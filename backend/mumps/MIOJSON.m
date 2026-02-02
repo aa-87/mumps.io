@@ -1,0 +1,20 @@
+MIOJSON
+	;
+	;
+	;
+	Q
+	;
+DECODE(JSON,OUT,ERR)
+		N %TI,%TO,%TERR
+		S %TI(1)=JSON
+		D DECODE^MIOIDE($NA(%TI),$NA(%TO),$NA(%TERR))
+		N OK S OK=1 
+		I $D(%TERR(0)) S OK=0  D ERRSET(.ERR,$G(%TERR(%TERR(0)))) I 1
+		E  K OUT M OUT=%TO
+		Q OK
+	;	
+	;	
+ERRSET(ERR,ECODE,POS)
+	SET ERR("error")=ECODE
+	SET ERR("pos")=$G(POS)
+	QUIT

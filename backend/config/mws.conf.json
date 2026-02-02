@@ -1,0 +1,131 @@
+{
+  "server": {
+    "name": "mws",
+    "version": "0.1.0",
+    "environment": "dev",
+    "listen": {
+      "host": "127.0.0.1",
+      "port": 9080
+    },
+    "process": {
+      "workers": 4,
+      "maxRequestsPerWorker": 200000,
+      "maxConnIdleSeconds": 10,
+      "gracefulShutdownSeconds": 15
+    },
+    "timeouts": {
+      "readHeaderMs": 2000,
+      "readBodyMs": 30000,
+      "writeResponseMs": 30000,
+      "handlerMaxMs": 30000
+    },
+    "limits": {
+      "maxRequestLineBytes": 8192,
+      "maxHeaderCount": 80,
+      "maxHeaderBytes": 65536,
+      "maxBodyBytes": 10485760
+    },
+    "http": {
+      "keepAlive": true,
+      "supportChunkedRequest": true,
+      "defaultResponseHeaders": {
+        "Server": "mws",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "DENY",
+        "Referrer-Policy": "no-referrer",
+        "Cache-Control": "no-store"
+      }
+    },
+    "templateDir": "templates",
+    "layout": "layout.html"
+  },
+  "logging": {
+    "level": "info",
+    "format": "json",
+    "accessLogEnabled": true,
+    "auditLogEnabled": true,
+    "redaction": {
+      "redactHeaders": [
+        "authorization",
+        "cookie",
+        "set-cookie",
+        "x-api-key"
+      ],
+      "redactQueryString": true,
+      "redactBody": true
+    }
+  },
+  "metrics": {
+    "enabled": true,
+    "path": "/metrics",
+    "includeRouteLabels": true,
+    "retentionMinutes": 180,
+    "buffered": true,
+    "flushEvery": 200,
+    "flushIntervalMs": 1000,
+    "windowEnabled": true,
+    "cleanupIntervalSeconds": 60,
+    "staleBufferMinutes": 10
+  },
+  "package": {
+    "schemaVersion": 1
+  },
+  "examples": {
+    "enabled": true
+  },
+  "templates": {
+    "devWatchEnabled": true,
+    "devWatchIntervalSeconds": 2,
+    "maxRenderDepth": 20,
+    "precompileEnabled": true,
+    "precompilePatterns": [
+      "*.html",
+      "*.tpl"
+    ],
+    "cleanupStackOnError": true,
+    "staleWatcherSeconds": 10
+  },
+  "referenceApp": {
+    "enabled": 1
+  },
+  "auth": {
+    "enabled": 1,
+    "mode": "either",
+    "apiKey": {
+      "header": "X-Api-Key",
+      "key": "change-me",
+      "value": "change-me"
+    },
+    "protect": {
+      "prefix": [
+        "/api/",
+        "/ws/app"
+      ],
+      "exempt": [
+        "/api/ping",
+        "/healthz",
+        "/metrics",
+        "/bench",
+        "/app",
+        "/ws"
+      ]
+    },
+    "protectMode": "route",
+    "jwt": {
+      "bearerPrefix": "Bearer ",
+      "issuer": "",
+      "audience": "",
+      "clockSkewSeconds": 60,
+      "rolesClaim": "roles",
+      "jwksUrl": "",
+      "jwksCacheSeconds": 300,
+      "jwksLockTimeoutMs": 2000,
+      "jwksWaitTimeoutMs": 2000,
+      "jwksNegativeCacheSeconds": 60,
+      "hmacSecret": "",
+      "jwksRefreshCooldownSeconds": 30,
+      "jwksRefreshMaxCooldownSeconds": 300,
+      "jwksNegativeCacheMax": 1000
+    }
+  }
+}

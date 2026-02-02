@@ -1,0 +1,14 @@
+MIOJSON1
+	; JSON HELPERS
+	;
+	Q
+	;	
+	;	SET JSON=$$EN^MIOJSON1(.TMP)
+EN(ARR)
+	N %TI,%TO,A,JSON,%TERR
+	M %TI=ARR S JSON=""
+	D ENCODE^MIOIDE($NA(%TI),$NA(%TO),$NA(%TERR))
+	S A="" F  S A=$O(%TO(A)) Q:A=""  S JSON=JSON_%TO(A)
+	Q JSON
+	;	
+	;

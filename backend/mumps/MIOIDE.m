@@ -1,0 +1,766 @@
+MIOWS 	;  MIO Web Server
+		; AA 1/20/26
+		; V 1.0
+	;#################################################################
+	;#                                                               #
+	;# Copyright (c) 2025 Ahmed Khaled Abdelrazek                    #
+	;# All rights reserved.                                          #
+	;#                                                               #
+	;#   This source code contains the intellectual property         #
+	;#   of its copyright holder(s), and is made available           #
+	;#   under a license.  If you do not know the terms of           #
+	;#   the license, please stop and do not read further.           #
+	;#                                                               #
+	;#################################################################
+	Q
+	;
+	;
+TEST
+	NEW PATH S PATH=$$GETCONF^MIOCONF()
+	DO LOAD^MIOCONF(PATH,.CONF)	
+	ZWR CONF
+	Q
+	;	
+	;
+	;
+Start
+	J JOB
+	W "MIO Web Server started.",!
+	Q
+Stop
+	S $P(^MIO(":WS","JOB:STATUS"),":")="stopped"
+	W "MIO Web Server stopped.",!
+	Q
+RUN2(HTTPREQ,HTTPRSP,HTTPARGS)
+	S HTTPRSP("mime")="javascript/json"
+	S @HTTPRSP@(1)="{"_"STATUS"_":"_1_"}"
+	Q       
+RUN(HTTPREQ,HTTPRSP,HTTPARGS)
+	S HTTPRSP("mime")="text/html"
+	S @HTTPRSP@(1)="Hello World"
+	Q
+WSBENCH
+	S ST=$ZUT
+	D SELFTEST^MIOSHA1
+	S END=$ZUT
+	W "M=>",(END-ST)/1000,!
+	S ST=$ZUT
+	D SELFTEST2^MIOSHA1
+	S END=$ZUT
+	W "C=>",(END-ST)/1000,!
+	Q   
+WS	U %WTCP:(NODELIM)
+	W "HTTP/1.1 101 Switching Protocols"_$C(13,10)
+	W "Upgrade: websocket"_$C(13,10)
+	W "Connection: Upgrade"_$C(13,10)
+	W "Sec-WebSocket-Accept: "
+	;W $$GENWS(HTTPREQ("header","sec-websocket-key"))
+	W $$WSACCEPT^MIOSHA1(HTTPREQ("header","sec-websocket-key")) ;
+	W $C(13,10)_$C(13,10) 
+WS1	K X,Y,Z,MSK,PZ,I,PL,OPC R *X S OPC=X R *X S X=X-128 I X<=125 S PZ=X
+	I OPC=136 W $$WSMSG("") H
+	I X=126 R X#2 S PZ=$$WSSZ16(X)
+	I X=127 R X#8 S PZ=$$WSSZ64(X)
+	R MSK#4 R PL#PZ
+	K %WSI,%WSO S (%WSI,%WSO)=""
+	S %WSI=$$UNMSK(PL,MSK) 
+	D FECHO
+	;W $$WSMSG($ZUT_$C(13,10))
+	;S HTTPRSP="%MIOO" k @HTTPRSP D RESPOND
+	;I $G(@HTTPRSP)]"" W $$WSMSG(@HTTPRSP)
+	;E  H 0.01 
+	G WS1
+FECHO ZSHOW "*":^A W $$WSMSG($ZUT) W:$G(%WSI)]"" $$WSMSG(%WSI) 
+	Q
+	;	
+	;	
+WSMSG(M,OPCODE)
+	 N B1,B2,LEN,O S O="" I $G(OPCODE)="" S OPCODE=1
+	 S B1=$S(1:128,1:0) ; FIN=1 -> ONLY -> SINGLE-FRAME MESSAGES		
+	 S B1=B1+OPCODE     ; 8=CLOSE   9=PING   10=PONG    1=TEXT
+		 S LEN=$L($G(M))
+		 I LEN<126 S B2=LEN S O=O_$C(B1,B2)
+		 I LEN>=126,LEN<65536126 S B2=126 S O=O_$C(B1,B2)_$C(LEN\256#256,LEN#256)
+	 I LEN>=65536126 D
+	 . S B2=127
+	 . N I,BUF S BUF=""
+	 . N L S L=LEN
+	 . F I=7:-1:0 S BUF=$C((L\(256**I))#256)_BUF
+	 . S O=O_$C(B1,B2)_BUF
+	 Q O_M
+	 ;
+SHA1(X) N D,C,S,O,CD S D="shasum"_$J,C="echo -n """_X_""" | openssl sha1 -binary | openssl base64"
+		S O="",CD=$P O D:(SHELL="/bin/sh":COMM=C)::"pipe" U D F  Q:$ZEOF=1  R S:2 S O=O_$P(S," ") Q:'$T
+		C D U CD Q O
+GENWS(K) N T S T="258EAFA5-E914-47DA-95CA-C5AB0DC85B11" Q $$SHA1(K_T)
+UNMSK(X,Y) N I,O S O="" F I=1:1:$L(X) S O=O_$C($$XOR($A(X,I),$A(Y,$S('(I#4):4,1:I#4)),8))
+	Q O
+XOR(A,B,W) N I,M,R S R=B,M=1 F I=1:1:W S:A\M#2 R=R+$S(R\M#2:-M,1:M) S M=M+M
+	Q R	
+WSSZ64(X) N X1,X2,X3,X4,X5,X6,X7,X8 S X1=$A($E(X)),X2=$A($E(X,2)),X3=$A($E(X,3)),X4=$A($E(X,4))
+		S X5=$A($E(X,5)),X6=$A($E(X,6)),X7=$A($E(X,7)),X8=$A($E(X,8))
+		Q (X1*256**7)+(X2*256**6)+(X3*256**5)+(X4*256**4)+(X5*256**3)+(X6*256**2)+(X7*256)+X8	
+WSSZ16(X) N X1,X2 S X1=$A($E(X)),X2=$A($E(X,2)) Q (X1*256)+X2
+	;
+RUNVIDS(HTTPREQ,HTTPRSP,HTTPARGS)
+	S HTTPRSP("mime")="video/mp4"
+	S RANGE=$G(HTTPREQ("header","range"))
+	S (START,END,LENGTH,TMP,VIDSIZE)=0
+	S SEQ=$P(HTTPREQ("path"),"/",2) I 'SEQ S SEQ=1
+	S VIDSIZE=^PDF(SEQ)
+	S START=$P($P(RANGE,"=",2),"-") I START="" D  Q
+	. S HTTPRSP("header","Connection")="close"
+	. S HTTPRSP("header","Content-Range")="bytes "_0_"-"_0_"/"_VIDSIZE
+	S FST=(START\4080),RMN=(START#4080),VIDEND=0
+	I 'RMN S @HTTPRSP@(1)="$NA("_$NA(^PDF(SEQ,FST+1))_")"
+	I RMN S @HTTPRSP@(1)=$E(^PDF(SEQ,FST+1),RMN+1,$L(^PDF(SEQ,FST+1)))
+	S SIZE=$L(^PDF(SEQ,FST+1))-RMN S D=0
+	S D=0 F I=2:1:2240 Q:D  D
+	. I '$D(^PDF(SEQ,FST+I)) S D=1 Q
+	. S @HTTPRSP@(I)="$NA("_$NA(^PDF(SEQ,FST+I))_")"
+	. S SIZE=SIZE+$L(^PDF(SEQ,FST+I))
+	S HTTPRSP("header","Content-Range")="bytes "_START_"-"_(START+SIZE-1)_"/"_VIDSIZE
+	S HTTPRSP("partial")=""
+	Q
+JOB
+	N TCPPORT S TCPPORT=$G(^MIO(":WS","PORT"),7040)
+	S @("$ZINTERRUPT=""I $$JOBEXAM^MIOWS($ZPOSITION)""")
+	S TCPIO="SCK$"_TCPPORT
+	O TCPIO:(ZLISTEN=TCPPORT_":TCP":delim=$C(13,10):attach="server"):15:"socket"
+	E  U 0 W !,"error cannot open port "_TCPPORT Q
+	S ^MIO(":WS","JOB:STATUS")="running"
+	U TCPIO
+	W /LISTEN(5)
+LOOP
+	I $G(^MIO(":WS","JOB:STATUS"))="stopped" C TCPIO  Q
+	D  G LOOP
+	. F  W /WAIT(10) Q:$KEY]""  Q:($G(^MIO(":WS","JOB:STATUS"))="stopped")
+	. Q:($G(^MIO(":WS","JOB:STATUS"))="stopped")
+	. I $P($KEY,"|")="CONNECT" D
+	. . S CHILDSOCK=$P($KEY,"|",2)
+	. . U TCPIO:(detach=CHILDSOCK)
+	. . N Q S Q=""""
+	. . N ARG S ARG=Q_"SOCKET:"_CHILDSOCK_Q
+	. . N J S J="CHILD($G(TLSCONFIG),$G(NOGBL)):(input="_ARG_":output="_ARG_")"
+	. . J @J
+	QUIT
+JOBEXAM(%ZPOS)
+	ZSHOW "*":^MIO(":WS","LOG",+$H,$P($H,",",2),$J)
+	QUIT 1
+CHILD(TLSCONFIG,NOGBL)
+	N %WTCP S %WTCP=$GET(TCPIO,$PRINCIPAL)
+	S HTTPLOG=0
+	S HTTPLOG("DT")=+$H
+	D INCRLOG
+	N $ET S $ET="G ETSOCK^MIOWS"
+	;
+NEXT
+	K HTTPREQ,HTTPRSP,HTTPERR
+	K ^MIO(":WS","ERR",$J),^MIO(":WS","HTTPERR",$J)
+WAIT
+	I $G(^MIO(":WS","JOB:STATUS"))="stopped" C %WTCP Q
+	U %WTCP:(delim=$C(13,10))
+	R TCPX:1 I '$T G ETDC
+	I '$L(TCPX) G ETDC
+	S HTTPREQ("method")=$P(TCPX," ")
+	S HTTPREQ("path")=$P($P(TCPX," ",2),"?")
+	S HTTPREQ("query")=$P($P(TCPX," ",2),"?",2,999)
+	S HTTPREQ("body")="%MIOI" K @HTTPREQ("body")
+	I $E($P(TCPX," ",3),1,4)'="HTTP" G NEXT
+	F  S TCPX=$$RDCRLF() Q:'$L(TCPX)  D ADDHEAD(TCPX)
+	I $G(HTTPREQ("header","expect"))="100-continue" D
+	. W "HTTP/1.1 100 Continue",$C(13,10,13,10),!
+	I $ZCONVERT($G(HTTPREQ("header","connection")),"L")="upgrade",$ZCONVERT($G(HTTPREQ("header","upgrade")),"L")="websocket" G WS
+	U %WTCP:(nodelim)
+	I $$LOW($G(HTTPREQ("header","transfer-encoding")))="chunked" D
+	. D RDCHNKS
+	. I HTTPLOG>2
+	I $G(HTTPREQ("header","content-length"))>0 D
+	. D RDLEN(HTTPREQ("header","content-length"),99)
+	S $ETRAP="G ETCODE^MIOWS"
+	S HTTPERR=0
+	D RESPOND
+	S $ETRAP="G ETSOCK^MIOWS"
+	U %WTCP:(nodelim)
+	I $G(HTTPERR) D RSPERROR
+	D SENDATA
+	I $G(HTTPRSP("header","Connection"))="close" C %WTCP H
+	G NEXT
+RDCRLF()
+	N X,LINE,RETRY
+	S LINE=""
+	F RETRY=1:1 R X:1 S LINE=LINE_X Q:$A($ZB)=13  Q:RETRY>10
+	Q LINE
+RDCHNKS
+	Q
+RDLEN(REMAIN,TIMEOUT)
+	N X,LINE,LENGTH
+	S LINE=0
+RDLOOP
+	S LENGTH=REMAIN I LENGTH>1600 S LENGTH=1600
+	R X#LENGTH:TIMEOUT
+	I '$T S LINE=LINE+1,@HTTPREQ("body")@(LINE)=X Q
+	S REMAIN=REMAIN-$L(X),LINE=LINE+1,@HTTPREQ("body")@(LINE)=X
+	G:REMAIN RDLOOP
+	Q
+ADDHEAD(LINE)
+	N NAME,VALUE
+	S NAME=$$LOW($$LTRIM($P(LINE,":")))
+	S VALUE=$$LTRIM($P(LINE,":",2,99))
+	I LINE'[":" S NAME="",VALUE=LINE
+	I '$L(NAME) S NAME=$G(HTTPREQ("header"))
+	I '$L(NAME) Q
+	I $D(HTTPREQ("header",NAME)) D
+	. S HTTPREQ("header",NAME)=HTTPREQ("header",NAME)_","_VALUE
+	E  D
+	. S HTTPREQ("header",NAME)=VALUE,HTTPREQ("header")=NAME
+	Q
+ETSOCK
+	D LOGERR
+	C %WTCP
+	H
+ETCODE
+	S $ETRAP="G ETBAIL^MIOWS"
+	I $TLEVEL TROLLBACK
+	L
+	D LOGERR,SETERROR(501,"Log ID:"_HTTPLOG("ID")),RSPERROR,SENDATA
+	S $ETRAP="Q:$ESTACK&$QUIT 0 Q:$ESTACK  S $ECODE="""" G NEXT"
+	Q
+ETDC
+	K ^MIO(":WS","ERR",$J),^MIO(":WS","HTTPERR",$J)
+	C $P
+	HALT
+ETBAIL
+	U %WTCP
+	W "HTTP/1.1 500 Internal Server Error",$C(13,10),$C(13,10),!
+	K ^MIO(":WS","ERR",$J),^MIO(":WS","HTTPERR",$J)
+	C %WTCP
+	HALT
+INCRLOG
+	N DT,ID
+	S DT=+$H
+	S ID=$H_"."_$J S HTTPLOG("ID")=ID
+	Q
+LOGERR
+	N %D,%I
+	S %D=+$H,%I=$I(^MIO(":WS","ERR",%D))
+	S ^MIO(":WS","ERR",%D,%I)=$ZSTATUS_"  ($ECODE:"_$ECODE_")"
+	N %LVL,%TOP,%N
+	S %TOP=$STACK(-1),%N=0
+	F %LVL=0:1:%TOP D
+	. S %N=%N+1
+	. S $P(^MIO(":WS","ERR",%D,%I,%N),":",1)=$STACK(%LVL,"PLACE")
+	. S $P(^MIO(":WS","ERR",%D,%I,%N),":",2)=$STACK(%LVL,"MCODE")
+	N %X,%Y
+	S %X="^MIO("":WS"",""ERR"",%D,%I,""vars"","
+	S %Y="%" F  M:$D(@%Y) @(%X_"%Y)="_%Y) S %Y=$O(@%Y) Q:%Y=""
+	Q
+UP(X) Q $TR(X,"abcdefghijklmnopqrstuvwxyz","ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+LOW(X) Q $TR(X,"ABCDEFGHIJKLMNOPQRSTUVWXYZ","abcdefghijklmnopqrstuvwxyz")
+LTRIM(%X)
+	N %L,%R
+	S %L=1,%R=$L(%X)
+	F %L=1:1:$L(%X) Q:$A($E(%X,%L))>32
+	Q $E(%X,%L,%R)
+RESPOND
+	K MIO(":WS","TMP",$J)
+	N ROUTINE,LOCATION,HTTPARGS,HTTPBODY,ADS
+	S ROUTINE=""
+	D MATCH(.ROUTINE,.HTTPARGS) I $G(HTTPERR) Q
+	D QSPLIT(.HTTPARGS) I $G(HTTPERR) QUIT
+	s HTTPRSP="%MIOO" k @HTTPRSP
+	I ROUTINE="" S ROUTINE="RUN" 
+	D @(ROUTINE_"(.HTTPREQ,.HTTPRSP,.HTTPARGS)")
+	Q
+QSPLIT(QUERY)
+	N I,X,NAME,VALUE
+	F I=1:1:$L(HTTPREQ("query"),"&") D
+	. S X=$$URLDEC($P(HTTPREQ("query"),"&",I))
+	. S NAME=$P(X,"="),VALUE=$P(X,"=",2,999)
+	. I $L(NAME) S QUERY($$LOW(NAME))=VALUE
+	Q
+MATCHWS(RTN,ARGS) N AUD S RTN="" D MATCHF(.RTN,.ARGS,.AUD) Q	
+MATCH(ROUTINE,ARGS)
+	N AUTHNODE
+	S ROUTINE=""
+	D MATCHF(.ROUTINE,.ARGS,.AUTHNODE) Q
+	Q
+MATCHF(ROUTINE,ARGS,AUTHNODE)
+	N PATH S PATH=HTTPREQ("path")
+	S:$E(PATH)="/" PATH=$E(PATH,2,$L(PATH))
+	N DONE S DONE=0
+	N PATH1 S PATH1=$$URLDEC($P(PATH,"/",1,999),1)
+	N PATTERN S PATTERN=PATH1
+	I PATTERN="" S PATTERN="/"
+	I $D(^MIO(":WS","ROUTES",HTTPREQ("method"),PATTERN)) D
+	. S ROUTINE=$O(^MIO(":WS","ROUTES",HTTPREQ("method"),PATTERN,""))
+	I ROUTINE="" S ROUTINE="RUN"
+	Q
+SENDATA
+	N %WBUFF S %WBUFF=""
+	N SIZE,RSPTYPE,PREAMBLE,START,LIMIOT
+	;S RSPTYPE=$S($E($G(HTTPRSP))'="^":1,1:2)
+	S RSPTYPE=$S($E($G(HTTPRSP))="%":2,$E($G(HTTPRSP))'="^":1,1:2)
+	I RSPTYPE=1 S SIZE=$$VARSIZE(.HTTPRSP)
+	I RSPTYPE=2 S SIZE=$$REFSIZE(.HTTPRSP)
+	D W($$RSPLINE()_$C(13,10))
+	I $D(HTTPREQ("Content-Disposition")) D
+	. D W("Content-Disposition: "_HTTPREQ("Content-Disposition")_$C(13,10))
+	I $D(HTTPREQ("X-Accel-Redirect")) D
+	. D W("X-Accel-Redirect: "_HTTPREQ("X-Accel-Redirect")_$C(13,10))
+	I $D(HTTPREQ("set_cookie")) D
+	. D W("Set-Cookie: "_HTTPREQ("set_cookie")_$C(13,10))
+	I $D(HTTPREQ("location")) D
+	. D W("Location: "_HTTPREQ("location")_$C(13,10))
+	I $D(HTTPRSP("auth")) D
+	. D W("WWW-Authenticate: "_HTTPRSP("auth")_$C(13,10)) K HTTPRSP("auth")
+	I $D(HTTPRSP("header")) d
+	. n tmp s tmp="" f  s tmp=$o(HTTPRSP("header",tmp)) q:tmp=""  D
+	. . d W(tmp_": "_HTTPRSP("header",tmp)_$c(13,10))
+	. k HTTPRSP("header")
+	I $D(HTTPRSP("mime")) D
+	. D W("Content-Type: "_HTTPRSP("mime")_$C(13,10)) K HTTPRSP("mime")
+	E  D W("Content-Type: application/json; charset=utf-8"_$C(13,10))
+	D W("Content-Length: "_SIZE_$C(13,10)_$C(13,10))
+	I 'SIZE D FLUSH Q
+	N I,J,IND
+	I RSPTYPE=1 D
+	. I $D(HTTPRSP)#2 D W(HTTPRSP)
+	. I $D(HTTPRSP)>1 S I=0 F  S I=$O(HTTPRSP(I)) Q:'I  D W(HTTPRSP(I))
+	I RSPTYPE=2 D
+	. I $D(@HTTPRSP)#2 D W(@HTTPRSP)
+	. I $D(@HTTPRSP)>1 S I=0 F  S I=$O(@HTTPRSP@(I)) Q:'I  D
+	. . S IND=@HTTPRSP@(I)
+	. . I $E(IND,1,4)="$NA(" D  Q
+	. . . S TMP=$P($P(IND,"$NA(",2),")",1,$L(IND,")")-1)
+	. . . D W(@TMP)
+	. . D W(IND) Q
+	D FLUSH
+	Q
+W(DATA)
+	I ($L(%WBUFF)+$L(DATA))>4080 D FLUSH
+	S %WBUFF=%WBUFF_DATA
+	Q
+FLUSH
+	W %WBUFF
+	S %WBUFF=""
+	Q
+RSPERROR
+	D ENCODE("^MIO("":WS"",""ERR"",$J,1)","^MIO("":WS"",""ERR"",$J,""JS"")")
+	S HTTPRSP="^MIO("":WS"",""ERR"",$J,""JS"")"
+	Q
+RSPLINE()
+	I $D(HTTPRSP("partial")) Q "HTTP/1.1 206 Partial Content"
+	I '$G(HTTPERR),'$D(HTTPREQ("location")) Q "HTTP/1.1 200 OK"
+	I '$G(HTTPERR),$D(HTTPREQ("location")) Q "HTTP/1.1 201 Created"
+	I $G(HTTPERR)=409 Q "HTTP/1.1 409 Conflict"
+	I $G(HTTPERR)=503 Q "HTTP/1.1 503 Service Unavailable"
+	I $G(HTTPERR)=400 Q "HTTP/1.1 400 Bad Request"
+	I $G(HTTPERR)=401 Q "HTTP/1.1 401 Unauthorized"
+	I $G(HTTPERR)=404 Q "HTTP/1.1 404 Not Found"
+	I $G(HTTPERR)=405 Q "HTTP/1.1 405 Method Not Allowed"
+	I $G(HTTPERR)=302 Q "HTTP/1.1 302 Moved Temporarily"
+	Q "HTTP/1.1 500 Internal Server Error"
+SETERROR(ERRCODE,MESSAGE)
+	N NEXTERR,ERRNAME,TOPMSG
+	S HTTPERR=400,TOPMSG="Bad Request"
+	I ERRCODE=101 S ERRNAME="MIOssing name of index"
+	I ERRCODE=102 S ERRNAME="Invalid index name"
+	I ERRCODE=103 S ERRNAME="Parameter error"
+	I ERRCODE=104 S HTTPERR=404,TOPMSG="Not Found",ERRNAME="Bad key"
+	I ERRCODE=105 S ERRNAME="Template required"
+	I ERRCODE=106 S ERRNAME="Bad Filter Parameter"
+	I ERRCODE=107 S ERRNAME="Unsupported Field Name"
+	I ERRCODE=108 S ERRNAME="Bad Order Parameter"
+	I ERRCODE=109 S ERRNAME="Operation not supported with this index"
+	I ERRCODE=110 S ERRNAME="Order field unknown"
+	I ERRCODE=111 S ERRNAME="Unrecognized parameter"
+	I ERRCODE=112 S ERRNAME="Filter required"
+	I ERRCODE=201 S ERRNAME="Unknown collection"
+	I ERRCODE=202 S ERRNAME="Unable to decode JSON"
+	I ERRCODE=203 D
+	. S HTTPERR=404,TOPMSG="Not Found",ERRNAME="Unable to deterMIOne patient"
+	I ERRCODE=204 D
+	. S HTTPERR=404,TOPMSG="Not Found",ERRNAME="Unable to deterMIOne collection"
+	I ERRCODE=205 S ERRNAME="Patient MIOsmatch with object"
+	I ERRCODE=207 S ERRNAME="MIOssing UID"
+	I ERRCODE=209 S ERRNAME="MIOssing range or index"
+	I ERRCODE=210 S ERRNAME="Unknown UID format"
+	I ERRCODE=211 D
+	. S HTTPERR=404,TOPMSG="Not Found",ERRNAME="MIOssing patient identifiers"
+	I ERRCODE=212 S ERRNAME="MIOsmatch of patient identifiers"
+	I ERRCODE=213 S ERRNAME="Delete demographics only not allowed"
+	I ERRCODE=214 S HTTPERR=404,ERRNAME="Patient ID not found in database"
+	I ERRCODE=215 S ERRNAME="MIOssing collection name"
+	I ERRCODE=216 S ERRNAME="Incomplete deletion of collection"
+	I ERRCODE=400 S ERRNAME="Bad Request"
+	I ERRCODE=401 S ERRNAME="Unauthorized"
+	I ERRCODE=404 S ERRNAME="Not Found"
+	I ERRCODE=405 S ERRNAME="Method Not Allowed"
+	I ERRCODE=501 S ERRNAME="M execution error"
+	I ERRCODE=502 S ERRNAME="Unable to lock record"
+	I '$L($G(ERRNAME)) S ERRNAME="Unknown error"
+	I ERRCODE>500 S HTTPERR=500,TOPMSG="Internal Server Error"
+	I ERRCODE<500,ERRCODE>400 S HTTPERR=ERRCODE,TOPMSG=ERRNAME
+	Q
+REFSIZE(ROOT)
+	Q:'$D(ROOT) 0 Q:'$L(ROOT) 0
+	N SIZE,I
+	S SIZE=0
+	I $D(@ROOT)#2 S SIZE=$L(@ROOT)
+	I $D(@ROOT)>1 S I=0 F  S I=$O(@ROOT@(I)) Q:'I  D
+	. I $E(@ROOT@(I),1,4)="$NA(" D  Q
+	. . S TMP=$P($P(@ROOT@(I),"$NA(",2),")",1,$L(@ROOT@(I),")")-1)
+	. . S SIZE=SIZE+$L(@TMP) Q
+	. S SIZE=SIZE+$L(@ROOT@(I))
+	Q SIZE
+VARSIZE(V)
+	Q:'$D(V) 0
+	N SIZE,I
+	S SIZE=0
+	I $D(V)#2 S SIZE=$L(V)
+	I $D(V)>1 S I="" F  S I=$O(V(I)) Q:'I  S SIZE=SIZE+$L(V(I))
+	Q SIZE
+	; MIOERR 
+MIOJSONET
+		S ERRMSG=$ZSTATUS 
+		G XERRX
+ENCODE(MIOROOT,MIOJSON,MIOERR)
+	S $ET="G MIOJSONET^MIOIDE"
+	S MIOERR=$G(MIOERR)
+	I '$L($G(MIOROOT)) Q
+	I '$L($G(MIOJSON)) Q
+	N MIOLINE,MIOMAX,MIOERRORS
+	S MIOLINE=1,MIOMAX=1048000,MIOERRORS=0
+	S @MIOJSON@(MIOLINE)=""
+	D SEROBJ(MIOROOT)
+	Q
+SEROBJ(MIOROOT)
+	N MIOFIRST,MIOSUB,MIONXT
+	S @MIOJSON@(MIOLINE)=@MIOJSON@(MIOLINE)_"{"
+	S MIOFIRST=1
+	S MIOSUB="" F  S MIOSUB=$O(@MIOROOT@(MIOSUB)) Q:MIOSUB=""  D
+	. S:'MIOFIRST @MIOJSON@(MIOLINE)=@MIOJSON@(MIOLINE)_"," S MIOFIRST=0
+	. D SERNAME(MIOSUB)
+	. I $$ISVALUE(MIOROOT,MIOSUB) D SERVAL(MIOROOT,MIOSUB) Q
+	. I $D(@MIOROOT@(MIOSUB))=10 S MIONXT=$O(@MIOROOT@(MIOSUB,"")) D  Q
+	. . I +MIONXT D SERARY($NA(@MIOROOT@(MIOSUB))) I 1
+	. . E  D SEROBJ($NA(@MIOROOT@(MIOSUB)))
+	. D ERRX("SOB",MIOSUB)
+	S @MIOJSON@(MIOLINE)=@MIOJSON@(MIOLINE)_"}"
+	Q
+SERARY(MIOROOT)
+	N MIOFIRST,MIOI,MIONXT
+	S @MIOJSON@(MIOLINE)=@MIOJSON@(MIOLINE)_"["
+	S MIOFIRST=1
+	S MIOI=0 F  S MIOI=$O(@MIOROOT@(MIOI)) Q:'MIOI  D
+	. S:'MIOFIRST @MIOJSON@(MIOLINE)=@MIOJSON@(MIOLINE)_"," S MIOFIRST=0
+	. I $$ISVALUE(MIOROOT,MIOI) D SERVAL(MIOROOT,MIOI) Q 
+	. I $D(@MIOROOT@(MIOI))=10 S MIONXT=$O(@MIOROOT@(MIOI,"")) D  Q
+	. . I +MIONXT D SERARY($NA(@MIOROOT@(MIOI))) I 1
+	. . E  D SEROBJ($NA(@MIOROOT@(MIOI)))
+	. D ERRX("SAR",MIOI)
+	S @MIOJSON@(MIOLINE)=@MIOJSON@(MIOLINE)_"]"
+	Q
+SERNAME(MIOSUB)
+	I ($L(MIOSUB)+$L(@MIOJSON@(MIOLINE)))>MIOMAX S MIOLINE=MIOLINE+1,@MIOJSON@(MIOLINE)=""
+	S @MIOJSON@(MIOLINE)=@MIOJSON@(MIOLINE)_""""_MIOSUB_""""_":"
+	Q
+SERVAL(MIOROOT,MIOSUB)
+	N MIOX,MIOI
+	I $D(@MIOROOT@(MIOSUB,":")) D  Q
+	. S MIOX=$G(@MIOROOT@(MIOSUB,":")) D:$L(MIOX) CONCAT
+	. S MIOI=0 F  S MIOI=$O(@MIOROOT@(MIOSUB,":",MIOI)) Q:'MIOI  S MIOX=@MIOROOT@(MIOSUB,":",MIOI) D CONCAT
+	S MIOX=$G(@MIOROOT@(MIOSUB))
+	I '$D(@MIOROOT@(MIOSUB,"\s")),$$NUMERIC(MIOX) D CONCAT QUIT
+	I (MIOX="true")!(MIOX="false")!(MIOX="null") D CONCAT QUIT
+	S MIOX=""""_$$ESC(MIOX)
+	D CONCAT
+	I $D(@MIOROOT@(MIOSUB,"\")) D
+	. S MIOI=0 F  S MIOI=$O(@MIOROOT@(MIOSUB,"\",MIOI)) Q:'MIOI   D
+	. . S MIOX=$$ESC(@MIOROOT@(MIOSUB,"\",MIOI))
+	. . D CONCAT
+	S MIOX="""" D CONCAT
+	Q
+CONCAT
+	I ($L(MIOX)+$L(@MIOJSON@(MIOLINE)))>MIOMAX S MIOLINE=MIOLINE+1,@MIOJSON@(MIOLINE)=""
+	S @MIOJSON@(MIOLINE)=@MIOJSON@(MIOLINE)_MIOX
+	Q
+ISVALUE(MIOROOT,MIOSUB)
+	I $D(@MIOROOT@(MIOSUB))#2 Q 1
+	N MIOX S MIOX=$O(@MIOROOT@(MIOSUB,""))
+	Q:MIOX="\" 1
+	Q:MIOX=":" 1
+	Q 0
+NUMERIC(X) 
+	;I $E(X,1,2)="-." Q 0
+	I $E(X,1)="." Q 0
+	I X=+X Q 1
+	Q 0
+	;Q $ISVALIDNUM(X)
+ESC(X)
+	N Y,I,PAIR,FROM,TO
+	S Y=X
+	F PAIR="\\","""""","//",$C(8,98),$C(12,102),$C(10,110),$C(13,114),$C(9,116) D
+	. S FROM=$E(PAIR),TO=$E(PAIR,2)
+	. S X=Y,Y=$P(X,FROM) F I=2:1:$L(X,FROM) S Y=Y_"\"_TO_$P(X,FROM,I)
+	Q Y
+ERRX(ID,VAL)
+	b
+	N ERRMSG
+	I ID="STL{" S ERRMSG="Stack too large for new object." G XERRX
+	I ID="SUF}" S ERRMSG="Stack Underflow - extra } found" G XERRX
+	I ID="STL[" S ERRMSG="Stack too large for new array." G XERRX
+	I ID="SUF]" S ERRMSG="Stack Underflow - extra ] found." G XERRX
+	I ID="OBM" S ERRMSG="Array MIOsmatch - expected ] got }." G XERRX
+	I ID="ARM" S ERRMSG="Object MIOsmatch - expected } got ]." G XERRX
+	I ID="MPN" S ERRMSG="MIOssing property name." G XERRX
+	I ID="EXT" S ERRMSG="Expected true, got "_VAL G XERRX
+	I ID="EXF" S ERRMSG="Expected false, got "_VAL G XERRX
+	I ID="EXN" S ERRMSG="Expected null, got "_VAL G XERRX
+	I ID="TKN" S ERRMSG="Unable to identify type of token, value was "_VAL G XERRX
+	I ID="SCT" S ERRMSG="Stack MIOsmatch - exit stack level was  "_VAL G XERRX
+	I ID="EIQ" S ERRMSG="Close quote not found before end of input." G XERRX
+	I ID="EIU" S ERRMSG="Unexpected end of input while unescaping." G XERRX
+	I ID="RSB" S ERRMSG="Reverse search for \ past beginning of input." G XERRX
+	I ID="ORN" S ERRMSG="Overrun while scanning name." G XERRX
+	I ID="OR#" S ERRMSG="Overrun while scanning number." G XERRX
+	I ID="ORB" S ERRMSG="Overrun while scanning boolean." G XERRX
+	I ID="ESC" S ERRMSG="Escaped character not recognized"_VAL G XERRX
+	I ID="SOB" S ERRMSG="Unable to serialize node as object, value was "_VAL G XERRX
+	I ID="SAR" S ERRMSG="Unable to serialize node as array, value was "_VAL G XERRX
+	S ERRMSG="Unspecified error "_ID_" "_$G(VAL)
+XERRX
+	I $G(MIOERR)]"" D	
+	. S @MIOERR@(0)=$G(@MIOERR@(0))+1
+	. S @MIOERR@(@MIOERR@(0))=ERRMSG
+	. S MIOERRORS=MIOERRORS+1
+	Q
+DECODE(MIOJSON,MIOROOT,MIOERR)
+	S MIOERR=$G(MIOERR)
+DIRECT
+	S $ET="G MIOJSONET^MIOIDE"
+	N MIOMAX S MIOMAX=1048000
+	I $D(@MIOJSON)=1 N MIOINPUT S MIOINPUT(1)=@MIOJSON,MIOJSON="MIOINPUT"
+	S MIOROOT=$NA(@MIOROOT@("Z")),MIOROOT=$E(MIOROOT,1,$L(MIOROOT)-4) ; make open array ref
+	N MIOLINE,MIOIDX,MIOSTACK,MIOPROP,MIOTYPE,MIOERRORS
+	S MIOLINE=$O(@MIOJSON@("")),MIOIDX=1,MIOSTACK=0,MIOPROP=0,MIOERRORS=0
+	F  S MIOTYPE=$$NXTKN() Q:MIOTYPE=""  D  I MIOERRORS Q
+	. I MIOTYPE="{" S MIOSTACK=MIOSTACK+1,MIOSTACK(MIOSTACK)="",MIOPROP=1 D:MIOSTACK>64 ERRX("STL{") Q
+	. I MIOTYPE="}" D:$$NUMERIC(MIOSTACK(MIOSTACK)) ERRX("OBM") S MIOSTACK=MIOSTACK-1 D:MIOSTACK<0 ERRX("SUF}") Q
+	. I MIOTYPE="[" S MIOSTACK=MIOSTACK+1,MIOSTACK(MIOSTACK)=1 D:MIOSTACK>64 ERRX("STL[") Q
+	. I MIOTYPE="]" D:'$$NUMERIC(MIOSTACK(MIOSTACK)) ERRX("ARM") S MIOSTACK=MIOSTACK-1 D:MIOSTACK<0 ERRX("SUF]") Q
+	. I MIOTYPE="," D  Q
+	. . I MIOSTACK(MIOSTACK) S MIOSTACK(MIOSTACK)=MIOSTACK(MIOSTACK)+1 
+	. . E  S MIOPROP=1                                  
+	. I MIOTYPE=":" S MIOPROP=0 D:'$L($G(MIOSTACK(MIOSTACK))) ERRX("MPN") Q
+	. I MIOTYPE="""" D  Q
+	. . I MIOPROP S MIOSTACK(MIOSTACK)=$$NAMPARS() I 1
+	. . E  D ADDSTR
+	. S MIOTYPE=$TR(MIOTYPE,"TFN","tfn")
+	. I MIOTYPE="t"  D  Q
+	. . I $L(@MIOJSON@(MIOLINE))<=MIOIDX+2,$D(@MIOJSON@(MIOLINE+1)) D
+	. . . S @MIOJSON@(MIOLINE)=@MIOJSON@(MIOLINE)_$E(@MIOJSON@(MIOLINE+1),1,2),@MIOJSON@(MIOLINE+1)=$E(@MIOJSON@(MIOLINE+1),3,$L(@MIOJSON@(MIOLINE+1)))
+	. . I $TR($E(@MIOJSON@(MIOLINE),MIOIDX,MIOIDX+2),"RUE","rue")="rue" D SETBOOL("true") I 1
+	. . E  B  D ERRX("EXT",MIOTYPE)
+	. I MIOTYPE="f" D  Q
+	. . I $L(@MIOJSON@(MIOLINE))<=MIOIDX+3,$D(@MIOJSON@(MIOLINE+1)) D
+	. . . S @MIOJSON@(MIOLINE)=@MIOJSON@(MIOLINE)_$E(@MIOJSON@(MIOLINE+1),1,3),@MIOJSON@(MIOLINE+1)=$E(@MIOJSON@(MIOLINE+1),4,$L(@MIOJSON@(MIOLINE+1)))
+	. . I $TR($E(@MIOJSON@(MIOLINE),MIOIDX,MIOIDX+3),"ALSE","alse")="alse" D SETBOOL("false") I 1
+	. . E  D ERRX("EXF",MIOTYPE)
+	. I MIOTYPE="n" D  Q
+	. . I $L(@MIOJSON@(MIOLINE))<=MIOIDX+2,$D(@MIOJSON@(MIOLINE+1)) D
+	. . . S @MIOJSON@(MIOLINE)=@MIOJSON@(MIOLINE)_$E(@MIOJSON@(MIOLINE+1),1,2),@MIOJSON@(MIOLINE+1)=$E(@MIOJSON@(MIOLINE+1),3,$L(@MIOJSON@(MIOLINE+1)))
+	. . I $TR($E(@MIOJSON@(MIOLINE),MIOIDX,MIOIDX+2),"ULL","ull")="ull" D SETBOOL("null") I 1
+	. . E  D ERRX("EXN",MIOTYPE)
+	. I "0123456789+-.eE"[MIOTYPE S @$$CURNODE()=$$NUMPARS(MIOTYPE) Q
+	. D ERRX("TKN",MIOTYPE_"["_$E(@MIOJSON@(MIOLINE),MIOIDX,MIOIDX+2)_"] ")
+	I MIOSTACK'=0 D ERRX("SCT",MIOSTACK)
+	Q
+NXTKN()
+	N MIODONE,MIOEOF,MIOTOKEN
+	S MIODONE=0,MIOEOF=0 F  D  Q:MIODONE!MIOEOF
+	. I MIOIDX>$L(@MIOJSON@(MIOLINE)) S MIOLINE=$O(@MIOJSON@(MIOLINE)),MIOIDX=1 I 'MIOLINE S MIOEOF=1 Q
+	. I $A(@MIOJSON@(MIOLINE),MIOIDX)>32 S MIODONE=1 Q
+	. S MIOIDX=MIOIDX+1
+	Q:MIOEOF ""
+	S MIOTOKEN=$E(@MIOJSON@(MIOLINE),MIOIDX),MIOIDX=MIOIDX+1
+	Q MIOTOKEN
+ADDSTR
+	N MIOEND,MIOX
+	S MIOEND=$F(@MIOJSON@(MIOLINE),"""",MIOIDX)
+	I MIOEND,($E(@MIOJSON@(MIOLINE),MIOEND-2)'="\") D SETSTR  QUIT  ;normal
+	I MIOEND,$$ISCLOSEQ(MIOLINE) D SETSTR QUIT
+	N MIODONE,MIOTLINE
+	S MIODONE=0,MIOTLINE=MIOLINE
+	F  D  Q:MIODONE  Q:MIOERRORS
+	. I 'MIOEND S MIOTLINE=MIOTLINE+1,MIOEND=1 I '$D(@MIOJSON@(MIOTLINE)) D ERRX("EIQ") Q
+	. S MIOEND=$F(@MIOJSON@(MIOTLINE),"""",MIOEND)
+	. I MIOEND,$E(@MIOJSON@(MIOTLINE),MIOEND-2)'="\" S MIODONE=1 Q
+	. S MIODONE=$$ISCLOSEQ(MIOTLINE)
+	Q:MIOERRORS
+	D UESEXT
+	S MIOLINE=MIOTLINE,MIOIDX=MIOEND
+	Q
+SETSTR
+	N MIOX
+	S MIOX=$E(@MIOJSON@(MIOLINE),MIOIDX,MIOEND-2),MIOIDX=MIOEND
+	S @$$CURNODE()=$$UES(MIOX)
+	I MIOIDX>$L(@MIOJSON@(MIOLINE)) S MIOLINE=MIOLINE+1,MIOIDX=1
+	Q
+UESEXT
+	N MIOI,MIOY,MIOSTART,MIOSTOP,MIODONE,MIOBUF,MIONODE,MIOMORE,MIOTO
+	S MIONODE=$$CURNODE(),MIOBUF="",MIOMORE=0,MIOSTOP=MIOEND-2
+	S MIOI=MIOIDX,MIOY=MIOLINE,MIODONE=0
+	F  D  Q:MIODONE  Q:MIOERRORS
+	. S MIOSTART=MIOI,MIOI=$F(@MIOJSON@(MIOY),"\",MIOI)
+	. I (MIOY=MIOTLINE) S MIOTO=$S('MIOI:MIOSTOP,MIOI>MIOSTOP:MIOSTOP,1:MIOI-2) I 1
+	. E  S MIOTO=$S('MIOI:99999,1:MIOI-2)
+	. D ADDBUF($E(@MIOJSON@(MIOY),MIOSTART,MIOTO))
+	. I (MIOY'<MIOTLINE),(('MIOI)!(MIOI>MIOSTOP)) S MIODONE=1 QUIT
+	. I 'MIOI S MIOY=MIOY+1,MIOI=1 QUIT 
+	. I MIOI>$L(@MIOJSON@(MIOY)) S MIOY=MIOY+1,MIOI=1 I '$D(@MIOJSON@(MIOY)) D ERRX("EIU")
+	. D ADDBUF($$REALCHAR($E(@MIOJSON@(MIOY),MIOI),@MIOJSON@(MIOY),.MIOI))
+	. S MIOI=MIOI+1
+	. I (MIOY'<MIOTLINE),(MIOI>MIOSTOP) S MIODONE=1
+	Q:MIOERRORS
+	D SAVEBUF
+	Q
+ADDBUF(MIOX)
+	I $L(MIOX)+$L(MIOBUF)>MIOMAX D SAVEBUF
+	S MIOBUF=MIOBUF_MIOX
+	Q
+SAVEBUF
+	I 'MIOMORE S @MIONODE=MIOBUF S:+MIOBUF=MIOBUF @MIONODE@("\s")="" I 1
+	E  S @MIONODE@("\",MIOMORE)=MIOBUF
+	S MIOMORE=MIOMORE+1,MIOBUF=""
+	Q
+ISCLOSEQ(MIOBLINE)
+	N MIOBACK,MIOBIDX
+	S MIOBACK=0,MIOBIDX=MIOEND-2
+	F  D  Q:$E(@MIOJSON@(MIOBLINE),MIOBIDX)'="\"  Q:MIOERRORS
+	. S MIOBACK=MIOBACK+1,MIOBIDX=MIOBIDX-1
+	. I (MIOBLINE=MIOLINE),(MIOBIDX=MIOIDX) Q
+	. Q:MIOBIDX
+	. S MIOBLINE=MIOBLINE-1 I MIOBLINE<MIOLINE D ERRX("RSB") Q
+	. S MIOBIDX=$L(@MIOJSON@(MIOBLINE))
+	Q MIOBACK#2=0
+NAMPARS()
+	N MIOEND,MIODONE,MIONAME
+	S MIODONE=0,MIONAME=""
+	F  D  Q:MIODONE  Q:MIOERRORS
+	. S MIOEND=$F(@MIOJSON@(MIOLINE),"""",MIOIDX)
+	. I MIOEND S MIONAME=MIONAME_$E(@MIOJSON@(MIOLINE),MIOIDX,MIOEND-2),MIOIDX=MIOEND,MIODONE=1
+	. I 'MIOEND S MIONAME=MIONAME_$E(@MIOJSON@(MIOLINE),MIOIDX,$L(@MIOJSON@(MIOLINE)))
+	. I 'MIOEND!(MIOEND>$L(@MIOJSON@(MIOLINE))) S MIOLINE=MIOLINE+1,MIOIDX=1 I '$D(@MIOJSON@(MIOLINE)) D ERRX("ORN")
+	Q MIONAME
+NUMPARS(MIODIGIT)
+	N MIODONE,MIONUM
+	S MIODONE=0,MIONUM=MIODIGIT
+	F  D  Q:MIODONE  Q:MIOERRORS
+	. I '("0123456789+-.eE"[$E(@MIOJSON@(MIOLINE),MIOIDX)) S MIODONE=1 Q
+	. S MIONUM=MIONUM_$E(@MIOJSON@(MIOLINE),MIOIDX)
+	. S MIOIDX=MIOIDX+1 I MIOIDX>$L(@MIOJSON@(MIOLINE)) S MIOLINE=MIOLINE+1,MIOIDX=1 I '$D(@MIOJSON@(MIOLINE)) D ERRX("OR#")
+	Q MIONUM
+SETBOOL(MIOX)
+	S @$$CURNODE()=MIOX
+	S MIOIDX=MIOIDX+$L(MIOX)-1
+	N MIODIFF S MIODIFF=MIOIDX-$L(@MIOJSON@(MIOLINE))
+	I MIODIFF>0 S MIOLINE=MIOLINE+1,MIOIDX=MIODIFF I '$D(@MIOJSON@(MIOLINE)) D ERRX("ORB")
+	Q
+CURNODE()
+	N MIOI,MIOSUBS
+	S MIOSUBS=""
+	F MIOI=1:1:MIOSTACK S:MIOI>1 MIOSUBS=MIOSUBS_"," D
+	. I $$NUMERIC(MIOSTACK(MIOI))  S MIOSUBS=MIOSUBS_MIOSTACK(MIOI)
+	. E  S MIOSUBS=MIOSUBS_""""_MIOSTACK(MIOI)_""""
+	Q MIOROOT_MIOSUBS_")"
+UES(X)
+	N POS,Y,START
+	S POS=0,Y=""
+	F  S START=POS+1 D  Q:START>$L(X)
+	. S POS=$F(X,"\",POS+1)
+	. I 'POS S Y=Y_$E(X,START,$L(X)),POS=$L(X) I 1
+	. E  S Y=Y_$E(X,START,POS-2)_$$REALCHAR($E(X,POS),X,.POS)
+	Q Y
+REALCHAR(C,X,POS)
+	I C="""" Q """"
+	I C="/" Q "/"
+	I C="\" Q "\"
+	I C="b" Q $C(8)
+	I C="f" Q $C(12)
+	I C="n" Q $C(10)
+	I C="r" Q $C(13)
+	I C="t" Q $C(9)
+	I C="u",$E(X,POS+1,POS+4)="001a" S POS=POS+4 Q $C(10)
+	I C="u",$E(X,POS+1,POS+4)="000b" S POS=POS+4 Q $C(11)
+	I C="u",$E(X,POS+1,POS+4)="001c" S POS=POS+4 Q $C(28)
+	I C="u",$E(X,POS+1,POS+3)="000",$E(X,POS+4)?1N.NN S POS=POS+4 Q $C($E(X,POS))
+	I $L($G(MIOERR)) D ERRX("ESC",$E(X,POS,POS+4))
+	Q C
+	;
+PARSE10(BODY,PARSED)
+	N LL S LL="" N L S L=1 K PARSED
+	N I S I="" F  S I=$O(BODY(I)) Q:'I  D 
+	. N J F J=1:1:$L(BODY(I),$C(10)) D  
+	. . S:(J=1&(L>1)) L=L-1 
+	. . S PARSED(L)=$TR($P(BODY(I),$C(10),J),$C(13)) 
+	. . S:(J=1&(L>1)) PARSED(L)=LL_PARSED(L) 
+	. . S LL=PARSED(L)
+	. . S L=L+1 
+	Q
+	;
+ADDCRLF(RESULT)
+	I $E($G(RESULT))="^" D  QUIT  ; Global
+	. N V,QL S V=RESULT,QL=$QL(V) F  S V=$Q(@V) Q:V=""  Q:$NA(@V,QL)'=RESULT  S @V=@V_$C(13,10)
+	E  D  ; Local variable passed by reference
+	. I $D(RESULT)#2 S RESULT=RESULT_$C(13,10)
+	. N V S V=$NA(RESULT) F  S V=$Q(@V) Q:V=""  S @V=@V_$C(13,10)
+	Q
+	;
+ENCODE64(X) ;
+	N RGZ,RGZ1,RGZ2,RGZ3,RGZ4,RGZ5,RGZ6
+	S RGZ=$$INIT64,RGZ1=""
+	F RGZ2=1:3:$L(X) D
+	. S RGZ3=0,RGZ6=""
+	. F RGZ4=0:1:2 D
+	. . S RGZ5=$A(X,RGZ2+RGZ4),RGZ3=RGZ3*256+$S(RGZ5<0:0,1:RGZ5)
+	. F RGZ4=1:1:4 S RGZ6=$E(RGZ,RGZ3#64+2)_RGZ6,RGZ3=RGZ3\64
+	. S RGZ1=RGZ1_RGZ6
+	S RGZ2=$L(X)#3
+	S:RGZ2 RGZ3=$L(RGZ1),$E(RGZ1,RGZ3-2+RGZ2,RGZ3)=$E("==",RGZ2,2)
+	Q RGZ1
+DECODE64(X) ;
+	N RGZ,RGZ1,RGZ2,RGZ3,RGZ4,RGZ5,RGZ6
+	S RGZ=$$INIT64,RGZ1=""
+	F RGZ2=1:4:$L(X) D
+	. S RGZ3=0,RGZ6=""
+	. F RGZ4=0:1:3 D
+	. . S RGZ5=$F(RGZ,$E(X,RGZ2+RGZ4))-3
+	. . S RGZ3=RGZ3*64+$S(RGZ5<0:0,1:RGZ5)
+	. F RGZ4=0:1:2 S RGZ6=$C(RGZ3#256)_RGZ6,RGZ3=RGZ3\256
+	. S RGZ1=RGZ1_RGZ6
+	Q $E(RGZ1,1,$L(RGZ1)-$L(X,"=")+1)
+INIT64() Q "=ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/" 
+URLDEC(X,PATH)
+	N I,OUT,FRAG,ASC
+	S:'$G(PATH) X=$TR(X,"+"," ")
+	F I=1:1:$L(X,"%") D
+	. I I=1 S OUT=$P(X,"%") Q
+	. S FRAG=$P(X,"%",I),ASC=$E(FRAG,1,2),FRAG=$E(FRAG,3,$L(FRAG))
+	. I $L(ASC) S OUT=OUT_$C($$HEX2DEC(ASC))
+	. S OUT=OUT_FRAG
+	Q OUT
+HEX2DEC(HEX)
+	Q $$BASE(HEX,16,10)
+BASE(%X1,%X2,%X3)
+	I (%X2<2)!(%X2>16)!(%X3<2)!(%X3>16) Q -1
+	Q $$CNV($$DEC(%X1,%X2),%X3)
+DEC(N,B) 
+	Q:B=10 N N I,Y S Y=0
+	F I=1:1:$L(N) S Y=Y*B+($F("0123456789ABCDEF",$E(N,I))-2)
+	Q Y
+CNV(N,B)
+	Q:B=10 N N I,Y S Y=""
+	F I=1:1 S Y=$E("0123456789ABCDEF",N#B+1)_Y,N=N\B Q:N<1
+	Q Y
