@@ -41,3 +41,21 @@ quasar build
 ### Customize the configuration
 
 See [Configuring quasar.config.js](https://v2.quasar.dev/quasar-cli-vite/quasar-config-js).
+
+Quick setup — if you’ve done this kind of thing before
+or	
+https://github.com/aa-87/MIOIDE.git
+Get started by creating a new file or uploading an existing file. We recommend every repository include a README, LICENSE, and .gitignore.
+
+…or create a new repository on the command line
+echo "# MIOIDE" >> README.md
+git init
+git add README.md
+git commit -m "first commit"
+git branch -M main
+git remote add origin https://github.com/aa-87/MIOIDE.git
+git push -u origin main
+…or push an existing repository from the command line
+git remote add origin https://github.com/aa-87/MIOIDE.git
+git branch -M main
+git push -u origin main
