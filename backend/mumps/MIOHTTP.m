@@ -37,7 +37,7 @@ MIOHTTP ; HTTP request parser and response writer.;
 ; See docs/routines for details.;
 PARSE(DEV,CONF,REQ,ERR)
 	KILL REQ,ERR
-	NEW TOH S TOH=$GET(CONF("server","timeouts","readHeaderMs"),2000)
+	NEW TOH S TOH=$GET(CONF("server","timeouts","readHeaderMs"),2)
 	NEW LINE DO READLINE(.DEV,TOH,.LINE,.ERR) IF $DATA(ERR) QUIT 0
 	IF LINE="" SET ERR("error")="client_closed" QUIT 0
 	IF $LENGTH(LINE)>$GET(CONF("server","limits","maxRequestLineBytes"),8192) SET ERR("error")="request_line_too_large" QUIT 0
@@ -51,7 +51,7 @@ PARSE(DEV,CONF,REQ,ERR)
 	ELSE  IF CL'="" DO
 	. NEW MAXB SET MAXB=$GET(CONF("server","limits","maxBodyBytes"),10485760)
 	. IF CL>MAXB SET ERR("error")="payload_too_large" QUIT
-	. NEW TOB S TOB=$GET(CONF("server","timeouts","readBodyMs"),30000)
+	. NEW TOB S TOB=$GET(CONF("server","timeouts","readBodyMs"),3)
 	. NEW B DO READFIX(.DEV,CL,TOB,.B,.ERR) IF $DATA(ERR) QUIT
 	. SET REQ("body")=B
 	QUIT:$DATA(ERR) 0
@@ -61,7 +61,7 @@ PARSE(DEV,CONF,REQ,ERR)
 ; See docs/routines for details.;
 READLINE(DEV,TO,OUT,ERR)
 	NEW X
-	DO READLN^MIOSOCK(DEV,TO,.X)
+	I 1 DO READLN^MIOSOCK(DEV,TO,.X)
 	IF '$TEST SET ERR("error")="read_timeout" QUIT
 	SET OUT=X
 	QUIT
@@ -106,7 +106,7 @@ READHDRS(DEV,CONF,REQ,ERR)
 	SET MAXC=$GET(CONF("server","limits","maxHeaderCount"),80)
 	SET MAXB=$GET(CONF("server","limits","maxHeaderBytes"),65536)
 	SET COUNT=0,BYTES=0
-	SET TOH=$GET(CONF("server","timeouts","readHeaderMs"),2000)
+	SET TOH=$GET(CONF("server","timeouts","readHeaderMs"),2)
 	FOR  DO  QUIT:LINE=""
 	. DO READLINE(.DEV,TOH,.LINE,.ERR) IF $DATA(ERR) QUIT
 	. SET BYTES=BYTES+$LENGTH(LINE)+2
@@ -142,12 +142,6 @@ RESPJSON(DEV,CONF,STATUS,OBJ,REQID)
 	NEW BODY,HEAD
 	SET BODY=$$EN^MIOJSON1(.OBJ)
 	SET HEAD("Content-Type")="application/json"
-	M ^DEV7=DEV
-	M ^CONF7=CONF
-	M ^STATUS7=STATUS
-	M ^HEAD7=HEAD
-	M ^BODY7=BODY
-	M ^REQUD7=REQID
 	DO RESP(.DEV,.CONF,STATUS,.HEAD,BODY,REQID)
 	QUIT
 	;
@@ -185,13 +179,13 @@ STATUSMSG(S)
 	;
 ; Entry point
 ; See docs/routines for details.;
-LOW(S)
-	NEW I,C,OUT SET OUT=""
-	FOR I=1:1:$LENGTH(S) DO
-	. SET C=$ASCII($EXTRACT(S,I))
-	. IF C>64,C<91 SET C=C+32
-	. SET OUT=OUT_$CHAR(C)
-	QUIT OUT
+LOW(S) Q $ZCONVERT(S,"L")
+	;NEW I,C,OUT SET OUT=""
+	;FOR I=1:1:$LENGTH(S) DO
+	;. SET C=$ASCII($EXTRACT(S,I))
+	;. IF C>64,C<91 SET C=C+32
+	;. SET OUT=OUT_$CHAR(C)
+	;QUIT OUT
 	;
 ; Entry point
 ; See docs/routines for details.;

@@ -11,11 +11,11 @@
       "workers": 4,
       "maxRequestsPerWorker": 200000,
       "maxConnIdleSeconds": 10,
-      "gracefulShutdownSeconds": 15
+      "gracefulShutdownSeconds": 3
     },
     "timeouts": {
-      "readHeaderMs": 2000,
-      "readBodyMs": 30000,
+      "readHeaderMs": 2,
+      "readBodyMs": 3,
       "writeResponseMs": 30000,
       "handlerMaxMs": 30000
     },
