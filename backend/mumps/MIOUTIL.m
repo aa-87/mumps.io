@@ -280,3 +280,5 @@ Z(N,L) ;
 	SET S=N
 	FOR  QUIT:$L(S)'<L  SET S="0"_S
 	QUIT S
+	;
+YEAR Q "20"_$PIECE($ZDATE($HOROLOG),"/",3)
