@@ -1,0 +1,99 @@
+{{#block:title}}MIO Reference App{{/block:title}}
+
+<div class="row">
+  <div class="card">
+    <div class="pill">User: {{user}}</div>
+    <h3>Create item</h3>
+    <label>Title</label>
+    <input id="title" placeholder="Example: Follow up appointment"/>
+    <label style="margin-top:10px;display:block;">Note</label>
+    <textarea id="note" placeholder="Optional note (avoid PHI in demos)"></textarea>
+    <label style="display:flex;gap:8px;align-items:center;margin:10px 0;">
+      <input type="checkbox" id="phi" /> <span>Mark as PHI (demo)</span>
+    </label>
+    <div class="row" style="margin-top:10px;">
+      <button id="createBtn">Create</button>
+      <button class="secondary" id="refreshBtn">Refresh</button>
+    </div>
+    <p><small class="muted">API: <code>/api/items</code> • WebSocket: <code>/ws/app</code></small></p>
+  </div>
+
+  <div class="card">
+    <h3>Items</h3>
+    <table id="itemsTbl">
+      <thead><tr><th>ID</th><th>Title</th><th>PHI</th><th>Updated</th><th></th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card" style="margin-top:12px;">
+  <h3>Live events (WebSocket)</h3>
+  <div id="wsState" class="pill">connecting…</div>
+  <div class="log" id="log"></div>
+</div>
+
+<script>
+const $ = (id)=>document.getElementById(id);
+const log = (msg)=>{ const el=$("log"); el.textContent += msg+"\n"; el.scrollTop = el.scrollHeight; };
+
+async function api(path, opts){
+  const res = await fetch(path, Object.assign({headers:{"Content-Type":"application/json"}}, opts||{}));
+  const txt = await res.text();
+  let json=null; try{ json=JSON.parse(txt);}catch(e){}
+  if(!res.ok){ throw new Error((json&&json.error)||("HTTP "+res.status)); }
+  return json;
+}
+
+async function refresh(){
+  const items = await api("/api/items");
+  const tbody = $("itemsTbl").querySelector("tbody");
+  tbody.innerHTML = "";
+  for(const it of items){
+    const tr=document.createElement("tr");
+    tr.innerHTML = `
+      <td>${it.id}</td>
+      <td>${escapeHtml(it.title||"")}</td>
+      <td>${it.phi? "yes":"no"}</td>
+      <td><small class="muted">${escapeHtml(it.updatedAt||"")}</small></td>
+      <td><button class="secondary" data-del="${it.id}">Delete</button></td>
+    `;
+    tbody.appendChild(tr);
+  }
+  tbody.querySelectorAll("button[data-del]").forEach(btn=>{
+    btn.onclick = async ()=>{
+      const id = btn.getAttribute("data-del");
+      await api("/api/items/"+id, {method:"DELETE"});
+      await refresh();
+    };
+  });
+}
+
+function escapeHtml(s){
+  return (s||"").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+$("createBtn").onclick = async ()=>{
+  const payload = {
+    title: $("title").value || "",
+    note: $("note").value || "",
+    phi: $("phi").checked
+  };
+  await api("/api/items", {method:"POST", body: JSON.stringify(payload)});
+  $("title").value=""; $("note").value=""; $("phi").checked=false;
+  await refresh();
+};
+
+$("refreshBtn").onclick = refresh;
+
+refresh().catch(e=>log("[refresh error] "+e.message));
+
+(function ws(){
+  const proto = (location.protocol==="https:") ? "wss" : "ws";
+  const ws = new WebSocket(proto+"://"+location.host+"/ws/app");
+  ws.onopen = ()=>{ $("wsState").textContent="connected"; log("[ws] open"); };
+  ws.onclose = ()=>{ $("wsState").textContent="closed"; log("[ws] closed"); setTimeout(()=>location.reload(), 1000); };
+  ws.onerror = ()=>{ $("wsState").textContent="error"; log("[ws] error"); };
+  ws.onmessage = (ev)=>{ log(ev.data); };
+})();
+</script>

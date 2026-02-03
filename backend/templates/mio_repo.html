@@ -1,0 +1,134 @@
+{{#block:title}}MUMPS.IO — Package Registry{{/block:title}}
+
+<section class="pt-14 pb-10">
+  <div class="flex flex-col gap-6">
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <div class="text-sm text-slate-400">Registry</div>
+        <h1 class="mt-1 text-3xl font-semibold tracking-tight sm:text-4xl">Package Registry</h1>
+        <p class="mt-2 text-slate-300">
+          Browse packages for the MIO platform.
+          Filter by tier, category, and tag.
+        </p>
+      </div>
+
+      <form class="w-full sm:w-auto" method="GET" action="/repo">
+        <input type="hidden" name="cat" value="{{filters.cat}}" />
+        <input type="hidden" name="tag" value="{{filters.tag}}" />
+        <input type="hidden" name="tier" value="{{filters.tier}}" />
+        <div class="flex w-full items-center gap-2 rounded-xl border border-white/10 bg-white/5 p-2 ring-soft">
+          <input name="q" value="{{q}}" placeholder="Search packages…"
+            class="w-full bg-transparent px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 outline-none" />
+          <button class="shrink-0 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-400" type="submit">
+            Search
+          </button>
+        </div>
+        <div class="mt-2 text-xs text-slate-500">Tip: try “ws”, “json”, “auth”.</div>
+      </form>
+    </div>
+
+    <div class="grid gap-4 lg:grid-cols-12">
+      <div class="lg:col-span-3 rounded-2xl border border-white/10 bg-white/5 p-5 ring-soft">
+        <div class="text-sm text-slate-400">Filters</div>
+
+        <div class="mt-4">
+          <div class="text-xs text-slate-500">Tier</div>
+          <div class="mt-2 flex flex-wrap gap-2 text-sm">
+            <a href="/repo?q={{q}}&per={{pager.per}}" class="rounded-full border border-white/10 bg-white/5 px-3 py-1 hover:bg-white/10">All</a>
+            <a href="/repo?q={{q}}&tier=community&per={{pager.per}}" class="rounded-full border border-white/10 bg-white/5 px-3 py-1 hover:bg-white/10">Community</a>
+            <a href="/repo?q={{q}}&tier=pro&per={{pager.per}}" class="rounded-full border border-white/10 bg-white/5 px-3 py-1 hover:bg-white/10">Pro</a>
+          </div>
+        </div>
+
+        <div class="mt-6">
+          <div class="text-xs text-slate-500">Category</div>
+          <div class="mt-2 flex flex-wrap gap-2 text-sm">
+            <a href="/repo?q={{q}}&tier={{filters.tier}}&tag={{filters.tag}}&per={{pager.per}}" class="rounded-full border border-white/10 bg-white/5 px-3 py-1 hover:bg-white/10">All</a>
+            {{#cats.items}}
+            <a href="/repo?q={{q}}&tier={{filters.tier}}&cat={{.}}&tag={{filters.tag}}&per={{pager.per}}" class="rounded-full border border-white/10 bg-white/5 px-3 py-1 hover:bg-white/10">{{.}}</a>
+            {{/cats.items}}
+          </div>
+        </div>
+
+        <div class="mt-6">
+          <div class="text-xs text-slate-500">Tags</div>
+          <div class="mt-2 flex flex-wrap gap-2 text-sm">
+            <a href="/repo?q={{q}}&tier={{filters.tier}}&cat={{filters.cat}}&per={{pager.per}}" class="rounded-full border border-white/10 bg-white/5 px-3 py-1 hover:bg-white/10">All</a>
+            {{#tags.items}}
+            <a href="/repo?q={{q}}&tier={{filters.tier}}&cat={{filters.cat}}&tag={{.}}&per={{pager.per}}" class="rounded-full border border-white/10 bg-white/5 px-3 py-1 hover:bg-white/10">{{.}}</a>
+            {{/tags.items}}
+          </div>
+        </div>
+
+        <div class="mt-6">
+          <div class="text-xs text-slate-500">Sort</div>
+          <div class="mt-2 flex flex-wrap gap-2 text-sm">
+            <a href="/repo?q={{q}}&tier={{filters.tier}}&cat={{filters.cat}}&tag={{filters.tag}}&sort=featured&per={{pager.per}}" class="rounded-full border border-white/10 bg-white/5 px-3 py-1 hover:bg-white/10">Featured</a>
+            <a href="/repo?q={{q}}&tier={{filters.tier}}&cat={{filters.cat}}&tag={{filters.tag}}&sort=recent&per={{pager.per}}" class="rounded-full border border-white/10 bg-white/5 px-3 py-1 hover:bg-white/10">Recent</a>
+            <a href="/repo?q={{q}}&tier={{filters.tier}}&cat={{filters.cat}}&tag={{filters.tag}}&sort=popular&per={{pager.per}}" class="rounded-full border border-white/10 bg-white/5 px-3 py-1 hover:bg-white/10">Popular</a>
+            <a href="/repo?q={{q}}&tier={{filters.tier}}&cat={{filters.cat}}&tag={{filters.tag}}&sort=name&per={{pager.per}}" class="rounded-full border border-white/10 bg-white/5 px-3 py-1 hover:bg-white/10">Name</a>
+          </div>
+        </div>
+
+        <div class="mt-6 text-xs text-slate-500">
+          Showing {{pager.total}} results.
+        </div>
+      </div>
+
+      <div class="lg:col-span-9">
+        <div class="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+          {{#packages}}
+          <a href="/repo/{{slug}}" class="group rounded-2xl border border-white/10 bg-white/5 p-6 ring-soft hover:bg-white/10">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <div class="text-sm text-slate-400">{{category}}</div>
+                <div class="mt-1 text-lg font-semibold text-white group-hover:text-emerald-200">{{name}}</div>
+              </div>
+              <div class="flex flex-col items-end gap-2">
+                <div class="rounded-full border border-white/10 bg-slate-900/60 px-3 py-1 text-xs text-slate-300">v{{version}}</div>
+                {{#featured}}
+                <div class="rounded-full border border-white/10 bg-amber-400/10 px-3 py-1 text-xs text-amber-200">featured</div>
+                {{/featured}}
+                {{#tier}}
+                <div class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-300">{{tier}} • {{price}}</div>
+                {{/tier}}
+              </div>
+            </div>
+
+            <p class="mt-3 text-sm text-slate-300">{{summary}}</p>
+
+            {{#tags}}
+            <div class="mt-4 flex flex-wrap gap-2">
+              {{#items}}<span class="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-slate-300">{{.}}</span>{{/items}}
+            </div>
+            {{/tags}}
+          </a>
+          {{/packages}}
+
+          {{^packages}}
+          <div class="rounded-2xl border border-white/10 bg-white/5 p-6 ring-soft md:col-span-2 lg:col-span-3">
+            <div class="text-sm text-slate-400">No results</div>
+            <div class="mt-1 text-lg font-semibold">No packages match your search.</div>
+            <p class="mt-2 text-sm text-slate-300">Try different filters.</p>
+          </div>
+          {{/packages}}
+        </div>
+
+        <div class="mt-8 flex items-center justify-between">
+          <div class="text-xs text-slate-500">
+            Page {{pager.page}} of {{pager.totalPages}}
+          </div>
+
+          <div class="flex gap-2">
+            {{#pager.prev}}
+            <a href="{{pager.prev}}" class="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm hover:bg-white/10">Prev</a>
+            {{/pager.prev}}
+            {{#pager.next}}
+            <a href="{{pager.next}}" class="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm hover:bg-white/10">Next</a>
+            {{/pager.next}}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

@@ -14,8 +14,8 @@
       "gracefulShutdownSeconds": 3
     },
     "timeouts": {
-      "readHeaderMs": 2,
-      "readBodyMs": 3,
+      "readHeaderMs": 30,
+      "readBodyMs": 30,
       "writeResponseMs": 30000,
       "handlerMaxMs": 30000
     },
@@ -74,7 +74,7 @@
     "enabled": true
   },
   "templates": {
-    "devWatchEnabled": true,
+    "devWatchEnabled": false,
     "devWatchIntervalSeconds": 2,
     "maxRenderDepth": 20,
     "precompileEnabled": true,
