@@ -1,0 +1,50 @@
+EVALSEC(TOK,CONF,CTX,IDX,KEY,INV,ACC,ERR) ;
+	; Evaluate a section starting at TOK(IDX)=secS. Advances IDX to matching secE.;
+	NEW I,DEPTH SET DEPTH=1
+	NEW TMP KILL TMP
+	NEW J SET J=0
+	SET I=$ORDER(TOK(IDX))  ; start AFTER secS
+	FOR  QUIT:'I  DO  QUIT:ERR'=""
+	. NEW TT SET TT=$GET(TOK(I,"t"))
+	. IF TT="secS",$GET(TOK(I,"k"))=KEY SET DEPTH=DEPTH+1 SET I=$ORDER(TOK(I)) QUIT
+	. IF TT="secE",$GET(TOK(I,"k"))=KEY DO  SET DEPTH=DEPTH-1 DO  QUIT
+	. . IF DEPTH=0 SET IDX=I SET I=0 QUIT  ; stop
+	. . SET I=$ORDER(TOK(I)) QUIT
+	. ; Never include structural section tokens in the body
+	. IF TT="secS" SET I=$ORDER(TOK(I)) QUIT
+	. IF TT="secE" SET I=$ORDER(TOK(I)) QUIT
+	. ; Normal body token
+	. IF DEPTH>0 DO
+	. . SET J=J+1
+	. . MERGE TMP(J)=TOK(I)
+	. SET I=$ORDER(TOK(I))
+	IF ERR'="" QUIT 0
+	; Special: block:<name> capture
+	IF $E(KEY,1,6)="block:" QUIT $$CAPBLOCK(.TMP,.CONF,.CTX,KEY,.ACC,.ERR)
+	NEW REF,ISARR,OKN
+	SET OKN=$$GETREF(.CTX,KEY,.REF,.ISARR)
+	IF 'OKN DO  QUIT 1
+	. IF INV DO  ; inverted renders on missing
+	. . NEW OUT,OK2
+	. . SET OK2=$$EVAL(.TMP,.CONF,.CTX,.OUT,.ERR) IF 'OK2 QUIT
+	. . SET ACC=ACC_$$JOIN(.OUT)
+	; ---- truthiness (Mustache-correct) ----
+	NEW HAS,VAL,TRUTH
+	SET HAS=$$HASITEMS(.CTX,KEY)
+	; Lists/objects are truthy if they have items
+	IF HAS SET TRUTH=1
+	ELSE  DO
+	. SET VAL=$$LOOKUP(.CTX,KEY)
+	. SET TRUTH=$$ISTRUE(VAL)
+	; Apply inversion
+	IF INV SET TRUTH='TRUTH
+	; If not truthy, skip rendering body
+	IF 'TRUTH QUIT 1
+	; If it’s a list/object with items, iterate
+	IF HAS QUIT $$EVALARR(.TMP,.CONF,.CTX,KEY,.ACC,.ERR)
+	; Else render once
+	NEW OUT,OK
+	SET OK=$$EVAL(.TMP,.CONF,.CTX,.OUT,.ERR) IF 'OK QUIT 0
+	SET ACC=ACC_$$JOIN(.OUT)
+	QUIT 1
+; ---- end truthiness ----

@@ -17,8 +17,8 @@ REG(CONF) ;
 	DO ADD^MIOROUTE("GET","/repo/:slug","PKG^MIORP")
 	QUIT
 	;
-	
-	
+	;	
+	;	
 	;
 LIST(DEV,CONF,REQ,CTX) ;
 	DO ENSURE(.CONF)
@@ -141,7 +141,8 @@ PKG(DEV,CONF,REQ,CTX) ;
 	;
 	NEW BODY,K SET BODY="",K=0
 	FOR  SET K=$ORDER(OUT(K)) QUIT:K=""  SET BODY=BODY_OUT(K)
-	DO RESP^MIOHTTP(DEV,200,"text/html; charset=utf-8",.CTX,BODY)
+	S HEAD("Content-Type")="text/html; charset=utf-8"
+	DO RESP^MIOHTTP(DEV,.CONF,200,.HEAD,.BODY,CTX("request_id"))
 	QUIT
 	;
 ENSURE(CONF) ;

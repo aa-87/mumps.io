@@ -138,7 +138,7 @@ URLDEC(S) ;
 	. IF C="+" SET OUT=OUT_" " QUIT
 	. IF C="%" DO  QUIT
 	. . SET H=$E(S,I+1,I+2)
-	. . IF $L(H)=2 SET OUT=OUT_$C($$H2D^MIOUTIL(H)),I=I+2 QUIT
+	. . IF $L(H)=2 SET OUT=OUT_$C($$H2D(H)),I=I+2 QUIT
 	. . SET OUT=OUT_C
 	. SET OUT=OUT_C
 	QUIT OUT

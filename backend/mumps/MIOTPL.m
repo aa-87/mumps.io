@@ -255,6 +255,7 @@ EVAL(TOK,CONF,CTX,OUT,ERR) ;
 	; Evaluate tokens to OUT() lines.;
 	; Supports:
 	; - text, var, part, secS/secE (mustache sections), and legacy inc/b0/b1.;
+	;
 	KILL OUT SET ERR=""
 	NEW ACC SET ACC=""
 	NEW I SET I=0
@@ -304,9 +305,7 @@ DOINCLUDE(P,TOK,CONF,CTX,ACC,ERR) ;
 	QUIT
 	;
 EVALSEC(TOK,CONF,CTX,IDX,KEY,INV,ACC,ERR) ;
-	; Evaluate a mustache section starting at TOK(IDX)=secS.;
-	; Advances IDX to the matching secE.;
-	;
+	; Evaluate a section starting at TOK(IDX)=secS. Advances IDX to matching secE.;
 	NEW I,DEPTH SET DEPTH=1
 	NEW TMP KILL TMP
 	NEW J SET J=0
@@ -324,26 +323,46 @@ EVALSEC(TOK,CONF,CTX,IDX,KEY,INV,ACC,ERR) ;
 	;
 	IF ERR'="" QUIT 0
 	;
-	; Special section: block:<name> captures output into CTX("blocks",name)
+	; Special: block:<name> capture
 	IF $E(KEY,1,6)="block:" QUIT $$CAPBLOCK(.TMP,.CONF,.CTX,KEY,.ACC,.ERR)
 	;
-	; Resolve section value
-	NEW VAL SET VAL=$$LOOKUP(.CTX,KEY)
-	NEW TRUTH SET TRUTH=$$ISTRUE(VAL)
+	; Determine node truthiness and/or array-ness.;
+	NEW REF,ISARR,OKN
+	SET OKN=$$GETREF(.CTX,KEY,.REF,.ISARR)
+	IF 'OKN DO  QUIT 1
+	. ; Missing node => falsey
+	. IF 'INV QUIT
+	. ; Inverted: render
+	. NEW OUT,OK2 SET OK2=$$EVAL(.TMP,.CONF,.CTX,.OUT,.ERR) IF 'OK2 QUIT
+	. SET ACC=ACC_$$JOIN(.OUT)
+	;
+	IF ISARR QUIT $$EVALARR(.TMP,.CONF,.CTX,KEY,.ACC,.ERR)
+	;
+	; ---- truthiness (Mustache-correct) ----
+	NEW HAS,VAL,TRUTH
+	SET HAS=$$HASITEMS(.CTX,KEY)
+	;
+	; Lists/objects are truthy if they have items
+	IF HAS SET TRUTH=1
+	ELSE  DO
+	. SET VAL=$$LOOKUP(.CTX,KEY)
+	. SET TRUTH=$$ISTRUE(VAL)
+		;
+	; Apply inversion
 	IF INV SET TRUTH='TRUTH
 	;
+	; If not truthy, skip rendering body
 	IF 'TRUTH QUIT 1
 	;
-	; If VAL is an array node in CTX, try to iterate numeric children.;
-	; Convention: CTX(KEY,1)=..., CTX(KEY,2)=...;
-	; This is best-effort for pure M mustache-like loops.;
-	NEW HASARR SET HASARR=$DATA(CTX(KEY,1))
-	IF HASARR QUIT $$EVALARR(.TMP,.CONF,.CTX,KEY,.ACC,.ERR)
+	; If it’s a list/object with items, iterate
+	IF HAS QUIT $$EVALARR(.TMP,.CONF,.CTX,KEY,.ACC,.ERR)
 	;
-	; Else render once with same CTX
-	NEW OUT,OK SET OK=$$EVAL(.TMP,.CONF,.CTX,.OUT,.ERR) IF 'OK QUIT 0
+	; Else render once
+	NEW OUT,OK
+	SET OK=$$EVAL(.TMP,.CONF,.CTX,.OUT,.ERR) IF 'OK QUIT 0
 	SET ACC=ACC_$$JOIN(.OUT)
 	QUIT 1
+; ---- end truthiness ----
 	;
 CAPBLOCK(TMP,CONF,CTX,KEY,ACC,ERR) ;
 	NEW NAME SET NAME=$E(KEY,7,$L(KEY))
@@ -353,17 +372,39 @@ CAPBLOCK(TMP,CONF,CTX,KEY,ACC,ERR) ;
 	QUIT 1
 	;
 EVALARR(TMP,CONF,CTX,KEY,ACC,ERR) ;
-	NEW I SET I=0
-	FOR  SET I=$ORDER(CTX(KEY,I)) QUIT:'I  DO  QUIT:ERR'=""
+	; Iterate children under section KEY (supports dot paths).;
+	NEW REF,DATA,OK
+	SET OK=$$RESREF(.CTX,$GET(KEY),.REF,.DATA)
+	IF 'OK QUIT 0
+	IF DATA'>1 QUIT 1
+	QUIT $$EVALARR2(.TMP,.CONF,.CTX,REF,.ACC,.ERR)
+	;
+EVALARR2(TMP,CONF,CTX,REF,ACC,ERR) ;
+	; REF is base reference like: CTX("cats","items") or CTX("packages")
+	; We must iterate first-level subscripts reliably.;
+	;
+	; IMPORTANT:
+	; - Use BASE without trailing ")"
+	; - Use $ORDER on BASE_","""_I_""") so the first call is valid even when I=""
+	;
+	NEW BASE,I,ITEMREF
+	SET BASE=$E(REF,1,$L(REF)-1)  ; REF like: CTX("cats","items")
+	SET I=0
+	NEW SUB
+	SET SUB=BASE_","_I_")"
+	FOR  SET I=$ORDER(@SUB) QUIT:'I  DO
+	. SET SUB=BASE_","_I_")" 
+	. SET ITEMREF=SUB
 	. NEW SCTX MERGE SCTX=CTX
-	. ; In a loop, expose current item as "." and also "item".;
-	. SET SCTX(".")=$GET(CTX(KEY,I))
-	. SET SCTX("item")=$GET(CTX(KEY,I))
-	. NEW OUT,OK SET OK=$$EVAL(.TMP,.CONF,.SCTX,.OUT,.ERR) IF 'OK QUIT
+	. SET SCTX(".")=$GET(@ITEMREF)
+	. SET SCTX("item")=$GET(@ITEMREF)
+	. IF $DATA(@ITEMREF)>1 MERGE SCTX=@ITEMREF
+	. NEW OUT,OK2
+	. SET OK2=$$EVAL(.TMP,.CONF,.SCTX,.OUT,.ERR) IF 'OK2 QUIT
 	. SET ACC=ACC_$$JOIN(.OUT)
 	IF ERR'="" QUIT 0
 	QUIT 1
-	;
+	;	
 ISTRUE(V) ;
 	NEW X SET X=$GET(V)
 	IF X="" QUIT 0
@@ -399,20 +440,78 @@ EDGE(CTX,FROM,TO,ERR) ;
 	IF $GET(FROM)'=""&($GET(TO)'="") SET CTX("tplEdge",FROM,TO)=1
 	QUIT 1
 	;
-LOOKUP(CTX,PATH) ;
-	; Dot-path lookup in CTX with support for "blocks.<name>".;
-	NEW P SET P=$GET(PATH)
-	IF P="" QUIT ""
-	IF $E(P,1,7)="blocks." QUIT $GET(CTX("blocks",$E(P,8,$L(P))))
-	NEW A,I,REF
+GETREF(CTX,PATH,REF,ISARR) ;
+	; Build REF (a string) pointing at CTX node for PATH.;
+	; ISARR=1 if node has children, 0 otherwise.;
+	NEW P,A,I
+	SET REF="CTX"
+	SET ISARR=0
+	SET P=$GET(PATH)
+	IF P="" QUIT 0
+	FOR I=1:1:$L(P,".") DO
+	. SET A=$PIECE(P,".",I)
+	. IF A="" QUIT
+	. IF A="." QUIT
+	. SET REF=REF_"("""_A_""")" 
+	I REF[""")("""  S REF=$$REPLACE^MIOUTIL(REF,""")(""",""",""")
+	IF $DATA(@REF)>1 SET ISARR=1
+	QUIT $DATA(@REF)>0	
+	;
+HASITEMS(CTX,KEY) ;
+	; Returns 1 if KEY resolves to a node with at least one child subscript.;
+	NEW REF,ISARR,BASE,S
+	SET ISARR=0
+	IF '$$GETREF(.CTX,KEY,.REF,.ISARR) QUIT 0
+	IF 'ISARR QUIT 0
+	; REF is like: CTX("packages") or CTX("cats","items")
+	SET BASE=$E(REF,1,$L(REF)-1)   ; strip trailing ")"
+	SET S=$ORDER(@(BASE_",0)"))    ; first numeric child
+	IF S'="" QUIT 1
+	QUIT 0	
+	;
+HASCHILD(CTX,PATH) ;
+		; Return 1 if PATH resolves to a node with children (array/object).;
+	NEW REF,DATA
+	IF '$$RESREF(.CTX,$GET(PATH),.REF,.DATA) QUIT 0
+	IF DATA>1 QUIT 1
+	QUIT 0
+	;
+RESREF(CTX,PATH,REF,DATA) ;
+	; Resolve dot-path PATH into a string reference REF.;
+	; DATA is set to $DATA(@REF).;
+	;
+	; Examples:
+	;   PATH="packages"     => REF="CTX(""packages"")"
+	;   PATH="cats.items"   => REF="CTX(""cats"",""items"")"
+	;
+	NEW P,A,I
+	SET REF="",DATA=0
+	SET P=$GET(PATH)
+	IF P="" QUIT 0
+	IF $E(P,1,7)="blocks." DO  QUIT 1
+	. SET REF="CTX(""blocks"","""_$E(P,8,$L(P))_""")"
+	. SET DATA=$DATA(@REF)
+	IF P="." DO  QUIT 1
+	. SET REF="CTX(""."")"
+	. SET DATA=$DATA(@REF)
 	SET REF="CTX"
 	FOR I=1:1:$L(P,".") DO
 	. SET A=$PIECE(P,".",I)
 	. IF A="" QUIT
-	. ; Allow "." to mean current loop item.;
-	. IF A="." QUIT
-	. SET REF=$NA(REF(A))
-	QUIT $GET(@REF)
+	. SET REF=REF_"("""_A_""")"
+	I REF[""")("""  S REF=$$REPLACE^MIOUTIL(REF,""")(""",""",""")
+	SET DATA=$DATA(@REF)
+	QUIT 1
+	;
+LOOKUP(CTX,PATH) ;
+	NEW P SET P=$GET(PATH)
+	IF P="" QUIT ""
+	IF P="." QUIT $GET(CTX("."))
+	IF $E(P,1,7)="blocks." QUIT $GET(CTX("blocks",$E(P,8,$L(P))))
+	NEW REF,ISARR,OK
+	SET OK=$$GETREF(.CTX,P,.REF,.ISARR)
+	IF 'OK QUIT ""
+	QUIT $GET(@REF)	
 	;
 JOIN(ARR,SEP) ;
 	; Join numeric ARR() into string.;
