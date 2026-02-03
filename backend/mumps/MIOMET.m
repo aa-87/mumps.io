@@ -231,7 +231,7 @@ NOWMIN()
 ; Entry point
 ; See docs/routines for details.;
 METRICS(DEV,CONF,REQ,CTX) ; handler for /metrics
-	IF '$GET(CONF("metrics","enabled"),0) DO  QUIT
+	IF '$S($G(CONF("metrics","enabled"))="true":1,1:+$G(CONF("metrics","enabled"))) DO  QUIT
 	. NEW OBJ SET OBJ("error")="metrics_disabled",OBJ("request_id")=$GET(CTX("request_id"))
 	. DO RESPJSON^MIOHTTP(.DEV,.CONF,404,.OBJ,$GET(CTX("request_id")))
 	NEW HEAD SET HEAD("Content-Type")="text/plain; version=0.0.4"

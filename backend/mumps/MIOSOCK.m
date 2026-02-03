@@ -82,5 +82,5 @@ WRITE(DEV,S)
 ; See docs/routines for details.;
 CLOSE(DEV)
 	CLOSE DEV
-	QUIT
+	QUIT 
 	;

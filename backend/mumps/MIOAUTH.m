@@ -45,7 +45,7 @@ ENFORCE(DEV,CONF,REQ,CTX)
 	;   - "prefix": protect by prefixes list (or defaults)
 	;   - "route": protect only if matched route meta authRequired=1
 	NEW PMODE SET PMODE=$GET(CONF("auth","protectMode"),"prefix")
-	IF PMODE="route" DO  QUIT:TEST 0
+	IF PMODE="route" DO  QUIT:'TEST 0
 	. ; If no matching route, do not authenticate here (router will 404)
 	. IF $GET(CTX("match","ok"))'=1 SET TEST=1 QUIT
 	. NEW RP SET RP=$GET(CTX("match","route"))
@@ -54,7 +54,7 @@ ENFORCE(DEV,CONF,REQ,CTX)
 	. ; fall through to auth
 	;
 	; Prefix-based protection
-	IF PMODE'="route" IF '$$ISPROTECTED(PATH,.CONF) QUIT 1
+	IF PMODE="route" IF '$$ISPROTECTED(PATH,.CONF) QUIT 1
 	;
 	; Authenticate
 	NEW MODE SET MODE=$GET(CONF("auth","mode"),"api_key")
