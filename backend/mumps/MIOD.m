@@ -29,52 +29,26 @@ MIOD ; Worker daemon. Accepts connections and runs request lifecycle.;
 ; Entry point
 ; See docs/routines for details.;
 	;
-T
-	;			
-	;
-ST
-	NEW PATH S PATH=$$GETCONF^MIOCONF()
-	DO LOAD^MIOCONF(PATH,.CONF)	
-	D START(.CONF)
-	Q
-	;
 STERR
 	ZSHOW "*":^AAA
 	S ^AAA=$ZSTATUS
 	Q
-	;	
-	;	
-	;	
-	;	
+	;
 START(CONF)
 	KILL ^MIO("CTL")
-	NEW PORT SET PORT=$GET(CONF("server","listen","port"),9080)
+	NEW PORT,ZJ S ZJ=0
+	SET PORT=$GET(CONF("server","listen","port"),9080)
+	J RUN(PORT) I $T S ZJ=$ZJOB D INFO^MIOLOG("mio_server_started","pid="_ZJ) I 1
+	E  D PANIC^MIOLOG("mio_server_failed","")
+	H 2 I $G(^MIO("CTL","PID"))=ZJ D INFO^MIOLOG("listen_success","port="_PORT)
+	Q
+	;
+RUN(PORT)
 	NEW DEV,ERR
 	IF '$$LISTEN^MIOSOCK(PORT,.DEV,.ERR) DO PANIC^MIOLOG("listen_failed",.ERR) Q
 	SET ^MIO("CTL","DEV")=DEV
-	NEW W SET W=$GET(CONF("server","process","workers"),4)
-	;NEW I FOR I=1:1:W H 0.1 JOB WORKER^MIOD(I,DEV)
-	D INFO^MIOLOG("master_started","")
-	I '$D(^MIO("CONF")) D
-	. NEW PATH S PATH=$$GETCONF^MIOCONF()
-	. DO LOAD^MIOCONF(PATH,.CONF)	
-	. M ^MIO("CONF")=CONF
-	. D INFO^MIOLOG("config_file_loaded",PATH)
-	. W /LISTEN(5)
-	D WORKER^MIOD(DEV)
-	;FOR  DO  QUIT:$GET(^MIO("CTL","STOP"))
-	;. HANG 1
-	;SET ^MIO("CTL","STOP")=1
-	HANG $GET(CONF("server","process","gracefulShutdownSeconds"),3)
-	DO CLOSE^MIOSOCK(DEV)
-	QUIT
-	;
-; Entry point
-; See docs/routines for details.;
-WORKER(DEV)
-	NEW CONF MERGE CONF=^MIO("CONF")
-	NEW KEY
-	FOR  QUIT:$GET(^MIO("CTL","STOP"))  DO
+	SET ^MIO("CTL","PID")=$J
+	W /LISTEN(5) NEW KEY FOR  QUIT:$GET(^MIO("CTL","STOP"))  DO
 	. DO WAIT^MIOSOCK(DEV,10,.KEY)
 	. IF KEY="" QUIT
 	. I $P(KEY,"|")="CONNECT" D
@@ -87,6 +61,13 @@ WORKER(DEV)
 	. . J @J
 	QUIT
 	;
+STOP ; to do -> make sure to kill the pid associated after checking
+	S ^MIO("CTL","STOP")=1
+	N DEV S DEV=$G(^MIO("CTL","DEV"))
+	H $GET(^MIO("CONF","server","process","gracefulShutdownSeconds"),3)
+	I DEV]"" I 1 D CLOSE^MIOSOCK(DEV) D:$T INFO^MIOLOG("listen_device_closed","")
+	D INFO^MIOLOG("mio_server_stopped","")
+	QUIT
 	;
 JOBCONN(ADDR,HANDLE)
 	N CONF M CONF=^MIO("CONF")
@@ -115,33 +96,17 @@ JOBCONN(ADDR,HANDLE)
 	. DO CLOSE^MIOSOCK(DEV) Q
 	DO DISPATCH^MIOROUTE(DEV,.CONF,.REQ,.CTX)
 	; Metrics observation (skip if handler requested)
-	;IF '$GET(CTX("skip_metrics")) DO
-	;. NEW T1 SET T1=$$TSUS^MIOMET()
-	;. NEW LATMS SET LATMS=((T1-$GET(CTX("t0us")))/1000)
-	;. NEW RT SET RT=$GET(CTX("route"),"unknown")
-	;. NEW ST SET ST=$GET(CTX("status"),0)
-	;. NEW MM SET MM=$GET(REQ("http_method"),$GET(REQ("method")))
-	;. DO OBS^MIOMET(MM,RT,ST,LATMS)
+	IF '$GET(CTX("skip_metrics")) DO
+	. NEW T1 SET T1=$$TSUS^MIOMET()
+	. NEW LATMS SET LATMS=((T1-$GET(CTX("t0us")))/1000)
+	. NEW RT SET RT=$GET(CTX("route"),"unknown")
+	. NEW ST SET ST=$GET(CTX("status"),0)
+	. NEW MM SET MM=$GET(REQ("http_method"),$GET(REQ("method")))
+	. DO OBS^MIOMET(MM,RT,ST,LATMS)
 	DO CLOSE^MIOSOCK(DEV)
-	;J FLUSHJOB^MIOMET()
 	IF $$LOW^MIOHTTP($GET(REQ("hdr","connection")))="close" H
 	QUIT
-	;	
-	;	
-	;	
-LOOP
-	I $G(^MIO(":WS","JOB:STATUS"))="stopped" C TCPIO  Q
-	D  G LOOP
-	. F  W /WAIT(10) Q:$KEY]""  Q:($G(^MIO(":WS","JOB:STATUS"))="stopped")
-	. Q:($G(^MIO(":WS","JOB:STATUS"))="stopped")
-	. I $P($KEY,"|")="CONNECT" D
-	. . S CHILDSOCK=$P($KEY,"|",2)
-	. . U TCPIO:(detach=CHILDSOCK)
-	. . N Q S Q=""""
-	. . N ARG S ARG=Q_"SOCKET:"_CHILDSOCK_Q
-	. . N J S J="CHILD($G(TLSCONFIG),$G(NOGBL)):(input="_ARG_":output="_ARG_")"
-	. . J @J
-	QUIT	
+	;
 	;	
 ; Entry point
 ; See docs/routines for details.;

@@ -23,11 +23,9 @@ MIO ; Routine for the MIO web server package.;
 ; Entry point
 ; See docs/routines for details.;
 start ; start^MIO
-	I $D(^MIO("CONF")) M CONF=^NIO("CONF")
-	E  D
-	. N PATH S PATH=$$GETCONF^MIOCONF()
-	. DO LOAD^MIOCONF(PATH,.CONF)	
-	. M ^MIO("CONF")=CONF
+	N PATH S PATH=$$GETCONF^MIOCONF()
+	N CONF D LOAD^MIOCONF(PATH,.CONF)
+	K ^MIO("CONF") M ^MIO("CONF")=CONF
 	DO INIT^MIOROUTE
 	DO START^MIOTPL(.CONF)
 	DO REG^MIODEMO(.CONF)
@@ -38,7 +36,6 @@ start ; start^MIO
 	DO REG^MIOREGAPI(.CONF)	
 	DO REG^MIOREGADM(.CONF)
 	DO REG^MIOAPP(.CONF)
-	;
 	DO COMPILE^MIOROUTE
 	DO START^MIOCLEAN(.CONF)
 	DO START^MIOD(.CONF)
@@ -46,6 +43,7 @@ start ; start^MIO
 ; Entry point
 ; See docs/routines for details.;
 stop ; stop^MIO
+	D STOP^MIOD
 	SET ^MIO("CTL","STOP")=1
 	WRITE "stop requested",!
 	QUIT
