@@ -100,16 +100,17 @@
       "prefix": [
         "/api/",
         "/ws/app"
-      ],
-      "exempt": [
+      ]},
+    "exempt": {
+      "prefix": [
+        "/v1/",
         "/api/ping",
         "/healthz",
         "/metrics",
         "/bench",
         "/app",
         "/ws"
-      ]
-    },
+      ]},
     "protectMode": "route",
     "jwt": {
       "bearerPrefix": "Bearer ",

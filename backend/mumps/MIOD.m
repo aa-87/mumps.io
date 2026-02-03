@@ -107,42 +107,6 @@ JOBCONN(ADDR,HANDLE)
 	IF $$LOW^MIOHTTP($GET(REQ("hdr","connection")))="close" H
 	QUIT
 	;
-	;	
-; Entry point
-; See docs/routines for details.;
-HANDLECONN(DEV,HANDLE,ADDR,CONF)
-	NEW CTX,REQ,ERR
-	SET CTX("remote_addr")=ADDR
-	DO SETSOCK^MIOSOCK(DEV,HANDLE)
-	FOR  DO  QUIT:$GET(^MIO("CTL","STOP"))
-	. KILL REQ,ERR
-	. SET CTX("request_id")=$$UUID^MIOUTIL()
-	. NEW OK SET OK=$$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR)
-	. IF 'OK QUIT
-	. ; If this is a WebSocket Upgrade request, route under method "WS".;
-	. ; This allows registering WS endpoints without colliding with normal GET routes.;
-	. IF $$ISWSREQ(.REQ) DO
-	. . SET CTX("is_websocket")=1
-	. . SET REQ("http_method")=$GET(REQ("method"))
-	. . SET REQ("method")="WS"
-	. SET CTX("t0us")=$$TSUS^MIOMET()
-	. KILL CTX("status"),CTX("route"),CTX("skip_metrics")
-	. ; Pre-match route (enables per-route authz without double parse)
-	. DO PREMATCH^MIOROUTE(.REQ,.CTX)
-	. ; Authentication / authorization gate (config-driven)
-	. IF '$$ENFORCE^MIOAUTH(DEV,.CONF,.REQ,.CTX) QUIT
-	. DO DISPATCH^MIOROUTE(DEV,.CONF,.REQ,.CTX)
-	. ; Metrics observation (skip if handler requested)
-	. ;IF '$GET(CTX("skip_metrics")) DO
-	. ;. NEW T1 SET T1=$$TSUS^MIOMET()
-	. ;. NEW LATMS SET LATMS=((T1-$GET(CTX("t0us")))/1000)
-	. ;. NEW RT SET RT=$GET(CTX("route"),"unknown")
-	. ;. NEW ST SET ST=$GET(CTX("status"),0)
-	. ;. NEW MM SET MM=$GET(REQ("http_method"),$GET(REQ("method")))
-	. ;. DO OBS^MIOMET(MM,RT,ST,LATMS)
-	. IF $$LOW^MIOHTTP($GET(REQ("hdr","connection")))="close" QUIT
-	QUIT
-	;
 ; Entry point
 ; See docs/routines for details.;
 ISWSREQ(REQ)

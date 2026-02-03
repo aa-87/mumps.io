@@ -26,7 +26,7 @@ MIODEMO ; Demo routes for quick validation.;
 ; See docs/routines for details.;
 REG(CONF) ; DO REG^MIODEMO(.CONF)
 	NEW EN S EN=$S($GET(CONF("examples","enabled"))="true":1,1:+$GET(CONF("examples","enabled")))
-	IF EN'=1 QUIT
+	IF 'EN QUIT
 	DO ADD^MIOROUTE("GET","/v1/demo/hello","HELLO^MIODEMO")
 	DO ADD^MIOROUTE("GET","/v1/demo/phi/:id","PHI^MIODEMO")
 	DO ADD^MIOROUTE("GET","/v1/demo/page","PAGE^MIODEMO")
@@ -35,7 +35,7 @@ REG(CONF) ; DO REG^MIODEMO(.CONF)
 ; Entry point
 ; See docs/routines for details.;
 HELLO(DEV,CONF,REQ,CTX)
-	DO JSON^MIOERR(DEV,CONF,200,"ok","hello from demo",.CTX)
+	DO JSON^MIOERR(DEV,.CONF,200,"ok","hello from demo",.CTX)
 	QUIT
 	;
 ; Entry point
@@ -45,7 +45,7 @@ PHI(DEV,CONF,REQ,CTX)
 	SET CTX("auditAction")="DEMO_PHI_READ"
 	NEW ID S ID=$GET(REQ("params","id"))
 	NEW BODY S BODY="{""resource_id"":"""_$$ESC^MIOUTIL(ID)_""",""note"":""demo only""}"
-	DO RESPJSON^MIOHTTP(DEV,200,.CTX,BODY)
+	DO RESPJSON^MIOHTTP(DEV,.CONF,200,.CTX,BODY)
 	QUIT
 	;
 	;
@@ -61,8 +61,8 @@ PAGE(DEV,CONF,REQ,CTX)
 	NEW OUT,ERR
 	IF '$$RENDER^MIOTPL("page.html",.CONF,.TCTX,.OUT,.ERR) DO  QUIT
 	. DO RESPJSON^MIOHTTP(DEV,500,.CTX,"{""error"":""template_error"",""detail"":"""_ERR_"""}")
-	NEW BODY,I S BODY="",I=0
+	NEW BODY,I,HEAD  S BODY="",I=0
 	FOR  SET I=$ORDER(OUT(I)) QUIT:I=""  SET BODY=BODY_OUT(I)
-	DO RESP^MIOHTTP(DEV,200,"text/html; charset=utf-8",.CTX,BODY)
+	S HEAD("Content-Type")="text/html; charset=utf-8"
+	DO RESP^MIOHTTP(DEV,.CONF,200,.HEAD,.BODY,CTX("request_id"))
 	QUIT
-	;

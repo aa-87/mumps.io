@@ -281,4 +281,11 @@ Z(N,L) ;
 	FOR  QUIT:$L(S)'<L  SET S="0"_S
 	QUIT S
 	;
-YEAR Q "20"_$PIECE($ZDATE($HOROLOG),"/",3)
+YEAR() Q "20"_$PIECE($ZDATE($HOROLOG),"/",3)
+	;
+ESC(X) Q $$ESC^MIOJSON2(X)
+	;
+REPLACE(s,f,t)
+	i $tr(s,f)=s q s
+	n o,i s o="" f i=1:1:$l(s,f)  s o=o_$s(i<$l(s,f):$p(s,f,i)_t,1:$p(s,f,i))
+	q o
