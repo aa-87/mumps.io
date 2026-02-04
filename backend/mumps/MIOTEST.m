@@ -1,7 +1,7 @@
 MIOTEST 
 	;
 	;
-	;
+	; test
 	;
 	;
 	; 100-121 Coverage instrumentation per routines, to be implemented later
