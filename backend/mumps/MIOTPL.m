@@ -14,11 +14,9 @@ MIOTPL ; MIO template engine with layouts, blocks, partials, and caching.;
 ; - PRECOMPILE(CONF) ;
 	; Precompile templates into ^MIO("TPL","CACHE",...).;
 	; This improves cold-start latency and reduces first-request jitter.;
-	;
 	; Strategy:
 	; 1) If CONF("templates","precompile","path",n) exists, compile those paths.;
 	; 2) Else enumerate common globs under template root (non-recursive best-effort).;
-	;
 	;
 START(CONF)
 	NEW EN
@@ -30,7 +28,6 @@ START(CONF)
 	; Strategy:
 	; 1) If CONF("templates","precompile","path",n) exists, compile those paths.;
 	; 2) Else enumerate common globs under template root (non-recursive best-effort).;
-	;	
 PRECOMPILE(CONF) ;
 	; Compile all templates under template root.;
 	; This is intentionally minimal in pure M.;
@@ -53,7 +50,6 @@ PRECOMPILE(CONF) ;
 	. ; Do not fail whole precompile on a single file, but record last error.;
 	. IF 'OK SET CONF("templates","precompile","lastError")=ERR
 	QUIT
-	;
 ENUMGLOBS(ROOT,LIST) ;
 	; Best-effort enumeration using common file globs.;
 	; YottaDB supports $ZSEARCH for filesystem search with wildcards.;
@@ -66,14 +62,12 @@ ENUMGLOBS(ROOT,LIST) ;
 	DO ENUM1(ROOT_"/partials/*.html",.LIST)
 	DO ENUM1(ROOT_"/includes/*.html",.LIST)
 	QUIT
-	;
 ENUM1(PAT,LIST) ;
 	NEW F SET F=$ZSEARCH(PAT)
 	FOR  QUIT:F=""  DO
 	. SET LIST(F)=1
 	. SET F=$ZSEARCH("")
 	QUIT
-	;
 RENDER(NAME,CONF,CTX,OUT,ERR) ;
 	; Render a template to OUT() lines.;
 	KILL OUT SET ERR=""
@@ -81,7 +75,6 @@ RENDER(NAME,CONF,CTX,OUT,ERR) ;
 	SET OK=$$RESOLVE(NAME,.CONF,.FP,.ERR) IF 'OK QUIT 0
 	SET OK=$$GETTOKFP(FP,.CONF,.TOK,.ERR) IF 'OK QUIT 0
 	QUIT $$EVAL(.TOK,.CONF,.CTX,.OUT,.ERR)
-	;
 RENDERPAGE(PAGE,LAYOUT,CONF,CTX,OUT,ERR) ;
 	; Render PAGE and inject into LAYOUT.;
 	; Captures blocks from PAGE into CTX("blocks",name).;
@@ -94,16 +87,13 @@ RENDERPAGE(PAGE,LAYOUT,CONF,CTX,OUT,ERR) ;
 	SET BCTX("content")=$$JOIN(.BODY)
 	; Render layout using content + blocks.;
 	QUIT $$RENDER(LAYOUT,.CONF,.BCTX,.OUT,.ERR)
-	;
 RENDERLAYOUT(LAYOUT,CONF,CTX,OUT,ERR) ;
 	; Render a layout that expects CTX("content") and CTX("blocks",...).;
 	QUIT $$RENDER(LAYOUT,.CONF,.CTX,.OUT,.ERR)
-	;
 GETTOK(NAME,CONF,TOK,ERR) ;
 	NEW FP,OK
 	SET OK=$$RESOLVE(NAME,.CONF,.FP,.ERR) IF 'OK QUIT 0
 	QUIT $$GETTOKFP(FP,.CONF,.TOK,.ERR)
-	;
 GETTOKFP(FP,CONF,TOK,ERR) ;
 	; Load and compile a template by full path.;
 	KILL TOK SET ERR=""
@@ -127,11 +117,9 @@ GETTOKFP(FP,CONF,TOK,ERR) ;
 	MERGE ^MIO("TPL","CACHE",FP,"TOK")=TMP
 	MERGE TOK=TMP
 	QUIT 1
-	;
 READFILE(FP,TXT,ERR) ;
 	; Read the full file at FP into TXT as a single string.;
 	; This must preserve newlines so templates compile correctly.;
-	;
 	; NOTES
 	; - READ without a length reads a line. We must loop to EOF.;
 	; - We normalize line endings to LF.;
@@ -155,7 +143,6 @@ RFERR ;
 	SET ERR="template_read_failed:"_FP
 	CLOSE DEV
 	QUIT 0
-	;
 RESOLVE(NAME,CONF,FP,ERR) ;
 	; Resolve NAME into FP within template root.;
 	NEW ROOT SET ROOT=$GET(CONF("server","templateDir")) IF ROOT="" SET ROOT="templates"
@@ -164,7 +151,6 @@ RESOLVE(NAME,CONF,FP,ERR) ;
 	IF NAME[".." SET ERR="template_invalid_name" QUIT 0
 	SET FP=ROOT_"/"_NAME
 	QUIT 1
-	;
 PUSHDEPTH(CTX,CONF,FP,ERR) ;
 	; Enforce max render depth and prevent recursion.;
 	; Uses CTX("tplDepth") and CTX("tplStack",n).;
@@ -179,7 +165,6 @@ PUSHDEPTH(CTX,CONF,FP,ERR) ;
 	SET CTX("tplDepth")=D
 	SET CTX("tplStack",D)=FP
 	QUIT 1
-	;
 POPDEPTH(CTX) ;
 	NEW D SET D=+$GET(CTX("tplDepth"))
 	IF D<1 QUIT
@@ -188,17 +173,14 @@ POPDEPTH(CTX) ;
 	IF D=0 KILL CTX("tplDepth") QUIT
 	SET CTX("tplDepth")=D
 	QUIT
-	;
 COMPILE(TXT,TOK,ERR) ;
 	; Compile TXT into TOK() tokens.;
-	;
 	; Token format:
 	;   TOK(n,"t")="text"  TOK(n,"v")=...;
 	;   TOK(n,"t")="var"   TOK(n,"k")=key TOK(n,"e")=1/0 (escape?)
 	;   TOK(n,"t")="secS"  TOK(n,"k")=key TOK(n,"inv")=1/0
 	;   TOK(n,"t")="secE"  TOK(n,"k")=key
 	;   TOK(n,"t")="part"  TOK(n,"k")=name
-	;
 	KILL TOK SET ERR=""
 	NEW I,POS,START,END,CHUNK,N SET POS=1,N=0
 	FOR  DO  QUIT:POS>$LENGTH(TXT)!(ERR'="")
@@ -238,7 +220,6 @@ COMPILE(TXT,TOK,ERR) ;
 	. . ELSE  DO  ; normal var
 	. . . SET N=N+1,TOK(N,"t")="var",TOK(N,"k")=RAW,TOK(N,"e")=1
 	. . SET POS=END
-	;
 	; validate sections stack
 	NEW STK,SP SET SP=0
 	FOR I=1:1:N DO  QUIT:ERR'=""
@@ -255,27 +236,20 @@ EVAL(TOK,CONF,CTX,OUT,ERR) ;
 	; Evaluate tokens to OUT() lines.;
 	; Supports:
 	; - text, var, part, secS/secE (mustache sections), and legacy inc/b0/b1.;
-	;
 	KILL OUT SET ERR=""
 	NEW ACC SET ACC=""
+	NEW S SET S=1
 	NEW I SET I=0
 	FOR  SET I=$ORDER(TOK(I)) QUIT:'I  DO  QUIT:ERR'=""
 	. NEW TT SET TT=$GET(TOK(I,"t"))
 	. IF TT="text" SET ACC=ACC_$GET(TOK(I,"v")) QUIT
 	. IF TT="var" DO  QUIT
 	. . NEW V SET V=$$LOOKUP(.CTX,$GET(TOK(I,"k")))
-	. . ; Escape unless explicitly disabled.;
 	. . IF $GET(TOK(I,"e"),1) SET V=$$ESC(V)
 	. . SET ACC=ACC_V
-	. ; Legacy include token
-	. IF TT="inc" DO  QUIT
-	. . NEW P SET P=$GET(TOK(I,"p"))
-	. . DO DOINCLUDE(.P,.TOK,.CONF,.CTX,.ACC,.ERR)
-	. ; Mustache partial token
 	. IF TT="part" DO  QUIT
 	. . NEW P SET P=$GET(TOK(I,"k"))
 	. . DO DOINCLUDE(.P,.TOK,.CONF,.CTX,.ACC,.ERR)
-	. ; Sections
 	. IF TT="secS" DO  QUIT
 	. . NEW KEY SET KEY=$GET(TOK(I,"k"))
 	. . NEW INV SET INV=+$GET(TOK(I,"inv"))
@@ -305,80 +279,82 @@ DOINCLUDE(P,TOK,CONF,CTX,ACC,ERR) ;
 	QUIT
 	;
 EVALSEC(TOK,CONF,CTX,IDX,KEY,INV,ACC,ERR) ;
-	; Evaluate a section starting at TOK(IDX)=secS. Advances IDX to matching secE.;
-	NEW I,DEPTH SET DEPTH=1
-	NEW TMP KILL TMP
-	NEW J SET J=0
+	NEW I,DEPTH,DONE
+	SET DEPTH=1,DONE=0
+	KILL TMP
+	SET J=0 
 	SET I=IDX
-	FOR  SET I=$ORDER(TOK(I)) QUIT:'I  DO  QUIT:ERR'=""
+	FOR  SET I=$ORDER(TOK(I)) QUIT:'I  QUIT:DONE  DO  QUIT:ERR'=""
 	. NEW TT SET TT=$GET(TOK(I,"t"))
-	. IF TT="secS",$GET(TOK(I,"k"))=KEY SET DEPTH=DEPTH+1 QUIT
+	. IF TT="secS",$GET(TOK(I,"k"))=KEY SET DEPTH=DEPTH+1 QUIT 
 	. IF TT="secE",$GET(TOK(I,"k"))=KEY DO  QUIT
 	. . SET DEPTH=DEPTH-1
-	. . IF DEPTH=0 SET IDX=I QUIT
-	. . QUIT
-	. IF DEPTH>0 DO
-	. . SET J=J+1
-	. . MERGE TMP(J)=TOK(I)
+	. . IF DEPTH=0 SET IDX=I,DONE=1 QUIT
+	. ; Never include structural markers in body
+	. IF TT="secS" QUIT
+	. IF TT="secE" QUIT
+	. ; Copy body tokens
+	. SET J=J+1
+	. MERGE TMP(J)=TOK(I)
 	;
 	IF ERR'="" QUIT 0
 	;
-	; Special: block:<name> capture
+	; block capture
 	IF $E(KEY,1,6)="block:" QUIT $$CAPBLOCK(.TMP,.CONF,.CTX,KEY,.ACC,.ERR)
 	;
-	; Determine node truthiness and/or array-ness.;
+	; missing node handling (single, clean)
 	NEW REF,ISARR,OKN
 	SET OKN=$$GETREF(.CTX,KEY,.REF,.ISARR)
 	IF 'OKN DO  QUIT 1
-	. ; Missing node => falsey
-	. IF 'INV QUIT
-	. ; Inverted: render
-	. NEW OUT,OK2 SET OK2=$$EVAL(.TMP,.CONF,.CTX,.OUT,.ERR) IF 'OK2 QUIT
-	. SET ACC=ACC_$$JOIN(.OUT)
+	. IF INV DO
+	. . NEW OUT,OK2 SET OK2=$$EVAL(.TMP,.CONF,.CTX,.OUT,.ERR) IF 'OK2 QUIT
+	. . SET ACC=ACC_$$JOIN(.OUT)
 	;
-	IF ISARR QUIT $$EVALARR(.TMP,.CONF,.CTX,KEY,.ACC,.ERR)
-	;
-	; ---- truthiness (Mustache-correct) ----
+	; Mustache truthiness
 	NEW HAS,VAL,TRUTH
 	SET HAS=$$HASITEMS(.CTX,KEY)
-	;
-	; Lists/objects are truthy if they have items
 	IF HAS SET TRUTH=1
 	ELSE  DO
 	. SET VAL=$$LOOKUP(.CTX,KEY)
 	. SET TRUTH=$$ISTRUE(VAL)
-		;
-	; Apply inversion
-	IF INV SET TRUTH='TRUTH
 	;
-	; If not truthy, skip rendering body
+	IF INV SET TRUTH='TRUTH
 	IF 'TRUTH QUIT 1
 	;
-	; If it’s a list/object with items, iterate
 	IF HAS QUIT $$EVALARR(.TMP,.CONF,.CTX,KEY,.ACC,.ERR)
 	;
-	; Else render once
 	NEW OUT,OK
 	SET OK=$$EVAL(.TMP,.CONF,.CTX,.OUT,.ERR) IF 'OK QUIT 0
 	SET ACC=ACC_$$JOIN(.OUT)
 	QUIT 1
-; ---- end truthiness ----
 	;
 CAPBLOCK(TMP,CONF,CTX,KEY,ACC,ERR) ;
 	NEW NAME SET NAME=$E(KEY,7,$L(KEY))
 	NEW OUT,OK SET OK=$$EVAL(.TMP,.CONF,.CTX,.OUT,.ERR) IF 'OK QUIT 0
 	SET CTX("blocks",NAME)=$$JOIN(.OUT)
 	; Block content is not appended to ACC.;
-	QUIT 1
-	;
+	QUIT 1 ;
 EVALARR(TMP,CONF,CTX,KEY,ACC,ERR) ;
-	; Iterate children under section KEY (supports dot paths).;
-	NEW REF,DATA,OK
-	SET OK=$$RESREF(.CTX,$GET(KEY),.REF,.DATA)
-	IF 'OK QUIT 0
-	IF DATA'>1 QUIT 1
-	QUIT $$EVALARR2(.TMP,.CONF,.CTX,REF,.ACC,.ERR)
+	NEW REF,ISARR
+	IF '$$GETREF(.CTX,KEY,.REF,.ISARR) QUIT 0
+	IF 'ISARR QUIT 1
+	NEW BASE,I,ITEMREF
+	SET BASE=$E(REF,1,$L(REF)-1)  ; strip trailing ")"
+	SET I=0
+	FOR  SET I=$ORDER(@(BASE_","_I_")")) QUIT:'I  DO
+	. SET ITEMREF=BASE_","_I_")"
+	. ;
+	. NEW SCTX MERGE SCTX=CTX
+	. SET SCTX(".")=$GET(@ITEMREF)
+	. SET SCTX("item")=$GET(@ITEMREF)
+	. IF $DATA(@ITEMREF)>1 MERGE SCTX=@ITEMREF
+	. ;
+	. NEW OUT,OK2
+	. SET OK2=$$EVAL(.TMP,.CONF,.SCTX,.OUT,.ERR) IF 'OK2 QUIT
+	. SET ACC=ACC_$$JOIN(.OUT)
 	;
+	IF ERR'="" QUIT 0
+	QUIT 1
 EVALARR2(TMP,CONF,CTX,REF,ACC,ERR) ;
 	; REF is base reference like: CTX("cats","items") or CTX("packages")
 	; We must iterate first-level subscripts reliably.;
@@ -464,7 +440,7 @@ HASITEMS(CTX,KEY) ;
 	IF '$$GETREF(.CTX,KEY,.REF,.ISARR) QUIT 0
 	IF 'ISARR QUIT 0
 	; REF is like: CTX("packages") or CTX("cats","items")
-	SET BASE=$E(REF,1,$L(REF)-1)   ; strip trailing ")"
+	SET BASE=$E(REF,1,$L(REF)-1) ;strip trailing ")"
 	SET S=$ORDER(@(BASE_",0)"))    ; first numeric child
 	IF S'="" QUIT 1
 	QUIT 0	

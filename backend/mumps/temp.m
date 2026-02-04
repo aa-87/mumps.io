@@ -1,5 +1,4 @@
 EVALSEC(TOK,CONF,CTX,IDX,KEY,INV,ACC,ERR) ;
-	; Evaluate a section starting at TOK(IDX)=secS. Advances IDX to matching secE.;
 	NEW I,DEPTH SET DEPTH=1
 	NEW TMP KILL TMP
 	NEW J SET J=0
