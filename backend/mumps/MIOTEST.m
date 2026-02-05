@@ -49,7 +49,7 @@ MIOTF125 ; Full suite test 125 - TPL_INVERTED_NORESULTS.;
 	KILL CTX
 	SET CTX("packages",1,"name")="Pkg1"
 	DO EVAL^MIOTPL(.TOK,.CONF,.CTX,.OUT,.ERR)
-	DO OK^MIOTASSERT('$D(ERR),"eval A") ZWR ERR ZWR TOK
+	DO OK^MIOTASSERT('$D(ERR),"eval A")
 	DO EQ^MIOTASSERT(OUT,"YES","inverted suppressed when list has items") 
 	; Case B: packages empty => inverted MUST render, normal must NOT render.;
 	KILL OUT,ERR,CTX

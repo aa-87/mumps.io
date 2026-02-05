@@ -86,7 +86,7 @@ RENDER(NAME,CONF,CTX,OUT,ERR)
 ; =============================================================================
 RENDERPAGE(PAGE,LAYOUT,CONF,CTX,OUT,ERR)
 	K ERR S OUT=""
-	N PAGEOUT
+	N PAGEOUT,OK
 	; Reset blocks for this page render.;
 	K CTX("blocks")
 	S CTX("content")=""
@@ -95,7 +95,7 @@ RENDERPAGE(PAGE,LAYOUT,CONF,CTX,OUT,ERR)
 	; define blocks, but we still capture whatever they produced.;
 	S CTX("content")=PAGEOUT
 	D RENDERLAYOUT(LAYOUT,.CONF,.CTX,.OUT,.ERR)
-	Q
+	Q $S($D(ERR):0,1:1)
 	;
 ; =============================================================================
 ; RENDERLAYOUT(LAYOUT,CONF,CTX,OUT,ERR)
@@ -417,7 +417,8 @@ EVAL(TOK,CONF,CTX,OUT,ERR)
 	F  Q:FSP<1  D  Q:$D(ERR)
 	. S FRAMES=FRAMES+1
 	. I FRAMES>FRAMELIM S ERR("code")="TPL_LIMIT",ERR("msg")="Render exceeded safety frame limit." Q
-	 . ; Iterator frames do not use TOK(i,"t"). Run them first.;
+	. ; Iterator frames do not use TOK(i,"t"). Run them first.;
+	. ; --- iterator frames must run BEFORE any token dispatch ---
 	. I $G(F(FSP,"mode"))="iter" D  Q
 	. . N LREF,SUB,BS,BE,PM,PC
 	. . S LREF=$G(F(FSP,"listRef"))
@@ -426,14 +427,14 @@ EVAL(TOK,CONF,CTX,OUT,ERR)
 	. . S BE=+$G(F(FSP,"bodyE"))
 	. . S PM=$G(F(FSP,"parentMode"))
 	. . S PC=$G(F(FSP,"parentCap"))
-	. . ; next item
+	. . ; next list item (sibling subscript)
 	. . S SUB=$O(@($$APPREF(LREF,SUB)))
 	. . I SUB="" D POPF(.FSP,.F,.CST,.CTSP) Q
 	. . S F(FSP,"sub")=SUB
-	. . N ITEMREF S ITEMREF=$$APPREF(LREF,SUB)
-	. . ; push item context and render body
-	. . N NEWTOP S NEWTOP=CTSP+1
-	. . S CST(NEWTOP)=ITEMREF,CTSP=NEWTOP
+	. . ; push item context and render body once
+	. . N ITEMREF,NEWTOP
+	. . S ITEMREF=$$APPREF(LREF,SUB)
+	. . S NEWTOP=CTSP+1,CST(NEWTOP)=ITEMREF,CTSP=NEWTOP
 	. . D PUSHFRAME(.FSP,.F,.TOK,BS,BE,CTSP,PM,PC)
 	. N I,END,TYP
 	. S I=+$G(F(FSP,"i"))
@@ -470,76 +471,56 @@ EVAL(TOK,CONF,CTX,OUT,ERR)
 	. . ; When PTOK frame finishes, decrement recursion counter.;
 	. . ; We do it in POPF by detecting a marker.;
 	. . S F(FSP,"pname")=PN
-	. I TYP="secS" D  Q
-	. . N KEY,INV,MI
+	 . I TYP="secS" D  Q
+	. . ; --- robust section execution: always advance parent exactly once ---
+	. . N PARENT,NEXT,KEY,INV,MI
+	. . S PARENT=FSP
 	. . S KEY=$G(TOK(I,"k")),INV=+$G(TOK(I,"inv"))
 	. . S MI=+$G(TOK(I,"m"))
 	. . I 'MI S ERR("code")="TPL_PARSE",ERR("msg")="Section start without match: "_KEY Q
-	. . ; Block section handling.;
+	. . S NEXT=MI+1
+	. . ; Always advance parent past the section close now.;
+	. . S F(PARENT,"i")=NEXT
+	. . ; ---- block sections: capture rendered body, store CTX("blocks",name), no inline emit ----
 	. . I +$G(TOK(I,"blk")) D  Q
-	. . . N BNAME S BNAME=$G(TOK(I,"bname"))
-	. . . ; Render body into a capture buffer (string), store into CTX("blocks",BNAME).;
-	. . . ; The block does NOT output in place.;
-	. . . N CAP S CAP=""
-	. . . ; Push a capture frame for the body.;
-	. . . ; We keep the same context, but mode="capture" and capRef points to local CAP by reference string.;
-	. . . N CAPREF S CAPREF=$NA(CAP)
-	. . . ; Push child frame: token range (I+1 .. MI-1)
+	. . . N BNAME,CAP,CAPREF
+	. . . S BNAME=$G(TOK(I,"bname"))
+	. . . S CAP="",CAPREF=$NA(CAP)
+	. . . ; push capture frame for body (same ctx)
 	. . . D PUSHFRAME(.FSP,.F,.TOK,I+1,MI-1,CTSP,"capture",CAPREF)
-	. . . ; Advance parent index to MI+1 exactly once.;
-	. . . S F(FSP-1,"i")=MI+1
-	. . . ; When capture frame pops, store result.;
+	. . . ; mark store on that capture frame (the top frame)
 	. . . S F(FSP,"storeBlock")=1
 	. . . S F(FSP,"storeName")=BNAME
 	. . . S F(FSP,"storeCapRef")=CAPREF
-	. . ; Normal section truthiness evaluation.;
-	. . N REF,TYPE,ISSET
+	. . ; ---- evaluate truthiness / type ----
+	. . N ISSET,TYPE,REF
 	. . D RESREF(KEY,.CST,CTSP,.ISSET,.TYPE,.REF)
-	. . ; Inverted logic:
+	. . ; ---- inverted section ----
 	. . I INV D  Q
 	. . . I $$ISTRUTH(.ISSET,.TYPE,.REF)=0 D
-	. . . . ; Render body once (current context). No context push.;
-	. . . . D PUSHFRAME(.FSP,.F,.TOK,I+1,MI-1,CTSP,$G(F(FSP,"mode")),$G(F(FSP,"capRef")))
-	. . . ; Advance parent index to MI+1 no matter what.;
-	. . . S F(FSP-1,"i")=MI+1
-	. . ; Non-inverted sections
-	. . I $$ISTRUTH(.ISSET,.TYPE,.REF)=0 D  Q
-	. . . ; Skip body.;
-	. . . S F(FSP,"i")=MI+1
-	. . ; If list/array: iterate.;
+	. . . . D PUSHFRAME(.FSP,.F,.TOK,I+1,MI-1,CTSP,$G(F(PARENT,"mode")),$G(F(PARENT,"capRef")))
+	. . ; ---- normal section: skip if falsey ----
+	. . I $$ISTRUTH(.ISSET,.TYPE,.REF)=0 Q
+	. . ; ---- list iteration ----
 	. . I TYPE="list" D  Q
-	. . . N SUB S SUB=""
-	. . . ; Empty list means falsey, but we already checked truthy, so it has at least one item.;
-	. . . ; We iterate in $O order, stable for numeric and string subscripts.;
-	. . . ; Iteration is done by pushing frames one-by-one (no recursion copying tokens).;
-	. . . ; We push an iterator frame that manages SUB state.;
-	. . . N ITSP S ITSP=FSP+1
-	. . . ; Parent advances past section now.;
-	. . . S F(FSP,"i")=MI+1
-	. . . ; Push iterator controller frame.;
+	. . . ; push iterator controller frame (no token range)
 	. . . S FSP=FSP+1
 	. . . S F(FSP,"mode")="iter"
-	. . . S F(FSP,"end")=MI-1
-	. . . S F(FSP,"i")=I+1
+	. . . S F(FSP,"i")=0,F(FSP,"end")=0
 	. . . S F(FSP,"ctxTop")=CTSP
 	. . . S F(FSP,"listRef")=REF
 	. . . S F(FSP,"sub")=""
 	. . . S F(FSP,"bodyS")=I+1
 	. . . S F(FSP,"bodyE")=MI-1
-	. . . S F(FSP,"parentMode")=$G(F(FSP-1,"mode"))
-	. . . S F(FSP,"parentCap")=$G(F(FSP-1,"capRef"))
-	. . . Q
-	. . ; If object: push object context once, render body once.;
+	. . . S F(FSP,"parentMode")=$G(F(PARENT,"mode"))
+	. . . S F(FSP,"parentCap")=$G(F(PARENT,"capRef"))
+	. . ; ---- object: push object context once ----
 	. . I TYPE="obj" D  Q
 	. . . N NEWTOP S NEWTOP=CTSP+1
-	. . . S CST(NEWTOP)=REF
-	. . . S CTSP=NEWTOP
-	. . . D PUSHFRAME(.FSP,.F,.TOK,I+1,MI-1,CTSP,$G(F(FSP,"mode")),$G(F(FSP,"capRef")))
-	. . . ; Advance parent index.;
-	. . . S F(FSP-1,"i")=MI+1
-	. . ; Scalar truthy: render body once with current context.;
-	. . D PUSHFRAME(.FSP,.F,.TOK,I+1,MI-1,CTSP,$G(F(FSP,"mode")),$G(F(FSP,"capRef")))
-	. . S F(FSP-1,"i")=MI+1
+	. . . S CST(NEWTOP)=REF,CTSP=NEWTOP
+	. . . D PUSHFRAME(.FSP,.F,.TOK,I+1,MI-1,CTSP,$G(F(PARENT,"mode")),$G(F(PARENT,"capRef")))
+	. . ; ---- scalar truthy: render once with current context ----
+	. . D PUSHFRAME(.FSP,.F,.TOK,I+1,MI-1,CTSP,$G(F(PARENT,"mode")),$G(F(PARENT,"capRef")))
 	. I TYP="secE" D  Q
 	. . ; End tokens are never executed directly because secS jumps past them.;
 	. . S F(FSP,"i")=I+1
