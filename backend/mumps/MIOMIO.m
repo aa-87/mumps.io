@@ -38,22 +38,16 @@ REG(CONF) ;
 	QUIT
 	;
 HOME(DEV,CONF,REQ,CTX) ;
-	; Render the MUMPS.IO landing page.;
-	S HEAD("Content-Type")="text/html; charset=utf-8"
-	S BODY=^BODY
-	DO RESP^MIOHTTP(DEV,.CONF,200,.HEAD,.BODY,CTX("request_id"))
-	Q
+	I $G(^B)]"" S BODY=^B G HOMECACHED
 A	NEW TCTX KILL TCTX
 	SET TCTX("year")=$$YEAR^MIOUTIL()
 	SET TCTX("desc")="MUMPS.IO is a professional home for M packages. Community and Pro products. Web server, tooling, and enterprise-ready features."
-	;
 	NEW OUT,ERR
 	IF '$$RENDERPAGE^MIOTPL("mio_index.html","mio_layout.html",.CONF,.TCTX,.OUT,.ERR) DO  QUIT
 	. DO RESPJSON^MIOHTTP(DEV,500,.CTX,"{""error"":""template_error"",""detail"":"""_$$ESC^MIOUTIL($GET(ERR("error")))_"""}")
-	;
 	NEW BODY,I,HEAD SET BODY="",I=0
 	FOR  SET I=$ORDER(OUT(I)) QUIT:I=""  SET BODY=BODY_OUT(I)
-	;
+HOMECACHED
 	S HEAD("Content-Type")="text/html; charset=utf-8"
 	DO RESP^MIOHTTP(DEV,.CONF,200,.HEAD,.BODY,CTX("request_id"))
 	QUIT
