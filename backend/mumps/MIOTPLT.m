@@ -1,6 +1,6 @@
 MIOTPLT
 	;
-	D TEST001
+	D TEST001,TEST002,TEST003
 	Q
 	;
 TEST001
@@ -8,8 +8,7 @@ TEST001
 	NEW DESC S DESC=HDR_"[Mustache-free templates should render as-is]"
 	NEW TOK,ERR,CONF,CTX,OUT
 	D COMPILE^MIOTPL2($$UES("Hello from {Mustache}!\n"),.TOK,.ERR)
-	DO OK^MIOTASSERT('$D(ERR),"compile "_HDR)
-	SET CTX("cta")=1
+	DO OK^MIOTASSERT('$D(ERR),"[COMPILE] "_HDR)
 	DO EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
 	DO OK^MIOTASSERT('$D(ERR),"[EVAL]"_DESC)
 	DO EQ^MIOTASSERT(OUT,$$UES("Hello from {Mustache}!\n"),"[RENDER]"_DESC)
@@ -19,12 +18,23 @@ TEST002
 	NEW DESC S DESC=HDR_"[Unadorned tags should interpolate content into the template.]"
 	NEW TOK,ERR,CONF,CTX,OUT
 	D COMPILE^MIOTPL2($$UES("Hello, {{subject}}!\n"),.TOK,.ERR)
-	DO OK^MIOTASSERT('$D(ERR),"compile "_HDR)
-	SET CTX("cta")=1
+	DO OK^MIOTASSERT('$D(ERR),"[COMPILE]"_HDR)
 	SET CTX("subject")="world"
 	DO EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
 	DO OK^MIOTASSERT('$D(ERR),"[EVAL]"_DESC)
 	DO EQ^MIOTASSERT(OUT,$$UES("Hello, world!\n"),"[RENDER]"_DESC)
+	QUIT
+TEST003
+	NEW HDR S HDR="[MIOTPL][TEST003][No Re-interpolation]"
+	NEW DESC S DESC=HDR_"[Interpolated tag output should not be re-interpolated.]"
+	NEW TOK,ERR,CONF,CTX,OUT
+	D COMPILE^MIOTPL2($$UES("{{template}}: {{planet}}"),.TOK,.ERR)
+	DO OK^MIOTASSERT('$D(ERR),"[COMPILE]"_HDR)
+	SET CTX("template")="{{planet}}"
+	SET CTX("planet")="Earth"
+	DO EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
+	DO OK^MIOTASSERT('$D(ERR),"[EVAL]"_DESC)
+	DO EQ^MIOTASSERT(OUT,$$UES("{{planet}}: Earth"),"[RENDER]"_DESC)
 	QUIT
 	;
 UES(X)
