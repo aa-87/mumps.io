@@ -1,6 +1,6 @@
 MIOTPLT
 	;
-	D TEST001,TEST002,TEST003,TEST004
+	D TEST001,TEST002,TEST003,TEST004,TEST005
 	Q
 	;
 TEST001
@@ -28,24 +28,40 @@ TEST003
 	NEW HDR S HDR="[MIOTPL][TEST003][No Re-interpolation]"
 	NEW DESC S DESC=HDR_"[Interpolated tag output should not be re-interpolated.]"
 	NEW TOK,ERR,CONF,CTX,OUT
-	D COMPILE^MIOTPL2($$UES("{{template}}: {{planet}}"),.TOK,.ERR)
+	D COMPILE^MIOTPL2("{{template}}: {{planet}}",.TOK,.ERR)
 	DO OK^MIOTASSERT('$D(ERR),"[COMPILE]"_HDR)
 	SET CTX("template")="{{planet}}"
 	SET CTX("planet")="Earth"
 	DO EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
 	DO OK^MIOTASSERT('$D(ERR),"[EVAL]"_DESC)
-	DO EQ^MIOTASSERT(OUT,$$UES("{{planet}}: Earth"),"[RENDER]"_DESC)
+	DO EQ^MIOTASSERT(OUT,"{{planet}}: Earth","[RENDER]"_DESC)
 	QUIT
 TEST004
 	NEW HDR S HDR="[MIOTPL][TEST004][HTML Escaping]"
 	NEW DESC S DESC=HDR_"[Basic interpolation should be HTML escaped..]"
 	NEW TOK,ERR,CONF,CTX,OUT
-	D COMPILE^MIOTPL2($$UES("These characters should be HTML escaped: {{forbidden}}"),.TOK,.ERR)
+	D COMPILE^MIOTPL2("These characters should be HTML escaped: {{forbidden}}",.TOK,.ERR)
 	DO OK^MIOTASSERT('$D(ERR),"[COMPILE]"_HDR)
 	SET CTX("forbidden")="& "" < >"
 	DO EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
 	DO OK^MIOTASSERT('$D(ERR),"[EVAL]"_DESC)
-	DO EQ^MIOTASSERT(OUT,$$UES("These characters should be HTML escaped: &amp; &quot; &lt; &gt;"),"[RENDER]"_DESC)
+	DO EQ^MIOTASSERT(OUT,"These characters should be HTML escaped: &amp; &quot; &lt; &gt;","[RENDER]"_DESC)
+	QUIT
+	;
+TEST005
+	NEW HDR S HDR="[MIOTPL][TEST005][Triple Mustache]"
+	NEW DESC S DESC=HDR_"[Triple mustaches should interpolate without HTML escaping.]"
+	NEW TEMPLATE S TEMPLATE="These characters should not be HTML escaped: {{{forbidden}}}"
+	NEW EXPECTED S EXPECTED="These characters should not be HTML escaped: & "" < >"
+	;
+	NEW CTX SET CTX("forbidden")="& "" < >"
+	;
+	NEW TOK,ERR,CONF,OUT
+	D COMPILE^MIOTPL2(TEMPLATE,.TOK,.ERR)
+	DO OK^MIOTASSERT('$D(ERR),"[COMPILE]"_HDR)
+	DO EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
+	DO OK^MIOTASSERT('$D(ERR),"[EVAL]"_DESC)
+	DO EQ^MIOTASSERT(OUT,EXPECTED,"[RENDER]"_DESC)
 	QUIT
 	;
 UES(X)
