@@ -187,7 +187,15 @@ TEST021
 	SET CTX("person","name")="Joe"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	QUIT
-	;
+TEST022
+	NEW HDR S HDR="[MIOTPL][TEST022][Dotted Names - Arbitrary Depth]"
+	NEW DESC S DESC=HDR_"Dotted names should be functional to any level of nesting."
+	NEW TEMPLATE S TEMPLATE="""{{a.b.c.d.e.name}}"" == ""Phil"""
+	NEW EXPECTED S EXPECTED="""Phil"" == ""Phil"""
+	NEW CTX 
+	SET CTX("a","b","c","d","e","name")="Phil"
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
 UES(X)
 	N POS,Y,START
 	S POS=0,Y=""
