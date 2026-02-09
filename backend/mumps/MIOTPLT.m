@@ -62,6 +62,15 @@ TEST007
 	SET CTX("mph")=85
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	QUIT
+TEST008
+	NEW HDR S HDR="[MIOTPL][TEST008][Triple Mustache Integer Interpolation]"
+	NEW DESC S DESC=HDR_"[Integers should interpolate seamlessly.]"
+	NEW TEMPLATE S TEMPLATE="""{{{mph}}} miles an hour!"""
+	NEW EXPECTED S EXPECTED="""85 miles an hour!"""
+	NEW CTX 
+	SET CTX("mph")=85
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
 UES(X)
 	N POS,Y,START
 	S POS=0,Y=""
