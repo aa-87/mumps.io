@@ -56,10 +56,10 @@ TEST006
 TEST007
 	NEW HDR S HDR="[MIOTPL][TEST007][Basic Integer Interpolation]"
 	NEW DESC S DESC=HDR_"[Integers should interpolate seamlessly.]"
-	NEW TEMPLATE S TEMPLATE="These characters should not be HTML escaped: {{{forbidden}}}"
-	NEW EXPECTED S EXPECTED="These characters should not be HTML escaped: & "" < >"
+	NEW TEMPLATE S TEMPLATE="""{{mph}} miles an hour!"""
+	NEW EXPECTED S EXPECTED="""85 miles an hour!"""
 	NEW CTX 
-	SET CTX("forbidden")="& "" < >"
+	SET CTX("mph")=85
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	QUIT
 UES(X)
