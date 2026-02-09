@@ -47,8 +47,9 @@ MIOTPL2 ; MIO template engine with layouts, blocks, partials, and caching.;
 MIOTEST 
 	; 100-121 Coverage instrumentation per routines, to be implemented later
 	; 120-125 D MIOTF120 *skipped* - Coverage instrumentation for a full test suite
-	D MIOTF121,MIOTF122,MIOTF123,MIOTF124,MIOTF125,MIOTF126,MIOTF126B,MIOTF127,MIOTF128
-	Q
+	D ^MIOTPLT,MIOTF121,MIOTF122,MIOTF123,MIOTF124,MIOTF125
+	D MIOTF126,MIOTF126B,MIOTF127,MIOTF128,MIOTF129,MIOTF130
+	;
 MIOTF121 ; Full suite test 121 - TPL_SECTION_CTA.;
 	NEW TOK,ERR,CONF,CTX,OUT
 	D COMPILE("{{#cta}}X{{/cta}}",.TOK,.ERR)
@@ -230,6 +231,25 @@ MIOTF128 ; Full suite test 128 - TPL_PARTIALS_INCLUDE
 	D RMDIR(ROOT)
 	Q
 	;
+MIOTF129 ;
+	N TOK,ERR,CONF,CTX,OUT
+	D COMPILE("{{#x}}Y{{/x}}{{^x}}N{{/x}}",.TOK,.ERR)
+	S CTX("x")="false"
+	D EVAL(.TOK,.CONF,.CTX,.OUT,.ERR)
+	D EQ^MIOTASSERT(OUT,"N","false string is falsey")
+	K OUT,ERR
+	S CTX("x")="true"
+	D EVAL(.TOK,.CONF,.CTX,.OUT,.ERR)
+	D EQ^MIOTASSERT(OUT,"Y","true string is truthy")
+	Q
+	;
+MIOTF130 ;
+	N TOK,ERR,CONF,CTX,OUT
+	D COMPILE("{{#x}}Y{{/x}}{{^x}}N{{/x}}",.TOK,.ERR)
+	S CTX("x")="FALSE"
+	D EVAL(.TOK,.CONF,.CTX,.OUT,.ERR)
+	D EQ^MIOTASSERT(OUT,"N","FALSE is falsey")
+	Q
 ; -----------------------------
 ; Helpers for filesystem tests
 ; -----------------------------
@@ -250,14 +270,13 @@ WFERR ;
 MKDIR(PATH) ; mkdir -p PATH (best-effort)
 	NEW CMD
 	S CMD="mkdir -p "_$$SHQ(PATH)
-	;NEW X S X=$ZF(-1,CMD)
 	ZSY CMD
 	Q
 	;
 RMDIR(PATH) ; rm -rf PATH (best-effort)
 	NEW CMD
 	S CMD="rm -rf "_$$SHQ(PATH)
-	NEW X S X=$ZF(-1,CMD)
+	ZSY CMD
 	Q
 	;
 SHQ(S) ; shell-quote
@@ -483,10 +502,11 @@ READFILE(FP,TXT,ERR) ;
 	U FP
 	F  R LINE Q:$ZEOF  D  Q:('$T!$D(ERR))
 	. ; Keep newlines. Most templates expect them.;
-	. S TXT=TXT_LINE ;_
+	. S TXT=TXT_LINE_$C(10)
 	. I $L(TXT)>MAX S ERR("code")="TPL_TOOLARGE",ERR("msg")="Template too large (limit 2MB): "_FP
 	I $D(ERR) Q 0
 	C FP U IO
+	S TXT=$E(TXT,1,$L(TXT)-1) ;get rid of the extra $C(10)
 	Q 1
 	;
 RFERR ;
@@ -982,26 +1002,38 @@ RESINBASE(BASE,KEY,OK,TYPE,REF)
 ; Variable resolution returns a scalar or "" if missing/non-scalar.;
 ; =============================================================================
 RESVAL(KEY,CST,CTSP)
-	N ISSET,TYPE,REF
+	N ISSET,TYPE,REF,V
 	D RESREF(KEY,.CST,CTSP,.ISSET,.TYPE,.REF)
 	I 'ISSET Q ""
-	I $D(@REF)#2 Q $G(@REF)
+	I $D(@REF)#2 D  Q V
+	. S V=$G(@REF)
+	. ; optional boolean normalization for display
+	. I V=1 Q  ; leave numeric 1 if you don't want this
+	. I V=0 Q  ; leave numeric 0 if you don't want this
 	Q ""
-	;
 ; =============================================================================
 ; ISTRUTH(ISSET,TYPE,REF)
 ; Truthiness:
-; False: missing, "", 0, "0", empty list/object
+; False: missing, "", 0, "0", "false" (case-insensitive), empty list/object
+; True : "true" (case-insensitive), any other non-empty scalar, non-empty list/object
 ; =============================================================================
 ISTRUTH(ISSET,TYPE,REF)
 	I 'ISSET Q 0
 	; list/object: false if no subscripts
 	I TYPE="list"!(TYPE="obj") Q $S($$FIRSTSUB(REF)="":0,1:1)
 	; scalar truthiness
-	N V S V=$G(@REF)
+	N V,VL
+	S V=$G(@REF)
+	; missing/empty
 	I V="" Q 0
+	; numeric/zero rules (keep existing)
 	I V=0 Q 0
 	I V="0" Q 0
+	; JSON booleans as strings
+	S VL=$ZCONVERT(V,"L")  ; you may already have a lower() helper; if not, add below
+	I VL="false" Q 0
+	I VL="true" Q 1
+	; default: any other non-empty scalar is truthy
 	Q 1
 	;
 ; =============================================================================

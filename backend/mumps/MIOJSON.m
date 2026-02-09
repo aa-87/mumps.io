@@ -11,7 +11,8 @@ DECODE(JSON,OUT,ERR)
 		N OK S OK=1 
 		I $D(%TERR(0)) S OK=0  D ERRSET(.ERR,$G(%TERR(%TERR(0)))) I 1
 		E  K OUT M OUT=%TO
-		Q OK
+		Q:$Q OK
+		Q 
 	;	
 	;	
 ERRSET(ERR,ECODE,POS)
