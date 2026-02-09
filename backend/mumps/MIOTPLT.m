@@ -1,6 +1,6 @@
 MIOTPLT
 	;
-	D TEST001,TEST002,TEST003
+	D TEST001,TEST002,TEST003,TEST004
 	Q
 	;
 TEST001
@@ -35,6 +35,17 @@ TEST003
 	DO EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
 	DO OK^MIOTASSERT('$D(ERR),"[EVAL]"_DESC)
 	DO EQ^MIOTASSERT(OUT,$$UES("{{planet}}: Earth"),"[RENDER]"_DESC)
+	QUIT
+TEST004
+	NEW HDR S HDR="[MIOTPL][TEST004][HTML Escaping]"
+	NEW DESC S DESC=HDR_"[Basic interpolation should be HTML escaped..]"
+	NEW TOK,ERR,CONF,CTX,OUT
+	D COMPILE^MIOTPL2($$UES("These characters should be HTML escaped: {{forbidden}}"),.TOK,.ERR)
+	DO OK^MIOTASSERT('$D(ERR),"[COMPILE]"_HDR)
+	SET CTX("forbidden")="& "" < >"
+	DO EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
+	DO OK^MIOTASSERT('$D(ERR),"[EVAL]"_DESC)
+	DO EQ^MIOTASSERT(OUT,$$UES("These characters should be HTML escaped: &amp; &quot; &lt; &gt;"),"[RENDER]"_DESC)
 	QUIT
 	;
 UES(X)
