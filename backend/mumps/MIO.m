@@ -53,3 +53,18 @@ version ; version^MIO
 	WRITE "mws 0.1.0",!
 	QUIT
 	;
+GetRoutineList(routine,result)
+	N %ZR K result,%ZR
+	do SILENT^%RSEL(routine,"CALL")
+	M result=%ZR
+	K %ZR
+	Q
+	;
+link
+	N R,RTN
+	D GetRoutineList("MIO*",.R)
+	N A S A="" F  S A=$O(R(A)) Q:A=""  D
+	. S RTN=A
+	. I $E(RTN)="%" S $E(RTN)="_"
+	. W !,"ZL " ZL RTN_".m" W RTN_".m"
+	Q	

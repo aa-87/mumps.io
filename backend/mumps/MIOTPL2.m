@@ -1,26 +1,335 @@
-MIOTPL ; MIO template engine with layouts, blocks, partials, and caching.;
+MIOTPL2 ; MIO template engine with layouts, blocks, partials, and caching.;
 ;
-; PURPOSE
-; Render HTML templates safely and fast.;
-;
-; TEMPLATE SYNTAX
-; - {{var}}        HTML-escaped variable lookup.;
-; - {{{var}}}      Unescaped variable lookup.;
-; - {{> path}}     Partial include (path relative to template root).;
-; - {{#block:n}}..{{/block:n}}  Capture block content into CTX("blocks",n).;
-;
-; PUBLIC ENTRY POINTS
-; - START(CONF)
-; - PRECOMPILE(CONF) ;
-	; Precompile templates into ^MIO("TPL","CACHE",...).;
-	; This improves cold-start latency and reduces first-request jitter.;
-	; Strategy:
-	; 1) If CONF("templates","precompile","path",n) exists, compile those paths.;
-	; 2) Else enumerate common globs under template root (non-recursive best-effort).;
+	; MUMPS.IO - Mustache/Handlebars-compatible template engine (YottaDB/GT.M)
+	; ---------------------------------------------------------------------------
+	; Drop-in replacement for prior MIOTPL.m
 	;
+	; Design goals:
+	; - Correct Mustache semantics (variables, sections, inverted sections, partials).;
+	; - Compatible with the subset of Handlebars-like behavior used by existing templates.;
+	; - Stable evaluator (no double-render, no recursive blow-ups).;
+	; - Fast: compile once, cache tokens in ^MIO("TPL","CACHE",FP,...).;
+	;
+	; Public entry points (required):
+	;   START(CONF)
+	;   PRECOMPILE(CONF)
+	;   RENDER(NAME,CONF,CTX,OUT,ERR)
+	;   RENDERPAGE(PAGE,LAYOUT,CONF,CTX,OUT,ERR)
+	;   RENDERLAYOUT(LAYOUT,CONF,CTX,OUT,ERR)
+	;   GETTOK(NAME,CONF,TOK,ERR)
+	;   GETTOKFP(FP,CONF,TOK,ERR)
+	;
+	; Token model (must match):
+	;   TOK(n,"t") in {text,var,secS,secE,part}
+	;   text: TOK(n,"v")
+	;   var:  TOK(n,"k") key, TOK(n,"e") 1/0 escape
+	;   secS: TOK(n,"k") key, TOK(n,"inv") 1/0 inverted
+	;   secE: TOK(n,"k") key
+	;   part: TOK(n,"k") name
+	;
+	; Additional internal fields (safe additions):
+	;   TOK(n,"m") = matching secE index for secS
+	;   TOK(n,"blk") = 1 if this is a block section (block:name)
+	;   TOK(n,"bname") = block name (name after "block:")
+	;
+	; Globals:
+	;   ^MIO("TPL","CACHE",FP,"H") = 32-bit hash of file content
+	;   ^MIO("TPL","CACHE",FP,"TOK",n,...) = cached tokens
+	;
+	; ---------------------------------------------------------------------------
+	;
+	Q
+	;
+; =============================================================================
+; START(CONF)
+; Initialize template subsystem. Safe to call multiple times.;
+; =============================================================================
+MIOTEST 
+	; 100-121 Coverage instrumentation per routines, to be implemented later
+	; 120-125 D MIOTF120 *skipped* - Coverage instrumentation for a full test suite
+	D MIOTF121,MIOTF122,MIOTF123,MIOTF124,MIOTF125,MIOTF126,MIOTF126B,MIOTF127,MIOTF128
+	Q
+MIOTF121 ; Full suite test 121 - TPL_SECTION_CTA.;
+	NEW TOK,ERR,CONF,CTX,OUT
+	D COMPILE("{{#cta}}X{{/cta}}",.TOK,.ERR)
+	DO OK^MIOTASSERT('$D(ERR),"compile")
+	SET CTX("cta")=1
+	DO EVAL(.TOK,.CONF,.CTX,.OUT,.ERR)
+	DO OK^MIOTASSERT('$D(ERR),"eval")
+	DO EQ^MIOTASSERT(OUT,"X","section render")
+	QUIT
+MIOTF122 ; Full suite test 122 - TPL_BLOCK_TITLE.;
+	NEW TOK,ERR,CONF,CTX,OUT
+	DO COMPILE("{{#block:title}}Hello{{/block:title}}",.TOK,.ERR)
+	DO OK^MIOTASSERT('$D(ERR),"compile")
+	DO EVAL(.TOK,.CONF,.CTX,.OUT,.ERR)
+	DO OK^MIOTASSERT('$D(ERR),"eval")
+	DO EQ^MIOTASSERT($GET(CTX("blocks","title")),"Hello","block captured")
+	QUIT
+MIOTF123 ; Full suite test 123 - TPL_DOTTED_LIST.;
+	NEW TOK,ERR,CONF,CTX,OUT
+	SET CTX("cats","items",1)="Core"
+	SET CTX("cats","items",2)="Tools"
+	DO COMPILE("{{#cats.items}}{{.}};{{/cats.items}}",.TOK,.ERR)
+	DO OK^MIOTASSERT('$D(ERR),"compile")
+	DO EVAL(.TOK,.CONF,.CTX,.OUT,.ERR)
+	DO OK^MIOTASSERT('$D(ERR),"eval")
+	DO EQ^MIOTASSERT(OUT,"Core;Tools;","dotted list") 
+	QUIT
+MIOTF124 ; Full suite test 124 - TPL_PACKAGES_OBJECT.;
+	NEW TOK,ERR,CONF,CTX,OUT
+	SET CTX("packages",1,"slug")="mio-web"
+	SET CTX("packages",1,"name")="Web Server"
+	DO COMPILE("{{#packages}}{{slug}}-{{name}};{{/packages}}",.TOK,.ERR)
+	DO OK^MIOTASSERT('$D(ERR),"compile")
+	DO EVAL(.TOK,.CONF,.CTX,.OUT,.ERR)
+	DO OK^MIOTASSERT('$D(ERR),"eval")
+	DO EQ^MIOTASSERT(OUT,"mio-web-Web Server;","packages obj")
+	QUIT
+MIOTF125 ; Full suite test 125 - TPL_INVERTED_NORESULTS.;
+	NEW TOK,ERR,CONF,CTX,OUT,RES
+	; Template: show "NONE" only when packages is falsey/empty.;
+	DO COMPILE("{{^packages}}NONE{{/packages}}{{#packages}}YES{{/packages}}",.TOK,.ERR)
+	DO OK^MIOTASSERT('$D(ERR),"compile")
+	; Case A: packages has an item => inverted must NOT render, normal must render.;
+	KILL CTX
+	SET CTX("packages",1,"name")="Pkg1"
+	DO EVAL(.TOK,.CONF,.CTX,.OUT,.ERR)
+	DO OK^MIOTASSERT('$D(ERR),"eval A")
+	DO EQ^MIOTASSERT(OUT,"YES","inverted suppressed when list has items") 
+	; Case B: packages empty => inverted MUST render, normal must NOT render.;
+	KILL OUT,ERR,CTX
+	DO EVAL(.TOK,.CONF,.CTX,.OUT,.ERR)
+	DO OK^MIOTASSERT('$D(ERR),"eval B")
+	DO EQ^MIOTASSERT(OUT,"NONE","inverted renders when list empty")
+	QUIT
+MIOTF126 ; Full suite test 126 - TPL_DEEP_NESTED_CONTEXT.;
+	NEW TOK,ERR,CONF,CTX,OUT,RES,TPL
+	; This template expects:
+	; CTX("groups","items",g,"name") = group name
+	; CTX("groups","items",g,"members",m,"name") = member name
+	; If no members, inverted section prints "EMPTY"
+	SET TPL="{{#groups.items}}"
+	SET TPL=TPL_"G={{name}}:["
+	SET TPL=TPL_"{{#members}}{{name}},{{/members}}"
+	SET TPL=TPL_"{{^members}}EMPTY{{/members}}"
+	SET TPL=TPL_"];"
+	SET TPL=TPL_"{{/groups.items}}"
+	DO COMPILE(TPL,.TOK,.ERR)
+	DO OK^MIOTASSERT('$D(ERR),"compile")
+	; Build deep context with two groups:
+	; Group 1 has 2 members, Group 2 has none.;
+	KILL CTX
+	SET CTX("groups","items",1,"name")="Core"
+	SET CTX("groups","items",1,"members",1,"name")="Alice"
+	SET CTX("groups","items",1,"members",2,"name")="Bob"
+	SET CTX("groups","items",2,"name")="Tools"
+	; No members under group 2 => should show EMPTY
+	DO EVAL(.TOK,.CONF,.CTX,.OUT,.ERR)
+	DO OK^MIOTASSERT('$D(ERR),"eval")
+	DO EQ^MIOTASSERT(OUT,"G=Core:[Alice,Bob,];G=Tools:[EMPTY];","deep nested render")
+	QUIT
+MIOTF126B ; Full suite test 126B - TPL_DEEP_NESTED_CONTEXT_SCALARS.;
+	NEW TOK,ERR,CONF,CTX,OUT,RES,TPL
+	; Scalar member list variant:
+	; CTX("groups","items",g,"name") = group name
+	; CTX("groups","items",g,"members",m) = member scalar (e.g., "Alice")
+	; Uses {{.}} inside members loop.;
+	; If no members, inverted section prints "EMPTY"
+	SET TPL="{{#groups.items}}"
+	SET TPL=TPL_"G={{name}}:["
+	SET TPL=TPL_"{{#members}}{{.}},{{/members}}"
+	SET TPL=TPL_"{{^members}}EMPTY{{/members}}"
+	SET TPL=TPL_"];"
+	SET TPL=TPL_"{{/groups.items}}"
+	DO COMPILE(TPL,.TOK,.ERR)
+	DO OK^MIOTASSERT('$D(ERR),"compile")
+	; Two groups: one with scalar members, one empty.;
+	KILL CTX
+	SET CTX("groups","items",1,"name")="Core"
+	SET CTX("groups","items",1,"members",1)="Alice"
+	SET CTX("groups","items",1,"members",2)="Bob"
+	SET CTX("groups","items",2,"name")="Tools"
+	; No members under group 2 => should show EMPTY
+	DO EVAL(.TOK,.CONF,.CTX,.OUT,.ERR)
+	DO OK^MIOTASSERT('$D(ERR),"eval")
+	DO EQ^MIOTASSERT(OUT,"G=Core:[Alice,Bob,];G=Tools:[EMPTY];","deep nested scalars render")
+	QUIT
+	;
+MIOTF127 ;
+	K ERR,OUT,CONF,CTX
+	M CONF=^MIO("CONF")
+	;
+	S ROOT="templates/test127-"_$J_"/"
+	D MKDIR(ROOT),MKDIR(ROOT_"partials/")
+	;
+	S CONF("templates","root")=ROOT
+	S CONF("templates","ext")=""
+	; Write layout + page templates
+	D WRFILE(ROOT_"layout.html","L0<title>{{{blocks.title}}}</title>|D={{desc}}|{{{content}}}|L9"_$C(10),.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write layout") K ERR
+	;
+	N T,OK S OK=$$READFILE^MIOTPL2(ROOT_"layout.html",.T,.ERR) 
+	D EQ^MIOTASSERT($E(T,1,9),"L0<title>","layout file prefix")
+	;
+	D WRFILE(ROOT_"page.html","{{#block:title}}T{{year}}{{/block:title}}P{{year}}"_$C(10),.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write page") K ERR
+	;
+	; Clear cache entries for these exact filepaths (defensive)
+	K ^MIO("TPL","CACHE",ROOT_"layout.html")
+	K ^MIO("TPL","CACHE",ROOT_"page.html")
+	;	
+	;
+	; Context
+	S CTX("year")=2026
+	S CTX("desc")="DESC"
+	;
+	;
+	D RENDERPAGE("page.html","layout.html",.CONF,.CTX,.OUT,.ERR)
+	D OK^MIOTASSERT('$D(ERR),"renderpage") ZWR:$D(ERR) ERR
+	;
+	; Expected output
+	D EQ^MIOTASSERT(OUT,"L0<title>T2026</title>|D=DESC|P2026"_$C(10)_"|L9"_$C(10),"layout+page output")
+	D EQ^MIOTASSERT($G(CTX("blocks","title")),"T2026","block title captured")
+	;
+	; Cleanup best-effort
+	D RMDIR(ROOT)
+	Q	
+MIOTF127B ; Full suite test 127 - TPL_RENDERPAGE_LAYOUT_INDEX (layout + page + blocks)
+	;NEW CONF,CTX,ERR,OUT,ROOT,RC
+	K ERR,OUT,CONF,CTX
+	;
+	; Temp template root (unique per process)
+	;S ROOT="templates/"
+	;D MKDIR(ROOT)
+	;D MKDIR(ROOT_"partials/")
+	;	
+	 ;Configure engine to read from this root
+	S ROOT="templates"
+	S CONF("templates","root")=ROOT
+	; Using explicit .html filenames, so ext doesn't matter. Keep it empty to avoid surprises.;
+	S CONF("templates","ext")=""
+	;	
+	; --- Write layout + page templates ---
+	; Layout uses blocks.title, desc, and content
+	D WRFILE(ROOT_"layout.html","L0<title>{{{blocks.title}}}</title>|D={{desc}}|{{{content}}}|L9"_$C(10),.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write layout") K ERR
+	;;	
+	; Page captures title block and emits body content
+	D WRFILE(ROOT_"page.html","{{#block:title}}T{{year}}{{/block:title}}P{{year}}"_$C(10),.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write page") K ERR
+	;	
+	; --- Context ---
+	M CONF=^MIO("CONF")
+	;	
+	S CTX("year")=2026
+	S CTX("desc")="DESC"
+	;
+	; --- Render ---
+	D RENDERPAGE("page.html","layout.html",.CONF,.CTX,.OUT,.ERR)
+	D OK^MIOTASSERT('$D(ERR),"renderpage") ZWR:$D(ERR) ERR
+	;
+	; Expected output is deterministic
+	D EQ^MIOTASSERT(OUT,"L0<title>T2026</title>|D=DESC|P2026"_$C(10)_"|L9"_$C(10),"layout+page output")
+	;
+	; Optional: blocks captured
+	D EQ^MIOTASSERT($G(CTX("blocks","title")),"T2026","block title captured")
+	;
+	; Cleanup best-effort (don’t fail the test on cleanup)
+	;D RMDIR(ROOT)
+	;
+	Q
+	;
+	;
+MIOTF128 ; Full suite test 128 - TPL_PARTIALS_INCLUDE (partials)
+	NEW CONF,CTX,ERR,OUT,ROOT
+	K ERR,OUT,CONF,CTX
+	;
+	S ROOT="templates"
+	D MKDIR(ROOT)
+	D MKDIR(ROOT_"partials/")
+	;
+	S CONF("templates","root")=ROOT
+	S CONF("templates","ext")=""
+	;
+	; Partial file
+	D WRFILE(ROOT_"partials/p.html","PP{{x}}PP"_$C(10),.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write partial") K ERR
+	;
+	; Main file includes the partial
+	D WRFILE(ROOT_"main.html","A{{> partials/p.html}}B"_$C(10),.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write main") K ERR
+	;
+	S CTX("x")="1"
+	;
+	D RENDER^MIOTPL2("main.html",.CONF,.CTX,.OUT,.ERR)
+	D OK^MIOTASSERT('$D(ERR),"render main") ZWR:$D(ERR) ERR
+	;
+	; Exact expected output (includes newline from files)
+	D EQ^MIOTASSERT(OUT,"APP1PP"_$C(10)_"B"_$C(10),"partials include output")
+	;
+	D RMDIR(ROOT)
+	;
+	Q
+	;
+	;
+; -----------------------------
+; Helpers for filesystem tests
+; -----------------------------
+	;
+WRFILE(FP,TXT,ERR) ; Write TXT to FP (overwrite)
+	K ERR
+	NEW $ETRAP S $ETRAP="S ERR(""code"")=""TPL_IO"",ERR(""msg"")=""Write failed: ""_FP Q"
+	OPEN FP:(NEWVERSION:WRITEONLY:EXCEPTION="GOTO WFERR")
+	USE FP
+	WRITE TXT
+	CLOSE FP
+	Q
+WFERR ;
+	CLOSE FP
+	S ERR("code")="TPL_IO",ERR("msg")="Write failed: "_FP
+	Q
+	;
+MKDIR(PATH) ; mkdir -p PATH (best-effort)
+	NEW CMD
+	S CMD="mkdir -p "_$$SHQ(PATH)
+	;NEW X S X=$ZF(-1,CMD)
+	ZSY CMD
+	Q
+	;
+RMDIR(PATH) ; rm -rf PATH (best-effort)
+	NEW CMD
+	S CMD="rm -rf "_$$SHQ(PATH)
+	NEW X S X=$ZF(-1,CMD)
+	Q
+	;
+SHQ(S) ; shell-quote
+	; Wrap in single quotes; escape single quotes safely: ' -> '\'' (close, escape, reopen)
+	NEW X S X=$G(S)
+	I X["'" S X=$$REPLQ(X)
+	Q "'"_X_"'"
+	;
+REPLQ(S) ; replace ' with '\'' for shell single-quote context
+	NEW OUT,P,F
+	S OUT="",P=1
+	F  D  Q:P>$L(S)
+	. S F=$F(S,"'",P)
+	. I 'F S OUT=OUT_$E(S,P,$L(S)),P=$L(S)+1 Q
+	. S OUT=OUT_$E(S,P,F-2)_"'\''"
+	. S P=F
+	Q OUT
+	;
+	;
+start
+	K 
+	S PATH=$$GETCONF^MIOCONF()
+	D LOAD^MIOCONF(PATH,.CONF)
+	M CONF=^MIO("CONF")
+	D START(.CONF)
+	Q
 START(CONF)
 	NEW EN
-	DO START^MIOTPLW(.CONF)
+	;DO START^MIOTPLW(.CONF)
 	SET EN=$S($GET(CONF("templates","precompileEnabled"))="true":1,1:+$GET(CONF("templates","precompileEnabled")))
 	IF EN DO PRECOMPILE(.CONF)
 	QUIT
@@ -46,448 +355,836 @@ PRECOMPILE(CONF) ;
 	NEW FP,OK,TOK,ERR
 	SET FP=""
 	FOR  SET FP=$ORDER(LIST(FP)) QUIT:FP=""  DO
-	. SET OK=$$GETTOKFP(FP,.CONF,.TOK,.ERR)
+	. DO GETTOKFP(FP,.CONF,.TOK,.ERR)
 	. ; Do not fail whole precompile on a single file, but record last error.;
-	. IF 'OK SET CONF("templates","precompile","lastError")=ERR
+	. ;IF 'OK SET CONF("templates","precompile","lastError")=ERR
 	QUIT
 ENUMGLOBS(ROOT,LIST) ;
 	; Best-effort enumeration using common file globs.;
 	; YottaDB supports $ZSEARCH for filesystem search with wildcards.;
-	NEW P
 	; Root-level pages and known folders (non-recursive).;
-	DO ENUM1(ROOT_"/*.html",.LIST)
-	DO ENUM1(ROOT_"/*.htm",.LIST)
-	DO ENUM1(ROOT_"/pages/*.html",.LIST)
-	DO ENUM1(ROOT_"/layouts/*.html",.LIST)
-	DO ENUM1(ROOT_"/partials/*.html",.LIST)
-	DO ENUM1(ROOT_"/includes/*.html",.LIST)
+	DO ENUM1(ROOT,"/*.html",.LIST)
+	DO ENUM1(ROOT,"/*.htm",.LIST)
+	DO ENUM1(ROOT,"/pages/*.html",.LIST)
+	DO ENUM1(ROOT,"/layouts/*.html",.LIST)
+	DO ENUM1(ROOT,"/partials/*.html",.LIST)
+	DO ENUM1(ROOT,"/includes/*.html",.LIST)
 	QUIT
-ENUM1(PAT,LIST) ;
-	NEW F SET F=$ZSEARCH(PAT)
+ENUM1(RT,PAT,LIST) ;
+	NEW F,T SET F=$ZSEARCH(RT_PAT)
 	FOR  QUIT:F=""  DO
-	. SET LIST(F)=1
-	. SET F=$ZSEARCH("")
+	. SET T=RT_$P(F,RT,2,999)
+	. SET LIST(T)=1
+	. SET F=$ZSEARCH(RT_PAT)
 	QUIT
-RENDER(NAME,CONF,CTX,OUT,ERR) ;
-	; Render a template to OUT() lines.;
-	KILL OUT SET ERR=""
-	NEW FP,OK,TOK
-	SET OK=$$RESOLVE(NAME,.CONF,.FP,.ERR) IF 'OK QUIT 0
-	SET OK=$$GETTOKFP(FP,.CONF,.TOK,.ERR) IF 'OK QUIT 0
-	QUIT $$EVAL(.TOK,.CONF,.CTX,.OUT,.ERR)
-RENDERPAGE(PAGE,LAYOUT,CONF,CTX,OUT,ERR) ;
-	; Render PAGE and inject into LAYOUT.;
-	; Captures blocks from PAGE into CTX("blocks",name).;
-	KILL OUT SET ERR=""
-	NEW BCTX MERGE BCTX=CTX
-	KILL BCTX("blocks")
-	NEW BODY,OK
-	SET OK=$$RENDER(PAGE,.CONF,.BCTX,.BODY,.ERR) IF 'OK QUIT 0
-	; BODY includes page content excluding captured blocks.;
-	SET BCTX("content")=$$JOIN(.BODY)
-	; Render layout using content + blocks.;
-	QUIT $$RENDER(LAYOUT,.CONF,.BCTX,.OUT,.ERR)
-RENDERLAYOUT(LAYOUT,CONF,CTX,OUT,ERR) ;
-	; Render a layout that expects CTX("content") and CTX("blocks",...).;
-	QUIT $$RENDER(LAYOUT,.CONF,.CTX,.OUT,.ERR)
-GETTOK(NAME,CONF,TOK,ERR) ;
-	NEW FP,OK
-	SET OK=$$RESOLVE(NAME,.CONF,.FP,.ERR) IF 'OK QUIT 0
-	QUIT $$GETTOKFP(FP,.CONF,.TOK,.ERR)
+; =============================================================================
+; RENDER(NAME,CONF,CTX,OUT,ERR)
+; Render a template by name into OUT (scalar string).;
+; CTX is passed by reference and may be read/written (blocks/page flow uses it).;
+; =============================================================================
+RENDER(NAME,CONF,CTX,OUT,ERR)
+	K ERR S OUT=""
+	N TOK
+	D GETTOK(NAME,.CONF,.TOK,.ERR) Q:$D(ERR)
+	D EVAL(.TOK,.CONF,.CTX,.OUT,.ERR)
+	Q
+	;
+; =============================================================================
+; RENDERPAGE(PAGE,LAYOUT,CONF,CTX,OUT,ERR)
+; Render PAGE capturing blocks, set CTX("content"), then render layout.;
+; Layout flow:
+;   - Render page template with block capture enabled.;
+;   - Store rendered page output into CTX("content").;
+;   - Render layout template (which may place {{content}} and blocks).;
+; =============================================================================
+RENDERPAGE(PAGE,LAYOUT,CONF,CTX,OUT,ERR)
+	K ERR S OUT=""
+	N PAGEOUT,OK
+	; Reset blocks for this page render.;
+	K CTX("blocks")
+	S CTX("content")=""
+	D RENDER(PAGE,.CONF,.CTX,.PAGEOUT,.ERR)  
+	Q:$D(ERR) 
+	; Page output is typically not directly emitted by page templates if they only
+	; define blocks, but we still capture whatever they produced.;
+	S CTX("content")=PAGEOUT
+	D RENDERLAYOUT(LAYOUT,.CONF,.CTX,.OUT,.ERR)
+	Q
+	;
+; =============================================================================
+; RENDERLAYOUT(LAYOUT,CONF,CTX,OUT,ERR)
+; Render layout template using current CTX (must include CTX("content") usually).;
+; =============================================================================
+RENDERLAYOUT(LAYOUT,CONF,CTX,OUT,ERR)
+	K ERR S OUT=""
+	D RENDER(LAYOUT,.CONF,.CTX,.OUT,.ERR)
+	Q
+	;
+; =============================================================================
+; GETTOK(NAME,CONF,TOK,ERR)
+; Compile template by logical name.;
+; - Resolves NAME to a file path under template root.;
+; - Prevents path traversal.;
+; =============================================================================
+GETTOK(NAME,CONF,TOK,ERR)
+	;I '$$GETTOKFP^MIOTPL(NAME,.CONF,.TOK,.ERR) S ERR=1 
+	;Q	
+	K ERR K TOK N FP
+	S FP=$$NAME2FP(NAME,.CONF,.ERR) Q:$D(ERR)
+	D GETTOKFP(FP,.CONF,.TOK,.ERR)
+	;I $$GETTOKFP^MIOTPL(NAME,.CONF,.TOK,.ERR)
+	Q
+; =============================================================================
+; GETTOKFP(FP,CONF,TOK,ERR)
+; Compile template by file path.;k
+; - Uses cache hash ^MIO("TPL","CACHE",FP,"H")
+; - Stores tokens under ^MIO("TPL","CACHE",FP,"TOK",...)
+; - Respects CONF("templates","devWatchEnabled")
+; =============================================================================
 GETTOKFP(FP,CONF,TOK,ERR) ;
 	; Load and compile a template by full path.;
 	KILL TOK SET ERR=""
 	NEW CH,WH,DEVW,OK,TXT,H
 	SET DEVW=+$GET(CONF("templates","devWatchEnabled"))
+	;SET DEVW=1
 	SET CH=$GET(^MIO("TPL","CACHE",FP,"H"))
 	IF DEVW,CH'="" DO  IF $DATA(^MIO("TPL","CACHE",FP,"TOK",1)) DO  QUIT
 	. SET WH=$GET(^MIO("TPL","FS",FP,"H"))
 	. IF WH'="",WH=CH DO  QUIT
 	. . MERGE TOK=^MIO("TPL","CACHE",FP,"TOK")
 	; Fallback: read + hash
-	SET OK=$$READFILE(FP,.TXT,.ERR) IF 'OK QUIT 0
+	SET OK=$$READFILE(FP,.TXT,.ERR) IF 'OK QUIT
 	SET H=$$H32(TXT)
-	IF CH'="",CH=H,$DATA(^MIO("TPL","CACHE",FP,"TOK",1)) DO  QUIT 1
+	IF CH'="",CH=H,$DATA(^MIO("TPL","CACHE",FP,"TOK",1)) DO  QUIT
 	. MERGE TOK=^MIO("TPL","CACHE",FP,"TOK")
 	; Compile
 	NEW TMP KILL TMP
-	SET OK=$$COMPILE(.TXT,.TMP,.ERR) IF 'OK QUIT 0
+	D PARSE(TXT,.TMP,.ERR) Q:$D(ERR)
+	D LINKSECS(.TMP,.ERR) Q:$D(ERR)
 	KILL ^MIO("TPL","CACHE",FP)
 	SET ^MIO("TPL","CACHE",FP,"H")=H
 	MERGE ^MIO("TPL","CACHE",FP,"TOK")=TMP
 	MERGE TOK=TMP
-	QUIT 1
+	QUIT
+; =============================================================================
+; Internal: LOADTOK(FP,TOK)
+; =============================================================================
+LOADTOK(FP,TOK)
+	K TOK
+	M TOK=^MIO("TPL","CACHE",FP,"TOK")
+	Q
+	;
+; =============================================================================
+; Internal: NAME2FP(NAME,CONF,ERR)
+; Resolve template logical name into file path under root.;
+; - Prevents traversal: no "..", no ":".;
+; - Allows subfolders "repo/browser/page".;
+; - Adds default extension if missing.;
+; =============================================================================
+NAME2FP(NAME,CONF,ERR)
+	N ROOT,EXT,NM,FP
+	K ERR
+	S ROOT=$G(CONF("templates","root"))
+	I ROOT="" S ROOT="templates/"
+	I $E(ROOT,$L(ROOT))'="/" S ROOT=ROOT_"/"
+	S EXT=$G(CONF("templates","ext"))
+	I EXT="" S EXT=".html"
+	S NM=NAME
+	; Normalize backslashes to slashes for safety/consistency.;
+	S NM=$TR(NM,"\","/")
+	; Block obvious traversal / absolute / device patterns.;
+	I NM[".." S ERR("code")="TPL_TRAVERSAL",ERR("msg")="Path traversal '..' is not allowed." Q ""
+	I NM[":" S ERR("code")="TPL_TRAVERSAL",ERR("msg")="Device/path ':' is not allowed." Q ""
+	I $E(NM,1)="/" S ERR("code")="TPL_TRAVERSAL",ERR("msg")="Absolute paths are not allowed." Q ""
+	; Add extension if missing.;
+	I NM'["." S NM=NM_EXT
+	S FP=ROOT_NM
+	Q FP
+	;
+; =============================================================================
+; Internal: READFILE(FP,ERR)
+; Read entire file into a single string.;
+; Production-safe: detects missing file, limits worst-case memory blow-ups.;
+; =============================================================================
 READFILE(FP,TXT,ERR) ;
-	; Read the full file at FP into TXT as a single string.;
-	; This must preserve newlines so templates compile correctly.;
-	; NOTES
-	; - READ without a length reads a line. We must loop to EOF.;
-	; - We normalize line endings to LF.;
-	KILL TXT SET ERR=""
-	NEW $ETRAP SET $ETRAP="G RFERR^MIOTPL"
-	NEW DEV SET DEV=FP
-	NEW LINE,ACC
-	SET ACC=""
-	OPEN DEV:(readonly)
-	USE DEV
-	FOR  READ LINE QUIT:$ZEOF  DO
-	. ; Normalize CRLF/CR to LF.;
-	. IF $E(LINE,$L(LINE))=$C(13) SET LINE=$E(LINE,1,$L(LINE)-1)
-	. SET ACC=ACC_LINE_$C(10)
-	CLOSE DEV
-	; Remove trailing LF added by loop, if present.;
-	IF $L(ACC)>0,$E(ACC,$L(ACC))=$C(10) SET ACC=$E(ACC,1,$L(ACC)-1)
-	SET TXT=ACC
-	QUIT 1
+	N LINE,MAX
+	K ERR
+	S TXT=""
+	N IO S IO=$PRINCIPAL
+	; Safety limit: 2 MB (adjustable via CONF later if needed).;
+	S MAX=2*1024*1024
+	;I '$$FILEEXISTS(FP) ="" 
+	I '$$FILEEXISTS(FP),'$$FILEEXISTS("./"_FP) S ERR("code")="TPL_NOFILE",ERR("msg")="Template file not found: "_FP Q 0
+	O FP:(READONLY:EXCEPTION="GOTO RFERR^MIOTPL2")
+	U FP
+	F  R LINE Q:$ZEOF  D  Q:('$T!$D(ERR))
+	. ; Keep newlines. Most templates expect them.;
+	. S TXT=TXT_LINE_$C(10)
+	. I $L(TXT)>MAX S ERR("code")="TPL_TOOLARGE",ERR("msg")="Template too large (limit 2MB): "_FP
+	I $D(ERR) Q 0
+	C FP U IO
+	Q 1
+	;
 RFERR ;
-	SET ERR="template_read_failed:"_FP
-	CLOSE DEV
-	QUIT 0
-RESOLVE(NAME,CONF,FP,ERR) ;
-	; Resolve NAME into FP within template root.;
-	NEW ROOT SET ROOT=$GET(CONF("server","templateDir")) IF ROOT="" SET ROOT="templates"
-	SET ERR=""
-	; Disallow path traversal.;
-	IF NAME[".." SET ERR="template_invalid_name" QUIT 0
-	SET FP=ROOT_"/"_NAME
-	QUIT 1
-PUSHDEPTH(CTX,CONF,FP,ERR) ;
-	; Enforce max render depth and prevent recursion.;
-	; Uses CTX("tplDepth") and CTX("tplStack",n).;
-	NEW D,MAX,I
-	SET ERR=""
-	SET D=+$GET(CTX("tplDepth"))+1
-	SET MAX=+$GET(CONF("templates","maxRenderDepth")) IF MAX<1 SET MAX=32
-	IF D>MAX SET ERR="template_max_depth_exceeded:"_MAX QUIT 0
-	N TQ S TQ=1
-	FOR I=1:1:D-1 IF $GET(CTX("tplStack",I))=FP SET ERR="template_recursion_detected:"_FP S TQ=0
-	I 'TQ Q 0
-	SET CTX("tplDepth")=D
-	SET CTX("tplStack",D)=FP
-	QUIT 1
-POPDEPTH(CTX) ;
-	NEW D SET D=+$GET(CTX("tplDepth"))
-	IF D<1 QUIT
-	KILL CTX("tplStack",D)
-	SET D=D-1
-	IF D=0 KILL CTX("tplDepth") QUIT
-	SET CTX("tplDepth")=D
-	QUIT
-COMPILE(TXT,TOK,ERR) ;
-	; Compile TXT into TOK() tokens.;
-	; Token format:
-	;   TOK(n,"t")="text"  TOK(n,"v")=...;
-	;   TOK(n,"t")="var"   TOK(n,"k")=key TOK(n,"e")=1/0 (escape?)
-	;   TOK(n,"t")="secS"  TOK(n,"k")=key TOK(n,"inv")=1/0
-	;   TOK(n,"t")="secE"  TOK(n,"k")=key
-	;   TOK(n,"t")="part"  TOK(n,"k")=name
-	KILL TOK SET ERR=""
-	NEW I,POS,START,END,CHUNK,N SET POS=1,N=0
-	FOR  DO  QUIT:POS>$LENGTH(TXT)!(ERR'="")
-	. SET START=$FIND(TXT,"{{",POS)
-	. IF START=0 DO  QUIT
-	. . SET CHUNK=$EXTRACT(TXT,POS,$LENGTH(TXT))
-	. . IF CHUNK'="" SET N=N+1,TOK(N,"t")="text",TOK(N,"v")=CHUNK
-	. . SET POS=$LENGTH(TXT)+1
-	. ; text before tag
-	. IF (START-3)>=POS DO
-	. . SET CHUNK=$EXTRACT(TXT,POS,START-3)
-	. . IF CHUNK'="" SET N=N+1,TOK(N,"t")="text",TOK(N,"v")=CHUNK
-	. ; determine triple
-	. IF $EXTRACT(TXT,START,START)="{" DO  ; triple mustache {{{key}}}
-	. . SET END=$FIND(TXT,"}}}",START)
-	. . IF END=0 SET ERR="template_unclosed_tag" QUIT
-	. . NEW KEY SET KEY=$$TRIM($EXTRACT(TXT,START+1,END-4))
-	. . SET N=N+1,TOK(N,"t")="var",TOK(N,"k")=KEY,TOK(N,"e")=0
-	. . SET POS=END
-	. ELSE  DO
-	. . SET END=$FIND(TXT,"}}",START)
-	. . IF END=0 SET ERR="template_unclosed_tag" QUIT
-	. . NEW RAW SET RAW=$$TRIM($EXTRACT(TXT,START,END-3))
-	. . NEW C0 SET C0=$EXTRACT(RAW,1)
-	. . IF C0="#" DO  ; section start
-	. . . NEW KEY SET KEY=$$TRIM($EXTRACT(RAW,2,$LENGTH(RAW)))
-	. . . SET N=N+1,TOK(N,"t")="secS",TOK(N,"k")=KEY,TOK(N,"inv")=0
-	. . ELSE  IF C0="^" DO  ; inverted section start
-	. . . NEW KEY SET KEY=$$TRIM($EXTRACT(RAW,2,$LENGTH(RAW)))
-	. . . SET N=N+1,TOK(N,"t")="secS",TOK(N,"k")=KEY,TOK(N,"inv")=1
-	. . ELSE  IF C0="/" DO  ; section end
-	. . . NEW KEY SET KEY=$$TRIM($EXTRACT(RAW,2,$LENGTH(RAW)))
-	. . . SET N=N+1,TOK(N,"t")="secE",TOK(N,"k")=KEY
-	. . ELSE  IF C0=">" DO  ; partial
-	. . . NEW KEY SET KEY=$$TRIM($EXTRACT(RAW,2,$LENGTH(RAW)))
-	. . . SET N=N+1,TOK(N,"t")="part",TOK(N,"k")=KEY
-	. . ELSE  DO  ; normal var
-	. . . SET N=N+1,TOK(N,"t")="var",TOK(N,"k")=RAW,TOK(N,"e")=1
-	. . SET POS=END
-	; validate sections stack
-	NEW STK,SP SET SP=0
-	FOR I=1:1:N DO  QUIT:ERR'=""
-	. IF TOK(I,"t")="secS" SET SP=SP+1,STK(SP)=TOK(I,"k") QUIT
-	. IF TOK(I,"t")="secE" DO
-	. . IF SP=0 SET ERR="template_unexpected_section_end:"_TOK(I,"k") QUIT
-	. . IF STK(SP)'=TOK(I,"k") SET ERR="template_section_mismatch:"_STK(SP)_"!="_TOK(I,"k") QUIT
-	. . SET SP=SP-1
-	IF ERR'="" QUIT 0
-	IF SP>0 SET ERR="template_unclosed_section:"_STK(SP) QUIT 0
-	QUIT 1
+	C FP
+	S ERR("code")="TPL_IO",ERR("msg")="I/O error reading template: "_FP
+	Q ""
+; =============================================================================
+; Internal: FILEEXISTS(FP)
+; Portable-ish file existence check for GT.M/YottaDB.;
+; =============================================================================
+FILEEXISTS(FP) Q $ZSEARCH(FP)]""
+	; $ZSEARCH returns "" if not found.;
+; =============================================================================
+;  PARSE + LINKSECS
+; =============================================================================
+COMPILE(TEXT,TOK,ERR) ;
+	DO PARSE(.TEXT,.TOK,.ERR)
+	D:'$D(ERR) LINKSECS(.TOK,.ERR)
+	Q 
+; =============================================================================
+; PARSE(TEXT,TOK,ERR)
+; Mustache parser -> token list.;
+; Supported tags:
+;   {{var}} escaped
+;   {{{var}}} unescaped
+;   {{& var}} unescaped
+;   {{#key}} section start
+;   {{^key}} inverted section start
+;   {{/key}} section end
+;   {{> partial}} partial
+;   {{! comment}} ignored
+; Handlebars-like subset compatibility:
+;   {{#if key}} treated like {{#key}}
+;   {{#each key}} treated like {{#key}}
+;   {{#unless key}} treated like inverted {{^key}}
+; =============================================================================
+; =============================================================================
+; PARSE(TEXT,TOK,ERR)
+; =============================================================================
+PARSE(TEXT,TOK,ERR)
+	K ERR K TOK
+	N L,POS,OPEN,CLOSE,PRE,INSIDE,RAW,END3,TRI
+	N N S N=0
 	;
-EVAL(TOK,CONF,CTX,OUT,ERR) ;
-	; Evaluate tokens to OUT() lines.;
-	; Supports:
-	; - text, var, part, secS/secE (mustache sections), and legacy inc/b0/b1.;
-	KILL OUT SET ERR=""
-	NEW ACC SET ACC=""
-	NEW S SET S=1
-	NEW I SET I=0
-	FOR  SET I=$ORDER(TOK(I)) QUIT:'I  DO  QUIT:ERR'=""
-	. NEW TT SET TT=$GET(TOK(I,"t"))
-	. IF TT="text" SET ACC=ACC_$GET(TOK(I,"v")) QUIT
-	. IF TT="var" DO  QUIT
-	. . NEW V SET V=$$LOOKUP(.CTX,$GET(TOK(I,"k")))
-	. . IF $GET(TOK(I,"e"),1) SET V=$$ESC(V)
-	. . SET ACC=ACC_V
-	. IF TT="part" DO  QUIT
-	. . NEW P SET P=$GET(TOK(I,"k"))
-	. . DO DOINCLUDE(.P,.TOK,.CONF,.CTX,.ACC,.ERR)
-	. IF TT="secS" DO  QUIT
-	. . NEW KEY SET KEY=$GET(TOK(I,"k"))
-	. . NEW INV SET INV=+$GET(TOK(I,"inv"))
-	. . NEW OK SET OK=$$EVALSEC(.TOK,.CONF,.CTX,.I,KEY,INV,.ACC,.ERR)
-	. . IF 'OK QUIT
-	. IF TT="secE" QUIT
-	. ; Legacy block capture tokens (kept for compatibility)
-	. IF TT="b0" DO  QUIT
-	. . NEW BNAME SET BNAME=$GET(TOK(I,"n"))
-	. . NEW BOUT,OK SET OK=$$EVALBLOCK(.TOK,.CONF,.CTX,.I,BNAME,.BOUT,.ERR) IF 'OK QUIT
-	. . SET CTX("blocks",BNAME)=$$JOIN(.BOUT)
-	. IF TT="b1" QUIT
-	DO SPLIT(.ACC,.OUT)
-	QUIT 1
-	;
-DOINCLUDE(P,TOK,CONF,CTX,ACC,ERR) ;
-	; Append rendered include to ACC.;
-	NEW FP,OK,TTOK,TOUT
-	SET OK=$$RESOLVE(P,.CONF,.FP,.ERR) IF 'OK QUIT
-	SET OK=$$PUSHDEPTH(.CTX,.CONF,FP,.ERR) IF 'OK QUIT
-	SET OK=$$GETTOKFP(FP,.CONF,.TTOK,.ERR)
-	IF 'OK DO POPDEPTH(.CTX) QUIT
-	SET OK=$$EVAL(.TTOK,.CONF,.CTX,.TOUT,.ERR)
-	DO POPDEPTH(.CTX)
-	IF 'OK QUIT
-	SET ACC=ACC_$$JOIN(.TOUT)
-	QUIT
-	;
-EVALSEC(TOK,CONF,CTX,IDX,KEY,INV,ACC,ERR) ;
-	NEW I,DEPTH,DONE
-	SET DEPTH=1,DONE=0
-	KILL TMP
-	SET J=0 
-	SET I=IDX
-	FOR  SET I=$ORDER(TOK(I)) QUIT:'I  QUIT:DONE  DO  QUIT:ERR'=""
-	. NEW TT SET TT=$GET(TOK(I,"t"))
-	. IF TT="secS",$GET(TOK(I,"k"))=KEY SET DEPTH=DEPTH+1 QUIT 
-	. IF TT="secE",$GET(TOK(I,"k"))=KEY DO  QUIT
-	. . SET DEPTH=DEPTH-1
-	. . IF DEPTH=0 SET IDX=I,DONE=1 QUIT
-	. ; Never include structural markers in body
-	. IF TT="secS" QUIT
-	. IF TT="secE" QUIT
-	. ; Copy body tokens
-	. SET J=J+1
-	. MERGE TMP(J)=TOK(I)
-	;
-	IF ERR'="" QUIT 0
-	;
-	; block capture
-	IF $E(KEY,1,6)="block:" QUIT $$CAPBLOCK(.TMP,.CONF,.CTX,KEY,.ACC,.ERR)
-	;
-	; missing node handling (single, clean)
-	NEW REF,ISARR,OKN
-	SET OKN=$$GETREF(.CTX,KEY,.REF,.ISARR)
-	IF 'OKN DO  QUIT 1
-	. IF INV DO
-	. . NEW OUT,OK2 SET OK2=$$EVAL(.TMP,.CONF,.CTX,.OUT,.ERR) IF 'OK2 QUIT
-	. . SET ACC=ACC_$$JOIN(.OUT)
-	;
-	; Mustache truthiness
-	NEW HAS,VAL,TRUTH
-	SET HAS=$$HASITEMS(.CTX,KEY)
-	IF HAS SET TRUTH=1
-	ELSE  DO
-	. SET VAL=$$LOOKUP(.CTX,KEY)
-	. SET TRUTH=$$ISTRUE(VAL)
-	;
-	IF INV SET TRUTH='TRUTH
-	IF 'TRUTH QUIT 1
-	;
-	IF HAS QUIT $$EVALARR(.TMP,.CONF,.CTX,KEY,.ACC,.ERR)
-	;
-	NEW OUT,OK
-	SET OK=$$EVAL(.TMP,.CONF,.CTX,.OUT,.ERR) IF 'OK QUIT 0
-	SET ACC=ACC_$$JOIN(.OUT)
-	QUIT 1
-	;
-CAPBLOCK(TMP,CONF,CTX,KEY,ACC,ERR) ;
-	NEW NAME SET NAME=$E(KEY,7,$L(KEY))
-	NEW OUT,OK SET OK=$$EVAL(.TMP,.CONF,.CTX,.OUT,.ERR) IF 'OK QUIT 0
-	SET CTX("blocks",NAME)=$$JOIN(.OUT)
-	; Block content is not appended to ACC.;
-	QUIT 1 ;
-EVALARR(TMP,CONF,CTX,KEY,ACC,ERR) ;
-	NEW REF,ISARR
-	IF '$$GETREF(.CTX,KEY,.REF,.ISARR) QUIT 0
-	IF 'ISARR QUIT 1
-	NEW BASE,I,ITEMREF
-	SET BASE=$E(REF,1,$L(REF)-1)  ; strip trailing ")"
-	SET I=0
-	FOR  SET I=$ORDER(@(BASE_","_I_")")) QUIT:'I  DO
-	. SET ITEMREF=BASE_","_I_")"
+	S L=$L(TEXT),POS=1
+	F  Q:POS>L  D  Q:$D(ERR)
+	. ; Find next {{
+	. S OPEN=$F(TEXT,"{{",POS)
+	. I 'OPEN D  Q
+	. . S PRE=$E(TEXT,POS,L)
+	. . I PRE'="" D ADDTXT(.TOK,.N,PRE)
+	. . S POS=L+1
 	. ;
-	. NEW SCTX MERGE SCTX=CTX
-	. SET SCTX(".")=$GET(@ITEMREF)
-	. SET SCTX("item")=$GET(@ITEMREF)
-	. IF $DATA(@ITEMREF)>1 MERGE SCTX=@ITEMREF
+	. ; Text before tag
+	. S PRE=$E(TEXT,POS,OPEN-3)
+	. I PRE'="" D ADDTXT(.TOK,.N,PRE)
 	. ;
-	. NEW OUT,OK2
-	. SET OK2=$$EVAL(.TMP,.CONF,.SCTX,.OUT,.ERR) IF 'OK2 QUIT
-	. SET ACC=ACC_$$JOIN(.OUT)
+	. ; Triple mustache?  "{{{"
+	. ; NOTE: OPEN points to the char immediately AFTER "{{"
+	. S TRI=0
+	. I $E(TEXT,OPEN)="{" S TRI=1
+	. ;
+	. I TRI D  Q
+	. . S END3=$F(TEXT,"}}}",OPEN)
+	. . I 'END3 S ERR("code")="TPL_PARSE",ERR("msg")="Unclosed triple mustache." Q
+	. . ; inside is from after the 3rd "{" (OPEN+1) to before "}}}" (END3-4)
+	. . S RAW=$E(TEXT,OPEN+1,END3-4)
+	. . S RAW=$$TRIM(RAW)
+	. . D ADDVAR(.TOK,.N,RAW,0)
+	. . S POS=END3
+	. ;
+	. ; Normal mustache "{{ ... }}"
+	. S CLOSE=$F(TEXT,"}}",OPEN)
+	. I 'CLOSE S ERR("code")="TPL_PARSE",ERR("msg")="Unclosed mustache tag." Q
+	. S INSIDE=$E(TEXT,OPEN,CLOSE-3)
+	. S INSIDE=$$TRIM(INSIDE)
+	. ;
+	. ; Comments
+	. I $E(INSIDE,1)="!" S POS=CLOSE Q
+	. ;
+	. ; Unescaped via &
+	. I $E(INSIDE,1)="&" D  S POS=CLOSE Q
+	. . N K S K=$$TRIM($E(INSIDE,2,$L(INSIDE)))
+	. . D ADDVAR(.TOK,.N,K,0)
+	. ;
+	. ; Partials
+	. I $E(INSIDE,1)=">" D  S POS=CLOSE Q
+	. . N P S P=$$TRIM($E(INSIDE,2,$L(INSIDE)))
+	. . D ADDPART(.TOK,.N,P)
+	. ;
+	. ; Sections / inverted / end
+	. I $E(INSIDE,1)="#"!($E(INSIDE,1)="^")!($E(INSIDE,1)="/") D  S POS=CLOSE Q
+	. . N OP,K,INV
+	. . S OP=$E(INSIDE,1)
+	. . S K=$$TRIM($E(INSIDE,2,$L(INSIDE)))
+	. . ; Handlebars-like helpers
+	. . I OP="#" D
+	. . . I $E(K,1,3)="if " S K=$$TRIM($E(K,4,$L(K)))
+	. . . I $E(K,1,5)="each " S K=$$TRIM($E(K,6,$L(K)))
+	. . . I $E(K,1,7)="unless " S OP="^",K=$$TRIM($E(K,8,$L(K)))
+	. . I OP="/" D ADDSECE(.TOK,.N,K) Q
+	. . S INV=$S(OP="^":1,1:0)
+	. . D ADDSECS(.TOK,.N,K,INV)
+	. . ; Block detection: key like "block:name"
+	. . I $E(K,1,6)="block:" D
+	. . . S TOK(N,"blk")=1
+	. . . S TOK(N,"bname")=$E(K,7,$L(K))
+	. ;
+	. ; Default: variable escaped
+	. D ADDVAR(.TOK,.N,INSIDE,1)
+	. S POS=CLOSE
+	Q
 	;
-	IF ERR'="" QUIT 0
-	QUIT 1
-EVALARR2(TMP,CONF,CTX,REF,ACC,ERR) ;
-	; REF is base reference like: CTX("cats","items") or CTX("packages")
-	; We must iterate first-level subscripts reliably.;
 	;
-	; IMPORTANT:
-	; - Use BASE without trailing ")"
-	; - Use $ORDER on BASE_","""_I_""") so the first call is valid even when I=""
 	;
-	NEW BASE,I,ITEMREF
-	SET BASE=$E(REF,1,$L(REF)-1)  ; REF like: CTX("cats","items")
-	SET I=0
-	NEW SUB
-	SET SUB=BASE_","_I_")"
-	FOR  SET I=$ORDER(@SUB) QUIT:'I  DO
-	. SET SUB=BASE_","_I_")" 
-	. SET ITEMREF=SUB
-	. NEW SCTX MERGE SCTX=CTX
-	. SET SCTX(".")=$GET(@ITEMREF)
-	. SET SCTX("item")=$GET(@ITEMREF)
-	. IF $DATA(@ITEMREF)>1 MERGE SCTX=@ITEMREF
-	. NEW OUT,OK2
-	. SET OK2=$$EVAL(.TMP,.CONF,.SCTX,.OUT,.ERR) IF 'OK2 QUIT
-	. SET ACC=ACC_$$JOIN(.OUT)
-	IF ERR'="" QUIT 0
-	QUIT 1
+ADDTXT(TOK,N,VAL)
+	S N=N+1
+	S TOK(N,"t")="text"
+	S TOK(N,"v")=VAL
+	Q
+	;
+ADDVAR(TOK,N,KEY,ESC)
+	S N=N+1
+	S TOK(N,"t")="var"
+	S TOK(N,"k")=KEY
+	S TOK(N,"e")=+$G(ESC)
+	Q
+	;
+ADDSECS(TOK,N,KEY,INV)
+	S N=N+1
+	S TOK(N,"t")="secS"
+	S TOK(N,"k")=KEY
+	S TOK(N,"inv")=+$G(INV)
+	Q
+	;
+ADDSECE(TOK,N,KEY)
+	S N=N+1
+	S TOK(N,"t")="secE"
+	S TOK(N,"k")=KEY
+	Q
+	;
+ADDPART(TOK,N,NAME)
+	S N=N+1
+	S TOK(N,"t")="part"
+	S TOK(N,"k")=NAME
+	Q
+	;
+; =============================================================================
+; LINKSECS(TOK,ERR)
+; Precompute matching indices for sections.;
+; - TOK(i,"m") stored on secS token to point to matching secE index.;
+; - Detect mismatches early.;
+; =============================================================================
+LINKSECS(TOK,ERR)
+	K ERR
+	N STK,SP,I,T,K,TOP
+	S SP=0
+	S I=0
+	F  S I=$O(TOK(I)) Q:'I  D  Q:$D(ERR)
+	. S T=$G(TOK(I,"t"))
+	. I T="secS" D  Q
+	. . S SP=SP+1
+	. . S STK(SP,"i")=I
+	. . S STK(SP,"k")=$G(TOK(I,"k"))
+	. I T="secE" D  Q
+	. . S K=$G(TOK(I,"k"))
+	. . I SP<1 S ERR("code")="TPL_PARSE",ERR("msg")="Section end without start: "_K Q
+	. . S TOP=$G(STK(SP,"k"))
+	. . I TOP'=K S ERR("code")="TPL_PARSE",ERR("msg")="Section mismatch: expected /"_TOP_" got /"_K Q
+	. . N SI S SI=STK(SP,"i")
+	. . S TOK(SI,"m")=I
+	. . S SP=SP-1
+	I SP>0 D
+	. S ERR("code")="TPL_PARSE",ERR("msg")="Unclosed section: "_$G(STK(SP,"k"))
+	Q
+	;
+; =============================================================================
+; EVAL(TOK,CONF,CTX,OUT,ERR)
+; Iterative evaluator with frame stack + context stack.;
+; Supports: text, var, sections, inverted, block capture, partials, list iteration.;
+; =============================================================================
+EVAL(TOK,CONF,CTX,OUT,ERR)
+	K ERR
+	N CST,CTSP
+	S CTSP=1
+	S CST(1)="CTX"
+	;
+	; Partial recursion protection
+	N PDEPTHMAX S PDEPTHMAX=+$G(CONF("templates","maxPartialDepth")) I PDEPTHMAX<1 S PDEPTHMAX=20
+	N PACTIVE  ; PACTIVE(name)=count
+	;
+	; Partial token storage (unique per render call)
+	N PTID,PTOKS S PTID=0
+	;
+	; Capture buffers per frame (avoid shared CAP scalar collisions)
+	N BCAP
+	;
+	; Frame stack
+	N FSP,F
+	S FSP=1
+	S F(1,"i")=1
+	S F(1,"end")=$O(TOK(""),-1)
+	S F(1,"ctxTop")=CTSP
+	S F(1,"mode")="emit"
+	S F(1,"capRef")=""
+	S F(1,"tokName")="TOK"
+	S OUT=""
+	; Safety limit
+	N FRAMELIM,FRAMES
+	S FRAMELIM=50000,FRAMES=0
+	F  Q:FSP<1  D  Q:$D(ERR)
+	. S FRAMES=FRAMES+1
+	. I FRAMES>FRAMELIM S ERR("code")="TPL_LIMIT",ERR("msg")="Render exceeded safety frame limit." Q
+	. ; -------------------------
+	. ; Iterator frames (mode="iter")
+	. ; -------------------------
+	. I $G(F(FSP,"mode"))="iter" D  Q
+	. . N LREF,SUB,BS,BE,PM,PC,ITEMREF,NEWTOP
+	. . S LREF=$G(F(FSP,"listRef"))
+	. . S SUB=$G(F(FSP,"sub"))
+	. . S BS=+$G(F(FSP,"bodyS"))
+	. . S BE=+$G(F(FSP,"bodyE"))
+	. . S PM=$G(F(FSP,"parentMode"))
+	. . S PC=$G(F(FSP,"parentCap"))
+	. . ; next list subscript (MUST use APPREF, not string concat)
+	. . S SUB=$O(@($$APPREF^MIOTPL2(LREF,SUB)))
+	. . I SUB="" D POPF^MIOTPL2(.FSP,.F,.CST,.CTSP) Q
+	. . S F(FSP,"sub")=SUB
+	. . ; item reference
+	. . S ITEMREF=$$APPREF^MIOTPL2(LREF,SUB)
+	. . ; push item context
+	. . S NEWTOP=CTSP+1,CST(NEWTOP)=ITEMREF,CTSP=NEWTOP
+	. . ; render body once for this item
+	. . D PUSHFRAME^MIOTPL2(.FSP,.F,BS,BE,CTSP,PM,PC,$G(F(FSP-1,"tokName")))
+	. ; -------------------------
+	. ; Fetch current token
+	. ; -------------------------
+	. N I,END,TN,TYP
+	. S I=+$G(F(FSP,"i"))
+	. S END=+$G(F(FSP,"end"))
+	. I I<1!(I>END) D POPF^MIOTPL2(.FSP,.F,.CST,.CTSP) Q
+	. S TN=$G(F(FSP,"tokName")) I TN="" S TN="TOK"
+	. S TYP=$G(@TN@(I,"t"))
+	. ; -------------------------
+	. ; TEXT
+	. ; -------------------------
+	. I TYP="text" D  Q
+	. . D EMIT^MIOTPL2(.FSP,.F,.OUT,$G(@TN@(I,"v")))
+	. . S F(FSP,"i")=I+1
+	. ; -------------------------
+	. ; VAR
+	. ; -------------------------
+	. I TYP="var" D  Q
+	. . N KEY,ESC,VAL
+	. . S KEY=$G(@TN@(I,"k")),ESC=+$G(@TN@(I,"e"))
+	. . S VAL=$$RESVAL^MIOTPL2(KEY,.CST,CTSP)
+	. . I ESC S VAL=$$ESCHTML^MIOTPL2(VAL)
+	. . D EMIT^MIOTPL2(.FSP,.F,.OUT,VAL)
+	. . S F(FSP,"i")=I+1
+	. ; -------------------------
+	. ; PARTIAL
+	. ; -------------------------
+	. I TYP="part" D  Q
+	. . N PNAME,FP,PERR
+	. . S PNAME=$G(@TN@(I,"k"))
+	. . ; advance parent immediately
+	. . S F(FSP,"i")=I+1
+	. . ; validate name -> path safety (optional but you had it)
+	. . S FP=$$NAME2FP^MIOTPL2(PNAME,.CONF,.PERR)
+	. . I $D(PERR) M ERR=PERR Q
+	. . ; recursion control
+	. . S PACTIVE(PNAME)=+$G(PACTIVE(PNAME))
+	. . I (PACTIVE(PNAME)+1)>PDEPTHMAX S ERR("code")="TPL_PARTIAL_DEPTH",ERR("msg")="Partial recursion depth exceeded: "_PNAME Q
+	. . S PACTIVE(PNAME)=PACTIVE(PNAME)+1
+	. . ; load partial tokens into PTOKS(PID)
+	. . N PID,PTOK,PMAX,CHTN
+	. . S PTID=PTID+1,PID=PTID
+	. . K PTOKS(PID),PTOK
+	. . D GETTOK^MIOTPL2(PNAME,.CONF,.PTOK,.ERR) I $D(ERR) S PACTIVE(PNAME)=PACTIVE(PNAME)-1 Q
+	. . M PTOKS(PID)=PTOK
+	. . S CHTN="PTOKS("_PID_")"
+	. . S PMAX=$$TOKMAX^MIOTPL2(CHTN)
+	. . I PMAX<1 D  Q
+	. . . ; empty partial is allowed
+	. . . S PACTIVE(PNAME)=PACTIVE(PNAME)-1
+	. . ; push partial frame (inherits current output mode/capture)
+	. . D PUSHFRAME^MIOTPL2(.FSP,.F,1,PMAX,CTSP,$G(F(FSP,"mode")),$G(F(FSP,"capRef")),CHTN)
+	. . ; mark for decrement when frame ends
+	. . S F(FSP,"pname")=PNAME
+	. ; -------------------------
+	. ; SECTION START
+	. ; -------------------------
+	. I TYP="secS" D  Q
+	. . N KEY,INV,MI,NEXT,PARENT
+	. . S PARENT=FSP
+	. . S KEY=$G(@TN@(I,"k")),INV=+$G(@TN@(I,"inv"))
+	. . S MI=+$G(@TN@(I,"m"))
+	. . I 'MI S ERR("code")="TPL_PARSE",ERR("msg")="Section start without match: "_KEY Q
+	. . ; advance parent beyond matching end now
+	. . S NEXT=MI+1
+	. . S F(PARENT,"i")=NEXT
+	. . ; ---- block capture ----
+	. . I +$G(@TN@(I,"blk")) D  Q
+	. . . N BNAME,NEWF,CAPREF
+	. . . S BNAME=$G(@TN@(I,"bname"))
+	. . . ; allocate capture buffer for the *new* frame index
+	. . . S NEWF=FSP+1
+	. . . S BCAP(NEWF)=""
+	. . . S CAPREF=$NA(BCAP(NEWF))
+	. . . D PUSHFRAME^MIOTPL2(.FSP,.F,I+1,MI-1,CTSP,"capture",CAPREF,TN)
+	. . . ; store block info on the capture frame
+	. . . S F(FSP,"storeBlock")=1
+	. . . S F(FSP,"storeName")=BNAME
+	. . . S F(FSP,"storeCapRef")=CAPREF
+	. . ; resolve section key
+	. . N ISSET,TYPE,REF
+	. . D RESREF^MIOTPL2(KEY,.CST,CTSP,.ISSET,.TYPE,.REF)
+	. . ; inverted section
+	. . I INV D  Q
+	. . . I $$ISTRUTH^MIOTPL2(.ISSET,.TYPE,.REF)=0 D
+	. . . . D PUSHFRAME^MIOTPL2(.FSP,.F,I+1,MI-1,CTSP,$G(F(PARENT,"mode")),$G(F(PARENT,"capRef")),TN)
+	. . ; normal section: skip if falsey
+	. . I $$ISTRUTH^MIOTPL2(.ISSET,.TYPE,.REF)=0 Q
+	. . ; list iteration
+	. . I TYPE="list" D  Q
+	. . . S FSP=FSP+1
+	. . . S F(FSP,"mode")="iter"
+	. . . S F(FSP,"i")=0,F(FSP,"end")=0
+	. . . S F(FSP,"ctxTop")=CTSP
+	. . . S F(FSP,"listRef")=REF
+	. . . S F(FSP,"sub")=""
+	. . . S F(FSP,"bodyS")=I+1
+	. . . S F(FSP,"bodyE")=MI-1
+	. . . S F(FSP,"parentMode")=$G(F(PARENT,"mode"))
+	. . . S F(FSP,"parentCap")=$G(F(PARENT,"capRef"))
+	. . ; object context
+	. . I TYPE="obj" D  Q
+	. . . N NEWTOP S NEWTOP=CTSP+1
+	. . . S CST(NEWTOP)=REF,CTSP=NEWTOP
+	. . . D PUSHFRAME^MIOTPL2(.FSP,.F,I+1,MI-1,CTSP,$G(F(PARENT,"mode")),$G(F(PARENT,"capRef")),TN)
+	. . ; scalar truthy: render once with current context
+	. . D PUSHFRAME^MIOTPL2(.FSP,.F,I+1,MI-1,CTSP,$G(F(PARENT,"mode")),$G(F(PARENT,"capRef")),TN)
+	. ; -------------------------
+	. ; SECTION END (not executed)
+	. ; -------------------------
+	. I TYP="secE" D  Q
+	. . S F(FSP,"i")=I+1
+	;
+	Q:$Q $S($D(ERR):0,1:1)
+	Q
+	;
+	;
+; =============================================================================
+; PUSHFRAME(FSP,F,START,END,CTSP,MODE,CAPREF,TOKNAME)
+; =============================================================================
+PUSHFRAME(FSP,F,START,END,CTSP,MODE,CAPREF,TOKNAME)
+	S FSP=FSP+1
+	S F(FSP,"i")=START
+	S F(FSP,"end")=END
+	S F(FSP,"ctxTop")=CTSP
+	S F(FSP,"mode")=$G(MODE,"emit")
+	S F(FSP,"capRef")=$G(CAPREF)
+	S F(FSP,"tokName")=$G(TOKNAME,"TOK")
+	Q
+	;
+	;
+; =============================================================================
+; POPF(FSP,F,CST,CTSP)
+; (Uses CTX, PACTIVE in outer scope)
+; =============================================================================
+POPF(FSP,F,CST,CTSP)
+	N OLD S OLD=FSP
+	;
+	; Block store finalizer
+	I +$G(F(OLD,"storeBlock")) D
+	. N BN,CR,VAL
+	. S BN=$G(F(OLD,"storeName"))
+	. S CR=$G(F(OLD,"storeCapRef"))
+	. S VAL=$G(@CR)
+	. S CTX("blocks",BN)=VAL
+	;
+	; Partial decrement finalizer
+	I $G(F(OLD,"pname"))'="" D
+	. N PN S PN=$G(F(OLD,"pname"))
+	. S PACTIVE(PN)=+$G(PACTIVE(PN))-1
+	. I PACTIVE(PN)<0 K PACTIVE(PN)
+	;
+	; Pop and restore CTSP
+	S FSP=FSP-1
+	I FSP>0 S CTSP=+$G(F(FSP,"ctxTop"))
+	Q
+	;
+	;
+; =============================================================================
+; TOKMAX(TOKNAME)
+; Return last numeric token index for an array referenced by name (e.g. "TOK", "PTOKS(3)")
+; =============================================================================
+TOKMAX(TOKNAME)
+	Q +$O(@TOKNAME@(""),-1)
+	;
+	;
+; =============================================================================
+; FIRSTSUB(REF)  (fix for INDEXTRACHARS everywhere)
+; =============================================================================
+FIRSTSUB(REF)
+	N CHREF
+	S CHREF=$$APPREF^MIOTPL2(REF,"")
+	Q $O(@CHREF)
+	;
+; =============================================================================
+; EMIT(FSP,F,OUT,VAL)
+; Emits to OUT or capture buffer depending on current frame mode.;
+; =============================================================================
+EMIT(FSP,F,OUT,VAL)
+	N MODE S MODE=$G(F(FSP,"mode"))
+	I MODE="capture" D  Q
+	. N CR S CR=$G(F(FSP,"capRef")) Q:CR=""
+	. S @CR=$G(@CR)_$G(VAL)
+	S OUT=$G(OUT)_$G(VAL)
+	Q
+; =============================================================================
+; TOKEND(TOKR)
+; Return the last numeric token index in token root TOKR.;
+; =============================================================================
+TOKEND(TOKR)
+	N X S X=$O(@(TOKR_"("""")"),-1)
+	Q +X
+	;
+; =============================================================================
+; TOKG(TOKR,I,FIELD)
+; Safe token field getter using a $NA(...) root.;
+; =============================================================================
+TOKG(TOKR,I,FIELD)
+	Q $G(@(TOKR_"("_I_","""_FIELD_""")"))
+	;
 	;	
-ISTRUE(V) ;
-	NEW X SET X=$GET(V)
-	IF X="" QUIT 0
-	IF X=0 QUIT 0
-	QUIT 1
 	;
-EVALBLOCK(TOK,CONF,CTX,IDX,BNAME,OUT,ERR) ;
-	; Called when TOK(IDX) is b0. Consumes until matching b1.;
-	KILL OUT SET ERR=""
-	NEW DEPTH SET DEPTH=1
-	NEW I SET I=IDX
-	NEW TMP KILL TMP
-	NEW J SET J=0
-	FOR  SET I=$ORDER(TOK(I)) QUIT:'I  DO  QUIT:ERR'=""
-	. NEW TT SET TT=$GET(TOK(I,"t"))
-	. IF TT="b0",$GET(TOK(I,"n"))=BNAME SET DEPTH=DEPTH+1 QUIT
-	. IF TT="b1",$GET(TOK(I,"n"))=BNAME DO  QUIT
-	. . SET DEPTH=DEPTH-1
-	. . IF DEPTH=0 SET IDX=I QUIT
-	. . QUIT
-	. IF DEPTH>0 DO
-	. . SET J=J+1
-	. . MERGE TMP(J)=TOK(I)
-	IF ERR'="" QUIT 0
-	NEW OK SET OK=$$EVAL(.TMP,.CONF,.CTX,.OUT,.ERR)
-	QUIT OK
+;=====================================================
+; RESREF(KEY,CST,CTSP,ISSET,TYPE,REF)
+; Resolve KEY using Mustache lookup rules.;
+; REF is a reference-string like: CTX("groups","items",1)
+; =============================================================================
+RESREF(KEY,CST,CTSP,ISSET,TYPE,REF)
+	N K S K=KEY
+	S ISSET=0,TYPE="missing",REF=""
+	I K="" Q
+	; {{.}} => current context scalar (if any)
+	I K="." D  Q
+	. N R S R=$G(CST(CTSP)) Q:R=""
+	. I $D(@R)#2 S ISSET=1,TYPE="scalar",REF=R Q
+	. ; If the node has children but no scalar, treat {{.}} as empty.;
+	. S ISSET=0,TYPE="missing",REF=""
+	; Search top-down
+	N LEVEL
+	F LEVEL=CTSP:-1:1 D  Q:ISSET
+	. N BASE S BASE=$G(CST(LEVEL)) Q:BASE=""
+	. N OK,RR,TT
+	. D RESINBASE(BASE,K,.OK,.TT,.RR)
+	. I OK S ISSET=1,TYPE=TT,REF=RR
+	Q
 	;
-EDGE(CTX,FROM,TO,ERR) ;
-	; Record include edge and detect cycles.;
-	; We still rely primarily on PUSHDEPTH stack check.;
+; =============================================================================
+; RESINBASE(BASE,KEY,OK,TYPE,REF)
+; Resolve dotted KEY within a single BASE reference-string.;
+; =============================================================================
+RESINBASE(BASE,KEY,OK,TYPE,REF)
+	S OK=0,TYPE="missing",REF=""
+	N CUR S CUR=BASE
+	N PARTS,PC,I,P
+	D SPLIT(KEY,".",.PARTS,.PC)
+	I PC=0 Q
+	; Walk dotted path
+	F I=1:1:PC D  Q:'OK&(I>1)  ; stop early on fail
+	. S P=PARTS(I)
+	. I P="." S OK=1 Q
+	. N NEXT S NEXT=$$APPREF(CUR,P)
+	. I '$D(@NEXT) S OK=0,TYPE="missing",REF="" Q
+	. S CUR=NEXT,OK=1
+	I 'OK Q
+	I '$D(@CUR) Q
+	; Determine type:
+	; - children => list if it has any subscript at that level
+	; - scalar only => scalar
+	I $D(@CUR)>1 D  Q
+	. N S0 S S0=$$FIRSTSUB(CUR)
+	. I S0'="" S OK=1,TYPE="list",REF=CUR Q
+	. S OK=1,TYPE="obj",REF=CUR
+	I $D(@CUR)#2 S OK=1,TYPE="scalar",REF=CUR Q
+	Q
 	;
-	; CTX("tplEdge",from,to)=1 is request-local.;
-	IF $GET(FROM)'=""&($GET(TO)'="") SET CTX("tplEdge",FROM,TO)=1
-	QUIT 1
+; =============================================================================
+; RESVAL(KEY,CST,CTSP)
+; Variable resolution returns a scalar or "" if missing/non-scalar.;
+; =============================================================================
+RESVAL(KEY,CST,CTSP)
+	N ISSET,TYPE,REF
+	D RESREF(KEY,.CST,CTSP,.ISSET,.TYPE,.REF)
+	I 'ISSET Q ""
+	I $D(@REF)#2 Q $G(@REF)
+	Q ""
 	;
-GETREF(CTX,PATH,REF,ISARR) ;
-	; Build REF (a string) pointing at CTX node for PATH.;
-	; ISARR=1 if node has children, 0 otherwise.;
-	NEW P,A,I
-	SET REF="CTX"
-	SET ISARR=0
-	SET P=$GET(PATH)
-	IF P="" QUIT 0
-	FOR I=1:1:$L(P,".") DO
-	. SET A=$PIECE(P,".",I)
-	. IF A="" QUIT
-	. IF A="." QUIT
-	. SET REF=REF_"("""_A_""")" 
-	I REF[""")("""  S REF=$$REPLACE^MIOUTIL(REF,""")(""",""",""")
-	IF $DATA(@REF)>1 SET ISARR=1
-	QUIT $DATA(@REF)>0	
+; =============================================================================
+; ISTRUTH(ISSET,TYPE,REF)
+; Truthiness:
+; False: missing, "", 0, "0", empty list/object
+; =============================================================================
+ISTRUTH(ISSET,TYPE,REF)
+	I 'ISSET Q 0
+	; list/object: false if no subscripts
+	I TYPE="list"!(TYPE="obj") Q $S($$FIRSTSUB(REF)="":0,1:1)
+	; scalar truthiness
+	N V S V=$G(@REF)
+	I V="" Q 0
+	I V=0 Q 0
+	I V="0" Q 0
+	Q 1
 	;
-HASITEMS(CTX,KEY) ;
-	; Returns 1 if KEY resolves to a node with at least one child subscript.;
-	NEW REF,ISARR,BASE,S
-	SET ISARR=0
-	IF '$$GETREF(.CTX,KEY,.REF,.ISARR) QUIT 0
-	IF 'ISARR QUIT 0
-	; REF is like: CTX("packages") or CTX("cats","items")
-	SET BASE=$E(REF,1,$L(REF)-1) ;strip trailing ")"
-	SET S=$ORDER(@(BASE_",0)"))    ; first numeric child
-	IF S'="" QUIT 1
-	QUIT 0	
+; =============================================================================
+; APPREF(REF,SUB)
+; Append a subscript to a reference-string.;
+; REF examples:
+;  "CTX"
+;  "CTX(""groups"",1)"
+; SUB can be numeric or string (including "").;
+; =============================================================================
+APPREF(REF,SUB)
+	N R,Q,OUT
+	S R=REF
+	S Q=$$QSUB(SUB)
+	; If already has (...), splice before final ')'
+	I R["(" D  Q OUT
+	. ; assume well-formed and ends with ')'
+	. S OUT=$E(R,1,$L(R)-1)_","_Q_")"
+	; No subs yet.;
+	Q R_"("_Q_")"
 	;
-HASCHILD(CTX,PATH) ;
-		; Return 1 if PATH resolves to a node with children (array/object).;
-	NEW REF,DATA
-	IF '$$RESREF(.CTX,$GET(PATH),.REF,.DATA) QUIT 0
-	IF DATA>1 QUIT 1
-	QUIT 0
+; =============================================================================
+; QSUB(SUB)
+; Quote/escape a subscript for use in a reference-string.;
+; - Numeric stays numeric.;
+; - Everything else becomes a quoted string with internal quotes doubled.;
+; =============================================================================
+QSUB(SUB)
+	N S S S=$G(SUB)
+	; treat pure numeric as numeric
+	I S?1.N Q S
+	; quote string
+	S S=$$REPL(S,$C(34),$C(34,34))
+	Q $C(34)_S_$C(34)
 	;
-RESREF(CTX,PATH,REF,DATA) ;
-	; Resolve dot-path PATH into a string reference REF.;
-	; DATA is set to $DATA(@REF).;
+; =============================================================================
+; SPLIT(STR,DEL,ARR,COUNT)
+; Split string STR by DEL into ARR(1..COUNT).;
+; =============================================================================
+SPLIT(STR,DEL,ARR,COUNT)
+	K ARR S COUNT=0
+	N I,CH,BUF S BUF=""
+	F I=1:1:$L(STR) D
+	. S CH=$E(STR,I)
+	. I CH=DEL D  Q
+	. . S COUNT=COUNT+1,ARR(COUNT)=BUF,BUF=""
+	. S BUF=BUF_CH
+	S COUNT=COUNT+1,ARR(COUNT)=BUF
+	Q
 	;
-	; Examples:
-	;   PATH="packages"     => REF="CTX(""packages"")"
-	;   PATH="cats.items"   => REF="CTX(""cats"",""items"")"
+; =============================================================================
+; TRIM(S)
+; Simple trim for spaces and tabs.;
+; =============================================================================
+TRIM(S)
+	N A,B
+	S A=1,B=$L(S)
+	F  Q:A>B  Q:$E(S,A)'=" "&($E(S,A)'=$C(9))  S A=A+1
+	F  Q:B<A  Q:$E(S,B)'=" "&($E(S,B)'=$C(9))  S B=B-1
+	Q $E(S,A,B)
 	;
-	NEW P,A,I
-	SET REF="",DATA=0
-	SET P=$GET(PATH)
-	IF P="" QUIT 0
-	IF $E(P,1,7)="blocks." DO  QUIT 1
-	. SET REF="CTX(""blocks"","""_$E(P,8,$L(P))_""")"
-	. SET DATA=$DATA(@REF)
-	IF P="." DO  QUIT 1
-	. SET REF="CTX(""."")"
-	. SET DATA=$DATA(@REF)
-	SET REF="CTX"
-	FOR I=1:1:$L(P,".") DO
-	. SET A=$PIECE(P,".",I)
-	. IF A="" QUIT
-	. SET REF=REF_"("""_A_""")"
-	I REF[""")("""  S REF=$$REPLACE^MIOUTIL(REF,""")(""",""",""")
-	SET DATA=$DATA(@REF)
-	QUIT 1
+; =============================================================================
+; ESCHTML(S)
+; HTML escaping for {{var}}:
+;  & < > " '
+; =============================================================================
+ESCHTML(S)
+	N X S X=$G(S)
+	; Order matters: escape & first.;
+	S X=$$REPL(X,"&","&amp;")
+	S X=$$REPL(X,"<","&lt;")
+	S X=$$REPL(X,">","&gt;")
+	S X=$$REPL(X,$C(34),"&quot;")
+	S X=$$REPL(X,"'","&#39;")
+	Q X
 	;
-LOOKUP(CTX,PATH) ;
-	NEW P SET P=$GET(PATH)
-	IF P="" QUIT ""
-	IF P="." QUIT $GET(CTX("."))
-	IF $E(P,1,7)="blocks." QUIT $GET(CTX("blocks",$E(P,8,$L(P))))
-	NEW REF,ISARR,OK
-	SET OK=$$GETREF(.CTX,P,.REF,.ISARR)
-	IF 'OK QUIT ""
-	QUIT $GET(@REF)	
+; =============================================================================
+; REPL(S,FROM,TO)
+; Replace all occurrences.;
+; =============================================================================
+REPL(S,FROM,TO)
+	N OUT,P,L1,L2
+	S OUT="",P=1,L1=$L(FROM)
+	I L1=0 Q S
+	F  D  Q:P>$L(S)
+	. N F S F=$F(S,FROM,P)
+	. I 'F S OUT=OUT_$E(S,P,$L(S)),P=$L(S)+1 Q
+	. S OUT=OUT_$E(S,P,F-L1-1)_TO
+	. S P=F
+	Q OUT
+	;
+; =============================================================================
+; H32(TEXT)
+; Fast 32-bit non-cryptographic hash for caching.;
+; FNV-1a 32-bit variant.;
+; =============================================================================
+H32(TEXT)
+	N H,I,C
+	; FNV offset basis: 2166136261
+	S H=2166136261
+	F I=1:1:$L(TEXT) D
+	. S C=$A(TEXT,I)
+	. ; H = H XOR C
+	. S H=$$XOR32(H,C)
+	. ; H = H * 16777619 mod 2^32
+	. S H=$$MUL32(H,16777619)
+	Q H
+	;
+; =============================================================================
+; XOR32(A,B)
+; 32-bit XOR using $ZBIT* if present, else fallback bit arithmetic.;
+; YottaDB provides $ZBITXOR on newer builds; GT.M varies.;
+; We implement a portable fallback.;
+; =============================================================================
+XOR32(A,B)
+	N R,I,BA,BB,POW
+	S R=0,POW=1
+	F I=0:1:31 D
+	. S BA=A#2,A=A\2
+	. S BB=B#2,B=B\2
+	. I (BA+BB)=1 S R=R+POW
+	. S POW=POW*2
+	Q R
+	;
+; =============================================================================
+; MUL32(A,M)
+; Multiply mod 2^32 using iterative doubling to stay in integer range.;
+; =============================================================================
+MUL32(A,M)
+	N R
+	S R=0
+	F  Q:M=0  D
+	. I M#2 S R=$$ADD32(R,A)
+	. S M=M\2
+	. S A=$$ADD32(A,A)
+	Q R
+	;
+; =============================================================================
+; ADD32(A,B)
+; Add mod 2^32
+; =============================================================================
+ADD32(A,B)
+	N S
+	S S=A+B
+	; Reduce mod 2^32 (4294967296)
+	I S'<4294967296 S S=S#4294967296
+	Q S
 	;
 JOIN(ARR,SEP) ;
 	; Join numeric ARR() into string.;
@@ -498,77 +1195,3 @@ JOIN(ARR,SEP) ;
 	. IF S'="" SET S=S_D
 	. SET S=S_$GET(ARR(I))
 	QUIT S
-	;
-SPLIT(STR,OUT) ;
-	; Split STR by LF into OUT() lines.;
-	KILL OUT
-	NEW POS,NEXT,LINE,IDX
-	SET POS=1,IDX=0
-	FOR  DO  QUIT:POS>$L(STR)
-	. SET NEXT=$F(STR,$C(10),POS)
-	. IF NEXT=0 DO
-	. . SET LINE=$E(STR,POS,$L(STR))
-	. . SET IDX=IDX+1,OUT(IDX)=LINE
-	. . SET POS=$L(STR)+1
-	. ELSE  DO
-	. . SET LINE=$E(STR,POS,NEXT-2)
-	. . SET IDX=IDX+1,OUT(IDX)=LINE
-	. . SET POS=NEXT
-	QUIT
-	;
-TRIM(S) ;
-	; Trim leading and trailing whitespace (space, tab, CR, LF).;
-	NEW X SET X=$GET(S)
-	FOR  QUIT:X=""  QUIT:($E(X,1)'=" ")&($E(X,1)'=$C(9))&($E(X,1)'=$C(10))&($E(X,1)'=$C(13))  SET X=$E(X,2,$L(X))
-	FOR  QUIT:X=""  QUIT:($E(X,$L(X))'=" ")&($E(X,$L(X))'=$C(9))&($E(X,$L(X))'=$C(10))&($E(X,$L(X))'=$C(13))  SET X=$E(X,1,$L(X)-1)
-	QUIT X
-	;
-ESC(S) ;
-	; Escape basic HTML entities.;
-	NEW X SET X=$GET(S)
-	SET X=$$REPL(X,"&","&amp;")
-	SET X=$$REPL(X,"<","&lt;")
-	SET X=$$REPL(X,">","&gt;")
-	SET X=$$REPL(X,"""","&quot;")
-	SET X=$$REPL(X,"'","&#39;")
-	QUIT X
-	;
-REPL(S,A,B) ;
-	NEW X SET X=$GET(S)
-	NEW P SET P=1
-	NEW OUT SET OUT=""
-	NEW F
-	FOR  DO  QUIT:P>$L(X)
-	. SET F=$F(X,A,P)
-	. IF F=0 DO  QUIT
-	. . SET OUT=OUT_$E(X,P,$L(X))
-	. . SET P=$L(X)+1
-	. SET OUT=OUT_$E(X,P,F-$L(A)-1)_B
-	. SET P=F
-	QUIT OUT
-	;
-H32(S) ;
-	; Simple 32-bit FNV-1a hash for change detection.;
-	NEW I,H,C
-	SET H=2166136261
-	FOR I=1:1:$L(S) DO
-	. SET C=$ASCII($E(S,I))
-	. SET H=$$BXOR(H,C)
-	. SET H=$$MULMOD(H,16777619)
-	QUIT H
-	;
-MULMOD(A,B) ;
-	; 32-bit multiply modulo 2^32.;
-	NEW X SET X=(A*B)#4294967296
-	QUIT X
-	;
-BXOR(A,B) ;
-	; Portable XOR for small integers (0..2^32-1).;
-	NEW I,RA,RB,OUT,P
-	SET OUT=0,P=1
-	FOR I=1:1:32 DO
-	. SET RA=A#2,RB=B#2
-	. IF (RA+RB)=1 SET OUT=OUT+P
-	. SET A=A\2,B=B\2,P=P*2
-	QUIT OUT
-	;
