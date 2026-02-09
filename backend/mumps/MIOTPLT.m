@@ -340,6 +340,15 @@ TEST037
 	SET CTX("string")="---"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	QUIT
+TEST038
+	NEW HDR S HDR="[MIOTPL][TEST038][Triple Mustache - Standalone]"
+	NEW DESC S DESC=HDR_"[Standalone interpolation should not alter surrounding whitespace.]"
+	NEW TEMPLATE S TEMPLATE="  {{{string}}}\n"
+	NEW EXPECTED S EXPECTED="  ---\n"
+	NEW CTX 
+	SET CTX("string")="---"
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
 TEST000
 	NEW HDR S HDR="[MIOTPL][TEST000][]"
 	NEW DESC S DESC=HDR_"[]"
