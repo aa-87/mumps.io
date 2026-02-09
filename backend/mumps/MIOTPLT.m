@@ -4,21 +4,22 @@ MIOTPLT
 	D TEST008,TEST009,TEST010,TEST011,TEST012,TEST013,TEST014
 	D TEST015,TEST016,TEST017,TEST018,TEST019,TEST020,TEST021
 	D TEST022,TEST023,TEST024,TEST025,TEST026,TEST027,TEST028
+	D TEST029
 	;	
 	Q
 TEST001
 	NEW HDR S HDR="[MIOTPL][TEST001][No Interpolation]"
 	NEW DESC S DESC=HDR_"[Mustache-free templates should render as-is]"
-	NEW TEMPLATE S TEMPLATE=$$UES("Hello from {Mustache}!\n")
-	NEW EXPECTED S EXPECTED=$$UES("Hello from {Mustache}!\n")
+	NEW TEMPLATE S TEMPLATE="Hello from {Mustache}!\n"
+	NEW EXPECTED S EXPECTED="Hello from {Mustache}!\n"
 	NEW CTX
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	QUIT
 TEST002
 	NEW HDR S HDR="[MIOTPL][TEST002][Basic Interpolation]"
 	NEW DESC S DESC=HDR_"[Unadorned tags should interpolate content into the template.]"
-	NEW TEMPLATE S TEMPLATE=$$UES("Hello, {{subject}}!\n")
-	NEW EXPECTED S EXPECTED=$$UES("Hello, world!\n")
+	NEW TEMPLATE S TEMPLATE="Hello, {{subject}}!\n"
+	NEW EXPECTED S EXPECTED="Hello, world!\n"
 	NEW CTX
 	SET CTX("subject")="world"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
@@ -257,23 +258,42 @@ TEST028
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	QUIT
 	;
+TEST029
+	NEW HDR S HDR="[MIOTPL][TEST029][Implicit Iterators - Basic Interpolation]"
+	NEW DESC S DESC=HDR_"[Unadorned tags should interpolate content into the template.]"
+	NEW TEMPLATE S TEMPLATE="Hello, {{.}}!\n"
+	NEW EXPECTED S EXPECTED="Hello, world!\n"
+	NEW CTX 
+	SET CTX="world"
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+TEST030
+	NEW HDR S HDR="[MIOTPL][TEST030][Implicit Iterators - HTML Escaping]"
+	NEW DESC S DESC=HDR_"[Basic interpolation should be HTML escaped.]"
+	NEW TEMPLATE S TEMPLATE="These characters should be HTML escaped: {{.}}\n"
+	NEW EXPECTED S EXPECTED="These characters should be HTML escaped: &amp; &quot; &lt; &gt;\n"
+	NEW CTX 
+	SET CTX="& "" < >"
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+TEST031
+	NEW HDR S HDR="[MIOTPL][TEST031][Implicit Iterators - Triple Mustache]"
+	NEW DESC S DESC=HDR_"[Implicit Iterators - Triple Mustache.]"
+	NEW TEMPLATE S TEMPLATE="These characters should not be HTML escaped: {{{.}}}\n"
+	NEW EXPECTED S EXPECTED="These characters should not be HTML escaped: & "" < >\n"
+	NEW CTX 
+	SET CTX="& "" < >"
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
 TEST000
 	NEW HDR S HDR="[MIOTPL][TEST000][]"
-	NEW DESC S DESC=HDR_""
+	NEW DESC S DESC=HDR_"[]"
 	NEW TEMPLATE S TEMPLATE=""
 	NEW EXPECTED S EXPECTED=""
 	NEW CTX 
-	SET CTX("")=""
+	SET CTX="world"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	QUIT
-UES(X)
-	N POS,Y,START
-	S POS=0,Y=""
-	F  S START=POS+1 D  Q:START>$L(X)
-	. S POS=$F(X,"\",POS+1)
-	. I 'POS S Y=Y_$E(X,START,$L(X)),POS=$L(X) I 1
-	. E  S Y=Y_$E(X,START,POS-2)_$$REALCHAR($E(X,POS),X,.POS)
-	Q Y
 RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,CTX)
 	NEW TOK,ERR,CONF,OUT
 	D COMPILE^MIOTPL2(TEMPLATE,.TOK,.ERR)
@@ -282,18 +302,3 @@ RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,CTX)
 	DO OK^MIOTASSERT('$D(ERR),"[EVAL]"_DESC)
 	DO EQ^MIOTASSERT(OUT,EXPECTED,"[RENDER]"_DESC)
 	Q
-	;
-REALCHAR(C,X,POS)
-	N OPOS
-	I C="""" Q """"
-	I C="/" Q "/"
-	I C="\" Q "\"
-	I C="b" Q $C(8)
-	I C="f" Q $C(12)
-	I C="n" Q $C(10)
-	I C="r" Q $C(13)
-	I C="t" Q $C(9)
-	I C="u" S OPOS=POS S POS=POS+4 Q $C($$FUNC^%HD($E(X,OPOS+1,OPOS+4)))
-	Q C
-	;
-	;
