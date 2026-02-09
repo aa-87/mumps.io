@@ -64,6 +64,21 @@ TEST005
 	DO EQ^MIOTASSERT(OUT,EXPECTED,"[RENDER]"_DESC)
 	QUIT
 	;
+TEST006
+	NEW HDR S HDR="[MIOTPL][TEST006][Ampersand]"
+	NEW DESC S DESC=HDR_"[These characters should not be HTML escaped: {{&forbidden}}]"
+	NEW TEMPLATE S TEMPLATE="These characters should not be HTML escaped: {{{forbidden}}}"
+	NEW EXPECTED S EXPECTED="These characters should not be HTML escaped: & "" < >"
+	;
+	NEW CTX SET CTX("forbidden")="& "" < >"
+	;
+	NEW TOK,ERR,CONF,OUT
+	D COMPILE^MIOTPL2(TEMPLATE,.TOK,.ERR)
+	DO OK^MIOTASSERT('$D(ERR),"[COMPILE]"_HDR)
+	DO EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
+	DO OK^MIOTASSERT('$D(ERR),"[EVAL]"_DESC)
+	DO EQ^MIOTASSERT(OUT,EXPECTED,"[RENDER]"_DESC)
+	QUIT
 UES(X)
 	N POS,Y,START
 	S POS=0,Y=""
