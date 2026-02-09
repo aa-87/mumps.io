@@ -957,15 +957,38 @@ RESREF(KEY,CST,CTSP,ISSET,TYPE,REF)
 	I K="." D  Q
 	. N R S R=$G(CST(CTSP)) Q:R=""
 	. I $D(@R)#2 S ISSET=1,TYPE="scalar",REF=R Q
-	. ; If the node has children but no scalar, treat {{.}} as empty.;
 	. S ISSET=0,TYPE="missing",REF=""
-	; Search top-down
+	; -----------------------------
+	; DOTTED NAMES: context precedence
+	; Resolve first segment via normal lookup (with fallback),
+	; then resolve the remainder ONLY from that resolved base.;
+	; -----------------------------
+	I K["." D  Q
+	. N PARTS,PC,FIRST,REST,I,BASEOK,BASETYPE,BASEREF
+	. D SPLIT(K,".",.PARTS,.PC)
+	. I PC<2 Q  ; shouldn't happen, but safe
+	. S FIRST=$G(PARTS(1))
+	. S REST=""
+	. F I=2:1:PC S REST=REST_$S(REST="":"",1:".")_$G(PARTS(I))
+	. ; 1) resolve FIRST using standard rules (top-down)
+	. D RESREF(FIRST,.CST,CTSP,.BASEOK,.BASETYPE,.BASEREF)
+	. I 'BASEOK S ISSET=0,TYPE="missing",REF="" Q
+	. ; 2) resolve REST ONLY within BASEREF (no fallback)
+	. N OK2,TT2,RR2
+	. D RESINBASE(BASEREF,REST,.OK2,.TT2,.RR2)
+	. I 'OK2 S ISSET=0,TYPE="missing",REF="" Q
+	. S ISSET=1,TYPE=TT2,REF=RR2
+	. Q
+	;
+	; -----------------------------
+	; NON-DOTTED: standard lookup
+	; -----------------------------
 	N LEVEL
 	F LEVEL=CTSP:-1:1 D  Q:ISSET
 	. N BASE S BASE=$G(CST(LEVEL)) Q:BASE=""
 	. N OK,RR,TT
 	. D RESINBASE(BASE,K,.OK,.TT,.RR)
-	. I OK,RR'="" S ISSET=1,TYPE=TT,REF=RR
+	. I OK S ISSET=1,TYPE=TT,REF=RR
 	Q
 	;
 ; =============================================================================

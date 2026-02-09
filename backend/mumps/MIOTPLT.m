@@ -3,7 +3,7 @@ MIOTPLT
 	D TEST001,TEST002,TEST003,TEST004,TEST005,TEST006,TEST007
 	D TEST008,TEST009,TEST010,TEST011,TEST012,TEST013,TEST014
 	D TEST015,TEST016,TEST017,TEST018,TEST019,TEST020,TEST021
-	D TEST022,TEST023,TEST024
+	D TEST022,TEST023,TEST024,TEST025,TEST026
 	Q
 TEST001
 	NEW HDR S HDR="[MIOTPL][TEST001][No Interpolation]"
@@ -94,7 +94,7 @@ TEST010
 	QUIT
 TEST011
 	NEW HDR S HDR="[MIOTPL][TEST011][Triple Mustache Decimal Interpolation]"
-	NEW DESC S DESC=HDR_"Decimals should interpolate seamlessly with proper significance."
+	NEW DESC S DESC=HDR_"[Decimals should interpolate seamlessly with proper significance.]"
 	NEW TEMPLATE S TEMPLATE="""{{{power}}} jiggawatts!"""
 	NEW EXPECTED S EXPECTED="""1.21 jiggawatts!"""
 	NEW CTX 
@@ -103,7 +103,7 @@ TEST011
 	QUIT
 TEST012
 	NEW HDR S HDR="[MIOTPL][TEST012[Ampersand Decimal Interpolation]"
-	NEW DESC S DESC=HDR_"Decimals should interpolate seamlessly with proper significance."
+	NEW DESC S DESC=HDR_"[Decimals should interpolate seamlessly with proper significance.]"
 	NEW TEMPLATE S TEMPLATE="""{{&power}} jiggawatts!"""
 	NEW EXPECTED S EXPECTED="""1.21 jiggawatts!"""
 	NEW CTX 
@@ -112,7 +112,7 @@ TEST012
 	QUIT
 TEST013
 	NEW HDR S HDR="[MIOTPL][TEST013][Basic Null Interpolation]"
-	NEW DESC S DESC=HDR_"Nulls should interpolate as the empty string."
+	NEW DESC S DESC=HDR_"[Nulls should interpolate as the empty string.]"
 	NEW TEMPLATE S TEMPLATE="I ({{cannot}}) be seen!"
 	NEW EXPECTED S EXPECTED="I () be seen!"
 	NEW CTX 
@@ -121,7 +121,7 @@ TEST013
 	QUIT
 TEST014
 	NEW HDR S HDR="[MIOTPL][TEST014[Triple Mustache Null Interpolation]"
-	NEW DESC S DESC=HDR_"Nulls should interpolate as the empty string."
+	NEW DESC S DESC=HDR_"[Nulls should interpolate as the empty string.]"
 	NEW TEMPLATE S TEMPLATE="I ({{{cannot}}}) be seen!"
 	NEW EXPECTED S EXPECTED="I () be seen!"
 	NEW CTX 
@@ -130,7 +130,7 @@ TEST014
 	QUIT
 TEST015
 	NEW HDR S HDR="[MIOTPL][TEST015][Ampersand Null Interpolation]"
-	NEW DESC S DESC=HDR_"Nulls should interpolate as the empty string."
+	NEW DESC S DESC=HDR_"[Nulls should interpolate as the empty string.]"
 	NEW TEMPLATE S TEMPLATE="I ({{&cannot}}) be seen!"
 	NEW EXPECTED S EXPECTED="I () be seen!"
 	NEW CTX 
@@ -139,7 +139,7 @@ TEST015
 	QUIT
 TEST016
 	NEW HDR S HDR="[MIOTPL][TEST016[Basic Context Miss Interpolation]"
-	NEW DESC S DESC=HDR_"Failed context lookups should default to empty strings."
+	NEW DESC S DESC=HDR_"[Failed context lookups should default to empty strings.]"
 	NEW TEMPLATE S TEMPLATE="I ({{cannot}}) be seen!"
 	NEW EXPECTED S EXPECTED="I () be seen!"
 	NEW CTX 
@@ -147,7 +147,7 @@ TEST016
 	QUIT
 TEST017
 	NEW HDR S HDR="[MIOTPL][TEST017][Triple Mustache Context Miss Interpolation]"
-	NEW DESC S DESC=HDR_"Failed context lookups should default to empty strings."
+	NEW DESC S DESC=HDR_"[Failed context lookups should default to empty strings.]"
 	NEW TEMPLATE S TEMPLATE="I ({{{cannot}}}) be seen!"
 	NEW EXPECTED S EXPECTED="I () be seen!"
 	NEW CTX 
@@ -155,7 +155,7 @@ TEST017
 	QUIT
 TEST018
 	NEW HDR S HDR="[MIOTPL][TEST018[Ampersand Context Miss Interpolation]"
-	NEW DESC S DESC=HDR_"Failed context lookups should default to empty strings."
+	NEW DESC S DESC=HDR_"[Failed context lookups should default to empty strings.]"
 	NEW TEMPLATE S TEMPLATE="I ({{&cannot}}) be seen!"
 	NEW EXPECTED S EXPECTED="I () be seen!"
 	NEW CTX 
@@ -163,7 +163,7 @@ TEST018
 	QUIT
 TEST019
 	NEW HDR S HDR="[MIOTPL][TEST019][Dotted Names - Basic Interpolation]"
-	NEW DESC S DESC=HDR_"Dotted names should be considered a form of shorthand for sections."
+	NEW DESC S DESC=HDR_"[Dotted names should be considered a form of shorthand for sections.]"
 	NEW TEMPLATE S TEMPLATE="""{{person.name}}"" == ""{{#person}}{{name}}{{/person}}"""
 	NEW EXPECTED S EXPECTED="""Joe"" == ""Joe"""
 	NEW CTX 
@@ -172,7 +172,7 @@ TEST019
 	QUIT
 TEST020
 	NEW HDR S HDR="[MIOTPL][TEST020][Dotted Names - Triple Mustache Interpolation]"
-	NEW DESC S DESC=HDR_"Dotted names should be considered a form of shorthand for sections."
+	NEW DESC S DESC=HDR_"[Dotted names should be considered a form of shorthand for sections.]"
 	NEW TEMPLATE S TEMPLATE="""{{{person.name}}}"" == ""{{#person}}{{{name}}}{{/person}}""" 
 	NEW EXPECTED S EXPECTED="""Joe"" == ""Joe"""
 	NEW CTX 
@@ -181,7 +181,7 @@ TEST020
 	QUIT
 TEST021
 	NEW HDR S HDR="[MIOTPL][TEST021][Dotted Names - Ampersand Interpolation]"
-	NEW DESC S DESC=HDR_"Dotted names should be considered a form of shorthand for sections."
+	NEW DESC S DESC=HDR_"[Dotted names should be considered a form of shorthand for sections.]"
 	NEW TEMPLATE S TEMPLATE="""{{&person.name}}"" == ""{{#person}}{{&name}}{{/person}}"""
 	NEW EXPECTED S EXPECTED="""Joe"" == ""Joe"""
 	NEW CTX 
@@ -190,7 +190,7 @@ TEST021
 	QUIT
 TEST022
 	NEW HDR S HDR="[MIOTPL][TEST022][Dotted Names - Arbitrary Depth]"
-	NEW DESC S DESC=HDR_"Dotted names should be functional to any level of nesting."
+	NEW DESC S DESC=HDR_"[Dotted names should be functional to any level of nesting.]"
 	NEW TEMPLATE S TEMPLATE="""{{a.b.c.d.e.name}}"" == ""Phil"""
 	NEW EXPECTED S EXPECTED="""Phil"" == ""Phil"""
 	NEW CTX 
@@ -199,7 +199,7 @@ TEST022
 	QUIT
 TEST023
 	NEW HDR S HDR="[MIOTPL][TEST023][Dotted Names - Broken Chains]"
-	NEW DESC S DESC=HDR_"Any falsey value prior to the last part of the name should yield ''."
+	NEW DESC S DESC=HDR_"[Any falsey value prior to the last part of the name should yield ''.]"
 	NEW TEMPLATE S TEMPLATE="""{{a.b.c}}"" == """""
 	NEW EXPECTED S EXPECTED=""""" == """""
 	NEW CTX 
@@ -208,7 +208,7 @@ TEST023
 	QUIT
 TEST024
 	NEW HDR S HDR="[MIOTPL][TEST024][Dotted Names - Broken Chain Resolution]"
-	NEW DESC S DESC=HDR_"Each part of a dotted name should resolve only against its parent."
+	NEW DESC S DESC=HDR_"[Each part of a dotted name should resolve only against its parent.]"
 	NEW TEMPLATE S TEMPLATE="""{{a.b.c.name}}"" == """""
 	NEW EXPECTED S EXPECTED=""""" == """""
 	NEW CTX 
@@ -216,8 +216,26 @@ TEST024
 	SET CTX("c","name")="Jim"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	QUIT
-	;
-	;
+TEST025
+	NEW HDR S HDR="[MIOTPL][TEST025][Dotted Names - Initial Resolution]"
+	NEW DESC S DESC=HDR_"[The first part of a dotted name should resolve as any other name.]"
+	NEW TEMPLATE S TEMPLATE="""{{#a}}{{b.c.d.e.name}}{{/a}}"" == ""Phil"""
+	NEW EXPECTED S EXPECTED="""Phil"" == ""Phil"""
+	NEW CTX 
+	SET CTX("a","b","c","d","e","name")="Phil"
+	SET CTX("b","c","d","e","name")="Wrong"
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+TEST026
+	NEW HDR S HDR="[MIOTPL][TEST026][Dotted Names - Context Precedence]"
+	NEW DESC S DESC=HDR_"[Dotted names should be resolved against former resolutions.]"
+	NEW TEMPLATE S TEMPLATE="{{#a}}{{b.c}}{{/a}}"
+	NEW EXPECTED S EXPECTED=""
+	NEW CTX 
+	SET CTX("a","b")=""
+	SET CTX("b","c")="ERROR"
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
 	;
 	;
 	;
