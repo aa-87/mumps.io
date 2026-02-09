@@ -4,7 +4,7 @@ MIOTPLT
 	D TEST008,TEST009,TEST010,TEST011,TEST012,TEST013,TEST014
 	D TEST015,TEST016,TEST017,TEST018,TEST019,TEST020,TEST021
 	D TEST022,TEST023,TEST024,TEST025,TEST026,TEST027,TEST028
-	D TEST029
+	D TEST029,TEST030,TEST031,TEST032
 	;	
 	Q
 TEST001
@@ -280,6 +280,15 @@ TEST031
 	NEW HDR S HDR="[MIOTPL][TEST031][Implicit Iterators - Triple Mustache]"
 	NEW DESC S DESC=HDR_"[Implicit Iterators - Triple Mustache.]"
 	NEW TEMPLATE S TEMPLATE="These characters should not be HTML escaped: {{{.}}}\n"
+	NEW EXPECTED S EXPECTED="These characters should not be HTML escaped: & "" < >\n"
+	NEW CTX 
+	SET CTX="& "" < >"
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+TEST032
+	NEW HDR S HDR="[MIOTPL][TEST032][Implicit Iterators - Ampersand]"
+	NEW DESC S DESC=HDR_"[Ampersand should interpolate without HTML escaping.]"
+	NEW TEMPLATE S TEMPLATE="These characters should not be HTML escaped: {{&.}}\n"
 	NEW EXPECTED S EXPECTED="These characters should not be HTML escaped: & "" < >\n"
 	NEW CTX 
 	SET CTX="& "" < >"
