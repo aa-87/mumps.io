@@ -965,7 +965,7 @@ RESREF(KEY,CST,CTSP,ISSET,TYPE,REF)
 	. N BASE S BASE=$G(CST(LEVEL)) Q:BASE=""
 	. N OK,RR,TT
 	. D RESINBASE(BASE,K,.OK,.TT,.RR)
-	. I OK S ISSET=1,TYPE=TT,REF=RR
+	. I OK,RR'="" S ISSET=1,TYPE=TT,REF=RR
 	Q
 	;
 ; =============================================================================
@@ -988,11 +988,12 @@ RESINBASE(BASE,KEY,OK,TYPE,REF)
 	I 'OK Q
 	I '$D(@CUR) Q
 	; Determine type:
-	; - children => list if it has any subscript at that level
+	; - if has children: list if first subscript is numeric, else obj
 	; - scalar only => scalar
 	I $D(@CUR)>1 D  Q
 	. N S0 S S0=$$FIRSTSUB(CUR)
-	. I S0'="" S OK=1,TYPE="list",REF=CUR Q
+	. I S0="" S OK=1,TYPE="obj",REF=CUR Q  ; empty object node
+	. I S0?1.N S OK=1,TYPE="list",REF=CUR Q
 	. S OK=1,TYPE="obj",REF=CUR
 	I $D(@CUR)#2 S OK=1,TYPE="scalar",REF=CUR Q
 	Q
@@ -1004,13 +1005,21 @@ RESINBASE(BASE,KEY,OK,TYPE,REF)
 RESVAL(KEY,CST,CTSP)
 	N ISSET,TYPE,REF,V
 	D RESREF(KEY,.CST,CTSP,.ISSET,.TYPE,.REF)
+	; If missing or we didn't get a usable reference, return empty
 	I 'ISSET Q ""
-	I $D(@REF)#2 D  Q V
-	. S V=$G(@REF)
-	. ; optional boolean normalization for display
-	. I V=1 Q  ; leave numeric 1 if you don't want this
-	. I V=0 Q  ; leave numeric 0 if you don't want this
+	I $G(REF)="" Q ""
+	; Must be a variable reference string (e.g. CTX(...)), not a literal value
+	I '$$ISREF(REF) Q ""
+	; Only return scalars
+	I $D(@REF)#2 Q $G(@REF)
 	Q ""
+ISREF(REF)
+	; Very small guard: our engine only stores local ref strings like "CTX(...)".;
+	; Reject literals like "Joe" or empty.;
+	N R S R=$G(REF)
+	I R="" Q 0
+	I $E(R,1)'?1A Q 0
+	Q 1
 ; =============================================================================
 ; ISTRUTH(ISSET,TYPE,REF)
 ; Truthiness:

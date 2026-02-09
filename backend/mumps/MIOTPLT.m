@@ -1,6 +1,8 @@
 MIOTPLT
 	;
 	D TEST001,TEST002,TEST003,TEST004,TEST005,TEST006,TEST007
+	D TEST008,TEST009,TEST010,TEST011,TEST012,TEST013,TEST014
+	D TEST015,TEST016,TEST017,TEST018,TEST019
 	Q
 TEST001
 	NEW HDR S HDR="[MIOTPL][TEST001][No Interpolation]"
@@ -71,6 +73,103 @@ TEST008
 	SET CTX("mph")=85
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	QUIT
+TEST009
+	NEW HDR S HDR="[MIOTPL][TEST009[Ampersand Integer Interpolation]"
+	NEW DESC S DESC=HDR_"[Integers should interpolate seamlessly.]"
+	NEW TEMPLATE S TEMPLATE="""{{&mph}} miles an hour!"""
+	NEW EXPECTED S EXPECTED="""85 miles an hour!"""
+	NEW CTX 
+	SET CTX("mph")=85
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+TEST010
+	NEW HDR S HDR="[MIOTPL][TEST010[Basic Decimal Interpolation]"
+	NEW DESC S DESC=HDR_"[Decimals should interpolate seamlessly with proper significance.]"
+	NEW TEMPLATE S TEMPLATE="""{{power}} jiggawatts!"""
+	NEW EXPECTED S EXPECTED="""1.21 jiggawatts!"""
+	NEW CTX 
+	SET CTX("power")=1.21
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+TEST011
+	NEW HDR S HDR="[MIOTPL][TEST011[Triple Mustache Decimal Interpolation]"
+	NEW DESC S DESC=HDR_"Decimals should interpolate seamlessly with proper significance."
+	NEW TEMPLATE S TEMPLATE="""{{{power}}} jiggawatts!"""
+	NEW EXPECTED S EXPECTED="""1.21 jiggawatts!"""
+	NEW CTX 
+	SET CTX("power")=1.21
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+TEST012
+	NEW HDR S HDR="[MIOTPL][TEST012[Ampersand Decimal Interpolation]"
+	NEW DESC S DESC=HDR_"Decimals should interpolate seamlessly with proper significance."
+	NEW TEMPLATE S TEMPLATE="""{{&power}} jiggawatts!"""
+	NEW EXPECTED S EXPECTED="""1.21 jiggawatts!"""
+	NEW CTX 
+	SET CTX("power")=1.21
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+TEST013
+	NEW HDR S HDR="[MIOTPL][TEST013[Basic Null Interpolation]"
+	NEW DESC S DESC=HDR_"Nulls should interpolate as the empty string."
+	NEW TEMPLATE S TEMPLATE="I ({{cannot}}) be seen!"
+	NEW EXPECTED S EXPECTED="I () be seen!"
+	NEW CTX 
+	SET CTX("cannot")=""
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+TEST014
+	NEW HDR S HDR="[MIOTPL][TEST014[Triple Mustache Null Interpolation]"
+	NEW DESC S DESC=HDR_"Nulls should interpolate as the empty string."
+	NEW TEMPLATE S TEMPLATE="I ({{{cannot}}}) be seen!"
+	NEW EXPECTED S EXPECTED="I () be seen!"
+	NEW CTX 
+	SET CTX("cannot")=""
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+TEST015
+	NEW HDR S HDR="[MIOTPL][TEST015[Ampersand Null Interpolation]"
+	NEW DESC S DESC=HDR_"Nulls should interpolate as the empty string."
+	NEW TEMPLATE S TEMPLATE="I ({{&cannot}}) be seen!"
+	NEW EXPECTED S EXPECTED="I () be seen!"
+	NEW CTX 
+	SET CTX("cannot")=""
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+TEST016
+	NEW HDR S HDR="[MIOTPL][TEST016[Basic Context Miss Interpolation]"
+	NEW DESC S DESC=HDR_"Failed context lookups should default to empty strings."
+	NEW TEMPLATE S TEMPLATE="I ({{cannot}}) be seen!"
+	NEW EXPECTED S EXPECTED="I () be seen!"
+	NEW CTX 
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+TEST017
+	NEW HDR S HDR="[MIOTPL][TEST017[Triple Mustache Context Miss Interpolation]"
+	NEW DESC S DESC=HDR_"Failed context lookups should default to empty strings."
+	NEW TEMPLATE S TEMPLATE="I ({{{cannot}}}) be seen!"
+	NEW EXPECTED S EXPECTED="I () be seen!"
+	NEW CTX 
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+TEST018
+	NEW HDR S HDR="[MIOTPL][TEST018[Ampersand Context Miss Interpolation]"
+	NEW DESC S DESC=HDR_"Failed context lookups should default to empty strings."
+	NEW TEMPLATE S TEMPLATE="I ({{&cannot}}) be seen!"
+	NEW EXPECTED S EXPECTED="I () be seen!"
+	NEW CTX 
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+TEST019
+	NEW HDR S HDR="[MIOTPL][TEST019[Dotted Names - Basic Interpolation]"
+	NEW DESC S DESC=HDR_"Dotted names should be considered a form of shorthand for sections."
+	NEW TEMPLATE S TEMPLATE="""{{person.name}}"" == ""{{#person}}{{name}}{{/person}}"""
+	NEW EXPECTED S EXPECTED="""Joe"" == ""Joe"""
+	NEW CTX 
+	SET CTX("person","name")="Joe"
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+	;
 UES(X)
 	N POS,Y,START
 	S POS=0,Y=""
