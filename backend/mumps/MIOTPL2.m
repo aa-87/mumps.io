@@ -166,13 +166,13 @@ MIOTF127 ;
 	S CONF("templates","root")=ROOT
 	S CONF("templates","ext")=""
 	; Write layout + page templates
-	D WRFILE(ROOT_"layout.html","L0<title>{{{blocks.title}}}</title>|D={{desc}}|{{{content}}}|L9"_$C(10),.ERR)
+	D WRFILE(ROOT_"layout.html","L0<title>{{{blocks.title}}}</title>|D={{desc}}|{{{content}}}|L9",.ERR)
 	D OK^MIOTASSERT('$D(ERR),"write layout") K ERR
 	;
 	N T,OK S OK=$$READFILE^MIOTPL2(ROOT_"layout.html",.T,.ERR) 
 	D EQ^MIOTASSERT($E(T,1,9),"L0<title>","layout file prefix")
 	;
-	D WRFILE(ROOT_"page.html","{{#block:title}}T{{year}}{{/block:title}}P{{year}}"_$C(10),.ERR)
+	D WRFILE(ROOT_"page.html","{{#block:title}}T{{year}}{{/block:title}}P{{year}}",.ERR)
 	D OK^MIOTASSERT('$D(ERR),"write page") K ERR
 	;
 	; Clear cache entries for these exact filepaths (defensive)
@@ -189,89 +189,46 @@ MIOTF127 ;
 	D OK^MIOTASSERT('$D(ERR),"renderpage") ZWR:$D(ERR) ERR
 	;
 	; Expected output
-	D EQ^MIOTASSERT(OUT,"L0<title>T2026</title>|D=DESC|P2026"_$C(10)_"|L9"_$C(10),"layout+page output")
+	D EQ^MIOTASSERT(OUT,"L0<title>T2026</title>|D=DESC|P2026|L9","layout+page output")
 	D EQ^MIOTASSERT($G(CTX("blocks","title")),"T2026","block title captured")
 	;
 	; Cleanup best-effort
 	D RMDIR(ROOT)
-	Q	
-MIOTF127B ; Full suite test 127 - TPL_RENDERPAGE_LAYOUT_INDEX (layout + page + blocks)
-	;NEW CONF,CTX,ERR,OUT,ROOT,RC
-	K ERR,OUT,CONF,CTX
-	;
-	; Temp template root (unique per process)
-	;S ROOT="templates/"
-	;D MKDIR(ROOT)
-	;D MKDIR(ROOT_"partials/")
-	;	
-	 ;Configure engine to read from this root
-	S ROOT="templates"
-	S CONF("templates","root")=ROOT
-	; Using explicit .html filenames, so ext doesn't matter. Keep it empty to avoid surprises.;
-	S CONF("templates","ext")=""
-	;	
-	; --- Write layout + page templates ---
-	; Layout uses blocks.title, desc, and content
-	D WRFILE(ROOT_"layout.html","L0<title>{{{blocks.title}}}</title>|D={{desc}}|{{{content}}}|L9"_$C(10),.ERR)
-	D OK^MIOTASSERT('$D(ERR),"write layout") K ERR
-	;;	
-	; Page captures title block and emits body content
-	D WRFILE(ROOT_"page.html","{{#block:title}}T{{year}}{{/block:title}}P{{year}}"_$C(10),.ERR)
-	D OK^MIOTASSERT('$D(ERR),"write page") K ERR
-	;	
-	; --- Context ---
-	M CONF=^MIO("CONF")
-	;	
-	S CTX("year")=2026
-	S CTX("desc")="DESC"
-	;
-	; --- Render ---
-	D RENDERPAGE("page.html","layout.html",.CONF,.CTX,.OUT,.ERR)
-	D OK^MIOTASSERT('$D(ERR),"renderpage") ZWR:$D(ERR) ERR
-	;
-	; Expected output is deterministic
-	D EQ^MIOTASSERT(OUT,"L0<title>T2026</title>|D=DESC|P2026"_$C(10)_"|L9"_$C(10),"layout+page output")
-	;
-	; Optional: blocks captured
-	D EQ^MIOTASSERT($G(CTX("blocks","title")),"T2026","block title captured")
-	;
-	; Cleanup best-effort (don’t fail the test on cleanup)
-	;D RMDIR(ROOT)
-	;
 	Q
 	;
-	;
-MIOTF128 ; Full suite test 128 - TPL_PARTIALS_INCLUDE (partials)
-	NEW CONF,CTX,ERR,OUT,ROOT
+MIOTF128 ; Full suite test 128 - TPL_PARTIALS_INCLUDE
 	K ERR,OUT,CONF,CTX
+	N ROOT
 	;
-	S ROOT="templates"
+	; Pull base config first (if you want it), THEN override root/ext
+	M CONF=^MIO("CONF")
+	;
+	S ROOT="templates/test128-"_$J_"/"
 	D MKDIR(ROOT)
 	D MKDIR(ROOT_"partials/")
 	;
 	S CONF("templates","root")=ROOT
 	S CONF("templates","ext")=""
 	;
-	; Partial file
-	D WRFILE(ROOT_"partials/p.html","PP{{x}}PP"_$C(10),.ERR)
-	D OK^MIOTASSERT('$D(ERR),"write partial") K ERR
+	; --- write partials ---
+	D WRFILE(ROOT_"partials/app1.html","APP1",.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write app1") K ERR
 	;
-	; Main file includes the partial
-	D WRFILE(ROOT_"main.html","A{{> partials/p.html}}B"_$C(10),.ERR)
+	D WRFILE(ROOT_"partials/p.html","PP",.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write p") K ERR
+	;
+	; --- write main (includes both partials) ---
+	D WRFILE(ROOT_"main.html","{{> partials/app1.html}}{{> partials/p.html}}",.ERR)
 	D OK^MIOTASSERT('$D(ERR),"write main") K ERR
 	;
-	S CTX("x")="1"
+	; --- render main by logical name (NO ROOT PREFIX) ---
+	D RENDER("main.html",.CONF,.CTX,.OUT,.ERR)
+	D OK^MIOTASSERT('$D(ERR),"render main") I $D(ERR) ZWR ERR
 	;
-	D RENDER^MIOTPL2("main.html",.CONF,.CTX,.OUT,.ERR)
-	D OK^MIOTASSERT('$D(ERR),"render main") ZWR:$D(ERR) ERR
-	;
-	; Exact expected output (includes newline from files)
-	D EQ^MIOTASSERT(OUT,"APP1PP"_$C(10)_"B"_$C(10),"partials include output")
+	D EQ^MIOTASSERT(OUT,"APP1PP","partials include output")
 	;
 	D RMDIR(ROOT)
-	;
 	Q
-	;
 	;
 ; -----------------------------
 ; Helpers for filesystem tests
@@ -492,6 +449,12 @@ NAME2FP(NAME,CONF,ERR)
 	S NM=NAME
 	; Normalize backslashes to slashes for safety/consistency.;
 	S NM=$TR(NM,"\","/")
+	; If caller passed an already-rooted path, strip the root to avoid double prefix
+	N R1,R2
+	S R1=ROOT
+	S R2="./"_ROOT
+	I $E(NM,1,$L(R2))=R2 S NM=$E(NM,$L(R2)+1,$L(NM))
+	E  I $E(NM,1,$L(R1))=R1 S NM=$E(NM,$L(R1)+1,$L(NM))
 	; Block obvious traversal / absolute / device patterns.;
 	I NM[".." S ERR("code")="TPL_TRAVERSAL",ERR("msg")="Path traversal '..' is not allowed." Q ""
 	I NM[":" S ERR("code")="TPL_TRAVERSAL",ERR("msg")="Device/path ':' is not allowed." Q ""
@@ -514,12 +477,13 @@ READFILE(FP,TXT,ERR) ;
 	; Safety limit: 2 MB (adjustable via CONF later if needed).;
 	S MAX=2*1024*1024
 	;I '$$FILEEXISTS(FP) ="" 
-	I '$$FILEEXISTS(FP),'$$FILEEXISTS("./"_FP) S ERR("code")="TPL_NOFILE",ERR("msg")="Template file not found: "_FP Q 0
+	S FP="./"_FP
+	I '$$FILEEXISTS(FP) S ERR("code")="TPL_NOFILE",ERR("msg")="Template file not found: "_FP Q 0
 	O FP:(READONLY:EXCEPTION="GOTO RFERR^MIOTPL2")
 	U FP
 	F  R LINE Q:$ZEOF  D  Q:('$T!$D(ERR))
 	. ; Keep newlines. Most templates expect them.;
-	. S TXT=TXT_LINE_$C(10)
+	. S TXT=TXT_LINE ;_
 	. I $L(TXT)>MAX S ERR("code")="TPL_TOOLARGE",ERR("msg")="Template too large (limit 2MB): "_FP
 	I $D(ERR) Q 0
 	C FP U IO
