@@ -140,7 +140,7 @@ TEST049
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	QUIT
 TEST050
-	NEW HDR S HDR="[MIOTPL][TEST050][Deeply Nested Contexts]"
+	NEW HDR S HDR="[MIOTPL][TEST050][Deeply Nested Contexts] "
 	NEW DESC S DESC=HDR_"[All elements on the context stack should be accessible.]"
 	NEW TEMPLATE S TEMPLATE="{{#a}}\n{{one}}\n{{#b}}\n{{one}}{{two}}{{one}}\n{{#c}}\n{{one}}{{two}}{{three}}{{two}}{{one}}\n{{#d}}\n{{one}}{{two}}{{three}}{{four}}{{three}}{{two}}{{one}}\n{{#five}}\n{{one}}{{two}}{{three}}{{four}}{{five}}{{four}}{{three}}{{two}}{{one}}\n{{one}}{{two}}{{three}}{{four}}{{.}}6{{.}}{{four}}{{three}}{{two}}{{one}}\n{{one}}{{two}}{{three}}{{four}}{{five}}{{four}}{{three}}{{two}}{{one}}\n{{/five}}\n{{one}}{{two}}{{three}}{{four}}{{three}}{{two}}{{one}}\n{{/d}}\n{{one}}{{two}}{{three}}{{two}}{{one}}\n{{/c}}\n{{one}}{{two}}{{one}}\n{{/b}}\n{{one}}\n{{/a}}\n"
 	NEW EXPECTED S EXPECTED="1\n121\n12321\n1234321\n123454321\n12345654321\n123454321\n1234321\n12321\n121\n1\n"
