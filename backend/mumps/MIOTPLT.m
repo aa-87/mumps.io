@@ -35,7 +35,8 @@ MIOTF201 ;Sections
 	;      off the context stack.;
 	;      Section and End Section tags SHOULD be treated as standalone when appropriate."
 	D TEST043,TEST044,TEST045,TEST046,TEST047,TEST048,TEST049
-	D TEST050,TEST051,TEST052,TEST053,TEST054
+	D TEST050,TEST051,TEST052,TEST053,TEST054,TEST055,TEST056
+	D TEST057,TEST058,TEST059
 	Q
 MIOTF200 ;Interpolation
 	; Interpolation tags are used to integrate dynamic content into the template.;
@@ -194,7 +195,76 @@ TEST054
 	SET CTX("bool")="true"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	QUIT
-	;
+TEST055
+	NEW HDR S HDR="[MIOTPL][TEST055][Nested (Falsey)]"
+	NEW DESC S DESC=HDR_"[Nested falsey sections should be omitted.]"
+	NEW TEMPLATE S TEMPLATE="| A {{#bool}}B {{#bool}}C{{/bool}} D{{/bool}} E |"
+	NEW EXPECTED S EXPECTED="| A  E |"
+	NEW CTX 
+	SET CTX("bool")="false"
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+TEST056
+	NEW HDR S HDR="[MIOTPL][TEST056][Context Misses]"
+	NEW DESC S DESC=HDR_"[Failed context lookups should be considered falsey.]"
+	NEW TEMPLATE S TEMPLATE="[{{#missing}}Found key 'missing'!{{/missing}}]"
+	NEW EXPECTED S EXPECTED="[]"
+	NEW CTX 
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+TEST057
+	NEW HDR S HDR="[MIOTPL][TEST057][Implicit Iterator - String]"
+	NEW DESC S DESC=HDR_"[Implicit iterators should directly interpolate strings.]"
+	NEW TEMPLATE S TEMPLATE="""{{#list}}({{.}}){{/list}}"""
+	NEW EXPECTED S EXPECTED="""(a)(b)(c)(d)(e)"""
+	NEW CTX 
+	SET CTX("list",1)="a"
+	SET CTX("list",2)="b"
+	SET CTX("list",3)="c"
+	SET CTX("list",4)="d"
+	SET CTX("list",5)="e"
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+TEST058
+	NEW HDR S HDR="[MIOTPL][TEST058][Implicit Iterator - Integer]"
+	NEW DESC S DESC=HDR_"[Implicit iterators should cast integers to strings and interpolate.]"
+	NEW TEMPLATE S TEMPLATE="""{{#list}}({{.}}){{/list}}"""
+	NEW EXPECTED S EXPECTED="""(1)(2)(3)(4)(5)"""
+	NEW CTX 
+	SET CTX("list",1)=1
+	SET CTX("list",2)=2
+	SET CTX("list",3)=3
+	SET CTX("list",4)=4
+	SET CTX("list",5)=5
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+TEST059
+	NEW HDR S HDR="[MIOTPL][TEST059][Implicit Iterator - Decimal]"
+	NEW DESC S DESC=HDR_"[Implicit iterators should cast decimals to strings and interpolate.]"
+	NEW TEMPLATE S TEMPLATE="""{{#list}}({{.}}){{/list}}"""
+	NEW EXPECTED S EXPECTED="""(1.1)(2.2)(3.3)(4.4)(5.5)"""
+	NEW CTX 
+	SET CTX("list",1)=1.1
+	SET CTX("list",2)=2.2
+	SET CTX("list",3)=3.3
+	SET CTX("list",4)=4.4
+	SET CTX("list",5)=5.5
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+TEST060
+	NEW HDR S HDR="[MIOTPL][TEST060][Implicit Iterator - Array]"
+	NEW DESC S DESC=HDR_"[Implicit iterators should allow iterating over nested arrays.]"
+	NEW TEMPLATE S TEMPLATE="""{{#list}}({{#.}}{{.}}{{/.}}){{/list}}"""
+	NEW EXPECTED S EXPECTED="""(123)(abc)"""
+	NEW CTX 
+	SET CTX("list",1,1)=1
+	SET CTX("list",1,2)=2
+	SET CTX("list",1,3)=3
+	SET CTX("list",2,1)="a"
+	SET CTX("list",2,2)="b"
+	SET CTX("list",2,3)="c"
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
 TEST000
 	NEW HDR S HDR="[MIOTPL][TEST000][]"
 	NEW DESC S DESC=HDR_"[]"
