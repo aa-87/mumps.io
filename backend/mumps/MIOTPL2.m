@@ -49,7 +49,10 @@ MIOTEST
 	; 120-125 D MIOTF120 *skipped* - Coverage instrumentation for a full test suite
 	D ^MIOTPLT,MIOTF121,MIOTF122,MIOTF123,MIOTF124,MIOTF125
 	D MIOTF126,MIOTF126B,MIOTF127,MIOTF128,MIOTF129,MIOTF130
+	D MIOTF200
 	;
+MIOTF200 D MIOTF200^MIOTPLT QUIT ; Run mustache spec: interpolation.json
+MIOTF201 D MIOTF201^MIOTPLT QUIT ; Run mustache spec: interpolation.json
 MIOTF121 ; Full suite test 121 - TPL_SECTION_CTA.;
 	NEW TOK,ERR,CONF,CTX,OUT
 	D COMPILE("{{#cta}}X{{/cta}}",.TOK,.ERR)
@@ -250,6 +253,7 @@ MIOTF130 ;
 	D EVAL(.TOK,.CONF,.CTX,.OUT,.ERR)
 	D EQ^MIOTASSERT(OUT,"N","FALSE is falsey")
 	Q
+	;
 ; -----------------------------
 ; Helpers for filesystem tests
 ; -----------------------------

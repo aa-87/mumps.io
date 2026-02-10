@@ -1,13 +1,99 @@
 MIOTPLT
-	;
+	D MIOTF200,MIOTF201
+	Q
+MIOTF201 ;Sections
+	;Section tags and End Section tags are used in combination to wrap a section
+	;of the template for iteration.;
+	;These tags' content MUST be a non-whitespace character sequence NOT
+	;containing the current closing delimiter; each Section tag MUST be followed
+	;by an End Section tag with the same content within the same section.;
+	;This tag's content names the data to replace the tag.  
+	;Name resolution is as
+	;follows:
+	;  1) If the name is a single period (.), the data is the item currently
+	;     sitting atop the context stack. Skip the rest of these steps.;
+	;  2) Split the name on periods; the first part is the name to resolve, any
+	;    remaining parts should be retained.;
+	;  3) Walk the context stack from top to bottom, finding the first context
+	;     that is 
+	;         a) a hash containing the name as a key OR 
+	;         b) an object responding to a method with the given name.;
+	;  4) If the context is a hash, the data is the value associated with the name.;
+	;  5) If the context is an object and the method with the given name has an
+	;     arity of 1, the method SHOULD be called with a String containing the
+	;     unprocessed contents of the sections; the data is the value returned.;
+	;  6) Otherwise, the data is the value returned by calling the method with the given name.;
+	;  7) If any name parts were retained in step 1, each should be resolved
+	;     against a context stack containing only the result from the former resolution.;
+	;     If any part fails resolution, the result should be considered
+	;     falsey, and should interpolate as the empty string.;
+	;     If the data is not of a list type, it is coerced into a list as follows: if
+	;     the data is truthy (e.g. `!!data == true`), use a single-element list
+	;      containing the data, otherwise use an empty list.;
+	;      For each element in the data list, the element MUST be pushed onto the
+	;      context stack, the section MUST be rendered, and the element MUST be popped
+	;      off the context stack.;
+	;      Section and End Section tags SHOULD be treated as standalone when appropriate."
+	D TEST043,TEST044
+	Q
+MIOTF200 ;Interpolation
+	; Interpolation tags are used to integrate dynamic content into the template.;
+	; The tag's content MUST be a non-whitespace character sequence NOT containing
+	; the current closing delimiter.;
+	; This tag's content names and the data to replace the tag.  A single period (`.`)
+	; indicates that the item currently sitting atop the context stack should be used; 
+	; otherwise, name resolution is as follows:
+	;   1) Split the name on periods; the first part is the name to resolve, 
+	;      any remaining parts should be retained.;
+	;   2) Walk the context stack from top to bottom, finding the first context
+	;      that is: 
+	;           a) a hash containing the name as a key OR 
+	;           b) an object responding to a method with the given name.;
+	;   3) If the context is a hash, the data is the value associated with the name.;
+	;   4) If the context is an object, the data is the value returned by the method
+	;      with the given name.;
+	;   5) If any name parts were retained in step 1, each should be resolved against
+	;      a context stack containing only the result from the former resolution.;
+	;      If any part fails resolution, the result should be considered falsey, and
+	;      should interpolate as the empty string. Data should be coerced into a string
+	;      (and escaped, if appropriate) before interpolation. The Interpolation tags
+	;      MUST NOT be treated as standalone
 	D TEST001,TEST002,TEST003,TEST004,TEST005,TEST006,TEST007
 	D TEST008,TEST009,TEST010,TEST011,TEST012,TEST013,TEST014
 	D TEST015,TEST016,TEST017,TEST018,TEST019,TEST020,TEST021
 	D TEST022,TEST023,TEST024,TEST025,TEST026,TEST027,TEST028
 	D TEST029,TEST030,TEST031,TEST032,TEST033,TEST034,TEST035
 	D TEST036,TEST037,TEST038,TEST039,TEST040,TEST041,TEST042
-	;	
 	Q
+TEST043 ;
+	NEW HDR S HDR="[MIOTPL][TEST043][Truthy]"
+	NEW DESC S DESC=HDR_"[Truthy sections should have their contents rendered.]"
+	NEW TEMPLATE S TEMPLATE="""{{#boolean}}This should be rendered.{{/boolean}}"""
+	NEW EXPECTED S EXPECTED="""This should be rendered."""
+	NEW CTX
+	S CTX("boolean")="true"
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	Q
+TEST044
+	NEW HDR S HDR="[MIOTPL][TEST044][Falsey]"
+	NEW DESC S DESC=HDR_"[Falsey sections should have their contents omitted.]"
+	NEW TEMPLATE S TEMPLATE="""{{#boolean}}This should not be rendered.{{/boolean}}"""
+	NEW EXPECTED S EXPECTED=""""""
+	NEW CTX 
+	S CTX("boolean")="false"
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+	;
+TEST000
+	NEW HDR S HDR="[MIOTPL][TEST000][]"
+	NEW DESC S DESC=HDR_"[]"
+	NEW TEMPLATE S TEMPLATE=""
+	NEW EXPECTED S EXPECTED=""
+	NEW CTX 
+	SET CTX("string")="---"
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+	;
 TEST001
 	NEW HDR S HDR="[MIOTPL][TEST001][No Interpolation]"
 	NEW DESC S DESC=HDR_"[Mustache-free templates should render as-is]"
@@ -381,15 +467,6 @@ TEST042
 	NEW DESC S DESC=HDR_"[Superfluous in-tag whitespace should be ignored.]"
 	NEW TEMPLATE S TEMPLATE="|{{& string }}|"
 	NEW EXPECTED S EXPECTED="|---|"
-	NEW CTX 
-	SET CTX("string")="---"
-	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
-	QUIT
-TEST000
-	NEW HDR S HDR="[MIOTPL][TEST000][]"
-	NEW DESC S DESC=HDR_"[]"
-	NEW TEMPLATE S TEMPLATE=""
-	NEW EXPECTED S EXPECTED=""
 	NEW CTX 
 	SET CTX("string")="---"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
