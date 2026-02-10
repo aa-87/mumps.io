@@ -34,7 +34,7 @@ MIOTF201 ;Sections
 	;      context stack, the section MUST be rendered, and the element MUST be popped
 	;      off the context stack.;
 	;      Section and End Section tags SHOULD be treated as standalone when appropriate."
-	D TEST043,TEST044,TEST045,TEST046,TEST047,TEST048,TEST049
+	D TEST043,TEST044,TEST045,TEST046,TEST047,TEST048,TEST049,TEST050
 	Q
 MIOTF200 ;Interpolation
 	; Interpolation tags are used to integrate dynamic content into the template.;
@@ -154,7 +154,7 @@ TEST050
 	SET CTX("c","three")=3
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	QUIT
-UNESCNL(S) Q $$UES^MIOJSON2(S)
+UNESCNL(S) Q $$UES^MIOJSON2(S) ; Enescape string from json/js -> M
 	;
 TEST000
 	NEW HDR S HDR="[MIOTPL][TEST000][]"

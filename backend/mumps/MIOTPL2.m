@@ -49,7 +49,7 @@ MIOTEST
 	; 120-125 D MIOTF120 *skipped* - Coverage instrumentation for a full test suite
 	D MIOTF121,MIOTF122,MIOTF123,MIOTF124,MIOTF125
 	D MIOTF126,MIOTF126B,MIOTF127,MIOTF128,MIOTF129,MIOTF130
-	D MIOTF200,MIOTF200
+	D MIOTF200,MIOTF201
 	;
 MIOTF200 D MIOTF200^MIOTPLT QUIT ; Run mustache spec: interpolation.json
 MIOTF201 D MIOTF201^MIOTPLT QUIT ; Run mustache spec: interpolation.json
@@ -528,7 +528,8 @@ FILEEXISTS(FP) Q $ZSEARCH(FP)]""
 ; =============================================================================
 COMPILE(TEXT,TOK,ERR) ;
 	DO PARSE(.TEXT,.TOK,.ERR)
-	D:'$D(ERR) LINKSECS(.TOK,.ERR)
+	DO:'$D(ERR) LINKSECS(.TOK,.ERR)
+	DO STANDTOK(.TOK) 
 	Q 
 ; =============================================================================
 ; PARSE(TEXT,TOK,ERR)
@@ -622,10 +623,97 @@ PARSE(TEXT,TOK,ERR)
 	. ; Default: variable escaped
 	. D ADDVAR(.TOK,.N,INSIDE,1)
 	. S POS=CLOSE
+	D STANDTOK(.TOK)
 	Q
 	;
+; =============================================================================
+; STANDTOK(TOK)
+; Apply Mustache standalone line trimming at token level.;
+; This does NOT remove the tag token, only surrounding whitespace/newline.;
+; =============================================================================
+STANDTOK(TOK)
+	N I,MAX,TYP
+	S MAX=+$O(TOK(""),-1) Q:MAX<1
 	;
+	F I=1:1:MAX D
+	. S TYP=$G(TOK(I,"t"))
+	. Q:(TYP'="secS")&(TYP'="secE")&(TYP'="part")
+	. D STAND1(.TOK,I,MAX)
+	Q
 	;
+; =============================================================================
+; STAND1(TOK,I,MAX)
+; If token I sits alone on its line (optionally indented), trim surrounding newline.;
+; =============================================================================
+STAND1(TOK,I,MAX)
+	N POK,NOK,PV,NV
+	; prev side must be start-of-file OR text token whose tail after last LF is all ws
+	S POK=1
+	I I>1 D
+	. I $G(TOK(I-1,"t"))'="text" S POK=0 Q
+	. S PV=$G(TOK(I-1,"v"))
+	. I '$$TAILWS(PV) S POK=0
+	Q:'POK
+	;
+	; next side must be end-of-file OR text token starting with ws then LF
+	S NOK=1
+	I I<MAX D
+	. I $G(TOK(I+1,"t"))'="text" S NOK=0 Q
+	. S NV=$G(TOK(I+1,"v"))
+	. I '$$HEADWNL(NV) S NOK=0
+	Q:'NOK
+	;
+	; trim prev indentation (ws after last LF)
+	I I>1 S TOK(I-1,"v")=$$CUTPRE($G(TOK(I-1,"v")))
+	; trim next leading ws + ONE LF
+	I I<MAX S TOK(I+1,"v")=$$CUTNX($G(TOK(I+1,"v")))
+	Q
+	;
+; --- helpers ---
+	;
+TAILWS(S) ; 1 if everything after last LF is ws (or no LF and whole string ws)
+	N P,TAIL
+	S S=$G(S)
+	S P=$$LASTLF(S)
+	S TAIL=$S(P>0:$E(S,P+1,$L(S)),1:S)
+	Q $$ALLWS(TAIL)
+	;
+HEADWNL(S) ; 1 if starts with ws then LF (or empty string => allow EOF)
+	N J,C
+	S S=$G(S)
+	I S="" Q 1
+	F J=1:1:$L(S) S C=$E(S,J) Q:(C'=" ")&(C'=$C(9))&(C'=$C(13))
+	I J>$L(S) Q 0
+	Q $S($E(S,J)=$C(10):1,1:0)
+	;
+CUTPRE(S) ; keep up to last LF, drop any ws after it; if no LF, drop all
+	N P
+	S S=$G(S)
+	S P=$$LASTLF(S)
+	Q $S(P>0:$E(S,1,P),1:"")
+	;
+CUTNX(S) ; drop leading ws then one LF
+	N J,C
+	S S=$G(S)
+	I S="" Q ""
+	F J=1:1:$L(S) S C=$E(S,J) Q:(C'=" ")&(C'=$C(9))&(C'=$C(13))
+	I J>$L(S) Q S
+	I $E(S,J)'=$C(10) Q S
+	Q $E(S,J+1,$L(S))
+	;
+ALLWS(S) ; spaces/tabs/CR only
+	N I,C,Q S Q=1
+	S S=$G(S)
+	F I=1:1:$L(S) D  Q:$Q
+	. S C=$E(S,I)
+	. I (C'=" ")&(C'=$C(9))&(C'=$C(13)) S Q=0
+	Q Q
+	;
+LASTLF(S) ; position of last LF, 0 if none
+	N P,AT
+	S S=$G(S),P=0,AT=0
+	F  S AT=$F(S,$C(10),AT+1) Q:'AT  S P=AT-1
+	Q P
 ADDTXT(TOK,N,VAL)
 	S N=N+1
 	S TOK(N,"t")="text"
@@ -686,11 +774,8 @@ LINKSECS(TOK,ERR)
 	I SP>0 D
 	. S ERR("code")="TPL_PARSE",ERR("msg")="Unclosed section: "_$G(STK(SP,"k"))
 	Q
-	;
 ; =============================================================================
 ; EVAL(TOK,CONF,CTX,OUT,ERR)
-; Iterative evaluator with frame stack + context stack.;
-; Supports: text, var, sections, inverted, block capture, partials, list iteration.;
 ; =============================================================================
 EVAL(TOK,CONF,CTX,OUT,ERR)
 	K ERR
@@ -700,51 +785,60 @@ EVAL(TOK,CONF,CTX,OUT,ERR)
 	;
 	; Partial recursion protection
 	N PDEPTHMAX S PDEPTHMAX=+$G(CONF("templates","maxPartialDepth")) I PDEPTHMAX<1 S PDEPTHMAX=20
-	N PACTIVE  ; PACTIVE(name)=count
+	N PACTIVE
 	;
-	; Partial token storage (unique per render call)
-	N PTID,PTOKS S PTID=0
+	;Temp Array
+	N TMPTARR
 	;
-	; Capture buffers per frame (avoid shared CAP scalar collisions)
+	; Local storage for partial token arrays
+	N PTID,PTOKS
+	S PTID=0
+	;
+	; Block capture buffers keyed by frame#
 	N BCAP
 	;
 	; Frame stack
 	N FSP,F
 	S FSP=1
 	S F(1,"i")=1
-	S F(1,"end")=$O(TOK(""),-1)
+	S F(1,"end")=$$TOKENDR("TOK")
 	S F(1,"ctxTop")=CTSP
 	S F(1,"mode")="emit"
 	S F(1,"capRef")=""
 	S F(1,"tokName")="TOK"
+	;
 	S OUT=""
+	;
 	; Safety limit
 	N FRAMELIM,FRAMES
-	S FRAMELIM=50000,FRAMES=0
+	S FRAMELIM=2000,FRAMES=0
+	;
+	; Main loop
 	F  Q:FSP<1  D  Q:$D(ERR)
 	. S FRAMES=FRAMES+1
 	. I FRAMES>FRAMELIM S ERR("code")="TPL_LIMIT",ERR("msg")="Render exceeded safety frame limit." Q
+	. ;
 	. ; -------------------------
-	. ; Iterator frames (mode="iter")
+	. ; ITERATOR controller frame
 	. ; -------------------------
 	. I $G(F(FSP,"mode"))="iter" D  Q
-	. . N LREF,SUB,BS,BE,PM,PC,ITEMREF,NEWTOP
+	. . N LREF,SUB,BS,BE,PM,PC,PARENTMODE,PARENTCAP
 	. . S LREF=$G(F(FSP,"listRef"))
 	. . S SUB=$G(F(FSP,"sub"))
 	. . S BS=+$G(F(FSP,"bodyS"))
 	. . S BE=+$G(F(FSP,"bodyE"))
-	. . S PM=$G(F(FSP,"parentMode"))
-	. . S PC=$G(F(FSP,"parentCap"))
-	. . ; next list subscript (MUST use APPREF, not string concat)
+	. . S PARENTMODE=$G(F(FSP,"parentMode"))
+	. . S PARENTCAP=$G(F(FSP,"parentCap"))
+	. . ; next element
 	. . S SUB=$O(@($$APPREF^MIOTPL2(LREF,SUB)))
 	. . I SUB="" D POPF^MIOTPL2(.FSP,.F,.CST,.CTSP) Q
 	. . S F(FSP,"sub")=SUB
-	. . ; item reference
+	. . ; push item context and render body once
+	. . N ITEMREF,NEWTOP
 	. . S ITEMREF=$$APPREF^MIOTPL2(LREF,SUB)
-	. . ; push item context
 	. . S NEWTOP=CTSP+1,CST(NEWTOP)=ITEMREF,CTSP=NEWTOP
-	. . ; render body once for this item
-	. . D PUSHFRAME^MIOTPL2(.FSP,.F,BS,BE,CTSP,PM,PC,$G(F(FSP-1,"tokName")))
+	. . D PUSHFRAME^MIOTPL2(.FSP,.F,BS,BE,CTSP,PARENTMODE,PARENTCAP,F(FSP-1,"tokName"))
+	. ;
 	. ; -------------------------
 	. ; Fetch current token
 	. ; -------------------------
@@ -753,87 +847,94 @@ EVAL(TOK,CONF,CTX,OUT,ERR)
 	. S END=+$G(F(FSP,"end"))
 	. I I<1!(I>END) D POPF^MIOTPL2(.FSP,.F,.CST,.CTSP) Q
 	. S TN=$G(F(FSP,"tokName")) I TN="" S TN="TOK"
-	. S TYP=$G(@TN@(I,"t"))
+	. S TYP=$$TOKGET(TN,I,"t")
+	. ;
 	. ; -------------------------
 	. ; TEXT
 	. ; -------------------------
 	. I TYP="text" D  Q
-	. . D EMIT^MIOTPL2(.FSP,.F,.OUT,$G(@TN@(I,"v")))
+	. . D EMIT^MIOTPL2(.FSP,.F,.OUT,$$TOKGET(TN,I,"v"))
 	. . S F(FSP,"i")=I+1
+	. ;
 	. ; -------------------------
 	. ; VAR
 	. ; -------------------------
 	. I TYP="var" D  Q
 	. . N KEY,ESC,VAL
-	. . S KEY=$G(@TN@(I,"k")),ESC=+$G(@TN@(I,"e"))
+	. . S KEY=$$TOKGET(TN,I,"k")
+	. . S ESC=+$$TOKGET(TN,I,"e")
 	. . S VAL=$$RESVAL^MIOTPL2(KEY,.CST,CTSP)
 	. . I ESC S VAL=$$ESCHTML^MIOTPL2(VAL)
 	. . D EMIT^MIOTPL2(.FSP,.F,.OUT,VAL)
 	. . S F(FSP,"i")=I+1
+	. ;
 	. ; -------------------------
 	. ; PARTIAL
 	. ; -------------------------
 	. I TYP="part" D  Q
-	. . N PNAME,FP,PERR
-	. . S PNAME=$G(@TN@(I,"k"))
-	. . ; advance parent immediately
+	. . N PNAME
+	. . S PNAME=$$TOKGET(TN,I,"k")
+	. . ; advance parent now
 	. . S F(FSP,"i")=I+1
-	. . ; validate name -> path safety (optional but you had it)
-	. . S FP=$$NAME2FP^MIOTPL2(PNAME,.CONF,.PERR)
-	. . I $D(PERR) M ERR=PERR Q
 	. . ; recursion control
-	. . S PACTIVE(PNAME)=+$G(PACTIVE(PNAME))
-	. . I (PACTIVE(PNAME)+1)>PDEPTHMAX S ERR("code")="TPL_PARTIAL_DEPTH",ERR("msg")="Partial recursion depth exceeded: "_PNAME Q
+	. . I $G(PACTIVE(PNAME))'<0 S PACTIVE(PNAME)=+$G(PACTIVE(PNAME))
+	. . I PACTIVE(PNAME)+1>PDEPTHMAX S ERR("code")="TPL_PARTIAL_DEPTH",ERR("msg")="Partial recursion depth exceeded: "_PNAME Q
 	. . S PACTIVE(PNAME)=PACTIVE(PNAME)+1
-	. . ; load partial tokens into PTOKS(PID)
-	. . N PID,PTOK,PMAX,CHTN
-	. . S PTID=PTID+1,PID=PTID
-	. . K PTOKS(PID),PTOK
-	. . D GETTOK^MIOTPL2(PNAME,.CONF,.PTOK,.ERR) I $D(ERR) S PACTIVE(PNAME)=PACTIVE(PNAME)-1 Q
-	. . M PTOKS(PID)=PTOK
-	. . S CHTN="PTOKS("_PID_")"
-	. . S PMAX=$$TOKMAX^MIOTPL2(CHTN)
-	. . I PMAX<1 D  Q
-	. . . ; empty partial is allowed
-	. . . S PACTIVE(PNAME)=PACTIVE(PNAME)-1
-	. . ; push partial frame (inherits current output mode/capture)
-	. . D PUSHFRAME^MIOTPL2(.FSP,.F,1,PMAX,CTSP,$G(F(FSP,"mode")),$G(F(FSP,"capRef")),CHTN)
-	. . ; mark for decrement when frame ends
+	. . ; load partial tokens into PTOKS(pid)
+	. . S PTID=PTID+1
+	. . K PTOKS(PTID),TMPTARR
+	. . D GETTOK^MIOTPL2(PNAME,.CONF,.TMPTARR,.ERR)
+	. . M PTOKS(PTID)=TMPTARR K TMPTARR
+	. . I $D(ERR) S PACTIVE(PNAME)=PACTIVE(PNAME)-1 I PACTIVE(PNAME)<1 K PACTIVE(PNAME) Q
+	. . N PMAX S PMAX=$O(PTOKS(PTID,""),-1)
+	. . I PMAX<1 D  Q  ; empty partial ok
+	. . . S PACTIVE(PNAME)=PACTIVE(PNAME)-1 I PACTIVE(PNAME)<1 K PACTIVE(PNAME)
+	. . ; push frame for partial, inherit mode/cap from current frame
+	. . N MODE,CAP
+	. . S MODE=$G(F(FSP,"mode"))
+	. . S CAP=$G(F(FSP,"capRef"))
+	. . D PUSHFRAME^MIOTPL2(.FSP,.F,1,PMAX,CTSP,MODE,CAP,"PTOKS("_PTID_")")
+	. . ; mark pname so POPF decrements
 	. . S F(FSP,"pname")=PNAME
+	. ;
 	. ; -------------------------
 	. ; SECTION START
 	. ; -------------------------
 	. I TYP="secS" D  Q
 	. . N KEY,INV,MI,NEXT,PARENT
 	. . S PARENT=FSP
-	. . S KEY=$G(@TN@(I,"k")),INV=+$G(@TN@(I,"inv"))
-	. . S MI=+$G(@TN@(I,"m"))
+	. . S KEY=$$TOKGET(TN,I,"k")
+	. . S INV=+$$TOKGET(TN,I,"inv")
+	. . S MI=+$$TOKGET(TN,I,"m")
 	. . I 'MI S ERR("code")="TPL_PARSE",ERR("msg")="Section start without match: "_KEY Q
-	. . ; advance parent beyond matching end now
+	. . ; advance parent beyond close now (so we never double-run)
 	. . S NEXT=MI+1
 	. . S F(PARENT,"i")=NEXT
+	. . ;
 	. . ; ---- block capture ----
-	. . I +$G(@TN@(I,"blk")) D  Q
+	. . I +$$TOKGET(TN,I,"blk") D  Q
 	. . . N BNAME,NEWF,CAPREF
-	. . . S BNAME=$G(@TN@(I,"bname"))
-	. . . ; allocate capture buffer for the *new* frame index
+	. . . S BNAME=$$TOKGET(TN,I,"bname")
 	. . . S NEWF=FSP+1
 	. . . S BCAP(NEWF)=""
 	. . . S CAPREF=$NA(BCAP(NEWF))
 	. . . D PUSHFRAME^MIOTPL2(.FSP,.F,I+1,MI-1,CTSP,"capture",CAPREF,TN)
-	. . . ; store block info on the capture frame
 	. . . S F(FSP,"storeBlock")=1
 	. . . S F(FSP,"storeName")=BNAME
 	. . . S F(FSP,"storeCapRef")=CAPREF
-	. . ; resolve section key
+	. . ;
+	. . ; resolve key
 	. . N ISSET,TYPE,REF
 	. . D RESREF^MIOTPL2(KEY,.CST,CTSP,.ISSET,.TYPE,.REF)
-	. . ; inverted section
+	. . ;
+	. . ; inverted
 	. . I INV D  Q
 	. . . I $$ISTRUTH^MIOTPL2(.ISSET,.TYPE,.REF)=0 D
 	. . . . D PUSHFRAME^MIOTPL2(.FSP,.F,I+1,MI-1,CTSP,$G(F(PARENT,"mode")),$G(F(PARENT,"capRef")),TN)
-	. . ; normal section: skip if falsey
+	. . ;
+	. . ; normal: skip if falsey
 	. . I $$ISTRUTH^MIOTPL2(.ISSET,.TYPE,.REF)=0 Q
+	. . ;
 	. . ; list iteration
 	. . I TYPE="list" D  Q
 	. . . S FSP=FSP+1
@@ -846,18 +947,22 @@ EVAL(TOK,CONF,CTX,OUT,ERR)
 	. . . S F(FSP,"bodyE")=MI-1
 	. . . S F(FSP,"parentMode")=$G(F(PARENT,"mode"))
 	. . . S F(FSP,"parentCap")=$G(F(PARENT,"capRef"))
-	. . ; object context
+	. . ;
+	. . ; object context: push
 	. . I TYPE="obj" D  Q
 	. . . N NEWTOP S NEWTOP=CTSP+1
 	. . . S CST(NEWTOP)=REF,CTSP=NEWTOP
 	. . . D PUSHFRAME^MIOTPL2(.FSP,.F,I+1,MI-1,CTSP,$G(F(PARENT,"mode")),$G(F(PARENT,"capRef")),TN)
-	. . ; scalar truthy: push scalar value onto context so {{.}} works
+	. . ;
+	. . ; scalar context: push (so {{.}} works)
 	. . I TYPE="scalar" D  Q
 	. . . N NEWTOP S NEWTOP=CTSP+1
 	. . . S CST(NEWTOP)=REF,CTSP=NEWTOP
 	. . . D PUSHFRAME^MIOTPL2(.FSP,.F,I+1,MI-1,CTSP,$G(F(PARENT,"mode")),$G(F(PARENT,"capRef")),TN)
-	. . ; fallback (should rarely hit): render once with current context
+	. . ;
+	. . ; fallback
 	. . D PUSHFRAME^MIOTPL2(.FSP,.F,I+1,MI-1,CTSP,$G(F(PARENT,"mode")),$G(F(PARENT,"capRef")),TN)
+	. ;
 	. ; -------------------------
 	. ; SECTION END (not executed)
 	. ; -------------------------
@@ -867,7 +972,33 @@ EVAL(TOK,CONF,CTX,OUT,ERR)
 	Q:$Q $S($D(ERR):0,1:1)
 	Q
 	;
+; =============================================================================
+; TOKGET(TN,I,FIELD)  -- safe token getter
+; TN examples: "TOK" or "PTOKS(3)"
+; =============================================================================
+TOKGET(TN,I,FIELD)
+	N R
+	I TN["(" D
+	. ; splice before final ')'
+	. S R=$E(TN,1,$L(TN)-1)_","_I_","""_FIELD_""")"
+	E  D
+	. S R=TN_"("_I_","""_FIELD_""")"
+	Q $G(@R)
 	;
+; =============================================================================
+; TOKENDR(TN) -- last numeric subscript
+; =============================================================================
+TOKENDR(TN)
+	N R
+	I TN["(" D
+	. S R=$E(TN,1,$L(TN)-1)_","""")"
+	E  D
+	. S R=TN_"("""")"
+	Q +$O(@R,-1)
+REPL(s,f,t)
+	i $tr(s,f)=s q s
+	n o,i s o="" f i=1:1:$l(s,f)  s o=o_$s(i<$l(s,f):$p(s,f,i)_t,1:$p(s,f,i))
+	q o
 ; =============================================================================
 ; PUSHFRAME(FSP,F,START,END,CTSP,MODE,CAPREF,TOKNAME)
 ; =============================================================================
@@ -1019,15 +1150,13 @@ RESINBASE(BASE,KEY,OK,TYPE,REF)
 	. S CUR=NEXT,OK=1
 	I 'OK Q
 	I '$D(@CUR) Q
-	; Determine type:
-	; - if has children: list if first subscript is numeric, else obj
-	; - scalar only => scalar
+	; Determine TYPE
 	I $D(@CUR)>1 D  Q
-	. N S0 S S0=$$FIRSTSUB(CUR)
-	. I S0="" S OK=1,TYPE="obj",REF=CUR Q  ; empty object node
+	. N S0 S S0=$$FIRSTSUB^MIOTPL2(CUR)
 	. I S0?1.N S OK=1,TYPE="list",REF=CUR Q
-	. S OK=1,TYPE="obj",REF=CUR
+	. S OK=1,TYPE="obj",REF=CUR Q
 	I $D(@CUR)#2 S OK=1,TYPE="scalar",REF=CUR Q
+	S OK=0,TYPE="missing",REF=""
 	Q
 	;
 ; =============================================================================
@@ -1155,7 +1284,7 @@ ESCHTML(S)
 ; REPL(S,FROM,TO)
 ; Replace all occurrences.;
 ; =============================================================================
-REPL(S,FROM,TO)
+REPLXX(S,FROM,TO)
 	N OUT,P,L1,L2
 	S OUT="",P=1,L1=$L(FROM)
 	I L1=0 Q S
