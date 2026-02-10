@@ -34,7 +34,8 @@ MIOTF201 ;Sections
 	;      context stack, the section MUST be rendered, and the element MUST be popped
 	;      off the context stack.;
 	;      Section and End Section tags SHOULD be treated as standalone when appropriate."
-	D TEST043,TEST044,TEST045,TEST046,TEST047,TEST048,TEST049,TEST050
+	D TEST043,TEST044,TEST045,TEST046,TEST047,TEST048,TEST049
+	D TEST050,TEST051,TEST052,TEST053,TEST054
 	Q
 MIOTF200 ;Interpolation
 	; Interpolation tags are used to integrate dynamic content into the template.;
@@ -154,7 +155,45 @@ TEST050
 	SET CTX("c","three")=3
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	QUIT
-UNESCNL(S) Q $$UES^MIOJSON2(S) ; Enescape string from json/js -> M
+TEST051
+	NEW HDR S HDR="[MIOTPL][TEST051][List]"
+	NEW DESC S DESC=HDR_"[Lists should be iterated; list items should visit the context stack.]"
+	NEW TEMPLATE S TEMPLATE="""{{#list}}{{item}}{{/list}}"""
+	NEW EXPECTED S EXPECTED="""123"""
+	NEW CTX 
+	SET CTX("list",1,"item")=1
+	SET CTX("list",2,"item")=2
+	SET CTX("list",3,"item")=3
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+TEST052
+	NEW HDR S HDR="[MIOTPL][TEST052][Empty List]"
+	NEW DESC S DESC=HDR_"[Empty lists should behave like falsey values.]"
+	NEW TEMPLATE S TEMPLATE="""{{#list}}Yay lists!{{/list}}"""
+	NEW EXPECTED S EXPECTED=""""""
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+TEST053
+	NEW HDR S HDR="[MIOTPL][TEST053][Doubled]"
+	NEW DESC S DESC=HDR_"[Multiple sections per template should be permitted.]"
+	NEW TEMPLATE S TEMPLATE="{{#bool}}\n* first\n{{/bool}}\n* {{two}}\n{{#bool}}\n* third\n{{/bool}}\n"
+	NEW EXPECTED S EXPECTED="* first\n* second\n* third\n"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	NEW CTX 
+	SET CTX("bool")="true"
+	SET CTX("two")="second"
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+TEST054
+	NEW HDR S HDR="[MIOTPL][TEST054][Nested (Truthy)]"
+	NEW DESC S DESC=HDR_"[Nested truthy sections should have their contents rendered.]"
+	NEW TEMPLATE S TEMPLATE="| A {{#bool}}B {{#bool}}C{{/bool}} D{{/bool}} E |"
+	NEW EXPECTED S EXPECTED="| A B C D E |"
+	NEW CTX 
+	SET CTX("bool")="true"
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
 	;
 TEST000
 	NEW HDR S HDR="[MIOTPL][TEST000][]"
@@ -551,3 +590,5 @@ RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,CTX)
 	DO OK^MIOTASSERT('$D(ERR),"[EVAL]"_DESC)
 	DO EQ^MIOTASSERT(OUT,EXPECTED,"[RENDER]"_DESC)
 	Q
+UNESCNL(S) Q $$UES^MIOJSON2(S) ; Enescape string from json/js -> M
+	;
