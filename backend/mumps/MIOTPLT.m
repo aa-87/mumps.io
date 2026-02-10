@@ -34,7 +34,7 @@ MIOTF201 ;Sections
 	;      context stack, the section MUST be rendered, and the element MUST be popped
 	;      off the context stack.;
 	;      Section and End Section tags SHOULD be treated as standalone when appropriate."
-	D TEST043,TEST044,TEST045,TEST046,TEST047,TEST048
+	D TEST043,TEST044,TEST045,TEST046,TEST047,TEST048,TEST049
 	Q
 MIOTF200 ;Interpolation
 	; Interpolation tags are used to integrate dynamic content into the template.;
@@ -126,6 +126,36 @@ TEST048
 	SET CTX("foo")="bar"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	QUIT
+TEST049
+	NEW HDR S HDR="[MIOTPL][TEST049][List Contexts]"
+	NEW DESC S DESC=HDR_"[All elements on the context stack should be accessible within lists.]" 
+	NEW TEMPLATE S TEMPLATE="{{#tops}}{{#middles}}{{tname.lower}}{{mname}}.{{#bottoms}}{{tname.upper}}{{mname}}{{bname}}.{{/bottoms}}{{/middles}}{{/tops}}"
+	NEW EXPECTED S EXPECTED="a1.A1x.A1y."
+	NEW CTX 
+	SET CTX("tops",1,"middles",1,"bottoms",1,"bname")="x"
+	SET CTX("tops",1,"middles",1,"bottoms",2,"bname")="y"
+	SET CTX("tops",1,"middles",1,"mname")=1
+	SET CTX("tops",1,"tname","lower")="a"
+	SET CTX("tops",1,"tname","upper")="A"
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+TEST050
+	NEW HDR S HDR="[MIOTPL][TEST050][Deeply Nested Contexts]"
+	NEW DESC S DESC=HDR_"[All elements on the context stack should be accessible.]"
+	NEW TEMPLATE S TEMPLATE="{{#a}}\n{{one}}\n{{#b}}\n{{one}}{{two}}{{one}}\n{{#c}}\n{{one}}{{two}}{{three}}{{two}}{{one}}\n{{#d}}\n{{one}}{{two}}{{three}}{{four}}{{three}}{{two}}{{one}}\n{{#five}}\n{{one}}{{two}}{{three}}{{four}}{{five}}{{four}}{{three}}{{two}}{{one}}\n{{one}}{{two}}{{three}}{{four}}{{.}}6{{.}}{{four}}{{three}}{{two}}{{one}}\n{{one}}{{two}}{{three}}{{four}}{{five}}{{four}}{{three}}{{two}}{{one}}\n{{/five}}\n{{one}}{{two}}{{three}}{{four}}{{three}}{{two}}{{one}}\n{{/d}}\n{{one}}{{two}}{{three}}{{two}}{{one}}\n{{/c}}\n{{one}}{{two}}{{one}}\n{{/b}}\n{{one}}\n{{/a}}\n"
+	NEW EXPECTED S EXPECTED="1\n121\n12321\n1234321\n123454321\n12345654321\n123454321\n1234321\n12321\n121\n1\n"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	NEW CTX 
+	SET CTX("a","one")=1
+	SET CTX("b","two")=2
+	SET CTX("c","d","five")=5
+	SET CTX("c","d","four")=4
+	SET CTX("c","three")=3
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+UNESCNL(S) Q $$UES^MIOJSON2(S)
+	;
 TEST000
 	NEW HDR S HDR="[MIOTPL][TEST000][]"
 	NEW DESC S DESC=HDR_"[]"
