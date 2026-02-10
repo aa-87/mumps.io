@@ -34,7 +34,7 @@ MIOTF201 ;Sections
 	;      context stack, the section MUST be rendered, and the element MUST be popped
 	;      off the context stack.;
 	;      Section and End Section tags SHOULD be treated as standalone when appropriate."
-	D TEST043,TEST044,TEST045,TEST046,TEST047
+	D TEST043,TEST044,TEST045,TEST046,TEST047,TEST048
 	Q
 MIOTF200 ;Interpolation
 	; Interpolation tags are used to integrate dynamic content into the template.;
@@ -113,6 +113,17 @@ TEST047
 	S CTX("b")="wrong"
 	S CTX("sec","b")="bar"
 	S CTX("c","d")="baz"
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+TEST048
+	NEW HDR S HDR="[MIOTPL][TEST048][Variable test]"
+	NEW DESC S DESC=HDR_"[Non-false sections have their value at the top of context,accessible as {{.}} or" 
+	S DESC=DESC_"through the parent context. This gives a simple way to display content conditionally if a variable exists.]"
+	NEW TEMPLATE S TEMPLATE="""{{#foo}}{{.}} is {{foo}}{{/foo}}"""
+	NEW EXPECTED S EXPECTED="""bar is bar"""
+	NEW CTX 
+	SET CTC("foo")=1
+	SET CTX("foo")="bar"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	QUIT
 TEST000

@@ -851,7 +851,12 @@ EVAL(TOK,CONF,CTX,OUT,ERR)
 	. . . N NEWTOP S NEWTOP=CTSP+1
 	. . . S CST(NEWTOP)=REF,CTSP=NEWTOP
 	. . . D PUSHFRAME^MIOTPL2(.FSP,.F,I+1,MI-1,CTSP,$G(F(PARENT,"mode")),$G(F(PARENT,"capRef")),TN)
-	. . ; scalar truthy: render once with current context
+	. . ; scalar truthy: push scalar value onto context so {{.}} works
+	. . I TYPE="scalar" D  Q
+	. . . N NEWTOP S NEWTOP=CTSP+1
+	. . . S CST(NEWTOP)=REF,CTSP=NEWTOP
+	. . . D PUSHFRAME^MIOTPL2(.FSP,.F,I+1,MI-1,CTSP,$G(F(PARENT,"mode")),$G(F(PARENT,"capRef")),TN)
+	. . ; fallback (should rarely hit): render once with current context
 	. . D PUSHFRAME^MIOTPL2(.FSP,.F,I+1,MI-1,CTSP,$G(F(PARENT,"mode")),$G(F(PARENT,"capRef")),TN)
 	. ; -------------------------
 	. ; SECTION END (not executed)
