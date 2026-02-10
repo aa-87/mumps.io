@@ -47,9 +47,9 @@ MIOTPL2 ; MIO template engine with layouts, blocks, partials, and caching.;
 MIOTEST 
 	; 100-121 Coverage instrumentation per routines, to be implemented later
 	; 120-125 D MIOTF120 *skipped* - Coverage instrumentation for a full test suite
-	D ^MIOTPLT,MIOTF121,MIOTF122,MIOTF123,MIOTF124,MIOTF125
+	D MIOTF121,MIOTF122,MIOTF123,MIOTF124,MIOTF125
 	D MIOTF126,MIOTF126B,MIOTF127,MIOTF128,MIOTF129,MIOTF130
-	D MIOTF200
+	D MIOTF200,MIOTF200
 	;
 MIOTF200 D MIOTF200^MIOTPLT QUIT ; Run mustache spec: interpolation.json
 MIOTF201 D MIOTF201^MIOTPLT QUIT ; Run mustache spec: interpolation.json

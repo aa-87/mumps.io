@@ -34,7 +34,7 @@ MIOTF201 ;Sections
 	;      context stack, the section MUST be rendered, and the element MUST be popped
 	;      off the context stack.;
 	;      Section and End Section tags SHOULD be treated as standalone when appropriate."
-	D TEST043,TEST044
+	D TEST043,TEST044,TEST045,TEST046,TEST047
 	Q
 MIOTF200 ;Interpolation
 	; Interpolation tags are used to integrate dynamic content into the template.;
@@ -83,7 +83,38 @@ TEST044
 	S CTX("boolean")="false"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	QUIT
-	;
+TEST045
+	NEW HDR S HDR="[MIOTPL][TEST045][Null is false]"
+	NEW DESC S DESC=HDR_"[Null is falsey.]"
+	NEW TEMPLATE S TEMPLATE="""{{#null}}This should not be rendered.{{/null}}"""
+	NEW EXPECTED S EXPECTED=""""""
+	NEW CTX 
+	S CTX("null")=""
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+TEST046
+	NEW HDR S HDR="[MIOTPL][TEST046][Context]"
+	NEW DESC S DESC=HDR_"[Objects and hashes should be pushed onto the context stack.]"
+	NEW TEMPLATE S TEMPLATE="""{{#context}}Hi {{name}}.{{/context}}"""
+	NEW EXPECTED S EXPECTED="""Hi Joe."""
+	NEW CTX 
+	S CTX("context")=1
+	S CTX("name")="Joe"
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+TEST047
+	NEW HDR S HDR="[MIOTPL][TEST047][Parent context]"
+	NEW DESC S DESC=HDR_"[Names missing in the current context are looked up in the stack.]"
+	NEW TEMPLATE S TEMPLATE="""{{#sec}}{{a}}, {{b}}, {{c.d}}{{/sec}}"""
+	NEW EXPECTED S EXPECTED="""foo, bar, baz"""
+	NEW CTX 
+	S CTX("sec")=1
+	S CTX("a")="foo"
+	S CTX("b")="wrong"
+	S CTX("sec","b")="bar"
+	S CTX("c","d")="baz"
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
 TEST000
 	NEW HDR S HDR="[MIOTPL][TEST000][]"
 	NEW DESC S DESC=HDR_"[]"
