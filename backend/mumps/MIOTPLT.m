@@ -36,7 +36,7 @@ MIOTF201 ;Sections
 	;      Section and End Section tags SHOULD be treated as standalone when appropriate."
 	D TEST043,TEST044,TEST045,TEST046,TEST047,TEST048,TEST049
 	D TEST050,TEST051,TEST052,TEST053,TEST054,TEST055,TEST056
-	D TEST057,TEST058,TEST059
+	D TEST057,TEST058,TEST059,TEST060,TEST061,TEST062
 	Q
 MIOTF200 ;Interpolation
 	; Interpolation tags are used to integrate dynamic content into the template.;
@@ -263,6 +263,30 @@ TEST060
 	SET CTX("list",2,1)="a"
 	SET CTX("list",2,2)="b"
 	SET CTX("list",2,3)="c"
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+TEST061
+	NEW HDR S HDR="[MIOTPL][TEST061][Implicit Iterator - HTML Escaping]"
+	NEW DESC S DESC=HDR_"[Implicit iterators with basic interpolation should be HTML escaped.]"
+	NEW TEMPLATE S TEMPLATE="""{{#list}}({{.}}){{/list}}"""
+	NEW EXPECTED S EXPECTED="""(&amp;)(&quot;)(&lt;)(&gt;)"""
+	NEW CTX 
+	SET CTX("list",1)="&"
+	SET CTX("list",2)=""""
+	SET CTX("list",3)="<"
+	SET CTX("list",4)=">"
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+TEST062
+	NEW HDR S HDR="[MIOTPL][TEST062][Implicit Iterator - Triple mustache]"
+	NEW DESC S DESC=HDR_"[Implicit iterators in triple mustache should interpolate without HTML escaping.]"
+	NEW TEMPLATE S TEMPLATE="""{{#list}}({{{.}}}){{/list}}"""
+	NEW EXPECTED S EXPECTED="""(&)("")(<)(>)"""
+	NEW CTX 
+	SET CTX("list",1)="&"
+	SET CTX("list",2)=""""
+	SET CTX("list",3)="<"
+	SET CTX("list",4)=">"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	QUIT
 TEST000

@@ -1093,44 +1093,67 @@ RESREF(KEY,CST,CTSP,ISSET,TYPE,REF)
 	N K S K=KEY
 	S ISSET=0,TYPE="missing",REF=""
 	I K="" Q
-	; {{.}} => current context scalar (if any)
+	;
+	; {{.}} : current context (scalar OR obj/list)  (your fixed version)
 	I K="." D  Q
 	. N R S R=$G(CST(CTSP)) Q:R=""
+	. I '$D(@R) S ISSET=0,TYPE="missing",REF="" Q
+	. I $D(@R)>1 D  Q
+	. . N S0 S S0=$$FIRSTSUB^MIOTPL2(R)
+	. . I S0'="" S ISSET=1,TYPE="list",REF=R Q
+	. . S ISSET=1,TYPE="obj",REF=R Q
 	. I $D(@R)#2 S ISSET=1,TYPE="scalar",REF=R Q
-	. S ISSET=0,TYPE="missing",REF=""
-	; -----------------------------
-	; DOTTED NAMES: context precedence
-	; Resolve first segment via normal lookup (with fallback),
-	; then resolve the remainder ONLY from that resolved base.;
-	; -----------------------------
-	I K["." D  Q
-	. N PARTS,PC,FIRST,REST,I,BASEOK,BASETYPE,BASEREF
-	. D SPLIT(K,".",.PARTS,.PC)
-	. I PC<2 Q  ; shouldn't happen, but safe
-	. S FIRST=$G(PARTS(1))
-	. S REST=""
-	. F I=2:1:PC S REST=REST_$S(REST="":"",1:".")_$G(PARTS(I))
-	. ; 1) resolve FIRST using standard rules (top-down)
-	. D RESREF(FIRST,.CST,CTSP,.BASEOK,.BASETYPE,.BASEREF)
-	. I 'BASEOK S ISSET=0,TYPE="missing",REF="" Q
-	. ; 2) resolve REST ONLY within BASEREF (no fallback)
-	. N OK2,TT2,RR2
-	. D RESINBASE(BASEREF,REST,.OK2,.TT2,.RR2)
-	. I 'OK2 S ISSET=0,TYPE="missing",REF="" Q
-	. S ISSET=1,TYPE=TT2,REF=RR2
-	. Q
+	. S ISSET=0,TYPE="missing",REF="" Q
 	;
-	; -----------------------------
-	; NON-DOTTED: standard lookup
-	; -----------------------------
+	; ------------------------------------------------------------------
+	; DOTTED NAME PRECEDENCE (Mustache spec):
+	; Resolve first segment via context stack; then resolve remaining
+	; segments ONLY within that resolved ref (NO fallback).;
+	; ------------------------------------------------------------------
+	I K["." D  Q
+	. N PARTS,PC,I,P1,LEVEL,BASE,OK1,TT1,RR1,CUR,NEXT
+	. D SPLIT^MIOTPL2(K,".",.PARTS,.PC)
+	. I PC<2 Q  ; safety
+	. S P1=$G(PARTS(1)) I P1="" Q
+	. ;
+	. ; 1) Resolve first segment top-down
+	. S OK1=0,TT1="missing",RR1=""
+	. F LEVEL=CTSP:-1:1 Q:OK1  D
+	. . S BASE=$G(CST(LEVEL)) Q:BASE=""
+	. . D RESINBASE^MIOTPL2(BASE,P1,.OK1,.TT1,.RR1)
+	. I 'OK1 S ISSET=0,TYPE="missing",REF="" Q
+	. ;
+	. ; If first segment is scalar but key continues => missing
+	. I TT1="scalar" S ISSET=0,TYPE="missing",REF="" Q
+	. ;
+	. ; 2) Resolve remaining segments ONLY within RR1
+	. S CUR=RR1
+	. F I=2:1:PC D  Q:'ISSET
+	. . S P=$G(PARTS(I))
+	. . I P="" S ISSET=0,TYPE="missing",REF="" Q
+	. . S NEXT=$$APPREF^MIOTPL2(CUR,P)
+	. . I '$D(@NEXT) S ISSET=0,TYPE="missing",REF="" Q
+	. . S CUR=NEXT,ISSET=1
+	. I 'ISSET Q
+	. ;
+	. ; Determine final TYPE at CUR
+	. I $D(@CUR)>1 D  Q
+	. . N S0 S S0=$$FIRSTSUB^MIOTPL2(CUR)
+	. . I S0'="" S TYPE="list",REF=CUR,ISSET=1 Q
+	. . S TYPE="obj",REF=CUR,ISSET=1 Q
+	. I $D(@CUR)#2 S TYPE="scalar",REF=CUR,ISSET=1 Q
+	. S ISSET=0,TYPE="missing",REF="" Q
+	;
+	; ------------------------------------------------------------------
+	; Non-dotted: existing behavior (top-down normal lookup)
+	; ------------------------------------------------------------------
 	N LEVEL
 	F LEVEL=CTSP:-1:1 D  Q:ISSET
 	. N BASE S BASE=$G(CST(LEVEL)) Q:BASE=""
 	. N OK,RR,TT
-	. D RESINBASE(BASE,K,.OK,.TT,.RR)
+	. D RESINBASE^MIOTPL2(BASE,K,.OK,.TT,.RR)
 	. I OK S ISSET=1,TYPE=TT,REF=RR
 	Q
-	;
 ; =============================================================================
 ; RESINBASE(BASE,KEY,OK,TYPE,REF)
 ; Resolve dotted KEY within a single BASE reference-string.;
