@@ -92,7 +92,7 @@ TEST045
 	S CTX("null")=""
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	QUIT
-TEST046
+TEST046 
 	NEW HDR S HDR="[MIOTPL][TEST046][Context]"
 	NEW DESC S DESC=HDR_"[Objects and hashes should be pushed onto the context stack.]"
 	NEW TEMPLATE S TEMPLATE="""{{#context}}Hi {{name}}.{{/context}}"""
