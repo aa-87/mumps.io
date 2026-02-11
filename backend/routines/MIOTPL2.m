@@ -50,6 +50,7 @@ MIOTEST
 	D MIOTF121,MIOTF122,MIOTF123,MIOTF124,MIOTF125
 	D MIOTF126,MIOTF126B,MIOTF127,MIOTF128,MIOTF129,MIOTF130
 	D MIOTF200,MIOTF201
+	Q
 	;
 MIOTF200 D MIOTF200^MIOTPLT QUIT ; Run mustache spec: interpolation.json
 MIOTF201 D MIOTF201^MIOTPLT QUIT ; Run mustache spec: interpolation.json
@@ -926,6 +927,10 @@ EVAL(TOK,CONF,CTX,OUT,ERR)
 	. . ; resolve key
 	. . N ISSET,TYPE,REF
 	. . D RESREF^MIOTPL2(KEY,.CST,CTSP,.ISSET,.TYPE,.REF)
+	. . ; --- normalize: if "list" but first subscript is non-numeric, it's an object/hash
+	. . I TYPE="list" D
+	. . . N S0 S S0=$$FIRSTSUB^MIOTPL2(REF)
+	. . . I S0'="",S0'?1.N S TYPE="obj"
 	. . ;
 	. . ; inverted
 	. . I INV D  Q
@@ -1165,7 +1170,7 @@ RESINBASE(BASE,KEY,OK,TYPE,REF)
 	D SPLIT(KEY,".",.PARTS,.PC)
 	I PC=0 Q
 	; Walk dotted path
-	F I=1:1:PC D  Q:'OK&(I>1)  ; stop early on fail
+	F I=1:1:PC D  Q:'OK&(I>1)
 	. S P=PARTS(I)
 	. I P="." S OK=1 Q
 	. N NEXT S NEXT=$$APPREF(CUR,P)
@@ -1173,11 +1178,14 @@ RESINBASE(BASE,KEY,OK,TYPE,REF)
 	. S CUR=NEXT,OK=1
 	I 'OK Q
 	I '$D(@CUR) Q
-	; Determine TYPE
+	;
+	; Determine TYPE (IMPORTANT)
 	I $D(@CUR)>1 D  Q
-	. N S0 S S0=$$FIRSTSUB^MIOTPL2(CUR)
+	. N S0 S S0=$$FIRSTSUB(CUR)
+	. I S0=""  S OK=1,TYPE="obj",REF=CUR Q  ; has children flag but no subscripts (rare)
 	. I S0?1.N S OK=1,TYPE="list",REF=CUR Q
 	. S OK=1,TYPE="obj",REF=CUR Q
+	;
 	I $D(@CUR)#2 S OK=1,TYPE="scalar",REF=CUR Q
 	S OK=0,TYPE="missing",REF=""
 	Q
@@ -1187,15 +1195,14 @@ RESINBASE(BASE,KEY,OK,TYPE,REF)
 ; Variable resolution returns a scalar or "" if missing/non-scalar.;
 ; =============================================================================
 RESVAL(KEY,CST,CTSP)
-	N ISSET,TYPE,REF,V
+	N ISSET,TYPE,REF,V,VL
 	D RESREF(KEY,.CST,CTSP,.ISSET,.TYPE,.REF)
-	; If missing or we didn't get a usable reference, return empty
 	I 'ISSET Q ""
-	I $G(REF)="" Q ""
-	; Must be a variable reference string (e.g. CTX(...)), not a literal value
-	I '$$ISREF(REF) Q ""
-	; Only return scalars
-	I $D(@REF)#2 Q $G(@REF)
+	I $D(@REF)#2 D  Q V
+	. S V=$G(@REF)
+	. ; normalize JSON null string -> empty
+	. S VL=$ZCONVERT(V,"L")
+	. I VL="null" S V=""
 	Q ""
 ISREF(REF)
 	; Very small guard: our engine only stores local ref strings like "CTX(...)".;
@@ -1214,19 +1221,27 @@ ISTRUTH(ISSET,TYPE,REF)
 	I 'ISSET Q 0
 	; list/object: false if no subscripts
 	I TYPE="list"!(TYPE="obj") Q $S($$FIRSTSUB(REF)="":0,1:1)
+	;
 	; scalar truthiness
 	N V,VL
 	S V=$G(@REF)
-	; missing/empty
+	;
+	; empty is falsey
 	I V="" Q 0
-	; numeric/zero rules (keep existing)
+	;
+	; normalize JSON null string -> falsey
+	S VL=$ZCONVERT(V,"L")
+	I VL="null" Q 0
+	;
+	; numeric/zero rules
 	I V=0 Q 0
 	I V="0" Q 0
+	;
 	; JSON booleans as strings
-	S VL=$ZCONVERT(V,"L")  ; you may already have a lower() helper; if not, add below
 	I VL="false" Q 0
 	I VL="true" Q 1
-	; default: any other non-empty scalar is truthy
+	;
+	; default truthy
 	Q 1
 	;
 ; =============================================================================
