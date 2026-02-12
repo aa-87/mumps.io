@@ -49,11 +49,13 @@ MIOTEST
 	; 120-125 D MIOTF120 *skipped* - Coverage instrumentation for a full test suite
 	D MIOTF121,MIOTF122,MIOTF123,MIOTF124,MIOTF125
 	D MIOTF126,MIOTF126B,MIOTF127,MIOTF128,MIOTF129,MIOTF130
-	D MIOTF200,MIOTF201
+	D MIOTF200,MIOTF201,MIOTF202,MIOTF203
 	Q
 	;
-MIOTF200 D MIOTF200^MIOTPLT QUIT ; Run mustache spec: interpolation.json
-MIOTF201 D MIOTF201^MIOTPLT QUIT ; Run mustache spec: interpolation.json
+MIOTF200 D MIOTF200^MIOTPLT QUIT 
+MIOTF201 D MIOTF201^MIOTPLT QUIT
+MIOTF202 D MIOTF202^MIOTPLT QUIT
+MIOTF203 D MIOTF203^MIOTPLT QUIT
 MIOTF121 ; Full suite test 121 - TPL_SECTION_CTA.;
 	NEW TOK,ERR,CONF,CTX,OUT
 	D COMPILE("{{#cta}}X{{/cta}}",.TOK,.ERR)
@@ -469,7 +471,7 @@ NAME2FP(NAME,CONF,ERR)
 	I ROOT="" S ROOT="templates/"
 	I $E(ROOT,$L(ROOT))'="/" S ROOT=ROOT_"/"
 	S EXT=$G(CONF("templates","ext"))
-	I EXT="" S EXT=".html"
+	;I EXT="" S EXT=".html"
 	S NM=NAME
 	; Normalize backslashes to slashes for safety/consistency.;
 	S NM=$TR(NM,"\","/")
@@ -501,8 +503,8 @@ READFILE(FP,TXT,ERR) ;
 	; Safety limit: 2 MB (adjustable via CONF later if needed).;
 	S MAX=2*1024*1024
 	;I '$$FILEEXISTS(FP) ="" 
-	S FP="./"_FP
-	I '$$FILEEXISTS(FP) S ERR("code")="TPL_NOFILE",ERR("msg")="Template file not found: "_FP Q 0
+	;S FP="./"_FP
+	;I '$$FILEEXISTS(FP) S ERR("code")="TPL_NOFILE",ERR("msg")="Template file not found: "_FP Q 0
 	O FP:(READONLY:EXCEPTION="GOTO RFERR^MIOTPL2")
 	U FP
 	F  R LINE Q:$ZEOF  D  Q:('$T!$D(ERR))
@@ -872,6 +874,7 @@ EVAL(TOK,CONF,CTX,OUT,ERR)
 	. ; -------------------------
 	. ; PARTIAL
 	. ; -------------------------
+	. ;
 	. I TYP="part" D  Q
 	. . N PNAME
 	. . S PNAME=$$TOKGET(TN,I,"k")
@@ -886,7 +889,8 @@ EVAL(TOK,CONF,CTX,OUT,ERR)
 	. . K PTOKS(PTID),TMPTARR
 	. . D GETTOK^MIOTPL2(PNAME,.CONF,.TMPTARR,.ERR)
 	. . M PTOKS(PTID)=TMPTARR K TMPTARR
-	. . I $D(ERR) S PACTIVE(PNAME)=PACTIVE(PNAME)-1 I PACTIVE(PNAME)<1 K PACTIVE(PNAME) Q
+	. . I $D(ERR) D  Q
+	. . . S PACTIVE(PNAME)=PACTIVE(PNAME)-1 I PACTIVE(PNAME)<1 K PACTIVE(PNAME) Q
 	. . N PMAX S PMAX=$O(PTOKS(PTID,""),-1)
 	. . I PMAX<1 D  Q  ; empty partial ok
 	. . . S PACTIVE(PNAME)=PACTIVE(PNAME)-1 I PACTIVE(PNAME)<1 K PACTIVE(PNAME)

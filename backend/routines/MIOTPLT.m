@@ -1,5 +1,5 @@
 MIOTPLT
-	D MIOTF200,MIOTF201
+	D MIOTF200,MIOTF201,MIOTF202,MIOTF203
 	Q
 MIOTF200 ;Interpolation
 	; Interpolation tags are used to integrate dynamic content into the template.;
@@ -108,6 +108,21 @@ MIOTF202 ;Inverted
 	D TEST091,TEST091,TEST092,TEST093,TEST094,TEST095,TEST096
 	D TEST097,TEST098
 	Q
+MIOTF203 ;Partials
+	;  Partial tags are used to expand an external template into the current
+	;  template.The tag's content MUST be a non-whitespace character sequence
+	;  NOT containing the current closing delimiter. This tag's content names
+	;  the partial to inject. Set Delimiter tags MUST NOT affect the parsing
+	;  of a partial. The partial MUST be rendered against the context stack 
+	;  local to the tag. If the named partial cannot be found, the
+	;  empty string SHOULD be used instead, as in interpolations. Partial tags
+	;  SHOULD be treated as standalone when appropriate. If this tag is used
+	;  standalone, any whitespace preceding the tag should treated as indentation, 
+	;  and prepended to each line of the partial before rendering.;
+	;D RUNJSONSPECSPART("./tests/data/partials.json") ;This is the same as below.;
+	; Each test is run two different ways
+	D TEST099,TEST100
+	QUIT 	
 TEST001
 	NEW HDR S HDR="[TEST001][No Interpolation]"
 	NEW DESC S DESC=HDR_"[Mustache-free templates should render as-is]"
@@ -1068,17 +1083,42 @@ TEST098
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	QUIT
+TEST099
+	NEW HDR S HDR="[TEST099][Basic Behavior]"
+	NEW DESC S DESC=HDR_"[The greater-than operator should expand to the named partial.]"
+	NEW TEMPLATE S TEMPLATE="""{{>text}}"""
+	NEW EXPECTED S EXPECTED="""from partial"""
+	N CONF,ROOT D SETUPPART(.CONF,.ROOT) 
+	K ERR  D WRFILE(ROOT_"text","from partial",.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR	
+	S CONF("templates","root")=ROOT
+	S CONF("templates","ext")=""
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	QUIT
+TEST100
+	NEW HDR S HDR="[TEST100][Failed Lookup]"
+	NEW DESC S DESC=HDR_"[The empty string should be used when the named partial is not found.]"
+	NEW TEMPLATE S TEMPLATE="""{{>text}}"""
+	NEW EXPECTED S EXPECTED=""""""
+	N CONF
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
 TEST000
 	NEW HDR S HDR="[TEST000][]"
 	NEW DESC S DESC=HDR_"[]"
-	NEW TEMPLATE S TEMPLATE=""
+	NEW TEMPLATE S TEMPLATE="""{{>text}}"""
 	NEW EXPECTED S EXPECTED=""
+	N CONF,ROOT D SETUPPART(.CONF,.ROOT)
+	N ERR 
+	D WRFILE(ROOT_"text","from partial",.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
 	NEW CTX 
 	SET CTX("string")="---"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	QUIT
 RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,CTX)
-	NEW TOK,ERR,CONF,OUT
+	;NEW TOK,ERR,OUT
 	D COMPILE^MIOTPL2(TEMPLATE,.TOK,.ERR)
 	DO OK^MIOTASSERT('$D(ERR),"[COMPILE]"_HDR)
 	DO EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
@@ -1109,4 +1149,47 @@ ReadFile(file,return)
 	close source use currentdevice
 	quit	
 UNESCNL(S) Q $$UES^MIOJSON2(S) ; Enescape string from json/js -> M
-	;
+WRFILE(FP,TXT,ERR) 
+	K ERR
+	NEW $ETRAP S $ETRAP="S ERR(""code"")=""TPL_IO"",ERR(""msg"")=""Write failed: ""_FP Q"
+	OPEN FP:(NEWVERSION:WRITEONLY:EXCEPTION="GOTO WFERR")
+	USE FP
+	WRITE TXT
+	CLOSE FP
+	Q
+WFERR ;
+	CLOSE FP
+	S ERR("code")="TPL_IO",ERR("msg")="Write failed: "_FP
+	Q
+SETUPPART(CONF,ROOT)
+	M CONF=^MIO("CONF")
+	S ROOT="templates/test-MIOTPL-"_$J_"/"
+	D MKDIR(ROOT)
+	D MKDIR(ROOT_"partials/")
+	S CONF("templates","root")=ROOT
+	S CONF("templates","ext")=""
+	Q
+MKDIR(PATH) ; mkdir -p PATH (best-effort)
+	NEW CMD
+	S CMD="mkdir -p "_$$SHQ(PATH)
+	ZSY CMD
+	Q
+RMDIR(PATH) ; rm -rf PATH (best-effort)
+	NEW CMD
+	S CMD="rm -rf "_$$SHQ(PATH)
+	ZSY CMD
+	Q
+SHQ(S) ; shell-quote
+	; Wrap in single quotes; escape single quotes safely: ' -> '\'' (close, escape, reopen)
+	NEW X S X=$G(S)
+	I X["'" S X=$$REPLQ(X)
+	Q "'"_X_"'"
+REPLQ(S) ; replace ' with '\'' for shell single-quote context
+	NEW OUT,P,F
+	S OUT="",P=1
+	F  D  Q:P>$L(S)
+	. S F=$F(S,"'",P)
+	. I 'F S OUT=OUT_$E(S,P,$L(S)),P=$L(S)+1 Q
+	. S OUT=OUT_$E(S,P,F-2)_"'\''"
+	. S P=F
+	Q OUT
