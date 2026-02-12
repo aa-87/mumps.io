@@ -121,7 +121,7 @@ MIOTF203 ;Partials
 	;  and prepended to each line of the partial before rendering.;
 	;D RUNJSONSPECSPART("./tests/data/partials.json") ;This is the same as below.;
 	; Each test is run two different ways
-	D TEST099,TEST100,TEST101,TEST102
+	D TEST099,TEST100,TEST101,TEST102,TEST103
 	QUIT 	
 TEST001
 	NEW HDR S HDR="[TEST001][No Interpolation]"
@@ -1144,6 +1144,28 @@ TEST103
 	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
 	SET CTX("a")="hello"
 	SET CTX("b")="world"
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	QUIT
+TEST104
+	NEW HDR S HDR="[TEST104][Surrounding Whitespace]"
+	NEW DESC S DESC=HDR_"[The greater-than operator should not alter surrounding whitespace.]"
+	NEW TEMPLATE S TEMPLATE="| {{>partial}} |"
+	NEW EXPECTED S EXPECTED="| \t|\t |"
+	N CONF,ROOT,CTX D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"partial","\t|\t",.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	QUIT
+TEST105
+	NEW HDR S HDR="[TEST103][Surrounding Whitespace]"
+	NEW DESC S DESC=HDR_"[The greater-than operator should not alter surrounding whitespace.]"
+	NEW TEMPLATE S TEMPLATE="{{>outer}}"
+	NEW EXPECTED S EXPECTED="  |  >\n>\n"
+	N CONF,ROOT,CTX D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"partial",">\n>",.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	D RMDIR(ROOT)
 	QUIT	
