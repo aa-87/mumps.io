@@ -121,7 +121,7 @@ MIOTF203 ;Partials
 	;  and prepended to each line of the partial before rendering.;
 	;D RUNJSONSPECSPART("./tests/data/partials.json") ;This is the same as below.;
 	; Each test is run two different ways
-	D TEST099,TEST100,TEST101
+	D TEST099,TEST100,TEST101,TEST102
 	QUIT 	
 TEST001
 	NEW HDR S HDR="[TEST001][No Interpolation]"
@@ -1117,6 +1117,36 @@ TEST101
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	D RMDIR(ROOT)
 	QUIT
+TEST102
+	NEW HDR S HDR="[TEST102][Recursion]"
+	NEW DESC S DESC=HDR_"[The greater-than operator should properly recurse.]"
+	NEW TEMPLATE S TEMPLATE="{{>node}}"
+	NEW EXPECTED S EXPECTED="X<Y<>>"
+	N CONF,ROOT,CTX D SETUPPART(.CONF,.ROOT)
+	N ERR 
+	D WRFILE(ROOT_"node","{{content}}<{{#nodes}}{{>node}}{{/nodes}}>",.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	SET CTX("content")="X"
+	SET CTX("nodes",1,"content")="Y"
+	SET CTX("nodes",1,"nodes")=""   ; to match and pass the test
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	QUIT
+TEST103
+	NEW HDR S HDR="[TEST103][Nested]"
+	NEW DESC S DESC=HDR_"[The greater-than operator should work from within partials.]"
+	NEW TEMPLATE S TEMPLATE="{{>outer}}"
+	NEW EXPECTED S EXPECTED="*hello world!*"
+	N CONF,ROOT,CTX D SETUPPART(.CONF,.ROOT)
+	N ERR 
+	D WRFILE(ROOT_"outer","*{{a}} {{>inner}}*",.ERR)
+	D WRFILE(ROOT_"inner","{{b}}!",.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	SET CTX("a")="hello"
+	SET CTX("b")="world"
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	QUIT	
 TEST000
 	NEW HDR S HDR="[TEST000][]"
 	NEW DESC S DESC=HDR_"[]"
