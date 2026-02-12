@@ -121,7 +121,7 @@ MIOTF203 ;Partials
 	;  and prepended to each line of the partial before rendering.;
 	;D RUNJSONSPECSPART("./tests/data/partials.json") ;This is the same as below.;
 	; Each test is run two different ways
-	D TEST099,TEST100
+	D TEST099,TEST100,TEST101
 	QUIT 	
 TEST001
 	NEW HDR S HDR="[TEST001][No Interpolation]"
@@ -1104,6 +1104,19 @@ TEST100
 	N CONF
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	QUIT
+TEST101
+	NEW HDR S HDR="[TEST101][Context]"
+	NEW DESC S DESC=HDR_"[The greater-than operator should operate within the current context.]"
+	NEW TEMPLATE S TEMPLATE="""{{>partial}}"""
+	NEW EXPECTED S EXPECTED="""*content*"""
+	N CONF,ROOT,CTX D SETUPPART(.CONF,.ROOT)
+	N ERR 
+	D WRFILE(ROOT_"partial","*{{text}}*",.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	SET CTX("text")="content"
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	QUIT
 TEST000
 	NEW HDR S HDR="[TEST000][]"
 	NEW DESC S DESC=HDR_"[]"
@@ -1114,7 +1127,7 @@ TEST000
 	D WRFILE(ROOT_"text","from partial",.ERR)
 	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
 	NEW CTX 
-	SET CTX("string")="---"
+	SET CTX("text")="content"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	QUIT
 RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,CTX)
