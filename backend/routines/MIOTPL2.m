@@ -785,21 +785,16 @@ EVAL(TOK,CONF,CTX,OUT,ERR)
 	N CST,CTSP
 	S CTSP=1
 	S CST(1)="CTX"
-	;
 	; Partial recursion protection
 	N PDEPTHMAX S PDEPTHMAX=+$G(CONF("templates","maxPartialDepth")) I PDEPTHMAX<1 S PDEPTHMAX=20
 	N PACTIVE
-	;
 	;Temp Array
 	N TMPTARR
-	;
 	; Local storage for partial token arrays
 	N PTID,PTOKS
 	S PTID=0
-	;
 	; Block capture buffers keyed by frame#
 	N BCAP
-	;
 	; Frame stack
 	N FSP,F
 	S FSP=1
@@ -809,21 +804,15 @@ EVAL(TOK,CONF,CTX,OUT,ERR)
 	S F(1,"mode")="emit"
 	S F(1,"capRef")=""
 	S F(1,"tokName")="TOK"
-	;
 	S OUT=""
-	;
 	; Safety limit
 	N FRAMELIM,FRAMES
 	S FRAMELIM=2000,FRAMES=0
-	;
 	; Main loop
 	F  Q:FSP<1  D  Q:$D(ERR)
 	. S FRAMES=FRAMES+1
 	. I FRAMES>FRAMELIM S ERR("code")="TPL_LIMIT",ERR("msg")="Render exceeded safety frame limit." Q
-	. ;
-	. ; -------------------------
-	. ; ITERATOR controller frame
-	. ; -------------------------
+	. ; ITERATOR controller
 	. I $G(F(FSP,"mode"))="iter" D  Q
 	. . N LREF,SUB,BS,BE,PM,PC,PARENTMODE,PARENTCAP
 	. . S LREF=$G(F(FSP,"listRef"))
@@ -841,27 +830,18 @@ EVAL(TOK,CONF,CTX,OUT,ERR)
 	. . S ITEMREF=$$APPREF^MIOTPL2(LREF,SUB)
 	. . S NEWTOP=CTSP+1,CST(NEWTOP)=ITEMREF,CTSP=NEWTOP
 	. . D PUSHFRAME^MIOTPL2(.FSP,.F,BS,BE,CTSP,PARENTMODE,PARENTCAP,F(FSP-1,"tokName"))
-	. ;
-	. ; -------------------------
 	. ; Fetch current token
-	. ; -------------------------
 	. N I,END,TN,TYP
 	. S I=+$G(F(FSP,"i"))
 	. S END=+$G(F(FSP,"end"))
 	. I I<1!(I>END) D POPF^MIOTPL2(.FSP,.F,.CST,.CTSP) Q
 	. S TN=$G(F(FSP,"tokName")) I TN="" S TN="TOK"
 	. S TYP=$$TOKGET(TN,I,"t")
-	. ;
-	. ; -------------------------
 	. ; TEXT
-	. ; -------------------------
 	. I TYP="text" D  Q
 	. . D EMIT^MIOTPL2(.FSP,.F,.OUT,$$TOKGET(TN,I,"v"))
 	. . S F(FSP,"i")=I+1
-	. ;
-	. ; -------------------------
 	. ; VAR
-	. ; -------------------------
 	. I TYP="var" D  Q
 	. . N KEY,ESC,VAL
 	. . S KEY=$$TOKGET(TN,I,"k")
@@ -870,11 +850,7 @@ EVAL(TOK,CONF,CTX,OUT,ERR)
 	. . I ESC S VAL=$$ESCHTML^MIOTPL2(VAL)
 	. . D EMIT^MIOTPL2(.FSP,.F,.OUT,VAL)
 	. . S F(FSP,"i")=I+1
-	. ;
-	. ; -------------------------
 	. ; PARTIAL
-	. ; -------------------------
-	. ;
 	. I TYP="part" D  Q
 	. . N PNAME
 	. . S PNAME=$$TOKGET(TN,I,"k")
@@ -889,10 +865,15 @@ EVAL(TOK,CONF,CTX,OUT,ERR)
 	. . K PTOKS(PTID),TMPTARR
 	. . D GETTOK^MIOTPL2(PNAME,.CONF,.TMPTARR,.ERR)
 	. . M PTOKS(PTID)=TMPTARR K TMPTARR
-	. . I $D(ERR) D  Q
-	. . . S PACTIVE(PNAME)=PACTIVE(PNAME)-1 I PACTIVE(PNAME)<1 K PACTIVE(PNAME) Q
+	. . I $D(ERR) D  I $D(ERR) Q
+	. . . N EC S EC=$G(ERR("code")) 
+	. . . ; Treat "not found" / "can't open" as missing ONLY for partials
+	. . . I (EC="TPL_NOFILE")!(EC="TPL_IO") D  Q
+	. . . . S PACTIVE(PNAME)=PACTIVE(PNAME)-1 I PACTIVE(PNAME)<1 K PACTIVE(PNAME)
+	. . . . K ERR ;reset 
 	. . N PMAX S PMAX=$O(PTOKS(PTID,""),-1)
 	. . I PMAX<1 D  Q  ; empty partial ok
+	. . . I $G(PACTIVE(PNAME))="" K PACTIVE(PNAME) Q
 	. . . S PACTIVE(PNAME)=PACTIVE(PNAME)-1 I PACTIVE(PNAME)<1 K PACTIVE(PNAME)
 	. . ; push frame for partial, inherit mode/cap from current frame
 	. . N MODE,CAP
@@ -901,10 +882,7 @@ EVAL(TOK,CONF,CTX,OUT,ERR)
 	. . D PUSHFRAME^MIOTPL2(.FSP,.F,1,PMAX,CTSP,MODE,CAP,"PTOKS("_PTID_")")
 	. . ; mark pname so POPF decrements
 	. . S F(FSP,"pname")=PNAME
-	. ;
-	. ; -------------------------
 	. ; SECTION START
-	. ; -------------------------
 	. I TYP="secS" D  Q
 	. . N KEY,INV,MI,NEXT,PARENT
 	. . S PARENT=FSP
@@ -915,8 +893,7 @@ EVAL(TOK,CONF,CTX,OUT,ERR)
 	. . ; advance parent beyond close now (so we never double-run)
 	. . S NEXT=MI+1
 	. . S F(PARENT,"i")=NEXT
-	. . ;
-	. . ; ---- block capture ----
+	. . ; block capture
 	. . I +$$TOKGET(TN,I,"blk") D  Q
 	. . . N BNAME,NEWF,CAPREF
 	. . . S BNAME=$$TOKGET(TN,I,"bname")
@@ -927,7 +904,6 @@ EVAL(TOK,CONF,CTX,OUT,ERR)
 	. . . S F(FSP,"storeBlock")=1
 	. . . S F(FSP,"storeName")=BNAME
 	. . . S F(FSP,"storeCapRef")=CAPREF
-	. . ;
 	. . ; resolve key
 	. . N ISSET,TYPE,REF
 	. . D RESREF^MIOTPL2(KEY,.CST,CTSP,.ISSET,.TYPE,.REF)
@@ -935,15 +911,12 @@ EVAL(TOK,CONF,CTX,OUT,ERR)
 	. . I TYPE="list" D
 	. . . N S0 S S0=$$FIRSTSUB^MIOTPL2(REF)
 	. . . I S0'="",S0'?1.N S TYPE="obj"
-	. . ;
 	. . ; inverted
 	. . I INV D  Q
 	. . . I $$ISTRUTH^MIOTPL2(.ISSET,.TYPE,.REF)=0 D
 	. . . . D PUSHFRAME^MIOTPL2(.FSP,.F,I+1,MI-1,CTSP,$G(F(PARENT,"mode")),$G(F(PARENT,"capRef")),TN)
-	. . ;
 	. . ; normal: skip if falsey
 	. . I $$ISTRUTH^MIOTPL2(.ISSET,.TYPE,.REF)=0 Q
-	. . ;
 	. . ; list iteration
 	. . I TYPE="list" D  Q
 	. . . S FSP=FSP+1
@@ -956,28 +929,21 @@ EVAL(TOK,CONF,CTX,OUT,ERR)
 	. . . S F(FSP,"bodyE")=MI-1
 	. . . S F(FSP,"parentMode")=$G(F(PARENT,"mode"))
 	. . . S F(FSP,"parentCap")=$G(F(PARENT,"capRef"))
-	. . ;
 	. . ; object context: push
 	. . I TYPE="obj" D  Q
 	. . . N NEWTOP S NEWTOP=CTSP+1
 	. . . S CST(NEWTOP)=REF,CTSP=NEWTOP
 	. . . D PUSHFRAME^MIOTPL2(.FSP,.F,I+1,MI-1,CTSP,$G(F(PARENT,"mode")),$G(F(PARENT,"capRef")),TN)
-	. . ;
 	. . ; scalar context: push (so {{.}} works)
 	. . I TYPE="scalar" D  Q
 	. . . N NEWTOP S NEWTOP=CTSP+1
 	. . . S CST(NEWTOP)=REF,CTSP=NEWTOP
 	. . . D PUSHFRAME^MIOTPL2(.FSP,.F,I+1,MI-1,CTSP,$G(F(PARENT,"mode")),$G(F(PARENT,"capRef")),TN)
-	. . ;
 	. . ; fallback
 	. . D PUSHFRAME^MIOTPL2(.FSP,.F,I+1,MI-1,CTSP,$G(F(PARENT,"mode")),$G(F(PARENT,"capRef")),TN)
-	. ;
-	. ; -------------------------
-	. ; SECTION END (not executed)
-	. ; -------------------------
+	. ; SECTION END-
 	. I TYP="secE" D  Q
 	. . S F(FSP,"i")=I+1
-	;
 	Q:$Q $S($D(ERR):0,1:1)
 	Q
 	;
