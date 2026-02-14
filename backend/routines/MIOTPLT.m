@@ -121,7 +121,7 @@ MIOTF203 ;Partials
 	;  and prepended to each line of the partial before rendering.;
 	;D RUNJSONSPECSPART("./tests/data/partials.json") ;This is the same as below.;
 	; Each test is run two different ways
-	D TEST099,TEST100,TEST101,TEST102,TEST103
+	D TEST099,TEST100,TEST101,TEST102,TEST103,TEST104
 	QUIT 	
 TEST001
 	NEW HDR S HDR="[TEST001][No Interpolation]"
@@ -1159,15 +1159,18 @@ TEST104
 	D RMDIR(ROOT)
 	QUIT
 TEST105
-	NEW HDR S HDR="[TEST103][Surrounding Whitespace]"
-	NEW DESC S DESC=HDR_"[The greater-than operator should not alter surrounding whitespace.]"
-	NEW TEMPLATE S TEMPLATE="{{>outer}}"
+	NEW HDR S HDR="[TEST105][Inline Indentation]"
+	NEW DESC S DESC=HDR_"[Whitespace should be left untouched.]"
+	NEW TEMPLATE S TEMPLATE="  {{data}}  {{> partial}}\n"
 	NEW EXPECTED S EXPECTED="  |  >\n>\n"
-	N CONF,ROOT,CTX D SETUPPART(.CONF,.ROOT)
-	N ERR D WRFILE(ROOT_"partial",">\n>",.ERR)
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CONF,CTX D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"partial",$$UNESCNL(">\n>"),.ERR) ;
+	SET CTX("data")="|"
 	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
-	D RMDIR(ROOT)
+	;D RMDIR(ROOT)
 	QUIT	
 TEST000
 	NEW HDR S HDR="[TEST000][]"
@@ -1183,7 +1186,8 @@ TEST000
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	QUIT
 RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,CTX)
-	;NEW TOK,ERR,OUT
+	;NEW TOK,ERR,OUT,CONF
+	;M CONF=^MIO("CONF")
 	D COMPILE^MIOTPL2(TEMPLATE,.TOK,.ERR)
 	DO OK^MIOTASSERT('$D(ERR),"[COMPILE]"_HDR)
 	DO EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
@@ -1214,17 +1218,25 @@ ReadFile(file,return)
 	close source use currentdevice
 	quit	
 UNESCNL(S) Q $$UES^MIOJSON2(S) ; Enescape string from json/js -> M
-WRFILE(FP,TXT,ERR) 
+; =============================================================================
+; WRFILE(FILE,TEXT,ERR)
+; Write TEXT exactly as-is (preserve embedded $C(10)/$C(13)).;
+; =============================================================================
+WRFILE(FILE,TEXT,ERR)
 	K ERR
-	NEW $ETRAP S $ETRAP="S ERR(""code"")=""TPL_IO"",ERR(""msg"")=""Write failed: ""_FP Q"
-	OPEN FP:(NEWVERSION:WRITEONLY:EXCEPTION="GOTO WFERR")
-	USE FP
-	WRITE TXT
-	CLOSE FP
+	N USEIO
+	S USEIO=$IO
+	O FILE:(newversion:stream:exception="G WRFILEERR")
+	U FILE
+	W $G(TEXT)
+	C FILE
+	U USEIO
 	Q
-WFERR ;
-	CLOSE FP
-	S ERR("code")="TPL_IO",ERR("msg")="Write failed: "_FP
+WRFILEERR
+	S ERR("code")="TPL_IO"
+	S ERR("msg")="I/O error writing template: "_FILE
+	C FILE
+	U USEIO
 	Q
 SETUPPART(CONF,ROOT)
 	M CONF=^MIO("CONF")
