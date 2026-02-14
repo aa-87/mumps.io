@@ -678,7 +678,7 @@ STAND1(TOK,I,MAX)
 	; trim prev indentation (ws after last LF)
 	I I>1 S TOK(I-1,"v")=$$CUTPRE($G(TOK(I-1,"v")))
 	; trim next leading ws + ONE LF
-	I I<MAX S TOK(I+1,"v")=$$CUTNX($G(TOK(I+1,"v")))
+	I I<MAX S TOK(I+1,"v")=$$CUTNXNL($G(TOK(I+1,"v")))
 	Q
 ; =============================================================================
 ; LINEPURE(.TOK,I,MAX)
@@ -690,19 +690,19 @@ LINEPURE(TOK,I,MAX)
 	N J,TYP,OK,FOUND
 	S OK=1
 	;
-	; scan left until LF boundary
+	; scan left until newline boundary
 	S FOUND=0
 	F J=I-1:-1:1 Q:'OK  D  Q:FOUND
 	. S TYP=$G(TOK(J,"t"))
 	. I TYP'="text" S OK=0 Q
-	. I $F($G(TOK(J,"v")),$C(10)) S FOUND=1
+	. I $$HASNL($G(TOK(J,"v"))) S FOUND=1
 	;
-	; scan right until LF boundary
+	; scan right until newline boundary
 	S FOUND=0
 	F J=I+1:1:MAX Q:'OK  D  Q:FOUND
 	. S TYP=$G(TOK(J,"t"))
 	. I TYP'="text" S OK=0 Q
-	. I $F($G(TOK(J,"v")),$C(10)) S FOUND=1
+	. I $$HASNL($G(TOK(J,"v"))) S FOUND=1
 	Q OK
 ; =============================================================================
 ; PRELINE(.TOK,I,.K)
@@ -865,27 +865,66 @@ NORMNL(S)
 	. ; normal char
 	. S OUT=OUT_CH,I=I+1
 	Q OUT
-TAILWS(S)
+TAILWS(S) ; 1 if everything after last newline is ws (or no NL and whole string ws)
 	N P,TAIL
 	S S=$G(S)
 	S P=$$LASTNL(S)
 	S TAIL=$S(P>0:$E(S,P+1,$L(S)),1:S)
 	Q $$ALLWS(TAIL)
+; =============================================================================
+; HASNL(S)
+; Return 1 if S contains ANY newline char (LF or CR), else 0
+; =============================================================================
+HASNL(S)
+	Q:($F($G(S),$C(10))>0) 1
+	Q:($F($G(S),$C(13))>0) 1
+	Q 0
 	;
-	;
-CUTPRE(S) ; keep up to last LF, drop any ws after it; if no LF, drop all
+; =============================================================================
+; LASTNL(S)
+; Position of the *last* newline sequence end.;
+; For CRLF treat the newline as ending at LF (position of LF).;
+; For lone CR treat as CR position.;
+; For lone LF treat as LF position.;
+; Returns 0 if none.;
+; =============================================================================
+LASTNL(S)
+	N I,L,P,CH
+	S S=$G(S),L=$L(S),P=0
+	F I=1:1:L D
+	. S CH=$E(S,I)
+	. I CH=$C(10) S P=I Q  ; LF always newline end (includes CRLF because LF ends it)
+	. I CH=$C(13) D       ; CR newline end unless followed by LF (then LF will win later)
+	. . I I<L,$E(S,I+1)=$C(10) Q  ; CRLF => don't set P here; LF will set P
+	. . S P=I
+	Q P
+CUTNXNL(S)
+	N J,C,L
+	S S=$G(S),L=$L(S)
+	I L=0 Q ""
+	; skip indentation (spaces/tabs only)
+	F J=1:1:L S C=$E(S,J) Q:(C'=" ")&(C'=$C(9))
+	I J>L Q S
+	; remove one newline sequence
+	I $E(S,J)=$C(13) D  Q $E(S,J+1,L)
+	. I (J<L),$E(S,J+1)=$C(10) S J=J+1  ; CRLF, also remove LF
+	I $E(S,J)=$C(10) Q $E(S,J+1,L)
+	Q S
+HEADWNLNL(S)
+	N J,C,L
+	S S=$G(S),L=$L(S)
+	I L=0 Q 1  ; allow EOF
+	; skip indentation (spaces/tabs only)
+	F J=1:1:L S C=$E(S,J) Q:(C'=" ")&(C'=$C(9))
+	I J>L Q 0
+	I $E(S,J)=$C(10) Q 1
+	I $E(S,J)=$C(13) Q 1
+	Q 0
+CUTPRE(S) ; keep up to last newline end, drop any ws after it; if no NL, drop all
 	N P
 	S S=$G(S)
 	S P=$$LASTNL(S)
 	Q $S(P>0:$E(S,1,P),1:"")
-	;
-LASTNL(S) ; position of last newline (LF or CR). Treat CRLF as one newline at the CR position.;
-	N I,L,P
-	S S=$G(S),L=$L(S),P=0
-	F I=1:1:L D
-	. I $E(S,I)=$C(10) S P=I Q
-	. I $E(S,I)=$C(13) S P=I Q
-	Q P
 ADDTXT(TOK,N,VAL)
 	S N=N+1
 	S TOK(N,"t")="text"
