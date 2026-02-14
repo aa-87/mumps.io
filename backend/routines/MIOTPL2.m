@@ -519,6 +519,7 @@ RFERR ;
 	C FP
 	I $zstatus["%YDB-E-IOEOF" D  K ERR Q 1
 	. I $E(TXT,$L(TXT))=$C(10) S TXT=$E(TXT,1,$L(TXT)-1) ;get rid of the extra $C(10)
+	. S $ZSTATUS="",$EC=""
 	S ERR("code")="TPL_IO",ERR("msg")="I/O error reading template: "_FP_" $zstatus:"_$zstatus
 	Q ""
 ; =============================================================================
@@ -531,11 +532,39 @@ FILEEXISTS(FP) Q $ZSEARCH(FP)]""
 ;  PARSE + LINKSECS
 ; =============================================================================
 COMPILE(TEXT,TOK,ERR) ;
+	N HADCRLF
+	S HADCRLF=0
+	I $F(TEXT,$C(13,10))>0 S HADCRLF=1
+	;
 	S TEXT=$$NORMNL^MIOTPL2(TEXT)
+	;
 	DO PARSE(.TEXT,.TOK,.ERR)
 	DO:'$D(ERR) LINKSECS(.TOK,.ERR)
-	DO STANDTOK(.TOK) 
-	Q 
+	DO STANDTOK(.TOK)
+	;
+	; persist newline style for render
+	S TOK("meta","crlf")=HADCRLF
+	Q
+	;
+LINEPURE(TOK,I,MAX)
+	N J,TYP,OK,FOUND
+	S OK=1
+	;
+	; scan left until newline boundary
+	S FOUND=0
+	F J=I-1:-1:1 Q:'OK  D  Q:FOUND
+	. S TYP=$G(TOK(J,"t"))
+	. I TYP'="text" S OK=0 Q
+	. I $$HASNL($G(TOK(J,"v"))) S FOUND=1
+	;
+	; scan right until newline boundary
+	S FOUND=0
+	F J=I+1:1:MAX Q:'OK  D  Q:FOUND
+	. S TYP=$G(TOK(J,"t"))
+	. I TYP'="text" S OK=0 Q
+	. I $$HASNL($G(TOK(J,"v"))) S FOUND=1
+	Q OK
+	;
 ; =============================================================================
 ; PARSE(TEXT,TOK,ERR)
 ; Mustache parser -> token list.;
@@ -560,7 +589,6 @@ PARSE(TEXT,TOK,ERR)
 	K ERR K TOK
 	N L,POS,OPEN,CLOSE,PRE,INSIDE,RAW,END3,TRI
 	N N S N=0
-	;
 	S L=$L(TEXT),POS=1
 	F  Q:POS>L  D  Q:$D(ERR)
 	. ; Find next {{
@@ -628,36 +656,47 @@ PARSE(TEXT,TOK,ERR)
 	. ; Default: variable escaped
 	. D ADDVAR(.TOK,.N,INSIDE,1)
 	. S POS=CLOSE
-	;D STANDTOK(.TOK)
+	D STANDTOK(.TOK)
 	Q
 ; =============================================================================
+; NUMMAX(.TOK)
+; Return largest numeric subscript in TOK (ignores "meta", etc.)
+; =============================================================================
+NUMMAX(TOK)
+	N I,MAX
+	S MAX=0,I=0
+	F  S I=$O(TOK(I)) Q:I=""  D
+	. I I?1.N,I>MAX S MAX=I
+	Q MAX
+; =============================================================================
 ; STANDTOK(TOK)
-; Apply Mustache standalone line trimming at token level.;
-; This does NOT remove the tag token, only surrounding whitespace/newline.;
+; Mustache standalone trimming using SNAPSHOT line boundaries.;
+; This avoids "cascading" bugs where trimming earlier tags removes the evidence
+; needed to recognize later tags on their own lines (fixes TEST073/095).;
 ; =============================================================================
 STANDTOK(TOK)
 	N I,MAX,TYP
-	S MAX=+$O(TOK(""),-1) Q:MAX<1
+	N DO  ; mark standalone tags first
 	;
+	S MAX=$$NUMMAX(.TOK) Q:MAX<1
+	;
+	; pass 1: detect (no mutation)
 	F I=1:1:MAX D
 	. S TYP=$G(TOK(I,"t"))
 	. Q:(TYP'="secS")&(TYP'="secE")&(TYP'="part")
-	. D STAND1(.TOK,I,MAX)
-	Q
+	. I $$ISSTAND(.TOK,I,MAX) S DO(I)=1
 	;
-; =============================================================================
-; STAND1(TOK,I,MAX)
-; Standalone tag trimming per Mustache spec.;
-; A tag is standalone only if it is the only non-whitespace on its line:
-;   - From (BOF or last LF) to tag: whitespace only AND ONLY text tokens
-;   - From tag to (LF or EOF): whitespace only AND ONLY text tokens
-; Standalone line trimming with "no non-text tokens on the same line" rule.;
-; =============================================================================
-STAND1(TOK,I,MAX)
+	; pass 2: apply trims (mutation ok now)
+	F I=1:1:MAX I $G(DO(I)) D
+	. D STANDAP(.TOK,I,MAX)
+	;
+	Q
+; returns 1 if token I is standalone (uses your current rules)
+ISSTAND(TOK,I,MAX)
 	N POK,NOK,PV,NV
 	;
-	; NEW: if there is ANY non-text token on the same line (before/after), it's NOT standalone
-	I '$$LINEPURE(.TOK,I,MAX) Q
+	; keep your "no inline non-text on same line" guard if you want it:
+	I '$$LINEPURE(.TOK,I,MAX) Q 0
 	;
 	; prev side must be start-of-file OR text token whose tail after last LF is all ws
 	S POK=1
@@ -665,131 +704,157 @@ STAND1(TOK,I,MAX)
 	. I $G(TOK(I-1,"t"))'="text" S POK=0 Q
 	. S PV=$G(TOK(I-1,"v"))
 	. I '$$TAILWS(PV) S POK=0
-	Q:'POK
+	Q:'POK 0
 	;
-	; next side must be end-of-file OR text token starting with ws then LF
+	; next side must be end-of-file OR text token starting with ws then LF/CRLF/CR (whatever your HEADWNL supports)
 	S NOK=1
 	I I<MAX D
 	. I $G(TOK(I+1,"t"))'="text" S NOK=0 Q
 	. S NV=$G(TOK(I+1,"v"))
 	. I '$$HEADWNL(NV) S NOK=0
-	Q:'NOK
+	Q:'NOK 0
 	;
+	Q 1
+	;
+	;
+; apply the trims (no re-checking)
+STANDAP(TOK,I,MAX)
 	; trim prev indentation (ws after last LF)
 	I I>1 S TOK(I-1,"v")=$$CUTPRE($G(TOK(I-1,"v")))
-	; trim next leading ws + ONE LF
-	I I<MAX S TOK(I+1,"v")=$$CUTNXNL($G(TOK(I+1,"v")))
+	; trim next leading ws + ONE newline
+	I I<MAX S TOK(I+1,"v")=$$CUTNX($G(TOK(I+1,"v")))
 	Q
 ; =============================================================================
-; LINEPURE(.TOK,I,MAX)
-; Returns 1 if from the nearest LF before token I to the nearest LF after token I
-; (exclusive), there are ONLY text tokens (besides token I itself).;
-; This prevents treating inline tags as standalone (fixes TEST105).;
+; STAND1(TOK,I,MAX,LBN,RBN)
+; Tag token I is standalone if:
+;   - From line-start to I: only whitespace TEXT tokens (no other tags)
+;   - From I to line-end: only whitespace TEXT tokens
+; Uses snapshot LBN/RBN so earlier trimming can't break later decisions.;
 ; =============================================================================
-LINEPURE(TOK,I,MAX)
-	N J,TYP,OK,FOUND
-	S OK=1
+STAND1(TOK,I,MAX,LBN,RBN)
+	N LB,RB
+	S LB=$S(I>1:+$G(LBN(I-1)),1:0)        ; token index containing LF before I, or 0 for BOF
+	S RB=$S(I<MAX:+$G(RBN(I+1)),1:0)      ; token index containing LF after I, or 0 for EOF
 	;
-	; scan left until newline boundary
-	S FOUND=0
-	F J=I-1:-1:1 Q:'OK  D  Q:FOUND
-	. S TYP=$G(TOK(J,"t"))
-	. I TYP'="text" S OK=0 Q
-	. I $$HASNL($G(TOK(J,"v"))) S FOUND=1
+	; --- PRE side check (LB+1 .. I-1 must be whitespace-only text; and tail of LB after last LF ws-only)
+	I '$$PREOK(.TOK,LB,I) Q
 	;
-	; scan right until newline boundary
-	S FOUND=0
-	F J=I+1:1:MAX Q:'OK  D  Q:FOUND
-	. S TYP=$G(TOK(J,"t"))
-	. I TYP'="text" S OK=0 Q
-	. I $$HASNL($G(TOK(J,"v"))) S FOUND=1
-	Q OK
-; =============================================================================
-; PRELINE(.TOK,I,.K)
-; Returns 1 if tokens from start-of-line up to token I (exclusive)
-; are ONLY text tokens and whitespace. K is the index of the text token that
-; contains the line-start boundary (either token holding last LF, or 0 for BOF).;
-; =============================================================================
-PRELINE(TOK,I,K)
-	N J,TYP,V,P,TAIL
-	S K=0
-	; walk backwards to find last LF in a text token; fail if any non-text token is on the line
-	F J=I-1:-1:1 D
-	. S TYP=$G(TOK(J,"t"))
-	. I TYP'="text" S K=-1 Q
-	. S V=$G(TOK(J,"v"))
-	. ; if this text token contains an LF, we've found the line boundary
-	. S P=$$LASTNL(V)
-	. I P>0 D  S K=J Q
-	. . ; no LF: this whole token must be whitespace-only
-	. I '$$ALLWS(V) S K=-1 Q
-	I K=-1 Q 0
-	; if we never found an LF, then BOF boundary; ensure all text tokens 1..I-1 are whitespace (already checked)
-	Q 1
+	; --- POST side check (I+1 .. RB-1 must be whitespace-only text; and head of RB before first LF ws-only)
+	I '$$POSTOK(.TOK,I,RB,MAX) Q
 	;
+	; --- TRIM PRE: remove indentation between line-start and tag
+	D TRIMPRE(.TOK,LB,I)
+	;
+	; --- TRIM POST: remove whitespace after tag up to (and including) ONE LF if present
+	D TRIMPOST(.TOK,I,RB,MAX)
+	;
+	Q
 	;
 ; =============================================================================
-; POSTLINE(.TOK,I,MAX,.K,.HASNL)
-; Returns 1 if tokens after I up to end-of-line contain ONLY text tokens and whitespace,
-; and either:
-;   - newline is present (LF or CRLF), or
-;   - EOF (no newline) is allowed
-; K = index of first text token that contains the newline, or 0 if EOF.;
-; HASNL=1 if newline found, else 0.;
+; PREOK(TOK,LB,I)
 ; =============================================================================
-POSTLINE(TOK,I,MAX,K,HASNL)
-	N J,TYP,V,P
-	S K=0,HASNL=0
-	; walk forwards until we find LF; fail if any non-text token appears before the LF
-	F J=I+1:1:MAX D  Q:HASNL
-	. S TYP=$G(TOK(J,"t"))
-	. I TYP'="text" S K=-1 Q
-	. S V=$G(TOK(J,"v"))
-	. ; if we have an LF, accept (newline boundary)
-	. S P=$F(V,$C(10))
-	. I P>0 S K=J,HASNL=1 Q
-	. ; otherwise token must be whitespace-only (spaces/tabs/CR)
-	. I '$$ALLWS(V) S K=-1 Q
-	I K=-1 Q 0
-	; if no newline found, EOF is allowed (standalone without newline)
-	Q 1
+PREOK(TOK,LB,I)
+	N J,V,P,TAIL,Q S Q=1
+	; tokens between LB and I must be text + whitespace-only
+	F J=$S(LB>0:LB+1,1:1):1:I-1 D  S Q=0 Q
+	. I $G(TOK(J,"t"))'="text" S Q=0 Q
+	. I '$$ALLWSIND($G(TOK(J,"v"))) S Q=0 Q
+	; tail of LB after last LF (indentation) must be ws-only
+	I LB>0 D
+	. S V=$G(TOK(LB,"v")),P=$$LASTNL(V)
+	. S TAIL=$S(P>0:$E(V,P+1,$L(V)),1:"")
+	. I '$$ALLWSIND(TAIL) S Q=0 Q
+	Q Q
+FIRSTNL(S) ; $F-like index of first NL start char; returns position (1-based) of NL char, 0 if none
+	N I,L,C,Q S Q=0
+	S S=$G(S),L=$L(S)
+	F I=1:1:L S C=$E(S,I) I (C=$C(10))!(C=$C(13)) S Q=I Q
+	Q Q
+; =============================================================================
+; POSTOK(TOK,I,RB,MAX)
+; =============================================================================
+POSTOK(TOK,I,RB,MAX)
+	N J,V,P,HEAD,Q S Q=1
+	; tokens after I until RB must be text + whitespace-only
+	F J=I+1:1:$S(RB>0:RB-1,1:MAX) D  S Q=0 Q
+	. I $G(TOK(J,"t"))'="text" S Q=0 Q
+	. I '$$ALLWSIND($G(TOK(J,"v"))) S Q=0 Q
+	; if RB exists, head before first LF must be ws-only
+	I RB>0 D
+	. S V=$G(TOK(RB,"v"))
+	. ;S P=$F(V,$C(10))
+	. N P
+	. S P=$$FIRSTNL(V) I P'>0 S Q=0 Q
+	. S HEAD=$E(V,1,P-2)
+	. I '$$ALLWSIND(HEAD) S Q=0 Q
+	. ; must actually contain LF to be a line boundary
+	. I P'>0 S Q=0 Q
+	. S HEAD=$E(V,1,P-2)
+	. I '$$ALLWSIND(HEAD) S Q=0 Q
+	Q Q
 	;
-	;
 ; =============================================================================
-; TRIMPRE(.TOK,PK,I)
-; Remove indentation whitespace from line start up to tag token I.;
-; PK is the token index that contains last LF boundary; 0 means BOF.;
+; TRIMPRE(TOK,LB,I)
+; Keep up to last LF in boundary token; blank all-whitespace tokens between.;
 ; =============================================================================
-TRIMPRE(TOK,PK,I)
+TRIMPRE(TOK,LB,I)
 	N J,V,P
-	; If boundary token contains LF, drop everything after last LF (indentation)
-	I PK>0 D
-	. S V=$G(TOK(PK,"v"))
+	I LB>0 D
+	. S V=$G(TOK(LB,"v"))
 	. S P=$$LASTNL(V)
-	. ; keep up to and including LF
-	. S TOK(PK,"v")=$E(V,1,P)
-	; tokens between boundary and tag are whitespace-only text tokens -> blank them
-	F J=$S(PK>0:PK+1,1:1):1:I-1 S TOK(J,"v")=""
+	. S TOK(LB,"v")=$E(V,1,P)
+	F J=$S(LB>0:LB+1,1:1):1:I-1 S TOK(J,"v")=""
 	Q
 	;
-	;
 ; =============================================================================
-; TRIMPOST(.TOK,I,NK,HASNL)
-; Remove whitespace after tag on same line and remove exactly one newline if present.;
-; NK = token index containing the newline, or 0 if EOF.;
+; TRIMPOST(TOK,I,RB,MAX)
+; Blank whitespace tokens after tag; remove ONE LF from RB token (after ws).;
 ; =============================================================================
-TRIMPOST(TOK,I,NK,HASNL)
-	N J,V,LF
-	; blank any whitespace-only text tokens immediately after tag up to NK-1
-	F J=I+1:1:$S(NK>0:NK-1,1:$O(TOK(""),-1)) S TOK(J,"v")=""
-	;
-	I 'HASNL Q  ; EOF: nothing more to remove
-	;
-	; In token NK, remove leading ws and ONE newline (LF, optionally preceded by CR)
-	S V=$G(TOK(NK,"v"))
-	S TOK(NK,"v")=$$CUTNX1(V)
+TRIMPOST(TOK,I,RB,MAX)
+	N J
+	F J=I+1:1:$S(RB>0:RB-1,1:MAX) S TOK(J,"v")=""
+	I RB>0 S TOK(RB,"v")=$$CUTNXNL($G(TOK(RB,"v")))
 	Q
 	;
+; =============================================================================
+; CUTNXLF(S)
+; Remove leading indentation ws (space/tab) then remove exactly ONE LF.;
+; (Input is normalized to LF already.)
+; =============================================================================
+CUTNXLF(S)
+	N J,C,L
+	S S=$G(S),L=$L(S)
+	I L=0 Q ""
+	; skip indentation (spaces/tabs only)
+	F J=1:1:L S C=$E(S,J) Q:(C'=" ")&(C'=$C(9))
+	I J>L Q S
+	; remove one LF if present
+	I $E(S,J)=$C(10) Q $E(S,J+1,L)
+	Q S
+HEADWNL(S) ; starts with [spaces/tabs]* then LF, or empty => allow EOF
+	N J,C,L
+	S S=$G(S) I S="" Q 1
+	S L=$L(S)
+	F J=1:1:L S C=$E(S,J) Q:(C'=" ")&(C'=$C(9))
+	I J>L Q 0
+	Q $S($E(S,J)=$C(10):1,1:0)
+; =============================================================================
+; ALLWSIND(S)  spaces/tabs only
+; =============================================================================
+ALLWSIND(S)
+	N I,C,Q S Q=1
+	S S=$G(S)
+	F I=1:1:$L(S) S C=$E(S,I) I (C'=" ")&(C'=$C(9)) S Q=0 Q
+	Q Q
+	;
+; =============================================================================
+; LASTLF(S) position of last LF, 0 if none
+; =============================================================================
+LASTLF(S)
+	N P,AT
+	S S=$G(S),P=0,AT=0
+	F  S AT=$F(S,$C(10),AT+1) Q:'AT  S P=AT-1
+	Q P
 ; spaces/tabs only (CR is NOT indentation whitespace)
 ALLWS(S)
 	N I,C,OK
@@ -799,33 +864,13 @@ ALLWS(S)
 	. I (C'=" ")&(C'=$C(9)) S OK=0
 	Q OK
 	;
-HEADWNL(S) ; 1 if starts with ws then newline (LF, CRLF, or CR). empty => allow EOF
+CUTNX(S) ; drop leading [spaces/tabs]* then ONE LF
 	N J,C,L
-	S S=$G(S)
-	I S="" Q 1
+	S S=$G(S) I S="" Q ""
 	S L=$L(S)
-	; skip indentation ws (space/tab only). DO NOT treat CR as ws here.;
-	F J=1:1:L S C=$E(S,J) Q:(C'=" ")&(C'=$C(9))
-	I J>L Q 0
-	; newline seq?
-	I $E(S,J)=$C(10) Q 1
-	I $E(S,J)=$C(13) Q 1  ; CR or CRLF
-	Q 0
-	;
-	;
-CUTNX(S) ; drop leading indentation ws then ONE newline seq (LF, CRLF, or CR)
-	N J,C,L
-	S S=$G(S)
-	I S="" Q ""
-	S L=$L(S)
-	; skip indentation ws (space/tab only)
 	F J=1:1:L S C=$E(S,J) Q:(C'=" ")&(C'=$C(9))
 	I J>L Q S
-	; remove one newline sequence
 	I $E(S,J)=$C(10) Q $E(S,J+1,L)
-	I $E(S,J)=$C(13) D  Q $E(S,J+1,L)
-	. ; if CRLF, also drop following LF
-	. I (J<L),$E(S,J+1)=$C(10) S J=J+1
 	Q S
 ; =============================================================================
 ; CUTNX1(S)
@@ -865,12 +910,22 @@ NORMNL(S)
 	. ; normal char
 	. S OUT=OUT_CH,I=I+1
 	Q OUT
-TAILWS(S) ; 1 if everything after last newline is ws (or no NL and whole string ws)
+TAILWS(S)
 	N P,TAIL
 	S S=$G(S)
-	S P=$$LASTNL(S)
+	S P=$$LASTNLSEQ(S)
 	S TAIL=$S(P>0:$E(S,P+1,$L(S)),1:S)
 	Q $$ALLWS(TAIL)
+LASTNLSEQ(S) ; position of last newline char in last newline sequence (CRLF->LF pos)
+	N I,L,P
+	S S=$G(S),L=$L(S),P=0
+	F I=1:1:L D
+	. I $E(S,I)=$C(10) S P=I
+	. I $E(S,I)=$C(13) D
+	. . ; if CRLF, consider LF as the newline "end"
+	. . I (I<L),$E(S,I+1)=$C(10) S P=I+1
+	. . E  S P=I
+	Q P
 ; =============================================================================
 ; HASNL(S)
 ; Return 1 if S contains ANY newline char (LF or CR), else 0
@@ -888,42 +943,37 @@ HASNL(S)
 ; For lone LF treat as LF position.;
 ; Returns 0 if none.;
 ; =============================================================================
-LASTNL(S)
-	N I,L,P,CH
-	S S=$G(S),L=$L(S),P=0
-	F I=1:1:L D
-	. S CH=$E(S,I)
-	. I CH=$C(10) S P=I Q  ; LF always newline end (includes CRLF because LF ends it)
-	. I CH=$C(13) D       ; CR newline end unless followed by LF (then LF will win later)
-	. . I I<L,$E(S,I+1)=$C(10) Q  ; CRLF => don't set P here; LF will set P
-	. . S P=I
-	Q P
-CUTNXNL(S)
+LASTNL(S) ; position of last newline char (LF or CR), 0 if none
+	N P10,P13
+	S S=$G(S)
+	S P10=$$LASTCHR(S,$C(10))
+	S P13=$$LASTCHR(S,$C(13))
+	Q $S(P10>P13:P10,1:P13)
+LASTCHR(S,CH)
+	N P,AT
+	S S=$G(S),P=0,AT=0
+	F  S AT=$F(S,CH,AT+1) Q:'AT  S P=AT-1
+	Q P	
+CUTNXNL(S) ; drop leading indent (space/tab) then ONE newline seq (CRLF/LF/CR)
 	N J,C,L
 	S S=$G(S),L=$L(S)
 	I L=0 Q ""
-	; skip indentation (spaces/tabs only)
+	; skip indentation (space/tab only)
 	F J=1:1:L S C=$E(S,J) Q:(C'=" ")&(C'=$C(9))
 	I J>L Q S
+	;
 	; remove one newline sequence
 	I $E(S,J)=$C(13) D  Q $E(S,J+1,L)
-	. I (J<L),$E(S,J+1)=$C(10) S J=J+1  ; CRLF, also remove LF
+	. ; if CRLF, also drop following LF
+	. I (J<L),$E(S,J+1)=$C(10) S J=J+1
+	;
 	I $E(S,J)=$C(10) Q $E(S,J+1,L)
+	;
 	Q S
-HEADWNLNL(S)
-	N J,C,L
-	S S=$G(S),L=$L(S)
-	I L=0 Q 1  ; allow EOF
-	; skip indentation (spaces/tabs only)
-	F J=1:1:L S C=$E(S,J) Q:(C'=" ")&(C'=$C(9))
-	I J>L Q 0
-	I $E(S,J)=$C(10) Q 1
-	I $E(S,J)=$C(13) Q 1
-	Q 0
-CUTPRE(S) ; keep up to last newline end, drop any ws after it; if no NL, drop all
+CUTPRE(S) ; keep up to and including last newline sequence; drop indentation after it
 	N P
 	S S=$G(S)
-	S P=$$LASTNL(S)
+	S P=$$LASTNLSEQ(S)
 	Q $S(P>0:$E(S,1,P),1:"")
 ADDTXT(TOK,N,VAL)
 	S N=N+1
@@ -1152,9 +1202,18 @@ EVAL(TOK,CONF,CTX,OUT,ERR)
 	. ; SECTION END-
 	. I TYP="secE" D  Q
 	. . S F(FSP,"i")=I+1
+	 I $G(TOK("meta","crlf")) D
+	. S OUT=$$LF2CRLF^MIOTPL2(OUT)
 	Q:$Q $S($D(ERR):0,1:1)
 	Q
-	;
+TOCRLF(S)
+	N I,N,OUT
+	S S=$G(S)
+	S N=$L(S,$C(10))
+	I N<2 Q S
+	S OUT=$P(S,$C(10),1)
+	F I=2:1:N S OUT=OUT_$C(13,10)_$P(S,$C(10),I)
+	Q OUT
 ; =============================================================================
 ; TOKGET(TN,I,FIELD)  -- safe token getter
 ; TN examples: "TOK" or "PTOKS(3)"
@@ -1169,15 +1228,16 @@ TOKGET(TN,I,FIELD)
 	Q $G(@R)
 	;
 ; =============================================================================
-; TOKENDR(TN) -- last numeric subscript
+; TOKENDR(TOKNAME)
+; Return the last NUMERIC token index in token root TOKNAME.;
+; (Ignores string subscripts like TOK("meta",...))
 ; =============================================================================
-TOKENDR(TN)
-	N R
-	I TN["(" D
-	. S R=$E(TN,1,$L(TN)-1)_","""")"
-	E  D
-	. S R=TN_"("""")"
-	Q +$O(@R,-1)
+TOKENDR(TOKR)
+	N I,MAX
+	S MAX=0,I=0
+	F  S I=$O(@TOKR@(I)) Q:I=""  D
+	. I I?1.N,I>MAX S MAX=I
+	Q MAX
 REPL(s,f,t)
 	i $tr(s,f)=s q s
 	n o,i s o="" f i=1:1:$l(s,f)  s o=o_$s(i<$l(s,f):$p(s,f,i)_t,1:$p(s,f,i))
@@ -1222,13 +1282,24 @@ POPF(FSP,F,CST,CTSP)
 	I FSP>0 S CTSP=+$G(F(FSP,"ctxTop"))
 	Q
 	;
+; =============================================================================
+; LF2CRLF(S)  Convert LF -> CRLF
+; =============================================================================
+LF2CRLF(S)
+	N LF,N,I,OUT
+	S LF=$C(10)
+	S N=$L($G(S),LF)
+	I N<2 Q $G(S)  ; no LF present
 	;
+	S OUT=$P(S,LF,1)
+	F I=2:1:N S OUT=OUT_$C(13,10)_$P(S,LF,I)
+	Q OUT
 ; =============================================================================
 ; TOKMAX(TOKNAME)
 ; Return last numeric token index for an array referenced by name (e.g. "TOK", "PTOKS(3)")
 ; =============================================================================
 TOKMAX(TOKNAME)
-	Q +$O(@TOKNAME@(""),-1)
+	Q $$TOKENDR(TOKNAME)
 	;
 	;
 ; =============================================================================
@@ -1255,8 +1326,7 @@ EMIT(FSP,F,OUT,VAL)
 ; Return the last numeric token index in token root TOKR.;
 ; =============================================================================
 TOKEND(TOKR)
-	N X S X=$O(@(TOKR_"("""")"),-1)
-	Q +X
+	Q $$TOKENDR(TOKR)
 	;
 ; =============================================================================
 ; TOKG(TOKR,I,FIELD)
