@@ -1246,7 +1246,7 @@ EVAL(TOK,CONF,CTX,OUT,ERR)
 	S CST(1)="CTX"
 	; Partial recursion protection
 	N PDEPTHMAX S PDEPTHMAX=+$G(CONF("templates","maxPartialDepth")) I PDEPTHMAX<1 S PDEPTHMAX=20
-	N PACTIVE
+	N PACTIVEN,IACTIVE ; inheritance recursion protection (keyed by parent#ovID)
 	;Temp Array
 	N TMPTARR
 	; Local storage for partial token arrays
@@ -1310,11 +1310,26 @@ EVAL(TOK,CONF,CTX,OUT,ERR)
 	. I TYP="parS" D  Q
 	. . N MI,PNAME,PTID,PMAX,OVIDX
 	. . S MI=+$$TOKGET(TN,I,"m") I MI<1 S ERR("code")="TPL_EVAL",ERR("msg")="Unmatched parent tag." Q
-	. . S PNAME=$G(TOK(I,"k"))
+	. . S PNAME=$$TOKGET(TN,I,"k")
 	. . ; collect overrides from child body (blocks only)
 	. . S OVID=OVID+1,OVIDX=OVID
 	. . K OVT(OVIDX)
 	. . D COLLOVR^MIOTPL2(TN,I+1,MI-1,OVIDX,.OVT)
+	. . ; inherit/merge overrides from current frame into this include's overrides
+	. . N POVID,BN,IK
+	. . S POVID=+$G(F(FSP,"ovID"))
+	. . I POVID>0 D
+	. . . ; if no local overrides, reuse inherited ovID (fast path)
+	. . . I $O(OVT(OVIDX,""))="" K OVT(OVIDX) S OVIDX=POVID Q
+	. . . ; else copy missing inherited blocks (local wins)
+	. . . I $D(OVT(POVID)) D
+	. . . . S BN=""
+	. . . . F  S BN=$O(OVT(POVID,BN)) Q:BN=""  D
+	. . . . . I '$D(OVT(OVIDX,BN)) S OVT(OVIDX,BN)=$G(OVT(POVID,BN))
+	. . ; recursion protection for inherited templates: key by parent name + ovID
+	. . S IK=PNAME_"#"_OVIDX
+	. . I $G(IACTIVE(IK))>0 Q
+	. . S IACTIVE(IK)=+$G(IACTIVE(IK))+1
 	. . ; advance parent first
 	. . S F(FSP,"i")=MI+1
 	. . ; load parent as partial
@@ -1328,6 +1343,7 @@ EVAL(TOK,CONF,CTX,OUT,ERR)
 	. . ; attach override id to new frame
 	. . S F(FSP,"ovID")=OVIDX
 	. . S F(FSP,"pname")=PNAME
+	. . S F(FSP,"ikey")=IK
 	. ;
 	. ; Block tag {{$name}}...{{/name}}
 	. I TYP="blkS" D  Q
@@ -1613,6 +1629,7 @@ PUSHFRAME(FSP,F,START,END,CTSP,MODE,CAPREF,TOKNAME)
 	S F(FSP,"mode")=$G(MODE,"emit")
 	S F(FSP,"capRef")=$G(CAPREF)
 	S F(FSP,"tokName")=$G(TOKNAME,"TOK")
+	S F(FSP,"ovID")=$G(F(FSP-1,"ovID"))
 	Q
 	;
 	;
@@ -1636,6 +1653,12 @@ POPF(FSP,F,CST,CTSP)
 	. N PN S PN=$G(F(OLD,"pname"))
 	. S PACTIVE(PN)=+$G(PACTIVE(PN))-1
 	. I PACTIVE(PN)<1 K PACTIVE(PN)
+	;
+	; inherit recursion finalizer
+	I $G(F(OLD,"ikey"))'="" D
+	. N IK S IK=$G(F(OLD,"ikey"))
+	. S IACTIVE(IK)=+$G(IACTIVE(IK))-1
+	. I IACTIVE(IK)<1 K IACTIVE(IK)
 	;
 	; capEmit finalizer (indented partial emit)
 	I +$G(F(OLD,"capEmit")) D

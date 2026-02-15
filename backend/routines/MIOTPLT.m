@@ -1814,8 +1814,10 @@ TEST153
 TEST154
 	NEW HDR S HDR="[TEST154][Recursion]"
 	NEW DESC S DESC=HDR_"[Recursion in inherited templates]"
-	NEW TEMPLATE S TEMPLATE="{{<parent}}{{$foo}}override{{/foo}}{{/parent}}"
-	NEW EXPECTED S EXPECTED="override override override don't recurse"
+	;NEW TEMPLATE 
+	S TEMPLATE="{{<parent}}{{$foo}}override{{/foo}}{{/parent}}"
+	;NEW EXPECTED 
+	S EXPECTED="override override override don't recurse"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CTX
