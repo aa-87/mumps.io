@@ -710,7 +710,7 @@ STANDTOK(TOK)
 	. . S MI=+$G(TOK(I,"m")) I MI<I Q
 	. . I $$ISSTANDR(.TOK,I,MI,MAX) S DO(I)=1,DOM(I)=MI
 	. ; existing standalone token types
-	. Q:(TYP'="secS")&(TYP'="secE")&(TYP'="part")&(TYP'="comm")&(TYP'="delim")
+	. Q:(TYP'="secS")&(TYP'="secE")&(TYP'="blkS")&(TYP'="part")&(TYP'="comm")&(TYP'="delim")
 	. I $$ISSTAND(.TOK,I,MAX) S DO(I)=1
 	;
 	; pass 2: apply trims (reverse to avoid cascades)
@@ -770,7 +770,8 @@ ISSTAND(TOK,I,MAX)
 	N POK,NOK,PV,NV
 	;
 	; keep your "no inline non-text on same line" guard if you want it:
-	I '$$LINEPURE(.TOK,I,MAX) Q 0
+	  I $G(TOK(I,"t"))="blkS" Q $$ISSTANDB(.TOK,I,MAX)
+	E  I '$$LINEPURE(.TOK,I,MAX) Q 0
 	;
 	; prev side must be start-of-file OR text token whose tail after last LF is all ws
 	S POK=1
@@ -789,31 +790,72 @@ ISSTAND(TOK,I,MAX)
 	Q:'NOK 0
 	;
 	Q 1
+ISSTANDB(TOK,I,MAX) ; standalone detection for blkS ignoring parS adjacency
+	N JP,JN,PV,NV,P,OK
 	;
+	; must be "line pure" except we allow parS tokens on the line
+	I '$$LINEPUREB(.TOK,I,MAX) Q 0
 	;
-; apply the trims (no re-checking)
+	; find previous TEXT token scanning left, skipping parS
+	S JP=I-1
+	F  Q:JP<1  Q:$G(TOK(JP,"t"))="text"  D  Q:$G(TOK(JP,"t"))'="parS"
+	. I $G(TOK(JP,"t"))="parS" S JP=JP-1 Q
+	. Q
+	S PV=""
+	I JP>=1,$G(TOK(JP,"t"))="text" S PV=$G(TOK(JP,"v"))
+	;
+	; prev side OK if:
+	; - no prev text (BOF or only parS) OR
+	; - after last newline in PV, only spaces/tabs
+	S OK=1
+	I PV'="" D
+	. S P=$$LASTNLSEQ(PV)
+	. I P>0 D  Q
+	. . I $TR($E(PV,P+1,$L(PV))," "_$C(9),"")'="" S OK=0
+	. ; no newline in PV => must be all ws (otherwise tag not standalone)
+	. I P=0,$TR(PV," "_$C(9),"")'="" S OK=0
+	I 'OK Q 0
+	;
+	; find next TEXT token scanning right, skipping parS (defensive)
+	S JN=I+1
+	F  Q:JN>MAX  Q:$G(TOK(JN,"t"))="text"  D  Q:$G(TOK(JN,"t"))'="parS"
+	. I $G(TOK(JN,"t"))="parS" S JN=JN+1 Q
+	. Q
+	;
+	; next must exist and begin with optional ws/CR then a newline
+	S NV=$S(JN<=MAX&($G(TOK(JN,"t"))="text"):$G(TOK(JN,"v")),1:"")
+	I NV="" Q 0
+	I '$$HASLEADNL(NV) Q 0
+	;
+	Q 1
+HASLEADNL(S) ; true if S begins with [spaces/tabs/CR]* then LF or CRLF
+	N J,C,L
+	S S=$G(S),L=$L(S)
+	I L=0 Q 0
+	F J=1:1:L S C=$E(S,J) Q:(C'=" ")&(C'=$C(9))&(C'=$C(13))
+	I J>L Q 0
+	I $E(S,J)=$C(10) Q 1
+	I $E(S,J)=$C(13),$E(S,J+1)=$C(10) Q 1
+	Q 0
 STANDAP(TOK,I,MAX)
 	N TYP,PV,P,IND
 	S TYP=$G(TOK(I,"t"))
 	;
-	; If this is a standalone PARTIAL, capture indentation from the line
-	; we are about to trim away, and store it on the token for render-time.;
 	I TYP="part" D
 	. S IND=""
 	. I I>1,$G(TOK(I-1,"t"))="text" D
 	. . S PV=$G(TOK(I-1,"v"))
-	. . ; indent = chars after last newline sequence in PV
 	. . S P=$$LASTNLSEQ(PV)
 	. . I P>0 S IND=$E(PV,P+1,$L(PV))
 	. . E  S IND=PV
-	. ; only keep spaces/tabs as indent (defensive)
 	. I IND'="",$TR(IND," "_$C(9),"")'="" S IND=""
 	. S TOK(I,"indent")=IND
 	;
-	; trim prev indentation (ws after last newline)
 	I I>1 S TOK(I-1,"v")=$$CUTPRE($G(TOK(I-1,"v")))
-	; trim next leading ws + ONE newline (if present)
 	I I<MAX S TOK(I+1,"v")=$$CUTNX($G(TOK(I+1,"v")))
+	;
+	; NEW: also trim blkS raw if we are trimming this tag as standalone
+	I TYP="blkS" S TOK(I,"raw")=$$CUTNX1($G(TOK(I,"raw")))
 	Q
 LINEIND(V) ; indentation after last LF (or BOF), spaces/tabs only
 	N P,TAIL
@@ -1078,6 +1120,24 @@ CUTNXNL(S) ; drop leading indent (space/tab) then ONE newline seq (CRLF/LF/CR)
 	I $E(S,J)=$C(10) Q $E(S,J+1,L)
 	;
 	Q S
+LINEPUREB(TOK,I,MAX) ; like LINEPURE, but ignores parS tokens (inheritance blocks)
+	N J,TYP,OK,FOUND
+	S OK=1
+	; scan left until newline boundary
+	S FOUND=0
+	F J=I-1:-1:1 Q:'OK  D  Q:FOUND
+	. S TYP=$G(TOK(J,"t"))
+	. I TYP="parS" Q  ; ignore parent/include start on same line
+	. I TYP'="text" S OK=0 Q
+	. I $$HASNL($G(TOK(J,"v"))) S FOUND=1
+	; scan right until newline boundary
+	S FOUND=0
+	F J=I+1:1:MAX Q:'OK  D  Q:FOUND
+	. S TYP=$G(TOK(J,"t"))
+	. I TYP="parS" Q  ; defensive (shouldn't occur to the right)
+	. I TYP'="text" S OK=0 Q
+	. I $$HASNL($G(TOK(J,"v"))) S FOUND=1
+	Q OK
 CUTPRE(S) ; keep up to and including last newline sequence; drop indentation after it
 	N P
 	S S=$G(S)

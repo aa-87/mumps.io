@@ -183,7 +183,9 @@ MIOTF206 ;Inheritance
 	; any substitutions. Parameter and arguments names live in a namespace
 	; that is distinct from both Partials and the context.	
 	D TEST138,TEST139,TEST140,TEST141,TEST142,TEST143,TEST144
-	D TEST145,TEST146,TEST147,TEST148,TEST149
+	D TEST145,TEST146,TEST147,TEST148,TEST149,TEST150,TEST151
+	D TEST152,TEST153,TEST154
+	;	
 	QUIT 		
 TEST001
 	NEW HDR S HDR="[TEST001][No Interpolation]"
@@ -1756,15 +1758,70 @@ TEST149
 TEST150
 	NEW HDR S HDR="[TEST150][Override parent with newlines]"
 	NEW DESC S DESC=HDR_"[Override parent with newlines]"
-	;NEW TEMPLATE 
-	S TEMPLATE="{{<parent}}{{$ballmer}}\npeaked\n\n:(\n{{/ballmer}}{{/parent}}"
-	;NEW EXPECTED 
-	S EXPECTED="peaked\n\n:(\n"
+	NEW TEMPLATE S TEMPLATE="{{<parent}}{{$ballmer}}\npeaked\n\n:(\n{{/ballmer}}{{/parent}}"
+	NEW EXPECTED S EXPECTED="peaked\n\n:(\n"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CTX
 	N CONF,CTX D SETUPPART(.CONF,.ROOT)
 	N ERR D WRFILE(ROOT_"parent",$$UNESCNL("{{$ballmer}}peaking{{/ballmer}}"),.ERR) ;
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	QUIT
+TEST151
+	NEW HDR S HDR="[TEST151][Override parent with newlines]"
+	NEW DESC S DESC=HDR_"[Inherit indentation when overriding a parents]"
+	NEW TEMPLATE S TEMPLATE="{{<parent}}{{$nineties}}hammer time{{/nineties}}{{/parent}}"
+	NEW EXPECTED S EXPECTED="stop:\n  hammer time\n"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX
+	N CONF,CTX D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"parent",$$UNESCNL("stop:\n  {{$nineties}}collaborate and listen{{/nineties}}\n"),.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	QUIT
+TEST152
+	NEW HDR S HDR="[TEST152][Only one override]"
+	NEW DESC S DESC=HDR_"[Override one parameter but not the other]"
+	NEW TEMPLATE S TEMPLATE="{{<parent}}{{$stuff2}}override two{{/stuff2}}{{/parent}}"
+	NEW EXPECTED S EXPECTED="new default one, override two"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX
+	N CONF,CTX D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"parent",$$UNESCNL("{{$stuff}}new default one{{/stuff}}, {{$stuff2}}new default two{{/stuff2}}"),.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	QUIT
+TEST153
+	NEW HDR S HDR="[TEST153][Parent template]"
+	NEW DESC S DESC=HDR_"[Parent templates behave identically to partials when called with no parameters]"
+	NEW TEMPLATE S TEMPLATE="{{>parent}}|{{<parent}}{{/parent}}"
+	NEW EXPECTED S EXPECTED="default content|default content"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX
+	N CONF,CTX D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"parent",$$UNESCNL("{{$foo}}default content{{/foo}}"),.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	QUIT
+TEST154
+	NEW HDR S HDR="[TEST154][Recursion]"
+	NEW DESC S DESC=HDR_"[Recursion in inherited templates]"
+	NEW TEMPLATE S TEMPLATE="{{<parent}}{{$foo}}override{{/foo}}{{/parent}}"
+	NEW EXPECTED S EXPECTED="override override override don't recurse"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX
+	N CONF,CTX D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"parent",$$UNESCNL("{{$foo}}default content{{/foo}} {{$bar}}{{<parent2}}{{/parent2}}{{/bar}}"),.ERR)
+	N ERR D WRFILE(ROOT_"parent2",$$UNESCNL("{{$foo}}parent2 default content{{/foo}} {{<parent}}{{$bar}}don't recurse{{/bar}}{{/parent}}"),.ERR)
 	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	D RMDIR(ROOT)
