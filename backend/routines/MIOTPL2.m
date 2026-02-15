@@ -532,18 +532,23 @@ FILEEXISTS(FP) Q $ZSEARCH(FP)]""
 ;  PARSE + LINKSECS
 ; =============================================================================
 COMPILE(TEXT,TOK,ERR) ;
-	N HADCRLF
-	S HADCRLF=0
-	I $F(TEXT,$C(13,10))>0 S HADCRLF=1
+	N CRLF
+	; Detect original newline style BEFORE normalization
+	S CRLF=$S($F($G(TEXT),$C(13,10))>0:1,1:0)
 	;
+	; Normalize only for parsing/standalone logic
 	S TEXT=$$NORMNL^MIOTPL2(TEXT)
 	;
-	DO PARSE(.TEXT,.TOK,.ERR)
-	DO:'$D(ERR) LINKSECS(.TOK,.ERR)
-	DO STANDTOK(.TOK)
+	D PARSE(.TEXT,.TOK,.ERR)  ; PARSE kills TOK, so meta must be set AFTER this
+	I $D(ERR) Q
 	;
-	; persist newline style for render
-	S TOK("meta","crlf")=HADCRLF
+	; Restore newline-style metadata on the compiled token stream
+	S TOK("meta","crlf")=CRLF
+	;
+	D LINKSECS(.TOK,.ERR)
+	I $D(ERR) Q
+	;
+	D STANDTOK(.TOK)
 	Q
 	;
 LINEPURE(TOK,I,MAX)
@@ -656,7 +661,7 @@ PARSE(TEXT,TOK,ERR)
 	. ; Default: variable escaped
 	. D ADDVAR(.TOK,.N,INSIDE,1)
 	. S POS=CLOSE
-	D STANDTOK(.TOK)
+	;D STANDTOK(.TOK)
 	Q
 ; =============================================================================
 ; NUMMAX(.TOK)
@@ -719,11 +724,45 @@ ISSTAND(TOK,I,MAX)
 	;
 ; apply the trims (no re-checking)
 STANDAP(TOK,I,MAX)
-	; trim prev indentation (ws after last LF)
+	N TYP,PV,P,IND
+	S TYP=$G(TOK(I,"t"))
+	;
+	; If this is a standalone PARTIAL, capture indentation from the line
+	; we are about to trim away, and store it on the token for render-time.;
+	I TYP="part" D
+	. S IND=""
+	. I I>1,$G(TOK(I-1,"t"))="text" D
+	. . S PV=$G(TOK(I-1,"v"))
+	. . ; indent = chars after last newline sequence in PV
+	. . S P=$$LASTNLSEQ(PV)
+	. . I P>0 S IND=$E(PV,P+1,$L(PV))
+	. . E  S IND=PV
+	. ; only keep spaces/tabs as indent (defensive)
+	. I IND'="",$TR(IND," "_$C(9),"")'="" S IND=""
+	. S TOK(I,"indent")=IND
+	;
+	; trim prev indentation (ws after last newline)
 	I I>1 S TOK(I-1,"v")=$$CUTPRE($G(TOK(I-1,"v")))
-	; trim next leading ws + ONE newline
+	; trim next leading ws + ONE newline (if present)
 	I I<MAX S TOK(I+1,"v")=$$CUTNX($G(TOK(I+1,"v")))
 	Q
+LINEIND(V) ; indentation after last LF (or BOF), spaces/tabs only
+	N P,TAIL
+	S V=$G(V)
+	S P=$$LASTLF(V)
+	S TAIL=$S(P>0:$E(V,P+1,$L(V)),1:V)
+	I '$$ALLWSIND(TAIL) Q ""
+	Q TAIL
+INDENTSTR(S,IND)
+	I $G(IND)="" Q $G(S)
+	N I,L,CH,OUT
+	S S=$G(S),OUT=IND,L=$L(S)
+	F I=1:1:L D
+	. S CH=$E(S,I),OUT=OUT_CH
+	. ; after LF, add IND unless LF is last char
+	. I CH=$C(10),I<L S OUT=OUT_IND
+	Q OUT
+	;
 ; =============================================================================
 ; STAND1(TOK,I,MAX,LBN,RBN)
 ; Tag token I is standalone if:
@@ -1110,37 +1149,43 @@ EVAL(TOK,CONF,CTX,OUT,ERR)
 	. . S F(FSP,"i")=I+1
 	. ; PARTIAL
 	. I TYP="part" D  Q
-	. . N PNAME
+	. . N PNAME,IND,MODE,CAP,PMAX
 	. . S PNAME=$$TOKGET(TN,I,"k")
+	. . S IND=$$TOKGET(TN,I,"indent")  ; may be ""
 	. . ; advance parent now
 	. . S F(FSP,"i")=I+1
-	. . ; recursion control
-	. . I $G(PACTIVE(PNAME))'<0 S PACTIVE(PNAME)=+$G(PACTIVE(PNAME))
-	. . I PACTIVE(PNAME)+1>PDEPTHMAX S ERR("code")="TPL_PARTIAL_DEPTH",ERR("msg")="Partial recursion depth exceeded: "_PNAME Q
+	. . ; recursion control (SAFE)
+	. . S PACTIVE(PNAME)=+$G(PACTIVE(PNAME))
+	. . I (PACTIVE(PNAME)+1)>PDEPTHMAX S ERR("code")="TPL_PARTIAL_DEPTH",ERR("msg")="Partial recursion depth exceeded: "_PNAME Q
 	. . S PACTIVE(PNAME)=PACTIVE(PNAME)+1
-	. . ; load partial tokens into PTOKS(pid)
+	. . ; load partial tokens
 	. . S PTID=PTID+1
 	. . K PTOKS(PTID),TMPTARR
 	. . D GETTOK^MIOTPL2(PNAME,.CONF,.TMPTARR,.ERR)
 	. . M PTOKS(PTID)=TMPTARR K TMPTARR
 	. . I $D(ERR) D  I $D(ERR) Q
-	. . . N EC S EC=$G(ERR("code")) 
-	. . . ; Treat "not found" / "can't open" as missing ONLY for partials
+	. . . N EC S EC=$G(ERR("code"))
 	. . . I (EC="TPL_NOFILE")!(EC="TPL_IO") D  Q
-	. . . . S PACTIVE(PNAME)=PACTIVE(PNAME)-1 I PACTIVE(PNAME)<1 K PACTIVE(PNAME)
-	. . . . K ERR ;reset 
-	. . N PMAX S PMAX=$O(PTOKS(PTID,""),-1)
-	. . I PMAX<1 D  Q  ; empty partial ok
-	. . . I $G(PACTIVE(PNAME))="" K PACTIVE(PNAME) Q
-	. . . S PACTIVE(PNAME)=PACTIVE(PNAME)-1 I PACTIVE(PNAME)<1 K PACTIVE(PNAME)
-	. . ; push frame for partial, inherit mode/cap from current frame
-	. . N MODE,CAP
+	. . . . S PACTIVE(PNAME)=+$G(PACTIVE(PNAME))-1
+	. . . . I PACTIVE(PNAME)'>0 K PACTIVE(PNAME)
+	. . . . K ERR
+	. . ; compute PMAX safely (numeric-only)
+	. . S PMAX=$$TOKENDR^MIOTPL2("PTOKS("_PTID_")")
+	. . I PMAX<1 D  Q
+	. . . S PACTIVE(PNAME)=+$G(PACTIVE(PNAME))-1
+	. . . I PACTIVE(PNAME)'>0 K PACTIVE(PNAME)
+	. . ;
+	. . ; if IND, indent the PARTIAL TOKENS (template newlines only) BEFORE rendering
+	. . I IND'="" D
+	. . . K TMPTARR M TMPTARR=PTOKS(PTID)
+	. . . D INDENTPTOK^MIOTPL2(.TMPTARR,IND)
+	. . . K PTOKS(PTID) M PTOKS(PTID)=TMPTARR K TMPTARR
+	. . . S PMAX=$$TOKENDR^MIOTPL2("PTOKS("_PTID_")")  ; recompute after rewrite
+	. . ;
 	. . S MODE=$G(F(FSP,"mode"))
 	. . S CAP=$G(F(FSP,"capRef"))
 	. . D PUSHFRAME^MIOTPL2(.FSP,.F,1,PMAX,CTSP,MODE,CAP,"PTOKS("_PTID_")")
-	. . ; mark pname so POPF decrements
 	. . S F(FSP,"pname")=PNAME
-	. ; SECTION START
 	. I TYP="secS" D  Q
 	. . N KEY,INV,MI,NEXT,PARENT
 	. . S PARENT=FSP
@@ -1202,10 +1247,83 @@ EVAL(TOK,CONF,CTX,OUT,ERR)
 	. ; SECTION END-
 	. I TYP="secE" D  Q
 	. . S F(FSP,"i")=I+1
-	 I $G(TOK("meta","crlf")) D
-	. S OUT=$$LF2CRLF^MIOTPL2(OUT)
+	I $G(TOK("meta","crlf")) S OUT=$$LF2CRLF^MIOTPL2(OUT)
 	Q:$Q $S($D(ERR):0,1:1)
 	Q
+; =============================================================================
+; INDENTPTOK(.TOK,IND)
+; Indent partial TEMPLATE lines only:
+;  - Indent text tokens at template line starts
+;  - If a template line begins with a NON-text token (var/sec/part), inject
+;    a leading text token containing IND before it.;
+; This avoids indenting newlines produced by variable values (passes TEST109).;
+; =============================================================================
+INDENTPTOK(TOK,IND)
+	N TMP,MAX,I,NEWN,LS,AT,TYP,V,S
+	S IND=$G(IND) Q:IND=""
+	;
+	; preserve any non-numeric subscripts (e.g. "meta")
+	K TMP
+	S S=""
+	F  S S=$O(TOK(S)) Q:S=""  D
+	. I S?1.N Q
+	. M TMP(S)=TOK(S)
+	;
+	S MAX=$$NUMMAX(.TOK)
+	S NEWN=0
+	S LS=1  ; start-of-partial is line start
+	S AT=1  ; for INDTXT
+	;
+	F I=1:1:MAX D
+	. S TYP=$G(TOK(I,"t"))
+	. ;
+	. ; if we're at template line start and next token is non-text,
+	. ; inject indent as a text token
+	. I LS,(TYP'="text") D
+	. . S NEWN=NEWN+1
+	. . S TMP(NEWN,"t")="text"
+	. . S TMP(NEWN,"v")=IND
+	. . S LS=0,AT=0
+	. ;
+	. ; copy token
+	. S NEWN=NEWN+1
+	. M TMP(NEWN)=TOK(I)
+	. ;
+	. ; if text, indent within it at template line starts
+	. I TYP="text" D
+	. . S V=$G(TMP(NEWN,"v"))
+	. . ; AT tells INDTXT whether we're at a template line start
+	. . S AT=LS
+	. . S TMP(NEWN,"v")=$$INDTXT(V,IND,.AT)
+	. . ; update LS: if (original) text ends with LF, next token starts a new line
+	. . I $L(V)>0,$E(V,$L(V))=$C(10) S LS=1 Q
+	. . S LS=0
+	. E  D
+	. . ; non-text token is not a line break by itself
+	. . S LS=0
+	;
+	K TOK M TOK=TMP
+	Q
+	;
+; =============================================================================
+; INDTXT(V,IND,.AT)
+; If AT=1, prepend IND before first emitted char in this token line.;
+; After each LF in TEMPLATE text, insert IND for the next template line *only
+; if more text follows inside this same token*; otherwise AT=1 so the next token
+; on that new template line is handled (including non-text via injected token).;
+; =============================================================================
+INDTXT(V,IND,AT)
+	N OUT,L,I,CH
+	S V=$G(V),OUT="",L=$L(V)
+	I AT,L>0 S OUT=OUT_IND,AT=0
+	F I=1:1:L D
+	. S CH=$E(V,I)
+	. S OUT=OUT_CH
+	. I CH=$C(10) D
+	. . I I<L S OUT=OUT_IND
+	. . E  S AT=1
+	Q OUT
+	;
 TOCRLF(S)
 	N I,N,OUT
 	S S=$G(S)
@@ -1270,13 +1388,27 @@ POPF(FSP,F,CST,CTSP)
 	. S CR=$G(F(OLD,"storeCapRef"))
 	. S VAL=$G(@CR)
 	. S CTX("blocks",BN)=VAL
-	;
-	; Partial decrement finalizer
+	; Partial decrement finalizer (UNDEF-safe)
 	I $G(F(OLD,"pname"))'="" D
 	. N PN S PN=$G(F(OLD,"pname"))
 	. S PACTIVE(PN)=+$G(PACTIVE(PN))-1
-	. I PACTIVE(PN)<0 K PACTIVE(PN)
-	;
+	. I PACTIVE(PN)'>0 K PACTIVE(PN)
+	; Capture->Indent->Emit finalizer (indented standalone partials)
+	I +$G(F(OLD,"capEmit")) D
+	. N CR,VAL,IND,TXT,PMODE,PCR
+	. S CR=$G(F(OLD,"capRef"))
+	. S VAL=$S(CR'="":$G(@CR),1:"")
+	. S IND=$G(F(OLD,"indent"))
+	. S TXT=$$INDENTSTR^MIOTPL2(VAL,IND)
+	. ; single-shot
+	. I CR'="" S @CR=""
+	. K F(OLD,"capEmit"),F(OLD,"indent")
+	. ; emit into parent mode
+	. S PMODE=$G(F(OLD-1,"mode"))
+	. I PMODE="capture" D
+	. . S PCR=$G(F(OLD-1,"capRef")) Q:PCR=""
+	. . S @PCR=$G(@PCR)_TXT
+	. E  S OUT=$G(OUT)_TXT	
 	; Pop and restore CTSP
 	S FSP=FSP-1
 	I FSP>0 S CTSP=+$G(F(FSP,"ctxTop"))

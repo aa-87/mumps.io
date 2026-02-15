@@ -119,9 +119,10 @@ MIOTF203 ;Partials
 	;  SHOULD be treated as standalone when appropriate. If this tag is used
 	;  standalone, any whitespace preceding the tag should treated as indentation, 
 	;  and prepended to each line of the partial before rendering.;
-	;D RUNJSONSPECSPART("./tests/data/partials.json") ;This is the same as below.;
+	D RUNJSONSPECSPART("./tests/data/partials.json") ;This is the same as below.;
 	; Each test is run two different ways
 	D TEST099,TEST100,TEST101,TEST102,TEST103,TEST104,TEST105
+	D TEST106,TEST107,TEST108,TEST109,TEST110
 	QUIT 	
 TEST001
 	NEW HDR S HDR="[TEST001][No Interpolation]"
@@ -1184,6 +1185,62 @@ TEST106
 	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	D RMDIR(ROOT)
+	QUIT
+TEST107
+	NEW HDR S HDR="[TEST107][Standalone Without Previous Line]"
+	NEW DESC S DESC=HDR_"[Standalone tags should not require a newline to precede them.]"
+	NEW TEMPLATE S TEMPLATE="  {{>partial}}\n>"
+	NEW EXPECTED S EXPECTED="  >\n  >>"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CONF,CTX D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"partial",$$UNESCNL(">\n>"),.ERR) ;
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	QUIT
+TEST108
+	NEW HDR S HDR="[TEST108][Standalone Without Newline]"
+	NEW DESC S DESC=HDR_"[Standalone tags should not require a newline to follow them.]"
+	NEW TEMPLATE S TEMPLATE=">\n  {{>partial}}"
+	NEW EXPECTED S EXPECTED=">\n  >\n  >"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CONF,CTX D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"partial",$$UNESCNL(">\n>"),.ERR) ;
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	QUIT
+TEST109
+	NEW HDR S HDR="[TEST109][Standalone Indentation]"
+	NEW DESC S DESC=HDR_"[Each line of the partial should be indented before rendering.]"
+	NEW TEMPLATE S TEMPLATE="\\\n {{>partial}}\n/\n"
+	NEW EXPECTED S EXPECTED="\\\n |\n <\n->\n |\n/\n"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CONF,CTX D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"partial",$$UNESCNL("|\n{{{content}}}\n|\n"),.ERR) ;
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	N CTX
+	S CTX("content")=$$UNESCNL("<\n->")
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	QUIT
+TEST110
+	NEW HDR S HDR="[TEST110][Padding Whitespace]"
+	NEW DESC S DESC=HDR_"[Superfluous in-tag whitespace should be ignored..]"
+	NEW TEMPLATE S TEMPLATE="|{{> partial }}|"
+	NEW EXPECTED S EXPECTED="|[]|"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CONF,CTX D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"partial",$$UNESCNL("[]"),.ERR) ;
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	N CTX
+	S CTX("boolean")="true"
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
 	QUIT	
 TEST000
 	NEW HDR S HDR="[TEST000][]"
@@ -1199,7 +1256,7 @@ TEST000
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	QUIT
 RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,CTX)
-	NEW TOK,ERR,OUT ;,CONF
+	;NEW TOK,ERR,OUT ;,CONF
 	;M CONF=^MIO("CONF")
 	D COMPILE^MIOTPL2(TEMPLATE,.TOK,.ERR)
 	DO OK^MIOTASSERT('$D(ERR),"[COMPILE]"_HDR)
@@ -1218,6 +1275,23 @@ RUNJSONSPECS(FP)
 	. NEW EXPECTED S EXPECTED=TESTS("tests",A,"expected")
 	. NEW CTX M CTX=TESTS("tests",A,"data")
 	. D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	Q
+RUNJSONSPECSPART(FP)
+	N OK,TXT,ERR,TESTS,TXT
+	N T,OK S OK=$$READFILE^MIOTPL2(FP,.TXT,.ERR)
+	D DECODE^MIOJSON2($NA(TXT),$NA(TESTS))
+	N A S A="" F  S A=$O(TESTS("tests",A)) Q:A=""  D
+	. NEW HDR S HDR="["_TESTS("tests",A,"name")_"]"
+	. NEW DESC S DESC=HDR_"["_TESTS("tests",A,"desc")_"]"
+	. NEW TEMPLATE S TEMPLATE=TESTS("tests",A,"template")
+	. NEW EXPECTED S EXPECTED=TESTS("tests",A,"expected")
+	. NEW CTX M CTX=TESTS("tests",A,"data")
+	. I $D(TESTS("tests",A,"partials")) D
+	. . N A S A="" F  S A=$O(TESTS("tests",A,"partials",A)) Q:A=""  D
+	. . . D SETUPPART(.CONF,.ROOT)
+	. . . N ERR D WRFILE(ROOT_A,TESTS("tests",A,"partials",A),.ERR) ;
+	. . . D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	. . . D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	Q
 	;
 ReadFile(file,return)
