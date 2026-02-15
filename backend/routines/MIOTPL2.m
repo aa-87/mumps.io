@@ -1321,12 +1321,12 @@ EVAL(TOK,CONF,CTX,OUT,ERR)
 	. . I POVID>0,$D(OVT(POVID)) D
 	. . . ; if child body has no overrides, reuse inherited ovID
 	. . . I $O(OVT(OVIDX,""))="" K OVT(OVIDX) S OVIDX=POVID Q
-	. . . ; else copy missing overrides from inherited into local (local wins)
+	. . . ; else overlay inherited onto local (OVERWRITE)
 	. . . S BN=""
 	. . . F  S BN=$O(OVT(POVID,BN)) Q:BN=""  D
-	. . . . I '$D(OVT(OVIDX,BN)) D
-	. . . . . ; MERGE the whole token subtree (critical!)
-	. . . . . M OVT(OVIDX,BN)=OVT(POVID,BN)
+	. . . . ; overwrite (child wins)
+	. . . . K OVT(OVIDX,BN)
+	. . . . M OVT(OVIDX,BN)=OVT(POVID,BN)
 	. . ; recursion protection for inherited templates: key by parent name + ovID
 	. . S IK=PNAME_"#"_OVIDX
 	. . I $G(IACTIVE(IK))>0 Q

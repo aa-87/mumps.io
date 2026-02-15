@@ -184,7 +184,7 @@ MIOTF206 ;Inheritance
 	; that is distinct from both Partials and the context.	
 	D TEST138,TEST139,TEST140,TEST141,TEST142,TEST143,TEST144
 	D TEST145,TEST146,TEST147,TEST148,TEST149,TEST150,TEST151
-	D TEST152,TEST153,TEST154
+	D TEST152,TEST153,TEST154,TEST155,TEST156
 	;	
 	QUIT 		
 TEST001
@@ -1814,16 +1814,48 @@ TEST153
 TEST154
 	NEW HDR S HDR="[TEST154][Recursion]"
 	NEW DESC S DESC=HDR_"[Recursion in inherited templates]"
-	;NEW TEMPLATE 
-	S TEMPLATE="{{<parent}}{{$foo}}override{{/foo}}{{/parent}}"
-	;NEW EXPECTED 
-	S EXPECTED="override override override don't recurse"
+	NEW TEMPLATE S TEMPLATE="{{<parent}}{{$foo}}override{{/foo}}{{/parent}}"
+	NEW EXPECTED S EXPECTED="override override override don't recurse"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CTX
 	N CONF,CTX D SETUPPART(.CONF,.ROOT)
 	N ERR D WRFILE(ROOT_"parent",$$UNESCNL("{{$foo}}default content{{/foo}} {{$bar}}{{<parent2}}{{/parent2}}{{/bar}}"),.ERR)
 	N ERR D WRFILE(ROOT_"parent2",$$UNESCNL("{{$foo}}parent2 default content{{/foo}} {{<parent}}{{$bar}}don't recurse{{/bar}}{{/parent}}"),.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	QUIT
+TEST155
+	NEW HDR S HDR="[TEST155][Multi-level inheritance]"
+	NEW DESC S DESC=HDR_"[Top-level substitutions take precedence in multi-level inheritance]"
+	NEW TEMPLATE S TEMPLATE="{{<parent}}{{$a}}c{{/a}}{{/parent}}"
+	NEW EXPECTED S EXPECTED="c"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX
+	N CONF,CTX D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"parent",$$UNESCNL("{{<older}}{{$a}}p{{/a}}{{/older}}"),.ERR)
+	N ERR D WRFILE(ROOT_"older",$$UNESCNL("{{<grandParent}}{{$a}}o{{/a}}{{/grandParent}}"),.ERR)
+	N ERR D WRFILE(ROOT_"grandParent",$$UNESCNL("{{$a}}g{{/a}}"),.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	QUIT
+TEST156
+	NEW HDR S HDR="[TEST156][Multi-level inheritance, no sub child]"
+	NEW DESC S DESC=HDR_"[TTop-level substitutions take precedence in multi-level inheritance]"
+	;NEW TEMPLATE 
+	S TEMPLATE="{{<parent}}{{/parent}}"
+	;NEW EXPECTED 
+	S EXPECTED="p"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX
+	N CONF,CTX D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"parent",$$UNESCNL("{{<older}}{{$a}}p{{/a}}{{/older}}"),.ERR)
+	N ERR D WRFILE(ROOT_"older",$$UNESCNL("{{<grandParent}}{{$a}}o{{/a}}{{/grandParent}}"),.ERR)
+	N ERR D WRFILE(ROOT_"grandParent",$$UNESCNL("{{$a}}g{{/a}}"),.ERR)
 	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	D RMDIR(ROOT)
