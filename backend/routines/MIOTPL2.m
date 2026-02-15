@@ -1315,17 +1315,18 @@ EVAL(TOK,CONF,CTX,OUT,ERR)
 	. . S OVID=OVID+1,OVIDX=OVID
 	. . K OVT(OVIDX)
 	. . D COLLOVR^MIOTPL2(TN,I+1,MI-1,OVIDX,.OVT)
-	. . ; inherit/merge overrides from current frame into this include's overrides
-	. . N POVID,BN,IK
+	. . ; inherit/merge overrides from current frame into this include's overrides	
+	. . N POVID,BN
 	. . S POVID=+$G(F(FSP,"ovID"))
-	. . I POVID>0 D
-	. . . ; if no local overrides, reuse inherited ovID (fast path)
+	. . I POVID>0,$D(OVT(POVID)) D
+	. . . ; if child body has no overrides, reuse inherited ovID
 	. . . I $O(OVT(OVIDX,""))="" K OVT(OVIDX) S OVIDX=POVID Q
-	. . . ; else copy missing inherited blocks (local wins)
-	. . . I $D(OVT(POVID)) D
-	. . . . S BN=""
-	. . . . F  S BN=$O(OVT(POVID,BN)) Q:BN=""  D
-	. . . . . I '$D(OVT(OVIDX,BN)) S OVT(OVIDX,BN)=$G(OVT(POVID,BN))
+	. . . ; else copy missing overrides from inherited into local (local wins)
+	. . . S BN=""
+	. . . F  S BN=$O(OVT(POVID,BN)) Q:BN=""  D
+	. . . . I '$D(OVT(OVIDX,BN)) D
+	. . . . . ; MERGE the whole token subtree (critical!)
+	. . . . . M OVT(OVIDX,BN)=OVT(POVID,BN)
 	. . ; recursion protection for inherited templates: key by parent name + ovID
 	. . S IK=PNAME_"#"_OVIDX
 	. . I $G(IACTIVE(IK))>0 Q
