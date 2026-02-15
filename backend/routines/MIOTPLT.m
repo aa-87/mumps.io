@@ -185,7 +185,7 @@ MIOTF206 ;Inheritance
 	D TEST138,TEST139,TEST140,TEST141,TEST142,TEST143,TEST144
 	D TEST145,TEST146,TEST147,TEST148,TEST149,TEST150,TEST151
 	D TEST152,TEST153,TEST154,TEST155,TEST156,TEST157,TEST158
-	D TEST159,TEST160
+	D TEST159,TEST160,TEST161
 	;	
 	QUIT 		
 TEST001
@@ -1906,15 +1906,29 @@ TEST159
 TEST160
 	NEW HDR S HDR="[TEST160][Standalone parent]"
 	NEW DESC S DESC=HDR_"[A parent's opening and closing tags need not be on separate lines in order to be standalone]"
+	NEW TEMPLATE S TEMPLATE="Hi,\n  {{<parent}}{{/parent}}\n"
+	NEW EXPECTED S EXPECTED="Hi,\n  one\n  two\n"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX
+	N CONF D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"parent",$$UNESCNL("one\ntwo\n"),.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	QUIT
+TEST161
+	NEW HDR S HDR="[TEST161][Standalone block]"
+	NEW DESC S DESC=HDR_"[A block's opening and closing tags need not be on separate lines in order to be standalone]"
 	;NEW TEMPLATE 
-	S TEMPLATE="Hi,\n  {{<parent}}{{/parent}}\n"
+	S TEMPLATE="{{<parent}}{{$block}}\none\ntwo{{/block}}\n{{/parent}}\n"
 	;NEW EXPECTED 
 	S EXPECTED="Hi,\n  one\n  two\n"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CTX
 	N CONF D SETUPPART(.CONF,.ROOT)
-	N ERR D WRFILE(ROOT_"parent",$$UNESCNL("one\ntwo\n"),.ERR)
+	N ERR D WRFILE(ROOT_"parent",$$UNESCNL("Hi,\n  {{$block}}{{/block}}\n"),.ERR)
 	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	D RMDIR(ROOT)

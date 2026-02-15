@@ -697,27 +697,38 @@ NUMMAX(TOK)
 ; needed to recognize later tags on their own lines (fixes TEST073/095).;
 ; =============================================================================
 STANDTOK(TOK)
-	N I,MAX,TYP,MI
-	N DO,DOM  ; DO(I)=standalone single token, DOM(I)=matching end index for parS
+	N I,MAX,TYP,MI,J
+	N DO,DOM,RSKIP  ; DO(I)=standalone start, DOM(I)=matching end index for range standalone
 	;
 	S MAX=$$NUMMAX(.TOK) Q:MAX<1
 	;
 	; pass 1: detect (no mutation)
 	F I=1:1:MAX D
-	. S TYP=$G(TOK(I,"t"))
-	. ; parent/include start: treat range I..MI as one unit
-	. I TYP="parS" D  Q
-	. . S MI=+$G(TOK(I,"m")) I MI<I Q
-	. . I $$ISSTANDR(.TOK,I,MI,MAX) S DO(I)=1,DOM(I)=MI
-	. ; existing standalone token types
-	. Q:(TYP'="secS")&(TYP'="secE")&(TYP'="blkS")&(TYP'="part")&(TYP'="comm")&(TYP'="delim")
-	. I $$ISSTAND(.TOK,I,MAX) S DO(I)=1
+	. 	S TYP=$G(TOK(I,"t"))
+	. 	; parent/include start: treat range I..MI as one unit
+	. 	I TYP="parS" D  Q
+	. 	.	S MI=+$G(TOK(I,"m")) I MI<I Q
+	. 	.	I $$ISSTANDR(.TOK,I,MI,MAX) D
+	. 	.	.	S DO(I)=1,DOM(I)=MI
+	. 	.	.	F J=I+1:1:MI S RSKIP(J)=1
+	. 	; block placeholder: allow standalone for the range {{$x}}...{{/x}} when open/close are on same line
+	. 	I TYP="blkS" D  Q
+	. 	.	S MI=+$G(TOK(I,"m")) I MI>I,$$ISSTANDR(.TOK,I,MI,MAX) D  Q
+	. 	.	.	S DO(I)=1,DOM(I)=MI
+	. 	.	.	F J=I+1:1:MI S RSKIP(J)=1
+	. 	.	; otherwise fall back to normal standalone rules for just the opening tag
+	. 	.	I $$ISSTAND(.TOK,I,MAX) S DO(I)=1
+	. 	; existing standalone token types (single-token detection)
+	. 	Q:(TYP'="secS")&(TYP'="secE")&(TYP'="part")&(TYP'="comm")&(TYP'="delim")
+	. 	I $$ISSTAND(.TOK,I,MAX) S DO(I)=1
 	;
 	; pass 2: apply trims (reverse to avoid cascades)
-	F I=MAX:-1:1 I $G(DO(I)) D
-	. I $G(TOK(I,"t"))="parS" D  Q
-	. . D STANDAPR(.TOK,I,+$G(DOM(I)),MAX)
-	. D STANDAP(.TOK,I,MAX)
+	F I=MAX:-1:1 D
+	. 	Q:$G(RSKIP(I))
+	. 	Q:'$G(DO(I))
+	. 	I $G(DOM(I))>0 D  Q
+	. 	.	D STANDAPR(.TOK,I,+$G(DOM(I)),MAX)
+	. 	D STANDAP(.TOK,I,MAX)
 	Q
 ; =============================================================================
 ; ISSTANDR(TOK,BS,BE,MAX)
@@ -855,7 +866,7 @@ STANDAP(TOK,I,MAX)
 	N TYP,PV,P,IND
 	S TYP=$G(TOK(I,"t"))
 	;
-	I TYP="part" D
+	I (TYP="part")!(TYP="blkS") D
 	. S IND=""
 	. I I>1,$G(TOK(I-1,"t"))="text" D
 	. . S PV=$G(TOK(I-1,"v"))
@@ -868,8 +879,6 @@ STANDAP(TOK,I,MAX)
 	I I>1 S TOK(I-1,"v")=$$CUTPRE($G(TOK(I-1,"v")))
 	I I<MAX S TOK(I+1,"v")=$$CUTNX($G(TOK(I+1,"v")))
 	;
-	; NEW: also trim blkS raw if we are trimming this tag as standalone
-	I TYP="blkS" S TOK(I,"raw")=$$CUTNX1($G(TOK(I,"raw")))
 	Q
 LINEIND(V) ; indentation after last LF (or BOF), spaces/tabs only
 	N P,TAIL
@@ -1036,6 +1045,13 @@ CUTNX(S) ; drop leading [spaces/tabs]* then ONE LF
 	I J>L Q S
 	I $E(S,J)=$C(10) Q $E(S,J+1,L)
 	Q S
+CUTIND(S) ; drop leading [spaces/tabs]* ONLY (preserve newline)
+	N J,C,L
+	S S=$G(S) I S="" Q ""
+	S L=$L(S)
+	F J=1:1:L S C=$E(S,J) Q:(C'=" ")&(C'=$C(9))
+	I J=1 Q S
+	Q $E(S,J,L)
 ; =============================================================================
 ; CUTNX1(S)
 ; Remove leading spaces/tabs/CR then remove one newline:
@@ -1266,6 +1282,9 @@ EVAL(TOK,CONF,CTX,OUT,ERR)
 	; Local storage for partial token arrays
 	N PTID,PTOKS
 	S PTID=0
+	; Local storage for indented block token arrays
+	N BTID,BTOKS
+	S BTID=0
 	; Block capture buffers keyed by frame#
 	N BCAP
 	; Frame stack
@@ -1370,21 +1389,80 @@ EVAL(TOK,CONF,CTX,OUT,ERR)
 	. ;
 	. ; Block tag {{$name}}...{{/name}}
 	. I TYP="blkS" D  Q
-	. . N MI,BNAME,OVIDX,OVTN,OMAX
+	. . N MI,BNAME,OVIDX,OVTN,OMAX,IND,J,NN,REF
 	. . S MI=+$$TOKGET(TN,I,"m") I MI<1 S ERR("code")="TPL_EVAL",ERR("msg")="Unmatched block tag." Q
 	. . S BNAME=$$TOKGET(TN,I,"k")
+	. . S IND=$$TOKGET(TN,I,"indent")  ; indentation captured by standalone trimming (may be "")
 	. . ; advance parent first
 	. . S F(FSP,"i")=MI+1
 	. . S OVIDX=+$G(F(FSP,"ovID"))
-	. . I OVIDX>0,$D(OVT(OVIDX,BNAME)) D  Q
-	. . . S OVTN="OVT("_OVIDX_","""_BNAME_""")"
-	. . . S OMAX=$$TOKENDR^MIOTPL2(OVTN)
-	. . . I OMAX>0 D PUSHFRAME^MIOTPL2(.FSP,.F,1,OMAX,CTSP,$G(F(FSP,"mode")),$G(F(FSP,"capRef")),OVTN)
-	. . ; default block content
-	. . D PUSHFRAME^MIOTPL2(.FSP,.F,I+1,MI-1,CTSP,$G(F(FSP,"mode")),$G(F(FSP,"capRef")),TN)
+	. . ;
+	. . ; Fast path: no indent handling needed
+	. . ; Render-time fallback: if IND wasn't captured by standalone trimming,
+	. . ; detect "standalone block placeholder" pattern and synthesize indentation + newline-trim.
+	. . I IND="" D
+	. . . N PV,P,IND2,OK,J,TV,NV
+	. . . S IND2="",OK=1
+	. . . ; previous token must be text ending with only spaces/tabs after its last newline
+	. . . I I>1,$$TOKGET(TN,I-1,"t")="text" D
+	. . . . S PV=$$TOKGET(TN,I-1,"v")
+	. . . . S P=$$LASTNLSEQ(PV)
+	. . . . I P>0 S IND2=$E(PV,P+1,$L(PV))
+	. . . . E  S IND2=PV
+	. . . E  S OK=0
+	. . . I IND2="",OK=0
+	. . . ; indentation must be spaces/tabs only
+	. . . I OK,$TR(IND2," "_$C(9),"")'="" S OK=0
+	. . . ; between blkS and secE: only whitespace text (if any)
+	. . . I OK,(MI>I+1) D
+	. . . . F J=I+1:1:MI-1 D  Q:'OK
+	. . . . . S TV=$$TOKGET(TN,J,"t")
+	. . . . . I TV'="text" S OK=0 Q
+	. . . . . I '$$ALLWSIND($$TOKGET(TN,J,"v")) S OK=0 Q
+	. . . ; next token after secE must start with optional ws then a newline (so the tag-line is standalone)
+	. . . I OK,(MI<END),$$TOKGET(TN,MI+1,"t")="text" D
+	. . . . S NV=$$TOKGET(TN,MI+1,"v")
+	. . . . I '$$HASLEADNL(NV) S OK=0
+	. . . E  S OK=0
+	. . . I OK D
+	. . . . S IND=IND2
+	. . . . ; remove the indentation already emitted from OUT (it came from the parent template text)
+	. . . . I $L(OUT)>=$L(IND2),$E(OUT,$L(OUT)-$L(IND2)+1,$L(OUT))=IND2 S OUT=$E(OUT,1,$L(OUT)-$L(IND2))
+	. . . . ; on the next text token, trim leading indentation + ONE newline (standalone rule)
+	. . . . S F(FSP,"cutnx")="IND"
+	. . ; --- end fallback ---
+	. . I IND="" D  Q  ; (no indent path)
+	. . . I OVIDX>0,$D(OVT(OVIDX,BNAME)) D  Q
+	. . . . S OVTN="OVT("_OVIDX_","""_BNAME_""")"
+	. . . . S OMAX=$$TOKENDR^MIOTPL2(OVTN)
+	. . . . I OMAX>0 D PUSHFRAME^MIOTPL2(.FSP,.F,1,OMAX,CTSP,$G(F(FSP,"mode")),$G(F(FSP,"capRef")),OVTN)
+	. . . ; default block content (slice in-place)
+	. . . D PUSHFRAME^MIOTPL2(.FSP,.F,I+1,MI-1,CTSP,$G(F(FSP,"mode")),$G(F(FSP,"capRef")),TN)
+	. . ;
+	. . ; Indent path: clone chosen block tokens, indent template lines, then render
+	. . K TMPTARR
+	. . I OVIDX>0,$D(OVT(OVIDX,BNAME)) D
+	. . . M TMPTARR=OVT(OVIDX,BNAME)
+	. . E  D
+	. . . S NN=0
+	. . . F J=I+1:1:MI-1 D
+	. . . . S NN=NN+1
+	. . . . S REF=TN_"("_J_")"
+	. . . . M TMPTARR(NN)=@REF
+	. . D INDENTPTOK^MIOTPL2(.TMPTARR,IND)
+	. . S BTID=BTID+1
+	. . K BTOKS(BTID) M BTOKS(BTID)=TMPTARR K TMPTARR
+	. . S OMAX=$$TOKENDR^MIOTPL2("BTOKS("_BTID_")")
+	. . I OMAX>0 D PUSHFRAME^MIOTPL2(.FSP,.F,1,OMAX,CTSP,$G(F(FSP,"mode")),$G(F(FSP,"capRef")),"BTOKS("_BTID_")")
+	. ;
 	. ; TEXT
 	. I TYP="text" D  Q
-	. . D EMIT^MIOTPL2(.FSP,.F,.OUT,$$TOKGET(TN,I,"v"))
+	. . N TV S TV=$$TOKGET(TN,I,"v")
+	. . I $D(F(FSP,"cutnx")) D
+	. . . I F(FSP,"cutnx")="IND" S TV=$$CUTIND(TV)
+	. . . E  S TV=$$CUTNX(TV)
+	. . . K F(FSP,"cutnx")
+	. . D EMIT^MIOTPL2(.FSP,.F,.OUT,TV)
 	. . S F(FSP,"i")=I+1
 	. ; VAR
 	. I TYP="var" D  Q
