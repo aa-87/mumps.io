@@ -42,7 +42,7 @@ MIOTPL2 ; MIO template engine with layouts, blocks, partials, and caching.;
 MIOTEST 
 	D MIOTF121,MIOTF122,MIOTF123,MIOTF124,MIOTF125
 	D MIOTF126,MIOTF126B,MIOTF127,MIOTF128,MIOTF129,MIOTF130
-	D MIOTF200,MIOTF201,MIOTF202,MIOTF203,MIOTF204
+	D MIOTF200,MIOTF201,MIOTF202,MIOTF203,MIOTF204,MIOTF205
 	Q
 	;
 MIOTF200 D MIOTF200^MIOTPLT QUIT 
@@ -50,6 +50,7 @@ MIOTF201 D MIOTF201^MIOTPLT QUIT
 MIOTF202 D MIOTF202^MIOTPLT QUIT
 MIOTF203 D MIOTF203^MIOTPLT QUIT
 MIOTF204 D MIOTF204^MIOTPLT QUIT
+MIOTF205 D MIOTF205^MIOTPLT QUIT
 MIOTF121 ; Full suite test 121 - TPL_SECTION_CTA.;
 	NEW TOK,ERR,CONF,CTX,OUT
 	D COMPILE("{{#cta}}X{{/cta}}",.TOK,.ERR)
@@ -583,43 +584,58 @@ LINEPURE(TOK,I,MAX)
 ; =============================================================================
 ; =============================================================================
 ; PARSE(TEXT,TOK,ERR)
+; Supports Mustache delimiter changes: {{= | | =}} etc.;
 ; =============================================================================
 PARSE(TEXT,TOK,ERR)
 	K ERR K TOK
 	N L,POS,OPEN,CLOSE,PRE,INSIDE,RAW,END3,TRI
 	N N S N=0
+	;
+	; current delimiters
+	N OD,CD
+	S OD="{{",CD="}}"
+	;
 	S L=$L(TEXT),POS=1
 	F  Q:POS>L  D  Q:$D(ERR)
-	. ; Find next {{
-	. S OPEN=$F(TEXT,"{{",POS)
+	. ; Find next opening delimiter
+	. S OPEN=$F(TEXT,OD,POS)
 	. I 'OPEN D  Q
 	. . S PRE=$E(TEXT,POS,L)
 	. . I PRE'="" D ADDTXT(.TOK,.N,PRE)
 	. . S POS=L+1
 	. ;
 	. ; Text before tag
-	. S PRE=$E(TEXT,POS,OPEN-3)
+	. S PRE=$E(TEXT,POS,OPEN-$L(OD)-1)
 	. I PRE'="" D ADDTXT(.TOK,.N,PRE)
 	. ;
-	. ; Triple mustache?  "{{{"
-	. ; NOTE: OPEN points to the char immediately AFTER "{{"
+	. ; Triple mustache only for default delimiters
 	. S TRI=0
-	. I $E(TEXT,OPEN)="{" S TRI=1
-	. ;
+	. I (OD="{{")&(CD="}}") I $E(TEXT,OPEN)="{" S TRI=1
 	. I TRI D  Q
 	. . S END3=$F(TEXT,"}}}",OPEN)
 	. . I 'END3 S ERR("code")="TPL_PARSE",ERR("msg")="Unclosed triple mustache." Q
-	. . ; inside is from after the 3rd "{" (OPEN+1) to before "}}}" (END3-4)
 	. . S RAW=$E(TEXT,OPEN+1,END3-4)
 	. . S RAW=$$TRIM(RAW)
 	. . D ADDVAR(.TOK,.N,RAW,0)
 	. . S POS=END3
 	. ;
-	. ; Normal mustache "{{ ... }}"
-	. S CLOSE=$F(TEXT,"}}",OPEN)
+	. ; Find close delimiter
+	. S CLOSE=$F(TEXT,CD,OPEN)
 	. I 'CLOSE S ERR("code")="TPL_PARSE",ERR("msg")="Unclosed mustache tag." Q
-	. S INSIDE=$E(TEXT,OPEN,CLOSE-3)
+	. S INSIDE=$E(TEXT,OPEN,CLOSE-$L(CD)-1)
 	. S INSIDE=$$TRIM(INSIDE)
+	. ;
+	. ; Delimiter change: {{= newOD newCD =}}
+	. I $E(INSIDE,1)="=",$E(INSIDE,$L(INSIDE))="=" D  S POS=CLOSE Q
+	. . N MID,W1,W2,REST
+	. . S MID=$$TRIM($E(INSIDE,2,$L(INSIDE)-1))
+	. . S REST=MID
+	. . S W1=$$NEXTTOK(.REST),W2=$$NEXTTOK(.REST)
+	. . I W1=""!(W2="") S ERR("code")="TPL_PARSE",ERR("msg")="Bad delimiter change tag." Q
+	. . ; record token (so standalone trimming can remove the whole line)
+	. . D ADDDELIM(.TOK,.N,W1,W2)
+	. . ; and update active delimiters for the rest of the parse
+	. . S OD=W1,CD=W2
 	. ;
 	. ; Comments
 	. I $E(INSIDE,1)="!" D  S POS=CLOSE Q
@@ -656,7 +672,27 @@ PARSE(TEXT,TOK,ERR)
 	. ; Default: variable escaped
 	. D ADDVAR(.TOK,.N,INSIDE,1)
 	. S POS=CLOSE
-	;D STANDTOK(.TOK)
+	Q
+; Return next non-ws token from REST (by reference), splitting on space/tab
+NEXTTOK(REST)
+	N S,L,I,C
+	S S=$G(REST),L=$L(S),I=1
+	; skip leading ws
+	F  Q:I>L  S C=$E(S,I) Q:(C'=" ")&(C'=$C(9))  S I=I+1
+	I I>L S REST="" Q ""
+	; take until ws
+	N J S J=I
+	F  Q:J>L  S C=$E(S,J) Q:(C=" ")!(C=$C(9))  S J=J+1
+	N OUT S OUT=$E(S,I,J-1)
+	; remainder
+	S REST=$$TRIM($E(S,J,L))
+	Q OUT
+	;
+ADDDELIM(TOK,N,OD,CD)
+	S N=N+1
+	S TOK(N,"t")="delim"
+	S TOK(N,"od")=$G(OD)
+	S TOK(N,"cd")=$G(CD)
 	Q
 ; =============================================================================
 ; NUMMAX(.TOK)
@@ -683,7 +719,7 @@ STANDTOK(TOK)
 	; pass 1: detect (no mutation)
 	F I=1:1:MAX D
 	. S TYP=$G(TOK(I,"t"))
-	. Q:(TYP'="secS")&(TYP'="secE")&(TYP'="part")&(TYP'="comm")
+	. Q:(TYP'="secS")&(TYP'="secE")&(TYP'="part")&(TYP'="comm")&(TYP'="delim")
 	. I $$ISSTAND(.TOK,I,MAX) S DO(I)=1
 	;
 	; pass 2: apply trims (mutation ok now)
@@ -1142,7 +1178,8 @@ EVAL(TOK,CONF,CTX,OUT,ERR)
 	. . I ESC S VAL=$$ESCHTML^MIOTPL2(VAL)
 	. . D EMIT^MIOTPL2(.FSP,.F,.OUT,VAL)
 	. . S F(FSP,"i")=I+1
-	. ; PARTIAL
+	. I TYP="delim" D  Q
+	. . S F(FSP,"i")=I+1
 	. ; COMMENT (no output)
 	. I TYP="comm" D  Q
 	. . S F(FSP,"i")=I+1

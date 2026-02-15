@@ -133,7 +133,18 @@ MIOTF204 ;Comments
 	;  standalone when appropriate.;
 	D TEST111,TEST112,TEST113,TEST114,TEST115,TEST116,TEST117
 	D TEST118,TEST119,TEST120,TEST121,TEST122
-	QUIT 		
+	QUIT
+MIOTF205 ;Delimiters
+	; Set Delimiter tags are used to change the tag delimiters for all content
+	; following the tag in the current compilation unit.;
+	; The tag's content MUST be any two non-whitespace sequences 
+	; (separated by\nwhitespace) EXCEPT an equals sign ('=') followed
+	;  by the current closing\ndelimiter.\n\nSet Delimiter tags
+	;  SHOULD be treated as standalone when appropriate.\n"
+	;D RUNJSONSPECS("./tests/data/comments.json") ;This is the same as below.;
+	; Each test is run two different ways
+	D TEST123,TEST124,TEST125
+	QUIT 	 		
 TEST001
 	NEW HDR S HDR="[TEST001][No Interpolation]"
 	NEW DESC S DESC=HDR_"[Mustache-free templates should render as-is]"
@@ -1373,6 +1384,43 @@ TEST122
 	S CTX("! comment ")=2
 	S CTX("!comment")=3
 	S CTX("comment")=4
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+TEST123
+	NEW HDR S HDR="[TEST123][Pair Behavior]"
+	NEW DESC S DESC=HDR_"[The equals sign (used on both sides) should permit delimiter changes.]"
+	NEW TEMPLATE S TEMPLATE="{{=<% %>=}}(<%text%>)"
+	NEW EXPECTED S EXPECTED="(Hey!)"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CON,CTX
+	N CTX
+	S CTX("text")="Hey!"
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+TEST124
+	NEW HDR S HDR="[TEST124][Special Characters]"
+	NEW DESC S DESC=HDR_"[Characters with special meaning regexen should be valid delimiters.]"
+	NEW TEMPLATE S TEMPLATE="({{=[ ]=}}[text])"
+	NEW EXPECTED S EXPECTED="(It worked!)"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CON,CTX
+	N CTX
+	S CTX("text")="It worked!"
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+TEST125
+	NEW HDR S HDR="[TEST125][Sections]"
+	NEW DESC S DESC=HDR_"[Delimiters set outside sections should persist.]"
+	NEW TEMPLATE S TEMPLATE="[\n{{#section}}\n  {{data}}\n  |data|\n{{/section}}\n\n{{= | | =}}\n|#section|\n  {{data}}\n  |data|\n|/section|\n]\n"
+	NEW EXPECTED S EXPECTED="[\n  I got interpolated.\n  |data|\n\n  {{data}}\n  I got interpolated.\n]\n"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CON,CTX
+	N CTX
+	S CTX("section")="true"
+	S CTX("data")="I got interpolated."
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	QUIT
 TEST000
