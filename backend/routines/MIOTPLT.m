@@ -184,7 +184,8 @@ MIOTF206 ;Inheritance
 	; that is distinct from both Partials and the context.	
 	D TEST138,TEST139,TEST140,TEST141,TEST142,TEST143,TEST144
 	D TEST145,TEST146,TEST147,TEST148,TEST149,TEST150,TEST151
-	D TEST152,TEST153,TEST154,TEST155,TEST156
+	D TEST152,TEST153,TEST154,TEST155,TEST156,TEST157,TEST158
+	D TEST159,TEST160
 	;	
 	QUIT 		
 TEST001
@@ -1844,11 +1845,9 @@ TEST155
 	QUIT
 TEST156
 	NEW HDR S HDR="[TEST156][Multi-level inheritance, no sub child]"
-	NEW DESC S DESC=HDR_"[TTop-level substitutions take precedence in multi-level inheritance]"
-	;NEW TEMPLATE 
-	S TEMPLATE="{{<parent}}{{/parent}}"
-	;NEW EXPECTED 
-	S EXPECTED="p"
+	NEW DESC S DESC=HDR_"[Top-level substitutions take precedence in multi-level inheritance]"
+	NEW TEMPLATE S TEMPLATE="{{<parent}}{{/parent}}"
+	NEW EXPECTED S EXPECTED="p"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CTX
@@ -1856,6 +1855,66 @@ TEST156
 	N ERR D WRFILE(ROOT_"parent",$$UNESCNL("{{<older}}{{$a}}p{{/a}}{{/older}}"),.ERR)
 	N ERR D WRFILE(ROOT_"older",$$UNESCNL("{{<grandParent}}{{$a}}o{{/a}}{{/grandParent}}"),.ERR)
 	N ERR D WRFILE(ROOT_"grandParent",$$UNESCNL("{{$a}}g{{/a}}"),.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	QUIT
+TEST157
+	NEW HDR S HDR="[TEST157][Text inside parent]"
+	NEW DESC S DESC=HDR_"[Ignores text inside parent templates, but does parse $ tags]"
+	NEW TEMPLATE S TEMPLATE="{{<parent}} asdfasd {{$foo}}hmm{{/foo}} asdfasdfasdf {{/parent}}"
+	NEW EXPECTED S EXPECTED="hmm"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX
+	N CONF,CTX D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"parent",$$UNESCNL("{{$foo}}default content{{/foo}}"),.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	QUIT
+TEST158
+	NEW HDR S HDR="[TEST158][Text inside parent]"
+	NEW DESC S DESC=HDR_"[Allows text inside a parent tag, but ignores it]"
+	NEW TEMPLATE S TEMPLATE="{{<parent}} asdfasd asdfasdfasdf {{/parent}}"
+	NEW EXPECTED S EXPECTED="default content"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX
+	N CONF,CTX D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"parent",$$UNESCNL("{{$foo}}default content{{/foo}}"),.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	QUIT
+TEST159
+	NEW HDR S HDR="[TEST159][Block scope]"
+	NEW DESC S DESC=HDR_"[Scope of a substituted block is evaluated in the context of the parent template]"
+	NEW TEMPLATE S TEMPLATE="{{<parent}}{{$block}}I say {{fruit}}.{{/block}}{{/parent}}"
+	NEW EXPECTED S EXPECTED="I say bananas."
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX
+	S CTX("fruit")="apples"
+	S CTX("nested","fruit")="bananas"
+	N CONF D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"parent",$$UNESCNL("{{#nested}}{{$block}}You say {{fruit}}.{{/block}}{{/nested}}"),.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	QUIT
+TEST160
+	NEW HDR S HDR="[TEST160][Standalone parent]"
+	NEW DESC S DESC=HDR_"[A parent's opening and closing tags need not be on separate lines in order to be standalone]"
+	;NEW TEMPLATE 
+	S TEMPLATE="Hi,\n  {{<parent}}{{/parent}}\n"
+	;NEW EXPECTED 
+	S EXPECTED="Hi,\n  one\n  two\n"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX
+	N CONF D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"parent",$$UNESCNL("one\ntwo\n"),.ERR)
 	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	D RMDIR(ROOT)

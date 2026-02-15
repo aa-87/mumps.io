@@ -758,6 +758,20 @@ ISSTANDR(TOK,BS,BE,MAX)
 ; =============================================================================
 STANDAPR(TOK,BS,BE,MAX)
 	N J
+	; --- NEW: capture indentation for standalone parent include range ---
+	N IND,PV,P
+	S IND=""
+	I BS>1,$G(TOK(BS-1,"t"))="text" D
+	. S PV=$G(TOK(BS-1,"v"))
+	. ; indent = chars after last newline in PV (or whole PV if no newline)
+	. S P=$$LASTNLSEQ(PV)
+	. I P>0 S IND=$E(PV,P+1,$L(PV))
+	. E  S IND=PV
+	; keep only spaces/tabs
+	I IND'="",$TR(IND," "_$C(9),"")'="" S IND=""
+	S TOK(BS,"indent")=IND
+	; --- END NEW ---
+	;
 	; trim prev indentation
 	I BS>1 S TOK(BS-1,"v")=$$CUTPRE($G(TOK(BS-1,"v")))
 	; blank whitespace-only text tokens between BS and BE (rare but safe)
@@ -1340,6 +1354,14 @@ EVAL(TOK,CONF,CTX,OUT,ERR)
 	. . M PTOKS(PTID)=TMPTARR K TMPTARR
 	. . S PMAX=$$TOKENDR^MIOTPL2("PTOKS("_PTID_")")
 	. . I PMAX<1 Q
+	. . ; Standalone-parent indentation: indent parent tokens like standalone partials
+	. . N IND
+	. . S IND=$$TOKGET(TN,I,"indent")
+	. . I IND'="" D
+	. . . K TMPTARR M TMPTARR=PTOKS(PTID)
+	. . . D INDENTPTOK^MIOTPL2(.TMPTARR,IND)
+	. . . K PTOKS(PTID) M PTOKS(PTID)=TMPTARR K TMPTARR
+	. . . S PMAX=$$TOKENDR^MIOTPL2("PTOKS("_PTID_")")  ; recompute after rewrite	
 	. . D PUSHFRAME^MIOTPL2(.FSP,.F,1,PMAX,CTSP,$G(F(FSP,"mode")),$G(F(FSP,"capRef")),"PTOKS("_PTID_")")
 	. . ; attach override id to new frame
 	. . S F(FSP,"ovID")=OVIDX
