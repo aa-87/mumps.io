@@ -43,7 +43,6 @@ MIOTEST
 	D MIOTF121,MIOTF122,MIOTF123,MIOTF124,MIOTF125
 	D MIOTF126,MIOTF126B,MIOTF127,MIOTF128,MIOTF129,MIOTF130
 	D MIOTF200,MIOTF201,MIOTF202,MIOTF203,MIOTF204,MIOTF205
-	D MIOTF206
 	Q
 	;
 MIOTF200 D MIOTF200^MIOTPLT QUIT 
@@ -52,7 +51,6 @@ MIOTF202 D MIOTF202^MIOTPLT QUIT
 MIOTF203 D MIOTF203^MIOTPLT QUIT
 MIOTF204 D MIOTF204^MIOTPLT QUIT
 MIOTF205 D MIOTF205^MIOTPLT QUIT
-MIOTF206 D MIOTF206^MIOTPLT QUIT
 MIOTF121 ; Full suite test 121 - TPL_SECTION_CTA.;
 	NEW TOK,ERR,CONF,CTX,OUT
 	D COMPILE("{{#cta}}X{{/cta}}",.TOK,.ERR)
@@ -528,8 +526,7 @@ FILEEXISTS(FP) Q $ZSEARCH(FP)]""
 ; =============================================================================
 ;  PARSE + LINKSECS
 ; =============================================================================
-	;
-COMPILE(TEXT,TOK,ERR,OD,CD) ;
+COMPILE(TEXT,TOK,ERR) ;
 	N CRLF
 	; Detect original newline style BEFORE normalization
 	S CRLF=$S($F($G(TEXT),$C(13,10))>0:1,1:0)
@@ -537,18 +534,18 @@ COMPILE(TEXT,TOK,ERR,OD,CD) ;
 	; Normalize only for parsing/standalone logic
 	S TEXT=$$NORMNL^MIOTPL2(TEXT)
 	;
-	D PARSE(.TEXT,.TOK,.ERR,.OD,.CD)  ; PARSE kills TOK
+	D PARSE(.TEXT,.TOK,.ERR)  ; PARSE kills TOK, so meta must be set AFTER this
 	I $D(ERR) Q
 	;
-	; Metadata
+	; Restore newline-style metadata on the compiled token stream
 	S TOK("meta","crlf")=CRLF
-	S TOK("meta","src")=TEXT
 	;
 	D LINKSECS(.TOK,.ERR)
 	I $D(ERR) Q
 	;
 	D STANDTOK(.TOK)
 	Q
+	;
 LINEPURE(TOK,I,MAX)
 	N J,TYP,OK,FOUND
 	S OK=1
@@ -587,21 +584,20 @@ LINEPURE(TOK,I,MAX)
 ; =============================================================================
 ; =============================================================================
 ; PARSE(TEXT,TOK,ERR)
+; Supports Mustache delimiter changes: {{= | | =}} etc.;
 ; =============================================================================
-	;
-PARSE(TEXT,TOK,ERR,OD,CD)
-	; Mustache-compatible parser with delimiter support.;
-	; OD/CD are the current open/close delimiters (default "{{" / "}}").;
-	; Stores raw body ranges for section/block/parent tags to support lambdas.;
+PARSE(TEXT,TOK,ERR)
 	K ERR K TOK
-	N L,POS,ODL,CDL,OPEN,CLOSE,PRE,INSIDE,RAW,END3,TRI
+	N L,POS,OPEN,CLOSE,PRE,INSIDE,RAW,END3,TRI
 	N N S N=0
-	S OD=$G(OD,"{{"),CD=$G(CD,"}}")
-	S ODL=$L(OD),CDL=$L(CD)
-	S L=$L(TEXT),POS=1
 	;
+	; current delimiters
+	N OD,CD
+	S OD="{{",CD="}}"
+	;
+	S L=$L(TEXT),POS=1
 	F  Q:POS>L  D  Q:$D(ERR)
-	. ; Find next open delimiter
+	. ; Find next opening delimiter
 	. S OPEN=$F(TEXT,OD,POS)
 	. I 'OPEN D  Q
 	. . S PRE=$E(TEXT,POS,L)
@@ -609,12 +605,12 @@ PARSE(TEXT,TOK,ERR,OD,CD)
 	. . S POS=L+1
 	. ;
 	. ; Text before tag
-	. S PRE=$E(TEXT,POS,OPEN-ODL-1)
+	. S PRE=$E(TEXT,POS,OPEN-$L(OD)-1)
 	. I PRE'="" D ADDTXT(.TOK,.N,PRE)
 	. ;
-	. ; Triple mustache ONLY when default delimiters are active
+	. ; Triple mustache only for default delimiters
 	. S TRI=0
-	. I (OD="{{")&(CD="}}"),$E(TEXT,OPEN)="{" S TRI=1
+	. I (OD="{{")&(CD="}}") I $E(TEXT,OPEN)="{" S TRI=1
 	. I TRI D  Q
 	. . S END3=$F(TEXT,"}}}",OPEN)
 	. . I 'END3 S ERR("code")="TPL_PARSE",ERR("msg")="Unclosed triple mustache." Q
@@ -623,24 +619,23 @@ PARSE(TEXT,TOK,ERR,OD,CD)
 	. . D ADDVAR(.TOK,.N,RAW,0)
 	. . S POS=END3
 	. ;
-	. ; Normal mustache "{{ ... }}" (or custom delimiters)
+	. ; Find close delimiter
 	. S CLOSE=$F(TEXT,CD,OPEN)
 	. I 'CLOSE S ERR("code")="TPL_PARSE",ERR("msg")="Unclosed mustache tag." Q
-	. S INSIDE=$E(TEXT,OPEN,CLOSE-CDL-1)
+	. S INSIDE=$E(TEXT,OPEN,CLOSE-$L(CD)-1)
 	. S INSIDE=$$TRIM(INSIDE)
 	. ;
 	. ; Delimiter change: {{= newOD newCD =}}
 	. I $E(INSIDE,1)="=",$E(INSIDE,$L(INSIDE))="=" D  S POS=CLOSE Q
-	. . N MID,A,B
+	. . N MID,W1,W2,REST
 	. . S MID=$$TRIM($E(INSIDE,2,$L(INSIDE)-1))
-	. . ; split by whitespace into 2 tokens
-	. . S A=$$TRIM($P(MID," ",1))
-	. . S B=$$TRIM($P(MID," ",2,99))
-	. . S B=$$TRIM($P(B," ",1))
-	. . I A=""!(B="") S ERR("code")="TPL_PARSE",ERR("msg")="Bad delimiter tag." Q
-	. . D ADDDELIM(.TOK,.N,A,B)
-	. . ; update active delimiters for subsequent scans
-	. . S OD=A,CD=B,ODL=$L(OD),CDL=$L(CD)
+	. . S REST=MID
+	. . S W1=$$NEXTTOK(.REST),W2=$$NEXTTOK(.REST)
+	. . I W1=""!(W2="") S ERR("code")="TPL_PARSE",ERR("msg")="Bad delimiter change tag." Q
+	. . ; record token (so standalone trimming can remove the whole line)
+	. . D ADDDELIM(.TOK,.N,W1,W2)
+	. . ; and update active delimiters for the rest of the parse
+	. . S OD=W1,CD=W2
 	. ;
 	. ; Comments
 	. I $E(INSIDE,1)="!" D  S POS=CLOSE Q
@@ -656,16 +651,6 @@ PARSE(TEXT,TOK,ERR,OD,CD)
 	. . N P S P=$$TRIM($E(INSIDE,2,$L(INSIDE)))
 	. . D ADDPART(.TOK,.N,P)
 	. ;
-	. ; Parent (inheritance): {{<parent}}
-	. I $E(INSIDE,1)="<" D  S POS=CLOSE Q
-	. . N P S P=$$TRIM($E(INSIDE,2,$L(INSIDE)))
-	. . D ADDPARENT(.TOK,.N,P,CLOSE) ; body starts after this tag
-	. ;
-	. ; Block: {{$block}}
-	. I $E(INSIDE,1)="$" D  S POS=CLOSE Q
-	. . N B S B=$$TRIM($E(INSIDE,2,$L(INSIDE)))
-	. . D ADDBLOCK(.TOK,.N,B,CLOSE)
-	. ;
 	. ; Sections / inverted / end
 	. I $E(INSIDE,1)="#"!($E(INSIDE,1)="^")!($E(INSIDE,1)="/") D  S POS=CLOSE Q
 	. . N OP,K,INV
@@ -676,14 +661,43 @@ PARSE(TEXT,TOK,ERR,OD,CD)
 	. . . I $E(K,1,3)="if " S K=$$TRIM($E(K,4,$L(K)))
 	. . . I $E(K,1,5)="each " S K=$$TRIM($E(K,6,$L(K)))
 	. . . I $E(K,1,7)="unless " S OP="^",K=$$TRIM($E(K,8,$L(K)))
-	. . I OP="/" D ADDSECE(.TOK,.N,K,OPEN-ODL) Q  ; store open-delim pos for raw slicing
+	. . I OP="/" D ADDSECE(.TOK,.N,K) Q
 	. . S INV=$S(OP="^":1,1:0)
-	. . D ADDSECS(.TOK,.N,K,INV,CLOSE)
+	. . D ADDSECS(.TOK,.N,K,INV)
+	. . ; Block detection: key like "block:name"
+	. . I $E(K,1,6)="block:" D
+	. . . S TOK(N,"blk")=1
+	. . . S TOK(N,"bname")=$E(K,7,$L(K))
 	. ;
 	. ; Default: variable escaped
 	. D ADDVAR(.TOK,.N,INSIDE,1)
 	. S POS=CLOSE
 	Q
+; Return next non-ws token from REST (by reference), splitting on space/tab
+NEXTTOK(REST)
+	N S,L,I,C
+	S S=$G(REST),L=$L(S),I=1
+	; skip leading ws
+	F  Q:I>L  S C=$E(S,I) Q:(C'=" ")&(C'=$C(9))  S I=I+1
+	I I>L S REST="" Q ""
+	; take until ws
+	N J S J=I
+	F  Q:J>L  S C=$E(S,J) Q:(C=" ")!(C=$C(9))  S J=J+1
+	N OUT S OUT=$E(S,I,J-1)
+	; remainder
+	S REST=$$TRIM($E(S,J,L))
+	Q OUT
+	;
+ADDDELIM(TOK,N,OD,CD)
+	S N=N+1
+	S TOK(N,"t")="delim"
+	S TOK(N,"od")=$G(OD)
+	S TOK(N,"cd")=$G(CD)
+	Q
+; =============================================================================
+; NUMMAX(.TOK)
+; Return largest numeric subscript in TOK (ignores "meta", etc.)
+; =============================================================================
 NUMMAX(TOK)
 	N I,MAX
 	S MAX=0,I=0
@@ -697,73 +711,21 @@ NUMMAX(TOK)
 ; needed to recognize later tags on their own lines (fixes TEST073/095).;
 ; =============================================================================
 STANDTOK(TOK)
-	N I,MAX,TYP,MI
-	N DO,DOM  ; DO(I)=standalone single token, DOM(I)=matching end index for parS
+	N I,MAX,TYP
+	N DO  ; mark standalone tags first
 	;
 	S MAX=$$NUMMAX(.TOK) Q:MAX<1
 	;
 	; pass 1: detect (no mutation)
 	F I=1:1:MAX D
 	. S TYP=$G(TOK(I,"t"))
-	. ; parent/include start: treat range I..MI as one unit
-	. I TYP="parS" D  Q
-	. . S MI=+$G(TOK(I,"m")) I MI<I Q
-	. . I $$ISSTANDR(.TOK,I,MI,MAX) S DO(I)=1,DOM(I)=MI
-	. ; existing standalone token types
 	. Q:(TYP'="secS")&(TYP'="secE")&(TYP'="part")&(TYP'="comm")&(TYP'="delim")
 	. I $$ISSTAND(.TOK,I,MAX) S DO(I)=1
 	;
-	; pass 2: apply trims (reverse to avoid cascades)
-	F I=MAX:-1:1 I $G(DO(I)) D
-	. I $G(TOK(I,"t"))="parS" D  Q
-	. . D STANDAPR(.TOK,I,+$G(DOM(I)),MAX)
+	; pass 2: apply trims (mutation ok now)
+	F I=1:1:MAX I $G(DO(I)) D
 	. D STANDAP(.TOK,I,MAX)
-	Q
-; =============================================================================
-; ISSTANDR(TOK,BS,BE,MAX)
-; Standalone check for a RANGE (BS..BE), used for parent/include (parS..secE).;
-; Same rules as standalone lines: only whitespace on the line besides the range,
-; and we may remove the following newline (or allow EOF).;
-; =============================================================================
-ISSTANDR(TOK,BS,BE,MAX)
-	N POK,NOK,PV,NV,J
 	;
-	; left side: BOF or previous text tail is ws-only
-	S POK=1
-	I BS>1 D  Q:'POK 0
-	. I $G(TOK(BS-1,"t"))'="text" S POK=0 Q
-	. S PV=$G(TOK(BS-1,"v"))
-	. I '$$TAILWS(PV) S POK=0
-	;
-	; inside range must not contain any non-ws text tokens (usually none)
-	F J=BS+1:1:BE-1 D  Q:'POK
-	. I $G(TOK(J,"t"))'="text" S POK=0 Q
-	. I '$$ALLWSIND($G(TOK(J,"v"))) S POK=0
-	Q:'POK 0
-	;
-	; right side: EOF allowed, else next text must start with ws then newline (or be empty => allow EOF)
-	S NOK=1
-	I BE<MAX D  Q:'NOK 0
-	. I $G(TOK(BE+1,"t"))'="text" S NOK=0 Q
-	. S NV=$G(TOK(BE+1,"v"))
-	. I '$$HEADWNL(NV) S NOK=0
-	Q 1
-	;
-; =============================================================================
-; STANDAPR(TOK,BS,BE,MAX)
-; Apply standalone trimming for range BS..BE:
-; - trim indentation before BS
-; - blank ws-only tokens inside range (if any)
-; - trim leading ws + ONE newline after BE (if present)
-; =============================================================================
-STANDAPR(TOK,BS,BE,MAX)
-	N J
-	; trim prev indentation
-	I BS>1 S TOK(BS-1,"v")=$$CUTPRE($G(TOK(BS-1,"v")))
-	; blank whitespace-only text tokens between BS and BE (rare but safe)
-	F J=BS+1:1:BE-1 I $G(TOK(J,"t"))="text" S TOK(J,"v")=""
-	; trim next leading ws + ONE newline
-	I BE<MAX S TOK(BE+1,"v")=$$CUTNX($G(TOK(BE+1,"v")))
 	Q
 ; returns 1 if token I is standalone (uses your current rules)
 ISSTAND(TOK,I,MAX)
@@ -1096,29 +1058,17 @@ ADDVAR(TOK,N,KEY,ESC)
 	S TOK(N,"e")=+$G(ESC)
 	Q
 	;
-	;
-ADDSECS(TOK,N,KEY,INV,BPOS)
+ADDSECS(TOK,N,KEY,INV)
 	S N=N+1
 	S TOK(N,"t")="secS"
 	S TOK(N,"k")=KEY
 	S TOK(N,"inv")=+$G(INV)
-	;
-	; Legacy block capture support: {{#block:name}} ... {{/block:name}}
-	; Captured content stored into CTX("blocks",name) during render.;
-	I $E($G(KEY),1,6)="block:" D
-	. S TOK(N,"blk")=1
-	. S TOK(N,"bname")=$E(KEY,7,$L(KEY))
-	;
-	; raw body start position in source text (after close delimiter)
-	I $G(BPOS)>0 S TOK(N,"bpos")=+BPOS
 	Q
 	;
-ADDSECE(TOK,N,KEY,OPOS)
+ADDSECE(TOK,N,KEY)
 	S N=N+1
 	S TOK(N,"t")="secE"
 	S TOK(N,"k")=KEY
-	; open delimiter start position for this end tag (for raw slicing)
-	I $G(OPOS)>0 S TOK(N,"opos")=+OPOS
 	Q
 	;
 ADDPART(TOK,N,NAME)
@@ -1127,43 +1077,23 @@ ADDPART(TOK,N,NAME)
 	S TOK(N,"k")=NAME
 	Q
 	;
-ADDDELIM(TOK,N,OD,CD)
-	S N=N+1
-	S TOK(N,"t")="delim"
-	S TOK(N,"od")=OD
-	S TOK(N,"cd")=CD
-	Q
-	;
-ADDPARENT(TOK,N,NAME,BPOS)
-	S N=N+1
-	S TOK(N,"t")="parS"
-	S TOK(N,"k")=NAME
-	I $G(BPOS)>0 S TOK(N,"bpos")=+BPOS
-	Q
-	;
-ADDBLOCK(TOK,N,NAME,BPOS)
-	S N=N+1
-	S TOK(N,"t")="blkS"
-	S TOK(N,"k")=NAME
-	I $G(BPOS)>0 S TOK(N,"bpos")=+BPOS
-	Q
-	;
-	;
+; =============================================================================
+; LINKSECS(TOK,ERR)
+; Precompute matching indices for sections.;
+; - TOK(i,"m") stored on secS token to point to matching secE index.;
+; - Detect mismatches early.;
+; =============================================================================
 LINKSECS(TOK,ERR)
-	; Precompute matching indices for sections, blocks, and parents.;
-	; - TOK(i,"m") stored on start token to point to matching end token index.;
-	; - Also computes TOK(start,"raw") from TOK("meta","src") using stored bpos/opos when available (for lambdas).;
 	K ERR
-	N STK,SP,I,T,K,TOP,TT
+	N STK,SP,I,T,K,TOP
 	S SP=0
 	S I=0
 	F  S I=$O(TOK(I)) Q:'I  D  Q:$D(ERR)
 	. S T=$G(TOK(I,"t"))
-	. I (T="secS")!(T="parS")!(T="blkS") D  Q
+	. I T="secS" D  Q
 	. . S SP=SP+1
 	. . S STK(SP,"i")=I
 	. . S STK(SP,"k")=$G(TOK(I,"k"))
-	. . S STK(SP,"t")=T
 	. I T="secE" D  Q
 	. . S K=$G(TOK(I,"k"))
 	. . I SP<1 S ERR("code")="TPL_PARSE",ERR("msg")="Section end without start: "_K Q
@@ -1171,14 +1101,13 @@ LINKSECS(TOK,ERR)
 	. . I TOP'=K S ERR("code")="TPL_PARSE",ERR("msg")="Section mismatch: expected /"_TOP_" got /"_K Q
 	. . N SI S SI=STK(SP,"i")
 	. . S TOK(SI,"m")=I
-	. . ; If we have source offsets, compute raw body
-	. . I $D(TOK("meta","src")),$G(TOK(SI,"bpos"))>0,$G(TOK(I,"opos"))>0 D
-	. . . N BS,BE S BS=+TOK(SI,"bpos"),BE=+TOK(I,"opos")-1
-	. . . I BE'<BS S TOK(SI,"raw")=$E(TOK("meta","src"),BS,BE)
 	. . S SP=SP-1
 	I SP>0 D
 	. S ERR("code")="TPL_PARSE",ERR("msg")="Unclosed section: "_$G(STK(SP,"k"))
 	Q
+; =============================================================================
+; EVAL(TOK,CONF,CTX,OUT,ERR)
+; =============================================================================
 EVAL(TOK,CONF,CTX,OUT,ERR)
 	K ERR
 	N CST,CTSP
@@ -1204,10 +1133,6 @@ EVAL(TOK,CONF,CTX,OUT,ERR)
 	S F(1,"capRef")=""
 	S F(1,"tokName")="TOK"
 	S OUT=""
-	; Delimiter state (used for lambdas re-rendering)
-	N DOD,DCD S DOD="{{",DCD="}}"
-	; Inheritance override token storage
-	N OVID,OVT S OVID=0
 	; Safety limit
 	N FRAMELIM,FRAMES
 	S FRAMELIM=2000,FRAMES=0
@@ -1240,81 +1165,27 @@ EVAL(TOK,CONF,CTX,OUT,ERR)
 	. I I<1!(I>END) D POPF^MIOTPL2(.FSP,.F,.CST,.CTSP) Q
 	. S TN=$G(F(FSP,"tokName")) I TN="" S TN="TOK"
 	. S TYP=$$TOKGET(TN,I,"t")
-	. ; Comments and delimiter changes emit nothing
-	. I TYP="comm" S F(FSP,"i")=I+1 Q
-	. I TYP="delim" D  S F(FSP,"i")=I+1 Q
-	. . S DOD=$$TOKGET(TN,I,"od")
-	. . S DCD=$$TOKGET(TN,I,"cd")
-	. ;
-	. ; Inheritance parent tag {{<parent}}...{{/parent}}
-	. I TYP="parS" D  Q
-	. . N MI,PNAME,PTID,PMAX,OVIDX
-	. . S MI=+$$TOKGET(TN,I,"m") I MI<1 S ERR("code")="TPL_EVAL",ERR("msg")="Unmatched parent tag." Q
-	. . S PNAME=$G(TOK(I,"k"))
-	. . ; collect overrides from child body (blocks only)
-	. . S OVID=OVID+1,OVIDX=OVID
-	. . K OVT(OVIDX)
-	. . D COLLOVR^MIOTPL2(TN,I+1,MI-1,OVIDX,.OVT)
-	. . ; advance parent first
-	. . S F(FSP,"i")=MI+1
-	. . ; load parent as partial
-	. . S PTID=+$G(F(FSP,"ptid"))+1 S F(FSP,"ptid")=PTID
-	. . N TMPTARR K TMPTARR
-	. . D GETTOK^MIOTPL2(PNAME,.CONF,.TMPTARR,.ERR) Q:$D(ERR)
-	. . M PTOKS(PTID)=TMPTARR K TMPTARR
-	. . S PMAX=$$TOKENDR^MIOTPL2("PTOKS("_PTID_")")
-	. . I PMAX<1 Q
-	. . D PUSHFRAME^MIOTPL2(.FSP,.F,1,PMAX,CTSP,$G(F(FSP,"mode")),$G(F(FSP,"capRef")),"PTOKS("_PTID_")")
-	. . ; attach override id to new frame
-	. . S F(FSP,"ovID")=OVIDX
-	. . S F(FSP,"pname")=PNAME
-	. ;
-	. ; Block tag {{$name}}...{{/name}}
-	. I TYP="blkS" D  Q
-	. . N MI,BNAME,OVIDX,OVTN,OMAX
-	. . S MI=+$$TOKGET(TN,I,"m") I MI<1 S ERR("code")="TPL_EVAL",ERR("msg")="Unmatched block tag." Q
-	. . S BNAME=$$TOKGET(TN,I,"k")
-	. . ; advance parent first
-	. . S F(FSP,"i")=MI+1
-	. . S OVIDX=+$G(F(FSP,"ovID"))
-	. . I OVIDX>0,$D(OVT(OVIDX,BNAME)) D  Q
-	. . . S OVTN="OVT("_OVIDX_","""_BNAME_""")"
-	. . . S OMAX=$$TOKENDR^MIOTPL2(OVTN)
-	. . . I OMAX>0 D PUSHFRAME^MIOTPL2(.FSP,.F,1,OMAX,CTSP,$G(F(FSP,"mode")),$G(F(FSP,"capRef")),OVTN)
-	. . ; default block content
-	. . D PUSHFRAME^MIOTPL2(.FSP,.F,I+1,MI-1,CTSP,$G(F(FSP,"mode")),$G(F(FSP,"capRef")),TN)
 	. ; TEXT
 	. I TYP="text" D  Q
 	. . D EMIT^MIOTPL2(.FSP,.F,.OUT,$$TOKGET(TN,I,"v"))
 	. . S F(FSP,"i")=I+1
 	. ; VAR
 	. I TYP="var" D  Q
-	. . N KEY,ESC,VAL,ISSET,TYPE,REF,LT,LO,LE
+	. . N KEY,ESC,VAL
 	. . S KEY=$$TOKGET(TN,I,"k")
 	. . S ESC=+$$TOKGET(TN,I,"e")
-	. . ; lambdas: value is callable -> call, then re-render
-	. . D RESREF^MIOTPL2(KEY,.CST,CTSP,.ISSET,.TYPE,.REF)
-	. . I ISSET,TYPE="lambda" D  S F(FSP,"i")=I+1 Q
-	. . . S VAL=$$LAM0^MIOTPL2(REF,$S(ESC:1,1:0),DOD,DCD,.CONF,.CST,CTSP,.ERR)
-	. . . I $D(ERR) Q
-	. . . D EMIT^MIOTPL2(.FSP,.F,.OUT,VAL)
-	. . ; normal variable
 	. . S VAL=$$RESVAL^MIOTPL2(KEY,.CST,CTSP)
 	. . I ESC S VAL=$$ESCHTML^MIOTPL2(VAL)
 	. . D EMIT^MIOTPL2(.FSP,.F,.OUT,VAL)
 	. . S F(FSP,"i")=I+1
-	. ; PARTIAL
+	. I TYP="delim" D  Q
+	. . S F(FSP,"i")=I+1
 	. ; COMMENT (no output)
 	. I TYP="comm" D  Q
 	. . S F(FSP,"i")=I+1
 	. I TYP="part" D  Q
 	. . N PNAME,IND,MODE,CAP,PMAX
 	. . S PNAME=$$TOKGET(TN,I,"k")
-	. . ; dynamic partial names: {{>*name}} resolves name from context
-	. . I $E(PNAME)="*" D
-	. . . N DKEY S DKEY=$E(PNAME,2,$L(PNAME))
-	. . . I (DKEY="")!(DKEY["*") S PNAME="" Q
-	. . . S PNAME=$$RESVAL^MIOTPL2(DKEY,.CST,CTSP)
 	. . S IND=$$TOKGET(TN,I,"indent")  ; may be ""
 	. . ; advance parent now
 	. . S F(FSP,"i")=I+1
@@ -1378,14 +1249,6 @@ EVAL(TOK,CONF,CTX,OUT,ERR)
 	. . I TYPE="list" D
 	. . . N S0 S S0=$$FIRSTSUB^MIOTPL2(REF)
 	. . . I S0'="",S0'?1.N S TYPE="obj"
-	. . ; lambda section: call with raw section text, then render result with current delimiters
-	. . I ISSET,TYPE="lambda" D  Q
-	. . . I INV Q  ; lambdas are truthy => inverted sections do not render
-	. . . N RAW,VAL
-	. . . S RAW=$G(TOK(I,"raw"))
-	. . . S VAL=$$LAM1^MIOTPL2(REF,RAW,DOD,DCD,.CONF,.CST,CTSP,.ERR)
-	. . . I $D(ERR) Q
-	. . . D EMIT^MIOTPL2(.FSP,.F,.OUT,VAL)
 	. . ; inverted
 	. . I INV D  Q
 	. . . I $$ISTRUTH^MIOTPL2(.ISSET,.TYPE,.REF)=0 D
@@ -1525,16 +1388,9 @@ TOKGET(TN,I,FIELD)
 ; Return the last NUMERIC token index in token root TOKNAME.;
 ; (Ignores string subscripts like TOK("meta",...))
 ; =============================================================================
-	;
 TOKENDR(TOKR)
-	; Return last numeric token index in token root TOKR.;
-	; TOKR may be "TOK" or "PTOKS(3)" or "OVT(1,\"name\")", etc.;
-	N I,MAX,BASE
+	N I,MAX
 	S MAX=0,I=0
-	I TOKR["(" D  Q MAX
-	. S BASE=$E(TOKR,1,$L(TOKR)-1) ; drop trailing ')'
-	. F  S I=$O(@(BASE_","_I_")")) Q:I=""  D
-	. . I I?1.N,I>MAX S MAX=I
 	F  S I=$O(@TOKR@(I)) Q:I=""  D
 	. I I?1.N,I>MAX S MAX=I
 	Q MAX
@@ -1570,35 +1426,32 @@ POPF(FSP,F,CST,CTSP)
 	. S CR=$G(F(OLD,"storeCapRef"))
 	. S VAL=$G(@CR)
 	. S CTX("blocks",BN)=VAL
-	;
-	; Partial decrement finalizer
+	; Partial decrement finalizer (UNDEF-safe)
 	I $G(F(OLD,"pname"))'="" D
 	. N PN S PN=$G(F(OLD,"pname"))
 	. S PACTIVE(PN)=+$G(PACTIVE(PN))-1
-	. I PACTIVE(PN)<1 K PACTIVE(PN)
-	;
-	; capEmit finalizer (indented partial emit)
+	. I PACTIVE(PN)'>0 K PACTIVE(PN)
+	; Capture->Indent->Emit finalizer (indented standalone partials)
 	I +$G(F(OLD,"capEmit")) D
-	. N IND,VAL
-	. S IND=$G(F(OLD,"indent"))
-	. S VAL=$G(@$G(F(OLD,"capRef")))
-	. I IND'="" S VAL=$$INDENTTXT^MIOTPL2(VAL,IND)
-	. D EMIT^MIOTPL2(.FSP,.F,.OUT,VAL)
-	;
-	; >>> ADD THIS: Inheritance override capture finalizer <<<
-	; Inheritance override capture finalizer ({{<parent}} {{$block}}..{{/block}} {{/parent}})
-	I $G(F(OLD,"ovrName"))'="" D
-	. N CR,VAL,OR
+	. N CR,VAL,IND,TXT,PMODE,PCR
 	. S CR=$G(F(OLD,"capRef"))
 	. S VAL=$S(CR'="":$G(@CR),1:"")
-	. S OR=$G(F(OLD,"ovrRef"))
-	. I OR'="" S @OR=VAL
-	. K F(OLD,"ovrName"),F(OLD,"ovrPar"),F(OLD,"ovrRef")
-	;
+	. S IND=$G(F(OLD,"indent"))
+	. S TXT=$$INDENTSTR^MIOTPL2(VAL,IND)
+	. ; single-shot
+	. I CR'="" S @CR=""
+	. K F(OLD,"capEmit"),F(OLD,"indent")
+	. ; emit into parent mode
+	. S PMODE=$G(F(OLD-1,"mode"))
+	. I PMODE="capture" D
+	. . S PCR=$G(F(OLD-1,"capRef")) Q:PCR=""
+	. . S @PCR=$G(@PCR)_TXT
+	. E  S OUT=$G(OUT)_TXT	
 	; Pop and restore CTSP
 	S FSP=FSP-1
 	I FSP>0 S CTSP=+$G(F(FSP,"ctxTop"))
 	Q
+	;
 ; =============================================================================
 ; LF2CRLF(S)  Convert LF -> CRLF
 ; =============================================================================
@@ -1723,12 +1576,11 @@ RESREF(KEY,CST,CTSP,ISSET,TYPE,REF)
 	. N OK,RR,TT
 	. D RESINBASE^MIOTPL2(BASE,K,.OK,.TT,.RR)
 	. I OK S ISSET=1,TYPE=TT,REF=RR
-	I $G(ISSET),$G(TYPE)="obj" D  ; detect lambda objects
-	. I $$ISCODE^MIOTPL2(REF) S TYPE="lambda"
 	Q
 ; =============================================================================
 ; RESINBASE(BASE,KEY,OK,TYPE,REF)
 ; Resolve dotted KEY within a single BASE reference-string.;
+; =============================================================================
 RESINBASE(BASE,KEY,OK,TYPE,REF)
 	S OK=0,TYPE="missing",REF=""
 	N CUR S CUR=BASE
@@ -1965,102 +1817,3 @@ JOIN(ARR,SEP) ;
 	. IF S'="" SET S=S_D
 	. SET S=S_$GET(ARR(I))
 	QUIT S
-	;
-	;
-; =============================================================================
-; Inheritance & Lambda helpers
-; =============================================================================
-ISCODE(REF)
-	; True if REF points to a "code" object from mustache-spec JSON
-	N T S T=$G(@REF@("__tag__"))
-	I $ZCONVERT(T,"L")="code" Q 1
-	Q 0
-	;
-TOKNODE(TN,IDX)
-	; Build a node reference string for token IDX under token-root TN.;
-	I TN["(" Q $E(TN,1,$L(TN)-1)_","_IDX_")"
-	Q TN_"("_IDX_")"
-	;
-COLLOVR(TN,FROM,TO,OVIDX,OVT)
-	; Collect block overrides from a child template body (inside a parent tag).;
-	; Stores override token ranges into OVT(OVIDX,blockName,1..n,*)
-	N I,TYP,MI,BNAME,NS,NE,N
-	F I=FROM:1:TO D
-	. S TYP=$$TOKGET^MIOTPL2(TN,I,"t")
-	. Q:TYP'="blkS"
-	. S MI=+$$TOKGET^MIOTPL2(TN,I,"m") Q:MI<1
-	. Q:MI>TO
-	. S BNAME=$$TOKGET^MIOTPL2(TN,I,"k")
-	. ; copy range (I+1 .. MI-1)
-	. K OVT(OVIDX,BNAME)
-	. S N=0,NS=I+1,NE=MI-1
-	. I NE<NS Q
-	. N J,REF
-	. F J=NS:1:NE D
-	. . S N=N+1
-	. . S REF=$$TOKNODE^MIOTPL2(TN,J)
-	. . M OVT(OVIDX,BNAME,N)=@REF
-	Q
-	;
-QSTR(S)
-	; Quote a string for XECUTE (double-quote escaping)
-	N X S X=$G(S)
-	S X=$TR(X,"""","""""")
-	Q """"_X_""""
-	;
-LAMCALL(REF)
-	; Determine MUMPS callable entrypoint for a lambda object.;
-	; Supported:
-	;  - @REF@("mumps") = "TAG^ROU" or "$$TAG^ROU"
-	;  - scalar @REF (rare): "TAG^ROU"
-	N C
-	S C=$G(@REF@("mumps"))
-	I C="" S C=$G(@REF)
-	I C="" Q ""
-	I $E(C,1,2)="$$" S C=$E(C,3,$L(C))
-	Q C
-	;
-CALL0(CALL,ERR)
-	N $ETRAP S $ETRAP="S ERR(""code"")=""TPL_LAMBDA"",ERR(""msg"")=$ZSTATUS Q"
-	N RES S RES=""
-	I CALL="" S ERR("code")="TPL_LAMBDA",ERR("msg")="Lambda has no MUMPS entrypoint." Q ""
-	X "S RES=$$"_CALL_"()"
-	Q $G(RES)
-	;
-CALL1(CALL,ARG,ERR)
-	N $ETRAP S $ETRAP="S ERR(""code"")=""TPL_LAMBDA"",ERR(""msg"")=$ZSTATUS Q"
-	N RES S RES=""
-	I CALL="" S ERR("code")="TPL_LAMBDA",ERR("msg")="Lambda has no MUMPS entrypoint." Q ""
-	N A S A=$$QSTR^MIOTPL2($G(ARG))
-	X "S RES=$$"_CALL_"("_A_")"
-	Q $G(RES)
-	;
-LAMRENDER(TXT,OD,CD,CONF,CST,CTSP,ERR)
-	; Compile+render TXT using top-of-stack context.;
-	N LTOK,LERR,LOUT,TCTX
-	K LTOK,LERR,LOUT,TCTX
-	D COMPILE^MIOTPL2(TXT,.LTOK,.LERR,$G(OD,"{{"),$G(CD,"}}"))
-	I $D(LERR) M ERR=LERR Q ""
-	M TCTX=@CST(CTSP)
-	D EVAL^MIOTPL2(.LTOK,.CONF,.TCTX,.LOUT,.LERR)
-	I $D(LERR) M ERR=LERR Q ""
-	Q $G(LOUT)
-	;
-LAM0(REF,ESC,DOD,DCD,CONF,CST,CTSP,ERR)
-	; Interpolation lambda: call with no args; render with default delimiters; escape if ESC=1.;
-	N CALL,TXT,VAL
-	S CALL=$$LAMCALL^MIOTPL2(REF)
-	S TXT=$$CALL0^MIOTPL2(CALL,.ERR) I $D(ERR) Q ""
-	S VAL=$$LAMRENDER^MIOTPL2(TXT,"{{","}}",.CONF,.CST,CTSP,.ERR) I $D(ERR) Q ""
-	I +$G(ESC) S VAL=$$ESCHTML^MIOTPL2(VAL)
-	Q VAL
-	;
-LAM1(REF,RAW,OD,CD,CONF,CST,CTSP,ERR)
-	; Section lambda: call with raw section string; render with current delimiters.;
-	N CALL,TXT,VAL
-	S CALL=$$LAMCALL^MIOTPL2(REF)
-	S TXT=$$CALL1^MIOTPL2(CALL,$G(RAW),.ERR) I $D(ERR) Q ""
-	S VAL=$$LAMRENDER^MIOTPL2(TXT,$G(OD,"{{"),$G(CD,"}}"),.CONF,.CST,CTSP,.ERR) I $D(ERR) Q ""
-	Q VAL
-	;
-	;
