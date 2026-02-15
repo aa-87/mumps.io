@@ -143,7 +143,7 @@ MIOTF205 ;Delimiters
 	;  SHOULD be treated as standalone when appropriate.\n"
 	;D RUNJSONSPECS("./tests/data/comments.json") ;This is the same as below.;
 	; Each test is run two different ways
-	D TEST123,TEST124,TEST125
+	D TEST123,TEST124,TEST125,TEST126
 	QUIT 	 		
 TEST001
 	NEW HDR S HDR="[TEST001][No Interpolation]"
@@ -1420,6 +1420,19 @@ TEST125
 	N CON,CTX
 	N CTX
 	S CTX("section")="true"
+	S CTX("data")="I got interpolated."
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+TEST126
+	NEW HDR S HDR="[TEST126][Inverted Sections]"
+	NEW DESC S DESC=HDR_"[Delimiters set outside inverted sections should persist.]"
+	NEW TEMPLATE S TEMPLATE="[\n{{^section}}\n  {{data}}\n  |data|\n{{/section}}\n\n{{= | | =}}\n|^section|\n  {{data}}\n  |data|\n|/section|\n]\n"
+	NEW EXPECTED S EXPECTED="[\n  I got interpolated.\n  |data|\n\n  {{data}}\n  I got interpolated.\n]\n"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CON,CTX
+	N CTX
+	S CTX("section")="false"
 	S CTX("data")="I got interpolated."
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	QUIT
