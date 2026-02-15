@@ -128,8 +128,11 @@ MIOTF204 ;Comments
 	; Comment tags represent content that should never appear in the resulting
 	; output.The tag's content may contain any substring (including newlines) 
 	; EXCEPT the closing delimiter. Comment tags SHOULD be treated as
+	D RUNJSONSPECS("./tests/data/comments.json") ;This is the same as below.;
+	; Each test is run two different ways
 	;  standalone when appropriate.;
-	D TEST111,TEST112,TEST113
+	D TEST111,TEST112,TEST113,TEST114,TEST115,TEST116,TEST117
+	D TEST118,TEST119,TEST120,TEST121,TEST122
 	QUIT 		
 TEST001
 	NEW HDR S HDR="[TEST001][No Interpolation]"
@@ -1285,6 +1288,91 @@ TEST114
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CON,CTX
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+TEST115
+	NEW HDR S HDR="[TEST115][Standalone Line Endings]"
+	NEW DESC S DESC=HDR_"""\\r\\n"" should be considered a newline for standalone tags."
+	NEW TEMPLATE S TEMPLATE="|\r\n{{! Standalone Comment }}\r\n|"
+	NEW EXPECTED S EXPECTED="|\r\n|"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CON,CTX
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+TEST116
+	NEW HDR S HDR="[TEST116][Standalone Without Previous Line]"
+	NEW DESC S DESC=HDR_"[Standalone tags should not require a newline to precede them.]"
+	NEW TEMPLATE S TEMPLATE="  {{! I'm Still Standalone }}\n!"
+	NEW EXPECTED S EXPECTED="!"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CON,CTX
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+TEST117
+	NEW HDR S HDR="[TEST117][Standalone Without Newline]"
+	NEW DESC S DESC=HDR_"[Standalone tags should not require a newline to follow them.]"
+	NEW TEMPLATE S TEMPLATE="!\n  {{! I'm Still Standalone }}"
+	NEW EXPECTED S EXPECTED="!\n"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CON,CTX
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+TEST118
+	NEW HDR S HDR="[TEST118][Multiline Standalone]"
+	NEW DESC S DESC=HDR_"[All standalone comment lines should be removed.]"
+	NEW TEMPLATE S TEMPLATE="Begin.\n{{!\nSomething's going on here...\n}}\nEnd.\n"
+	NEW EXPECTED S EXPECTED="Begin.\nEnd.\n"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CON,CTX
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+TEST119
+	NEW HDR S HDR="[TEST119][Indented Multiline Standalone]"
+	NEW DESC S DESC=HDR_"[All standalone comment lines should be removed.]"
+	NEW TEMPLATE S TEMPLATE="Begin.\n  {{!\n    Something's going on here...\n  }}\nEnd.\n"
+	NEW EXPECTED S EXPECTED="Begin.\nEnd.\n"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CON,CTX
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+TEST120
+	NEW HDR S HDR="[TEST120][Indented Inline]"
+	NEW DESC S DESC=HDR_"[Inline comments should not strip whitespace]"
+	NEW TEMPLATE S TEMPLATE="  12 {{! 34 }}\n"
+	NEW EXPECTED S EXPECTED="  12 \n"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CON,CTX
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+TEST121
+	NEW HDR S HDR="[TEST121][Surrounding Whitespace]"
+	NEW DESC S DESC=HDR_"[Comment removal should preserve surrounding whitespace.]"
+	NEW TEMPLATE S TEMPLATE="12345 {{! Comment Block! }} 67890"
+	NEW EXPECTED S EXPECTED="12345  67890"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CON,CTX
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+TEST122
+	NEW HDR S HDR="[TEST122][Variable Name Collision]"
+	NEW DESC S DESC=HDR_"[Comments must never render, even if variable with same name exists.]"
+	NEW TEMPLATE S TEMPLATE="comments never show: >{{! comment }}<"
+	NEW EXPECTED S EXPECTED="comments never show: ><"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CON,CTX
+	N CTX
+	S CTX("! comment")=1
+	S CTX("! comment ")=2
+	S CTX("!comment")=3
+	S CTX("comment")=4
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	QUIT
 TEST000
