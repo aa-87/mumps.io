@@ -39,23 +39,17 @@ MIOTPL2 ; MIO template engine with layouts, blocks, partials, and caching.;
 	; ---------------------------------------------------------------------------
 	;
 	Q
-	;
-; =============================================================================
-; START(CONF)
-; Initialize template subsystem. Safe to call multiple times.;
-; =============================================================================
 MIOTEST 
-	; 100-121 Coverage instrumentation per routines, to be implemented later
-	; 120-125 D MIOTF120 *skipped* - Coverage instrumentation for a full test suite
 	D MIOTF121,MIOTF122,MIOTF123,MIOTF124,MIOTF125
 	D MIOTF126,MIOTF126B,MIOTF127,MIOTF128,MIOTF129,MIOTF130
-	D MIOTF200,MIOTF201,MIOTF202,MIOTF203
+	D MIOTF200,MIOTF201,MIOTF202,MIOTF203,MIOTF204
 	Q
 	;
 MIOTF200 D MIOTF200^MIOTPLT QUIT 
 MIOTF201 D MIOTF201^MIOTPLT QUIT
 MIOTF202 D MIOTF202^MIOTPLT QUIT
 MIOTF203 D MIOTF203^MIOTPLT QUIT
+MIOTF204 D MIOTF204^MIOTPLT QUIT
 MIOTF121 ; Full suite test 121 - TPL_SECTION_CTA.;
 	NEW TOK,ERR,CONF,CTX,OUT
 	D COMPILE("{{#cta}}X{{/cta}}",.TOK,.ERR)
@@ -628,7 +622,8 @@ PARSE(TEXT,TOK,ERR)
 	. S INSIDE=$$TRIM(INSIDE)
 	. ;
 	. ; Comments
-	. I $E(INSIDE,1)="!" S POS=CLOSE Q
+	. I $E(INSIDE,1)="!" D  S POS=CLOSE Q
+	. . D ADDCOMM(.TOK,.N)
 	. ;
 	. ; Unescaped via &
 	. I $E(INSIDE,1)="&" D  S POS=CLOSE Q
@@ -688,7 +683,7 @@ STANDTOK(TOK)
 	; pass 1: detect (no mutation)
 	F I=1:1:MAX D
 	. S TYP=$G(TOK(I,"t"))
-	. Q:(TYP'="secS")&(TYP'="secE")&(TYP'="part")
+	. Q:(TYP'="secS")&(TYP'="secE")&(TYP'="part")&(TYP'="comm")
 	. I $$ISSTAND(.TOK,I,MAX) S DO(I)=1
 	;
 	; pass 2: apply trims (mutation ok now)
@@ -1148,6 +1143,9 @@ EVAL(TOK,CONF,CTX,OUT,ERR)
 	. . D EMIT^MIOTPL2(.FSP,.F,.OUT,VAL)
 	. . S F(FSP,"i")=I+1
 	. ; PARTIAL
+	. ; COMMENT (no output)
+	. I TYP="comm" D  Q
+	. . S F(FSP,"i")=I+1
 	. I TYP="part" D  Q
 	. . N PNAME,IND,MODE,CAP,PMAX
 	. . S PNAME=$$TOKGET(TN,I,"k")
@@ -1304,7 +1302,10 @@ INDENTPTOK(TOK,IND)
 	;
 	K TOK M TOK=TMP
 	Q
-	;
+ADDCOMM(TOK,N)
+	S N=N+1
+	S TOK(N,"t")="comm"
+	Q
 ; =============================================================================
 ; INDTXT(V,IND,.AT)
 ; If AT=1, prepend IND before first emitted char in this token line.;

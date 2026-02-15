@@ -123,7 +123,14 @@ MIOTF203 ;Partials
 	; Each test is run two different ways
 	D TEST099,TEST100,TEST101,TEST102,TEST103,TEST104,TEST105
 	D TEST106,TEST107,TEST108,TEST109,TEST110
-	QUIT 	
+	QUIT
+MIOTF204 ;Comments
+	; Comment tags represent content that should never appear in the resulting
+	; output.The tag's content may contain any substring (including newlines) 
+	; EXCEPT the closing delimiter. Comment tags SHOULD be treated as
+	;  standalone when appropriate.;
+	D TEST111,TEST112,TEST113
+	QUIT 		
 TEST001
 	NEW HDR S HDR="[TEST001][No Interpolation]"
 	NEW DESC S DESC=HDR_"[Mustache-free templates should render as-is]"
@@ -1229,7 +1236,7 @@ TEST109
 	QUIT
 TEST110
 	NEW HDR S HDR="[TEST110][Padding Whitespace]"
-	NEW DESC S DESC=HDR_"[Superfluous in-tag whitespace should be ignored..]"
+	NEW DESC S DESC=HDR_"[Superfluous in-tag whitespace should be ignored.]"
 	NEW TEMPLATE S TEMPLATE="|{{> partial }}|"
 	NEW EXPECTED S EXPECTED="|[]|"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
@@ -1241,7 +1248,45 @@ TEST110
 	S CTX("boolean")="true"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	D RMDIR(ROOT)
-	QUIT	
+	QUIT
+TEST111
+	NEW HDR S HDR="[TEST111][Inline]"
+	NEW DESC S DESC=HDR_"[Comment blocks should be removed from the template.]"
+	NEW TEMPLATE S TEMPLATE="12345{{! Comment Block! }}67890"
+	NEW EXPECTED S EXPECTED="1234567890"
+	N CON,CTX
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+TEST112
+	NEW HDR S HDR="[TEST112][Multiline]"
+	NEW DESC S DESC=HDR_"[Multiline comments should be permitted..]"
+	NEW TEMPLATE S TEMPLATE="12345{{!\n  This is a\n  multi-line comment...\n}}67890\n"
+	NEW EXPECTED S EXPECTED="1234567890\n"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CON,CTX
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+TEST113
+	NEW HDR S HDR="[TEST113][Standalone]"
+	NEW DESC S DESC=HDR_"[All standalone comment lines should be removed.]"
+	NEW TEMPLATE S TEMPLATE="Begin.\n{{! Comment Block! }}\nEnd.\n"
+	NEW EXPECTED S EXPECTED="Begin.\nEnd.\n"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CON,CTX
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+TEST114
+	NEW HDR S HDR="[TEST114][Indented Standalone]"
+	NEW DESC S DESC=HDR_"[All standalone comment lines should be removed.]"
+	NEW TEMPLATE S TEMPLATE="Begin.\n  {{! Indented Comment Block! }}\nEnd.\n"
+	NEW EXPECTED S EXPECTED="Begin.\nEnd.\n"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CON,CTX
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
 TEST000
 	NEW HDR S HDR="[TEST000][]"
 	NEW DESC S DESC=HDR_"[]"
