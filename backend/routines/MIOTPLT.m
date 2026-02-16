@@ -185,7 +185,7 @@ MIOTF206 ;Inheritance
 	D TEST138,TEST139,TEST140,TEST141,TEST142,TEST143,TEST144
 	D TEST145,TEST146,TEST147,TEST148,TEST149,TEST150,TEST151
 	D TEST152,TEST153,TEST154,TEST155,TEST156,TEST157,TEST158
-	D TEST159,TEST160,TEST161
+	D TEST159,TEST160,TEST161,TEST162,TEST163,TEST164
 	;	
 	QUIT 		
 TEST001
@@ -1920,8 +1920,7 @@ TEST160
 TEST161
 	NEW HDR S HDR="[TEST161][Standalone block]"
 	NEW DESC S DESC=HDR_"[A block's opening and closing tags need not be on separate lines in order to be standalone]"
-	;NEW TEMPLATE 
-	S TEMPLATE="{{<parent}}{{$block}}\none\ntwo{{/block}}\n{{/parent}}\n"
+	NEW TEMPLATE S TEMPLATE="{{<parent}}{{$block}}\none\ntwo{{/block}}\n{{/parent}}\n"
 	;NEW EXPECTED 
 	S EXPECTED="Hi,\n  one\n  two\n"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
@@ -1929,6 +1928,55 @@ TEST161
 	N CTX
 	N CONF D SETUPPART(.CONF,.ROOT)
 	N ERR D WRFILE(ROOT_"parent",$$UNESCNL("Hi,\n  {{$block}}{{/block}}\n"),.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	QUIT
+TEST162
+	NEW HDR S HDR="[TEST162][Block reindentation]"
+	NEW DESC S DESC=HDR_"[Block indentation is removed at the site of definition and added at the site of expansion]"
+	;NEW TEMPLATE 
+	S TEMPLATE="{{<parent}}{{$block}}\n    one\n    two\n{{/block}}{{/parent}}\n"
+	;NEW EXPECTED 
+	S EXPECTED="Hi,\n  one\n  two\n"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX
+	N CONF D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"parent",$$UNESCNL("Hi,\n  {{$block}}\n  {{/block}}\n"),.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	QUIT
+TEST163
+	NEW HDR S HDR="[TEST163][Intrinsic indentation]"
+	NEW DESC S DESC=HDR_"[When the block opening tag is standalone, indentation is determined by default content]"
+	;NEW TEMPLATE 
+	S TEMPLATE="{{<parent}}{{$block}}\none\ntwo\n{{/block}}{{/parent}}\n"
+	;NEW EXPECTED 
+	S EXPECTED="Hi,\n  one\n  two\n"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX
+	N CONF D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"parent",$$UNESCNL("Hi,\n{{$block}}\n  default\n{{/block}}\n"),.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	QUIT
+TEST164
+	NEW HDR S HDR="[TEST164][Nested block reindentation]"
+	NEW DESC S DESC=HDR_"[Nested blocks are reindented relative to the surrounding block]"
+	;NEW TEMPLATE 
+	S TEMPLATE="{{<parent}}{{$nested}}\nthree\n{{/nested}}{{/parent}}\n"
+	;NEW EXPECTED 
+	S EXPECTED="one\n  three\n"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX
+	N CONF D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"parent",$$UNESCNL("{{<grandparent}}{{$block}}\n  one\n  {{$nested}}\n    two\n  {{/nested}}\n{{/block}}{{/grandparent}}\n"),.ERR)
+	N ERR D WRFILE(ROOT_"grandparent",$$UNESCNL("{{$block}}default{{/block}}"),.ERR)
 	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	D RMDIR(ROOT)

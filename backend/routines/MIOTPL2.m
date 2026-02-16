@@ -718,6 +718,13 @@ STANDTOK(TOK)
 	. 	.	.	F J=I+1:1:MI S RSKIP(J)=1
 	. 	.	; otherwise fall back to normal standalone rules for just the opening tag
 	. 	.	I $$ISSTAND(.TOK,I,MAX) S DO(I)=1
+	. 	; NEW: treat consecutive close tags (secE) on the same line as a standalone range
+	. 	I TYP="secE",I<MAX,$G(TOK(I+1,"t"))="secE" D  Q
+	. 	.	S MI=I
+	. 	.	F  Q:MI>=MAX  Q:$G(TOK(MI+1,"t"))'="secE"  S MI=MI+1
+	. 	.	I $$ISSTANDRE(.TOK,I,MI,MAX) D
+	. 	.	.	S DO(I)=1,DOM(I)=MI
+	. 	.	.	F J=I+1:1:MI S RSKIP(J)=1
 	. 	; existing standalone token types (single-token detection)
 	. 	Q:(TYP'="secS")&(TYP'="secE")&(TYP'="part")&(TYP'="comm")&(TYP'="delim")
 	. 	I $$ISSTAND(.TOK,I,MAX) S DO(I)=1
@@ -758,6 +765,17 @@ ISSTANDR(TOK,BS,BE,MAX)
 	. I $G(TOK(BE+1,"t"))'="text" S NOK=0 Q
 	. S NV=$G(TOK(BE+1,"v"))
 	. I '$$HEADWNL(NV) S NOK=0
+	Q 1
+	;
+ISSTANDRE(TOK,BS,BE,MAX)
+	; Standalone check for a RANGE of consecutive close tags (secE).;
+	; Left/right whitespace rules are the same as ISSTANDR, but we do not require
+	; anything about token types inside the range (they are non-text tags).;
+	N PV,NV
+	; left side: BOF or previous text tail is ws-only
+	I BS>1 Q:$G(TOK(BS-1,"t"))'="text" 0 Q:'$$TAILWS($G(TOK(BS-1,"v"))) 0
+	; right side: EOF allowed, else next text must start with ws then newline
+	I BE<MAX Q:$G(TOK(BE+1,"t"))'="text" 0 Q:'$$HEADWNL($G(TOK(BE+1,"v"))) 0
 	Q 1
 	;
 ; =============================================================================
@@ -877,7 +895,11 @@ STANDAP(TOK,I,MAX)
 	. S TOK(I,"indent")=IND
 	;
 	I I>1 S TOK(I-1,"v")=$$CUTPRE($G(TOK(I-1,"v")))
-	I I<MAX S TOK(I+1,"v")=$$CUTNX($G(TOK(I+1,"v")))
+	I I<MAX D
+	. N NX S NX=$G(TOK(I+1,"v"))
+	. ; Do not trim the final trailing newline after a closing {{/parent}} tag (TEST161)
+	. I (TYP="secE"),$G(TOK(I,"parE")),(I+1=MAX),(NX=$C(10)!(NX=$C(13,10))) Q
+	. S TOK(I+1,"v")=$$CUTNX(NX)
 	;
 	Q
 LINEIND(V) ; indentation after last LF (or BOF), spaces/tabs only
@@ -1018,6 +1040,12 @@ ALLWSIND(S)
 	N I,C,Q S Q=1
 	S S=$G(S)
 	F I=1:1:$L(S) S C=$E(S,I) I (C'=" ")&(C'=$C(9)) S Q=0 Q
+	Q Q
+	;
+ALLWSNL(S)
+	N I,C,Q S Q=1
+	S S=$G(S)
+	F I=1:1:$L(S) S C=$E(S,I) I (C'=" ")&(C'=$C(9))&(C'=$C(10))&(C'=$C(13)) S Q=0 Q
 	Q Q
 	;
 ; =============================================================================
@@ -1261,6 +1289,8 @@ LINKSECS(TOK,ERR)
 	. . I TOP'=K S ERR("code")="TPL_PARSE",ERR("msg")="Section mismatch: expected /"_TOP_" got /"_K Q
 	. . N SI S SI=STK(SP,"i")
 	. . S TOK(SI,"m")=I
+	. 	. ; mark closing token if this was a parent include
+	. 	. I $G(STK(SP,"t"))="parS" S TOK(I,"parE")=1
 	. . ; If we have source offsets, compute raw body
 	. . I $D(TOK("meta","src")),$G(TOK(SI,"bpos"))>0,$G(TOK(I,"opos"))>0 D
 	. . . N BS,BE S BS=+TOK(SI,"bpos"),BE=+TOK(I,"opos")-1
@@ -1378,7 +1408,7 @@ EVAL(TOK,CONF,CTX,OUT,ERR)
 	. . S IND=$$TOKGET(TN,I,"indent")
 	. . I IND'="" D
 	. . . K TMPTARR M TMPTARR=PTOKS(PTID)
-	. . . D INDENTPTOK^MIOTPL2(.TMPTARR,IND)
+	. . . D INDENTBTOK^MIOTPL2(.TMPTARR,IND)
 	. . . K PTOKS(PTID) M PTOKS(PTID)=TMPTARR K TMPTARR
 	. . . S PMAX=$$TOKENDR^MIOTPL2("PTOKS("_PTID_")")  ; recompute after rewrite	
 	. . D PUSHFRAME^MIOTPL2(.FSP,.F,1,PMAX,CTSP,$G(F(FSP,"mode")),$G(F(FSP,"capRef")),"PTOKS("_PTID_")")
@@ -1399,7 +1429,7 @@ EVAL(TOK,CONF,CTX,OUT,ERR)
 	. . ;
 	. . ; Fast path: no indent handling needed
 	. . ; Render-time fallback: if IND wasn't captured by standalone trimming,
-	. . ; detect "standalone block placeholder" pattern and synthesize indentation + newline-trim.
+	. . ; detect "standalone block placeholder" pattern and synthesize indentation + newline-trim.;
 	. . I IND="" D
 	. . . N PV,P,IND2,OK,J,TV,NV
 	. . . S IND2="",OK=1
@@ -1418,7 +1448,7 @@ EVAL(TOK,CONF,CTX,OUT,ERR)
 	. . . . F J=I+1:1:MI-1 D  Q:'OK
 	. . . . . S TV=$$TOKGET(TN,J,"t")
 	. . . . . I TV'="text" S OK=0 Q
-	. . . . . I '$$ALLWSIND($$TOKGET(TN,J,"v")) S OK=0 Q
+	. . . . . I '$$ALLWSNL($$TOKGET(TN,J,"v")) S OK=0 Q
 	. . . ; next token after secE must start with optional ws then a newline (so the tag-line is standalone)
 	. . . I OK,(MI<END),$$TOKGET(TN,MI+1,"t")="text" D
 	. . . . S NV=$$TOKGET(TN,MI+1,"v")
@@ -1429,7 +1459,7 @@ EVAL(TOK,CONF,CTX,OUT,ERR)
 	. . . . ; remove the indentation already emitted from OUT (it came from the parent template text)
 	. . . . I $L(OUT)>=$L(IND2),$E(OUT,$L(OUT)-$L(IND2)+1,$L(OUT))=IND2 S OUT=$E(OUT,1,$L(OUT)-$L(IND2))
 	. . . . ; on the next text token, trim leading indentation + ONE newline (standalone rule)
-	. . . . S F(FSP,"cutnx")="IND"
+	. . . . S F(FSP,"cutnx")="NX"
 	. . ; --- end fallback ---
 	. . I IND="" D  Q  ; (no indent path)
 	. . . I OVIDX>0,$D(OVT(OVIDX,BNAME)) D  Q
@@ -1651,6 +1681,39 @@ INDENTPTOK(TOK,IND)
 	. . ; non-text token is not a line break by itself
 	. . S LS=0
 	;
+	K TOK M TOK=TMP
+	Q
+	;
+; =============================================================================
+; INDENTBTOK(.TOK,IND)
+; Block-only indenter used for inheritance blocks.;
+; Diff vs INDENTPTOK:
+;  - Preserves line-start state across non-text tokens
+;  - Uses AT returned by INDTXT (authoritative) to set LS
+; This ensures embedded newlines inside a single text token indent the next line.;
+; =============================================================================
+INDENTBTOK(TOK,IND)
+	N TMP,MAX,I,NEWN,LS,AT,TYP,V,S
+	S IND=$G(IND) Q:IND=""
+	K TMP S S=""
+	F  S S=$O(TOK(S)) Q:S=""  I 'S?1.N M TMP(S)=TOK(S)
+	S MAX=$$NUMMAX(.TOK)
+	S NEWN=0,LS=1,AT=1
+	F I=1:1:MAX D
+	. S TYP=$G(TOK(I,"t"))
+	. I LS,(TYP'="text") D
+	. . S NEWN=NEWN+1
+	. . S TMP(NEWN,"t")="text",TMP(NEWN,"v")=IND
+	. . S LS=0,AT=0
+	. S NEWN=NEWN+1 M TMP(NEWN)=TOK(I)
+	. I TYP="text" D
+	. . S V=$G(TMP(NEWN,"v"))
+	. . S AT=LS
+	. . S TMP(NEWN,"v")=$$INDTXT(V,IND,.AT)
+	. . S LS=AT
+	. E  D
+	. . ; preserve LS across tags; they do not create line breaks
+	. . Q
 	K TOK M TOK=TMP
 	Q
 ADDCOMM(TOK,N)
@@ -2165,6 +2228,70 @@ TOKNODE(TN,IDX)
 	I TN["(" Q $E(TN,1,$L(TN)-1)_","_IDX_")"
 	Q TN_"("_IDX_")"
 	;
+COMMPREF(A,B)
+	; Return common prefix of A and B
+	N I,MAX,OUT
+	S A=$G(A),B=$G(B)
+	S MAX=$S($L(A)<$L(B):$L(A),1:$L(B))
+	S OUT=""
+	F I=1:1:MAX Q:$E(A,I)'=$E(B,I)  S OUT=OUT_$E(A,I)
+	Q OUT
+	;
+BLKDEFIND(TOK)
+	; Determine common leading indentation (spaces/tabs) across non-blank lines
+	; in a block override token stream. Only considers template text.;
+	N MAX,I,TYP,V,POS,CH,LS,LINE,IND,INIT
+	S MAX=$$NUMMAX^MIOTPL2(.TOK)
+	S LS=1,IND="",INIT=0,LINE=""
+	F I=1:1:MAX D
+	. S TYP=$G(TOK(I,"t")) Q:TYP=""
+	. I TYP'="text" Q  ; only template text contributes
+	. S V=$G(TOK(I,"v"))
+	. S POS=1
+	. F  Q:POS>$L(V)  D
+	. . S CH=$E(V,POS),POS=POS+1
+	. . I LS D  Q
+	. . . I CH=$C(10)!(CH=$C(13)) Q  ; blank line, stay LS=1
+	. . . I CH=" "!(CH=$C(9)) S LINE=LINE_CH Q  ; building leading ws
+	. . . ; first non-ws content char at line start => commit LINE as indent candidate
+	. . . I 'INIT S IND=LINE,INIT=1
+	. . . E  S IND=$$COMMPREF^MIOTPL2(IND,LINE)
+	. . . S LINE="",LS=0
+	. . I CH=$C(10) S LS=1,LINE="" Q
+	. . I CH=$C(13) S LS=1,LINE="" Q
+	Q $G(IND)
+	;
+BLKUNPTOK(TOK,IND)
+	; Remove IND from the start of each template line in TEXT tokens.;
+	N MAX,I,TYP,V,AT
+	S IND=$G(IND) Q:IND=""
+	S MAX=$$NUMMAX^MIOTPL2(.TOK)
+	S AT=1
+	F I=1:1:MAX D
+	. S TYP=$G(TOK(I,"t")) Q:TYP=""
+	. I TYP="text" D
+	. . S V=$G(TOK(I,"v"))
+	. . S TOK(I,"v")=$$BLKUNDTXT^MIOTPL2(V,IND,.AT)
+	. E  D
+	. . ; non-text does not change line-start state
+	. . Q
+	Q
+	;
+BLKUNDTXT(V,IND,AT)
+	; Remove IND at template line starts within a text chunk.;
+	N OUT,I,CH,IL,LS
+	S OUT="",IL=$L(IND),LS=+$G(AT)
+	F I=1:1:$L($G(V)) D
+	. S CH=$E(V,I)
+	. I LS,IL>0,$E(V,I,I+IL-1)=IND D  S I=I+IL-1 Q
+	. . ; removed indent; still at line start until non-newline char processed
+	. . S LS=0
+	. I CH=$C(10) S OUT=OUT_CH,LS=1 Q
+	. I CH=$C(13) S OUT=OUT_CH,LS=1 Q
+	. S OUT=OUT_CH,LS=0
+	S AT=LS
+	Q OUT
+	;
 COLLOVR(TN,FROM,TO,OVIDX,OVT)
 	; Collect block overrides from a child template body (inside a parent tag).;
 	; Stores override token ranges into OVT(OVIDX,blockName,1..n,*)
@@ -2184,6 +2311,13 @@ COLLOVR(TN,FROM,TO,OVIDX,OVT)
 	. . S N=N+1
 	. . S REF=$$TOKNODE^MIOTPL2(TN,J)
 	. . M OVT(OVIDX,BNAME,N)=@REF
+	. ; definition-site unindent for overrides (inheritance block semantics)
+	. ; This is done at capture-time to avoid render-time token edge cases.;
+	. N TMP,DIND
+	. K TMP M TMP=OVT(OVIDX,BNAME)
+	. S DIND=$$BLKDEFIND^MIOTPL2(.TMP)
+	. I DIND'="" D BLKUNPTOK^MIOTPL2(.TMP,DIND)
+	. K OVT(OVIDX,BNAME) M OVT(OVIDX,BNAME)=TMP K TMP
 	Q
 	;
 QSTR(S)
@@ -2246,5 +2380,6 @@ LAM1(REF,RAW,OD,CD,CONF,CST,CTSP,ERR)
 	S TXT=$$CALL1^MIOTPL2(CALL,$G(RAW),.ERR) I $D(ERR) Q ""
 	S VAL=$$LAMRENDER^MIOTPL2(TXT,$G(OD,"{{"),$G(CD,"}}"),.CONF,.CST,CTSP,.ERR) I $D(ERR) Q ""
 	Q VAL
+	;
 	;
 	;
