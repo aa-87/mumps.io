@@ -306,6 +306,9 @@ start
 	D START(.CONF)
 	Q
 START(CONF)
+	I '$D(CONF("templates","streamFiles")) S CONF("templates","streamFiles")=0
+	I '$D(CONF("templates","streamFallback")) S CONF("templates","streamFallback")=1
+	I '$D(CONF("templates","fileChunk")) S CONF("templates","fileChunk")=32768
 	NEW EN
 	;DO START^MIOTPLW(.CONF)
 	SET EN=$S($GET(CONF("templates","precompileEnabled"))="true":1,1:+$GET(CONF("templates","precompileEnabled")))
@@ -412,6 +415,16 @@ GETTOK(NAME,CONF,TOK,ERR)
 	D GETTOKFP(FP,.CONF,.TOK,.ERR)
 	;I $$GETTOKFP^MIOTPL(NAME,.CONF,.TOK,.ERR)
 	Q
+GETTOKREF(NAME,CONF,TOKREF,PMAX,ERR)
+	NEW FP,DUM
+	K ERR
+	S TOKREF="",PMAX=0
+	S FP=$$NAME2FP^MIOTPL2(NAME,.CONF,.ERR) Q:$D(ERR)
+	; Ensure cached tokens exist, but do NOT MERGE to local arrays
+	D GETTOKFP^MIOTPL2(FP,.CONF,.DUM,.ERR,"REF") Q:$D(ERR)
+	S TOKREF=$NA(^MIO("TPL","CACHE",FP,"TOK"))
+	S PMAX=$$TOKENDR^MIOTPL2(TOKREF)
+	Q
 ; =============================================================================
 ; GETTOKFP(FP,CONF,TOK,ERR)
 ; Compile template by file path.;k
@@ -419,21 +432,16 @@ GETTOK(NAME,CONF,TOK,ERR)
 ; - Stores tokens under ^MIO("TPL","CACHE",FP,"TOK",...)
 ; - Respects CONF("templates","devWatchEnabled")
 ; =============================================================================
-GETTOKFP(FP,CONF,TOK,ERR) ;
+GETTOKFP(FP,CONF,TOK,ERR,OPT);
 	; Load and compile a template by full path.;
-	KILL TOK SET ERR=""
-	NEW CH,WH,DEVW,OK,TXT,H,STREAM,FB
-	SET DEVW=+$GET(CONF("templates","devWatchEnabled"))
-	SET STREAM=+$GET(CONF("templates","streamFiles"))
-	SET FB=+$GET(CONF("templates","streamFallback"))
+	 K ERR K TOK
+	NEW CH,WH,OK,TXT,H,STREAM,FB
+	S STREAM=$$BOOL($G(CONF("templates","streamFiles")))
+	S FB=$$BOOL($G(CONF("templates","streamFallback")))
+	I 'STREAM,'FB S FB=1  ; safe default if user set neither sanely
 	; If enabled, use streaming file load -> COMPREF to avoid MAXSTRING.;
-	IF STREAM DO GETTOKFPSTR(FP,.CONF,.TOK,.ERR) QUIT
+	IF STREAM DO GETTOKFPSTR(FP,.CONF,.TOK,.ERR,$G(OPT)) QUIT
 	SET CH=$GET(^MIO("TPL","CACHE",FP,"H"))
-	IF DEVW,CH'="" DO  IF $DATA(^MIO("TPL","CACHE",FP,"TOK",1)) DO  QUIT
-	. SET WH=$GET(^MIO("TPL","FS",FP,"H"))
-	. IF WH'="",WH=CH DO  QUIT
-	. . MERGE TOK=^MIO("TPL","CACHE",FP,"TOK")
-	; Fallback: read + hash (scalar)
 	SET OK=$$READFILE(FP,.TXT,.ERR)
 	IF 'OK DO  QUIT
 	. ; If the file is too large (or caller allows), fallback to streaming.;
@@ -442,17 +450,25 @@ GETTOKFP(FP,CONF,TOK,ERR) ;
 	. QUIT
 	SET H=$$H32(TXT)
 	IF CH'="",CH=H,$DATA(^MIO("TPL","CACHE",FP,"TOK",1)) DO  QUIT
-	. MERGE TOK=^MIO("TPL","CACHE",FP,"TOK")
+	. S ^MIO("TPL","CACHE",FP,"ts")=$H
+	. I $G(OPT)'="REF" M TOK=^MIO("TPL","CACHE",FP,"TOK")
 	; Compile (scalar)
 	NEW TMP KILL TMP
 	DO PARSE(TXT,.TMP,.ERR) QUIT:$D(ERR)
 	DO LINKSECS(.TMP,.ERR) QUIT:$D(ERR)
-	KILL ^MIO("TPL","CACHE",FP)
-	SET ^MIO("TPL","CACHE",FP,"H")=H
-	MERGE ^MIO("TPL","CACHE",FP,"TOK")=TMP
-	MERGE TOK=TMP
-	QUIT
-	;
+	;KILL ^MIO("TPL","CACHE",FP)
+	;SET ^MIO("TPL","CACHE",FP,"H")=H
+	;MERGE ^MIO("TPL","CACHE",FP,"TOK")=TMP
+	K ^MIO("TPL","CACHE",FP)
+	S ^MIO("TPL","CACHE",FP,"ts")=$H
+	S ^MIO("TPL","CACHE",FP,"H")=H
+	M ^MIO("TPL","CACHE",FP,"TOK")=TMP
+	I $G(OPT)="REF" K TOK
+	E  MERGE TOK=TMP
+	Q
+BOOL(X)
+	N L S L=$ZCONVERT($G(X),"L")
+	Q $S(X=1:1,X="1":1,L="true":1,L="yes":1,1:0)
 	;
 ; =============================================================================
 ; GETTOKFPSTR(FP,CONF,TOK,ERR)
@@ -464,19 +480,15 @@ GETTOKFP(FP,CONF,TOK,ERR) ;
 ; - Enable with CONF("templates","streamFiles")=1
 ; - Or set CONF("templates","streamFallback")=1 to auto-fallback when READFILE hits TPL_TOOLARGE
 ; =============================================================================
-GETTOKFPSTR(FP,CONF,TOK,ERR) ;
-	KILL TOK SET ERR=""
-	NEW CH,WH,DEVW,H,ROOT
+GETTOKFPSTR(FP,CONF,TOK,ERR,OPT) ;
+	K ERR K TOK
+	NEW CH,WH,DEVW,H,ROOT SET ROOT=$NA(TMPBUF("FILE"))
 	SET DEVW=+$GET(CONF("templates","devWatchEnabled"))
 	SET CH=$GET(^MIO("TPL","CACHE",FP,"H"))
-	; Dev-watch fast path: use FS hash if available
-	IF DEVW,CH'="" DO  IF $DATA(^MIO("TPL","CACHE",FP,"TOK",1)) DO  QUIT
-	. SET WH=$GET(^MIO("TPL","FS",FP,"H"))
-	. IF WH'="",WH=CH DO  QUIT
-	. . MERGE TOK=^MIO("TPL","CACHE",FP,"TOK")
+	IF CH'="",CH=H,$DATA(^MIO("TPL","CACHE",FP,"TOK",1)) DO  KILL @ROOT QUIT
+	. I $G(OPT)'="REF" MERGE TOK=^MIO("TPL","CACHE",FP,"TOK")
 	; Read file -> temp global chunks, compute hash
-	SET ROOT=$NA(^TMP($J,"MIOTPL2","FILE"))
-	KILL @ROOT
+	NEW TMPBUF KILL @ROOT
 	DO READFILE2REF(FP,ROOT,.CONF,.H,.ERR) I $D(ERR) KILL @ROOT QUIT
 	; Cache hit after hashing
 	IF CH'="",CH=H,$DATA(^MIO("TPL","CACHE",FP,"TOK",1)) DO  KILL @ROOT QUIT
@@ -489,8 +501,8 @@ GETTOKFPSTR(FP,CONF,TOK,ERR) ;
 	KILL ^MIO("TPL","CACHE",FP)
 	SET ^MIO("TPL","CACHE",FP,"H")=H
 	MERGE ^MIO("TPL","CACHE",FP,"TOK")=TMP
-	MERGE TOK=TMP
-	QUIT
+	I $G(OPT)="REF" K TOK
+	E  MERGE TOK=TMP
 	;
 ; =============================================================================
 ; Internal: LOADTOK(FP,TOK)
@@ -545,9 +557,7 @@ READFILE(FP,TXT,ERR) ;
 	N IO S IO=$PRINCIPAL
 	; Safety limit: 2 MB (adjustable via CONF later if needed).;
 	S MAX=2*1024*1024
-	;I '$$FILEEXISTS(FP) ="" 
-	;S FP="./"_FP
-	;I '$$FILEEXISTS(FP) S ERR("code")="TPL_NOFILE",ERR("msg")="Template file not found: "_FP Q 0
+	 I $$FILEEXISTS(FP)="" S ERR("code")="TPL_NOFILE",ERR("msg")="Template file not found: "_FP Q
 	O FP:(READONLY:EXCEPTION="GOTO RFERR^MIOTPL2":CHSET="M"):2	
 	F  U FP R *LINE Q:$ZEOF  D  Q:('$T!$D(ERR))
 	. ; Keep newlines. Most templates expect them.;
@@ -1416,7 +1426,8 @@ EVAL(TOK,CONF,CTX,OUT,ERR)
 	;Temp Array
 	N TMPTARR
 	; Local storage for partial token arrays
-	N PTID,PTOKS
+	;N PTID,PTOKS
+	N PTCACHE
 	S PTID=0
 	; Block capture buffers keyed by frame#
 	N BCAP
@@ -1464,60 +1475,62 @@ EVAL(TOK,CONF,CTX,OUT,ERR)
 	. S TYP=$$TOKGET(TN,I,"t")
 	. ; TEXT
 	. I TYP="text" D  Q
-	. . D EMIT^MIOTPL2(.FSP,.F,.OUT,$$TOKGET(TN,I,"v"))
+	. . N V,IND,AT
+	. . S V=$$TOKGET(TN,I,"v")
+	. . S IND=$G(F(FSP,"indent"))
+	. . I IND'="" D
+	. . . S AT=+$G(F(FSP,"at"))
+	. . . S V=$$INDTXT^MIOTPL2(V,IND,.AT)
+	. . . S F(FSP,"at")=AT
+	. . D EMIT^MIOTPL2(.FSP,.F,.OUT,V)
 	. . S F(FSP,"i")=I+1
 	. ; VAR
-	. I TYP="var" D  Q
-	. . N KEY,ESC,VAL
+	. I (TYP="var")!(TYP="unesc") D  Q
+	. . N KEY,ESC,VAL,IND,AT
 	. . S KEY=$$TOKGET(TN,I,"k")
 	. . S ESC=+$$TOKGET(TN,I,"e")
 	. . S VAL=$$RESVAL^MIOTPL2(KEY,.CST,CTSP)
 	. . I ESC S VAL=$$ESCHTML^MIOTPL2(VAL)
+	. . S IND=$G(F(FSP,"indent"))
+	. . I IND'="" D
+	. . . S AT=+$G(F(FSP,"at"))
+	. . . I AT,VAL'="" D EMIT^MIOTPL2(.FSP,.F,.OUT,IND) S AT=0
+	. . . S F(FSP,"at")=AT
 	. . D EMIT^MIOTPL2(.FSP,.F,.OUT,VAL)
-	. . S F(FSP,"i")=I+1
-	. I TYP="delim" D  Q
 	. . S F(FSP,"i")=I+1
 	. ; COMMENT (no output)
 	. I TYP="comm" D  Q
 	. . S F(FSP,"i")=I+1
-	. I TYP="part" D  Q
-	. . N PNAME,IND,MODE,CAP,PMAX
-	. . S PNAME=$$TOKGET(TN,I,"k")
-	. . S IND=$$TOKGET(TN,I,"indent")  ; may be ""
-	. . ; advance parent now
+	. ; DELIMITER CHANGE TOKEN (compile-time only, runtime skip)
+	. I TYP="delim" D  Q
 	. . S F(FSP,"i")=I+1
-	. . ; recursion control (SAFE)
-	. . S PACTIVE(PNAME)=+$G(PACTIVE(PNAME))
-	. . I (PACTIVE(PNAME)+1)>PDEPTHMAX S ERR("code")="TPL_PARTIAL_DEPTH",ERR("msg")="Partial recursion depth exceeded: "_PNAME Q
-	. . S PACTIVE(PNAME)=PACTIVE(PNAME)+1
-	. . ; load partial tokens
-	. . S PTID=PTID+1
-	. . K PTOKS(PTID),TMPTARR
-	. . D GETTOK^MIOTPL2(PNAME,.CONF,.TMPTARR,.ERR)
-	. . M PTOKS(PTID)=TMPTARR K TMPTARR
-	. . I $D(ERR) D  I $D(ERR) Q
-	. . . N EC S EC=$G(ERR("code"))
-	. . . I (EC="TPL_NOFILE")!(EC="TPL_IO") D  Q
-	. . . . S PACTIVE(PNAME)=+$G(PACTIVE(PNAME))-1
-	. . . . I PACTIVE(PNAME)'>0 K PACTIVE(PNAME)
-	. . . . K ERR
-	. . ; compute PMAX safely (numeric-only)
-	. . S PMAX=$$TOKENDR^MIOTPL2("PTOKS("_PTID_")")
-	. . I PMAX<1 D  Q
-	. . . S PACTIVE(PNAME)=+$G(PACTIVE(PNAME))-1
-	. . . I PACTIVE(PNAME)'>0 K PACTIVE(PNAME)
-	. . ;
-	. . ; if IND, indent the PARTIAL TOKENS (template newlines only) BEFORE rendering
-	. . I IND'="" D
-	. . . K TMPTARR M TMPTARR=PTOKS(PTID)
-	. . . D INDENTPTOK^MIOTPL2(.TMPTARR,IND)
-	. . . K PTOKS(PTID) M PTOKS(PTID)=TMPTARR K TMPTARR
-	. . . S PMAX=$$TOKENDR^MIOTPL2("PTOKS("_PTID_")")  ; recompute after rewrite
-	. . ;
+	. I TYP="part" D  Q
+	. . N PNAME,IND,PTREF,PMAX,MODE,CAPX
+	. . S PNAME=$$TOKGET(TN,I,"k")
+	. . S IND=$$TOKGET(TN,I,"indent")
+	. . S F(FSP,"i")=I+1
+	. . ; recursion protection
+	. . S PACTIVE(PNAME)=+$G(PACTIVE(PNAME))+1
+	. . I PACTIVE(PNAME)>PDEPTHMAX S ERR("code")="TPL_PARTIAL_DEPTH",ERR("msg")="Partial recursion depth exceeded: "_PNAME Q
+	. . ; per-render cache
+	. . I '$D(PTCACHE(PNAME,"ref")) D
+	. . . D GETTOKREF^MIOTPL2(PNAME,.CONF,.PTREF,.PMAX,.ERR)
+	. . . I $D(ERR) D  Q
+	. . . . I $G(ERR("code"))="TPL_NOFILE" K ERR S PTCACHE(PNAME,"ref")="",PTCACHE(PNAME,"max")=0 Q
+	. . . . ; fatal errors propagate
+	. . . . S PACTIVE(PNAME)=PACTIVE(PNAME)-1 I PACTIVE(PNAME)'>0 K PACTIVE(PNAME)
+	. . . . Q
+	. . . S PTCACHE(PNAME,"ref")=PTREF
+	. . . S PTCACHE(PNAME,"max")=PMAX
+	. . S PTREF=$G(PTCACHE(PNAME,"ref")),PMAX=+$G(PTCACHE(PNAME,"max"))
+	. . I PTREF="" D  Q
+	. . . S PACTIVE(PNAME)=$G(PACTIVE(PNAME))-1 I PACTIVE(PNAME)'>0 K PACTIVE(PNAME)
+	. . ; push partial frame
 	. . S MODE=$G(F(FSP,"mode"))
-	. . S CAP=$G(F(FSP,"capRef"))
-	. . D PUSHFRAME^MIOTPL2(.FSP,.F,1,PMAX,CTSP,MODE,CAP,"PTOKS("_PTID_")")
+	. . S CAPX=$G(F(FSP,"capRef"))
+	. . D PUSHFRAME^MIOTPL2(.FSP,.F,1,PMAX,CTSP,MODE,CAPX,PTREF)
 	. . S F(FSP,"pname")=PNAME
+	. . I IND'="" S F(FSP,"indent")=IND,F(FSP,"at")=1
 	. I TYP="secS" D  Q
 	. . N KEY,INV,MI,NEXT,PARENT
 	. . S PARENT=FSP
@@ -1864,7 +1877,6 @@ POPFR(FSP,F,CST,CTSP,W)
 RENDERANY(IN,CONF,CTX,OUT,ERR)
 	K ERR
 	N TOK
-	S CONF("templates","streamFiles")=1
 	I $$ISREF^MIOTPL2($G(IN)) D  Q
 	. D COMPREF^MIOTPL2($G(IN),.TOK,.ERR) Q:$D(ERR)
 	. D EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
