@@ -422,28 +422,76 @@ GETTOK(NAME,CONF,TOK,ERR)
 GETTOKFP(FP,CONF,TOK,ERR) ;
 	; Load and compile a template by full path.;
 	KILL TOK SET ERR=""
-	NEW CH,WH,DEVW,OK,TXT,H
+	NEW CH,WH,DEVW,OK,TXT,H,STREAM,FB
 	SET DEVW=+$GET(CONF("templates","devWatchEnabled"))
-	;SET DEVW=1
+	SET STREAM=+$GET(CONF("templates","streamFiles"))
+	SET FB=+$GET(CONF("templates","streamFallback"))
+	; If enabled, use streaming file load -> COMPREF to avoid MAXSTRING.;
+	IF STREAM DO GETTOKFPSTR(FP,.CONF,.TOK,.ERR) QUIT
 	SET CH=$GET(^MIO("TPL","CACHE",FP,"H"))
 	IF DEVW,CH'="" DO  IF $DATA(^MIO("TPL","CACHE",FP,"TOK",1)) DO  QUIT
 	. SET WH=$GET(^MIO("TPL","FS",FP,"H"))
 	. IF WH'="",WH=CH DO  QUIT
 	. . MERGE TOK=^MIO("TPL","CACHE",FP,"TOK")
-	; Fallback: read + hash
-	SET OK=$$READFILE(FP,.TXT,.ERR) IF 'OK QUIT
+	; Fallback: read + hash (scalar)
+	SET OK=$$READFILE(FP,.TXT,.ERR)
+	IF 'OK DO  QUIT
+	. ; If the file is too large (or caller allows), fallback to streaming.;
+	. IF $GET(ERR("code"))="TPL_TOOLARGE"!(FB) DO  QUIT
+	. . DO GETTOKFPSTR(FP,.CONF,.TOK,.ERR)
+	. QUIT
 	SET H=$$H32(TXT)
 	IF CH'="",CH=H,$DATA(^MIO("TPL","CACHE",FP,"TOK",1)) DO  QUIT
 	. MERGE TOK=^MIO("TPL","CACHE",FP,"TOK")
-	; Compile
+	; Compile (scalar)
 	NEW TMP KILL TMP
-	D PARSE(TXT,.TMP,.ERR) Q:$D(ERR)
-	D LINKSECS(.TMP,.ERR) Q:$D(ERR)
+	DO PARSE(TXT,.TMP,.ERR) QUIT:$D(ERR)
+	DO LINKSECS(.TMP,.ERR) QUIT:$D(ERR)
 	KILL ^MIO("TPL","CACHE",FP)
 	SET ^MIO("TPL","CACHE",FP,"H")=H
 	MERGE ^MIO("TPL","CACHE",FP,"TOK")=TMP
 	MERGE TOK=TMP
 	QUIT
+	;
+	;
+; =============================================================================
+; GETTOKFPSTR(FP,CONF,TOK,ERR)
+; Streaming template loader:
+; - Reads template file in chunks into a temp global ^TMP($J,"MIOTPL2","FILE",n)
+; - Compiles via COMPREF (so no MAXSTRING limits)
+; - Computes hash while reading (for cache identity)
+; Notes:
+; - Enable with CONF("templates","streamFiles")=1
+; - Or set CONF("templates","streamFallback")=1 to auto-fallback when READFILE hits TPL_TOOLARGE
+; =============================================================================
+GETTOKFPSTR(FP,CONF,TOK,ERR) ;
+	KILL TOK SET ERR=""
+	NEW CH,WH,DEVW,H,ROOT
+	SET DEVW=+$GET(CONF("templates","devWatchEnabled"))
+	SET CH=$GET(^MIO("TPL","CACHE",FP,"H"))
+	; Dev-watch fast path: use FS hash if available
+	IF DEVW,CH'="" DO  IF $DATA(^MIO("TPL","CACHE",FP,"TOK",1)) DO  QUIT
+	. SET WH=$GET(^MIO("TPL","FS",FP,"H"))
+	. IF WH'="",WH=CH DO  QUIT
+	. . MERGE TOK=^MIO("TPL","CACHE",FP,"TOK")
+	; Read file -> temp global chunks, compute hash
+	SET ROOT=$NA(^TMP($J,"MIOTPL2","FILE"))
+	KILL @ROOT
+	DO READFILE2REF(FP,ROOT,.CONF,.H,.ERR) I $D(ERR) KILL @ROOT QUIT
+	; Cache hit after hashing
+	IF CH'="",CH=H,$DATA(^MIO("TPL","CACHE",FP,"TOK",1)) DO  KILL @ROOT QUIT
+	. MERGE TOK=^MIO("TPL","CACHE",FP,"TOK")
+	; Compile via COMPREF
+	NEW TMP KILL TMP
+	DO COMPREF(ROOT,.TMP,.ERR)
+	KILL @ROOT
+	QUIT:$D(ERR)
+	KILL ^MIO("TPL","CACHE",FP)
+	SET ^MIO("TPL","CACHE",FP,"H")=H
+	MERGE ^MIO("TPL","CACHE",FP,"TOK")=TMP
+	MERGE TOK=TMP
+	QUIT
+	;
 ; =============================================================================
 ; Internal: LOADTOK(FP,TOK)
 ; =============================================================================
@@ -517,6 +565,64 @@ RFERR ;
 	. S $ZSTATUS="",$EC=""
 	S ERR("code")="TPL_IO",ERR("msg")="I/O error reading template: "_FP_" $zstatus:"_$zstatus
 	Q ""
+	;O FP:(READONLY:EXCEPTION="GOTO RFERR^MIOTPL2":CHSET="M"):2	
+	;F  U FP R *LINE Q:$ZEOF  D  Q:('$T!$D(ERR))
+; =============================================================================
+; READFILE2REF(FP,ROOT,CONF,.H,.ERR)
+; Streaming file read into ROOT(n)=chunk (local or global).;
+; - Does NOT impose a MAXSTRING limit (chunks are bounded).;
+; - Computes FNV-1a 32-bit hash incrementally into H (same as H32()).;
+; - Intended for template/partial loading to feed COMPREF().;
+; CONF knobs:
+;   CONF("templates","fileChunk")   ; bytes per read (default 32768)
+; =============================================================================
+READFILE2REF(FP,ROOT,CONF,H,ERR) ;
+	K ERR
+	N IO,CHSZ,BUF,N,PREV,STRIP
+	S IO=$PRINCIPAL
+	S CHSZ=+$G(CONF("templates","fileChunk"))
+	I CHSZ<1024 S CHSZ=32768
+	; Match legacy READFILE() behavior by default: strip one trailing LF, if present.;
+	S H=2166136261
+	S N=0,PREV=""
+	O FP:(READONLY:EXCEPTION="GOTO RF2ERR^MIOTPL2":CHSET="M"):2
+	F  U FP R *BUF  D  Q:$ZEOF
+	. I PREV'="",$L(PREV)>=CHSZ D
+	. . S N=N+1
+	. . S @($$APPREF^MIOTPL2(ROOT,N))=PREV
+	. . S H=$$H32UPD^MIOTPL2(H,PREV)
+	. . S PREV=""
+	. E  S PREV=PREV_$C(BUF)
+	C FP U IO
+	I PREV'="" D
+	. S N=N+1
+	. S @($$APPREF^MIOTPL2(ROOT,N))=PREV
+	. S H=$$H32UPD^MIOTPL2(H,PREV)
+	Q
+	;
+RF2ERR ;
+	C FP
+	I $zstatus["%YDB-E-IOEOF" D  K ERR Q
+	. I PREV'="" D
+	. . S N=N+1
+	. . S @($$APPREF^MIOTPL2(ROOT,N))=PREV
+	. . S H=$$H32UPD^MIOTPL2(H,PREV)
+	. . S $ZSTATUS="",$EC="",PREV=""
+	S ERR("code")="TPL_IO",ERR("msg")="I/O error reading template: "_FP_" $zstatus:"_$ZSTATUS
+	Q
+	;
+; =============================================================================
+; H32UPD(H,TEXT)
+; Incremental update for FNV-1a 32-bit hash (same as H32()).;
+; =============================================================================
+H32UPD(H,TEXT)
+	N I,C
+	F I=1:1:$L(TEXT) D
+	. S C=$A(TEXT,I)
+	. S H=$$XOR32^MIOTPL2(H,C)
+	. S H=$$MUL32^MIOTPL2(H,16777619)
+	Q H
+	;
 ; =============================================================================
 ; Internal: FILEEXISTS(FP)
 ; Portable-ish file existence check for GT.M/YottaDB.;
@@ -548,12 +654,13 @@ COMPILE(TEXT,TOK,ERR) ;
 	;
 	; =============================================================================
 ; COMPREF(TREF,.TOK,.ERR)
-; Compile template from a global/local array reference ROOT(sub)=chunk.
+; Compile template from a global/local array reference ROOT(sub)=chunk.;
 ; - Normalizes CRLF/CR -> LF while parsing (standalone logic is correct)
 ; - Sets TOK("meta","crlf") if CRLF was detected anywhere (including boundary pairs)
 ; =============================================================================
 COMPREF(TREF,TOK,ERR)
 	N ROOT,CRLF
+	;	
 	D REFROOT(TREF,.ROOT,.ERR) I $D(ERR) Q
 	D PARSEREF(ROOT,.TOK,.CRLF,.ERR) I $D(ERR) Q
 	S TOK("meta","crlf")=CRLF
@@ -563,9 +670,10 @@ COMPREF(TREF,TOK,ERR)
 	;
 ; =============================================================================
 ; COMPILEA(.ARR,.TOK,.ERR)
-; Compile template from a local array passed by reference ARR(sub)=chunk.
+; Compile template from a local array passed by reference ARR(sub)=chunk.;
 ; =============================================================================
-COMPILEA(ARR,TOK,ERR)
+COMPILEA(ARR,TOK,ERR)  
+	S CONF("templates","streamFiles")=1
 	N ROOT,CRLF
 	S ROOT=$NA(ARR)
 	D PARSEREF(ROOT,.TOK,.CRLF,.ERR) I $D(ERR) Q
@@ -591,7 +699,7 @@ REFROOT(TREF,ROOT,ERR)
 	;
 ; =============================================================================
 ; PARSEREF(ROOT,.TOK,.CRLF,.ERR)
-; Streaming parse from ROOT(sub)=chunk (subscript order).
+; Streaming parse from ROOT(sub)=chunk (subscript order).;
 ; =============================================================================
 PARSEREF(ROOT,TOK,CRLF,ERR)
 	K ERR K TOK
@@ -618,7 +726,7 @@ PARSEREF(ROOT,TOK,CRLF,ERR)
 	;
 ; =============================================================================
 ; NORMNLCH(.CHUNK,.P,.CRLF)
-; Normalize CRLF/CR -> LF across chunk boundaries.
+; Normalize CRLF/CR -> LF across chunk boundaries.;
 ; =============================================================================
 NORMNLCH(CHUNK,P,CRLF)
 	N S,OUT,I,PC
@@ -646,7 +754,7 @@ NORMNLCH(CHUNK,P,CRLF)
 	;
 ; =============================================================================
 ; PARSEBUF(.P,.TOK,.N,.ERR,FINAL)
-; Incremental Mustache parser over P("buf") using delimiters P("od")/P("cd").
+; Incremental Mustache parser over P("buf") using delimiters P("od")/P("cd").;
 ; =============================================================================
 PARSEBUF(P,TOK,N,ERR,FINAL)
 	N BUF,OD,CD,POS,L,OPEN,PRE,TRI,END3,CLOSE,INSIDE,RAW
@@ -663,13 +771,13 @@ PARSEBUF(P,TOK,N,ERR,FINAL)
 	. . . S BUF="",DONE=1 Q
 	. . S TAIL=$L(OD)-1 I TAIL<0 S TAIL=0
 	. . ; No opener found. Emit everything except the last (len(OD)-1) chars,
-	. . ; which could be the start of an opener spanning chunks.
+	. . ; which could be the start of an opener spanning chunks.;
 	. . I TAIL=0 D  S BUF="",DONE=1 Q
 	. . . S TXT=$E(BUF,POS,L) I TXT'="" D ADDTXT(.TOK,.N,TXT)
 	. . S SAFE=L-TAIL  ; last position we can safely emit through
 		. . ; If the remaining buffer is shorter than the tail length, keep ONLY the
 		. . ; remaining characters (from POS..end).  Otherwise we'd re-parse already
-		. . ; emitted text on the next chunk, causing duplicated output.
+		. . ; emitted text on the next chunk, causing duplicated output.;
 		. . I SAFE<POS S BUF=$E(BUF,POS,L),DONE=1 Q
 	. . S TXT=$E(BUF,POS,SAFE) I TXT'="" D ADDTXT(.TOK,.N,TXT)
 	. . S BUF=$E(BUF,SAFE+1,L)
@@ -1507,10 +1615,10 @@ OUTFLUSH(W)
 	S @($$APPREF^MIOTPL2(ROOT,N))=BUF
 	S W("buf")=""
 	Q
-
+	;
 ; =============================================================================
 ; EVALREF(TOK,CONF,CTX,OREF,ERR)
-; Render into OREF(n) chunks (GB-safe output).
+; Render into OREF(n) chunks (GB-safe output).;
 ; =============================================================================
 EVALREF(TOK,CONF,CTX,OREF,ERR)
 	K ERR
@@ -1692,10 +1800,10 @@ EVALREF(TOK,CONF,CTX,OREF,ERR)
 	D OUTFLUSH^MIOTPL2(.W)
 	Q:$Q $S($D(ERR):0,1:1)
 	Q
-
+	;
 ; =============================================================================
 ; EMITR(FSP,F,W,VAL)
-; Emit to capture buffer or output writer depending on frame mode.
+; Emit to capture buffer or output writer depending on frame mode.;
 ; =============================================================================
 EMITR(FSP,F,W,VAL)
 	N MODE
@@ -1705,10 +1813,10 @@ EMITR(FSP,F,W,VAL)
 	. S @CR=$G(@CR)_$G(VAL)
 	D OUTAPP^MIOTPL2(.W,VAL)
 	Q
-
+	;
 ; =============================================================================
 ; POPFR(FSP,F,CST,CTSP,W)
-; Like POPF, but emits via OUTAPP into writer W when needed.
+; Like POPF, but emits via OUTAPP into writer W when needed.;
 ; (Uses CTX, PACTIVE in outer scope)
 ; =============================================================================
 POPFR(FSP,F,CST,CTSP,W)
@@ -1747,7 +1855,7 @@ POPFR(FSP,F,CST,CTSP,W)
 	I FSP>0 S CTSP=+$G(F(FSP,"ctxTop"))
 	Q
 	;
-
+	;
 ; =============================================================================
 ; RENDERANY(IN,CONF,CTX,OUT,ERR)
 ; - IN may be scalar template text OR a reference-string root to chunks
@@ -1756,6 +1864,7 @@ POPFR(FSP,F,CST,CTSP,W)
 RENDERANY(IN,CONF,CTX,OUT,ERR)
 	K ERR
 	N TOK
+	S CONF("templates","streamFiles")=1
 	I $$ISREF^MIOTPL2($G(IN)) D  Q
 	. D COMPREF^MIOTPL2($G(IN),.TOK,.ERR) Q:$D(ERR)
 	. D EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
@@ -1770,6 +1879,7 @@ RENDERANY(IN,CONF,CTX,OUT,ERR)
 RENDERREF(IN,CONF,CTX,OREF,ERR)
 	K ERR
 	N TOK
+	S CONF("templates","streamFiles")=1
 	I $$ISREF^MIOTPL2($G(IN)) D  Q
 	. D COMPREF^MIOTPL2($G(IN),.TOK,.ERR) Q:$D(ERR)
 	. D EVALREF^MIOTPL2(.TOK,.CONF,.CTX,$G(OREF),.ERR)
@@ -1790,7 +1900,7 @@ ISREF(S)
 	; bare name: treat as ref only if NAME($J) has value/descendants
 	I R?1(1A,1"%")1.AN,$D(@(R_"($J)")) Q 1
 	Q 0
-
+	;
 ; =============================================================================
 ; INDENTPTOK(.TOK,IND)
 ; Indent partial TEMPLATE lines only:

@@ -1590,6 +1590,7 @@ RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,CTX)
 	D EQ^MIOTASSERT(OUT,$G(EXPECTED),"[RENDER]"_DESC)
 	;
 	; --- Reference mode: build input chunks, compile+eval into output chunks
+	;	
 	NEW TOKR,ERRR,INROOT,OUTROOT,CHSZ,L,P,N,OUT2
 	S INROOT=$NA(^TMP($J,"MIOTPLT","IN"))
 	S OUTROOT=$NA(^TMP($J,"MIOTPLT","OUT"))
@@ -1708,3 +1709,4 @@ REPLQ(S) ; replace ' with '\'' for shell single-quote context
 	. S OUT=OUT_$E(S,P,F-2)_"'\''"
 	. S P=F
 	Q OUT
+	;
