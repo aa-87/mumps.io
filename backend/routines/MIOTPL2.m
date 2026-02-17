@@ -1326,6 +1326,26 @@ EVAL(TOK,CONF,CTX,OUT,ERR)
 	S F(1,"mode")="emit"
 	S F(1,"capRef")=""
 	S F(1,"tokName")="TOK"
+	; --- Mode / output strategy ----------------------------------------------
+	; CONF("mode") = "perf" (default), "big" (huge output), "min" (low-mem output)
+	; In big/min modes, output is chunked into a global:
+	;   CONF("outRef")    = global root (optional; if omitted we allocate a unique ^TMP root)
+	;   CONF("outChunk")  = chunk size in bytes (default 32768)
+	;   CONF("outReturn") = 1 to also return scalar OUT (default 1, useful for tests)
+	;   CONF("outKeep")   = 1 to keep the global after return (default 0 when outReturn=1)
+	N MODE,OUTREF,CHUNK,RETSCAL,KEEPG
+	S MODE=$G(CONF("mode"))
+	I MODE="" S MODE=$G(^TMP($J,"MIOTPL2","MODE"))
+	I MODE="" S MODE="perf"
+	S F(1,"outMode")="s"
+	I (MODE="big")!(MODE="min") D
+	. S OUTREF=$G(CONF("outRef"))
+	. I OUTREF="" S OUTREF=$$OUTALLOC^MIOTPL2()
+	. S CHUNK=+$G(CONF("outChunk")) I CHUNK<1024 S CHUNK=32768
+	. S RETSCAL=$S($D(CONF("outReturn")):+CONF("outReturn"),1:1)
+	. S KEEPG=$S($D(CONF("outKeep")):+CONF("outKeep"),1:0)
+	. S F(1,"outMode")="g",F(1,"outRef")=OUTREF,F(1,"outChunk")=CHUNK,F(1,"outReturn")=RETSCAL,F(1,"outKeep")=KEEPG
+	. D OUTINIT^MIOTPL2(.F)
 	S OUT=""
 	; Delimiter state (used for lambdas re-rendering)
 	N DOD,DCD S DOD="{{",DCD="}}"
@@ -1457,7 +1477,7 @@ EVAL(TOK,CONF,CTX,OUT,ERR)
 	. . . I OK D
 	. . . . S IND=IND2
 	. . . . ; remove the indentation already emitted from OUT (it came from the parent template text)
-	. . . . I $L(OUT)>=$L(IND2),$E(OUT,$L(OUT)-$L(IND2)+1,$L(OUT))=IND2 S OUT=$E(OUT,1,$L(OUT)-$L(IND2))
+	. . . . I IND2'="",$$OUTTAIL(.F,.OUT,$L(IND2))=IND2 D OUTCHOP(.F,.OUT,$L(IND2))
 	. . . . ; on the next text token, trim leading indentation + ONE newline (standalone rule)
 	. . . . S F(FSP,"cutnx")="NX"
 	. . ; --- end fallback ---
@@ -1626,6 +1646,12 @@ EVAL(TOK,CONF,CTX,OUT,ERR)
 	. ; SECTION END-
 	. I TYP="secE" D  Q
 	. . S F(FSP,"i")=I+1
+	; finalize chunked output (if enabled)
+	I $G(F(1,"outMode"))="g" D
+	. D OUTFLUSH^MIOTPL2(.F)
+	. I $G(F(1,"outReturn")) S OUT=$$OUTJOIN^MIOTPL2($G(F(1,"outRef")))
+	. E  S OUT=$G(F(1,"outRef"))
+	. I $G(F(1,"outReturn")),'$G(F(1,"outKeep")) K @($G(F(1,"outRef")))
 	I $G(TOK("meta","crlf")) S OUT=$$LF2CRLF^MIOTPL2(OUT)
 	Q:$Q $S($D(ERR):0,1:1)
 	Q
@@ -1767,16 +1793,11 @@ TOKGET(TN,I,FIELD)
 ; =============================================================================
 	;
 TOKENDR(TOKR)
-	; Return last numeric token index in token root TOKR.;
-	; TOKR may be "TOK" or "PTOKS(3)" or "OVT(1,\"name\")", etc.;
-	N I,MAX,BASE
-	S MAX=0,I=0
-	I TOKR["(" D  Q MAX
-	. S BASE=$E(TOKR,1,$L(TOKR)-1) ; drop trailing ')'
-	. F  S I=$O(@(BASE_","_I_")")) Q:I=""  D
-	. . I I?1.N,I>MAX S MAX=I
-	F  S I=$O(@TOKR@(I)) Q:I=""  D
-	. I I?1.N,I>MAX S MAX=I
+	; Return last numeric token index in token root TOKR.
+	; Safe for mixed subscripts (e.g., TOK("meta",...)) and nested roots (e.g., PTOKS(3)).
+	N I,MAX
+	S MAX=0,I=""
+	F  S I=$O(@TOKR@(I)) Q:I=""  I I?1.N,I>MAX S MAX=I
 	Q MAX
 REPL(s,f,t)
 	i $tr(s,f)=s q s
@@ -1883,6 +1904,7 @@ EMIT(FSP,F,OUT,VAL)
 	I MODE="capture" D  Q
 	. N CR S CR=$G(F(FSP,"capRef")) Q:CR=""
 	. S @CR=$G(@CR)_$G(VAL)
+	I $G(F(1,"outMode"))="g" D OUTAPP^MIOTPL2(.F,$G(VAL)) Q
 	S OUT=$G(OUT)_$G(VAL)
 	Q
 ; =============================================================================
@@ -2383,3 +2405,142 @@ LAM1(REF,RAW,OD,CD,CONF,CST,CTSP,ERR)
 	;
 	;
 	;
+
+	; =============================================================================
+	; Mode helpers: big/min output chunking and convenience entry points
+	; =============================================================================
+
+OUTALLOC()
+	; Allocate a unique ^TMP($J,"MIOTPL2","OUT",N) root for this render.
+	Q $NA(^TMP($J,"MIOTPL2","OUT",$I(^TMP($J,"MIOTPL2","OUTSEQ"))))
+
+OUTINIT(F)
+	; Initialize the chunked output buffer using F(1,"outRef") / "outChunk".
+	N R,CH
+	S R=$G(F(1,"outRef")) Q:R=""
+	S CH=+$G(F(1,"outChunk")) I CH<1024 S CH=32768
+	K @R
+	S F(1,"outN")=0,F(1,"outLen")=0,F(1,"outBuf")=""
+	S @R@(0,"chunks")=0,@R@(0,"len")=0,@R@(0,"chunk")=CH
+	Q
+
+OUTAPP(F,VAL)
+	; Append VAL into the chunked output buffer in F(1,...) and flush to @outRef when needed.
+	N R,CH,BUF,N
+	S R=$G(F(1,"outRef")) Q:R=""
+	S CH=+$G(F(1,"outChunk")) I CH<1024 S CH=32768
+	S BUF=$G(F(1,"outBuf"))_VAL
+	F  Q:$L(BUF)<CH  D
+	. S N=$G(F(1,"outN"))+1,F(1,"outN")=N
+	. S @R@(N)=$E(BUF,1,CH)
+	. S BUF=$E(BUF,CH+1,$L(BUF))
+	S F(1,"outBuf")=BUF
+	S F(1,"outLen")=$G(F(1,"outLen"))+$L(VAL)
+	Q
+
+OUTFLUSH(F)
+	; Flush any remaining buffered output to the global and write metadata.
+	N R,BUF,N
+	S R=$G(F(1,"outRef")) Q:R=""
+	S BUF=$G(F(1,"outBuf"))
+	I BUF'="" D
+	. S N=$G(F(1,"outN"))+1,F(1,"outN")=N
+	. S @R@(N)=BUF
+	. S F(1,"outBuf")=""
+	S @R@(0,"chunks")=$G(F(1,"outN"))
+	S @R@(0,"len")=$G(F(1,"outLen"))
+	Q
+
+OUTJOIN(OUTREF)
+	; Join a chunked output global back into a scalar string.
+	N I,N,OUT
+	S OUT=""
+	S N=+$G(@OUTREF@(0,"chunks"))
+	I N'>0 S N=$O(@OUTREF@(""),-1)
+	F I=1:1:N S OUT=OUT_$G(@OUTREF@(I))
+	Q OUT
+
+; =============================================================================
+; OUTTAIL / OUTCHOP - output stream helpers (scalar and global modes)
+; =============================================================================
+
+OUTTAIL(F,OUT,N) ; Return last N chars from current output (scalar or global mode)
+	N M,R,B,IDX,NEED,TAIL,S
+	S N=+$G(N) I N'>0 Q ""
+	S M=$G(F(1,"outMode"),"s")
+	I M'="g" Q $E($G(OUT),$L($G(OUT))-N+1,$L($G(OUT)))
+	S R=$G(F(1,"outRef")) I R="" S R=$G(OUT)
+	S TAIL=""
+	S B=$G(F(1,"outBuf"))
+	I B'="" D  I $L(TAIL)=N Q TAIL
+	. S NEED=N-$L(TAIL) I NEED'>0 Q
+	. I $L(B)>NEED S TAIL=$E(B,$L(B)-NEED+1,$L(B))_TAIL Q
+	. S TAIL=B_TAIL
+	S IDX=+$G(F(1,"outN"))
+	F  Q:$L(TAIL)'<N  Q:IDX'>0  D
+	. S S=$G(@R@(IDX))
+	. I S'="" D
+	. . S NEED=N-$L(TAIL)
+	. . I $L(S)>NEED S TAIL=$E(S,$L(S)-NEED+1,$L(S))_TAIL Q
+	. . S TAIL=S_TAIL
+	. S IDX=IDX-1
+	Q $E(TAIL,$L(TAIL)-N+1,$L(TAIL))
+
+OUTCHOP(F,OUT,N) ; Remove last N chars from current output (scalar or global mode)
+	N M,R,B,IDX,S,L,RM
+	S N=+$G(N) I N'>0 Q
+	S M=$G(F(1,"outMode"),"s")
+	I M'="g" D  Q
+	. N L0 S L0=$L($G(OUT))
+	. I L0'>N S OUT="" Q
+	. S OUT=$E(OUT,1,L0-N)
+	S R=$G(F(1,"outRef")) I R="" S R=$G(OUT)
+	S RM=N
+	S B=$G(F(1,"outBuf"))
+	I B'="" D
+	. S L=$L(B)
+	. I L>RM S F(1,"outBuf")=$E(B,1,L-RM),RM=0 Q
+	. S F(1,"outBuf")="",RM=RM-L
+	S IDX=+$G(F(1,"outN"))
+	F  Q:RM'>0  Q:IDX'>0  D
+	. S S=$G(@R@(IDX)),L=$L(S)
+	. I L>RM S @R@(IDX)=$E(S,1,L-RM),RM=0 Q
+	. K @R@(IDX) S RM=RM-L,IDX=IDX-1
+	I IDX<+$G(F(1,"outN")) S F(1,"outN")=IDX I $D(@R@(0,"chunks")) S @R@(0,"chunks")=IDX
+	S F(1,"outLen")=$S($G(F(1,"outLen"))>N:$G(F(1,"outLen"))-N,1:0) I $D(@R@(0,"len")) S @R@(0,"len")=F(1,"outLen")
+	Q
+
+
+RENDERSTR(TXT,CONF,CTX,OUT,ERR)
+	; Render a template string directly (scalar-only fast path, no filesystem / caching).
+	N TOK
+	K ERR
+	D COMPILE^MIOTPL2($G(TXT),.TOK,.ERR,$G(CONF("od"),"{{"),$G(CONF("cd"),"}}"))
+	I $D(ERR) S OUT="" Q
+	D EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
+	Q
+
+RENDERBIG(NAME,CONF,CTX,OUTREF,ERR)
+	; Render a named template, but stream output to OUTREF as chunks (OUT returns OUTREF).
+	N OUT
+	S CONF("mode")="big",CONF("outRef")=$G(OUTREF),CONF("outReturn")=0,CONF("outKeep")=1
+	D RENDER^MIOTPL2(NAME,.CONF,.CTX,.OUT,.ERR)
+	Q
+
+RENDERMIN(NAME,CONF,CTX,OUTREF,ERR)
+	; Like RENDERBIG, but intended for lowest memory footprint (currently same output strategy).
+	N OUT
+	S CONF("mode")="min",CONF("outRef")=$G(OUTREF),CONF("outReturn")=0,CONF("outKeep")=1
+	D RENDER^MIOTPL2(NAME,.CONF,.CTX,.OUT,.ERR)
+	Q
+
+MIOTESTMODES
+	; Run MIOTEST^MIOTPL2 once per mode (perf, big, min) without modifying the existing tests.
+	N OLD,MODE
+	S OLD=$G(^TMP($J,"MIOTPL2","MODE"))
+	F MODE="perf","big","min" D
+	. S ^TMP($J,"MIOTPL2","MODE")=MODE
+	. W !,"== MIOTEST mode: ",MODE,!
+	. D MIOTEST^MIOTPL2
+	I OLD="" K ^TMP($J,"MIOTPL2","MODE") E  S ^TMP($J,"MIOTPL2","MODE")=OLD
+	Q
