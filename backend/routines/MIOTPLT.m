@@ -1949,7 +1949,7 @@ TEST162
 	D RMDIR(ROOT)
 	QUIT
 TEST163
-	K TOK NEW HDR S HDR="[TEST163][Intrinsic indentation]"
+	NEW HDR S HDR="[TEST163][Intrinsic indentation]"
 	NEW DESC S DESC=HDR_"[When the block opening tag is standalone, indentation is determined by default content]"
 	;NEW TEMPLATE 
 	S TEMPLATE="{{<parent}}{{$block}}\none\ntwo\n{{/block}}{{/parent}}\n"
@@ -1961,11 +1961,11 @@ TEST163
 	N CONF D SETUPPART(.CONF,.ROOT)
 	N ERR D WRFILE(ROOT_"parent",$$UNESCNL("Hi,\n{{$block}}\n  default\n{{/block}}\n"),.ERR)
 	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
-	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX) ZWR EXPECTED,OUT ZWR TOK
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	D RMDIR(ROOT)
 	QUIT
 TEST164
-	K TOK NEW HDR S HDR="[TEST164][Nested block reindentation]"
+	NEW HDR S HDR="[TEST164][Nested block reindentation]"
 	NEW DESC S DESC=HDR_"[Nested blocks are reindented relative to the surrounding block]"
 	;NEW TEMPLATE 
 	S TEMPLATE="{{<parent}}{{$nested}}\nthree\n{{/nested}}{{/parent}}\n"
@@ -1978,7 +1978,7 @@ TEST164
 	N ERR D WRFILE(ROOT_"parent",$$UNESCNL("{{<grandparent}}{{$block}}\n  one\n  {{$nested}}\n    two\n  {{/nested}}\n{{/block}}{{/grandparent}}\n"),.ERR)
 	N ERR D WRFILE(ROOT_"grandparent",$$UNESCNL("{{$block}}default{{/block}}"),.ERR)
 	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
-	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX) ZWR EXPECTED,OUT ZWR TOK
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	D RMDIR(ROOT)
 	QUIT
 TEST000
