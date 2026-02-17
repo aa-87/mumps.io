@@ -1,5 +1,9 @@
 MIOTPLT
-	D MIOTF200,MIOTF201,MIOTF202,MIOTF203
+	D MIOTF121,MIOTF122,MIOTF123,MIOTF124
+	D MIOTF125,MIOTF126,MIOTF126B,MIOTF127
+	D MIOTF128,MIOTF129,MIOTF130
+	D MIOTF131,MIOTF132,MIOTF133
+	D MIOTF200,MIOTF201,MIOTF202,MIOTF203,MIOTF204,MIOTF205
 	Q
 MIOTF200 ;Interpolation
 	; Interpolation tags are used to integrate dynamic content into the template.;
@@ -146,7 +150,250 @@ MIOTF205 ;Delimiters
 	D TEST123,TEST124,TEST125,TEST126,TEST127,TEST128,TEST129
 	D TEST130,TEST131,TEST132,TEST133,TEST134,TEST135,TEST136
 	D TEST137
-	QUIT 	 		
+	QUIT
+MIOTF121 ; Full suite test 121 - TPL_SECTION_CTA.;
+	NEW TOK,ERR,CONF,CTX,OUT
+	D COMPILE^MIOTPL2("{{#cta}}X{{/cta}}",.TOK,.ERR)
+	DO OK^MIOTASSERT('$D(ERR),"compile")
+	SET CTX("cta")=1
+	DO EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
+	DO OK^MIOTASSERT('$D(ERR),"eval")
+	DO EQ^MIOTASSERT(OUT,"X","section render")
+	QUIT
+MIOTF122 ; Full suite test 122 - TPL_BLOCK_TITLE.;
+	NEW TOK,ERR,CONF,CTX,OUT
+	DO COMPILE^MIOTPL2("{{#block:title}}Hello{{/block:title}}",.TOK,.ERR)
+	DO OK^MIOTASSERT('$D(ERR),"compile")
+	DO EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
+	DO OK^MIOTASSERT('$D(ERR),"eval")
+	DO EQ^MIOTASSERT($GET(CTX("blocks","title")),"Hello","block captured")
+	QUIT
+MIOTF123 ; Full suite test 123 - TPL_DOTTED_LIST.;
+	NEW TOK,ERR,CONF,CTX,OUT
+	SET CTX("cats","items",1)="Core"
+	SET CTX("cats","items",2)="Tools"
+	DO COMPILE^MIOTPL2("{{#cats.items}}{{.}};{{/cats.items}}",.TOK,.ERR)
+	DO OK^MIOTASSERT('$D(ERR),"compile")
+	DO EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
+	DO OK^MIOTASSERT('$D(ERR),"eval")
+	DO EQ^MIOTASSERT(OUT,"Core;Tools;","dotted list") 
+	QUIT
+MIOTF124 ; Full suite test 124 - TPL_PACKAGES_OBJECT.;
+	NEW TOK,ERR,CONF,CTX,OUT
+	SET CTX("packages",1,"slug")="mio-web"
+	SET CTX("packages",1,"name")="Web Server"
+	DO COMPILE^MIOTPL2("{{#packages}}{{slug}}-{{name}};{{/packages}}",.TOK,.ERR)
+	DO OK^MIOTASSERT('$D(ERR),"compile")
+	DO EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
+	DO OK^MIOTASSERT('$D(ERR),"eval")
+	DO EQ^MIOTASSERT(OUT,"mio-web-Web Server;","packages obj")
+	QUIT
+MIOTF125 ; Full suite test 125 - TPL_INVERTED_NORESULTS.;
+	NEW TOK,ERR,CONF,CTX,OUT,RES
+	; Template: show "NONE" only when packages is falsey/empty.;
+	DO COMPILE^MIOTPL2("{{^packages}}NONE{{/packages}}{{#packages}}YES{{/packages}}",.TOK,.ERR)
+	DO OK^MIOTASSERT('$D(ERR),"compile")
+	; Case A: packages has an item => inverted must NOT render, normal must render.;
+	KILL CTX
+	SET CTX("packages",1,"name")="Pkg1"
+	DO EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
+	DO OK^MIOTASSERT('$D(ERR),"eval A")
+	DO EQ^MIOTASSERT(OUT,"YES","inverted suppressed when list has items") 
+	; Case B: packages empty => inverted MUST render, normal must NOT render.;
+	KILL OUT,ERR,CTX
+	DO EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
+	DO OK^MIOTASSERT('$D(ERR),"eval B")
+	DO EQ^MIOTASSERT(OUT,"NONE","inverted renders when list empty")
+	QUIT
+MIOTF126 ; Full suite test 126 - TPL_DEEP_NESTED_CONTEXT.;
+	NEW TOK,ERR,CONF,CTX,OUT,RES,TPL
+	; This template expects:
+	; CTX("groups","items",g,"name") = group name
+	; CTX("groups","items",g,"members",m,"name") = member name
+	; If no members, inverted section prints "EMPTY"
+	SET TPL="{{#groups.items}}"
+	SET TPL=TPL_"G={{name}}:["
+	SET TPL=TPL_"{{#members}}{{name}},{{/members}}"
+	SET TPL=TPL_"{{^members}}EMPTY{{/members}}"
+	SET TPL=TPL_"];"
+	SET TPL=TPL_"{{/groups.items}}"
+	DO COMPILE^MIOTPL2(TPL,.TOK,.ERR)
+	DO OK^MIOTASSERT('$D(ERR),"compile")
+	; Build deep context with two groups:
+	; Group 1 has 2 members, Group 2 has none.;
+	KILL CTX
+	SET CTX("groups","items",1,"name")="Core"
+	SET CTX("groups","items",1,"members",1,"name")="Alice"
+	SET CTX("groups","items",1,"members",2,"name")="Bob"
+	SET CTX("groups","items",2,"name")="Tools"
+	; No members under group 2 => should show EMPTY
+	DO EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
+	DO OK^MIOTASSERT('$D(ERR),"eval")
+	DO EQ^MIOTASSERT(OUT,"G=Core:[Alice,Bob,];G=Tools:[EMPTY];","deep nested render")
+	QUIT
+MIOTF126B ; Full suite test 126B - TPL_DEEP_NESTED_CONTEXT_SCALARS.;
+	NEW TOK,ERR,CONF,CTX,OUT,RES,TPL
+	; Scalar member list variant:
+	; CTX("groups","items",g,"name") = group name
+	; CTX("groups","items",g,"members",m) = member scalar (e.g., "Alice")
+	; Uses {{.}} inside members loop.;
+	; If no members, inverted section prints "EMPTY"
+	SET TPL="{{#groups.items}}"
+	SET TPL=TPL_"G={{name}}:["
+	SET TPL=TPL_"{{#members}}{{.}},{{/members}}"
+	SET TPL=TPL_"{{^members}}EMPTY{{/members}}"
+	SET TPL=TPL_"];"
+	SET TPL=TPL_"{{/groups.items}}"
+	DO COMPILE^MIOTPL2(TPL,.TOK,.ERR)
+	DO OK^MIOTASSERT('$D(ERR),"compile")
+	; Two groups: one with scalar members, one empty.;
+	KILL CTX
+	SET CTX("groups","items",1,"name")="Core"
+	SET CTX("groups","items",1,"members",1)="Alice"
+	SET CTX("groups","items",1,"members",2)="Bob"
+	SET CTX("groups","items",2,"name")="Tools"
+	; No members under group 2 => should show EMPTY
+	DO EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
+	DO OK^MIOTASSERT('$D(ERR),"eval")
+	DO EQ^MIOTASSERT(OUT,"G=Core:[Alice,Bob,];G=Tools:[EMPTY];","deep nested scalars render")
+	QUIT
+	;
+MIOTF127 ;
+	K ERR,OUT,CONF,CTX
+	M CONF=^MIO("CONF")
+	;
+	S ROOT="templates/test127-"_$J_"/"
+	D MKDIR(ROOT),MKDIR(ROOT_"partials/")
+	;
+	S CONF("templates","root")=ROOT
+	S CONF("templates","ext")=""
+	; Write layout + page templates
+	D WRFILE(ROOT_"layout.html","L0<title>{{{blocks.title}}}</title>|D={{desc}}|{{{content}}}|L9",.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write layout") K ERR
+	;
+	N T,OK S OK=$$READFILE^MIOTPL2(ROOT_"layout.html",.T,.ERR) 
+	D EQ^MIOTASSERT($E(T,1,9),"L0<title>","layout file prefix")
+	;
+	D WRFILE(ROOT_"page.html","{{#block:title}}T{{year}}{{/block:title}}P{{year}}",.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write page") K ERR
+	;
+	; Clear cache entries for these exact filepaths (defensive)
+	K ^MIO("TPL","CACHE",ROOT_"layout.html")
+	K ^MIO("TPL","CACHE",ROOT_"page.html")
+	;	
+	;
+	; Context
+	S CTX("year")=2026
+	S CTX("desc")="DESC"
+	;
+	;
+	D RENDERPAGE^MIOTPL2("page.html","layout.html",.CONF,.CTX,.OUT,.ERR)
+	D OK^MIOTASSERT('$D(ERR),"renderpage") ZWR:$D(ERR) ERR
+	;
+	; Expected output
+	D EQ^MIOTASSERT(OUT,"L0<title>T2026</title>|D=DESC|P2026|L9","layout+page output")
+	D EQ^MIOTASSERT($G(CTX("blocks","title")),"T2026","block title captured")
+	;
+	; Cleanup best-effort
+	D RMDIR(ROOT)
+	Q
+	;
+MIOTF128 ; Full suite test 128 - TPL_PARTIALS_INCLUDE
+	K ERR,OUT,CONF,CTX
+	N ROOT
+	;
+	; Pull base config first (if you want it), THEN override root/ext
+	M CONF=^MIO("CONF")
+	;
+	S ROOT="templates/test128-"_$J_"/"
+	D MKDIR(ROOT)
+	D MKDIR(ROOT_"partials/")
+	;
+	S CONF("templates","root")=ROOT
+	S CONF("templates","ext")=""
+	;
+	; --- write partials ---
+	D WRFILE(ROOT_"partials/app1.html","APP1",.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write app1") K ERR
+	;
+	D WRFILE(ROOT_"partials/p.html","PP",.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write p") K ERR
+	;
+	; --- write main (includes both partials) ---
+	D WRFILE(ROOT_"main.html","{{> partials/app1.html}}{{> partials/p.html}}",.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write main") K ERR
+	;
+	; --- render main by logical name (NO ROOT PREFIX) ---
+	D RENDER^MIOTPL2("main.html",.CONF,.CTX,.OUT,.ERR)
+	D OK^MIOTASSERT('$D(ERR),"render main") I $D(ERR) ZWR ERR
+	;
+	D EQ^MIOTASSERT(OUT,"APP1PP","partials include output")
+	;
+	D RMDIR(ROOT)
+	Q
+	;
+MIOTF129 ;
+	N TOK,ERR,CONF,CTX,OUT
+	D COMPILE^MIOTPL2("{{#x}}Y{{/x}}{{^x}}N{{/x}}",.TOK,.ERR)
+	S CTX("x")="false"
+	D EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
+	D EQ^MIOTASSERT(OUT,"N","false string is falsey")
+	K OUT,ERR
+	S CTX("x")="true"
+	D EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
+	D EQ^MIOTASSERT(OUT,"Y","true string is truthy")
+	Q
+	;
+MIOTF130 ;
+	N TOK,ERR,CONF,CTX,OUT
+	D COMPILE^MIOTPL2("{{#x}}Y{{/x}}{{^x}}N{{/x}}",.TOK,.ERR)
+	S CTX("x")="FALSE"
+	D EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
+	D EQ^MIOTASSERT(OUT,"N","FALSE is falsey")
+	Q
+MIOTF131 ; CRLF output (scalar) + safe CRLF values
+	N TOK,ERR,CONF,CTX,OUT,CRLF,TPL,EXP
+	S CRLF=$C(13,10)
+	; template uses CRLF newlines
+	S TPL="A"_CRLF_"B"_CRLF_"{{x}}"_CRLF
+	D COMPILE^MIOTPL2(TPL,.TOK,.ERR)
+	D OK^MIOTASSERT('$D(ERR),"compile")
+	; value already contains CRLF -> must NOT become \r\r\n
+	S CTX("x")="X"_CRLF_"Y"
+	D EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
+	D OK^MIOTASSERT('$D(ERR),"eval")
+	S EXP="A"_CRLF_"B"_CRLF_"X"_CRLF_"Y"_CRLF
+	D EQ^MIOTASSERT(OUT,EXP,"crlf scalar + safe")
+	Q
+	;
+MIOTF132 ; CRLF output (ref mode) + safe CRLF values
+	N TOK,ERR,CONF,CTX,CRLF,TPL,EXP
+	N O,OUT,I
+	S CRLF=$C(13,10)
+	S TPL="A"_CRLF_"B"_CRLF_"{{x}}"_CRLF
+	D COMPILE^MIOTPL2(TPL,.TOK,.ERR)
+	D OK^MIOTASSERT('$D(ERR),"compile")
+	S CTX("x")="X"_CRLF_"Y"
+	D EVALREF^MIOTPL2(.TOK,.CONF,.CTX,$NA(O),.ERR)
+	D OK^MIOTASSERT('$D(ERR),"evalref")
+	S OUT="",I=0
+	F  S I=$O(O(I)) Q:'I  S OUT=OUT_O(I)
+	S EXP="A"_CRLF_"B"_CRLF_"X"_CRLF_"Y"_CRLF
+	D EQ^MIOTASSERT(OUT,EXP,"crlf ref + safe")
+	Q
+	;
+MIOTF133 ; CRLF detected across chunk boundary (COMPREF/COMPILEA path)
+	N ARR,TOK,ERR,CONF,CTX,OUT,EXP
+	; chunk boundary: ends with CR then next chunk starts with LF
+	S ARR(1)="A"_$C(13)
+	S ARR(2)=$C(10)_"B"_$C(10)
+	D COMPILEA^MIOTPL2(.ARR,.TOK,.ERR)
+	D OK^MIOTASSERT('$D(ERR),"compileA")
+	D EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
+	D OK^MIOTASSERT('$D(ERR),"eval")
+	S EXP="A"_$C(13,10)_"B"_$C(13,10)
+	D EQ^MIOTASSERT(OUT,EXP,"crlf boundary detect")
+	Q 	 		
 TEST001
 	NEW HDR S HDR="[TEST001][No Interpolation]"
 	NEW DESC S DESC=HDR_"[Mustache-free templates should render as-is]"
