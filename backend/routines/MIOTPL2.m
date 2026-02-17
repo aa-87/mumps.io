@@ -1644,151 +1644,189 @@ EVALREF(TOK,CONF,CTX,OREF,ERR)
 	N CST,CTSP
 	S CTSP=1
 	S CST(1)="CTX"
+	;
 	; Partial recursion protection
 	N PDEPTHMAX S PDEPTHMAX=+$G(CONF("templates","maxPartialDepth")) I PDEPTHMAX<1 S PDEPTHMAX=20
 	N PACTIVE
-	;Temp Array
-	N TMPTARR
-	; Local storage for partial token arrays
-	N PTID,PTOKS
-	S PTID=0
+	;
+	; Per-render partial token ref cache (keeps big token streams in ^MIO cache)
+	N PTCACHE
+	;
 	; Block capture buffers keyed by frame#
 	N BCAP
+	;
 	; Frame stack
 	N FSP,F
 	S FSP=1
 	S F(1,"i")=1
-	S F(1,"end")=$$TOKENDR("TOK")
+	S F(1,"end")=$$TOKENDR^MIOTPL2("TOK")
 	S F(1,"ctxTop")=CTSP
 	S F(1,"mode")="emit"
 	S F(1,"capRef")=""
 	S F(1,"tokName")="TOK"
+	; indent state (track always; needed when we enter an indented partial later)
+	S F(1,"indent")=""
+	S F(1,"at")=1   ; start of output is line-start
+	;
 	N W
 	I $G(OREF)="" S ERR("code")="TPL_OREF",ERR("msg")="Missing output reference." Q
 	K @OREF
 	D OUTINIT^MIOTPL2(.W,OREF,.CONF,.TOK)
+	;
 	; Safety limit
 	N FRAMELIM,FRAMES
 	S FRAMELIM=2000,FRAMES=0
+	;
 	; Main loop
 	F  Q:FSP<1  D  Q:$D(ERR)
 	. S FRAMES=FRAMES+1
 	. I FRAMES>FRAMELIM S ERR("code")="TPL_LIMIT",ERR("msg")="Render exceeded safety frame limit." Q
+	. ;
 	. ; ITERATOR controller
 	. I $G(F(FSP,"mode"))="iter" D  Q
-	. . N LREF,SUB,BS,BE,PM,PC,PARENTMODE,PARENTCAP
-	. . S LREF=$G(F(FSP,"listRef"))
-	. . S SUB=$G(F(FSP,"sub"))
-	. . S BS=+$G(F(FSP,"bodyS"))
-	. . S BE=+$G(F(FSP,"bodyE"))
-	. . S PARENTMODE=$G(F(FSP,"parentMode"))
-	. . S PARENTCAP=$G(F(FSP,"parentCap"))
+	. . N LREF,SUB,BS,BE,PM,PC,PARENTMODE,PARENTCAP,PARENT
+	. . S PARENT=FSP
+	. . S LREF=$G(F(PARENT,"listRef"))
+	. . S SUB=$G(F(PARENT,"sub"))
+	. . S BS=+$G(F(PARENT,"bodyS"))
+	. . S BE=+$G(F(PARENT,"bodyE"))
+	. . S PARENTMODE=$G(F(PARENT,"parentMode"))
+	. . S PARENTCAP=$G(F(PARENT,"parentCap"))
 	. . ; next element
 	. . S SUB=$O(@($$APPREF^MIOTPL2(LREF,SUB)))
 	. . I SUB="" D POPFR^MIOTPL2(.FSP,.F,.CST,.CTSP,.W) Q
-	. . S F(FSP,"sub")=SUB
+	. . S F(PARENT,"sub")=SUB
 	. . ; push item context and render body once
 	. . N ITEMREF,NEWTOP
 	. . S ITEMREF=$$APPREF^MIOTPL2(LREF,SUB)
 	. . S NEWTOP=CTSP+1,CST(NEWTOP)=ITEMREF,CTSP=NEWTOP
-	. . D PUSHFRAME^MIOTPL2(.FSP,.F,BS,BE,CTSP,PARENTMODE,PARENTCAP,F(FSP-1,"tokName"))
+	. . ; body frame inherits indent/at from iterator frame
+	. . D PUSHFRAMEI^MIOTPL2(.FSP,.F,BS,BE,CTSP,PARENTMODE,PARENTCAP,$G(F(PARENT,"tokName")),PARENT)
+	. ;
 	. ; Fetch current token
 	. N I,END,TN,TYP
 	. S I=+$G(F(FSP,"i"))
 	. S END=+$G(F(FSP,"end"))
 	. I I<1!(I>END) D POPFR^MIOTPL2(.FSP,.F,.CST,.CTSP,.W) Q
 	. S TN=$G(F(FSP,"tokName")) I TN="" S TN="TOK"
-	. S TYP=$$TOKGET(TN,I,"t")
+	. S TYP=$$TOKGET^MIOTPL2(TN,I,"t")
+	. ;
 	. ; TEXT
 	. I TYP="text" D  Q
-	. . D EMITR^MIOTPL2(.FSP,.F,.W,$$TOKGET(TN,I,"v"))
+	. . N V,IND,AT
+	. . S V=$$TOKGET^MIOTPL2(TN,I,"v")
+	. . S IND=$G(F(FSP,"indent"))
+	. . I IND'="" D
+	. . . S AT=+$G(F(FSP,"at"))
+	. . . S V=$$INDTXT^MIOTPL2(V,IND,.AT)
+	. . . S F(FSP,"at")=AT
+	. . E  D
+	. . . ; cheap AT tracking (needed if we later enter an indented partial)
+	. . . I V'="" S F(FSP,"at")=$S($E(V,$L(V))=$C(10):1,1:0)
+	. . D EMITR^MIOTPL2(.FSP,.F,.W,V)
 	. . S F(FSP,"i")=I+1
+	. ;
 	. ; VAR
 	. I TYP="var" D  Q
-	. . N KEY,ESC,VAL
-	. . S KEY=$$TOKGET(TN,I,"k")
-	. . S ESC=+$$TOKGET(TN,I,"e")
+	. . N KEY,ESC,VAL,IND,AT
+	. . S KEY=$$TOKGET^MIOTPL2(TN,I,"k")
+	. . S ESC=+$$TOKGET^MIOTPL2(TN,I,"e")
 	. . S VAL=$$RESVAL^MIOTPL2(KEY,.CST,CTSP)
 	. . I ESC S VAL=$$ESCHTML^MIOTPL2(VAL)
+	. . S IND=$G(F(FSP,"indent"))
+	. . S AT=+$G(F(FSP,"at"))
+	. . ; if we are at line-start under an active indent, emit indent before first real output
+	. . I AT,IND'="",VAL'="" D EMITR^MIOTPL2(.FSP,.F,.W,IND) S AT=0
+	. . ; even with no indent, once we output non-empty, we are no longer at line-start
+	. . I VAL'="" S AT=0
+	. . S F(FSP,"at")=AT
 	. . D EMITR^MIOTPL2(.FSP,.F,.W,VAL)
 	. . S F(FSP,"i")=I+1
+	. ;
+	. ; DELIMITER CHANGE TOKEN (compile-time only, runtime skip)
 	. I TYP="delim" D  Q
 	. . S F(FSP,"i")=I+1
+	. ;
 	. ; COMMENT (no output)
 	. I TYP="comm" D  Q
 	. . S F(FSP,"i")=I+1
+	. ;
+	. ; PARTIAL
 	. I TYP="part" D  Q
-	. . N PNAME,IND,MODE,CAP,PMAX
-	. . S PNAME=$$TOKGET(TN,I,"k")
-	. . S IND=$$TOKGET(TN,I,"indent")  ; may be ""
+	. . N PNAME,INDTOK,PTREF,PMAX,MODE,CAP,PARENT
+	. . S PARENT=FSP
+	. . S PNAME=$$TOKGET^MIOTPL2(TN,I,"k")
+	. . S INDTOK=$$TOKGET^MIOTPL2(TN,I,"indent")  ; "" unless standalone
 	. . ; advance parent now
-	. . S F(FSP,"i")=I+1
-	. . ; recursion control (SAFE)
-	. . S PACTIVE(PNAME)=+$G(PACTIVE(PNAME))
-	. . I (PACTIVE(PNAME)+1)>PDEPTHMAX S ERR("code")="TPL_PARTIAL_DEPTH",ERR("msg")="Partial recursion depth exceeded: "_PNAME Q
-	. . S PACTIVE(PNAME)=PACTIVE(PNAME)+1
-	. . ; load partial tokens
-	. . S PTID=PTID+1
-	. . K PTOKS(PTID),TMPTARR
-	. . D GETTOK^MIOTPL2(PNAME,.CONF,.TMPTARR,.ERR)
-	. . M PTOKS(PTID)=TMPTARR K TMPTARR
-	. . I $D(ERR) D  I $D(ERR) Q
-	. . . N EC S EC=$G(ERR("code"))
-	. . . I (EC="TPL_NOFILE")!(EC="TPL_IO") D  Q
-	. . . . S PACTIVE(PNAME)=+$G(PACTIVE(PNAME))-1
-	. . . . I PACTIVE(PNAME)'>0 K PACTIVE(PNAME)
-	. . . . K ERR
-	. . ; compute PMAX safely (numeric-only)
-	. . S PMAX=$$TOKENDR^MIOTPL2("PTOKS("_PTID_")")
-	. . I PMAX<1 D  Q
-	. . . S PACTIVE(PNAME)=+$G(PACTIVE(PNAME))-1
-	. . . I PACTIVE(PNAME)'>0 K PACTIVE(PNAME)
+	. . S F(PARENT,"i")=I+1
+	. . ; recursion protection
+	. . S PACTIVE(PNAME)=+$G(PACTIVE(PNAME))+1
+	. . I PACTIVE(PNAME)>PDEPTHMAX S ERR("code")="TPL_PARTIAL_DEPTH",ERR("msg")="Partial recursion depth exceeded: "_PNAME Q
 	. . ;
-	. . ; if IND, indent the PARTIAL TOKENS (template newlines only) BEFORE rendering
-	. . I IND'="" D
-	. . . K TMPTARR M TMPTARR=PTOKS(PTID)
-	. . . D INDENTPTOK^MIOTPL2(.TMPTARR,IND)
-	. . . K PTOKS(PTID) M PTOKS(PTID)=TMPTARR K TMPTARR
-	. . . S PMAX=$$TOKENDR^MIOTPL2("PTOKS("_PTID_")")  ; recompute after rewrite
+	. . ; per-render ref cache
+	. . I '$D(PTCACHE(PNAME,"ref")) D
+	. . . D GETTOKREF^MIOTPL2(PNAME,.CONF,.PTREF,.PMAX,.ERR)
+	. . . I $D(ERR) D  Q
+	. . . . ; missing partial => treat as empty (mustache behavior)
+	. . . . I $G(ERR("code"))="TPL_NOFILE" K ERR S PTCACHE(PNAME,"ref")="",PTCACHE(PNAME,"max")=0 Q
+	. . . . ; fatal errors propagate
+	. . . . S PACTIVE(PNAME)=PACTIVE(PNAME)-1 I PACTIVE(PNAME)'>0 K PACTIVE(PNAME)
+	. . . . Q
+	. . . S PTCACHE(PNAME,"ref")=PTREF
+	. . . S PTCACHE(PNAME,"max")=PMAX
+	. . S PTREF=$G(PTCACHE(PNAME,"ref")),PMAX=+$G(PTCACHE(PNAME,"max"))
+	. . I PTREF="" D  Q
+	. . . S PACTIVE(PNAME)=PACTIVE(PNAME)-1 I PACTIVE(PNAME)'>0 K PACTIVE(PNAME)
 	. . ;
-	. . S MODE=$G(F(FSP,"mode"))
-	. . S CAP=$G(F(FSP,"capRef"))
-	. . D PUSHFRAME^MIOTPL2(.FSP,.F,1,PMAX,CTSP,MODE,CAP,"PTOKS("_PTID_")")
+	. . S MODE=$G(F(PARENT,"mode"))
+	. . S CAP=$G(F(PARENT,"capRef"))
+	. . ; push partial frame inheriting indent/at
+	. . D PUSHFRAMEI^MIOTPL2(.FSP,.F,1,PMAX,CTSP,MODE,CAP,PTREF,PARENT)
 	. . S F(FSP,"pname")=PNAME
+	. . ; standalone partial indent composes (outer indent + call-site indent)
+	. . I INDTOK'="" S F(FSP,"indent")=$G(F(FSP,"indent"))_INDTOK
+	. ;
+	. ; SECTION START
 	. I TYP="secS" D  Q
 	. . N KEY,INV,MI,NEXT,PARENT
 	. . S PARENT=FSP
-	. . S KEY=$$TOKGET(TN,I,"k")
-	. . S INV=+$$TOKGET(TN,I,"inv")
-	. . S MI=+$$TOKGET(TN,I,"m")
+	. . S KEY=$$TOKGET^MIOTPL2(TN,I,"k")
+	. . S INV=+$$TOKGET^MIOTPL2(TN,I,"inv")
+	. . S MI=+$$TOKGET^MIOTPL2(TN,I,"m")
 	. . I 'MI S ERR("code")="TPL_PARSE",ERR("msg")="Section start without match: "_KEY Q
 	. . ; advance parent beyond close now (so we never double-run)
 	. . S NEXT=MI+1
 	. . S F(PARENT,"i")=NEXT
+	. . ;
 	. . ; block capture
-	. . I +$$TOKGET(TN,I,"blk") D  Q
+	. . I +$$TOKGET^MIOTPL2(TN,I,"blk") D  Q
 	. . . N BNAME,NEWF,CAPREF
-	. . . S BNAME=$$TOKGET(TN,I,"bname")
+	. . . S BNAME=$$TOKGET^MIOTPL2(TN,I,"bname")
 	. . . S NEWF=FSP+1
 	. . . S BCAP(NEWF)=""
 	. . . S CAPREF=$NA(BCAP(NEWF))
-	. . . D PUSHFRAME^MIOTPL2(.FSP,.F,I+1,MI-1,CTSP,"capture",CAPREF,TN)
+	. . . ; capture frame inherits indent/at but must not leak at back to emit parent (POPFR handles that)
+	. . . D PUSHFRAMEI^MIOTPL2(.FSP,.F,I+1,MI-1,CTSP,"capture",CAPREF,TN,PARENT)
 	. . . S F(FSP,"storeBlock")=1
 	. . . S F(FSP,"storeName")=BNAME
 	. . . S F(FSP,"storeCapRef")=CAPREF
+	. . ;
 	. . ; resolve key
 	. . N ISSET,TYPE,REF
 	. . D RESREF^MIOTPL2(KEY,.CST,CTSP,.ISSET,.TYPE,.REF)
-	. . ; --- normalize: if "list" but first subscript is non-numeric, it's an object/hash
+	. . ; normalize list with non-numeric first sub => obj
 	. . I TYPE="list" D
 	. . . N S0 S S0=$$FIRSTSUB^MIOTPL2(REF)
 	. . . I S0'="",S0'?1.N S TYPE="obj"
+	. . ;
 	. . ; inverted
 	. . I INV D  Q
 	. . . I $$ISTRUTH^MIOTPL2(.ISSET,.TYPE,.REF)=0 D
-	. . . . D PUSHFRAME^MIOTPL2(.FSP,.F,I+1,MI-1,CTSP,$G(F(PARENT,"mode")),$G(F(PARENT,"capRef")),TN)
+	. . . . D PUSHFRAMEI^MIOTPL2(.FSP,.F,I+1,MI-1,CTSP,$G(F(PARENT,"mode")),$G(F(PARENT,"capRef")),TN,PARENT)
+	. . ;
 	. . ; normal: skip if falsey
 	. . I $$ISTRUTH^MIOTPL2(.ISSET,.TYPE,.REF)=0 Q
+	. . ;
 	. . ; list iteration
 	. . I TYPE="list" D  Q
 	. . . S FSP=FSP+1
@@ -1801,25 +1839,33 @@ EVALREF(TOK,CONF,CTX,OREF,ERR)
 	. . . S F(FSP,"bodyE")=MI-1
 	. . . S F(FSP,"parentMode")=$G(F(PARENT,"mode"))
 	. . . S F(FSP,"parentCap")=$G(F(PARENT,"capRef"))
-	. . ; object context: push
+	. . . S F(FSP,"tokName")=TN
+	. . . ; inherit indent/at from parent frame
+	. . . S F(FSP,"indent")=$G(F(PARENT,"indent"))
+	. . . S F(FSP,"at")=+$G(F(PARENT,"at"))
+	. . ;
+	. . ; object context
 	. . I TYPE="obj" D  Q
 	. . . N NEWTOP S NEWTOP=CTSP+1
 	. . . S CST(NEWTOP)=REF,CTSP=NEWTOP
-	. . . D PUSHFRAME^MIOTPL2(.FSP,.F,I+1,MI-1,CTSP,$G(F(PARENT,"mode")),$G(F(PARENT,"capRef")),TN)
-	. . ; scalar context: push (so {{.}} works)
+	. . . D PUSHFRAMEI^MIOTPL2(.FSP,.F,I+1,MI-1,CTSP,$G(F(PARENT,"mode")),$G(F(PARENT,"capRef")),TN,PARENT)
+	. . ;
+	. . ; scalar context
 	. . I TYPE="scalar" D  Q
 	. . . N NEWTOP S NEWTOP=CTSP+1
 	. . . S CST(NEWTOP)=REF,CTSP=NEWTOP
-	. . . D PUSHFRAME^MIOTPL2(.FSP,.F,I+1,MI-1,CTSP,$G(F(PARENT,"mode")),$G(F(PARENT,"capRef")),TN)
+	. . . D PUSHFRAMEI^MIOTPL2(.FSP,.F,I+1,MI-1,CTSP,$G(F(PARENT,"mode")),$G(F(PARENT,"capRef")),TN,PARENT)
+	. . ;
 	. . ; fallback
-	. . D PUSHFRAME^MIOTPL2(.FSP,.F,I+1,MI-1,CTSP,$G(F(PARENT,"mode")),$G(F(PARENT,"capRef")),TN)
-	. ; SECTION END-
+	. . D PUSHFRAMEI^MIOTPL2(.FSP,.F,I+1,MI-1,CTSP,$G(F(PARENT,"mode")),$G(F(PARENT,"capRef")),TN,PARENT)
+	. ;
+	. ; SECTION END
 	. I TYP="secE" D  Q
 	. . S F(FSP,"i")=I+1
+	. ;
 	D OUTFLUSH^MIOTPL2(.W)
 	Q:$Q $S($D(ERR):0,1:1)
 	Q
-	;
 ; =============================================================================
 ; EMITR(FSP,F,W,VAL)
 ; Emit to capture buffer or output writer depending on frame mode.;
@@ -1840,6 +1886,9 @@ EMITR(FSP,F,W,VAL)
 ; =============================================================================
 POPFR(FSP,F,CST,CTSP,W)
 	N OLD S OLD=FSP
+	N CM,PM
+	S CM=$G(F(OLD,"mode"))
+	S PM=$S(OLD>1:$G(F(OLD-1,"mode")),1:"")
 	;
 	; Block store finalizer
 	I +$G(F(OLD,"storeBlock")) D
@@ -1848,33 +1897,22 @@ POPFR(FSP,F,CST,CTSP,W)
 	. S CR=$G(F(OLD,"storeCapRef"))
 	. S VAL=$G(@CR)
 	. S CTX("blocks",BN)=VAL
+	;
 	; Partial decrement finalizer (UNDEF-safe)
 	I $G(F(OLD,"pname"))'="" D
 	. N PN S PN=$G(F(OLD,"pname"))
 	. S PACTIVE(PN)=+$G(PACTIVE(PN))-1
 	. I PACTIVE(PN)'>0 K PACTIVE(PN)
-	; Capture->Indent->Emit finalizer (indented standalone partials)
-	I +$G(F(OLD,"capEmit")) D
-	. N CR,VAL,IND,TXT,PMODE,PCR
-	. S CR=$G(F(OLD,"capRef"))
-	. S VAL=$S(CR'="":$G(@CR),1:"")
-	. S IND=$G(F(OLD,"indent"))
-	. S TXT=$$INDENTSTR^MIOTPL2(VAL,IND)
-	. ; single-shot
-	. I CR'="" S @CR=""
-	. K F(OLD,"capEmit"),F(OLD,"indent")
-	. ; emit into parent mode
-	. S PMODE=$G(F(OLD-1,"mode"))
-	. I PMODE="capture" D
-	. . S PCR=$G(F(OLD-1,"capRef")) Q:PCR=""
-	. . S @PCR=$G(@PCR)_TXT
-	. E  D OUTAPP^MIOTPL2(.W,TXT)
+	;
+	; Propagate "at line start" state back to parent *only* when sinks match.;
+	; (capture frame must not disturb parent emit stream line-state)
+	I OLD>1 D
+	. I '(CM="capture"&(PM'="capture")) S F(OLD-1,"at")=+$G(F(OLD,"at"))
+	;
 	; Pop and restore CTSP
 	S FSP=FSP-1
 	I FSP>0 S CTSP=+$G(F(FSP,"ctxTop"))
 	Q
-	;
-	;
 ; =============================================================================
 ; RENDERANY(IN,CONF,CTX,OUT,ERR)
 ; - IN may be scalar template text OR a reference-string root to chunks
@@ -2444,3 +2482,12 @@ JOIN(ARR,SEP) ;
 	. IF S'="" SET S=S_D
 	. SET S=S_$GET(ARR(I))
 	QUIT S
+; =============================================================================
+; PUSHFRAMEI(FSP,F,START,END,CTSP,MODE,CAPREF,TOKNAME,PARENT)
+; Like PUSHFRAME, but inherits indent/at from PARENT frame.;
+; =============================================================================
+PUSHFRAMEI(FSP,F,START,END,CTSP,MODE,CAPREF,TOKNAME,PARENT)
+	D PUSHFRAME^MIOTPL2(.FSP,.F,START,END,CTSP,.MODE,.CAPREF,.TOKNAME)
+	S F(FSP,"indent")=$G(F(PARENT,"indent"))
+	S F(FSP,"at")=+$G(F(PARENT,"at"))
+	Q
