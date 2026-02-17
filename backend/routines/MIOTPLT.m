@@ -1123,8 +1123,10 @@ TEST099
 TEST100
 	NEW HDR S HDR="[TEST100][Failed Lookup]"
 	NEW DESC S DESC=HDR_"[The empty string should be used when the named partial is not found.]"
-	NEW TEMPLATE S TEMPLATE="""{{>text}}"""
-	NEW EXPECTED S EXPECTED=""""""
+	;NEW TEMPLATE 
+	S TEMPLATE="""{{>text}}"""
+	;NEW EXPECTED 
+	S EXPECTED=""""""
 	N CONF
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	QUIT
@@ -1576,6 +1578,20 @@ TEST000
 	NEW CTX 
 	SET CTX("text")="content"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+TEST1
+	NEW HDR S HDR="[TEST100][Failed Lookup]"
+	NEW DESC S DESC=HDR_"[The empty string should be used when the named partial is not found.]"
+	;NEW TEMPLATE 
+	S TEMPLATE="""{{>text}}"""
+	;NEW EXPECTED 
+	S EXPECTED=""""""
+	N CONF
+	D COMPILE^MIOTPL2($G(TEMPLATE),.TOK,.ERR)
+	D OK^MIOTASSERT('$D(ERR),"[COMPILE]"_HDR)
+	D EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
+	D OK^MIOTASSERT('$D(ERR),"[EVAL]"_DESC)
+	D EQ^MIOTASSERT(OUT,$G(EXPECTED),"[RENDER]"_DESC)
 	QUIT
 RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,CTX)
 	; Run each spec test twice:

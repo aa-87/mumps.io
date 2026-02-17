@@ -444,9 +444,10 @@ GETTOKFP(FP,CONF,TOK,ERR,OPT);
 	SET CH=$GET(^MIO("TPL","CACHE",FP,"H"))
 	SET OK=$$READFILE(FP,.TXT,.ERR)
 	IF 'OK DO  QUIT
-	. ; If the file is too large (or caller allows), fallback to streaming.;
-	. IF $GET(ERR("code"))="TPL_TOOLARGE"!(FB) DO  QUIT
-	. . DO GETTOKFPSTR(FP,.CONF,.TOK,.ERR)
+	. ; Only fallback when READFILE hit the MAXSTRING/size guard
+	. IF $GET(ERR("code"))="TPL_TOOLARGE",FB DO  QUIT
+	. . DO GETTOKFPSTR(FP,.CONF,.TOK,.ERR,$G(OPT))
+	. ; otherwise: keep ERR as-is (TPL_NOFILE should propagate to caller)
 	. QUIT
 	SET H=$$H32(TXT)
 	IF CH'="",CH=H,$DATA(^MIO("TPL","CACHE",FP,"TOK",1)) DO  QUIT
@@ -482,6 +483,7 @@ BOOL(X)
 ; =============================================================================
 GETTOKFPSTR(FP,CONF,TOK,ERR,OPT) ;
 	K ERR K TOK
+	I $$FILEEXISTS(FP)="" S ERR("code")="TPL_NOFILE",ERR("msg")="Template file not found: "_FP Q
 	NEW CH,WH,DEVW,H,ROOT SET ROOT=$NA(TMPBUF("FILE"))
 	SET DEVW=+$GET(CONF("templates","devWatchEnabled"))
 	SET CH=$GET(^MIO("TPL","CACHE",FP,"H"))
@@ -557,24 +559,25 @@ READFILE(FP,TXT,ERR) ;
 	N IO S IO=$PRINCIPAL
 	; Safety limit: 2 MB (adjustable via CONF later if needed).;
 	S MAX=2*1024*1024
-	 I $$FILEEXISTS(FP)="" S ERR("code")="TPL_NOFILE",ERR("msg")="Template file not found: "_FP Q
-	O FP:(READONLY:EXCEPTION="GOTO RFERR^MIOTPL2":CHSET="M"):2	
+	O FP:(READONLY:EXCEPTION="G RFERR^MIOTPL2":CHSET="M"):2	
 	F  U FP R *LINE Q:$ZEOF  D  Q:('$T!$D(ERR))
-	. ; Keep newlines. Most templates expect them.;
 	. S TXT=TXT_$C(LINE)
 	. I $L(TXT)>MAX S ERR("code")="TPL_TOOLARGE",ERR("msg")="Template too large (limit 2MB): "_FP
-	I $D(ERR) Q 0
+	I $D(ERR) C FP U IO Q 0
 	C FP U IO
 	I $E(TXT,$L(TXT))=$C(10) S TXT=$E(TXT,1,$L(TXT)-1) ;get rid of the extra $C(10)
 	Q 1
 	;
 RFERR ;
 	C FP
-	I $zstatus["%YDB-E-IOEOF" D  K ERR Q 1
+	I $ZSTATUS["DEVOPENFAIL" D  Q 0
+	. S ERR("code")="TPL_NOFILE",ERR("msg")="Template file not found: "_FP
+	. S $ZSTATUS="",$EC=""
+	I $zstatus["IOEOF" D  K ERR Q 1
 	. I $E(TXT,$L(TXT))=$C(10) S TXT=$E(TXT,1,$L(TXT)-1) ;get rid of the extra $C(10)
 	. S $ZSTATUS="",$EC=""
 	S ERR("code")="TPL_IO",ERR("msg")="I/O error reading template: "_FP_" $zstatus:"_$zstatus
-	Q ""
+	Q 0
 	;O FP:(READONLY:EXCEPTION="GOTO RFERR^MIOTPL2":CHSET="M"):2	
 	;F  U FP R *LINE Q:$ZEOF  D  Q:('$T!$D(ERR))
 ; =============================================================================
@@ -612,7 +615,10 @@ READFILE2REF(FP,ROOT,CONF,H,ERR) ;
 	;
 RF2ERR ;
 	C FP
-	I $zstatus["%YDB-E-IOEOF" D  K ERR Q
+	I $ZSTATUS["DEVOPENFAIL" D  Q 0
+	. S ERR("code")="TPL_NOFILE",ERR("msg")="Template file not found: "_FP
+	. S $ZSTATUS="",$EC=""
+	I $ZSTATUS["IOEOF" D  K ERR Q
 	. I PREV'="" D
 	. . S N=N+1
 	. . S @($$APPREF^MIOTPL2(ROOT,N))=PREV
