@@ -42,6 +42,7 @@ MIOTPL2 ; MIO template engine with layouts, blocks, partials, and caching.;
 MIOTEST 
 	D MIOTF121,MIOTF122,MIOTF123,MIOTF124,MIOTF125
 	D MIOTF126,MIOTF126B,MIOTF127,MIOTF128,MIOTF129,MIOTF130
+	D MIOTF131,MIOTF132,MIOTF133
 	D MIOTF200,MIOTF201,MIOTF202,MIOTF203,MIOTF204,MIOTF205
 	Q
 	;
@@ -251,7 +252,49 @@ MIOTF130 ;
 	D EVAL(.TOK,.CONF,.CTX,.OUT,.ERR)
 	D EQ^MIOTASSERT(OUT,"N","FALSE is falsey")
 	Q
+MIOTF131 ; CRLF output (scalar) + safe CRLF values
+	N TOK,ERR,CONF,CTX,OUT,CRLF,TPL,EXP
+	S CRLF=$C(13,10)
+	; template uses CRLF newlines
+	S TPL="A"_CRLF_"B"_CRLF_"{{x}}"_CRLF
+	D COMPILE(TPL,.TOK,.ERR)
+	D OK^MIOTASSERT('$D(ERR),"compile")
+	; value already contains CRLF -> must NOT become \r\r\n
+	S CTX("x")="X"_CRLF_"Y"
+	D EVAL(.TOK,.CONF,.CTX,.OUT,.ERR)
+	D OK^MIOTASSERT('$D(ERR),"eval")
+	S EXP="A"_CRLF_"B"_CRLF_"X"_CRLF_"Y"_CRLF
+	D EQ^MIOTASSERT(OUT,EXP,"crlf scalar + safe")
+	Q
 	;
+MIOTF132 ; CRLF output (ref mode) + safe CRLF values
+	N TOK,ERR,CONF,CTX,CRLF,TPL,EXP
+	N O,OUT,I
+	S CRLF=$C(13,10)
+	S TPL="A"_CRLF_"B"_CRLF_"{{x}}"_CRLF
+	D COMPILE(TPL,.TOK,.ERR)
+	D OK^MIOTASSERT('$D(ERR),"compile")
+	S CTX("x")="X"_CRLF_"Y"
+	D EVALREF(.TOK,.CONF,.CTX,$NA(O),.ERR)
+	D OK^MIOTASSERT('$D(ERR),"evalref")
+	S OUT="",I=0
+	F  S I=$O(O(I)) Q:'I  S OUT=OUT_O(I)
+	S EXP="A"_CRLF_"B"_CRLF_"X"_CRLF_"Y"_CRLF
+	D EQ^MIOTASSERT(OUT,EXP,"crlf ref + safe")
+	Q
+	;
+MIOTF133 ; CRLF detected across chunk boundary (COMPREF/COMPILEA path)
+	N ARR,TOK,ERR,CONF,CTX,OUT,EXP
+	; chunk boundary: ends with CR then next chunk starts with LF
+	S ARR(1)="A"_$C(13)
+	S ARR(2)=$C(10)_"B"_$C(10)
+	D COMPILEA(.ARR,.TOK,.ERR)
+	D OK^MIOTASSERT('$D(ERR),"compileA")
+	D EVAL(.TOK,.CONF,.CTX,.OUT,.ERR)
+	D OK^MIOTASSERT('$D(ERR),"eval")
+	S EXP="A"_$C(13,10)_"B"_$C(13,10)
+	D EQ^MIOTASSERT(OUT,EXP,"crlf boundary detect")
+	Q
 ; -----------------------------
 ; Helpers for filesystem tests
 ; -----------------------------
@@ -1447,6 +1490,8 @@ EVAL(TOK,CONF,CTX,OUT,ERR)
 	S F(1,"capRef")=""
 	S F(1,"tokName")="TOK"
 	S OUT=""
+	; output newline mode (set by COMPILE/COMPREF)
+	N CRLF S CRLF=+$G(TOK("meta","crlf"))
 	; Safety limit
 	N FRAMELIM,FRAMES
 	S FRAMELIM=2000,FRAMES=0
@@ -1598,7 +1643,6 @@ EVAL(TOK,CONF,CTX,OUT,ERR)
 	. ; SECTION END-
 	. I TYP="secE" D  Q
 	. . S F(FSP,"i")=I+1
-	I $G(TOK("meta","crlf")) S OUT=$$LF2CRLF^MIOTPL2(OUT)
 	Q:$Q $S($D(ERR):0,1:1)
 	Q
 ; =============================================================================
@@ -1615,7 +1659,9 @@ OUTINIT(W,OREF,CONF,TOK)
 OUTAPP(W,VAL)
 	N V,CHUNK,SPACE,PIECE
 	S V=$G(VAL) Q:V=""
-	I +$G(W("crlf")) S V=$$LF2CRLF^MIOTPL2(V)
+	I +$G(W("crlf")),V'="" D
+	. I V[$C(13) S V=$$NORMNL^MIOTPL2(V)
+	. I V[$C(10) S V=$$LF2CRLF^MIOTPL2(V)
 	S CHUNK=+$G(W("chunk")) I CHUNK<256 S CHUNK=8192
 	F  Q:V=""  D
 	. S SPACE=CHUNK-$L($G(W("buf")))
@@ -2118,7 +2164,7 @@ POPF(FSP,F,CST,CTSP)
 	. I PMODE="capture" D
 	. . S PCR=$G(F(OLD-1,"capRef")) Q:PCR=""
 	. . S @PCR=$G(@PCR)_TXT
-	. E  S OUT=$G(OUT)_TXT	
+	. E  D EMIT^MIOTPL2(OLD-1,.F,.OUT,TXT)
 	; Pop and restore CTSP
 	S FSP=FSP-1
 	I FSP>0 S CTSP=+$G(F(FSP,"ctxTop"))
@@ -2157,11 +2203,18 @@ FIRSTSUB(REF)
 ; Emits to OUT or capture buffer depending on current frame mode.;
 ; =============================================================================
 EMIT(FSP,F,OUT,VAL)
-	N MODE S MODE=$G(F(FSP,"mode"))
+	N MODE,V
+	S MODE=$G(F(FSP,"mode"))
 	I MODE="capture" D  Q
 	. N CR S CR=$G(F(FSP,"capRef")) Q:CR=""
 	. S @CR=$G(@CR)_$G(VAL)
-	S OUT=$G(OUT)_$G(VAL)
+	; emit mode
+	S V=$G(VAL)
+	; Inline CRLF conversion (SAFE): if value already has CR/CRLF, normalize first
+	I $G(CRLF),V'="" D
+	. I V[$C(13) S V=$$NORMNL^MIOTPL2(V)
+	. I V[$C(10) S V=$$LF2CRLF^MIOTPL2(V)
+	S OUT=$G(OUT)_V
 	Q
 ; =============================================================================
 ; TOKEND(TOKR)
