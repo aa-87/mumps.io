@@ -248,10 +248,10 @@ PARSEBUF(P,TOK,N,ERR,FINAL)
 	. . N K S K=$$TRIM($E(INSIDE,2,$L(INSIDE))) D ADDVAR(.TOK,.N,K,0)
 	. ; partials
 	. I $E(INSIDE,1)=">" D  S POS=CLOSE Q
-	. . N PNM S PNM=$$TRIM($E(INSIDE,2,$L(INSIDE))) D ADDPART(.TOK,.N,PNM)
+	. . N PNM S PNM=$$PNORM($E(INSIDE,2,$L(INSIDE))) I PNM'="" D ADDPART(.TOK,.N,PNM)
 	. ; parents (Mustache inheritance extension)
 	. I $E(INSIDE,1)="<" D  S POS=CLOSE Q
-	. . N PNM S PNM=$$TRIM($E(INSIDE,2,$L(INSIDE))) D ADDPARS(.TOK,.N,PNM)
+	. . N PNM S PNM=$$PNORM($E(INSIDE,2,$L(INSIDE))) I PNM'="" D ADDPARS(.TOK,.N,PNM)
 	. ; sections / inverted / end
 	. I $E(INSIDE,1)="#"!($E(INSIDE,1)="^")!($E(INSIDE,1)="/") D  S POS=CLOSE Q
 	. . N OP,K,INV
@@ -548,12 +548,10 @@ PARSE(TEXT,TOK,ERR)
 	. . D ADDVAR(.TOK,.N,K,0)
 	. ; Partials
 	. I $E(INSIDE,1)=">" D  S POS=CLOSE Q
-	. . N P S P=$$TRIM($E(INSIDE,2,$L(INSIDE)))
-	. . D ADDPART(.TOK,.N,P)
+	. . N P S P=$$PNORM($E(INSIDE,2,$L(INSIDE))) I P'="" D ADDPART(.TOK,.N,P)
 	. ; Parents (Mustache inheritance extension)
 	. I $E(INSIDE,1)="<" D  S POS=CLOSE Q
-	. . N P S P=$$TRIM($E(INSIDE,2,$L(INSIDE)))
-	. . D ADDPARS(.TOK,.N,P)
+	. . N P S P=$$PNORM($E(INSIDE,2,$L(INSIDE))) I P'="" D ADDPARS(.TOK,.N,P)
 	. ; Sections / inverted / end
 	. I $E(INSIDE,1)="#"!($E(INSIDE,1)="^")!($E(INSIDE,1)="/") D  S POS=CLOSE Q
 	. . N OP,K,INV
@@ -1146,6 +1144,7 @@ EVALX(TOK,CONF,CTX,OUTMODE,OUT,OREF,ERR)
 	; partial / parent recursion protection
 	N PDEPTHMAX S PDEPTHMAX=+$G(CONF("templates","maxPartialDepth")) I PDEPTHMAX<1 S PDEPTHMAX=20
 	N PACTIVE,PTCACHE
+	K ^TMP($J,"MIOTPL2","PARTTOK")
 	; parent override stack (scoped to each {{<parent}} call)
 	N BOVRSP,BOVR
 	S BOVRSP=0
@@ -1245,17 +1244,20 @@ EVALX(TOK,CONF,CTX,OUTMODE,OUT,OREF,ERR)
 	. . N PARENT,PN0,PN,INDTOK,PKEY,PTREF,PMX,PMODE,PCAP
 	. . S PARENT=FSP
 	. . S PN0=$$TOKGET(TN,I,"k")
+	. . ;S PN=PN0
+	. . ;I $E(PN,1)="*" S PN=$$RESVAL($E(PN,2,$L(PN)),.CST,CTSP)
 	. . S PN=PN0
-	. . I $E(PN,1)="*" S PN=$$RESVAL($E(PN,2,$L(PN)),.CST,CTSP)
+	. . I $E(PN,1)="*" D
+	. . . I $E(PN,2)="*" S PN="" Q  ; no double-deref (spec)
+	. . . S PN=$$RESVAL($E(PN,2,$L(PN)),.CST,CTSP)
 	. . S F(PARENT,"i")=I+1
 	. . I PN="" Q
 	. . S PKEY=">"_PN
 	. . S PACTIVE(PKEY)=+$G(PACTIVE(PKEY))+1
 	. . I PACTIVE(PKEY)>PDEPTHMAX S ERR("code")="TPL_PARTIAL_DEPTH",ERR("msg")="Partial recursion depth exceeded: "_PN Q
 	. . I '$D(PTCACHE(PKEY,"ref")) D
-	. . . D GETTOKREF(PN,.CONF,.PTREF,.PMX,.ERR)
+	. . . D GETPTOK(PN,PKEY,.CONF,.CTX,.PTREF,.PMX,.ERR)
 	. . . I $D(ERR) D  Q
-	. . . . I $G(ERR("code"))="TPL_NOFILE" K ERR S PTCACHE(PKEY,"ref")="",PTCACHE(PKEY,"max")=0 Q
 	. . . . S PACTIVE(PKEY)=PACTIVE(PKEY)-1 I PACTIVE(PKEY)'>0 K PACTIVE(PKEY)
 	. . . . Q
 	. . . S PTCACHE(PKEY,"ref")=PTREF
@@ -1278,17 +1280,20 @@ EVALX(TOK,CONF,CTX,OUTMODE,OUT,OREF,ERR)
 	. . I 'MI S ERR("code")="TPL_PARSE",ERR("msg")="Parent start without match: "_PN0 Q
 	. . ; skip entire parent section in current stream (we’ll push frames for body+parent)
 	. . S F(PARENT,"i")=MI+1
+	. . ;S PN=PN0
+	. . ;I $E(PN,1)="*" S PN=$$RESVAL($E(PN,2,$L(PN)),.CST,CTSP)
 	. . S PN=PN0
-	. . I $E(PN,1)="*" S PN=$$RESVAL($E(PN,2,$L(PN)),.CST,CTSP)
+	. . I $E(PN,1)="*" D
+	. . . I $E(PN,2)="*" S PN="" Q  ; no double-deref (spec)
+	. . . S PN=$$RESVAL($E(PN,2,$L(PN)),.CST,CTSP)
 	. . I PN="" Q
 	. . S PKEY="<"_PN
 	. . S PACTIVE(PKEY)=+$G(PACTIVE(PKEY))+1
 	. . I PACTIVE(PKEY)>PDEPTHMAX S ERR("code")="TPL_PARTIAL_DEPTH",ERR("msg")="Parent recursion depth exceeded: "_PN Q
 	. . ; cache tokens
 	. . I '$D(PTCACHE(PKEY,"ref")) D
-	. . . D GETTOKREF(PN,.CONF,.PTREF,.PMX,.ERR)
+	. . . D GETPTOK(PN,PKEY,.CONF,.CTX,.PTREF,.PMX,.ERR)
 	. . . I $D(ERR) D  Q
-	. . . . I $G(ERR("code"))="TPL_NOFILE" K ERR S PTCACHE(PKEY,"ref")="",PTCACHE(PKEY,"max")=0 Q
 	. . . . S PACTIVE(PKEY)=PACTIVE(PKEY)-1 I PACTIVE(PKEY)'>0 K PACTIVE(PKEY)
 	. . . . Q
 	. . . S PTCACHE(PKEY,"ref")=PTREF
@@ -1700,4 +1705,52 @@ GETBOVR(BNAME,OTOK,OS,OE,OIND,OAT)
 	. . S OE=+$G(BOVR(L,BNAME,"e"))
 	. . S OIND=$G(BOVR(L,BNAME,"indent"))
 	. . S OAT=+$G(BOVR(L,BNAME,"at"))
+	Q
+PNORM(S) ; normalize partial/parent name (handles {{> * dynamic }} => *dynamic)
+	N R,REST,NAME
+	S R=$$TRIM($G(S))
+	I R="" Q ""
+	; if dynamic: accept whitespace between "*" and name
+	I $E(R)="*" D  Q $S(NAME="":"",1:"*"_NAME)
+	. S REST=$$TRIM($E(R,2,$L(R)))
+	. S NAME=$$NEXTTOK(.REST)
+	; static: take first token (ignore any accidental extra tokens)
+	S REST=R
+	S NAME=$$NEXTTOK(.REST)
+	Q NAME
+PREFROOT(CONF,CTX) ; returns a ref to partial sources map, or ""
+	N R
+	S R=$G(CONF("templates","partialsRef")) I R'="" Q R
+	S R=$G(CTX("meta","partialsRef")) I R'="" Q R
+	Q ""
+PARTLOOK(PREF,NAME,SRC,FOUND) ; lookup partial source text in PREF(name)
+	S FOUND=0,SRC=""
+	N PR S PR=$$APPREF(PREF,NAME)
+	I '$D(@PR) Q
+	I $D(@PR)#2 S SRC=$G(@PR),FOUND=1 Q
+	I $D(@PR)>1 D
+	. N I S I=0
+	. F  S I=$O(@PR@(I)) Q:I=""  D
+	. . Q:'(I?1.N)
+	. . S SRC=SRC_$G(@PR@(I))
+	. S FOUND=$S(SRC'="":1,1:0)
+	Q
+GETPTOK(PN,PKEY,CONF,CTX,PTREF,PMX,ERR) ; resolve partial tokens via map OR filesystem
+	K ERR S PTREF="",PMX=0
+	N PREF,SRC,FOUND,TMP,MREF,PM
+	; 1) If a partials map is provided, it is authoritative (spec behavior)
+	S PREF=$$PREFROOT(.CONF,.CTX)
+	I PREF'="" D  Q
+	. D PARTLOOK(PREF,PN,.SRC,.FOUND)
+	. I 'FOUND S PTREF="",PMX=0 Q  ; missing partial => renders nothing
+	. K TMP
+	. D COMPILE(SRC,.TMP,.ERR) Q:$D(ERR)
+	. S PTREF=$NA(^TMP($J,"MIOTPL2","PARTTOK",PKEY))
+	. K @PTREF M @PTREF=TMP
+	. S MREF=$$APPREF(PTREF,"meta")
+	. S PMX=+$G(@($$APPREF(MREF,"pmax")))
+	. I 'PMX S PM=$$TOKENDR(PTREF),@($$APPREF(MREF,"pmax"))=PM,PMX=PM
+	; 2) Default: filesystem partials
+	D GETTOKREF(PN,.CONF,.PTREF,.PMX,.ERR)
+	I $D(ERR),$G(ERR("code"))="TPL_NOFILE" K ERR S PTREF="",PMX=0
 	Q
