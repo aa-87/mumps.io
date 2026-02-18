@@ -4,6 +4,7 @@ MIOTPLT
 	D MIOTF128,MIOTF129,MIOTF130
 	D MIOTF131,MIOTF132,MIOTF133
 	D MIOTF200,MIOTF201,MIOTF202,MIOTF203,MIOTF204,MIOTF205
+	D TEST265,TEST266,TEST267
 	Q
 MIOTF200 ;Interpolation
 	; Interpolation tags are used to integrate dynamic content into the template.;
@@ -151,6 +152,47 @@ MIOTF205 ;Delimiters
 	D TEST130,TEST131,TEST132,TEST133,TEST134,TEST135,TEST136
 	D TEST137
 	QUIT
+MIOTF206 ;Inheritance
+	; Like partials, Parent tags are used to expand an external template into the
+	; current template. Unlike partials, Parent tags may contain optional
+	; arguments delimited by Block tags. For this reason, Parent tags may also be
+	; referred to as Parametric Partials.\n\nThe Parent tags' 
+	; content MUST be a non-whitespace character sequence NOT
+	; containing the current closing delimiter; each Parent tag MUST be followed by
+	; an End Section tag with the same content within the matching Parent tag.;
+	; This tag's content names the Parent template to inject. Set Delimiter tags
+	; Preceding a Parent tag MUST NOT affect the parsing of the injected external
+	; template. The Parent MUST be rendered against the context stack local to the
+	; tag. If the named Parent cannot be found, the empty string SHOULD be used
+	; instead, as in interpolations.Parent tags SHOULD be treated as standalone when
+	;  appropriate. If this tag is used standalone, any whitespace preceding
+	; the tag should be treated as indentation, and prepended to each line of 
+	; the Parent before rendering. The Block tags' content MUST be a 
+	; non-whitespace character sequence NOT containing the current closing delimiter.;
+	; Each Block tag MUST be followed by an End Section tag with the same content within
+	;  the matching Block tag. This tag's content determines the parameter or argument name.;
+	; Block tags may appear both inside and outside of Parent tags. In both cases,
+	; they specify a position within the template that can be overridden; it is a
+	; parameter of the containing template. The template text between the Block tag
+	; and its matching End Section tag defines the default content to render when
+	; the parameter is not overridden from outside. In addition, when used inside of
+	; a Parent tag, the template text between a Block tag and its matching
+	; End Section tag defines content that replaces the default defined in
+	; the Parent template. This content is the argument passed to the Parent template.;
+	; The practice of injecting an external template using a Parent tag is referred
+	; to as inheritance. If the Parent tag includes a Block tag that overrides a
+	; parameter of the Parent template, this may also be referred to as
+	; substitution.Parent templates are taken from the same namespace as regular
+	; Partial templates and in fact, injecting a regular Partial is
+	;  exactly equivalent to injecting a Parent without making
+	; any substitutions. Parameter and arguments names live in a namespace
+	; that is distinct from both Partials and the context.	
+	D TEST138,TEST139,TEST140,TEST141,TEST142,TEST143,TEST144
+	D TEST145,TEST146,TEST147,TEST148,TEST149,TEST150,TEST151
+	D TEST152,TEST153,TEST154,TEST155,TEST156,TEST157,TEST158
+	D TEST159,TEST160,TEST161,TEST162 ;,TEST163,TEST164
+	;	
+	QUIT 
 MIOTF121 ; Full suite test 121 - TPL_SECTION_CTA.;
 	NEW TOK,ERR,CONF,CTX,OUT
 	D COMPILE^MIOTPL2("{{#cta}}X{{/cta}}",.TOK,.ERR)
@@ -1813,6 +1855,414 @@ TEST137
 	N CTX
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	QUIT
+TEST138
+	NEW HDR S HDR="[TEST138][Default]"
+	NEW DESC S DESC=HDR_"[Default content should be rendered if the block isn't overridden.]"
+	NEW TEMPLATE S TEMPLATE="{{$title}}Default title{{/title}}\n"
+	NEW EXPECTED S EXPECTED="Default title\n"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+TEST139
+	NEW HDR S HDR="[TEST139][Variable]"
+	NEW DESC S DESC=HDR_"[Default content renders variables]"
+	NEW TEMPLATE S TEMPLATE="{{$foo}}default {{bar}} content{{/foo}}\n"
+	NEW EXPECTED S EXPECTED="default baz content\n"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX
+	S CTX("bar")="baz"
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+TEST140
+	NEW HDR S HDR="[TEST140][Triple Mustache]"
+	NEW DESC S DESC=HDR_"[Default content renders triple mustache variables]"
+	NEW TEMPLATE S TEMPLATE="{{$foo}}default {{{bar}}} content{{/foo}}\n"
+	NEW EXPECTED S EXPECTED="default <baz> content\n"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX
+	S CTX("bar")="<baz>"
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+TEST141
+	NEW HDR S HDR="[TEST141][Sections]"
+	NEW DESC S DESC=HDR_"[Default content renders sections]"
+	NEW TEMPLATE S TEMPLATE="{{$foo}}default {{#bar}}{{baz}}{{/bar}} content{{/foo}}\n"
+	NEW EXPECTED S EXPECTED="default qux content\n"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX
+	S CTX("bar","baz")="qux"
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+TEST142
+	NEW HDR S HDR="[TEST142][Negative Sections]"
+	NEW DESC S DESC=HDR_"[Default content renders negative sections]"
+	NEW TEMPLATE S TEMPLATE="{{$foo}}default {{^bar}}{{baz}}{{/bar}} content{{/foo}}\n"
+	NEW EXPECTED S EXPECTED="default three content\n"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX
+	S CTX("baz")="three"
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+TEST143
+	NEW HDR S HDR="[TEST143][Mustache Injection]"
+	NEW DESC S DESC=HDR_"[Mustache injection in default content]"
+	NEW TEMPLATE S TEMPLATE="{{$foo}}default {{#bar}}{{baz}}{{/bar}} content{{/foo}}\n"
+	NEW EXPECTED S EXPECTED="default {{qux}} content\n"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX
+	S CTX("bar","baz")="{{qux}}"
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	QUIT
+TEST144
+	NEW HDR S HDR="[TEST144][Inherit]"
+	NEW DESC S DESC=HDR_"[Default content rendered inside inherited templates]"
+	NEW TEMPLATE S TEMPLATE="{{<include}}{{/include}}\n"
+	NEW EXPECTED S EXPECTED="default content"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX
+	N CONF,CTX D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"include",$$UNESCNL("{{$foo}}default content{{/foo}}"),.ERR) ;
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	QUIT
+TEST145
+	NEW HDR S HDR="[TEST145][Overridden content]"
+	NEW DESC S DESC=HDR_"[Overridden content]"
+	NEW TEMPLATE S TEMPLATE="{{<super}}{{$title}}sub template title{{/title}}{{/super}}"
+	NEW EXPECTED S EXPECTED="...sub template title..."
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX
+	N CONF,CTX D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"super",$$UNESCNL("...{{$title}}Default title{{/title}}..."),.ERR) ;
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	QUIT
+TEST146
+	NEW HDR S HDR="[TEST146][Data does not override block]"
+	NEW DESC S DESC=HDR_"[Context does not override argument passed into parent]"
+	NEW TEMPLATE S TEMPLATE="{{<include}}{{$var}}var in template{{/var}}{{/include}}"
+	NEW EXPECTED S EXPECTED="var in template"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX
+	S CTX("var")="var in data"
+	N CONF,CTX D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"include",$$UNESCNL("{{$var}}var in include{{/var}}"),.ERR) ;
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	QUIT
+TEST147
+	NEW HDR S HDR="[TEST147][Data does not override block default]"
+	NEW DESC S DESC=HDR_"[Context does not override default content of block]"
+	NEW TEMPLATE S TEMPLATE="{{<include}}{{/include}}"
+	NEW EXPECTED S EXPECTED="var in include"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX
+	S CTX("var")="var in data"
+	N CONF,CTX D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"include",$$UNESCNL("{{$var}}var in include{{/var}}"),.ERR) ;
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	QUIT
+TEST148
+	NEW HDR S HDR="[TEST148][Overridden parent]"
+	NEW DESC S DESC=HDR_"[Overridden parent]"
+	NEW TEMPLATE S TEMPLATE="test {{<parent}}{{$stuff}}override{{/stuff}}{{/parent}}"
+	NEW EXPECTED S EXPECTED="test override"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX
+	N CONF,CTX D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"parent",$$UNESCNL("{{$stuff}}...{{/stuff}}"),.ERR) ;
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	QUIT
+TEST149
+	NEW HDR S HDR="[TEST149][Two overridden parents]"
+	NEW DESC S DESC=HDR_"[Two overridden parents with different content]"
+	NEW TEMPLATE S TEMPLATE="test {{<parent}}{{$stuff}}override1{{/stuff}}{{/parent}} {{<parent}}{{$stuff}}override2{{/stuff}}{{/parent}}\n"
+	NEW EXPECTED S EXPECTED="test |override1 default| |override2 default|\n"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX
+	N CONF,CTX D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"parent",$$UNESCNL("|{{$stuff}}...{{/stuff}}{{$default}} default{{/default}}|"),.ERR) ;
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	QUIT
+TEST150
+	NEW HDR S HDR="[TEST150][Override parent with newlines]"
+	NEW DESC S DESC=HDR_"[Override parent with newlines]"
+	NEW TEMPLATE S TEMPLATE="{{<parent}}{{$ballmer}}\npeaked\n\n:(\n{{/ballmer}}{{/parent}}"
+	NEW EXPECTED S EXPECTED="peaked\n\n:(\n"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX
+	N CONF,CTX D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"parent",$$UNESCNL("{{$ballmer}}peaking{{/ballmer}}"),.ERR) ;
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	QUIT
+TEST151
+	NEW HDR S HDR="[TEST151][Override parent with newlines]"
+	NEW DESC S DESC=HDR_"[Inherit indentation when overriding a parents]"
+	NEW TEMPLATE S TEMPLATE="{{<parent}}{{$nineties}}hammer time{{/nineties}}{{/parent}}"
+	NEW EXPECTED S EXPECTED="stop:\n  hammer time\n"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX
+	N CONF,CTX D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"parent",$$UNESCNL("stop:\n  {{$nineties}}collaborate and listen{{/nineties}}\n"),.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	QUIT
+TEST152
+	NEW HDR S HDR="[TEST152][Only one override]"
+	NEW DESC S DESC=HDR_"[Override one parameter but not the other]"
+	NEW TEMPLATE S TEMPLATE="{{<parent}}{{$stuff2}}override two{{/stuff2}}{{/parent}}"
+	NEW EXPECTED S EXPECTED="new default one, override two"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX
+	N CONF,CTX D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"parent",$$UNESCNL("{{$stuff}}new default one{{/stuff}}, {{$stuff2}}new default two{{/stuff2}}"),.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	QUIT
+TEST153
+	NEW HDR S HDR="[TEST153][Parent template]"
+	NEW DESC S DESC=HDR_"[Parent templates behave identically to partials when called with no parameters]"
+	NEW TEMPLATE S TEMPLATE="{{>parent}}|{{<parent}}{{/parent}}"
+	NEW EXPECTED S EXPECTED="default content|default content"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX
+	N CONF,CTX D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"parent",$$UNESCNL("{{$foo}}default content{{/foo}}"),.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	QUIT
+TEST154
+	NEW HDR S HDR="[TEST154][Recursion]"
+	NEW DESC S DESC=HDR_"[Recursion in inherited templates]"
+	NEW TEMPLATE S TEMPLATE="{{<parent}}{{$foo}}override{{/foo}}{{/parent}}"
+	NEW EXPECTED S EXPECTED="override override override don't recurse"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX
+	N CONF,CTX D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"parent",$$UNESCNL("{{$foo}}default content{{/foo}} {{$bar}}{{<parent2}}{{/parent2}}{{/bar}}"),.ERR)
+	N ERR D WRFILE(ROOT_"parent2",$$UNESCNL("{{$foo}}parent2 default content{{/foo}} {{<parent}}{{$bar}}don't recurse{{/bar}}{{/parent}}"),.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	QUIT
+TEST155
+	NEW HDR S HDR="[TEST155][Multi-level inheritance]"
+	NEW DESC S DESC=HDR_"[Top-level substitutions take precedence in multi-level inheritance]"
+	NEW TEMPLATE S TEMPLATE="{{<parent}}{{$a}}c{{/a}}{{/parent}}"
+	NEW EXPECTED S EXPECTED="c"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX
+	N CONF,CTX D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"parent",$$UNESCNL("{{<older}}{{$a}}p{{/a}}{{/older}}"),.ERR)
+	N ERR D WRFILE(ROOT_"older",$$UNESCNL("{{<grandParent}}{{$a}}o{{/a}}{{/grandParent}}"),.ERR)
+	N ERR D WRFILE(ROOT_"grandParent",$$UNESCNL("{{$a}}g{{/a}}"),.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	QUIT
+TEST156
+	NEW HDR S HDR="[TEST156][Multi-level inheritance, no sub child]"
+	NEW DESC S DESC=HDR_"[Top-level substitutions take precedence in multi-level inheritance]"
+	NEW TEMPLATE S TEMPLATE="{{<parent}}{{/parent}}"
+	NEW EXPECTED S EXPECTED="p"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX
+	N CONF,CTX D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"parent",$$UNESCNL("{{<older}}{{$a}}p{{/a}}{{/older}}"),.ERR)
+	N ERR D WRFILE(ROOT_"older",$$UNESCNL("{{<grandParent}}{{$a}}o{{/a}}{{/grandParent}}"),.ERR)
+	N ERR D WRFILE(ROOT_"grandParent",$$UNESCNL("{{$a}}g{{/a}}"),.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	QUIT
+TEST157
+	NEW HDR S HDR="[TEST157][Text inside parent]"
+	NEW DESC S DESC=HDR_"[Ignores text inside parent templates, but does parse $ tags]"
+	NEW TEMPLATE S TEMPLATE="{{<parent}} asdfasd {{$foo}}hmm{{/foo}} asdfasdfasdf {{/parent}}"
+	NEW EXPECTED S EXPECTED="hmm"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX
+	N CONF,CTX D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"parent",$$UNESCNL("{{$foo}}default content{{/foo}}"),.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	QUIT
+TEST158
+	NEW HDR S HDR="[TEST158][Text inside parent]"
+	NEW DESC S DESC=HDR_"[Allows text inside a parent tag, but ignores it]"
+	NEW TEMPLATE S TEMPLATE="{{<parent}} asdfasd asdfasdfasdf {{/parent}}"
+	NEW EXPECTED S EXPECTED="default content"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX
+	N CONF,CTX D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"parent",$$UNESCNL("{{$foo}}default content{{/foo}}"),.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	QUIT
+TEST159
+	NEW HDR S HDR="[TEST159][Block scope]"
+	NEW DESC S DESC=HDR_"[Scope of a substituted block is evaluated in the context of the parent template]"
+	NEW TEMPLATE S TEMPLATE="{{<parent}}{{$block}}I say {{fruit}}.{{/block}}{{/parent}}"
+	NEW EXPECTED S EXPECTED="I say bananas."
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX
+	S CTX("fruit")="apples"
+	S CTX("nested","fruit")="bananas"
+	N CONF D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"parent",$$UNESCNL("{{#nested}}{{$block}}You say {{fruit}}.{{/block}}{{/nested}}"),.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	QUIT
+TEST160
+	NEW HDR S HDR="[TEST160][Standalone parent]"
+	NEW DESC S DESC=HDR_"[A parent's opening and closing tags need not be on separate lines in order to be standalone]"
+	NEW TEMPLATE S TEMPLATE="Hi,\n  {{<parent}}{{/parent}}\n"
+	NEW EXPECTED S EXPECTED="Hi,\n  one\n  two\n"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX
+	N CONF D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"parent",$$UNESCNL("one\ntwo\n"),.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	QUIT
+TEST161
+	NEW HDR S HDR="[TEST161][Standalone block]"
+	NEW DESC S DESC=HDR_"[A block's opening and closing tags need not be on separate lines in order to be standalone]"
+	NEW TEMPLATE S TEMPLATE="{{<parent}}{{$block}}\none\ntwo{{/block}}\n{{/parent}}\n"
+	;NEW EXPECTED 
+	S EXPECTED="Hi,\n  one\n  two\n"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX
+	N CONF D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"parent",$$UNESCNL("Hi,\n  {{$block}}{{/block}}\n"),.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	QUIT
+TEST162
+	NEW HDR S HDR="[TEST162][Block reindentation]"
+	NEW DESC S DESC=HDR_"[Block indentation is removed at the site of definition and added at the site of expansion]"
+	;NEW TEMPLATE 
+	S TEMPLATE="{{<parent}}{{$block}}\n    one\n    two\n{{/block}}{{/parent}}\n"
+	;NEW EXPECTED 
+	S EXPECTED="Hi,\n  one\n  two\n"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX
+	N CONF D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"parent",$$UNESCNL("Hi,\n  {{$block}}\n  {{/block}}\n"),.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	QUIT
+TEST163
+	NEW HDR S HDR="[TEST163][Intrinsic indentation]"
+	NEW DESC S DESC=HDR_"[When the block opening tag is standalone, indentation is determined by default content]"
+	;NEW TEMPLATE 
+	S TEMPLATE="{{<parent}}{{$block}}\none\ntwo\n{{/block}}{{/parent}}\n"
+	;NEW EXPECTED 
+	S EXPECTED="Hi,\n  one\n  two\n"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX
+	N CONF D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"parent",$$UNESCNL("Hi,\n{{$block}}\n  default\n{{/block}}\n"),.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	QUIT
+TEST164
+	NEW HDR S HDR="[TEST164][Nested block reindentation]"
+	NEW DESC S DESC=HDR_"[Nested blocks are reindented relative to the surrounding block]"
+	;NEW TEMPLATE 
+	S TEMPLATE="{{<parent}}{{$nested}}\nthree\n{{/nested}}{{/parent}}\n"
+	;NEW EXPECTED 
+	S EXPECTED="one\n  three\n"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX
+	N CONF D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"parent",$$UNESCNL("{{<grandparent}}{{$block}}\n  one\n  {{$nested}}\n    two\n  {{/nested}}\n{{/block}}{{/grandparent}}\n"),.ERR)
+	N ERR D WRFILE(ROOT_"grandparent",$$UNESCNL("{{$block}}default{{/block}}"),.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	QUIT
+TEST265 ;
+	N CONF,CTX,TOK,OUT,ERR,S
+	D START^MIOTPL2(.CONF)
+	S CTX("meta","captureBlocks")=1
+	S S="Body"_$C(10)_"  {{#block:head}}"_$C(10)_"  X"_$C(10)_"  {{/block:head}}"_$C(10)_"End"_$C(10)
+	D COMPILE^MIOTPL2(S,.TOK,.ERR) I $D(ERR) W "FAIL TEST165 compile",! Q
+	D EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR) I $D(ERR) W "FAIL TEST165 eval",! Q
+	I OUT'=("Body"_$C(10)_"End"_$C(10)) W "FAIL TEST165 OUT=",OUT,! Q
+	I $G(CTX("blocks","head"))'=("X"_$C(10)) W "FAIL TEST165 BLOCK=",CTX("blocks","head"),! Q
+	Q
+TEST266
+	N CONF,CTX,TOK,OUT,ERR,S
+	D START^MIOTPL2(.CONF)
+	K CTX("blocks")
+	S CTX("meta","captureBlocks")=0
+	S S="S"_$C(10)_"  {{#block:head}}"_$C(10)_"  D"_$C(10)_"  {{/block:head}}"_$C(10)_"E"_$C(10)
+	D COMPILE^MIOTPL2(S,.TOK,.ERR) I $D(ERR) W "FAIL TEST166 compile",! Q
+	D EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR) I $D(ERR) W "FAIL TEST166 eval",! Q
+	S EXPECTED=("S"_$C(10)_"  D"_$C(10)_"E"_$C(10))
+	I OUT'=EXPECTED W "FAIL TEST166 OUT=",OUT,! Q
+	Q
+TEST267
+	N CONF,CTX,TOK,OUT,ERR,S
+	D START^MIOTPL2(.CONF)
+	S CTX("blocks","head")="X"_$C(10)
+	S CTX("meta","captureBlocks")=0
+	S S="S"_$C(10)_"  {{#block:head}}"_$C(10)_"  D"_$C(10)_"  {{/block:head}}"_$C(10)_"E"_$C(10)
+	D COMPILE^MIOTPL2(S,.TOK,.ERR) I $D(ERR) W "FAIL TEST167 compile",! Q
+	D EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR) I $D(ERR) W "FAIL TEST167 eval",! Q
+	I OUT'=("S"_$C(10)_"  X"_$C(10)_"E"_$C(10)) W "FAIL TEST167 OUT=",OUT,! Q
+	I $G(CTX("blocks","head"))'=("X"_$C(10)) W "FAIL TEST167 BLOCK OVERWRITTEN=",CTX("blocks","head"),! Q
+	Q
 TEST000
 	NEW HDR S HDR="[TEST000][]"
 	NEW DESC S DESC=HDR_"[]"
@@ -1826,25 +2276,11 @@ TEST000
 	SET CTX("text")="content"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	QUIT
-TEST1
-	NEW HDR S HDR="[TEST100][Failed Lookup]"
-	NEW DESC S DESC=HDR_"[The empty string should be used when the named partial is not found.]"
-	;NEW TEMPLATE 
-	S TEMPLATE="""{{>text}}"""
-	;NEW EXPECTED 
-	S EXPECTED=""""""
-	N CONF
-	D COMPILE^MIOTPL2($G(TEMPLATE),.TOK,.ERR)
-	D OK^MIOTASSERT('$D(ERR),"[COMPILE]"_HDR)
-	D EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
-	D OK^MIOTASSERT('$D(ERR),"[EVAL]"_DESC)
-	D EQ^MIOTASSERT(OUT,$G(EXPECTED),"[RENDER]"_DESC)
-	QUIT
 RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,CTX)
 	; Run each spec test twice:
 	;  1) Scalar template -> scalar output (existing high-perf path)
 	;  2) Reference template OREF(n) -> reference output OREF(n) (GB-safe path)
-	NEW TOK,ERR,OUT
+	;NEW TOK,ERR,OUT
 	K TOK,ERR,OUT
 	D COMPILE^MIOTPL2($G(TEMPLATE),.TOK,.ERR)
 	D OK^MIOTASSERT('$D(ERR),"[COMPILE]"_HDR)

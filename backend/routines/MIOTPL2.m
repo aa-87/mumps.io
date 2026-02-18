@@ -194,14 +194,22 @@ RENDER(NAME,CONF,CTX,OUT,ERR)
 	Q
 RENDERPAGE(PAGE,LAYOUT,CONF,CTX,OUT,ERR)
 	K ERR S OUT=""
-	N PAGEOUT,OK
+	N PAGEOUT,OK,OLD
 	; Reset blocks for this page render.;
 	K CTX("blocks")
 	S CTX("content")=""
-	D RENDER(PAGE,.CONF,.CTX,.PAGEOUT,.ERR)  
-	Q:$D(ERR) 
+	; Page pass: capture blocks only (no emit)
+	S OLD=$G(CTX("meta","captureBlocks"))
+	S CTX("meta","captureBlocks")=1
+	D RENDER(PAGE,.CONF,.CTX,.PAGEOUT,.ERR)
+	S CTX("meta","captureBlocks")=0
+	Q:$D(ERR)
+	; Store page body as content, then render layout (blocks emit here)
 	S CTX("content")=PAGEOUT
 	D RENDERLAYOUT(LAYOUT,.CONF,.CTX,.OUT,.ERR)
+	; restore prior setting (if any)
+	I OLD'="" S CTX("meta","captureBlocks")=OLD
+	E  K CTX("meta","captureBlocks")
 	Q
 RENDERLAYOUT(LAYOUT,CONF,CTX,OUT,ERR)
 	K ERR S OUT=""
@@ -755,9 +763,11 @@ ISSTAND(TOK,I,MAX)
 	Q:'NOK 0
 	Q 1
 STANDAP(TOK,I,MAX)
-	N TYP,PV,P,IND
+	N TYP,PV,P,IND,ISBLK
 	S TYP=$G(TOK(I,"t"))
-	I TYP="part" D
+	S ISBLK=$S(TYP="secS":+$G(TOK(I,"blk")),1:0)
+	; Capture call-site indent for partials and block-start tags (standalone only)
+	I (TYP="part")!ISBLK D
 	. S IND=""
 	. I I>1,$G(TOK(I-1,"t"))="text" D
 	. . S PV=$G(TOK(I-1,"v"))
@@ -776,6 +786,17 @@ INDENTSTR(S,IND)
 	F I=1:1:L D
 	. S CH=$E(S,I),OUT=OUT_CH
 	. I CH=$C(10),I<L S OUT=OUT_IND
+	Q OUT
+DEINDENTSTR(S,IND) ; Inverse of INDENTSTR
+	I $G(IND)="" Q $G(S)
+	N LF,N,I,LINE,OUT
+	S S=$G(S),LF=$C(10),OUT=""
+	S N=$L(S,LF)
+	F I=1:1:N D
+	. S LINE=$P(S,LF,I)
+	. I $E(LINE,1,$L(IND))=IND S LINE=$E(LINE,$L(IND)+1,$L(LINE))
+	. S OUT=OUT_LINE
+	. I I<N S OUT=OUT_LF
 	Q OUT
 HEADWNL(S)
 	N J,C,L
@@ -1359,17 +1380,55 @@ EVALX(TOK,CONF,CTX,OUTMODE,OUT,OREF,ERR)
 	. . I 'MI S ERR("code")="TPL_PARSE",ERR("msg")="Section start without match: "_KEY Q
 	. . S NEXT=MI+1
 	. . S F(PARENT,"i")=NEXT
-	. . ; block capture
+	. . ; block slots: page captures override (no emit), layout emits override or default
 	. . I +$$TOKGET(TN,I,"blk") D  Q
-	. . . N BNAME,NEWF,CAPREF
+	. . . N BNAME,RAWIND,CAPMODE,OVR,TXT,EIND,NEWF,CAPREF
 	. . . S BNAME=$$TOKGET(TN,I,"bname")
+	. . . S RAWIND=$$TOKGET(TN,I,"indent")           ; standalone-only indent from STANDAP
+	. . . S EIND=$G(F(PARENT,"indent"))_RAWIND       ; effective indent at this site
+	. . . S CAPMODE=$S($D(CTX("meta","captureBlocks")):+$G(CTX("meta","captureBlocks")),1:+$G(CONF("templates","captureBlocks")))
+	. . . S OVR=$D(CTX("blocks",BNAME))
+	. . . ; Layout mode + override exists => emit override, skip default body
+	. . . I 'CAPMODE,OVR D  Q
+	. . . . S TXT=$G(CTX("blocks",BNAME))
+	. . . . S TXT=$$INDENTSTR(TXT,EIND)
+	. . . . D EMITX(OUTMODE,PARENT,.F,.OUT,.W,TXT,CRLF)
+	. . . . I TXT'="" S F(PARENT,"at")=$S($E(TXT,$L(TXT))=$C(10):1,1:0)
+	. . . ; Otherwise capture body (page capture or default capture)
 	. . . S NEWF=FSP+1
 	. . . S BCAP(NEWF)=""
 	. . . S CAPREF=$NA(BCAP(NEWF))
 	. . . D PUSHFRAMEI(.FSP,.F,I+1,MI-1,CTSP,"capture",CAPREF,TN,PARENT)
+	. . . ; store captured value into CTX("blocks",name)
 	. . . S F(FSP,"storeBlock")=1
 	. . . S F(FSP,"storeName")=BNAME
 	. . . S F(FSP,"storeCapRef")=CAPREF
+	. . . S F(FSP,"blockDefIndent")=EIND
+	. . . ; If layout default (no override), emit what we captured (after pop)
+	. . . I 'CAPMODE D
+	. . . . S F(FSP,"capEmit")=1
+	. . . . S F(FSP,"emitIndent")=EIND
+	. . . . S F(FSP,"storeNoOverwrite")=1
+	. . ; block slots: page captures override (no emit), layout emits override or default
+	. . I +$$TOKGET(TN,I,"blk") D  Q
+	. . . N BNAME,DEFIND,CAPMODE,OVR,TXT,EIND,NEWF,CAPREF
+	. . . S BNAME=$$TOKGET(TN,I,"bname")
+	. . . S DEFIND=$$TOKGET(TN,I,"indent")  ; set by STANDAP when standalone
+	. . . ; captureBlocks mode: 1 for page pass (capture only), 0 for layout (emit)
+	. . . S CAPMODE=$S($D(CTX("meta","captureBlocks")):+$G(CTX("meta","captureBlocks")),1:+$G(CONF("templates","captureBlocks")))
+	. . . S OVR=$D(CTX("blocks",BNAME))
+	. . . ; Layout mode + override exists => emit override, skip default body tokens
+	. . . I 'CAPMODE,OVR D  Q
+	. . . . S TXT=$G(CTX("blocks",BNAME))
+	. . . . S EIND=$G(F(PARENT,"indent"))_DEFIND
+	. . . . S TXT=$$INDENTSTR(TXT,EIND)
+	. . . . D EMITX(OUTMODE,PARENT,.F,.OUT,.W,TXT,CRLF)
+	. . . . I TXT'="" S F(PARENT,"at")=$S($E(TXT,$L(TXT))=$C(10):1,1:0)
+	. . . ; Otherwise capture default/override body
+	. . . S NEWF=FSP+1
+	. . . S BCAP(NEWF)=""
+	. . . S CAPREF=$NA(BCAP(NEWF))
+	. . . D PUSHFRAMEI(.FSP,.F,I+1,MI-1,CTSP,"capture",CAPREF,TN,PARENT)	
 	. . ; resolve key
 	. . N ISSET,TYPE,REF
 	. . D RESREF(KEY,.CST,CTSP,.ISSET,.TYPE,.REF)
@@ -1424,28 +1483,40 @@ EMITX(OUTMODE,FSP,F,OUT,W,VAL,CRLF)
 	S OUT=$G(OUT)_V
 	Q	
 POPX(OUTMODE,FSP,F,CST,CTSP,OUT,W,CRLF)
-	N OLD,CM,PM
+	N OLD,CM,PM,CAPVAL,DEFIND,STRIP,CR
 	S OLD=FSP
 	S CM=$G(F(OLD,"mode"))
 	S PM=$S(OLD>1:$G(F(OLD-1,"mode")),1:"")
+	; Precompute deindented capture for block frames (storeBlock/capEmit)
+	S CAPVAL="",DEFIND="",STRIP="",CR=""
+	I +$G(F(OLD,"storeBlock"))!(+$G(F(OLD,"capEmit"))) D
+	. S CR=$G(F(OLD,"storeCapRef")) I CR="" S CR=$G(F(OLD,"capRef"))
+	. S CAPVAL=$S(CR'="":$G(@CR),1:"")
+	. S DEFIND=$G(F(OLD,"blockDefIndent"))
+	. S STRIP=DEFIND
+	. I STRIP="" S STRIP=$$BLKMININD(CAPVAL)
+	. I STRIP'="" S CAPVAL=$$DEINDENTSTR(CAPVAL,STRIP)
 	I +$G(F(OLD,"storeBlock")) D
-	. N BN,CR,VAL
+	. N BN,NOOVR
 	. S BN=$G(F(OLD,"storeName"))
-	. S CR=$G(F(OLD,"storeCapRef"))
-	. S VAL=$S(CR'="":$G(@CR),1:"")
-	. S CTX("blocks",BN)=VAL
+	. S NOOVR=+$G(F(OLD,"storeNoOverwrite"))
+	. I NOOVR,$D(CTX("blocks",BN)) Q
+	. S CTX("blocks",BN)=CAPVAL
 	I $G(F(OLD,"pname"))'="" D
 	. N PN S PN=$G(F(OLD,"pname"))
 	. S PACTIVE(PN)=+$G(PACTIVE(PN))-1
 	. I PACTIVE(PN)'>0 K PACTIVE(PN)
 	I +$G(F(OLD,"capEmit")) D
-	. N CR,VAL,IND,TXT
+	. N CR,VAL,IND,TXT,DEFIND
 	. S CR=$G(F(OLD,"capRef"))
 	. S VAL=$S(CR'="":$G(@CR),1:"")
-	. S IND=$G(F(OLD,"indent"))
+	. S DEFIND=$G(F(OLD,"blockDefIndent"))
+	. I DEFIND'="" S VAL=$$DEINDENTSTR(VAL,DEFIND)
+	. S IND=$G(F(OLD,"emitIndent"))
+	. I IND="" S IND=$G(F(OLD,"indent"))  ; fallback
 	. S TXT=$$INDENTSTR(VAL,IND)
 	. I CR'="" S @CR=""
-	. K F(OLD,"capEmit"),F(OLD,"indent")
+	. K F(OLD,"capEmit"),F(OLD,"emitIndent"),F(OLD,"indent")
 	. I OLD>1 D EMITX(OUTMODE,OLD-1,.F,.OUT,.W,TXT,CRLF)
 	I OLD>1 D
 	. I '(CM="capture"&(PM'="capture")) S F(OLD-1,"at")=+$G(F(OLD,"at"))
@@ -1590,4 +1661,29 @@ EVALSIMP(TOK,TOKR,PMAX,CRLF,CONF,CST,CTSP,OUTMODE,OUT,W,ERR) ; fast path: text/v
 	. S ERR("code")="TPL_INT",ERR("msg")="Simple-eval hit complex token: "_TYP
 	I OUTMODE="R" D OUTFLUSH(.W)
 	Q
+BLKMININD(S) ; common leading ws across non-blank lines (spaces/tabs)
+	N LF,N,I,LINE,PFX,COM
+	S S=$G(S) Q:S="" ""
+	S LF=$C(10),COM=""
+	S N=$L(S,LF)
+	F I=1:1:N D  Q:COM=""
+	. S LINE=$P(S,LF,I)
+	. I LINE="" Q
+	. I $$ALLWS(LINE) Q  ; ignore whitespace-only lines
+	. S PFX=$$LEADWS(LINE)
+	. I COM="" S COM=PFX Q
+	. S COM=$$COMMPFX(COM,PFX)
+	Q COM
+LEADWS(LINE)
+	N L,J,C
+	S LINE=$G(LINE),L=$L(LINE)
+	F J=1:1:L S C=$E(LINE,J) Q:(C'=" ")&(C'=$C(9))
+	Q $E(LINE,1,J-1)
+COMMPFX(A,B)
+	N L,I
+	S A=$G(A),B=$G(B)
+	S L=$L(A) I $L(B)<L S L=$L(B)
+	S I=1
+	F  Q:I>L  Q:$E(A,I)'=$E(B,I)  S I=I+1
+	Q $E(A,1,I-1)
 	;
