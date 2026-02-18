@@ -203,7 +203,7 @@ MIOTF121 ; Full suite test 121 - TPL_SECTION_CTA.;
 	DO EQ^MIOTASSERT(OUT,"X","section render")
 	QUIT
 MIOTF122 ; Full suite test 122 - TPL_BLOCK_TITLE.;
-	;NEW TOK,ERR,CONF,CTX,OUT
+	NEW TOK,ERR,CONF,CTX,OUT
 	DO COMPILE^MIOTPL2("{{#block:title}}Hello{{/block:title}}",.TOK,.ERR) I $D(ERR) ZWR ERR
 	DO OK^MIOTASSERT('$D(ERR),"compile")  I $D(ERR) ZWR ERR
 	DO EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
@@ -439,16 +439,16 @@ MIOTF133 ; CRLF detected across chunk boundary (COMPREF/COMPILEA path)
 TEST001
 	NEW HDR S HDR="[TEST001][No Interpolation]"
 	NEW DESC S DESC=HDR_"[Mustache-free templates should render as-is]"
-	NEW TEMPLATE S TEMPLATE="Hello from {Mustache}!\n"
-	NEW EXPECTED S EXPECTED="Hello from {Mustache}!\n"
+	S TEMPLATE="Hello from {Mustache}!\n"
+	S EXPECTED="Hello from {Mustache}!\n"
 	NEW CTX
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	QUIT
 TEST002
 	NEW HDR S HDR="[TEST002][Basic Interpolation]"
 	NEW DESC S DESC=HDR_"[Unadorned tags should interpolate content into the template.]"
-	NEW TEMPLATE S TEMPLATE="Hello, {{subject}}!\n"
-	NEW EXPECTED S EXPECTED="Hello, world!\n"
+	S TEMPLATE="Hello, {{subject}}!\n"
+	S EXPECTED="Hello, world!\n"
 	NEW CTX
 	SET CTX("subject")="world"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
@@ -456,8 +456,8 @@ TEST002
 TEST003
 	NEW HDR S HDR="[TEST003][No Re-interpolation]"
 	NEW DESC S DESC=HDR_"[Interpolated tag output should not be re-interpolated.]"
-	NEW TEMPLATE S TEMPLATE="{{template}}: {{planet}}"
-	NEW EXPECTED S EXPECTED="{{planet}}: Earth"
+	S TEMPLATE="{{template}}: {{planet}}"
+	S EXPECTED="{{planet}}: Earth"
 	NEW CTX
 	SET CTX("template")="{{planet}}"
 	SET CTX("planet")="Earth"
@@ -466,32 +466,32 @@ TEST003
 TEST004
 	NEW HDR S HDR="[TEST004][HTML Escaping]"
 	NEW DESC S DESC=HDR_"[Basic interpolation should be HTML escaped..]"
-	NEW TEMPLATE S TEMPLATE="These characters should be HTML escaped: {{forbidden}}"
-	NEW EXPECTED S EXPECTED="These characters should be HTML escaped: &amp; &quot; &lt; &gt;"
+	S TEMPLATE="These characters should be HTML escaped: {{forbidden}}"
+	S EXPECTED="These characters should be HTML escaped: &amp; &quot; &lt; &gt;"
 	NEW CTX SET CTX("forbidden")="& "" < >"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	QUIT
 TEST005
 	NEW HDR S HDR="[TEST005][Triple Mustache]"
 	NEW DESC S DESC=HDR_"[Triple mustaches should interpolate without HTML escaping.]"
-	NEW TEMPLATE S TEMPLATE="These characters should not be HTML escaped: {{{forbidden}}}"
-	NEW EXPECTED S EXPECTED="These characters should not be HTML escaped: & "" < >"
+	S TEMPLATE="These characters should not be HTML escaped: {{{forbidden}}}"
+	S EXPECTED="These characters should not be HTML escaped: & "" < >"
 	NEW CTX SET CTX("forbidden")="& "" < >"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	QUIT
 TEST006
 	NEW HDR S HDR="[TEST006][Ampersand]"
 	NEW DESC S DESC=HDR_"[Ampersand should interpolate without HTML escaping.]"
-	NEW TEMPLATE S TEMPLATE="These characters should not be HTML escaped: {{{forbidden}}}"
-	NEW EXPECTED S EXPECTED="These characters should not be HTML escaped: & "" < >"
+	S TEMPLATE="These characters should not be HTML escaped: {{{forbidden}}}"
+	S EXPECTED="These characters should not be HTML escaped: & "" < >"
 	NEW CTX SET CTX("forbidden")="& "" < >"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	QUIT
 TEST007
 	NEW HDR S HDR="[TEST007][Basic Integer Interpolation]"
 	NEW DESC S DESC=HDR_"[Integers should interpolate seamlessly.]"
-	NEW TEMPLATE S TEMPLATE="""{{mph}} miles an hour!"""
-	NEW EXPECTED S EXPECTED="""85 miles an hour!"""
+	S TEMPLATE="""{{mph}} miles an hour!"""
+	S EXPECTED="""85 miles an hour!"""
 	NEW CTX 
 	SET CTX("mph")=85
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
@@ -499,8 +499,8 @@ TEST007
 TEST008
 	NEW HDR S HDR="[TEST008][Triple Mustache Integer Interpolation]"
 	NEW DESC S DESC=HDR_"[Integers should interpolate seamlessly.]"
-	NEW TEMPLATE S TEMPLATE="""{{{mph}}} miles an hour!"""
-	NEW EXPECTED S EXPECTED="""85 miles an hour!"""
+	S TEMPLATE="""{{{mph}}} miles an hour!"""
+	S EXPECTED="""85 miles an hour!"""
 	NEW CTX 
 	SET CTX("mph")=85
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
@@ -508,8 +508,8 @@ TEST008
 TEST009
 	NEW HDR S HDR="[TEST009][Ampersand Integer Interpolation]"
 	NEW DESC S DESC=HDR_"[Integers should interpolate seamlessly.]"
-	NEW TEMPLATE S TEMPLATE="""{{&mph}} miles an hour!"""
-	NEW EXPECTED S EXPECTED="""85 miles an hour!"""
+	S TEMPLATE="""{{&mph}} miles an hour!"""
+	S EXPECTED="""85 miles an hour!"""
 	NEW CTX 
 	SET CTX("mph")=85
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
@@ -517,8 +517,8 @@ TEST009
 TEST010
 	NEW HDR S HDR="[TEST010[Basic Decimal Interpolation]"
 	NEW DESC S DESC=HDR_"[Decimals should interpolate seamlessly with proper significance.]"
-	NEW TEMPLATE S TEMPLATE="""{{power}} jiggawatts!"""
-	NEW EXPECTED S EXPECTED="""1.21 jiggawatts!"""
+	S TEMPLATE="""{{power}} jiggawatts!"""
+	S EXPECTED="""1.21 jiggawatts!"""
 	NEW CTX 
 	SET CTX("power")=1.21
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
@@ -526,8 +526,8 @@ TEST010
 TEST011
 	NEW HDR S HDR="[TEST011][Triple Mustache Decimal Interpolation]"
 	NEW DESC S DESC=HDR_"[Decimals should interpolate seamlessly with proper significance.]"
-	NEW TEMPLATE S TEMPLATE="""{{{power}}} jiggawatts!"""
-	NEW EXPECTED S EXPECTED="""1.21 jiggawatts!"""
+	S TEMPLATE="""{{{power}}} jiggawatts!"""
+	S EXPECTED="""1.21 jiggawatts!"""
 	NEW CTX 
 	SET CTX("power")=1.21
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
@@ -535,8 +535,8 @@ TEST011
 TEST012
 	NEW HDR S HDR="[TEST012[Ampersand Decimal Interpolation]"
 	NEW DESC S DESC=HDR_"[Decimals should interpolate seamlessly with proper significance.]"
-	NEW TEMPLATE S TEMPLATE="""{{&power}} jiggawatts!"""
-	NEW EXPECTED S EXPECTED="""1.21 jiggawatts!"""
+	S TEMPLATE="""{{&power}} jiggawatts!"""
+	S EXPECTED="""1.21 jiggawatts!"""
 	NEW CTX 
 	SET CTX("power")=1.21
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
@@ -544,8 +544,8 @@ TEST012
 TEST013
 	NEW HDR S HDR="[TEST013][Basic Null Interpolation]"
 	NEW DESC S DESC=HDR_"[Nulls should interpolate as the empty string.]"
-	NEW TEMPLATE S TEMPLATE="I ({{cannot}}) be seen!"
-	NEW EXPECTED S EXPECTED="I () be seen!"
+	S TEMPLATE="I ({{cannot}}) be seen!"
+	S EXPECTED="I () be seen!"
 	NEW CTX 
 	SET CTX("cannot")=""
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
@@ -553,8 +553,8 @@ TEST013
 TEST014
 	NEW HDR S HDR="[TEST014[Triple Mustache Null Interpolation]"
 	NEW DESC S DESC=HDR_"[Nulls should interpolate as the empty string.]"
-	NEW TEMPLATE S TEMPLATE="I ({{{cannot}}}) be seen!"
-	NEW EXPECTED S EXPECTED="I () be seen!"
+	S TEMPLATE="I ({{{cannot}}}) be seen!"
+	S EXPECTED="I () be seen!"
 	NEW CTX 
 	SET CTX("cannot")=""
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
@@ -562,8 +562,8 @@ TEST014
 TEST015
 	NEW HDR S HDR="[TEST015][Ampersand Null Interpolation]"
 	NEW DESC S DESC=HDR_"[Nulls should interpolate as the empty string.]"
-	NEW TEMPLATE S TEMPLATE="I ({{&cannot}}) be seen!"
-	NEW EXPECTED S EXPECTED="I () be seen!"
+	S TEMPLATE="I ({{&cannot}}) be seen!"
+	S EXPECTED="I () be seen!"
 	NEW CTX 
 	SET CTX("cannot")=""
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
@@ -571,32 +571,32 @@ TEST015
 TEST016
 	NEW HDR S HDR="[TEST016[Basic Context Miss Interpolation]"
 	NEW DESC S DESC=HDR_"[Failed context lookups should default to empty strings.]"
-	NEW TEMPLATE S TEMPLATE="I ({{cannot}}) be seen!"
-	NEW EXPECTED S EXPECTED="I () be seen!"
+	S TEMPLATE="I ({{cannot}}) be seen!"
+	S EXPECTED="I () be seen!"
 	NEW CTX 
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	QUIT
 TEST017
 	NEW HDR S HDR="[TEST017][Triple Mustache Context Miss Interpolation]"
 	NEW DESC S DESC=HDR_"[Failed context lookups should default to empty strings.]"
-	NEW TEMPLATE S TEMPLATE="I ({{{cannot}}}) be seen!"
-	NEW EXPECTED S EXPECTED="I () be seen!"
+	S TEMPLATE="I ({{{cannot}}}) be seen!"
+	S EXPECTED="I () be seen!"
 	NEW CTX 
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	QUIT
 TEST018
 	NEW HDR S HDR="[TEST018[Ampersand Context Miss Interpolation]"
 	NEW DESC S DESC=HDR_"[Failed context lookups should default to empty strings.]"
-	NEW TEMPLATE S TEMPLATE="I ({{&cannot}}) be seen!"
-	NEW EXPECTED S EXPECTED="I () be seen!"
+	S TEMPLATE="I ({{&cannot}}) be seen!"
+	S EXPECTED="I () be seen!"
 	NEW CTX 
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	QUIT
 TEST019
 	NEW HDR S HDR="[TEST019][Dotted Names - Basic Interpolation]"
 	NEW DESC S DESC=HDR_"[Dotted names should be considered a form of shorthand for sections.]"
-	NEW TEMPLATE S TEMPLATE="""{{person.name}}"" == ""{{#person}}{{name}}{{/person}}"""
-	NEW EXPECTED S EXPECTED="""Joe"" == ""Joe"""
+	S TEMPLATE="""{{person.name}}"" == ""{{#person}}{{name}}{{/person}}"""
+	S EXPECTED="""Joe"" == ""Joe"""
 	NEW CTX 
 	SET CTX("person","name")="Joe"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
@@ -604,8 +604,8 @@ TEST019
 TEST020
 	NEW HDR S HDR="[TEST020][Dotted Names - Triple Mustache Interpolation]"
 	NEW DESC S DESC=HDR_"[Dotted names should be considered a form of shorthand for sections.]"
-	NEW TEMPLATE S TEMPLATE="""{{{person.name}}}"" == ""{{#person}}{{{name}}}{{/person}}""" 
-	NEW EXPECTED S EXPECTED="""Joe"" == ""Joe"""
+	S TEMPLATE="""{{{person.name}}}"" == ""{{#person}}{{{name}}}{{/person}}""" 
+	S EXPECTED="""Joe"" == ""Joe"""
 	NEW CTX 
 	SET CTX("person","name")="Joe"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
@@ -613,8 +613,8 @@ TEST020
 TEST021
 	NEW HDR S HDR="[TEST021][Dotted Names - Ampersand Interpolation]"
 	NEW DESC S DESC=HDR_"[Dotted names should be considered a form of shorthand for sections.]"
-	NEW TEMPLATE S TEMPLATE="""{{&person.name}}"" == ""{{#person}}{{&name}}{{/person}}"""
-	NEW EXPECTED S EXPECTED="""Joe"" == ""Joe"""
+	S TEMPLATE="""{{&person.name}}"" == ""{{#person}}{{&name}}{{/person}}"""
+	S EXPECTED="""Joe"" == ""Joe"""
 	NEW CTX 
 	SET CTX("person","name")="Joe"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
@@ -622,8 +622,8 @@ TEST021
 TEST022
 	NEW HDR S HDR="[TEST022][Dotted Names - Arbitrary Depth]"
 	NEW DESC S DESC=HDR_"[Dotted names should be functional to any level of nesting.]"
-	NEW TEMPLATE S TEMPLATE="""{{a.b.c.d.e.name}}"" == ""Phil"""
-	NEW EXPECTED S EXPECTED="""Phil"" == ""Phil"""
+	S TEMPLATE="""{{a.b.c.d.e.name}}"" == ""Phil"""
+	S EXPECTED="""Phil"" == ""Phil"""
 	NEW CTX 
 	SET CTX("a","b","c","d","e","name")="Phil"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
@@ -631,8 +631,8 @@ TEST022
 TEST023
 	NEW HDR S HDR="[TEST023][Dotted Names - Broken Chains]"
 	NEW DESC S DESC=HDR_"[Any falsey value prior to the last part of the name should yield ''.]"
-	NEW TEMPLATE S TEMPLATE="""{{a.b.c}}"" == """""
-	NEW EXPECTED S EXPECTED=""""" == """""
+	S TEMPLATE="""{{a.b.c}}"" == """""
+	S EXPECTED=""""" == """""
 	NEW CTX 
 	SET CTX("a")=""
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
@@ -640,8 +640,8 @@ TEST023
 TEST024
 	NEW HDR S HDR="[TEST024][Dotted Names - Broken Chain Resolution]"
 	NEW DESC S DESC=HDR_"[Each part of a dotted name should resolve only against its parent.]"
-	NEW TEMPLATE S TEMPLATE="""{{a.b.c.name}}"" == """""
-	NEW EXPECTED S EXPECTED=""""" == """""
+	S TEMPLATE="""{{a.b.c.name}}"" == """""
+	S EXPECTED=""""" == """""
 	NEW CTX 
 	SET CTX("a","b")=""
 	SET CTX("c","name")="Jim"
@@ -650,8 +650,8 @@ TEST024
 TEST025
 	NEW HDR S HDR="[TEST025][Dotted Names - Initial Resolution]"
 	NEW DESC S DESC=HDR_"[The first part of a dotted name should resolve as any other name.]"
-	NEW TEMPLATE S TEMPLATE="""{{#a}}{{b.c.d.e.name}}{{/a}}"" == ""Phil"""
-	NEW EXPECTED S EXPECTED="""Phil"" == ""Phil"""
+	S TEMPLATE="""{{#a}}{{b.c.d.e.name}}{{/a}}"" == ""Phil"""
+	S EXPECTED="""Phil"" == ""Phil"""
 	NEW CTX 
 	SET CTX("a","b","c","d","e","name")="Phil"
 	SET CTX("b","c","d","e","name")="Wrong"
@@ -660,8 +660,8 @@ TEST025
 TEST026
 	NEW HDR S HDR="[TEST026][Dotted Names - Context Precedence]"
 	NEW DESC S DESC=HDR_"[Dotted names should be resolved against former resolutions.]"
-	NEW TEMPLATE S TEMPLATE="{{#a}}{{b.c}}{{/a}}"
-	NEW EXPECTED S EXPECTED=""
+	S TEMPLATE="{{#a}}{{b.c}}{{/a}}"
+	S EXPECTED=""
 	NEW CTX 
 	SET CTX("a","b")=""
 	SET CTX("b","c")="ERROR"
@@ -670,8 +670,8 @@ TEST026
 TEST027
 	NEW HDR S HDR="[TEST027][Dotted Names are never single keys]"
 	NEW DESC S DESC=HDR_"[Dotted names shall not be parsed as single, atomic keys]"
-	NEW TEMPLATE S TEMPLATE="{{a.b}}"
-	NEW EXPECTED S EXPECTED=""
+	S TEMPLATE="{{a.b}}"
+	S EXPECTED=""
 	NEW CTX 
 	SET CTX("a.b")="c"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
@@ -679,8 +679,8 @@ TEST027
 TEST028
 	NEW HDR S HDR="[TEST028][Dotted Names - No Masking]"
 	NEW DESC S DESC=HDR_"[Dotted Names in a given context are unvavailable due to dot splitting]"
-	NEW TEMPLATE S TEMPLATE="{{a.b}}"
-	NEW EXPECTED S EXPECTED="d"
+	S TEMPLATE="{{a.b}}"
+	S EXPECTED="d"
 	NEW CTX 
 	SET CTX("a.b")="c"
 	SET CTX("a","b")="d"
@@ -690,8 +690,8 @@ TEST028
 TEST029
 	NEW HDR S HDR="[TEST029][Implicit Iterators - Basic Interpolation]"
 	NEW DESC S DESC=HDR_"[Unadorned tags should interpolate content into the template.]"
-	NEW TEMPLATE S TEMPLATE="Hello, {{.}}!\n"
-	NEW EXPECTED S EXPECTED="Hello, world!\n"
+	S TEMPLATE="Hello, {{.}}!\n"
+	S EXPECTED="Hello, world!\n"
 	NEW CTX 
 	SET CTX="world"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
@@ -699,8 +699,8 @@ TEST029
 TEST030
 	NEW HDR S HDR="[TEST030][Implicit Iterators - HTML Escaping]"
 	NEW DESC S DESC=HDR_"[Basic interpolation should be HTML escaped.]"
-	NEW TEMPLATE S TEMPLATE="These characters should be HTML escaped: {{.}}\n"
-	NEW EXPECTED S EXPECTED="These characters should be HTML escaped: &amp; &quot; &lt; &gt;\n"
+	S TEMPLATE="These characters should be HTML escaped: {{.}}\n"
+	S EXPECTED="These characters should be HTML escaped: &amp; &quot; &lt; &gt;\n"
 	NEW CTX 
 	SET CTX="& "" < >"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
@@ -708,8 +708,8 @@ TEST030
 TEST031
 	NEW HDR S HDR="[TEST031][Implicit Iterators - Triple Mustache]"
 	NEW DESC S DESC=HDR_"[Implicit Iterators - Triple Mustache.]"
-	NEW TEMPLATE S TEMPLATE="These characters should not be HTML escaped: {{{.}}}\n"
-	NEW EXPECTED S EXPECTED="These characters should not be HTML escaped: & "" < >\n"
+	S TEMPLATE="These characters should not be HTML escaped: {{{.}}}\n"
+	S EXPECTED="These characters should not be HTML escaped: & "" < >\n"
 	NEW CTX 
 	SET CTX="& "" < >"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
@@ -717,8 +717,8 @@ TEST031
 TEST032
 	NEW HDR S HDR="[TEST032][Implicit Iterators - Ampersand]"
 	NEW DESC S DESC=HDR_"[Ampersand should interpolate without HTML escaping.]"
-	NEW TEMPLATE S TEMPLATE="These characters should not be HTML escaped: {{&.}}\n"
-	NEW EXPECTED S EXPECTED="These characters should not be HTML escaped: & "" < >\n"
+	S TEMPLATE="These characters should not be HTML escaped: {{&.}}\n"
+	S EXPECTED="These characters should not be HTML escaped: & "" < >\n"
 	NEW CTX 
 	SET CTX="& "" < >"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
@@ -726,8 +726,8 @@ TEST032
 TEST033
 	NEW HDR S HDR="[TEST033][Implicit Iterators - Basic Integer Interpolation]"
 	NEW DESC S DESC=HDR_"[Integers should interpolate seamlessly.]"
-	NEW TEMPLATE S TEMPLATE="""{{.}} miles an hour!"""
-	NEW EXPECTED S EXPECTED="""85 miles an hour!"""
+	S TEMPLATE="""{{.}} miles an hour!"""
+	S EXPECTED="""85 miles an hour!"""
 	NEW CTX 
 	SET CTX=85
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
@@ -735,8 +735,8 @@ TEST033
 TEST034
 	NEW HDR S HDR="[TEST034][Interpolation - Surrounding Whitespace]"
 	NEW DESC S DESC=HDR_"[Interpolation should not alter surrounding whitespace.]"
-	NEW TEMPLATE S TEMPLATE="| {{string}} |"
-	NEW EXPECTED S EXPECTED="| --- |"
+	S TEMPLATE="| {{string}} |"
+	S EXPECTED="| --- |"
 	NEW CTX 
 	SET CTX("string")="---"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
@@ -744,8 +744,8 @@ TEST034
 TEST035
 	NEW HDR S HDR="[TEST035][Triple Mustache - Surrounding Whitespace]"
 	NEW DESC S DESC=HDR_"[Interpolation should not alter surrounding whitespace.]"
-	NEW TEMPLATE S TEMPLATE="| {{{string}}} |"
-	NEW EXPECTED S EXPECTED="| --- |"
+	S TEMPLATE="| {{{string}}} |"
+	S EXPECTED="| --- |"
 	NEW CTX 
 	SET CTX("string")="---"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
@@ -753,8 +753,8 @@ TEST035
 TEST036
 	NEW HDR S HDR="[TEST036][Ampersand - Surrounding Whitespace]"
 	NEW DESC S DESC=HDR_"[Interpolation should not alter surrounding whitespace.]"
-	NEW TEMPLATE S TEMPLATE="| {{&string}} |"
-	NEW EXPECTED S EXPECTED="| --- |"
+	S TEMPLATE="| {{&string}} |"
+	S EXPECTED="| --- |"
 	NEW CTX 
 	SET CTX("string")="---"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
@@ -762,8 +762,8 @@ TEST036
 TEST037
 	NEW HDR S HDR="[TEST037][Interpolation - Standalone]"
 	NEW DESC S DESC=HDR_"[Standalone interpolation should not alter surrounding whitespace.]"
-	NEW TEMPLATE S TEMPLATE="  {{string}}\n"
-	NEW EXPECTED S EXPECTED="  ---\n"
+	S TEMPLATE="  {{string}}\n"
+	S EXPECTED="  ---\n"
 	NEW CTX 
 	SET CTX("string")="---"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
@@ -771,8 +771,8 @@ TEST037
 TEST038
 	NEW HDR S HDR="[TEST038][Triple Mustache - Standalone]"
 	NEW DESC S DESC=HDR_"[Standalone interpolation should not alter surrounding whitespace.]"
-	NEW TEMPLATE S TEMPLATE="  {{{string}}}\n"
-	NEW EXPECTED S EXPECTED="  ---\n"
+	S TEMPLATE="  {{{string}}}\n"
+	S EXPECTED="  ---\n"
 	NEW CTX 
 	SET CTX("string")="---"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
@@ -780,8 +780,8 @@ TEST038
 TEST039
 	NEW HDR S HDR="[TEST039][Ampersand - Standalone]"
 	NEW DESC S DESC=HDR_"[Standalone interpolation should not alter surrounding whitespace.]"
-	NEW TEMPLATE S TEMPLATE="  {{&string}}\n"
-	NEW EXPECTED S EXPECTED="  ---\n"
+	S TEMPLATE="  {{&string}}\n"
+	S EXPECTED="  ---\n"
 	NEW CTX 
 	SET CTX("string")="---"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
@@ -789,8 +789,8 @@ TEST039
 TEST040
 	NEW HDR S HDR="[TEST040][Interpolation With Paddin]"
 	NEW DESC S DESC=HDR_"[Superfluous in-tag whitespace should be ignored.]"
-	NEW TEMPLATE S TEMPLATE="|{{ string }}|"
-	NEW EXPECTED S EXPECTED="|---|"
+	S TEMPLATE="|{{ string }}|"
+	S EXPECTED="|---|"
 	NEW CTX 
 	SET CTX("string")="---"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
@@ -798,8 +798,8 @@ TEST040
 TEST041
 	NEW HDR S HDR="[TEST041][Triple Mustache With Padding]"
 	NEW DESC S DESC=HDR_"[Superfluous in-tag whitespace should be ignored.]"
-	NEW TEMPLATE S TEMPLATE="|{{{ string }}}|"
-	NEW EXPECTED S EXPECTED="|---|"
+	S TEMPLATE="|{{{ string }}}|"
+	S EXPECTED="|---|"
 	NEW CTX 
 	SET CTX("string")="---"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
@@ -807,8 +807,8 @@ TEST041
 TEST042
 	NEW HDR S HDR="[TEST042][Ampersand With Padding]"
 	NEW DESC S DESC=HDR_"[Superfluous in-tag whitespace should be ignored.]"
-	NEW TEMPLATE S TEMPLATE="|{{& string }}|"
-	NEW EXPECTED S EXPECTED="|---|"
+	S TEMPLATE="|{{& string }}|"
+	S EXPECTED="|---|"
 	NEW CTX 
 	SET CTX("string")="---"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
@@ -816,8 +816,8 @@ TEST042
 TEST043 ;
 	NEW HDR S HDR="[TEST043][Truthy]"
 	NEW DESC S DESC=HDR_"[Truthy sections should have their contents rendered.]"
-	NEW TEMPLATE S TEMPLATE="""{{#boolean}}This should be rendered.{{/boolean}}"""
-	NEW EXPECTED S EXPECTED="""This should be rendered."""
+	S TEMPLATE="""{{#boolean}}This should be rendered.{{/boolean}}"""
+	S EXPECTED="""This should be rendered."""
 	NEW CTX
 	S CTX("boolean")="true"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
@@ -825,8 +825,8 @@ TEST043 ;
 TEST044
 	NEW HDR S HDR="[TEST044][Falsey]"
 	NEW DESC S DESC=HDR_"[Falsey sections should have their contents omitted.]"
-	NEW TEMPLATE S TEMPLATE="""{{#boolean}}This should not be rendered.{{/boolean}}"""
-	NEW EXPECTED S EXPECTED=""""""
+	S TEMPLATE="""{{#boolean}}This should not be rendered.{{/boolean}}"""
+	S EXPECTED=""""""
 	NEW CTX 
 	S CTX("boolean")="false"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
@@ -834,8 +834,8 @@ TEST044
 TEST045
 	NEW HDR S HDR="[TEST045][Null is false]"
 	NEW DESC S DESC=HDR_"[Null is falsey.]"
-	NEW TEMPLATE S TEMPLATE="""{{#null}}This should not be rendered.{{/null}}"""
-	NEW EXPECTED S EXPECTED=""""""
+	S TEMPLATE="""{{#null}}This should not be rendered.{{/null}}"""
+	S EXPECTED=""""""
 	NEW CTX 
 	S CTX("null")=""
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
@@ -843,8 +843,8 @@ TEST045
 TEST046 
 	NEW HDR S HDR="[TEST046][Context]"
 	NEW DESC S DESC=HDR_"[Objects and hashes should be pushed onto the context stack.]"
-	NEW TEMPLATE S TEMPLATE="""{{#context}}Hi {{name}}.{{/context}}"""
-	NEW EXPECTED S EXPECTED="""Hi Joe."""
+	S TEMPLATE="""{{#context}}Hi {{name}}.{{/context}}"""
+	S EXPECTED="""Hi Joe."""
 	NEW CTX 
 	S CTX("context","name")="Joe"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
@@ -852,8 +852,8 @@ TEST046
 TEST047
 	NEW HDR S HDR="[TEST047][Parent context]"
 	NEW DESC S DESC=HDR_"[Names missing in the current context are looked up in the stack.]"
-	NEW TEMPLATE S TEMPLATE="""{{#sec}}{{a}}, {{b}}, {{c.d}}{{/sec}}"""
-	NEW EXPECTED S EXPECTED="""foo, bar, baz"""
+	S TEMPLATE="""{{#sec}}{{a}}, {{b}}, {{c.d}}{{/sec}}"""
+	S EXPECTED="""foo, bar, baz"""
 	NEW CTX 
 	S CTX("a")="foo"
 	S CTX("b")="wrong"
@@ -865,8 +865,8 @@ TEST048
 	NEW HDR S HDR="[TEST048][Variable test]"
 	NEW DESC S DESC=HDR_"[Non-false sections have their value at the top of context,accessible as {{.}} or" 
 	S DESC=DESC_"through the parent context. This gives a simple way to display content conditionally if a variable exists.]"
-	NEW TEMPLATE S TEMPLATE="""{{#foo}}{{.}} is {{foo}}{{/foo}}"""
-	NEW EXPECTED S EXPECTED="""bar is bar"""
+	S TEMPLATE="""{{#foo}}{{.}} is {{foo}}{{/foo}}"""
+	S EXPECTED="""bar is bar"""
 	NEW CTX 
 	SET CTX("foo")="bar"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
@@ -874,8 +874,8 @@ TEST048
 TEST049
 	NEW HDR S HDR="[TEST049][List Contexts]"
 	NEW DESC S DESC=HDR_"[All elements on the context stack should be accessible within lists.]" 
-	NEW TEMPLATE S TEMPLATE="{{#tops}}{{#middles}}{{tname.lower}}{{mname}}.{{#bottoms}}{{tname.upper}}{{mname}}{{bname}}.{{/bottoms}}{{/middles}}{{/tops}}"
-	NEW EXPECTED S EXPECTED="a1.A1x.A1y."
+	S TEMPLATE="{{#tops}}{{#middles}}{{tname.lower}}{{mname}}.{{#bottoms}}{{tname.upper}}{{mname}}{{bname}}.{{/bottoms}}{{/middles}}{{/tops}}"
+	S EXPECTED="a1.A1x.A1y."
 	NEW CTX 
 	SET CTX("tops",1,"middles",1,"bottoms",1,"bname")="x"
 	SET CTX("tops",1,"middles",1,"bottoms",2,"bname")="y"
@@ -887,8 +887,8 @@ TEST049
 TEST050
 	NEW HDR S HDR="[TEST050][Deeply Nested Contexts] "
 	NEW DESC S DESC=HDR_"[All elements on the context stack should be accessible.]"
-	NEW TEMPLATE S TEMPLATE="{{#a}}\n{{one}}\n{{#b}}\n{{one}}{{two}}{{one}}\n{{#c}}\n{{one}}{{two}}{{three}}{{two}}{{one}}\n{{#d}}\n{{one}}{{two}}{{three}}{{four}}{{three}}{{two}}{{one}}\n{{#five}}\n{{one}}{{two}}{{three}}{{four}}{{five}}{{four}}{{three}}{{two}}{{one}}\n{{one}}{{two}}{{three}}{{four}}{{.}}6{{.}}{{four}}{{three}}{{two}}{{one}}\n{{one}}{{two}}{{three}}{{four}}{{five}}{{four}}{{three}}{{two}}{{one}}\n{{/five}}\n{{one}}{{two}}{{three}}{{four}}{{three}}{{two}}{{one}}\n{{/d}}\n{{one}}{{two}}{{three}}{{two}}{{one}}\n{{/c}}\n{{one}}{{two}}{{one}}\n{{/b}}\n{{one}}\n{{/a}}\n"
-	NEW EXPECTED S EXPECTED="1\n121\n12321\n1234321\n123454321\n12345654321\n123454321\n1234321\n12321\n121\n1\n"
+	S TEMPLATE="{{#a}}\n{{one}}\n{{#b}}\n{{one}}{{two}}{{one}}\n{{#c}}\n{{one}}{{two}}{{three}}{{two}}{{one}}\n{{#d}}\n{{one}}{{two}}{{three}}{{four}}{{three}}{{two}}{{one}}\n{{#five}}\n{{one}}{{two}}{{three}}{{four}}{{five}}{{four}}{{three}}{{two}}{{one}}\n{{one}}{{two}}{{three}}{{four}}{{.}}6{{.}}{{four}}{{three}}{{two}}{{one}}\n{{one}}{{two}}{{three}}{{four}}{{five}}{{four}}{{three}}{{two}}{{one}}\n{{/five}}\n{{one}}{{two}}{{three}}{{four}}{{three}}{{two}}{{one}}\n{{/d}}\n{{one}}{{two}}{{three}}{{two}}{{one}}\n{{/c}}\n{{one}}{{two}}{{one}}\n{{/b}}\n{{one}}\n{{/a}}\n"
+	S EXPECTED="1\n121\n12321\n1234321\n123454321\n12345654321\n123454321\n1234321\n12321\n121\n1\n"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	NEW CTX 
@@ -902,8 +902,8 @@ TEST050
 TEST051
 	NEW HDR S HDR="[TEST051][List]"
 	NEW DESC S DESC=HDR_"[Lists should be iterated; list items should visit the context stack.]"
-	NEW TEMPLATE S TEMPLATE="""{{#list}}{{item}}{{/list}}"""
-	NEW EXPECTED S EXPECTED="""123"""
+	S TEMPLATE="""{{#list}}{{item}}{{/list}}"""
+	S EXPECTED="""123"""
 	NEW CTX 
 	SET CTX("list",1,"item")=1
 	SET CTX("list",2,"item")=2
@@ -913,15 +913,15 @@ TEST051
 TEST052
 	NEW HDR S HDR="[TEST052][Empty List]"
 	NEW DESC S DESC=HDR_"[Empty lists should behave like falsey values.]"
-	NEW TEMPLATE S TEMPLATE="""{{#list}}Yay lists!{{/list}}"""
-	NEW EXPECTED S EXPECTED=""""""
+	S TEMPLATE="""{{#list}}Yay lists!{{/list}}"""
+	S EXPECTED=""""""
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	QUIT
 TEST053
 	NEW HDR S HDR="[TEST053][Doubled]"
 	NEW DESC S DESC=HDR_"[Multiple sections per template should be permitted.]"
-	NEW TEMPLATE S TEMPLATE="{{#bool}}\n* first\n{{/bool}}\n* {{two}}\n{{#bool}}\n* third\n{{/bool}}\n"
-	NEW EXPECTED S EXPECTED="* first\n* second\n* third\n"
+	S TEMPLATE="{{#bool}}\n* first\n{{/bool}}\n* {{two}}\n{{#bool}}\n* third\n{{/bool}}\n"
+	S EXPECTED="* first\n* second\n* third\n"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	NEW CTX 
@@ -932,8 +932,8 @@ TEST053
 TEST054
 	NEW HDR S HDR="[TEST054][Nested (Truthy)]"
 	NEW DESC S DESC=HDR_"[Nested truthy sections should have their contents rendered.]"
-	NEW TEMPLATE S TEMPLATE="| A {{#bool}}B {{#bool}}C{{/bool}} D{{/bool}} E |"
-	NEW EXPECTED S EXPECTED="| A B C D E |"
+	S TEMPLATE="| A {{#bool}}B {{#bool}}C{{/bool}} D{{/bool}} E |"
+	S EXPECTED="| A B C D E |"
 	NEW CTX 
 	SET CTX("bool")="true"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
@@ -941,8 +941,8 @@ TEST054
 TEST055
 	NEW HDR S HDR="[TEST055][Nested (Falsey)]"
 	NEW DESC S DESC=HDR_"[Nested falsey sections should be omitted.]"
-	NEW TEMPLATE S TEMPLATE="| A {{#bool}}B {{#bool}}C{{/bool}} D{{/bool}} E |"
-	NEW EXPECTED S EXPECTED="| A  E |"
+	S TEMPLATE="| A {{#bool}}B {{#bool}}C{{/bool}} D{{/bool}} E |"
+	S EXPECTED="| A  E |"
 	NEW CTX 
 	SET CTX("bool")="false"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
@@ -950,16 +950,16 @@ TEST055
 TEST056
 	NEW HDR S HDR="[TEST056][Context Misses]"
 	NEW DESC S DESC=HDR_"[Failed context lookups should be considered falsey.]"
-	NEW TEMPLATE S TEMPLATE="[{{#missing}}Found key 'missing'!{{/missing}}]"
-	NEW EXPECTED S EXPECTED="[]"
+	S TEMPLATE="[{{#missing}}Found key 'missing'!{{/missing}}]"
+	S EXPECTED="[]"
 	NEW CTX 
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	QUIT
 TEST057
 	NEW HDR S HDR="[TEST057][Implicit Iterator - String]"
 	NEW DESC S DESC=HDR_"[Implicit iterators should directly interpolate strings.]"
-	NEW TEMPLATE S TEMPLATE="""{{#list}}({{.}}){{/list}}"""
-	NEW EXPECTED S EXPECTED="""(a)(b)(c)(d)(e)"""
+	S TEMPLATE="""{{#list}}({{.}}){{/list}}"""
+	S EXPECTED="""(a)(b)(c)(d)(e)"""
 	NEW CTX 
 	SET CTX("list",1)="a"
 	SET CTX("list",2)="b"
@@ -971,8 +971,8 @@ TEST057
 TEST058
 	NEW HDR S HDR="[TEST058][Implicit Iterator - Integer]"
 	NEW DESC S DESC=HDR_"[Implicit iterators should cast integers to strings and interpolate.]"
-	NEW TEMPLATE S TEMPLATE="""{{#list}}({{.}}){{/list}}"""
-	NEW EXPECTED S EXPECTED="""(1)(2)(3)(4)(5)"""
+	S TEMPLATE="""{{#list}}({{.}}){{/list}}"""
+	S EXPECTED="""(1)(2)(3)(4)(5)"""
 	NEW CTX 
 	SET CTX("list",1)=1
 	SET CTX("list",2)=2
@@ -984,8 +984,8 @@ TEST058
 TEST059
 	NEW HDR S HDR="[TEST059][Implicit Iterator - Decimal]"
 	NEW DESC S DESC=HDR_"[Implicit iterators should cast decimals to strings and interpolate.]"
-	NEW TEMPLATE S TEMPLATE="""{{#list}}({{.}}){{/list}}"""
-	NEW EXPECTED S EXPECTED="""(1.1)(2.2)(3.3)(4.4)(5.5)"""
+	S TEMPLATE="""{{#list}}({{.}}){{/list}}"""
+	S EXPECTED="""(1.1)(2.2)(3.3)(4.4)(5.5)"""
 	NEW CTX 
 	SET CTX("list",1)=1.1
 	SET CTX("list",2)=2.2
@@ -997,8 +997,8 @@ TEST059
 TEST060
 	NEW HDR S HDR="[TEST060][Implicit Iterator - Array]"
 	NEW DESC S DESC=HDR_"[Implicit iterators should allow iterating over nested arrays.]"
-	NEW TEMPLATE S TEMPLATE="""{{#list}}({{#.}}{{.}}{{/.}}){{/list}}"""
-	NEW EXPECTED S EXPECTED="""(123)(abc)"""
+	S TEMPLATE="""{{#list}}({{#.}}{{.}}{{/.}}){{/list}}"""
+	S EXPECTED="""(123)(abc)"""
 	NEW CTX 
 	SET CTX("list",1,1)=1
 	SET CTX("list",1,2)=2
@@ -1011,8 +1011,8 @@ TEST060
 TEST061
 	NEW HDR S HDR="[TEST061][Implicit Iterator - HTML Escaping]"
 	NEW DESC S DESC=HDR_"[Implicit iterators with basic interpolation should be HTML escaped.]"
-	NEW TEMPLATE S TEMPLATE="""{{#list}}({{.}}){{/list}}"""
-	NEW EXPECTED S EXPECTED="""(&amp;)(&quot;)(&lt;)(&gt;)"""
+	S TEMPLATE="""{{#list}}({{.}}){{/list}}"""
+	S EXPECTED="""(&amp;)(&quot;)(&lt;)(&gt;)"""
 	NEW CTX 
 	SET CTX("list",1)="&"
 	SET CTX("list",2)=""""
@@ -1023,8 +1023,8 @@ TEST061
 TEST062
 	NEW HDR S HDR="[TEST062][Implicit Iterator - Triple mustache]"
 	NEW DESC S DESC=HDR_"[Implicit iterators in triple mustache should interpolate without HTML escaping.]"
-	NEW TEMPLATE S TEMPLATE="""{{#list}}({{{.}}}){{/list}}"""
-	NEW EXPECTED S EXPECTED="""(&)("")(<)(>)"""
+	S TEMPLATE="""{{#list}}({{{.}}}){{/list}}"""
+	S EXPECTED="""(&)("")(<)(>)"""
 	NEW CTX 
 	SET CTX("list",1)="&"
 	SET CTX("list",2)=""""
@@ -1035,8 +1035,8 @@ TEST062
 TEST063
 	NEW HDR S HDR="[TEST063][Implicit Iterator - Ampersand]"
 	NEW DESC S DESC=HDR_"[Implicit iterators in an Ampersand tag should interpolate without HTML escaping.]"
-	NEW TEMPLATE S TEMPLATE="""{{#list}}({{&.}}){{/list}}"""
-	NEW EXPECTED S EXPECTED="""(&)("")(<)(>)"""
+	S TEMPLATE="""{{#list}}({{&.}}){{/list}}"""
+	S EXPECTED="""(&)("")(<)(>)"""
 	NEW CTX 
 	SET CTX("list",1)="&"
 	SET CTX("list",2)=""""
@@ -1047,8 +1047,8 @@ TEST063
 TEST064
 	NEW HDR S HDR="[TEST064][Implicit Iterator - Root-level]"
 	NEW DESC S DESC=HDR_"[Implicit iterators should work on root-level lists.]"
-	NEW TEMPLATE S TEMPLATE="""{{#.}}({{value}}){{/.}}"""
-	NEW EXPECTED S EXPECTED="""(a)(b)"""
+	S TEMPLATE="""{{#.}}({{value}}){{/.}}"""
+	S EXPECTED="""(a)(b)"""
 	NEW CTX 
 	SET CTX(1,"value")="a"
 	SET CTX(2,"value")="b"
@@ -1057,8 +1057,8 @@ TEST064
 TEST065
 	NEW HDR S HDR="[TEST065][Dotted Names - Truthy]"
 	NEW DESC S DESC=HDR_"[Dotted names should be valid for Section tags.]"
-	NEW TEMPLATE S TEMPLATE="""{{#a.b.c}}Here{{/a.b.c}}"" == ""Here"""
-	NEW EXPECTED S EXPECTED="""Here"" == ""Here"""
+	S TEMPLATE="""{{#a.b.c}}Here{{/a.b.c}}"" == ""Here"""
+	S EXPECTED="""Here"" == ""Here"""
 	NEW CTX 
 	SET CTX("a","b","c")="true"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
@@ -1066,8 +1066,8 @@ TEST065
 TEST066
 	NEW HDR S HDR="[TEST066][Dotted Names - Falsey]"
 	NEW DESC S DESC=HDR_"[Dotted names should be valid for Section tags.]"
-	NEW TEMPLATE S TEMPLATE="""{{#a.b.c}}Here{{/a.b.c}}"" == """""
-	NEW EXPECTED S EXPECTED=""""" == """""
+	S TEMPLATE="""{{#a.b.c}}Here{{/a.b.c}}"" == """""
+	S EXPECTED=""""" == """""
 	NEW CTX 
 	SET CTX("a","b","c")="false"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
@@ -1075,8 +1075,8 @@ TEST066
 TEST067
 	NEW HDR S HDR="[TEST067][Dotted Names - Broken Chains]"
 	NEW DESC S DESC=HDR_"[Dotted names that cannot be resolved should be considered falsey.]"
-	NEW TEMPLATE S TEMPLATE="""{{#a.b.c}}Here{{/a.b.c}}"" == """""
-	NEW EXPECTED S EXPECTED=""""" == """""
+	S TEMPLATE="""{{#a.b.c}}Here{{/a.b.c}}"" == """""
+	S EXPECTED=""""" == """""
 	NEW CTX 
 	SET CTX("a")=""
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
@@ -1084,8 +1084,8 @@ TEST067
 TEST068
 	NEW HDR S HDR="[TEST068][Surrounding Whitespace]"
 	NEW DESC S DESC=HDR_"[Sections should not alter surrounding whitespace.]"
-	NEW TEMPLATE S TEMPLATE=" | {{#boolean}}\t|\t{{/boolean}} | \n"
-	NEW EXPECTED S EXPECTED=" | \t|\t | \n"
+	S TEMPLATE=" | {{#boolean}}\t|\t{{/boolean}} | \n"
+	S EXPECTED=" | \t|\t | \n"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	NEW CTX 
@@ -1095,8 +1095,8 @@ TEST068
 TEST069
 	NEW HDR S HDR="[TEST069][Internal Whitespace]"
 	NEW DESC S DESC=HDR_"[Sections should not alter surrounding whitespace.]"
-	NEW TEMPLATE S TEMPLATE=" | {{#boolean}} {{! Important Whitespace }}\n {{/boolean}} | \n"
-	NEW EXPECTED S EXPECTED=" |  \n  | \n"
+	S TEMPLATE=" | {{#boolean}} {{! Important Whitespace }}\n {{/boolean}} | \n"
+	S EXPECTED=" |  \n  | \n"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	NEW CTX 
@@ -1106,8 +1106,8 @@ TEST069
 TEST070
 	NEW HDR S HDR="[TEST070][Indented Inline Sections]"
 	NEW DESC S DESC=HDR_"[Single-line sections should not alter surrounding whitespace.]"
-	NEW TEMPLATE S TEMPLATE=" {{#boolean}}YES{{/boolean}}\n {{#boolean}}GOOD{{/boolean}}\n"
-	NEW EXPECTED S EXPECTED=" YES\n GOOD\n"
+	S TEMPLATE=" {{#boolean}}YES{{/boolean}}\n {{#boolean}}GOOD{{/boolean}}\n"
+	S EXPECTED=" YES\n GOOD\n"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	NEW CTX 
@@ -1117,8 +1117,8 @@ TEST070
 TEST071
 	NEW HDR S HDR="[TEST071][Standalone Lines]"
 	NEW DESC S DESC=HDR_"[Standalone lines should be removed from the template.]"
-	NEW TEMPLATE S TEMPLATE="| This Is\n{{#boolean}}\n|\n{{/boolean}}\n| A Line\n"
-	NEW EXPECTED S EXPECTED="| This Is\n|\n| A Line\n"
+	S TEMPLATE="| This Is\n{{#boolean}}\n|\n{{/boolean}}\n| A Line\n"
+	S EXPECTED="| This Is\n|\n| A Line\n"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	NEW CTX 
@@ -1128,8 +1128,8 @@ TEST071
 TEST072
 	NEW HDR S HDR="[TEST072][Indented Standalone Lines]"
 	NEW DESC S DESC=HDR_"[Indented standalone lines should be removed from the template.]"
-	NEW TEMPLATE S TEMPLATE="| This Is\n  {{#boolean}}\n|\n  {{/boolean}}\n| A Line\n"
-	NEW EXPECTED S EXPECTED="| This Is\n|\n| A Line\n"
+	S TEMPLATE="| This Is\n  {{#boolean}}\n|\n  {{/boolean}}\n| A Line\n"
+	S EXPECTED="| This Is\n|\n| A Line\n"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	NEW CTX 
@@ -1139,8 +1139,8 @@ TEST072
 TEST073
 	NEW HDR S HDR="[TEST073][Standalone Line Endings]"
 	NEW DESC S DESC=HDR_$$UNESCNL("[""\\r\\n"" should be considered a newline for standalone tags.]")
-	NEW TEMPLATE S TEMPLATE="|\r\n{{#boolean}}\r\n{{/boolean}}\r\n|"
-	NEW EXPECTED S EXPECTED="|\r\n|"
+	S TEMPLATE="|\r\n{{#boolean}}\r\n{{/boolean}}\r\n|"
+	S EXPECTED="|\r\n|"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	NEW CTX 
@@ -1150,8 +1150,8 @@ TEST073
 TEST074
 	NEW HDR S HDR="[TEST074][Standalone Without Previous Line]"
 	NEW DESC S DESC=HDR_"[Standalone tags should not require a newline to precede them.]"
-	NEW TEMPLATE S TEMPLATE="  {{#boolean}}\n#{{/boolean}}\n/"
-	NEW EXPECTED S EXPECTED="#\n/"
+	S TEMPLATE="  {{#boolean}}\n#{{/boolean}}\n/"
+	S EXPECTED="#\n/"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	NEW CTX 
@@ -1161,8 +1161,8 @@ TEST074
 TEST075
 	NEW HDR S HDR="[TEST075][Standalone Without Newline]"
 	NEW DESC S DESC=HDR_"[Standalone tags should not require a newline to follow them.]"
-	NEW TEMPLATE S TEMPLATE="#{{#boolean}}\n/\n  {{/boolean}}"
-	NEW EXPECTED S EXPECTED="#\n/\n"
+	S TEMPLATE="#{{#boolean}}\n/\n  {{/boolean}}"
+	S EXPECTED="#\n/\n"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	NEW CTX 
@@ -1172,8 +1172,8 @@ TEST075
 TEST076
 	NEW HDR S HDR="[TEST076][Padding]"
 	NEW DESC S DESC=HDR_"[Superfluous in-tag whitespace should be ignored.]"
-	NEW TEMPLATE S TEMPLATE="|{{# boolean }}={{/ boolean }}|"
-	NEW EXPECTED S EXPECTED="|=|"
+	S TEMPLATE="|{{# boolean }}={{/ boolean }}|"
+	S EXPECTED="|=|"
 	NEW CTX 
 	SET CTX("boolean")="true"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
@@ -1181,8 +1181,8 @@ TEST076
 TEST077
 	NEW HDR S HDR="[TEST077][Falsey]"
 	NEW DESC S DESC=HDR_"[Falsey sections should have their contents rendered.]"
-	NEW TEMPLATE S TEMPLATE="""{{^boolean}}This should be rendered.{{/boolean}}"""
-	NEW EXPECTED S EXPECTED="""This should be rendered."""
+	S TEMPLATE="""{{^boolean}}This should be rendered.{{/boolean}}"""
+	S EXPECTED="""This should be rendered."""
 	NEW CTX 
 	SET CTX("boolean")="false"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
@@ -1190,8 +1190,8 @@ TEST077
 TEST078
 	NEW HDR S HDR="[TEST078][Truthy]"
 	NEW DESC S DESC=HDR_"[Truthy sections should have their contents omitted.]"
-	NEW TEMPLATE S TEMPLATE="""{{^boolean}}This should be rendered.{{/boolean}}"""
-	NEW EXPECTED S EXPECTED=""""""
+	S TEMPLATE="""{{^boolean}}This should be rendered.{{/boolean}}"""
+	S EXPECTED=""""""
 	NEW CTX 
 	SET CTX("boolean")="true"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
@@ -1199,8 +1199,8 @@ TEST078
 TEST079
 	NEW HDR S HDR="[TEST079][Null is falsey]"
 	NEW DESC S DESC=HDR_"[Null is falsey.]"
-	NEW TEMPLATE S TEMPLATE="""{{^null}}This should be rendered.{{/null}}"""
-	NEW EXPECTED S EXPECTED="""This should be rendered."""
+	S TEMPLATE="""{{^null}}This should be rendered.{{/null}}"""
+	S EXPECTED="""This should be rendered."""
 	NEW CTX 
 	SET CTX("null")="null"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
@@ -1208,8 +1208,8 @@ TEST079
 TEST080
 	NEW HDR S HDR="[TEST080][Context]"
 	NEW DESC S DESC=HDR_"[Objects and hashes should behave like truthy values.]"
-	NEW TEMPLATE S TEMPLATE="""{{^context}}Hi {{name}}.{{/context}}"""
-	NEW EXPECTED S EXPECTED=""""""
+	S TEMPLATE="""{{^context}}Hi {{name}}.{{/context}}"""
+	S EXPECTED=""""""
 	NEW CTX 
 	SET CTX("context","name")="Joe"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
@@ -1217,8 +1217,8 @@ TEST080
 TEST081
 	NEW HDR S HDR="[TEST080][List]"
 	NEW DESC S DESC=HDR_"[Lists should behave like truthy values.]"
-	NEW TEMPLATE S TEMPLATE="""{{^list}}{{n}}{{/list}}"""
-	NEW EXPECTED S EXPECTED=""""""
+	S TEMPLATE="""{{^list}}{{n}}{{/list}}"""
+	S EXPECTED=""""""
 	NEW CTX 
 	SET CTX("list",1,"n")=1
 	SET CTX("list",2,"n")=2
@@ -1228,16 +1228,16 @@ TEST081
 TEST082
 	NEW HDR S HDR="[TEST082][Empty List]"
 	NEW DESC S DESC=HDR_"[Empty lists should behave like falsey values.]"
-	NEW TEMPLATE S TEMPLATE="""{{^list}}Yay lists!{{/list}}"""
-	NEW EXPECTED S EXPECTED="""Yay lists!"""
+	S TEMPLATE="""{{^list}}Yay lists!{{/list}}"""
+	S EXPECTED="""Yay lists!"""
 	NEW CTX 
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	QUIT
 TEST083
 	NEW HDR S HDR="[TEST083][Doubled]"
 	NEW DESC S DESC=HDR_"[Multiple inverted sections per template should be permitted.]"
-	NEW TEMPLATE S TEMPLATE="{{^bool}}\n* first\n{{/bool}}\n* {{two}}\n{{^bool}}\n* third\n{{/bool}}\n"
-	NEW EXPECTED S EXPECTED="* first\n* second\n* third\n"
+	S TEMPLATE="{{^bool}}\n* first\n{{/bool}}\n* {{two}}\n{{^bool}}\n* third\n{{/bool}}\n"
+	S EXPECTED="* first\n* second\n* third\n"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	NEW CTX 
@@ -1248,8 +1248,8 @@ TEST083
 TEST084
 	NEW HDR S HDR="[TEST084][Nested (Falsey)]"
 	NEW DESC S DESC=HDR_"[Nested falsey sections should have their contents rendered.]"
-	NEW TEMPLATE S TEMPLATE="| A {{^bool}}B {{^bool}}C{{/bool}} D{{/bool}} E |"
-	NEW EXPECTED S EXPECTED="| A B C D E |"
+	S TEMPLATE="| A {{^bool}}B {{^bool}}C{{/bool}} D{{/bool}} E |"
+	S EXPECTED="| A B C D E |"
 	NEW CTX 
 	SET CTX("bool")="false"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
@@ -1257,8 +1257,8 @@ TEST084
 TEST085
 	NEW HDR S HDR="[TEST085][Nested (Truthy)]"
 	NEW DESC S DESC=HDR_"[Nested truthy sections should be omitted.]"
-	NEW TEMPLATE S TEMPLATE="| A {{^bool}}B {{^bool}}C{{/bool}} D{{/bool}} E |"
-	NEW EXPECTED S EXPECTED="| A  E |"
+	S TEMPLATE="| A {{^bool}}B {{^bool}}C{{/bool}} D{{/bool}} E |"
+	S EXPECTED="| A  E |"
 	NEW CTX 
 	SET CTX("bool")="true"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
@@ -1266,16 +1266,16 @@ TEST085
 TEST086
 	NEW HDR S HDR="[TEST086][Context Misses]"
 	NEW DESC S DESC=HDR_"[Failed context lookups should be considered falsey.]"
-	NEW TEMPLATE S TEMPLATE="[{{^missing}}Cannot find key 'missing'!{{/missing}}]"
-	NEW EXPECTED S EXPECTED="[Cannot find key 'missing'!]"
+	S TEMPLATE="[{{^missing}}Cannot find key 'missing'!{{/missing}}]"
+	S EXPECTED="[Cannot find key 'missing'!]"
 	NEW CTX 
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	QUIT
 TEST087
 	NEW HDR S HDR="[TEST087][Dotted Names - Truthy]"
 	NEW DESC S DESC=HDR_"[Dotted names should be valid for Inverted Section tags.]"
-	NEW TEMPLATE S TEMPLATE="""{{^a.b.c}}Not Here{{/a.b.c}}"" == """""
-	NEW EXPECTED S EXPECTED=""""" == """""
+	S TEMPLATE="""{{^a.b.c}}Not Here{{/a.b.c}}"" == """""
+	S EXPECTED=""""" == """""
 	NEW CTX
 	SET CTX("a","b","c")="true"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
@@ -1283,8 +1283,8 @@ TEST087
 TEST088
 	NEW HDR S HDR="[TEST088][Dotted Names - Falsey]"
 	NEW DESC S DESC=HDR_"[Dotted names should be valid for Inverted Section tags.]"
-	NEW TEMPLATE S TEMPLATE="""{{^a.b.c}}Not Here{{/a.b.c}}"" == ""Not Here"""
-	NEW EXPECTED S EXPECTED="""Not Here"" == ""Not Here"""
+	S TEMPLATE="""{{^a.b.c}}Not Here{{/a.b.c}}"" == ""Not Here"""
+	S EXPECTED="""Not Here"" == ""Not Here"""
 	NEW CTX
 	SET CTX("a","b","c")="false"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
@@ -1292,16 +1292,16 @@ TEST088
 TEST089
 	NEW HDR S HDR="[TEST089][Dotted Names - Broken Chains]"
 	NEW DESC S DESC=HDR_"[Dotted names that cannot be resolved should be considered falsey.]"
-	NEW TEMPLATE S TEMPLATE="""{{^a.b.c}}Not Here{{/a.b.c}}"" == ""Not Here"""
-	NEW EXPECTED S EXPECTED="""Not Here"" == ""Not Here"""
+	S TEMPLATE="""{{^a.b.c}}Not Here{{/a.b.c}}"" == ""Not Here"""
+	S EXPECTED="""Not Here"" == ""Not Here"""
 	NEW CTX
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	QUIT
 TEST090
 	NEW HDR S HDR="[TEST090][Surrounding Whitespace]"
 	NEW DESC S DESC=HDR_"[Inverted sections should not alter surrounding whitespace.]"
-	NEW TEMPLATE S TEMPLATE=" | {{^boolean}}\t|\t{{/boolean}} | \n"
-	NEW EXPECTED S EXPECTED=" | \t|\t | \n"
+	S TEMPLATE=" | {{^boolean}}\t|\t{{/boolean}} | \n"
+	S EXPECTED=" | \t|\t | \n"
 	NEW CTX
 	SET CTX("booleanl")="false"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
@@ -1311,8 +1311,8 @@ TEST090
 TEST091
 	NEW HDR S HDR="[TEST091][Internal Whitespace]"
 	NEW DESC S DESC=HDR_"[Inverted should not alter internal whitespace.]"
-	NEW TEMPLATE S TEMPLATE=" | {{^boolean}} {{! Important Whitespace }}\n {{/boolean}} | \n"
-	NEW EXPECTED S EXPECTED=" |  \n  | \n"
+	S TEMPLATE=" | {{^boolean}} {{! Important Whitespace }}\n {{/boolean}} | \n"
+	S EXPECTED=" |  \n  | \n"
 	NEW CTX
 	SET CTX("booleanl")="false"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
@@ -1322,8 +1322,8 @@ TEST091
 TEST092
 	NEW HDR S HDR="[TEST092][Indented Inline Sections]"
 	NEW DESC S DESC=HDR_"[Single-line sections should not alter surrounding whitespace.]"
-	NEW TEMPLATE S TEMPLATE=" {{^boolean}}NO{{/boolean}}\n {{^boolean}}WAY{{/boolean}}\n"
-	NEW EXPECTED S EXPECTED=" NO\n WAY\n"
+	S TEMPLATE=" {{^boolean}}NO{{/boolean}}\n {{^boolean}}WAY{{/boolean}}\n"
+	S EXPECTED=" NO\n WAY\n"
 	NEW CTX
 	SET CTX("booleanl")="false"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
@@ -1333,8 +1333,8 @@ TEST092
 TEST093
 	NEW HDR S HDR="[TEST093][Standalone Lines]"
 	NEW DESC S DESC=HDR_"[Standalone lines should be removed from the template.]"
-	NEW TEMPLATE S TEMPLATE="| This Is\n{{^boolean}}\n|\n{{/boolean}}\n| A Line\n"
-	NEW EXPECTED S EXPECTED="| This Is\n|\n| A Line\n"
+	S TEMPLATE="| This Is\n{{^boolean}}\n|\n{{/boolean}}\n| A Line\n"
+	S EXPECTED="| This Is\n|\n| A Line\n"
 	NEW CTX
 	SET CTX("booleanl")="false"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
@@ -1344,8 +1344,8 @@ TEST093
 TEST094
 	NEW HDR S HDR="[TEST094][Standalone Indented Lines]"
 	NEW DESC S DESC=HDR_"[Standalone indented lines should be removed from the template.]"
-	NEW TEMPLATE S TEMPLATE="| This Is\n  {{^boolean}}\n|\n  {{/boolean}}\n| A Line\n"
-	NEW EXPECTED S EXPECTED="| This Is\n|\n| A Line\n"
+	S TEMPLATE="| This Is\n  {{^boolean}}\n|\n  {{/boolean}}\n| A Line\n"
+	S EXPECTED="| This Is\n|\n| A Line\n"
 	NEW CTX
 	SET CTX("booleanl")="false"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
@@ -1355,8 +1355,8 @@ TEST094
 TEST095
 	NEW HDR S HDR="[TEST095][Standalone Line Endings]"
 	NEW DESC S DESC=HDR_"[""\""\\r\\n\"" should be considered a newline for standalone tags.""]"
-	NEW TEMPLATE S TEMPLATE="|\r\n{{^boolean}}\r\n{{/boolean}}\r\n|"
-	NEW EXPECTED S EXPECTED="|\r\n|"
+	S TEMPLATE="|\r\n{{^boolean}}\r\n{{/boolean}}\r\n|"
+	S EXPECTED="|\r\n|"
 	NEW CTX
 	SET CTX("booleanl")="false"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
@@ -1366,8 +1366,8 @@ TEST095
 TEST096
 	NEW HDR S HDR="[TEST096][Standalone Without Previous Line]"
 	NEW DESC S DESC=HDR_"[Standalone tags should not require a newline to precede them.]"
-	NEW TEMPLATE S TEMPLATE="{{^boolean}}\n^{{/boolean}}\n/"
-	NEW EXPECTED S EXPECTED="^\n/"
+	S TEMPLATE="{{^boolean}}\n^{{/boolean}}\n/"
+	S EXPECTED="^\n/"
 	NEW CTX
 	SET CTX("booleanl")="false"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
@@ -1377,8 +1377,8 @@ TEST096
 TEST097
 	NEW HDR S HDR="[TEST097][Standalone Without Newline]"
 	NEW DESC S DESC=HDR_"[Standalone tags should not require a newline to follow them.]"
-	NEW TEMPLATE S TEMPLATE="^{{^boolean}}\n/\n  {{/boolean}}"
-	NEW EXPECTED S EXPECTED="^\n/\n"
+	S TEMPLATE="^{{^boolean}}\n/\n  {{/boolean}}"
+	S EXPECTED="^\n/\n"
 	NEW CTX
 	SET CTX("booleanl")="false"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
@@ -1388,8 +1388,8 @@ TEST097
 TEST098
 	NEW HDR S HDR="[TEST098][Padding]"
 	NEW DESC S DESC=HDR_"[Superfluous in-tag whitespace should be ignored.]"
-	NEW TEMPLATE S TEMPLATE="|{{^ boolean }}={{/ boolean }}|"
-	NEW EXPECTED S EXPECTED="|=|"
+	S TEMPLATE="|{{^ boolean }}={{/ boolean }}|"
+	S EXPECTED="|=|"
 	NEW CTX
 	SET CTX("booleanl")="false"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
@@ -1399,8 +1399,8 @@ TEST098
 TEST099
 	NEW HDR S HDR="[TEST099][Basic Behavior]"
 	NEW DESC S DESC=HDR_"[The greater-than operator should expand to the named partial.]"
-	NEW TEMPLATE S TEMPLATE="""{{>text}}"""
-	NEW EXPECTED S EXPECTED="""from partial"""
+	S TEMPLATE="""{{>text}}"""
+	S EXPECTED="""from partial"""
 	N CONF,ROOT D SETUPPART(.CONF,.ROOT) 
 	K ERR  D WRFILE(ROOT_"text","from partial",.ERR)
 	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR	
@@ -1412,9 +1412,9 @@ TEST099
 TEST100
 	NEW HDR S HDR="[TEST100][Failed Lookup]"
 	NEW DESC S DESC=HDR_"[The empty string should be used when the named partial is not found.]"
-	;NEW TEMPLATE 
+	;
 	S TEMPLATE="""{{>text}}"""
-	;NEW EXPECTED 
+	;
 	S EXPECTED=""""""
 	N CONF
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
@@ -1422,8 +1422,8 @@ TEST100
 TEST101
 	NEW HDR S HDR="[TEST101][Context]"
 	NEW DESC S DESC=HDR_"[The greater-than operator should operate within the current context.]"
-	NEW TEMPLATE S TEMPLATE="""{{>partial}}"""
-	NEW EXPECTED S EXPECTED="""*content*"""
+	S TEMPLATE="""{{>partial}}"""
+	S EXPECTED="""*content*"""
 	N CONF,ROOT,CTX D SETUPPART(.CONF,.ROOT)
 	N ERR 
 	D WRFILE(ROOT_"partial","*{{text}}*",.ERR)
@@ -1435,8 +1435,8 @@ TEST101
 TEST102
 	NEW HDR S HDR="[TEST102][Recursion]"
 	NEW DESC S DESC=HDR_"[The greater-than operator should properly recurse.]"
-	NEW TEMPLATE S TEMPLATE="{{>node}}"
-	NEW EXPECTED S EXPECTED="X<Y<>>"
+	S TEMPLATE="{{>node}}"
+	S EXPECTED="X<Y<>>"
 	N CONF,ROOT,CTX D SETUPPART(.CONF,.ROOT)
 	N ERR 
 	D WRFILE(ROOT_"node","{{content}}<{{#nodes}}{{>node}}{{/nodes}}>",.ERR)
@@ -1450,8 +1450,8 @@ TEST102
 TEST103
 	NEW HDR S HDR="[TEST103][Nested]"
 	NEW DESC S DESC=HDR_"[The greater-than operator should work from within partials.]"
-	NEW TEMPLATE S TEMPLATE="{{>outer}}"
-	NEW EXPECTED S EXPECTED="*hello world!*"
+	S TEMPLATE="{{>outer}}"
+	S EXPECTED="*hello world!*"
 	N CONF,ROOT,CTX D SETUPPART(.CONF,.ROOT)
 	N ERR 
 	D WRFILE(ROOT_"outer","*{{a}} {{>inner}}*",.ERR)
@@ -1465,8 +1465,8 @@ TEST103
 TEST104
 	NEW HDR S HDR="[TEST104][Surrounding Whitespace]"
 	NEW DESC S DESC=HDR_"[The greater-than operator should not alter surrounding whitespace.]"
-	NEW TEMPLATE S TEMPLATE="| {{>partial}} |"
-	NEW EXPECTED S EXPECTED="| \t|\t |"
+	S TEMPLATE="| {{>partial}} |"
+	S EXPECTED="| \t|\t |"
 	N CONF,ROOT,CTX D SETUPPART(.CONF,.ROOT)
 	N ERR D WRFILE(ROOT_"partial","\t|\t",.ERR)
 	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
@@ -1476,8 +1476,8 @@ TEST104
 TEST105
 	NEW HDR S HDR="[TEST105][Inline Indentation]"
 	NEW DESC S DESC=HDR_"[Whitespace should be left untouched.]"
-	NEW TEMPLATE S TEMPLATE="  {{data}}  {{> partial}}\n"
-	NEW EXPECTED S EXPECTED="  |  >\n>\n"
+	S TEMPLATE="  {{data}}  {{> partial}}\n"
+	S EXPECTED="  |  >\n>\n"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CONF,CTX D SETUPPART(.CONF,.ROOT)
@@ -1490,8 +1490,8 @@ TEST105
 TEST106
 	NEW HDR S HDR="[TEST106][Standalone Line Endings]"
 	NEW DESC S DESC=HDR_"[""\r\\n"" should be considered a newline for standalone tags.]"
-	NEW TEMPLATE S TEMPLATE="|\r\n{{>partial}}\r\n|"
-	NEW EXPECTED S EXPECTED="|\r\n>|"
+	S TEMPLATE="|\r\n{{>partial}}\r\n|"
+	S EXPECTED="|\r\n>|"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CONF,CTX D SETUPPART(.CONF,.ROOT)
@@ -1503,8 +1503,8 @@ TEST106
 TEST107
 	NEW HDR S HDR="[TEST107][Standalone Without Previous Line]"
 	NEW DESC S DESC=HDR_"[Standalone tags should not require a newline to precede them.]"
-	NEW TEMPLATE S TEMPLATE="  {{>partial}}\n>"
-	NEW EXPECTED S EXPECTED="  >\n  >>"
+	S TEMPLATE="  {{>partial}}\n>"
+	S EXPECTED="  >\n  >>"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CONF,CTX D SETUPPART(.CONF,.ROOT)
@@ -1516,8 +1516,8 @@ TEST107
 TEST108
 	NEW HDR S HDR="[TEST108][Standalone Without Newline]"
 	NEW DESC S DESC=HDR_"[Standalone tags should not require a newline to follow them.]"
-	NEW TEMPLATE S TEMPLATE=">\n  {{>partial}}"
-	NEW EXPECTED S EXPECTED=">\n  >\n  >"
+	S TEMPLATE=">\n  {{>partial}}"
+	S EXPECTED=">\n  >\n  >"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CONF,CTX D SETUPPART(.CONF,.ROOT)
@@ -1529,8 +1529,8 @@ TEST108
 TEST109
 	NEW HDR S HDR="[TEST109][Standalone Indentation]"
 	NEW DESC S DESC=HDR_"[Each line of the partial should be indented before rendering.]"
-	NEW TEMPLATE S TEMPLATE="\\\n {{>partial}}\n/\n"
-	NEW EXPECTED S EXPECTED="\\\n |\n <\n->\n |\n/\n"
+	S TEMPLATE="\\\n {{>partial}}\n/\n"
+	S EXPECTED="\\\n |\n <\n->\n |\n/\n"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CONF,CTX D SETUPPART(.CONF,.ROOT)
@@ -1544,8 +1544,8 @@ TEST109
 TEST110
 	NEW HDR S HDR="[TEST110][Padding Whitespace]"
 	NEW DESC S DESC=HDR_"[Superfluous in-tag whitespace should be ignored.]"
-	NEW TEMPLATE S TEMPLATE="|{{> partial }}|"
-	NEW EXPECTED S EXPECTED="|[]|"
+	S TEMPLATE="|{{> partial }}|"
+	S EXPECTED="|[]|"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CONF,CTX D SETUPPART(.CONF,.ROOT)
@@ -1560,16 +1560,16 @@ TEST110
 TEST111
 	NEW HDR S HDR="[TEST111][Inline]"
 	NEW DESC S DESC=HDR_"[Comment blocks should be removed from the template.]"
-	NEW TEMPLATE S TEMPLATE="12345{{! Comment Block! }}67890"
-	NEW EXPECTED S EXPECTED="1234567890"
+	S TEMPLATE="12345{{! Comment Block! }}67890"
+	S EXPECTED="1234567890"
 	N CON,CTX
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	QUIT
 TEST112
 	NEW HDR S HDR="[TEST112][Multiline]"
 	NEW DESC S DESC=HDR_"[Multiline comments should be permitted..]"
-	NEW TEMPLATE S TEMPLATE="12345{{!\n  This is a\n  multi-line comment...\n}}67890\n"
-	NEW EXPECTED S EXPECTED="1234567890\n"
+	S TEMPLATE="12345{{!\n  This is a\n  multi-line comment...\n}}67890\n"
+	S EXPECTED="1234567890\n"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CON,CTX
@@ -1578,8 +1578,8 @@ TEST112
 TEST113
 	NEW HDR S HDR="[TEST113][Standalone]"
 	NEW DESC S DESC=HDR_"[All standalone comment lines should be removed.]"
-	NEW TEMPLATE S TEMPLATE="Begin.\n{{! Comment Block! }}\nEnd.\n"
-	NEW EXPECTED S EXPECTED="Begin.\nEnd.\n"
+	S TEMPLATE="Begin.\n{{! Comment Block! }}\nEnd.\n"
+	S EXPECTED="Begin.\nEnd.\n"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CON,CTX
@@ -1588,8 +1588,8 @@ TEST113
 TEST114
 	NEW HDR S HDR="[TEST114][Indented Standalone]"
 	NEW DESC S DESC=HDR_"[All standalone comment lines should be removed.]"
-	NEW TEMPLATE S TEMPLATE="Begin.\n  {{! Indented Comment Block! }}\nEnd.\n"
-	NEW EXPECTED S EXPECTED="Begin.\nEnd.\n"
+	S TEMPLATE="Begin.\n  {{! Indented Comment Block! }}\nEnd.\n"
+	S EXPECTED="Begin.\nEnd.\n"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CON,CTX
@@ -1598,8 +1598,8 @@ TEST114
 TEST115
 	NEW HDR S HDR="[TEST115][Standalone Line Endings]"
 	NEW DESC S DESC=HDR_"""\\r\\n"" should be considered a newline for standalone tags."
-	NEW TEMPLATE S TEMPLATE="|\r\n{{! Standalone Comment }}\r\n|"
-	NEW EXPECTED S EXPECTED="|\r\n|"
+	S TEMPLATE="|\r\n{{! Standalone Comment }}\r\n|"
+	S EXPECTED="|\r\n|"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CON,CTX
@@ -1608,8 +1608,8 @@ TEST115
 TEST116
 	NEW HDR S HDR="[TEST116][Standalone Without Previous Line]"
 	NEW DESC S DESC=HDR_"[Standalone tags should not require a newline to precede them.]"
-	NEW TEMPLATE S TEMPLATE="  {{! I'm Still Standalone }}\n!"
-	NEW EXPECTED S EXPECTED="!"
+	S TEMPLATE="  {{! I'm Still Standalone }}\n!"
+	S EXPECTED="!"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CON,CTX
@@ -1618,8 +1618,8 @@ TEST116
 TEST117
 	NEW HDR S HDR="[TEST117][Standalone Without Newline]"
 	NEW DESC S DESC=HDR_"[Standalone tags should not require a newline to follow them.]"
-	NEW TEMPLATE S TEMPLATE="!\n  {{! I'm Still Standalone }}"
-	NEW EXPECTED S EXPECTED="!\n"
+	S TEMPLATE="!\n  {{! I'm Still Standalone }}"
+	S EXPECTED="!\n"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CON,CTX
@@ -1628,8 +1628,8 @@ TEST117
 TEST118
 	NEW HDR S HDR="[TEST118][Multiline Standalone]"
 	NEW DESC S DESC=HDR_"[All standalone comment lines should be removed.]"
-	NEW TEMPLATE S TEMPLATE="Begin.\n{{!\nSomething's going on here...\n}}\nEnd.\n"
-	NEW EXPECTED S EXPECTED="Begin.\nEnd.\n"
+	S TEMPLATE="Begin.\n{{!\nSomething's going on here...\n}}\nEnd.\n"
+	S EXPECTED="Begin.\nEnd.\n"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CON,CTX
@@ -1638,8 +1638,8 @@ TEST118
 TEST119
 	NEW HDR S HDR="[TEST119][Indented Multiline Standalone]"
 	NEW DESC S DESC=HDR_"[All standalone comment lines should be removed.]"
-	NEW TEMPLATE S TEMPLATE="Begin.\n  {{!\n    Something's going on here...\n  }}\nEnd.\n"
-	NEW EXPECTED S EXPECTED="Begin.\nEnd.\n"
+	S TEMPLATE="Begin.\n  {{!\n    Something's going on here...\n  }}\nEnd.\n"
+	S EXPECTED="Begin.\nEnd.\n"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CON,CTX
@@ -1648,8 +1648,8 @@ TEST119
 TEST120
 	NEW HDR S HDR="[TEST120][Indented Inline]"
 	NEW DESC S DESC=HDR_"[Inline comments should not strip whitespace]"
-	NEW TEMPLATE S TEMPLATE="  12 {{! 34 }}\n"
-	NEW EXPECTED S EXPECTED="  12 \n"
+	S TEMPLATE="  12 {{! 34 }}\n"
+	S EXPECTED="  12 \n"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CON,CTX
@@ -1658,8 +1658,8 @@ TEST120
 TEST121
 	NEW HDR S HDR="[TEST121][Surrounding Whitespace]"
 	NEW DESC S DESC=HDR_"[Comment removal should preserve surrounding whitespace.]"
-	NEW TEMPLATE S TEMPLATE="12345 {{! Comment Block! }} 67890"
-	NEW EXPECTED S EXPECTED="12345  67890"
+	S TEMPLATE="12345 {{! Comment Block! }} 67890"
+	S EXPECTED="12345  67890"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CON,CTX
@@ -1668,8 +1668,8 @@ TEST121
 TEST122
 	NEW HDR S HDR="[TEST122][Variable Name Collision]"
 	NEW DESC S DESC=HDR_"[Comments must never render, even if variable with same name exists.]"
-	NEW TEMPLATE S TEMPLATE="comments never show: >{{! comment }}<"
-	NEW EXPECTED S EXPECTED="comments never show: ><"
+	S TEMPLATE="comments never show: >{{! comment }}<"
+	S EXPECTED="comments never show: ><"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CON,CTX
@@ -1683,8 +1683,8 @@ TEST122
 TEST123
 	NEW HDR S HDR="[TEST123][Pair Behavior]"
 	NEW DESC S DESC=HDR_"[The equals sign (used on both sides) should permit delimiter changes.]"
-	NEW TEMPLATE S TEMPLATE="{{=<% %>=}}(<%text%>)"
-	NEW EXPECTED S EXPECTED="(Hey!)"
+	S TEMPLATE="{{=<% %>=}}(<%text%>)"
+	S EXPECTED="(Hey!)"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CON,CTX
@@ -1695,8 +1695,8 @@ TEST123
 TEST124
 	NEW HDR S HDR="[TEST124][Special Characters]"
 	NEW DESC S DESC=HDR_"[Characters with special meaning regexen should be valid delimiters.]"
-	NEW TEMPLATE S TEMPLATE="({{=[ ]=}}[text])"
-	NEW EXPECTED S EXPECTED="(It worked!)"
+	S TEMPLATE="({{=[ ]=}}[text])"
+	S EXPECTED="(It worked!)"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CON,CTX
@@ -1707,8 +1707,8 @@ TEST124
 TEST125
 	NEW HDR S HDR="[TEST125][Sections]"
 	NEW DESC S DESC=HDR_"[Delimiters set outside sections should persist.]"
-	NEW TEMPLATE S TEMPLATE="[\n{{#section}}\n  {{data}}\n  |data|\n{{/section}}\n\n{{= | | =}}\n|#section|\n  {{data}}\n  |data|\n|/section|\n]\n"
-	NEW EXPECTED S EXPECTED="[\n  I got interpolated.\n  |data|\n\n  {{data}}\n  I got interpolated.\n]\n"
+	S TEMPLATE="[\n{{#section}}\n  {{data}}\n  |data|\n{{/section}}\n\n{{= | | =}}\n|#section|\n  {{data}}\n  |data|\n|/section|\n]\n"
+	S EXPECTED="[\n  I got interpolated.\n  |data|\n\n  {{data}}\n  I got interpolated.\n]\n"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CON,CTX
@@ -1720,8 +1720,8 @@ TEST125
 TEST126
 	NEW HDR S HDR="[TEST126][Inverted Sections]"
 	NEW DESC S DESC=HDR_"[Delimiters set outside inverted sections should persist.]"
-	NEW TEMPLATE S TEMPLATE="[\n{{^section}}\n  {{data}}\n  |data|\n{{/section}}\n\n{{= | | =}}\n|^section|\n  {{data}}\n  |data|\n|/section|\n]\n"
-	NEW EXPECTED S EXPECTED="[\n  I got interpolated.\n  |data|\n\n  {{data}}\n  I got interpolated.\n]\n"
+	S TEMPLATE="[\n{{^section}}\n  {{data}}\n  |data|\n{{/section}}\n\n{{= | | =}}\n|^section|\n  {{data}}\n  |data|\n|/section|\n]\n"
+	S EXPECTED="[\n  I got interpolated.\n  |data|\n\n  {{data}}\n  I got interpolated.\n]\n"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CON,CTX
@@ -1733,8 +1733,8 @@ TEST126
 TEST127
 	NEW HDR S HDR="[TEST127][Partial Inheritence]"
 	NEW DESC S DESC=HDR_"[Delimiters set in a parent template should not affect a partial.]"
-	NEW TEMPLATE S TEMPLATE="[ {{>include}} ]\n{{= | | =}}\n[ |>include| ]\n"
-	NEW EXPECTED S EXPECTED="[ .yes. ]\n[ .yes. ]\n"
+	S TEMPLATE="[ {{>include}} ]\n{{= | | =}}\n[ |>include| ]\n"
+	S EXPECTED="[ .yes. ]\n[ .yes. ]\n"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CONF,CTX D SETUPPART(.CONF,.ROOT)
@@ -1748,8 +1748,8 @@ TEST127
 TEST128
 	NEW HDR S HDR="[TEST128][Partial Inheritence]"
 	NEW DESC S DESC=HDR_"[Delimiters set in a parent template should not affect a partial.]"
-	NEW TEMPLATE S TEMPLATE="[ {{>include}} ]\n{{= | | =}}\n[ |>include| ]\n"
-	NEW EXPECTED S EXPECTED="[ .yes. ]\n[ .yes. ]\n"
+	S TEMPLATE="[ {{>include}} ]\n{{= | | =}}\n[ |>include| ]\n"
+	S EXPECTED="[ .yes. ]\n[ .yes. ]\n"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CONF,CTX D SETUPPART(.CONF,.ROOT)
@@ -1763,8 +1763,8 @@ TEST128
 TEST129
 	NEW HDR S HDR="[TEST129][Post-Partial Behavior]"
 	NEW DESC S DESC=HDR_"[Delimiters set in a partial should not affect the parent template.]"
-	NEW TEMPLATE S TEMPLATE="[ {{>include}} ]\n[ .{{value}}.  .|value|. ]\n"
-	NEW EXPECTED S EXPECTED="[ .yes.  .yes. ]\n[ .yes.  .|value|. ]\n"
+	S TEMPLATE="[ {{>include}} ]\n[ .{{value}}.  .|value|. ]\n"
+	S EXPECTED="[ .yes.  .yes. ]\n[ .yes.  .|value|. ]\n"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CONF,CTX D SETUPPART(.CONF,.ROOT)
@@ -1778,8 +1778,8 @@ TEST129
 TEST130
 	NEW HDR S HDR="[TEST130][Surrounding Whitespace]"
 	NEW DESC S DESC=HDR_"[Surrounding whitespace should be left untouched.]"
-	NEW TEMPLATE S TEMPLATE="| {{=@ @=}} |"
-	NEW EXPECTED S EXPECTED="|  |"
+	S TEMPLATE="| {{=@ @=}} |"
+	S EXPECTED="|  |"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CTX
@@ -1788,8 +1788,8 @@ TEST130
 TEST131
 	NEW HDR S HDR="[TEST131][Outlying Whitespace (Inline)]"
 	NEW DESC S DESC=HDR_"[Whitespace should be left untouched.]"
-	NEW TEMPLATE S TEMPLATE=" | {{=@ @=}}\n"
-	NEW EXPECTED S EXPECTED=" | \n"
+	S TEMPLATE=" | {{=@ @=}}\n"
+	S EXPECTED=" | \n"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CTX
@@ -1798,8 +1798,8 @@ TEST131
 TEST132
 	NEW HDR S HDR="[TEST132][Standalone Tag]"
 	NEW DESC S DESC=HDR_"[Standalone lines should be removed from the template.]"
-	NEW TEMPLATE S TEMPLATE="Begin.\n{{=@ @=}}\nEnd.\n"
-	NEW EXPECTED S EXPECTED="Begin.\nEnd.\n"
+	S TEMPLATE="Begin.\n{{=@ @=}}\nEnd.\n"
+	S EXPECTED="Begin.\nEnd.\n"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CTX
@@ -1808,8 +1808,8 @@ TEST132
 TEST133
 	NEW HDR S HDR="[TEST133][Indented Standalone Tag]"
 	NEW DESC S DESC=HDR_"[Indented standalone lines should be removed from the template.]"
-	NEW TEMPLATE S TEMPLATE="Begin.\n  {{=@ @=}}\nEnd.\n"
-	NEW EXPECTED S EXPECTED="Begin.\nEnd.\n"
+	S TEMPLATE="Begin.\n  {{=@ @=}}\nEnd.\n"
+	S EXPECTED="Begin.\nEnd.\n"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CTX
@@ -1818,8 +1818,8 @@ TEST133
 TEST134
 	NEW HDR S HDR="[TEST134][Standalone Line Endings]"
 	NEW DESC S DESC=HDR_"[""\\r\\n"" should be considered a newline for standalone tags.]"
-	NEW TEMPLATE S TEMPLATE="|\r\n{{= @ @ =}}\r\n|"
-	NEW EXPECTED S EXPECTED="|\r\n|"
+	S TEMPLATE="|\r\n{{= @ @ =}}\r\n|"
+	S EXPECTED="|\r\n|"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CTX
@@ -1828,8 +1828,8 @@ TEST134
 TEST135
 	NEW HDR S HDR="[TEST135][Standalone Without Previous Line]"
 	NEW DESC S DESC=HDR_"[Standalone tags should not require a newline to precede them.]"
-	NEW TEMPLATE S TEMPLATE="  {{=@ @=}}\n="
-	NEW EXPECTED S EXPECTED="="
+	S TEMPLATE="  {{=@ @=}}\n="
+	S EXPECTED="="
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CTX
@@ -1838,8 +1838,8 @@ TEST135
 TEST136
 	NEW HDR S HDR="[TEST136][Standalone Without Newline]"
 	NEW DESC S DESC=HDR_"[Standalone tags should not require a newline to follow them.]"
-	NEW TEMPLATE S TEMPLATE="=\n  {{=@ @=}}"
-	NEW EXPECTED S EXPECTED="=\n"
+	S TEMPLATE="=\n  {{=@ @=}}"
+	S EXPECTED="=\n"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CTX
@@ -1848,8 +1848,8 @@ TEST136
 TEST137
 	NEW HDR S HDR="[TEST137][Pair with Padding]"
 	NEW DESC S DESC=HDR_"[Superfluous in-tag whitespace should be ignored.]"
-	NEW TEMPLATE S TEMPLATE="|{{= @   @ =}}|"
-	NEW EXPECTED S EXPECTED="||"
+	S TEMPLATE="|{{= @   @ =}}|"
+	S EXPECTED="||"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CTX
@@ -1858,8 +1858,8 @@ TEST137
 TEST138
 	NEW HDR S HDR="[TEST138][Default]"
 	NEW DESC S DESC=HDR_"[Default content should be rendered if the block isn't overridden.]"
-	NEW TEMPLATE S TEMPLATE="{{$title}}Default title{{/title}}\n"
-	NEW EXPECTED S EXPECTED="Default title\n"
+	S TEMPLATE="{{$title}}Default title{{/title}}\n"
+	S EXPECTED="Default title\n"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CTX
@@ -1868,8 +1868,8 @@ TEST138
 TEST139
 	NEW HDR S HDR="[TEST139][Variable]"
 	NEW DESC S DESC=HDR_"[Default content renders variables]"
-	NEW TEMPLATE S TEMPLATE="{{$foo}}default {{bar}} content{{/foo}}\n"
-	NEW EXPECTED S EXPECTED="default baz content\n"
+	S TEMPLATE="{{$foo}}default {{bar}} content{{/foo}}\n"
+	S EXPECTED="default baz content\n"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CTX
@@ -1879,8 +1879,8 @@ TEST139
 TEST140
 	NEW HDR S HDR="[TEST140][Triple Mustache]"
 	NEW DESC S DESC=HDR_"[Default content renders triple mustache variables]"
-	NEW TEMPLATE S TEMPLATE="{{$foo}}default {{{bar}}} content{{/foo}}\n"
-	NEW EXPECTED S EXPECTED="default <baz> content\n"
+	S TEMPLATE="{{$foo}}default {{{bar}}} content{{/foo}}\n"
+	S EXPECTED="default <baz> content\n"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CTX
@@ -1890,8 +1890,8 @@ TEST140
 TEST141
 	NEW HDR S HDR="[TEST141][Sections]"
 	NEW DESC S DESC=HDR_"[Default content renders sections]"
-	NEW TEMPLATE S TEMPLATE="{{$foo}}default {{#bar}}{{baz}}{{/bar}} content{{/foo}}\n"
-	NEW EXPECTED S EXPECTED="default qux content\n"
+	S TEMPLATE="{{$foo}}default {{#bar}}{{baz}}{{/bar}} content{{/foo}}\n"
+	S EXPECTED="default qux content\n"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CTX
@@ -1901,8 +1901,8 @@ TEST141
 TEST142
 	NEW HDR S HDR="[TEST142][Negative Sections]"
 	NEW DESC S DESC=HDR_"[Default content renders negative sections]"
-	NEW TEMPLATE S TEMPLATE="{{$foo}}default {{^bar}}{{baz}}{{/bar}} content{{/foo}}\n"
-	NEW EXPECTED S EXPECTED="default three content\n"
+	S TEMPLATE="{{$foo}}default {{^bar}}{{baz}}{{/bar}} content{{/foo}}\n"
+	S EXPECTED="default three content\n"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CTX
@@ -1912,8 +1912,8 @@ TEST142
 TEST143
 	NEW HDR S HDR="[TEST143][Mustache Injection]"
 	NEW DESC S DESC=HDR_"[Mustache injection in default content]"
-	NEW TEMPLATE S TEMPLATE="{{$foo}}default {{#bar}}{{baz}}{{/bar}} content{{/foo}}\n"
-	NEW EXPECTED S EXPECTED="default {{qux}} content\n"
+	S TEMPLATE="{{$foo}}default {{#bar}}{{baz}}{{/bar}} content{{/foo}}\n"
+	S EXPECTED="default {{qux}} content\n"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CTX
@@ -1923,8 +1923,8 @@ TEST143
 TEST144
 	NEW HDR S HDR="[TEST144][Inherit]"
 	NEW DESC S DESC=HDR_"[Default content rendered inside inherited templates]"
-	NEW TEMPLATE S TEMPLATE="{{<include}}{{/include}}\n"
-	NEW EXPECTED S EXPECTED="default content"
+	S TEMPLATE="{{<include}}{{/include}}\n"
+	S EXPECTED="default content"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CTX
@@ -1937,8 +1937,8 @@ TEST144
 TEST145
 	NEW HDR S HDR="[TEST145][Overridden content]"
 	NEW DESC S DESC=HDR_"[Overridden content]"
-	NEW TEMPLATE S TEMPLATE="{{<super}}{{$title}}sub template title{{/title}}{{/super}}"
-	NEW EXPECTED S EXPECTED="...sub template title..."
+	S TEMPLATE="{{<super}}{{$title}}sub template title{{/title}}{{/super}}"
+	S EXPECTED="...sub template title..."
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CTX
@@ -1951,8 +1951,8 @@ TEST145
 TEST146
 	NEW HDR S HDR="[TEST146][Data does not override block]"
 	NEW DESC S DESC=HDR_"[Context does not override argument passed into parent]"
-	NEW TEMPLATE S TEMPLATE="{{<include}}{{$var}}var in template{{/var}}{{/include}}"
-	NEW EXPECTED S EXPECTED="var in template"
+	S TEMPLATE="{{<include}}{{$var}}var in template{{/var}}{{/include}}"
+	S EXPECTED="var in template"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CTX
@@ -1966,8 +1966,8 @@ TEST146
 TEST147
 	NEW HDR S HDR="[TEST147][Data does not override block default]"
 	NEW DESC S DESC=HDR_"[Context does not override default content of block]"
-	NEW TEMPLATE S TEMPLATE="{{<include}}{{/include}}"
-	NEW EXPECTED S EXPECTED="var in include"
+	S TEMPLATE="{{<include}}{{/include}}"
+	S EXPECTED="var in include"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CTX
@@ -1981,8 +1981,8 @@ TEST147
 TEST148
 	NEW HDR S HDR="[TEST148][Overridden parent]"
 	NEW DESC S DESC=HDR_"[Overridden parent]"
-	NEW TEMPLATE S TEMPLATE="test {{<parent}}{{$stuff}}override{{/stuff}}{{/parent}}"
-	NEW EXPECTED S EXPECTED="test override"
+	S TEMPLATE="test {{<parent}}{{$stuff}}override{{/stuff}}{{/parent}}"
+	S EXPECTED="test override"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CTX
@@ -1995,8 +1995,8 @@ TEST148
 TEST149
 	NEW HDR S HDR="[TEST149][Two overridden parents]"
 	NEW DESC S DESC=HDR_"[Two overridden parents with different content]"
-	NEW TEMPLATE S TEMPLATE="test {{<parent}}{{$stuff}}override1{{/stuff}}{{/parent}} {{<parent}}{{$stuff}}override2{{/stuff}}{{/parent}}\n"
-	NEW EXPECTED S EXPECTED="test |override1 default| |override2 default|\n"
+	S TEMPLATE="test {{<parent}}{{$stuff}}override1{{/stuff}}{{/parent}} {{<parent}}{{$stuff}}override2{{/stuff}}{{/parent}}\n"
+	S EXPECTED="test |override1 default| |override2 default|\n"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CTX
@@ -2009,8 +2009,8 @@ TEST149
 TEST150
 	NEW HDR S HDR="[TEST150][Override parent with newlines]"
 	NEW DESC S DESC=HDR_"[Override parent with newlines]"
-	NEW TEMPLATE S TEMPLATE="{{<parent}}{{$ballmer}}\npeaked\n\n:(\n{{/ballmer}}{{/parent}}"
-	NEW EXPECTED S EXPECTED="peaked\n\n:(\n"
+	S TEMPLATE="{{<parent}}{{$ballmer}}\npeaked\n\n:(\n{{/ballmer}}{{/parent}}"
+	S EXPECTED="peaked\n\n:(\n"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CTX
@@ -2023,8 +2023,8 @@ TEST150
 TEST151
 	NEW HDR S HDR="[TEST151][Override parent with newlines]"
 	NEW DESC S DESC=HDR_"[Inherit indentation when overriding a parents]"
-	NEW TEMPLATE S TEMPLATE="{{<parent}}{{$nineties}}hammer time{{/nineties}}{{/parent}}"
-	NEW EXPECTED S EXPECTED="stop:\n  hammer time\n"
+	S TEMPLATE="{{<parent}}{{$nineties}}hammer time{{/nineties}}{{/parent}}"
+	S EXPECTED="stop:\n  hammer time\n"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CTX
@@ -2037,8 +2037,8 @@ TEST151
 TEST152
 	NEW HDR S HDR="[TEST152][Only one override]"
 	NEW DESC S DESC=HDR_"[Override one parameter but not the other]"
-	NEW TEMPLATE S TEMPLATE="{{<parent}}{{$stuff2}}override two{{/stuff2}}{{/parent}}"
-	NEW EXPECTED S EXPECTED="new default one, override two"
+	S TEMPLATE="{{<parent}}{{$stuff2}}override two{{/stuff2}}{{/parent}}"
+	S EXPECTED="new default one, override two"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CTX
@@ -2051,8 +2051,8 @@ TEST152
 TEST153
 	NEW HDR S HDR="[TEST153][Parent template]"
 	NEW DESC S DESC=HDR_"[Parent templates behave identically to partials when called with no parameters]"
-	NEW TEMPLATE S TEMPLATE="{{>parent}}|{{<parent}}{{/parent}}"
-	NEW EXPECTED S EXPECTED="default content|default content"
+	S TEMPLATE="{{>parent}}|{{<parent}}{{/parent}}"
+	S EXPECTED="default content|default content"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CTX
@@ -2065,8 +2065,8 @@ TEST153
 TEST154
 	NEW HDR S HDR="[TEST154][Recursion]"
 	NEW DESC S DESC=HDR_"[Recursion in inherited templates]"
-	NEW TEMPLATE S TEMPLATE="{{<parent}}{{$foo}}override{{/foo}}{{/parent}}"
-	NEW EXPECTED S EXPECTED="override override override don't recurse"
+	S TEMPLATE="{{<parent}}{{$foo}}override{{/foo}}{{/parent}}"
+	S EXPECTED="override override override don't recurse"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CTX
@@ -2080,8 +2080,8 @@ TEST154
 TEST155
 	NEW HDR S HDR="[TEST155][Multi-level inheritance]"
 	NEW DESC S DESC=HDR_"[Top-level substitutions take precedence in multi-level inheritance]"
-	NEW TEMPLATE S TEMPLATE="{{<parent}}{{$a}}c{{/a}}{{/parent}}"
-	NEW EXPECTED S EXPECTED="c"
+	S TEMPLATE="{{<parent}}{{$a}}c{{/a}}{{/parent}}"
+	S EXPECTED="c"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CTX
@@ -2096,8 +2096,8 @@ TEST155
 TEST156
 	NEW HDR S HDR="[TEST156][Multi-level inheritance, no sub child]"
 	NEW DESC S DESC=HDR_"[Top-level substitutions take precedence in multi-level inheritance]"
-	NEW TEMPLATE S TEMPLATE="{{<parent}}{{/parent}}"
-	NEW EXPECTED S EXPECTED="p"
+	S TEMPLATE="{{<parent}}{{/parent}}"
+	S EXPECTED="p"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CTX
@@ -2112,8 +2112,8 @@ TEST156
 TEST157
 	NEW HDR S HDR="[TEST157][Text inside parent]"
 	NEW DESC S DESC=HDR_"[Ignores text inside parent templates, but does parse $ tags]"
-	NEW TEMPLATE S TEMPLATE="{{<parent}} asdfasd {{$foo}}hmm{{/foo}} asdfasdfasdf {{/parent}}"
-	NEW EXPECTED S EXPECTED="hmm"
+	S TEMPLATE="{{<parent}} asdfasd {{$foo}}hmm{{/foo}} asdfasdfasdf {{/parent}}"
+	S EXPECTED="hmm"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CTX
@@ -2126,8 +2126,8 @@ TEST157
 TEST158
 	NEW HDR S HDR="[TEST158][Text inside parent]"
 	NEW DESC S DESC=HDR_"[Allows text inside a parent tag, but ignores it]"
-	NEW TEMPLATE S TEMPLATE="{{<parent}} asdfasd asdfasdfasdf {{/parent}}"
-	NEW EXPECTED S EXPECTED="default content"
+	S TEMPLATE="{{<parent}} asdfasd asdfasdfasdf {{/parent}}"
+	S EXPECTED="default content"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CTX
@@ -2140,8 +2140,8 @@ TEST158
 TEST159
 	NEW HDR S HDR="[TEST159][Block scope]"
 	NEW DESC S DESC=HDR_"[Scope of a substituted block is evaluated in the context of the parent template]"
-	NEW TEMPLATE S TEMPLATE="{{<parent}}{{$block}}I say {{fruit}}.{{/block}}{{/parent}}"
-	NEW EXPECTED S EXPECTED="I say bananas."
+	S TEMPLATE="{{<parent}}{{$block}}I say {{fruit}}.{{/block}}{{/parent}}"
+	S EXPECTED="I say bananas."
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CTX
@@ -2156,8 +2156,8 @@ TEST159
 TEST160
 	NEW HDR S HDR="[TEST160][Standalone parent]"
 	NEW DESC S DESC=HDR_"[A parent's opening and closing tags need not be on separate lines in order to be standalone]"
-	NEW TEMPLATE S TEMPLATE="Hi,\n  {{<parent}}{{/parent}}\n"
-	NEW EXPECTED S EXPECTED="Hi,\n  one\n  two\n"
+	S TEMPLATE="Hi,\n  {{<parent}}{{/parent}}\n"
+	S EXPECTED="Hi,\n  one\n  two\n"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
 	N CTX
@@ -2170,8 +2170,7 @@ TEST160
 TEST161
 	NEW HDR S HDR="[TEST161][Standalone block]"
 	NEW DESC S DESC=HDR_"[A block's opening and closing tags need not be on separate lines in order to be standalone]"
-	NEW TEMPLATE S TEMPLATE="{{<parent}}{{$block}}\none\ntwo{{/block}}\n{{/parent}}\n"
-	;NEW EXPECTED 
+	S TEMPLATE="{{<parent}}{{$block}}\none\ntwo{{/block}}\n{{/parent}}\n"
 	S EXPECTED="Hi,\n  one\n  two\n"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
@@ -2185,9 +2184,7 @@ TEST161
 TEST162
 	NEW HDR S HDR="[TEST162][Block reindentation]"
 	NEW DESC S DESC=HDR_"[Block indentation is removed at the site of definition and added at the site of expansion]"
-	;NEW TEMPLATE 
 	S TEMPLATE="{{<parent}}{{$block}}\n    one\n    two\n{{/block}}{{/parent}}\n"
-	;NEW EXPECTED 
 	S EXPECTED="Hi,\n  one\n  two\n"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
@@ -2201,9 +2198,7 @@ TEST162
 TEST163
 	NEW HDR S HDR="[TEST163][Intrinsic indentation]"
 	NEW DESC S DESC=HDR_"[When the block opening tag is standalone, indentation is determined by default content]"
-	;NEW TEMPLATE 
 	S TEMPLATE="{{<parent}}{{$block}}\none\ntwo\n{{/block}}{{/parent}}\n"
-	;NEW EXPECTED 
 	S EXPECTED="Hi,\n  one\n  two\n"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
@@ -2217,9 +2212,7 @@ TEST163
 TEST164
 	NEW HDR S HDR="[TEST164][Nested block reindentation]"
 	NEW DESC S DESC=HDR_"[Nested blocks are reindented relative to the surrounding block]"
-	;NEW TEMPLATE 
 	S TEMPLATE="{{<parent}}{{$nested}}\nthree\n{{/nested}}{{/parent}}\n"
-	;NEW EXPECTED 
 	S EXPECTED="one\n  three\n"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
 	S EXPECTED=$$UNESCNL(EXPECTED)
@@ -2266,8 +2259,8 @@ TEST267
 TEST000
 	NEW HDR S HDR="[TEST000][]"
 	NEW DESC S DESC=HDR_"[]"
-	NEW TEMPLATE S TEMPLATE="""{{>text}}"""
-	NEW EXPECTED S EXPECTED=""
+	S TEMPLATE="""{{>text}}"""
+	S EXPECTED=""
 	N CONF,ROOT D SETUPPART(.CONF,.ROOT)
 	N ERR 
 	D WRFILE(ROOT_"text","from partial",.ERR)
@@ -2281,12 +2274,21 @@ RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,CTX)
 	;  1) Scalar template -> scalar output (existing high-perf path)
 	;  2) Reference template OREF(n) -> reference output OREF(n) (GB-safe path)
 	;NEW TOK,ERR,OUT
-	K TOK,ERR,OUT
+	;K TOK,ERR,OUT
 	D COMPILE^MIOTPL2($G(TEMPLATE),.TOK,.ERR)
 	D OK^MIOTASSERT('$D(ERR),"[COMPILE]"_HDR)
 	D EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
 	D OK^MIOTASSERT('$D(ERR),"[EVAL]"_DESC)
 	D EQ^MIOTASSERT(OUT,$G(EXPECTED),"[RENDER]"_DESC)
+	I OUT=$G(EXPECTED) Q 
+	K CONF,HDR,DESC
+	W !
+	ZWR EXPECTED W !
+	W "     " ZWR OUT W !
+	ZWR TEMPLATE W !
+	ZWR TOK 
+	W "************************************",!
+	Q
 	;
 	; --- Reference mode: build input chunks, compile+eval into output chunks
 	;	
@@ -2318,8 +2320,8 @@ RUNJSONSPECS(FP)
 	N A S A="" F  S A=$O(TESTS("tests",A)) Q:A=""  D
 	. NEW HDR S HDR="["_TESTS("tests",A,"name")_"]"
 	. NEW DESC S DESC=HDR_"["_TESTS("tests",A,"desc")_"]"
-	. NEW TEMPLATE S TEMPLATE=TESTS("tests",A,"template")
-	. NEW EXPECTED S EXPECTED=TESTS("tests",A,"expected")
+	. S TEMPLATE=TESTS("tests",A,"template")
+	. S EXPECTED=TESTS("tests",A,"expected")
 	. NEW CTX M CTX=TESTS("tests",A,"data")
 	. D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	Q
@@ -2330,8 +2332,8 @@ RUNJSONSPECSPART(FP)
 	N A S A="" F  S A=$O(TESTS("tests",A)) Q:A=""  D
 	. NEW HDR S HDR="["_TESTS("tests",A,"name")_"]"
 	. NEW DESC S DESC=HDR_"["_TESTS("tests",A,"desc")_"]"
-	. NEW TEMPLATE S TEMPLATE=TESTS("tests",A,"template")
-	. NEW EXPECTED S EXPECTED=TESTS("tests",A,"expected")
+	. S TEMPLATE=TESTS("tests",A,"template")
+	. S EXPECTED=TESTS("tests",A,"expected")
 	. NEW CTX M CTX=TESTS("tests",A,"data") 
 	. I TESTS("tests",A,"name")="Recursion" D 
 	. . SET CTX("nodes",1,"nodes")=""  ; to match and pass the test 

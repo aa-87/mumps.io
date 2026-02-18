@@ -607,42 +607,56 @@ STANDTOK(TOK)
 	F I=1:1:MAX I $G(DO(I)) D STANDAP(.TOK,I,MAX)
 	Q
 ISSTAND(TOK,I,MAX)
-	N POK,NOK,PV,NV
-	I '$$LINEPURE(.TOK,I,MAX) Q 0
-	S POK=1
-	I I>1 D
-	. I $G(TOK(I-1,"t"))'="text" S POK=0 Q
-	. S PV=$G(TOK(I-1,"v"))
-	. I '$$TAILWS(PV) S POK=0
-	Q:'POK 0
-	S NOK=1
-	I I<MAX D
-	. I $G(TOK(I+1,"t"))'="text" S NOK=0 Q
-	. S NV=$G(TOK(I+1,"v"))
-	. I '$$HEADWNL(NV) S NOK=0
-	Q:'NOK 0
-	Q 1
+	N L,R,TYP,PV,NV,OK
+	; ---- scan left to nearest text, allowing only non-output tokens in-between
+	S OK=1,L=I-1
+	F  Q:L<1  Q:$G(TOK(L,"t"))="text"  D  Q:'OK  S L=L-1
+	. S TYP=$G(TOK(L,"t"))
+	. I TYP="comm"!(TYP="delim")!(TYP="parS")!(TYP="secE") Q
+	. S OK=0
+	Q:'OK 0
+	; left text tail must be whitespace only (or no left text at all)
+	I L>0 D  Q:'OK 0
+	. S PV=$G(TOK(L,"v"))
+	. I '$$TAILWS(PV) S OK=0
+	; ---- scan right to nearest text, allowing only non-output tokens in-between
+	S OK=1,R=I+1
+	F  Q:R>MAX  Q:$G(TOK(R,"t"))="text"  D  Q:'OK  S R=R+1
+	. S TYP=$G(TOK(R,"t"))
+	. I TYP="comm"!(TYP="delim")!(TYP="secE") Q  ; allow close tag next to parent start
+	. S OK=0
+	Q:'OK 0
+	; no right text => treat as standalone at EOF
+	I R>MAX Q 1
+	S NV=$G(TOK(R,"v"))
+	Q $$HEADWNL(NV)
 STANDAP(TOK,I,MAX)
-	N TYP,PV,P,IND,ISBLK,ISPART,ISPAR
+	N TYP,PV,P,IND,ISBLK,ISPART,ISPAR,L,R
 	S TYP=$G(TOK(I,"t"))
 	S ISBLK=$S(TYP="secS":+$G(TOK(I,"blk")),1:0)
 	S ISPART=$S(TYP="part":1,1:0)
 	S ISPAR=$S(TYP="parS":1,1:0)
 	; mark standalone
 	S TOK(I,"stand")=1
+	; nearest prev text
+	S L=I-1
+	F  Q:L<1  Q:$G(TOK(L,"t"))="text"  S L=L-1
+	; nearest next text
+	S R=I+1
+	F  Q:R>MAX  Q:$G(TOK(R,"t"))="text"  S R=R+1
 	; capture call-site indent for partials, parents, and standalone blocks
 	I ISPART!ISPAR!ISBLK D
 	. S IND=""
-	. I I>1,$G(TOK(I-1,"t"))="text" D
-	. . S PV=$G(TOK(I-1,"v"))
+	. I L>0 D
+	. . S PV=$G(TOK(L,"v"))
 	. . S P=$$LASTNLSEQ(PV)
 	. . I P>0 S IND=$E(PV,P+1,$L(PV))
 	. . E  S IND=PV
 	. I IND'="",$TR(IND," "_$C(9),"")'="" S IND=""
 	. S TOK(I,"indent")=IND
-	; trim standalone line
-	I I>1 S TOK(I-1,"v")=$$CUTPRE($G(TOK(I-1,"v")))
-	I I<MAX S TOK(I+1,"v")=$$CUTNX($G(TOK(I+1,"v")))
+	; trim standalone line: cut left tail + right head/newline
+	I L>0 S TOK(L,"v")=$$CUTPRE($G(TOK(L,"v")))
+	I R'>MAX S TOK(R,"v")=$$CUTNX($G(TOK(R,"v")))
 	Q
 INDENTSTR(S,IND)
 	I $G(IND)="" Q $G(S)
@@ -871,6 +885,7 @@ REPL(s,f,t)
 	q o
 PUSHFRAME(FSP,F,START,END,CTSP,MODE,CAPREF,TOKNAME)
 	S FSP=FSP+1
+	K F(FSP)  ; *** critical: clear stale flags (pdef/capEmit/etc) ***
 	S F(FSP,"i")=START
 	S F(FSP,"end")=END
 	S F(FSP,"ctxTop")=CTSP
@@ -1351,6 +1366,7 @@ EVALX(TOK,CONF,CTX,OUTMODE,OUT,OREF,ERR)
 	. . I $$ISTRUTH(.ISSET,.TYPE,.REF)=0 Q
 	. . I TYPE="list" D  Q
 	. . . S FSP=FSP+1
+	. . . K F(FSP)  ; *** critical: clear reused frame slot ***
 	. . . S F(FSP,"mode")="iter"
 	. . . S F(FSP,"i")=0,F(FSP,"end")=0
 	. . . S F(FSP,"ctxTop")=CTSP
@@ -1413,7 +1429,7 @@ POPX(OUTMODE,FSP,F,CST,CTSP,OUT,W,CRLF)
 	. I PACTIVE(PN)'>0 K PACTIVE(PN)
 	; capEmit: emit captured content into parent, with deindent->indent transform
 	I +$G(F(OLD,"capEmit")) D
-	. N VAL,IND,TXT
+	. N VAL,IND,TXT,LL
 	. S CR=$G(F(OLD,"capRef"))
 	. S VAL=$S(CR'="":$G(@CR),1:"")
 	. S DEFIND=$G(F(OLD,"blockDefIndent"))
@@ -1423,7 +1439,11 @@ POPX(OUTMODE,FSP,F,CST,CTSP,OUT,W,CRLF)
 	. S TXT=$$INDENTSTR(VAL,IND)
 	. I CR'="" S @CR=""
 	. K F(OLD,"capEmit"),F(OLD,"emitIndent")
-	. I OLD>1 D EMITX(OUTMODE,OLD-1,.F,.OUT,.W,TXT,CRLF)
+	. I OLD>1 D
+	. . D EMITX(OUTMODE,OLD-1,.F,.OUT,.W,TXT,CRLF)
+	. . ; *** critical: update parent "at" based on what we just emitted
+	. . S LL=$L(TXT)
+	. . I LL>0 S F(OLD-1,"at")=$S($E(TXT,LL)=$C(10):1,1:0)
 	; propagate "at" unless capture boundary
 	I OLD>1 D
 	. I '(CM="capture"&(PM'="capture")) S F(OLD-1,"at")=+$G(F(OLD,"at"))
