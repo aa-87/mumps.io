@@ -603,33 +603,46 @@ STANDTOK(TOK)
 	F I=1:1:MAX D
 	. S TYP=$G(TOK(I,"t"))
 	. Q:(TYP'="secS")&(TYP'="secE")&(TYP'="part")&(TYP'="parS")&(TYP'="comm")&(TYP'="delim")
+	. I TYP="secE",$G(TOK(I,"styp"))="parS" Q  ; <<< add this
 	. I $$ISSTAND(.TOK,I,MAX) S DO(I)=1
 	F I=1:1:MAX I $G(DO(I)) D STANDAP(.TOK,I,MAX)
 	Q
 ISSTAND(TOK,I,MAX)
-	N L,R,TYP,PV,NV,OK
-	; ---- scan left to nearest text, allowing only non-output tokens in-between
-	S OK=1,L=I-1
-	F  Q:L<1  Q:$G(TOK(L,"t"))="text"  D  Q:'OK  S L=L-1
-	. S TYP=$G(TOK(L,"t"))
-	. I TYP="comm"!(TYP="delim")!(TYP="parS")!(TYP="secE") Q
+	Q $$STLEFTOK(.TOK,I)&$$STRIGHTOK(.TOK,I,MAX)
+	;
+STLEFTOK(TOK,I) ; from token I-1 leftwards to start-of-line: only WS text + standalone-eligible tags
+	N J,TYP,V,P,TAIL,OK,SEENNL
+	S OK=1,SEENNL=0
+	F J=I-1:-1:1 Q:'OK  Q:SEENNL  D
+	. S TYP=$G(TOK(J,"t"))
+	. I TYP="text" D  Q
+	. . S V=$G(TOK(J,"v"))
+	. . S P=$$LASTNLSEQ(V)
+	. . S TAIL=$S(P>0:$E(V,P+1,$L(V)),1:V)
+	. . I $TR(TAIL," "_$C(9),"")'="" S OK=0 Q
+	. . I P>0 S SEENNL=1
+	. ; allow other standalone-eligible tags on the same line
+	. I TYP="comm"!(TYP="delim")!(TYP="part")!(TYP="parS")!(TYP="secS")!(TYP="secE") Q
+	. ; anything else on the line (e.g. var/unesc) => not standalone
 	. S OK=0
-	Q:'OK 0
-	; left text tail must be whitespace only (or no left text at all)
-	I L>0 D  Q:'OK 0
-	. S PV=$G(TOK(L,"v"))
-	. I '$$TAILWS(PV) S OK=0
-	; ---- scan right to nearest text, allowing only non-output tokens in-between
-	S OK=1,R=I+1
-	F  Q:R>MAX  Q:$G(TOK(R,"t"))="text"  D  Q:'OK  S R=R+1
-	. S TYP=$G(TOK(R,"t"))
-	. I TYP="comm"!(TYP="delim")!(TYP="secE") Q  ; allow close tag next to parent start
+	Q OK
+STRIGHTOK(TOK,I,MAX) ; from token I+1 rightwards to end-of-line: only WS text + standalone-eligible tags
+	N J,TYP,V,P,HEAD,OK,SEENNL
+	S OK=1,SEENNL=0
+	F J=I+1:1:MAX Q:'OK  Q:SEENNL  D
+	. S TYP=$G(TOK(J,"t"))
+	. I TYP="text" D  Q
+	. . S V=$G(TOK(J,"v"))
+	. . S P=$$FIRSTNLSEQ(V) 
+	. . S HEAD=$S(P>0:$E(V,1,P-1),1:V)
+	. . I $TR(HEAD," "_$C(9),"")'="" S OK=0 Q
+	. . I P>0 S SEENNL=1
+	. I TYP="comm"!(TYP="delim")!(TYP="part")!(TYP="parS")!(TYP="secS")!(TYP="secE") Q
 	. S OK=0
-	Q:'OK 0
-	; no right text => treat as standalone at EOF
-	I R>MAX Q 1
-	S NV=$G(TOK(R,"v"))
-	Q $$HEADWNL(NV)
+	Q OK
+FIRSTNLSEQ(S) ; position of first LF in S (0 if none)
+	N P S P=$F($G(S),$C(10))
+	Q $S(P>0:P-1,1:0)
 STANDAP(TOK,I,MAX)
 	N TYP,PV,P,IND,ISBLK,ISPART,ISPAR,L,R
 	S TYP=$G(TOK(I,"t"))
@@ -778,6 +791,7 @@ LINKSECS(TOK,ERR)
 	. . I TOP'=K S ERR("code")="TPL_PARSE",ERR("msg")="Mismatch: expected /"_TOP_" got /"_K Q
 	. . S SI=STK(SP,"i")
 	. . S TOK(SI,"m")=I
+	. . S TOK(I,"styp")=$G(TOK(SI,"t"))  ; <<< add this
 	. . S SP=SP-1
 	I SP>0 S ERR("code")="TPL_PARSE",ERR("msg")="Unclosed: "_$G(STK(SP,"k"))
 	Q
@@ -1312,7 +1326,6 @@ EVALX(TOK,CONF,CTX,OUTMODE,OUT,OREF,ERR)
 	. . I ISBLK D  Q
 	. . . N BNAME,CAPMODE,OTOK,OS,OE,OIND,OAT,EIND,TXT,NEWF,CAPREF
 	. . . S BNAME=$$TOKGET(TN,I,"bname") S:BNAME="" BNAME=KEY
-	. . . ; parent-body definition mode: register override token slice; emit nothing
 	. . . I +$G(F(PARENT,"pdef")) D  Q
 	. . . . S BOVR(BOVRSP,BNAME,"tok")=TN
 	. . . . S BOVR(BOVRSP,BNAME,"s")=I+1
@@ -1320,7 +1333,6 @@ EVALX(TOK,CONF,CTX,OUTMODE,OUT,OREF,ERR)
 	. . . . S BOVR(BOVRSP,BNAME,"indent")=$G(F(PARENT,"indent"))
 	. . . . S BOVR(BOVRSP,BNAME,"at")=+$G(F(PARENT,"at"))
 	. . . . S F(PARENT,"i")=MI+1
-	. . . ; legacy captureBlocks mode (page-pass): capture rendered string into CTX("blocks")
 	. . . S CAPMODE=$S(+$G(F(PARENT,"capBlocks")):1,$D(CTX("meta","captureBlocks")):+$G(CTX("meta","captureBlocks")),1:+$G(CONF("templates","captureBlocks")))
 	. . . I CAPMODE D  Q
 	. . . . S F(PARENT,"i")=MI+1
@@ -1329,32 +1341,29 @@ EVALX(TOK,CONF,CTX,OUTMODE,OUT,OREF,ERR)
 	. . . . S F(FSP,"storeBlock")=1
 	. . . . S F(FSP,"storeName")=BNAME
 	. . . . S F(FSP,"storeCapRef")=CAPREF
-	. . . ; prefer nearest scoped override from parents
 	. . . D GETBOVR(BNAME,.OTOK,.OS,.OE,.OIND,.OAT)
 	. . . I OTOK'="" D  Q
 	. . . . S EIND=$$BLKEXPIND(TN,I,MI,$G(F(PARENT,"indent")))
 	. . . . S F(PARENT,"i")=MI+1
 	. . . . S NEWF=FSP+1,BCAP(NEWF)="",CAPREF=$NA(BCAP(NEWF))
 	. . . . D PUSHFRAMEI(.FSP,.F,OS,OE,CTSP,"capture",CAPREF,OTOK,PARENT)
-	. . . . ; override definition-site indent context (so deindent is correct)
 	. . . . S F(FSP,"indent")=$G(OIND)
 	. . . . S F(FSP,"at")=+$G(OAT)
-	. . . . ; emit transformed at pop
 	. . . . S F(FSP,"capEmit")=1
 	. . . . S F(FSP,"emitIndent")=EIND
 	. . . . S F(FSP,"blockDefIndent")=""
-	. . . ; fallback to precomputed string overrides in CTX("blocks")
+	. . . . N SIND S SIND=$$BLKSTRIPIND(OTOK,OS,OE)
+	. . . . S F(FSP,"stripIndent")=SIND
 	. . . I $D(CTX("blocks",BNAME)) D  Q
 	. . . . S EIND=$$BLKEXPIND(TN,I,MI,$G(F(PARENT,"indent")))
+	. . . . I $G(F(PARENT,"mode"))="capture",$G(F(PARENT,"stripIndent"))'="" S EIND=$G(F(PARENT,"stripIndent"))_EIND
 	. . . . S TXT=$G(CTX("blocks",BNAME))
 	. . . . S TXT=$$INDENTSTR(TXT,EIND)
 	. . . . D EMITX(OUTMODE,PARENT,.F,.OUT,.W,TXT,CRLF)
 	. . . . I TXT'="" S F(PARENT,"at")=$S($E(TXT,$L(TXT))=$C(10):1,1:0)
 	. . . . S F(PARENT,"i")=MI+1
-	. . . ; no override => render default body once (as if {{$}} tags weren’t there)
 	. . . S F(PARENT,"i")=MI+1
 	. . . D PUSHFRAMEI(.FSP,.F,I+1,MI-1,CTSP,$G(F(PARENT,"mode")),$G(F(PARENT,"capRef")),TN,PARENT)
-	. . ; normal (non-block) section logic (existing behavior)
 	. . S F(PARENT,"i")=MI+1
 	. . N ISSET,TYPE,REF
 	. . D RESREF(KEY,.CST,CTSP,.ISSET,.TYPE,.REF)
@@ -1435,7 +1444,12 @@ POPX(OUTMODE,FSP,F,CST,CTSP,OUT,W,CRLF)
 	. S DEFIND=$G(F(OLD,"blockDefIndent"))
 	. S STRIP=DEFIND I STRIP="" S STRIP=$$BLKMININD(VAL)
 	. I STRIP'="" S VAL=$$DEINDENTSTR(VAL,STRIP)
+	. ;S IND=$G(F(OLD,"emitIndent")) I IND="" S IND=$G(F(OLD,"indent"))
+	. ;S TXT=$$INDENTSTR(VAL,IND)
 	. S IND=$G(F(OLD,"emitIndent")) I IND="" S IND=$G(F(OLD,"indent"))
+	. N PSTRIP S PSTRIP=""
+	. I OLD>1,$G(F(OLD-1,"mode"))="capture" S PSTRIP=$G(F(OLD-1,"stripIndent"))
+	. I PSTRIP'="" S IND=PSTRIP_IND
 	. S TXT=$$INDENTSTR(VAL,IND)
 	. I CR'="" S @CR=""
 	. K F(OLD,"capEmit"),F(OLD,"emitIndent")
@@ -1601,6 +1615,27 @@ BLKMININD(S)
 	. I COM="" S COM=PFX Q
 	. S COM=$$COMMPFX(COM,PFX)
 	Q COM
+BLKSTRIPIND(TN,BS,BE)
+	N COM,CUR,AT,I,TYP,V,L,J,CH
+	S COM="",CUR="",AT=1
+	F I=BS:1:BE D
+	. S TYP=$$TOKGET(TN,I,"t")
+	. I TYP="text" D  Q
+	. . S V=$$TOKGET(TN,I,"v"),L=$L(V)
+	. . F J=1:1:L D
+	. . . S CH=$E(V,J)
+	. . . I AT D
+	. . . . I (CH=" ")!(CH=$C(9)) S CUR=CUR_CH Q
+	. . . . I CH=$C(10) S CUR="" Q
+	. . . . I COM="" S COM=CUR
+	. . . . E  S COM=$$COMMPFX(COM,CUR)
+	. . . . S AT=0
+	. . . I CH=$C(10) S AT=1,CUR=""
+	. I AT,(TYP="var")!(TYP="unesc")!(TYP="part") D
+	. . I COM="" S COM=CUR
+	. . E  S COM=$$COMMPFX(COM,CUR)
+	. . S AT=0
+	Q COM
 LEADWS(LINE)
 	N L,J,C
 	S LINE=$G(LINE),L=$L(LINE)
@@ -1613,14 +1648,13 @@ COMMPFX(A,B)
 	S I=1
 	F  Q:I>L  Q:$E(A,I)'=$E(B,I)  S I=I+1
 	Q $E(A,1,I-1)
-DOLLARBLK(TOK) ; convert {{$name}} to a block section-start
+DOLLARBLK(TOK) ; convert {{$name}} to a block section start
 	N I,MAX,K,BN
 	S MAX=$$NUMMAX(.TOK) Q:MAX<1
 	F I=1:1:MAX D
 	. Q:$G(TOK(I,"t"))'="var"
 	. S K=$G(TOK(I,"k")) Q:$E(K)'="$"
 	. S BN=$E(K,2,$L(K)) Q:BN=""
-	. ; rewrite token
 	. K TOK(I,"e") ; escape flag doesnt apply for secS
 	. S TOK(I,"t")="secS"
 	. S TOK(I,"k")=BN
@@ -1634,8 +1668,6 @@ ADDPARS(TOK,N,NAME)
 	S TOK(N,"k")=NAME
 	Q
 BLKDEFIND(TN,BS,BE)
-	; Determine indentation from the FIRST non-empty content line in default block body.;
-	; Scans literal text tokens; falls back to "" if none.;
 	N I,TYP,V,L,J,CH,AT,CUR,IND
 	S IND="",AT=1,CUR=""
 	F I=BS:1:BE Q:IND'=""  D
@@ -1649,14 +1681,9 @@ BLKDEFIND(TN,BS,BE)
 	. . . . I (CH=" ")!(CH=$C(9)) S CUR=CUR_CH Q
 	. . . . S IND=CUR Q
 	. . . I CH=$C(10) S CUR="",AT=1
-	. ; If we are at line start and we already have whitespace collected,
-	. ; and next token is value-producing, treat it as content.;
 	. I AT,(TYP="var")!(TYP="unesc")!(TYP="secS")!(TYP="part")!(TYP="parS") S IND=CUR
 	Q IND
 BLKEXPIND(TN,I,MI,PIND)
-	; Expansion indent:
-	; - only if standalone (TOK(i,"stand")=1)
-	; - if standalone indent is empty, use indent from default body
 	N ST,BASE
 	S ST=+$$TOKGET(TN,I,"stand")
 	I 'ST Q ""
@@ -1664,11 +1691,9 @@ BLKEXPIND(TN,I,MI,PIND)
 	I BASE="" S BASE=$$BLKDEFIND(TN,I+1,MI-1)
 	Q $G(PIND)_BASE
 GETBOVR(BNAME,OTOK,OS,OE,OIND,OAT)
-	; Looks up the nearest scoped parent-override (token slice).;
-	; Uses locals BOVRSP and BOVR(level,...)
 	N L
 	S OTOK="",OS=0,OE=0,OIND="",OAT=1
-	F L=$G(BOVRSP):-1:1 Q:OTOK'=""  D
+	F L=1:1:$G(BOVRSP) Q:OTOK'=""  D
 	. I $D(BOVR(L,BNAME,"tok")) D
 	. . S OTOK=$G(BOVR(L,BNAME,"tok"))
 	. . S OS=+$G(BOVR(L,BNAME,"s"))

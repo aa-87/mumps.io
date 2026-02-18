@@ -1,10 +1,11 @@
 MIOTPLT
-	D MIOTF121,MIOTF122,MIOTF123,MIOTF124
-	D MIOTF125,MIOTF126,MIOTF126B,MIOTF127
-	D MIOTF128,MIOTF129,MIOTF130
-	D MIOTF131,MIOTF132,MIOTF133
-	D MIOTF200,MIOTF201,MIOTF202,MIOTF203,MIOTF204,MIOTF205
+	D MIOTF121,MIOTF122,MIOTF123,MIOTF124,MIOTF125
+	D MIOTF126,MIOTF126B,MIOTF127,MIOTF128,MIOTF129
+	D MIOTF130,MIOTF131,MIOTF132,MIOTF133
 	D TEST265,TEST266,TEST267
+	D MIOTF200,MIOTF201,MIOTF202,MIOTF203,MIOTF204
+	D MIOTF205,MIOTF206
+	;	
 	Q
 MIOTF200 ;Interpolation
 	; Interpolation tags are used to integrate dynamic content into the template.;
@@ -187,10 +188,12 @@ MIOTF206 ;Inheritance
 	;  exactly equivalent to injecting a Parent without making
 	; any substitutions. Parameter and arguments names live in a namespace
 	; that is distinct from both Partials and the context.	
+	D RUNJSONSPECSPART("./tests/data/_inheritance.json") ;This is the same as below.;
+	; Each test is run two different ways
 	D TEST138,TEST139,TEST140,TEST141,TEST142,TEST143,TEST144
 	D TEST145,TEST146,TEST147,TEST148,TEST149,TEST150,TEST151
 	D TEST152,TEST153,TEST154,TEST155,TEST156,TEST157,TEST158
-	D TEST159,TEST160,TEST161,TEST162 ;,TEST163,TEST164
+	D TEST159,TEST160,TEST161,TEST162,TEST163,TEST164
 	;	
 	QUIT 
 MIOTF121 ; Full suite test 121 - TPL_SECTION_CTA.;
@@ -2280,17 +2283,16 @@ RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,CTX)
 	D EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
 	D OK^MIOTASSERT('$D(ERR),"[EVAL]"_DESC)
 	D EQ^MIOTASSERT(OUT,$G(EXPECTED),"[RENDER]"_DESC)
-	I OUT=$G(EXPECTED) Q 
-	K CONF,HDR,DESC
-	W !
-	ZWR EXPECTED W !
-	W "     " ZWR OUT W !
-	ZWR TEMPLATE W !
-	ZWR TOK 
-	W "************************************",!
-	Q
-	;
-	; --- Reference mode: build input chunks, compile+eval into output chunks
+	;I OUT=$G(EXPECTED) Q 
+	;K CONF,HDR,DESC
+	;W !
+	;ZWR EXPECTED W !
+	;W "     " ZWR OUT W !
+	;ZWR TEMPLATE W !
+	;ZWR TOK 
+	;W "************************************",!
+	;Q
+	; Reference mode: build input chunks, compile+eval into output chunks
 	;	
 	NEW TOKR,ERRR,INROOT,OUTROOT,CHSZ,L,P,N,OUT2
 	S INROOT=$NA(^TMP($J,"MIOTPLT","IN"))
