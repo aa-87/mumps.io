@@ -203,12 +203,12 @@ MIOTF121 ; Full suite test 121 - TPL_SECTION_CTA.;
 	DO EQ^MIOTASSERT(OUT,"X","section render")
 	QUIT
 MIOTF122 ; Full suite test 122 - TPL_BLOCK_TITLE.;
-	NEW TOK,ERR,CONF,CTX,OUT
-	DO COMPILE^MIOTPL2("{{#block:title}}Hello{{/block:title}}",.TOK,.ERR)
-	DO OK^MIOTASSERT('$D(ERR),"compile")
+	;NEW TOK,ERR,CONF,CTX,OUT
+	DO COMPILE^MIOTPL2("{{#block:title}}Hello{{/block:title}}",.TOK,.ERR) I $D(ERR) ZWR ERR
+	DO OK^MIOTASSERT('$D(ERR),"compile")  I $D(ERR) ZWR ERR
 	DO EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
 	DO OK^MIOTASSERT('$D(ERR),"eval")
-	DO EQ^MIOTASSERT($GET(CTX("blocks","title")),"Hello","block captured")
+	DO EQ^MIOTASSERT(OUT,"Hello","block captured")
 	QUIT
 MIOTF123 ; Full suite test 123 - TPL_DOTTED_LIST.;
 	NEW TOK,ERR,CONF,CTX,OUT
