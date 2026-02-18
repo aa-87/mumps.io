@@ -30,14 +30,139 @@ MIOTPL2 ; # MIOTPL2
 	; ## Notes
 	; - Streaming compile avoids MAXSTRING. See CONF("templates","streamFiles").;
 	; - Tests live in ^MIOTPLT.;
-	;
+		;; =============================================================================
+	;;		; ## Public entry points
+	;;		; =============================================================================
+	;;		Q
+	;;	START(CONF)
+	;;	PRECOMPILE(CONF)
+	;;	RENDER(NAME,CONF,CTX,OUT,ERR)
+	;;	RENDERPAGE(PAGE,LAYOUT,CONF,CTX,OUT,ERR)
+	;;	RENDERLAYOUT(LAYOUT,CONF,CTX,OUT,ERR)
+	;;	EVAL(TOK,CONF,CTX,OUT,ERR)
+	;;	EVALREF(TOK,CONF,CTX,OREF,ERR)
+	;;	RENDERANY(IN,CONF,CTX,OUT,ERR)
+	;;	RENDERREF(IN,CONF,CTX,OREF,ERR)
+	;;
+	;;		; =============================================================================
+	;;		; ## Template acquisition & cache
+	;;		; =============================================================================
+	;;	GETTOK(NAME,CONF,TOK,ERR)
+	;;	GETTOKREF(NAME,CONF,TOKREF,PMAX,ERR)
+	;;	GETTOKFP(FP,CONF,TOK,ERR,OPT)
+	;;	GETTOKFPSTR(FP,CONF,TOK,ERR,OPT)
+	;;	LOADTOK(FP,TOK)
+	;;	NAME2FP(NAME,CONF,ERR)
+	;;	FILEEXISTS(FP)
+	;;	ENUMGLOBS(ROOT,LIST)
+	;;	ENUM1(RT,PAT,LIST)
+	;;
+	;;		; =============================================================================
+	;;		; ## File IO / streaming
+	;;		; =============================================================================
+	;;	READFILE(FP,TXT,ERR)
+	;;	RFERR
+	;;	READFILE2REF(FP,ROOT,CONF,H,ERR)
+	;;	RF2ERR
+	;;	REFROOT(TREF,ROOT,ERR)
+	;;
+	;;		; =============================================================================
+	;;		; ## Compile / parse
+	;;		; =============================================================================
+	;;	COMPILE(TEXT,TOK,ERR)
+	;;	COMPREF(TREF,TOK,ERR)
+	;;	COMPILEA(ARR,TOK,ERR)
+	;;	PARSEREF(ROOT,TOK,CRLF,ERR)
+	;;	PARSE(TEXT,TOK,ERR)
+	;;	PARSEBUF(P,TOK,N,ERR,FINAL)
+	;;	NORMNL(S)
+	;;	NORMNLCH(CHUNK,P,CRLF)
+	;;	NEXTTOK(REST)
+	;;	ADDDELIM(TOK,N,OD,CD)
+	;;	ADDTXT(TOK,N,VAL)
+	;;	ADDVAR(TOK,N,KEY,ESC)
+	;;	ADDSECS(TOK,N,KEY,INV)
+	;;	ADDSECE(TOK,N,KEY)
+	;;	ADDPART(TOK,N,NAME)
+	;;	ADDCOMM(TOK,N)
+	;;	LINKSECS(TOK,ERR)
+	;;
+	;;		; =============================================================================
+	;;		; ## Standalone tags / indentation
+	;;		; =============================================================================
+	;;	STANDTOK(TOK)
+	;;	ISSTAND(TOK,I,MAX)
+	;;	STANDAP(TOK,I,MAX)
+	;;	LINEPURE(TOK,I,MAX)
+	;;	INDENTSTR(S,IND)
+	;;	INDTXT(V,IND,AT)
+	;;	HEADWNL(S)
+	;;	CUTNX(S)
+	;;	CUTPRE(S)
+	;;	TAILWS(S)
+	;;	LASTNLSEQ(S)
+	;;	HASNL(S)
+	;;	ALLWS(S)
+	;;	INDENTPTOK(TOK,IND)
+	;;	NUMMAX(TOK)
+	;;
+	;;		; =============================================================================
+	;;		; ## Evaluation engine (zero-copy capable)
+	;;		; =============================================================================
+	;;	EVALX(TOK,CONF,CTX,OUTMODE,OUT,OREF,ERR)
+	;;	TOKINFO(TOK,TOKR,PMAX,CRLF)
+	;;	TOKGET(TN,I,FIELD)
+	;;	TOKENDR(TOKR)
+	;;	TOKEND(TOKR)
+	;;	TOKG(TOKR,I,FIELD)
+	;;	TOKMAX(TOKNAME)
+	;;	PUSHFRAME(...)
+	;;	PUSHFRAMEI(...)
+	;;	POPX(...)
+	;;	EMITX(...)
+	;;	OUTNORM(...)
+	;;	ISTRUTH(...)
+	;;	RESREF(...)
+	;;	RESINBASE(...)
+	;;	RESVAL(...)
+	;;
+	;;		; =============================================================================
+	;;		; ## Output writer (REF mode)
+	;;		; =============================================================================
+	;;	OUTINIT(W,OREF,CONF,CRLF)
+	;;	OUTAPP(W,VAL)
+	;;	OUTFLUSH(W)
+	;;	LF2CRLF(S)
+	;;
+	;;		; =============================================================================
+	;;		; ## Data structure helpers / string utils / hashing
+	;;		; =============================================================================
+	;;	APPREF(REF,SUB)
+	;;	FIRSTSUB(REF)
+	;;	QSUB(SUB)
+	;;	SPLIT(STR,DEL,ARR,COUNT)
+	;;	TRIM(S)
+	;;	ESCHTML(S)
+	;;	REPL(s,f,t)
+	;;	BOOL(X)
+	;;	JOIN(ARR,SEP)
+	;;	H32(TEXT)
+	;;	H32UPD(H,TEXT)
+	;;	XOR32(A,B)
+	;;	MUL32(A,M)
+	;;	ADD32(A,B) ;
 	Q
 START(CONF)
 	I '$D(CONF("templates","streamFiles")) S CONF("templates","streamFiles")=0
 	I '$D(CONF("templates","streamFallback")) S CONF("templates","streamFallback")=1
 	I '$D(CONF("templates","fileChunk")) S CONF("templates","fileChunk")=32768
+	;
+	; ROI: auto output (opt-in)
+	I '$D(CONF("output","auto")) S CONF("output","auto")=0
+	I '$D(CONF("output","maxString")) S CONF("output","maxString")=900000  ; safe default
+	I '$D(CONF("output","autoReturnRef")) S CONF("output","autoReturnRef")=0
+	;
 	NEW EN
-	;DO START^MIOTPLW(.CONF)
 	SET EN=$S($GET(CONF("templates","precompileEnabled"))="true":1,1:+$GET(CONF("templates","precompileEnabled")))
 	IF EN DO PRECOMPILE(.CONF)
 	QUIT
@@ -50,15 +175,21 @@ PRECOMPILE(CONF) ;
 	. SET PATH=$GET(CONF("templates","precompile","path",I))
 	. IF PATH'="" SET LIST(PATH)=1
 	IF '$DATA(LIST) DO ENUMGLOBS(ROOT,.LIST)
-	NEW FP,OK,TOK,ERR
+	NEW FP,DUM,ERR
 	SET FP=""
 	FOR  SET FP=$ORDER(LIST(FP)) QUIT:FP=""  DO
-	. DO GETTOKFP(FP,.CONF,.TOK,.ERR)
+	. DO GETTOKFP(FP,.CONF,.DUM,.ERR,"REF")
 	QUIT
 RENDER(NAME,CONF,CTX,OUT,ERR)
+	;N OPT S OPT("mode")="AUTO"	
+	;D RENDERX("pages/home",.CONF,.CTX,.OUT,.ERR,.OPT)
+	; OUT is either scalar string, OR OUT("ref") if autoReturnRef=1, OR ERR("oref") if too big
 	K ERR S OUT=""
-	N TOK
-	D GETTOK(NAME,.CONF,.TOK,.ERR) Q:$D(ERR)
+	N TOKREF,PMAX,TOK
+	D GETTOKREF(NAME,.CONF,.TOKREF,.PMAX,.ERR) Q:$D(ERR)
+	; Token-handle (small locals only)
+	S TOK("ref")=TOKREF
+	S TOK("pmax")=PMAX
 	D EVAL(.TOK,.CONF,.CTX,.OUT,.ERR)
 	Q
 RENDERPAGE(PAGE,LAYOUT,CONF,CTX,OUT,ERR)
@@ -78,42 +209,44 @@ RENDERLAYOUT(LAYOUT,CONF,CTX,OUT,ERR)
 	Q
 EVAL(TOK,CONF,CTX,OUT,ERR)
 	K ERR
-	D EVALX^MIOTPL2(.TOK,.CONF,.CTX,"S",.OUT,"",.ERR)
+	D EVALX(.TOK,.CONF,.CTX,"S",.OUT,"",.ERR)
 	Q
 EVALREF(TOK,CONF,CTX,OREF,ERR)
 	N DUM
 	K ERR
-	D EVALX^MIOTPL2(.TOK,.CONF,.CTX,"R",.DUM,$G(OREF),.ERR)
+	D EVALX(.TOK,.CONF,.CTX,"R",.DUM,$G(OREF),.ERR)
 	Q
 RENDERANY(IN,CONF,CTX,OUT,ERR)
 	K ERR
 	N TOK
-	I $$ISREF^MIOTPL2($G(IN)) D  Q
-	. D COMPREF^MIOTPL2($G(IN),.TOK,.ERR) Q:$D(ERR)
-	. D EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
-	D COMPILE^MIOTPL2($G(IN),.TOK,.ERR) Q:$D(ERR)
-	D EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
+	I $$ISREF($G(IN)) D  Q
+	. D COMPREF($G(IN),.TOK,.ERR) Q:$D(ERR)
+	. D EVAL(.TOK,.CONF,.CTX,.OUT,.ERR)
+	D COMPILE($G(IN),.TOK,.ERR) Q:$D(ERR)
+	D EVAL(.TOK,.CONF,.CTX,.OUT,.ERR)
 	Q
 RENDERREF(IN,CONF,CTX,OREF,ERR)
 	K ERR
 	N TOK
 	S CONF("templates","streamFiles")=1
-	I $$ISREF^MIOTPL2($G(IN)) D  Q
-	. D COMPREF^MIOTPL2($G(IN),.TOK,.ERR) Q:$D(ERR)
-	. D EVALREF^MIOTPL2(.TOK,.CONF,.CTX,$G(OREF),.ERR)
-	D COMPILE^MIOTPL2($G(IN),.TOK,.ERR) Q:$D(ERR)
-	D EVALREF^MIOTPL2(.TOK,.CONF,.CTX,$G(OREF),.ERR)
+	I $$ISREF($G(IN)) D  Q
+	. D COMPREF($G(IN),.TOK,.ERR) Q:$D(ERR)
+	. D EVALREF(.TOK,.CONF,.CTX,$G(OREF),.ERR)
+	D COMPILE($G(IN),.TOK,.ERR) Q:$D(ERR)
+	D EVALREF(.TOK,.CONF,.CTX,$G(OREF),.ERR)
 	Q
 COMPILE(TEXT,TOK,ERR) ;
 	N CRLF
 	S CRLF=$S($F($G(TEXT),$C(13,10))>0:1,1:0)
-	S TEXT=$$NORMNL^MIOTPL2(TEXT)
-	D PARSE(.TEXT,.TOK,.ERR) 
+	S TEXT=$$NORMNL(TEXT)
+	D PARSE(.TEXT,.TOK,.ERR)
 	I $D(ERR) Q
 	S TOK("meta","crlf")=CRLF
 	D LINKSECS(.TOK,.ERR)
 	I $D(ERR) Q
 	D STANDTOK(.TOK)
+	S TOK("meta","pmax")=$$NUMMAX(.TOK)
+	D ANALYZE(.TOK)
 	Q
 COMPREF(TREF,TOK,ERR)
 	N ROOT,CRLF
@@ -122,6 +255,8 @@ COMPREF(TREF,TOK,ERR)
 	S TOK("meta","crlf")=CRLF
 	D LINKSECS(.TOK,.ERR) I $D(ERR) Q
 	D STANDTOK(.TOK)
+	S TOK("meta","pmax")=$$NUMMAX(.TOK)
+	D ANALYZE(.TOK)
 	Q
 COMPILEA(ARR,TOK,ERR)  
 	N ROOT,CRLF
@@ -130,34 +265,54 @@ COMPILEA(ARR,TOK,ERR)
 	S TOK("meta","crlf")=CRLF
 	D LINKSECS(.TOK,.ERR) I $D(ERR) Q
 	D STANDTOK(.TOK)
+	S TOK("meta","pmax")=$$NUMMAX(.TOK)
+	D ANALYZE(.TOK)
 	Q
-GETTOKFP(FP,CONF,TOK,ERR,OPT);
-	 K ERR K TOK
-	NEW CH,OK,TXT,STREAM,FB
+GETTOKFP(FP,CONF,TOK,ERR,OPT) ;
+	K ERR K TOK
+	NEW CH,OK,TXT,STREAM,FB,H,CRLF,NTXT,TOKR,MREF,PM
 	S STREAM=$$BOOL($G(CONF("templates","streamFiles")))
 	S FB=$$BOOL($G(CONF("templates","streamFallback")))
-	I 'STREAM,'FB S FB=1 
+	I 'STREAM,'FB S FB=1
 	IF STREAM DO GETTOKFPSTR(FP,.CONF,.TOK,.ERR,$G(OPT)) QUIT
 	SET CH=$GET(^MIO("TPL","CACHE",FP,"H"))
-	SET OK=$$READFILE(FP,.TXT,.ERR)
+	; Detect CRLF during read (even if trailing newline is trimmed)
+	SET CRLF=0
+	SET OK=$$READFILE(FP,.TXT,.ERR,.CRLF)
 	IF 'OK DO  QUIT
 	. IF $GET(ERR("code"))="TPL_TOOLARGE",FB DO  QUIT
 	. . DO GETTOKFPSTR(FP,.CONF,.TOK,.ERR,$G(OPT))
 	. QUIT
+	; Hash the raw (as-read) content for cache validation
 	SET H=$$H32(TXT)
+	; Normalize to LF for parse (removes any CR / CRLF safely)
+	SET NTXT=$$NORMNL(TXT)
+	; Cache hit: ensure meta exists (crlf/pmax) without merging in REF mode
+	SET TOKR=$NA(^MIO("TPL","CACHE",FP,"TOK"))
+	SET MREF=$$APPREF(TOKR,"meta")
 	IF CH'="",CH=H,$DATA(^MIO("TPL","CACHE",FP,"TOK",1)) DO  QUIT
-	. S ^MIO("TPL","CACHE",FP,"ts")=$H
-	. I $G(OPT)'="REF" M TOK=^MIO("TPL","CACHE",FP,"TOK")
+	. SET ^MIO("TPL","CACHE",FP,"ts")=$H
+	. IF '$DATA(@($$APPREF(MREF,"crlf"))) SET @($$APPREF(MREF,"crlf"))=+CRLF
+	. SET PM=+$GET(@($$APPREF(MREF,"pmax")))
+	. IF 'PM SET PM=$$TOKENDR(TOKR),@($$APPREF(MREF,"pmax"))=PM
+	. IF $GET(OPT)'="REF" MERGE TOK=^MIO("TPL","CACHE",FP,"TOK")
+	. IF '$DATA(@($$APPREF(MREF,"simple"))) DO ANALYZERREF(TOKR,MREF)
+	. QUIT
+	; Compile (non-stream) path now matches COMPILE/COMPREF:
+	; parse normalized text, link sections, apply standalone rules, cache meta.;
 	NEW TMP KILL TMP
-	DO PARSE(TXT,.TMP,.ERR) QUIT:$D(ERR)
+	DO PARSE(NTXT,.TMP,.ERR) QUIT:$D(ERR)
 	DO LINKSECS(.TMP,.ERR) QUIT:$D(ERR)
-	K ^MIO("TPL","CACHE",FP)
-	S ^MIO("TPL","CACHE",FP,"ts")=$H
-	S ^MIO("TPL","CACHE",FP,"H")=H
-	M ^MIO("TPL","CACHE",FP,"TOK")=TMP
-	I $G(OPT)="REF" K TOK
-	E  MERGE TOK=TMP
-	Q	
+	DO STANDTOK(.TMP)
+	SET TMP("meta","crlf")=+CRLF
+	SET TMP("meta","pmax")=$$NUMMAX(.TMP)
+	KILL ^MIO("TPL","CACHE",FP)
+	SET ^MIO("TPL","CACHE",FP,"ts")=$H
+	SET ^MIO("TPL","CACHE",FP,"H")=H
+	MERGE ^MIO("TPL","CACHE",FP,"TOK")=TMP
+	IF $GET(OPT)="REF" KILL TOK QUIT
+	MERGE TOK=TMP
+	QUIT
 PARSEBUF(P,TOK,N,ERR,FINAL)
 	N BUF,OD,CD,POS,L,OPEN,PRE,TRI,END3,CLOSE,INSIDE,RAW
 	N DONE,TAIL,SAFE,TXT
@@ -262,37 +417,55 @@ GETTOK(NAME,CONF,TOK,ERR)
 	D GETTOKFP(FP,.CONF,.TOK,.ERR)
 	Q
 GETTOKREF(NAME,CONF,TOKREF,PMAX,ERR)
-	NEW FP,DUM
-	K ERR
-	S TOKREF="",PMAX=0
-	S FP=$$NAME2FP^MIOTPL2(NAME,.CONF,.ERR) Q:$D(ERR)
+	NEW FP,DUM,MREF,PM
+	K ERR S TOKREF="",PMAX=0
+	S FP=$$NAME2FP(NAME,.CONF,.ERR) Q:$D(ERR)
 	; Ensure cached tokens exist, but do NOT MERGE to local arrays
-	D GETTOKFP^MIOTPL2(FP,.CONF,.DUM,.ERR,"REF") Q:$D(ERR)
+	D GETTOKFP(FP,.CONF,.DUM,.ERR,"REF") Q:$D(ERR)
 	S TOKREF=$NA(^MIO("TPL","CACHE",FP,"TOK"))
-	S PMAX=$$TOKENDR^MIOTPL2(TOKREF)
+	; Prefer cached max stored under meta
+	S MREF=$$APPREF(TOKREF,"meta")
+	S PM=+$G(@($$APPREF(MREF,"pmax")))
+	I 'PM D
+	. S PM=$$TOKENDR(TOKREF)
+	. S @($$APPREF(MREF,"pmax"))=PM
+	S PMAX=PM
 	Q
-	;
 BOOL(X)
 	N L S L=$ZCONVERT($G(X),"L")
 	Q $S(X=1:1,X="1":1,L="true":1,L="yes":1,1:0)
 GETTOKFPSTR(FP,CONF,TOK,ERR,OPT) ;
 	K ERR K TOK
 	I $$FILEEXISTS(FP)="" S ERR("code")="TPL_NOFILE",ERR("msg")="Template file not found: "_FP Q
-	NEW CH,H,ROOT SET ROOT=$NA(TMPBUF("FILE"))
+	NEW CH,H,ROOT,CRLFDET,TOKR,MREF,PM
+	SET ROOT=$NA(TMPBUF("FILE"))
+	SET CH=$G(^MIO("TPL","CACHE",FP,"H"))
 	NEW TMPBUF KILL @ROOT
-	DO READFILE2REF(FP,ROOT,.CONF,.H,.ERR) I $D(ERR) KILL @ROOT QUIT
+	DO READFILE2REF(FP,ROOT,.CONF,.H,.ERR,.CRLFDET) I $D(ERR) KILL @ROOT QUIT
+	; Cache hit: no MERGE in REF mode, but ensure meta exists for zero-copy render
 	IF CH'="",CH=H,$DATA(^MIO("TPL","CACHE",FP,"TOK",1)) DO  KILL @ROOT QUIT
-	. MERGE TOK=^MIO("TPL","CACHE",FP,"TOK")
+	. SET ^MIO("TPL","CACHE",FP,"ts")=$H
+	. SET TOKR=$NA(^MIO("TPL","CACHE",FP,"TOK"))
+	. SET MREF=$$APPREF(TOKR,"meta")
+	. IF '$DATA(@($$APPREF(MREF,"crlf"))) SET @($$APPREF(MREF,"crlf"))=+CRLFDET
+	. SET PM=+$GET(@($$APPREF(MREF,"pmax")))
+	. IF 'PM SET PM=$$TOKENDR(TOKR),@($$APPREF(MREF,"pmax"))=PM
+	. IF $GET(OPT)'="REF" MERGE TOK=^MIO("TPL","CACHE",FP,"TOK")
+	. QUIT
 	NEW TMP KILL TMP
 	DO COMPREF(ROOT,.TMP,.ERR)
 	KILL @ROOT
 	QUIT:$D(ERR)
+	; Safety: older paths might not set meta; ensure now
+	IF '$DATA(TMP("meta","crlf")) SET TMP("meta","crlf")=+CRLFDET
+	IF '$DATA(TMP("meta","pmax")) SET TMP("meta","pmax")=$$NUMMAX(.TMP)
 	KILL ^MIO("TPL","CACHE",FP)
+	SET ^MIO("TPL","CACHE",FP,"ts")=$H
 	SET ^MIO("TPL","CACHE",FP,"H")=H
 	MERGE ^MIO("TPL","CACHE",FP,"TOK")=TMP
-	I $G(OPT)="REF" K TOK
-	E  MERGE TOK=TMP
-	Q
+	IF $GET(OPT)="REF" KILL TOK QUIT
+	MERGE TOK=TMP
+	QUIT
 LOADTOK(FP,TOK)
 	K TOK
 	M TOK=^MIO("TPL","CACHE",FP,"TOK")
@@ -317,51 +490,69 @@ NAME2FP(NAME,CONF,ERR)
 	I NM'["." S NM=NM_EXT
 	S FP=ROOT_NM
 	Q FP
-READFILE(FP,TXT,ERR) ;
-	N LINE,MAX
+READFILE(FP,TXT,ERR,CRLF) ;
+	N LINE,MAX,PREV
 	K ERR
 	S TXT=""
+	S CRLF=0
 	N IO S IO=$PRINCIPAL
 	S MAX=2*1024*1024
-	O FP:(READONLY:EXCEPTION="G RFERR^MIOTPL2":CHSET="M"):2	
+	S PREV=-1
+	O FP:(READONLY:EXCEPTION="G RFERR^MIOTPL2":CHSET="M"):2
 	F  U FP R *LINE Q:$ZEOF  D  Q:('$T!$D(ERR))
+	. I PREV=13,LINE=10 S CRLF=1
+	. S PREV=LINE
 	. S TXT=TXT_$C(LINE)
 	. I $L(TXT)>MAX S ERR("code")="TPL_TOOLARGE",ERR("msg")="Template too large (limit 2MB): "_FP
 	I $D(ERR) C FP U IO Q 0
 	C FP U IO
-	I $E(TXT,$L(TXT))=$C(10) S TXT=$E(TXT,1,$L(TXT)-1)
+	; Trim a single trailing newline sequence: CRLF, LF, or CR
+	I $L(TXT)>0 D
+	. I $E(TXT,$L(TXT))=$C(10) D
+	. . I $L(TXT)>1,$E(TXT,$L(TXT)-1)=$C(13) S TXT=$E(TXT,1,$L(TXT)-2) Q
+	. . S TXT=$E(TXT,1,$L(TXT)-1)
+	. E  I $E(TXT,$L(TXT))=$C(13) S TXT=$E(TXT,1,$L(TXT)-1)
 	Q 1
 RFERR
 	C FP
 	I $ZSTATUS["DEVOPENFAIL" D  Q 0
 	. S ERR("code")="TPL_NOFILE",ERR("msg")="Template file not found: "_FP
 	. S $ZSTATUS="",$EC=""
-	I $zstatus["IOEOF" D  K ERR Q 1
-	. I $E(TXT,$L(TXT))=$C(10) S TXT=$E(TXT,1,$L(TXT)-1)
+	I $ZSTATUS["IOEOF" D  K ERR Q 1
+	. ; Trim a single trailing newline sequence: CRLF, LF, or CR
+	. I $L(TXT)>0 D
+	. . I $E(TXT,$L(TXT))=$C(10) D
+	. . . I $L(TXT)>1,$E(TXT,$L(TXT)-1)=$C(13) S TXT=$E(TXT,1,$L(TXT)-2) Q
+	. . . S TXT=$E(TXT,1,$L(TXT)-1)
+	. . E  I $E(TXT,$L(TXT))=$C(13) S TXT=$E(TXT,1,$L(TXT)-1)
 	. S $ZSTATUS="",$EC=""
 	S ERR("code")="TPL_IO",ERR("msg")="I/O error reading template: "_FP_" $zstatus:"_$zstatus
 	Q 0
-READFILE2REF(FP,ROOT,CONF,H,ERR) ;
+READFILE2REF(FP,ROOT,CONF,H,ERR,CRLF) ;
 	K ERR
-	N IO,CHSZ,BUF,N,PREV,STRIP
+	N IO,CHSZ,BUF,N,PREV,LASTC
 	S IO=$PRINCIPAL
 	S CHSZ=+$G(CONF("templates","fileChunk"))
 	I CHSZ<1024 S CHSZ=32768
 	S H=2166136261
 	S N=0,PREV=""
+	S CRLF=0
+	S LASTC=-1
 	O FP:(READONLY:EXCEPTION="GOTO RF2ERR^MIOTPL2":CHSET="M"):2
 	F  U FP R *BUF  D  Q:$ZEOF
+	. I LASTC=13,BUF=10 S CRLF=1
+	. S LASTC=BUF
 	. I PREV'="",$L(PREV)>=CHSZ D
 	. . S N=N+1
-	. . S @($$APPREF^MIOTPL2(ROOT,N))=PREV
-	. . S H=$$H32UPD^MIOTPL2(H,PREV)
+	. . S @($$APPREF(ROOT,N))=PREV
+	. . S H=$$H32UPD(H,PREV)
 	. . S PREV=""
 	. E  S PREV=PREV_$C(BUF)
 	C FP U IO
 	I PREV'="" D
 	. S N=N+1
-	. S @($$APPREF^MIOTPL2(ROOT,N))=PREV
-	. S H=$$H32UPD^MIOTPL2(H,PREV)
+	. S @($$APPREF(ROOT,N))=PREV
+	. S H=$$H32UPD(H,PREV)
 	Q
 RF2ERR
 	C FP
@@ -371,17 +562,17 @@ RF2ERR
 	I $ZSTATUS["IOEOF" D  K ERR Q
 	. I PREV'="" D
 	. . S N=N+1
-	. . S @($$APPREF^MIOTPL2(ROOT,N))=PREV
-	. . S H=$$H32UPD^MIOTPL2(H,PREV)
+	. . S @($$APPREF(ROOT,N))=PREV
+	. . S H=$$H32UPD(H,PREV)
 	. . S $ZSTATUS="",$EC="",PREV=""
-	S ERR("code")="TPL_IO",ERR("msg")="I/O error reading template: "_FP_" $zstatus:"_$ZSTATUS
+	S ERR("code")="TPL_IO",ERR("msg")="I/O error reading template: "_FP_" $ZSTATUS:"_$ZSTATUS
 	Q
 H32UPD(H,TEXT)
 	N I,C
 	F I=1:1:$L(TEXT) D
 	. S C=$A(TEXT,I)
-	. S H=$$XOR32^MIOTPL2(H,C)
-	. S H=$$MUL32^MIOTPL2(H,16777619)
+	. S H=$$XOR32(H,C)
+	. S H=$$MUL32(H,16777619)
 	Q H
 FILEEXISTS(FP) Q $ZSEARCH(FP)]""
 	;
@@ -403,8 +594,8 @@ PARSEREF(ROOT,TOK,CRLF,ERR)
 	S P("buf")=""
 	S P("pendCR")=0
 	S SUB=""
-	F  S SUB=$O(@($$APPREF^MIOTPL2(ROOT,SUB))) Q:SUB=""  D  Q:$D(ERR)
-	. S CH=$G(@($$APPREF^MIOTPL2(ROOT,SUB)))
+	F  S SUB=$O(@($$APPREF(ROOT,SUB))) Q:SUB=""  D  Q:$D(ERR)
+	. S CH=$G(@($$APPREF(ROOT,SUB)))
 	. D NORMNLCH(.CH,.P,.CRLF)
 	. I CH'="" S P("buf")=$G(P("buf"))_CH
 	. D PARSEBUF(.P,.TOK,.N,.ERR,0)
@@ -693,13 +884,13 @@ LINKSECS(TOK,ERR)
 	. S ERR("code")="TPL_PARSE",ERR("msg")="Unclosed section: "_$G(STK(SP,"k"))
 	Q
 	;
-OUTINIT(W,OREF,CONF,TOK)
+OUTINIT(W,OREF,CONF,CRLF)
 	K W
 	S W("root")=$G(OREF)
 	S W("n")=0
 	S W("buf")=""
 	S W("chunk")=+$G(CONF("output","chunk")) I W("chunk")<256 S W("chunk")=8192
-	S W("crlf")=+$G(TOK("meta","crlf"))
+	S W("crlf")=+$G(CRLF)
 	Q
 OUTAPP(W,VAL)
 	N V,CHUNK,SPACE,PIECE
@@ -707,11 +898,11 @@ OUTAPP(W,VAL)
 	S CHUNK=+$G(W("chunk")) I CHUNK<256 S CHUNK=8192
 	F  Q:V=""  D
 	. S SPACE=CHUNK-$L($G(W("buf")))
-	. I SPACE<1 D OUTFLUSH^MIOTPL2(.W) S SPACE=CHUNK
+	. I SPACE<1 D OUTFLUSH(.W) S SPACE=CHUNK
 	. S PIECE=$E(V,1,SPACE)
 	. S W("buf")=$G(W("buf"))_PIECE
 	. S V=$E(V,SPACE+1,$L(V))
-	. I $L(W("buf"))'<CHUNK D OUTFLUSH^MIOTPL2(.W)
+	. I $L(W("buf"))'<CHUNK D OUTFLUSH(.W)
 	Q
 OUTFLUSH(W)
 	N ROOT,BUF,N
@@ -719,11 +910,11 @@ OUTFLUSH(W)
 	S ROOT=$G(W("root")) Q:ROOT=""
 	S N=+$G(W("n"))+1
 	S W("n")=N
-	S @($$APPREF^MIOTPL2(ROOT,N))=BUF
+	S @($$APPREF(ROOT,N))=BUF
 	S W("buf")=""
 	Q
 ISREF(S)
-	N R S R=$$TRIM^MIOTPL2($G(S))
+	N R S R=$$TRIM($G(S))
 	I R="" Q 0
 	; global ref
 	I $E(R)="^" Q 1
@@ -821,14 +1012,14 @@ POPF(FSP,F,CST,CTSP)
 	. S CR=$G(F(OLD,"capRef"))
 	. S VAL=$S(CR'="":$G(@CR),1:"")
 	. S IND=$G(F(OLD,"indent"))
-	. S TXT=$$INDENTSTR^MIOTPL2(VAL,IND)
+	. S TXT=$$INDENTSTR(VAL,IND)
 	. I CR'="" S @CR=""
 	. K F(OLD,"capEmit"),F(OLD,"indent")
 	. S PMODE=$G(F(OLD-1,"mode"))
 	. I PMODE="capture" D
 	. . S PCR=$G(F(OLD-1,"capRef")) Q:PCR=""
 	. . S @PCR=$G(@PCR)_TXT
-	. E  D EMIT^MIOTPL2(OLD-1,.F,.OUT,TXT)
+	. E  D EMIT(OLD-1,.F,.OUT,TXT)
 	S FSP=FSP-1
 	I FSP>0 S CTSP=+$G(F(FSP,"ctxTop"))
 	Q
@@ -844,7 +1035,7 @@ TOKMAX(TOKNAME)
 	Q $$TOKENDR(TOKNAME)
 FIRSTSUB(REF)
 	N CHREF
-	S CHREF=$$APPREF^MIOTPL2(REF,"")
+	S CHREF=$$APPREF(REF,"")
 	Q $O(@CHREF)
 EMIT(FSP,F,OUT,VAL)
 	N MODE,V
@@ -854,8 +1045,8 @@ EMIT(FSP,F,OUT,VAL)
 	. S @CR=$G(@CR)_$G(VAL)
 	S V=$G(VAL)
 	I $G(CRLF),V'="" D
-	. I V[$C(13) S V=$$NORMNL^MIOTPL2(V)
-	. I V[$C(10) S V=$$LF2CRLF^MIOTPL2(V)
+	. I V[$C(13) S V=$$NORMNL(V)
+	. I V[$C(10) S V=$$LF2CRLF(V)
 	S OUT=$G(OUT)_V
 	Q
 TOKEND(TOKR)
@@ -870,32 +1061,32 @@ RESREF(KEY,CST,CTSP,ISSET,TYPE,REF)
 	. N R S R=$G(CST(CTSP)) Q:R=""
 	. I '$D(@R) S ISSET=0,TYPE="missing",REF="" Q
 	. I $D(@R)>1 D  Q
-	. . N S0 S S0=$$FIRSTSUB^MIOTPL2(R)
+	. . N S0 S S0=$$FIRSTSUB(R)
 	. . I S0'="" S ISSET=1,TYPE="list",REF=R Q
 	. . S ISSET=1,TYPE="obj",REF=R Q
 	. I $D(@R)#2 S ISSET=1,TYPE="scalar",REF=R Q
 	. S ISSET=0,TYPE="missing",REF="" Q
 	I K["." D  Q
 	. N PARTS,PC,I,P1,LEVEL,BASE,OK1,TT1,RR1,CUR,NEXT
-	. D SPLIT^MIOTPL2(K,".",.PARTS,.PC)
+	. D SPLIT(K,".",.PARTS,.PC)
 	. I PC<2 Q  ; safety
 	. S P1=$G(PARTS(1)) I P1="" Q
 	. S OK1=0,TT1="missing",RR1=""
 	. F LEVEL=CTSP:-1:1 Q:OK1  D
 	. . S BASE=$G(CST(LEVEL)) Q:BASE=""
-	. . D RESINBASE^MIOTPL2(BASE,P1,.OK1,.TT1,.RR1)
+	. . D RESINBASE(BASE,P1,.OK1,.TT1,.RR1)
 	. I 'OK1 S ISSET=0,TYPE="missing",REF="" Q
 	. I TT1="scalar" S ISSET=0,TYPE="missing",REF="" Q
 	. S CUR=RR1
 	. F I=2:1:PC D  Q:'ISSET
 	. . S P=$G(PARTS(I))
 	. . I P="" S ISSET=0,TYPE="missing",REF="" Q
-	. . S NEXT=$$APPREF^MIOTPL2(CUR,P)
+	. . S NEXT=$$APPREF(CUR,P)
 	. . I '$D(@NEXT) S ISSET=0,TYPE="missing",REF="" Q
 	. . S CUR=NEXT,ISSET=1
 	. I 'ISSET Q
 	. I $D(@CUR)>1 D  Q
-	. . N S0 S S0=$$FIRSTSUB^MIOTPL2(CUR)
+	. . N S0 S S0=$$FIRSTSUB(CUR)
 	. . I S0'="" S TYPE="list",REF=CUR,ISSET=1 Q
 	. . S TYPE="obj",REF=CUR,ISSET=1 Q
 	. I $D(@CUR)#2 S TYPE="scalar",REF=CUR,ISSET=1 Q
@@ -904,7 +1095,7 @@ RESREF(KEY,CST,CTSP,ISSET,TYPE,REF)
 	F LEVEL=CTSP:-1:1 D  Q:ISSET
 	. N BASE S BASE=$G(CST(LEVEL)) Q:BASE=""
 	. N OK,RR,TT
-	. D RESINBASE^MIOTPL2(BASE,K,.OK,.TT,.RR)
+	. D RESINBASE(BASE,K,.OK,.TT,.RR)
 	. I OK S ISSET=1,TYPE=TT,REF=RR
 	Q
 RESINBASE(BASE,KEY,OK,TYPE,REF)
@@ -1026,15 +1217,15 @@ JOIN(ARR,SEP) ;
 	. SET S=S_$GET(ARR(I))
 	QUIT S
 PUSHFRAMEI(FSP,F,START,END,CTSP,MODE,CAPREF,TOKNAME,PARENT)
-	D PUSHFRAME^MIOTPL2(.FSP,.F,START,END,CTSP,.MODE,.CAPREF,.TOKNAME)
+	D PUSHFRAME(.FSP,.F,START,END,CTSP,.MODE,.CAPREF,.TOKNAME)
 	S F(FSP,"indent")=$G(F(PARENT,"indent"))
 	S F(FSP,"at")=+$G(F(PARENT,"at"))
 	Q
 OUTNORM(V,CRLF)
 	N X S X=$G(V)
 	I 'CRLF Q X
-	I X[$C(13) S X=$$NORMNL^MIOTPL2(X)
-	I X[$C(10) S X=$$LF2CRLF^MIOTPL2(X)
+	I X[$C(13) S X=$$NORMNL(X)
+	I X[$C(10) S X=$$LF2CRLF(X)
 	Q X
 EVALX(TOK,CONF,CTX,OUTMODE,OUT,OREF,ERR)
 	K ERR
@@ -1043,21 +1234,35 @@ EVALX(TOK,CONF,CTX,OUTMODE,OUT,OREF,ERR)
 	N PDEPTHMAX S PDEPTHMAX=+$G(CONF("templates","maxPartialDepth")) I PDEPTHMAX<1 S PDEPTHMAX=20
 	N PACTIVE,PTCACHE
 	N BCAP
-	N CRLF S CRLF=+$G(TOK("meta","crlf"))
+	N TOKR,PMAX,CRLF
+	D TOKINFO(.TOK,.TOKR,.PMAX,.CRLF)
 	N W
 	I $G(OUTMODE)="R" D  Q:$D(ERR)
 	. I $G(OREF)="" S ERR("code")="TPL_OREF",ERR("msg")="Missing output reference." Q
 	. K @OREF
-	. D OUTINIT^MIOTPL2(.W,OREF,.CONF,.TOK)
+	. D OUTINIT(.W,OREF,.CONF,CRLF)
 	E  S OUTMODE="S",OUT=""
+	N MREF,SIMPLE
+	S SIMPLE=0
+	I TOKR["(" D
+	. S MREF=$$APPREF(TOKR,"meta")
+	. I '$D(@($$APPREF(MREF,"simple"))) D ANALYZERREF(TOKR,MREF)
+	. S SIMPLE=+$G(@($$APPREF(MREF,"simple")))
+	E  D
+	. I '$D(TOK("meta","simple")) D ANALYZE(.TOK)
+	. S SIMPLE=+$G(TOK("meta","simple"))
+	I SIMPLE D  Q:$Q $S($D(ERR):0,1:1)  Q
+	. D EVALSIMP(.TOK,TOKR,PMAX,CRLF,.CONF,.CST,.CTSP,OUTMODE,.OUT,.W,.ERR)
 	N FSP,F
 	S FSP=1
 	S F(1,"i")=1
-	S F(1,"end")=$$TOKENDR^MIOTPL2("TOK")
+	S F(1,"end")=PMAX
 	S F(1,"ctxTop")=CTSP
 	S F(1,"mode")="emit"
 	S F(1,"capRef")=""
-	S F(1,"tokName")="TOK"
+	S F(1,"tokName")=TOKR
+	S F(1,"indent")=""
+	S F(1,"at")=1
 	S F(1,"indent")=""
 	S F(1,"at")=1
 	N FRAMELIM,FRAMES
@@ -1074,43 +1279,43 @@ EVALX(TOK,CONF,CTX,OUTMODE,OUT,OREF,ERR)
 	. . S BE=+$G(F(PARENT,"bodyE"))
 	. . S PMODE=$G(F(PARENT,"parentMode"))
 	. . S PCAP=$G(F(PARENT,"parentCap"))
-	. . S SUB=$O(@($$APPREF^MIOTPL2(LREF,SUB)))
-	. . I SUB="" D POPX^MIOTPL2(OUTMODE,.FSP,.F,.CST,.CTSP,.OUT,.W,CRLF) Q
+	. . S SUB=$O(@($$APPREF(LREF,SUB)))
+	. . I SUB="" D POPX(OUTMODE,.FSP,.F,.CST,.CTSP,.OUT,.W,CRLF) Q
 	. . S F(PARENT,"sub")=SUB
 	. . N ITEMREF,NEWTOP
-	. . S ITEMREF=$$APPREF^MIOTPL2(LREF,SUB)
+	. . S ITEMREF=$$APPREF(LREF,SUB)
 	. . S NEWTOP=CTSP+1,CST(NEWTOP)=ITEMREF,CTSP=NEWTOP
-	. . D PUSHFRAMEI^MIOTPL2(.FSP,.F,BS,BE,CTSP,PMODE,PCAP,$G(F(PARENT,"tokName")),PARENT)
+	. . D PUSHFRAMEI(.FSP,.F,BS,BE,CTSP,PMODE,PCAP,$G(F(PARENT,"tokName")),PARENT)
 	. N I,END,TN,TYP
 	. S I=+$G(F(FSP,"i")),END=+$G(F(FSP,"end"))
-	. I I<1!(I>END) D POPX^MIOTPL2(OUTMODE,.FSP,.F,.CST,.CTSP,.OUT,.W,CRLF) Q
+	. I I<1!(I>END) D POPX(OUTMODE,.FSP,.F,.CST,.CTSP,.OUT,.W,CRLF) Q
 	. S TN=$G(F(FSP,"tokName")) I TN="" S TN="TOK"
-	. S TYP=$$TOKGET^MIOTPL2(TN,I,"t")
+	. S TYP=$$TOKGET(TN,I,"t")
 	. I TYP="text" D  Q
 	. . N V,IND,AT
-	. . S V=$$TOKGET^MIOTPL2(TN,I,"v")
+	. . S V=$$TOKGET(TN,I,"v")
 	. . S IND=$G(F(FSP,"indent"))
 	. . I IND'="" D
 	. . . S AT=+$G(F(FSP,"at"))
-	. . . S V=$$INDTXT^MIOTPL2(V,IND,.AT)
+	. . . S V=$$INDTXT(V,IND,.AT)
 	. . . S F(FSP,"at")=AT
 	. . E  D
 	. . . I V'="" S F(FSP,"at")=$S($E(V,$L(V))=$C(10):1,1:0)
-	. . D EMITX^MIOTPL2(OUTMODE,FSP,.F,.OUT,.W,V,CRLF)
+	. . D EMITX(OUTMODE,FSP,.F,.OUT,.W,V,CRLF)
 	. . S F(FSP,"i")=I+1
 	. ; VAR (escaped/unescaped)
 	. I (TYP="var")!(TYP="unesc") D  Q
 	. . N KEY,ESC,VAL,IND,AT
-	. . S KEY=$$TOKGET^MIOTPL2(TN,I,"k")
-	. . S ESC=+$$TOKGET^MIOTPL2(TN,I,"e")
-	. . S VAL=$$RESVAL^MIOTPL2(KEY,.CST,CTSP)
-	. . I ESC S VAL=$$ESCHTML^MIOTPL2(VAL)
+	. . S KEY=$$TOKGET(TN,I,"k")
+	. . S ESC=+$$TOKGET(TN,I,"e")
+	. . S VAL=$$RESVAL(KEY,.CST,CTSP)
+	. . I ESC S VAL=$$ESCHTML(VAL)
 	. . S IND=$G(F(FSP,"indent"))
 	. . S AT=+$G(F(FSP,"at"))
-	. . I AT,IND'="",VAL'="" D EMITX^MIOTPL2(OUTMODE,FSP,.F,.OUT,.W,IND,CRLF) S AT=0
+	. . I AT,IND'="",VAL'="" D EMITX(OUTMODE,FSP,.F,.OUT,.W,IND,CRLF) S AT=0
 	. . I VAL'="" S AT=0
 	. . S F(FSP,"at")=AT
-	. . D EMITX^MIOTPL2(OUTMODE,FSP,.F,.OUT,.W,VAL,CRLF)
+	. . D EMITX(OUTMODE,FSP,.F,.OUT,.W,VAL,CRLF)
 	. . S F(FSP,"i")=I+1
 	. ; COMMENT / DELIM
 	. I (TYP="comm")!(TYP="delim") D  Q
@@ -1119,15 +1324,15 @@ EVALX(TOK,CONF,CTX,OUTMODE,OUT,OREF,ERR)
 	. I TYP="part" D  Q
 	. . N PARENT,PNAME,INDTOK,PTREF,PMAX,PMODE,PCAP
 	. . S PARENT=FSP
-	. . S PNAME=$$TOKGET^MIOTPL2(TN,I,"k")
-	. . S INDTOK=$$TOKGET^MIOTPL2(TN,I,"indent")
+	. . S PNAME=$$TOKGET(TN,I,"k")
+	. . S INDTOK=$$TOKGET(TN,I,"indent")
 	. . S F(PARENT,"i")=I+1
 	. . ; recursion protection
 	. . S PACTIVE(PNAME)=+$G(PACTIVE(PNAME))+1
 	. . I PACTIVE(PNAME)>PDEPTHMAX S ERR("code")="TPL_PARTIAL_DEPTH",ERR("msg")="Partial recursion depth exceeded: "_PNAME Q
 	. . ; per-render ref cache
 	. . I '$D(PTCACHE(PNAME,"ref")) D
-	. . . D GETTOKREF^MIOTPL2(PNAME,.CONF,.PTREF,.PMAX,.ERR)
+	. . . D GETTOKREF(PNAME,.CONF,.PTREF,.PMAX,.ERR)
 	. . . I $D(ERR) D  Q
 	. . . . I $G(ERR("code"))="TPL_NOFILE" K ERR S PTCACHE(PNAME,"ref")="",PTCACHE(PNAME,"max")=0 Q
 	. . . . S PACTIVE(PNAME)=PACTIVE(PNAME)-1 I PACTIVE(PNAME)'>0 K PACTIVE(PNAME)
@@ -1140,7 +1345,7 @@ EVALX(TOK,CONF,CTX,OUTMODE,OUT,OREF,ERR)
 	. . ; push partial frame inheriting indent/at
 	. . S PMODE=$G(F(PARENT,"mode"))
 	. . S PCAP=$G(F(PARENT,"capRef"))
-	. . D PUSHFRAMEI^MIOTPL2(.FSP,.F,1,PMAX,CTSP,PMODE,PCAP,PTREF,PARENT)
+	. . D PUSHFRAMEI(.FSP,.F,1,PMAX,CTSP,PMODE,PCAP,PTREF,PARENT)
 	. . S F(FSP,"pname")=PNAME
 	. . ; compose indent: inherited indent + call-site indent
 	. . I INDTOK'="" S F(FSP,"indent")=$G(F(FSP,"indent"))_INDTOK
@@ -1148,34 +1353,34 @@ EVALX(TOK,CONF,CTX,OUTMODE,OUT,OREF,ERR)
 	. I TYP="secS" D  Q
 	. . N PARENT,KEY,INV,MI,NEXT
 	. . S PARENT=FSP
-	. . S KEY=$$TOKGET^MIOTPL2(TN,I,"k")
-	. . S INV=+$$TOKGET^MIOTPL2(TN,I,"inv")
-	. . S MI=+$$TOKGET^MIOTPL2(TN,I,"m")
+	. . S KEY=$$TOKGET(TN,I,"k")
+	. . S INV=+$$TOKGET(TN,I,"inv")
+	. . S MI=+$$TOKGET(TN,I,"m")
 	. . I 'MI S ERR("code")="TPL_PARSE",ERR("msg")="Section start without match: "_KEY Q
 	. . S NEXT=MI+1
 	. . S F(PARENT,"i")=NEXT
 	. . ; block capture
-	. . I +$$TOKGET^MIOTPL2(TN,I,"blk") D  Q
+	. . I +$$TOKGET(TN,I,"blk") D  Q
 	. . . N BNAME,NEWF,CAPREF
-	. . . S BNAME=$$TOKGET^MIOTPL2(TN,I,"bname")
+	. . . S BNAME=$$TOKGET(TN,I,"bname")
 	. . . S NEWF=FSP+1
 	. . . S BCAP(NEWF)=""
 	. . . S CAPREF=$NA(BCAP(NEWF))
-	. . . D PUSHFRAMEI^MIOTPL2(.FSP,.F,I+1,MI-1,CTSP,"capture",CAPREF,TN,PARENT)
+	. . . D PUSHFRAMEI(.FSP,.F,I+1,MI-1,CTSP,"capture",CAPREF,TN,PARENT)
 	. . . S F(FSP,"storeBlock")=1
 	. . . S F(FSP,"storeName")=BNAME
 	. . . S F(FSP,"storeCapRef")=CAPREF
 	. . ; resolve key
 	. . N ISSET,TYPE,REF
-	. . D RESREF^MIOTPL2(KEY,.CST,CTSP,.ISSET,.TYPE,.REF)
+	. . D RESREF(KEY,.CST,CTSP,.ISSET,.TYPE,.REF)
 	. . I TYPE="list" D
-	. . . N S0 S S0=$$FIRSTSUB^MIOTPL2(REF)
+	. . . N S0 S S0=$$FIRSTSUB(REF)
 	. . . I S0'="",S0'?1.N S TYPE="obj"
 	. . ; inverted
 	. . I INV D  Q
-	. . . I $$ISTRUTH^MIOTPL2(.ISSET,.TYPE,.REF)=0 D
-	. . . . D PUSHFRAMEI^MIOTPL2(.FSP,.F,I+1,MI-1,CTSP,$G(F(PARENT,"mode")),$G(F(PARENT,"capRef")),TN,PARENT)
-	. . I $$ISTRUTH^MIOTPL2(.ISSET,.TYPE,.REF)=0 Q
+	. . . I $$ISTRUTH(.ISSET,.TYPE,.REF)=0 D
+	. . . . D PUSHFRAMEI(.FSP,.F,I+1,MI-1,CTSP,$G(F(PARENT,"mode")),$G(F(PARENT,"capRef")),TN,PARENT)
+	. . I $$ISTRUTH(.ISSET,.TYPE,.REF)=0 Q
 	. . ; list iteration
 	. . I TYPE="list" D  Q
 	. . . S FSP=FSP+1
@@ -1195,16 +1400,16 @@ EVALX(TOK,CONF,CTX,OUTMODE,OUT,OREF,ERR)
 	. . I (TYPE="obj")!(TYPE="scalar") D  Q
 	. . . N NEWTOP S NEWTOP=CTSP+1
 	. . . S CST(NEWTOP)=REF,CTSP=NEWTOP
-	. . . D PUSHFRAMEI^MIOTPL2(.FSP,.F,I+1,MI-1,CTSP,$G(F(PARENT,"mode")),$G(F(PARENT,"capRef")),TN,PARENT)
+	. . . D PUSHFRAMEI(.FSP,.F,I+1,MI-1,CTSP,$G(F(PARENT,"mode")),$G(F(PARENT,"capRef")),TN,PARENT)
 	. . ; fallback
-	. . D PUSHFRAMEI^MIOTPL2(.FSP,.F,I+1,MI-1,CTSP,$G(F(PARENT,"mode")),$G(F(PARENT,"capRef")),TN,PARENT)
+	. . D PUSHFRAMEI(.FSP,.F,I+1,MI-1,CTSP,$G(F(PARENT,"mode")),$G(F(PARENT,"capRef")),TN,PARENT)
 	. ; SECTION END
 	. I TYP="secE" D  Q
 	. . S F(FSP,"i")=I+1
 	. ; unknown token: skip
 	. S F(FSP,"i")=I+1
 	; final flush (writer mode)
-	I $G(OUTMODE)="R" D OUTFLUSH^MIOTPL2(.W)
+	I $G(OUTMODE)="R" D OUTFLUSH(.W)
 	Q:$Q $S($D(ERR):0,1:1)
 	Q
 EMITX(OUTMODE,FSP,F,OUT,W,VAL,CRLF)
@@ -1213,9 +1418,9 @@ EMITX(OUTMODE,FSP,F,OUT,W,VAL,CRLF)
 	I MODE="capture" D  Q
 	. S CR=$G(F(FSP,"capRef")) Q:CR=""
 	. S @CR=$G(@CR)_$G(VAL)
-	S V=$$OUTNORM^MIOTPL2($G(VAL),+$G(CRLF))
+	S V=$$OUTNORM($G(VAL),+$G(CRLF))
 	Q:V=""
-	I $G(OUTMODE)="R" D OUTAPP^MIOTPL2(.W,V) Q
+	I $G(OUTMODE)="R" D OUTAPP(.W,V) Q
 	S OUT=$G(OUT)_V
 	Q	
 POPX(OUTMODE,FSP,F,CST,CTSP,OUT,W,CRLF)
@@ -1238,13 +1443,151 @@ POPX(OUTMODE,FSP,F,CST,CTSP,OUT,W,CRLF)
 	. S CR=$G(F(OLD,"capRef"))
 	. S VAL=$S(CR'="":$G(@CR),1:"")
 	. S IND=$G(F(OLD,"indent"))
-	. S TXT=$$INDENTSTR^MIOTPL2(VAL,IND)
+	. S TXT=$$INDENTSTR(VAL,IND)
 	. I CR'="" S @CR=""
 	. K F(OLD,"capEmit"),F(OLD,"indent")
-	. I OLD>1 D EMITX^MIOTPL2(OUTMODE,OLD-1,.F,.OUT,.W,TXT,CRLF)
+	. I OLD>1 D EMITX(OUTMODE,OLD-1,.F,.OUT,.W,TXT,CRLF)
 	I OLD>1 D
 	. I '(CM="capture"&(PM'="capture")) S F(OLD-1,"at")=+$G(F(OLD,"at"))
 	S FSP=FSP-1
 	I FSP>0 S CTSP=+$G(F(FSP,"ctxTop"))
+	Q
+TOKINFO(TOK,TOKR,PMAX,CRLF)
+	N MREF,PM
+	S TOKR="TOK",PMAX=0,CRLF=0
+	; Token-handle (zero-copy path)
+	I $D(TOK("ref")) D  Q
+	. S TOKR=$G(TOK("ref"))
+	. S PMAX=+$G(TOK("pmax"))
+	. S MREF=$$APPREF(TOKR,"meta")
+	. I 'PMAX D
+	. . S PM=+$G(@($$APPREF(MREF,"pmax")))
+	. . I 'PM S PM=$$TOKENDR(TOKR),@($$APPREF(MREF,"pmax"))=PM
+	. . S PMAX=PM
+	. S CRLF=+$G(@($$APPREF(MREF,"crlf")))
+	; Local token array path
+	S PMAX=+$G(TOK("meta","pmax"))
+	I 'PMAX S PMAX=$$NUMMAX(.TOK),TOK("meta","pmax")=PMAX
+	S CRLF=+$G(TOK("meta","crlf"))
+	Q
+RENDERX(NAME,CONF,CTX,OUT,ERR,OPT)
+	; OPT("mode") = "S" | "R" | "AUTO"
+	;   S    : scalar OUT (same as RENDER)
+	;   R    : REF output, requires OPT("oref")
+	;   AUTO : render to temp ref, then return scalar if <= maxString,
+	;          else ERR("oref") OR OUT("ref") if autoReturnRef=1
+	K ERR K OUT
+	N MODE S MODE=$ZCONVERT($G(OPT("mode")),"U")
+	I MODE="" S MODE=$S($$BOOL($G(CONF("output","auto"))):"AUTO",1:"S")
+	I MODE="S" D  Q
+	. D RENDER(NAME,.CONF,.CTX,.OUT,.ERR)
+	I MODE="R" D  Q
+	. N OREF S OREF=$G(OPT("oref"))
+	. I OREF="" S ERR("code")="TPL_OREF",ERR("msg")="RENDERX mode=R requires OPT(""oref"")." Q
+	. D RENDERREFNAME(NAME,.CONF,.CTX,OREF,.ERR) Q:$D(ERR)
+	. S OUT("mode")="R",OUT("ref")=OREF
+	; AUTO
+	N MAX S MAX=+$G(CONF("output","maxString")) I MAX<1024 S MAX=900000
+	N OREF S OREF=$G(OPT("oref")) I OREF="" S OREF=$$DEFOREF()
+	K @OREF
+	D RENDERREFNAME(NAME,.CONF,.CTX,OREF,.ERR) Q:$D(ERR)
+	N LEN,CHUNKS
+	D OUTLEN(OREF,.LEN,.CHUNKS)
+	I LEN>MAX D  Q
+	. I $$BOOL($G(CONF("output","autoReturnRef"))) D  Q
+	. . S OUT("mode")="R",OUT("ref")=OREF,OUT("len")=LEN,OUT("chunks")=CHUNKS
+	. S ERR("code")="TPL_OUT_TOO_LARGE"
+	. S ERR("msg")="Rendered output is "_LEN_" bytes; exceeds maxString="_MAX_". Use RENDERREF/RENDERX mode=R."
+	. S ERR("oref")=OREF
+	D OUTJOIN(OREF,.OUT,.ERR)
+	Q
+RENDERREFNAME(NAME,CONF,CTX,OREF,ERR)
+	; Render template NAME into output reference OREF using token-handle + EVALX REF mode
+	K ERR
+	N TOKREF,PMAX,TOK,DUM
+	D GETTOKREF(NAME,.CONF,.TOKREF,.PMAX,.ERR) Q:$D(ERR)
+	S TOK("ref")=TOKREF
+	S TOK("pmax")=PMAX
+	D EVALX(.TOK,.CONF,.CTX,"R",.DUM,$G(OREF),.ERR)
+	Q
+DEFOREF()
+	; Default temp output ref for AUTO mode
+	Q $NA(^TMP($J,"MIOTPL2","OUT"))
+OUTLEN(ROOT,LEN,CHUNKS)
+	N S,REF
+	S LEN=0,CHUNKS=0
+	S REF=$G(ROOT) Q:REF=""
+	S S=0
+	F  S S=$O(@REF@(S)) Q:S=""  D
+	. Q:'(S?1.N)
+	. S CHUNKS=CHUNKS+1
+	. S LEN=LEN+$L($G(@REF@(S)))
+	Q
+OUTJOIN(ROOT,OUT,ERR)
+	; Join numeric chunks from ROOT into scalar OUT (caller should enforce size limit)
+	K ERR S OUT=""
+	N S,REF,CH
+	S REF=$G(ROOT)
+	I REF="" S ERR("code")="TPL_OREF",ERR("msg")="OUTJOIN missing ROOT." Q
+	S S=0
+	F  S S=$O(@REF@(S)) Q:S=""  D  Q:$D(ERR)
+	. Q:'(S?1.N)
+	. S CH=$G(@REF@(S))
+	. S OUT=OUT_CH
+	Q
+ANALYZE(TOK) ; sets meta("simple") and meta("textOnly") for local TOK arrays
+	N MAX,I,TYP,SIMPLE,TXONLY
+	S SIMPLE=1,TXONLY=1
+	S MAX=+$G(TOK("meta","pmax"))
+	I 'MAX S MAX=$$NUMMAX(.TOK) S TOK("meta","pmax")=MAX
+	F I=1:1:MAX Q:(SIMPLE=0)&(TXONLY=0)  D
+	. S TYP=$G(TOK(I,"t"))
+	. I TYP="text" Q
+	. I TYP="var"!(TYP="unesc") S TXONLY=0 Q
+	. I TYP="comm"!(TYP="delim") Q
+	. ; anything else implies complex template (sections/partials/etc.)
+	. S SIMPLE=0,TXONLY=0
+	S TOK("meta","simple")=SIMPLE
+	S TOK("meta","textOnly")=TXONLY
+	Q
+ANALYZERREF(TOKR,MREF) ; sets meta flags for cached/global TOK refs
+	N PM,BASE,I,TYP,SIMPLE,TXONLY
+	S PM=+$G(@($$APPREF(MREF,"pmax")))
+	I 'PM S PM=$$TOKENDR(TOKR) S @($$APPREF(MREF,"pmax"))=PM
+	S BASE=$E(TOKR,1,$L(TOKR)-1)
+	S SIMPLE=1,TXONLY=1
+	F I=1:1:PM Q:(SIMPLE=0)&(TXONLY=0)  D
+	. S TYP=$G(@(BASE_","_I_",""t"")"))
+	. I TYP="text" Q
+	. I TYP="var"!(TYP="unesc") S TXONLY=0 Q
+	. I TYP="comm"!(TYP="delim") Q
+	. S SIMPLE=0,TXONLY=0
+	S @($$APPREF(MREF,"simple"))=SIMPLE
+	S @($$APPREF(MREF,"textOnly"))=TXONLY
+	Q
+EVALSIMP(TOK,TOKR,PMAX,CRLF,CONF,CST,CTSP,OUTMODE,OUT,W,ERR) ; fast path: text/var only
+	N TG,TB,TN,I,TYP,V,KEY,ESC,VAL
+	S TG=$S(TOKR["(":1,1:0)
+	I TG S TB=$E(TOKR,1,$L(TOKR)-1)
+	S TN=TOKR I TN="" S TN="TOK"
+	F I=1:1:PMAX Q:$D(ERR)  D
+	. S TYP=$S(TG:$G(@(TB_","_I_",""t"")")),TN="TOK":$G(TOK(I,"t")),1:$G(@(TN_"("_I_",""t"")")))
+	. I TYP="text" D  Q
+	. . S V=$S(TG:$G(@(TB_","_I_",""v"")")),TN="TOK":$G(TOK(I,"v")),1:$G(@(TN_"("_I_",""v"")")))
+	. . S V=$$OUTNORM(V,CRLF) Q:V=""
+	. . I OUTMODE="R" D OUTAPP(.W,V) Q
+	. . S OUT=$G(OUT)_V
+	. I TYP="var"!(TYP="unesc") D  Q
+	. . S KEY=$S(TG:$G(@(TB_","_I_",""k"")")),TN="TOK":$G(TOK(I,"k")),1:$G(@(TN_"("_I_",""k"")")))
+	. . S ESC=+$S(TG:$G(@(TB_","_I_",""e"")")),TN="TOK":$G(TOK(I,"e")),1:$G(@(TN_"("_I_",""e"")")))
+	. . S VAL=$$RESVAL(KEY,.CST,CTSP)
+	. . I ESC S VAL=$$ESCHTML(VAL)
+	. . S VAL=$$OUTNORM(VAL,CRLF) Q:VAL=""
+	. . I OUTMODE="R" D OUTAPP(.W,VAL) Q
+	. . S OUT=$G(OUT)_VAL
+	. I TYP="comm"!(TYP="delim") Q
+	. ; should never happen if meta("simple") was correct
+	. S ERR("code")="TPL_INT",ERR("msg")="Simple-eval hit complex token: "_TYP
+	I OUTMODE="R" D OUTFLUSH(.W)
 	Q
 	;
