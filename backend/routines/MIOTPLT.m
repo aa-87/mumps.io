@@ -2427,7 +2427,23 @@ TEST165
 	N CTX S CTX("dynamic")="content"
 	N CONF D SETUPPART(.CONF,.ROOT)
 	N ERR D WRFILE(ROOT_"content",$$UNESCNL("Hello, world!"),.ERR)
-	N ERR D WRFILE(ROOT_"grandparent",$$UNESCNL("{{$block}}default{{/block}}"),.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	Q
+TEST166
+	NEW HDR S HDR="[TEST166][Basic Behavior - Name Resolution]"
+	NEW DESC S DESC=HDR_"[The asterisk is not part of the name that will be resolved in the context.]"
+	S TEMPLATE="""{{>*dynamic}}"""
+	S EXPECTED="""Hello, world!"""
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX 
+	S CTX("dynamic")="content"
+	S CTX("*dynamic")="wrong"
+	N CONF D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"content",$$UNESCNL("Hello, world!"),.ERR)
+	N ERR D WRFILE(ROOT_"wrong",$$UNESCNL("Invisible"),.ERR)
 	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	D RMDIR(ROOT)
