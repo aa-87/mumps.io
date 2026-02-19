@@ -2462,6 +2462,21 @@ TEST167
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	D RMDIR(ROOT)
 	Q
+TEST168
+	NEW HDR S HDR="[TEST168][Failed Lookup - Partial.]"
+	NEW DESC S DESC=HDR_"[The empty string should be used when the named partial is not found.]"
+	S TEMPLATE="""{{>*dynamic}}"""
+	S EXPECTED=""""""
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX 
+	S CTX("dynamic")="content"
+	N CONF D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"foobar",$$UNESCNL("Hello, world!"),.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	Q	
 TEST265 ;
 	N CONF,CTX,TOK,OUT,ERR,S
 	D START^MIOTPL2(.CONF)
