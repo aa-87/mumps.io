@@ -2510,7 +2510,7 @@ TEST170
 	D RMDIR(ROOT)
 	Q
 TEST171
-	NEW HDR S HDR="[TEST171][Dotted Names - Operator Precedence.]"
+	NEW HDR S HDR="[TEST171][Dotted Names - Operator Precedence]"
 	NEW DESC S DESC=HDR_"[The dotted name should be resolved entirely before being dereferenced.]"
 	S TEMPLATE="""{{>*foo.bar.baz}}"""
 	S EXPECTED=""""""
@@ -2520,6 +2520,22 @@ TEST171
 	S CTX("text")="Hello, world!"
 	S CTX("foo")="test"
 	S CTX("test","bar","baz")="partial"
+	N CONF D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"partial",$$UNESCNL("*{{text}}*"),.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	Q
+TEST172
+	NEW HDR S HDR="[TEST172][Dotted Names - Failed Lookup]"
+	NEW DESC S DESC=HDR_"[The dynamic partial should operate within the current context.]"
+	S TEMPLATE="""{{>*foo.bar.baz}}"""
+	S EXPECTED="""**"""
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX 
+	S CTX("foo","bar","baz")="partial"
+	S CTX("foo","text")="Hello, world!"
 	N CONF D SETUPPART(.CONF,.ROOT)
 	N ERR D WRFILE(ROOT_"partial",$$UNESCNL("*{{text}}*"),.ERR)
 	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
