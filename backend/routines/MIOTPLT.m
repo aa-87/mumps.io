@@ -2492,7 +2492,23 @@ TEST169
 	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	D RMDIR(ROOT)
-	Q	
+	Q
+TEST170
+	NEW HDR S HDR="[TEST170][Dotted Names]"
+	NEW DESC S DESC=HDR_"[The dynamic partial should operate within the current context.]"
+	S TEMPLATE="""{{>*foo.bar.baz}}"""
+	S EXPECTED="""*Hello, world!*"""
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX 
+	S CTX("text")="Hello, world!"
+	S CTX("foo","bar","baz")="partial"
+	N CONF D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"partial",$$UNESCNL("*{{text}}*"),.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	Q
 TEST265 ;
 	N CONF,CTX,TOK,OUT,ERR,S
 	D START^MIOTPL2(.CONF)
