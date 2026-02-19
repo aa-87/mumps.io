@@ -2509,6 +2509,23 @@ TEST170
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	D RMDIR(ROOT)
 	Q
+TEST171
+	NEW HDR S HDR="[TEST171][Dotted Names - Operator Precedence.]"
+	NEW DESC S DESC=HDR_"[The dotted name should be resolved entirely before being dereferenced.]"
+	S TEMPLATE="""{{>*foo.bar.baz}}"""
+	S EXPECTED=""""""
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX 
+	S CTX("text")="Hello, world!"
+	S CTX("foo")="test"
+	S CTX("test","bar","baz")="partial"
+	N CONF D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"partial",$$UNESCNL("*{{text}}*"),.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	Q
 TEST265 ;
 	N CONF,CTX,TOK,OUT,ERR,S
 	D START^MIOTPL2(.CONF)
