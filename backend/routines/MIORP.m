@@ -89,13 +89,11 @@ LIST(DEV,CONF,REQ,CTX) ;
 	. DO PACK(SLUG,.TCTX,IDX)
 	;
 	NEW OUT,ERR
-	IF '$$RENDERPAGE^MIOTPL("mio_repo.html","mio_layout.html",.CONF,.TCTX,.OUT,.ERR) DO  QUIT
-	. DO RESPJSON^MIOHTTP(DEV,500,.CTX,"{""error"":""template_error"",""detail"":"""_$$ESC^MIOUTIL($GET(ERR("error")))_"""}")
-	;
-	NEW BODY,K,HEAD SET BODY="",K=0
-	FOR  SET K=$ORDER(OUT(K)) QUIT:K=""  SET BODY=BODY_OUT(K)
-	S HEAD("Content-Type")="text/html; charset=utf-8"
-	DO RESP^MIOHTTP(DEV,.CONF,200,.HEAD,.BODY,CTX("request_id"))
+	;	
+	D RENDERPAGE^MIOTPL("mio_repo.html","mio_layout.html",.CONF,.TCTX,.OUT,.ERR)
+	I $D(ERR) DO RESPJSON^MIOHTTP(DEV,500,.CTX,"{""error"":""template_error"",""detail"":"""_$$ESC^MIOUTIL($GET(ERR("error")))_"""}")
+	N HEAD S HEAD("Content-Type")="text/html; charset=utf-8"
+	DO RESP^MIOHTTP(DEV,.CONF,200,.HEAD,.OUT,CTX("request_id"))
 	QUIT
 	;
 PKG(DEV,CONF,REQ,CTX) ;
@@ -136,13 +134,10 @@ PKG(DEV,CONF,REQ,CTX) ;
 	. IF VLIST(I)=VER SET TCTX("versions",I,"selected")=1
 	;
 	NEW OUT,ERR2
-	IF '$$RENDERPAGE^MIOTPL("mio_pkg.html","mio_layout.html",.CONF,.TCTX,.OUT,.ERR2) DO  QUIT
-	. DO RESPJSON^MIOHTTP(DEV,500,.CTX,"{""error"":""template_error"",""detail"":"""_$$ESC^MIOUTIL($GET(ERR2("error")))_"""}")
-	;
-	NEW BODY,K SET BODY="",K=0
-	FOR  SET K=$ORDER(OUT(K)) QUIT:K=""  SET BODY=BODY_OUT(K)
-	S HEAD("Content-Type")="text/html; charset=utf-8"
-	DO RESP^MIOHTTP(DEV,.CONF,200,.HEAD,.BODY,CTX("request_id"))
+	D RENDERPAGE^MIOTPL("mio_pkg.html","mio_layout.html",.CONF,.TCTX,.OUT,.ERR2)
+	I $D(ERR) DO RESPJSON^MIOHTTP(DEV,500,.CTX,"{""error"":""template_error"",""detail"":"""_$$ESC^MIOUTIL($GET(ERR("error")))_"""}")
+	N HEAD S HEAD("Content-Type")="text/html; charset=utf-8"
+	DO RESP^MIOHTTP(DEV,.CONF,200,.HEAD,.OUT,CTX("request_id"))
 	QUIT
 	;
 ENSURE(CONF) ;

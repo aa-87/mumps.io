@@ -407,33 +407,33 @@ MIOTF208 ; Lambdas
 	Q	
 TEST265 ;
 	N CONF,CTX,TOK,OUT,ERR,S
-	D START^MIOTPL2(.CONF)
+	D START^MIOTPL(.CONF)
 	S CTX("meta","captureBlocks")=1
 	S S="Body"_$C(10)_"  {{#block:head}}"_$C(10)_"  X"_$C(10)_"  {{/block:head}}"_$C(10)_"End"_$C(10)
-	D COMPILE^MIOTPL2(S,.TOK,.ERR) I $D(ERR) W "FAIL TEST165 compile",! Q
-	D EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR) I $D(ERR) W "FAIL TEST165 eval",! Q
+	D COMPILE^MIOTPL(S,.TOK,.ERR) I $D(ERR) W "FAIL TEST165 compile",! Q
+	D EVAL^MIOTPL(.TOK,.CONF,.CTX,.OUT,.ERR) I $D(ERR) W "FAIL TEST165 eval",! Q
 	I OUT'=("Body"_$C(10)_"End"_$C(10)) W "FAIL TEST165 OUT=",OUT,! Q
 	I $G(CTX("blocks","head"))'=("X"_$C(10)) W "FAIL TEST165 BLOCK=" Q ;,ZWR CTX("blocks","head"),! Q
 	Q
 TEST266
 	N CONF,CTX,TOK,OUT,ERR,S
-	D START^MIOTPL2(.CONF)
+	D START^MIOTPL(.CONF)
 	K CTX("blocks")
 	S CTX("meta","captureBlocks")=0
 	S S="S"_$C(10)_"  {{#block:head}}"_$C(10)_"  D"_$C(10)_"  {{/block:head}}"_$C(10)_"E"_$C(10)
-	D COMPILE^MIOTPL2(S,.TOK,.ERR) I $D(ERR) W "FAIL TEST166 compile",! Q
-	D EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR) I $D(ERR) W "FAIL TEST166 eval",! Q
+	D COMPILE^MIOTPL(S,.TOK,.ERR) I $D(ERR) W "FAIL TEST166 compile",! Q
+	D EVAL^MIOTPL(.TOK,.CONF,.CTX,.OUT,.ERR) I $D(ERR) W "FAIL TEST166 eval",! Q
 	S EXPECTED=("S"_$C(10)_"  D"_$C(10)_"E"_$C(10))
 	I OUT'=EXPECTED W "FAIL TEST166 OUT=",OUT,! Q
 	Q
 TEST267
 	N CONF,CTX,TOK,OUT,ERR,S
-	D START^MIOTPL2(.CONF)
+	D START^MIOTPL(.CONF)
 	S CTX("blocks","head")="X"_$C(10)
 	S CTX("meta","captureBlocks")=0
 	S S="S"_$C(10)_"  {{#block:head}}"_$C(10)_"  D"_$C(10)_"  {{/block:head}}"_$C(10)_"E"_$C(10)
-	D COMPILE^MIOTPL2(S,.TOK,.ERR) I $D(ERR) W "FAIL TEST167 compile",! Q
-	D EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR) I $D(ERR) W "FAIL TEST167 eval",! Q
+	D COMPILE^MIOTPL(S,.TOK,.ERR) I $D(ERR) W "FAIL TEST167 compile",! Q
+	D EVAL^MIOTPL(.TOK,.CONF,.CTX,.OUT,.ERR) I $D(ERR) W "FAIL TEST167 eval",! Q
 	I OUT'=("S"_$C(10)_"  X"_$C(10)_"E"_$C(10)) W "FAIL TEST167 OUT=",OUT,! Q
 	I $G(CTX("blocks","head"))'=("X"_$C(10)) W "FAIL TEST167 BLOCK OVERWRITTEN=",CTX("blocks","head"),! Q
 	Q
@@ -444,9 +444,9 @@ RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,CTX)
 	;N TOK,ERR,OUT
 	;K TOK,ERR,OUT
 	K ^TMP($J)
-	D COMPILE^MIOTPL2($G(TEMPLATE),.TOK,.ERR)
+	D COMPILE^MIOTPL($G(TEMPLATE),.TOK,.ERR)
 	D OK^MIOTASSERT('$D(ERR),"[COMPILE]"_HDR)
-	D EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
+	D EVAL^MIOTPL(.TOK,.CONF,.CTX,.OUT,.ERR)
 	D OK^MIOTASSERT('$D(ERR),"[EVAL]"_DESC)
 	D EQ^MIOTASSERT(OUT,$G(EXPECTED),"[RENDER]"_DESC)
 	;I OUT=$G(EXPECTED) Q 
@@ -471,21 +471,21 @@ RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,CTX)
 	S N=0
 	F P=1:CHSZ:L D
 	. S N=N+1
-	. S @($$APPREF^MIOTPL2(INROOT,N))=$E(TEMPLATE,P,P+CHSZ-1)
+	. S @($$APPREF^MIOTPL(INROOT,N))=$E(TEMPLATE,P,P+CHSZ-1)
 	K TOKR,ERRR
-	D COMPREF^MIOTPL2(INROOT,.TOKR,.ERRR)
+	D COMPREF^MIOTPL(INROOT,.TOKR,.ERRR)
 	D OK^MIOTASSERT('$D(ERRR),"[COMPREF]"_HDR)
-	D EVALREF^MIOTPL2(.TOKR,.CONF,.CTX,OUTROOT,.ERRR)
+	D EVALREF^MIOTPL(.TOKR,.CONF,.CTX,OUTROOT,.ERRR)
 	D OK^MIOTASSERT('$D(ERRR),"[EVALREF]"_DESC)
 	S OUT2=""
 	S N=0
-	F  S N=$O(@($$APPREF^MIOTPL2(OUTROOT,N))) Q:'N  D
-	. S OUT2=OUT2_$G(@($$APPREF^MIOTPL2(OUTROOT,N)))
+	F  S N=$O(@($$APPREF^MIOTPL(OUTROOT,N))) Q:'N  D
+	. S OUT2=OUT2_$G(@($$APPREF^MIOTPL(OUTROOT,N)))
 	D EQ^MIOTASSERT(OUT2,$G(EXPECTED),"[RENDERREF]"_DESC)
 	Q
 JSONTESTRUNNER(FP) ;
 	N OK,TXT,ERR,TESTS
-	S OK=$$READFILE^MIOTPL2(FP,.TXT,.ERR)
+	S OK=$$READFILE^MIOTPL(FP,.TXT,.ERR)
 	D OK^MIOTASSERT(OK,"read "_FP)
 	Q:'OK
 	D DECODE^MIOJSON2($NA(TXT),$NA(TESTS))
@@ -591,7 +591,7 @@ LAMHOSEXPWRAP(TEXT,LRID) ;LAM_HOS_EXP_WRAP
 	Q "$$LAMHOSEXPIN^MIOTPLT"
 LAMHOSRENDRAWIN(TEXT,LRID) ;LAM_HOS_RENDRAW_IN
 	; render the raw block itself (contains delimiter change tag)
-	Q $$LRENDER^MIOTPL2(+$G(LRID),$G(TEXT))
+	Q $$LRENDER^MIOTPL(+$G(LRID),$G(TEXT))
 LAMHOSRENDRAWWRAP(TEXT,LRID) ;LAM_HOS_RENDRAW_WRAP
 	Q "$$LAMHOSRENDRAWIN^MIOTPLT"
 LAMHOSMCALLWRAP(TEXT,LRID) ;LAM_HOS_MCALL_WRAP 
@@ -600,7 +600,7 @@ LAMHOSINVWRAP(TEXT,LRID) ;LAM_HOS_INV_WRAP
 	Q "$$LAMHOSINVIN^MIOTPLT"
 LAMHOSEXPIN(TEXT,LRID) ;LAM_HOS_EXP_IN
 	; return: text + render("{{planet}}") + text
-	N MID S MID=$$LRENDER^MIOTPL2(+$G(LRID),"{{planet}}")
+	N MID S MID=$$LRENDER^MIOTPL(+$G(LRID),"{{planet}}")
 	Q $G(TEXT)_MID_$G(TEXT)
 	;
 LAMHOSMCALLIN(TEXT,LRID) ;LAM_HOS_MCALL_IN
@@ -612,18 +612,18 @@ LAMHOSINVIN(TEXT,LRID) ;LAM_HOS_INV_IN
 	;	
 MIOTF121 ; Full suite test 121 - TPL_SECTION_CTA.;
 	N TOK,ERR,CONF,CTX,OUT
-	D COMPILE^MIOTPL2("{{#cta}}X{{/cta}}",.TOK,.ERR)
+	D COMPILE^MIOTPL("{{#cta}}X{{/cta}}",.TOK,.ERR)
 	DO OK^MIOTASSERT('$D(ERR),"compile")
 	SET CTX("cta")=1
-	DO EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
+	DO EVAL^MIOTPL(.TOK,.CONF,.CTX,.OUT,.ERR)
 	DO OK^MIOTASSERT('$D(ERR),"eval")
 	DO EQ^MIOTASSERT(OUT,"X","section render")
 	Q
 MIOTF122 ; Full suite test 122 - TPL_BLOCK_TITLE.;
 	N TOK,ERR,CONF,CTX,OUT
-	DO COMPILE^MIOTPL2("{{#block:title}}Hello{{/block:title}}",.TOK,.ERR) I $D(ERR) ZWR ERR
+	DO COMPILE^MIOTPL("{{#block:title}}Hello{{/block:title}}",.TOK,.ERR) I $D(ERR) ZWR ERR
 	DO OK^MIOTASSERT('$D(ERR),"compile")  I $D(ERR) ZWR ERR
-	DO EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
+	DO EVAL^MIOTPL(.TOK,.CONF,.CTX,.OUT,.ERR)
 	DO OK^MIOTASSERT('$D(ERR),"eval")
 	DO EQ^MIOTASSERT(OUT,"Hello","block captured")
 	Q
@@ -631,9 +631,9 @@ MIOTF123 ; Full suite test 123 - TPL_DOTTED_LIST.;
 	N TOK,ERR,CONF,CTX,OUT
 	SET CTX("cats","items",1)="Core"
 	SET CTX("cats","items",2)="Tools"
-	DO COMPILE^MIOTPL2("{{#cats.items}}{{.}};{{/cats.items}}",.TOK,.ERR)
+	DO COMPILE^MIOTPL("{{#cats.items}}{{.}};{{/cats.items}}",.TOK,.ERR)
 	DO OK^MIOTASSERT('$D(ERR),"compile")
-	DO EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
+	DO EVAL^MIOTPL(.TOK,.CONF,.CTX,.OUT,.ERR)
 	DO OK^MIOTASSERT('$D(ERR),"eval")
 	DO EQ^MIOTASSERT(OUT,"Core;Tools;","dotted list") 
 	Q
@@ -641,26 +641,26 @@ MIOTF124 ; Full suite test 124 - TPL_PACKAGES_OBJECT.;
 	N TOK,ERR,CONF,CTX,OUT
 	SET CTX("packages",1,"slug")="mio-web"
 	SET CTX("packages",1,"name")="Web Server"
-	DO COMPILE^MIOTPL2("{{#packages}}{{slug}}-{{name}};{{/packages}}",.TOK,.ERR)
+	DO COMPILE^MIOTPL("{{#packages}}{{slug}}-{{name}};{{/packages}}",.TOK,.ERR)
 	DO OK^MIOTASSERT('$D(ERR),"compile")
-	DO EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
+	DO EVAL^MIOTPL(.TOK,.CONF,.CTX,.OUT,.ERR)
 	DO OK^MIOTASSERT('$D(ERR),"eval")
 	DO EQ^MIOTASSERT(OUT,"mio-web-Web Server;","packages obj")
 	Q
 MIOTF125 ; Full suite test 125 - TPL_INVERTED_NORESULTS.;
 	N TOK,ERR,CONF,CTX,OUT,RES
 	; Template: show "NONE" only when packages is falsey/empty.;
-	DO COMPILE^MIOTPL2("{{^packages}}NONE{{/packages}}{{#packages}}YES{{/packages}}",.TOK,.ERR)
+	DO COMPILE^MIOTPL("{{^packages}}NONE{{/packages}}{{#packages}}YES{{/packages}}",.TOK,.ERR)
 	DO OK^MIOTASSERT('$D(ERR),"compile")
 	; Case A: packages has an item => inverted must NOT render, normal must render.;
 	KILL CTX
 	SET CTX("packages",1,"name")="Pkg1"
-	DO EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
+	DO EVAL^MIOTPL(.TOK,.CONF,.CTX,.OUT,.ERR)
 	DO OK^MIOTASSERT('$D(ERR),"eval A")
 	DO EQ^MIOTASSERT(OUT,"YES","inverted suppressed when list has items") 
 	; Case B: packages empty => inverted MUST render, normal must NOT render.;
 	KILL OUT,ERR,CTX
-	DO EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
+	DO EVAL^MIOTPL(.TOK,.CONF,.CTX,.OUT,.ERR)
 	DO OK^MIOTASSERT('$D(ERR),"eval B")
 	DO EQ^MIOTASSERT(OUT,"NONE","inverted renders when list empty")
 	Q
@@ -676,7 +676,7 @@ MIOTF126 ; Full suite test 126 - TPL_DEEP_NESTED_CONTEXT.;
 	SET TPL=TPL_"{{^members}}EMPTY{{/members}}"
 	SET TPL=TPL_"];"
 	SET TPL=TPL_"{{/groups.items}}"
-	DO COMPILE^MIOTPL2(TPL,.TOK,.ERR)
+	DO COMPILE^MIOTPL(TPL,.TOK,.ERR)
 	DO OK^MIOTASSERT('$D(ERR),"compile")
 	; Build deep context with two groups:
 	; Group 1 has 2 members, Group 2 has none.;
@@ -686,7 +686,7 @@ MIOTF126 ; Full suite test 126 - TPL_DEEP_NESTED_CONTEXT.;
 	SET CTX("groups","items",1,"members",2,"name")="Bob"
 	SET CTX("groups","items",2,"name")="Tools"
 	; No members under group 2 => should show EMPTY
-	DO EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
+	DO EVAL^MIOTPL(.TOK,.CONF,.CTX,.OUT,.ERR)
 	DO OK^MIOTASSERT('$D(ERR),"eval")
 	DO EQ^MIOTASSERT(OUT,"G=Core:[Alice,Bob,];G=Tools:[EMPTY];","deep nested render")
 	Q
@@ -703,7 +703,7 @@ MIOTF126B ; Full suite test 126B - TPL_DEEP_NESTED_CONTEXT_SCALARS.;
 	SET TPL=TPL_"{{^members}}EMPTY{{/members}}"
 	SET TPL=TPL_"];"
 	SET TPL=TPL_"{{/groups.items}}"
-	DO COMPILE^MIOTPL2(TPL,.TOK,.ERR)
+	DO COMPILE^MIOTPL(TPL,.TOK,.ERR)
 	DO OK^MIOTASSERT('$D(ERR),"compile")
 	; Two groups: one with scalar members, one empty.;
 	KILL CTX
@@ -712,7 +712,7 @@ MIOTF126B ; Full suite test 126B - TPL_DEEP_NESTED_CONTEXT_SCALARS.;
 	SET CTX("groups","items",1,"members",2)="Bob"
 	SET CTX("groups","items",2,"name")="Tools"
 	; No members under group 2 => should show EMPTY
-	DO EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
+	DO EVAL^MIOTPL(.TOK,.CONF,.CTX,.OUT,.ERR)
 	DO OK^MIOTASSERT('$D(ERR),"eval")
 	DO EQ^MIOTASSERT(OUT,"G=Core:[Alice,Bob,];G=Tools:[EMPTY];","deep nested scalars render")
 	Q
@@ -730,7 +730,7 @@ MIOTF127 ;
 	D WRFILE(ROOT_"layout.html","L0<title>{{{blocks.title}}}</title>|D={{desc}}|{{{content}}}|L9",.ERR)
 	D OK^MIOTASSERT('$D(ERR),"write layout") K ERR
 	;
-	N T,OK S OK=$$READFILE^MIOTPL2(ROOT_"layout.html",.T,.ERR) 
+	N T,OK S OK=$$READFILE^MIOTPL(ROOT_"layout.html",.T,.ERR) 
 	D EQ^MIOTASSERT($E(T,1,9),"L0<title>","layout file prefix")
 	;
 	D WRFILE(ROOT_"page.html","{{#block:title}}T{{year}}{{/block:title}}P{{year}}",.ERR)
@@ -746,7 +746,7 @@ MIOTF127 ;
 	S CTX("desc")="DESC"
 	;
 	;
-	D RENDERPAGE^MIOTPL2("page.html","layout.html",.CONF,.CTX,.OUT,.ERR)
+	D RENDERPAGE^MIOTPL("page.html","layout.html",.CONF,.CTX,.OUT,.ERR)
 	D OK^MIOTASSERT('$D(ERR),"renderpage") ZWR:$D(ERR) ERR
 	;
 	; Expected output
@@ -783,7 +783,7 @@ MIOTF128 ; Full suite test 128 - TPL_PARTIALS_INCLUDE
 	D OK^MIOTASSERT('$D(ERR),"write main") K ERR
 	;
 	; --- render main by logical name (NO ROOT PREFIX) ---
-	D RENDER^MIOTPL2("main.html",.CONF,.CTX,.OUT,.ERR)
+	D RENDER^MIOTPL("main.html",.CONF,.CTX,.OUT,.ERR)
 	D OK^MIOTASSERT('$D(ERR),"render main") I $D(ERR) ZWR ERR
 	;
 	D EQ^MIOTASSERT(OUT,"APP1PP","partials include output")
@@ -793,21 +793,21 @@ MIOTF128 ; Full suite test 128 - TPL_PARTIALS_INCLUDE
 	;
 MIOTF129 ;
 	N TOK,ERR,CONF,CTX,OUT
-	D COMPILE^MIOTPL2("{{#x}}Y{{/x}}{{^x}}N{{/x}}",.TOK,.ERR)
+	D COMPILE^MIOTPL("{{#x}}Y{{/x}}{{^x}}N{{/x}}",.TOK,.ERR)
 	S CTX("x")="false"
-	D EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
+	D EVAL^MIOTPL(.TOK,.CONF,.CTX,.OUT,.ERR)
 	D EQ^MIOTASSERT(OUT,"N","false string is falsey")
 	K OUT,ERR
 	S CTX("x")="true"
-	D EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
+	D EVAL^MIOTPL(.TOK,.CONF,.CTX,.OUT,.ERR)
 	D EQ^MIOTASSERT(OUT,"Y","true string is truthy")
 	Q
 	;
 MIOTF130 ;
 	N TOK,ERR,CONF,CTX,OUT
-	D COMPILE^MIOTPL2("{{#x}}Y{{/x}}{{^x}}N{{/x}}",.TOK,.ERR)
+	D COMPILE^MIOTPL("{{#x}}Y{{/x}}{{^x}}N{{/x}}",.TOK,.ERR)
 	S CTX("x")="FALSE"
-	D EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
+	D EVAL^MIOTPL(.TOK,.CONF,.CTX,.OUT,.ERR)
 	D EQ^MIOTASSERT(OUT,"N","FALSE is falsey")
 	Q
 MIOTF131 ; CRLF output (scalar) + safe CRLF values
@@ -815,11 +815,11 @@ MIOTF131 ; CRLF output (scalar) + safe CRLF values
 	S CRLF=$C(13,10)
 	; template uses CRLF newlines
 	S TPL="A"_CRLF_"B"_CRLF_"{{x}}"_CRLF
-	D COMPILE^MIOTPL2(TPL,.TOK,.ERR)
+	D COMPILE^MIOTPL(TPL,.TOK,.ERR)
 	D OK^MIOTASSERT('$D(ERR),"compile")
 	; value already contains CRLF -> must NOT become \r\r\n
 	S CTX("x")="X"_CRLF_"Y"
-	D EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
+	D EVAL^MIOTPL(.TOK,.CONF,.CTX,.OUT,.ERR)
 	D OK^MIOTASSERT('$D(ERR),"eval")
 	S EXP="A"_CRLF_"B"_CRLF_"X"_CRLF_"Y"_CRLF
 	D EQ^MIOTASSERT(OUT,EXP,"crlf scalar + safe")
@@ -830,10 +830,10 @@ MIOTF132 ; CRLF output (ref mode) + safe CRLF values
 	N O,OUT,I
 	S CRLF=$C(13,10)
 	S TPL="A"_CRLF_"B"_CRLF_"{{x}}"_CRLF
-	D COMPILE^MIOTPL2(TPL,.TOK,.ERR)
+	D COMPILE^MIOTPL(TPL,.TOK,.ERR)
 	D OK^MIOTASSERT('$D(ERR),"compile")
 	S CTX("x")="X"_CRLF_"Y"
-	D EVALREF^MIOTPL2(.TOK,.CONF,.CTX,$NA(O),.ERR)
+	D EVALREF^MIOTPL(.TOK,.CONF,.CTX,$NA(O),.ERR)
 	D OK^MIOTASSERT('$D(ERR),"evalref")
 	S OUT="",I=0
 	F  S I=$O(O(I)) Q:'I  S OUT=OUT_O(I)
@@ -846,9 +846,9 @@ MIOTF133 ; CRLF detected across chunk boundary (COMPREF/COMPILEA path)
 	; chunk boundary: ends with CR then next chunk starts with LF
 	S ARR(1)="A"_$C(13)
 	S ARR(2)=$C(10)_"B"_$C(10)
-	D COMPILEA^MIOTPL2(.ARR,.TOK,.ERR)
+	D COMPILEA^MIOTPL(.ARR,.TOK,.ERR)
 	D OK^MIOTASSERT('$D(ERR),"compileA")
-	D EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
+	D EVAL^MIOTPL(.TOK,.CONF,.CTX,.OUT,.ERR)
 	D OK^MIOTASSERT('$D(ERR),"eval")
 	S EXP="A"_$C(13,10)_"B"_$C(13,10)
 	D EQ^MIOTASSERT(OUT,EXP,"crlf boundary detect")
@@ -3113,9 +3113,9 @@ TEST197 ; [Errors] line/col + include stack (partials) + failing tag
 	; (CONF can be mostly empty; MIOTPL2 has internal defaults)
 	S CONF("compat","truthiness")="legacy"
 	N TOK,OUT,ERR
-	D COMPILE^MIOTPL2(TEMPLATE,.TOK,.ERR)
+	D COMPILE^MIOTPL(TEMPLATE,.TOK,.ERR)
 	I $D(ERR) D TFAILERR("COMPILE",DESC,.ERR) Q
-	D EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
+	D EVAL^MIOTPL(.TOK,.CONF,.CTX,.OUT,.ERR)
 	; Expect a lambda execution error
 	I '$D(ERR) D TFAIL("EVAL",DESC,"<no error>","<error TPL_LAMBDA>") Q
 	D TASSERTS("EVAL",DESC,$G(ERR("code")),"TPL_LAMBDA")
