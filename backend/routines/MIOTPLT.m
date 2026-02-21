@@ -2714,6 +2714,22 @@ TEST182
 	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	D RMDIR(ROOT)
+	Q
+TEST183
+	N HDR S HDR="[TEST183][Standalone Without Newline]"
+	N DESC S DESC=HDR_"[Standalone tags should not require a newline to follow them.]"
+	S DESC=DESC_"whitespace succeding the tag should be left untouched]"
+	S TEMPLATE=">\n  {{>*dynamic}}"
+	S EXPECTED=">\n  >\n  >"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX 
+	S CTX("dynamic")="partial"
+	N CONF D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"partial",$$UNESCNL(">\n>"),.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
 	Q	
 TEST265 ;
 	N CONF,CTX,TOK,OUT,ERR,S
