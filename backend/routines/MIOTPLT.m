@@ -5,7 +5,7 @@ MIOTPLT
 	D MIOTF130,MIOTF131,MIOTF132,MIOTF133
 	D TEST265,TEST266,TEST267
 	D MIOTF200,MIOTF201,MIOTF202,MIOTF203,MIOTF204
-	D MIOTF205,MIOTF206,MIOTF207
+	D MIOTF205,MIOTF206,MIOTF207,MIOTF208
 	;	
 	Q
 MIOTF200 ;Interpolation
@@ -30,7 +30,7 @@ MIOTF200 ;Interpolation
 	;      should interpolate as the empty string. Data should be coerced into a string
 	;      (and escaped, if appropriate) before interpolation. The Interpolation tags
 	;      MUST NOT be treated as standalone
-	D RUNJSONSPECS("./tests/data/interpolation.json") ;This is the same as below.;
+	D JSONTESTRUNNER("./tests/data/interpolation.json") ;This is the same as below.;
 	; Each test is run two different ways
 	D TEST001,TEST002,TEST003,TEST004,TEST005,TEST006,TEST007
 	D TEST008,TEST009,TEST010,TEST011,TEST012,TEST013,TEST014
@@ -72,7 +72,7 @@ MIOTF201 ;Sections
 	;      context stack, the section MUST be rendered, and the element MUST be popped
 	;      off the context stack.;
 	;      Section and End Section tags SHOULD be treated as standalone when appropriate."
-	D RUNJSONSPECS("./tests/data/sections.json") ;This is the same as below.;
+	D JSONTESTRUNNER("./tests/data/sections.json") ;This is the same as below.;
 	; Each test is run two different ways
 	D TEST043,TEST044,TEST045,TEST046,TEST047,TEST048,TEST049
 	D TEST050,TEST051,TEST052,TEST053,TEST054,TEST055,TEST056
@@ -108,7 +108,7 @@ MIOTF202 ;Inverted
 	;          containing the data, otherwise use an empty list.;
 	;   This section MUST NOT be rendered unless the data list is empty.;
 	;   Inverted Section and End Section tags SHOULD be treated as standalone when appropriate.;
-	D RUNJSONSPECS("./tests/data/inverted.json") ;This is the same as below.;
+	D JSONTESTRUNNER("./tests/data/inverted.json") ;This is the same as below.;
 	; Each test is run two different ways
 	D TEST077,TEST078,TEST079,TEST080,TEST081,TEST082,TEST083
 	D TEST084,TEST085,TEST086,TEST087,TEST088,TEST089,TEST090
@@ -126,7 +126,7 @@ MIOTF203 ;Partials
 	;  SHOULD be treated as standalone when appropriate. If this tag is used
 	;  standalone, any whitespace preceding the tag should treated as indentation, 
 	;  and prepended to each line of the partial before rendering.;
-	D RUNJSONSPECSPART("./tests/data/partials.json") ;This is the same as below.;
+	D JSONTESTRUNNER("./tests/data/partials.json") ;This is the same as below.;
 	; Each test is run two different ways
 	D TEST099,TEST100,TEST101,TEST102,TEST103,TEST104,TEST105
 	D TEST106,TEST107,TEST108,TEST109,TEST110
@@ -135,7 +135,7 @@ MIOTF204 ;Comments
 	; Comment tags represent content that should never appear in the resulting
 	; output.The tag's content may contain any substring (including newlines) 
 	; EXCEPT the closing delimiter. Comment tags SHOULD be treated as
-	D RUNJSONSPECS("./tests/data/comments.json") ;This is the same as below.;
+	D JSONTESTRUNNER("./tests/data/comments.json") ;This is the same as below.;
 	; Each test is run two different ways
 	;  standalone when appropriate.;
 	D TEST111,TEST112,TEST113,TEST114,TEST115,TEST116,TEST117
@@ -148,7 +148,7 @@ MIOTF205 ;Delimiters
 	; (separated by\nwhitespace) EXCEPT an equals sign ('=') followed
 	;  by the current closing\ndelimiter.\n\nSet Delimiter tags
 	;  SHOULD be treated as standalone when appropriate.\n"
-	D RUNJSONSPECSPART("./tests/data/delimiters.json") ;This is the same as below.;
+	D JSONTESTRUNNER("./tests/data/delimiters.json") ;This is the same as below.;
 	; Each test is run two different ways
 	D TEST123,TEST124,TEST125,TEST126,TEST127,TEST128,TEST129
 	D TEST130,TEST131,TEST132,TEST133,TEST134,TEST135,TEST136
@@ -189,7 +189,7 @@ MIOTF206 ;Inheritance
 	;  exactly equivalent to injecting a Parent without making
 	; any substitutions. Parameter and arguments names live in a namespace
 	; that is distinct from both Partials and the context.	
-	D RUNJSONSPECSPART("./tests/data/_inheritance.json") ;This is the same as below.;
+	D JSONTESTRUNNER("./tests/data/_inheritance.json") ;This is the same as below.;
 	; Each test is run two different ways
 	D TEST138,TEST139,TEST140,TEST141,TEST142,TEST143,TEST144
 	D TEST145,TEST146,TEST147,TEST148,TEST149,TEST150,TEST151
@@ -382,13 +382,30 @@ MIOTF207 ;Dynamic Names
 	;   inside Parent tags SHOULD be supported as well. Dynamic Names cannot be
 	;   resolved more than once (Dynamic Names cannot be nested).;
 	;	
-	;D RUNJSONSPECSPART("./tests/data/_inheritance.json") ;This is the same as below.;
+	D JSONTESTRUNNER("./tests/data/_dynamic-names.json") ;This is the same as below.;
 	; Each test is run two different ways
 	D TEST165,TEST166,TEST167,TEST168,TEST169,TEST170,TEST171
 	D TEST172,TEST173,TEST174,TEST175,TEST176,TEST177,TEST178
 	D TEST179,TEST180,TEST181,TEST182,TEST183,TEST184,TEST185
 	;	
-	Q 
+	Q
+MIOTF208 ; Lambdas
+	; Lambdas are a special-cased data type for use in interpolations and
+	;sections.;
+		;When used as the data value for an Interpolation tag, the lambda MUST be
+		;treatable as an arity 0 function, and invoked as such.  The returned value
+		;MUST be rendered against the default delimiters, then interpolated in place
+		;of the lambda.;
+		;When used as the data value for a Section tag, the lambda MUST be treatable
+		;as an arity 1 function, and invoked as such (passing a String containing the
+		;unprocessed section contents).  The returned value MUST be rendered against
+		;the current delimiters, then interpolated in place of the section.;
+	D JSONTESTRUNNER("./tests/data/_dynamic-names.json") ;This is the same as below.;
+	;; Each test is run two different ways
+	D TEST186,TEST187,TEST188
+	Q	
+	;	
+	;	
 MIOTF121 ; Full suite test 121 - TPL_SECTION_CTA.;
 	N TOK,ERR,CONF,CTX,OUT
 	D COMPILE^MIOTPL2("{{#cta}}X{{/cta}}",.TOK,.ERR)
@@ -2766,6 +2783,70 @@ TEST185
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	D RMDIR(ROOT)
 	Q
+TEST186
+	N HDR S HDR="[TEST191][Lambdas][Var escaping]"
+	N DESC S DESC=HDR_"[{{lambda}} is escaped; {{{lambda}}} is not.]"
+	N TEMPLATE,EXPECTED,CTX
+	S TEMPLATE="<{{lambda}}{{{lambda}}}"
+	; mustache.js escapes the first '>' => &gt;, second stays '>'
+	S EXPECTED="<&gt;>"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	K CTX
+	S CTX("lambda")="$$LAMVARGT^MIOTPLT"
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	Q
+TEST187
+	N HDR S HDR="[TEST187][Lambdas][Escaping]"
+	N DESC S DESC=HDR_"[{{lambda}} is escaped; {{{lambda}}} is not.]"
+	N TEMPLATE,EXPECTED,CTX
+	S TEMPLATE="<{{lambda}}{{{lambda}}}"
+	; mustache.js escapes the first '>' => &gt;, second stays '>'
+	S EXPECTED="<&gt;>"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	K CTX
+	S CTX("lambda")="$$LAMVARGT^MIOTPLT" ;to do => fix error handeling _
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	Q	
+TEST188
+	N HDR S HDR="[TEST188][Lambdas][Interpolation - Multiple Calls]"
+	N DESC S DESC=HDR_"[Variable lambda is called once per tag occurrence.]"
+	N TEMPLATE,EXPECTED,CTX
+	K ^TMP($J,"MIOTPLT","LAMCALL")
+	S TEMPLATE="{{lambda}} == {{{lambda}}} == {{lambda}}"
+	S EXPECTED="1 == 2 == 3"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	K CTX
+	S CTX("lambda")="$$LAMVARINC^MIOTPLT"
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	K ^TMP($J,"MIOTPLT","LAMCALL")
+	Q
+	;
+	;Higher-order section wrappers (outer no-arg)
+LAMHOSRAWWRAP(TEXT,RENDER) ;LAM_HOS_RAW_WRAP
+	Q "$$LAMHOSRAWIN^MIOTPLT"
+; --- Higher-order section inners (text, renderHandleId) ---
+LAMHOSRAWIN(TEXT,LRID) ;LAM_HOS_RAW_IN
+	; must receive literal "{{x}}"
+	I $G(TEXT)="{{x}}" Q "yes"
+	Q "no"
+TEST189
+TEST193
+	N HDR S HDR="[TEST189][Lambdas][Section]"
+	N DESC S DESC=HDR_"[Lambdas used for sections should receive the raw section string.]"
+	;N TEMPLATE,EXPECTED,CTX
+	S TEMPLATE="<{{#lambda}}{{x}}{{/lambda}}>"
+	S EXPECTED="<yes>"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	K CTX
+	S CTX("x")="Error!"
+	; mustache.js style: outer returns inner
+	S CTX("lambda")="$$LAMHOSRAWWRAP^MIOTPLT"
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	Q
 TEST265 ;
 	N CONF,CTX,TOK,OUT,ERR,S
 	D START^MIOTPL2(.CONF)
@@ -2774,7 +2855,7 @@ TEST265 ;
 	D COMPILE^MIOTPL2(S,.TOK,.ERR) I $D(ERR) W "FAIL TEST165 compile",! Q
 	D EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR) I $D(ERR) W "FAIL TEST165 eval",! Q
 	I OUT'=("Body"_$C(10)_"End"_$C(10)) W "FAIL TEST165 OUT=",OUT,! Q
-	I $G(CTX("blocks","head"))'=("X"_$C(10)) W "FAIL TEST165 BLOCK=",CTX("blocks","head"),! Q
+	I $G(CTX("blocks","head"))'=("X"_$C(10)) W "FAIL TEST165 BLOCK=" Q ;,ZWR CTX("blocks","head"),! Q
 	Q
 TEST266
 	N CONF,CTX,TOK,OUT,ERR,S
@@ -2817,6 +2898,7 @@ RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,CTX)
 	;  2) Reference template OREF(n) -> reference output OREF(n) (GB-safe path)
 	;N TOK,ERR,OUT
 	;K TOK,ERR,OUT
+	K ^TMP($J)
 	D COMPILE^MIOTPL2($G(TEMPLATE),.TOK,.ERR)
 	D OK^MIOTASSERT('$D(ERR),"[COMPILE]"_HDR)
 	D EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
@@ -2824,6 +2906,7 @@ RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,CTX)
 	D EQ^MIOTASSERT(OUT,$G(EXPECTED),"[RENDER]"_DESC)
 	;I OUT=$G(EXPECTED) Q 
 	;K CONF,HDR,DESC
+	;I $D(ERR) ZWR ERR
 	;W !
 	;ZWR EXPECTED W !
 	;W "     " ZWR OUT W !
@@ -2832,7 +2915,8 @@ RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,CTX)
 	;W "************************************",!
 	;Q
 	; Reference mode: build input chunks, compile+eval into output chunks
-	;	
+	;
+	K ^TMP($J)
 	N TOKR,ERRR,INROOT,OUTROOT,CHSZ,L,P,N,OUT2
 	S INROOT=$NA(^TMP($J,"MIOTPLT","IN"))
 	S OUTROOT=$NA(^TMP($J,"MIOTPLT","OUT"))
@@ -2854,43 +2938,50 @@ RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,CTX)
 	. S OUT2=OUT2_$G(@($$APPREF^MIOTPL2(OUTROOT,N)))
 	D EQ^MIOTASSERT(OUT2,$G(EXPECTED),"[RENDERREF]"_DESC)
 	Q
-RUNJSONSPECS(FP)
-	N OK,TXT,ERR,TESTS,TXT
-	N T,OK S OK=$$READFILE^MIOTPL2(FP,.TXT,.ERR)
+JSONTESTRUNNER(FP) ;
+	N OK,TXT,ERR,TESTS
+	S OK=$$READFILE^MIOTPL2(FP,.TXT,.ERR)
+	D OK^MIOTASSERT(OK,"read "_FP)
+	Q:'OK
 	D DECODE^MIOJSON2($NA(TXT),$NA(TESTS))
-	N A S A="" F  S A=$O(TESTS("tests",A)) Q:A=""  D
-	. N HDR S HDR="["_TESTS("tests",A,"name")_"]"
-	. N DESC S DESC=HDR_"["_TESTS("tests",A,"desc")_"]"
-	. S TEMPLATE=TESTS("tests",A,"template")
-	. S EXPECTED=TESTS("tests",A,"expected")
-	. N CTX M CTX=TESTS("tests",A,"data")
+	N A S A=""
+	F  S A=$O(TESTS("tests",A)) Q:A=""  D
+	. N HDR S HDR="["_$G(TESTS("tests",A,"name"))_"]"
+	. N DESC S DESC=HDR_"["_$G(TESTS("tests",A,"desc"))_"]"
+	. N TEMPLATE S TEMPLATE=$G(TESTS("tests",A,"template"))
+	. N EXPECTED S EXPECTED=$G(TESTS("tests",A,"expected"))
+	. N CTX,CONF M CTX=TESTS("tests",A,"data")
+	. N ROOT,NTARR D SETUPPART(.CONF,.ROOT)
+	. ; JSON parser workaround
+	. I $G(TESTS("tests",A,"name"))="Recursion",$G(TESTS("tests",A,"desc"))="The greater-than operator should properly recurse." D
+	. . S CTX("nodes",1,"nodes")=""
+	. I $G(TESTS("tests",A,"name"))="Recursion",$G(TESTS("tests",A,"desc"))="Dynamic partials should properly recurse." D
+	. . S CTX("nodes",1,"nodes")=""
+	. I $D(TESTS("tests",A,"partials")) D
+	. . N ERR,P S P="" F  S P=$O(TESTS("tests",A,"partials",P)) Q:P=""  D
+	. . . S NTARR(ROOT_P)="" D WRFILE(ROOT_P,TESTS("tests",A,"partials",P),.ERR) K ERR
+	. N TOK,OUT
 	. D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	. N A S A="" F  S A=$O(NTARR(A)) Q:A=""  ZSY "rm "_A
+	S ROOT="templates/test-MIOTPL-"_$J_"/" D RMDIR(ROOT)
+	Q	
+SETUPPART(CONF,ROOT)
+	M CONF=^MIO("CONF")
+	S ROOT="templates/test-MIOTPL-"_$J_"/"
+	D MKDIR(ROOT)
+	D MKDIR(ROOT_"partials/")
+	S CONF("templates","root")=ROOT
+	S CONF("templates","ext")=""
 	Q
-RUNJSONSPECSPART(FP)
-	N OK,TXT,ERR,TESTS,TXT
-	N T,OK S OK=$$READFILE^MIOTPL2(FP,.TXT,.ERR)
-	D DECODE^MIOJSON2($NA(TXT),$NA(TESTS))
-	N A S A="" F  S A=$O(TESTS("tests",A)) Q:A=""  D
-	. N HDR S HDR="["_TESTS("tests",A,"name")_"]"
-	. N DESC S DESC=HDR_"["_TESTS("tests",A,"desc")_"]"
-	. S TEMPLATE=TESTS("tests",A,"template")
-	. S EXPECTED=TESTS("tests",A,"expected")
-	. N CTX M CTX=TESTS("tests",A,"data") 
-	. I TESTS("tests",A,"name")="Recursion",TESTS("tests",A,"desc")="The greater-than operator should properly recurse." D
-	. . SET CTX("nodes",1,"nodes")=""  ; to match and pass test 102 
-	. . ;(work around the JSON, as it is not able to process empty objects)
-	. I TESTS("tests",A,"name")="Recursion",TESTS("tests",A,"desc")="Dynamic partials should properly recurse." D 
-	. . SET CTX("nodes",1,"nodes")=""  ; to match and pass test 176
-	. . ;(work around the JSON, as it is not able to process empty objects)
-	. K CONF,TOK,OUT,ERR
-	. I $D(TESTS("tests",A,"partials"))  D
-	. . N B S B="" F  S B=$O(TESTS("tests",A,"partials",B)) Q:B=""  D
-	. . . D SETUPPART(.CONF,.ROOT)
-	. . . N ERR D WRFILE(ROOT_B,TESTS("tests",A,"partials",B),.ERR) ;
-	. . . D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
-	. D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
-	Q
-	;
+SHQ(S) ; shell-quote
+	; Wrap in single quotes; escape single quotes safely: ' -> '\'' (close, escape, reopen)
+	N X S X=$G(S)
+	I X["'" S X=$$REPL(X,"'","\'")
+	Q "'"_X_"'"
+REPL(s,f,t)
+	i $tr(s,f)=s q s
+	n o,i s o="" f i=1:1:$l(s,f)  s o=o_$s(i<$l(s,f):$p(s,f,i)_t,1:$p(s,f,i))
+	q o
 ReadFile(file,return)
 	new source,line,counter,currentdevice
 	set source=file,currentdevice=$io
@@ -2902,10 +2993,6 @@ ReadFile(file,return)
 	close source use currentdevice
 	quit	
 UNESCNL(S) Q $$UES^MIOJSON2(S) ; Enescape string from json/js -> M
-; =============================================================================
-; WRFILE(FILE,TEXT,ERR)
-; Write TEXT exactly as-is (preserve embedded $C(10)/$C(13)).;
-; =============================================================================
 WRFILE(FILE,TEXT,ERR)
 	K ERR
 	N USEIO
@@ -2922,36 +3009,49 @@ WRFILEERR
 	C FILE
 	U USEIO
 	Q
-SETUPPART(CONF,ROOT)
-	M CONF=^MIO("CONF")
+SETUPTESTDIR(ROOT,PARTROOT)
 	S ROOT="templates/test-MIOTPL-"_$J_"/"
 	D MKDIR(ROOT)
 	D MKDIR(ROOT_"partials/")
-	S CONF("templates","root")=ROOT
-	S CONF("templates","ext")=""
+	S PARTROOT=ROOT_"partials/"
 	Q
 MKDIR(PATH) ; mkdir -p PATH (best-effort)
 	N CMD
-	S CMD="mkdir -p "_$$SHQ(PATH)
+	S CMD="mkdir -p "_PATH
 	ZSY CMD
 	Q
 RMDIR(PATH) ; rm -rf PATH (best-effort)
 	N CMD
-	S CMD="rm -rf "_$$SHQ(PATH)
+	S CMD="rm -rf "_PATH
 	ZSY CMD
 	Q
-SHQ(S) ; shell-quote
-	; Wrap in single quotes; escape single quotes safely: ' -> '\'' (close, escape, reopen)
-	N X S X=$G(S)
-	I X["'" S X=$$REPLQ(X)
-	Q "'"_X_"'"
-REPLQ(S) ; replace ' with '\'' for shell single-quote context
-	N OUT,P,F
-	S OUT="",P=1
-	F  D  Q:P>$L(S)
-	. S F=$F(S,"'",P)
-	. I 'F S OUT=OUT_$E(S,P,$L(S)),P=$L(S)+1 Q
-	. S OUT=OUT_$E(S,P,F-2)_"'\''"
-	. S P=F
-	Q OUT
-	;
+;--- Lambda implementations used by tests -=--
+;LAM_VAR_WORLD
+LAMVARWORLD() Q "world"
+;LAM_VAR_GT
+LAMVARGT()    Q ">"
+;LAM_VAR_INC
+LAMVARINC()
+	N N S N=$INCREMENT(^TMP($J,"MIOTPLT","LAMCALL","var"))
+	Q N
+LAMHOSEXPWRAP() ;LAM_HOS_EXP_WRAP
+	Q "$$LAMHOSEXPIN^MIOTPLT"
+LAMHOSRENDRAWWRAP() ;LAM_HOS_RENDRAW_WRAP
+	Q "$$LAMHOSRENDRAWIN^MIOTPLT"
+LAMHOSMCALLWRAP() ;LAM_HOS_MCALL_WRAP 
+	Q "$$LAMHOSMCALLIN^MIOTPLT"
+LAMHOSINVWRAP() ;LAM_HOS_INV_WRAP 
+	Q "$$LAMHOSINVIN^MIOTPLT"
+LAMHOSEXPIN(TEXT,LRID) ;LAM_HOS_EXP_IN
+	; return: text + render("{{planet}}") + text
+	N MID S MID=$$LRENDER^MIOTPL2(+$G(LRID),"{{planet}}")
+	Q $G(TEXT)_MID_$G(TEXT)
+LAMHOSRENDRAWIN(TEXT,LRID) ;LAM_HOS_RENDRAW_IN
+	; render the raw block itself (contains delimiter change tag)
+	Q $$LRENDER^MIOTPL2(+$G(LRID),$G(TEXT))
+LAMHOSMCALLIN(TEXT,LRID) ;LAM_HOS_MCALL_IN
+	Q "__"_$G(TEXT)_"__"
+LAMHOSINVIN(TEXT,LRID) ;LAM_HOS_INV_IN
+	; if this is called in inverted, that’s a bug; record it
+	S ^TMP($J,"MIOTPLT","LAMCALL","invInner")=$G(^TMP($J,"MIOTPLT","LAMCALL","invInner"))+1
+	Q "SHOULD_NOT_RUN"
