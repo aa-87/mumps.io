@@ -39,6 +39,8 @@ START(CONF)
 	I '$D(CONF("output","auto")) S CONF("output","auto")=0
 	I '$D(CONF("output","maxString")) S CONF("output","maxString")=900000  ; safe default
 	I '$D(CONF("output","autoReturnRef")) S CONF("output","autoReturnRef")=0
+	; compat defaults
+	I '$D(CONF("compat","truthiness")) S CONF("compat","truthiness")="legacy"
 	NEW EN
 	SET EN=$S($GET(CONF("templates","precompileEnabled"))="true":1,1:+$GET(CONF("templates","precompileEnabled")))
 	IF EN DO PRECOMPILE(.CONF)
@@ -1007,8 +1009,24 @@ RESVAL(KEY,CST,CTSP)
 	. S VL=$ZCONVERT(V,"L")
 	. I VL="null" S V=""
 	Q ""
-ISTRUTH(ISSET,TYPE,REF)
+ISTRUTH(ISSET,TYPE,REF,MODE)
 	I 'ISSET Q 0
+	S MODE=$ZCONVERT($G(MODE),"L") I MODE="" S MODE="legacy"
+	; -------- mustache.js parity --------
+	I MODE="mustachejs" D  Q $T
+	. I TYPE="list"!(TYPE="obj") D  Q
+	. . ; lists: truthy only if there is at least one element
+	. . I TYPE="list" Q $$FIRSTSUB(REF)'=""
+	. . ; objects: if present, treat as truthy (mustache.js behavior)
+	. . Q 1
+	. ; scalar
+	. N V,VL S V=$G(@REF),VL=$ZCONVERT(V,"L")
+	. I VL="null" Q 0
+	. I VL="false" Q 0
+	. I V="" Q 0
+	. ; NOTE: 0 / "0" are truthy here
+	. Q 1
+	; -------- legacy (your current behavior) --------
 	I TYPE="list"!(TYPE="obj") Q $S($$FIRSTSUB(REF)="":0,1:1)
 	N V,VL
 	S V=$G(@REF)
@@ -1116,6 +1134,7 @@ EVALX(TOK,CONF,CTX,OUTMODE,OUT,OREF,ERR)
 	. F I=1:1:CTSP S CST(I)=$G(CTX("meta","__cst",I))
 	E  D
 	. S CTSP=1,CST(1)="CTX"
+	N TRUTHM S TRUTHM=$$TRUTHMODE(.CONF,.CTX)
 	; partial / parent recursion protection
 	N PDEPTHMAX S PDEPTHMAX=+$G(CONF("templates","maxPartialDepth")) I PDEPTHMAX<1 S PDEPTHMAX=20
 	N PACTIVE,PTCACHE
@@ -1381,7 +1400,7 @@ EVALX(TOK,CONF,CTX,OUTMODE,OUT,OREF,ERR)
 	. . ; Inverted
 	. . I INV D  Q
 	. . . I $$ISTRUTH(.ISSET,.TYPE,.REF)=0 D PUSHFRAMEI(.FSP,.F,I+1,MI-1,CTSP,$G(F(PARENT,"mode")),$G(F(PARENT,"capRef")),TN,PARENT)
-	. . I $$ISTRUTH(.ISSET,.TYPE,.REF)=0 Q
+	. . I $$ISTRUTH(.ISSET,.TYPE,.REF,TRUTHM)=0 Q
 	. . I TYPE="list" D  Q
 	. . . S FSP=FSP+1
 	. . . K F(FSP)
@@ -1946,3 +1965,8 @@ TOK2RAW(TN,BS,BE) ; exact-ish raw substring from tokens (prefers TOK(i,"raw"))
 	. . S R=$$TOK2TPL(TN,I,I)
 	. S OUT=OUT_R
 	Q OUT
+TRUTHMODE(CONF,CTX) ; returns "legacy" or "mustachejs"
+	N M S M=$ZCONVERT($G(CTX("meta","compat","truthiness")),"L")
+	I M="" S M=$ZCONVERT($G(CONF("compat","truthiness")),"L")
+	I M="" S M="legacy"
+	Q M
