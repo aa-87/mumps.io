@@ -45,6 +45,22 @@ START(CONF)
 	SET EN=$S($GET(CONF("templates","precompileEnabled"))="true":1,1:+$GET(CONF("templates","precompileEnabled")))
 	IF EN DO PRECOMPILE(.CONF)
 	QUIT
+; ============================
+; Release: version info
+; ============================
+	;
+VERSION() ; semantic version string
+	Q "2.0.0"
+	;
+BUILD() ; build stamp (you can update per release)
+	Q "2026-02-21"
+	;
+BANNER() ; one-line banner
+	Q "MIOTPL2 "_$$VERSION()_" ("_$$BUILD()_")"
+	;
+PRINTBANNER() ; convenience
+	W $$BANNER(),!
+	Q
 PRECOMPILE(CONF) ;
 	NEW ROOT SET ROOT=$GET(CONF("server","templateDir")) IF ROOT="" SET ROOT="templates"
 	NEW LIST KILL LIST
@@ -789,22 +805,43 @@ OUTINIT(W,OREF,CONF,CRLF)
 	S W("buf")=""
 	S W("chunk")=+$G(CONF("output","chunk")) I W("chunk")<256 S W("chunk")=8192
 	S W("crlf")=+$G(CRLF)
+	; PERF: cache base for fast numeric subs when root looks like a ref ending in ")"
+	N R S R=W("root")
+	I R["(",$E(R,$L(R))=")" S W("base")=$E(R,1,$L(R)-1)
+	E  S W("base")=""
 	Q
 OUTAPP(W,VAL)
-	N V,CHUNK,SPACE,PIECE
+	N V,CHUNK,SPACE,PIECE,BUF
 	S V=$G(VAL) Q:V=""
 	S CHUNK=+$G(W("chunk")) I CHUNK<256 S CHUNK=8192
+	; PERF: keep buf local, write back once
+	S BUF=$G(W("buf"))
 	F  Q:V=""  D
-	. S SPACE=CHUNK-$L($G(W("buf")))
-	. I SPACE<1 D OUTFLUSH(.W) S SPACE=CHUNK
+	. S SPACE=CHUNK-$L(BUF)
+	. I SPACE<1 D  S SPACE=CHUNK
+	. . S W("buf")=BUF
+	. . D OUTFLUSH(.W)
+	. . S BUF=""
 	. S PIECE=$E(V,1,SPACE)
-	. S W("buf")=$G(W("buf"))_PIECE
+	. S BUF=BUF_PIECE
 	. S V=$E(V,SPACE+1,$L(V))
-	. I $L(W("buf"))'<CHUNK D OUTFLUSH(.W)
+	. I $L(BUF)'<CHUNK D
+	. . S W("buf")=BUF
+	. . D OUTFLUSH(.W)
+	. . S BUF=""
+	S W("buf")=BUF
 	Q
 OUTFLUSH(W)
-	N ROOT,BUF,N
+	N BASE,ROOT,BUF,N
 	S BUF=$G(W("buf")) Q:BUF=""
+	S BASE=$G(W("base"))
+	; PERF: fast numeric append when we have a cached base
+	I BASE'="" D  Q
+	. S N=+$G(W("n"))+1
+	. S W("n")=N
+	. S @(BASE_","_N_")")=BUF
+	. S W("buf")=""
+	; Fallback (should be rare)
 	S ROOT=$G(W("root")) Q:ROOT=""
 	S N=+$G(W("n"))+1
 	S W("n")=N
@@ -864,11 +901,15 @@ INDTXT(V,IND,AT)
 	. . E  S AT=1
 	Q OUT
 TOKGET(TN,I,FIELD)
-	N R
-	I TN["(" D
-	. S R=$E(TN,1,$L(TN)-1)_","_I_","""_FIELD_""")"
-	E  D
-	. S R=TN_"("_I_","""_FIELD_""")"
+	N R,TB
+	; Local token array path (root tokens when not using token-handle refs)
+	I TN="TOK" Q $G(TOK(I,FIELD))
+	; Global/ref token path: cache base in TBX(TN)
+	S TB=$G(TBX(TN))
+	I TB="" D
+	. I TN["(",$E(TN,$L(TN))=")" S TB=$E(TN,1,$L(TN)-1),TBX(TN)=TB
+	I TB="" Q ""
+	S R=TB_","_I_","""_FIELD_""")"
 	Q $G(@R)
 TOKENDR(TOKR)
 	N I,MAX
@@ -1124,9 +1165,6 @@ PUSHFRAMEI(FSP,F,START,END,CTSP,MODE,CAPREF,TOKNAME,PARENT)
 	S F(FSP,"at")=+$G(F(PARENT,"at"))
 	Q
 NUMBASE(REF)
-	; Returns a prefix usable for numeric subs:  (base_sub_")")
-	; If REF="CTX"        => "CTX("
-	; If REF="CTX(""a"")" => "CTX(""a"","
 	N R
 	S R=$G(REF)
 	I R["(" Q $E(R,1,$L(R)-1)_","
@@ -1140,22 +1178,23 @@ OUTNORM(V,CRLF)
 EVALX(TOK,CONF,CTX,OUTMODE,OUT,OREF,ERR)
 	K ERR
 	N CST,CTSP
+	N TBX  ; PERF: token-ref base cache used by TOKGET()
 	; Allow sub-render to pass a prepared context-stack via CTX("meta","__ctsp"/"__cst",i)
-	; Only honor it if __cst(1) exists
+	; Only honor it if __cst(1) exists (prevents accidental blank-stack regressions)
 	I $D(CTX("meta","__ctsp")),$D(CTX("meta","__cst",1)) D
 	. N I
 	. S CTSP=+$G(CTX("meta","__ctsp")) I CTSP<1 S CTSP=1
 	. F I=1:1:CTSP S CST(I)=$G(CTX("meta","__cst",I))
 	E  D
 	. S CTSP=1,CST(1)="CTX"
-	N ROOTTPL S ROOTTPL=$G(CTX("meta","templateName"))
+	N ROOTTPL S ROOTTPL=$G(CTX("meta","templateName")) ; optional if you set it upstream
 	N LASTTN,LASTI S LASTTN="",LASTI=0
 	; partial / parent recursion protection
 	N PDEPTHMAX S PDEPTHMAX=+$G(CONF("templates","maxPartialDepth")) I PDEPTHMAX<1 S PDEPTHMAX=20
 	N PACTIVE,PTCACHE
-	; IMPORTANT: compiled partial-token cache moved to PARTTOKC
+	; IMPORTANT: compiled partial-token cache moved to PARTTOKC to avoid colliding with partial source maps
 	K ^TMP($J,"MIOTPL2","PARTTOKC")
-	; parent override stack
+	; parent override stack (scoped to each {{<parent}} call)
 	N BOVRSP,BOVR
 	S BOVRSP=0
 	N BCAP
@@ -1190,59 +1229,51 @@ EVALX(TOK,CONF,CTX,OUTMODE,OUT,OREF,ERR)
 	S F(1,"tokName")=TOKR
 	S F(1,"indent")=""
 	S F(1,"at")=1
-	; token cache for root frame
-	S F(1,"tg")=$S(TOKR["(":1,1:0)
-	S F(1,"tb")=$S(F(1,"tg"):$E(TOKR,1,$L(TOKR)-1),1:"")
 	N FRAMELIM,FRAMES
 	S FRAMELIM=2000,FRAMES=0
 	F  Q:FSP<1  D  Q:$D(ERR)
-	. N MODE S MODE=$G(F(FSP,"mode"))
 	. S FRAMES=FRAMES+1
 	. I FRAMES>FRAMELIM S ERR("code")="TPL_LIMIT",ERR("msg")="Render exceeded safety frame limit." Q
-	. ; list-iterator frame (hot)
-	. I MODE="iter" D  Q
-	. . N PARENT,LREF,SUB,BS,BE,PMODE,PCAP,LBASE,LCH
+	. ; list-iterator frame (PERF: use listBase)
+	. I $G(F(FSP,"mode"))="iter" D  Q
+	. . N PARENT,LREF,LBASE,SUB,BS,BE,PMODE,PCAP
 	. . S PARENT=FSP
 	. . S LREF=$G(F(PARENT,"listRef"))
-	. . S LBASE=$G(F(PARENT,"lbase"))
-	. . S LCH=$G(F(PARENT,"lch"))
+	. . S LBASE=$G(F(PARENT,"listBase"))
+	. . I LBASE="" S LBASE=$S(LREF["("&($E(LREF,$L(LREF))=")"):$E(LREF,1,$L(LREF)-1),1:""),F(PARENT,"listBase")=LBASE
 	. . S SUB=$G(F(PARENT,"sub"))
 	. . S BS=+$G(F(PARENT,"bodyS"))
 	. . S BE=+$G(F(PARENT,"bodyE"))
 	. . S PMODE=$G(F(PARENT,"parentMode"))
 	. . S PCAP=$G(F(PARENT,"parentCap"))
-	. . ; first sub via cached child-ref, then numeric-fast via lbase
-	. . I SUB="" S SUB=$O(@LCH)
-	. . E  S SUB=$O(@(LBASE_SUB_")"))
+	. . I LBASE="" D  Q  ; ultra-safety fallback
+	. . . S SUB=$O(@($$APPREF(LREF,SUB)))
+	. . . I SUB="" D POPX(OUTMODE,.FSP,.F,.CST,.CTSP,.OUT,.W,CRLF) Q
+	. . . S F(PARENT,"sub")=SUB
+	. . . N ITEMREF,NEWTOP
+	. . . S ITEMREF=$$APPREF(LREF,SUB)
+	. . . S NEWTOP=CTSP+1,CST(NEWTOP)=ITEMREF,CTSP=NEWTOP
+	. . . D PUSHFRAMEI(.FSP,.F,BS,BE,CTSP,PMODE,PCAP,$G(F(PARENT,"tokName")),PARENT)
+	. . ; numeric list fast-path: SUB="" => start
+	. . I SUB="" S SUB=$O(@(LBASE_","""")"))
+	. . E  S SUB=$O(@(LBASE_","_SUB_")"))
 	. . I SUB="" D POPX(OUTMODE,.FSP,.F,.CST,.CTSP,.OUT,.W,CRLF) Q
 	. . S F(PARENT,"sub")=SUB
 	. . N ITEMREF,NEWTOP
-	. . ; numeric sub append (fast)
-	. . I LREF["(" S ITEMREF=$E(LREF,1,$L(LREF)-1)_","_SUB_")"
-	. . E  S ITEMREF=LREF_"("_SUB_")"
+	. . S ITEMREF=LBASE_","_SUB_")"
 	. . S NEWTOP=CTSP+1,CST(NEWTOP)=ITEMREF,CTSP=NEWTOP
 	. . D PUSHFRAMEI(.FSP,.F,BS,BE,CTSP,PMODE,PCAP,$G(F(PARENT,"tokName")),PARENT)
 	. ; end-of-frame
-	. N I,END
+	. N I,END,TN,TYP
 	. S I=+$G(F(FSP,"i")),END=+$G(F(FSP,"end"))
 	. I I<1!(I>END) D POPX(OUTMODE,.FSP,.F,.CST,.CTSP,.OUT,.W,CRLF) Q
-	. ; token addressing cache
-	. N TN,TG,TB
 	. S TN=$G(F(FSP,"tokName")) S:TN="" TN="TOK"
-	. S TG=+$G(F(FSP,"tg"))
-	. S TB=$G(F(FSP,"tb"))
 	. S LASTTN=TN,LASTI=I
-	. ; type fetch (fast)
-	. N TYP
-	. I TG S TYP=$G(@(TB_","_I_",""t"")"))
-	. E  I TN="TOK" S TYP=$G(TOK(I,"t"))
-	. E  S TYP=$G(@(TN_"("_I_",""t"")"))
+	. S TYP=$$TOKGET(TN,I,"t")
 	. ; TEXT
 	. I TYP="text" D  Q
 	. . N V,IND,AT
-	. . I TG S V=$G(@(TB_","_I_",""v"")"))
-	. . E  I TN="TOK" S V=$G(TOK(I,"v"))
-	. . E  S V=$G(@(TN_"("_I_",""v"")"))
+	. . S V=$$TOKGET(TN,I,"v")
 	. . S IND=$G(F(FSP,"indent"))
 	. . I IND'="" D
 	. . . S AT=+$G(F(FSP,"at"))
@@ -1255,13 +1286,14 @@ EVALX(TOK,CONF,CTX,OUTMODE,OUT,OREF,ERR)
 	. ; VAR / UNESC
 	. I (TYP="var")!(TYP="unesc") D  Q
 	. . N KEY,ESC,VAL,IND,AT
-	. . I TG S KEY=$G(@(TB_","_I_",""k"")")),ESC=+$G(@(TB_","_I_",""e"")"))
-	. . E  I TN="TOK" S KEY=$G(TOK(I,"k")),ESC=+$G(TOK(I,"e"))
-	. . E  S KEY=$G(@(TN_"("_I_",""k"")")),ESC=+$G(@(TN_"("_I_",""e"")"))
+	. . S KEY=$$TOKGET(TN,I,"k")
+	. . S ESC=+$$TOKGET(TN,I,"e")
 	. . S VAL=$$RESVAL(KEY,.CST,CTSP)
+	. . ; variable lambdas (mustache.js-style): call with no args
 	. . I $$ISLAM(VAL) D  Q:$D(ERR)
 	. . . S VAL=$$LAMCALL0(VAL,.ERR)
 	. . I ESC S VAL=$$ESCHTML(VAL)
+	. . ; indentation-at-start-of-line only for scalar vars (existing behavior)
 	. . S IND=$G(F(FSP,"indent"))
 	. . S AT=+$G(F(FSP,"at"))
 	. . I AT,IND'="",VAL'="" D EMITX(OUTMODE,FSP,.F,.OUT,.W,IND,CRLF) S AT=0
@@ -1274,14 +1306,12 @@ EVALX(TOK,CONF,CTX,OUTMODE,OUT,OREF,ERR)
 	. . S F(FSP,"i")=I+1
 	. ; PARTIAL
 	. I TYP="part" D  Q
-	. . N PARENT,PN0,PN,INDTOK,PKEY,PTREF,PMX,PMODE,PCAP,LINE,COL
+	. . N PARENT,PN0,PN,INDTOK,PKEY,PTREF,PMX,PMODE,PCAP
 	. . S PARENT=FSP
-	. . I TG S PN0=$G(@(TB_","_I_",""k"")")),INDTOK=$G(@(TB_","_I_",""indent"")")),LINE=+$G(@(TB_","_I_",""line"")")),COL=+$G(@(TB_","_I_",""col"")"))
-	. . E  I TN="TOK" S PN0=$G(TOK(I,"k")),INDTOK=$G(TOK(I,"indent")),LINE=+$G(TOK(I,"line")),COL=+$G(TOK(I,"col"))
-	. . E  S PN0=$G(@(TN_"("_I_",""k"")")),INDTOK=$G(@(TN_"("_I_",""indent"")")),LINE=+$G(@(TN_"("_I_",""line"")")),COL=+$G(@(TN_"("_I_",""col"")"))
+	. . S PN0=$$TOKGET(TN,I,"k")
 	. . S PN=PN0
 	. . I $E(PN,1)="*" D
-	. . . I $E(PN,2)="*" S PN="" Q
+	. . . I $E(PN,2)="*" S PN="" Q  ; no double-deref (spec)
 	. . . S PN=$$RESVAL($E(PN,2,$L(PN)),.CST,CTSP)
 	. . S F(PARENT,"i")=I+1
 	. . I PN="" Q
@@ -1298,21 +1328,22 @@ EVALX(TOK,CONF,CTX,OUTMODE,OUT,OREF,ERR)
 	. . S PTREF=$G(PTCACHE(PKEY,"ref")),PMX=+$G(PTCACHE(PKEY,"max"))
 	. . I PTREF="" D  Q
 	. . . S PACTIVE(PKEY)=PACTIVE(PKEY)-1 I PACTIVE(PKEY)'>0 K PACTIVE(PKEY)
+	. . S INDTOK=$$TOKGET(TN,I,"indent")
 	. . S PMODE=$G(F(PARENT,"mode"))
 	. . S PCAP=$G(F(PARENT,"capRef"))
 	. . D PUSHFRAMEI(.FSP,.F,1,PMX,CTSP,PMODE,PCAP,PTREF,PARENT)
 	. . S F(FSP,"pname")=PKEY
-	. . S F(FSP,"callLine")=LINE
-	. . S F(FSP,"callCol")=COL
+	. . S F(FSP,"callLine")=+$$TOKGET(TN,I,"line")
+	. . S F(FSP,"callCol")=+$$TOKGET(TN,I,"col")
 	. . I INDTOK'="" S F(FSP,"indent")=$G(F(FSP,"indent"))_INDTOK
 	. ; PARENT ({{<name}} ... {{/name}})
 	. I TYP="parS" D  Q
-	. . N PARENT,PN0,PN,MI,INDTOK,PKEY,PTREF,PMX,PMODE,PCAP,LINE,COL
+	. . N PARENT,PN0,PN,MI,INDTOK,PKEY,PTREF,PMX,PMODE,PCAP
 	. . S PARENT=FSP
-	. . I TG S PN0=$G(@(TB_","_I_",""k"")")),MI=+$G(@(TB_","_I_",""m"")")),INDTOK=$G(@(TB_","_I_",""indent"")")),LINE=+$G(@(TB_","_I_",""line"")")),COL=+$G(@(TB_","_I_",""col"")"))
-	. . E  I TN="TOK" S PN0=$G(TOK(I,"k")),MI=+$G(TOK(I,"m")),INDTOK=$G(TOK(I,"indent")),LINE=+$G(TOK(I,"line")),COL=+$G(TOK(I,"col"))
-	. . E  S PN0=$G(@(TN_"("_I_",""k"")")),MI=+$G(@(TN_"("_I_",""m"")")),INDTOK=$G(@(TN_"("_I_",""indent"")")),LINE=+$G(@(TN_"("_I_",""line"")")),COL=+$G(@(TN_"("_I_",""col"")"))
+	. . S PN0=$$TOKGET(TN,I,"k")
+	. . S MI=+$$TOKGET(TN,I,"m")
 	. . I 'MI S ERR("code")="TPL_PARSE",ERR("msg")="Parent start without match: "_PN0 Q
+	. . ; skip entire parent section in current stream
 	. . S F(PARENT,"i")=MI+1
 	. . S PN=PN0
 	. . I $E(PN,1)="*" D
@@ -1332,39 +1363,39 @@ EVALX(TOK,CONF,CTX,OUTMODE,OUT,OREF,ERR)
 	. . S PTREF=$G(PTCACHE(PKEY,"ref")),PMX=+$G(PTCACHE(PKEY,"max"))
 	. . I PTREF="" D  Q
 	. . . S PACTIVE(PKEY)=PACTIVE(PKEY)-1 I PACTIVE(PKEY)'>0 K PACTIVE(PKEY)
+	. . ; push a new override scope for THIS parent invocation
 	. . S BOVRSP=BOVRSP+1
 	. . K BOVR(BOVRSP)
+	. . ; push parent-render frame FIRST (runs AFTER the body define frame)
 	. . S PMODE=$G(F(PARENT,"mode"))
 	. . S PCAP=$G(F(PARENT,"capRef"))
 	. . D PUSHFRAMEI(.FSP,.F,1,PMX,CTSP,PMODE,PCAP,PTREF,PARENT)
 	. . S F(FSP,"pname")=PKEY
-	. . S F(FSP,"callLine")=LINE
-	. . S F(FSP,"callCol")=COL
+	. . S F(FSP,"callLine")=+$$TOKGET(TN,I,"line")
+	. . S F(FSP,"callCol")=+$$TOKGET(TN,I,"col")
 	. . S F(FSP,"bovrPop")=1
+	. . S INDTOK=$$TOKGET(TN,I,"indent")
 	. . I INDTOK'="" S F(FSP,"indent")=$G(F(FSP,"indent"))_INDTOK
+	. . ; push parent-body “define” frame (drop output, register {{$block}} overrides)
 	. . I (I+1)>(MI-1) Q
 	. . D PUSHFRAMEI(.FSP,.F,I+1,MI-1,CTSP,"drop","",TN,PARENT)
 	. . S F(FSP,"pdef")=1
 	. ; SECTION START
 	. I TYP="secS" D  Q
-	. . N PARENT,KEY,INV,MI
+	. . N PARENT,KEY,INV,MI,ISBLK
 	. . S PARENT=FSP
-	. . I TG S KEY=$G(@(TB_","_I_",""k"")")),INV=+$G(@(TB_","_I_",""inv"")")),MI=+$G(@(TB_","_I_",""m"")"))
-	. . E  I TN="TOK" S KEY=$G(TOK(I,"k")),INV=+$G(TOK(I,"inv")),MI=+$G(TOK(I,"m"))
-	. . E  S KEY=$G(@(TN_"("_I_",""k"")")),INV=+$G(@(TN_"("_I_",""inv"")")),MI=+$G(@(TN_"("_I_",""m"")"))
+	. . S KEY=$$TOKGET(TN,I,"k")
+	. . S INV=+$$TOKGET(TN,I,"inv")
+	. . S MI=+$$TOKGET(TN,I,"m")
 	. . I 'MI S ERR("code")="TPL_PARSE",ERR("msg")="Section start without match: "_KEY Q
-	. . ; BLOCK?
-	. . N ISBLK
-	. . I TG S ISBLK=+$G(@(TB_","_I_",""blk"")"))
-	. . E  I TN="TOK" S ISBLK=+$G(TOK(I,"blk"))
+	. . ; BLOCK ({{$name}} ... {{/name}})
+	. . I $E(TN,$L(TN))=")" S ISBLK=+$G(@($E(TN,1,$L(TN)-1)_","_I_",""blk"")"))
 	. . E  S ISBLK=+$G(@(TN_"("_I_",""blk"")"))
+	. . I 'ISBLK S ISBLK=+$$TOKGET(TN,I,"blk")
 	. . I ISBLK D  Q
-	. . . ; (block logic unchanged from your current version)
 	. . . N BNAME,CAPMODE,OTOK,OS,OE,OIND,OAT,EIND,TXT,NEWF,CAPREF
-	. . . I TG S BNAME=$G(@(TB_","_I_",""bname"")"))
-	. . . E  I TN="TOK" S BNAME=$G(TOK(I,"bname"))
-	. . . E  S BNAME=$G(@(TN_"("_I_",""bname"")"))
-	. . . S:BNAME="" BNAME=KEY
+	. . . S BNAME=$$TOKGET(TN,I,"bname") S:BNAME="" BNAME=KEY
+	. . . ; Parent-define frame: register override, do not render body
 	. . . I +$G(F(PARENT,"pdef")) D  Q
 	. . . . S BOVR(BOVRSP,BNAME,"tok")=TN
 	. . . . S BOVR(BOVRSP,BNAME,"s")=I+1
@@ -1372,6 +1403,7 @@ EVALX(TOK,CONF,CTX,OUTMODE,OUT,OREF,ERR)
 	. . . . S BOVR(BOVRSP,BNAME,"indent")=$G(F(PARENT,"indent"))
 	. . . . S BOVR(BOVRSP,BNAME,"at")=+$G(F(PARENT,"at"))
 	. . . . S F(PARENT,"i")=MI+1
+	. . . ; captureBlocks mode (page defines blocks for layout)
 	. . . S CAPMODE=$S(+$G(F(PARENT,"capBlocks")):1,$D(CTX("meta","captureBlocks")):+$G(CTX("meta","captureBlocks")),1:+$G(CONF("templates","captureBlocks")))
 	. . . I CAPMODE D  Q
 	. . . . S F(PARENT,"i")=MI+1
@@ -1380,6 +1412,7 @@ EVALX(TOK,CONF,CTX,OUTMODE,OUT,OREF,ERR)
 	. . . . S F(FSP,"storeBlock")=1
 	. . . . S F(FSP,"storeName")=BNAME
 	. . . . S F(FSP,"storeCapRef")=CAPREF
+	. . . ; overridden by nearest parent scope?
 	. . . D GETBOVR(BNAME,.OTOK,.OS,.OE,.OIND,.OAT)
 	. . . I OTOK'="" D  Q
 	. . . . S EIND=$$BLKEXPIND(TN,I,MI,$G(F(PARENT,"indent")))
@@ -1393,6 +1426,7 @@ EVALX(TOK,CONF,CTX,OUTMODE,OUT,OREF,ERR)
 	. . . . S F(FSP,"blockDefIndent")=""
 	. . . . N SIND S SIND=$$BLKSTRIPIND(OTOK,OS,OE)
 	. . . . S F(FSP,"stripIndent")=SIND
+	. . . ; block provided directly in CTX("blocks",...)
 	. . . I $D(CTX("blocks",BNAME)) D  Q
 	. . . . S EIND=$$BLKEXPIND(TN,I,MI,$G(F(PARENT,"indent")))
 	. . . . I $G(F(PARENT,"mode"))="capture",$G(F(PARENT,"stripIndent"))'="" S EIND=$G(F(PARENT,"stripIndent"))_EIND
@@ -1401,6 +1435,7 @@ EVALX(TOK,CONF,CTX,OUTMODE,OUT,OREF,ERR)
 	. . . . D EMITX(OUTMODE,PARENT,.F,.OUT,.W,TXT,CRLF)
 	. . . . I TXT'="" S F(PARENT,"at")=$S($E(TXT,$L(TXT))=$C(10):1,1:0)
 	. . . . S F(PARENT,"i")=MI+1
+	. . . ; default content: render body normally
 	. . . S F(PARENT,"i")=MI+1
 	. . . D PUSHFRAMEI(.FSP,.F,I+1,MI-1,CTSP,$G(F(PARENT,"mode")),$G(F(PARENT,"capRef")),TN,PARENT)
 	. . ; Normal section flow
@@ -1410,7 +1445,7 @@ EVALX(TOK,CONF,CTX,OUTMODE,OUT,OREF,ERR)
 	. . I TYPE="list" D
 	. . . N S0 S S0=$$FIRSTSUB(REF)
 	. . . I S0'="",S0'?1.N S TYPE="obj"
-	. . ; Higher-order section lambdas (same logic as your current version)
+	. . ; Higher-order section lambdas (Mustache.js-style) - only for non-inverted, scalar, set
 	. . N DIDLAM S DIDLAM=0
 	. . I 'INV,(TYPE="scalar"),ISSET D  Q:$D(ERR)
 	. . . N LAMV,LVL,RAW,LRID,RET,OUT2,LL,DEP
@@ -1432,7 +1467,7 @@ EVALX(TOK,CONF,CTX,OUTMODE,OUT,OREF,ERR)
 	. . . . D EMITX(OUTMODE,PARENT,.F,.OUT,.W,OUT2,CRLF)
 	. . . . S LL=$L(OUT2) I LL>0 S F(PARENT,"at")=$S($E(OUT2,LL)=$C(10):1,1:0)
 	. . . S DIDLAM=1
-	. . I DIDLAM Q
+	. . I DIDLAM Q  ; do NOT render section body
 	. . ; Inverted
 	. . I INV D  Q
 	. . . I $$ISTRUTH(.ISSET,.TYPE,.REF)=0 D PUSHFRAMEI(.FSP,.F,I+1,MI-1,CTSP,$G(F(PARENT,"mode")),$G(F(PARENT,"capRef")),TN,PARENT)
@@ -1444,6 +1479,9 @@ EVALX(TOK,CONF,CTX,OUTMODE,OUT,OREF,ERR)
 	. . . S F(FSP,"i")=0,F(FSP,"end")=0
 	. . . S F(FSP,"ctxTop")=CTSP
 	. . . S F(FSP,"listRef")=REF
+	. . . ; PERF: cache base once for iterator
+	. . . I REF["(",$E(REF,$L(REF))=")" S F(FSP,"listBase")=$E(REF,1,$L(REF)-1)
+	. . . E  S F(FSP,"listBase")=""
 	. . . S F(FSP,"sub")=""
 	. . . S F(FSP,"bodyS")=I+1
 	. . . S F(FSP,"bodyE")=MI-1
@@ -1452,9 +1490,6 @@ EVALX(TOK,CONF,CTX,OUTMODE,OUT,OREF,ERR)
 	. . . S F(FSP,"tokName")=TN
 	. . . S F(FSP,"indent")=$G(F(PARENT,"indent"))
 	. . . S F(FSP,"at")=+$G(F(PARENT,"at"))
-	. . . ; iterator caches (ROI A)
-	. . . S F(FSP,"lbase")=$$NUMBASE(REF)
-	. . . S F(FSP,"lch")=$$APPREF(REF,"")
 	. . I (TYPE="obj")!(TYPE="scalar") D  Q
 	. . . N NEWTOP S NEWTOP=CTSP+1
 	. . . S CST(NEWTOP)=REF,CTSP=NEWTOP
@@ -1529,8 +1564,6 @@ POPX(OUTMODE,FSP,F,CST,CTSP,OUT,W,CRLF)
 	. S DEFIND=$G(F(OLD,"blockDefIndent"))
 	. S STRIP=DEFIND I STRIP="" S STRIP=$$BLKMININD(VAL)
 	. I STRIP'="" S VAL=$$DEINDENTSTR(VAL,STRIP)
-	. ;S IND=$G(F(OLD,"emitIndent")) I IND="" S IND=$G(F(OLD,"indent"))
-	. ;S TXT=$$INDENTSTR(VAL,IND)
 	. S IND=$G(F(OLD,"emitIndent")) I IND="" S IND=$G(F(OLD,"indent"))
 	. N PSTRIP S PSTRIP=""
 	. I OLD>1,$G(F(OLD-1,"mode"))="capture" S PSTRIP=$G(F(OLD-1,"stripIndent"))
@@ -1540,7 +1573,7 @@ POPX(OUTMODE,FSP,F,CST,CTSP,OUT,W,CRLF)
 	. K F(OLD,"capEmit"),F(OLD,"emitIndent")
 	. I OLD>1 D
 	. . D EMITX(OUTMODE,OLD-1,.F,.OUT,.W,TXT,CRLF)
-	. . ; *** critical: update parent "at" based on what we just emitted
+	. . ; *** critical: update parent "at" based on what was just emitted
 	. . S LL=$L(TXT)
 	. . I LL>0 S F(OLD-1,"at")=$S($E(TXT,LL)=$C(10):1,1:0)
 	; propagate "at" unless capture boundary
@@ -1847,22 +1880,15 @@ GETPTOK(PN,PKEY,CONF,CTX,PTREF,PMX,ERR) ; resolve partial tokens via map OR file
 	D GETTOKREF(PN,.CONF,.PTREF,.PMX,.ERR)
 	I $D(ERR),$G(ERR("code"))="TPL_NOFILE" K ERR S PTREF="",PMX=0
 	Q
-	;
-; ============================
-; NEW helper labels for Lambdas
-; ============================
-	;
 ISLAM(V) ; 1 if scalar value looks like a callable lambda
 	N S S S=$$TRIM($G(V))
 	Q $S($E(S,1,2)="$$":1,1:0)
-	;
 LAMBASE(LAM) ; normalize "$$LBL^ROU(...)" => "$$LBL^ROU"
 	N S S S=$$TRIM($G(LAM))
 	I S="" Q ""
 	I $E(S,1,2)'="$$" S S="$$"_S
 	I S["(" S S=$P(S,"(",1)
 	Q S
-	;
 LAMCALL0(LAM,ERR) ; variable lambda => $$LBL^ROU()
 	N RES,EX,$ET,$ES
 	S RES="" K ERR
@@ -1871,7 +1897,6 @@ LAMCALL0(LAM,ERR) ; variable lambda => $$LBL^ROU()
 	X "S RES="_EX_"()"
 	S $ET=""
 	Q $G(RES)
-	;
 LAMCALL2(LAM,TXT,LRID,ERR) ; section lambda => $$LBL^ROU(text[, renderHandle])
 	N RES,EX,A1,A2,$ET,$ES,ZS,RETRY
 	S RES="" K ERR
@@ -1889,7 +1914,6 @@ LAMTRAP(ERR)
 	S ERR("msg")="Lambda execution error: "_$ZSTATUS
 	S $ZSTATUS="",$ECODE=""
 	Q
-	;
 LAMHNEW(CONF,CTX,CST,CTSP,LRID) ; create render-handle for subRender
 	N ID,I
 	S ID=$INCREMENT(^TMP($J,"MIOTPL2","LAMBDA","H"))
@@ -1900,12 +1924,10 @@ LAMHNEW(CONF,CTX,CST,CTSP,LRID) ; create render-handle for subRender
 	F I=1:1:+$G(CTSP) S ^TMP($J,"MIOTPL2","LAMBDA",ID,"CST",I)=$G(CST(I))
 	S LRID=ID
 	Q
-	;
 LAMHKILL(LRID)
 	Q:LRID=""
 	K ^TMP($J,"MIOTPL2","LAMBDA",+$G(LRID))
 	Q
-	;
 TOK2TPL(TN,BS,BE) ; reconstruct inner template text from tokens BS..BE (best-effort)
 	N OUT,OD,CD,I,TYP,K,ESC,INV,NEWOD,NEWCD,BLK,BN
 	S OUT="",OD="{{",CD="}}"
@@ -1947,7 +1969,7 @@ LRENDER(LRID,TEMPLATE) ; subRender callback for section lambdas: $$LRENDER^MIOTP
 	M CTX=^TMP($J,"MIOTPL2","LAMBDA",LRID,"CTX")
 	S CTSP=+$G(^TMP($J,"MIOTPL2","LAMBDA",LRID,"CTSP"))
 	I CTSP<1 S CTSP=1
-	; embed the preserved stack into CTX meta (EVALX will use it)
+	; embed the preserved stack into CTX meta ( to be used by EVALX)
 	S CTX("meta","__ctsp")=CTSP
 	F I=1:1:CTSP S CTX("meta","__cst",I)=$G(^TMP($J,"MIOTPL2","LAMBDA",LRID,"CST",I))
 	; compile + render
@@ -1960,7 +1982,6 @@ ADDTXT(TOK,N,VAL,RAW)
 	S TOK(N,"v")=VAL
 	S TOK(N,"raw")=$S($D(RAW):RAW,1:VAL)
 	Q
-	;
 ADDVAR(TOK,N,KEY,ESC,RAW)
 	S N=N+1
 	S TOK(N,"t")="var"
@@ -1968,7 +1989,6 @@ ADDVAR(TOK,N,KEY,ESC,RAW)
 	S TOK(N,"e")=+$G(ESC)
 	S TOK(N,"raw")=$G(RAW)
 	Q
-	;
 ADDSECS(TOK,N,KEY,INV,RAW)
 	S N=N+1
 	S TOK(N,"t")="secS"
@@ -1976,28 +1996,24 @@ ADDSECS(TOK,N,KEY,INV,RAW)
 	S TOK(N,"inv")=+$G(INV)
 	S TOK(N,"raw")=$G(RAW)
 	Q
-	;
 ADDSECE(TOK,N,KEY,RAW)
 	S N=N+1
 	S TOK(N,"t")="secE"
 	S TOK(N,"k")=KEY
 	S TOK(N,"raw")=$G(RAW)
 	Q
-	;
 ADDPART(TOK,N,NAME,RAW)
 	S N=N+1
 	S TOK(N,"t")="part"
 	S TOK(N,"k")=NAME
 	S TOK(N,"raw")=$G(RAW)
 	Q
-	;
 ADDPARS(TOK,N,NAME,RAW)
 	S N=N+1
 	S TOK(N,"t")="parS"
 	S TOK(N,"k")=NAME
 	S TOK(N,"raw")=$G(RAW)
 	Q
-	;
 ADDDELIM(TOK,N,OD,CD,RAW)
 	S N=N+1
 	S TOK(N,"t")="delim"
@@ -2005,13 +2021,12 @@ ADDDELIM(TOK,N,OD,CD,RAW)
 	S TOK(N,"cd")=$G(CD)
 	S TOK(N,"raw")=$G(RAW)
 	Q
-	;
 ADDCOMM(TOK,N,RAW)
 	S N=N+1
 	S TOK(N,"t")="comm"
 	S TOK(N,"raw")=$G(RAW)
 	Q
-TOK2RAW(TN,BS,BE) ; exact-ish raw substring from tokens (prefers TOK(i,"raw"))
+TOK2RAW(TN,BS,BE) ; exact raw substring from tokens (prefers TOK(i,"raw"))
 	N OUT,I,R,TYP
 	S OUT=""
 	I +$G(BS)<1 Q ""
@@ -2021,7 +2036,7 @@ TOK2RAW(TN,BS,BE) ; exact-ish raw substring from tokens (prefers TOK(i,"raw"))
 	. I R="" D  ; fallback for older tokens
 	. . S TYP=$$TOKGET(TN,I,"t")
 	. . I TYP="text" S R=$$TOKGET(TN,I,"v") Q
-	. . ; last-resort: reconstruct approximately (keeps you safe if raw missing)
+	. . ; last-resort: reconstruct approximately ( so it's safe if raw missing)
 	. . S R=$$TOK2TPL(TN,I,I)
 	. S OUT=OUT_R
 	Q OUT
