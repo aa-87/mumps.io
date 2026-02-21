@@ -191,7 +191,7 @@ GETTOKFP(FP,CONF,TOK,ERR,OPT) ;
 	QUIT
 PARSEBUF(P,TOK,N,ERR,FINAL)
 	N BUF,OD,CD,POS,L,OPEN,PRE,TRI,END3,CLOSE,INSIDE,RAW
-	N DONE,TAIL,SAFE,TXT
+	N DONE,TAIL,SAFE,TXT,RAWTAG
 	S BUF=$G(P("buf")),OD=$G(P("od")),CD=$G(P("cd"))
 	S POS=1,DONE=0
 	F  Q:DONE  D  Q:$D(ERR)
@@ -200,18 +200,18 @@ PARSEBUF(P,TOK,N,ERR,FINAL)
 	. S OPEN=$F(BUF,OD,POS)
 	. I 'OPEN D  Q
 	. . I FINAL D
-	. . . S PRE=$E(BUF,POS,L) I PRE'="" D ADDTXT(.TOK,.N,PRE)
+	. . . S PRE=$E(BUF,POS,L) I PRE'="" D ADDTXT(.TOK,.N,PRE,PRE)
 	. . . S BUF="",DONE=1 Q
 	. . S TAIL=$L(OD)-1 I TAIL<0 S TAIL=0
 	. . I TAIL=0 D  S BUF="",DONE=1 Q
-	. . . S TXT=$E(BUF,POS,L) I TXT'="" D ADDTXT(.TOK,.N,TXT)
+	. . . S TXT=$E(BUF,POS,L) I TXT'="" D ADDTXT(.TOK,.N,TXT,TXT)
 	. . S SAFE=L-TAIL
 	. . I SAFE<POS S BUF=$E(BUF,POS,L),DONE=1 Q
-	. . S TXT=$E(BUF,POS,SAFE) I TXT'="" D ADDTXT(.TOK,.N,TXT)
+	. . S TXT=$E(BUF,POS,SAFE) I TXT'="" D ADDTXT(.TOK,.N,TXT,TXT)
 	. . S BUF=$E(BUF,SAFE+1,L)
 	. . S DONE=1 Q
 	. S PRE=$E(BUF,POS,OPEN-$L(OD)-1)
-	. I PRE'="" D ADDTXT(.TOK,.N,PRE)
+	. I PRE'="" D ADDTXT(.TOK,.N,PRE,PRE)
 	. S TRI=0
 	. I (OD="{{")&(CD="}}") D
 	. . I OPEN>$L(BUF) S TRI=-1 Q
@@ -224,13 +224,15 @@ PARSEBUF(P,TOK,N,ERR,FINAL)
 	. . . I FINAL S ERR("code")="TPL_PARSE",ERR("msg")="Unclosed triple mustache." Q
 	. . . S BUF=$E(BUF,OPEN-$L(OD),L),POS=1,DONE=1
 	. . S RAW=$$TRIM($E(BUF,OPEN+1,END3-4))
-	. . D ADDVAR(.TOK,.N,RAW,0)
+	. . S RAWTAG=$E(BUF,OPEN-$L(OD),END3-1)
+	. . D ADDVAR(.TOK,.N,RAW,0,RAWTAG)
 	. . S POS=END3
 	. S CLOSE=$F(BUF,CD,OPEN)
 	. I 'CLOSE D  Q
 	. . I FINAL S ERR("code")="TPL_PARSE",ERR("msg")="Unclosed mustache tag." Q
 	. . S BUF=$E(BUF,OPEN-$L(OD),L),POS=1,DONE=1
 	. S INSIDE=$$TRIM($E(BUF,OPEN,CLOSE-$L(CD)-1))
+	. S RAWTAG=$E(BUF,OPEN-$L(OD),CLOSE-1)
 	. ; delimiter change
 	. I $E(INSIDE,1)="=",$E(INSIDE,$L(INSIDE))="=" D  S POS=CLOSE Q
 	. . N MID,REST,W1,W2
@@ -238,20 +240,21 @@ PARSEBUF(P,TOK,N,ERR,FINAL)
 	. . S REST=MID
 	. . S W1=$$NEXTTOK(.REST),W2=$$NEXTTOK(.REST)
 	. . I W1=""!(W2="") S ERR("code")="TPL_PARSE",ERR("msg")="Bad delimiter change tag." Q
-	. . D ADDDELIM(.TOK,.N,W1,W2)
+	. . D ADDDELIM(.TOK,.N,W1,W2,RAWTAG)
 	. . S OD=W1,CD=W2
 	. . S P("od")=OD,P("cd")=CD
 	. ; comment
-	. I $E(INSIDE,1)="!" D ADDCOMM(.TOK,.N) S POS=CLOSE Q
+	. I $E(INSIDE,1)="!" D ADDCOMM(.TOK,.N,RAWTAG) S POS=CLOSE Q
 	. ; unescaped via &
 	. I $E(INSIDE,1)="&" D  S POS=CLOSE Q
-	. . N K S K=$$TRIM($E(INSIDE,2,$L(INSIDE))) D ADDVAR(.TOK,.N,K,0)
+	. . N K S K=$$TRIM($E(INSIDE,2,$L(INSIDE)))
+	. . D ADDVAR(.TOK,.N,K,0,RAWTAG)
 	. ; partials
 	. I $E(INSIDE,1)=">" D  S POS=CLOSE Q
-	. . N PNM S PNM=$$PNORM($E(INSIDE,2,$L(INSIDE))) I PNM'="" D ADDPART(.TOK,.N,PNM)
+	. . N PNM S PNM=$$PNORM($E(INSIDE,2,$L(INSIDE))) I PNM'="" D ADDPART(.TOK,.N,PNM,RAWTAG)
 	. ; parents (Mustache inheritance extension)
 	. I $E(INSIDE,1)="<" D  S POS=CLOSE Q
-	. . N PNM S PNM=$$PNORM($E(INSIDE,2,$L(INSIDE))) I PNM'="" D ADDPARS(.TOK,.N,PNM)
+	. . N PNM S PNM=$$PNORM($E(INSIDE,2,$L(INSIDE))) I PNM'="" D ADDPARS(.TOK,.N,PNM,RAWTAG)
 	. ; sections / inverted / end
 	. I $E(INSIDE,1)="#"!($E(INSIDE,1)="^")!($E(INSIDE,1)="/") D  S POS=CLOSE Q
 	. . N OP,K,INV
@@ -262,12 +265,12 @@ PARSEBUF(P,TOK,N,ERR,FINAL)
 	. . . I $E(K,1,3)="if " S K=$$TRIM($E(K,4,$L(K)))
 	. . . I $E(K,1,5)="each " S K=$$TRIM($E(K,6,$L(K)))
 	. . . I $E(K,1,7)="unless " S OP="^",K=$$TRIM($E(K,8,$L(K)))
-	. . I OP="/" D ADDSECE(.TOK,.N,K) Q
+	. . I OP="/" D ADDSECE(.TOK,.N,K,RAWTAG) Q
 	. . S INV=$S(OP="^":1,1:0)
-	. . D ADDSECS(.TOK,.N,K,INV)
+	. . D ADDSECS(.TOK,.N,K,INV,RAWTAG)
 	. . I $E(K,1,6)="block:" S TOK(N,"blk")=1,TOK(N,"bname")=$E(K,7,$L(K))
 	. ; default escaped var
-	. D ADDVAR(.TOK,.N,INSIDE,1)
+	. D ADDVAR(.TOK,.N,INSIDE,1,RAWTAG)
 	. S POS=CLOSE
 	S P("buf")=BUF
 	Q
@@ -508,29 +511,31 @@ LINEPURE(TOK,I,MAX)
 PARSE(TEXT,TOK,ERR)
 	K ERR K TOK
 	N L,POS,OPEN,CLOSE,PRE,INSIDE,RAW,END3,TRI
-	N N S N=0
-	N OD,CD
+	N N,OD,CD,RAWTAG
+	S N=0
 	S OD="{{",CD="}}"
 	S L=$L(TEXT),POS=1
 	F  Q:POS>L  D  Q:$D(ERR)
 	. S OPEN=$F(TEXT,OD,POS)
 	. I 'OPEN D  Q
 	. . S PRE=$E(TEXT,POS,L)
-	. . I PRE'="" D ADDTXT(.TOK,.N,PRE)
+	. . I PRE'="" D ADDTXT(.TOK,.N,PRE,PRE)
 	. . S POS=L+1
 	. S PRE=$E(TEXT,POS,OPEN-$L(OD)-1)
-	. I PRE'="" D ADDTXT(.TOK,.N,PRE)
+	. I PRE'="" D ADDTXT(.TOK,.N,PRE,PRE)
 	. S TRI=0
 	. I (OD="{{")&(CD="}}") I $E(TEXT,OPEN)="{" S TRI=1
 	. I TRI D  Q
 	. . S END3=$F(TEXT,"}}}",OPEN)
 	. . I 'END3 S ERR("code")="TPL_PARSE",ERR("msg")="Unclosed triple mustache." Q
 	. . S RAW=$$TRIM($E(TEXT,OPEN+1,END3-4))
-	. . D ADDVAR(.TOK,.N,RAW,0)
+	. . S RAWTAG=$E(TEXT,OPEN-$L(OD),END3-1)
+	. . D ADDVAR(.TOK,.N,RAW,0,RAWTAG)
 	. . S POS=END3
 	. S CLOSE=$F(TEXT,CD,OPEN)
 	. I 'CLOSE S ERR("code")="TPL_PARSE",ERR("msg")="Unclosed mustache tag." Q
 	. S INSIDE=$$TRIM($E(TEXT,OPEN,CLOSE-$L(CD)-1))
+	. S RAWTAG=$E(TEXT,OPEN-$L(OD),CLOSE-1)
 	. ; delimiter change
 	. I $E(INSIDE,1)="=",$E(INSIDE,$L(INSIDE))="=" D  S POS=CLOSE Q
 	. . N MID,W1,W2,REST
@@ -538,20 +543,20 @@ PARSE(TEXT,TOK,ERR)
 	. . S REST=MID
 	. . S W1=$$NEXTTOK(.REST),W2=$$NEXTTOK(.REST)
 	. . I W1=""!(W2="") S ERR("code")="TPL_PARSE",ERR("msg")="Bad delimiter change tag." Q
-	. . D ADDDELIM(.TOK,.N,W1,W2)
+	. . D ADDDELIM(.TOK,.N,W1,W2,RAWTAG)
 	. . S OD=W1,CD=W2
 	. ; Comments
-	. I $E(INSIDE,1)="!" D ADDCOMM(.TOK,.N) S POS=CLOSE Q
+	. I $E(INSIDE,1)="!" D ADDCOMM(.TOK,.N,RAWTAG) S POS=CLOSE Q
 	. ; Unescaped via &
 	. I $E(INSIDE,1)="&" D  S POS=CLOSE Q
 	. . N K S K=$$TRIM($E(INSIDE,2,$L(INSIDE)))
-	. . D ADDVAR(.TOK,.N,K,0)
+	. . D ADDVAR(.TOK,.N,K,0,RAWTAG)
 	. ; Partials
 	. I $E(INSIDE,1)=">" D  S POS=CLOSE Q
-	. . N P S P=$$PNORM($E(INSIDE,2,$L(INSIDE))) I P'="" D ADDPART(.TOK,.N,P)
+	. . N P S P=$$PNORM($E(INSIDE,2,$L(INSIDE))) I P'="" D ADDPART(.TOK,.N,P,RAWTAG)
 	. ; Parents (Mustache inheritance extension)
 	. I $E(INSIDE,1)="<" D  S POS=CLOSE Q
-	. . N P S P=$$PNORM($E(INSIDE,2,$L(INSIDE))) I P'="" D ADDPARS(.TOK,.N,P)
+	. . N P S P=$$PNORM($E(INSIDE,2,$L(INSIDE))) I P'="" D ADDPARS(.TOK,.N,P,RAWTAG)
 	. ; Sections / inverted / end
 	. I $E(INSIDE,1)="#"!($E(INSIDE,1)="^")!($E(INSIDE,1)="/") D  S POS=CLOSE Q
 	. . N OP,K,INV
@@ -562,14 +567,14 @@ PARSE(TEXT,TOK,ERR)
 	. . . I $E(K,1,3)="if " S K=$$TRIM($E(K,4,$L(K)))
 	. . . I $E(K,1,5)="each " S K=$$TRIM($E(K,6,$L(K)))
 	. . . I $E(K,1,7)="unless " S OP="^",K=$$TRIM($E(K,8,$L(K)))
-	. . I OP="/" D ADDSECE(.TOK,.N,K) Q
+	. . I OP="/" D ADDSECE(.TOK,.N,K,RAWTAG) Q
 	. . S INV=$S(OP="^":1,1:0)
-	. . D ADDSECS(.TOK,.N,K,INV)
+	. . D ADDSECS(.TOK,.N,K,INV,RAWTAG)
 	. . I $E(K,1,6)="block:" D
 	. . . S TOK(N,"blk")=1
 	. . . S TOK(N,"bname")=$E(K,7,$L(K))
 	. ; Default: variable escaped
-	. D ADDVAR(.TOK,.N,INSIDE,1)
+	. D ADDVAR(.TOK,.N,INSIDE,1,RAWTAG)
 	. S POS=CLOSE
 	Q
 NEXTTOK(REST)
@@ -582,12 +587,6 @@ NEXTTOK(REST)
 	N OUT S OUT=$E(S,I,J-1)
 	S REST=$$TRIM($E(S,J,L))
 	Q OUT
-ADDDELIM(TOK,N,OD,CD)
-	S N=N+1
-	S TOK(N,"t")="delim"
-	S TOK(N,"od")=$G(OD)
-	S TOK(N,"cd")=$G(CD)
-	Q
 NUMMAX(TOK)
 	N I,MAX
 	S MAX=0,I=0
@@ -745,33 +744,6 @@ CUTPRE(S)
 	S S=$G(S)
 	S P=$$LASTNLSEQ(S)
 	Q $S(P>0:$E(S,1,P),1:"")
-ADDTXT(TOK,N,VAL)
-	S N=N+1
-	S TOK(N,"t")="text"
-	S TOK(N,"v")=VAL
-	Q
-ADDVAR(TOK,N,KEY,ESC)
-	S N=N+1
-	S TOK(N,"t")="var"
-	S TOK(N,"k")=KEY
-	S TOK(N,"e")=+$G(ESC)
-	Q
-ADDSECS(TOK,N,KEY,INV)
-	S N=N+1
-	S TOK(N,"t")="secS"
-	S TOK(N,"k")=KEY
-	S TOK(N,"inv")=+$G(INV)
-	Q
-ADDSECE(TOK,N,KEY)
-	S N=N+1
-	S TOK(N,"t")="secE"
-	S TOK(N,"k")=KEY
-	Q
-ADDPART(TOK,N,NAME)
-	S N=N+1
-	S TOK(N,"t")="part"
-	S TOK(N,"k")=NAME
-	Q
 LINKSECS(TOK,ERR)
 	K ERR
 	N STK,SP,I,T,K,TOP,SI
@@ -862,10 +834,6 @@ INDENTPTOK(TOK,IND)
 	. E  D
 	. . S LS=0
 	K TOK M TOK=TMP
-	Q
-ADDCOMM(TOK,N)
-	S N=N+1
-	S TOK(N,"t")="comm"
 	Q
 INDTXT(V,IND,AT)
 	N OUT,L,I,CH
@@ -1140,7 +1108,13 @@ OUTNORM(V,CRLF)
 EVALX(TOK,CONF,CTX,OUTMODE,OUT,OREF,ERR)
 	K ERR
 	N CST,CTSP
-	S CTSP=1,CST(1)="CTX"
+	; Allow sub-render to pass a prepared context-stack via CTX("meta","__ctsp"/"__cst",i)
+	I $D(CTX("meta","__ctsp")) D
+	. N I
+	. S CTSP=+$G(CTX("meta","__ctsp")) I CTSP<1 S CTSP=1
+	. F I=1:1:CTSP S CST(I)=$G(CTX("meta","__cst",I))
+	E  D
+	. S CTSP=1,CST(1)="CTX"
 	; partial / parent recursion protection
 	N PDEPTHMAX S PDEPTHMAX=+$G(CONF("templates","maxPartialDepth")) I PDEPTHMAX<1 S PDEPTHMAX=20
 	N PACTIVE,PTCACHE
@@ -1221,12 +1195,15 @@ EVALX(TOK,CONF,CTX,OUTMODE,OUT,OREF,ERR)
 	. . . I V'="" S F(FSP,"at")=$S($E(V,$L(V))=$C(10):1,1:0)
 	. . D EMITX(OUTMODE,FSP,.F,.OUT,.W,V,CRLF)
 	. . S F(FSP,"i")=I+1
-	. ; VAR
+	. ; VAR / UNESC
 	. I (TYP="var")!(TYP="unesc") D  Q
 	. . N KEY,ESC,VAL,IND,AT
 	. . S KEY=$$TOKGET(TN,I,"k")
 	. . S ESC=+$$TOKGET(TN,I,"e")
 	. . S VAL=$$RESVAL(KEY,.CST,CTSP)
+	. . ; variable lambdas (mustache.js-style): call with no args
+	. . I $$ISLAM(VAL) D  Q:$D(ERR)
+	. . . S VAL=$$LAMCALL0(VAL,.ERR)
 	. . I ESC S VAL=$$ESCHTML(VAL)
 	. . ; indentation-at-start-of-line only for scalar vars (existing behavior)
 	. . S IND=$G(F(FSP,"indent"))
@@ -1244,8 +1221,6 @@ EVALX(TOK,CONF,CTX,OUTMODE,OUT,OREF,ERR)
 	. . N PARENT,PN0,PN,INDTOK,PKEY,PTREF,PMX,PMODE,PCAP
 	. . S PARENT=FSP
 	. . S PN0=$$TOKGET(TN,I,"k")
-	. . ;S PN=PN0
-	. . ;I $E(PN,1)="*" S PN=$$RESVAL($E(PN,2,$L(PN)),.CST,CTSP)
 	. . S PN=PN0
 	. . I $E(PN,1)="*" D
 	. . . I $E(PN,2)="*" S PN="" Q  ; no double-deref (spec)
@@ -1280,8 +1255,6 @@ EVALX(TOK,CONF,CTX,OUTMODE,OUT,OREF,ERR)
 	. . I 'MI S ERR("code")="TPL_PARSE",ERR("msg")="Parent start without match: "_PN0 Q
 	. . ; skip entire parent section in current stream (we’ll push frames for body+parent)
 	. . S F(PARENT,"i")=MI+1
-	. . ;S PN=PN0
-	. . ;I $E(PN,1)="*" S PN=$$RESVAL($E(PN,2,$L(PN)),.CST,CTSP)
 	. . S PN=PN0
 	. . I $E(PN,1)="*" D
 	. . . I $E(PN,2)="*" S PN="" Q  ; no double-deref (spec)
@@ -1325,10 +1298,11 @@ EVALX(TOK,CONF,CTX,OUTMODE,OUT,OREF,ERR)
 	. . S MI=+$$TOKGET(TN,I,"m")
 	. . I 'MI S ERR("code")="TPL_PARSE",ERR("msg")="Section start without match: "_KEY Q
 	. . ; BLOCK ({{$name}} ... {{/name}})
-	. . I $E(TN,$L(TN))=")" S ISBLK=+$G(@($E(TN,1,$L(TN)-1)_","_I_",""blk"")")) 
+	. . I $E(TN,$L(TN))=")" S ISBLK=+$G(@($E(TN,1,$L(TN)-1)_","_I_",""blk"")"))
 	. . E  S ISBLK=+$G(@(TN_"("_I_",""blk"")"))
 	. . I 'ISBLK S ISBLK=+$$TOKGET(TN,I,"blk")
 	. . I ISBLK D  Q
+	. . . ; (existing block handling unchanged)
 	. . . N BNAME,CAPMODE,OTOK,OS,OE,OIND,OAT,EIND,TXT,NEWF,CAPREF
 	. . . S BNAME=$$TOKGET(TN,I,"bname") S:BNAME="" BNAME=KEY
 	. . . I +$G(F(PARENT,"pdef")) D  Q
@@ -1369,18 +1343,36 @@ EVALX(TOK,CONF,CTX,OUTMODE,OUT,OREF,ERR)
 	. . . . S F(PARENT,"i")=MI+1
 	. . . S F(PARENT,"i")=MI+1
 	. . . D PUSHFRAMEI(.FSP,.F,I+1,MI-1,CTSP,$G(F(PARENT,"mode")),$G(F(PARENT,"capRef")),TN,PARENT)
+	. . ; ===== Normal section flow (THIS MUST STAY INSIDE secS) =====
 	. . S F(PARENT,"i")=MI+1
 	. . N ISSET,TYPE,REF
 	. . D RESREF(KEY,.CST,CTSP,.ISSET,.TYPE,.REF)
 	. . I TYPE="list" D
 	. . . N S0 S S0=$$FIRSTSUB(REF)
 	. . . I S0'="",S0'?1.N S TYPE="obj"
+	. . ; Higher-order section lambdas (mustache.js-style): scalar value that is callable
+	. . I 'INV,TYPE="scalar" D  Q:$D(ERR)
+	. . . N LAMV,LVL
+	. . . S LAMV=$G(@REF)
+	. . . S LVL=$ZCONVERT(LAMV,"L") I LVL="null" S LAMV=""
+	. . . I $$ISLAM(LAMV) D  Q
+	. . . . N RAW,LRID,RET,LL
+	. . . . S RAW=$$TOK2TPL(TN,I+1,MI-1)
+	. . . . D LAMHNEW(.CONF,.CTX,.CST,CTSP,.LRID)
+	. . . . S RET=$$LAMCALL2(LAMV,RAW,LRID,.ERR)
+	. . . . D LAMHKILL(LRID)
+	. . . . Q:$D(ERR)
+	. . . . I RET'="" D
+	. . . . . D EMITX(OUTMODE,PARENT,.F,.OUT,.W,RET,CRLF)
+	. . . . . S LL=$L(RET) I LL>0 S F(PARENT,"at")=$S($E(RET,LL)=$C(10):1,1:0)
+	. . . Q  ; lambda sections do NOT render the normal block
+	. . ; Inverted
 	. . I INV D  Q
 	. . . I $$ISTRUTH(.ISSET,.TYPE,.REF)=0 D PUSHFRAMEI(.FSP,.F,I+1,MI-1,CTSP,$G(F(PARENT,"mode")),$G(F(PARENT,"capRef")),TN,PARENT)
 	. . I $$ISTRUTH(.ISSET,.TYPE,.REF)=0 Q
 	. . I TYPE="list" D  Q
 	. . . S FSP=FSP+1
-	. . . K F(FSP)  ; *** critical: clear reused frame slot ***
+	. . . K F(FSP)
 	. . . S F(FSP,"mode")="iter"
 	. . . S F(FSP,"i")=0,F(FSP,"end")=0
 	. . . S F(FSP,"ctxTop")=CTSP
@@ -1599,6 +1591,8 @@ EVALSIMP(TOK,TOKR,PMAX,CRLF,CONF,CST,CTSP,OUTMODE,OUT,W,ERR)
 	. . S KEY=$S(TG:$G(@(TB_","_I_",""k"")")),TN="TOK":$G(TOK(I,"k")),1:$G(@(TN_"("_I_",""k"")")))
 	. . S ESC=+$S(TG:$G(@(TB_","_I_",""e"")")),TN="TOK":$G(TOK(I,"e")),1:$G(@(TN_"("_I_",""e"")")))
 	. . S VAL=$$RESVAL(KEY,.CST,CTSP)
+	. . I $$ISLAM(VAL) D  Q:$D(ERR)
+	. . . S VAL=$$LAMCALL0(VAL,.ERR)
 	. . I ESC S VAL=$$ESCHTML(VAL)
 	. . S VAL=$$OUTNORM(VAL,CRLF) Q:VAL=""
 	. . I OUTMODE="R" D OUTAPP(.W,VAL) Q
@@ -1666,11 +1660,6 @@ DOLLARBLK(TOK) ; convert {{$name}} to a block section start
 	. S TOK(I,"inv")=0
 	. S TOK(I,"blk")=1
 	. S TOK(I,"bname")=BN
-	Q
-ADDPARS(TOK,N,NAME)
-	S N=N+1
-	S TOK(N,"t")="parS"
-	S TOK(N,"k")=NAME
 	Q
 BLKDEFIND(TN,BS,BE)
 	N I,TYP,V,L,J,CH,AT,CUR,IND
@@ -1754,3 +1743,169 @@ GETPTOK(PN,PKEY,CONF,CTX,PTREF,PMX,ERR) ; resolve partial tokens via map OR file
 	D GETTOKREF(PN,.CONF,.PTREF,.PMX,.ERR)
 	I $D(ERR),$G(ERR("code"))="TPL_NOFILE" K ERR S PTREF="",PMX=0
 	Q
+	;
+; ============================
+; NEW helper labels for Lambdas
+; ============================
+	;
+ISLAM(V) ; 1 if scalar value looks like a callable lambda
+	N S S S=$$TRIM($G(V))
+	Q $S($E(S,1,2)="$$":1,1:0)
+	;
+LAMBASE(LAM) ; normalize "$$LBL^ROU(...)" => "$$LBL^ROU"
+	N S S S=$$TRIM($G(LAM))
+	I S="" Q ""
+	I $E(S,1,2)'="$$" S S="$$"_S
+	I S["(" S S=$P(S,"(",1)
+	Q S
+	;
+LAMCALL0(LAM,ERR) ; variable lambda => $$LBL^ROU()
+	N RES,EX,$ET,$ES
+	S RES="" K ERR
+	S EX=$$LAMBASE($G(LAM)) I EX="" Q ""
+	S $ET="D LAMTRAP^MIOTPL2(.ERR) S $ECODE="""""
+	X "S RES="_EX_"()"
+	S $ET=""
+	Q $G(RES)
+	;
+LAMCALL2(LAM,TXT,LRID,ERR) ; section lambda => $$LBL^ROU(text, renderHandle)
+	N RES,EX,A1,A2,$ET,$ES
+	S RES="" K ERR
+	S EX=$$LAMBASE($G(LAM)) I EX="" Q ""
+	S A1=$G(TXT),A2=+$G(LRID)
+	S $ET="D LAMTRAP^MIOTPL2(.ERR) S $ECODE="""""
+	X "S RES="_EX_"(A1,A2)"
+	S $ET=""
+	Q $G(RES)
+	;
+LAMTRAP(ERR)
+	;I $ET'="" S $ET=""
+	;N $ET S $ET=""
+	S $ET=""
+	S ERR("code")="TPL_LAMBDA"
+	S ERR("msg")="Lambda execution error: "_$ZSTATUS
+	S $ZSTATUS="",$ECODE=""
+	Q
+	;
+LAMHNEW(CONF,CTX,CST,CTSP,LRID) ; create render-handle for subRender
+	N ID,I
+	S ID=$INCREMENT(^TMP($J,"MIOTPL2","LAMBDA","H"))
+	K ^TMP($J,"MIOTPL2","LAMBDA",ID)
+	M ^TMP($J,"MIOTPL2","LAMBDA",ID,"CONF")=CONF
+	M ^TMP($J,"MIOTPL2","LAMBDA",ID,"CTX")=CTX
+	S ^TMP($J,"MIOTPL2","LAMBDA",ID,"CTSP")=+$G(CTSP)
+	F I=1:1:+$G(CTSP) S ^TMP($J,"MIOTPL2","LAMBDA",ID,"CST",I)=$G(CST(I))
+	S LRID=ID
+	Q
+	;
+LAMHKILL(LRID)
+	Q:LRID=""
+	K ^TMP($J,"MIOTPL2","LAMBDA",+$G(LRID))
+	Q
+	;
+TOK2TPL(TN,BS,BE) ; reconstruct inner template text from tokens BS..BE (best-effort)
+	N OUT,OD,CD,I,TYP,K,ESC,INV,NEWOD,NEWCD,BLK,BN
+	S OUT="",OD="{{",CD="}}"
+	I +$G(BS)<1 Q ""
+	I +$G(BE)<BS Q ""
+	F I=BS:1:BE D
+	. S TYP=$$TOKGET(TN,I,"t")
+	. I TYP="text" S OUT=OUT_$$TOKGET(TN,I,"v") Q
+	. I TYP="var"!(TYP="unesc") D  Q
+	. . S K=$$TOKGET(TN,I,"k")
+	. . S ESC=+$$TOKGET(TN,I,"e")
+	. . I ESC S OUT=OUT_OD_K_CD Q
+	. . ; best-effort unescaped as triple braces when using default delimiters, else use &-form
+	. . I (OD="{{")&(CD="}}") S OUT=OUT_"{{{"_K_"}}}" Q
+	. . S OUT=OUT_OD_"&"_K_CD
+	. I TYP="comm" S OUT=OUT_OD_"!"_CD Q
+	. I TYP="part" S K=$$TOKGET(TN,I,"k") S OUT=OUT_OD_">"_K_CD Q
+	. I TYP="parS" S K=$$TOKGET(TN,I,"k") S OUT=OUT_OD_"<"_K_CD Q
+	. I TYP="secS" D  Q
+	. . S K=$$TOKGET(TN,I,"k")
+	. . S INV=+$$TOKGET(TN,I,"inv")
+	. . S BLK=+$$TOKGET(TN,I,"blk")
+	. . S BN=$$TOKGET(TN,I,"bname") S:BN="" BN=K
+	. . I BLK S OUT=OUT_OD_"$"_BN_CD Q
+	. . S OUT=OUT_OD_$S(INV:"^",1:"#")_K_CD
+	. I TYP="secE" S K=$$TOKGET(TN,I,"k") S OUT=OUT_OD_"/"_K_CD Q
+	. I TYP="delim" D  Q
+	. . S NEWOD=$$TOKGET(TN,I,"od"),NEWCD=$$TOKGET(TN,I,"cd")
+	. . S OUT=OUT_OD_"="_NEWOD_" "_NEWCD_"="_CD
+	. . S OD=NEWOD,CD=NEWCD
+	Q OUT
+	;
+LRENDER(LRID,TEMPLATE) ; subRender callback for section lambdas: $$LRENDER^MIOTPL2(LRID,tmpl)
+	N OUT,ERR,CONF,CTX,CST,CTSP,I,TOK
+	S OUT=""
+	I +$G(LRID)<1 Q OUT
+	; restore snapshot
+	M CONF=^TMP($J,"MIOTPL2","LAMBDA",LRID,"CONF")
+	M CTX=^TMP($J,"MIOTPL2","LAMBDA",LRID,"CTX")
+	S CTSP=+$G(^TMP($J,"MIOTPL2","LAMBDA",LRID,"CTSP"))
+	I CTSP<1 S CTSP=1
+	; embed the preserved stack into CTX meta (EVALX will use it)
+	S CTX("meta","__ctsp")=CTSP
+	F I=1:1:CTSP S CTX("meta","__cst",I)=$G(^TMP($J,"MIOTPL2","LAMBDA",LRID,"CST",I))
+	; compile + render
+	D COMPILE($G(TEMPLATE),.TOK,.ERR) Q:$D(ERR) ""
+	D EVALX(.TOK,.CONF,.CTX,"S",.OUT,"",.ERR) Q:$D(ERR) ""
+	Q $G(OUT)
+ADDTXT(TOK,N,VAL,RAW)
+	S N=N+1
+	S TOK(N,"t")="text"
+	S TOK(N,"v")=VAL
+	S TOK(N,"raw")=$S($D(RAW):RAW,1:VAL)
+	Q
+	;
+ADDVAR(TOK,N,KEY,ESC,RAW)
+	S N=N+1
+	S TOK(N,"t")="var"
+	S TOK(N,"k")=KEY
+	S TOK(N,"e")=+$G(ESC)
+	S TOK(N,"raw")=$G(RAW)
+	Q
+	;
+ADDSECS(TOK,N,KEY,INV,RAW)
+	S N=N+1
+	S TOK(N,"t")="secS"
+	S TOK(N,"k")=KEY
+	S TOK(N,"inv")=+$G(INV)
+	S TOK(N,"raw")=$G(RAW)
+	Q
+	;
+ADDSECE(TOK,N,KEY,RAW)
+	S N=N+1
+	S TOK(N,"t")="secE"
+	S TOK(N,"k")=KEY
+	S TOK(N,"raw")=$G(RAW)
+	Q
+	;
+ADDPART(TOK,N,NAME,RAW)
+	S N=N+1
+	S TOK(N,"t")="part"
+	S TOK(N,"k")=NAME
+	S TOK(N,"raw")=$G(RAW)
+	Q
+	;
+ADDPARS(TOK,N,NAME,RAW)
+	S N=N+1
+	S TOK(N,"t")="parS"
+	S TOK(N,"k")=NAME
+	S TOK(N,"raw")=$G(RAW)
+	Q
+	;
+ADDDELIM(TOK,N,OD,CD,RAW)
+	S N=N+1
+	S TOK(N,"t")="delim"
+	S TOK(N,"od")=$G(OD)
+	S TOK(N,"cd")=$G(CD)
+	S TOK(N,"raw")=$G(RAW)
+	Q
+	;
+ADDCOMM(TOK,N,RAW)
+	S N=N+1
+	S TOK(N,"t")="comm"
+	S TOK(N,"raw")=$G(RAW)
+	Q
+	;
