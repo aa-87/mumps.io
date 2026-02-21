@@ -1798,26 +1798,14 @@ LAMCALL2(LAM,TXT,LRID,ERR) ; section lambda => $$LBL^ROU(text[, renderHandle])
 	S RES="" K ERR
 	S EX=$$LAMBASE($G(LAM)) I EX="" Q ""
 	S A1=$G(TXT),A2=+$G(LRID)
-	; Try 2-arg first; if ACTLSTTOOLONG, retry as 1-arg.;
-	S ZS="",RETRY=0
-	S $ET="S ZS=$ZSTATUS,RETRY=$S(ZS[""ACTLSTTOOLONG"":1,1:0) S $ECODE="""""""
+	S ZS="" S $ET="S ZS=$ZSTATUS,$ECODE="""""
 	X "S RES="_EX_"(A1,A2)"
 	S $ET=""
-	I ZS="",RETRY=0 Q $G(RES)
-	I RETRY D  Q:$D(ERR) ""  Q $G(RES)
-	. S ZS=""
-	. S $ET="S ZS=$ZSTATUS S $ECODE="""""""
-	. X "S RES="_EX_"(A1)"
-	. S $ET=""
-	. I ZS'="" D LAMTRAP(.ERR)
-	; real error
+	I ZS="" Q $G(RES)
 	D LAMTRAP(.ERR)
 	Q ""
 LAMTRAP(ERR)
-	;I $ET'="" S $ET=""
-	;N $ET S $ET=""
-	S $ET=""
-	K ^AHM ZSHOW "*":^AHM
+	N $ET S $ET=""
 	S ERR("code")="TPL_LAMBDA"
 	S ERR("msg")="Lambda execution error: "_$ZSTATUS
 	S $ZSTATUS="",$ECODE=""

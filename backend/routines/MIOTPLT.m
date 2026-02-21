@@ -400,9 +400,10 @@ MIOTF208 ; Lambdas
 		;as an arity 1 function, and invoked as such (passing a String containing the
 		;unprocessed section contents).  The returned value MUST be rendered against
 		;the current delimiters, then interpolated in place of the section.;
-	D JSONTESTRUNNER("./tests/data/_dynamic-names.json") ;This is the same as below.;
-	;; Each test is run two different ways
-	D TEST186,TEST187,TEST188
+	;; No test runner, since no MUMPS in test specs (TODO)
+	D TEST186,TEST187,TEST188,TEST189,TEST190,TEST191,TEST192
+	D TEST193
+	;	
 	Q	
 	;	
 	;	
@@ -2823,20 +2824,10 @@ TEST188
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	K ^TMP($J,"MIOTPLT","LAMCALL")
 	Q
-	;
-	;Higher-order section wrappers (outer no-arg)
-LAMHOSRAWWRAP(TEXT,RENDER) ;LAM_HOS_RAW_WRAP
-	Q "$$LAMHOSRAWIN^MIOTPLT"
-; --- Higher-order section inners (text, renderHandleId) ---
-LAMHOSRAWIN(TEXT,LRID) ;LAM_HOS_RAW_IN
-	; must receive literal "{{x}}"
-	I $G(TEXT)="{{x}}" Q "yes"
-	Q "no"
 TEST189
-TEST193
 	N HDR S HDR="[TEST189][Lambdas][Section]"
 	N DESC S DESC=HDR_"[Lambdas used for sections should receive the raw section string.]"
-	;N TEMPLATE,EXPECTED,CTX
+	N TEMPLATE,EXPECTED,CTX
 	S TEMPLATE="<{{#lambda}}{{x}}{{/lambda}}>"
 	S EXPECTED="<yes>"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
@@ -2845,6 +2836,59 @@ TEST193
 	S CTX("x")="Error!"
 	; mustache.js style: outer returns inner
 	S CTX("lambda")="$$LAMHOSRAWWRAP^MIOTPLT"
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	Q
+TEST190
+	N HDR S HDR="[TEST190][Lambdas][HOS render function]"
+	N DESC S DESC=HDR_"[Higher-order section can subRender using render handle.]"
+	N TEMPLATE,EXPECTED,CTX
+	S TEMPLATE="<{{#lambda}}-{{/lambda}}>"
+	S EXPECTED="<-Earth->"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	K CTX
+	S CTX("planet")="Earth"
+	S CTX("lambda")="$$LAMHOSEXPWRAP^MIOTPLT"
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	Q
+TEST191
+	N HDR S HDR="[TEST191][Lambdas][HOS delimiter inside raw block]"
+	N DESC S DESC=HDR_"[Raw block includes delimiter changes; render(handle,text) honors them.]"
+	N TEMPLATE,EXPECTED,CTX
+	; inner gets raw: "{{= | | =}}|planet|" and calls render on it => Earth
+	S TEMPLATE="<{{#lambda}}{{= | | =}}|planet|{{/lambda}}>"  ; <= wrong (must reset delimiter)
+	S TEMPLATE="<{{#lambda}}{{= | | =}}|planet||={{ }}=|{{/lambda}}>" ; <= either this
+	S TEMPLATE="<{{#lambda}}{{= | | =}}|planet||/lambda|>" ; <= or this
+	S EXPECTED="<Earth>"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	K CTX
+	S CTX("planet")="Earth"
+	S CTX("lambda")="$$LAMHOSRENDRAWWRAP^MIOTPLT"
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	Q
+TEST192
+	N HDR S HDR="[TEST192][Lambdas][HOS multiple calls]"
+	N DESC S DESC=HDR_"[Higher-order section runs per section occurrence.]"
+	N TEMPLATE,EXPECTED,CTX
+	S TEMPLATE="{{#lambda}}FILE{{/lambda}} != {{#lambda}}LINE{{/lambda}}"
+	S EXPECTED="__FILE__ != __LINE__"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	K CTX
+	S CTX("lambda")="$$LAMHOSMCALLWRAP^MIOTPLT"
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	Q
+TEST193 ;
+	N HDR S HDR="[TEST193][Lambdas][Inverted treats HOS truthy]"
+	N DESC S DESC=HDR_"[Inverted section should NOT render when value is higher-order lambda.]"
+	N TEMPLATE,EXPECTED,CTX
+	S TEMPLATE="<{{^lambda}}FAIL{{/lambda}}>"
+	S EXPECTED="<>"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	K CTX
+	S CTX("lambda")="$$LAMHOSINVWRAP^MIOTPLT"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	Q
 TEST265 ;
@@ -3030,28 +3074,38 @@ RMDIR(PATH) ; rm -rf PATH (best-effort)
 LAMVARWORLD() Q "world"
 ;LAM_VAR_GT
 LAMVARGT()    Q ">"
+;Higher-order section wrappers (outer no-arg)
+LAMHOSRAWWRAP(TEXT,RENDER) ;LAM_HOS_RAW_WRAP
+	Q "$$LAMHOSRAWIN^MIOTPLT"
+; --- Higher-order section inners (text, renderHandleId) ---
+LAMHOSRAWIN(TEXT,LRID) ;LAM_HOS_RAW_IN
+	; must receive literal "{{x}}"
+	I $G(TEXT)="{{x}}" Q "yes"
+	Q "no"
 ;LAM_VAR_INC
 LAMVARINC()
 	N N S N=$INCREMENT(^TMP($J,"MIOTPLT","LAMCALL","var"))
 	Q N
-LAMHOSEXPWRAP() ;LAM_HOS_EXP_WRAP
+LAMHOSEXPWRAP(TEXT,LRID) ;LAM_HOS_EXP_WRAP
 	Q "$$LAMHOSEXPIN^MIOTPLT"
-LAMHOSRENDRAWWRAP() ;LAM_HOS_RENDRAW_WRAP
+LAMHOSRENDRAWIN(TEXT,LRID) ;LAM_HOS_RENDRAW_IN
+	; render the raw block itself (contains delimiter change tag)
+	Q $$LRENDER^MIOTPL2(+$G(LRID),$G(TEXT))
+LAMHOSRENDRAWWRAP(TEXT,LRID) ;LAM_HOS_RENDRAW_WRAP
 	Q "$$LAMHOSRENDRAWIN^MIOTPLT"
-LAMHOSMCALLWRAP() ;LAM_HOS_MCALL_WRAP 
+LAMHOSMCALLWRAP(TEXT,LRID) ;LAM_HOS_MCALL_WRAP 
 	Q "$$LAMHOSMCALLIN^MIOTPLT"
-LAMHOSINVWRAP() ;LAM_HOS_INV_WRAP 
+LAMHOSINVWRAP(TEXT,LRID) ;LAM_HOS_INV_WRAP 
 	Q "$$LAMHOSINVIN^MIOTPLT"
 LAMHOSEXPIN(TEXT,LRID) ;LAM_HOS_EXP_IN
 	; return: text + render("{{planet}}") + text
 	N MID S MID=$$LRENDER^MIOTPL2(+$G(LRID),"{{planet}}")
 	Q $G(TEXT)_MID_$G(TEXT)
-LAMHOSRENDRAWIN(TEXT,LRID) ;LAM_HOS_RENDRAW_IN
-	; render the raw block itself (contains delimiter change tag)
-	Q $$LRENDER^MIOTPL2(+$G(LRID),$G(TEXT))
+	;
 LAMHOSMCALLIN(TEXT,LRID) ;LAM_HOS_MCALL_IN
 	Q "__"_$G(TEXT)_"__"
 LAMHOSINVIN(TEXT,LRID) ;LAM_HOS_INV_IN
 	; if this is called in inverted, that’s a bug; record it
 	S ^TMP($J,"MIOTPLT","LAMCALL","invInner")=$G(^TMP($J,"MIOTPLT","LAMCALL","invInner"))+1
 	Q "SHOULD_NOT_RUN"
+	;	
