@@ -1,4 +1,5 @@
 MIOTPLT
+	K ^MIO("TPL","CACHE")
 	D MIOTF121,MIOTF122,MIOTF123,MIOTF124,MIOTF125
 	D MIOTF126,MIOTF126B,MIOTF127,MIOTF128,MIOTF129
 	D MIOTF130,MIOTF131,MIOTF132,MIOTF133
@@ -383,7 +384,8 @@ MIOTF207 ;Dynamic Names
 	;	
 	;D RUNJSONSPECSPART("./tests/data/_inheritance.json") ;This is the same as below.;
 	; Each test is run two different ways
-	D TEST165
+	D TEST165,TEST166,TEST167,TEST168,TEST169,TEST170,TEST171
+	D TEST172,TEST173,TEST174,TEST175
 	;	
 	Q 
 MIOTF121 ; Full suite test 121 - TPL_SECTION_CTA.;
@@ -1636,7 +1638,7 @@ TEST102
 	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
 	SET CTX("content")="X"
 	SET CTX("nodes",1,"content")="Y"
-	SET CTX("nodes",1,"nodes")=""   ; to match and pass the test
+	SET CTX("nodes",1,"nodes")=""   ; to match and pass the test (An issue with the JSON parser)
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	D RMDIR(ROOT)
 	Q
@@ -2577,7 +2579,43 @@ TEST174
 	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	D RMDIR(ROOT)
-	Q	
+	Q
+TEST175
+	N HDR S HDR="[TEST175][Dotted names - Context Stacking Failed Lookup]"
+	N DESC S DESC=HDR_"[Dotted names should resolve against the proper context stack.]"
+	S TEMPLATE="{{#section1}}{{>*section2.dynamic}}{{/section1}}"
+	S EXPECTED=""""""""""
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX 
+	S CTX("section1",1)=1
+	S CTX("section1",2)=2
+	S CTX("section2","dynamic")="partial"
+	S CTX("section2","value")="section2"
+	N CONF D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"partial",$$UNESCNL("""{{value}}"""),.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	Q
+TEST176
+	N HDR S HDR="[TEST176][Recursion]"
+	N DESC S DESC=HDR_"[Dynamic partials should properly recurse.]"
+	S TEMPLATE="{{>*template}}"
+	S EXPECTED="X<Y<>>"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX 
+	S CTX("content")="X"
+	S CTX("nodes",1,"content")="Y"
+	S CTX("nodes",1,"nodes")="" ; 
+	S CTX("template")="node"
+	N CONF D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"node",$$UNESCNL("{{content}}<{{#nodes}}{{>*template}}{{/nodes}}>"),.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	Q
 TEST265 ;
 	N CONF,CTX,TOK,OUT,ERR,S
 	D START^MIOTPL2(.CONF)
@@ -2688,8 +2726,11 @@ RUNJSONSPECSPART(FP)
 	. S TEMPLATE=TESTS("tests",A,"template")
 	. S EXPECTED=TESTS("tests",A,"expected")
 	. N CTX M CTX=TESTS("tests",A,"data") 
-	. I TESTS("tests",A,"name")="Recursion" D 
-	. . SET CTX("nodes",1,"nodes")=""  ; to match and pass the test 
+	. I TESTS("tests",A,"name")="Recursion",TESTS("tests",A,"desc")="The greater-than operator should properly recurse." D
+	. . SET CTX("nodes",1,"nodes")=""  ; to match and pass test 102 
+	. . ;(work around the JSON, as it is not able to process empty objects)
+	. I TESTS("tests",A,"name")="Recursion",TESTS("tests",A,"desc")="Dynamic partials should properly recurse." D 
+	. . SET CTX("nodes",1,"nodes")=""  ; to match and pass test 176
 	. . ;(work around the JSON, as it is not able to process empty objects)
 	. K CONF,TOK,OUT,ERR
 	. I $D(TESTS("tests",A,"partials"))  D
