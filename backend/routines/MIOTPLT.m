@@ -2685,7 +2685,7 @@ TEST180
 	Q
 TEST181
 	N HDR S HDR="[TEST181][Standalone Line Endings]"
-	N SESC S DESC=HDR_"Whitespace should be left untouched: whitespaces preceding the tag"
+	N DESC S DESC=HDR_"Whitespace should be left untouched: whitespaces preceding the tag"
 	S DESC=DESC_"whitespace succeding the tag should be left untouched]"
 	S TEMPLATE="|\r\n{{>*dynamic}}\r\n|"
 	S EXPECTED="|\r\n>|"
@@ -2695,6 +2695,22 @@ TEST181
 	S CTX("dynamic")="partial"
 	N CONF D SETUPPART(.CONF,.ROOT)
 	N ERR D WRFILE(ROOT_"partial",$$UNESCNL(">"),.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	Q
+TEST182
+	N HDR S HDR="[TEST182][Standalone Without Previous Line]"
+	N DESC S DESC=HDR_"[Standalone tags should not require a newline to precede them.]"
+	S DESC=DESC_"whitespace succeding the tag should be left untouched]"
+	S TEMPLATE="  {{>*dynamic}}\n>"
+	S EXPECTED="  >\n  >>"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX 
+	S CTX("dynamic")="partial"
+	N CONF D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"partial",$$UNESCNL(">\n>"),.ERR)
 	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	D RMDIR(ROOT)
