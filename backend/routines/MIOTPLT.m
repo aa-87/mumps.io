@@ -2616,6 +2616,39 @@ TEST176
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	D RMDIR(ROOT)
 	Q
+TEST177
+	N HDR S HDR="[TEST177][Dynamic Names - Double Dereferencing]"
+	N DESC S DESC=HDR_"[Dynamic Names can't be dereferenced more than once.]"
+	S TEMPLATE="""{{>**dynamic}}"""
+	S EXPECTED=""""""
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX 
+	S CTX("dynamic")="test"
+	S CTX("test")="content"
+	N CONF D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"node",$$UNESCNL("Hello, world!"),.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	Q
+TEST178
+	N HDR S HDR="[TEST178][Dynamic Names - Composed Dereferencing]"
+	N DESC S DESC=HDR_"[Dotted Names are resolved entirely before dereferencing begins.]"
+	S TEMPLATE="""{{>*foo.*bar}}"""
+	S EXPECTED=""""""
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX 
+	S CTX("bar")="buzz"
+	S CTX("fizz","buzz","content")="null"
+	S CTX("foo")="fizz"
+	N CONF D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"content",$$UNESCNL("Hello, world!"),.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	Q
 TEST265 ;
 	N CONF,CTX,TOK,OUT,ERR,S
 	D START^MIOTPL2(.CONF)
