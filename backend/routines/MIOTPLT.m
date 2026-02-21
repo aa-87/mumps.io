@@ -2649,6 +2649,40 @@ TEST178
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	D RMDIR(ROOT)
 	Q
+TEST179
+	N HDR S HDR="[TEST179][Surrounding Whitespace]"
+	N DESC S DESC=HDR_"[whitespace preceding the tag should be treated as indentation while any"
+	S DESC=DESC="whitespace succeding the tag should be left untouched"
+	S DESC=DESC="whitespace succeding the tag should be left untouched.]"
+	S TEMPLATE="| {{>*partial}} |"
+	S EXPECTED="| \t|\t |"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX 
+	S CTX("partial")="foobar"
+	N CONF D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"foobar",$$UNESCNL("\t|\t"),.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	Q
+TEST180
+	N HDR S HDR="[TEST180][Inline Indentation]"
+	S DESC=HDR_"Whitespace should be left untouched: whitespaces preceding the tag"
+	S DESC=HDR_"whitespace succeding the tag should be left untouched]"
+	S TEMPLATE="  {{data}}  {{>*dynamic}}\n"
+	S EXPECTED="  |  >\n>\n"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX 
+	S CTX("dynamic")="partial"
+	S CTX("data")="|"
+	N CONF D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"partial",$$UNESCNL(">\n>"),.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	Q
 TEST265 ;
 	N CONF,CTX,TOK,OUT,ERR,S
 	D START^MIOTPL2(.CONF)
