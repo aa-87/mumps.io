@@ -385,7 +385,8 @@ MIOTF207 ;Dynamic Names
 	;D RUNJSONSPECSPART("./tests/data/_inheritance.json") ;This is the same as below.;
 	; Each test is run two different ways
 	D TEST165,TEST166,TEST167,TEST168,TEST169,TEST170,TEST171
-	D TEST172,TEST173,TEST174,TEST175
+	D TEST172,TEST173,TEST174,TEST175,TEST176,TEST177,TEST178
+	D TEST179,TEST180,TEST181,TEST182,TEST183,TEST184,TEST185
 	;	
 	Q 
 MIOTF121 ; Full suite test 121 - TPL_SECTION_CTA.;
@@ -2730,7 +2731,41 @@ TEST183
 	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	D RMDIR(ROOT)
-	Q	
+	Q
+TEST184
+	N HDR S HDR="[TEST184][Standalone Indentation]"
+	N DESC S DESC=HDR_"[Each line of the partial should be indented before rendering.]"
+	S DESC=DESC_"whitespace succeding the tag should be left untouched]"
+	S TEMPLATE="\\\n {{>*dynamic}}\n/\n"
+	S EXPECTED="\\\n |\n <\n->\n |\n/\n"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX 
+	S CTX("dynamic")="partial"
+	S CTX("content")="<"_$C(10)_"->"
+	N CONF D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"partial",$$UNESCNL("|\n{{{content}}}\n|\n"),.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	Q
+TEST185
+	N HDR S HDR="[TEST185][Padding Whitespace]"
+	N DESC S DESC=HDR_"[Superfluous in-tag whitespace should be ignored.]"
+	S DESC=DESC_"whitespace succeding the tag should be left untouched]"
+	S TEMPLATE="|{{> * dynamic }}|"
+	S EXPECTED="|[]|"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX
+	S CTX("dynamic")="partial"
+	S CTX("boolean")="true"
+	N CONF D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"partial",$$UNESCNL("[]"),.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	Q
 TEST265 ;
 	N CONF,CTX,TOK,OUT,ERR,S
 	D START^MIOTPL2(.CONF)
