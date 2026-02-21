@@ -41,16 +41,12 @@ HOME(DEV,CONF,REQ,CTX) ;
 A	NEW TCTX KILL TCTX
 	SET TCTX("year")=$$YEAR^MIOUTIL()
 	SET TCTX("desc")="MUMPS.IO is a professional home for M packages. Community and Pro products. Web server, tooling, and enterprise-ready features."
-	;
 	NEW OUT,ERR
-	IF '$$RENDERPAGE^MIOTPL("mio_index.html","mio_layout.html",.CONF,.TCTX,.OUT,.ERR) DO  QUIT
-	. DO RESPJSON^MIOHTTP(DEV,500,.CTX,"{""error"":""template_error"",""detail"":"""_$$ESC^MIOUTIL($GET(ERR("error")))_"""}")
+	D RENDERPAGE^MIOTPL2("mio_index.html","mio_layout.html",.CONF,.TCTX,.OUT,.ERR)
+	I $D(ERR) DO RESPJSON^MIOHTTP(DEV,500,.CTX,"{""error"":""template_error"",""detail"":"""_$$ESC^MIOUTIL($GET(ERR("error")))_"""}")
 	;
-	NEW BODY,I,HEAD SET BODY="",I=0
-	FOR  SET I=$ORDER(OUT(I)) QUIT:I=""  SET BODY=BODY_OUT(I)
-	;
-	S HEAD("Content-Type")="text/html; charset=utf-8"
-	DO RESP^MIOHTTP(DEV,.CONF,200,.HEAD,.BODY,CTX("request_id"))
+	N HEAD S HEAD("Content-Type")="text/html; charset=utf-8"
+	DO RESP^MIOHTTP(DEV,.CONF,200,.HEAD,.OUT,CTX("request_id"))
 	QUIT
 	;
 PAGE(DEV,CONF,REQ,CTX,TITLE,KICKER,HEADING,LEAD,NEXTT,NEXTX,CTAL,CTAH,CTAL2,CTAH2) ;
@@ -74,13 +70,10 @@ PAGE(DEV,CONF,REQ,CTX,TITLE,KICKER,HEADING,LEAD,NEXTT,NEXTX,CTAL,CTAH,CTAL2,CTAH
 	. . SET TCTX("cta","secondary","href")=CTAH2
 	;
 	NEW OUT,ERR
-	IF '$$RENDERPAGE^MIOTPL("mio_page.html","mio_layout.html",.CONF,.TCTX,.OUT,.ERR) DO  QUIT
-	. DO RESPJSON^MIOHTTP(DEV,500,.CTX,"{""error"":""template_error"",""detail"":"""_$$ESC^MIOUTIL($GET(ERR("error")))_"""}")
-	;
-	NEW BODY,I,HEAD SET BODY="",I=0
-	FOR  SET I=$ORDER(OUT(I)) QUIT:I=""  SET BODY=BODY_OUT(I)
-	S HEAD("Content-Type")="text/html; charset=utf-8"
-	DO RESP^MIOHTTP(DEV,.CONF,200,.HEAD,.BODY,CTX("request_id"))
+	D RENDERPAGE^MIOTPL2("mio_page.html","mio_layout.html",.CONF,.TCTX,.OUT,.ERR)
+	I $D(ERR) DO RESPJSON^MIOHTTP(DEV,500,.CTX,"{""error"":""template_error"",""detail"":"""_$$ESC^MIOUTIL($GET(ERR("error")))_"""}")
+	NEW HEAD S HEAD("Content-Type")="text/html; charset=utf-8"
+	DO RESP^MIOHTTP(DEV,.CONF,200,.HEAD,.OUT,CTX("request_id"))
 	QUIT
 	;
 REPO(DEV,CONF,REQ,CTX) ;
