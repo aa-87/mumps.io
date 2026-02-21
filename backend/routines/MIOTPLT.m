@@ -405,7 +405,210 @@ MIOTF208 ; Lambdas
 	D TEST193
 	;	
 	Q	
-	;	
+TEST265 ;
+	N CONF,CTX,TOK,OUT,ERR,S
+	D START^MIOTPL2(.CONF)
+	S CTX("meta","captureBlocks")=1
+	S S="Body"_$C(10)_"  {{#block:head}}"_$C(10)_"  X"_$C(10)_"  {{/block:head}}"_$C(10)_"End"_$C(10)
+	D COMPILE^MIOTPL2(S,.TOK,.ERR) I $D(ERR) W "FAIL TEST165 compile",! Q
+	D EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR) I $D(ERR) W "FAIL TEST165 eval",! Q
+	I OUT'=("Body"_$C(10)_"End"_$C(10)) W "FAIL TEST165 OUT=",OUT,! Q
+	I $G(CTX("blocks","head"))'=("X"_$C(10)) W "FAIL TEST165 BLOCK=" Q ;,ZWR CTX("blocks","head"),! Q
+	Q
+TEST266
+	N CONF,CTX,TOK,OUT,ERR,S
+	D START^MIOTPL2(.CONF)
+	K CTX("blocks")
+	S CTX("meta","captureBlocks")=0
+	S S="S"_$C(10)_"  {{#block:head}}"_$C(10)_"  D"_$C(10)_"  {{/block:head}}"_$C(10)_"E"_$C(10)
+	D COMPILE^MIOTPL2(S,.TOK,.ERR) I $D(ERR) W "FAIL TEST166 compile",! Q
+	D EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR) I $D(ERR) W "FAIL TEST166 eval",! Q
+	S EXPECTED=("S"_$C(10)_"  D"_$C(10)_"E"_$C(10))
+	I OUT'=EXPECTED W "FAIL TEST166 OUT=",OUT,! Q
+	Q
+TEST267
+	N CONF,CTX,TOK,OUT,ERR,S
+	D START^MIOTPL2(.CONF)
+	S CTX("blocks","head")="X"_$C(10)
+	S CTX("meta","captureBlocks")=0
+	S S="S"_$C(10)_"  {{#block:head}}"_$C(10)_"  D"_$C(10)_"  {{/block:head}}"_$C(10)_"E"_$C(10)
+	D COMPILE^MIOTPL2(S,.TOK,.ERR) I $D(ERR) W "FAIL TEST167 compile",! Q
+	D EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR) I $D(ERR) W "FAIL TEST167 eval",! Q
+	I OUT'=("S"_$C(10)_"  X"_$C(10)_"E"_$C(10)) W "FAIL TEST167 OUT=",OUT,! Q
+	I $G(CTX("blocks","head"))'=("X"_$C(10)) W "FAIL TEST167 BLOCK OVERWRITTEN=",CTX("blocks","head"),! Q
+	Q
+RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,CTX)
+	; Run each spec test twice:
+	;  1) Scalar template -> scalar output (existing high-perf path)
+	;  2) Reference template OREF(n) -> reference output OREF(n) (GB-safe path)
+	;N TOK,ERR,OUT
+	;K TOK,ERR,OUT
+	K ^TMP($J)
+	D COMPILE^MIOTPL2($G(TEMPLATE),.TOK,.ERR)
+	D OK^MIOTASSERT('$D(ERR),"[COMPILE]"_HDR)
+	D EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
+	D OK^MIOTASSERT('$D(ERR),"[EVAL]"_DESC)
+	D EQ^MIOTASSERT(OUT,$G(EXPECTED),"[RENDER]"_DESC)
+	;I OUT=$G(EXPECTED) Q 
+	;K CONF,HDR,DESC
+	;I $D(ERR) ZWR ERR
+	;W !
+	;ZWR EXPECTED W !
+	;W "     " ZWR OUT W !
+	;ZWR TEMPLATE W !
+	;ZWR TOK 
+	;W "************************************",!
+	;Q
+	; Reference mode: build input chunks, compile+eval into output chunks
+	;
+	K ^TMP($J)
+	N TOKR,ERRR,INROOT,OUTROOT,CHSZ,L,P,N,OUT2
+	S INROOT=$NA(^TMP($J,"MIOTPLT","IN"))
+	S OUTROOT=$NA(^TMP($J,"MIOTPLT","OUT"))
+	K @INROOT K @OUTROOT
+	S CHSZ=17  ; small chunk to stress boundary logic
+	S L=$L($G(TEMPLATE))
+	S N=0
+	F P=1:CHSZ:L D
+	. S N=N+1
+	. S @($$APPREF^MIOTPL2(INROOT,N))=$E(TEMPLATE,P,P+CHSZ-1)
+	K TOKR,ERRR
+	D COMPREF^MIOTPL2(INROOT,.TOKR,.ERRR)
+	D OK^MIOTASSERT('$D(ERRR),"[COMPREF]"_HDR)
+	D EVALREF^MIOTPL2(.TOKR,.CONF,.CTX,OUTROOT,.ERRR)
+	D OK^MIOTASSERT('$D(ERRR),"[EVALREF]"_DESC)
+	S OUT2=""
+	S N=0
+	F  S N=$O(@($$APPREF^MIOTPL2(OUTROOT,N))) Q:'N  D
+	. S OUT2=OUT2_$G(@($$APPREF^MIOTPL2(OUTROOT,N)))
+	D EQ^MIOTASSERT(OUT2,$G(EXPECTED),"[RENDERREF]"_DESC)
+	Q
+JSONTESTRUNNER(FP) ;
+	N OK,TXT,ERR,TESTS
+	S OK=$$READFILE^MIOTPL2(FP,.TXT,.ERR)
+	D OK^MIOTASSERT(OK,"read "_FP)
+	Q:'OK
+	D DECODE^MIOJSON2($NA(TXT),$NA(TESTS))
+	N A S A=""
+	F  S A=$O(TESTS("tests",A)) Q:A=""  D
+	. N HDR S HDR="["_$G(TESTS("tests",A,"name"))_"]"
+	. N DESC S DESC=HDR_"["_$G(TESTS("tests",A,"desc"))_"]"
+	. N TEMPLATE S TEMPLATE=$G(TESTS("tests",A,"template"))
+	. N EXPECTED S EXPECTED=$G(TESTS("tests",A,"expected"))
+	. N CTX,CONF M CTX=TESTS("tests",A,"data")
+	. N ROOT,NTARR D SETUPPART(.CONF,.ROOT)
+	. ; JSON parser workaround
+	. I $G(TESTS("tests",A,"name"))="Recursion",$G(TESTS("tests",A,"desc"))="The greater-than operator should properly recurse." D
+	. . S CTX("nodes",1,"nodes")=""
+	. I $G(TESTS("tests",A,"name"))="Recursion",$G(TESTS("tests",A,"desc"))="Dynamic partials should properly recurse." D
+	. . S CTX("nodes",1,"nodes")=""
+	. I $D(TESTS("tests",A,"partials")) D
+	. . N ERR,P S P="" F  S P=$O(TESTS("tests",A,"partials",P)) Q:P=""  D
+	. . . S NTARR(ROOT_P)="" D WRFILE(ROOT_P,TESTS("tests",A,"partials",P),.ERR) K ERR
+	. N TOK,OUT
+	. D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	. N A S A="" F  S A=$O(NTARR(A)) Q:A=""  ZSY "rm "_A
+	S ROOT="templates/test-MIOTPL-"_$J_"/" D RMDIR(ROOT)
+	Q	
+SETUPPART(CONF,ROOT)
+	M CONF=^MIO("CONF")
+	S ROOT="templates/test-MIOTPL-"_$J_"/"
+	D MKDIR(ROOT)
+	D MKDIR(ROOT_"partials/")
+	S CONF("templates","root")=ROOT
+	S CONF("templates","ext")=""
+	Q
+SHQ(S) ; shell-quote
+	; Wrap in single quotes; escape single quotes safely: ' -> '\'' (close, escape, reopen)
+	N X S X=$G(S)
+	I X["'" S X=$$REPL(X,"'","\'")
+	Q "'"_X_"'"
+REPL(s,f,t)
+	i $tr(s,f)=s q s
+	n o,i s o="" f i=1:1:$l(s,f)  s o=o_$s(i<$l(s,f):$p(s,f,i)_t,1:$p(s,f,i))
+	q o
+ReadFile(file,return)
+	new source,line,counter,currentdevice
+	set source=file,currentdevice=$io
+	open source:(readonly:chset="m")
+	for  use source read line:2 quit:$zeof  quit:'$test  do
+	. if $zextract(line,$zlength(line))=$char(13) set line=$zextract(line,1,$zlength(line)-1)
+	. if $zextract(line,$zlength(line))=$char(10) set line=$zextract(line,1,$zlength(line)-1)
+	. set return($increment(counter))=line
+	close source use currentdevice
+	quit	
+UNESCNL(S) Q $$UES^MIOJSON2(S) ; Enescape string from json/js -> M
+WRFILE(FILE,TEXT,ERR)
+	K ERR
+	N USEIO
+	S USEIO=$IO
+	O FILE:(newversion:stream:exception="G WRFILEERR")
+	U FILE
+	W $G(TEXT)
+	C FILE
+	U USEIO
+	Q
+WRFILEERR
+	S ERR("code")="TPL_IO"
+	S ERR("msg")="I/O error writing template: "_FILE
+	C FILE
+	U USEIO
+	Q
+SETUPTESTDIR(ROOT,PARTROOT)
+	S ROOT="templates/test-MIOTPL-"_$J_"/"
+	D MKDIR(ROOT)
+	D MKDIR(ROOT_"partials/")
+	S PARTROOT=ROOT_"partials/"
+	Q
+MKDIR(PATH) ; mkdir -p PATH (best-effort)
+	N CMD
+	S CMD="mkdir -p "_PATH
+	ZSY CMD
+	Q
+RMDIR(PATH) ; rm -rf PATH (best-effort)
+	N CMD
+	S CMD="rm -rf "_PATH
+	ZSY CMD
+	Q
+;--- Lambda implementations used by tests -=--
+;LAM_VAR_WORLD
+LAMVARWORLD() Q "world"
+;LAM_VAR_GT
+LAMVARGT()    Q ">"
+;Higher-order section wrappers (outer no-arg)
+LAMHOSRAWWRAP(TEXT,RENDER) ;LAM_HOS_RAW_WRAP
+	Q "$$LAMHOSRAWIN^MIOTPLT"
+; --- Higher-order section inners (text, renderHandleId) ---
+LAMHOSRAWIN(TEXT,LRID) ;LAM_HOS_RAW_IN
+	; must receive literal "{{x}}"
+	I $G(TEXT)="{{x}}" Q "yes"
+	Q "no"
+;LAM_VAR_INC
+LAMVARINC()
+	N N S N=$INCREMENT(^TMP($J,"MIOTPLT","LAMCALL","var"))
+	Q N
+LAMHOSEXPWRAP(TEXT,LRID) ;LAM_HOS_EXP_WRAP
+	Q "$$LAMHOSEXPIN^MIOTPLT"
+LAMHOSRENDRAWIN(TEXT,LRID) ;LAM_HOS_RENDRAW_IN
+	; render the raw block itself (contains delimiter change tag)
+	Q $$LRENDER^MIOTPL2(+$G(LRID),$G(TEXT))
+LAMHOSRENDRAWWRAP(TEXT,LRID) ;LAM_HOS_RENDRAW_WRAP
+	Q "$$LAMHOSRENDRAWIN^MIOTPLT"
+LAMHOSMCALLWRAP(TEXT,LRID) ;LAM_HOS_MCALL_WRAP 
+	Q "$$LAMHOSMCALLIN^MIOTPLT"
+LAMHOSINVWRAP(TEXT,LRID) ;LAM_HOS_INV_WRAP 
+	Q "$$LAMHOSINVIN^MIOTPLT"
+LAMHOSEXPIN(TEXT,LRID) ;LAM_HOS_EXP_IN
+	; return: text + render("{{planet}}") + text
+	N MID S MID=$$LRENDER^MIOTPL2(+$G(LRID),"{{planet}}")
+	Q $G(TEXT)_MID_$G(TEXT)
+	;
+LAMHOSMCALLIN(TEXT,LRID) ;LAM_HOS_MCALL_IN
+	Q "__"_$G(TEXT)_"__"
+LAMHOSINVIN(TEXT,LRID) ;LAM_HOS_INV_IN
+	; if this is called in inverted, that’s a bug; record it
+	S ^TMP($J,"MIOTPLT","LAMCALL","invInner")=$G(^TMP($J,"MIOTPLT","LAMCALL","invInner"))+1
+	Q "SHOULD_NOT_RUN"
 	;	
 MIOTF121 ; Full suite test 121 - TPL_SECTION_CTA.;
 	N TOK,ERR,CONF,CTX,OUT
@@ -2891,37 +3094,68 @@ TEST193 ;
 	S CTX("lambda")="$$LAMHOSINVWRAP^MIOTPLT"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	Q
-TEST265 ;
-	N CONF,CTX,TOK,OUT,ERR,S
-	D START^MIOTPL2(.CONF)
-	S CTX("meta","captureBlocks")=1
-	S S="Body"_$C(10)_"  {{#block:head}}"_$C(10)_"  X"_$C(10)_"  {{/block:head}}"_$C(10)_"End"_$C(10)
-	D COMPILE^MIOTPL2(S,.TOK,.ERR) I $D(ERR) W "FAIL TEST165 compile",! Q
-	D EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR) I $D(ERR) W "FAIL TEST165 eval",! Q
-	I OUT'=("Body"_$C(10)_"End"_$C(10)) W "FAIL TEST165 OUT=",OUT,! Q
-	I $G(CTX("blocks","head"))'=("X"_$C(10)) W "FAIL TEST165 BLOCK=" Q ;,ZWR CTX("blocks","head"),! Q
+TEST197 ; [Errors] line/col + include stack (partials) + failing tag
+	N HDR,DESC
+	S HDR="[TEST197][Errors][Line/Col + stack]"
+	S DESC=HDR_"[Nested partials + lambda error should report failing tag and include chain]"
+	; Build a partials map (authoritative source) so we don't hit filesystem
+	N PART K PART
+	S PART("p1")="P1"_$C(10)_"{{>p2}}"_$C(10)
+	S PART("p2")="P2 {{#boom}}X{{/boom}}"_$C(10)
+	; Root template calls p1 at line 2 col 1
+	N TEMPLATE
+	S TEMPLATE="ROOT"_$C(10)_"{{>p1}}"_$C(10)
+	N CTX K CTX
+	S CTX("boom")="$$LAMBOOM^MIOTPLT"
+	S CTX("meta","partialsRef")="PART"
+	S CTX("meta","templateName")="root"
+	N CONF K CONF
+	; (CONF can be mostly empty; MIOTPL2 has internal defaults)
+	S CONF("compat","truthiness")="legacy"
+	N TOK,OUT,ERR
+	D COMPILE^MIOTPL2(TEMPLATE,.TOK,.ERR)
+	I $D(ERR) D TFAILERR("COMPILE",DESC,.ERR) Q
+	D EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
+	; Expect a lambda execution error
+	I '$D(ERR) D TFAIL("EVAL",DESC,"<no error>","<error TPL_LAMBDA>") Q
+	D TASSERTS("EVAL",DESC,$G(ERR("code")),"TPL_LAMBDA")
+	; failing tag location is inside p2: "P2 " = 3 chars, so {{#boom}} begins at col 4
+	D TASSERTN("EVAL",DESC,+$G(ERR("line")),1)
+	D TASSERTN("EVAL",DESC,+$G(ERR("col")),4)
+	D TASSERTS("EVAL",DESC,$G(ERR("tag")),"{{#boom}}")
+	; stack: root then >p1 then >p2 (call-site line/col recorded on the calling tags)
+	D TASSERTS("EVAL",DESC,$G(ERR("stack",1,"name")),"root")
+	D TASSERTS("EVAL",DESC,$G(ERR("stack",2,"name")),">p1")
+	D TASSERTS("EVAL",DESC,$G(ERR("stack",3,"name")),">p2")
+	; call-site positions:
+	; root calls {{>p1}} at line 2 col 1
+	D TASSERTN("EVAL",DESC,+$G(ERR("stack",2,"line")),2)
+	D TASSERTN("EVAL",DESC,+$G(ERR("stack",2,"col")),1)
+	; p1 calls {{>p2}} at line 2 col 1
+	D TASSERTN("EVAL",DESC,+$G(ERR("stack",3,"line")),2)
+	D TASSERTN("EVAL",DESC,+$G(ERR("stack",3,"col")),1)
 	Q
-TEST266
-	N CONF,CTX,TOK,OUT,ERR,S
-	D START^MIOTPL2(.CONF)
-	K CTX("blocks")
-	S CTX("meta","captureBlocks")=0
-	S S="S"_$C(10)_"  {{#block:head}}"_$C(10)_"  D"_$C(10)_"  {{/block:head}}"_$C(10)_"E"_$C(10)
-	D COMPILE^MIOTPL2(S,.TOK,.ERR) I $D(ERR) W "FAIL TEST166 compile",! Q
-	D EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR) I $D(ERR) W "FAIL TEST166 eval",! Q
-	S EXPECTED=("S"_$C(10)_"  D"_$C(10)_"E"_$C(10))
-	I OUT'=EXPECTED W "FAIL TEST166 OUT=",OUT,! Q
+; Lambda used by TEST197: intentionally triggers a runtime error that MIOTPL2 must trap
+LAMBOOM(TEXT,LRID) ; [test helper] provoke an error inside lambda execution
+	N X
+	S X=1/0  ; DIVZERO -> should be trapped by MIOTPL2 lambda trap
+	Q ""
+TFAIL(STAGE,DESC,GOT,EXP)
+	W "FAIL: ["_STAGE_"]"_DESC_": got="_GOT_" expected="_EXP,!
 	Q
-TEST267
-	N CONF,CTX,TOK,OUT,ERR,S
-	D START^MIOTPL2(.CONF)
-	S CTX("blocks","head")="X"_$C(10)
-	S CTX("meta","captureBlocks")=0
-	S S="S"_$C(10)_"  {{#block:head}}"_$C(10)_"  D"_$C(10)_"  {{/block:head}}"_$C(10)_"E"_$C(10)
-	D COMPILE^MIOTPL2(S,.TOK,.ERR) I $D(ERR) W "FAIL TEST167 compile",! Q
-	D EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR) I $D(ERR) W "FAIL TEST167 eval",! Q
-	I OUT'=("S"_$C(10)_"  X"_$C(10)_"E"_$C(10)) W "FAIL TEST167 OUT=",OUT,! Q
-	I $G(CTX("blocks","head"))'=("X"_$C(10)) W "FAIL TEST167 BLOCK OVERWRITTEN=",CTX("blocks","head"),! Q
+TFAILERR(STAGE,DESC,ERR)
+	N C,M,LN,CL,TG
+	S C=$G(ERR("code")),M=$G(ERR("msg"))
+	S LN=$G(ERR("line")),CL=$G(ERR("col")),TG=$G(ERR("tag"))
+	D TFAIL(STAGE,DESC,"code="_C_" msg="_M_" line="_LN_" col="_CL_" tag="_TG,"<no error>")
+	Q
+TASSERTS(STAGE,DESC,GOT,EXP)
+	I $G(GOT)=$G(EXP) Q
+	D TFAIL(STAGE,DESC,"<"_$G(GOT)_">","<"_$G(EXP)_">")
+	Q
+TASSERTN(STAGE,DESC,GOT,EXP)
+	I +$G(GOT)=+$G(EXP) Q
+	D TFAIL(STAGE,DESC,$G(GOT),$G(EXP))
 	Q
 TEST000
 	N HDR S HDR="[TEST000][]"
@@ -2936,176 +3170,4 @@ TEST000
 	SET CTX("text")="content"
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	Q
-RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,CTX)
-	; Run each spec test twice:
-	;  1) Scalar template -> scalar output (existing high-perf path)
-	;  2) Reference template OREF(n) -> reference output OREF(n) (GB-safe path)
-	;N TOK,ERR,OUT
-	;K TOK,ERR,OUT
-	K ^TMP($J)
-	D COMPILE^MIOTPL2($G(TEMPLATE),.TOK,.ERR)
-	D OK^MIOTASSERT('$D(ERR),"[COMPILE]"_HDR)
-	D EVAL^MIOTPL2(.TOK,.CONF,.CTX,.OUT,.ERR)
-	D OK^MIOTASSERT('$D(ERR),"[EVAL]"_DESC)
-	D EQ^MIOTASSERT(OUT,$G(EXPECTED),"[RENDER]"_DESC)
-	;I OUT=$G(EXPECTED) Q 
-	;K CONF,HDR,DESC
-	;I $D(ERR) ZWR ERR
-	;W !
-	;ZWR EXPECTED W !
-	;W "     " ZWR OUT W !
-	;ZWR TEMPLATE W !
-	;ZWR TOK 
-	;W "************************************",!
-	;Q
-	; Reference mode: build input chunks, compile+eval into output chunks
 	;
-	K ^TMP($J)
-	N TOKR,ERRR,INROOT,OUTROOT,CHSZ,L,P,N,OUT2
-	S INROOT=$NA(^TMP($J,"MIOTPLT","IN"))
-	S OUTROOT=$NA(^TMP($J,"MIOTPLT","OUT"))
-	K @INROOT K @OUTROOT
-	S CHSZ=17  ; small chunk to stress boundary logic
-	S L=$L($G(TEMPLATE))
-	S N=0
-	F P=1:CHSZ:L D
-	. S N=N+1
-	. S @($$APPREF^MIOTPL2(INROOT,N))=$E(TEMPLATE,P,P+CHSZ-1)
-	K TOKR,ERRR
-	D COMPREF^MIOTPL2(INROOT,.TOKR,.ERRR)
-	D OK^MIOTASSERT('$D(ERRR),"[COMPREF]"_HDR)
-	D EVALREF^MIOTPL2(.TOKR,.CONF,.CTX,OUTROOT,.ERRR)
-	D OK^MIOTASSERT('$D(ERRR),"[EVALREF]"_DESC)
-	S OUT2=""
-	S N=0
-	F  S N=$O(@($$APPREF^MIOTPL2(OUTROOT,N))) Q:'N  D
-	. S OUT2=OUT2_$G(@($$APPREF^MIOTPL2(OUTROOT,N)))
-	D EQ^MIOTASSERT(OUT2,$G(EXPECTED),"[RENDERREF]"_DESC)
-	Q
-JSONTESTRUNNER(FP) ;
-	N OK,TXT,ERR,TESTS
-	S OK=$$READFILE^MIOTPL2(FP,.TXT,.ERR)
-	D OK^MIOTASSERT(OK,"read "_FP)
-	Q:'OK
-	D DECODE^MIOJSON2($NA(TXT),$NA(TESTS))
-	N A S A=""
-	F  S A=$O(TESTS("tests",A)) Q:A=""  D
-	. N HDR S HDR="["_$G(TESTS("tests",A,"name"))_"]"
-	. N DESC S DESC=HDR_"["_$G(TESTS("tests",A,"desc"))_"]"
-	. N TEMPLATE S TEMPLATE=$G(TESTS("tests",A,"template"))
-	. N EXPECTED S EXPECTED=$G(TESTS("tests",A,"expected"))
-	. N CTX,CONF M CTX=TESTS("tests",A,"data")
-	. N ROOT,NTARR D SETUPPART(.CONF,.ROOT)
-	. ; JSON parser workaround
-	. I $G(TESTS("tests",A,"name"))="Recursion",$G(TESTS("tests",A,"desc"))="The greater-than operator should properly recurse." D
-	. . S CTX("nodes",1,"nodes")=""
-	. I $G(TESTS("tests",A,"name"))="Recursion",$G(TESTS("tests",A,"desc"))="Dynamic partials should properly recurse." D
-	. . S CTX("nodes",1,"nodes")=""
-	. I $D(TESTS("tests",A,"partials")) D
-	. . N ERR,P S P="" F  S P=$O(TESTS("tests",A,"partials",P)) Q:P=""  D
-	. . . S NTARR(ROOT_P)="" D WRFILE(ROOT_P,TESTS("tests",A,"partials",P),.ERR) K ERR
-	. N TOK,OUT
-	. D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
-	. N A S A="" F  S A=$O(NTARR(A)) Q:A=""  ZSY "rm "_A
-	S ROOT="templates/test-MIOTPL-"_$J_"/" D RMDIR(ROOT)
-	Q	
-SETUPPART(CONF,ROOT)
-	M CONF=^MIO("CONF")
-	S ROOT="templates/test-MIOTPL-"_$J_"/"
-	D MKDIR(ROOT)
-	D MKDIR(ROOT_"partials/")
-	S CONF("templates","root")=ROOT
-	S CONF("templates","ext")=""
-	Q
-SHQ(S) ; shell-quote
-	; Wrap in single quotes; escape single quotes safely: ' -> '\'' (close, escape, reopen)
-	N X S X=$G(S)
-	I X["'" S X=$$REPL(X,"'","\'")
-	Q "'"_X_"'"
-REPL(s,f,t)
-	i $tr(s,f)=s q s
-	n o,i s o="" f i=1:1:$l(s,f)  s o=o_$s(i<$l(s,f):$p(s,f,i)_t,1:$p(s,f,i))
-	q o
-ReadFile(file,return)
-	new source,line,counter,currentdevice
-	set source=file,currentdevice=$io
-	open source:(readonly:chset="m")
-	for  use source read line:2 quit:$zeof  quit:'$test  do
-	. if $zextract(line,$zlength(line))=$char(13) set line=$zextract(line,1,$zlength(line)-1)
-	. if $zextract(line,$zlength(line))=$char(10) set line=$zextract(line,1,$zlength(line)-1)
-	. set return($increment(counter))=line
-	close source use currentdevice
-	quit	
-UNESCNL(S) Q $$UES^MIOJSON2(S) ; Enescape string from json/js -> M
-WRFILE(FILE,TEXT,ERR)
-	K ERR
-	N USEIO
-	S USEIO=$IO
-	O FILE:(newversion:stream:exception="G WRFILEERR")
-	U FILE
-	W $G(TEXT)
-	C FILE
-	U USEIO
-	Q
-WRFILEERR
-	S ERR("code")="TPL_IO"
-	S ERR("msg")="I/O error writing template: "_FILE
-	C FILE
-	U USEIO
-	Q
-SETUPTESTDIR(ROOT,PARTROOT)
-	S ROOT="templates/test-MIOTPL-"_$J_"/"
-	D MKDIR(ROOT)
-	D MKDIR(ROOT_"partials/")
-	S PARTROOT=ROOT_"partials/"
-	Q
-MKDIR(PATH) ; mkdir -p PATH (best-effort)
-	N CMD
-	S CMD="mkdir -p "_PATH
-	ZSY CMD
-	Q
-RMDIR(PATH) ; rm -rf PATH (best-effort)
-	N CMD
-	S CMD="rm -rf "_PATH
-	ZSY CMD
-	Q
-;--- Lambda implementations used by tests -=--
-;LAM_VAR_WORLD
-LAMVARWORLD() Q "world"
-;LAM_VAR_GT
-LAMVARGT()    Q ">"
-;Higher-order section wrappers (outer no-arg)
-LAMHOSRAWWRAP(TEXT,RENDER) ;LAM_HOS_RAW_WRAP
-	Q "$$LAMHOSRAWIN^MIOTPLT"
-; --- Higher-order section inners (text, renderHandleId) ---
-LAMHOSRAWIN(TEXT,LRID) ;LAM_HOS_RAW_IN
-	; must receive literal "{{x}}"
-	I $G(TEXT)="{{x}}" Q "yes"
-	Q "no"
-;LAM_VAR_INC
-LAMVARINC()
-	N N S N=$INCREMENT(^TMP($J,"MIOTPLT","LAMCALL","var"))
-	Q N
-LAMHOSEXPWRAP(TEXT,LRID) ;LAM_HOS_EXP_WRAP
-	Q "$$LAMHOSEXPIN^MIOTPLT"
-LAMHOSRENDRAWIN(TEXT,LRID) ;LAM_HOS_RENDRAW_IN
-	; render the raw block itself (contains delimiter change tag)
-	Q $$LRENDER^MIOTPL2(+$G(LRID),$G(TEXT))
-LAMHOSRENDRAWWRAP(TEXT,LRID) ;LAM_HOS_RENDRAW_WRAP
-	Q "$$LAMHOSRENDRAWIN^MIOTPLT"
-LAMHOSMCALLWRAP(TEXT,LRID) ;LAM_HOS_MCALL_WRAP 
-	Q "$$LAMHOSMCALLIN^MIOTPLT"
-LAMHOSINVWRAP(TEXT,LRID) ;LAM_HOS_INV_WRAP 
-	Q "$$LAMHOSINVIN^MIOTPLT"
-LAMHOSEXPIN(TEXT,LRID) ;LAM_HOS_EXP_IN
-	; return: text + render("{{planet}}") + text
-	N MID S MID=$$LRENDER^MIOTPL2(+$G(LRID),"{{planet}}")
-	Q $G(TEXT)_MID_$G(TEXT)
-	;
-LAMHOSMCALLIN(TEXT,LRID) ;LAM_HOS_MCALL_IN
-	Q "__"_$G(TEXT)_"__"
-LAMHOSINVIN(TEXT,LRID) ;LAM_HOS_INV_IN
-	; if this is called in inverted, that’s a bug; record it
-	S ^TMP($J,"MIOTPLT","LAMCALL","invInner")=$G(^TMP($J,"MIOTPLT","LAMCALL","invInner"))+1
-	Q "SHOULD_NOT_RUN"
-	;	
