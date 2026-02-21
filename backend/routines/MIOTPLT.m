@@ -2668,8 +2668,8 @@ TEST179
 	Q
 TEST180
 	N HDR S HDR="[TEST180][Inline Indentation]"
-	S DESC=HDR_"Whitespace should be left untouched: whitespaces preceding the tag"
-	S DESC=HDR_"whitespace succeding the tag should be left untouched]"
+	N DESC S DESC=HDR_"Whitespace should be left untouched: whitespaces preceding the tag"
+	S DESC=DESC="whitespace succeding the tag should be left untouched]"
 	S TEMPLATE="  {{data}}  {{>*dynamic}}\n"
 	S EXPECTED="  |  >\n>\n"
 	S TEMPLATE=$$UNESCNL(TEMPLATE)
@@ -2683,6 +2683,22 @@ TEST180
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
 	D RMDIR(ROOT)
 	Q
+TEST181
+	N HDR S HDR="[TEST181][Standalone Line Endings]"
+	N SESC S DESC=HDR_"Whitespace should be left untouched: whitespaces preceding the tag"
+	S DESC=DESC_"whitespace succeding the tag should be left untouched]"
+	S TEMPLATE="|\r\n{{>*dynamic}}\r\n|"
+	S EXPECTED="|\r\n>|"
+	S TEMPLATE=$$UNESCNL(TEMPLATE)
+	S EXPECTED=$$UNESCNL(EXPECTED)
+	N CTX 
+	S CTX("dynamic")="partial"
+	N CONF D SETUPPART(.CONF,.ROOT)
+	N ERR D WRFILE(ROOT_"partial",$$UNESCNL(">"),.ERR)
+	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
+	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
+	D RMDIR(ROOT)
+	Q	
 TEST265 ;
 	N CONF,CTX,TOK,OUT,ERR,S
 	D START^MIOTPL2(.CONF)
