@@ -1,0 +1,1358 @@
+{{$title}}Playground{{/title}}
+
+<section class="plgd-card plgd-pg" id="plgd-root" aria-label="Template Playground">
+  <div class="plgd-pg-inner">
+    <div class="plgd-pg-grid">
+
+      <!-- Sidebar: Library -->
+      <aside class="plgd-sidebar" id="plgd-sidebar" data-panel="sidebar" aria-label="Template library">
+        <div class="plgd-sidebar-head">
+          <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:10px;">
+            <div style="min-width:0;">
+              <div class="plgd-kicker">Library</div>
+              <div class="plgd-h2" style="margin-top:6px;">Templates</div>
+              <div class="plgd-muted" style="margin-top:8px; font-size:13px; line-height:1.45;">{{page.lead}}</div>
+            </div>
+            <a class="plgd-btn plgd-btn-ghost" href="/plgd" style="padding:9px 12px;">Back</a>
+          </div>
+
+          <div style="margin-top:12px; display:flex; gap:10px; align-items:center;">
+            <input id="plgd-search" class="plgd-input" placeholder="Search templates…" aria-label="Search templates" />
+          </div>
+
+          <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+            <button class="plgd-btn plgd-btn-ghost plgd-collapse" type="button" data-target="sidebar" title="Collapse sidebar">
+              <span data-coll="sidebar">▾</span>
+            </button>
+            <span class="plgd-chip" title="Keyboard shortcuts">
+              <span>Shortcuts</span>
+              <span class="plgd-kbd">Ctrl/⌘+Enter</span>
+              <span class="plgd-kbd">Ctrl/⌘+S</span>
+              <span class="plgd-kbd">Ctrl/⌘+F</span>
+            </span>
+          </div>
+        </div>
+
+        <div class="plgd-sidebar-list">
+          <div class="plgd-kicker" style="margin: 2px 0 10px;">Click to load</div>
+
+          <div id="plgd-lib-list" class="plgd-lib-list">
+            {{#tpls}}
+              <a href="/plgd/playground?id={{id}}" class="plgd-lib-item" data-name="{{name}}" data-group="{{group}}" data-tags="{{tags}}">
+                <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:10px;">
+                  <div style="min-width:0;">
+                    <div class="plgd-lib-title">{{name}}</div>
+                    <div class="plgd-lib-meta">{{group}} · ID {{id}}{{#tags}} · {{tags}}{{/tags}}</div>
+                  </div>
+                  <div style="font-size:14px; color:rgba(251,191,36,.92); margin-top:2px;">{{#fav}}★{{/fav}}{{^fav}}☆{{/fav}}</div>
+                </div>
+              </a>
+            {{/tpls}}
+          </div>
+        </div>
+      </aside>
+
+      <div class="plgd-splitter-col" id="split-sidebar" title="Drag to resize" aria-hidden="true"></div>
+
+      <!-- Main -->
+      <div class="plgd-main" aria-label="Playground workspace">
+
+        <!-- Header -->
+        <div class="plgd-main-head">
+          <div style="min-width:0;">
+            <div class="plgd-kicker">Selected</div>
+            <h1 class="plgd-h1" style="margin-top:8px;">{{sel.name}}</h1>
+            <p class="plgd-lead">{{sel.desc}}</p>
+
+            <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+              <span class="plgd-chip" id="plgd-json-status">JSON: <strong style="font-weight:800;">Unknown</strong></span>
+              <span class="plgd-chip" id="plgd-mode-chip">Mode: <strong style="font-weight:800;">Text</strong></span>
+              <span class="plgd-chip" id="plgd-zen-chip" style="display:none;">Zen</span>
+            </div>
+
+            <div id="plgd-draft-banner" class="plgd-subcard" style="display:none; margin-top:10px; padding:10px 12px;">
+              <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+                <div class="plgd-muted" style="font-size:13px;">
+                  <strong style="color:var(--textStrong);">Draft restored</strong> from local storage.
+                </div>
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                  <button id="plgd-draft-revert" class="plgd-btn" type="button">Revert to saved</button>
+                  <button id="plgd-draft-discard" class="plgd-btn plgd-btn-ghost" type="button">Discard draft</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="plgd-actions">
+            <button id="plgd-fav" type="button" class="plgd-btn plgd-btn-ghost" data-id="{{sel.id}}" data-fav="{{sel.fav}}">
+              <span id="plgd-fav-icon">{{#sel.fav}}★{{/sel.fav}}{{^sel.fav}}☆{{/sel.fav}}</span>
+              <span>Favorite</span>
+            </button>
+
+            <button id="plgd-render" type="button" class="plgd-btn plgd-btn-primary">Render</button>
+            <button id="plgd-save" type="button" class="plgd-btn">Save</button>
+
+            <button id="plgd-zen" type="button" class="plgd-btn plgd-btn-ghost" title="Zen mode">
+              <span id="plgd-zen-ic">⛶</span>
+              <span id="plgd-zen-label">Zen</span>
+            </button>
+
+            <button id="plgd-output-toggle" type="button" class="plgd-btn" style="display:none;" title="Toggle output drawer">
+              <span>Output</span>
+            </button>
+
+            <button id="plgd-tools" type="button" class="plgd-btn plgd-btn-ghost" title="Tools (Find / Replace / Go to line)">
+              <span>Tools</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Details / metadata -->
+        <section class="plgd-panel" id="panel-meta" data-panel="meta" aria-label="Template details">
+          <div class="plgd-panel-head">
+            <div>
+              <div class="plgd-panel-title">Details</div>
+              <div class="plgd-panel-sub">Name, group, tags, description</div>
+            </div>
+            <button class="plgd-btn plgd-btn-ghost plgd-collapse" type="button" data-target="meta" title="Collapse">
+              <span data-coll="meta">▾</span>
+            </button>
+          </div>
+
+          <div class="plgd-panel-body">
+            <div class="plgd-meta-grid">
+              <div class="span-2">
+                <label class="plgd-label" for="plgd-name">Name</label>
+                <input id="plgd-name" class="plgd-input" value="{{sel.name}}" />
+              </div>
+
+              <div>
+                <label class="plgd-label" for="plgd-group">Group</label>
+                <input id="plgd-group" class="plgd-input" value="{{sel.group}}" />
+              </div>
+
+              <div>
+                <label class="plgd-label" for="plgd-tags">Tags</label>
+                <input id="plgd-tags" class="plgd-input" value="{{sel.tags}}" placeholder="e.g. email, dashboard" />
+              </div>
+
+              <div>
+                <label class="plgd-label" for="plgd-id">ID</label>
+                <input id="plgd-id" class="plgd-input" value="{{sel.id}}" readonly />
+              </div>
+
+              <div>
+                <label class="plgd-label">Safety</label>
+                <span class="plgd-chip" title="Ad-hoc safety rules">Partials/inheritance blocked</span>
+              </div>
+            </div>
+
+            <div class="plgd-meta-desc">
+              <label class="plgd-label" for="plgd-desc">Description</label>
+              <input id="plgd-desc" class="plgd-input" value="{{sel.desc}}" />
+            </div>
+          </div>
+        </section>
+
+        <!-- Work area -->
+        <div class="plgd-body" id="plgd-body">
+
+          <!-- Editors row -->
+          <div class="plgd-editors" id="plgd-editors-row">
+
+            <section class="plgd-panel" id="panel-template" data-panel="template" aria-label="Template editor">
+              <div class="plgd-panel-head">
+                <div>
+                  <div class="plgd-panel-title">Template</div>
+                  <div class="plgd-panel-sub">Mustache / MIOTPL</div>
+                </div>
+                <button class="plgd-btn plgd-btn-ghost plgd-collapse" type="button" data-target="template" title="Collapse">
+                  <span data-coll="template">▾</span>
+                </button>
+              </div>
+              <div class="plgd-panel-body pad0">
+                <textarea id="plgd-template" class="plgd-textarea-plain" spellcheck="false">{{{sel.tpl}}}</textarea>
+              </div>
+              <div class="plgd-panel-foot">
+                Ad-hoc rendering blocks <code>&#123;&#123;&gt;&#125;&#125;</code> partials and <code>&#123;&#123;&lt;&#125;&#125;</code> inheritance by default.
+              </div>
+            </section>
+
+            <div class="plgd-splitter-col" id="split-editors" title="Drag to resize" aria-hidden="true"></div>
+
+            <section class="plgd-panel" id="panel-json" data-panel="json" aria-label="JSON editor">
+              <div class="plgd-panel-head">
+                <div>
+                  <div class="plgd-panel-title">JSON context</div>
+                  <div class="plgd-panel-sub">Values starting with <code>$$</code> are stripped</div>
+                </div>
+                <div style="display:flex; gap:8px; align-items:center;">
+                  <button id="plgd-json-format" type="button" class="plgd-btn" title="Format JSON">Format</button>
+                  <button class="plgd-btn plgd-btn-ghost plgd-collapse" type="button" data-target="json" title="Collapse">
+                    <span data-coll="json">▾</span>
+                  </button>
+                </div>
+              </div>
+              <div class="plgd-panel-body pad0">
+                <textarea id="plgd-json" class="plgd-textarea-plain" spellcheck="false">{{{sel.json}}}</textarea>
+              </div>
+              <div class="plgd-panel-foot">
+                Tip: press <span class="plgd-kbd">Ctrl/⌘+Enter</span> to render and <span class="plgd-kbd">Ctrl/⌘+S</span> to save.
+              </div>
+            </section>
+
+          </div>
+
+          <div class="plgd-splitter-row" id="split-vertical" title="Drag to resize" aria-hidden="true"></div>
+
+          <!-- Output host (moves into drawer in zen mode) -->
+          <div id="plgd-output-host" class="plgd-outputzone">
+
+            <!-- Problems -->
+            <section class="plgd-panel plgd-collapsed" id="panel-problems" data-panel="problems" aria-label="Problems">
+              <div class="plgd-panel-head">
+                <div>
+                  <div class="plgd-panel-title">Problems</div>
+                  <div class="plgd-panel-sub">Render errors and diagnostics</div>
+                </div>
+                <div style="display:flex; gap:8px; align-items:center;">
+                  <button id="plgd-problems-clear" class="plgd-btn" type="button">Clear</button>
+                  <button class="plgd-btn plgd-btn-ghost plgd-collapse" type="button" data-target="problems" title="Collapse">
+                    <span data-coll="problems">▾</span>
+                  </button>
+                </div>
+              </div>
+              <div class="plgd-panel-body">
+                <pre id="plgd-problems" class="plgd-output-pre" style="white-space:pre-wrap;"></pre>
+              </div>
+            </section>
+
+            <!-- Output -->
+            <section class="plgd-panel" id="panel-output" data-panel="output" aria-label="Output">
+              <div class="plgd-panel-head">
+                <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                  <div>
+                    <div class="plgd-panel-title">Output</div>
+                    <div class="plgd-panel-sub">Text / HTML preview / Raw / Diff</div>
+                  </div>
+
+                  <div class="plgd-output-modes" role="tablist" aria-label="Output mode">
+                    <button class="plgd-tab active" type="button" data-mode="text">Text</button>
+                    <button class="plgd-tab" type="button" data-mode="html">HTML</button>
+                    <button class="plgd-tab" type="button" data-mode="raw">Raw</button>
+                    <button class="plgd-tab" type="button" data-mode="diff">Diff</button>
+                  </div>
+                </div>
+
+                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                  <button id="plgd-copy" type="button" class="plgd-btn">Copy</button>
+                  <button id="plgd-clear" type="button" class="plgd-btn">Clear</button>
+                  <button class="plgd-btn plgd-btn-ghost plgd-collapse" type="button" data-target="output" title="Collapse">
+                    <span data-coll="output">▾</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="plgd-panel-body" id="plgd-output-body">
+                <pre id="plgd-output-text" class="plgd-output-pre"></pre>
+
+                <div id="plgd-output-html-wrap" style="display:none;">
+                  <iframe id="plgd-output-html" class="plgd-iframe" sandbox=""></iframe>
+                </div>
+
+                <pre id="plgd-output-raw" class="plgd-output-pre" style="display:none; white-space:pre-wrap;"></pre>
+                <pre id="plgd-output-diff" class="plgd-output-pre" style="display:none; white-space:pre-wrap;"></pre>
+              </div>
+
+              <div class="plgd-panel-foot">
+                <span id="plgd-last-render">Not rendered yet.</span>
+                <span style="float:right; color:rgba(148,163,184,.92);">History: <span id="plgd-hcount">0</span>/10</span>
+              </div>
+            </section>
+
+            <!-- History -->
+            <section class="plgd-panel plgd-collapsed" id="panel-history" data-panel="history" aria-label="Render history">
+              <div class="plgd-panel-head">
+                <div>
+                  <div class="plgd-panel-title">Render history</div>
+                  <div class="plgd-panel-sub">Last 10 outputs (local)</div>
+                </div>
+                <div style="display:flex; gap:8px; align-items:center;">
+                  <button id="plgd-history-clear" class="plgd-btn" type="button">Clear</button>
+                  <button class="plgd-btn plgd-btn-ghost plgd-collapse" type="button" data-target="history" title="Collapse">
+                    <span data-coll="history">▾</span>
+                  </button>
+                </div>
+              </div>
+              <div class="plgd-panel-body">
+                <div id="plgd-history" style="display:flex; flex-direction:column; gap:10px;"></div>
+              </div>
+            </section>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Output drawer host (Zen mode) -->
+<div class="plgd-drawer" id="plgd-drawer" aria-hidden="true">
+  <div class="plgd-panel" style="height:100%;">
+    <div class="plgd-panel-head">
+      <div>
+        <div class="plgd-panel-title">Output</div>
+        <div class="plgd-panel-sub">Zen drawer</div>
+      </div>
+      <button id="plgd-drawer-close" class="plgd-btn" type="button">Close</button>
+    </div>
+    <div class="plgd-panel-body" style="height: calc(100% - 58px); overflow:auto; box-sizing:border-box;">
+      <div id="plgd-drawer-host"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="plgd-toast" class="plgd-toast" aria-live="polite" aria-atomic="true">
+  <div><span id="plgd-toast-msg">Saved</span></div>
+</div>
+
+<!-- Modal: Tools -->
+<div id="plgd-modal-tools" class="plgd-modal" role="dialog" aria-modal="true" aria-label="Tools">
+  <div class="plgd-modal-card">
+    <div class="plgd-panel-head">
+      <div>
+        <div class="plgd-panel-title">Tools</div>
+        <div class="plgd-panel-sub">Find / Replace / Go to line (active editor)</div>
+      </div>
+      <button id="plgd-tools-close" class="plgd-btn" type="button">Close</button>
+    </div>
+
+    <div class="plgd-modal-body">
+      <div class="plgd-modal-grid">
+        <div>
+          <label class="plgd-label" for="plgd-find">Find</label>
+          <input id="plgd-find" class="plgd-input" placeholder="Search text" />
+        </div>
+        <div>
+          <label class="plgd-label" for="plgd-repl">Replace</label>
+          <input id="plgd-repl" class="plgd-input" placeholder="Replacement (optional)" />
+        </div>
+      </div>
+
+      <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap; align-items:center; color:rgba(203,213,225,.90); font-size:12px;">
+        <label style="display:flex; gap:8px; align-items:center;">
+          <input id="plgd-find-case" type="checkbox" /> Case sensitive
+        </label>
+        <label style="display:flex; gap:8px; align-items:center;">
+          <input id="plgd-find-regex" type="checkbox" /> Regex
+        </label>
+      </div>
+
+      <div style="margin-top:10px; color:rgba(148,163,184,.90); font-size:12px;">
+        Active editor: <span id="plgd-active-editor">template</span>
+      </div>
+    </div>
+
+    <div class="plgd-modal-row">
+      <button id="plgd-find-prev" class="plgd-btn" type="button">Prev</button>
+      <button id="plgd-find-next" class="plgd-btn" type="button">Next</button>
+      <span style="flex:1;"></span>
+      <button id="plgd-replace-one" class="plgd-btn" type="button">Replace</button>
+      <button id="plgd-replace-all" class="plgd-btn" type="button">Replace all</button>
+      <button id="plgd-goto" class="plgd-btn plgd-btn-ghost" type="button">Go to line…</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Go to line -->
+<div id="plgd-modal-goto" class="plgd-modal" role="dialog" aria-modal="true" aria-label="Go to line">
+  <div class="plgd-modal-card" style="width:min(520px,100%);">
+    <div class="plgd-panel-head">
+      <div>
+        <div class="plgd-panel-title">Go to line</div>
+        <div class="plgd-panel-sub">Moves cursor in the active editor</div>
+      </div>
+      <button id="plgd-goto-close" class="plgd-btn" type="button">Close</button>
+    </div>
+    <div class="plgd-modal-body">
+      <label class="plgd-label" for="plgd-goto-line">Line number (1-based)</label>
+      <input id="plgd-goto-line" class="plgd-input" placeholder="e.g. 12" />
+      <div style="margin-top:10px; color:rgba(148,163,184,.90); font-size:12px;">
+        Tip: <span class="plgd-kbd">Esc</span> closes this dialog.
+      </div>
+    </div>
+    <div class="plgd-modal-row">
+      <button id="plgd-goto-go" class="plgd-btn plgd-btn-primary" type="button">Go</button>
+    </div>
+  </div>
+</div>
+
+{{$scripts}}
+<script>
+(function(){
+  const $ = (id) => document.getElementById(id);
+  const qs = (sel, root=document) => root.querySelector(sel);
+  const qsa = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+
+  // ---------------------------------
+  // Toast
+  // ---------------------------------
+  const toast = (msg) => {
+    if(!$('plgd-toast')) return;
+    $('plgd-toast-msg').textContent = msg;
+    $('plgd-toast').classList.add('show');
+    clearTimeout(window.__plgdToastT);
+    window.__plgdToastT = setTimeout(() => $('plgd-toast').classList.remove('show'), 1800);
+  };
+
+  // ---------------------------------
+  // HTTP helpers
+  // ---------------------------------
+  async function postForm(url, data){
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},
+      body: new URLSearchParams(data)
+    });
+    const ct = (res.headers.get('content-type') || '');
+    const isJSON = ct.includes('application/json');
+    const payload = isJSON ? await res.json().catch(() => null) : await res.text();
+    if(!res.ok){
+      // normalize error shape
+      if(isJSON && payload && typeof payload === 'object'){
+        const msg = payload.detail ? (payload.error + ': ' + payload.detail) : (payload.error || 'request_failed');
+        const e = new Error(msg);
+        e.payload = payload;
+        throw e;
+      }
+      throw new Error(typeof payload === 'string' ? payload : 'request_failed');
+    }
+    return payload;
+  }
+
+  function nowLabel(){
+    try { return new Date().toLocaleString(); } catch(_) { return ''+Date.now(); }
+  }
+
+  // ---------------------------------
+  // Local storage keys
+  // ---------------------------------
+  const tplId = ($('plgd-id') && $('plgd-id').value) ? $('plgd-id').value : 'new';
+  const LS = {
+    draft: (id) => `plgd:draft:${id||'new'}`,
+    hist:  (id) => `plgd:hist:${id||'new'}`,
+    ui:    'plgd:ui:state',
+    split: 'plgd:ui:split',
+    zen:   'plgd:ui:zen'
+  };
+
+  // Snapshot of server-loaded values (for draft revert)
+  const initial = {
+    name: $('plgd-name')?.value || '',
+    group: $('plgd-group')?.value || '',
+    tags: $('plgd-tags')?.value || '',
+    desc: $('plgd-desc')?.value || '',
+    tpl: $('plgd-template')?.value || '',
+    json: $('plgd-json')?.value || ''
+  };
+
+  // ---------------------------------
+  // Collapsible panels
+  // ---------------------------------
+  function loadUIState(){
+    try { return JSON.parse(localStorage.getItem(LS.ui) || '{}'); } catch(_) { return {}; }
+  }
+  function saveUIState(state){
+    localStorage.setItem(LS.ui, JSON.stringify(state||{}));
+  }
+  function setCollapsed(panelKey, collapsed){
+    const el = qs(`[data-panel="${panelKey}"]`);
+    if(!el) return;
+    el.classList.toggle('plgd-collapsed', !!collapsed);
+    const ic = qs(`[data-coll="${panelKey}"]`);
+    if(ic) ic.textContent = collapsed ? '▸' : '▾';
+    const st = loadUIState();
+    st.collapsed = st.collapsed || {};
+    st.collapsed[panelKey] = !!collapsed;
+    saveUIState(st);
+  }
+  function initCollapsibles(){
+    const st = loadUIState();
+    const collapsed = (st && st.collapsed) ? st.collapsed : {};
+    for(const key of ['meta','template','json','output','problems','history','sidebar']){
+      if(typeof collapsed[key] !== 'undefined') setCollapsed(key, collapsed[key]);
+    }
+    qsa('.plgd-collapse').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const key = btn.getAttribute('data-target');
+        const el = qs(`[data-panel="${key}"]`);
+        if(!el) return;
+        setCollapsed(key, !el.classList.contains('plgd-collapsed'));
+      });
+    });
+  }
+
+  // ---------------------------------
+  // Split panes (sidebar + editors + vertical)
+  // ---------------------------------
+  function loadSplit(){
+    try { return JSON.parse(localStorage.getItem(LS.split) || '{}'); } catch(_) { return {}; }
+  }
+  function saveSplit(s){
+    localStorage.setItem(LS.split, JSON.stringify(s||{}));
+  }
+  function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
+
+  function initSplitters(){
+    const split = loadSplit();
+
+    // Sidebar width restore
+    if(split.sidebarW && !$('plgd-sidebar').classList.contains('plgd-collapsed') && !document.body.classList.contains('plgd-zen')){
+      $('plgd-sidebar').style.width = split.sidebarW;
+    }
+
+    // Editors ratio restore
+    if(split.editLeftW){
+      try { $('plgd-editors-row').style.gridTemplateColumns = `${split.editLeftW} 10px 1fr`; } catch(_){}
+    }
+
+    // Vertical heights restore
+    if(split.editorH){
+      setVerticalHeights(split.editorH);
+    }
+
+    // Sidebar splitter drag
+    const sbar = $('split-sidebar');
+    if(sbar){
+      sbar.addEventListener('dblclick', () => {
+        $('plgd-sidebar').style.width = '360px';
+        const s = loadSplit();
+        s.sidebarW = '360px';
+        saveSplit(s);
+      });
+      sbar.addEventListener('mousedown', (e) => {
+        if(document.body.classList.contains('plgd-zen')) return;
+        const sidebar = $('plgd-sidebar');
+        if(sidebar.classList.contains('plgd-collapsed')) return;
+        e.preventDefault();
+        const startX = e.clientX;
+        const startW = sidebar.getBoundingClientRect().width;
+        const onMove = (ev) => {
+          const dx = ev.clientX - startX;
+          const w = clamp(startW + dx, 240, 520);
+          sidebar.style.width = `${w}px`;
+        };
+        const onUp = () => {
+          window.removeEventListener('mousemove', onMove);
+          window.removeEventListener('mouseup', onUp);
+          const s = loadSplit();
+          s.sidebarW = sidebar.style.width || `${startW}px`;
+          saveSplit(s);
+        };
+        window.addEventListener('mousemove', onMove);
+        window.addEventListener('mouseup', onUp);
+      });
+    }
+
+    // Editors splitter drag
+    const sed = $('split-editors');
+    if(sed){
+      sed.addEventListener('dblclick', () => {
+        $('plgd-editors-row').style.gridTemplateColumns = '1fr 10px 1fr';
+        const s = loadSplit();
+        delete s.editLeftW;
+        saveSplit(s);
+      });
+      sed.addEventListener('mousedown', (e) => {
+        if(window.innerWidth < 980) return;
+        e.preventDefault();
+        const row = $('plgd-editors-row');
+        const rect = row.getBoundingClientRect();
+        const startX = e.clientX;
+        const startLeft = rect.width * 0.5;
+        const onMove = (ev) => {
+          const dx = ev.clientX - startX;
+          const leftW = clamp(startLeft + dx, 240, rect.width - 240);
+          row.style.gridTemplateColumns = `${leftW}px 10px 1fr`;
+        };
+        const onUp = () => {
+          window.removeEventListener('mousemove', onMove);
+          window.removeEventListener('mouseup', onUp);
+          const s = loadSplit();
+          const cols = (row.style.gridTemplateColumns || '').split(' ');
+          if(cols.length) s.editLeftW = cols[0];
+          saveSplit(s);
+        };
+        window.addEventListener('mousemove', onMove);
+        window.addEventListener('mouseup', onUp);
+      });
+    }
+
+    // Vertical splitter drag
+    const sv = $('split-vertical');
+    if(sv){
+      sv.addEventListener('dblclick', () => {
+        setVerticalHeights(320);
+        const s = loadSplit();
+        s.editorH = 320;
+        saveSplit(s);
+      });
+      sv.addEventListener('mousedown', (e) => {
+        if(window.innerWidth < 980) return;
+        e.preventDefault();
+        const startY = e.clientY;
+        const t = $('plgd-template');
+        const startH = t ? t.getBoundingClientRect().height : 320;
+        const onMove = (ev) => {
+          const dy = ev.clientY - startY;
+          const h = clamp(startH + dy, 180, 900);
+          setVerticalHeights(h);
+        };
+        const onUp = () => {
+          window.removeEventListener('mousemove', onMove);
+          window.removeEventListener('mouseup', onUp);
+          const s = loadSplit();
+          const h = $('plgd-template') ? $('plgd-template').getBoundingClientRect().height : startH;
+          s.editorH = Math.round(h);
+          saveSplit(s);
+        };
+        window.addEventListener('mousemove', onMove);
+        window.addEventListener('mouseup', onUp);
+      });
+    }
+  }
+
+  function setVerticalHeights(editorH){
+    const t = $('plgd-template');
+    const j = $('plgd-json');
+    if(t) t.style.height = `${editorH}px`;
+    if(j) j.style.height = `${editorH}px`;
+  }
+
+  // ---------------------------------
+  // Active editor tracking
+  // ---------------------------------
+  let activeEditor = 'template';
+  function setActive(which){
+    activeEditor = which;
+    if($('plgd-active-editor')) $('plgd-active-editor').textContent = which;
+  }
+
+  // ---------------------------------
+  // JSON validation + format
+  // ---------------------------------
+  function setJSONStatus(ok, msg){
+    const el = $('plgd-json-status');
+    if(!el) return;
+    el.innerHTML = ok ? 'JSON: <strong style="font-weight:800;">OK</strong>' : 'JSON: <strong style="font-weight:800;">Invalid</strong>';
+    el.title = msg || '';
+    if(!ok && msg){
+      showProblem('json', msg);
+    }
+  }
+
+  function tryParseJSON(s){
+    try {
+      const obj = JSON.parse(s || '{}');
+      return {ok:true, obj};
+    } catch(e){
+      return {ok:false, err: e && e.message ? e.message : 'invalid_json'};
+    }
+  }
+
+  function formatJSON(){
+    const r = tryParseJSON($('plgd-json').value);
+    if(!r.ok){
+      toast('Invalid JSON');
+      return;
+    }
+    $('plgd-json').value = JSON.stringify(r.obj, null, 2);
+    setJSONStatus(true);
+    saveDraftSoon();
+  }
+
+  // ---------------------------------
+  // Problems panel
+  // ---------------------------------
+  function showProblem(kind, text){
+    const pre = $('plgd-problems');
+    if(!pre) return;
+    const head = `[${kind.toUpperCase()}] `;
+    const msg = (text || '').toString();
+    const now = nowLabel();
+    const line = `${now}\n${head}${msg}\n`;
+    pre.textContent = (pre.textContent ? pre.textContent + '\n' : '') + line;
+    setCollapsed('problems', false);
+  }
+
+  function clearProblems(){
+    if($('plgd-problems')) $('plgd-problems').textContent = '';
+  }
+
+  // ---------------------------------
+  // Output modes + history
+  // ---------------------------------
+  let currentOutput = '';
+  let lastOutput = '';
+  let outputMode = 'text';
+
+  function setMode(mode){
+    outputMode = mode;
+    qsa('.plgd-tab').forEach(b => b.classList.toggle('active', b.getAttribute('data-mode') === mode));
+    if($('plgd-mode-chip')) $('plgd-mode-chip').innerHTML = `Mode: <strong style="font-weight:800;">${mode.toUpperCase()}</strong>`;
+
+    $('plgd-output-text').style.display = (mode === 'text') ? '' : 'none';
+    $('plgd-output-html-wrap').style.display = (mode === 'html') ? '' : 'none';
+    $('plgd-output-raw').style.display = (mode === 'raw') ? '' : 'none';
+    $('plgd-output-diff').style.display = (mode === 'diff') ? '' : 'none';
+
+    if(mode === 'html'){
+      $('plgd-output-html').srcdoc = wrapHTML(currentOutput);
+    }
+    if(mode === 'raw'){
+      $('plgd-output-raw').textContent = JSON.stringify({output: currentOutput}, null, 2);
+    }
+    if(mode === 'diff'){
+      $('plgd-output-diff').textContent = diffText(lastOutput || '', currentOutput || '');
+    }
+  }
+
+  function wrapHTML(body){
+    // sandbox: no scripts, but allow basic styles; keep it simple.
+    const safe = (body || '').toString();
+    return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>body{font-family:ui-sans-serif,system-ui; padding:16px; color:#0f172a;} pre{white-space:pre-wrap;}</style></head><body>${safe}</body></html>`;
+  }
+
+  function diffText(prev, curr){
+    const a = (prev || '').split('\n');
+    const b = (curr || '').split('\n');
+    const out = [];
+    let i=0, j=0;
+    const win = 24;
+    const cap = 4000;
+    if(a.length + b.length > cap){
+      return 'Diff too large to compute locally. (Output is huge.)';
+    }
+    while(i < a.length || j < b.length){
+      if(i < a.length && j < b.length && a[i] === b[j]){
+        out.push('  ' + a[i]); i++; j++; continue;
+      }
+      let ai = -1, bj = -1;
+      if(j < b.length){
+        for(let k=1;k<=win && (i+k) < a.length;k++){
+          if(a[i+k] === b[j]){ ai = i+k; break; }
+        }
+      }
+      if(i < a.length){
+        for(let k=1;k<=win && (j+k) < b.length;k++){
+          if(b[j+k] === a[i]){ bj = j+k; break; }
+        }
+      }
+      if(ai !== -1 && (bj === -1 || (ai - i) <= (bj - j))){
+        while(i < ai){ out.push('- ' + a[i]); i++; }
+        continue;
+      }
+      if(bj !== -1){
+        while(j < bj){ out.push('+ ' + b[j]); j++; }
+        continue;
+      }
+      if(i < a.length){ out.push('- ' + a[i]); i++; }
+      if(j < b.length){ out.push('+ ' + b[j]); j++; }
+    }
+    return out.join('\n');
+  }
+
+  function loadHistory(){
+    try { return JSON.parse(localStorage.getItem(LS.hist(tplId)) || '[]'); } catch(_) { return []; }
+  }
+  function saveHistory(arr){
+    localStorage.setItem(LS.hist(tplId), JSON.stringify(arr || []));
+  }
+  function pushHistory(out){
+    const arr = loadHistory();
+    arr.unshift({ts: Date.now(), label: nowLabel(), out: out});
+    while(arr.length > 10) arr.pop();
+    saveHistory(arr);
+    renderHistory();
+    $('plgd-hcount').textContent = String(arr.length);
+  }
+
+  function renderHistory(){
+    const wrap = $('plgd-history');
+    if(!wrap) return;
+    const arr = loadHistory();
+    wrap.innerHTML = '';
+    arr.forEach((h, idx) => {
+      const div = document.createElement('div');
+      div.className = 'plgd-subcard';
+      div.style.padding = '10px 12px';
+      div.style.borderRadius = '16px';
+      div.style.border = '1px solid rgba(255,255,255,.08)';
+      div.style.background = 'rgba(0,0,0,.20)';
+      div.innerHTML = `
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+          <div style="min-width:0;">
+            <div style="font-weight:800; color:var(--textStrong); font-size:13px;">#${idx+1} · ${escapeHTML(h.label||'')}</div>
+            <div style="margin-top:4px; color:rgba(148,163,184,.92); font-size:12px;">${escapeHTML((h.out||'').slice(0,80))}${(h.out||'').length>80?'…':''}</div>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="plgd-btn" type="button" data-act="load" data-idx="${idx}" style="padding:9px 12px;">Load</button>
+            <button class="plgd-btn plgd-btn-ghost" type="button" data-act="copy" data-idx="${idx}" style="padding:9px 12px;">Copy</button>
+          </div>
+        </div>`;
+      wrap.appendChild(div);
+    });
+
+    qsa('button[data-act="load"]', wrap).forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = +btn.getAttribute('data-idx');
+        const h = loadHistory()[idx];
+        if(!h) return;
+        lastOutput = currentOutput;
+        currentOutput = h.out || '';
+        renderOutput(currentOutput, true);
+        toast('Loaded from history');
+      });
+    });
+    qsa('button[data-act="copy"]', wrap).forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const idx = +btn.getAttribute('data-idx');
+        const h = loadHistory()[idx];
+        if(!h) return;
+        await copyText(h.out || '');
+        toast('Copied');
+      });
+    });
+  }
+
+  function renderOutput(out, fromHistory){
+    $('plgd-output-text').textContent = out || '';
+    if(outputMode === 'html') $('plgd-output-html').srcdoc = wrapHTML(out);
+    if(outputMode === 'raw') $('plgd-output-raw').textContent = JSON.stringify({output: out}, null, 2);
+    if(outputMode === 'diff') $('plgd-output-diff').textContent = diffText(lastOutput || '', out || '');
+    if(!fromHistory){
+      $('plgd-last-render').textContent = `Rendered: ${nowLabel()}`;
+    }
+  }
+
+  // ---------------------------------
+  // Autosave drafts
+  // ---------------------------------
+  let draftT = null;
+  function draftObj(){
+    return {
+      id: $('plgd-id')?.value || '',
+      name: $('plgd-name')?.value || '',
+      group: $('plgd-group')?.value || '',
+      tags: $('plgd-tags')?.value || '',
+      desc: $('plgd-desc')?.value || '',
+      tpl: $('plgd-template')?.value || '',
+      json: $('plgd-json')?.value || '',
+      savedAt: Date.now()
+    };
+  }
+  function saveDraftSoon(){
+    clearTimeout(draftT);
+    draftT = setTimeout(() => {
+      try { localStorage.setItem(LS.draft(tplId), JSON.stringify(draftObj())); } catch(_){}
+    }, 500);
+  }
+  function discardDraft(){
+    try { localStorage.removeItem(LS.draft(tplId)); } catch(_){}
+    $('plgd-draft-banner').style.display = 'none';
+  }
+  function revertToInitial(){
+    $('plgd-name').value = initial.name;
+    $('plgd-group').value = initial.group;
+    $('plgd-tags').value = initial.tags;
+    $('plgd-desc').value = initial.desc;
+    $('plgd-template').value = initial.tpl;
+    $('plgd-json').value = initial.json;
+    discardDraft();
+    toast('Reverted');
+  }
+  function restoreDraftIfAny(){
+    let d = null;
+    try { d = JSON.parse(localStorage.getItem(LS.draft(tplId)) || 'null'); } catch(_){ d=null; }
+    if(!d) return;
+    // Only restore if it differs from initial
+    const differs = (d.tpl !== initial.tpl) || (d.json !== initial.json) || (d.name !== initial.name) || (d.desc !== initial.desc) || (d.group !== initial.group) || (d.tags !== initial.tags);
+    if(!differs) return;
+    $('plgd-name').value = d.name || $('plgd-name').value;
+    $('plgd-group').value = d.group || $('plgd-group').value;
+    $('plgd-tags').value = d.tags || $('plgd-tags').value;
+    $('plgd-desc').value = d.desc || $('plgd-desc').value;
+    $('plgd-template').value = d.tpl || $('plgd-template').value;
+    $('plgd-json').value = d.json || $('plgd-json').value;
+    $('plgd-draft-banner').style.display = '';
+  }
+
+  // ---------------------------------
+  // Render / Save / Fav
+  // ---------------------------------
+  async function doRender(){
+    clearProblems();
+    const j = $('plgd-json').value;
+    const parsed = tryParseJSON(j);
+    if(!parsed.ok){
+      setJSONStatus(false, parsed.err);
+      return;
+    }
+    setJSONStatus(true);
+
+    const tpl = $('plgd-template').value;
+
+    try {
+      const out = await postForm('/plgd/api/render', {template: tpl, json: j});
+      // on success, API returns text/plain
+      lastOutput = currentOutput;
+      currentOutput = (typeof out === 'string') ? out : (out && out.output ? String(out.output) : '');
+      renderOutput(currentOutput);
+      pushHistory(currentOutput);
+      $('plgd-hcount').textContent = String(loadHistory().length);
+      setMode(outputMode);
+
+      // open drawer automatically in zen
+      if(document.body.classList.contains('plgd-zen')){
+        openDrawer(true);
+      }
+
+      toast('Rendered');
+    } catch(e){
+      const payload = e && e.payload ? e.payload : null;
+      const detail = payload && payload.detail ? payload.detail : (e && e.message ? e.message : 'render_failed');
+      showProblem('render', detail);
+      toast('Render failed');
+    }
+  }
+
+  async function doSave(){
+    const data = {
+      id: $('plgd-id').value || '',
+      name: $('plgd-name').value || '',
+      group: $('plgd-group').value || '',
+      tags: $('plgd-tags').value || '',
+      desc: $('plgd-desc').value || '',
+      fav: $('plgd-fav').getAttribute('data-fav') || '0',
+      template: $('plgd-template').value || '',
+      json: $('plgd-json').value || ''
+    };
+    if(!data.name.trim()){
+      showProblem('save', 'Name is required');
+      toast('Name required');
+      return;
+    }
+    try {
+      const res = await postForm('/plgd/api/save', data);
+      if(res && typeof res === 'object'){
+        if(res.id && !$('plgd-id').value){
+          $('plgd-id').value = res.id;
+        }
+      }
+      discardDraft();
+      toast('Saved');
+    } catch(e){
+      const payload = e && e.payload ? e.payload : null;
+      const detail = payload && payload.detail ? payload.detail : (e && e.message ? e.message : 'save_failed');
+      showProblem('save', detail);
+      toast('Save failed');
+    }
+  }
+
+  async function toggleFav(){
+    const id = $('plgd-fav').getAttribute('data-id') || $('plgd-id').value;
+    if(!id){ toast('No ID'); return; }
+    const cur = +($('plgd-fav').getAttribute('data-fav') || '0');
+    const next = cur ? 0 : 1;
+    try {
+      const res = await postForm('/plgd/api/fav', {id, fav: String(next)});
+      const fav = (res && res.fav != null) ? +res.fav : next;
+      $('plgd-fav').setAttribute('data-fav', String(fav));
+      $('plgd-fav-icon').textContent = fav ? '★' : '☆';
+      toast(fav ? 'Favorited' : 'Unfavorited');
+    } catch(e){
+      showProblem('fav', e.message || 'favorite_failed');
+      toast('Favorite failed');
+    }
+  }
+
+  // ---------------------------------
+  // Library filtering (client-side)
+  // ---------------------------------
+  function initLibrarySearch(){
+    const inp = $('plgd-search');
+    const list = $('plgd-lib-list');
+    if(!inp || !list) return;
+    inp.addEventListener('input', () => {
+      const q = (inp.value || '').trim().toLowerCase();
+      qsa('a.plgd-lib-item', list).forEach(a => {
+        const hay = ((a.getAttribute('data-name')||'') + ' ' + (a.getAttribute('data-group')||'') + ' ' + (a.getAttribute('data-tags')||'')).toLowerCase();
+        a.style.display = (!q || hay.includes(q)) ? '' : 'none';
+      });
+    });
+  }
+
+  // ---------------------------------
+  // Zen mode + drawer
+  // ---------------------------------
+  function loadZen(){
+    try { return localStorage.getItem(LS.zen) === '1'; } catch(_) { return false; }
+  }
+  function saveZen(on){
+    try { localStorage.setItem(LS.zen, on ? '1' : '0'); } catch(_){}
+  }
+
+  function setZen(on){
+    document.body.classList.toggle('plgd-zen', !!on);
+    $('plgd-zen-chip').style.display = on ? '' : 'none';
+    $('plgd-zen-ic').textContent = on ? '⛶' : '⛶';
+    $('plgd-zen-label').textContent = on ? 'Zen' : 'Zen';
+    saveZen(!!on);
+    if(!on) closeDrawer();
+  }
+
+  function openDrawer(auto){
+    const drawer = $('plgd-drawer');
+    if(!drawer) return;
+    // move output host into drawer
+    const host = $('plgd-output-host');
+    const dh = $('plgd-drawer-host');
+    if(host && dh && !dh.contains(host)){
+      dh.appendChild(host);
+    }
+    drawer.classList.add('show');
+    drawer.setAttribute('aria-hidden','false');
+    if(auto) $('plgd-output-toggle').textContent = 'Output (open)';
+  }
+  function closeDrawer(){
+    const drawer = $('plgd-drawer');
+    if(!drawer) return;
+    // move output host back
+    const host = $('plgd-output-host');
+    const orig = $('plgd-body');
+    if(host && orig && !orig.contains(host)){
+      orig.appendChild(host);
+    }
+    drawer.classList.remove('show');
+    drawer.setAttribute('aria-hidden','true');
+    $('plgd-output-toggle').textContent = 'Output';
+  }
+
+  // ---------------------------------
+  // Tools (Find/Replace/Go to line) for textareas
+  // ---------------------------------
+  function openModal(id){
+    const el = $(id);
+    if(!el) return;
+    el.classList.add('show');
+    // focus first input
+    const input = el.querySelector('input');
+    if(input) setTimeout(() => input.focus(), 0);
+  }
+  function closeModal(id){
+    const el = $(id);
+    if(!el) return;
+    el.classList.remove('show');
+  }
+
+  function activeTextarea(){
+    return activeEditor === 'json' ? $('plgd-json') : $('plgd-template');
+  }
+
+  function buildFindRegex(q, isCase, isRegex){
+    if(!q) return null;
+    try {
+      if(isRegex) return new RegExp(q, isCase ? 'g' : 'gi');
+      const esc = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      return new RegExp(esc, isCase ? 'g' : 'gi');
+    } catch(_){
+      return null;
+    }
+  }
+
+  function findNext(dir){
+    const ta = activeTextarea();
+    const q = $('plgd-find').value || '';
+    const isCase = $('plgd-find-case').checked;
+    const isRegex = $('plgd-find-regex').checked;
+    const rx = buildFindRegex(q, isCase, isRegex);
+    if(!rx){ toast('Invalid find'); return; }
+
+    const text = ta.value || '';
+    const start = (dir > 0) ? ta.selectionEnd : ta.selectionStart;
+
+    // Forward search
+    if(dir > 0){
+      rx.lastIndex = start;
+      const m = rx.exec(text);
+      if(m){
+        ta.focus();
+        ta.setSelectionRange(m.index, m.index + m[0].length);
+        return;
+      }
+      // wrap
+      rx.lastIndex = 0;
+      const m2 = rx.exec(text);
+      if(m2){
+        ta.focus();
+        ta.setSelectionRange(m2.index, m2.index + m2[0].length);
+        toast('Wrapped');
+        return;
+      }
+      toast('Not found');
+      return;
+    }
+
+    // Backward: scan all matches up to start
+    let last = null;
+    rx.lastIndex = 0;
+    let m;
+    while((m = rx.exec(text))){
+      if(m.index >= start) break;
+      last = {i:m.index, l:m[0].length};
+      // prevent infinite loop on zero-length
+      if(m[0].length === 0) rx.lastIndex++;
+    }
+    if(last){
+      ta.focus();
+      ta.setSelectionRange(last.i, last.i + last.l);
+      return;
+    }
+    // wrap: pick last match overall
+    rx.lastIndex = 0;
+    let last2 = null;
+    while((m = rx.exec(text))){
+      last2 = {i:m.index, l:m[0].length};
+      if(m[0].length === 0) rx.lastIndex++;
+    }
+    if(last2){
+      ta.focus();
+      ta.setSelectionRange(last2.i, last2.i + last2.l);
+      toast('Wrapped');
+      return;
+    }
+    toast('Not found');
+  }
+
+  function replaceOne(){
+    const ta = activeTextarea();
+    const sel = ta.value.substring(ta.selectionStart, ta.selectionEnd);
+    if(!sel){ toast('Select text to replace'); return; }
+    const repl = $('plgd-repl').value || '';
+    const before = ta.value.slice(0, ta.selectionStart);
+    const after  = ta.value.slice(ta.selectionEnd);
+    const pos = ta.selectionStart;
+    ta.value = before + repl + after;
+    ta.focus();
+    ta.setSelectionRange(pos, pos + repl.length);
+    saveDraftSoon();
+  }
+
+  function replaceAll(){
+    const ta = activeTextarea();
+    const q = $('plgd-find').value || '';
+    if(!q){ toast('Find is empty'); return; }
+    const isCase = $('plgd-find-case').checked;
+    const isRegex = $('plgd-find-regex').checked;
+    const rx = buildFindRegex(q, isCase, isRegex);
+    if(!rx){ toast('Invalid find'); return; }
+    const repl = $('plgd-repl').value || '';
+    const before = ta.value;
+    const after = before.replace(rx, repl);
+    ta.value = after;
+    toast('Replace all done');
+    saveDraftSoon();
+  }
+
+  function openGoto(){
+    closeModal('plgd-modal-tools');
+    openModal('plgd-modal-goto');
+  }
+
+  function gotoLine(){
+    const ta = activeTextarea();
+    const n = parseInt($('plgd-goto-line').value || '0', 10);
+    if(!n || n < 1){ toast('Invalid line'); return; }
+    const lines = ta.value.split('\n');
+    const line = Math.min(n, lines.length);
+    let pos = 0;
+    for(let i=1;i<line;i++) pos += lines[i-1].length + 1;
+    ta.focus();
+    ta.setSelectionRange(pos, pos);
+    closeModal('plgd-modal-goto');
+  }
+
+  // ---------------------------------
+  // Clipboard
+  // ---------------------------------
+  async function copyText(text){
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch(_){
+      // fallback
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position='fixed'; ta.style.left='-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); } catch(__){}
+      document.body.removeChild(ta);
+      return true;
+    }
+  }
+
+  function escapeHTML(s){
+    return (s || '').toString().replace(/[&<>\"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
+  }
+
+  // ---------------------------------
+  // Wire up events
+  // ---------------------------------
+  function bind(){
+    // Active editor tracking
+    $('plgd-template').addEventListener('focus', () => setActive('template'));
+    $('plgd-json').addEventListener('focus', () => setActive('json'));
+
+    // Draft autosave
+    ['plgd-name','plgd-group','plgd-tags','plgd-desc','plgd-template','plgd-json'].forEach(id => {
+      const el = $(id);
+      if(!el) return;
+      el.addEventListener('input', () => {
+        saveDraftSoon();
+        if(id === 'plgd-json'){
+          const r = tryParseJSON(el.value);
+          setJSONStatus(r.ok, r.ok ? '' : r.err);
+        }
+      });
+    });
+
+    // Render/save/fav
+    $('plgd-render').addEventListener('click', doRender);
+    $('plgd-save').addEventListener('click', doSave);
+    $('plgd-fav').addEventListener('click', toggleFav);
+
+    // Output modes
+    qsa('.plgd-tab').forEach(btn => btn.addEventListener('click', () => setMode(btn.getAttribute('data-mode'))));
+
+    // Output actions
+    $('plgd-copy').addEventListener('click', async () => { await copyText(currentOutput || ''); toast('Copied'); });
+    $('plgd-clear').addEventListener('click', () => { lastOutput = currentOutput; currentOutput=''; renderOutput(''); toast('Cleared'); });
+
+    // JSON format
+    $('plgd-json-format').addEventListener('click', formatJSON);
+
+    // Problems/history clear
+    $('plgd-problems-clear').addEventListener('click', () => { clearProblems(); toast('Cleared'); });
+    $('plgd-history-clear').addEventListener('click', () => { saveHistory([]); renderHistory(); $('plgd-hcount').textContent='0'; toast('History cleared'); });
+
+    // Zen
+    $('plgd-zen').addEventListener('click', () => setZen(!document.body.classList.contains('plgd-zen')));
+    $('plgd-output-toggle').addEventListener('click', () => {
+      const drawer = $('plgd-drawer');
+      if(!drawer) return;
+      if(drawer.classList.contains('show')) closeDrawer(); else openDrawer(false);
+    });
+    $('plgd-drawer-close').addEventListener('click', closeDrawer);
+
+    // Draft banner
+    $('plgd-draft-revert').addEventListener('click', revertToInitial);
+    $('plgd-draft-discard').addEventListener('click', () => { discardDraft(); toast('Draft discarded'); });
+
+    // Tools modal
+    $('plgd-tools').addEventListener('click', () => openModal('plgd-modal-tools'));
+    $('plgd-tools-close').addEventListener('click', () => closeModal('plgd-modal-tools'));
+    $('plgd-goto-close').addEventListener('click', () => closeModal('plgd-modal-goto'));
+
+    // Tools actions
+    $('plgd-find-prev').addEventListener('click', () => findNext(-1));
+    $('plgd-find-next').addEventListener('click', () => findNext(1));
+    $('plgd-replace-one').addEventListener('click', replaceOne);
+    $('plgd-replace-all').addEventListener('click', replaceAll);
+    $('plgd-goto').addEventListener('click', openGoto);
+    $('plgd-goto-go').addEventListener('click', gotoLine);
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      const key = (e.key || '').toLowerCase();
+      const mod = e.ctrlKey || e.metaKey;
+
+      if(mod && key === 'enter'){
+        e.preventDefault();
+        doRender();
+        return;
+      }
+      if(mod && key === 's'){
+        e.preventDefault();
+        doSave();
+        return;
+      }
+      if(mod && key === 'f'){
+        e.preventDefault();
+        openModal('plgd-modal-tools');
+        return;
+      }
+      if(mod && key === 'g'){
+        e.preventDefault();
+        openGoto();
+        return;
+      }
+      if(mod && key === 'h'){
+        e.preventDefault();
+        openModal('plgd-modal-tools');
+        setTimeout(() => $('plgd-repl').focus(), 0);
+        return;
+      }
+      if(key === 'escape'){
+        closeModal('plgd-modal-tools');
+        closeModal('plgd-modal-goto');
+      }
+    });
+
+    // Click outside modals to close
+    ['plgd-modal-tools','plgd-modal-goto'].forEach(mid => {
+      const el = $(mid);
+      if(!el) return;
+      el.addEventListener('mousedown', (ev) => {
+        if(ev.target === el) closeModal(mid);
+      });
+    });
+  }
+
+  // ---------------------------------
+  // Init
+  // ---------------------------------
+  function init(){
+    initCollapsibles();
+    initSplitters();
+    initLibrarySearch();
+
+    // restore draft
+    restoreDraftIfAny();
+
+    // history count
+    const h = loadHistory();
+    $('plgd-hcount').textContent = String(h.length);
+    renderHistory();
+
+    // initial mode
+    qsa('.plgd-tab').forEach(btn => btn.classList.toggle('active', btn.getAttribute('data-mode') === 'text'));
+    setMode('text');
+
+    // initial JSON status
+    const r = tryParseJSON($('plgd-json').value);
+    setJSONStatus(r.ok, r.ok ? '' : r.err);
+
+    // restore zen
+    setZen(loadZen());
+
+    bind();
+  }
+
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();
+</script>
+{{/scripts}}
