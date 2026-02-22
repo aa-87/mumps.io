@@ -572,19 +572,19 @@ LOGPAGEDN(ID)
 	IF lines<2 SET lines=2
 	QUIT $$LOGDOWN(ID,lines-1)
 	;
-LOGFILT(ID)
-	NEW f SET f=$GET(^MIO("DEVW",ID,"CTL","logFilter"))
-	IF f="" SET f="ALL"
-	QUIT f
+LOGFILT(ID) QUIT $$LOGFILTER(ID)
 	;
 LOGMAXSCROLL(ID,FILT,LINES)
 	; max scroll value given current filter and viewport size
+	; ROI tweak: if match<=LINES, still allow scroll up to match-1 (shift window)
 	SET LINES=+$GET(LINES)
 	IF LINES<1 QUIT 0
-	NEW max SET max=+$GET(^MIO("DEVW",ID,"STATE","conf","logMax"),100)
-	NEW n SET n=+$GET(^MIO("DEVW",ID,"STATE","log","n"))
-	NEW cap SET cap=$SELECT(n<max:n,1:max)
-	NEW i,idx,rec,lvl,match
+	;
+	NEW max,n,cap,i,idx,rec,lvl,match,ms
+	SET max=+$GET(^MIO("DEVW",ID,"STATE","conf","logMax"),100)
+	SET n=+$GET(^MIO("DEVW",ID,"STATE","log","n"))
+	SET cap=$SELECT(n<max:n,1:max)
+	;
 	SET match=0
 	FOR i=0:1:(cap-1) DO
 	. SET idx=((n-i-1)#max)+1
@@ -592,7 +592,11 @@ LOGMAXSCROLL(ID,FILT,LINES)
 	. IF rec="" QUIT
 	. SET lvl=$PIECE(rec,"^",2)
 	. IF $$LOGMATCH(FILT,lvl) SET match=match+1
-	NEW ms SET ms=match-LINES
+	;
+	; If there are fewer/equal items than the viewport, allow shifting up to match-1
+	IF match'>LINES SET ms=match-1
+	ELSE  SET ms=match-LINES
+	;
 	IF ms<0 SET ms=0
 	QUIT ms
 	;
