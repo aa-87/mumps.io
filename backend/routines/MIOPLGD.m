@@ -205,7 +205,7 @@ APIRENDER(DEV,CONF,REQ,CTX)
 	. I JSON="" S JSON="{}"
 	. D TRYJSON(JSON,.TCTX,.ERR)
 	;
-	I $D(ERR) D RESPERR(DEV,.CONF,.CTX,400,"invalid_json") Q
+	I $D(ERR) D RESPERR(DEV,.CONF,.CTX,400,"invalid_json",$G(ERR("zstatus"))) Q
 	;
 	; SECURITY: strip any lambdas from untrusted input (scalar values beginning with "$$")
 	D STRIPLAMR(.TCTX)
@@ -216,7 +216,7 @@ APIRENDER(DEV,CONF,REQ,CTX)
 	;
 	D START^MIOTPL(.CONF)
 	D RENDERANY^MIOTPL(TPL,.CONF,.TCTX,.OUT,.ERR)
-	I $D(ERR) D RESPERR(DEV,.CONF,.CTX,500,"render_failed") Q
+	I $D(ERR) D RESPERR(DEV,.CONF,.CTX,500,"render_failed",$$ERR2TXT(.ERR)) Q
 	;
 	D RESPTXT(DEV,.CONF,.CTX,.OUT)
 	Q
@@ -264,8 +264,7 @@ APISAVE(DEV,CONF,REQ,CTX)
 	; Ensure JSON is parseable; if not, still allow save but return a warning.;
 	D TRYJSON($S(REC("json")="":"{}",1:REC("json")),.JCTX,.JERR)
 	;
-	;	
-	S ID=$$SAVEREC(.REC) S ^A=ID M ^B=REC
+	S ID=$$SAVEREC(.REC)
 	S RESP="{""ok"":true,""id"":"""_ID_""""
 	I $D(JERR) S RESP=RESP_",""warning"":""json_invalid"""
 	S RESP=RESP_"}"
@@ -1369,6 +1368,29 @@ IMPORT(OBJ,ERR)
 	. D SAVEREC(.REC)
 	Q
 	;
+	;
+	; -------------------------
+	; Error formatting
+	; -------------------------
+ERR2TXT(ERR)
+	; Build a compact, readable diagnostics string from an error array.
+	; Keeps output small and safe for JSON transport.
+	N S,K,K2,LINE
+	S S=""
+	S K=""
+	F  S K=$O(ERR(K)) Q:K=""  D
+	. I $D(ERR(K))#2 D  Q
+	. . S LINE=K_": "_$G(ERR(K))
+	. . S S=S_LINE_$C(10)
+	. S K2=""
+	. F  S K2=$O(ERR(K,K2)) Q:K2=""  D
+	. . S LINE=K_"("_K2_")"_": "_$G(ERR(K,K2))
+	. . S S=S_LINE_$C(10)
+	; trim trailing LF
+	I $E(S,$L(S))=$C(10) S S=$E(S,1,$L(S)-1)
+	Q S
+	;
+
 	; -------------------------
 	; HTTP helpers
 	; -------------------------
@@ -1387,8 +1409,12 @@ RESPJSON(DEV,CONF,CTX,STATUS,JSON)
 	D RESP^MIOHTTP(DEV,.CONF,.STATUS,.HEAD,.JSON,$G(CTX("request_id")))
 	Q
 	;
-RESPERR(DEV,CONF,CTX,STATUS,CODE)
-	N J S J="{""ok"":false,""error"":"""_$G(CODE)_"""}"
+RESPERR(DEV,CONF,CTX,STATUS,CODE,DETAIL)
+	N J,DET
+	S J="{""ok"":false,""error"":"""_$G(CODE)_""""
+	S DET=$G(DETAIL)
+	I DET'="" S J=J_",""detail"":"""_$$JESC(DET)_""""
+	S J=J_"}"
 	D RESPJSON(DEV,.CONF,.CTX,STATUS,J)
 	Q
 	;
