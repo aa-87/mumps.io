@@ -1,0 +1,48 @@
+{{$title}}About{{/title}}
+
+<section class="rounded-3xl bg-white/5 ring-1 ring-white/10 p-6 shadow-sm">
+  <div class="max-w-3xl">
+    <div class="text-sm text-slate-300/80">Docs</div>
+    <h1 class="mt-2 text-3xl font-semibold tracking-tight">{{page.heading}}</h1>
+    <p class="mt-2 text-slate-300/90">{{page.lead}}</p>
+
+    <div class="mt-6 space-y-6 text-slate-300/90 leading-relaxed">
+      <div class="rounded-2xl bg-black/20 ring-1 ring-white/10 p-5">
+        <h2 class="text-white font-semibold">What this app is</h2>
+        <p class="mt-2">
+          MIOPLGD is a server-rendered template playground powered by <span class="text-white font-semibold">MIOTPL</span>.
+          It includes a built-in library (seeded on first run), allows saving custom templates to <code class="text-slate-200">^MIO("PLGD",...)</code>,
+          and provides APIs for render/save/favorite/export/import.
+        </p>
+      </div>
+
+      <div class="rounded-2xl bg-black/20 ring-1 ring-white/10 p-5">
+        <h2 class="text-white font-semibold">Security defaults</h2>
+        <ul class="mt-2 list-disc pl-6 space-y-1">
+          <li><span class="text-white">No untrusted lambdas:</span> scalar values beginning with <code class="text-slate-200">$$</code> are stripped before rendering.</li>
+          <li><span class="text-white">Sandboxed ad-hoc render:</span> ad-hoc templates block <code class="text-slate-200">&#123;&#123;&gt;&#125;&#125;</code> partials and <code class="text-slate-200">&#123;&#123;&lt;&#125;&#125;</code> inheritance by default.</li>
+          <li><span class="text-white">Recursion limits:</span> <code class="text-slate-200">CONF("templates","maxPartialDepth")</code> is set conservatively.</li>
+        </ul>
+      </div>
+
+      <div class="rounded-2xl bg-black/20 ring-1 ring-white/10 p-5">
+        <h2 class="text-white font-semibold">API quick reference</h2>
+        <div class="mt-2 text-sm text-slate-300/90 space-y-1">
+          <div><code class="text-slate-200">POST /plgd/api/render</code> → <span class="text-slate-400">template + json → text/plain</span></div>
+          <div><code class="text-slate-200">POST /plgd/api/save</code> → <span class="text-slate-400">save template in ^MIO → JSON</span></div>
+          <div><code class="text-slate-200">POST /plgd/api/fav</code> → <span class="text-slate-400">toggle favorite → JSON</span></div>
+          <div><code class="text-slate-200">POST /plgd/api/export</code> → <span class="text-slate-400">export library → JSON</span></div>
+          <div><code class="text-slate-200">POST /plgd/api/import</code> → <span class="text-slate-400">import library → JSON</span></div>
+        </div>
+      </div>
+
+      <div class="rounded-2xl bg-black/20 ring-1 ring-white/10 p-5">
+        <h2 class="text-white font-semibold">Where to go next</h2>
+        <p class="mt-2">
+          For a roadmap with ROI milestones (search, tags, versioning, share links, server-side preview for HTML, policy gates),
+          see <code class="text-slate-200">docs/ROI.md</code>.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>

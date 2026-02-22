@@ -37,9 +37,11 @@ start ; start^MIO
 	DO REG^MIOREGADM(.CONF)
 	DO REG^MIOWOW(.CONF)
 	DO REG^MIOAPP(.CONF)
+	D REG^MIOPLGD(.CONF)
 	DO COMPILE^MIOROUTE
 	DO START^MIOCLEAN(.CONF)
 	DO START^MIOD(.CONF)
+	;	
 	QUIT
 ; Entry point
 ; See docs/routines for details.;

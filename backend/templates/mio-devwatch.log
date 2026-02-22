@@ -1,0 +1,10 @@
+2000-291-0-7342T01:47:22 [HEAD] MIODEVW - Development Watcher started
+2000-291-0-7342T01:47:22 [INFO] dir=templates  pattern=*.*  interval=1s
+2000-291-0-7342T01:47:22 [INFO] stopFile=templates/.miodevw.stop
+2000-291-0-7342T01:47:22 [INFO] onfile=PROCESS^MIODEVW
+2000-291-0-7342T01:49:17 [HEAD] MIODEVW - Development Watcher started
+2000-291-0-7342T01:49:17 [INFO] dir=templates  pattern=*.*  interval=1s
+2000-291-0-7342T01:49:17 [INFO] stopFile=templates/.miodevw.stop
+2000-291-0-7342T01:49:17 [INFO] onfile=PROCESS^MIODEVW
+2000-291-0-7342T01:49:17 [INFO] Processing app_index.html (99 lines, 3494 bytes)
+2000-291-0-7342T01:49:17 [OK] Done: app_index.html

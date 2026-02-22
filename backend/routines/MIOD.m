@@ -41,8 +41,13 @@ START(CONF)
 	J RUN(PORT) I $T S ZJ=$ZJOB D INFO^MIOLOG("mio_server_started","pid="_ZJ) I 1
 	E  D PANIC^MIOLOG("mio_server_failed","")
 	H 2 I $G(^MIO("CTL","PID"))=ZJ D INFO^MIOLOG("listen_success","port="_PORT)
+	K  U 0 G DEVWATCH
 	Q
 	;
+DEVWATCH
+	;
+	;
+	Q
 RUN(PORT)
 	NEW DEV,ERR
 	IF '$$LISTEN^MIOSOCK(PORT,.DEV,.ERR) DO PANIC^MIOLOG("listen_failed",.ERR) Q
