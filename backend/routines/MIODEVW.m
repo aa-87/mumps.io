@@ -8,11 +8,6 @@ MIODEVW ; MIO Development Watcher (dashboard + IPC + pretty logs)
 	;   3) External control (pause/stop)
 	;   4) Still supports classic "LINE()" output mode if ui=0
 	;
-	; ROI (next) - Widget registry / plug-in UI
-	;   - UI is composed of registered widgets (DRAW/PAINT)
-	;   - Add widgets without editing core UIRENDER/UIDRAWSTATIC
-	;   - Supports widgets implemented in other routines (TAG^ROU)
-	;
 	; PUBLIC ENTRYPOINTS
 	;   DEVWATCH         - your convenience launcher (uses ^MIO("CONF"))
 	;   START(.CONF)     - loop watcher
@@ -161,6 +156,14 @@ HELP
 	WRITE "  D PUBFILE^MIODEVW(ID,FP,""OK"",""detail"")",!
 	WRITE "  D PUBMET^MIODEVW(ID,""jobs"",1)",!
 	WRITE "  D SETCTL^MIODEVW(ID,""pause"",1)  /  D SETCTL^MIODEVW(ID,""stop"",1)",!
+	WRITE "Log panel helpers (if logPanel=1):",!
+	WRITE "  D LOGEND^MIODEVW(ID)      ; tail (newest)",!
+	WRITE "  D LOGHOME^MIODEVW(ID)     ; oldest window",!
+	WRITE "  D LOGUP^MIODEVW(ID,1)     ; up 1",!
+	WRITE "  D LOGDOWN^MIODEVW(ID,1)   ; down 1",!
+	WRITE "  D LOGPAGEUP^MIODEVW(ID)   ; up one page",!
+	WRITE "  D LOGPAGEDN^MIODEVW(ID)   ; down one page",!
+	WRITE !
 	WRITE !
 	QUIT
 	;
@@ -186,8 +189,16 @@ DEFAULT(CONF)
 	IF $GET(CONF("cols"))=""     SET CONF("cols")=100
 	IF $GET(CONF("lastN"))=""    SET CONF("lastN")=10
 	IF $GET(CONF("errN"))=""     SET CONF("errN")=6
-	IF $GET(CONF("dryUI"))=""    SET CONF("dryUI")=0
 	;
+	; dev/test UI options
+	IF $GET(CONF("dryUI"))=""    SET CONF("dryUI")=0   ; 1=record PUT() ops to ^TMP($J,"MIODEVW","UI")
+	IF $GET(CONF("uidiff"))=""   SET CONF("uidiff")=1  ; 1=skip unchanged PUT() writes
+	;
+	; log panel options
+	IF $GET(CONF("logPanel"))="" SET CONF("logPanel")=$SELECT(+$GET(CONF("ui")):1,1:0)
+	IF $GET(CONF("paneAHeight"))="" SET CONF("paneAHeight")=0 ; 0=auto
+	IF $GET(CONF("logMinH"))=""  SET CONF("logMinH")=6
+	IF $GET(CONF("logMax"))=""   SET CONF("logMax")=50
 	QUIT
 	;
 INITSTATE(CONF)
@@ -197,97 +208,11 @@ INITSTATE(CONF)
 	SET ^MIO("DEVW",id,"STATE","conf","cols")=CONF("cols")
 	SET ^MIO("DEVW",id,"STATE","conf","lastN")=CONF("lastN")
 	SET ^MIO("DEVW",id,"STATE","conf","errN")=CONF("errN")
+	SET ^MIO("DEVW",id,"STATE","conf","logMax")=+$GET(CONF("logMax"),50)
 	;
 	IF $GET(^MIO("DEVW",id,"STATE","startH"))="" SET ^MIO("DEVW",id,"STATE","startH")=$H
 	IF $GET(^MIO("DEVW",id,"STATE","status"))="" SET ^MIO("DEVW",id,"STATE","status")="Watching..."
 	SET ^MIO("DEVW",id,"STATE","dirty")=1
-	QUIT
-	;
-; -------------------- UI Widget Registry (next ROI) --------------------
-	;
-; Widgets are registered in CONF("ui","W",priority,name)=DRAW_"|"_PAINT
-; - DRAW is called on UISTART and when size/signature changes
-; - PAINT is called every UIRENDER
-	;
-REGW(CONF,NAME,PRI,DRAW,PAINT)
-	; Register/override a widget.;
-	IF $GET(NAME)="" QUIT
-	IF $GET(PRI)="" SET PRI=50
-	SET CONF("ui","W",PRI,NAME)=$GET(DRAW)_"|"_$GET(PAINT)
-	QUIT
-	;
-WREGDEFAULT(CONF)
-	; Minimal default widget set (extendible).;
-	; Priority order: lower runs first.;
-	DO REGW(.CONF,"chrome",10,"WCHROME^MIODEVW","")
-	DO REGW(.CONF,"header",20,"","WHEADER^MIODEVW")
-	DO REGW(.CONF,"metrics",30,"","WMETRICS^MIODEVW")
-	DO REGW(.CONF,"recent",40,"","WRECENT^MIODEVW")
-	DO REGW(.CONF,"errors",50,"","WERRORS^MIODEVW")
-	QUIT
-	;
-UIINIT(CONF)
-	; Prepare UI context + ensure widget registry exists.;
-	; Safe to call repeatedly.;
-	IF '$GET(CONF("ui")) QUIT
-	IF '$DATA(CONF("ui","W")) DO WREGDEFAULT(.CONF)
-	; cache a few bits for PUT() when running in dry mode
-	KILL ^TMP($J,"MIODEVW","UI")
-	SET ^TMP($J,"MIODEVW","UI","id")=$GET(CONF("id"),"default")
-	SET ^TMP($J,"MIODEVW","UI","tty")=+$GET(CONF("tty"))
-	SET ^TMP($J,"MIODEVW","UI","dry")=+$GET(CONF("dryUI"))
-	SET ^TMP($J,"MIODEVW","UI","ttyIO")=$GET(CONF("ttyIO"),$IO)
-	QUIT
-	;
-WDRAW(CONF,LAY,CTX)
-	; Call DRAW handlers for widgets.;
-	NEW pri,name,val,draw
-	SET pri=""
-	FOR  SET pri=$ORDER(CONF("ui","W",pri)) QUIT:pri=""  DO
-	. SET name=""
-	. FOR  SET name=$ORDER(CONF("ui","W",pri,name)) QUIT:name=""  DO
-	. . SET val=$GET(CONF("ui","W",pri,name))
-	. . SET draw=$PIECE(val,"|",1)
-	. . IF draw'="" DO WDO(draw,.CONF,.LAY,.CTX)
-	QUIT
-	;
-WPAINT(CONF,LAY,CTX)
-	; Call PAINT handlers for widgets.;
-	NEW pri,name,val,paint
-	SET pri=""
-	FOR  SET pri=$ORDER(CONF("ui","W",pri)) QUIT:pri=""  DO
-	. SET name=""
-	. FOR  SET name=$ORDER(CONF("ui","W",pri,name)) QUIT:name=""  DO
-	. . SET val=$GET(CONF("ui","W",pri,name))
-	. . SET paint=$PIECE(val,"|",2)
-	. . IF paint'="" DO WDO(paint,.CONF,.LAY,.CTX)
-	QUIT
-	;
-WDO(REF,CONF,LAY,CTX)
-	; Safe widget call. REF can be TAG or TAG^ROU.;
-	NEW $ETRAP,$ES,tag,rou,cmd,id
-	SET id=$GET(CONF("id"),"default")
-	SET $ETRAP="SET $ECODE="""" DO ADDERROR^MIODEVW(id,""UI widget error: ""_$ZSTATUS) QUIT"
-	SET tag=$PIECE(REF,"^",1),rou=$PIECE(REF,"^",2)
-	IF rou="" SET rou=$$RTN()
-	SET cmd=tag_"^"_rou_"(.CONF,.LAY,.CTX)"
-	DO @cmd
-	QUIT
-	;
-UILAYOUT(CONF,LAY)
-	; Compute a minimalist, extendible layout.;
-	NEW rows,cols,errW,leftW,splitC
-	SET rows=+$GET(CONF("rows"),24),cols=+$GET(CONF("cols"),100)
-	SET errW=32 IF cols<80 SET errW=26
-	SET leftW=cols-errW-3 IF leftW<30 SET leftW=30
-	SET splitC=leftW+2
-	SET LAY("rows")=rows,LAY("cols")=cols
-	SET LAY("leftW")=leftW,LAY("errW")=errW,LAY("splitC")=splitC
-	SET LAY("hdr1")=1,LAY("hdr2")=2
-	SET LAY("div1")=3,LAY("met")=4,LAY("div2")=5
-	SET LAY("colhdr")=6
-	SET LAY("listTop")=7
-	SET LAY("divB")=rows-1,LAY("help")=rows
 	QUIT
 	;
 ; -------------------- Core watcher logic --------------------
@@ -421,6 +346,7 @@ LOGX(LEVEL,MSG,CONF)
 	IF LEVEL="ERROR" SET ^MIO("DEVW",id,"STATE","status")="ERROR: "_$EXTRACT(MSG,1,70)
 	IF LEVEL="INFO"!(LEVEL="OK") SET ^MIO("DEVW",id,"STATE","status")=MSG
 	SET ^MIO("DEVW",id,"STATE","dirty")=1
+	IF $GET(CONF("ui")) DO ADDLOG(id,LEVEL,MSG)
 	;
 	; classic terminal
 	IF '$GET(CONF("ui")) DO LINE(LEVEL,MSG,.CONF)
@@ -476,6 +402,7 @@ ET(ST,CONF)
 	;
 PUBSTATUS(ID,MSG)   DO PUBEVENT(ID,"status",MSG,"","") QUIT
 PUBERR(ID,MSG)      DO PUBEVENT(ID,"error",MSG,"","") QUIT
+PUBLOG(ID,LEVEL,MSG) DO PUBEVENT(ID,"log",MSG,"",$$UP(LEVEL)) QUIT
 PUBFILE(ID,FP,ST,DETAIL)
 	DO PUBEVENT(ID,"file",FP,"status",ST_"|"_DETAIL) QUIT
 PUBMET(ID,NAME,DELTA)
@@ -489,6 +416,9 @@ SETCTL(ID,NAME,VALUE)
 	;
 GETCTL(ID,NAME)
 	QUIT +$GET(^MIO("DEVW",ID,"CTL",NAME))
+	;
+GETCTLS(ID,NAME)
+	QUIT $GET(^MIO("DEVW",ID,"CTL",NAME))
 	;
 PUBEVENT(ID,TYPE,MSG,K,V)
 	; Atomic-ish sequence using $INCREMENT (fast, lockless)
@@ -526,6 +456,8 @@ UIPOLL(CONF,lastSeq)
 	. . DO METADD(id,k,+v)
 	. IF type="metset" DO  QUIT
 	. . DO METSET(id,k,v)
+	. IF type="log" DO  QUIT
+	. . DO ADDLOG(id,v,msg)
 	. ; prune consumed event to keep global tidy
 	. KILL ^MIO("DEVW",id,"Q",lastSeq)
 	SET ^MIO("DEVW",id,"STATE","qdone")=lastSeq
@@ -563,31 +495,247 @@ ADDERROR(ID,MSG)
 	SET ^MIO("DEVW",ID,"STATE","dirty")=1
 	QUIT
 	;
-; -------------------- Minimalist Dashboard UI --------------------
-;
-; Layout (minimal, extendible):
-;   Row 1: Title + spinner + status
-;   Row 2: dir/pattern + interval + ctl flags + queue lag
-;   Row 3: divider
-;   Row 4: metrics line (uptime, scans, processed, ok, errors, rate)
-;   Row 5: divider
-;   Rows 6..bottom-2: two columns
-;       left  : Recent files (lastN)
-;       right : Errors (errN)
-;   Bottom-1: divider
-;   Bottom  : help line
-;
-; To extend: add another metrics line, or add a third column by changing widths.;
 	;
+ADDLOG(ID,LEVEL,MSG)
+	; Log ring for UI log panel (timestamp^LEVEL^message).;
+	NEW max,n,idx,rec
+	SET max=+$GET(^MIO("DEVW",ID,"STATE","conf","logMax")) IF max<10 SET max=10
+	IF $GET(LEVEL)="" SET LEVEL="INFO"
+	SET LEVEL=$$UP(LEVEL)
+	SET MSG=$GET(MSG)
+	SET n=+$GET(^MIO("DEVW",ID,"STATE","log","n"))
+	SET idx=(n#max)+1
+	SET ^MIO("DEVW",ID,"STATE","log","n")=n+1
+	SET rec=$$TS()_"^"_LEVEL_"^"_$EXTRACT(MSG,1,200)
+	SET ^MIO("DEVW",ID,"STATE","log",idx)=rec
+	SET ^MIO("DEVW",ID,"STATE","dirty")=1
+	QUIT
+	;
+MATCHLVL(LVL,FILT)
+	; FILT: ALL or comma/space/pipe separated levels.;
+	NEW f,pat
+	SET LVL=$$UP($GET(LVL)),FILT=$$UP($GET(FILT))
+	IF FILT=""!(FILT="ALL") QUIT 1
+	SET f=$TRANSLATE(FILT,"| "," ,,")
+	SET pat=","_f_","
+	QUIT (pat[(","_LVL_",")) 
+	;
+LOGVIEW(ID,FILT,SKIP,COUNT,OUT)
+	; OUT(i)=rec (ts^lvl^msg), newest-first window with filter + scroll.;
+	KILL OUT
+	NEW max,n,seen,i,idx,rec,lvl
+	SET max=+$GET(^MIO("DEVW",ID,"STATE","conf","logMax")) IF max<10 SET max=10
+	SET n=+$GET(^MIO("DEVW",ID,"STATE","log","n"))
+	SET seen=0,i=0
+	FOR  QUIT:(i>=COUNT)!(seen>=max)  DO
+	. IF n-seen'>0 QUIT
+	. SET idx=((n-seen-1)#max)+1
+	. SET rec=$GET(^MIO("DEVW",ID,"STATE","log",idx))
+	. SET seen=seen+1
+	. IF rec="" QUIT
+	. SET lvl=$PIECE(rec,"^",2)
+	. IF '$$MATCHLVL(lvl,FILT) QUIT
+	. IF +SKIP>0 SET SKIP=SKIP-1 QUIT
+	. SET i=i+1
+	. SET OUT(i)=rec
+	QUIT
+	;
+	;
+	; ----- Log scroll helpers (Next ROI) -----
+	; These are safe to call from other processes. They clamp scroll based on:
+	;   - current filter (CTL "logFilter", default ALL)
+	;   - visible log lines (STATE ui log lines; falls back to 10)
+	;
+LOGCOUNT(ID,FILT)
+	; Count matching log records in the ring (up to logMax).;
+	NEW max,n,seen,idx,rec,lvl,cnt
+	SET max=+$GET(^MIO("DEVW",ID,"STATE","conf","logMax")) IF max<10 SET max=10
+	SET n=+$GET(^MIO("DEVW",ID,"STATE","log","n"))
+	SET cnt=0,seen=0
+	FOR  QUIT:(seen>=max)  DO  QUIT:n-seen'>0
+	. SET idx=((n-seen-1)#max)+1
+	. SET rec=$GET(^MIO("DEVW",ID,"STATE","log",idx))
+	. SET seen=seen+1
+	. IF rec="" QUIT
+	. SET lvl=$PIECE(rec,"^",2)
+	. IF $$MATCHLVL(lvl,FILT) SET cnt=cnt+1
+	QUIT cnt
+	;
+LOGMAXSCROLL(ID,FILT,LINES)
+	; Maximum valid scroll offset for current ring/filter/viewport.;
+	NEW lines,cnt,maxS
+	SET lines=+$GET(LINES)
+	IF lines<=0 SET lines=+$GET(^MIO("DEVW",ID,"STATE","ui","log","lines"))
+	IF lines<=0 SET lines=10
+	SET cnt=$$LOGCOUNT(ID,FILT)
+	SET maxS=cnt-lines
+	IF maxS<0 SET maxS=0
+	QUIT maxS
+	;
+LOGEND(ID)
+	; Jump to tail (newest).;
+	DO SETCTL(ID,"logScroll",0)
+	QUIT 0
+	;
+LOGHOME(ID)
+	; Jump to oldest window (top).;
+	NEW filt SET filt=$$UP($$GETCTLS(ID,"logFilter")) IF filt="" SET filt="ALL"
+	NEW maxS SET maxS=$$LOGMAXSCROLL(ID,filt,0)
+	DO SETCTL(ID,"logScroll",maxS)
+	QUIT maxS
+	;
+LOGUP(ID,STEP)
+	; Scroll up (older) by STEP lines (default 1), clamped. Returns new scroll. ;
+	NEW s,cur,filt,maxS,new
+	SET s=+$GET(STEP) IF s<=0 SET s=1
+	SET cur=+$GET(^MIO("DEVW",ID,"CTL","logScroll"))
+	SET filt=$$UP($$GETCTLS(ID,"logFilter")) IF filt="" SET filt="ALL"
+	SET maxS=$$LOGMAXSCROLL(ID,filt,0)
+	SET new=cur+s IF new>maxS SET new=maxS
+	DO SETCTL(ID,"logScroll",new)
+	QUIT new
+	;
+LOGDOWN(ID,STEP)
+	; Scroll down (newer) by STEP lines (default 1), clamped. Returns new scroll. ;
+	NEW s,cur,new
+	SET s=+$GET(STEP) IF s<=0 SET s=1
+	SET cur=+$GET(^MIO("DEVW",ID,"CTL","logScroll"))
+	SET new=cur-s IF new<0 SET new=0
+	DO SETCTL(ID,"logScroll",new)
+	QUIT new
+	;
+LOGPAGEUP(ID)
+	; Page up by (lines-1) (or 1 if unknown).;
+	NEW lines SET lines=+$GET(^MIO("DEVW",ID,"STATE","ui","log","lines"))
+	IF lines<=1 SET lines=2
+	QUIT $$LOGUP(ID,lines-1)
+	;
+LOGPAGEDN(ID)
+	; Page down by (lines-1) (or 1 if unknown).;
+	NEW lines SET lines=+$GET(^MIO("DEVW",ID,"STATE","ui","log","lines"))
+	IF lines<=1 SET lines=2
+	QUIT $$LOGDOWN(ID,lines-1)
+	;
+	;
+	;
+; -------------------- Minimalist Dashboard UI (widget-based + log panel) --------------------
+;
+; Next ROI:
+;   - Scrollable full-height Log panel (filtered by level)
+;   - Controlled from other processes via:
+;       SETCTL(ID,"logScroll",N)   ; 0=tail, 1.. scroll up (skip newest matching lines)
+;       SETCTL(ID,"logFilter","ERROR") or "ERROR,WARN" or "ALL"
+;   - Row-level diff flushing (uidiff) and dryUI recording for tests
+;
+; Widget Registry
+;   CONF("ui","W",priority,name)=DRAW_"|"_PAINT
+;   DRAW is called during UISTART (and on resize redraw)
+;   PAINT is called every UIRENDER
+;
+REGW(CONF,NAME,PRI,DRAW,PAINT)
+	IF $GET(NAME)="" QUIT
+	IF $GET(PRI)="" SET PRI=50
+	SET CONF("ui","W",PRI,NAME)=$GET(DRAW)_"|"_$GET(PAINT)
+	QUIT
+	;
+WREGDEFAULT(CONF)
+	DO REGW(.CONF,"chrome",10,"WCHROME^MIODEVW","")
+	DO REGW(.CONF,"header",20,"","WHEADER^MIODEVW")
+	DO REGW(.CONF,"metrics",30,"","WMETRICS^MIODEVW")
+	DO REGW(.CONF,"recent",40,"","WRECENT^MIODEVW")
+	DO REGW(.CONF,"errors",50,"","WERRORS^MIODEVW")
+	DO REGW(.CONF,"log",60,"","WLOG^MIODEVW")
+	QUIT
+	;
+UIINIT(CONF)
+	; Prepare temp UI state for PUT() (dryUI/uidiff/cache).;
+	IF '$GET(CONF("ui")) QUIT
+	IF '$DATA(CONF("ui","W")) DO WREGDEFAULT(.CONF)
+	IF '$DATA(^TMP($J,"MIODEVW","UI","init")) DO
+	. KILL ^TMP($J,"MIODEVW","UI")
+	. SET ^TMP($J,"MIODEVW","UI","init")=1
+	; Always refresh dynamic knobs
+	SET ^TMP($J,"MIODEVW","UI","dry")=+$GET(CONF("dryUI"))
+	SET ^TMP($J,"MIODEVW","UI","tty")=+$GET(CONF("tty"))
+	SET ^TMP($J,"MIODEVW","UI","ttyIO")=$GET(CONF("ttyIO"),$IO)
+	SET ^TMP($J,"MIODEVW","UI","uidiff")=+$GET(CONF("uidiff"))
+	SET ^TMP($J,"MIODEVW","UI","cols")=+$GET(CONF("cols"),80)
+	QUIT
+	;
+WDRAW(CONF,LAY,CTX)
+	NEW pri,name,val,draw
+	SET pri=""
+	FOR  SET pri=$ORDER(CONF("ui","W",pri)) QUIT:pri=""  DO
+	. SET name=""
+	. FOR  SET name=$ORDER(CONF("ui","W",pri,name)) QUIT:name=""  DO
+	. . SET val=$GET(CONF("ui","W",pri,name))
+	. . SET draw=$PIECE(val,"|",1)
+	. . IF draw'="" DO WDO(draw,.CONF,.LAY,.CTX)
+	QUIT
+	;
+WPAINT(CONF,LAY,CTX)
+	NEW pri,name,val,paint
+	SET pri=""
+	FOR  SET pri=$ORDER(CONF("ui","W",pri)) QUIT:pri=""  DO
+	. SET name=""
+	. FOR  SET name=$ORDER(CONF("ui","W",pri,name)) QUIT:name=""  DO
+	. . SET val=$GET(CONF("ui","W",pri,name))
+	. . SET paint=$PIECE(val,"|",2)
+	. . IF paint'="" DO WDO(paint,.CONF,.LAY,.CTX)
+	QUIT
+	;
+WDO(REF,CONF,LAY,CTX)
+	NEW $ETRAP,$ES,tag,rou,cmd,id
+	SET id=$GET(CONF("id"),"default")
+	SET $ETRAP="SET $ECODE="""" DO ADDERROR^MIODEVW(id,""UI widget error: ""_$ZSTATUS) QUIT"
+	SET tag=$PIECE(REF,"^",1),rou=$PIECE(REF,"^",2)
+	IF rou="" SET rou=$$RTN()
+	SET cmd=tag_"^"_rou_"(.CONF,.LAY,.CTX)"
+	DO @cmd
+	QUIT
+	;
+UILAYOUT(CONF,LAY)
+	; Compute minimalist layout + optional log panel at bottom.;
+	NEW rows,cols,errW,leftW,splitC,pane,maxPane,logMin
+	SET rows=+$GET(CONF("rows"),24),cols=+$GET(CONF("cols"),100)
+	SET errW=32 IF cols<80 SET errW=26
+	SET leftW=cols-errW-3 IF leftW<30 SET leftW=30
+	SET splitC=leftW+2
+	SET LAY("rows")=rows,LAY("cols")=cols
+	SET LAY("leftW")=leftW,LAY("errW")=errW,LAY("splitC")=splitC
+	SET LAY("hdr1")=1,LAY("hdr2")=2
+	SET LAY("div1")=3,LAY("met")=4,LAY("div2")=5
+	SET LAY("colhdr")=6
+	SET LAY("listTop")=7
+	SET LAY("divB")=rows-1,LAY("help")=rows
+	SET LAY("logPanel")=0
+	SET LAY("listBottom")=rows-2
+	IF '+$GET(CONF("logPanel")) QUIT
+	SET logMin=+$GET(CONF("logMinH"),6) IF logMin<4 SET logMin=4
+	SET pane=+$GET(CONF("paneAHeight"))
+	IF pane<=0 SET pane=$SELECT(rows>=30:10,rows>=26:8,rows>=24:6,1:4)
+	SET maxPane=rows-logMin-10
+	IF maxPane<3 QUIT  ; too small: disable log panel
+	IF pane>maxPane SET pane=maxPane
+	IF pane<3 SET pane=3
+	SET LAY("listBottom")=LAY("listTop")+pane-1
+	SET LAY("div3")=LAY("listBottom")+1
+	SET LAY("logHdr")=LAY("div3")+1
+	SET LAY("logTop")=LAY("logHdr")+1
+	SET LAY("logBottom")=rows-2
+	SET LAY("logLines")=LAY("logBottom")-LAY("logTop")+1
+	SET LAY("logPanel")=1
+	QUIT
+	;
+; ----- UI lifecycle -----
 UISTART(CONF)
+	IF '$GET(CONF("ui")) QUIT
 	DO UIINIT(.CONF)
+	KILL ^TMP($J,"MIODEVW","UI","cache") ; reset diff-cache for a fresh screen
 	NEW id SET id=$GET(CONF("id"),"default")
 	NEW LAY,CTX
 	DO UILAYOUT(.CONF,.LAY)
-	SET CTX("phase")="draw"
-	SET CTX("dirty")=1
-	SET CTX("spin")="|"
-	;
+	SET CTX("phase")="draw",CTX("dirty")=1
 	IF $GET(CONF("tty")) DO
 	. NEW io SET io=$GET(CONF("ttyIO"),$IO)
 	. NEW old SET old=$IO
@@ -610,7 +758,8 @@ UIEND(CONF)
 	QUIT
 	;
 UIDRAWSTATIC(CONF)
-	; kept for backward compatibility - now delegated to widget system.;
+	; Backward compatible shim (uses widgets).;
+	IF '$GET(CONF("ui")) QUIT
 	DO UIINIT(.CONF)
 	NEW LAY,CTX
 	DO UILAYOUT(.CONF,.LAY)
@@ -624,81 +773,75 @@ UIRENDER(CONF,spinI,lastRateH,lastRateP)
 	NEW id SET id=$GET(CONF("id"),"default")
 	NEW LAY,CTX
 	DO UILAYOUT(.CONF,.LAY)
-	;
-	; redraw chrome if size signature changed
+	; redraw chrome if size changed
 	NEW sig SET sig=LAY("rows")_"x"_LAY("cols")
 	IF $GET(^MIO("DEVW",id,"STATE","ui","sig"))'=sig DO
-	. SET CTX("phase")="draw",CTX("dirty")=1
+	. KILL ^TMP($J,"MIODEVW","UI","cache")
 	. NEW oldIO SET oldIO=$IO
 	. IF $GET(CONF("tty")) USE $GET(CONF("ttyIO"),$IO)
+	. SET CTX("phase")="draw",CTX("dirty")=1
 	. DO WDRAW(.CONF,.LAY,.CTX)
 	. USE oldIO
 	. SET ^MIO("DEVW",id,"STATE","ui","sig")=sig
 	. SET ^MIO("DEVW",id,"STATE","dirty")=1
-	;
 	NEW dirty SET dirty=+$GET(^MIO("DEVW",id,"STATE","dirty"))
 	SET ^MIO("DEVW",id,"STATE","dirty")=0
-	;
-	; compute rate and other ctx
+	; rate calc
 	NEW nowH SET nowH=$H
 	NEW p SET p=+$GET(^MIO("DEVW",id,"STATE","metrics","processed"))
 	NEW dt SET dt=$$HSECS(nowH,lastRateH)
 	NEW rate SET rate=0
 	IF dt>0 SET rate=(p-lastRateP)/dt
 	SET lastRateH=nowH,lastRateP=p
-	;
-	SET CTX("phase")="paint"
-	SET CTX("dirty")=dirty
-	SET CTX("spin")=$EXTRACT("|/-\",((spinI)#4)+1)
-	SET CTX("processed")=p
-	SET CTX("rate")=rate
-	;
-	; Make sure all widget writes go to tty IO (and restore after)
+	SET CTX("phase")="paint",CTX("dirty")=dirty
+	SET CTX("spin")=$EXTRACT("|/-",((spinI)#4)+1)
+	SET CTX("processed")=p,CTX("rate")=rate
 	NEW oldIO SET oldIO=$IO
 	IF $GET(CONF("tty")) USE $GET(CONF("ttyIO"),$IO)
 	DO WPAINT(.CONF,.LAY,.CTX)
 	USE oldIO
 	QUIT
 	;
-; -------------------- Widgets (default set) --------------------
-	;
+; ----- Default widgets -----
 WCHROME(CONF,LAY,CTX)
-	; Static chrome: title, dividers, column labels, footer.;
-	NEW rows,cols,splitC,id
-	SET rows=LAY("rows"),cols=LAY("cols"),splitC=LAY("splitC")
+	NEW cols,splitC,id,bottom
+	SET cols=LAY("cols"),splitC=LAY("splitC")
+	SET bottom=LAY("listBottom")
 	SET id=$GET(CONF("id"),"default")
-	;
-	DO PUT(1,1,$$C("HEAD",.CONF)_"MIODEVW"_$$RESET(.CONF)_" "_$$C("DIM",.CONF)_"id="_id_$$RESET(.CONF))
-	DO PUT(2,1,$$C("DIM",.CONF)_"dir="_CONF("dir")_"  pattern="_CONF("pattern")_"  interval="_CONF("interval")_"s"_$$RESET(.CONF))
+	DO PUT(LAY("hdr1"),1,$$C("HEAD",.CONF)_"MIODEVW"_$$RESET(.CONF)_" "_$$C("DIM",.CONF)_"id="_id_$$RESET(.CONF))
+	DO PUT(LAY("hdr2"),1,$$C("DIM",.CONF)_"dir="_CONF("dir")_"  pattern="_CONF("pattern")_"  interval="_CONF("interval")_"s"_$$RESET(.CONF))
 	DO HLINE(LAY("div1"),1,cols)
 	DO PUT(LAY("met"),1,"")
 	DO HLINE(LAY("div2"),1,cols)
 	DO PUT(LAY("colhdr"),1,$$C("HEAD",.CONF)_"Recent"_$$RESET(.CONF))
 	DO PUT(LAY("colhdr"),splitC+1,$$C("HEAD",.CONF)_"Errors"_$$RESET(.CONF))
-	NEW r FOR r=LAY("colhdr"):1:(LAY("divB")-1) DO PUT(r,splitC,"|")
+	NEW r FOR r=LAY("colhdr"):1:bottom DO PUT(r,splitC,"|")
+	IF +$GET(LAY("logPanel")) DO
+	. DO HLINE(LAY("div3"),1,cols)
+	. DO PUT(LAY("logHdr"),1,$$C("HEAD",.CONF)_"Log"_$$RESET(.CONF))
 	DO HLINE(LAY("divB"),1,cols)
-	DO PUT(LAY("help"),1,$$C("DIM",.CONF)_"IPC: PUBSTATUS/PUBERR/PUBFILE  |  CTL: SETCTL(pause/stop)"_$$RESET(.CONF))
+	DO PUT(LAY("help"),1,$$C("DIM",.CONF)_"IPC: PUBSTATUS/PUBERR/PUBFILE/PUBLOG  |  CTL: SETCTL(pause/stop/logScroll/logFilter)"_$$RESET(.CONF))
 	QUIT
 	;
 WHEADER(CONF,LAY,CTX)
-	; Dynamic header bits: spinner+status, ctl/qlag.;
 	NEW id SET id=$GET(CONF("id"),"default")
 	NEW cols SET cols=LAY("cols")
 	NEW spin SET spin=$GET(CTX("spin"),"|")
 	NEW status SET status=$GET(^MIO("DEVW",id,"STATE","status"),"Watching...")
 	IF $L(status)>(cols-22) SET status=$E(status,1,(cols-22))
 	DO PUT(LAY("hdr1"),20,$$C("DIM",.CONF)_"["_spin_"] "_$$RESET(.CONF)_status)
-	;
 	NEW qnext SET qnext=+$GET(^MIO("DEVW",id,"Q","next"))
 	NEW qdone SET qdone=+$GET(^MIO("DEVW",id,"STATE","qdone"))
 	NEW qlag SET qlag=qnext-qdone IF qlag<0 SET qlag=0
+	NEW ls SET ls=+$GET(^MIO("DEVW",id,"CTL","logScroll"))
+	NEW lf SET lf=$$UP($$GETCTLS(id,"logFilter")) IF lf="" SET lf="ALL"
 	NEW ctl SET ctl="pause="_$$YESNO($$GETCTL(id,"pause"))_" stop="_$$YESNO($$GETCTL(id,"stop"))_" qlag="_qlag
+	IF +$GET(LAY("logPanel")) SET ctl=ctl_" logScroll="_ls_" logFilter="_lf
 	NEW cpos SET cpos=cols-$L(ctl)+1 IF cpos<1 SET cpos=1
 	DO PUT(LAY("hdr2"),cpos,$$C("DIM",.CONF)_ctl_$$RESET(.CONF))
 	QUIT
 	;
 WMETRICS(CONF,LAY,CTX)
-	; Dynamic metrics line.;
 	NEW id SET id=$GET(CONF("id"),"default")
 	NEW cols SET cols=LAY("cols")
 	NEW p SET p=+$GET(CTX("processed"))
@@ -714,16 +857,14 @@ WMETRICS(CONF,LAY,CTX)
 	QUIT
 	;
 WRECENT(CONF,LAY,CTX)
-	; Recent file list. Only repaints when dirty.;
 	IF '$GET(CTX("dirty")) QUIT
 	NEW id SET id=$GET(CONF("id"),"default")
-	NEW rows SET rows=LAY("rows")
-	NEW top SET top=LAY("listTop")
+	NEW top SET top=LAY("listTop"),bottom=LAY("listBottom")
 	NEW width SET width=LAY("leftW")
 	NEW max SET max=+$GET(^MIO("DEVW",id,"STATE","conf","lastN"),10)
 	NEW n SET n=+$GET(^MIO("DEVW",id,"STATE","recent","n"))
 	NEW i,row,idx,rec,ts,st,name,detail,line,out
-	FOR i=1:1:(rows-top-1) DO
+	FOR i=1:1:(bottom-top+1) DO
 	. SET row=top+i-1
 	. IF i>max DO PUT(row,1,"") QUIT
 	. SET idx=((n-i)#max)+1
@@ -738,17 +879,15 @@ WRECENT(CONF,LAY,CTX)
 	QUIT
 	;
 WERRORS(CONF,LAY,CTX)
-	; Errors list. Only repaints when dirty.;
 	IF '$GET(CTX("dirty")) QUIT
 	NEW id SET id=$GET(CONF("id"),"default")
-	NEW rows SET rows=LAY("rows")
-	NEW top SET top=LAY("listTop")
+	NEW top SET top=LAY("listTop"),bottom=LAY("listBottom")
 	NEW width SET width=LAY("errW")
 	NEW left SET left=LAY("splitC")+1
 	NEW max SET max=+$GET(^MIO("DEVW",id,"STATE","conf","errN"),6)
 	NEW n SET n=+$GET(^MIO("DEVW",id,"STATE","errors","n"))
 	NEW i,row,idx,rec,line
-	FOR i=1:1:(rows-top-1) DO
+	FOR i=1:1:(bottom-top+1) DO
 	. SET row=top+i-1
 	. IF i>max DO PUT(row,left,"") QUIT
 	. SET idx=((n-i)#max)+1
@@ -758,57 +897,57 @@ WERRORS(CONF,LAY,CTX)
 	. DO PUT(row,left,$$C("ERROR",.CONF)_line_$$RESET(.CONF))
 	QUIT
 	;
+WLOG(CONF,LAY,CTX)
+	IF '+$GET(LAY("logPanel")) QUIT
+	NEW id SET id=$GET(CONF("id"),"default")
+	NEW cols SET cols=LAY("cols")
+	NEW hdr SET hdr=LAY("logHdr"),top=LAY("logTop"),bot=LAY("logBottom")
+	NEW lines SET lines=(bot-top+1) IF lines<1 QUIT
+	NEW filt SET filt=$$UP($$GETCTLS(id,"logFilter")) IF filt="" SET filt="ALL"
+	NEW scroll SET scroll=+$GET(^MIO("DEVW",id,"CTL","logScroll"))
+	; remember viewport lines for scroll helpers
+	SET ^MIO("DEVW",id,"STATE","ui","log","lines")=lines
+	NEW maxS SET maxS=$$LOGMAXSCROLL(id,filt,lines)
+	IF scroll>maxS SET scroll=maxS,^MIO("DEVW",id,"CTL","logScroll")=scroll
+	NEW dirty SET dirty=+$GET(CTX("dirty"))
+	IF scroll'=+$GET(^MIO("DEVW",id,"STATE","ui","log","scroll")) SET dirty=1,^MIO("DEVW",id,"STATE","ui","log","scroll")=scroll
+	IF filt'=$GET(^MIO("DEVW",id,"STATE","ui","log","filter")) SET dirty=1,^MIO("DEVW",id,"STATE","ui","log","filter")=filt
+	IF 'dirty QUIT
+	NEW h SET h=$$C("HEAD",.CONF)_"Log"_$$RESET(.CONF)_" "_$$C("DIM",.CONF)_"filter="_filt_" scroll="_scroll_"/"_maxS_" (0=tail)"_$$RESET(.CONF)
+	IF $L(h)>cols SET h=$E(h,1,cols)
+	DO PUT(hdr,1,h)
+	NEW view,i,row,rec,ts,lvl,msg,line,out
+	DO LOGVIEW(id,filt,scroll,lines,.view)
+	FOR i=1:1:lines DO
+	. SET row=top+i-1
+	. SET rec=$GET(view(i))
+	. IF rec="" DO PUT(row,1,"") QUIT
+	. SET ts=$P(rec,"^",1),lvl=$P(rec,"^",2),msg=$P(rec,"^",3,99)
+	. SET line=ts_" ["_lvl_"] "_msg
+	. IF $L(line)>cols SET line=$E(line,1,cols)
+	. SET out=$$CPFX(lvl,.CONF)_line_$$RESET(.CONF)
+	. DO PUT(row,1,out)
+	QUIT
+	;
 CPFX(ST,CONF)
-	; Color prefix without RESET (RESET appended by caller).;
 	IF '$GET(CONF("color")) QUIT ""
-	IF ST="OK" QUIT $$C("OK",.CONF)
-	IF ST="RUN" QUIT $$C("INFO",.CONF)
-	IF ST="ERR" QUIT $$C("ERROR",.CONF)
-	IF ST="WARN" QUIT $$C("WARN",.CONF)
-	QUIT ""
+	SET ST=$$UP($GET(ST))
+	IF ST="ERROR" QUIT $$C("ERROR",.CONF)
+	IF ST="WARN"  QUIT $$C("WARN",.CONF)
+	IF ST="OK"    QUIT $$C("OK",.CONF)
+	IF ST="INFO"  QUIT $$C("INFO",.CONF)
+	IF ST="DEBUG" QUIT $$C("DEBUG",.CONF)
+	IF ST="RUN"   QUIT $$C("INFO",.CONF)
+	IF ST="ERR"   QUIT $$C("ERROR",.CONF)
+	QUIT $$C("DIM",.CONF)
 	;
-RENDERRECENT(ID,TOP,LEFT,WIDTH,CONF,ROWS)
-	NEW max SET max=+$GET(^MIO("DEVW",ID,"STATE","conf","lastN"),10)
-	NEW n SET n=+$GET(^MIO("DEVW",ID,"STATE","recent","n"))
-	NEW i,idx,rec,ts,st,name,detail,line,row
-	FOR i=1:1:(ROWS-TOP-1) DO  ; fill available lines, but show at most max
-	. SET row=TOP+i-1
-	. IF i>max DO PUT(row,LEFT,$$FIT("",WIDTH)) QUIT
-	. SET idx=((n-i)#max)+1
-	. SET rec=$GET(^MIO("DEVW",ID,"STATE","recent",idx))
-	. IF rec="" DO PUT(row,LEFT,$$FIT("",WIDTH)) QUIT
-	. SET ts=$PIECE(rec,"^",1),st=$PIECE(rec,"^",2),name=$PIECE(rec,"^",3),detail=$PIECE(rec,"^",4,99)
-	. SET line=ts_" ["_st_"] "_name
-	. IF detail'="" SET line=line_" - "_detail
-	. DO PUT(row,LEFT,$$FIT($$COLORST(st,line,.CONF),WIDTH))
-	QUIT
-	;
-RENDERERR(ID,TOP,LEFT,WIDTH,CONF,ROWS)
-	NEW max SET max=+$GET(^MIO("DEVW",ID,"STATE","conf","errN"),6)
-	NEW n SET n=+$GET(^MIO("DEVW",ID,"STATE","errors","n"))
-	NEW i,idx,rec,row
-	FOR i=1:1:(ROWS-TOP-1) DO
-	. SET row=TOP+i-1
-	. IF i>max DO PUT(row,LEFT,$$FIT("",WIDTH)) QUIT
-	. SET idx=((n-i)#max)+1
-	. SET rec=$GET(^MIO("DEVW",ID,"STATE","errors",idx))
-	. IF rec="" DO PUT(row,LEFT,$$FIT("",WIDTH)) QUIT
-	. DO PUT(row,LEFT,$$FIT($$C("ERROR",.CONF)_rec_$$RESET(.CONF),WIDTH))
-	QUIT
-	;
-COLORST(ST,LINE,CONF)
-	IF '$GET(CONF("color")) QUIT LINE
-	IF ST="OK" QUIT $$C("OK",.CONF)_LINE_$$RESET(.CONF)
-	IF ST="RUN" QUIT $$C("INFO",.CONF)_LINE_$$RESET(.CONF)
-	IF ST="ERR" QUIT $$C("ERROR",.CONF)_LINE_$$RESET(.CONF)
-	IF ST="WARN" QUIT $$C("WARN",.CONF)_LINE_$$RESET(.CONF)
-	QUIT LINE
-	;
-; drawing primitives
+; ----- Drawing primitives (supports dryUI + uidiff) -----
 PUT(R,C,S)
-	; UI-only helper. In dryUI mode, records ops to ^TMP for tests.;
 	NEW dry SET dry=+$GET(^TMP($J,"MIODEVW","UI","dry"))
 	NEW tty SET tty=+$GET(^TMP($J,"MIODEVW","UI","tty"))
+	NEW uidiff SET uidiff=+$GET(^TMP($J,"MIODEVW","UI","uidiff"))
+	IF uidiff,$GET(^TMP($J,"MIODEVW","UI","cache",R,C))=S QUIT
+	IF uidiff SET ^TMP($J,"MIODEVW","UI","cache",R,C)=S
 	IF dry DO  QUIT
 	. NEW n SET n=$INCREMENT(^TMP($J,"MIODEVW","UI","ops"))
 	. SET ^TMP($J,"MIODEVW","UI","ops",n)=R_$C(9)_C_$C(9)_S
@@ -823,6 +962,7 @@ HLINE(R,C,L)
 	QUIT
 	;
 ; -------------------- File helpers --------------------
+	; --------------------
 	;
 FILEINFO(FILE,BYTES,LINES,ERR)
 	NEW $ETRAP,$ES,old
@@ -870,6 +1010,9 @@ ESCQ(S)
 	;
 RTN()
 	QUIT $PIECE($TEXT(+0)," ",1)
+	;
+UP(X)
+	QUIT $TRANSLATE($GET(X),"abcdefghijklmnopqrstuvwxyz","ABCDEFGHIJKLMNOPQRSTUVWXYZ")
 	;
 ; -------------------- Time helpers --------------------
 	;

@@ -264,7 +264,8 @@ APISAVE(DEV,CONF,REQ,CTX)
 	; Ensure JSON is parseable; if not, still allow save but return a warning.;
 	D TRYJSON($S(REC("json")="":"{}",1:REC("json")),.JCTX,.JERR)
 	;
-	S ID=$$SAVEREC(.REC)
+	;	
+	S ID=$$SAVEREC(.REC) S ^A=ID M ^B=REC
 	S RESP="{""ok"":true,""id"":"""_ID_""""
 	I $D(JERR) S RESP=RESP_",""warning"":""json_invalid"""
 	S RESP=RESP_"}"

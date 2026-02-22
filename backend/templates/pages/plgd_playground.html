@@ -211,9 +211,9 @@
   // CodeMirror editors (optional, loaded via CDN)
   let tplCM = null;
   let jsonCM = null;
+  let getJson = null;
+  let getTpl = null;
 
-  const getTpl = () => $("plgd-template").textContent;
-  const getJson = () => $("plgd-json").textContent;
 
   const setJsonStatus = (ok, msg) => {
     const okEl = $("plgd-json-ok");
@@ -266,7 +266,8 @@
       tabSize: 2
     };
     tplCM = CodeMirror.fromTextArea($("plgd-template"), tplOpts)
-
+    getTpl = () => tplCM.getValue();
+    getJson = () => jsonCM.getValue();
     const jsonOpts = {
       theme: "material-darker",
       mode: "javascript",
@@ -439,7 +440,9 @@
   search.addEventListener("input", applyFilter);
 
   // Initialize editors (CodeMirror) and render once on load for convenience
-  try{ initEditors(); }catch(_){}
+  try{ initEditors(); 
+
+  }catch(_){}
   setTimeout(() => { try{ $("plgd-render").click(); }catch(_){} }, 80);
 })();
 </script>
