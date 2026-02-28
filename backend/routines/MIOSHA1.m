@@ -1,4 +1,4 @@
-MIOWSSHA ; MIO WebSocket SHA1 + Accept helper (MUMPS Implementation)
+MIOSHA1 ; MIO WebSocket SHA1 + Accept helper (MUMPS Implementation)
 	; AA 1/20/26
 	; V 1.0
 	;#################################################################

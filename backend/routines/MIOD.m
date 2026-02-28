@@ -80,9 +80,24 @@ JOBCONN(ADDR,HANDLE)
 	NEW CTX,REQ,ERR,DEV
 	S DEV=$PRINCIPAL U DEV:(delim=$C(13,10))
 	SET CTX("remote_addr")=ADDR
-	KILL REQ,ERR SET CTX("request_id")=$$UUID^MIOUTIL()
+	KILL REQ,ERR
+	SET CTX("request_id")=$$UUID^MIOUTIL()
+	SET REQ("id")=CTX("request_id")
 	NEW OK SET OK=$$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR)
-	IF 'OK DO CLOSE^MIOSOCK(DEV) QUIT
+	IF 'OK DO  QUIT
+	. ; If client closed, do not attempt a response.
+	. IF $GET(ERR("error"))="client_closed" DO CLOSE^MIOSOCK(DEV) QUIT
+	. NEW ST SET ST=$$STATUS4ERR^MIOHTTP(.ERR)
+	. NEW OBJ
+	. SET OBJ("ok")=0
+	. SET OBJ("error")=$GET(ERR("error"),"parse_error")
+	. SET OBJ("routine")=$GET(ERR("routine"),"MIOHTTP")
+	. SET OBJ("request_id")=$GET(CTX("request_id"))
+	. IF $GET(ERR("message"))'="" SET OBJ("message")=$GET(ERR("message"))
+	. DO RESPJSONX^MIOHTTP(.DEV,.CONF,ST,.OBJ,$GET(CTX("request_id")),.CTX)
+	. SET CTX("status")=ST,CTX("route")="(parse_error)",CTX("skip_metrics")=1
+	. DO BODYFREE^MIOHTTP(.REQ)
+	. DO CLOSE^MIOSOCK(DEV)
 	; If this is a WebSocket Upgrade request, route under method "WS".;
 	; This allows registering WS endpoints without colliding with normal GET routes.;
 	IF $$ISWSREQ(.REQ) DO
@@ -108,6 +123,8 @@ JOBCONN(ADDR,HANDLE)
 	. NEW ST SET ST=$GET(CTX("status"),0)
 	. NEW MM SET MM=$GET(REQ("http_method"),$GET(REQ("method")))
 	. DO OBS^MIOMET(MM,RT,ST,LATMS)
+	; Always free request body storage (if global)
+	DO BODYFREE^MIOHTTP(.REQ)
 	DO CLOSE^MIOSOCK(DEV)
 	IF $$LOW^MIOHTTP($GET(REQ("hdr","connection")))="close" H
 	QUIT
