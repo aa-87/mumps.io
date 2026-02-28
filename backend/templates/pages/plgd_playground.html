@@ -1,280 +1,647 @@
-{{$title}}Playground{{/title}}
+<style>
+  .pg{display:grid;grid-template-columns: 320px 1fr;gap:12px}
+  @media (max-width: 980px){.pg{grid-template-columns:1fr}}
 
-<section class="rounded-3xl bg-white/5 ring-1 ring-white/10 shadow-sm overflow-hidden">
-  <div class="flex flex-col lg:flex-row min-h-[680px]">
-    <!-- Sidebar -->
-    <aside class="lg:w-[360px] border-b lg:border-b-0 lg:border-r border-white/10 bg-black/20">
-      <div class="p-5">
-        <div class="flex items-center justify-between gap-3">
-          <div>
-            <div class="text-xs uppercase tracking-widest text-slate-400">Library</div>
-            <div class="mt-1 text-lg font-semibold text-white">Templates</div>
-          </div>
-          <a href="/plgd"
-             class="rounded-xl px-3 py-2 text-sm bg-white/10 hover:bg-white/15 ring-1 ring-white/10 transition">
-            Back
-          </a>
+  .side{position:sticky;top:14px;height:calc(100vh - 160px);min-height:520px;display:flex;flex-direction:column;gap:10px}
+  @media (max-width: 980px){.side{position:static;height:auto;min-height:0}}
+
+  .sideList{overflow:auto;padding:6px;display:flex;flex-direction:column;gap:6px;max-height:100%}
+  .sideItem{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border-radius:14px;border:1px solid transparent;cursor:pointer}
+  .sideItem:hover{background:var(--panel2);border-color:var(--border2)}
+  .sideItem .t{font-weight:650;font-size:13px;line-height:1.2}
+  .sideItem .m{color:var(--muted2);font-size:12px;margin-top:2px}
+  .sideItem .g{color:var(--muted);font-size:12px;margin-top:6px}
+  .sideItem .fav{margin-left:auto;color:var(--muted);font-size:14px}
+
+  .denseToolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .denseToolbar .btn{padding:8px 10px}
+
+  .metaGrid{display:grid;grid-template-columns: 1fr 1fr 1fr 120px;gap:8px}
+  @media (max-width: 980px){.metaGrid{grid-template-columns:1fr 1fr}}
+  @media (max-width: 520px){.metaGrid{grid-template-columns:1fr}}
+
+  .editGrid{display:grid;grid-template-columns: 1fr 1fr;gap:10px}
+  @media (max-width: 980px){.editGrid{grid-template-columns:1fr}}
+
+  .subHd{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+  .subHd .h{font-size:13px;font-weight:700}
+  .subHd .hint{font-size:12px;color:var(--muted)}
+
+  .outTabs{display:flex;gap:6px;flex-wrap:wrap}
+  .tab{padding:7px 10px;border-radius:999px;border:1px solid var(--border2);background:var(--panel2);color:var(--muted);font-size:12px;cursor:pointer;user-select:none}
+  .tab:hover{border-color:var(--border);color:var(--text)}
+  .tab.sel{background:rgba(99,102,241,.20);border-color:rgba(99,102,241,.45);color:var(--text)}
+
+  .outputPre{font-family:var(--mono);font-size:12px;line-height:1.35;margin:0;white-space:pre-wrap;word-break:break-word}
+  .outBox{min-height:200px;max-height:520px;overflow:auto;padding:10px;border-radius:14px;border:1px solid var(--border2);background:rgba(0,0,0,.18)}
+  html[data-theme="light"] .outBox{background:rgba(255,255,255,.55)}
+
+  .probList{display:flex;flex-direction:column;gap:6px}
+  .prob{padding:8px 10px;border-radius:14px;border:1px solid rgba(239,68,68,.30);background:rgba(239,68,68,.10);font-size:12.5px}
+  .prob .k{font-weight:800;margin-bottom:3px}
+  .prob .d{color:var(--text);opacity:.95;white-space:pre-wrap;font-family:var(--mono);font-size:12px}
+  .prob.warn{border-color:rgba(245,158,11,.35);background:rgba(245,158,11,.10)}
+
+  .histList{display:flex;flex-direction:column;gap:6px}
+  .histItem{padding:8px 10px;border-radius:14px;border:1px solid var(--border2);background:var(--panel2);cursor:pointer}
+  .histItem:hover{border-color:var(--border);color:var(--text)}
+  .histItem .t{font-size:12px;color:var(--muted)}
+  .histItem .s{font-size:13px;font-weight:650;margin-top:2px}
+
+  .diffLine{font-family:var(--mono);font-size:12px;white-space:pre-wrap;word-break:break-word;margin:0}
+  .diffAdd{background:rgba(34,197,94,.12);border-left:3px solid rgba(34,197,94,.55);padding-left:8px}
+  .diffDel{background:rgba(239,68,68,.10);border-left:3px solid rgba(239,68,68,.55);padding-left:8px}
+  .diffSame{opacity:.92;border-left:3px solid transparent;padding-left:8px}
+
+  .iframeWrap{border:1px solid var(--border2);border-radius:14px;overflow:hidden;background:rgba(0,0,0,.10)}
+  html[data-theme="light"] .iframeWrap{background:rgba(255,255,255,.45)}
+  iframe{width:100%;height:420px;border:0;background:white}
+</style>
+
+<div class="pg">
+  <!-- Sidebar -->
+  <aside class="panel side" aria-label="Template library">
+    <div class="panelHd">
+      <h3>Templates</h3>
+      <a class="btn" href="/plgd" title="Open full library">Library</a>
+    </div>
+    <div class="panelBd" style="padding:10px">
+      <input class="input" id="sideSearch" placeholder="Filter…" />
+    </div>
+    <div class="sideList" id="sideList">
+      {{#tpls}}
+      <a class="sideItem" href="/plgd/playground?id={{id}}" data-name="{{name}}" data-group="{{group}}" data-tags="{{tags}}">
+        <div style="min-width:0">
+          <div class="t">{{name}}</div>
+          <div class="m">{{group}} · {{updatedAgo}}</div>
+          {{#tags}}<div class="g">{{tags}}</div>{{/tags}}
         </div>
+        <div class="fav" aria-hidden="true">{{favIcon}}</div>
+      </a>
+      {{/tpls}}
+    </div>
+  </aside>
 
-        <div class="mt-4 text-sm text-slate-300/90">{{page.lead}}</div>
-
-        <div class="mt-5 flex items-center gap-2">
-          <input id="plgd-search" placeholder="Search..."
-                 class="w-full rounded-xl bg-black/30 ring-1 ring-white/10 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-400/40" />
-        </div>
-      </div>
-
-      <div class="px-5 pb-5">
-        <div class="text-xs uppercase tracking-widest text-slate-500">Click to load</div>
-        <div class="mt-3 space-y-2 max-h-[520px] overflow-auto pr-2">
-          {{#tpls}}
-            <a href="/plgd/playground?id={{id}}"
-               class="plgd-item block rounded-2xl bg-white/5 hover:bg-white/10 ring-1 ring-white/10 px-4 py-3 transition"
-               data-name="{{name}}" data-group="{{group}}">
-              <div class="flex items-center justify-between gap-3">
-                <div class="min-w-0">
-                  <div class="truncate font-semibold text-white">{{name}}</div>
-                  <div class="mt-1 text-xs text-slate-400 truncate">{{group}} · ID {{id}}</div>
-                </div>
-                <div class="text-sm text-amber-200/90">{{#fav}}★{{/fav}}{{^fav}}☆{{/fav}}</div>
-              </div>
-            </a>
-          {{/tpls}}
-        </div>
-      </div>
-    </aside>
-
-    <!-- Main -->
-    <div class="flex-1">
-      <div class="p-5 border-b border-white/10">
-        <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-          <div class="min-w-0">
-            <div class="text-xs uppercase tracking-widest text-slate-400">Selected</div>
-            <h1 class="mt-1 text-2xl font-semibold tracking-tight text-white">{{sel.name}}</h1>
-            <p class="mt-1 text-sm text-slate-300/90">{{sel.desc}}</p>
-          </div>
-
-          <div class="flex flex-wrap items-center gap-2">
-            <button id="plgd-fav" type="button"
-              class="rounded-xl px-4 py-2 text-sm bg-black/20 hover:bg-black/35 ring-1 ring-white/10 transition"
-              data-id="{{sel.id}}" data-fav="{{sel.fav}}">
-              <span id="plgd-fav-icon">{{#sel.fav}}★{{/sel.fav}}{{^sel.fav}}☆{{/sel.fav}}</span>
-              <span class="ml-1">Favorite</span>
-            </button>
-
-            <button id="plgd-render" type="button"
-              class="rounded-xl px-4 py-2 text-sm font-semibold bg-gradient-to-r from-sky-500/25 to-indigo-500/25 hover:from-sky-500/35 hover:to-indigo-500/35 ring-1 ring-white/10 transition">
-              Render
-            </button>
-
-            <button id="plgd-save" type="button"
-              class="rounded-xl px-4 py-2 text-sm font-semibold bg-white/10 hover:bg-white/15 ring-1 ring-white/10 transition">
-              Save
-            </button>
-          </div>
-        </div>
-
-        <div class="mt-4 grid grid-cols-1 md:grid-cols-5 gap-3">
-          <div class="md:col-span-2">
-            <label class="text-xs uppercase tracking-widest text-slate-500">Name</label>
-            <input id="plgd-name" value="{{sel.name}}"
-                   class="mt-1 w-full rounded-xl bg-black/30 ring-1 ring-white/10 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-400/40" />
-          </div>
-          <div>
-            <label class="text-xs uppercase tracking-widest text-slate-500">Group</label>
-            <input id="plgd-group" value="{{sel.group}}"
-                   class="mt-1 w-full rounded-xl bg-black/30 ring-1 ring-white/10 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-400/40" />
-          </div>
-          <div>
-            <label class="text-xs uppercase tracking-widest text-slate-500">Tags</label>
-            <input id="plgd-tags" value="{{sel.tags}}" placeholder="e.g. email, dashboard"
-                   class="mt-1 w-full rounded-xl bg-black/30 ring-1 ring-white/10 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-400/40" />
-          </div>
-          <div>
-            <label class="text-xs uppercase tracking-widest text-slate-500">ID</label>
-            <input id="plgd-id" value="{{sel.id}}" readonly
-                   class="mt-1 w-full rounded-xl bg-black/20 ring-1 ring-white/10 px-3 py-2 text-sm text-slate-300" />
-          </div>
-        </div>
-        <div class="mt-3">
-          <label class="text-xs uppercase tracking-widest text-slate-500">Description</label>
-          <input id="plgd-desc" value="{{sel.desc}}"
-                 class="mt-1 w-full rounded-xl bg-black/30 ring-1 ring-white/10 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-400/40" />
-        </div>
-      </div>
-
-      <div class="p-5 grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div class="rounded-2xl bg-black/20 ring-1 ring-white/10 overflow-hidden">
-          <div class="flex items-center justify-between px-4 py-3 border-b border-white/10">
-            <div class="text-sm font-semibold text-white">Template</div>
-            <div class="text-xs text-slate-400">Mustache / MIOTPL</div>
-          </div>
-          <textarea id="plgd-template" spellcheck="false"
-            class="h-[320px] w-full resize-none bg-black/30 px-4 py-3 font-mono text-[13px] leading-5 text-slate-100 focus:outline-none">{{{sel.tpl}}}</textarea>
-          <div class="px-4 py-3 border-t border-white/10 text-xs text-slate-400">
-            For ad-hoc rendering, partials (<code class="text-slate-200">&#123;&#123;&gt;&#125;&#125;</code>) and inheritance (<code class="text-slate-200">&#123;&#123;&lt;&#125;&#125;</code>) are blocked by default.
-          </div>
-        </div>
-
-        <div class="rounded-2xl bg-black/20 ring-1 ring-white/10 overflow-hidden">
-          <div class="flex items-center justify-between px-4 py-3 border-b border-white/10">
-            <div class="text-sm font-semibold text-white">JSON context</div>
-            <div class="text-xs text-slate-400">No lambdas allowed</div>
-          </div>
-          <textarea id="plgd-json" spellcheck="false"
-            class="h-[320px] w-full resize-none bg-black/30 px-4 py-3 font-mono text-[13px] leading-5 text-slate-100 focus:outline-none">{{{sel.json}}}</textarea>
-          <div class="px-4 py-3 border-t border-white/10 text-xs text-slate-400">
-            Values beginning with <code class="text-slate-200">$$</code> are stripped before rendering (lambda safety).
-          </div>
-        </div>
-
-        <div class="lg:col-span-2 rounded-2xl bg-black/20 ring-1 ring-white/10 overflow-hidden">
-          <div class="flex items-center justify-between px-4 py-3 border-b border-white/10">
-            <div class="text-sm font-semibold text-white">Output</div>
-            <div class="flex items-center gap-2">
-              <button id="plgd-copy" type="button"
-                class="rounded-xl px-3 py-2 text-xs bg-white/10 hover:bg-white/15 ring-1 ring-white/10 transition">Copy</button>
-              <button id="plgd-clear" type="button"
-                class="rounded-xl px-3 py-2 text-xs bg-white/10 hover:bg-white/15 ring-1 ring-white/10 transition">Clear</button>
-            </div>
-          </div>
-          <pre id="plgd-output" class="min-h-[220px] max-h-[360px] overflow-auto bg-black/30 px-4 py-3 text-[13px] leading-5 text-slate-100"></pre>
-        </div>
+  <!-- Main -->
+  <section class="panel" aria-label="Playground">
+    <div class="panelHd">
+      <h3>Playground</h3>
+      <div class="denseToolbar">
+        <button class="btn primary" id="btnRender" type="button">Render</button>
+        <button class="btn" id="btnSave" type="button">Save</button>
+        <button class="btn" id="btnFav" type="button" title="Alt+F">{{#sel.fav}}★{{/sel.fav}}{{^sel.fav}}☆{{/sel.fav}}</button>
+        <button class="btn" id="btnRevs" type="button">Versions</button>
       </div>
     </div>
-  </div>
-</section>
 
-<div id="plgd-toast" class="fixed bottom-6 right-6 hidden">
-  <div class="rounded-2xl bg-black/60 ring-1 ring-white/10 px-4 py-3 text-sm text-slate-100 shadow-lg backdrop-blur">
-    <span id="plgd-toast-msg">Saved</span>
-  </div>
+    <div class="panelBd">
+      <input type="hidden" id="tplId" value="{{sel.id}}" />
+
+      <div class="metaGrid" style="margin-bottom:10px">
+        <div>
+          <div class="subHd"><div class="h">Name</div></div>
+          <input class="input" id="tplName" value="{{sel.name}}" />
+        </div>
+        <div>
+          <div class="subHd"><div class="h">Group</div></div>
+          <input class="input" id="tplGroup" value="{{sel.group}}" />
+        </div>
+        <div>
+          <div class="subHd"><div class="h">Tags</div><div class="hint">comma-separated</div></div>
+          <input class="input" id="tplTags" value="{{sel.tags}}" />
+        </div>
+        <div>
+          <div class="subHd"><div class="h">Fav</div></div>
+          <select class="select" id="tplFavSel">
+            <option value="0" {{^sel.fav}}selected{{/sel.fav}}>No</option>
+            <option value="1" {{#sel.fav}}selected{{/sel.fav}}>Yes</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-bottom:10px">
+        <div class="subHd"><div class="h">Description</div></div>
+        <input class="input" id="tplDesc" value="{{sel.desc}}" />
+      </div>
+
+      <div class="editGrid">
+        <div>
+          <div class="subHd"><div class="h">Template</div><div class="hint">Ctrl+Enter renders</div></div>
+          <textarea id="edTpl">{{sel.tpl}}</textarea>
+        </div>
+        <div>
+          <div class="subHd"><div class="h">JSON Context</div><div class="hint">must parse</div></div>
+          <textarea id="edJson">{{sel.json}}</textarea>
+        </div>
+      </div>
+
+      <div style="height:10px"></div>
+
+      <section class="panel" style="border-radius:18px">
+        <div class="panelHd">
+          <h3>Output</h3>
+          <div class="outTabs" id="outTabs">
+            <div class="tab sel" data-mode="text">Text</div>
+            <div class="tab" data-mode="html">HTML</div>
+            <div class="tab" data-mode="raw">Raw</div>
+            <div class="tab" data-mode="diff">Diff</div>
+            <div class="tab" data-mode="history">History</div>
+            <div class="tab" data-mode="versions">Versions</div>
+            <div class="tab" data-mode="problems">Problems</div>
+          </div>
+        </div>
+        <div class="panelBd">
+          <div id="mode_text" class="outBox"><pre class="outputPre" id="outText">(render output)</pre></div>
+
+          <div id="mode_html" class="iframeWrap" style="display:none">
+            <iframe id="outFrame" sandbox=""></iframe>
+          </div>
+
+          <div id="mode_raw" class="outBox" style="display:none"><pre class="outputPre" id="outRaw"></pre></div>
+
+          <div id="mode_diff" class="outBox" style="display:none"><div id="outDiff"></div></div>
+
+          <div id="mode_history" style="display:none">
+            <div class="histList" id="histList"></div>
+          </div>
+
+          <div id="mode_versions" style="display:none">
+            <div class="row" style="margin-bottom:8px">
+              <div class="muted">Server-side revisions (save snapshots + rollback)</div>
+              <div class="fit"><button class="btn" type="button" id="btnRefreshRevs">Refresh</button></div>
+            </div>
+
+            <!-- ROI: inline revision preview + diff before rollback -->
+            <div id="revPreview" class="panel" style="display:none; border-radius:18px; margin-bottom:10px">
+              <div class="panelHd">
+                <h3 id="revPrevTitle">Revision preview</h3>
+                <div class="denseToolbar" style="gap:6px">
+                  <button class="btn" type="button" id="btnApplyRev" title="Load selected revision into the editors (does not save)">Load</button>
+                  <button class="btn bad" type="button" id="btnRollbackRev" title="Rollback server template to selected revision">Rollback</button>
+                  <button class="btn" type="button" id="btnCloseRevPrev">Close</button>
+                </div>
+              </div>
+              <div class="panelBd">
+                <div class="muted" id="revPrevMeta"></div>
+                <div style="height:8px"></div>
+                <div class="outTabs" id="revTabs">
+                  <div class="tab sel" data-rtab="tpl">Template diff</div>
+                  <div class="tab" data-rtab="json">JSON diff</div>
+                  <div class="tab" data-rtab="tplraw">Template raw</div>
+                  <div class="tab" data-rtab="jsonraw">JSON raw</div>
+                </div>
+                <div style="height:8px"></div>
+                <div id="rev_mode_tpl" class="outBox"><div id="revDiffTpl"></div></div>
+                <div id="rev_mode_json" class="outBox" style="display:none"><div id="revDiffJson"></div></div>
+                <div id="rev_mode_tplraw" class="outBox" style="display:none"><pre class="outputPre" id="revRawTpl"></pre></div>
+                <div id="rev_mode_jsonraw" class="outBox" style="display:none"><pre class="outputPre" id="revRawJson"></pre></div>
+                <div class="muted" style="margin-top:8px" id="revPrevHint">Diff compares your current editors to the selected revision before you rollback.</div>
+              </div>
+            </div>
+
+            <div class="histList" id="revList"></div>
+          </div>
+
+          <div id="mode_problems" style="display:none">
+            <div class="probList" id="probList"></div>
+          </div>
+        </div>
+      </section>
+
+      <div class="muted" style="margin-top:10px">
+        Endpoints: <span style="font-family:var(--mono)">/plgd/api/render</span> · <span style="font-family:var(--mono)">/plgd/api/save</span>
+      </div>
+    </div>
+  </section>
 </div>
 
-{{$scripts}}
 <script>
 (function(){
-  const $ = (id) => document.getElementById(id);
-  const toast = (msg) => {
-    $("plgd-toast-msg").textContent = msg;
-    $("plgd-toast").classList.remove("hidden");
-    clearTimeout(window.__plgdToastT);
-    window.__plgdToastT = setTimeout(() => $("plgd-toast").classList.add("hidden"), 1800);
+  // -------- helpers
+  const $ = (id)=>document.getElementById(id);
+  const state = {
+    mode:'text',
+    lastOut:'',
+    out:'',
+    lastOk:false,
+    baseline:null,
+    revSelected:null,
+    revTab:'tpl'
   };
 
-  function post(url, data){
-    return fetch(url, {
-      method: "POST",
-      headers: {"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8"},
-      body: new URLSearchParams(data)
-    }).then(async r => {
-      const ct = (r.headers.get("content-type") || "");
-      if(ct.includes("application/json")) return r.json();
-      return r.text();
+  function formBody(obj){ return new URLSearchParams(obj).toString(); }
+  async function post(url, obj){
+    const r = await fetch(url, {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body: formBody(obj)});
+    return r;
+  }
+  function setMode(mode){
+    state.mode = mode;
+    document.querySelectorAll('#outTabs .tab').forEach(t=>t.classList.toggle('sel', t.dataset.mode===mode));
+    ['text','html','raw','diff','history','versions','problems'].forEach(m=>{
+      const el = $('mode_'+m);
+      if(el) el.style.display = (m===mode) ? '' : 'none';
     });
   }
 
-  $("plgd-render").addEventListener("click", async () => {
-    $("plgd-render").disabled = true;
-    try{
-      const res = await post("/plgd/api/render", {
-        template: $("plgd-template").value,
-        json: $("plgd-json").value
-      });
-      $("plgd-output").textContent = (typeof res === "string" ? res : JSON.stringify(res, null, 2));
-      toast("Rendered");
-    }catch(err){
-      console.error(err);
-      toast("Render failed");
-    }finally{
-      $("plgd-render").disabled = false;
-    }
-  });
+  // -------- baseline (dirty detection)
+  function captureBaseline(){
+    state.baseline = {
+      name: $('tplName').value || '',
+      group: $('tplGroup').value || '',
+      tags: $('tplTags').value || '',
+      desc: $('tplDesc').value || '',
+      fav: $('tplFavSel').value || '0',
+      tpl: $('edTpl').value || '',
+      json: $('edJson').value || ''
+    };
+  }
+  function isDirty(){
+    const b = state.baseline || {};
+    return (
+      (b.name||'') !== ($('tplName').value||'') ||
+      (b.group||'') !== ($('tplGroup').value||'') ||
+      (b.tags||'') !== ($('tplTags').value||'') ||
+      (b.desc||'') !== ($('tplDesc').value||'') ||
+      (String(b.fav||'0')) !== String($('tplFavSel').value||'0') ||
+      (b.tpl||'') !== ($('edTpl').value||'') ||
+      (b.json||'') !== ($('edJson').value||'')
+    );
+  }
 
-  $("plgd-save").addEventListener("click", async () => {
-    $("plgd-save").disabled = true;
-    try{
-      const res = await post("/plgd/api/save", {
-        id: $("plgd-id").value,
-        name: $("plgd-name").value,
-        group: $("plgd-group").value,
-        tags: $("plgd-tags").value,
-        desc: $("plgd-desc").value,
-        fav: $("plgd-fav").getAttribute("data-fav") || "0",
-        template: $("plgd-template").value,
-        json: $("plgd-json").value
-      });
-      if(res && res.ok){
-        $("plgd-id").value = res.id;
-        $("plgd-fav").setAttribute("data-id", res.id);
-        toast(res.warning ? "Saved (JSON invalid)" : "Saved");
-        // keep URL stable for refresh
-        if(window.location.search.indexOf("id=") === -1 && res.id){
-          const url = new URL(window.location.href);
-          url.searchParams.set("id", res.id);
-          history.replaceState({}, "", url.toString());
-        }
-      } else {
-        toast("Save failed");
-        $("plgd-output").textContent = JSON.stringify(res, null, 2);
+  // -------- diagnostics
+  function diagnoseTemplate(tpl){
+    const issues = [];
+    const re = /\{\{\s*([#\^\/])\s*([^\s\}]+)[^\}]*\}\}/g;
+    const stack = [];
+    let m;
+    while((m=re.exec(tpl))){
+      const kind=m[1], name=m[2];
+      if(kind==='#' || kind==='^') stack.push(name);
+      else if(kind==='/'){
+        const top = stack.pop();
+        if(top!==name){ issues.push({type:'warn', msg:`Mismatched closing tag: expected /${top||'?'} but found /${name}`}); }
       }
-    }catch(err){
-      console.error(err);
-      toast("Save failed");
-    }finally{
-      $("plgd-save").disabled = false;
+    }
+    if(stack.length){ issues.push({type:'warn', msg:`Unclosed section(s): ${stack.join(', ')}`}); }
+    return issues;
+  }
+
+  function setProblems(items){
+    const box = $('probList');
+    box.innerHTML='';
+    if(!items || !items.length){
+      box.innerHTML = '<div class="muted">No problems detected.</div>';
+      return;
+    }
+    for(const it of items){
+      const d=document.createElement('div');
+      d.className = 'prob ' + (it.type==='warn'?'warn':'');
+      d.innerHTML = `<div class="k">${it.type==='warn'?'Warning':'Error'}</div><div class="d">${escapeHtml(it.msg||'')}</div>`;
+      box.appendChild(d);
+    }
+  }
+
+  function escapeHtml(s){
+    return String(s||'').replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+  }
+
+  // -------- history
+  function histKey(){
+    const id = $('tplId').value || 'scratch';
+    return 'plgd:renderhist:'+id;
+  }
+  function loadHist(){
+    try{ return JSON.parse(localStorage.getItem(histKey())||'[]'); }catch(e){ return []; }
+  }
+  function saveHist(list){
+    try{ localStorage.setItem(histKey(), JSON.stringify(list.slice(0,10))); }catch(e){}
+  }
+  function pushHist(out){
+    const list = loadHist();
+    list.unshift({ts:Date.now(), len:(out||'').length, out:out||''});
+    saveHist(list);
+    renderHist();
+  }
+  function fmtTime(ts){
+    const d = new Date(ts);
+    return d.toLocaleString();
+  }
+  function renderHist(){
+    const list = loadHist();
+    const root = $('histList');
+    root.innerHTML='';
+    if(!list.length){ root.innerHTML='<div class="muted">No render history yet.</div>'; return; }
+    list.forEach((h,idx)=>{
+      const el=document.createElement('div');
+      el.className='histItem';
+      el.innerHTML=`<div class="t">${fmtTime(h.ts)} · ${h.len} chars</div><div class="s">Load this output</div>`;
+      el.addEventListener('click', ()=>{
+        state.lastOut = state.out;
+        state.out = h.out;
+        paintOutput();
+        setMode('text');
+      });
+      root.appendChild(el);
+    });
+  }
+
+  // -------- diff (simple line diff)
+  function diffLines(a,b){
+    const A=(a||'').split(/\n/), B=(b||'').split(/\n/);
+    // naive: walk with LCS-lite using map of lines (fast enough for 10 renders)
+    const out=[];
+    let i=0,j=0;
+    while(i<A.length || j<B.length){
+      if(i<A.length && j<B.length && A[i]===B[j]){ out.push({k:'same', v:A[i]}); i++; j++; continue; }
+      if(j<B.length && (i>=A.length || A[i]!==B[j])){ out.push({k:'add', v:B[j]}); j++; continue; }
+      if(i<A.length){ out.push({k:'del', v:A[i]}); i++; continue; }
+    }
+    return out;
+  }
+
+  function renderDiffInto(elId, a, b){
+    const root = $(elId);
+    const A=(a||'').split(/\n/), B=(b||'').split(/\n/);
+    if(A.length>2500 || B.length>2500){
+      root.innerHTML = '<div class="muted">Diff too large to render inline. Use Raw view to inspect.</div>';
+      return;
+    }
+    const parts = diffLines(a,b);
+    const html = parts.map(p=>{
+      const cls = p.k==='add'?'diffLine diffAdd':(p.k==='del'?'diffLine diffDel':'diffLine diffSame');
+      const prefix = p.k==='add'?'+ ':(p.k==='del'?'- ':'  ');
+      return `<div class="${cls}">${escapeHtml(prefix + p.v)}</div>`;
+    }).join('');
+    root.innerHTML = html || '<div class="muted">No differences.</div>';
+  }
+
+  // -------- revisions preview
+  function setRevTab(tab){
+    state.revTab = tab;
+    document.querySelectorAll('#revTabs .tab').forEach(t=>t.classList.toggle('sel', t.dataset.rtab===tab));
+    ['tpl','json','tplraw','jsonraw'].forEach(m=>{
+      const el = $('rev_mode_'+m);
+      if(el) el.style.display = (m===tab) ? '' : 'none';
+    });
+  }
+
+  function showRevPreview(show){
+    const box = $('revPreview');
+    box.style.display = show ? '' : 'none';
+    if(!show){ state.revSelected = null; }
+  }
+
+  async function selectRevision(rv){
+    const id = $('tplId').value;
+    if(!id){
+      setProblems([{type:'warn', msg:'Save this template to enable versions.'}]);
+      setMode('problems');
+      return;
+    }
+    showRevPreview(true);
+    $('revPrevTitle').textContent = `Revision ${rv.rev} preview`;
+    $('revPrevMeta').textContent = `Saved ${rv.savedAgo||''}${rv.note?(' · '+rv.note):''}`;
+    $('revRawTpl').textContent = '';
+    $('revRawJson').textContent = '';
+    $('revDiffTpl').innerHTML = '<div class="muted">Loading revision…</div>';
+    $('revDiffJson').innerHTML = '';
+    state.revSelected = { meta: rv, data: null };
+
+    const gr = await post('/plgd/api/revget', {id, rev: rv.rev});
+    const gj = await gr.json().catch(()=>null);
+    if(!gj || !gj.ok){
+      setProblems([{type:'error', msg:'Failed to load revision'}]);
+      setMode('problems');
+      showRevPreview(false);
+      return;
+    }
+    state.revSelected.data = gj;
+    // render diff: current editors -> selected rev
+    const curTpl = $('edTpl').value || '';
+    const curJson = $('edJson').value || '';
+    const revTpl = gj.template || '';
+    const revJson = gj.json || '';
+    renderDiffInto('revDiffTpl', curTpl, revTpl);
+    renderDiffInto('revDiffJson', curJson, revJson);
+    $('revRawTpl').textContent = revTpl;
+    $('revRawJson').textContent = revJson;
+    setRevTab(state.revTab || 'tpl');
+  }
+
+  async function applySelectedRevision(){
+    if(!state.revSelected || !state.revSelected.data) return;
+    if(isDirty()){
+      const ok = confirm('You have unsaved edits. Load this revision into the editors anyway?');
+      if(!ok) return;
+    }
+    const d = state.revSelected.data;
+    $('tplName').value = d.name || $('tplName').value;
+    $('tplGroup').value = d.group || $('tplGroup').value;
+    $('tplTags').value = d.tags || '';
+    $('tplDesc').value = d.desc || '';
+    $('tplFavSel').value = String(d.fav?1:0);
+    $('btnFav').textContent = d.fav ? '★' : '☆';
+    $('edTpl').value = d.template || '';
+    $('edJson').value = d.json || '';
+    // update preview diffs vs newly loaded editors
+    renderDiffInto('revDiffTpl', $('edTpl').value||'', d.template||'');
+    renderDiffInto('revDiffJson', $('edJson').value||'', d.json||'');
+  }
+
+  async function rollbackSelectedRevision(){
+    if(!state.revSelected || !state.revSelected.data) return;
+    const id = $('tplId').value;
+    const rv = state.revSelected.meta.rev;
+    const ok = confirm(`Rollback to revision ${rv}? This overwrites the server template. A snapshot of the current version will be created.`);
+    if(!ok) return;
+    const rr = await post('/plgd/api/rollback', {id, rev: rv});
+    const rj = await rr.json().catch(()=>null);
+    if(!rj || !rj.ok){
+      setProblems([{type:'error', msg:'Rollback failed'}]);
+      setMode('problems');
+      return;
+    }
+    window.location.reload();
+  }
+
+  function paintDiff(){
+    const root=$('outDiff');
+    const parts = diffLines(state.lastOut, state.out);
+    const html = parts.map(p=>{
+      const cls = p.k==='add'?'diffLine diffAdd':(p.k==='del'?'diffLine diffDel':'diffLine diffSame');
+      const prefix = p.k==='add'?'+ ':(p.k==='del'?'- ':'  ');
+      return `<div class="${cls}">${escapeHtml(prefix + p.v)}</div>`;
+    }).join('');
+    root.innerHTML = html || '<div class="muted">No diff to show.</div>';
+  }
+
+  // -------- output modes
+  function paintOutput(){
+    $('outText').textContent = state.out || '';
+    $('outRaw').textContent = JSON.stringify(String(state.out||''));
+
+    // HTML preview: sandboxed iframe
+    const doc = `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Preview</title>${state.out||''}`;
+    const frame = $('outFrame');
+    frame.srcdoc = doc;
+
+    paintDiff();
+  }
+
+  // -------- API actions
+  async function doRender(){
+    const tpl = $('edTpl').value;
+    const js = $('edJson').value;
+
+    // client JSON validation
+    const probs=[];
+    try{ JSON.parse(js||'{}'); }catch(e){ probs.push({type:'error', msg:`Invalid JSON: ${e.message}`}); }
+
+    // template diagnostics
+    const diags = diagnoseTemplate(tpl);
+    diags.forEach(d=>probs.push(d));
+    if(probs.length){ setProblems(probs); }
+
+    const r = await post('/plgd/api/render', {template: tpl, json: js});
+    if(!r.ok){
+      let msg = `HTTP ${r.status}`;
+      let detail = '';
+      try{ const j=await r.json(); msg = j.error || msg; detail = j.detail || ''; }catch(e){}
+      setProblems([{type:'error', msg: msg + (detail?`\n${detail}`:'')}].concat(diags));
+      setMode('problems');
+      return;
+    }
+    const out = await r.text();
+    state.lastOut = state.out;
+    state.out = out;
+    paintOutput();
+    pushHist(out);
+    // keep problems visible if diagnostics exist
+    if(diags.length){ setProblems(diags); }
+  }
+
+  async function doSave(){
+    const id = $('tplId').value;
+    const fav = $('tplFavSel').value;
+    const data = {
+      id,
+      name: $('tplName').value,
+      group: $('tplGroup').value,
+      tags: $('tplTags').value,
+      desc: $('tplDesc').value,
+      fav,
+      template: $('edTpl').value,
+      json: $('edJson').value
+    };
+    const r = await post('/plgd/api/save', data);
+    const j = await r.json().catch(()=>null);
+    if(!j || !j.ok){
+      setProblems([{type:'error', msg:'Save failed'}]);
+      setMode('problems');
+      return;
+    }
+    // If new, redirect to stable id
+    if(!id && j.id){ window.location.href = '/plgd/playground?id=' + encodeURIComponent(j.id); return; }
+    // after successful save, reset dirty baseline
+    captureBaseline();
+    await refreshRevs(true);
+  }
+
+  async function toggleFav(){
+    const id = $('tplId').value;
+    if(!id){
+      // scratch favorite uses local select
+      $('tplFavSel').value = ($('tplFavSel').value==='1') ? '0' : '1';
+      $('btnFav').textContent = ($('tplFavSel').value==='1') ? '★' : '☆';
+      return;
+    }
+    const r = await post('/plgd/api/fav', {id});
+    const j = await r.json().catch(()=>null);
+    if(j && j.ok){
+      $('tplFavSel').value = String(j.fav?1:0);
+      $('btnFav').textContent = j.fav ? '★' : '☆';
+    }
+  }
+
+  async function refreshRevs(showTab){
+    const id = $('tplId').value;
+    const root = $('revList');
+    root.innerHTML = id ? '<div class="muted">Loading…</div>' : '<div class="muted">Save this template to enable versions.</div>';
+    if(!id) return;
+    const r = await post('/plgd/api/revs', {id, max: 40});
+    const j = await r.json().catch(()=>null);
+    if(!j || !j.ok){ root.innerHTML='<div class="muted">Failed to load versions.</div>'; return; }
+    if(!j.revs || !j.revs.length){ root.innerHTML='<div class="muted">No versions yet (save to create snapshots).</div>'; return; }
+    root.innerHTML='';
+    j.revs.forEach(rv=>{
+      const el=document.createElement('div');
+      el.className='histItem';
+      el.innerHTML = `<div class="t">Rev ${rv.rev} · ${escapeHtml(rv.savedAgo||'')} · ${escapeHtml(rv.note||'')}</div><div class="s">${escapeHtml(rv.name||'')}</div>`;
+      el.addEventListener('click', async ()=>{
+        selectRevision(rv);
+      });
+      root.appendChild(el);
+    });
+    if(showTab){ setMode('versions'); }
+  }
+
+  // -------- keyboard shortcuts
+  document.addEventListener('keydown', (e)=>{
+    const isMac = navigator.platform.toLowerCase().includes('mac');
+    const ctrl = isMac ? e.metaKey : e.ctrlKey;
+    if(ctrl && e.key==='Enter'){
+      e.preventDefault();
+      doRender();
+    }
+    if(ctrl && (e.key==='s' || e.key==='S')){
+      e.preventDefault();
+      doSave();
+    }
+    if(e.altKey && (e.key==='f' || e.key==='F')){
+      e.preventDefault();
+      toggleFav();
     }
   });
 
-  $("plgd-fav").addEventListener("click", async () => {
-    const btn = $("plgd-fav");
-    btn.disabled = true;
-    try{
-      const id = btn.getAttribute("data-id");
-      const fav = btn.getAttribute("data-fav") === "1" ? "0" : "1";
-      const res = await post("/plgd/api/fav", {id, fav});
-      if(res && res.ok){
-        btn.setAttribute("data-fav", String(res.fav));
-        $("plgd-fav-icon").textContent = (res.fav === 1 ? "★" : "☆");
-        toast(res.fav === 1 ? "Favorited" : "Unfavorited");
-      }
-    }catch(err){
-      console.error(err);
-      toast("Failed");
-    }finally{
-      btn.disabled = false;
-    }
+  // -------- tab switching
+  document.querySelectorAll('#outTabs .tab').forEach(t=>{
+    t.addEventListener('click', ()=>{
+      const m=t.dataset.mode;
+      setMode(m);
+      if(m==='history') renderHist();
+      if(m==='versions') refreshRevs(false);
+    });
   });
 
-  $("plgd-clear").addEventListener("click", () => {
-    $("plgd-output").textContent = "";
+  // revision preview tabs
+  document.querySelectorAll('#revTabs .tab').forEach(t=>{
+    t.addEventListener('click', ()=> setRevTab(t.dataset.rtab));
   });
 
-  $("plgd-copy").addEventListener("click", async () => {
-    try{
-      await navigator.clipboard.writeText($("plgd-output").textContent || "");
-      toast("Copied");
-    }catch(err){
-      toast("Copy failed");
-    }
+  // -------- buttons
+  $('btnRender').addEventListener('click', doRender);
+  $('btnSave').addEventListener('click', doSave);
+  $('btnFav').addEventListener('click', toggleFav);
+  $('btnRevs').addEventListener('click', ()=>{ setMode('versions'); refreshRevs(false); });
+  $('btnRefreshRevs').addEventListener('click', ()=>refreshRevs(false));
+  $('btnApplyRev').addEventListener('click', applySelectedRevision);
+  $('btnRollbackRev').addEventListener('click', rollbackSelectedRevision);
+  $('btnCloseRevPrev').addEventListener('click', ()=>showRevPreview(false));
+
+  // sidebar quick filter
+  $('sideSearch').addEventListener('input', ()=>{
+    const q = $('sideSearch').value.trim().toLowerCase();
+    document.querySelectorAll('#sideList .sideItem').forEach(a=>{
+      const hay = (a.dataset.name+' '+a.dataset.group+' '+a.dataset.tags).toLowerCase();
+      a.style.display = (!q || hay.includes(q)) ? '' : 'none';
+    });
   });
 
-  // Sidebar search filter
-  const search = $("plgd-search");
-  const items = Array.from(document.querySelectorAll(".plgd-item"));
-  const applyFilter = () => {
-    const q = (search.value || "").toLowerCase().trim();
-    for(const el of items){
-      const name = (el.getAttribute("data-name")||"").toLowerCase();
-      const group = (el.getAttribute("data-group")||"").toLowerCase();
-      const ok = !q || name.includes(q) || group.includes(q);
-      el.style.display = ok ? "" : "none";
-    }
-  };
-  search.addEventListener("input", applyFilter);
-
-  // render once on load for convenience
-  setTimeout(() => { try{ $("plgd-render").click(); }catch(_){} }, 50);
+  // initial render history + diagnostics
+  renderHist();
+  captureBaseline();
+  const initialDiags = diagnoseTemplate($('edTpl').value||'');
+  if(initialDiags.length){ setProblems(initialDiags); }
+  paintOutput();
 })();
 </script>
-{{/scripts}}

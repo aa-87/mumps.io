@@ -487,7 +487,6 @@ JSONTESTRUNNER(FP) ;
 	N OK,TXT,ERR,TESTS
 	S OK=$$READFILE^MIOTPL(FP,.TXT,.ERR)
 	D OK^MIOTASSERT(OK,"read "_FP)
-	Q:'OK
 	D DECODE^MIOJSON2($NA(TXT),$NA(TESTS))
 	N A S A=""
 	F  S A=$O(TESTS("tests",A)) Q:A=""  D
@@ -496,7 +495,7 @@ JSONTESTRUNNER(FP) ;
 	. N TEMPLATE S TEMPLATE=$G(TESTS("tests",A,"template"))
 	. N EXPECTED S EXPECTED=$G(TESTS("tests",A,"expected"))
 	. N CTX,CONF M CTX=TESTS("tests",A,"data")
-	. N ROOT,NTARR D SETUPPART(.CONF,.ROOT)
+	. N ROOT,NTARR D SETUPPART(.CONF,.ROOT) 
 	. ; JSON parser workaround
 	. I $G(TESTS("tests",A,"name"))="Recursion",$G(TESTS("tests",A,"desc"))="The greater-than operator should properly recurse." D
 	. . S CTX("nodes",1,"nodes")=""
@@ -504,11 +503,14 @@ JSONTESTRUNNER(FP) ;
 	. . S CTX("nodes",1,"nodes")=""
 	. I $D(TESTS("tests",A,"partials")) D
 	. . N ERR,P S P="" F  S P=$O(TESTS("tests",A,"partials",P)) Q:P=""  D
+	. . . K ^MIO("TPL","CACHE",ROOT_P)
 	. . . S NTARR(ROOT_P)="" D WRFILE(ROOT_P,TESTS("tests",A,"partials",P),.ERR) K ERR
 	. N TOK,OUT
 	. D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)
-	. N A S A="" F  S A=$O(NTARR(A)) Q:A=""  ZSY "rm "_A
-	S ROOT="templates/test-MIOTPL-"_$J_"/" D RMDIR(ROOT)
+	. ;CLEAR TEST DIR TEMP TPL CACHE
+	. N A S A="" F  S A=$O(^MIO("TPL","CACHE",A)) Q:A=""  I A[ROOT,$E(A,1,$L(ROOT))=ROOT K ^MIO("TPL","CACHE",A)
+	D RMDIR(ROOT)
+	;
 	Q	
 SETUPPART(CONF,ROOT)
 	M CONF=^MIO("CONF")
@@ -547,6 +549,7 @@ WRFILE(FILE,TEXT,ERR)
 	W $G(TEXT)
 	C FILE
 	U USEIO
+	D PROCESSFILE^MIOTPL(FILE)
 	Q
 WRFILEERR
 	S ERR("code")="TPL_IO"
@@ -726,6 +729,10 @@ MIOTF127 ;
 	;
 	S CONF("templates","root")=ROOT
 	S CONF("templates","ext")=""
+	;
+	; Clear cache entries for these exact filepaths (defensive)
+	K ^MIO("TPL","CACHE",ROOT_"layout.html")
+	K ^MIO("TPL","CACHE",ROOT_"page.html")
 	; Write layout + page templates
 	D WRFILE(ROOT_"layout.html","L0<title>{{{blocks.title}}}</title>|D={{desc}}|{{{content}}}|L9",.ERR)
 	D OK^MIOTASSERT('$D(ERR),"write layout") K ERR
@@ -736,17 +743,13 @@ MIOTF127 ;
 	D WRFILE(ROOT_"page.html","{{#block:title}}T{{year}}{{/block:title}}P{{year}}",.ERR)
 	D OK^MIOTASSERT('$D(ERR),"write page") K ERR
 	;
-	; Clear cache entries for these exact filepaths (defensive)
-	K ^MIO("TPL","CACHE",ROOT_"layout.html")
-	K ^MIO("TPL","CACHE",ROOT_"page.html")
-	;	
 	;
 	; Context
 	S CTX("year")=2026
 	S CTX("desc")="DESC"
 	;
 	;
-	D RENDERPAGE^MIOTPL("page.html","layout.html",.CONF,.CTX,.OUT,.ERR)
+	D RENDERPAGE^MIOTPL("page.html","layout.html",.CONF,.CTX,.OUT,.ERR) 
 	D OK^MIOTASSERT('$D(ERR),"renderpage") ZWR:$D(ERR) ERR
 	;
 	; Expected output
@@ -2696,6 +2699,9 @@ TEST168
 	N CTX 
 	S CTX("dynamic")="content"
 	N CONF D SETUPPART(.CONF,.ROOT)
+	K ^MIO("TPL","CACHE",ROOT_"foobar")
+	K ^MIO("TPL","CACHE",ROOT_"missing")
+	K ^MIO("TPL","CACHE",ROOT_"content")
 	N ERR D WRFILE(ROOT_"foobar",$$UNESCNL("Hello, world!"),.ERR)
 	D OK^MIOTASSERT('$D(ERR),"write "_HDR) K ERR
 	D RUNTEST1(HDR,DESC,TEMPLATE,EXPECTED,.CTX)

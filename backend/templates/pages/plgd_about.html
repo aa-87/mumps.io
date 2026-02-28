@@ -1,48 +1,57 @@
-{{$title}}About{{/title}}
+<style>
+  .aboutGrid{display:grid;grid-template-columns: 1fr 1fr;gap:12px}
+  @media (max-width: 980px){.aboutGrid{grid-template-columns:1fr}}
+  .k{font-weight:700}
+  .p{color:var(--muted);font-size:13px;line-height:1.5;margin:8px 0}
+  .code{font-family:var(--mono);font-size:12px;background:rgba(0,0,0,.18);border:1px solid var(--border2);border-radius:14px;padding:10px;overflow:auto}
+  html[data-theme="light"] .code{background:rgba(255,255,255,.55)}
+</style>
 
-<section class="rounded-3xl bg-white/5 ring-1 ring-white/10 p-6 shadow-sm">
-  <div class="max-w-3xl">
-    <div class="text-sm text-slate-300/80">Docs</div>
-    <h1 class="mt-2 text-3xl font-semibold tracking-tight">{{page.heading}}</h1>
-    <p class="mt-2 text-slate-300/90">{{page.lead}}</p>
-
-    <div class="mt-6 space-y-6 text-slate-300/90 leading-relaxed">
-      <div class="rounded-2xl bg-black/20 ring-1 ring-white/10 p-5">
-        <h2 class="text-white font-semibold">What this app is</h2>
-        <p class="mt-2">
-          MIOPLGD is a server-rendered template playground powered by <span class="text-white font-semibold">MIOTPL</span>.
-          It includes a built-in library (seeded on first run), allows saving custom templates to <code class="text-slate-200">^MIO("PLGD",...)</code>,
-          and provides APIs for render/save/favorite/export/import.
-        </p>
-      </div>
-
-      <div class="rounded-2xl bg-black/20 ring-1 ring-white/10 p-5">
-        <h2 class="text-white font-semibold">Security defaults</h2>
-        <ul class="mt-2 list-disc pl-6 space-y-1">
-          <li><span class="text-white">No untrusted lambdas:</span> scalar values beginning with <code class="text-slate-200">$$</code> are stripped before rendering.</li>
-          <li><span class="text-white">Sandboxed ad-hoc render:</span> ad-hoc templates block <code class="text-slate-200">&#123;&#123;&gt;&#125;&#125;</code> partials and <code class="text-slate-200">&#123;&#123;&lt;&#125;&#125;</code> inheritance by default.</li>
-          <li><span class="text-white">Recursion limits:</span> <code class="text-slate-200">CONF("templates","maxPartialDepth")</code> is set conservatively.</li>
-        </ul>
-      </div>
-
-      <div class="rounded-2xl bg-black/20 ring-1 ring-white/10 p-5">
-        <h2 class="text-white font-semibold">API quick reference</h2>
-        <div class="mt-2 text-sm text-slate-300/90 space-y-1">
-          <div><code class="text-slate-200">POST /plgd/api/render</code> → <span class="text-slate-400">template + json → text/plain</span></div>
-          <div><code class="text-slate-200">POST /plgd/api/save</code> → <span class="text-slate-400">save template in ^MIO → JSON</span></div>
-          <div><code class="text-slate-200">POST /plgd/api/fav</code> → <span class="text-slate-400">toggle favorite → JSON</span></div>
-          <div><code class="text-slate-200">POST /plgd/api/export</code> → <span class="text-slate-400">export library → JSON</span></div>
-          <div><code class="text-slate-200">POST /plgd/api/import</code> → <span class="text-slate-400">import library → JSON</span></div>
-        </div>
-      </div>
-
-      <div class="rounded-2xl bg-black/20 ring-1 ring-white/10 p-5">
-        <h2 class="text-white font-semibold">Where to go next</h2>
-        <p class="mt-2">
-          For a roadmap with ROI milestones (search, tags, versioning, share links, server-side preview for HTML, policy gates),
-          see <code class="text-slate-200">docs/ROI.md</code>.
-        </p>
-      </div>
+<div class="aboutGrid">
+  <section class="panel">
+    <div class="panelHd"><h3>What is MIOPLGD?</h3></div>
+    <div class="panelBd">
+      <p class="p">MIOPLGD is a <span class="k">MIOTPL-powered</span> template playground with a reusable library. It is designed for <span class="k">data-heavy</span> workflows: compact UI, fast iteration, and strong safety defaults.</p>
+      <p class="p">Use the Playground to edit a template + JSON context, render instantly, inspect output in multiple modes, and keep render history + diffs. Save templates to the Library and manage versions with rollback.</p>
     </div>
-  </div>
-</section>
+  </section>
+
+  <section class="panel">
+    <div class="panelHd"><h3>Shortcuts</h3></div>
+    <div class="panelBd">
+      <div class="code">
+<pre>
+Ctrl+Enter  Render
+Ctrl+S      Save
+Alt+F       Toggle favorite
+</pre>
+</div>
+      <p class="p">Theme is persisted locally. Version history is stored server-side in <code>^MIO("PLGD","tpl",id,"rev",...)</code>.</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panelHd"><h3>Safety defaults</h3></div>
+    <div class="panelBd">
+      <ul class="p" style="margin:0;padding-left:18px">
+        <li>Untrusted lambdas (scalars starting with <code>$$</code>) are stripped from JSON context.</li>
+        <li>Ad-hoc renders reject partials / inheritance by default.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panelHd"><h3>APIs</h3></div>
+    <div class="panelBd">
+      <div class="code">
+<pre>
+POST /plgd/api/render
+POST /plgd/api/save
+POST /plgd/api/fav
+POST /plgd/api/revs
+POST /plgd/api/revget
+POST /plgd/api/rollback
+</pre></div>
+    </div>
+  </section>
+</div>

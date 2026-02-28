@@ -60,6 +60,9 @@ REG(CONF)
 	D ADD^MIOROUTE("POST","/plgd/api/fav","APIFAV^MIOPLGD")
 	D ADD^MIOROUTE("POST","/plgd/api/export","APIEXPORT^MIOPLGD")
 	D ADD^MIOROUTE("POST","/plgd/api/import","APIIMPORT^MIOPLGD")
+	D ADD^MIOROUTE("POST","/plgd/api/revs","APIREVS^MIOPLGD")
+	D ADD^MIOROUTE("POST","/plgd/api/revget","APIREVGET^MIOPLGD")
+	D ADD^MIOROUTE("POST","/plgd/api/rollback","APIROLL^MIOPLGD")
 	Q
 	;
 HOME(DEV,CONF,REQ,CTX)
@@ -264,6 +267,20 @@ APISAVE(DEV,CONF,REQ,CTX)
 	; Ensure JSON is parseable; if not, still allow save but return a warning.;
 	D TRYJSON($S(REC("json")="":"{}",1:REC("json")),.JCTX,.JERR)
 	;
+	; Versioning (ROI): snapshot current before overwrite if this is an update and content changed
+	I ID'="",$D(^MIO("PLGD","tpl",ID)) D
+	. N OLD,CHG
+	. K OLD S CHG=0
+	. D GETREC(ID,.OLD)
+	. I $G(OLD("name"))'=$G(REC("name")) S CHG=1
+	. I $G(OLD("group"))'=$G(REC("group")) S CHG=1
+	. I $G(OLD("tags"))'=$G(REC("tags")) S CHG=1
+	. I $G(OLD("desc"))'=$G(REC("desc")) S CHG=1
+	. I +$G(OLD("fav"))'=+$G(REC("fav")) S CHG=1
+	. I $G(OLD("tpl"))'=$G(REC("tpl")) S CHG=1
+	. I $G(OLD("json"))'=$G(REC("json")) S CHG=1
+	. I CHG D SAVEREV(ID,"save")
+	;
 	S ID=$$SAVEREC(.REC)
 	S RESP="{""ok"":true,""id"":"""_ID_""""
 	I $D(JERR) S RESP=RESP_",""warning"":""json_invalid"""
@@ -316,6 +333,75 @@ APIIMPORT(DEV,CONF,REQ,CTX)
 	; -------------------------
 	; Config + template context
 	; -------------------------
+APIREVS(DEV,CONF,REQ,CTX)
+	; List revisions for a template ID (newest first)
+	N BODY,POST,OBJ,ID,MAX,RID,JSON,N,NOTE,H
+	K POST,OBJ
+	D CONFDEF(.CONF)
+	D INIT(.CONF)
+	S BODY=$G(REQ("body"))
+	D PARSEBODY(BODY,.POST,.OBJ)
+	S ID=$G(POST("id")) I ID="" S ID=$G(OBJ("id"))
+	I ID="" D RESPERR(DEV,.CONF,.CTX,400,"id_required") Q
+	I '$D(^MIO("PLGD","tpl",ID)) D RESPERR(DEV,.CONF,.CTX,404,"not_found") Q
+	S MAX=+$G(POST("max")) I MAX=0 S MAX=+$G(OBJ("max"))
+	I MAX<1 S MAX=25
+	I MAX>100 S MAX=100
+	S JSON="{""ok"":true,""id"":"""_$$JESC(ID)_""",""revs"":["
+	S N=0
+	S RID=$O(^MIO("PLGD","tpl",ID,"rev",""),-1)
+	F  Q:RID=""!(N'<MAX)  D  S RID=$O(^MIO("PLGD","tpl",ID,"rev",RID),-1)
+	. S N=N+1
+	. I N>1 S JSON=JSON_","
+	. S NOTE=$G(^MIO("PLGD","tpl",ID,"rev",RID,"note"))
+	. S H=$G(^MIO("PLGD","tpl",ID,"rev",RID,"savedH"))
+	. S JSON=JSON_"{""rev"":"_+RID_",""savedH"":"""_$$JESC(H)_""",""savedAgo"":"""_$$JESC($$AGO(H))_""",""note"":"""_$$JESC(NOTE)_""",""name"":"""_$$JESC($G(^MIO("PLGD","tpl",ID,"rev",RID,"name")))_"""}"
+	S JSON=JSON_"]}"
+	D RESPJSON(DEV,.CONF,.CTX,200,JSON)
+	Q
+	;
+APIREVGET(DEV,CONF,REQ,CTX)
+	; Get a specific revision (includes tpl/json)
+	N BODY,POST,OBJ,ID,RID,REC,JSON
+	K POST,OBJ,REC
+	D CONFDEF(.CONF)
+	D INIT(.CONF)
+	S BODY=$G(REQ("body"))
+	D PARSEBODY(BODY,.POST,.OBJ)
+	S ID=$G(POST("id")) I ID="" S ID=$G(OBJ("id"))
+	S RID=$G(POST("rev")) I RID="" S RID=$G(OBJ("rev"))
+	I ID="" D RESPERR(DEV,.CONF,.CTX,400,"id_required") Q
+	I RID="" D RESPERR(DEV,.CONF,.CTX,400,"rev_required") Q
+	I '$D(^MIO("PLGD","tpl",ID,"rev",RID)) D RESPERR(DEV,.CONF,.CTX,404,"rev_not_found") Q
+	D GETREV(ID,RID,.REC)
+	S JSON="{""ok"":true,""id"":"""_$$JESC(ID)_""",""rev"":"_+RID_",""name"":"""_$$JESC($G(REC("name")))_""",""group"":"""_$$JESC($G(REC("group")))_""",""tags"":"""_$$JESC($G(REC("tags")))_""",""desc"":"""_$$JESC($G(REC("desc")))_""",""fav"":"_+$G(REC("fav"))_",""template"":"""_$$JESC($G(REC("tpl")))_""",""json"":"""_$$JESC($G(REC("json")))_"""}"
+	D RESPJSON(DEV,.CONF,.CTX,200,JSON)
+	Q
+	;
+APIROLL(DEV,CONF,REQ,CTX)
+	; Roll back a template to a prior revision
+	N BODY,POST,OBJ,ID,RID,REC,NOTE,RESP
+	K POST,OBJ,REC
+	D CONFDEF(.CONF)
+	D INIT(.CONF)
+	S BODY=$G(REQ("body"))
+	D PARSEBODY(BODY,.POST,.OBJ)
+	S ID=$G(POST("id")) I ID="" S ID=$G(OBJ("id"))
+	S RID=$G(POST("rev")) I RID="" S RID=$G(OBJ("rev"))
+	I ID="" D RESPERR(DEV,.CONF,.CTX,400,"id_required") Q
+	I RID="" D RESPERR(DEV,.CONF,.CTX,400,"rev_required") Q
+	I '$D(^MIO("PLGD","tpl",ID)) D RESPERR(DEV,.CONF,.CTX,404,"not_found") Q
+	I '$D(^MIO("PLGD","tpl",ID,"rev",RID)) D RESPERR(DEV,.CONF,.CTX,404,"rev_not_found") Q
+	S NOTE="rollback_to_rev_"_RID
+	D SAVEREV(ID,NOTE)
+	D GETREV(ID,RID,.REC)
+	S REC("id")=ID
+	S ID=$$SAVEREC(.REC)
+	S RESP="{""ok"":true,""id"":"""_ID_""",""rev"":"_+RID_"}"
+	D RESPJSON(DEV,.CONF,.CTX,200,RESP)
+	Q
+	;
+	;
 CONFDEF(CONF)
 	; Production-safe defaults (matches LLM_APPLICATION_SPEC)
 	I '$D(CONF("templates","root")) S CONF("templates","root")="templates/"
@@ -508,6 +594,15 @@ REC2CTX(REC,TCTX,N,OPT)
 	S TCTX("tpls",N,"group")=REC("group")
 	S TCTX("tpls",N,"desc")=REC("desc")
 	S TCTX("tpls",N,"tags")=$G(REC("tags"))
+	; tags list (for UI chips)
+	K TCTX("tpls",N,"tagList")
+	I $G(REC("tags"))'="" D
+	. N A,LBL,TI
+	. K A D PARSETAGS($G(REC("tags")),.A)
+	. S TI=0,LBL=""
+	. F  S LBL=$O(A(LBL)) Q:LBL=""  D  Q:TI'<6
+	. . S TI=TI+1
+	. . S TCTX("tpls",N,"tagList",TI)=LBL
 	S TCTX("tpls",N,"fav")=+$G(REC("fav"))
 	S TCTX("tpls",N,"favText")=$S(+$G(REC("fav"))=1:"Favorited",1:"Favorite")
 	S TCTX("tpls",N,"favIcon")=$S(+$G(REC("fav"))=1:"★",1:"☆")
@@ -905,6 +1000,54 @@ TAGIDXSET(ID,OLD,NEW)
 	. F  S LBL=$O(ARR(LBL)) Q:LBL=""  D
 	. . S KEY=$$TAGKEY(LBL)
 	. . S ^MIO("PLGD","idx","tag",KEY,ID)=1
+	Q
+	;
+	;
+	; -------------------------
+	; Versioning / rollback (library-grade)
+	; -------------------------
+NEXTREV(ID)
+	; Next revision id for a template
+	N X S X=+$G(^MIO("PLGD","tpl",ID,"revNext"))
+	S X=X+1,^MIO("PLGD","tpl",ID,"revNext")=X
+	Q X
+	;
+SAVEREV(ID,NOTE)
+	; Save current state as a revision (before overwrite / rollback)
+	N RID,REC,KEEP
+	I $G(ID)="" Q
+	I '$D(^MIO("PLGD","tpl",ID)) Q
+	K REC D GETREC(ID,.REC) I '$D(REC) Q
+	S RID=$$NEXTREV(ID)
+	S ^MIO("PLGD","tpl",ID,"rev",RID,"savedH")=$H
+	S ^MIO("PLGD","tpl",ID,"rev",RID,"note")=$G(NOTE)
+	S ^MIO("PLGD","tpl",ID,"rev",RID,"name")=$G(REC("name"))
+	S ^MIO("PLGD","tpl",ID,"rev",RID,"group")=$G(REC("group"))
+	S ^MIO("PLGD","tpl",ID,"rev",RID,"tags")=$G(REC("tags"))
+	S ^MIO("PLGD","tpl",ID,"rev",RID,"desc")=$G(REC("desc"))
+	S ^MIO("PLGD","tpl",ID,"rev",RID,"fav")=+$G(REC("fav"))
+	D SETTEXT($NA(^MIO("PLGD","tpl",ID,"rev",RID,"tpl")),$G(REC("tpl")))
+	D SETTEXT($NA(^MIO("PLGD","tpl",ID,"rev",RID,"json")),$G(REC("json")))
+	; cap revisions to last 50 (simple: drop RID-50)
+	S KEEP=50
+	I +RID>KEEP K ^MIO("PLGD","tpl",ID,"rev",(RID-KEEP))
+	Q
+	;
+GETREV(ID,RID,REC)
+	; Load a revision into REC, including tpl/json scalar
+	K REC
+	I $G(ID)="" Q
+	I $G(RID)="" Q
+	I '$D(^MIO("PLGD","tpl",ID,"rev",RID)) Q
+	S REC("id")=ID
+	S REC("name")=$G(^MIO("PLGD","tpl",ID,"rev",RID,"name"))
+	S REC("group")=$G(^MIO("PLGD","tpl",ID,"rev",RID,"group"))
+	S REC("tags")=$G(^MIO("PLGD","tpl",ID,"rev",RID,"tags"))
+	S REC("desc")=$G(^MIO("PLGD","tpl",ID,"rev",RID,"desc"))
+	S REC("fav")=+$G(^MIO("PLGD","tpl",ID,"rev",RID,"fav"))
+	N TT
+	S TT="" D GETTEXT($NA(^MIO("PLGD","tpl",ID,"rev",RID,"tpl")),.TT) S REC("tpl")=TT
+	S TT="" D GETTEXT($NA(^MIO("PLGD","tpl",ID,"rev",RID,"json")),.TT) S REC("json")=TT
 	Q
 	;
 NEXTID()
@@ -1373,8 +1516,8 @@ IMPORT(OBJ,ERR)
 	; Error formatting
 	; -------------------------
 ERR2TXT(ERR)
-	; Build a compact, readable diagnostics string from an error array.
-	; Keeps output small and safe for JSON transport.
+	; Build a compact, readable diagnostics string from an error array.;
+	; Keeps output small and safe for JSON transport.;
 	N S,K,K2,LINE
 	S S=""
 	S K=""
@@ -1390,7 +1533,7 @@ ERR2TXT(ERR)
 	I $E(S,$L(S))=$C(10) S S=$E(S,1,$L(S)-1)
 	Q S
 	;
-
+	;
 	; -------------------------
 	; HTTP helpers
 	; -------------------------

@@ -1,73 +1,255 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>{{#blocks.title}}{{{blocks.title}}} · {{/blocks.title}}MIOPLGD</title>
+  <title>{{brand}} - {{page.heading}}</title>
 
-  <!-- Tailwind (CDN) -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: { sans: ["ui-sans-serif","system-ui","Segoe UI","Roboto","Helvetica Neue","Arial","Noto Sans","Apple Color Emoji","Segoe UI Emoji"] },
-          keyframes: {
-            floaty: { "0%,100%": { transform: "translateY(0)" }, "50%": { transform: "translateY(-6px)" } },
-            shimmer: { "0%": { backgroundPosition: "0% 50%" }, "100%": { backgroundPosition: "100% 50%" } }
-          },
-          animation: {
-            floaty: "floaty 6s ease-in-out infinite",
-            shimmer: "shimmer 10s ease infinite"
-          }
-        }
-      }
-    }
-  </script>
+  <meta name="description" content="{{page.lead}}" />
+  <meta name="theme-color" content="#6366f1" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="{{brand}} - {{page.heading}}" />
+  <meta property="og:description" content="{{page.lead}}" />
 
   <style>
-    /* crisp scrollbar */
-    * { scrollbar-width: thin; scrollbar-color: rgba(148,163,184,.6) transparent; }
-    *::-webkit-scrollbar { height: 10px; width: 10px; }
-    *::-webkit-scrollbar-thumb { background: rgba(148,163,184,.5); border-radius: 999px; border: 2px solid transparent; background-clip: content-box; }
-    *::-webkit-scrollbar-track { background: transparent; }
+    :root{
+      /* Dark theme: true black background + darker surfaces */
+      --bg0:#000000;
+      --bg1:#000000;
+      --panel:rgba(255,255,255,.05);
+      --panel2:rgba(255,255,255,.03);
+      --border:rgba(148,163,184,.16);
+      --border2:rgba(148,163,184,.10);
+      --text:#e5e7eb;
+      --muted:#a3b0c2;
+      --muted2:#7c8aa0;
+      --accent:#6366f1;
+      --accent2:#818cf8;
+      --good:#22c55e;
+      --bad:#ef4444;
+      --warn:#f59e0b;
+      --radius:16px;      /* Tailwind-ish rounded */
+      --radius2:22px;
+      --shadow:0 12px 34px rgba(0,0,0,.45);
+      --shadow2:0 10px 22px rgba(0,0,0,.35);
+      --pad:10px;         /* dense */
+      --pad2:12px;
+      --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+    html[data-theme="light"]{
+      --bg0:#f8fafc;
+      --bg1:#eef2ff;
+      --panel:rgba(255,255,255,.78);
+      --panel2:rgba(255,255,255,.62);
+      --border:rgba(30,41,59,.14);
+      --border2:rgba(30,41,59,.10);
+      --text:#0f172a;
+      --muted:#334155;
+      --muted2:#475569;
+      --accent:#4f46e5;
+      --accent2:#6366f1;
+      --shadow:0 14px 36px rgba(2,6,23,.14);
+      --shadow2:0 10px 20px rgba(2,6,23,.10);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:var(--font);
+      color:var(--text);
+      /* Dark theme background: pure black (no aurora glow) */
+      background:#000;
+      overflow-x:hidden;
+    }
+    html[data-theme="light"] body{
+      background:radial-gradient(1200px 800px at 20% 5%, rgba(99,102,241,.18), transparent 60%),
+                 radial-gradient(900px 650px at 80% 10%, rgba(14,165,233,.10), transparent 55%),
+                 radial-gradient(1100px 750px at 55% 98%, rgba(244,114,182,.09), transparent 60%),
+                 linear-gradient(180deg, var(--bg0), var(--bg1));
+    }
 
-    /* subtle background grain */
-    .grain::before{
-      content:"";
-      position:absolute; inset:0;
-      background-image: radial-gradient(rgba(255,255,255,.06) 1px, transparent 1px);
-      background-size: 18px 18px;
-      pointer-events:none;
-      mask-image: radial-gradient(circle at 10% 0%, rgba(0,0,0,.9), transparent 60%);
-      opacity:.55;
+    a{color:inherit;text-decoration:none}
+    a:hover{text-decoration:none}
+
+    .skip{position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden}
+    .skip:focus{left:12px;top:12px;width:auto;height:auto;padding:10px 12px;background:var(--panel);border:1px solid var(--border);border-radius:12px;z-index:9999}
+
+    .wrap{width:min(96vw,1600px);margin:0 auto; padding:14px 0 18px}
+
+    .topbar{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:12px 14px;
+      background:var(--panel);
+      border:1px solid var(--border);
+      border-radius:var(--radius2);
+      box-shadow:var(--shadow2);
+      backdrop-filter: blur(10px);
+    }
+    .brand{display:flex;align-items:center;gap:10px;min-width:0}
+    .logo{
+      width:34px;height:34px;border-radius:12px;
+      background:linear-gradient(135deg, rgba(99,102,241,.95), rgba(34,211,238,.6));
+      box-shadow:0 10px 18px rgba(99,102,241,.22);
+      border:1px solid rgba(255,255,255,.20);
+    }
+    .brand h1{margin:0;font-size:14px;letter-spacing:.06em;text-transform:uppercase}
+    .brand .sub{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+    .nav{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+    .nav a{
+      padding:8px 10px;
+      border-radius:14px;
+      border:1px solid transparent;
+      color:var(--muted);
+      font-size:13px;
+    }
+    .nav a:hover{background:var(--panel2);border-color:var(--border2);color:var(--text)}
+
+    .actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+    .btn{
+      border:1px solid var(--border);
+      background:var(--panel2);
+      color:var(--text);
+      padding:8px 10px;
+      border-radius:14px;
+      font-size:13px;
+      line-height:1;
+      cursor:pointer;
+      box-shadow:none;
+      transition:transform .08s ease, background .12s ease, border-color .12s ease;
+      user-select:none;
+    }
+    .btn:hover{background:var(--panel);border-color:var(--border)}
+    .btn:active{transform:translateY(1px)}
+    .btn.primary{background:rgba(99,102,241,.22);border-color:rgba(99,102,241,.45)}
+    .btn.primary:hover{background:rgba(99,102,241,.28)}
+    .btn.bad{background:rgba(239,68,68,.16);border-color:rgba(239,68,68,.35)}
+
+    .pill{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:8px 10px;border-radius:999px;
+      border:1px solid var(--border);
+      background:var(--panel2);
+      color:var(--muted);
+      font-size:12px;
+      white-space:nowrap;
+    }
+
+    .pageHead{
+      margin:14px 0 10px;
+      padding:12px 14px;
+      border-radius:var(--radius2);
+      border:1px solid var(--border);
+      background:var(--panel);
+      box-shadow:var(--shadow2);
+      backdrop-filter: blur(10px);
+    }
+    .pageHead h2{margin:0 0 4px;font-size:16px}
+    .pageHead p{margin:0;color:var(--muted);font-size:13px}
+
+    .content{min-height:50vh}
+
+    .footer{margin-top:14px;padding:10px 14px;color:var(--muted2);font-size:12px;text-align:center}
+
+    /* reusable */
+    .panel{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius2);box-shadow:var(--shadow2);backdrop-filter: blur(10px)}
+    .panelHd{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border2)}
+    .panelHd h3{margin:0;font-size:13px;letter-spacing:.02em}
+    .panelBd{padding:var(--pad2)}
+
+    .grid{display:grid;gap:10px}
+
+    .input,.select,textarea{
+      width:100%;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,.04);
+      color:var(--text);
+      padding:8px 10px;
+      border-radius:14px;
+      font-size:13px;
+      outline:none;
+    }
+    html[data-theme="light"] .input,html[data-theme="light"] .select,html[data-theme="light"] textarea{background:rgba(255,255,255,.55)}
+    textarea{font-family:var(--mono);line-height:1.35;resize:vertical;min-height:180px}
+    .input:focus,.select:focus,textarea:focus{border-color:rgba(99,102,241,.6);box-shadow:0 0 0 3px rgba(99,102,241,.18)}
+
+    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .row > *{flex:1}
+    .row .fit{flex:0 0 auto}
+
+    .chips{display:flex;gap:6px;flex-wrap:wrap}
+    .chip{padding:6px 9px;border-radius:999px;border:1px solid var(--border2);background:var(--panel2);color:var(--muted);font-size:12px}
+    .chip:hover{border-color:var(--border);color:var(--text)}
+    .chip.sel{background:rgba(99,102,241,.20);border-color:rgba(99,102,241,.45);color:var(--text)}
+
+    /* responsive */
+    @media (max-width: 920px){
+      .wrap{width:94vw}
+      .nav{display:none}
+      .brand .sub{display:none}
     }
   </style>
-
-  {{{blocks.head}}}
 </head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
 
-<body class="min-h-screen bg-slate-950 text-slate-100">
-  <div class="relative grain">
-    <!-- animated gradient -->
-    <div class="absolute inset-0 -z-10 opacity-70">
-      <div class="absolute -top-48 left-1/2 h-[520px] w-[900px] -translate-x-1/2 rounded-full blur-3xl"
-           style="background: radial-gradient(circle at 50% 50%, rgba(56,189,248,.20), rgba(99,102,241,.12), rgba(0,0,0,0));"></div>
-      <div class="absolute -bottom-52 left-1/2 h-[520px] w-[900px] -translate-x-1/2 rounded-full blur-3xl"
-           style="background: radial-gradient(circle at 50% 50%, rgba(244,114,182,.16), rgba(34,197,94,.10), rgba(0,0,0,0));"></div>
-    </div>
-
-    <div class="mx-auto max-w-6xl px-4 py-6">
-      {{> partials/ui_nav}}
-      <main class="mt-6">
-        {{{content}}}
-      </main>
-      <div class="mt-14">
-        {{> partials/ui_footer}}
+  <div class="wrap">
+    <header class="topbar" role="banner">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <div style="min-width:0">
+          <h1>{{brand}}</h1>
+          <div class="sub">MIOTPL Template Playground</div>
+        </div>
       </div>
-    </div>
+
+      <nav class="nav" aria-label="Primary">
+        {{#nav}}
+          <a href="{{href}}">{{label}}</a>
+        {{/nav}}
+      </nav>
+
+      <div class="actions">
+        <span class="pill" title="Keyboard shortcuts">Ctrl+Enter Render · Ctrl+S Save · Alt+F Favorite</span>
+        <button class="btn" id="themeBtn" type="button" aria-label="Toggle theme">🌙</button>
+      </div>
+    </header>
+
+    <section class="pageHead" aria-label="Page header">
+      <h2>{{page.heading}}</h2>
+      <p>{{page.lead}}</p>
+    </section>
+
+    <main id="main" class="content" role="main">
+      {{{content}}}
+    </main>
+
+    <footer class="footer" role="contentinfo">
+      <div>© {{brand}} · Built on MIOTPL · Data-dense playground</div>
+    </footer>
   </div>
 
-  {{{blocks.scripts}}}
+  <script>
+    (function(){
+      const key = 'plgd:theme';
+      const html = document.documentElement;
+      const btn = document.getElementById('themeBtn');
+      function icon(){ btn.textContent = (html.dataset.theme === 'light') ? '☀️' : '🌙'; }
+      function setTheme(t){ html.dataset.theme = t; try{ localStorage.setItem(key,t); }catch(e){} icon(); }
+      function init(){
+        let t = null;
+        try{ t = localStorage.getItem(key); }catch(e){}
+        if(!t){
+          t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+        }
+        setTheme(t);
+      }
+      btn && btn.addEventListener('click', ()=> setTheme(html.dataset.theme === 'light' ? 'dark' : 'light'));
+      init();
+    })();
+  </script>
 </body>
 </html>
