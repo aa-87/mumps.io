@@ -445,3 +445,67 @@ RESPJSONX(DEV,CONF,STATUS,OBJ,REQID,CTX)
 	DO RESPJSON(DEV,.CONF,STATUS,.OBJ,REQID)
 	QUIT
 	;
+	;
+; -------------------------------------------------------------------------
+; Expect: 100-continue helpers (ROI)
+;
+; These helpers do NOT change PARSE() behavior.;
+; Typical server flow:
+;   ok=$$PARSEHDRS^MIOHTTP(DEV,.CONF,.REQ,.ERR)
+;   ok2=$$EXPECTDECIDE^MIOHTTP(.CONF,.REQ,.ERR)
+;   if ok2=0 -> respond and close
+;   else -> DO SEND100^MIOHTTP(DEV,.REQ,.ERR) (optional) then DO READBODY^MIOHTTP(DEV,.CONF,.REQ,.ERR)
+;
+EXPECTDECIDE(CONF,REQ,ERR)
+	NEW EXP SET EXP=$$LOW($GET(REQ("hdr","expect")))
+	IF EXP'["100-continue" QUIT 1
+	NEW MAXB SET MAXB=+$GET(CONF("server","limits","maxBodyBytes"),10485760)
+	NEW CL SET CL=+$GET(REQ("hdr","content-length"),0)
+	IF CL>0,CL>MAXB DO  QUIT 0
+	. SET ERR("routine")="MIOHTTP",ERR("error")="payload_too_large"
+	QUIT 1
+;
+SEND100(DEV,REQ,ERR)
+	NEW $ETRAP SET $ETRAP="SET $ECODE=\"\" QUIT"
+	USE DEV WRITE "HTTP/1.1 100 Continue",$$CRLF^MIOHTTP(),$$CRLF^MIOHTTP()
+	QUIT
+;
+; Parse request line + headers only (no body).;
+PARSEHDRS(DEV,CONF,REQ,ERR)
+	NEW RID SET RID=$GET(REQ("id"))
+	KILL REQ,ERR
+	IF RID'="" SET REQ("id")=RID
+	IF $GET(REQ("id"))="" SET REQ("id")=$TR($ZH,",")
+	NEW TOH SET TOH=$GET(CONF("server","timeouts","readHeaderMs"),2)
+	NEW LINE DO READLINE(.DEV,TOH,.LINE,.ERR) IF $DATA(ERR) QUIT 0
+	DO PARSEREQLINE(LINE,.REQ,.ERR) IF $DATA(ERR) QUIT 0
+	DO READHDRS(.DEV,.CONF,.REQ,.ERR) IF $DATA(ERR) QUIT 0
+	QUIT 1
+;
+; Read only the request body, assuming headers already parsed.;
+READBODY(DEV,CONF,REQ,ERR)
+	NEW TE SET TE=$$LOW($GET(REQ("hdr","transfer-encoding")))
+	IF TE["chunked" QUIT $$READCHUNKED(.DEV,.CONF,.REQ,.ERR)
+	NEW CL SET CL=+$GET(REQ("hdr","content-length"),0)
+	IF CL'>0 QUIT 1
+	; Use the same logic as PARSE() for Content-Length bodies
+	NEW TOB SET TOB=$GET(CONF("server","timeouts","readBodyMs"),10)
+	NEW MAXS SET MAXS=$GET(CONF("server","limits","maxBodyScalarBytes"),262144)
+	NEW MAXB SET MAXB=$GET(CONF("server","limits","maxBodyBytes"),10485760)
+	NEW CHSZ SET CHSZ=$GET(CONF("server","http","readBodyChunkBytes"),8192) IF CHSZ<1 SET CHSZ=8192
+	IF CHSZ>262144 SET CHSZ=262144
+	DO BODYINIT(.REQ,.CONF,CL)
+	IF $DATA(ERR) QUIT 0
+	IF $GET(REQ("body","mode"))="scalar",(CL'>MAXS) DO  QUIT 1
+	. NEW B DO READFIX(.DEV,CL,TOB,.B,.ERR) IF $DATA(ERR) QUIT
+	. SET REQ("body")=B,REQ("body","len")=CL
+	NEW REM SET REM=CL
+	FOR  QUIT:REM'>0  DO  QUIT:$DATA(ERR)
+	. NEW N SET N=$SELECT(REM>CHSZ:CHSZ,1:REM)
+	. NEW CH DO READFIX(.DEV,N,TOB,.CH,.ERR) IF $DATA(ERR) QUIT
+	. DO BODYAPPEND(.REQ,.CONF,.CH,.ERR) IF $DATA(ERR) QUIT
+	. SET REM=REM-N
+	. IF $GET(REQ("body","len"))>MAXB DO  QUIT
+	. . SET ERR("error")="payload_too_large",ERR("routine")="MIOHTTP"
+	QUIT $SELECT($DATA(ERR):0,1:1)
+	;
