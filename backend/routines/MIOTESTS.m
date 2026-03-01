@@ -1,0 +1,10 @@
+MIOTESTS ; MIOMIOTESTS test suite 
+;
+; Run:
+;   YDB>D ^MIOTESTS
+	D ^MIOROUTET
+	D ^MIOTPLT
+	;
+	;
+	;
+	Q

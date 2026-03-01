@@ -8,16 +8,16 @@ MIOHTTPT ; MIOHTTP test suite (request parsing + streaming bodies)
 ; - Uses files as the "socket" device.;
 ; - Prints only FAIL lines.;
 ;
-	DO T001
-	DO T002
-	DO T003
-	DO T004
-	DO T005
-	DO T006
-	DO T007
-	DO T008
-	DO T009
-	DO T010
+	DO T001 ZWR:$D(ERR) ERR 
+	DO T002 ZWR:$D(ERR) ERR
+	DO T003 ZWR:$D(ERR) ERR
+	DO T004 ZWR:$D(ERR) ERR
+	DO T005 ZWR:$D(ERR) ERR
+	DO T006 ZWR:$D(ERR) ERR
+	DO T007 ZWR:$D(ERR) ERR
+	DO T008 ZWR:$D(ERR) ERR
+	DO T009 ZWR:$D(ERR) ERR
+	DO T010 ZWR:$D(ERR) ERR
 	QUIT
 	;
 ; ---------------- helpers ----------------
@@ -52,7 +52,7 @@ SLURP(REQ,OUT)
 ; ---------------- tests ----------------
 	;
 T001 ; GET /plgd?... query parsing
-	NEW CONF,REQ,ERR,DEV,PATH,TXT
+	NEW CONF,REQ,DEV,PATH,TXT
 	KILL CONF,REQ,ERR
 	SET PATH=$$TMPPATH("t001")
 	SET TXT="GET /plgd?q=&sort=updated&per=18&fav=0&view=grid HTTP/1.1"_$C(13,10)
@@ -71,7 +71,7 @@ T001 ; GET /plgd?... query parsing
 	QUIT
 	;
 T002 ; POST small body -> scalar
-	NEW CONF,REQ,ERR,DEV,PATH,TXT,B
+	NEW CONF,REQ,DEV,PATH,TXT,B
 	KILL CONF,REQ,ERR
 	SET CONF("server","limits","maxBodyScalarBytes")=1024
 	SET PATH=$$TMPPATH("t002")
@@ -93,7 +93,7 @@ T002 ; POST small body -> scalar
 	QUIT
 	;
 T003 ; POST large body -> global chunks (trigger via small maxBodyScalarBytes)
-	NEW CONF,REQ,ERR,DEV,PATH,TXT,B,OUT
+	NEW CONF,REQ,DEV,PATH,TXT,B,OUT
 	KILL CONF,REQ,ERR
 	SET CONF("server","limits","maxBodyScalarBytes")=16
 	SET CONF("server","http","readBodyChunkBytes")=10
@@ -109,7 +109,8 @@ T003 ; POST large body -> global chunks (trigger via small maxBodyScalarBytes)
 	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T003][parse]")
 	DO CLOSER(DEV)
 	DO EQ^MIOTASSERT($GET(REQ("body","mode")),"global","[T003][mode]")
-	DO NOTHAS^MIOTASSERT(REQ("body"),"[T003][no scalar body]")
+	; In global mode there should be NO scalar value at REQ("body"), but descendants exist.;
+	DO EQ^MIOTASSERT(($DATA(REQ("body"))#2),0,"[T003][no scalar body]")
 	DO OK^MIOTASSERT($GET(REQ("body","ref"))'="","[T003][ref]")
 	DO SLURP(.REQ,.OUT)
 	DO EQ^MIOTASSERT(OUT,B,"[T003][slurp]")
@@ -118,7 +119,7 @@ T003 ; POST large body -> global chunks (trigger via small maxBodyScalarBytes)
 	QUIT
 	;
 T004 ; Chunked small -> scalar
-	NEW CONF,REQ,ERR,DEV,PATH,TXT,OUT
+	NEW CONF,REQ,DEV,PATH,TXT,OUT
 	KILL CONF,REQ,ERR
 	SET CONF("server","limits","maxBodyScalarBytes")=64
 	SET PATH=$$TMPPATH("t004")
@@ -140,7 +141,7 @@ T004 ; Chunked small -> scalar
 	QUIT
 	;
 T005 ; Chunked triggers upgrade -> global
-	NEW CONF,REQ,ERR,DEV,PATH,TXT,OUT
+	NEW CONF,REQ,DEV,PATH,TXT,OUT
 	KILL CONF,REQ,ERR
 	SET CONF("server","limits","maxBodyScalarBytes")=8
 	SET PATH=$$TMPPATH("t005")
@@ -162,7 +163,7 @@ T005 ; Chunked triggers upgrade -> global
 	QUIT
 	;
 T006 ; Chunked invalid size -> error includes routine
-	NEW CONF,REQ,ERR,DEV,PATH,TXT
+	NEW CONF,REQ,DEV,PATH,TXT
 	KILL CONF,REQ,ERR
 	SET PATH=$$TMPPATH("t006")
 	SET TXT="POST /c HTTP/1.1"_$C(13,10)
@@ -180,7 +181,7 @@ T006 ; Chunked invalid size -> error includes routine
 	QUIT
 	;
 T007 ; Invalid Content-Length
-	NEW CONF,REQ,ERR,DEV,PATH,TXT
+	NEW CONF,REQ,DEV,PATH,TXT
 	KILL CONF,REQ,ERR
 	SET PATH=$$TMPPATH("t007")
 	SET TXT="POST /x HTTP/1.1"_$C(13,10)
@@ -196,7 +197,7 @@ T007 ; Invalid Content-Length
 	QUIT
 	;
 T008 ; Payload too large (Content-Length > maxBodyBytes)
-	NEW CONF,REQ,ERR,DEV,PATH,TXT,B
+	NEW CONF,REQ,DEV,PATH,TXT,B
 	KILL CONF,REQ,ERR
 	SET CONF("server","limits","maxBodyBytes")=10
 	SET PATH=$$TMPPATH("t008")
@@ -215,7 +216,7 @@ T008 ; Payload too large (Content-Length > maxBodyBytes)
 	QUIT
 	;
 T009 ; Short read
-	NEW CONF,REQ,ERR,DEV,PATH,TXT,B
+	NEW CONF,REQ,DEV,PATH,TXT,B
 	KILL CONF,REQ,ERR
 	SET PATH=$$TMPPATH("t009")
 	SET B="abc" ; 3 bytes
@@ -233,9 +234,11 @@ T009 ; Short read
 	QUIT
 	;
 T010 ; Iterator behavior
-	NEW CONF,REQ,ERR,DEV,PATH,TXT,B,CUR,CH,COUNT
+	NEW CONF,REQ,DEV,PATH,TXT,B,CUR,CH,COUNT
 	KILL CONF,REQ,ERR
 	SET CONF("server","limits","maxBodyScalarBytes")=16
+	; Force small chunks so this test is deterministic
+	SET CONF("server","http","readBodyChunkBytes")=10
 	SET PATH=$$TMPPATH("t010")
 	SET B="abcdefghijklmnopqrstuvwxyz0123456789"
 	SET TXT="POST /big HTTP/1.1"_$C(13,10)
