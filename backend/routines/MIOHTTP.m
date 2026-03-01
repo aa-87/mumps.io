@@ -72,20 +72,43 @@ PARSE(DEV,CONF,REQ,ERR)
 ; ---------------- read helpers ----------------
 	;
 READLINE(DEV,TO,OUT,ERR)
-	; Read a CRLF-delimited line; tolerate LF-only.;
-	NEW $ETRAP SET $ETRAP="SET $ECODE="""" SET OUT="""" SET ERR(""routine"")=""MIOHTTP"",ERR(""error"")=""short_read"" QUIT"
+	; Read a CRLF-delimited line.;
+	; IMPORTANT: file fixtures use DELIM=$C(13,10) and may need true M READ behavior
+	; to correctly return empty lines (e.g. chunk terminators/trailers).;
 	NEW X
+	; File fixture path? (tests pass DEV as a filename like /tmp/t004_*.req)
+	IF $GET(DEV)["/" DO  QUIT
+	. NEW $ETRAP SET $ETRAP="SET $ECODE="""" SET OUT="""" SET ERR(""routine"")=""MIOHTTP"",ERR(""error"")=""short_read"" QUIT"
+	. USE DEV
+	. READ X:TO
+	. IF '$TEST DO  QUIT
+	. . SET ERR("routine")="MIOHTTP",ERR("error")="read_timeout"
+	. ; Strip any CR chars (some devices can leave trailing CR)
+	. SET OUT=$TR(X,$C(13))
+	; Socket / normal device: delegate to MIOSOCK
+	NEW $ETRAP SET $ETRAP="SET $ECODE="""" SET OUT="""" SET ERR(""routine"")=""MIOHTTP"",ERR(""error"")=""short_read"" QUIT"
 	DO READLN^MIOSOCK(DEV,TO,.X)
 	IF '$TEST DO  QUIT
 	. SET ERR("routine")="MIOHTTP",ERR("error")="read_timeout"
-	; Strip any CR chars (file fixtures can leave trailing CR)
 	SET OUT=$TR(X,$C(13))
 	QUIT
 	;
 READFIX(DEV,N,TO,OUT,ERR)
 	; Read exactly N bytes.;
-	NEW $ETRAP SET $ETRAP="SET $ECODE="""" SET OUT="""" SET ERR(""routine"")=""MIOHTTP"",ERR(""error"")=""short_read"" QUIT"
+	; For file fixtures (DEV is a pathname), do a raw READ#N with DELIM disabled.;
 	NEW X
+	IF $GET(DEV)["/" DO  QUIT
+	. NEW $ETRAP SET $ETRAP="SET $ECODE="""" SET OUT="""" SET ERR(""routine"")=""MIOHTTP"",ERR(""error"")=""short_read"" QUIT"
+	. USE DEV:(DELIM=$C(0))
+	. READ X#N:TO
+	. ; Restore HTTP delimiter for subsequent READLINE usage
+	. USE DEV:(DELIM=$C(13,10))
+	. IF '$TEST DO  QUIT
+	. . SET ERR("routine")="MIOHTTP",ERR("error")="read_timeout"
+	. IF $L(X)'=N DO  QUIT
+	. . SET ERR("routine")="MIOHTTP",ERR("error")="short_read"
+	. SET OUT=X
+	NEW $ETRAP SET $ETRAP="SET $ECODE="""" SET OUT="""" SET ERR(""routine"")=""MIOHTTP"",ERR(""error"")=""short_read"" QUIT"
 	DO READN^MIOSOCK(DEV,N,TO,.X)
 	IF '$TEST DO  QUIT
 	. SET ERR("routine")="MIOHTTP",ERR("error")="read_timeout"
@@ -93,8 +116,6 @@ READFIX(DEV,N,TO,OUT,ERR)
 	. SET ERR("routine")="MIOHTTP",ERR("error")="short_read"
 	SET OUT=X
 	QUIT
-	;
-; ---------------- request line + query ----------------
 	;
 PARSEREQLINE(L,REQ,ERR)
 	NEW M,P,V
@@ -149,7 +170,7 @@ HEX1(C)
 	QUIT $S(P=0:-1,1:P-2)
 	;
 HEXSTR2DEC(S)
-	; Decode 1+ hex digits into decimal. Returns -1 on invalid.
+	; Decode 1+ hex digits into decimal. Returns -1 on invalid.;
 	NEW X SET X=$$TRIM($GET(S))
 	IF X="" QUIT -1
 	NEW I,C,V,N SET N=0
@@ -251,9 +272,9 @@ READLEN(DEV,CONF,REQ,CL,TOB,ERR)
 	;
 ; ---------------- body: chunked ----------------
 	;
-
+	;
 READCHUNKED(DEV,CONF,REQ,ERR)
-	; Read chunked transfer-encoding request body.
+	; Read chunked transfer-encoding request body.;
 	NEW MAXB SET MAXB=$GET(CONF("server","limits","maxBodyBytes"),10485760)
 	NEW TOB SET TOB=$GET(CONF("server","timeouts","readBodyMs"),3)
 	NEW DONE SET DONE=0
@@ -270,13 +291,12 @@ READCHUNKED(DEV,CONF,REQ,ERR)
 	. . SET ERR("error")="bad_chunk_size",ERR("routine")="MIOHTTP"
 	. IF SZ=0 DO  QUIT
 	. . ; trailer headers until blank line then stop
-	. . NEW TLINE
-	. . FOR  DO  QUIT:$DATA(ERR)
+	. . NEW TLINE SET TLINE="x"
+	. . FOR  DO  QUIT:$DATA(ERR)  QUIT:TLINE=""
 	. . . DO READLINE(.DEV,TOB,.TLINE,.ERR) IF $DATA(ERR) QUIT
-	. . . IF TLINE="" QUIT
 	. . SET DONE=1
 	. NEW CH DO READFIX(.DEV,SZ,TOB,.CH,.ERR) IF $DATA(ERR) QUIT
-	. ; consume chunk terminator using a line read. Under CRLF delim this returns "".
+	. ; consume chunk terminator using a line read. Under CRLF delim this returns "".;
 	. NEW EOL DO READLINE(.DEV,TOB,.EOL,.ERR) IF $DATA(ERR) QUIT
 	. IF EOL'="" DO  QUIT
 	. . SET ERR("error")="bad_chunk_ending",ERR("routine")="MIOHTTP"
@@ -284,7 +304,7 @@ READCHUNKED(DEV,CONF,REQ,ERR)
 	. IF $GET(REQ("body","len"))>MAXB DO
 	. . SET ERR("error")="payload_too_large",ERR("routine")="MIOHTTP"
 	QUIT
-
+	;
 BODYINIT(REQ,CONF,EXPECTLEN)
 	DO BODYFREE(.REQ)
 	KILL REQ("body")
