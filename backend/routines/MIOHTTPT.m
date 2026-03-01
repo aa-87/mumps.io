@@ -8,16 +8,18 @@ MIOHTTPT ; MIOHTTP test suite (request parsing + streaming bodies)
 ; - Uses files as the "socket" device.;
 ; - Prints only FAIL lines.;
 ;
-	DO T001 ZWR:$D(ERR) ERR 
-	DO T002 ZWR:$D(ERR) ERR
-	DO T003 ZWR:$D(ERR) ERR
-	DO T004 ZWR:$D(ERR) ERR
-	DO T005 ZWR:$D(ERR) ERR
-	DO T006 ZWR:$D(ERR) ERR
-	DO T007 ZWR:$D(ERR) ERR
-	DO T008 ZWR:$D(ERR) ERR
-	DO T009 ZWR:$D(ERR) ERR
-	DO T010 ZWR:$D(ERR) ERR
+	NEW DEBUG SET DEBUG=$GET(^MIO("CONF","test","debug"),0)
+	; Set ^MIO("CONF","test","debug")=1 to print extra diagnostics on failures.;
+	DO T001
+	DO T002
+	DO T003
+	DO T004
+	DO T005
+	DO T006
+	DO T007
+	DO T008
+	DO T009
+	DO T010
 	QUIT
 	;
 ; ---------------- helpers ----------------
@@ -52,7 +54,7 @@ SLURP(REQ,OUT)
 ; ---------------- tests ----------------
 	;
 T001 ; GET /plgd?... query parsing
-	NEW CONF,REQ,DEV,PATH,TXT
+	NEW CONF,REQ,ERR,DEV,PATH,TXT
 	KILL CONF,REQ,ERR
 	SET PATH=$$TMPPATH("t001")
 	SET TXT="GET /plgd?q=&sort=updated&per=18&fav=0&view=grid HTTP/1.1"_$C(13,10)
@@ -71,7 +73,7 @@ T001 ; GET /plgd?... query parsing
 	QUIT
 	;
 T002 ; POST small body -> scalar
-	NEW CONF,REQ,DEV,PATH,TXT,B
+	NEW CONF,REQ,ERR,DEV,PATH,TXT,B
 	KILL CONF,REQ,ERR
 	SET CONF("server","limits","maxBodyScalarBytes")=1024
 	SET PATH=$$TMPPATH("t002")
@@ -93,7 +95,7 @@ T002 ; POST small body -> scalar
 	QUIT
 	;
 T003 ; POST large body -> global chunks (trigger via small maxBodyScalarBytes)
-	NEW CONF,REQ,DEV,PATH,TXT,B,OUT
+	NEW CONF,REQ,ERR,DEV,PATH,TXT,B,OUT
 	KILL CONF,REQ,ERR
 	SET CONF("server","limits","maxBodyScalarBytes")=16
 	SET CONF("server","http","readBodyChunkBytes")=10
@@ -119,7 +121,7 @@ T003 ; POST large body -> global chunks (trigger via small maxBodyScalarBytes)
 	QUIT
 	;
 T004 ; Chunked small -> scalar
-	NEW CONF,REQ,DEV,PATH,TXT,OUT
+	NEW CONF,REQ,ERR,DEV,PATH,TXT,OUT
 	KILL CONF,REQ,ERR
 	SET CONF("server","limits","maxBodyScalarBytes")=64
 	SET PATH=$$TMPPATH("t004")
@@ -132,7 +134,9 @@ T004 ; Chunked small -> scalar
 	DO WRFILE(PATH,TXT)
 	SET DEV=$$OPENR(PATH)
 	SET REQ("id")="t004"
-	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T004][parse]")
+	NEW OK SET OK=$$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR)
+	IF 'OK,DEBUG DO DUMPERR("T004",PATH,.ERR,.REQ)
+	DO EQ^MIOTASSERT(OK,1,"[T004][parse]")
 	DO CLOSER(DEV)
 	DO EQ^MIOTASSERT($GET(REQ("body","mode")),"scalar","[T004][mode]")
 	DO SLURP(.REQ,.OUT)
@@ -141,7 +145,7 @@ T004 ; Chunked small -> scalar
 	QUIT
 	;
 T005 ; Chunked triggers upgrade -> global
-	NEW CONF,REQ,DEV,PATH,TXT,OUT
+	NEW CONF,REQ,ERR,DEV,PATH,TXT,OUT
 	KILL CONF,REQ,ERR
 	SET CONF("server","limits","maxBodyScalarBytes")=8
 	SET PATH=$$TMPPATH("t005")
@@ -154,7 +158,9 @@ T005 ; Chunked triggers upgrade -> global
 	DO WRFILE(PATH,TXT)
 	SET DEV=$$OPENR(PATH)
 	SET REQ("id")="t005"
-	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T005][parse]")
+	NEW OK SET OK=$$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR)
+	IF 'OK,DEBUG DO DUMPERR("T005",PATH,.ERR,.REQ)
+	DO EQ^MIOTASSERT(OK,1,"[T005][parse]")
 	DO CLOSER(DEV)
 	DO EQ^MIOTASSERT($GET(REQ("body","mode")),"global","[T005][mode]")
 	DO SLURP(.REQ,.OUT)
@@ -163,7 +169,7 @@ T005 ; Chunked triggers upgrade -> global
 	QUIT
 	;
 T006 ; Chunked invalid size -> error includes routine
-	NEW CONF,REQ,DEV,PATH,TXT
+	NEW CONF,REQ,ERR,DEV,PATH,TXT
 	KILL CONF,REQ,ERR
 	SET PATH=$$TMPPATH("t006")
 	SET TXT="POST /c HTTP/1.1"_$C(13,10)
@@ -181,7 +187,7 @@ T006 ; Chunked invalid size -> error includes routine
 	QUIT
 	;
 T007 ; Invalid Content-Length
-	NEW CONF,REQ,DEV,PATH,TXT
+	NEW CONF,REQ,ERR,DEV,PATH,TXT
 	KILL CONF,REQ,ERR
 	SET PATH=$$TMPPATH("t007")
 	SET TXT="POST /x HTTP/1.1"_$C(13,10)
@@ -197,7 +203,7 @@ T007 ; Invalid Content-Length
 	QUIT
 	;
 T008 ; Payload too large (Content-Length > maxBodyBytes)
-	NEW CONF,REQ,DEV,PATH,TXT,B
+	NEW CONF,REQ,ERR,DEV,PATH,TXT,B
 	KILL CONF,REQ,ERR
 	SET CONF("server","limits","maxBodyBytes")=10
 	SET PATH=$$TMPPATH("t008")
@@ -216,7 +222,7 @@ T008 ; Payload too large (Content-Length > maxBodyBytes)
 	QUIT
 	;
 T009 ; Short read
-	NEW CONF,REQ,DEV,PATH,TXT,B
+	NEW CONF,REQ,ERR,DEV,PATH,TXT,B
 	KILL CONF,REQ,ERR
 	SET PATH=$$TMPPATH("t009")
 	SET B="abc" ; 3 bytes
@@ -234,7 +240,7 @@ T009 ; Short read
 	QUIT
 	;
 T010 ; Iterator behavior
-	NEW CONF,REQ,DEV,PATH,TXT,B,CUR,CH,COUNT
+	NEW CONF,REQ,ERR,DEV,PATH,TXT,B,CUR,CH,COUNT
 	KILL CONF,REQ,ERR
 	SET CONF("server","limits","maxBodyScalarBytes")=16
 	; Force small chunks so this test is deterministic
@@ -248,7 +254,9 @@ T010 ; Iterator behavior
 	DO WRFILE(PATH,TXT)
 	SET DEV=$$OPENR(PATH)
 	SET REQ("id")="t010"
-	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T010][parse]")
+	NEW OK SET OK=$$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR)
+	IF 'OK,DEBUG DO DUMPERR("T010",PATH,.ERR,.REQ)
+	DO EQ^MIOTASSERT(OK,1,"[T010][parse]")
 	DO CLOSER(DEV)
 	DO EQ^MIOTASSERT($GET(REQ("body","mode")),"global","[T010][mode]")
 	SET COUNT=0
@@ -256,7 +264,17 @@ T010 ; Iterator behavior
 	FOR  QUIT:'$$BODYNEXT^MIOHTTP(.REQ,.CUR,.CH)  DO
 	. SET COUNT=COUNT+1
 	. DO OK^MIOTASSERT($L(CH)>0,"[T010][chunk non-empty]")
+	IF '(COUNT>1),DEBUG DO DUMPERR("T010-multi",PATH,.ERR,.REQ)
 	DO OK^MIOTASSERT(COUNT>1,"[T010][multiple chunks]")
 	DO BODYFREE^MIOHTTP(.REQ)
+	QUIT
+	;
+	;
+DUMPERR(TAG,PATH,ERR,REQ)
+	; Print debug info for a failing parse (guarded by DEBUG in caller).;
+	USE $PRINCIPAL
+	WRITE "DBG ",TAG," file=",$GET(PATH),!
+	IF $DATA(ERR) ZWRITE ERR
+	IF $DATA(REQ) ZWRITE REQ ;("hdr"),REQ("body","mode"),REQ("body","len")
 	QUIT
 	;

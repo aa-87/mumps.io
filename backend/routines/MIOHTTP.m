@@ -148,6 +148,19 @@ HEX1(C)
 	SET P=$F("0123456789ABCDEF",U)
 	QUIT $S(P=0:-1,1:P-2)
 	;
+HEXSTR2DEC(S)
+	; Decode 1+ hex digits into decimal. Returns -1 on invalid.
+	NEW X SET X=$$TRIM($GET(S))
+	IF X="" QUIT -1
+	NEW I,C,V,N SET N=0
+	FOR I=1:1:$L(X) DO
+	. SET C=$E(X,I)
+	. SET V=$$HEX1(C)
+	. IF V<0 SET N=-1 QUIT
+	. SET N=(N*16)+V
+	IF N<0 QUIT -1
+	QUIT N
+	;
 ; ---------------- headers ----------------
 	;
 READHDRS(DEV,CONF,REQ,ERR)
@@ -238,59 +251,40 @@ READLEN(DEV,CONF,REQ,CL,TOB,ERR)
 	;
 ; ---------------- body: chunked ----------------
 	;
+
 READCHUNKED(DEV,CONF,REQ,ERR)
+	; Read chunked transfer-encoding request body.
 	NEW MAXB SET MAXB=$GET(CONF("server","limits","maxBodyBytes"),10485760)
 	NEW TOB SET TOB=$GET(CONF("server","timeouts","readBodyMs"),3)
+	NEW DONE SET DONE=0
 	DO BODYINIT(.REQ,.CONF,"")
 	IF $DATA(ERR) QUIT
-	FOR  DO  QUIT:$DATA(ERR)
-	. NEW LINE
-	. DO READLINE(.DEV,TOB,.LINE,.ERR) IF $DATA(ERR) QUIT
-	. NEW HEX SET HEX=$$TRIM($P(LINE,";",1))
+	FOR  QUIT:DONE  QUIT:$DATA(ERR)  DO
+	. NEW LINE DO READLINE(.DEV,TOB,.LINE,.ERR) IF $DATA(ERR) QUIT
+	. ; chunk-size line may include extensions after ';'
+	. NEW HEX SET HEX=$$TRIM($PIECE(LINE,";",1))
 	. IF HEX="" DO  QUIT
-	. . SET ERR("routine")="MIOHTTP",ERR("error")="bad_chunk_size"
+	. . SET ERR("error")="bad_chunk_size",ERR("routine")="MIOHTTP"
 	. NEW SZ SET SZ=$$HEXSTR2DEC(HEX)
 	. IF SZ<0 DO  QUIT
-	. . SET ERR("routine")="MIOHTTP",ERR("error")="bad_chunk_size"
+	. . SET ERR("error")="bad_chunk_size",ERR("routine")="MIOHTTP"
 	. IF SZ=0 DO  QUIT
-	. . ; trailer headers until blank line
+	. . ; trailer headers until blank line then stop
 	. . NEW TLINE
 	. . FOR  DO  QUIT:$DATA(ERR)
 	. . . DO READLINE(.DEV,TOB,.TLINE,.ERR) IF $DATA(ERR) QUIT
 	. . . IF TLINE="" QUIT
-	. NEW CH
-	. DO READFIX(.DEV,SZ,TOB,.CH,.ERR) IF $DATA(ERR) QUIT
-	. DO READCHEND(.DEV,TOB,.ERR) IF $DATA(ERR) QUIT
+	. . SET DONE=1
+	. NEW CH DO READFIX(.DEV,SZ,TOB,.CH,.ERR) IF $DATA(ERR) QUIT
+	. ; consume chunk terminator using a line read. Under CRLF delim this returns "".
+	. NEW EOL DO READLINE(.DEV,TOB,.EOL,.ERR) IF $DATA(ERR) QUIT
+	. IF EOL'="" DO  QUIT
+	. . SET ERR("error")="bad_chunk_ending",ERR("routine")="MIOHTTP"
 	. DO BODYAPPEND(.REQ,.CONF,.CH,.ERR) IF $DATA(ERR) QUIT
 	. IF $GET(REQ("body","len"))>MAXB DO
-	. . SET ERR("routine")="MIOHTTP",ERR("error")="payload_too_large"
+	. . SET ERR("error")="payload_too_large",ERR("routine")="MIOHTTP"
 	QUIT
-	;
-READCHEND(DEV,TOB,ERR)
-	; Expect CRLF (preferred) or LF-only.;
-	NEW B1
-	DO READFIX(.DEV,1,TOB,.B1,.ERR) IF $DATA(ERR) QUIT
-	IF B1=$C(10) QUIT
-	IF B1=$C(13) DO  QUIT
-	. NEW B2
-	. DO READFIX(.DEV,1,TOB,.B2,.ERR) IF $DATA(ERR) QUIT
-	. IF B2'=$C(10) SET ERR("routine")="MIOHTTP",ERR("error")="bad_chunk_ending"
-	SET ERR("routine")="MIOHTTP",ERR("error")="bad_chunk_ending"
-	QUIT
-	;
-HEXSTR2DEC(HEX)
-	; 1+ hex digits -> decimal; returns -1 on invalid.;
-	NEW I,C,V,OUT
-	SET OUT=0
-	FOR I=1:1:$L(HEX) DO
-	. SET C=$E(HEX,I)
-	. SET V=$$HEX1(C)
-	. IF V<0 SET OUT=-1 QUIT
-	. SET OUT=(OUT*16)+V
-	QUIT OUT
-	;
-; ---------------- body storage ----------------
-	;
+
 BODYINIT(REQ,CONF,EXPECTLEN)
 	DO BODYFREE(.REQ)
 	KILL REQ("body")
