@@ -1,0 +1,64 @@
+MIODKAT ; Keep-Alive unit tests for MIOD
+ ;
+ ; Run:
+ ;   YDB>ZL "MIOD_KA.m","MIODKAT.m","MIOTASSERT.m","MIOHTTP.m"
+ ;   YDB>D ^MIODKAT
+ ;
+ D T001,T002,T003,T004,T005,T006,T007
+ QUIT
+ ;
+MKREQ(VER,CONN,REQ)
+ KILL REQ
+ SET REQ("httpver")=VER
+ IF CONN'="" SET REQ("hdr","connection")=CONN
+ QUIT
+ ;
+T001 ; HTTP/1.1 default keep-alive
+ NEW CONF,REQ,KEEP
+ DO MKREQ("HTTP/1.1","",.REQ)
+ SET KEEP=$$KASHOULD^MIOD(.CONF,.REQ,1,1,100)
+ DO EQ^MIOTASSERT(KEEP,1,"[T001][1.1 default keep]")
+ QUIT
+ ;
+T002 ; HTTP/1.1 close
+ NEW CONF,REQ,KEEP
+ DO MKREQ("HTTP/1.1","close",.REQ)
+ SET KEEP=$$KASHOULD^MIOD(.CONF,.REQ,1,1,100)
+ DO EQ^MIOTASSERT(KEEP,0,"[T002][1.1 close]")
+ QUIT
+ ;
+T003 ; HTTP/1.0 default close
+ NEW CONF,REQ,KEEP
+ DO MKREQ("HTTP/1.0","",.REQ)
+ SET KEEP=$$KASHOULD^MIOD(.CONF,.REQ,1,1,100)
+ DO EQ^MIOTASSERT(KEEP,0,"[T003][1.0 default close]")
+ QUIT
+ ;
+T004 ; HTTP/1.0 keep-alive token
+ NEW CONF,REQ,KEEP
+ DO MKREQ("HTTP/1.0","Keep-Alive",.REQ)
+ SET KEEP=$$KASHOULD^MIOD(.CONF,.REQ,1,1,100)
+ DO EQ^MIOTASSERT(KEEP,1,"[T004][1.0 keep-alive]")
+ QUIT
+ ;
+T005 ; maxRequests reached => close
+ NEW CONF,REQ,KEEP
+ DO MKREQ("HTTP/1.1","",.REQ)
+ SET KEEP=$$KASHOULD^MIOD(.CONF,.REQ,1,1,1)
+ DO EQ^MIOTASSERT(KEEP,0,"[T005][maxRequests=1 close]")
+ QUIT
+ ;
+T006 ; server disabled => close
+ NEW CONF,REQ,KEEP
+ DO MKREQ("HTTP/1.1","",.REQ)
+ SET KEEP=$$KASHOULD^MIOD(.CONF,.REQ,1,0,100)
+ DO EQ^MIOTASSERT(KEEP,0,"[T006][disabled close]")
+ QUIT
+ ;
+T007 ; unknown http version => close
+ NEW CONF,REQ,KEEP
+ DO MKREQ("HTTP/2.0","",.REQ)
+ SET KEEP=$$KASHOULD^MIOD(.CONF,.REQ,1,1,100)
+ DO EQ^MIOTASSERT(KEEP,0,"[T007][unknown close]")
+ QUIT
+ ;

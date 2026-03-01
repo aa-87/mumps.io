@@ -10,6 +10,6 @@ MIOTESTS ; MIOMIOTESTS test suite
 	D ^MIOHTTP1CTT 
 	D ^MIOHTTPTX
 	;	
-	;	
+	D ^MIODKAT
 	;
 	Q
