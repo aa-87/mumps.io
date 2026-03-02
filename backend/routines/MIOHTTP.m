@@ -1,28 +1,49 @@
-MIOHTTP ; HTTP request parsing + streaming request bodies (MAXSTRING-safe)
+MIOHTTP ; HTTP parsing + streaming request body storage (MAXSTRING-safe).;
 ;
-; Entry points
-;   PARSE(DEV,CONF,REQ,ERR)  -> 1 ok, 0 error (ERR populated)
-;   BODYLEN(.REQ)
-;   BODYOPEN(.REQ,.CUR)
-;   BODYNEXT(.REQ,.CUR,.CH) -> 1 chunk, 0 done
-;   BODYFREE(.REQ)
-;   STATUS4ERR(.ERR)        -> HTTP status code
-;   RESP/RESPJSON/RESPX/RESPJSONX
+; Purpose
+; Parse HTTP/1.1 request line, headers, and request bodies.;
+; Store bodies in a way that avoids MAXSTRING errors and minimizes copying.;
 ;
-; Body storage
-;   Scalar:
-;     REQ("body")=string
-;     REQ("body","mode")="scalar"
-;     REQ("body","len")=N
-;   Global (chunked / large):
-;     REQ("body","mode")="global"
-;     REQ("body","ref")=$NAME(^TMP($J,"MIOHTTP","BODY",REQID))
-;     REQ("body","n")=chunkCount
-;     REQ("body","len")=N
-;     ^TMP(...,1)=chunk1, ^TMP(...,2)=chunk2, ...;
+; Storage model
+; - Small bodies: REQ("body") (scalar), REQ("body","mode")="scalar"
+; - Large bodies: chunks in ^TMP($J,"MIOHTTP","BODY",REQ("id"),n)
+;   REQ("body","mode")="global", REQ("body","ref")=$NAME(^TMP(...)), REQ("body","n")=n
 ;
-; ---------------------------------------------------------------------------
+; Config (optional)
+; CONF("server","limits","maxRequestLineBytes")   default 8192
+; CONF("server","limits","maxHeaderBytes")        default 65536
+; CONF("server","limits","maxHeaderCount")        default 80
+; CONF("server","limits","maxBodyBytes")          default 10485760
+; CONF("server","limits","maxBodyScalarBytes")    default 262144
+; CONF("server","http","readBodyChunkBytes")      default 65536 (clamped 1024..262144)
+; CONF("server","http","supportChunkedRequest")   default 1
+; CONF("server","timeouts","readHeaderMs")        default 2 (seconds)
+; CONF("server","timeouts","readBodyMs")          default 3 (seconds)
+;
+; Public entry points
+; - PARSE(DEV,CONF,REQ,ERR)
+; - READLINE(DEV,TO,OUT,ERR)
+; - READFIX(DEV,N,TO,OUT,ERR)
+; - PARSEREQLINE(L,REQ,ERR)
+; - PARSEQRY(P,REQ)
+; - READHDRS(DEV,CONF,REQ,ERR)
+; - READCHUNKED(DEV,CONF,REQ,ERR)
+; - BODYOPEN(REQ,CUR)
+; - BODYNEXT(REQ,CUR,CH)
+; - BODYLEN(REQ)
+; - BODYFREE(REQ)
+; - STATUS4ERR(ERR)
+; - RESP / RESPJSON / RESPX / RESPJSONX
+;
+; Notes
+; - Errors include ERR("routine")="MIOHTTP".;
+; - This routine does not assume keep-alive; connection policy is handled by MIOD.;
+;
+	; V1-02 (YottaDB/GT.M)
 	;
+; -------------------------------------------------------------------------
+; Parse request line + headers + body.;
+; Returns 1 on success, 0 on failure with ERR().;
 PARSE(DEV,CONF,REQ,ERR)
 	; Parse request line, headers, and body.;
 	NEW RID SET RID=$GET(REQ("id"))
@@ -68,8 +89,8 @@ PARSE(DEV,CONF,REQ,ERR)
 	; No body
 	SET REQ("body","mode")="none",REQ("body","len")=0
 	QUIT 1
-	;
-; ---------------- read helpers ----------------
+	;--------------------------------------------------------------
+	; Line and fixed reads.;
 	;
 READLINE(DEV,TO,OUT,ERR)
 	; Read a CRLF-delimited line.;
@@ -117,72 +138,83 @@ READFIX(DEV,N,TO,OUT,ERR)
 	SET OUT=X
 	QUIT
 	;
+; -------------------------------------------------------------------------
+; Request line and query parsing.;
+	;
 PARSEREQLINE(L,REQ,ERR)
 	NEW M,P,V
-	SET M=$P(L," ",1),P=$P(L," ",2),V=$P(L," ",3)
-	IF M=""!(P="")!(V="") DO  QUIT
-	. SET ERR("routine")="MIOHTTP",ERR("error")="bad_request_line"
+	SET M=$PIECE(L," ",1),P=$PIECE(L," ",2),V=$PIECE(L," ",3)
+	IF M=""!(P="")!(V="") SET ERR("error")="bad_request_line" QUIT
 	SET REQ("method")=M
 	SET REQ("rawpath")=P
-	SET REQ("httpver")=V
-	SET REQ("path")=$P(P,"?",1)
+	; Strip any stray CR from the version token.;
+	SET REQ("httpver")=$TRANSLATE(V,$CHAR(13),"")
+	SET REQ("path")=$PIECE(P,"?",1)
 	DO PARSEQRY(P,.REQ)
 	QUIT
 	;
 PARSEQRY(P,REQ)
 	KILL REQ("query")
-	NEW Q SET Q=$P(P,"?",2,999)
+	NEW Q SET Q=$PIECE(P,"?",2,999)
 	IF Q="" QUIT
 	NEW I,PAIR,K,V
-	FOR I=1:1:$L(Q,"&") DO
-	. SET PAIR=$P(Q,"&",I)
-	. SET K=$$URLDECQ($P(PAIR,"=",1))
-	. SET V=$$URLDECQ($P(PAIR,"=",2,999))
+	FOR I=1:1:$LENGTH(Q,"&") DO
+	. SET PAIR=$PIECE(Q,"&",I)
+	. SET K=$$URLDECQ($PIECE(PAIR,"=",1))
+	. SET V=$$URLDECQ($PIECE(PAIR,"=",2,999))
 	. IF K'="" SET REQ("query",K)=V
 	QUIT
 	;
+; Query/Form URL decoder: '+' => space, %HH => byte.;
+; Invalid % sequences are preserved.;
 URLDECQ(S)
-	; '+' => space, %HH => byte. Invalid sequences preserved.;
-	NEW IN,OUT,I,C,HEX,D
-	SET IN=$GET(S),OUT=""
-	FOR I=1:1:$L(IN) DO
-	. SET C=$E(IN,I)
-	. IF C="+" SET OUT=OUT_" " QUIT
-	. IF C'="%" SET OUT=OUT_C QUIT
-	. SET HEX=$E(IN,I+1,I+2)
-	. IF $L(HEX)'=2 SET OUT=OUT_C QUIT
-	. SET D=$$HEX2DEC(HEX)
-	. IF D<0 SET OUT=OUT_C QUIT
-	. SET OUT=OUT_$C(D)
-	. SET I=I+2
+	NEW IN,OUT,L,I,C,HEX,B
+	SET IN=$TRANSLATE($GET(S),"+"," ")
+	; fast path
+	IF IN'["%",IN'[" " QUIT IN
+	SET OUT="",L=$LENGTH(IN),I=1
+	FOR  QUIT:I>L  DO
+	. SET C=$EXTRACT(IN,I)
+	. IF C="%",(I+2)'>L DO  QUIT
+	. . SET HEX=$EXTRACT(IN,I+1,I+2)
+	. . SET B=$$HEX2DEC(HEX)
+	. . IF B'<0 SET OUT=OUT_$CHAR(B),I=I+3 QUIT
+	. . SET OUT=OUT_"%",I=I+1
+	. SET OUT=OUT_C
+	. SET I=I+1
 	QUIT OUT
 	;
-HEX2DEC(H)
+; Convert exactly 2 hex digits (used for %HH decoding).;
+HEX2DEC(HH)
 	NEW A,B
-	SET A=$$HEX1($E(H,1)),B=$$HEX1($E(H,2))
+	SET A=$$HEXVAL($EXTRACT($GET(HH),1))
+	SET B=$$HEXVAL($EXTRACT($GET(HH),2))
 	IF A<0!(B<0) QUIT -1
 	QUIT (A*16)+B
 	;
-HEX1(C)
+; Convert variable-length hex string (1..8 chars) to decimal.;
+; Used for chunked transfer sizes like "4" or "1A3".;
+HEXSTR2DEC(HX)
+	NEW I,C,V,OUT
+	SET HX=$ZCONVERT($GET(HX),"U")
+	IF HX="" QUIT -1
+	IF $LENGTH(HX)>8 QUIT -1
+	SET OUT=0
+	FOR I=1:1:$LENGTH(HX) DO
+	. SET C=$EXTRACT(HX,I)
+	. SET V=$$HEXVAL(C)
+	. IF V<0 SET OUT=-1 QUIT
+	. SET OUT=(OUT*16)+V
+	QUIT OUT
+	;
+HEXVAL(C)
 	NEW U,P
 	SET U=$ZCONVERT($GET(C),"U")
-	SET P=$F("0123456789ABCDEF",U)
-	QUIT $S(P=0:-1,1:P-2)
+	SET P=$FIND("0123456789ABCDEF",U)
+	QUIT $SELECT(P=0:-1,1:P-2)
 	;
-HEXSTR2DEC(S)
-	; Decode 1+ hex digits into decimal. Returns -1 on invalid.;
-	NEW X SET X=$$TRIM($GET(S))
-	IF X="" QUIT -1
-	NEW I,C,V,N SET N=0
-	FOR I=1:1:$L(X) DO
-	. SET C=$E(X,I)
-	. SET V=$$HEX1(C)
-	. IF V<0 SET N=-1 QUIT
-	. SET N=(N*16)+V
-	IF N<0 QUIT -1
-	QUIT N
-	;
-; ---------------- headers ----------------
+; -------------------------------------------------------------------------
+; Header parsing.;
 	;
 READHDRS(DEV,CONF,REQ,ERR)
 	KILL REQ("hdr")
@@ -191,30 +223,220 @@ READHDRS(DEV,CONF,REQ,ERR)
 	SET MAXB=$GET(CONF("server","limits","maxHeaderBytes"),65536)
 	SET COUNT=0,BYTES=0
 	SET TOH=$GET(CONF("server","timeouts","readHeaderMs"),2)
-	FOR  DO  QUIT:LINE=""  QUIT:$DATA(ERR)
+	FOR  DO  QUIT:LINE=""
 	. DO READLINE(.DEV,TOH,.LINE,.ERR) IF $DATA(ERR) QUIT
+	. ; blank line ends headers
 	. IF LINE="" QUIT
-	. SET BYTES=BYTES+$L(LINE)+2
+	. SET BYTES=BYTES+$LENGTH(LINE)+2
 	. IF BYTES>MAXB DO  QUIT
-	. . SET ERR("routine")="MIOHTTP",ERR("error")="headers_too_large"
+	. . SET ERR("error")="headers_too_large",ERR("routine")="MIOHTTP"
 	. SET COUNT=COUNT+1
 	. IF COUNT>MAXC DO  QUIT
-	. . SET ERR("routine")="MIOHTTP",ERR("error")="too_many_headers"
-	. IF $E(LINE,1)=" "!($E(LINE,1)=$C(9)) DO  QUIT
-	. . SET ERR("routine")="MIOHTTP",ERR("error")="header_folding_rejected"
-	. NEW N,V
-	. SET N=$$LOW($P(LINE,":",1))
-	. SET V=$$TRIM($P(LINE,":",2,999))
+	. . SET ERR("error")="too_many_headers",ERR("routine")="MIOHTTP"
+	. ; Reject obs-fold (line starts with SP/TAB) as a safety hardening
+	. IF $EXTRACT(LINE,1)=" "!($EXTRACT(LINE,1)=$CHAR(9)) DO  QUIT
+	. . SET ERR("error")="header_folding_rejected",ERR("routine")="MIOHTTP"
+	. NEW N,V SET N=$$LOW($PIECE(LINE,":",1)),V=$$TRIM($PIECE(LINE,":",2,999))
 	. IF N'="" SET REQ("hdr",N)=V
 	QUIT
+	;
+; -------------------------------------------------------------------------
+; Error mapping.;
+	;
+STATUS4ERR(ERR)
+	NEW E SET E=$GET(ERR("error"))
+	QUIT $SELECT(E="client_closed":0,E="read_timeout":408,E="request_line_too_large":414,E="headers_too_large":431,E="too_many_headers":431,E="payload_too_large":413,E="chunked_not_supported":400,E="unsupported_transfer_encoding":501,E="invalid_content_length":400,E="bad_request_line":400,E="short_read":400,E="bad_chunk_size":400,E="bad_chunk_ending":400,E="header_folding_rejected":400,1:400)
+	;
+; -------------------------------------------------------------------------
+; Response helpers.;
+	;
+RESPJSON(DEV,CONF,STATUS,OBJ,REQID)
+	NEW BODY,HEAD
+	SET BODY=$$EN^MIOJSON1(.OBJ)
+	SET HEAD("Content-Type")="application/json"
+	IF '$G(STATUS) SET STATUS=200
+	IF '$G(REQID) SET REQID=$TR($ZH,",")
+	DO RESP(.DEV,.CONF,STATUS,.HEAD,BODY,REQID)
+	QUIT
+	;
+RESP(DEV,CONF,STATUS,HEAD,BODY,REQID)
+	NEW HLINE SET HLINE="HTTP/1.1 "_STATUS_" "_$$STATUSMSG(STATUS)_$CHAR(13,10)
+	DO WRITE^MIOSOCK(DEV,HLINE)
+	NEW DH MERGE DH=CONF("server","http","defaultResponseHeaders")
+	NEW K SET K=""
+	FOR  SET K=$ORDER(DH(K)) QUIT:K=""  SET HEAD(K)=DH(K)
+	IF REQID'="" SET HEAD("X-Request-Id")=REQID
+	SET HEAD("Content-Length")=$LENGTH(BODY)
+	IF '$DATA(HEAD("Connection")) SET HEAD("Connection")="keep-alive"
+	FOR  SET K=$ORDER(HEAD(K)) QUIT:K=""  DO WRITE^MIOSOCK(DEV,K_": "_HEAD(K)_$CHAR(13,10))
+	DO WRITE^MIOSOCK(DEV,$CHAR(13,10))
+	DO WRITE^MIOSOCK(DEV,BODY)
+	QUIT
+	;
+STATUSMSG(S)
+	QUIT $SELECT(S=200:"OK",S=101:"Switching Protocols",S=400:"Bad Request",S=401:"Unauthorized",S=404:"Not Found",S=405:"Method Not Allowed",S=408:"Request Timeout",S=413:"Payload Too Large",S=414:"URI Too Long",S=431:"Request Header Fields Too Large",S=500:"Internal Server Error",S=501:"Not Implemented",1:"")
 	;
 LOW(S) QUIT $ZCONVERT($GET(S),"L")
 	;
 TRIM(S)
 	NEW X SET X=$GET(S)
-	FOR  QUIT:X=""!($E(X,1)'=" ")  SET X=$E(X,2,$L(X))
-	FOR  QUIT:X=""!($E(X,$L(X))'=" ")  SET X=$E(X,1,$L(X)-1)
+	FOR  QUIT:$EXTRACT(X,1)'=" "  SET X=$EXTRACT(X,2,$LENGTH(X))
+	FOR  QUIT:$EXTRACT(X,$LENGTH(X))'=" "  SET X=$EXTRACT(X,1,$LENGTH(X)-1)
 	QUIT X
+	;
+RESPX(DEV,CONF,STATUS,HEAD,BODY,REQID,CTX)
+	IF $DATA(CTX) SET CTX("status")=STATUS
+	DO RESP(DEV,.CONF,STATUS,.HEAD,BODY,REQID)
+	QUIT
+	;
+RESPJSONX(DEV,CONF,STATUS,OBJ,REQID,CTX)
+	IF $DATA(CTX) SET CTX("status")=STATUS
+	DO RESPJSON(DEV,.CONF,STATUS,.OBJ,REQID)
+	QUIT
+	;
+; -------------------------------------------------------------------------
+; Expect: 100-continue helpers (ROI)
+;
+; These helpers do NOT change PARSE() behavior.;
+; Typical server flow:
+;   ok=$$PARSEHDRS^MIOHTTP(DEV,.CONF,.REQ,.ERR)
+;   ok2=$$EXPECTDECIDE^MIOHTTP(.CONF,.REQ,.ERR)
+;   if ok2=0 -> respond and close
+;   else -> DO SEND100^MIOHTTP(DEV,.REQ,.ERR) then DO READBODYONLY^MIOHTTP(DEV,.CONF,.REQ,.ERR)
+;
+EXPECTDECIDE(CONF,REQ,ERR)
+	NEW EXP SET EXP=$$LOW($GET(REQ("hdr","expect")))
+	IF EXP'["100-continue" QUIT 1
+	NEW MAXB SET MAXB=+$GET(CONF("server","limits","maxBodyBytes"),10485760)
+	NEW CL SET CL=+$GET(REQ("hdr","content-length"),0)
+	IF CL>0,CL>MAXB DO  QUIT 0
+	. SET ERR("routine")="MIOHTTP",ERR("error")="payload_too_large"
+	QUIT 1
+;
+SEND100(DEV,REQ,ERR)
+	NEW OIO SET OIO=$IO
+	NEW $ETRAP SET $ETRAP="DO TRAPIO^MIOHTTP"
+	USE DEV WRITE "HTTP/1.1 100 Continue",$CHAR(13,10),$CHAR(13,10)
+	USE OIO
+	QUIT
+;
+; Parse request line + headers only (no body).;
+PARSEHDRS(DEV,CONF,REQ,ERR)
+	NEW RID SET RID=$GET(REQ("id"))
+	KILL REQ,ERR
+	IF RID'="" SET REQ("id")=RID
+	IF $GET(REQ("id"))="" SET REQ("id")=$TR($ZH,",")_"-"_$J
+	NEW TOH SET TOH=$GET(CONF("server","timeouts","readHeaderMs"),2)
+	NEW LINE DO READLINE(.DEV,TOH,.LINE,.ERR) IF $DATA(ERR) QUIT 0
+	DO PARSEREQLINE(LINE,.REQ,.ERR) IF $DATA(ERR) QUIT 0
+	DO READHDRS(.DEV,.CONF,.REQ,.ERR) IF $DATA(ERR) QUIT 0
+	QUIT 1
+;
+; Read only the request body, assuming headers already parsed.;
+READBODYONLY(DEV,CONF,REQ,ERR)
+	NEW TE SET TE=$$LOW($GET(REQ("hdr","transfer-encoding")))
+	IF TE["chunked" QUIT $$READCHUNKED(.DEV,.CONF,.REQ,.ERR)
+	NEW CL SET CL=+$GET(REQ("hdr","content-length"),0)
+	IF CL'>0 QUIT 1
+	NEW TOB SET TOB=$GET(CONF("server","timeouts","readBodyMs"),3)
+	DO READLEN(.DEV,.CONF,.REQ,CL,TOB,.ERR)
+	QUIT $SELECT($DATA(ERR):0,1:1)
+	;
+; -----------------------------------------------------------------------------
+; Response streaming + sendfile (ROI)
+;
+; Public:
+;   STREAMBEGIN(DEV,CONF,STATUS,HEAD,REQID,CTX)
+;   STREAMWRITE(DEV,DATA)
+;   STREAMEND(DEV)
+;   $$SENDFILE(DEV,CONF,PATH,HEAD,REQID,CTX,METHOD)
+;
+WRESP(DEV,S)
+	NEW D SET D=$GET(DEV) IF D="" SET D=$IO
+	NEW OIO SET OIO=$IO
+	NEW $ETRAP SET $ETRAP="DO TRAPIO^MIOHTTP"
+	IF $TEXT(WRITE^MIOSOCK)'="" DO
+	. DO WRITE^MIOSOCK(D,S)
+	ELSE  DO
+	. USE D WRITE S
+	USE OIO
+	QUIT
+;
+HEXOUT(N)
+	NEW H SET H="0123456789ABCDEF"
+	IF N=0 QUIT "0"
+	NEW OUT SET OUT=""
+	NEW Q,R
+	FOR  QUIT:N=0  DO
+	. SET Q=N\16,R=N#16
+	. SET OUT=$E(H,R+1)_OUT
+	. SET N=Q
+	QUIT OUT
+;
+STREAMBEGIN(DEV,CONF,STATUS,HEAD,REQID,CTX)
+	IF '$G(STATUS) SET STATUS=200
+	IF '$G(REQID) SET REQID=$TR($ZH,",")_"-"_$J
+	IF $DATA(CTX) SET CTX("status")=STATUS
+	DO WRESP(.DEV,"HTTP/1.1 "_STATUS_" "_$$STATUSMSG(STATUS)_$CHAR(13,10))
+	NEW DH MERGE DH=CONF("server","http","defaultResponseHeaders")
+	NEW K SET K=""
+	FOR  SET K=$ORDER(DH(K)) QUIT:K=""  SET HEAD(K)=DH(K)
+	IF REQID'="" SET HEAD("X-Request-Id")=REQID
+	KILL HEAD("Content-Length")
+	SET HEAD("Transfer-Encoding")="chunked"
+	IF '$DATA(HEAD("Connection")) SET HEAD("Connection")="keep-alive"
+	FOR  SET K=$ORDER(HEAD(K)) QUIT:K=""  DO WRESP(.DEV,K_": "_HEAD(K)_$CHAR(13,10))
+	DO WRESP(.DEV,$CHAR(13,10))
+	QUIT
+;
+STREAMWRITE(DEV,DATA)
+	NEW L SET L=$L($GET(DATA))
+	IF L=0 QUIT
+	DO WRESP(.DEV,$$HEXOUT(L)_$CHAR(13,10))
+	DO WRESP(.DEV,DATA)
+	DO WRESP(.DEV,$CHAR(13,10))
+	QUIT
+;
+STREAMEND(DEV)
+	DO WRESP(.DEV,"0"_$CHAR(13,10)_$CHAR(13,10))
+	QUIT
+;
+SENDFILE(DEV,CONF,PATH,HEAD,REQID,CTX,METHOD)
+	NEW P SET P=$GET(PATH)
+	IF P="" DO  QUIT 0
+	. IF $DATA(CTX) SET CTX("err","routine")="MIOHTTP",CTX("err","error")="file_not_specified"
+	NEW M SET M=$$LOW($GET(METHOD,"GET"))
+	NEW CHSZ SET CHSZ=+$GET(CONF("server","static","readChunkBytes"),65536)
+	IF CHSZ<1024 SET CHSZ=1024
+	IF CHSZ>262144 SET CHSZ=262144
+	NEW OIO SET OIO=$IO
+	NEW FDEV SET FDEV=P
+	; open file (no trap); on failure return 0 with CTX(err)
+	OPEN FDEV:(readonly:stream:nowrap):1 ELSE  DO  QUIT 0
+	. IF $DATA(CTX) SET CTX("err","routine")="MIOHTTP",CTX("err","error")="open_failed"
+	USE FDEV
+	IF M="head" GOTO SFHEAD
+	DO STREAMBEGIN(.DEV,.CONF,200,.HEAD,REQID,.CTX)
+	NEW X
+	FOR  DO  QUIT:$ZEOF
+	. READ X#CHSZ
+	. IF X'="" DO STREAMWRITE(.DEV,X)
+	DO STREAMEND(.DEV)
+	CLOSE FDEV
+	USE OIO
+	QUIT 1
+SFHEAD
+	KILL HEAD("Transfer-Encoding"),HEAD("Content-Length")
+	IF '$DATA(HEAD("Connection")) SET HEAD("Connection")="keep-alive"
+	DO RESPX(.DEV,.CONF,200,.HEAD,"",REQID,.CTX)
+	CLOSE FDEV
+	USE OIO
+	QUIT 1
+	;
+TRAPIO ; internal: restore IO on error
+	SET $ECODE=""
+	IF $DATA(OIO) USE OIO
+	QUIT
 	;
 ; ---------------- Transfer-Encoding parsing ----------------
 	;
@@ -400,112 +622,4 @@ BODYFREE(REQ)
 	KILL REQ("body")
 	KILL REQ("body","mode"),REQ("body","ref"),REQ("body","n"),REQ("body","len")
 	QUIT
-	;
-; ---------------- error mapping ----------------
-	;
-STATUS4ERR(ERR)
-	NEW E SET E=$GET(ERR("error"))
-	QUIT $SELECT(E="client_closed":0,E="read_timeout":408,E="request_line_too_large":414,E="headers_too_large":431,E="too_many_headers":431,E="payload_too_large":413,E="unsupported_transfer_encoding":501,E="chunked_not_supported":400,E="invalid_content_length":400,E="bad_request_line":400,E="short_read":400,E="bad_chunk_size":400,E="bad_chunk_ending":400,E="header_folding_rejected":400,1:400)
-	;
-; ---------------- responses (used by MIOD) ----------------
-	;
-RESPJSON(DEV,CONF,STATUS,OBJ,REQID)
-	NEW BODY,HEAD
-	SET BODY=$$EN^MIOJSON1(.OBJ)
-	SET HEAD("Content-Type")="application/json"
-	IF '$G(STATUS) SET STATUS=200
-	IF '$G(REQID) SET REQID=$TR($ZH,",")
-	DO RESP(.DEV,.CONF,STATUS,.HEAD,BODY,REQID)
-	QUIT
-	;
-RESP(DEV,CONF,STATUS,HEAD,BODY,REQID)
-	NEW HLINE SET HLINE="HTTP/1.1 "_STATUS_" "_$$STATUSMSG(STATUS)_$C(13,10)
-	DO WRITE^MIOSOCK(DEV,HLINE)
-	NEW DH MERGE DH=CONF("server","http","defaultResponseHeaders")
-	NEW K SET K=""
-	FOR  SET K=$ORDER(DH(K)) QUIT:K=""  SET HEAD(K)=DH(K)
-	IF REQID'="" SET HEAD("X-Request-Id")=REQID
-	SET HEAD("Content-Length")=$L(BODY)
-	IF '$DATA(HEAD("Connection")) SET HEAD("Connection")="keep-alive"
-	FOR  SET K=$ORDER(HEAD(K)) QUIT:K=""  DO WRITE^MIOSOCK(DEV,K_": "_HEAD(K)_$C(13,10))
-	DO WRITE^MIOSOCK(DEV,$C(13,10))
-	DO WRITE^MIOSOCK(DEV,BODY)
-	QUIT
-	;
-STATUSMSG(S)
-	QUIT $SELECT(S=200:"OK",S=101:"Switching Protocols",S=400:"Bad Request",S=401:"Unauthorized",S=404:"Not Found",S=405:"Method Not Allowed",S=408:"Request Timeout",S=413:"Payload Too Large",S=414:"URI Too Long",S=431:"Request Header Fields Too Large",S=500:"Internal Server Error",S=501:"Not Implemented",1:"")
-	;
-RESPX(DEV,CONF,STATUS,HEAD,BODY,REQID,CTX)
-	IF $DATA(CTX) SET CTX("status")=STATUS
-	DO RESP(DEV,.CONF,STATUS,.HEAD,BODY,REQID)
-	QUIT
-	;
-RESPJSONX(DEV,CONF,STATUS,OBJ,REQID,CTX)
-	IF $DATA(CTX) SET CTX("status")=STATUS
-	DO RESPJSON(DEV,.CONF,STATUS,.OBJ,REQID)
-	QUIT
-	;
-	;
-; -------------------------------------------------------------------------
-; Expect: 100-continue helpers (ROI)
-;
-; These helpers do NOT change PARSE() behavior.;
-; Typical server flow:
-;   ok=$$PARSEHDRS^MIOHTTP(DEV,.CONF,.REQ,.ERR)
-;   ok2=$$EXPECTDECIDE^MIOHTTP(.CONF,.REQ,.ERR)
-;   if ok2=0 -> respond and close
-;   else -> DO SEND100^MIOHTTP(DEV,.REQ,.ERR) (optional) then DO READBODY^MIOHTTP(DEV,.CONF,.REQ,.ERR)
-;
-EXPECTDECIDE(CONF,REQ,ERR)
-	NEW EXP SET EXP=$$LOW($GET(REQ("hdr","expect")))
-	IF EXP'["100-continue" QUIT 1
-	NEW MAXB SET MAXB=+$GET(CONF("server","limits","maxBodyBytes"),10485760)
-	NEW CL SET CL=+$GET(REQ("hdr","content-length"),0)
-	IF CL>0,CL>MAXB DO  QUIT 0
-	. SET ERR("routine")="MIOHTTP",ERR("error")="payload_too_large"
-	QUIT 1
-;
-SEND100(DEV,REQ,ERR)
-	NEW $ETRAP SET $ETRAP="SET $ECODE=\"\" QUIT"
-	USE DEV WRITE "HTTP/1.1 100 Continue",$$CRLF^MIOHTTP(),$$CRLF^MIOHTTP()
-	QUIT
-;
-; Parse request line + headers only (no body).;
-PARSEHDRS(DEV,CONF,REQ,ERR)
-	NEW RID SET RID=$GET(REQ("id"))
-	KILL REQ,ERR
-	IF RID'="" SET REQ("id")=RID
-	IF $GET(REQ("id"))="" SET REQ("id")=$TR($ZH,",")
-	NEW TOH SET TOH=$GET(CONF("server","timeouts","readHeaderMs"),2)
-	NEW LINE DO READLINE(.DEV,TOH,.LINE,.ERR) IF $DATA(ERR) QUIT 0
-	DO PARSEREQLINE(LINE,.REQ,.ERR) IF $DATA(ERR) QUIT 0
-	DO READHDRS(.DEV,.CONF,.REQ,.ERR) IF $DATA(ERR) QUIT 0
-	QUIT 1
-;
-; Read only the request body, assuming headers already parsed.;
-READBODY(DEV,CONF,REQ,ERR)
-	NEW TE SET TE=$$LOW($GET(REQ("hdr","transfer-encoding")))
-	IF TE["chunked" QUIT $$READCHUNKED(.DEV,.CONF,.REQ,.ERR)
-	NEW CL SET CL=+$GET(REQ("hdr","content-length"),0)
-	IF CL'>0 QUIT 1
-	; Use the same logic as PARSE() for Content-Length bodies
-	NEW TOB SET TOB=$GET(CONF("server","timeouts","readBodyMs"),10)
-	NEW MAXS SET MAXS=$GET(CONF("server","limits","maxBodyScalarBytes"),262144)
-	NEW MAXB SET MAXB=$GET(CONF("server","limits","maxBodyBytes"),10485760)
-	NEW CHSZ SET CHSZ=$GET(CONF("server","http","readBodyChunkBytes"),8192) IF CHSZ<1 SET CHSZ=8192
-	IF CHSZ>262144 SET CHSZ=262144
-	DO BODYINIT(.REQ,.CONF,CL)
-	IF $DATA(ERR) QUIT 0
-	IF $GET(REQ("body","mode"))="scalar",(CL'>MAXS) DO  QUIT 1
-	. NEW B DO READFIX(.DEV,CL,TOB,.B,.ERR) IF $DATA(ERR) QUIT
-	. SET REQ("body")=B,REQ("body","len")=CL
-	NEW REM SET REM=CL
-	FOR  QUIT:REM'>0  DO  QUIT:$DATA(ERR)
-	. NEW N SET N=$SELECT(REM>CHSZ:CHSZ,1:REM)
-	. NEW CH DO READFIX(.DEV,N,TOB,.CH,.ERR) IF $DATA(ERR) QUIT
-	. DO BODYAPPEND(.REQ,.CONF,.CH,.ERR) IF $DATA(ERR) QUIT
-	. SET REM=REM-N
-	. IF $GET(REQ("body","len"))>MAXB DO  QUIT
-	. . SET ERR("error")="payload_too_large",ERR("routine")="MIOHTTP"
-	QUIT $SELECT($DATA(ERR):0,1:1)
 	;
