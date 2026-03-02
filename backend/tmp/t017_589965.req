@@ -1,5 +1,0 @@
-POST /big HTTP/1.1
-Host: example
-Content-Length: 11
-
-hello=world

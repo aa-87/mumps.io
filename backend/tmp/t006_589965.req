@@ -1,7 +1,0 @@
-POST /c HTTP/1.1
-Host: example
-Transfer-Encoding: chunked
-
-Z
-oops
-

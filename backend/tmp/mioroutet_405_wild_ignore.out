@@ -1,8 +1,0 @@
-HTTP/1.1 405 Method Not Allowed
-Allow: POST
-Connection: keep-alive
-Content-Length: 96
-Content-Type: application/json
-X-Request-Id: rid-405-wild
-
-{"allowed":"POST","error":"method_not_allowed","request_id":"rid-405-wild","routine":"MIOROUTE"}

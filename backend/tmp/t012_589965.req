@@ -1,4 +1,0 @@
-GET /this/is/too/long HTTP/1.1
-Host: example
-
-
