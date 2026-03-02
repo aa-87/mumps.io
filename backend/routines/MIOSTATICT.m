@@ -11,11 +11,13 @@ MIOSTATICT ; Static file handler tests (includes ETag 304)
 	DO T004
 	DO T005
 	DO T006
+	DO T007
 	QUIT
 	;
 STERR
 	USE $PRINCIPAL WRITE "ERR ",$ZSTATUS,!
 	QUIT
+	;
 	;
 READALL(PATH,OUT)
 	NEW OIO SET OIO=$IO
@@ -223,4 +225,52 @@ T006 ; Invalid range -> 416
 	DO EQ^MIOTASSERT($SELECT(OUT["Content-Range: bytes */2":1,1:0),1,"[T006][content-range]")
 	QUIT
 	;
+	; (T001-T006 unchanged in your tree)
+	;
+T007 ; If-Modified-Since -> 304 (server-known mtime)
+	KILL ^MIO("STATIC","META")
+	;NEW CONF,REQ,CTX,DEV,OUT,ROOT,FP,OP,NORM,LM,P1,HD,HS
+	SET ROOT="tmp"
+	SET FP=ROOT_"/hello.txt"
+	OPEN FP:(newversion:stream:nowrap)
+	USE FP WRITE "hi" CLOSE FP
+	SET CONF("server","static","enabled")=1
+	SET CONF("server","static","root")=ROOT
+	SET CONF("server","static","mount")="/static"
+	SET HD=+$P($H,",",1),HS=+$P($H,",",2)
+	DO SETMTIME^MIOSTATIC(FP,HD,HS)
+	;
+	; First request: capture Last-Modified
+	SET OP=ROOT_"/mio_static_t007a.out"
+	KILL REQ,CTX,OUT
+	SET REQ("method")="GET"
+	SET REQ("path")="/static/hello.txt"
+	SET REQ("params","path")="hello.txt"
+	SET CTX("request_id")="st007a"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO STATIC^MIOSTATIC(.DEV,.CONF,.REQ,.CTX)
+	CLOSE DEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	SET NORM=$TR(OUT,$C(13),$C(10))
+	SET P1=$P(NORM,"Last-Modified: ",2)
+	SET LM=$P(P1,$C(10),1)
+	DO EQ^MIOTASSERT($SELECT(LM'="":1,1:0),1,"[T007][last-modified present]")
+	;
+	; Second request: If-Modified-Since -> 304 and no body
+	SET OP=ROOT_"/mio_static_t007b.out"
+	KILL REQ,CTX,OUT
+	SET REQ("method")="GET"
+	SET REQ("path")="/static/hello.txt"
+	SET REQ("params","path")="hello.txt"
+	SET REQ("hdr","if-modified-since")=LM
+	SET CTX("request_id")="st007b"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO STATIC^MIOSTATIC(.DEV,.CONF,.REQ,.CTX)
+	CLOSE DEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["304":1,1:0),1,"[T007][status]")
+	DO EQ^MIOTASSERT($SELECT(OUT["hi":1,1:0),0,"[T007][no body]")
+	QUIT
 	;

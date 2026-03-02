@@ -355,3 +355,27 @@ DOC ;;
 ;;- 206: Content-Range, Content-Length, Accept-Ranges: bytes
 ;;- 416: Content-Range: bytes */<size>
 ;;
+;;
+;;------------------------------------------------------------------------
+;;Static Last-Modified / If-Modified-Since (ROI)
+;;
+;;MIOSTATIC can emit Last-Modified when file mtime is available.
+;;It can return 304 Not Modified for If-Modified-Since.
+;;
+;;Pragmatic mtime strategy
+;;- Primary: server-known mtime stored under ^MIO("STATIC","META",path,"mhd"/"mhs").
+;;- Optional: CONF("server","static","mtimeProvider")="LABEL^ROUTINE".
+;;  The provider must return $H day and seconds in .MHD/.MHS and optionally .LM string.
+;;- If no mtime is available, Last-Modified is omitted and If-Modified-Since is ignored.
+;;
+;;Public helper
+;;- DO SETMTIME^MIOSTATIC(fullPath,horologDay,horologSeconds)
+;;  This is useful for watchers or build pipelines.
+;;
+;;Precedence
+;;- If-None-Match (ETag) is evaluated first.
+;;- If-Modified-Since is evaluated only when mtime is available.
+;;
+;;Responses
+;;- 304 includes no body.
+;;
