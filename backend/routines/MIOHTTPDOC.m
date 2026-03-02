@@ -313,3 +313,45 @@ DOC ;;
 ;;- Large files omit ETag to avoid extra I/O.
 ;;- Use sendfile streaming for large file delivery.
 ;;
+;;
+;;------------------------------------------------------------------------
+;;Static Range Requests (ROI)
+;;
+;;MIOSTATIC now supports single Range: bytes=... requests.
+;;It returns 206 Partial Content.
+;;It sets Content-Range and Content-Length.
+;;It sets Accept-Ranges: bytes.
+;;
+;;Supported forms
+;;- Range: bytes=START-END
+;;- Range: bytes=START-
+;;- Range: bytes=-SUFFIX
+;;
+;;Unsupported
+;;- Multiple ranges in one header.
+;;  The server returns 416.
+;;
+;;Invalid range response
+;;- Status: 416 Range Not Satisfiable
+;;- Header: Content-Range: bytes */<size>
+;;
+;;HEAD
+;;- Returns headers only (no body).
+;;
+;;Config
+;;- CONF("server","static","readChunkBytes") controls streaming chunk size.
+;;- File size is computed on demand and cached briefly in ^MIO("STATIC","META",path).
+;;
+
+;;
+;;Static Range Requests (ROI)
+;;Implementation note:
+;;- MIOHTTP RESP/RESPX always sets Content-Length from BODY.
+;;- For 206 responses, MIOSTATIC writes headers with RESPHEAD and streams bytes.
+;;
+;;Range support:
+;;- Single-range only.
+;;- bytes=START-END, bytes=START-, bytes=-SUFFIX
+;;- 206: Content-Range, Content-Length, Accept-Ranges: bytes
+;;- 416: Content-Range: bytes */<size>
+;;

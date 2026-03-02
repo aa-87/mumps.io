@@ -62,10 +62,19 @@ RUN(PORT)
 	. . U DEV:(detach=HANDLE)
 	. . N Q S Q=""""
 	. . N ARG S ARG=Q_"SOCKET:"_HANDLE_Q
-	. . N J S J="JOBCONN(ADDR,HANDLE)"
-	; Connection worker. Handles HTTP/1.x keep-alive lifecycle.;
-	; DEV is a MIOSOCK detached handle device (read+write).;
+	. . N J S J="JOBCONN(ADDR,HANDLE):(input="_ARG_":output="_ARG_")"
+	. . J @J
+	QUIT
 	;
+STOP ; to do -> make sure to kill the pid associated after checking
+	S ^MIO("CTL","STOP")=1
+	N DEV S DEV=$G(^MIO("CTL","DEV"))
+	H $GET(^MIO("CONF","server","process","gracefulShutdownSeconds"),3)
+	I DEV]"" I 1 D CLOSE^MIOSOCK(DEV) D:$T INFO^MIOLOG("listen_device_closed","")
+	D INFO^MIOLOG("mio_server_stopped","")
+	QUIT
+	;
+JOBCONN(ADDR,HANDLE)
 	NEW CONF MERGE CONF=^MIO("CONF")
 	SET $ET="G STERR^MIOD"
 	NEW DEV SET DEV=$PRINCIPAL
@@ -158,7 +167,6 @@ RUN(PORT)
 	SET CONF("server","timeouts","readBodyMs")=ORIGTOB
 	DO CLOSE^MIOSOCK(DEV)
 	QUIT
-	;
 ; Keep-alive decision: returns 1 to keep, 0 to close after this request.;
 KASHOULD(CONF,REQ,NREQ,KAEN,KAMAX)
 	IF 'KAEN QUIT 0
