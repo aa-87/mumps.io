@@ -174,7 +174,7 @@ T009 ; 405 Method Not Allowed for non-wildcard matches
 	DO ADD^MIOROUTE("POST","/m","H2^MIOROUTET")
 	DO COMPILE
 	NEW DEV,CONF,REQ,CTX,OUTP
-	SET OUTP="/tmp/mioroutet_405.out"
+	SET OUTP="tmp/mioroutet_405.out"
 	OPEN OUTP:(NEWVERSION):1 ELSE  DO  QUIT
 	. DO OK^MIOTASSERT(0,"[T009][open]")
 	SET DEV=OUTP
@@ -194,7 +194,7 @@ T010 ; Not found must be 404 (even if other methods have ONLY wildcard matches)
 	DO ADD^MIOROUTE("GET","/*path","H1^MIOROUTET")
 	DO COMPILE
 	NEW DEV,CONF,REQ,CTX,OUTP
-	SET OUTP="/tmp/mioroutet_404.out"
+	SET OUTP="tmp/mioroutet_404.out"
 	OPEN OUTP:(NEWVERSION):1 ELSE  DO  QUIT
 	. DO OK^MIOTASSERT(0,"[T010][open]")
 	SET DEV=OUTP
@@ -376,7 +376,7 @@ T027 ; 405 should ignore WS routes when computing Allow
 	DO ADD^MIOROUTE("GET","/sock","H2^MIOROUTET")
 	DO COMPILE
 	NEW DEV,CONF,REQ,CTX,OUTP
-	SET OUTP="/tmp/mioroutet_405_ws.out"
+	SET OUTP="tmp/mioroutet_405_ws.out"
 	OPEN OUTP:(NEWVERSION):1 ELSE  DO  QUIT
 	. DO OK^MIOTASSERT(0,"[T027][open]")
 	SET DEV=OUTP
@@ -396,7 +396,7 @@ T028 ; 405 should NOT include wildcard-only matches in Allow
 	DO ADD^MIOROUTE("POST","/m","H2^MIOROUTET")
 	DO COMPILE
 	NEW DEV,CONF,REQ,CTX,OUTP
-	SET OUTP="/tmp/mioroutet_405_wild_ignore.out"
+	SET OUTP="tmp/mioroutet_405_wild_ignore.out"
 	OPEN OUTP:(NEWVERSION):1 ELSE  DO  QUIT
 	. DO OK^MIOTASSERT(0,"[T028][open]")
 	SET DEV=OUTP

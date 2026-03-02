@@ -25,7 +25,7 @@ MIOHTTPT ; MIOHTTP test suite (request parsing + streaming bodies)
 ; ---------------- helpers ----------------
 	;
 TMPPATH(NAME)
-	QUIT "/tmp/"_NAME_"_"_$J_".req"
+	QUIT "tmp/"_NAME_"_"_$J_".req"
 	;
 WRFILE(PATH,TXT)
 	NEW DEV SET DEV=PATH

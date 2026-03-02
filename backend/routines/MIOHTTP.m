@@ -97,7 +97,7 @@ READLINE(DEV,TO,OUT,ERR)
 	; IMPORTANT: file fixtures use DELIM=$C(13,10) and may need true M READ behavior
 	; to correctly return empty lines (e.g. chunk terminators/trailers).;
 	NEW X
-	; File fixture path? (tests pass DEV as a filename like /tmp/t004_*.req)
+	; File fixture path? (tests pass DEV as a filename like tmp/t004_*.req)
 	IF $GET(DEV)["/" DO  QUIT
 	. NEW $ETRAP SET $ETRAP="SET $ECODE="""" SET OUT="""" SET ERR(""routine"")=""MIOHTTP"",ERR(""error"")=""short_read"" QUIT"
 	. USE DEV
@@ -622,4 +622,5 @@ BODYFREE(REQ)
 	KILL REQ("body")
 	KILL REQ("body","mode"),REQ("body","ref"),REQ("body","n"),REQ("body","len")
 	QUIT
+	;
 	;

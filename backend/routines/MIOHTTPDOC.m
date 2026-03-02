@@ -292,3 +292,24 @@ DOC ;;
 
 ;;End.
 ;;
+;;
+;;Static file caching (ROI)
+;;
+;;ETag and If-None-Match
+;;- MIOSTATIC can emit an ETag for small files.
+;;- If the request includes If-None-Match and it matches the ETag, the server returns 304.
+;;- 304 responses have no body.
+;;
+;;Config
+;;- CONF("server","static","maxEtagBytes") default 2097152 (2 MB)
+;;- CONF("server","static","etagCacheSeconds") default 30
+;;- CONF("server","static","etagChunkBytes") default 65536
+;;
+;;Cache
+;;- Stored under ^MIO("STATIC","META",fullPath)
+;;- Contains META("etag") and META("ts")
+;;
+;;Notes
+;;- Large files omit ETag to avoid extra I/O.
+;;- Use sendfile streaming for large file delivery.
+;;

@@ -1,0 +1,7 @@
+HTTP/1.1 404 Not Found
+Connection: keep-alive
+Content-Length: 42
+Content-Type: application/json
+X-Request-Id: 676307708210752618000
+
+{"error":"not_found","request_id":"st002"}

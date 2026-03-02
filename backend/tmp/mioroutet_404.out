@@ -1,0 +1,7 @@
+HTTP/1.1 404 Not Found
+Connection: keep-alive
+Content-Length: 65
+Content-Type: application/json
+X-Request-Id: 676307706698211518000
+
+{"error":"not_found","request_id":"rid-404","routine":"MIOROUTE"}
