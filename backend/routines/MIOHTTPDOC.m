@@ -386,6 +386,10 @@ DOC ;;
 ;;  CONF("server","log","access","buffer")=1
 ;;  CONF("server","log","access","flushEvery")=50
 ;;  CONF("server","log","access","flushBytes")=65536
+;;- Optional file-handle caching (micro-optimization):
+;;  CONF("server","log","access","fhCache")=1
+;;  CONF("server","log","access","fhIdleSeconds")=5
+;;  (keeps file open between flushes per job; closes on idle best-effort)
 ;;- Formats:
 ;;  common | combined | json
 ;;- Metrics included per request:

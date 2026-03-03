@@ -14,6 +14,7 @@ MIOLOGT ; MIOLOG access log test suite (ROI #1)
 	DO T003
 	DO T004
 	DO T005
+	DO T006
 	QUIT
 	;
 ; ---------------- helpers ----------------
@@ -57,6 +58,7 @@ T001 ; common format
 	NEW CONF,REQ,CTX,ERR,BASE,PATH,OUT,OK
 	SET BASE=$$TMPBASE("common")
 	SET CONF("server","log","access","enabled")=1
+	SET CONF("server","log","access","fhCache")=0
 	SET CONF("server","log","access","path")=BASE
 	SET CONF("server","log","access","daily")=0
 	SET CONF("server","log","access","format")="common"
@@ -77,12 +79,12 @@ T001 ; common format
 	DO OK^MIOTASSERT($$HAS(OUT," rid=rid123")=1,"[T001] request id missing")
 	QUIT
 	;
-	;
 T002 ; combined format
 	KILL ^TMP($J,"MIOLOG","A")
 	NEW CONF,REQ,CTX,ERR,BASE,PATH,OUT,OK
 	SET BASE=$$TMPBASE("combined")
 	SET CONF("server","log","access","enabled")=1
+	SET CONF("server","log","access","fhCache")=0
 	SET CONF("server","log","access","path")=BASE
 	SET CONF("server","log","access","daily")=0
 	SET CONF("server","log","access","format")="combined"
@@ -99,12 +101,12 @@ T002 ; combined format
 	DO OK^MIOTASSERT($$HAS(OUT,"""http://ref/"" ""UA""")=1,"[T002] combined fields missing")
 	QUIT
 	;
-	;
 T003 ; json format
 	KILL ^TMP($J,"MIOLOG","A")
-	NEW CONF,REQ,CTX,ERR,BASE,PATH,OUT,OK
+	;NEW CONF,REQ,CTX,ERR,BASE,PATH,OUT,OK
 	SET BASE=$$TMPBASE("json")
 	SET CONF("server","log","access","enabled")=1
+	SET CONF("server","log","access","fhCache")=0
 	SET CONF("server","log","access","path")=BASE
 	SET CONF("server","log","access","daily")=0
 	SET CONF("server","log","access","format")="json"
@@ -121,12 +123,12 @@ T003 ; json format
 	DO OK^MIOTASSERT($$HAS(OUT,"""method"":""POST""")=1,"[T003] method missing")
 	QUIT
 	;
-	;
 T004 ; rotation trigger (maxBytes)
 	KILL ^TMP($J,"MIOLOG","A")
-	NEW CONF,REQ,CTX,ERR,BASE,P0,P1,O0,O1,OK
+	;NEW CONF,REQ,CTX,ERR,BASE,P0,P1,O0,O1,OK
 	SET BASE=$$TMPBASE("rot")
 	SET CONF("server","log","access","enabled")=1
+	SET CONF("server","log","access","fhCache")=0
 	SET CONF("server","log","access","path")=BASE
 	SET CONF("server","log","access","daily")=0
 	SET CONF("server","log","access","format")="common"
@@ -155,11 +157,11 @@ T004 ; rotation trigger (maxBytes)
 	DO OK^MIOTASSERT($$HAS(O1," rid=r2")=1,"[T004] r2 missing in rotated")
 	QUIT
 	;
-	;
 T005 ; open failure -> ERR includes routine + error
 	KILL ^TMP($J,"MIOLOG","A")
 	NEW CONF,REQ,CTX,ERR,OK
 	SET CONF("server","log","access","enabled")=1
+	SET CONF("server","log","access","fhCache")=0
 	SET CONF("server","log","access","daily")=0
 	SET CONF("server","log","access","buffer")=0
 	SET CONF("server","log","access","path")="/tmp/__no_such_dir_"_$J_"/mio"
@@ -169,6 +171,37 @@ T005 ; open failure -> ERR includes routine + error
 	DO OK^MIOTASSERT(OK=0,"[T005] expected open failure")
 	DO EQ^MIOTASSERT($GET(ERR("routine")),"MIOLOG","[T005] ERR routine missing")
 	DO EQ^MIOTASSERT($GET(ERR("error")),"open_failed","[T005] ERR code mismatch")
+	QUIT
+	;
+T006 ; file-handle cache: keep open between flushes, close explicitly
+	KILL ^TMP($J,"MIOLOG","A"),^TMP($J,"MIOLOG","FH")
+	NEW CONF,REQ,CTX,ERR,BASE,PATH,OUT,OK
+	SET BASE=$$TMPBASE("fh")
+	SET CONF("server","log","access","enabled")=1
+	SET CONF("server","log","access","fhCache")=1
+	SET CONF("server","log","access","fhIdleSeconds")=999
+	SET CONF("server","log","access","path")=BASE
+	SET CONF("server","log","access","daily")=0
+	SET CONF("server","log","access","format")="common"
+	SET CONF("server","log","access","buffer")=0
+	SET REQ("method")="GET",REQ("target")="/x",REQ("httpver")="HTTP/1.1"
+	SET REQ("body","len")=0
+	SET CTX("remote_addr")="127.0.0.1"
+	SET CTX("status")=200
+	SET CTX("request_id")="ridA"
+	SET OK=$$ACCESS^MIOLOG(.CONF,.REQ,.CTX,.ERR)
+	DO OK^MIOTASSERT(OK=1,"[T006] first access failed err="_$GET(ERR("error")))
+	SET PATH=BASE_".log"
+	DO OK^MIOTASSERT($GET(^TMP($J,"MIOLOG","FH","access","fp"))=PATH,"[T006] cache fp missing/mismatch")
+	SET CTX("request_id")="ridB"
+	KILL ERR SET OK=$$ACCESS^MIOLOG(.CONF,.REQ,.CTX,.ERR)
+	DO OK^MIOTASSERT(OK=1,"[T006] second access failed err="_$GET(ERR("error")))
+	DO OK^MIOTASSERT($DATA(^TMP($J,"MIOLOG","FH","access","fp"))=1,"[T006] cache not present after second flush")
+	DO CLOSEALL^MIOLOG(.CONF)
+	DO OK^MIOTASSERT($DATA(^TMP($J,"MIOLOG","FH","access"))=0,"[T006] cache not cleared by CLOSEALL")
+	DO OK^MIOTASSERT($$RDTXT(PATH,.OUT)=1,"[T006] log file missing")
+	DO OK^MIOTASSERT($$HAS(OUT,"ridA"),"[T006] ridA missing")
+	DO OK^MIOTASSERT($$HAS(OUT,"ridB"),"[T006] ridB missing")
 	QUIT
 	;
 	;

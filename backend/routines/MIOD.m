@@ -199,6 +199,7 @@ JOBCONN(ADDR,HANDLE)
 	SET CONF("server","timeouts","readBodyMs")=ORIGTOB
 	; Flush any buffered access logs for this job
 	IF LOGEN NEW LERR2,OKF SET OKF=$$FLUSH^MIOLOG(.CONF,.LERR2)
+	IF LOGEN DO CLOSEALL^MIOLOG(.CONF)
 	DO CLOSE^MIOSOCK(DEV)
 	QUIT
 ; Keep-alive decision: returns 1 to keep, 0 to close after this request.;
