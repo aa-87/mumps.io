@@ -44,10 +44,15 @@ STATIC(DEV,CONF,REQ,CTX)
 	. DO RESPJSONX^MIOHTTP(.DEV,.CONF,404,.OBJ,$GET(CTX("request_id")),.CTX)
 	. SET CTX("status")=404
 	;
+	NEW ORFS SET ORFS=FS
+	NEW ENC,VARY SET ENC="",VARY=0
+	DO SELENC(.CONF,.REQ,METHOD,.ORFS,.FS,.ENC,.VARY)
 	NEW HEAD
-	SET HEAD("Content-Type")=$$MIME(.CONF,FS)
+	SET HEAD("Content-Type")=$$MIME(.CONF,ORFS)
 	SET HEAD("X-Content-Type-Options")="nosniff"
 	SET HEAD("Accept-Ranges")="bytes"
+	IF ENC'="" SET HEAD("Content-Encoding")=ENC
+	IF VARY DO ADDVARY(.HEAD,"Accept-Encoding")
 	;
 	; --- ETag / If-None-Match (first) -------------------------------------
 	NEW META,ETAG
@@ -209,6 +214,69 @@ MIME(CONF,PATH)
 	QUIT $SELECT(EXT="html":"text/html; charset=utf-8",EXT="css":"text/css; charset=utf-8",EXT="js":"application/javascript; charset=utf-8",EXT="json":"application/json; charset=utf-8",EXT="png":"image/png",EXT="jpg":"image/jpeg",EXT="jpeg":"image/jpeg",EXT="gif":"image/gif",EXT="svg":"image/svg+xml",EXT="txt":"text/plain; charset=utf-8",EXT="ico":"image/x-icon",EXT="woff":"font/woff",EXT="woff2":"font/woff2",1:"application/octet-stream")
 	;
 ; -------------------------------------------------------------------------
+; Precompressed static assets (br/gz) + content negotiation
+; - If enabled, and Accept-Encoding prefers br or gzip, serve file.ext.br / file.ext.gz when present.
+; - Always set: Vary: Accept-Encoding when enabled (safe for caches).
+; - Default: do NOT serve encoded variant for Range requests (unless allowRangeEncoded=1).
+
+SELENC(CONF,REQ,METHOD,ORFS,FS,ENC,VARY)
+	SET ENC="",VARY=0
+	NEW PRE SET PRE=+$GET(CONF("server","static","precompressed","enabled"),0)
+	IF 'PRE QUIT
+	SET VARY=1
+	NEW M SET M=$GET(METHOD) IF M="" SET M="get"
+	IF M'="get",M'="head" QUIT
+	NEW RNG SET RNG=$GET(REQ("hdr","range"))
+	IF RNG'="",'$GET(CONF("server","static","precompressed","allowRangeEncoded")) QUIT
+	NEW AE SET AE=$$LOW^MIOHTTP($GET(REQ("hdr","accept-encoding")))
+	IF AE="" QUIT
+	NEW Q DO PARSEAE(AE,.Q)
+	NEW STQ SET STQ=$$QVAL(.Q,"*")
+	NEW BRQ SET BRQ=$$QVAL(.Q,"br") IF BRQ<0 SET BRQ=STQ
+	NEW GQ1 SET GQ1=$$QVAL(.Q,"gzip") IF GQ1<0 SET GQ1=STQ
+	NEW GQ2 SET GQ2=$$QVAL(.Q,"x-gzip") IF GQ2<0 SET GQ2=STQ
+	NEW GZQ SET GZQ=$SELECT(GQ1>GQ2:GQ1,1:GQ2)
+	; Prefer br, then gzip
+	IF BRQ>0,$$EXISTS(ORFS_".br") SET FS=ORFS_".br",ENC="br" QUIT
+	IF GZQ>0,$$EXISTS(ORFS_".gz") SET FS=ORFS_".gz",ENC="gzip" QUIT
+	QUIT
+
+PARSEAE(AE,Q)
+	KILL Q
+	NEW I,T,NM,QV,J,P,K,V
+	FOR I=1:1:$L($GET(AE),",") DO
+	. SET T=$$TRIM^MIOHTTP($P(AE,",",I))
+	. IF T="" QUIT
+	. SET NM=$$LOW^MIOHTTP($$TRIM^MIOHTTP($P(T,";",1)))
+	. IF NM="" QUIT
+	. SET QV=1
+	. IF T[";" FOR J=2:1:$L(T,";") DO
+	. . SET P=$$TRIM^MIOHTTP($P(T,";",J))
+	. . SET K=$$LOW^MIOHTTP($$TRIM^MIOHTTP($P(P,"=",1)))
+	. . IF K="q" SET V=$$TRIM^MIOHTTP($P(P,"=",2)),QV=+V
+	. SET Q(NM)=QV
+	QUIT
+
+QVAL(Q,NM)
+	QUIT $SELECT($DATA(Q($GET(NM))):Q(NM),1:-1)
+
+ADDVARY(HEAD,VAL)
+	NEW V SET V=$GET(HEAD("Vary"))
+	IF V="" SET HEAD("Vary")=$GET(VAL) QUIT
+	NEW L1 SET L1=","_$$LOW^MIOHTTP(V)_","
+	NEW L2 SET L2=","_$$LOW^MIOHTTP($GET(VAL))_","
+	IF L1[L2 QUIT
+	SET HEAD("Vary")=V_", "_$GET(VAL)
+	QUIT
+
+EXISTS(PATH)
+	NEW OK SET OK=1
+	NEW $ETRAP SET $ETRAP="SET $ECODE="""" SET OK=0"
+	OPEN PATH:(readonly)
+	CLOSE PATH
+	QUIT OK
+
+; -------------------------------------------------------------------------
 ; ETag helpers (do NOT clobber mtime keys)
 GETMETA(CONF,FS,META)
 	KILL META
@@ -218,90 +286,83 @@ GETMETA(CONF,FS,META)
 	NEW NOWD SET NOWD=+$P($H,",",1)
 	NEW NOWS SET NOWS=+$P($H,",",2)
 	NEW CREF SET CREF=$NA(^MIO("STATIC","META",FS))
+	;
+	; Identity tuple for invalidation (prefer server-known mtime + len)
+	NEW FSZ SET FSZ=$$FILESIZE(.CONF,FS)
+	NEW MHD SET MHD=+$GET(^MIO("STATIC","META",FS,"mhd"))
+	NEW MHS SET MHS=+$GET(^MIO("STATIC","META",FS,"mhs"))
+	NEW VER SET VER=$GET(^MIO("STATIC","META",FS,"ver"))
+	NEW ID
+	IF MHD>0 SET ID="l="_FSZ_"|m="_MHD_"."_MHS
+	ELSE  SET ID="l="_FSZ_"|v="_$SELECT(VER'="":VER,1:0)
+	SET META("etagid")=ID
+	;
+	; 1) Fast TTL cache, but only if identity matches
+	IF TTL>0,$DATA(@CREF@("etag")),$DATA(@CREF@("tsd")),$DATA(@CREF@("tss")),$GET(@CREF@("etagid"))=ID DO
+	. IF $$HDELTA(@CREF@("tsd"),@CREF@("tss"),NOWD,NOWS)'>TTL DO
+	. . MERGE META=@CREF
+	IF $DATA(META("etag")) DO  QUIT
+	. IF '$DATA(META("len")) SET META("len")=FSZ
+	;
+	; 2) Persistent ETag store (restart-stable), keyed by served file path
 	NEW EREF SET EREF=$NA(^MIO("STATIC","ETAG",FS))
-	;
-	; Ensure stable mtime identity (seed once if unknown).
-	NEW MHD,MHS,LM
-	SET MHD=+$GET(@CREF@("mhd"))
-	SET MHS=+$GET(@CREF@("mhs"))
-	SET LM=$GET(@CREF@("lm"))
-	IF 'MHD DO
-	. SET MHD=NOWD,MHS=NOWS
-	. DO SETMTIME(FS,MHD,MHS)
-	. SET LM=$$HTTPDATE(MHD,MHS)
-	;
-	; Identity tuple (len+mtime) when known. Avoid extra I/O on hot paths.
-	NEW LENH SET LENH=$GET(@CREF@("len"))
-	IF LENH="" SET LENH=$GET(@EREF@("len"))
-	NEW PID SET PID="mhd="_MHD_"|mhs="_MHS_"|len="_LENH
-	;
-	; Hot path: short TTL cache is valid ONLY when identity matches.
-	IF TTL>0,$DATA(@CREF@("etag")),$DATA(@CREF@("etagid")),$DATA(@CREF@("tsd")),$DATA(@CREF@("tss")) DO
-	. IF @CREF@("etagid")=PID,$$HDELTA(@CREF@("tsd"),@CREF@("tss"),NOWD,NOWS)'>TTL DO
-	. . SET META("etag")=$GET(@CREF@("etag"))
-	. . SET META("len")=$GET(@CREF@("len"))
-	IF $DATA(META("etag")) QUIT
-	;
-	; Persistent cache: stable across restarts; invalidates when identity changes.
-	IF $DATA(@EREF),$GET(@EREF@("id"))=PID DO
-	. SET META("etag")=$GET(@EREF)
-	. SET META("len")=$GET(@EREF@("len"))
-	. ; Refresh TTL cache timestamps (do not clobber mtime keys)
+	IF $DATA(@EREF),$GET(@EREF@("id"))=ID DO  QUIT
+	. SET META("etag")=@EREF
+	. SET META("len")=+$GET(@EREF@("len"),FSZ)
+	. SET META("tsd")=NOWD,META("tss")=NOWS
+	. ; refresh TTL cache fields (preserve mhd/mhs/lm)
 	. SET @CREF@("etag")=META("etag")
-	. SET @CREF@("etagid")=PID
+	. SET @CREF@("etagid")=ID
 	. SET @CREF@("tsd")=NOWD
 	. SET @CREF@("tss")=NOWS
-	. IF $GET(META("len"))'="" SET @CREF@("len")=META("len")
-	. QUIT
-	IF $DATA(META("etag")) QUIT
+	. SET @CREF@("len")=META("len")
 	;
-	; Recompute ETag (streaming; bounded by maxEtagBytes).
+	; 3) Compute weak ETag (Adler32 over up to MAXB bytes)
 	NEW CHSZ SET CHSZ=+$GET(CONF("server","static","etagChunkBytes"),65536)
 	IF CHSZ<1024 SET CHSZ=1024
 	IF CHSZ>262144 SET CHSZ=262144
-	NEW LEN SET LEN=0
+	NEW LENAD SET LENAD=0
 	NEW S1,S2 SET S1=1,S2=0
-	NEW X,EOF,TOOBIG
-	SET EOF=0,TOOBIG=0
-	NEW $ETRAP SET $ETRAP="SET $ECODE="""" QUIT"
+	NEW X
+	NEW OKREAD SET OKREAD=1
+	NEW $ETRAP SET $ETRAP="SET $ECODE="""" SET OKREAD=0"
 	OPEN FS:(readonly:stream:nowrap)
 	USE FS
-	FOR  DO  QUIT:EOF  QUIT:TOOBIG
+	FOR  DO  QUIT:$ZEOF  QUIT:LENAD>MAXB
 	. READ X#CHSZ
-	. IF $ZEOF SET EOF=1
 	. IF X="" QUIT
-	. DO ADLERUP(.S1,.S2,X,.LEN,MAXB)
-	. IF LEN>MAXB SET TOOBIG=1
+	. DO ADLERUP(.S1,.S2,X,.LENAD,MAXB)
 	CLOSE FS
-	NEW ETAG SET ETAG=""
-	IF 'TOOBIG DO
+	IF 'OKREAD DO  QUIT
+	. SET META("etag")=""
+	. SET META("len")=FSZ
+	;
+	IF LENAD>MAXB DO
+	. SET META("etag")=""
+	ELSE  DO
 	. NEW MOD SET MOD=65521
 	. NEW A SET A=S1#MOD
 	. NEW B SET B=S2#MOD
 	. NEW SUM SET SUM=B*65536+A
-	. SET ETAG="W/"""_LEN_"-"_SUM_""""
+	. SET META("etag")="W/"""_LENAD_"-"_SUM_""""
 	;
-	; Full length: avoid extra pass when file <= maxEtagBytes.
-	NEW FULLLEN SET FULLLEN=""
-	IF 'TOOBIG,EOF SET FULLLEN=LEN
-	IF FULLLEN="" SET FULLLEN=$$FILESIZE(.CONF,FS)
-	;
-	; Store (persist + short TTL cache), keyed by identity.
-	SET PID="mhd="_MHD_"|mhs="_MHS_"|len="_FULLLEN
-	SET META("etag")=ETAG
-	SET META("len")=FULLLEN
-	SET META("tsd")=NOWD
-	SET META("tss")=NOWS
-	SET @CREF@("etag")=ETAG
-	SET @CREF@("etagid")=PID
-	SET @CREF@("tsd")=NOWD
-	SET @CREF@("tss")=NOWS
-	SET @CREF@("len")=FULLLEN
-	SET @EREF=ETAG
-	SET @EREF@("id")=PID
-	SET @EREF@("len")=FULLLEN
+	SET META("tsd")=NOWD,META("tss")=NOWS
+	SET META("len")=FSZ
+	; Store only ETag fields (preserve mhd/mhs/lm)
+	SET @CREF@("etag")=META("etag")
+	SET @CREF@("etagid")=ID
+	SET @CREF@("tsd")=META("tsd")
+	SET @CREF@("tss")=META("tss")
+	SET @CREF@("len")=META("len")
+	; Persist when we have a computed ETag
+	IF META("etag")'="" DO
+	. SET ^MIO("STATIC","ETAG",FS)=META("etag")
+	. SET ^MIO("STATIC","ETAG",FS,"id")=ID
+	. SET ^MIO("STATIC","ETAG",FS,"len")=META("len")
+	ELSE  DO
+	. KILL ^MIO("STATIC","ETAG",FS)
 	QUIT
-	;
+
 HDELTA(D0,S0,D1,S1)
 	QUIT (D1-D0)*86400+(S1-S0)
 	;

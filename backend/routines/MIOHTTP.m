@@ -66,11 +66,18 @@ PARSE(DEV,CONF,REQ,ERR)
 	; Decide body framing
 	NEW CL SET CL=$GET(REQ("hdr","content-length"))
 	NEW TE SET TE=$GET(REQ("hdr","transfer-encoding"))
+	NEW ALLOWTECL SET ALLOWTECL=+$GET(CONF("server","http","allowTECL"),0)
+	NEW STRICTTE SET STRICTTE=+$GET(CONF("server","http","strictTE"),1)
+	;
+	; Smuggling defense: reject TE:chunked + Content-Length unless explicitly allowed
+	IF TE'="",CL'="",$$TEHAS(TE,"chunked"),'ALLOWTECL SET ERR("routine")="MIOHTTP",ERR("error")="te_cl_conflict" QUIT 0
 	;
 	; Transfer-Encoding beats Content-Length
 	IF TE'="" DO  QUIT:$DATA(ERR) 0  QUIT 1
 	. IF '$$TEOK(TE) DO  QUIT
 	. . SET ERR("routine")="MIOHTTP",ERR("error")="unsupported_transfer_encoding"
+	. IF STRICTTE,$$TEHAS(TE,"chunked"),'$$TECHUNKLAST(TE) DO  QUIT
+	. . SET ERR("routine")="MIOHTTP",ERR("error")="bad_transfer_encoding_order"
 	. IF $$TEHAS(TE,"chunked") DO  QUIT
 	. . IF '$GET(CONF("server","http","supportChunkedRequest"),1) DO  QUIT
 	. . . SET ERR("routine")="MIOHTTP",ERR("error")="chunked_not_supported"
@@ -82,7 +89,7 @@ PARSE(DEV,CONF,REQ,ERR)
 	. ELSE  DO
 	. . SET REQ("body","mode")="none",REQ("body","len")=0
 	;
-	; No TE
+; No TE
 	IF CL'="" DO  QUIT:$DATA(ERR) 0  QUIT 1
 	. DO READCL(.DEV,.CONF,.REQ,CL,.ERR)
 	;
@@ -218,26 +225,49 @@ HEXVAL(C)
 	;
 READHDRS(DEV,CONF,REQ,ERR)
 	KILL REQ("hdr")
-	NEW MAXC,MAXB,COUNT,BYTES,LINE,TOH
+	NEW MAXC,MAXB,MAXL,COUNT,BYTES,LINE,TOH
 	SET MAXC=$GET(CONF("server","limits","maxHeaderCount"),80)
 	SET MAXB=$GET(CONF("server","limits","maxHeaderBytes"),65536)
+	SET MAXL=$GET(CONF("server","limits","maxHeaderLineBytes"),8192)
 	SET COUNT=0,BYTES=0
 	SET TOH=$GET(CONF("server","timeouts","readHeaderMs"),2)
 	FOR  DO  QUIT:LINE=""
 	. DO READLINE(.DEV,TOH,.LINE,.ERR) IF $DATA(ERR) QUIT
 	. ; blank line ends headers
 	. IF LINE="" QUIT
+	. ; per-line limit (prevents pathological single-line headers)
+	. IF $LENGTH(LINE)>MAXL DO  QUIT
+	. . SET ERR("error")="header_line_too_large",ERR("routine")="MIOHTTP"
 	. SET BYTES=BYTES+$LENGTH(LINE)+2
 	. IF BYTES>MAXB DO  QUIT
 	. . SET ERR("error")="headers_too_large",ERR("routine")="MIOHTTP"
 	. SET COUNT=COUNT+1
 	. IF COUNT>MAXC DO  QUIT
 	. . SET ERR("error")="too_many_headers",ERR("routine")="MIOHTTP"
-	. ; Reject obs-fold (line starts with SP/TAB) as a safety hardening
+	. ; Reject obs-fold (line starts with SP/TAB)
 	. IF $EXTRACT(LINE,1)=" "!($EXTRACT(LINE,1)=$CHAR(9)) DO  QUIT
 	. . SET ERR("error")="header_folding_rejected",ERR("routine")="MIOHTTP"
-	. NEW N,V SET N=$$LOW($PIECE(LINE,":",1)),V=$$TRIM($PIECE(LINE,":",2,999))
-	. IF N'="" SET REQ("hdr",N)=V
+	. ; Must contain ':'
+	. IF LINE'[":" DO  QUIT
+	. . SET ERR("error")="bad_header_line",ERR("routine")="MIOHTTP"
+	. NEW RAWN,N,V
+	. SET RAWN=$$TRIM($PIECE(LINE,":",1))
+	. IF RAWN="" DO  QUIT
+	. . SET ERR("error")="invalid_header_name",ERR("routine")="MIOHTTP"
+	. SET N=$$LOW(RAWN)
+	. IF '$$HTOK(N) DO  QUIT
+	. . SET ERR("error")="invalid_header_name",ERR("routine")="MIOHTTP"
+	. SET V=$$TRIM($PIECE(LINE,":",2,999))
+	. IF '$$HVALOK(V) DO  QUIT
+	. . SET ERR("error")="invalid_header_value",ERR("routine")="MIOHTTP"
+	. ; Strict duplicate rejection for smuggling-sensitive headers
+	. IF N="content-length",$DATA(REQ("hdr",N)) DO  QUIT
+	. . SET ERR("error")="duplicate_content_length",ERR("routine")="MIOHTTP"
+	. IF N="transfer-encoding",$DATA(REQ("hdr",N)) DO  QUIT
+	. . SET ERR("error")="duplicate_transfer_encoding",ERR("routine")="MIOHTTP"
+	. IF N="host",$DATA(REQ("hdr",N)) DO  QUIT
+	. . SET ERR("error")="duplicate_host",ERR("routine")="MIOHTTP"
+	. SET REQ("hdr",N)=V
 	QUIT
 	;
 ; -------------------------------------------------------------------------
@@ -245,7 +275,7 @@ READHDRS(DEV,CONF,REQ,ERR)
 	;
 STATUS4ERR(ERR)
 	NEW E SET E=$GET(ERR("error"))
-	QUIT $SELECT(E="client_closed":0,E="read_timeout":408,E="request_line_too_large":414,E="headers_too_large":431,E="too_many_headers":431,E="payload_too_large":413,E="chunked_not_supported":400,E="unsupported_transfer_encoding":501,E="invalid_content_length":400,E="bad_request_line":400,E="short_read":400,E="bad_chunk_size":400,E="bad_chunk_ending":400,E="header_folding_rejected":400,1:400)
+	QUIT $SELECT(E="client_closed":0,E="read_timeout":408,E="request_line_too_large":414,E="header_line_too_large":431,E="headers_too_large":431,E="too_many_headers":431,E="payload_too_large":413,E="te_cl_conflict":400,E="duplicate_content_length":400,E="duplicate_transfer_encoding":400,E="duplicate_host":400,E="bad_header_line":400,E="invalid_header_name":400,E="invalid_header_value":400,E="bad_transfer_encoding_order":400,E="chunked_not_supported":400,E="unsupported_transfer_encoding":501,E="invalid_content_length":400,E="bad_request_line":400,E="short_read":400,E="bad_chunk_size":400,E="bad_chunk_ending":400,E="header_folding_rejected":400,1:400)
 	;
 ; -------------------------------------------------------------------------
 ; Response helpers.;
@@ -449,6 +479,45 @@ TRAPIO ; internal: restore IO on error
 	SET $ECODE=""
 	IF $DATA(OIO) USE OIO
 	QUIT
+	;
+;
+; ---------------- Header validation (hardening) ----------------
+;
+HTOK(N)
+	; Return 1 if N is a valid RFC7230 token (lowercase recommended).;
+	NEW I,C,OK,AL
+	SET N=$GET(N)
+	IF N="" QUIT 0
+	SET AL="abcdefghijklmnopqrstuvwxyz0123456789!#$%&'*+-.^_`|~"
+	SET OK=1
+	FOR I=1:1:$LENGTH(N) DO  QUIT:'OK
+	. SET C=$EXTRACT(N,I)
+	. IF $FIND(AL,C)=0 SET OK=0
+	QUIT OK
+	;
+HVALOK(V)
+	; Reject CTL chars (except HTAB).;
+	NEW I,A,OK
+	SET V=$GET(V)
+	SET OK=1
+	FOR I=1:1:$LENGTH(V) DO  QUIT:'OK
+	. SET A=$ASCII($EXTRACT(V,I))
+	. IF A=9 QUIT
+	. IF A<32!(A=127) SET OK=0
+	QUIT OK
+	;
+TECHUNKLAST(TE)
+	; Return 1 if 'chunked' is absent OR is the last non-empty token.;
+	NEW I,T,POS,LAST
+	SET TE=$GET(TE)
+	SET POS=0,LAST=0
+	FOR I=1:1:$LENGTH(TE,",") DO
+	. SET T=$$LOW($$TRIM($PIECE(TE,",",I)))
+	. IF T="" QUIT
+	. SET LAST=I
+	. IF T="chunked" SET POS=I
+	IF POS=0 QUIT 1
+	QUIT $SELECT(POS=LAST:1,1:0)
 	;
 ; ---------------- Transfer-Encoding parsing ----------------
 	;
