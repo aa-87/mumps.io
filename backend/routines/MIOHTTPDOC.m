@@ -404,3 +404,24 @@ DOC ;;
 ;;- template_dir: optional; enabled when CONF("server","health","readyCheckTemplates")=1
 ;;  Verifies CONF("server","templateDir") exists.
 ;;
+;;------------------------------------------------------------------------
+;;Rate Limiting / Basic DoS Controls (ROI #6)
+;;
+;;Per-IP token bucket
+;;- Enabled when CONF("server","rate","enabled")=1
+;;- Implemented by $$ALLOW^MIORATE(.CONF,.CTX,.REQ,.ERR)
+;;
+;;Config
+;;- CONF("server","rate","perIp","rps")        Tokens per second (default 10)
+;;- CONF("server","rate","perIp","burst")      Max burst tokens (default 20)
+;;- CONF("server","rate","perIp","ttlSeconds") Idle reset threshold (default 3600)
+;;
+;;Behavior
+;;- When rejected, server responds 429 Too Many Requests and closes the connection.
+;;- Response includes Retry-After header (seconds).
+;;- Errors include ERR("routine")="MIORATE", ERR("error")="rate_limited", ERR("status")=429
+;;
+;;State
+;;- ^MIO("RATE","IP",ip)=lastSec^tokensMilli
+;;  tokensMilli uses fixed-point (tokens*1000) to avoid floating arithmetic.
+;;

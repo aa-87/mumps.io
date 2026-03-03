@@ -84,6 +84,8 @@ JOBCONN(ADDR,HANDLE)
 	;
 	; Access log (ROI #1)
 	NEW LOGEN SET LOGEN=+$GET(CONF("server","log","access","enabled"),0)
+	; Rate limiting (ROI #6)
+	NEW RLEN SET RLEN=+$GET(CONF("server","rate","enabled"),0)
 	;
 	; Keep-alive policy
 	NEW KAEN SET KAEN=+$GET(CONF("server","keepAlive","enabled"),1)
@@ -135,6 +137,34 @@ JOBCONN(ADDR,HANDLE)
 	. . SET DONE=1
 	. ;
 	. SET NREQ=NREQ+1
+	. ; Rate limiting (per-IP token bucket)
+	. IF RLEN DO  QUIT:$GET(DONE)
+	. . NEW RERR,OKR SET OKR=$$ALLOW^MIORATE(.CONF,.CTX,.REQ,.RERR)
+	. . IF OKR QUIT
+	. . ; Respond 429 and close (do not dispatch handlers)
+	. . NEW OBJ,HEAD,BODY
+	. . SET HEAD("Content-Type")="application/json"
+	. . SET HEAD("Connection")="close"
+	. . SET HEAD("Retry-After")=$GET(RERR("retry_after"),"1")
+	. . SET OBJ("ok")=0
+	. . SET OBJ("error")=$GET(RERR("error"),"rate_limited")
+	. . SET OBJ("routine")=$GET(RERR("routine"),"MIORATE")
+	. . SET OBJ("request_id")=$GET(CTX("request_id"))
+	. . SET BODY=$$EN^MIOJSON1(.OBJ)
+	. . DO RESPX^MIOHTTP(.DEV,.CONF,429,.HEAD,BODY,$GET(CTX("request_id")),.CTX)
+	. . SET CTX("status")=429,CTX("route")="(rate_limited)",CTX("error")=$GET(RERR("error"))
+	. . ; Access log for rate-limited responses (best effort)
+	. . IF LOGEN DO
+	. . . NEW TRL SET TRL=$$TSUS^MIOMET()
+	. . . SET CTX("bytes_in")=+$GET(REQ("body","len"),0)
+	. . . NEW BOUT SET BOUT=+$GET(^TMP($J,"MIOHTTP","RESP","bytes"))
+	. . . SET CTX("bytes_out")=BOUT
+	. . . SET CTX("met","handler_ms")=0
+	. . . SET CTX("met","total_ms")=((TRL-$GET(CTX("t0us")))/1000)
+	. . . NEW LERR,OKL SET OKL=$$ACCESS^MIOLOG(.CONF,.REQ,.CTX,.LERR)
+	. . ; Free request body storage
+	. . DO BODYFREE^MIOHTTP(.REQ)
+	. . SET DONE=1
 	. ;
 	. ; If this is a WebSocket Upgrade request, route under method "WS".;
 	. IF $$ISWSREQ(.REQ) DO

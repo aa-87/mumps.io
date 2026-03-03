@@ -89,7 +89,7 @@ PARSE(DEV,CONF,REQ,ERR)
 	. ELSE  DO
 	. . SET REQ("body","mode")="none",REQ("body","len")=0
 	;
-	; No TE
+; No TE
 	IF CL'="" DO  QUIT:$DATA(ERR) 0  QUIT 1
 	. DO READCL(.DEV,.CONF,.REQ,CL,.ERR)
 	;
@@ -275,7 +275,7 @@ READHDRS(DEV,CONF,REQ,ERR)
 	;
 STATUS4ERR(ERR)
 	NEW E SET E=$GET(ERR("error"))
-	QUIT $SELECT(E="client_closed":0,E="read_timeout":408,E="request_line_too_large":414,E="header_line_too_large":431,E="headers_too_large":431,E="too_many_headers":431,E="payload_too_large":413,E="te_cl_conflict":400,E="duplicate_content_length":400,E="duplicate_transfer_encoding":400,E="duplicate_host":400,E="bad_header_line":400,E="invalid_header_name":400,E="invalid_header_value":400,E="bad_transfer_encoding_order":400,E="chunked_not_supported":400,E="unsupported_transfer_encoding":501,E="invalid_content_length":400,E="bad_request_line":400,E="short_read":400,E="bad_chunk_size":400,E="bad_chunk_ending":400,E="header_folding_rejected":400,1:400)
+	QUIT $SELECT(E="client_closed":0,E="rate_limited":429,E="read_timeout":408,E="request_line_too_large":414,E="header_line_too_large":431,E="headers_too_large":431,E="too_many_headers":431,E="payload_too_large":413,E="te_cl_conflict":400,E="duplicate_content_length":400,E="duplicate_transfer_encoding":400,E="duplicate_host":400,E="bad_header_line":400,E="invalid_header_name":400,E="invalid_header_value":400,E="bad_transfer_encoding_order":400,E="chunked_not_supported":400,E="unsupported_transfer_encoding":501,E="invalid_content_length":400,E="bad_request_line":400,E="short_read":400,E="bad_chunk_size":400,E="bad_chunk_ending":400,E="header_folding_rejected":400,1:400)
 	;
 ; -------------------------------------------------------------------------
 ; Response helpers.;
@@ -309,7 +309,7 @@ RESP(DEV,CONF,STATUS,HEAD,BODY,REQID)
 	QUIT
 	;
 STATUSMSG(S)
-	QUIT $SELECT(S=200:"OK",S=101:"Switching Protocols",S=400:"Bad Request",S=401:"Unauthorized",S=404:"Not Found",S=405:"Method Not Allowed",S=408:"Request Timeout",S=413:"Payload Too Large",S=414:"URI Too Long",S=431:"Request Header Fields Too Large",S=500:"Internal Server Error",S=501:"Not Implemented",S=503:"Service Unavailable",1:"")
+	QUIT $SELECT(S=200:"OK",S=101:"Switching Protocols",S=400:"Bad Request",S=401:"Unauthorized",S=404:"Not Found",S=405:"Method Not Allowed",S=408:"Request Timeout",S=413:"Payload Too Large",S=414:"URI Too Long",S=431:"Request Header Fields Too Large",S=429:"Too Many Requests",S=500:"Internal Server Error",S=501:"Not Implemented",S=503:"Service Unavailable",1:"")
 	;
 LOW(S) QUIT $ZCONVERT($GET(S),"L")
 	;
