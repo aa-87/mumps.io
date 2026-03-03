@@ -378,4 +378,19 @@ DOC ;;
 ;;
 ;;Responses
 ;;- 304 includes no body.
+;;Access logs + timing metrics (ROI #1)
+;;- Implemented in MIOLOG (access logging queue + rotation) and integrated in MIOD.
+;;- Enable:
+;;  CONF("server","log","access","enabled")=1
+;;- Optional buffering (recommended for performance):
+;;  CONF("server","log","access","buffer")=1
+;;  CONF("server","log","access","flushEvery")=50
+;;  CONF("server","log","access","flushBytes")=65536
+;;- Formats:
+;;  common | combined | json
+;;- Metrics included per request:
+;;  parse_ms, handler_ms, total_ms
+;;  bytes_in (REQ("body","len")), bytes_out (response byte accounting in MIOHTTP)
+;;
+
 ;;

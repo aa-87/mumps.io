@@ -82,6 +82,9 @@ JOBCONN(ADDR,HANDLE)
 	NEW CTX,REQ,ERR
 	SET CTX("remote_addr")=$GET(ADDR)
 	;
+	; Access log (ROI #1)
+	NEW LOGEN SET LOGEN=+$GET(CONF("server","log","access","enabled"),0)
+	;
 	; Keep-alive policy
 	NEW KAEN SET KAEN=+$GET(CONF("server","keepAlive","enabled"),1)
 	NEW KAMAX SET KAMAX=+$GET(CONF("server","keepAlive","maxRequests"),100)
@@ -107,10 +110,25 @@ JOBCONN(ADDR,HANDLE)
 	. KILL REQ,ERR
 	. SET CTX("request_id")=$$UUID^MIOUTIL()
 	. SET CTX("t0us")=$$TSUS^MIOMET()
-	. KILL CTX("status"),CTX("route"),CTX("skip_metrics"),CTX("match"),CTX("is_websocket")
+	. KILL CTX("status"),CTX("route"),CTX("skip_metrics"),CTX("match"),CTX("is_websocket"),CTX("bytes_in"),CTX("bytes_out"),CTX("error"),CTX("met")
 	. ;
+	. KILL ^TMP($J,"MIOHTTP","RESP"),^TMP($J,"MIOHTTP","STREAM")
+	. ;
+	. NEW TPARSE SET TPARSE=""
 	. NEW OK SET OK=$$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR)
+	. IF LOGEN SET TPARSE=$$TSUS^MIOMET(),CTX("met","parse_ms")=((TPARSE-$GET(CTX("t0us")))/1000)
 	. IF 'OK DO  QUIT
+	. . ; Access log parse failures (best effort)
+	. . IF LOGEN DO
+	. . . SET CTX("status")=$$STATUS4ERR^MIOHTTP(.ERR)
+	. . . SET CTX("route")="(parse_error)"
+	. . . SET CTX("error")=$GET(ERR("error"))
+	. . . SET CTX("bytes_in")=0,CTX("bytes_out")=0
+	. . . IF TPARSE="" SET TPARSE=$$TSUS^MIOMET()
+	. . . SET CTX("met","parse_ms")=((TPARSE-$GET(CTX("t0us")))/1000)
+	. . . SET CTX("met","handler_ms")=0
+	. . . SET CTX("met","total_ms")=$GET(CTX("met","parse_ms"))
+	. . . NEW LERR,OKL SET OKL=$$ACCESS^MIOLOG(.CONF,.REQ,.CTX,.LERR)
 	. . ; Treat keep-alive idle timeout as a clean close (after at least one request).;
 	. . IF NREQ>0,$GET(ERR("error"))="read_timeout" SET DONE=1 QUIT
 	. . ; Otherwise close hard.;
@@ -142,16 +160,30 @@ JOBCONN(ADDR,HANDLE)
 	. . SET CTX("status")=401,CTX("route")="(unauthorized)"
 	. . SET DONE=1
 	. ;
+	. NEW H0 SET H0=""
+	. IF LOGEN SET H0=$$TSUS^MIOMET()
 	. DO DISPATCH^MIOROUTE(DEV,.CONF,.REQ,.CTX)
+	. ;
+	. NEW TEND SET TEND=""
+	. IF LOGEN!('$GET(CTX("skip_metrics"))) SET TEND=$$TSUS^MIOMET()
 	. ;
 	. ; Metrics observation (skip if handler requested)
 	. IF '$GET(CTX("skip_metrics")) DO
-	. . NEW T1 SET T1=$$TSUS^MIOMET()
-	. . NEW LATMS SET LATMS=((T1-$GET(CTX("t0us")))/1000)
+	. . NEW LATMS SET LATMS=((TEND-$GET(CTX("t0us")))/1000)
 	. . NEW RT SET RT=$GET(CTX("route"),"unknown")
 	. . NEW ST SET ST=$GET(CTX("status"),0)
 	. . NEW MM SET MM=$GET(REQ("http_method"),$GET(REQ("method")))
 	. . DO OBS^MIOMET(MM,RT,ST,LATMS)
+	. ;
+	. ; Access log (best effort)
+	. IF LOGEN DO
+	. . SET CTX("bytes_in")=+$GET(REQ("body","len"),0)
+	. . NEW BOUT SET BOUT=+$GET(^TMP($J,"MIOHTTP","RESP","bytes"))
+	. . IF BOUT<1 SET BOUT=+$GET(^TMP($J,"MIOHTTP","STREAM","bytes"))
+	. . SET CTX("bytes_out")=BOUT
+	. . SET CTX("met","handler_ms")=((TEND-H0)/1000)
+	. . SET CTX("met","total_ms")=((TEND-$GET(CTX("t0us")))/1000)
+	. . NEW LERR,OKL SET OKL=$$ACCESS^MIOLOG(.CONF,.REQ,.CTX,.LERR)
 	. ;
 	. ; Free request body storage each request
 	. DO BODYFREE^MIOHTTP(.REQ)
@@ -165,6 +197,8 @@ JOBCONN(ADDR,HANDLE)
 	; Restore defaults (best effort)
 	SET CONF("server","timeouts","readHeaderMs")=ORIGTOH
 	SET CONF("server","timeouts","readBodyMs")=ORIGTOB
+	; Flush any buffered access logs for this job
+	IF LOGEN NEW LERR2,OKF SET OKF=$$FLUSH^MIOLOG(.CONF,.LERR2)
 	DO CLOSE^MIOSOCK(DEV)
 	QUIT
 ; Keep-alive decision: returns 1 to keep, 0 to close after this request.;
