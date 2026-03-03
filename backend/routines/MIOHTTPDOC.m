@@ -306,8 +306,15 @@ DOC ;;
 ;;- CONF("server","static","etagChunkBytes") default 65536
 ;;
 ;;Cache
-;;- Stored under ^MIO("STATIC","META",fullPath)
-;;- Contains META("etag") and META("ts")
+;;- Fast (short TTL) cache under ^MIO("STATIC","META",fullPath)
+;;  - keys: "etag", "etagid", "tsd", "tss", "len"
+;;- Persistent cache under ^MIO("STATIC","ETAG",fullPath)
+;;  - keys: value = ETag, and "id"/"len"
+
+;;Identity tuple (long-TTL correctness)
+;;- Tuple is (len + server-known mtime) when available.
+;;- If the tuple changes, ETag is recomputed even if etagCacheSeconds is large.
+;;- mtime is from ^MIO("STATIC","META",fullPath,"mhd"/"mhs") (seeded once if missing).
 ;;
 ;;Notes
 ;;- Large files omit ETag to avoid extra I/O.
@@ -378,23 +385,4 @@ DOC ;;
 ;;
 ;;Responses
 ;;- 304 includes no body.
-;;Access logs + timing metrics (ROI #1)
-;;- Implemented in MIOLOG (access logging queue + rotation) and integrated in MIOD.
-;;- Enable:
-;;  CONF("server","log","access","enabled")=1
-;;- Optional buffering (recommended for performance):
-;;  CONF("server","log","access","buffer")=1
-;;  CONF("server","log","access","flushEvery")=50
-;;  CONF("server","log","access","flushBytes")=65536
-;;- Optional file-handle caching (micro-optimization):
-;;  CONF("server","log","access","fhCache")=1
-;;  CONF("server","log","access","fhIdleSeconds")=5
-;;  (keeps file open between flushes per job; closes on idle best-effort)
-;;- Formats:
-;;  common | combined | json
-;;- Metrics included per request:
-;;  parse_ms, handler_ms, total_ms
-;;  bytes_in (REQ("body","len")), bytes_out (response byte accounting in MIOHTTP)
-;;
-
 ;;

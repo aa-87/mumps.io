@@ -218,38 +218,88 @@ GETMETA(CONF,FS,META)
 	NEW NOWD SET NOWD=+$P($H,",",1)
 	NEW NOWS SET NOWS=+$P($H,",",2)
 	NEW CREF SET CREF=$NA(^MIO("STATIC","META",FS))
-	IF TTL>0,$DATA(@CREF@("etag")),$DATA(@CREF@("tsd")),$DATA(@CREF@("tss")) DO
-	. IF $$HDELTA(@CREF@("tsd"),@CREF@("tss"),NOWD,NOWS)'>TTL DO  QUIT
-	. . MERGE META=@CREF
+	NEW EREF SET EREF=$NA(^MIO("STATIC","ETAG",FS))
 	;
+	; Ensure stable mtime identity (seed once if unknown).
+	NEW MHD,MHS,LM
+	SET MHD=+$GET(@CREF@("mhd"))
+	SET MHS=+$GET(@CREF@("mhs"))
+	SET LM=$GET(@CREF@("lm"))
+	IF 'MHD DO
+	. SET MHD=NOWD,MHS=NOWS
+	. DO SETMTIME(FS,MHD,MHS)
+	. SET LM=$$HTTPDATE(MHD,MHS)
+	;
+	; Identity tuple (len+mtime) when known. Avoid extra I/O on hot paths.
+	NEW LENH SET LENH=$GET(@CREF@("len"))
+	IF LENH="" SET LENH=$GET(@EREF@("len"))
+	NEW PID SET PID="mhd="_MHD_"|mhs="_MHS_"|len="_LENH
+	;
+	; Hot path: short TTL cache is valid ONLY when identity matches.
+	IF TTL>0,$DATA(@CREF@("etag")),$DATA(@CREF@("etagid")),$DATA(@CREF@("tsd")),$DATA(@CREF@("tss")) DO
+	. IF @CREF@("etagid")=PID,$$HDELTA(@CREF@("tsd"),@CREF@("tss"),NOWD,NOWS)'>TTL DO
+	. . SET META("etag")=$GET(@CREF@("etag"))
+	. . SET META("len")=$GET(@CREF@("len"))
+	IF $DATA(META("etag")) QUIT
+	;
+	; Persistent cache: stable across restarts; invalidates when identity changes.
+	IF $DATA(@EREF),$GET(@EREF@("id"))=PID DO
+	. SET META("etag")=$GET(@EREF)
+	. SET META("len")=$GET(@EREF@("len"))
+	. ; Refresh TTL cache timestamps (do not clobber mtime keys)
+	. SET @CREF@("etag")=META("etag")
+	. SET @CREF@("etagid")=PID
+	. SET @CREF@("tsd")=NOWD
+	. SET @CREF@("tss")=NOWS
+	. IF $GET(META("len"))'="" SET @CREF@("len")=META("len")
+	. QUIT
+	IF $DATA(META("etag")) QUIT
+	;
+	; Recompute ETag (streaming; bounded by maxEtagBytes).
 	NEW CHSZ SET CHSZ=+$GET(CONF("server","static","etagChunkBytes"),65536)
 	IF CHSZ<1024 SET CHSZ=1024
 	IF CHSZ>262144 SET CHSZ=262144
 	NEW LEN SET LEN=0
 	NEW S1,S2 SET S1=1,S2=0
-	NEW X
+	NEW X,EOF,TOOBIG
+	SET EOF=0,TOOBIG=0
 	NEW $ETRAP SET $ETRAP="SET $ECODE="""" QUIT"
 	OPEN FS:(readonly:stream:nowrap)
 	USE FS
-	FOR  DO  QUIT:$ZEOF  QUIT:LEN>MAXB
+	FOR  DO  QUIT:EOF  QUIT:TOOBIG
 	. READ X#CHSZ
+	. IF $ZEOF SET EOF=1
 	. IF X="" QUIT
 	. DO ADLERUP(.S1,.S2,X,.LEN,MAXB)
+	. IF LEN>MAXB SET TOOBIG=1
 	CLOSE FS
-	IF LEN>MAXB SET META("etag")="" GOTO GMSTORE
-	NEW MOD SET MOD=65521
-	NEW A SET A=S1#MOD
-	NEW B SET B=S2#MOD
-	NEW SUM SET SUM=B*65536+A
-	SET META("etag")="W/"""_LEN_"-"_SUM_""""
-GMSTORE
-	SET META("tsd")=NOWD,META("tss")=NOWS
-	SET META("len")=$$FILESIZE(.CONF,FS)
-	; Store only ETag fields (preserve mhd/mhs/lm)
-	SET @CREF@("etag")=META("etag")
-	SET @CREF@("tsd")=META("tsd")
-	SET @CREF@("tss")=META("tss")
-	SET @CREF@("len")=META("len")
+	NEW ETAG SET ETAG=""
+	IF 'TOOBIG DO
+	. NEW MOD SET MOD=65521
+	. NEW A SET A=S1#MOD
+	. NEW B SET B=S2#MOD
+	. NEW SUM SET SUM=B*65536+A
+	. SET ETAG="W/"""_LEN_"-"_SUM_""""
+	;
+	; Full length: avoid extra pass when file <= maxEtagBytes.
+	NEW FULLLEN SET FULLLEN=""
+	IF 'TOOBIG,EOF SET FULLLEN=LEN
+	IF FULLLEN="" SET FULLLEN=$$FILESIZE(.CONF,FS)
+	;
+	; Store (persist + short TTL cache), keyed by identity.
+	SET PID="mhd="_MHD_"|mhs="_MHS_"|len="_FULLLEN
+	SET META("etag")=ETAG
+	SET META("len")=FULLLEN
+	SET META("tsd")=NOWD
+	SET META("tss")=NOWS
+	SET @CREF@("etag")=ETAG
+	SET @CREF@("etagid")=PID
+	SET @CREF@("tsd")=NOWD
+	SET @CREF@("tss")=NOWS
+	SET @CREF@("len")=FULLLEN
+	SET @EREF=ETAG
+	SET @EREF@("id")=PID
+	SET @EREF@("len")=FULLLEN
 	QUIT
 	;
 HDELTA(D0,S0,D1,S1)
