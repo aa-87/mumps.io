@@ -5,8 +5,8 @@ MIOHTTPHDT ; MIOHTTP hardening tests (request smuggling defenses)
 ;   YDB>D ^MIOHTTPHDT
 ;
 ; Notes
-; - Uses files as the "socket" device (like MIOHTTPT).
-; - Quiet on success; prints only FAIL lines.
+; - Uses files as the "socket" device (like MIOHTTPT).;
+; - Quiet on success; prints only FAIL lines.;
 ;
 	NEW DEBUG SET DEBUG=$GET(^MIO("CONF","test","debug"),0)
 	DO T001
@@ -42,7 +42,7 @@ CLOSER(DEV)
 	QUIT
 	;
 DUMPERR(TAG,PATH,ERR,REQ)
-	; Only called when DEBUG=1 and the test failed.
+	; Only called when DEBUG=1 and the test failed.;
 	W "\n[DEBUG] ",TAG," file=",PATH,"\n"
 	ZWR ERR,REQ
 	QUIT
@@ -203,3 +203,4 @@ T008 ; TE order: chunked must be last when strictTE=1 (default)
 	DO EQ^MIOTASSERT($GET(ERR("error")),"bad_transfer_encoding_order","[T008][err]")
 	DO EQ^MIOTASSERT($GET(ERR("routine")),"MIOHTTP","[T008][routine]")
 	QUIT
+	;

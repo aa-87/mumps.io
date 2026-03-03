@@ -35,7 +35,7 @@ T001 ; GET existing file
 	NEW CONF,REQ,CTX,DEV,OUT,ROOT,FP,OP
 	SET ROOT="tmp"
 	SET FP=ROOT_"/hello.txt"
-	SET OP="/tmp/mio_static_t001.out"
+	SET OP="tmp/mio_static_t001.out"
 	; create file
 	OPEN FP:(newversion:stream:nowrap)
 	USE FP WRITE "hi" CLOSE FP
@@ -63,7 +63,7 @@ T001 ; GET existing file
 T002 ; traversal rejected -> 404
 	NEW CONF,REQ,CTX,DEV,OUT,ROOT,OP
 	SET ROOT="tmp"
-	SET OP="/tmp/mio_static_t002.out"
+	SET OP="tmp/mio_static_t002.out"
 	OPEN (ROOT_"/index.html"):(newversion:stream:nowrap)
 	USE (ROOT_"/index.html") WRITE "ok" CLOSE (ROOT_"/index.html")
 	;

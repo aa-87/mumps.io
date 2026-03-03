@@ -21,7 +21,7 @@ MIOLOGT ; MIOLOG access log test suite (ROI #1)
 	;
 TMPBASE(NAME)
 	NEW TS SET TS=$HOROLOG
-	QUIT "/tmp/miologt_"_NAME_"_"_$J_"_"_$PIECE(TS,",",2)
+	QUIT "tmp/miologt_"_NAME_"_"_$J_"_"_$PIECE(TS,",",2)
 	;
 	;
 	;
@@ -164,7 +164,7 @@ T005 ; open failure -> ERR includes routine + error
 	SET CONF("server","log","access","fhCache")=0
 	SET CONF("server","log","access","daily")=0
 	SET CONF("server","log","access","buffer")=0
-	SET CONF("server","log","access","path")="/tmp/__no_such_dir_"_$J_"/mio"
+	SET CONF("server","log","access","path")="tmp/__no_such_dir_"_$J_"/mio"
 	SET REQ("method")="GET",REQ("target")="/x",REQ("httpver")="HTTP/1.1"
 	SET CTX("remote_addr")="127.0.0.1",CTX("status")=200,CTX("request_id")="ridE"
 	SET OK=$$ACCESS^MIOLOG(.CONF,.REQ,.CTX,.ERR)

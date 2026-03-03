@@ -89,7 +89,7 @@ PARSE(DEV,CONF,REQ,ERR)
 	. ELSE  DO
 	. . SET REQ("body","mode")="none",REQ("body","len")=0
 	;
-; No TE
+	; No TE
 	IF CL'="" DO  QUIT:$DATA(ERR) 0  QUIT 1
 	. DO READCL(.DEV,.CONF,.REQ,CL,.ERR)
 	;
@@ -309,7 +309,7 @@ RESP(DEV,CONF,STATUS,HEAD,BODY,REQID)
 	QUIT
 	;
 STATUSMSG(S)
-	QUIT $SELECT(S=200:"OK",S=101:"Switching Protocols",S=400:"Bad Request",S=401:"Unauthorized",S=404:"Not Found",S=405:"Method Not Allowed",S=408:"Request Timeout",S=413:"Payload Too Large",S=414:"URI Too Long",S=431:"Request Header Fields Too Large",S=500:"Internal Server Error",S=501:"Not Implemented",1:"")
+	QUIT $SELECT(S=200:"OK",S=101:"Switching Protocols",S=400:"Bad Request",S=401:"Unauthorized",S=404:"Not Found",S=405:"Method Not Allowed",S=408:"Request Timeout",S=413:"Payload Too Large",S=414:"URI Too Long",S=431:"Request Header Fields Too Large",S=500:"Internal Server Error",S=501:"Not Implemented",S=503:"Service Unavailable",1:"")
 	;
 LOW(S) QUIT $ZCONVERT($GET(S),"L")
 	;

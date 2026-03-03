@@ -38,7 +38,7 @@ T001 ; ETag persisted and stable even if short cache is cleared
 	SET ROOT="/tmp"
 	SET FN="mio_etag_t001_"_$J_"_"_$P($H,",",2)_".txt"
 	SET FS=ROOT_"/"_FN
-	SET OP="/tmp/mio_etag_t001_"_$J_".out"
+	SET OP="tmp/mio_etag_t001_"_$J_".out"
 	;
 	OPEN FS:(newversion:stream:nowrap)
 	USE FS WRITE "alpha" CLOSE FS
@@ -65,13 +65,13 @@ T001 ; ETag persisted and stable even if short cache is cleared
 	DO OK^MIOTASSERT($SELECT(ET1'="":1,1:0),"[T001] etag present")
 	DO EQ^MIOTASSERT($GET(^MIO("STATIC","ETAG",FS)),ET1,"[T001] persisted etag")
 	;
-	; Clear only the short cache (simulate restart/ttl expiry) and ensure stable reuse.
+	; Clear only the short cache (simulate restart/ttl expiry) and ensure stable reuse.;
 	KILL ^MIO("STATIC","META",FS,"etag")
 	KILL ^MIO("STATIC","META",FS,"etagid")
 	KILL ^MIO("STATIC","META",FS,"tsd")
 	KILL ^MIO("STATIC","META",FS,"tss")
 	;
-	SET OP="/tmp/mio_etag_t001b_"_$J_".out"
+	SET OP="tmp/mio_etag_t001b_"_$J_".out"
 	KILL REQ,CTX,OUT
 	SET REQ("method")="GET"
 	SET REQ("path")="/static/"_FN
@@ -106,7 +106,7 @@ T002 ; Identity change (mtime updated) invalidates cached ETag even with long TT
 	SET CONF("server","static","etagCacheSeconds")=999999
 	;
 	; First request -> ET1
-	SET OP="/tmp/mio_etag_t002a_"_$J_".out"
+	SET OP="tmp/mio_etag_t002a_"_$J_".out"
 	KILL REQ,CTX,OUT
 	SET REQ("method")="GET"
 	SET REQ("path")="/static/"_FN
@@ -120,13 +120,13 @@ T002 ; Identity change (mtime updated) invalidates cached ETag even with long TT
 	SET ET1=$$CAPETAG(.OUT)
 	DO OK^MIOTASSERT($SELECT(ET1'="":1,1:0),"[T002] etag present")
 	;
-	; Modify file content + bump server-known mtime.
+	; Modify file content + bump server-known mtime.;
 	OPEN FS:(newversion:stream:nowrap)
 	USE FS WRITE "alpha-beta" CLOSE FS
 	DO SETMTIME^MIOSTATIC(FS,HD,HS+1)
 	;
-	; Second request -> ET2 should differ even though TTL is huge.
-	SET OP="/tmp/mio_etag_t002b_"_$J_".out"
+	; Second request -> ET2 should differ even though TTL is huge.;
+	SET OP="tmp/mio_etag_t002b_"_$J_".out"
 	KILL REQ,CTX,OUT
 	SET REQ("method")="GET"
 	SET REQ("path")="/static/"_FN
@@ -142,7 +142,7 @@ T002 ; Identity change (mtime updated) invalidates cached ETag even with long TT
 	DO EQ^MIOTASSERT($GET(^MIO("STATIC","ETAG",FS)),ET2,"[T002] persisted updated etag")
 	;
 	; If-None-Match old -> must NOT return 304
-	SET OP="/tmp/mio_etag_t002c_"_$J_".out"
+	SET OP="tmp/mio_etag_t002c_"_$J_".out"
 	KILL REQ,CTX,OUT
 	SET REQ("method")="GET"
 	SET REQ("path")="/static/"_FN
@@ -156,3 +156,4 @@ T002 ; Identity change (mtime updated) invalidates cached ETag even with long TT
 	DO READALL(OP,.OUT)
 	DO OK^MIOTASSERT($SELECT(OUT["HTTP/1.1 200 OK":1,1:0),"[T002] old etag does not 304")
 	QUIT
+	;

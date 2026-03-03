@@ -1,15 +1,15 @@
-MIOLOG ; Structured logging with enforced redaction.
+MIOLOG ; Structured logging with enforced redaction.;
 ; API STABILITY
-; Public API labels are documented in docs/routines.
-; Undocumented labels are internal.
+; Public API labels are documented in docs/routines.;
+; Undocumented labels are internal.;
 ;
 ; Purpose
-; Structured logging with enforced redaction.
+; Structured logging with enforced redaction.;
 ;
 ; Responsibilities
-; - Collect operational data.
-; - Export metrics.
-; - Enforce retention policies.
+; - Collect operational data.;
+; - Export metrics.;
+; - Enforce retention policies.;
 ;
 ; Entry Points
 ; - INFO
@@ -25,70 +25,70 @@ MIOLOG ; Structured logging with enforced redaction.
 ; - ^MIO("LOG",...)
 ;
 ; Notes
-; Keep comments short.
-; Do not log secrets.
+; Keep comments short.;
+; Do not log secrets.;
 ;
- ; Generated V1-01 (YottaDB)
- ;
+	; Generated V1-01 (YottaDB)
+	;
 ; Entry point
-; See docs/routines for details.
+; See docs/routines for details.;
 INFO(EVT,CTX) DO EMIT("info",EVT,.CTX) QUIT
 ; Entry point
-; See docs/routines for details.
+; See docs/routines for details.;
 WARN(EVT,CTX) DO EMIT("warn",EVT,.CTX) QUIT
 ; Entry point
-; See docs/routines for details.
+; See docs/routines for details.;
 ERROR(EVT,CTX) DO EMIT("error",EVT,.CTX) QUIT
 ; Entry point
-; See docs/routines for details.
+; See docs/routines for details.;
 PANIC(EVT,CTX) DO EMIT("panic",EVT,.CTX) QUIT
-
+	;
 ; Entry point
-; See docs/routines for details.
+; See docs/routines for details.;
 EMIT(LEVEL,EVT,CTX)
-    NEW REC,JSON
-    SET REC("ts")=$$NOWISO^MIOUTIL()
-    SET REC("level")=LEVEL
-    SET REC("event")=EVT
-    IF $DATA(CTX) MERGE REC("ctx")=CTX
-    DO REDACT(.REC)
-    NEW TMP MERGE TMP=REC
-    SET JSON=$$EN^MIOJSON1(.TMP)
-    USE $PRINCIPAL WRITE JSON,!
-    QUIT
-
+	NEW REC,JSON
+	SET REC("ts")=$$NOWISO^MIOUTIL()
+	SET REC("level")=LEVEL
+	SET REC("event")=EVT
+	IF $DATA(CTX) MERGE REC("ctx")=CTX
+	DO REDACT(.REC)
+	NEW TMP MERGE TMP=REC
+	SET JSON=$$EN^MIOJSON1(.TMP)
+	USE $PRINCIPAL WRITE JSON,!
+	QUIT
+	;
 ; Entry point
-; See docs/routines for details.
+; See docs/routines for details.;
 REDACT(REC)
-    IF $DATA(REC("ctx","req","hdr")) DO
-    . NEW K SET K=""
-    . FOR  SET K=$ORDER(REC("ctx","req","hdr",K)) QUIT:K=""  DO
-    . . IF $$ISREDACT(K) SET REC("ctx","req","hdr",K)="[REDACTED]"
-    IF $DATA(REC("ctx","req","query")) DO
-    . NEW K SET K=""
-    . FOR  SET K=$ORDER(REC("ctx","req","query",K)) QUIT:K=""  SET REC("ctx","req","query",K)="[REDACTED]"
-    QUIT
-
+	IF $DATA(REC("ctx","req","hdr")) DO
+	. NEW K SET K=""
+	. FOR  SET K=$ORDER(REC("ctx","req","hdr",K)) QUIT:K=""  DO
+	. . IF $$ISREDACT(K) SET REC("ctx","req","hdr",K)="[REDACTED]"
+	IF $DATA(REC("ctx","req","query")) DO
+	. NEW K SET K=""
+	. FOR  SET K=$ORDER(REC("ctx","req","query",K)) QUIT:K=""  SET REC("ctx","req","query",K)="[REDACTED]"
+	QUIT
+	;
 ; Entry point
-; See docs/routines for details.
+; See docs/routines for details.;
 ISREDACT(K)
-    SET K=$$LOW(K)
-    IF K="authorization" QUIT 1
-    IF K="cookie" QUIT 1
-    IF K="set-cookie" QUIT 1
-    IF K="x-api-key" QUIT 1
-    QUIT 0
-
+	SET K=$$LOW(K)
+	IF K="authorization" QUIT 1
+	IF K="cookie" QUIT 1
+	IF K="set-cookie" QUIT 1
+	IF K="x-api-key" QUIT 1
+	QUIT 0
+	;
 ; Entry point
-; See docs/routines for details.
+; See docs/routines for details.;
 LOW(S)
-    NEW I,C,OUT SET OUT=""
-    FOR I=1:1:$LENGTH(S) DO
-    . SET C=$ASCII($EXTRACT(S,I))
-    . IF C>64,C<91 SET C=C+32
-    . SET OUT=OUT_$CHAR(C)
-    QUIT OUT
-
+	NEW I,C,OUT SET OUT=""
+	FOR I=1:1:$LENGTH(S) DO
+	. SET C=$ASCII($EXTRACT(S,I))
+	. IF C>64,C<91 SET C=C+32
+	. SET OUT=OUT_$CHAR(C)
+	QUIT OUT
+	;
 	; -------------------------------------------------------------------------
 	; ROI #1: Access logs + timing metrics (fast path + optional buffering)
 	;
@@ -109,10 +109,10 @@ LOW(S)
 	;   CONF("server","log","access","fhIdleSeconds") default 5 (best-effort close on idle)
 	;
 	; Notes:
-	; - No ZSYSTEM (rotation is by filename).
-	; - Buffered mode reduces open/close overhead by batching writes.
-	; - FLUSH is safe to call frequently; it is a no-op when queue is empty.
-	; - Errors always include ERR("routine") and ERR("error").
+	; - No ZSYSTEM (rotation is by filename).;
+	; - Buffered mode reduces open/close overhead by batching writes.;
+	; - FLUSH is safe to call frequently; it is a no-op when queue is empty.;
+	; - Errors always include ERR("routine") and ERR("error").;
 	;
 ACCESS(CONF,REQ,CTX,ERR)
 	KILL ERR
@@ -142,7 +142,7 @@ FLUSH(CONF,ERR)
 	NEW MAXB SET MAXB=+$GET(CONF("server","log","access","maxBytes"),10485760)
 	NEW DAY SET DAY=$SELECT(DAILY:$$DAY(),1:"")
 	; If the log base path changes within the same job (common in tests),
-	; reset rotation state so we don't incorrectly continue prior suffix/bytes.
+	; reset rotation state so we don't incorrectly continue prior suffix/bytes.;
 	NEW CURBASE SET CURBASE=$GET(^TMP($J,"MIOLOG","A","base"))
 	IF CURBASE'=BASE DO
 	. SET ^TMP($J,"MIOLOG","A","base")=BASE
@@ -213,7 +213,7 @@ FHCLOSEIDLE(CONF)
 	QUIT
 	;
 FHOPEN(CONF,FP)
-	; Ensure the access log device is open and cached for this job.
+	; Ensure the access log device is open and cached for this job.;
 	DO FHCLOSEIDLE(.CONF)
 	NEW CUR SET CUR=$GET(^TMP($J,"MIOLOG","FH","access","fp"))
 	IF CUR=FP,$GET(^TMP($J,"MIOLOG","FH","access","ok"))=1 DO  QUIT 1
@@ -250,7 +250,7 @@ SAFECLOSE(DEV)
 	QUIT
 	;
 CLOSEALL(CONF)
-	; Public: close any cached access log handle for this job.
+	; Public: close any cached access log handle for this job.;
 	DO FHCLOSE(.CONF)
 	QUIT
 	;
@@ -279,22 +279,22 @@ QCLR
 	SET ^TMP($J,"MIOLOG","A","qB")=0
 	QUIT
 	;
-
+	;
 OPNTRAP ; internal: open() error trap helper (OPENA)
 	SET OK=0
 	SET $ECODE=""
 	QUIT
 	;
 OPENA(DEV)
-	; Robust open for append-only log writes.
-	; Returns 1 on success, 0 on failure (no exception raised).
+	; Robust open for append-only log writes.;
+	; Returns 1 on success, 0 on failure (no exception raised).;
 	NEW $ETRAP,$ESTACK,$ET,$ES
 	NEW OK SET OK=0
 	SET $ETRAP="DO OPNTRAP^MIOLOG"
 	OPEN DEV:(append:stream:nowrap):1
 	IF $TEST SET OK=1 QUIT 1
-	; On some YottaDB/GT.M builds, APPEND may not create a missing file.
-	; Use NEW (not NEWVERSION) so the created path is exactly DEV.
+	; On some YottaDB/GT.M builds, APPEND may not create a missing file.;
+	; Use NEW (not NEWVERSION) so the created path is exactly DEV.;
 	OPEN DEV:(new:stream:nowrap):1
 	IF $TEST SET OK=1
 	QUIT OK
@@ -380,4 +380,5 @@ ESCQ(S)
 	IF X["\\" SET X=$$REPLACE^MIOUTIL(X,"\\","\\\\")
 	IF X["""" SET X=$$REPLACE^MIOUTIL(X,"""","\\""")
 	QUIT X
+	;
 	;

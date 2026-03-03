@@ -63,7 +63,7 @@ T001 ; br preferred when present
 	DO BASECONF(.CONF)
 	SET NAME="miostatic_ztt1_"_$J_"_"_$P($H,",",2)
 	SET FP=$$MKFILES("/tmp",NAME,"plain","brdata","gzdata",1,1)
-	SET OP="/tmp/mio_static_ztt1_"_$J_".out"
+	SET OP="tmp/mio_static_ztt1_"_$J_".out"
 	KILL REQ,CTX
 	SET REQ("method")="GET"
 	SET REQ("path")="/static/"_NAME_".txt"
@@ -83,7 +83,7 @@ T002 ; q=0 disables br, gzip served
 	DO BASECONF(.CONF)
 	SET NAME="miostatic_ztt2_"_$J_"_"_$P($H,",",2)
 	SET FP=$$MKFILES("/tmp",NAME,"plain","brdata","gzdata",1,1)
-	SET OP="/tmp/mio_static_ztt2_"_$J_".out"
+	SET OP="tmp/mio_static_ztt2_"_$J_".out"
 	KILL REQ,CTX
 	SET REQ("method")="GET"
 	SET REQ("path")="/static/"_NAME_".txt"
@@ -101,7 +101,7 @@ T003 ; no Accept-Encoding -> original (no Content-Encoding), still Vary present
 	DO BASECONF(.CONF)
 	SET NAME="miostatic_ztt3_"_$J_"_"_$P($H,",",2)
 	SET FP=$$MKFILES("/tmp",NAME,"plain","brdata","gzdata",1,1)
-	SET OP="/tmp/mio_static_ztt3_"_$J_".out"
+	SET OP="tmp/mio_static_ztt3_"_$J_".out"
 	KILL REQ,CTX
 	SET REQ("method")="GET"
 	SET REQ("path")="/static/"_NAME_".txt"
@@ -119,7 +119,7 @@ T004 ; Range request should not serve encoded variant (default)
 	DO BASECONF(.CONF)
 	SET NAME="miostatic_ztt4_"_$J_"_"_$P($H,",",2)
 	SET FP=$$MKFILES("/tmp",NAME,"plain","brdata","gzdata",1,1)
-	SET OP="/tmp/mio_static_ztt4_"_$J_".out"
+	SET OP="tmp/mio_static_ztt4_"_$J_".out"
 	KILL REQ,CTX
 	SET REQ("method")="GET"
 	SET REQ("path")="/static/"_NAME_".txt"
@@ -139,7 +139,7 @@ T005 ; br missing -> fallback to gzip when accepted and present
 	SET NAME="miostatic_ztt5_"_$J_"_"_$P($H,",",2)
 	; create only gzip sidecar
 	SET FP=$$MKFILES("/tmp",NAME,"plain","brdata","gzdata",0,1)
-	SET OP="/tmp/mio_static_ztt5_"_$J_".out"
+	SET OP="tmp/mio_static_ztt5_"_$J_".out"
 	KILL REQ,CTX
 	SET REQ("method")="GET"
 	SET REQ("path")="/static/"_NAME_".txt"
@@ -151,4 +151,5 @@ T005 ; br missing -> fallback to gzip when accepted and present
 	DO EQ^MIOTASSERT($$HAS(OUT,"Content-Encoding: gzip"),1,"[T005][encoding gzip]")
 	DO EQ^MIOTASSERT($$HAS(OUT,"gzdata"),1,"[T005][body]")
 	QUIT
+	;
 	;

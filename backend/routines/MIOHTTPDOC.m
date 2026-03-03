@@ -142,12 +142,6 @@ DOC ;;
 ;;  - Controls syscall count vs memory churn.
 ;;  - 8 KB to 64 KB is usually a good range.
 ;;
-
-;;Hardening toggles (ROI #4)
-;;- CONF("server","http","strictTE") default 1
-;;  - If enabled, 'chunked' must be the final transfer-coding token.
-;;- CONF("server","http","allowTECL") default 0
-;;  - If 0, reject TE:chunked + Content-Length (smuggling defense).
 ;;Error contract (ERR)
 ;;- ERR("routine")="MIOHTTP"
 ;;- ERR("error")=<code>
@@ -162,14 +156,6 @@ DOC ;;
 ;;- headers_too_large
 ;;- too_many_headers
 ;;- header_folding_rejected
-;;- bad_header_line
-;;- invalid_header_name
-;;- invalid_header_value
-;;- duplicate_content_length
-;;- duplicate_transfer_encoding
-;;- duplicate_host
-;;- te_cl_conflict
-;;- bad_transfer_encoding_order
 ;;- invalid_content_length
 ;;- payload_too_large
 ;;- unsupported_transfer_encoding
@@ -184,14 +170,8 @@ DOC ;;
 ;;- Always call BODYFREE after handling a request.
 ;;
 ;;Security notes
-;;- Limits are enforced early (request line, header line length/count/total bytes, body bytes).
-;;- obs-fold (header folding) is rejected.
-;;- Header field names are validated (RFC7230 token rules).
-;;- Duplicate Content-Length / Transfer-Encoding / Host are rejected.
-;;- TE:chunked + Content-Length is rejected by default (smuggling defense).
-;;  - Override with CONF("server","http","allowTECL")=1 only if you must.
-;;- Transfer-Encoding is whitelisted (chunked/identity only).
-;;- If CONF("server","http","strictTE") is enabled (default 1), chunked must be the final token.
+;;- Limits are enforced early (request line, headers, body bytes).
+;;- Transfer-Encoding is whitelisted.
 ;;- Do not log raw bodies by default.
 ;;
 ;;------------------------------------------------------------------------
@@ -399,17 +379,28 @@ DOC ;;
 ;;Responses
 ;;- 304 includes no body.
 ;;
-;;ROI #3 — Precompressed static assets (br/gz) + content negotiation
-;;- Implemented in MIOSTATIC.
-;;- If enabled and the client sends Accept-Encoding including "br" or "gzip", MIOSTATIC will serve:
-;;  - <file>.br with "Content-Encoding: br" when available, else
-;;  - <file>.gz with "Content-Encoding: gzip" when available, else the original file.
-;;- Always adds: Vary: Accept-Encoding when precompressed mode is enabled (safe for caches/CDNs).
-;;- Range requests: by default, encoded variants are NOT served for requests with Range: bytes=...
-;;  (set allowRangeEncoded=1 to allow ranges on encoded bytes, if you understand the semantics).
+;;------------------------------------------------------------------------
+;;Health + Readiness Endpoints (ROI #5)
 ;;
-;;Config
-;;- CONF("server","static","precompressed","enabled") = 1/0 (default 0)
-;;- CONF("server","static","precompressed","allowRangeEncoded") = 1/0 (default 0)
+;;Core health endpoint
+;;- GET /healthz
+;;  Always returns 200 OK with a minimal body.
 ;;
+;;Readiness endpoint
+;;- GET /readyz
+;;  Returns 200 OK when the server is "ready".
+;;  Returns 503 Service Unavailable when not ready.
+;;  Response is JSON and includes deterministic check results.
+;;
+;;Handler
+;;- READY^MIOHEALTH
+;;
+;;Checks
+;;- conf_loaded: CONF() passed into handler has data.
+;;- static_root: only checked when CONF("server","static","enabled")=1
+;;  Verifies CONF("server","static","root") exists.
+;;- access_log_dir: only checked when CONF("server","log","access","enabled")=1
+;;  Verifies the directory exists and is writable (creates a small dotfile once).
+;;- template_dir: optional; enabled when CONF("server","health","readyCheckTemplates")=1
+;;  Verifies CONF("server","templateDir") exists.
 ;;

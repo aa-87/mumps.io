@@ -35,6 +35,7 @@ INIT ;
 	KILL ^MIO("ROUTE")
 	; Core routes
 	DO ADD("GET","/healthz","HEALTH^MIOROUTE")
+	DO ADD("GET","/readyz","READY^MIOHEALTH")
 	DO ADD("GET","/api/ping","PING^MIOROUTE")
 	; WebSocket endpoints should be registered under method "WS"
 	DO ADDWS("/ws","ACCEPT^MIOWS")
