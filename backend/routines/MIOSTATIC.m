@@ -28,21 +28,69 @@ STATIC(DEV,CONF,REQ,CTX)
 	NEW INDEX SET INDEX=$GET(CONF("server","static","index"),"index.html")
 	NEW METHOD SET METHOD=$$LOW^MIOHTTP($GET(REQ("method"))) IF METHOD="" SET METHOD="get"
 	;
-	; Resolve relative path under mount
+	; Resolve relative path under mount (may be empty)
+	NEW PATH SET PATH=$GET(REQ("path"))
 	NEW RPATH SET RPATH=$GET(REQ("params","path"))
 	IF RPATH="" DO
-	. NEW P SET P=$GET(REQ("path"))
-	. IF $E(P,1,$L(MOUNT))=MOUNT SET RPATH=$E(P,$L(MOUNT)+2,999)
+	. IF $E(PATH,1,$L(MOUNT))=MOUNT SET RPATH=$E(PATH,$L(MOUNT)+2,999)
 	SET RPATH=$$URLDECPATH(RPATH)
-	IF RPATH="" SET RPATH=INDEX
 	;
-	; Secure join
-	NEW FS,OK
-	SET OK=$$SAFEJOIN(ROOT,RPATH,INDEX,.FS)
-	IF 'OK DO  QUIT
-	. NEW OBJ SET OBJ("error")="not_found",OBJ("request_id")=$GET(CTX("request_id"))
+	; Directory request detection (trailing slash)
+	NEW DIRREQ SET DIRREQ=0
+	IF PATH'="",$E(PATH,$L(PATH))="/" SET DIRREQ=1
+	IF RPATH'="",$E(RPATH,$L(RPATH))="/" SET DIRREQ=1
+	;
+	; Mount without trailing slash -> redirect to mount/ (safer defaults)
+	IF RPATH="",('DIRREQ) DO  QUIT
+	. NEW LOC SET LOC=MOUNT_"/"
+	. DO REDIR(.DEV,.CONF,301,LOC,$GET(CTX("request_id")),.CTX)
+	. SET CTX("status")=301
+	;
+	; Normalize directory RPATH to end with "/" (except empty)
+	IF DIRREQ,RPATH'="",$E(RPATH,$L(RPATH))'="/" SET RPATH=RPATH_"/"
+	;
+	; Optional directory listing (default off)
+	NEW DLEN SET DLEN=+$GET(CONF("server","static","dirListing","enabled"),0)
+	NEW DLDOT SET DLDOT=+$GET(CONF("server","static","dirListing","showDotfiles"),0)
+	;
+	; Resolve to a concrete file path, or handle directory index/listing/redirect
+	NEW FS,FSIDX,ORFS SET FS="",FSIDX="",ORFS=""
+	IF 'DIRREQ DO
+	. ; Exact file
+	. IF $$SAFEJOINP(ROOT,RPATH,.FS),$$EXISTS(FS) SET ORFS=FS QUIT
+	. ; Directory index (redirect to canonical slash form)
+	. NEW IDXPATH SET IDXPATH=RPATH_"/"_INDEX
+	. IF $$SAFEJOINP(ROOT,IDXPATH,.FSIDX),$$EXISTS(FSIDX) DO  QUIT
+	. . NEW LOC SET LOC=$$CLEANURL(MOUNT_"/"_RPATH_"/")
+	. . DO REDIR(.DEV,.CONF,301,LOC,$GET(CTX("request_id")),.CTX)
+	. . SET CTX("status")=301
+	. ; Directory listing redirect if directory has entries
+	. IF DLEN DO
+	. . NEW DIRFS,ANY SET ANY=0
+	. . IF $$SAFEJOINP(ROOT,RPATH_"/",.DIRFS) SET ANY=$$DIRHAS(DIRFS,DLDOT)
+	. . IF ANY DO
+	. . . NEW LOC SET LOC=$$CLEANURL(MOUNT_"/"_RPATH_"/")
+	. . . DO REDIR(.DEV,.CONF,301,LOC,$GET(CTX("request_id")),.CTX)
+	. . . SET CTX("status")=301
+	ELSE  DO
+	. ; Directory request: try index (RPATH may be empty)
+	. NEW XPATH SET XPATH=$SELECT(RPATH="":INDEX,1:RPATH_INDEX)
+	. IF $$SAFEJOINP(ROOT,XPATH,.FSIDX),$$EXISTS(FSIDX) SET ORFS=FSIDX QUIT
+	. ; Optional directory listing
+	. IF DLEN DO
+	. . NEW DP SET DP=RPATH IF DP'="",$E(DP,$L(DP))'="/" SET DP=DP_"/"
+	. . NEW DIRFS,ANY SET ANY=0
+	. . IF $$SAFEJOINP(ROOT,DP,.DIRFS) SET ANY=$$DIRHAS(DIRFS,DLDOT)
+	. . IF ANY DO  QUIT
+	. . . DO DIRLIST(.DEV,.CONF,DIRFS,$$CLEANURL(MOUNT_"/"_DP),METHOD,$GET(CTX("request_id")),.CTX,DLDOT)
+	. . . QUIT
+	;
+	IF $GET(CTX("status"))=301 QUIT
+	IF ORFS="" DO  QUIT
+	. NEW OBJ SET OBJ("error")="not_found",OBJ("routine")="MIOSTATIC",OBJ("request_id")=$GET(CTX("request_id"))
 	. DO RESPJSONX^MIOHTTP(.DEV,.CONF,404,.OBJ,$GET(CTX("request_id")),.CTX)
 	. SET CTX("status")=404
+	SET FS=ORFS
 	;
 	NEW ORFS SET ORFS=FS
 	NEW ENC,VARY SET ENC="",VARY=0
@@ -143,7 +191,7 @@ RESPHEAD(DEV,CONF,STATUS,HEAD,REQID)
 	QUIT
 	;
 SMSG(S)
-	QUIT $SELECT(S=200:"OK",S=206:"Partial Content",S=304:"Not Modified",S=404:"Not Found",S=416:"Range Not Satisfiable",1:"")
+	QUIT $SELECT(S=200:"OK",S=206:"Partial Content",S=301:"Moved Permanently",S=304:"Not Modified",S=404:"Not Found",S=416:"Range Not Satisfiable",1:"")
 	;
 WOUT(DEV,STR)
 	NEW D SET D=$GET(DEV) IF D="" SET D=$IO
@@ -187,6 +235,127 @@ URLDECPATH(S)
 	. SET I=I+1
 	QUIT OUT
 	;
+SAFEJOINP(ROOT,RPATH,OUT)
+	; Safe join without existence check.;
+	; - Rejects traversal (., ..) and NUL.;
+	; - Preserves trailing "/" if provided.;
+	KILL OUT
+	NEW R,P,I,SEG,BAD
+	SET R=$GET(ROOT)
+	SET P=$GET(RPATH)
+	IF $E(P,1)="/" SET P=$E(P,2,999)
+	IF P[$C(0) QUIT 0
+	SET BAD=0
+	FOR I=1:1:$L(P,"/") DO  QUIT:BAD
+	. SET SEG=$P(P,"/",I)
+	. IF SEG="" QUIT
+	. IF SEG="."!(SEG="..") SET BAD=1
+	IF BAD QUIT 0
+	IF $E(R,$L(R))="/" SET R=$E(R,1,$L(R)-1)
+	SET OUT=R
+	IF P'="" SET OUT=OUT_"/"_P
+	ELSE  SET OUT=OUT_"/"
+	QUIT 1
+	;
+CLEANURL(U)
+	NEW X SET X=$GET(U)
+	FOR  QUIT:X'["//"  SET X=$PIECE(X,"//",1)_"/"_$PIECE(X,"//",2,999)
+	QUIT X
+	;
+REDIR(DEV,CONF,STATUS,LOC,REQID,CTX)
+	NEW S SET S=+$GET(STATUS,301)
+	NEW H
+	SET H("Location")=$GET(LOC)
+	SET H("Content-Length")=0
+	DO RESPHEAD(.DEV,.CONF,S,.H,$GET(REQID))
+	IF $DATA(CTX) SET CTX("status")=S
+	QUIT
+	;
+DIRHAS(DIRFS,SHOWDOT)
+	NEW OK SET OK=0
+	NEW PAT SET PAT=$GET(DIRFS)
+	IF PAT="" QUIT 0
+	IF $E(PAT,$L(PAT))'="/" SET PAT=PAT_"/"
+	SET PAT=PAT_"*"
+	NEW F SET F=$ZSEARCH(PAT)
+	FOR  QUIT:F=""  DO  QUIT:OK
+	. NEW NM SET NM=$PIECE(F,"/",$L(F,"/"))
+	. IF NM="" SET F=$ZSEARCH("") QUIT
+	. IF '$GET(SHOWDOT),$E(NM,1)="." SET F=$ZSEARCH("") QUIT
+	. SET OK=1
+	. SET F=$ZSEARCH("")
+	QUIT OK
+	;
+DIRLIST(DEV,CONF,DIRFS,URLBASE,METHOD,REQID,CTX,SHOWDOT)
+	NEW M SET M=$GET(METHOD) IF M="" SET M="get"
+	NEW HEAD
+	SET HEAD("Content-Type")="text/html; charset=utf-8"
+	SET HEAD("X-Content-Type-Options")="nosniff"
+	SET HEAD("Cache-Control")="no-store"
+	IF M="head" DO  QUIT
+	. SET HEAD("Content-Length")=0
+	. DO RESPHEAD(.DEV,.CONF,200,.HEAD,$GET(REQID))
+	. IF $DATA(CTX) SET CTX("status")=200
+	;
+	DO STREAMBEGIN^MIOHTTP(.DEV,.CONF,200,.HEAD,$GET(REQID),.CTX)
+	NEW UB SET UB=$$CLEANURL($GET(URLBASE))
+	IF UB="" SET UB="/"
+	IF $E(UB,$L(UB))'="/" SET UB=UB_"/"
+	DO STREAMWRITE^MIOHTTP(.DEV,"<!doctype html><html><head><meta charset=""utf-8""><title>Index of "_$$ESCHTML(UB)_"</title></head><body><h1>Index of "_$$ESCHTML(UB)_"</h1><ul>")
+	;
+	; Collect entries (sorted) for deterministic output
+	NEW MAXE SET MAXE=+$GET(CONF("server","static","dirListing","maxEntries"),1024)
+	IF MAXE<1 SET MAXE=1
+	NEW NAMES,COUNT SET COUNT=0
+	NEW PAT SET PAT=$GET(DIRFS)
+	IF PAT="" SET PAT="/"
+	IF $E(PAT,$L(PAT))'="/" SET PAT=PAT_"/"
+	SET PAT=PAT_"*"
+	NEW F SET F=$ZSEARCH(PAT)
+	FOR  QUIT:F=""  QUIT:COUNT'<MAXE  DO
+	. NEW NM SET NM=$PIECE(F,"/",$L(F,"/"))
+	. IF NM="" SET F=$ZSEARCH("") QUIT
+	. IF '$GET(SHOWDOT),$E(NM,1)="." SET F=$ZSEARCH("") QUIT
+	. IF '$DATA(NAMES(NM)) SET NAMES(NM)=1,COUNT=COUNT+1
+	. SET F=$ZSEARCH(PAT)
+	;
+	NEW NM SET NM=""
+	FOR  SET NM=$ORDER(NAMES(NM)) QUIT:NM=""  DO
+	. NEW HREF SET HREF=UB_$$URLENCSEG(NM)
+	. DO STREAMWRITE^MIOHTTP(.DEV,"<li><a href="""_HREF_""">"_$$ESCHTML(NM)_"</a></li>")
+	DO STREAMWRITE^MIOHTTP(.DEV,"</ul></body></html>")
+	DO STREAMEND^MIOHTTP(.DEV)
+	IF $DATA(CTX) SET CTX("status")=200
+	QUIT
+	;
+ESCHTML(S)
+	NEW IN,OUT,I,C
+	SET IN=$GET(S),OUT=""
+	FOR I=1:1:$L(IN) DO
+	. SET C=$E(IN,I)
+	. IF C="&" SET OUT=OUT_"&amp;" QUIT
+	. IF C="<" SET OUT=OUT_"&lt;" QUIT
+	. IF C=">" SET OUT=OUT_"&gt;" QUIT
+	. IF C="""" SET OUT=OUT_"&quot;" QUIT
+	. SET OUT=OUT_C
+	QUIT OUT
+	;
+HEX2(N)
+	NEW H SET H=$$HEXOUT^MIOHTTP(+$GET(N))
+	IF $L(H)=1 SET H="0"_H
+	QUIT H
+	;
+URLENCSEG(S)
+	NEW IN,OUT,I,C,A
+	SET IN=$GET(S),OUT=""
+	FOR I=1:1:$L(IN) DO
+	. SET C=$E(IN,I)
+	. IF C?1AN SET OUT=OUT_C QUIT
+	. IF C="-"!(C="_")!(C=".")!(C="~") SET OUT=OUT_C QUIT
+	. SET A=$ASCII(C)
+	. SET OUT=OUT_"%"_$$HEX2(A)
+	QUIT OUT
+	;
 SAFEJOIN(ROOT,RPATH,INDEX,OUT)
 	KILL OUT
 	NEW R SET R=$GET(ROOT)
@@ -215,10 +384,10 @@ MIME(CONF,PATH)
 	;
 ; -------------------------------------------------------------------------
 ; Precompressed static assets (br/gz) + content negotiation
-; - If enabled, and Accept-Encoding prefers br or gzip, serve file.ext.br / file.ext.gz when present.
-; - Always set: Vary: Accept-Encoding when enabled (safe for caches).
-; - Default: do NOT serve encoded variant for Range requests (unless allowRangeEncoded=1).
-
+; - If enabled, and Accept-Encoding prefers br or gzip, serve file.ext.br / file.ext.gz when present.;
+; - Always set: Vary: Accept-Encoding when enabled (safe for caches).;
+; - Default: do NOT serve encoded variant for Range requests (unless allowRangeEncoded=1).;
+	;
 SELENC(CONF,REQ,METHOD,ORFS,FS,ENC,VARY)
 	SET ENC="",VARY=0
 	NEW PRE SET PRE=+$GET(CONF("server","static","precompressed","enabled"),0)
@@ -240,7 +409,7 @@ SELENC(CONF,REQ,METHOD,ORFS,FS,ENC,VARY)
 	IF BRQ>0,$$EXISTS(ORFS_".br") SET FS=ORFS_".br",ENC="br" QUIT
 	IF GZQ>0,$$EXISTS(ORFS_".gz") SET FS=ORFS_".gz",ENC="gzip" QUIT
 	QUIT
-
+	;
 PARSEAE(AE,Q)
 	KILL Q
 	NEW I,T,NM,QV,J,P,K,V
@@ -256,10 +425,10 @@ PARSEAE(AE,Q)
 	. . IF K="q" SET V=$$TRIM^MIOHTTP($P(P,"=",2)),QV=+V
 	. SET Q(NM)=QV
 	QUIT
-
+	;
 QVAL(Q,NM)
 	QUIT $SELECT($DATA(Q($GET(NM))):Q(NM),1:-1)
-
+	;
 ADDVARY(HEAD,VAL)
 	NEW V SET V=$GET(HEAD("Vary"))
 	IF V="" SET HEAD("Vary")=$GET(VAL) QUIT
@@ -268,14 +437,14 @@ ADDVARY(HEAD,VAL)
 	IF L1[L2 QUIT
 	SET HEAD("Vary")=V_", "_$GET(VAL)
 	QUIT
-
+	;
 EXISTS(PATH)
 	NEW OK SET OK=1
 	NEW $ETRAP SET $ETRAP="SET $ECODE="""" SET OK=0"
 	OPEN PATH:(readonly)
 	CLOSE PATH
 	QUIT OK
-
+	;
 ; -------------------------------------------------------------------------
 ; ETag helpers (do NOT clobber mtime keys)
 GETMETA(CONF,FS,META)
@@ -362,7 +531,7 @@ GETMETA(CONF,FS,META)
 	ELSE  DO
 	. KILL ^MIO("STATIC","ETAG",FS)
 	QUIT
-
+	;
 HDELTA(D0,S0,D1,S1)
 	QUIT (D1-D0)*86400+(S1-S0)
 	;

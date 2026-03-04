@@ -481,11 +481,101 @@ DISPATCH(DEV,CONF,REQ,CTX)
 	. DO RESPJSONX^MIOHTTP(.DEV,.CONF,404,.OBJ,$GET(CTX("request_id")),.CTX)
 	. SET CTX("route")="(not_found)"
 	;
-	NEW TAG,RTN
+	;D @(TAG_"^"_RTN_"(.DEV,.CONF,.REQ,.CTX)")
+	NEW TAG,RTN,METHOD
 	SET TAG=$PIECE(H,"^",1),RTN=$PIECE(H,"^",2)
+	SET METHOD=$GET(REQ("method"))
 	SET CTX("route")=RP
 	MERGE REQ("params")=PARAMS
-	D @(TAG_"^"_RTN_"(.DEV,.CONF,.REQ,.CTX)")
+	NEW MWERR,MWOK,MWON
+	NEW NWONOK 
+	SET NWONOK=$$MWANY(.CONF,METHOD,RP)
+	IF NWONOK DO
+	. M ^A=CONF,^B=REQ,^C=CTX,^D=METHOD,^E=RP
+	. SET MWOK=$$MWBEFORE(.DEV,.CONF,.REQ,.CTX,METHOD,RP,.MWERR)
+	. IF 'MWOK DO  QUIT
+	. . IF +$GET(CTX("status"))>0 QUIT
+	. . DO MWRESPERR(.DEV,.CONF,.REQ,.CTX,.MWERR)
+	. D @(TAG_"^"_RTN_"(.DEV,.CONF,.REQ,.CTX)")
+	. DO MWAFTER(.DEV,.CONF,.REQ,.CTX,METHOD,RP,.MWERR)
+	IF 'NWONOK  D @(TAG_"^"_RTN_"(.DEV,.CONF,.REQ,.CTX)")
+	QUIT	
+	;
+; ---- middleware pipeline (ROI #8) -------------------------------------
+MWANY(CONF,METHOD,ROUTEPAT)
+	NEW X SET X=0
+	IF $DATA(CONF("server","middleware","before")) SET X=1
+	IF $DATA(CONF("server","middleware","after")) SET X=1
+	IF X QUIT 1
+	IF $GET(METHOD)'="",$GET(ROUTEPAT)'="" DO
+	. IF $DATA(^MIO("ROUTE","META",METHOD,ROUTEPAT,"mw_before")) SET X=1
+	. IF $DATA(^MIO("ROUTE","META",METHOD,ROUTEPAT,"mw_after")) SET X=1
+	QUIT X
+	;
+MWLIST(CONF,METHOD,ROUTEPAT,PHASE,LIST)
+	KILL LIST
+	NEW N SET N=0
+	NEW I SET I=""
+	FOR  SET I=$ORDER(CONF("server","middleware",PHASE,I)) QUIT:I=""  DO
+	. NEW E SET E=$GET(CONF("server","middleware",PHASE,I))
+	. IF E'="" SET N=N+1,LIST(N)=E
+	NEW STR SET STR=$GET(^MIO("ROUTE","META",METHOD,ROUTEPAT,"mw_"_PHASE))
+	IF STR'="" DO
+	. NEW J,E
+	. FOR J=1:1:$L(STR,",") DO
+	. . SET E=$$TRIM^MIOHTTP($P(STR,",",J))
+	. . IF E'="" SET N=N+1,LIST(N)=E
+	QUIT
+	;
+MWBEFORE(DEV,CONF,REQ,CTX,METHOD,ROUTEPAT,ERR)
+	KILL ERR,TTAG
+	NEW L
+	DO MWLIST(.CONF,$GET(METHOD),$GET(ROUTEPAT),"before",.L)
+	IF '$DATA(L) QUIT 1
+	NEW I,ENT,TAG,RTN,OK
+	NEW $ETRAP SET $ETRAP="SET $ECODE="""" SET ERR(""routine"")=""MIOROUTE"" SET ERR(""error"")=""middleware_exception"" SET ERR(""status"")=500 QUIT 0"
+	SET OK=1
+	SET I=0
+	FOR  SET I=$ORDER(L(I)) QUIT:I=""  DO  QUIT:'OK
+	. SET ENT=$GET(L(I))
+	. IF ENT="" QUIT
+	. SET TAG=$PIECE(ENT,"^",1),RTN=$PIECE(ENT,"^",2)
+	. IF TAG=""!(RTN="") DO  SET OK=0 QUIT
+	. . SET ERR("routine")="MIOROUTE",ERR("error")="middleware_bad_entry",ERR("status")=500
+	. IF $TEXT(@(TAG_"^"_RTN))="" DO  SET OK=0 QUIT
+	. . SET ERR("routine")="MIOROUTE",ERR("error")="middleware_missing",ERR("status")=500
+	. SET TTAG="OK=$$"_TAG_"^"_RTN
+	. SET @TTAG@(.DEV,.CONF,.REQ,.CTX,.ERR)
+	. IF +OK'=1 DO
+	. . IF $GET(ERR("routine"))="" SET ERR("routine")=RTN
+	. . IF $GET(ERR("error"))="" SET ERR("error")="middleware_reject"
+	. . IF '$DATA(ERR("status")) SET ERR("status")=403
+	. . SET OK=0
+	QUIT OK
+	;
+MWAFTER(DEV,CONF,REQ,CTX,METHOD,ROUTEPAT,ERR)
+	NEW L
+	DO MWLIST(.CONF,$GET(METHOD),$GET(ROUTEPAT),"after",.L)
+	IF '$DATA(L) QUIT
+	NEW I,ENT,TAG,RTN
+	SET I=0
+	FOR  SET I=$ORDER(L(I)) QUIT:I=""  DO
+	. SET ENT=$GET(L(I))
+	. IF ENT="" QUIT
+	. SET TAG=$PIECE(ENT,"^",1),RTN=$PIECE(ENT,"^",2)
+	. IF TAG=""!(RTN="") QUIT
+	. IF $TEXT(@(TAG_"^"_RTN))="" QUIT
+	. NEW $ETRAP SET $ETRAP="SET $ECODE="""""
+	. DO @(TAG_"^"_RTN_"(.DEV,.CONF,.REQ,.CTX,.ERR)")
+	QUIT
+	;
+MWRESPERR(DEV,CONF,REQ,CTX,ERR)
+	NEW S SET S=+$GET(ERR("status"),500)
+	NEW OBJ
+	SET OBJ("error")=$GET(ERR("error"),"middleware_error")
+	SET OBJ("routine")=$GET(ERR("routine"),"MIOROUTE")
+	SET OBJ("request_id")=$GET(CTX("request_id"))
+	DO RESPJSONX^MIOHTTP(.DEV,.CONF,S,.OBJ,$GET(CTX("request_id")),.CTX)
 	QUIT
 	;
 ; ---- core handlers ----

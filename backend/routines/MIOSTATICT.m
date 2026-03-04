@@ -12,6 +12,10 @@ MIOSTATICT ; Static file handler tests (includes ETag 304)
 	DO T005
 	DO T006
 	DO T007
+	DO T008
+	DO T009
+	DO T010
+	DO T011
 	QUIT
 	;
 STERR
@@ -274,3 +278,113 @@ T007 ; If-Modified-Since -> 304 (server-known mtime)
 	DO EQ^MIOTASSERT($SELECT(OUT["hi":1,1:0),0,"[T007][no body]")
 	QUIT
 	;
+T008 ; /static (no slash) redirects to /static/
+	NEW CONF,REQ,CTX,DEV,OUT,ROOT,OP
+	SET ROOT="tmp"
+	SET OP="tmp/mio_static_t008.out"
+	;
+	SET CONF("server","static","enabled")=1
+	SET CONF("server","static","root")=ROOT
+	SET CONF("server","static","mount")="/static"
+	;
+	KILL REQ,CTX,OUT
+	SET REQ("method")="GET"
+	SET REQ("path")="/static"
+	SET REQ("params","path")=""
+	SET CTX("request_id")="st008"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO STATIC^MIOSTATIC(.DEV,.CONF,.REQ,.CTX)
+	CLOSE DEV
+	USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["301":1,1:0),1,"[T008][status]")
+	DO EQ^MIOTASSERT($SELECT(OUT["Location: /static/":1,1:0),1,"[T008][location]")
+	QUIT
+	;
+T009 ; GET /static/ serves configured index
+	NEW CONF,REQ,CTX,DEV,OUT,ROOT,FP,OP,IDX
+	SET ROOT="tmp"
+	SET IDX="mio_static_index9.html"
+	SET FP=ROOT_"/"_IDX
+	SET OP="tmp/mio_static_t009.out"
+	OPEN FP:(newversion:stream:nowrap)
+	USE FP WRITE "home9" CLOSE FP
+	;
+	SET CONF("server","static","enabled")=1
+	SET CONF("server","static","root")=ROOT
+	SET CONF("server","static","mount")="/static"
+	SET CONF("server","static","index")=IDX
+	;
+	KILL REQ,CTX,OUT
+	SET REQ("method")="GET"
+	SET REQ("path")="/static/"
+	SET REQ("params","path")=""
+	SET CTX("request_id")="st009"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO STATIC^MIOSTATIC(.DEV,.CONF,.REQ,.CTX)
+	CLOSE DEV
+	USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["HTTP/1.1 200 OK":1,1:0),1,"[T009][status]")
+	DO EQ^MIOTASSERT($SELECT(OUT["home9":1,1:0),1,"[T009][body]")
+	QUIT
+	;
+T010 ; Directory listing when index missing and listing enabled
+	NEW CONF,REQ,CTX,DEV,OUT,ROOT,OP
+	SET ROOT="tmp"
+	SET OP="tmp/mio_static_t010.out"
+	; create a couple files in root
+	OPEN (ROOT_"/mio_dl_a.txt"):(newversion:stream:nowrap)
+	USE (ROOT_"/mio_dl_a.txt") WRITE "a" CLOSE (ROOT_"/mio_dl_a.txt")
+	OPEN (ROOT_"/mio_dl_b.txt"):(newversion:stream:nowrap)
+	USE (ROOT_"/mio_dl_b.txt") WRITE "b" CLOSE (ROOT_"/mio_dl_b.txt")
+	;
+	SET CONF("server","static","enabled")=1
+	SET CONF("server","static","root")=ROOT
+	SET CONF("server","static","mount")="/static"
+	SET CONF("server","static","index")="mio_static_noindex_t010.html"
+	SET CONF("server","static","dirListing","enabled")=1
+	SET CONF("server","static","dirListing","maxEntries")=200
+	;
+	KILL REQ,CTX,OUT
+	SET REQ("method")="GET"
+	SET REQ("path")="/static/"
+	SET REQ("params","path")=""
+	SET CTX("request_id")="st010"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO STATIC^MIOSTATIC(.DEV,.CONF,.REQ,.CTX)
+	CLOSE DEV
+	USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["HTTP/1.1 200 OK":1,1:0),1,"[T010][status]")
+	DO EQ^MIOTASSERT($SELECT(OUT["Transfer-Encoding: chunked":1,1:0),1,"[T010][chunked]")
+	DO EQ^MIOTASSERT($SELECT(OUT["mio_dl_a.txt":1,1:0),1,"[T010][a present]")
+	DO EQ^MIOTASSERT($SELECT(OUT["mio_dl_b.txt":1,1:0),1,"[T010][b present]")
+	QUIT
+	;
+T011 ; /static/ missing index and listing disabled -> 404
+	NEW CONF,REQ,CTX,DEV,OUT,ROOT,OP
+	SET ROOT="tmp"
+	SET OP="tmp/mio_static_t011.out"
+	SET CONF("server","static","enabled")=1
+	SET CONF("server","static","root")=ROOT
+	SET CONF("server","static","mount")="/static"
+	SET CONF("server","static","index")="mio_static_noindex_t011.html"
+	;
+	KILL REQ,CTX,OUT
+	SET REQ("method")="GET"
+	SET REQ("path")="/static/"
+	SET REQ("params","path")=""
+	SET CTX("request_id")="st011"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO STATIC^MIOSTATIC(.DEV,.CONF,.REQ,.CTX)
+	CLOSE DEV
+	USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["404":1,1:0),1,"[T011][status]")
+	DO EQ^MIOTASSERT($SELECT(OUT["MIOSTATIC":1,1:0),1,"[T011][routine]")
+	QUIT
