@@ -1,0 +1,92 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mws-config
+  namespace: mumps-io
+data:
+  mws.conf.json: |
+    {
+      "server": {
+        "listen": {
+          "port": 9080
+        },
+        "keepAlive": {
+          "enabled": 1,
+          "maxRequests": 100,
+          "idleSeconds": 10
+        },
+        "timeouts": {
+          "readHeaderMs": 2,
+          "readBodyMs": 3
+        },
+        "http": {
+          "limits": {
+            "maxRequestLineBytes": 8192,
+            "maxHeaderLineBytes": 8192,
+            "maxHeaders": 100,
+            "maxHeaderBytes": 65536
+          }
+        },
+        "static": {
+          "enabled": 1,
+          "mount": "/static",
+          "root": "/app/static",
+          "precompressed": {
+            "enabled": 1,
+            "allowRangeEncoded": 0
+          },
+          "cache": {
+            "enabled": 1,
+            "maxAgeSeconds": 3600,
+            "immutable": 0,
+            "sendExpires": 0,
+            "expiresFrom": "mtime"
+          },
+          "dirListing": {
+            "enabled": 0
+          }
+        },
+        "log": {
+          "access": {
+            "enabled": 1,
+            "format": "json"
+          }
+        },
+        "metrics": {
+          "enabled": 1
+        },
+        "rate": {
+          "enabled": 1,
+          "rps": 20,
+          "burst": 40,
+          "trustProxy": 1
+        },
+        "dos": {
+          "maxActiveConns": 200,
+          "maxConnSeconds": 0
+        },
+        "process": {
+          "gracefulShutdownSeconds": 5
+        },
+        "security": {
+          "preset": "balanced",
+          "csp": {
+            "enabled": 0,
+            "reportOnly": 1,
+            "nonce": {
+              "enabled": 0
+            }
+          }
+        }
+      },
+      "auth": {
+        "enabled": 1,
+        "mode": "api_key",
+        "protectMode": "prefix",
+        "protect": [
+          "/api/",
+          "/admin/",
+          "/metrics"
+        ]
+      }
+    }

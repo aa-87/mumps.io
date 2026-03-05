@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mws
+  namespace: mumps-io
+spec:
+  selector:
+    app: mws
+  ports:
+    - name: http
+      port: 80
+      targetPort: 9080
+  type: ClusterIP

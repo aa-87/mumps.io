@@ -1,0 +1,44 @@
+[Unit]
+Description=MUMPS.IO Web Server (MIO) - YottaDB/GT.M
+After=network.target
+Wants=network.target
+
+# If you use a reverse proxy on the same host, you may want:
+# After=nginx.service
+# Wants=nginx.service
+
+[Service]
+Type=simple
+User=mio
+Group=mio
+
+# Adjust to your install path
+WorkingDirectory=/opt/mumps.io/MIO/backend
+
+# Environment variables for YottaDB and configuration
+EnvironmentFile=/etc/mumps-io/mws.env
+
+# Start the server (runs start label in MIO routine)
+ExecStart=/usr/local/bin/yottadb -run MIO
+
+# Request graceful stop (MIOD watches ^MIO("CTL","STOP"))
+ExecStop=/usr/local/bin/yottadb -run stop^MIO
+
+# Ensure systemd gives enough time for draining (align with gracefulShutdownSeconds)
+TimeoutStopSec=10
+Restart=on-failure
+RestartSec=2
+
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/mumps-io /var/log/mumps-io /opt/mumps.io/MIO/backend
+# If your DB/global directory is elsewhere, add it to ReadWritePaths.
+
+# Optional: raise file descriptor limit for busy servers
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target

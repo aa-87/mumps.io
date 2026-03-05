@@ -1,0 +1,23 @@
+# Caddy reverse proxy recipe for MUMPS.IO MIO
+#
+# Example:
+#   example.com {
+#     reverse_proxy 127.0.0.1:9080
+#   }
+
+example.com {
+    # Automatic TLS by default (Let's Encrypt). For internal-only use:
+    # auto_https off
+
+    reverse_proxy 127.0.0.1:9080 {
+        header_up Host {host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+        header_up X-Request-Id {http.request.id}
+
+        # WebSocket upgrade support is automatic in Caddy reverse_proxy.
+    }
+
+    # Optional: gzip encode at proxy layer (MIO already supports br/gz static variants)
+    # encode gzip
+}
