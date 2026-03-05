@@ -30,7 +30,6 @@ MIOD ; Worker daemon. Accepts connections and runs request lifecycle.;
 ; See docs/routines for details.;
 	;
 STERR
-	DO ETRAP^MIODRAIN($J)
 	ZSHOW "*":^AAA
 	S ^AAA=$ZSTATUS
 	Q
@@ -67,21 +66,14 @@ RUN(PORT)
 	. . J @J
 	QUIT
 	;
-STOP ; Request graceful shutdown (stop accepting new conns, drain existing)
-	NEW CONF MERGE CONF=^MIO("CONF")
-	SET ^MIO("CTL","STOP")=1
-	DO REQSTOP^MIODRAIN(.CONF,"stop")
-	NEW DEV SET DEV=$GET(^MIO("CTL","DEV"))
-	IF DEV'="" DO CLOSE^MIOSOCK(DEV) DO:$TEXT(INFO^MIOLOG)'="" INFO^MIOLOG("listen_device_closed","")
-	NEW GS SET GS=+$GET(CONF("server","process","gracefulShutdownSeconds"),3)
-	IF GS<0 SET GS=0
-	IF GS>0 DO
-	. NEW OK SET OK=$$WAITDRAIN^MIODRAIN(GS)
-	. IF 'OK,$TEXT(INFO^MIOLOG)'="" DO INFO^MIOLOG("drain_timeout","active="_$$ACTIVE^MIODRAIN())
-	DO:$TEXT(INFO^MIOLOG)'="" INFO^MIOLOG("mio_server_stopped","")
+STOP ; to do -> make sure to kill the pid associated after checking
+	S ^MIO("CTL","STOP")=1
+	N DEV S DEV=$G(^MIO("CTL","DEV"))
+	H $GET(^MIO("CONF","server","process","gracefulShutdownSeconds"),3)
+	I DEV]"" I 1 D CLOSE^MIOSOCK(DEV) D:$T INFO^MIOLOG("listen_device_closed","")
+	D INFO^MIOLOG("mio_server_stopped","")
 	QUIT
 	;
-
 JOBCONN(ADDR,HANDLE)
 	NEW CONF MERGE CONF=^MIO("CONF")
 	; Ensure router middleware pipeline is configured (CORS/Auth/AccessLog defaults)
@@ -91,8 +83,6 @@ JOBCONN(ADDR,HANDLE)
 	USE DEV:(delim=$C(13,10))
 	NEW CTX,REQ,ERR
 	SET CTX("remote_addr")=$GET(ADDR)
-	NEW CONN0US SET CONN0US=$$TSUS^MIOMET()
-	DO BEGIN^MIODRAIN(.CONF,ADDR,HANDLE,CONN0US)
 	;
 	; Access log (ROI #1)
 	NEW LOGEN SET LOGEN=+$GET(CONF("server","log","access","enabled"),0)
@@ -100,6 +90,8 @@ JOBCONN(ADDR,HANDLE)
 	NEW METEN SET METEN=$$EN^MIOMET(.CONF)
 	; Rate limiting (ROI #6)
 	NEW RLEN SET RLEN=+$GET(CONF("server","rate","enabled"),0)
+ 	; Error Center (ROI B)
+	NEW ERREN SET ERREN=$$EN^MIOERRC(.CONF)
 	;
 	; Keep-alive policy
 	NEW KAEN SET KAEN=+$GET(CONF("server","keepAlive","enabled"),1)
@@ -114,8 +106,6 @@ JOBCONN(ADDR,HANDLE)
 	NEW NREQ SET NREQ=0
 	NEW DONE SET DONE=0
 	FOR  QUIT:DONE  DO  QUIT:$GET(DONE)
-	. ; Graceful drain: do not accept additional keep-alive requests.
-	. IF NREQ>0,$$ISDRAIN^MIODRAIN() SET DONE=1 QUIT
 	. ; For the first request, use normal timeouts.;
 	. ; For subsequent requests, use keep-alive idle timeout for header reads.;
 	. IF NREQ>0 DO
@@ -149,36 +139,13 @@ JOBCONN(ADDR,HANDLE)
 	. . . ; Metrics + access log
 	. . . IF METEN DO OBSX^MIOMET($GET(REQ("method")),"(parse_error)",+$GET(CTX("status")),+$GET(CTX("met","total_ms")),+$GET(CTX("met","parse_ms")),0,0,0,$GET(CTX("error")))
 	. . . IF LOGEN NEW LERR,OKL SET OKL=$$ACCESS^MIOLOG(.CONF,.REQ,.CTX,.LERR)
+	. . IF ERREN DO PUSH^MIOERRC(.CONF,.REQ,.CTX,.ERR,"parse")
 	. . ; Treat keep-alive idle timeout as a clean close (after at least one request).;
 	. . IF NREQ>0,$GET(ERR("error"))="read_timeout" SET DONE=1 QUIT
 	. . ; Otherwise close hard.;
 	. . SET DONE=1
 	. ;
 	. SET NREQ=NREQ+1
-	. ; Graceful drain: if this connection started after drain began, reject with 503 and close.
-	. IF $$REJECTNEW^MIODRAIN(CONN0US) DO  QUIT
-	. . NEW OBJ,HEAD,BODY,ST
-	. . SET ST=503
-	. . SET HEAD("Content-Type")="application/json"
-	. . SET HEAD("Connection")="close"
-	. . SET OBJ("ok")=0
-	. . SET OBJ("error")="server_shutting_down"
-	. . SET OBJ("routine")="MIOD"
-	. . SET OBJ("request_id")=$GET(CTX("request_id"))
-	. . SET BODY=$$EN^MIOJSON1(.OBJ)
-	. . DO RESPX^MIOHTTP(.DEV,.CONF,ST,.HEAD,BODY,$GET(CTX("request_id")),.CTX)
-	. . SET CTX("status")=ST,CTX("route")="(shutting_down)",CTX("error")="server_shutting_down"
-	. . NEW TSD SET TSD=$$TSUS^MIOMET()
-	. . SET CTX("bytes_in")=+$GET(REQ("body","len"),0)
-	. . NEW BOUT SET BOUT=+$GET(^TMP($J,"MIOHTTP","RESP","bytes"))
-	. . IF BOUT<1 SET BOUT=+$GET(^TMP($J,"MIOHTTP","STREAM","bytes"))
-	. . SET CTX("bytes_out")=BOUT
-	. . SET CTX("met","handler_ms")=0
-	. . SET CTX("met","total_ms")=((TSD-$GET(CTX("t0us")))/1000)
-	. . IF METEN DO OBSX^MIOMET($GET(REQ("method")),"(shutting_down)",ST,+$GET(CTX("met","total_ms")),+$GET(CTX("met","parse_ms")),0,+$GET(CTX("bytes_in")),+BOUT,$GET(CTX("error")))
-	. . IF LOGEN NEW LERR,OKL SET OKL=$$ACCESS^MIOLOG(.CONF,.REQ,.CTX,.LERR)
-	. . DO BODYFREE^MIOHTTP(.REQ)
-	. . SET DONE=1
 	. ; Rate limiting (per-IP token bucket)
 	. IF RLEN DO  QUIT:$GET(DONE)
 	. . NEW RERR,OKR SET OKR=$$ALLOW^MIORATE(.CONF,.CTX,.REQ,.RERR)
@@ -204,6 +171,7 @@ JOBCONN(ADDR,HANDLE)
 	. . SET CTX("met","total_ms")=((TRL-$GET(CTX("t0us")))/1000)
 	. . IF METEN DO OBSX^MIOMET($GET(REQ("method")),"(rate_limited)",429,+$GET(CTX("met","total_ms")),+$GET(CTX("met","parse_ms")),0,+$GET(CTX("bytes_in")),+BOUT,$GET(CTX("error")))
 	. . IF LOGEN NEW LERR,OKL SET OKL=$$ACCESS^MIOLOG(.CONF,.REQ,.CTX,.LERR)
+	. . IF ERREN DO PUSH^MIOERRC(.CONF,.REQ,.CTX,.RERR,"rate")
 	. . ; Free request body storage
 	. . DO BODYFREE^MIOHTTP(.REQ)
 	. . SET DONE=1
@@ -216,7 +184,6 @@ JOBCONN(ADDR,HANDLE)
 	. ;
 	. ; Decide connection persistence for THIS response.;
 	. NEW KEEP SET KEEP=$$KASHOULD(.CONF,.REQ,NREQ,KAEN,KAMAX)
-	. IF $$ISDRAIN^MIODRAIN() SET KEEP=0
 	. SET CONF("server","http","defaultResponseHeaders","Connection")=$$KACONN(.REQ,KEEP)
 	. ;
 	. ; Pre-match route (enables per-route authz without double parse)
@@ -250,6 +217,8 @@ JOBCONN(ADDR,HANDLE)
 	. . DO OBSX^MIOMET(MM,RT,ST,LATMS,+$GET(CTX("met","parse_ms")),+$GET(CTX("met","handler_ms")),+$GET(CTX("bytes_in")),+BOUT,$GET(CTX("error")))
 	. ;
 	. ; Access log for normal requests is emitted by router middleware (MIOMW LOGA).
+	. ; Error Center capture (best effort)
+	. IF ERREN DO CAPREQ^MIOERRC(.CONF,.REQ,.CTX)
 	. ; Free request body storage each request
 	. DO BODYFREE^MIOHTTP(.REQ)
 	. ;
@@ -265,7 +234,6 @@ JOBCONN(ADDR,HANDLE)
 	; Flush any buffered access logs for this job
 	IF LOGEN NEW LERR2,OKF SET OKF=$$FLUSH^MIOLOG(.CONF,.LERR2)
 	IF LOGEN DO CLOSEALL^MIOLOG(.CONF)
-	DO END^MIODRAIN($J)
 	DO CLOSE^MIOSOCK(DEV)
 	QUIT
 ; Keep-alive decision: returns 1 to keep, 0 to close after this request.;

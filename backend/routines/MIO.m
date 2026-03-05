@@ -41,6 +41,7 @@ INIT
 	SET ^MIO("CONF","auth","protect",1)="/api/"
 	SET ^MIO("CONF","auth","protect",2)="/admin/"
 	SET ^MIO("CONF","auth","protect",3)="/metrics"
+	SET ^MIO("CONF","auth","protect",4)="/debug/"
 	; Global middleware: LOG + CORS only
 	;KILL ^MIO("CONF","server","middleware","before")
 	;SET ^MIO("CONF","server","middleware","before",1)="LOGB^MIOMW"
@@ -48,6 +49,10 @@ INIT
 	;KILL ^MIO("CONF","server","middleware","after")
 	;SET ^MIO("CONF","server","middleware","after",1)="CORSA^MIOMW"
 	;SET ^MIO("CONF","server","middleware","after",2)="LOGA^MIOMW"
+	S CONF("server","errors","enabled")=1
+	S CONF("server","errors","maxEntries")=2000
+	S CONF("server","errors","capture4xx")=1
+	S CONF("server","errors","capture404")=1
 	DO INIT^MIOROUTE
 	DO START^MIOTPL(.CONF)
 	DO REG^MIODEMO(.CONF)
@@ -62,6 +67,7 @@ INIT
 	DO REG^MIOPLGD(.CONF)
 	DO REG^MIOSTATIC(.CONF)
 	DO REG^MIOHEALTH(.CONF)
+	DO REG^MIOERRC(.CONF)
 	DO COMPILE^MIOROUTE
 	DO START^MIOCLEAN(.CONF)
 	QUIT
