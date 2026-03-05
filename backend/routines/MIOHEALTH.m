@@ -1,30 +1,58 @@
 MIOHEALTH ; Health + readiness endpoints (ROI #5)
 ;
-; Purpose
-; - Provide production-friendly health and readiness endpoints.
+; PURPOSE
+; Provide production-friendly health and readiness endpoints.
 ;
-; Endpoints
-; - GET /readyz  -> 200 when ready, else 503 with JSON details.
-;   /healthz is a core handler in MIOROUTE and always returns 200.
+; ENDPOINTS (typical)
+;   GET /healthz  -> always 200 (service is running)
+;   GET /readyz   -> 200 when ready, else 503 with JSON checks
 ;
-; Notes
-; - No ZSYSTEM.
-; - Keep checks fast and deterministic.
-; - When not ready, response includes routine + error fields.
+; ROUTE REGISTRATION
+;   DO REG^MIOHEALTH(.CONF) during startup before COMPILE^MIOROUTE.
 ;
+; DESIGN
+; - Deterministic, fast checks
+; - No ZSYSTEM, no GOTO
+; - All error responses include routine + error
+;
+; GLOBALS
+; - none (read-only checks on ^MIO(...) when present)
+;
+	Q
+	;
+REG(CONF) ; Register routes (safe no-op if router not available)
+	IF $TEXT(ADD^MIOROUTE)="" QUIT
+	DO ADD^MIOROUTE("GET","/healthz","HEALTH^MIOHEALTH")
+	DO ADD^MIOROUTE("GET","/readyz","READY^MIOHEALTH")
 	QUIT
 	;
-READY(DEV,CONF,REQ,CTX)
+HEALTH(DEV,CONF,REQ,CTX) ; Always 200
+	NEW OBJ
+	KILL OBJ
+	SET OBJ("ok")=1
+	SET OBJ("status")="ok"
+	SET OBJ("routine")="MIOHEALTH"
+	SET OBJ("endpoint")="healthz"
+	SET OBJ("request_id")=$GET(CTX("request_id"))
+	IF $TEXT(NOWISO^MIOUTIL)'="" SET OBJ("ts")=$$NOWISO^MIOUTIL()
+	DO RESPJSONX^MIOHTTP(.DEV,.CONF,200,.OBJ,$GET(CTX("request_id")),.CTX)
+	SET CTX("status")=200
+	QUIT
+	;
+READY(DEV,CONF,REQ,CTX) ; 200 when ready else 503
 	NEW OBJ,OK,STATUS
 	SET OK=1
 	KILL OBJ
 	SET OBJ("routine")="MIOHEALTH"
 	SET OBJ("endpoint")="readyz"
-	SET OBJ("ts")=$$NOWISO^MIOUTIL()
+	SET OBJ("request_id")=$GET(CTX("request_id"))
+	IF $TEXT(NOWISO^MIOUTIL)'="" SET OBJ("ts")=$$NOWISO^MIOUTIL()
 	;
 	; checks (deterministic order)
 	DO CHKCONF(.CONF,.OBJ,.OK)
+	DO CHKROUTER(.CONF,.OBJ,.OK)
 	DO CHKSTATIC(.CONF,.OBJ,.OK)
+	DO CHKSPOOL(.CONF,.OBJ,.OK)
 	DO CHKACCESSLOG(.CONF,.OBJ,.OK)
 	DO CHKTPL(.CONF,.OBJ,.OK)
 	;
@@ -42,11 +70,19 @@ READY(DEV,CONF,REQ,CTX)
 	;
 ; ---- checks ------------------------------------------------------------
 CHKCONF(CONF,OBJ,OK)
-	; CONF is passed by reference by the server, but may be empty in tests
-	; or minimal configurations. Readiness should not fail solely because
-	; the configuration array is empty.
+	; Do not fail solely because CONF is empty (tests may pass minimal config)
 	NEW HAS SET HAS=$SELECT($DATA(CONF)>0:1,1:0)
 	DO SETCHK(.OBJ,"conf_loaded",1,$SELECT(HAS:"ok",1:"empty"))
+	QUIT
+	;
+CHKROUTER(CONF,OBJ,OK)
+	; Optional: check that router was compiled (if info exists)
+	NEW EN SET EN=$$BOOL($GET(CONF("server","health","readyCheckRouterCompiled"),0))
+	IF 'EN DO  QUIT
+	. DO SETCHK(.OBJ,"router_compiled",1,"skipped")
+	NEW ROK SET ROK=+$GET(^MIO("ROUTE","COMPILE","ok"))
+	DO SETCHK(.OBJ,"router_compiled",ROK,$SELECT(ROK:"ok",1:"not_compiled"))
+	IF 'ROK SET OK=0
 	QUIT
 	;
 CHKSTATIC(CONF,OBJ,OK)
@@ -59,10 +95,21 @@ CHKSTATIC(CONF,OBJ,OK)
 	IF 'EOK SET OK=0
 	QUIT
 	;
+CHKSPOOL(CONF,OBJ,OK)
+	; Multipart spooling is optional but common. We only check directory existence (no writes).
+	NEW EN SET EN=$$BOOL($GET(CONF("server","health","readyCheckSpoolDir"),0))
+	IF 'EN DO  QUIT
+	. DO SETCHK(.OBJ,"multipart_spool_dir",1,"skipped")
+	NEW DIR SET DIR=$GET(CONF("server","multipart","spoolDir"),"/tmp")
+	NEW DOK SET DOK=$$DIREX(DIR)
+	DO SETCHK(.OBJ,"multipart_spool_dir",DOK,$SELECT(DOK:"ok",1:"missing:"_DIR))
+	IF 'DOK SET OK=0
+	QUIT
+	;
 CHKACCESSLOG(CONF,OBJ,OK)
 	NEW EN SET EN=$$BOOL($GET(CONF("server","log","access","enabled")))
 	IF 'EN DO  QUIT
-	. DO SETCHK(.OBJ,"access_log_dir",1,"disabled")
+	. DO SETCHK(.OBJ,"access_log_sink",1,"disabled")
 	; Access logs are global-backed for determinism/perf.
 	NEW ME SET ME=+$GET(CONF("server","log","access","maxEntries"),20000)
 	IF ME<100 DO  QUIT
@@ -92,31 +139,11 @@ DIREX(PATH)
 	NEW P SET P=$GET(PATH)
 	IF P="" QUIT 0
 	IF $L(P)>1,$E(P,$L(P))="/" SET P=$E(P,1,$L(P)-1)
-	IF $ZSEARCH(P)'="" QUIT 1
-	IF $ZSEARCH(P_"/")'="" QUIT 1
+	; Directory exists if any file matches (best-effort, deterministic)
 	IF $ZSEARCH(P_"/.")'="" QUIT 1
+	IF $ZSEARCH(P_"/")'="" QUIT 1
+	IF $ZSEARCH(P)'="" QUIT 1
 	QUIT 0
-	;
-DIRNAME(PATH)
-	NEW P SET P=$GET(PATH)
-	NEW N SET N=$L(P,"/")
-	IF N<2 QUIT ""
-	NEW D SET D=$P(P,"/",1,N-1)
-	IF D="" SET D="/"
-	QUIT D
-	;
-CANWRITE(DIR,FN)
-	NEW OK SET OK=1
-	NEW FP SET FP=$GET(DIR)
-	IF FP="" QUIT 0
-	IF $E(FP,$L(FP))'="/" SET FP=FP_"/"
-	SET FP=FP_$GET(FN,".mio_ready")
-	NEW $ETRAP SET $ETRAP="SET $ECODE=\"\" SET OK=0"
-	; Try append; if file doesn't exist, create new.
-	OPEN FP:(append:stream:nowrap):1 ELSE  DO
-	. OPEN FP:(new:stream:nowrap):1 ELSE  SET OK=0
-	IF OK CLOSE FP
-	QUIT OK
 	;
 BOOL(X)
 	NEW V SET V=$$LOW^MIOHTTP($GET(X))

@@ -33,8 +33,6 @@ INIT
 	N CONF D LOAD^MIOCONF(PATH,.CONF)
 	K ^MIO("CONF") M ^MIO("CONF")=CONF
 	;
-	KILL ^MIO("CONF","auth","protectAll")
-	KILL ^MIO("CONF","auth","requireAuth")
 	; Protect only selected prefixes
 	SET ^MIO("CONF","auth","enabled")=1
 	SET ^MIO("CONF","auth","protectMode")="prefix"
@@ -63,6 +61,7 @@ INIT
 	DO REG^MIOAPP(.CONF)
 	DO REG^MIOPLGD(.CONF)
 	DO REG^MIOSTATIC(.CONF)
+	DO REG^MIOHEALTH(.CONF)
 	DO COMPILE^MIOROUTE
 	DO START^MIOCLEAN(.CONF)
 	QUIT

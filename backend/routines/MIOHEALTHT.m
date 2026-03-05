@@ -1,102 +1,116 @@
-MIOHEALTHT ; Health + readiness endpoint tests (ROI #5)
+MIOHEALTHT ; Tests for health + readiness endpoints (ROI #5)
 ;
 ; Run:
-;   YDB>ZL "MIOHTTP.m","MIOROUTE.m","MIOHEALTH.m","MIOHEALTHT.m","MIOTASSERT.m","MIOUTIL.m"
 ;   YDB>D ^MIOHEALTHT
 ;
-; Output:
-;   Prints only FAIL lines. No output means pass.;
+; Notes
+; - Quiet on success.;
+; - Writes to tmp files and validates response content.;
 ;
+	Q
+	;
+START
 	DO T001
 	DO T002
 	DO T003
 	DO T004
 	QUIT
 	;
-RESET
-	KILL ^MIO("ROUTE")
-	KILL ^MIO("CONF","server","routing")
+T001 ; /healthz always 200
+	NEW CONF,REQ,CTX,OUT,OP
+	SET OP="tmp/mio_health_t001.out"
+	DO SETUPROUTES
+	KILL REQ,CTX
+	SET REQ("method")="GET"
+	SET REQ("path")="/healthz"
+	SET CTX("request_id")="hlt001"
+	DO RUNDISP(OP,.CONF,.REQ,.CTX,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["HTTP/1.1 200 OK":1,1:0),1,"[T001][status]")
+	DO EQ^MIOTASSERT($SELECT(OUT["""endpoint"":""healthz""":1,1:0),1,"[T001][body]")
 	QUIT
 	;
-READALL(PATH,OUT)
-	NEW OIO SET OIO=$IO
-	SET OUT=""
-	NEW DEV SET DEV=PATH
-	OPEN DEV:(readonly:stream:nowrap):1 ELSE  QUIT
-	USE DEV
-	NEW X
-	FOR  READ X#16384  QUIT:$ZEOF  SET OUT=OUT_X
-	CLOSE DEV
-	USE OIO
-	QUIT
-	;
-T001 ; /readyz is registered by INIT
-	DO RESET
-	DO INIT^MIOROUTE
-	DO COMPILE^MIOROUTE
-	NEW P,H,RP,OK
-	KILL P
-	SET OK=$$MATCH^MIOROUTE("GET","/readyz",.P,.H,.RP)
-	DO EQ^MIOTASSERT(+OK,1,"[T001] match ok")
-	DO EQ^MIOTASSERT($GET(H),"READY^MIOHEALTH","[T001] handler")
-	QUIT
-	;
-T002 ; /healthz always 200
-	DO RESET
-	DO INIT^MIOROUTE
-	DO COMPILE^MIOROUTE
-	NEW CONF,REQ,CTX,DEV,OUT,OP
+T002 ; /readyz 200 with minimal config (static disabled)
+	NEW CONF,REQ,CTX,OUT,OP
 	SET OP="tmp/mio_health_t002.out"
+	DO SETUPROUTES
+	SET CONF("server","static","enabled")=0
+	; do not require template/spool/router checks in this minimal config
+	SET CONF("server","health","readyCheckTemplates")=0
+	SET CONF("server","health","readyCheckSpoolDir")=0
+	SET CONF("server","health","readyCheckRouterCompiled")=0
 	KILL REQ,CTX
-	SET REQ("method")="GET",REQ("path")="/healthz"
-	SET CTX("request_id")="hz002"
-	OPEN OP:(newversion:stream:nowrap)
-	SET DEV=OP USE DEV
-	DO DISPATCH^MIOROUTE(.DEV,.CONF,.REQ,.CTX)
-	CLOSE DEV USE $PRINCIPAL
-	DO READALL(OP,.OUT)
-	DO EQ^MIOTASSERT($SELECT(OUT["HTTP/1.1 200":1,1:0),1,"[T002] status")
-	DO EQ^MIOTASSERT($SELECT(OUT["ok":1,1:0),1,"[T002] body")
+	SET REQ("method")="GET"
+	SET REQ("path")="/readyz"
+	SET CTX("request_id")="hlt002"
+	DO RUNDISP(OP,.CONF,.REQ,.CTX,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["HTTP/1.1 200 OK":1,1:0),1,"[T002][status]")
+	DO EQ^MIOTASSERT($SELECT(OUT["""status"":""ready""":1,1:0),1,"[T002][body]")
 	QUIT
 	;
-T003 ; /readyz ok when no required deps enabled
-	DO RESET
-	DO INIT^MIOROUTE
-	DO COMPILE^MIOROUTE
-	NEW CONF,REQ,CTX,DEV,OUT,OP
+T003 ; /readyz 503 when static enabled but root missing
+	NEW CONF,REQ,CTX,OUT,OP
 	SET OP="tmp/mio_health_t003.out"
-	; static/log disabled by default
+	DO SETUPROUTES
+	SET CONF("server","static","enabled")=1
+	SET CONF("server","static","root")="tmp/__mio_missing_dir__"
+	SET CONF("server","health","readyCheckTemplates")=0
+	SET CONF("server","health","readyCheckSpoolDir")=0
+	SET CONF("server","health","readyCheckRouterCompiled")=0
 	KILL REQ,CTX
-	SET REQ("method")="GET",REQ("path")="/readyz"
-	SET CTX("request_id")="rz003"
-	OPEN OP:(newversion:stream:nowrap)
-	SET DEV=OP USE DEV
-	DO DISPATCH^MIOROUTE(.DEV,.CONF,.REQ,.CTX)
-	CLOSE DEV USE $PRINCIPAL
-	DO READALL(OP,.OUT)
-	DO EQ^MIOTASSERT($SELECT(OUT["HTTP/1.1 200":1,1:0),1,"[T003] status")
-	DO EQ^MIOTASSERT($SELECT(OUT["""ok"":1":1,1:0),1,"[T003] ok=1")
-	DO EQ^MIOTASSERT($SELECT(OUT["""routine"":""MIOHEALTH""":1,1:0),1,"[T003] routine")
+	SET REQ("method")="GET"
+	SET REQ("path")="/readyz"
+	SET CTX("request_id")="hlt003"
+	DO RUNDISP(OP,.CONF,.REQ,.CTX,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["HTTP/1.1 503 Service Unavailable":1,1:0),1,"[T003][status]")
+	DO EQ^MIOTASSERT($SELECT(OUT["""routine"":""MIOHEALTH""":1,1:0),1,"[T003][routine]")
+	DO EQ^MIOTASSERT($SELECT(OUT["""error"":""not_ready""":1,1:0),1,"[T003][error]")
+	DO EQ^MIOTASSERT($SELECT(OUT["""static_root""":1,1:0),1,"[T003][checks]")
 	QUIT
 	;
-T004 ; /readyz 503 when static enabled but root missing
-	DO RESET
-	DO INIT^MIOROUTE
-	DO COMPILE^MIOROUTE
-	NEW CONF,REQ,CTX,DEV,OUT,OP
+T004 ; /readyz 200 when static enabled and root exists
+	NEW CONF,REQ,CTX,OUT,OP
 	SET OP="tmp/mio_health_t004.out"
+	DO SETUPROUTES
 	SET CONF("server","static","enabled")=1
-	SET CONF("server","static","root")="tmp/__no_such_dir_mio_readyz_"_$J
+	SET CONF("server","static","root")="tmp"
+	SET CONF("server","health","readyCheckTemplates")=0
+	SET CONF("server","health","readyCheckSpoolDir")=0
+	SET CONF("server","health","readyCheckRouterCompiled")=0
 	KILL REQ,CTX
-	SET REQ("method")="GET",REQ("path")="/readyz"
-	SET CTX("request_id")="rz004"
+	SET REQ("method")="GET"
+	SET REQ("path")="/readyz"
+	SET CTX("request_id")="hlt004"
+	DO RUNDISP(OP,.CONF,.REQ,.CTX,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["HTTP/1.1 200 OK":1,1:0),1,"[T004][status]")
+	DO EQ^MIOTASSERT($SELECT(OUT["""status"":""ready""":1,1:0),1,"[T004][body]")
+	QUIT
+	;
+; ---- harness helpers ---------------------------------------------------
+SETUPROUTES
+	; Setup minimal routes for these tests (avoid depending on full INIT)
+	IF $TEXT(ADD^MIOROUTE)="" QUIT
+	KILL ^MIO("ROUTE")
+	DO ADD^MIOROUTE("GET","/healthz","HEALTH^MIOHEALTH")
+	DO ADD^MIOROUTE("GET","/readyz","READY^MIOHEALTH")
+	DO COMPILE^MIOROUTE
+	QUIT
+	;
+RUNDISP(OP,CONF,REQ,CTX,OUT)
+	NEW DEV,OIO
+	SET OIO=$IO
 	OPEN OP:(newversion:stream:nowrap)
 	SET DEV=OP USE DEV
 	DO DISPATCH^MIOROUTE(.DEV,.CONF,.REQ,.CTX)
-	CLOSE DEV USE $PRINCIPAL
+	CLOSE DEV USE OIO
 	DO READALL(OP,.OUT)
-	DO EQ^MIOTASSERT($SELECT(OUT["HTTP/1.1 503":1,1:0),1,"[T004] status")
-	DO EQ^MIOTASSERT($SELECT(OUT["""error"":""not_ready""":1,1:0),1,"[T004] error")
-	DO EQ^MIOTASSERT($SELECT(OUT["static_root":1,1:0),1,"[T004] static_root check")
+	QUIT
+	;
+READALL(FP,OUT)
+	NEW X S OUT=""
+	NEW $ETRAP SET $ETRAP="SET $ECODE="""" QUIT"
+	OPEN FP:(readonly:stream:nowrap)
+	USE FP
+	FOR  READ X QUIT:$ZEOF  SET OUT=OUT_X
+	CLOSE FP USE $PRINCIPAL
 	QUIT
 	;
