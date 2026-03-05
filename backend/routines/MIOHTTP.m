@@ -57,7 +57,7 @@ PARSE(DEV,CONF,REQ,ERR)
 	DO READLINE(.DEV,TOH,.LINE,.ERR) IF $DATA(ERR) QUIT 0
 	IF LINE="" DO  QUIT 0
 	. SET ERR("routine")="MIOHTTP",ERR("error")="client_closed"
-	IF $L(LINE)>$GET(CONF("server","limits","maxRequestLineBytes"),8192) DO  QUIT 0
+	IF $L(LINE)>$$LIM(.CONF,"maxRequestLineBytes",8192) DO  QUIT 0
 	. SET ERR("routine")="MIOHTTP",ERR("error")="request_line_too_large"
 	;
 	DO PARSEREQLINE(LINE,.REQ,.ERR) IF $DATA(ERR) QUIT 0
@@ -226,9 +226,9 @@ HEXVAL(C)
 READHDRS(DEV,CONF,REQ,ERR)
 	KILL REQ("hdr")
 	NEW MAXC,MAXB,MAXL,COUNT,BYTES,LINE,TOH
-	SET MAXC=$GET(CONF("server","limits","maxHeaderCount"),80)
-	SET MAXB=$GET(CONF("server","limits","maxHeaderBytes"),65536)
-	SET MAXL=$GET(CONF("server","limits","maxHeaderLineBytes"),8192)
+	SET MAXC=$$LIM(.CONF,"maxHeaderCount",80)
+	SET MAXB=$$LIM(.CONF,"maxHeaderBytes",65536)
+	SET MAXL=$$LIM(.CONF,"maxHeaderLineBytes",8192)
 	SET COUNT=0,BYTES=0
 	SET TOH=$GET(CONF("server","timeouts","readHeaderMs"),2)
 	FOR  DO  QUIT:LINE=""
@@ -318,6 +318,22 @@ TRIM(S)
 	FOR  QUIT:$EXTRACT(X,1)'=" "  SET X=$EXTRACT(X,2,$LENGTH(X))
 	FOR  QUIT:$EXTRACT(X,$LENGTH(X))'=" "  SET X=$EXTRACT(X,1,$LENGTH(X)-1)
 	QUIT X
+;
+LIM(CONF,NAME,DEF)
+	; Lookup limit values with backward-compatible paths.
+	; Preferred: CONF("server","http","limits",NAME)
+	; Fallback:  CONF("server","limits",NAME)
+	NEW V SET V=$GET(CONF("server","http","limits",NAME))
+	IF V="" SET V=$GET(CONF("server","limits",NAME))
+	; Allow legacy/alternate key spellings
+	IF V="",NAME="maxHeaderLineBytes" DO
+	. SET V=$GET(CONF("server","http","limits","maxHeaderLineLength"))
+	. IF V="" SET V=$GET(CONF("server","limits","maxHeaderLineLength"))
+	IF V="",NAME="maxRequestLineBytes" DO
+	. SET V=$GET(CONF("server","http","limits","maxRequestLineLength"))
+	. IF V="" SET V=$GET(CONF("server","limits","maxRequestLineLength"))
+	IF V="" SET V=$GET(DEF)
+	QUIT V
 	;
 RESPX(DEV,CONF,STATUS,HEAD,BODY,REQID,CTX)
 	IF $DATA(CTX) SET CTX("status")=STATUS
@@ -457,20 +473,18 @@ SENDFILE(DEV,CONF,PATH,HEAD,REQID,CTX,METHOD)
 	OPEN FDEV:(readonly:stream:nowrap):1 ELSE  DO  QUIT 0
 	. IF $DATA(CTX) SET CTX("err","routine")="MIOHTTP",CTX("err","error")="open_failed"
 	USE FDEV
-	IF M="head" GOTO SFHEAD
+	IF M="head" DO  QUIT 1
+	. KILL HEAD("Transfer-Encoding"),HEAD("Content-Length")
+	. IF '$DATA(HEAD("Connection")) SET HEAD("Connection")="keep-alive"
+	. DO RESPX(.DEV,.CONF,200,.HEAD,"",REQID,.CTX)
+	. CLOSE FDEV
+	. USE OIO
 	DO STREAMBEGIN(.DEV,.CONF,200,.HEAD,REQID,.CTX)
 	NEW X
 	FOR  DO  QUIT:$ZEOF
 	. READ X#CHSZ
 	. IF X'="" DO STREAMWRITE(.DEV,X)
 	DO STREAMEND(.DEV)
-	CLOSE FDEV
-	USE OIO
-	QUIT 1
-SFHEAD
-	KILL HEAD("Transfer-Encoding"),HEAD("Content-Length")
-	IF '$DATA(HEAD("Connection")) SET HEAD("Connection")="keep-alive"
-	DO RESPX(.DEV,.CONF,200,.HEAD,"",REQID,.CTX)
 	CLOSE FDEV
 	USE OIO
 	QUIT 1
