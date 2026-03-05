@@ -11,6 +11,9 @@ MIOHTTPRESPT ; Response streaming + sendfile tests (robust chunk parser)
 	NEW $ET SET $ET="DO STERR^MIOHTTPRESPT"
 	DO T001
 	DO T002
+	DO T003
+	DO T004
+	DO T005
 	QUIT
 	;
 STERR
@@ -39,6 +42,13 @@ NORMEOL(S) ; normalize CRLF/CR => LF for parsing/debug
 FINDHDRSEP(S) ; returns position just after header separator, 0 if not found
 	NEW P SET P=$F(S,$C(10,10))
 	QUIT P
+	;
+
+BODYAFTER(S)
+	NEW N SET N=$$NORMEOL($GET(S))
+	NEW P SET P=$$FINDHDRSEP(N)
+	IF P=0 QUIT ""
+	QUIT $E(N,P,$L(N))
 	;
 HEXVAL(HX) ; parse hex string to decimal, -1 on failure
 	NEW H SET H="0123456789ABCDEF"
@@ -125,3 +135,77 @@ T002 ; sendfile
 	DO EQ^MIOTASSERT($SELECT(N[TXT:1,1:0),1,"[T002][body]")
 	QUIT
 	;
+T003 ; RESP HEAD must not emit body
+	NEW CONF,DEV,HEAD,REQID,PATH,BODY,RAW,N,P,AFTER
+	SET PATH="tmp/mio_resp_t003.out"
+	SET ^TMP($J,"MIOHTTP","REQ","method")="head"
+	OPEN PATH:(newversion:stream:nowrap)
+	SET DEV=PATH USE DEV
+	SET BODY="Hello"
+	SET HEAD("Content-Type")="text/plain"
+	SET REQID="t003"
+	DO RESP^MIOHTTP(.DEV,.CONF,200,.HEAD,BODY,REQID)
+	CLOSE DEV USE $PRINCIPAL
+	KILL ^TMP($J,"MIOHTTP","REQ")
+	DO READALL(PATH,.RAW)
+	SET N=$$NORMEOL(RAW)
+	SET P=$$FINDHDRSEP(N)
+	DO EQ^MIOTASSERT($SELECT(P>0:1,1:0),1,"[T003][hdr sep]")
+	IF P=0 QUIT
+	SET AFTER=$E(N,P,$L(N))
+	DO EQ^MIOTASSERT($SELECT(AFTER="":1,1:0),1,"[T003][no body]")
+	DO OK^MIOTASSERT($SELECT(N["Content-Length: 5":1,1:0),"[T003][content-length]")
+	QUIT
+	;
+T004 ; STREAM HEAD must not emit chunk data (only terminator)
+	NEW CONF,DEV,HEAD,REQID,CTX,PATH,TXT,RAW,N,P,CSLINE,CS
+	SET PATH="tmp/mio_resp_t004.out"
+	SET ^TMP($J,"MIOHTTP","REQ","method")="head"
+	OPEN PATH:(newversion:stream:nowrap)
+	SET DEV=PATH USE DEV
+	SET TXT="HelloWorld"
+	SET HEAD("Content-Type")="text/plain"
+	SET REQID="t004"
+	DO STREAMBEGIN^MIOHTTP(.DEV,.CONF,200,.HEAD,REQID,.CTX)
+	DO STREAMWRITE^MIOHTTP(.DEV,TXT)
+	DO STREAMEND^MIOHTTP(.DEV)
+	CLOSE DEV USE $PRINCIPAL
+	KILL ^TMP($J,"MIOHTTP","REQ")
+	DO READALL(PATH,.RAW)
+	SET N=$$NORMEOL(RAW)
+	SET P=$$FINDHDRSEP(N)
+	DO EQ^MIOTASSERT($SELECT(P>0:1,1:0),1,"[T004][hdr sep]")
+	IF P=0 QUIT
+	SET CSLINE=$P($E(N,P,$L(N)),$C(10),1)
+	SET CS=$$HEXVAL($$TRIM(CSLINE))
+	DO EQ^MIOTASSERT($SELECT(CS=0:1,1:0),1,"[T004][first chunk is 0]")
+	DO EQ^MIOTASSERT($SELECT(N[TXT:1,1:0),0,"[T004][no payload]")
+	QUIT
+	;
+T005 ; SENDFILE HEAD must not emit file bytes
+	NEW CONF,DEV,HEAD,REQID,CTX,OP,IP,TXT,RAW,N,P,CSLINE,CS,OK
+	SET IP="tmp/mio_resp_t005.in"
+	SET OP="tmp/mio_resp_t005.out"
+	SET TXT="abcdefghijklmnopqrstuvwxyz"
+	OPEN IP:(newversion:stream:nowrap)
+	USE IP WRITE TXT CLOSE IP
+	SET ^TMP($J,"MIOHTTP","REQ","method")="head"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	SET HEAD("Content-Type")="text/plain"
+	SET REQID="t005"
+	SET OK=$$SENDFILE^MIOHTTP(.DEV,.CONF,IP,.HEAD,REQID,.CTX,"HEAD")
+	CLOSE DEV USE $PRINCIPAL
+	KILL ^TMP($J,"MIOHTTP","REQ")
+	DO EQ^MIOTASSERT(OK,1,"[T005][ok]")
+	DO READALL(OP,.RAW)
+	SET N=$$NORMEOL(RAW)
+	SET P=$$FINDHDRSEP(N)
+	DO EQ^MIOTASSERT($SELECT(P>0:1,1:0),1,"[T005][hdr sep]")
+	IF P=0 QUIT
+	SET CSLINE=$P($E(N,P,$L(N)),$C(10),1)
+	SET CS=$$HEXVAL($$TRIM(CSLINE))
+	DO EQ^MIOTASSERT($SELECT(CS=0:1,1:0),1,"[T005][first chunk is 0]")
+	DO EQ^MIOTASSERT($SELECT(N[TXT:1,1:0),0,"[T005][no payload]")
+	DO OK^MIOTASSERT($SELECT(N["Transfer-Encoding: chunked":1,1:0),"[T005][chunked header]")
+	QUIT

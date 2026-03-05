@@ -289,22 +289,33 @@ RESPJSON(DEV,CONF,STATUS,OBJ,REQID)
 	DO RESP(.DEV,.CONF,STATUS,.HEAD,BODY,REQID)
 	QUIT
 	;
+
 RESP(DEV,CONF,STATUS,HEAD,BODY,REQID)
 	NEW BYTES SET BYTES=0
-	NEW HLINE SET HLINE="HTTP/1.1 "_STATUS_" "_$$STATUSMSG(STATUS)_$CHAR(13,10)
+	NEW S SET S=+$GET(STATUS,200)
+	NEW METH SET METH=$$CURMETH()
+	NEW ISH SET ISH=$SELECT(METH="head":1,1:0)
+	NEW NOB SET NOB=$$NOBODY(S)
+	NEW BLEN SET BLEN=$LENGTH($GET(BODY))
+	IF NOB SET BLEN=0
+	NEW HLINE SET HLINE="HTTP/1.1 "_S_" "_$$STATUSMSG(S)_$CHAR(13,10)
 	DO WRITE^MIOSOCK(DEV,HLINE) SET BYTES=BYTES+$L(HLINE)
 	NEW DH MERGE DH=CONF("server","http","defaultResponseHeaders")
 	NEW K SET K=""
 	FOR  SET K=$ORDER(DH(K)) QUIT:K=""  SET HEAD(K)=DH(K)
 	IF REQID'="" SET HEAD("X-Request-Id")=REQID
-	SET HEAD("Content-Length")=$LENGTH(BODY)
+	; Status codes that must not include a body
+	IF NOB SET HEAD("Content-Length")=0
+	ELSE  SET HEAD("Content-Length")=BLEN
 	IF '$DATA(HEAD("Connection")) SET HEAD("Connection")="keep-alive"
 	FOR  SET K=$ORDER(HEAD(K)) QUIT:K=""  DO
 	. NEW L SET L=K_": "_HEAD(K)_$CHAR(13,10)
 	. DO WRITE^MIOSOCK(DEV,L) SET BYTES=BYTES+$L(L)
 	NEW BL SET BL=$CHAR(13,10)
 	DO WRITE^MIOSOCK(DEV,BL) SET BYTES=BYTES+$L(BL)
-	DO WRITE^MIOSOCK(DEV,BODY) SET BYTES=BYTES+$L(BODY)
+	; HEAD requests and no-body statuses must not emit a message body
+	IF 'ISH,'NOB DO
+	. DO WRITE^MIOSOCK(DEV,$GET(BODY)) SET BYTES=BYTES+$L($GET(BODY))
 	SET ^TMP($J,"MIOHTTP","RESP","bytes")=BYTES
 	QUIT
 	;
@@ -427,6 +438,7 @@ HEXOUT(N)
 	. SET N=Q
 	QUIT OUT
 ;
+
 STREAMBEGIN(DEV,CONF,STATUS,HEAD,REQID,CTX)
 	IF '$G(STATUS) SET STATUS=200
 	IF '$G(REQID) SET REQID=$TR($ZH,",")_"-"_$J
@@ -434,19 +446,34 @@ STREAMBEGIN(DEV,CONF,STATUS,HEAD,REQID,CTX)
 	KILL ^TMP($J,"MIOHTTP","RESP","bytes")
 	SET ^TMP($J,"MIOHTTP","STREAM","active")=1
 	SET ^TMP($J,"MIOHTTP","STREAM","bytes")=0
-	DO WRESP(.DEV,"HTTP/1.1 "_STATUS_" "_$$STATUSMSG(STATUS)_$CHAR(13,10))
+	NEW S SET S=+STATUS
+	NEW METH SET METH=$$CURMETH()
+	NEW ISH SET ISH=$SELECT(METH="head":1,1:0)
+	NEW NOB SET NOB=$$NOBODY(S)
+	SET ^TMP($J,"MIOHTTP","STREAM","skipbody")=$SELECT(ISH!NOB:1,1:0)
+	DO WRESP(.DEV,"HTTP/1.1 "_S_" "_$$STATUSMSG(S)_$CHAR(13,10))
 	NEW DH MERGE DH=CONF("server","http","defaultResponseHeaders")
 	NEW K SET K=""
 	FOR  SET K=$ORDER(DH(K)) QUIT:K=""  SET HEAD(K)=DH(K)
 	IF REQID'="" SET HEAD("X-Request-Id")=REQID
 	KILL HEAD("Content-Length")
-	SET HEAD("Transfer-Encoding")="chunked"
+	IF NOB DO
+	. ; no-body statuses: send Content-Length: 0 and do not use chunked framing
+	. KILL HEAD("Transfer-Encoding")
+	. SET HEAD("Content-Length")=0
+	. SET ^TMP($J,"MIOHTTP","STREAM","chunked")=0
+	ELSE  DO
+	. SET HEAD("Transfer-Encoding")="chunked"
+	. SET ^TMP($J,"MIOHTTP","STREAM","chunked")=1
 	IF '$DATA(HEAD("Connection")) SET HEAD("Connection")="keep-alive"
 	FOR  SET K=$ORDER(HEAD(K)) QUIT:K=""  DO WRESP(.DEV,K_": "_HEAD(K)_$CHAR(13,10))
 	DO WRESP(.DEV,$CHAR(13,10))
 	QUIT
 ;
+
 STREAMWRITE(DEV,DATA)
+	; In HEAD/no-body mode, suppress chunk emission entirely.
+	IF +$GET(^TMP($J,"MIOHTTP","STREAM","skipbody")) QUIT
 	NEW L SET L=$L($GET(DATA))
 	IF L=0 QUIT
 	DO WRESP(.DEV,$$HEXOUT(L)_$CHAR(13,10))
@@ -454,8 +481,10 @@ STREAMWRITE(DEV,DATA)
 	DO WRESP(.DEV,$CHAR(13,10))
 	QUIT
 ;
+
 STREAMEND(DEV)
-	DO WRESP(.DEV,"0"_$CHAR(13,10)_$CHAR(13,10))
+	; If chunked framing is active, always terminate it (even for HEAD) so the message is well-formed.
+	IF +$GET(^TMP($J,"MIOHTTP","STREAM","chunked")) DO WRESP(.DEV,"0"_$CHAR(13,10)_$CHAR(13,10))
 	SET ^TMP($J,"MIOHTTP","STREAM","active")=0
 	QUIT
 ;
@@ -474,9 +503,9 @@ SENDFILE(DEV,CONF,PATH,HEAD,REQID,CTX,METHOD)
 	. IF $DATA(CTX) SET CTX("err","routine")="MIOHTTP",CTX("err","error")="open_failed"
 	USE FDEV
 	IF M="head" DO  QUIT 1
-	. KILL HEAD("Transfer-Encoding"),HEAD("Content-Length")
-	. IF '$DATA(HEAD("Connection")) SET HEAD("Connection")="keep-alive"
-	. DO RESPX(.DEV,.CONF,200,.HEAD,"",REQID,.CTX)
+	. ; Mirror GET framing: send headers with chunked Transfer-Encoding, but suppress body chunks (HEAD semantics).
+	. DO STREAMBEGIN(.DEV,.CONF,200,.HEAD,REQID,.CTX)
+	. DO STREAMEND(.DEV)
 	. CLOSE FDEV
 	. USE OIO
 	DO STREAMBEGIN(.DEV,.CONF,200,.HEAD,REQID,.CTX)
@@ -717,5 +746,26 @@ BODYFREE(REQ)
 	KILL REQ("body")
 	KILL REQ("body","mode"),REQ("body","ref"),REQ("body","n"),REQ("body","len")
 	QUIT
+	;
+	; -------------------------------------------------------------------------
+	; ROI #10 helpers (response correctness)
+	;
+	; Current request method (lowercase).
+	; MIOD sets ^TMP($J,"MIOHTTP","REQ","method") for each request.
+CURMETH()
+	NEW M SET M=$GET(^TMP($J,"MIOHTTP","REQ","method"))
+	IF M="" SET M=$GET(^TMP($J,"MIOHTTP","REQ","METHOD"))
+	IF M="" QUIT "get"
+	QUIT $$LOW(M)
+	;
+	; Status codes that must not include a message body per RFC semantics.
+	; (1xx, 204, 205, 304)
+NOBODY(S)
+	NEW X SET X=+S
+	IF X\100=1 QUIT 1
+	IF X=204 QUIT 1
+	IF X=205 QUIT 1
+	IF X=304 QUIT 1
+	QUIT 0
 	;
 	;

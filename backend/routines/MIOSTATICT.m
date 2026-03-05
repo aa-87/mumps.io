@@ -18,6 +18,8 @@ MIOSTATICT ; Static file handler tests (includes ETag 304)
 	DO T011
 	DO T012
 	DO T013
+	DO T014
+	DO T015
 	QUIT
 	;
 STERR
@@ -526,3 +528,51 @@ T013 ; ETag invalidates when server version/mtime updated (TOUCH)
 	DO EQ^MIOTASSERT($SELECT(OUT["304":1,1:0),1,"[T013][status 304]")
 	QUIT
 
+
+T014 ; HEAD not_found should not emit a body
+	NEW CONF,REQ,CTX,DEV,OUT,ROOT,OP
+	SET ROOT="tmp"
+	SET OP="tmp/mio_static_t014.out"
+	SET CONF("server","static","enabled")=1
+	SET CONF("server","static","root")=ROOT
+	SET CONF("server","static","mount")="/static"
+	KILL REQ,CTX
+	SET REQ("method")="HEAD"
+	SET REQ("path")="/static/missing.txt"
+	SET REQ("params","path")="missing.txt"
+	SET CTX("request_id")="st014"
+	SET ^TMP($J,"MIOHTTP","REQ","method")="head"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO STATIC^MIOSTATIC(.DEV,.CONF,.REQ,.CTX)
+	CLOSE DEV USE $PRINCIPAL
+	KILL ^TMP($J,"MIOHTTP","REQ")
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["HTTP/1.1 404":1,1:0),1,"[T014][status]")
+	DO EQ^MIOTASSERT($SELECT(OUT["not_found":1,1:0),0,"[T014][no body]")
+	QUIT
+	;
+T015 ; Cache-Control policy header
+	NEW CONF,REQ,CTX,DEV,OUT,ROOT,FP,OP
+	SET ROOT="tmp"
+	SET FP=ROOT_"/hello_cache.txt"
+	SET OP="tmp/mio_static_t015.out"
+	OPEN FP:(newversion:stream:nowrap)
+	USE FP WRITE "hi" CLOSE FP
+	SET CONF("server","static","enabled")=1
+	SET CONF("server","static","root")=ROOT
+	SET CONF("server","static","mount")="/static"
+	SET CONF("server","static","cache","enabled")=1
+	SET CONF("server","static","cache","maxAgeSeconds")=60
+	KILL REQ,CTX
+	SET REQ("method")="GET"
+	SET REQ("path")="/static/hello_cache.txt"
+	SET REQ("params","path")="hello_cache.txt"
+	SET CTX("request_id")="st015"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO STATIC^MIOSTATIC(.DEV,.CONF,.REQ,.CTX)
+	CLOSE DEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["Cache-Control: public, max-age=60":1,1:0),1,"[T015][cache-control]")
+	QUIT

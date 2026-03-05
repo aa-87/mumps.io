@@ -48,6 +48,8 @@ MIOROUTET ; MIOROUTE test suite (router)
 	DO T036
 	DO T037
 	DO T038
+	DO T039
+	DO T040
 	QUIT
 	;
 ; ---------------------------------------------------------------------
@@ -543,3 +545,43 @@ HCACHE(DEV,CONF,REQ,CTX)
 	SET CTX("called")="HCACHE"
 	QUIT
 	;
+	;
+T039 ; HEAD 405 should not emit a body
+	DO RESET
+	DO ADD^MIOROUTE("GET","/m","H1^MIOROUTET")
+	DO ADD^MIOROUTE("POST","/m","H2^MIOROUTET")
+	DO COMPILE
+	NEW DEV,CONF,REQ,CTX,OUTP
+	SET OUTP="tmp/mioroutet_head_405.out"
+	OPEN OUTP:(NEWVERSION):1 ELSE  DO  QUIT
+	. DO OK^MIOTASSERT(0,"[T039][open]")
+	SET DEV=OUTP
+	SET REQ("method")="HEAD",REQ("path")="/m"
+	SET CTX("request_id")="rid-head-405"
+	SET ^TMP($J,"MIOHTTP","REQ","method")="head"
+	DO DISPATCH^MIOROUTE(.DEV,.CONF,.REQ,.CTX)
+	KILL ^TMP($J,"MIOHTTP","REQ")
+	CLOSE OUTP
+	DO EQ^MIOTASSERT($GET(CTX("status")),405,"[T039][status 405]")
+	DO OK^MIOTASSERT($$FILEHAS(OUTP,"Allow:"),"[T039][Allow header]")
+	DO EQ^MIOTASSERT($$FILEHAS(OUTP,"method_not_allowed"),0,"[T039][no body]")
+	QUIT
+	;
+T040 ; HEAD 404 should not emit a body
+	DO RESET
+	DO ADD^MIOROUTE("GET","/*path","H1^MIOROUTET")
+	DO COMPILE
+	NEW DEV,CONF,REQ,CTX,OUTP
+	SET OUTP="tmp/mioroutet_head_404.out"
+	OPEN OUTP:(NEWVERSION):1 ELSE  DO  QUIT
+	. DO OK^MIOTASSERT(0,"[T040][open]")
+	SET DEV=OUTP
+	SET REQ("method")="HEAD",REQ("path")="/nope"
+	SET CTX("request_id")="rid-head-404"
+	SET ^TMP($J,"MIOHTTP","REQ","method")="head"
+	DO DISPATCH^MIOROUTE(.DEV,.CONF,.REQ,.CTX)
+	KILL ^TMP($J,"MIOHTTP","REQ")
+	CLOSE OUTP
+	DO EQ^MIOTASSERT($GET(CTX("status")),404,"[T040][status 404]")
+	DO EQ^MIOTASSERT($$FILEHAS(OUTP,"not_found"),0,"[T040][no body]")
+	QUIT

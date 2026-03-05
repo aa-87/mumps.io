@@ -142,6 +142,10 @@ JOBCONN(ADDR,HANDLE)
 	. . ; Otherwise close hard.;
 	. . SET DONE=1
 	. ;
+	. ; Expose request method to response helpers (ROI #10: HEAD correctness)
+	. KILL ^TMP($J,"MIOHTTP","REQ")
+	. SET ^TMP($J,"MIOHTTP","REQ","method")=$$LOW^MIOHTTP($GET(REQ("method")))
+	.
 	. SET NREQ=NREQ+1
 	. ; Rate limiting (per-IP token bucket)
 	. IF RLEN DO  QUIT:$GET(DONE)

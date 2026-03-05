@@ -101,6 +101,10 @@ STATIC(DEV,CONF,REQ,CTX)
 	SET HEAD("Accept-Ranges")="bytes"
 	IF ENC'="" SET HEAD("Content-Encoding")=ENC
 	IF VARY DO ADDVARY(.HEAD,"Accept-Encoding")
+	; Precompressed static implies Vary: Accept-Encoding for cache correctness (even if request omits Accept-Encoding)
+	IF +$GET(CONF("server","static","precompressed","enabled"),0),(METHOD="get"!(METHOD="head")) DO ADDVARY(.HEAD,"Accept-Encoding")
+	; Optional caching policy layer (ROI #10)
+	DO APPLYCACHE(.CONF,ORFS,.HEAD)
 	;
 	; --- ETag / If-None-Match (first) -------------------------------------
 	NEW META,ETAG
@@ -766,3 +770,54 @@ SENDRANGE(DEV,CONF,FS,OFF,LEN)
 	CLOSE FS
 	QUIT $SELECT(REM=0:1,1:0)
 	;
+
+	;
+; -------------------------------------------------------------------------
+; Cache policy layer (ROI #10)
+;
+APPLYCACHE(CONF,ORFS,HEAD)
+	; Apply Cache-Control/Expires for static responses when enabled.
+	; Default is off.
+	IF '$GET(CONF("server","static","cache","enabled")) QUIT
+	; Do not override if handler already set Cache-Control
+	IF $DATA(HEAD("Cache-Control")) QUIT
+	NEW EXT SET EXT=$$EXT(ORFS)
+	NEW NS SET NS=+$GET(CONF("server","static","cache","noStore"),0)
+	IF NS DO  QUIT
+	. SET HEAD("Cache-Control")="no-store"
+	NEW MAXA SET MAXA=$GET(CONF("server","static","cache","maxAgeSeconds"),0)
+	IF EXT'="",$DATA(CONF("server","static","cache","byExt",EXT,"maxAgeSeconds")) SET MAXA=$GET(CONF("server","static","cache","byExt",EXT,"maxAgeSeconds"),MAXA)
+	NEW IMM SET IMM=+$GET(CONF("server","static","cache","immutable"),0)
+	IF EXT'="",$DATA(CONF("server","static","cache","byExt",EXT,"immutable")) SET IMM=+$GET(CONF("server","static","cache","byExt",EXT,"immutable"),IMM)
+	IF +MAXA'>0 QUIT
+	NEW CC SET CC="public, max-age="_+MAXA
+	IF IMM SET CC=CC_", immutable"
+	SET HEAD("Cache-Control")=CC
+	; Optional Expires: deterministic default is derived from mtime when known.
+	IF +$GET(CONF("server","static","cache","sendExpires"),0) DO
+	. NEW FROM SET FROM=$$LOW^MIOHTTP($GET(CONF("server","static","cache","expiresFrom"),"mtime"))
+	. NEW HD,HS,NHD,NHS
+	. IF FROM="now" DO  QUIT
+	. . SET HD=+$P($H,",",1),HS=+$P($H,",",2)
+	. . DO ADDSEC(HD,HS,+MAXA,.NHD,.NHS)
+	. . SET HEAD("Expires")=$$HTTPDATE(NHD,NHS)
+	. ; Default: from server-known mtime when available
+	. SET HD=+$GET(^MIO("STATIC","META",ORFS,"mhd"))
+	. SET HS=+$GET(^MIO("STATIC","META",ORFS,"mhs"))
+	. IF HD'>0 QUIT
+	. DO ADDSEC(HD,HS,+MAXA,.NHD,.NHS)
+	. SET HEAD("Expires")=$$HTTPDATE(NHD,NHS)
+	QUIT
+	;
+EXT(P)
+	NEW X SET X=$GET(P)
+	NEW B SET B=$PIECE(X,"/",$L(X,"/"))
+	IF B'["." QUIT ""
+	NEW E SET E=$PIECE(B,".",$L(B,"."))
+	QUIT $$LOW^MIOHTTP(E)
+	;
+ADDSEC(HD,HS,SEC,NHD,NHS)
+	NEW T SET T=(+HD*86400)+(+HS)+(+SEC)
+	SET NHD=T\86400
+	SET NHS=T#86400
+	QUIT
