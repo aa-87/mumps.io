@@ -220,6 +220,28 @@ CSPAPPLY(CONF,CTX,PRE,REQ)
 	. ELSE  SET POL=$$APPENDCSP(BASE,OV)
 	NEW EX SET EX=$GET(CONF("server","security","csp","extra"))
 	IF EX'="" SET POL=$$APPENDCSP(POL,EX)
+	;
+	; CSP nonce support (optional). Provides CTX("csp_nonce") for templates.;
+	NEW NEN SET NEN=+$GET(CONF("server","security","csp","nonce","enabled"),0)
+	NEW NRO SET NRO=""
+	IF METHOD'="",RP'="" SET NRO=$GET(^MIO("ROUTE","META",METHOD,RP,"csp_nonce"))
+	IF NRO'="" DO
+	. NEW LNO SET LNO=$$LOW^MIOHTTP(NRO)
+	. IF LNO="off" SET NEN=0 QUIT
+	. SET NEN=+NRO
+	IF NEN DO
+	. NEW NON SET NON=$GET(CONF("server","security","csp","nonce","fixed"))
+	. IF NON="" SET NON=$$NONCE()
+	. SET CTX("csp","nonce")=NON
+	. SET CTX("csp_nonce")=NON
+	. SET CTX("sec","nonce")=NON
+	. NEW DL SET DL=$GET(CONF("server","security","csp","nonce","directives"),"script-src")
+	. NEW I,DIR
+	. FOR I=1:1:$L(DL,",") DO
+	. . SET DIR=$$TRIM^MIOHTTP($P(DL,",",I))
+	. . IF DIR="" QUIT
+	. . SET POL=$$CSPADDNONCE(POL,DIR,NON)
+	. IF +$GET(CONF("server","security","csp","nonce","sendHeader"),0) DO DEFSETN(.CONF,.CTX,"sec","X-CSP-Nonce",NON)
 	IF POL'="" DO DEFSETN(.CONF,.CTX,"sec",HN,POL)
 	QUIT
 	;
@@ -239,6 +261,62 @@ APPENDCSP(A,B)
 	IF $E(X,$L(X))=";" SET X=$E(X,1,$L(X)-1)
 	QUIT X_"; "_Y
 	;
+	;
+	;
+	; ------------------------------
+	; CSP nonce helpers
+	; ------------------------------
+	;
+NONCE()
+	; Generate a CSP nonce (base64url, no padding). Not cryptographic.;
+	NEW BIN,I
+	SET BIN=""
+	FOR I=1:1:16 SET BIN=BIN_$CHAR($RANDOM(256))
+	QUIT $$B64URLENC(BIN)
+	;
+B64URLENC(BIN)
+	; base64url encode (no '=') for small binary strings.;
+	NEW T,OUT,L,I,REM,A,B,C,N
+	SET T="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+	SET OUT=""
+	SET L=$L($GET(BIN))
+	SET I=1
+	FOR  QUIT:I>L  DO
+	. SET REM=L-I+1
+	. SET A=$ASCII($EXTRACT(BIN,I))
+	. IF REM>1 SET B=$ASCII($EXTRACT(BIN,I+1)) ELSE  SET B=-1
+	. IF REM>2 SET C=$ASCII($EXTRACT(BIN,I+2)) ELSE  SET C=-1
+	. SET N=(A*65536)+$SELECT(B=-1:0,1:B*256)+$SELECT(C=-1:0,1:C)
+	. SET OUT=OUT_$EXTRACT(T,(N\262144)+1)_$EXTRACT(T,((N\4096)#64)+1)
+	. IF B=-1 SET I=I+3 QUIT
+	. SET OUT=OUT_$EXTRACT(T,((N\64)#64)+1)
+	. IF C=-1 SET I=I+3 QUIT
+	. SET OUT=OUT_$EXTRACT(T,(N#64)+1)
+	. SET I=I+3
+	QUIT $TRANSLATE(OUT,"+/","-_")
+	;
+CSPADDNONCE(POL,DIR,NON)
+	; Ensure directive DIR contains nonce token.;
+	NEW P SET P=$GET(POL)
+	NEW DIRX SET DIRX=$$TRIM^MIOHTTP($GET(DIR))
+	NEW D SET D=$$LOW^MIOHTTP(DIRX)
+	NEW N SET N=$GET(NON)
+	IF P=""!(D="")!(N="") QUIT P
+	NEW LOW SET LOW=$$LOW^MIOHTTP(P)
+	NEW PAT SET PAT=D_" "
+	NEW FP SET FP=$F(LOW,PAT)
+	NEW INS SET INS=" 'nonce-"_N_"'"
+	IF FP=0 QUIT $$APPENDCSP(P,DIRX_INS)
+	; Find end of directive (next ';' or end)
+	NEW SEM SET SEM=$F(P,";",FP)
+	NEW END SET END=$SELECT(SEM>0:SEM-1,1:$L(P)+1)
+	NEW SEGLOW SET SEGLOW=$E(LOW,FP,END-1)
+	IF SEGLOW["nonce-" QUIT P
+	NEW PFX,SFX
+	SET PFX=$E(P,1,END-1)
+	SET SFX=$E(P,END,$L(P))
+	SET P=PFX_INS_SFX
+	QUIT P
 	;
 	; ------------------------------
 	; Auth middleware (wraps MIOAUTH)

@@ -9,6 +9,8 @@ MIOSECHT ; Security headers presets + CSP tests (middleware)
 	DO T002
 	DO T003
 	DO T004
+	DO T005
+	DO T006
 	QUIT
 	;
 STERR
@@ -129,6 +131,58 @@ T004 ; CSP report-only + per-route replace (no base policy)
 	DO EQ^MIOTASSERT($SELECT(OUT["default-src 'none'":1,1:0),1,"[T004][replace]")
 	DO EQ^MIOTASSERT($SELECT(OUT["default-src 'self'":1,1:0),0,"[T004][no base]")
 	QUIT
+
+T005 ; CSP nonce enabled (fixed) injects nonce into policy + exposes CTX("csp_nonce")
+	DO RESET
+	DO ADD^MIOROUTE("GET","/sec/cspn","H200^MIOSECHT")
+	DO COMPILE^MIOROUTE
+	NEW CONF,REQ,CTX,DEV,OUT,OP
+	KILL CONF,REQ,CTX
+	DO STDWIRE^MIOMW(.CONF)
+	SET CONF("server","security","csp","enabled")=1
+	SET CONF("server","security","csp","nonce","enabled")=1
+	SET CONF("server","security","csp","nonce","fixed")="abc123"
+	SET CONF("server","security","csp","nonce","directives")="script-src"
+	SET REQ("method")="GET"
+	SET REQ("path")="/sec/cspn"
+	SET CTX("request_id")="sec005"
+	SET OP="tmp/mio_sec_t005.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO DISPATCH^MIOROUTE(.DEV,.CONF,.REQ,.CTX)
+	CLOSE DEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["Content-Security-Policy:":1,1:0),1,"[T005][csp present]")
+	DO EQ^MIOTASSERT($SELECT(OUT["nonce-abc123":1,1:0),1,"[T005][nonce token]")
+	DO EQ^MIOTASSERT($SELECT($GET(CTX("csp_nonce"))="abc123":1,1:0),1,"[T005][ctx nonce]")
+	QUIT
+	;
+T006 ; Per-route csp_nonce=0 disables nonce even when globally enabled
+	DO RESET
+	NEW META
+	SET META("csp_nonce")=0
+	DO ADDM^MIOROUTE("GET","/sec/cspno","H200^MIOSECHT",.META)
+	DO COMPILE^MIOROUTE
+	NEW CONF,REQ,CTX,DEV,OUT,OP
+	KILL CONF,REQ,CTX
+	DO STDWIRE^MIOMW(.CONF)
+	SET CONF("server","security","csp","enabled")=1
+	SET CONF("server","security","csp","nonce","enabled")=1
+	SET CONF("server","security","csp","nonce","fixed")="abc123"
+	SET REQ("method")="GET"
+	SET REQ("path")="/sec/cspno"
+	SET CTX("request_id")="sec006"
+	SET OP="tmp/mio_sec_t006.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO DISPATCH^MIOROUTE(.DEV,.CONF,.REQ,.CTX)
+	CLOSE DEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["Content-Security-Policy:":1,1:0),1,"[T006][csp present]")
+	DO EQ^MIOTASSERT($SELECT(OUT["nonce-abc123":1,1:0),0,"[T006][no nonce]")
+	DO EQ^MIOTASSERT($SELECT($GET(CTX("csp_nonce"))="":1,1:0),1,"[T006][no ctx nonce]")
+	QUIT
+	;
 	;
 	; ---- handler fixture ----
 H200(DEV,CONF,REQ,CTX)
