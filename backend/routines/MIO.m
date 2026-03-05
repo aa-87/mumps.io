@@ -23,9 +23,33 @@ MIO ; Routine for the MIO web server package.;
 ; Entry point
 ; See docs/routines for details.;
 start ; start^MIO
+	DO INIT
+	DO START^MIOD(.CONF)
+	;	
+	QUIT
+	;
+INIT
 	N PATH S PATH=$$GETCONF^MIOCONF()
 	N CONF D LOAD^MIOCONF(PATH,.CONF)
 	K ^MIO("CONF") M ^MIO("CONF")=CONF
+	;
+	KILL ^MIO("CONF","auth","protectAll")
+	KILL ^MIO("CONF","auth","requireAuth")
+	; Protect only selected prefixes
+	SET ^MIO("CONF","auth","enabled")=1
+	SET ^MIO("CONF","auth","protectMode")="prefix"
+	;
+	KILL ^MIO("CONF","auth","protect")
+	SET ^MIO("CONF","auth","protect",1)="/api/"
+	SET ^MIO("CONF","auth","protect",2)="/admin/"
+	SET ^MIO("CONF","auth","protect",3)="/metrics"
+	; Global middleware: LOG + CORS only
+	;KILL ^MIO("CONF","server","middleware","before")
+	;SET ^MIO("CONF","server","middleware","before",1)="LOGB^MIOMW"
+	;SET ^MIO("CONF","server","middleware","before",2)="CORSB^MIOMW"
+	;KILL ^MIO("CONF","server","middleware","after")
+	;SET ^MIO("CONF","server","middleware","after",1)="CORSA^MIOMW"
+	;SET ^MIO("CONF","server","middleware","after",2)="LOGA^MIOMW"
 	DO INIT^MIOROUTE
 	DO START^MIOTPL(.CONF)
 	DO REG^MIODEMO(.CONF)
@@ -41,9 +65,8 @@ start ; start^MIO
 	DO REG^MIOSTATIC(.CONF)
 	DO COMPILE^MIOROUTE
 	DO START^MIOCLEAN(.CONF)
-	DO START^MIOD(.CONF)
-	;	
 	QUIT
+	;
 ; Entry point
 ; See docs/routines for details.;
 stop ; stop^MIO

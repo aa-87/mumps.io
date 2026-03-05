@@ -16,6 +16,10 @@ MIOSTATICT ; Static file handler tests (includes ETag 304)
 	DO T009
 	DO T010
 	DO T011
+	DO T012
+	DO T013
+	DO T014
+	DO T015
 	QUIT
 	;
 STERR
@@ -387,4 +391,133 @@ T011 ; /static/ missing index and listing disabled -> 404
 	DO READALL(OP,.OUT)
 	DO EQ^MIOTASSERT($SELECT(OUT["404":1,1:0),1,"[T011][status]")
 	DO EQ^MIOTASSERT($SELECT(OUT["MIOSTATIC":1,1:0),1,"[T011][routine]")
+	QUIT
+T012 ; Precompressed br served when Accept-Encoding includes br
+	NEW CONF,REQ,CTX,DEV,OUT,ROOT,FP,OP
+	SET ROOT="tmp"
+	SET FP=ROOT_"/hello.txt"
+	SET OP="tmp/mio_static_t012.out"
+	OPEN FP:(newversion:stream:nowrap)
+	USE FP WRITE "plain" CLOSE FP
+	OPEN (FP_".br"):(newversion:stream:nowrap)
+	USE (FP_".br") WRITE "BR" CLOSE (FP_".br")
+	OPEN (FP_".gz"):(newversion:stream:nowrap)
+	USE (FP_".gz") WRITE "GZ" CLOSE (FP_".gz")
+	;
+	SET CONF("server","static","enabled")=1
+	SET CONF("server","static","root")=ROOT
+	SET CONF("server","static","mount")="/static"
+	SET CONF("server","static","precompressed","enabled")=1
+	;
+	KILL REQ,CTX,OUT
+	SET REQ("method")="GET"
+	SET REQ("path")="/static/hello.txt"
+	SET REQ("params","path")="hello.txt"
+	SET REQ("hdr","accept-encoding")="br, gzip"
+	SET CTX("request_id")="st012"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO STATIC^MIOSTATIC(.DEV,.CONF,.REQ,.CTX)
+	CLOSE DEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["HTTP/1.1 200 OK":1,1:0),1,"[T012][status]")
+	DO EQ^MIOTASSERT($SELECT(OUT["Content-Encoding: br":1,1:0),1,"[T012][encoding br]")
+	DO EQ^MIOTASSERT($SELECT(OUT["Vary: Accept-Encoding":1,1:0),1,"[T012][vary]")
+	DO EQ^MIOTASSERT($SELECT(OUT["BR":1,1:0),1,"[T012][body]")
+	QUIT
+	;
+T013 ; Precompressed gzip served when br not acceptable
+	NEW CONF,REQ,CTX,DEV,OUT,ROOT,FP,OP
+	SET ROOT="tmp"
+	SET FP=ROOT_"/hello.txt"
+	SET OP="tmp/mio_static_t013.out"
+	OPEN FP:(newversion:stream:nowrap)
+	USE FP WRITE "plain" CLOSE FP
+	OPEN (FP_".gz"):(newversion:stream:nowrap)
+	USE (FP_".gz") WRITE "GZ" CLOSE (FP_".gz")
+	;
+	SET CONF("server","static","enabled")=1
+	SET CONF("server","static","root")=ROOT
+	SET CONF("server","static","mount")="/static"
+	SET CONF("server","static","precompressed","enabled")=1
+	;
+	KILL REQ,CTX,OUT
+	SET REQ("method")="GET"
+	SET REQ("path")="/static/hello.txt"
+	SET REQ("params","path")="hello.txt"
+	SET REQ("hdr","accept-encoding")="gzip"
+	SET CTX("request_id")="st013"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO STATIC^MIOSTATIC(.DEV,.CONF,.REQ,.CTX)
+	CLOSE DEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["HTTP/1.1 200 OK":1,1:0),1,"[T013][status]")
+	DO EQ^MIOTASSERT($SELECT(OUT["Content-Encoding: gzip":1,1:0),1,"[T013][encoding gzip]")
+	DO EQ^MIOTASSERT($SELECT(OUT["Vary: Accept-Encoding":1,1:0),1,"[T013][vary]")
+	DO EQ^MIOTASSERT($SELECT(OUT["GZ":1,1:0),1,"[T013][body]")
+	QUIT
+	;
+T014 ; q-values: choose gzip if br;q=0
+	NEW CONF,REQ,CTX,DEV,OUT,ROOT,FP,OP
+	SET ROOT="tmp"
+	SET FP=ROOT_"/hello.txt"
+	SET OP="tmp/mio_static_t014.out"
+	OPEN FP:(newversion:stream:nowrap)
+	USE FP WRITE "plain" CLOSE FP
+	OPEN (FP_".br"):(newversion:stream:nowrap)
+	USE (FP_".br") WRITE "BR" CLOSE (FP_".br")
+	OPEN (FP_".gz"):(newversion:stream:nowrap)
+	USE (FP_".gz") WRITE "GZ" CLOSE (FP_".gz")
+	;
+	SET CONF("server","static","enabled")=1
+	SET CONF("server","static","root")=ROOT
+	SET CONF("server","static","mount")="/static"
+	SET CONF("server","static","precompressed","enabled")=1
+	;
+	KILL REQ,CTX,OUT
+	SET REQ("method")="GET"
+	SET REQ("path")="/static/hello.txt"
+	SET REQ("params","path")="hello.txt"
+	SET REQ("hdr","accept-encoding")="br;q=0, gzip"
+	SET CTX("request_id")="st014"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO STATIC^MIOSTATIC(.DEV,.CONF,.REQ,.CTX)
+	CLOSE DEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["Content-Encoding: gzip":1,1:0),1,"[T014][encoding gzip]")
+	DO EQ^MIOTASSERT($SELECT(OUT["GZ":1,1:0),1,"[T014][body]")
+	QUIT
+	;
+T015 ; Range request does not use encoded variant by default
+	NEW CONF,REQ,CTX,DEV,OUT,ROOT,FP,OP
+	SET ROOT="tmp"
+	SET FP=ROOT_"/hello.txt"
+	SET OP="tmp/mio_static_t015.out"
+	OPEN FP:(newversion:stream:nowrap)
+	USE FP WRITE "hi" CLOSE FP
+	OPEN (FP_".br"):(newversion:stream:nowrap)
+	USE (FP_".br") WRITE "BR" CLOSE (FP_".br")
+	;
+	SET CONF("server","static","enabled")=1
+	SET CONF("server","static","root")=ROOT
+	SET CONF("server","static","mount")="/static"
+	SET CONF("server","static","precompressed","enabled")=1
+	;
+	KILL REQ,CTX,OUT
+	SET REQ("method")="GET"
+	SET REQ("path")="/static/hello.txt"
+	SET REQ("params","path")="hello.txt"
+	SET REQ("hdr","accept-encoding")="br"
+	SET REQ("hdr","range")="bytes=0-0"
+	SET CTX("request_id")="st015"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO STATIC^MIOSTATIC(.DEV,.CONF,.REQ,.CTX)
+	CLOSE DEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["206":1,1:0),1,"[T015][status]")
+	DO EQ^MIOTASSERT($SELECT(OUT["Content-Encoding:":1,1:0),0,"[T015][no encoding]")
+	DO EQ^MIOTASSERT($SELECT(OUT["h":1,1:0),1,"[T015][body]")
 	QUIT

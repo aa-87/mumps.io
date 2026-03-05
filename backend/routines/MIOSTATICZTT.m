@@ -97,7 +97,7 @@ T002 ; q=0 disables br, gzip served
 	QUIT
 	;
 T003 ; no Accept-Encoding -> original (no Content-Encoding), still Vary present
-	NEW CONF,REQ,CTX,DEV,OUT,NAME,FP,OP
+	;NEW CONF,REQ,CTX,DEV,OUT,NAME,FP,OP
 	DO BASECONF(.CONF)
 	SET NAME="miostatic_ztt3_"_$J_"_"_$P($H,",",2)
 	SET FP=$$MKFILES("/tmp",NAME,"plain","brdata","gzdata",1,1)

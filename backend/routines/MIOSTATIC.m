@@ -100,7 +100,9 @@ STATIC(DEV,CONF,REQ,CTX)
 	SET HEAD("X-Content-Type-Options")="nosniff"
 	SET HEAD("Accept-Ranges")="bytes"
 	IF ENC'="" SET HEAD("Content-Encoding")=ENC
-	IF VARY DO ADDVARY(.HEAD,"Accept-Encoding")
+	; Always emit Vary: Accept-Encoding when precompressed mode is enabled (even if request lacks Accept-Encoding).
+	IF +$GET(CONF("server","static","precompressed","enabled"),0),(METHOD="get"!(METHOD="head")) DO ADDVARY(.HEAD,"Accept-Encoding")
+	ELSE  IF VARY DO ADDVARY(.HEAD,"Accept-Encoding")
 	;
 	; --- ETag / If-None-Match (first) -------------------------------------
 	NEW META,ETAG
@@ -196,25 +198,30 @@ SMSG(S)
 WOUT(DEV,STR)
 	NEW D SET D=$GET(DEV) IF D="" SET D=$IO
 	NEW OIO SET OIO=$IO
-	; Absolute filesystem devices: write directly.
-	IF $E(D,1)="/" DO WFILE(D,STR,OIO) QUIT
-	; Prefer socket write when available; fallback to direct device write.
-	IF $TEXT(WRITE^MIOSOCK)'="" DO  QUIT
-	. NEW OK SET OK=1
-	. NEW $ETRAP SET $ETRAP="SET $ECODE="""" SET OK=0"
-	. DO WRITE^MIOSOCK(D,STR)
-	. USE OIO
-	. IF OK QUIT
-	. DO WFILE(D,STR,OIO)
-	DO WFILE(D,STR,OIO)
+	; File-backed device path
+	IF $E(D,1)="/" DO  QUIT
+	. DO WOUTUSE(D,STR,OIO)
+	; Prefer MIOSOCK writer when available (socket devices)
+	NEW OK SET OK=0
+	IF $TEXT(WRITE^MIOSOCK)'="" SET OK=$$WOUTSOCK(D,STR)
+	IF OK USE OIO QUIT
+	; Fallback: direct USE/WRITE
+	DO WOUTUSE(D,STR,OIO)
 	QUIT
 	;
-WFILE(D,STR,OIO)
+WOUTUSE(D,STR,OIO)
 	NEW $ETRAP SET $ETRAP="SET $ECODE="""" USE OIO QUIT"
 	USE D WRITE STR
 	USE OIO
 	QUIT
 	;
+WOUTSOCK(D,STR)
+	NEW OK SET OK=1
+	NEW $ETRAP SET $ETRAP="SET $ECODE="""" SET OK=0"
+	DO WRITE^MIOSOCK(D,STR)
+	QUIT OK
+	;
+
 ; -------------------------------------------------------------------------
 ; Path helpers
 NORMMOUNT(M)
