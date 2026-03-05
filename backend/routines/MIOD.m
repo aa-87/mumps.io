@@ -76,6 +76,8 @@ STOP ; to do -> make sure to kill the pid associated after checking
 	;
 JOBCONN(ADDR,HANDLE)
 	NEW CONF MERGE CONF=^MIO("CONF")
+	; Ensure router middleware pipeline is configured (CORS/Auth/AccessLog defaults)
+	DO ENSURE^MIOMW(.CONF)
 	SET $ET="G STERR^MIOD"
 	NEW DEV SET DEV=$PRINCIPAL
 	USE DEV:(delim=$C(13,10))
@@ -179,16 +181,7 @@ JOBCONN(ADDR,HANDLE)
 	. ; Pre-match route (enables per-route authz without double parse)
 	. DO PREMATCH^MIOROUTE(.REQ,.CTX)
 	. ;
-	. ; Authentication / authorization gate (config-driven)
-	. IF '$$ENFORCE^MIOAUTH(DEV,.CONF,.REQ,.CTX) DO  QUIT
-	. . NEW OBJ,HEAD,BODY
-	. . SET HEAD("Content-Type")="application/json"
-	. . SET HEAD("Connection")="close"
-	. . SET OBJ("error")="unauthorized",OBJ("request_id")=$GET(CTX("request_id"))
-	. . SET BODY=$$EN^MIOJSON1(.OBJ)
-	. . DO RESPX^MIOHTTP(.DEV,.CONF,401,.HEAD,BODY,$GET(CTX("request_id")),.CTX)
-	. . SET CTX("status")=401,CTX("route")="(unauthorized)"
-	. . SET DONE=1
+	. ; Auth is enforced via MIOROUTE middleware (MIOMW AUTHB) when enabled.
 	. ;
 	. NEW H0 SET H0=""
 	. IF LOGEN SET H0=$$TSUS^MIOMET()
@@ -205,16 +198,7 @@ JOBCONN(ADDR,HANDLE)
 	. . NEW MM SET MM=$GET(REQ("http_method"),$GET(REQ("method")))
 	. . DO OBS^MIOMET(MM,RT,ST,LATMS)
 	. ;
-	. ; Access log (best effort)
-	. IF LOGEN DO
-	. . SET CTX("bytes_in")=+$GET(REQ("body","len"),0)
-	. . NEW BOUT SET BOUT=+$GET(^TMP($J,"MIOHTTP","RESP","bytes"))
-	. . IF BOUT<1 SET BOUT=+$GET(^TMP($J,"MIOHTTP","STREAM","bytes"))
-	. . SET CTX("bytes_out")=BOUT
-	. . SET CTX("met","handler_ms")=((TEND-H0)/1000)
-	. . SET CTX("met","total_ms")=((TEND-$GET(CTX("t0us")))/1000)
-	. . NEW LERR,OKL SET OKL=$$ACCESS^MIOLOG(.CONF,.REQ,.CTX,.LERR)
-	. ;
+	. ; Access log for normal requests is emitted by router middleware (MIOMW LOGA).
 	. ; Free request body storage each request
 	. DO BODYFREE^MIOHTTP(.REQ)
 	. ;

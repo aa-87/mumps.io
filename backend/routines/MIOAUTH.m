@@ -54,7 +54,8 @@ ENFORCE(DEV,CONF,REQ,CTX)
 	. ; fall through to auth
 	;
 	; Prefix-based protection
-	IF PMODE="route" IF '$$ISPROTECTED(PATH,.CONF) QUIT 1
+	; Default behavior: only enforce auth for protected prefixes (/api/, /ws/app, or CONF list)
+	IF PMODE="prefix" IF '$$ISPROTECTED(PATH,.CONF) QUIT 1
 	;
 	; Authenticate
 	NEW MODE SET MODE=$GET(CONF("auth","mode"),"api_key")
@@ -179,6 +180,7 @@ TRIM(S)
 ; See docs/routines for details.;
 DENY(DEV,CONF,REQ,CTX,ECODE,REASON)
 	NEW OBJ
+	SET OBJ("routine")="MIOAUTH"
 	SET OBJ("error")=ECODE
 	SET OBJ("reason")=REASON
 	SET OBJ("request_id")=$GET(CTX("request_id"))

@@ -196,19 +196,24 @@ SMSG(S)
 WOUT(DEV,STR)
 	NEW D SET D=$GET(DEV) IF D="" SET D=$IO
 	NEW OIO SET OIO=$IO
-	IF $E(D,1)="/"  GOTO WFILE
-	IF $TEXT(WRITE^MIOSOCK)'=""  GOTO WSOCK
-WFILE
+	; Absolute filesystem devices: write directly.
+	IF $E(D,1)="/" DO WFILE(D,STR,OIO) QUIT
+	; Prefer socket write when available; fallback to direct device write.
+	IF $TEXT(WRITE^MIOSOCK)'="" DO  QUIT
+	. NEW OK SET OK=1
+	. NEW $ETRAP SET $ETRAP="SET $ECODE="""" SET OK=0"
+	. DO WRITE^MIOSOCK(D,STR)
+	. USE OIO
+	. IF OK QUIT
+	. DO WFILE(D,STR,OIO)
+	DO WFILE(D,STR,OIO)
+	QUIT
+	;
+WFILE(D,STR,OIO)
 	NEW $ETRAP SET $ETRAP="SET $ECODE="""" USE OIO QUIT"
 	USE D WRITE STR
 	USE OIO
 	QUIT
-WSOCK
-	NEW OK SET OK=1
-	NEW $ETRAP SET $ETRAP="SET $ECODE="""" SET OK=0"
-	DO WRITE^MIOSOCK(D,STR)
-	IF OK USE OIO QUIT
-	GOTO WFILE
 	;
 ; -------------------------------------------------------------------------
 ; Path helpers

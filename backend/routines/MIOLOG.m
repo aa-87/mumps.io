@@ -90,34 +90,27 @@ LOW(S)
 	QUIT OUT
 	;
 	; -------------------------------------------------------------------------
-	; ROI #1: Access logs + timing metrics (fast path + optional buffering)
+	; ROI #1: Access logs + timing metrics (deterministic, global-backed)
 	;
 	; Public entry points:
 	;   $$ACCESS(.CONF,.REQ,.CTX,.ERR)   -> 1 ok, 0 error (ERR set)
-	;   $$FLUSH(.CONF,.ERR)             -> 1 ok, 0 error (ERR set)
+	;   $$FLUSH(.CONF,.ERR)             -> 1 ok (no-op in global sink)
+	;   DO ACLEAR                         -> clear access ring (tests)
+	;   DO ALAST(.LINE,.SEQ)              -> get last access line (tests/ops)
 	;
 	; Config:
 	;   CONF("server","log","access","enabled")     default 0
-	;   CONF("server","log","access","path")        default "tmp/mio-access"
 	;   CONF("server","log","access","format")      common|combined|json (default common)
-	;   CONF("server","log","access","daily")       default 1
-	;   CONF("server","log","access","maxBytes")    default 10485760 (10MB)
-	;   CONF("server","log","access","buffer")      default 1 (queue in ^TMP($J,...))
-	;   CONF("server","log","access","flushEvery")  default 50 (lines)
-	;   CONF("server","log","access","flushBytes")  default 65536 (queued bytes)
-	;   CONF("server","log","access","fhCache")     default 1 (keep file open between flushes)
-	;   CONF("server","log","access","fhIdleSeconds") default 5 (best-effort close on idle)
+	;   CONF("server","log","access","maxEntries")  default 20000 (ring size)
 	;
 	; Notes:
-	; - No ZSYSTEM (rotation is by filename).;
-	; - Buffered mode reduces open/close overhead by batching writes.;
-	; - FLUSH is safe to call frequently; it is a no-op when queue is empty.;
+	; - No filesystem I/O on the request path (writes go to globals).;
+	; - Deterministic: single atomic sequence per access line via $INCREMENT.;
 	; - Errors always include ERR("routine") and ERR("error").;
 	;
 ACCESS(CONF,REQ,CTX,ERR)
 	KILL ERR
 	IF '$$AEN(.CONF) QUIT 1
-	DO FHCLOSEIDLE(.CONF)
 	NEW FMT SET FMT=$$LOW($GET(CONF("server","log","access","format"),"common"))
 	NEW LINE,OK SET LINE="",OK=1
 	IF FMT="json" DO
@@ -125,120 +118,52 @@ ACCESS(CONF,REQ,CTX,ERR)
 	. IF $DATA(ERR) SET OK=0
 	ELSE  SET LINE=$$ALINE(FMT,.REQ,.CTX)
 	IF 'OK QUIT 0
-	DO QPUT(LINE)
-	NEW BUF SET BUF=+$GET(CONF("server","log","access","buffer"),1)
-	IF 'BUF QUIT $$FLUSH(.CONF,.ERR)
-	IF $$NEEDFLUSH(.CONF) QUIT $$FLUSH(.CONF,.ERR)
+	DO APUT(.CONF,LINE)
 	QUIT 1
 	;
 FLUSH(CONF,ERR)
+	; Global sink has no flush step; retained for compatibility.;
 	KILL ERR
-	IF '$$AEN(.CONF) QUIT 1
-	DO FHCLOSEIDLE(.CONF)
-	NEW QC SET QC=+$GET(^TMP($J,"MIOLOG","A","qC"))
-	IF QC<1 QUIT 1
-	NEW BASE SET BASE=$GET(CONF("server","log","access","path"),"tmp/mio-access")
-	NEW DAILY SET DAILY=+$GET(CONF("server","log","access","daily"),1)
-	NEW MAXB SET MAXB=+$GET(CONF("server","log","access","maxBytes"),10485760)
-	NEW DAY SET DAY=$SELECT(DAILY:$$DAY(),1:"")
-	; If the log base path changes within the same job (common in tests),
-	; reset rotation state so we don't incorrectly continue prior suffix/bytes.;
-	NEW CURBASE SET CURBASE=$GET(^TMP($J,"MIOLOG","A","base"))
-	IF CURBASE'=BASE DO
-	. SET ^TMP($J,"MIOLOG","A","base")=BASE
-	. SET ^TMP($J,"MIOLOG","A","day")=DAY
-	. SET ^TMP($J,"MIOLOG","A","sfx")=0
-	. SET ^TMP($J,"MIOLOG","A","bytes")=0
-	; daily boundary resets rotation state
-	IF DAILY,$GET(^TMP($J,"MIOLOG","A","day"))'=DAY DO
-	. SET ^TMP($J,"MIOLOG","A","day")=DAY
-	. SET ^TMP($J,"MIOLOG","A","sfx")=0
-	. SET ^TMP($J,"MIOLOG","A","bytes")=0
-	NEW SFX SET SFX=+$GET(^TMP($J,"MIOLOG","A","sfx"))
-	NEW BYTES SET BYTES=+$GET(^TMP($J,"MIOLOG","A","bytes"))
-	NEW FP SET FP=$$FPATH(BASE,DAY,SFX,DAILY)
-	NEW BASEFP SET BASEFP=$$FPATH(BASE,DAY,0,DAILY)
-	NEW DEV SET DEV=FP
-	NEW CACHE SET CACHE=$$FHCACHE(.CONF)
-	NEW OIO SET OIO=$IO
-	NEW OKOPEN SET OKOPEN=1
-	IF CACHE SET OKOPEN=$$FHOPEN(.CONF,DEV)
-	ELSE  SET OKOPEN=$$OPENA(DEV)
-	IF 'OKOPEN DO SETERR(.ERR,"open_failed",FP) USE OIO QUIT 0
-	USE DEV
-	NEW I SET I=0
-	FOR  SET I=$ORDER(^TMP($J,"MIOLOG","A","Q",I)) QUIT:I=""  DO  IF $DATA(ERR) QUIT
-	. NEW L SET L=$GET(^TMP($J,"MIOLOG","A","Q",I))
-	. NEW WLEN SET WLEN=$L(L)+1
-	. IF MAXB>0,BYTES>0,(BYTES+WLEN)>MAXB DO
-	. . IF CACHE DO FHCLOSE(.CONF) ELSE  CLOSE DEV
-	. . SET SFX=SFX+1,BYTES=0
-	. . SET FP=$$FPATH(BASE,DAY,SFX,DAILY),DEV=FP
-	. . IF CACHE DO
-	. . . IF '$$FHOPEN(.CONF,DEV) DO SETERR(.ERR,"open_failed",FP) QUIT
-	. . ELSE  DO
-	. . . IF '$$OPENA(DEV) DO SETERR(.ERR,"open_failed",FP) QUIT
-	. . USE DEV
-	. WRITE L,$CHAR(10)
-	. SET BYTES=BYTES+WLEN
-	IF 'CACHE CLOSE DEV
-	IF 'CACHE,SFX>0 DO SAFECLOSE(BASEFP)
-	IF CACHE SET ^TMP($J,"MIOLOG","FH","access","last")=$$HSEC()
-	USE OIO
-	IF $DATA(ERR) QUIT 0
-	SET ^TMP($J,"MIOLOG","A","sfx")=SFX
-	SET ^TMP($J,"MIOLOG","A","bytes")=BYTES
-	DO QCLR
 	QUIT 1
 	;
 AEN(CONF)
 	QUIT +$GET(CONF("server","log","access","enabled"),0)
 	;
-FHCACHE(CONF)
-	; 1=enabled, 0=disabled (strict cap: only one open handle per job)
-	NEW X SET X=+$GET(CONF("server","log","access","fhCache"),1)
-	QUIT $SELECT(X>0:1,1:0)
-	;
-HSEC()
-	NEW H SET H=$HOROLOG
-	QUIT ($PIECE(H,",",1)*86400)+$PIECE(H,",",2)
-	;
-FHCLOSEIDLE(CONF)
-	IF '$$FHCACHE(.CONF) QUIT
-	NEW IDLE SET IDLE=+$GET(CONF("server","log","access","fhIdleSeconds"),5)
-	IF IDLE<1 QUIT
-	NEW LAST SET LAST=+$GET(^TMP($J,"MIOLOG","FH","access","last"))
-	IF LAST<1 QUIT
-	IF ($$HSEC()-LAST)>IDLE DO FHCLOSE(.CONF)
+; ---- access ring storage (global sink) ---------------------------------
+;
+; Store LINE into a fixed-size ring in ^MIO("LOG","ACCESS","ring",slot).;
+; Uses one atomic sequence counter to preserve deterministic ordering.;
+;
+APUT(CONF,LINE)
+	NEW MAX SET MAX=+$GET(CONF("server","log","access","maxEntries"),20000)
+	;IF MAX<100 SET MAX=100
+	NEW SEQ SET SEQ=$INCREMENT(^MIO("LOG","ACCESS","seq"))
+	NEW SLOT SET SLOT=((SEQ-1)#MAX)+1
+	SET ^MIO("LOG","ACCESS","ring",SLOT)=LINE
+	SET ^MIO("LOG","ACCESS","ring",SLOT,"seq")=SEQ
+	SET ^MIO("LOG","ACCESS","last")=SEQ
+	SET ^MIO("LOG","ACCESS","lastSlot")=SLOT
+	SET ^MIO("LOG","ACCESS","maxEntries")=MAX
+	SET ^MIO("LOG","ACCESS","count")=$INCREMENT(^MIO("LOG","ACCESS","count"))
 	QUIT
 	;
-FHOPEN(CONF,FP)
-	; Ensure the access log device is open and cached for this job.;
-	DO FHCLOSEIDLE(.CONF)
-	NEW CUR SET CUR=$GET(^TMP($J,"MIOLOG","FH","access","fp"))
-	IF CUR=FP,$GET(^TMP($J,"MIOLOG","FH","access","ok"))=1 DO  QUIT 1
-	. SET ^TMP($J,"MIOLOG","FH","access","last")=$$HSEC()
-	IF CUR'="" DO FHCLOSE(.CONF)
-	IF '$$OPENA(FP) QUIT 0
-	SET ^TMP($J,"MIOLOG","FH","access","fp")=FP
-	SET ^TMP($J,"MIOLOG","FH","access","ok")=1
-	SET ^TMP($J,"MIOLOG","FH","access","last")=$$HSEC()
-	QUIT 1
-	;
-FHCLOSE(CONF)
-	NEW FP SET FP=$GET(^TMP($J,"MIOLOG","FH","access","fp"))
-	IF FP="" KILL ^TMP($J,"MIOLOG","FH","access") QUIT
-	NEW $ETRAP,$ESTACK,$ET,$ES
-	SET $ETRAP="DO CLSTRAP^MIOLOG"
-	CLOSE FP
-	KILL ^TMP($J,"MIOLOG","FH","access")
+ACLEAR ; Clear access log ring (tests)
+	KILL ^MIO("LOG","ACCESS","ring")
+	KILL ^MIO("LOG","ACCESS","last"),^MIO("LOG","ACCESS","lastSlot")
 	QUIT
 	;
-CLSTRAP ; internal: close error trap helper
-	SET $ECODE=""
-	KILL ^TMP($J,"MIOLOG","FH","access")
+ALAST(LINE,SEQ) ; Return last access log line (tests/ops)
+	SET LINE="",SEQ=0
+	NEW SLOT SET SLOT=+$GET(^MIO("LOG","ACCESS","lastSlot"))
+	IF SLOT<1 QUIT
+	SET LINE=$GET(^MIO("LOG","ACCESS","ring",SLOT))
+	SET SEQ=+$GET(^MIO("LOG","ACCESS","ring",SLOT,"seq"))
 	QUIT
 	;
+; Deterministic access logging:
+; - No file-handle caching; each FLUSH opens and closes the target file(s).;
+; - Prevents read-only device errors across re-runs/tests.;
+;
 SCTRP ; internal: safe close trap helper
 	SET $ECODE=""
 	QUIT
@@ -250,8 +175,7 @@ SAFECLOSE(DEV)
 	QUIT
 	;
 CLOSEALL(CONF)
-	; Public: close any cached access log handle for this job.;
-	DO FHCLOSE(.CONF)
+	; Public: retained for compatibility (deterministic mode keeps no cached handles).;
 	QUIT
 	;
 NEEDFLUSH(CONF)
@@ -290,6 +214,7 @@ OPENA(DEV)
 	; Returns 1 on success, 0 on failure (no exception raised).;
 	NEW $ETRAP,$ESTACK,$ET,$ES
 	NEW OK SET OK=0
+	DO SAFECLOSE(DEV)
 	SET $ETRAP="DO OPNTRAP^MIOLOG"
 	OPEN DEV:(append:stream:nowrap):1
 	IF $TEST SET OK=1 QUIT 1

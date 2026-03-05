@@ -4,7 +4,7 @@ MIOMWT ; Middleware pipeline tests (router-level before/after)
 	;   YDB>ZL "MIOHTTP.m","MIOROUTE.m","MIOMWT.m","MIOTASSERT.m"
 	;   YDB>D ^MIOMWT
 	;
-	NEW $ET SET $ET="ZSHOW ""*"":^A DO STERR^MIOMWT"
+	NEW $ET SET $ET="DO STERR^MIOMWT"
 	DO T001
 	DO T002
 	DO T003
@@ -127,4 +127,3 @@ H1(DEV,CONF,REQ,CTX)
 	DO RESPJSONX^MIOHTTP(.DEV,.CONF,200,.OBJ,$GET(CTX("request_id")),.CTX)
 	SET CTX("status")=200
 	QUIT
-	;

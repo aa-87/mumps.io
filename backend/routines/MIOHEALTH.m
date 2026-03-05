@@ -63,16 +63,12 @@ CHKACCESSLOG(CONF,OBJ,OK)
 	NEW EN SET EN=$$BOOL($GET(CONF("server","log","access","enabled")))
 	IF 'EN DO  QUIT
 	. DO SETCHK(.OBJ,"access_log_dir",1,"disabled")
-	NEW BASE SET BASE=$GET(CONF("server","log","access","path"),"tmp/mio-access")
-	NEW DIR SET DIR=$$DIRNAME(BASE)
-	IF DIR="" SET DIR="."
-	NEW DOK SET DOK=$$DIREX(DIR)
-	IF 'DOK DO  QUIT
-	. DO SETCHK(.OBJ,"access_log_dir",0,"missing:"_DIR)
+	; Access logs are global-backed for determinism/perf.
+	NEW ME SET ME=+$GET(CONF("server","log","access","maxEntries"),20000)
+	IF ME<100 DO  QUIT
+	. DO SETCHK(.OBJ,"access_log_sink",0,"maxEntries_lt_100")
 	. SET OK=0
-	NEW WOK SET WOK=$$CANWRITE(DIR,".mio_ready_log")
-	DO SETCHK(.OBJ,"access_log_dir",WOK,$SELECT(WOK:"ok",1:"not_writable:"_DIR))
-	IF 'WOK SET OK=0
+	DO SETCHK(.OBJ,"access_log_sink",1,"global")
 	QUIT
 	;
 CHKTPL(CONF,OBJ,OK)

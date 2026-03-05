@@ -451,20 +451,34 @@ FINDALLOWED(PATH,CURRENT,ALLOW)
 	QUIT $DATA(ALLOW)>0
 	;
 DISPATCH(DEV,CONF,REQ,CTX)
-	NEW OK,H,RP,PARAMS
+	NEW OK,H,RP,PARAMS,METHOD
+	; Fast path: use PREMATCH results when available
 	IF $GET(CTX("match","ok"))=1 DO
 	. SET OK=1,H=$GET(CTX("match","handler")),RP=$GET(CTX("match","route"))
 	. MERGE PARAMS=CTX("match","params")
 	ELSE  DO
 	. SET OK=$$MATCH($GET(REQ("method")),$$PATHONLY($GET(REQ("path"))),.PARAMS,.H,.RP)
+	SET METHOD=$GET(REQ("method"))
 	;
-	IF 'OK DO  QUIT
-	. NEW ALLOW,ANY,ASTR,M
+	; No route match -> 405 (when non-wildcard match exists for another method) else 404
+	IF 'OK DO
+	. NEW ALLOW,ANY,ASTR,M,HEAD,OBJ,BODY
+	. NEW MWERR,MWOK,NWONOK,ABORT
+	. SET ABORT=0
+	. ; Run global middleware (if configured) even on 404/405
+	. SET NWONOK=$$MWANY(.CONF,METHOD,"")
+	. IF NWONOK DO
+	. . SET MWOK=$$MWBEFORE(.DEV,.CONF,.REQ,.CTX,METHOD,"",.MWERR)
+	. . IF 'MWOK DO
+	. . . IF +$GET(CTX("status"))<1 DO MWRESPERR(.DEV,.CONF,.REQ,.CTX,.MWERR)
+	. . . DO MWAFTER(.DEV,.CONF,.REQ,.CTX,METHOD,"",.MWERR)
+	. . . SET ABORT=1
+	. IF ABORT QUIT
+	. ;
 	. SET ANY=$$FINDALLOWED($GET(REQ("path")),$GET(REQ("method")),.ALLOW)
-	. IF ANY DO  QUIT
+	. IF ANY DO
 	. . SET ASTR="",M=""
 	. . FOR  SET M=$ORDER(ALLOW(M)) QUIT:M=""  SET ASTR=ASTR_$SELECT(ASTR'="":", ",1:"")_M
-	. . NEW HEAD,OBJ,BODY
 	. . SET HEAD("Content-Type")="application/json"
 	. . SET HEAD("Allow")=ASTR
 	. . SET OBJ("error")="method_not_allowed"
@@ -474,32 +488,46 @@ DISPATCH(DEV,CONF,REQ,CTX)
 	. . SET BODY=$$EN^MIOJSON1(.OBJ)
 	. . DO RESPX^MIOHTTP(.DEV,.CONF,405,.HEAD,BODY,$GET(CTX("request_id")),.CTX)
 	. . SET CTX("route")="(method_not_allowed)"
-	. NEW OBJ
-	. SET OBJ("error")="not_found"
-	. SET OBJ("routine")="MIOROUTE"
-	. SET OBJ("request_id")=$GET(CTX("request_id"))
-	. DO RESPJSONX^MIOHTTP(.DEV,.CONF,404,.OBJ,$GET(CTX("request_id")),.CTX)
-	. SET CTX("route")="(not_found)"
+	. ELSE  DO
+	. . SET OBJ("error")="not_found"
+	. . SET OBJ("routine")="MIOROUTE"
+	. . SET OBJ("request_id")=$GET(CTX("request_id"))
+	. . DO RESPJSONX^MIOHTTP(.DEV,.CONF,404,.OBJ,$GET(CTX("request_id")),.CTX)
+	. . SET CTX("route")="(not_found)"
+	. ;
+	. IF NWONOK DO MWAFTER(.DEV,.CONF,.REQ,.CTX,METHOD,"",.MWERR)
+	IF 'OK QUIT
 	;
-	;D @(TAG_"^"_RTN_"(.DEV,.CONF,.REQ,.CTX)")
-	NEW TAG,RTN,METHOD
-	SET TAG=$PIECE(H,"^",1),RTN=$PIECE(H,"^",2)
-	SET METHOD=$GET(REQ("method"))
+	; Matched route
 	SET CTX("route")=RP
 	MERGE REQ("params")=PARAMS
-	NEW MWERR,MWOK,MWON
-	NEW NWONOK 
+	;
+	NEW TAG,RTN
+	SET TAG=$PIECE($GET(H),"^",1),RTN=$PIECE($GET(H),"^",2)
+	IF TAG=""!(RTN="") DO  QUIT
+	. NEW EOBJ
+	. SET EOBJ("error")="empty_handler"
+	. SET EOBJ("routine")="MIOROUTE"
+	. SET EOBJ("request_id")=$GET(CTX("request_id"))
+	. DO RESPJSONX^MIOHTTP(.DEV,.CONF,500,.EOBJ,$GET(CTX("request_id")),.CTX)
+	. SET CTX("status")=500
+	. SET CTX("route")="(empty_handler)"
+	;
+	NEW MWERR,MWOK,NWONOK,ABORT
+	SET ABORT=0
 	SET NWONOK=$$MWANY(.CONF,METHOD,RP)
 	IF NWONOK DO
-	. M ^A=CONF,^B=REQ,^C=CTX,^D=METHOD,^E=RP
 	. SET MWOK=$$MWBEFORE(.DEV,.CONF,.REQ,.CTX,METHOD,RP,.MWERR)
-	. IF 'MWOK DO  QUIT
-	. . IF +$GET(CTX("status"))>0 QUIT
-	. . DO MWRESPERR(.DEV,.CONF,.REQ,.CTX,.MWERR)
-	. D @(TAG_"^"_RTN_"(.DEV,.CONF,.REQ,.CTX)")
-	. DO MWAFTER(.DEV,.CONF,.REQ,.CTX,METHOD,RP,.MWERR)
-	IF 'NWONOK  D @(TAG_"^"_RTN_"(.DEV,.CONF,.REQ,.CTX)")
-	QUIT	
+	. IF 'MWOK DO
+	. . IF +$GET(CTX("status"))<1 DO MWRESPERR(.DEV,.CONF,.REQ,.CTX,.MWERR)
+	. . DO MWAFTER(.DEV,.CONF,.REQ,.CTX,METHOD,RP,.MWERR)
+	. . SET ABORT=1
+	IF ABORT QUIT
+	;
+	DO @(TAG_"^"_RTN_"(.DEV,.CONF,.REQ,.CTX)")
+	IF NWONOK DO MWAFTER(.DEV,.CONF,.REQ,.CTX,METHOD,RP,.MWERR)
+	QUIT
+	;
 	;
 ; ---- middleware pipeline (ROI #8) -------------------------------------
 MWANY(CONF,METHOD,ROUTEPAT)
@@ -527,27 +555,46 @@ MWLIST(CONF,METHOD,ROUTEPAT,PHASE,LIST)
 	. . IF E'="" SET N=N+1,LIST(N)=E
 	QUIT
 	;
+	; Execute ENT="TAG^RTN" as an extrinsic: OK=$$TAG^RTN(.DEV,.CONF,.REQ,.CTX,.ERR)
+MWEX(ENT,DEV,CONF,REQ,CTX,ERR)
+	NEW TAG,RTN,CMD,OK
+	SET OK=0
+	SET TAG=$PIECE($GET(ENT),"^",1),RTN=$PIECE($GET(ENT),"^",2)
+	IF TAG=""!(RTN="") DO  QUIT 0
+	. SET ERR("routine")="MIOROUTE",ERR("error")="middleware_bad_entry",ERR("status")=500
+	IF '$$ISID(TAG)!'$$ISID(RTN) DO  QUIT 0
+	. SET ERR("routine")="MIOROUTE",ERR("error")="middleware_bad_entry",ERR("status")=500
+	NEW $ETRAP SET $ETRAP="SET $ECODE="""" SET ERR(""routine"")=""MIOROUTE"" SET ERR(""error"")=""middleware_exception"" SET ERR(""status"")=500 SET OK=0"
+	SET CMD="SET OK=$$"_TAG_"^"_RTN_"(.DEV,.CONF,.REQ,.CTX,.ERR)"
+	XECUTE CMD
+	QUIT +$GET(OK)
+	;
+ISID(S)
+	NEW I,C,OK
+	SET S=$GET(S)
+	IF S="" QUIT 0
+	SET C=$EXTRACT(S,1)
+	SET OK=$SELECT((C?1A)!(C="%"):1,1:0)
+	IF 'OK QUIT 0
+	FOR I=2:1:$LENGTH(S) DO  QUIT:'OK
+	. SET C=$EXTRACT(S,I)
+	. IF '(C?1AN) SET OK=0
+	QUIT OK
+	;
 MWBEFORE(DEV,CONF,REQ,CTX,METHOD,ROUTEPAT,ERR)
-	KILL ERR,TTAG
+	KILL ERR
 	NEW L
 	DO MWLIST(.CONF,$GET(METHOD),$GET(ROUTEPAT),"before",.L)
 	IF '$DATA(L) QUIT 1
-	NEW I,ENT,TAG,RTN,OK
-	NEW $ETRAP SET $ETRAP="SET $ECODE="""" SET ERR(""routine"")=""MIOROUTE"" SET ERR(""error"")=""middleware_exception"" SET ERR(""status"")=500 QUIT 0"
+	NEW I,ENT,OK
 	SET OK=1
 	SET I=0
 	FOR  SET I=$ORDER(L(I)) QUIT:I=""  DO  QUIT:'OK
 	. SET ENT=$GET(L(I))
 	. IF ENT="" QUIT
-	. SET TAG=$PIECE(ENT,"^",1),RTN=$PIECE(ENT,"^",2)
-	. IF TAG=""!(RTN="") DO  SET OK=0 QUIT
-	. . SET ERR("routine")="MIOROUTE",ERR("error")="middleware_bad_entry",ERR("status")=500
-	. IF $TEXT(@(TAG_"^"_RTN))="" DO  SET OK=0 QUIT
-	. . SET ERR("routine")="MIOROUTE",ERR("error")="middleware_missing",ERR("status")=500
-	. SET TTAG="OK=$$"_TAG_"^"_RTN
-	. SET @TTAG@(.DEV,.CONF,.REQ,.CTX,.ERR)
+	. SET OK=$$MWEX(ENT,.DEV,.CONF,.REQ,.CTX,.ERR)
 	. IF +OK'=1 DO
-	. . IF $GET(ERR("routine"))="" SET ERR("routine")=RTN
+	. . IF $GET(ERR("routine"))="" SET ERR("routine")=$PIECE(ENT,"^",2)
 	. . IF $GET(ERR("error"))="" SET ERR("error")="middleware_reject"
 	. . IF '$DATA(ERR("status")) SET ERR("status")=403
 	. . SET OK=0
@@ -557,16 +604,17 @@ MWAFTER(DEV,CONF,REQ,CTX,METHOD,ROUTEPAT,ERR)
 	NEW L
 	DO MWLIST(.CONF,$GET(METHOD),$GET(ROUTEPAT),"after",.L)
 	IF '$DATA(L) QUIT
-	NEW I,ENT,TAG,RTN
+	NEW I,ENT,TAG,RTN,CMD
 	SET I=0
 	FOR  SET I=$ORDER(L(I)) QUIT:I=""  DO
 	. SET ENT=$GET(L(I))
 	. IF ENT="" QUIT
 	. SET TAG=$PIECE(ENT,"^",1),RTN=$PIECE(ENT,"^",2)
 	. IF TAG=""!(RTN="") QUIT
-	. IF $TEXT(@(TAG_"^"_RTN))="" QUIT
+	. IF '$$ISID(TAG)!'$$ISID(RTN) QUIT
 	. NEW $ETRAP SET $ETRAP="SET $ECODE="""""
-	. DO @(TAG_"^"_RTN_"(.DEV,.CONF,.REQ,.CTX,.ERR)")
+	. SET CMD="DO "_TAG_"^"_RTN_"(.DEV,.CONF,.REQ,.CTX,.ERR)"
+	. XECUTE CMD
 	QUIT
 	;
 MWRESPERR(DEV,CONF,REQ,CTX,ERR)
