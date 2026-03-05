@@ -32,6 +32,8 @@ MIOD ; Worker daemon. Accepts connections and runs request lifecycle.;
 STERR
 	ZSHOW "*":^AAA
 	S ^AAA=$ZSTATUS
+	; Best-effort: release admission slot if this job crashes
+	NEW D DO CONNCLOSE^MIODOS(.D)
 	Q
 	;
 START(CONF)
@@ -83,6 +85,21 @@ JOBCONN(ADDR,HANDLE)
 	USE DEV:(delim=$C(13,10))
 	NEW CTX,REQ,ERR
 	SET CTX("remote_addr")=$GET(ADDR)
+	; Connection-level DoS hardening (active cap + lifetime)
+	NEW DERR,OKD SET OKD=$$CONNOPEN^MIODOS(.CONF,.CTX,.DERR)
+	IF 'OKD DO  QUIT
+	. ; Reject early with 503 and close
+	. NEW OBJ,HEAD,BODY
+	. SET CTX("request_id")=$$UUID^MIOUTIL()
+	. SET HEAD("Content-Type")="application/json"
+	. SET HEAD("Connection")="close"
+	. SET OBJ("ok")=0
+	. SET OBJ("error")=$GET(DERR("error"),"too_many_connections")
+	. SET OBJ("routine")=$GET(DERR("routine"),"MIODOS")
+	. SET OBJ("request_id")=$GET(CTX("request_id"))
+	. SET BODY=$$EN^MIOJSON1(.OBJ)
+	. DO RESPX^MIOHTTP(.DEV,.CONF,503,.HEAD,BODY,$GET(CTX("request_id")),.CTX)
+	. DO CLOSE^MIOSOCK(DEV)
 	;
 	; Access log (ROI #1)
 	NEW LOGEN SET LOGEN=+$GET(CONF("server","log","access","enabled"),0)
@@ -104,6 +121,8 @@ JOBCONN(ADDR,HANDLE)
 	NEW NREQ SET NREQ=0
 	NEW DONE SET DONE=0
 	FOR  QUIT:DONE  DO  QUIT:$GET(DONE)
+	. ; Hard close if connection lifetime exceeded before reading next request
+	. IF $$CONNEXPIRED^MIODOS(.CONF,.CTX) SET DONE=1 QUIT
 	. ; For the first request, use normal timeouts.;
 	. ; For subsequent requests, use keep-alive idle timeout for header reads.;
 	. IF NREQ>0 DO
@@ -142,10 +161,6 @@ JOBCONN(ADDR,HANDLE)
 	. . ; Otherwise close hard.;
 	. . SET DONE=1
 	. ;
-	. ; Expose request method to response helpers (ROI #10: HEAD correctness)
-	. KILL ^TMP($J,"MIOHTTP","REQ")
-	. SET ^TMP($J,"MIOHTTP","REQ","method")=$$LOW^MIOHTTP($GET(REQ("method")))
-	.
 	. SET NREQ=NREQ+1
 	. ; Rate limiting (per-IP token bucket)
 	. IF RLEN DO  QUIT:$GET(DONE)
@@ -233,6 +248,7 @@ JOBCONN(ADDR,HANDLE)
 	IF LOGEN NEW LERR2,OKF SET OKF=$$FLUSH^MIOLOG(.CONF,.LERR2)
 	IF LOGEN DO CLOSEALL^MIOLOG(.CONF)
 	DO CLOSE^MIOSOCK(DEV)
+	DO CONNCLOSE^MIODOS(.CTX)
 	QUIT
 ; Keep-alive decision: returns 1 to keep, 0 to close after this request.;
 KASHOULD(CONF,REQ,NREQ,KAEN,KAMAX)
