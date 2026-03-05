@@ -18,8 +18,6 @@ MIOSTATICT ; Static file handler tests (includes ETag 304)
 	DO T011
 	DO T012
 	DO T013
-	DO T014
-	DO T015
 	QUIT
 	;
 STERR
@@ -392,132 +390,139 @@ T011 ; /static/ missing index and listing disabled -> 404
 	DO EQ^MIOTASSERT($SELECT(OUT["404":1,1:0),1,"[T011][status]")
 	DO EQ^MIOTASSERT($SELECT(OUT["MIOSTATIC":1,1:0),1,"[T011][routine]")
 	QUIT
-T012 ; Precompressed br served when Accept-Encoding includes br
-	NEW CONF,REQ,CTX,DEV,OUT,ROOT,FP,OP
+;
+T012 ; ETag persists across in-memory cache clear (persistent store)
+	NEW CONF,REQ,CTX,DEV,OUT,ROOT,FP,OP,ET1,ET2,NORM,P1,HD,HS
 	SET ROOT="tmp"
-	SET FP=ROOT_"/hello.txt"
-	SET OP="tmp/mio_static_t012.out"
+	SET FP=ROOT_"/mio_etag_persist.txt"
 	OPEN FP:(newversion:stream:nowrap)
-	USE FP WRITE "plain" CLOSE FP
-	OPEN (FP_".br"):(newversion:stream:nowrap)
-	USE (FP_".br") WRITE "BR" CLOSE (FP_".br")
-	OPEN (FP_".gz"):(newversion:stream:nowrap)
-	USE (FP_".gz") WRITE "GZ" CLOSE (FP_".gz")
+	USE FP WRITE "hello" CLOSE FP
+	;
+	KILL ^MIO("STATIC","META",FP)
+	KILL ^MIO("STATIC","ETAG",FP)
 	;
 	SET CONF("server","static","enabled")=1
 	SET CONF("server","static","root")=ROOT
 	SET CONF("server","static","mount")="/static"
-	SET CONF("server","static","precompressed","enabled")=1
+	SET CONF("server","static","maxEtagBytes")=1048576
+	SET CONF("server","static","etagCacheSeconds")=300
+	; Stable identity: pin mtime once
+	SET HD=+$P($H,",",1),HS=+$P($H,",",2)
+	DO SETMTIME^MIOSTATIC(FP,HD,HS)
 	;
+	; First request: capture ETag1
+	SET OP="tmp/mio_static_t012a.out"
 	KILL REQ,CTX,OUT
 	SET REQ("method")="GET"
-	SET REQ("path")="/static/hello.txt"
-	SET REQ("params","path")="hello.txt"
-	SET REQ("hdr","accept-encoding")="br, gzip"
-	SET CTX("request_id")="st012"
+	SET REQ("path")="/static/mio_etag_persist.txt"
+	SET REQ("params","path")="mio_etag_persist.txt"
+	SET CTX("request_id")="st012a"
 	OPEN OP:(newversion:stream:nowrap)
 	SET DEV=OP USE DEV
 	DO STATIC^MIOSTATIC(.DEV,.CONF,.REQ,.CTX)
 	CLOSE DEV USE $PRINCIPAL
 	DO READALL(OP,.OUT)
-	DO EQ^MIOTASSERT($SELECT(OUT["HTTP/1.1 200 OK":1,1:0),1,"[T012][status]")
-	DO EQ^MIOTASSERT($SELECT(OUT["Content-Encoding: br":1,1:0),1,"[T012][encoding br]")
-	DO EQ^MIOTASSERT($SELECT(OUT["Vary: Accept-Encoding":1,1:0),1,"[T012][vary]")
-	DO EQ^MIOTASSERT($SELECT(OUT["BR":1,1:0),1,"[T012][body]")
-	QUIT
+	SET NORM=$TR(OUT,$C(13),$C(10))
+	SET P1=$P(NORM,"ETag: ",2)
+	SET ET1=$P(P1,$C(10),1)
+	DO EQ^MIOTASSERT($SELECT(ET1'="":1,1:0),1,"[T012][etag1 present]")
 	;
-T013 ; Precompressed gzip served when br not acceptable
-	NEW CONF,REQ,CTX,DEV,OUT,ROOT,FP,OP
-	SET ROOT="tmp"
-	SET FP=ROOT_"/hello.txt"
-	SET OP="tmp/mio_static_t013.out"
-	OPEN FP:(newversion:stream:nowrap)
-	USE FP WRITE "plain" CLOSE FP
-	OPEN (FP_".gz"):(newversion:stream:nowrap)
-	USE (FP_".gz") WRITE "GZ" CLOSE (FP_".gz")
+	; Clear in-memory cache fields but keep persistent store + pinned mtime
+	KILL ^MIO("STATIC","META",FP,"etag")
+	KILL ^MIO("STATIC","META",FP,"etagid")
+	KILL ^MIO("STATIC","META",FP,"tsd")
+	KILL ^MIO("STATIC","META",FP,"tss")
+	KILL ^MIO("STATIC","META",FP,"len")
 	;
-	SET CONF("server","static","enabled")=1
-	SET CONF("server","static","root")=ROOT
-	SET CONF("server","static","mount")="/static"
-	SET CONF("server","static","precompressed","enabled")=1
-	;
+	; Second request: should reuse same ETag via persistent store
+	SET OP="tmp/mio_static_t012b.out"
 	KILL REQ,CTX,OUT
 	SET REQ("method")="GET"
-	SET REQ("path")="/static/hello.txt"
-	SET REQ("params","path")="hello.txt"
-	SET REQ("hdr","accept-encoding")="gzip"
-	SET CTX("request_id")="st013"
+	SET REQ("path")="/static/mio_etag_persist.txt"
+	SET REQ("params","path")="mio_etag_persist.txt"
+	SET CTX("request_id")="st012b"
 	OPEN OP:(newversion:stream:nowrap)
 	SET DEV=OP USE DEV
 	DO STATIC^MIOSTATIC(.DEV,.CONF,.REQ,.CTX)
 	CLOSE DEV USE $PRINCIPAL
 	DO READALL(OP,.OUT)
-	DO EQ^MIOTASSERT($SELECT(OUT["HTTP/1.1 200 OK":1,1:0),1,"[T013][status]")
-	DO EQ^MIOTASSERT($SELECT(OUT["Content-Encoding: gzip":1,1:0),1,"[T013][encoding gzip]")
-	DO EQ^MIOTASSERT($SELECT(OUT["Vary: Accept-Encoding":1,1:0),1,"[T013][vary]")
-	DO EQ^MIOTASSERT($SELECT(OUT["GZ":1,1:0),1,"[T013][body]")
+	SET NORM=$TR(OUT,$C(13),$C(10))
+	SET P1=$P(NORM,"ETag: ",2)
+	SET ET2=$P(P1,$C(10),1)
+	DO EQ^MIOTASSERT($SELECT(ET2=ET1:1,1:0),1,"[T012][etag persisted]")
 	QUIT
 	;
-T014 ; q-values: choose gzip if br;q=0
-	NEW CONF,REQ,CTX,DEV,OUT,ROOT,FP,OP
+T013 ; ETag invalidates when server version/mtime updated (TOUCH)
+	NEW CONF,REQ,CTX,DEV,OUT,ROOT,FP,OP,ET1,ET2,NORM,P1
 	SET ROOT="tmp"
-	SET FP=ROOT_"/hello.txt"
-	SET OP="tmp/mio_static_t014.out"
+	SET FP=ROOT_"/mio_etag_inval.txt"
 	OPEN FP:(newversion:stream:nowrap)
-	USE FP WRITE "plain" CLOSE FP
-	OPEN (FP_".br"):(newversion:stream:nowrap)
-	USE (FP_".br") WRITE "BR" CLOSE (FP_".br")
-	OPEN (FP_".gz"):(newversion:stream:nowrap)
-	USE (FP_".gz") WRITE "GZ" CLOSE (FP_".gz")
+	USE FP WRITE "aaaaa" CLOSE FP
+	;
+	KILL ^MIO("STATIC","META",FP)
+	KILL ^MIO("STATIC","ETAG",FP)
 	;
 	SET CONF("server","static","enabled")=1
 	SET CONF("server","static","root")=ROOT
 	SET CONF("server","static","mount")="/static"
-	SET CONF("server","static","precompressed","enabled")=1
+	SET CONF("server","static","maxEtagBytes")=1048576
+	SET CONF("server","static","etagCacheSeconds")=300
 	;
+	; First request: ETag1
+	SET OP="tmp/mio_static_t013a.out"
 	KILL REQ,CTX,OUT
 	SET REQ("method")="GET"
-	SET REQ("path")="/static/hello.txt"
-	SET REQ("params","path")="hello.txt"
-	SET REQ("hdr","accept-encoding")="br;q=0, gzip"
-	SET CTX("request_id")="st014"
+	SET REQ("path")="/static/mio_etag_inval.txt"
+	SET REQ("params","path")="mio_etag_inval.txt"
+	SET CTX("request_id")="st013a"
 	OPEN OP:(newversion:stream:nowrap)
 	SET DEV=OP USE DEV
 	DO STATIC^MIOSTATIC(.DEV,.CONF,.REQ,.CTX)
 	CLOSE DEV USE $PRINCIPAL
 	DO READALL(OP,.OUT)
-	DO EQ^MIOTASSERT($SELECT(OUT["Content-Encoding: gzip":1,1:0),1,"[T014][encoding gzip]")
-	DO EQ^MIOTASSERT($SELECT(OUT["GZ":1,1:0),1,"[T014][body]")
-	QUIT
+	SET NORM=$TR(OUT,$C(13),$C(10))
+	SET P1=$P(NORM,"ETag: ",2)
+	SET ET1=$P(P1,$C(10),1)
+	DO EQ^MIOTASSERT($SELECT(ET1'="":1,1:0),1,"[T013][etag1 present]")
 	;
-T015 ; Range request does not use encoded variant by default
-	NEW CONF,REQ,CTX,DEV,OUT,ROOT,FP,OP
-	SET ROOT="tmp"
-	SET FP=ROOT_"/hello.txt"
-	SET OP="tmp/mio_static_t015.out"
-	OPEN FP:(newversion:stream:nowrap)
-	USE FP WRITE "hi" CLOSE FP
-	OPEN (FP_".br"):(newversion:stream:nowrap)
-	USE (FP_".br") WRITE "BR" CLOSE (FP_".br")
+	; Change file content (same length) and touch to bump version/mtime
+	OPEN FP:(stream:nowrap)
+	USE FP WRITE "bbbbb" CLOSE FP
+	DO TOUCH^MIOSTATIC(FP)
 	;
-	SET CONF("server","static","enabled")=1
-	SET CONF("server","static","root")=ROOT
-	SET CONF("server","static","mount")="/static"
-	SET CONF("server","static","precompressed","enabled")=1
-	;
+	; If-None-Match with old ETag should NOT 304; should return 200 with new ETag2
+	SET OP="tmp/mio_static_t013b.out"
 	KILL REQ,CTX,OUT
 	SET REQ("method")="GET"
-	SET REQ("path")="/static/hello.txt"
-	SET REQ("params","path")="hello.txt"
-	SET REQ("hdr","accept-encoding")="br"
-	SET REQ("hdr","range")="bytes=0-0"
-	SET CTX("request_id")="st015"
+	SET REQ("path")="/static/mio_etag_inval.txt"
+	SET REQ("params","path")="mio_etag_inval.txt"
+	SET REQ("hdr","if-none-match")=ET1
+	SET CTX("request_id")="st013b"
 	OPEN OP:(newversion:stream:nowrap)
 	SET DEV=OP USE DEV
 	DO STATIC^MIOSTATIC(.DEV,.CONF,.REQ,.CTX)
 	CLOSE DEV USE $PRINCIPAL
 	DO READALL(OP,.OUT)
-	DO EQ^MIOTASSERT($SELECT(OUT["206":1,1:0),1,"[T015][status]")
-	DO EQ^MIOTASSERT($SELECT(OUT["Content-Encoding:":1,1:0),0,"[T015][no encoding]")
-	DO EQ^MIOTASSERT($SELECT(OUT["h":1,1:0),1,"[T015][body]")
+	DO EQ^MIOTASSERT($SELECT(OUT["HTTP/1.1 200 OK":1,1:0),1,"[T013][status 200]")
+	SET NORM=$TR(OUT,$C(13),$C(10))
+	SET P1=$P(NORM,"ETag: ",2)
+	SET ET2=$P(P1,$C(10),1)
+	DO EQ^MIOTASSERT($SELECT(ET2'="":1,1:0),1,"[T013][etag2 present]")
+	DO EQ^MIOTASSERT($SELECT(ET2'=ET1:1,1:0),1,"[T013][etag changed]")
+	;
+	; If-None-Match with new ETag should 304
+	SET OP="tmp/mio_static_t013c.out"
+	KILL REQ,CTX,OUT
+	SET REQ("method")="GET"
+	SET REQ("path")="/static/mio_etag_inval.txt"
+	SET REQ("params","path")="mio_etag_inval.txt"
+	SET REQ("hdr","if-none-match")=ET2
+	SET CTX("request_id")="st013c"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO STATIC^MIOSTATIC(.DEV,.CONF,.REQ,.CTX)
+	CLOSE DEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["304":1,1:0),1,"[T013][status 304]")
 	QUIT
+

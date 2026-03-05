@@ -100,9 +100,7 @@ STATIC(DEV,CONF,REQ,CTX)
 	SET HEAD("X-Content-Type-Options")="nosniff"
 	SET HEAD("Accept-Ranges")="bytes"
 	IF ENC'="" SET HEAD("Content-Encoding")=ENC
-	; Always emit Vary: Accept-Encoding when precompressed mode is enabled (even if request lacks Accept-Encoding).
-	IF +$GET(CONF("server","static","precompressed","enabled"),0),(METHOD="get"!(METHOD="head")) DO ADDVARY(.HEAD,"Accept-Encoding")
-	ELSE  IF VARY DO ADDVARY(.HEAD,"Accept-Encoding")
+	IF VARY DO ADDVARY(.HEAD,"Accept-Encoding")
 	;
 	; --- ETag / If-None-Match (first) -------------------------------------
 	NEW META,ETAG
@@ -221,7 +219,6 @@ WOUTSOCK(D,STR)
 	DO WRITE^MIOSOCK(D,STR)
 	QUIT OK
 	;
-
 ; -------------------------------------------------------------------------
 ; Path helpers
 NORMMOUNT(M)
@@ -472,10 +469,9 @@ GETMETA(CONF,FS,META)
 	NEW FSZ SET FSZ=$$FILESIZE(.CONF,FS)
 	NEW MHD SET MHD=+$GET(^MIO("STATIC","META",FS,"mhd"))
 	NEW MHS SET MHS=+$GET(^MIO("STATIC","META",FS,"mhs"))
-	NEW VER SET VER=$GET(^MIO("STATIC","META",FS,"ver"))
+	NEW VER SET VER=+$GET(^MIO("STATIC","META",FS,"ver"))
 	NEW ID
-	IF MHD>0 SET ID="l="_FSZ_"|m="_MHD_"."_MHS
-	ELSE  SET ID="l="_FSZ_"|v="_$SELECT(VER'="":VER,1:0)
+	SET ID="l="_FSZ_"|m="_MHD_"."_MHS_"|v="_VER
 	SET META("etagid")=ID
 	;
 	; 1) Fast TTL cache, but only if identity matches
@@ -601,6 +597,17 @@ SETMTIME(FS,MHD,MHS)
 	SET @CREF@("mhd")=+$GET(MHD)
 	SET @CREF@("mhs")=+$GET(MHS)
 	SET @CREF@("lm")=$$HTTPDATE(+$GET(MHD),+$GET(MHS))
+	; Invalidate ETag caches for this path so conditional GET is always correct
+	KILL @CREF@("etag"),@CREF@("etagid"),@CREF@("tsd"),@CREF@("tss")
+	KILL ^MIO("STATIC","ETAG",FS)
+	QUIT
+	;
+TOUCH(FS)
+	; Bump server-known version key and update mtime for cache invalidation.
+	NEW CREF SET CREF=$NA(^MIO("STATIC","META",FS))
+	SET @CREF@("ver")=+$GET(@CREF@("ver"))+1
+	NEW HD,HS SET HD=+$P($H,",",1),HS=+$P($H,",",2)
+	DO SETMTIME(FS,HD,HS)
 	QUIT
 	;
 CMPH(D1,S1,D2,S2)
