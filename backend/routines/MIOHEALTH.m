@@ -50,6 +50,7 @@ READY(DEV,CONF,REQ,CTX) ; 200 when ready else 503
 	;
 	; checks (deterministic order)
 	DO CHKCONF(.CONF,.OBJ,.OK)
+	DO CHKCONFV(.CONF,.OBJ,.OK)
 	DO CHKROUTER(.CONF,.OBJ,.OK)
 	DO CHKSTATIC(.CONF,.OBJ,.OK)
 	DO CHKSPOOL(.CONF,.OBJ,.OK)
@@ -73,6 +74,26 @@ CHKCONF(CONF,OBJ,OK)
 	; Do not fail solely because CONF is empty (tests may pass minimal config)
 	NEW HAS SET HAS=$SELECT($DATA(CONF)>0:1,1:0)
 	DO SETCHK(.OBJ,"conf_loaded",1,$SELECT(HAS:"ok",1:"empty"))
+	QUIT
+	;
+CHKCONFV(CONF,OBJ,OK)
+	; Config validation: fail readiness only on explicit errors.
+	; Missing optional keys do not fail.
+	IF $TEXT(VALIDATE^MIOCONFV)="" DO  QUIT
+	. DO SETCHK(.OBJ,"config_valid",1,"skipped")
+	NEW REP,ERR,GOOD
+	SET GOOD=$$VALIDATE^MIOCONFV(.CONF,.REP,.ERR)
+	IF GOOD DO  QUIT
+	. DO SETCHK(.OBJ,"config_valid",1,$SELECT(+$GET(REP("warn_count"))>0:"warn:"_+$GET(REP("warn_count")),1:"ok"))
+	; invalid config
+	DO SETCHK(.OBJ,"config_valid",0,"invalid:"_+$GET(REP("err_count")))
+	; include first few issue codes for diagnostics
+	NEW I,N SET (I,N)=0
+	FOR  SET I=$ORDER(REP("issues",I)) QUIT:'I  DO  QUIT:N'<5
+	. IF $GET(REP("issues",I,"sev"))'="error" QUIT
+	. SET N=N+1
+	. SET OBJ("checks","config_valid","issues",N)=$GET(REP("issues",I,"code"))
+	SET OK=0
 	QUIT
 	;
 CHKROUTER(CONF,OBJ,OK)

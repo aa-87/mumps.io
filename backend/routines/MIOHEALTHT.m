@@ -14,6 +14,7 @@ START
 	DO T002
 	DO T003
 	DO T004
+	DO T005
 	QUIT
 	;
 T001 ; /healthz always 200
@@ -85,6 +86,26 @@ T004 ; /readyz 200 when static enabled and root exists
 	DO EQ^MIOTASSERT($SELECT(OUT["""status"":""ready""":1,1:0),1,"[T004][body]")
 	QUIT
 	;
+T005 ; /readyz 503 when config validation finds an explicit error
+	NEW CONF,REQ,CTX,OUT,OP
+	SET OP="tmp/mio_health_t005.out"
+	DO SETUPROUTES
+	; introduce an invalid listen port
+	SET CONF("server","listen","port")=70000
+	SET CONF("server","static","enabled")=0
+	SET CONF("server","health","readyCheckTemplates")=0
+	SET CONF("server","health","readyCheckSpoolDir")=0
+	SET CONF("server","health","readyCheckRouterCompiled")=0
+	KILL REQ,CTX
+	SET REQ("method")="GET"
+	SET REQ("path")="/readyz"
+	SET CTX("request_id")="hlt005"
+	DO RUNDISP(OP,.CONF,.REQ,.CTX,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["HTTP/1.1 503 Service Unavailable":1,1:0),1,"[T005][status]")
+	DO EQ^MIOTASSERT($SELECT(OUT["""config_valid""":1,1:0),1,"[T005][check present]")
+	DO EQ^MIOTASSERT($SELECT(OUT["bad_port":1,1:0),1,"[T005][issue code]")
+	QUIT
+	;
 ; ---- harness helpers ---------------------------------------------------
 SETUPROUTES
 	; Setup minimal routes for these tests (avoid depending on full INIT)
@@ -107,7 +128,7 @@ RUNDISP(OP,CONF,REQ,CTX,OUT)
 	;
 READALL(FP,OUT)
 	NEW X S OUT=""
-	NEW $ETRAP SET $ETRAP="SET $ECODE="""" QUIT"
+	NEW $ETRAP SET $ETRAP="SET $ECODE="" QUIT"
 	OPEN FP:(readonly:stream:nowrap)
 	USE FP
 	FOR  READ X QUIT:$ZEOF  SET OUT=OUT_X
