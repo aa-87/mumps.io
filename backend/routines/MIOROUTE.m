@@ -452,6 +452,8 @@ FINDALLOWED(PATH,CURRENT,ALLOW)
 	;
 DISPATCH(DEV,CONF,REQ,CTX)
 	NEW OK,H,RP,PARAMS,METHOD
+	; Request timing base (microseconds) for metrics/logging
+	IF +$GET(CTX("t0us"))<1 SET CTX("t0us")=$$TSUS^MIOMET()
 	; Fast path: use PREMATCH results when available
 	IF $GET(CTX("match","ok"))=1 DO
 	. SET OK=1,H=$GET(CTX("match","handler")),RP=$GET(CTX("match","route"))
@@ -488,12 +490,14 @@ DISPATCH(DEV,CONF,REQ,CTX)
 	. . SET BODY=$$EN^MIOJSON1(.OBJ)
 	. . DO RESPX^MIOHTTP(.DEV,.CONF,405,.HEAD,BODY,$GET(CTX("request_id")),.CTX)
 	. . SET CTX("route")="(method_not_allowed)"
+	. . SET CTX("error")="method_not_allowed"
 	. ELSE  DO
 	. . SET OBJ("error")="not_found"
 	. . SET OBJ("routine")="MIOROUTE"
 	. . SET OBJ("request_id")=$GET(CTX("request_id"))
 	. . DO RESPJSONX^MIOHTTP(.DEV,.CONF,404,.OBJ,$GET(CTX("request_id")),.CTX)
 	. . SET CTX("route")="(not_found)"
+	. . SET CTX("error")="not_found"
 	. ;
 	. IF NWONOK DO MWAFTER(.DEV,.CONF,.REQ,.CTX,METHOD,"",.MWERR)
 	IF 'OK QUIT
@@ -520,11 +524,17 @@ DISPATCH(DEV,CONF,REQ,CTX)
 	. SET MWOK=$$MWBEFORE(.DEV,.CONF,.REQ,.CTX,METHOD,RP,.MWERR)
 	. IF 'MWOK DO
 	. . IF +$GET(CTX("status"))<1 DO MWRESPERR(.DEV,.CONF,.REQ,.CTX,.MWERR)
+	. . SET CTX("error")=$GET(MWERR("error"))
 	. . DO MWAFTER(.DEV,.CONF,.REQ,.CTX,METHOD,RP,.MWERR)
 	. . SET ABORT=1
 	IF ABORT QUIT
 	;
+	; Handler timing (microseconds)
+	SET CTX("met","h0us")=$$TSUS^MIOMET()
 	DO @(TAG_"^"_RTN_"(.DEV,.CONF,.REQ,.CTX)")
+	SET CTX("met","h1us")=$$TSUS^MIOMET()
+	IF +$GET(CTX("met","h0us"))>0,+$GET(CTX("met","h1us"))'>+$GET(CTX("met","h0us")) DO
+	. SET CTX("met","handler_ms")=((CTX("met","h1us")-CTX("met","h0us"))/1000)
 	IF NWONOK DO MWAFTER(.DEV,.CONF,.REQ,.CTX,METHOD,RP,.MWERR)
 	QUIT
 	;

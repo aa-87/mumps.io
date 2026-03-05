@@ -129,7 +129,7 @@ AUTHB(DEV,CONF,REQ,CTX,ERR)
 LOGB(DEV,CONF,REQ,CTX,ERR)
 	KILL ERR
 	IF '+$GET(CONF("server","log","access","enabled"),0) QUIT 1
-	; Capture handler start in microseconds
+	; Best-effort marker (legacy); accurate handler timing is captured in MIOROUTE.
 	SET CTX("mw","log","h0us")=$$TSUS^MIOMET()
 	QUIT 1
 
@@ -145,10 +145,12 @@ LOGA(DEV,CONF,REQ,CTX,ERR)
 	IF BOUT<1 SET BOUT=+$GET(^TMP($J,"MIOHTTP","STREAM","bytes"))
 	SET CTX("bytes_out")=BOUT
 	;
-	; Timing metrics
-	IF H0>0 SET CTX("met","handler_ms")=((TEND-H0)/1000)
-	IF +$GET(CTX("t0us"))>0 SET CTX("met","total_ms")=((TEND-$GET(CTX("t0us")))/1000)
-	IF $GET(CTX("met","parse_ms"))="",(H0>0),(+$GET(CTX("t0us"))>0) SET CTX("met","parse_ms")=((H0-$GET(CTX("t0us")))/1000)
+	; Timing metrics (populate only if absent; canonical metrics are recorded in MIOD)
+	IF $GET(CTX("met","handler_ms"))="" DO
+	. IF +$GET(CTX("met","h0us"))>0,+$GET(CTX("met","h1us"))'>+$GET(CTX("met","h0us")) SET CTX("met","handler_ms")=((CTX("met","h1us")-CTX("met","h0us"))/1000) QUIT
+	. IF H0>0 SET CTX("met","handler_ms")=((TEND-H0)/1000)
+	IF $GET(CTX("met","total_ms"))="",+$GET(CTX("t0us"))>0 SET CTX("met","total_ms")=((TEND-$GET(CTX("t0us")))/1000)
+	IF $GET(CTX("met","parse_ms"))="",+$GET(CTX("t0us"))>0,+$GET(CTX("met","h0us"))>0 SET CTX("met","parse_ms")=((CTX("met","h0us")-$GET(CTX("t0us")))/1000)
 	;
 	; Emit access log line (buffered by default)
 	NEW LERR,OKL SET OKL=$$ACCESS^MIOLOG(.CONF,.REQ,.CTX,.LERR)

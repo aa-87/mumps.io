@@ -86,6 +86,8 @@ JOBCONN(ADDR,HANDLE)
 	;
 	; Access log (ROI #1)
 	NEW LOGEN SET LOGEN=+$GET(CONF("server","log","access","enabled"),0)
+	; Metrics (ROI #1)
+	NEW METEN SET METEN=$$EN^MIOMET(.CONF)
 	; Rate limiting (ROI #6)
 	NEW RLEN SET RLEN=+$GET(CONF("server","rate","enabled"),0)
 	;
@@ -120,10 +122,10 @@ JOBCONN(ADDR,HANDLE)
 	. ;
 	. NEW TPARSE SET TPARSE=""
 	. NEW OK SET OK=$$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR)
-	. IF LOGEN SET TPARSE=$$TSUS^MIOMET(),CTX("met","parse_ms")=((TPARSE-$GET(CTX("t0us")))/1000)
+	. IF METEN!LOGEN SET TPARSE=$$TSUS^MIOMET(),CTX("met","parse_ms")=((TPARSE-$GET(CTX("t0us")))/1000)
 	. IF 'OK DO  QUIT
 	. . ; Access log parse failures (best effort)
-	. . IF LOGEN DO
+	. . IF METEN!LOGEN DO
 	. . . SET CTX("status")=$$STATUS4ERR^MIOHTTP(.ERR)
 	. . . SET CTX("route")="(parse_error)"
 	. . . SET CTX("error")=$GET(ERR("error"))
@@ -132,7 +134,9 @@ JOBCONN(ADDR,HANDLE)
 	. . . SET CTX("met","parse_ms")=((TPARSE-$GET(CTX("t0us")))/1000)
 	. . . SET CTX("met","handler_ms")=0
 	. . . SET CTX("met","total_ms")=$GET(CTX("met","parse_ms"))
-	. . . NEW LERR,OKL SET OKL=$$ACCESS^MIOLOG(.CONF,.REQ,.CTX,.LERR)
+	. . . ; Metrics + access log
+	. . . IF METEN DO OBSX^MIOMET($GET(REQ("method")),"(parse_error)",+$GET(CTX("status")),+$GET(CTX("met","total_ms")),+$GET(CTX("met","parse_ms")),0,0,0,$GET(CTX("error")))
+	. . . IF LOGEN NEW LERR,OKL SET OKL=$$ACCESS^MIOLOG(.CONF,.REQ,.CTX,.LERR)
 	. . ; Treat keep-alive idle timeout as a clean close (after at least one request).;
 	. . IF NREQ>0,$GET(ERR("error"))="read_timeout" SET DONE=1 QUIT
 	. . ; Otherwise close hard.;
@@ -155,15 +159,15 @@ JOBCONN(ADDR,HANDLE)
 	. . SET BODY=$$EN^MIOJSON1(.OBJ)
 	. . DO RESPX^MIOHTTP(.DEV,.CONF,429,.HEAD,BODY,$GET(CTX("request_id")),.CTX)
 	. . SET CTX("status")=429,CTX("route")="(rate_limited)",CTX("error")=$GET(RERR("error"))
-	. . ; Access log for rate-limited responses (best effort)
-	. . IF LOGEN DO
-	. . . NEW TRL SET TRL=$$TSUS^MIOMET()
-	. . . SET CTX("bytes_in")=+$GET(REQ("body","len"),0)
-	. . . NEW BOUT SET BOUT=+$GET(^TMP($J,"MIOHTTP","RESP","bytes"))
-	. . . SET CTX("bytes_out")=BOUT
-	. . . SET CTX("met","handler_ms")=0
-	. . . SET CTX("met","total_ms")=((TRL-$GET(CTX("t0us")))/1000)
-	. . . NEW LERR,OKL SET OKL=$$ACCESS^MIOLOG(.CONF,.REQ,.CTX,.LERR)
+	. . ; Metrics + access log for rate-limited responses (best effort)
+	. . NEW TRL SET TRL=$$TSUS^MIOMET()
+	. . SET CTX("bytes_in")=+$GET(REQ("body","len"),0)
+	. . NEW BOUT SET BOUT=+$GET(^TMP($J,"MIOHTTP","RESP","bytes"))
+	. . SET CTX("bytes_out")=BOUT
+	. . SET CTX("met","handler_ms")=0
+	. . SET CTX("met","total_ms")=((TRL-$GET(CTX("t0us")))/1000)
+	. . IF METEN DO OBSX^MIOMET($GET(REQ("method")),"(rate_limited)",429,+$GET(CTX("met","total_ms")),+$GET(CTX("met","parse_ms")),0,+$GET(CTX("bytes_in")),+BOUT,$GET(CTX("error")))
+	. . IF LOGEN NEW LERR,OKL SET OKL=$$ACCESS^MIOLOG(.CONF,.REQ,.CTX,.LERR)
 	. . ; Free request body storage
 	. . DO BODYFREE^MIOHTTP(.REQ)
 	. . SET DONE=1
@@ -183,20 +187,30 @@ JOBCONN(ADDR,HANDLE)
 	. ;
 	. ; Auth is enforced via MIOROUTE middleware (MIOMW AUTHB) when enabled.
 	. ;
-	. NEW H0 SET H0=""
-	. IF LOGEN SET H0=$$TSUS^MIOMET()
 	. DO DISPATCH^MIOROUTE(DEV,.CONF,.REQ,.CTX)
 	. ;
 	. NEW TEND SET TEND=""
-	. IF LOGEN!('$GET(CTX("skip_metrics"))) SET TEND=$$TSUS^MIOMET()
+	. IF METEN!LOGEN,'$GET(CTX("skip_metrics")) SET TEND=$$TSUS^MIOMET()
 	. ;
 	. ; Metrics observation (skip if handler requested)
-	. IF '$GET(CTX("skip_metrics")) DO
+	. IF METEN,'$GET(CTX("skip_metrics")) DO
 	. . NEW LATMS SET LATMS=((TEND-$GET(CTX("t0us")))/1000)
 	. . NEW RT SET RT=$GET(CTX("route"),"unknown")
 	. . NEW ST SET ST=$GET(CTX("status"),0)
 	. . NEW MM SET MM=$GET(REQ("http_method"),$GET(REQ("method")))
-	. . DO OBS^MIOMET(MM,RT,ST,LATMS)
+	. . ; Compute bytes in/out once per request
+	. . SET CTX("bytes_in")=+$GET(REQ("body","len"),0)
+	. . NEW BOUT SET BOUT=+$GET(^TMP($J,"MIOHTTP","RESP","bytes"))
+	. . IF BOUT<1 SET BOUT=+$GET(^TMP($J,"MIOHTTP","STREAM","bytes"))
+	. . SET CTX("bytes_out")=BOUT
+	. . ; Compute handler_ms if router captured h0/h1
+	. . IF $GET(CTX("met","handler_ms"))="",+$GET(CTX("met","h0us"))>0,+$GET(CTX("met","h1us"))'>+$GET(CTX("met","h0us")) DO
+	. . . SET CTX("met","handler_ms")=((CTX("met","h1us")-CTX("met","h0us"))/1000)
+	. . ; Ensure parse_ms exists
+	. . IF $GET(CTX("met","parse_ms"))="",TPARSE'="" SET CTX("met","parse_ms")=((TPARSE-$GET(CTX("t0us")))/1000)
+	. . SET CTX("met","total_ms")=LATMS
+	. . IF $GET(CTX("error"))="" SET CTX("error")=$GET(CTX("err","error"))
+	. . DO OBSX^MIOMET(MM,RT,ST,LATMS,+$GET(CTX("met","parse_ms")),+$GET(CTX("met","handler_ms")),+$GET(CTX("bytes_in")),+BOUT,$GET(CTX("error")))
 	. ;
 	. ; Access log for normal requests is emitted by router middleware (MIOMW LOGA).
 	. ; Free request body storage each request
