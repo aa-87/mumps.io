@@ -45,13 +45,18 @@ ENFORCE(DEV,CONF,REQ,CTX)
 	;   - "prefix": protect by prefixes list (or defaults)
 	;   - "route": protect only if matched route meta authRequired=1
 	NEW PMODE SET PMODE=$GET(CONF("auth","protectMode"),"prefix")
-	IF PMODE="route" DO  QUIT:'TEST 0
-	. ; If no matching route, do not authenticate here (router will 404)
-	. IF $GET(CTX("match","ok"))'=1 SET TEST=1 QUIT
+	; Route-based protection: enforce only when route meta authRequired=1.
+	; This must work both when CTX("match",...) is populated and when only CTX("route") is set.
+	IF PMODE="route" DO
 	. NEW RP SET RP=$GET(CTX("match","route"))
+	. IF RP="" SET RP=$GET(CTX("route"))
+	. ; If no real route match, do not enforce here
+	. IF RP="" SET PMODE="none" QUIT
+	. IF $EXTRACT(RP,1)="(" SET PMODE="none" QUIT
 	. NEW META DO GETMETA^MIOROUTE($GET(REQ("method")),RP,.META)
-	. IF +$GET(META("authRequired"))'=1 SET TEST=1 QUIT
-	. ; fall through to auth
+	. IF +$GET(META("authRequired"))'=1 SET PMODE="none" QUIT
+	; If not protected by route meta, allow
+	IF PMODE="none" QUIT 1
 	;
 	; Prefix-based protection
 	; Default behavior: only enforce auth for protected prefixes (/api/, /ws/app, or CONF list)

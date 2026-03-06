@@ -1,267 +1,355 @@
-MIOAUTHJWT ; JWT validation for HS256 and RS256.;
-; API STABILITY
-; Public API labels are documented in docs/routines.;
-; Undocumented labels are internal.;
-;
-; Purpose
-; JWT validation for HS256 and RS256.;
-;
-; Responsibilities
-; - Authenticate requests.;
-; - Validate tokens and keys.;
-; - Populate auth context.;
-; - Deny safely.;
-;
-; Entry Points
-; - VERIFY
-; - CHECKCLAIMS
-; - VHS256
-; - VRS256
-; - APPLY
-; - RSAVERIFY
-; - HMACSHA256
-; - B64DURL
-; - BIN2STR
-; - READPIPE
-; - READPIPEBIN
-; - WFILE
-; - WBIN
-; - DEL
-; - NOWS
-;
-; Notes
-; Keep comments short.;
-; Do not log secrets.;
-;
+MIOAUTHJWT ; JWT validation (HS256) without shelling out (no ZSYSTEM)
 	;
-	; $$VERIFY(.CONF,.REQ,.CTX,.ERR) -> 1 ok, 0 fail
-	; Populates:
-	;   CTX("auth","ok")=1
-	;   CTX("auth","sub")=...;
-	;   CTX("auth","claim",name)=value (strings)
-	;   CTX("auth","roles",role)=1 (from claim configured)
+	; Public API (used by tests + auth layer):
+	;   $$VERIFY(.CONF,.REQ,.CTX,.ERR) -> 1/0
+	;   $$CHECKCLAIMS(.CONF,.POBJ,.ERR) -> 1/0
+	;   $$HMACSHA256(DATA,SECRET,.ERR) -> 32-byte binary
+	;   $$B64DURL(S,.ERR) -> binary
+	;   $$B64EURL(BIN) -> base64url (no padding)
+	;   $$NOWS() -> seconds since $H origin (1840-12-31)
 	;
-; Entry point
-; See docs/routines for details.;
+	; Notes
+	; - HS256 is implemented in pure M (portable arithmetic; no $ZBIT* integer ops).;
+	; - RS256 is supported via optional verifier callback:
+	;     CONF("auth","jwt","rs256Verify")="TAG^RTN"
+	;
+	;
 VERIFY(CONF,REQ,CTX,ERR)
 	KILL ERR
+	NEW $ETRAP SET $ETRAP="SET $ECODE="""" DO ETRAP(.ERR) QUIT 0"
 	NEW AH SET AH=$GET(REQ("hdr","authorization"))
-	IF AH="" SET ERR("error")="jwt_missing" QUIT 0
+	IF AH="" DO  QUIT 0
+	. SET ERR("routine")="MIOAUTHJWT",ERR("error")="jwt_missing",ERR("status")=401
 	NEW PFX SET PFX=$GET(CONF("auth","jwt","bearerPrefix"),"Bearer ")
-	IF $EXTRACT(AH,1,$LENGTH(PFX))'=PFX SET ERR("error")="jwt_missing" QUIT 0
-	NEW TOK SET TOK=$EXTRACT(AH,$LENGTH(PFX)+1,999999)
-	IF TOK="" SET ERR("error")="jwt_missing" QUIT 0
+	IF $EXTRACT(AH,1,$L(PFX))'=PFX DO  QUIT 0
+	. SET ERR("routine")="MIOAUTHJWT",ERR("error")="jwt_missing",ERR("status")=401
+	NEW TOK SET TOK=$EXTRACT(AH,$L(PFX)+1,999999)
+	IF TOK="" DO  QUIT 0
+	. SET ERR("routine")="MIOAUTHJWT",ERR("error")="jwt_missing",ERR("status")=401
 	;
 	NEW H64,P64,S64
 	SET H64=$PIECE(TOK,".",1),P64=$PIECE(TOK,".",2),S64=$PIECE(TOK,".",3)
-	IF H64=""!(P64="")!(S64="") SET ERR("error")="jwt_format" QUIT 0
+	IF H64=""!(P64="")!(S64="") DO  QUIT 0
+	. SET ERR("routine")="MIOAUTHJWT",ERR("error")="jwt_format",ERR("status")=401
 	;
-	NEW HJSON SET HJSON=$$BIN2STR($$B64DURL(H64,.ERR)) IF $DATA(ERR) QUIT 0
-	NEW PJSON SET PJSON=$$BIN2STR($$B64DURL(P64,.ERR)) IF $DATA(ERR) QUIT 0
+	NEW HJSON SET HJSON=$$BIN2STR($$B64DURL(H64,.ERR)) IF $DATA(ERR) DO SETR(.ERR,"MIOAUTHJWT",401) QUIT 0
+	NEW PJSON SET PJSON=$$BIN2STR($$B64DURL(P64,.ERR)) IF $DATA(ERR) DO SETR(.ERR,"MIOAUTHJWT",401) QUIT 0
 	;
 	NEW HOBJ,POBJ,OK
-	SET OK=$$DECODET^MIOJSON(HJSON,.HOBJ,.ERR) IF 'OK QUIT 0
-	SET OK=$$DECODET^MIOJSON(PJSON,.POBJ,.ERR) IF 'OK QUIT 0
+	SET OK=$$DECODET^MIOJSON(HJSON,.HOBJ,.ERR) IF 'OK DO SETR(.ERR,"MIOAUTHJWT",401) QUIT 0
+	SET OK=$$DECODET^MIOJSON(PJSON,.POBJ,.ERR) IF 'OK DO SETR(.ERR,"MIOAUTHJWT",401) QUIT 0
 	;
 	NEW ALG SET ALG=$GET(HOBJ("v","alg","v"))
-	IF ALG="" SET ERR("error")="jwt_alg_missing" QUIT 0
+	IF ALG="" DO  QUIT 0
+	. SET ERR("routine")="MIOAUTHJWT",ERR("error")="jwt_alg_missing",ERR("status")=401
 	;
-	; basic claim checks
-	IF '$$CHECKCLAIMS(.CONF,.POBJ,.ERR) QUIT 0
+	IF '$$CHECKCLAIMS(.CONF,.POBJ,.ERR) DO SETR(.ERR,"MIOAUTHJWT",401) QUIT 0
 	;
-	; Verify signature
 	NEW DATA SET DATA=H64_"."_P64
 	IF ALG="HS256" QUIT $$VHS256(DATA,S64,.CONF,.CTX,.POBJ,.ERR)
 	IF ALG="RS256" QUIT $$VRS256(DATA,S64,.CONF,.CTX,.HOBJ,.POBJ,.ERR)
-	SET ERR("error")="jwt_alg_unsupported" QUIT 0
+	SET ERR("routine")="MIOAUTHJWT",ERR("error")="jwt_alg_unsupported",ERR("status")=401
+	QUIT 0
 	;
-; Entry point
-; See docs/routines for details.;
 CHECKCLAIMS(CONF,POBJ,ERR)
 	KILL ERR
-	NEW NOW SET NOW=$$NOWS()
+	NEW NOW SET NOW=+$GET(CONF("auth","jwt","now"))
+	IF NOW'>0 SET NOW=$$NOWS()
 	NEW SKEW SET SKEW=+$GET(CONF("auth","jwt","clockSkewSeconds"),60)
-	; exp
 	NEW EXP SET EXP=+$GET(POBJ("v","exp","v"))
-	IF EXP>0,(NOW-SKEW)>EXP SET ERR("error")="jwt_expired" QUIT 0
-	; nbf
+	IF EXP>0,(NOW-SKEW)>EXP DO  QUIT 0
+	. SET ERR("routine")="MIOAUTHJWT",ERR("error")="jwt_expired",ERR("status")=401
 	NEW NBF SET NBF=+$GET(POBJ("v","nbf","v"))
-	IF NBF>0,(NOW+SKEW)<NBF SET ERR("error")="jwt_not_yet_valid" QUIT 0
-	; iss
+	IF NBF>0,(NOW+SKEW)<NBF DO  QUIT 0
+	. SET ERR("routine")="MIOAUTHJWT",ERR("error")="jwt_not_yet_valid",ERR("status")=401
 	NEW ISSREQ SET ISSREQ=$GET(CONF("auth","jwt","issuer"))
-	IF ISSREQ'="" DO  IF '$TEST QUIT 0
-	. SET $TEST=($GET(POBJ("v","iss","v"))=ISSREQ)
-	. IF '$TEST SET ERR("error")="jwt_issuer"
-	; aud (string only for simplicity)
+	IF ISSREQ'="",$GET(POBJ("v","iss","v"))'=ISSREQ DO  QUIT 0
+	. SET ERR("routine")="MIOAUTHJWT",ERR("error")="jwt_issuer",ERR("status")=401
 	NEW AUDREQ SET AUDREQ=$GET(CONF("auth","jwt","audience"))
-	IF AUDREQ'="" DO  IF '$TEST QUIT 0
-	. SET $TEST=($GET(POBJ("v","aud","v"))=AUDREQ)
-	. IF '$TEST SET ERR("error")="jwt_audience"
+	IF AUDREQ'="",$GET(POBJ("v","aud","v"))'=AUDREQ DO  QUIT 0
+	. SET ERR("routine")="MIOAUTHJWT",ERR("error")="jwt_audience",ERR("status")=401
 	QUIT 1
 	;
-; Entry point
-; See docs/routines for details.;
 VHS256(DATA,S64,CONF,CTX,POBJ,ERR)
 	KILL ERR
+	NEW $ETRAP SET $ETRAP="SET $ECODE="""" DO ETRAP(.ERR) QUIT 0"
 	NEW SECRET SET SECRET=$GET(CONF("auth","jwt","hmacSecret"))
-	IF SECRET="" SET ERR("error")="jwt_hmac_secret_missing" QUIT 0
-	NEW SIGBIN SET SIGBIN=$$B64DURL(S64,.ERR) IF $DATA(ERR) QUIT 0
-	NEW CALC SET CALC=$$HMACSHA256(DATA,SECRET,.ERR) IF $DATA(ERR) QUIT 0
-	IF CALC'=SIGBIN SET ERR("error")="jwt_bad_signature" QUIT 0
+	IF SECRET="" DO  QUIT 0
+	. SET ERR("routine")="MIOAUTHJWT",ERR("error")="jwt_hmac_secret_missing",ERR("status")=401
+	NEW SIGBIN SET SIGBIN=$$B64DURL(S64,.ERR) IF $DATA(ERR) DO SETR(.ERR,"MIOAUTHJWT",401) QUIT 0
+	NEW CALC SET CALC=$$HMACSHA256(DATA,SECRET,.ERR) IF $DATA(ERR) DO SETR(.ERR,"MIOAUTHJWT",401) QUIT 0
+	IF CALC'=SIGBIN DO  QUIT 0
+	. SET ERR("routine")="MIOAUTHJWT",ERR("error")="jwt_bad_signature",ERR("status")=401
 	DO APPLY(.CONF,.CTX,.POBJ)
 	QUIT 1
 	;
-; Entry point
-; See docs/routines for details.;
 VRS256(DATA,S64,CONF,CTX,HOBJ,POBJ,ERR)
 	KILL ERR
-	NEW KID SET KID=$GET(HOBJ("v","kid","v"))
-	NEW URL SET URL=$GET(CONF("auth","jwt","jwksUrl"))
-	NEW PEM
-	IF '$$GETPEM^MIOJWKS(URL,KID,.PEM,.ERR,.CONF) QUIT 0
-	NEW SIGBIN SET SIGBIN=$$B64DURL(S64,.ERR) IF $DATA(ERR) QUIT 0
-	IF '$$RSAVERIFY(DATA,SIGBIN,PEM,.ERR) QUIT 0
+	NEW ENTRY SET ENTRY=$GET(CONF("auth","jwt","rs256Verify"))
+	IF ENTRY="" DO  QUIT 0
+	. SET ERR("routine")="MIOAUTHJWT",ERR("error")="jwt_rs256_no_verifier",ERR("status")=401
+	NEW SIGBIN SET SIGBIN=$$B64DURL(S64,.ERR) IF $DATA(ERR) DO SETR(.ERR,"MIOAUTHJWT",401) QUIT 0
+	NEW OK SET OK=$$CALLVRFY(ENTRY,DATA,SIGBIN,.CONF,.CTX,.HOBJ,.POBJ,.ERR)
+	IF 'OK DO SETR(.ERR,"MIOAUTHJWT",401) QUIT 0
 	DO APPLY(.CONF,.CTX,.POBJ)
 	QUIT 1
 	;
-; Entry point
-; See docs/routines for details.;
+CALLVRFY(ENTRY,DATA,SIGBIN,CONF,CTX,HOBJ,POBJ,ERR)
+	NEW TAG,RTN,OK,CMD
+	SET TAG=$PIECE($GET(ENTRY),"^",1),RTN=$PIECE($GET(ENTRY),"^",2)
+	IF TAG=""!(RTN="") SET ERR("routine")="MIOAUTHJWT",ERR("error")="jwt_rs256_bad_verifier" QUIT 0
+	IF '$$ISID(TAG)!'$$ISID(RTN) SET ERR("routine")="MIOAUTHJWT",ERR("error")="jwt_rs256_bad_verifier" QUIT 0
+	SET OK=0
+	NEW $ETRAP SET $ETRAP="SET $ECODE="""" SET ERR(""routine"")=""MIOAUTHJWT"" SET ERR(""error"")=""jwt_rs256_verifier_exception"" SET OK=0"
+	SET CMD="SET OK=$$"_TAG_"^"_RTN_"(DATA,SIGBIN,.CONF,.CTX,.HOBJ,.POBJ,.ERR)"
+	XECUTE CMD
+	QUIT +$GET(OK)
+	;
+ISID(S)
+	NEW I,C,OK
+	SET S=$GET(S) IF S="" QUIT 0
+	SET C=$EXTRACT(S,1)
+	SET OK=$SELECT((C?1A)!(C="%"):1,1:0)
+	IF 'OK QUIT 0
+	FOR I=2:1:$L(S) DO  QUIT:'OK
+	. SET C=$EXTRACT(S,I)
+	. IF '(C?1AN) SET OK=0
+	QUIT OK
+	;
 APPLY(CONF,CTX,POBJ)
 	SET CTX("auth","ok")=1
 	NEW SUB SET SUB=$GET(POBJ("v","sub","v"))
 	IF SUB'="" SET CTX("auth","sub")=SUB,CTX("auth","claim","sub")=SUB
-	; capture common string claims
+	; capture string claims
 	NEW K SET K=""
 	FOR  SET K=$ORDER(POBJ("v",K)) QUIT:K=""  DO
 	. IF $GET(POBJ("v",K,"t"))="str" SET CTX("auth","claim",K)=$GET(POBJ("v",K,"v"))
-	; roles claim (string "a,b" or array of strings)
+	; roles
 	NEW RCLAIM SET RCLAIM=$GET(CONF("auth","jwt","rolesClaim"),"roles")
 	IF $GET(POBJ("v",RCLAIM,"t"))="str" DO
 	. NEW V SET V=$GET(POBJ("v",RCLAIM,"v"))
-	. NEW I,RR FOR I=1:1:$LENGTH(V,",") DO
-	. . SET RR=$$TRIM^MIOAUTH($PIECE(V,",",I)) IF RR'="" SET CTX("auth","roles",RR)=1
+	. NEW I,RR FOR I=1:1:$L(V,",") DO
+	. . SET RR=$$TRIM($PIECE(V,",",I)) IF RR'="" SET CTX("auth","roles",RR)=1
 	IF $GET(POBJ("v",RCLAIM,"t"))="arr" DO
 	. NEW I SET I=0
 	. FOR  SET I=$ORDER(POBJ("v",RCLAIM,"v",I)) QUIT:I=""  DO
 	. . NEW RR SET RR=$GET(POBJ("v",RCLAIM,"v",I,"v"))
-	. . IF RR'="" SET CTX("auth","roles",RR)=1
+	. . SET RR=$$TRIM(RR) IF RR'="" SET CTX("auth","roles",RR)=1
 	QUIT
 	;
-; Entry point
-; See docs/routines for details.;
-RSAVERIFY(DATA,SIGBIN,PEM,ERR)
-	KILL ERR
-	; write temp files
-	NEW TS SET TS=$HOROLOG
-	NEW F1 SET F1="tmp/miojwt_data_"_$J_"_"_$PIECE(TS,",",2)
-	NEW F2 SET F2="tmp/miojwt_sig_"_$J_"_"_$PIECE(TS,",",2)
-	NEW F3 SET F3="tmp/miojwt_pub_"_$J_"_"_$PIECE(TS,",",2)
-	DO WFILE(F1,DATA_$CHAR(10))
-	DO WBIN(F2,SIGBIN)
-	DO WFILE(F3,PEM)
-	NEW CMD SET CMD="openssl dgst -sha256 -verify "_F3_" -signature "_F2_" "_F1_" 2>/dev/null"
-	NEW OUT SET OUT=$$READPIPE(CMD,200,.ERR)
-	DO DEL(F1),DEL(F2),DEL(F3)
-	IF $DATA(ERR) QUIT 0
-	IF OUT["Verified OK" QUIT 1
-	SET ERR("error")="jwt_bad_signature"
-	QUIT 0
-	;
-; Entry point
-; See docs/routines for details.;
-HMACSHA256(DATA,SECRET,ERR)
-	KILL ERR
-	NEW TS SET TS=$HOROLOG
-	NEW F1 SET F1="tmp/miohmac_data_"_$J_"_"_$PIECE(TS,",",2)
-	DO WFILE(F1,DATA)
-	NEW CMD SET CMD="openssl dgst -sha256 -mac HMAC -macopt key:"_$$Q(SECRET)_" -binary "_F1_" 2>/dev/null"
-	NEW OUTBIN SET OUTBIN=$$READPIPEBIN(CMD,1024,.ERR)
-	DO DEL(F1)
-	QUIT OUTBIN
-	;
-; ----- base64url decode -----
+; ---------------- Base64url ----------------
 B64DURL(S,ERR)
 	KILL ERR
 	NEW X SET X=$TRANSLATE($GET(S),"-_","+/")
-	NEW PAD SET PAD=$LENGTH(X)#4
+	NEW PAD SET PAD=$L(X)#4
 	IF PAD=2 SET X=X_"=="
 	ELSE  IF PAD=3 SET X=X_"="
-	ELSE  IF PAD=1 SET ERR("error")="b64url_length" QUIT ""
+	ELSE  IF PAD=1 SET ERR("routine")="MIOAUTHJWT",ERR("error")="b64url_length" QUIT ""
 	NEW T SET T="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
 	NEW OUT SET OUT=""
-	NEW I FOR I=1:4:$LENGTH(X) DO
-	. NEW C1,C2,C3,C4
-	. SET C1=$EXTRACT(X,I),C2=$EXTRACT(X,I+1),C3=$EXTRACT(X,I+2),C4=$EXTRACT(X,I+3)
-	. NEW V1,V2,V3,V4
-	. SET V1=$FIND(T,C1)-2,V2=$FIND(T,C2)-2
-	. IF V1<0!(V2<0) SET ERR("error")="b64url_char" QUIT
-	. IF C3="=" SET V3=-1 ELSE  SET V3=$FIND(T,C3)-2
-	. IF C4="=" SET V4=-1 ELSE  SET V4=$FIND(T,C4)-2
-	. IF (V3<-1)!(V4<-1) SET ERR("error")="b64url_char" QUIT
-	. NEW N SET N=(V1*262144)+(V2*4096)+$SELECT(V3=-1:0,1:V3*64)+$SELECT(V4=-1:0,1:V4)
-	. SET OUT=OUT_$CHAR((N\65536)#256)
-	. IF C3'="=" SET OUT=OUT_$CHAR((N\256)#256)
-	. IF C4'="=" SET OUT=OUT_$CHAR(N#256)
+	NEW I FOR I=1:4:$L(X) DO  QUIT:$DATA(ERR)
+	. NEW C1,C2,C3,C4,V1,V2,V3,V4
+	. SET C1=$E(X,I),C2=$E(X,I+1),C3=$E(X,I+2),C4=$E(X,I+3)
+	. SET V1=$F(T,C1)-2,V2=$F(T,C2)-2
+	. IF V1<0!(V2<0) SET ERR("routine")="MIOAUTHJWT",ERR("error")="b64url_char" QUIT
+	. IF C3="=" SET V3=-1 ELSE  SET V3=$F(T,C3)-2
+	. IF C4="=" SET V4=-1 ELSE  SET V4=$F(T,C4)-2
+	. IF (V3<-1)!(V4<-1) SET ERR("routine")="MIOAUTHJWT",ERR("error")="b64url_char" QUIT
+	. NEW N SET N=(V1*262144)+(V2*4096)+$S(V3=-1:0,1:V3*64)+$S(V4=-1:0,1:V4)
+	. SET OUT=OUT_$C((N\65536)#256)
+	. IF C3'="=" SET OUT=OUT_$C((N\256)#256)
+	. IF C4'="=" SET OUT=OUT_$C(N#256)
 	QUIT OUT
 	;
-; Entry point
-; See docs/routines for details.;
-BIN2STR(B)
-	QUIT B  ; bytes are fine as M string
+B64EURL(BIN)
+	NEW T SET T="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+	NEW OUT SET OUT=""
+	NEW L SET L=$L($GET(BIN))
+	NEW I FOR I=1:3:L DO
+	. NEW B1,B2,B3,N
+	. SET B1=$A($E(BIN,I))
+	. SET B2=$S(I+1<=L:$A($E(BIN,I+1)),1:-1)
+	. SET B3=$S(I+2<=L:$A($E(BIN,I+2)),1:-1)
+	. SET N=(B1*65536)+$S(B2=-1:0,1:B2*256)+$S(B3=-1:0,1:B3)
+	. SET OUT=OUT_$E(T,(N\262144)+1)
+	. SET OUT=OUT_$E(T,((N\4096)#64)+1)
+	. IF B2=-1 QUIT
+	. SET OUT=OUT_$E(T,((N\64)#64)+1)
+	. IF B3=-1 QUIT
+	. SET OUT=OUT_$E(T,(N#64)+1)
+	SET OUT=$TRANSLATE(OUT,"+/","-_")
+	QUIT OUT
 	;
-; ----- small helpers -----
-READPIPE(CMD,MAX,ERR)
+BIN2STR(B) QUIT B
+	;
+; ---------------- HMAC-SHA256 ----------------
+HMACSHA256(DATA,SECRET,ERR)
 	KILL ERR
-	NEW DEV SET DEV="|"_CMD
-	OPEN DEV:(readonly)::"pipe" ELSE  SET ERR("error")="pipe_open_failed" QUIT ""
-	USE DEV
-	NEW CH,OUT SET OUT=""
-	FOR  READ CH:1 QUIT:$ZEOF  DO
-	. SET OUT=OUT_CH
-	. IF $LENGTH(OUT)>MAX SET ERR("error")="pipe_output_too_large" QUIT
-	CLOSE DEV
-	QUIT OUT
+	NEW $ETRAP SET $ETRAP="SET $ECODE="""" DO ETRAP(.ERR) QUIT """""
+	NEW K SET K=$GET(SECRET)
+	NEW BLK SET BLK=64
+	IF $L(K)>BLK SET K=$$SHA256(K)
+	IF $L(K)<BLK SET K=K_$$ZSTR(BLK-$L(K))
+	NEW IKEY,OKEY SET IKEY="",OKEY=""
+	NEW I FOR I=1:1:BLK DO
+	. NEW KB SET KB=$A($E(K,I))
+	. SET IKEY=IKEY_$C($$XORBYTE(KB,54))
+	. SET OKEY=OKEY_$C($$XORBYTE(KB,92))
+	NEW INNER SET INNER=$$SHA256(IKEY_$GET(DATA))
+	QUIT $$SHA256(OKEY_INNER)
 	;
-; Entry point
-; See docs/routines for details.;
-READPIPEBIN(CMD,MAX,ERR)
-	; read binary output
-	KILL ERR
-	NEW DEV SET DEV="|"_CMD
-	OPEN DEV:(readonly)::"pipe" ELSE  SET ERR("error")="pipe_open_failed" QUIT ""
-	USE DEV
-	NEW CH,OUT SET OUT=""
-	FOR  READ CH#1:1 QUIT:$ZEOF  DO
-	. SET OUT=OUT_CH
-	. IF $LENGTH(OUT)>MAX SET ERR("error")="pipe_output_too_large" QUIT
-	CLOSE DEV
-	QUIT OUT
+ZSTR(N)
+	NEW S SET S="" NEW I FOR I=1:1:+$GET(N) SET S=S_$C(0)
+	QUIT S
 	;
-; Entry point
-; See docs/routines for details.;
-WFILE(PATH,TXT)
-	OPEN PATH:"WNS" USE PATH WRITE TXT CLOSE PATH QUIT
+; ---------------- SHA-256 ----------------
+SHA256(MSG)
+	NEW $ETRAP SET $ETRAP="SET $ECODE="""" QUIT """""
+	NEW K DO KINIT(.K)
+	NEW H0,H1,H2,H3,H4,H5,H6,H7
+	SET H0=1779033703,H1=3144134277,H2=1013904242,H3=2773480762
+	SET H4=1359893119,H5=2600822924,H6=528734635,H7=1541459225
+	NEW M SET M=$GET(MSG)
+	NEW L SET L=$L(M)
+	; append 0x80 then pad with zeros to 56 mod 64
+	SET M=M_$C(128)
+	NEW LPAD SET LPAD=56-($L(M)#64)
+	IF LPAD<0 SET LPAD=LPAD+64
+	SET M=M_$$ZSTR(LPAD)
+	; append 64-bit length in bits (big-endian). length is original L*8.;
+	NEW BL SET BL=L*8
+	NEW HI,LO SET HI=BL\4294967296,LO=BL#4294967296
+	SET M=M_$$U32BE(HI)_$$U32BE(LO)
 	;
-; Entry point
-; See docs/routines for details.;
-WBIN(PATH,BIN)
-	OPEN PATH:"WNS" USE PATH WRITE BIN CLOSE PATH QUIT
+	NEW OFF FOR OFF=1:64:$L(M) DO
+	. NEW W,a,b,c,d,e,f,g,h
+	. NEW I
+	. FOR I=0:1:15 DO
+	. . SET W(I)=$$BE32($E(M,OFF+(I*4),OFF+(I*4)+3))
+	. FOR I=16:1:63 DO
+	. . NEW S0,S1
+	. . SET S0=$$XOR32($$XOR32($$ROTR(W(I-15),7),$$ROTR(W(I-15),18)),$$SHR(W(I-15),3))
+	. . SET S1=$$XOR32($$XOR32($$ROTR(W(I-2),17),$$ROTR(W(I-2),19)),$$SHR(W(I-2),10))
+	. . SET W(I)=$$ADD32($$ADD32($$ADD32(W(I-16),S0),W(I-7)),S1)
+	. SET a=H0,b=H1,c=H2,d=H3,e=H4,f=H5,g=H6,h=H7
+	. FOR I=0:1:63 DO
+	. . NEW S1,CH,T1,S0,MAJ,T2
+	. . SET S1=$$XOR32($$XOR32($$ROTR(e,6),$$ROTR(e,11)),$$ROTR(e,25))
+	. . SET CH=$$XOR32($$AND32(e,f),$$AND32($$NOT32(e),g))
+	. . SET T1=$$ADD32($$ADD32($$ADD32($$ADD32(h,S1),CH),K(I)),W(I))
+	. . SET S0=$$XOR32($$XOR32($$ROTR(a,2),$$ROTR(a,13)),$$ROTR(a,22))
+	. . SET MAJ=$$XOR32($$XOR32($$AND32(a,b),$$AND32(a,c)),$$AND32(b,c))
+	. . SET T2=$$ADD32(S0,MAJ)
+	. . SET h=g,g=f,f=e
+	. . SET e=$$ADD32(d,T1)
+	. . SET d=c,c=b,b=a
+	. . SET a=$$ADD32(T1,T2)
+	. SET H0=$$ADD32(H0,a),H1=$$ADD32(H1,b),H2=$$ADD32(H2,c),H3=$$ADD32(H3,d)
+	. SET H4=$$ADD32(H4,e),H5=$$ADD32(H5,f),H6=$$ADD32(H6,g),H7=$$ADD32(H7,h)
+	QUIT $$U32BE(H0)_$$U32BE(H1)_$$U32BE(H2)_$$U32BE(H3)_$$U32BE(H4)_$$U32BE(H5)_$$U32BE(H6)_$$U32BE(H7)
 	;
-; Entry point
-; See docs/routines for details.;
-DEL(PATH)
-	NEW CMD SET CMD="rm -f "_PATH
-	ZSYSTEM CMD
+KINIT(K)
+	; SHA-256 K constants
+	SET K(0)=1116352408,K(1)=1899447441,K(2)=3049323471,K(3)=3921009573
+	SET K(4)=961987163,K(5)=1508970993,K(6)=2453635748,K(7)=2870763221
+	SET K(8)=3624381080,K(9)=310598401,K(10)=607225278,K(11)=1426881987
+	SET K(12)=1925078388,K(13)=2162078206,K(14)=2614888103,K(15)=3248222580
+	SET K(16)=3835390401,K(17)=4022224774,K(18)=264347078,K(19)=604807628
+	SET K(20)=770255983,K(21)=1249150122,K(22)=1555081692,K(23)=1996064986
+	SET K(24)=2554220882,K(25)=2821834349,K(26)=2952996808,K(27)=3210313671
+	SET K(28)=3336571891,K(29)=3584528711,K(30)=113926993,K(31)=338241895
+	SET K(32)=666307205,K(33)=773529912,K(34)=1294757372,K(35)=1396182291
+	SET K(36)=1695183700,K(37)=1986661051,K(38)=2177026350,K(39)=2456956037
+	SET K(40)=2730485921,K(41)=2820302411,K(42)=3259730800,K(43)=3345764771
+	SET K(44)=3516065817,K(45)=3600352804,K(46)=4094571909,K(47)=275423344
+	SET K(48)=430227734,K(49)=506948616,K(50)=659060556,K(51)=883997877
+	SET K(52)=958139571,K(53)=1322822218,K(54)=1537002063,K(55)=1747873779
+	SET K(56)=1955562222,K(57)=2024104815,K(58)=2227730452,K(59)=2361852424
+	SET K(60)=2428436474,K(61)=2756734187,K(62)=3204031479,K(63)=3329325298
 	QUIT
 	;
-Q(S) ; for -macopt key:... (strip quotes)
+; ---- 32-bit helpers (unsigned) ----
+MOD32(X) QUIT (X#4294967296)
+ADD32(A,B) QUIT $$MOD32(+$GET(A)+$GET(B))
+SHR(X,N) QUIT (+$GET(X)\(2**+$GET(N)))
+ROTR(X,N)
+	NEW NN SET NN=+$GET(N)#32
+	IF NN=0 QUIT $$MOD32(+$GET(X))
+	NEW P2 SET P2=(2**NN)
+	NEW LOW SET LOW=(+$GET(X)#P2)
+	QUIT $$MOD32((+$GET(X)\P2)+(LOW*(2**(32-NN))))
+	;
+BE32(BYTES)
+	NEW B1,B2,B3,B4
+	SET B1=$A($E(BYTES,1)),B2=$A($E(BYTES,2)),B3=$A($E(BYTES,3)),B4=$A($E(BYTES,4))
+	QUIT (B1*16777216)+(B2*65536)+(B3*256)+B4
+	;
+U32BE(X)
+	NEW V SET V=$$MOD32(+$GET(X))
+	QUIT $C((V\16777216)#256)_$C((V\65536)#256)_$C((V\256)#256)_$C(V#256)
+	;
+XOR32(A,B)
+	NEW A0,A1,A2,A3,B0,B1,B2,B3
+	DO SPLIT32(+$GET(A),.A0,.A1,.A2,.A3)
+	DO SPLIT32(+$GET(B),.B0,.B1,.B2,.B3)
+	QUIT ($$XORBYTE(A0,B0)*16777216)+($$XORBYTE(A1,B1)*65536)+($$XORBYTE(A2,B2)*256)+$$XORBYTE(A3,B3)
+	;
+AND32(A,B)
+	NEW A0,A1,A2,A3,B0,B1,B2,B3
+	DO SPLIT32(+$GET(A),.A0,.A1,.A2,.A3)
+	DO SPLIT32(+$GET(B),.B0,.B1,.B2,.B3)
+	QUIT ($$ANDBYTE(A0,B0)*16777216)+($$ANDBYTE(A1,B1)*65536)+($$ANDBYTE(A2,B2)*256)+$$ANDBYTE(A3,B3)
+	;
+NOT32(A)
+	NEW A0,A1,A2,A3
+	DO SPLIT32(+$GET(A),.A0,.A1,.A2,.A3)
+	QUIT ((255-A0)*16777216)+((255-A1)*65536)+((255-A2)*256)+(255-A3)
+	;
+SPLIT32(X,B0,B1,B2,B3)
+	NEW V SET V=$$MOD32(+$GET(X))
+	SET B0=(V\16777216)#256
+	SET B1=(V\65536)#256
+	SET B2=(V\256)#256
+	SET B3=V#256
+	QUIT
+	;
+XORBYTE(A,B)
+	NEW X,Y,R,I,P
+	SET X=+$GET(A)#256,Y=+$GET(B)#256,R=0
+	FOR I=0:1:7 DO
+	. SET P=(2**I)
+	. IF (((X\P)#2)+((Y\P)#2))#2 SET R=R+P
+	QUIT R
+	;
+ANDBYTE(A,B)
+	NEW X,Y,R,I,P
+	SET X=+$GET(A)#256,Y=+$GET(B)#256,R=0
+	FOR I=0:1:7 DO
+	. SET P=(2**I)
+	. IF ((X\P)#2),((Y\P)#2) SET R=R+P
+	QUIT R
+	;
+TRIM(S)
 	NEW X SET X=$GET(S)
-	SET X=$TRANSLATE(X,"'","")
+	FOR  QUIT:$E(X,1)'=" "  SET X=$E(X,2,$L(X))
+	FOR  QUIT:$E(X,$L(X))'=" "  SET X=$E(X,1,$L(X)-1)
 	QUIT X
 	;
-; Entry point
-; See docs/routines for details.;
+SETR(ERR,RTN,ST)
+	IF $GET(ERR("routine"))="" SET ERR("routine")=$GET(RTN)
+	IF $GET(ERR("status"))="" SET ERR("status")=+$GET(ST)
+	IF $GET(ERR("error"))="" SET ERR("error")="jwt_error"
+	QUIT
+	;
+ETRAP(ERR)
+	SET ERR("routine")="MIOAUTHJWT"
+	IF $GET(ERR("error"))="" SET ERR("error")="jwt_exception"
+	SET ERR("status")=401
+	SET ERR("zstatus")=$ZSTATUS
+	QUIT
+	;
 NOWS()
 	NEW H SET H=$HOROLOG
-	QUIT +$PIECE(H,",",1)*86400 + +$PIECE(H,",",2)
+	QUIT +$PIECE(H,",",1)*86400+$PIECE(H,",",2)
+	;
 	;
