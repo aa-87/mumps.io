@@ -37,19 +37,19 @@ MIOAUTHZ ; Authorization checks (RBAC/ABAC) using route metadata and claims.;
 ; Entry point
 ; See docs/routines for details.;
 ENFORCE(DEV,CONF,REQ,CTX)
-	; If no prematch route, do nothing (auth middleware can still be prefix-based)
-	NEW RP SET RP=$GET(CTX("match","route"))
+	NEW RP
+	SET RP=$GET(CTX("match","route"))
+	IF RP="" SET RP=$GET(CTX("route"))
 	IF RP="" QUIT 1
+	;
 	NEW M SET M=$GET(REQ("method"))
 	NEW META DO GETMETA^MIOROUTE(M,RP,.META)
 	NEW TEST S TEST=$TEST
-	; If route doesn't require auth, allow
+	;
 	IF +$GET(META("authRequired"))'=1 QUIT 1
 	;
-	; Must be authenticated
 	IF '$GET(CTX("auth","ok")) QUIT $$DENY(.DEV,.CONF,.REQ,.CTX,"unauthorized","not_authenticated")
 	;
-	; RBAC: roles any-of
 	NEW REQROLES SET REQROLES=$GET(META("roles"))
 	IF REQROLES'="" DO  IF 'TEST QUIT $$DENY(.DEV,.CONF,.REQ,.CTX,"forbidden","role_required")
 	. NEW OK SET OK=0
@@ -60,23 +60,23 @@ ENFORCE(DEV,CONF,REQ,CTX)
 	. . IF $GET(CTX("auth","roles",RR)) SET OK=1
 	. SET TEST=OK
 	;
-	; Claim requirements (exact match)
-	; Metadata keys are stored as "claims.<name>".;
 	NEW K SET K="claims."
 	FOR  SET K=$ORDER(META(K)) QUIT:K=""  QUIT:$EXTRACT(K,1,7)'="claims."  DO
 	. NEW NAME SET NAME=$EXTRACT(K,8,999)
 	. NEW WANT SET WANT=$GET(META(K))
 	. NEW GOT SET GOT=$GET(CTX("auth","claim",NAME))
 	. IF WANT'="",GOT'=WANT QUIT $$DENY(.DEV,.CONF,.REQ,.CTX,"forbidden","claim_mismatch:"_NAME)
-	; Owner check
-	NEW OP SET OP=$GET(META("ownerParam")),OC=$GET(META("ownerClaim"))
+	;
+	NEW OP,OC
+	SET OP=$GET(META("ownerParam"))
+	SET OC=$GET(META("ownerClaim"))
 	IF OP'="",OC'="" DO  IF 'TEST QUIT $$DENY(.DEV,.CONF,.REQ,.CTX,"forbidden","not_owner")
-	. NEW PV SET PV=$GET(REQ("params",OP))
-	. NEW CV SET CV=$GET(CTX("auth","claim",OC))
+	. NEW PV,CV
+	. SET PV=$GET(REQ("params",OP))
+	. SET CV=$GET(CTX("auth","claim",OC))
 	. SET TEST=(PV'="")&(CV'="")&(PV=CV)
 	;
 	QUIT 1
-	;
 ; Entry point
 ; See docs/routines for details.;
 DENY(DEV,CONF,REQ,CTX,ECODE,REASON)

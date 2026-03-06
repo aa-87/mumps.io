@@ -574,9 +574,9 @@ MWEX(ENT,DEV,CONF,REQ,CTX,ERR)
 	. SET ERR("routine")="MIOROUTE",ERR("error")="middleware_bad_entry",ERR("status")=500
 	IF '$$ISID(TAG)!'$$ISID(RTN) DO  QUIT 0
 	. SET ERR("routine")="MIOROUTE",ERR("error")="middleware_bad_entry",ERR("status")=500
-	NEW $ETRAP SET $ETRAP="SET $ECODE="""" SET ERR(""routine"")=""MIOROUTE"" SET ERR(""error"")=""middleware_exception"" SET ERR(""status"")=500 SET OK=0"
-	SET CMD="SET OK=$$"_TAG_"^"_RTN_"(.DEV,.CONF,.REQ,.CTX,.ERR)"
-	XECUTE CMD
+	NEW $ETRAP SET $ETRAP="SET $ECODE="""" SET ERR(""routine"")=""MIOROUTE"" SET ERR(""error"")=""middleware_exception|""_$ZSTATUS SET ERR(""status"")=500 SET OK=0"
+	SET CMD="OK=$$"_TAG_"^"_RTN_"(.DEV,.CONF,.REQ,.CTX,.ERR)",@CMD
+	;XECUTE CMD
 	QUIT +$GET(OK)
 	;
 ISID(S)
@@ -623,8 +623,8 @@ MWAFTER(DEV,CONF,REQ,CTX,METHOD,ROUTEPAT,ERR)
 	. IF TAG=""!(RTN="") QUIT
 	. IF '$$ISID(TAG)!'$$ISID(RTN) QUIT
 	. NEW $ETRAP SET $ETRAP="SET $ECODE="""""
-	. SET CMD="DO "_TAG_"^"_RTN_"(.DEV,.CONF,.REQ,.CTX,.ERR)"
-	. XECUTE CMD
+	. SET CMD=TAG_"^"_RTN_"(.DEV,.CONF,.REQ,.CTX,.ERR)" DO @CMD
+	. ;XECUTE CMD
 	QUIT
 	;
 MWRESPERR(DEV,CONF,REQ,CTX,ERR)

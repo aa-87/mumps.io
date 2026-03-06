@@ -17,26 +17,6 @@ MIOSHA1 ; MIO WebSocket SHA1 + Accept helper (MUMPS Implementation)
 	;   $$SHA1RAW(text)  -> 20-byte binary string
 	;   $$WSACCEPT(secKey) -> Sec-WebSocket-Accept header value
 	;
-SELFTEST
-	N $ET S $ET="G ETSOCK^MIOWS"
-	S %WTCP=""
-	N secKey,expect,got
-	S secKey="dGhlIHNhbXBsZSBub25jZQ=="
-	S expect="s3pPLMBiTxaQ9kYGzzhZRbK+xOo="
-	S got=$$WSACCEPT(secKey)
-	W !,"Expected: ",expect,!
-	W "Got     : ",got,!
-	W "PASS?   : ",$S(got=expect:"YES",1:"NO"),!
-	Q
-SELFTEST2
-	N secKey,expect,got
-	S secKey="dGhlIHNhbXBsZSBub25jZQ=="
-	S expect="s3pPLMBiTxaQ9kYGzzhZRbK+xOo="
-	S got=$$GENWS^MIOWS(secKey)
-	W !,"Expected: ",expect,!
-	W "Got     : ",got,!
-	W "PASS?   : ",$S(got=expect:"YES",1:"NO"),!
-	Q
 WSACCEPT(secKey) ;
 	N guid S guid="258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 	Q $$B64ENC($$SHA1RAW(secKey_guid))

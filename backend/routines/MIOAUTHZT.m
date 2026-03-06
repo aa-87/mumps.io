@@ -48,7 +48,7 @@ T001 ; HS256 JWT allows route (role admin)
 	SET META("roles")="admin"
 	DO ADDM^MIOROUTE("GET","/secure","HOK^MIOAUTHZT",.META)
 	DO COMPILE^MIOROUTE
-	;NEW CONF,REQ,CTX,DEV,OUT,OP,SECRET,NOW,TOK
+	NEW CONF,REQ,CTX,DEV,OUT,OP,SECRET,NOW,TOK
 	KILL CONF,REQ,CTX
 	SET CONF("auth","protectMode")="route"
 	SET CONF("auth","mode")="jwt"
@@ -72,7 +72,6 @@ T001 ; HS256 JWT allows route (role admin)
 	DO EQ^MIOTASSERT($GET(CTX("ran")),1,"[T001][handler ran]")
 	DO EQ^MIOTASSERT($GET(CTX("auth","ok")),1,"[T001][auth ok]")
 	DO EQ^MIOTASSERT($GET(CTX("auth","roles","admin")),1,"[T001][role]")
-	zwr
 	QUIT
 	;
 T002 ; RBAC denies when role missing
@@ -82,7 +81,7 @@ T002 ; RBAC denies when role missing
 	SET META("roles")="admin"
 	DO ADDM^MIOROUTE("GET","/secure","HOK^MIOAUTHZT",.META)
 	DO COMPILE^MIOROUTE
-	;NEW CONF,REQ,CTX,DEV,OUT,OP,SECRET,NOW,TOK
+	NEW CONF,REQ,CTX,DEV,OUT,OP,SECRET,NOW,TOK
 	KILL CONF,REQ,CTX
 	SET CONF("auth","protectMode")="route"
 	SET CONF("auth","mode")="jwt"
@@ -96,6 +95,7 @@ T002 ; RBAC denies when role missing
 	SET REQ("path")="/secure"
 	SET REQ("hdr","authorization")="Bearer "_TOK
 	SET CTX("request_id")="az002"
+	SET CTX("ran")=0
 	SET OP="tmp/mio_authz_t002.out"
 	OPEN OP:(newversion:stream:nowrap)
 	SET DEV=OP USE DEV
@@ -106,7 +106,6 @@ T002 ; RBAC denies when role missing
 	DO EQ^MIOTASSERT($GET(CTX("ran")),0,"[T002][handler not ran]")
 	DO EQ^MIOTASSERT($SELECT(OUT["MIOAUTHZ":1,1:0),1,"[T002][routine]")
 	DO EQ^MIOTASSERT($SELECT(OUT["role_required":1,1:0),1,"[T002][reason]")
-	zwr
 	QUIT
 	;
 T003 ; ABAC owner check: ownerParam=id, ownerClaim=sub
@@ -117,7 +116,7 @@ T003 ; ABAC owner check: ownerParam=id, ownerClaim=sub
 	SET META("ownerClaim")="sub"
 	DO ADDM^MIOROUTE("GET","/item/:id","HOK^MIOAUTHZT",.META)
 	DO COMPILE^MIOROUTE
-	;NEW CONF,REQ,CTX,DEV,OUT,OP,SECRET,NOW,TOK
+	NEW CONF,REQ,CTX,DEV,OUT,OP,SECRET,NOW,TOK
 	KILL CONF,REQ,CTX
 	SET CONF("auth","protectMode")="route"
 	SET CONF("auth","mode")="jwt"
@@ -130,6 +129,7 @@ T003 ; ABAC owner check: ownerParam=id, ownerClaim=sub
 	SET REQ("path")="/item/u2" ; mismatch
 	SET REQ("hdr","authorization")="Bearer "_TOK
 	SET CTX("request_id")="az003"
+	SET CTX("ran")=0
 	SET OP="tmp/mio_authz_t003.out"
 	OPEN OP:(newversion:stream:nowrap)
 	SET DEV=OP USE DEV
@@ -139,7 +139,6 @@ T003 ; ABAC owner check: ownerParam=id, ownerClaim=sub
 	DO EQ^MIOTASSERT($SELECT(OUT["403":1,1:0),1,"[T003][status]")
 	DO EQ^MIOTASSERT($GET(CTX("ran")),0,"[T003][handler not ran]")
 	DO EQ^MIOTASSERT($SELECT(OUT["not_owner":1,1:0),1,"[T003][reason]")
-	zwr
 	QUIT
 	;
 ; ---- handler ----
