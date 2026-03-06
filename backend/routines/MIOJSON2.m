@@ -102,7 +102,6 @@ ESC(X)
 	. S Y=$$REPLACE^MIOUTIL(Y,$E(X,I),"\u"_$E(%DH,$L(%DH)-3,$L(%DH)))
 	Q Y 
 ERRX(ID,VAL)
-	b
 	N ERRMSG
 	I ID="STL{" S ERRMSG="Stack too large for new object." G XERRX
 	I ID="SUF}" S ERRMSG="Stack Underflow - extra } found" G XERRX

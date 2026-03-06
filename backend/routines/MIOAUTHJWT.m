@@ -32,7 +32,7 @@ VERIFY(CONF,REQ,CTX,ERR)
 	. SET ERR("routine")="MIOAUTHJWT",ERR("error")="jwt_missing",ERR("status")=401
 	;
 	SET H64=$PIECE(TOK,".",1),P64=$PIECE(TOK,".",2),S64=$PIECE(TOK,".",3)
-	IF H64=""!(P64="")!(S64="") DO  QUIT 0
+	IF H64=""!(P64="")!(S64="")!($L(TOK,".")'=3) DO  QUIT 0
 	. SET ERR("routine")="MIOAUTHJWT",ERR("error")="jwt_format",ERR("status")=401
 	;
 	SET HJSON=$$BIN2STR($$B64DURL(H64,.ERR))
