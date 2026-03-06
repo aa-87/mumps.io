@@ -72,7 +72,7 @@ T001 ; HS256 JWT allows route (role admin)
 	DO EQ^MIOTASSERT($GET(CTX("ran")),1,"[T001][handler ran]")
 	DO EQ^MIOTASSERT($GET(CTX("auth","ok")),1,"[T001][auth ok]")
 	DO EQ^MIOTASSERT($GET(CTX("auth","roles","admin")),1,"[T001][role]")
-	ZWR OUT
+	zwr
 	QUIT
 	;
 T002 ; RBAC denies when role missing
@@ -106,7 +106,7 @@ T002 ; RBAC denies when role missing
 	DO EQ^MIOTASSERT($GET(CTX("ran")),0,"[T002][handler not ran]")
 	DO EQ^MIOTASSERT($SELECT(OUT["MIOAUTHZ":1,1:0),1,"[T002][routine]")
 	DO EQ^MIOTASSERT($SELECT(OUT["role_required":1,1:0),1,"[T002][reason]")
-	ZWR OUT
+	zwr
 	QUIT
 	;
 T003 ; ABAC owner check: ownerParam=id, ownerClaim=sub
@@ -139,7 +139,7 @@ T003 ; ABAC owner check: ownerParam=id, ownerClaim=sub
 	DO EQ^MIOTASSERT($SELECT(OUT["403":1,1:0),1,"[T003][status]")
 	DO EQ^MIOTASSERT($GET(CTX("ran")),0,"[T003][handler not ran]")
 	DO EQ^MIOTASSERT($SELECT(OUT["not_owner":1,1:0),1,"[T003][reason]")
-	ZWR OUT
+	zwr
 	QUIT
 	;
 ; ---- handler ----

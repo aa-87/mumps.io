@@ -1,0 +1,80 @@
+MIOSHA256T ; Tests for MIOSHA256
+	;
+	; Run:
+	;   D ^MIOSHA256T
+	;
+	;	
+	;
+START ;
+	D EN
+	Q
+	;
+EN ;
+	N FAIL,TOTAL
+	S FAIL=0,TOTAL=0
+	W !,"MIOSHA256 test suite",!
+	;
+	D T("SHA256 empty",$$SHA256^MIOSHA256(""),"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",.TOTAL,.FAIL)
+	D T("SHA256 abc",$$SHA256^MIOSHA256("abc"),"ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",.TOTAL,.FAIL)
+	D T("SHA256 long NIST vector",$$SHA256^MIOSHA256("abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq"),"248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1",.TOTAL,.FAIL)
+	;
+	D TV1(.TOTAL,.FAIL)
+	D TV2(.TOTAL,.FAIL)
+	D TV3(.TOTAL,.FAIL)
+	;
+	W !
+	W "Total: ",TOTAL,!
+	W "Failed: ",FAIL,!
+	I 'FAIL W "ALL TESTS PASSED",!
+	E  W "TEST FAILURES DETECTED",!
+	Q
+	;
+TV1(TOTAL,FAIL) ;
+	N KEY,DATA,EXP,ACT
+	S KEY=$$REP($C(11),20)
+	S DATA="Hi There"
+	S EXP="b0344c61d8db38535ca8afceaf0bf12b881dc200c9833da726e9376c2e32cff7"
+	S ACT=$$HMAC^MIOSHA256(KEY,DATA)
+	D T("HMAC RFC4231 #1",ACT,EXP,.TOTAL,.FAIL)
+	Q
+	;
+TV2(TOTAL,FAIL) ;
+	N KEY,DATA,EXP,ACT
+	S KEY="Jefe"
+	S DATA="what do ya want for nothing?"
+	S EXP="5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843"
+	S ACT=$$HMAC^MIOSHA256(KEY,DATA)
+	D T("HMAC RFC4231 #2",ACT,EXP,.TOTAL,.FAIL)
+	Q
+	;
+TV3(TOTAL,FAIL) ;
+	N KEYHEX,DATA,EXP,ACT
+	S KEYHEX=$$REPHEX("aa",131)
+	S DATA="Test Using Larger Than Block-Size Key - Hash Key First"
+	S EXP="60e431591ee0b67f0d8a26aacbf5b77f8e0bc6213728c5140546040f0ee37f54"
+	S ACT=$$HMACHEX^MIOSHA256(KEYHEX,DATA)
+	D T("HMAC RFC4231 #6",ACT,EXP,.TOTAL,.FAIL)
+	Q
+	;
+T(NAME,ACT,EXP,TOTAL,FAIL) ;
+	S TOTAL=$G(TOTAL)+1
+	I $G(ACT)=$G(EXP) W "OK:   ",NAME,!
+	E  D
+	. S FAIL=$G(FAIL)+1
+	. W "FAIL: ",NAME,!
+	. W "  got: ",$G(ACT),!
+	. W "  exp: ",$G(EXP),!
+	Q
+	;
+REP(CH,N) ;
+	N I,R
+	S R=""
+	F I=1:1:N S R=R_CH
+	Q R
+	;
+REPHEX(HX,N) ;
+	N I,R
+	S R=""
+	F I=1:1:N S R=R_HX
+	Q R
+	;
