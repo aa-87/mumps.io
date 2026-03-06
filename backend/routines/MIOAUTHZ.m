@@ -60,12 +60,14 @@ ENFORCE(DEV,CONF,REQ,CTX)
 	. . IF $GET(CTX("auth","roles",RR)) SET OK=1
 	. SET TEST=OK
 	;
-	NEW K SET K="claims."
-	FOR  SET K=$ORDER(META(K)) QUIT:K=""  QUIT:$EXTRACT(K,1,7)'="claims."  DO
+	NEW K,DENY,DENYNM SET K="claims.",DENY=0,DENYNM=""
+	FOR  SET K=$ORDER(META(K)) QUIT:K=""  QUIT:$EXTRACT(K,1,7)'="claims."  QUIT:DENY  DO
+	. I DENY QUIT
 	. NEW NAME SET NAME=$EXTRACT(K,8,999)
 	. NEW WANT SET WANT=$GET(META(K))
 	. NEW GOT SET GOT=$GET(CTX("auth","claim",NAME))
-	. IF WANT'="",GOT'=WANT QUIT $$DENY(.DEV,.CONF,.REQ,.CTX,"forbidden","claim_mismatch:"_NAME)
+	. IF WANT'="",GOT'=WANT S DENY=1,DENYNM=NAME QUIT 
+	I DENY QUIT $$DENY(.DEV,.CONF,.REQ,.CTX,"forbidden","claim_mismatch:"_DENYNM)
 	;
 	NEW OP,OC
 	SET OP=$GET(META("ownerParam"))
