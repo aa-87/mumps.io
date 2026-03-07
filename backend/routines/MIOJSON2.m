@@ -107,14 +107,14 @@ ERRX(ID,VAL)
 	I ID="SUF}" S ERRMSG="Stack Underflow - extra } found" G XERRX
 	I ID="STL[" S ERRMSG="Stack too large for new array." G XERRX
 	I ID="SUF]" S ERRMSG="Stack Underflow - extra ] found." G XERRX
-	I ID="OBM" S ERRMSG="Array MIOsmatch - expected ] got }." G XERRX
-	I ID="ARM" S ERRMSG="Object MIOsmatch - expected } got ]." G XERRX
+	I ID="OBM" S ERRMSG="Array Mismatch - expected ] got }." G XERRX
+	I ID="ARM" S ERRMSG="Object Mismatch - expected } got ]." G XERRX
 	I ID="MPN" S ERRMSG="MIOssing property name." G XERRX
 	I ID="EXT" S ERRMSG="Expected true, got "_VAL G XERRX
 	I ID="EXF" S ERRMSG="Expected false, got "_VAL G XERRX
 	I ID="EXN" S ERRMSG="Expected null, got "_VAL G XERRX
 	I ID="TKN" S ERRMSG="Unable to identify type of token, value was "_VAL G XERRX
-	I ID="SCT" S ERRMSG="Stack MIOsmatch - exit stack level was  "_VAL G XERRX
+	I ID="SCT" S ERRMSG="Stack Mismatch - exit stack level was  "_VAL G XERRX
 	I ID="EIQ" S ERRMSG="Close quote not found before end of input." G XERRX
 	I ID="EIU" S ERRMSG="Unexpected end of input while unescaping." G XERRX
 	I ID="RSB" S ERRMSG="Reverse search for \ past beginning of input." G XERRX
@@ -133,7 +133,6 @@ XERRX
 	Q
 DECODE(MIOJSON,MIOROOT,MIOERR)
 	S MIOERR=$G(MIOERR)
-DIRECT
 	S $ET="G MIOJSONET^MIOJSON2"
 	N MIOMAX S MIOMAX=1048000
 	I $D(@MIOJSON)=1 N MIOINPUT S MIOINPUT(1)=@MIOJSON,MIOJSON="MIOINPUT"
@@ -175,6 +174,7 @@ DIRECT
 NXTKN()
 	N MIODONE,MIOEOF,MIOTOKEN
 	S MIODONE=0,MIOEOF=0 F  D  Q:MIODONE!MIOEOF
+	. I '$D(@MIOJSON@(MIOLINE)) S MIOEOF=1 Q
 	. I MIOIDX>$L(@MIOJSON@(MIOLINE)) S MIOLINE=$O(@MIOJSON@(MIOLINE)),MIOIDX=1 I 'MIOLINE S MIOEOF=1 Q
 	. I $A(@MIOJSON@(MIOLINE),MIOIDX)>32 S MIODONE=1 Q
 	. S MIOIDX=MIOIDX+1
