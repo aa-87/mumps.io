@@ -1,0 +1,12 @@
+HTTP/1.1 401 Unauthorized
+Connection: keep-alive
+Content-Length: 117
+Content-Type: application/json
+Permissions-Policy: camera=(), microphone=(), geolocation=()
+Referrer-Policy: strict-origin-when-cross-origin
+X-Content-Type-Options: nosniff
+X-Frame-Options: SAMEORIGIN
+X-Permitted-Cross-Domain-Policies: none
+X-Request-Id: 676357589855636818000
+
+{"error":"unauthorized","reason":"Stack Mismatch - exit stack level was  1","request_id":"az041","routine":"MIOAUTH"}

@@ -1,0 +1,22 @@
+2026-03-06 21:15:40 watcher_start pid=2238790 pattern=*.html
+{"ts":"2026-03-06 21:15:40","event":"add","file":"/home/aa/work/mumps.io/MIO/templates/app_index.html"}
+{"ts":"2026-03-06 21:15:40","event":"add","file":"/home/aa/work/mumps.io/MIO/templates/app_layout.html"}
+{"ts":"2026-03-06 21:15:40","event":"add","file":"/home/aa/work/mumps.io/MIO/templates/layout.html"}
+{"ts":"2026-03-06 21:15:40","event":"add","file":"/home/aa/work/mumps.io/MIO/templates/layouts/plgd_layout.html"}
+{"ts":"2026-03-06 21:15:40","event":"add","file":"/home/aa/work/mumps.io/MIO/templates/mio_index.html"}
+{"ts":"2026-03-06 21:15:40","event":"add","file":"/home/aa/work/mumps.io/MIO/templates/mio_layout.html"}
+{"ts":"2026-03-06 21:15:40","event":"add","file":"/home/aa/work/mumps.io/MIO/templates/mio_page.html"}
+{"ts":"2026-03-06 21:15:40","event":"add","file":"/home/aa/work/mumps.io/MIO/templates/mio_pkg.html"}
+{"ts":"2026-03-06 21:15:40","event":"add","file":"/home/aa/work/mumps.io/MIO/templates/mio_repo.html"}
+{"ts":"2026-03-06 21:15:40","event":"add","file":"/home/aa/work/mumps.io/MIO/templates/page.html"}
+{"ts":"2026-03-06 21:15:40","event":"add","file":"/home/aa/work/mumps.io/MIO/templates/pages/plgd_about.html"}
+{"ts":"2026-03-06 21:15:40","event":"add","file":"/home/aa/work/mumps.io/MIO/templates/pages/plgd_home.html"}
+{"ts":"2026-03-06 21:15:40","event":"add","file":"/home/aa/work/mumps.io/MIO/templates/pages/plgd_playground.html"}
+{"ts":"2026-03-06 21:15:40","event":"add","file":"/home/aa/work/mumps.io/MIO/templates/partials/mio_footer.html"}
+{"ts":"2026-03-06 21:15:40","event":"add","file":"/home/aa/work/mumps.io/MIO/templates/partials/mio_nav.html"}
+{"ts":"2026-03-06 21:15:40","event":"add","file":"/home/aa/work/mumps.io/MIO/templates/partials/ui_badge.html"}
+{"ts":"2026-03-06 21:15:40","event":"add","file":"/home/aa/work/mumps.io/MIO/templates/partials/ui_footer.html"}
+{"ts":"2026-03-06 21:15:40","event":"add","file":"/home/aa/work/mumps.io/MIO/templates/partials/ui_hero.html"}
+{"ts":"2026-03-06 21:15:40","event":"add","file":"/home/aa/work/mumps.io/MIO/templates/partials/ui_nav.html"}
+{"ts":"2026-03-06 21:15:40","event":"add","file":"/home/aa/work/mumps.io/MIO/templates/partials/ui_tpl_card_grid.html"}
+{"ts":"2026-03-06 21:15:40","event":"add","file":"/home/aa/work/mumps.io/MIO/templates/partials/ui_tpl_card_list.html"}

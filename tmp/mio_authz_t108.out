@@ -1,0 +1,12 @@
+HTTP/1.1 401 Unauthorized
+Connection: keep-alive
+Content-Length: 105
+Content-Type: application/json
+Permissions-Policy: camera=(), microphone=(), geolocation=()
+Referrer-Policy: strict-origin-when-cross-origin
+X-Content-Type-Options: nosniff
+X-Frame-Options: SAMEORIGIN
+X-Permitted-Cross-Domain-Policies: none
+X-Request-Id: 676357592419231018000
+
+{"error":"unauthorized","reason":"jwt_rs256_verifier_exception","request_id":"az108","routine":"MIOAUTH"}

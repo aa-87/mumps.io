@@ -1,0 +1,12 @@
+HTTP/1.1 403 
+Connection: keep-alive
+Content-Length: 84
+Content-Type: application/json
+Permissions-Policy: camera=(), microphone=(), geolocation=()
+Referrer-Policy: strict-origin-when-cross-origin
+X-Content-Type-Options: nosniff
+X-Frame-Options: SAMEORIGIN
+X-Permitted-Cross-Domain-Policies: none
+X-Request-Id: 676357591024004518000
+
+{"error":"forbidden","reason":"not_owner","request_id":"az072","routine":"MIOAUTHZ"}
