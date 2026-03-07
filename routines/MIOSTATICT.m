@@ -64,8 +64,8 @@ T001 ; GET existing file
 	CLOSE DEV
 	USE $PRINCIPAL
 	DO READALL(OP,.OUT)
-	DO EQ^MIOTASSERT($SELECT(OUT["HTTP/1.1 200 OK":1,1:0),1,"[T001][status]")
-	DO EQ^MIOTASSERT($SELECT(OUT["hi":1,1:0),1,"[T001][body]")
+	DO EQ^MIOTASSERT($SELECT(OUT["HTTP/1.1 200 OK":1,1:0),1,"[MIOSTATICT][T001][status]")
+	DO EQ^MIOTASSERT($SELECT(OUT["hi":1,1:0),1,"[MIOSTATICT][T001][body]")
 	QUIT
 	;
 T002 ; traversal rejected -> 404
@@ -91,7 +91,7 @@ T002 ; traversal rejected -> 404
 	CLOSE DEV
 	USE $PRINCIPAL
 	DO READALL(OP,.OUT)
-	DO EQ^MIOTASSERT($SELECT(OUT["404":1,1:0),1,"[T002][status]")
+	DO EQ^MIOTASSERT($SELECT(OUT["404":1,1:0),1,"[MIOSTATICT][T002][status]")
 	QUIT
 	;
 T003 ; If-None-Match -> 304 no body
@@ -124,7 +124,7 @@ T003 ; If-None-Match -> 304 no body
 	SET NORM=$TR(OUT,$C(13),$C(10))
 	SET P1=$P(NORM,"ETag: ",2)
 	SET ET=$P(P1,$C(10),1)
-	DO EQ^MIOTASSERT($SELECT(ET'="":1,1:0),1,"[T003][etag present]")
+	DO EQ^MIOTASSERT($SELECT(ET'="":1,1:0),1,"[MIOSTATICT][T003][etag present]")
 	;
 	; Second request: If-None-Match
 	SET OP="tmp/mio_static_t003b.out"
@@ -140,8 +140,8 @@ T003 ; If-None-Match -> 304 no body
 	CLOSE DEV
 	USE $PRINCIPAL
 	DO READALL(OP,.OUT)
-	DO EQ^MIOTASSERT($SELECT(OUT["304":1,1:0),1,"[T003][status]")
-	DO EQ^MIOTASSERT($SELECT(OUT["hi":1,1:0),0,"[T003][no body]")
+	DO EQ^MIOTASSERT($SELECT(OUT["304":1,1:0),1,"[MIOSTATICT][T003][status]")
+	DO EQ^MIOTASSERT($SELECT(OUT["hi":1,1:0),0,"[MIOSTATICT][T003][no body]")
 	QUIT
 	;
 	;
@@ -169,10 +169,10 @@ T004 ; Range 0-0 -> 206 and first byte
 	CLOSE DEV
 	USE $PRINCIPAL
 	DO READALL(OP,.OUT)
-	DO EQ^MIOTASSERT($SELECT(OUT["206":1,1:0),1,"[T004][status]")
-	DO EQ^MIOTASSERT($SELECT(OUT["Content-Range: bytes 0-0/2":1,1:0),1,"[T004][content-range]")
-	DO EQ^MIOTASSERT($SELECT(OUT["Content-Length: 1":1,1:0),1,"[T004][content-length]")
-	DO EQ^MIOTASSERT($SELECT(OUT["h":1,1:0),1,"[T004][body]")
+	DO EQ^MIOTASSERT($SELECT(OUT["206":1,1:0),1,"[MIOSTATICT][T004][status]")
+	DO EQ^MIOTASSERT($SELECT(OUT["Content-Range: bytes 0-0/2":1,1:0),1,"[MIOSTATICT][T004][content-range]")
+	DO EQ^MIOTASSERT($SELECT(OUT["Content-Length: 1":1,1:0),1,"[MIOSTATICT][T004][content-length]")
+	DO EQ^MIOTASSERT($SELECT(OUT["h":1,1:0),1,"[MIOSTATICT][T004][body]")
 	QUIT
 	;
 T005 ; Range suffix -1 -> last byte
@@ -199,10 +199,10 @@ T005 ; Range suffix -1 -> last byte
 	CLOSE DEV
 	USE $PRINCIPAL
 	DO READALL(OP,.OUT)
-	DO EQ^MIOTASSERT($SELECT(OUT["206":1,1:0),1,"[T005][status]")
-	DO EQ^MIOTASSERT($SELECT(OUT["Content-Range: bytes 1-1/2":1,1:0),1,"[T005][content-range]")
-	DO EQ^MIOTASSERT($SELECT(OUT["Content-Length: 1":1,1:0),1,"[T005][content-length]")
-	DO EQ^MIOTASSERT($SELECT(OUT["i":1,1:0),1,"[T005][body]")
+	DO EQ^MIOTASSERT($SELECT(OUT["206":1,1:0),1,"[MIOSTATICT][T005][status]")
+	DO EQ^MIOTASSERT($SELECT(OUT["Content-Range: bytes 1-1/2":1,1:0),1,"[MIOSTATICT][T005][content-range]")
+	DO EQ^MIOTASSERT($SELECT(OUT["Content-Length: 1":1,1:0),1,"[MIOSTATICT][T005][content-length]")
+	DO EQ^MIOTASSERT($SELECT(OUT["i":1,1:0),1,"[MIOSTATICT][T005][body]")
 	QUIT
 	;
 T006 ; Invalid range -> 416
@@ -229,15 +229,15 @@ T006 ; Invalid range -> 416
 	CLOSE DEV
 	USE $PRINCIPAL
 	DO READALL(OP,.OUT)
-	DO EQ^MIOTASSERT($SELECT(OUT["416":1,1:0),1,"[T006][status]")
-	DO EQ^MIOTASSERT($SELECT(OUT["Content-Range: bytes */2":1,1:0),1,"[T006][content-range]")
+	DO EQ^MIOTASSERT($SELECT(OUT["416":1,1:0),1,"[MIOSTATICT][T006][status]")
+	DO EQ^MIOTASSERT($SELECT(OUT["Content-Range: bytes */2":1,1:0),1,"[MIOSTATICT][T006][content-range]")
 	QUIT
 	;
 	; (T001-T006 unchanged in your tree)
 	;
 T007 ; If-Modified-Since -> 304 (server-known mtime)
 	KILL ^MIO("STATIC","META")
-	;NEW CONF,REQ,CTX,DEV,OUT,ROOT,FP,OP,NORM,LM,P1,HD,HS
+	NEW CONF,REQ,CTX,DEV,OUT,ROOT,FP,OP,NORM,LM,P1,HD,HS
 	SET ROOT="tmp"
 	SET FP=ROOT_"/hello.txt"
 	OPEN FP:(newversion:stream:nowrap)
@@ -263,7 +263,7 @@ T007 ; If-Modified-Since -> 304 (server-known mtime)
 	SET NORM=$TR(OUT,$C(13),$C(10))
 	SET P1=$P(NORM,"Last-Modified: ",2)
 	SET LM=$P(P1,$C(10),1)
-	DO EQ^MIOTASSERT($SELECT(LM'="":1,1:0),1,"[T007][last-modified present]")
+	DO EQ^MIOTASSERT($SELECT(LM'="":1,1:0),1,"[MIOSTATICT][T007][last-modified present]")
 	;
 	; Second request: If-Modified-Since -> 304 and no body
 	SET OP=ROOT_"/mio_static_t007b.out"
@@ -278,8 +278,8 @@ T007 ; If-Modified-Since -> 304 (server-known mtime)
 	DO STATIC^MIOSTATIC(.DEV,.CONF,.REQ,.CTX)
 	CLOSE DEV USE $PRINCIPAL
 	DO READALL(OP,.OUT)
-	DO EQ^MIOTASSERT($SELECT(OUT["304":1,1:0),1,"[T007][status]")
-	DO EQ^MIOTASSERT($SELECT(OUT["hi":1,1:0),0,"[T007][no body]")
+	DO EQ^MIOTASSERT($SELECT(OUT["304":1,1:0),1,"[MIOSTATICT][T007][status]")
+	DO EQ^MIOTASSERT($SELECT(OUT["hi":1,1:0),0,"[MIOSTATICT][T007][no body]")
 	QUIT
 	;
 T008 ; /static (no slash) redirects to /static/
@@ -302,8 +302,8 @@ T008 ; /static (no slash) redirects to /static/
 	CLOSE DEV
 	USE $PRINCIPAL
 	DO READALL(OP,.OUT)
-	DO EQ^MIOTASSERT($SELECT(OUT["301":1,1:0),1,"[T008][status]")
-	DO EQ^MIOTASSERT($SELECT(OUT["Location: /static/":1,1:0),1,"[T008][location]")
+	DO EQ^MIOTASSERT($SELECT(OUT["301":1,1:0),1,"[MIOSTATICT][T008][status]")
+	DO EQ^MIOTASSERT($SELECT(OUT["Location: /static/":1,1:0),1,"[MIOSTATICT][T008][location]")
 	QUIT
 	;
 T009 ; GET /static/ serves configured index
@@ -331,19 +331,19 @@ T009 ; GET /static/ serves configured index
 	CLOSE DEV
 	USE $PRINCIPAL
 	DO READALL(OP,.OUT)
-	DO EQ^MIOTASSERT($SELECT(OUT["HTTP/1.1 200 OK":1,1:0),1,"[T009][status]")
-	DO EQ^MIOTASSERT($SELECT(OUT["home9":1,1:0),1,"[T009][body]")
+	DO EQ^MIOTASSERT($SELECT(OUT["HTTP/1.1 200 OK":1,1:0),1,"[MIOSTATICT][T009][status]")
+	DO EQ^MIOTASSERT($SELECT(OUT["home9":1,1:0),1,"[MIOSTATICT][T009][body]")
 	QUIT
 	;
 T010 ; Directory listing when index missing and listing enabled
 	NEW CONF,REQ,CTX,DEV,OUT,ROOT,OP
 	SET ROOT="tmp"
-	SET OP="tmp/mio_static_t010.out"
+	SET OP="tmp/mio_static_t010"_$J_".out"
 	; create a couple files in root
-	OPEN (ROOT_"/mio_dl_a.txt"):(newversion:stream:nowrap)
-	USE (ROOT_"/mio_dl_a.txt") WRITE "a" CLOSE (ROOT_"/mio_dl_a.txt")
-	OPEN (ROOT_"/mio_dl_b.txt"):(newversion:stream:nowrap)
-	USE (ROOT_"/mio_dl_b.txt") WRITE "b" CLOSE (ROOT_"/mio_dl_b.txt")
+	OPEN (ROOT_"/mio_dl_a"_$J_".txt"):(newversion:stream:nowrap)
+	USE (ROOT_"/mio_dl_a"_$J_".txt") WRITE "a" CLOSE (ROOT_"/mio_dl_a"_$J_".txt")
+	OPEN (ROOT_"/mio_dl_b"_$J_".txt"):(newversion:stream:nowrap)
+	USE (ROOT_"/mio_dl_b"_$J_".txt") WRITE "b" CLOSE (ROOT_"/mio_dl_b"_$J_".txt")
 	;
 	SET CONF("server","static","enabled")=1
 	SET CONF("server","static","root")=ROOT
@@ -363,10 +363,10 @@ T010 ; Directory listing when index missing and listing enabled
 	CLOSE DEV
 	USE $PRINCIPAL
 	DO READALL(OP,.OUT)
-	DO EQ^MIOTASSERT($SELECT(OUT["HTTP/1.1 200 OK":1,1:0),1,"[T010][status]")
-	DO EQ^MIOTASSERT($SELECT(OUT["Transfer-Encoding: chunked":1,1:0),1,"[T010][chunked]")
-	DO EQ^MIOTASSERT($SELECT(OUT["mio_dl_a.txt":1,1:0),1,"[T010][a present]")
-	DO EQ^MIOTASSERT($SELECT(OUT["mio_dl_b.txt":1,1:0),1,"[T010][b present]")
+	DO EQ^MIOTASSERT($SELECT(OUT["HTTP/1.1 200 OK":1,1:0),1,"[MIOSTATICT][T010][status]")
+	DO EQ^MIOTASSERT($SELECT(OUT["Transfer-Encoding: chunked":1,1:0),1,"[MIOSTATICT][T010][chunked]")
+	DO EQ^MIOTASSERT($SELECT(OUT["mio_dl_a"_$J_".txt":1,1:0),1,"[MIOSTATICT][T010][a present]")
+	DO EQ^MIOTASSERT($SELECT(OUT["mio_dl_b"_$J_".txt":1,1:0),1,"[MIOSTATICT][T010][b present]")
 	QUIT
 	;
 T011 ; /static/ missing index and listing disabled -> 404
@@ -389,8 +389,8 @@ T011 ; /static/ missing index and listing disabled -> 404
 	CLOSE DEV
 	USE $PRINCIPAL
 	DO READALL(OP,.OUT)
-	DO EQ^MIOTASSERT($SELECT(OUT["404":1,1:0),1,"[T011][status]")
-	DO EQ^MIOTASSERT($SELECT(OUT["MIOSTATIC":1,1:0),1,"[T011][routine]")
+	DO EQ^MIOTASSERT($SELECT(OUT["404":1,1:0),1,"[MIOSTATICT][T011][status]")
+	DO EQ^MIOTASSERT($SELECT(OUT["MIOSTATIC":1,1:0),1,"[MIOSTATICT][T011][routine]")
 	QUIT
 ;
 T012 ; ETag persists across in-memory cache clear (persistent store)
@@ -427,7 +427,7 @@ T012 ; ETag persists across in-memory cache clear (persistent store)
 	SET NORM=$TR(OUT,$C(13),$C(10))
 	SET P1=$P(NORM,"ETag: ",2)
 	SET ET1=$P(P1,$C(10),1)
-	DO EQ^MIOTASSERT($SELECT(ET1'="":1,1:0),1,"[T012][etag1 present]")
+	DO EQ^MIOTASSERT($SELECT(ET1'="":1,1:0),1,"[MIOSTATICT][T012][etag1 present]")
 	;
 	; Clear in-memory cache fields but keep persistent store + pinned mtime
 	KILL ^MIO("STATIC","META",FP,"etag")
@@ -451,7 +451,7 @@ T012 ; ETag persists across in-memory cache clear (persistent store)
 	SET NORM=$TR(OUT,$C(13),$C(10))
 	SET P1=$P(NORM,"ETag: ",2)
 	SET ET2=$P(P1,$C(10),1)
-	DO EQ^MIOTASSERT($SELECT(ET2=ET1:1,1:0),1,"[T012][etag persisted]")
+	DO EQ^MIOTASSERT($SELECT(ET2=ET1:1,1:0),1,"[MIOSTATICT][T012][etag persisted]")
 	QUIT
 	;
 T013 ; ETag invalidates when server version/mtime updated (TOUCH)
@@ -485,7 +485,7 @@ T013 ; ETag invalidates when server version/mtime updated (TOUCH)
 	SET NORM=$TR(OUT,$C(13),$C(10))
 	SET P1=$P(NORM,"ETag: ",2)
 	SET ET1=$P(P1,$C(10),1)
-	DO EQ^MIOTASSERT($SELECT(ET1'="":1,1:0),1,"[T013][etag1 present]")
+	DO EQ^MIOTASSERT($SELECT(ET1'="":1,1:0),1,"[MIOSTATICT][T013][etag1 present]")
 	;
 	; Change file content (same length) and touch to bump version/mtime
 	OPEN FP:(stream:nowrap)
@@ -505,12 +505,12 @@ T013 ; ETag invalidates when server version/mtime updated (TOUCH)
 	DO STATIC^MIOSTATIC(.DEV,.CONF,.REQ,.CTX)
 	CLOSE DEV USE $PRINCIPAL
 	DO READALL(OP,.OUT)
-	DO EQ^MIOTASSERT($SELECT(OUT["HTTP/1.1 200 OK":1,1:0),1,"[T013][status 200]")
+	DO EQ^MIOTASSERT($SELECT(OUT["HTTP/1.1 200 OK":1,1:0),1,"[MIOSTATICT][T013][status 200]")
 	SET NORM=$TR(OUT,$C(13),$C(10))
 	SET P1=$P(NORM,"ETag: ",2)
 	SET ET2=$P(P1,$C(10),1)
-	DO EQ^MIOTASSERT($SELECT(ET2'="":1,1:0),1,"[T013][etag2 present]")
-	DO EQ^MIOTASSERT($SELECT(ET2'=ET1:1,1:0),1,"[T013][etag changed]")
+	DO EQ^MIOTASSERT($SELECT(ET2'="":1,1:0),1,"[MIOSTATICT][T013][etag2 present]")
+	DO EQ^MIOTASSERT($SELECT(ET2'=ET1:1,1:0),1,"[MIOSTATICT][T013][etag changed]")
 	;
 	; If-None-Match with new ETag should 304
 	SET OP="tmp/mio_static_t013c.out"
@@ -525,10 +525,10 @@ T013 ; ETag invalidates when server version/mtime updated (TOUCH)
 	DO STATIC^MIOSTATIC(.DEV,.CONF,.REQ,.CTX)
 	CLOSE DEV USE $PRINCIPAL
 	DO READALL(OP,.OUT)
-	DO EQ^MIOTASSERT($SELECT(OUT["304":1,1:0),1,"[T013][status 304]")
+	DO EQ^MIOTASSERT($SELECT(OUT["304":1,1:0),1,"[MIOSTATICT][T013][status 304]")
 	QUIT
-
-
+	;
+	;
 T014 ; HEAD not_found should not emit a body
 	NEW CONF,REQ,CTX,DEV,OUT,ROOT,OP
 	SET ROOT="tmp"
@@ -548,8 +548,8 @@ T014 ; HEAD not_found should not emit a body
 	CLOSE DEV USE $PRINCIPAL
 	KILL ^TMP($J,"MIOHTTP","REQ")
 	DO READALL(OP,.OUT)
-	DO EQ^MIOTASSERT($SELECT(OUT["HTTP/1.1 404":1,1:0),1,"[T014][status]")
-	DO EQ^MIOTASSERT($SELECT(OUT["not_found":1,1:0),0,"[T014][no body]")
+	DO EQ^MIOTASSERT($SELECT(OUT["HTTP/1.1 404":1,1:0),1,"[MIOSTATICT][T014][status]")
+	DO EQ^MIOTASSERT($SELECT(OUT["not_found":1,1:0),0,"[MIOSTATICT][T014][no body]")
 	QUIT
 	;
 T015 ; Cache-Control policy header
@@ -574,5 +574,6 @@ T015 ; Cache-Control policy header
 	DO STATIC^MIOSTATIC(.DEV,.CONF,.REQ,.CTX)
 	CLOSE DEV USE $PRINCIPAL
 	DO READALL(OP,.OUT)
-	DO EQ^MIOTASSERT($SELECT(OUT["Cache-Control: public, max-age=60":1,1:0),1,"[T015][cache-control]")
+	DO EQ^MIOTASSERT($SELECT(OUT["Cache-Control: public, max-age=60":1,1:0),1,"[MIOSTATICT][T015][cache-control]")
 	QUIT
+	;
