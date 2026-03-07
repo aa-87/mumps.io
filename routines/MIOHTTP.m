@@ -289,7 +289,7 @@ RESPJSON(DEV,CONF,STATUS,OBJ,REQID)
 	DO RESP(.DEV,.CONF,STATUS,.HEAD,BODY,REQID)
 	QUIT
 	;
-
+	;
 RESP(DEV,CONF,STATUS,HEAD,BODY,REQID)
 	NEW BYTES SET BYTES=0
 	NEW S SET S=+$GET(STATUS,200)
@@ -331,7 +331,7 @@ TRIM(S)
 	QUIT X
 ;
 LIM(CONF,NAME,DEF)
-	; Lookup limit values with backward-compatible paths.
+	; Lookup limit values with backward-compatible paths.;
 	; Preferred: CONF("server","http","limits",NAME)
 	; Fallback:  CONF("server","limits",NAME)
 	NEW V SET V=$GET(CONF("server","http","limits",NAME))
@@ -438,7 +438,7 @@ HEXOUT(N)
 	. SET N=Q
 	QUIT OUT
 ;
-
+	;
 STREAMBEGIN(DEV,CONF,STATUS,HEAD,REQID,CTX)
 	IF '$G(STATUS) SET STATUS=200
 	IF '$G(REQID) SET REQID=$TR($ZH,",")_"-"_$J
@@ -470,9 +470,9 @@ STREAMBEGIN(DEV,CONF,STATUS,HEAD,REQID,CTX)
 	DO WRESP(.DEV,$CHAR(13,10))
 	QUIT
 ;
-
+	;
 STREAMWRITE(DEV,DATA)
-	; In HEAD/no-body mode, suppress chunk emission entirely.
+	; In HEAD/no-body mode, suppress chunk emission entirely.;
 	IF +$GET(^TMP($J,"MIOHTTP","STREAM","skipbody")) QUIT
 	NEW L SET L=$L($GET(DATA))
 	IF L=0 QUIT
@@ -481,9 +481,9 @@ STREAMWRITE(DEV,DATA)
 	DO WRESP(.DEV,$CHAR(13,10))
 	QUIT
 ;
-
+	;
 STREAMEND(DEV)
-	; If chunked framing is active, always terminate it (even for HEAD) so the message is well-formed.
+	; If chunked framing is active, always terminate it (even for HEAD) so the message is well-formed.;
 	IF +$GET(^TMP($J,"MIOHTTP","STREAM","chunked")) DO WRESP(.DEV,"0"_$CHAR(13,10)_$CHAR(13,10))
 	SET ^TMP($J,"MIOHTTP","STREAM","active")=0
 	QUIT
@@ -503,7 +503,7 @@ SENDFILE(DEV,CONF,PATH,HEAD,REQID,CTX,METHOD)
 	. IF $DATA(CTX) SET CTX("err","routine")="MIOHTTP",CTX("err","error")="open_failed"
 	USE FDEV
 	IF M="head" DO  QUIT 1
-	. ; Mirror GET framing: send headers with chunked Transfer-Encoding, but suppress body chunks (HEAD semantics).
+	. ; Mirror GET framing: send headers with chunked Transfer-Encoding, but suppress body chunks (HEAD semantics).;
 	. DO STREAMBEGIN(.DEV,.CONF,200,.HEAD,REQID,.CTX)
 	. DO STREAMEND(.DEV)
 	. CLOSE FDEV
@@ -625,7 +625,7 @@ READCHUNKED(DEV,CONF,REQ,ERR)
 	NEW TOB SET TOB=$GET(CONF("server","timeouts","readBodyMs"),3)
 	NEW DONE SET DONE=0
 	DO BODYINIT(.REQ,.CONF,"")
-	IF $DATA(ERR) QUIT
+	IF $DATA(ERR) QUIT:$QUIT 0  QUIT 
 	FOR  QUIT:DONE  QUIT:$DATA(ERR)  DO
 	. NEW LINE DO READLINE(.DEV,TOB,.LINE,.ERR) IF $DATA(ERR) QUIT
 	. ; chunk-size line may include extensions after ';'
@@ -649,6 +649,7 @@ READCHUNKED(DEV,CONF,REQ,ERR)
 	. DO BODYAPPEND(.REQ,.CONF,.CH,.ERR) IF $DATA(ERR) QUIT
 	. IF $GET(REQ("body","len"))>MAXB DO
 	. . SET ERR("error")="payload_too_large",ERR("routine")="MIOHTTP"
+	QUIT:$QUIT $S($D(ERR):0,1:1)
 	QUIT
 	;
 BODYINIT(REQ,CONF,EXPECTLEN)
@@ -750,15 +751,15 @@ BODYFREE(REQ)
 	; -------------------------------------------------------------------------
 	; ROI #10 helpers (response correctness)
 	;
-	; Current request method (lowercase).
-	; MIOD sets ^TMP($J,"MIOHTTP","REQ","method") for each request.
+	; Current request method (lowercase).;
+	; MIOD sets ^TMP($J,"MIOHTTP","REQ","method") for each request.;
 CURMETH()
 	NEW M SET M=$GET(^TMP($J,"MIOHTTP","REQ","method"))
 	IF M="" SET M=$GET(^TMP($J,"MIOHTTP","REQ","METHOD"))
 	IF M="" QUIT "get"
 	QUIT $$LOW(M)
 	;
-	; Status codes that must not include a message body per RFC semantics.
+	; Status codes that must not include a message body per RFC semantics.;
 	; (1xx, 204, 205, 304)
 NOBODY(S)
 	NEW X SET X=+S
