@@ -441,8 +441,8 @@ HEXOUT(N)
 	;
 STREAMBEGIN(DEV,CONF,STATUS,HEAD,REQID,CTX)
 	IF '$G(STATUS) SET STATUS=200
-	IF '$G(REQID) SET REQID=$TR($ZH,",")_"-"_$J
-	IF $DATA(CTX) SET CTX("status")=STATUS
+	IF $G(REQID)="" SET REQID=$TR($ZH,",")_"-"_$J
+	SET CTX("status")=STATUS
 	KILL ^TMP($J,"MIOHTTP","RESP","bytes")
 	SET ^TMP($J,"MIOHTTP","STREAM","active")=1
 	SET ^TMP($J,"MIOHTTP","STREAM","bytes")=0
@@ -489,9 +489,10 @@ STREAMEND(DEV)
 	QUIT
 ;
 SENDFILE(DEV,CONF,PATH,HEAD,REQID,CTX,METHOD)
+	NEW $ETRAP SET $ETRAP="SET $ECODE="""" SET CTX(""err"",""routine"")=""MIOHTTP"",CTX(""err"",""error"")=""open_failed"" QUIT 0"
 	NEW P SET P=$GET(PATH)
 	IF P="" DO  QUIT 0
-	. IF $DATA(CTX) SET CTX("err","routine")="MIOHTTP",CTX("err","error")="file_not_specified"
+	. SET CTX("err","routine")="MIOHTTP",CTX("err","error")="file_not_specified"
 	NEW M SET M=$$LOW($GET(METHOD,"GET"))
 	NEW CHSZ SET CHSZ=+$GET(CONF("server","static","readChunkBytes"),65536)
 	IF CHSZ<1024 SET CHSZ=1024
@@ -500,7 +501,7 @@ SENDFILE(DEV,CONF,PATH,HEAD,REQID,CTX,METHOD)
 	NEW FDEV SET FDEV=P
 	; open file (no trap); on failure return 0 with CTX(err)
 	OPEN FDEV:(readonly:stream:nowrap):1 ELSE  DO  QUIT 0
-	. IF $DATA(CTX) SET CTX("err","routine")="MIOHTTP",CTX("err","error")="open_failed"
+	. SET CTX("err","routine")="MIOHTTP",CTX("err","error")="open_failed"
 	USE FDEV
 	IF M="head" DO  QUIT 1
 	. ; Mirror GET framing: send headers with chunked Transfer-Encoding, but suppress body chunks (HEAD semantics).;
