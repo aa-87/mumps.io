@@ -3,7 +3,7 @@ MIOCONFVT ; Tests for MIOCONFV config validation
 ; Run:
 ;   YDB>D ^MIOCONFVT
 ;
-	QUIT
+	;
 	;
 START
 	DO T001
@@ -37,3 +37,4 @@ T003 ; static enabled without root is error
 	SET OK=$$VALIDATE^MIOCONFV(.CONF,.REP,.ERR)
 	DO EQ^MIOTASSERT(OK,0,"[T003][ok]")
 	QUIT
+	;
