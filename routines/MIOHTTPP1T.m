@@ -379,6 +379,106 @@ MIOHTTPP1T ; MIOHTTP parser/helper tests
 	D T373 ; PARSEHDRS then EXPECTDECIDE normal flow
 	D T374 ; PARSEHDRS then EXPECTDECIDE payload too large
 	D T375 ; SEND100 then STREAMBEGIN same device
+	D T376 ; READCHUNKED three chunks joined
+	D T377 ; READCHUNKED empty trailers after zero chunk
+	D T378 ; READCHUNKED chunk extension with multiple attrs
+	D T379 ; READCHUNKED bad mixed hex chars
+	D T380 ; READCHUNKED missing zero chunk terminator
+	D T381 ; READCL zero length stable
+	D T382 ; READCL one byte scalar
+	D T383 ; BODYAPPEND scalar then BODYUP explicit
+	D T384 ; BODYAPPEND global after upgrade stores chunks
+	D T385 ; BODYOPEN global empty then no next
+	D T386 ; STATUS4ERR short_read fallback
+	D T387 ; STATUS4ERR bad transfer encoding order
+	D T388 ; STATUS4ERR duplicate transfer encoding
+	D T389 ; STATUSMSG additional known statuses
+	D T390 ; STATUSMSG unknown stays empty phrase path
+	D T391 ; PARSE then RESP text roundtrip path echo
+	D T392 ; PARSE then RESPJSON roundtrip method echo
+	D T393 ; PARSE chunked then RESPJSONX body len echo
+	D T394 ; STREAM then READALL contains status and chunks
+	D T395 ; SENDFILE then READALL contains status and content
+	D T396 ; HEXSTR2DEC lowercase long valid
+	D T397 ; HEX2DEC lowercase pair
+	D T398 ; LOW repeated stable
+	D T399 ; TRIM repeated stable
+	D T400 ; mixed parsehdrs readbodyonly respjsonx full split roundtrip
+	D T401 ; READHDRS host plus content-length direct
+	D T402 ; READHDRS transfer-encoding identity direct
+	D T403 ; PARSEHDRS preserves rawpath with query
+	D T404 ; PARSEHDRS invalid request line only
+	D T405 ; READBODYONLY with content-length after PARSEHDRS
+	D T406 ; READBODYONLY with no body headers remains none
+	D T407 ; READBODYONLY with chunked request direct
+	D T408 ; BODYOPEN none mode then repeated BODYNEXT false
+	D T409 ; BODYNEXT scalar second call false
+	D T410 ; BODYNEXT global exhausts correctly
+	D T411 ; RESP 101 no body
+	D T412 ; RESPJSON 304 no body
+	D T413 ; RESPX 304 updates ctx status
+	D T414 ; RESPJSONX 304 updates ctx status
+	D T415 ; STREAMBEGIN 101 not chunked
+	D T416 ; STREAMBEGIN 200 then two empty writes only zero chunk
+	D T417 ; SENDFILE with explicit extra header
+	D T418 ; SENDFILE with two default headers
+	D T419 ; HTOK empty false
+	D T420 ; HVALOK DEL false
+	D T421 ; HEXVAL numeric chars
+	D T422 ; HEXVAL invalid punctuation
+	D T423 ; URLDECQ empty input
+	D T424 ; PARSEQRY no question mark leaves empty query map
+	D T425 ; mixed parse resp sendfile sequence stable
+	D T426 ; READCHUNKED invalid size with leading space
+	D T427 ; READCHUNKED invalid size with trailing space
+	D T428 ; READCHUNKED invalid empty extension delimiter
+	D T429 ; READCHUNKED size zero with extension valid
+	D T430 ; READCHUNKED two chunks with trailer and blank line
+	D T431 ; READCHUNKED global threshold exact stays scalar
+	D T432 ; READCHUNKED global threshold plus one goes global
+	D T433 ; BODYAPPEND scalar many small appends
+	D T434 ; BODYAPPEND empty then nonempty then empty
+	D T435 ; BODYUP from empty scalar to global
+	D T436 ; BODYFREE global twice harmless
+	D T437 ; PARSEHDRS expect continue normal
+	D T438 ; PARSEHDRS expect mixed case preserved
+	D T439 ; PARSEHDRS then EXPECTDECIDE then SEND100 flow
+	D T440 ; PARSEHDRS then EXPECTDECIDE deny no SEND100
+	D T441 ; RESP repeated body suppression for HEAD
+	D T442 ; RESPJSON repeated body suppression for HEAD
+	D T443 ; STREAM repeated with same payload stable
+	D T444 ; STREAM 204 repeated no chunked
+	D T445 ; SENDFILE repeated explicit header override stable
+	D T446 ; STATUS4ERR repeated bad_chunk_size stable
+	D T447 ; STATUSMSG repeated 200 stable
+	D T448 ; PARSE then BODY iterator on global body repeated
+	D T449 ; PARSEHDRS READBODYONLY RESP text split flow repeated
+	D T450 ; mixed chunk parse send100 stream flow
+	D T451 ; READLINE three sequential lines
+	D T452 ; READLINE blank blank text
+	D T453 ; READFIX split exact into 1 1 1
+	D T454 ; READFIX split exact into 2 then 2
+	D T455 ; READFIX empty file immediate short path
+	D T456 ; READHDRS maxHeaderCount exact two
+	D T457 ; READHDRS maxHeaderLineBytes over by one fails
+	D T458 ; READHDRS maxHeaderBytes over by one fails
+	D T459 ; PARSEHDRS bad header line after valid one
+	D T460 ; PARSEHDRS duplicate host direct
+	D T461 ; PARSEHDRS duplicate content-length direct
+	D T462 ; PARSEHDRS duplicate transfer-encoding direct
+	D T463 ; PARSE invalid header value end-to-end again
+	D T464 ; PARSE invalid header folding end-to-end again
+	D T465 ; RESP default plus two explicit headers
+	D T466 ; RESPJSON default plus custom explicit ctype path
+	D T467 ; STREAMBEGIN default plus two explicit headers
+	D T468 ; STREAM header override repeated
+	D T469 ; READBODYONLY CL zero after parsehdrs
+	D T470 ; READBODYONLY CL too large after parsehdrs
+	D T471 ; READBODYONLY chunked disabled after parsehdrs
+	D T472 ; STATUS4ERR read timeout again
+	D T473 ; STATUS4ERR headers too large again
+	D T474 ; STATUSMSG 501 and 503
+	D T475 ; mixed parsehdrs expect send100 readbody stream sequence
 	QUIT
 	;
 T001 ; PARSEREQLINE basic GET
@@ -4518,6 +4618,1181 @@ T375 ; SEND100 then STREAMBEGIN same device
 	DO EQ^MIOTASSERT($SELECT(OUT["100 Continue":1,1:0),1,"[T375][100]")
 	DO EQ^MIOTASSERT($SELECT(OUT["Transfer-Encoding: chunked":1,1:0),1,"[T375][chunked]")
 	DO EQ^MIOTASSERT($SELECT(OUT["2"_$C(13,10)_"ok":1,1:0),1,"[T375][chunk]")
+	QUIT
+T376 ; READCHUNKED three chunks joined
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p16_t376.req"
+	DO WRFILE(DEV,"1"_$C(13,10)_"a"_$C(13,10)_"2"_$C(13,10)_"bc"_$C(13,10)_"3"_$C(13,10)_"def"_$C(13,10)_"0"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO READCHUNKED^MIOHTTP(DEV,.CONF,.REQ,.ERR)
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(ERR("error")),"","[T376][no err]")
+	DO EQ^MIOTASSERT($GET(REQ("body")),"abcdef","[T376][body]")
+	QUIT
+	;
+T377 ; READCHUNKED empty trailers after zero chunk
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p16_t377.req"
+	DO WRFILE(DEV,"1"_$C(13,10)_"x"_$C(13,10)_"0"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO READCHUNKED^MIOHTTP(DEV,.CONF,.REQ,.ERR)
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(ERR("error")),"","[T377][no err]")
+	DO EQ^MIOTASSERT($GET(REQ("body")),"x","[T377][body]")
+	QUIT
+	;
+T378 ; READCHUNKED chunk extension with multiple attrs
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p16_t378.req"
+	DO WRFILE(DEV,"2;a=1;b=2"_$C(13,10)_"ok"_$C(13,10)_"0"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO READCHUNKED^MIOHTTP(DEV,.CONF,.REQ,.ERR)
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(ERR("error")),"","[T378][no err]")
+	DO EQ^MIOTASSERT($GET(REQ("body")),"ok","[T378][body]")
+	QUIT
+	;
+T379 ; READCHUNKED bad mixed hex chars
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p16_t379.req"
+	DO WRFILE(DEV,"1G"_$C(13,10)_"x"_$C(13,10))
+	DO OPENR(DEV)
+	DO READCHUNKED^MIOHTTP(DEV,.CONF,.REQ,.ERR)
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(ERR("error")),"bad_chunk_size","[T379][err]")
+	QUIT
+	;
+T380 ; READCHUNKED missing zero chunk terminator
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p16_t380.req"
+	DO WRFILE(DEV,"1"_$C(13,10)_"x"_$C(13,10))
+	DO OPENR(DEV)
+	DO READCHUNKED^MIOHTTP(DEV,.CONF,.REQ,.ERR)
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(ERR("error"))'="",1,"[T380][some err]")
+	QUIT
+	;
+T381 ; READCL zero length stable
+	NEW CONF,REQ,ERR
+	DO READCL^MIOHTTP("dummy",.CONF,.REQ,0,.ERR)
+	DO EQ^MIOTASSERT($GET(ERR("error")),"","[T381][no err]")
+	DO EQ^MIOTASSERT($GET(REQ("body","mode")),"none","[T381][mode]")
+	QUIT
+	;
+T382 ; READCL one byte scalar
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p16_t382.req"
+	DO WRFILE(DEV,"z")
+	DO OPENR(DEV)
+	DO READCL^MIOHTTP(DEV,.CONF,.REQ,1,.ERR)
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(ERR("error")),"","[T382][no err]")
+	DO EQ^MIOTASSERT($GET(REQ("body")),"z","[T382][body]")
+	QUIT
+	;
+T383 ; BODYAPPEND scalar then BODYUP explicit
+	NEW CONF,REQ,ERR
+	SET CONF("server","limits","maxBodyScalarBytes")=100
+	DO BODYINIT^MIOHTTP(.REQ,.CONF,0)
+	DO BODYAPPEND^MIOHTTP(.REQ,.CONF,"abc",.ERR)
+	DO BODYUP^MIOHTTP(.REQ,.CONF)
+	DO EQ^MIOTASSERT($GET(REQ("body","mode")),"global","[T383][mode]")
+	DO EQ^MIOTASSERT($GET(REQ("body","len")),3,"[T383][len]")
+	DO BODYFREE^MIOHTTP(.REQ)
+	QUIT
+	;
+T384 ; BODYAPPEND global after upgrade stores chunks
+	NEW CONF,REQ,ERR
+	SET CONF("server","limits","maxBodyScalarBytes")=2
+	DO BODYINIT^MIOHTTP(.REQ,.CONF,0)
+	DO BODYAPPEND^MIOHTTP(.REQ,.CONF,"ab",.ERR)
+	DO BODYAPPEND^MIOHTTP(.REQ,.CONF,"cd",.ERR)
+	DO EQ^MIOTASSERT($GET(REQ("body","n"))=2,1,"[T384][n]")
+	DO EQ^MIOTASSERT($GET(REQ("body","len")),4,"[T384][len]")
+	DO BODYFREE^MIOHTTP(.REQ)
+	QUIT
+	;
+T385 ; BODYOPEN global empty then no next
+	NEW REQ,CUR,CH
+	SET REQ("body","mode")="global"
+	SET REQ("body","ref")=$NAME(^TMP($J,"MIOHTTPP16","T385"))
+	KILL ^TMP($J,"MIOHTTPP16","T385")
+	SET REQ("body","n")=0
+	SET REQ("body","len")=0
+	DO BODYOPEN^MIOHTTP(.REQ,.CUR)
+	DO EQ^MIOTASSERT($$BODYNEXT^MIOHTTP(.REQ,.CUR,.CH),0,"[T385][next]")
+	KILL ^TMP($J,"MIOHTTPP16","T385")
+	QUIT
+	;
+T386 ; STATUS4ERR short_read fallback
+	NEW ERR
+	SET ERR("error")="short_read"
+	DO EQ^MIOTASSERT($$STATUS4ERR^MIOHTTP(.ERR),400,"[T386][400]")
+	QUIT
+	;
+T387 ; STATUS4ERR bad transfer encoding order
+	NEW ERR
+	SET ERR("error")="bad_transfer_encoding_order"
+	DO EQ^MIOTASSERT($$STATUS4ERR^MIOHTTP(.ERR),400,"[T387][400]")
+	QUIT
+	;
+T388 ; STATUS4ERR duplicate transfer encoding
+	NEW ERR
+	SET ERR("error")="duplicate_transfer_encoding"
+	DO EQ^MIOTASSERT($$STATUS4ERR^MIOHTTP(.ERR),400,"[T388][400]")
+	QUIT
+	;
+T389 ; STATUSMSG additional known statuses
+	DO EQ^MIOTASSERT($$STATUSMSG^MIOHTTP(408),"Request Timeout","[T389][408]")
+	DO EQ^MIOTASSERT($$STATUSMSG^MIOHTTP(413),"Payload Too Large","[T389][413]")
+	DO EQ^MIOTASSERT($$STATUSMSG^MIOHTTP(431),"Request Header Fields Too Large","[T389][431]")
+	QUIT
+	;
+T390 ; STATUSMSG unknown stays empty phrase path
+	DO EQ^MIOTASSERT($$STATUSMSG^MIOHTTP(299),"","[T390][299]")
+	QUIT
+	;
+T391 ; PARSE then RESP text roundtrip path echo
+	NEW CONF,REQ,ERR,DEV,OP,OUT,RDEV,HEAD
+	SET DEV="tmp/miohttp_p16_t391.req"
+	DO WRFILE(DEV,"GET /echo391 HTTP/1.1"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T391][parse]")
+	DO CLOSER(DEV)
+	SET HEAD("Content-Type")="text/plain"
+	SET OP="tmp/miohttp_p16_t391.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET RDEV=OP USE RDEV
+	DO RESP^MIOHTTP(.RDEV,.CONF,200,.HEAD,$GET(REQ("path")),"rid391")
+	CLOSE RDEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["/echo391":1,1:0),1,"[T391][body]")
+	QUIT
+	;
+T392 ; PARSE then RESPJSON roundtrip method echo
+	NEW CONF,REQ,ERR,DEV,OP,OUT,RDEV,OBJ
+	SET DEV="tmp/miohttp_p16_t392.req"
+	DO WRFILE(DEV,"POST /echo392 HTTP/1.1"_$C(13,10)_"Content-Length: 2"_$C(13,10,13,10)_"ok")
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T392][parse]")
+	DO CLOSER(DEV)
+	SET OBJ("method")=$GET(REQ("method"))
+	SET OBJ("body")=$GET(REQ("body"))
+	SET OP="tmp/miohttp_p16_t392.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET RDEV=OP USE RDEV
+	DO RESPJSON^MIOHTTP(.RDEV,.CONF,200,.OBJ,"rid392")
+	CLOSE RDEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["""method"":""POST""":1,1:0),1,"[T392][method]")
+	DO EQ^MIOTASSERT($SELECT(OUT["""body"":""ok""":1,1:0),1,"[T392][body]")
+	QUIT
+	;
+T393 ; PARSE chunked then RESPJSONX body len echo
+	NEW CONF,REQ,ERR,DEV,OP,OUT,RDEV,OBJ,CTX
+	SET CONF("server","http","supportChunkedRequest")=1
+	SET DEV="tmp/miohttp_p16_t393.req"
+	DO WRFILE(DEV,"POST /c HTTP/1.1"_$C(13,10)_"Transfer-Encoding: chunked"_$C(13,10,13,10)_"3"_$C(13,10)_"abc"_$C(13,10)_"0"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T393][parse]")
+	DO CLOSER(DEV)
+	SET OBJ("len")=$$BODYLEN^MIOHTTP(.REQ)
+	SET OP="tmp/miohttp_p16_t393.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET RDEV=OP USE RDEV
+	DO RESPJSONX^MIOHTTP(.RDEV,.CONF,200,.OBJ,"rid393",.CTX)
+	CLOSE RDEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["""len"":3":1,1:0),1,"[T393][len]")
+	QUIT
+	;
+T394 ; STREAM then READALL contains status and chunks
+	NEW DEV,CONF,CTX,OUT,OP,HEAD
+	KILL ^TMP($J,"MIOHTTP","REQ")
+	SET ^TMP($J,"MIOHTTP","REQ","method")="GET"
+	SET HEAD("Content-Type")="text/plain"
+	SET OP="tmp/miohttp_p16_t394.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO STREAMBEGIN^MIOHTTP(.DEV,.CONF,200,.HEAD,"rid394",.CTX)
+	DO STREAMWRITE^MIOHTTP(.DEV,"xy")
+	DO STREAMEND^MIOHTTP(.DEV)
+	CLOSE DEV USE $PRINCIPAL
+	KILL ^TMP($J,"MIOHTTP","REQ")
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["HTTP/1.1 200 OK":1,1:0),1,"[T394][status]")
+	DO EQ^MIOTASSERT($SELECT(OUT["2"_$C(13,10)_"xy":1,1:0),1,"[T394][chunk]")
+	QUIT
+	;
+T395 ; SENDFILE then READALL contains status and content
+	NEW DEV,CONF,CTX,OUT,OP,HEAD,FP
+	SET FP="tmp/miohttp_p16_t395.txt"
+	DO WRFILE(FP,"txt395")
+	SET HEAD("Content-Type")="text/plain"
+	SET OP="tmp/miohttp_p16_t395.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO EQ^MIOTASSERT($$SENDFILE^MIOHTTP(.DEV,.CONF,FP,.HEAD,"rid395",.CTX,"GET"),1,"[T395][ok]")
+	CLOSE DEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["HTTP/1.1 200 OK":1,1:0),1,"[T395][status]")
+	DO EQ^MIOTASSERT($SELECT(OUT["txt395":1,1:0),1,"[T395][body]")
+	QUIT
+	;
+T396 ; HEXSTR2DEC lowercase long valid
+	DO EQ^MIOTASSERT($$HEXSTR2DEC^MIOHTTP("ff"),255,"[T396][ff]")
+	DO EQ^MIOTASSERT($$HEXSTR2DEC^MIOHTTP("10"),16,"[T396][10]")
+	QUIT
+	;
+T397 ; HEX2DEC lowercase pair
+	DO EQ^MIOTASSERT($$HEX2DEC^MIOHTTP("af"),175,"[T397][af]")
+	QUIT
+	;
+T398 ; LOW repeated stable
+	DO EQ^MIOTASSERT($$LOW^MIOHTTP("MiXeD"),"mixed","[T398][mixed]")
+	DO EQ^MIOTASSERT($$LOW^MIOHTTP("UPPER"),"upper","[T398][upper]")
+	QUIT
+	;
+T399 ; TRIM repeated stable
+	DO EQ^MIOTASSERT($$TRIM^MIOHTTP(" x"),"x","[T399][left]")
+	DO EQ^MIOTASSERT($$TRIM^MIOHTTP("x "),"x","[T399][right]")
+	QUIT
+	;
+T400 ; mixed parsehdrs readbodyonly respjsonx full split roundtrip
+	NEW CONF,REQ,ERR,DEV,OP,OUT,RDEV,OBJ,CTX
+	SET DEV="tmp/miohttp_p16_t400.req"
+	DO WRFILE(DEV,"POST /split400 HTTP/1.1"_$C(13,10)_"Content-Length: 2"_$C(13,10,13,10)_"ok")
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSEHDRS^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T400][hdrs]")
+	DO EQ^MIOTASSERT($$READBODYONLY^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T400][body]")
+	DO CLOSER(DEV)
+	SET OBJ("path")=$GET(REQ("path"))
+	SET OBJ("body")=$GET(REQ("body"))
+	SET OP="tmp/miohttp_p16_t400.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET RDEV=OP USE RDEV
+	DO RESPJSONX^MIOHTTP(.RDEV,.CONF,200,.OBJ,"rid400",.CTX)
+	CLOSE RDEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["""path"":""\/split400""":1,1:0),1,"[T400][path]")
+	DO EQ^MIOTASSERT($SELECT(OUT["""body"":""ok""":1,1:0),1,"[T400][body]")
+	QUIT
+T401 ; READHDRS host plus content-length direct
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p17_t401.req"
+	DO WRFILE(DEV,"Host: ex"_$C(13,10)_"Content-Length: 2"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO READHDRS^MIOHTTP(DEV,.CONF,.REQ,.ERR)
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(ERR("error")),"","[T401][no err]")
+	DO EQ^MIOTASSERT($GET(REQ("hdr","host")),"ex","[T401][host]")
+	DO EQ^MIOTASSERT($GET(REQ("hdr","content-length")),"2","[T401][cl]")
+	QUIT
+	;
+T402 ; READHDRS transfer-encoding identity direct
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p17_t402.req"
+	DO WRFILE(DEV,"Transfer-Encoding: identity"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO READHDRS^MIOHTTP(DEV,.CONF,.REQ,.ERR)
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(ERR("error")),"","[T402][no err]")
+	DO EQ^MIOTASSERT($GET(REQ("hdr","transfer-encoding")),"identity","[T402][te]")
+	QUIT
+	;
+T403 ; PARSEHDRS preserves rawpath with query
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p17_t403.req"
+	DO WRFILE(DEV,"GET /r?q=1 HTTP/1.1"_$C(13,10)_"Host: ex"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSEHDRS^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T403][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("rawpath")),"/r?q=1","[T403][rawpath]")
+	QUIT
+	;
+T404 ; PARSEHDRS invalid request line only
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p17_t404.req"
+	DO WRFILE(DEV,"BROKEN"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSEHDRS^MIOHTTP(DEV,.CONF,.REQ,.ERR),0,"[T404][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(ERR("error")),"bad_request_line","[T404][err]")
+	QUIT
+	;
+T405 ; READBODYONLY with content-length after PARSEHDRS
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p17_t405.req"
+	DO WRFILE(DEV,"POST /rb HTTP/1.1"_$C(13,10)_"Content-Length: 3"_$C(13,10,13,10)_"hey")
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSEHDRS^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T405][hdrs]")
+	DO EQ^MIOTASSERT($$READBODYONLY^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T405][body]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("body")),"hey","[T405][body]")
+	QUIT
+	;
+T406 ; READBODYONLY with no body headers remains none
+	NEW CONF,REQ,ERR
+	KILL CONF,REQ,ERR
+	SET REQ("method")="GET"
+	DO EQ^MIOTASSERT($$READBODYONLY^MIOHTTP("dummy",.CONF,.REQ,.ERR),1,"[T406][ok]")
+	DO EQ^MIOTASSERT($GET(REQ("body","mode")),"none","[T406][mode]")
+	QUIT
+	;
+T407 ; READBODYONLY with chunked request direct
+	NEW CONF,REQ,ERR,DEV
+	SET CONF("server","http","supportChunkedRequest")=1
+	SET DEV="tmp/miohttp_p17_t407.req"
+	DO WRFILE(DEV,"2"_$C(13,10)_"ok"_$C(13,10)_"0"_$C(13,10,13,10))
+	SET REQ("hdr","transfer-encoding")="chunked"
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$READBODYONLY^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T407][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("body")),"ok","[T407][body]")
+	QUIT
+	;
+T408 ; BODYOPEN none mode then repeated BODYNEXT false
+	NEW REQ,CUR,CH
+	SET REQ("body","mode")="none"
+	SET REQ("body","len")=0
+	DO BODYOPEN^MIOHTTP(.REQ,.CUR)
+	DO EQ^MIOTASSERT($$BODYNEXT^MIOHTTP(.REQ,.CUR,.CH),0,"[T408][next1]")
+	DO EQ^MIOTASSERT($$BODYNEXT^MIOHTTP(.REQ,.CUR,.CH),0,"[T408][next2]")
+	QUIT
+	;
+T409 ; BODYNEXT scalar second call false
+	NEW REQ,CUR,CH
+	SET REQ("body","mode")="scalar"
+	SET REQ("body")="abc"
+	SET REQ("body","len")=3
+	DO BODYOPEN^MIOHTTP(.REQ,.CUR)
+	DO EQ^MIOTASSERT($$BODYNEXT^MIOHTTP(.REQ,.CUR,.CH),1,"[T409][next1]")
+	DO EQ^MIOTASSERT(CH,"abc","[T409][chunk]")
+	DO EQ^MIOTASSERT($$BODYNEXT^MIOHTTP(.REQ,.CUR,.CH),0,"[T409][next2]")
+	QUIT
+	;
+T410 ; BODYNEXT global exhausts correctly
+	NEW REQ,CUR,CH
+	SET REQ("body","mode")="global"
+	SET REQ("body","ref")=$NAME(^TMP($J,"MIOHTTPP17","T410"))
+	KILL ^TMP($J,"MIOHTTPP17","T410")
+	SET ^TMP($J,"MIOHTTPP17","T410",1)="aa"
+	SET ^TMP($J,"MIOHTTPP17","T410",2)="bb"
+	SET REQ("body","n")=2
+	SET REQ("body","len")=4
+	DO BODYOPEN^MIOHTTP(.REQ,.CUR)
+	DO EQ^MIOTASSERT($$BODYNEXT^MIOHTTP(.REQ,.CUR,.CH),1,"[T410][next1]")
+	DO EQ^MIOTASSERT(CH,"aa","[T410][chunk1]")
+	DO EQ^MIOTASSERT($$BODYNEXT^MIOHTTP(.REQ,.CUR,.CH),1,"[T410][next2]")
+	DO EQ^MIOTASSERT(CH,"bb","[T410][chunk2]")
+	DO EQ^MIOTASSERT($$BODYNEXT^MIOHTTP(.REQ,.CUR,.CH),0,"[T410][next3]")
+	KILL ^TMP($J,"MIOHTTPP17","T410")
+	QUIT
+	;
+T411 ; RESP 101 no body
+	NEW DEV,CONF,OUT,OP,HEAD
+	SET HEAD("Content-Type")="text/plain"
+	SET OP="tmp/miohttp_p17_t411.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO RESP^MIOHTTP(.DEV,.CONF,101,.HEAD,"abc","rid411")
+	CLOSE DEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["HTTP/1.1 101 Switching Protocols":1,1:0),1,"[T411][status]")
+	DO EQ^MIOTASSERT($SELECT(OUT[$C(13,10,13,10)_"abc":1,1:0),0,"[T411][no body]")
+	QUIT
+	;
+T412 ; RESPJSON 304 no body
+	NEW DEV,CONF,OUT,OP,OBJ
+	SET OBJ("ok")=1
+	SET OP="tmp/miohttp_p17_t412.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO RESPJSON^MIOHTTP(.DEV,.CONF,304,.OBJ,"rid412")
+	CLOSE DEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT[$C(13,10,13,10)_"{":1,1:0),0,"[T412][no body]")
+	QUIT
+	;
+T413 ; RESPX 304 updates ctx status
+	NEW DEV,CONF,CTX,OUT,OP,HEAD
+	SET HEAD("Content-Type")="text/plain"
+	SET OP="tmp/miohttp_p17_t413.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO RESPX^MIOHTTP(.DEV,.CONF,304,.HEAD,"x","rid413",.CTX)
+	CLOSE DEV USE $PRINCIPAL
+	DO EQ^MIOTASSERT($GET(CTX("status")),304,"[T413][ctx]")
+	QUIT
+	;
+T414 ; RESPJSONX 304 updates ctx status
+	NEW DEV,CONF,CTX,OUT,OP,OBJ
+	SET OBJ("ok")=1
+	SET OP="tmp/miohttp_p17_t414.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO RESPJSONX^MIOHTTP(.DEV,.CONF,304,.OBJ,"rid414",.CTX)
+	CLOSE DEV USE $PRINCIPAL
+	DO EQ^MIOTASSERT($GET(CTX("status")),304,"[T414][ctx]")
+	QUIT
+	;
+T415 ; STREAMBEGIN 101 not chunked
+	NEW DEV,CONF,CTX,OUT,OP,HEAD
+	KILL ^TMP($J,"MIOHTTP","REQ")
+	SET ^TMP($J,"MIOHTTP","REQ","method")="GET"
+	SET HEAD("Upgrade")="websocket"
+	SET OP="tmp/miohttp_p17_t415.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO STREAMBEGIN^MIOHTTP(.DEV,.CONF,101,.HEAD,"rid415",.CTX)
+	DO STREAMEND^MIOHTTP(.DEV)
+	CLOSE DEV USE $PRINCIPAL
+	KILL ^TMP($J,"MIOHTTP","REQ")
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["Transfer-Encoding: chunked":1,1:0),0,"[T415][not chunked]")
+	QUIT
+	;
+T416 ; STREAMBEGIN 200 then two empty writes only zero chunk
+	NEW DEV,CONF,CTX,OUT,OP,HEAD
+	KILL ^TMP($J,"MIOHTTP","REQ")
+	SET ^TMP($J,"MIOHTTP","REQ","method")="GET"
+	SET HEAD("Content-Type")="text/plain"
+	SET OP="tmp/miohttp_p17_t416.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO STREAMBEGIN^MIOHTTP(.DEV,.CONF,200,.HEAD,"rid416",.CTX)
+	DO STREAMWRITE^MIOHTTP(.DEV,"")
+	DO STREAMWRITE^MIOHTTP(.DEV,"")
+	DO STREAMEND^MIOHTTP(.DEV)
+	CLOSE DEV USE $PRINCIPAL
+	KILL ^TMP($J,"MIOHTTP","REQ")
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["0"_$C(13,10,13,10):1,1:0),1,"[T416][zero]")
+	QUIT
+	;
+T417 ; SENDFILE with explicit extra header
+	NEW DEV,CONF,CTX,OUT,OP,HEAD,FP
+	SET FP="tmp/miohttp_p17_t417.txt"
+	DO WRFILE(FP,"body417")
+	SET HEAD("Content-Type")="text/plain"
+	SET HEAD("X-Extra")="yes"
+	SET OP="tmp/miohttp_p17_t417.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO EQ^MIOTASSERT($$SENDFILE^MIOHTTP(.DEV,.CONF,FP,.HEAD,"rid417",.CTX,"GET"),1,"[T417][ok]")
+	CLOSE DEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["X-Extra: yes":1,1:0),1,"[T417][x-extra]")
+	QUIT
+	;
+T418 ; SENDFILE with two default headers
+	NEW DEV,CONF,CTX,OUT,OP,HEAD,FP
+	SET FP="tmp/miohttp_p17_t418.txt"
+	DO WRFILE(FP,"body418")
+	SET CONF("server","http","defaultResponseHeaders","X-A")="1"
+	SET CONF("server","http","defaultResponseHeaders","X-B")="2"
+	SET HEAD("Content-Type")="text/plain"
+	SET OP="tmp/miohttp_p17_t418.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO EQ^MIOTASSERT($$SENDFILE^MIOHTTP(.DEV,.CONF,FP,.HEAD,"rid418",.CTX,"GET"),1,"[T418][ok]")
+	CLOSE DEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["X-A: 1":1,1:0),1,"[T418][x-a]")
+	DO EQ^MIOTASSERT($SELECT(OUT["X-B: 2":1,1:0),1,"[T418][x-b]")
+	QUIT
+	;
+T419 ; HTOK empty false
+	DO EQ^MIOTASSERT($$HTOK^MIOHTTP(""),0,"[T419][empty]")
+	QUIT
+	;
+T420 ; HVALOK DEL false
+	DO EQ^MIOTASSERT($$HVALOK^MIOHTTP("a"_$C(127)_"b"),0,"[T420][del]")
+	QUIT
+	;
+T421 ; HEXVAL numeric chars
+	DO EQ^MIOTASSERT($$HEXVAL^MIOHTTP("0"),0,"[T421][0]")
+	DO EQ^MIOTASSERT($$HEXVAL^MIOHTTP("9"),9,"[T421][9]")
+	QUIT
+	;
+T422 ; HEXVAL invalid punctuation
+	DO EQ^MIOTASSERT($$HEXVAL^MIOHTTP("-"),-1,"[T422][-]")
+	QUIT
+	;
+T423 ; URLDECQ empty input
+	DO EQ^MIOTASSERT($$URLDECQ^MIOHTTP(""),"","[T423][empty]")
+	QUIT
+	;
+T424 ; PARSEQRY no question mark leaves empty query map
+	NEW REQ
+	DO PARSEQRY^MIOHTTP("/plain",.REQ)
+	DO EQ^MIOTASSERT($DATA(REQ("query")),0,"[T424][no query]")
+	QUIT
+	;
+T425 ; mixed parse resp sendfile sequence stable
+	NEW CONF,REQ,ERR,DEV,OP,OUT,RDEV,HEAD,FP,CTX
+	SET DEV="tmp/miohttp_p17_t425.req"
+	DO WRFILE(DEV,"GET /seq425 HTTP/1.1"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T425][parse]")
+	DO CLOSER(DEV)
+	SET HEAD("Content-Type")="text/plain"
+	SET OP="tmp/miohttp_p17_t425a.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET RDEV=OP USE RDEV
+	DO RESP^MIOHTTP(.RDEV,.CONF,200,.HEAD,"ok","rid425a")
+	CLOSE RDEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["ok":1,1:0),1,"[T425][resp]")
+	SET FP="tmp/miohttp_p17_t425.txt"
+	DO WRFILE(FP,"file425")
+	SET OP="tmp/miohttp_p17_t425b.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET RDEV=OP USE RDEV
+	DO EQ^MIOTASSERT($$SENDFILE^MIOHTTP(.RDEV,.CONF,FP,.HEAD,"rid425b",.CTX,"GET"),1,"[T425][sendfile]")
+	CLOSE RDEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["file425":1,1:0),1,"[T425][file]")
+	QUIT
+T426 ; READCHUNKED invalid size with leading space
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p18_t426.req"
+	DO WRFILE(DEV," 1"_$C(13,10)_"a"_$C(13,10))
+	DO OPENR(DEV)
+	DO READCHUNKED^MIOHTTP(DEV,.CONF,.REQ,.ERR)
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(ERR("error")),"bad_chunk_size","[T426][err]")
+	QUIT
+	;
+T427 ; READCHUNKED invalid size with trailing space
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p18_t427.req"
+	DO WRFILE(DEV,"1 "_$C(13,10)_"a"_$C(13,10))
+	DO OPENR(DEV)
+	DO READCHUNKED^MIOHTTP(DEV,.CONF,.REQ,.ERR)
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(ERR("error")),"bad_chunk_size","[T427][err]")
+	QUIT
+	;
+T428 ; READCHUNKED invalid empty extension delimiter
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p18_t428.req"
+	DO WRFILE(DEV,";"_$C(13,10))
+	DO OPENR(DEV)
+	DO READCHUNKED^MIOHTTP(DEV,.CONF,.REQ,.ERR)
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(ERR("error")),"bad_chunk_size","[T428][err]")
+	QUIT
+	;
+T429 ; READCHUNKED size zero with extension valid
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p18_t429.req"
+	DO WRFILE(DEV,"0;done=yes"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO READCHUNKED^MIOHTTP(DEV,.CONF,.REQ,.ERR)
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(ERR("error")),"","[T429][no err]")
+	DO EQ^MIOTASSERT($GET(REQ("body")),"","[T429][body]")
+	QUIT
+	;
+T430 ; READCHUNKED two chunks with trailer and blank line
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p18_t430.req"
+	DO WRFILE(DEV,"1"_$C(13,10)_"a"_$C(13,10)_"1"_$C(13,10)_"b"_$C(13,10)_"0"_$C(13,10)_"X-T: ok"_$C(13,10)_$C(13,10))
+	DO OPENR(DEV)
+	DO READCHUNKED^MIOHTTP(DEV,.CONF,.REQ,.ERR)
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(ERR("error")),"","[T430][no err]")
+	DO EQ^MIOTASSERT($GET(REQ("body")),"ab","[T430][body]")
+	QUIT
+	;
+T431 ; READCHUNKED global threshold exact stays scalar
+	NEW CONF,REQ,ERR,DEV
+	SET CONF("server","limits","maxBodyScalarBytes")=3
+	SET DEV="tmp/miohttp_p18_t431.req"
+	DO WRFILE(DEV,"1"_$C(13,10)_"a"_$C(13,10)_"2"_$C(13,10)_"bc"_$C(13,10)_"0"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO READCHUNKED^MIOHTTP(DEV,.CONF,.REQ,.ERR)
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("body","mode")),"scalar","[T431][mode]")
+	DO EQ^MIOTASSERT($GET(REQ("body")),"abc","[T431][body]")
+	QUIT
+	;
+T432 ; READCHUNKED global threshold plus one goes global
+	NEW CONF,REQ,ERR,DEV
+	SET CONF("server","limits","maxBodyScalarBytes")=3
+	SET DEV="tmp/miohttp_p18_t432.req"
+	DO WRFILE(DEV,"2"_$C(13,10)_"ab"_$C(13,10)_"2"_$C(13,10)_"cd"_$C(13,10)_"0"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO READCHUNKED^MIOHTTP(DEV,.CONF,.REQ,.ERR)
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("body","mode")),"global","[T432][mode]")
+	DO EQ^MIOTASSERT($GET(REQ("body","len")),4,"[T432][len]")
+	DO BODYFREE^MIOHTTP(.REQ)
+	QUIT
+	;
+T433 ; BODYAPPEND scalar many small appends
+	NEW CONF,REQ,ERR
+	SET CONF("server","limits","maxBodyScalarBytes")=10
+	DO BODYINIT^MIOHTTP(.REQ,.CONF,0)
+	DO BODYAPPEND^MIOHTTP(.REQ,.CONF,"a",.ERR)
+	DO BODYAPPEND^MIOHTTP(.REQ,.CONF,"b",.ERR)
+	DO BODYAPPEND^MIOHTTP(.REQ,.CONF,"c",.ERR)
+	DO EQ^MIOTASSERT($GET(REQ("body","mode")),"scalar","[T433][mode]")
+	DO EQ^MIOTASSERT($GET(REQ("body")),"abc","[T433][body]")
+	QUIT
+	;
+T434 ; BODYAPPEND empty then nonempty then empty
+	NEW CONF,REQ,ERR
+	SET CONF("server","limits","maxBodyScalarBytes")=10
+	DO BODYINIT^MIOHTTP(.REQ,.CONF,0)
+	DO BODYAPPEND^MIOHTTP(.REQ,.CONF,"",.ERR)
+	DO BODYAPPEND^MIOHTTP(.REQ,.CONF,"ab",.ERR)
+	DO BODYAPPEND^MIOHTTP(.REQ,.CONF,"",.ERR)
+	DO EQ^MIOTASSERT($GET(REQ("body")),"ab","[T434][body]")
+	DO EQ^MIOTASSERT($GET(REQ("body","len")),2,"[T434][len]")
+	QUIT
+	;
+T435 ; BODYUP from empty scalar to global
+	NEW CONF,REQ
+	SET CONF("server","limits","maxBodyScalarBytes")=1
+	SET REQ("body")=""
+	SET REQ("body","len")=0
+	DO BODYUP^MIOHTTP(.REQ,.CONF)
+	DO EQ^MIOTASSERT($GET(REQ("body","mode")),"global","[T435][mode]")
+	DO BODYFREE^MIOHTTP(.REQ)
+	QUIT
+	;
+T436 ; BODYFREE global twice harmless
+	NEW REQ
+	SET REQ("body","mode")="global"
+	SET REQ("body","ref")=$NAME(^TMP($J,"MIOHTTPP18","T436"))
+	KILL ^TMP($J,"MIOHTTPP18","T436")
+	SET ^TMP($J,"MIOHTTPP18","T436",1)="ab"
+	SET REQ("body","n")=1
+	SET REQ("body","len")=2
+	DO BODYFREE^MIOHTTP(.REQ)
+	DO BODYFREE^MIOHTTP(.REQ)
+	DO EQ^MIOTASSERT($DATA(^TMP($J,"MIOHTTPP18","T436")),0,"[T436][freed]")
+	QUIT
+	;
+T437 ; PARSEHDRS expect continue normal
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p18_t437.req"
+	DO WRFILE(DEV,"POST /exp HTTP/1.1"_$C(13,10)_"Expect: 100-continue"_$C(13,10)_"Content-Length: 2"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSEHDRS^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T437][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("hdr","expect")),"100-continue","[T437][expect]")
+	QUIT
+	;
+T438 ; PARSEHDRS expect mixed case preserved
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p18_t438.req"
+	DO WRFILE(DEV,"POST /exp HTTP/1.1"_$C(13,10)_"Expect: 100-ConTinue"_$C(13,10)_"Content-Length: 2"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSEHDRS^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T438][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("hdr","expect")),"100-ConTinue","[T438][expect]")
+	QUIT
+	;
+T439 ; PARSEHDRS then EXPECTDECIDE then SEND100 flow
+	NEW CONF,REQ,ERR,DEV,OP,OUT,RDEV
+	SET CONF("server","limits","maxBodyBytes")=3
+	SET DEV="tmp/miohttp_p18_t439.req"
+	DO WRFILE(DEV,"POST /flow HTTP/1.1"_$C(13,10)_"Expect: 100-continue"_$C(13,10)_"Content-Length: 3"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSEHDRS^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T439][hdrs]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($$EXPECTDECIDE^MIOHTTP(.CONF,.REQ,.ERR),1,"[T439][expect]")
+	SET OP="tmp/miohttp_p18_t439.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET RDEV=OP USE RDEV
+	DO SEND100^MIOHTTP(.RDEV)
+	CLOSE RDEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["100 Continue":1,1:0),1,"[T439][100]")
+	QUIT
+	;
+T440 ; PARSEHDRS then EXPECTDECIDE deny no SEND100
+	NEW CONF,REQ,ERR,DEV
+	SET CONF("server","limits","maxBodyBytes")=2
+	SET DEV="tmp/miohttp_p18_t440.req"
+	DO WRFILE(DEV,"POST /flow HTTP/1.1"_$C(13,10)_"Expect: 100-continue"_$C(13,10)_"Content-Length: 3"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSEHDRS^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T440][hdrs]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($$EXPECTDECIDE^MIOHTTP(.CONF,.REQ,.ERR),0,"[T440][expect]")
+	DO EQ^MIOTASSERT($GET(ERR("error")),"payload_too_large","[T440][err]")
+	QUIT
+	;
+T441 ; RESP repeated body suppression for HEAD
+	NEW I,DEV,CONF,OUT,OP,HEAD
+	KILL ^TMP($J,"MIOHTTP","REQ")
+	SET ^TMP($J,"MIOHTTP","REQ","method")="HEAD"
+	SET HEAD("Content-Type")="text/plain"
+	FOR I=1:1:2 DO
+	. SET OP="tmp/miohttp_p18_t441-"_I_".out"
+	. OPEN OP:(newversion:stream:nowrap)
+	. SET DEV=OP USE DEV
+	. DO RESP^MIOHTTP(.DEV,.CONF,200,.HEAD,"abc","rid441-"_I)
+	. CLOSE DEV USE $PRINCIPAL
+	. DO READALL(OP,.OUT)
+	. DO EQ^MIOTASSERT($SELECT(OUT[$C(13,10,13,10)_"abc":1,1:0),0,"[T441]["_I_"][no body]")
+	KILL ^TMP($J,"MIOHTTP","REQ")
+	QUIT
+	;
+T442 ; RESPJSON repeated body suppression for HEAD
+	NEW I,DEV,CONF,OUT,OP,OBJ
+	KILL ^TMP($J,"MIOHTTP","REQ")
+	SET ^TMP($J,"MIOHTTP","REQ","method")="HEAD"
+	SET OBJ("ok")=1
+	FOR I=1:1:2 DO
+	. SET OP="tmp/miohttp_p18_t442-"_I_".out"
+	. OPEN OP:(newversion:stream:nowrap)
+	. SET DEV=OP USE DEV
+	. DO RESPJSON^MIOHTTP(.DEV,.CONF,200,.OBJ,"rid442-"_I)
+	. CLOSE DEV USE $PRINCIPAL
+	. DO READALL(OP,.OUT)
+	. DO EQ^MIOTASSERT($SELECT(OUT[$C(13,10,13,10)_"{":1,1:0),0,"[T442]["_I_"][no body]")
+	KILL ^TMP($J,"MIOHTTP","REQ")
+	QUIT
+	;
+T443 ; STREAM repeated with same payload stable
+	NEW I,DEV,CONF,CTX,OUT,OP,HEAD
+	KILL ^TMP($J,"MIOHTTP","REQ")
+	SET HEAD("Content-Type")="text/plain"
+	FOR I=1:1:2 DO
+	. SET ^TMP($J,"MIOHTTP","REQ","method")="GET"
+	. SET OP="tmp/miohttp_p18_t443-"_I_".out"
+	. OPEN OP:(newversion:stream:nowrap)
+	. SET DEV=OP USE DEV
+	. DO STREAMBEGIN^MIOHTTP(.DEV,.CONF,200,.HEAD,"rid443-"_I,.CTX)
+	. DO STREAMWRITE^MIOHTTP(.DEV,"ok")
+	. DO STREAMEND^MIOHTTP(.DEV)
+	. CLOSE DEV USE $PRINCIPAL
+	. DO READALL(OP,.OUT)
+	. DO EQ^MIOTASSERT($SELECT(OUT["2"_$C(13,10)_"ok":1,1:0),1,"[T443]["_I_"][chunk]")
+	KILL ^TMP($J,"MIOHTTP","REQ")
+	QUIT
+	;
+T444 ; STREAM 204 repeated no chunked
+	NEW I,DEV,CONF,CTX,OUT,OP,HEAD
+	KILL ^TMP($J,"MIOHTTP","REQ")
+	SET HEAD("Content-Type")="text/plain"
+	FOR I=1:1:2 DO
+	. SET ^TMP($J,"MIOHTTP","REQ","method")="GET"
+	. SET OP="tmp/miohttp_p18_t444-"_I_".out"
+	. OPEN OP:(newversion:stream:nowrap)
+	. SET DEV=OP USE DEV
+	. DO STREAMBEGIN^MIOHTTP(.DEV,.CONF,204,.HEAD,"rid444-"_I,.CTX)
+	. DO STREAMEND^MIOHTTP(.DEV)
+	. CLOSE DEV USE $PRINCIPAL
+	. DO READALL(OP,.OUT)
+	. DO EQ^MIOTASSERT($SELECT(OUT["Transfer-Encoding: chunked":1,1:0),0,"[T444]["_I_"][not chunked]")
+	KILL ^TMP($J,"MIOHTTP","REQ")
+	QUIT
+	;
+T445 ; SENDFILE repeated explicit header override stable
+	NEW I,DEV,CONF,CTX,OUT,OP,HEAD,FP
+	SET FP="tmp/miohttp_p18_t445.txt"
+	DO WRFILE(FP,"file445")
+	SET CONF("server","http","defaultResponseHeaders","X-App")="default"
+	SET HEAD("Content-Type")="text/plain"
+	SET HEAD("X-App")="explicit"
+	FOR I=1:1:2 DO
+	. SET OP="tmp/miohttp_p18_t445-"_I_".out"
+	. OPEN OP:(newversion:stream:nowrap)
+	. SET DEV=OP USE DEV
+	. DO EQ^MIOTASSERT($$SENDFILE^MIOHTTP(.DEV,.CONF,FP,.HEAD,"rid445-"_I,.CTX,"GET"),1,"[T445]["_I_"][ok]")
+	. CLOSE DEV USE $PRINCIPAL
+	. DO READALL(OP,.OUT)
+	. DO EQ^MIOTASSERT($SELECT(OUT["X-App: explicit":1,1:0),1,"[T445]["_I_"][explicit]")
+	QUIT
+	;
+T446 ; STATUS4ERR repeated bad_chunk_size stable
+	NEW I,ERR
+	FOR I=1:1:3 DO
+	. SET ERR("error")="bad_chunk_size"
+	. DO EQ^MIOTASSERT($$STATUS4ERR^MIOHTTP(.ERR),400,"[T446]["_I_"][400]")
+	QUIT
+	;
+T447 ; STATUSMSG repeated 200 stable
+	NEW I
+	FOR I=1:1:3 DO
+	. DO EQ^MIOTASSERT($$STATUSMSG^MIOHTTP(200),"OK","[T447]["_I_"][ok]")
+	QUIT
+	;
+T448 ; PARSE then BODY iterator on global body repeated
+	NEW I,CONF,REQ,ERR,DEV,CUR,CH
+	SET CONF("server","limits","maxBodyScalarBytes")=2
+	FOR I=1:1:2 DO
+	. SET DEV="tmp/miohttp_p18_t448-"_I_".req"
+	. DO WRFILE(DEV,"POST /g HTTP/1.1"_$C(13,10)_"Content-Length: 4"_$C(13,10,13,10)_"abcd")
+	. KILL REQ,ERR
+	. DO OPENR(DEV)
+	. DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T448]["_I_"][parse]")
+	. DO CLOSER(DEV)
+	. DO BODYOPEN^MIOHTTP(.REQ,.CUR)
+	. DO EQ^MIOTASSERT($$BODYNEXT^MIOHTTP(.REQ,.CUR,.CH),1,"[T448]["_I_"][next]")
+	. DO EQ^MIOTASSERT(CH'="",1,"[T448]["_I_"][chunk]")
+	. DO BODYFREE^MIOHTTP(.REQ)
+	QUIT
+	;
+T449 ; PARSEHDRS READBODYONLY RESP text split flow repeated
+	NEW I,CONF,REQ,ERR,DEV,OP,OUT,RDEV,HEAD
+	FOR I=1:1:2 DO
+	. SET DEV="tmp/miohttp_p18_t449-"_I_".req"
+	. DO WRFILE(DEV,"POST /s HTTP/1.1"_$C(13,10)_"Content-Length: 2"_$C(13,10,13,10)_"ok")
+	. KILL REQ,ERR
+	. DO OPENR(DEV)
+	. DO EQ^MIOTASSERT($$PARSEHDRS^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T449]["_I_"][hdrs]")
+	. DO EQ^MIOTASSERT($$READBODYONLY^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T449]["_I_"][body]")
+	. DO CLOSER(DEV)
+	. SET HEAD("Content-Type")="text/plain"
+	. SET OP="tmp/miohttp_p18_t449-"_I_".out"
+	. OPEN OP:(newversion:stream:nowrap)
+	. SET RDEV=OP USE RDEV
+	. DO RESP^MIOHTTP(.RDEV,.CONF,200,.HEAD,$GET(REQ("body")),"rid449-"_I)
+	. CLOSE RDEV USE $PRINCIPAL
+	. DO READALL(OP,.OUT)
+	. DO EQ^MIOTASSERT($SELECT(OUT["ok":1,1:0),1,"[T449]["_I_"][resp]")
+	QUIT
+	;
+T450 ; mixed chunk parse send100 stream flow
+	NEW CONF,REQ,ERR,DEV,OP,OUT,RDEV,HEAD,CTX
+	SET CONF("server","http","supportChunkedRequest")=1
+	SET DEV="tmp/miohttp_p18_t450.req"
+	DO WRFILE(DEV,"POST /flow450 HTTP/1.1"_$C(13,10)_"Expect: 100-continue"_$C(13,10)_"Transfer-Encoding: chunked"_$C(13,10,13,10)_"2"_$C(13,10)_"ok"_$C(13,10)_"0"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSEHDRS^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T450][hdrs]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($$EXPECTDECIDE^MIOHTTP(.CONF,.REQ,.ERR),1,"[T450][expect]")
+	SET OP="tmp/miohttp_p18_t450.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET RDEV=OP USE RDEV
+	DO SEND100^MIOHTTP(.RDEV)
+	KILL ^TMP($J,"MIOHTTP","REQ")
+	SET ^TMP($J,"MIOHTTP","REQ","method")="GET"
+	SET HEAD("Content-Type")="text/plain"
+	DO STREAMBEGIN^MIOHTTP(.RDEV,.CONF,200,.HEAD,"rid450",.CTX)
+	DO STREAMWRITE^MIOHTTP(.RDEV,"ok")
+	DO STREAMEND^MIOHTTP(.RDEV)
+	CLOSE RDEV USE $PRINCIPAL
+	KILL ^TMP($J,"MIOHTTP","REQ")
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["100 Continue":1,1:0),1,"[T450][100]")
+	DO EQ^MIOTASSERT($SELECT(OUT["2"_$C(13,10)_"ok":1,1:0),1,"[T450][chunk]")
+	QUIT
+T451 ; READLINE three sequential lines
+	NEW DEV,X,ERR
+	SET DEV="tmp/miohttp_p19_t451.req"
+	DO WRFILE(DEV,"one"_$C(13,10)_"two"_$C(13,10)_"three"_$C(13,10))
+	DO OPENR(DEV)
+	DO READLINE^MIOHTTP(DEV,1,.X,.ERR)
+	DO EQ^MIOTASSERT(X,"one","[T451][one]")
+	DO READLINE^MIOHTTP(DEV,1,.X,.ERR)
+	DO EQ^MIOTASSERT(X,"two","[T451][two]")
+	DO READLINE^MIOHTTP(DEV,1,.X,.ERR)
+	DO EQ^MIOTASSERT(X,"three","[T451][three]")
+	DO CLOSER(DEV)
+	QUIT
+	;
+T452 ; READLINE blank blank text
+	NEW DEV,X,ERR
+	SET DEV="tmp/miohttp_p19_t452.req"
+	DO WRFILE(DEV,$C(13,10)_$C(13,10)_"x"_$C(13,10))
+	DO OPENR(DEV)
+	DO READLINE^MIOHTTP(DEV,1,.X,.ERR)
+	DO EQ^MIOTASSERT(X,"","[T452][blank1]")
+	DO READLINE^MIOHTTP(DEV,1,.X,.ERR)
+	DO EQ^MIOTASSERT(X,"","[T452][blank2]")
+	DO READLINE^MIOHTTP(DEV,1,.X,.ERR)
+	DO EQ^MIOTASSERT(X,"x","[T452][x]")
+	DO CLOSER(DEV)
+	QUIT
+	;
+T453 ; READFIX split exact into 1 1 1
+	NEW DEV,X,ERR
+	SET DEV="tmp/miohttp_p19_t453.req"
+	DO WRFILE(DEV,"abc")
+	DO OPENR(DEV)
+	DO READFIX^MIOHTTP(DEV,1,1,.X,.ERR)
+	DO EQ^MIOTASSERT(X,"a","[T453][a]")
+	DO READFIX^MIOHTTP(DEV,1,1,.X,.ERR)
+	DO EQ^MIOTASSERT(X,"b","[T453][b]")
+	DO READFIX^MIOHTTP(DEV,1,1,.X,.ERR)
+	DO EQ^MIOTASSERT(X,"c","[T453][c]")
+	DO CLOSER(DEV)
+	QUIT
+	;
+T454 ; READFIX split exact into 2 then 2
+	NEW DEV,X,ERR
+	SET DEV="tmp/miohttp_p19_t454.req"
+	DO WRFILE(DEV,"abcd")
+	DO OPENR(DEV)
+	DO READFIX^MIOHTTP(DEV,2,1,.X,.ERR)
+	DO EQ^MIOTASSERT(X,"ab","[T454][ab]")
+	DO READFIX^MIOHTTP(DEV,2,1,.X,.ERR)
+	DO EQ^MIOTASSERT(X,"cd","[T454][cd]")
+	DO CLOSER(DEV)
+	QUIT
+	;
+T455 ; READFIX empty file immediate short path
+	NEW DEV,X,ERR
+	SET DEV="tmp/miohttp_p19_t455.req"
+	DO WRFILE(DEV,"")
+	DO OPENR(DEV)
+	DO READFIX^MIOHTTP(DEV,1,1,.X,.ERR)
+	DO EQ^MIOTASSERT($GET(ERR("error"))'="",1,"[T455][some err]")
+	DO CLOSER(DEV)
+	QUIT
+	;
+T456 ; READHDRS maxHeaderCount exact two
+	NEW CONF,REQ,ERR,DEV
+	SET CONF("server","limits","maxHeaderCount")=2
+	SET DEV="tmp/miohttp_p19_t456.req"
+	DO WRFILE(DEV,"X-A: 1"_$C(13,10)_"X-B: 2"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO READHDRS^MIOHTTP(DEV,.CONF,.REQ,.ERR)
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(ERR("error")),"","[T456][no err]")
+	DO EQ^MIOTASSERT($GET(REQ("hdr","x-a")),"1","[T456][x-a]")
+	DO EQ^MIOTASSERT($GET(REQ("hdr","x-b")),"2","[T456][x-b]")
+	QUIT
+	;
+T457 ; READHDRS maxHeaderLineBytes over by one fails
+	NEW CONF,REQ,ERR,DEV,LINE
+	SET LINE="X-Long: 12"
+	SET CONF("server","limits","maxHeaderLineBytes")=$L(LINE)-1
+	SET DEV="tmp/miohttp_p19_t457.req"
+	DO WRFILE(DEV,LINE_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO READHDRS^MIOHTTP(DEV,.CONF,.REQ,.ERR)
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(ERR("error")),"header_line_too_large","[T457][err]")
+	QUIT
+	;
+T458 ; READHDRS maxHeaderBytes over by one fails
+	NEW CONF,REQ,ERR,DEV,LINE
+	SET LINE="X-A: 1"
+	SET CONF("server","limits","maxHeaderBytes")=$L(LINE)+1
+	SET DEV="tmp/miohttp_p19_t458.req"
+	DO WRFILE(DEV,LINE_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO READHDRS^MIOHTTP(DEV,.CONF,.REQ,.ERR)
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(ERR("error")),"headers_too_large","[T458][err]")
+	QUIT
+	;
+T459 ; PARSEHDRS bad header line after valid one
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p19_t459.req"
+	DO WRFILE(DEV,"GET /x HTTP/1.1"_$C(13,10)_"X-A: 1"_$C(13,10)_"Broken"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSEHDRS^MIOHTTP(DEV,.CONF,.REQ,.ERR),0,"[T459][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(ERR("error")),"bad_header_line","[T459][err]")
+	QUIT
+	;
+T460 ; PARSEHDRS duplicate host direct
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p19_t460.req"
+	DO WRFILE(DEV,"GET /x HTTP/1.1"_$C(13,10)_"Host: a"_$C(13,10)_"Host: b"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSEHDRS^MIOHTTP(DEV,.CONF,.REQ,.ERR),0,"[T460][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(ERR("error")),"duplicate_host","[T460][err]")
+	QUIT
+	;
+T461 ; PARSEHDRS duplicate content-length direct
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p19_t461.req"
+	DO WRFILE(DEV,"POST /x HTTP/1.1"_$C(13,10)_"Content-Length: 1"_$C(13,10)_"Content-Length: 2"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSEHDRS^MIOHTTP(DEV,.CONF,.REQ,.ERR),0,"[T461][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(ERR("error")),"duplicate_content_length","[T461][err]")
+	QUIT
+	;
+T462 ; PARSEHDRS duplicate transfer-encoding direct
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p19_t462.req"
+	DO WRFILE(DEV,"POST /x HTTP/1.1"_$C(13,10)_"Transfer-Encoding: chunked"_$C(13,10)_"Transfer-Encoding: identity"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSEHDRS^MIOHTTP(DEV,.CONF,.REQ,.ERR),0,"[T462][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(ERR("error")),"duplicate_transfer_encoding","[T462][err]")
+	QUIT
+	;
+T463 ; PARSE invalid header value end-to-end again
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p19_t463.req"
+	DO WRFILE(DEV,"GET /x HTTP/1.1"_$C(13,10)_"X-A: a"_$C(1)_"b"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),0,"[T463][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(ERR("error")),"invalid_header_value","[T463][err]")
+	QUIT
+	;
+T464 ; PARSE invalid header folding end-to-end again
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p19_t464.req"
+	DO WRFILE(DEV,"GET /x HTTP/1.1"_$C(13,10)_"X-A: 1"_$C(13,10)_" 2"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),0,"[T464][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(ERR("error")),"header_folding_rejected","[T464][err]")
+	QUIT
+	;
+T465 ; RESP default plus two explicit headers
+	NEW DEV,CONF,OUT,OP,HEAD
+	SET CONF("server","http","defaultResponseHeaders","X-App")="mio"
+	SET HEAD("Content-Type")="text/plain"
+	SET HEAD("X-A")="1"
+	SET HEAD("X-B")="2"
+	SET OP="tmp/miohttp_p19_t465.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO RESP^MIOHTTP(.DEV,.CONF,200,.HEAD,"ok","rid465")
+	CLOSE DEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["X-App: mio":1,1:0),1,"[T465][x-app]")
+	DO EQ^MIOTASSERT($SELECT(OUT["X-A: 1":1,1:0),1,"[T465][x-a]")
+	DO EQ^MIOTASSERT($SELECT(OUT["X-B: 2":1,1:0),1,"[T465][x-b]")
+	QUIT
+	;
+T466 ; RESPJSON default plus custom explicit ctype path
+	NEW DEV,CONF,OUT,OP,OBJ
+	SET CONF("server","http","defaultResponseHeaders","X-App")="mio"
+	SET OBJ("ok")=1
+	SET OP="tmp/miohttp_p19_t466.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO RESPJSON^MIOHTTP(.DEV,.CONF,200,.OBJ,"rid466")
+	CLOSE DEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["Content-Type: application/json":1,1:0),1,"[T466][ctype]")
+	DO EQ^MIOTASSERT($SELECT(OUT["X-App: mio":1,1:0),1,"[T466][x-app]")
+	QUIT
+	;
+T467 ; STREAMBEGIN default plus two explicit headers
+	NEW DEV,CONF,CTX,OUT,OP,HEAD
+	KILL ^TMP($J,"MIOHTTP","REQ")
+	SET ^TMP($J,"MIOHTTP","REQ","method")="GET"
+	SET CONF("server","http","defaultResponseHeaders","X-App")="mio"
+	SET HEAD("Content-Type")="text/plain"
+	SET HEAD("X-A")="1"
+	SET HEAD("X-B")="2"
+	SET OP="tmp/miohttp_p19_t467.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO STREAMBEGIN^MIOHTTP(.DEV,.CONF,200,.HEAD,"rid467",.CTX)
+	DO STREAMEND^MIOHTTP(.DEV)
+	CLOSE DEV USE $PRINCIPAL
+	KILL ^TMP($J,"MIOHTTP","REQ")
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["X-App: mio":1,1:0),1,"[T467][x-app]")
+	DO EQ^MIOTASSERT($SELECT(OUT["X-A: 1":1,1:0),1,"[T467][x-a]")
+	DO EQ^MIOTASSERT($SELECT(OUT["X-B: 2":1,1:0),1,"[T467][x-b]")
+	QUIT
+	;
+T468 ; STREAM header override repeated
+	NEW I,DEV,CONF,CTX,OUT,OP,HEAD
+	SET CONF("server","http","defaultResponseHeaders","X-App")="default"
+	FOR I=1:1:2 DO
+	. KILL ^TMP($J,"MIOHTTP","REQ")
+	. SET ^TMP($J,"MIOHTTP","REQ","method")="GET"
+	. KILL HEAD
+	. SET HEAD("Content-Type")="text/plain"
+	. SET HEAD("X-App")="explicit"
+	. SET OP="tmp/miohttp_p19_t468-"_I_".out"
+	. OPEN OP:(newversion:stream:nowrap)
+	. SET DEV=OP USE DEV
+	. DO STREAMBEGIN^MIOHTTP(.DEV,.CONF,200,.HEAD,"rid468-"_I,.CTX)
+	. DO STREAMEND^MIOHTTP(.DEV)
+	. CLOSE DEV USE $PRINCIPAL
+	. DO READALL(OP,.OUT)
+	. DO EQ^MIOTASSERT($SELECT(OUT["X-App: explicit":1,1:0),1,"[T468]["_I_"][explicit]")
+	KILL ^TMP($J,"MIOHTTP","REQ")
+	QUIT
+	;
+T469 ; READBODYONLY CL zero after parsehdrs
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p19_t469.req"
+	DO WRFILE(DEV,"POST /z HTTP/1.1"_$C(13,10)_"Content-Length: 0"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSEHDRS^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T469][hdrs]")
+	DO EQ^MIOTASSERT($$READBODYONLY^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T469][body]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("body","mode")),"none","[T469][mode]")
+	QUIT
+	;
+T470 ; READBODYONLY CL too large after parsehdrs
+	NEW CONF,REQ,ERR,DEV
+	SET CONF("server","limits","maxBodyBytes")=1
+	SET DEV="tmp/miohttp_p19_t470.req"
+	DO WRFILE(DEV,"POST /z HTTP/1.1"_$C(13,10)_"Content-Length: 2"_$C(13,10,13,10)_"ok")
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSEHDRS^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T470][hdrs]")
+	DO EQ^MIOTASSERT($$READBODYONLY^MIOHTTP(DEV,.CONF,.REQ,.ERR),0,"[T470][body]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(ERR("error")),"payload_too_large","[T470][err]")
+	QUIT
+	;
+T471 ; READBODYONLY chunked disabled after parsehdrs
+	NEW CONF,REQ,ERR,DEV
+	SET CONF("server","http","supportChunkedRequest")=0
+	SET DEV="tmp/miohttp_p19_t471.req"
+	DO WRFILE(DEV,"POST /z HTTP/1.1"_$C(13,10)_"Transfer-Encoding: chunked"_$C(13,10,13,10)_"2"_$C(13,10)_"ok"_$C(13,10)_"0"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSEHDRS^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T471][hdrs]")
+	DO EQ^MIOTASSERT($$READBODYONLY^MIOHTTP(DEV,.CONF,.REQ,.ERR),0,"[T471][body]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(ERR("error")),"chunked_not_supported","[T471][err]")
+	QUIT
+	;
+T472 ; STATUS4ERR read timeout again
+	NEW ERR
+	SET ERR("error")="read_timeout"
+	DO EQ^MIOTASSERT($$STATUS4ERR^MIOHTTP(.ERR),408,"[T472][408]")
+	QUIT
+	;
+T473 ; STATUS4ERR headers too large again
+	NEW ERR
+	SET ERR("error")="headers_too_large"
+	DO EQ^MIOTASSERT($$STATUS4ERR^MIOHTTP(.ERR),431,"[T473][431]")
+	QUIT
+	;
+T474 ; STATUSMSG 501 and 503
+	DO EQ^MIOTASSERT($$STATUSMSG^MIOHTTP(501),"Not Implemented","[T474][501]")
+	DO EQ^MIOTASSERT($$STATUSMSG^MIOHTTP(503),"Service Unavailable","[T474][503]")
+	QUIT
+	;
+T475 ; mixed parsehdrs expect send100 readbody stream sequence
+	NEW CONF,REQ,ERR,DEV,OP,OUT,RDEV,HEAD,CTX
+	SET CONF("server","limits","maxBodyBytes")=2
+	SET DEV="tmp/miohttp_p19_t475.req"
+	DO WRFILE(DEV,"POST /m HTTP/1.1"_$C(13,10)_"Expect: 100-continue"_$C(13,10)_"Content-Length: 2"_$C(13,10,13,10)_"ok")
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSEHDRS^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T475][hdrs]")
+	DO EQ^MIOTASSERT($$EXPECTDECIDE^MIOHTTP(.CONF,.REQ,.ERR),1,"[T475][expect]")
+	DO EQ^MIOTASSERT($$READBODYONLY^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T475][body]")
+	DO CLOSER(DEV)
+	SET OP="tmp/miohttp_p19_t475.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET RDEV=OP USE RDEV
+	DO SEND100^MIOHTTP(.RDEV)
+	KILL ^TMP($J,"MIOHTTP","REQ")
+	SET ^TMP($J,"MIOHTTP","REQ","method")="GET"
+	SET HEAD("Content-Type")="text/plain"
+	DO STREAMBEGIN^MIOHTTP(.RDEV,.CONF,200,.HEAD,"rid475",.CTX)
+	DO STREAMWRITE^MIOHTTP(.RDEV,$GET(REQ("body")))
+	DO STREAMEND^MIOHTTP(.RDEV)
+	CLOSE RDEV USE $PRINCIPAL
+	KILL ^TMP($J,"MIOHTTP","REQ")
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["2"_$C(13,10)_"ok":1,1:0),1,"[T475][chunk]")
 	QUIT
 READALL(PATH,OUT)
 	NEW OIO SET OIO=$IO

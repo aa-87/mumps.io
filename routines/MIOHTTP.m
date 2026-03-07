@@ -86,7 +86,7 @@ PARSE(DEV,CONF,REQ,ERR)
 	. IF $DATA(ERR) QUIT
 	. IF CL'="" DO
 	. . DO READCL(.DEV,.CONF,.REQ,CL,.ERR)
-	. ELSE  DO
+	. IF CL=""  DO
 	. . SET REQ("body","mode")="none",REQ("body","len")=0
 	;
 ; No TE
@@ -395,13 +395,15 @@ PARSEHDRS(DEV,CONF,REQ,ERR)
 	DO PARSEREQLINE(LINE,.REQ,.ERR) IF $DATA(ERR) QUIT 0
 	DO READHDRS(.DEV,.CONF,.REQ,.ERR) IF $DATA(ERR) QUIT 0
 	QUIT 1
-;
+	;	
 ; Read only the request body, assuming headers already parsed.;
 READBODYONLY(DEV,CONF,REQ,ERR)
 	NEW TE SET TE=$$LOW($GET(REQ("hdr","transfer-encoding")))
-	IF TE["chunked" QUIT $$READCHUNKED(.DEV,.CONF,.REQ,.ERR)
+	IF TE["chunked",$GET(CONF("server","http","supportChunkedRequest"),1) QUIT $$READCHUNKED(.DEV,.CONF,.REQ,.ERR)
+	IF TE["chunked",'$GET(CONF("server","http","supportChunkedRequest"),1) D  QUIT 0
+	. SET ERR("routine")="MIOHTTP",ERR("error")="chunked_not_supported"
 	NEW CL SET CL=+$GET(REQ("hdr","content-length"),0)
-	IF CL'>0 QUIT 1
+	IF ('+CL)!(CL'>0) SET REQ("body","mode")="none",REQ("body","len")=0 QUIT 1 
 	NEW TOB SET TOB=$GET(CONF("server","timeouts","readBodyMs"),3)
 	DO READLEN(.DEV,.CONF,.REQ,CL,TOB,.ERR)
 	QUIT $SELECT($DATA(ERR):0,1:1)
