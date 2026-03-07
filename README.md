@@ -842,3 +842,89 @@ Add tests for new behavior.
 Keep tests quiet on success.
 
 Follow the no-`ZSYSTEM` and no-`GOTO` rules.
+
+
+
+#TODO IN README
+```Next README expansions I will generate
+
+      Full request lifecycle walkthrough
+
+      Step-by-step flow
+
+      MIOD → MIOHTTP → MIOROUTE → MIOMW → handler → response
+
+      Real REQ(...), CTX(...), ERR(...) structures
+
+      Example debug traces
+
+      Deep MIOTPL documentation
+
+      moustache.js compatibility table
+
+      section evaluation rules
+
+      dotted name resolution algorithm
+
+      partial indentation behavior
+
+      caching internals
+
+      template inheritance examples
+
+      performance considerations
+
+      Advanced MIOHTTP internals
+
+      HTTP parsing algorithm
+
+      chunked transfer decoding
+
+      request body streaming modes
+
+      MAXSTRING avoidance design
+
+      security protections (TE/CL conflicts, duplicate headers)
+
+      Router internals
+
+      route compilation
+
+      wildcard matching
+
+      param extraction
+
+      middleware injection
+
+      Production deployment guide
+
+      systemd
+
+      nginx
+
+      caddy
+
+      docker
+
+      kubernetes probes
+
+      Debugging guide
+
+      tracing middleware
+
+      reading the error center
+
+      interpreting logs and metrics
+
+      Full working application example
+
+      small but complete MIO web app
+
+      templates
+
+      API
+
+      auth
+
+      static assets
+      ```
