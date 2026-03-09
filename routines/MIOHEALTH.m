@@ -1,14 +1,14 @@
 MIOHEALTH ; Health + readiness endpoints (ROI #5)
 ;
 ; PURPOSE
-; Provide production-friendly health and readiness endpoints.
+; Provide production-friendly health and readiness endpoints.;
 ;
 ; ENDPOINTS (typical)
 ;   GET /healthz  -> always 200 (service is running)
 ;   GET /readyz   -> 200 when ready, else 503 with JSON checks
 ;
 ; ROUTE REGISTRATION
-;   DO REG^MIOHEALTH(.CONF) during startup before COMPILE^MIOROUTE.
+;   DO REG^MIOHEALTH(.CONF) during startup before COMPILE^MIOROUTE.;
 ;
 ; DESIGN
 ; - Deterministic, fast checks
@@ -77,8 +77,8 @@ CHKCONF(CONF,OBJ,OK)
 	QUIT
 	;
 CHKCONFV(CONF,OBJ,OK)
-	; Config validation: fail readiness only on explicit errors.
-	; Missing optional keys do not fail.
+	; Config validation: fail readiness only on explicit errors.;
+	; Missing optional keys do not fail.;
 	IF $TEXT(VALIDATE^MIOCONFV)="" DO  QUIT
 	. DO SETCHK(.OBJ,"config_valid",1,"skipped")
 	NEW REP,ERR,GOOD
@@ -117,7 +117,7 @@ CHKSTATIC(CONF,OBJ,OK)
 	QUIT
 	;
 CHKSPOOL(CONF,OBJ,OK)
-	; Multipart spooling is optional but common. We only check directory existence (no writes).
+	; Multipart spooling is optional but common. We only check directory existence (no writes).;
 	NEW EN SET EN=$$BOOL($GET(CONF("server","health","readyCheckSpoolDir"),0))
 	IF 'EN DO  QUIT
 	. DO SETCHK(.OBJ,"multipart_spool_dir",1,"skipped")
@@ -131,7 +131,7 @@ CHKACCESSLOG(CONF,OBJ,OK)
 	NEW EN SET EN=$$BOOL($GET(CONF("server","log","access","enabled")))
 	IF 'EN DO  QUIT
 	. DO SETCHK(.OBJ,"access_log_sink",1,"disabled")
-	; Access logs are global-backed for determinism/perf.
+	; Access logs are global-backed for determinism/perf.;
 	NEW ME SET ME=+$GET(CONF("server","log","access","maxEntries"),20000)
 	IF ME<100 DO  QUIT
 	. DO SETCHK(.OBJ,"access_log_sink",0,"maxEntries_lt_100")
@@ -140,7 +140,7 @@ CHKACCESSLOG(CONF,OBJ,OK)
 	QUIT
 	;
 CHKTPL(CONF,OBJ,OK)
-	; Optional: only check templateDir when explicitly enabled.
+	; Optional: only check templateDir when explicitly enabled.;
 	NEW EN SET EN=$$BOOL($GET(CONF("server","health","readyCheckTemplates"),0))
 	IF 'EN DO  QUIT
 	. DO SETCHK(.OBJ,"template_dir",1,"skipped")
@@ -169,3 +169,4 @@ DIREX(PATH)
 BOOL(X)
 	NEW V SET V=$$LOW^MIOHTTP($GET(X))
 	QUIT $SELECT(V="1":1,V="true":1,V="yes":1,V="on":1,1:0)
+	;

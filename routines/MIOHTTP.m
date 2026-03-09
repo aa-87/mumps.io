@@ -22,28 +22,6 @@ MIOHTTP ; HTTP parsing + streaming request body storage (MAXSTRING-safe).;
 ;
 ; Public entry points
 ; - PARSE(DEV,CONF,REQ,ERR)
-; - READLINE(DEV,TO,OUT,ERR)
-; - READFIX(DEV,N,TO,OUT,ERR)
-; - PARSEREQLINE(L,REQ,ERR)
-; - PARSEQRY(P,REQ)
-; - READHDRS(DEV,CONF,REQ,ERR)
-; - READCHUNKED(DEV,CONF,REQ,ERR)
-; - BODYOPEN(REQ,CUR)
-; - BODYNEXT(REQ,CUR,CH)
-; - BODYLEN(REQ)
-; - BODYFREE(REQ)
-; - STATUS4ERR(ERR)
-; - RESP / RESPJSON / RESPX / RESPJSONX
-;
-; Notes
-; - Errors include ERR("routine")="MIOHTTP".;
-; - This routine does not assume keep-alive; connection policy is handled by MIOD.;
-;
-	; V1-02 (YottaDB/GT.M)
-	;
-; -------------------------------------------------------------------------
-; Parse request line + headers + body.;
-; Returns 1 on success, 0 on failure with ERR().;
 PARSE(DEV,CONF,REQ,ERR)
 	; Parse request line, headers, and body.;
 	NEW RID SET RID=$GET(REQ("id"))
@@ -62,42 +40,21 @@ PARSE(DEV,CONF,REQ,ERR)
 	;
 	DO PARSEREQLINE(LINE,.REQ,.ERR) IF $DATA(ERR) QUIT 0
 	DO READHDRS(.DEV,.CONF,.REQ,.ERR) IF $DATA(ERR) QUIT 0
-	;
-	; Decide body framing
+	DO SETMETABASE(.REQ)
+	IF '$$STRICTREQ(.CONF,.REQ,.ERR) QUIT 0
+	NEW FR SET FR=$$BODYFRAMING(.CONF,.REQ,.ERR) IF $DATA(ERR) QUIT 0
 	NEW CL SET CL=$GET(REQ("hdr","content-length"))
-	NEW TE SET TE=$GET(REQ("hdr","transfer-encoding"))
-	NEW ALLOWTECL SET ALLOWTECL=+$GET(CONF("server","http","allowTECL"),0)
-	NEW STRICTTE SET STRICTTE=+$GET(CONF("server","http","strictTE"),1)
-	;
-	; Smuggling defense: reject TE:chunked + Content-Length unless explicitly allowed
-	IF TE'="",CL'="",$$TEHAS(TE,"chunked"),'ALLOWTECL SET ERR("routine")="MIOHTTP",ERR("error")="te_cl_conflict" QUIT 0
-	;
-	; Transfer-Encoding beats Content-Length
-	IF TE'="" DO  QUIT:$DATA(ERR) 0  QUIT 1
-	. IF '$$TEOK(TE) DO  QUIT
-	. . SET ERR("routine")="MIOHTTP",ERR("error")="unsupported_transfer_encoding"
-	. IF STRICTTE,$$TEHAS(TE,"chunked"),'$$TECHUNKLAST(TE) DO  QUIT
-	. . SET ERR("routine")="MIOHTTP",ERR("error")="bad_transfer_encoding_order"
-	. IF $$TEHAS(TE,"chunked") DO  QUIT
-	. . IF '$GET(CONF("server","http","supportChunkedRequest"),1) DO  QUIT
-	. . . SET ERR("routine")="MIOHTTP",ERR("error")="chunked_not_supported"
-	. . DO READCHUNKED(.DEV,.CONF,.REQ,.ERR)
-	. ; identity only => no framing, require Content-Length if body expected
-	. IF $DATA(ERR) QUIT
-	. IF CL'="" DO
-	. . DO READCL(.DEV,.CONF,.REQ,CL,.ERR)
-	. IF CL=""  DO
-	. . SET REQ("body","mode")="none",REQ("body","len")=0
-	;
-; No TE
-	IF CL'="" DO  QUIT:$DATA(ERR) 0  QUIT 1
+	IF FR="chunked" DO  QUIT $SELECT($DATA(ERR):0,1:1)
+	. IF '$GET(CONF("server","http","supportChunkedRequest"),1) DO  QUIT
+	. . SET ERR("routine")="MIOHTTP",ERR("error")="chunked_not_supported"
+	. DO READCHUNKED(.DEV,.CONF,.REQ,.ERR)
+	. IF '$DATA(ERR) DO SETBODYMETA(.REQ,"chunked")
+	IF FR="content-length" DO  QUIT $SELECT($DATA(ERR):0,1:1)
 	. DO READCL(.DEV,.CONF,.REQ,CL,.ERR)
-	;
-	; No body
+	. IF '$DATA(ERR) DO SETBODYMETA(.REQ,"content-length")
 	SET REQ("body","mode")="none",REQ("body","len")=0
+	DO SETBODYMETA(.REQ,"none")
 	QUIT 1
-	;--------------------------------------------------------------
-	; Line and fixed reads.;
 	;
 READLINE(DEV,TO,OUT,ERR)
 	; Read a CRLF-delimited line.;
@@ -159,6 +116,72 @@ PARSEREQLINE(L,REQ,ERR)
 	SET REQ("path")=$PIECE(P,"?",1)
 	DO PARSEQRY(P,.REQ)
 	QUIT
+	;
+TARGETKIND(REQ)
+	NEW M,P
+	SET M=$$LOW($GET(REQ("method")))
+	SET P=$GET(REQ("path"))
+	IF P="*" QUIT "asterisk"
+	IF M="connect",P'="",$EXTRACT(P)'="/" QUIT "authority"
+	QUIT "origin"
+	;
+SETMETABASE(REQ)
+	SET REQ("meta","targetKind")=$$TARGETKIND(.REQ)
+	SET REQ("meta","contentLength")=$GET(REQ("hdr","content-length"))
+	SET REQ("meta","transferEncoding")=$$LOW($GET(REQ("hdr","transfer-encoding")))
+	SET REQ("meta","isForm")=$$ISFORM(.REQ)
+	SET REQ("meta","isJSON")=$$ISJSON(.REQ)
+	QUIT
+	;
+SETBODYMETA(REQ,FRAMING)
+	NEW BL,CL
+	SET BL=+$GET(REQ("body","len"))
+	SET CL=+$GET(REQ("meta","contentLength"))
+	SET REQ("meta","bodyFraming")=$GET(FRAMING,"none")
+	SET REQ("meta","hasBody")=$SELECT(BL>0:1,$GET(FRAMING)="chunked":1,$GET(FRAMING)="content-length"&(CL>0):1,1:0)
+	QUIT
+	;
+STRICTREQ(CONF,REQ,ERR)
+	NEW STRICT SET STRICT=+$GET(CONF("server","http","strict"),0)
+	IF 'STRICT QUIT 1
+	NEW TK,M,P,V
+	SET TK=$GET(REQ("meta","targetKind")) IF TK="" SET TK=$$TARGETKIND(.REQ)
+	SET M=$$LOW($GET(REQ("method")))
+	SET P=$GET(REQ("path"))
+	SET V=$GET(REQ("httpver"))
+	IF V="HTTP/1.1",TK="origin",$GET(REQ("hdr","host"))="" DO  QUIT 0
+	. SET ERR("routine")="MIOHTTP",ERR("error")="missing_host"
+	IF TK="origin",(P=""!($EXTRACT(P)'="/")) DO  QUIT 0
+	. SET ERR("routine")="MIOHTTP",ERR("error")="invalid_request_target"
+	IF TK="asterisk",M'="options" DO  QUIT 0
+	. SET ERR("routine")="MIOHTTP",ERR("error")="invalid_request_target"
+	IF TK="authority",M'="connect" DO  QUIT 0
+	. SET ERR("routine")="MIOHTTP",ERR("error")="invalid_request_target"
+	QUIT 1
+	;
+BODYFRAMING(CONF,REQ,ERR)
+	NEW CL,TE,ALLOWTECL,STRICTTE,FR
+	SET CL=$GET(REQ("hdr","content-length"))
+	SET TE=$$LOW($GET(REQ("hdr","transfer-encoding")))
+	SET ALLOWTECL=+$GET(CONF("server","http","allowTECL"),0)
+	SET STRICTTE=+$GET(CONF("server","http","strictTE"),1)
+	SET FR="none"
+	IF TE'="" DO  QUIT $SELECT($DATA(ERR):"",1:FR)
+	. IF '$$TEOK(TE) DO  QUIT
+	. . SET ERR("routine")="MIOHTTP",ERR("error")="unsupported_transfer_encoding"
+	. IF STRICTTE,$$TEHAS(TE,"chunked"),'$$TECHUNKLAST(TE) DO  QUIT
+	. . SET ERR("routine")="MIOHTTP",ERR("error")="bad_transfer_encoding_order"
+	. IF $$TEHAS(TE,"chunked") DO  QUIT
+	. . IF CL'="",'ALLOWTECL DO  QUIT
+	. . . SET ERR("routine")="MIOHTTP",ERR("error")="te_cl_conflict"
+	. . SET REQ("meta","contentLength")=""
+	. . SET REQ("meta","transferEncoding")=TE
+	. . SET FR="chunked"
+	. IF CL'="" SET FR="content-length" QUIT
+	. SET FR="none"
+	IF CL'="" SET FR="content-length"
+	SET REQ("meta","bodyFraming")=FR
+	QUIT FR
 	;
 PARSEQRY(P,REQ)
 	KILL REQ("query")
@@ -275,7 +298,7 @@ READHDRS(DEV,CONF,REQ,ERR)
 	;
 STATUS4ERR(ERR)
 	NEW E SET E=$GET(ERR("error"))
-	QUIT $SELECT(E="client_closed":0,E="rate_limited":429,E="read_timeout":408,E="request_line_too_large":414,E="header_line_too_large":431,E="headers_too_large":431,E="too_many_headers":431,E="payload_too_large":413,E="te_cl_conflict":400,E="duplicate_content_length":400,E="duplicate_transfer_encoding":400,E="duplicate_host":400,E="bad_header_line":400,E="invalid_header_name":400,E="invalid_header_value":400,E="bad_transfer_encoding_order":400,E="chunked_not_supported":400,E="unsupported_transfer_encoding":501,E="invalid_content_length":400,E="bad_request_line":400,E="short_read":400,E="bad_chunk_size":400,E="bad_chunk_ending":400,E="header_folding_rejected":400,1:400)
+	QUIT $SELECT(E="client_closed":0,E="rate_limited":429,E="read_timeout":408,E="request_line_too_large":414,E="header_line_too_large":431,E="headers_too_large":431,E="too_many_headers":431,E="payload_too_large":413,E="te_cl_conflict":400,E="duplicate_content_length":400,E="duplicate_transfer_encoding":400,E="duplicate_host":400,E="bad_header_line":400,E="invalid_header_name":400,E="invalid_header_value":400,E="bad_transfer_encoding_order":400,E="chunked_not_supported":400,E="unsupported_transfer_encoding":501,E="invalid_content_length":400,E="bad_request_line":400,E="invalid_request_target":400,E="missing_host":400,E="short_read":400,E="bad_chunk_size":400,E="bad_chunk_ending":400,E="header_folding_rejected":400,1:400)
 	;
 ; -------------------------------------------------------------------------
 ; Response helpers.;
@@ -322,7 +345,8 @@ RESP(DEV,CONF,STATUS,HEAD,BODY,REQID)
 	QUIT
 	;
 STATUSMSG(S)
-	QUIT $SELECT(S=200:"OK",S=101:"Switching Protocols",S=400:"Bad Request",S=401:"Unauthorized",S=404:"Not Found",S=405:"Method Not Allowed",S=408:"Request Timeout",S=413:"Payload Too Large",S=414:"URI Too Long",S=431:"Request Header Fields Too Large",S=429:"Too Many Requests",S=500:"Internal Server Error",S=501:"Not Implemented",S=503:"Service Unavailable",1:"")
+	NEW X SET X=+S
+	QUIT $SELECT(X=100:"Continue",X=101:"Switching Protocols",X=200:"OK",X=201:"Created",X=202:"Accepted",X=204:"No Content",X=205:"Reset Content",X=301:"Moved Permanently",X=302:"Found",X=303:"See Other",X=304:"Not Modified",X=307:"Temporary Redirect",X=308:"Permanent Redirect",X=400:"Bad Request",X=401:"Unauthorized",X=404:"Not Found",X=405:"Method Not Allowed",X=408:"Request Timeout",X=409:"Conflict",X=413:"Payload Too Large",X=414:"URI Too Long",X=422:"Unprocessable Entity",X=429:"Too Many Requests",X=431:"Request Header Fields Too Large",X=500:"Internal Server Error",X=501:"Not Implemented",X=503:"Service Unavailable",1:"")
 	;
 LOW(S) QUIT $ZCONVERT($GET(S),"L")
 	;
@@ -331,6 +355,115 @@ TRIM(S)
 	FOR  QUIT:$EXTRACT(X,1)'=" "  SET X=$EXTRACT(X,2,$LENGTH(X))
 	FOR  QUIT:$EXTRACT(X,$LENGTH(X))'=" "  SET X=$EXTRACT(X,1,$LENGTH(X)-1)
 	QUIT X
+	;
+MEDIATYPE(CTYPE)
+	NEW X
+	SET X=$$LOW($$TRIM($PIECE($GET(CTYPE),";",1)))
+	QUIT X
+	;
+CTPARAM(CTYPE,NAME)
+	NEW I,P,K,V,ANS
+	SET NAME=$$LOW($$TRIM($GET(NAME)))
+	SET ANS=""
+	FOR I=2:1:$LENGTH($GET(CTYPE),";") QUIT:ANS'=""  DO
+	. SET P=$$TRIM($PIECE(CTYPE,";",I))
+	. QUIT:P=""
+	. SET K=$$LOW($$TRIM($PIECE(P,"=",1)))
+	. SET V=$$TRIM($PIECE(P,"=",2,999))
+	. IF $EXTRACT(V)=""",$EXTRACT(V,$LENGTH(V))=""",$LENGTH(V)>1 SET V=$EXTRACT(V,2,$LENGTH(V)-1)
+	. IF K=NAME SET ANS=V
+	QUIT ANS
+	;
+ISFORM(REQ)
+	NEW MT
+	SET MT=$$MEDIATYPE($GET(REQ("hdr","content-type")))
+	QUIT $SELECT(MT="application/x-www-form-urlencoded":1,1:0)
+	;
+ISJSON(REQ)
+	NEW MT
+	SET MT=$$MEDIATYPE($GET(REQ("hdr","content-type")))
+	IF MT="application/json" QUIT 1
+	IF $LENGTH(MT)>5,$EXTRACT(MT,$LENGTH(MT)-4,$LENGTH(MT))="+json" QUIT 1
+	QUIT 0
+	;
+PARSEFORM(REQ,OUT,ERR)
+	KILL OUT,ERR
+	IF '$$ISFORM(.REQ) DO  QUIT 0
+	. SET ERR("routine")="MIOHTTP",ERR("error")="not_form_content_type"
+	NEW CUR,CH,BUF,PIECEI
+	SET BUF=""
+	DO BODYOPEN(.REQ,.CUR)
+	FOR  QUIT:'$$BODYNEXT(.REQ,.CUR,.CH)  DO
+	. SET BUF=BUF_$GET(CH)
+	. FOR  QUIT:BUF'["&"  DO
+	. . NEW PAIR
+	. . SET PAIR=$PIECE(BUF,"&",1)
+	. . SET BUF=$PIECE(BUF,"&",2,999)
+	. . DO FORMPAIR(.PAIR,.OUT)
+	IF BUF'="" DO FORMPAIR(.BUF,.OUT)
+	QUIT 1
+	;
+FORMPAIR(PAIR,OUT)
+	NEW KENC,VENC,EQ,K,V
+	QUIT:$GET(PAIR)=""
+	SET EQ=$FIND(PAIR,"=")
+	IF EQ>0 DO
+	. SET KENC=$EXTRACT(PAIR,1,EQ-2)
+	. SET VENC=$EXTRACT(PAIR,EQ,$LENGTH(PAIR))
+	ELSE  DO
+	. SET KENC=PAIR
+	. SET VENC=""
+	SET K=$$URLDECQ(KENC)
+	SET V=$$URLDECQ(VENC)
+	DO FORMSET(.OUT,K,V)
+	SET PAIR=""
+	QUIT
+	;
+FORMSET(OUT,KEY,VAL)
+	NEW CNT,OLD
+	QUIT:$GET(KEY)=""
+	IF '$DATA(OUT(KEY)) DO  QUIT
+	. SET OUT(KEY)=VAL
+	SET CNT=$GET(OUT(KEY,0))
+	IF CNT="" DO  QUIT
+	. SET OLD=$GET(OUT(KEY))
+	. SET OUT(KEY,0)=2
+	. SET OUT(KEY,1)=OLD
+	. SET OUT(KEY,2)=VAL
+	. SET OUT(KEY)=VAL
+	SET CNT=CNT+1
+	SET OUT(KEY,0)=CNT
+	SET OUT(KEY,CNT)=VAL
+	SET OUT(KEY)=VAL
+	QUIT
+	;
+REDIRECT(DEV,CONF,LOC,STATUS,REQID,CTX)
+	NEW HEAD,S,BODY
+	SET S=+$GET(STATUS)
+	IF 'S SET S=303
+	SET HEAD("Content-Type")="text/plain; charset=utf-8"
+	SET HEAD("Location")=$GET(LOC,"/")
+	SET BODY=$SELECT($$STATUSMSG(S)'="":$$STATUSMSG(S),1:"Redirect")
+	DO RESPX(.DEV,.CONF,S,.HEAD,BODY,$GET(REQID),.CTX)
+	QUIT
+	;
+RESPTEXT(DEV,CONF,STATUS,TEXT,REQID,CTX)
+	NEW HEAD,S
+	SET S=+$GET(STATUS)
+	IF 'S SET S=200
+	SET HEAD("Content-Type")="text/plain; charset=utf-8"
+	DO RESPX(.DEV,.CONF,S,.HEAD,$GET(TEXT),$GET(REQID),.CTX)
+	QUIT
+	;
+RESPERR(DEV,CONF,STATUS,CODE,MESSAGE,REQID,CTX)
+	NEW OBJ,S
+	SET S=+$GET(STATUS)
+	IF 'S SET S=400
+	SET OBJ("ok")=0
+	SET OBJ("error")=$GET(CODE)
+	IF $GET(MESSAGE)'="" SET OBJ("message")=$GET(MESSAGE)
+	DO RESPJSONX(.DEV,.CONF,S,.OBJ,$GET(REQID),.CTX)
+	QUIT
 ;
 LIM(CONF,NAME,DEF)
 	; Lookup limit values with backward-compatible paths.;
@@ -394,19 +527,33 @@ PARSEHDRS(DEV,CONF,REQ,ERR)
 	NEW LINE DO READLINE(.DEV,TOH,.LINE,.ERR) IF $DATA(ERR) QUIT 0
 	DO PARSEREQLINE(LINE,.REQ,.ERR) IF $DATA(ERR) QUIT 0
 	DO READHDRS(.DEV,.CONF,.REQ,.ERR) IF $DATA(ERR) QUIT 0
+	DO SETMETABASE(.REQ)
+	IF '$$STRICTREQ(.CONF,.REQ,.ERR) QUIT 0
+	NEW FR SET FR=$$BODYFRAMING(.CONF,.REQ,.ERR) IF $DATA(ERR) QUIT 0
+	DO SETBODYMETA(.REQ,FR)
 	QUIT 1
 	;	
 ; Read only the request body, assuming headers already parsed.;
 READBODYONLY(DEV,CONF,REQ,ERR)
-	NEW TE SET TE=$$LOW($GET(REQ("hdr","transfer-encoding")))
-	IF TE["chunked",$GET(CONF("server","http","supportChunkedRequest"),1) QUIT $$READCHUNKED(.DEV,.CONF,.REQ,.ERR)
-	IF TE["chunked",'$GET(CONF("server","http","supportChunkedRequest"),1) D  QUIT 0
-	. SET ERR("routine")="MIOHTTP",ERR("error")="chunked_not_supported"
+	DO SETMETABASE(.REQ)
+	IF '$$STRICTREQ(.CONF,.REQ,.ERR) QUIT 0
+	NEW FR SET FR=$$BODYFRAMING(.CONF,.REQ,.ERR) IF $DATA(ERR) QUIT 0
 	NEW CL SET CL=+$GET(REQ("hdr","content-length"),0)
-	IF ('+CL)!(CL'>0) SET REQ("body","mode")="none",REQ("body","len")=0 QUIT 1 
-	NEW TOB SET TOB=$GET(CONF("server","timeouts","readBodyMs"),3)
-	DO READLEN(.DEV,.CONF,.REQ,CL,TOB,.ERR)
-	QUIT $SELECT($DATA(ERR):0,1:1)
+	IF FR="chunked" DO  QUIT $SELECT($DATA(ERR):0,1:1)
+	. IF '$GET(CONF("server","http","supportChunkedRequest"),1) DO  QUIT
+	. . SET ERR("routine")="MIOHTTP",ERR("error")="chunked_not_supported"
+	. DO READCHUNKED(.DEV,.CONF,.REQ,.ERR)
+	. IF '$DATA(ERR) DO SETBODYMETA(.REQ,"chunked")
+	IF FR="content-length" DO  QUIT $SELECT($DATA(ERR):0,1:1)
+	. IF CL'>0 DO  QUIT
+	. . SET REQ("body","mode")="none",REQ("body","len")=0
+	. . DO SETBODYMETA(.REQ,"content-length")
+	. NEW TOB SET TOB=$GET(CONF("server","timeouts","readBodyMs"),3)
+	. DO READLEN(.DEV,.CONF,.REQ,CL,TOB,.ERR)
+	. IF '$DATA(ERR) DO SETBODYMETA(.REQ,"content-length")
+	SET REQ("body","mode")="none",REQ("body","len")=0
+	DO SETBODYMETA(.REQ,"none")
+	QUIT 1
 	;
 ; -----------------------------------------------------------------------------
 ; Response streaming + sendfile (ROI)

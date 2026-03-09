@@ -479,6 +479,191 @@ MIOHTTPP1T ; MIOHTTP parser/helper tests
 	D T473 ; STATUS4ERR headers too large again
 	D T474 ; STATUSMSG 501 and 503
 	D T475 ; mixed parsehdrs expect send100 readbody stream sequence
+	D T476 ; PARSEREQLINE encoded query values
+	D T477 ; PARSEREQLINE repeated query key last wins
+	D T478 ; PARSEREQLINE empty query pair
+	D T479 ; PARSEREQLINE question mark only
+	D T480 ; PARSE TE chunked with allowTECL and CL zero
+	D T481 ; PARSE TE identity with no CL gives no body
+	D T482 ; PARSE TE chunked only with empty body
+	D T483 ; PARSE unsupported TE compress, chunked
+	D T484 ; PARSE TE chunked not last in longer list
+	D T485 ; BODYAPPEND threshold boundary one below stays scalar
+	D T486 ; BODYAPPEND threshold exact stays scalar
+	D T487 ; BODYAPPEND threshold plus one upgrades
+	D T488 ; READCL above maxBodyBytes denied
+	D T489 ; READCL exact maxBodyBytes allowed
+	D T490 ; PARSE simple GET then RESPX text
+	D T491 ; PARSE simple GET then RESPJSONX path
+	D T492 ; PARSE POST body then STREAM response echoes size
+	D T493 ; READHDRS preserves tab in value
+	D T494 ; PARSEHDRS path only HTTP/1.0
+	D T495 ; PARSE full request with host and empty body cl0
+	D T496 ; SENDFILE then RESP on separate device sequence
+	D T497 ; STATUSMSG 405 and 500
+	D T498 ; STATUS4ERR bad_header_line and invalid_content_length
+	D T499 ; URLDECQ preserved invalid escape in middle
+	D T500 ; mixed parse split response file flow
+	D T501 ; common GET home page parse
+	D T502 ; common GET asset with query cache buster
+	D T503 ; common HEAD request for health endpoint
+	D T504 ; common JSON API response helper
+	D T505 ; common plain text health response
+	D T506 ; common form POST parse username password body
+	D T507 ; common form POST with encoded spaces and slash
+	D T508 ; common form POST with empty optional field
+	D T509 ; split flow form parsehdrs then readbodyonly
+	D T510 ; common multipart not auto-decoded by http layer
+	D T511 ; common search query parse
+	D T512 ; common file download via sendfile
+	D T513 ; common file HEAD download suppresses body
+	D T514 ; common upload expect continue accepted
+	D T515 ; common upload expect continue denied when too large
+	D T516 ; common chunked form body parse
+	D T517 ; common html response with defaults
+	D T518 ; common streaming text response two chunks
+	D T519 ; form fragment decode helper name field
+	D T520 ; form fragment decode helper encoded equals and ampersand
+	D T521 ; common parse then json echo response
+	D T522 ; common login form split flow and text response
+	D T523 ; common empty form body cl0
+	D T524 ; common form body boundary exact scalar threshold
+	D T525 ; common form body boundary above scalar threshold
+	D T526 ; common signup form parse
+	D T527 ; common contact form parse
+	D T528 ; common settings form with booleans
+	D T529 ; common search filters parse
+	D T530 ; common pagination query parse
+	D T531 ; common redirect style response 303
+	D T532 ; common redirect style response 302
+	D T533 ; post submit json response helper
+	D T534 ; common login form split flow then json response
+	D T535 ; common comment form small scalar body
+	D T536 ; common comment form large body goes global
+	D T537 ; common upload endpoint with fixed body
+	D T538 ; common chunked upload endpoint
+	D T539 ; common api post then stream response
+	D T540 ; form field fragment decode simple pair
+	D T541 ; form field fragment decode spaces
+	D T542 ; form field fragment decode slash and question mark
+	D T543 ; common GET profile query parse
+	D T544 ; common GET filter query with repeated key last wins
+	D T545 ; common create form then redirect response
+	D T546 ; common delete request parse
+	D T547 ; common patch form parse
+	D T548 ; common put body parse
+	D T549 ; common form submit expect continue full flow
+	D T550 ; common final file download after form flow
+	D T551 ; profile form with encoded email and display name
+	D T552 ; settings form with timezone and language
+	D T553 ; password reset form with token
+	D T554 ; newsletter subscribe form
+	D T555 ; checkout form with encoded address
+	D T556 ; dashboard query with multiple filters
+	D T557 ; search query with encoded slash and plus
+	D T558 ; navigation request for nested docs path
+	D T559 ; common success json payload after form submit
+	D T560 ; common redirect after signup
+	D T561 ; common redirect after logout
+	D T562 ; split flow settings form then text response
+	D T563 ; split flow profile form then json response
+	D T564 ; common report download sendfile with default header
+	D T565 ; common report download head only
+	D T566 ; common query with page sort dir
+	D T567 ; common GET with encoded tag and slash
+	D T568 ; form field helper repeated key fragment decode
+	D T569 ; form field helper plus and percent combo
+	D T570 ; common empty search query value
+	D T571 ; common file api fixed binary-like upload
+	D T572 ; common api GET then stream json-like text
+	D T573 ; common save form with expect continue split flow
+	D T574 ; common response with request id header
+	D T575 ; common final roundtrip parse form then sendfile
+	D T576 ; auth login form with remember me
+	D T577 ; auth forgot password form
+	D T578 ; auth reset password form with token and next
+	D T579 ; account delete confirmation form
+	D T580 ; settings notifications form split flow
+	D T581 ; profile avatar upload fixed binary body
+	D T582 ; search with phrase and category filters
+	D T583 ; dashboard navigation query with section and mode
+	D T584 ; redirect after login success
+	D T585 ; redirect after logout success
+	D T586 ; json success payload with redirect and ok
+	D T587 ; json failure payload common pattern
+	D T588 ; report export request parse with query
+	D T589 ; export download sendfile common case
+	D T590 ; export head download no body
+	D T591 ; common chunked form submit split flow
+	D T592 ; common stream response after search request
+	D T593 ; common form helper decode encoded slash in return url
+	D T594 ; common form helper decode plus and comma
+	D T595 ; common GET with empty optional filters
+	D T596 ; common HEAD request to export route
+	D T597 ; common profile form body exact scalar threshold
+	D T598 ; common profile form body above scalar threshold
+	D T599 ; common final json response after auth flow
+	D T600 ; final common roundtrip form parse then redirect response
+	D T601 ; MEDIATYPE plain
+	D T602 ; MEDIATYPE strips params and lowers
+	D T603 ; CTPARAM charset
+	D T604 ; CTPARAM quoted boundary
+	D T605 ; ISFORM exact type
+	D T606 ; ISFORM with charset
+	D T607 ; ISJSON exact
+	D T608 ; ISJSON vendor subtype
+	D T609 ; PARSEFORM scalar simple
+	D T610 ; PARSEFORM repeated keys
+	D T611 ; PARSEFORM blank value
+	D T612 ; PARSEFORM decodes spaces and slash
+	D T613 ; PARSEFORM global body across chunk boundaries
+	D T614 ; PARSEFORM non-form type rejected
+	D T615 ; REDIRECT default status
+	D T616 ; REDIRECT explicit status
+	D T617 ; RESPTEXT helper
+	D T618 ; RESPERR helper
+	D T619 ; STATUSMSG added phrases
+	D T620 ; CTPARAM missing returns empty
+	D T621 ; TARGETKIND origin
+	D T622 ; TARGETKIND asterisk
+	D T623 ; TARGETKIND authority
+	D T624 ; PARSEHDRS GET metadata none/origin
+	D T625 ; PARSEHDRS POST form metadata CL
+	D T626 ; PARSEHDRS JSON metadata
+	D T627 ; PARSEHDRS chunked metadata
+	D T628 ; PARSE full GET metadata none
+	D T629 ; PARSE full POST CL body metadata
+	D T630 ; PARSE full POST CL zero metadata
+	D T631 ; PARSE full chunked metadata
+	D T632 ; READBODYONLY updates CL metadata
+	D T633 ; READBODYONLY updates chunked metadata
+	D T634 ; PARSE CONNECT metadata authority
+	D T635 ; PARSE OPTIONS star metadata asterisk
+	D T636 ; PARSE full form metadata isForm
+	D T637 ; PARSE full json metadata isJSON
+	D T638 ; PARSE TE identity with CL metadata
+	D T639 ; PARSE TE identity no CL metadata none
+	D T640 ; PARSE query request keeps origin metadata
+	D T641 ; BODYFRAMING none
+	D T642 ; BODYFRAMING content-length
+	D T643 ; BODYFRAMING chunked
+	D T644 ; BODYFRAMING identity plus content-length
+	D T645 ; BODYFRAMING te cl conflict by default
+	D T646 ; BODYFRAMING te cl allowed when enabled
+	D T647 ; BODYFRAMING bad te order
+	D T648 ; STRICTREQ missing host on http11 origin
+	D T649 ; STRICTREQ non-strict allows missing host
+	D T650 ; STRICTREQ options star valid
+	D T651 ; STRICTREQ get star invalid
+	D T652 ; STRICTREQ connect authority valid
+	D T653 ; STRICTREQ get authority invalid
+	D T654 ; PARSE strict missing host fails
+	D T655 ; PARSE strict host present passes
+	D T656 ; PARSEHDRS strict options star passes
+	D T657 ; PARSEHDRS strict invalid origin target fails
+	D T658 ; READBODYONLY chunked uses framing helper
+	D T659 ; READBODYONLY cl zero sets no body but framing content-length
+	D T660 ; PARSE te identity no cl yields none framing	
 	QUIT
 	;
 T001 ; PARSEREQLINE basic GET
@@ -5793,6 +5978,2099 @@ T475 ; mixed parsehdrs expect send100 readbody stream sequence
 	KILL ^TMP($J,"MIOHTTP","REQ")
 	DO READALL(OP,.OUT)
 	DO EQ^MIOTASSERT($SELECT(OUT["2"_$C(13,10)_"ok":1,1:0),1,"[T475][chunk]")
+	QUIT
+T476 ; PARSEREQLINE encoded query values
+	NEW REQ,ERR
+	DO PARSEREQLINE^MIOHTTP("GET /x?a=%2F&b=hello+world HTTP/1.1",.REQ,.ERR)
+	DO EQ^MIOTASSERT($GET(REQ("path")),"/x","[T476][path]")
+	DO EQ^MIOTASSERT($GET(REQ("query","a")),"/","[T476][a]")
+	DO EQ^MIOTASSERT($GET(REQ("query","b")),"hello world","[T476][b]")
+	QUIT
+	;
+T477 ; PARSEREQLINE repeated query key last wins
+	NEW REQ,ERR
+	DO PARSEREQLINE^MIOHTTP("GET /x?a=1&a=2 HTTP/1.1",.REQ,.ERR)
+	DO EQ^MIOTASSERT($GET(REQ("query","a")),"2","[T477][a]")
+	QUIT
+	;
+T478 ; PARSEREQLINE empty query pair
+	NEW REQ,ERR
+	DO PARSEREQLINE^MIOHTTP("GET /x?a=&b=2 HTTP/1.1",.REQ,.ERR)
+	DO EQ^MIOTASSERT($GET(REQ("query","a")),"","[T478][a]")
+	DO EQ^MIOTASSERT($GET(REQ("query","b")),"2","[T478][b]")
+	QUIT
+	;
+T479 ; PARSEREQLINE question mark only
+	NEW REQ,ERR
+	DO PARSEREQLINE^MIOHTTP("GET /x? HTTP/1.1",.REQ,.ERR)
+	DO EQ^MIOTASSERT($GET(REQ("path")),"/x","[T479][path]")
+	QUIT
+	;
+T480 ; PARSE TE chunked with allowTECL and CL zero
+	NEW CONF,REQ,ERR,DEV
+	SET CONF("server","http","allowTECL")=1
+	SET CONF("server","http","supportChunkedRequest")=1
+	SET DEV="tmp/miohttp_p20_t480.req"
+	DO WRFILE(DEV,"POST /x HTTP/1.1"_$C(13,10)_"Transfer-Encoding: chunked"_$C(13,10)_"Content-Length: 0"_$C(13,10,13,10)_"2"_$C(13,10)_"ok"_$C(13,10)_"0"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T480][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("body")),"ok","[T480][body]")
+	QUIT
+	;
+T481 ; PARSE TE identity with no CL gives no body
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p20_t481.req"
+	DO WRFILE(DEV,"POST /x HTTP/1.1"_$C(13,10)_"Transfer-Encoding: identity"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T481][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("body","mode")),"none","[T481][mode]")
+	QUIT
+	;
+T482 ; PARSE TE chunked only with empty body
+	NEW CONF,REQ,ERR,DEV
+	SET CONF("server","http","supportChunkedRequest")=1
+	SET DEV="tmp/miohttp_p20_t482.req"
+	DO WRFILE(DEV,"POST /x HTTP/1.1"_$C(13,10)_"Transfer-Encoding: chunked"_$C(13,10,13,10)_"0"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T482][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($$BODYLEN^MIOHTTP(.REQ),0,"[T482][len]")
+	QUIT
+	;
+T483 ; PARSE unsupported TE compress, chunked
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p20_t483.req"
+	DO WRFILE(DEV,"POST /x HTTP/1.1"_$C(13,10)_"Transfer-Encoding: compress, chunked"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),0,"[T483][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(ERR("error")),"unsupported_transfer_encoding","[T483][err]")
+	QUIT
+	;
+T484 ; PARSE TE chunked not last in longer list
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p20_t484.req"
+	DO WRFILE(DEV,"POST /x HTTP/1.1"_$C(13,10)_"Transfer-Encoding: identity, chunked, identity"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),0,"[T484][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(ERR("error")),"bad_transfer_encoding_order","[T484][err]")
+	QUIT
+	;
+T485 ; BODYAPPEND threshold boundary one below stays scalar
+	NEW CONF,REQ,ERR
+	SET CONF("server","limits","maxBodyScalarBytes")=5
+	DO BODYINIT^MIOHTTP(.REQ,.CONF,0)
+	DO BODYAPPEND^MIOHTTP(.REQ,.CONF,"ab",.ERR)
+	DO BODYAPPEND^MIOHTTP(.REQ,.CONF,"cd",.ERR)
+	DO EQ^MIOTASSERT($GET(REQ("body","mode")),"scalar","[T485][mode]")
+	DO EQ^MIOTASSERT($GET(REQ("body")),"abcd","[T485][body]")
+	QUIT
+	;
+T486 ; BODYAPPEND threshold exact stays scalar
+	NEW CONF,REQ,ERR
+	SET CONF("server","limits","maxBodyScalarBytes")=4
+	DO BODYINIT^MIOHTTP(.REQ,.CONF,0)
+	DO BODYAPPEND^MIOHTTP(.REQ,.CONF,"ab",.ERR)
+	DO BODYAPPEND^MIOHTTP(.REQ,.CONF,"cd",.ERR)
+	DO EQ^MIOTASSERT($GET(REQ("body","mode")),"scalar","[T486][mode]")
+	QUIT
+	;
+T487 ; BODYAPPEND threshold plus one upgrades
+	NEW CONF,REQ,ERR
+	SET CONF("server","limits","maxBodyScalarBytes")=4
+	DO BODYINIT^MIOHTTP(.REQ,.CONF,0)
+	DO BODYAPPEND^MIOHTTP(.REQ,.CONF,"ab",.ERR)
+	DO BODYAPPEND^MIOHTTP(.REQ,.CONF,"cde",.ERR)
+	DO EQ^MIOTASSERT($GET(REQ("body","mode")),"global","[T487][mode]")
+	DO EQ^MIOTASSERT($GET(REQ("body","len")),5,"[T487][len]")
+	DO BODYFREE^MIOHTTP(.REQ)
+	QUIT
+	;
+T488 ; READCL above maxBodyBytes denied
+	NEW CONF,REQ,ERR
+	SET CONF("server","limits","maxBodyBytes")=3
+	DO READCL^MIOHTTP("dummy",.CONF,.REQ,4,.ERR)
+	DO EQ^MIOTASSERT($GET(ERR("error")),"payload_too_large","[T488][err]")
+	QUIT
+	;
+T489 ; READCL exact maxBodyBytes allowed
+	NEW CONF,REQ,ERR,DEV
+	SET CONF("server","limits","maxBodyBytes")=4
+	SET DEV="tmp/miohttp_p20_t489.req"
+	DO WRFILE(DEV,"abcd")
+	DO OPENR(DEV)
+	DO READCL^MIOHTTP(DEV,.CONF,.REQ,4,.ERR)
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(ERR("error")),"","[T489][no err]")
+	DO EQ^MIOTASSERT($GET(REQ("body")),"abcd","[T489][body]")
+	QUIT
+	;
+T490 ; PARSE simple GET then RESPX text
+	NEW CONF,REQ,ERR,DEV,OP,OUT,RDEV,HEAD,CTX
+	SET DEV="tmp/miohttp_p20_t490.req"
+	DO WRFILE(DEV,"GET /rx HTTP/1.1"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T490][parse]")
+	DO CLOSER(DEV)
+	SET HEAD("Content-Type")="text/plain"
+	SET OP="tmp/miohttp_p20_t490.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET RDEV=OP USE RDEV
+	DO RESPX^MIOHTTP(.RDEV,.CONF,200,.HEAD,$GET(REQ("path")),"rid490",.CTX)
+	CLOSE RDEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["/rx":1,1:0),1,"[T490][body]")
+	QUIT
+	;
+T491 ; PARSE simple GET then RESPJSONX path
+	NEW CONF,REQ,ERR,DEV,OP,OUT,RDEV,OBJ,CTX
+	SET DEV="tmp/miohttp_p20_t491.req"
+	DO WRFILE(DEV,"GET /jsonx HTTP/1.1"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T491][parse]")
+	DO CLOSER(DEV)
+	SET OBJ("path")=$GET(REQ("path"))
+	SET OP="tmp/miohttp_p20_t491.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET RDEV=OP USE RDEV
+	DO RESPJSONX^MIOHTTP(.RDEV,.CONF,200,.OBJ,"rid491",.CTX)
+	CLOSE RDEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["""path"":""\/jsonx""":1,1:0),1,"[T491][json]")
+	QUIT
+	;
+T492 ; PARSE POST body then STREAM response echoes size
+	NEW CONF,REQ,ERR,DEV,OP,OUT,RDEV,HEAD,CTX
+	SET DEV="tmp/miohttp_p20_t492.req"
+	DO WRFILE(DEV,"POST /s HTTP/1.1"_$C(13,10)_"Content-Length: 3"_$C(13,10,13,10)_"hey")
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T492][parse]")
+	DO CLOSER(DEV)
+	SET HEAD("Content-Type")="text/plain"
+	SET OP="tmp/miohttp_p20_t492.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET RDEV=OP USE RDEV
+	KILL ^TMP($J,"MIOHTTP","REQ")
+	SET ^TMP($J,"MIOHTTP","REQ","method")="GET"
+	DO STREAMBEGIN^MIOHTTP(.RDEV,.CONF,200,.HEAD,"rid492",.CTX)
+	DO STREAMWRITE^MIOHTTP(.RDEV,$J($$BODYLEN^MIOHTTP(.REQ),1,0))
+	DO STREAMEND^MIOHTTP(.RDEV)
+	CLOSE RDEV USE $PRINCIPAL
+	KILL ^TMP($J,"MIOHTTP","REQ")
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["1"_$C(13,10)_"3":1,1:0),1,"[T492][chunk]")
+	QUIT
+	;
+T493 ; READHDRS preserves tab in value
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p20_t493.req"
+	DO WRFILE(DEV,"X-A: a"_$C(9)_"b"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO READHDRS^MIOHTTP(DEV,.CONF,.REQ,.ERR)
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("hdr","x-a")),"a"_$C(9)_"b","[T493][value]")
+	QUIT
+	;
+T494 ; PARSEHDRS path only HTTP/1.0
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p20_t494.req"
+	DO WRFILE(DEV,"GET /old HTTP/1.0"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSEHDRS^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T494][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("httpver")),"HTTP/1.0","[T494][ver]")
+	QUIT
+	;
+T495 ; PARSE full request with host and empty body cl0
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p20_t495.req"
+	DO WRFILE(DEV,"POST /e HTTP/1.1"_$C(13,10)_"Host: ex"_$C(13,10)_"Content-Length: 0"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T495][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("hdr","host")),"ex","[T495][host]")
+	DO EQ^MIOTASSERT($GET(REQ("body","mode")),"none","[T495][mode]")
+	QUIT
+	;
+T496 ; SENDFILE then RESP on separate device sequence
+	NEW DEV,CONF,CTX,OUT,OP,HEAD,FP,RDEV
+	SET FP="tmp/miohttp_p20_t496.txt"
+	DO WRFILE(FP,"f496")
+	SET HEAD("Content-Type")="text/plain"
+	SET OP="tmp/miohttp_p20_t496a.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO EQ^MIOTASSERT($$SENDFILE^MIOHTTP(.DEV,.CONF,FP,.HEAD,"rid496a",.CTX,"GET"),1,"[T496][sendfile]")
+	CLOSE DEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["f496":1,1:0),1,"[T496][file]")
+	SET OP="tmp/miohttp_p20_t496b.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET RDEV=OP USE RDEV
+	DO RESP^MIOHTTP(.RDEV,.CONF,200,.HEAD,"ok","rid496b")
+	CLOSE RDEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["ok":1,1:0),1,"[T496][resp]")
+	QUIT
+	;
+T497 ; STATUSMSG 405 and 500
+	DO EQ^MIOTASSERT($$STATUSMSG^MIOHTTP(405),"Method Not Allowed","[T497][405]")
+	DO EQ^MIOTASSERT($$STATUSMSG^MIOHTTP(500),"Internal Server Error","[T497][500]")
+	QUIT
+	;
+T498 ; STATUS4ERR bad_header_line and invalid_content_length
+	NEW ERR
+	SET ERR("error")="bad_header_line"
+	DO EQ^MIOTASSERT($$STATUS4ERR^MIOHTTP(.ERR),400,"[T498][bad header]")
+	SET ERR("error")="invalid_content_length"
+	DO EQ^MIOTASSERT($$STATUS4ERR^MIOHTTP(.ERR),400,"[T498][bad cl]")
+	QUIT
+	;
+T499 ; URLDECQ preserved invalid escape in middle
+	DO EQ^MIOTASSERT($$URLDECQ^MIOHTTP("a%XZb"),"a%XZb","[T499][decode]")
+	QUIT
+	;
+T500 ; mixed parse split response file flow
+	NEW CONF,REQ,ERR,DEV,OP,OUT,RDEV,HEAD,OBJ,CTX,FP
+	SET DEV="tmp/miohttp_p20_t500.req"
+	DO WRFILE(DEV,"POST /five HTTP/1.1"_$C(13,10)_"Content-Length: 2"_$C(13,10,13,10)_"ok")
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSEHDRS^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T500][hdrs]")
+	DO EQ^MIOTASSERT($$READBODYONLY^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T500][body]")
+	DO CLOSER(DEV)
+	SET OBJ("body")=$GET(REQ("body"))
+	SET OP="tmp/miohttp_p20_t500a.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET RDEV=OP USE RDEV
+	DO RESPJSONX^MIOHTTP(.RDEV,.CONF,200,.OBJ,"rid500a",.CTX)
+	CLOSE RDEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["""body"":""ok""":1,1:0),1,"[T500][json]")
+	SET FP="tmp/miohttp_p20_t500.txt"
+	DO WRFILE(FP,"done500")
+	SET OP="tmp/miohttp_p20_t500b.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET RDEV=OP USE RDEV
+	SET HEAD("Content-Type")="text/plain"
+	DO EQ^MIOTASSERT($$SENDFILE^MIOHTTP(.RDEV,.CONF,FP,.HEAD,"rid500b",.CTX,"GET"),1,"[T500][sendfile]")
+	CLOSE RDEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["done500":1,1:0),1,"[T500][file]")
+	QUIT
+T501 ; common GET home page parse
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p21_t501.req"
+	DO WRFILE(DEV,"GET / HTTP/1.1"_$C(13,10)_"Host: example.com"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T501][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("method")),"GET","[T501][method]")
+	DO EQ^MIOTASSERT($GET(REQ("path")),"/","[T501][path]")
+	DO EQ^MIOTASSERT($GET(REQ("hdr","host")),"example.com","[T501][host]")
+	QUIT
+	;
+T502 ; common GET asset with query cache buster
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p21_t502.req"
+	DO WRFILE(DEV,"GET /app.js?v=42 HTTP/1.1"_$C(13,10)_"Host: ex"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T502][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("path")),"/app.js","[T502][path]")
+	DO EQ^MIOTASSERT($GET(REQ("query","v")),"42","[T502][v]")
+	QUIT
+	;
+T503 ; common HEAD request for health endpoint
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p21_t503.req"
+	DO WRFILE(DEV,"HEAD /health HTTP/1.1"_$C(13,10)_"Host: ex"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T503][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("method")),"HEAD","[T503][method]")
+	DO EQ^MIOTASSERT($GET(REQ("path")),"/health","[T503][path]")
+	QUIT
+	;
+T504 ; common JSON API response helper
+	NEW DEV,CONF,OUT,OP,OBJ
+	SET OBJ("ok")=1
+	SET OBJ("route")="/api/ping"
+	SET OP="tmp/miohttp_p21_t504.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO RESPJSON^MIOHTTP(.DEV,.CONF,200,.OBJ,"rid504")
+	CLOSE DEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["HTTP/1.1 200 OK":1,1:0),1,"[T504][status]")
+	DO EQ^MIOTASSERT($SELECT(OUT["Content-Type: application/json":1,1:0),1,"[T504][ctype]")
+	DO EQ^MIOTASSERT($SELECT(OUT["""route"":""\/api\/ping""":1,1:0),1,"[T504][route]")
+	QUIT
+	;
+T505 ; common plain text health response
+	NEW DEV,CONF,OUT,OP,HEAD
+	SET HEAD("Content-Type")="text/plain"
+	SET OP="tmp/miohttp_p21_t505.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO RESP^MIOHTTP(.DEV,.CONF,200,.HEAD,"OK","rid505")
+	CLOSE DEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["Content-Length: 2":1,1:0),1,"[T505][cl]")
+	DO EQ^MIOTASSERT($SELECT(OUT["OK":1,1:0),1,"[T505][body]")
+	QUIT
+	;
+T506 ; common form POST parse username password body
+	NEW CONF,REQ,ERR,DEV,BODY
+	SET BODY="username=alice&password=secret"
+	SET DEV="tmp/miohttp_p21_t506.req"
+	DO WRFILE(DEV,"POST /login HTTP/1.1"_$C(13,10)_"Host: ex"_$C(13,10)_"Content-Type: application/x-www-form-urlencoded"_$C(13,10)_"Content-Length: "_$L(BODY)_$C(13,10,13,10)_BODY)
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T506][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("path")),"/login","[T506][path]")
+	DO EQ^MIOTASSERT($GET(REQ("hdr","content-type")),"application/x-www-form-urlencoded","[T506][ctype]")
+	DO EQ^MIOTASSERT($GET(REQ("body")),BODY,"[T506][body]")
+	QUIT
+	;
+T507 ; common form POST with encoded spaces and slash
+	NEW CONF,REQ,ERR,DEV,BODY
+	SET BODY="name=Alice+Smith&next=%2Fdashboard"
+	SET DEV="tmp/miohttp_p21_t507.req"
+	DO WRFILE(DEV,"POST /login HTTP/1.1"_$C(13,10)_"Content-Type: application/x-www-form-urlencoded"_$C(13,10)_"Content-Length: "_$L(BODY)_$C(13,10,13,10)_BODY)
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T507][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("body")),BODY,"[T507][body]")
+	DO EQ^MIOTASSERT($$URLDECQ^MIOHTTP("Alice+Smith"),"Alice Smith","[T507][name decode]")
+	DO EQ^MIOTASSERT($$URLDECQ^MIOHTTP("%2Fdashboard"),"/dashboard","[T507][next decode]")
+	QUIT
+	;
+T508 ; common form POST with empty optional field
+	NEW CONF,REQ,ERR,DEV,BODY
+	SET BODY="email=a%40b.com&phone="
+	SET DEV="tmp/miohttp_p21_t508.req"
+	DO WRFILE(DEV,"POST /profile HTTP/1.1"_$C(13,10)_"Content-Type: application/x-www-form-urlencoded"_$C(13,10)_"Content-Length: "_$L(BODY)_$C(13,10,13,10)_BODY)
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T508][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("body")),BODY,"[T508][body]")
+	DO EQ^MIOTASSERT($$URLDECQ^MIOHTTP("a%40b.com"),"a@b.com","[T508][email decode]")
+	QUIT
+	;
+T509 ; split flow form parsehdrs then readbodyonly
+	NEW CONF,REQ,ERR,DEV,BODY
+	SET BODY="title=Hello+World&published=1"
+	SET DEV="tmp/miohttp_p21_t509.req"
+	DO WRFILE(DEV,"POST /posts HTTP/1.1"_$C(13,10)_"Content-Type: application/x-www-form-urlencoded"_$C(13,10)_"Content-Length: "_$L(BODY)_$C(13,10,13,10)_BODY)
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSEHDRS^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T509][hdrs]")
+	DO EQ^MIOTASSERT($$READBODYONLY^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T509][body]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("hdr","content-type")),"application/x-www-form-urlencoded","[T509][ctype]")
+	DO EQ^MIOTASSERT($GET(REQ("body")),BODY,"[T509][body]")
+	QUIT
+	;
+T510 ; common multipart not auto-decoded by http layer
+	NEW CONF,REQ,ERR,DEV,BODY
+	SET BODY="field1=value1&field2=value2"
+	SET DEV="tmp/miohttp_p21_t510.req"
+	DO WRFILE(DEV,"POST /submit HTTP/1.1"_$C(13,10)_"Content-Type: application/x-www-form-urlencoded; charset=utf-8"_$C(13,10)_"Content-Length: "_$L(BODY)_$C(13,10,13,10)_BODY)
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T510][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("hdr","content-type")),"application/x-www-form-urlencoded; charset=utf-8","[T510][ctype]")
+	DO EQ^MIOTASSERT($GET(REQ("body")),BODY,"[T510][body]")
+	QUIT
+	;
+T511 ; common search query parse
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p21_t511.req"
+	DO WRFILE(DEV,"GET /search?q=hello+world&tag=mumps HTTP/1.1"_$C(13,10)_"Host: ex"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T511][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("query","q")),"hello world","[T511][q]")
+	DO EQ^MIOTASSERT($GET(REQ("query","tag")),"mumps","[T511][tag]")
+	QUIT
+	;
+T512 ; common file download via sendfile
+	NEW DEV,CONF,CTX,OUT,OP,HEAD,FP
+	SET FP="tmp/miohttp_p21_t512.txt"
+	DO WRFILE(FP,"download-body")
+	SET HEAD("Content-Type")="text/plain"
+	SET OP="tmp/miohttp_p21_t512.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO EQ^MIOTASSERT($$SENDFILE^MIOHTTP(.DEV,.CONF,FP,.HEAD,"rid512",.CTX,"GET"),1,"[T512][ok]")
+	CLOSE DEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["download-body":1,1:0),1,"[T512][body]")
+	QUIT
+	;
+T513 ; common file HEAD download suppresses body
+	NEW DEV,CONF,CTX,OUT,OP,HEAD,FP
+	SET FP="tmp/miohttp_p21_t513.txt"
+	DO WRFILE(FP,"download-body")
+	SET HEAD("Content-Type")="text/plain"
+	SET OP="tmp/miohttp_p21_t513.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO EQ^MIOTASSERT($$SENDFILE^MIOHTTP(.DEV,.CONF,FP,.HEAD,"rid513",.CTX,"HEAD"),1,"[T513][ok]")
+	CLOSE DEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["download-body":1,1:0),0,"[T513][no body]")
+	QUIT
+	;
+T514 ; common upload expect continue accepted
+	NEW CONF,REQ,ERR,DEV
+	SET CONF("server","limits","maxBodyBytes")=20
+	SET DEV="tmp/miohttp_p21_t514.req"
+	DO WRFILE(DEV,"POST /upload HTTP/1.1"_$C(13,10)_"Expect: 100-continue"_$C(13,10)_"Content-Length: 10"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSEHDRS^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T514][hdrs]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($$EXPECTDECIDE^MIOHTTP(.CONF,.REQ,.ERR),1,"[T514][expect]")
+	QUIT
+	;
+T515 ; common upload expect continue denied when too large
+	NEW CONF,REQ,ERR,DEV
+	SET CONF("server","limits","maxBodyBytes")=5
+	SET DEV="tmp/miohttp_p21_t515.req"
+	DO WRFILE(DEV,"POST /upload HTTP/1.1"_$C(13,10)_"Expect: 100-continue"_$C(13,10)_"Content-Length: 10"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSEHDRS^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T515][hdrs]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($$EXPECTDECIDE^MIOHTTP(.CONF,.REQ,.ERR),0,"[T515][expect]")
+	DO EQ^MIOTASSERT($GET(ERR("error")),"payload_too_large","[T515][err]")
+	QUIT
+	;
+T516 ; common chunked form body parse
+	NEW CONF,REQ,ERR,DEV,BODY
+	SET CONF("server","http","supportChunkedRequest")=1
+	SET BODY="a=1&b=2"
+	SET DEV="tmp/miohttp_p21_t516.req"
+	DO WRFILE(DEV,"POST /form HTTP/1.1"_$C(13,10)_"Content-Type: application/x-www-form-urlencoded"_$C(13,10)_"Transfer-Encoding: chunked"_$C(13,10,13,10)_"7"_$C(13,10)_BODY_$C(13,10)_"0"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T516][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("body")),BODY,"[T516][body]")
+	QUIT
+	;
+T517 ; common html response with defaults
+	NEW DEV,CONF,OUT,OP,HEAD
+	SET CONF("server","http","defaultResponseHeaders","X-App")="mio"
+	SET HEAD("Content-Type")="text/html"
+	SET OP="tmp/miohttp_p21_t517.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO RESP^MIOHTTP(.DEV,.CONF,200,.HEAD,"<h1>Home</h1>","rid517")
+	CLOSE DEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["Content-Type: text/html":1,1:0),1,"[T517][ctype]")
+	DO EQ^MIOTASSERT($SELECT(OUT["X-App: mio":1,1:0),1,"[T517][x-app]")
+	QUIT
+	;
+T518 ; common streaming text response two chunks
+	NEW DEV,CONF,CTX,OUT,OP,HEAD
+	KILL ^TMP($J,"MIOHTTP","REQ")
+	SET ^TMP($J,"MIOHTTP","REQ","method")="GET"
+	SET HEAD("Content-Type")="text/plain"
+	SET OP="tmp/miohttp_p21_t518.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO STREAMBEGIN^MIOHTTP(.DEV,.CONF,200,.HEAD,"rid518",.CTX)
+	DO STREAMWRITE^MIOHTTP(.DEV,"hello ")
+	DO STREAMWRITE^MIOHTTP(.DEV,"world")
+	DO STREAMEND^MIOHTTP(.DEV)
+	CLOSE DEV USE $PRINCIPAL
+	KILL ^TMP($J,"MIOHTTP","REQ")
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["6"_$C(13,10)_"hello ":1,1:0),1,"[T518][chunk1]")
+	DO EQ^MIOTASSERT($SELECT(OUT["5"_$C(13,10)_"world":1,1:0),1,"[T518][chunk2]")
+	QUIT
+	;
+T519 ; form fragment decode helper name field
+	DO EQ^MIOTASSERT($$URLDECQ^MIOHTTP("first=Alice+Smith"),"first=Alice Smith","[T519][decode]")
+	QUIT
+	;
+T520 ; form fragment decode helper encoded equals and ampersand
+	DO EQ^MIOTASSERT($$URLDECQ^MIOHTTP("note=a%3Db%26c"),"note=a=b&c","[T520][decode]")
+	QUIT
+	;
+T521 ; common parse then json echo response
+	NEW CONF,REQ,ERR,DEV,OP,OUT,RDEV,OBJ
+	SET DEV="tmp/miohttp_p21_t521.req"
+	DO WRFILE(DEV,"GET /user?id=42 HTTP/1.1"_$C(13,10)_"Host: ex"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T521][parse]")
+	DO CLOSER(DEV)
+	SET OBJ("path")=$GET(REQ("path"))
+	SET OBJ("id")=$GET(REQ("query","id"))
+	SET OP="tmp/miohttp_p21_t521.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET RDEV=OP USE RDEV
+	DO RESPJSON^MIOHTTP(.RDEV,.CONF,200,.OBJ,"rid521")
+	CLOSE RDEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["""path"":""\/user""":1,1:0),1,"[T521][path]")
+	DO EQ^MIOTASSERT($SELECT(OUT["""id"":42":1,1:0),1,"[T521][id]")
+	QUIT
+	;
+T522 ; common login form split flow and text response
+	NEW CONF,REQ,ERR,DEV,OP,OUT,RDEV,HEAD,BODY
+	SET BODY="username=alice&password=secret"
+	SET DEV="tmp/miohttp_p21_t522.req"
+	DO WRFILE(DEV,"POST /login HTTP/1.1"_$C(13,10)_"Content-Type: application/x-www-form-urlencoded"_$C(13,10)_"Content-Length: "_$L(BODY)_$C(13,10,13,10)_BODY)
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSEHDRS^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T522][hdrs]")
+	DO EQ^MIOTASSERT($$READBODYONLY^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T522][body]")
+	DO CLOSER(DEV)
+	SET HEAD("Content-Type")="text/plain"
+	SET OP="tmp/miohttp_p21_t522.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET RDEV=OP USE RDEV
+	DO RESP^MIOHTTP(.RDEV,.CONF,200,.HEAD,"logged-in","rid522")
+	CLOSE RDEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["logged-in":1,1:0),1,"[T522][resp]")
+	QUIT
+	;
+T523 ; common empty form body cl0
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p21_t523.req"
+	DO WRFILE(DEV,"POST /form HTTP/1.1"_$C(13,10)_"Content-Type: application/x-www-form-urlencoded"_$C(13,10)_"Content-Length: 0"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T523][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("body","mode")),"none","[T523][mode]")
+	QUIT
+	;
+T524 ; common form body boundary exact scalar threshold
+	NEW CONF,REQ,ERR,DEV,BODY
+	SET BODY="a=1&b=2"
+	SET CONF("server","limits","maxBodyScalarBytes")=$L(BODY)
+	SET DEV="tmp/miohttp_p21_t524.req"
+	DO WRFILE(DEV,"POST /form HTTP/1.1"_$C(13,10)_"Content-Type: application/x-www-form-urlencoded"_$C(13,10)_"Content-Length: "_$L(BODY)_$C(13,10,13,10)_BODY)
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T524][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("body","mode")),"scalar","[T524][mode]")
+	QUIT
+	;
+T525 ; common form body boundary above scalar threshold
+	NEW CONF,REQ,ERR,DEV,BODY
+	SET BODY="a=1&b=2"
+	SET CONF("server","limits","maxBodyScalarBytes")=$L(BODY)-1
+	SET DEV="tmp/miohttp_p21_t525.req"
+	DO WRFILE(DEV,"POST /form HTTP/1.1"_$C(13,10)_"Content-Type: application/x-www-form-urlencoded"_$C(13,10)_"Content-Length: "_$L(BODY)_$C(13,10,13,10)_BODY)
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T525][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("body","mode")),"global","[T525][mode]")
+	DO BODYFREE^MIOHTTP(.REQ)
+	QUIT
+T526 ; common signup form parse
+	NEW CONF,REQ,ERR,DEV,BODY
+	SET BODY="email=test%40example.com&password=secret123"
+	SET DEV="tmp/miohttp_p22_t526.req"
+	DO WRFILE(DEV,"POST /signup HTTP/1.1"_$C(13,10)_"Host: ex"_$C(13,10)_"Content-Type: application/x-www-form-urlencoded"_$C(13,10)_"Content-Length: "_$L(BODY)_$C(13,10,13,10)_BODY)
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T526][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("path")),"/signup","[T526][path]")
+	DO EQ^MIOTASSERT($GET(REQ("body")),BODY,"[T526][body]")
+	DO EQ^MIOTASSERT($$URLDECQ^MIOHTTP("test%40example.com"),"test@example.com","[T526][email]")
+	QUIT
+	;
+T527 ; common contact form parse
+	NEW CONF,REQ,ERR,DEV,BODY
+	SET BODY="name=Alice+Jones&message=Hello+there"
+	SET DEV="tmp/miohttp_p22_t527.req"
+	DO WRFILE(DEV,"POST /contact HTTP/1.1"_$C(13,10)_"Content-Type: application/x-www-form-urlencoded"_$C(13,10)_"Content-Length: "_$L(BODY)_$C(13,10,13,10)_BODY)
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T527][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("body")),BODY,"[T527][body]")
+	DO EQ^MIOTASSERT($$URLDECQ^MIOHTTP("Alice+Jones"),"Alice Jones","[T527][name]")
+	DO EQ^MIOTASSERT($$URLDECQ^MIOHTTP("Hello+there"),"Hello there","[T527][msg]")
+	QUIT
+	;
+T528 ; common settings form with booleans
+	NEW CONF,REQ,ERR,DEV,BODY
+	SET BODY="email_alerts=1&sms_alerts=0&theme=dark"
+	SET DEV="tmp/miohttp_p22_t528.req"
+	DO WRFILE(DEV,"POST /settings HTTP/1.1"_$C(13,10)_"Content-Type: application/x-www-form-urlencoded"_$C(13,10)_"Content-Length: "_$L(BODY)_$C(13,10,13,10)_BODY)
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T528][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("body")),BODY,"[T528][body]")
+	QUIT
+	;
+T529 ; common search filters parse
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p22_t529.req"
+	DO WRFILE(DEV,"GET /items?q=red+shoes&size=10&sort=price HTTP/1.1"_$C(13,10)_"Host: ex"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T529][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("query","q")),"red shoes","[T529][q]")
+	DO EQ^MIOTASSERT($GET(REQ("query","size")),"10","[T529][size]")
+	DO EQ^MIOTASSERT($GET(REQ("query","sort")),"price","[T529][sort]")
+	QUIT
+	;
+T530 ; common pagination query parse
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p22_t530.req"
+	DO WRFILE(DEV,"GET /posts?page=3&limit=25 HTTP/1.1"_$C(13,10)_"Host: ex"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T530][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("query","page")),"3","[T530][page]")
+	DO EQ^MIOTASSERT($GET(REQ("query","limit")),"25","[T530][limit]")
+	QUIT
+	;
+T531 ; common redirect style response 303
+	NEW DEV,CONF,OUT,OP,HEAD
+	SET HEAD("Content-Type")="text/plain"
+	SET HEAD("Location")="/thanks"
+	SET OP="tmp/miohttp_p22_t531.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO RESP^MIOHTTP(.DEV,.CONF,303,.HEAD,"See Other","rid531")
+	CLOSE DEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["HTTP/1.1 303 ":1,1:0),1,"[T531][status]")
+	DO EQ^MIOTASSERT($SELECT(OUT["Location: /thanks":1,1:0),1,"[T531][location]")
+	QUIT
+	;
+T532 ; common redirect style response 302
+	NEW DEV,CONF,OUT,OP,HEAD
+	SET HEAD("Content-Type")="text/plain"
+	SET HEAD("Location")="/login"
+	SET OP="tmp/miohttp_p22_t532.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO RESP^MIOHTTP(.DEV,.CONF,302,.HEAD,"Found","rid532")
+	CLOSE DEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["HTTP/1.1 302 ":1,1:0),1,"[T532][status]")
+	DO EQ^MIOTASSERT($SELECT(OUT["Location: /login":1,1:0),1,"[T532][location]")
+	QUIT
+	;
+T533 ; post submit json response helper
+	NEW DEV,CONF,OUT,OP,OBJ
+	SET OBJ("ok")=1
+	SET OBJ("redirect")="/dashboard"
+	SET OP="tmp/miohttp_p22_t533.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO RESPJSON^MIOHTTP(.DEV,.CONF,200,.OBJ,"rid533")
+	CLOSE DEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["""redirect"":""\/dashboard""":1,1:0),1,"[T533][redirect]")
+	QUIT
+	;
+T534 ; common login form split flow then json response
+	NEW CONF,REQ,ERR,DEV,OP,OUT,RDEV,OBJ,BODY
+	SET BODY="username=alice&password=secret"
+	SET DEV="tmp/miohttp_p22_t534.req"
+	DO WRFILE(DEV,"POST /login HTTP/1.1"_$C(13,10)_"Content-Type: application/x-www-form-urlencoded"_$C(13,10)_"Content-Length: "_$L(BODY)_$C(13,10,13,10)_BODY)
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSEHDRS^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T534][hdrs]")
+	DO EQ^MIOTASSERT($$READBODYONLY^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T534][body]")
+	DO CLOSER(DEV)
+	SET OBJ("path")=$GET(REQ("path"))
+	SET OBJ("body")=$GET(REQ("body"))
+	SET OP="tmp/miohttp_p22_t534.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET RDEV=OP USE RDEV
+	DO RESPJSON^MIOHTTP(.RDEV,.CONF,200,.OBJ,"rid534")
+	CLOSE RDEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["""path"":""\/login""":1,1:0),1,"[T534][path]")
+	DO EQ^MIOTASSERT($SELECT(OUT["""body"":"""_BODY_"""":1,1:0),1,"[T534][body]")
+	QUIT
+	;
+T535 ; common comment form small scalar body
+	NEW CONF,REQ,ERR,DEV,BODY
+	SET BODY="text=Nice+post"
+	SET CONF("server","limits","maxBodyScalarBytes")=50
+	SET DEV="tmp/miohttp_p22_t535.req"
+	DO WRFILE(DEV,"POST /comments HTTP/1.1"_$C(13,10)_"Content-Type: application/x-www-form-urlencoded"_$C(13,10)_"Content-Length: "_$L(BODY)_$C(13,10,13,10)_BODY)
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T535][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("body","mode")),"scalar","[T535][mode]")
+	QUIT
+	;
+T536 ; common comment form large body goes global
+	NEW CONF,REQ,ERR,DEV,BODY
+	SET BODY="text=This+is+a+longer+comment"
+	SET CONF("server","limits","maxBodyScalarBytes")=5
+	SET DEV="tmp/miohttp_p22_t536.req"
+	DO WRFILE(DEV,"POST /comments HTTP/1.1"_$C(13,10)_"Content-Type: application/x-www-form-urlencoded"_$C(13,10)_"Content-Length: "_$L(BODY)_$C(13,10,13,10)_BODY)
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T536][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("body","mode")),"global","[T536][mode]")
+	DO BODYFREE^MIOHTTP(.REQ)
+	QUIT
+	;
+T537 ; common upload endpoint with fixed body
+	NEW CONF,REQ,ERR,DEV,BODY
+	SET BODY="abcdef"
+	SET DEV="tmp/miohttp_p22_t537.req"
+	DO WRFILE(DEV,"POST /upload HTTP/1.1"_$C(13,10)_"Content-Type: application/octet-stream"_$C(13,10)_"Content-Length: 6"_$C(13,10,13,10)_BODY)
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T537][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("body")),BODY,"[T537][body]")
+	QUIT
+	;
+T538 ; common chunked upload endpoint
+	NEW CONF,REQ,ERR,DEV
+	SET CONF("server","http","supportChunkedRequest")=1
+	SET DEV="tmp/miohttp_p22_t538.req"
+	DO WRFILE(DEV,"POST /upload HTTP/1.1"_$C(13,10)_"Transfer-Encoding: chunked"_$C(13,10)_"Content-Type: application/octet-stream"_$C(13,10,13,10)_"3"_$C(13,10)_"abc"_$C(13,10)_"3"_$C(13,10)_"def"_$C(13,10)_"0"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T538][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("body")),"abcdef","[T538][body]")
+	QUIT
+	;
+T539 ; common api post then stream response
+	NEW CONF,REQ,ERR,DEV,OP,OUT,RDEV,HEAD,CTX,BODY
+	SET BODY="name=api+client"
+	SET DEV="tmp/miohttp_p22_t539.req"
+	DO WRFILE(DEV,"POST /api/submit HTTP/1.1"_$C(13,10)_"Content-Type: application/x-www-form-urlencoded"_$C(13,10)_"Content-Length: "_$L(BODY)_$C(13,10,13,10)_BODY)
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T539][parse]")
+	DO CLOSER(DEV)
+	SET HEAD("Content-Type")="text/plain"
+	SET OP="tmp/miohttp_p22_t539.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET RDEV=OP USE RDEV
+	KILL ^TMP($J,"MIOHTTP","REQ")
+	SET ^TMP($J,"MIOHTTP","REQ","method")="GET"
+	DO STREAMBEGIN^MIOHTTP(.RDEV,.CONF,200,.HEAD,"rid539",.CTX)
+	DO STREAMWRITE^MIOHTTP(.RDEV,"saved")
+	DO STREAMEND^MIOHTTP(.RDEV)
+	CLOSE RDEV USE $PRINCIPAL
+	KILL ^TMP($J,"MIOHTTP","REQ")
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["5"_$C(13,10)_"saved":1,1:0),1,"[T539][chunk]")
+	QUIT
+	;
+T540 ; form field fragment decode simple pair
+	DO EQ^MIOTASSERT($$URLDECQ^MIOHTTP("username=alice"),"username=alice","[T540][decode]")
+	QUIT
+	;
+T541 ; form field fragment decode spaces
+	DO EQ^MIOTASSERT($$URLDECQ^MIOHTTP("city=New+York"),"city=New York","[T541][decode]")
+	QUIT
+	;
+T542 ; form field fragment decode slash and question mark
+	DO EQ^MIOTASSERT($$URLDECQ^MIOHTTP("next=%2Fhome%3Ftab%3D1"),"next=/home?tab=1","[T542][decode]")
+	QUIT
+	;
+T543 ; common GET profile query parse
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p22_t543.req"
+	DO WRFILE(DEV,"GET /profile?tab=settings HTTP/1.1"_$C(13,10)_"Host: ex"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T543][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("query","tab")),"settings","[T543][tab]")
+	QUIT
+	;
+T544 ; common GET filter query with repeated key last wins
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p22_t544.req"
+	DO WRFILE(DEV,"GET /items?category=one&category=two HTTP/1.1"_$C(13,10)_"Host: ex"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T544][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("query","category")),"two","[T544][category]")
+	QUIT
+	;
+T545 ; common create form then redirect response
+	NEW CONF,REQ,ERR,DEV,OP,OUT,RDEV,HEAD,BODY
+	SET BODY="title=New+Post"
+	SET DEV="tmp/miohttp_p22_t545.req"
+	DO WRFILE(DEV,"POST /posts HTTP/1.1"_$C(13,10)_"Content-Type: application/x-www-form-urlencoded"_$C(13,10)_"Content-Length: "_$L(BODY)_$C(13,10,13,10)_BODY)
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T545][parse]")
+	DO CLOSER(DEV)
+	SET HEAD("Content-Type")="text/plain"
+	SET HEAD("Location")="/posts/1"
+	SET OP="tmp/miohttp_p22_t545.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET RDEV=OP USE RDEV
+	DO RESP^MIOHTTP(.RDEV,.CONF,303,.HEAD,"See Other","rid545")
+	CLOSE RDEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["Location: /posts/1":1,1:0),1,"[T545][location]")
+	QUIT
+	;
+T546 ; common delete request parse
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p22_t546.req"
+	DO WRFILE(DEV,"DELETE /posts/1 HTTP/1.1"_$C(13,10)_"Host: ex"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T546][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("method")),"DELETE","[T546][method]")
+	QUIT
+	;
+T547 ; common patch form parse
+	NEW CONF,REQ,ERR,DEV,BODY
+	SET BODY="display_name=Alice+J"
+	SET DEV="tmp/miohttp_p22_t547.req"
+	DO WRFILE(DEV,"PATCH /profile HTTP/1.1"_$C(13,10)_"Content-Type: application/x-www-form-urlencoded"_$C(13,10)_"Content-Length: "_$L(BODY)_$C(13,10,13,10)_BODY)
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T547][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("method")),"PATCH","[T547][method]")
+	DO EQ^MIOTASSERT($GET(REQ("body")),BODY,"[T547][body]")
+	QUIT
+	;
+T548 ; common put body parse
+	NEW CONF,REQ,ERR,DEV,BODY
+	SET BODY="abcdef"
+	SET DEV="tmp/miohttp_p22_t548.req"
+	DO WRFILE(DEV,"PUT /files/1 HTTP/1.1"_$C(13,10)_"Content-Length: 6"_$C(13,10,13,10)_BODY)
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T548][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("method")),"PUT","[T548][method]")
+	DO EQ^MIOTASSERT($GET(REQ("body")),BODY,"[T548][body]")
+	QUIT
+	;
+T549 ; common form submit expect continue full flow
+	NEW CONF,REQ,ERR,DEV,OP,OUT,RDEV,BODY
+	SET BODY="a=1&b=2"
+	SET CONF("server","limits","maxBodyBytes")=50
+	SET DEV="tmp/miohttp_p22_t549.req"
+	DO WRFILE(DEV,"POST /form HTTP/1.1"_$C(13,10)_"Expect: 100-continue"_$C(13,10)_"Content-Type: application/x-www-form-urlencoded"_$C(13,10)_"Content-Length: "_$L(BODY)_$C(13,10,13,10)_BODY)
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSEHDRS^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T549][hdrs]")
+	DO EQ^MIOTASSERT($$EXPECTDECIDE^MIOHTTP(.CONF,.REQ,.ERR),1,"[T549][expect]")
+	DO EQ^MIOTASSERT($$READBODYONLY^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T549][body]")
+	DO CLOSER(DEV)
+	SET OP="tmp/miohttp_p22_t549.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET RDEV=OP USE RDEV
+	DO SEND100^MIOHTTP(.RDEV)
+	CLOSE RDEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["100 Continue":1,1:0),1,"[T549][100]")
+	DO EQ^MIOTASSERT($GET(REQ("body")),BODY,"[T549][body content]")
+	QUIT
+	;
+T550 ; common final file download after form flow
+	NEW DEV,CONF,CTX,OUT,OP,HEAD,FP
+	SET FP="tmp/miohttp_p22_t550.txt"
+	DO WRFILE(FP,"report-ready")
+	SET HEAD("Content-Type")="text/plain"
+	SET OP="tmp/miohttp_p22_t550.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO EQ^MIOTASSERT($$SENDFILE^MIOHTTP(.DEV,.CONF,FP,.HEAD,"rid550",.CTX,"GET"),1,"[T550][ok]")
+	CLOSE DEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["report-ready":1,1:0),1,"[T550][body]")
+	QUIT
+T551 ; profile form with encoded email and display name
+	NEW CONF,REQ,ERR,DEV,BODY
+	SET BODY="display_name=Alice+Smith&email=alice%40example.com"
+	SET DEV="tmp/miohttp_p23_t551.req"
+	DO WRFILE(DEV,"POST /profile HTTP/1.1"_$C(13,10)_"Content-Type: application/x-www-form-urlencoded"_$C(13,10)_"Content-Length: "_$L(BODY)_$C(13,10,13,10)_BODY)
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T551][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("body")),BODY,"[T551][body]")
+	DO EQ^MIOTASSERT($$URLDECQ^MIOHTTP("display_name=Alice+Smith"),"display_name=Alice Smith","[T551][name]")
+	DO EQ^MIOTASSERT($$URLDECQ^MIOHTTP("email=alice%40example.com"),"email=alice@example.com","[T551][email]")
+	QUIT
+	;
+T552 ; settings form with timezone and language
+	NEW CONF,REQ,ERR,DEV,BODY
+	SET BODY="timezone=America%2FNew_York&language=en"
+	SET DEV="tmp/miohttp_p23_t552.req"
+	DO WRFILE(DEV,"POST /settings HTTP/1.1"_$C(13,10)_"Content-Type: application/x-www-form-urlencoded"_$C(13,10)_"Content-Length: "_$L(BODY)_$C(13,10,13,10)_BODY)
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T552][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("body")),BODY,"[T552][body]")
+	DO EQ^MIOTASSERT($$URLDECQ^MIOHTTP("timezone=America%2FNew_York"),"timezone=America/New_York","[T552][tz]")
+	QUIT
+	;
+T553 ; password reset form with token
+	NEW CONF,REQ,ERR,DEV,BODY
+	SET BODY="token=abc123&password=newpass"
+	SET DEV="tmp/miohttp_p23_t553.req"
+	DO WRFILE(DEV,"POST /reset HTTP/1.1"_$C(13,10)_"Content-Type: application/x-www-form-urlencoded"_$C(13,10)_"Content-Length: "_$L(BODY)_$C(13,10,13,10)_BODY)
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T553][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("path")),"/reset","[T553][path]")
+	DO EQ^MIOTASSERT($GET(REQ("body")),BODY,"[T553][body]")
+	QUIT
+	;
+T554 ; newsletter subscribe form
+	NEW CONF,REQ,ERR,DEV,BODY
+	SET BODY="email=subscriber%40example.com"
+	SET DEV="tmp/miohttp_p23_t554.req"
+	DO WRFILE(DEV,"POST /subscribe HTTP/1.1"_$C(13,10)_"Content-Type: application/x-www-form-urlencoded"_$C(13,10)_"Content-Length: "_$L(BODY)_$C(13,10,13,10)_BODY)
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T554][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($$URLDECQ^MIOHTTP(BODY),"email=subscriber@example.com","[T554][decode]")
+	QUIT
+	;
+T555 ; checkout form with encoded address
+	NEW CONF,REQ,ERR,DEV,BODY
+	SET BODY="address=123+Main+St&city=New+York&zip=10001"
+	SET DEV="tmp/miohttp_p23_t555.req"
+	DO WRFILE(DEV,"POST /checkout HTTP/1.1"_$C(13,10)_"Content-Type: application/x-www-form-urlencoded"_$C(13,10)_"Content-Length: "_$L(BODY)_$C(13,10,13,10)_BODY)
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T555][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("body")),BODY,"[T555][body]")
+	QUIT
+	;
+T556 ; dashboard query with multiple filters
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p23_t556.req"
+	DO WRFILE(DEV,"GET /dashboard?tab=activity&range=30d&team=core HTTP/1.1"_$C(13,10)_"Host: ex"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T556][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("query","tab")),"activity","[T556][tab]")
+	DO EQ^MIOTASSERT($GET(REQ("query","range")),"30d","[T556][range]")
+	DO EQ^MIOTASSERT($GET(REQ("query","team")),"core","[T556][team]")
+	QUIT
+	;
+T557 ; search query with encoded slash and plus
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p23_t557.req"
+	DO WRFILE(DEV,"GET /search?q=MUMPS%2FHTTP+tests HTTP/1.1"_$C(13,10)_"Host: ex"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T557][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("query","q")),"MUMPS/HTTP tests","[T557][q]")
+	QUIT
+	;
+T558 ; navigation request for nested docs path
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p23_t558.req"
+	DO WRFILE(DEV,"GET /docs/guides/http HTTP/1.1"_$C(13,10)_"Host: ex"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T558][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("path")),"/docs/guides/http","[T558][path]")
+	QUIT
+	;
+T559 ; common success json payload after form submit
+	NEW DEV,CONF,OUT,OP,OBJ
+	SET OBJ("ok")=1
+	SET OBJ("message")="saved"
+	SET OP="tmp/miohttp_p23_t559.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO RESPJSON^MIOHTTP(.DEV,.CONF,200,.OBJ,"rid559")
+	CLOSE DEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["""message"":""saved""":1,1:0),1,"[T559][msg]")
+	QUIT
+	;
+T560 ; common redirect after signup
+	NEW DEV,CONF,OUT,OP,HEAD
+	SET HEAD("Content-Type")="text/plain"
+	SET HEAD("Location")="/welcome"
+	SET OP="tmp/miohttp_p23_t560.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO RESP^MIOHTTP(.DEV,.CONF,303,.HEAD,"See Other","rid560")
+	CLOSE DEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["Location: /welcome":1,1:0),1,"[T560][location]")
+	QUIT
+	;
+T561 ; common redirect after logout
+	NEW DEV,CONF,OUT,OP,HEAD
+	SET HEAD("Content-Type")="text/plain"
+	SET HEAD("Location")="/"
+	SET OP="tmp/miohttp_p23_t561.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO RESP^MIOHTTP(.DEV,.CONF,302,.HEAD,"Found","rid561")
+	CLOSE DEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["Location: /":1,1:0),1,"[T561][location]")
+	QUIT
+	;
+T562 ; split flow settings form then text response
+	NEW CONF,REQ,ERR,DEV,OP,OUT,RDEV,HEAD,BODY
+	SET BODY="theme=dark&density=compact"
+	SET DEV="tmp/miohttp_p23_t562.req"
+	DO WRFILE(DEV,"POST /settings HTTP/1.1"_$C(13,10)_"Content-Type: application/x-www-form-urlencoded"_$C(13,10)_"Content-Length: "_$L(BODY)_$C(13,10,13,10)_BODY)
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSEHDRS^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T562][hdrs]")
+	DO EQ^MIOTASSERT($$READBODYONLY^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T562][body]")
+	DO CLOSER(DEV)
+	SET HEAD("Content-Type")="text/plain"
+	SET OP="tmp/miohttp_p23_t562.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET RDEV=OP USE RDEV
+	DO RESP^MIOHTTP(.RDEV,.CONF,200,.HEAD,"saved","rid562")
+	CLOSE RDEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["saved":1,1:0),1,"[T562][resp]")
+	QUIT
+	;
+T563 ; split flow profile form then json response
+	NEW CONF,REQ,ERR,DEV,OP,OUT,RDEV,OBJ,BODY
+	SET BODY="display_name=Alice+J"
+	SET DEV="tmp/miohttp_p23_t563.req"
+	DO WRFILE(DEV,"POST /profile HTTP/1.1"_$C(13,10)_"Content-Type: application/x-www-form-urlencoded"_$C(13,10)_"Content-Length: "_$L(BODY)_$C(13,10,13,10)_BODY)
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSEHDRS^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T563][hdrs]")
+	DO EQ^MIOTASSERT($$READBODYONLY^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T563][body]")
+	DO CLOSER(DEV)
+	SET OBJ("ok")=1
+	SET OBJ("body")=$GET(REQ("body"))
+	SET OP="tmp/miohttp_p23_t563.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET RDEV=OP USE RDEV
+	DO RESPJSON^MIOHTTP(.RDEV,.CONF,200,.OBJ,"rid563")
+	CLOSE RDEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["""body"":"""_BODY_"""":1,1:0),1,"[T563][body]")
+	QUIT
+	;
+T564 ; common report download sendfile with default header
+	NEW DEV,CONF,CTX,OUT,OP,HEAD,FP
+	SET FP="tmp/miohttp_p23_t564.txt"
+	DO WRFILE(FP,"monthly-report")
+	SET CONF("server","http","defaultResponseHeaders","X-App")="mio"
+	SET HEAD("Content-Type")="text/plain"
+	SET OP="tmp/miohttp_p23_t564.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO EQ^MIOTASSERT($$SENDFILE^MIOHTTP(.DEV,.CONF,FP,.HEAD,"rid564",.CTX,"GET"),1,"[T564][ok]")
+	CLOSE DEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["monthly-report":1,1:0),1,"[T564][body]")
+	DO EQ^MIOTASSERT($SELECT(OUT["X-App: mio":1,1:0),1,"[T564][x-app]")
+	QUIT
+	;
+T565 ; common report download head only
+	NEW DEV,CONF,CTX,OUT,OP,HEAD,FP
+	SET FP="tmp/miohttp_p23_t565.txt"
+	DO WRFILE(FP,"monthly-report")
+	SET HEAD("Content-Type")="text/plain"
+	SET OP="tmp/miohttp_p23_t565.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO EQ^MIOTASSERT($$SENDFILE^MIOHTTP(.DEV,.CONF,FP,.HEAD,"rid565",.CTX,"HEAD"),1,"[T565][ok]")
+	CLOSE DEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["monthly-report":1,1:0),0,"[T565][no body]")
+	QUIT
+	;
+T566 ; common query with page sort dir
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p23_t566.req"
+	DO WRFILE(DEV,"GET /users?page=2&sort=name&dir=asc HTTP/1.1"_$C(13,10)_"Host: ex"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T566][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("query","page")),"2","[T566][page]")
+	DO EQ^MIOTASSERT($GET(REQ("query","sort")),"name","[T566][sort]")
+	DO EQ^MIOTASSERT($GET(REQ("query","dir")),"asc","[T566][dir]")
+	QUIT
+	;
+T567 ; common GET with encoded tag and slash
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p23_t567.req"
+	DO WRFILE(DEV,"GET /repos?tag=alpha%2Fbeta&view=grid HTTP/1.1"_$C(13,10)_"Host: ex"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T567][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("query","tag")),"alpha/beta","[T567][tag]")
+	DO EQ^MIOTASSERT($GET(REQ("query","view")),"grid","[T567][view]")
+	QUIT
+	;
+T568 ; form field helper repeated key fragment decode
+	DO EQ^MIOTASSERT($$URLDECQ^MIOHTTP("tag=one&tag=two"),"tag=one&tag=two","[T568][decode]")
+	QUIT
+	;
+T569 ; form field helper plus and percent combo
+	DO EQ^MIOTASSERT($$URLDECQ^MIOHTTP("note=Hello+%26+Bye"),"note=Hello & Bye","[T569][decode]")
+	QUIT
+	;
+T570 ; common empty search query value
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p23_t570.req"
+	DO WRFILE(DEV,"GET /search?q= HTTP/1.1"_$C(13,10)_"Host: ex"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T570][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("query","q")),"","[T570][q]")
+	QUIT
+	;
+T571 ; common file api fixed binary-like upload
+	NEW CONF,REQ,ERR,DEV,BODY
+	SET BODY="1234567890"
+	SET DEV="tmp/miohttp_p23_t571.req"
+	DO WRFILE(DEV,"POST /api/upload HTTP/1.1"_$C(13,10)_"Content-Type: application/octet-stream"_$C(13,10)_"Content-Length: 10"_$C(13,10,13,10)_BODY)
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T571][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("body")),BODY,"[T571][body]")
+	QUIT
+	;
+T572 ; common api GET then stream json-like text
+	NEW CONF,REQ,ERR,DEV,OP,OUT,RDEV,HEAD,CTX
+	SET DEV="tmp/miohttp_p23_t572.req"
+	DO WRFILE(DEV,"GET /api/status HTTP/1.1"_$C(13,10)_"Host: ex"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T572][parse]")
+	DO CLOSER(DEV)
+	SET HEAD("Content-Type")="application/json"
+	SET OP="tmp/miohttp_p23_t572.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET RDEV=OP USE RDEV
+	KILL ^TMP($J,"MIOHTTP","REQ")
+	SET ^TMP($J,"MIOHTTP","REQ","method")="GET"
+	DO STREAMBEGIN^MIOHTTP(.RDEV,.CONF,200,.HEAD,"rid572",.CTX)
+	DO STREAMWRITE^MIOHTTP(.RDEV,"{""ok"":1}")
+	DO STREAMEND^MIOHTTP(.RDEV)
+	CLOSE RDEV USE $PRINCIPAL
+	KILL ^TMP($J,"MIOHTTP","REQ")
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["8"_$C(13,10)_"{""ok"":1}":1,1:0),1,"[T572][chunk]")
+	QUIT
+	;
+T573 ; common save form with expect continue split flow
+	NEW CONF,REQ,ERR,DEV,BODY
+	SET BODY="title=Draft&body=Text"
+	SET CONF("server","limits","maxBodyBytes")=100
+	SET DEV="tmp/miohttp_p23_t573.req"
+	DO WRFILE(DEV,"POST /drafts HTTP/1.1"_$C(13,10)_"Expect: 100-continue"_$C(13,10)_"Content-Type: application/x-www-form-urlencoded"_$C(13,10)_"Content-Length: "_$L(BODY)_$C(13,10,13,10)_BODY)
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSEHDRS^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T573][hdrs]")
+	DO EQ^MIOTASSERT($$EXPECTDECIDE^MIOHTTP(.CONF,.REQ,.ERR),1,"[T573][expect]")
+	DO EQ^MIOTASSERT($$READBODYONLY^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T573][body]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("body")),BODY,"[T573][body content]")
+	QUIT
+	;
+T574 ; common response with request id header
+	NEW DEV,CONF,OUT,OP,HEAD
+	SET HEAD("Content-Type")="text/plain"
+	SET OP="tmp/miohttp_p23_t574.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO RESP^MIOHTTP(.DEV,.CONF,200,.HEAD,"done","rid574")
+	CLOSE DEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["X-Request-Id: rid574":1,1:0),1,"[T574][rid]")
+	QUIT
+	;
+T575 ; common final roundtrip parse form then sendfile
+	NEW CONF,REQ,ERR,DEV,FP,OP,OUT,RDEV,HEAD,CTX,BODY
+	SET BODY="export=1&format=txt"
+	SET DEV="tmp/miohttp_p23_t575.req"
+	DO WRFILE(DEV,"POST /exports HTTP/1.1"_$C(13,10)_"Content-Type: application/x-www-form-urlencoded"_$C(13,10)_"Content-Length: "_$L(BODY)_$C(13,10,13,10)_BODY)
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T575][parse]")
+	DO CLOSER(DEV)
+	SET FP="tmp/miohttp_p23_t575.txt"
+	DO WRFILE(FP,"export-ready")
+	SET HEAD("Content-Type")="text/plain"
+	SET OP="tmp/miohttp_p23_t575.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET RDEV=OP USE RDEV
+	DO EQ^MIOTASSERT($$SENDFILE^MIOHTTP(.RDEV,.CONF,FP,.HEAD,"rid575",.CTX,"GET"),1,"[T575][sendfile]")
+	CLOSE RDEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["export-ready":1,1:0),1,"[T575][file]")
+	QUIT
+T576 ; auth login form with remember me
+	NEW CONF,REQ,ERR,DEV,BODY
+	SET BODY="username=alice&password=secret&remember=1"
+	SET DEV="tmp/miohttp_p24_t576.req"
+	DO WRFILE(DEV,"POST /auth/login HTTP/1.1"_$C(13,10)_"Content-Type: application/x-www-form-urlencoded"_$C(13,10)_"Content-Length: "_$L(BODY)_$C(13,10,13,10)_BODY)
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T576][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("path")),"/auth/login","[T576][path]")
+	DO EQ^MIOTASSERT($GET(REQ("body")),BODY,"[T576][body]")
+	QUIT
+	;
+T577 ; auth forgot password form
+	NEW CONF,REQ,ERR,DEV,BODY
+	SET BODY="email=reset%40example.com"
+	SET DEV="tmp/miohttp_p24_t577.req"
+	DO WRFILE(DEV,"POST /auth/forgot HTTP/1.1"_$C(13,10)_"Content-Type: application/x-www-form-urlencoded"_$C(13,10)_"Content-Length: "_$L(BODY)_$C(13,10,13,10)_BODY)
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T577][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($$URLDECQ^MIOHTTP(BODY),"email=reset@example.com","[T577][decode]")
+	QUIT
+	;
+T578 ; auth reset password form with token and next
+	NEW CONF,REQ,ERR,DEV,BODY
+	SET BODY="token=abc123&password=secret2&next=%2Fdashboard"
+	SET DEV="tmp/miohttp_p24_t578.req"
+	DO WRFILE(DEV,"POST /auth/reset HTTP/1.1"_$C(13,10)_"Content-Type: application/x-www-form-urlencoded"_$C(13,10)_"Content-Length: "_$L(BODY)_$C(13,10,13,10)_BODY)
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T578][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("body")),BODY,"[T578][body]")
+	DO EQ^MIOTASSERT($$URLDECQ^MIOHTTP("next=%2Fdashboard"),"next=/dashboard","[T578][next]")
+	QUIT
+	;
+T579 ; account delete confirmation form
+	NEW CONF,REQ,ERR,DEV,BODY
+	SET BODY="confirm=yes"
+	SET DEV="tmp/miohttp_p24_t579.req"
+	DO WRFILE(DEV,"POST /account/delete HTTP/1.1"_$C(13,10)_"Content-Type: application/x-www-form-urlencoded"_$C(13,10)_"Content-Length: "_$L(BODY)_$C(13,10,13,10)_BODY)
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T579][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("body")),BODY,"[T579][body]")
+	QUIT
+	;
+T580 ; settings notifications form split flow
+	NEW CONF,REQ,ERR,DEV,BODY
+	SET BODY="email=1&push=1&weekly=0"
+	SET DEV="tmp/miohttp_p24_t580.req"
+	DO WRFILE(DEV,"POST /settings/notifications HTTP/1.1"_$C(13,10)_"Content-Type: application/x-www-form-urlencoded"_$C(13,10)_"Content-Length: "_$L(BODY)_$C(13,10,13,10)_BODY)
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSEHDRS^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T580][hdrs]")
+	DO EQ^MIOTASSERT($$READBODYONLY^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T580][body]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("body")),BODY,"[T580][body content]")
+	QUIT
+	;
+T581 ; profile avatar upload fixed binary body
+	NEW CONF,REQ,ERR,DEV,BODY
+	SET BODY="PNGDATA"
+	SET DEV="tmp/miohttp_p24_t581.req"
+	DO WRFILE(DEV,"POST /profile/avatar HTTP/1.1"_$C(13,10)_"Content-Type: application/octet-stream"_$C(13,10)_"Content-Length: 7"_$C(13,10,13,10)_BODY)
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T581][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("body")),BODY,"[T581][body]")
+	QUIT
+	;
+T582 ; search with phrase and category filters
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p24_t582.req"
+	DO WRFILE(DEV,"GET /search?q=project+notes&category=docs&owner=alice HTTP/1.1"_$C(13,10)_"Host: ex"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T582][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("query","q")),"project notes","[T582][q]")
+	DO EQ^MIOTASSERT($GET(REQ("query","category")),"docs","[T582][category]")
+	DO EQ^MIOTASSERT($GET(REQ("query","owner")),"alice","[T582][owner]")
+	QUIT
+	;
+T583 ; dashboard navigation query with section and mode
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p24_t583.req"
+	DO WRFILE(DEV,"GET /dashboard?section=reports&mode=compact HTTP/1.1"_$C(13,10)_"Host: ex"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T583][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("query","section")),"reports","[T583][section]")
+	DO EQ^MIOTASSERT($GET(REQ("query","mode")),"compact","[T583][mode]")
+	QUIT
+	;
+T584 ; redirect after login success
+	NEW DEV,CONF,OUT,OP,HEAD
+	SET HEAD("Content-Type")="text/plain"
+	SET HEAD("Location")="/dashboard"
+	SET OP="tmp/miohttp_p24_t584.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO RESP^MIOHTTP(.DEV,.CONF,303,.HEAD,"See Other","rid584")
+	CLOSE DEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["Location: /dashboard":1,1:0),1,"[T584][location]")
+	QUIT
+	;
+T585 ; redirect after logout success
+	NEW DEV,CONF,OUT,OP,HEAD
+	SET HEAD("Content-Type")="text/plain"
+	SET HEAD("Location")="/goodbye"
+	SET OP="tmp/miohttp_p24_t585.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO RESP^MIOHTTP(.DEV,.CONF,302,.HEAD,"Found","rid585")
+	CLOSE DEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["Location: /goodbye":1,1:0),1,"[T585][location]")
+	QUIT
+	;
+T586 ; json success payload with redirect and ok
+	NEW DEV,CONF,OUT,OP,OBJ
+	SET OBJ("ok")=1
+	SET OBJ("redirect")="/home"
+	SET OBJ("status")="saved"
+	SET OP="tmp/miohttp_p24_t586.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO RESPJSON^MIOHTTP(.DEV,.CONF,200,.OBJ,"rid586")
+	CLOSE DEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["""ok"":1":1,1:0),1,"[T586][ok]")
+	DO EQ^MIOTASSERT($SELECT(OUT["""redirect"":""\/home""":1,1:0),1,"[T586][redirect]")
+	QUIT
+	;
+T587 ; json failure payload common pattern
+	NEW DEV,CONF,OUT,OP,OBJ
+	SET OBJ("ok")=0
+	SET OBJ("error")="validation_failed"
+	SET OP="tmp/miohttp_p24_t587.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO RESPJSON^MIOHTTP(.DEV,.CONF,400,.OBJ,"rid587")
+	CLOSE DEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["HTTP/1.1 400 Bad Request":1,1:0),1,"[T587][status]")
+	DO EQ^MIOTASSERT($SELECT(OUT["""error"":""validation_failed""":1,1:0),1,"[T587][error]")
+	QUIT
+	;
+T588 ; report export request parse with query
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p24_t588.req"
+	DO WRFILE(DEV,"GET /exports/report?month=2026-03&format=csv HTTP/1.1"_$C(13,10)_"Host: ex"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T588][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("query","month")),"2026-03","[T588][month]")
+	DO EQ^MIOTASSERT($GET(REQ("query","format")),"csv","[T588][format]")
+	QUIT
+	;
+T589 ; export download sendfile common case
+	NEW DEV,CONF,CTX,OUT,OP,HEAD,FP
+	SET FP="tmp/miohttp_p24_t589.txt"
+	DO WRFILE(FP,"csv,data")
+	SET HEAD("Content-Type")="text/csv"
+	SET OP="tmp/miohttp_p24_t589.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO EQ^MIOTASSERT($$SENDFILE^MIOHTTP(.DEV,.CONF,FP,.HEAD,"rid589",.CTX,"GET"),1,"[T589][ok]")
+	CLOSE DEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["csv,data":1,1:0),1,"[T589][body]")
+	DO EQ^MIOTASSERT($SELECT(OUT["Content-Type: text/csv":1,1:0),1,"[T589][ctype]")
+	QUIT
+	;
+T590 ; export head download no body
+	NEW DEV,CONF,CTX,OUT,OP,HEAD,FP
+	SET FP="tmp/miohttp_p24_t590.txt"
+	DO WRFILE(FP,"csv,data")
+	SET HEAD("Content-Type")="text/csv"
+	SET OP="tmp/miohttp_p24_t590.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO EQ^MIOTASSERT($$SENDFILE^MIOHTTP(.DEV,.CONF,FP,.HEAD,"rid590",.CTX,"HEAD"),1,"[T590][ok]")
+	CLOSE DEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["csv,data":1,1:0),0,"[T590][no body]")
+	QUIT
+	;
+T591 ; common chunked form submit split flow
+	NEW CONF,REQ,ERR,DEV,BODY
+	SET CONF("server","http","supportChunkedRequest")=1
+	SET BODY="x=1&y=2"
+	SET DEV="tmp/miohttp_p24_t591.req"
+	DO WRFILE(DEV,"POST /submit HTTP/1.1"_$C(13,10)_"Content-Type: application/x-www-form-urlencoded"_$C(13,10)_"Transfer-Encoding: chunked"_$C(13,10,13,10)_"7"_$C(13,10)_BODY_$C(13,10)_"0"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSEHDRS^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T591][hdrs]")
+	DO EQ^MIOTASSERT($$READBODYONLY^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T591][body]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("body")),BODY,"[T591][body content]")
+	QUIT
+	;
+T592 ; common stream response after search request
+	NEW CONF,REQ,ERR,DEV,OP,OUT,RDEV,HEAD,CTX
+	SET DEV="tmp/miohttp_p24_t592.req"
+	DO WRFILE(DEV,"GET /search?q=alpha HTTP/1.1"_$C(13,10)_"Host: ex"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T592][parse]")
+	DO CLOSER(DEV)
+	SET HEAD("Content-Type")="text/plain"
+	SET OP="tmp/miohttp_p24_t592.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET RDEV=OP USE RDEV
+	KILL ^TMP($J,"MIOHTTP","REQ")
+	SET ^TMP($J,"MIOHTTP","REQ","method")="GET"
+	DO STREAMBEGIN^MIOHTTP(.RDEV,.CONF,200,.HEAD,"rid592",.CTX)
+	DO STREAMWRITE^MIOHTTP(.RDEV,"results")
+	DO STREAMEND^MIOHTTP(.RDEV)
+	CLOSE RDEV USE $PRINCIPAL
+	KILL ^TMP($J,"MIOHTTP","REQ")
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["7"_$C(13,10)_"results":1,1:0),1,"[T592][chunk]")
+	QUIT
+	;
+T593 ; common form helper decode encoded slash in return url
+	DO EQ^MIOTASSERT($$URLDECQ^MIOHTTP("return_to=%2Fsettings%2Fprofile"),"return_to=/settings/profile","[T593][decode]")
+	QUIT
+	;
+T594 ; common form helper decode plus and comma
+	DO EQ^MIOTASSERT($$URLDECQ^MIOHTTP("tags=one%2Ctwo+three"),"tags=one,two three","[T594][decode]")
+	QUIT
+	;
+T595 ; common GET with empty optional filters
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p24_t595.req"
+	DO WRFILE(DEV,"GET /items?tag=&owner=alice HTTP/1.1"_$C(13,10)_"Host: ex"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T595][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("query","tag")),"","[T595][tag]")
+	DO EQ^MIOTASSERT($GET(REQ("query","owner")),"alice","[T595][owner]")
+	QUIT
+	;
+T596 ; common HEAD request to export route
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p24_t596.req"
+	DO WRFILE(DEV,"HEAD /exports/report HTTP/1.1"_$C(13,10)_"Host: ex"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T596][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("method")),"HEAD","[T596][method]")
+	QUIT
+	;
+T597 ; common profile form body exact scalar threshold
+	NEW CONF,REQ,ERR,DEV,BODY
+	SET BODY="a=1&b=2&c=3"
+	SET CONF("server","limits","maxBodyScalarBytes")=$L(BODY)
+	SET DEV="tmp/miohttp_p24_t597.req"
+	DO WRFILE(DEV,"POST /profile HTTP/1.1"_$C(13,10)_"Content-Type: application/x-www-form-urlencoded"_$C(13,10)_"Content-Length: "_$L(BODY)_$C(13,10,13,10)_BODY)
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T597][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("body","mode")),"scalar","[T597][mode]")
+	QUIT
+	;
+T598 ; common profile form body above scalar threshold
+	NEW CONF,REQ,ERR,DEV,BODY
+	SET BODY="a=1&b=2&c=3"
+	SET CONF("server","limits","maxBodyScalarBytes")=$L(BODY)-1
+	SET DEV="tmp/miohttp_p24_t598.req"
+	DO WRFILE(DEV,"POST /profile HTTP/1.1"_$C(13,10)_"Content-Type: application/x-www-form-urlencoded"_$C(13,10)_"Content-Length: "_$L(BODY)_$C(13,10,13,10)_BODY)
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T598][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("body","mode")),"global","[T598][mode]")
+	DO BODYFREE^MIOHTTP(.REQ)
+	QUIT
+	;
+T599 ; common final json response after auth flow
+	NEW DEV,CONF,OUT,OP,OBJ
+	SET OBJ("ok")=1
+	SET OBJ("user")="alice"
+	SET OBJ("redirect")="/dashboard"
+	SET OP="tmp/miohttp_p24_t599.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO RESPJSON^MIOHTTP(.DEV,.CONF,200,.OBJ,"rid599")
+	CLOSE DEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["""user"":""alice""":1,1:0),1,"[T599][user]")
+	DO EQ^MIOTASSERT($SELECT(OUT["""redirect"":""\/dashboard""":1,1:0),1,"[T599][redirect]")
+	QUIT
+	;
+T600 ; final common roundtrip form parse then redirect response
+	NEW CONF,REQ,ERR,DEV,OP,OUT,RDEV,HEAD,BODY
+	SET BODY="username=alice&password=secret"
+	SET DEV="tmp/miohttp_p24_t600.req"
+	DO WRFILE(DEV,"POST /auth/login HTTP/1.1"_$C(13,10)_"Content-Type: application/x-www-form-urlencoded"_$C(13,10)_"Content-Length: "_$L(BODY)_$C(13,10,13,10)_BODY)
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSEHDRS^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T600][hdrs]")
+	DO EQ^MIOTASSERT($$READBODYONLY^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T600][body]")
+	DO CLOSER(DEV)
+	SET HEAD("Content-Type")="text/plain"
+	SET HEAD("Location")="/dashboard"
+	SET OP="tmp/miohttp_p24_t600.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET RDEV=OP USE RDEV
+	DO RESP^MIOHTTP(.RDEV,.CONF,303,.HEAD,"See Other","rid600")
+	CLOSE RDEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["Location: /dashboard":1,1:0),1,"[T600][location]")
+	QUIT
+T601 ; MEDIATYPE plain
+	DO EQ^MIOTASSERT($$MEDIATYPE^MIOHTTP("application/json"),"application/json","[T601][mt]")
+	QUIT
+	;
+T602 ; MEDIATYPE strips params and lowers
+	DO EQ^MIOTASSERT($$MEDIATYPE^MIOHTTP("Application/X-WWW-Form-Urlencoded; charset=utf-8"),"application/x-www-form-urlencoded","[T602][mt]")
+	QUIT
+	;
+T603 ; CTPARAM charset
+	DO EQ^MIOTASSERT($$CTPARAM^MIOHTTP("application/json; charset=utf-8","charset"),"utf-8","[T603][charset]")
+	QUIT
+	;
+T604 ; CTPARAM quoted boundary
+	DO EQ^MIOTASSERT($$CTPARAM^MIOHTTP("multipart/form-data; boundary=""abc123""","boundary"),"""abc123""","[T604][boundary]")
+	QUIT
+	;
+T605 ; ISFORM exact type
+	NEW REQ
+	SET REQ("hdr","content-type")="application/x-www-form-urlencoded"
+	DO EQ^MIOTASSERT($$ISFORM^MIOHTTP(.REQ),1,"[T605][isform]")
+	QUIT
+	;
+T606 ; ISFORM with charset
+	NEW REQ
+	SET REQ("hdr","content-type")="application/x-www-form-urlencoded; charset=utf-8"
+	DO EQ^MIOTASSERT($$ISFORM^MIOHTTP(.REQ),1,"[T606][isform]")
+	QUIT
+	;
+T607 ; ISJSON exact
+	NEW REQ
+	SET REQ("hdr","content-type")="application/json"
+	DO EQ^MIOTASSERT($$ISJSON^MIOHTTP(.REQ),1,"[T607][isjson]")
+	QUIT
+	;
+T608 ; ISJSON vendor subtype
+	NEW REQ
+	SET REQ("hdr","content-type")="application/problem+json"
+	DO EQ^MIOTASSERT($$ISJSON^MIOHTTP(.REQ),1,"[T608][isjson]")
+	QUIT
+	;
+T609 ; PARSEFORM scalar simple
+	NEW REQ,OUT,ERR
+	SET REQ("hdr","content-type")="application/x-www-form-urlencoded"
+	SET REQ("body","mode")="scalar"
+	SET REQ("body")="a=1&b=two"
+	SET REQ("body","len")=9
+	DO EQ^MIOTASSERT($$PARSEFORM^MIOHTTP(.REQ,.OUT,.ERR),1,"[T609][ok]")
+	DO EQ^MIOTASSERT($GET(OUT("a")),"1","[T609][a]")
+	DO EQ^MIOTASSERT($GET(OUT("b")),"two","[T609][b]")
+	QUIT
+	;
+T610 ; PARSEFORM repeated keys
+	NEW REQ,OUT,ERR
+	SET REQ("hdr","content-type")="application/x-www-form-urlencoded"
+	SET REQ("body","mode")="scalar"
+	SET REQ("body")="tag=one++&tag=two++&tag=three&tag=four+"
+	SET REQ("body","len")=$LENGTH(REQ("body"))
+	DO EQ^MIOTASSERT($$PARSEFORM^MIOHTTP(.REQ,.OUT,.ERR),1,"[T610][ok]")
+	DO EQ^MIOTASSERT($GET(OUT("tag")),"four ","[T610][last]")
+	DO EQ^MIOTASSERT($GET(OUT("tag",0)),4,"[T610][count]")
+	DO EQ^MIOTASSERT($GET(OUT("tag",1)),"one  ","[T610][1]")
+	DO EQ^MIOTASSERT($GET(OUT("tag",2)),"two  ","[T610][2]")
+	DO EQ^MIOTASSERT($GET(OUT("tag",3)),"three","[T610][3]")
+	DO EQ^MIOTASSERT($GET(OUT("tag",4)),"four ","[T610][4]")
+	QUIT
+	;
+T611 ; PARSEFORM blank value
+	NEW REQ,OUT,ERR
+	SET REQ("hdr","content-type")="application/x-www-form-urlencoded"
+	SET REQ("body","mode")="scalar"
+	SET REQ("body")="phone="
+	SET REQ("body","len")=6
+	DO EQ^MIOTASSERT($$PARSEFORM^MIOHTTP(.REQ,.OUT,.ERR),1,"[T611][ok]")
+	DO EQ^MIOTASSERT($GET(OUT("phone")),"","[T611][blank]")
+	QUIT
+	;
+T612 ; PARSEFORM decodes spaces and slash
+	NEW REQ,OUT,ERR
+	SET REQ("hdr","content-type")="application/x-www-form-urlencoded"
+	SET REQ("body","mode")="scalar"
+	SET REQ("body")="name=Alice+Smith&next=%2Fdashboard"
+	SET REQ("body","len")=$LENGTH(REQ("body"))
+	DO EQ^MIOTASSERT($$PARSEFORM^MIOHTTP(.REQ,.OUT,.ERR),1,"[T612][ok]")
+	DO EQ^MIOTASSERT($GET(OUT("name")),"Alice Smith","[T612][name]")
+	DO EQ^MIOTASSERT($GET(OUT("next")),"/dashboard","[T612][next]")
+	QUIT
+	;
+T613 ; PARSEFORM global body across chunk boundaries
+	NEW REQ,OUT,ERR,REF
+	SET REQ("hdr","content-type")="application/x-www-form-urlencoded"
+	SET REQ("body","mode")="global"
+	SET REF=$NAME(^TMP($J,"MIOHTTPP25","T613"))
+	KILL @REF
+	SET REQ("body","ref")=REF
+	SET @REF@(1)="name=Ali"
+	SET @REF@(2)="ce+Smith&tag"
+	SET @REF@(3)="=mumps"
+	SET REQ("body","n")=3
+	SET REQ("body","len")=$LENGTH(@REF@(1))+$LENGTH(@REF@(2))+$LENGTH(@REF@(3))
+	DO EQ^MIOTASSERT($$PARSEFORM^MIOHTTP(.REQ,.OUT,.ERR),1,"[T613][ok]")
+	DO EQ^MIOTASSERT($GET(OUT("name")),"Alice Smith","[T613][name]")
+	DO EQ^MIOTASSERT($GET(OUT("tag")),"mumps","[T613][tag]")
+	DO BODYFREE^MIOHTTP(.REQ)
+	QUIT
+	;
+T614 ; PARSEFORM non-form type rejected
+	NEW REQ,OUT,ERR
+	SET REQ("hdr","content-type")="application/json"
+	SET REQ("body","mode")="scalar"
+	SET REQ("body")="{}"
+	SET REQ("body","len")=2
+	DO EQ^MIOTASSERT($$PARSEFORM^MIOHTTP(.REQ,.OUT,.ERR),0,"[T614][ok]")
+	DO EQ^MIOTASSERT($GET(ERR("error")),"not_form_content_type","[T614][err]")
+	QUIT
+	;
+T615 ; REDIRECT default status
+	NEW DEV,CONF,CTX,OUT,OP
+	SET OP="tmp/miohttp_p25_t615.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO REDIRECT^MIOHTTP(.DEV,.CONF,"/home","","rid615",.CTX)
+	CLOSE DEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["HTTP/1.1 303 See Other":1,1:0),1,"[T615][status]")
+	DO EQ^MIOTASSERT($SELECT(OUT["Location: /home":1,1:0),1,"[T615][location]")
+	QUIT
+	;
+T616 ; REDIRECT explicit status
+	NEW DEV,CONF,CTX,OUT,OP
+	SET OP="tmp/miohttp_p25_t616.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO REDIRECT^MIOHTTP(.DEV,.CONF,"/login",302,"rid616",.CTX)
+	CLOSE DEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["HTTP/1.1 302 Found":1,1:0),1,"[T616][status]")
+	DO EQ^MIOTASSERT($SELECT(OUT["Location: /login":1,1:0),1,"[T616][location]")
+	QUIT
+	;
+T617 ; RESPTEXT helper
+	NEW DEV,CONF,CTX,OUT,OP
+	SET OP="tmp/miohttp_p25_t617.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO RESPTEXT^MIOHTTP(.DEV,.CONF,200,"hello","rid617",.CTX)
+	CLOSE DEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["Content-Type: text/plain; charset=utf-8":1,1:0),1,"[T617][ctype]")
+	DO EQ^MIOTASSERT($SELECT(OUT["hello":1,1:0),1,"[T617][body]")
+	QUIT
+	;
+T618 ; RESPERR helper
+	NEW DEV,CONF,CTX,OUT,OP
+	SET OP="tmp/miohttp_p25_t618.out"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO RESPERR^MIOHTTP(.DEV,.CONF,422,"validation_failed","bad email","rid618",.CTX)
+	CLOSE DEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["HTTP/1.1 422 Unprocessable Entity":1,1:0),1,"[T618][status]")
+	DO EQ^MIOTASSERT($SELECT(OUT["""error"":""validation_failed""":1,1:0),1,"[T618][error]")
+	DO EQ^MIOTASSERT($SELECT(OUT["""message"":""bad email""":1,1:0),1,"[T618][message]")
+	QUIT
+	;
+T619 ; STATUSMSG added phrases
+	DO EQ^MIOTASSERT($$STATUSMSG^MIOHTTP(201),"Created","[T619][201]")
+	DO EQ^MIOTASSERT($$STATUSMSG^MIOHTTP(303),"See Other","[T619][303]")
+	DO EQ^MIOTASSERT($$STATUSMSG^MIOHTTP(422),"Unprocessable Entity","[T619][422]")
+	QUIT
+	;
+T620 ; CTPARAM missing returns empty
+	DO EQ^MIOTASSERT($$CTPARAM^MIOHTTP("application/json; charset=utf-8","boundary"),"","[T620][empty]")
+	QUIT
+T621 ; TARGETKIND origin
+	NEW REQ
+	SET REQ("method")="GET",REQ("path")="/x"
+	DO EQ^MIOTASSERT($$TARGETKIND^MIOHTTP(.REQ),"origin","[T621][kind]")
+	QUIT
+	;
+T622 ; TARGETKIND asterisk
+	NEW REQ
+	SET REQ("method")="OPTIONS",REQ("path")="*"
+	DO EQ^MIOTASSERT($$TARGETKIND^MIOHTTP(.REQ),"asterisk","[T622][kind]")
+	QUIT
+	;
+T623 ; TARGETKIND authority
+	NEW REQ
+	SET REQ("method")="CONNECT",REQ("path")="example.com:443"
+	DO EQ^MIOTASSERT($$TARGETKIND^MIOHTTP(.REQ),"authority","[T623][kind]")
+	QUIT
+	;
+T624 ; PARSEHDRS GET metadata none/origin
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p26_t624.req"
+	DO WRFILE(DEV,"GET /home HTTP/1.1"_$C(13,10)_"Host: ex"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSEHDRS^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T624][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("meta","targetKind")),"origin","[T624][kind]")
+	DO EQ^MIOTASSERT($GET(REQ("meta","bodyFraming")),"none","[T624][framing]")
+	DO EQ^MIOTASSERT($GET(REQ("meta","hasBody")),0,"[T624][hasBody]")
+	QUIT
+	;
+T625 ; PARSEHDRS POST form metadata CL
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p26_t625.req"
+	DO WRFILE(DEV,"POST /form HTTP/1.1"_$C(13,10)_"Content-Type: application/x-www-form-urlencoded"_$C(13,10)_"Content-Length: 7"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSEHDRS^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T625][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("meta","contentLength")),"7","[T625][cl]")
+	DO EQ^MIOTASSERT($GET(REQ("meta","bodyFraming")),"content-length","[T625][framing]")
+	DO EQ^MIOTASSERT($GET(REQ("meta","hasBody")),1,"[T625][hasBody]")
+	DO EQ^MIOTASSERT($GET(REQ("meta","isForm")),1,"[T625][isForm]")
+	QUIT
+	;
+T626 ; PARSEHDRS JSON metadata
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p26_t626.req"
+	DO WRFILE(DEV,"POST /api HTTP/1.1"_$C(13,10)_"Content-Type: application/json"_$C(13,10)_"Content-Length: 2"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSEHDRS^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T626][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("meta","isJSON")),1,"[T626][isJSON]")
+	QUIT
+	;
+T627 ; PARSEHDRS chunked metadata
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p26_t627.req"
+	DO WRFILE(DEV,"POST /up HTTP/1.1"_$C(13,10)_"Transfer-Encoding: chunked"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSEHDRS^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T627][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("meta","transferEncoding")),"chunked","[T627][te]")
+	DO EQ^MIOTASSERT($GET(REQ("meta","bodyFraming")),"chunked","[T627][framing]")
+	DO EQ^MIOTASSERT($GET(REQ("meta","hasBody")),1,"[T627][hasBody]")
+	QUIT
+	;
+T628 ; PARSE full GET metadata none
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p26_t628.req"
+	DO WRFILE(DEV,"GET /ping HTTP/1.1"_$C(13,10)_"Host: ex"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T628][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("meta","bodyFraming")),"none","[T628][framing]")
+	DO EQ^MIOTASSERT($GET(REQ("meta","hasBody")),0,"[T628][hasBody]")
+	QUIT
+	;
+T629 ; PARSE full POST CL body metadata
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p26_t629.req"
+	DO WRFILE(DEV,"POST /echo HTTP/1.1"_$C(13,10)_"Content-Length: 2"_$C(13,10,13,10)_"ok")
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T629][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("meta","bodyFraming")),"content-length","[T629][framing]")
+	DO EQ^MIOTASSERT($GET(REQ("meta","hasBody")),1,"[T629][hasBody]")
+	QUIT
+	;
+T630 ; PARSE full POST CL zero metadata
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p26_t630.req"
+	DO WRFILE(DEV,"POST /empty HTTP/1.1"_$C(13,10)_"Content-Length: 0"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T630][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("meta","bodyFraming")),"content-length","[T630][framing]")
+	DO EQ^MIOTASSERT($GET(REQ("meta","hasBody")),0,"[T630][hasBody]")
+	QUIT
+	;
+T631 ; PARSE full chunked metadata
+	NEW CONF,REQ,ERR,DEV
+	SET CONF("server","http","supportChunkedRequest")=1
+	SET DEV="tmp/miohttp_p26_t631.req"
+	DO WRFILE(DEV,"POST /c HTTP/1.1"_$C(13,10)_"Transfer-Encoding: chunked"_$C(13,10,13,10)_"2"_$C(13,10)_"ok"_$C(13,10)_"0"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T631][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("meta","bodyFraming")),"chunked","[T631][framing]")
+	DO EQ^MIOTASSERT($GET(REQ("meta","hasBody")),1,"[T631][hasBody]")
+	QUIT
+	;
+T632 ; READBODYONLY updates CL metadata
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p26_t632.req"
+	DO WRFILE(DEV,"POST /x HTTP/1.1"_$C(13,10)_"Content-Length: 2"_$C(13,10,13,10)_"ok")
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSEHDRS^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T632][hdrs]")
+	DO EQ^MIOTASSERT($$READBODYONLY^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T632][body]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("meta","bodyFraming")),"content-length","[T632][framing]")
+	DO EQ^MIOTASSERT($GET(REQ("meta","hasBody")),1,"[T632][hasBody]")
+	QUIT
+	;
+T633 ; READBODYONLY updates chunked metadata
+	NEW CONF,REQ,ERR,DEV
+	SET CONF("server","http","supportChunkedRequest")=1
+	SET DEV="tmp/miohttp_p26_t633.req"
+	DO WRFILE(DEV,"POST /x HTTP/1.1"_$C(13,10)_"Transfer-Encoding: chunked"_$C(13,10,13,10)_"2"_$C(13,10)_"ok"_$C(13,10)_"0"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSEHDRS^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T633][hdrs]")
+	DO EQ^MIOTASSERT($$READBODYONLY^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T633][body]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("meta","bodyFraming")),"chunked","[T633][framing]")
+	QUIT
+	;
+T634 ; PARSE CONNECT metadata authority
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p26_t634.req"
+	DO WRFILE(DEV,"CONNECT example.com:443 HTTP/1.1"_$C(13,10)_"Host: example.com"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T634][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("meta","targetKind")),"authority","[T634][kind]")
+	QUIT
+	;
+T635 ; PARSE OPTIONS star metadata asterisk
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p26_t635.req"
+	DO WRFILE(DEV,"OPTIONS * HTTP/1.1"_$C(13,10)_"Host: ex"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T635][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("meta","targetKind")),"asterisk","[T635][kind]")
+	QUIT
+	;
+T636 ; PARSE full form metadata isForm
+	NEW CONF,REQ,ERR,DEV,BODY
+	SET BODY="a=1&b=2"
+	SET DEV="tmp/miohttp_p26_t636.req"
+	DO WRFILE(DEV,"POST /form HTTP/1.1"_$C(13,10)_"Content-Type: application/x-www-form-urlencoded"_$C(13,10)_"Content-Length: "_$L(BODY)_$C(13,10,13,10)_BODY)
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T636][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("meta","isForm")),1,"[T636][isForm]")
+	QUIT
+	;
+T637 ; PARSE full json metadata isJSON
+	NEW CONF,REQ,ERR,DEV,BODY
+	SET BODY="{}"
+	SET DEV="tmp/miohttp_p26_t637.req"
+	DO WRFILE(DEV,"POST /api HTTP/1.1"_$C(13,10)_"Content-Type: application/json"_$C(13,10)_"Content-Length: 2"_$C(13,10,13,10)_BODY)
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T637][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("meta","isJSON")),1,"[T637][isJSON]")
+	QUIT
+	;
+T638 ; PARSE TE identity with CL metadata
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p26_t638.req"
+	DO WRFILE(DEV,"POST /x HTTP/1.1"_$C(13,10)_"Transfer-Encoding: identity"_$C(13,10)_"Content-Length: 2"_$C(13,10,13,10)_"ok")
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T638][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("meta","transferEncoding")),"identity","[T638][te]")
+	DO EQ^MIOTASSERT($GET(REQ("meta","bodyFraming")),"content-length","[T638][framing]")
+	QUIT
+	;
+T639 ; PARSE TE identity no CL metadata none
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p26_t639.req"
+	DO WRFILE(DEV,"POST /x HTTP/1.1"_$C(13,10)_"Transfer-Encoding: identity"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T639][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("meta","transferEncoding")),"identity","[T639][te]")
+	DO EQ^MIOTASSERT($GET(REQ("meta","bodyFraming")),"none","[T639][framing]")
+	DO EQ^MIOTASSERT($GET(REQ("meta","hasBody")),0,"[T639][hasBody]")
+	QUIT
+	;
+T640 ; PARSE query request keeps origin metadata
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p26_t640.req"
+	DO WRFILE(DEV,"GET /items?page=2 HTTP/1.1"_$C(13,10)_"Host: ex"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T640][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("meta","targetKind")),"origin","[T640][kind]")
+	DO EQ^MIOTASSERT($GET(REQ("query","page")),"2","[T640][page]")
+	QUIT
+T641 ; BODYFRAMING none
+	NEW CONF,REQ,ERR
+	DO SETMETABASE^MIOHTTP(.REQ)
+	DO EQ^MIOTASSERT($$BODYFRAMING^MIOHTTP(.CONF,.REQ,.ERR),"none","[T621][fr]")
+	QUIT
+	;
+T642 ; BODYFRAMING content-length
+	NEW CONF,REQ,ERR
+	SET REQ("hdr","content-length")="5"
+	DO SETMETABASE^MIOHTTP(.REQ)
+	DO EQ^MIOTASSERT($$BODYFRAMING^MIOHTTP(.CONF,.REQ,.ERR),"content-length","[T622][fr]")
+	QUIT
+	;
+T643 ; BODYFRAMING chunked
+	NEW CONF,REQ,ERR
+	SET REQ("hdr","transfer-encoding")="chunked"
+	DO SETMETABASE^MIOHTTP(.REQ)
+	DO EQ^MIOTASSERT($$BODYFRAMING^MIOHTTP(.CONF,.REQ,.ERR),"chunked","[T623][fr]")
+	QUIT
+	;
+T644 ; BODYFRAMING identity plus content-length
+	NEW CONF,REQ,ERR
+	SET REQ("hdr","transfer-encoding")="identity"
+	SET REQ("hdr","content-length")="4"
+	DO SETMETABASE^MIOHTTP(.REQ)
+	DO EQ^MIOTASSERT($$BODYFRAMING^MIOHTTP(.CONF,.REQ,.ERR),"content-length","[T624][fr]")
+	QUIT
+	;
+T645 ; BODYFRAMING te cl conflict by default
+	NEW CONF,REQ,ERR
+	SET REQ("hdr","transfer-encoding")="chunked"
+	SET REQ("hdr","content-length")="4"
+	DO SETMETABASE^MIOHTTP(.REQ)
+	DO EQ^MIOTASSERT($$BODYFRAMING^MIOHTTP(.CONF,.REQ,.ERR),"","[T625][fr]")
+	DO EQ^MIOTASSERT($GET(ERR("error")),"te_cl_conflict","[T625][err]")
+	QUIT
+	;
+T646 ; BODYFRAMING te cl allowed when enabled
+	NEW CONF,REQ,ERR
+	SET CONF("server","http","allowTECL")=1
+	SET REQ("hdr","transfer-encoding")="chunked"
+	SET REQ("hdr","content-length")="4"
+	DO SETMETABASE^MIOHTTP(.REQ)
+	DO EQ^MIOTASSERT($$BODYFRAMING^MIOHTTP(.CONF,.REQ,.ERR),"chunked","[T626][fr]")
+	QUIT
+	;
+T647 ; BODYFRAMING bad te order
+	NEW CONF,REQ,ERR
+	SET REQ("hdr","transfer-encoding")="chunked, identity"
+	DO SETMETABASE^MIOHTTP(.REQ)
+	DO EQ^MIOTASSERT($$BODYFRAMING^MIOHTTP(.CONF,.REQ,.ERR),"","[T627][fr]")
+	DO EQ^MIOTASSERT($GET(ERR("error")),"bad_transfer_encoding_order","[T627][err]")
+	QUIT
+	;
+T648 ; STRICTREQ missing host on http11 origin
+	NEW CONF,REQ,ERR
+	SET CONF("server","http","strict")=1
+	SET REQ("method")="GET",REQ("path")="/x",REQ("httpver")="HTTP/1.1"
+	DO SETMETABASE^MIOHTTP(.REQ)
+	DO EQ^MIOTASSERT($$STRICTREQ^MIOHTTP(.CONF,.REQ,.ERR),0,"[T628][ok]")
+	DO EQ^MIOTASSERT($GET(ERR("error")),"missing_host","[T628][err]")
+	QUIT
+	;
+T649 ; STRICTREQ non-strict allows missing host
+	NEW CONF,REQ,ERR
+	SET REQ("method")="GET",REQ("path")="/x",REQ("httpver")="HTTP/1.1"
+	DO SETMETABASE^MIOHTTP(.REQ)
+	DO EQ^MIOTASSERT($$STRICTREQ^MIOHTTP(.CONF,.REQ,.ERR),1,"[T629][ok]")
+	QUIT
+	;
+T650 ; STRICTREQ options star valid
+	NEW CONF,REQ,ERR
+	SET CONF("server","http","strict")=1
+	SET REQ("method")="OPTIONS",REQ("path")="*",REQ("httpver")="HTTP/1.1",REQ("hdr","host")="ex"
+	DO SETMETABASE^MIOHTTP(.REQ)
+	DO EQ^MIOTASSERT($$STRICTREQ^MIOHTTP(.CONF,.REQ,.ERR),1,"[T630][ok]")
+	QUIT
+	;
+T651 ; STRICTREQ get star invalid
+	NEW CONF,REQ,ERR
+	SET CONF("server","http","strict")=1
+	SET REQ("method")="GET",REQ("path")="*",REQ("httpver")="HTTP/1.1",REQ("hdr","host")="ex"
+	DO SETMETABASE^MIOHTTP(.REQ)
+	DO EQ^MIOTASSERT($$STRICTREQ^MIOHTTP(.CONF,.REQ,.ERR),0,"[T631][ok]")
+	DO EQ^MIOTASSERT($GET(ERR("error")),"invalid_request_target","[T631][err]")
+	QUIT
+	;
+T652 ; STRICTREQ connect authority valid
+	NEW CONF,REQ,ERR
+	SET CONF("server","http","strict")=1
+	SET REQ("method")="CONNECT",REQ("path")="example.com:443",REQ("httpver")="HTTP/1.1"
+	DO SETMETABASE^MIOHTTP(.REQ)
+	DO EQ^MIOTASSERT($$STRICTREQ^MIOHTTP(.CONF,.REQ,.ERR),1,"[T632][ok]")
+	QUIT
+	;
+T653 ; STRICTREQ get authority invalid
+	NEW CONF,REQ,ERR
+	SET CONF("server","http","strict")=1
+	SET REQ("method")="GET",REQ("path")="example.com:443",REQ("httpver")="HTTP/1.1"
+	DO SETMETABASE^MIOHTTP(.REQ)
+	DO EQ^MIOTASSERT($$STRICTREQ^MIOHTTP(.CONF,.REQ,.ERR),0,"[T633][ok]")
+	DO EQ^MIOTASSERT($GET(ERR("error")),"missing_host","[T633][err]")
+	QUIT
+	;
+T654 ; PARSE strict missing host fails
+	NEW CONF,REQ,ERR,DEV
+	SET CONF("server","http","strict")=1
+	SET DEV="tmp/miohttp_p27_t634.req"
+	DO WRFILE(DEV,"GET /secure HTTP/1.1"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),0,"[T634][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(ERR("error")),"missing_host","[T634][err]")
+	QUIT
+	;
+T655 ; PARSE strict host present passes
+	NEW CONF,REQ,ERR,DEV
+	SET CONF("server","http","strict")=1
+	SET DEV="tmp/miohttp_p27_t635.req"
+	DO WRFILE(DEV,"GET /secure HTTP/1.1"_$C(13,10)_"Host: ex"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T635][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("meta","targetKind")),"origin","[T635][tk]")
+	DO EQ^MIOTASSERT($GET(REQ("meta","bodyFraming")),"none","[T635][fr]")
+	QUIT
+	;
+T656 ; PARSEHDRS strict options star passes
+	NEW CONF,REQ,ERR,DEV
+	SET CONF("server","http","strict")=1
+	SET DEV="tmp/miohttp_p27_t636.req"
+	DO WRFILE(DEV,"OPTIONS * HTTP/1.1"_$C(13,10)_"Host: ex"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSEHDRS^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T636][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("meta","targetKind")),"asterisk","[T636][tk]")
+	QUIT
+	;
+T657 ; PARSEHDRS strict invalid origin target fails
+	NEW CONF,REQ,ERR,DEV
+	SET CONF("server","http","strict")=1
+	SET DEV="tmp/miohttp_p27_t637.req"
+	DO WRFILE(DEV,"GET abc HTTP/1.1"_$C(13,10)_"Host: ex"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSEHDRS^MIOHTTP(DEV,.CONF,.REQ,.ERR),0,"[T637][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(ERR("error")),"invalid_request_target","[T637][err]")
+	QUIT
+	;
+T658 ; READBODYONLY chunked uses framing helper
+	NEW CONF,REQ,ERR,DEV
+	SET CONF("server","http","supportChunkedRequest")=1
+	SET DEV="tmp/miohttp_p27_t638.req"
+	DO WRFILE(DEV,"2"_$C(13,10)_"ok"_$C(13,10)_"0"_$C(13,10,13,10))
+	SET REQ("method")="POST",REQ("path")="/x",REQ("httpver")="HTTP/1.1",REQ("hdr","transfer-encoding")="chunked"
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$READBODYONLY^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T638][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("body")),"ok","[T638][body]")
+	DO EQ^MIOTASSERT($GET(REQ("meta","bodyFraming")),"chunked","[T638][fr]")
+	QUIT
+	;
+T659 ; READBODYONLY cl zero sets no body but framing content-length
+	NEW CONF,REQ,ERR
+	SET REQ("method")="POST",REQ("path")="/x",REQ("httpver")="HTTP/1.1",REQ("hdr","content-length")="0"
+	DO EQ^MIOTASSERT($$READBODYONLY^MIOHTTP("dummy",.CONF,.REQ,.ERR),1,"[T639][ok]")
+	DO EQ^MIOTASSERT($GET(REQ("body","mode")),"none","[T639][mode]")
+	DO EQ^MIOTASSERT($GET(REQ("meta","bodyFraming")),"content-length","[T639][fr]")
+	QUIT
+	;
+T660 ; PARSE te identity no cl yields none framing
+	NEW CONF,REQ,ERR,DEV
+	SET DEV="tmp/miohttp_p27_t640.req"
+	DO WRFILE(DEV,"POST /x HTTP/1.1"_$C(13,10)_"Host: ex"_$C(13,10)_"Transfer-Encoding: identity"_$C(13,10,13,10))
+	DO OPENR(DEV)
+	DO EQ^MIOTASSERT($$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR),1,"[T640][ok]")
+	DO CLOSER(DEV)
+	DO EQ^MIOTASSERT($GET(REQ("meta","bodyFraming")),"none","[T640][fr]")
 	QUIT
 READALL(PATH,OUT)
 	NEW OIO SET OIO=$IO
