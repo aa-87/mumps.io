@@ -37,6 +37,7 @@ ENFORCE(DEV,CONF,REQ,CTX)
 	IF M="OPTIONS" QUIT 1
 	NEW PATH SET PATH=$GET(REQ("path"))
 	IF PATH="" QUIT 1
+	IF +$GET(CONF("auth","enabled"),1)'=1 QUIT 1
 	;
 	; Exempt paths
 	IF $$ISEXEMPT(PATH,.CONF) QUIT 1

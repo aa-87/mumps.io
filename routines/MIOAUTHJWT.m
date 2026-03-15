@@ -12,6 +12,13 @@ MIOAUTHJWT ; JWT validation using MIOSHA256 with original compat behavior
 	; - Keeps the original Base64URL implementation for framework compatibility.;
 	; - Uses MIOSHA256 for HMAC-SHA256 only.;
 	; - RS256 callback support preserved.;
+	; - HS256 secret resolution is opt-in and keeps hmacSecret precedence.;
+	; - Client-secret lookup order for HS256 is:
+	;     1) CONF("auth","jwt","hmacSecret")
+	;     2) CONF("auth","jwt","hmacSecretByKid",<jwt header kid>)
+	;     3) CONF("auth","jwt","hmacSecretByClient",<claim value>)
+	;        using clientIdClaim, default claim name client_id
+	;     4) CONF("auth","jwt","hs256Resolve")="TAG^ROUTINE"
 	;
 	QUIT
 	;
@@ -54,7 +61,7 @@ VERIFY(CONF,REQ,CTX,ERR)
 	IF '$$CHECKCLAIMS(.CONF,.POBJ,.ERR) DO SETR(.ERR,"MIOAUTHJWT",401) QUIT 0
 	;
 	SET DATA=H64_"."_P64
-	IF ALG="HS256" QUIT $$VHS256(DATA,S64,.CONF,.CTX,.POBJ,.ERR)
+	IF ALG="HS256" QUIT $$VHS256(DATA,S64,.CONF,.CTX,.HOBJ,.POBJ,.ERR)
 	IF ALG="RS256" QUIT $$VRS256(DATA,S64,.CONF,.CTX,.HOBJ,.POBJ,.ERR)
 	;
 	SET ERR("routine")="MIOAUTHJWT",ERR("error")="jwt_alg_unsupported",ERR("status")=401
@@ -87,13 +94,14 @@ CHECKCLAIMS(CONF,POBJ,ERR)
 	;
 	QUIT 1
 	;
-VHS256(DATA,S64,CONF,CTX,POBJ,ERR)
+VHS256(DATA,S64,CONF,CTX,HOBJ,POBJ,ERR)
 	KILL ERR
 	NEW SECRET,SIGBIN,CALC
 	;
-	SET SECRET=$GET(CONF("auth","jwt","hmacSecret"))
+	SET SECRET=$$GETHSEC(.CONF,.CTX,.HOBJ,.POBJ,.ERR)
 	IF SECRET="" DO  QUIT 0
-	. SET ERR("routine")="MIOAUTHJWT",ERR("error")="jwt_hmac_secret_missing",ERR("status")=401
+	. IF '$DATA(ERR) SET ERR("routine")="MIOAUTHJWT",ERR("error")="jwt_hmac_secret_missing",ERR("status")=401
+	. DO SETR(.ERR,"MIOAUTHJWT",401)
 	;
 	SET SIGBIN=$$B64DURL(S64,.ERR)
 	IF $DATA(ERR) DO SETR(.ERR,"MIOAUTHJWT",401) QUIT 0
@@ -106,6 +114,42 @@ VHS256(DATA,S64,CONF,CTX,POBJ,ERR)
 	;
 	DO APPLY(.CONF,.CTX,.POBJ)
 	QUIT 1
+	;
+GETHSEC(CONF,CTX,HOBJ,POBJ,ERR)
+	NEW SECRET,KID,CCLAIM,CLIENT,ENTRY
+	SET SECRET=$GET(CONF("auth","jwt","hmacSecret"))
+	IF SECRET'="" QUIT SECRET
+	;
+	SET KID=$GET(HOBJ("kid"))
+	IF KID'="",$DATA(CONF("auth","jwt","hmacSecretByKid",KID))#2 DO
+	. SET SECRET=$GET(CONF("auth","jwt","hmacSecretByKid",KID))
+	IF SECRET'="" QUIT SECRET
+	;
+	SET CCLAIM=$GET(CONF("auth","jwt","clientIdClaim"))
+	IF CCLAIM="" SET CCLAIM="client_id"
+	SET CLIENT=$GET(POBJ(CCLAIM))
+	IF CLIENT'="",$DATA(CONF("auth","jwt","hmacSecretByClient",CLIENT))#2 DO
+	. SET SECRET=$GET(CONF("auth","jwt","hmacSecretByClient",CLIENT))
+	IF SECRET'="" QUIT SECRET
+	;
+	SET ENTRY=$GET(CONF("auth","jwt","hs256Resolve"))
+	IF ENTRY'="" DO
+	. IF $$CALLHSEC(ENTRY,.CONF,.CTX,.HOBJ,.POBJ,.SECRET,.ERR)'>0 QUIT
+	IF SECRET'="" QUIT SECRET
+	QUIT ""
+	;
+CALLHSEC(ENTRY,CONF,CTX,HOBJ,POBJ,SECRET,ERR)
+	NEW TAG,RTN,OK,CMD
+	SET TAG=$PIECE($GET(ENTRY),"^",1),RTN=$PIECE($GET(ENTRY),"^",2)
+	IF TAG=""!(RTN="") SET ERR("routine")="MIOAUTHJWT",ERR("error")="jwt_hs256_bad_resolver" QUIT 0
+	IF '$$ISID(TAG)!'$$ISID(RTN) SET ERR("routine")="MIOAUTHJWT",ERR("error")="jwt_hs256_bad_resolver" QUIT 0
+	;
+	SET OK=0,SECRET=""
+	NEW $ETRAP
+	SET $ETRAP="SET $ECODE="""" SET ERR(""routine"")=""MIOAUTHJWT"" SET ERR(""error"")=""jwt_hs256_resolver_exception"" SET OK=0 SET SECRET="""""
+	SET CMD="SET OK=$$"_TAG_"^"_RTN_"(.CONF,.CTX,.HOBJ,.POBJ,.SECRET,.ERR)"
+	XECUTE CMD
+	QUIT +$GET(OK)
 	;
 VRS256(DATA,S64,CONF,CTX,HOBJ,POBJ,ERR)
 	KILL ERR
