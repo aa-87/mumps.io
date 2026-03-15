@@ -12,6 +12,7 @@ MIOAUTHJWT ; JWT validation using MIOSHA256 with original compat behavior
 	; - Keeps the original Base64URL implementation for framework compatibility.;
 	; - Uses MIOSHA256 for HMAC-SHA256 only.;
 	; - RS256 callback support preserved.;
+	; - Default RS256 OpenSSL verifier auto-loads when RS256 key config exists.;
 	; - HS256 secret resolution is opt-in and keeps hmacSecret precedence.;
 	; - Client-secret lookup order for HS256 is:
 	;     1) CONF("auth","jwt","hmacSecret")
@@ -156,8 +157,12 @@ VRS256(DATA,S64,CONF,CTX,HOBJ,POBJ,ERR)
 	NEW ENTRY,SIGBIN,OK
 	;
 	SET ENTRY=$GET(CONF("auth","jwt","rs256Verify"))
+	IF ENTRY="",$$HASCFG^MIOAUTHRS(.CONF) DO
+	. SET OK=$$INIT^MIOAUTHRS(.CONF,.ERR)
+	. IF OK SET ENTRY=$GET(CONF("auth","jwt","rs256Verify"))
 	IF ENTRY="" DO  QUIT 0
-	. SET ERR("routine")="MIOAUTHJWT",ERR("error")="jwt_rs256_no_verifier",ERR("status")=401
+	. IF '$DATA(ERR) SET ERR("routine")="MIOAUTHJWT",ERR("error")="jwt_rs256_no_verifier",ERR("status")=401
+	. DO SETR(.ERR,"MIOAUTHJWT",401)
 	;
 	SET SIGBIN=$$B64DURL(S64,.ERR)
 	IF $DATA(ERR) DO SETR(.ERR,"MIOAUTHJWT",401) QUIT 0
