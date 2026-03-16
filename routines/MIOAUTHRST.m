@@ -29,11 +29,6 @@ READALL(PATH,OUT)
 	USE OIO
 	QUIT
 	;
-RSNOW() ; fixed verifier clock for hard-coded RS256 fixtures
-	; These fixtures carry a fixed exp value. Pinning "now" keeps the
-	; tests deterministic under MIOAUTHJWT's existing claim-time model.
-	QUIT 4102441200
-	;
 T001 ; INITJWT installs default verifier when RS256 key config exists
 	DO RESET
 	NEW CONF,ERR
@@ -136,6 +131,10 @@ T008 ; route RBAC still works through default OpenSSL verifier
 	DO EQ^MIOTASSERT($GET(CTX("auth","roles","admin")),1,"[MIOAUTHRST][T008][role]")
 	QUIT
 	;
+RSNOW()
+	QUIT 4102444800
+	;
+
 HOK(DEV,CONF,REQ,CTX)
 	NEW OBJ
 	SET CTX("ran")=1

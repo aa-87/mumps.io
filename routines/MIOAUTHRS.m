@@ -4,16 +4,7 @@ MIOAUTHRS ; OpenSSL-backed default RS256 verifier for MIOAUTHJWT
 	;   $$INIT(.CONF,.ERR) -> 1/0
 	;   $$HASCFG(.CONF) -> 1/0
 	;   $$VERIFYOSSL(DATA,SIGBIN,.CONF,.CTX,.HOBJ,.POBJ,.ERR) -> 1/0
-	;
-	; Config
-	;   CONF("auth","jwt","rs256Verify")="VERIFYOSSL^MIOAUTHRS"
-	;   CONF("auth","jwt","rs256PublicKeyPem")=<PEM text>
-	;   CONF("auth","jwt","rs256PublicKeyFile")=<path>
-	;   CONF("auth","jwt","rs256PublicKeyPemByKid",kid)=<PEM text>
-	;   CONF("auth","jwt","rs256PublicKeyFileByKid",kid)=<path>
-	;   CONF("auth","jwt","rs256OpenSSLPath")=<openssl path>
-	;   CONF("auth","jwt","rs256WorkDir")=<temp dir>
-	;   CONF("auth","jwt","rs256InstallCmd")=<optional shell command>
+	;   $$VERIFYJWT(DATA,S64,.CONF,.CTX,.HOBJ,.POBJ,.ERR) -> 1/0
 	;
 	QUIT
 	;
@@ -33,7 +24,7 @@ HASCFG(CONF)
 	IF $DATA(CONF("auth","jwt","rs256PublicKeyFileByKid")) QUIT 1
 	QUIT 0
 	;
-VERIFYOSSL(DATA,SIGBIN,CONF,CTX,HOBJ,POBJ,ERR)
+VERIFYJWT(DATA,S64,CONF,CTX,HOBJ,POBJ,ERR)
 	KILL ERR
 	NEW MODE,KEYVAL,WORK,BASE,DATAFILE,SIG64FILE,SIGFILE,PUBFILE,OWNPUB,OUT,RC,OSSL
 	IF '$$HASOPENSSL(.CONF,.ERR) QUIT 0
@@ -44,25 +35,40 @@ VERIFYOSSL(DATA,SIGBIN,CONF,CTX,HOBJ,POBJ,ERR)
 	SET SIG64FILE=BASE_".sig.b64"
 	SET SIGFILE=BASE_".sig"
 	SET OWNPUB=0,PUBFILE=""
-	IF MODE="pem" DO  QUIT:$DATA(ERR) 0
+	IF MODE="pem" DO
 	. SET PUBFILE=BASE_".pub.pem",OWNPUB=1
 	. DO WTXT(PUBFILE,KEYVAL,.ERR)
-	IF MODE="file" DO  QUIT:$DATA(ERR) 0
+	IF $DATA(ERR) QUIT 0
+	IF MODE="file" DO
 	. SET PUBFILE=KEYVAL
-	. IF '$$FILEOK(PUBFILE) DO
-	. . SET ERR("routine")="MIOAUTHJWT",ERR("error")="jwt_rs256_key_missing",ERR("status")=401
+	. IF '$$FILEOK(PUBFILE) SET ERR("routine")="MIOAUTHJWT",ERR("error")="jwt_rs256_key_missing",ERR("status")=401
+	IF $DATA(ERR) QUIT 0
 	DO WTXT(DATAFILE,DATA,.ERR)
-	IF $DATA(ERR) QUIT 0
-	DO WTXT(SIG64FILE,$$B64STD(SIGBIN),.ERR)
-	IF $DATA(ERR) QUIT 0
+	IF $DATA(ERR) DO CLEAN(DATAFILE,SIG64FILE,SIGFILE,PUBFILE,OWNPUB) QUIT 0
+	DO WTXT(SIG64FILE,$$URL2STD($GET(S64)),.ERR)
+	IF $DATA(ERR) DO CLEAN(DATAFILE,SIG64FILE,SIGFILE,PUBFILE,OWNPUB) QUIT 0
 	SET OSSL=$$OSSL(.CONF)
-	IF '$$RUNVERIFY(OSSL,DATAFILE,SIG64FILE,SIGFILE,PUBFILE,OWNPUB,.OUT,.ERR) QUIT 0
-	SET RC=$$PARSERC(OUT)
+	SET RC=$$RUNVERIFY(OSSL,DATAFILE,SIG64FILE,SIGFILE,PUBFILE,.OUT)
+	DO CLEAN(DATAFILE,SIG64FILE,SIGFILE,PUBFILE,OWNPUB)
+	IF RC=0 QUIT 1
 	IF RC<0 DO  QUIT 0
 	. SET ERR("routine")="MIOAUTHJWT",ERR("error")="jwt_rs256_verify_failed",ERR("status")=401
-	IF RC'=0 DO  QUIT 0
+	. SET ERR("detail")=$GET(OUT)
+	IF $$ISSIGFAIL($GET(OUT)) DO  QUIT 0
 	. SET ERR("routine")="MIOAUTHJWT",ERR("error")="jwt_bad_signature",ERR("status")=401
-	QUIT 1
+	. SET ERR("detail")=$GET(OUT)
+	SET ERR("routine")="MIOAUTHJWT",ERR("error")="jwt_rs256_verify_failed",ERR("status")=401
+	SET ERR("detail")=$GET(OUT)
+	QUIT 0
+	;
+VERIFYOSSL(DATA,SIGBIN,CONF,CTX,HOBJ,POBJ,ERR)
+	KILL ERR
+	NEW S64
+	SET S64=$GET(CONF("auth","jwt","_sig64"))
+	IF S64="" SET S64=$GET(CTX("auth","jwt","sig64"))
+	IF S64'="" QUIT $$VERIFYJWT(DATA,S64,.CONF,.CTX,.HOBJ,.POBJ,.ERR)
+	SET S64=$$B64EURL^MIOAUTHJWT($GET(SIGBIN))
+	QUIT $$VERIFYJWT(DATA,S64,.CONF,.CTX,.HOBJ,.POBJ,.ERR)
 	;
 GETKEY(CONF,HOBJ,POBJ,MODE,KEYVAL,ERR)
 	KILL ERR
@@ -117,9 +123,13 @@ OSSL(CONF)
 	QUIT X
 	;
 WORKDIR(CONF)
-	NEW X SET X=$GET(CONF("auth","jwt","rs256WorkDir"))
+	NEW X,WD
+	SET X=$GET(CONF("auth","jwt","rs256WorkDir"))
 	IF X="" SET X="tmp"
-	QUIT X
+	IF $EXTRACT(X,1)="/" QUIT X
+	SET WD=$ZDIRECTORY
+	IF WD="" QUIT X
+	QUIT $$JOIN(WD,X)
 	;
 TMPBASE(WORK)
 	NEW NAME
@@ -147,7 +157,7 @@ WTXT(PATH,TXT,ERR)
 	IF DEV="" DO  QUIT
 	. SET ERR("routine")="MIOAUTHJWT",ERR("error")="jwt_rs256_tempfile"
 	SET OIO=$IO
-	OPEN DEV:(newversion:stream:nowrap):5
+	OPEN DEV:(newversion:stream:nowrap:chset="M"):5
 	IF '$TEST DO  QUIT
 	. SET ERR("routine")="MIOAUTHJWT",ERR("error")="jwt_rs256_tempfile"
 	USE DEV
@@ -159,16 +169,45 @@ WTXT(PATH,TXT,ERR)
 	USE OIO
 	QUIT
 	;
-RUNVERIFY(OSSL,DATAFILE,SIG64FILE,SIGFILE,PUBFILE,OWNPUB,OUT,ERR)
-	KILL ERR
-	NEW CMD,CLEAN
+RUNVERIFY(OSSL,DATAFILE,SIG64FILE,SIGFILE,PUBFILE,OUT)
+	NEW RC
 	SET OUT=""
-	SET CLEAN="rm -f "_$$SQ(DATAFILE)_" "_$$SQ(SIG64FILE)_" "_$$SQ(SIGFILE)
-	IF +$GET(OWNPUB)=1 SET CLEAN=CLEAN_" "_$$SQ(PUBFILE)
-	SET CMD=$$SQ(OSSL)_" base64 -d -A -in "_$$SQ(SIG64FILE)_" -out "_$$SQ(SIGFILE)_" >/dev/null 2>&1"
-	SET CMD=CMD_" && "_$$SQ(OSSL)_" dgst -sha256 -verify "_$$SQ(PUBFILE)_" -signature "_$$SQ(SIGFILE)_" "_$$SQ(DATAFILE)_" >/dev/null 2>&1"
-	SET CMD=CMD_" ; RC=$?; "_CLEAN_" >/dev/null 2>&1; printf '__MIO_RC__:%s\n' ""$RC"""
-	QUIT $$EXEC(CMD,.OUT,.ERR)
+	SET RC=$$DECSIG(OSSL,SIG64FILE,SIGFILE,.OUT)
+	IF RC'=0 QUIT RC
+	QUIT $$VERIFYFILE(OSSL,DATAFILE,SIGFILE,PUBFILE,.OUT)
+	;
+DECSIG(OSSL,SIG64FILE,SIGFILE,OUT)
+	NEW CMD,RC,ERRX
+	SET OUT=""
+	SET CMD="if command -v base64 >/dev/null 2>&1; then base64 -d < "_$$SQ(SIG64FILE)_" > "_$$SQ(SIGFILE)_" 2>/dev/null; RC=$?; else RC=127; fi; printf '__MIO_RC__:%s\n' ""$RC"""
+	IF '$$EXEC(CMD,.OUT,.ERRX) QUIT -1
+	SET RC=$$PARSERC(OUT)
+	IF RC=0 QUIT 0
+	SET CMD="if command -v base64 >/dev/null 2>&1; then base64 -D -i "_$$SQ(SIG64FILE)_" -o "_$$SQ(SIGFILE)_" >/dev/null 2>&1; RC=$?; else RC=127; fi; printf '__MIO_RC__:%s\n' ""$RC"""
+	IF '$$EXEC(CMD,.OUT,.ERRX) QUIT -1
+	SET RC=$$PARSERC(OUT)
+	IF RC=0 QUIT 0
+	SET CMD=$$SQ(OSSL)_" enc -base64 -d -A -in "_$$SQ(SIG64FILE)_" -out "_$$SQ(SIGFILE)_" >/dev/null 2>&1; printf '__MIO_RC__:%s\n' ""$?"""
+	IF '$$EXEC(CMD,.OUT,.ERRX) QUIT -1
+	SET RC=$$PARSERC(OUT)
+	IF RC=0 QUIT 0
+	SET CMD=$$SQ(OSSL)_" base64 -d -A -in "_$$SQ(SIG64FILE)_" -out "_$$SQ(SIGFILE)_" >/dev/null 2>&1; printf '__MIO_RC__:%s\n' ""$?"""
+	IF '$$EXEC(CMD,.OUT,.ERRX) QUIT -1
+	QUIT $$PARSERC(OUT)
+	;
+VERIFYFILE(OSSL,DATAFILE,SIGFILE,PUBFILE,OUT)
+	NEW CMD,ERRX
+	SET OUT=""
+	SET CMD=$$SQ(OSSL)_" dgst -sha256 -verify "_$$SQ(PUBFILE)_" -signature "_$$SQ(SIGFILE)_" "_$$SQ(DATAFILE)_" 2>&1; printf '__MIO_RC__:%s\n' ""$?"""
+	IF '$$EXEC(CMD,.OUT,.ERRX) QUIT -1
+	QUIT $$PARSERC(OUT)
+	;
+CLEAN(DATAFILE,SIG64FILE,SIGFILE,PUBFILE,OWNPUB)
+	NEW CMD,OUT,ERR2
+	SET CMD="rm -f "_$$SQ($GET(DATAFILE))_" "_$$SQ($GET(SIG64FILE))_" "_$$SQ($GET(SIGFILE))
+	IF +$GET(OWNPUB)=1 SET CMD=CMD_" "_$$SQ($GET(PUBFILE))
+	DO EXEC(CMD,.OUT,.ERR2)
+	QUIT
 	;
 EXEC(CMD,OUT,ERR)
 	KILL ERR
@@ -184,7 +223,8 @@ EXEC(CMD,OUT,ERR)
 	. SET OUT=OUT_X
 	CLOSE DEV
 	USE OIO
-	QUIT '$DATA(ERR)
+	QUIT:$QUIT '$DATA(ERR)
+	QUIT
 	;
 PARSERC(OUT)
 	NEW POS,X
@@ -202,11 +242,20 @@ SQ(S)
 	. SET Y=Y_C
 	QUIT Y_$C(39)
 	;
-B64STD(BIN)
-	NEW X,P
-	SET X=$$B64EURL^MIOAUTHJWT($GET(BIN))
-	SET X=$TRANSLATE(X,"-_","+/")
+ISSIGFAIL(OUT)
+	NEW X
+	SET X=$GET(OUT)
+	IF X["Verification failure" QUIT 1
+	IF X["bad signature" QUIT 1
+	IF X["rsa_verify" QUIT 1
+	IF X["ossl_rsa_verify" QUIT 1
+	QUIT 0
+	;
+URL2STD(X)
+	NEW P
+	SET X=$TRANSLATE($GET(X),"-_","+/")
 	SET P=$L(X)#4
 	IF P=2 SET X=X_"=="
 	IF P=3 SET X=X_"="
 	QUIT X
+	;

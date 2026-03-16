@@ -34,26 +34,25 @@ STERR
 	S ^AAA=$ZSTATUS
 	Q
 	;
-START(CONF)
-	KILL ^MIO("CTL")
-	NEW PORT,ZJ S ZJ=0
-	SET PORT=$GET(CONF("server","listen","port"),9080)
-	J RUN(PORT) I $T S ZJ=$ZJOB D INFO^MIOLOG("mio_server_started","pid="_ZJ) I 1
-	E  D PANIC^MIOLOG("mio_server_failed","")
-	H 2 I $G(^MIO("CTL","PID"))=ZJ D INFO^MIOLOG("listen_success","port="_PORT)
-	K  U 0 G DEVWATCH
+START(CONF,PORT)
+	NEW ZJ S ZJ=0 S PORT=$G(PORT)
+	I 'PORT SET PORT=$GET(CONF("server","listen","port"),8083)
+	D INFO^MIOLOG("mio_server_started","")
+	J RUN(PORT) 
+	S ZJ=$ZJOB H 2 I ZJ D:$D(^MIO("CTL",ZJ)) INFO^MIOLOG("listen_success","port=["_PORT_"] pid=["_ZJ_"]")
 	Q
 	;
-DEVWATCH
-	;
-	;
-	Q
 RUN(PORT)
 	NEW DEV,ERR
 	IF '$$LISTEN^MIOSOCK(PORT,.DEV,.ERR) DO PANIC^MIOLOG("listen_failed",.ERR) Q
-	SET ^MIO("CTL","DEV")=DEV
-	SET ^MIO("CTL","PID")=$J
-	W /LISTEN(5) NEW KEY FOR  QUIT:$GET(^MIO("CTL","STOP"))  DO
+	KILL ^MIO("CTL",$J)
+	ZKILL ^MIO("CTL")
+	SET ^MIO("CTL",$J,"DEV")=DEV
+	SET ^MIO("CTL",$J,"PID")=$J
+	SET ^MIO("CTL",$J,"PORT")=PORT
+	;	
+	;	
+	W /LISTEN(5) NEW KEY FOR  QUIT:+$G(^MIO("CTL",$J,"STOP"))!($G(^MIO("CTL"))="STOP")  DO
 	. DO WAIT^MIOSOCK(DEV,10,.KEY)
 	. IF KEY="" QUIT
 	. I $P(KEY,"|")="CONNECT" D
@@ -67,10 +66,13 @@ RUN(PORT)
 	QUIT
 	;
 STOP ; to do -> make sure to kill the pid associated after checking
-	S ^MIO("CTL","STOP")=1
-	N DEV S DEV=$G(^MIO("CTL","DEV"))
-	H $GET(^MIO("CONF","server","process","gracefulShutdownSeconds"),3)
-	I DEV]"" I 1 D CLOSE^MIOSOCK(DEV) D:$T INFO^MIOLOG("listen_device_closed","")
+	S ^MIO("CTL")="STOP"
+	N P S P="" F  S P=$O(^MIO("CTL",P)) Q:P=""  S ^MIO("CTL",P,"STOP")=1
+	N DEV,P S P="" F  S P=$O(^MIO("CTL",P)) Q:P=""  I P'="STOP" S DEV=^MIO("CTL",P,"DEV")  D
+	. ;$GET(^MIO("CONF","server","process","gracefulShutdownSeconds"),1)
+	. I DEV]"" H 1 I 1 D CLOSE^MIOSOCK(DEV) H 1 I $T D
+	. . D INFO^MIOLOG("listen_device_closed,","port=["_^MIO("CTL",P,"PORT")_"] pid=["_P_"]")
+	. . K ^MIO("CTL",P) 
 	D INFO^MIOLOG("mio_server_stopped","")
 	QUIT
 	;
@@ -90,7 +92,7 @@ JOBCONN(ADDR,HANDLE)
 	NEW METEN SET METEN=$$EN^MIOMET(.CONF)
 	; Rate limiting (ROI #6)
 	NEW RLEN SET RLEN=+$GET(CONF("server","rate","enabled"),0)
- 	; Error Center (ROI B)
+		; Error Center (ROI B)
 	NEW ERREN SET ERREN=$$EN^MIOERRC(.CONF)
 	;
 	; Keep-alive policy
@@ -122,7 +124,7 @@ JOBCONN(ADDR,HANDLE)
 	. ;
 	. KILL ^TMP($J,"MIOHTTP","RESP"),^TMP($J,"MIOHTTP","STREAM")
 	. ;
-	. NEW TPARSE SET TPARSE=""
+	. NEW TPARSE SET TPARSE="" SET ^OK=$$PARSE^MIOHTTPMPU(.CONF,.REQ,.MP,.ERR) M ^E=ERR
 	. NEW OK SET OK=$$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR)
 	. IF METEN!LOGEN SET TPARSE=$$TSUS^MIOMET(),CTX("met","parse_ms")=((TPARSE-$GET(CTX("t0us")))/1000)
 	. IF 'OK DO  QUIT
@@ -189,7 +191,7 @@ JOBCONN(ADDR,HANDLE)
 	. ; Pre-match route (enables per-route authz without double parse)
 	. DO PREMATCH^MIOROUTE(.REQ,.CTX)
 	. ;
-	. ; Auth is enforced via MIOROUTE middleware (MIOMW AUTHB) when enabled.
+	. ; Auth is enforced via MIOROUTE middleware (MIOMW AUTHB) when enabled.;
 	. ;
 	. DO DISPATCH^MIOROUTE(DEV,.CONF,.REQ,.CTX)
 	. ;
@@ -216,7 +218,7 @@ JOBCONN(ADDR,HANDLE)
 	. . IF $GET(CTX("error"))="" SET CTX("error")=$GET(CTX("err","error"))
 	. . DO OBSX^MIOMET(MM,RT,ST,LATMS,+$GET(CTX("met","parse_ms")),+$GET(CTX("met","handler_ms")),+$GET(CTX("bytes_in")),+BOUT,$GET(CTX("error")))
 	. ;
-	. ; Access log for normal requests is emitted by router middleware (MIOMW LOGA).
+	. ; Access log for normal requests is emitted by router middleware (MIOMW LOGA).;
 	. ; Error Center capture (best effort)
 	. IF ERREN DO CAPREQ^MIOERRC(.CONF,.REQ,.CTX)
 	. ; Free request body storage each request
