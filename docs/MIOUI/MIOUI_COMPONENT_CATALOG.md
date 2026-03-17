@@ -1,7 +1,5 @@
 # MIOUI Component Catalog Additions
 
-## Auth/forms surfaces currently tracked in the catalog
-
 - auth_split_shell
 - auth_login_card
 - auth_signup_card
@@ -12,30 +10,59 @@
 - form_multi_step_onboarding
 - form_advanced_filter_panel
 - form_inline_validation_summary
-- auth_workspace_invitation
-- form_consent_approval
-- form_progressive_preferences
-- auth_invitation_state_stack
-- form_expired_invite_recovery
-- auth_account_recovery_variants
-- auth_trusted_device_message
-- form_admin_preference_matrix
-- form_access_review_stack
-- form_workspace_bootstrap_variants
-- form_workspace_bootstrap_resolution
-- form_profile_completion_variants
-- form_first_run_account_hardening
 - page_auth_forms
+- miouibill_claim_snapshot
+- miouibill_section_card
+- miouibill_transaction_card
+- miouibill_x12_explorer
+- page_miouibill_patient_review
+- page_miouibill_patient_review_dense
+- page_miouibill_patient_review_balanced
+- page_miouibill_reports
+- page_miouibill_reports_dense
+- page_miouibill_reports_executive
+- miouibill_report_kpi_grid
+- miouibill_report_aging_table
+- miouibill_report_payer_table
+- miouibill_report_denial_bands
+- miouibill_report_export_queue
+- miouibill_report_queue_board
+- miouibill_report_trend_strip
+- miouibill_report_story_cards
+- miouibill_report_action_stack
 
-## Profile surfaces currently tracked in the catalog
+- page_miouibill_reports_analytics
+- page_miouibill_reports_wallboard
+- miouibill_chart_meter
+- miouibill_chart_columns
+- miouibill_chart_horizontal_bars
+- miouibill_chart_stacked_band
+- miouibill_chart_heatmap
+- miouibill_chart_funnel
+- page_miouibill_reports_forecast
+- page_miouibill_reports_benchmark
+- miouibill_chart_projection_band
+- miouibill_chart_waterfall
+- miouibill_report_scenario_cards
+- miouibill_chart_benchmark_ladder
+- miouibill_chart_peer_matrix
+- miouibill_report_benchmark_scorecards
+- page_miouibill_reports_cashflow
+- page_miouibill_reports_denials
+- miouibill_chart_runrate_strip
+- miouibill_chart_source_mix
+- miouibill_chart_lag_timeline
+- miouibill_chart_denial_stream
+- miouibill_chart_denial_matrix
+- miouibill_chart_appeal_ladder
 
-- profile_patient_dossier
-- profile_biller_workbench
-- profile_manager_command
-- profile_variant_capability_matrix
-- profile_patient_financial_summary
-- profile_patient_payment_plan
-- profile_collector_workbench
-- profile_qa_reviewer_board
-- profile_denial_specialist_desk
-- page_profile_variants
+- page_miouibill_reports_productivity
+- page_miouibill_reports_underpayments
+- miouibill_chart_productivity_team
+- miouibill_chart_productivity_heatmap
+- miouibill_report_productivity_leaderboard
+- miouibill_chart_backlog_slope
+- miouibill_chart_underpayment_waterfall
+- miouibill_chart_underpayment_lanes
+- miouibill_chart_underpayment_matrix
+- miouibill_report_underpayment_cards

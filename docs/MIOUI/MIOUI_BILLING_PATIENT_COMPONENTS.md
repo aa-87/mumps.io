@@ -1,69 +1,220 @@
 # MIOUI Billing Patient Components
 
-This ROI now adds three patient-oriented billing review surfaces:
+This billing UI ROI now covers both patient-review and billing-report surfaces:
 
 - `/mioui/billing-patient`
 - `/mioui/billing-patient-dense`
 - `/mioui/billing-patient-balanced`
+- `/mioui/billing-reports`
+- `/mioui/billing-reports-dense`
+- `/mioui/billing-reports-executive`
+- `/mioui/billing-reports-analytics`
+- `/mioui/billing-reports-wallboard`
+- `/mioui/billing-reports-forecast`
+- `/mioui/billing-reports-benchmark`
+- `/mioui/billing-reports-cashflow`
+- `/mioui/billing-reports-denials`
 
 ## Goal
 
-Create dense, readable SSR components for three billing review surfaces:
+Create dense, readable SSR components for two billing review modes:
 
-- claim detail
-- transaction detail
-- raw X12 loop and segment review
+- patient and claim inspection
+- report and supervisor monitoring
 
-The second route is the densest operator workspace.
-It is designed to keep the whole review experience on one screen using tabs and fixed-height panes.
-The page itself is non-scrolling.
-Individual dense panes can overflow internally when needed for large X12 content.
+The patient routes remain focused on claim detail, transactions, and raw X12 trace.
+The report routes shift to revenue-cycle supervision and aggregate the same billing work into multiple report rhythms rather than one single dashboard shape.
 
-The third route is a balanced hybrid.
-It keeps a readable claim overview ribbon and notes rail, then uses tabs for the deeper panes.
-It is intended to sit between the long stacked review and the one-screen dense workspace.
+## Patient review surfaces
 
-## Source alignment
+The patient-oriented routes keep the behavior from the previous ROI:
 
-The three attached HTML files were used as the source of truth for:
+- a standard stacked review
+- a one-screen dense workspace
+- a balanced hybrid route
 
-- labels
-- section nesting
-- claim, transaction, and X12 groupings
-- general density and information hierarchy
+Those routes still preserve the claim, transaction, and X12 labels and structure from the three attached HTML references.
+They still use fresh synthetic data instead of the sample data from those source files.
 
-The implementation does **not** reuse the sample patient data from those files.
-It uses fresh synthetic data with similar structure.
+## Billing reports family
 
-## Routes
+The report routes are now:
 
-- `GET /mioui/billing-patient`
-- `GET /mioui/billing-patient-dense`
-- `GET /mioui/billing-patient-balanced`
+- `GET /mioui/billing-reports`
+- `GET /mioui/billing-reports-dense`
+- `GET /mioui/billing-reports-executive`
+- `GET /mioui/billing-reports-analytics`
+- `GET /mioui/billing-reports-wallboard`
+- `GET /mioui/billing-reports-forecast`
+- `GET /mioui/billing-reports-benchmark`
+- `GET /mioui/billing-reports-cashflow`
+- `GET /mioui/billing-reports-denials`
+
+All nine report routes share the same core revenue-cycle data model:
+
+- report header with refresh status and report period
+- dense filter ribbon for facility, payer scope, and queue context
+- KPI grid for gross charges, collections, first-pass rate, aged A/R, denials, and posted cash
+- aging-bucket table
+- payer performance table
+- top denial-reason stack
+- scheduled export queue
+- operator watch notes
+
+The difference is the page rhythm and operator intent.
+
+### Standard workspace
+
+`/mioui/billing-reports` remains the balanced baseline for general supervision.
+It keeps KPI cards at the top and uses tabs for Summary, Aging, Payers, and Exports.
+
+### Dense console
+
+`/mioui/billing-reports-dense` is the next ROI delivered in this pass.
+It is a queue-first operator console with:
+
+- smaller KPI cells
+- fixed-height workspace layout
+- compact filter ribbon
+- left-rail recovery lanes
+- center tabbed panes for queues, aging, payers, and exports
+- right-rail daily collections trend strip
+
+This variant is meant for leads and operators who stay close to queue ownership and need a tighter, more scan-oriented surface.
+
+### Executive snapshot
+
+`/mioui/billing-reports-executive` is the presentation-oriented companion route.
+It keeps the same billing metrics but changes the hierarchy toward:
+
+- calmer header rhythm
+- leadership-friendly KPI presentation
+- narrative story cards
+- named next-action stack
+- dense supporting payer, denial, aging, and export panels
+
+This variant is meant for weekly review, stakeholder walkthroughs, and leadership syncs that still need real billing detail in the same SSR shell.
+
+
+### Analytics studio
+
+`/mioui/billing-reports-analytics` shifts the report family toward visual scanning.
+It keeps the same synthetic billing signals, but emphasizes chart surfaces such as:
+
+- a collection-goal metric ring
+- a seven-day collections column graph
+- a payer mix and variance horizontal graph
+- an aging distribution stacked band
+- a denial heatmap
+- a clean-claim funnel
+
+This route is meant for supervisors and analysts who want trend and concentration patterns before they open deeper tables.
+
+### Visual wallboard
+
+`/mioui/billing-reports-wallboard` is the monitor-friendly companion to the analytics studio.
+It uses the same chart primitives but arranges them into a shared-space wallboard rhythm for:
+
+- command-center monitors
+- shift huddles
+- floor displays
+- high-level visual scanning in light or dark theme
+
+The wallboard remains SSR-first and does not depend on a browser chart library.
+
+### Forecast studio
+
+`/mioui/billing-reports-forecast` extends the chart family into forward-looking supervision.
+It adds:
+
+- a six-week cash projection band
+- constrained, commit, and stretch scenario cards
+- a projected cash bridge that shows drag and upside factors
+- the existing KPI, denial, and export primitives underneath
+
+This route is meant for planning meetings, staffing discussions, and weekly expectation-setting where the next few weeks matter more than the prior few days.
+
+### Benchmark deck
+
+`/mioui/billing-reports-benchmark` turns the report family toward comparison and ranking.
+It adds:
+
+- a peer-versus-internal benchmark ladder
+- a payer-family benchmark matrix
+- payer ranking scorecards
+- the existing payer, denial, and aging tables as support detail
+
+This route is meant for operational review, payer-performance comparison, and identifying which metrics are above peer median but still below top-quartile posture.
+
+
+### Cashflow studio
+
+`/mioui/billing-reports-cashflow` turns the report family toward posted-cash motion.
+It adds:
+
+- an eight-period posted-cash run-rate graph
+- cash-source mix lanes for ERA, lockbox, manual posting, and rebill recovery
+- payer remit-lag tracks for the highest-impact payer groups
+- the existing payer, KPI, and export primitives underneath
+
+This route is meant for supervisors and leads who need to understand how cash is arriving, not only how much has been collected.
+
+### Denial intelligence
+
+`/mioui/billing-reports-denials` turns the report family toward denial pressure and appeal posture.
+It adds:
+
+- a denial reason stream with open, appealed, and closed posture
+- a payer-risk matrix crossing denial family with payer family
+- an appeal-aging ladder for stale denial detection
+- the existing denial, payer, and aging tables as support detail
+
+This route is meant for denial managers, appeal leads, and queue owners who need reason concentration and stale-case pressure to read quickly.
 
 ## New and updated routines
 
 - `MIOUIBILL`
-  - shared patient-oriented billing builders
-  - claim header, fact, section, transaction, and X12 loop builders
+  - still provides patient-oriented claim, transaction, and X12 builders
+  - provides report builders for header, filters, KPIs, tabs, aging rows, payer rows, denial bands, export jobs, and watch notes
+  - now also provides variant-specific builders for dense queue lanes, daily trend bars, executive story cards, and named actions
 - `MIOUIBILLD`
-  - route registration
-  - standard page builder
-  - dense tabbed workspace builder
-  - balanced hybrid workspace builder
-  - page handlers for all three routes
+  - still registers and serves the three patient routes
+  - serves the standard report route plus the dense and executive report variants
+  - now builds the shared report context and the variant-specific overlays
 - `MIOUIBILLT`
-  - standalone test runner
+  - standalone billing test runner
 - `MIOUIBILLT001`
-  - builder contract coverage
+  - patient builder contract coverage
 - `MIOUIBILLT002`
-  - route coverage and render coverage for all three routes
+  - route coverage and render coverage for patient routes and all report routes
 - `MIOUIBILLT003`
-  - reference-element coverage for all three variants
+  - reference-element coverage for all patient variants
 - `MIOUIBILLT004`
-  - balanced-variant builder and layout coverage
+  - balanced patient variant coverage
+- `MIOUIBILLT005`
+  - report builder contract coverage for the standard report workspace
+- `MIOUIBILLT006`
+  - standard report render coverage
+- `MIOUIBILLT007`
+  - report variant builder coverage for dense and executive routes
+- `MIOUIBILLT008`
+  - report variant render-token coverage for dense and executive routes
+- `MIOUIBILLT009`
+  - builder coverage for analytics studio and wallboard variants
+- `MIOUIBILLT010`
+  - render-token coverage for analytics studio and wallboard variants
+- `MIOUIBILLT011`
+  - builder coverage for forecast and benchmark report variants
+- `MIOUIBILLT012`
+  - render-token coverage for forecast and benchmark report variants
+- `MIOUIBILLT013`
+  - builder coverage for cashflow and denial-intelligence report variants
+- `MIOUIBILLT014`
+  - render-token coverage for cashflow and denial-intelligence report variants
 
-## Updated templates
+## Updated and new templates
+
+### Existing patient templates still in use
 
 - `templates/pages/miouibill_patient_review.html`
 - `templates/pages/miouibill_patient_review_dense.html`
@@ -72,109 +223,94 @@ It uses fresh synthetic data with similar structure.
 - `templates/partials/miouibill_transaction_card.html`
 - `templates/partials/miouibill_x12_explorer.html`
 
-## Variant behavior
+### Report templates
 
-### Standard variant
+- `templates/pages/miouibill_reports.html`
+- `templates/pages/miouibill_reports_dense.html`
+- `templates/pages/miouibill_reports_executive.html`
+- `templates/pages/miouibill_reports_analytics.html`
+- `templates/pages/miouibill_reports_wallboard.html`
+- `templates/pages/miouibill_reports_forecast.html`
+- `templates/pages/miouibill_reports_benchmark.html`
+- `templates/pages/miouibill_reports_cashflow.html`
+- `templates/pages/miouibill_reports_denials.html`
+- `templates/partials/miouibill_report_kpi_grid.html`
+- `templates/partials/miouibill_report_aging_table.html`
+- `templates/partials/miouibill_report_payer_table.html`
+- `templates/partials/miouibill_report_denial_bands.html`
+- `templates/partials/miouibill_report_export_queue.html`
+- `templates/partials/miouibill_report_queue_board.html`
+- `templates/partials/miouibill_report_trend_strip.html`
+- `templates/partials/miouibill_report_story_cards.html`
+- `templates/partials/miouibill_report_action_stack.html`
+- `templates/partials/miouibill_chart_meter.html`
+- `templates/partials/miouibill_chart_columns.html`
+- `templates/partials/miouibill_chart_horizontal_bars.html`
+- `templates/partials/miouibill_chart_stacked_band.html`
+- `templates/partials/miouibill_chart_heatmap.html`
+- `templates/partials/miouibill_chart_funnel.html`
+- `templates/partials/miouibill_chart_projection_band.html`
+- `templates/partials/miouibill_chart_waterfall.html`
+- `templates/partials/miouibill_report_scenario_cards.html`
+- `templates/partials/miouibill_chart_benchmark_ladder.html`
+- `templates/partials/miouibill_chart_peer_matrix.html`
+- `templates/partials/miouibill_report_benchmark_scorecards.html`
+- `templates/partials/miouibill_chart_runrate_strip.html`
+- `templates/partials/miouibill_chart_source_mix.html`
+- `templates/partials/miouibill_chart_lag_timeline.html`
+- `templates/partials/miouibill_chart_denial_stream.html`
+- `templates/partials/miouibill_chart_denial_matrix.html`
+- `templates/partials/miouibill_chart_appeal_ladder.html`
 
-The standard variant keeps the original stacked review flow:
+## Report design principles
 
-- claim header and key facts first
-- patient and party cards next
-- service lines next
-- raw X12 explorer last
+The report family follows the same MIOUI guardrails as the patient surfaces:
 
-It remains useful for long-form review and side-by-side scanning.
+- SSR first
+- minimal browser enhancement
+- dense but readable light-theme contrast
+- server-built view model
+- reusable partials
+- stable tables and predictable panel rhythm
 
-### Dense variant
+The new variants do not introduce a new client-side dashboard framework.
+They reuse the same report data while changing only the layout choreography.
 
-The dense variant is designed to be at least twice as dense in practical use:
+## Report data model
 
-- fixed-height workspace container
-- no page-level vertical scrolling
-- tabbed panes for Claims, Transactions, and Raw X12
-- compact key-fact ribbon
-- compact cards and tables
-- darker, higher-contrast light-theme text for readability
+The report surfaces use fresh synthetic billing data.
+It is intentionally similar to real billing supervision data, but it is not copied from external samples.
 
-The dense view is intended for an operator who wants one-screen review and very fast switching between claim, line, and source-EDI perspectives.
+The current report family includes:
 
-### Balanced variant
-
-The balanced variant mixes the two approaches:
-
-- readable top summary ribbon
-- quick links to the other variants
-- operator notes visible without entering a separate pane
-- tabbed switching for patient and parties, transactions, and raw X12
-- roomier inner cards than the dense workspace
-- more controlled scanning than the full stacked review
-
-This variant is intended for operators who want structure and speed, but still want slightly more breathing room inside the deeper content panes.
-
-## Reference coverage
-
-The updated implementation now carries forward the major visible elements from all three reference files into **all three** variants.
-That includes the claim labels, transaction labels, and X12 loop and segment structure.
-
-Coverage now explicitly includes these areas from the references:
-
-### Claim coverage
-
-- Patient Ctrl Num (Claim ID)
-- Charge Amt
-- Place of Service
-- Frequency
-- Service Dates
-- Provider Signature Indicator
-- Assignment Participation Code
-- Benefits Assignment Indicator
-- Release of Information Code
-- Key Info
-- Insured Subscriber (Self, Primary)
-- Payer
-- Diagnoses
-- Billing Provider
-- Submitter
-- Receiver
-- EDI Transaction Info
-- EDI File Info
-- Employer's Identification Number
-- File's Url
-
-### Transaction coverage
-
-- Charge Amt
-- Units
-- Place of Service
-- Service Dates
-- HCPCS Procedure
-- Related Diagnosis
-- Ordering Provider
-- Name:
-- NPI:
-- Line 1 / Charge Amount: / Units:
-
-### X12 coverage
-
-- Transaction Set Header / Loop: 0000
-- Submitter Name / Loop: 1000A
-- Receiver Name / Loop: 1000B
-- Billing Provider Hierarchical Level / Loop: 2000A
-- Billing Provider Name / Loop: 2010AA
-- Subscriber Hierarchical Level / Loop: 2000B
-- Subscriber Name / Loop: 2010BA
-- Payer Name / Loop: 2010BB
-- Claim Information / Loop: 2300
-- Service Line / Loop: 2400
-- Drug Identification / Loop: 2410
-- Ordering Provider Name / Loop: 2420E
-- segment tokens including ST, BHT, SE, NM1, PER, HL, N3, N4, REF, SBR, DMG, CLM, HI, LX, SV1, DTP, LIN, and CTP
+- five filters
+- six KPI cards
+- five aging buckets
+- five payer rows
+- four denial reasons
+- three scheduled export jobs
+- three operator watch notes
+- four dense queue lanes
+- six dense trend bars
+- three executive story cards
+- three executive next actions
+- one metric ring
+- seven collections trend bars
+- five payer graph rows
+- five aging distribution segments
+- sixteen denial heat cells
+- six forecast weeks
+- three forecast scenario cards
+- six bridge steps
+- five benchmark ladders
+- sixteen benchmark matrix cells
+- four benchmark payer scorecards
+- four clean-claim funnel stages
 
 ## Theme and readability
 
-The pages use existing MIOUI layout primitives and Tailwind classes.
-Light-theme text is intentionally darker than the source references so dense sections remain readable.
-This remains especially important for the balanced and dense variants where a large amount of detail must stay visible without washing out in light mode.
+All report variants follow the same light-theme guardrail as the patient pages.
+Text remains darker and more contrast-heavy than many dashboard examples so dense grids, tables, labels, and tabs remain readable in light mode.
 
 ## Test entry point
 
@@ -182,4 +318,32 @@ Run:
 
 - `D ^MIOUIBILLT`
 
-This remains separate from the main `^MIOUIT` runner so the billing work can iterate independently without disturbing the current numbered MIOUI suite.
+The billing test runner remains separate from the main `^MIOUIT` runner so billing-specific work can continue to evolve independently.
+
+The cashflow and denial variants keep the same SSR-first model, but bias the layout toward run-rate, lag, appeal posture, and concentration scanning rather than general supervision alone.
+
+
+## Productivity and underpayments ROI
+
+This ROI adds two more billing-report variants:
+
+- ` /mioui/billing-reports-productivity`
+- ` /mioui/billing-reports-underpayments`
+
+The productivity studio is built for billing leads who want team throughput to be visible without opening a separate workforce dashboard.
+It adds:
+
+- five team touch bars
+- sixteen queue heat cells
+- four leaderboard cards
+- six backlog slope points
+
+The underpayments studio is built for reimbursement variance review.
+It adds:
+
+- five waterfall steps
+- four payer leakage lanes
+- sixteen contract variance cells
+- four leakage story cards
+
+Both variants stay SSR-first and use the same darker light-theme treatment as the rest of the billing family so dense chart labels remain readable.

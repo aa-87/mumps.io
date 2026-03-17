@@ -1,0 +1,38 @@
+<div class="panel-soft rounded-[1.35rem] p-5" id="report-benchmark-matrix">
+  <div class="flex items-start justify-between gap-3">
+    <div>
+      <div class="section-kicker">Peer matrix</div>
+      <h3 class="mt-2 text-base font-semibold text-slate-900 dark:text-slate-100">Payer-family benchmark matrix</h3>
+      <p class="mt-2 text-sm text-slate-700 dark:text-slate-300">A denser comparison view for metric behavior across payer families.</p>
+    </div>
+    <span class="badge badge-amber">Matrix</span>
+  </div>
+  <div class="mt-5 overflow-x-auto">
+    <table class="min-w-full text-left text-sm">
+      <thead>
+        <tr class="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+          <th class="px-3 py-2">Metric</th>
+          <th class="px-3 py-2">Commercial</th>
+          <th class="px-3 py-2">Medicare Advantage</th>
+          <th class="px-3 py-2">Managed Medicaid</th>
+          <th class="px-3 py-2">Employer Plan</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#billReportBench.matrix}}
+        <tr class="border-t border-slate-300/70 dark:border-slate-700/70">
+          <td class="px-3 py-3 font-semibold text-slate-900 dark:text-slate-100">{{label}}</td>
+          {{#cell}}
+          <td class="px-3 py-3">
+            <div class="rounded-xl border border-slate-300/70 px-3 py-2 dark:border-slate-700/70 text-slate-900 dark:text-slate-100 {{panelClass}}" style="opacity: {{opacity}};">
+              <div class="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{{label}}</div>
+              <div class="mt-1 text-sm font-semibold">{{value}}</div>
+            </div>
+          </td>
+          {{/cell}}
+        </tr>
+        {{/billReportBench.matrix}}
+      </tbody>
+    </table>
+  </div>
+</div>

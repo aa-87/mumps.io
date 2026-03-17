@@ -1,0 +1,26 @@
+<div class="panel-soft rounded-[1.35rem] p-5" id="report-analytics-funnel">
+  <div class="flex items-start justify-between gap-3">
+    <div>
+      <div class="section-kicker">Funnel graph</div>
+      <h3 class="mt-2 text-base font-semibold text-slate-900 dark:text-slate-100">Clean claim funnel</h3>
+      <p class="mt-2 text-sm text-slate-700 dark:text-slate-300">Submitted volume narrowing into accepted, paid, and active follow-up stages.</p>
+    </div>
+    <span class="badge badge-slate">4 stages</span>
+  </div>
+  <div class="mt-5 space-y-3">
+    {{#billReportViz.funnel}}
+    <div>
+      <div class="mb-2 flex items-center justify-between gap-3 text-sm">
+        <div class="font-semibold text-slate-900 dark:text-slate-100">{{label}}</div>
+        <div class="flex items-center gap-2">
+          <span class="text-slate-700 dark:text-slate-300">{{value}}</span>
+          <span class="badge {{badgeClass}}">{{percent}}%</span>
+        </div>
+      </div>
+      <div class="h-5 overflow-hidden rounded-full bg-slate-200/80 dark:bg-slate-800/80">
+        <div class="h-full rounded-full {{panelClass}}" style="width: {{percent}}%;"></div>
+      </div>
+    </div>
+    {{/billReportViz.funnel}}
+  </div>
+</div>

@@ -1,0 +1,32 @@
+<div class="panel-soft rounded-[1.35rem] p-4">
+  <div class="flex items-start justify-between gap-3">
+    <div>
+      <div class="section-kicker">Aging snapshot</div>
+      <h3 class="mt-2 text-base font-semibold text-slate-900 dark:text-slate-100">Aging buckets</h3>
+      <p class="mt-2 text-sm text-slate-700 dark:text-slate-300">Current and older A/R tiers aligned to service-date aging for supervisor follow-up planning.</p>
+    </div>
+    <span class="badge badge-slate">5 buckets</span>
+  </div>
+  <div class="mt-4 overflow-x-auto rounded-2xl border border-slate-300/70 dark:border-slate-700/70">
+    <table class="min-w-full text-sm">
+      <thead class="bg-slate-100/90 dark:bg-slate-900/70">
+        <tr>
+          <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-slate-600 dark:text-slate-300">Bucket</th>
+          <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-slate-600 dark:text-slate-300">A/R Balance</th>
+          <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-slate-600 dark:text-slate-300">Claims</th>
+          <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-slate-600 dark:text-slate-300">Percent of A/R</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#billReport.aging}}
+        <tr class="border-t border-slate-300/70 dark:border-slate-700/70">
+          <td class="px-3 py-3 align-top"><span class="badge {{badgeClass}}">{{bucket}}</span></td>
+          <td class="px-3 py-3 align-top font-semibold text-slate-900 dark:text-slate-100">{{amount}}</td>
+          <td class="px-3 py-3 align-top text-slate-700 dark:text-slate-300">{{claims}}</td>
+          <td class="px-3 py-3 align-top text-slate-700 dark:text-slate-300">{{percent}}</td>
+        </tr>
+        {{/billReport.aging}}
+      </tbody>
+    </table>
+  </div>
+</div>

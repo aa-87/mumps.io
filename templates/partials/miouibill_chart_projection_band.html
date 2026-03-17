@@ -1,0 +1,55 @@
+<div class="panel-soft rounded-[1.35rem] p-5" id="report-forecast-band">
+  <div class="flex items-start justify-between gap-3">
+    <div>
+      <div class="section-kicker">Projection band</div>
+      <h3 class="mt-2 text-base font-semibold text-slate-900 dark:text-slate-100">{{billReportForecast.headline}}</h3>
+      <p class="mt-2 text-sm text-slate-700 dark:text-slate-300">{{billReportForecast.subhead}}</p>
+    </div>
+    <span class="badge badge-amber">Forecast</span>
+  </div>
+  <div class="mt-5 space-y-4">
+    {{#billReportForecast.point}}
+    <div class="rounded-[1.15rem] border border-slate-300/70 bg-white/80 px-4 py-4 dark:border-slate-700/70 dark:bg-slate-950/40 {{panelClass}}">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <div class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{label}}</div>
+          <div class="mt-1 text-xs text-slate-600 dark:text-slate-400">{{note}}</div>
+        </div>
+        <div class="text-right">
+          <div class="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100">{{value}}</div>
+          <span class="badge {{badgeClass}}">Commit view</span>
+        </div>
+      </div>
+      <div class="mt-3 space-y-2">
+        <div>
+          <div class="mb-1 flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+            <span>Risk to commit</span><span>{{commitPercent}}%</span>
+          </div>
+          <div class="h-2.5 rounded-full bg-slate-200 dark:bg-slate-800">
+            <div class="h-2.5 rounded-full bg-amber-700/70 dark:bg-amber-500/70" style="width: {{lowPercent}}%;"></div>
+          </div>
+        </div>
+        <div>
+          <div class="mb-1 flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+            <span>Commit</span><span>{{commitPercent}}%</span>
+          </div>
+          <div class="h-2.5 rounded-full bg-slate-200 dark:bg-slate-800">
+            <div class="h-2.5 rounded-full bg-sky-700/75 dark:bg-sky-500/75" style="width: {{commitPercent}}%;"></div>
+          </div>
+        </div>
+        <div>
+          <div class="mb-1 flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+            <span>Stretch</span><span>{{stretchPercent}}%</span>
+          </div>
+          <div class="h-2.5 rounded-full bg-slate-200 dark:bg-slate-800">
+            <div class="h-2.5 rounded-full bg-violet-700/75 dark:bg-violet-500/75" style="width: {{stretchPercent}}%;"></div>
+          </div>
+        </div>
+        <div class="flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+          <span>Goal line</span><span>{{goalPercent}}%</span>
+        </div>
+      </div>
+    </div>
+    {{/billReportForecast.point}}
+  </div>
+</div>

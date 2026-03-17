@@ -1,0 +1,26 @@
+<div class="panel-soft rounded-[1.35rem] p-5" id="report-cashflow-lag">
+  <div class="flex items-start justify-between gap-3">
+    <div>
+      <div class="section-kicker">Lag timeline</div>
+      <h3 class="mt-2 text-base font-semibold text-slate-900 dark:text-slate-100">Payer remit lag</h3>
+      <p class="mt-2 text-sm text-slate-700 dark:text-slate-300">Average hours from remit availability to posted cash for the highest-impact payer groups.</p>
+    </div>
+    <span class="badge badge-amber">5 payers</span>
+  </div>
+  <div class="mt-5 space-y-4">
+    {{#billReportCash.lag}}
+    <div class="rounded-[1.15rem] border border-slate-300/70 px-4 py-4 dark:border-slate-700/70 bg-white/80 dark:bg-slate-950/40 {{panelClass}}">
+      <div class="flex items-center justify-between gap-3">
+        <div>
+          <div class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{label}}</div>
+          <div class="mt-1 text-xs text-slate-600 dark:text-slate-400">{{note}}</div>
+        </div>
+        <span class="badge {{badgeClass}}">{{value}}</span>
+      </div>
+      <div class="mt-3 h-2.5 rounded-full bg-slate-200 dark:bg-slate-800">
+        <div class="h-2.5 rounded-full bg-slate-900/80 dark:bg-slate-100/80" style="width: {{percent}}%;"></div>
+      </div>
+    </div>
+    {{/billReportCash.lag}}
+  </div>
+</div>

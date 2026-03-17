@@ -1,0 +1,31 @@
+<article class="panel p-5">
+  <div class="chart-kicker">Sparkline table</div>
+  <h2 class="mt-2 text-lg font-semibold chart-title">{{spark.title}}</h2>
+  <p class="mt-2 text-sm chart-copy">{{spark.desc}}</p>
+  <div class="chart-table-wrap mt-5">
+    <table class="chart-table text-sm">
+      <thead>
+        <tr>
+          <th class="px-4 py-3 text-left font-medium">Metric</th>
+          <th class="px-4 py-3 text-left font-medium">Trend</th>
+          <th class="px-4 py-3 text-right font-medium">Value</th>
+          <th class="px-4 py-3 text-right font-medium">Delta</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#spark.row}}
+        <tr>
+          <td class="px-4 py-3">{{metric}}</td>
+          <td class="px-4 py-3">
+            <svg viewBox="0 0 108 28" class="h-7 w-28">
+              <polyline points="{{polyline}}" class="chart-line-sky" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"></polyline>
+            </svg>
+          </td>
+          <td class="px-4 py-3 text-right font-semibold chart-value">{{value}}</td>
+          <td class="px-4 py-3 text-right chart-muted">{{delta}}</td>
+        </tr>
+        {{/spark.row}}
+      </tbody>
+    </table>
+  </div>
+</article>

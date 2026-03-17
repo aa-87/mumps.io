@@ -1,0 +1,14 @@
+<article class="panel p-5">
+  <div class="chart-kicker">Heatmap</div>
+  <h2 class="mt-2 text-lg font-semibold chart-title">{{heat.title}}</h2>
+  <p class="mt-2 text-sm chart-copy">{{heat.desc}}</p>
+  <div class="mt-5 grid gap-2">
+    {{#heat.week}}
+    <div class="grid grid-cols-7 gap-2">
+      {{#day}}
+      <div class="flex h-12 items-end justify-end rounded-xl {{toneClass}} p-2 text-[11px] font-semibold chart-cell-count">{{count}}</div>
+      {{/day}}
+    </div>
+    {{/heat.week}}
+  </div>
+</article>

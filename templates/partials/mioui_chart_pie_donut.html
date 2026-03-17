@@ -1,0 +1,21 @@
+<article class="panel p-5">
+  <div class="chart-kicker">Pie / donut</div>
+  <h2 class="mt-2 text-lg font-semibold chart-title">{{pie.title}}</h2>
+  <p class="mt-2 text-sm chart-copy">{{pie.desc}}</p>
+  <div class="mt-5 grid gap-5 lg:grid-cols-[12rem_1fr] lg:items-center">
+    <div class="mx-auto flex h-48 w-48 items-center justify-center rounded-full" style="background: {{pie.gradient}};">
+      <div class="chart-center-hole flex h-24 w-24 flex-col items-center justify-center rounded-full text-center">
+        <div class="text-lg font-semibold chart-value">{{pie.centerTop}}</div>
+        <div class="text-[11px] uppercase tracking-[0.18em] chart-muted">{{pie.centerBottom}}</div>
+      </div>
+    </div>
+    <div class="space-y-3">
+      {{#pie.slice}}
+      <div class="chart-soft flex items-center justify-between rounded-xl px-3 py-2 text-sm">
+        <div class="flex items-center gap-2"><span class="h-3 w-3 rounded-full {{toneClass}}"></span><span class="chart-label">{{label}}</span></div>
+        <span class="font-semibold chart-value">{{value}}</span>
+      </div>
+      {{/pie.slice}}
+    </div>
+  </div>
+</article>

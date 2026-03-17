@@ -1,0 +1,18 @@
+<article class="panel p-5">
+  <div class="chart-kicker">Line</div>
+  <h2 class="mt-2 text-lg font-semibold chart-title">{{line.title}}</h2>
+  <p class="mt-2 text-sm chart-copy">{{line.desc}}</p>
+  <div class="chart-surface mt-5 rounded-2xl p-4">
+    <svg viewBox="0 0 308 120" class="h-40 w-full">
+      <path d="M 10 104 L 298 104" class="chart-axis" stroke-width="1" fill="none"></path>
+      <path d="M 10 72 L 298 72" class="chart-axis-soft" stroke-width="1" fill="none"></path>
+      <path d="M 10 40 L 298 40" class="chart-axis-soft" stroke-width="1" fill="none"></path>
+      <polyline points="{{line.polyline}}" class="chart-line-sky" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"></polyline>
+    </svg>
+    <div class="mt-3 grid grid-cols-7 gap-2 text-center text-[11px] chart-svg-label">
+      {{#line.point}}
+      <div><div>{{label}}</div><div class="mt-1 font-semibold chart-label">{{value}}</div></div>
+      {{/line.point}}
+    </div>
+  </div>
+</article>

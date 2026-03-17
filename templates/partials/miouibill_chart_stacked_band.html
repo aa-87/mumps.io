@@ -1,0 +1,26 @@
+<div class="panel-soft rounded-[1.35rem] p-5">
+  <div class="flex items-start justify-between gap-3">
+    <div>
+      <div class="section-kicker">Stacked band</div>
+      <h3 class="mt-2 text-base font-semibold text-slate-900 dark:text-slate-100">Aging distribution</h3>
+      <p class="mt-2 text-sm text-slate-700 dark:text-slate-300">One-band view of where A/R is sitting before you drill into the detailed aging table.</p>
+    </div>
+    <span class="badge badge-slate">5 segments</span>
+  </div>
+  <div class="mt-5 flex h-10 overflow-hidden rounded-full bg-slate-200/70 dark:bg-slate-800/70">
+    {{#billReportViz.segment}}
+    <div class="h-full {{panelClass}}" style="width: {{percent}}%;"></div>
+    {{/billReportViz.segment}}
+  </div>
+  <div class="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+    {{#billReportViz.segment}}
+    <div class="rounded-2xl border border-slate-300/70 px-3 py-3 dark:border-slate-700/70 bg-white/70 dark:bg-slate-950/35">
+      <div class="flex items-center justify-between gap-2">
+        <div class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{label}}</div>
+        <span class="badge {{badgeClass}}">{{percent}}%</span>
+      </div>
+      <div class="mt-2 text-sm text-slate-700 dark:text-slate-300">{{value}}</div>
+    </div>
+    {{/billReportViz.segment}}
+  </div>
+</div>

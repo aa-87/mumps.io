@@ -1,0 +1,32 @@
+# MIOUI Component Catalog Additions
+
+- auth_split_shell
+- auth_login_card
+- auth_signup_card
+- auth_forgot_password
+- auth_reset_password
+- auth_mfa_challenge
+- form_profile_registration
+- form_multi_step_onboarding
+- form_advanced_filter_panel
+- form_inline_validation_summary
+- page_auth_forms
+- miouibill_claim_snapshot
+- miouibill_section_card
+- miouibill_transaction_card
+- miouibill_x12_explorer
+- page_miouibill_patient_review
+- page_miouibill_patient_review_dense
+- page_miouibill_patient_review_balanced
+- page_miouibill_reports
+- page_miouibill_reports_dense
+- page_miouibill_reports_executive
+- miouibill_report_kpi_grid
+- miouibill_report_aging_table
+- miouibill_report_payer_table
+- miouibill_report_denial_bands
+- miouibill_report_export_queue
+- miouibill_report_queue_board
+- miouibill_report_trend_strip
+- miouibill_report_story_cards
+- miouibill_report_action_stack

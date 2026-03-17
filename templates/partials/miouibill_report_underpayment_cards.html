@@ -1,0 +1,21 @@
+<div class="panel-soft rounded-[1.35rem] p-5" id="report-underpayments-cards">
+  <div class="flex items-start justify-between gap-3">
+    <div>
+      <div class="section-kicker">Leakage cards</div>
+      <h3 class="mt-2 text-base font-semibold text-slate-900 dark:text-slate-100">Highest-value underpayment stories</h3>
+      <p class="mt-2 text-sm text-slate-700 dark:text-slate-300">Small narrative cards keep the biggest recoverable spreads readable without losing the surrounding chart context.</p>
+    </div>
+    <span class="badge badge-sky">4 cards</span>
+  </div>
+  <div class="mt-5 grid gap-3 md:grid-cols-2">
+    {{#billReportUnder.card}}
+    <div class="rounded-[1.15rem] border border-slate-300/70 bg-white/80 p-4 dark:border-slate-700/70 dark:bg-slate-950/40 {{panelClass}}">
+      <div class="flex items-center justify-between gap-3">
+        <div class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{title}}</div>
+        <span class="badge {{badgeClass}}">{{value}}</span>
+      </div>
+      <p class="mt-3 text-sm leading-6 text-slate-700 dark:text-slate-300">{{note}}</p>
+    </div>
+    {{/billReportUnder.card}}
+  </div>
+</div>

@@ -16,6 +16,8 @@ REG(CONF)
 	D REG1("GET","/mioui/premium","PREMIUM^MIOUIDEMO",.META)
 	D REG1("GET","/mioui/large-table","LARGETABLE^MIOUIDEMO",.META)
 	D REG1("GET","/mioui/million-table","MILLIONTABLE^MIOUIDEMO",.META)
+	D REG1("GET","/mioui/code-menus","CODEMENUS^MIOUIDEMO",.META)
+	D REG1("GET","/mioui/charts","CHARTS^MIOUIDEMO",.META)
 	Q
 	;
 REG1(METHOD,PATH,TARGET,META)
@@ -118,6 +120,22 @@ MILLIONTABLE(DEV,CONF,REQ,CTX)
 	D BUILDMILLION(.CONF,.REQ,.CTX,.TCTX)
 	D RENDER("pages/mioui_million_table.html",.CONF,.CTX,.TCTX,.OUT,.ERR)
 	I $D(ERR) M ^ERR=ERR D RESPERR(.DEV,.CONF,.CTX,500,"template_error") Q
+	D RESPHTML(.DEV,.CONF,.CTX,.OUT)
+	Q
+	;
+CODEMENUS(DEV,CONF,REQ,CTX)
+	N TCTX,OUT,ERR
+	D BUILDCODE(.CONF,.REQ,.CTX,.TCTX)
+	D RENDER("pages/mioui_code_menus.html",.CONF,.CTX,.TCTX,.OUT,.ERR)
+	I $D(ERR) D RESPERR(.DEV,.CONF,.CTX,500,"template_error") Q
+	D RESPHTML(.DEV,.CONF,.CTX,.OUT)
+	Q
+	;
+CHARTS(DEV,CONF,REQ,CTX)
+	N TCTX,OUT,ERR
+	D BUILDCHARTS(.CONF,.REQ,.CTX,.TCTX)
+	D RENDER("pages/mioui_chart_variants.html",.CONF,.CTX,.TCTX,.OUT,.ERR)
+	I $D(ERR) D RESPERR(.DEV,.CONF,.CTX,500,"template_error") Q
 	D RESPHTML(.DEV,.CONF,.CTX,.OUT)
 	Q
 	;
@@ -281,165 +299,170 @@ BUILDFORMS(CONF,REQ,CTX,TCTX)
 	D FINAL^MIOUIFORM(.TCTX,"filter")
 	Q
 	;
-BUILDEXPORT(CONF,REQ,CTX,TCTX)
+BUILDCHARTS(CONF,REQ,CTX,TCTX)
 	D BASE^MIOUICTX(.TCTX)
 	D APPLY^MIOUITHEME(.CONF,.TCTX)
-	D ACT^MIOUICTX(.TCTX,"export")
-	D PAGE^MIOUICTX(.TCTX,"MIOUI / Export","Export UX","Reusable field-selection and export editing surfaces for dense billing workflows.","Profile editor")
-	D SUMINIT^MIOUIEXP(.TCTX,"main","Export profile summary","Compact output rules, selected-field counts, and file naming rules for CSV profile review.")
-	D SUMSTAT^MIOUIEXP(.TCTX,"main",1,"Mode","Claim summary","sky")
-	D SUMSTAT^MIOUIEXP(.TCTX,"main",2,"Selected fields",4,"emerald")
-	D SUMSTAT^MIOUIEXP(.TCTX,"main",3,"Delimiter","Comma","amber")
-	D SUMSTAT^MIOUIEXP(.TCTX,"main",4,"Header row","Included","violet")
-	D SUMRULE^MIOUIEXP(.TCTX,"main",1,"File naming","claims_review_{{date}}.csv")
-	D SUMRULE^MIOUIEXP(.TCTX,"main",2,"Quote mode","Minimal quoting")
-	D SUMRULE^MIOUIEXP(.TCTX,"main",3,"Empty values","Leave blank")
-	D CHKINIT^MIOUIEXP(.TCTX,"fieldCatalog","Field catalog","Choose the export fields operators need without leaving the SSR editor flow.")
-	D CHKITEM^MIOUIEXP(.TCTX,"fieldCatalog",1,"claim_id","Claim ID","Stable claim-level identifier used by downstream QA sheets.",1)
-	D CHKITEM^MIOUIEXP(.TCTX,"fieldCatalog",2,"patient_last","Patient last name","Useful for operator review and spreadsheet grouping.",1)
-	D CHKITEM^MIOUIEXP(.TCTX,"fieldCatalog",3,"date_of_service","Date of service","High-value billing field for daily reconciliation.",1)
-	D CHKITEM^MIOUIEXP(.TCTX,"fieldCatalog",4,"total_charge","Total charge","Include the summed billed charge for quick balance checks.",1)
-	D CHKITEM^MIOUIEXP(.TCTX,"fieldCatalog",5,"payer_name","Payer name","Helpful for payer-segmented work queues.",0)
-	D CHKITEM^MIOUIEXP(.TCTX,"fieldCatalog",6,"claim_frequency","Claim frequency","Optional field for advanced claim audit exports.",0)
-	D CHKFINAL^MIOUIEXP(.TCTX,"fieldCatalog")
-	D ORDINIT^MIOUIEXP(.TCTX,"selectedFields","Selected field order","Explicit row order keeps export columns predictable and easy to test.")
-	D ORDITEM^MIOUIEXP(.TCTX,"selectedFields",1,"Claim ID","claim_id")
-	D ORDITEM^MIOUIEXP(.TCTX,"selectedFields",2,"Patient last name","patient_last")
-	D ORDITEM^MIOUIEXP(.TCTX,"selectedFields",3,"Date of service","date_of_service")
-	D ORDITEM^MIOUIEXP(.TCTX,"selectedFields",4,"Total charge","total_charge")
-	D ORDFINAL^MIOUIEXP(.TCTX,"selectedFields")
-	D INIT^MIOUIFORM(.TCTX,"naming","Naming rules","Keep export naming stable for local installs, automation folders, and audit review.","/mioui/export","post")
-	D FIELD^MIOUIFORM(.TCTX,"naming",1,"text","prefix","File prefix","claims_review","Short prefix that stays stable across environments.","","")
-	D FIELD^MIOUIFORM(.TCTX,"naming",2,"select","dateToken","Date token","yyyymmdd","Append a date token to every export filename.","","")
-	D OPTION^MIOUIFORM(.TCTX,"naming",2,1,"yyyymmdd","YYYYMMDD",1)
-	D OPTION^MIOUIFORM(.TCTX,"naming",2,2,"iso8601","ISO 8601",0)
-	D OPTION^MIOUIFORM(.TCTX,"naming",2,3,"none","No date token",0)
-	D ACTION^MIOUIFORM(.TCTX,"naming",1,"Apply naming rule","submit","primary")
-	D FINAL^MIOUIFORM(.TCTX,"naming")
-	D FOOTINIT^MIOUIEXP(.TCTX,"profile","Sticky actions","Keep primary actions visible while operators scan selected fields and naming rules.")
-	D FOOTACT^MIOUIEXP(.TCTX,"profile",1,"Save profile","/mioui/export?save=1","primary-button")
-	D FOOTACT^MIOUIEXP(.TCTX,"profile",2,"Preview sample","/mioui/export?preview=1","quick-button")
-	D FOOTACT^MIOUIEXP(.TCTX,"profile",3,"Cancel","/mioui/forms","ghost-button")
-	Q
-	;
-BUILDBILL(CONF,REQ,CTX,TCTX)
-	D BASE^MIOUICTX(.TCTX)
-	D APPLY^MIOUITHEME(.CONF,.TCTX)
-	D ACT^MIOUICTX(.TCTX,"billing")
-	D PAGE^MIOUICTX(.TCTX,"MIOUI / Billing","Billing blueprints","Claim, line, diagnostics, and artifact patterns tailored for dense SSR review flows.","Billing adapters")
-	D STAT^MIOUIPANEL(.TCTX,1,"Claims",2,"sky","")
-	D STAT^MIOUIPANEL(.TCTX,2,"Lines",3,"emerald","")
-	D STAT^MIOUIPANEL(.TCTX,3,"Warnings",1,"amber","")
-	D STAT^MIOUIPANEL(.TCTX,4,"Errors",0,"violet","")
-	D CLAIM^MIOUIBIL(.TCTX,1,"CLM-1001","JANE DOE","ALPHA HEALTH","2026-03-01","125.00","Previewed","sky")
-	D CLAIM^MIOUIBIL(.TCTX,2,"CLM-1002","JOHN SMITH","BETA HEALTH","2026-03-02","88.20","Publishable","emerald")
-	D INIT^MIOUITBL(.TCTX,"serviceLine","Service lines","No service line rows.")
-	D COL^MIOUITBL(.TCTX,"serviceLine",1,"Claim","left")
-	D COL^MIOUITBL(.TCTX,"serviceLine",2,"Line","left")
-	D COL^MIOUITBL(.TCTX,"serviceLine",3,"Procedure","left")
-	D COL^MIOUITBL(.TCTX,"serviceLine",4,"Date of service","left")
-	D COL^MIOUITBL(.TCTX,"serviceLine",5,"Charge","right")
-	D CELL^MIOUITBL(.TCTX,"serviceLine",1,1,"CLM-1001")
-	D CELL^MIOUITBL(.TCTX,"serviceLine",1,2,"1")
-	D CELL^MIOUITBL(.TCTX,"serviceLine",1,3,"99213")
-	D CELL^MIOUITBL(.TCTX,"serviceLine",1,4,"2026-03-01")
-	D CELL^MIOUITBL(.TCTX,"serviceLine",1,5,"75.00")
-	D CELL^MIOUITBL(.TCTX,"serviceLine",2,1,"CLM-1001")
-	D CELL^MIOUITBL(.TCTX,"serviceLine",2,2,"2")
-	D CELL^MIOUITBL(.TCTX,"serviceLine",2,3,"87070")
-	D CELL^MIOUITBL(.TCTX,"serviceLine",2,4,"2026-03-01")
-	D CELL^MIOUITBL(.TCTX,"serviceLine",2,5,"50.00")
-	D CELL^MIOUITBL(.TCTX,"serviceLine",3,1,"CLM-1002")
-	D CELL^MIOUITBL(.TCTX,"serviceLine",3,2,"1")
-	D CELL^MIOUITBL(.TCTX,"serviceLine",3,3,"97110")
-	D CELL^MIOUITBL(.TCTX,"serviceLine",3,4,"2026-03-02")
-	D CELL^MIOUITBL(.TCTX,"serviceLine",3,5,"88.20")
-	D FINAL^MIOUITBL(.TCTX,"serviceLine")
-	D VALSUM^MIOUIBIL(.TCTX,1,0,2,1,"Publishable","emerald")
-	D DIAG^MIOUIBIL(.TCTX,"warning",1,"SV201","One line is missing a modifier but remains publishable under the current profile.","2400/SV1/03","Review payer rules before release.")
-	D DIAG^MIOUIBIL(.TCTX,"info",1,"CSV001","Header row will be written because the selected profile includes column names.","profile/includeHeaders","No action needed.")
-	D META^MIOUIBIL(.TCTX,1,"Profile","Claim summary")
-	D META^MIOUIBIL(.TCTX,2,"Output naming","{{source_base}}-claims-{{job_id}}.csv")
-	D META^MIOUIBIL(.TCTX,3,"Delimiter","Comma")
-	D META^MIOUIBIL(.TCTX,4,"Headers","Included")
-	D ARTMETA^MIOUIBIL(.TCTX,"canonical","Canonical artifacts","Stable output set for audit and downstream workflows.","sky")
-	D ARTROW^MIOUIBIL(.TCTX,"canonical",1,"claims.csv","CSV","/efuzy/download/1/claims","csv")
-	D ARTROW^MIOUIBIL(.TCTX,"canonical",2,"lines.csv","CSV","/efuzy/download/1/lines","csv")
-	D ARTMETA^MIOUIBIL(.TCTX,"report","Reports","Operator-facing validation and round-trip checks.","violet")
-	D ARTROW^MIOUIBIL(.TCTX,"report",1,"roundtrip-report.json","JSON","/efuzy/download/1/report","json")
-	Q
-	;
-BUILDWORK(CONF,REQ,CTX,TCTX)
-	D BASE^MIOUICTX(.TCTX)
-	D APPLY^MIOUITHEME(.CONF,.TCTX)
-	D PAGE^MIOUICTX(.TCTX,"MIOUI / Workflows","Workflow polish","Reusable first-run and file-staging surfaces for dense SSR workflow applications.","Workflow surfaces")
-	D ONBINIT^MIOUIWF(.TCTX,"firstRun","First-run onboarding","Guide new operators through setup, preview, and publish without leaving the SSR flow.","Continue setup","/mioui/workflows?step=2","Skip for now","/mioui")
-	D ONBSTEP^MIOUIWF(.TCTX,"firstRun",1,"Connect input folders","Point the workspace at a local or mapped folder where inbound files arrive.","complete")
-	D ONBSTEP^MIOUIWF(.TCTX,"firstRun",2,"Review preview settings","Confirm claim preview, line preview, and export profile defaults before first use.","current")
-	D ONBSTEP^MIOUIWF(.TCTX,"firstRun",3,"Publish a sample batch","Create canonical artifacts and verify naming, diagnostics, and audit outputs.","queued")
-	D ONBSTEP^MIOUIWF(.TCTX,"firstRun",4,"Invite operators","Share a consistent workflow once the first local run looks correct.","queued")
-	D ONBFINAL^MIOUIWF(.TCTX,"firstRun")
-	D CONFIRM^MIOUIWF(.TCTX,"publish","Publish staged files","Publishing will write canonical artifacts, update audit history, and expose downloads to operators.","amber","Publish artifacts","/mioui/workflows?publish=1","Cancel","/mioui/workflows")
-	D DROPINIT^MIOUIWF(.TCTX,"staging","File staging","Drop files here or browse a local folder to stage a batch for preview.","837, 835, CSV, TXT","Files remain local until the operator confirms publish.")
-	D DROPFILE^MIOUIWF(.TCTX,"staging",1,"alpha-claim-batch.837","148 KB","Ready","emerald")
-	D DROPFILE^MIOUIWF(.TCTX,"staging",2,"secondary-review.csv","42 KB","Needs review","amber")
-	D DROPFILE^MIOUIWF(.TCTX,"staging",3,"payer-notes.txt","4 KB","Ready","sky")
-	D DROPFINAL^MIOUIWF(.TCTX,"staging")
-	D STEP^MIOUICTX(.TCTX,1,"Stage","Collect files into a stable batch before any validation or export work begins.","complete")
-	D STEP^MIOUICTX(.TCTX,2,"Preview","Inspect claim rows, service lines, diagnostics, and output rules.","current")
-	D STEP^MIOUICTX(.TCTX,3,"Confirm","Review publish intent and make destructive actions explicit.","queued")
-	D STEP^MIOUICTX(.TCTX,4,"Publish","Write artifacts and expose the final manifest for download and audit.","queued")
-	D STEPNOTE^MIOUIWF(.TCTX,1,"Dropzone state should stay visible while operators scan incoming files.","View staging","/mioui/workflows#staging")
-	D STEPNOTE^MIOUIWF(.TCTX,2,"Preview keeps the operator in context without hiding diagnostics.","Open preview","/mioui/billing")
-	D STEPNOTE^MIOUIWF(.TCTX,3,"Every publish path should include a confirmation surface.","Open confirm dialog","/mioui/workflows#publish")
-	D STEPNOTE^MIOUIWF(.TCTX,4,"Final publish should leave a clear artifact manifest and audit trail.","Review artifacts","/mioui/billing#artifacts")
-	D STEPFINAL^MIOUIWF(.TCTX)
-	D ALERT^MIOUICTX(.TCTX,1,"sky","Workflow note","First-run flows should stay short, numbered, and explicit.")
-	D ALERT^MIOUICTX(.TCTX,2,"amber","Confirmation note","Destructive or publish actions should always explain what will happen next.")
-	Q
-	;
-	;
-BUILDOPS(CONF,REQ,CTX,TCTX)
-	D BASE^MIOUICTX(.TCTX)
-	D APPLY^MIOUITHEME(.CONF,.TCTX)
-	D PAGE^MIOUICTX(.TCTX,"MIOUI / Operators","Dense operator ergonomics","Saved views, column chooser, split detail panels, activity feeds, and shell framing for high-volume list/detail work.","Operator tools")
-	D PHEADER^MIOUIOPS(.TCTX,"main","Dense operator workflows","Operator workspace","Persist scanning preferences, keep selected-record detail in view, and reduce context switches on high-volume review screens.")
-	D PHEADMETA^MIOUIOPS(.TCTX,"main",1,"Queue","18 queued","sky")
-	D PHEADMETA^MIOUIOPS(.TCTX,"main",2,"Ready","12 publishable","emerald")
-	D PHEADMETA^MIOUIOPS(.TCTX,"main",3,"Attention","3 warnings","amber")
-	D PHEADACT^MIOUIOPS(.TCTX,"main",1,"Open billing preview","/mioui/billing","primary-button")
-	D PHEADACT^MIOUIOPS(.TCTX,"main",2,"Open export profile","/mioui/export","quick-button")
-	D SUBINIT^MIOUIOPS(.TCTX,"main","Queue health")
-	D SUBITEM^MIOUIOPS(.TCTX,"main",1,"Queues","/mioui/operators#queues",1)
-	D SUBITEM^MIOUIOPS(.TCTX,"main",2,"Selected detail","/mioui/operators#detail",0)
-	D SUBITEM^MIOUIOPS(.TCTX,"main",3,"Activity","/mioui/operators#activity",0)
-	D SUBFINAL^MIOUIOPS(.TCTX,"main")
-	D VIEWSINIT^MIOUIOPS(.TCTX,"main","Saved views","Server-shaped presets help operators switch between dense worklists without rebuilding the same filters every time.")
-	D VIEW^MIOUIOPS(.TCTX,"main",1,"My preview queue","/mioui/operators?view=preview",1,12)
-	D VIEW^MIOUIOPS(.TCTX,"main",2,"Needs review","/mioui/operators?view=review",0,5)
-	D VIEW^MIOUIOPS(.TCTX,"main",3,"Published today","/mioui/operators?view=published",0,29)
-	D VIEWSFINAL^MIOUIOPS(.TCTX,"main")
-	D CHINIT^MIOUIOPS(.TCTX,"main","Visible columns","Choose only the fields needed for the current review pass and keep wide datasets readable.")
-	D CHITEM^MIOUIOPS(.TCTX,"main",1,"Claim","Primary claim identifier",1)
-	D CHITEM^MIOUIOPS(.TCTX,"main",2,"Date of service","Operator scan anchor",1)
-	D CHITEM^MIOUIOPS(.TCTX,"main",3,"Payer","Top-level routing context",1)
-	D CHITEM^MIOUIOPS(.TCTX,"main",4,"Subscriber","Useful for mismatch review",0)
-	D CHITEM^MIOUIOPS(.TCTX,"main",5,"Total charge","High-value scan field",1)
-	D CHFINAL^MIOUIOPS(.TCTX,"main")
-	D SPLITINIT^MIOUIOPS(.TCTX,"main","Split detail panel","Keep a dense list on the left and the selected claim summary on the right.","Selected claim")
-	D SPLITSUM^MIOUIOPS(.TCTX,"main",1,"Claim","CLM-1001")
-	D SPLITSUM^MIOUIOPS(.TCTX,"main",2,"Status","Previewed")
-	D SPLITSUM^MIOUIOPS(.TCTX,"main",3,"Diagnostics","2 warnings")
-	D SPLITFIELD^MIOUIOPS(.TCTX,"main",1,"Date of service","2026-03-12")
-	D SPLITFIELD^MIOUIOPS(.TCTX,"main",2,"Procedure","99213")
-	D SPLITFIELD^MIOUIOPS(.TCTX,"main",3,"Total charge","$125.00")
-	D SPLITFIELD^MIOUIOPS(.TCTX,"main",4,"Payer","ACME HEALTH")
-	D SPLITFINAL^MIOUIOPS(.TCTX,"main")
-	D FEEDINIT^MIOUIOPS(.TCTX,"main","Operator activity","Compact event stream for claim review, publish, and audit actions.")
-	D FEEDITEM^MIOUIOPS(.TCTX,"main",1,"08:24","View saved","My preview queue selected for morning pass.","sky")
-	D FEEDITEM^MIOUIOPS(.TCTX,"main",2,"08:29","Claim opened","CLM-1001 moved into the split detail panel.","emerald")
-	D FEEDITEM^MIOUIOPS(.TCTX,"main",3,"08:33","Warning reviewed","SV201 warning acknowledged before publish.","amber")
-	D FEEDFINAL^MIOUIOPS(.TCTX,"main")
+	D ACT^MIOUICTX(.TCTX,"components")
+	D PAGE^MIOUICTX(.TCTX,"MIOUI / Charts","Chart variants","Reusable SSR chart, graph, and KPI surfaces for operator dashboards, billing analytics, and dense review workspaces.","Chart lab")
+	S TCTX("pageTitle")="Chart and graph variants"
+	S TCTX("pageIntro")="Dense SSR chart surfaces for bars, stacks, lines, area trends, pie and donut summaries, heatmaps, bullets, funnels, waterfall bridges, histograms, box-range summaries, radar score profiles, and sparkline tables. The chart lab stays theme-aware so the same variants remain readable in both dark and light operator shells."
+	S TCTX("heroCallback")="openChartVariantStudio"
+	S TCTX("chartStat",1,"label")="Chart families" S TCTX("chartStat",1,"value")=13
+	S TCTX("chartStat",2,"label")="Tracked measures" S TCTX("chartStat",2,"value")=39
+	S TCTX("chartStat",3,"label")="Threshold rules" S TCTX("chartStat",3,"value")=16
+	S TCTX("chartStat",4,"label")="Pinned boards" S TCTX("chartStat",4,"value")=10
+	S TCTX("chartStat",5,"label")="Drill paths" S TCTX("chartStat",5,"value")=20
+	S TCTX("chartStat",6,"label")="Saved variants" S TCTX("chartStat",6,"value")=15
+	S TCTX("chartCallback",1,"token")="openChartVariantStudio"
+	S TCTX("chartCallback",2,"token")="changeChartDateWindow"
+	S TCTX("chartCallback",3,"token")="switchChartGranularity"
+	S TCTX("chartCallback",4,"token")="toggleChartSeries"
+	S TCTX("chartCallback",5,"token")="filterChartPopulation"
+	S TCTX("chartCallback",6,"token")="compareChartSegments"
+	S TCTX("chartCallback",7,"token")="saveChartThresholds"
+	S TCTX("chartCallback",8,"token")="exportChartSnapshot"
+	S TCTX("chartCallback",9,"token")="pinChartToDashboard"
+	S TCTX("chartCallback",10,"token")="drillIntoChartPoint"
+	S TCTX("chartCallback",11,"token")="annotateChartRunRate"
+	S TCTX("chartCallback",12,"token")="cycleChartPalette"
+	S TCTX("chartCallback",13,"token")="rebaseVarianceBridge"
+	S TCTX("chartCallback",14,"token")="toggleDistributionBands"
+	S TCTX("chartCallback",15,"token")="changeBenchmarkOverlay"
+	S TCTX("chartCallback",16,"token")="switchRadarProfile"
+	S TCTX("bar","title")="Horizontal bar comparisons"
+	S TCTX("bar","desc")="Fast scan for queues, denial classes, and payer segments where exact counts matter more than shape alone."
+	S TCTX("bar","item",1,"label")="Eligibility" S TCTX("bar","item",1,"pct")=84 S TCTX("bar","item",1,"value")="2,140" S TCTX("bar","item",1,"toneClass")="bg-sky-500"
+	S TCTX("bar","item",2,"label")="Authorization" S TCTX("bar","item",2,"pct")=63 S TCTX("bar","item",2,"value")="1,608" S TCTX("bar","item",2,"toneClass")="bg-violet-500"
+	S TCTX("bar","item",3,"label")="Medical necessity" S TCTX("bar","item",3,"pct")=47 S TCTX("bar","item",3,"value")="1,202" S TCTX("bar","item",3,"toneClass")="bg-amber-500"
+	S TCTX("bar","item",4,"label")="Timely filing" S TCTX("bar","item",4,"pct")=28 S TCTX("bar","item",4,"value")="711" S TCTX("bar","item",4,"toneClass")="bg-rose-500"
+	S TCTX("stack","title")="Stacked resolution mix"
+	S TCTX("stack","desc")="Single-row comparisons for multi-status outcome mix across pods or payers."
+	S TCTX("stack","row",1,"label")="North pod"
+	S TCTX("stack","row",1,"segment",1,"pct")=46 S TCTX("stack","row",1,"segment",1,"toneClass")="bg-emerald-500" S TCTX("stack","row",1,"segment",1,"label")="Paid"
+	S TCTX("stack","row",1,"segment",2,"pct")=29 S TCTX("stack","row",1,"segment",2,"toneClass")="bg-sky-500" S TCTX("stack","row",1,"segment",2,"label")="Previewed"
+	S TCTX("stack","row",1,"segment",3,"pct")=17 S TCTX("stack","row",1,"segment",3,"toneClass")="bg-amber-500" S TCTX("stack","row",1,"segment",3,"label")="Need review"
+	S TCTX("stack","row",1,"segment",4,"pct")=8 S TCTX("stack","row",1,"segment",4,"toneClass")="bg-rose-500" S TCTX("stack","row",1,"segment",4,"label")="Blocked"
+	S TCTX("stack","row",2,"label")="West pod"
+	S TCTX("stack","row",2,"segment",1,"pct")=38 S TCTX("stack","row",2,"segment",1,"toneClass")="bg-emerald-500" S TCTX("stack","row",2,"segment",1,"label")="Paid"
+	S TCTX("stack","row",2,"segment",2,"pct")=33 S TCTX("stack","row",2,"segment",2,"toneClass")="bg-sky-500" S TCTX("stack","row",2,"segment",2,"label")="Previewed"
+	S TCTX("stack","row",2,"segment",3,"pct")=18 S TCTX("stack","row",2,"segment",3,"toneClass")="bg-amber-500" S TCTX("stack","row",2,"segment",3,"label")="Need review"
+	S TCTX("stack","row",2,"segment",4,"pct")=11 S TCTX("stack","row",2,"segment",4,"toneClass")="bg-rose-500" S TCTX("stack","row",2,"segment",4,"label")="Blocked"
+	S TCTX("line","title")="Run-rate line trend"
+	S TCTX("line","desc")="Seven-point line chart for daily throughput, recoveries, or aging trend movement."
+	S TCTX("line","polyline")="10,86 58,74 106,70 154,54 202,49 250,36 298,28"
+	S TCTX("line","point",1,"label")="Mon" S TCTX("line","point",1,"value")="182"
+	S TCTX("line","point",2,"label")="Tue" S TCTX("line","point",2,"value")="196"
+	S TCTX("line","point",3,"label")="Wed" S TCTX("line","point",3,"value")="201"
+	S TCTX("line","point",4,"label")="Thu" S TCTX("line","point",4,"value")="228"
+	S TCTX("line","point",5,"label")="Fri" S TCTX("line","point",5,"value")="241"
+	S TCTX("line","point",6,"label")="Sat" S TCTX("line","point",6,"value")="266"
+	S TCTX("line","point",7,"label")="Sun" S TCTX("line","point",7,"value")="279"
+	S TCTX("area","title")="Area forecast band"
+	S TCTX("area","desc")="Filled trend for projected collections, completion curves, or cumulative release value."
+	S TCTX("area","polyline")="10,92 58,80 106,76 154,63 202,58 250,49 298,34"
+	S TCTX("area","polygon")="10,110 10,92 58,80 106,76 154,63 202,58 250,49 298,34 298,110"
+	S TCTX("area","note")="Forecast stays within threshold until the Friday batch closes."
+	S TCTX("pie","title")="Pie and donut summaries"
+	S TCTX("pie","desc")="Part-to-whole view for payer share, queue ownership, or denial category composition."
+	S TCTX("pie","gradient")="conic-gradient(#38bdf8 0 34%, #14b8a6 34% 58%, #f59e0b 58% 81%, #f43f5e 81% 100%)"
+	S TCTX("pie","centerTop")="4.8k"
+	S TCTX("pie","centerBottom")="open items"
+	S TCTX("pie","slice",1,"label")="Commercial" S TCTX("pie","slice",1,"value")="34%" S TCTX("pie","slice",1,"toneClass")="bg-sky-500"
+	S TCTX("pie","slice",2,"label")="Medicare" S TCTX("pie","slice",2,"value")="24%" S TCTX("pie","slice",2,"toneClass")="bg-teal-500"
+	S TCTX("pie","slice",3,"label")="Medicaid" S TCTX("pie","slice",3,"value")="23%" S TCTX("pie","slice",3,"toneClass")="bg-amber-500"
+	S TCTX("pie","slice",4,"label")="Other" S TCTX("pie","slice",4,"value")="19%" S TCTX("pie","slice",4,"toneClass")="bg-rose-500"
+	S TCTX("heat","title")="Heatmap activity grid"
+	S TCTX("heat","desc")="Compact intensity matrix for day-of-week productivity or payer-response concentration."
+	S TCTX("heat","week",1,"day",1,"toneClass")="bg-slate-700" S TCTX("heat","week",1,"day",1,"count")=8
+	S TCTX("heat","week",1,"day",2,"toneClass")="bg-sky-800" S TCTX("heat","week",1,"day",2,"count")=14
+	S TCTX("heat","week",1,"day",3,"toneClass")="bg-sky-600" S TCTX("heat","week",1,"day",3,"count")=22
+	S TCTX("heat","week",1,"day",4,"toneClass")="bg-emerald-600" S TCTX("heat","week",1,"day",4,"count")=27
+	S TCTX("heat","week",1,"day",5,"toneClass")="bg-amber-500" S TCTX("heat","week",1,"day",5,"count")=19
+	S TCTX("heat","week",1,"day",6,"toneClass")="bg-slate-700" S TCTX("heat","week",1,"day",6,"count")=5
+	S TCTX("heat","week",1,"day",7,"toneClass")="bg-slate-800" S TCTX("heat","week",1,"day",7,"count")=2
+	S TCTX("heat","week",2,"day",1,"toneClass")="bg-sky-800" S TCTX("heat","week",2,"day",1,"count")=16
+	S TCTX("heat","week",2,"day",2,"toneClass")="bg-sky-600" S TCTX("heat","week",2,"day",2,"count")=23
+	S TCTX("heat","week",2,"day",3,"toneClass")="bg-emerald-600" S TCTX("heat","week",2,"day",3,"count")=29
+	S TCTX("heat","week",2,"day",4,"toneClass")="bg-emerald-500" S TCTX("heat","week",2,"day",4,"count")=31
+	S TCTX("heat","week",2,"day",5,"toneClass")="bg-amber-500" S TCTX("heat","week",2,"day",5,"count")=21
+	S TCTX("heat","week",2,"day",6,"toneClass")="bg-slate-700" S TCTX("heat","week",2,"day",6,"count")=9
+	S TCTX("heat","week",2,"day",7,"toneClass")="bg-slate-800" S TCTX("heat","week",2,"day",7,"count")=3
+	S TCTX("heat","week",3,"day",1,"toneClass")="bg-sky-800" S TCTX("heat","week",3,"day",1,"count")=18
+	S TCTX("heat","week",3,"day",2,"toneClass")="bg-sky-600" S TCTX("heat","week",3,"day",2,"count")=26
+	S TCTX("heat","week",3,"day",3,"toneClass")="bg-emerald-600" S TCTX("heat","week",3,"day",3,"count")=33
+	S TCTX("heat","week",3,"day",4,"toneClass")="bg-emerald-500" S TCTX("heat","week",3,"day",4,"count")=35
+	S TCTX("heat","week",3,"day",5,"toneClass")="bg-amber-500" S TCTX("heat","week",3,"day",5,"count")=24
+	S TCTX("heat","week",3,"day",6,"toneClass")="bg-slate-700" S TCTX("heat","week",3,"day",6,"count")=12
+	S TCTX("heat","week",3,"day",7,"toneClass")="bg-slate-800" S TCTX("heat","week",3,"day",7,"count")=4
+	S TCTX("bullet","title")="Bullet and target grid"
+	S TCTX("bullet","desc")="Target-vs-actual bars for aging, payments, denial overturn, or productivity goals."
+	S TCTX("bullet","item",1,"label")="Collections" S TCTX("bullet","item",1,"actualPct")=74 S TCTX("bullet","item",1,"targetPct")=82 S TCTX("bullet","item",1,"actual")="$184k" S TCTX("bullet","item",1,"target")="$200k"
+	S TCTX("bullet","item",2,"label")="First-pass rate" S TCTX("bullet","item",2,"actualPct")=68 S TCTX("bullet","item",2,"targetPct")=76 S TCTX("bullet","item",2,"actual")="92.4%" S TCTX("bullet","item",2,"target")="95.0%"
+	S TCTX("bullet","item",3,"label")="Appeal win rate" S TCTX("bullet","item",3,"actualPct")=57 S TCTX("bullet","item",3,"targetPct")=63 S TCTX("bullet","item",3,"actual")="61%" S TCTX("bullet","item",3,"target")="67%"
+	S TCTX("funnel","title")="Funnel stage board"
+	S TCTX("funnel","desc")="Step-down volume view for intake-to-release workflows and triage pipelines."
+	S TCTX("funnel","stage",1,"label")="Loaded" S TCTX("funnel","stage",1,"value")="8,420" S TCTX("funnel","stage",1,"pct")=100 S TCTX("funnel","stage",1,"toneClass")="bg-sky-500/80"
+	S TCTX("funnel","stage",2,"label")="Parsed" S TCTX("funnel","stage",2,"value")="7,980" S TCTX("funnel","stage",2,"pct")=88 S TCTX("funnel","stage",2,"toneClass")="bg-sky-500/70"
+	S TCTX("funnel","stage",3,"label")="Validated" S TCTX("funnel","stage",3,"value")="6,441" S TCTX("funnel","stage",3,"pct")=72 S TCTX("funnel","stage",3,"toneClass")="bg-violet-500/70"
+	S TCTX("funnel","stage",4,"label")="Published" S TCTX("funnel","stage",4,"value")="5,908" S TCTX("funnel","stage",4,"pct")=61 S TCTX("funnel","stage",4,"toneClass")="bg-emerald-500/70"
+	S TCTX("waterfall","title")="Waterfall variance bridge"
+	S TCTX("waterfall","desc")="Sequential variance view for monthly release value, backlog movement, or payment-plan forecast changes."
+	S TCTX("waterfall","step",1,"label")="Expected release" S TCTX("waterfall","step",1,"detail")="Baseline plan" S TCTX("waterfall","step",1,"startPct")=0 S TCTX("waterfall","step",1,"widthPct")=64 S TCTX("waterfall","step",1,"barClass")="chart-waterfall-total" S TCTX("waterfall","step",1,"value")="$1.92M" S TCTX("waterfall","step",1,"valueClass")="chart-value"
+	S TCTX("waterfall","step",2,"label")="Mix shift" S TCTX("waterfall","step",2,"detail")="Higher public-payer share" S TCTX("waterfall","step",2,"startPct")=60.3 S TCTX("waterfall","step",2,"widthPct")=3.7 S TCTX("waterfall","step",2,"barClass")="chart-waterfall-negative" S TCTX("waterfall","step",2,"value")="-$110k" S TCTX("waterfall","step",2,"valueClass")="text-rose-500"
+	S TCTX("waterfall","step",3,"label")="Coding fixes" S TCTX("waterfall","step",3,"detail")="Recovered under-coded encounters" S TCTX("waterfall","step",3,"startPct")=60.3 S TCTX("waterfall","step",3,"widthPct")=2.8 S TCTX("waterfall","step",3,"barClass")="chart-waterfall-positive" S TCTX("waterfall","step",3,"value")="+$84k" S TCTX("waterfall","step",3,"valueClass")="text-emerald-500"
+	S TCTX("waterfall","step",4,"label")="Timely filing" S TCTX("waterfall","step",4,"detail")="Expired submission window" S TCTX("waterfall","step",4,"startPct")=61.7 S TCTX("waterfall","step",4,"widthPct")=1.4 S TCTX("waterfall","step",4,"barClass")="chart-waterfall-negative" S TCTX("waterfall","step",4,"value")="-$42k" S TCTX("waterfall","step",4,"valueClass")="text-rose-500"
+	S TCTX("waterfall","step",5,"label")="Appeal overturn" S TCTX("waterfall","step",5,"detail")="Recovered high-value denials" S TCTX("waterfall","step",5,"startPct")=61.7 S TCTX("waterfall","step",5,"widthPct")=4.2 S TCTX("waterfall","step",5,"barClass")="chart-waterfall-positive" S TCTX("waterfall","step",5,"value")="+$126k" S TCTX("waterfall","step",5,"valueClass")="text-emerald-500"
+	S TCTX("waterfall","step",6,"label")="Actual release" S TCTX("waterfall","step",6,"detail")="Net posted result" S TCTX("waterfall","step",6,"startPct")=0 S TCTX("waterfall","step",6,"widthPct")=65.9 S TCTX("waterfall","step",6,"barClass")="chart-waterfall-total" S TCTX("waterfall","step",6,"value")="$1.98M" S TCTX("waterfall","step",6,"valueClass")="chart-value"
+	S TCTX("waterfall","rule")="Bridge stays anchored to expected release unless the reviewer rebases to actual cash postings."
+	S TCTX("waterfall","legendPositive")="Positive bridge"
+	S TCTX("waterfall","legendNegative")="Negative bridge"
+	S TCTX("waterfall","legendTotal")="Baseline and actual"
+	S TCTX("hist","title")="Histogram distribution"
+	S TCTX("hist","desc")="Distribution view for claim value, unit counts, or days-in-A/R where spread matters more than ordered sequence."
+	S TCTX("hist","yMax")="420 claims"
+	S TCTX("hist","bucket",1,"label")="0-7" S TCTX("hist","bucket",1,"pct")=28 S TCTX("hist","bucket",1,"count")=118 S TCTX("hist","bucket",1,"toneClass")="bg-sky-500"
+	S TCTX("hist","bucket",2,"label")="8-14" S TCTX("hist","bucket",2,"pct")=56 S TCTX("hist","bucket",2,"count")=235 S TCTX("hist","bucket",2,"toneClass")="bg-sky-400"
+	S TCTX("hist","bucket",3,"label")="15-21" S TCTX("hist","bucket",3,"pct")=84 S TCTX("hist","bucket",3,"count")=352 S TCTX("hist","bucket",3,"toneClass")="bg-violet-500"
+	S TCTX("hist","bucket",4,"label")="22-28" S TCTX("hist","bucket",4,"pct")=100 S TCTX("hist","bucket",4,"count")=418 S TCTX("hist","bucket",4,"toneClass")="bg-emerald-500"
+	S TCTX("hist","bucket",5,"label")="29-35" S TCTX("hist","bucket",5,"pct")=72 S TCTX("hist","bucket",5,"count")=301 S TCTX("hist","bucket",5,"toneClass")="bg-amber-500"
+	S TCTX("hist","bucket",6,"label")="36-42" S TCTX("hist","bucket",6,"pct")=48 S TCTX("hist","bucket",6,"count")=202 S TCTX("hist","bucket",6,"toneClass")="bg-rose-500"
+	S TCTX("hist","bucket",7,"label")="43+" S TCTX("hist","bucket",7,"pct")=26 S TCTX("hist","bucket",7,"count")=109 S TCTX("hist","bucket",7,"toneClass")="bg-slate-500"
+	S TCTX("hist","bandLabel")="Target aging band"
+	S TCTX("hist","bandRange")="15 to 28 days"
+	S TCTX("box","title")="Box-range summary"
+	S TCTX("box","desc")="Quartile and whisker summary for payer turnaround, payment lag, or denial-resolution time."
+	S TCTX("box","scaleMin")="0"
+	S TCTX("box","scaleMid")="24"
+	S TCTX("box","scaleMax")="48 days"
+	S TCTX("box","minPct")=9
+	S TCTX("box","q1Pct")=24
+	S TCTX("box","medianPct")=46
+	S TCTX("box","q3Pct")=68
+	S TCTX("box","maxPct")=87
+	S TCTX("box","summary",1,"label")="Min" S TCTX("box","summary",1,"value")="4d"
+	S TCTX("box","summary",2,"label")="Q1" S TCTX("box","summary",2,"value")="11d"
+	S TCTX("box","summary",3,"label")="Median" S TCTX("box","summary",3,"value")="22d"
+	S TCTX("box","summary",4,"label")="Q3" S TCTX("box","summary",4,"value")="33d"
+	S TCTX("box","summary",5,"label")="Max" S TCTX("box","summary",5,"value")="42d"
+	S TCTX("box","note")="Useful when averages hide a long-tail payer or facility."
+	S TCTX("radar","title")="Radar score profile"
+	S TCTX("radar","desc")="Multi-axis score view for access, coding, documentation, denials, and follow-up readiness."
+	S TCTX("radar","polygon")="100,22 162,58 150,130 100,164 50,130 38,58"
+	S TCTX("radar","overlay")="100,10 190,62 172,146 100,194 28,146 10,62"
+	S TCTX("radar","axis",1,"label")="Access" S TCTX("radar","axis",1,"left")="96px" S TCTX("radar","axis",1,"top")="0px" S TCTX("radar","axis",1,"score")="82"
+	S TCTX("radar","axis",2,"label")="Coding" S TCTX("radar","axis",2,"left")="174px" S TCTX("radar","axis",2,"top")="42px" S TCTX("radar","axis",2,"score")="74"
+	S TCTX("radar","axis",3,"label")="Docs" S TCTX("radar","axis",3,"left")="164px" S TCTX("radar","axis",3,"top")="130px" S TCTX("radar","axis",3,"score")="69"
+	S TCTX("radar","axis",4,"label")="Denials" S TCTX("radar","axis",4,"left")="90px" S TCTX("radar","axis",4,"top")="184px" S TCTX("radar","axis",4,"score")="88"
+	S TCTX("radar","axis",5,"label")="Appeals" S TCTX("radar","axis",5,"left")="8px" S TCTX("radar","axis",5,"top")="130px" S TCTX("radar","axis",5,"score")="63"
+	S TCTX("radar","axis",6,"label")="Follow-up" S TCTX("radar","axis",6,"left")="-2px" S TCTX("radar","axis",6,"top")="42px" S TCTX("radar","axis",6,"score")="77"
+	S TCTX("radar","legendCurrent")="Current month"
+	S TCTX("radar","legendBenchmark")="Benchmark overlay"
+	S TCTX("radar","profileLabel")="Manager composite"
+	S TCTX("spark","title")="Sparkline comparison table"
+	S TCTX("spark","desc")="Tabular chart variant for multi-metric review where tiny trend lines live beside exact values."
+	S TCTX("spark","row",1,"metric")="Days in A/R" S TCTX("spark","row",1,"value")="31.2" S TCTX("spark","row",1,"delta")="-1.8" S TCTX("spark","row",1,"polyline")="4,20 24,22 44,18 64,16 84,14 104,12"
+	S TCTX("spark","row",2,"metric")="Net collection" S TCTX("spark","row",2,"value")="94.1%" S TCTX("spark","row",2,"delta")="+0.7" S TCTX("spark","row",2,"polyline")="4,24 24,23 44,20 64,18 84,15 104,11"
+	S TCTX("spark","row",3,"metric")="Denial rate" S TCTX("spark","row",3,"value")="6.4%" S TCTX("spark","row",3,"delta")="-0.4" S TCTX("spark","row",3,"polyline")="4,12 24,14 44,16 64,18 84,19 104,21"
 	Q
 	;
 	;
@@ -862,4 +885,634 @@ RESPERR(DEV,CONF,CTX,STATUS,ERRTXT)
 	N OBJ S OBJ("ok")=0,OBJ("error")=$G(ERRTXT)
 	D RESPJSONX^MIOHTTP(.DEV,.CONF,+$G(STATUS),.OBJ,$G(CTX("request_id")),.CTX) Q
 	;
+	;
+	;
+BUILDEXPORT(CONF,REQ,CTX,TCTX)
+	D BASE^MIOUICTX(.TCTX)
+	D APPLY^MIOUITHEME(.CONF,.TCTX)
+	D ACT^MIOUICTX(.TCTX,"export")
+	D PAGE^MIOUICTX(.TCTX,"MIOUI / Export","Export UX","Reusable field-selection and export editing surfaces for dense billing workflows.","Profile editor")
+	D SUMINIT^MIOUIEXP(.TCTX,"main","Export profile summary","Compact output rules, selected-field counts, and file naming rules for CSV profile review.")
+	D SUMSTAT^MIOUIEXP(.TCTX,"main",1,"Mode","Claim summary","sky")
+	D SUMSTAT^MIOUIEXP(.TCTX,"main",2,"Selected fields",4,"emerald")
+	D SUMSTAT^MIOUIEXP(.TCTX,"main",3,"Delimiter","Comma","amber")
+	D SUMSTAT^MIOUIEXP(.TCTX,"main",4,"Header row","Included","violet")
+	D SUMRULE^MIOUIEXP(.TCTX,"main",1,"File naming","claims_review_{{date}}.csv")
+	D SUMRULE^MIOUIEXP(.TCTX,"main",2,"Quote mode","Minimal quoting")
+	D SUMRULE^MIOUIEXP(.TCTX,"main",3,"Empty values","Leave blank")
+	D CHKINIT^MIOUIEXP(.TCTX,"fieldCatalog","Field catalog","Choose the export fields operators need without leaving the SSR editor flow.")
+	D CHKITEM^MIOUIEXP(.TCTX,"fieldCatalog",1,"claim_id","Claim ID","Stable claim-level identifier used by downstream QA sheets.",1)
+	D CHKITEM^MIOUIEXP(.TCTX,"fieldCatalog",2,"patient_last","Patient last name","Useful for operator review and spreadsheet grouping.",1)
+	D CHKITEM^MIOUIEXP(.TCTX,"fieldCatalog",3,"date_of_service","Date of service","High-value billing field for daily reconciliation.",1)
+	D CHKITEM^MIOUIEXP(.TCTX,"fieldCatalog",4,"total_charge","Total charge","Include the summed billed charge for quick balance checks.",1)
+	D CHKITEM^MIOUIEXP(.TCTX,"fieldCatalog",5,"payer_name","Payer name","Helpful for payer-segmented work queues.",0)
+	D CHKITEM^MIOUIEXP(.TCTX,"fieldCatalog",6,"claim_frequency","Claim frequency","Optional field for advanced claim audit exports.",0)
+	D CHKFINAL^MIOUIEXP(.TCTX,"fieldCatalog")
+	D ORDINIT^MIOUIEXP(.TCTX,"selectedFields","Selected field order","Explicit row order keeps export columns predictable and easy to test.")
+	D ORDITEM^MIOUIEXP(.TCTX,"selectedFields",1,"Claim ID","claim_id")
+	D ORDITEM^MIOUIEXP(.TCTX,"selectedFields",2,"Patient last name","patient_last")
+	D ORDITEM^MIOUIEXP(.TCTX,"selectedFields",3,"Date of service","date_of_service")
+	D ORDITEM^MIOUIEXP(.TCTX,"selectedFields",4,"Total charge","total_charge")
+	D ORDFINAL^MIOUIEXP(.TCTX,"selectedFields")
+	D INIT^MIOUIFORM(.TCTX,"naming","Naming rules","Keep export naming stable for local installs, automation folders, and audit review.","/mioui/export","post")
+	D FIELD^MIOUIFORM(.TCTX,"naming",1,"text","prefix","File prefix","claims_review","Short prefix that stays stable across environments.","","")
+	D FIELD^MIOUIFORM(.TCTX,"naming",2,"select","dateToken","Date token","yyyymmdd","Append a date token to every export filename.","","")
+	D OPTION^MIOUIFORM(.TCTX,"naming",2,1,"yyyymmdd","YYYYMMDD",1)
+	D OPTION^MIOUIFORM(.TCTX,"naming",2,2,"iso8601","ISO 8601",0)
+	D OPTION^MIOUIFORM(.TCTX,"naming",2,3,"none","No date token",0)
+	D ACTION^MIOUIFORM(.TCTX,"naming",1,"Apply naming rule","submit","primary")
+	D FINAL^MIOUIFORM(.TCTX,"naming")
+	D FOOTINIT^MIOUIEXP(.TCTX,"profile","Sticky actions","Keep primary actions visible while operators scan selected fields and naming rules.")
+	D FOOTACT^MIOUIEXP(.TCTX,"profile",1,"Save profile","/mioui/export?save=1","primary-button")
+	D FOOTACT^MIOUIEXP(.TCTX,"profile",2,"Preview sample","/mioui/export?preview=1","quick-button")
+	D FOOTACT^MIOUIEXP(.TCTX,"profile",3,"Cancel","/mioui/forms","ghost-button")
+	Q
+	;
+BUILDWORKX(CONF,REQ,CTX,TCTX)
+	D BASE^MIOUICTX(.TCTX)
+	D APPLY^MIOUITHEME(.CONF,.TCTX)
+	D PAGE^MIOUICTX(.TCTX,"MIOUI / Workflows","Workflow polish","Reusable first-run and file-staging surfaces for dense SSR workflow applications.","Workflow surfaces")
+	D ONBINIT^MIOUIWF(.TCTX,"firstRun","First-run onboarding","Guide new operators through setup, preview, and publish without leaving the SSR flow.","Continue setup","/mioui/workflows?step=2","Skip for now","/mioui")
+	D ONBSTEP^MIOUIWF(.TCTX,"firstRun",1,"Connect input folders","Point the workspace at a local or mapped folder where inbound files arrive.","complete")
+	D ONBSTEP^MIOUIWF(.TCTX,"firstRun",2,"Review preview settings","Confirm claim preview, line preview, and export profile defaults before first use.","current")
+	D ONBSTEP^MIOUIWF(.TCTX,"firstRun",3,"Publish a sample batch","Create canonical artifacts and verify naming, diagnostics, and audit outputs.","queued")
+	D ONBSTEP^MIOUIWF(.TCTX,"firstRun",4,"Invite operators","Share a consistent workflow once the first local run looks correct.","queued")
+	D ONBFINAL^MIOUIWF(.TCTX,"firstRun")
+	D CONFIRM^MIOUIWF(.TCTX,"publish","Publish staged files","Publishing will write canonical artifacts, update audit history, and expose downloads to operators.","amber","Publish artifacts","/mioui/workflows?publish=1","Cancel","/mioui/workflows")
+	D DROPINIT^MIOUIWF(.TCTX,"staging","File staging","Drop files here or browse a local folder to stage a batch for preview.","837, 835, CSV, TXT","Files remain local until the operator confirms publish.")
+	D DROPFILE^MIOUIWF(.TCTX,"staging",1,"alpha-claim-batch.837","148 KB","Ready","emerald")
+	D DROPFILE^MIOUIWF(.TCTX,"staging",2,"secondary-review.csv","42 KB","Needs review","amber")
+	D DROPFILE^MIOUIWF(.TCTX,"staging",3,"payer-notes.txt","4 KB","Ready","sky")
+	D DROPFINAL^MIOUIWF(.TCTX,"staging")
+	D STEP^MIOUICTX(.TCTX,1,"Stage","Collect files into a stable batch before any validation or export work begins.","complete")
+	D STEP^MIOUICTX(.TCTX,2,"Preview","Inspect claim rows, service lines, diagnostics, and output rules.","current")
+	D STEP^MIOUICTX(.TCTX,3,"Confirm","Review publish intent and make destructive actions explicit.","queued")
+	D STEP^MIOUICTX(.TCTX,4,"Publish","Write artifacts and expose the final manifest for download and audit.","queued")
+	D STEPNOTE^MIOUIWF(.TCTX,1,"Dropzone state should stay visible while operators scan incoming files.","View staging","/mioui/workflows#staging")
+	D STEPNOTE^MIOUIWF(.TCTX,2,"Preview keeps the operator in context without hiding diagnostics.","Open preview","/mioui/billing")
+	D STEPNOTE^MIOUIWF(.TCTX,3,"Every publish path should include a confirmation surface.","Open confirm dialog","/mioui/workflows#publish")
+	D STEPNOTE^MIOUIWF(.TCTX,4,"Final publish should leave a clear artifact manifest and audit trail.","Review artifacts","/mioui/billing#artifacts")
+	D STEPFINAL^MIOUIWF(.TCTX)
+	D ALERT^MIOUICTX(.TCTX,1,"sky","Workflow note","First-run flows should stay short, numbered, and explicit.")
+	D ALERT^MIOUICTX(.TCTX,2,"amber","Confirmation note","Destructive or publish actions should always explain what will happen next.")
+	Q
+	;
+	;
+BUILDOPS(CONF,REQ,CTX,TCTX)
+	D BASE^MIOUICTX(.TCTX)
+	D APPLY^MIOUITHEME(.CONF,.TCTX)
+	D PAGE^MIOUICTX(.TCTX,"MIOUI / Operators","Dense operator ergonomics","Saved views, column chooser, split detail panels, activity feeds, and shell framing for high-volume list/detail work.","Operator tools")
+	D PHEADER^MIOUIOPS(.TCTX,"main","Dense operator workflows","Operator workspace","Persist scanning preferences, keep selected-record detail in view, and reduce context switches on high-volume review screens.")
+	D PHEADMETA^MIOUIOPS(.TCTX,"main",1,"Queue","18 queued","sky")
+	D PHEADMETA^MIOUIOPS(.TCTX,"main",2,"Ready","12 publishable","emerald")
+	D PHEADMETA^MIOUIOPS(.TCTX,"main",3,"Attention","3 warnings","amber")
+	D PHEADACT^MIOUIOPS(.TCTX,"main",1,"Open billing preview","/mioui/billing","primary-button")
+	D PHEADACT^MIOUIOPS(.TCTX,"main",2,"Open export profile","/mioui/export","quick-button")
+	D SUBINIT^MIOUIOPS(.TCTX,"main","Queue health")
+	D SUBITEM^MIOUIOPS(.TCTX,"main",1,"Queues","/mioui/operators#queues",1)
+	D SUBITEM^MIOUIOPS(.TCTX,"main",2,"Selected detail","/mioui/operators#detail",0)
+	D SUBITEM^MIOUIOPS(.TCTX,"main",3,"Activity","/mioui/operators#activity",0)
+	D SUBFINAL^MIOUIOPS(.TCTX,"main")
+	D VIEWSINIT^MIOUIOPS(.TCTX,"main","Saved views","Server-shaped presets help operators switch between dense worklists without rebuilding the same filters every time.")
+	D VIEW^MIOUIOPS(.TCTX,"main",1,"My preview queue","/mioui/operators?view=preview",1,12)
+	D VIEW^MIOUIOPS(.TCTX,"main",2,"Needs review","/mioui/operators?view=review",0,5)
+	D VIEW^MIOUIOPS(.TCTX,"main",3,"Published today","/mioui/operators?view=published",0,29)
+	D VIEWSFINAL^MIOUIOPS(.TCTX,"main")
+	D CHINIT^MIOUIOPS(.TCTX,"main","Visible columns","Choose only the fields needed for the current review pass and keep wide datasets readable.")
+	D CHITEM^MIOUIOPS(.TCTX,"main",1,"Claim","Primary claim identifier",1)
+	D CHITEM^MIOUIOPS(.TCTX,"main",2,"Date of service","Operator scan anchor",1)
+	D CHITEM^MIOUIOPS(.TCTX,"main",3,"Payer","Top-level routing context",1)
+	D CHITEM^MIOUIOPS(.TCTX,"main",4,"Subscriber","Useful for mismatch review",0)
+	D CHITEM^MIOUIOPS(.TCTX,"main",5,"Total charge","High-value scan field",1)
+	D CHFINAL^MIOUIOPS(.TCTX,"main")
+	D SPLITINIT^MIOUIOPS(.TCTX,"main","Split detail panel","Keep a dense list on the left and the selected claim summary on the right.","Selected claim")
+	D SPLITSUM^MIOUIOPS(.TCTX,"main",1,"Claim","CLM-1001")
+	D SPLITSUM^MIOUIOPS(.TCTX,"main",2,"Status","Previewed")
+	D SPLITSUM^MIOUIOPS(.TCTX,"main",3,"Diagnostics","2 warnings")
+	D SPLITFIELD^MIOUIOPS(.TCTX,"main",1,"Date of service","2026-03-12")
+	D SPLITFIELD^MIOUIOPS(.TCTX,"main",2,"Procedure","99213")
+	D SPLITFIELD^MIOUIOPS(.TCTX,"main",3,"Total charge","$125.00")
+	D SPLITFIELD^MIOUIOPS(.TCTX,"main",4,"Payer","ACME HEALTH")
+	D SPLITFINAL^MIOUIOPS(.TCTX,"main")
+	D FEEDINIT^MIOUIOPS(.TCTX,"main","Operator activity","Compact event stream for claim review, publish, and audit actions.")
+	D FEEDITEM^MIOUIOPS(.TCTX,"main",1,"08:24","View saved","My preview queue selected for morning pass.","sky")
+	D FEEDITEM^MIOUIOPS(.TCTX,"main",2,"08:29","Claim opened","CLM-1001 moved into the split detail panel.","emerald")
+	D FEEDITEM^MIOUIOPS(.TCTX,"main",3,"08:33","Warning reviewed","SV201 warning acknowledged before publish.","amber")
+	D FEEDFINAL^MIOUIOPS(.TCTX,"main")
+	Q
+	;
+	;
+	;
+	;
+BUILDOPSX(CONF,REQ,CTX,TCTX)
+	D BASE^MIOUICTX(.TCTX)
+	D APPLY^MIOUITHEME(.CONF,.TCTX)
+	D PAGE^MIOUICTX(.TCTX,"MIOUI / Operators","Dense operator ergonomics","Saved views, column chooser, split detail panels, activity feeds, and shell framing for high-volume list/detail work.","Operator tools")
+	D PHEADER^MIOUIOPS(.TCTX,"main","Dense operator workflows","Operator workspace","Persist scanning preferences, keep selected-record detail in view, and reduce context switches on high-volume review screens.")
+	D PHEADMETA^MIOUIOPS(.TCTX,"main",1,"Queue","18 queued","sky")
+	D PHEADMETA^MIOUIOPS(.TCTX,"main",2,"Ready","12 publishable","emerald")
+	D PHEADMETA^MIOUIOPS(.TCTX,"main",3,"Attention","3 warnings","amber")
+	D PHEADACT^MIOUIOPS(.TCTX,"main",1,"Open billing preview","/mioui/billing","primary-button")
+	D PHEADACT^MIOUIOPS(.TCTX,"main",2,"Open export profile","/mioui/export","quick-button")
+	D SUBINIT^MIOUIOPS(.TCTX,"main","Queue health")
+	D SUBITEM^MIOUIOPS(.TCTX,"main",1,"Queues","/mioui/operators#queues",1)
+	D SUBITEM^MIOUIOPS(.TCTX,"main",2,"Selected detail","/mioui/operators#detail",0)
+	D SUBITEM^MIOUIOPS(.TCTX,"main",3,"Activity","/mioui/operators#activity",0)
+	D SUBFINAL^MIOUIOPS(.TCTX,"main")
+	D VIEWSINIT^MIOUIOPS(.TCTX,"main","Saved views","Server-shaped presets help operators switch between dense worklists without rebuilding the same filters every time.")
+	D VIEW^MIOUIOPS(.TCTX,"main",1,"My preview queue","/mioui/operators?view=preview",1,12)
+	D VIEW^MIOUIOPS(.TCTX,"main",2,"Needs review","/mioui/operators?view=review",0,5)
+	D VIEW^MIOUIOPS(.TCTX,"main",3,"Published today","/mioui/operators?view=published",0,29)
+	D VIEWSFINAL^MIOUIOPS(.TCTX,"main")
+	D CHINIT^MIOUIOPS(.TCTX,"main","Visible columns","Choose only the fields needed for the current review pass and keep wide datasets readable.")
+	D CHITEM^MIOUIOPS(.TCTX,"main",1,"Claim","Primary claim identifier",1)
+	D CHITEM^MIOUIOPS(.TCTX,"main",2,"Date of service","Operator scan anchor",1)
+	D CHITEM^MIOUIOPS(.TCTX,"main",3,"Payer","Top-level routing context",1)
+	D CHITEM^MIOUIOPS(.TCTX,"main",4,"Subscriber","Useful for mismatch review",0)
+	D CHITEM^MIOUIOPS(.TCTX,"main",5,"Total charge","High-value scan field",1)
+	D CHFINAL^MIOUIOPS(.TCTX,"main")
+	D SPLITINIT^MIOUIOPS(.TCTX,"main","Split detail panel","Keep a dense list on the left and the selected claim summary on the right.","Selected claim")
+	D SPLITSUM^MIOUIOPS(.TCTX,"main",1,"Claim","CLM-1001")
+	D SPLITSUM^MIOUIOPS(.TCTX,"main",2,"Status","Previewed")
+	D SPLITSUM^MIOUIOPS(.TCTX,"main",3,"Diagnostics","2 warnings")
+	D SPLITFIELD^MIOUIOPS(.TCTX,"main",1,"Date of service","2026-03-12")
+	D SPLITFIELD^MIOUIOPS(.TCTX,"main",2,"Procedure","99213")
+	D SPLITFIELD^MIOUIOPS(.TCTX,"main",3,"Total charge","$125.00")
+	D SPLITFIELD^MIOUIOPS(.TCTX,"main",4,"Payer","ACME HEALTH")
+	D SPLITFINAL^MIOUIOPS(.TCTX,"main")
+	D FEEDINIT^MIOUIOPS(.TCTX,"main","Operator activity","Compact event stream for claim review, publish, and audit actions.")
+	D FEEDITEM^MIOUIOPS(.TCTX,"main",1,"08:24","View saved","My preview queue selected for morning pass.","sky")
+	D FEEDITEM^MIOUIOPS(.TCTX,"main",2,"08:29","Claim opened","CLM-1001 moved into the split detail panel.","emerald")
+	D FEEDITEM^MIOUIOPS(.TCTX,"main",3,"08:33","Warning reviewed","SV201 warning acknowledged before publish.","amber")
+	D FEEDFINAL^MIOUIOPS(.TCTX,"main")
+	Q
+	;
+	;
+	;
+	;
+BUILDCODE(CONF,REQ,CTX,TCTX)
+	D BASE^MIOUICTX(.TCTX)
+	D APPLY^MIOUITHEME(.CONF,.TCTX)
+	D ACT^MIOUICTX(.TCTX,"tables")
+	D PAGE^MIOUICTX(.TCTX,"MIOUI / Code menus","Code menu variants","Reusable SSR code-menu surfaces for CRUD-heavy setup tables, payer mappings, editor variations, and governed maintenance workflows.","Code menu lab")
+	S TCTX("pageTitle")="Code menu variants"
+	S TCTX("pageIntro")="Typical CRUD-heavy code menus for billing and operator software, including search, ordering, add/edit/delete actions, custom fields, mappings, effective dating, import staging, inline editing, side-drawer forms, compare-and-merge review, and approval queues."
+	S TCTX("heroCallback")="openCodeMenuStudio"
+	S TCTX("codeStat",1,"label")="Active code sets"
+	S TCTX("codeStat",1,"value")=18
+	S TCTX("codeStat",2,"label")="Custom fields"
+	S TCTX("codeStat",2,"value")=27
+	S TCTX("codeStat",3,"label")="Mapped payers"
+	S TCTX("codeStat",3,"value")=9
+	S TCTX("codeStat",4,"label")="Pending changes"
+	S TCTX("codeStat",4,"value")=6
+	S TCTX("codeStat",5,"label")="Future versions"
+	S TCTX("codeStat",5,"value")=4
+	S TCTX("codeStat",6,"label")="Staged imports"
+	S TCTX("codeStat",6,"value")=2
+	S TCTX("codeStat",7,"label")="Draft edits"
+	S TCTX("codeStat",7,"value")=11
+	S TCTX("codeStat",8,"label")="Approval queue"
+	S TCTX("codeStat",8,"value")=5
+	S TCTX("callback",1,"token")="addCodeRow"
+	S TCTX("callback",2,"token")="editSelectedCode"
+	S TCTX("callback",3,"token")="deleteSelectedCodes"
+	S TCTX("callback",4,"token")="searchCodeCatalog"
+	S TCTX("callback",5,"token")="reorderCodeSet"
+	S TCTX("callback",6,"token")="saveCodeCustomFields"
+	S TCTX("callback",7,"token")="openCodeChangeHistory"
+	S TCTX("callback",8,"token")="exportCodeMenuView"
+	S TCTX("callback",9,"token")="scheduleCodeEffectiveDate"
+	S TCTX("callback",10,"token")="publishFutureCodeVersion"
+	S TCTX("callback",11,"token")="saveCodeDependencyRules"
+	S TCTX("callback",12,"token")="previewDeleteImpact"
+	S TCTX("callback",13,"token")="archiveRetiredCodes"
+	S TCTX("callback",14,"token")="importCodeSetSpreadsheet"
+	S TCTX("callback",15,"token")="validateImportedCodeRows"
+	S TCTX("callback",16,"token")="commitImportedCodes"
+	S TCTX("callback",17,"token")="openInlineCodeEditor"
+	S TCTX("callback",18,"token")="saveInlineCodeRow"
+	S TCTX("callback",19,"token")="openCodeSideDrawer"
+	S TCTX("callback",20,"token")="createCodeMenuEntry"
+	S TCTX("callback",21,"token")="compareIncomingCodeSet"
+	S TCTX("callback",22,"token")="mergeSelectedCodeDiffs"
+	S TCTX("callback",23,"token")="submitCodeApprovalBatch"
+	S TCTX("callback",24,"token")="approveCodeChangeSet"
+	S TCTX("callback",25,"token")="rejectCodeChangeSet"
+	S TCTX("master","title")="Master catalog"
+	S TCTX("master","desc")="Flat code-list view for frequent maintenance with search, ordering, and bulk actions."
+	S TCTX("master","search")="Search reason code, modifier, queue, or status"
+	S TCTX("master","order")="Label A-Z"
+	S TCTX("master","empty")="No codes matched the current search."
+	S TCTX("master","action","add")="addCodeRow"
+	S TCTX("master","action","edit")="editSelectedCode"
+	S TCTX("master","action","delete")="deleteSelectedCodes"
+	S TCTX("master","action","export")="exportCodeMenuView"
+	S TCTX("master","row",1,"code")="ARC-01"
+	S TCTX("master","row",1,"label")="Appeal required"
+	S TCTX("master","row",1,"type")="Follow-up"
+	S TCTX("master","row",1,"status")="Active"
+	S TCTX("master","row",1,"order")="010"
+	S TCTX("master","row",1,"tone")="emerald"
+	S TCTX("master","row",2,"code")="ELG-12"
+	S TCTX("master","row",2,"label")="Eligibility pending"
+	S TCTX("master","row",2,"type")="Queue"
+	S TCTX("master","row",2,"status")="Review"
+	S TCTX("master","row",2,"order")="020"
+	S TCTX("master","row",2,"tone")="amber"
+	S TCTX("master","row",3,"code")="MCD-77"
+	S TCTX("master","row",3,"label")="Medicaid crossover"
+	S TCTX("master","row",3,"type")="Payer"
+	S TCTX("master","row",3,"status")="Inactive"
+	S TCTX("master","row",3,"order")="090"
+	S TCTX("master","row",3,"tone")="rose"
+	S TCTX("hier","title")="Hierarchy control"
+	S TCTX("hier","desc")="Parent-child code structures for denial families, routing groups, and staged escalation menus."
+	S TCTX("hier","action","add")="addCodeRow"
+	S TCTX("hier","action","reorder")="reorderCodeSet"
+	S TCTX("hier","group",1,"name")="Denial family"
+	S TCTX("hier","group",1,"item",1,"label")="Authorization"
+	S TCTX("hier","group",1,"item",1,"meta")="AUTH-100 / order 010"
+	S TCTX("hier","group",1,"item",2,"label")="Medical necessity"
+	S TCTX("hier","group",1,"item",2,"meta")="MED-210 / order 020"
+	S TCTX("hier","group",2,"name")="Route bucket"
+	S TCTX("hier","group",2,"item",1,"label")="Collector queue"
+	S TCTX("hier","group",2,"item",1,"meta")="COL-01 / order 030"
+	S TCTX("hier","group",2,"item",2,"label")="QA hold"
+	S TCTX("hier","group",2,"item",2,"meta")="QA-07 / order 040"
+	S TCTX("hier","group",3,"name")="Escalation stage"
+	S TCTX("hier","group",3,"item",1,"label")="Supervisor review"
+	S TCTX("hier","group",3,"item",1,"meta")="SUP-01 / order 050"
+	S TCTX("hier","group",3,"item",2,"label")="Manager approval"
+	S TCTX("hier","group",3,"item",2,"meta")="MGR-02 / order 060"
+	S TCTX("cross","title")="Crosswalk workspace"
+	S TCTX("cross","desc")="Local-to-payer mappings with effective dates and conflict cues."
+	S TCTX("cross","action","add")="addCodeRow"
+	S TCTX("cross","action","edit")="editSelectedCode"
+	S TCTX("cross","action","delete")="deleteSelectedCodes"
+	S TCTX("cross","row",1,"local")="FUP-ELIG"
+	S TCTX("cross","row",1,"external")="271-PEND"
+	S TCTX("cross","row",1,"payer")="Apex Health"
+	S TCTX("cross","row",1,"effective")="2026-01-01"
+	S TCTX("cross","row",1,"status")="Mapped"
+	S TCTX("cross","row",1,"tone")="emerald"
+	S TCTX("cross","row",2,"local")="FUP-AUTH"
+	S TCTX("cross","row",2,"external")="AUTH-REQ"
+	S TCTX("cross","row",2,"payer")="Ridge Admin"
+	S TCTX("cross","row",2,"effective")="2026-02-10"
+	S TCTX("cross","row",2,"status")="Review"
+	S TCTX("cross","row",2,"tone")="amber"
+	S TCTX("cross","row",3,"local")="FUP-COB"
+	S TCTX("cross","row",3,"external")=""
+	S TCTX("cross","row",3,"payer")="Summit Plan"
+	S TCTX("cross","row",3,"effective")=""
+	S TCTX("cross","row",3,"status")="Missing"
+	S TCTX("cross","row",3,"tone")="rose"
+	S TCTX("custom","title")="Custom field studio"
+	S TCTX("custom","desc")="Manage extra fields that appear beside the core code columns without rewriting the base menu."
+	S TCTX("custom","action","save")="saveCodeCustomFields"
+	S TCTX("custom","action","search")="searchCodeCatalog"
+	S TCTX("custom","field",1,"name")="requires_note"
+	S TCTX("custom","field",1,"type")="toggle"
+	S TCTX("custom","field",1,"required")="Yes"
+	S TCTX("custom","field",1,"list")="Visible"
+	S TCTX("custom","field",1,"order")="010"
+	S TCTX("custom","field",2,"name")="aging_bucket"
+	S TCTX("custom","field",2,"type")="select"
+	S TCTX("custom","field",2,"required")="No"
+	S TCTX("custom","field",2,"list")="Visible"
+	S TCTX("custom","field",2,"order")="020"
+	S TCTX("custom","field",3,"name")="owner_role"
+	S TCTX("custom","field",3,"type")="text"
+	S TCTX("custom","field",3,"required")="No"
+	S TCTX("custom","field",3,"list")="Hidden"
+	S TCTX("custom","field",3,"order")="090"
+	S TCTX("effective","title")="Effective dating studio"
+	S TCTX("effective","desc")="Future-date changes, superseded rows, and activation windows for fee schedules, route codes, and payer-specific menus."
+	S TCTX("effective","action","schedule")="scheduleCodeEffectiveDate"
+	S TCTX("effective","action","publish")="publishFutureCodeVersion"
+	S TCTX("effective","action","archive")="archiveRetiredCodes"
+	S TCTX("effective","row",1,"code")="ARC-01"
+	S TCTX("effective","row",1,"version")="v3"
+	S TCTX("effective","row",1,"window")="2026-04-01 → open"
+	S TCTX("effective","row",1,"state")="Scheduled"
+	S TCTX("effective","row",2,"code")="ELG-12"
+	S TCTX("effective","row",2,"version")="v2"
+	S TCTX("effective","row",2,"window")="2026-03-01 → 2026-03-31"
+	S TCTX("effective","row",2,"state")="Active"
+	S TCTX("effective","row",3,"code")="MCD-77"
+	S TCTX("effective","row",3,"version")="v1"
+	S TCTX("effective","row",3,"window")="2025-11-01 → 2026-02-29"
+	S TCTX("effective","row",3,"state")="Superseded"
+	S TCTX("depend","title")="Dependency rules"
+	S TCTX("depend","desc")="Conditional field logic for companion codes, required notes, owner rules, and mutually exclusive status combinations."
+	S TCTX("depend","action","save")="saveCodeDependencyRules"
+	S TCTX("depend","action","preview")="previewDeleteImpact"
+	S TCTX("depend","rule",1,"name")="Requires note when ARC-01 is active"
+	S TCTX("depend","rule",1,"if")="status=Active and code=ARC-01"
+	S TCTX("depend","rule",1,"then")="requires_note=Yes"
+	S TCTX("depend","rule",2,"name")="Owner role hidden for payer-neutral rows"
+	S TCTX("depend","rule",2,"if")="type=Follow-up and payer=*"
+	S TCTX("depend","rule",2,"then")="owner_role=Hidden"
+	S TCTX("depend","rule",3,"name")="QA hold blocks collector route"
+	S TCTX("depend","rule",3,"if")="route=QA-07"
+	S TCTX("depend","rule",3,"then")="collector_queue=Disabled"
+	S TCTX("import","title")="Import staging workspace"
+	S TCTX("import","desc")="Spreadsheet intake variation for bulk code maintenance with row validation, duplicate detection, and controlled commit."
+	S TCTX("import","action","import")="importCodeSetSpreadsheet"
+	S TCTX("import","action","validate")="validateImportedCodeRows"
+	S TCTX("import","action","commit")="commitImportedCodes"
+	S TCTX("import","batch",1,"name")="payer_reason_codes_april.xlsx"
+	S TCTX("import","batch",1,"rows")=144
+	S TCTX("import","batch",1,"issues")="3 warnings / 1 duplicate"
+	S TCTX("import","batch",1,"state")="Ready for QA"
+	S TCTX("import","batch",2,"name")="collector_routes_refresh.csv"
+	S TCTX("import","batch",2,"rows")=37
+	S TCTX("import","batch",2,"issues")="0 warnings"
+	S TCTX("import","batch",2,"state")="Validated"
+	S TCTX("retire","title")="Retirement and delete control"
+	S TCTX("retire","desc")="Governed archive and delete variation with downstream impact preview before hard removal."
+	S TCTX("retire","action","preview")="previewDeleteImpact"
+	S TCTX("retire","action","archive")="archiveRetiredCodes"
+	S TCTX("retire","action","delete")="deleteSelectedCodes"
+	S TCTX("retire","impact",1,"target")="MCD-77"
+	S TCTX("retire","impact",1,"refs")="7 payer mappings"
+	S TCTX("retire","impact",1,"resolution")="Archive then remap"
+	S TCTX("retire","impact",2,"target")="QA-07"
+	S TCTX("retire","impact",2,"refs")="2 escalation branches"
+	S TCTX("retire","impact",2,"resolution")="Replace hierarchy parent"
+	S TCTX("inline","title")="Inline row editor"
+	S TCTX("inline","desc")="Fast spreadsheet-like editing variation for high-volume code maintenance where operators change one field at a time without leaving the table."
+	S TCTX("inline","action","open")="openInlineCodeEditor"
+	S TCTX("inline","action","save")="saveInlineCodeRow"
+	S TCTX("inline","action","compare")="compareIncomingCodeSet"
+	S TCTX("inline","row",1,"code")="ARC-01"
+	S TCTX("inline","row",1,"field")="label"
+	S TCTX("inline","row",1,"before")="Appeal required"
+	S TCTX("inline","row",1,"after")="Appeal and review required"
+	S TCTX("inline","row",1,"state")="Draft"
+	S TCTX("inline","row",2,"code")="ELG-12"
+	S TCTX("inline","row",2,"field")="owner_role"
+	S TCTX("inline","row",2,"before")=""
+	S TCTX("inline","row",2,"after")="collector"
+	S TCTX("inline","row",2,"state")="Pending"
+	S TCTX("inline","row",3,"code")="QA-07"
+	S TCTX("inline","row",3,"field")="status"
+	S TCTX("inline","row",3,"before")="Review"
+	S TCTX("inline","row",3,"after")="Active"
+	S TCTX("inline","row",3,"state")="Ready"
+	S TCTX("drawer","title")="Side-drawer editor"
+	S TCTX("drawer","desc")="Add and edit variation that keeps the menu visible while operators fill a dense side drawer with core fields, custom fields, and governance flags."
+	S TCTX("drawer","action","open")="openCodeSideDrawer"
+	S TCTX("drawer","action","create")="createCodeMenuEntry"
+	S TCTX("drawer","action","delete")="deleteSelectedCodes"
+	S TCTX("drawer","field",1,"label")="Code"
+	S TCTX("drawer","field",1,"value")="AUTH-310"
+	S TCTX("drawer","field",2,"label")="Label"
+	S TCTX("drawer","field",2,"value")="Authorization escalation"
+	S TCTX("drawer","field",3,"label")="Type"
+	S TCTX("drawer","field",3,"value")="Follow-up"
+	S TCTX("drawer","field",4,"label")="Owner role"
+	S TCTX("drawer","field",4,"value")="supervisor"
+	S TCTX("drawer","field",5,"label")="Requires note"
+	S TCTX("drawer","field",5,"value")="Yes"
+	S TCTX("drawer","field",6,"label")="Approval"
+	S TCTX("drawer","field",6,"value")="Manager required"
+	S TCTX("compare","title")="Compare and merge review"
+	S TCTX("compare","desc")="Side-by-side diff variation for vendor imports, payer refreshes, and environment promotion where operators merge only selected changes."
+	S TCTX("compare","action","compare")="compareIncomingCodeSet"
+	S TCTX("compare","action","merge")="mergeSelectedCodeDiffs"
+	S TCTX("compare","action","submit")="submitCodeApprovalBatch"
+	S TCTX("compare","row",1,"code")="ELG-12"
+	S TCTX("compare","row",1,"current")="Eligibility pending"
+	S TCTX("compare","row",1,"incoming")="Eligibility pending / portal"
+	S TCTX("compare","row",1,"decision")="Merge"
+	S TCTX("compare","row",2,"code")="MCD-77"
+	S TCTX("compare","row",2,"current")="Medicaid crossover"
+	S TCTX("compare","row",2,"incoming")="Medicaid crossover legacy"
+	S TCTX("compare","row",2,"decision")="Hold"
+	S TCTX("compare","row",3,"code")="QA-07"
+	S TCTX("compare","row",3,"current")="QA hold"
+	S TCTX("compare","row",3,"incoming")="QA hold / payer mismatch"
+	S TCTX("compare","row",3,"decision")="Review"
+	S TCTX("approve","title")="Approval queue"
+	S TCTX("approve","desc")="Governance variation for promoted code changes that need supervisor or manager sign-off before they become active."
+	S TCTX("approve","action","submit")="submitCodeApprovalBatch"
+	S TCTX("approve","action","approve")="approveCodeChangeSet"
+	S TCTX("approve","action","reject")="rejectCodeChangeSet"
+	S TCTX("approve","item",1,"batch")="APR-2026-0317-A"
+	S TCTX("approve","item",1,"scope")="4 route codes / 2 custom fields"
+	S TCTX("approve","item",1,"owner")="ops.manager"
+	S TCTX("approve","item",1,"state")="Awaiting approval"
+	S TCTX("approve","item",2,"batch")="APR-2026-0317-B"
+	S TCTX("approve","item",2,"scope")="1 payer crosswalk / 3 labels"
+	S TCTX("approve","item",2,"owner")="qa.supervisor"
+	S TCTX("approve","item",2,"state")="Needs revision"
+	S TCTX("approve","item",3,"batch")="APR-2026-0317-C"
+	S TCTX("approve","item",3,"scope")="Vendor import merge set"
+	S TCTX("approve","item",3,"owner")="collector.lead"
+	S TCTX("approve","item",3,"state")="Ready to submit"
+	S TCTX("audit","title")="Change history"
+	S TCTX("audit","desc")="Add/edit/delete review log for code maintenance with actor, reason, and recovery actions."
+	S TCTX("audit","action","open")="openCodeChangeHistory"
+	S TCTX("audit","action","restore")="editSelectedCode"
+	S TCTX("audit","entry",1,"when")="2026-03-17 09:14"
+	S TCTX("audit","entry",1,"actor")="qa.supervisor"
+	S TCTX("audit","entry",1,"verb")="Deleted"
+	S TCTX("audit","entry",1,"target")="MCD-77"
+	S TCTX("audit","entry",1,"reason")="Merged into payer-neutral follow-up code"
+	S TCTX("audit","entry",2,"when")="2026-03-17 08:52"
+	S TCTX("audit","entry",2,"actor")="ops.manager"
+	S TCTX("audit","entry",2,"verb")="Edited"
+	S TCTX("audit","entry",2,"target")="ELG-12"
+	S TCTX("audit","entry",2,"reason")="Updated routing priority and note requirement"
+	S TCTX("audit","entry",3,"when")="2026-03-17 08:30"
+	S TCTX("audit","entry",3,"actor")="collector.lead"
+	S TCTX("audit","entry",3,"verb")="Added"
+	S TCTX("audit","entry",3,"target")="ARC-01"
+	S TCTX("audit","entry",3,"reason")="New appeal queue bucket for manual review"
+	S TCTX("matrix","title")="Variant matrix"
+	S TCTX("matrix","row",1,"label")="Master catalog"
+	S TCTX("matrix","row",1,"search")="Yes"
+	S TCTX("matrix","row",1,"order")="Yes"
+	S TCTX("matrix","row",1,"crud")="Full"
+	S TCTX("matrix","row",1,"custom")="Optional"
+	S TCTX("matrix","row",2,"label")="Hierarchy control"
+	S TCTX("matrix","row",2,"search")="Scoped"
+	S TCTX("matrix","row",2,"order")="Nested"
+	S TCTX("matrix","row",2,"crud")="Full"
+	S TCTX("matrix","row",2,"custom")="Optional"
+	S TCTX("matrix","row",3,"label")="Crosswalk workspace"
+	S TCTX("matrix","row",3,"search")="Yes"
+	S TCTX("matrix","row",3,"order")="Effective date"
+	S TCTX("matrix","row",3,"crud")="Map CRUD"
+	S TCTX("matrix","row",3,"custom")="No"
+	S TCTX("matrix","row",4,"label")="Custom field studio"
+	S TCTX("matrix","row",4,"search")="Yes"
+	S TCTX("matrix","row",4,"order")="Field order"
+	S TCTX("matrix","row",4,"crud")="Field CRUD"
+	S TCTX("matrix","row",4,"custom")="Primary"
+	S TCTX("matrix","row",5,"label")="Effective dating studio"
+	S TCTX("matrix","row",5,"search")="Version"
+	S TCTX("matrix","row",5,"order")="Window"
+	S TCTX("matrix","row",5,"crud")="Version CRUD"
+	S TCTX("matrix","row",5,"custom")="Optional"
+	S TCTX("matrix","row",6,"label")="Dependency rules"
+	S TCTX("matrix","row",6,"search")="Rule name"
+	S TCTX("matrix","row",6,"order")="Priority"
+	S TCTX("matrix","row",6,"crud")="Rule CRUD"
+	S TCTX("matrix","row",6,"custom")="Derived"
+	S TCTX("matrix","row",7,"label")="Import staging workspace"
+	S TCTX("matrix","row",7,"search")="File/batch"
+	S TCTX("matrix","row",7,"order")="Upload time"
+	S TCTX("matrix","row",7,"crud")="Stage/commit"
+	S TCTX("matrix","row",7,"custom")="Mapped"
+	S TCTX("matrix","row",8,"label")="Retirement and delete control"
+	S TCTX("matrix","row",8,"search")="Impact"
+	S TCTX("matrix","row",8,"order")="Risk first"
+	S TCTX("matrix","row",8,"crud")="Archive/delete"
+	S TCTX("matrix","row",8,"custom")="No"
+	S TCTX("matrix","row",9,"label")="Change history"
+	S TCTX("matrix","row",9,"search")="Actor/date"
+	S TCTX("matrix","row",9,"order")="Newest first"
+	S TCTX("matrix","row",9,"crud")="Restore"
+	S TCTX("matrix","row",9,"custom")="No"
+	S TCTX("matrix","row",10,"label")="Inline row editor"
+	S TCTX("matrix","row",10,"search")="Cell focus"
+	S TCTX("matrix","row",10,"order")="Grid order"
+	S TCTX("matrix","row",10,"crud")="Inline edit"
+	S TCTX("matrix","row",10,"custom")="Optional"
+	S TCTX("matrix","row",11,"label")="Side-drawer editor"
+	S TCTX("matrix","row",11,"search")="Contextual"
+	S TCTX("matrix","row",11,"order")="Drawer sections"
+	S TCTX("matrix","row",11,"crud")="Create/edit"
+	S TCTX("matrix","row",11,"custom")="Full"
+	S TCTX("matrix","row",12,"label")="Compare and merge review"
+	S TCTX("matrix","row",12,"search")="Diff target"
+	S TCTX("matrix","row",12,"order")="Risk first"
+	S TCTX("matrix","row",12,"crud")="Merge batch"
+	S TCTX("matrix","row",12,"custom")="Mapped"
+	S TCTX("matrix","row",13,"label")="Approval queue"
+	S TCTX("matrix","row",13,"search")="Batch/state"
+	S TCTX("matrix","row",13,"order")="Oldest first"
+	S TCTX("matrix","row",13,"crud")="Approve/reject"
+	S TCTX("matrix","row",13,"custom")="Governed"
+	Q
+	;
+BUILDEXPORTX(CONF,REQ,CTX,TCTX)
+	D BASE^MIOUICTX(.TCTX)
+	D APPLY^MIOUITHEME(.CONF,.TCTX)
+	D ACT^MIOUICTX(.TCTX,"export")
+	D PAGE^MIOUICTX(.TCTX,"MIOUI / Export","Export UX","Reusable field-selection and export editing surfaces for dense billing workflows.","Profile editor")
+	D SUMINIT^MIOUIEXP(.TCTX,"main","Export profile summary","Compact output rules, selected-field counts, and file naming rules for CSV profile review.")
+	D SUMSTAT^MIOUIEXP(.TCTX,"main",1,"Mode","Claim summary","sky")
+	D SUMSTAT^MIOUIEXP(.TCTX,"main",2,"Selected fields",4,"emerald")
+	D SUMSTAT^MIOUIEXP(.TCTX,"main",3,"Delimiter","Comma","amber")
+	D SUMSTAT^MIOUIEXP(.TCTX,"main",4,"Header row","Included","violet")
+	D SUMRULE^MIOUIEXP(.TCTX,"main",1,"File naming","claims_review_{{date}}.csv")
+	D SUMRULE^MIOUIEXP(.TCTX,"main",2,"Quote mode","Minimal quoting")
+	D SUMRULE^MIOUIEXP(.TCTX,"main",3,"Empty values","Leave blank")
+	D CHKINIT^MIOUIEXP(.TCTX,"fieldCatalog","Field catalog","Choose the export fields operators need without leaving the SSR editor flow.")
+	D CHKITEM^MIOUIEXP(.TCTX,"fieldCatalog",1,"claim_id","Claim ID","Stable claim-level identifier used by downstream QA sheets.",1)
+	D CHKITEM^MIOUIEXP(.TCTX,"fieldCatalog",2,"patient_last","Patient last name","Useful for operator review and spreadsheet grouping.",1)
+	D CHKITEM^MIOUIEXP(.TCTX,"fieldCatalog",3,"date_of_service","Date of service","High-value billing field for daily reconciliation.",1)
+	D CHKITEM^MIOUIEXP(.TCTX,"fieldCatalog",4,"total_charge","Total charge","Include the summed billed charge for quick balance checks.",1)
+	D CHKITEM^MIOUIEXP(.TCTX,"fieldCatalog",5,"payer_name","Payer name","Helpful for payer-segmented work queues.",0)
+	D CHKITEM^MIOUIEXP(.TCTX,"fieldCatalog",6,"claim_frequency","Claim frequency","Optional field for advanced claim audit exports.",0)
+	D CHKFINAL^MIOUIEXP(.TCTX,"fieldCatalog")
+	D ORDINIT^MIOUIEXP(.TCTX,"selectedFields","Selected field order","Explicit row order keeps export columns predictable and easy to test.")
+	D ORDITEM^MIOUIEXP(.TCTX,"selectedFields",1,"Claim ID","claim_id")
+	D ORDITEM^MIOUIEXP(.TCTX,"selectedFields",2,"Patient last name","patient_last")
+	D ORDITEM^MIOUIEXP(.TCTX,"selectedFields",3,"Date of service","date_of_service")
+	D ORDITEM^MIOUIEXP(.TCTX,"selectedFields",4,"Total charge","total_charge")
+	D ORDFINAL^MIOUIEXP(.TCTX,"selectedFields")
+	D INIT^MIOUIFORM(.TCTX,"naming","Naming rules","Keep export naming stable for local installs, automation folders, and audit review.","/mioui/export","post")
+	D FIELD^MIOUIFORM(.TCTX,"naming",1,"text","prefix","File prefix","claims_review","Short prefix that stays stable across environments.","","")
+	D FIELD^MIOUIFORM(.TCTX,"naming",2,"select","dateToken","Date token","yyyymmdd","Append a date token to every export filename.","","")
+	D OPTION^MIOUIFORM(.TCTX,"naming",2,1,"yyyymmdd","YYYYMMDD",1)
+	D OPTION^MIOUIFORM(.TCTX,"naming",2,2,"iso8601","ISO 8601",0)
+	D OPTION^MIOUIFORM(.TCTX,"naming",2,3,"none","No date token",0)
+	D ACTION^MIOUIFORM(.TCTX,"naming",1,"Apply naming rule","submit","primary")
+	D FINAL^MIOUIFORM(.TCTX,"naming")
+	D FOOTINIT^MIOUIEXP(.TCTX,"profile","Sticky actions","Keep primary actions visible while operators scan selected fields and naming rules.")
+	D FOOTACT^MIOUIEXP(.TCTX,"profile",1,"Save profile","/mioui/export?save=1","primary-button")
+	D FOOTACT^MIOUIEXP(.TCTX,"profile",2,"Preview sample","/mioui/export?preview=1","quick-button")
+	D FOOTACT^MIOUIEXP(.TCTX,"profile",3,"Cancel","/mioui/forms","ghost-button")
+	Q
+	;
+BUILDBILL(CONF,REQ,CTX,TCTX)
+	D BASE^MIOUICTX(.TCTX)
+	D APPLY^MIOUITHEME(.CONF,.TCTX)
+	D ACT^MIOUICTX(.TCTX,"billing")
+	D PAGE^MIOUICTX(.TCTX,"MIOUI / Billing","Billing blueprints","Claim, line, diagnostics, and artifact patterns tailored for dense SSR review flows.","Billing adapters")
+	D STAT^MIOUIPANEL(.TCTX,1,"Claims",2,"sky","")
+	D STAT^MIOUIPANEL(.TCTX,2,"Lines",3,"emerald","")
+	D STAT^MIOUIPANEL(.TCTX,3,"Warnings",1,"amber","")
+	D STAT^MIOUIPANEL(.TCTX,4,"Errors",0,"violet","")
+	D CLAIM^MIOUIBIL(.TCTX,1,"CLM-1001","JANE DOE","ALPHA HEALTH","2026-03-01","125.00","Previewed","sky")
+	D CLAIM^MIOUIBIL(.TCTX,2,"CLM-1002","JOHN SMITH","BETA HEALTH","2026-03-02","88.20","Publishable","emerald")
+	D INIT^MIOUITBL(.TCTX,"serviceLine","Service lines","No service line rows.")
+	D COL^MIOUITBL(.TCTX,"serviceLine",1,"Claim","left")
+	D COL^MIOUITBL(.TCTX,"serviceLine",2,"Line","left")
+	D COL^MIOUITBL(.TCTX,"serviceLine",3,"Procedure","left")
+	D COL^MIOUITBL(.TCTX,"serviceLine",4,"Date of service","left")
+	D COL^MIOUITBL(.TCTX,"serviceLine",5,"Charge","right")
+	D CELL^MIOUITBL(.TCTX,"serviceLine",1,1,"CLM-1001")
+	D CELL^MIOUITBL(.TCTX,"serviceLine",1,2,"1")
+	D CELL^MIOUITBL(.TCTX,"serviceLine",1,3,"99213")
+	D CELL^MIOUITBL(.TCTX,"serviceLine",1,4,"2026-03-01")
+	D CELL^MIOUITBL(.TCTX,"serviceLine",1,5,"75.00")
+	D CELL^MIOUITBL(.TCTX,"serviceLine",2,1,"CLM-1001")
+	D CELL^MIOUITBL(.TCTX,"serviceLine",2,2,"2")
+	D CELL^MIOUITBL(.TCTX,"serviceLine",2,3,"87070")
+	D CELL^MIOUITBL(.TCTX,"serviceLine",2,4,"2026-03-01")
+	D CELL^MIOUITBL(.TCTX,"serviceLine",2,5,"50.00")
+	D CELL^MIOUITBL(.TCTX,"serviceLine",3,1,"CLM-1002")
+	D CELL^MIOUITBL(.TCTX,"serviceLine",3,2,"1")
+	D CELL^MIOUITBL(.TCTX,"serviceLine",3,3,"97110")
+	D CELL^MIOUITBL(.TCTX,"serviceLine",3,4,"2026-03-02")
+	D CELL^MIOUITBL(.TCTX,"serviceLine",3,5,"88.20")
+	D FINAL^MIOUITBL(.TCTX,"serviceLine")
+	D VALSUM^MIOUIBIL(.TCTX,1,0,2,1,"Publishable","emerald")
+	D DIAG^MIOUIBIL(.TCTX,"warning",1,"SV201","One line is missing a modifier but remains publishable under the current profile.","2400/SV1/03","Review payer rules before release.")
+	D DIAG^MIOUIBIL(.TCTX,"info",1,"CSV001","Header row will be written because the selected profile includes column names.","profile/includeHeaders","No action needed.")
+	D META^MIOUIBIL(.TCTX,1,"Profile","Claim summary")
+	D META^MIOUIBIL(.TCTX,2,"Output naming","{{source_base}}-claims-{{job_id}}.csv")
+	D META^MIOUIBIL(.TCTX,3,"Delimiter","Comma")
+	D META^MIOUIBIL(.TCTX,4,"Headers","Included")
+	D ARTMETA^MIOUIBIL(.TCTX,"canonical","Canonical artifacts","Stable output set for audit and downstream workflows.","sky")
+	D ARTROW^MIOUIBIL(.TCTX,"canonical",1,"claims.csv","CSV","/efuzy/download/1/claims","csv")
+	D ARTROW^MIOUIBIL(.TCTX,"canonical",2,"lines.csv","CSV","/efuzy/download/1/lines","csv")
+	D ARTMETA^MIOUIBIL(.TCTX,"report","Reports","Operator-facing validation and round-trip checks.","violet")
+	D ARTROW^MIOUIBIL(.TCTX,"report",1,"roundtrip-report.json","JSON","/efuzy/download/1/report","json")
+	Q
+	;
+BUILDWORK(CONF,REQ,CTX,TCTX)
+	D BASE^MIOUICTX(.TCTX)
+	D APPLY^MIOUITHEME(.CONF,.TCTX)
+	D PAGE^MIOUICTX(.TCTX,"MIOUI / Workflows","Workflow polish","Reusable first-run and file-staging surfaces for dense SSR workflow applications.","Workflow surfaces")
+	D ONBINIT^MIOUIWF(.TCTX,"firstRun","First-run onboarding","Guide new operators through setup, preview, and publish without leaving the SSR flow.","Continue setup","/mioui/workflows?step=2","Skip for now","/mioui")
+	D ONBSTEP^MIOUIWF(.TCTX,"firstRun",1,"Connect input folders","Point the workspace at a local or mapped folder where inbound files arrive.","complete")
+	D ONBSTEP^MIOUIWF(.TCTX,"firstRun",2,"Review preview settings","Confirm claim preview, line preview, and export profile defaults before first use.","current")
+	D ONBSTEP^MIOUIWF(.TCTX,"firstRun",3,"Publish a sample batch","Create canonical artifacts and verify naming, diagnostics, and audit outputs.","queued")
+	D ONBSTEP^MIOUIWF(.TCTX,"firstRun",4,"Invite operators","Share a consistent workflow once the first local run looks correct.","queued")
+	D ONBFINAL^MIOUIWF(.TCTX,"firstRun")
+	D CONFIRM^MIOUIWF(.TCTX,"publish","Publish staged files","Publishing will write canonical artifacts, update audit history, and expose downloads to operators.","amber","Publish artifacts","/mioui/workflows?publish=1","Cancel","/mioui/workflows")
+	D DROPINIT^MIOUIWF(.TCTX,"staging","File staging","Drop files here or browse a local folder to stage a batch for preview.","837, 835, CSV, TXT","Files remain local until the operator confirms publish.")
+	D DROPFILE^MIOUIWF(.TCTX,"staging",1,"alpha-claim-batch.837","148 KB","Ready","emerald")
+	D DROPFILE^MIOUIWF(.TCTX,"staging",2,"secondary-review.csv","42 KB","Needs review","amber")
+	D DROPFILE^MIOUIWF(.TCTX,"staging",3,"payer-notes.txt","4 KB","Ready","sky")
+	D DROPFINAL^MIOUIWF(.TCTX,"staging")
+	D STEP^MIOUICTX(.TCTX,1,"Stage","Collect files into a stable batch before any validation or export work begins.","complete")
+	D STEP^MIOUICTX(.TCTX,2,"Preview","Inspect claim rows, service lines, diagnostics, and output rules.","current")
+	D STEP^MIOUICTX(.TCTX,3,"Confirm","Review publish intent and make destructive actions explicit.","queued")
+	D STEP^MIOUICTX(.TCTX,4,"Publish","Write artifacts and expose the final manifest for download and audit.","queued")
+	D STEPNOTE^MIOUIWF(.TCTX,1,"Dropzone state should stay visible while operators scan incoming files.","View staging","/mioui/workflows#staging")
+	D STEPNOTE^MIOUIWF(.TCTX,2,"Preview keeps the operator in context without hiding diagnostics.","Open preview","/mioui/billing")
+	D STEPNOTE^MIOUIWF(.TCTX,3,"Every publish path should include a confirmation surface.","Open confirm dialog","/mioui/workflows#publish")
+	D STEPNOTE^MIOUIWF(.TCTX,4,"Final publish should leave a clear artifact manifest and audit trail.","Review artifacts","/mioui/billing#artifacts")
+	D STEPFINAL^MIOUIWF(.TCTX)
+	D ALERT^MIOUICTX(.TCTX,1,"sky","Workflow note","First-run flows should stay short, numbered, and explicit.")
+	D ALERT^MIOUICTX(.TCTX,2,"amber","Confirmation note","Destructive or publish actions should always explain what will happen next.")
+	Q
 	;

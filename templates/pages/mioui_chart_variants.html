@@ -1,0 +1,136 @@
+<section class="mioui-chart-lab space-y-6">
+  <style>
+    .mioui-chart-lab .chart-kicker{font-size:.72rem;line-height:1;text-transform:uppercase;letter-spacing:.22em;color:#94a3b8}
+    .mioui-chart-lab .chart-title{color:#f8fafc}
+    .mioui-chart-lab .chart-copy{color:#cbd5e1}
+    .mioui-chart-lab .chart-stat-chip{display:inline-flex;align-items:center;gap:.45rem;border-radius:999px;border:1px solid rgba(71,85,105,.85);background:rgba(2,6,23,.72);padding:.38rem .8rem;color:#e2e8f0}
+    .mioui-chart-lab .chart-stat-chip-label{color:#94a3b8}
+    .mioui-chart-lab .chart-stat-chip-value{font-weight:700;color:#fff}
+    .mioui-chart-lab .chart-hero-pill{display:inline-flex;align-items:center;border-radius:999px;border:1px solid rgba(139,92,246,.34);background:rgba(139,92,246,.14);padding:.38rem .82rem;color:#e9d5ff}
+    .mioui-chart-lab .chart-surface{border:1px solid rgba(51,65,85,.86);background:linear-gradient(180deg,rgba(2,6,23,.86),rgba(15,23,42,.94))}
+    .mioui-chart-lab .chart-track{background:rgba(2,6,23,.78)}
+    .mioui-chart-lab .chart-soft{border:1px solid rgba(71,85,105,.8);background:rgba(2,6,23,.62)}
+    .mioui-chart-lab .chart-soft-note{border:1px solid rgba(139,92,246,.34);background:rgba(139,92,246,.14);color:#ede9fe}
+    .mioui-chart-lab .chart-label{color:#e2e8f0}
+    .mioui-chart-lab .chart-value{color:#fff}
+    .mioui-chart-lab .chart-muted{color:#94a3b8}
+    .mioui-chart-lab .chart-table-wrap{overflow:hidden;border:1px solid rgba(51,65,85,.86);border-radius:1rem}
+    .mioui-chart-lab .chart-table{min-width:100%;border-collapse:separate;border-spacing:0}
+    .mioui-chart-lab .chart-table thead{background:rgba(2,6,23,.92);color:#94a3b8}
+    .mioui-chart-lab .chart-table tbody{background:rgba(15,23,42,.74);color:#cbd5e1}
+    .mioui-chart-lab .chart-table tbody tr+tr td{border-top:1px solid rgba(51,65,85,.76)}
+    .mioui-chart-lab .chart-center-hole{border:1px solid rgba(51,65,85,.84);background:rgba(2,6,23,.92)}
+    .mioui-chart-lab .chart-stage-card{border:1px solid rgba(51,65,85,.86);background:rgba(2,6,23,.7)}
+    .mioui-chart-lab .chart-axis{stroke:#334155}
+    .mioui-chart-lab .chart-axis-soft{stroke:#1e293b}
+    .mioui-chart-lab .chart-line-sky{stroke:#38bdf8}
+    .mioui-chart-lab .chart-line-violet{stroke:#8b5cf6}
+    .mioui-chart-lab .chart-fill-violet{fill:rgba(139,92,246,.22)}
+    .mioui-chart-lab .chart-svg-label{color:#94a3b8}
+    .mioui-chart-lab .chart-cell-count{color:rgba(255,255,255,.92)}
+    .mioui-chart-lab .chart-waterfall-lane{position:relative;height:1.4rem;border-radius:999px;background:rgba(2,6,23,.76)}
+    .mioui-chart-lab .chart-waterfall-bar{position:absolute;top:.2rem;bottom:.2rem;border-radius:999px}
+    .mioui-chart-lab .chart-waterfall-total{background:linear-gradient(180deg,rgba(56,189,248,.34),rgba(56,189,248,.18));border:1px solid rgba(56,189,248,.28)}
+    .mioui-chart-lab .chart-waterfall-positive{background:linear-gradient(180deg,rgba(16,185,129,.84),rgba(5,150,105,.68))}
+    .mioui-chart-lab .chart-waterfall-negative{background:linear-gradient(180deg,rgba(244,63,94,.84),rgba(225,29,72,.68))}
+    .mioui-chart-lab .chart-hist-grid{display:grid;align-items:end;grid-template-columns:repeat(7,minmax(0,1fr));gap:.75rem;height:14rem}
+    .mioui-chart-lab .chart-hist-bin{display:flex;flex-direction:column;align-items:center;gap:.55rem}
+    .mioui-chart-lab .chart-hist-bar{width:100%;border-radius:.95rem .95rem .35rem .35rem;min-height:1rem;box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
+    .mioui-chart-lab .chart-band-chip{display:inline-flex;align-items:center;gap:.4rem;border-radius:999px;border:1px solid rgba(16,185,129,.28);background:rgba(16,185,129,.12);padding:.34rem .74rem;color:#d1fae5}
+    .mioui-chart-lab .chart-box-lane{position:relative;height:3.5rem;border-radius:999px;background:rgba(2,6,23,.68)}
+    .mioui-chart-lab .chart-box-whisker{position:absolute;top:50%;height:2px;transform:translateY(-50%);background:#94a3b8}
+    .mioui-chart-lab .chart-box-whisker-cap{position:absolute;top:.75rem;bottom:.75rem;width:2px;background:#94a3b8}
+    .mioui-chart-lab .chart-box-range{position:absolute;top:.72rem;bottom:.72rem;border-radius:999px;background:linear-gradient(180deg,rgba(56,189,248,.28),rgba(14,165,233,.18));border:1px solid rgba(56,189,248,.28)}
+    .mioui-chart-lab .chart-box-median{position:absolute;top:.5rem;bottom:.5rem;width:3px;border-radius:999px;background:#f59e0b}
+    .mioui-chart-lab .chart-radar-wrap{position:relative;display:flex;align-items:center;justify-content:center;min-height:18rem}
+    .mioui-chart-lab .chart-radar-label{position:absolute;font-size:.68rem;line-height:1.1;color:#94a3b8;text-transform:uppercase;letter-spacing:.12em}
+    .mioui-chart-lab .chart-radar-fill{fill:rgba(56,189,248,.22);stroke:#38bdf8;stroke-width:3}
+    .mioui-chart-lab .chart-radar-benchmark{fill:rgba(139,92,246,.08);stroke:rgba(139,92,246,.7);stroke-width:2;stroke-dasharray:5 4}
+    html[data-theme="light"] .mioui-chart-lab .chart-kicker{color:#64748b}
+    html[data-theme="light"] .mioui-chart-lab .chart-title{color:#0f172a}
+    html[data-theme="light"] .mioui-chart-lab .chart-copy{color:#475569}
+    html[data-theme="light"] .mioui-chart-lab .chart-stat-chip{border-color:rgba(148,163,184,.46);background:#ffffff;color:#334155;box-shadow:0 1px 2px rgba(15,23,42,.04)}
+    html[data-theme="light"] .mioui-chart-lab .chart-stat-chip-label{color:#64748b}
+    html[data-theme="light"] .mioui-chart-lab .chart-stat-chip-value{color:#0f172a}
+    html[data-theme="light"] .mioui-chart-lab .chart-hero-pill{border-color:rgba(139,92,246,.22);background:#f3e8ff;color:#6b21a8}
+    html[data-theme="light"] .mioui-chart-lab .chart-surface{border-color:rgba(148,163,184,.36);background:linear-gradient(180deg,#ffffff,#f8fbff)}
+    html[data-theme="light"] .mioui-chart-lab .chart-track{background:#e2e8f0}
+    html[data-theme="light"] .mioui-chart-lab .chart-soft{border-color:rgba(148,163,184,.34);background:#ffffff}
+    html[data-theme="light"] .mioui-chart-lab .chart-soft-note{border-color:rgba(139,92,246,.2);background:#f5f3ff;color:#6b21a8}
+    html[data-theme="light"] .mioui-chart-lab .chart-label{color:#334155}
+    html[data-theme="light"] .mioui-chart-lab .chart-value{color:#0f172a}
+    html[data-theme="light"] .mioui-chart-lab .chart-muted{color:#64748b}
+    html[data-theme="light"] .mioui-chart-lab .chart-table-wrap{border-color:rgba(148,163,184,.36)}
+    html[data-theme="light"] .mioui-chart-lab .chart-table thead{background:#f8fafc;color:#64748b}
+    html[data-theme="light"] .mioui-chart-lab .chart-table tbody{background:#ffffff;color:#334155}
+    html[data-theme="light"] .mioui-chart-lab .chart-table tbody tr+tr td{border-top-color:rgba(226,232,240,.92)}
+    html[data-theme="light"] .mioui-chart-lab .chart-center-hole{border-color:rgba(148,163,184,.34);background:#ffffff}
+    html[data-theme="light"] .mioui-chart-lab .chart-stage-card{border-color:rgba(148,163,184,.34);background:#ffffff}
+    html[data-theme="light"] .mioui-chart-lab .chart-axis{stroke:#cbd5e1}
+    html[data-theme="light"] .mioui-chart-lab .chart-axis-soft{stroke:#e2e8f0}
+    html[data-theme="light"] .mioui-chart-lab .chart-svg-label{color:#64748b}
+    html[data-theme="light"] .mioui-chart-lab .chart-cell-count{color:#0f172a}
+    html[data-theme="light"] .mioui-chart-lab .chart-waterfall-lane{background:#e2e8f0}
+    html[data-theme="light"] .mioui-chart-lab .chart-band-chip{border-color:rgba(16,185,129,.18);background:#ecfdf5;color:#047857}
+    html[data-theme="light"] .mioui-chart-lab .chart-box-lane{background:#e2e8f0}
+    html[data-theme="light"] .mioui-chart-lab .chart-box-whisker{background:#94a3b8}
+    html[data-theme="light"] .mioui-chart-lab .chart-box-whisker-cap{background:#94a3b8}
+    html[data-theme="light"] .mioui-chart-lab .chart-box-range{border-color:rgba(56,189,248,.2);background:linear-gradient(180deg,#e0f2fe,#f0f9ff)}
+    html[data-theme="light"] .mioui-chart-lab .chart-radar-label{color:#64748b}
+  </style>
+
+  <header class="panel p-6">
+    <div class="chart-kicker">MIOUI / Charts</div>
+    <h1 class="mt-2 text-3xl font-semibold chart-title">{{pageTitle}}</h1>
+    <p class="mt-2 max-w-4xl text-sm chart-copy">{{pageIntro}}</p>
+    <div class="mt-4 flex flex-wrap gap-3 text-xs">
+      {{#chartStat}}
+      <div class="chart-stat-chip"><span class="chart-stat-chip-label">{{label}}</span> <span class="chart-stat-chip-value">{{value}}</span></div>
+      {{/chartStat}}
+    </div>
+    <div class="mt-4 chart-hero-pill text-xs">{{heroCallback}}</div>
+  </header>
+
+  <div class="panel p-5">
+    <div class="chart-kicker">Callback tokens</div>
+    <h2 class="mt-2 text-lg font-semibold chart-title">Chart actions</h2>
+    <p class="mt-2 text-sm chart-copy">These tokens are rendered explicitly so the chart page has deterministic coverage for date windows, series switches, threshold management, snapshot export, drill-down, annotations, and dashboard pinning.</p>
+    <div class="mt-4 flex flex-wrap gap-2 text-xs">
+      {{#chartCallback}}
+      <span class="chart-stat-chip">{{token}}</span>
+      {{/chartCallback}}
+    </div>
+  </div>
+
+  <div class="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+    {{>partials/mioui_chart_bar_comparison.html}}
+    {{>partials/mioui_chart_stacked_mix.html}}
+  </div>
+
+  <div class="grid gap-6 xl:grid-cols-2">
+    {{>partials/mioui_chart_line_trend.html}}
+    {{>partials/mioui_chart_area_forecast.html}}
+  </div>
+
+  <div class="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+    {{>partials/mioui_chart_pie_donut.html}}
+    {{>partials/mioui_chart_heatmap_grid.html}}
+  </div>
+
+  <div class="grid gap-6 xl:grid-cols-[1fr_0.95fr]">
+    {{>partials/mioui_chart_bullet_grid.html}}
+    {{>partials/mioui_chart_funnel_board.html}}
+  </div>
+
+  <div class="grid gap-6 xl:grid-cols-[1.04fr_0.96fr]">
+    {{>partials/mioui_chart_waterfall_bridge.html}}
+    {{>partials/mioui_chart_sparkline_table.html}}
+  </div>
+
+  <div class="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+    {{>partials/mioui_chart_histogram_distribution.html}}
+    {{>partials/mioui_chart_box_range_summary.html}}
+  </div>
+
+  {{>partials/mioui_chart_radar_score_profile.html}}
+</section>

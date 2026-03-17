@@ -1,0 +1,23 @@
+<section class="panel p-5">
+  <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+    <div>
+      <div class="text-xs uppercase tracking-[0.22em] text-slate-400">Audit variation</div>
+      <h2 class="mt-2 text-lg font-semibold text-white">{{audit.title}}</h2>
+      <p class="mt-2 text-sm text-slate-300">{{audit.desc}}</p>
+    </div>
+    <div class="flex flex-wrap gap-2 text-xs text-slate-300">
+      <span class="rounded-full border border-slate-700 bg-slate-950 px-3 py-1">{{audit.action.open}}</span>
+      <span class="rounded-full border border-slate-700 bg-slate-950 px-3 py-1">{{audit.action.restore}}</span>
+    </div>
+  </div>
+  <div class="mt-4 grid gap-3 lg:grid-cols-3">
+    {{#audit.entry}}
+    <div class="rounded-2xl border border-slate-800 bg-slate-950/60 p-4">
+      <div class="text-xs text-slate-400">{{when}}</div>
+      <div class="mt-2 text-base font-semibold text-white">{{verb}} {{target}}</div>
+      <div class="mt-1 text-sm text-slate-300">{{reason}}</div>
+      <div class="mt-3 text-xs text-slate-500">actor {{actor}}</div>
+    </div>
+    {{/audit.entry}}
+  </div>
+</section>

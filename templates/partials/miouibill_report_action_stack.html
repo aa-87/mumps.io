@@ -1,0 +1,24 @@
+<div class="panel-soft rounded-[1.35rem] p-4" id="report-exec-actions">
+  <div class="flex items-start justify-between gap-3">
+    <div>
+      <div class="section-kicker">Recommended actions</div>
+      <h3 class="mt-2 text-base font-semibold text-slate-900 dark:text-slate-100">Next 48 hours</h3>
+      <p class="mt-2 text-sm text-slate-700 dark:text-slate-300">Named owners and due windows for the most important follow-up moves.</p>
+    </div>
+    <span class="badge badge-slate">3 actions</span>
+  </div>
+  <div class="mt-4 space-y-3">
+    {{#billReportExec.action}}
+    <div class="rounded-2xl border border-slate-300/70 px-4 py-4 dark:border-slate-700/70 {{panelClass}}">
+      <div class="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <div class="font-semibold text-slate-900 dark:text-slate-100">{{title}}</div>
+          <div class="mt-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{{owner}}</div>
+        </div>
+        <span class="badge {{badgeClass}}">{{due}}</span>
+      </div>
+      <p class="mt-3 text-sm text-slate-700 dark:text-slate-300">{{body}}</p>
+    </div>
+    {{/billReportExec.action}}
+  </div>
+</div>
