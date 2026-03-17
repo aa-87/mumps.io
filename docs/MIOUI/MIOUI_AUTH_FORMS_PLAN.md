@@ -27,6 +27,10 @@ This document tracks the current auth/forms slice as a living area, not a one-of
 - trusted device message panel
 - admin preference matrix form
 - access review approval stack
+- workspace bootstrap variant stack
+- workspace bootstrap resolution form
+- profile completion variant stack
+- first-run account hardening form
 
 ## Current test coverage
 
@@ -36,10 +40,12 @@ This document tracks the current auth/forms slice as a living area, not a one-of
 - `MIOUIT035` for invitation-state and expired-invite-recovery tokens and registry checks
 - `MIOUIT036` for account-recovery and trusted-device tokens and registry checks
 - `MIOUIT037` for admin-preference-matrix and access-review tokens and registry checks
+- `MIOUIT038` for workspace-bootstrap tokens and registry checks
+- `MIOUIT039` for profile-completion and first-run-hardening tokens and registry checks
 
 ## Immediate follow-up opportunities
 
-- workspace bootstrap variants: create workspace vs join existing workspace
-- dense first-run hardening forms for recovery, MFA, and trust choices
 - role-aware reviewer handoff and reviewer-note form families
 - billing review filter presets and multi-column query forms
+- organization domain-claim and tenant-transfer variants
+- account-transfer and domain-claim reconciliation forms

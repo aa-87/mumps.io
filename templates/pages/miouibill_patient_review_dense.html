@@ -1,0 +1,310 @@
+<section class="miouibill-dense {{billDense.workspaceClass}}" data-miouibill-workspace>
+  <div class="panel rounded-[1.45rem] flex h-full flex-col overflow-hidden border border-slate-300/80 dark:border-slate-700/80">
+    <div class="border-b border-slate-300/80 px-4 py-4 dark:border-slate-700/80 lg:px-5 lg:py-4">
+      <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+        <div>
+          <div class="section-kicker">Key Info</div>
+          <div class="mt-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Claim detail</div>
+          <div class="mt-2 flex flex-wrap items-center gap-3">
+            <h2 class="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">{{billHeader.claimId}}</h2>
+            <span class="badge {{billHeader.badgeClass}}">{{billHeader.status}}</span>
+          </div>
+          <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-700 dark:text-slate-300">
+            <span>Patient: <span class="font-semibold text-slate-900 dark:text-slate-100">{{billHeader.patient}}</span></span>
+            <span>Payer: <span class="font-semibold text-slate-900 dark:text-slate-100">{{billHeader.payer}}</span></span>
+            <span>Transaction Type: <span class="font-semibold text-slate-900 dark:text-slate-100">{{billX12.transactionType}}</span></span>
+            <span>Control Number: <span class="font-semibold text-slate-900 dark:text-slate-100">{{billX12.controlNumber}}</span></span>
+          </div>
+        </div>
+        <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+          {{#billFact}}
+          <div class="panel-soft rounded-2xl px-3 py-2.5">
+            <div class="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{{{label}}}</div>
+            <div class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">{{{value}}}</div>
+          </div>
+          {{/billFact}}
+        </div>
+      </div>
+
+      <div class="mt-4 flex flex-wrap gap-2" role="tablist" aria-label="Billing patient dense tabs">
+        {{#billDense.tab}}
+        <button
+          type="button"
+          data-miouibill-tab="{{key}}"
+          class="{{#isActive}}primary-button{{/isActive}}{{^isActive}}quick-button{{/isActive}}"
+          aria-selected="{{#isActive}}true{{/isActive}}{{^isActive}}false{{/isActive}}"
+        >
+          {{{label}}} <span class="ml-2 text-xs opacity-80">{{count}}</span>
+        </button>
+        {{/billDense.tab}}
+        <a href="/mioui/billing-patient" class="quick-button">Open stacked review</a>
+      </div>
+    </div>
+
+    <div class="min-h-0 flex-1 p-3 lg:p-4">
+      <div data-miouibill-pane="claim" class="h-full">
+        <div class="grid h-full min-h-0 gap-3 xl:grid-cols-[1.1fr_1.25fr_.8fr]">
+          <div class="min-h-0 space-y-3 overflow-auto pr-1">
+            <div class="panel-soft rounded-[1.25rem] p-4">
+              <div class="section-kicker">Claim summary</div>
+              <dl class="mt-3 space-y-2">
+                {{#billFact}}
+                <div class="grid gap-1 sm:grid-cols-[12rem_minmax(0,1fr)] sm:items-start">
+                  <dt class="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{{{label}}}</dt>
+                  <dd class="text-sm font-semibold text-slate-900 dark:text-slate-100 break-words">{{{value}}}</dd>
+                </div>
+                {{/billFact}}
+              </dl>
+            </div>
+
+            <div class="panel-soft rounded-[1.25rem] p-4">
+              <div class="section-kicker">Review notes</div>
+              <div class="mt-3 space-y-2">
+                {{#billNote}}
+                <div class="rounded-2xl border border-slate-300/70 px-3 py-2.5 dark:border-slate-700/70 {{panelClass}}">
+                  <div class="flex items-center justify-between gap-2">
+                    <div class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{{title}}}</div>
+                    <span class="badge {{badgeClass}}">{{{title}}}</span>
+                  </div>
+                  <div class="mt-1.5 text-xs leading-5 text-slate-700 dark:text-slate-300">{{body}}</div>
+                </div>
+                {{/billNote}}
+              </div>
+            </div>
+          </div>
+
+          <div class="min-h-0 overflow-auto pr-1">
+            <div class="grid gap-3 md:grid-cols-2">
+              {{#billSection}}
+              <div class="panel-soft rounded-[1.2rem] p-3 {{panelClass}}">
+                <div class="flex items-start justify-between gap-2">
+                  <div>
+                    <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{{title}}}</h3>
+                    <p class="mt-1 text-xs text-slate-700 dark:text-slate-300">{{{summary}}}</p>
+                  </div>
+                  <span class="badge {{badgeClass}}">{{{title}}}</span>
+                </div>
+                <dl class="mt-3 space-y-2">
+                  {{#item}}
+                  <div class="grid gap-1 sm:grid-cols-[9.75rem_minmax(0,1fr)] sm:items-start">
+                    <dt class="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{{{label}}}</dt>
+                    <dd class="text-sm text-slate-900 dark:text-slate-100 break-words">{{{value}}}</dd>
+                  </div>
+                  {{/item}}
+                </dl>
+              </div>
+              {{/billSection}}
+            </div>
+          </div>
+
+          <div class="min-h-0 space-y-3 overflow-auto pl-0.5">
+            <div class="panel-soft rounded-[1.25rem] p-4">
+              <div class="section-kicker">Routing view</div>
+              <div class="mt-3 space-y-2 text-sm text-slate-700 dark:text-slate-300">
+                <div class="rounded-2xl border border-slate-300/70 px-3 py-2.5 dark:border-slate-700/70">
+                  <div class="font-semibold text-slate-900 dark:text-slate-100">Payer</div>
+                  <div class="mt-1">Plan ID: NHP442901</div>
+                  <div>Name: North Harbor Health Plan</div>
+                </div>
+                <div class="rounded-2xl border border-slate-300/70 px-3 py-2.5 dark:border-slate-700/70">
+                  <div class="font-semibold text-slate-900 dark:text-slate-100">Submitter</div>
+                  <div class="mt-1">ETIN: 731845902</div>
+                  <div>Name: Northlight Revenue Partners</div>
+                </div>
+                <div class="rounded-2xl border border-slate-300/70 px-3 py-2.5 dark:border-slate-700/70">
+                  <div class="font-semibold text-slate-900 dark:text-slate-100">Receiver</div>
+                  <div class="mt-1">ETIN: 442781593</div>
+                  <div>Name: Harbor Claims Gateway</div>
+                </div>
+                <div class="rounded-2xl border border-slate-300/70 px-3 py-2.5 dark:border-slate-700/70">
+                  <div class="font-semibold text-slate-900 dark:text-slate-100">EDI Transaction Info</div>
+                  <div class="mt-1">Control Number: 58274</div>
+                  <div>Transaction Type: 837P</div>
+                  <div>Claim or Encounter Type: Chargeable</div>
+                </div>
+                <div class="rounded-2xl border border-slate-300/70 px-3 py-2.5 dark:border-slate-700/70">
+                  <div class="font-semibold text-slate-900 dark:text-slate-100">EDI File Info</div>
+                  <div class="mt-1">File Name: daily/home-infusion-batch-0211.837</div>
+                  <div>Last Modified Date and Time: 2026-02-18, 07:58 AM</div>
+                  <div>File's Url: /staging/inbox/home-infusion-batch-0211.837</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div data-miouibill-pane="transactions" class="hidden h-full">
+        <div class="grid h-full min-h-0 gap-3 xl:grid-cols-3">
+          {{#billTxn}}
+          <div class="panel-soft min-h-0 overflow-auto rounded-[1.2rem] p-4 {{panelClass}}">
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <div class="section-kicker">Service line</div>
+                <h3 class="mt-1.5 text-base font-semibold text-slate-900 dark:text-slate-100">{{{title}}}</h3>
+                <div class="mt-1 text-xs text-slate-700 dark:text-slate-300">{{status}}</div>
+              </div>
+              <span class="badge {{badgeClass}}">{{{title}}}</span>
+            </div>
+
+            <div class="mt-3 grid gap-2 sm:grid-cols-2">
+              {{#fact}}
+              <div class="rounded-2xl border border-slate-300/70 px-3 py-2.5 dark:border-slate-700/70">
+                <div class="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{{{label}}}</div>
+                <div class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">{{{value}}}</div>
+              </div>
+              {{/fact}}
+            </div>
+
+            <div class="mt-3 space-y-2.5 text-sm text-slate-700 dark:text-slate-300">
+              <div class="rounded-2xl border border-slate-300/70 px-3 py-2.5 dark:border-slate-700/70">
+                <div class="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{{codeTitle}}</div>
+                <div class="mt-2 flex items-start justify-between gap-3"><span class="font-semibold text-slate-600 dark:text-slate-300">Code</span><span class="font-semibold text-slate-900 dark:text-slate-100">{{code}}</span></div>
+                <div class="mt-2 font-semibold text-slate-600 dark:text-slate-300">Description</div>
+                <div class="mt-1 text-slate-900 dark:text-slate-100">{{codeDesc}}</div>
+              </div>
+              <div class="rounded-2xl border border-slate-300/70 px-3 py-2.5 dark:border-slate-700/70">
+                <div class="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{{diagTitle}}</div>
+                <div class="mt-2 flex items-start justify-between gap-3"><span class="font-semibold text-slate-600 dark:text-slate-300">Code</span><span class="font-semibold text-slate-900 dark:text-slate-100">{{diagCode}}</span></div>
+                <div class="mt-2 font-semibold text-slate-600 dark:text-slate-300">Description</div>
+                <div class="mt-1 text-slate-900 dark:text-slate-100">{{diagDesc}}</div>
+              </div>
+              <div class="rounded-2xl border border-slate-300/70 px-3 py-2.5 dark:border-slate-700/70">
+                <div class="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Ordering Provider</div>
+                <div class="mt-2 font-semibold text-slate-600 dark:text-slate-300">Name:</div>
+                <div class="mt-1 text-slate-900 dark:text-slate-100">{{providerName}}</div>
+                <div class="mt-2 font-semibold text-slate-600 dark:text-slate-300">NPI:</div>
+                <div class="mt-1 text-slate-900 dark:text-slate-100">{{providerNpi}}</div>
+              </div>
+            </div>
+          </div>
+          {{/billTxn}}
+        </div>
+      </div>
+
+      <div data-miouibill-pane="x12" class="hidden h-full">
+        <div class="grid h-full min-h-0 gap-3 xl:grid-cols-[17rem_minmax(0,1fr)]">
+          <div class="panel-soft min-h-0 overflow-auto rounded-[1.2rem] p-4">
+            <div class="flex items-center justify-between gap-2">
+              <div>
+                <div class="section-kicker">Raw X12</div>
+                <div class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">Loop navigator</div>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <button type="button" class="quick-button" data-miouibill-expand>Expand All</button>
+                <button type="button" class="quick-button" data-miouibill-collapse>Collapse All</button>
+              </div>
+            </div>
+            <div class="mt-3 grid gap-2">
+              <div class="rounded-2xl border border-slate-300/70 px-3 py-2.5 dark:border-slate-700/70">
+                <div class="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Transaction Type</div>
+                <div class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">{{billX12.transactionType}}</div>
+              </div>
+              <div class="rounded-2xl border border-slate-300/70 px-3 py-2.5 dark:border-slate-700/70">
+                <div class="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Control Number</div>
+                <div class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">{{billX12.controlNumber}}</div>
+              </div>
+              <div class="rounded-2xl border border-slate-300/70 px-3 py-2.5 dark:border-slate-700/70">
+                <div class="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Loops</div>
+                <div class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">{{billX12.totalLoops}}</div>
+              </div>
+              <div class="rounded-2xl border border-slate-300/70 px-3 py-2.5 dark:border-slate-700/70">
+                <div class="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Segments</div>
+                <div class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">{{billX12.totalSegments}}</div>
+              </div>
+            </div>
+            <div class="mt-3 space-y-2">
+              {{#billX12.loop}}
+              <a href="#dense-x12-loop-{{idx}}" class="flex items-start justify-between gap-3 rounded-2xl border border-slate-300/70 px-3 py-2.5 text-sm dark:border-slate-700/70">
+                <div>
+                  <div class="font-semibold text-slate-900 dark:text-slate-100">{{{title}}}</div>
+                  <div class="mt-1 text-xs text-slate-700 dark:text-slate-300">Loop: {{loop}}</div>
+                  <div class="mt-1 text-xs text-slate-600 dark:text-slate-400">Parent: {{parent}}</div>
+                </div>
+                <span class="badge {{badgeClass}}">Loop: {{loop}}</span>
+              </a>
+              {{/billX12.loop}}
+            </div>
+          </div>
+
+          <div class="panel-soft miouibill-x12 min-h-0 overflow-auto rounded-[1.2rem] p-4">
+            <div class="space-y-3">
+              {{#billX12.loop}}
+              <details id="dense-x12-loop-{{idx}}" class="rounded-[1.15rem] border border-slate-300/70 p-3 dark:border-slate-700/70" {{#isOpen}}open{{/isOpen}}>
+                <summary class="cursor-pointer list-none">
+                  <div class="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+                    <div>
+                      <div class="flex flex-wrap items-center gap-2">
+                        <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{{title}}}</h3>
+                        <span class="badge {{badgeClass}}">Loop: {{loop}}</span>
+                      </div>
+                      <p class="mt-1 text-xs text-slate-700 dark:text-slate-300">Parent: {{parent}}</p>
+                    </div>
+                    <div class="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{{segmentCount}} segments</div>
+                  </div>
+                </summary>
+                <div class="mt-3 overflow-x-auto rounded-2xl border border-slate-300/70 dark:border-slate-700/70">
+                  <table class="min-w-full text-xs lg:text-sm">
+                    <thead class="bg-slate-100/90 dark:bg-slate-900/70">
+                      <tr>
+                        <th class="px-3 py-2 text-left font-semibold uppercase tracking-[0.16em] text-slate-600 dark:text-slate-300">Segment</th>
+                        <th class="px-3 py-2 text-left font-semibold uppercase tracking-[0.16em] text-slate-600 dark:text-slate-300">Parsed values</th>
+                        <th class="px-3 py-2 text-left font-semibold uppercase tracking-[0.16em] text-slate-600 dark:text-slate-300">Raw preview</th>
+                        <th class="px-3 py-2 text-left font-semibold uppercase tracking-[0.16em] text-slate-600 dark:text-slate-300">Meaning</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {{#segment}}
+                      <tr class="border-t border-slate-300/70 dark:border-slate-700/70">
+                        <td class="px-3 py-2 align-top"><span class="badge badge-slate">{{seg}}</span></td>
+                        <td class="px-3 py-2 align-top text-slate-900 dark:text-slate-100">{{parsed}}</td>
+                        <td class="px-3 py-2 align-top"><code class="block rounded-xl bg-slate-100 px-2.5 py-2 text-[11px] text-slate-800 dark:bg-slate-950 dark:text-slate-200 break-all">{{raw}}</code></td>
+                        <td class="px-3 py-2 align-top text-slate-700 dark:text-slate-300">{{note}}</td>
+                      </tr>
+                      {{/segment}}
+                    </tbody>
+                  </table>
+                </div>
+              </details>
+              {{/billX12.loop}}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      if (window.__miouibillDenseBound) return;
+      window.__miouibillDenseBound = true;
+      function activate(root, key) {
+        root.querySelectorAll('[data-miouibill-pane]').forEach(function (pane) {
+          pane.classList.toggle('hidden', pane.getAttribute('data-miouibill-pane') !== key);
+        });
+        root.querySelectorAll('[data-miouibill-tab]').forEach(function (button) {
+          var active = button.getAttribute('data-miouibill-tab') === key;
+          button.classList.toggle('primary-button', active);
+          button.classList.toggle('quick-button', !active);
+          button.setAttribute('aria-selected', active ? 'true' : 'false');
+        });
+      }
+      document.querySelectorAll('[data-miouibill-workspace]').forEach(function (root) {
+        root.querySelectorAll('[data-miouibill-tab]').forEach(function (button) {
+          button.addEventListener('click', function () {
+            activate(root, button.getAttribute('data-miouibill-tab'));
+          });
+        });
+        activate(root, 'claim');
+      });
+      document.addEventListener('click', function (event) {
+        var expand = event.target.closest('[data-miouibill-expand]');
+        var collapse = event.target.closest('[data-miouibill-collapse]');
+        if (!expand && !collapse) return;
+        document.querySelectorAll('.miouibill-x12 details').forEach(function (node) {
+          node.open = !!expand;
+        });
+      });
+    }());
+  </script>
+</section>

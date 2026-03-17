@@ -182,6 +182,12 @@ PREP(FAIL,OUTS)
 	D RENDER^MIOUIDEMO("pages/mioui_auth_forms.html",.CONF,.CTX,.TCTX,.OUT,.ERR)
 	I $D(ERR) S FAIL=1 W !,"FAIL: [PREP][auth forms render]" Q
 	D STORE(.OUTS,"pages/mioui_auth_forms.html",OUT)
+	;
+	K TCTX,OUT,ERR
+	D BUILD^MIOUIPRF(.CONF,.REQ,.CTX,.TCTX)
+	D RENDER^MIOUIDEMO("pages/mioui_profile_variants.html",.CONF,.CTX,.TCTX,.OUT,.ERR)
+	I $D(ERR) S FAIL=1 W !,"FAIL: [PREP][profile variants render]" Q
+	D STORE(.OUTS,"pages/mioui_profile_variants.html",OUT)
 	Q
 	;
 STORE(OUTS,KEY,VAL)

@@ -39,6 +39,22 @@
       <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">requestAccessClarification</span>
       <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">denyAccessRequest</span>
       <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">viewAccessReviewAudit</span>
+      <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">startCreateWorkspace</span>
+      <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">startJoinWorkspace</span>
+      <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">resolveInviteCode</span>
+      <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">provisionWorkspaceDefaults</span>
+      <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">matchExistingWorkspace</span>
+      <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">sendJoinRequestToAdmin</span>
+      <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">completeOperatorProfile</span>
+      <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">completeSupervisorProfile</span>
+      <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">completeExternalReviewerProfile</span>
+      <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">previewQueueDefaults</span>
+      <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">previewApprovalScope</span>
+      <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">previewLimitedAccessPolicy</span>
+      <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">saveFirstRunHardening</span>
+      <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">enforceMfaEnrollment</span>
+      <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">generateBackupRecoveryCodes</span>
+      <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">reviewTrustedDevicePolicy</span>
     </div>
   </div>
 
@@ -64,6 +80,11 @@
     {{#profile}}{{>partials/mioui_profile_registration_form.html}}{{/profile}}
     {{#onboard}}{{>partials/mioui_multi_step_onboarding_form.html}}{{/onboard}}
   </div>
+  <div class="grid gap-6 xl:grid-cols-[1.2fr_0.95fr]">
+    {{#profileComplete}}{{>partials/mioui_profile_completion_variant_stack.html}}{{/profileComplete}}
+    {{#hardening}}{{>partials/mioui_first_run_account_hardening_form.html}}{{/hardening}}
+  </div>
+
 
   <div class="grid gap-6 xl:grid-cols-[1.35fr_0.9fr]">
     {{#filters}}{{>partials/mioui_advanced_filter_form_panel.html}}{{/filters}}
@@ -78,6 +99,11 @@
   <div class="grid gap-6 xl:grid-cols-[1.25fr_0.95fr]">
     {{#inviteStates}}{{>partials/mioui_auth_invitation_state_stack.html}}{{/inviteStates}}
     {{#inviteRecovery}}{{>partials/mioui_auth_expired_invite_recovery.html}}{{/inviteRecovery}}
+  </div>
+
+  <div class="grid gap-6 xl:grid-cols-[1.2fr_1fr]">
+    {{#bootstrap}}{{>partials/mioui_workspace_bootstrap_variant_stack.html}}{{/bootstrap}}
+    {{#bootstrapResolve}}{{>partials/mioui_workspace_bootstrap_resolution_form.html}}{{/bootstrapResolve}}
   </div>
 
   <div>

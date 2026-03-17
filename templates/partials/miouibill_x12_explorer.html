@@ -1,0 +1,104 @@
+<div class="panel rounded-[1.45rem] p-5 miouibill-x12" id="x12-component">
+  <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+    <div>
+      <div class="section-kicker">Raw X12</div>
+      <h2 class="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-100">Loop and segment explorer</h2>
+      <p class="mt-2 text-sm text-slate-700 dark:text-slate-300">
+        Loop labels, nesting, and segment ordering mirror the source raw EDI component while keeping a cleaner,
+        darker light-theme presentation for dense patient review.
+      </p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <button type="button" class="quick-button" data-miouibill-expand>Expand All</button>
+      <button type="button" class="quick-button" data-miouibill-collapse>Collapse All</button>
+    </div>
+  </div>
+
+  <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <div class="panel-soft rounded-2xl p-4">
+      <div class="stat-label">Transaction Type</div>
+      <div class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">{{billX12.transactionType}}</div>
+    </div>
+    <div class="panel-soft rounded-2xl p-4">
+      <div class="stat-label">Control Number</div>
+      <div class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">{{billX12.controlNumber}}</div>
+    </div>
+    <div class="panel-soft rounded-2xl p-4">
+      <div class="stat-label">Loops</div>
+      <div class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">{{billX12.totalLoops}}</div>
+    </div>
+    <div class="panel-soft rounded-2xl p-4">
+      <div class="stat-label">Segments</div>
+      <div class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">{{billX12.totalSegments}}</div>
+    </div>
+  </div>
+
+  <div class="mt-4 flex flex-wrap gap-2">
+    {{#billX12.loop}}
+    <a href="#x12-loop-{{idx}}" class="badge {{badgeClass}}">Loop: {{loop}}</a>
+    {{/billX12.loop}}
+  </div>
+
+  <div class="mt-4 space-y-4">
+    {{#billX12.loop}}
+    <details class="panel-soft rounded-[1.25rem] p-4" id="x12-loop-{{idx}}" {{#isOpen}}open{{/isOpen}}>
+      <summary class="cursor-pointer list-none">
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <div class="flex flex-wrap items-center gap-2">
+              <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{title}}</h3>
+              <span class="badge {{badgeClass}}">Loop: {{loop}}</span>
+            </div>
+            <p class="mt-1 text-xs text-slate-700 dark:text-slate-300">Parent: {{parent}}</p>
+          </div>
+          <div class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+            {{segmentCount}} segments
+          </div>
+        </div>
+      </summary>
+
+      <div class="mt-4 overflow-x-auto rounded-2xl border border-slate-300/70 dark:border-slate-700/70">
+        <table class="min-w-full text-sm">
+          <thead class="bg-slate-100/90 dark:bg-slate-900/70">
+            <tr>
+              <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-slate-600 dark:text-slate-300">Segment</th>
+              <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-slate-600 dark:text-slate-300">Parsed values</th>
+              <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-slate-600 dark:text-slate-300">Raw preview</th>
+              <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-slate-600 dark:text-slate-300">Meaning</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#segment}}
+            <tr class="border-t border-slate-300/70 dark:border-slate-700/70">
+              <td class="px-3 py-3 align-top">
+                <span class="badge badge-slate">{{seg}}</span>
+              </td>
+              <td class="px-3 py-3 align-top text-slate-900 dark:text-slate-100">{{parsed}}</td>
+              <td class="px-3 py-3 align-top">
+                <code class="block rounded-xl bg-slate-100 px-3 py-2 text-xs text-slate-800 dark:bg-slate-950 dark:text-slate-200 break-all">{{raw}}</code>
+              </td>
+              <td class="px-3 py-3 align-top text-slate-700 dark:text-slate-300">{{note}}</td>
+            </tr>
+            {{/segment}}
+          </tbody>
+        </table>
+      </div>
+    </details>
+    {{/billX12.loop}}
+  </div>
+
+  <script>
+    (function () {
+      if (window.__miouibillX12Bound) return;
+      window.__miouibillX12Bound = true;
+      document.addEventListener('click', function (event) {
+        var expand = event.target.closest('[data-miouibill-expand]');
+        var collapse = event.target.closest('[data-miouibill-collapse]');
+        if (!expand && !collapse) return;
+        document.querySelectorAll('.miouibill-x12 details').forEach(function (node) {
+          node.open = !!expand;
+        });
+      });
+    }());
+  </script>
+</div>

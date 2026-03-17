@@ -2,19 +2,18 @@
 
 ## Current direction
 
-The active direction remains auth/forms depth on top of the existing dense-data and layout work.
+The active direction has shifted from auth/forms depth into dedicated profile-page variants.
 
-## Completed in the latest auth/forms increment
+## Completed in the latest profile increment
 
-- preserved the existing `/mioui/auth-forms` route
-- added a dense admin preference matrix for security, approvals, notifications, and retention defaults
-- added a queue-style access-review approval stack for invitation exceptions, recovery escalations, and privileged access changes
-- extended the auth/forms page with new admin-default and access-review callbacks
-- added registry coverage and a new numbered suite for the new surfaces
+- preserved the existing `/mioui/profile-variants` route and extended the same builder and page
+- added collector, QA reviewer, and denial-specialist variants as reusable SSR profile surfaces
+- kept the patient dossier, patient financial, and payment-plan profile families intact
+- added registry coverage, smoke-token coverage, and a new numbered suite for the new specialist profile subvariants
 
 ## Highest-ROI next candidates
 
-- workspace bootstrap variants for create-workspace vs join-existing-workspace
-- profile-completion variants for first-run account hardening
-- billing-oriented saved-search and advanced filter combinations
-- role-aware approval handoff and reviewer-note form families
+- organization and workspace administration profile variants
+- payer and carrier-contact profile variants
+- profile page tabs, activity strips, and role-aware sidecar panels shared across profile families
+- provider, scheduler, and front-desk profile variants for adjacent operational workflows

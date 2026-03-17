@@ -1,0 +1,61 @@
+<section class="panel rounded-[1.35rem] p-5 space-y-5">
+  <div>
+    <p class="text-xs uppercase tracking-[0.2em] text-sky-700 dark:text-slate-400">{{eyebrow}}</p>
+    <h2 class="text-xl font-semibold text-slate-900 dark:text-white">{{title}}</h2>
+    <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">{{subtitle}}</p>
+  </div>
+  <div class="grid gap-4 xl:grid-cols-2">
+    {{#section}}
+    <div class="rounded-[1.1rem] border border-slate-200 bg-white/70 p-4 dark:border-white/10 dark:bg-slate-950/40">
+      <div>
+        <h3 class="text-base font-semibold text-slate-900 dark:text-white">{{title}}</h3>
+        <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">{{help}}</p>
+      </div>
+      <div class="mt-4 space-y-3">
+        {{#item}}
+        <div class="grid gap-3 rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-3 md:grid-cols-[minmax(0,1fr)_auto] dark:border-white/10 dark:bg-slate-900/70">
+          <div>
+            <div class="text-sm font-medium text-slate-900 dark:text-white">{{label}}</div>
+            <div class="mt-1 text-sm text-slate-600 dark:text-slate-300">{{hint}}</div>
+          </div>
+          <div class="text-sm font-medium text-slate-900 dark:text-white md:text-right">{{value}}</div>
+        </div>
+        {{/item}}
+      </div>
+    </div>
+    {{/section}}
+  </div>
+  <div class="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
+    <div class="rounded-[1.1rem] border border-slate-200 bg-white/70 p-4 dark:border-white/10 dark:bg-slate-950/40">
+      <h3 class="text-base font-semibold text-slate-900 dark:text-white">Hardening checklist</h3>
+      <div class="mt-4 space-y-3">
+        {{#check}}
+        <label class="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm dark:border-white/10 dark:bg-slate-900/70">
+          <input type="checkbox" class="mt-1 h-4 w-4 rounded border-slate-300" {{#isChecked}}checked{{/isChecked}} />
+          <span class="font-medium text-slate-900 dark:text-white">{{label}}</span>
+        </label>
+        {{/check}}
+      </div>
+    </div>
+    <div class="space-y-4">
+      <div class="grid gap-3 sm:grid-cols-1">
+        {{#signal}}
+        <div class="rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-3 dark:border-white/10 dark:bg-slate-900/70">
+          <div class="text-xs uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{{label}}</div>
+          <div class="mt-1 text-sm font-medium text-slate-900 dark:text-white">{{value}}</div>
+        </div>
+        {{/signal}}
+      </div>
+      <div class="rounded-[1.1rem] border border-sky-500/20 bg-sky-500/5 p-4 dark:border-sky-400/20 dark:bg-sky-400/10">
+        <h3 class="text-sm font-semibold text-slate-900 dark:text-white">{{noteTitle}}</h3>
+        <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">{{noteBody}}</p>
+      </div>
+    </div>
+  </div>
+  <div class="flex flex-wrap gap-3">
+    <button class="primary-button" data-callback="{{callback}}">{{primaryLabel}}</button>
+    <button class="ghost-button" data-callback="{{secondaryCallback}}">{{secondaryLabel}}</button>
+    <button class="ghost-button" data-callback="{{tertiaryCallback}}">{{tertiaryLabel}}</button>
+    <button class="ghost-button" data-callback="{{quaternaryCallback}}">{{quaternaryLabel}}</button>
+  </div>
+</section>

@@ -1,0 +1,76 @@
+<section class="space-y-6">
+  {{> partials/mioui_stat_strip.html}}
+
+  <div class="grid gap-6 xl:grid-cols-[1.1fr_.9fr]" id="claim-component">
+    <div class="space-y-6">
+      {{> partials/miouibill_claim_snapshot.html}}
+    </div>
+    <div class="space-y-4">
+      <div class="panel rounded-[1.45rem] p-5">
+        <div class="section-kicker">Review focus</div>
+        <h2 class="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-100">Operator guidance</h2>
+        <p class="mt-2 text-sm text-slate-700 dark:text-slate-300">
+          Keep patient facts, routing parties, and raw EDI evidence visible at the same time so a reviewer can validate
+          the human-friendly claim view against the source transaction without jumping screens.
+        </p>
+        <div class="mt-4 space-y-3">
+          {{#billNote}}
+          <div class="panel-soft rounded-2xl p-4 {{panelClass}}">
+            <div class="flex items-center justify-between gap-3">
+              <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{title}}</h3>
+              <span class="badge {{badgeClass}}">{{title}}</span>
+            </div>
+            <p class="mt-2 text-sm text-slate-700 dark:text-slate-300">{{body}}</p>
+          </div>
+          {{/billNote}}
+        </div>
+      </div>
+
+      <div class="panel rounded-[1.45rem] p-5">
+        <div class="section-kicker">Anchors</div>
+        <h2 class="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-100">Jump to component</h2>
+        <div class="mt-4 flex flex-wrap gap-2">
+          <a href="#claim-component" class="quick-button">Claim detail</a>
+          <a href="#claim-sections" class="quick-button">Patient and parties</a>
+          <a href="#transaction-component" class="quick-button">Transactions</a>
+          <a href="#x12-component" class="quick-button">Raw X12</a>
+          <a href="/mioui/billing-patient-dense" class="primary-button">Dense workspace</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel rounded-[1.45rem] p-5" id="claim-sections">
+    <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+      <div>
+        <div class="section-kicker">Claim context</div>
+        <h2 class="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-100">Patient, payer, and routing cards</h2>
+        <p class="mt-2 text-sm text-slate-700 dark:text-slate-300">
+          Labels, nesting, and sequencing follow the source claim detail view while using fresh synthetic data.
+        </p>
+      </div>
+      <div class="text-sm text-slate-700 dark:text-slate-300">8 dense detail cards</div>
+    </div>
+    <div class="mt-4 grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
+      {{#billSection}}{{> partials/miouibill_section_card.html}}{{/billSection}}
+    </div>
+  </div>
+
+  <div class="panel rounded-[1.45rem] p-5" id="transaction-component">
+    <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+      <div>
+        <div class="section-kicker">Transactions</div>
+        <h2 class="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-100">Patient-oriented service line review</h2>
+        <p class="mt-2 text-sm text-slate-700 dark:text-slate-300">
+          Each line keeps charge, units, place of service, dates, code, diagnosis, and ordering provider in one compact stack.
+        </p>
+      </div>
+      <div class="text-sm text-slate-700 dark:text-slate-300">3 service lines</div>
+    </div>
+    <div class="mt-4 grid gap-4 xl:grid-cols-2 2xl:grid-cols-3">
+      {{#billTxn}}{{> partials/miouibill_transaction_card.html}}{{/billTxn}}
+    </div>
+  </div>
+
+  {{> partials/miouibill_x12_explorer.html}}
+</section>
