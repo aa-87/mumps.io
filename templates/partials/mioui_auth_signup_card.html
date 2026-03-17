@@ -1,12 +1,24 @@
-<div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4 space-y-3">
-  <label class="block text-sm">Work email</label>
-  <input class="field w-full" value="new.user@alphahealth.com" />
-  <label class="block text-sm">Team name</label>
-  <input class="field w-full" value="Revenue follow-up" />
-  <label class="block text-sm">Role</label>
-  <select class="field w-full"><option>Supervisor</option></select>
-  <div class="grid gap-3 md:grid-cols-2 text-xs text-slate-400">
-    <div>Terms accepted</div><div>HIPAA training confirmed</div>
+<div class="rounded-2xl border border-slate-200 bg-white/70 p-4 space-y-3 dark:border-white/10 dark:bg-slate-950/40">
+  <div>
+    <div class="text-sm font-medium text-slate-900 dark:text-white">{{title}}</div>
+    <div class="mt-1 text-sm text-slate-600 dark:text-slate-300">{{subtitle}}</div>
   </div>
-  <button class="primary-button" data-callback="{{signupCallback}}">Create account</button>
+  <div>
+    <label class="mb-1 block text-sm text-slate-700 dark:text-slate-200">{{emailLabel}}</label>
+    <input class="field w-full" value="{{emailValue}}" />
+  </div>
+  <div>
+    <label class="mb-1 block text-sm text-slate-700 dark:text-slate-200">{{teamLabel}}</label>
+    <input class="field w-full" value="{{teamValue}}" />
+  </div>
+  <div>
+    <label class="mb-1 block text-sm text-slate-700 dark:text-slate-200">{{roleLabel}}</label>
+    <select class="field w-full"><option>{{roleValue}}</option></select>
+  </div>
+  <div class="grid gap-3 text-xs text-slate-500 md:grid-cols-2 dark:text-slate-400">
+    {{#meta}}
+    <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 dark:border-white/10 dark:bg-slate-900/60">{{label}}</div>
+    {{/meta}}
+  </div>
+  <button class="primary-button" data-callback="{{callback}}">{{primaryLabel}}</button>
 </div>

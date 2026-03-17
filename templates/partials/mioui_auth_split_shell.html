@@ -1,23 +1,29 @@
 <section class="grid gap-6 xl:grid-cols-2">
-  <div class="panel p-5 rounded-2xl border border-white/10 space-y-4">
+  <div class="panel rounded-[1.35rem] p-5 space-y-4">
+    {{#login}}
     <div>
-      <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Login</p>
-      <h2 class="text-xl font-semibold">Trusted access</h2>
-      <p class="text-sm text-slate-300">Use a tight, operator-friendly sign-in surface with clear recovery paths.</p>
+      <p class="text-xs uppercase tracking-[0.2em] text-sky-700 dark:text-slate-400">{{eyebrow}}</p>
+      <h2 class="text-xl font-semibold text-slate-900 dark:text-white">{{title}}</h2>
+      <p class="text-sm text-slate-600 dark:text-slate-300">Use a tight, operator-friendly sign-in surface with clear recovery paths.</p>
     </div>
-    {{> partials/mioui_auth_login_card.html}}
-    {{> partials/mioui_auth_forgot_password.html}}
+    {{>partials/mioui_auth_login_card.html}}
+    {{/login}}
+    {{#forgot}}
+    {{>partials/mioui_auth_forgot_password.html}}
+    {{/forgot}}
   </div>
-  <div class="panel p-5 rounded-2xl border border-white/10 space-y-4">
+  <div class="panel rounded-[1.35rem] p-5 space-y-4">
+    {{#signup}}
     <div>
-      <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Signup</p>
-      <h2 class="text-xl font-semibold">Create account</h2>
-      <p class="text-sm text-slate-300">Pair signup with step gating, verification, and role capture.</p>
+      <p class="text-xs uppercase tracking-[0.2em] text-sky-700 dark:text-slate-400">{{eyebrow}}</p>
+      <h2 class="text-xl font-semibold text-slate-900 dark:text-white">{{title}}</h2>
+      <p class="text-sm text-slate-600 dark:text-slate-300">Pair signup with step gating, verification, and role capture.</p>
     </div>
-    {{> partials/mioui_auth_signup_card.html}}
+    {{>partials/mioui_auth_signup_card.html}}
+    {{/signup}}
     <div class="grid gap-4 md:grid-cols-2">
-      {{> partials/mioui_auth_reset_password.html}}
-      {{> partials/mioui_auth_mfa_challenge.html}}
+      {{#reset}}{{>partials/mioui_auth_reset_password.html}}{{/reset}}
+      {{#mfa}}{{>partials/mioui_auth_mfa_challenge.html}}{{/mfa}}
     </div>
   </div>
 </section>

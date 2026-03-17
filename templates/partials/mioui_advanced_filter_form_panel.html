@@ -1,13 +1,19 @@
-<section class="panel p-5 rounded-2xl border border-white/10 space-y-4">
-  <div>
-    <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Dense filter form</p>
-    <h2 class="text-xl font-semibold">Advanced filters</h2>
+<section class="panel rounded-[1.35rem] p-5 space-y-4">
+  <div class="flex flex-wrap items-start justify-between gap-3">
+    <div>
+      <p class="text-xs uppercase tracking-[0.2em] text-sky-700 dark:text-slate-400">Dense filter form</p>
+      <h2 class="text-xl font-semibold text-slate-900 dark:text-white">{{title}}</h2>
+      <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">{{subtitle}}</p>
+    </div>
+    <div class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-600 dark:border-white/10 dark:bg-slate-950/40 dark:text-slate-300">{{savedName}}</div>
   </div>
   <div class="grid gap-4 md:grid-cols-2">
-    <div><label class="block text-sm">Payer class</label><select class="field w-full"><option>Commercial</option></select></div>
-    <div><label class="block text-sm">Aging bucket</label><select class="field w-full"><option>61-90</option></select></div>
-    <div><label class="block text-sm">Balance min</label><input class="field w-full" value="500" /></div>
-    <div><label class="block text-sm">Procedure code</label><input class="field w-full" value="99213" /></div>
+    {{#field}}
+    <div>
+      <label class="mb-1 block text-sm text-slate-700 dark:text-slate-200">{{label}}</label>
+      <input class="field w-full" value="{{value}}" />
+    </div>
+    {{/field}}
   </div>
-  <button class="quick-button" data-callback="{{filtersCallback}}">Apply advanced filters</button>
+  <button class="quick-button" data-callback="{{callback}}">{{primaryLabel}}</button>
 </section>

@@ -1,12 +1,12 @@
-<section class="panel p-5 rounded-2xl border border-amber-400/30 bg-amber-500/10 space-y-3">
+<section class="panel rounded-[1.35rem] border border-amber-300 bg-amber-50/80 p-5 space-y-3 dark:border-amber-400/30 dark:bg-amber-500/10">
   <div>
-    <p class="text-xs uppercase tracking-[0.2em] text-amber-200">Validation</p>
-    <h2 class="text-xl font-semibold">Please correct the highlighted fields</h2>
+    <p class="text-xs uppercase tracking-[0.2em] text-amber-700 dark:text-amber-200">{{eyebrow}}</p>
+    <h2 class="text-xl font-semibold text-amber-900 dark:text-white">{{title}}</h2>
   </div>
-  <ul class="space-y-2 text-sm text-amber-100">
-    <li>Email must use a work domain</li>
-    <li>Password must include a special character</li>
-    <li>Role selection is required</li>
+  <ul class="space-y-2 text-sm text-amber-900 dark:text-amber-100">
+    {{#issue}}
+    <li class="rounded-xl border border-amber-300/70 bg-white/50 px-3 py-2 dark:border-amber-400/20 dark:bg-white/5">{{text}}</li>
+    {{/issue}}
   </ul>
-  <button class="quick-button" data-callback="{{validationCallback}}">Focus invalid field</button>
+  <button class="quick-button" data-callback="{{callback}}">{{primaryLabel}}</button>
 </section>

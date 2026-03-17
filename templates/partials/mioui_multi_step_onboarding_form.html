@@ -1,13 +1,16 @@
-<section class="panel p-5 rounded-2xl border border-white/10 space-y-4">
+<section class="panel rounded-[1.35rem] p-5 space-y-4">
   <div>
-    <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Multi-step</p>
-    <h2 class="text-xl font-semibold">Step 1 of 3</h2>
-    <p class="text-sm text-slate-300">Collect workspace goals, team structure, and first-run defaults.</p>
+    <p class="text-xs uppercase tracking-[0.2em] text-sky-700 dark:text-slate-400">Multi-step</p>
+    <h2 class="text-xl font-semibold text-slate-900 dark:text-white">{{title}}</h2>
+    <p class="text-sm text-slate-600 dark:text-slate-300">{{subtitle}}</p>
   </div>
-  <ol class="space-y-2 text-sm text-slate-300">
-    <li>1. Identity and team</li>
-    <li>2. Workflow preferences</li>
-    <li>3. Notifications and security</li>
+  <ol class="space-y-2 text-sm text-slate-600 dark:text-slate-300">
+    {{#step}}
+    <li class="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 dark:border-white/10 dark:bg-slate-950/40">
+      <span class="badge badge-sky">{{number}}</span>
+      <span>{{title}}</span>
+    </li>
+    {{/step}}
   </ol>
-  <button class="primary-button" data-callback="{{onboardingCallback}}">Continue onboarding</button>
+  <button class="primary-button" data-callback="{{callback}}">{{primaryLabel}}</button>
 </section>

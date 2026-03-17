@@ -1,45 +1,91 @@
 <section class="space-y-8">
-  <div class="panel p-6">
-    <div class="text-xs uppercase tracking-[0.24em] text-slate-400">MIOUI / Auth forms</div>
-    <h1 class="mt-2 text-3xl font-semibold text-white">{{pageTitle}}</h1>
-    <p class="mt-2 max-w-3xl text-sm text-slate-300">{{pageIntro}}</p>
-    <div class="mt-4 inline-flex items-center rounded-full border border-sky-500/40 bg-sky-500/10 px-3 py-1 text-xs text-sky-200">{{heroCallback}}</div>
+  <div class="panel rounded-[1.35rem] p-6">
+    <div class="text-xs uppercase tracking-[0.24em] text-sky-700 dark:text-slate-400">MIOUI / Auth forms</div>
+    <h1 class="mt-2 text-3xl font-semibold text-slate-900 dark:text-white">{{pageTitle}}</h1>
+    <p class="mt-2 max-w-3xl text-sm text-slate-600 dark:text-slate-300">{{pageIntro}}</p>
+    <div class="mt-4 inline-flex items-center rounded-full border border-sky-500/30 bg-sky-500/10 px-3 py-1 text-xs font-medium text-sky-700 dark:text-sky-200">{{heroCallback}}</div>
   </div>
 
-  <div class="panel p-5">
-    <div class="text-xs uppercase tracking-[0.22em] text-slate-400">Callback tokens</div>
-    <h2 class="mt-2 text-lg font-semibold text-white">Auth and form action callbacks</h2>
-    <p class="mt-2 text-sm text-slate-300">These callback identifiers are rendered here explicitly so the auth/forms page has deterministic smoke tokens for the numbered suite.</p>
+  <div class="panel rounded-[1.35rem] p-5">
+    <div class="text-xs uppercase tracking-[0.22em] text-sky-700 dark:text-slate-400">Callback tokens</div>
+    <h2 class="mt-2 text-lg font-semibold text-slate-900 dark:text-white">Auth and form action callbacks</h2>
+    <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">These callback identifiers are rendered here explicitly so the auth/forms page has deterministic smoke tokens for the numbered suite.</p>
     <div class="mt-4 flex flex-wrap gap-2 text-xs">
-      <span class="rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-slate-200">submitLoginForm</span>
-      <span class="rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-slate-200">submitSignupForm</span>
-      <span class="rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-slate-200">sendResetLink</span>
-      <span class="rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-slate-200">submitResetPassword</span>
-      <span class="rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-slate-200">verifyOtpCode</span>
-      <span class="rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-slate-200">applyAdvancedFilters</span>
+      <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">submitLoginForm</span>
+      <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">submitSignupForm</span>
+      <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">sendResetLink</span>
+      <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">submitResetPassword</span>
+      <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">verifyOtpCode</span>
+      <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">sendRecoveryEmailLink</span>
+      <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">verifyRecoveryCode</span>
+      <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">resendRecoveryCode</span>
+      <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">escalateRecoveryReview</span>
+      <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">trustCurrentDevice</span>
+      <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">manageTrustedDevices</span>
+      <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">revokeDeviceTrust</span>
+      <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">viewRecoveryAuditTrail</span>
+      <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">applyAdvancedFilters</span>
+      <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">acceptWorkspaceInvite</span>
+      <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">approvePolicyBundle</span>
+      <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">saveSecurityPreferences</span>
+      <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">requestFreshInvite</span>
+      <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">contactWorkspaceAdmin</span>
+      <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">goToWorkspaceSignIn</span>
+      <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">previewWorkspacePolicies</span>
+      <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">viewInvitationAuditTrail</span>
+      <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">saveAdminPreferenceMatrix</span>
+      <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">resetAdminPreferenceDefaults</span>
+      <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">approveAccessRequest</span>
+      <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">requestAccessClarification</span>
+      <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">denyAccessRequest</span>
+      <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">viewAccessReviewAudit</span>
     </div>
   </div>
 
   {{>partials/mioui_auth_split_shell.html}}
 
   <div class="grid gap-6 xl:grid-cols-2">
-    {{>partials/mioui_auth_login_card.html}}
-    {{>partials/mioui_auth_signup_card.html}}
+    {{#login}}{{>partials/mioui_auth_login_card.html}}{{/login}}
+    {{#signup}}{{>partials/mioui_auth_signup_card.html}}{{/signup}}
   </div>
 
   <div class="grid gap-6 xl:grid-cols-3">
-    {{>partials/mioui_auth_forgot_password.html}}
-    {{>partials/mioui_auth_reset_password.html}}
-    {{>partials/mioui_auth_mfa_challenge.html}}
+    {{#forgot}}{{>partials/mioui_auth_forgot_password.html}}{{/forgot}}
+    {{#reset}}{{>partials/mioui_auth_reset_password.html}}{{/reset}}
+    {{#mfa}}{{>partials/mioui_auth_mfa_challenge.html}}{{/mfa}}
+  </div>
+
+  <div class="grid gap-6 xl:grid-cols-[1.2fr_0.95fr]">
+    {{#recovery}}{{>partials/mioui_account_recovery_variant_stack.html}}{{/recovery}}
+    {{#trusted}}{{>partials/mioui_trusted_device_message_panel.html}}{{/trusted}}
   </div>
 
   <div class="grid gap-6 xl:grid-cols-2">
-    {{>partials/mioui_profile_registration_form.html}}
-    {{>partials/mioui_multi_step_onboarding_form.html}}
+    {{#profile}}{{>partials/mioui_profile_registration_form.html}}{{/profile}}
+    {{#onboard}}{{>partials/mioui_multi_step_onboarding_form.html}}{{/onboard}}
   </div>
 
   <div class="grid gap-6 xl:grid-cols-[1.35fr_0.9fr]">
-    {{>partials/mioui_advanced_filter_form_panel.html}}
-    {{>partials/mioui_inline_validation_summary.html}}
+    {{#filters}}{{>partials/mioui_advanced_filter_form_panel.html}}{{/filters}}
+    {{#validation}}{{>partials/mioui_inline_validation_summary.html}}{{/validation}}
+  </div>
+
+  <div class="grid gap-6 xl:grid-cols-2">
+    {{#invite}}{{>partials/mioui_auth_workspace_invitation.html}}{{/invite}}
+    {{#consent}}{{>partials/mioui_consent_approval_form.html}}{{/consent}}
+  </div>
+
+  <div class="grid gap-6 xl:grid-cols-[1.25fr_0.95fr]">
+    {{#inviteStates}}{{>partials/mioui_auth_invitation_state_stack.html}}{{/inviteStates}}
+    {{#inviteRecovery}}{{>partials/mioui_auth_expired_invite_recovery.html}}{{/inviteRecovery}}
+  </div>
+
+  <div>
+    {{#prefs}}{{>partials/mioui_progressive_disclosure_form.html}}{{/prefs}}
+  </div>
+
+  <div class="grid gap-6 xl:grid-cols-[1.15fr_1fr]">
+    {{#adminPrefs}}{{>partials/mioui_admin_preference_matrix_form.html}}{{/adminPrefs}}
+    {{#accessReview}}{{>partials/mioui_access_review_approval_stack.html}}{{/accessReview}}
   </div>
 </section>
