@@ -1,0 +1,23 @@
+<div class="panel rounded-[1.45rem] p-5">
+  <div>
+    <div class="section-kicker">Export profile summary</div>
+    <h2 class="mt-2 text-lg font-semibold">{{title}}</h2>
+    <p class="mt-2 text-sm muted">{{lead}}</p>
+  </div>
+  <div class="mt-4 grid gap-3 sm:grid-cols-2">
+    {{#stat}}
+    <div class="rounded-2xl border border-slate-500/10 p-4 {{panelClass}}">
+      <div class="stat-label">{{label}}</div>
+      <div class="mt-2 text-sm font-semibold">{{value}}</div>
+    </div>
+    {{/stat}}
+  </div>
+  <dl class="mt-4 space-y-3">
+    {{#rule}}
+    <div class="panel-soft rounded-2xl p-4">
+      <dt class="stat-label">{{label}}</dt>
+      <dd class="mt-2 text-sm font-medium break-all">{{value}}</dd>
+    </div>
+    {{/rule}}
+  </dl>
+</div>

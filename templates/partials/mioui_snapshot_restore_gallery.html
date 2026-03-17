@@ -1,0 +1,15 @@
+<section class="panel space-y-3">
+  <div>
+    <h2 class="text-lg font-semibold text-white">{{snapshotTitle}}</h2>
+    <p class="text-sm text-slate-300">{{snapshotLead}}</p>
+  </div>
+  <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+    {{#snapshot}}
+    <article class="rounded-2xl border border-slate-800 bg-slate-950/60 p-4">
+      <div class="font-medium text-white">{{label}}</div>
+      <div class="mt-1 text-sm text-slate-300">{{detail}}</div>
+      <div class="mt-2 text-xs text-emerald-300">{{callback}}</div>
+    </article>
+    {{/snapshot}}
+  </div>
+</section>

@@ -1,0 +1,16 @@
+<section class="panel space-y-3">
+  <div>
+    <h2 class="text-lg font-semibold text-white">{{ratioTitle}}</h2>
+    <p class="text-sm text-slate-300">{{ratioLead}}</p>
+  </div>
+  <div class="grid gap-3 lg:grid-cols-4 md:grid-cols-2">
+    {{#ratio}}
+    <article class="panel-soft space-y-1">
+      <p class="text-sm font-semibold text-white">{{label}}</p>
+      <p class="text-xs uppercase tracking-[0.24em] text-slate-400">{{ratio}}</p>
+      <p class="text-xs text-slate-300">{{detail}}</p>
+    </article>
+    {{/ratio}}
+  </div>
+  <p class="text-xs text-slate-400">Callback: <code>{{ratioCallback}}</code></p>
+</section>

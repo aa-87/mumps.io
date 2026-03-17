@@ -1,0 +1,30 @@
+<div class="panel rounded-[1.45rem] p-5" id="workflow-onboarding">
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <div>
+      <div class="section-kicker">First-run onboarding</div>
+      <h2 class="mt-2 text-lg font-semibold">{{title}}</h2>
+      <p class="mt-2 text-sm muted">{{lead}}</p>
+    </div>
+    <span class="badge {{badgeClass}}">{{summary}}</span>
+  </div>
+  <div class="mt-4 space-y-3">
+    {{#step}}
+    <div class="panel-soft rounded-2xl p-4">
+      <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div class="flex items-start gap-3">
+          <span class="badge {{badgeClass}}">{{number}}</span>
+          <div>
+            <div class="text-sm font-semibold">{{title}}</div>
+            <div class="mt-1 text-sm muted">{{body}}</div>
+          </div>
+        </div>
+        <span class="badge {{badgeClass}}">{{label}}</span>
+      </div>
+    </div>
+    {{/step}}
+  </div>
+  <div class="mt-5 flex flex-wrap gap-2">
+    {{#primaryLabel}}<a class="primary-button" href="{{primaryHref}}">{{primaryLabel}}</a>{{/primaryLabel}}
+    {{#secondaryLabel}}<a class="quick-button" href="{{secondaryHref}}">{{secondaryLabel}}</a>{{/secondaryLabel}}
+  </div>
+</div>

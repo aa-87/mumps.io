@@ -1,0 +1,20 @@
+<div class="panel rounded-[1.45rem] p-5 {{panelClass}}">
+  <div class="flex items-start justify-between gap-3">
+    <div>
+      <div class="section-kicker">Claim summary</div>
+      <h2 class="mt-2 text-lg font-semibold">{{claim}}</h2>
+      <div class="mt-1 text-sm muted">{{patient}} · {{subscriber}}</div>
+    </div>
+    <span class="badge {{badgeClass}}">{{status}}</span>
+  </div>
+  <dl class="mt-4 grid gap-3 sm:grid-cols-2">
+    <div class="panel-soft rounded-2xl p-4">
+      <dt class="stat-label">Date of service</dt>
+      <dd class="mt-2 text-sm font-medium">{{dateOfService}}</dd>
+    </div>
+    <div class="panel-soft rounded-2xl p-4">
+      <dt class="stat-label">Total charge</dt>
+      <dd class="mt-2 text-sm font-medium">{{totalCharge}}</dd>
+    </div>
+  </dl>
+</div>

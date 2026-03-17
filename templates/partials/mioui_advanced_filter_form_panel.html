@@ -1,0 +1,13 @@
+<section class="panel p-5 rounded-2xl border border-white/10 space-y-4">
+  <div>
+    <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Dense filter form</p>
+    <h2 class="text-xl font-semibold">Advanced filters</h2>
+  </div>
+  <div class="grid gap-4 md:grid-cols-2">
+    <div><label class="block text-sm">Payer class</label><select class="field w-full"><option>Commercial</option></select></div>
+    <div><label class="block text-sm">Aging bucket</label><select class="field w-full"><option>61-90</option></select></div>
+    <div><label class="block text-sm">Balance min</label><input class="field w-full" value="500" /></div>
+    <div><label class="block text-sm">Procedure code</label><input class="field w-full" value="99213" /></div>
+  </div>
+  <button class="quick-button" data-callback="{{filtersCallback}}">Apply advanced filters</button>
+</section>

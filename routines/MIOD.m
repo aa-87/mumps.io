@@ -69,8 +69,7 @@ STOP ; to do -> make sure to kill the pid associated after checking
 	S ^MIO("CTL")="STOP"
 	N P S P="" F  S P=$O(^MIO("CTL",P)) Q:P=""  S ^MIO("CTL",P,"STOP")=1
 	N DEV,P S P="" F  S P=$O(^MIO("CTL",P)) Q:P=""  I P'="STOP" S DEV=^MIO("CTL",P,"DEV")  D
-	. ;$GET(^MIO("CONF","server","process","gracefulShutdownSeconds"),1)
-	. I DEV]"" H 1 I 1 D CLOSE^MIOSOCK(DEV) H 1 I $T D
+	. I DEV]"" H $G(^MIO("CONF","server","process","gracefulShutdownSeconds"),1) D CLOSE^MIOSOCK(DEV) I $T D
 	. . D INFO^MIOLOG("listen_device_closed,","port=["_^MIO("CTL",P,"PORT")_"] pid=["_P_"]")
 	. . K ^MIO("CTL",P) 
 	D INFO^MIOLOG("mio_server_stopped","")

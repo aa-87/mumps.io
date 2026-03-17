@@ -1,0 +1,29 @@
+<div class="panel rounded-[1.45rem] p-5" id="split-detail">
+  <div class="section-kicker">Split detail</div>
+  <h2 class="mt-2 text-lg font-semibold">{{title}}</h2>
+  <p class="mt-2 text-sm muted">{{lead}}</p>
+  <div class="mt-4 grid gap-4 lg:grid-cols-[.92fr_1.08fr]">
+    <div class="panel-soft rounded-2xl p-4">
+      <div class="stat-label">Focused summary</div>
+      <div class="mt-3 space-y-3">
+        {{#summary}}
+        <div>
+          <div class="text-xs muted">{{label}}</div>
+          <div class="mt-1 text-sm font-semibold">{{value}}</div>
+        </div>
+        {{/summary}}
+      </div>
+    </div>
+    <div class="panel-soft rounded-2xl p-4">
+      <div class="stat-label">{{selectedTitle}}</div>
+      <div class="mt-3 space-y-3">
+        {{#field}}
+        <div>
+          <div class="text-xs muted">{{label}}</div>
+          <div class="mt-1 text-sm font-semibold">{{value}}</div>
+        </div>
+        {{/field}}
+      </div>
+    </div>
+  </div>
+</div>

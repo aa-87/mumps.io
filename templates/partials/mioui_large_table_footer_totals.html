@@ -1,0 +1,10 @@
+{{#hasTotals}}
+<tfoot class="bg-slate-500/5">
+  <tr>
+    {{#totalCell}}
+    <td class="border-t border-slate-500/10 px-4 py-3 {{alignClass}}">{{#isStrong}}<span class="font-semibold">{{/isStrong}}{{value}}{{#isStrong}}</span>{{/isStrong}}</td>
+    {{/totalCell}}
+    <td class="border-t border-slate-500/10 px-4 py-3"></td>
+  </tr>
+</tfoot>
+{{/hasTotals}}

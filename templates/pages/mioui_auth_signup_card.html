@@ -1,0 +1,13 @@
+<section class="panel p-6">
+  <div class="text-xs uppercase tracking-[0.24em] text-slate-400">Signup</div>
+  <h2 class="mt-2 text-xl font-semibold text-white">{{signup.title}}</h2>
+  <p class="mt-2 text-sm text-slate-300">{{signup.subtitle}}</p>
+  <div class="mt-4 grid gap-4 sm:grid-cols-2">
+    <label class="grid gap-1"><span class="text-xs text-slate-400">First name</span><input class="field" value="Avery" /></label>
+    <label class="grid gap-1"><span class="text-xs text-slate-400">Last name</span><input class="field" value="Shaw" /></label>
+    <label class="grid gap-1 sm:col-span-2"><span class="text-xs text-slate-400">Work email</span><input class="field" value="avery@northshore.example" /></label>
+    <label class="grid gap-1"><span class="text-xs text-slate-400">Role</span><select class="field"><option>Revenue operations lead</option></select></label>
+    <label class="grid gap-1"><span class="text-xs text-slate-400">Workspace</span><input class="field" value="North Shore Billing" /></label>
+    <div class="sm:col-span-2 inline-flex items-center rounded-xl bg-emerald-500/15 px-3 py-2 text-xs text-emerald-200">{{signup.callback}}</div>
+  </div>
+</section>

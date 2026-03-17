@@ -1,0 +1,20 @@
+<div class="panel rounded-[1.45rem] p-5">
+  <div class="section-kicker">Artifacts</div>
+  <h2 class="mt-2 text-lg font-semibold">Artifact groups</h2>
+  <div class="mt-4 space-y-4">
+    {{#artifactGroup.canonical.hasItems}}
+    <div class="rounded-2xl border p-4 {{artifactGroup.canonical.panelClass}}">
+      <div class="font-semibold">{{artifactGroup.canonical.label}}</div>
+      <div class="mt-1 text-sm muted">{{artifactGroup.canonical.desc}}</div>
+      <div class="mt-3 grid gap-2">{{#artifactGroup.canonical.item}}{{> partials/mioui_download_row.html}}{{/artifactGroup.canonical.item}}</div>
+    </div>
+    {{/artifactGroup.canonical.hasItems}}
+    {{#artifactGroup.report.hasItems}}
+    <div class="rounded-2xl border p-4 {{artifactGroup.report.panelClass}}">
+      <div class="font-semibold">{{artifactGroup.report.label}}</div>
+      <div class="mt-1 text-sm muted">{{artifactGroup.report.desc}}</div>
+      <div class="mt-3 grid gap-2">{{#artifactGroup.report.item}}{{> partials/mioui_download_row.html}}{{/artifactGroup.report.item}}</div>
+    </div>
+    {{/artifactGroup.report.hasItems}}
+  </div>
+</div>

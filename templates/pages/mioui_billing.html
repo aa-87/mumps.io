@@ -1,0 +1,33 @@
+<section class="space-y-6">
+  {{> partials/mioui_stat_strip.html}}
+  <div class="grid gap-6 xl:grid-cols-[1.06fr_.94fr]">
+    <div class="space-y-6">
+      <div class="panel rounded-[1.45rem] p-5">
+        <div class="section-kicker">Claim review</div>
+        <h2 class="mt-2 text-lg font-semibold">Claim preview</h2>
+        <p class="mt-2 text-sm text-[var(--text-muted)]">Compact SSR claim cards for dense billing review and operator sign-off.</p>
+        <div class="mt-4 grid gap-4 lg:grid-cols-2" id="claim-preview">
+          {{#claimCard}}{{> partials/mioui_claim_summary_card.html}}{{/claimCard}}
+        </div>
+      </div>
+      {{#table.serviceLine}}{{> partials/mioui_service_line_table.html}}{{/table.serviceLine}}
+    </div>
+    <div class="space-y-6">
+      {{> partials/mioui_validation_summary.html}}
+      {{> partials/mioui_diagnostic_list.html}}
+      <div class="panel rounded-[1.45rem] p-5">
+        <div class="section-kicker">Claim meta</div>
+        <h2 class="mt-2 text-lg font-semibold">Export context</h2>
+        <dl class="mt-4 space-y-3">
+          {{#claimMeta}}
+          <div class="panel-soft rounded-2xl p-4">
+            <dt class="stat-label">{{label}}</dt>
+            <dd class="mt-2 text-sm font-medium break-all">{{value}}</dd>
+          </div>
+          {{/claimMeta}}
+        </dl>
+      </div>
+      {{> partials/mioui_artifact_group.html}}
+    </div>
+  </div>
+</section>

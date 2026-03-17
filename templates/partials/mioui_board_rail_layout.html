@@ -1,0 +1,19 @@
+<section class="panel space-y-4">
+  <div>
+    <h2 class="text-lg font-semibold text-white">{{layout.board.title}}</h2>
+    <p class="text-sm text-slate-300">{{layout.board.lead}}</p>
+  </div>
+  <div class="grid gap-3 xl:grid-cols-3">
+    {{#layout.board.col}}
+    <article class="panel-soft space-y-2">
+      <p class="text-sm font-semibold text-white">{{title}}</p>
+      <p class="text-2xl font-semibold text-white">{{count}}</p>
+    </article>
+    {{/layout.board.col}}
+  </div>
+  <article class="panel-soft border-dashed border-sky-400/30">
+    <p class="text-sm font-semibold text-white">{{layout.board.railTitle}}</p>
+    <p class="text-xs text-slate-300">{{layout.board.railLead}}</p>
+    <p class="mt-2 text-xs text-slate-400">Callback: <span class="font-mono text-slate-200">{{layout.board.callback}}</span></p>
+  </article>
+</section>

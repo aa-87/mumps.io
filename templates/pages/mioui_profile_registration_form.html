@@ -1,0 +1,10 @@
+<section class="panel p-6">
+  <div class="text-xs uppercase tracking-[0.24em] text-slate-400">Registration profile</div>
+  <h2 class="mt-2 text-xl font-semibold text-white">{{profile.title}}</h2>
+  <div class="mt-4 grid gap-4 sm:grid-cols-2">
+    <label class="grid gap-1"><span class="text-xs text-slate-400">Organization</span><input class="field" value="{{profile.org}}" /></label>
+    <label class="grid gap-1"><span class="text-xs text-slate-400">Primary role</span><input class="field" value="{{profile.role}}" /></label>
+    <label class="grid gap-1 sm:col-span-2"><span class="text-xs text-slate-400">Timezone</span><select class="field"><option>America/New_York</option></select></label>
+    <div class="sm:col-span-2 inline-flex items-center rounded-xl bg-sky-500/15 px-3 py-2 text-xs text-sky-200">{{profile.callback}}</div>
+  </div>
+</section>

@@ -1,0 +1,135 @@
+MIOUIT007 ; demo page render smoke tests
+ D START Q
+ ;
+START(FAIL)
+ N LOCAL,TOP
+ S TOP='$D(FAIL),LOCAL=0
+ D T001(.LOCAL)
+ D T010(.LOCAL)
+ D T020(.LOCAL)
+ D T030(.LOCAL)
+ D T040(.LOCAL)
+ D T050(.LOCAL)
+ D T060(.LOCAL)
+ D T070(.LOCAL)
+ D T080(.LOCAL)
+ D T090(.LOCAL)
+ I TOP D  Q
+ . I 'LOCAL W !,"OK - MIOUIT007"
+ I LOCAL S FAIL=1
+ Q
+ ;
+BASECONF(CONF)
+ D CONFDEF^MIOUI(.CONF)
+ Q
+ ;
+T001(FAIL)
+ N CONF,REQ,CTX,TCTX,OUT,ERR
+ D BASECONF(.CONF)
+ D BUILDHOME^MIOUIDEMO(.CONF,.REQ,.CTX,.TCTX)
+ D RENDER^MIOUIDEMO("pages/mioui_home.html",.CONF,.CTX,.TCTX,.OUT,.ERR)
+ D EQ^MIOUIT000(.FAIL,"[T001][render ok]",$D(ERR),0)
+ D CONTAINS^MIOUIT000(.FAIL,"[T001][brand]",OUT,"MIOUI")
+ D CONTAINS^MIOUIT000(.FAIL,"[T001][home token]",OUT,"Broad SSR component system")
+ Q
+ ;
+T010(FAIL)
+ N CONF,REQ,CTX,TCTX,OUT,ERR
+ D BASECONF(.CONF)
+ D BUILDCOMP^MIOUIDEMO(.CONF,.REQ,.CTX,.TCTX)
+ D RENDER^MIOUIDEMO("pages/mioui_components.html",.CONF,.CTX,.TCTX,.OUT,.ERR)
+ D EQ^MIOUIT000(.FAIL,"[T010][render ok]",$D(ERR),0)
+ D CONTAINS^MIOUIT000(.FAIL,"[T010][alerts]",OUT,"Warning")
+ D CONTAINS^MIOUIT000(.FAIL,"[T010][timeline]",OUT,"Template context built")
+ Q
+ ;
+T020(FAIL)
+ N CONF,REQ,CTX,TCTX,OUT,ERR
+ D BASECONF(.CONF)
+ D BUILDTABLES^MIOUIDEMO(.CONF,.REQ,.CTX,.TCTX)
+ D RENDER^MIOUIDEMO("pages/mioui_tables.html",.CONF,.CTX,.TCTX,.OUT,.ERR)
+ D EQ^MIOUIT000(.FAIL,"[T020][render ok]",$D(ERR),0)
+ D CONTAINS^MIOUIT000(.FAIL,"[T020][claims row]",OUT,"CLM-1001")
+ D CONTAINS^MIOUIT000(.FAIL,"[T020][audit title]",OUT,"Audit log")
+ Q
+ ;
+T030(FAIL)
+ N CONF,REQ,CTX,TCTX,OUT,ERR
+ D BASECONF(.CONF)
+ D BUILDFORMS^MIOUIDEMO(.CONF,.REQ,.CTX,.TCTX)
+ D RENDER^MIOUIDEMO("pages/mioui_forms.html",.CONF,.CTX,.TCTX,.OUT,.ERR)
+ D EQ^MIOUIT000(.FAIL,"[T030][render ok]",$D(ERR),0)
+ D CONTAINS^MIOUIT000(.FAIL,"[T030][profile title]",OUT,"Export profile")
+ D CONTAINS^MIOUIT000(.FAIL,"[T030][filter title]",OUT,"Review filters")
+ Q
+ ;
+T040(FAIL)
+ N CONF,REQ,CTX,TCTX,OUT,ERR
+ D BASECONF(.CONF)
+ D BUILDBILL^MIOUIDEMO(.CONF,.REQ,.CTX,.TCTX)
+ D RENDER^MIOUIDEMO("pages/mioui_billing.html",.CONF,.CTX,.TCTX,.OUT,.ERR)
+ D EQ^MIOUIT000(.FAIL,"[T040][render ok]",$D(ERR),0)
+ D CONTAINS^MIOUIT000(.FAIL,"[T040][claim preview]",OUT,"Claim preview")
+ D CONTAINS^MIOUIT000(.FAIL,"[T040][artifact]",OUT,"roundtrip-report.json")
+ Q
+ ;
+T050(FAIL)
+ N CONF,REQ,CTX,TCTX,OUT,ERR
+ D BASECONF(.CONF)
+ D BUILDEXPORT^MIOUIDEMO(.CONF,.REQ,.CTX,.TCTX)
+ D RENDER^MIOUIDEMO("pages/mioui_export.html",.CONF,.CTX,.TCTX,.OUT,.ERR)
+ D EQ^MIOUIT000(.FAIL,"[T050][render ok]",$D(ERR),0)
+ D CONTAINS^MIOUIT000(.FAIL,"[T050][field catalog]",OUT,"Field catalog")
+ D CONTAINS^MIOUIT000(.FAIL,"[T050][order editor]",OUT,"Selected field order")
+ D CONTAINS^MIOUIT000(.FAIL,"[T050][sticky footer]",OUT,"Preview sample")
+ Q
+ ;
+T060(FAIL)
+ N CONF,REQ,CTX,TCTX,OUT,ERR
+ D BASECONF(.CONF)
+ D BUILDWORK^MIOUIDEMO(.CONF,.REQ,.CTX,.TCTX)
+ D RENDER^MIOUIDEMO("pages/mioui_workflows.html",.CONF,.CTX,.TCTX,.OUT,.ERR)
+ D EQ^MIOUIT000(.FAIL,"[T060][render ok]",$D(ERR),0)
+ D CONTAINS^MIOUIT000(.FAIL,"[T060][onboarding]",OUT,"First-run onboarding")
+ D CONTAINS^MIOUIT000(.FAIL,"[T060][confirm]",OUT,"Publish staged files")
+ D CONTAINS^MIOUIT000(.FAIL,"[T060][dropzone]",OUT,"Drop files here")
+ Q
+
+
+T070(FAIL)
+ N CONF,REQ,CTX,TCTX,OUT,ERR
+ D BASECONF(.CONF)
+ D BUILDTRACE^MIOUIDEMO(.CONF,.REQ,.CTX,.TCTX)
+ D RENDER^MIOUIDEMO("pages/mioui_trace.html",.CONF,.CTX,.TCTX,.OUT,.ERR)
+ D EQ^MIOUIT000(.FAIL,"[T070][render ok]",$D(ERR),0)
+ D CONTAINS^MIOUIT000(.FAIL,"[T070][trace summary]",OUT,"Trace summary")
+ D CONTAINS^MIOUIT000(.FAIL,"[T070][timeline]",OUT,"Audit timeline")
+ D CONTAINS^MIOUIT000(.FAIL,"[T070][trace table]",OUT,"2400/SV1/03")
+ Q
+
+
+T080(FAIL)
+ N CONF,REQ,CTX,TCTX,OUT,ERR
+ D BASECONF(.CONF)
+ D BUILDPREMIUM^MIOUIDEMO(.CONF,.REQ,.CTX,.TCTX)
+ D RENDER^MIOUIDEMO("pages/mioui_premium.html",.CONF,.CTX,.TCTX,.OUT,.ERR)
+ D EQ^MIOUIT000(.FAIL,"[T080][render ok]",$D(ERR),0)
+ D CONTAINS^MIOUIT000(.FAIL,"[T080][command bar]",OUT,"Quick actions and shortcuts")
+ D CONTAINS^MIOUIT000(.FAIL,"[T080][filters]",OUT,"Advanced filters")
+ D CONTAINS^MIOUIT000(.FAIL,"[T080][toast]",OUT,"Saved view updated")
+ D CONTAINS^MIOUIT000(.FAIL,"[T080][diff]",OUT,"Subscriber last name")
+ Q
+
+
+T090(FAIL)
+ N CONF,REQ,CTX,TCTX,OUT,ERR
+ D BASECONF(.CONF)
+ D BUILDLARGE^MIOUIDEMO(.CONF,.REQ,.CTX,.TCTX)
+ D RENDER^MIOUIDEMO("pages/mioui_large_table.html",.CONF,.CTX,.TCTX,.OUT,.ERR)
+ D EQ^MIOUIT000(.FAIL,"[T090][render ok]",$D(ERR),0)
+ D CONTAINS^MIOUIT000(.FAIL,"[T090][title]",OUT,"Large claims queue")
+ D CONTAINS^MIOUIT000(.FAIL,"[T090][results]",OUT,"24812 results")
+ D CONTAINS^MIOUIT000(.FAIL,"[T090][window]",OUT,"Rows 201-300 of 24812")
+ D CONTAINS^MIOUIT000(.FAIL,"[T090][filters]",OUT,"Needs review")
+ D CONTAINS^MIOUIT000(.FAIL,"[T090][totals]",OUT,"Page totals")
+ Q

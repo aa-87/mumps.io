@@ -1,0 +1,45 @@
+<section class="space-y-6">
+  {{> partials/mioui_stat_strip.html}}
+  <div class="grid gap-6 lg:grid-cols-[1.2fr_.8fr]">
+    <div class="panel rounded-[1.55rem] p-6 fx-rise">
+      <div class="section-kicker">Package shape</div>
+      <h2 class="mt-2 text-xl font-semibold">Broad SSR component system for high-performance business apps</h2>
+      <p class="mt-3 text-sm muted lg:text-base">MIOUI standardizes shell, tables, forms, billing review surfaces, and dense operational patterns on top of MIOTPL and Tailwind. The goal is fast server rendering, predictable contracts, and reusable pages across billing-focused applications.</p>
+      <div class="mt-5 grid gap-4 md:grid-cols-2">
+        {{#catalog}}
+        <div class="panel-soft rounded-[1.25rem] p-4">
+          <div class="font-semibold">{{name}}</div>
+          <div class="mt-2 text-sm muted">{{desc}}</div>
+        </div>
+        {{/catalog}}
+      </div>
+    </div>
+    <div class="space-y-6">
+      <div class="panel rounded-[1.55rem] p-5 fx-rise">
+        <div class="section-kicker">Suggested rollout</div>
+        <div class="mt-4 space-y-3">
+          {{#stepper}}
+          <div class="panel-soft rounded-2xl p-4">
+            <div class="flex items-center justify-between gap-3">
+              <div class="font-semibold">Step {{number}} · {{title}}</div>
+              <span class="badge {{#isComplete}}badge-emerald{{/isComplete}}{{#isCurrent}}badge-sky{{/isCurrent}}{{^isComplete}}{{^isCurrent}}badge-slate{{/isCurrent}}{{/isComplete}}">{{state}}</span>
+            </div>
+            <div class="mt-2 text-sm muted">{{body}}</div>
+          </div>
+          {{/stepper}}
+        </div>
+      </div>
+      <div class="panel rounded-[1.55rem] p-5 fx-rise">
+        <div class="section-kicker">Roadmap</div>
+        <div class="mt-4 space-y-3">
+          {{#timeline}}
+          <div class="rounded-2xl border border-slate-500/10 p-4">
+            <div class="flex items-center gap-2"><span class="badge {{tone}}">{{stamp}}</span><span class="font-semibold">{{title}}</span></div>
+            <div class="mt-2 text-sm muted">{{body}}</div>
+          </div>
+          {{/timeline}}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

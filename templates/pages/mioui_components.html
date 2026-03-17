@@ -1,0 +1,51 @@
+<section class="space-y-6">
+  <div class="grid gap-6 xl:grid-cols-[1.05fr_.95fr]">
+    <div class="space-y-6">
+      <div class="panel rounded-[1.5rem] p-5">
+        <div class="section-kicker">Foundation</div>
+        <h2 class="mt-2 text-lg font-semibold">Badges</h2>
+        <div class="mt-4 flex flex-wrap gap-2">{{#badgeDemo}}{{> partials/mioui_badge.html}}{{/badgeDemo}}</div>
+      </div>
+      <div class="panel rounded-[1.5rem] p-5">
+        <div class="section-kicker">Actions</div>
+        <h2 class="mt-2 text-lg font-semibold">Buttons</h2>
+        <div class="mt-4 flex flex-wrap gap-2">{{#buttonDemo}}{{> partials/mioui_button.html}}{{/buttonDemo}}</div>
+      </div>
+      <div class="panel rounded-[1.5rem] p-5">
+        <div class="section-kicker">Feedback</div>
+        <h2 class="mt-2 text-lg font-semibold">Alerts and callouts</h2>
+        <div class="mt-4 space-y-3">{{#alert}}{{> partials/mioui_alert.html}}{{/alert}}</div>
+      </div>
+      <div class="panel rounded-[1.5rem] p-5" id="workflow">
+        <div class="section-kicker">Workflow</div>
+        <h2 class="mt-2 text-lg font-semibold">Stepper</h2>
+        <div class="mt-4">{{> partials/mioui_stepper.html}}</div>
+      </div>
+    </div>
+    <div class="space-y-6">
+      <div class="panel rounded-[1.5rem] p-5">
+        <div class="section-kicker">Navigation</div>
+        <h2 class="mt-2 text-lg font-semibold">Tabs</h2>
+        <div class="mt-4">{{> partials/mioui_tabs.html}}</div>
+      </div>
+      {{> partials/mioui_kv_list.html}}
+      <div class="panel rounded-[1.5rem] p-5">
+        <div class="section-kicker">Empty state</div>
+        <h2 class="mt-2 text-lg font-semibold">Fallback pattern</h2>
+        <div class="mt-4">{{#emptyState}}{{> partials/mioui_empty_state.html}}{{/emptyState}}</div>
+      </div>
+      <div class="panel rounded-[1.5rem] p-5" id="feedback">
+        <div class="section-kicker">Timeline</div>
+        <h2 class="mt-2 text-lg font-semibold">Activity feed</h2>
+        <div class="mt-4 space-y-3">
+          {{#timeline}}
+          <div class="rounded-2xl border border-slate-500/10 p-4">
+            <div class="flex items-center gap-2"><span class="badge {{tone}}">{{stamp}}</span><span class="font-semibold">{{title}}</span></div>
+            <div class="mt-2 text-sm muted">{{body}}</div>
+          </div>
+          {{/timeline}}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

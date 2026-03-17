@@ -1,0 +1,19 @@
+<section class="panel space-y-3">
+  <div>
+    <h2 class="text-lg font-semibold text-white">{{layoutModesTitle}}</h2>
+    <p class="text-sm text-slate-300">{{layoutModesLead}}</p>
+  </div>
+  <div class="flex flex-wrap gap-2">
+    {{#layout.mode}}
+    <button class="{{class}}">{{label}}</button>
+    {{/layout.mode}}
+  </div>
+  <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+    {{#layout.mode}}
+    <article class="panel-soft space-y-1">
+      <p class="text-sm font-semibold text-white">{{label}}</p>
+      <p class="text-xs text-slate-300">{{detail}}</p>
+    </article>
+    {{/layout.mode}}
+  </div>
+</section>

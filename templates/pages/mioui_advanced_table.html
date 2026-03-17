@@ -1,0 +1,17 @@
+<section class="space-y-6">
+  <div class="panel">
+    <div class="section-kicker">Advanced grid controls</div>
+    <h2 class="text-2xl font-semibold">{{advTitle}}</h2>
+    <p class="mt-2 text-sm text-slate-300">{{advLead}}</p>
+  </div>
+
+  <div class="grid gap-4 xl:grid-cols-2">
+    {{> partials/mioui_multi_sort_stack.html}}
+    {{> partials/mioui_virtual_window_navigator.html}}
+    {{> partials/mioui_column_resize_ruler.html}}
+    {{> partials/mioui_right_frozen_summary.html}}
+  </div>
+
+  {{> partials/mioui_row_group_bands.html}}
+  {{> partials/mioui_subtotal_band.html}}
+</section>

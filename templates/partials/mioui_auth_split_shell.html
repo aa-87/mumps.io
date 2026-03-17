@@ -1,0 +1,23 @@
+<section class="grid gap-6 xl:grid-cols-2">
+  <div class="panel p-5 rounded-2xl border border-white/10 space-y-4">
+    <div>
+      <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Login</p>
+      <h2 class="text-xl font-semibold">Trusted access</h2>
+      <p class="text-sm text-slate-300">Use a tight, operator-friendly sign-in surface with clear recovery paths.</p>
+    </div>
+    {{> partials/mioui_auth_login_card.html}}
+    {{> partials/mioui_auth_forgot_password.html}}
+  </div>
+  <div class="panel p-5 rounded-2xl border border-white/10 space-y-4">
+    <div>
+      <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Signup</p>
+      <h2 class="text-xl font-semibold">Create account</h2>
+      <p class="text-sm text-slate-300">Pair signup with step gating, verification, and role capture.</p>
+    </div>
+    {{> partials/mioui_auth_signup_card.html}}
+    <div class="grid gap-4 md:grid-cols-2">
+      {{> partials/mioui_auth_reset_password.html}}
+      {{> partials/mioui_auth_mfa_challenge.html}}
+    </div>
+  </div>
+</section>

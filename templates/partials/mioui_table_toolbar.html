@@ -1,0 +1,16 @@
+{{#hasToolbar}}
+<div class="panel rounded-[1.45rem] p-4">
+  <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+    <div>
+      <div class="section-kicker">{{toolbar.kicker}}</div>
+      <div class="mt-2 text-sm muted">{{toolbar.summary}}</div>
+    </div>
+    <div class="flex flex-col gap-3 xl:min-w-[28rem] xl:flex-row xl:items-center xl:justify-end">
+      <input class="field xl:max-w-[18rem]" type="text" value="{{toolbar.search}}" placeholder="{{toolbar.placeholder}}">
+      <div class="flex flex-wrap gap-2">
+        {{#toolbar.action}}{{> partials/mioui_button.html}}{{/toolbar.action}}
+      </div>
+    </div>
+  </div>
+</div>
+{{/hasToolbar}}

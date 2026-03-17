@@ -1,0 +1,21 @@
+<div class="panel rounded-[1.45rem] p-5">
+  <div class="section-kicker">Ordering</div>
+  <h2 class="mt-2 text-lg font-semibold">Visible column order</h2>
+  <p class="mt-2 text-sm muted">Keep wide billing views predictable by making order and active sort visible in the same place.</p>
+  <div class="mt-4 space-y-3">
+    {{#order}}
+    <div class="panel-soft rounded-2xl p-4">
+      <div class="flex items-center justify-between gap-3">
+        <div>
+          <div class="text-sm font-semibold">{{position}}. {{label}}</div>
+          {{#isActive}}<div class="mt-1 text-xs muted">Active sort column</div>{{/isActive}}
+        </div>
+        <div class="flex gap-2">
+          <a href="{{upHref}}" class="ghost-button">Up</a>
+          <a href="{{downHref}}" class="ghost-button">Down</a>
+        </div>
+      </div>
+    </div>
+    {{/order}}
+  </div>
+</div>

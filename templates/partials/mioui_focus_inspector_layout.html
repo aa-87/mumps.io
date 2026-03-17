@@ -1,0 +1,14 @@
+<section class="panel space-y-4">
+  <div>
+    <h2 class="text-lg font-semibold text-white">{{layout.focus.title}}</h2>
+    <p class="text-sm text-slate-300">{{layout.focus.lead}}</p>
+  </div>
+  <div class="grid gap-3 lg:grid-cols-[18rem_1fr_20rem]">
+    {{#layout.focus.section}}
+    <article class="panel-soft min-h-28 space-y-1">
+      <p class="text-sm font-semibold text-white">{{title}}</p>
+      <p class="text-xs text-slate-300">{{detail}}</p>
+    </article>
+    {{/layout.focus.section}}
+  </div>
+</section>

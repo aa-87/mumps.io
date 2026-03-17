@@ -1,0 +1,16 @@
+<section class="panel space-y-4">
+  <div>
+    <div class="section-kicker">Sticky right edge</div>
+    <h3 class="text-lg font-semibold">{{summaryTitle}}</h3>
+    <p class="text-sm text-slate-300">{{summaryLead}}</p>
+  </div>
+  <div class="space-y-2">
+    {{#mxSummary}}
+    <div class="flex items-center justify-between rounded-xl border border-slate-700/80 px-3 py-2 text-sm">
+      <span class="text-slate-300">{{label}}</span>
+      <span class="font-medium text-slate-100">{{value}}</span>
+    </div>
+    {{/mxSummary}}
+  </div>
+  <div class="text-xs text-slate-400">Right-frozen summary</div>
+</section>

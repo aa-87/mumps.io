@@ -1,0 +1,16 @@
+<section class="panel space-y-4">
+  <div>
+    <div class="section-kicker">Window jumps</div>
+    <h3 class="text-lg font-semibold">{{windowTitle}}</h3>
+    <p class="text-sm text-slate-300">{{windowLead}}</p>
+  </div>
+  <div class="flex flex-wrap items-center gap-2 text-sm">
+    <span class="badge badge-violet">{{windowPage}}</span>
+    <span class="text-slate-300">{{windowLabel}}</span>
+  </div>
+  <div class="grid gap-2 md:grid-cols-2">
+    {{#mxJump}}
+    <a href="{{href}}" class="quick-button">{{label}}</a>
+    {{/mxJump}}
+  </div>
+</section>

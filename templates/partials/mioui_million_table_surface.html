@@ -1,0 +1,12 @@
+<div class="panel rounded-[1.45rem] p-5">
+  <div class="overflow-x-auto rounded-2xl border border-slate-500/10">
+    <table class="grid-table min-w-[150rem] text-sm">
+      <caption class="sr-only">Claim / patient</caption>
+      <thead class="bg-slate-500/5 text-left muted">
+        <tr>{{&headerHtml}}</tr>
+      </thead>
+      <tbody>{{&bodyHtml}}</tbody>
+    </table>
+  </div>
+  {{^hasRows}}<p class="mt-4 text-sm muted">{{emptyText}}</p>{{/hasRows}}
+</div>

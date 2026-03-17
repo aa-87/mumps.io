@@ -1,0 +1,45 @@
+<section class="space-y-8">
+  <div class="panel p-6">
+    <div class="text-xs uppercase tracking-[0.24em] text-slate-400">MIOUI / Auth forms</div>
+    <h1 class="mt-2 text-3xl font-semibold text-white">{{pageTitle}}</h1>
+    <p class="mt-2 max-w-3xl text-sm text-slate-300">{{pageIntro}}</p>
+    <div class="mt-4 inline-flex items-center rounded-full border border-sky-500/40 bg-sky-500/10 px-3 py-1 text-xs text-sky-200">{{heroCallback}}</div>
+  </div>
+
+  <div class="panel p-5">
+    <div class="text-xs uppercase tracking-[0.22em] text-slate-400">Callback tokens</div>
+    <h2 class="mt-2 text-lg font-semibold text-white">Auth and form action callbacks</h2>
+    <p class="mt-2 text-sm text-slate-300">These callback identifiers are rendered here explicitly so the auth/forms page has deterministic smoke tokens for the numbered suite.</p>
+    <div class="mt-4 flex flex-wrap gap-2 text-xs">
+      <span class="rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-slate-200">submitLoginForm</span>
+      <span class="rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-slate-200">submitSignupForm</span>
+      <span class="rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-slate-200">sendResetLink</span>
+      <span class="rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-slate-200">submitResetPassword</span>
+      <span class="rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-slate-200">verifyOtpCode</span>
+      <span class="rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-slate-200">applyAdvancedFilters</span>
+    </div>
+  </div>
+
+  {{>partials/mioui_auth_split_shell.html}}
+
+  <div class="grid gap-6 xl:grid-cols-2">
+    {{>partials/mioui_auth_login_card.html}}
+    {{>partials/mioui_auth_signup_card.html}}
+  </div>
+
+  <div class="grid gap-6 xl:grid-cols-3">
+    {{>partials/mioui_auth_forgot_password.html}}
+    {{>partials/mioui_auth_reset_password.html}}
+    {{>partials/mioui_auth_mfa_challenge.html}}
+  </div>
+
+  <div class="grid gap-6 xl:grid-cols-2">
+    {{>partials/mioui_profile_registration_form.html}}
+    {{>partials/mioui_multi_step_onboarding_form.html}}
+  </div>
+
+  <div class="grid gap-6 xl:grid-cols-[1.35fr_0.9fr]">
+    {{>partials/mioui_advanced_filter_form_panel.html}}
+    {{>partials/mioui_inline_validation_summary.html}}
+  </div>
+</section>

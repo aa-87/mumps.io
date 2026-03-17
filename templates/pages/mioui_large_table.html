@@ -1,0 +1,19 @@
+<section class="space-y-6">
+  {{#pageHeader.large}}{{> partials/mioui_page_header.html}}{{/pageHeader.large}}
+  {{#savedViews.large}}{{> partials/mioui_saved_views_toolbar.html}}{{/savedViews.large}}
+  {{#large.main}}
+    {{> partials/mioui_table_insights.html}}
+    {{> partials/mioui_selection_summary.html}}
+    {{> partials/mioui_large_table_toolbar.html}}
+    <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
+      <div class="space-y-6">
+        {{> partials/mioui_large_table.html}}
+        {{> partials/mioui_large_table_pagination.html}}
+      </div>
+      <div class="space-y-6">
+        {{> partials/mioui_large_table_filters.html}}
+        {{> partials/mioui_large_table_column_order.html}}
+      </div>
+    </div>
+  {{/large.main}}
+</section>

@@ -1,0 +1,13 @@
+<section class="panel p-5 rounded-2xl border border-white/10 space-y-4">
+  <div>
+    <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Profile form</p>
+    <h2 class="text-xl font-semibold">Registration profile</h2>
+  </div>
+  <div class="grid gap-4 md:grid-cols-2">
+    <div><label class="block text-sm">First name</label><input class="field w-full" value="Maya" /></div>
+    <div><label class="block text-sm">Last name</label><input class="field w-full" value="Jordan" /></div>
+    <div><label class="block text-sm">Preferred queue</label><select class="field w-full"><option>High-value AR</option></select></div>
+    <div><label class="block text-sm">Timezone</label><select class="field w-full"><option>America/New_York</option></select></div>
+  </div>
+  <button class="primary-button" data-callback="{{profileCallback}}">Save profile basics</button>
+</section>

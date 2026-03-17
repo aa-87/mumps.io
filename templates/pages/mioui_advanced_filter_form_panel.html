@@ -1,0 +1,12 @@
+<section class="panel p-6">
+  <div class="text-xs uppercase tracking-[0.24em] text-slate-400">Dense filters</div>
+  <h2 class="mt-2 text-xl font-semibold text-white">{{filters.title}}</h2>
+  <p class="mt-2 text-sm text-slate-300">Saved filter: {{filters.savedName}}</p>
+  <div class="mt-4 grid gap-4 sm:grid-cols-2">
+    <label class="grid gap-1"><span class="text-xs text-slate-400">Queue</span><select class="field"><option>High-risk follow-up</option></select></label>
+    <label class="grid gap-1"><span class="text-xs text-slate-400">Payer class</span><select class="field"><option>Commercial</option></select></label>
+    <label class="grid gap-1"><span class="text-xs text-slate-400">Age bucket</span><select class="field"><option>30-45 days</option></select></label>
+    <label class="grid gap-1"><span class="text-xs text-slate-400">Escalation state</span><select class="field"><option>Needs supervisor</option></select></label>
+    <div class="sm:col-span-2 inline-flex items-center rounded-xl bg-amber-500/15 px-3 py-2 text-xs text-amber-200">{{filters.callback}}</div>
+  </div>
+</section>

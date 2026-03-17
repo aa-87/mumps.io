@@ -1,0 +1,28 @@
+<div class="panel rounded-[1.45rem] p-5">
+  <div class="section-kicker">Selected columns</div>
+  <h2 class="mt-2 text-lg font-semibold">Visible column order</h2>
+  <p class="mt-2 text-sm muted">Selected columns stay configurable and callback-ready without moving ownership away from the server.</p>
+  <div class="mt-4 space-y-3">
+    {{#selectedColumn}}
+    <div class="panel-soft rounded-2xl p-4">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <div class="text-sm font-semibold">{{position}}. {{label}}</div>
+          <div class="mt-1 text-xs muted">{{state}}</div>
+        </div>
+        <span class="badge {{badgeClass}}">{{#isActive}}Visible{{/isActive}}{{^isActive}}Hidden{{/isActive}}</span>
+      </div>
+      <div class="mt-3 flex flex-wrap gap-2">
+        <a href="{{upHref}}" class="ghost-button">Move up</a>
+        <a href="{{downHref}}" class="ghost-button">Move down</a>
+      </div>
+    </div>
+    {{/selectedColumn}}
+  </div>
+  <div class="mt-4 panel-soft rounded-2xl p-4">
+    <div class="text-sm font-semibold">Callback actions</div>
+    <div class="mt-3 flex flex-wrap gap-2">
+      {{#callback}}<a href="{{href}}" class="{{class}}">{{label}}</a>{{/callback}}
+    </div>
+  </div>
+</div>

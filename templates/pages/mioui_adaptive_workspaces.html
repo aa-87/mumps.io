@@ -1,0 +1,53 @@
+<section class="space-y-6">
+  <header class="space-y-2">
+    <p class="text-xs uppercase tracking-[0.28em] text-slate-400">Adaptive workspaces</p>
+    <h1 class="text-3xl font-semibold text-white">{{workspaceTitle}}</h1>
+    <p class="max-w-4xl text-sm text-slate-300">{{workspaceLead}}</p>
+  </header>
+
+  <section class="panel space-y-3">
+    <div>
+      <h2 class="text-lg font-semibold text-white">Adaptive workspace control map</h2>
+      <p class="text-sm text-slate-300">This summary keeps the adaptive dense workspace tokens visible even before the deeper component surfaces load below.</p>
+    </div>
+    <div class="grid gap-3 xl:grid-cols-3 md:grid-cols-2">
+      <article class="panel-soft space-y-1">
+        <p class="text-sm font-semibold text-white">Role and task presets</p>
+        <p class="text-xs text-slate-300">Preset switching for queue-heavy work modes.</p>
+        <code class="text-[11px] text-slate-400">applyPresetRevenueFollowup</code>
+      </article>
+      <article class="panel-soft space-y-1">
+        <p class="text-sm font-semibold text-white">Keyboard-first pane focus</p>
+        <p class="text-xs text-slate-300">Move between queue, inspector, trace, notes, and actions without leaving the keyboard.</p>
+        <code class="text-[11px] text-slate-400">focusTracePane</code>
+      </article>
+      <article class="panel-soft space-y-1">
+        <p class="text-sm font-semibold text-white">Persistent pane ratios</p>
+        <p class="text-xs text-slate-300">Restore the same spatial rhythm by role and task.</p>
+        <code class="text-[11px] text-slate-400">saveSplitPreset</code>
+      </article>
+      <article class="panel-soft space-y-1">
+        <p class="text-sm font-semibold text-white">Collapsed rails</p>
+        <p class="text-xs text-slate-300">Recover horizontal space without losing layout state.</p>
+        <code class="text-[11px] text-slate-400">toggleRightRail</code>
+      </article>
+      <article class="panel-soft space-y-1">
+        <p class="text-sm font-semibold text-white">Responsive dense stacking</p>
+        <p class="text-xs text-slate-300">Change pane order across desktop, laptop, tablet, and narrow mobile states.</p>
+        <code class="text-[11px] text-slate-400">useTabletDenseMode</code>
+      </article>
+      <article class="panel-soft space-y-1">
+        <p class="text-sm font-semibold text-white">Keyboard shortcuts</p>
+        <p class="text-xs text-slate-300">Expose a visible shortcut system for layout trust and operator training.</p>
+        <code class="text-[11px] text-slate-400">openShortcutOverlay</code>
+      </article>
+    </div>
+  </section>
+
+  {{> partials/mioui_layout_role_preset_bar.html}}
+  {{> partials/mioui_keyboard_pane_focus_map.html}}
+  {{> partials/mioui_persistent_pane_ratios.html}}
+  {{> partials/mioui_collapsed_rail_toggle_strip.html}}
+  {{> partials/mioui_responsive_dense_stack_layout.html}}
+  {{> partials/mioui_keyboard_shortcut_cheatsheet.html}}
+</section>

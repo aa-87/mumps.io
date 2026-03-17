@@ -1,0 +1,13 @@
+<section class="space-y-6">
+  <div class="grid gap-6 xl:grid-cols-[1.12fr_.88fr]">
+    <div class="space-y-6">
+      {{#checkboxGroup.fieldCatalog}}{{> partials/mioui_checkbox_group.html}}{{/checkboxGroup.fieldCatalog}}
+      {{#columnEditor.selectedFields}}{{> partials/mioui_column_order_editor.html}}{{/columnEditor.selectedFields}}
+    </div>
+    <div class="space-y-6">
+      {{#exportProfile.main}}{{> partials/mioui_export_profile_summary.html}}{{/exportProfile.main}}
+      {{#form.naming}}{{> partials/mioui_form.html}}{{/form.naming}}
+    </div>
+  </div>
+  {{#stickyFooter.profile}}{{> partials/mioui_sticky_action_footer.html}}{{/stickyFooter.profile}}
+</section>

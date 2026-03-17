@@ -1,0 +1,13 @@
+<section class="space-y-6">
+  <div class="grid gap-6 xl:grid-cols-[.92fr_1.08fr]">
+    <div class="space-y-6">
+      {{#traceSummary.main}}{{> partials/mioui_trace_summary.html}}{{/traceSummary.main}}
+      {{#detailCard.main}}{{> partials/mioui_detail_card.html}}{{/detailCard.main}}
+      {{#listGroup.main}}{{> partials/mioui_list_group.html}}{{/listGroup.main}}
+    </div>
+    <div class="space-y-6">
+      {{#timeline.main}}{{> partials/mioui_timeline.html}}{{/timeline.main}}
+      {{#traceTable.main}}{{> partials/mioui_trace_table.html}}{{/traceTable.main}}
+    </div>
+  </div>
+</section>

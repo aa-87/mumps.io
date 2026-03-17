@@ -1,0 +1,22 @@
+<section class="panel space-y-3">
+  <div>
+    <h2 class="text-lg font-semibold text-white">{{mapTitle}}</h2>
+    <p class="text-sm text-slate-300">{{mapLead}}</p>
+  </div>
+  <div class="overflow-hidden rounded-2xl border border-slate-800">
+    <table class="min-w-full divide-y divide-slate-800 text-sm">
+      <thead class="bg-slate-950/70 text-left text-slate-300">
+        <tr><th class="px-4 py-3">Route</th><th class="px-4 py-3">Shell</th><th class="px-4 py-3">Callback</th></tr>
+      </thead>
+      <tbody class="divide-y divide-slate-800 bg-slate-950/40">
+        {{#routeMap}}
+        <tr>
+          <td class="px-4 py-3"><div class="font-medium text-white">{{label}}</div><div class="text-xs text-slate-400">{{route}}</div></td>
+          <td class="px-4 py-3 text-slate-300">{{layout}}</td>
+          <td class="px-4 py-3 text-xs text-sky-300">{{callback}}</td>
+        </tr>
+        {{/routeMap}}
+      </tbody>
+    </table>
+  </div>
+</section>

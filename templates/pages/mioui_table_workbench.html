@@ -1,0 +1,24 @@
+<div class="space-y-6">
+  <section class="panel p-5">
+    <div class="section-kicker">Detailed table workbench</div>
+    <h2 class="text-xl font-semibold">Very large table control plane</h2>
+    <p class="mt-2 muted">Use these combined elements around large-table and million-row queue surfaces. Keep filtering, export, selection, and drill-in state explicit and server-owned.</p>
+  </section>
+
+  <section class="panel p-5 space-y-4">
+    <h2 class="text-lg font-semibold">Queue metrics</h2>
+    {{> partials/mioui_table_metric_bar.html}}
+  </section>
+
+  <div class="grid gap-6 xl:grid-cols-[1.25fr_.95fr]">
+    <section class="panel p-5 space-y-4">
+      {{> partials/mioui_table_query_builder.html}}
+      {{> partials/mioui_table_saved_view_manager.html}}
+      {{> partials/mioui_table_export_current_view.html}}
+    </section>
+    <section class="panel p-5 space-y-4">
+      {{> partials/mioui_table_bulk_action_drawer.html}}
+      {{> partials/mioui_row_inspector.html}}
+    </section>
+  </div>
+</div>

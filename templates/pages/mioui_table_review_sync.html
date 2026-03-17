@@ -1,0 +1,17 @@
+<section class="space-y-6">
+  <div class="panel">
+    <div class="section-kicker">Review and synchronization</div>
+    <h2 class="text-2xl font-semibold">{{syncTitle}}</h2>
+    <p class="mt-2 text-sm text-slate-300">{{syncLead}}</p>
+  </div>
+
+  {{> partials/mioui_facet_bar.html}}
+
+  <div class="grid gap-4 xl:grid-cols-2">
+    {{> partials/mioui_inline_cell_notes.html}}
+    {{> partials/mioui_width_preset_pack.html}}
+  </div>
+
+  {{> partials/mioui_compare_rows_surface.html}}
+  {{> partials/mioui_split_grid_trace_sync.html}}
+</section>

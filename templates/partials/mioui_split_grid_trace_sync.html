@@ -1,0 +1,37 @@
+<div class="panel space-y-4">
+  <div>
+    <div class="section-kicker">Synchronization</div>
+    <h3 class="text-xl font-semibold">{{sync.splitTitle}}</h3>
+    <p class="mt-2 text-sm text-slate-300">{{sync.splitLead}}</p>
+  </div>
+  <div class="grid gap-4 xl:grid-cols-[1.25fr_1fr]">
+    <div class="space-y-2">
+      <div class="text-xs uppercase tracking-wide muted">Grid rows</div>
+      {{#sync.split.row}}
+      <div class="panel-soft rounded-2xl border p-3 {{rowClass}}">
+        <div class="flex items-center justify-between gap-3">
+          <div class="font-medium">{{claim}}</div>
+          <span class="badge badge-slate">{{status}}</span>
+        </div>
+        <div class="mt-1 text-sm text-slate-300">Procedure {{code}}</div>
+      </div>
+      {{/sync.split.row}}
+    </div>
+    <div class="space-y-2">
+      <div class="flex items-center justify-between gap-3">
+        <div class="text-xs uppercase tracking-wide muted">Trace steps</div>
+        <span class="badge badge-sky">{{sync.split.callbackA}}</span>
+      </div>
+      {{#sync.split.trace}}
+      <div class="panel-soft rounded-2xl border border-white/10 p-3">
+        <div class="flex items-center justify-between gap-3">
+          <div class="font-medium">{{label}}</div>
+          <span class="badge badge-slate">{{callback}}</span>
+        </div>
+        <div class="mt-1 text-sm text-slate-300">{{detail}}</div>
+      </div>
+      {{/sync.split.trace}}
+      <div class="text-xs text-slate-400">Callback bridge: {{sync.split.callbackB}}</div>
+    </div>
+  </div>
+</div>

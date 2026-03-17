@@ -1,0 +1,25 @@
+<div class="panel rounded-[1.45rem] p-5" id="inline-diff-card">
+  <div class="section-kicker">Inline diff card</div>
+  <h2 class="mt-2 text-lg font-semibold">{{title}}</h2>
+  <p class="mt-2 text-sm muted">{{lead}}</p>
+  <div class="mt-4 space-y-3">
+    {{#row}}
+    <div class="panel-soft rounded-2xl p-4">
+      <div class="flex items-center justify-between gap-3">
+        <div class="stat-label">{{label}}</div>
+        <span class="{{badgeClass}}">{{stateLabel}}</span>
+      </div>
+      <div class="mt-3 grid gap-3 sm:grid-cols-2">
+        <div>
+          <div class="stat-label">Before</div>
+          <div class="mt-1 text-sm font-medium break-all">{{before}}</div>
+        </div>
+        <div>
+          <div class="stat-label">After</div>
+          <div class="mt-1 text-sm font-medium break-all">{{after}}</div>
+        </div>
+      </div>
+    </div>
+    {{/row}}
+  </div>
+</div>

@@ -1,0 +1,28 @@
+<section class="panel space-y-3">
+  <div>
+    <h2 class="text-lg font-semibold text-white">{{routeTitle}}</h2>
+    <p class="text-sm text-slate-300">{{routeLead}}</p>
+  </div>
+  <div class="overflow-hidden rounded-2xl border border-slate-800">
+    <table class="min-w-full text-sm">
+      <thead class="bg-slate-900/70 text-slate-300">
+        <tr>
+          <th class="px-3 py-2 text-left">Route</th>
+          <th class="px-3 py-2 text-left">Pane ratio</th>
+          <th class="px-3 py-2 text-left">Restored state</th>
+          <th class="px-3 py-2 text-left">Callback</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#routePersist}}
+        <tr class="border-t border-slate-800/80 text-slate-200">
+          <td class="px-3 py-2 font-mono text-xs">{{route}}</td>
+          <td class="px-3 py-2">{{ratio}}</td>
+          <td class="px-3 py-2">{{state}}</td>
+          <td class="px-3 py-2"><code class="text-[11px] text-sky-300">{{callback}}</code></td>
+        </tr>
+        {{/routePersist}}
+      </tbody>
+    </table>
+  </div>
+</section>

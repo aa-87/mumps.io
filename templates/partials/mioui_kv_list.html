@@ -1,0 +1,12 @@
+<div class="panel rounded-[1.45rem] p-5">
+  <div class="section-kicker">Detail</div>
+  <h2 class="mt-2 text-lg font-semibold">Key details</h2>
+  <dl class="mt-4 grid gap-3 sm:grid-cols-2">
+    {{#detail}}
+    <div class="panel-soft rounded-2xl p-4">
+      <dt class="stat-label">{{label}}</dt>
+      <dd class="mt-2 text-sm font-medium">{{value}}</dd>
+    </div>
+    {{/detail}}
+  </dl>
+</div>

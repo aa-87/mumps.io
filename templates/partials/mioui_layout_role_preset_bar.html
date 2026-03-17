@@ -1,0 +1,23 @@
+<section class="panel space-y-3">
+  <div>
+    <h2 class="text-lg font-semibold text-white">{{presetTitle}}</h2>
+    <p class="text-sm text-slate-300">{{presetLead}}</p>
+  </div>
+  <div class="flex flex-wrap gap-2">
+    {{#preset}}
+    <button class="{{class}}">{{role}}</button>
+    {{/preset}}
+  </div>
+  <div class="grid gap-3 xl:grid-cols-5 md:grid-cols-2">
+    {{#preset}}
+    <article class="panel-soft space-y-1">
+      <p class="text-sm font-semibold text-white">{{role}}</p>
+      <p class="text-xs text-slate-300">{{task}} · {{layout}}</p>
+      <div class="flex items-center justify-between text-[11px] text-slate-400">
+        <span>{{hint}}</span>
+        <code>{{callback}}</code>
+      </div>
+    </article>
+    {{/preset}}
+  </div>
+</section>

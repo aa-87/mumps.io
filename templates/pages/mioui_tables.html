@@ -1,0 +1,12 @@
+<section class="space-y-6">
+  {{#table.claims}}
+  <div class="space-y-4">
+    {{> partials/mioui_table_toolbar.html}}
+    {{> partials/mioui_table_filters.html}}
+    {{> partials/mioui_table_bulkbar.html}}
+    {{> partials/mioui_table.html}}
+    {{> partials/mioui_table_pager.html}}
+  </div>
+  {{/table.claims}}
+  {{#table.audit}}{{> partials/mioui_table.html}}{{/table.audit}}
+</section>

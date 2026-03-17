@@ -1,0 +1,25 @@
+<div class="space-y-3">
+  <div>
+    <h3 class="text-lg font-semibold">{{workbench.export.title}}</h3>
+    <p class="mt-1 muted">{{workbench.export.summary}}</p>
+  </div>
+  <div class="panel-soft p-4 rounded-2xl border border-white/10 space-y-3 text-sm">
+    <div>
+      <div class="text-xs uppercase tracking-wide muted">Query</div>
+      <div class="mt-1 font-medium break-words">{{workbench.export.query}}</div>
+    </div>
+    <div>
+      <div class="text-xs uppercase tracking-wide muted">Sort stack</div>
+      <div class="mt-1 font-medium">{{workbench.export.sort}}</div>
+    </div>
+    <div>
+      <div class="text-xs uppercase tracking-wide muted">Visible columns</div>
+      <div class="mt-1 font-medium">{{workbench.export.columns}}</div>
+    </div>
+  </div>
+  <div class="flex flex-wrap gap-2">
+    {{#workbench.export.action}}
+    <a href="{{href}}" data-callback="{{callback}}" class="{{class}}">{{label}}</a>
+    {{/workbench.export.action}}
+  </div>
+</div>

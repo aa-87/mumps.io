@@ -1,0 +1,28 @@
+<div class="panel rounded-[1.45rem] p-5" id="staging-dropzone">
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <div>
+      <div class="section-kicker">File staging</div>
+      <h2 class="mt-2 text-lg font-semibold">{{title}}</h2>
+      <p class="mt-2 text-sm muted">{{prompt}}</p>
+    </div>
+    <span class="badge badge-sky">{{summary}}</span>
+  </div>
+  <div class="mt-4 rounded-[1.35rem] border border-dashed border-slate-400/30 panel-soft px-5 py-6 text-center">
+    <div class="text-sm font-semibold">Drop files here</div>
+    <div class="mt-2 text-sm muted">Accepted: {{acceptedTypes}}</div>
+    <div class="mt-1 text-xs muted">{{help}}</div>
+  </div>
+  <div class="mt-4 space-y-3">
+    {{#file}}
+    <div class="panel-soft rounded-2xl p-4">
+      <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <div class="text-sm font-semibold break-all">{{name}}</div>
+          <div class="mt-1 text-xs muted">{{size}}</div>
+        </div>
+        <span class="badge {{badgeClass}}">{{status}}</span>
+      </div>
+    </div>
+    {{/file}}
+  </div>
+</div>
