@@ -18,6 +18,7 @@ REG(CONF)
 	D REG1("GET","/mioui/million-table","MILLIONTABLE^MIOUIDEMO",.META)
 	D REG1("GET","/mioui/code-menus","CODEMENUS^MIOUIDEMO",.META)
 	D REG1("GET","/mioui/charts","CHARTS^MIOUIDEMO",.META)
+	D REG1("GET","/mioui/collaboration","COLLAB^MIOUIDEMO",.META)
 	Q
 	;
 REG1(METHOD,PATH,TARGET,META)
@@ -135,6 +136,14 @@ CHARTS(DEV,CONF,REQ,CTX)
 	N TCTX,OUT,ERR
 	D BUILDCHARTS(.CONF,.REQ,.CTX,.TCTX)
 	D RENDER("pages/mioui_chart_variants.html",.CONF,.CTX,.TCTX,.OUT,.ERR)
+	I $D(ERR) D RESPERR(.DEV,.CONF,.CTX,500,"template_error") Q
+	D RESPHTML(.DEV,.CONF,.CTX,.OUT)
+	Q
+	;
+COLLAB(DEV,CONF,REQ,CTX)
+	N TCTX,OUT,ERR
+	D BUILDCOLLAB(.CONF,.REQ,.CTX,.TCTX)
+	D RENDER("pages/mioui_collaboration.html",.CONF,.CTX,.TCTX,.OUT,.ERR)
 	I $D(ERR) D RESPERR(.DEV,.CONF,.CTX,500,"template_error") Q
 	D RESPHTML(.DEV,.CONF,.CTX,.OUT)
 	Q
@@ -463,6 +472,482 @@ BUILDCHARTS(CONF,REQ,CTX,TCTX)
 	S TCTX("spark","row",1,"metric")="Days in A/R" S TCTX("spark","row",1,"value")="31.2" S TCTX("spark","row",1,"delta")="-1.8" S TCTX("spark","row",1,"polyline")="4,20 24,22 44,18 64,16 84,14 104,12"
 	S TCTX("spark","row",2,"metric")="Net collection" S TCTX("spark","row",2,"value")="94.1%" S TCTX("spark","row",2,"delta")="+0.7" S TCTX("spark","row",2,"polyline")="4,24 24,23 44,20 64,18 84,15 104,11"
 	S TCTX("spark","row",3,"metric")="Denial rate" S TCTX("spark","row",3,"value")="6.4%" S TCTX("spark","row",3,"delta")="-0.4" S TCTX("spark","row",3,"polyline")="4,12 24,14 44,16 64,18 84,19 104,21"
+	Q
+	;
+	;
+BUILDCOLLAB(CONF,REQ,CTX,TCTX)
+	D BASE^MIOUICTX(.TCTX)
+	D APPLY^MIOUITHEME(.CONF,.TCTX)
+	D ACT^MIOUICTX(.TCTX,"collaboration")
+	D PAGE^MIOUICTX(.TCTX,"MIOUI / Collaboration","Presence, chat, and workspace variants","Reusable SSR collaboration surfaces for avatars, presence, connected users, conversation rails, workspaces, and operator-friendly composer patterns.","Collaboration lab")
+	S TCTX("pageTitle")="Presence, conversation, and workspace variants"
+	S TCTX("pageIntro")="Foundation collaboration surfaces for identity, presence, connected users, participant rows, operator-friendly user bubbles, message primitives, and full workspace layouts. This page stays SSR-first and reusable so later thread, activity, roster, and composite collaboration ROIs can compose the same primitives without turning MIOUI into a consumer social product."
+	S TCTX("heroCallback")="openPresencePanel"
+	S TCTX("collabStat",1,"label")="Presence states"
+	S TCTX("collabStat",1,"value")=5
+	S TCTX("collabStat",2,"label")="Avatar sizes"
+	S TCTX("collabStat",2,"value")=5
+	S TCTX("collabStat",3,"label")="Bubble variants"
+	S TCTX("collabStat",3,"value")=6
+	S TCTX("collabStat",4,"label")="Connected users"
+	S TCTX("collabStat",4,"value")=18
+	S TCTX("collabStat",5,"label")="Active rooms"
+	S TCTX("collabStat",5,"value")=4
+	S TCTX("collabStat",6,"label")="Participant roles"
+	S TCTX("collabStat",6,"value")=7
+	S TCTX("collabStat",7,"label")="Conversations"
+	S TCTX("collabStat",7,"value")=12
+	S TCTX("collabStat",8,"label")="Unread threads"
+	S TCTX("collabStat",8,"value")=4
+	S TCTX("collabStat",9,"label")="Workspace layouts"
+	S TCTX("collabStat",9,"value")=2
+	S TCTX("collabStat",10,"label")="Composer variants"
+	S TCTX("collabStat",10,"value")=5
+	S TCTX("collabCallback",1,"token")="openUserCard"
+	S TCTX("collabCallback",2,"token")="openPresencePanel"
+	S TCTX("collabCallback",3,"token")="filterConnectedUsers"
+	S TCTX("collabCallback",4,"token")="toggleAvailability"
+	S TCTX("collabCallback",5,"token")="viewParticipantGroup"
+	S TCTX("collabCallback",6,"token")="startDirectThread"
+	S TCTX("collabCallback",7,"token")="viewWorkspaceRoster"
+	S TCTX("collabCallback",8,"token")="openConversation"
+	S TCTX("collabCallback",9,"token")="sendMessage"
+	S TCTX("collabCallback",10,"token")="attachFile"
+	S TCTX("collabCallback",11,"token")="replyToMessage"
+	S TCTX("collabCallback",12,"token")="toggleReaction"
+	S TCTX("collabCallback",13,"token")="pinConversation"
+	S TCTX("collabCallback",14,"token")="muteConversation"
+	S TCTX("collabCallback",15,"token")="sendQuickReply"
+	S TCTX("collabCallback",16,"token")="sendInternalNote"
+	S TCTX("collabCallback",17,"token")="insertMessageTemplate"
+	S TCTX("collabCallback",18,"token")="openContextPanel"
+	S TCTX("collabCallback",19,"token")="openEscalationThread"
+	S TCTX("collabCallback",20,"token")="toggleSharedVisibility"
+	S TCTX("avatarDemo",1,"label")="XS"
+	S TCTX("avatarDemo",1,"sizeClass")="presence-avatar-xs"
+	S TCTX("avatarDemo",1,"initials")="AJ"
+	S TCTX("avatarDemo",1,"statusClass")="avatar-ring-online"
+	S TCTX("avatarDemo",1,"dotClass")="state-online"
+	S TCTX("avatarDemo",2,"label")="SM"
+	S TCTX("avatarDemo",2,"sizeClass")="presence-avatar-sm"
+	S TCTX("avatarDemo",2,"initials")="BM"
+	S TCTX("avatarDemo",2,"statusClass")="avatar-ring-away"
+	S TCTX("avatarDemo",2,"dotClass")="state-away"
+	S TCTX("avatarDemo",3,"label")="MD"
+	S TCTX("avatarDemo",3,"sizeClass")="presence-avatar-md"
+	S TCTX("avatarDemo",3,"initials")="CR"
+	S TCTX("avatarDemo",3,"statusClass")="avatar-ring-busy"
+	S TCTX("avatarDemo",3,"dotClass")="state-busy"
+	S TCTX("avatarDemo",4,"label")="LG"
+	S TCTX("avatarDemo",4,"sizeClass")="presence-avatar-lg"
+	S TCTX("avatarDemo",4,"initials")="DT"
+	S TCTX("avatarDemo",4,"statusClass")="avatar-ring-offline"
+	S TCTX("avatarDemo",4,"dotClass")="state-offline"
+	S TCTX("avatarDemo",5,"label")="XL"
+	S TCTX("avatarDemo",5,"sizeClass")="presence-avatar-xl"
+	S TCTX("avatarDemo",5,"initials")="EM"
+	S TCTX("avatarDemo",5,"statusClass")="avatar-ring-dnd"
+	S TCTX("avatarDemo",5,"dotClass")="state-dnd"
+	S TCTX("photoDemo",1,"name")="Amina Jordan"
+	S TCTX("photoDemo",1,"role")="Collector"
+	S TCTX("photoDemo",1,"initials")="AJ"
+	S TCTX("photoDemo",1,"avatarClass")="avatar-photo-sky"
+	S TCTX("photoDemo",1,"statusClass")="avatar-ring-online"
+	S TCTX("photoDemo",1,"dotClass")="state-online"
+	S TCTX("photoDemo",2,"name")="Brett Miles"
+	S TCTX("photoDemo",2,"role")="Biller"
+	S TCTX("photoDemo",2,"initials")="BM"
+	S TCTX("photoDemo",2,"avatarClass")="avatar-photo-violet"
+	S TCTX("photoDemo",2,"statusClass")="avatar-ring-away"
+	S TCTX("photoDemo",2,"dotClass")="state-away"
+	S TCTX("photoDemo",3,"name")="Carla Ruiz"
+	S TCTX("photoDemo",3,"role")="Manager"
+	S TCTX("photoDemo",3,"initials")="CR"
+	S TCTX("photoDemo",3,"avatarClass")="avatar-photo-emerald"
+	S TCTX("photoDemo",3,"statusClass")="avatar-ring-busy"
+	S TCTX("photoDemo",3,"dotClass")="state-busy"
+	S TCTX("presenceState",1,"label")="Online"
+	S TCTX("presenceState",1,"desc")="Ready for direct collaboration now."
+	S TCTX("presenceState",1,"statusClass")="avatar-ring-online"
+	S TCTX("presenceState",1,"dotClass")="state-online"
+	S TCTX("presenceState",2,"label")="Away"
+	S TCTX("presenceState",2,"desc")="Temporarily idle but still reachable."
+	S TCTX("presenceState",2,"statusClass")="avatar-ring-away"
+	S TCTX("presenceState",2,"dotClass")="state-away"
+	S TCTX("presenceState",3,"label")="Busy"
+	S TCTX("presenceState",3,"desc")="Working a live case or review window."
+	S TCTX("presenceState",3,"statusClass")="avatar-ring-busy"
+	S TCTX("presenceState",3,"dotClass")="state-busy"
+	S TCTX("presenceState",4,"label")="Offline"
+	S TCTX("presenceState",4,"desc")="Not currently connected to the workspace."
+	S TCTX("presenceState",4,"statusClass")="avatar-ring-offline"
+	S TCTX("presenceState",4,"dotClass")="state-offline"
+	S TCTX("presenceState",5,"label")="Do not disturb"
+	S TCTX("presenceState",5,"desc")="Suppress routine interruptions except escalations."
+	S TCTX("presenceState",5,"statusClass")="avatar-ring-dnd"
+	S TCTX("presenceState",5,"dotClass")="state-dnd"
+	S TCTX("bubbleCompact",1,"name")="Amina Jordan"
+	S TCTX("bubbleCompact",1,"role")="Collector"
+	S TCTX("bubbleCompact",1,"initials")="AJ"
+	S TCTX("bubbleCompact",1,"statusClass")="avatar-ring-online"
+	S TCTX("bubbleCompact",2,"name")="Brett Miles"
+	S TCTX("bubbleCompact",2,"role")="Appeals"
+	S TCTX("bubbleCompact",2,"initials")="BM"
+	S TCTX("bubbleCompact",2,"statusClass")="avatar-ring-away"
+	S TCTX("bubbleCompact",3,"name")="Carla Ruiz"
+	S TCTX("bubbleCompact",3,"role")="Manager"
+	S TCTX("bubbleCompact",3,"initials")="CR"
+	S TCTX("bubbleCompact",3,"statusClass")="avatar-ring-busy"
+	S TCTX("personaChip",1,"label")="Owner"
+	S TCTX("personaChip",1,"toneClass")="persona-chip-sky"
+	S TCTX("personaChip",2,"label")="Moderator"
+	S TCTX("personaChip",2,"toneClass")="persona-chip-violet"
+	S TCTX("personaChip",3,"label")="Supervisor"
+	S TCTX("personaChip",3,"toneClass")="persona-chip-emerald"
+	S TCTX("personaChip",4,"label")="External reviewer"
+	S TCTX("personaChip",4,"toneClass")="persona-chip-amber"
+	S TCTX("tagBubble",1,"name")="Daria Tran"
+	S TCTX("tagBubble",1,"role")="QA reviewer"
+	S TCTX("tagBubble",1,"badge")="Moderator"
+	S TCTX("tagBubble",1,"initials")="DT"
+	S TCTX("tagBubble",1,"statusClass")="avatar-ring-online"
+	S TCTX("tagBubble",2,"name")="Eli Mercer"
+	S TCTX("tagBubble",2,"role")="Shift lead"
+	S TCTX("tagBubble",2,"badge")="Owner"
+	S TCTX("tagBubble",2,"initials")="EM"
+	S TCTX("tagBubble",2,"statusClass")="avatar-ring-dnd"
+	S TCTX("stacked",1,"initials")="AJ"
+	S TCTX("stacked",1,"statusClass")="avatar-ring-online"
+	S TCTX("stacked",2,"initials")="BM"
+	S TCTX("stacked",2,"statusClass")="avatar-ring-away"
+	S TCTX("stacked",3,"initials")="CR"
+	S TCTX("stacked",3,"statusClass")="avatar-ring-busy"
+	S TCTX("stacked",4,"initials")="DT"
+	S TCTX("stacked",4,"statusClass")="avatar-ring-online"
+	S TCTX("stacked",5,"initials")="EM"
+	S TCTX("stacked",5,"statusClass")="avatar-ring-dnd"
+	S TCTX("connected",1,"name")="Amina Jordan"
+	S TCTX("connected",1,"role")="Collector"
+	S TCTX("connected",1,"zone")="ET"
+	S TCTX("connected",1,"status")="Online"
+	S TCTX("connected",1,"initials")="AJ"
+	S TCTX("connected",1,"statusClass")="avatar-ring-online"
+	S TCTX("connected",2,"name")="Brett Miles"
+	S TCTX("connected",2,"role")="Biller"
+	S TCTX("connected",2,"zone")="CT"
+	S TCTX("connected",2,"status")="Away"
+	S TCTX("connected",2,"initials")="BM"
+	S TCTX("connected",2,"statusClass")="avatar-ring-away"
+	S TCTX("connected",3,"name")="Carla Ruiz"
+	S TCTX("connected",3,"role")="Manager"
+	S TCTX("connected",3,"zone")="MT"
+	S TCTX("connected",3,"status")="Busy"
+	S TCTX("connected",3,"initials")="CR"
+	S TCTX("connected",3,"statusClass")="avatar-ring-busy"
+	S TCTX("connected",4,"name")="Daria Tran"
+	S TCTX("connected",4,"role")="QA reviewer"
+	S TCTX("connected",4,"zone")="PT"
+	S TCTX("connected",4,"status")="Online"
+	S TCTX("connected",4,"initials")="DT"
+	S TCTX("connected",4,"statusClass")="avatar-ring-online"
+	S TCTX("connected",5,"name")="Eli Mercer"
+	S TCTX("connected",5,"role")="Supervisor"
+	S TCTX("connected",5,"zone")="ET"
+	S TCTX("connected",5,"status")="DND"
+	S TCTX("connected",5,"initials")="EM"
+	S TCTX("connected",5,"statusClass")="avatar-ring-dnd"
+	S TCTX("participant",1,"name")="Amina Jordan"
+	S TCTX("participant",1,"role")="Collector"
+	S TCTX("participant",1,"initials")="AJ"
+	S TCTX("participant",1,"statusClass")="avatar-ring-online"
+	S TCTX("participant",1,"team")="Commercial denials"
+	S TCTX("participant",1,"timezone")="America/New_York"
+	S TCTX("participant",1,"lastActive")="Active now"
+	S TCTX("participant",1,"workload")="14 active follow-ups"
+	S TCTX("participant",1,"signal")="Typing"
+	S TCTX("participant",1,"signalClass")="signal-live"
+	S TCTX("participant",2,"name")="Brett Miles"
+	S TCTX("participant",2,"role")="Biller"
+	S TCTX("participant",2,"initials")="BM"
+	S TCTX("participant",2,"statusClass")="avatar-ring-away"
+	S TCTX("participant",2,"team")="Government follow-up"
+	S TCTX("participant",2,"timezone")="America/Chicago"
+	S TCTX("participant",2,"lastActive")="Seen 6m ago"
+	S TCTX("participant",2,"workload")="9 queued corrections"
+	S TCTX("participant",2,"signal")="Reviewing"
+	S TCTX("participant",2,"signalClass")="signal-review"
+	S TCTX("participant",3,"name")="Carla Ruiz"
+	S TCTX("participant",3,"role")="Manager"
+	S TCTX("participant",3,"initials")="CR"
+	S TCTX("participant",3,"statusClass")="avatar-ring-busy"
+	S TCTX("participant",3,"team")="Revenue cycle oversight"
+	S TCTX("participant",3,"timezone")="America/Denver"
+	S TCTX("participant",3,"lastActive")="In escalation room"
+	S TCTX("participant",3,"workload")="3 live escalations"
+	S TCTX("participant",3,"signal")="Escalation"
+	S TCTX("participant",3,"signalClass")="signal-alert"
+	S TCTX("participant",4,"name")="Daria Tran"
+	S TCTX("participant",4,"role")="QA reviewer"
+	S TCTX("participant",4,"initials")="DT"
+	S TCTX("participant",4,"statusClass")="avatar-ring-online"
+	S TCTX("participant",4,"team")="Documentation QA"
+	S TCTX("participant",4,"timezone")="America/Los_Angeles"
+	S TCTX("participant",4,"lastActive")="Active now"
+	S TCTX("participant",4,"workload")="5 pending validations"
+	S TCTX("participant",4,"signal")="Available"
+	S TCTX("participant",4,"signalClass")="signal-live"
+	S TCTX("userCard",1,"name")="Amina Jordan"
+	S TCTX("userCard",1,"role")="Collector"
+	S TCTX("userCard",1,"team")="Commercial denials pod"
+	S TCTX("userCard",1,"timezone")="America/New_York"
+	S TCTX("userCard",1,"lastActive")="Active now"
+	S TCTX("userCard",1,"workload")="14 active follow-ups / 3 waiting for payer response"
+	S TCTX("userCard",1,"initials")="AJ"
+	S TCTX("userCard",1,"statusClass")="avatar-ring-online"
+	S TCTX("userCard",1,"badge")="Owner"
+	S TCTX("userCard",2,"name")="Brett Miles"
+	S TCTX("userCard",2,"role")="Biller"
+	S TCTX("userCard",2,"team")="Government claims pod"
+	S TCTX("userCard",2,"timezone")="America/Chicago"
+	S TCTX("userCard",2,"lastActive")="Seen 6m ago"
+	S TCTX("userCard",2,"workload")="9 claim edits / 2 returns to provider"
+	S TCTX("userCard",2,"initials")="BM"
+	S TCTX("userCard",2,"statusClass")="avatar-ring-away"
+	S TCTX("userCard",2,"badge")="Moderator"
+	S TCTX("userCard",3,"name")="Carla Ruiz"
+	S TCTX("userCard",3,"role")="Manager"
+	S TCTX("userCard",3,"team")="Revenue cycle leadership"
+	S TCTX("userCard",3,"timezone")="America/Denver"
+	S TCTX("userCard",3,"lastActive")="In escalation room"
+	S TCTX("userCard",3,"workload")="3 live escalations / 1 staffing review"
+	S TCTX("userCard",3,"initials")="CR"
+	S TCTX("userCard",3,"statusClass")="avatar-ring-busy"
+	S TCTX("userCard",3,"badge")="Supervisor"
+	S TCTX("conversationFilter",1,"label")="Unread conversations"
+	S TCTX("conversationFilter",1,"count")=4
+	S TCTX("conversationFilter",2,"label")="Pinned"
+	S TCTX("conversationFilter",2,"count")=3
+	S TCTX("conversationFilter",3,"label")="Drafts"
+	S TCTX("conversationFilter",3,"count")=2
+	S TCTX("conversationFilter",4,"label")="Muted"
+	S TCTX("conversationFilter",4,"count")=1
+	S TCTX("conversationRow",1,"name")="Denial escalation pod"
+	S TCTX("conversationRow",1,"role")="Room / 6 participants"
+	S TCTX("conversationRow",1,"summary")="Manager requested payer-call summary before 3:30 PM handoff."
+	S TCTX("conversationRow",1,"time")="2m"
+	S TCTX("conversationRow",1,"unread")=3
+	S TCTX("conversationRow",1,"isPinned")=1
+	S TCTX("conversationRow",1,"initials")="DE"
+	S TCTX("conversationRow",1,"statusClass")="avatar-ring-busy"
+	S TCTX("conversationRow",2,"name")="Amina Jordan"
+	S TCTX("conversationRow",2,"role")="Collector"
+	S TCTX("conversationRow",2,"summary")="I attached the corrected eligibility notes and payer reference ID."
+	S TCTX("conversationRow",2,"time")="8m"
+	S TCTX("conversationRow",2,"unread")=1
+	S TCTX("conversationRow",2,"hasDraft")=1
+	S TCTX("conversationRow",2,"draftText")="Draft saved"
+	S TCTX("conversationRow",2,"initials")="AJ"
+	S TCTX("conversationRow",2,"statusClass")="avatar-ring-online"
+	S TCTX("conversationRow",3,"name")="CARC 197 crosswalk review"
+	S TCTX("conversationRow",3,"role")="Review thread"
+	S TCTX("conversationRow",3,"summary")="Quoted message linked to the latest code-menu retirement review."
+	S TCTX("conversationRow",3,"time")="21m"
+	S TCTX("conversationRow",3,"isPinned")=1
+	S TCTX("conversationRow",3,"initials")="C1"
+	S TCTX("conversationRow",3,"statusClass")="avatar-ring-away"
+	S TCTX("conversationRow",4,"name")="Brett Miles"
+	S TCTX("conversationRow",4,"role")="Biller"
+	S TCTX("conversationRow",4,"summary")="Can we reuse the 02/14 appeal packet for the follow-up call?"
+	S TCTX("conversationRow",4,"time")="53m"
+	S TCTX("conversationRow",4,"hasMuted")=1
+	S TCTX("conversationRow",4,"mutedText")="Muted"
+	S TCTX("conversationRow",4,"initials")="BM"
+	S TCTX("conversationRow",4,"statusClass")="avatar-ring-away"
+	S TCTX("conversationRow",5,"name")="Manager staffing review"
+	S TCTX("conversationRow",5,"role")="Escalation room"
+	S TCTX("conversationRow",5,"summary")="Unread separator moved above the last staffing note after reconnect."
+	S TCTX("conversationRow",5,"time")="1h"
+	S TCTX("conversationRow",5,"unread")=6
+	S TCTX("conversationRow",5,"initials")="MS"
+	S TCTX("conversationRow",5,"statusClass")="avatar-ring-dnd"
+	S TCTX("transcriptRow",1,"isDay")=1
+	S TCTX("transcriptRow",1,"markerText")="Today / Tuesday"
+	S TCTX("transcriptRow",2,"isSystem")=1
+	S TCTX("transcriptRow",2,"markerText")="System event message"
+	S TCTX("transcriptRow",2,"body")="Carla Ruiz reassigned payer-call ownership to the denial escalation pod."
+	S TCTX("transcriptRow",3,"isIncoming")=1
+	S TCTX("transcriptRow",3,"initials")="AJ"
+	S TCTX("transcriptRow",3,"statusClass")="avatar-ring-online"
+	S TCTX("transcriptRow",3,"author")="Amina Jordan"
+	S TCTX("transcriptRow",3,"meta")="Collector · 2:11 PM"
+	S TCTX("transcriptRow",3,"body")="I pulled the eligibility notes into one message so the next caller does not need to reopen three different tabs."
+	S TCTX("transcriptRow",3,"hasReactions")=1
+	S TCTX("transcriptRow",3,"reactionText")="👍 3   👀 1"
+	S TCTX("transcriptRow",4,"isOutgoing")=1
+	S TCTX("transcriptRow",4,"author")="You"
+	S TCTX("transcriptRow",4,"meta")="2:13 PM"
+	S TCTX("transcriptRow",4,"body")="Good. Attach the payer reference and I will pin this thread for the shift handoff."
+	S TCTX("transcriptRow",4,"showReceipt")=1
+	S TCTX("transcriptRow",4,"receiptText")="Seen by 4 participants"
+	S TCTX("transcriptRow",5,"isUnread")=1
+	S TCTX("transcriptRow",5,"markerText")="Unread messages"
+	S TCTX("transcriptRow",6,"isIncoming")=1
+	S TCTX("transcriptRow",6,"initials")="BM"
+	S TCTX("transcriptRow",6,"statusClass")="avatar-ring-away"
+	S TCTX("transcriptRow",6,"author")="Brett Miles"
+	S TCTX("transcriptRow",6,"meta")="Biller · 2:17 PM"
+	S TCTX("transcriptRow",6,"body")="Replying to the handoff note now. I also quoted the previous appeal packet so QA can compare wording."
+	S TCTX("transcriptRow",6,"hasReply")=1
+	S TCTX("transcriptRow",6,"replyAuthor")="Amina Jordan"
+	S TCTX("transcriptRow",6,"replyText")="Attach the payer reference and I will pin this thread for the shift handoff."
+	S TCTX("transcriptRow",6,"hasAttachment")=1
+	S TCTX("transcriptRow",6,"attachmentName")="payer-call-summary.pdf"
+	S TCTX("transcriptRow",6,"attachmentMeta")="PDF · 248 KB"
+	S TCTX("transcriptRow",6,"hasReactions")=1
+	S TCTX("transcriptRow",6,"reactionText")="✅ 2   📌 1"
+	S TCTX("transcriptRow",7,"isIncoming")=1
+	S TCTX("transcriptRow",7,"initials")="CR"
+	S TCTX("transcriptRow",7,"statusClass")="avatar-ring-busy"
+	S TCTX("transcriptRow",7,"author")="Carla Ruiz"
+	S TCTX("transcriptRow",7,"meta")="Manager · 2:19 PM"
+	S TCTX("transcriptRow",7,"body")="Pinned conversation. Keep the draft indicator visible until the supervisor follow-up is sent."
+	S TCTX("transcriptRow",7,"hasDelivery")=1
+	S TCTX("transcriptRow",7,"deliveryText")="Delivered to escalation room"
+	S TCTX("transcriptRow",8,"isOutgoing")=1
+	S TCTX("transcriptRow",8,"author")="You"
+	S TCTX("transcriptRow",8,"meta")="2:21 PM"
+	S TCTX("transcriptRow",8,"body")="Pinned and noted. I muted the low-priority room but kept this escalation thread live."
+	S TCTX("transcriptRow",8,"showReceipt")=1
+	S TCTX("transcriptRow",8,"receiptText")="Delivered"
+	S TCTX("messageVariant",1,"title")="Attachment tile"
+	S TCTX("messageVariant",1,"detail")="payer-call-summary.pdf · PDF · 248 KB"
+	S TCTX("messageVariant",1,"token")="attachFile"
+	S TCTX("messageVariant",1,"chipClass")="delivery-chip-neutral"
+	S TCTX("messageVariant",2,"title")="Reaction strip"
+	S TCTX("messageVariant",2,"detail")="👍 3 · ✅ 2 · 📌 1"
+	S TCTX("messageVariant",2,"token")="toggleReaction"
+	S TCTX("messageVariant",2,"chipClass")="delivery-chip-live"
+	S TCTX("messageVariant",3,"title")="Reply preview"
+	S TCTX("messageVariant",3,"detail")="Quoted payer-reference handoff above the new message bubble."
+	S TCTX("messageVariant",3,"token")="replyToMessage"
+	S TCTX("messageVariant",3,"chipClass")="delivery-chip-review"
+	S TCTX("messageVariant",4,"title")="Pinned conversation"
+	S TCTX("messageVariant",4,"detail")="Conversation list can show pin, mute, unread, and draft state simultaneously."
+	S TCTX("messageVariant",4,"token")="pinConversation"
+	S TCTX("messageVariant",4,"chipClass")="delivery-chip-alert"
+	S TCTX("deliveryState",1,"label")="Sent"
+	S TCTX("deliveryState",1,"value")="Queued to room"
+	S TCTX("deliveryState",1,"chipClass")="delivery-chip-neutral"
+	S TCTX("deliveryState",2,"label")="Delivered"
+	S TCTX("deliveryState",2,"value")="Delivered to escalation room"
+	S TCTX("deliveryState",2,"chipClass")="delivery-chip-live"
+	S TCTX("deliveryState",3,"label")="Read"
+	S TCTX("deliveryState",3,"value")="Seen by 4 participants"
+	S TCTX("deliveryState",3,"chipClass")="delivery-chip-review"
+	S TCTX("deliveryState",4,"label")="Muted room"
+	S TCTX("deliveryState",4,"value")="Low-priority room suppressed"
+	S TCTX("deliveryState",4,"chipClass")="delivery-chip-alert"
+	S TCTX("workspaceTwo",1,"title")="Two-pane chat workspace"
+	S TCTX("workspaceTwo",1,"desc")="Conversation rail on the left, active case discussion on the right, and a quick-reply composer anchored below the transcript."
+	S TCTX("workspaceTwo",1,"token")="sendQuickReply"
+	S TCTX("workspaceTwo",1,"token2")="openConversation"
+	S TCTX("workspaceTwo",1,"activeTitle")="Eligibility hold / patient follow-up"
+	S TCTX("workspaceTwo",1,"activeMeta")="Case room · 5 participants · last update 2:24 PM"
+	S TCTX("workspaceTwo",1,"draft")="Quick reply draft: payer callback scheduled for tomorrow morning."
+	S TCTX("workspaceTwoRail",1,"name")="Eligibility hold"
+	S TCTX("workspaceTwoRail",1,"meta")="3 unread · Payer call"
+	S TCTX("workspaceTwoRail",1,"active")=1
+	S TCTX("workspaceTwoRail",2,"name")="Missing modifier check"
+	S TCTX("workspaceTwoRail",2,"meta")="1 unread · QA review"
+	S TCTX("workspaceTwoRail",3,"name")="Appeal packet refresh"
+	S TCTX("workspaceTwoRail",3,"meta")="Pinned · Supervisor"
+	S TCTX("workspaceTwoEvent",1,"author")="Amina Jordan"
+	S TCTX("workspaceTwoEvent",1,"meta")="Collector · 2:18 PM"
+	S TCTX("workspaceTwoEvent",1,"body")="I confirmed the subscriber eligibility window and added the payer call reference in the room notes."
+	S TCTX("workspaceTwoEvent",2,"author")="You"
+	S TCTX("workspaceTwoEvent",2,"meta")="2:22 PM"
+	S TCTX("workspaceTwoEvent",2,"body")="Good. Send the callback plan in a quick reply so the next shift sees it without opening the full composer."
+	S TCTX("workspaceThree","title")="Three-pane collaboration workspace"
+	S TCTX("workspaceThree","desc")="Conversation list, active transcript, and participant/context side panel combined into one dense operator-friendly layout."
+	S TCTX("workspaceThree","token")="openContextPanel"
+	S TCTX("workspaceThree","token2")="openEscalationThread"
+	S TCTX("workspaceThreeList",1,"name")="Denial escalation"
+	S TCTX("workspaceThreeList",1,"meta")="Room · 6 participants"
+	S TCTX("workspaceThreeList",1,"active")=1
+	S TCTX("workspaceThreeList",2,"name")="Manager staffing review"
+	S TCTX("workspaceThreeList",2,"meta")="Escalation room"
+	S TCTX("workspaceThreeList",3,"name")="Code crosswalk QA"
+	S TCTX("workspaceThreeList",3,"meta")="Review thread"
+	S TCTX("workspaceThreeMsg",1,"author")="Carla Ruiz"
+	S TCTX("workspaceThreeMsg",1,"meta")="Manager · 2:31 PM"
+	S TCTX("workspaceThreeMsg",1,"body")="Keep the transcript focused on payer-call facts and move staffing detail into the internal note channel."
+	S TCTX("workspaceThreeMsg",2,"author")="You"
+	S TCTX("workspaceThreeMsg",2,"meta")="2:33 PM"
+	S TCTX("workspaceThreeMsg",2,"body")="Done. I opened the context panel so the room can see pinned notes, participants, and related claims side by side."
+	S TCTX("workspaceThreeSide",1,"label")="Participants"
+	S TCTX("workspaceThreeSide",1,"value")="6 active"
+	S TCTX("workspaceThreeSide",2,"label")="Pinned notes"
+	S TCTX("workspaceThreeSide",2,"value")="2 live"
+	S TCTX("workspaceThreeSide",3,"label")="Related claims"
+	S TCTX("workspaceThreeSide",3,"value")="4 linked"
+	S TCTX("composerVariant",1,"title")="Quick reply composer"
+	S TCTX("composerVariant",1,"desc")="Single-line response for fast case updates and shift handoffs."
+	S TCTX("composerVariant",1,"token")="sendQuickReply"
+	S TCTX("composerVariant",1,"placeholder")="Reply with the payer callback plan or next action"
+	S TCTX("composerVariant",1,"chipClass")="delivery-chip-live"
+	S TCTX("composerVariant",2,"title")="Multiline composer"
+	S TCTX("composerVariant",2,"desc")="Room for quoted context, longer notes, and attachment mentions before sending."
+	S TCTX("composerVariant",2,"token")="sendMessage"
+	S TCTX("composerVariant",2,"placeholder")="Write a detailed room update, include references, and mention attachments"
+	S TCTX("composerVariant",2,"chipClass")="delivery-chip-review"
+	S TCTX("composerVariant",3,"title")="Internal note toggle"
+	S TCTX("composerVariant",3,"desc")="Switch between internal-only notes and shared room messages without changing pages."
+	S TCTX("composerVariant",3,"token")="sendInternalNote"
+	S TCTX("composerVariant",3,"placeholder")="Add a supervisor-only staffing note"
+	S TCTX("composerVariant",3,"chipClass")="delivery-chip-alert"
+	S TCTX("composerVariant",4,"title")="Escalation composer"
+	S TCTX("composerVariant",4,"desc")="Prominent escalation state, urgency pill, and explicit room targeting."
+	S TCTX("composerVariant",4,"token")="openEscalationThread"
+	S TCTX("composerVariant",4,"placeholder")="Escalation summary for manager and QA review"
+	S TCTX("composerVariant",4,"chipClass")="delivery-chip-alert"
+	S TCTX("composerToggle",1,"label")="Shared message"
+	S TCTX("composerToggle",1,"state")="Active"
+	S TCTX("composerToggle",1,"active")=1
+	S TCTX("composerToggle",2,"label")="Internal note"
+	S TCTX("composerToggle",2,"state")="Draft"
+	S TCTX("composerToggle",2,"active")=0
+	S TCTX("composerSnippet",1,"label")="Payer callback scheduled"
+	S TCTX("composerSnippet",1,"token")="insertMessageTemplate"
+	S TCTX("composerSnippet",2,"label")="Need QA review"
+	S TCTX("composerSnippet",2,"token")="insertMessageTemplate"
+	S TCTX("composerSnippet",3,"label")="Shift handoff note"
+	S TCTX("composerSnippet",3,"token")="insertMessageTemplate"
+	S TCTX("contextCard",1,"title")="Context side panel"
+	S TCTX("contextCard",1,"desc")="Participant presence, related records, tags, pinned notes, and room status beside the transcript."
+	S TCTX("contextCard",1,"token")="openContextPanel"
+	S TCTX("contextParticipant",1,"name")="Amina Jordan"
+	S TCTX("contextParticipant",1,"role")="Collector"
+	S TCTX("contextParticipant",1,"state")="Online"
+	S TCTX("contextParticipant",2,"name")="Carla Ruiz"
+	S TCTX("contextParticipant",2,"role")="Manager"
+	S TCTX("contextParticipant",2,"state")="Busy"
+	S TCTX("contextParticipant",3,"name")="Daria Tran"
+	S TCTX("contextParticipant",3,"role")="QA reviewer"
+	S TCTX("contextParticipant",3,"state")="Available"
+	S TCTX("contextRecord",1,"label")="Claim"
+	S TCTX("contextRecord",1,"value")="CLM-240312-07"
+	S TCTX("contextRecord",2,"label")="DOS"
+	S TCTX("contextRecord",2,"value")="2026-03-12"
+	S TCTX("contextRecord",3,"label")="Payer"
+	S TCTX("contextRecord",3,"value")="ACME HEALTH"
+	S TCTX("contextTag",1,"label")="eligibility"
+	S TCTX("contextTag",2,"label")="payer-call"
+	S TCTX("contextTag",3,"label")="handoff"
+	S TCTX("contextPinned",1,"label")="Pinned note"
+	S TCTX("contextPinned",1,"value")="Use callback reference in all follow-up summaries."
+	S TCTX("contextPinned",2,"label")="Room status"
+	S TCTX("contextPinned",2,"value")="Supervisor review requested by 3:30 PM."
+	S TCTX("participantNote")="Presence, bubble, avatar, chat, workspace, and composer primitives stay neutral and enterprise-friendly so they can serve patient collaboration, biller follow-up, reviewer discussion, handoff, and manager command surfaces without consumer-social branding."
 	Q
 	;
 	;
@@ -928,7 +1413,54 @@ BUILDEXPORT(CONF,REQ,CTX,TCTX)
 	D FOOTACT^MIOUIEXP(.TCTX,"profile",3,"Cancel","/mioui/forms","ghost-button")
 	Q
 	;
-BUILDWORKX(CONF,REQ,CTX,TCTX)
+BUILDBILL(CONF,REQ,CTX,TCTX)
+	D BASE^MIOUICTX(.TCTX)
+	D APPLY^MIOUITHEME(.CONF,.TCTX)
+	D ACT^MIOUICTX(.TCTX,"billing")
+	D PAGE^MIOUICTX(.TCTX,"MIOUI / Billing","Billing blueprints","Claim, line, diagnostics, and artifact patterns tailored for dense SSR review flows.","Billing adapters")
+	D STAT^MIOUIPANEL(.TCTX,1,"Claims",2,"sky","")
+	D STAT^MIOUIPANEL(.TCTX,2,"Lines",3,"emerald","")
+	D STAT^MIOUIPANEL(.TCTX,3,"Warnings",1,"amber","")
+	D STAT^MIOUIPANEL(.TCTX,4,"Errors",0,"violet","")
+	D CLAIM^MIOUIBIL(.TCTX,1,"CLM-1001","JANE DOE","ALPHA HEALTH","2026-03-01","125.00","Previewed","sky")
+	D CLAIM^MIOUIBIL(.TCTX,2,"CLM-1002","JOHN SMITH","BETA HEALTH","2026-03-02","88.20","Publishable","emerald")
+	D INIT^MIOUITBL(.TCTX,"serviceLine","Service lines","No service line rows.")
+	D COL^MIOUITBL(.TCTX,"serviceLine",1,"Claim","left")
+	D COL^MIOUITBL(.TCTX,"serviceLine",2,"Line","left")
+	D COL^MIOUITBL(.TCTX,"serviceLine",3,"Procedure","left")
+	D COL^MIOUITBL(.TCTX,"serviceLine",4,"Date of service","left")
+	D COL^MIOUITBL(.TCTX,"serviceLine",5,"Charge","right")
+	D CELL^MIOUITBL(.TCTX,"serviceLine",1,1,"CLM-1001")
+	D CELL^MIOUITBL(.TCTX,"serviceLine",1,2,"1")
+	D CELL^MIOUITBL(.TCTX,"serviceLine",1,3,"99213")
+	D CELL^MIOUITBL(.TCTX,"serviceLine",1,4,"2026-03-01")
+	D CELL^MIOUITBL(.TCTX,"serviceLine",1,5,"75.00")
+	D CELL^MIOUITBL(.TCTX,"serviceLine",2,1,"CLM-1001")
+	D CELL^MIOUITBL(.TCTX,"serviceLine",2,2,"2")
+	D CELL^MIOUITBL(.TCTX,"serviceLine",2,3,"87070")
+	D CELL^MIOUITBL(.TCTX,"serviceLine",2,4,"2026-03-01")
+	D CELL^MIOUITBL(.TCTX,"serviceLine",2,5,"50.00")
+	D CELL^MIOUITBL(.TCTX,"serviceLine",3,1,"CLM-1002")
+	D CELL^MIOUITBL(.TCTX,"serviceLine",3,2,"1")
+	D CELL^MIOUITBL(.TCTX,"serviceLine",3,3,"97110")
+	D CELL^MIOUITBL(.TCTX,"serviceLine",3,4,"2026-03-02")
+	D CELL^MIOUITBL(.TCTX,"serviceLine",3,5,"88.20")
+	D FINAL^MIOUITBL(.TCTX,"serviceLine")
+	D VALSUM^MIOUIBIL(.TCTX,1,0,2,1,"Publishable","emerald")
+	D DIAG^MIOUIBIL(.TCTX,"warning",1,"SV201","One line is missing a modifier but remains publishable under the current profile.","2400/SV1/03","Review payer rules before release.")
+	D DIAG^MIOUIBIL(.TCTX,"info",1,"CSV001","Header row will be written because the selected profile includes column names.","profile/includeHeaders","No action needed.")
+	D META^MIOUIBIL(.TCTX,1,"Profile","Claim summary")
+	D META^MIOUIBIL(.TCTX,2,"Output naming","{{source_base}}-claims-{{job_id}}.csv")
+	D META^MIOUIBIL(.TCTX,3,"Delimiter","Comma")
+	D META^MIOUIBIL(.TCTX,4,"Headers","Included")
+	D ARTMETA^MIOUIBIL(.TCTX,"canonical","Canonical artifacts","Stable output set for audit and downstream workflows.","sky")
+	D ARTROW^MIOUIBIL(.TCTX,"canonical",1,"claims.csv","CSV","/efuzy/download/1/claims","csv")
+	D ARTROW^MIOUIBIL(.TCTX,"canonical",2,"lines.csv","CSV","/efuzy/download/1/lines","csv")
+	D ARTMETA^MIOUIBIL(.TCTX,"report","Reports","Operator-facing validation and round-trip checks.","violet")
+	D ARTROW^MIOUIBIL(.TCTX,"report",1,"roundtrip-report.json","JSON","/efuzy/download/1/report","json")
+	Q
+	;
+BUILDWORK(CONF,REQ,CTX,TCTX)
 	D BASE^MIOUICTX(.TCTX)
 	D APPLY^MIOUITHEME(.CONF,.TCTX)
 	D PAGE^MIOUICTX(.TCTX,"MIOUI / Workflows","Workflow polish","Reusable first-run and file-staging surfaces for dense SSR workflow applications.","Workflow surfaces")
@@ -1000,53 +1532,6 @@ BUILDOPS(CONF,REQ,CTX,TCTX)
 	D FEEDITEM^MIOUIOPS(.TCTX,"main",3,"08:33","Warning reviewed","SV201 warning acknowledged before publish.","amber")
 	D FEEDFINAL^MIOUIOPS(.TCTX,"main")
 	Q
-	;
-	;
-	;
-	;
-BUILDOPSX(CONF,REQ,CTX,TCTX)
-	D BASE^MIOUICTX(.TCTX)
-	D APPLY^MIOUITHEME(.CONF,.TCTX)
-	D PAGE^MIOUICTX(.TCTX,"MIOUI / Operators","Dense operator ergonomics","Saved views, column chooser, split detail panels, activity feeds, and shell framing for high-volume list/detail work.","Operator tools")
-	D PHEADER^MIOUIOPS(.TCTX,"main","Dense operator workflows","Operator workspace","Persist scanning preferences, keep selected-record detail in view, and reduce context switches on high-volume review screens.")
-	D PHEADMETA^MIOUIOPS(.TCTX,"main",1,"Queue","18 queued","sky")
-	D PHEADMETA^MIOUIOPS(.TCTX,"main",2,"Ready","12 publishable","emerald")
-	D PHEADMETA^MIOUIOPS(.TCTX,"main",3,"Attention","3 warnings","amber")
-	D PHEADACT^MIOUIOPS(.TCTX,"main",1,"Open billing preview","/mioui/billing","primary-button")
-	D PHEADACT^MIOUIOPS(.TCTX,"main",2,"Open export profile","/mioui/export","quick-button")
-	D SUBINIT^MIOUIOPS(.TCTX,"main","Queue health")
-	D SUBITEM^MIOUIOPS(.TCTX,"main",1,"Queues","/mioui/operators#queues",1)
-	D SUBITEM^MIOUIOPS(.TCTX,"main",2,"Selected detail","/mioui/operators#detail",0)
-	D SUBITEM^MIOUIOPS(.TCTX,"main",3,"Activity","/mioui/operators#activity",0)
-	D SUBFINAL^MIOUIOPS(.TCTX,"main")
-	D VIEWSINIT^MIOUIOPS(.TCTX,"main","Saved views","Server-shaped presets help operators switch between dense worklists without rebuilding the same filters every time.")
-	D VIEW^MIOUIOPS(.TCTX,"main",1,"My preview queue","/mioui/operators?view=preview",1,12)
-	D VIEW^MIOUIOPS(.TCTX,"main",2,"Needs review","/mioui/operators?view=review",0,5)
-	D VIEW^MIOUIOPS(.TCTX,"main",3,"Published today","/mioui/operators?view=published",0,29)
-	D VIEWSFINAL^MIOUIOPS(.TCTX,"main")
-	D CHINIT^MIOUIOPS(.TCTX,"main","Visible columns","Choose only the fields needed for the current review pass and keep wide datasets readable.")
-	D CHITEM^MIOUIOPS(.TCTX,"main",1,"Claim","Primary claim identifier",1)
-	D CHITEM^MIOUIOPS(.TCTX,"main",2,"Date of service","Operator scan anchor",1)
-	D CHITEM^MIOUIOPS(.TCTX,"main",3,"Payer","Top-level routing context",1)
-	D CHITEM^MIOUIOPS(.TCTX,"main",4,"Subscriber","Useful for mismatch review",0)
-	D CHITEM^MIOUIOPS(.TCTX,"main",5,"Total charge","High-value scan field",1)
-	D CHFINAL^MIOUIOPS(.TCTX,"main")
-	D SPLITINIT^MIOUIOPS(.TCTX,"main","Split detail panel","Keep a dense list on the left and the selected claim summary on the right.","Selected claim")
-	D SPLITSUM^MIOUIOPS(.TCTX,"main",1,"Claim","CLM-1001")
-	D SPLITSUM^MIOUIOPS(.TCTX,"main",2,"Status","Previewed")
-	D SPLITSUM^MIOUIOPS(.TCTX,"main",3,"Diagnostics","2 warnings")
-	D SPLITFIELD^MIOUIOPS(.TCTX,"main",1,"Date of service","2026-03-12")
-	D SPLITFIELD^MIOUIOPS(.TCTX,"main",2,"Procedure","99213")
-	D SPLITFIELD^MIOUIOPS(.TCTX,"main",3,"Total charge","$125.00")
-	D SPLITFIELD^MIOUIOPS(.TCTX,"main",4,"Payer","ACME HEALTH")
-	D SPLITFINAL^MIOUIOPS(.TCTX,"main")
-	D FEEDINIT^MIOUIOPS(.TCTX,"main","Operator activity","Compact event stream for claim review, publish, and audit actions.")
-	D FEEDITEM^MIOUIOPS(.TCTX,"main",1,"08:24","View saved","My preview queue selected for morning pass.","sky")
-	D FEEDITEM^MIOUIOPS(.TCTX,"main",2,"08:29","Claim opened","CLM-1001 moved into the split detail panel.","emerald")
-	D FEEDITEM^MIOUIOPS(.TCTX,"main",3,"08:33","Warning reviewed","SV201 warning acknowledged before publish.","amber")
-	D FEEDFINAL^MIOUIOPS(.TCTX,"main")
-	Q
-	;
 	;
 	;
 	;
@@ -1399,120 +1884,4 @@ BUILDCODE(CONF,REQ,CTX,TCTX)
 	S TCTX("matrix","row",13,"custom")="Governed"
 	Q
 	;
-BUILDEXPORTX(CONF,REQ,CTX,TCTX)
-	D BASE^MIOUICTX(.TCTX)
-	D APPLY^MIOUITHEME(.CONF,.TCTX)
-	D ACT^MIOUICTX(.TCTX,"export")
-	D PAGE^MIOUICTX(.TCTX,"MIOUI / Export","Export UX","Reusable field-selection and export editing surfaces for dense billing workflows.","Profile editor")
-	D SUMINIT^MIOUIEXP(.TCTX,"main","Export profile summary","Compact output rules, selected-field counts, and file naming rules for CSV profile review.")
-	D SUMSTAT^MIOUIEXP(.TCTX,"main",1,"Mode","Claim summary","sky")
-	D SUMSTAT^MIOUIEXP(.TCTX,"main",2,"Selected fields",4,"emerald")
-	D SUMSTAT^MIOUIEXP(.TCTX,"main",3,"Delimiter","Comma","amber")
-	D SUMSTAT^MIOUIEXP(.TCTX,"main",4,"Header row","Included","violet")
-	D SUMRULE^MIOUIEXP(.TCTX,"main",1,"File naming","claims_review_{{date}}.csv")
-	D SUMRULE^MIOUIEXP(.TCTX,"main",2,"Quote mode","Minimal quoting")
-	D SUMRULE^MIOUIEXP(.TCTX,"main",3,"Empty values","Leave blank")
-	D CHKINIT^MIOUIEXP(.TCTX,"fieldCatalog","Field catalog","Choose the export fields operators need without leaving the SSR editor flow.")
-	D CHKITEM^MIOUIEXP(.TCTX,"fieldCatalog",1,"claim_id","Claim ID","Stable claim-level identifier used by downstream QA sheets.",1)
-	D CHKITEM^MIOUIEXP(.TCTX,"fieldCatalog",2,"patient_last","Patient last name","Useful for operator review and spreadsheet grouping.",1)
-	D CHKITEM^MIOUIEXP(.TCTX,"fieldCatalog",3,"date_of_service","Date of service","High-value billing field for daily reconciliation.",1)
-	D CHKITEM^MIOUIEXP(.TCTX,"fieldCatalog",4,"total_charge","Total charge","Include the summed billed charge for quick balance checks.",1)
-	D CHKITEM^MIOUIEXP(.TCTX,"fieldCatalog",5,"payer_name","Payer name","Helpful for payer-segmented work queues.",0)
-	D CHKITEM^MIOUIEXP(.TCTX,"fieldCatalog",6,"claim_frequency","Claim frequency","Optional field for advanced claim audit exports.",0)
-	D CHKFINAL^MIOUIEXP(.TCTX,"fieldCatalog")
-	D ORDINIT^MIOUIEXP(.TCTX,"selectedFields","Selected field order","Explicit row order keeps export columns predictable and easy to test.")
-	D ORDITEM^MIOUIEXP(.TCTX,"selectedFields",1,"Claim ID","claim_id")
-	D ORDITEM^MIOUIEXP(.TCTX,"selectedFields",2,"Patient last name","patient_last")
-	D ORDITEM^MIOUIEXP(.TCTX,"selectedFields",3,"Date of service","date_of_service")
-	D ORDITEM^MIOUIEXP(.TCTX,"selectedFields",4,"Total charge","total_charge")
-	D ORDFINAL^MIOUIEXP(.TCTX,"selectedFields")
-	D INIT^MIOUIFORM(.TCTX,"naming","Naming rules","Keep export naming stable for local installs, automation folders, and audit review.","/mioui/export","post")
-	D FIELD^MIOUIFORM(.TCTX,"naming",1,"text","prefix","File prefix","claims_review","Short prefix that stays stable across environments.","","")
-	D FIELD^MIOUIFORM(.TCTX,"naming",2,"select","dateToken","Date token","yyyymmdd","Append a date token to every export filename.","","")
-	D OPTION^MIOUIFORM(.TCTX,"naming",2,1,"yyyymmdd","YYYYMMDD",1)
-	D OPTION^MIOUIFORM(.TCTX,"naming",2,2,"iso8601","ISO 8601",0)
-	D OPTION^MIOUIFORM(.TCTX,"naming",2,3,"none","No date token",0)
-	D ACTION^MIOUIFORM(.TCTX,"naming",1,"Apply naming rule","submit","primary")
-	D FINAL^MIOUIFORM(.TCTX,"naming")
-	D FOOTINIT^MIOUIEXP(.TCTX,"profile","Sticky actions","Keep primary actions visible while operators scan selected fields and naming rules.")
-	D FOOTACT^MIOUIEXP(.TCTX,"profile",1,"Save profile","/mioui/export?save=1","primary-button")
-	D FOOTACT^MIOUIEXP(.TCTX,"profile",2,"Preview sample","/mioui/export?preview=1","quick-button")
-	D FOOTACT^MIOUIEXP(.TCTX,"profile",3,"Cancel","/mioui/forms","ghost-button")
-	Q
-	;
-BUILDBILL(CONF,REQ,CTX,TCTX)
-	D BASE^MIOUICTX(.TCTX)
-	D APPLY^MIOUITHEME(.CONF,.TCTX)
-	D ACT^MIOUICTX(.TCTX,"billing")
-	D PAGE^MIOUICTX(.TCTX,"MIOUI / Billing","Billing blueprints","Claim, line, diagnostics, and artifact patterns tailored for dense SSR review flows.","Billing adapters")
-	D STAT^MIOUIPANEL(.TCTX,1,"Claims",2,"sky","")
-	D STAT^MIOUIPANEL(.TCTX,2,"Lines",3,"emerald","")
-	D STAT^MIOUIPANEL(.TCTX,3,"Warnings",1,"amber","")
-	D STAT^MIOUIPANEL(.TCTX,4,"Errors",0,"violet","")
-	D CLAIM^MIOUIBIL(.TCTX,1,"CLM-1001","JANE DOE","ALPHA HEALTH","2026-03-01","125.00","Previewed","sky")
-	D CLAIM^MIOUIBIL(.TCTX,2,"CLM-1002","JOHN SMITH","BETA HEALTH","2026-03-02","88.20","Publishable","emerald")
-	D INIT^MIOUITBL(.TCTX,"serviceLine","Service lines","No service line rows.")
-	D COL^MIOUITBL(.TCTX,"serviceLine",1,"Claim","left")
-	D COL^MIOUITBL(.TCTX,"serviceLine",2,"Line","left")
-	D COL^MIOUITBL(.TCTX,"serviceLine",3,"Procedure","left")
-	D COL^MIOUITBL(.TCTX,"serviceLine",4,"Date of service","left")
-	D COL^MIOUITBL(.TCTX,"serviceLine",5,"Charge","right")
-	D CELL^MIOUITBL(.TCTX,"serviceLine",1,1,"CLM-1001")
-	D CELL^MIOUITBL(.TCTX,"serviceLine",1,2,"1")
-	D CELL^MIOUITBL(.TCTX,"serviceLine",1,3,"99213")
-	D CELL^MIOUITBL(.TCTX,"serviceLine",1,4,"2026-03-01")
-	D CELL^MIOUITBL(.TCTX,"serviceLine",1,5,"75.00")
-	D CELL^MIOUITBL(.TCTX,"serviceLine",2,1,"CLM-1001")
-	D CELL^MIOUITBL(.TCTX,"serviceLine",2,2,"2")
-	D CELL^MIOUITBL(.TCTX,"serviceLine",2,3,"87070")
-	D CELL^MIOUITBL(.TCTX,"serviceLine",2,4,"2026-03-01")
-	D CELL^MIOUITBL(.TCTX,"serviceLine",2,5,"50.00")
-	D CELL^MIOUITBL(.TCTX,"serviceLine",3,1,"CLM-1002")
-	D CELL^MIOUITBL(.TCTX,"serviceLine",3,2,"1")
-	D CELL^MIOUITBL(.TCTX,"serviceLine",3,3,"97110")
-	D CELL^MIOUITBL(.TCTX,"serviceLine",3,4,"2026-03-02")
-	D CELL^MIOUITBL(.TCTX,"serviceLine",3,5,"88.20")
-	D FINAL^MIOUITBL(.TCTX,"serviceLine")
-	D VALSUM^MIOUIBIL(.TCTX,1,0,2,1,"Publishable","emerald")
-	D DIAG^MIOUIBIL(.TCTX,"warning",1,"SV201","One line is missing a modifier but remains publishable under the current profile.","2400/SV1/03","Review payer rules before release.")
-	D DIAG^MIOUIBIL(.TCTX,"info",1,"CSV001","Header row will be written because the selected profile includes column names.","profile/includeHeaders","No action needed.")
-	D META^MIOUIBIL(.TCTX,1,"Profile","Claim summary")
-	D META^MIOUIBIL(.TCTX,2,"Output naming","{{source_base}}-claims-{{job_id}}.csv")
-	D META^MIOUIBIL(.TCTX,3,"Delimiter","Comma")
-	D META^MIOUIBIL(.TCTX,4,"Headers","Included")
-	D ARTMETA^MIOUIBIL(.TCTX,"canonical","Canonical artifacts","Stable output set for audit and downstream workflows.","sky")
-	D ARTROW^MIOUIBIL(.TCTX,"canonical",1,"claims.csv","CSV","/efuzy/download/1/claims","csv")
-	D ARTROW^MIOUIBIL(.TCTX,"canonical",2,"lines.csv","CSV","/efuzy/download/1/lines","csv")
-	D ARTMETA^MIOUIBIL(.TCTX,"report","Reports","Operator-facing validation and round-trip checks.","violet")
-	D ARTROW^MIOUIBIL(.TCTX,"report",1,"roundtrip-report.json","JSON","/efuzy/download/1/report","json")
-	Q
-	;
-BUILDWORK(CONF,REQ,CTX,TCTX)
-	D BASE^MIOUICTX(.TCTX)
-	D APPLY^MIOUITHEME(.CONF,.TCTX)
-	D PAGE^MIOUICTX(.TCTX,"MIOUI / Workflows","Workflow polish","Reusable first-run and file-staging surfaces for dense SSR workflow applications.","Workflow surfaces")
-	D ONBINIT^MIOUIWF(.TCTX,"firstRun","First-run onboarding","Guide new operators through setup, preview, and publish without leaving the SSR flow.","Continue setup","/mioui/workflows?step=2","Skip for now","/mioui")
-	D ONBSTEP^MIOUIWF(.TCTX,"firstRun",1,"Connect input folders","Point the workspace at a local or mapped folder where inbound files arrive.","complete")
-	D ONBSTEP^MIOUIWF(.TCTX,"firstRun",2,"Review preview settings","Confirm claim preview, line preview, and export profile defaults before first use.","current")
-	D ONBSTEP^MIOUIWF(.TCTX,"firstRun",3,"Publish a sample batch","Create canonical artifacts and verify naming, diagnostics, and audit outputs.","queued")
-	D ONBSTEP^MIOUIWF(.TCTX,"firstRun",4,"Invite operators","Share a consistent workflow once the first local run looks correct.","queued")
-	D ONBFINAL^MIOUIWF(.TCTX,"firstRun")
-	D CONFIRM^MIOUIWF(.TCTX,"publish","Publish staged files","Publishing will write canonical artifacts, update audit history, and expose downloads to operators.","amber","Publish artifacts","/mioui/workflows?publish=1","Cancel","/mioui/workflows")
-	D DROPINIT^MIOUIWF(.TCTX,"staging","File staging","Drop files here or browse a local folder to stage a batch for preview.","837, 835, CSV, TXT","Files remain local until the operator confirms publish.")
-	D DROPFILE^MIOUIWF(.TCTX,"staging",1,"alpha-claim-batch.837","148 KB","Ready","emerald")
-	D DROPFILE^MIOUIWF(.TCTX,"staging",2,"secondary-review.csv","42 KB","Needs review","amber")
-	D DROPFILE^MIOUIWF(.TCTX,"staging",3,"payer-notes.txt","4 KB","Ready","sky")
-	D DROPFINAL^MIOUIWF(.TCTX,"staging")
-	D STEP^MIOUICTX(.TCTX,1,"Stage","Collect files into a stable batch before any validation or export work begins.","complete")
-	D STEP^MIOUICTX(.TCTX,2,"Preview","Inspect claim rows, service lines, diagnostics, and output rules.","current")
-	D STEP^MIOUICTX(.TCTX,3,"Confirm","Review publish intent and make destructive actions explicit.","queued")
-	D STEP^MIOUICTX(.TCTX,4,"Publish","Write artifacts and expose the final manifest for download and audit.","queued")
-	D STEPNOTE^MIOUIWF(.TCTX,1,"Dropzone state should stay visible while operators scan incoming files.","View staging","/mioui/workflows#staging")
-	D STEPNOTE^MIOUIWF(.TCTX,2,"Preview keeps the operator in context without hiding diagnostics.","Open preview","/mioui/billing")
-	D STEPNOTE^MIOUIWF(.TCTX,3,"Every publish path should include a confirmation surface.","Open confirm dialog","/mioui/workflows#publish")
-	D STEPNOTE^MIOUIWF(.TCTX,4,"Final publish should leave a clear artifact manifest and audit trail.","Review artifacts","/mioui/billing#artifacts")
-	D STEPFINAL^MIOUIWF(.TCTX)
-	D ALERT^MIOUICTX(.TCTX,1,"sky","Workflow note","First-run flows should stay short, numbered, and explicit.")
-	D ALERT^MIOUICTX(.TCTX,2,"amber","Confirmation note","Destructive or publish actions should always explain what will happen next.")
-	Q
 	;

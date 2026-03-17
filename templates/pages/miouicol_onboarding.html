@@ -1,0 +1,22 @@
+<div class="space-y-4" data-miouicol-onboarding-root>
+  {{> partials/miouicol_top_tabs.html}}
+  {{> partials/miouicol_hero_strip.html}}
+  <div class="grid gap-4 xl:grid-cols-[minmax(0,1.12fr)_minmax(0,.88fr)]">
+    <div class="space-y-4">
+      {{> partials/miouicol_onboarding_summary.html}}
+      <div class="grid gap-4 lg:grid-cols-2">
+        {{> partials/miouicol_onboarding_checklist.html}}
+        {{> partials/miouicol_onboarding_launch_panel.html}}
+      </div>
+    </div>
+    <div class="space-y-4">
+      {{> partials/miouicol_onboarding_stage_cards.html}}
+      {{> partials/miouicol_onboarding_invite_panel.html}}
+      {{> partials/miouicol_onboarding_rooms.html}}
+    </div>
+  </div>
+  <div class="grid gap-4 xl:grid-cols-2">
+    {{> partials/miouicol_user_bubbles.html}}
+    {{> partials/miouicol_connected_users_panel.html}}
+  </div>
+</div>

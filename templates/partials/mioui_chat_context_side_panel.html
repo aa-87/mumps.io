@@ -1,0 +1,58 @@
+<div class="panel p-5 transcript-shell">
+  <div class="collab-kicker">Context side panel</div>
+  <h2 class="mt-2 text-xl font-semibold collab-title">Participant, record, tag, and pinned-note context</h2>
+  <p class="mt-2 text-sm collab-copy">A connected context panel keeps the active transcript grounded in the real work object. This is where participants, related claims, tags, pinned notes, and room status should stay visible.</p>
+  {{#contextCard}}
+  <div class="mt-4 flex items-center justify-between gap-3">
+    <div>
+      <div class="text-sm font-semibold collab-label">{{title}}</div>
+      <div class="mt-1 text-sm collab-copy">{{desc}}</div>
+    </div>
+    <span class="delivery-chip delivery-chip-review">{{token}}</span>
+  </div>
+  {{/contextCard}}
+  <div class="mt-5 grid gap-4">
+    <div class="workspace-pane">
+      <div class="text-sm font-semibold collab-label">Connected participants</div>
+      <div class="mt-3 space-y-2">
+        {{#contextParticipant}}
+        <div class="workspace-mini-row">
+          <div>
+            <div class="font-semibold collab-label">{{name}}</div>
+            <div class="mt-1 text-xs collab-muted">{{role}}</div>
+          </div>
+          <span class="delivery-chip delivery-chip-live">{{state}}</span>
+        </div>
+        {{/contextParticipant}}
+      </div>
+    </div>
+    <div class="workspace-pane">
+      <div class="text-sm font-semibold collab-label">Related records</div>
+      <div class="mt-3 space-y-2">
+        {{#contextRecord}}
+        <div class="flex items-center justify-between gap-3">
+          <div class="text-xs collab-muted">{{label}}</div>
+          <div class="text-sm font-semibold collab-label">{{value}}</div>
+        </div>
+        {{/contextRecord}}
+      </div>
+      <div class="mt-4 flex flex-wrap gap-2">
+        {{#contextTag}}
+        <span class="context-tag">{{label}}</span>
+        {{/contextTag}}
+      </div>
+    </div>
+    <div class="workspace-pane">
+      <div class="text-sm font-semibold collab-label">Pinned notes and room status</div>
+      <div class="mt-3 space-y-3">
+        {{#contextPinned}}
+        <div class="workspace-note">
+          <div class="text-xs collab-muted">{{label}}</div>
+          <div class="mt-2 text-sm collab-copy">{{value}}</div>
+        </div>
+        {{/contextPinned}}
+      </div>
+      <div class="mt-4 rounded-2xl border border-sky-500/20 bg-sky-500/10 p-3 text-xs collab-copy">Context callbacks covered: openContextPanel, toggleSharedVisibility, openEscalationThread.</div>
+    </div>
+  </div>
+</div>

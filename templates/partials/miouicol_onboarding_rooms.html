@@ -1,0 +1,20 @@
+<section class="panel rounded-[1.45rem] px-4 py-4 lg:px-5">
+  <div class="flex items-center justify-between gap-3">
+    <div>
+      <p class="section-kicker">Default rooms</p>
+      <h2 class="mt-2 text-lg font-semibold">Starter room set</h2>
+    </div>
+    <span class="badge badge-slate">3 rooms</span>
+  </div>
+  <div class="mt-4 grid gap-3 md:grid-cols-3 xl:grid-cols-1">
+    {{#defaultRoom}}
+    <article class="rounded-[1.15rem] border px-3 py-3 {{panelClass}}">
+      <div class="flex items-center justify-between gap-3">
+        <div class="text-sm font-semibold">{{label}}</div>
+        <span class="badge {{badgeClass}}">{{meta}}</span>
+      </div>
+      <div class="mt-2 text-sm muted">{{detail}}</div>
+    </article>
+    {{/defaultRoom}}
+  </div>
+</section>

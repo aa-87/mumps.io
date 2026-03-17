@@ -1,0 +1,197 @@
+<section class="mioui-collab-lab space-y-6">
+  <style>
+    .mioui-collab-lab .collab-kicker{font-size:.72rem;line-height:1;text-transform:uppercase;letter-spacing:.22em;color:#94a3b8}
+    .mioui-collab-lab .collab-title{color:#f8fafc}
+    .mioui-collab-lab .collab-copy{color:#cbd5e1}
+    .mioui-collab-lab .collab-pill{display:inline-flex;align-items:center;gap:.45rem;border-radius:999px;border:1px solid rgba(71,85,105,.85);background:rgba(2,6,23,.72);padding:.38rem .8rem;color:#e2e8f0}
+    .mioui-collab-lab .collab-pill-value{font-weight:700;color:#fff}
+    .mioui-collab-lab .collab-hero{display:inline-flex;align-items:center;border-radius:999px;border:1px solid rgba(56,189,248,.28);background:rgba(56,189,248,.14);padding:.38rem .82rem;color:#bae6fd}
+    .mioui-collab-lab .collab-surface{border:1px solid rgba(51,65,85,.86);background:linear-gradient(180deg,rgba(2,6,23,.86),rgba(15,23,42,.94))}
+    .mioui-collab-lab .collab-soft{border:1px solid rgba(71,85,105,.8);background:rgba(2,6,23,.62)}
+    .mioui-collab-lab .collab-label{color:#e2e8f0}
+    .mioui-collab-lab .collab-muted{color:#94a3b8}
+    .mioui-collab-lab .collab-value{color:#fff}
+    .mioui-collab-lab .presence-avatar{position:relative;display:inline-flex;align-items:center;justify-content:center;border-radius:999px;font-weight:700;letter-spacing:.02em;color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
+    .mioui-collab-lab .presence-avatar-xs{width:1.9rem;height:1.9rem;font-size:.62rem}
+    .mioui-collab-lab .presence-avatar-sm{width:2.35rem;height:2.35rem;font-size:.72rem}
+    .mioui-collab-lab .presence-avatar-md{width:2.9rem;height:2.9rem;font-size:.82rem}
+    .mioui-collab-lab .presence-avatar-lg{width:3.4rem;height:3.4rem;font-size:.94rem}
+    .mioui-collab-lab .presence-avatar-xl{width:4rem;height:4rem;font-size:1.06rem}
+    .mioui-collab-lab .avatar-initials{background:linear-gradient(135deg,#0f172a,#334155)}
+    .mioui-collab-lab .avatar-photo-sky{background:radial-gradient(circle at 35% 28%,rgba(255,255,255,.28),transparent 32%),linear-gradient(135deg,#38bdf8,#1d4ed8)}
+    .mioui-collab-lab .avatar-photo-violet{background:radial-gradient(circle at 35% 28%,rgba(255,255,255,.28),transparent 32%),linear-gradient(135deg,#a78bfa,#6d28d9)}
+    .mioui-collab-lab .avatar-photo-emerald{background:radial-gradient(circle at 35% 28%,rgba(255,255,255,.28),transparent 32%),linear-gradient(135deg,#34d399,#0f766e)}
+    .mioui-collab-lab .avatar-badge{position:absolute;right:-.05rem;bottom:-.05rem;width:.9rem;height:.9rem;border-radius:999px;border:2px solid rgba(2,6,23,.96)}
+    .mioui-collab-lab .avatar-ring-online{box-shadow:0 0 0 2px rgba(16,185,129,.72)}
+    .mioui-collab-lab .avatar-ring-away{box-shadow:0 0 0 2px rgba(245,158,11,.7)}
+    .mioui-collab-lab .avatar-ring-busy{box-shadow:0 0 0 2px rgba(244,63,94,.72)}
+    .mioui-collab-lab .avatar-ring-offline{box-shadow:0 0 0 2px rgba(100,116,139,.7)}
+    .mioui-collab-lab .avatar-ring-dnd{box-shadow:0 0 0 2px rgba(139,92,246,.76)}
+    .mioui-collab-lab .state-dot{display:inline-flex;width:.65rem;height:.65rem;border-radius:999px}
+    .mioui-collab-lab .state-online{background:#10b981}
+    .mioui-collab-lab .state-away{background:#f59e0b}
+    .mioui-collab-lab .state-busy{background:#f43f5e}
+    .mioui-collab-lab .state-offline{background:#64748b}
+    .mioui-collab-lab .state-dnd{background:#8b5cf6}
+    .mioui-collab-lab .bubble-tag{display:inline-flex;align-items:center;border-radius:999px;padding:.24rem .58rem;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em}
+    .mioui-collab-lab .persona-chip-sky{background:rgba(56,189,248,.14);border:1px solid rgba(56,189,248,.3);color:#bae6fd}
+    .mioui-collab-lab .persona-chip-violet{background:rgba(139,92,246,.16);border:1px solid rgba(139,92,246,.3);color:#ddd6fe}
+    .mioui-collab-lab .persona-chip-emerald{background:rgba(16,185,129,.14);border:1px solid rgba(16,185,129,.3);color:#d1fae5}
+    .mioui-collab-lab .persona-chip-amber{background:rgba(245,158,11,.16);border:1px solid rgba(245,158,11,.3);color:#fde68a}
+    .mioui-collab-lab .avatar-stack{display:flex;align-items:center}
+    .mioui-collab-lab .avatar-stack > *+*{margin-left:-.55rem}
+    .mioui-collab-lab .presence-strip{display:grid;gap:.85rem;grid-template-columns:repeat(auto-fit,minmax(12.5rem,1fr))}
+    .mioui-collab-lab .presence-card{border:1px solid rgba(71,85,105,.78);background:rgba(2,6,23,.62);border-radius:1rem;padding:1rem}
+    .mioui-collab-lab .participant-row{display:grid;gap:1rem;grid-template-columns:auto 1fr auto;align-items:center;border:1px solid rgba(71,85,105,.76);background:rgba(2,6,23,.56);border-radius:1rem;padding:1rem}
+    .mioui-collab-lab .signal-pill{display:inline-flex;align-items:center;border-radius:999px;padding:.32rem .7rem;font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+    .mioui-collab-lab .signal-live{background:rgba(16,185,129,.14);border:1px solid rgba(16,185,129,.28);color:#d1fae5}
+    .mioui-collab-lab .signal-review{background:rgba(56,189,248,.14);border:1px solid rgba(56,189,248,.28);color:#bae6fd}
+    .mioui-collab-lab .signal-alert{background:rgba(244,63,94,.14);border:1px solid rgba(244,63,94,.28);color:#fecdd3}
+    .mioui-collab-lab .typing-dots{display:inline-flex;gap:.22rem;align-items:center}
+    .mioui-collab-lab .typing-dots span{width:.36rem;height:.36rem;border-radius:999px;background:#38bdf8;opacity:.86}
+    .mioui-collab-lab .conversation-shell{border:1px solid rgba(71,85,105,.78);background:rgba(2,6,23,.62);border-radius:1rem;padding:1rem}
+    .mioui-collab-lab .conversation-row{display:grid;gap:.85rem;grid-template-columns:auto 1fr auto;align-items:start;border:1px solid rgba(71,85,105,.72);background:rgba(15,23,42,.62);border-radius:1rem;padding:.9rem}
+    .mioui-collab-lab .conversation-row-active{border-color:rgba(56,189,248,.4);box-shadow:inset 0 0 0 1px rgba(56,189,248,.2)}
+    .mioui-collab-lab .conversation-search{border:1px solid rgba(71,85,105,.78);background:rgba(2,6,23,.56);border-radius:.9rem;padding:.7rem .85rem;color:#cbd5e1}
+    .mioui-collab-lab .conversation-search::placeholder{color:#94a3b8}
+    .mioui-collab-lab .conversation-pill{display:inline-flex;align-items:center;gap:.38rem;border-radius:999px;border:1px solid rgba(71,85,105,.7);background:rgba(15,23,42,.7);padding:.28rem .62rem;color:#cbd5e1}
+    .mioui-collab-lab .conversation-count{display:inline-flex;min-width:1.25rem;justify-content:center;border-radius:999px;background:rgba(56,189,248,.18);padding:.1rem .38rem;color:#e0f2fe;font-weight:700}
+    .mioui-collab-lab .conversation-flag{display:inline-flex;align-items:center;border-radius:999px;padding:.18rem .5rem;font-size:.66rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+    .mioui-collab-lab .flag-pin{background:rgba(56,189,248,.14);border:1px solid rgba(56,189,248,.28);color:#bae6fd}
+    .mioui-collab-lab .flag-draft{background:rgba(245,158,11,.16);border:1px solid rgba(245,158,11,.3);color:#fde68a}
+    .mioui-collab-lab .flag-muted{background:rgba(148,163,184,.18);border:1px solid rgba(148,163,184,.3);color:#cbd5e1}
+    .mioui-collab-lab .transcript-shell{border:1px solid rgba(71,85,105,.78);background:rgba(2,6,23,.62);border-radius:1rem;padding:1rem}
+    .mioui-collab-lab .transcript-flow{display:flex;flex-direction:column;gap:.9rem}
+    .mioui-collab-lab .message-row{display:flex;gap:.75rem;align-items:flex-end}
+    .mioui-collab-lab .message-row-outgoing{justify-content:flex-end}
+    .mioui-collab-lab .message-meta{font-size:.72rem;color:#94a3b8}
+    .mioui-collab-lab .message-bubble{max-width:38rem;border-radius:1rem;padding:.8rem .95rem;border:1px solid rgba(71,85,105,.74)}
+    .mioui-collab-lab .message-bubble-incoming{background:rgba(15,23,42,.9);color:#e2e8f0}
+    .mioui-collab-lab .message-bubble-outgoing{background:rgba(56,189,248,.16);border-color:rgba(56,189,248,.28);color:#e0f2fe}
+    .mioui-collab-lab .message-marker{display:flex;justify-content:center}
+    .mioui-collab-lab .message-marker span{border-radius:999px;border:1px solid rgba(71,85,105,.72);background:rgba(15,23,42,.7);padding:.28rem .7rem;font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#cbd5e1}
+    .mioui-collab-lab .message-system{border:1px dashed rgba(139,92,246,.36);background:rgba(76,29,149,.14);border-radius:1rem;padding:.8rem .95rem;color:#ddd6fe}
+    .mioui-collab-lab .reply-preview{border-left:3px solid rgba(56,189,248,.42);background:rgba(15,23,42,.55);border-radius:.8rem;padding:.6rem .75rem}
+    .mioui-collab-lab .attachment-tile{display:flex;align-items:center;justify-content:space-between;gap:.8rem;border:1px solid rgba(71,85,105,.72);background:rgba(2,6,23,.4);border-radius:.85rem;padding:.65rem .8rem}
+    .mioui-collab-lab .reaction-chip{display:inline-flex;align-items:center;border-radius:999px;border:1px solid rgba(71,85,105,.72);background:rgba(15,23,42,.72);padding:.2rem .52rem;font-size:.72rem;color:#cbd5e1}
+    .mioui-collab-lab .receipt-line{font-size:.72rem;color:#94a3b8}
+    .mioui-collab-lab .delivery-chip{display:inline-flex;align-items:center;border-radius:999px;padding:.28rem .6rem;font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+    .mioui-collab-lab .delivery-chip-neutral{background:rgba(100,116,139,.2);border:1px solid rgba(100,116,139,.32);color:#e2e8f0}
+    .mioui-collab-lab .delivery-chip-live{background:rgba(16,185,129,.14);border:1px solid rgba(16,185,129,.28);color:#d1fae5}
+    .mioui-collab-lab .delivery-chip-review{background:rgba(56,189,248,.14);border:1px solid rgba(56,189,248,.28);color:#bae6fd}
+    .mioui-collab-lab .delivery-chip-alert{background:rgba(244,63,94,.14);border:1px solid rgba(244,63,94,.28);color:#fecdd3}
+    .mioui-collab-lab .workspace-grid{display:grid;gap:1rem}
+    .mioui-collab-lab .workspace-grid-three{grid-template-columns:1.05fr 1.28fr .9fr}
+    .mioui-collab-lab .workspace-pane{border:1px solid rgba(71,85,105,.74);background:rgba(15,23,42,.56);border-radius:1rem;padding:.9rem}
+    .mioui-collab-lab .workspace-mini-row{display:flex;justify-content:space-between;gap:.9rem;align-items:flex-start;border:1px solid rgba(71,85,105,.68);background:rgba(2,6,23,.4);border-radius:.85rem;padding:.75rem .8rem}
+    .mioui-collab-lab .workspace-mini-row-active{border-color:rgba(56,189,248,.38);box-shadow:inset 0 0 0 1px rgba(56,189,248,.18)}
+    .mioui-collab-lab .workspace-note{border-radius:.9rem;border:1px dashed rgba(148,163,184,.32);background:rgba(2,6,23,.3);padding:.7rem .8rem}
+    .mioui-collab-lab .composer-box{border:1px solid rgba(71,85,105,.74);background:rgba(15,23,42,.56);border-radius:1rem;padding:1rem}
+    .mioui-collab-lab .composer-input{width:100%;border:1px solid rgba(71,85,105,.74);background:rgba(2,6,23,.5);border-radius:.9rem;padding:.78rem .92rem;color:#e2e8f0}
+    .mioui-collab-lab .composer-input::placeholder{color:#94a3b8}
+    .mioui-collab-lab .composer-textarea{min-height:6.8rem;resize:none}
+    .mioui-collab-lab .composer-toolbar{display:flex;flex-wrap:wrap;gap:.55rem}
+    .mioui-collab-lab .composer-toggle{display:inline-flex;align-items:center;gap:.4rem;border-radius:999px;border:1px solid rgba(71,85,105,.72);background:rgba(2,6,23,.48);padding:.26rem .58rem;color:#cbd5e1}
+    .mioui-collab-lab .composer-toggle-active{border-color:rgba(56,189,248,.28);background:rgba(56,189,248,.14);color:#bae6fd}
+    .mioui-collab-lab .snippet-chip{display:inline-flex;align-items:center;border-radius:999px;border:1px solid rgba(71,85,105,.72);background:rgba(15,23,42,.72);padding:.26rem .6rem;font-size:.72rem;color:#cbd5e1}
+    .mioui-collab-lab .context-tag{display:inline-flex;align-items:center;border-radius:999px;background:rgba(56,189,248,.14);border:1px solid rgba(56,189,248,.26);padding:.18rem .55rem;font-size:.72rem;color:#bae6fd}
+    html[data-theme="light"] .mioui-collab-lab .collab-kicker{color:#64748b}
+    html[data-theme="light"] .mioui-collab-lab .collab-title{color:#0f172a}
+    html[data-theme="light"] .mioui-collab-lab .collab-copy{color:#475569}
+    html[data-theme="light"] .mioui-collab-lab .collab-pill{border-color:rgba(148,163,184,.46);background:#fff;color:#334155;box-shadow:0 1px 2px rgba(15,23,42,.04)}
+    html[data-theme="light"] .mioui-collab-lab .collab-pill-value{color:#0f172a}
+    html[data-theme="light"] .mioui-collab-lab .collab-hero{border-color:rgba(56,189,248,.24);background:#e0f2fe;color:#075985}
+    html[data-theme="light"] .mioui-collab-lab .collab-surface{border-color:rgba(148,163,184,.36);background:linear-gradient(180deg,#fff,#f8fbff)}
+    html[data-theme="light"] .mioui-collab-lab .collab-soft{border-color:rgba(148,163,184,.34);background:#fff}
+    html[data-theme="light"] .mioui-collab-lab .collab-label{color:#334155}
+    html[data-theme="light"] .mioui-collab-lab .collab-muted{color:#64748b}
+    html[data-theme="light"] .mioui-collab-lab .collab-value{color:#0f172a}
+    html[data-theme="light"] .mioui-collab-lab .avatar-badge{border-color:#fff}
+    html[data-theme="light"] .mioui-collab-lab .presence-card{border-color:rgba(148,163,184,.34);background:#fff}
+    html[data-theme="light"] .mioui-collab-lab .participant-row{border-color:rgba(148,163,184,.34);background:#fff}
+    html[data-theme="light"] .mioui-collab-lab .conversation-shell{border-color:rgba(148,163,184,.34);background:#fff}
+    html[data-theme="light"] .mioui-collab-lab .conversation-row{border-color:rgba(148,163,184,.34);background:#fff}
+    html[data-theme="light"] .mioui-collab-lab .conversation-row-active{border-color:rgba(14,165,233,.28);box-shadow:inset 0 0 0 1px rgba(14,165,233,.12)}
+    html[data-theme="light"] .mioui-collab-lab .conversation-search{border-color:rgba(148,163,184,.34);background:#f8fafc;color:#334155}
+    html[data-theme="light"] .mioui-collab-lab .conversation-search::placeholder{color:#94a3b8}
+    html[data-theme="light"] .mioui-collab-lab .conversation-pill{border-color:rgba(148,163,184,.34);background:#fff;color:#475569}
+    html[data-theme="light"] .mioui-collab-lab .conversation-count{background:#e0f2fe;color:#075985}
+    html[data-theme="light"] .mioui-collab-lab .transcript-shell{border-color:rgba(148,163,184,.34);background:#fff}
+    html[data-theme="light"] .mioui-collab-lab .message-meta{color:#64748b}
+    html[data-theme="light"] .mioui-collab-lab .message-bubble-incoming{background:#fff;color:#0f172a;border-color:rgba(148,163,184,.34)}
+    html[data-theme="light"] .mioui-collab-lab .message-bubble-outgoing{background:#e0f2fe;color:#0c4a6e;border-color:rgba(56,189,248,.26)}
+    html[data-theme="light"] .mioui-collab-lab .message-marker span{border-color:rgba(148,163,184,.34);background:#f8fafc;color:#475569}
+    html[data-theme="light"] .mioui-collab-lab .message-system{background:#f5f3ff;color:#5b21b6;border-color:rgba(139,92,246,.22)}
+    html[data-theme="light"] .mioui-collab-lab .reply-preview{background:#f8fafc}
+    html[data-theme="light"] .mioui-collab-lab .attachment-tile{border-color:rgba(148,163,184,.34);background:#f8fafc}
+    html[data-theme="light"] .mioui-collab-lab .reaction-chip{border-color:rgba(148,163,184,.34);background:#fff;color:#475569}
+    html[data-theme="light"] .mioui-collab-lab .receipt-line{color:#64748b}
+    html[data-theme="light"] .mioui-collab-lab .delivery-chip-neutral{background:#f1f5f9;color:#334155;border-color:rgba(148,163,184,.34)}
+    html[data-theme="light"] .mioui-collab-lab .delivery-chip-live{background:#ecfdf5;color:#065f46;border-color:rgba(16,185,129,.2)}
+    html[data-theme="light"] .mioui-collab-lab .delivery-chip-review{background:#e0f2fe;color:#075985;border-color:rgba(56,189,248,.24)}
+    html[data-theme="light"] .mioui-collab-lab .delivery-chip-alert{background:#fff1f2;color:#9f1239;border-color:rgba(244,63,94,.18)}
+    html[data-theme="light"] .mioui-collab-lab .workspace-pane{border-color:rgba(148,163,184,.34);background:#fff}
+    html[data-theme="light"] .mioui-collab-lab .workspace-mini-row{border-color:rgba(148,163,184,.34);background:#f8fafc}
+    html[data-theme="light"] .mioui-collab-lab .workspace-mini-row-active{border-color:rgba(14,165,233,.28);box-shadow:inset 0 0 0 1px rgba(14,165,233,.12)}
+    html[data-theme="light"] .mioui-collab-lab .workspace-note{background:#f8fafc;border-color:rgba(148,163,184,.34)}
+    html[data-theme="light"] .mioui-collab-lab .composer-box{border-color:rgba(148,163,184,.34);background:#fff}
+    html[data-theme="light"] .mioui-collab-lab .composer-input{border-color:rgba(148,163,184,.34);background:#f8fafc;color:#334155}
+    html[data-theme="light"] .mioui-collab-lab .composer-input::placeholder{color:#94a3b8}
+    html[data-theme="light"] .mioui-collab-lab .composer-toggle{border-color:rgba(148,163,184,.34);background:#fff;color:#475569}
+    html[data-theme="light"] .mioui-collab-lab .composer-toggle-active{border-color:rgba(14,165,233,.28);background:#e0f2fe;color:#075985}
+    html[data-theme="light"] .mioui-collab-lab .snippet-chip{border-color:rgba(148,163,184,.34);background:#fff;color:#475569}
+    html[data-theme="light"] .mioui-collab-lab .context-tag{background:#e0f2fe;border-color:rgba(14,165,233,.22);color:#075985}
+  </style>
+
+  <header class="panel p-6">
+    <div class="collab-kicker">MIOUI / Collaboration</div>
+    <h1 class="mt-2 text-3xl font-semibold collab-title">{{pageTitle}}</h1>
+    <p class="mt-2 max-w-4xl text-sm collab-copy">{{pageIntro}}</p>
+    <div class="mt-4 flex flex-wrap gap-3 text-xs">
+      {{#collabStat}}
+      <div class="collab-pill"><span>{{label}}</span> <span class="collab-pill-value">{{value}}</span></div>
+      {{/collabStat}}
+    </div>
+    <div class="mt-4 collab-hero text-xs">{{heroCallback}}</div>
+  </header>
+
+  <div class="panel p-5">
+    <div class="collab-kicker">Callback tokens</div>
+    <h2 class="mt-2 text-lg font-semibold collab-title">Presence, chat, and workspace actions</h2>
+    <p class="mt-2 text-sm collab-copy">These tokens are rendered explicitly so the collaboration page has deterministic coverage for user cards, connected-user filters, conversation flow, workspace context panels, escalation actions, and composer variants before later activity and roster ROIs arrive.</p>
+    <div class="mt-4 flex flex-wrap gap-2 text-xs">
+      {{#collabCallback}}
+      <span class="collab-pill">{{token}}</span>
+      {{/collabCallback}}
+    </div>
+  </div>
+
+  <div class="grid gap-6 xl:grid-cols-[1.02fr_0.98fr]">
+    {{>partials/mioui_presence_avatar_gallery.html}}
+    {{>partials/mioui_user_bubble_variants.html}}
+  </div>
+
+  {{>partials/mioui_connected_users_strip.html}}
+
+  <div class="grid gap-6 xl:grid-cols-[1.08fr_0.92fr]">
+    {{>partials/mioui_workspace_participant_rows.html}}
+    {{>partials/mioui_user_presence_cards.html}}
+  </div>
+
+  <div class="grid gap-6 xl:grid-cols-[0.92fr_1.08fr]">
+    {{>partials/mioui_chat_conversation_list.html}}
+    {{>partials/mioui_chat_message_transcript.html}}
+  </div>
+
+  {{>partials/mioui_chat_message_state_tiles.html}}
+
+  <div class="grid gap-6 xl:grid-cols-[1fr_1fr]">
+    {{>partials/mioui_chat_workspace_two_pane.html}}
+    {{>partials/mioui_chat_workspace_three_pane.html}}
+  </div>
+
+  <div class="grid gap-6 xl:grid-cols-[1.06fr_0.94fr]">
+    {{>partials/mioui_chat_composer_variants.html}}
+    {{>partials/mioui_chat_context_side_panel.html}}
+  </div>
+</section>

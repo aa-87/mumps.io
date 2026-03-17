@@ -1,0 +1,43 @@
+<div class="panel p-5 collab-surface">
+  <div class="collab-kicker">User cards</div>
+  <h2 class="mt-2 text-xl font-semibold collab-title">Rich profile bubbles and cards</h2>
+  <p class="mt-2 text-sm collab-copy">Use these richer cards for hover panels, roster details, directory drawers, and participant context rails.</p>
+  <div class="mt-5 space-y-4">
+    {{#userCard}}
+    <div class="collab-soft rounded-[1.25rem] p-4">
+      <div class="flex items-start justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <div class="presence-avatar presence-avatar-lg avatar-initials {{statusClass}}">{{initials}}</div>
+          <div>
+            <div class="font-semibold collab-label">{{name}}</div>
+            <div class="text-xs collab-muted">{{role}}</div>
+          </div>
+        </div>
+        <span class="bubble-tag persona-chip-sky">{{badge}}</span>
+      </div>
+      <div class="mt-4 grid gap-3 text-sm md:grid-cols-2">
+        <div>
+          <div class="text-[0.68rem] uppercase tracking-[0.16em] collab-muted">Team</div>
+          <div class="mt-1 collab-label">{{team}}</div>
+        </div>
+        <div>
+          <div class="text-[0.68rem] uppercase tracking-[0.16em] collab-muted">Timezone</div>
+          <div class="mt-1 collab-label">{{timezone}}</div>
+        </div>
+        <div>
+          <div class="text-[0.68rem] uppercase tracking-[0.16em] collab-muted">Last active</div>
+          <div class="mt-1 collab-label">{{lastActive}}</div>
+        </div>
+        <div>
+          <div class="text-[0.68rem] uppercase tracking-[0.16em] collab-muted">Workload</div>
+          <div class="mt-1 collab-label">{{workload}}</div>
+        </div>
+      </div>
+      <div class="mt-4 flex flex-wrap gap-2 text-xs">
+        <span class="collab-pill">openUserCard</span>
+        <span class="collab-pill">toggleAvailability</span>
+      </div>
+    </div>
+    {{/userCard}}
+  </div>
+</div>

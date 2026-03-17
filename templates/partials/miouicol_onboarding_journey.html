@@ -1,0 +1,22 @@
+{{#onboarding.launch}}
+<section class="panel rounded-[1.45rem] px-4 py-4 lg:px-5">
+  <div>
+    <p class="section-kicker">Guided journey</p>
+    <h2 class="mt-2 text-lg font-semibold">Step-by-step launch</h2>
+  </div>
+  <div class="mt-4 space-y-3">
+    {{#step}}
+    <article class="panel-soft rounded-[1.15rem] px-3 py-3">
+      <div class="flex items-start gap-3">
+        <span class="badge {{badgeClass}}">{{number}}</span>
+        <div>
+          <div class="text-sm font-semibold">{{title}}</div>
+          <div class="mt-1 text-xs muted">{{body}}</div>
+          <div class="mt-2 text-xs font-semibold">{{label}}</div>
+        </div>
+      </div>
+    </article>
+    {{/step}}
+  </div>
+</section>
+{{/onboarding.launch}}
