@@ -38,9 +38,9 @@ INIT ;
 	DO ADD("GET","/readyz","READY^MIOHEALTH")
 	DO ADD("GET","/api/ping","PING^MIOROUTE")
 	; WebSocket endpoints should be registered under method "WS"
-	DO ADDWS("/ws","ACCEPT^MIOWS")
+	DO ADDWS("/ws","WSECHO^MIOWS")
 	; Legacy GET /ws (attempt upgrade)
-	DO ADD("GET","/ws","WS^MIOROUTE")
+	;DO ADD("GET","/ws","WS^MIOROUTE")
 	DO ADD("GET","/bench","BENCH^MIOBENCH")
 	DO ADD("GET","/metrics","METRICS^MIOMET")
 	QUIT

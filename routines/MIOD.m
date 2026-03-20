@@ -106,9 +106,10 @@ JOBCONN(ADDR,HANDLE)
 	;
 	NEW NREQ SET NREQ=0
 	NEW DONE SET DONE=0
-	FOR  QUIT:DONE  DO  QUIT:$GET(DONE)
+	FOR  DO  QUIT:$GET(DONE)
 	. ; For the first request, use normal timeouts.;
 	. ; For subsequent requests, use keep-alive idle timeout for header reads.;
+	. IF DONE QUIT
 	. IF NREQ>0 DO
 	. . SET CONF("server","timeouts","readHeaderMs")=KATMO
 	. . SET CONF("server","timeouts","readBodyMs")=ORIGTOB
@@ -123,8 +124,9 @@ JOBCONN(ADDR,HANDLE)
 	. ;
 	. KILL ^TMP($J,"MIOHTTP","RESP"),^TMP($J,"MIOHTTP","STREAM")
 	. ;
-	. NEW TPARSE SET TPARSE="" SET ^OK=$$PARSE^MIOHTTPMPU(.CONF,.REQ,.MP,.ERR) M ^E=ERR
-	. NEW OK SET OK=$$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR)
+	. ;
+	. NEW TPARSE SET TPARSE="" 
+	. NEW OK SET OK=$$PARSE^MIOHTTPMPU(.CONF,.REQ,.MP,.ERR),OK=$$PARSE^MIOHTTP(DEV,.CONF,.REQ,.ERR)
 	. IF METEN!LOGEN SET TPARSE=$$TSUS^MIOMET(),CTX("met","parse_ms")=((TPARSE-$GET(CTX("t0us")))/1000)
 	. IF 'OK DO  QUIT
 	. . ; Access log parse failures (best effort)
@@ -178,11 +180,12 @@ JOBCONN(ADDR,HANDLE)
 	. . SET DONE=1
 	. ;
 	. ; If this is a WebSocket Upgrade request, route under method "WS".;
-	. IF $$ISWSREQ(.REQ) DO   DO ACCEPT^MIOWS(DEV,.CONF,.REQ,.CTX) Q
+	. IF '$GET(DONE),$$ISWSREQ(.REQ) DO  QUIT
 	. . SET CTX("is_websocket")=1
 	. . SET REQ("http_method")=$GET(REQ("method"))
 	. . SET REQ("method")="WS"
-	. ;
+	. . DO ACCEPT^MIOWS(DEV,.CONF,.REQ,.CTX)
+	. . S DONE=1
 	. ; Decide connection persistence for THIS response.;
 	. NEW KEEP SET KEEP=$$KASHOULD(.CONF,.REQ,NREQ,KAEN,KAMAX)
 	. SET CONF("server","http","defaultResponseHeaders","Connection")=$$KACONN(.REQ,KEEP)
@@ -223,18 +226,9 @@ JOBCONN(ADDR,HANDLE)
 	. ; Free request body storage each request
 	. DO BODYFREE^MIOHTTP(.REQ)
 	. ;
-	. ; WebSocket handler owns the connection lifecycle.;
-	. IF $GET(CTX("is_websocket")) SET DONE=1 QUIT
-	. ;
 	. ; If not keeping the connection, stop after this response.;
 	. IF 'KEEP SET DONE=1
 	;
-	; Restore defaults (best effort)
-	SET CONF("server","timeouts","readHeaderMs")=ORIGTOH
-	SET CONF("server","timeouts","readBodyMs")=ORIGTOB
-	; Flush any buffered access logs for this job
-	IF LOGEN NEW LERR2,OKF SET OKF=$$FLUSH^MIOLOG(.CONF,.LERR2)
-	IF LOGEN DO CLOSEALL^MIOLOG(.CONF)
 	DO CLOSE^MIOSOCK(DEV)
 	QUIT
 ; Keep-alive decision: returns 1 to keep, 0 to close after this request.;

@@ -33,7 +33,9 @@ MIOWS ; WebSocket protocol handler (RFC 6455).;
 ; Notes
 ; Keep comments short.;
 ; Do not log secrets.;
-;
+WSECHO(DEV,CONF,REQ,CTX)
+	F  Q:$G(CTX("stop"))  H 0.5 S X=$G(X)_"X" D:'$G(CTX("stop")) SENDTEXT(.DEV,"THE TIME NOW IS "_$H) D:'$G(CTX("stop")) SENDTEXT(.DEV,$c(10)_X_$C(10)_$L(X))
+	QUIT
 	;
 	; Handshake + frame loop.;
 	; Supports full fragmentation reassembly for text/binary messages.;
@@ -47,7 +49,7 @@ MIOWS ; WebSocket protocol handler (RFC 6455).;
 ACCEPT(DEV,CONF,REQ,CTX)
 	NEW KEY SET KEY=$GET(REQ("hdr","sec-websocket-key"))
 	IF KEY="" DO FAIL(.DEV,.CONF,.CTX,"missing_sec_websocket_key") QUIT
-	NEW ACC S ACC=$$WSACCEPT^MIOSHA1(KEY) S ^AHM("ACC")=ACC
+	NEW ACC S ACC=$$WSACCEPT^MIOSHA1(KEY)
 	NEW HEAD
 	SET HEAD("Upgrade")="websocket"
 	SET HEAD("Connection")="Upgrade"
@@ -76,9 +78,9 @@ LOOP(DEV,CONF,REQ,CTX)
 	NEW MAXMSG SET MAXMSG=+$GET(CONF("websocket","maxMessageBytes"),262144)
 	; fragmentation state
 	NEW FRAG,MSGOPC,MSGBUF,MSGLEN
+	NEW OPC,FIN,PAY,ERR
 	SET FRAG=0,MSGOPC=0,MSGBUF="",MSGLEN=0
 	FOR  DO  QUIT:$GET(CTX("stop"))
-	. NEW OPC,FIN,PAY,ERR
 	. DO READFRAME(.DEV,TO,.FIN,.OPC,.PAY,.ERR,.MAXFRAME)
 	. IF $DATA(ERR) SET CTX("stop")=1 QUIT
 	. ; control frames may appear anytime
@@ -91,13 +93,13 @@ LOOP(DEV,CONF,REQ,CTX)
 	. . SET MSGBUF=MSGBUF_PAY,MSGLEN=MSGLEN+$LENGTH(PAY)
 	. . IF MSGLEN>MAXMSG SET CTX("stop")=1 DO SENDCLOSE(.DEV,"",1009) QUIT
 	. . IF FIN DO
-	. . . DO HANDLEMSG(.DEV,.CONF,.CTX,MSGOPC,MSGBUF)
+	. . . DO HANDLEMSG(.DEV,.REQ,.CONF,.CTX,MSGOPC,MSGBUF)
 	. . . SET FRAG=0,MSGOPC=0,MSGBUF="",MSGLEN=0
 	. ; data frames
 	. IF (OPC=1)!(OPC=2) DO  QUIT
 	. . IF FRAG SET CTX("stop")=1 DO SENDCLOSE(.DEV,"",1002) QUIT
 	. . IF FIN DO  QUIT
-	. . . DO HANDLEMSG(.DEV,.CONF,.CTX,OPC,PAY)
+	. . . DO HANDLEMSG(.DEV,.REQ,.CONF,.CTX,OPC,PAY)
 	. . SET FRAG=1,MSGOPC=OPC,MSGBUF=PAY,MSGLEN=$LENGTH(PAY)
 	. . IF MSGLEN>MAXMSG SET CTX("stop")=1 DO SENDCLOSE(.DEV,"",1009) QUIT
 	. ; unknown opcode
@@ -106,9 +108,17 @@ LOOP(DEV,CONF,REQ,CTX)
 	;
 ; Entry point
 ; See docs/routines for details.;
-HANDLEMSG(DEV,CONF,CTX,OPC,PAY)
-	; OPC 1=text, 2=binary. Default server: echo text; reject binary.;
-	IF OPC=1 DO SENDTEXT(.DEV,PAY) QUIT
+HANDLEMSG(DEV,REQ,CONF,CTX,OPC,PAY) 
+	I $G(CTX("stop")) QUIT
+	DO PREMATCH^MIOROUTE(.REQ,.CTX)
+	IF '$G(CTX("match","ok")) QUIT ;for now
+	N H,TAG,RTN 
+	SET H=CTX("match","handler")
+	SET TAG=$PIECE($GET(H),"^")
+	SET RTN=$PIECE($GET(H),"^",2)
+	SET CTX=PAY
+	SET CTX("OPC")=OPC
+	DO @(TAG_"^"_RTN_"(.DEV,.CONF,.REQ,.CTX)")
 	DO SENDCLOSE(.DEV,"",1003)
 	SET CTX("stop")=1
 	QUIT
@@ -121,13 +131,9 @@ READFRAME(DEV,TO,FIN,OPC,PAY,ERR,MAXFRAME)
 	DO READN^MIOSOCK(DEV,1,TO,.B1) IF '$TEST SET ERR("error")="ws_timeout" QUIT
 	DO READN^MIOSOCK(DEV,1,TO,.B2) IF '$TEST SET ERR("error")="ws_timeout" QUIT
 	NEW N1,N2 SET N1=$ASCII(B1),N2=$ASCII(B2)
-	SET FIN=$S($ZBITAND(N1,128)>0:1,1:0)
-	SET OPC=$ZBITAND(N1,15)
-	; RSV bits must be 0 (no extensions)
-	IF $ZBITAND(N1,112)>0 SET ERR("error")="ws_rsv_not_supported" QUIT
-	NEW MASK SET MASK=$S($ZBITAND(N2,128)>0:1,1:0)
-	NEW LEN SET LEN=$ZBITAND(N2,127)
-	; control frames: FIN=1 and <=125 bytes
+	S FIN=(N1\128),OPC=(N1#128)
+	NEW MASK SET MASK=(N2\128)
+	NEW LEN SET LEN=(N2#128)
 	IF (OPC=8)!(OPC=9)!(OPC=10) DO
 	. IF 'FIN SET ERR("error")="ws_control_fragmented" QUIT
 	. IF LEN>125 SET ERR("error")="ws_control_too_large" QUIT
@@ -135,31 +141,23 @@ READFRAME(DEV,TO,FIN,OPC,PAY,ERR,MAXFRAME)
 	IF LEN=126 DO
 	. NEW X DO READN^MIOSOCK(DEV,2,TO,.X) IF '$TEST SET ERR("error")="ws_timeout" QUIT
 	. SET LEN=($ASCII($EXTRACT(X,1))*256)+$ASCII($EXTRACT(X,2))
-	ELSE  IF LEN=127 DO
+	IF LEN=127 DO
 	. NEW X DO READN^MIOSOCK(DEV,8,TO,.X) IF '$TEST SET ERR("error")="ws_timeout" QUIT
 	. NEW I,VAL SET VAL=0
 	. FOR I=1:1:8 SET VAL=VAL*256+$ASCII($EXTRACT(X,I))
 	. IF VAL>2147483647 SET ERR("error")="ws_frame_too_large" QUIT
 	. SET LEN=VAL
-	IF $DATA(ERR) QUIT
 	IF LEN>MAXFRAME SET ERR("error")="ws_frame_too_large" QUIT
 	IF 'MASK SET ERR("error")="ws_client_unmasked" QUIT
 	NEW MK DO READN^MIOSOCK(DEV,4,TO,.MK) IF '$TEST SET ERR("error")="ws_timeout" QUIT
 	NEW DATA SET DATA=""
 	IF LEN>0 DO READN^MIOSOCK(DEV,LEN,TO,.DATA) IF '$TEST SET ERR("error")="ws_timeout" QUIT
-	SET PAY=$$UNMASK(DATA,MK)
+	SET PAY=$$UNMSK(DATA,MK)
 	QUIT
-	;
-; Entry point
-; See docs/routines for details.;
-UNMASK(DATA,MK)
-	NEW OUT SET OUT=""
-	NEW I
-	FOR I=1:1:$LENGTH(DATA) DO
-	. NEW B SET B=$ASCII($EXTRACT(DATA,I))
-	. NEW K SET K=$ASCII($EXTRACT(MK,((I-1)#4)+1))
-	. SET OUT=OUT_$CHAR($ZBITXOR(B,K))
-	QUIT OUT
+UNMSK(X,Y) N I,O S O="" F I=1:1:$L(X) S O=O_$C($$XOR($A(X,I),$A(Y,$S('(I#4):4,1:I#4)),8))
+	Q O
+XOR(A,B,W) N I,M,R S R=B,M=1 F I=1:1:W S:A\M#2 R=R+$S(R\M#2:-M,1:M) S M=M+M
+	Q R	
 	;
 ; Entry point
 ; See docs/routines for details.;
@@ -209,38 +207,3 @@ INITSTATE(S,CONF)
 	SET S("frag")=0,S("msgopc")=0,S("buf")="",S("len")=0
 	QUIT
 	;
-; Entry point
-; See docs/routines for details.;
-READMSG(DEV,TO,S,OPC,MSG,ERR)
-	KILL ERR
-	SET OPC="",MSG=""
-	NEW MAXFRAME SET MAXFRAME=+$GET(S("maxframe"),65536)
-	NEW MAXMSG SET MAXMSG=+$GET(S("maxmsg"),262144)
-	FOR  DO  QUIT:$DATA(ERR)!(OPC'="")
-	. NEW FOPC,FIN,PAY,FERR
-	. DO READFRAME(.DEV,TO,.FIN,.FOPC,.PAY,.FERR,.MAXFRAME)
-	. IF $DATA(FERR) DO  QUIT
-	. . IF $GET(FERR("error"))="ws_timeout" SET ERR("timeout")=1 QUIT
-	. . MERGE ERR=FERR
-	. ; control frames
-	. IF FOPC=8 SET OPC=8,MSG=PAY QUIT
-	. IF FOPC=9 DO SENDPONG(.DEV,PAY) QUIT
-	. IF FOPC=10 QUIT
-	. ; continuation
-	. IF FOPC=0 DO  QUIT
-	. . IF '$GET(S("frag")) DO SENDCLOSE(.DEV,"",1002) SET ERR("error")="ws_protocol" QUIT
-	. . SET S("buf")=$GET(S("buf"))_PAY
-	. . SET S("len")=+$GET(S("len"))+$LENGTH(PAY)
-	. . IF S("len")>MAXMSG DO SENDCLOSE(.DEV,"",1009) SET ERR("error")="ws_message_too_large" QUIT
-	. . IF FIN DO
-	. . . SET OPC=$GET(S("msgopc")),MSG=$GET(S("buf"))
-	. . . SET S("frag")=0,S("msgopc")=0,S("buf")="",S("len")=0
-	. ; new data frame
-	. IF (FOPC=1)!(FOPC=2) DO  QUIT
-	. . IF $GET(S("frag")) DO SENDCLOSE(.DEV,"",1002) SET ERR("error")="ws_protocol" QUIT
-	. . IF FIN SET OPC=FOPC,MSG=PAY QUIT
-	. . SET S("frag")=1,S("msgopc")=FOPC,S("buf")=PAY,S("len")=$LENGTH(PAY)
-	. . IF S("len")>MAXMSG DO SENDCLOSE(.DEV,"",1009) SET ERR("error")="ws_message_too_large" QUIT
-	. ; unknown opcode
-	. DO SENDCLOSE(.DEV,"",1002) SET ERR("error")="ws_bad_opcode"
-	QUIT
