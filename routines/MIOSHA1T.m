@@ -17,7 +17,7 @@ TEST2
 	N secKey,expect,got
 	S secKey="dGhlIHNhbXBsZSBub25jZQ=="
 	S expect="s3pPLMBiTxaQ9kYGzzhZRbK+xOo="
-	S got=$$GENWS^MIOWS(secKey)
+	S got=$$WSACCEPT^MIOSHA1(secKey)
 	;W !,"Expected: ",expect,!
 	;W "Got     : ",got,!
 	W:(got'=expect) "MIOSHA1T-2 PASS?   : ",$S(got=expect:"YES",1:"NO"),!

@@ -178,7 +178,7 @@ JOBCONN(ADDR,HANDLE)
 	. . SET DONE=1
 	. ;
 	. ; If this is a WebSocket Upgrade request, route under method "WS".;
-	. IF $$ISWSREQ(.REQ) DO
+	. IF $$ISWSREQ(.REQ) DO   DO ACCEPT^MIOWS(DEV,.CONF,.REQ,.CTX) Q
 	. . SET CTX("is_websocket")=1
 	. . SET REQ("http_method")=$GET(REQ("method"))
 	. . SET REQ("method")="WS"

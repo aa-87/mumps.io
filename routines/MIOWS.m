@@ -47,7 +47,7 @@ MIOWS ; WebSocket protocol handler (RFC 6455).;
 ACCEPT(DEV,CONF,REQ,CTX)
 	NEW KEY SET KEY=$GET(REQ("hdr","sec-websocket-key"))
 	IF KEY="" DO FAIL(.DEV,.CONF,.CTX,"missing_sec_websocket_key") QUIT
-	NEW ACC SET ACC=$$ACCEPTKEY(KEY)
+	NEW ACC S ACC=$$WSACCEPT^MIOSHA1(KEY) S ^AHM("ACC")=ACC
 	NEW HEAD
 	SET HEAD("Upgrade")="websocket"
 	SET HEAD("Connection")="Upgrade"
@@ -60,13 +60,6 @@ ACCEPT(DEV,CONF,REQ,CTX)
 	DO OBS^MIOMET($GET(REQ("method")),$GET(CTX("route"),"/ws"),101,LATMS)
 	DO LOOP(.DEV,.CONF,.REQ,.CTX)
 	QUIT
-	;
-; Entry point
-; See docs/routines for details.;
-ACCEPTKEY(KEY)
-	NEW GUID SET GUID="258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
-	NEW BIN SET BIN=$$SHA1BIN^MIOUTIL(KEY_GUID)
-	QUIT $$B64ENC^MIOUTIL(BIN)
 	;
 ; Entry point
 ; See docs/routines for details.;
