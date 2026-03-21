@@ -1,0 +1,16 @@
+<footer class="statusbar" id="mioide-statusbar">
+  <div class="flex flex-wrap items-center gap-1.5">
+    <span class="status-pill">{{branchName}}</span>
+    <span class="status-pill" id="status-file">{{activeName}}</span>
+    <span class="status-pill" id="status-state">{{workspaceState}}</span>
+    <span class="status-pill">{{connectionText}}</span>
+  </div>
+  <div class="flex flex-wrap items-center gap-1.5">
+    <span class="status-pill" id="status-lineinfo">{{lineInfo}}</span>
+    <span class="status-pill">{{indentInfo}}</span>
+    <span class="status-pill">{{syntaxInfo}}</span>
+    <span class="status-pill">{{encodingInfo}}</span>
+    <span class="status-pill">{{eolInfo}}</span>
+    <button type="button" class="icon-btn icon-btn-compact" id="themeToggle" title="Toggle theme" aria-label="Toggle theme">◐</button>
+  </div>
+</footer>

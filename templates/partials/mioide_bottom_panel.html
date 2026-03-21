@@ -1,0 +1,30 @@
+<section class="dock-shell" id="mioide-dock-shell">
+  <div class="dock-head">
+    <div class="dock-tabs">
+      <button type="button" class="dock-tab is-active" data-dock-tab="output">OUTPUT</button>
+      <button type="button" class="dock-tab" data-dock-tab="terminal">TERMINAL</button>
+    </div>
+    <div class="flex items-center gap-1.5">
+      <button type="button" class="icon-btn icon-btn-compact" id="btn-new-terminal" title="New terminal" aria-label="New terminal">⌁</button>
+      <button type="button" class="icon-btn icon-btn-compact" data-float-open="output" title="Float output" aria-label="Float output">⧉</button>
+      <button type="button" class="icon-btn icon-btn-compact" data-float-open="terminal" title="Float terminal" aria-label="Float terminal">⧉</button>
+      <button type="button" class="icon-btn icon-btn-compact" id="btn-collapse-dock" title="Collapse bottom panel" aria-label="Collapse bottom panel">—</button>
+    </div>
+  </div>
+  <div class="dock-body">
+    <section class="dock-pane is-active" data-dock-pane="output">
+      <div class="dock-pane-inner scroll-vscode">
+        <div id="output-list" class="space-y-1">
+          {{#output}}
+          <div class="output-line compact-row">{{text}}</div>
+          {{/output}}
+        </div>
+      </div>
+    </section>
+    <section class="dock-pane" data-dock-pane="terminal">
+      <div class="dock-pane-inner terminal-pane-inner">
+        <div class="terminal-host" id="dockTerminalHost"></div>
+      </div>
+    </section>
+  </div>
+</section>
