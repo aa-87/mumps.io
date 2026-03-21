@@ -169,6 +169,9 @@
     .palette-list { max-height:22rem; overflow:auto; }
     .palette-item { width:100%; border:1px solid var(--line); background:var(--panel-2); color:var(--text); border-radius:.8rem; padding:.72rem .78rem; display:flex; align-items:center; justify-content:space-between; gap:.75rem; text-align:left; }
     .window-layer { position:fixed; inset:0; z-index:110; pointer-events:none; }
+
+    .mioide-debug-line { background: rgba(245,158,11,.12); }
+    .mioide-breakpoint-glyph { background: var(--warn); border-radius: 999px; width: .55rem !important; height: .55rem !important; margin-left: .2rem; }
     .float-win { position:fixed; width:min(34rem,calc(100vw - 2rem)); height:min(24rem,calc(100vh - 4rem)); display:none; flex-direction:column; background:var(--frame); border:1px solid var(--line); border-radius:.95rem; box-shadow:var(--shadow); overflow:hidden; }
     .float-win.is-open { display:flex; pointer-events:auto; }
     .float-head { display:flex; align-items:center; justify-content:space-between; gap:.75rem; padding:.45rem .6rem; background:var(--panel); border-bottom:1px solid var(--line); cursor:move; user-select:none; touch-action:none; }

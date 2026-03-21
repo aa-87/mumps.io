@@ -10,10 +10,13 @@ BUILDHOME(CONF,REQ,CTX,TCTX)
 	S TCTX("themeMode")=$S($G(CONF("mioide","theme","default"))="light":"light",1:"dark")
 	S TCTX("pageTitle")="MIOIDE / Debug Workbench"
 	S TCTX("heading")="MIOIDE Debug Workbench"
-	S TCTX("lead")="Dense SSR-first M routine IDE with Monaco, Xterm.js, docked output, draggable floating tools, and a VS Code-like debugger workbench."
+	S TCTX("lead")="Dense SSR-first M routine IDE with Monaco, Xterm.js, live MIOWS terminal transport, and a debugger foundation with breakpoints, watches, and source-mapped stepping."
 	S TCTX("statusText")="Ready"
 	S TCTX("commandBarLabel")="Command Palette"
 	S TCTX("apiBase")="/mioide/api"
+	S TCTX("debugApiBase")="/mioide/api/debug"
+	S TCTX("debugSessionText")="No active debug session"
+	S TCTX("debugReasonText")="Start a session to inspect source-mapped frames"
 	S TCTX("saveMethod")="PUT"
 	S TCTX("branchName")="main"
 	S TCTX("lineInfo")="Ln 1, Col 1"
@@ -22,11 +25,13 @@ BUILDHOME(CONF,REQ,CTX,TCTX)
 	S TCTX("encodingInfo")="UTF-8"
 	S TCTX("eolInfo")="LF"
 	S TCTX("workspaceState")="Ready"
-	S TCTX("connectionText")="MIOWS-ready"
+	S TCTX("connectionText")="Events offline"
 	S TCTX("searchPlaceholder")="Search routines or symbols"
 	S TCTX("commandPlaceholder")="Type a command or jump to a routine"
-	S TCTX("terminalIntro")="Xterm.js dock ready. Live WebSocket transport lands in ROI 2."
-	S TCTX("terminalSeed")="MIOIDE terminal"_$C(10)_"Xterm.js loaded"_$C(10)_"MIOWS session transport pending"_$C(10)_"YDB> "
+	S TCTX("terminalIntro")="Live WebSocket terminal ready. Commands execute inside a controlled MIOIDE session."
+	S TCTX("terminalSeed")="MIOIDE terminal"_$C(10)_"MIOWS transport ready"_$C(10)_"Type help for commands"_$C(10)_"YDB> "
+	S TCTX("wsEventsUrl")=$G(CONF("mioide","ws","eventsPath"),"/mioide/ws/events")
+	S TCTX("wsTerminalUrl")=$G(CONF("mioide","ws","terminalPath"),"/mioide/ws/terminal")
 	D LISTRTN(.CONF,$G(REQ("query","q")),.RTNS)
 	M TCTX("routines")=RTNS
 	S COUNT=$$COUNT(.RTNS)
@@ -39,7 +44,7 @@ BUILDHOME(CONF,REQ,CTX,TCTX)
 	S MAXI=+$G(CONF("mioide","editor","maxInitialBytes"),262144)
 	S SRC=""
 	I ACTIVE'="" D GETSRCTXT(ACTIVE,.CONF,MAXI,.SRC,.ERR)
-	I SRC="" S SRC=ACTIVE_" ; MIOIDE scratch routine"_$C(10)_"  Q"
+	I SRC="" S SRC=ACTIVE_" ; MIOIDE scratch routine"_$C(10,9)_"Q"
 	S TCTX("initialSource")=SRC
 	S I=0
 	F  S I=$O(TCTX("routines",I)) Q:'I  D
@@ -62,14 +67,17 @@ BUILDHOME(CONF,REQ,CTX,TCTX)
 	S TCTX("callstack",1,"frame")="HOME^MIOIDER",TCTX("callstack",1,"detail")="SSR route entry",TCTX("callstack",1,"isActive")=1
 	S TCTX("callstack",2,"frame")="BUILDHOME^MIOIDED",TCTX("callstack",2,"detail")="Context builder"
 	S TCTX("callstack",3,"frame")="RENDERPAGE^MIOTPL",TCTX("callstack",3,"detail")="Layout + page render"
-	S TCTX("breakpoint",1,"loc")=ACTIVE_"+1",TCTX("breakpoint",1,"detail")="routine entry"
-	S TCTX("breakpoint",2,"loc")="MIOIDER+1",TCTX("breakpoint",2,"detail")="route handler"
+	K TCTX("breakpoint")
+	N TARR M TARR=TCTX("breakpoint") D LISTBP^MIOIDBG(ACTIVE,.TARR) K TCTX("breakpoint") M TCTX("breakpoint")=TARR K TARR
+	I '$D(TCTX("breakpoint")) D
+	. S TCTX("breakpoint",1,"loc")=ACTIVE_"+1",TCTX("breakpoint",1,"detail")="routine entry"
 	S TCTX("problem",1,"sevClass")="pill-error",TCTX("problem",1,"sevLabel")="Error",TCTX("problem",1,"file")=ACTIVE_".m",TCTX("problem",1,"line")=42,TCTX("problem",1,"message")="Compiler output and diagnostics surface here"
-	S TCTX("problem",2,"sevClass")="pill-warn",TCTX("problem",2,"sevLabel")="Warning",TCTX("problem",2,"file")="MIOIDER.m",TCTX("problem",2,"line")=18,TCTX("problem",2,"message")="WebSocket transport reserved for ROI 2"
+	S TCTX("problem",2,"sevClass")="pill-warn",TCTX("problem",2,"sevLabel")="Warning",TCTX("problem",2,"file")="MIOIDEWS.m",TCTX("problem",2,"line")=18,TCTX("problem",2,"message")="Interactive sessions run inside a controlled MIOIDE REPL"
 	S TCTX("output",1,"text")="[boot] MIOIDE workbench ready"
-	S TCTX("output",2,"text")="[save] Stream body writer configured"
-	S TCTX("output",3,"text")="[compile] Compile endpoint ready"
+	S TCTX("output",2,"text")="[events] waiting for WebSocket connection"
+	S TCTX("output",3,"text")="[terminal] MIOWS session transport enabled"
 	S TCTX("output",4,"text")="[run] Run output will appear here"
+	S TCTX("output",5,"text")="[debug] Breakpoints and watch updates stream here"
 	S TCTX("palette",1,"id")="save",TCTX("palette",1,"label")="File: Save current routine",TCTX("palette",1,"hint")="Ctrl+S"
 	S TCTX("palette",2,"id")="reload",TCTX("palette",2,"label")="File: Reload current routine",TCTX("palette",2,"hint")="Ctrl+R"
 	S TCTX("palette",3,"id")="compile",TCTX("palette",3,"label")="Build: Compile current routine",TCTX("palette",3,"hint")="Ctrl+Shift+B"
@@ -84,6 +92,11 @@ BUILDHOME(CONF,REQ,CTX,TCTX)
 	S TCTX("palette",12,"id")="problems",TCTX("palette",12,"label")="View: Focus problems",TCTX("palette",12,"hint")="Alt+4"
 	S TCTX("palette",13,"id")="theme",TCTX("palette",13,"label")="Preferences: Toggle theme",TCTX("palette",13,"hint")="Ctrl+K Ctrl+T"
 	S TCTX("palette",14,"id")="dock",TCTX("palette",14,"label")="View: Toggle bottom panel",TCTX("palette",14,"hint")="Ctrl+J"
+	S TCTX("palette",15,"id")="startdebug",TCTX("palette",15,"label")="Debug: Start session",TCTX("palette",15,"hint")="F9"
+	S TCTX("palette",16,"id")="continue",TCTX("palette",16,"label")="Debug: Continue",TCTX("palette",16,"hint")="F8"
+	S TCTX("palette",17,"id")="stepinto",TCTX("palette",17,"label")="Debug: Step Into",TCTX("palette",17,"hint")="F10"
+	S TCTX("palette",18,"id")="stepover",TCTX("palette",18,"label")="Debug: Step Over",TCTX("palette",18,"hint")="F11"
+	S TCTX("palette",19,"id")="stopdebug",TCTX("palette",19,"label")="Debug: Stop session",TCTX("palette",19,"hint")="Shift+F5"
 	D SNIPS(.TCTX)
 	Q
 	;
@@ -178,20 +191,20 @@ COMPILE(RTN,CONF,RES)
 	K RES
 	S RES("routine")="MIOIDED"
 	S RES("name")=$G(RTN)
-	I '$G(CONF("mioide","compile","enabled")) S RES("ok")=0,RES("error")="compile_disabled" Q 
-	I '$$ISRTN($G(RTN)) S RES("ok")=0,RES("error")="invalid_routine" Q 
-	I '$$FILEX($$ROUTEPATH(RTN,.CONF)) S RES("ok")=0,RES("error")="not_found" Q 
+	I '$G(CONF("mioide","compile","enabled")) S RES("ok")=0,RES("error")="compile_disabled" Q:$Q 0 Q
+	I '$$ISRTN($G(RTN)) S RES("ok")=0,RES("error")="invalid_routine" Q:$Q 0 Q
+	I '$$FILEX($$ROUTEPATH(RTN,.CONF)) S RES("ok")=0,RES("error")="not_found" Q:$Q 0 Q
 	S RES("ok")=1,RES("compiled")=0
-	S $ETRAP="D CERR^MIOIDED(.RES)"
-	S CMD="ZLINK """_$G(RTN)_".m"""
+	S $ETRAP="D CERR^MIOIDED(.RES) Q:$Q 0 Q"
+	S CMD="ZLINK """_$G(RTN)_""".m"""
 	XECUTE CMD
 	S ZCS=+$ZCSTATUS
 	S RES("zcstatus")=ZCS
-	I ZCS>1 S RES("ok")=0,RES("compiled")=0,RES("error")="compile_failed",RES("status")="compile_failed" Q 
+	I ZCS>1 S RES("ok")=0,RES("compiled")=0,RES("error")="compile_failed",RES("status")="compile_failed" Q 0
 	S RES("compiled")=1
 	S RES("status")="compiled"
 	S RES("message")="Routine compiled successfully"
-	Q
+	Q 1
 	;
 CERR(RES)
 	S $ECODE=""
@@ -208,7 +221,7 @@ RUN(RTN,ENTRY,CONF,RES)
 	S RES("name")=$G(RTN)
 	S RES("entry")=$G(ENTRY)
 	I '$G(CONF("mioide","run","enabled")) S RES("ok")=0,RES("error")="run_disabled" Q 0
-	I '$$ISRTN($G(RTN)) S RES("ok")=0,RES("error")="invalid_routine" Q 0
+	I '$$ISRTN($G(RTN)) S RES("ok")=0,RES("error")="invalid_routine" Q:$Q 0 Q
 	I ENTRY'="" D
 	. I '$$ISID(ENTRY) S RES("ok")=0,RES("error")="invalid_entry"
 	I $G(RES("error"))="invalid_entry" Q 0
@@ -265,126 +278,132 @@ SEARCH(CONF,Q,LIMIT,OUT)
 	Q
 	;
 SNIPS(TCTX)
-	K TCTX("snippets")
-	D ADDSNIP(.TCTX,1,"SET/get","Set default with $GET","S value=$G(^GLOBAL(node),"""")")
-	D ADDSNIP(.TCTX,2,"FOR/$ORDER","Loop through nodes","S key="""" F  S key=$O(^GLOBAL(key)) Q:key=""""  D")
-	D ADDSNIP(.TCTX,3,"Error trap","Simple local trap","N $ET S $ET=$$TRAP^MYERR()")
-	D ADDSNIP(.TCTX,4,"API handler","Standard route entry","ROUTE(DEV,CONF,REQ,CTX) N OUT,ERR Q")
-	D ADDSNIP(.TCTX,5,"Quiet test","Quiet-on-success assertion","D EQ^MIOTASSERT($G(X),1,""[T001][ok]"")")
+	S TCTX("snippets",1,"title")="SET"
+	S TCTX("snippets",1,"lead")="Assign values and defaults"
+	S TCTX("snippets",1,"code")="S X=$G(X,0)"
+	S TCTX("snippets",2,"title")="DO"
+	S TCTX("snippets",2,"lead")="Invoke a label or routine"
+	S TCTX("snippets",2,"code")="D TAG^ROUTINE"
+	S TCTX("snippets",3,"title")="QUIT"
+	S TCTX("snippets",3,"lead")="Return from entry points"
+	S TCTX("snippets",3,"code")="Q"
+	S TCTX("snippets",4,"title")="$GET"
+	S TCTX("snippets",4,"lead")="Read safely with a default"
+	S TCTX("snippets",4,"code")="$G(^GLOBAL(KEY),"""")"
+	S TCTX("snippets",5,"title")="FOR"
+	S TCTX("snippets",5,"lead")="Simple bounded loop"
+	S TCTX("snippets",5,"code")="F I=1:1:10 W !,I"
 	Q
 	;
-ADDSNIP(TCTX,IDX,TITLE,LEAD,CODE)
-	S TCTX("snippets",IDX,"title")=$G(TITLE)
-	S TCTX("snippets",IDX,"lead")=$G(LEAD)
-	S TCTX("snippets",IDX,"code")=$G(CODE)
-	Q
+RDIR(CONF)
+	Q $G(CONF("mioide","routineDir"),"routines")
 	;
-COUNT(ARR)
-	N I,C
-	S I=0,C=0
-	F  S I=$O(ARR(I)) Q:'I  S C=C+1
-	Q C
-	;
-PKG(RTN)
-	N I,C,OUT
-	S OUT=""
-	F I=1:1:$L($G(RTN)) S C=$E(RTN,I) Q:C'?1A  S OUT=OUT_C Q:$L(OUT)'<4
-	I OUT="" S OUT="misc"
-	Q OUT
+TDIR(CONF)
+	Q $G(CONF("mioide","tempDir"),"tmp")
 	;
 ROUTEPATH(RTN,CONF)
 	Q $$RDIR(.CONF)_"/"_$G(RTN)_".m"
 	;
-RDIR(CONF)
-	Q $$TRAIL($G(CONF("mioide","routineDir"),"routines"))
-	;
-TDIR(CONF)
-	Q $$TRAIL($G(CONF("mioide","tempDir"),"tmp/mioide"))
-	;
 RUNPATH(CONF)
-	Q $$TDIR(.CONF)_"/run-"_$J_"-"_$TR($H,",","-")_".out"
+	Q $$TDIR(.CONF)_"/mioide_run.out"
 	;
-TRAIL(PATH)
-	N P
-	S P=$G(PATH)
-	I $E(P,$L(P))="/" Q $E(P,1,$L(P)-1)
-	Q P
+PKG(NAME)
+	Q $E($G(NAME),1,3)
 	;
-ENSDIR(PATH)
-	Q
+COUNT(ARR)
+	N I,N S I=0,N=0 F  S I=$O(ARR(I)) Q:'I  S N=N+1
+	Q N
+	;
+LOW(X)
+	Q $ZCONVERT($G(X),"L")
+	;
+NOEXT(X)
+	N P S P=$L($G(X),".") I P>1 Q $P(X,".",1,P-1)
+	Q $G(X)
+	;
+BASE(PATH)
+	N I,P,CUR S CUR=$G(PATH)
+	F I=$L(CUR):-1:1 I $E(CUR,I)="/" Q
+	I I>0 Q $E(CUR,I+1,$L(CUR))
+	Q CUR
+	;
+URLENC(X)
+	Q $TR($G(X)," ","+")
+	;
+ISRTN(X)
+	Q $$ISID($G(X))
+	;
+ISID(S)
+	N I,C,OK
+	S S=$G(S)
+	I S="" Q 0
+	S C=$E(S,1),OK=$S((C?1A)!(C="%"):1,1:0)
+	I 'OK Q 0
+	F I=2:1:$L(S) Q:'OK  D
+	. S C=$E(S,I)
+	. I '(C?1AN) S OK=0
+	Q OK
+	;
+RUNOK(RTN,CONF)
+	N I,P,OK
+	S OK=0
+	S I=0
+	F  S I=$O(CONF("mioide","run","allowPrefix",I)) Q:'I  D  Q:OK
+	. S P=$G(CONF("mioide","run","allowPrefix",I))
+	. I P'="",$E($G(RTN),1,$L(P))=P S OK=1
+	Q OK
 	;
 READARR(PATH,OUT,ERR)
-	N OIO,I,LINE
-	K OUT
-	K ERR
+	N OIO,LINE,I
+	K OUT,ERR
 	S OIO=$IO
-	OPEN PATH:(READONLY):1 ELSE  S ERR("error")="open_failed" Q 0
+	OPEN PATH:(READONLY:STREAM):1 ELSE  S ERR("error")="open_failed" Q 0
 	USE PATH
 	S I=0
-	F  R LINE Q:$ZEOF  S I=I+1,OUT(I)=LINE
+	F  U PATH R LINE Q:$ZEOF  S I=I+1,OUT(I)=LINE
 	CLOSE PATH
 	USE OIO
 	Q 1
 	;
 READTXT(PATH,MAX,OUT,ERR)
-	N LINES,I,LEN,LINE
+	N ARR,I,LEN
 	K ERR
 	S OUT=""
-	I '$$READARR(PATH,.LINES,.ERR) Q 0
-	S LEN=0,I=0
-	F  S I=$O(LINES(I)) Q:'I  D  Q:LEN'<MAX
-	. S LINE=$G(LINES(I))
-	. I I>1 S OUT=OUT_$C(10),LEN=LEN+1 I LEN'<MAX Q
-	. I LEN+$L(LINE)>MAX S OUT=OUT_$E(LINE,1,MAX-LEN),LEN=MAX Q
-	. S OUT=OUT_LINE,LEN=LEN+$L(LINE)
-	Q 1
+	I '$$READARR(PATH,.ARR,.ERR) Q
+	S I=0,LEN=0
+	F  S I=$O(ARR(I)) Q:'I  D  Q:LEN'<MAX
+	. I I>1 S OUT=OUT_$C(10),LEN=LEN+1
+	. S OUT=OUT_$E($G(ARR(I)),1,MAX-LEN),LEN=$L(OUT)
+	Q
 	;
 FILEX(PATH)
-	N X
-	S X=$ZSEARCH($G(PATH))
-	Q $S(X'="":1,1:0)
+	N X S X=$ZSEARCH($G(PATH))
+	Q $S(X="":0,1:1)
 	;
-BASE(PATH)
-	N I,C,OUT
-	S OUT=$G(PATH)
-	F I=$L(OUT):-1:1 S C=$E(OUT,I) I C="/" Q
-	Q $E(OUT,I+1,$L(OUT))
+ENSDIR(DIR)
+	Q
 	;
-NOEXT(NAME)
-	N I
-	S I=$L($G(NAME),".")
-	I I'>1 Q $G(NAME)
-	Q $P(NAME,".",1,I-1)
 	;
-LOW(X)
-	Q $ZCONVERT($G(X),"L")
+EXECBUF(CODE,CONF,OUT,ERR)
+	N PATH,OIO,MAX
+	K ERR
+	S OUT=""
+	D ENSDIR($$TDIR(.CONF))
+	S PATH=$$TDIR(.CONF)_"/mioide_term.out"
+	S OIO=$IO
+	OPEN PATH:(NEWVERSION:STREAM):1 ELSE  S ERR("error")="open_failed" Q 0
+	USE PATH
+	S $ETRAP="D EXECERR^MIOIDED(.ERR) USE OIO CLOSE PATH Q"
+	XECUTE CODE
+	CLOSE PATH
+	USE OIO
+	S MAX=+$G(CONF("mioide","terminal","maxOutputBytes"),65536)
+	D READTXT(PATH,MAX,.OUT,.ERR)
+	Q $S($D(ERR("error")):0,1:1)
 	;
-URLENC(S)
-	Q $$URLE^MIOUTIL($G(S))
-	;
-ISID(X)
-	N I,C,Q S Q=1
-	S X=$G(X)
-	I X="" Q 0
-	I '$E(X,1)?1A Q 0
-	F I=1:1:$L(X) S C=$E(X,I) I C'?1A,C'?1N,C'="%" S Q=0 Q
-	Q Q
-	;
-ISRTN(X)
-	N I,C,Q S Q=1
-	S X=$G(X)
-	I X="" Q 0
-	I $L(X)>31 Q 0
-	I '$E(X,1)?1A,$E(X,1)'="%" Q 0
-	F I=1:1:$L(X) S C=$E(X,I) I C'?1A,C'?1N,C'="%" S Q=0 Q
-	Q Q
-	;
-RUNOK(RTN,CONF)
-	N I,P,PRE
-	S P="",I=0
-	F  S I=$O(CONF("mioide","run","allowPrefix",I)) Q:'I  D  Q:P'=""
-	. S PRE=$G(CONF("mioide","run","allowPrefix",I))
-	. I PRE'="",$E($G(RTN),1,$L(PRE))=PRE S P=PRE
-	Q $S(P'="":1,1:0)
-	;
+EXECERR(ERR)
+	S $ECODE=""
+	S ERR("error")="xecute_failed"
+	S ERR("zstatus")=$ZSTATUS
+	Q
 	;

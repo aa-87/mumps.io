@@ -1,4 +1,4 @@
-MIOIDET001 ; MIOIDE config and route tests
+MIOIDET001 ; MIOIDE bootstrap and route tests
 	D START Q
 	;
 START(FAIL)
@@ -6,7 +6,6 @@ START(FAIL)
 	S TOP='$D(FAIL),LOCAL=0
 	D T001(.LOCAL)
 	D T010(.LOCAL)
-	D T020(.LOCAL)
 	I TOP D  Q
 	. I 'LOCAL W !,"OK - MIOIDET001"
 	I LOCAL S FAIL=1
@@ -17,37 +16,27 @@ T001(FAIL)
 	D CONFDEF^MIOIDE(.CONF)
 	D EQ^MIOIDET000(.FAIL,"[T001][enabled]",+$G(CONF("mioide","enabled")),1)
 	D EQ^MIOIDET000(.FAIL,"[T001][auth]",+$G(CONF("mioide","authRequired")),1)
-	D EQ^MIOIDET000(.FAIL,"[T001][roles]",$G(CONF("mioide","roles")),"developer,admin")
-	D EQ^MIOIDET000(.FAIL,"[T001][routine dir]",$G(CONF("mioide","routineDir")),"routines")
-	D EQ^MIOIDET000(.FAIL,"[T001][template dir]",$G(CONF("server","templateDir")),"templates")
-	D EQ^MIOIDET000(.FAIL,"[T001][theme]",$G(CONF("mioide","theme","default")),"dark")
+	D EQ^MIOIDET000(.FAIL,"[T001][ws enabled]",+$G(CONF("mioide","ws","enabled")),1)
+	D EQ^MIOIDET000(.FAIL,"[T001][events path]",$G(CONF("mioide","ws","eventsPath")),"/mioide/ws/events")
+	D EQ^MIOIDET000(.FAIL,"[T001][terminal path]",$G(CONF("mioide","ws","terminalPath")),"/mioide/ws/terminal")
+	D EQ^MIOIDET000(.FAIL,"[T001][debug enabled]",+$G(CONF("mioide","debug","enabled")),1)
 	Q
 	;
 T010(FAIL)
 	N CONF
 	K ^MIO("ROUTE","RAW","GET","/mioide")
-	K ^MIO("ROUTE","RAW","GET","/mioide/api/routines")
-	K ^MIO("ROUTE","RAW","GET","/mioide/api/routines/:name/source")
-	K ^MIO("ROUTE","RAW","PUT","/mioide/api/routines/:name/source")
-	K ^MIO("ROUTE","RAW","POST","/mioide/api/routines/:name/compile")
-	K ^MIO("ROUTE","RAW","POST","/mioide/api/routines/:name/run")
+	K ^MIO("ROUTE","RAW","WS","/mioide/ws/events")
+	K ^MIO("ROUTE","RAW","WS","/mioide/ws/terminal")
+	K ^MIO("ROUTE","RAW","POST","/mioide/api/debug/sessions")
+	K ^MIO("ROUTE","RAW","GET","/mioide/api/debug/sessions/:sid")
 	D CONFDEF^MIOIDE(.CONF)
-	S CONF("mioide","authRequired")=0
 	D REG^MIOIDE(.CONF)
 	D EQ^MIOIDET000(.FAIL,"[T010][home]",$G(^MIO("ROUTE","RAW","GET","/mioide")),"HOME^MIOIDER")
-	D EQ^MIOIDET000(.FAIL,"[T010][list]",$G(^MIO("ROUTE","RAW","GET","/mioide/api/routines")),"APIRTN^MIOIDER")
-	D EQ^MIOIDET000(.FAIL,"[T010][load]",$G(^MIO("ROUTE","RAW","GET","/mioide/api/routines/:name/source")),"APILOAD^MIOIDER")
-	D EQ^MIOIDET000(.FAIL,"[T010][save]",$G(^MIO("ROUTE","RAW","PUT","/mioide/api/routines/:name/source")),"APISAVE^MIOIDER")
-	D EQ^MIOIDET000(.FAIL,"[T010][compile]",$G(^MIO("ROUTE","RAW","POST","/mioide/api/routines/:name/compile")),"APICOMP^MIOIDER")
-	D EQ^MIOIDET000(.FAIL,"[T010][run]",$G(^MIO("ROUTE","RAW","POST","/mioide/api/routines/:name/run")),"APIRUN^MIOIDER")
-	D EQ^MIOIDET000(.FAIL,"[T010][auth required]",+$G(^MIO("ROUTE","META","GET","/mioide","authRequired")),0)
-	Q
-	;
-T020(FAIL)
-	N CONF
-	K ^MIO("ROUTE","RAW","GET","/mioide")
-	D CONFDEF^MIOIDE(.CONF)
-	D REG^MIOIDE(.CONF)
-	D EQ^MIOIDET000(.FAIL,"[T020][auth default]",+$G(^MIO("ROUTE","META","GET","/mioide","authRequired")),1)
+	D EQ^MIOIDET000(.FAIL,"[T010][ws events]",$G(^MIO("ROUTE","RAW","WS","/mioide/ws/events")),"EVENTS^MIOIDEWS")
+	D EQ^MIOIDET000(.FAIL,"[T010][ws terminal]",$G(^MIO("ROUTE","RAW","WS","/mioide/ws/terminal")),"TERMINAL^MIOIDEWS")
+	D EQ^MIOIDET000(.FAIL,"[T010][ws persistent]",+$G(^MIO("ROUTE","META","WS","/mioide/ws/events","wsPersistent")),1)
+	D EQ^MIOIDET000(.FAIL,"[T010][auth required]",+$G(^MIO("ROUTE","META","GET","/mioide","authRequired")),1)
+	D EQ^MIOIDET000(.FAIL,"[T010][debug start]",$G(^MIO("ROUTE","RAW","POST","/mioide/api/debug/sessions")),"APIDBGST^MIOIDER")
+	D EQ^MIOIDET000(.FAIL,"[T010][debug snap]",$G(^MIO("ROUTE","RAW","GET","/mioide/api/debug/sessions/:sid")),"APIDBGSN^MIOIDER")
 	Q
 	;

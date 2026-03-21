@@ -60,14 +60,54 @@
     <div class="panel-head">
       <div>
         <div class="section-label">Run and Debug</div>
-        <div class="mt-1 text-xs muted">Watches, stack, and breakpoints</div>
+        <div class="mt-1 text-xs muted">Breakpoints, watches, and source-mapped stepping</div>
       </div>
       <button type="button" class="icon-btn" data-float-open="debug" title="Float run and debug" aria-label="Float run and debug">⧉</button>
     </div>
     <div class="scroll-vscode overflow-auto p-2 min-h-0 h-full space-y-3" id="debug-panel-body">
-      <section>
+      <section class="space-y-2">
+        <div class="section-label">DEBUG SESSION</div>
+        <div class="grid grid-cols-2 gap-1.5">
+          <button type="button" class="tool-btn" id="dbg-start-btn">Start</button>
+          <button type="button" class="tool-btn" id="dbg-continue-btn">Continue</button>
+          <button type="button" class="tool-btn" id="dbg-stepinto-btn">Step Into</button>
+          <button type="button" class="tool-btn" id="dbg-stepover-btn">Step Over</button>
+          <button type="button" class="tool-btn col-span-2" id="dbg-stop-btn">Stop</button>
+        </div>
+        <div class="debug-row compact-row space-y-1">
+          <div class="flex items-center justify-between gap-2"><span class="text-[11px] muted">Status</span><span class="badge" id="dbg-session-status">{{debugSessionText}}</span></div>
+          <div class="flex items-center justify-between gap-2"><span class="text-[11px] muted">Routine</span><span class="text-[11px] font-mono" id="dbg-session-routine">{{activeName}}</span></div>
+          <div class="flex items-center justify-between gap-2"><span class="text-[11px] muted">Location</span><span class="text-[11px] font-mono" id="dbg-session-line"></span></div>
+          <div class="text-[11px] muted" id="dbg-session-reason">{{debugReasonText}}</div>
+          <div class="text-[11px] font-mono" id="dbg-current-text"></div>
+        </div>
+      </section>
+
+      <section class="space-y-2">
+        <div class="section-label">BREAKPOINTS</div>
+        <div class="flex items-center gap-1.5">
+          <input id="dbg-bp-line" class="field-lite field-lite-compact" placeholder="Line" inputmode="numeric">
+          <button type="button" class="tool-btn" id="dbg-bp-toggle">Toggle</button>
+        </div>
+        <div id="dbg-breakpoint-list" class="space-y-1">
+          {{#breakpoint}}
+          <div class="debug-row compact-row">
+            <div class="min-w-0">
+              <div class="truncate text-xs font-semibold">{{loc}}</div>
+              <div class="mt-1 truncate text-[11px] muted">{{detail}}</div>
+            </div>
+          </div>
+          {{/breakpoint}}
+        </div>
+      </section>
+
+      <section class="space-y-2">
         <div class="section-label">WATCH</div>
-        <div class="mt-2 space-y-1">
+        <div class="flex items-center gap-1.5">
+          <input id="dbg-watch-expr" class="field-lite field-lite-compact" placeholder="^GLOBAL or $JOB">
+          <button type="button" class="tool-btn" id="dbg-watch-add">Add</button>
+        </div>
+        <div id="dbg-watch-list" class="space-y-1">
           {{#watch}}
           <div class="debug-row compact-row">
             <div class="min-w-0">
@@ -78,9 +118,10 @@
           {{/watch}}
         </div>
       </section>
-      <section>
+
+      <section class="space-y-2">
         <div class="section-label">CALL STACK</div>
-        <div class="mt-2 space-y-1">
+        <div id="dbg-callstack-list" class="space-y-1">
           {{#callstack}}
           <div class="debug-row compact-row">
             <div class="min-w-0">
@@ -91,18 +132,14 @@
           {{/callstack}}
         </div>
       </section>
-      <section>
-        <div class="section-label">BREAKPOINTS</div>
-        <div class="mt-2 space-y-1">
-          {{#breakpoint}}
-          <div class="debug-row compact-row">
-            <div class="min-w-0">
-              <div class="truncate text-xs font-semibold">{{loc}}</div>
-              <div class="mt-1 truncate text-[11px] muted">{{detail}}</div>
-            </div>
-          </div>
-          {{/breakpoint}}
+
+      <section class="space-y-2">
+        <div class="section-label">EVALUATE</div>
+        <div class="flex items-center gap-1.5">
+          <input id="dbg-eval-expr" class="field-lite field-lite-compact" placeholder="Evaluate ^GLOBAL or $JOB">
+          <button type="button" class="tool-btn" id="dbg-eval-run">Run</button>
         </div>
+        <div class="debug-row compact-row text-[11px] font-mono" id="dbg-eval-result"></div>
       </section>
     </div>
   </section>

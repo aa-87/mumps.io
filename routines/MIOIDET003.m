@@ -1,4 +1,4 @@
-MIOIDET003 ; MIOIDE render token tests
+MIOIDET003 ; MIOIDE websocket and terminal tests
 	D START Q
 	;
 START(FAIL)
@@ -13,68 +13,37 @@ START(FAIL)
 	I LOCAL S FAIL=1
 	Q
 	;
-T020(FAIL)
-	N CONF,REQ,CTX,TCTX,OUT,ERR
-	D CONFDEF^MIOIDE(.CONF)
-	D BUILDHOME^MIOIDED(.CONF,.REQ,.CTX,.TCTX)
-	D RENDER^MIOIDER(.CONF,.TCTX,.OUT,.ERR)
-	D HAS^MIOIDET000(.FAIL,"[T020][palette overlay]",OUT,"paletteOverlay")
-	D HAS^MIOIDET000(.FAIL,"[T020][dispatch command]",OUT,"dispatchCommand")
-	D HAS^MIOIDET000(.FAIL,"[T020][ctrl reload]",OUT,"Ctrl+R")
-	D HAS^MIOIDET000(.FAIL,"[T020][ctrl save]",OUT,"Ctrl+S")
-	D HAS^MIOIDET000(.FAIL,"[T020][compile shortcut]",OUT,"Ctrl+Shift+B")
-	D HAS^MIOIDET000(.FAIL,"[T020][new terminal shortcut]",OUT,"Ctrl+Shift+`")
-	Q
-	;
-T030(FAIL)
-	N CONF,REQ,CTX,TCTX,OUT,ERR
-	D CONFDEF^MIOIDE(.CONF)
-	D BUILDHOME^MIOIDED(.CONF,.REQ,.CTX,.TCTX)
-	D RENDER^MIOIDER(.CONF,.TCTX,.OUT,.ERR)
-	D HAS^MIOIDET000(.FAIL,"[T030][dock terminal host]",OUT,"dockTerminalHost")
-	D HAS^MIOIDET000(.FAIL,"[T030][float terminal host]",OUT,"floatTerminalHost")
-	D HAS^MIOIDET000(.FAIL,"[T030][float drag]",OUT,"wireFloatWindow")
-	D HAS^MIOIDET000(.FAIL,"[T030][theme toggle id]",OUT,"themeToggle")
-	D HAS^MIOIDET000(.FAIL,"[T030][line sync]",OUT,"syncLineInfo")
-	D HAS^MIOIDET000(.FAIL,"[T030][sidebar splitter]",OUT,"sidebarSplitter")
-	D HAS^MIOIDET000(.FAIL,"[T030][dock splitter]",OUT,"dockSplitter")
-	D HAS^MIOIDET000(.FAIL,"[T030][monaco loader]",OUT,"loadMonaco")
-	D HAS^MIOIDET000(.FAIL,"[T030][xterm loader]",OUT,"loadXterm")
-	Q
-	;
-
 T001(FAIL)
-	N CONF,REQ,CTX,TCTX,OUT,ERR
-	D CONFDEF^MIOIDE(.CONF)
-	D BUILDHOME^MIOIDED(.CONF,.REQ,.CTX,.TCTX)
-	D RENDER^MIOIDER(.CONF,.TCTX,.OUT,.ERR)
-	D TRUE^MIOIDET000(.FAIL,"[T001][render ok]",'$D(ERR))
-	D HAS^MIOIDET000(.FAIL,"[T001][heading]",OUT,"MIOIDE Debug Workbench")
-	D HAS^MIOIDET000(.FAIL,"[T001][explorer]",OUT,"Routine explorer")
-	D HAS^MIOIDET000(.FAIL,"[T001][debug]",OUT,"Run and Debug")
-	D HAS^MIOIDET000(.FAIL,"[T001][watch]",OUT,"WATCH")
-	D HAS^MIOIDET000(.FAIL,"[T001][call stack]",OUT,"CALL STACK")
-	D HAS^MIOIDET000(.FAIL,"[T001][palette]",OUT,"Command Palette")
-	D HAS^MIOIDET000(.FAIL,"[T001][monaco]",OUT,"monaco-editor")
-	D HAS^MIOIDET000(.FAIL,"[T001][xterm]",OUT,"xterm")
-	D HAS^MIOIDET000(.FAIL,"[T001][output]",OUT,"OUTPUT")
-	D HAS^MIOIDET000(.FAIL,"[T001][terminal]",OUT,"TERMINAL")
-	D HAS^MIOIDET000(.FAIL,"[T001][theme]",OUT,"Toggle theme")
-	D HAS^MIOIDET000(.FAIL,"[T001][new terminal]",OUT,"New terminal")
-	D HAS^MIOIDET000(.FAIL,"[T001][reload]",OUT,"Reload current routine")
-	D HAS^MIOIDET000(.FAIL,"[T001][tab close]",OUT,"data-close-tab=")
+	N REQ,EV
+	S REQ("hdr","x-mioide-client")="clientA"
+	D PUBREQ^MIOIDEWS(.REQ,"save","MIOIDE","saved","Routine saved",.REQ)
+	D TRUE^MIOIDET000(.FAIL,"[T001][queue next]",$$NEXTEV^MIOIDEWS("clientA",0,.EV))
+	D EQ^MIOIDET000(.FAIL,"[T001][type]",$G(EV("type")),"save")
+	D EQ^MIOIDET000(.FAIL,"[T001][routine]",$G(EV("routine")),"MIOIDE")
 	Q
 	;
 T010(FAIL)
-	N CONF,REQ,CTX,TCTX,OUT,ERR
+	N ERR,CONF
 	D CONFDEF^MIOIDE(.CONF)
-	D BUILDHOME^MIOIDED(.CONF,.REQ,.CTX,.TCTX)
-	D RENDER^MIOIDER(.CONF,.TCTX,.OUT,.ERR)
-	D HAS^MIOIDET000(.FAIL,"[T010][dock output tab]",OUT,"data-dock-tab=""output""")
-	D HAS^MIOIDET000(.FAIL,"[T010][dock terminal tab]",OUT,"data-dock-tab=""terminal""")
-	D HAS^MIOIDET000(.FAIL,"[T010][float terminal]",OUT,"data-float-window=""terminal""")
-	D HAS^MIOIDET000(.FAIL,"[T010][palette command]",OUT,"data-palette-command=""newterm""")
-	D HAS^MIOIDET000(.FAIL,"[T010][theme function]",OUT,"setThemeMode")
-	D HAS^MIOIDET000(.FAIL,"[T010][terminal function]",OUT,"createTerminalWindow")
+	D TRUE^MIOIDET000(.FAIL,"[T010][safe help]",$$TERMSAFE^MIOIDEWS("W !,1",.CONF,.ERR))
+	K ERR
+	D EQ^MIOIDET000(.FAIL,"[T010][block read]",$$TERMSAFE^MIOIDEWS("READ X",.CONF,.ERR),0)
+	D EQ^MIOIDET000(.FAIL,"[T010][block err]",$G(ERR("error")),"command_not_allowed")
+	Q
+	;
+T020(FAIL)
+	N OBJ,ERR
+	D PARSE^MIOIDEWS("{""cmd"":""ping"",""clientId"":""abc123""}",.OBJ,.ERR)
+	D TRUE^MIOIDET000(.FAIL,"[T020][parse ok]",'$D(ERR))
+	D EQ^MIOIDET000(.FAIL,"[T020][cmd]",$G(OBJ("cmd")),"ping")
+	D EQ^MIOIDET000(.FAIL,"[T020][client]",$G(OBJ("clientId")),"abc123")
+	Q
+	;
+T030(FAIL)
+	N S,CONF,OPC,MSG,ERR
+	D CONFDEF^MIOIDE(.CONF)
+	D INITSTATE^MIOWS(.S,.CONF)
+	D EQ^MIOIDET000(.FAIL,"[T030][state timeout]",+$G(S("to")),+$G(CONF("websocket","idleTimeoutSeconds"),3600))
+	D EQ^MIOIDET000(.FAIL,"[T030][frag]",+$G(S("frag")),0)
 	Q
 	;

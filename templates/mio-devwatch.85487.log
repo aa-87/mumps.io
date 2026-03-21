@@ -793,3 +793,9 @@
 {"ts":"2026-03-21 12:02:43","event":"mod","file":"/home/aa/work/mumps.io/templates/partials/mioide_sidebar.html"}
 {"ts":"2026-03-21 12:02:51","event":"mod","file":"/home/aa/work/mumps.io/templates/pages/mioide_home.html"}
 {"ts":"2026-03-21 12:02:56","event":"mod","file":"/home/aa/work/mumps.io/templates/layouts/mioide_app.html"}
+{"ts":"2026-03-21 12:46:39","event":"mod","file":"/home/aa/work/mumps.io/templates/partials/mioide_editor_shell.html"}
+{"ts":"2026-03-21 12:46:39","event":"mod","file":"/home/aa/work/mumps.io/templates/partials/mioide_status_bar.html"}
+{"ts":"2026-03-21 14:42:15","event":"mod","file":"/home/aa/work/mumps.io/templates/layouts/mioide_app.html"}
+{"ts":"2026-03-21 14:42:21","event":"mod","file":"/home/aa/work/mumps.io/templates/partials/mioide_editor_shell.html"}
+{"ts":"2026-03-21 14:42:21","event":"mod","file":"/home/aa/work/mumps.io/templates/partials/mioide_sidebar.html"}
+{"ts":"2026-03-21 14:42:21","event":"mod","file":"/home/aa/work/mumps.io/templates/partials/mioide_status_bar.html"}

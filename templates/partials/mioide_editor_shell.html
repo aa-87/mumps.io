@@ -20,6 +20,8 @@
 <script>
 (function () {
   var apiBase = '{{apiBase}}';
+  var wsEventsUrl = '{{wsEventsUrl}}';
+  var wsTerminalUrl = '{{wsTerminalUrl}}';
   var saveMethod = '{{saveMethod}}';
   var initialName = '{{activeName}}';
   var initialSource = document.getElementById('fallback-editor') ? document.getElementById('fallback-editor').value : '';
@@ -32,6 +34,7 @@
   var statusState = document.getElementById('status-state');
   var statusFile = document.getElementById('status-file');
   var statusLine = document.getElementById('status-lineinfo');
+  var statusConn = document.getElementById('status-conn');
   var filepathNode = document.getElementById('editor-filepath');
   var outputList = document.getElementById('output-list');
   var floatOutputList = document.getElementById('floatOutputList');
@@ -48,6 +51,10 @@
   var searchTimer = null;
   var editor = null;
   var xterms = {};
+  var termSockets = {};
+  var eventsSocket = null;
+  var eventsSocketTimer = null;
+  var clientId = loadClientId();
   var nextTerminalId = 1;
   var floatZ = 120;
   var outputLines = [];
@@ -57,6 +64,56 @@
   var lastDockHeight = 112;
 
   function encodeName(name) { return encodeURIComponent(name || ''); }
+
+  function loadClientId() {
+    var key = 'mioide.clientId';
+    try {
+      var cur = window.localStorage.getItem(key);
+      if (cur) return cur;
+      cur = 'mioide-' + Math.random().toString(36).slice(2, 10);
+      window.localStorage.setItem(key, cur);
+      return cur;
+    } catch (e) {
+      return 'mioide-' + Math.random().toString(36).slice(2, 10);
+    }
+  }
+  function wsUrl(path) {
+    var proto = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+    return proto + window.location.host + path;
+  }
+  function updateConnection(text) {
+    if (statusConn) statusConn.textContent = text;
+  }
+  function sendEvent(obj) {
+    if (!eventsSocket || eventsSocket.readyState !== WebSocket.OPEN) return;
+    eventsSocket.send(JSON.stringify(obj || {}));
+  }
+  function connectEvents() {
+    if (!wsEventsUrl || typeof WebSocket === 'undefined') { updateConnection('Events unavailable'); return; }
+    if (eventsSocket && (eventsSocket.readyState === WebSocket.OPEN || eventsSocket.readyState === WebSocket.CONNECTING)) return;
+    updateConnection('Events connecting');
+    eventsSocket = new WebSocket(wsUrl(wsEventsUrl));
+    eventsSocket.addEventListener('open', function () {
+      updateConnection('Events live');
+      eventsSocket.send(JSON.stringify({ cmd: 'hello', clientId: clientId }));
+    });
+    eventsSocket.addEventListener('message', function (ev) {
+      var obj = {};
+      try { obj = JSON.parse(ev.data || '{}'); } catch (e) { return; }
+      if (obj.type === 'hello') { updateConnection('Events live'); return; }
+      if (obj.type === 'ping') { sendEvent({ cmd: 'ping', clientId: clientId }); return; }
+      if (obj.message) toast(obj.message);
+      if (obj.type && obj.status) appendOutput('[' + obj.type + '] ' + (obj.routine || '') + ' ' + obj.status);
+      if (obj.output) appendOutput(obj.output);
+      if (window.MIOIDE && typeof window.MIOIDE.onEvent === 'function') window.MIOIDE.onEvent(obj);
+    });
+    eventsSocket.addEventListener('close', function () {
+      updateConnection('Events offline');
+      if (eventsSocketTimer) window.clearTimeout(eventsSocketTimer);
+      eventsSocketTimer = window.setTimeout(connectEvents, 1500);
+    });
+    eventsSocket.addEventListener('error', function () { updateConnection('Events error'); });
+  }
   function normalizeSource(text) { return String(text || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n'); }
   function escapeHtml(text) {
     return String(text || '')
@@ -107,6 +164,7 @@
     if (!statusLine) return;
     var info = getCursorInfo();
     statusLine.textContent = 'Ln ' + info.line + ', Col ' + info.col;
+    if (window.MIOIDE && typeof window.MIOIDE.onCursorChange === 'function') window.MIOIDE.onCursorChange(info);
   }
   function setThemeMode(mode) {
     document.documentElement.setAttribute('data-theme', mode);
@@ -166,6 +224,7 @@
     highlightRoutine(name);
     focusEditor();
     toast('Active: ' + name);
+    if (window.MIOIDE && typeof window.MIOIDE.onRoutineChange === 'function') window.MIOIDE.onRoutineChange(name);
   }
   function closeTab(name) {
     var idx;
@@ -274,7 +333,7 @@
   function runSearch() {
     var q = ((document.getElementById('search-filter') || {}).value || '').trim();
     if (!q) { renderSearchResults([]); return; }
-    fetch(apiBase + '/search?q=' + encodeName(q), { credentials: 'same-origin' })
+    fetch(apiBase + '/search?q=' + encodeName(q) + '&client=' + encodeName(clientId), { credentials: 'same-origin', headers: { 'X-MIOIDE-Client': clientId } })
       .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, body: j || {} }; }); })
       .then(function (res) { renderSearchResults((res.body && res.body.results) || []); })
       .catch(function () { renderSearchResults([]); });
@@ -285,7 +344,7 @@
     if (!name) return;
     if (tabs[name] && tabs[name].loaded && !opts.force) { activateTab(name); return; }
     toast('Loading ' + name + ' ...');
-    fetch(apiBase + '/routines/' + encodeName(name) + '/source', { credentials: 'same-origin' })
+    fetch(apiBase + '/routines/' + encodeName(name) + '/source?client=' + encodeName(clientId), { credentials: 'same-origin', headers: { 'X-MIOIDE-Client': clientId } })
       .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, body: j || {} }; }); })
       .then(function (res) {
         if (!res.ok || !res.body || !res.body.ok) throw new Error('load_failed');
@@ -307,7 +366,7 @@
     fetch(apiBase + '/routines/' + encodeName(activeName) + '/source', {
       method: saveMethod || 'PUT',
       credentials: 'same-origin',
-      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+      headers: { 'Content-Type': 'text/plain; charset=utf-8', 'X-MIOIDE-Client': clientId },
       body: getEditorValue()
     })
       .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, body: j || {} }; }); })
@@ -326,7 +385,7 @@
   function reloadRoutine() { if (activeName) loadRoutine(activeName, { force: true }); }
   function compileRoutine() {
     if (!activeName) return;
-    fetch(apiBase + '/routines/' + encodeName(activeName) + '/compile', { method: 'POST', credentials: 'same-origin' })
+    fetch(apiBase + '/routines/' + encodeName(activeName) + '/compile?client=' + encodeName(clientId), { method: 'POST', credentials: 'same-origin', headers: { 'X-MIOIDE-Client': clientId } })
       .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, body: j || {} }; }); })
       .then(function (res) {
         var body = res.body || {};
@@ -339,7 +398,7 @@
   function runRoutine() {
     if (!activeName) return;
     openDock('output');
-    fetch(apiBase + '/routines/' + encodeName(activeName) + '/run', { method: 'POST', credentials: 'same-origin' })
+    fetch(apiBase + '/routines/' + encodeName(activeName) + '/run?client=' + encodeName(clientId), { method: 'POST', credentials: 'same-origin', headers: { 'X-MIOIDE-Client': clientId } })
       .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, body: j || {} }; }); })
       .then(function (res) {
         var body = res.body || {};
@@ -444,10 +503,72 @@
     });
     return window.__mioideXtermPromise;
   }
+  function closeTerminalSocket(key) {
+    var ws = termSockets[key];
+    if (!ws) return;
+    try { ws.close(); } catch (e) {}
+    delete termSockets[key];
+  }
+  function bindTerminal(term, key) {
+    var line = '';
+    term.onData(function (data) {
+      var ws = termSockets[key];
+      if (!ws || ws.readyState !== WebSocket.OPEN) return;
+      if (data === '\r') {
+        ws.send(JSON.stringify({ cmd: 'input', clientId: clientId, data: line }));
+        line = '';
+        return;
+      }
+      if (data === '\u007f') {
+        if (line.length > 0) {
+          line = line.slice(0, -1);
+          term.write('\b \b');
+        }
+        return;
+      }
+      if (data === '\u0003') {
+        ws.send(JSON.stringify({ cmd: 'clear', clientId: clientId }));
+        return;
+      }
+      if (data >= ' ') {
+        line += data;
+        term.write(data);
+      }
+    });
+    term.onResize(function (size) {
+      var ws = termSockets[key];
+      if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ cmd: 'resize', clientId: clientId, cols: size.cols, rows: size.rows }));
+    });
+  }
+  function connectTerminal(term, key) {
+    if (!wsTerminalUrl || typeof WebSocket === 'undefined') {
+      term.write('WebSocket terminal unavailable\r\n');
+      return;
+    }
+    closeTerminalSocket(key);
+    var ws = new WebSocket(wsUrl(wsTerminalUrl));
+    termSockets[key] = ws;
+    ws.addEventListener('open', function () {
+      ws.send(JSON.stringify({ cmd: 'hello', clientId: clientId, termId: key, cols: term.cols || 80, rows: term.rows || 24 }));
+    });
+    ws.addEventListener('message', function (ev) {
+      var obj = {};
+      try { obj = JSON.parse(ev.data || '{}'); } catch (e) { return; }
+      if (obj.type === 'clear') { term.clear(); return; }
+      if (obj.type === 'prompt' || obj.type === 'output') { term.write(String(obj.data || '')); return; }
+      if (obj.type === 'error') { term.write('\r\n' + String(obj.message || 'error') + '\r\n'); return; }
+      if (obj.type === 'hello' && obj.sid) { appendOutput('[terminal] session ' + obj.sid + ' connected'); }
+    });
+    ws.addEventListener('close', function () {
+      term.write('\r\n[terminal disconnected]\r\n');
+      delete termSockets[key];
+    });
+    ws.addEventListener('error', function () { term.write('\r\n[terminal error]\r\n'); });
+  }
   function initTerminalHost(hostId, key) {
     var host = document.getElementById(hostId);
     if (!host) return;
-    if (xterms[key]) { if (xterms[key].focus) xterms[key].focus(); return; }
+    if (xterms[key]) { if (!termSockets[key] || termSockets[key].readyState > 1) connectTerminal(xterms[key], key); if (xterms[key].focus) xterms[key].focus(); return; }
     loadXterm().then(function (TerminalCtor) {
       if (!host || xterms[key]) return;
       host.innerHTML = '';
@@ -456,15 +577,13 @@
         fontFamily: 'IBM Plex Mono, ui-monospace, Menlo, monospace',
         fontSize: 12,
         theme: terminalThemeForMode(currentThemeMode()),
-        convertEol: true,
+        convertEol: false,
         rows: 18
       });
       term.open(host);
-      term.write('MIOIDE terminal\r\n');
-      term.write('Xterm.js loaded\r\n');
-      term.write('MIOWS session transport pending\r\n');
-      term.write('YDB> ');
       xterms[key] = term;
+      bindTerminal(term, key);
+      connectTerminal(term, key);
       if (term.focus) term.focus();
     }).catch(function () {
       host.innerHTML = '<div class="output-line compact-row">Terminal library failed to load</div>';
@@ -480,7 +599,7 @@
     section.innerHTML = '<div class="float-head" data-float-handle="' + id + '"><div class="font-semibold">Terminal #' + (nextTerminalId - 1) + '</div><div class="flex items-center gap-2"><button type="button" class="icon-btn icon-btn-compact" data-float-close="' + id + '">✕</button></div></div><div class="float-body"><div class="terminal-host" id="' + id + '-host"></div></div>';
     windowLayer.appendChild(section);
     wireFloatWindow(section);
-    section.querySelector('[data-float-close]').addEventListener('click', function () { section.classList.remove('is-open'); });
+    section.querySelector('[data-float-close]').addEventListener('click', function () { closeTerminalSocket(id); section.classList.remove('is-open'); });
     bringToFront(section);
     requestAnimationFrame(function () { initTerminalHost(id + '-host', id); });
   }
@@ -506,6 +625,15 @@
     if (id === 'output') { openDock('output'); return; }
     if (id === 'theme') { toggleTheme(); return; }
     if (id === 'dock') { toggleDock(); return; }
+    if (id === 'startdebug' || id === 'continue' || id === 'stepinto' || id === 'stepover' || id === 'stopdebug') {
+      if (window.MIOIDE && window.MIOIDE.debug) {
+        if (id === 'startdebug' && typeof window.MIOIDE.debug.start === 'function') { window.MIOIDE.debug.start(); return; }
+        if (id === 'continue' && typeof window.MIOIDE.debug.continueRun === 'function') { window.MIOIDE.debug.continueRun(); return; }
+        if (id === 'stepinto' && typeof window.MIOIDE.debug.stepInto === 'function') { window.MIOIDE.debug.stepInto(); return; }
+        if (id === 'stepover' && typeof window.MIOIDE.debug.stepOver === 'function') { window.MIOIDE.debug.stepOver(); return; }
+        if (id === 'stopdebug' && typeof window.MIOIDE.debug.stop === 'function') { window.MIOIDE.debug.stop(); return; }
+      }
+    }
     openSidebarPanel(id);
   }
   function initPalette() {
@@ -674,6 +802,11 @@
       if (ev.altKey && k === '6') { ev.preventDefault(); openDock('output'); return; }
       if (ev.altKey && k === '7') { ev.preventDefault(); openDock('terminal'); return; }
       if (ev.key === 'F5') { ev.preventDefault(); runRoutine(); return; }
+      if (ev.key === 'F8') { ev.preventDefault(); dispatchCommand('continue'); return; }
+      if (ev.key === 'F9') { ev.preventDefault(); dispatchCommand('startdebug'); return; }
+      if (ev.key === 'F10') { ev.preventDefault(); dispatchCommand('stepinto'); return; }
+      if (ev.key === 'F11') { ev.preventDefault(); dispatchCommand('stepover'); return; }
+      if (ev.shiftKey && ev.key === 'F5') { ev.preventDefault(); dispatchCommand('stopdebug'); return; }
       if (ev.key === 'Escape') { closePalette(); }
     });
     document.getElementById('routine-filter') && document.getElementById('routine-filter').addEventListener('input', filterRoutines);
@@ -718,9 +851,167 @@
     wireFloatWindow(win);
   });
   initMonaco();
+  connectEvents();
   openDock('output');
   runSearch();
   syncActivityButtons();
   syncLineInfo();
+  window.MIOIDE = window.MIOIDE || {};
+  window.MIOIDE.getActiveName = function () { return activeName; };
+  window.MIOIDE.getClientId = function () { return clientId; };
+  window.MIOIDE.appendOutput = appendOutput;
+  window.MIOIDE.openSidebarPanel = openSidebarPanel;
+  window.MIOIDE.openDock = openDock;
+  window.MIOIDE.dispatchCommand = dispatchCommand;
+  window.MIOIDE.toast = toast;
+  window.MIOIDE.getCursorInfo = getCursorInfo;
+  window.MIOIDE.setStatus = setStatus;
+  window.MIOIDE.focusEditor = focusEditor;
+})();
+</script>
+<script>
+(function () {
+  var ide = window.MIOIDE = window.MIOIDE || {};
+  var state = { sid: '', routine: '', line: 0, status: 'idle', reason: '', breakpoints: [], watch: [] };
+  var apiBase = '{{debugApiBase}}';
+  function byId(id) { return document.getElementById(id); }
+  function enc(x) { return encodeURIComponent(x || ''); }
+  function json(url, method, body) {
+    return fetch(url, {
+      method: method || 'GET',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json; charset=utf-8', 'X-MIOIDE-Client': ide.getClientId ? ide.getClientId() : '' },
+      body: body ? JSON.stringify(body) : undefined
+    }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, body: j || {} }; }); });
+  }
+  function setText(id, text) { var node = byId(id); if (node) node.textContent = text || ''; }
+  function activeRoutine() { return (ide.getActiveName ? ide.getActiveName() : '') || ''; }
+  function currentLine() { var info = ide.getCursorInfo ? ide.getCursorInfo() : { line: 1 }; return parseInt((info || {}).line || 1, 10) || 1; }
+  function flatten(prefix, body) {
+    var out = [], i = 1;
+    if (body && body[prefix] && Array.isArray(body[prefix])) return body[prefix];
+    while (body && body[prefix] && body[prefix][i]) { out.push(body[prefix][i]); i += 1; }
+    return out;
+  }
+  function renderBreakpoints(list) {
+    state.breakpoints = list || [];
+    var host = byId('dbg-breakpoint-list');
+    if (!host) return;
+    if (!state.breakpoints.length) { host.innerHTML = '<div class="debug-row compact-row text-[11px] muted">No breakpoints</div>'; return; }
+    host.innerHTML = state.breakpoints.map(function (bp) {
+      return '<div class="debug-row compact-row flex items-center justify-between gap-2"><div class="min-w-0"><div class="truncate text-xs font-semibold">' + (bp.loc || '') + '</div><div class="mt-1 truncate text-[11px] muted">' + (bp.detail || 'Persistent breakpoint') + '</div></div><button type="button" class="icon-btn icon-btn-compact" data-dbg-toggle-line="' + (bp.line || 0) + '">✕</button></div>';
+    }).join('');
+  }
+  function renderWatch(list) {
+    state.watch = list || [];
+    var host = byId('dbg-watch-list');
+    if (!host) return;
+    if (!state.watch.length) { host.innerHTML = '<div class="debug-row compact-row text-[11px] muted">No watches</div>'; return; }
+    host.innerHTML = state.watch.map(function (item, idx) {
+      return '<div class="debug-row compact-row flex items-center justify-between gap-2"><div class="min-w-0"><div class="truncate text-xs font-semibold">' + (item.expr || item.name || '') + '</div><div class="mt-1 truncate text-[11px] muted">' + (item.value || '') + '</div></div><button type="button" class="icon-btn icon-btn-compact" data-dbg-remove-watch="' + (idx + 1) + '">✕</button></div>';
+    }).join('');
+  }
+  function renderFrames(list) {
+    var host = byId('dbg-callstack-list');
+    if (!host) return;
+    host.innerHTML = (list || []).length ? list.map(function (frame) { return '<div class="debug-row compact-row"><div class="truncate text-xs font-semibold">' + (frame.name || frame.frame || '') + '</div><div class="mt-1 truncate text-[11px] muted">' + (frame.detail || '') + '</div></div>'; }).join('') : '<div class="debug-row compact-row text-[11px] muted">No frames</div>';
+  }
+  function updateSession(body) {
+    body = body || {};
+    state.sid = body.sid || state.sid || '';
+    state.routine = body.routine || activeRoutine();
+    state.line = parseInt(body.line || 0, 10) || 0;
+    state.status = body.status || 'idle';
+    state.reason = body.reason || '';
+    setText('debug-session-pill', state.sid ? ('Debug ' + state.status) : 'Debug idle');
+    setText('dbg-session-status', state.status || 'idle');
+    setText('dbg-session-routine', state.routine || '');
+    setText('dbg-session-line', state.line ? ('Line ' + state.line) : '');
+    setText('dbg-session-reason', state.reason || '');
+    setText('dbg-current-text', body.currentText || '');
+    renderFrames(flatten('frame', body));
+    renderWatch(flatten('watch', body));
+    renderBreakpoints(flatten('breakpoint', body));
+  }
+  function refreshSession() {
+    if (!state.sid) return Promise.resolve();
+    return json(apiBase + '/sessions/' + enc(state.sid), 'GET').then(function (res) { if (res.ok && res.body && res.body.ok) updateSession(res.body); });
+  }
+  function refreshBreakpoints() {
+    var name = activeRoutine();
+    if (!name) return Promise.resolve();
+    return json(apiBase + '/routines/' + enc(name) + '/breakpoints', 'GET').then(function (res) { if (res.ok && res.body) renderBreakpoints(flatten('breakpoint', res.body)); });
+  }
+  function start() {
+    var name = activeRoutine();
+    if (!name) return;
+    ide.openSidebarPanel && ide.openSidebarPanel('debug');
+    json(apiBase + '/sessions', 'POST', { routine: name, entry: '', clientId: ide.getClientId ? ide.getClientId() : '' }).then(function (res) {
+      if (!res.ok || !res.body || !res.body.ok) { ide.toast && ide.toast('Debug start failed'); return; }
+      updateSession(res.body);
+      ide.appendOutput && ide.appendOutput('[debug] session started for ' + name);
+      ide.toast && ide.toast('Debug session started');
+    });
+  }
+  function cmd(name) {
+    if (!state.sid) { if (name === 'stop') return; start(); return; }
+    json(apiBase + '/sessions/' + enc(state.sid) + '/command', 'POST', { cmd: name, clientId: ide.getClientId ? ide.getClientId() : '' }).then(function (res) {
+      if (!res.ok || !res.body || !res.body.ok) { ide.toast && ide.toast('Debug command failed'); return; }
+      updateSession(res.body);
+      ide.appendOutput && ide.appendOutput('[debug] ' + name + ' -> ' + (res.body.status || '')); 
+    });
+  }
+  function toggleBreakpoint(line) {
+    var name = activeRoutine();
+    line = parseInt(line || currentLine(), 10) || 1;
+    if (!name) return;
+    json(apiBase + '/routines/' + enc(name) + '/breakpoints/' + line + '/toggle', 'POST', { clientId: ide.getClientId ? ide.getClientId() : '' }).then(function (res) {
+      if (!res.ok || !res.body || !res.body.ok) { ide.toast && ide.toast('Breakpoint toggle failed'); return; }
+      ide.appendOutput && ide.appendOutput('[debug] breakpoint ' + (res.body.enabled ? 'enabled' : 'disabled') + ' @ ' + line);
+      refreshBreakpoints();
+      refreshSession();
+    });
+  }
+  function addWatch() {
+    var input = byId('dbg-watch-expr');
+    if (!input || !input.value) return;
+    if (!state.sid) { start(); setTimeout(addWatch, 150); return; }
+    json(apiBase + '/sessions/' + enc(state.sid) + '/watches', 'POST', { expr: input.value }).then(function (res) {
+      if (!res.ok || !res.body || !res.body.ok) { ide.toast && ide.toast('Watch add failed'); return; }
+      input.value = '';
+      updateSession(res.body);
+    });
+  }
+  function removeWatch(idx) {
+    if (!state.sid) return;
+    json(apiBase + '/sessions/' + enc(state.sid) + '/watches/' + idx + '/remove', 'POST', { ok: 1 }).then(function (res) { if (res.ok && res.body && res.body.ok) updateSession(res.body); });
+  }
+  function evalExpr() {
+    var input = byId('dbg-eval-expr');
+    var out = byId('dbg-eval-result');
+    if (!input || !input.value || !state.sid || !out) return;
+    json(apiBase + '/sessions/' + enc(state.sid) + '/eval', 'POST', { expr: input.value }).then(function (res) {
+      out.textContent = (res.ok && res.body && res.body.ok) ? String(res.body.value || '') : ((res.body && res.body.error) || 'eval_failed');
+    });
+  }
+  ide.debug = { start: start, continueRun: function () { cmd('continue'); }, stepInto: function () { cmd('stepinto'); }, stepOver: function () { cmd('stepover'); }, stop: function () { cmd('stop'); }, toggleBreakpoint: toggleBreakpoint, refresh: refreshSession };
+  ide.onRoutineChange = function () { refreshBreakpoints(); };
+  ide.onEvent = function (obj) { if (!obj) return; if (obj.sid && state.sid && obj.sid === state.sid && (obj.type === 'debug' || obj.type === 'watch' || obj.type === 'debug_eval')) refreshSession(); if (obj.type === 'breakpoint' && obj.routine === activeRoutine()) refreshBreakpoints(); };
+  document.addEventListener('click', function (ev) {
+    var t = ev.target;
+    if (t.closest('#dbg-start-btn')) { ev.preventDefault(); start(); return; }
+    if (t.closest('#dbg-continue-btn')) { ev.preventDefault(); cmd('continue'); return; }
+    if (t.closest('#dbg-stepinto-btn')) { ev.preventDefault(); cmd('stepinto'); return; }
+    if (t.closest('#dbg-stepover-btn')) { ev.preventDefault(); cmd('stepover'); return; }
+    if (t.closest('#dbg-stop-btn')) { ev.preventDefault(); cmd('stop'); return; }
+    if (t.closest('#dbg-bp-toggle')) { ev.preventDefault(); toggleBreakpoint((byId('dbg-bp-line') || {}).value); return; }
+    if (t.closest('#dbg-watch-add')) { ev.preventDefault(); addWatch(); return; }
+    if (t.closest('#dbg-eval-run')) { ev.preventDefault(); evalExpr(); return; }
+    var bp = t.closest('[data-dbg-toggle-line]');
+    if (bp) { ev.preventDefault(); toggleBreakpoint(bp.getAttribute('data-dbg-toggle-line')); return; }
+    var wr = t.closest('[data-dbg-remove-watch]');
+    if (wr) { ev.preventDefault(); removeWatch(wr.getAttribute('data-dbg-remove-watch')); return; }
+  });
+  refreshBreakpoints();
 })();
 </script>
