@@ -1,11 +1,8 @@
-MIOIDEDBGS ; MIOIDE debugger session store
+MIOIDEDBGS ; MIOIDE debugger session store and hardening helpers
 	Q
 	;
 ROOT()
 	Q $NA(^MIO("MIOIDE","DBG"))
-	;
-SROOT(SID)
-	Q $$ROOT()_",""SESSION"","""_$G(SID)_""""
 	;
 RESET()
 	K ^MIO("MIOIDE","DBG")
@@ -25,8 +22,10 @@ INIT(SID,CLIENT,RTN,ENTRY,MAXLINE)
 	S ^MIO("MIOIDE","DBG","SESSION",SID,"status")="paused"
 	S ^MIO("MIOIDE","DBG","SESSION",SID,"reason")="started"
 	S ^MIO("MIOIDE","DBG","SESSION",SID,"seq")=0
+	S ^MIO("MIOIDE","DBG","SESSION",SID,"cmdSeq")=0
 	S ^MIO("MIOIDE","DBG","SESSION",SID,"createdTs")=$H
 	S ^MIO("MIOIDE","DBG","SESSION",SID,"updatedTs")=$H
+	S ^MIO("MIOIDE","DBG","SESSION",SID,"lastSeenTs")=$H
 	Q
 	;
 SET(SID,KEY,VAL)
@@ -37,20 +36,48 @@ SET(SID,KEY,VAL)
 GET(SID,KEY)
 	Q $G(^MIO("MIOIDE","DBG","SESSION",SID,KEY))
 	;
+TOUCH(SID)
+	I $$EXISTS($G(SID)) S ^MIO("MIOIDE","DBG","SESSION",SID,"lastSeenTs")=$H,^MIO("MIOIDE","DBG","SESSION",SID,"updatedTs")=$H
+	Q
+	;
+STATUSOK(STATUS)
+	N X S X=$ZCONVERT($G(STATUS),"L")
+	I X="idle" Q 1
+	I X="starting" Q 1
+	I X="paused" Q 1
+	I X="running" Q 1
+	I X="stepping" Q 1
+	I X="terminated" Q 1
+	I X="faulted" Q 1
+	Q 0
+	;
+SETSTAT(SID,STATUS,REASON)
+	I '$$EXISTS($G(SID)) Q:$Q 0 Q
+	I '$$STATUSOK($G(STATUS)) Q:$Q 0 Q
+	S ^MIO("MIOIDE","DBG","SESSION",SID,"status")=$G(STATUS)
+	S ^MIO("MIOIDE","DBG","SESSION",SID,"reason")=$G(REASON)
+	S ^MIO("MIOIDE","DBG","SESSION",SID,"updatedTs")=$H
+	S ^MIO("MIOIDE","DBG","SESSION",SID,"lastSeenTs")=$H
+	Q:$Q 1 Q
+	;
 NEXTSEQ(SID)
 	N X
 	S X=+$G(^MIO("MIOIDE","DBG","SESSION",SID,"seq"))+1
 	S ^MIO("MIOIDE","DBG","SESSION",SID,"seq")=X
 	S ^MIO("MIOIDE","DBG","SESSION",SID,"updatedTs")=$H
+	S ^MIO("MIOIDE","DBG","SESSION",SID,"lastSeenTs")=$H
 	Q X
 	;
+LASTSEQ(SID)
+	Q +$G(^MIO("MIOIDE","DBG","SESSION",$G(SID),"seq"))
+	;
 STOREEVT(SID,SEQ,TYPE,JSON,CONF)
-	N KEEP,ROOT,I,FIRST
+	N KEEP,FIRST
 	S KEEP=+$G(CONF("mioide","debug","eventRetain"),64)
+	I KEEP<1 S KEEP=1
 	S ^MIO("MIOIDE","DBG","SESSION",SID,"EVENT",SEQ,"type")=$G(TYPE)
 	S ^MIO("MIOIDE","DBG","SESSION",SID,"EVENT",SEQ,"json")=$G(JSON)
 	S ^MIO("MIOIDE","DBG","SESSION",SID,"EVENT",SEQ,"ts")=$H
-	S ROOT=$NA(^MIO("MIOIDE","DBG","SESSION",SID,"EVENT"))
 	F  Q:$$EVCOUNT(SID)'>KEEP  D
 	. S FIRST=$O(^MIO("MIOIDE","DBG","SESSION",SID,"EVENT",0))
 	. Q:'FIRST
@@ -61,6 +88,18 @@ EVCOUNT(SID)
 	N I,C S I=0,C=0
 	F  S I=$O(^MIO("MIOIDE","DBG","SESSION",SID,"EVENT",I)) Q:'I  S C=C+1
 	Q C
+	;
+NEXTEVT(SID,AFTER,OUT)
+	N SEQ
+	K OUT
+	I '$$EXISTS($G(SID)) Q:$Q 0 Q
+	S SEQ=$O(^MIO("MIOIDE","DBG","SESSION",SID,"EVENT",+$G(AFTER)))
+	I 'SEQ Q:$Q 0 Q
+	S OUT("seq")=SEQ
+	S OUT("type")=$G(^MIO("MIOIDE","DBG","SESSION",SID,"EVENT",SEQ,"type"))
+	S OUT("json")=$G(^MIO("MIOIDE","DBG","SESSION",SID,"EVENT",SEQ,"json"))
+	S OUT("ts")=$G(^MIO("MIOIDE","DBG","SESSION",SID,"EVENT",SEQ,"ts"))
+	Q:$Q 1 Q
 	;
 SETBP(SID,RTN,LINE,VAL)
 	I +$G(VAL) S ^MIO("MIOIDE","DBG","SESSION",SID,"BP",RTN,+LINE)=1 Q
@@ -113,8 +152,75 @@ WATCHARY(SID,OUT)
 	. S OUT(OIDX,"idx")=IDX
 	Q
 	;
+CMDLOG(SID,CMD,DETAIL,CONF)
+	N IDX,KEEP,FIRST
+	I '$$EXISTS($G(SID)) Q
+	S IDX=+$G(^MIO("MIOIDE","DBG","SESSION",SID,"cmdSeq"))+1
+	S ^MIO("MIOIDE","DBG","SESSION",SID,"cmdSeq")=IDX
+	S ^MIO("MIOIDE","DBG","SESSION",SID,"CMD",IDX,"cmd")=$G(CMD)
+	S ^MIO("MIOIDE","DBG","SESSION",SID,"CMD",IDX,"detail")=$G(DETAIL)
+	S ^MIO("MIOIDE","DBG","SESSION",SID,"CMD",IDX,"ts")=$H
+	S KEEP=+$G(CONF("mioide","debug","cmdRetain"),64)
+	I KEEP<1 S KEEP=1
+	F  Q:$$CMDCOUNT(SID)'>KEEP  D
+	. S FIRST=$O(^MIO("MIOIDE","DBG","SESSION",SID,"CMD",0))
+	. Q:'FIRST
+	. K ^MIO("MIOIDE","DBG","SESSION",SID,"CMD",FIRST)
+	D TOUCH(SID)
+	Q
+	;
+CMDCOUNT(SID)
+	N I,C S I=0,C=0
+	F  S I=$O(^MIO("MIOIDE","DBG","SESSION",SID,"CMD",I)) Q:'I  S C=C+1
+	Q C
+	;
+REAP(CONF,OUT)
+	N SID,IDLE,KEEP,CNT,REM,PRN
+	K OUT
+	S IDLE=+$G(CONF("mioide","debug","idleSeconds"),900)
+	I IDLE<1 S IDLE=1
+	S KEEP=+$G(CONF("mioide","debug","sessionRetain"),32)
+	I KEEP<1 S KEEP=1
+	S SID="",REM=0,PRN=0
+	F  S SID=$O(^MIO("MIOIDE","DBG","SESSION",SID)) Q:SID=""  D
+	. I $$AGESEC($G(^MIO("MIOIDE","DBG","SESSION",SID,"lastSeenTs")))>IDLE D DROP(SID) S REM=REM+1
+	F  Q:$$SESSIONCOUNT()'>KEEP  D
+	. S SID=$$OLDESTSID()
+	. Q:SID=""
+	. D DROP(SID)
+	. S PRN=PRN+1
+	S OUT("ok")=1
+	S OUT("removed")=REM
+	S OUT("pruned")=PRN
+	S OUT("kept")=$$SESSIONCOUNT()
+	Q:$Q 1 Q
+	;
+SESSIONCOUNT()
+	N SID,C
+	S SID="",C=0
+	F  S SID=$O(^MIO("MIOIDE","DBG","SESSION",SID)) Q:SID=""  S C=C+1
+	Q C
+	;
+OLDESTSID()
+	N SID,OLD,OLDTS,TS
+	S SID="",OLD="",OLDTS=-1
+	F  S SID=$O(^MIO("MIOIDE","DBG","SESSION",SID)) Q:SID=""  D
+	. S TS=$$TSNUM($G(^MIO("MIOIDE","DBG","SESSION",SID,"updatedTs")))
+	. I OLD=""!(TS<OLDTS) S OLD=SID,OLDTS=TS
+	Q OLD
+	;
+AGESEC(TS)
+	N NOW,THEN
+	S NOW=$$TSNUM($H),THEN=$$TSNUM($G(TS))
+	I THEN<1 Q 999999999
+	Q NOW-THEN
+	;
+TSNUM(TS)
+	N D,S
+	S D=+$P($G(TS),",",1),S=+$P($G(TS),",",2)
+	Q (D*86400)+S
+	;
 DROP(SID)
 	K ^MIO("MIOIDE","DBG","SESSION",$G(SID))
 	Q
-	;
 	;

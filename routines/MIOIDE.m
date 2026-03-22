@@ -21,6 +21,7 @@ CONFDEF(CONF)
 	I '$D(CONF("mioide","debug","breakpointLimit")) S CONF("mioide","debug","breakpointLimit")=256
 	I '$D(CONF("mioide","debug","sessionRetain")) S CONF("mioide","debug","sessionRetain")=32
 	I '$D(CONF("mioide","debug","eventRetain")) S CONF("mioide","debug","eventRetain")=64
+	I '$D(CONF("mioide","debug","cmdRetain")) S CONF("mioide","debug","cmdRetain")=64
 	I '$D(CONF("mioide","debug","idleSeconds")) S CONF("mioide","debug","idleSeconds")=900
 	I '$D(CONF("mioide","debug","wsPath")) S CONF("mioide","debug","wsPath")="/mioide/ws/debug"
 	I '$D(CONF("mioide","debug","apiBase")) S CONF("mioide","debug","apiBase")="/mioide/api/debug"
@@ -56,10 +57,10 @@ REG(CONF)
 	Q
 	;
 VERSION()
-	Q "0.2.0"
+	Q "0.2.1"
 	;
 BUILD()
-	Q "2026-03-22 websocket debugger transport"
+	Q "2026-03-22 websocket debugger hardening"
 	;
 BANNER()
 	Q "MIOIDE "_$$VERSION()_" ("_$$BUILD()_")"
