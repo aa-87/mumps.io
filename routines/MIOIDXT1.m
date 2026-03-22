@@ -1,0 +1,4 @@
+MIOIDXT1 ; ROI3A fixture one
+ S X=1
+ W "ROI3A_ALPHA_UNIQUE"
+ Q

@@ -1,0 +1,4 @@
+MIOIDXT3 ; ROI3A fixture three
+ S Z=3
+ W "GAMMA ROI3A_ALPHA_UNIQUE"
+ Q

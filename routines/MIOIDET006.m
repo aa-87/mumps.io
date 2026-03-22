@@ -1,0 +1,78 @@
+MIOIDET006 ; MIOIDE ROI 3A routine helper coverage
+	D START Q
+	;
+START(FAIL)
+	N TOP,LOCAL
+	S TOP='$D(FAIL),LOCAL=0
+	D T001(.LOCAL)
+	D T010(.LOCAL)
+	D T020(.LOCAL)
+	D T030(.LOCAL)
+	D T040(.LOCAL)
+	I TOP D  Q
+	. I 'LOCAL W !,"OK - MIOIDET006"
+	I LOCAL S FAIL=1
+	Q
+	;
+BASE(CONF)
+	D CONFDEF^MIOIDE(.CONF)
+	D MKFIX^MIOIDET000(.CONF)
+	Q
+	;
+T001(FAIL)
+	N CONF,OUT,ERR,OK
+	D BASE(.CONF)
+	S OK=$$LOADSRC^MIOIDED("1BAD",.CONF,.OUT,.ERR)
+	D EQ^MIOIDET000(.FAIL,"[T001][invalid ok]",OK,0)
+	D EQ^MIOIDET000(.FAIL,"[T001][invalid err]",$G(ERR("error")),"invalid_routine")
+	K ERR S OUT=""
+	S OK=$$LOADSRC^MIOIDED("MIOIDZNF",.CONF,.OUT,.ERR)
+	D EQ^MIOIDET000(.FAIL,"[T001][missing ok]",OK,0)
+	D EQ^MIOIDET000(.FAIL,"[T001][missing err]",$G(ERR("error")),"not_found")
+	Q
+	;
+T010(FAIL)
+	N CONF,OUT,ERR,OK
+	D BASE(.CONF)
+	S CONF("mioide","editor","maxInitialBytes")=48
+	S OK=$$LOADSRC^MIOIDED("MIOIDXL1",.CONF,.OUT,.ERR)
+	D TRUE^MIOIDET000(.FAIL,"[T010][load ok]",OK)
+	D TRUE^MIOIDET000(.FAIL,"[T010][truncated]",$S($D(ERR("truncated")):1,1:0))
+	D EQ^MIOIDET000(.FAIL,"[T010][length]",$L(OUT),48)
+	Q
+	;
+T020(FAIL)
+	N CONF,TXT,OUT,ERR,OK,LF
+	D BASE(.CONF)
+	S LF=$C(10)
+	S TXT="MIOIDXT9 ; multiline preserve"_LF_" S A=1"_LF_" W ""LINE2"""_LF_" Q"
+	S OK=$$SAVETEXT^MIOIDED("MIOIDXT9",TXT,.CONF,.ERR)
+	D TRUE^MIOIDET000(.FAIL,"[T020][save ok]",OK)
+	K ERR S OUT=""
+	S OK=$$LOADSRC^MIOIDED("MIOIDXT9",.CONF,.OUT,.ERR)
+	D TRUE^MIOIDET000(.FAIL,"[T020][reload ok]",OK)
+	D EQ^MIOIDET000(.FAIL,"[T020][reload text]",OUT,TXT)
+	Q
+	;
+T030(FAIL)
+	N CONF,RES
+	D BASE(.CONF)
+	D RUN^MIOIDED("ZZIDXT1","",.CONF,.RES)
+	D EQ^MIOIDET000(.FAIL,"[T030][run blocked]",$G(RES("error")),"run_not_allowed")
+	K RES
+	D RUN^MIOIDED("MIOIDXT1","BAD-ENTRY",.CONF,.RES)
+	D EQ^MIOIDET000(.FAIL,"[T030][invalid entry]",$G(RES("error")),"invalid_entry")
+	Q
+	;
+T040(FAIL)
+	N CONF,RES,TCTX
+	D BASE(.CONF)
+	D SEARCH^MIOIDED(.CONF,"ROI3A_ALPHA_UNIQUE",1,.RES)
+	D EQ^MIOIDET000(.FAIL,"[T040][search count]",$$COUNT^MIOIDED(.RES),1)
+	D HAS^MIOIDET000(.FAIL,"[T040][search text]",$G(RES(1,"text")),"ROI3A_ALPHA_UNIQUE")
+	D SNIPS^MIOIDED(.TCTX) N T M T=TCTX("snippets")
+	D GE2^MIOIDET000(.FAIL,"[T040][snippet count]",$$COUNT^MIOIDED(.T),5)
+	D HAS^MIOIDET000(.FAIL,"[T040][snippet code]",$G(TCTX("snippets",1,"code")),"$G")
+	Q
+	;
+	;

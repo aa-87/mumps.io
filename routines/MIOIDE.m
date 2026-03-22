@@ -2,7 +2,7 @@ MIOIDE ; MIOIDE - Monaco-backed SSR IDE bootstrap for MUMPS.IO
 	Q
 	;
 CONFDEF(CONF)
-	S CONF("mioide","authRequired")=0
+	;S CONF("mioide","authRequired")=0
 	I '$D(CONF("mioide","enabled")) S CONF("mioide","enabled")=1
 	I '$D(CONF("mioide","authRequired")) S CONF("mioide","authRequired")=1
 	I $G(CONF("mioide","roles"))="" S CONF("mioide","roles")="developer,admin"

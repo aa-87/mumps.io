@@ -61,6 +61,9 @@ BUILDHOME(CONF,REQ,CTX,TCTX)
 	S TCTX("activity",7,"id")="terminal",TCTX("activity",7,"abbr")="TM",TCTX("activity",7,"icon")="$_",TCTX("activity",7,"label")="Terminal"
 	S TCTX("activity",8,"id")="palette",TCTX("activity",8,"abbr")="CP",TCTX("activity",8,"icon")="CMD",TCTX("activity",8,"label")="Command Palette"
 	S TCTX("activity",9,"id")="theme",TCTX("activity",9,"abbr")="TH",TCTX("activity",9,"icon")="THM",TCTX("activity",9,"label")="Toggle theme"
+	S TCTX("saveEnabled")=$S($G(CONF("mioide","save","enabled")):1,1:0)
+	S TCTX("compileEnabled")=$S($G(CONF("mioide","compile","enabled")):1,1:0)
+	S TCTX("runEnabled")=$S($G(CONF("mioide","run","enabled")):1,1:0)
 	S TCTX("watch",1,"name")="REQ(""params"",""name"")",TCTX("watch",1,"value")=ACTIVE
 	S TCTX("watch",2,"name")="saveEnabled",TCTX("watch",2,"value")=$S($G(CONF("mioide","save","enabled")):1,1:0)
 	S TCTX("watch",3,"name")="$ZSTATUS",TCTX("watch",3,"value")="ready"
@@ -101,13 +104,13 @@ BUILDHOME(CONF,REQ,CTX,TCTX)
 	Q
 	;
 LISTRTN(CONF,Q,OUT)
-	N %ZR,PAT,NAME,IDX,LIM,QQ,KEY
+	N %ZR,PAT,NAME,IDX,LIM,QQ,KEY,PATH
 	K OUT,%ZR
 	S LIM=+$G(CONF("mioide","explorer","limit"),250)
 	I LIM<1 S LIM=250
 	S QQ=$$LOW($G(Q))
-	S PAT=$S(QQ'="":$ZCONVERT($G(Q),"U")_"*",1:"*")
-	D SILENT^%RSEL(PAT,"CALL")
+	S PAT=$S(QQ'="":$ZCONVERT($G(Q),"U")_"*",1:"MIOIDE*")
+	I $T(SILENT^%RSEL)'="" D SILENT^%RSEL(PAT,"CALL")
 	S NAME="",IDX=0
 	F  S NAME=$O(%ZR(NAME)) Q:NAME=""  D  Q:IDX'<LIM
 	. I '$$ISRTN(NAME) Q
@@ -116,7 +119,8 @@ LISTRTN(CONF,Q,OUT)
 	. S OUT(IDX,"name")=NAME
 	. S OUT(IDX,"href")="/mioide?name="_$$URLENC(NAME)
 	. S OUT(IDX,"kind")="routine"
-	. S OUT(IDX,"path")=$G(%ZR(NAME))_NAME_".m"
+	. S PATH=$G(%ZR(NAME))
+	. S OUT(IDX,"path")=PATH_NAME_".m"
 	. S KEY=$$PKG(NAME)
 	. S OUT(IDX,"pkg")=KEY
 	K %ZR
@@ -196,15 +200,15 @@ COMPILE(RTN,CONF,RES)
 	I '$$FILEX($$ROUTEPATH(RTN,.CONF)) S RES("ok")=0,RES("error")="not_found" Q:$Q 0 Q
 	S RES("ok")=1,RES("compiled")=0
 	S $ETRAP="D CERR^MIOIDED(.RES) Q:$Q 0 Q"
-	S CMD="ZLINK """_$G(RTN)_""".m"""
+	S CMD="ZLINK """_$G(RTN)_""".m"
 	XECUTE CMD
 	S ZCS=+$ZCSTATUS
 	S RES("zcstatus")=ZCS
-	I ZCS>1 S RES("ok")=0,RES("compiled")=0,RES("error")="compile_failed",RES("status")="compile_failed" Q 0
+	I ZCS>1 S RES("ok")=0,RES("compiled")=0,RES("error")="compile_failed",RES("status")="compile_failed" Q:$Q 0 Q
 	S RES("compiled")=1
 	S RES("status")="compiled"
 	S RES("message")="Routine compiled successfully"
-	Q 1
+	Q:$Q 1 Q
 	;
 CERR(RES)
 	S $ECODE=""
@@ -216,23 +220,23 @@ CERR(RES)
 	;
 RUN(RTN,ENTRY,CONF,RES)
 	N OIO,PATH,OUT,ERR,CMD,MAX
+	S OIO=$IO
 	K RES
 	S RES("routine")="MIOIDED"
 	S RES("name")=$G(RTN)
 	S RES("entry")=$G(ENTRY)
-	I '$G(CONF("mioide","run","enabled")) S RES("ok")=0,RES("error")="run_disabled" Q 0
+	I '$G(CONF("mioide","run","enabled")) S RES("ok")=0,RES("error")="run_disabled" Q:$Q 0 Q
 	I '$$ISRTN($G(RTN)) S RES("ok")=0,RES("error")="invalid_routine" Q:$Q 0 Q
 	I ENTRY'="" D
 	. I '$$ISID(ENTRY) S RES("ok")=0,RES("error")="invalid_entry"
-	I $G(RES("error"))="invalid_entry" Q 0
-	I '$$RUNOK(RTN,.CONF) S RES("ok")=0,RES("error")="run_not_allowed" Q 0
+	I $G(RES("error"))="invalid_entry" Q:$Q 0 Q
+	I '$$RUNOK(RTN,.CONF) S RES("ok")=0,RES("error")="run_not_allowed" Q:$Q 0 Q
 	D ENSDIR($$TDIR(.CONF))
 	S PATH=$$RUNPATH(.CONF)
-	S OIO=$IO
-	OPEN PATH:(NEWVERSION:STREAM):1 ELSE  S RES("ok")=0,RES("error")="open_failed" Q 0
+	OPEN PATH:(NEWVERSION:STREAM):1 ELSE  S RES("ok")=0,RES("error")="open_failed" Q:$Q 0 Q
 	USE PATH
 	S RES("ok")=1
-	S $ETRAP="D RERR^MIOIDED(.RES) USE OIO CLOSE PATH Q"
+	S $ETRAP="D RERR^MIOIDED(.RES) USE OIO CLOSE PATH Q:$Q 0 Q"
 	S CMD=$S(ENTRY'="":"DO "_ENTRY_"^"_RTN,1:"DO ^"_RTN)
 	XECUTE CMD
 	CLOSE PATH
@@ -243,7 +247,7 @@ RUN(RTN,ENTRY,CONF,RES)
 	D READTXT(PATH,MAX,.OUT,.ERR)
 	S RES("output")=OUT
 	S RES("status")="completed"
-	Q 1
+	Q:$Q 1 Q
 	;
 RERR(RES)
 	S $ECODE=""
@@ -253,20 +257,23 @@ RERR(RES)
 	Q
 	;
 SEARCH(CONF,Q,LIMIT,OUT)
-	N DIR,PAT,FP,NAME,LINE,IDX,N,QQ,I,ERR
+	N DIR,PAT,FP,NAME,LINE,IDX,QQ,I,ERR,SEEN
 	K OUT
 	S QQ=$$LOW($G(Q))
 	I QQ="" Q
 	S LIMIT=+$G(LIMIT) I LIMIT<1 S LIMIT=20
 	S DIR=$$RDIR(.CONF)
-	S PAT=DIR_"/*.m"
+	S PAT=DIR_"/*.m*"
 	S FP=$ZSEARCH(PAT)
 	S IDX=0
+	K SEEN
 	F  Q:FP=""  D  Q:IDX'<LIMIT
-	. S NAME=$$NOEXT($$BASE(FP))
-	. I '$$ISRTN(NAME) S FP=$ZSEARCH("") Q
-	. K LINE,ERR S N=0
-	. I '$$READARR(FP,.LINE,.ERR) S FP=$ZSEARCH("") Q
+	. S NAME=$$NOEXT($$NOEXT($$BASE(FP)))
+	. I '$$ISRTN(NAME) S FP=$ZSEARCH(PAT) Q
+	. I $D(SEEN(NAME)) S FP=$ZSEARCH(PAT) Q
+	. S SEEN(NAME)=1
+	. K LINE,ERR
+	. I '$$READARR(FP,.LINE,.ERR) S FP=$ZSEARCH(PAT) Q
 	. S I=0
 	. F  S I=$O(LINE(I)) Q:'I  D  Q:IDX'<LIMIT
 	. . I $$LOW($G(LINE(I)))[QQ D
@@ -274,7 +281,7 @@ SEARCH(CONF,Q,LIMIT,OUT)
 	. . . S OUT(IDX,"routine")=NAME
 	. . . S OUT(IDX,"line")=I
 	. . . S OUT(IDX,"text")=$E($G(LINE(I)),1,220)
-	. S FP=$ZSEARCH("")
+	. S FP=$ZSEARCH(PAT)
 	Q
 	;
 SNIPS(TCTX)
@@ -310,8 +317,15 @@ RUNPATH(CONF)
 PKG(NAME)
 	Q $E($G(NAME),1,3)
 	;
-COUNT(ARR)
-	N I,N S I=0,N=0 F  S I=$O(ARR(I)) Q:'I  S N=N+1
+COUNT(ARR,KEY,VAL)
+	N I,N,NEED,HAS
+	S I=0,N=0,NEED=$D(KEY)
+	F  S I=$O(ARR(I)) Q:'I  D
+	. I 'NEED S N=N+1 Q
+	. S HAS=$D(ARR(I,$G(KEY)))
+	. I 'HAS Q
+	. I '$D(VAL) S N=N+1 Q
+	. I $G(ARR(I,$G(KEY)))[$G(VAL) S N=N+1
 	Q N
 	;
 LOW(X)
@@ -393,7 +407,7 @@ EXECBUF(CODE,CONF,OUT,ERR)
 	S OIO=$IO
 	OPEN PATH:(NEWVERSION:STREAM):1 ELSE  S ERR("error")="open_failed" Q 0
 	USE PATH
-	S $ETRAP="D EXECERR^MIOIDED(.ERR) USE OIO CLOSE PATH Q"
+	S $ETRAP="D EXECERR^MIOIDED(.ERR) USE:$D(OIO) OIO CLOSE:$D(PATH) PATH Q"
 	XECUTE CODE
 	CLOSE PATH
 	USE OIO
