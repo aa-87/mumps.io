@@ -2,7 +2,6 @@ MIOIDE ; MIOIDE - Monaco-backed SSR IDE bootstrap for MUMPS.IO
 	Q
 	;
 CONFDEF(CONF)
-	;S CONF("mioide","authRequired")=0
 	I '$D(CONF("mioide","enabled")) S CONF("mioide","enabled")=1
 	I '$D(CONF("mioide","authRequired")) S CONF("mioide","authRequired")=1
 	I $G(CONF("mioide","roles"))="" S CONF("mioide","roles")="developer,admin"
@@ -18,23 +17,33 @@ CONFDEF(CONF)
 	I '$D(CONF("mioide","run","allowPrefix",1)) S CONF("mioide","run","allowPrefix",1)="MIO"
 	I '$D(CONF("mioide","run","allowPrefix",2)) S CONF("mioide","run","allowPrefix",2)="MIOIDE"
 	I '$D(CONF("mioide","theme","default")) S CONF("mioide","theme","default")="dark"
+	I '$D(CONF("mioide","debug","enabled")) S CONF("mioide","debug","enabled")=1
+	I '$D(CONF("mioide","debug","breakpointLimit")) S CONF("mioide","debug","breakpointLimit")=256
+	I '$D(CONF("mioide","debug","sessionRetain")) S CONF("mioide","debug","sessionRetain")=32
+	I '$D(CONF("mioide","debug","eventRetain")) S CONF("mioide","debug","eventRetain")=64
+	I '$D(CONF("mioide","debug","idleSeconds")) S CONF("mioide","debug","idleSeconds")=900
+	I '$D(CONF("mioide","debug","wsPath")) S CONF("mioide","debug","wsPath")="/mioide/ws/debug"
+	I '$D(CONF("mioide","debug","apiBase")) S CONF("mioide","debug","apiBase")="/mioide/api/debug"
+	I '$D(CONF("websocket","idleTimeoutSeconds")) S CONF("websocket","idleTimeoutSeconds")=3600
+	I '$D(CONF("websocket","maxFrameBytes")) S CONF("websocket","maxFrameBytes")=65536
+	I '$D(CONF("websocket","maxMessageBytes")) S CONF("websocket","maxMessageBytes")=262144
 	I '$D(CONF("mioide","ws","enabled")) S CONF("mioide","ws","enabled")=1
-	I '''$D(CONF("mioide","debug","enabled")) S CONF("mioide","debug","enabled")=1
-	I '''$D(CONF("mioide","debug","sessionRetain")) S CONF("mioide","debug","sessionRetain")=20
-	I '''$D(CONF("mioide","debug","breakpointLimit")) S CONF("mioide","debug","breakpointLimit")=256
 	I $G(CONF("mioide","ws","eventsPath"))="" S CONF("mioide","ws","eventsPath")="/mioide/ws/events"
 	I $G(CONF("mioide","ws","terminalPath"))="" S CONF("mioide","ws","terminalPath")="/mioide/ws/terminal"
 	I '$D(CONF("mioide","ws","pingSeconds")) S CONF("mioide","ws","pingSeconds")=20
-	I '$D(CONF("mioide","events","retain")) S CONF("mioide","events","retain")=200
 	I '$D(CONF("mioide","terminal","enabled")) S CONF("mioide","terminal","enabled")=1
 	I '$D(CONF("mioide","terminal","idleSeconds")) S CONF("mioide","terminal","idleSeconds")=1
 	I '$D(CONF("mioide","terminal","maxInputBytes")) S CONF("mioide","terminal","maxInputBytes")=8192
 	I '$D(CONF("mioide","terminal","maxOutputBytes")) S CONF("mioide","terminal","maxOutputBytes")=65536
 	I '$D(CONF("mioide","terminal","allowXecute")) S CONF("mioide","terminal","allowXecute")=1
+	I $G(CONF("server","templateDir"))="" S CONF("server","templateDir")="templates"
+	I $G(CONF("templates","root"))="" S CONF("templates","root")=$G(CONF("server","templateDir"))_"/"
+	I $G(CONF("templates","ext"))="" S CONF("templates","ext")=""
 	Q
 	;
 INIT(CONF)
 	D CONFDEF(.CONF)
+	D START^MIOTPL(.CONF)
 	Q
 	;
 REG(CONF)
@@ -47,12 +56,11 @@ REG(CONF)
 	Q
 	;
 VERSION()
-	Q "0.3.0"
+	Q "0.2.0"
 	;
 BUILD()
-	Q "2026-03-21 roi3 debugger foundation"
+	Q "2026-03-22 websocket debugger transport"
 	;
 BANNER()
 	Q "MIOIDE "_$$VERSION()_" ("_$$BUILD()_")"
-	;
 	;

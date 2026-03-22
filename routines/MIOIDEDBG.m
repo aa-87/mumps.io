@@ -1,0 +1,97 @@
+MIOIDEDBG ; MIOIDE debugger service facade and websocket transport
+	Q
+	;
+START(CONF,RTN,ENTRY,CLIENT,RES)
+	N SID,TXT,ERR,MAX,SNAP,JSON
+	K RES
+	I '$G(CONF("mioide","debug","enabled")) S RES("ok")=0,RES("error")="debug_disabled" Q 0
+	I '$$ISRTN^MIOIDED($G(RTN)) S RES("ok")=0,RES("error")="invalid_routine" Q 0
+	D GETSRCTXT^MIOIDED(RTN,.CONF,1048576,.TXT,.ERR)
+	I $D(ERR) S RES("ok")=0 M RES=ERR Q 0
+	S SID=$$NEWID^MIOIDEDBGU()
+	S MAX=$$MAXLINE^MIOIDEDBGU(TXT)
+	D INIT^MIOIDEDBGS(SID,$G(CLIENT),RTN,$G(ENTRY),MAX)
+	N OK S OK=$$SNAP^MIOIDEDBGE(SID,.CONF,.SNAP)
+	M RES=SNAP
+	S RES("sid")=SID
+	S RES("wsPath")=$$WSPATH(.CONF,SID)
+	D PUBLISH^MIOIDEDBGP(SID,"started",.CONF,.SNAP,.JSON)
+	S RES("eventJson")=JSON
+	Q 1
+	;
+SNAP(SID,CONF,RES)
+	Q $$SNAP^MIOIDEDBGE($G(SID),.CONF,.RES)
+	;
+CMD(SID,CMD,ARG,CONF,RES)
+	N SNAP,JSON,OK
+	K RES
+	I '$$CMDOK^MIOIDEDBGU($G(CMD)) S RES("ok")=0,RES("error")="invalid_command" Q 0
+	S OK=1
+	I CMD="toggle_breakpoint" S OK=$$TOGBP^MIOIDEDBGE(SID,$G(ARG("routine"),$$GET^MIOIDEDBGS(SID,"routine")),+$G(ARG("line")),.CONF,.RES)
+	E  I CMD="watch_add" S OK=$$ADDWATCH^MIOIDEDBGE(SID,$G(ARG("expr")),.CONF,.RES)
+	E  I CMD="watch_del" S OK=$$DELWATCH^MIOIDEDBGE(SID,$G(ARG("expr")),.CONF,.RES)
+	E  I CMD="eval" S OK=$$EVAL^MIOIDEDBGE(SID,$G(ARG("expr")),.CONF,.RES)
+	E  S OK=$$CMD^MIOIDEDBGE(SID,$G(CMD),.ARG,.CONF,.RES)
+	I OK D  Q 1
+	. I CMD'="eval",CMD'="watch_add",CMD'="watch_del",CMD'="toggle_breakpoint" Q
+	. N SNAP2,OK2 S OK2=$$SNAP^MIOIDEDBGE(SID,.CONF,.SNAP2) M RES("session")=SNAP2
+	I 'OK Q 0
+	Q 1
+	;
+TOGBP(SID,RTN,LINE,CONF,RES)
+	Q $$TOGBP^MIOIDEDBGE($G(SID),$G(RTN),+$G(LINE),.CONF,.RES)
+	;
+ADDWATCH(SID,EXPR,CONF,RES)
+	Q $$ADDWATCH^MIOIDEDBGE($G(SID),$G(EXPR),.CONF,.RES)
+	;
+DELWATCH(SID,EXPR,CONF,RES)
+	Q $$DELWATCH^MIOIDEDBGE($G(SID),$G(EXPR),.CONF,.RES)
+	;
+EVAL(SID,EXPR,CONF,RES)
+	Q $$EVAL^MIOIDEDBGE($G(SID),$G(EXPR),.CONF,.RES)
+	;
+RESET()
+	D RESET^MIOIDEDBGS
+	Q
+	;
+WSPATH(CONF,SID)
+	Q $G(CONF("mioide","debug","wsPath"),"/mioide/ws/debug")_"/"_$G(SID)
+	;
+WS(DEV,CONF,REQ,CTX)
+	N SID,KEY,ACC,HEAD,S,FIN,OPC,PAY,ERR,STOP,JSON,CMD,ARG,RES,SNAP
+	S SID=$G(REQ("params","sid"))
+	I '$$EXISTS^MIOIDEDBGS(SID) D FAIL^MIOWS(.DEV,.CONF,.CTX,"missing_session") Q
+	S KEY=$G(REQ("hdr","sec-websocket-key"))
+	I KEY="" D FAIL^MIOWS(.DEV,.CONF,.CTX,"missing_sec_websocket_key") Q
+	S ACC=$$WSACCEPT^MIOSHA1(KEY)
+	S HEAD("Upgrade")="websocket"
+	S HEAD("Connection")="Upgrade"
+	S HEAD("Sec-WebSocket-Accept")=ACC
+	D RESPX^MIOHTTP(.DEV,.CONF,101,.HEAD,"",$G(CTX("request_id")),.CTX)
+	S CTX("skip_metrics")=1
+	D INITSTATE^MIOWS(.S,.CONF)
+	N OK S OK=$$SNAP^MIOIDEDBGE(SID,.CONF,.SNAP)
+	D PUBLISH^MIOIDEDBGP(SID,"hello",.CONF,.SNAP,.JSON)
+	D SENDTEXT^MIOWS(.DEV,JSON)
+	S STOP=0
+	F  D  Q:STOP
+	. K ERR S FIN=0,OPC=0,PAY=""
+	. D READFRAME^MIOWS(.DEV,+$G(S("to")),.FIN,.OPC,.PAY,.ERR,+$G(S("maxframe")))
+	. I $D(ERR) S STOP=1 Q
+	. I OPC=8 D SENDCLOSE^MIOWS(.DEV,"",1000) S STOP=1 Q
+	. I OPC=9 D SENDPONG^MIOWS(.DEV,PAY) Q
+	. I OPC'=1 D SENDTEXT^MIOWS(.DEV,$$ERRJSON^MIOIDEDBGP(SID,"unsupported_frame","text frames only")) Q
+	. D PAYLOAD^MIOIDEDBGP(PAY,.CMD,.ARG)
+	. I '$$CMDOK^MIOIDEDBGU($G(CMD)) D SENDTEXT^MIOWS(.DEV,$$ERRJSON^MIOIDEDBGP(SID,"invalid_command","unsupported command")) Q
+	. K RES
+	. I '$$CMD(SID,.CMD,.ARG,.CONF,.RES) D SENDTEXT^MIOWS(.DEV,$$EN^MIOJSON1(.RES)) Q
+	. I CMD="eval" S JSON=$$EN^MIOJSON1(.RES) D SENDTEXT^MIOWS(.DEV,JSON) Q
+	. I CMD="watch_add"!(CMD="watch_del")!(CMD="toggle_breakpoint") D  Q
+	. . N SNAPX,OK S OK=$$SNAP^MIOIDEDBGE(SID,.CONF,.SNAPX)
+	. . D PUBLISH^MIOIDEDBGP(SID,CMD,.CONF,.SNAPX,.JSON)
+	. . D SENDTEXT^MIOWS(.DEV,JSON)
+	. D PUBLISH^MIOIDEDBGP(SID,CMD,.CONF,.RES,.JSON)
+	. D SENDTEXT^MIOWS(.DEV,JSON)
+	Q
+	;
+	;
