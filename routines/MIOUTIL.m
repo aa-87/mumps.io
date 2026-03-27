@@ -77,13 +77,15 @@ HEX(N,W)
 	;
 ; Entry point
 ; See docs/routines for details.;
-DEC2HEX(N)
+DEC2HEX(N,W)
 	NEW D,H SET H=""
-	IF N=0 QUIT "0"
+	IF N=0 SET H="0" G D2HOUT
 	FOR  QUIT:N=0  DO
 	. SET D=N#16
 	. SET N=N\16
 	. SET H=$EXTRACT("0123456789abcdef",D+1)_H
+D2HOUT
+	IF +$GET(W)>0 FOR  QUIT:$LENGTH(H)'>+$GET(W)  SET H="0"_H
 	QUIT H
 	;
 ; Entry point

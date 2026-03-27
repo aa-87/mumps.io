@@ -12,7 +12,7 @@ MIO ; Routine for the MIO web server package.;
 ; Entry Points
 ; - start
 ; - stop
-; - version
+; - version 
 ;
 ; Notes
 ; Keep comments short.;
@@ -81,11 +81,11 @@ INIT(CONF)
 	DO REG^MIOWOW(.CONF)
 	DO REG^MIOAPP(.CONF)
 	DO REG^MIOPLGD(.CONF)
+	DO REG^MIOIDE(.CONF)
 	DO REG^MIOSTATIC(.CONF)
 	DO REG^MIOHEALTH(.CONF)
 	DO REG^MIOERRC(.CONF)
 	DO REG^MIOUI(.CONF)
-	DO REG^MIOIDE(.CONF)
 	DO COMPILE^MIOROUTE
 	DO SYNCCONF(.CONF)
 	DO START^MIOCLEAN(.CONF)
@@ -128,6 +128,7 @@ linkui
 	. W !,"ZL " ZL RTN_".m" W RTN_".m"
 	Q
 	;	
+	;
 	;
 	;
 	;
