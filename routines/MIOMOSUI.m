@@ -1,6 +1,23 @@
 MIOMOSUI ; MIOMOS UI helpers
 	QUIT
 	;
+
+OBSSSR(STATE,CONF,DATA)
+	NEW OUT,N
+	DO SUMMARY^MIOMOSOBS(.STATE,.CONF,.OUT)
+	SET DATA("obsRetention","accessDays")=+$GET(OUT("retention","accessDays"))
+	SET DATA("obsRetention","errorDays")=+$GET(OUT("retention","errorDays"))
+	SET DATA("obsRetention","auditDays")=+$GET(OUT("retention","auditDays"))
+	SET DATA("obsRetention","maxEntries")=+$GET(OUT("retention","maxEntries"))
+	SET DATA("obsRetention","exportLimit")=+$GET(OUT("retention","exportLimit"))
+	SET DATA("obsLastAccess","event")=$GET(OUT("lastAccess","event"))
+	SET DATA("obsLastAccess","correlationId")=$GET(OUT("lastAccess","correlationId"))
+	SET DATA("obsLastError","event")=$GET(OUT("lastError","event"))
+	SET DATA("obsLastError","correlationId")=$GET(OUT("lastError","correlationId"))
+	SET DATA("obsLastAudit","event")=$GET(OUT("lastAudit","event"))
+	SET DATA("obsLastAudit","correlationId")=$GET(OUT("lastAudit","correlationId"))
+	QUIT
+	;
 DESKCTX(STATE,CONF,DATA)
 	KILL DATA
 	SET DATA("page","title")=$GET(STATE("brandTitle"),"MIOMOS")_" Desktop"
@@ -13,42 +30,63 @@ DESKCTX(STATE,CONF,DATA)
 	SET DATA("desktopPath")=$GET(STATE("desktopPath"))
 	SET DATA("bootstrapPath")=$GET(STATE("bootstrapPath"))
 	SET DATA("wsPath")=$GET(STATE("wsPath"))
-	SET DATA("wallpaper")=$GET(STATE("wallpaper"))
+	SET DATA("themePath")=$GET(STATE("themePath"))
+	SET DATA("signoutPath")=$GET(STATE("signoutPath"))
+	SET DATA("adminUsersPath")=$GET(STATE("adminUsersPath"))
+	SET DATA("adminInviteCreatePath")=$GET(STATE("adminInviteCreatePath"))
+	SET DATA("adminResetRequestPath")=$GET(STATE("adminResetRequestPath"))
+	SET DATA("observSummaryPath")=$GET(STATE("observSummaryPath"))
+	SET DATA("accessExportPath")=$GET(STATE("accessExportPath"))
+	SET DATA("errorExportPath")=$GET(STATE("errorExportPath"))
+	SET DATA("auditExportPath")=$GET(STATE("auditExportPath"))
+	SET DATA("securityDigestPath")=$GET(STATE("securityDigestPath"))
+	SET DATA("retentionPrunePath")=$GET(STATE("retentionPrunePath"))
 	SET DATA("accent")=$GET(STATE("accent"),"#2f6fed")
+	SET DATA("themeKey")=$GET(STATE("themeKey"),"midnight-professional")
 	SET DATA("bootJson")=$$BOOTJSON^MIOMOSST(.STATE,.CONF)
 	SET DATA("vueScript")="https://unpkg.com/vue@3/dist/vue.global.prod.js"
 	SET DATA("osjsClientScript")="https://cdn.jsdelivr.net/npm/@osjs/client/dist/main.js"
 	SET DATA("sevenCssHref")="https://unpkg.com/7.css/dist/7.scoped.css"
 	DO APPSSR(.DATA)
 	DO WINSSR(.DATA)
+	DO THEMESSR(.DATA,$GET(STATE("themeKey"),"midnight-professional"))
+	DO AUDITSSR(.DATA)
+	DO LOGSSR(.DATA)
+	DO PERMSSR(.DATA,$GET(STATE("roles")))
+	DO ADMINSSR(.DATA)
+	DO OBSSSR(.STATE,.CONF,.DATA)
+	QUIT
+	;
+AUTHCTX(CONF,DATA)
+	KILL DATA
+	SET DATA("page","title")=$GET(CONF("miomos","brand","title"),"MIOMOS")_" Access"
+	SET DATA("page","subtitle")=$GET(CONF("miomos","brand","subtitle"),"MUMPS-first clinical workspace")
+	SET DATA("brandTitle")=$GET(CONF("miomos","brand","title"),"MIOMOS")
+	SET DATA("brandSubtitle")=$GET(CONF("miomos","brand","subtitle"),"MUMPS-first clinical workspace")
+	SET DATA("signinPath")=$GET(CONF("miomos","route","signin"),"/api/miomos/auth/signin")
+	SET DATA("signupPath")=$GET(CONF("miomos","route","signup"),"/api/miomos/auth/signup")
+	SET DATA("allowSignup")=+$GET(CONF("miomos","localAuth","allowSignup"),1)
+	SET DATA("inviteOnly")=+$GET(CONF("miomos","localAuth","inviteOnly"),0)
+	SET DATA("sevenCssHref")="https://unpkg.com/7.css/dist/7.scoped.css"
 	QUIT
 	;
 APPSSR(DATA)
 	KILL DATA("apps")
-	SET DATA("apps",1,"key")="workspace"
-	SET DATA("apps",1,"title")="Workspace"
-	SET DATA("apps",1,"subtitle")="Queues, intake, review, and export"
-	SET DATA("apps",1,"icon")="W"
-	SET DATA("apps",1,"badge")="Live"
-	SET DATA("apps",2,"key")="operations"
-	SET DATA("apps",2,"title")="Operations"
-	SET DATA("apps",2,"subtitle")="Throughput, latency, and batch posture"
-	SET DATA("apps",2,"icon")="O"
-	SET DATA("apps",2,"badge")="Ops"
-	SET DATA("apps",3,"key")="security"
-	SET DATA("apps",3,"title")="Audit"
-	SET DATA("apps",3,"subtitle")="Sessions, controls, and privileged actions"
-	SET DATA("apps",3,"icon")="A"
-	SET DATA("apps",3,"badge")="Audit"
+	SET DATA("apps",1,"key")="workspace",DATA("apps",1,"title")="Workspace",DATA("apps",1,"subtitle")="Queues, intake, review, and export",DATA("apps",1,"icon")="W",DATA("apps",1,"badge")="Live"
+	SET DATA("apps",2,"key")="collaboration",DATA("apps",2,"title")="Chat",DATA("apps",2,"subtitle")="User chat and analyst coordination",DATA("apps",2,"icon")="C",DATA("apps",2,"badge")="Team"
+	SET DATA("apps",3,"key")="security",DATA("apps",3,"title")="Security",DATA("apps",3,"subtitle")="Access, errors, permissions, and audit",DATA("apps",3,"icon")="S",DATA("apps",3,"badge")="Audit"
+	SET DATA("apps",4,"key")="admin",DATA("apps",4,"title")="Admin",DATA("apps",4,"subtitle")="Users, invites, resets, and lockout posture",DATA("apps",4,"icon")="A",DATA("apps",4,"badge")="Ops"
 	QUIT
 	;
 WINSSR(DATA)
-	DO WIN(.DATA,1,"win-workspace","workspace","Workspace",18,18,1104,660,4,"normal")
+	DO WIN(.DATA,1,"win-workspace","workspace","Workspace",16,14,1180,690,6,"normal")
 	SET DATA("windows",1,"isWorkspace")=1
-	DO WIN(.DATA,2,"win-operations","operations","Operations",1136,18,280,320,3,"minimized")
-	SET DATA("windows",2,"isOperations")=1
-	DO WIN(.DATA,3,"win-security","security","Audit",1136,350,280,268,2,"minimized")
+	DO WIN(.DATA,2,"win-collaboration","collaboration","Chat",940,44,420,430,3,"minimized")
+	SET DATA("windows",2,"isCollaboration")=1
+	DO WIN(.DATA,3,"win-security","security","Security",970,488,390,258,2,"minimized")
 	SET DATA("windows",3,"isSecurity")=1
+	DO WIN(.DATA,4,"win-admin","admin","Admin",220,68,820,520,4,"minimized")
+	SET DATA("windows",4,"isAdmin")=1
 	QUIT
 	;
 WIN(DATA,N,ID,APPKEY,TITLE,LEFT,TOP,WIDTH,HEIGHT,Z,STATE)
@@ -63,5 +101,63 @@ WIN(DATA,N,ID,APPKEY,TITLE,LEFT,TOP,WIDTH,HEIGHT,Z,STATE)
 	SET DATA("windows",N,"state")=STATE
 	SET DATA("windows",N,"glyph")=$EXTRACT(TITLE,1)
 	SET DATA("windows",N,"stateClass")=$SELECT(STATE="minimized":"is-minimized",1:"")
+	QUIT
+	;
+THEMESSR(DATA,CURRENT)
+	NEW CAT,N
+	DO CATALOG^MIOMOSTH($NAME(CAT))
+	KILL DATA("themes")
+	SET N=0
+	FOR  SET N=$ORDER(CAT(N)) QUIT:N=""  DO
+	. MERGE DATA("themes",N)=CAT(N)
+	. SET DATA("themes",N,"isCurrent")=$SELECT($GET(CAT(N,"key"))=$GET(CURRENT):1,1:0)
+	QUIT
+	;
+AUDITSSR(DATA)
+	NEW TAIL,N
+	DO TAIL^MIOMOSAUD(4,.TAIL)
+	KILL DATA("audit")
+	SET N=0
+	FOR  SET N=$ORDER(TAIL(N)) QUIT:N=""  MERGE DATA("audit",N)=TAIL(N)
+	QUIT
+	;
+LOGSSR(DATA)
+	NEW CNT,TAIL,N
+	DO COUNTS^MIOMOSOBS(.CNT)
+	SET DATA("logCounts","access")=+$GET(CNT("access"))
+	SET DATA("logCounts","error")=+$GET(CNT("error"))
+	SET DATA("logCounts","audit")=+$GET(CNT("audit"))
+	DO TAIL^MIOMOSOBS("ERROR",3,.TAIL)
+	KILL DATA("errors")
+	SET N=0
+	FOR  SET N=$ORDER(TAIL(N)) QUIT:N=""  MERGE DATA("errors",N)=TAIL(N)
+	QUIT
+	;
+PERMSSR(DATA,ROLES)
+	NEW LIST,N
+	DO LIST^MIOMOSPERM($GET(ROLES),.LIST)
+	KILL DATA("permissions")
+	SET N=0
+	FOR  SET N=$ORDER(LIST(N)) QUIT:N=""  MERGE DATA("permissions",N)=LIST(N)
+	QUIT
+	;
+ADMINSSR(DATA)
+	NEW CNT,USR,INV,RST,N
+	DO COUNTS^MIOMOSADMIN(.CNT)
+	SET DATA("adminCounts","users")=+$GET(CNT("users"))
+	SET DATA("adminCounts","enabled")=+$GET(CNT("enabled"))
+	SET DATA("adminCounts","disabled")=+$GET(CNT("disabled"))
+	SET DATA("adminCounts","locked")=+$GET(CNT("locked"))
+	SET DATA("adminCounts","invites")=+$GET(CNT("invites"))
+	SET DATA("adminCounts","resets")=+$GET(CNT("resets"))
+	DO USERLIST^MIOMOSADMIN(8,.USR)
+	KILL DATA("adminUsers")
+	SET N=0 FOR  SET N=$ORDER(USR(N)) QUIT:N=""  MERGE DATA("adminUsers",N)=USR(N)
+	DO INVITELIST^MIOMOSADMIN(4,.INV)
+	KILL DATA("adminInvites")
+	SET N=0 FOR  SET N=$ORDER(INV(N)) QUIT:N=""  MERGE DATA("adminInvites",N)=INV(N)
+	DO RESETLIST^MIOMOSADMIN(4,.RST)
+	KILL DATA("adminResets")
+	SET N=0 FOR  SET N=$ORDER(RST(N)) QUIT:N=""  MERGE DATA("adminResets",N)=RST(N)
 	QUIT
 	;

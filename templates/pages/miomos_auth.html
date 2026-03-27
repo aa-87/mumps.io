@@ -1,0 +1,94 @@
+<div class="miomos-auth-shell">
+  <style>
+    .miomos-auth-shell {
+      min-height:100vh; display:grid; place-items:center; padding:24px; color:#eef4fa;
+      background:radial-gradient(circle at top right, rgba(255,255,255,.08), transparent 28%), linear-gradient(180deg, #132033, #0b1220 58%, #09101b);
+    }
+    .miomos-auth-frame {
+      width:min(960px, 100%); display:grid; grid-template-columns:minmax(0,1.05fr) minmax(340px,.95fr); gap:16px;
+      border:1px solid rgba(170,188,214,.18); border-radius:24px; padding:16px; background:rgba(14,21,33,.88); backdrop-filter:blur(18px);
+      box-shadow:0 30px 80px rgba(0,0,0,.28);
+    }
+    .miomos-auth-panel { border:1px solid rgba(170,188,214,.16); border-radius:18px; padding:18px; background:rgba(255,255,255,.03); }
+    .miomos-auth-hero h1 { margin:0; font-size:32px; line-height:1.05; }
+    .miomos-auth-hero p { margin:10px 0 0; color:#9cb0c7; font-size:14px; line-height:1.45; }
+    .miomos-auth-grid { display:grid; gap:10px; margin-top:14px; }
+    .miomos-auth-card { padding:12px; border-radius:14px; border:1px solid rgba(170,188,214,.14); background:rgba(255,255,255,.03); }
+    .miomos-auth-card strong { display:block; font-size:12px; }
+    .miomos-auth-card span { display:block; margin-top:4px; color:#9cb0c7; font-size:12px; line-height:1.35; }
+    .miomos-auth-forms { display:grid; gap:12px; }
+    .miomos-auth-box { border:1px solid rgba(170,188,214,.14); border-radius:16px; padding:14px; background:rgba(0,0,0,.14); }
+    .miomos-auth-box h2 { margin:0 0 10px; font-size:15px; }
+    .miomos-auth-form { display:grid; gap:9px; }
+    .miomos-auth-form input {
+      height:40px; border-radius:12px; border:1px solid rgba(170,188,214,.16); background:rgba(255,255,255,.04); color:#eef4fa; padding:0 12px; font:inherit;
+    }
+    .miomos-auth-actions { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .miomos-auth-btn {
+      height:34px; padding:0 14px; border-radius:10px; border:1px solid rgba(170,188,214,.18); background:rgba(95,141,255,.20); color:#eef4fa; font:inherit; font-size:12px; font-weight:800; cursor:pointer;
+    }
+    .miomos-auth-status { min-height:18px; color:#9cb0c7; font-size:11px; }
+    @media (max-width: 900px) { .miomos-auth-frame { grid-template-columns:minmax(0,1fr); } }
+  </style>
+
+  <div class="miomos-auth-frame">
+    <section class="miomos-auth-panel miomos-auth-hero">
+      <h1>{{brandTitle}}</h1>
+      <p>{{brandSubtitle}}</p>
+      <div class="miomos-auth-grid">
+        <div class="miomos-auth-card"><strong>Optional local sign in</strong><span>Enable built-in accounts for evaluation or smaller installations without changing the desktop entry path. Invite-only onboarding can be enforced when desired.</span></div>
+        <div class="miomos-auth-card"><strong>Theme-ready desktop</strong><span>Theme, permissions, access logs, error logs, audit trail, and team chat stay managed on the MUMPS side.</span></div>
+        <div class="miomos-auth-card"><strong>Development stays frictionless</strong><span>When the MIOMOS profile is <code>dev</code>, authentication can remain disabled for rapid iteration.</span></div>
+      </div>
+    </section>
+
+    <section class="miomos-auth-panel miomos-auth-forms">
+      <div class="miomos-auth-box">
+        <h2>Sign in</h2>
+        <form class="miomos-auth-form" id="miomosSigninForm">
+          <input type="text" name="username" placeholder="Username" autocomplete="username">
+          <input type="password" name="password" placeholder="Password" autocomplete="current-password">
+          <div class="miomos-auth-actions"><span class="miomos-auth-status" id="miomosSigninStatus"></span><button type="submit" class="miomos-auth-btn">Sign in</button></div>
+        </form>
+      </div>
+      {{#allowSignup}}
+      <div class="miomos-auth-box">
+        <h2>Sign up</h2>
+        <form class="miomos-auth-form" id="miomosSignupForm">
+          <input type="text" name="displayName" placeholder="Display name" autocomplete="name">
+          <input type="text" name="username" placeholder="Username" autocomplete="username">
+          <input type="password" name="password" placeholder="Password" autocomplete="new-password">
+          {{#inviteOnly}}<input type="text" name="inviteToken" placeholder="Invite token" autocomplete="off">{{/inviteOnly}}
+          <div class="miomos-auth-actions"><span class="miomos-auth-status" id="miomosSignupStatus"></span><button type="submit" class="miomos-auth-btn">Create account</button></div>
+        </form>
+      </div>
+      {{/allowSignup}}
+    </section>
+  </div>
+
+  <script>
+    (function () {
+      function postJson(path, payload) {
+        return fetch(path, {method: 'POST', headers: {'Content-Type': 'application/json'}, credentials: 'same-origin', body: JSON.stringify(payload || {})}).then(function (res) { return res.json(); });
+      }
+      var signin = document.getElementById('miomosSigninForm');
+      var signup = document.getElementById('miomosSignupForm');
+      var signinStatus = document.getElementById('miomosSigninStatus');
+      var signupStatus = document.getElementById('miomosSignupStatus');
+      if (signin) signin.addEventListener('submit', function (ev) {
+        ev.preventDefault(); signinStatus.textContent = 'Signing in…';
+        postJson('{{signinPath}}', {username: signin.username.value, password: signin.password.value}).then(function (json) {
+          if (json && json.ok) { window.location.reload(); return; }
+          signinStatus.textContent = (json && json.detail) || (json && json.error) || 'Unable to sign in';
+        }).catch(function () { signinStatus.textContent = 'Unable to sign in'; });
+      });
+      if (signup) signup.addEventListener('submit', function (ev) {
+        ev.preventDefault(); signupStatus.textContent = 'Creating account…';
+        postJson('{{signupPath}}', {displayName: signup.displayName.value, username: signup.username.value, password: signup.password.value, inviteToken: signup.inviteToken ? signup.inviteToken.value : ''}).then(function (json) {
+          if (json && json.ok) { window.location.reload(); return; }
+          signupStatus.textContent = (json && json.detail) || (json && json.error) || 'Unable to sign up';
+        }).catch(function () { signupStatus.textContent = 'Unable to sign up'; });
+      });
+    }());
+  </script>
+</div>

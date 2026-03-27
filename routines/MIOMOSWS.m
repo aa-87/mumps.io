@@ -2,39 +2,60 @@ MIOMOSWS ; MIOMOS websocket handler
 	QUIT
 	;
 MESSAGE(DEV,CONF,REQ,CTX)
-	NEW STATE,ERR,RESP,EVT,APPKEY,SID,OK
+	NEW STATE,ERR,RESP,EVT,APPKEY,SID,OK,PAYLOAD,ROOM,TEXT,MSG
 	SET CTX("ws","keep_open")=1
-	SET EVT=$$EVENT($GET(CTX("payload")))
+	SET PAYLOAD=$GET(CTX("payload"))
+	SET EVT=$$EVENT(PAYLOAD)
 	SET OK=$$ENSURE^MIOMOSST(.CONF,.REQ,.CTX,.STATE,.ERR)
 	IF 'OK DO
 	. SET SID=$GET(CTX("miomos","sessionId"))
-	. IF SID="" SET SID=$$SESSIONID($GET(CTX("payload")))
+	. IF SID="" SET SID=$$SESSIONID(PAYLOAD)
 	. IF $$INJECTAUTH(.CONF,SID,.CTX,.ERR) SET OK=$$ENSURE^MIOMOSST(.CONF,.REQ,.CTX,.STATE,.ERR)
 	IF 'OK DO  QUIT
 	. SET RESP=$$ERRJSON("session_error",$GET(ERR("error")))
 	. DO SENDTEXT^MIOWS(.DEV,RESP)
 	SET CTX("miomos","sessionId")=$GET(STATE("sessionId"))
-	SET CTX("ws","keep_open")=1
 	IF EVT="hello" DO  QUIT
 	. DO EVENT^MIOMOSAUD("ws_hello",.CTX,.STATE)
+	. DO ACCESS^MIOMOSOBS("ws_hello",.CTX,.STATE)
 	. SET RESP=$$HELLO(.STATE)
 	. DO SENDTEXT^MIOWS(.DEV,RESP)
+	. DO SNAPSHOT^MIOMOSCHAT($GET(STATE("chatRoom")),+$GET(STATE("chatLimit"),20),.RESP)
+	. DO SENDTEXT^MIOWS(.DEV,RESP)
 	IF EVT="ping" DO  QUIT
-	. DO EVENT^MIOMOSAUD("ws_ping",.CTX,.STATE)
 	. SET RESP=$$PONG(.STATE)
 	. DO SENDTEXT^MIOWS(.DEV,RESP)
 	IF EVT="launcher.open" DO  QUIT
-	. SET APPKEY=$$APPKEY($GET(CTX("payload")))
+	. SET APPKEY=$$APPKEY(PAYLOAD)
 	. IF APPKEY="" SET APPKEY="workspace"
-	. DO EVENT^MIOMOSAUD("ws_launcher_open",.CTX,.STATE)
+	. DO EVENTX^MIOMOSAUD("ws_launcher_open",.CTX,.STATE,APPKEY)
+	. DO ACCESS^MIOMOSOBS("ws_launcher_open",.CTX,.STATE)
 	. SET RESP=$$ACK("launcher.open",APPKEY,.STATE)
 	. DO SENDTEXT^MIOWS(.DEV,RESP)
 	IF EVT="layout.sync" DO  QUIT
-	. DO SAVELAYOUT^MIOMOSST($GET(STATE("sessionId")),$GET(CTX("payload")))
+	. DO SAVELAYOUT^MIOMOSST($GET(STATE("sessionId")),PAYLOAD)
 	. DO EVENT^MIOMOSAUD("ws_layout_sync",.CTX,.STATE)
 	. SET RESP=$$ACK("layout.sync","layout",.STATE)
 	. DO SENDTEXT^MIOWS(.DEV,RESP)
-	DO EVENT^MIOMOSAUD("ws_unsupported",.CTX,.STATE)
+	IF EVT="chat.fetch" DO  QUIT
+	. SET ROOM=$$ROOM(PAYLOAD,.STATE)
+	. DO SNAPSHOT^MIOMOSCHAT(ROOM,+$GET(STATE("chatLimit"),20),.RESP)
+	. DO SENDTEXT^MIOWS(.DEV,RESP)
+	IF EVT="chat.send" DO  QUIT
+	. IF '$$HAS^MIOMOSPERM(.STATE,"chat.use") DO  QUIT
+	. . SET RESP=$$ERRJSON("forbidden","chat.use")
+	. . DO SENDTEXT^MIOWS(.DEV,RESP)
+	. SET ROOM=$$ROOM(PAYLOAD,.STATE)
+	. SET TEXT=$$TEXT(PAYLOAD)
+	. IF '$$SEND^MIOMOSCHAT(.STATE,ROOM,TEXT,.MSG,.ERR) DO  QUIT
+	. . DO ERROR^MIOMOSOBS("chat_send_error",$GET(ERR("error")),.CTX,.STATE,$GET(ERR("error")))
+	. . SET RESP=$$ERRJSON("chat_send_error",$GET(ERR("error")))
+	. . DO SENDTEXT^MIOWS(.DEV,RESP)
+	. DO EVENTX^MIOMOSAUD("chat_send",.CTX,.STATE,ROOM)
+	. DO ACCESS^MIOMOSOBS("chat_send",.CTX,.STATE)
+	. DO MESSAGE^MIOMOSCHAT(.MSG,.RESP)
+	. DO SENDTEXT^MIOWS(.DEV,RESP)
+	DO EVENTX^MIOMOSAUD("ws_unsupported",.CTX,.STATE,EVT)
 	SET RESP=$$ERRJSON("unsupported_event",EVT)
 	DO SENDTEXT^MIOWS(.DEV,RESP)
 	QUIT
@@ -55,6 +76,20 @@ APPKEY(PAY)
 	IF $EXTRACT($GET(PAY),1)="{" DO  QUIT $GET(TREE("appKey"))
 	. IF '$$DECODE^MIOJSON($GET(PAY),.TREE,.ERR) QUIT
 	QUIT ""
+	;
+ROOM(PAYLOAD,STATE)
+	NEW TREE,ERR,ROOM
+	SET ROOM=$GET(STATE("chatRoom"),"general")
+	IF $EXTRACT($GET(PAYLOAD),1)'="{" QUIT ROOM
+	IF '$$DECODE^MIOJSON($GET(PAYLOAD),.TREE,.ERR) QUIT ROOM
+	IF $GET(TREE("room"))'="" SET ROOM=$GET(TREE("room"))
+	QUIT ROOM
+	;
+TEXT(PAYLOAD)
+	NEW TREE,ERR
+	IF $EXTRACT($GET(PAYLOAD),1)'="{" QUIT ""
+	IF '$$DECODE^MIOJSON($GET(PAYLOAD),.TREE,.ERR) QUIT ""
+	QUIT $GET(TREE("text"))
 	;
 SESSIONID(PAY)
 	NEW TREE,ERR,SID
@@ -91,6 +126,7 @@ HELLO(STATE)
 	SET OBJ("sessionId")=$GET(STATE("sessionId"))
 	SET OBJ("userName")=$GET(STATE("userName"))
 	SET OBJ("profile")=$GET(STATE("profile"))
+	SET OBJ("themeKey")=$GET(STATE("themeKey"))
 	SET OBJ("serverTime")=$$NOWISO^MIOUTIL()
 	SET OBJ("idleTimeoutSeconds")=+$GET(STATE("idleTimeoutSeconds"))
 	SET OBJ("absoluteTimeoutSeconds")=+$GET(STATE("absoluteTimeoutSeconds"))
@@ -111,6 +147,7 @@ ACK(EVT,APPKEY,STATE)
 	SET OBJ("appKey")=$GET(APPKEY)
 	SET OBJ("sessionId")=$GET(STATE("sessionId"))
 	SET OBJ("serverTime")=$$NOWISO^MIOUTIL()
+	SET OBJ("savedAt")=$GET(^MIO("MIOMOS","SESSION",$GET(STATE("sessionId")),"layoutSavedAt"))
 	QUIT $$EN^MIOJSON1(.OBJ)
 	;
 ERRJSON(CODE,DETAIL)
