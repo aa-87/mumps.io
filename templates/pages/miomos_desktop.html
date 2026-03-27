@@ -1,0 +1,728 @@
+<div id="miomosRoot" class="miomos-root" data-miomos-root data-miomos-taskbar data-miomos-single-socket="1" data-miomos-session="{{sessionId}}" data-miomos-ws="{{wsPath}}" data-miomos-bootstrap="{{bootstrapPath}}" data-miomos-profile="{{profile}}">
+  <style>
+    .miomos-root { --miomos-taskbar-h: 42px; }
+    .miomos-stage {
+      position: absolute; inset: 12px 12px calc(var(--miomos-taskbar-h) + 12px) 12px;
+      padding: 0; overflow: hidden;
+    }
+    .miomos-desktop-icons {
+      position: absolute; top: 14px; left: 14px; z-index: 8;
+      display: grid; gap: 10px; width: 88px;
+    }
+    .miomos-desktop-icon {
+      width: 88px; border: 0; background: transparent; color: #eef4fa; cursor: pointer;
+      display: grid; justify-items: center; gap: 6px; padding: 4px;
+      text-shadow: 0 1px 2px rgba(0,0,0,.28);
+    }
+    .miomos-desktop-icon:hover { background: rgba(255,255,255,.08); border-radius: 12px; }
+    .miomos-desktop-icon-glyph {
+      width: 42px; height: 42px; border-radius: 13px; display: grid; place-items: center;
+      color: #fff; font-size: 14px; font-weight: 800;
+      background: linear-gradient(180deg, #5a8ff2, #2b63d4);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.28), 0 10px 20px rgba(8,18,33,.24);
+    }
+    .miomos-desktop-icon-label { font-size: 11px; font-weight: 700; line-height: 1.2; }
+
+    .miomos-window {
+      position: absolute; min-width: 360px; min-height: 240px; display: block; overflow: hidden;
+      border-radius: 16px; border: 1px solid rgba(90,115,150,.34); background: rgba(248,251,255,.96);
+      box-shadow: 0 24px 64px rgba(8,18,33,.28); z-index: 10; user-select: none;
+      backdrop-filter: blur(20px);
+    }
+    .miomos-window.is-minimized, .miomos-window.is-closed { display: none; }
+    .miomos-window.is-maximized { border-radius: 0; }
+    .miomos-window.is-active { box-shadow: 0 28px 72px rgba(8,18,33,.34); }
+    .miomos-window-bar {
+      height: 36px; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      padding: 0 10px 0 12px; cursor: grab;
+      background: linear-gradient(180deg, rgba(255,255,255,.95), rgba(231,239,248,.95));
+      border-bottom: 1px solid rgba(90,115,150,.16);
+    }
+    .miomos-window-bar:active { cursor: grabbing; }
+    .miomos-window-meta { display: flex; align-items: center; gap: 8px; min-width: 0; }
+    .miomos-window-glyph {
+      width: 18px; height: 18px; border-radius: 6px; display: grid; place-items: center;
+      color: #fff; font-size: 10px; font-weight: 800;
+      background: linear-gradient(180deg, #5a8ff2, #2b63d4);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.28), 0 5px 10px rgba(8,18,33,.18);
+      flex: 0 0 18px;
+    }
+    .miomos-window-title { min-width: 0; }
+    .miomos-window-title strong { display: block; font-size: 12px; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .miomos-window-title span { display: block; margin-top: 1px; color: #64758a; font-size: 10px; }
+    .miomos-window-controls { display: flex; align-items: center; gap: 6px; }
+    .miomos-window-controls button {
+      width: 26px; height: 24px; border: 1px solid rgba(90,115,150,.18); border-radius: 8px;
+      background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(239,244,250,.96)); color: #243649;
+      font: inherit; font-size: 12px; font-weight: 800; display: grid; place-items: center; cursor: pointer;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.44);
+    }
+    .miomos-window-controls button:hover { background: linear-gradient(180deg, rgba(255,255,255,1), rgba(228,236,246,.98)); }
+    .miomos-window-controls button[data-window-action="close"]:hover { color: #b11e3e; }
+    .miomos-window-body {
+      height: calc(100% - 36px); padding: 10px 12px 12px; overflow: auto; background: rgba(247,250,253,.96);
+      user-select: text;
+    }
+
+    .miomos-surface-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+    .miomos-surface-title strong { display: block; font-size: 13px; }
+    .miomos-surface-title span { display: block; margin-top: 2px; font-size: 11px; color: #64758a; }
+    .miomos-surface-chips, .miomos-taskbar-left, .miomos-taskbar-right, .miomos-taskband { display: flex; align-items: center; }
+    .miomos-surface-chips { gap: 6px; }
+    .miomos-chip {
+      height: 24px; padding: 0 9px; border-radius: 999px; display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(234,240,248,.96); border: 1px solid rgba(90,115,150,.16); color: #2b3b50; font-size: 11px; font-weight: 700;
+    }
+    .miomos-chip-dot { width: 7px; height: 7px; border-radius: 999px; background: #e0a100; display: inline-block; }
+    .miomos-chip.is-connected .miomos-chip-dot { background: #1e9a63; }
+
+    .miomos-dense-grid {
+      display: grid; gap: 10px; grid-template-columns: minmax(0, 1.8fr) minmax(300px, .95fr);
+    }
+    .miomos-card {
+      border: 1px solid rgba(90,115,150,.12); border-radius: 12px; background: rgba(255,255,255,.94); padding: 10px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.64);
+    }
+    .miomos-card h4 { margin: 0 0 8px; font-size: 12px; }
+    .miomos-kpi-row { display: grid; gap: 8px; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-bottom: 10px; }
+    .miomos-kpi { padding: 9px 10px; }
+    .miomos-kpi-label { font-size: 10px; font-weight: 800; letter-spacing: .11em; text-transform: uppercase; color: #64758a; }
+    .miomos-kpi-value { margin-top: 4px; font-size: 22px; font-weight: 800; line-height: 1; }
+    .miomos-kpi-copy { margin-top: 4px; font-size: 11px; color: #64758a; line-height: 1.3; }
+
+    .miomos-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    .miomos-table thead th {
+      padding: 7px 8px; text-align: left; color: #64758a; border-bottom: 1px solid rgba(90,115,150,.14);
+      font-size: 10px; letter-spacing: .08em; text-transform: uppercase;
+    }
+    .miomos-table tbody td { padding: 8px; border-bottom: 1px solid rgba(90,115,150,.10); }
+    .miomos-table tbody tr:hover { background: rgba(47,111,237,.04); }
+    .miomos-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; }
+    .miomos-list li { padding: 8px 9px; border-radius: 10px; border: 1px solid rgba(90,115,150,.10); background: rgba(246,249,253,.94); }
+    .miomos-list li strong { display: block; font-size: 11px; }
+    .miomos-list li span { display: block; margin-top: 2px; font-size: 11px; color: #64758a; line-height: 1.3; }
+
+    .miomos-taskbar {
+      position: absolute; left: 12px; right: 12px; bottom: 12px; height: var(--miomos-taskbar-h); z-index: 50;
+      display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center;
+      padding: 0 10px; border-radius: 14px;
+      background: rgba(14,24,39,.58); border: 1px solid rgba(255,255,255,.08); backdrop-filter: blur(22px);
+      box-shadow: 0 16px 34px rgba(8,18,33,.26);
+    }
+    .miomos-taskbar-left { gap: 8px; }
+    .miomos-menu-button {
+      height: 30px; min-width: 84px; padding: 0 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,.10);
+      background: linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.06)); color: #eef4fa;
+      font: inherit; font-size: 11px; font-weight: 800; cursor: pointer;
+    }
+    .miomos-taskband { gap: 8px; min-width: 0; overflow: auto hidden; }
+    .miomos-task-button {
+      height: 30px; min-width: 140px; max-width: 220px; padding: 0 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.08); color: #eef4fa; cursor: pointer; text-align: left;
+      font: inherit; font-size: 11px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .miomos-task-button.is-active { background: rgba(79,128,235,.26); border-color: rgba(90,143,242,.30); }
+    .miomos-taskbar-right { gap: 8px; color: #eef4fa; }
+    .miomos-status-host { min-width: 210px; }
+    .miomos-session-copy { font-size: 11px; color: rgba(231,237,244,.78); }
+
+    .miomos-menu {
+      position: absolute; left: 12px; bottom: 62px; width: 300px; display: none; z-index: 70;
+      padding: 10px; border-radius: 16px; background: rgba(247,250,254,.97); border: 1px solid rgba(90,115,150,.18);
+      box-shadow: 0 20px 46px rgba(8,18,33,.30); backdrop-filter: blur(20px);
+    }
+    .miomos-menu.is-open { display: block; }
+    .miomos-menu-head { padding: 4px 6px 10px; border-bottom: 1px solid rgba(90,115,150,.12); }
+    .miomos-menu-head strong { display: block; font-size: 13px; }
+    .miomos-menu-head span { display: block; margin-top: 3px; font-size: 11px; color: #64758a; }
+    .miomos-menu-list { display: grid; gap: 6px; padding-top: 10px; }
+    .miomos-menu-item {
+      width: 100%; display: grid; grid-template-columns: 28px 1fr auto; gap: 10px; align-items: center;
+      padding: 9px; border-radius: 11px; border: 1px solid rgba(90,115,150,.12); background: rgba(255,255,255,.9);
+      cursor: pointer; text-align: left;
+    }
+    .miomos-menu-item:hover { border-color: rgba(47,111,237,.20); background: rgba(255,255,255,1); }
+    .miomos-menu-glyph {
+      width: 28px; height: 28px; border-radius: 9px; display: grid; place-items: center; color: #fff; font-size: 11px; font-weight: 800;
+      background: linear-gradient(180deg, #5a8ff2, #2b63d4);
+    }
+    .miomos-menu-copy strong { display: block; font-size: 11px; }
+    .miomos-menu-copy span { display: block; margin-top: 2px; font-size: 10px; color: #64758a; line-height: 1.3; }
+    .miomos-menu-badge { font-size: 10px; font-weight: 800; color: #2350a7; }
+
+    .miomos-resize-handle { position: absolute; z-index: 6; }
+    .miomos-resize-handle[data-edge="e"], .miomos-resize-handle[data-edge="w"] { top: 10px; bottom: 10px; width: 8px; }
+    .miomos-resize-handle[data-edge="e"] { right: -4px; cursor: ew-resize; }
+    .miomos-resize-handle[data-edge="w"] { left: -4px; cursor: ew-resize; }
+    .miomos-resize-handle[data-edge="n"], .miomos-resize-handle[data-edge="s"] { left: 10px; right: 10px; height: 8px; }
+    .miomos-resize-handle[data-edge="n"] { top: -4px; cursor: ns-resize; }
+    .miomos-resize-handle[data-edge="s"] { bottom: -4px; cursor: ns-resize; }
+    .miomos-resize-handle[data-edge="ne"], .miomos-resize-handle[data-edge="nw"], .miomos-resize-handle[data-edge="se"], .miomos-resize-handle[data-edge="sw"] {
+      width: 12px; height: 12px;
+    }
+    .miomos-resize-handle[data-edge="ne"] { right: -4px; top: -4px; cursor: nesw-resize; }
+    .miomos-resize-handle[data-edge="nw"] { left: -4px; top: -4px; cursor: nwse-resize; }
+    .miomos-resize-handle[data-edge="se"] { right: -4px; bottom: -4px; cursor: nwse-resize; }
+    .miomos-resize-handle[data-edge="sw"] { left: -4px; bottom: -4px; cursor: nesw-resize; }
+
+    @media (max-width: 1180px) {
+      .miomos-dense-grid { grid-template-columns: minmax(0,1fr); }
+      .miomos-kpi-row { grid-template-columns: repeat(2, minmax(0,1fr)); }
+      .miomos-desktop-icons { width: 72px; }
+      .miomos-desktop-icon { width: 72px; }
+    }
+  </style>
+
+  <aside class="miomos-desktop-icons" aria-label="Desktop apps">
+    {{#apps}}
+    <button type="button" class="miomos-desktop-icon" data-launch-app="{{key}}">
+      <span class="miomos-desktop-icon-glyph">{{icon}}</span>
+      <span class="miomos-desktop-icon-label">{{title}}</span>
+    </button>
+    {{/apps}}
+  </aside>
+
+  <div class="miomos-stage" id="miomosStage">
+    {{#windows}}
+    <section class="miomos-window {{stateClass}}" data-window-id="{{id}}" data-app-key="{{appKey}}" data-window-state="{{state}}" style="left:{{left}}px;top:{{top}}px;width:{{width}}px;height:{{height}}px;z-index:{{z}};">
+      <header class="miomos-window-bar" data-window-drag="{{id}}">
+        <div class="miomos-window-meta">
+          <span class="miomos-window-glyph">{{glyph}}</span>
+          <div class="miomos-window-title">
+            <strong>{{title}}</strong>
+            <span>{{brandTitle}} {{profile}} session</span>
+          </div>
+        </div>
+        <div class="miomos-window-controls">
+          <button type="button" aria-label="Minimize" data-window-action="minimize">–</button>
+          <button type="button" aria-label="Maximize" data-window-action="maximize">▢</button>
+          <button type="button" aria-label="Close" data-window-action="close">×</button>
+        </div>
+      </header>
+      <div class="miomos-window-body">
+        {{#isWorkspace}}
+        <div class="miomos-surface-header">
+          <div class="miomos-surface-title">
+            <strong>Claim operations workspace</strong>
+            <span>Dense, keyboard-friendly workbench with one persistent desktop websocket.</span>
+          </div>
+          <div class="miomos-surface-chips">
+            <span class="miomos-chip"><span class="miomos-chip-dot"></span>Pending 07</span>
+            <span class="miomos-chip">Latency 183ms</span>
+            <span class="miomos-chip">Operators 12</span>
+          </div>
+        </div>
+
+        <div class="miomos-kpi-row">
+          <section class="miomos-card miomos-kpi"><div class="miomos-kpi-label">In flight</div><div class="miomos-kpi-value">142</div><div class="miomos-kpi-copy">Files across intake, review, and export.</div></section>
+          <section class="miomos-card miomos-kpi"><div class="miomos-kpi-label">Exception queue</div><div class="miomos-kpi-value">07</div><div class="miomos-kpi-copy">Claims requiring analyst intervention.</div></section>
+          <section class="miomos-card miomos-kpi"><div class="miomos-kpi-label">Exports today</div><div class="miomos-kpi-value">328</div><div class="miomos-kpi-copy">Successful delivery artifacts generated.</div></section>
+          <section class="miomos-card miomos-kpi"><div class="miomos-kpi-label">Socket posture</div><div class="miomos-kpi-value">1</div><div class="miomos-kpi-copy">Desktop socket owned by the page runtime.</div></section>
+        </div>
+
+        <div class="miomos-dense-grid">
+          <section class="miomos-card">
+            <h4>Active queue</h4>
+            <table class="miomos-table miomos-grid-table">
+              <thead>
+                <tr><th>Batch</th><th>Payer</th><th>Profile</th><th>Status</th><th>Operator</th><th>Age</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>837P-24081</td><td>Blue Cross</td><td>Colorado 837P</td><td>Validated</td><td>Farah</td><td>03m</td></tr>
+                <tr><td>837I-91842</td><td>Aetna</td><td>Facility Inpatient</td><td>Mapped</td><td>Ahmed</td><td>07m</td></tr>
+                <tr><td>837D-10118</td><td>Delta Dental</td><td>Dental Batch</td><td>Exception</td><td>Sara</td><td>12m</td></tr>
+                <tr><td>837P-24093</td><td>Cigna</td><td>Workers Comp</td><td>Exporting</td><td>Joel</td><td>16m</td></tr>
+                <tr><td>837P-24102</td><td>Humana</td><td>Medicare Pro</td><td>Ready</td><td>Mina</td><td>21m</td></tr>
+              </tbody>
+            </table>
+          </section>
+          <section class="miomos-card">
+            <h4>Recent decisions</h4>
+            <ul class="miomos-list">
+              <li><strong>Routing updated for Delta Dental</strong><span>Rule matched to dental exception workflow and held for review.</span></li>
+              <li><strong>Export manifest generated</strong><span>Daily Colorado 837P outbound batch closed successfully.</span></li>
+              <li><strong>Session policy healthy</strong><span>All active operator sessions are inside idle limits.</span></li>
+              <li><strong>Audit digest delivered</strong><span>Privileged action digest written to the security surface.</span></li>
+            </ul>
+          </section>
+        </div>
+        {{/isWorkspace}}
+
+        {{#isOperations}}
+        <div class="miomos-surface-header">
+          <div class="miomos-surface-title"><strong>Operations</strong><span>Focused throughput and delivery posture.</span></div>
+        </div>
+        <div class="miomos-card">
+          <table class="miomos-table">
+            <tbody>
+              <tr><td>Bootstrap median</td><td>183ms</td></tr>
+              <tr><td>Socket resumes</td><td>0 today</td></tr>
+              <tr><td>Output backlog</td><td>3 jobs</td></tr>
+              <tr><td>Health</td><td>Nominal</td></tr>
+            </tbody>
+          </table>
+        </div>
+        {{/isOperations}}
+
+        {{#isSecurity}}
+        <div class="miomos-surface-header">
+          <div class="miomos-surface-title"><strong>Audit</strong><span>Minimal privileged activity view.</span></div>
+        </div>
+        <div class="miomos-card">
+          <ul class="miomos-list">
+            <li><strong>Operator login</strong><span>Developer session resumed through desktop bootstrap.</span></li>
+            <li><strong>Policy review</strong><span>No auth challenge required in dev profile.</span></li>
+            <li><strong>Transport</strong><span>Single socket runtime guard active.</span></li>
+          </ul>
+        </div>
+        {{/isSecurity}}
+      </div>
+      <div class="miomos-resize-handle" data-edge="n"></div>
+      <div class="miomos-resize-handle" data-edge="e"></div>
+      <div class="miomos-resize-handle" data-edge="s"></div>
+      <div class="miomos-resize-handle" data-edge="w"></div>
+      <div class="miomos-resize-handle" data-edge="ne"></div>
+      <div class="miomos-resize-handle" data-edge="nw"></div>
+      <div class="miomos-resize-handle" data-edge="se"></div>
+      <div class="miomos-resize-handle" data-edge="sw"></div>
+    </section>
+    {{/windows}}
+  </div>
+
+  <aside class="miomos-menu" id="miomosMenu" aria-hidden="true">
+    <div class="miomos-menu-head">
+      <strong>{{brandTitle}} Menu</strong>
+      <span>Lean desktop surface. One socket. No extra chrome.</span>
+    </div>
+    <div class="miomos-menu-list">
+      {{#apps}}
+      <button type="button" class="miomos-menu-item" data-launch-app="{{key}}">
+        <span class="miomos-menu-glyph">{{icon}}</span>
+        <span class="miomos-menu-copy"><strong>{{title}}</strong><span>{{subtitle}}</span></span>
+        <span class="miomos-menu-badge">{{badge}}</span>
+      </button>
+      {{/apps}}
+    </div>
+  </aside>
+
+  <footer class="miomos-taskbar">
+    <div class="miomos-taskbar-left">
+      <button type="button" id="miomosMenuButton" class="miomos-menu-button">Menu</button>
+    </div>
+    <div class="miomos-taskband" id="miomosTaskband">
+      {{#windows}}
+      <button type="button" class="miomos-task-button {{stateClass}}" data-task-window="{{id}}">{{title}}</button>
+      {{/windows}}
+    </div>
+    <div class="miomos-taskbar-right">
+      <div id="miomosStatusVue" class="miomos-status-host"></div>
+      <span class="miomos-session-copy">{{userName}}</span>
+    </div>
+  </footer>
+
+  <script src="{{vueScript}}"></script>
+  <script src="{{osjsClientScript}}"></script>
+  <script>
+    (function () {
+      var root = document.getElementById('miomosRoot');
+      if (!root) return;
+      var sessionId = root.getAttribute('data-miomos-session') || '';
+      if (window.__MIOMOS_DESKTOP__ && window.__MIOMOS_DESKTOP__.initialized && window.__MIOMOS_DESKTOP__.sessionId === sessionId) return;
+
+      var runtime = window.__MIOMOS_DESKTOP__ || {};
+      runtime.initialized = true;
+      runtime.sessionId = sessionId;
+      runtime.socket = runtime.socket || null;
+      runtime.connecting = false;
+      runtime.socketSeq = runtime.socketSeq || 0;
+      runtime.reconnectTimer = runtime.reconnectTimer || null;
+      runtime.pingTimer = runtime.pingTimer || null;
+      window.__MIOMOS_DESKTOP__ = runtime;
+
+      var boot = {};
+      try { boot = JSON.parse('{{{bootJson}}}' || '{}'); } catch (e) { boot = {}; }
+
+      var stage = document.getElementById('miomosStage');
+      var menu = document.getElementById('miomosMenu');
+      var menuButton = document.getElementById('miomosMenuButton');
+      var taskband = document.getElementById('miomosTaskband');
+      var zCounter = 20;
+      var layoutTimer = null;
+      var statusVm = null;
+
+      function getWindows() {
+        return Array.prototype.slice.call(stage.querySelectorAll('.miomos-window'));
+      }
+
+      function stateOf(win) {
+        if (win.classList.contains('is-closed')) return 'closed';
+        if (win.classList.contains('is-minimized')) return 'minimized';
+        if (win.classList.contains('is-maximized')) return 'maximized';
+        return 'normal';
+      }
+
+      function applyState(win, state) {
+        win.classList.remove('is-closed', 'is-minimized', 'is-maximized');
+        if (state === 'closed') win.classList.add('is-closed');
+        else if (state === 'minimized') win.classList.add('is-minimized');
+        else if (state === 'maximized') win.classList.add('is-maximized');
+        syncTaskButton(win);
+      }
+
+      function applyRect(win, rect) {
+        if (typeof rect.left === 'number') win.style.left = rect.left + 'px';
+        if (typeof rect.top === 'number') win.style.top = rect.top + 'px';
+        if (typeof rect.width === 'number') win.style.width = rect.width + 'px';
+        if (typeof rect.height === 'number') win.style.height = rect.height + 'px';
+        if (typeof rect.z === 'number') win.style.zIndex = String(rect.z);
+      }
+
+      function focusWindow(win) {
+        getWindows().forEach(function (item) { item.classList.remove('is-active'); });
+        if (win.classList.contains('is-minimized')) win.classList.remove('is-minimized');
+        if (win.classList.contains('is-closed')) win.classList.remove('is-closed');
+        zCounter += 1;
+        win.style.zIndex = String(zCounter);
+        win.classList.add('is-active');
+        syncTaskButton(win);
+      }
+
+      function syncTaskButton(win) {
+        var btn = taskband.querySelector('[data-task-window="' + win.getAttribute('data-window-id') + '"]');
+        if (!btn) return;
+        btn.classList.toggle('is-active', win.classList.contains('is-active') && !win.classList.contains('is-minimized') && !win.classList.contains('is-closed'));
+      }
+
+      function serializeLayout() {
+        return getWindows().map(function (win) {
+          return {
+            id: win.getAttribute('data-window-id'),
+            state: stateOf(win),
+            left: parseInt(win.style.left || '0', 10),
+            top: parseInt(win.style.top || '0', 10),
+            width: parseInt(win.style.width || '0', 10),
+            height: parseInt(win.style.height || '0', 10),
+            z: parseInt(win.style.zIndex || '1', 10)
+          };
+        });
+      }
+
+      function saveLayoutLocal() {
+        if (!window.localStorage) return;
+        try {
+          localStorage.setItem('miomos.layout.' + sessionId, JSON.stringify({sessionId: sessionId, windows: serializeLayout()}));
+        } catch (e) {}
+      }
+
+      function queueLayoutSave() {
+        if (layoutTimer) window.clearTimeout(layoutTimer);
+        layoutTimer = window.setTimeout(function () {
+          layoutTimer = null;
+          saveLayoutLocal();
+        }, 120);
+      }
+
+      function loadLayout() {
+        var raw = null;
+        try { raw = localStorage.getItem('miomos.layout.' + sessionId); } catch (e) {}
+        if (!raw && boot.desktop && boot.desktop.savedLayoutJson) raw = boot.desktop.savedLayoutJson;
+        if (!raw) return;
+        try {
+          var parsed = JSON.parse(raw);
+          (parsed.windows || []).forEach(function (saved) {
+            var win = stage.querySelector('[data-window-id="' + saved.id + '"]');
+            if (!win) return;
+            applyRect(win, saved);
+            applyState(win, saved.state || 'normal');
+          });
+        } catch (e) {}
+      }
+
+      function toggleMenu(force) {
+        var next = typeof force === 'boolean' ? force : !menu.classList.contains('is-open');
+        menu.classList.toggle('is-open', next);
+        menu.setAttribute('aria-hidden', next ? 'false' : 'true');
+      }
+
+      menuButton.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        toggleMenu();
+      });
+
+      document.addEventListener('click', function (ev) {
+        if (!menu.contains(ev.target) && ev.target !== menuButton) toggleMenu(false);
+      });
+
+      function launchApp(key) {
+        var win = stage.querySelector('.miomos-window[data-app-key="' + key + '"]');
+        if (!win) return;
+        win.classList.remove('is-closed', 'is-minimized');
+        focusWindow(win);
+        queueLayoutSave();
+        toggleMenu(false);
+      }
+
+      Array.prototype.forEach.call(document.querySelectorAll('[data-launch-app]'), function (el) {
+        el.addEventListener('click', function () { launchApp(el.getAttribute('data-launch-app')); });
+      });
+
+      taskband.addEventListener('click', function (ev) {
+        var btn = ev.target.closest('[data-task-window]');
+        if (!btn) return;
+        var win = stage.querySelector('.miomos-window[data-window-id="' + btn.getAttribute('data-task-window') + '"]');
+        if (!win) return;
+        if (win.classList.contains('is-active') && !win.classList.contains('is-minimized')) {
+          win.classList.add('is-minimized');
+          win.classList.remove('is-active');
+        } else {
+          focusWindow(win);
+        }
+        syncTaskButton(win);
+        queueLayoutSave();
+      });
+
+      stage.addEventListener('pointerdown', function (ev) {
+        var win = ev.target.closest('.miomos-window');
+        if (win) focusWindow(win);
+      });
+
+      stage.addEventListener('click', function (ev) {
+        var btn = ev.target.closest('[data-window-action]');
+        if (!btn) return;
+        var action = btn.getAttribute('data-window-action');
+        var win = btn.closest('.miomos-window');
+        if (!win) return;
+        if (action === 'close') {
+          win.classList.add('is-closed');
+          win.classList.remove('is-active');
+        } else if (action === 'minimize') {
+          win.classList.add('is-minimized');
+          win.classList.remove('is-active');
+        } else if (action === 'maximize') {
+          if (win.classList.contains('is-maximized')) {
+            var restore = win.__restoreRect;
+            win.classList.remove('is-maximized');
+            if (restore) applyRect(win, restore);
+          } else {
+            win.__restoreRect = {
+              left: parseInt(win.style.left || '0', 10),
+              top: parseInt(win.style.top || '0', 10),
+              width: parseInt(win.style.width || '0', 10),
+              height: parseInt(win.style.height || '0', 10),
+              z: parseInt(win.style.zIndex || '1', 10)
+            };
+            win.classList.add('is-maximized');
+            applyRect(win, {left: 0, top: 0, width: stage.clientWidth, height: stage.clientHeight, z: zCounter + 1});
+          }
+          focusWindow(win);
+        }
+        syncTaskButton(win);
+        queueLayoutSave();
+      });
+
+      function clampRect(next, stageRect) {
+        if (next.width < 360) next.width = 360;
+        if (next.height < 240) next.height = 240;
+        if (next.left < 0) next.left = 0;
+        if (next.top < 0) next.top = 0;
+        if (next.left + next.width > stageRect.width) next.left = Math.max(0, stageRect.width - next.width);
+        if (next.top + next.height > stageRect.height) next.top = Math.max(0, stageRect.height - next.height);
+        return next;
+      }
+
+      function bindDrag(win) {
+        var bar = win.querySelector('[data-window-drag]');
+        if (!bar) return;
+        bar.addEventListener('pointerdown', function (ev) {
+          if (ev.target.closest('[data-window-action]')) return;
+          if (win.classList.contains('is-maximized')) return;
+          ev.preventDefault();
+          focusWindow(win);
+          if (bar.setPointerCapture) {
+            try { bar.setPointerCapture(ev.pointerId); } catch (e) {}
+          }
+          var stageRect = stage.getBoundingClientRect();
+          var winRect = win.getBoundingClientRect();
+          var offsetX = ev.clientX - winRect.left;
+          var offsetY = ev.clientY - winRect.top;
+          function move(mev) {
+            var next = {
+              left: mev.clientX - stageRect.left - offsetX,
+              top: mev.clientY - stageRect.top - offsetY,
+              width: parseInt(win.style.width || '0', 10),
+              height: parseInt(win.style.height || '0', 10)
+            };
+            applyRect(win, clampRect(next, stageRect));
+          }
+          function done() {
+            window.removeEventListener('pointermove', move);
+            window.removeEventListener('pointerup', done);
+            window.removeEventListener('pointercancel', done);
+            queueLayoutSave();
+          }
+          window.addEventListener('pointermove', move);
+          window.addEventListener('pointerup', done);
+          window.addEventListener('pointercancel', done);
+        });
+      }
+
+      function bindResize(win) {
+        Array.prototype.forEach.call(win.querySelectorAll('.miomos-resize-handle'), function (handle) {
+          handle.addEventListener('pointerdown', function (ev) {
+            if (win.classList.contains('is-maximized')) return;
+            ev.preventDefault();
+            ev.stopPropagation();
+            focusWindow(win);
+            if (handle.setPointerCapture) {
+              try { handle.setPointerCapture(ev.pointerId); } catch (e) {}
+            }
+            var edge = handle.getAttribute('data-edge');
+            var stageRect = stage.getBoundingClientRect();
+            var rect = {
+              left: parseInt(win.style.left || '0', 10),
+              top: parseInt(win.style.top || '0', 10),
+              width: parseInt(win.style.width || '0', 10),
+              height: parseInt(win.style.height || '0', 10)
+            };
+            var startX = ev.clientX;
+            var startY = ev.clientY;
+            function move(mev) {
+              var dx = mev.clientX - startX;
+              var dy = mev.clientY - startY;
+              var next = {left: rect.left, top: rect.top, width: rect.width, height: rect.height};
+              if (edge.indexOf('e') >= 0) next.width = rect.width + dx;
+              if (edge.indexOf('s') >= 0) next.height = rect.height + dy;
+              if (edge.indexOf('w') >= 0) { next.left = rect.left + dx; next.width = rect.width - dx; }
+              if (edge.indexOf('n') >= 0) { next.top = rect.top + dy; next.height = rect.height - dy; }
+              if (next.width < 360) { if (edge.indexOf('w') >= 0) next.left -= (360 - next.width); next.width = 360; }
+              if (next.height < 240) { if (edge.indexOf('n') >= 0) next.top -= (240 - next.height); next.height = 240; }
+              if (next.left < 0) { next.width += next.left; next.left = 0; }
+              if (next.top < 0) { next.height += next.top; next.top = 0; }
+              if (next.left + next.width > stageRect.width) next.width = stageRect.width - next.left;
+              if (next.top + next.height > stageRect.height) next.height = stageRect.height - next.top;
+              applyRect(win, next);
+            }
+            function done() {
+              window.removeEventListener('pointermove', move);
+              window.removeEventListener('pointerup', done);
+              window.removeEventListener('pointercancel', done);
+              queueLayoutSave();
+            }
+            window.addEventListener('pointermove', move);
+            window.addEventListener('pointerup', done);
+            window.addEventListener('pointercancel', done);
+          });
+        });
+      }
+
+      function makeWsUrl(path) {
+        if (!path) return '';
+        var scheme = location.protocol === 'https:' ? 'wss://' : 'ws://';
+        return scheme + location.host + path;
+      }
+
+      function setConnected(isConnected) {
+        if (statusVm) statusVm.connected = !!isConnected;
+      }
+
+      function clearSocketTimers() {
+        if (runtime.pingTimer) {
+          window.clearInterval(runtime.pingTimer);
+          runtime.pingTimer = null;
+        }
+      }
+
+      function scheduleReconnect() {
+        if (runtime.reconnectTimer) return;
+        runtime.reconnectTimer = window.setTimeout(function () {
+          runtime.reconnectTimer = null;
+          connectSocket();
+        }, 1600);
+      }
+
+      function connectSocket() {
+        if (runtime.connecting) return;
+        if (runtime.socket && (runtime.socket.readyState === 0 || runtime.socket.readyState === 1)) return;
+        var wsPath = (boot.routes && boot.routes.websocket) || boot.websocketPath || root.getAttribute('data-miomos-ws');
+        var url = makeWsUrl(wsPath);
+        if (!url) return;
+        runtime.connecting = true;
+        runtime.socketSeq += 1;
+        var seq = runtime.socketSeq;
+        var socket = new WebSocket(url);
+        runtime.socket = socket;
+        setConnected(false);
+        socket.addEventListener('open', function () {
+          if (seq !== runtime.socketSeq) return;
+          runtime.connecting = false;
+          setConnected(true);
+          socket.send(JSON.stringify({event: 'hello', sessionId: sessionId}));
+          clearSocketTimers();
+          runtime.pingTimer = window.setInterval(function () {
+            if (runtime.socket && runtime.socket.readyState === 1) {
+              runtime.socket.send(JSON.stringify({event: 'ping', sessionId: sessionId}));
+            }
+          }, 25000);
+        });
+        socket.addEventListener('message', function (ev) {
+          try {
+            var msg = JSON.parse(ev.data || '{}');
+            if (msg.event === 'hello' || msg.event === 'pong') setConnected(true);
+          } catch (e) {}
+        });
+        socket.addEventListener('close', function () {
+          if (seq !== runtime.socketSeq) return;
+          runtime.connecting = false;
+          setConnected(false);
+          clearSocketTimers();
+          scheduleReconnect();
+        });
+        socket.addEventListener('error', function () {
+          if (seq !== runtime.socketSeq) return;
+          runtime.connecting = false;
+          setConnected(false);
+        });
+      }
+
+      function initStatusVue() {
+        var host = document.getElementById('miomosStatusVue');
+        if (!host || !window.Vue || !window.Vue.createApp) return;
+        statusVm = window.Vue.reactive({connected: false, now: new Date().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'}), osjsDeferred: true});
+        window.Vue.createApp({
+          setup: function () { return statusVm; },
+          mounted: function () {
+            window.setInterval(function () {
+              statusVm.now = new Date().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+            }, 60000);
+          },
+          template: '<div class="miomos-surface-chips"><span class="miomos-chip" :class="{\'is-connected\': connected}"><span class="miomos-chip-dot"></span>{{ connected ? "Socket live" : "Socket offline" }}</span><span class="miomos-chip">{{ now }}</span></div>'
+        }).mount(host);
+      }
+
+      function initDeferredOsjs() {
+        runtime.osjs = {available: !!window.osjsClient, deferred: true};
+      }
+
+      getWindows().forEach(function (win) {
+        bindDrag(win);
+        bindResize(win);
+        syncTaskButton(win);
+      });
+      loadLayout();
+      var first = stage.querySelector('.miomos-window:not(.is-minimized):not(.is-closed)');
+      if (first) focusWindow(first);
+      window.addEventListener('resize', function () {
+        getWindows().forEach(function (win) {
+          if (win.classList.contains('is-maximized')) {
+            applyRect(win, {left: 0, top: 0, width: stage.clientWidth, height: stage.clientHeight, z: parseInt(win.style.zIndex || '1', 10)});
+          }
+        });
+      });
+      window.addEventListener('beforeunload', saveLayoutLocal);
+
+      initStatusVue();
+      initDeferredOsjs();
+      connectSocket();
+    }());
+  </script>
+</div>
