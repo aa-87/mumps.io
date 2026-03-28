@@ -39,6 +39,9 @@ ENSURE(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("sessionId")=SID
 	SET STATE("startedAt")=$GET(^MIO("MIOMOS","SESSION",SID,"startedAt"))
 	SET STATE("lastSeenAt")=$GET(^MIO("MIOMOS","SESSION",SID,"lastSeenAt"))
+	SET STATE("layoutSavedAt")=$GET(^MIO("MIOMOS","SESSION",SID,"layoutSavedAt"))
+	SET STATE("savedLayoutJson")=$GET(^MIO("MIOMOS","SESSION",SID,"layoutJson"))
+	NEW UISTATE DO LOADUI(SID,.UISTATE) MERGE STATE("ui")=UISTATE
 	SET STATE("idleTimeoutSeconds")=IDLE
 	SET STATE("absoluteTimeoutSeconds")=ABS
 	SET STATE("desktopPath")=$GET(CONF("miomos","route","desktop"),"/miomos")
@@ -137,7 +140,7 @@ BOOTARY(STATE,CONF,OBJ)
 	KILL OBJ
 	SET OBJ("product","name")=$GET(STATE("brandTitle"),"MIOMOS")
 	SET OBJ("product","subtitle")=$GET(STATE("brandSubtitle"),"MUMPS-first clinical workspace")
-	SET OBJ("product","version")="roi10-terminal-foundation"
+	SET OBJ("product","version")="roi21-uiux-session-hardening"
 	SET OBJ("product","profile")=$GET(STATE("profile"),"dev")
 	SET OBJ("user","id")=$GET(STATE("principal"))
 	SET OBJ("user","displayName")=$GET(STATE("userName"))
@@ -147,6 +150,16 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("session","lastSeenAt")=$GET(STATE("lastSeenAt"))
 	SET OBJ("session","idleTimeoutSeconds")=+$GET(STATE("idleTimeoutSeconds"))
 	SET OBJ("session","absoluteTimeoutSeconds")=+$GET(STATE("absoluteTimeoutSeconds"))
+	NEW SNAP
+	NEW SNAPOK SET SNAPOK=$$SNAPSHOT($GET(STATE("sessionId")),.SNAP)
+	MERGE OBJ("session","ui")=SNAP("ui")
+	SET OBJ("session","lastEvent")=$GET(SNAP("lastEvent"))
+	SET OBJ("session","layoutSavedAt")=$GET(SNAP("layoutSavedAt"))
+	SET OBJ("session","uiSavedAt")=$GET(SNAP("uiSavedAt"))
+	SET OBJ("session","hasLayout")=+$GET(SNAP("hasLayout"))
+	SET OBJ("session","heartbeatCount")=+$GET(SNAP("eventCounts","heartbeat"))
+	SET OBJ("session","viewRefreshCount")=+$GET(SNAP("eventCounts","view.refresh"))
+	SET OBJ("session","uiSaveCount")=+$GET(SNAP("eventCounts","ui_state_save"))
 	SET OBJ("routes","desktop")=$GET(STATE("desktopPath"))
 	SET OBJ("routes","bootstrap")=$GET(STATE("bootstrapPath"))
 	SET OBJ("routes","websocket")=$GET(STATE("wsPath"))
@@ -192,7 +205,8 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","engine")="miomos-osjs-bridge"
 	SET OBJ("desktop","windowManagerName")="miomos-lean-production"
 	SET OBJ("desktop","savedLayoutJson")=$GET(^MIO("MIOMOS","SESSION",$GET(STATE("sessionId")),"layoutJson"))
-	SET OBJ("desktop","contractVersion")="2026-03-roi12"
+	SET OBJ("desktop","savedLayoutAt")=$GET(^MIO("MIOMOS","SESSION",$GET(STATE("sessionId")),"layoutSavedAt"))
+	SET OBJ("desktop","contractVersion")="2026-03-roi21"
 	SET OBJ("desktop","renderMode")="mumps-first"
 	SET OBJ("desktop","renderer")="vue-thin"
 	SET OBJ("desktop","motionProfile")=$GET(STATE("motionProfile"))
@@ -292,5 +306,88 @@ SAVELAYOUT(SID,PAYLOAD)
 	. . . SET RAW=$$EN^MIOJSON1(.LAYOUT)
 	SET ^MIO("MIOMOS","SESSION",SID,"layoutJson")=$EXTRACT(RAW,1,16384)
 	SET ^MIO("MIOMOS","SESSION",SID,"layoutSavedAt")=$$NOWISO^MIOUTIL()
+	DO TOUCH(SID,"layout.save")
 	QUIT
 	;
+
+SAVEUI(SID,PAYLOAD)
+	NEW TREE,ERR,RAW,SAVE
+	IF $GET(SID)="" QUIT 0
+	SET RAW=$GET(PAYLOAD)
+	KILL SAVE
+	IF RAW'="",$EXTRACT(RAW,1)="{" DO
+	. IF $$DECODE^MIOJSON(RAW,.TREE,.ERR) DO
+	. . SET SAVE("menuOpen")=+$GET(TREE("menuOpen"))
+	. . SET SAVE("activeWindowId")=$EXTRACT($GET(TREE("activeWindowId")),1,128)
+	. . SET SAVE("focusedAppKey")=$EXTRACT($GET(TREE("focusedAppKey")),1,64)
+	. . SET SAVE("layoutMode")=$EXTRACT($GET(TREE("layoutMode")),1,64)
+	. . SET SAVE("lastCommandName")=$EXTRACT($GET(TREE("lastCommandName")),1,128)
+	. . SET SAVE("terminalId")=$EXTRACT($GET(TREE("terminalId")),1,128)
+	. . SET SAVE("reason")=$EXTRACT($GET(TREE("reason")),1,64)
+	ELSE  DO
+	. SET SAVE("menuOpen")=0
+	. SET SAVE("activeWindowId")=""
+	. SET SAVE("focusedAppKey")=""
+	. SET SAVE("layoutMode")=""
+	. SET SAVE("lastCommandName")=""
+	. SET SAVE("terminalId")=""
+	. SET SAVE("reason")=""
+	KILL ^MIO("MIOMOS","SESSION",SID,"ui")
+	SET ^MIO("MIOMOS","SESSION",SID,"ui","menuOpen")=+$GET(SAVE("menuOpen"))
+	SET ^MIO("MIOMOS","SESSION",SID,"ui","activeWindowId")=$GET(SAVE("activeWindowId"))
+	SET ^MIO("MIOMOS","SESSION",SID,"ui","focusedAppKey")=$GET(SAVE("focusedAppKey"))
+	SET ^MIO("MIOMOS","SESSION",SID,"ui","layoutMode")=$GET(SAVE("layoutMode"))
+	SET ^MIO("MIOMOS","SESSION",SID,"ui","lastCommandName")=$GET(SAVE("lastCommandName"))
+	SET ^MIO("MIOMOS","SESSION",SID,"ui","terminalId")=$GET(SAVE("terminalId"))
+	SET ^MIO("MIOMOS","SESSION",SID,"ui","reason")=$GET(SAVE("reason"))
+	SET ^MIO("MIOMOS","SESSION",SID,"uiJson")=$EXTRACT($$EN^MIOJSON1(.SAVE),1,4096)
+	SET ^MIO("MIOMOS","SESSION",SID,"uiSavedAt")=$$NOWISO^MIOUTIL()
+	DO TOUCH(SID,"ui_state_save")
+	QUIT 1
+	;
+LOADUI(SID,OUT)
+	KILL OUT
+	IF $GET(SID)="" QUIT
+	SET OUT("menuOpen")=+$GET(^MIO("MIOMOS","SESSION",SID,"ui","menuOpen"))
+	SET OUT("activeWindowId")=$GET(^MIO("MIOMOS","SESSION",SID,"ui","activeWindowId"))
+	SET OUT("focusedAppKey")=$GET(^MIO("MIOMOS","SESSION",SID,"ui","focusedAppKey"))
+	SET OUT("layoutMode")=$GET(^MIO("MIOMOS","SESSION",SID,"ui","layoutMode"))
+	SET OUT("lastCommandName")=$GET(^MIO("MIOMOS","SESSION",SID,"ui","lastCommandName"))
+	SET OUT("terminalId")=$GET(^MIO("MIOMOS","SESSION",SID,"ui","terminalId"))
+	SET OUT("reason")=$GET(^MIO("MIOMOS","SESSION",SID,"ui","reason"))
+	QUIT
+	;
+TOUCH(SID,EVENT)
+	NEW NOWD,NOWS,KEY
+	IF $GET(SID)="" QUIT 0
+	SET NOWD=+$PIECE($HOROLOG,",",1),NOWS=+$PIECE($HOROLOG,",",2)
+	SET ^MIO("MIOMOS","SESSION",SID,"lastDay")=NOWD
+	SET ^MIO("MIOMOS","SESSION",SID,"lastSec")=NOWS
+	SET ^MIO("MIOMOS","SESSION",SID,"lastSeenAt")=$$NOWISO^MIOUTIL()
+	SET KEY=$EXTRACT($GET(EVENT),1,64)
+	IF KEY'="" DO
+	. SET ^MIO("MIOMOS","SESSION",SID,"lastEvent")=KEY
+	. SET ^MIO("MIOMOS","SESSION",SID,"eventCounts",KEY)=+$GET(^MIO("MIOMOS","SESSION",SID,"eventCounts",KEY))+1
+	QUIT 1
+	;
+SNAPSHOT(SID,OUT)
+	NEW NOWD,NOWS
+	KILL OUT
+	IF $GET(SID)="" QUIT 0
+	IF '$DATA(^MIO("MIOMOS","SESSION",SID,"principal")) QUIT 0
+	SET NOWD=+$PIECE($HOROLOG,",",1),NOWS=+$PIECE($HOROLOG,",",2)
+	SET OUT("id")=SID
+	SET OUT("principal")=$GET(^MIO("MIOMOS","SESSION",SID,"principal"))
+	SET OUT("userName")=$GET(^MIO("MIOMOS","SESSION",SID,"userName"))
+	SET OUT("roles")=$GET(^MIO("MIOMOS","SESSION",SID,"roles"))
+	SET OUT("startedAt")=$GET(^MIO("MIOMOS","SESSION",SID,"startedAt"))
+	SET OUT("lastSeenAt")=$GET(^MIO("MIOMOS","SESSION",SID,"lastSeenAt"))
+	SET OUT("lastEvent")=$GET(^MIO("MIOMOS","SESSION",SID,"lastEvent"))
+	SET OUT("layoutSavedAt")=$GET(^MIO("MIOMOS","SESSION",SID,"layoutSavedAt"))
+	SET OUT("uiSavedAt")=$GET(^MIO("MIOMOS","SESSION",SID,"uiSavedAt"))
+	SET OUT("hasLayout")=$SELECT($GET(^MIO("MIOMOS","SESSION",SID,"layoutJson"))'="":1,1:0)
+	SET OUT("ageSeconds")=$$AGESEC(+$GET(^MIO("MIOMOS","SESSION",SID,"startedDay")),+$GET(^MIO("MIOMOS","SESSION",SID,"startedSec")),NOWD,NOWS)
+	SET OUT("idleSeconds")=$$AGESEC(+$GET(^MIO("MIOMOS","SESSION",SID,"lastDay")),+$GET(^MIO("MIOMOS","SESSION",SID,"lastSec")),NOWD,NOWS)
+	NEW UISTATE DO LOADUI(SID,.UISTATE) MERGE OUT("ui")=UISTATE
+	MERGE OUT("eventCounts")=^MIO("MIOMOS","SESSION",SID,"eventCounts")
+	QUIT 1

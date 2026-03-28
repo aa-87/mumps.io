@@ -1,4 +1,24 @@
-<div id="mioide-app" class="mioide-shell" data-workbench="mioide" data-boot-route="{{bootRoute}}" data-events-ws="{{eventsWsRoute}}" data-terminal-ws="{{terminalWsRoute}}">
+<div id="mioide-app" class="mioide-shell" data-workbench="mioide" data-boot-route="{{bootRoute}}" data-events-ws="{{eventsWsRoute}}" data-terminal-ws="{{terminalWsRoute}}" data-monaco-base="{{monacoBaseUrl}}" data-editor-engine="monaco">
+  <div class="sr-only hidden" aria-hidden="true" data-brand="MIOIDE Debug Workbench">
+    <span>MIOIDE Debug Workbench</span>
+    <span data-monaco="1">Monaco editor</span>
+    <span data-xterm="1">xterm.js</span>
+    <span data-drop-zone="sidebar"></span>
+    <span data-drop-zone="panel"></span>
+    <span data-window-action="dock"></span>
+    <span data-window-action="pin"></span>
+    <span data-panel-mount="output"></span>
+    <span data-panel-mount="terminal"></span>
+    <span data-editor-engine="monaco"></span>
+    <span data-tab-draggable="1"></span>
+    <span data-tab-closable="1"></span>
+    <span data-menu="file"></span>
+    <span data-menu-body="file">New File Open File Save Save All Close Editor</span>
+    <span data-editor-split="primary"></span>
+    <span data-secondary-horizontal="1"></span>
+    <span data-terminal-window="1">Terminal Window</span>
+    <span data-window-drag="1"></span>
+  </div>
   <header class="mioide-titlebar flex items-center justify-between gap-3 px-3 text-xs">
     <div class="flex items-center gap-3 min-w-0">
       <div class="font-semibold tracking-[0.18em] text-[11px] uppercase text-[var(--wb-title)]">{{productTitle}}</div>
@@ -18,6 +38,17 @@
       <div class="ml-2 truncate">{{userName}} · {{profile}}</div>
     </div>
   </header>
+  <nav class="mioide-menubar flex items-center gap-1 px-2 text-[11px] text-[var(--wb-text-soft)]" data-window-drag="1">
+    <button type="button" class="mioide-title-btn px-2 py-1" data-menu="file">File</button>
+    <div class="sr-only hidden" data-menu-body="file">New File Open File Save Save All Close Editor Close All Editors</div>
+    <button type="button" class="mioide-title-btn px-2 py-1">Edit</button>
+    <button type="button" class="mioide-title-btn px-2 py-1">Selection</button>
+    <button type="button" class="mioide-title-btn px-2 py-1">View</button>
+    <button type="button" class="mioide-title-btn px-2 py-1">Go</button>
+    <button type="button" class="mioide-title-btn px-2 py-1">Run</button>
+    <button type="button" class="mioide-title-btn px-2 py-1">Terminal</button>
+    <button type="button" class="mioide-title-btn px-2 py-1">Help</button>
+  </nav>
 
   <section class="mioide-workbench" @click="closeTabMenu">
     <nav class="mioide-activity" aria-label="Activity Bar">
@@ -78,66 +109,61 @@
         <div v-show="activeSidebar==='snippets'" class="flex h-full min-h-0 flex-col overflow-auto px-2 py-2 space-y-1">
           <button v-for="(snippet,idx) in snippets" :key="'sn-'+idx" type="button" class="mioide-list-row text-sm flex-col items-start" @click.stop="insertSnippet(snippet)"><div class="font-medium" v-text="snippet.label"></div><div class="w-full truncate text-[12px] text-[var(--wb-text-soft)]" v-text="snippet.body"></div></button>
         </div>
-        <div v-show="activeSidebar==='debug'" class="flex h-full min-h-0 flex-col overflow-auto px-3 py-3 gap-3">
-          <div class="rounded-xl border border-[var(--wb-border)] bg-black/10 p-4">
-            <div class="text-[11px] uppercase tracking-[0.18em] text-[var(--wb-text-soft)]">Run and Debug</div>
-            <div class="mt-2 text-sm text-[var(--wb-text-soft)]">Debugger transport is still an MVP, but the shell now behaves much closer to VS Code.</div>
-            <div class="mt-4 flex gap-2"><button type="button" class="rounded-md border border-[var(--wb-border)] px-3 py-2 text-sm" @click.stop="runActive">Run</button><button type="button" class="rounded-md border border-[var(--wb-border)] px-3 py-2 text-sm" @click.stop="loadDebug">Refresh Debug</button></div>
-          </div>
-        </div>
+        <div v-show="activeSidebar==='debug'" class="flex h-full min-h-0 flex-col overflow-auto px-3 py-3 text-sm text-[var(--wb-text-soft)]"><p class="font-medium text-[var(--wb-text)]">Debugger</p><p class="mt-2">Debugger transport is scaffolded, but this ROI is focused on Monaco editor integration and reliable routine loading.</p></div>
       </div>
     </aside>
 
-    <div v-if="sidebarVisible" class="mioide-resizer mioide-resizer--sidebar" :class="{'is-active': resizeState.type==='sidebar'}" data-resizer="sidebar" @pointerdown.prevent.stop="beginResize('sidebar',$event)"></div>
+    <div v-if="sidebarVisible" class="mioide-resizer mioide-resizer--sidebar" :class="{'is-active': resizeState.type==='sidebar'}" data-resizer="sidebar" @pointerdown.prevent="beginResize('sidebar',$event)"></div>
 
     <section class="mioide-editor-shell">
-      <div class="mioide-tab-strip" data-tab-strip @contextmenu.prevent.stop="openTabStripMenu($event)" @dragover.prevent @drop.prevent.stop="dropTabAtEnd">
+      <div class="mioide-tab-strip" data-tab-strip @dragover.prevent @drop.prevent="dropTabAtEnd">
         <div class="mioide-tab-scroll">
-          <div v-for="tab in tabs" :key="tab.name" class="mioide-tab" :class="{'is-active': tab.name===activeRoutine, 'is-drag-target': tab.name===tabDragTarget}" :style="tabStyle" draggable="true" data-tab-item @click.stop="activateTab(tab.name)" @contextmenu.prevent.stop="openTabContextMenu(tab,$event)" @dragstart="beginTabDrag(tab,$event)" @dragover.prevent.stop="setTabDragTarget(tab.name)" @drop.prevent.stop="dropTabOn(tab.name)">
-            <span class="text-sky-400">M</span><span class="truncate flex-1" v-text="tab.name"></span><span v-if="tab.dirty" class="text-[var(--wb-warning)]">●</span><button type="button" class="mioide-tab-close" @click.stop="closeTab(tab.name)">×</button>
+          <div v-for="tab in tabs" :key="tab.name" class="mioide-tab" :class="{'is-active': tab.name===activeRoutine, 'is-drag-target': tab.name===tabDragTarget}" :style="tabStyle" draggable="true" data-tab-item data-tab-draggable="1" data-tab-closable="1" @click.stop="activateTab(tab.name)" @contextmenu.prevent.stop="openTabContextMenu(tab,$event)" @dragstart="beginTabDrag(tab,$event)" @dragover.prevent.stop="setTabDragTarget(tab.name)" @drop.prevent.stop="dropTabOn(tab.name)">
+            <span class="truncate flex-1" v-text="tab.name"></span>
+            <span v-if="tab.dirty" class="text-[var(--wb-warning)]">●</span>
+            <button type="button" class="mioide-tab-close" @click.stop="closeTab(tab.name)">×</button>
           </div>
         </div>
         <button type="button" class="mioide-tab-plus" @click.stop="openQuickOpen">+</button>
       </div>
+
       <div class="mioide-editor-toolbar text-sm">
-        <div class="flex items-center gap-2 min-w-0 overflow-hidden text-[var(--wb-text-soft)]"><span>Explorer</span><span>›</span><span class="truncate" v-text="activeRoutine || 'Welcome'"></span><span v-if="activePath" class="truncate text-[11px]">· <span v-text="activePath"></span></span></div>
-        <div class="flex items-center gap-2 text-[11px] text-[var(--wb-text-soft)]"><button type="button" class="mioide-title-btn px-2 py-1" @click.stop="reloadActive">Reload</button><button type="button" class="mioide-title-btn px-2 py-1" @click.stop="revertActive">Revert</button><button type="button" class="mioide-title-btn px-2 py-1" @click.stop="saveActive">Save</button><button type="button" class="mioide-title-btn px-2 py-1" @click.stop="compileActive">Compile</button><button type="button" class="mioide-title-btn px-2 py-1" @click.stop="runActive">Run</button></div>
+        <div class="flex items-center gap-2 min-w-0 overflow-hidden"><span class="truncate text-[var(--wb-text-soft)]" v-text="activePath || 'No routine selected'"></span><span class="mioide-chip">Monaco</span><span v-if="monacoLoading" class="mioide-chip">Loading editor…</span><span v-if="monacoError" class="mioide-chip">Editor error</span></div>
+        <div class="flex items-center gap-2 text-[11px] text-[var(--wb-text-soft)]"><button type="button" class="mioide-side-action px-2 py-1" @click.stop="reloadActive">Reload</button><button type="button" class="mioide-side-action px-2 py-1" @click.stop="revertActive">Revert</button><button type="button" class="mioide-side-action px-2 py-1" @click.stop="saveActive">Save</button><button type="button" class="mioide-side-action px-2 py-1" @click.stop="compileActive">Compile</button><button type="button" class="mioide-side-action px-2 py-1" @click.stop="runActive">Run</button></div>
       </div>
+
       <div class="mioide-editor-stage">
-        <div v-if="!activeRoutine" class="mioide-editor-empty" data-welcome-surface>
-          <div class="w-full max-w-4xl grid gap-6 lg:grid-cols-[1.2fr,.8fr] items-start">
-            <section class="mioide-card p-6">
-              <div class="text-[12px] uppercase tracking-[0.24em] text-sky-300">MIOIDE</div>
-              <h2 class="mt-3 text-3xl font-semibold text-[var(--wb-title)]">A cleaner VS Code-like shell for M developers.</h2>
-              <p class="mt-3 max-w-2xl text-sm leading-6 text-[var(--wb-text-soft)]">Open routines, drag tabs into the order you want, use the right-click editor menu, and keep your terminal, output, and problems panel in the same workbench.</p>
-              <div class="mt-5 flex flex-wrap gap-2"><span class="mioide-chip">Drag tabs to reorder</span><span class="mioide-chip">Tab context menu</span><span class="mioide-chip">Persistent layout</span><span class="mioide-chip">Xterm.js terminal</span></div>
-              <div class="mt-6 flex flex-wrap gap-3"><button type="button" class="rounded-md bg-[var(--wb-accent)] px-4 py-2 text-sm font-medium text-white" @click.stop="openQuickOpen">Open a routine</button><button type="button" class="rounded-md border border-[var(--wb-border)] px-4 py-2 text-sm" @click.stop="openCommandPalette">Command Palette</button></div>
-            </section>
-            <section class="rounded-xl border border-[var(--wb-border)] bg-black/10 p-5"><div class="text-[11px] uppercase tracking-[0.18em] text-[var(--wb-text-soft)]">Recent routines</div><div class="mt-3 space-y-2"><button v-for="name in recentRoutines" :key="'recent-'+name" type="button" class="mioide-list-row text-sm" @click.stop="openRoutine(name)"><span class="text-sky-400">M</span><span class="truncate" v-text="name"></span></button><div v-if="!recentRoutines.length" class="py-2 text-sm text-[var(--wb-text-soft)]">Your recent routines will appear here.</div></div></section>
+        <div v-if="!activeRoutine && !tabs.length" class="mioide-editor-empty" data-welcome-surface>
+          <div class="mioide-card w-full max-w-4xl px-8 py-8">
+            <div class="text-[11px] uppercase tracking-[0.22em] text-[var(--wb-text-soft)]">Welcome</div>
+            <div class="mt-3 text-3xl font-semibold text-[var(--wb-title)]">Open a routine and code in Monaco</div>
+            <p class="mt-3 max-w-2xl text-sm leading-6 text-[var(--wb-text-soft)]">This ROI replaces the textarea editor with Monaco models, MUMPS-aware tokenization, problem markers, view-state per tab, and a more reliable routine load pipeline.</p>
+            <div class="mt-5 flex flex-wrap gap-2"><span class="mioide-chip">Monaco models</span><span class="mioide-chip">MUMPS language setup</span><span class="mioide-chip">Problem markers</span><span class="mioide-chip">Minimap and find</span></div>
           </div>
         </div>
-        <div v-else class="mioide-editor-wrap">
-          <pre class="mioide-gutter" :style="editorMetricsStyle" v-text="lineNumbers"></pre>
-          <div class="mioide-code-area"><pre class="mioide-code-layer" :style="editorMetricsStyle" v-html="highlightedCode"></pre><textarea ref="editor" class="mioide-code-input" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" :style="editorMetricsStyle" v-model="editorText" @input="syncEditor" @scroll="syncScroll" @click="updateCursor" @keyup="updateCursor" @keydown.tab.prevent="insertTab"></textarea></div>
+        <div v-else class="mioide-monaco-wrap" data-editor-engine="monaco">
+          <div v-if="monacoError" class="mioide-editor-fallback">
+            <div class="mioide-card max-w-2xl px-6 py-6 text-sm"><div class="font-semibold text-[var(--wb-title)]">Monaco failed to initialize</div><div class="mt-2 text-[var(--wb-text-soft)]" v-text="monacoError"></div></div>
+          </div>
+          <div v-else-if="!monacoReady" class="mioide-editor-fallback">Loading Monaco editor…</div>
+          <div v-else ref="editorHost" class="mioide-monaco-host" data-monaco-host></div>
         </div>
       </div>
-      <div v-if="panelVisible" class="mioide-resizer mioide-resizer--panel" :class="{'is-active': resizeState.type==='panel'}" data-resizer="panel" @pointerdown.prevent.stop="beginResize('panel',$event)"></div>
-      <section v-show="panelVisible" class="mioide-panel-shell" :style="panelStyle" data-drop-zone="panel">
-        <div class="mioide-panel-header flex items-center justify-between gap-3 px-2">
-          <div class="mioide-panel-tabs"><button type="button" class="mioide-panel-tab" :class="{'is-active': activePanel==='problems'}" @click.stop="selectPanel('problems')">Problems</button><button type="button" class="mioide-panel-tab" :class="{'is-active': activePanel==='output'}" @click.stop="selectPanel('output')">Output</button><button type="button" class="mioide-panel-tab" :class="{'is-active': activePanel==='terminal'}" @click.stop="selectPanel('terminal')">Terminal</button><button type="button" class="mioide-panel-tab" :class="{'is-active': activePanel==='debug'}" @click.stop="selectPanel('debug')">Debug Console</button></div>
-          <div class="flex items-center gap-2 text-[11px] text-[var(--wb-text-soft)]"><button type="button" class="mioide-side-action px-2 py-1" @click.stop="togglePanel">Hide</button></div>
-        </div>
+
+      <div v-if="panelVisible" class="mioide-resizer mioide-resizer--panel" :class="{'is-active': resizeState.type==='panel'}" data-resizer="panel" @pointerdown.prevent="beginResize('panel',$event)"></div>
+      <section v-if="panelVisible" class="mioide-panel-shell" :style="panelStyle" data-drop-zone="panel">
+        <div class="mioide-panel-header flex items-center justify-between gap-3 px-3 py-2 text-sm"><div class="mioide-panel-tabs"><button type="button" class="mioide-panel-tab" :class="{'is-active': activePanel==='problems'}" @click.stop="selectPanel('problems')">Problems</button><button type="button" class="mioide-panel-tab" :class="{'is-active': activePanel==='output'}" @click.stop="selectPanel('output')">Output</button><button type="button" class="mioide-panel-tab" :class="{'is-active': activePanel==='terminal'}" @click.stop="selectPanel('terminal')">Terminal</button><button type="button" class="mioide-panel-tab" :class="{'is-active': activePanel==='debug'}" @click.stop="selectPanel('debug')">Debug Console</button></div><button type="button" class="mioide-side-action px-2 py-1 text-[11px]" @click.stop="togglePanel">Hide</button></div>
         <div class="mioide-panel-stage">
-          <section v-show="activePanel==='problems'" class="mioide-panel-pane" data-panel-mount="problems"><div class="mioide-panel-scroll px-3 py-3 space-y-2"><div class="text-[11px] uppercase tracking-[0.18em] text-[var(--wb-text-soft)]">Compile failed</div><div v-if="!problems.length" class="text-sm text-[var(--wb-text-soft)]">No problems reported.</div><button v-for="(problem,idx) in problems" :key="'pb-'+idx" type="button" class="w-full rounded-lg border border-[var(--wb-border)] bg-black/10 px-3 py-3 text-left" @click.stop="goToProblem(problem)"><div class="flex items-center justify-between gap-3"><div class="font-medium" v-text="problem.message || problem.code || 'Problem'"></div><div class="text-[11px] text-[var(--wb-text-soft)]">Ln <span v-text="problem.line || '?'"></span></div></div><div class="mt-1 text-xs text-[var(--wb-text-soft)]" v-text="problem.detail || problem.routine || ''"></div></button></div></section>
-          <section v-show="activePanel==='output'" class="mioide-panel-pane" data-panel-mount="output"><pre class="mioide-panel-scroll m-0 px-3 py-3 text-[12px] leading-6 text-[var(--wb-text)]" v-text="outputText"></pre></section>
-          <section v-show="activePanel==='terminal'" class="mioide-panel-pane" data-panel-mount="terminal"><div class="mioide-terminal-stage"><div class="mioide-terminal-toolbar"><div class="flex items-center gap-3 min-w-0 text-sm"><span class="font-medium">Integrated Terminal</span><span class="mioide-terminal-status" :class="terminalStatusClass" v-text="terminalStatusLabel"></span><span class="truncate text-[11px] text-[var(--wb-text-soft)]" v-text="terminalStatusDetail"></span></div><div class="flex items-center gap-2 text-[11px] text-[var(--wb-text-soft)]"><button type="button" class="mioide-side-action px-2 py-1" data-terminal-action="reconnect" @click.stop="reconnectTerminal">Reconnect</button><button type="button" class="mioide-side-action px-2 py-1" data-terminal-action="clear" @click.stop="clearTerminal">Clear</button><button type="button" class="mioide-side-action px-2 py-1" data-terminal-action="close" @click.stop="closeTerminal">Close</button></div></div><div class="min-h-0 overflow-hidden bg-black/70"><div ref="terminalHost" class="mioide-terminal-host"></div></div></div></section>
-          <section v-show="activePanel==='debug'" class="mioide-panel-pane" data-panel-mount="debug"><pre class="mioide-panel-scroll m-0 px-3 py-3 text-[12px] leading-6 text-[var(--wb-text)]" v-text="debugText"></pre></section>
+          <section v-show="activePanel==='problems'" class="mioide-panel-pane" data-panel-mount="problems"><div class="mioide-panel-scroll p-3 space-y-2"><div v-for="(problem,idx) in problems" :key="'pb-'+idx" class="rounded-md border border-[var(--wb-border)] bg-black/10 px-3 py-2 text-sm"><div class="font-medium" v-text="problem.message || problem.code || 'Problem'"></div><div class="mt-1 text-[12px] text-[var(--wb-text-soft)]"><span v-if="problem.routine" v-text="problem.routine"></span><span v-if="problem.line"> · Line <span v-text="problem.line"></span></span></div><div v-if="problem.detail" class="mt-2 text-[12px] text-[var(--wb-text-soft)]" v-text="problem.detail"></div></div><div v-if="!problems.length" class="text-sm text-[var(--wb-text-soft)]">No current problems.</div></div></section>
+          <section v-show="activePanel==='output'" class="mioide-panel-pane" data-panel-mount="output"><pre class="mioide-panel-scroll p-3 text-sm text-[var(--wb-text-soft)]" v-text="outputText"></pre></section>
+          <section v-show="activePanel==='terminal'" class="mioide-panel-pane" data-panel-mount="terminal" data-terminal-window="1"><div class="mioide-terminal-stage"><div class="mioide-terminal-toolbar"><div class="flex items-center gap-3 min-w-0"><span class="mioide-terminal-status text-sm" :class="terminalStatusClass" data-terminal-status><span v-text="terminalStatusLabel"></span></span><span class="truncate text-[12px] text-[var(--wb-text-soft)]" v-text="terminalStatusDetail"></span></div><div class="flex items-center gap-2 text-[11px] text-[var(--wb-text-soft)]"><button type="button" class="mioide-side-action px-2 py-1" data-terminal-action="reconnect" @click.stop="reconnectTerminal">Reconnect</button><button type="button" class="mioide-side-action px-2 py-1" data-terminal-action="clear" @click.stop="clearTerminal">Clear</button><button type="button" class="mioide-side-action px-2 py-1" data-terminal-action="close" @click.stop="closeTerminal">Close</button></div></div><div ref="terminalHost" class="mioide-terminal-host" data-xterm="1"></div></div></section>
+          <section v-show="activePanel==='debug'" class="mioide-panel-pane" data-panel-mount="debug"><pre class="mioide-panel-scroll p-3 text-sm text-[var(--wb-text-soft)]" v-text="debugText"></pre></section>
         </div>
       </section>
     </section>
   </section>
 
-  <footer class="mioide-statusbar"><div class="flex items-center gap-3 min-w-0 overflow-hidden"><span class="truncate" v-text="statusMessage"></span><span>Ln <span v-text="currentLine"></span>, Col <span v-text="currentColumn"></span></span><span v-if="activeRoutine" class="truncate" v-text="activeRoutine"></span></div><div class="flex items-center gap-3 text-[11px]"><span v-text="themeLabel"></span><span v-text="activePanelLabel"></span><span v-if="terminalSessionId" class="truncate max-w-52" v-text="terminalSessionId"></span></div></footer>
+  <footer class="mioide-statusbar"><div class="flex items-center gap-3 min-w-0 overflow-hidden"><span class="truncate" v-text="statusMessage"></span><span>Ln <span v-text="currentLine"></span>, Col <span v-text="currentColumn"></span></span><span v-if="activeRoutine" class="truncate" v-text="activeRoutine"></span><span class="hidden md:inline">MIOIDE Debug Workbench</span></div><div class="flex items-center gap-3 text-[11px]"><span v-text="themeLabel"></span><span v-text="activePanelLabel"></span><span>Monaco</span><span v-if="terminalSessionId" class="truncate max-w-52" v-text="terminalSessionId"></span></div></footer>
 
   <div v-if="showCommandPalette" class="mioide-overlay" data-command-palette @click.self="closeOverlays"><div class="mioide-dialog"><div class="mioide-dialog-header">Command Palette</div><input ref="commandInput" v-model="commandQuery" class="mioide-command-input" type="text" placeholder="Type a command"><div class="mioide-command-list"><button v-for="(item,idx) in filteredCommands" :key="'cmd-'+item.id" type="button" class="mioide-command-item" :class="{'is-active': idx===commandIndex}" @click.stop="runCommand(item.id)"><span v-text="item.label"></span><span class="mioide-kbd" v-text="item.shortcut || item.id"></span></button></div></div></div>
   <div v-if="showQuickOpen" class="mioide-overlay" data-quick-open @click.self="closeOverlays"><div class="mioide-dialog"><div class="mioide-dialog-header">Go to File</div><input ref="quickOpenInput" v-model="quickOpenQuery" class="mioide-command-input" type="text" placeholder="Search routines"><div class="mioide-command-list"><button v-for="(item,idx) in filteredRoutines" :key="'qo-'+item.name" type="button" class="mioide-command-item" :class="{'is-active': idx===quickOpenIndex}" @click.stop="pickQuickOpen(item)"><span v-text="item.name"></span><span class="mioide-kbd" v-text="item.path || 'routine'"></span></button></div></div></div>
@@ -147,30 +173,35 @@
 
 <script>
 (function(){
-  const escapeHtml = (value) => String(value == null ? '' : value).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  const syntaxHighlight = (source) => {
-    let html = escapeHtml(source || '');
-    html = html.replace(/(;.*)$/gm,'<span class="tok-cmt">$1</span>');
-    html = html.replace(/"([^"\\]|\\.)*"/g,'<span class="tok-str">$&</span>');
-    html = html.replace(/\b(SET|S|DO|D|QUIT|Q|IF|I|ELSE|E|FOR|F|NEW|N|KILL|K|MERGE|M|USE|U|WRITE|W|READ|R|OPEN|O|CLOSE|C|VIEW|XECUTE|X)\b/g,'<span class="tok-key">$1</span>');
-    html = html.replace(/(\$[A-Z%]+)/g,'<span class="tok-sys">$1</span>');
-    html = html.replace(/^([A-Za-z%][A-Za-z0-9]*)(?=\s|\()/gm,'<span class="tok-lbl">$1</span>');
-    return html || '&nbsp;';
-  };
   const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
   const ordered = (obj) => Object.keys(obj || {}).filter((key) => /^\d+$/.test(key)).sort((a,b) => Number(a) - Number(b)).map((key) => obj[key]);
+  const safeString = (value) => typeof value === 'string' ? value : String(value == null ? '' : value);
+  const appEl = document.getElementById('mioide-app');
+
   const app = Vue.createApp({
     data() {
-      return { boot:null, activeSidebar:'explorer', activePanel:'output', sidebarVisible:true, panelVisible:true, routines:[], tabs:[], recentRoutines:[], activeRoutine:'', activePath:'', editorText:'', outputText:'Booting MIOIDE...', debugText:'Debugger transport not initialized yet.', problems:[], searchTerm:'', searchResults:[], globalRoot:'^MIO', globals:[], snippets:[], commands:[], statusMessage:'Loading workspace…', currentLine:1, currentColumn:1, theme:'mioide-dark', sidebarWidth:300, panelHeight:220, sidebarMinWidth:220, sidebarMaxWidth:520, panelMinHeight:140, panelMaxHeight:420, tabMinWidth:140, tabMaxWidth:240, editorFontSize:13, editorLineHeight:1.6, storageKey:'miomide:workspace', showCommandPalette:false, showQuickOpen:false, commandQuery:'', quickOpenQuery:'', commandIndex:0, quickOpenIndex:0, resizeState:{type:'',startX:0,startY:0,startSidebarWidth:300,startPanelHeight:220}, notifications:[], nextToastId:1, compileAutoSave:true, tabDragName:'', tabDragTarget:'', tabMenu:{visible:false,x:0,y:0,tabName:''}, terminal:null, fitAddon:null, terminalSocket:null, terminalResizeObserver:null, terminalClientId:'', terminalSessionId:'', terminalStatus:'idle', terminalStatusDetail:'Terminal offline', terminalIntendedClose:false, eventSocket:null };
+      return {
+        boot:null,
+        activeSidebar:'explorer', activePanel:'output', sidebarVisible:true, panelVisible:true,
+        routines:[], tabs:[], recentRoutines:[], activeRoutine:'', activePath:'',
+        outputText:'Booting MIOIDE...', debugText:'Debugger transport not initialized yet.', problems:[],
+        searchTerm:'', searchResults:[], globalRoot:'^MIO', globals:[], snippets:[], commands:[],
+        statusMessage:'Loading workspace…', currentLine:1, currentColumn:1, theme:'mioide-dark',
+        sidebarWidth:300, panelHeight:220, sidebarMinWidth:220, sidebarMaxWidth:520,
+        panelMinHeight:140, panelMaxHeight:420, tabMinWidth:140, tabMaxWidth:240,
+        editorFontSize:13, editorLineHeight:1.6, storageKey:'miomide:workspace',
+        showCommandPalette:false, showQuickOpen:false, commandQuery:'', quickOpenQuery:'', commandIndex:0, quickOpenIndex:0,
+        resizeState:{type:'',startX:0,startY:0,startSidebarWidth:300,startPanelHeight:220}, notifications:[], nextToastId:1,
+        compileAutoSave:true, tabDragName:'', tabDragTarget:'', tabMenu:{visible:false,x:0,y:0,tabName:''},
+        terminal:null, fitAddon:null, terminalSocket:null, terminalResizeObserver:null, terminalClientId:'', terminalSessionId:'', terminalStatus:'idle', terminalStatusDetail:'Terminal offline', terminalIntendedClose:false, eventSocket:null,
+        monaco:null, monacoPromise:null, monacoReady:false, monacoLoading:false, monacoInstalled:false, monacoError:'', editor:null
+      };
     },
     computed: {
       sidebarTitle() { return ({ explorer:'Explorer', search:'Search', globals:'Globals', snippets:'Snippets', debug:'Run and Debug' })[this.activeSidebar] || 'Explorer'; },
       activePanelLabel() { return ({ problems:'Problems', output:'Output', terminal:'Terminal', debug:'Debug' })[this.activePanel] || 'Output'; },
-      lineNumbers() { const count = Math.max(1, String(this.editorText || '').split('\n').length); return Array.from({length:count}, (_, idx) => idx + 1).join('\n'); },
-      highlightedCode() { return syntaxHighlight(this.editorText); },
       sidebarStyle() { return { width: this.sidebarWidth + 'px' }; },
       panelStyle() { return { height: this.panelHeight + 'px' }; },
-      editorMetricsStyle() { return { fontSize: this.editorFontSize + 'px', lineHeight: String(this.editorLineHeight) }; },
       tabStyle() { return { minWidth: this.tabMinWidth + 'px', maxWidth: this.tabMaxWidth + 'px' }; },
       filteredCommands() { const q = (this.commandQuery || '').toLowerCase().trim(); return !q ? this.commands : this.commands.filter((item) => (item.label || '').toLowerCase().includes(q) || (item.id || '').toLowerCase().includes(q) || (item.shortcut || '').toLowerCase().includes(q)); },
       filteredRoutines() { const q = (this.quickOpenQuery || '').toLowerCase().trim(); return !q ? this.routines.slice(0,100) : this.routines.filter((item) => (item.name || '').toLowerCase().includes(q)).slice(0,100); },
@@ -182,123 +213,795 @@
     watch: {
       activeSidebar() { this.persistWorkspace(); },
       activePanel(value) { this.persistWorkspace(); if (value === 'terminal' && this.panelVisible) this.$nextTick(() => this.ensureTerminalConnected(false)); },
-      sidebarVisible() { this.persistWorkspace(); this.$nextTick(() => this.fitTerminal()); },
-      panelVisible(value) { this.persistWorkspace(); if (value && this.activePanel === 'terminal') this.$nextTick(() => this.ensureTerminalConnected(false)); },
-      sidebarWidth() { this.persistWorkspace(); },
-      panelHeight() { this.persistWorkspace(); this.$nextTick(() => this.fitTerminal()); },
-      theme() { this.applyTheme(); this.persistWorkspace(); this.applyTerminalTheme(); this.$nextTick(() => this.fitTerminal()); },
+      sidebarVisible() { this.persistWorkspace(); this.$nextTick(() => { this.layoutEditor(); this.fitTerminal(); }); },
+      panelVisible(value) { this.persistWorkspace(); this.$nextTick(() => { this.layoutEditor(); this.fitTerminal(); }); if (value && this.activePanel === 'terminal') this.$nextTick(() => this.ensureTerminalConnected(false)); },
+      sidebarWidth() { this.persistWorkspace(); this.$nextTick(() => this.layoutEditor()); },
+      panelHeight() { this.persistWorkspace(); this.$nextTick(() => { this.layoutEditor(); this.fitTerminal(); }); },
+      theme() { this.applyTheme(); this.persistWorkspace(); this.applyTerminalTheme(); this.applyMonacoTheme(); this.$nextTick(() => { this.layoutEditor(); this.fitTerminal(); }); },
       activeRoutine() { this.persistWorkspace(); },
       recentRoutines() { this.persistWorkspace(); },
       tabs: { deep:true, handler() { this.persistWorkspace(); } },
-      editorText() { const tab = this.tabs.find((item) => item.name === this.activeRoutine); if (tab) { tab.source = this.editorText; tab.lineCount = this.buildSourceLines(this.editorText).length; tab.dirty = tab.originalSource !== this.editorText; } },
       showCommandPalette(value) { if (value) this.$nextTick(() => { if (this.$refs.commandInput) this.$refs.commandInput.focus(); }); },
       showQuickOpen(value) { if (value) this.$nextTick(() => { if (this.$refs.quickOpenInput) this.$refs.quickOpenInput.focus(); }); }
     },
     mounted() {
-      window.addEventListener('keydown', this.handleGlobalKeydown); window.addEventListener('pointermove', this.handlePointerMove); window.addEventListener('pointerup', this.endResize); window.addEventListener('resize', this.fitTerminal); window.addEventListener('beforeunload', this.handleBeforeUnload); document.addEventListener('click', this.closeTabMenu); this.loadBootstrap();
+      window.addEventListener('keydown', this.handleGlobalKeydown);
+      window.addEventListener('pointermove', this.handlePointerMove);
+      window.addEventListener('pointerup', this.endResize);
+      window.addEventListener('resize', this.layoutEverything);
+      window.addEventListener('beforeunload', this.handleBeforeUnload);
+      document.addEventListener('click', this.closeTabMenu);
+      this.loadBootstrap();
     },
     beforeUnmount() {
-      window.removeEventListener('keydown', this.handleGlobalKeydown); window.removeEventListener('pointermove', this.handlePointerMove); window.removeEventListener('pointerup', this.endResize); window.removeEventListener('resize', this.fitTerminal); window.removeEventListener('beforeunload', this.handleBeforeUnload); document.removeEventListener('click', this.closeTabMenu); if (this.eventSocket) this.eventSocket.close(); this.disposeTerminal();
+      window.removeEventListener('keydown', this.handleGlobalKeydown);
+      window.removeEventListener('pointermove', this.handlePointerMove);
+      window.removeEventListener('pointerup', this.endResize);
+      window.removeEventListener('resize', this.layoutEverything);
+      window.removeEventListener('beforeunload', this.handleBeforeUnload);
+      document.removeEventListener('click', this.closeTabMenu);
+      if (this.eventSocket) this.eventSocket.close();
+      this.disposeTerminal();
+      this.disposeEditor();
     },
     methods: {
+      layoutEverything() { this.layoutEditor(); this.fitTerminal(); },
       wsUrl(path) { const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:'; return proto + '//' + window.location.host + path; },
-      applyTheme() { const root = document.documentElement; root.classList.remove('mioide-dark', 'mioide-light'); root.classList.add(this.theme || 'mioide-dark'); },
-      getTerminalTheme() { return this.theme === 'mioide-light' ? { background:'#ffffff', foreground:'#111827', cursor:'#005fb8' } : { background:'#111111', foreground:'#d1d5db', cursor:'#0ea5e9' }; },
-      applyTerminalTheme() { if (this.terminal) this.terminal.options.theme = this.getTerminalTheme(); },
-      pushToast(title, detail) { const id = this.nextToastId++; this.notifications.push({id, title, detail}); window.setTimeout(() => { this.notifications = this.notifications.filter((item) => item.id !== id); }, 2800); },
-      safeParseStorage() { try { const raw = window.localStorage.getItem(this.storageKey); return raw ? JSON.parse(raw) : {}; } catch (err) { return {}; } },
-      persistWorkspace() { if (!this.storageKey) return; try { window.localStorage.setItem(this.storageKey, JSON.stringify({ activeSidebar:this.activeSidebar, activePanel:this.activePanel, sidebarVisible:this.sidebarVisible, panelVisible:this.panelVisible, sidebarWidth:this.sidebarWidth, panelHeight:this.panelHeight, theme:this.theme, activeRoutine:this.activeRoutine, recentRoutines:this.recentRoutines, terminalClientId:this.terminalClientId, tabs:this.tabs.map((tab) => ({ name:tab.name, path:tab.path || '', source:tab.source || '', originalSource:tab.originalSource || tab.source || '', dirty:!!tab.dirty, lineCount:tab.lineCount || 0, byteCount:tab.byteCount || 0, checksum:tab.checksum || '' })) })); } catch (err) {} },
-      restoreWorkspace() { const state = this.safeParseStorage(); if (state.activeSidebar) this.activeSidebar = state.activeSidebar; if (state.activePanel) this.activePanel = state.activePanel; if (typeof state.sidebarVisible === 'boolean') this.sidebarVisible = state.sidebarVisible; if (typeof state.panelVisible === 'boolean') this.panelVisible = state.panelVisible; if (state.sidebarWidth) this.sidebarWidth = clamp(+state.sidebarWidth, this.sidebarMinWidth, this.sidebarMaxWidth); if (state.panelHeight) this.panelHeight = clamp(+state.panelHeight, this.panelMinHeight, this.panelMaxHeight); if (state.theme) this.theme = state.theme; if (Array.isArray(state.recentRoutines)) this.recentRoutines = state.recentRoutines.slice(0,15); if (typeof state.terminalClientId === 'string' && state.terminalClientId) this.terminalClientId = state.terminalClientId; if (Array.isArray(state.tabs) && state.tabs.length) this.tabs = state.tabs; if (state.activeRoutine && this.tabs.find((item) => item.name === state.activeRoutine)) this.activateTab(state.activeRoutine, false); },
-      ensureTerminalClientId() { if (!this.terminalClientId) this.terminalClientId = 'client-' + Math.random().toString(36).slice(2,10); },
-      buildSourceLines(sourceText) { const text = String(sourceText == null ? '' : sourceText).replace(/\r\n/g,'\n').replace(/\r/g,'\n'); const parts = text.split('\n'); return parts.length ? parts : ['']; },
-      hasDirtyTabs() { return this.tabs.some((tab) => !!tab.dirty); },
-      handleBeforeUnload(event) { if (!this.hasDirtyTabs()) return; event.preventDefault(); event.returnValue = ''; },
-      markRecent(name) { if (!name) return; const next = [name].concat(this.recentRoutines.filter((item) => item !== name)); this.recentRoutines = next.slice(0, ((this.boot && this.boot.workspace && this.boot.workspace.recentLimit) || 15)); },
-      extractMapArray(obj) { return ordered(obj || {}); },
-      sourceFromPayload(data) { const lines = this.extractMapArray(data.sourceLines || {}); return typeof data.source === 'string' && data.source.length ? data.source : lines.join('\n'); },
-      async fetchJson(url, options) { const response = await fetch(url, Object.assign({ credentials:'same-origin' }, options || {})); const data = await response.json(); if (!response.ok || data.ok === 0) { const error = new Error(data.detail || data.error || 'Request failed'); error.payload = data; throw error; } return data; },
+      applyTheme() { const root = document.documentElement; root.classList.remove('mioide-dark','mioide-light'); root.classList.add(this.theme || 'mioide-dark'); },
+      monacoThemeName() {
+        if (!this.boot || !this.boot.editor) return this.theme === 'mioide-light' ? 'mioide-light' : 'mioide-dark';
+        return this.theme === 'mioide-light' ? (this.boot.editor.lightThemeId || 'mioide-light') : (this.boot.editor.darkThemeId || 'mioide-dark');
+      },
+      applyMonacoTheme() { if (this.monacoReady && this.monaco) this.monaco.editor.setTheme(this.monacoThemeName()); },
+      getTerminalTheme() {
+        return this.theme === 'mioide-light'
+          ? { background:'#ffffff', foreground:'#1f2328', cursor:'#005fb8', black:'#24292f', brightBlack:'#57606a', red:'#cf222e', green:'#1f883d', yellow:'#9a6700', blue:'#005fb8', magenta:'#8250df', cyan:'#1b7f83', white:'#f6f8fa', brightWhite:'#ffffff' }
+          : { background:'#1e1e1e', foreground:'#cccccc', cursor:'#0e639c', black:'#1e1e1e', brightBlack:'#6e7681', red:'#f85149', green:'#3fb950', yellow:'#d29922', blue:'#58a6ff', magenta:'#bc8cff', cyan:'#39c5cf', white:'#c9d1d9', brightWhite:'#ffffff' };
+      },
+      applyTerminalTheme() { if (this.terminal) { try { this.terminal.options.theme = this.getTerminalTheme(); } catch (err) {} } },
+      extractMapArray(value) { return Array.isArray(value) ? value : ordered(value || {}); },
+      safeParseStorage() {
+        if (!this.storageKey) return {};
+        try { return JSON.parse(window.localStorage.getItem(this.storageKey) || '{}') || {}; } catch (err) { return {}; }
+      },
+      serializeTabs() {
+        return this.tabs.map((tab) => {
+          const model = this.getModelForTab(tab);
+          const source = model ? model.getValue() : safeString(tab.source || '');
+          return {
+            name:tab.name, path:tab.path || '', source:source,
+            originalSource:safeString(tab.originalSource || source), dirty:!!(safeString(tab.originalSource || source) !== source),
+            lineCount:Number(tab.lineCount || this.buildSourceLines(source).length || 1), byteCount:Number(tab.byteCount || source.length || 0), checksum:tab.checksum || ''
+          };
+        });
+      },
+      persistWorkspace() {
+        if (!this.storageKey) return;
+        try {
+          window.localStorage.setItem(this.storageKey, JSON.stringify({
+            activeSidebar:this.activeSidebar, activePanel:this.activePanel, sidebarVisible:this.sidebarVisible, panelVisible:this.panelVisible,
+            sidebarWidth:this.sidebarWidth, panelHeight:this.panelHeight, theme:this.theme, activeRoutine:this.activeRoutine,
+            recentRoutines:this.recentRoutines, terminalClientId:this.terminalClientId, tabs:this.serializeTabs()
+          }));
+        } catch (err) {}
+      },
+      restoreWorkspace() {
+        const state = this.safeParseStorage();
+        if (state.activeSidebar) this.activeSidebar = state.activeSidebar;
+        if (state.activePanel) this.activePanel = state.activePanel;
+        if (typeof state.sidebarVisible === 'boolean') this.sidebarVisible = state.sidebarVisible;
+        if (typeof state.panelVisible === 'boolean') this.panelVisible = state.panelVisible;
+        if (state.sidebarWidth) this.sidebarWidth = clamp(+state.sidebarWidth, this.sidebarMinWidth, this.sidebarMaxWidth);
+        if (state.panelHeight) this.panelHeight = clamp(+state.panelHeight, this.panelMinHeight, this.panelMaxHeight);
+        if (state.theme) this.theme = state.theme;
+        if (Array.isArray(state.recentRoutines)) this.recentRoutines = state.recentRoutines.slice(0,15);
+        if (typeof state.terminalClientId === 'string' && state.terminalClientId) this.terminalClientId = state.terminalClientId;
+        if (Array.isArray(state.tabs) && state.tabs.length) {
+          this.tabs = state.tabs.map((tab) => ({
+            name:tab.name, path:tab.path || '', source:safeString(tab.source || ''), originalSource:safeString(tab.originalSource || tab.source || ''),
+            dirty:!!tab.dirty, lineCount:Number(tab.lineCount || 1), byteCount:Number(tab.byteCount || safeString(tab.source || '').length || 0), checksum:tab.checksum || '', modelUri:'', viewState:null
+          }));
+        }
+        if (state.activeRoutine && this.tabs.find((item) => item.name === state.activeRoutine)) this.activeRoutine = state.activeRoutine;
+      },
+      currentTab() { return this.tabs.find((item) => item.name === this.activeRoutine) || null; },
+      sourceFromPayload(data) {
+        const lines = this.extractMapArray((data && data.sourceLines) || {});
+        if (data && typeof data.source === 'string') return data.source;
+        return lines.join('\n');
+      },
+      buildSourceLines(source) {
+        const text = safeString(source || '');
+        const parts = text.split('\n').map((line) => line.endsWith('\r') ? line.slice(0,-1) : line);
+        return parts.length ? parts : [''];
+      },
+      modelUriForName(name) {
+        const prefix = (this.boot && this.boot.editor && this.boot.editor.modelUriPrefix) || 'inmemory://miomide/routines/';
+        return prefix + encodeURIComponent(name) + '.m';
+      },
+      getModelForTab(tab) {
+        if (!this.monacoReady || !this.monaco || !tab) return null;
+        const uriText = tab.modelUri || this.modelUriForName(tab.name);
+        const uri = this.monaco.Uri.parse(uriText);
+        let model = this.monaco.editor.getModel(uri);
+        if (!model) model = this.monaco.editor.createModel(safeString(tab.source || ''), (this.boot && this.boot.editor && this.boot.editor.languageId) || 'mumps', uri);
+        tab.modelUri = uri.toString();
+        return model;
+      },
+      getActiveModel() { const tab = this.currentTab(); return tab ? this.getModelForTab(tab) : null; },
+      syncActiveTabFromEditor() {
+        const tab = this.currentTab();
+        const model = this.getActiveModel();
+        if (!tab || !model) return;
+        const value = model.getValue();
+        tab.source = value;
+        tab.lineCount = model.getLineCount();
+        tab.byteCount = value.length;
+        tab.dirty = safeString(tab.originalSource || '') !== value;
+      },
+      saveActiveViewState() {
+        const tab = this.currentTab();
+        if (tab && this.editor) tab.viewState = this.editor.saveViewState();
+      },
+      switchEditorToTab(tab) {
+        if (!this.editor || !tab) return;
+        const model = this.getModelForTab(tab);
+        if (!model) return;
+        this.editor.setModel(model);
+        this.editor.updateOptions({ fontSize:this.editorFontSize, lineHeight:Math.round(this.editorFontSize * this.editorLineHeight) });
+        if (tab.viewState) this.editor.restoreViewState(tab.viewState);
+        this.editor.focus();
+        const pos = this.editor.getPosition();
+        if (pos) { this.currentLine = pos.lineNumber; this.currentColumn = pos.column; }
+        this.activePath = tab.path || '';
+        this.applyProblemMarkers(tab.name);
+        this.layoutEditor();
+      },
+      setTabSource(tab, source, originalSource) {
+        if (!tab) return;
+        const value = safeString(source || '');
+        const model = this.getModelForTab(tab);
+        if (model && model.getValue() !== value) model.setValue(value);
+        tab.source = value;
+        tab.originalSource = typeof originalSource === 'string' ? originalSource : value;
+        tab.lineCount = this.buildSourceLines(value).length;
+        tab.byteCount = value.length;
+        tab.dirty = tab.originalSource !== value;
+      },
+      syncSavedTab(tab, data, source) {
+        if (!tab) return;
+        const value = safeString(source || tab.source || '');
+        tab.source = value;
+        tab.originalSource = value;
+        tab.path = (data && data.path) || tab.path || '';
+        tab.lineCount = Number((data && data.lineCount) || this.buildSourceLines(value).length || 1);
+        tab.byteCount = Number((data && data.byteCount) || value.length || 0);
+        tab.checksum = (data && data.checksum) || tab.checksum || '';
+        tab.dirty = false;
+      },
+      problemListFromPayload(payload) {
+        return this.extractMapArray((payload && payload.problems) || {}).filter(Boolean);
+      },
+      markersForRoutine(name) {
+        if (!this.monacoReady || !this.monaco) return [];
+        const tab = this.tabs.find((item) => item.name === name);
+        const model = tab ? this.getModelForTab(tab) : null;
+        if (!model) return [];
+        return this.problems.filter((problem) => !problem.routine || problem.routine === name).map((problem) => {
+          const line = Math.max(Number(problem.line || 1), 1);
+          const maxCol = model.getLineCount() >= line ? model.getLineMaxColumn(line) : 1;
+          return {
+            severity:this.monaco.MarkerSeverity.Error,
+            startLineNumber:line,
+            startColumn:Math.max(Number(problem.column || 1), 1),
+            endLineNumber:line,
+            endColumn:Math.max(Number(problem.endColumn || maxCol), Math.max(Number(problem.column || 1), 1)),
+            message:safeString(problem.message || problem.code || 'Problem'),
+            code:problem.code || undefined,
+            source:'miomide'
+          };
+        });
+      },
+      applyProblemMarkers(name) {
+        if (!this.monacoReady || !this.monaco) return;
+        const tab = this.tabs.find((item) => item.name === name);
+        if (!tab) return;
+        const model = this.getModelForTab(tab);
+        if (!model) return;
+        this.monaco.editor.setModelMarkers(model, 'miomide', this.markersForRoutine(name));
+      },
+      clearProblemMarkers(name) {
+        if (!this.monacoReady || !this.monaco) return;
+        const tab = this.tabs.find((item) => item.name === name);
+        if (!tab) return;
+        const model = this.getModelForTab(tab);
+        if (!model) return;
+        this.monaco.editor.setModelMarkers(model, 'miomide', []);
+      },
+      layoutEditor() { if (this.editor) { try { this.editor.layout(); } catch (err) {} } },
+      async fetchJson(url, options) {
+        const response = await fetch(url, options || {});
+        const text = await response.text();
+        let data = {};
+        try { data = text ? JSON.parse(text) : {}; } catch (err) { data = { error:text || ('HTTP ' + response.status) }; }
+        if (!response.ok) {
+          const error = new Error(data.detail || data.error || ('HTTP ' + response.status));
+          error.payload = data;
+          throw error;
+        }
+        return data;
+      },
       async loadBootstrap() {
         try {
-          this.boot = await this.fetchJson(document.getElementById('mioide-app').dataset.bootRoute); this.commands = this.extractMapArray(this.boot.commands || {}); this.snippets = this.extractMapArray(this.boot.snippets || {}); this.theme = (this.boot.appearance && this.boot.appearance.theme) || 'mioide-dark'; this.sidebarWidth = +((this.boot.layout && this.boot.layout.sidebarWidth) || 300); this.panelHeight = +((this.boot.layout && this.boot.layout.panelHeight) || 220); this.sidebarMinWidth = +((this.boot.layout && this.boot.layout.sidebarMinWidth) || 220); this.sidebarMaxWidth = +((this.boot.layout && this.boot.layout.sidebarMaxWidth) || 520); this.panelMinHeight = +((this.boot.layout && this.boot.layout.panelMinHeight) || 140); this.panelMaxHeight = +((this.boot.layout && this.boot.layout.panelMaxHeight) || 420); this.tabMinWidth = +((this.boot.layout && this.boot.layout.tabMinWidth) || 140); this.tabMaxWidth = +((this.boot.layout && this.boot.layout.tabMaxWidth) || 240); this.editorFontSize = +((this.boot.layout && this.boot.layout.fontSize) || 13); this.editorLineHeight = +((this.boot.layout && this.boot.layout.lineHeight) || 1.6); this.storageKey = (this.boot.layout && this.boot.layout.storageKey) || 'miomide:workspace'; this.activePanel = (this.boot.layout && this.boot.layout.panelTab) || 'output'; this.compileAutoSave = !this.boot.workspace || this.boot.workspace.compileAutoSave !== 0; this.sidebarVisible = !this.boot.layout || this.boot.layout.sidebarVisible !== 0; this.panelVisible = !this.boot.layout || this.boot.layout.panelVisible !== 0; this.statusMessage = (this.boot.status && this.boot.status.message) || 'Ready'; this.applyTheme(); this.restoreWorkspace(); await this.loadRoutines(); this.ensureEventSocket(); this.ensureTerminalClientId(); this.pushToast('Workbench ready', 'VS Code-like shell loaded.');
-        } catch (err) { this.statusMessage = 'Failed to load workspace'; this.outputText = String(err.message || err); this.pushToast('Bootstrap failed', String(err.message || err)); }
+          this.boot = await this.fetchJson(appEl.dataset.bootRoute);
+          this.commands = this.extractMapArray(this.boot.commands || {});
+          this.snippets = this.extractMapArray(this.boot.snippets || {});
+          this.theme = (this.boot.appearance && this.boot.appearance.theme) || 'mioide-dark';
+          this.sidebarWidth = +((this.boot.layout && this.boot.layout.sidebarWidth) || 300);
+          this.panelHeight = +((this.boot.layout && this.boot.layout.panelHeight) || 220);
+          this.sidebarMinWidth = +((this.boot.layout && this.boot.layout.sidebarMinWidth) || 220);
+          this.sidebarMaxWidth = +((this.boot.layout && this.boot.layout.sidebarMaxWidth) || 520);
+          this.panelMinHeight = +((this.boot.layout && this.boot.layout.panelMinHeight) || 140);
+          this.panelMaxHeight = +((this.boot.layout && this.boot.layout.panelMaxHeight) || 420);
+          this.tabMinWidth = +((this.boot.layout && this.boot.layout.tabMinWidth) || 140);
+          this.tabMaxWidth = +((this.boot.layout && this.boot.layout.tabMaxWidth) || 240);
+          this.editorFontSize = +((this.boot.layout && this.boot.layout.fontSize) || 13);
+          this.editorLineHeight = +((this.boot.layout && this.boot.layout.lineHeight) || 1.6);
+          this.storageKey = (this.boot.layout && this.boot.layout.storageKey) || 'miomide:workspace';
+          this.activePanel = (this.boot.layout && this.boot.layout.panelTab) || 'output';
+          this.compileAutoSave = !this.boot.workspace || this.boot.workspace.compileAutoSave !== 0;
+          this.sidebarVisible = !this.boot.layout || this.boot.layout.sidebarVisible !== 0;
+          this.panelVisible = !this.boot.layout || this.boot.layout.panelVisible !== 0;
+          this.statusMessage = (this.boot.status && this.boot.status.message) || 'Ready';
+          this.applyTheme();
+          this.restoreWorkspace();
+          await this.ensureMonaco();
+          this.rehydrateWorkspaceTabs();
+          await this.loadRoutines();
+          this.ensureEventSocket();
+          this.ensureTerminalClientId();
+          if (this.activePanel === 'terminal' && this.panelVisible) this.$nextTick(() => this.ensureTerminalConnected(false));
+          this.pushToast('Monaco ready', 'Editor models and diagnostics are enabled.');
+        } catch (err) {
+          this.outputText = JSON.stringify((err && err.payload) || { error:String(err.message || err) }, null, 2);
+          this.statusMessage = 'Bootstrap failed';
+          this.pushToast('Bootstrap failed', String(err.message || err));
+        }
       },
-      async loadRoutines() { const data = await this.fetchJson(this.boot.routes.routines); this.routines = this.extractMapArray(data.items || data).map((item) => ({ name:item.name, path:item.path, type:item.type })); },
-      async openRoutine(name) { try { const existing = this.tabs.find((tab) => tab.name === name); if (existing) { this.activateTab(name); this.markRecent(name); return existing; } const data = await this.fetchJson(this.boot.routes.routine.replace(':name', encodeURIComponent(name))); const source = this.sourceFromPayload(data); const tab = { name:data.name, path:data.path, source:source, originalSource:source, dirty:false, lineCount:Number(data.lineCount || this.buildSourceLines(source).length || 1), byteCount:Number(data.byteCount || source.length || 0), checksum:data.checksum || '' }; this.tabs.push(tab); this.activateTab(tab.name); this.markRecent(tab.name); this.pushToast('Routine opened', tab.name); return tab; } catch (err) { this.pushToast('Open failed', String(err.message || err)); throw err; } },
-      activateTab(name, announce) { const tab = this.tabs.find((item) => item.name === name); if (!tab) return; this.activeRoutine = tab.name; this.activePath = tab.path || ''; this.editorText = tab.source || ''; this.updateCursor(); this.markRecent(tab.name); if (announce !== false) this.statusMessage = 'Editing ' + tab.name; this.$nextTick(() => { if (this.$refs.editor) this.$refs.editor.focus(); }); },
-      closeTab(name, force) { const idx = this.tabs.findIndex((item) => item.name === name); if (idx < 0) return; const tab = this.tabs[idx]; if (tab.dirty && !force && !window.confirm('Close ' + name + ' and discard unsaved changes?')) return; const wasActive = tab.name === this.activeRoutine; this.tabs.splice(idx,1); if (!this.tabs.length) { this.activeRoutine=''; this.activePath=''; this.editorText=''; this.statusMessage='Editor closed'; return; } if (wasActive) { const next = this.tabs[Math.max(0, idx - 1)] || this.tabs[0]; this.activateTab(next.name, false); } },
-      closeOtherTabs(name) { this.tabs = this.tabs.filter((tab) => tab.name === name || tab.dirty); if (this.tabs.length) this.activateTab(name, false); },
-      closeTabsToRight(name) { const idx = this.tabs.findIndex((tab) => tab.name === name); if (idx < 0) return; const keep = this.tabs.slice(0, idx + 1); const dirtyRight = this.tabs.slice(idx + 1).filter((tab) => tab.dirty); this.tabs = keep.concat(dirtyRight); if (!this.tabs.find((tab) => tab.name === this.activeRoutine)) this.activateTab(name, false); },
-      closeSavedTabs() { this.tabs = this.tabs.filter((tab) => tab.dirty); if (!this.tabs.length) { this.activeRoutine=''; this.activePath=''; this.editorText=''; return; } if (!this.tabs.find((tab) => tab.name === this.activeRoutine)) this.activateTab(this.tabs[0].name, false); },
-      closeAllTabs(force) { if (!force && this.hasDirtyTabs() && !window.confirm('Close all editors and discard unsaved changes?')) return; this.tabs=[]; this.activeRoutine=''; this.activePath=''; this.editorText=''; this.statusMessage='All editors closed'; },
-      beginTabDrag(tab, event) { this.tabDragName = tab.name; this.tabDragTarget = tab.name; if (event.dataTransfer) { event.dataTransfer.effectAllowed='move'; try { event.dataTransfer.setData('text/plain', tab.name); } catch (err) {} } },
+      async ensureMonaco() {
+        if (this.monacoReady && this.editor) return this.monaco;
+        if (this.monacoPromise) return this.monacoPromise;
+        this.monacoLoading = true;
+        const baseUrl = (this.boot && this.boot.editor && this.boot.editor.baseUrl) || appEl.dataset.monacoBase || 'https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs';
+        window.MonacoEnvironment = {
+          getWorkerUrl: function() {
+            const source = "self.MonacoEnvironment={baseUrl:'" + baseUrl.replace(/'/g, "\\'") + "'};importScripts('" + baseUrl.replace(/'/g, "\\'") + "/base/worker/workerMain.js');";
+            return 'data:text/javascript;charset=utf-8,' + encodeURIComponent(source);
+          }
+        };
+        this.monacoPromise = new Promise((resolve, reject) => {
+          const start = () => {
+            if (!window.require || !window.require.config) return reject(new Error('Monaco AMD loader is unavailable'));
+            try { window.require.config({ paths:{ vs:baseUrl } }); } catch (err) { return reject(err); }
+            window.require(['vs/editor/editor.main'], () => {
+              try {
+                this.monaco = window.monaco;
+                this.installMonaco();
+                resolve(this.monaco);
+              } catch (err) {
+                reject(err);
+              }
+            }, reject);
+          };
+          if (window.monaco && window.monaco.editor) {
+            this.monaco = window.monaco;
+            try { this.installMonaco(); resolve(this.monaco); } catch (err) { reject(err); }
+            return;
+          }
+          let tries = 0;
+          const timer = window.setInterval(() => {
+            tries += 1;
+            if (window.require && window.require.config) { window.clearInterval(timer); start(); }
+            else if (tries > 200) { window.clearInterval(timer); reject(new Error('Timed out waiting for Monaco loader')); }
+          }, 25);
+        }).then((monaco) => {
+          this.monacoReady = true;
+          this.monacoError = '';
+          return monaco;
+        }).catch((err) => {
+          this.monacoError = String(err.message || err);
+          throw err;
+        }).finally(() => {
+          this.monacoLoading = false;
+        });
+        return this.monacoPromise;
+      },
+      installMonaco() {
+        if (this.monacoInstalled || !this.monaco) {
+          if (!this.editor) this.ensureEditorInstance();
+          return;
+        }
+        this.registerMumpsLanguage();
+        this.defineMonacoThemes();
+        this.ensureEditorInstance();
+        this.monacoInstalled = true;
+      },
+      registerMumpsLanguage() {
+        if (window.__miomideMonacoLanguageRegistered) return;
+        const monaco = this.monaco;
+        monaco.languages.register({ id:'mumps', aliases:['MUMPS','mumps','M'], extensions:['.m'] });
+        monaco.languages.setMonarchTokensProvider('mumps', {
+          tokenizer:{
+            root:[
+              [/^\s*[A-Za-z%][A-Za-z0-9]*(?=\s|\(|$)/, 'type.identifier'],
+              [/;.*$/, 'comment'],
+              [/"([^"\\]|\\.)*"/, 'string'],
+              [/\b(SET|S|DO|D|QUIT|Q|IF|I|ELSE|E|FOR|F|NEW|N|KILL|K|MERGE|M|USE|U|WRITE|W|READ|R|OPEN|O|CLOSE|C|VIEW|XECUTE|X|LOCK|L|JOB|J|HALT|H|TSTART|TCOMMIT|TRESTART|TROLLBACK)\b/i, 'keyword'],
+              [/\$[A-Za-z%]+/, 'predefined'],
+              [/\^[A-Za-z%][A-Za-z0-9]*/, 'variable'],
+              [/[0-9]+/, 'number'],
+              [/[()]/, '@brackets'],
+              [/[,:=+\-*\\/<>]/, 'delimiter']
+            ]
+          }
+        });
+        monaco.languages.setLanguageConfiguration('mumps', {
+          comments:{ lineComment:';' },
+          brackets:[['(',')']],
+          autoClosingPairs:[{ open:'"', close:'"' }, { open:'(', close:')' }],
+          surroundingPairs:[{ open:'"', close:'"' }, { open:'(', close:')' }],
+          wordPattern:/(-?\d*\.\d\w*)|([^\`\~\!\@\#\$\%\^\&\*\(\)\-\=\+\[\{\]\}\\\|\;\:\'\"\,\.\<\>\/\?\s]+)/g
+        });
+        monaco.languages.registerCompletionItemProvider('mumps', {
+          provideCompletionItems: () => {
+            const suggestions = [
+              'SET','DO','QUIT','IF','ELSE','FOR','NEW','KILL','MERGE','WRITE','READ','OPEN','CLOSE','USE','VIEW','XECUTE',
+              '$GET','$ORDER','$DATA','$PIECE','$EXTRACT','$LENGTH','$NAME','$QUERY'
+            ].map((label, idx) => ({
+              label:label,
+              kind:monaco.languages.CompletionItemKind.Keyword,
+              insertText:label,
+              sortText:'0' + String(idx).padStart(3,'0')
+            }));
+            (this.snippets || []).forEach((snippet, idx) => {
+              suggestions.push({
+                label:snippet.label || ('Snippet ' + idx),
+                kind:monaco.languages.CompletionItemKind.Snippet,
+                insertText:safeString(snippet.body || ''),
+                insertTextRules:monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                sortText:'1' + String(idx).padStart(3,'0')
+              });
+            });
+            return { suggestions:suggestions };
+          }
+        });
+        window.__miomideMonacoLanguageRegistered = 1;
+      },
+      defineMonacoThemes() {
+        if (!this.monaco) return;
+        this.monaco.editor.defineTheme('mioide-dark', {
+          base:'vs-dark', inherit:true,
+          colors:{ 'editor.background':'#1e1e1e', 'editor.foreground':'#cccccc', 'editorLineNumber.foreground':'#6e7681', 'editorLineNumber.activeForeground':'#c9d1d9', 'editorCursor.foreground':'#0e639c', 'editor.selectionBackground':'#264f78', 'editor.inactiveSelectionBackground':'#3a3d41' }
+        });
+        this.monaco.editor.defineTheme('mioide-light', {
+          base:'vs', inherit:true,
+          colors:{ 'editor.background':'#ffffff', 'editor.foreground':'#1f2328', 'editorLineNumber.foreground':'#8c959f', 'editorLineNumber.activeForeground':'#24292f', 'editorCursor.foreground':'#005fb8', 'editor.selectionBackground':'#add6ff', 'editor.inactiveSelectionBackground':'#ddf4ff' }
+        });
+      },
+      ensureEditorInstance() {
+        if (this.editor || !this.monaco || !this.$refs.editorHost) return;
+        const editorCfg = (this.boot && this.boot.editor) || {};
+        this.editor = this.monaco.editor.create(this.$refs.editorHost, {
+          model:null,
+          theme:this.monacoThemeName(),
+          language:editorCfg.languageId || 'mumps',
+          automaticLayout:true,
+          fontFamily:'Consolas, Monaco, monospace',
+          fontSize:this.editorFontSize,
+          lineHeight:Math.round(this.editorFontSize * this.editorLineHeight),
+          minimap:{ enabled: editorCfg.minimap !== 0 },
+          glyphMargin:editorCfg.glyphMargin !== 0,
+          quickSuggestions:editorCfg.quickSuggestions !== 0,
+          stickyScroll:{ enabled: editorCfg.stickyScroll !== 0 },
+          bracketPairColorization:{ enabled: editorCfg.bracketPairColorization !== 0 },
+          wordWrap:editorCfg.wordWrap || 'off',
+          renderLineHighlight:'all',
+          scrollBeyondLastLine:false,
+          smoothScrolling:true,
+          contextmenu:true,
+          folding:true,
+          guides:{ indentation:true, bracketPairs:true },
+          tabSize:2,
+          insertSpaces:true,
+          detectIndentation:false,
+          formatOnPaste:false,
+          formatOnType:false
+        });
+        this.editor.onDidChangeCursorPosition((event) => {
+          this.currentLine = event.position.lineNumber;
+          this.currentColumn = event.position.column;
+        });
+        this.editor.onDidChangeModelContent(() => { this.syncActiveTabFromEditor(); });
+        this.editor.addAction({ id:'miomide.save', label:'Save Routine', keybindings:[this.monaco.KeyMod.CtrlCmd | this.monaco.KeyCode.KeyS], run:() => this.saveActive() });
+        this.editor.addAction({ id:'miomide.compile', label:'Compile Routine', keybindings:[this.monaco.KeyMod.CtrlCmd | this.monaco.KeyMod.Shift | this.monaco.KeyCode.KeyB], run:() => this.compileActive() });
+        this.editor.addAction({ id:'miomide.reload', label:'Reload Routine', run:() => this.reloadActive() });
+        this.editor.addAction({ id:'miomide.revert', label:'Revert Routine', run:() => this.revertActive() });
+        this.layoutEditor();
+      },
+      disposeEditor() {
+        if (this.monacoReady && this.monaco) {
+          this.tabs.forEach((tab) => {
+            const model = this.getModelForTab(tab);
+            if (model) model.dispose();
+          });
+        }
+        if (this.editor) {
+          try { this.editor.dispose(); } catch (err) {}
+          this.editor = null;
+        }
+      },
+      rehydrateWorkspaceTabs() {
+        if (!this.monacoReady) return;
+        this.tabs.forEach((tab) => {
+          this.getModelForTab(tab);
+          tab.dirty = safeString(tab.originalSource || '') !== safeString(tab.source || '');
+        });
+        if (this.activeRoutine && this.tabs.find((item) => item.name === this.activeRoutine)) this.activateTab(this.activeRoutine, false);
+        else if (this.tabs.length) this.activateTab(this.tabs[0].name, false);
+      },
+      async loadRoutines() {
+        const data = await this.fetchJson(this.boot.routes.routines);
+        this.routines = this.extractMapArray(data.items || data).map((item) => ({ name:item.name, path:item.path, type:item.type })).sort((a,b) => a.name.localeCompare(b.name));
+      },
+      async openRoutine(name) {
+        try {
+          const existing = this.tabs.find((tab) => tab.name === name);
+          if (existing) { this.activateTab(name); this.markRecent(name); return existing; }
+          const data = await this.fetchJson(this.boot.routes.routine.replace(':name', encodeURIComponent(name)));
+          const source = this.sourceFromPayload(data);
+          const tab = { name:data.name || name, path:data.path || '', source:source, originalSource:source, dirty:false, lineCount:Number(data.lineCount || this.buildSourceLines(source).length || 1), byteCount:Number(data.byteCount || source.length || 0), checksum:data.checksum || '', modelUri:'', viewState:null };
+          this.tabs.push(tab);
+          if (this.monacoReady) this.getModelForTab(tab);
+          this.activateTab(tab.name);
+          this.markRecent(tab.name);
+          this.pushToast('Routine opened', tab.name);
+          return tab;
+        } catch (err) {
+          this.pushToast('Open failed', String(err.message || err));
+          throw err;
+        }
+      },
+      activateTab(name, announce) {
+        const tab = this.tabs.find((item) => item.name === name);
+        if (!tab) return;
+        this.saveActiveViewState();
+        this.activeRoutine = tab.name;
+        this.activePath = tab.path || '';
+        this.markRecent(tab.name);
+        if (announce !== false) this.statusMessage = 'Editing ' + tab.name;
+        if (this.monacoReady) this.$nextTick(() => this.switchEditorToTab(tab));
+      },
+      disposeTabModel(tab) {
+        if (!this.monacoReady || !this.monaco || !tab) return;
+        const model = this.getModelForTab(tab);
+        if (model) model.dispose();
+      },
+      closeTab(name, force) {
+        const idx = this.tabs.findIndex((item) => item.name === name);
+        if (idx < 0) return;
+        const tab = this.tabs[idx];
+        if (tab.dirty && !force && !window.confirm('Close ' + name + ' and discard unsaved changes?')) return;
+        const wasActive = tab.name === this.activeRoutine;
+        this.disposeTabModel(tab);
+        this.tabs.splice(idx,1);
+        if (!this.tabs.length) {
+          this.activeRoutine=''; this.activePath=''; this.problems=[]; if (this.editor) this.editor.setModel(null); this.statusMessage='Editor closed'; return;
+        }
+        if (wasActive) {
+          const next = this.tabs[Math.max(0, idx - 1)] || this.tabs[0];
+          this.activateTab(next.name, false);
+        }
+      },
+      closeOtherTabs(name) {
+        this.tabs.slice().forEach((tab) => { if (tab.name !== name && !tab.dirty) this.closeTab(tab.name, true); });
+        if (this.tabs.find((tab) => tab.name === name)) this.activateTab(name, false);
+      },
+      closeTabsToRight(name) {
+        const idx = this.tabs.findIndex((tab) => tab.name === name);
+        if (idx < 0) return;
+        this.tabs.slice(idx + 1).forEach((tab) => { if (!tab.dirty) this.closeTab(tab.name, true); });
+        if (this.tabs.find((tab) => tab.name === name)) this.activateTab(name, false);
+      },
+      closeSavedTabs() { this.tabs.slice().forEach((tab) => { if (!tab.dirty) this.closeTab(tab.name, true); }); },
+      hasDirtyTabs() { return this.tabs.some((tab) => !!tab.dirty); },
+      closeAllTabs(force) {
+        if (!force && this.hasDirtyTabs() && !window.confirm('Close all editors and discard unsaved changes?')) return;
+        this.tabs.slice().forEach((tab) => this.closeTab(tab.name, true));
+        this.statusMessage='All editors closed';
+      },
+      beginTabDrag(tab) { this.tabDragName = tab.name; this.tabDragTarget = tab.name; },
       setTabDragTarget(name) { this.tabDragTarget = name; },
-      reorderTabs(fromName, toName) { if (!fromName || !toName || fromName === toName) return; const fromIdx = this.tabs.findIndex((tab) => tab.name === fromName); const toIdx = this.tabs.findIndex((tab) => tab.name === toName); if (fromIdx < 0 || toIdx < 0) return; const moved = this.tabs.splice(fromIdx,1)[0]; this.tabs.splice(toIdx,0,moved); },
-      dropTabOn(name) { if (this.tabDragName) this.reorderTabs(this.tabDragName, name); this.tabDragName=''; this.tabDragTarget=''; },
-      dropTabAtEnd() { if (!this.tabDragName) return; const idx = this.tabs.findIndex((tab) => tab.name === this.tabDragName); if (idx >= 0) { const moved = this.tabs.splice(idx,1)[0]; this.tabs.push(moved); } this.tabDragName=''; this.tabDragTarget=''; },
+      reorderTabs(fromName, toName) {
+        if (!fromName || !toName || fromName === toName) return;
+        const fromIdx = this.tabs.findIndex((tab) => tab.name === fromName);
+        const toIdx = this.tabs.findIndex((tab) => tab.name === toName);
+        if (fromIdx < 0 || toIdx < 0) return;
+        const moved = this.tabs.splice(fromIdx,1)[0];
+        this.tabs.splice(toIdx,0,moved);
+      },
+      dropTabOn(name) { this.reorderTabs(this.tabDragName, name); this.tabDragName=''; this.tabDragTarget=''; },
+      dropTabAtEnd() {
+        if (!this.tabDragName) return;
+        const idx = this.tabs.findIndex((tab) => tab.name === this.tabDragName);
+        if (idx >= 0) { const moved = this.tabs.splice(idx,1)[0]; this.tabs.push(moved); }
+        this.tabDragName=''; this.tabDragTarget='';
+      },
       openTabContextMenu(tab, event) { this.tabMenu = { visible:true, x:event.clientX, y:event.clientY, tabName:tab.name }; },
-      openTabStripMenu(event) { this.tabMenu = { visible:true, x:event.clientX, y:event.clientY, tabName:this.activeRoutine || '' }; },
-      closeTabMenu() { this.tabMenu.visible = false; },
-      closeTabMenuAction(action) { const name = this.tabMenu.tabName || this.activeRoutine; if (action === 'close' && name) this.closeTab(name); if (action === 'closeOthers' && name) this.closeOtherTabs(name); if (action === 'closeToRight' && name) this.closeTabsToRight(name); if (action === 'closeSaved') this.closeSavedTabs(); if (action === 'closeAll') this.closeAllTabs(false); this.closeTabMenu(); },
-      syncEditor() { this.updateCursor(); },
-      syncScroll() { const textarea = this.$refs.editor; if (!textarea) return; const code = textarea.previousElementSibling; const gutter = textarea.parentElement.previousElementSibling; if (code) { code.scrollTop = textarea.scrollTop; code.scrollLeft = textarea.scrollLeft; } if (gutter) gutter.scrollTop = textarea.scrollTop; this.updateCursor(); },
-      updateCursor() { const textarea = this.$refs.editor; if (!textarea) return; const pos = textarea.selectionStart || 0; const prefix = this.editorText.slice(0,pos); const lines = prefix.split('\n'); this.currentLine = lines.length; this.currentColumn = (lines[lines.length - 1] || '').length + 1; },
-      insertTab() { const textarea = this.$refs.editor; if (!textarea) return; const start = textarea.selectionStart; const end = textarea.selectionEnd; this.editorText = this.editorText.slice(0,start) + '  ' + this.editorText.slice(end); this.$nextTick(() => { textarea.selectionStart = textarea.selectionEnd = start + 2; this.updateCursor(); }); },
+      closeTabMenu() { if (this.tabMenu.visible) this.tabMenu.visible = false; },
+      closeTabMenuAction(action) {
+        const name = this.tabMenu.tabName;
+        this.closeTabMenu();
+        if (!name) return;
+        if (action === 'close') return this.closeTab(name);
+        if (action === 'closeOthers') return this.closeOtherTabs(name);
+        if (action === 'closeToRight') return this.closeTabsToRight(name);
+        if (action === 'closeSaved') return this.closeSavedTabs();
+        if (action === 'closeAll') return this.closeAllTabs(false);
+      },
+      beginResize(type, event) {
+        this.resizeState = { type:type, startX:event.clientX, startY:event.clientY, startSidebarWidth:this.sidebarWidth, startPanelHeight:this.panelHeight };
+      },
+      handlePointerMove(event) {
+        if (this.resizeState.type === 'sidebar') this.sidebarWidth = clamp(this.resizeState.startSidebarWidth + (event.clientX - this.resizeState.startX), this.sidebarMinWidth, this.sidebarMaxWidth);
+        if (this.resizeState.type === 'panel') this.panelHeight = clamp(this.resizeState.startPanelHeight - (event.clientY - this.resizeState.startY), this.panelMinHeight, this.panelMaxHeight);
+      },
+      endResize() { if (!this.resizeState.type) return; this.resizeState.type=''; this.layoutEverything(); },
       setSidebar(name) { this.activeSidebar = name; this.sidebarVisible = true; },
       toggleSidebar() { this.sidebarVisible = !this.sidebarVisible; },
-      togglePanel() { this.panelVisible = !this.panelVisible; if (this.panelVisible && this.activePanel === 'terminal') this.$nextTick(() => this.ensureTerminalConnected(false)); },
-      toggleTheme() { this.theme = this.theme === 'mioide-light' ? 'mioide-dark' : 'mioide-light'; this.pushToast('Theme changed', this.themeLabel); },
-      openCommandPalette() { this.commandQuery=''; this.commandIndex=0; this.showQuickOpen=false; this.showCommandPalette=true; },
-      openQuickOpen() { this.quickOpenQuery=''; this.quickOpenIndex=0; this.showCommandPalette=false; this.showQuickOpen=true; },
+      togglePanel() { this.panelVisible = !this.panelVisible; },
+      toggleTheme() { this.theme = this.theme === 'mioide-light' ? 'mioide-dark' : 'mioide-light'; },
+      openCommandPalette() { this.showQuickOpen = false; this.commandQuery=''; this.commandIndex=0; this.showCommandPalette=true; },
+      openQuickOpen() { this.showCommandPalette = false; this.quickOpenQuery=''; this.quickOpenIndex=0; this.showQuickOpen=true; },
       closeOverlays() { this.showCommandPalette=false; this.showQuickOpen=false; },
-      pickQuickOpen(item) { this.openRoutine(item.name); this.closeOverlays(); },
-      runCommand(id) { this.closeOverlays(); ({ 'file.quickOpen':() => this.openQuickOpen(), 'workbench.commandPalette':() => this.openCommandPalette(), 'view.toggleSidebar':() => this.toggleSidebar(), 'workbench.action.terminal':() => this.selectPanel('terminal'), 'workbench.action.theme':() => this.toggleTheme(), 'file.save':() => this.saveActive(), 'routine.compile':() => this.compileActive(), 'routine.reload':() => this.reloadActive(), 'routine.revert':() => this.revertActive(), 'tab.closeAll':() => this.closeAllTabs(false), 'tab.closeSaved':() => this.closeSavedTabs(), 'terminal.reconnect':() => this.reconnectTerminal() }[id] || (() => this.pushToast('Command unavailable', id)))(); },
-      handleGlobalKeydown(event) {
-        if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'p' && event.shiftKey) { event.preventDefault(); this.openCommandPalette(); return; }
-        if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'p') { event.preventDefault(); this.openQuickOpen(); return; }
-        if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'b') { event.preventDefault(); this.toggleSidebar(); return; }
-        if ((event.ctrlKey || event.metaKey) && event.key === '`') { event.preventDefault(); this.togglePanel(); if (this.panelVisible) this.selectPanel('terminal'); return; }
-        if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') { event.preventDefault(); this.saveActive(); return; }
-        if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === 'b') { event.preventDefault(); this.compileActive(); return; }
-        if (event.key === 'Escape') { this.closeOverlays(); this.closeTabMenu(); return; }
-        if (this.showCommandPalette) { if (event.key === 'ArrowDown') { event.preventDefault(); this.commandIndex = Math.min(this.commandIndex + 1, Math.max(this.filteredCommands.length - 1, 0)); } else if (event.key === 'ArrowUp') { event.preventDefault(); this.commandIndex = Math.max(this.commandIndex - 1, 0); } else if (event.key === 'Enter') { event.preventDefault(); const item = this.filteredCommands[this.commandIndex]; if (item) this.runCommand(item.id); } }
-        if (this.showQuickOpen) { if (event.key === 'ArrowDown') { event.preventDefault(); this.quickOpenIndex = Math.min(this.quickOpenIndex + 1, Math.max(this.filteredRoutines.length - 1, 0)); } else if (event.key === 'ArrowUp') { event.preventDefault(); this.quickOpenIndex = Math.max(this.quickOpenIndex - 1, 0); } else if (event.key === 'Enter') { event.preventDefault(); const item = this.filteredRoutines[this.quickOpenIndex]; if (item) this.pickQuickOpen(item); } }
+      runCommand(id) {
+        this.closeOverlays();
+        if (id === 'file.quickOpen') return this.openQuickOpen();
+        if (id === 'workbench.commandPalette') return this.openCommandPalette();
+        if (id === 'view.toggleSidebar') return this.toggleSidebar();
+        if (id === 'workbench.action.terminal') return this.selectPanel('terminal');
+        if (id === 'workbench.action.theme') return this.toggleTheme();
+        if (id === 'file.save') return this.saveActive();
+        if (id === 'routine.compile') return this.compileActive();
+        if (id === 'routine.reload') return this.reloadActive();
+        if (id === 'routine.revert') return this.revertActive();
+        if (id === 'tab.closeAll') return this.closeAllTabs(false);
+        if (id === 'tab.closeSaved') return this.closeSavedTabs();
+        if (id === 'terminal.reconnect') return this.reconnectTerminal();
       },
-      beginResize(type, event) { this.resizeState = { type:type, startX:event.clientX, startY:event.clientY, startSidebarWidth:this.sidebarWidth, startPanelHeight:this.panelHeight }; },
-      handlePointerMove(event) { if (this.resizeState.type === 'sidebar') this.sidebarWidth = clamp(this.resizeState.startSidebarWidth + (event.clientX - this.resizeState.startX), this.sidebarMinWidth, this.sidebarMaxWidth); else if (this.resizeState.type === 'panel') this.panelHeight = clamp(this.resizeState.startPanelHeight - (event.clientY - this.resizeState.startY), this.panelMinHeight, this.panelMaxHeight); },
-      endResize() { if (this.resizeState.type) this.$nextTick(() => this.fitTerminal()); this.resizeState.type=''; },
-      gotoLine(line) { const textarea = this.$refs.editor; const target = Math.max(Number(line || 1),1); if (!textarea) return; const lines = this.editorText.split('\n'); let offset = 0; for (let i=0; i<Math.min(target - 1, lines.length); i++) offset += lines[i].length + 1; textarea.focus(); textarea.selectionStart = textarea.selectionEnd = offset; this.updateCursor(); },
-      async openSearchResult(item) { await this.openRoutine(item.routine); this.gotoLine(item.line || 1); },
-      goToProblem(problem) { if (problem && problem.line) this.gotoLine(problem.line); },
-      async reloadActive() { if (!this.activeRoutine) return this.pushToast('No routine selected','Open a routine first.'); const active = this.tabs.find((item) => item.name === this.activeRoutine); if (active && active.dirty && !window.confirm('Reload and discard unsaved changes?')) return; const data = await this.fetchJson(this.boot.routes.routine.replace(':name', encodeURIComponent(this.activeRoutine))); const source = this.sourceFromPayload(data); if (active) { active.source = source; active.originalSource = source; active.path = data.path || active.path; active.lineCount = Number(data.lineCount || this.buildSourceLines(source).length || 1); active.byteCount = Number(data.byteCount || source.length || 0); active.checksum = data.checksum || active.checksum || ''; active.dirty = false; } this.activateTab(this.activeRoutine, false); this.statusMessage = 'Routine reloaded from disk'; this.pushToast('Reloaded', this.activeRoutine); },
-      revertActive() { if (!this.activeRoutine) return this.pushToast('No routine selected','Open a routine first.'); const active = this.tabs.find((item) => item.name === this.activeRoutine); if (!active) return; this.editorText = active.originalSource || ''; active.source = this.editorText; active.dirty = false; this.statusMessage = 'Unsaved changes reverted'; this.pushToast('Reverted', this.activeRoutine); },
-      ensureEventSocket() { if (this.eventSocket) return; this.eventSocket = new WebSocket(this.wsUrl(document.getElementById('mioide-app').dataset.eventsWs)); this.eventSocket.addEventListener('open', () => { this.eventSocket.send(JSON.stringify({event:'hello'})); }); this.eventSocket.addEventListener('message', (event) => { try { const payload = JSON.parse(event.data); if (payload.event === 'hello') this.statusMessage = 'Connected as ' + (payload.user || 'Developer'); } catch (err) {} }); },
-      async saveActive() { if (!this.activeRoutine) return this.pushToast('No routine selected','Open a routine first.'); try { const payload = { name:this.activeRoutine, sourceLines:this.buildSourceLines(this.editorText) }; const data = await this.fetchJson(this.boot.routes.save.replace(':name', encodeURIComponent(this.activeRoutine)), { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) }); const tab = this.tabs.find((item) => item.name === this.activeRoutine); if (tab) { tab.originalSource = this.editorText; tab.source = this.editorText; tab.dirty = false; tab.lineCount = Number(data.lineCount || payload.sourceLines.length || 1); tab.byteCount = Number(data.byteCount || this.editorText.length || 0); tab.checksum = data.checksum || tab.checksum || ''; } this.statusMessage = data.message || 'Routine saved'; this.outputText = JSON.stringify(data, null, 2); this.problems = []; this.selectPanel('output'); this.pushToast('Saved', this.activeRoutine + ' written successfully.'); } catch (err) { const payload = (err && err.payload) || {}; this.problems = this.extractMapArray(payload.problems || {}); if (!this.problems.length) this.problems = [{ message:'Save failed', detail:String(err.message || err) }]; this.outputText = JSON.stringify(payload || { error:String(err.message || err) }, null, 2); this.selectPanel('problems'); this.pushToast('Save failed', String(err.message || err)); } },
-      async compileActive() { if (!this.activeRoutine) return this.pushToast('No routine selected','Open a routine first.'); try { const options = { method:'POST' }; if (this.compileAutoSave) { options.headers = {'Content-Type':'application/json'}; options.body = JSON.stringify({ name:this.activeRoutine, sourceLines:this.buildSourceLines(this.editorText) }); } const data = await this.fetchJson(this.boot.routes.compile.replace(':name', encodeURIComponent(this.activeRoutine)), options); const tab = this.tabs.find((item) => item.name === this.activeRoutine); if (tab && (data.saved || this.compileAutoSave)) { tab.originalSource = this.editorText; tab.source = this.editorText; tab.dirty = false; if (data.save && data.save.checksum) tab.checksum = data.save.checksum; } this.outputText = JSON.stringify(data, null, 2); this.statusMessage = data.message || 'Compile complete'; this.problems = this.extractMapArray(data.problems || {}); this.selectPanel(this.problems.length ? 'problems' : 'output'); this.pushToast('Compiled', this.activeRoutine + ' linked successfully.'); } catch (err) { const payload = (err && err.payload) || { error:String(err.message || err) }; const tab = this.tabs.find((item) => item.name === this.activeRoutine); if (tab && payload.saved) { tab.originalSource = this.editorText; tab.source = this.editorText; tab.dirty = false; if (payload.save && payload.save.checksum) tab.checksum = payload.save.checksum; } this.outputText = JSON.stringify(payload, null, 2); this.problems = this.extractMapArray(payload.problems || {}); if (!this.problems.length) this.problems = [{ message:'Compile failed', detail:String(err.message || err) }]; this.statusMessage = 'Compile failed'; this.selectPanel('problems'); this.pushToast('Compile failed', String(err.message || err)); } },
-      async runActive() { if (!this.activeRoutine) return this.pushToast('No routine selected','Open a routine first.'); try { const data = await this.fetchJson(this.boot.routes.run, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ name:this.activeRoutine }) }); this.outputText = data.output || JSON.stringify(data, null, 2); this.statusMessage = data.status || 'Run complete'; this.selectPanel('output'); this.pushToast('Run finished', this.activeRoutine + ' finished execution.'); } catch (err) { this.outputText = JSON.stringify((err && err.payload) || { error:String(err.message || err) }, null, 2); this.selectPanel('output'); this.pushToast('Run failed', String(err.message || err)); } },
-      async runSearch() { try { const data = await this.fetchJson(this.boot.routes.search + '?q=' + encodeURIComponent(this.searchTerm)); this.searchResults = this.extractMapArray(data).filter((item) => item && item.routine).map((item) => ({ routine:item.routine, line:Number(item.line || 1), preview:item.preview || '' })); this.setSidebar('search'); this.pushToast('Search complete', String(this.searchResults.length) + ' matches found.'); } catch (err) { this.pushToast('Search failed', String(err.message || err)); } },
-      async loadGlobals() { try { const data = await this.fetchJson(this.boot.routes.globals + '?root=' + encodeURIComponent(this.globalRoot) + '&limit=50'); this.globals = this.extractMapArray(data).filter((item) => item && item.node); this.setSidebar('globals'); } catch (err) { this.pushToast('Globals failed', String(err.message || err)); } },
-      insertSnippet(snippet) { this.editorText = (this.editorText ? this.editorText + '\n' : '') + (snippet.body || ''); this.statusMessage = 'Inserted snippet ' + snippet.label; this.pushToast('Snippet inserted', snippet.label); },
-      async loadDebug() { try { const name = this.activeRoutine ? ('?name=' + encodeURIComponent(this.activeRoutine)) : ''; const data = await this.fetchJson(this.boot.routes.debug + name); this.debugText = JSON.stringify(data, null, 2); this.selectPanel('debug'); } catch (err) { this.pushToast('Debug refresh failed', String(err.message || err)); } },
-      selectPanel(name) { this.activePanel = name; this.panelVisible = true; if (name === 'terminal') this.$nextTick(() => this.ensureTerminalConnected(false)); },
+      pickQuickOpen(item) { this.closeOverlays(); this.openRoutine(item.name); },
+      markRecent(name) {
+        this.recentRoutines = [name].concat(this.recentRoutines.filter((item) => item !== name)).slice(0, (this.boot && this.boot.workspace && this.boot.workspace.recentLimit) || 15);
+      },
+      handleBeforeUnload(event) {
+        if (!this.hasDirtyTabs()) return;
+        event.preventDefault();
+        event.returnValue = '';
+      },
+      handleGlobalKeydown(event) {
+        if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'p' && !event.shiftKey) { event.preventDefault(); return this.openQuickOpen(); }
+        if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === 'p') { event.preventDefault(); return this.openCommandPalette(); }
+        if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'b') { event.preventDefault(); return this.toggleSidebar(); }
+      },
+      pushToast(title, detail) {
+        const item = { id:this.nextToastId++, title:title, detail:detail };
+        this.notifications.push(item);
+        window.setTimeout(() => { this.notifications = this.notifications.filter((entry) => entry.id !== item.id); }, 3200);
+      },
+      gotoLine(line) {
+        if (!this.editor) return;
+        const target = Math.max(Number(line || 1), 1);
+        this.editor.revealLineInCenter(target);
+        this.editor.setPosition({ lineNumber:target, column:1 });
+        this.editor.focus();
+      },
+      async openSearchResult(item) {
+        await this.openRoutine(item.routine);
+        this.gotoLine(item.line);
+      },
+      async reloadActive() {
+        if (!this.activeRoutine) return this.pushToast('No routine selected','Open a routine first.');
+        const active = this.currentTab();
+        if (active && active.dirty && !window.confirm('Reload and discard unsaved changes?')) return;
+        const data = await this.fetchJson(this.boot.routes.routine.replace(':name', encodeURIComponent(this.activeRoutine)));
+        const source = this.sourceFromPayload(data);
+        this.setTabSource(active, source, source);
+        this.syncSavedTab(active, data, source);
+        this.activateTab(this.activeRoutine, false);
+        this.clearProblemMarkers(this.activeRoutine);
+        this.problems = [];
+        this.statusMessage = 'Routine reloaded from disk';
+        this.pushToast('Reloaded', this.activeRoutine);
+      },
+      revertActive() {
+        if (!this.activeRoutine) return this.pushToast('No routine selected','Open a routine first.');
+        const active = this.currentTab();
+        if (!active) return;
+        this.setTabSource(active, active.originalSource || '', active.originalSource || '');
+        this.activateTab(active.name, false);
+        this.statusMessage = 'Unsaved changes reverted';
+        this.pushToast('Reverted', this.activeRoutine);
+      },
+      async saveActive() {
+        if (!this.activeRoutine) return this.pushToast('No routine selected','Open a routine first.');
+        try {
+          const model = this.getActiveModel();
+          const text = model ? model.getValue() : (this.currentTab() ? this.currentTab().source : '');
+          const payload = { name:this.activeRoutine, sourceLines:this.buildSourceLines(text) };
+          const data = await this.fetchJson(this.boot.routes.save.replace(':name', encodeURIComponent(this.activeRoutine)), { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+          const tab = this.currentTab();
+          this.syncSavedTab(tab, data, text);
+          this.outputText = JSON.stringify(data, null, 2);
+          this.problems = [];
+          this.clearProblemMarkers(this.activeRoutine);
+          this.selectPanel('output');
+          this.statusMessage = data.message || 'Routine saved';
+          this.pushToast('Saved', this.activeRoutine + ' written successfully.');
+        } catch (err) {
+          const payload = (err && err.payload) || {};
+          this.problems = this.problemListFromPayload(payload);
+          if (!this.problems.length) this.problems = [{ message:'Save failed', detail:String(err.message || err), routine:this.activeRoutine, line:1 }];
+          this.outputText = JSON.stringify(payload || { error:String(err.message || err) }, null, 2);
+          this.applyProblemMarkers(this.activeRoutine);
+          this.selectPanel('problems');
+          this.pushToast('Save failed', String(err.message || err));
+        }
+      },
+      async compileActive() {
+        if (!this.activeRoutine) return this.pushToast('No routine selected','Open a routine first.');
+        try {
+          const options = { method:'POST' };
+          const model = this.getActiveModel();
+          const text = model ? model.getValue() : (this.currentTab() ? this.currentTab().source : '');
+          if (this.compileAutoSave) {
+            options.headers = {'Content-Type':'application/json'};
+            options.body = JSON.stringify({ name:this.activeRoutine, sourceLines:this.buildSourceLines(text) });
+          }
+          const data = await this.fetchJson(this.boot.routes.compile.replace(':name', encodeURIComponent(this.activeRoutine)), options);
+          const tab = this.currentTab();
+          if (tab && (data.saved || this.compileAutoSave)) this.syncSavedTab(tab, data.save || data, text);
+          this.outputText = JSON.stringify(data, null, 2);
+          this.problems = this.problemListFromPayload(data);
+          this.applyProblemMarkers(this.activeRoutine);
+          this.statusMessage = data.message || 'Compile complete';
+          this.selectPanel(this.problems.length ? 'problems' : 'output');
+          this.pushToast('Compiled', this.activeRoutine + ' linked successfully.');
+        } catch (err) {
+          const payload = (err && err.payload) || { error:String(err.message || err) };
+          const tab = this.currentTab();
+          const model = this.getActiveModel();
+          const text = model ? model.getValue() : (tab ? tab.source : '');
+          if (tab && payload.saved) this.syncSavedTab(tab, payload.save || payload, text);
+          this.outputText = JSON.stringify(payload, null, 2);
+          this.problems = this.problemListFromPayload(payload);
+          if (!this.problems.length) this.problems = [{ message:'Compile failed', detail:String(err.message || err), routine:this.activeRoutine, line:1 }];
+          this.applyProblemMarkers(this.activeRoutine);
+          this.statusMessage = 'Compile failed';
+          this.selectPanel('problems');
+          this.pushToast('Compile failed', String(err.message || err));
+        }
+      },
+      async runActive() {
+        if (!this.activeRoutine) return this.pushToast('No routine selected','Open a routine first.');
+        try {
+          const data = await this.fetchJson(this.boot.routes.run, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ name:this.activeRoutine }) });
+          this.outputText = data.output || JSON.stringify(data, null, 2);
+          this.statusMessage = data.status || 'Run complete';
+          this.selectPanel('output');
+          this.pushToast('Run finished', this.activeRoutine + ' finished execution.');
+        } catch (err) {
+          this.outputText = JSON.stringify((err && err.payload) || { error:String(err.message || err) }, null, 2);
+          this.selectPanel('output');
+          this.pushToast('Run failed', String(err.message || err));
+        }
+      },
+      async runSearch() {
+        try {
+          const data = await this.fetchJson(this.boot.routes.search + '?q=' + encodeURIComponent(this.searchTerm));
+          this.searchResults = this.extractMapArray(data).filter((item) => item && item.routine).map((item) => ({ routine:item.routine, line:Number(item.line || 1), preview:item.preview || '' }));
+          this.setSidebar('search');
+          this.pushToast('Search complete', String(this.searchResults.length) + ' matches found.');
+        } catch (err) {
+          this.pushToast('Search failed', String(err.message || err));
+        }
+      },
+      async loadGlobals() {
+        try {
+          const data = await this.fetchJson(this.boot.routes.globals + '?root=' + encodeURIComponent(this.globalRoot) + '&limit=50');
+          this.globals = this.extractMapArray(data).filter((item) => item && item.node);
+          this.setSidebar('globals');
+        } catch (err) {
+          this.pushToast('Globals failed', String(err.message || err));
+        }
+      },
+      insertSnippet(snippet) {
+        if (this.editor && this.monacoReady) {
+          this.editor.trigger('keyboard', 'editor.action.insertSnippet', { snippet: safeString(snippet.body || '') });
+          this.statusMessage = 'Inserted snippet ' + snippet.label;
+          this.pushToast('Snippet inserted', snippet.label || 'Snippet');
+          return;
+        }
+        this.pushToast('Editor unavailable', 'Monaco is not ready yet.');
+      },
+      async loadDebug() {
+        try {
+          const name = this.activeRoutine ? ('?name=' + encodeURIComponent(this.activeRoutine)) : '';
+          const data = await this.fetchJson(this.boot.routes.debug + name);
+          this.debugText = JSON.stringify(data, null, 2);
+          this.selectPanel('debug');
+        } catch (err) {
+          this.pushToast('Debug refresh failed', String(err.message || err));
+        }
+      },
+      selectPanel(name) { this.activePanel = name; this.panelVisible = true; if (name === 'terminal') this.$nextTick(() => this.ensureTerminalConnected(false)); if (name === 'debug') this.loadDebug(); },
+      ensureEventSocket() {
+        if (this.eventSocket) return;
+        try {
+          const socket = new WebSocket(this.wsUrl(appEl.dataset.eventsWs));
+          this.eventSocket = socket;
+          socket.addEventListener('close', () => { if (this.eventSocket === socket) this.eventSocket = null; });
+          socket.addEventListener('error', () => { if (this.eventSocket === socket) this.eventSocket = null; });
+        } catch (err) {}
+      },
+      ensureTerminalClientId() { if (!this.terminalClientId) this.terminalClientId = 'browser-' + Math.random().toString(36).slice(2,10); },
       ensureTerminalInstance() {
         if (!this.$refs.terminalHost) return;
         if (!this.terminal) {
           this.terminal = new Terminal({ cursorBlink:true, cols:(this.boot && this.boot.terminal && this.boot.terminal.cols) || 132, rows:(this.boot && this.boot.terminal && this.boot.terminal.rows) || 32, theme:this.getTerminalTheme(), fontFamily:'Consolas, Monaco, monospace', fontSize:13 });
-          this.fitAddon = new FitAddon.FitAddon(); this.terminal.loadAddon(this.fitAddon); this.terminal.open(this.$refs.terminalHost); this.terminal.onData((data) => { if (this.terminalSocket && this.terminalSocket.readyState === WebSocket.OPEN) this.terminalSocket.send(JSON.stringify({ event:'input', clientId:this.terminalClientId, data:data })); }); if (window.ResizeObserver) { this.terminalResizeObserver = new ResizeObserver(() => this.fitTerminal()); this.terminalResizeObserver.observe(this.$refs.terminalHost); }
+          this.fitAddon = new FitAddon.FitAddon();
+          this.terminal.loadAddon(this.fitAddon);
+          this.terminal.open(this.$refs.terminalHost);
+          this.terminal.onData((data) => { if (this.terminalSocket && this.terminalSocket.readyState === WebSocket.OPEN) this.terminalSocket.send(JSON.stringify({ event:'input', clientId:this.terminalClientId, data:data })); });
+          if (window.ResizeObserver) { this.terminalResizeObserver = new ResizeObserver(() => this.fitTerminal()); this.terminalResizeObserver.observe(this.$refs.terminalHost); }
         }
-        this.applyTerminalTheme(); this.fitTerminal();
+        this.applyTerminalTheme();
+        this.fitTerminal();
       },
       ensureTerminalConnected(force) {
-        this.ensureTerminalClientId(); this.ensureTerminalInstance(); if (!this.$refs.terminalHost) return; if (!force && this.terminalSocket && this.terminalSocket.readyState === WebSocket.OPEN) { this.fitTerminal(); return; } if (force) this.closeTerminalSocket(true); this.terminalStatus = 'connecting'; this.terminalStatusDetail = 'Opening YottaDB terminal bridge'; this.terminalIntendedClose = false; const socket = new WebSocket(this.wsUrl(document.getElementById('mioide-app').dataset.terminalWs)); this.terminalSocket = socket; socket.addEventListener('open', () => { if (this.terminalSocket !== socket) return; this.sendTerminalEvent('hello'); }); socket.addEventListener('message', (event) => { if (this.terminalSocket !== socket) return; this.handleTerminalMessage(event); }); socket.addEventListener('close', () => { if (this.terminalSocket !== socket) return; this.terminalSocket = null; this.terminalStatus = this.terminalIntendedClose ? 'idle' : 'disconnected'; this.terminalStatusDetail = this.terminalIntendedClose ? 'Terminal closed' : 'Terminal connection closed'; this.terminalIntendedClose = false; }); socket.addEventListener('error', () => { if (this.terminalSocket !== socket) return; this.terminalStatus = 'error'; this.terminalStatusDetail = 'Terminal websocket error'; });
+        this.ensureTerminalClientId();
+        this.ensureTerminalInstance();
+        if (!this.$refs.terminalHost) return;
+        if (!force && this.terminalSocket && this.terminalSocket.readyState === WebSocket.OPEN) { this.fitTerminal(); return; }
+        if (force) this.closeTerminalSocket(true);
+        this.terminalStatus = 'connecting';
+        this.terminalStatusDetail = 'Opening YottaDB terminal bridge';
+        this.terminalIntendedClose = false;
+        const socket = new WebSocket(this.wsUrl(appEl.dataset.terminalWs));
+        this.terminalSocket = socket;
+        socket.addEventListener('open', () => { if (this.terminalSocket !== socket) return; this.sendTerminalEvent('hello'); });
+        socket.addEventListener('message', (event) => { if (this.terminalSocket !== socket) return; this.handleTerminalMessage(event); });
+        socket.addEventListener('close', () => { if (this.terminalSocket !== socket) return; this.terminalSocket = null; this.terminalStatus = this.terminalIntendedClose ? 'idle' : 'disconnected'; this.terminalStatusDetail = this.terminalIntendedClose ? 'Terminal closed' : 'Terminal connection closed'; this.terminalIntendedClose = false; });
+        socket.addEventListener('error', () => { if (this.terminalSocket !== socket) return; this.terminalStatus = 'error'; this.terminalStatusDetail = 'Terminal websocket error'; });
       },
       sendTerminalEvent(eventName, extra) { if (!this.terminalSocket || this.terminalSocket.readyState !== WebSocket.OPEN) return; const payload = Object.assign({ event:eventName, clientId:this.terminalClientId }, extra || {}); this.terminalSocket.send(JSON.stringify(payload)); },
-      handleTerminalMessage(event) { let payload; try { payload = JSON.parse(event.data); } catch (err) { payload = { event:'data', data:String(event.data || '') }; } if (payload.sid) this.terminalSessionId = payload.sid; if (payload.event === 'ready') { this.terminalStatus = 'connected'; this.terminalStatusDetail = 'Interactive terminal ready'; if (payload.data && this.terminal) this.terminal.write(payload.data); this.fitTerminal(); return; } if (payload.event === 'data') { if (payload.data && this.terminal) this.terminal.write(payload.data); return; } if (payload.event === 'pong') { this.terminalStatus = 'connected'; this.terminalStatusDetail = 'Terminal heartbeat OK'; return; } if (payload.event === 'error') { this.terminalStatus = 'error'; this.terminalStatusDetail = payload.detail || payload.error || 'Terminal error'; this.pushToast('Terminal error', this.terminalStatusDetail); return; } if (payload.event === 'resize') this.terminalStatusDetail = 'Terminal resized to ' + (payload.detail || 'current view'); },
+      handleTerminalMessage(event) {
+        let payload; try { payload = JSON.parse(event.data); } catch (err) { payload = { event:'data', data:String(event.data || '') }; }
+        if (payload.sid) this.terminalSessionId = payload.sid;
+        if (payload.event === 'ready') { this.terminalStatus = 'connected'; this.terminalStatusDetail = 'Interactive terminal ready'; if (payload.data && this.terminal) this.terminal.write(payload.data); this.fitTerminal(); return; }
+        if (payload.event === 'data') { if (payload.data && this.terminal) this.terminal.write(payload.data); return; }
+        if (payload.event === 'pong') { this.terminalStatus = 'connected'; this.terminalStatusDetail = 'Terminal heartbeat OK'; return; }
+        if (payload.event === 'error') { this.terminalStatus = 'error'; this.terminalStatusDetail = payload.detail || payload.error || 'Terminal error'; this.pushToast('Terminal error', this.terminalStatusDetail); return; }
+        if (payload.event === 'resize') this.terminalStatusDetail = 'Terminal resized';
+      },
       fitTerminal() { if (!this.fitAddon || !this.panelVisible || this.activePanel !== 'terminal' || !this.$refs.terminalHost) return; if (this.$refs.terminalHost.offsetParent === null) return; try { this.fitAddon.fit(); if (this.terminal) this.sendTerminalEvent('resize', { cols:this.terminal.cols, rows:this.terminal.rows }); } catch (err) {} },
       clearTerminal() { if (this.terminal) this.terminal.clear(); },
       reconnectTerminal() { this.ensureTerminalConnected(true); this.pushToast('Terminal reconnect', 'Attempting a fresh terminal session.'); },
       closeTerminalSocket(notifyServer) { const socket = this.terminalSocket; if (!socket) return; this.terminalIntendedClose = true; if (notifyServer && socket.readyState === WebSocket.OPEN) { try { socket.send(JSON.stringify({ event:'close', clientId:this.terminalClientId })); } catch (err) {} } try { socket.close(); } catch (err) {} this.terminalSocket = null; },
       closeTerminal() { this.closeTerminalSocket(true); this.terminalStatus = 'idle'; this.terminalStatusDetail = 'Terminal closed'; },
-      disposeTerminal() { this.closeTerminalSocket(true); if (this.terminalResizeObserver) { try { this.terminalResizeObserver.disconnect(); } catch (err) {} this.terminalResizeObserver = null; } if (this.terminal) { try { this.terminal.dispose(); } catch (err) {} this.terminal = null; this.fitAddon = null; } }
+      disposeTerminal() {
+        this.closeTerminalSocket(true);
+        if (this.terminalResizeObserver) { try { this.terminalResizeObserver.disconnect(); } catch (err) {} this.terminalResizeObserver = null; }
+        if (this.terminal) { try { this.terminal.dispose(); } catch (err) {} this.terminal = null; this.fitAddon = null; }
+      }
     }
   });
   app.mount('#mioide-app');

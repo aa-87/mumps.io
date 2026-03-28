@@ -44,10 +44,14 @@ START
 	DO OK^MIOTASSERT(OUT["data-launch-app=""terminal""","[MIOMOST][T003][terminal app]")
 	DO OK^MIOTASSERT(OUT["data-entry-kind=""directory""","[MIOMOST][T003][directory entry]")
 	DO OK^MIOTASSERT(OUT["data-entry-kind=""future""","[MIOMOST][T003][future entry]")
+	DO OK^MIOTASSERT(OUT["data-session-surface","[MIOMOST][T003][session surface]")
+	DO OK^MIOTASSERT(OUT["data-ui-contract","[MIOMOST][T003][ui contract]")
+	DO OK^MIOTASSERT(OUT["Server-owned session posture","[MIOMOST][T003][session copy]")
+	DO OK^MIOTASSERT(OUT["session.ui.save","[MIOMOST][T003][session command]")
 	;
 	KILL OBJ
 	DO BOOTARY^MIOMOSST(.STATE,.CONF,.OBJ)
-	DO EQ^MIOTASSERT($GET(OBJ("product","version")),"roi10-terminal-foundation","[MIOMOST][T004][version]")
+	DO EQ^MIOTASSERT($GET(OBJ("product","version")),"roi21-uiux-session-hardening","[MIOMOST][T004][version]")
 	DO EQ^MIOTASSERT($GET(OBJ("routes","adminUsers")),"/api/miomos/admin/users","[MIOMOST][T004][admin users route]")
 	DO EQ^MIOTASSERT($GET(OBJ("routes","settings")),"/api/miomos/settings","[MIOMOST][T004][settings route]")
 	DO EQ^MIOTASSERT($GET(OBJ("routes","view")),"/api/miomos/view","[MIOMOST][T004][view route]")
@@ -62,6 +66,8 @@ START
 	DO EQ^MIOTASSERT($GET(OBJ("apps",6,"key")),"terminal","[MIOMOST][T004][terminal app key]")
 	DO EQ^MIOTASSERT($GET(OBJ("windows",6,"appKey")),"terminal","[MIOMOST][T004][terminal win key]")
 	DO EQ^MIOTASSERT(+$DATA(OBJ("security","adminCounts","users"))>0,1,"[MIOMOST][T004][admin counts]")
+	DO EQ^MIOTASSERT($GET(OBJ("session","ui","menuOpen")),0,"[MIOMOST][T004][session ui boot]")
+	DO EQ^MIOTASSERT($GET(OBJ("desktop","savedLayoutAt")),"","[MIOMOST][T004][layout saved at empty]")
 	;
 	KILL CONF
 	SET CONF("auth","enabled")=1
@@ -170,6 +176,8 @@ START
 	NEW VM,TREE
 	DO BUILD^MIOMOSVM(.STATE,.CONF,.VM)
 	DO EQ^MIOTASSERT($GET(VM("workspace","headline")),"Production workspace","[MIOMOST][T013][workspace headline]")
+	DO EQ^MIOTASSERT($GET(VM("session","headline")),"Server-owned session posture","[MIOMOST][T013][session headline]")
+	DO EQ^MIOTASSERT($GET(VM("ux","headline")),"UI contract hardening","[MIOMOST][T013][ux headline]")
 	DO EQ^MIOTASSERT(+$DATA(VM("settings","catalog","themes",1,"key"))>0,1,"[MIOMOST][T013][settings catalog]")
 	KILL TREE,OBJ,ERR
 	SET TREE("command")="desktop.ping"
@@ -179,6 +187,16 @@ START
 	SET TREE("command")="layout.save",TREE("layoutJson")="{""layout"":{""windows"":[{""id"":""workspace""}]}}"
 	DO OK^MIOTASSERT($$EXEC^MIOMOSCMD(.STATE,.CONF,.TREE,.OBJ,.ERR),"[MIOMOST][T013][layout save]")
 	DO EQ^MIOTASSERT($GET(OBJ("saved")),1,"[MIOMOST][T013][layout saved]")
+	KILL TREE,OBJ,ERR
+	SET TREE("command")="session.ui.save",TREE("menuOpen")=1,TREE("activeWindowId")="win-terminal",TREE("focusedAppKey")="terminal",TREE("layoutMode")="tile",TREE("lastCommandName")="shell.focusTerminal",TREE("reason")="test"
+	DO OK^MIOTASSERT($$EXEC^MIOMOSCMD(.STATE,.CONF,.TREE,.OBJ,.ERR),"[MIOMOST][T013][session ui save]")
+	DO EQ^MIOTASSERT($GET(OBJ("session","ui","activeWindowId")),"win-terminal","[MIOMOST][T013][session active win]")
+	DO EQ^MIOTASSERT($GET(OBJ("session","ui","menuOpen")),1,"[MIOMOST][T013][session menu open]")
+	KILL TREE,OBJ,ERR
+	SET TREE("command")="session.snapshot"
+	DO OK^MIOTASSERT($$EXEC^MIOMOSCMD(.STATE,.CONF,.TREE,.OBJ,.ERR),"[MIOMOST][T013][session snapshot]")
+	DO EQ^MIOTASSERT($GET(OBJ("session","ui","focusedAppKey")),"terminal","[MIOMOST][T013][session focused app]")
+	DO EQ^MIOTASSERT($GET(OBJ("session","hasLayout")),1,"[MIOMOST][T013][session has layout]")
 	;
 	DO CURRENT^MIOMOSSET($GET(STATE("principal")),.ARR)
 	DO EQ^MIOTASSERT(+$DATA(ARR("catalog","windowManager","windowPresets",1,"key"))>0,1,"[MIOMOST][T014][wm preset catalog]")

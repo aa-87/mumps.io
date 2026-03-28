@@ -300,7 +300,66 @@
       .miomos-topbar { grid-template-columns: 1fr; height: auto; padding: 8px 10px; }
       .miomos-stage { top: 88px; }
       .miomos-side-rail { display: none; }
+      .miomos-admin-grid, .miomos-admin-action-grid, .miomos-theme-gallery, .miomos-ui-foundation-grid { grid-template-columns: minmax(0,1fr); }
     }
+
+    .miomos-note-list { display: grid; gap: 8px; }
+    .miomos-note-item { display: grid; gap: 3px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--border); background: rgba(255,255,255,.04); }
+    .miomos-note-item strong { font-size: 12px; }
+    .miomos-note-item span { color: var(--muted); font-size: 11px; line-height: 1.4; }
+    .miomos-admin-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
+    .miomos-admin-toolbar { margin-top: 10px; }
+    .miomos-admin-action-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; margin-top: 8px; }
+    .miomos-admin-action {
+      display: grid; gap: 3px; text-decoration: none; color: inherit; padding: 10px 12px; border-radius: 12px;
+      border: 1px solid var(--border); background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+    }
+    .miomos-admin-action strong { font-size: 12px; }
+    .miomos-admin-action span, .miomos-admin-action em { font-size: 11px; color: var(--muted); font-style: normal; }
+    .miomos-state-pill { display:inline-flex; align-items:center; height:22px; padding:0 8px; border-radius:999px; border:1px solid var(--border); background:var(--accent-soft); color:var(--text); font-size:10px; font-weight:700; }
+    .miomos-state-pill.is-warn { background: rgba(212,165,20,.16); border-color: rgba(212,165,20,.24); }
+    .miomos-state-pill.is-danger { background: rgba(239,107,122,.16); border-color: rgba(239,107,122,.24); }
+    .miomos-table-subtle { margin-top: 2px; color: var(--muted); font-size: 10px; }
+    .miomos-theme-gallery { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; margin-top: 8px; }
+    .miomos-theme-card {
+      display: grid; gap: 8px; text-align: left; border: 1px solid var(--border); border-radius: 14px; padding: 10px;
+      background: rgba(255,255,255,.04); color: inherit; cursor: pointer;
+    }
+    .miomos-theme-card.is-current { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent-soft) inset; }
+    .miomos-theme-swatch { border-radius: 12px; min-height: 48px; padding: 10px; display:flex; align-items:flex-end; font-weight:800; box-shadow: inset 0 1px 0 rgba(255,255,255,.18); }
+    .miomos-theme-meta { display:grid; gap:3px; }
+    .miomos-theme-meta strong { font-size: 12px; }
+    .miomos-theme-meta span, .miomos-theme-meta em { font-size: 11px; color: var(--muted); font-style: normal; }
+    .miomos-ui-foundation-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; margin-top: 8px; }
+    .miomos-primitive-card { display:grid; gap:8px; padding: 10px 12px; border-radius: 12px; border:1px solid var(--border); background: rgba(255,255,255,.04); }
+    .miomos-primitive-card strong { font-size: 12px; }
+    .miomos-preview-row, .miomos-preview-stack, .miomos-preview-tabs, .miomos-breadcrumb-preview, .miomos-stepper-preview { display:flex; gap:8px; flex-wrap:wrap; }
+    .miomos-preview-stack { flex-direction: column; }
+    .miomos-preview-input, .miomos-preview-textarea {
+      width: 100%; border-radius: 10px; border: 1px solid var(--border); background: rgba(255,255,255,.06); color: var(--text);
+      padding: 8px 10px; font: inherit;
+    }
+    .miomos-preview-textarea { min-height: 74px; resize: vertical; }
+    .miomos-check-row { display:flex; gap:8px; align-items:center; font-size:11px; color: var(--muted); }
+    .miomos-preview-tab { height: 24px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--border); display:inline-flex; align-items:center; font-size: 10px; font-weight: 700; }
+    .miomos-preview-tab.is-active { border-color: var(--accent); background: var(--accent-soft); color: var(--text); }
+    .miomos-breadcrumb-preview span { position: relative; padding-right: 12px; font-size: 11px; color: var(--muted); }
+    .miomos-breadcrumb-preview span:not(:last-child)::after { content: '›'; position: absolute; right: 2px; }
+    .miomos-preview-drawer, .miomos-preview-toast, .miomos-command-preview {
+      padding: 9px 10px; border-radius: 10px; border: 1px solid var(--border); background: rgba(255,255,255,.05); font-size: 11px;
+    }
+    .miomos-command-preview { display:flex; justify-content:space-between; }
+    .miomos-step-pill, .miomos-token-pill {
+      display:inline-flex; align-items:center; height: 24px; padding: 0 8px; border-radius: 999px; border: 1px solid var(--border);
+      background: rgba(255,255,255,.05); font-size: 10px; font-weight: 700;
+    }
+    .miomos-tree-preview { display:grid; gap:8px; }
+    .miomos-tree-preview div { display:grid; gap:4px; padding:8px 10px; border-radius: 10px; border:1px solid var(--border); background: rgba(255,255,255,.04); }
+    .miomos-tree-preview span { margin-left: 10px; font-size: 11px; color: var(--muted); }
+    .miomos-token-grid { display:flex; gap:8px; flex-wrap:wrap; }
+    .miomos-btn-secondary { background: rgba(255,255,255,.08); color: var(--text); }
+    .miomos-btn-danger { background: rgba(239,107,122,.16); border-color: rgba(239,107,122,.26); color: var(--text); }
+    .miomos-permission-matrix td { vertical-align: top; }
   
   </style>
   <style>
@@ -719,24 +778,26 @@
     }
     .miomos-save-status { color: var(--muted); font-size: 11px; }
 
-    .miomos-terminal-shell { display: grid; gap: 8px; height: 100%; grid-template-rows: auto 1fr; }
-    .miomos-terminal-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-    .miomos-terminal-toolbar .miomos-actions { justify-content: flex-end; }
+    .miomos-terminal-shell { display: grid; gap: 10px; height: 100%; grid-template-rows: auto 1fr; }
+    .miomos-terminal-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+    .miomos-terminal-toolbar .miomos-actions { justify-content: flex-end; flex-wrap: wrap; align-items: center; }
     .miomos-terminal-viewport {
       width: 100%;
       height: 100%;
       min-height: 340px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
+      border-radius: 14px;
+      border: 1px solid rgba(143,179,255,0.18);
       background: #08111d;
       overflow: hidden;
-      padding: 4px;
+      padding: 6px;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.03), 0 12px 28px rgba(0,0,0,0.22);
     }
     .miomos-terminal-fallback {
       padding: 12px;
       color: var(--muted);
       font-size: 12px;
     }
+    .miomos-terminal-viewport .xterm { height: 100%; }
 
     .miomos-resize-handle { position: absolute; z-index: 7; }
     .miomos-resize-handle[data-edge="e"], .miomos-resize-handle[data-edge="w"] { top: 10px; bottom: 10px; width: 8px; }
@@ -962,29 +1023,29 @@
     .miomos-root .miomos-window-body {
       background:
         linear-gradient(180deg, rgba(255,255,255,0.025), rgba(255,255,255,0.01)),
-        rgba(9,13,22,0.97);
+        var(--surface-alt);
     }
     .miomos-root .miomos-card {
-      border: 1px solid rgba(148,163,184,0.14);
-      background: linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.018));
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.018)), var(--surface);
       box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
     }
     .miomos-root .miomos-table thead th {
-      background: rgba(255,255,255,0.035);
-      color: rgba(238,245,255,0.88);
+      background: var(--surface-soft);
+      color: var(--text);
     }
     .miomos-root .miomos-table tbody tr:hover {
-      background: rgba(95,141,255,0.10);
+      background: var(--accent-soft);
     }
     .miomos-root .miomos-btn,
     .miomos-root .miomos-link-btn {
-      border: 1px solid rgba(148,163,184,0.18);
-      background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03)), var(--surface);
       box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
     }
     .miomos-root .miomos-taskbar {
-      background: linear-gradient(180deg, rgba(15,23,36,0.96), rgba(8,12,20,0.98));
-      border-top: 1px solid rgba(148,163,184,0.18);
+      background: linear-gradient(180deg, color-mix(in srgb, var(--desktop) 78%, black 22%), color-mix(in srgb, var(--desktop) 92%, black 8%));
+      border-top: 1px solid var(--border);
       box-shadow: 0 -10px 24px rgba(0,0,0,0.26);
     }
     .miomos-root .miomos-start,
@@ -1284,16 +1345,16 @@
     .miomos-window-title strong { color: #f3f7ff !important; }
     .miomos-window-controls button { transition: transform 120ms ease, background 120ms ease, border-color 120ms ease; }
     .miomos-window-controls button:hover { transform: translateY(-1px); }
-    .miomos-window-body { background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01)), rgba(9,13,22,.97) !important; }
-    .miomos-card, .miomos-directory-card, .miomos-setting-card { background: linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.018)) !important; border: 1px solid rgba(148,163,184,.12) !important; box-shadow: inset 0 1px 0 rgba(255,255,255,.05); }
+    .miomos-window-body { background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01)), var(--surface-alt) !important; }
+    .miomos-card, .miomos-directory-card, .miomos-setting-card { background: linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.018)), var(--surface) !important; border: 1px solid var(--border) !important; box-shadow: inset 0 1px 0 rgba(255,255,255,.05); }
     .miomos-directory-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-bottom: 10px; }
     .miomos-directory-card { padding: 12px; border-radius: 14px; }
     .miomos-directory-head { display:flex; align-items:flex-start; gap:10px; margin-bottom:10px; }
-    .miomos-directory-copy strong { display:block; color:#eff4ff; font-size:12px; }
-    .miomos-table thead th { background: rgba(255,255,255,.035); color:#e7eefb !important; }
-    .miomos-table tbody tr:hover { background: rgba(95,141,255,.09) !important; }
-    .miomos-pill, .miomos-chip { border-color: rgba(148,163,184,.14) !important; background: rgba(255,255,255,.05) !important; color:#e6edf9 !important; }
-    .miomos-taskbar { background: linear-gradient(180deg, rgba(15,23,36,.96), rgba(8,12,20,.98)) !important; border-top: 1px solid rgba(148,163,184,.16); box-shadow: 0 -10px 28px rgba(0,0,0,.22); height: var(--miomos-taskbar-h) !important; border-radius: 16px; }
+    .miomos-directory-copy strong { display:block; color:var(--text); font-size:12px; }
+    .miomos-table thead th { background: var(--surface-soft); color:var(--text) !important; }
+    .miomos-table tbody tr:hover { background: var(--accent-soft) !important; }
+    .miomos-pill, .miomos-chip { border-color: var(--border) !important; background: rgba(255,255,255,.05) !important; color:var(--text) !important; }
+    .miomos-taskbar { background: linear-gradient(180deg, color-mix(in srgb, var(--desktop) 78%, black 22%), color-mix(in srgb, var(--desktop) 92%, black 8%)) !important; border-top: 1px solid var(--border); box-shadow: 0 -10px 28px rgba(0,0,0,.22); height: var(--miomos-taskbar-h) !important; border-radius: 16px; }
     .miomos-taskband { display:flex; gap:6px; min-width:0; overflow:auto hidden; }
     .miomos-task-button, .miomos-menu-button, .miomos-signout-button, .miomos-btn, .miomos-link-btn { transition: transform 140ms ease, background 140ms ease, border-color 140ms ease, box-shadow 140ms ease; }
     .miomos-task-button:hover, .miomos-menu-button:hover, .miomos-signout-button:hover, .miomos-btn:hover, .miomos-link-btn:hover { transform: translateY(-1px); }
@@ -1301,7 +1362,7 @@
     .miomos-task-button.is-active { border-color: rgba(95,141,255,.42) !important; background: linear-gradient(180deg, rgba(95,141,255,.18), rgba(95,141,255,.08)) !important; }
     .miomos-task-button[data-entry-kind="directory"] { border-color: rgba(214,171,59,.22) !important; }
     .miomos-task-button[data-entry-kind="settings"] { border-color: rgba(124,58,237,.24) !important; }
-    .miomos-btn, .miomos-link-btn, .miomos-menu-button, .miomos-signout-button { border: 1px solid rgba(148,163,184,.16) !important; background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03)) !important; color:#eef3fb !important; }
+    .miomos-btn, .miomos-link-btn, .miomos-menu-button, .miomos-signout-button { border: 1px solid var(--border) !important; background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03)), var(--surface) !important; color:var(--text) !important; }
     .miomos-settings-grid { grid-template-columns: repeat(3, minmax(0,1fr)) !important; }
     .miomos-icon-grid { grid-template-columns: repeat(6, minmax(0, 1fr)) !important; }
     .miomos-terminal-toolbar .miomos-actions { flex-wrap: wrap; }

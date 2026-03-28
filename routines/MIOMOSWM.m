@@ -59,6 +59,7 @@ ACTIONS(ROOT)
 	SET @ROOT@(3,"key")="minimizeAll",@ROOT@(3,"label")="Minimize all",@ROOT@(3,"subtitle")="Clear the workspace quickly",@ROOT@(3,"shortcut")="Alt+N"
 	SET @ROOT@(4,"key")="restoreAll",@ROOT@(4,"label")="Restore all",@ROOT@(4,"subtitle")="Bring every surface back",@ROOT@(4,"shortcut")="Alt+R"
 	SET @ROOT@(5,"key")="focusTerminal",@ROOT@(5,"label")="Focus terminal",@ROOT@(5,"subtitle")="Jump to the YDB console",@ROOT@(5,"shortcut")="Alt+T"
+	SET @ROOT@(6,"key")="focusEditor",@ROOT@(6,"label")="Focus editor",@ROOT@(6,"subtitle")="Open the Monaco code studio",@ROOT@(6,"shortcut")="Alt+E"
 	QUIT
 	;
 DEFAULTWINS(ROOT,PRESET)
@@ -74,6 +75,7 @@ DEFAULTWINS(ROOT,PRESET)
 	. DO SETWIN(.ROOT,USEIND,4,"win-admin","admin","Admin",180,62,820,520,5,"minimized")
 	. DO SETWIN(.ROOT,USEIND,5,"win-settings","settings","Settings",210,84,760,560,7,"minimized")
 	. DO SETWIN(.ROOT,USEIND,6,"win-terminal","terminal","Terminal",70,60,1310,700,8,"minimized")
+	. DO SETWIN(.ROOT,USEIND,7,"win-editor","editor","Code Studio",128,42,1180,680,9,"minimized")
 	IF PRESET="review" DO  QUIT
 	. DO SETWIN(.ROOT,USEIND,1,"win-workspace","workspace","Workspace",20,16,860,650,6,"normal")
 	. DO SETWIN(.ROOT,USEIND,2,"win-collaboration","collaboration","Chat",894,16,486,260,4,"minimized")
@@ -81,6 +83,7 @@ DEFAULTWINS(ROOT,PRESET)
 	. DO SETWIN(.ROOT,USEIND,4,"win-admin","admin","Admin",118,70,880,560,3,"minimized")
 	. DO SETWIN(.ROOT,USEIND,5,"win-settings","settings","Settings",160,88,780,560,7,"minimized")
 	. DO SETWIN(.ROOT,USEIND,6,"win-terminal","terminal","Terminal",90,76,1080,600,8,"minimized")
+	. DO SETWIN(.ROOT,USEIND,7,"win-editor","editor","Code Studio",116,44,1080,660,9,"minimized")
 	IF PRESET="operations" DO  QUIT
 	. DO SETWIN(.ROOT,USEIND,1,"win-workspace","workspace","Workspace",16,14,930,650,6,"normal")
 	. DO SETWIN(.ROOT,USEIND,2,"win-collaboration","collaboration","Chat",958,14,420,260,4,"normal")
@@ -88,12 +91,14 @@ DEFAULTWINS(ROOT,PRESET)
 	. DO SETWIN(.ROOT,USEIND,4,"win-admin","admin","Admin",958,528,420,176,3,"minimized")
 	. DO SETWIN(.ROOT,USEIND,5,"win-settings","settings","Settings",170,76,820,560,2,"minimized")
 	. DO SETWIN(.ROOT,USEIND,6,"win-terminal","terminal","Terminal",120,92,1180,600,7,"minimized")
+	. DO SETWIN(.ROOT,USEIND,7,"win-editor","editor","Code Studio",84,38,1088,650,8,"minimized")
 	DO SETWIN(.ROOT,USEIND,1,"win-workspace","workspace","Workspace",16,14,1180,690,6,"normal")
 	DO SETWIN(.ROOT,USEIND,2,"win-collaboration","collaboration","Chat",940,44,420,430,3,"minimized")
 	DO SETWIN(.ROOT,USEIND,3,"win-security","security","Security",970,488,390,258,2,"minimized")
 	DO SETWIN(.ROOT,USEIND,4,"win-admin","admin","Admin",220,68,820,520,4,"minimized")
 	DO SETWIN(.ROOT,USEIND,5,"win-settings","settings","Settings",240,88,760,560,5,"minimized")
 	DO SETWIN(.ROOT,USEIND,6,"win-terminal","terminal","Terminal",110,80,1180,620,7,"minimized")
+	DO SETWIN(.ROOT,USEIND,7,"win-editor","editor","Code Studio",86,34,1100,660,8,"minimized")
 	QUIT
 	;
 SETWIN(ROOT,USEIND,N,ID,APPKEY,TITLE,LEFT,TOP,WIDTH,HEIGHT,Z,STATE)

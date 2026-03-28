@@ -65,6 +65,7 @@ DESKCTX(STATE,CONF,DATA)
 	SET DATA("sevenCssHref")="https://unpkg.com/7.css/dist/7.scoped.css"
 	SET DATA("xtermCssHref")="https://cdn.jsdelivr.net/npm/@xterm/xterm/css/xterm.css"
 	SET DATA("xtermScript")="https://cdn.jsdelivr.net/npm/@xterm/xterm/lib/xterm.js"
+	SET DATA("monacoLoaderScript")="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs/loader.js"
 	DO APPSSR(.DATA,.STATE)
 	DO WINSSR(.DATA,.STATE)
 	DO THEMESSR(.DATA,$GET(STATE("themeKey"),"midnight-professional"))
@@ -99,6 +100,7 @@ APPSSR(DATA,STATE)
 	SET DATA("apps",4,"key")="admin",DATA("apps",4,"title")="Admin",DATA("apps",4,"subtitle")="Users, invites, resets, and lockout posture",DATA("apps",4,"icon")=$GET(STATE("icon","admin"),"A"),DATA("apps",4,"badge")="Ops"
 	SET DATA("apps",5,"key")="settings",DATA("apps",5,"title")="Settings",DATA("apps",5,"subtitle")="Themes, fonts, density, colors, and icons",DATA("apps",5,"icon")=$GET(STATE("icon","settings"),"T"),DATA("apps",5,"badge")="Prefs"
 	SET DATA("apps",6,"key")="terminal",DATA("apps",6,"title")="Terminal",DATA("apps",6,"subtitle")="xterm.js foundation over the MIOMOS websocket",DATA("apps",6,"icon")=$GET(STATE("icon","terminal"),">_"),DATA("apps",6,"badge")="CLI"
+	SET DATA("apps",7,"key")="editor",DATA("apps",7,"title")="Code Studio",DATA("apps",7,"subtitle")="Monaco routine workspace over MIOIDE APIs",DATA("apps",7,"icon")=$GET(STATE("icon","editor"),"EDT"),DATA("apps",7,"badge")="Code"
 	QUIT
 	;
 WINSSR(DATA,STATE)
@@ -114,6 +116,8 @@ WINSSR(DATA,STATE)
 	SET DATA("windows",5,"isSettings")=1
 	DO WIN(.DATA,6,"win-terminal","terminal","Terminal",110,80,960,540,7,"minimized",$GET(STATE("icon","terminal"),">_"))
 	SET DATA("windows",6,"isTerminal")=1
+	DO WIN(.DATA,7,"win-editor","editor","Code Studio",86,34,1100,660,8,"minimized",$GET(STATE("icon","editor"),"EDT"))
+	SET DATA("windows",7,"isEditor")=1
 	QUIT
 	;
 WIN(DATA,N,ID,APPKEY,TITLE,LEFT,TOP,WIDTH,HEIGHT,Z,STATE,GLYPH)

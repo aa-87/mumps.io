@@ -22,7 +22,11 @@ EXEC(STATE,CONF,TREE,OUT,ERR)
 	. SET OUT("saved")=1
 	IF CMD="theme.quick" QUIT $$THEME(.STATE,.TREE,.OUT,.ERR)
 	IF CMD="settings.save" QUIT $$SETSAVE(.STATE,.TREE,.OUT,.ERR)
+	IF CMD="session.touch" QUIT $$SESSNTO(.STATE,.TREE,.OUT,.ERR)
+	IF CMD="session.ui.save" QUIT $$SESSUISV(.STATE,.TREE,.OUT,.ERR)
+	IF CMD="session.snapshot" QUIT $$SESSSNAP(.STATE,.OUT,.ERR)
 	IF CMD="view.refresh" DO  QUIT 1
+	. DO TOUCH^MIOMOSST($GET(STATE("sessionId")),"view.refresh")
 	. DO BUILD^MIOMOSVM(.STATE,.CONF,.VIEW)
 	. MERGE OUT("view")=VIEW
 	. SET OUT("command")=CMD
@@ -35,7 +39,7 @@ EXEC(STATE,CONF,TREE,OUT,ERR)
 	QUIT 0
 	;
 THEME(STATE,TREE,OUT,ERR)
-	NEW SAVE,CUR
+	NEW SAVE,SESSION,CUR
 	IF '$$HAS^MIOMOSPERM(.STATE,"settings.self") SET ERR("error")="forbidden",ERR("detail")="settings.self",ERR("status")=403 QUIT 0
 	SET SAVE("themeKey")=$GET(TREE("themeKey"))
 	IF SAVE("themeKey")="" SET ERR("error")="theme_missing",ERR("status")=400 QUIT 0
@@ -100,4 +104,29 @@ TERMRESZ(STATE,TREE,OUT,ERR)
 	IF '$$RESIZE^MIOMOSTPIPE(.STATE,$GET(TREE("terminalId")),+$GET(TREE("cols")),+$GET(TREE("rows")),.TERMOUT,.ERR) SET ERR("status")=400 QUIT 0
 	MERGE OUT("terminal")=TERMOUT
 	SET OUT("command")="terminal.resize"
+	QUIT 1
+	;
+SESSNTO(STATE,TREE,OUT,ERR)
+	NEW EVENT,SESSION
+	SET EVENT=$EXTRACT($GET(TREE("event")),1,64)
+	IF EVENT="" SET EVENT="session.touch"
+	DO TOUCH^MIOMOSST($GET(STATE("sessionId")),EVENT)
+	NEW OK SET OK=$$SNAPSHOT^MIOMOSST($GET(STATE("sessionId")),.SESSION) MERGE OUT("session")=SESSION
+	SET OUT("command")="session.touch"
+	QUIT 1
+	;
+SESSUISV(STATE,TREE,OUT,ERR)
+	NEW SAVE,SESSION
+	MERGE SAVE=TREE
+	KILL SAVE("command")
+	IF '$$SAVEUI^MIOMOSST($GET(STATE("sessionId")),$$EN^MIOJSON1(.SAVE)) SET ERR("error")="session_ui_save_failed",ERR("status")=400 QUIT 0
+	NEW OK SET OK=$$SNAPSHOT^MIOMOSST($GET(STATE("sessionId")),.SESSION) MERGE OUT("session")=SESSION
+	SET OUT("command")="session.ui.save"
+	QUIT 1
+	;
+SESSSNAP(STATE,OUT,ERR)
+	NEW SESSION
+	IF '$$SNAPSHOT^MIOMOSST($GET(STATE("sessionId")),.SESSION) SET ERR("error")="session_not_found",ERR("status")=404 QUIT 0
+	MERGE OUT("session")=SESSION
+	SET OUT("command")="session.snapshot"
 	QUIT 1

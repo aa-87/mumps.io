@@ -36,6 +36,9 @@ USERLIST(LIMIT,OUT)
 	. SET OUT(N,"createdAt")=$GET(^MIO("MIOMOS","USER",U,"createdAt"))
 	. SET OUT(N,"lastFailedAt")=$GET(^MIO("MIOMOS","USER",U,"lastFailedAt"))
 	. SET OUT(N,"locked")=$SELECT($$AGESEC(NOWD,NOWS,+$GET(^MIO("MIOMOS","USER",U,"lockedUntilDay")),+$GET(^MIO("MIOMOS","USER",U,"lockedUntilSec")))>0:1,1:0)
+	. IF +$GET(OUT(N,"enabled"))'=1 SET OUT(N,"state")="Disabled" QUIT
+	. IF +$GET(OUT(N,"locked"))=1 SET OUT(N,"state")="Locked" QUIT
+	. SET OUT(N,"state")="Active"
 	QUIT
 	;
 INVITELIST(LIMIT,OUT)
@@ -67,6 +70,16 @@ RESETLIST(LIMIT,OUT)
 	. SET OUT(N,"createdBy")=$GET(^MIO("MIOMOS","AUTH","RESET",I,"createdBy"))
 	. SET OUT(N,"createdAt")=$GET(^MIO("MIOMOS","AUTH","RESET",I,"createdAt"))
 	. SET OUT(N,"usedAt")=$GET(^MIO("MIOMOS","AUTH","RESET",I,"usedAt"))
+	QUIT
+	;
+ACTIONS(CONF,OUT)
+	KILL OUT
+	SET OUT(1,"key")="disable",OUT(1,"label")="Disable account",OUT(1,"copy")="Stop sign-in without deleting the identity.",OUT(1,"route")=$GET(CONF("miomos","route","adminDisable"),"/api/miomos/admin/users/disable"),OUT(1,"permission")="admin.users.manage"
+	SET OUT(2,"key")="enable",OUT(2,"label")="Enable account",OUT(2,"copy")="Restore sign-in after review.",OUT(2,"route")=$GET(CONF("miomos","route","adminEnable"),"/api/miomos/admin/users/enable"),OUT(2,"permission")="admin.users.manage"
+	SET OUT(3,"key")="lock",OUT(3,"label")="Lock account",OUT(3,"copy")="Force a temporary hold for risk or support review.",OUT(3,"route")=$GET(CONF("miomos","route","adminLock"),"/api/miomos/admin/users/lock"),OUT(3,"permission")="admin.users.manage"
+	SET OUT(4,"key")="unlock",OUT(4,"label")="Unlock account",OUT(4,"copy")="Clear lockout after verification.",OUT(4,"route")=$GET(CONF("miomos","route","adminUnlock"),"/api/miomos/admin/users/unlock"),OUT(4,"permission")="admin.users.manage"
+	SET OUT(5,"key")="invite",OUT(5,"label")="Create invite",OUT(5,"copy")="Issue an invite-only onboarding token.",OUT(5,"route")=$GET(CONF("miomos","route","adminInviteCreate"),"/api/miomos/admin/invites/create"),OUT(5,"permission")="admin.invites.manage"
+	SET OUT(6,"key")="reset",OUT(6,"label")="Issue reset token",OUT(6,"copy")="Create a temporary password reset token.",OUT(6,"route")=$GET(CONF("miomos","route","adminResetRequest"),"/api/miomos/admin/users/reset/request"),OUT(6,"permission")="admin.reset.manage"
 	QUIT
 	;
 AGESEC(D1,S1,D2,S2)

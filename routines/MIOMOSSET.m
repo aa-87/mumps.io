@@ -86,6 +86,9 @@ CURRENT(USER,OUT)
 	SET CONF("miomos","desktop","density")="dense"
 	DO LOAD(.STATE,.CONF)
 	MERGE OUT("current")=STATE
+	NEW THEME
+	DO THEME^MIOMOSTH($GET(STATE("themeKey")),.THEME)
+	MERGE OUT("current","theme")=THEME
 	SET OUT("current","windowPreset")=$GET(STATE("windowPreset"))
 	SET OUT("current","snapMode")=$GET(STATE("snapMode"))
 	SET OUT("current","motionProfile")=$GET(STATE("motionProfile"))
@@ -110,6 +113,7 @@ CATALOG(ROOT)
 	DO OPTS($NAME(@ROOT@("densities")),"compact^Compact,dense^Dense,comfortable^Comfortable")
 	DO OPTS($NAME(@ROOT@("wallpapers")),"midnight-clinic^Midnight Clinic,slate-grid^Slate Grid,aurora-blue^Aurora Blue,contrast-grid^Contrast Grid,soft-grid^Soft Grid")
 	DO OPTS($NAME(@ROOT@("animations")),"off^Off,reduced^Reduced,standard^Standard,full^Full")
+	DO OPTS($NAME(@ROOT@("accessibilityPresets")),"balanced^Balanced,high-contrast^High Contrast,quiet-focus^Quiet Focus,large-text^Large Text")
 	DO CATALOG^MIOMOSTERM($NAME(@ROOT@("terminal")))
 	DO CATALOG^MIOMOSWM($NAME(@ROOT@("windowManager")))
 	QUIT

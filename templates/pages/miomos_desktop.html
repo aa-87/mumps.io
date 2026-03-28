@@ -5,7 +5,10 @@
   data-settings-form="1"
   data-setting-terminal="fontFamily"
   data-launch-app="terminal"
-  data-admin-surface="1">{{adminUsersPath}}</div>
+  data-admin-surface="1"
+  data-session-surface="1"
+  data-ui-contract="1"
+  data-session-command="session.ui.save">{{adminUsersPath}}</div>
 <div id="miomosRoot"
   class="miomos-root"
   v-cloak
@@ -28,6 +31,9 @@
   data-titlebar-style="{{titlebarStyle}}">
   <span hidden data-launch-app="terminal"></span>
   <span hidden data-setting-terminal="fontFamily"></span>
+  <span hidden data-session-surface="1"></span>
+  <span hidden data-ui-contract="1"></span>
+  <span hidden data-session-command="session.ui.save"></span>
   <a hidden href="{{adminUsersPath}}" data-admin-route>{{adminUsersPath}}</a>
 
   <div v-if="showShellAlert" class="miomos-shell-alert" :class="shellAlertClass">
@@ -178,6 +184,52 @@
               <button type="button" class="miomos-btn" @click="runShellAction('focusTerminal')">Focus terminal</button>
             </div>
           </section>
+
+          <div class="miomos-ux-row">
+            <section class="miomos-card miomos-session-card" data-session-surface="1">
+              <div class="miomos-surface-title"><strong>[[ view.session.headline || 'Server-owned session posture' ]]</strong><span>[[ view.session.subheadline || 'Shell state remains MUMPS-owned.' ]]</span></div>
+              <div class="miomos-session-grid">
+                <div class="miomos-session-stat"><span>Session</span><strong>[[ sessionSummary.id || boot.session.id || '' ]]</strong><em>[[ profile ]] profile</em></div>
+                <div class="miomos-session-stat"><span>Last event</span><strong>[[ sessionSummary.lastEvent || 'desktop_render' ]]</strong><em>Active window [[ sessionSummary.activeWindowId || 'pending' ]]</em></div>
+                <div class="miomos-session-stat"><span>Idle seconds</span><strong>[[ sessionSummary.idleSeconds || 0 ]]</strong><em>Age [[ sessionSummary.ageSeconds || 0 ]] seconds</em></div>
+                <div class="miomos-session-stat"><span>Persistence</span><strong>[[ sessionSummary.hasLayout ? 'layout saved' : 'layout pending' ]]</strong><em>UI saves [[ sessionSummary.uiSaveCount || 0 ]]</em></div>
+              </div>
+              <div class="miomos-chips miomos-session-chip-row">
+                <span class="miomos-pill" data-session-layout-saved>Layout [[ sessionSummary.layoutSavedAt || 'Not saved yet' ]]</span>
+                <span class="miomos-pill">UI [[ sessionSummary.uiSavedAt || 'Not saved yet' ]]</span>
+                <span class="miomos-pill">Focus [[ sessionSummary.focusedAppKey || 'workspace' ]]</span>
+                <span class="miomos-pill">Mode [[ sessionSummary.layoutMode || 'freeform' ]]</span>
+              </div>
+            </section>
+            <section class="miomos-card miomos-ui-contract-card" data-ui-contract="1">
+              <div class="miomos-surface-title"><strong>[[ view.ux.headline || 'UI contract hardening' ]]</strong><span>[[ view.ux.subheadline || 'Production-facing buttons, forms, tables, and tabs.' ]]</span></div>
+              <div class="miomos-ui-contract-grid">
+                <div class="miomos-ui-preview-block">
+                  <div class="miomos-ui-tabs" data-ui-tabs>
+                    <button v-for="tab in uxTabs" :key="tab.label" type="button" class="miomos-ui-tab" :class="{ 'is-active': !!tab.active }">[[ tab.label ]]</button>
+                  </div>
+                  <div class="miomos-actions">
+                    <button v-for="btn in uxButtons" :key="btn.label" type="button" class="miomos-btn" :class="{ 'secondary': btn.kind==='secondary' }">[[ btn.label ]]</button>
+                  </div>
+                  <div class="miomos-chips">
+                    <span v-for="pill in uxStates" :key="pill.label" class="miomos-pill">[[ pill.label ]]</span>
+                  </div>
+                  <div class="miomos-inline-fields" data-ui-form-preview>
+                    <label v-for="field in uxFields" :key="field.label" class="miomos-field"><span>[[ field.label ]]</span><input :value="field.value || ''" readonly></label>
+                  </div>
+                </div>
+                <div class="miomos-ui-table-block">
+                  <table class="miomos-table" data-ui-table-preview>
+                    <thead><tr><th>Surface</th><th>Status</th><th>Detail</th></tr></thead>
+                    <tbody><tr v-for="row in uxTable" :key="row.surface"><td>[[ row.surface ]]</td><td>[[ row.status ]]</td><td>[[ row.detail ]]</td></tr></tbody>
+                  </table>
+                  <ul class="miomos-shortcut-list miomos-shortcut-list--dense">
+                    <li v-for="shortcut in uxShortcuts" :key="shortcut.label"><span>[[ shortcut.label ]]</span><code>[[ shortcut.keys ]]</code></li>
+                  </ul>
+                </div>
+              </div>
+            </section>
+          </div>
           <div class="miomos-directory-grid">
             <section v-for="entry in directoryEntries" :key="entry.key" class="miomos-directory-card" >
               <div class="miomos-directory-head"><span class="miomos-directory-glyph" :class="entryGlyphClass(entry.kind || 'directory')">[[ entry.icon ]]</span><div class="miomos-directory-copy"><strong>[[ entry.title ]]</strong><span>[[ entry.subtitle ]]</span></div></div>
@@ -278,6 +330,20 @@
             <section class="miomos-card"><div class="miomos-kpi-value">[[ view.admin.counts.invites || 0 ]]</div><div class="miomos-kpi-copy">Invites</div></section>
             <section class="miomos-card"><div class="miomos-kpi-value">[[ view.admin.counts.resets || 0 ]]</div><div class="miomos-kpi-copy">Reset requests</div></section>
           </div>
+
+          <section class="miomos-card miomos-admin-workflows" data-admin-workflows="1">
+            <div class="miomos-surface-title"><strong>Admin workflow posture</strong><span>Compact filters, action routes, and state badges for routine identity operations.</span></div>
+            <div class="miomos-admin-action-grid">
+              <article class="miomos-admin-action-card"><strong>Invite user</strong><span>Server route [[ boot.routes.adminInviteCreate || '/api/miomos/admin/invites/create' ]]</span></article>
+              <article class="miomos-admin-action-card"><strong>Reset password</strong><span>Server route [[ boot.routes.adminResetRequest || '/api/miomos/admin/users/reset/request' ]]</span></article>
+              <article class="miomos-admin-action-card"><strong>Lock or unlock</strong><span>Use direct action columns without leaving the admin surface.</span></article>
+            </div>
+            <div class="miomos-inline-fields miomos-admin-filter-row">
+              <label class="miomos-field"><span>User search</span><input value="phaseone" readonly></label>
+              <label class="miomos-field"><span>Role filter</span><select disabled><option>developer</option></select></label>
+              <label class="miomos-field"><span>Status filter</span><select disabled><option>active</option></select></label>
+            </div>
+          </section>
           <section class="miomos-card">
             <div class="miomos-surface-title"><strong>Recent identities</strong><span>Current server-side user summary.</span></div>
             <table class="miomos-table" style="margin-top:8px;">
@@ -332,6 +398,13 @@
                 <label class="miomos-field"><span>Terminal</span><input v-model="settingsForm.icons.terminal" maxlength="3"></label>
               </div>
             </section>
+
+            <section class="miomos-setting-card miomos-theme-preview-card" data-ui-theme-preview="1">
+              <strong>Theme and component preview</strong>
+              <div class="miomos-kpi-copy" style="margin-bottom:8px;">Use this preview to validate density, type, pills, and button states before saving a desktop profile.</div>
+              <div class="miomos-ui-tabs"><button type="button" class="miomos-ui-tab is-active">Preview</button><button type="button" class="miomos-ui-tab">Tables</button><button type="button" class="miomos-ui-tab">Forms</button></div>
+              <div class="miomos-actions"><button type="button" class="miomos-btn">Primary</button><button type="button" class="miomos-btn secondary">Secondary</button><span class="miomos-pill">[[ settingsForm.themeKey ]]</span><span class="miomos-pill">[[ settingsForm.density ]]</span></div>
+            </section>
             <div class="miomos-actions">
               <span class="miomos-save-status">[[ settingsStatus ]]</span>
               <div class="miomos-actions"><button type="button" class="miomos-btn" @click="refreshView">Reload</button><button type="submit" class="miomos-btn">Save settings</button></div>
@@ -384,8 +457,8 @@
           profile: root.getAttribute('data-miomos-profile') || ((boot.product||{}).profile || 'dev'),
           currentClock: '',
           bootLoading: false,
-          menuOpen: false,
-          activeWindowId: '',
+          menuOpen: !!((((boot.session||{}).ui)||{}).menuOpen),
+          activeWindowId: ((((boot.session||{}).ui)||{}).activeWindowId || ''),
           zCounter: 20,
           socket: null,
           socketConnected: false,
@@ -465,6 +538,13 @@
         terminalScrollbacks: function(){ return arr((((this.view.settings||{}).catalog||{}).terminal||{}).scrollbacks); },
         terminalRenderers: function(){ return arr((((this.view.settings||{}).catalog||{}).terminal||{}).renderers); },
         terminalUnicodeModes: function(){ return arr((((this.view.settings||{}).catalog||{}).terminal||{}).unicodeModes); },
+        sessionSummary: function(){ return (((this.view.session||{}).summary)||{}); },
+        uxTabs: function(){ return arr((((this.view.ux||{}).tabs)||{})); },
+        uxButtons: function(){ return arr((((this.view.ux||{}).buttons)||{})); },
+        uxStates: function(){ return arr((((this.view.ux||{}).states)||{})); },
+        uxFields: function(){ return arr((((((this.view.ux||{}).form)||{}).fields)||{})); },
+        uxTable: function(){ return arr((((this.view.ux||{}).table)||{})); },
+        uxShortcuts: function(){ return arr((((this.view.ux||{}).shortcuts)||{})); },
         pinnedEntries: function(){ return this.apps.filter(function(app){ return !!app.desktopPinned; }).sort(function(a,b){ return Number(a.order||0)-Number(b.order||0); }).slice(0,6); },
         desktopEntries: function(){ return this.pinnedEntries; },
         directoryEntries: function(){ return this.apps.filter(function(app){ return (app.kind || '')==='directory'; }).sort(function(a,b){ return Number(a.order||0)-Number(b.order||0); }); },
@@ -526,30 +606,33 @@
         appEntry: function(key){ return this.apps.find(function(x){ return x.key===key; }) || null; },
         appIcon: function(appKey){ var icons=this.settingsForm.icons || {}; if (icons[appKey]) return icons[appKey]; var app=this.appEntry(appKey); return (app && app.icon) || (appKey || '?').slice(0,2).toUpperCase(); },
         uiStateStorageKey: function(){ return 'miomos.ui.' + (((this.boot.session||{}).id) || root.getAttribute('data-miomos-session') || 'anon'); },
-        loadUiStateLocal: function(){ var raw='', saved={}; try { raw=window.localStorage.getItem(this.uiStateStorageKey()) || ''; } catch(e) { raw=''; } if (!raw) return; try { saved=JSON.parse(raw); } catch(e2) { saved={}; } if ((this.desktopPolicy.persistMenuState || 0) && saved.menuOpen!=null) this.menuOpen=!!saved.menuOpen; if ((this.desktopPolicy.persistActiveWindow || 0) && saved.activeWindowId) this.activeWindowId=saved.activeWindowId; if (saved.lastCommandName) this.lastCommandName=saved.lastCommandName; },
-        saveUiStateLocal: function(){ var payload={ menuOpen:!!this.menuOpen, activeWindowId:this.activeWindowId || '', lastCommandName:this.lastCommandName || '' }; try { window.localStorage.setItem(this.uiStateStorageKey(), JSON.stringify(payload)); } catch(e) {} },
+        loadUiStateLocal: function(){ var raw='', saved=clone((((this.boot.session||{}).ui)||{})); try { raw=window.localStorage.getItem(this.uiStateStorageKey()) || ''; } catch(e) { raw=''; } if (raw) { try { saved=Object.assign(saved, JSON.parse(raw)); } catch(e2) {} } if ((this.desktopPolicy.persistMenuState || 0) && saved.menuOpen!=null) this.menuOpen=!!saved.menuOpen; if ((this.desktopPolicy.persistActiveWindow || 0) && saved.activeWindowId) this.activeWindowId=saved.activeWindowId; if (saved.lastCommandName) this.lastCommandName=saved.lastCommandName; if (saved.layoutMode) this.layoutMode=saved.layoutMode; },
+        saveUiStateLocal: function(reason){ var payload={ menuOpen:!!this.menuOpen, activeWindowId:this.activeWindowId || '', focusedAppKey:((this.windows.find(function(w){ return w.id===this.activeWindowId; }, this)||{}).appKey || ''), layoutMode:this.layoutMode || '', lastCommandName:this.lastCommandName || '', terminalId:(this.terminal||{}).terminalId || '', reason:reason || '' }; try { window.localStorage.setItem(this.uiStateStorageKey(), JSON.stringify(payload)); } catch(e) {} this.queueSessionUiSave(payload); },
+        queueSessionUiSave: function(payload){ var self=this; if (this._sessionUiSaveTimer) window.clearTimeout(this._sessionUiSaveTimer); this._sessionUiSaveTimer=window.setTimeout(function(){ self.persistSessionUiState(payload); }, 140); },
+        persistSessionUiState: function(payload){ var self=this, path=(this.boot.routes||{}).command || root.getAttribute('data-miomos-command') || '/api/miomos/command'; fetch(path, { method:'POST', credentials:'same-origin', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(Object.assign({ command:'session.ui.save' }, payload || {})) }).then(function(r){ if(!r.ok) return null; return r.json(); }).then(function(json){ if (json && json.session) self.mergeSessionSummary(json.session); }).catch(function(){}); },
+        mergeSessionSummary: function(session){ if (!session) return; if (!this.boot.session) this.boot.session={}; this.boot.session=Object.assign({}, this.boot.session, session, { ui: Object.assign({}, ((this.boot.session||{}).ui)||{}, session.ui||{}) }); if (!this.view.session) this.view.session={}; this.view.session.summary=Object.assign({}, (this.view.session.summary||{}), session, { menuOpen: (session.ui||{}).menuOpen, activeWindowId: (session.ui||{}).activeWindowId, focusedAppKey: (session.ui||{}).focusedAppKey, layoutMode: (session.ui||{}).layoutMode, lastCommandName: (session.ui||{}).lastCommandName }); },
         dismissShellAlert: function(){ this.dismissedAlertKey=this.shellAlertKey || ''; },
         markSocketActivity: function(){ this.lastSocketAt=Date.now(); },
         entryKindLabel: function(kind){ if (kind==='directory') return 'Directory'; if (kind==='settings') return 'Settings'; if (kind==='future') return 'Planned'; return 'App'; },
         entryStatusLabel: function(status){ if (status==='planned') return 'Roadmap'; if (status==='available') return 'Ready'; return String(status || ''); },
         entryGlyphClass: function(kind){ kind=String(kind || 'app'); return 'miomos-entry-glyph--' + kind; },
-        installWindowListeners: function(){ var self=this; this._miomosKeydown=function(ev){ self.onGlobalKeydown(ev); }; window.addEventListener('resize', function(){ self.onWindowResize(); }); window.addEventListener('keydown', this._miomosKeydown); document.addEventListener('pointerdown', function(ev){ if (!root.contains(ev.target)) self.menuOpen=false; }); window.addEventListener('beforeunload', function(){ self.shouldReconnect=false; self.saveLayoutLocal(); self.saveUiStateLocal(); self.clearReconnectTimer(); self.clearHeartbeat(); self.clearStaleMonitor(); }); },
+        installWindowListeners: function(){ var self=this; this._miomosKeydown=function(ev){ self.onGlobalKeydown(ev); }; window.addEventListener('resize', function(){ self.onWindowResize(); }); window.addEventListener('keydown', this._miomosKeydown); document.addEventListener('pointerdown', function(ev){ if (!root.contains(ev.target) && self.menuOpen) { self.menuOpen=false; self.saveUiStateLocal('outside-click'); } }); window.addEventListener('beforeunload', function(){ self.shouldReconnect=false; self.saveLayoutLocal(); self.saveUiStateLocal('beforeunload'); self.clearReconnectTimer(); self.clearHeartbeat(); self.clearStaleMonitor(); }); },
         applySettings: function(){ root.dataset.density=this.settingsForm.density || 'dense'; root.dataset.wallpaper=this.settingsForm.wallpaper || 'midnight-clinic'; root.dataset.animations=this.settingsForm.animations || 'reduced'; root.dataset.windowPreset=this.settingsForm.windowPreset || 'analyst'; root.dataset.snapMode=this.settingsForm.snapMode || 'quadrant'; root.dataset.motionProfile=this.settingsForm.motionProfile || 'standard'; root.dataset.titlebarStyle=this.settingsForm.titlebarStyle || 'accent'; root.style.setProperty('--miomos-font', this.settingsForm.fontFamily || 'Segoe UI'); root.style.fontSize=(parseInt(this.settingsForm.fontSize || '13',10) || 13) + 'px'; },
-        focusWindow: function(id){ var win=this.windows.find(function(w){ return w.id===id; }); if (!win || win.closed) return; this.activeWindowId=win.id; this.zCounter+=1; win.z=this.zCounter; this.saveUiStateLocal(); },
-        launchApp: function(key){ var entry=this.appEntry(key) || {}, launchKey=entry.launchKey || key; if (entry.disabled) { this.menuOpen=false; this.saveUiStateLocal(); return; } var win=this.windows.find(function(w){ return w.appKey===launchKey || w.id===launchKey; }); if (!win) { this.menuOpen=false; this.saveUiStateLocal(); return; } win.closed=false; win.minimized=false; this.focusWindow(win.id); this.menuOpen=false; this.lastCommandName='launch.' + launchKey; if (launchKey==='terminal') this.openTerminal(); this.saveLayout(); this.saveUiStateLocal(); },
+        focusWindow: function(id){ var win=this.windows.find(function(w){ return w.id===id; }); if (!win || win.closed) return; this.activeWindowId=win.id; this.zCounter+=1; win.z=this.zCounter; this.saveUiStateLocal('focus-window'); },
+        launchApp: function(key){ var entry=this.appEntry(key) || {}, launchKey=entry.launchKey || key; if (entry.disabled) { this.menuOpen=false; this.saveUiStateLocal('launch-disabled'); return; } var win=this.windows.find(function(w){ return w.appKey===launchKey || w.id===launchKey; }); if (!win) { this.menuOpen=false; this.saveUiStateLocal('launch-missing'); return; } win.closed=false; win.minimized=false; this.focusWindow(win.id); this.menuOpen=false; this.lastCommandName='launch.' + launchKey; if (launchKey==='terminal') this.openTerminal(); this.saveLayout(); this.saveUiStateLocal('launch'); },
         minimizeWindow: function(id){ var win=this.windows.find(function(w){ return w.id===id; }); if (!win) return; win.minimized=true; this.saveLayout(); },
         closeWindow: function(id){ var win=this.windows.find(function(w){ return w.id===id; }); if (!win) return; win.closed=true; win.minimized=false; this.saveLayout(); },
         toggleTaskWindow: function(id){ var win=this.windows.find(function(w){ return w.id===id; }); if (!win) return; if (!win.closed && !win.minimized && this.activeWindowId===win.id) { win.minimized=true; } else { win.closed=false; win.minimized=false; this.focusWindow(win.id); } this.saveLayout(); },
-        toggleMenu: function(){ this.menuOpen=!this.menuOpen; this.saveUiStateLocal(); },
-        runShellAction: function(actionKey){ this.lastCommandName='shell.' + actionKey; this.saveUiStateLocal(); if (actionKey==='tile') return this.tileWindows(); if (actionKey==='cascade') return this.cascadeWindows(); if (actionKey==='minimizeAll') return this.minimizeAllWindows(); if (actionKey==='restoreAll') return this.restoreAllWindows(); if (actionKey==='focusTerminal') return this.focusTerminalWindow(); if (actionKey==='focusNext') return this.focusWindowByIndex(1); if (actionKey==='focusPrev') return this.focusWindowByIndex(-1); },
+        toggleMenu: function(){ this.menuOpen=!this.menuOpen; this.saveUiStateLocal('toggle-menu'); },
+        runShellAction: function(actionKey){ this.lastCommandName='shell.' + actionKey; this.saveUiStateLocal('shell-action'); if (actionKey==='tile') return this.tileWindows(); if (actionKey==='cascade') return this.cascadeWindows(); if (actionKey==='minimizeAll') return this.minimizeAllWindows(); if (actionKey==='restoreAll') return this.restoreAllWindows(); if (actionKey==='focusTerminal') return this.focusTerminalWindow(); if (actionKey==='focusNext') return this.focusWindowByIndex(1); if (actionKey==='focusPrev') return this.focusWindowByIndex(-1); },
         visibleWindows: function(){ return this.windows.filter(function(w){ return !w.closed; }); },
         tileWindows: function(){ var wins=this.windows.filter(function(w){ return !w.closed; }); if (!wins.length) return; var rect=this.stageRect(), cols=Math.ceil(Math.sqrt(wins.length)), rows=Math.ceil(wins.length/cols), gutter=12, cellW=Math.max(360, Math.floor((rect.width - ((cols-1)*gutter))/cols)), cellH=Math.max(240, Math.floor((rect.height - ((rows-1)*gutter))/rows)); wins.forEach(function(win, idx){ var col=idx%cols, row=Math.floor(idx/cols); win.minimized=false; win.maximized=false; win.snap='grid'; win.left=(cellW+gutter)*col; win.top=(cellH+gutter)*row; win.width=(col===cols-1 ? Math.max(360, rect.width-win.left) : cellW); win.height=(row===rows-1 ? Math.max(240, rect.height-win.top) : cellH); }); this.layoutMode='tile'; this.focusWindow(wins[0].id); this.saveLayout(); },
         cascadeWindows: function(){ var wins=this.windows.filter(function(w){ return !w.closed; }); if (!wins.length) return; var rect=this.stageRect(), offsetX=28, offsetY=24, width=Math.max(560, Math.floor(rect.width*0.72)), height=Math.max(360, Math.floor(rect.height*0.72)); wins.forEach(function(win, idx){ win.minimized=false; win.maximized=false; win.snap='cascade'; win.left=Math.min((idx*offsetX), Math.max(0, rect.width-width-20)); win.top=Math.min((idx*offsetY), Math.max(0, rect.height-height-20)); win.width=width; win.height=height; }); this.layoutMode='cascade'; this.focusWindow(wins[wins.length-1].id); this.saveLayout(); },
-        minimizeAllWindows: function(){ this.windows.forEach(function(win){ if (!win.closed) win.minimized=true; }); this.layoutMode=''; this.activeWindowId=''; this.saveLayout(); this.saveUiStateLocal(); },
-        restoreAllWindows: function(){ var self=this; this.windows.forEach(function(win){ if (!win.closed) win.minimized=false; if (win.snap==='grid' || win.snap==='cascade') win.snap=''; self.clampWindow(win); }); this.layoutMode=''; if (this.windows.length) this.focusWindow(this.windows[0].id); this.saveLayout(); this.saveUiStateLocal(); },
+        minimizeAllWindows: function(){ this.windows.forEach(function(win){ if (!win.closed) win.minimized=true; }); this.layoutMode=''; this.activeWindowId=''; this.saveLayout(); this.saveUiStateLocal('minimize-all'); },
+        restoreAllWindows: function(){ var self=this; this.windows.forEach(function(win){ if (!win.closed) win.minimized=false; if (win.snap==='grid' || win.snap==='cascade') win.snap=''; self.clampWindow(win); }); this.layoutMode=''; if (this.windows.length) this.focusWindow(this.windows[0].id); this.saveLayout(); this.saveUiStateLocal('restore-all'); },
         focusTerminalWindow: function(){ this.lastCommandName='shell.focusTerminal'; this.launchApp('terminal'); },
         focusWindowByIndex: function(step){ var wins=this.taskWindows.filter(function(win){ return !win.minimized && !win.closed; }); if (!wins.length) return; var idx=wins.findIndex(function(win){ return win.id===this.activeWindowId; }, this); if (idx<0) idx=0; idx=(idx+step+wins.length)%wins.length; this.focusWindow(wins[idx].id); },
-        onGlobalKeydown: function(ev){ if (ev.altKey && !ev.shiftKey && !ev.ctrlKey && (ev.key==='m' || ev.key==='M')) { ev.preventDefault(); this.toggleMenu(); return; } if (ev.altKey && !ev.shiftKey && !ev.ctrlKey && (ev.key==='g' || ev.key==='G')) { ev.preventDefault(); this.tileWindows(); return; } if (ev.altKey && !ev.shiftKey && !ev.ctrlKey && (ev.key==='c' || ev.key==='C')) { ev.preventDefault(); this.cascadeWindows(); return; } if (ev.altKey && !ev.shiftKey && !ev.ctrlKey && (ev.key==='n' || ev.key==='N')) { ev.preventDefault(); this.minimizeAllWindows(); return; } if (ev.altKey && !ev.shiftKey && !ev.ctrlKey && (ev.key==='r' || ev.key==='R')) { ev.preventDefault(); this.restoreAllWindows(); return; } if (ev.altKey && !ev.shiftKey && !ev.ctrlKey && (ev.key==='t' || ev.key==='T')) { ev.preventDefault(); this.focusTerminalWindow(); return; } if (ev.key==='Escape' && this.menuOpen) { ev.preventDefault(); this.menuOpen=false; this.saveUiStateLocal(); return; } if (ev.altKey && !ev.ctrlKey && /^[1-9]$/.test(ev.key)) { ev.preventDefault(); var idx=parseInt(ev.key,10)-1; if (this.taskWindows[idx]) this.toggleTaskWindow(this.taskWindows[idx].id); } },
+        onGlobalKeydown: function(ev){ if (ev.altKey && !ev.shiftKey && !ev.ctrlKey && (ev.key==='m' || ev.key==='M')) { ev.preventDefault(); this.toggleMenu(); return; } if (ev.altKey && !ev.shiftKey && !ev.ctrlKey && (ev.key==='g' || ev.key==='G')) { ev.preventDefault(); this.tileWindows(); return; } if (ev.altKey && !ev.shiftKey && !ev.ctrlKey && (ev.key==='c' || ev.key==='C')) { ev.preventDefault(); this.cascadeWindows(); return; } if (ev.altKey && !ev.shiftKey && !ev.ctrlKey && (ev.key==='n' || ev.key==='N')) { ev.preventDefault(); this.minimizeAllWindows(); return; } if (ev.altKey && !ev.shiftKey && !ev.ctrlKey && (ev.key==='r' || ev.key==='R')) { ev.preventDefault(); this.restoreAllWindows(); return; } if (ev.altKey && !ev.shiftKey && !ev.ctrlKey && (ev.key==='t' || ev.key==='T')) { ev.preventDefault(); this.focusTerminalWindow(); return; } if (ev.key==='Escape' && this.menuOpen) { ev.preventDefault(); this.menuOpen=false; this.saveUiStateLocal('escape'); return; } if (ev.altKey && !ev.ctrlKey && /^[1-9]$/.test(ev.key)) { ev.preventDefault(); var idx=parseInt(ev.key,10)-1; if (this.taskWindows[idx]) this.toggleTaskWindow(this.taskWindows[idx].id); } },
         windowClassMap: function(win){ return { 'is-active': this.activeWindowId===win.id && !win.minimized && !win.closed, 'is-minimized': !!win.minimized, 'is-closed': !!win.closed, 'is-maximized': !!win.maximized, 'is-tiled': (win.snap||'')==='grid', 'is-cascaded': (win.snap||'')==='cascade' }; },
         windowStyle: function(win){ return { left: win.left + 'px', top: win.top + 'px', width: win.width + 'px', height: win.height + 'px', zIndex: win.z }; },
         stageRect: function(){ var stage=this.$refs.stage; return stage ? stage.getBoundingClientRect() : { left:0, top:0, width:window.innerWidth-20, height:window.innerHeight-64, right:window.innerWidth-20, bottom:window.innerHeight-64 }; },
@@ -562,12 +645,12 @@
         commitSnapFromPointer: function(id,x,y){ var kind=this.snapCandidateForPointer(x,y); if (kind) return this.applySnap(id,kind); },
         applySnap: function(id,kind){ var win=this.windows.find(function(w){ return w.id===id; }); if (!win) return; if (!win.restoreRect) win.restoreRect={ left:win.left, top:win.top, width:win.width, height:win.height, snap:win.snap||'' }; var stage=this.stageRect(), halfW=Math.floor(stage.width/2), halfH=Math.floor(stage.height/2); if (kind==='maximize') { win.left=0; win.top=0; win.width=stage.width; win.height=stage.height; win.maximized=true; win.snap='maximize'; } else if (kind==='left') { win.left=0; win.top=0; win.width=halfW; win.height=stage.height; win.maximized=false; win.snap='left'; } else if (kind==='right') { win.left=Math.ceil(stage.width/2); win.top=0; win.width=halfW; win.height=stage.height; win.maximized=false; win.snap='right'; } else if (kind==='top-left') { win.left=0; win.top=0; win.width=halfW; win.height=halfH; win.maximized=false; win.snap='top-left'; } else if (kind==='top-right') { win.left=Math.ceil(stage.width/2); win.top=0; win.width=halfW; win.height=halfH; win.maximized=false; win.snap='top-right'; } else if (kind==='bottom-left') { win.left=0; win.top=Math.ceil(stage.height/2); win.width=halfW; win.height=halfH; win.maximized=false; win.snap='bottom-left'; } else if (kind==='bottom-right') { win.left=Math.ceil(stage.width/2); win.top=Math.ceil(stage.height/2); win.width=halfW; win.height=halfH; win.maximized=false; win.snap='bottom-right'; } },
         serializeLayout: function(){ return { mode:this.layoutMode || '', windows: this.windows.map(function(w){ return { id:w.id, appKey:w.appKey, left:w.left, top:w.top, width:w.width, height:w.height, z:w.z, minimized:!!w.minimized, closed:!!w.closed, maximized:!!w.maximized, snap:w.snap||'' }; }) }; },
-        loadLayoutLocal: function(){ var key='miomos.layout.' + (this.boot.session||{}).id, raw=''; try { raw=window.localStorage.getItem(key)||''; } catch(e){} if (!raw) return; try { var layout=JSON.parse(raw), self=this; if (layout.mode) this.layoutMode=layout.mode; arr(layout.windows).forEach(function(saved){ var win=self.windows.find(function(w){ return w.id===saved.id; }); if (!win) return; Object.assign(win, { left:Number(saved.left||win.left), top:Number(saved.top||win.top), width:Number(saved.width||win.width), height:Number(saved.height||win.height), z:Number(saved.z||win.z), minimized:!!saved.minimized, closed:!!saved.closed, maximized:!!saved.maximized, snap:saved.snap||'' }); self.clampWindow(win); }); } catch(e2){} },
+        loadLayoutLocal: function(){ var key='miomos.layout.' + (this.boot.session||{}).id, raw=''; try { raw=window.localStorage.getItem(key)||''; } catch(e){} if (!raw) raw=((this.boot.desktop||{}).savedLayoutJson) || ''; if (!raw) return; try { var layout=JSON.parse(raw), self=this; if (layout.mode) this.layoutMode=layout.mode; arr(layout.windows).forEach(function(saved){ var win=self.windows.find(function(w){ return w.id===saved.id; }); if (!win) return; Object.assign(win, { left:Number(saved.left||win.left), top:Number(saved.top||win.top), width:Number(saved.width||win.width), height:Number(saved.height||win.height), z:Number(saved.z||win.z), minimized:!!saved.minimized, closed:!!saved.closed, maximized:!!saved.maximized, snap:saved.snap||'' }); self.clampWindow(win); }); } catch(e2){} },
         saveLayoutLocal: function(){ var key='miomos.layout.' + (this.boot.session||{}).id; try { window.localStorage.setItem(key, JSON.stringify(this.serializeLayout())); } catch(e){} },
         saveLayout: function(){ this.saveLayoutLocal(); this.command('layout.save', { layout: this.serializeLayout() }); },
         onWindowResize: function(){ var self=this; this.windows.forEach(function(w){ if (['left','right','maximize','top-left','top-right','bottom-left','bottom-right'].indexOf(w.snap||'')>-1 || w.maximized) self.applySnap(w.id, w.snap || 'maximize'); else self.clampWindow(w); }); if (this.layoutMode==='tile') this.tileWindows(); if (this.terminal.instance) this.resizeTerminal(); },
-        command: function(command, payload){ var path=(this.boot.routes||{}).command || root.getAttribute('data-miomos-command') || '/api/miomos/command'; var maxInflight=Number(this.desktopPolicy.commandMaxInflight || 1) || 1; var body=Object.assign({ command: command }, payload || {}); var key=command + '|' + JSON.stringify(body); var self=this; if (this.pendingCommands[key]) return this.pendingCommands[key]; if (this.inflightCommandCount >= maxInflight) { this.commandError='Another shell command is still in flight. Please wait for it to finish before submitting a new action.'; return Promise.reject(new Error('command_busy')); } this.commandError=''; this.dismissedAlertKey=''; this.inflightCommandCount += 1; this.lastCommandName=command; this.saveUiStateLocal(); var req=fetch(path, { method:'POST', credentials:'same-origin', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(body) }).then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }).catch(function(err){ self.commandError='Command ' + command + ' failed: ' + (err && err.message ? err.message : 'unknown error'); self.dismissedAlertKey=''; throw err; }).finally(function(){ self.inflightCommandCount=Math.max(0,self.inflightCommandCount-1); delete self.pendingCommands[key]; self.saveUiStateLocal(); }); this.pendingCommands[key]=req; return req; },
-        refreshView: function(){ var self=this; var path=(this.boot.routes||{}).view || root.getAttribute('data-miomos-view') || '/api/miomos/view'; return fetch(path, { credentials:'same-origin' }).then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }).then(function(json){ if (json.view) self.view = json.view; self.syncSettingsForm(); self.applySettings(); self.commandError=''; }); },
+        command: function(command, payload){ var path=(this.boot.routes||{}).command || root.getAttribute('data-miomos-command') || '/api/miomos/command'; var maxInflight=Number(this.desktopPolicy.commandMaxInflight || 1) || 1; var body=Object.assign({ command: command }, payload || {}); var key=command + '|' + JSON.stringify(body); var self=this; if (this.pendingCommands[key]) return this.pendingCommands[key]; if (this.inflightCommandCount >= maxInflight) { this.commandError='Another shell command is still in flight. Please wait for it to finish before submitting a new action.'; return Promise.reject(new Error('command_busy')); } this.commandError=''; this.dismissedAlertKey=''; this.inflightCommandCount += 1; this.lastCommandName=command; this.saveUiStateLocal('command'); var req=fetch(path, { method:'POST', credentials:'same-origin', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(body) }).then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }).catch(function(err){ self.commandError='Command ' + command + ' failed: ' + (err && err.message ? err.message : 'unknown error'); self.dismissedAlertKey=''; throw err; }).finally(function(){ self.inflightCommandCount=Math.max(0,self.inflightCommandCount-1); delete self.pendingCommands[key]; self.saveUiStateLocal(); }); this.pendingCommands[key]=req; return req; },
+        refreshView: function(){ var self=this; var path=(this.boot.routes||{}).view || root.getAttribute('data-miomos-view') || '/api/miomos/view'; return fetch(path, { credentials:'same-origin' }).then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }).then(function(json){ if (json.view) self.view = json.view; if (json.session) self.mergeSessionSummary(json.session); self.syncSettingsForm(); self.applySettings(); self.commandError=''; }); },
         syncSettingsForm: function(){ var cur=((this.view.settings||{}).current)||{}; this.settingsForm.themeKey = cur.themeKey || this.settingsForm.themeKey; this.settingsForm.fontFamily = cur.fontFamily || this.settingsForm.fontFamily; this.settingsForm.fontSize = String(cur.fontSize || this.settingsForm.fontSize); this.settingsForm.titleAccent = cur.titleAccent || this.settingsForm.titleAccent; this.settingsForm.iconStyle = cur.iconStyle || this.settingsForm.iconStyle; this.settingsForm.wallpaper = cur.wallpaper || this.settingsForm.wallpaper; this.settingsForm.density = cur.density || this.settingsForm.density; this.settingsForm.animations = cur.animations || this.settingsForm.animations; this.settingsForm.windowPreset = cur.windowPreset || this.settingsForm.windowPreset; this.settingsForm.snapMode = cur.snapMode || this.settingsForm.snapMode; this.settingsForm.motionProfile = cur.motionProfile || this.settingsForm.motionProfile; this.settingsForm.titlebarStyle = cur.titlebarStyle || this.settingsForm.titlebarStyle; this.settingsForm.icons = Object.assign({}, this.settingsForm.icons, cur.icon || {}); if (cur.terminal) { var self=this; Object.keys(cur.terminal).forEach(function(k){ self.settingsForm.terminal[k] = String(cur.terminal[k]); }); } },
         buildSettingsPayload: function(){ return { themeKey:this.settingsForm.themeKey, fontFamily:this.settingsForm.fontFamily, fontSize:parseInt(this.settingsForm.fontSize,10), titleAccent:this.settingsForm.titleAccent, iconStyle:this.settingsForm.iconStyle, wallpaper:this.settingsForm.wallpaper, density:this.settingsForm.density, animations:this.settingsForm.animations, windowPreset:this.settingsForm.windowPreset, snapMode:this.settingsForm.snapMode, motionProfile:this.settingsForm.motionProfile, titlebarStyle:this.settingsForm.titlebarStyle, icons: clone(this.settingsForm.icons), terminal: { fontFamily:this.settingsForm.terminal.fontFamily, fontSize:parseInt(this.settingsForm.terminal.fontSize,10), cursorBlink:parseInt(this.settingsForm.terminal.cursorBlink,10), cursorStyle:this.settingsForm.terminal.cursorStyle, scrollback:parseInt(this.settingsForm.terminal.scrollback,10), renderer:this.settingsForm.terminal.renderer, unicode:this.settingsForm.terminal.unicode, cols:parseInt(this.settingsForm.terminal.cols || '120',10), rows:parseInt(this.settingsForm.terminal.rows || '28',10) } }; },
         saveSettings: function(){ var self=this; this.settingsStatus='Saving…'; this.command('settings.save', this.buildSettingsPayload()).then(function(){ self.settingsStatus='Saved'; self.refreshView(); }).catch(function(){ self.settingsStatus='Save failed'; }); },

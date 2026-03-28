@@ -9,6 +9,8 @@ BUILD(STATE,CONF,OUT)
 	DO SETTINGS(.STATE,.CONF,$NAME(OUT("settings")))
 	DO CHAT(.STATE,.CONF,$NAME(OUT("chat")))
 	DO TERMINAL(.STATE,.CONF,$NAME(OUT("terminal")))
+	DO SESSION(.STATE,.CONF,$NAME(OUT("session")))
+	DO UX(.STATE,.CONF,$NAME(OUT("ux")))
 	DO WINDOWS(.STATE,.CONF,$NAME(OUT("windowManager")))
 	QUIT
 	;
@@ -18,7 +20,7 @@ WORKSPACE(STATE,CONF,ROOT)
 	DO COUNTS^MIOMOSOBS(.CNT)
 	DO LIST^MIOMOSPERM($GET(STATE("roles")),.PERMS)
 	SET @ROOT@("headline")="Production workspace"
-	SET @ROOT@("subheadline")="MUMPS-first desktop with server-authored state, routes, settings, and operational summaries."
+	SET @ROOT@("subheadline")="MUMPS-first desktop with server-authored state, routes, settings, operational summaries, and session-backed shell restore."
 	SET @ROOT@("kpis",1,"label")="Access events"
 	SET @ROOT@("kpis",1,"value")=+$GET(CNT("access"))
 	SET @ROOT@("kpis",1,"copy")="Recent authenticated desktop actions."
@@ -50,6 +52,7 @@ NOTES(ROOT)
 	SET @ROOT@(2,"title")="Server-authored settings",@ROOT@(2,"copy")="Theme, typography, density, wallpaper, icons, and terminal profile are persisted server-side in MUMPS globals."
 	SET @ROOT@(3,"title")="Operational exports",@ROOT@(3,"copy")="Access, error, audit, digest, and retention posture remain server-managed and permission-controlled."
 	SET @ROOT@(4,"title")="PIPE terminal bridge",@ROOT@(4,"copy")="The browser renders xterm.js while MUMPS launches and supervises a child YottaDB session over PIPE devices and websockets."
+	SET @ROOT@(5,"title")="Session-backed shell restore",@ROOT@(5,"copy")="Active window, menu posture, layout mode, and last command are now persisted in MUMPS as part of the desktop session contract."
 	QUIT
 	;
 SECURITY(STATE,CONF,ROOT)
@@ -118,4 +121,56 @@ WINDOWS(STATE,CONF,ROOT)
 	SET @ROOT@("motionProfile")=$GET(STATE("motionProfile"),"standard")
 	SET @ROOT@("titlebarStyle")=$GET(STATE("titlebarStyle"),"accent")
 	DO CATALOG^MIOMOSWM($NAME(@ROOT@("catalog")))
+	QUIT
+
+SESSION(STATE,CONF,ROOT)
+	NEW SNAP
+	KILL @ROOT
+	DO SNAPSHOT^MIOMOSST($GET(STATE("sessionId")),.SNAP)
+	SET @ROOT@("headline")="Server-owned session posture"
+	SET @ROOT@("subheadline")="Idle timers, layout restore, active window, and shell chrome are persisted in MUMPS and emitted back into the SSR desktop."
+	SET @ROOT@("summary","id")=$GET(SNAP("id"),$GET(STATE("sessionId")))
+	SET @ROOT@("summary","startedAt")=$GET(SNAP("startedAt"),$GET(STATE("startedAt")))
+	SET @ROOT@("summary","lastSeenAt")=$GET(SNAP("lastSeenAt"),$GET(STATE("lastSeenAt")))
+	SET @ROOT@("summary","lastEvent")=$GET(SNAP("lastEvent"),"desktop_render")
+	SET @ROOT@("summary","ageSeconds")=+$GET(SNAP("ageSeconds"))
+	SET @ROOT@("summary","idleSeconds")=+$GET(SNAP("idleSeconds"))
+	SET @ROOT@("summary","layoutSavedAt")=$GET(SNAP("layoutSavedAt"))
+	SET @ROOT@("summary","uiSavedAt")=$GET(SNAP("uiSavedAt"))
+	SET @ROOT@("summary","menuOpen")=+$GET(SNAP("ui","menuOpen"))
+	SET @ROOT@("summary","activeWindowId")=$GET(SNAP("ui","activeWindowId"))
+	SET @ROOT@("summary","focusedAppKey")=$GET(SNAP("ui","focusedAppKey"))
+	SET @ROOT@("summary","layoutMode")=$GET(SNAP("ui","layoutMode"))
+	SET @ROOT@("summary","lastCommandName")=$GET(SNAP("ui","lastCommandName"))
+	SET @ROOT@("summary","hasLayout")=+$GET(SNAP("hasLayout"))
+	SET @ROOT@("summary","heartbeatCount")=+$GET(SNAP("eventCounts","heartbeat"))
+	SET @ROOT@("summary","viewRefreshCount")=+$GET(SNAP("eventCounts","view.refresh"))
+	SET @ROOT@("summary","uiSaveCount")=+$GET(SNAP("eventCounts","ui_state_save"))
+	QUIT
+	;
+UX(STATE,CONF,ROOT)
+	KILL @ROOT
+	SET @ROOT@("headline")="UI contract hardening"
+	SET @ROOT@("subheadline")="Buttons, forms, tabs, pills, tables, and shell shortcuts now follow one production-facing render contract that can be tested by tokens."
+	SET @ROOT@("tabs",1,"label")="Overview",@ROOT@("tabs",1,"active")=1
+	SET @ROOT@("tabs",2,"label")="Forms",@ROOT@("tabs",2,"active")=0
+	SET @ROOT@("tabs",3,"label")="Tables",@ROOT@("tabs",3,"active")=0
+	SET @ROOT@("buttons",1,"label")="Primary action",@ROOT@("buttons",1,"kind")="primary"
+	SET @ROOT@("buttons",2,"label")="Secondary action",@ROOT@("buttons",2,"kind")="secondary"
+	SET @ROOT@("buttons",3,"label")="Quiet action",@ROOT@("buttons",3,"kind")="quiet"
+	SET @ROOT@("states",1,"label")="Ready",@ROOT@("states",1,"kind")="ok"
+	SET @ROOT@("states",2,"label")="Review",@ROOT@("states",2,"kind")="warn"
+	SET @ROOT@("states",3,"label")="Protected",@ROOT@("states",3,"kind")="neutral"
+	SET @ROOT@("form","title")="Profile and permission workflow"
+	SET @ROOT@("form","copy")="Use explicit labels, compact spacing, inline help, and visible validation language for all privileged workflows."
+	SET @ROOT@("form","fields",1,"label")="Display name",@ROOT@("form","fields",1,"value")=$GET(STATE("userName"))
+	SET @ROOT@("form","fields",2,"label")="Role bundle",@ROOT@("form","fields",2,"value")=$GET(STATE("roles"))
+	SET @ROOT@("form","fields",3,"label")="Session identifier",@ROOT@("form","fields",3,"value")=$GET(STATE("sessionId"))
+	SET @ROOT@("table",1,"surface")="Buttons and pills",@ROOT@("table",1,"status")="Ready",@ROOT@("table",1,"detail")="Consistent sizing, focus, density, and badge styling."
+	SET @ROOT@("table",2,"surface")="Forms and validation",@ROOT@("table",2,"status")="Ready",@ROOT@("table",2,"detail")="Inline labels, helper copy, and compact field grouping."
+	SET @ROOT@("table",3,"surface")="Session restore",@ROOT@("table",3,"status")="Ready",@ROOT@("table",3,"detail")="Menu posture, active window, layout mode, and restore timestamps persisted in MUMPS."
+	SET @ROOT@("table",4,"surface")="Admin tables",@ROOT@("table",4,"status")="Ready",@ROOT@("table",4,"detail")="Clear action columns and state badges for identity operations."
+	SET @ROOT@("shortcuts",1,"label")="Open menu",@ROOT@("shortcuts",1,"keys")="Alt+M"
+	SET @ROOT@("shortcuts",2,"label")="Tile windows",@ROOT@("shortcuts",2,"keys")="Alt+G"
+	SET @ROOT@("shortcuts",3,"label")="Focus terminal",@ROOT@("shortcuts",3,"keys")="Alt+T"
 	QUIT
