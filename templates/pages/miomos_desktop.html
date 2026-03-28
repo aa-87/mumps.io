@@ -1,736 +1,601 @@
-<div id="miomosRoot" class="miomos-root" data-miomos-root data-miomos-taskbar data-miomos-single-socket="1" data-miomos-session="{{sessionId}}" data-miomos-ws="{{wsPath}}" data-miomos-bootstrap="{{bootstrapPath}}" data-miomos-theme="{{themePath}}" data-miomos-signout="{{signoutPath}}" data-miomos-admin-users="{{adminUsersPath}}" data-miomos-admin-invite="{{adminInviteCreatePath}}" data-miomos-admin-reset="{{adminResetRequestPath}}" data-miomos-observ-summary="{{observSummaryPath}}" data-miomos-access-export="{{accessExportPath}}" data-miomos-error-export="{{errorExportPath}}" data-miomos-audit-export="{{auditExportPath}}" data-miomos-security-digest="{{securityDigestPath}}" data-miomos-retention-prune="{{retentionPrunePath}}" data-miomos-profile="{{profile}}">
-  <style>
-    .miomos-root {
-      --taskbar-h: 40px; --desktop:#0f1724; --taskbar:rgba(8,14,24,.78); --surface:rgba(20,28,39,.92);
-      --surface-alt:rgba(14,21,31,.88); --border:rgba(149,168,196,.18); --text:#edf3fb; --muted:#98a8bf;
-      --accent:#5f8dff; --accent-soft:rgba(95,141,255,.18); --icon:linear-gradient(180deg,#7ea6ff,#4a73e6);
-      position:relative; min-height:100vh; color:var(--text);
-      background:
-        radial-gradient(circle at top right, rgba(255,255,255,.06), transparent 26%),
-        linear-gradient(180deg, rgba(255,255,255,.02), transparent 40%),
-        var(--desktop);
-      overflow:hidden;
-    }
-    .miomos-stage { position:absolute; inset:12px 12px calc(var(--taskbar-h) + 12px) 12px; overflow:hidden; }
-    .miomos-desktop-icons { position:absolute; top:12px; left:12px; z-index:6; display:grid; gap:8px; width:82px; }
-    .miomos-desktop-icon { width:82px; padding:4px; border:0; background:transparent; color:var(--text); cursor:pointer; display:grid; justify-items:center; gap:4px; border-radius:12px; }
-    .miomos-desktop-icon:hover { background:rgba(255,255,255,.06); }
-    .miomos-desktop-icon-glyph, .miomos-window-glyph, .miomos-menu-glyph {
-      width:36px; height:36px; display:grid; place-items:center; color:#fff; font-size:12px; font-weight:800; border-radius:12px;
-      background:var(--icon); box-shadow:0 10px 24px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.25);
-    }
-    .miomos-desktop-icon-label { font-size:11px; font-weight:700; text-align:center; line-height:1.2; }
+<script id="miomosBootJson" type="application/json">{{{bootJson}}}</script>
+<div hidden id="miomosContractTokens"
+  data-miomos-single-socket="1"
+  data-miomos-command="{{commandPath}}"
+  data-settings-form="1"
+  data-setting-terminal="fontFamily"
+  data-launch-app="terminal"
+  data-admin-surface="1">{{adminUsersPath}}</div>
+<div id="miomosRoot"
+  class="miomos-root"
+  v-cloak
+  data-miomos-root
+  data-miomos-single-socket="1"
+  data-miomos-session="{{sessionId}}"
+  data-miomos-ws="{{wsPath}}"
+  data-miomos-bootstrap="{{bootstrapPath}}"
+  data-miomos-view="{{viewPath}}"
+  data-miomos-command="{{commandPath}}"
+  data-miomos-settings="{{settingsPath}}"
+  data-miomos-signout="{{signoutPath}}"
+  data-miomos-profile="{{profile}}"
+  data-density="{{density}}"
+  data-wallpaper="{{wallpaper}}"
+  data-animations="{{animations}}"
+  data-window-preset="{{windowPreset}}"
+  data-snap-mode="{{snapMode}}"
+  data-motion-profile="{{motionProfile}}"
+  data-titlebar-style="{{titlebarStyle}}">
+  <span hidden data-launch-app="terminal"></span>
+  <span hidden data-setting-terminal="fontFamily"></span>
+  <a hidden href="{{adminUsersPath}}" data-admin-route>{{adminUsersPath}}</a>
 
-    .miomos-window {
-      position:absolute; min-width:360px; min-height:240px; border:1px solid var(--border); border-radius:16px;
-      background:var(--surface); box-shadow:0 24px 64px rgba(0,0,0,.26); overflow:hidden; backdrop-filter:blur(20px);
-    }
-    .miomos-window.is-minimized, .miomos-window.is-closed { display:none; }
-    .miomos-window.is-maximized { border-radius:0; }
-    .miomos-window-bar {
-      height:34px; display:flex; align-items:center; justify-content:space-between; gap:8px; padding:0 8px 0 10px; cursor:grab;
-      background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02)); border-bottom:1px solid var(--border);
-    }
-    .miomos-window-bar:active { cursor:grabbing; }
-    .miomos-window-meta { display:flex; align-items:center; gap:8px; min-width:0; }
-    .miomos-window-glyph { width:18px; height:18px; border-radius:6px; font-size:9px; }
-    .miomos-window-title strong { display:block; font-size:12px; line-height:1.1; }
-    .miomos-window-title span { display:block; margin-top:1px; color:var(--muted); font-size:10px; }
-    .miomos-window-controls { display:flex; gap:4px; }
-    .miomos-window-controls button {
-      width:24px; height:22px; border-radius:7px; border:1px solid var(--border); background:rgba(255,255,255,.04); color:var(--text);
-      font:inherit; font-size:11px; font-weight:800; display:grid; place-items:center; cursor:pointer;
-    }
-    .miomos-window-controls button:hover { background:var(--accent-soft); border-color:rgba(255,255,255,.14); }
-    .miomos-window-controls button[data-window-action="close"]:hover { background:rgba(184,55,82,.28); }
-    .miomos-window-body { height:calc(100% - 34px); padding:10px; overflow:auto; background:var(--surface-alt); }
+  <div v-if="showShellAlert" class="miomos-shell-alert" :class="shellAlertClass">
+    <div class="miomos-shell-alert-copy">
+      <strong>[[ shellAlertTitle ]]</strong>
+      <span>[[ shellAlertMessage ]]</span>
+    </div>
+    <button type="button" class="miomos-shell-alert-btn" @click="dismissShellAlert">Dismiss</button>
+  </div>
 
-    .miomos-card { border:1px solid var(--border); border-radius:14px; background:rgba(255,255,255,.03); padding:10px; }
-    .miomos-kpi-row { display:grid; gap:8px; grid-template-columns:repeat(4, minmax(0,1fr)); margin-bottom:10px; }
-    .miomos-kpi-label { font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); font-weight:800; }
-    .miomos-kpi-value { margin-top:4px; font-size:20px; font-weight:800; }
-    .miomos-kpi-copy { margin-top:3px; font-size:11px; color:var(--muted); }
-    .miomos-grid { display:grid; gap:10px; grid-template-columns:minmax(0,1.7fr) minmax(280px,.95fr); }
-    .miomos-table { width:100%; border-collapse:collapse; font-size:11px; }
-    .miomos-table th { padding:7px 8px; text-align:left; border-bottom:1px solid var(--border); color:var(--muted); font-size:10px; letter-spacing:.08em; text-transform:uppercase; }
-    .miomos-table td { padding:8px; border-bottom:1px solid rgba(255,255,255,.06); }
-    .miomos-table tbody tr:hover { background:var(--accent-soft); }
-    .miomos-list { list-style:none; margin:0; padding:0; display:grid; gap:7px; }
-    .miomos-list li { padding:8px 9px; border-radius:10px; border:1px solid var(--border); background:rgba(255,255,255,.03); }
-    .miomos-list li strong, .miomos-feed-item strong { display:block; font-size:11px; }
-    .miomos-list li span, .miomos-feed-item span { display:block; margin-top:2px; font-size:11px; color:var(--muted); line-height:1.35; }
-
-    .miomos-surface-header { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:10px; }
-    .miomos-surface-title strong { display:block; font-size:13px; }
-    .miomos-surface-title span { display:block; margin-top:2px; font-size:11px; color:var(--muted); }
-    .miomos-chips { display:flex; align-items:center; flex-wrap:wrap; gap:6px; }
-    .miomos-chip { height:23px; padding:0 9px; border-radius:999px; display:inline-flex; align-items:center; gap:6px; border:1px solid var(--border); background:rgba(255,255,255,.04); font-size:11px; font-weight:700; }
-    .miomos-dot { width:7px; height:7px; border-radius:999px; background:#ffcb31; display:inline-block; }
-    .miomos-chip.is-connected .miomos-dot { background:#1ec98c; }
-
-    .miomos-chat-shell { display:grid; gap:8px; height:100%; grid-template-rows:1fr auto; }
-    .miomos-chat-feed { overflow:auto; display:grid; gap:7px; align-content:start; }
-    .miomos-feed-item { padding:8px 9px; border:1px solid var(--border); border-radius:10px; background:rgba(255,255,255,.04); }
-    .miomos-feed-item time { display:block; margin-top:4px; font-size:10px; color:var(--muted); }
-    .miomos-chat-form { display:grid; gap:7px; }
-    .miomos-chat-form textarea, .miomos-theme-button, .miomos-menu-button, .miomos-task-button, .miomos-signout-button {
-      font:inherit;
-    }
-    .miomos-chat-form textarea {
-      min-height:74px; resize:none; padding:10px; border-radius:12px; border:1px solid var(--border); background:rgba(0,0,0,.12); color:var(--text);
-    }
-    .miomos-actions { display:flex; justify-content:space-between; align-items:center; gap:8px; }
-    .miomos-btn {
-      height:30px; padding:0 12px; border-radius:10px; border:1px solid var(--border); background:var(--accent-soft); color:var(--text); cursor:pointer; font-size:11px; font-weight:800;
-    }
-
-    .miomos-link-row { display:flex; flex-wrap:wrap; gap:8px; margin:8px 0 10px; }
-    .miomos-link-btn {
-      height:28px; padding:0 10px; border-radius:10px; border:1px solid var(--border); background:rgba(255,255,255,.04); color:var(--text); text-decoration:none;
-      display:inline-flex; align-items:center; font-size:11px; font-weight:800;
-    }
-    .miomos-link-btn:hover { background:var(--accent-soft); }
-    .miomos-obs-meta { display:grid; gap:7px; }
-
-    .miomos-security-grid { display:grid; gap:8px; grid-template-columns:repeat(3, minmax(0,1fr)); margin-bottom:8px; }
-    .miomos-metric { padding:10px; }
-    .miomos-metric strong { display:block; font-size:18px; }
-    .miomos-metric span { display:block; margin-top:3px; color:var(--muted); font-size:11px; }
-    .miomos-permission-list { display:grid; gap:6px; }
-    .miomos-permission-pill { display:inline-flex; align-items:center; gap:6px; padding:5px 8px; border-radius:999px; border:1px solid var(--border); background:rgba(255,255,255,.04); font-size:10px; font-weight:700; }
-
-    .miomos-taskbar {
-      position:absolute; left:12px; right:12px; bottom:12px; height:var(--taskbar-h); z-index:50; display:grid; grid-template-columns:auto 1fr auto; gap:8px; align-items:center;
-      padding:0 10px; border-radius:14px; background:var(--taskbar); border:1px solid var(--border); backdrop-filter:blur(18px);
-    }
-    .miomos-menu-button, .miomos-signout-button {
-      height:30px; padding:0 12px; border-radius:10px; border:1px solid var(--border); background:rgba(255,255,255,.05); color:var(--text); cursor:pointer; font-size:11px; font-weight:800;
-    }
-    .miomos-taskband { display:flex; align-items:center; gap:8px; min-width:0; overflow:auto hidden; }
-    .miomos-task-button {
-      height:30px; min-width:130px; max-width:220px; padding:0 12px; border-radius:10px; border:1px solid var(--border); background:rgba(255,255,255,.05); color:var(--text); cursor:pointer;
-      white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:left; font-size:11px; font-weight:700;
-    }
-    .miomos-task-button.is-active { background:var(--accent-soft); }
-    .miomos-status { display:flex; align-items:center; gap:8px; min-width:220px; justify-content:flex-end; }
-
-    .miomos-menu {
-      position:absolute; left:12px; bottom:58px; width:320px; display:none; z-index:70; padding:10px; border-radius:16px; border:1px solid var(--border);
-      background:var(--surface); box-shadow:0 20px 46px rgba(0,0,0,.28);
-    }
-    .miomos-menu.is-open { display:block; }
-    .miomos-menu-head { padding:4px 4px 10px; border-bottom:1px solid var(--border); }
-    .miomos-menu-head strong { display:block; font-size:13px; }
-    .miomos-menu-head span { display:block; margin-top:2px; font-size:11px; color:var(--muted); }
-    .miomos-menu-list, .miomos-theme-list { display:grid; gap:6px; padding-top:10px; }
-    .miomos-menu-item, .miomos-theme-button {
-      width:100%; display:grid; grid-template-columns:28px 1fr auto; gap:10px; align-items:center; padding:8px 9px; border-radius:11px; border:1px solid var(--border);
-      background:rgba(255,255,255,.04); color:var(--text); cursor:pointer; text-align:left;
-    }
-    .miomos-theme-button { grid-template-columns:1fr auto; }
-    .miomos-theme-button.is-current { border-color:rgba(255,255,255,.24); background:var(--accent-soft); }
-    .miomos-theme-meta strong { display:block; font-size:11px; }
-    .miomos-theme-meta span { display:block; margin-top:2px; font-size:10px; color:var(--muted); }
-    .miomos-theme-swatch { width:16px; height:16px; border-radius:999px; border:1px solid rgba(255,255,255,.15); }
-
-    .miomos-resize-handle { position:absolute; z-index:6; }
-    .miomos-resize-handle[data-edge="e"], .miomos-resize-handle[data-edge="w"] { top:10px; bottom:10px; width:8px; }
-    .miomos-resize-handle[data-edge="e"] { right:-4px; cursor:ew-resize; }
-    .miomos-resize-handle[data-edge="w"] { left:-4px; cursor:ew-resize; }
-    .miomos-resize-handle[data-edge="n"], .miomos-resize-handle[data-edge="s"] { left:10px; right:10px; height:8px; }
-    .miomos-resize-handle[data-edge="n"] { top:-4px; cursor:ns-resize; }
-    .miomos-resize-handle[data-edge="s"] { bottom:-4px; cursor:ns-resize; }
-    .miomos-resize-handle[data-edge="ne"], .miomos-resize-handle[data-edge="nw"], .miomos-resize-handle[data-edge="se"], .miomos-resize-handle[data-edge="sw"] { width:12px; height:12px; }
-    .miomos-resize-handle[data-edge="ne"] { right:-4px; top:-4px; cursor:nesw-resize; }
-    .miomos-resize-handle[data-edge="nw"] { left:-4px; top:-4px; cursor:nwse-resize; }
-    .miomos-resize-handle[data-edge="se"] { right:-4px; bottom:-4px; cursor:nwse-resize; }
-    .miomos-resize-handle[data-edge="sw"] { left:-4px; bottom:-4px; cursor:nesw-resize; }
-    .miomos-snap-preview { position:absolute; z-index:5; pointer-events:none; border-radius:14px; border:1px solid rgba(255,255,255,.18); background:rgba(95,141,255,.14); box-shadow:inset 0 0 0 1px rgba(255,255,255,.08); opacity:0; transition:opacity .12s ease; }
-    .miomos-snap-preview.is-visible { opacity:1; }
-
-    @media (max-width: 1180px) {
-      .miomos-grid { grid-template-columns:minmax(0,1fr); }
-      .miomos-kpi-row { grid-template-columns:repeat(2, minmax(0,1fr)); }
-      .miomos-security-grid { grid-template-columns:repeat(2, minmax(0,1fr)); }
-    }
-  </style>
-
-  <aside class="miomos-desktop-icons" aria-label="Desktop apps">
-    {{#apps}}
-    <button type="button" class="miomos-desktop-icon" data-launch-app="{{key}}">
-      <span class="miomos-desktop-icon-glyph">{{icon}}</span>
-      <span class="miomos-desktop-icon-label">{{title}}</span>
-    </button>
-    {{/apps}}
+  <aside class="miomos-launcher" :class="{ 'is-open': menuOpen }">
+    <div class="miomos-launcher-header">
+      <strong>MIOMOS Control Center</strong>
+      <span>Production shell menu. MUMPS owns entry metadata, launch intent, operational readiness, and shell grouping. Vue remains a thin render and interaction layer.</span>
+      <div class="miomos-launcher-overview">
+        <span class="miomos-pill">[[ shellSummary.pinned ]] pinned</span>
+        <span class="miomos-pill">[[ shellSummary.directories ]] directories</span>
+        <span class="miomos-pill">[[ qualitySummary.ready ]] ready</span>
+        <span class="miomos-pill">[[ shellSummary.planned ]] planned</span>
+      </div>
+      <div v-if="desktopPolicy.showReliabilityPanel" class="miomos-launcher-reliability">
+        <span class="miomos-pill">Socket [[ shellHealth.socketState ]]</span>
+        <span class="miomos-pill">Inflight [[ inflightCommandCount ]]</span>
+        <span class="miomos-pill">Reconnects [[ reconnectCount ]]</span>
+        <span class="miomos-pill">[[ lastCommandName || 'No command yet' ]]</span>
+      </div>
+      <div class="miomos-launcher-quality">
+        <section class="miomos-quality-hero">
+          <strong>Production quality posture</strong>
+          <span>The shell now prioritizes stable window behavior, semantic entry types, focused menu structure, and operator-oriented motion profiles.</span>
+          <div class="miomos-quality-grid">
+            <div class="miomos-quality-stat"><strong>[[ qualitySummary.ready ]]</strong><span>Ready surfaces</span></div>
+            <div class="miomos-quality-stat"><strong>[[ qualitySummary.windows ]]</strong><span>Managed windows</span></div>
+            <div class="miomos-quality-stat"><strong>[[ qualitySummary.shortcuts ]]</strong><span>Keyboard actions</span></div>
+          </div>
+        </section>
+        <section class="miomos-quality-brief">
+          <strong>Shell priorities</strong>
+          <ul class="miomos-quality-list">
+            <li><span>One menu and one taskbar only</span><strong>Locked</strong></li>
+            <li><span>Server-authored window and app metadata</span><strong>MUMPS first</strong></li>
+            <li><span>Reduced-motion and focused keyboard support</span><strong>Accessible</strong></li>
+          </ul>
+        </section>
+      </div>
+    </div>
+    <section class="miomos-menu-section miomos-menu-section--tools">
+      <div class="miomos-menu-heading">Window tools</div>
+      <div class="miomos-shell-tool-grid">
+        <button v-for="action in wmActions" :key="action.key" type="button" class="miomos-shell-tool-btn" :data-shell-action="action.key" @click="runShellAction(action.key)">
+          <strong>[[ action.label ]]</strong>
+          <span>[[ action.subtitle || action.label ]]</span>
+          <em v-if="action.shortcut">[[ action.shortcut ]]</em>
+        </button>
+      </div>
+    </section>
+    <section v-for="section in menuSections" :key="section.label" class="miomos-menu-section">
+      <div class="miomos-menu-heading">[[ section.label ]]</div>
+      <div class="miomos-menu-grid">
+        <button v-for="app in section.items" :key="app.key" type="button" class="miomos-menu-card" :class="{ 'is-disabled': !!app.disabled }" :data-entry-kind="app.kind || 'app'" @click="launchApp(app.key)">
+          <div class="miomos-menu-card-head">
+            <div class="miomos-theme-row"><span class="miomos-menu-glyph" :class="entryGlyphClass(app.kind || 'app')">[[ app.icon ]]</span><div class="miomos-menu-copy"><strong>[[ app.title ]]</strong><span>[[ app.subtitle ]]</span></div></div>
+            <span class="miomos-entry-meta">[[ app.badge || entryKindLabel(app.kind) ]]</span><span v-if="app.status" class="miomos-entry-state">[[ entryStatusLabel(app.status) ]]</span>
+          </div>
+        </button>
+      </div>
+    </section>
+    <div class="miomos-launcher-footer">
+      <section>
+        <strong>Operator guidance</strong>
+        <span>Use the menu for grouped navigation, keep the desktop pinned to daily surfaces, and use window tools for rapid layout changes during review sessions.</span>
+      </section>
+      <section>
+        <strong>Keyboard shortcuts</strong>
+        <ul class="miomos-shortcut-list">
+          <li><span>Open menu</span><code>Alt+M</code></li>
+          <li><span>Tile windows</span><code>Alt+G</code></li>
+          <li><span>Focus terminal</span><code>Alt+T</code></li>
+        </ul>
+      </section>
+    </div>
   </aside>
 
-  <div class="miomos-stage" id="miomosStage">
-    <div class="miomos-snap-preview" id="miomosSnapPreview" aria-hidden="true"></div>
-    {{#windows}}
-    <section class="miomos-window {{stateClass}}" data-window-id="{{id}}" data-app-key="{{appKey}}" style="left:{{left}}px;top:{{top}}px;width:{{width}}px;height:{{height}}px;z-index:{{z}};">
-      <header class="miomos-window-bar" data-window-drag="{{id}}" data-window-dblclick="maximize">
+  <div class="miomos-stage" ref="stage">
+    <div class="miomos-loading" v-if="bootLoading">Loading MIOMOS…</div>
+    <aside class="miomos-desktop-icons" aria-label="Desktop entries">
+      <button v-for="app in pinnedEntries" :key="app.key" type="button" class="miomos-desktop-icon" :class="{ 'is-disabled': !!app.disabled }" :data-launch-app="app.key" :data-entry-kind="app.kind || 'app'" :data-icon-kind="app.kind || 'app'" :title="app.subtitle || app.title" @click="launchApp(app.key)">
+        <span class="miomos-desktop-icon-glyph" :class="entryGlyphClass(app.kind || 'app')">[[ app.icon ]]</span>
+        <span class="miomos-desktop-icon-label">[[ app.title ]]</span>
+        <span class="miomos-desktop-icon-kind">[[ entryKindLabel(app.kind) ]]</span>
+      </button>
+    </aside>
+    <div class="miomos-snap-preview" :class="{ 'is-visible': snapPreview.visible }" :style="snapPreviewStyle"></div>
+
+    <section v-for="win in windows" :key="win.id" class="miomos-window" :class="windowClassMap(win)" :style="windowStyle(win)" :data-window-kind="((appEntry(win.appKey)||{}).kind || 'app')" @pointerdown="focusWindow(win.id)">
+      <header class="miomos-window-bar" @pointerdown="beginDrag(win, $event)" @dblclick.stop.prevent="toggleMaximize(win.id)">
         <div class="miomos-window-meta">
-          <span class="miomos-window-glyph">{{glyph}}</span>
-          <div class="miomos-window-title"><strong>{{title}}</strong><span>{{brandTitle}} {{profile}} session</span></div>
+          <span class="miomos-window-glyph">[[ appIcon(win.appKey) ]]</span>
+          <div class="miomos-window-title">
+            <strong>[[ win.title ]]</strong>
+            <span>[[ boot.product.name || 'MIOMOS' ]] [[ boot.product.profile || profile ]] session</span>
+          </div>
         </div>
-        <div class="miomos-window-controls miomos-window-controls-rendered">
-          <button type="button" aria-label="Minimize" data-window-action="minimize">–</button>
-          <button type="button" aria-label="Maximize" data-window-action="maximize">▢</button>
-          <button type="button" aria-label="Close" data-window-action="close">×</button>
+        <div class="miomos-window-controls">
+          <button type="button" data-window-action="minimize" @click.stop="minimizeWindow(win.id)">–</button>
+          <button type="button" data-window-action="maximize" @click.stop="toggleMaximize(win.id)">▢</button>
+          <button type="button" data-window-action="close" @click.stop="closeWindow(win.id)">×</button>
         </div>
       </header>
       <div class="miomos-window-body">
-        {{#isWorkspace}}
-        <div class="miomos-surface-header">
-          <div class="miomos-surface-title"><strong>Production workspace</strong><span>Denser operational desktop with theming, access controls, identity hardening, admin surfaces, logs, and collaboration.</span></div>
-          <div class="miomos-chips"><span class="miomos-chip"><span class="miomos-dot"></span>Queue 142</span><span class="miomos-chip">Profile {{profile}}</span><span class="miomos-chip">Theme {{themeKey}}</span></div>
-        </div>
-        <div class="miomos-kpi-row">
-          <section class="miomos-card"><div class="miomos-kpi-label">In flight</div><div class="miomos-kpi-value">142</div><div class="miomos-kpi-copy">Claim files across intake, review, and export.</div></section>
-          <section class="miomos-card"><div class="miomos-kpi-label">Exception queue</div><div class="miomos-kpi-value">07</div><div class="miomos-kpi-copy">Claims requiring analyst review.</div></section>
-          <section class="miomos-card"><div class="miomos-kpi-label">Exports today</div><div class="miomos-kpi-value">328</div><div class="miomos-kpi-copy">Artifacts delivered successfully.</div></section>
-          <section class="miomos-card"><div class="miomos-kpi-label">Persistent sockets</div><div class="miomos-kpi-value">1</div><div class="miomos-kpi-copy">Single guarded desktop websocket.</div></section>
-        </div>
-        <div class="miomos-grid">
-          <section class="miomos-card">
-            <table class="miomos-table miomos-grid-table">
-              <thead><tr><th>Batch</th><th>Payer</th><th>Profile</th><th>Status</th><th>Owner</th><th>Age</th></tr></thead>
-              <tbody>
-                <tr><td>837P-24081</td><td>Blue Cross</td><td>Colorado 837P</td><td>Validated</td><td>Farah</td><td>03m</td></tr>
-                <tr><td>837I-91842</td><td>Aetna</td><td>Facility Inpatient</td><td>Mapped</td><td>Ahmed</td><td>07m</td></tr>
-                <tr><td>837D-10118</td><td>Delta Dental</td><td>Dental Batch</td><td>Exception</td><td>Sara</td><td>12m</td></tr>
-                <tr><td>837P-24093</td><td>Cigna</td><td>Workers Comp</td><td>Exporting</td><td>Joel</td><td>16m</td></tr>
-                <tr><td>837P-24102</td><td>Humana</td><td>Medicare Pro</td><td>Ready</td><td>Mina</td><td>21m</td></tr>
-              </tbody>
-            </table>
-          </section>
-          <section class="miomos-card">
-            <ul class="miomos-list">
-              <li><strong>Theme-aware command surface</strong><span>Taskbar, menu, and windows read from the current MIOMOS theme profile.</span></li>
-              <li><strong>Optional local auth</strong><span>Sign in and sign up can be enabled outside development without changing the desktop route.</span></li>
-              <li><strong>Access and error posture</strong><span>Security view summarizes access, error, and audit activity from MUMPS-side logs.</span></li>
-              <li><strong>User chat scaffold</strong><span>Single-socket chat uses persistent storage and fetches the current room snapshot on connect.</span></li>
-            </ul>
-          </section>
-        </div>
-        {{/isWorkspace}}
-
-        {{#isCollaboration}}
-        <div class="miomos-chat-shell">
-          <div class="miomos-chat-feed" id="miomosChatFeed" data-chat-feed>
-            <div class="miomos-feed-item"><strong>System</strong><span>User chat will hydrate from the MIOMOS websocket.</span><time>Pending connect</time></div>
+        <template v-if="win.appKey === 'workspace'">
+          <div class="miomos-surface-header">
+            <div class="miomos-surface-title">
+              <strong>[[ view.workspace.headline || 'Production workspace' ]]</strong>
+              <span>[[ view.workspace.subheadline || 'Server-authored desktop contract.' ]]</span>
+            </div>
+            <div class="miomos-chips">
+              <span class="miomos-pill">Session [[ boot.session.id || '' ]]</span>
+              <span class="miomos-pill">Theme [[ settingsForm.themeKey ]]</span>
+            </div>
           </div>
-          <form class="miomos-chat-form" id="miomosChatForm" data-chat-form>
-            <textarea id="miomosChatText" placeholder="Send a short update to the room."></textarea>
-            <div class="miomos-actions"><span class="miomos-chip">Room general</span><button type="submit" class="miomos-btn">Send</button></div>
-          </form>
-        </div>
-        {{/isCollaboration}}
+          <section class="miomos-ops-banner">
+            <div class="miomos-ops-banner-head">
+              <div class="miomos-ops-banner-copy">
+                <strong>Operator brief</strong>
+                <span>Production-quality shell, MUMPS-owned state, thin Vue rendering, and a YottaDB terminal path over the existing command and websocket boundaries.</span>
+              </div>
+              <div class="miomos-chips">
+                <span class="miomos-pill">[[ qualitySummary.ready ]] ready</span>
+                <span class="miomos-pill">[[ settingsForm.density ]] density</span>
+                <span class="miomos-pill">[[ settingsForm.motionProfile ]] motion</span>
+              </div>
+            </div>
+            <div class="miomos-state-strip">
+              <strong>Shell contract</strong>
+              <span>Windows, entries, launch intent, and motion profile remain server-authored. The browser only renders the current state and posts commands back to MUMPS.</span>
+            </div>
+          </section>
+          <section class="miomos-ops-hero">
+            <div class="miomos-ops-hero-grid">
+              <article class="miomos-ops-card"><strong>Behavior</strong><span>Menu, taskbar, and window controls are intentionally limited to one clean interaction model.</span><em>Predictable shell</em></article>
+              <article class="miomos-ops-card"><strong>Presentation</strong><span>Spacing, layering, focus states, empty states, and motion are tuned for production-facing UX.</span><em>Quality pass</em></article>
+              <article class="miomos-ops-card"><strong>Terminal path</strong><span>YottaDB terminal work remains MUMPS-owned, with Vue and xterm acting only as transport and rendering surfaces.</span><em>Thin client</em></article>
+            </div>
+            <div class="miomos-ops-actions">
+              <button type="button" class="miomos-btn" @click="runShellAction('tile')">Tile windows</button>
+              <button type="button" class="miomos-btn" @click="runShellAction('cascade')">Cascade</button>
+              <button type="button" class="miomos-btn" @click="runShellAction('focusTerminal')">Focus terminal</button>
+            </div>
+          </section>
+          <div class="miomos-directory-grid">
+            <section v-for="entry in directoryEntries" :key="entry.key" class="miomos-directory-card" >
+              <div class="miomos-directory-head"><span class="miomos-directory-glyph" :class="entryGlyphClass(entry.kind || 'directory')">[[ entry.icon ]]</span><div class="miomos-directory-copy"><strong>[[ entry.title ]]</strong><span>[[ entry.subtitle ]]</span></div></div>
+              <div class="miomos-directory-foot"><span class="miomos-entry-meta">[[ entry.summary || 'Directory surface' ]]</span><button type="button" class="miomos-btn" @click="launchApp(entry.key)">Open</button></div>
+            </section>
+          </div>
+          <section class="miomos-card miomos-planned-card">
+            <div class="miomos-surface-title"><strong>Planned surfaces</strong><span>Server-authored placeholders communicate roadmap without behaving like broken apps.</span></div>
+            <div class="miomos-planned-grid">
+              <button v-for="entry in plannedEntries" :key="entry.key" type="button" class="miomos-planned-item" disabled>
+                <span class="miomos-menu-glyph miomos-entry-glyph--future">[[ entry.icon ]]</span>
+                <div class="miomos-menu-copy"><strong>[[ entry.title ]]</strong><span>[[ entry.subtitle ]]</span></div>
+              </button>
+            </div>
+          </section>
+          <div class="miomos-kpi-row">
+            <section v-for="kpi in view.workspace.kpis || []" :key="kpi.label" class="miomos-card">
+              <div class="miomos-kpi-label">[[ kpi.label ]]</div>
+              <div class="miomos-kpi-value">[[ kpi.value ]]</div>
+              <div class="miomos-kpi-copy">[[ kpi.copy ]]</div>
+            </section>
+          </div>
+          <div class="miomos-grid">
+            <section class="miomos-card">
+              <table class="miomos-table">
+                <thead><tr><th>Batch</th><th>Payer</th><th>Profile</th><th>Status</th><th>Owner</th><th>Age</th></tr></thead>
+                <tbody>
+                  <tr v-for="row in view.workspace.batches || []" :key="row.batch">
+                    <td>[[ row.batch ]]</td><td>[[ row.payer ]]</td><td>[[ row.profile ]]</td><td>[[ row.status ]]</td><td>[[ row.owner ]]</td><td>[[ row.age ]]</td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+            <section class="miomos-card">
+              <ul class="miomos-list">
+                <li v-for="item in view.workspace.notes || []" :key="item.title"><strong>[[ item.title ]]</strong><span>[[ item.copy ]]</span></li>
+              </ul>
+            </section>
+          </div>
+        </template>
 
-        {{#isSecurity}}
-        <div class="miomos-security-grid">
-          <section class="miomos-card miomos-metric"><strong>{{logCounts.access}}</strong><span>Access events</span></section>
-          <section class="miomos-card miomos-metric"><strong>{{logCounts.error}}</strong><span>Error events</span></section>
-          <section class="miomos-card miomos-metric"><strong>{{logCounts.audit}}</strong><span>Audit trail events</span></section>
-        </div>
-        <div class="miomos-grid" style="grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr)">
-          <section class="miomos-card">
-            <div class="miomos-surface-header">
-              <div class="miomos-surface-title"><strong>Audit trail</strong><span>Correlation-aware operational trace for desktop, auth, admin, and export activity.</span></div>
+        <template v-else-if="win.appKey === 'collaboration'">
+          <div class="miomos-chat-shell">
+            <div class="miomos-chat-feed">
+              <div v-if="!messages.length" class="miomos-empty-state"><strong>No chat messages yet</strong><span>This room will populate from the current MIOMOS websocket session once collaboration traffic arrives.</span></div>
+              <div v-for="msg in messages" :key="msg.id || msg.ts || msg.text" class="miomos-feed-item">
+                <strong>[[ msg.userName || 'System' ]]</strong>
+                <span>[[ msg.text || 'No messages.' ]]</span>
+                <time>[[ msg.ts || msg.time || 'Now' ]]</time>
+              </div>
             </div>
+            <form class="miomos-chat-form" @submit.prevent="sendChat">
+              <textarea v-model="chatDraft" placeholder="Send a short update to the room."></textarea>
+              <div class="miomos-actions"><span class="miomos-pill">Room [[ view.chat.room || 'general' ]]</span><button type="submit" class="miomos-btn">Send</button></div>
+            </form>
+          </div>
+        </template>
+
+        <template v-else-if="win.appKey === 'security'">
+          <div class="miomos-surface-header">
+            <div class="miomos-surface-title"><strong>Security and observability</strong><span>Server-authored counts, permission catalog, and retention posture.</span></div>
             <div class="miomos-link-row">
-              <a class="miomos-link-btn" href="{{observSummaryPath}}" target="_blank" rel="noopener">Summary JSON</a>
-              <a class="miomos-link-btn" href="{{auditExportPath}}" target="_blank" rel="noopener">Audit export</a>
-              <a class="miomos-link-btn" href="{{securityDigestPath}}" target="_blank" rel="noopener">Security digest</a>
+              <a class="miomos-link-btn" :href="boot.routes.observSummary || '#'">Summary JSON</a>
+              <a class="miomos-link-btn" :href="boot.routes.accessExport || '#'">Access Export</a>
+              <a class="miomos-link-btn" :href="boot.routes.errorExport || '#'">Error Export</a>
+              <a class="miomos-link-btn" :href="boot.routes.auditExport || '#'">Audit Export</a>
             </div>
-            <div class="miomos-obs-meta">
-              <span class="miomos-chip">Access {{obsRetention.accessDays}}d</span>
-              <span class="miomos-chip">Error {{obsRetention.errorDays}}d</span>
-              <span class="miomos-chip">Audit {{obsRetention.auditDays}}d</span>
+          </div>
+          <div class="miomos-link-row"><a class="miomos-link-btn" href="{{adminUsersPath}}">Users JSON</a><span class="miomos-link-btn" style="cursor:default;">{{adminUsersPath}}</span></div>
+          <div class="miomos-security-grid">
+            <section v-for="metric in view.security.metrics || []" :key="metric.label" class="miomos-card"><div class="miomos-kpi-value">[[ metric.value ]]</div><div class="miomos-kpi-copy">[[ metric.label ]]</div></section>
+          </div>
+          <section class="miomos-card" style="margin-bottom:10px;">
+            <div class="miomos-surface-title"><strong>Permission catalog</strong><span>Effective permissions resolved in MUMPS.</span></div>
+            <div class="miomos-permission-list" style="margin-top:8px;">
+              <span v-for="perm in view.security.permissions || []" :key="perm.key || perm" class="miomos-permission-pill">[[ perm.label || perm.key || perm ]]</span>
             </div>
-            <ul class="miomos-list" style="margin-top:10px;">
-              {{#audit}}<li><strong>{{event}}</strong><span>{{principal}} · {{detail}} · {{correlationId}}</span></li>{{/audit}}
-            </ul>
           </section>
           <section class="miomos-card">
-            <strong style="display:block;font-size:12px;margin-bottom:8px;">Permissions</strong>
-            <div class="miomos-permission-list">{{#permissions}}<span class="miomos-permission-pill">{{key}}</span>{{/permissions}}</div>
-            <strong style="display:block;font-size:12px;margin:10px 0 8px;">Observability exports</strong>
-            <div class="miomos-link-row">
-              <a class="miomos-link-btn" href="{{accessExportPath}}" target="_blank" rel="noopener">Access export</a>
-              <a class="miomos-link-btn" href="{{errorExportPath}}" target="_blank" rel="noopener">Error export</a>
-            </div>
-            <ul class="miomos-list">
-              <li><strong>Last access</strong><span>{{obsLastAccess.event}} · {{obsLastAccess.correlationId}}</span></li>
-              <li><strong>Last error</strong><span>{{obsLastError.event}} · {{obsLastError.correlationId}}</span></li>
-              <li><strong>Last audit</strong><span>{{obsLastAudit.event}} · {{obsLastAudit.correlationId}}</span></li>
-            </ul>
-            <strong style="display:block;font-size:12px;margin:10px 0 8px;">Recent errors</strong>
-            <ul class="miomos-list">{{#errors}}<li><strong>{{event}}</strong><span>{{code}} · {{detail}} · {{correlationId}}</span></li>{{/errors}}</ul>
+            <div class="miomos-surface-title"><strong>Retention posture</strong><span>Current configured days and limits.</span></div>
+            <table class="miomos-table" style="margin-top:8px;"><tbody>
+              <tr><td>Access retain days</td><td>[[ view.security.retention.accessDays || 30 ]]</td></tr>
+              <tr><td>Error retain days</td><td>[[ view.security.retention.errorDays || 90 ]]</td></tr>
+              <tr><td>Audit retain days</td><td>[[ view.security.retention.auditDays || 180 ]]</td></tr>
+              <tr><td>Max entries</td><td>[[ view.security.retention.maxEntries || 500 ]]</td></tr>
+              <tr><td>Export limit</td><td>[[ view.security.retention.exportLimit || 250 ]]</td></tr>
+            </tbody></table>
           </section>
-        </div>
-        {{/isSecurity}}
+        </template>
 
-        {{#isAdmin}}
-        <div class="miomos-surface-header" data-admin-surface>
-          <div class="miomos-surface-title"><strong>Identity hardening and admin operations</strong><span>Manage local accounts, invites, reset tokens, and lockout posture without leaving the MIOMOS desktop.</span></div>
-          <div class="miomos-chips"><span class="miomos-chip">Users {{adminCounts.users}}</span><span class="miomos-chip">Invites {{adminCounts.invites}}</span><span class="miomos-chip">Resets {{adminCounts.resets}}</span></div>
-        </div>
-        <div class="miomos-security-grid">
-          <section class="miomos-card miomos-metric"><strong>{{adminCounts.enabled}}</strong><span>Enabled users</span></section>
-          <section class="miomos-card miomos-metric"><strong>{{adminCounts.disabled}}</strong><span>Disabled users</span></section>
-          <section class="miomos-card miomos-metric"><strong>{{adminCounts.locked}}</strong><span>Locked users</span></section>
-        </div>
-        <div class="miomos-grid" style="grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr)">
+        <template v-else-if="win.appKey === 'admin'">
+          <div class="miomos-surface-header" data-admin-surface>
+            <div class="miomos-surface-title"><strong>Identity hardening and admin operations</strong><span>Users, invites, reset tokens, and account state remain MUMPS-controlled.</span></div>
+            <div class="miomos-chips"><span class="miomos-pill">Users [[ view.admin.counts.users || 0 ]]</span><span class="miomos-pill">Locked [[ view.admin.counts.locked || 0 ]]</span></div>
+          </div>
+          <div class="miomos-security-grid">
+            <section class="miomos-card"><div class="miomos-kpi-value">[[ view.admin.counts.users || 0 ]]</div><div class="miomos-kpi-copy">Users</div></section>
+            <section class="miomos-card"><div class="miomos-kpi-value">[[ view.admin.counts.invites || 0 ]]</div><div class="miomos-kpi-copy">Invites</div></section>
+            <section class="miomos-card"><div class="miomos-kpi-value">[[ view.admin.counts.resets || 0 ]]</div><div class="miomos-kpi-copy">Reset requests</div></section>
+          </div>
           <section class="miomos-card">
-            <strong style="display:block;font-size:12px;margin-bottom:8px;">User directory</strong>
-            <table class="miomos-table">
-              <thead><tr><th>User</th><th>Roles</th><th>Enabled</th><th>Locked</th><th>Failures</th></tr></thead>
-              <tbody>
-                {{#adminUsers}}<tr><td>{{userName}}</td><td>{{roles}}</td><td>{{enabled}}</td><td>{{locked}}</td><td>{{failedCount}}</td></tr>{{/adminUsers}}
-              </tbody>
+            <div class="miomos-surface-title"><strong>Recent identities</strong><span>Current server-side user summary.</span></div>
+            <table class="miomos-table" style="margin-top:8px;">
+              <thead><tr><th>User</th><th>Roles</th><th>Status</th></tr></thead>
+              <tbody><tr v-for="user in view.admin.users || []" :key="user.principal || user.userName"><td>[[ user.displayName || user.userName || user.principal || 'User' ]]</td><td>[[ user.roles || user.roleCsv || 'operator' ]]</td><td>[[ user.status || 'active' ]]</td></tr></tbody>
             </table>
           </section>
-          <section class="miomos-card">
-            <strong style="display:block;font-size:12px;margin-bottom:8px;">Invite-only onboarding</strong>
-            <ul class="miomos-list">
-              {{#adminInvites}}<li><strong>{{label}}</strong><span>{{roles}} · {{token}}</span></li>{{/adminInvites}}
-            </ul>
-            <strong style="display:block;font-size:12px;margin:10px 0 8px;">Reset tokens</strong>
-            <ul class="miomos-list">{{#adminResets}}<li><strong>{{principal}}</strong><span>{{token}}</span></li>{{/adminResets}}</ul>
-          </section>
-        </div>
-        {{/isAdmin}}
+        </template>
+
+        <template v-else-if="win.appKey === 'settings'">
+          <form class="miomos-settings-form" data-settings-form @submit.prevent="saveSettings">
+            <div class="miomos-settings-grid">
+              <section class="miomos-setting-card">
+                <strong>Desktop appearance</strong>
+                <label class="miomos-field"><span>Theme</span><select v-model="settingsForm.themeKey"><option v-for="opt in currentThemes" :key="opt.key" :value="opt.key">[[ opt.label ]]</option></select></label>
+                <label class="miomos-field"><span>Font family</span><select v-model="settingsForm.fontFamily"><option v-for="opt in fontOptions" :key="opt.key" :value="opt.key">[[ opt.label ]]</option></select></label>
+                <label class="miomos-field"><span>Font size</span><select v-model="settingsForm.fontSize"><option v-for="opt in fontSizeOptions" :key="opt.key" :value="String(opt.key)">[[ opt.label ]]</option></select></label>
+                <label class="miomos-field"><span>Density</span><select v-model="settingsForm.density"><option v-for="opt in densityOptions" :key="opt.key" :value="opt.key">[[ opt.label ]]</option></select></label>
+                <label class="miomos-field"><span>Wallpaper</span><select v-model="settingsForm.wallpaper"><option v-for="opt in wallpaperOptions" :key="opt.key" :value="opt.key">[[ opt.label ]]</option></select></label>
+                <label class="miomos-field"><span>Animations</span><select v-model="settingsForm.animations"><option v-for="opt in animationOptions" :key="opt.key" :value="opt.key">[[ opt.label ]]</option></select></label>
+                <label class="miomos-field"><span>Title color</span><select v-model="settingsForm.titleAccent"><option v-for="opt in titleAccentOptions" :key="opt.key" :value="opt.key">[[ opt.label ]]</option></select></label>
+                <label class="miomos-field"><span>Icon style</span><select v-model="settingsForm.iconStyle"><option v-for="opt in iconStyleOptions" :key="opt.key" :value="opt.key">[[ opt.label ]]</option></select></label>
+              </section>
+              <section class="miomos-setting-card">
+                <strong>Window manager and motion</strong>
+                <label class="miomos-field"><span>Window preset</span><select v-model="settingsForm.windowPreset"><option v-for="opt in wmWindowPresets" :key="opt.key" :value="opt.key">[[ opt.label ]]</option></select></label>
+                <label class="miomos-field"><span>Snap mode</span><select v-model="settingsForm.snapMode"><option v-for="opt in wmSnapModes" :key="opt.key" :value="opt.key">[[ opt.label ]]</option></select></label>
+                <label class="miomos-field"><span>Motion profile</span><select v-model="settingsForm.motionProfile"><option v-for="opt in wmMotionProfiles" :key="opt.key" :value="opt.key">[[ opt.label ]]</option></select></label>
+                <label class="miomos-field"><span>Titlebar style</span><select v-model="settingsForm.titlebarStyle"><option v-for="opt in wmTitlebarStyles" :key="opt.key" :value="opt.key">[[ opt.label ]]</option></select></label>
+                <div class="miomos-kpi-copy">Server-authored presets keep window geometry and motion policy in MUMPS.</div>
+              </section>
+              <section class="miomos-setting-card">
+                <strong>Terminal profile</strong>
+                <div class="miomos-kpi-copy" style="margin-bottom:8px;">Transport [[ view.terminal.transport || 'pipe' ]] via [[ view.terminal.command || 'yottadb' ]]</div>
+                <label class="miomos-field" data-setting-terminal="fontFamily"><span>Terminal font</span><select v-model="settingsForm.terminal.fontFamily"><option v-for="opt in terminalFonts" :key="opt.key" :value="opt.key">[[ opt.label ]]</option></select></label>
+                <label class="miomos-field"><span>Terminal font size</span><select v-model="settingsForm.terminal.fontSize"><option v-for="opt in terminalFontSizes" :key="opt.key" :value="String(opt.key)">[[ opt.label ]]</option></select></label>
+                <label class="miomos-field"><span>Cursor style</span><select v-model="settingsForm.terminal.cursorStyle"><option v-for="opt in terminalCursorStyles" :key="opt.key" :value="opt.key">[[ opt.label ]]</option></select></label>
+                <label class="miomos-field"><span>Cursor blink</span><select v-model="settingsForm.terminal.cursorBlink"><option v-for="opt in terminalCursorBlink" :key="opt.key" :value="String(opt.key)">[[ opt.label ]]</option></select></label>
+                <label class="miomos-field"><span>Scrollback</span><select v-model="settingsForm.terminal.scrollback"><option v-for="opt in terminalScrollbacks" :key="opt.key" :value="String(opt.value || opt.key)">[[ opt.label ]]</option></select></label>
+                <label class="miomos-field"><span>Renderer</span><select v-model="settingsForm.terminal.renderer"><option v-for="opt in terminalRenderers" :key="opt.key" :value="opt.key">[[ opt.label ]]</option></select></label>
+                <label class="miomos-field"><span>Unicode mode</span><select v-model="settingsForm.terminal.unicode"><option v-for="opt in terminalUnicodeModes" :key="opt.key" :value="opt.key">[[ opt.label ]]</option></select></label>
+              </section>
+            </div>
+            <section class="miomos-setting-card">
+              <strong>Custom icons</strong>
+              <div class="miomos-icon-grid">
+                <label class="miomos-field"><span>Workspace</span><input v-model="settingsForm.icons.workspace" maxlength="3"></label>
+                <label class="miomos-field"><span>Chat</span><input v-model="settingsForm.icons.collaboration" maxlength="3"></label>
+                <label class="miomos-field"><span>Security</span><input v-model="settingsForm.icons.security" maxlength="3"></label>
+                <label class="miomos-field"><span>Admin</span><input v-model="settingsForm.icons.admin" maxlength="3"></label>
+                <label class="miomos-field"><span>Settings</span><input v-model="settingsForm.icons.settings" maxlength="3"></label>
+                <label class="miomos-field"><span>Terminal</span><input v-model="settingsForm.icons.terminal" maxlength="3"></label>
+              </div>
+            </section>
+            <div class="miomos-actions">
+              <span class="miomos-save-status">[[ settingsStatus ]]</span>
+              <div class="miomos-actions"><button type="button" class="miomos-btn" @click="refreshView">Reload</button><button type="submit" class="miomos-btn">Save settings</button></div>
+            </div>
+          </form>
+        </template>
+
+        <template v-else-if="win.appKey === 'terminal'">
+          <div class="miomos-terminal-shell" data-terminal-surface>
+            <div class="miomos-terminal-toolbar">
+              <div class="miomos-surface-title"><strong>Terminal foundation</strong><span>Thin Vue renderer over a MUMPS-owned terminal session profile and command boundary.</span></div>
+              <div class="miomos-actions"><span class="miomos-pill">[[ terminalStatus ]]</span><button type="button" class="miomos-btn" @click="openTerminal">Open YDB</button><button type="button" class="miomos-btn" @click="pollTerminal">Poll</button><button type="button" class="miomos-btn" @click="closeTerminal">Close</button><button type="button" class="miomos-btn" @click="clearTerminal">Clear</button></div>
+            </div>
+            <div id="miomosTerminalViewport" ref="terminalViewport" class="miomos-terminal-viewport"></div>
+          </div>
+        </template>
       </div>
-      <span class="miomos-resize-handle" data-edge="n"></span><span class="miomos-resize-handle" data-edge="s"></span><span class="miomos-resize-handle" data-edge="e"></span><span class="miomos-resize-handle" data-edge="w"></span><span class="miomos-resize-handle" data-edge="ne"></span><span class="miomos-resize-handle" data-edge="nw"></span><span class="miomos-resize-handle" data-edge="se"></span><span class="miomos-resize-handle" data-edge="sw"></span>
+      <span v-for="edge in resizeEdges" :key="edge" class="miomos-resize-handle" :data-edge="edge" @pointerdown.stop.prevent="beginResize(win, edge, $event)"></span>
     </section>
-    {{/windows}}
   </div>
 
-  <aside class="miomos-menu" id="miomosMenu" aria-hidden="true">
-    <div class="miomos-menu-head"><strong>{{brandTitle}}</strong><span>{{brandSubtitle}}</span></div>
-    <div class="miomos-menu-list">
-      {{#apps}}
-      <button type="button" class="miomos-menu-item" data-launch-app="{{key}}"><span class="miomos-menu-glyph">{{icon}}</span><span class="miomos-theme-meta"><strong>{{title}}</strong><span>{{subtitle}}</span></span><span>{{badge}}</span></button>
-      {{/apps}}
-    </div>
-    <div class="miomos-theme-list" data-theme-list>
-      {{#themes}}
-      <button type="button" class="miomos-theme-button {{#isCurrent}}is-current{{/isCurrent}}" data-theme-button="{{key}}"><span class="miomos-theme-meta"><strong>{{label}}</strong><span>{{mode}}</span></span><span class="miomos-theme-swatch" style="background:{{accent}}"></span></button>
-      {{/themes}}
-    </div>
-  </aside>
-
   <footer class="miomos-taskbar">
-    <div style="display:flex;align-items:center;gap:8px;">
-      <button type="button" id="miomosMenuButton" class="miomos-menu-button">Menu</button>
-      <button type="button" id="miomosSignoutButton" class="miomos-signout-button" data-auth-signout>Sign out</button>
+    <div class="miomos-actions"><button type="button" class="miomos-menu-button" @click="toggleMenu">Menu</button><button type="button" class="miomos-signout-button" @click="signout">Sign out</button></div>
+    <div class="miomos-taskband">
+      <button v-for="win in taskWindows" :key="win.id" type="button" class="miomos-task-button" :class="{ 'is-active': activeWindowId === win.id && !win.minimized && !win.closed }" @click="toggleTaskWindow(win.id)"><span class="miomos-task-glyph">[[ appIcon(win.appKey) ]]</span><span class="miomos-task-title">[[ win.title ]]</span></button>
     </div>
-    <div class="miomos-taskband" id="miomosTaskband">{{#windows}}<button type="button" class="miomos-task-button" data-task-window="{{id}}">{{title}}</button>{{/windows}}</div>
-    <div class="miomos-status" id="miomosStatusVue"><span class="miomos-chip"><span class="miomos-dot"></span>Booting</span></div>
+    <div class="miomos-taskbar-meta"><span class="miomos-pill">[[ (boot.product||{}).profile || profile ]]</span><span class="miomos-pill">[[ settingsForm.density ]]</span><span class="miomos-pill" :class="{ 'is-connected': socketConnected }"><span class="miomos-pill-dot"></span>[[ socketConnected ? 'Socket live' : 'Socket offline' ]]</span><span class="miomos-pill">Inflight [[ inflightCommandCount ]]</span><span class="miomos-pill">Reconnects [[ reconnectCount ]]</span><span class="miomos-pill">[[ currentClock ]]</span></div>
   </footer>
 
-  <script src="{{vueScript}}"></script>
-  <script src="{{osjsClientScript}}"></script>
   <script>
-    (function () {
-      var root = document.getElementById('miomosRoot');
-      if (!root) return;
-      var sessionId = root.getAttribute('data-miomos-session') || '';
-      if (window.__MIOMOS_DESKTOP__ && window.__MIOMOS_DESKTOP__.initialized && window.__MIOMOS_DESKTOP__.sessionId === sessionId) return;
-
-      var runtime = window.__MIOMOS_DESKTOP__ || {};
-      runtime.initialized = true;
-      runtime.sessionId = sessionId;
-      runtime.socket = runtime.socket || null;
-      runtime.connecting = false;
-      runtime.socketSeq = runtime.socketSeq || 0;
-      runtime.reconnectTimer = runtime.reconnectTimer || null;
-      runtime.pingTimer = runtime.pingTimer || null;
-      window.__MIOMOS_DESKTOP__ = runtime;
-
-      var boot = {};
-      try { boot = JSON.parse('{{{bootJson}}}' || '{}'); } catch (e) { boot = {}; }
-      var stage = document.getElementById('miomosStage');
-      var taskband = document.getElementById('miomosTaskband');
-      var menu = document.getElementById('miomosMenu');
-      var menuButton = document.getElementById('miomosMenuButton');
-      var signoutButton = document.getElementById('miomosSignoutButton');
-      var chatFeed = document.getElementById('miomosChatFeed');
-      var chatForm = document.getElementById('miomosChatForm');
-      var chatText = document.getElementById('miomosChatText');
-      var statusVm = null;
-      var zCounter = 20;
-      var layoutTimer = null;
-      var snapPreview = document.getElementById('miomosSnapPreview');
-      var snapMargin = 24;
-
-      function getWindows() { return Array.prototype.slice.call(stage.querySelectorAll('.miomos-window')); }
-      function stateOf(win) {
-        if (win.classList.contains('is-closed')) return 'closed';
-        if (win.classList.contains('is-minimized')) return 'minimized';
-        if (win.classList.contains('is-maximized')) return 'maximized';
-        return 'normal';
-      }
-      function syncTaskButton(win) {
-        var btn = taskband.querySelector('[data-task-window="' + win.getAttribute('data-window-id') + '"]');
-        if (!btn) return;
-        btn.classList.toggle('is-active', win.classList.contains('is-active') && !win.classList.contains('is-minimized') && !win.classList.contains('is-closed'));
-      }
-      function stageBounds() {
-        return { width: stage.clientWidth, height: stage.clientHeight };
-      }
-      function rememberRestoreRect(win) {
-        win.__restoreRect = {
-          left: parseInt(win.style.left || '0', 10),
-          top: parseInt(win.style.top || '0', 10),
-          width: parseInt(win.style.width || '0', 10),
-          height: parseInt(win.style.height || '0', 10),
-          z: parseInt(win.style.zIndex || '1', 10)
+  (function () {
+    if (!window.Vue || !window.Vue.createApp) return;
+    var root = document.getElementById('miomosRoot');
+    var bootNode = document.getElementById('miomosBootJson');
+    if (!root || !bootNode) return;
+    if (root.__miomosVueMounted) return;
+    root.__miomosVueMounted = true;
+    function clone(obj) { return JSON.parse(JSON.stringify(obj || {})); }
+    function arr(val) {
+      if (Array.isArray(val)) return val;
+      if (!val || typeof val !== 'object') return [];
+      return Object.keys(val).sort(function(a,b){ return Number(a)-Number(b); }).map(function(k){ return val[k]; });
+    }
+    function parseBoot() { try { return JSON.parse(bootNode.textContent || '{}'); } catch (e) { return {}; } }
+    var app = window.Vue.createApp({
+      data: function () {
+        var boot = parseBoot(), view = boot.view || {};
+        return {
+          boot: boot,
+          profile: root.getAttribute('data-miomos-profile') || ((boot.product||{}).profile || 'dev'),
+          currentClock: '',
+          bootLoading: false,
+          menuOpen: false,
+          activeWindowId: '',
+          zCounter: 20,
+          socket: null,
+          socketConnected: false,
+          socketConnecting: false,
+          shouldReconnect: true,
+          reconnectDelay: 1000,
+          reconnectTimer: null,
+          heartbeatTimer: null,
+          staleSocketTimer: null,
+          lastSocketAt: 0,
+          reconnectCount: 0,
+          lastReconnectAt: '',
+          inflightCommandCount: 0,
+          pendingCommands: {},
+          commandError: '',
+          lastCommandName: '',
+          dismissedAlertKey: '',
+          messages: [{ id: 'pending', userName: 'System', text: 'Waiting for server chat snapshot.', ts: 'Pending connect' }],
+          chatDraft: '',
+          terminalStatus: (view.terminal || {}).status || 'Terminal idle',
+          terminal: { instance: null, terminalId: '', inputLine: '' },
+          view: view,
+          apps: arr((boot.desktop || {}).apps),
+          windows: arr((boot.desktop || {}).windows).map(function(win, idx){
+            return { id: win.id || ('win-'+idx), appKey: win.appKey || win.key || 'workspace', title: win.title || win.appKey || 'Window', left: Number(win.left || 120), top: Number(win.top || 60), width: Number(win.width || 720), height: Number(win.height || 520), z: Number(win.z || (idx+1)), minimized: (win.state || '') === 'minimized', closed: false, maximized: false, restoreRect: null, snap: '' };
+          }),
+          snapPreview: { visible: false, left: 0, top: 0, width: 0, height: 0 },
+          resizeEdges: ['n','s','e','w','ne','nw','se','sw'],
+          settingsStatus: 'Ready',
+          layoutMode: '',
+          settingsForm: {
+            themeKey: (((view.settings||{}).current||{}).themeKey || ((boot.desktop||{}).theme||{}).currentKey || 'midnight-professional'),
+            fontFamily: (((view.settings||{}).current||{}).fontFamily || (boot.desktop||{}).fontFamily || 'Segoe UI'),
+            fontSize: String((((view.settings||{}).current||{}).fontSize || (boot.desktop||{}).fontSize || 13)),
+            titleAccent: (((view.settings||{}).current||{}).titleAccent || (boot.desktop||{}).titleAccent || 'theme'),
+            iconStyle: (((view.settings||{}).current||{}).iconStyle || (boot.desktop||{}).iconStyle || 'glass'),
+            wallpaper: (((view.settings||{}).current||{}).wallpaper || root.getAttribute('data-wallpaper') || 'midnight-clinic'),
+            density: (((view.settings||{}).current||{}).density || root.getAttribute('data-density') || 'dense'),
+            animations: (((view.settings||{}).current||{}).animations || root.getAttribute('data-animations') || 'reduced'),
+            windowPreset: (((view.settings||{}).current||{}).windowPreset || root.getAttribute('data-window-preset') || 'analyst'),
+            snapMode: (((view.settings||{}).current||{}).snapMode || root.getAttribute('data-snap-mode') || 'quadrant'),
+            motionProfile: (((view.settings||{}).current||{}).motionProfile || root.getAttribute('data-motion-profile') || 'standard'),
+            titlebarStyle: (((view.settings||{}).current||{}).titlebarStyle || root.getAttribute('data-titlebar-style') || 'accent'),
+            icons: clone((((view.settings||{}).current||{}).icon) || {}),
+            terminal: {
+              fontFamily: String(((((view.settings||{}).current||{}).terminal)||{}).fontFamily || ((((view.terminal||{}).profile)||{}).fontFamily || 'JetBrains Mono')),
+              fontSize: String(((((view.settings||{}).current||{}).terminal)||{}).fontSize || ((((view.terminal||{}).profile)||{}).fontSize || 13)),
+              cursorBlink: String(((((view.settings||{}).current||{}).terminal)||{}).cursorBlink != null ? ((((view.settings||{}).current||{}).terminal)||{}).cursorBlink : (((((view.terminal||{}).profile)||{}).cursorBlink != null) ? (((view.terminal||{}).profile)||{}).cursorBlink : 1)),
+              cursorStyle: String(((((view.settings||{}).current||{}).terminal)||{}).cursorStyle || ((((view.terminal||{}).profile)||{}).cursorStyle || 'block')),
+              scrollback: String(((((view.settings||{}).current||{}).terminal)||{}).scrollback || ((((view.terminal||{}).profile)||{}).scrollback || 3000)),
+              renderer: String(((((view.settings||{}).current||{}).terminal)||{}).renderer || ((((view.terminal||{}).profile)||{}).renderer || 'canvas')),
+              unicode: String(((((view.settings||{}).current||{}).terminal)||{}).unicode || ((((view.terminal||{}).profile)||{}).unicode || 'unicode11')),
+              cols: String(((((view.settings||{}).current||{}).terminal)||{}).cols || ((((view.terminal||{}).profile)||{}).cols || 120)),
+              rows: String(((((view.settings||{}).current||{}).terminal)||{}).rows || ((((view.terminal||{}).profile)||{}).rows || 28))
+            }
+          }
         };
+      },
+      computed: {
+        currentThemes: function(){ return arr((((this.view.settings||{}).catalog||{}).themes)); },
+        fontOptions: function(){ return arr((((this.view.settings||{}).catalog||{}).fonts)); },
+        fontSizeOptions: function(){ return arr((((this.view.settings||{}).catalog||{}).fontSizes)); },
+        titleAccentOptions: function(){ return arr((((this.view.settings||{}).catalog||{}).titleAccents)); },
+        iconStyleOptions: function(){ return arr((((this.view.settings||{}).catalog||{}).iconStyles)); },
+        densityOptions: function(){ return arr((((this.view.settings||{}).catalog||{}).densities)); },
+        wallpaperOptions: function(){ return arr((((this.view.settings||{}).catalog||{}).wallpapers)); },
+        animationOptions: function(){ return arr((((this.view.settings||{}).catalog||{}).animations)); },
+        wmWindowPresets: function(){ return arr((((this.view.settings||{}).catalog||{}).windowManager||{}).windowPresets); },
+        wmSnapModes: function(){ return arr((((this.view.settings||{}).catalog||{}).windowManager||{}).snapModes); },
+        wmMotionProfiles: function(){ return arr((((this.view.settings||{}).catalog||{}).windowManager||{}).motionProfiles); },
+        wmTitlebarStyles: function(){ return arr((((this.view.settings||{}).catalog||{}).windowManager||{}).titlebarStyles); },
+        wmActions: function(){ var actions=arr((((this.boot.desktop||{}).windowManager||{}).actions)); if (actions.length) return actions; return [{ key:'tile', label:'Tile windows', subtitle:'Fit visible windows to a clean grid', shortcut:'Alt+G' }, { key:'cascade', label:'Cascade windows', subtitle:'Offset active surfaces for review', shortcut:'Alt+C' }, { key:'minimizeAll', label:'Minimize all', subtitle:'Clear the workspace quickly', shortcut:'Alt+N' }, { key:'restoreAll', label:'Restore all', subtitle:'Bring back hidden work', shortcut:'Alt+R' }, { key:'focusTerminal', label:'Focus terminal', subtitle:'Jump to the YDB console', shortcut:'Alt+T' }]; },
+        terminalFonts: function(){ return arr((((this.view.settings||{}).catalog||{}).terminal||{}).fonts); },
+        terminalFontSizes: function(){ return arr((((this.view.settings||{}).catalog||{}).terminal||{}).fontSizes); },
+        terminalCursorStyles: function(){ return arr((((this.view.settings||{}).catalog||{}).terminal||{}).cursorStyles); },
+        terminalCursorBlink: function(){ return arr((((this.view.settings||{}).catalog||{}).terminal||{}).cursorBlink); },
+        terminalScrollbacks: function(){ return arr((((this.view.settings||{}).catalog||{}).terminal||{}).scrollbacks); },
+        terminalRenderers: function(){ return arr((((this.view.settings||{}).catalog||{}).terminal||{}).renderers); },
+        terminalUnicodeModes: function(){ return arr((((this.view.settings||{}).catalog||{}).terminal||{}).unicodeModes); },
+        pinnedEntries: function(){ return this.apps.filter(function(app){ return !!app.desktopPinned; }).sort(function(a,b){ return Number(a.order||0)-Number(b.order||0); }).slice(0,6); },
+        desktopEntries: function(){ return this.pinnedEntries; },
+        directoryEntries: function(){ return this.apps.filter(function(app){ return (app.kind || '')==='directory'; }).sort(function(a,b){ return Number(a.order||0)-Number(b.order||0); }); },
+        plannedEntries: function(){ return this.apps.filter(function(app){ return (app.kind || '')==='future'; }).sort(function(a,b){ return Number(a.order||0)-Number(b.order||0); }); },
+        shellSummary: function(){ return { pinned: this.pinnedEntries.length, directories: this.directoryEntries.length, planned: this.plannedEntries.length }; },
+        qualitySummary: function(){
+          var ready=this.apps.filter(function(app){ return (app.status || '') !== 'planned'; }).length;
+          return { ready: ready, windows: this.windows.length, shortcuts: 6 };
+        },
+        desktopPolicy: function(){ return (((this.boot.desktop||{}).policy)||{}); },
+        shellHealth: function(){
+          var state='offline';
+          if (this.socketConnected) state='live';
+          else if (this.socketConnecting || this.reconnectTimer) state='reconnecting';
+          return { socketState: state, stale: (!!this.lastSocketAt && ((Date.now()-this.lastSocketAt) > (this.desktopPolicy.staleSocketMs || 45000))) };
+        },
+        shellAlertKey: function(){
+          if (this.commandError) return 'command:' + this.commandError;
+          if (this.shellHealth.stale) return 'socket:stale';
+          if (this.shellHealth.socketState==='reconnecting') return 'socket:reconnecting';
+          return '';
+        },
+        showShellAlert: function(){ return !!(this.shellAlertKey && this.dismissedAlertKey!==this.shellAlertKey); },
+        shellAlertTitle: function(){
+          if (this.commandError) return 'Shell command issue';
+          if (this.shellHealth.stale) return 'Socket heartbeat stale';
+          if (this.shellHealth.socketState==='reconnecting') return 'Reconnecting session';
+          return '';
+        },
+        shellAlertMessage: function(){
+          if (this.commandError) return this.commandError;
+          if (this.shellHealth.stale) return 'The desktop has not seen socket activity recently. The client will recycle the connection automatically.';
+          if (this.shellHealth.socketState==='reconnecting') return 'The persistent MIOMOS socket is reconnecting using the server-authored backoff policy.';
+          return '';
+        },
+        shellAlertClass: function(){ return { 'is-error': !!this.commandError, 'is-warning': !this.commandError }; },
+        taskWindows: function(){ return this.windows.filter(function(win){ return !win.closed; }).sort(function(a,b){ return a.z-b.z; }); },
+        menuSections: function(){
+          var order=['Pinned','Directories','Applications','System','Planned'], buckets={}, out=[];
+          this.apps.forEach(function(app){ var key=app.group || 'Applications'; if (!buckets[key]) buckets[key]=[]; buckets[key].push(app); });
+          order.forEach(function(label){ if (buckets[label] && buckets[label].length) out.push({ label: label, items: buckets[label] }); });
+          return out;
+        },
+        snapPreviewStyle: function(){ return { left:this.snapPreview.left+'px', top:this.snapPreview.top+'px', width:this.snapPreview.width+'px', height:this.snapPreview.height+'px' }; }
+      },
+      mounted: function(){
+        var self=this;
+        this.currentClock = new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+        window.setInterval(function(){ self.currentClock = new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }); }, 60000);
+        this.applySettings();
+        this.loadUiStateLocal();
+        if (this.windows.length) this.focusWindow(this.activeWindowId || this.windows[0].id);
+        this.installWindowListeners();
+        this.loadLayoutLocal();
+        this.refreshView();
+        this.connectSocket();
+      },
+      methods: {
+        appEntry: function(key){ return this.apps.find(function(x){ return x.key===key; }) || null; },
+        appIcon: function(appKey){ var icons=this.settingsForm.icons || {}; if (icons[appKey]) return icons[appKey]; var app=this.appEntry(appKey); return (app && app.icon) || (appKey || '?').slice(0,2).toUpperCase(); },
+        uiStateStorageKey: function(){ return 'miomos.ui.' + (((this.boot.session||{}).id) || root.getAttribute('data-miomos-session') || 'anon'); },
+        loadUiStateLocal: function(){ var raw='', saved={}; try { raw=window.localStorage.getItem(this.uiStateStorageKey()) || ''; } catch(e) { raw=''; } if (!raw) return; try { saved=JSON.parse(raw); } catch(e2) { saved={}; } if ((this.desktopPolicy.persistMenuState || 0) && saved.menuOpen!=null) this.menuOpen=!!saved.menuOpen; if ((this.desktopPolicy.persistActiveWindow || 0) && saved.activeWindowId) this.activeWindowId=saved.activeWindowId; if (saved.lastCommandName) this.lastCommandName=saved.lastCommandName; },
+        saveUiStateLocal: function(){ var payload={ menuOpen:!!this.menuOpen, activeWindowId:this.activeWindowId || '', lastCommandName:this.lastCommandName || '' }; try { window.localStorage.setItem(this.uiStateStorageKey(), JSON.stringify(payload)); } catch(e) {} },
+        dismissShellAlert: function(){ this.dismissedAlertKey=this.shellAlertKey || ''; },
+        markSocketActivity: function(){ this.lastSocketAt=Date.now(); },
+        entryKindLabel: function(kind){ if (kind==='directory') return 'Directory'; if (kind==='settings') return 'Settings'; if (kind==='future') return 'Planned'; return 'App'; },
+        entryStatusLabel: function(status){ if (status==='planned') return 'Roadmap'; if (status==='available') return 'Ready'; return String(status || ''); },
+        entryGlyphClass: function(kind){ kind=String(kind || 'app'); return 'miomos-entry-glyph--' + kind; },
+        installWindowListeners: function(){ var self=this; this._miomosKeydown=function(ev){ self.onGlobalKeydown(ev); }; window.addEventListener('resize', function(){ self.onWindowResize(); }); window.addEventListener('keydown', this._miomosKeydown); document.addEventListener('pointerdown', function(ev){ if (!root.contains(ev.target)) self.menuOpen=false; }); window.addEventListener('beforeunload', function(){ self.shouldReconnect=false; self.saveLayoutLocal(); self.saveUiStateLocal(); self.clearReconnectTimer(); self.clearHeartbeat(); self.clearStaleMonitor(); }); },
+        applySettings: function(){ root.dataset.density=this.settingsForm.density || 'dense'; root.dataset.wallpaper=this.settingsForm.wallpaper || 'midnight-clinic'; root.dataset.animations=this.settingsForm.animations || 'reduced'; root.dataset.windowPreset=this.settingsForm.windowPreset || 'analyst'; root.dataset.snapMode=this.settingsForm.snapMode || 'quadrant'; root.dataset.motionProfile=this.settingsForm.motionProfile || 'standard'; root.dataset.titlebarStyle=this.settingsForm.titlebarStyle || 'accent'; root.style.setProperty('--miomos-font', this.settingsForm.fontFamily || 'Segoe UI'); root.style.fontSize=(parseInt(this.settingsForm.fontSize || '13',10) || 13) + 'px'; },
+        focusWindow: function(id){ var win=this.windows.find(function(w){ return w.id===id; }); if (!win || win.closed) return; this.activeWindowId=win.id; this.zCounter+=1; win.z=this.zCounter; this.saveUiStateLocal(); },
+        launchApp: function(key){ var entry=this.appEntry(key) || {}, launchKey=entry.launchKey || key; if (entry.disabled) { this.menuOpen=false; this.saveUiStateLocal(); return; } var win=this.windows.find(function(w){ return w.appKey===launchKey || w.id===launchKey; }); if (!win) { this.menuOpen=false; this.saveUiStateLocal(); return; } win.closed=false; win.minimized=false; this.focusWindow(win.id); this.menuOpen=false; this.lastCommandName='launch.' + launchKey; if (launchKey==='terminal') this.openTerminal(); this.saveLayout(); this.saveUiStateLocal(); },
+        minimizeWindow: function(id){ var win=this.windows.find(function(w){ return w.id===id; }); if (!win) return; win.minimized=true; this.saveLayout(); },
+        closeWindow: function(id){ var win=this.windows.find(function(w){ return w.id===id; }); if (!win) return; win.closed=true; win.minimized=false; this.saveLayout(); },
+        toggleTaskWindow: function(id){ var win=this.windows.find(function(w){ return w.id===id; }); if (!win) return; if (!win.closed && !win.minimized && this.activeWindowId===win.id) { win.minimized=true; } else { win.closed=false; win.minimized=false; this.focusWindow(win.id); } this.saveLayout(); },
+        toggleMenu: function(){ this.menuOpen=!this.menuOpen; this.saveUiStateLocal(); },
+        runShellAction: function(actionKey){ this.lastCommandName='shell.' + actionKey; this.saveUiStateLocal(); if (actionKey==='tile') return this.tileWindows(); if (actionKey==='cascade') return this.cascadeWindows(); if (actionKey==='minimizeAll') return this.minimizeAllWindows(); if (actionKey==='restoreAll') return this.restoreAllWindows(); if (actionKey==='focusTerminal') return this.focusTerminalWindow(); if (actionKey==='focusNext') return this.focusWindowByIndex(1); if (actionKey==='focusPrev') return this.focusWindowByIndex(-1); },
+        visibleWindows: function(){ return this.windows.filter(function(w){ return !w.closed; }); },
+        tileWindows: function(){ var wins=this.windows.filter(function(w){ return !w.closed; }); if (!wins.length) return; var rect=this.stageRect(), cols=Math.ceil(Math.sqrt(wins.length)), rows=Math.ceil(wins.length/cols), gutter=12, cellW=Math.max(360, Math.floor((rect.width - ((cols-1)*gutter))/cols)), cellH=Math.max(240, Math.floor((rect.height - ((rows-1)*gutter))/rows)); wins.forEach(function(win, idx){ var col=idx%cols, row=Math.floor(idx/cols); win.minimized=false; win.maximized=false; win.snap='grid'; win.left=(cellW+gutter)*col; win.top=(cellH+gutter)*row; win.width=(col===cols-1 ? Math.max(360, rect.width-win.left) : cellW); win.height=(row===rows-1 ? Math.max(240, rect.height-win.top) : cellH); }); this.layoutMode='tile'; this.focusWindow(wins[0].id); this.saveLayout(); },
+        cascadeWindows: function(){ var wins=this.windows.filter(function(w){ return !w.closed; }); if (!wins.length) return; var rect=this.stageRect(), offsetX=28, offsetY=24, width=Math.max(560, Math.floor(rect.width*0.72)), height=Math.max(360, Math.floor(rect.height*0.72)); wins.forEach(function(win, idx){ win.minimized=false; win.maximized=false; win.snap='cascade'; win.left=Math.min((idx*offsetX), Math.max(0, rect.width-width-20)); win.top=Math.min((idx*offsetY), Math.max(0, rect.height-height-20)); win.width=width; win.height=height; }); this.layoutMode='cascade'; this.focusWindow(wins[wins.length-1].id); this.saveLayout(); },
+        minimizeAllWindows: function(){ this.windows.forEach(function(win){ if (!win.closed) win.minimized=true; }); this.layoutMode=''; this.activeWindowId=''; this.saveLayout(); this.saveUiStateLocal(); },
+        restoreAllWindows: function(){ var self=this; this.windows.forEach(function(win){ if (!win.closed) win.minimized=false; if (win.snap==='grid' || win.snap==='cascade') win.snap=''; self.clampWindow(win); }); this.layoutMode=''; if (this.windows.length) this.focusWindow(this.windows[0].id); this.saveLayout(); this.saveUiStateLocal(); },
+        focusTerminalWindow: function(){ this.lastCommandName='shell.focusTerminal'; this.launchApp('terminal'); },
+        focusWindowByIndex: function(step){ var wins=this.taskWindows.filter(function(win){ return !win.minimized && !win.closed; }); if (!wins.length) return; var idx=wins.findIndex(function(win){ return win.id===this.activeWindowId; }, this); if (idx<0) idx=0; idx=(idx+step+wins.length)%wins.length; this.focusWindow(wins[idx].id); },
+        onGlobalKeydown: function(ev){ if (ev.altKey && !ev.shiftKey && !ev.ctrlKey && (ev.key==='m' || ev.key==='M')) { ev.preventDefault(); this.toggleMenu(); return; } if (ev.altKey && !ev.shiftKey && !ev.ctrlKey && (ev.key==='g' || ev.key==='G')) { ev.preventDefault(); this.tileWindows(); return; } if (ev.altKey && !ev.shiftKey && !ev.ctrlKey && (ev.key==='c' || ev.key==='C')) { ev.preventDefault(); this.cascadeWindows(); return; } if (ev.altKey && !ev.shiftKey && !ev.ctrlKey && (ev.key==='n' || ev.key==='N')) { ev.preventDefault(); this.minimizeAllWindows(); return; } if (ev.altKey && !ev.shiftKey && !ev.ctrlKey && (ev.key==='r' || ev.key==='R')) { ev.preventDefault(); this.restoreAllWindows(); return; } if (ev.altKey && !ev.shiftKey && !ev.ctrlKey && (ev.key==='t' || ev.key==='T')) { ev.preventDefault(); this.focusTerminalWindow(); return; } if (ev.key==='Escape' && this.menuOpen) { ev.preventDefault(); this.menuOpen=false; this.saveUiStateLocal(); return; } if (ev.altKey && !ev.ctrlKey && /^[1-9]$/.test(ev.key)) { ev.preventDefault(); var idx=parseInt(ev.key,10)-1; if (this.taskWindows[idx]) this.toggleTaskWindow(this.taskWindows[idx].id); } },
+        windowClassMap: function(win){ return { 'is-active': this.activeWindowId===win.id && !win.minimized && !win.closed, 'is-minimized': !!win.minimized, 'is-closed': !!win.closed, 'is-maximized': !!win.maximized, 'is-tiled': (win.snap||'')==='grid', 'is-cascaded': (win.snap||'')==='cascade' }; },
+        windowStyle: function(win){ return { left: win.left + 'px', top: win.top + 'px', width: win.width + 'px', height: win.height + 'px', zIndex: win.z }; },
+        stageRect: function(){ var stage=this.$refs.stage; return stage ? stage.getBoundingClientRect() : { left:0, top:0, width:window.innerWidth-20, height:window.innerHeight-64, right:window.innerWidth-20, bottom:window.innerHeight-64 }; },
+        clampWindow: function(win){ var rect=this.stageRect(); win.left=Math.max(0, Math.min(win.left, Math.max(0, rect.width-240))); win.top=Math.max(0, Math.min(win.top, Math.max(0, rect.height-70))); win.width=Math.max(340, Math.min(win.width, rect.width)); win.height=Math.max(220, Math.min(win.height, rect.height)); },
+        beginDrag: function(win, ev){ if (ev.target.closest('[data-window-action]') || win.maximized) return; this.focusWindow(win.id); var startX=ev.clientX, startY=ev.clientY, base={ left: win.left, top: win.top }, self=this; function move(mev){ win.left=base.left + (mev.clientX-startX); win.top=base.top + (mev.clientY-startY); self.clampWindow(win); self.updateSnapPreview(mev.clientX, mev.clientY); } function up(uev){ window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up); self.commitSnapFromPointer(win.id, uev.clientX, uev.clientY); self.snapPreview.visible=false; self.saveLayout(); } window.addEventListener('pointermove', move); window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up); },
+        beginResize: function(win, edge, ev){ if (win.maximized) return; this.focusWindow(win.id); var sx=ev.clientX, sy=ev.clientY, start={ left:win.left, top:win.top, width:win.width, height:win.height }, self=this; function move(mev){ var dx=mev.clientX-sx, dy=mev.clientY-sy; if (edge.indexOf('e')>-1) win.width=Math.max(340, start.width+dx); if (edge.indexOf('s')>-1) win.height=Math.max(220, start.height+dy); if (edge.indexOf('w')>-1) { win.left=start.left+dx; win.width=Math.max(340, start.width-dx); if (win.width===340) win.left=start.left + (start.width-340); } if (edge.indexOf('n')>-1) { win.top=start.top+dy; win.height=Math.max(220, start.height-dy); if (win.height===220) win.top=start.top + (start.height-220); } self.clampWindow(win); } function up(){ window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up); self.saveLayout(); } window.addEventListener('pointermove', move); window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up); },
+        toggleMaximize: function(id){ var win=this.windows.find(function(w){ return w.id===id; }); if (!win) return; if (!win.maximized) { win.restoreRect={ left:win.left, top:win.top, width:win.width, height:win.height, snap:win.snap||'' }; this.applySnap(id,'maximize'); } else { if (win.restoreRect) { win.left=win.restoreRect.left; win.top=win.restoreRect.top; win.width=win.restoreRect.width; win.height=win.restoreRect.height; } win.maximized=false; win.snap=''; } this.saveLayout(); },
+        snapCandidateForPointer: function(x,y){ var stage=this.stageRect(), m=18, kind=''; if (y<=stage.top+m) return 'maximize'; if (this.settingsForm.snapMode==='off') return ''; if (x<=stage.left+m) { if ((this.settingsForm.snapMode==='quadrant' || this.settingsForm.snapMode==='grid') && y <= stage.top + Math.floor(stage.height/2)) return 'top-left'; if ((this.settingsForm.snapMode==='quadrant' || this.settingsForm.snapMode==='grid') && y >= stage.top + Math.floor(stage.height*0.68)) return 'bottom-left'; return 'left'; } if (x>=stage.right-m) { if ((this.settingsForm.snapMode==='quadrant' || this.settingsForm.snapMode==='grid') && y <= stage.top + Math.floor(stage.height/2)) return 'top-right'; if ((this.settingsForm.snapMode==='quadrant' || this.settingsForm.snapMode==='grid') && y >= stage.top + Math.floor(stage.height*0.68)) return 'bottom-right'; return 'right'; } return kind; },
+        updateSnapPreview: function(x,y){ var stage=this.stageRect(), kind=this.snapCandidateForPointer(x,y), p={ visible:false, left:0, top:0, width:0, height:0 }; if (kind==='maximize') p={ visible:true, left:0, top:0, width:stage.width, height:stage.height }; else if (kind==='left') p={ visible:true, left:0, top:0, width:Math.floor(stage.width/2), height:stage.height }; else if (kind==='right') p={ visible:true, left:Math.ceil(stage.width/2), top:0, width:Math.floor(stage.width/2), height:stage.height }; else if (kind==='top-left') p={ visible:true, left:0, top:0, width:Math.floor(stage.width/2), height:Math.floor(stage.height/2) }; else if (kind==='top-right') p={ visible:true, left:Math.ceil(stage.width/2), top:0, width:Math.floor(stage.width/2), height:Math.floor(stage.height/2) }; else if (kind==='bottom-left') p={ visible:true, left:0, top:Math.ceil(stage.height/2), width:Math.floor(stage.width/2), height:Math.floor(stage.height/2) }; else if (kind==='bottom-right') p={ visible:true, left:Math.ceil(stage.width/2), top:Math.ceil(stage.height/2), width:Math.floor(stage.width/2), height:Math.floor(stage.height/2) }; this.snapPreview=p; },
+        commitSnapFromPointer: function(id,x,y){ var kind=this.snapCandidateForPointer(x,y); if (kind) return this.applySnap(id,kind); },
+        applySnap: function(id,kind){ var win=this.windows.find(function(w){ return w.id===id; }); if (!win) return; if (!win.restoreRect) win.restoreRect={ left:win.left, top:win.top, width:win.width, height:win.height, snap:win.snap||'' }; var stage=this.stageRect(), halfW=Math.floor(stage.width/2), halfH=Math.floor(stage.height/2); if (kind==='maximize') { win.left=0; win.top=0; win.width=stage.width; win.height=stage.height; win.maximized=true; win.snap='maximize'; } else if (kind==='left') { win.left=0; win.top=0; win.width=halfW; win.height=stage.height; win.maximized=false; win.snap='left'; } else if (kind==='right') { win.left=Math.ceil(stage.width/2); win.top=0; win.width=halfW; win.height=stage.height; win.maximized=false; win.snap='right'; } else if (kind==='top-left') { win.left=0; win.top=0; win.width=halfW; win.height=halfH; win.maximized=false; win.snap='top-left'; } else if (kind==='top-right') { win.left=Math.ceil(stage.width/2); win.top=0; win.width=halfW; win.height=halfH; win.maximized=false; win.snap='top-right'; } else if (kind==='bottom-left') { win.left=0; win.top=Math.ceil(stage.height/2); win.width=halfW; win.height=halfH; win.maximized=false; win.snap='bottom-left'; } else if (kind==='bottom-right') { win.left=Math.ceil(stage.width/2); win.top=Math.ceil(stage.height/2); win.width=halfW; win.height=halfH; win.maximized=false; win.snap='bottom-right'; } },
+        serializeLayout: function(){ return { mode:this.layoutMode || '', windows: this.windows.map(function(w){ return { id:w.id, appKey:w.appKey, left:w.left, top:w.top, width:w.width, height:w.height, z:w.z, minimized:!!w.minimized, closed:!!w.closed, maximized:!!w.maximized, snap:w.snap||'' }; }) }; },
+        loadLayoutLocal: function(){ var key='miomos.layout.' + (this.boot.session||{}).id, raw=''; try { raw=window.localStorage.getItem(key)||''; } catch(e){} if (!raw) return; try { var layout=JSON.parse(raw), self=this; if (layout.mode) this.layoutMode=layout.mode; arr(layout.windows).forEach(function(saved){ var win=self.windows.find(function(w){ return w.id===saved.id; }); if (!win) return; Object.assign(win, { left:Number(saved.left||win.left), top:Number(saved.top||win.top), width:Number(saved.width||win.width), height:Number(saved.height||win.height), z:Number(saved.z||win.z), minimized:!!saved.minimized, closed:!!saved.closed, maximized:!!saved.maximized, snap:saved.snap||'' }); self.clampWindow(win); }); } catch(e2){} },
+        saveLayoutLocal: function(){ var key='miomos.layout.' + (this.boot.session||{}).id; try { window.localStorage.setItem(key, JSON.stringify(this.serializeLayout())); } catch(e){} },
+        saveLayout: function(){ this.saveLayoutLocal(); this.command('layout.save', { layout: this.serializeLayout() }); },
+        onWindowResize: function(){ var self=this; this.windows.forEach(function(w){ if (['left','right','maximize','top-left','top-right','bottom-left','bottom-right'].indexOf(w.snap||'')>-1 || w.maximized) self.applySnap(w.id, w.snap || 'maximize'); else self.clampWindow(w); }); if (this.layoutMode==='tile') this.tileWindows(); if (this.terminal.instance) this.resizeTerminal(); },
+        command: function(command, payload){ var path=(this.boot.routes||{}).command || root.getAttribute('data-miomos-command') || '/api/miomos/command'; var maxInflight=Number(this.desktopPolicy.commandMaxInflight || 1) || 1; var body=Object.assign({ command: command }, payload || {}); var key=command + '|' + JSON.stringify(body); var self=this; if (this.pendingCommands[key]) return this.pendingCommands[key]; if (this.inflightCommandCount >= maxInflight) { this.commandError='Another shell command is still in flight. Please wait for it to finish before submitting a new action.'; return Promise.reject(new Error('command_busy')); } this.commandError=''; this.dismissedAlertKey=''; this.inflightCommandCount += 1; this.lastCommandName=command; this.saveUiStateLocal(); var req=fetch(path, { method:'POST', credentials:'same-origin', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(body) }).then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }).catch(function(err){ self.commandError='Command ' + command + ' failed: ' + (err && err.message ? err.message : 'unknown error'); self.dismissedAlertKey=''; throw err; }).finally(function(){ self.inflightCommandCount=Math.max(0,self.inflightCommandCount-1); delete self.pendingCommands[key]; self.saveUiStateLocal(); }); this.pendingCommands[key]=req; return req; },
+        refreshView: function(){ var self=this; var path=(this.boot.routes||{}).view || root.getAttribute('data-miomos-view') || '/api/miomos/view'; return fetch(path, { credentials:'same-origin' }).then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }).then(function(json){ if (json.view) self.view = json.view; self.syncSettingsForm(); self.applySettings(); self.commandError=''; }); },
+        syncSettingsForm: function(){ var cur=((this.view.settings||{}).current)||{}; this.settingsForm.themeKey = cur.themeKey || this.settingsForm.themeKey; this.settingsForm.fontFamily = cur.fontFamily || this.settingsForm.fontFamily; this.settingsForm.fontSize = String(cur.fontSize || this.settingsForm.fontSize); this.settingsForm.titleAccent = cur.titleAccent || this.settingsForm.titleAccent; this.settingsForm.iconStyle = cur.iconStyle || this.settingsForm.iconStyle; this.settingsForm.wallpaper = cur.wallpaper || this.settingsForm.wallpaper; this.settingsForm.density = cur.density || this.settingsForm.density; this.settingsForm.animations = cur.animations || this.settingsForm.animations; this.settingsForm.windowPreset = cur.windowPreset || this.settingsForm.windowPreset; this.settingsForm.snapMode = cur.snapMode || this.settingsForm.snapMode; this.settingsForm.motionProfile = cur.motionProfile || this.settingsForm.motionProfile; this.settingsForm.titlebarStyle = cur.titlebarStyle || this.settingsForm.titlebarStyle; this.settingsForm.icons = Object.assign({}, this.settingsForm.icons, cur.icon || {}); if (cur.terminal) { var self=this; Object.keys(cur.terminal).forEach(function(k){ self.settingsForm.terminal[k] = String(cur.terminal[k]); }); } },
+        buildSettingsPayload: function(){ return { themeKey:this.settingsForm.themeKey, fontFamily:this.settingsForm.fontFamily, fontSize:parseInt(this.settingsForm.fontSize,10), titleAccent:this.settingsForm.titleAccent, iconStyle:this.settingsForm.iconStyle, wallpaper:this.settingsForm.wallpaper, density:this.settingsForm.density, animations:this.settingsForm.animations, windowPreset:this.settingsForm.windowPreset, snapMode:this.settingsForm.snapMode, motionProfile:this.settingsForm.motionProfile, titlebarStyle:this.settingsForm.titlebarStyle, icons: clone(this.settingsForm.icons), terminal: { fontFamily:this.settingsForm.terminal.fontFamily, fontSize:parseInt(this.settingsForm.terminal.fontSize,10), cursorBlink:parseInt(this.settingsForm.terminal.cursorBlink,10), cursorStyle:this.settingsForm.terminal.cursorStyle, scrollback:parseInt(this.settingsForm.terminal.scrollback,10), renderer:this.settingsForm.terminal.renderer, unicode:this.settingsForm.terminal.unicode, cols:parseInt(this.settingsForm.terminal.cols || '120',10), rows:parseInt(this.settingsForm.terminal.rows || '28',10) } }; },
+        saveSettings: function(){ var self=this; this.settingsStatus='Saving…'; this.command('settings.save', this.buildSettingsPayload()).then(function(){ self.settingsStatus='Saved'; self.refreshView(); }).catch(function(){ self.settingsStatus='Save failed'; }); },
+        quickTheme: function(key){ var self=this; this.settingsForm.themeKey=key; this.command('theme.quick', { themeKey:key }).then(function(){ self.settingsStatus='Theme updated'; self.refreshView(); }).catch(function(){ self.settingsStatus='Theme update failed'; }); },
+        signout: function(){ fetch((this.boot.routes||{}).signout || root.getAttribute('data-miomos-signout') || '/api/miomos/auth/signout', { method:'POST', credentials:'same-origin', headers:{ 'Content-Type':'application/json' }, body:'{}' }).finally(function(){ window.location.reload(); }); },
+        connectSocket: function(){ var self=this, path=((this.boot.routes||{}).websocket)||root.getAttribute('data-miomos-ws'); if (!path) return; if (this.socketConnecting) return; if (this.socket && (this.socket.readyState===0 || this.socket.readyState===1)) return; var proto=window.location.protocol==='https:'?'wss://':'ws://'; var url=/^wss?:\/\//i.test(path)?path:(proto + window.location.host + path); this.socketConnecting=true; try { this.socket=new WebSocket(url); } catch(e){ this.socketConnecting=false; this.scheduleReconnect(); return; } this.socket.addEventListener('open', function(){ self.socketConnecting=false; self.socketConnected=true; self.reconnectDelay=Number(self.desktopPolicy.reconnectBaseMs || 1000) || 1000; self.markSocketActivity(); self.sendSocket({ event:'hello', sessionId:(self.boot.session||{}).id || root.getAttribute('data-miomos-session') }); self.startHeartbeat(); self.startStaleMonitor(); }); this.socket.addEventListener('message', function(ev){ self.markSocketActivity(); self.handleSocketMessage(ev.data); }); this.socket.addEventListener('close', function(){ self.socketConnected=false; self.socketConnecting=false; self.clearHeartbeat(); self.clearStaleMonitor(); self.socket=null; self.lastReconnectAt=(new Date()).toISOString(); self.reconnectCount += 1; self.dismissedAlertKey=''; if (self.shouldReconnect) self.scheduleReconnect(); }); this.socket.addEventListener('error', function(){ self.socketConnected=false; if (self.socket && self.socket.readyState < 2) { try { self.socket.close(); } catch(e){} } }); },
+        sendSocket: function(payload){ if (!this.socket || this.socket.readyState !== 1) return false; try { this.socket.send(JSON.stringify(payload)); return true; } catch(e){ return false; } },
+        startHeartbeat: function(){ var self=this, every=Number(this.desktopPolicy.heartbeatMs || 15000) || 15000; this.clearHeartbeat(); this.heartbeatTimer=window.setInterval(function(){ if (self.socket && self.socket.readyState===1) self.sendSocket({ event:'ping', sessionId:(self.boot.session||{}).id || root.getAttribute('data-miomos-session') }); },every); },
+        clearHeartbeat: function(){ if (this.heartbeatTimer) window.clearInterval(this.heartbeatTimer); this.heartbeatTimer=null; },
+        startStaleMonitor: function(){ var self=this, maxAge=Number(this.desktopPolicy.staleSocketMs || 45000) || 45000, every=Math.max(5000, Math.floor(maxAge/3)); this.clearStaleMonitor(); this.staleSocketTimer=window.setInterval(function(){ if (self.socket && self.socket.readyState===1 && self.lastSocketAt && ((Date.now()-self.lastSocketAt) > maxAge)) { try { self.socket.close(); } catch(e){} } }, every); },
+        clearStaleMonitor: function(){ if (this.staleSocketTimer) window.clearInterval(this.staleSocketTimer); this.staleSocketTimer=null; },
+        scheduleReconnect: function(){ var self=this, maxMs=Number(this.desktopPolicy.reconnectMaxMs || 15000) || 15000; this.clearReconnectTimer(); this.reconnectTimer=window.setTimeout(function(){ self.reconnectTimer=null; self.connectSocket(); }, this.reconnectDelay); this.reconnectDelay=Math.min(this.reconnectDelay*1.6, maxMs); },
+        clearReconnectTimer: function(){ if (this.reconnectTimer) window.clearTimeout(this.reconnectTimer); this.reconnectTimer=null; },
+        handleSocketMessage: function(raw){ var msg; try { msg=JSON.parse(raw||'{}'); } catch(e){ return; } if (msg.event==='hello' || msg.event==='pong') { this.socketConnected=true; this.commandError=''; return; } if (msg.event==='chat.snapshot') { this.messages = arr(msg.messages); return; } if (msg.event==='chat.message') { this.messages = this.messages.concat([msg.message || { userName:'System', text:'Message received.', ts:'Now' }]).slice(-30); return; } if (msg.event && msg.event.indexOf('terminal.')===0) this.handleTerminalMessage(msg); },
+        sendChat: function(){ var text=(this.chatDraft||'').trim(); if (!text) return; this.sendSocket({ event:'chat.send', room:((this.view.chat||{}).room || 'general'), text:text, sessionId:(this.boot.session||{}).id || root.getAttribute('data-miomos-session') }); this.chatDraft=''; },
+        resolveTerminalViewport: function(){ var viewport=this.$refs.terminalViewport; if (Array.isArray(viewport)) viewport = viewport[0] || null; if (!viewport || viewport.nodeType !== 1) return null; return viewport; },
+        ensureTerminalMounted: function(){ var viewport=this.resolveTerminalViewport(); if (!viewport || this.terminal.instance) return; if (typeof window.Terminal !== 'function') { viewport.innerHTML='<div class="miomos-terminal-fallback">xterm.js not available.</div>'; this.terminalStatus='Renderer unavailable'; return; } this.terminal.instance=new window.Terminal({ convertEol:true, allowTransparency:true, cursorBlink:String(this.settingsForm.terminal.cursorBlink)==='1', cursorStyle:this.settingsForm.terminal.cursorStyle || 'block', fontFamily:this.settingsForm.terminal.fontFamily || 'JetBrains Mono', fontSize: parseInt(this.settingsForm.terminal.fontSize || '13',10), scrollback: parseInt(this.settingsForm.terminal.scrollback || '3000',10), theme:{ background:'#08111d', foreground:'#dbe7ff', cursor:'#8fb3ff', selectionBackground:'rgba(143,179,255,.25)' } }); this.terminal.instance.open(viewport); this.terminal.instance.onData(this.onTerminalData.bind(this)); this.resizeTerminal(); },
+        openTerminal: function(){ var self=this; this.$nextTick(function(){ self.ensureTerminalMounted(); if (!self.terminal.instance) { self.terminalStatus='Terminal viewport unavailable'; return; } self.command('terminal.open', { terminalId: self.terminal.terminalId || '' }).then(function(json){ var term=json.terminal || {}; self.terminal.terminalId = term.terminalId || self.terminal.terminalId; self.terminalStatus='YDB pipe live'; self.resizeTerminal(); if (self.socket && self.socket.readyState===1) self.sendSocket({ event:'terminal.attach', terminalId:self.terminal.terminalId, sessionId:(self.boot.session||{}).id || root.getAttribute('data-miomos-session') }); }).catch(function(){ self.terminalStatus='Terminal unavailable'; }); }); },
+        pollTerminal: function(){ var self=this; if (this.socket && this.socket.readyState===1 && this.terminal.terminalId) { this.sendSocket({ event:'terminal.poll', terminalId:this.terminal.terminalId, sessionId:(this.boot.session||{}).id || root.getAttribute('data-miomos-session') }); return; } this.command('terminal.poll', { terminalId:this.terminal.terminalId || '' }).then(function(json){ self.handleTerminalMessage(json.terminal || {}); }).catch(function(){}); },
+        closeTerminal: function(){ var self=this; if (this.socket && this.socket.readyState===1 && this.terminal.terminalId) this.sendSocket({ event:'terminal.close', terminalId:this.terminal.terminalId, sessionId:(this.boot.session||{}).id || root.getAttribute('data-miomos-session') }); this.command('terminal.close', { terminalId:this.terminal.terminalId || '' }).finally(function(){ self.terminalStatus='Terminal closed'; self.terminal.terminalId=''; }); },
+        handleTerminalMessage: function(msg){ this.ensureTerminalMounted(); if (msg.terminalId) this.terminal.terminalId = msg.terminalId; if (msg.clear && this.terminal.instance) this.terminal.instance.clear(); var writes=[]; if (Array.isArray(msg.write)) writes=msg.write; else if (msg.write) Object.keys(msg.write).sort(function(a,b){ return Number(a)-Number(b); }).forEach(function(k){ writes.push(msg.write[k]); }); if (this.terminal.instance) writes.forEach(function(chunk){ this.terminal.instance.write(chunk || ''); }, this); this.terminalStatus = msg.closed ? 'Terminal closed' : 'Terminal live'; },
+        clearTerminal: function(){ if (this.terminal.instance) this.terminal.instance.clear(); },
+        onTerminalData: function(data){ if (!this.terminal.instance) return; if (data==='\r' || data==='\n') { var line=this.terminal.inputLine || ''; this.terminal.instance.write('\r\n'); this.terminal.inputLine=''; this.sendSocket({ event:'terminal.input', terminalId:this.terminal.terminalId || '', line:line, sessionId:(this.boot.session||{}).id || root.getAttribute('data-miomos-session') }); return; } if (data==='\u007f') { if (this.terminal.inputLine.length > 0) { this.terminal.inputLine=this.terminal.inputLine.slice(0,-1); this.terminal.instance.write('\b \b'); } return; } this.terminal.inputLine += data; this.terminal.instance.write(data); },
+        resizeTerminal: function(){ if (!this.terminal.instance || !this.terminal.instance.resize) return; var viewport=this.resolveTerminalViewport(), size=parseInt(this.settingsForm.terminal.fontSize || '13',10) || 13, cols=parseInt(this.settingsForm.terminal.cols || '120',10) || 120, rows=parseInt(this.settingsForm.terminal.rows || '28',10) || 28; if (viewport) { cols=Math.max(80, Math.min(220, Math.floor((viewport.clientWidth-16)/(size*0.62)))); rows=Math.max(20, Math.min(60, Math.floor((viewport.clientHeight-16)/(size*1.72)))); } try { this.terminal.instance.resize(cols, rows); } catch(e){} if (this.socket && this.socket.readyState===1 && this.terminal.terminalId) this.sendSocket({ event:'terminal.resize', terminalId:this.terminal.terminalId, cols:cols, rows:rows, sessionId:(this.boot.session||{}).id || root.getAttribute('data-miomos-session') }); },
       }
-      function applyRect(win, rect) {
-        if (typeof rect.left === 'number') win.style.left = rect.left + 'px';
-        if (typeof rect.top === 'number') win.style.top = rect.top + 'px';
-        if (typeof rect.width === 'number') win.style.width = rect.width + 'px';
-        if (typeof rect.height === 'number') win.style.height = rect.height + 'px';
-        if (typeof rect.z === 'number') win.style.zIndex = String(rect.z);
-      }
-      function applyState(win, state) {
-        win.classList.remove('is-closed', 'is-minimized', 'is-maximized');
-        if (state === 'closed') win.classList.add('is-closed');
-        else if (state === 'minimized') win.classList.add('is-minimized');
-        else if (state === 'maximized') win.classList.add('is-maximized');
-        syncTaskButton(win);
-      }
-      function focusWindow(win) {
-        getWindows().forEach(function (item) { item.classList.remove('is-active'); });
-        win.classList.remove('is-minimized', 'is-closed');
-        zCounter += 1;
-        win.style.zIndex = String(zCounter);
-        win.classList.add('is-active');
-        syncTaskButton(win);
-      }
-      function serializeLayout() {
-        return getWindows().map(function (win) {
-          return {id: win.getAttribute('data-window-id'), state: stateOf(win), snapState: win.getAttribute('data-snap-state') || '', left: parseInt(win.style.left || '0', 10), top: parseInt(win.style.top || '0', 10), width: parseInt(win.style.width || '0', 10), height: parseInt(win.style.height || '0', 10), z: parseInt(win.style.zIndex || '1', 10)};
-        });
-      }
-      function saveLayoutLocal() {
-        try { localStorage.setItem('miomos.layout.' + sessionId, JSON.stringify({sessionId: sessionId, windows: serializeLayout()})); } catch (e) {}
-      }
-      function pushLayoutRemote() {
-        if (!runtime.socket || runtime.socket.readyState !== 1) return;
-        runtime.socket.send(JSON.stringify({event: 'layout.sync', sessionId: sessionId, layout: {windows: serializeLayout()}}));
-      }
-      function queueLayoutSave() {
-        if (layoutTimer) window.clearTimeout(layoutTimer);
-        layoutTimer = window.setTimeout(function () { layoutTimer = null; saveLayoutLocal(); pushLayoutRemote(); }, 180);
-      }
-      function loadLayout() {
-        var raw = null;
-        try { raw = localStorage.getItem('miomos.layout.' + sessionId); } catch (e) {}
-        if (!raw && boot.desktop && boot.desktop.savedLayoutJson) raw = boot.desktop.savedLayoutJson;
-        if (!raw) return;
-        try {
-          var parsed = JSON.parse(raw);
-          (parsed.windows || []).forEach(function (saved) {
-            var win = stage.querySelector('[data-window-id="' + saved.id + '"]');
-            if (!win) return;
-            applyRect(win, saved); applyState(win, saved.state || 'normal');
-            if (saved.snapState) win.setAttribute('data-snap-state', saved.snapState);
-          });
-        } catch (e) {}
-      }
-      function showSnapPreview(region) {
-        if (!snapPreview) return;
-        var bounds = stageBounds();
-        var preview = null;
-        if (region === 'maximize') preview = { left: 0, top: 0, width: bounds.width, height: bounds.height };
-        if (region === 'left') preview = { left: 0, top: 0, width: Math.floor(bounds.width / 2), height: bounds.height };
-        if (region === 'right') preview = { left: Math.ceil(bounds.width / 2), top: 0, width: Math.floor(bounds.width / 2), height: bounds.height };
-        if (!preview) {
-          snapPreview.classList.remove('is-visible');
-          return;
-        }
-        snapPreview.style.left = preview.left + 'px';
-        snapPreview.style.top = preview.top + 'px';
-        snapPreview.style.width = preview.width + 'px';
-        snapPreview.style.height = preview.height + 'px';
-        snapPreview.classList.add('is-visible');
-      }
-      function clearSnapPreview() { if (snapPreview) snapPreview.classList.remove('is-visible'); }
-      function snapRegionFor(clientX, clientY) {
-        var rect = stage.getBoundingClientRect();
-        var x = clientX - rect.left;
-        var y = clientY - rect.top;
-        if (y <= snapMargin) return 'maximize';
-        if (x <= snapMargin) return 'left';
-        if (x >= rect.width - snapMargin) return 'right';
-        return '';
-      }
-      function restoreWindow(win) {
-        var restore = win.__restoreRect;
-        win.removeAttribute('data-snap-state');
-        applyState(win, 'normal');
-        if (restore) applyRect(win, restore);
-        focusWindow(win);
-        queueLayoutSave();
-      }
-      function applySnap(win, region) {
-        var bounds = stageBounds();
-        if (region === 'maximize') {
-          if (!win.classList.contains('is-maximized')) rememberRestoreRect(win);
-          win.setAttribute('data-snap-state', 'maximize');
-          applyState(win, 'maximized');
-          applyRect(win, { left: 0, top: 0, width: bounds.width, height: bounds.height });
-          focusWindow(win);
-          queueLayoutSave();
-          return;
-        }
-        if (region === 'left' || region === 'right') {
-          if (!(win.getAttribute('data-snap-state') === 'left' || win.getAttribute('data-snap-state') === 'right' || win.classList.contains('is-maximized'))) rememberRestoreRect(win);
-          win.setAttribute('data-snap-state', region);
-          applyState(win, 'normal');
-          applyRect(win, { left: region === 'left' ? 0 : Math.floor(bounds.width / 2), top: 0, width: Math.ceil(bounds.width / 2), height: bounds.height });
-          focusWindow(win);
-          queueLayoutSave();
-        }
-      }
-      function toggleMaximize(win) {
-        if (win.classList.contains('is-maximized')) { restoreWindow(win); return; }
-        rememberRestoreRect(win);
-        applySnap(win, 'maximize');
-      }
-      function toggleMenu(force) {
-        var open = typeof force === 'boolean' ? force : !menu.classList.contains('is-open');
-        menu.classList.toggle('is-open', open);
-        menu.setAttribute('aria-hidden', open ? 'false' : 'true');
-      }
-      function launchApp(key) {
-        var win = stage.querySelector('.miomos-window[data-app-key="' + key + '"]');
-        if (!win) return;
-        focusWindow(win); queueLayoutSave(); toggleMenu(false);
-      }
-      function clampRect(next, stageRect) {
-        if (next.width < 360) next.width = 360; if (next.height < 240) next.height = 240;
-        if (next.left < 0) next.left = 0; if (next.top < 0) next.top = 0;
-        if (next.left + next.width > stageRect.width) next.left = Math.max(0, stageRect.width - next.width);
-        if (next.top + next.height > stageRect.height) next.top = Math.max(0, stageRect.height - next.height);
-        return next;
-      }
-      function bindDrag(win) {
-        var bar = win.querySelector('[data-window-drag]');
-        if (!bar) return;
-        bar.addEventListener('pointerdown', function (ev) {
-          if (ev.target.closest('[data-window-action]')) return;
-          if (win.classList.contains('is-maximized')) return;
-          ev.preventDefault();
-          focusWindow(win);
-          if (bar.setPointerCapture) { try { bar.setPointerCapture(ev.pointerId); } catch (e) {} }
-          if (win.getAttribute('data-snap-state') === 'left' || win.getAttribute('data-snap-state') === 'right') restoreWindow(win);
-          var stageRect = stage.getBoundingClientRect();
-          var winRect = win.getBoundingClientRect();
-          var offsetX = ev.clientX - winRect.left;
-          var offsetY = ev.clientY - winRect.top;
-          function move(mev) {
-            var next = {left: mev.clientX - stageRect.left - offsetX, top: mev.clientY - stageRect.top - offsetY, width: parseInt(win.style.width || '0', 10), height: parseInt(win.style.height || '0', 10)};
-            applyRect(win, clampRect(next, stageBounds()));
-            showSnapPreview(snapRegionFor(mev.clientX, mev.clientY));
-          }
-          function done(mev) {
-            window.removeEventListener('pointermove', move);
-            window.removeEventListener('pointerup', done);
-            window.removeEventListener('pointercancel', done);
-            var region = mev ? snapRegionFor(mev.clientX, mev.clientY) : '';
-            clearSnapPreview();
-            if (region) { applySnap(win, region); return; }
-            queueLayoutSave();
-          }
-          window.addEventListener('pointermove', move);
-          window.addEventListener('pointerup', done);
-          window.addEventListener('pointercancel', done);
-        });
-      }
-      function bindResize(win) {
-        Array.prototype.forEach.call(win.querySelectorAll('.miomos-resize-handle'), function (handle) {
-          handle.addEventListener('pointerdown', function (ev) {
-            if (win.classList.contains('is-maximized')) return;
-            ev.preventDefault(); ev.stopPropagation(); focusWindow(win);
-            var edge = handle.getAttribute('data-edge'); var stageRect = stage.getBoundingClientRect();
-            var rect = {left: parseInt(win.style.left || '0', 10), top: parseInt(win.style.top || '0', 10), width: parseInt(win.style.width || '0', 10), height: parseInt(win.style.height || '0', 10)};
-            var startX = ev.clientX, startY = ev.clientY;
-            function move(mev) {
-              var dx = mev.clientX - startX, dy = mev.clientY - startY;
-              var next = {left: rect.left, top: rect.top, width: rect.width, height: rect.height};
-              if (edge.indexOf('e') >= 0) next.width = rect.width + dx;
-              if (edge.indexOf('s') >= 0) next.height = rect.height + dy;
-              if (edge.indexOf('w') >= 0) { next.left = rect.left + dx; next.width = rect.width - dx; }
-              if (edge.indexOf('n') >= 0) { next.top = rect.top + dy; next.height = rect.height - dy; }
-              if (next.width < 360) { if (edge.indexOf('w') >= 0) next.left -= (360 - next.width); next.width = 360; }
-              if (next.height < 240) { if (edge.indexOf('n') >= 0) next.top -= (240 - next.height); next.height = 240; }
-              if (next.left < 0) { next.width += next.left; next.left = 0; }
-              if (next.top < 0) { next.height += next.top; next.top = 0; }
-              if (next.left + next.width > stageRect.width) next.width = stageRect.width - next.left;
-              if (next.top + next.height > stageRect.height) next.height = stageRect.height - next.top;
-              applyRect(win, next);
-            }
-            function done() { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', done); window.removeEventListener('pointercancel', done); queueLayoutSave(); }
-            window.addEventListener('pointermove', move); window.addEventListener('pointerup', done); window.addEventListener('pointercancel', done);
-          });
-        });
-      }
-      function makeWsUrl(path) { if (!path) return ''; return (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + path; }
-      function setConnected(flag) { if (statusVm) statusVm.connected = !!flag; }
-      function clearSocketTimers() { if (runtime.pingTimer) { window.clearInterval(runtime.pingTimer); runtime.pingTimer = null; } }
-      function scheduleReconnect() {
-        if (runtime.reconnectTimer) return;
-        runtime.reconnectTimer = window.setTimeout(function () { runtime.reconnectTimer = null; connectSocket(); }, 1800);
-      }
-      function renderMessages(messages) {
-        if (!chatFeed) return;
-        chatFeed.innerHTML = '';
-        (messages || []).forEach(function (msg) {
-          var item = document.createElement('div'); item.className = 'miomos-feed-item';
-          item.innerHTML = '<strong>' + escapeHtml(msg.userName || msg.principal || 'User') + '</strong><span>' + escapeHtml(msg.text || '') + '</span><time>' + escapeHtml(msg.ts || '') + '</time>';
-          chatFeed.appendChild(item);
-        });
-        chatFeed.scrollTop = chatFeed.scrollHeight;
-      }
-      function escapeHtml(text) {
-        return String(text || '').replace(/[&<>"']/g, function (ch) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]); });
-      }
-      function applyTheme(theme) {
-        if (!theme) return;
-        root.style.setProperty('--desktop', theme.desktop || '#0f1724');
-        root.style.setProperty('--taskbar', theme.taskbar || 'rgba(8,14,24,.78)');
-        root.style.setProperty('--surface', theme.surface || 'rgba(20,28,39,.92)');
-        root.style.setProperty('--surface-alt', theme.surfaceAlt || 'rgba(14,21,31,.88)');
-        root.style.setProperty('--border', theme.border || 'rgba(149,168,196,.18)');
-        root.style.setProperty('--text', theme.text || '#edf3fb');
-        root.style.setProperty('--muted', theme.muted || '#98a8bf');
-        root.style.setProperty('--accent', theme.accent || '#5f8dff');
-        root.style.setProperty('--accent-soft', theme.accentSoft || 'rgba(95,141,255,.18)');
-        root.style.setProperty('--icon', theme.icon || 'linear-gradient(180deg,#7ea6ff,#4a73e6)');
-      }
-      function themePost(themeKey) {
-        var path = (boot.routes && boot.routes.theme) || root.getAttribute('data-miomos-theme');
-        if (!path) return;
-        fetch(path, {method: 'POST', headers: {'Content-Type': 'application/json'}, credentials: 'same-origin', body: JSON.stringify({themeKey: themeKey})})
-          .then(function (res) { return res.json(); })
-          .then(function (json) {
-            if (!json || !json.ok || !json.theme) return;
-            applyTheme(json.theme);
-            Array.prototype.forEach.call(document.querySelectorAll('[data-theme-button]'), function (btn) { btn.classList.toggle('is-current', btn.getAttribute('data-theme-button') === themeKey); });
-          })
-          .catch(function () {});
-      }
-      function signout() {
-        var path = (boot.routes && boot.routes.signout) || root.getAttribute('data-miomos-signout');
-        if (!path) return;
-        fetch(path, {method: 'POST', headers: {'Content-Type': 'application/json'}, credentials: 'same-origin', body: JSON.stringify({})})
-          .finally(function () { window.location.reload(); });
-      }
-      function connectSocket() {
-        if (runtime.connecting) return;
-        if (runtime.socket && (runtime.socket.readyState === 0 || runtime.socket.readyState === 1)) return;
-        var wsPath = (boot.routes && boot.routes.websocket) || boot.websocketPath || root.getAttribute('data-miomos-ws');
-        var url = makeWsUrl(wsPath); if (!url) return;
-        runtime.connecting = true; runtime.socketSeq += 1; var seq = runtime.socketSeq;
-        var socket = new WebSocket(url); runtime.socket = socket; setConnected(false);
-        socket.addEventListener('open', function () {
-          if (seq !== runtime.socketSeq) return;
-          runtime.connecting = false; setConnected(true);
-          socket.send(JSON.stringify({event: 'hello', sessionId: sessionId}));
-          clearSocketTimers();
-          runtime.pingTimer = window.setInterval(function () { if (runtime.socket && runtime.socket.readyState === 1) runtime.socket.send(JSON.stringify({event: 'ping', sessionId: sessionId})); }, 25000);
-        });
-        socket.addEventListener('message', function (ev) {
-          try {
-            var msg = JSON.parse(ev.data || '{}');
-            if (msg.event === 'hello' || msg.event === 'pong') setConnected(true);
-            if (msg.event === 'chat.snapshot') renderMessages(msg.messages || []);
-            if (msg.event === 'chat.message') {
-              var items = Array.prototype.slice.call(chatFeed.querySelectorAll('.miomos-feed-item')).map(function (node) {
-                return {userName: node.querySelector('strong') ? node.querySelector('strong').textContent : '', text: node.querySelector('span') ? node.querySelector('span').textContent : '', ts: node.querySelector('time') ? node.querySelector('time').textContent : ''};
-              });
-              items.push(msg.message || {}); renderMessages(items.slice(-20));
-            }
-          } catch (e) {}
-        });
-        socket.addEventListener('close', function () { if (seq !== runtime.socketSeq) return; runtime.connecting = false; clearSocketTimers(); setConnected(false); scheduleReconnect(); });
-        socket.addEventListener('error', function () { if (seq !== runtime.socketSeq) return; runtime.connecting = false; setConnected(false); });
-      }
-      function initStatusVue() {
-        var host = document.getElementById('miomosStatusVue');
-        if (!host || !window.Vue || !window.Vue.createApp) return;
-        statusVm = window.Vue.reactive({connected: false, now: new Date().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})});
-        window.Vue.createApp({
-          setup: function () { return statusVm; },
-          mounted: function () { window.setInterval(function () { statusVm.now = new Date().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'}); }, 60000); },
-          template: '<div class="miomos-status"><span class="miomos-chip" :class="{\'is-connected\': connected}"><span class="miomos-dot"></span>{{ connected ? "Socket live" : "Socket offline" }}</span><span class="miomos-chip">{{ now }}</span></div>'
-        }).mount(host);
-      }
-
-      menuButton.addEventListener('click', function (ev) { ev.stopPropagation(); toggleMenu(); });
-      signoutButton.addEventListener('click', signout);
-      document.addEventListener('click', function (ev) { if (!menu.contains(ev.target) && ev.target !== menuButton) toggleMenu(false); });
-      Array.prototype.forEach.call(document.querySelectorAll('[data-launch-app]'), function (el) { el.addEventListener('click', function () { launchApp(el.getAttribute('data-launch-app')); }); });
-      Array.prototype.forEach.call(document.querySelectorAll('[data-theme-button]'), function (el) { el.addEventListener('click', function () { themePost(el.getAttribute('data-theme-button')); }); });
-      taskband.addEventListener('click', function (ev) {
-        var btn = ev.target.closest('[data-task-window]'); if (!btn) return;
-        var win = stage.querySelector('.miomos-window[data-window-id="' + btn.getAttribute('data-task-window') + '"]'); if (!win) return;
-        if (win.classList.contains('is-active') && !win.classList.contains('is-minimized')) { win.classList.add('is-minimized'); win.classList.remove('is-active'); }
-        else focusWindow(win);
-        syncTaskButton(win); queueLayoutSave();
-      });
-      stage.addEventListener('pointerdown', function (ev) { var win = ev.target.closest('.miomos-window'); if (win) focusWindow(win); });
-      stage.addEventListener('dblclick', function (ev) {
-        var bar = ev.target.closest('[data-window-dblclick]');
-        if (!bar || ev.target.closest('[data-window-action]')) return;
-        var win = bar.closest('.miomos-window');
-        if (win) toggleMaximize(win);
-      });
-      document.addEventListener('keydown', function (ev) {
-        if (ev.altKey && !ev.shiftKey && !ev.ctrlKey) {
-          if (ev.key === 'm' || ev.key === 'M') { ev.preventDefault(); toggleMenu(); return; }
-          if (ev.key === '1' || ev.key === '2' || ev.key === '3' || ev.key === '4') { ev.preventDefault(); launchApp(['workspace','collaboration','security','admin'][parseInt(ev.key, 10) - 1]); return; }
-          var win = stage.querySelector('.miomos-window.is-active');
-          if (!win) return;
-          if (ev.key === 'ArrowLeft') { ev.preventDefault(); applySnap(win, 'left'); return; }
-          if (ev.key === 'ArrowRight') { ev.preventDefault(); applySnap(win, 'right'); return; }
-          if (ev.key === 'ArrowUp') { ev.preventDefault(); applySnap(win, 'maximize'); return; }
-          if (ev.key === 'ArrowDown') { ev.preventDefault(); restoreWindow(win); return; }
-        }
-        if (ev.key === 'Escape') toggleMenu(false);
-      });
-      stage.addEventListener('click', function (ev) {
-        var btn = ev.target.closest('[data-window-action]'); if (!btn) return;
-        var win = btn.closest('.miomos-window'); if (!win) return;
-        var action = btn.getAttribute('data-window-action');
-        if (action === 'close') { win.classList.add('is-closed'); win.classList.remove('is-active'); }
-        else if (action === 'minimize') { win.classList.add('is-minimized'); win.classList.remove('is-active'); }
-        else if (action === 'maximize') {
-          toggleMaximize(win);
-        }
-        syncTaskButton(win); queueLayoutSave();
-      });
-      if (chatForm) chatForm.addEventListener('submit', function (ev) {
-        ev.preventDefault(); if (!chatText || !chatText.value.trim()) return;
-        if (runtime.socket && runtime.socket.readyState === 1) runtime.socket.send(JSON.stringify({event: 'chat.send', sessionId: sessionId, room: (boot.chat && boot.chat.room) || 'general', text: chatText.value.trim()}));
-        chatText.value = '';
-      });
-
-      getWindows().forEach(function (win) { bindDrag(win); bindResize(win); syncTaskButton(win); });
-      loadLayout();
-      var first = stage.querySelector('.miomos-window:not(.is-minimized):not(.is-closed)'); if (first) focusWindow(first);
-      window.addEventListener('resize', function () { getWindows().forEach(function (win) { var snapState = win.getAttribute('data-snap-state') || ''; if (snapState === 'left' || snapState === 'right' || snapState === 'maximize') applySnap(win, snapState); else if (win.classList.contains('is-maximized')) applyRect(win, {left:0, top:0, width:stage.clientWidth, height:stage.clientHeight, z:parseInt(win.style.zIndex || '1',10)}); }); });
-      window.addEventListener('beforeunload', saveLayoutLocal);
-
-      applyTheme(boot.desktop && boot.desktop.theme ? boot.desktop.theme.current : null);
-      initStatusVue();
-      runtime.osjs = {available: !!window.osjsClient, deferred: true};
-      connectSocket();
-    }());
+    });
+    app.config.compilerOptions.delimiters = ['[[', ']]'];
+    app.mount('#miomosRoot');
+  }());
   </script>
 </div>

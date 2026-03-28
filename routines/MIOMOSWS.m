@@ -55,6 +55,64 @@ MESSAGE(DEV,CONF,REQ,CTX)
 	. DO ACCESS^MIOMOSOBS("chat_send",.CTX,.STATE)
 	. DO MESSAGE^MIOMOSCHAT(.MSG,.RESP)
 	. DO SENDTEXT^MIOWS(.DEV,RESP)
+
+	IF EVT="terminal.open" DO  QUIT
+	. IF '$$HAS^MIOMOSPERM(.STATE,"terminal.use") DO  QUIT
+	. . SET RESP=$$ERRJSON("forbidden","terminal.use")
+	. . DO SENDTEXT^MIOWS(.DEV,RESP)
+	. NEW TREE,TERR,OUT,TERMID
+	. IF $EXTRACT($GET(PAYLOAD),1)="{" SET OK=$$DECODE^MIOJSON(PAYLOAD,.TREE,.TERR)
+	. SET TERMID=$GET(TREE("terminalId"))
+	. IF '$$OPEN^MIOMOSTPIPE(.STATE,.CONF,TERMID,.OUT,.TERR) DO  QUIT
+	. . SET RESP=$$ERRJSON("terminal_open_failed",$GET(TERR("error")))
+	. . DO SENDTEXT^MIOWS(.DEV,RESP)
+	. SET RESP=$$TERMEVT("terminal.open",.OUT)
+	. DO SENDTEXT^MIOWS(.DEV,RESP)
+	IF EVT="terminal.attach" DO  QUIT
+	. NEW TREE,TERR,OUT,TERMID
+	. IF $EXTRACT($GET(PAYLOAD),1)="{" SET OK=$$DECODE^MIOJSON(PAYLOAD,.TREE,.TERR)
+	. SET TERMID=$GET(TREE("terminalId"))
+	. IF '$$ATTACH^MIOMOSTPIPE(.STATE,TERMID,.OUT,.TERR) DO  QUIT
+	. . SET RESP=$$ERRJSON("terminal_attach_failed",$GET(TERR("error")))
+	. . DO SENDTEXT^MIOWS(.DEV,RESP)
+	. SET RESP=$$TERMEVT("terminal.attach",.OUT)
+	. DO SENDTEXT^MIOWS(.DEV,RESP)
+	IF EVT="terminal.input" DO  QUIT
+	. NEW TREE,TERR,OUT,TERMID,LINE
+	. IF $EXTRACT($GET(PAYLOAD),1)="{" SET OK=$$DECODE^MIOJSON(PAYLOAD,.TREE,.TERR)
+	. SET TERMID=$GET(TREE("terminalId")),LINE=$GET(TREE("line"))
+	. IF '$$INPUT^MIOMOSTPIPE(.STATE,TERMID,LINE,.OUT,.TERR) DO  QUIT
+	. . SET RESP=$$ERRJSON("terminal_input_failed",$GET(TERR("error")))
+	. . DO SENDTEXT^MIOWS(.DEV,RESP)
+	. SET RESP=$$TERMEVT("terminal.stdout",.OUT)
+	. DO SENDTEXT^MIOWS(.DEV,RESP)
+	IF EVT="terminal.resize" DO  QUIT
+	. NEW TREE,TERR,OUT,TERMID,COLS,ROWS
+	. IF $EXTRACT($GET(PAYLOAD),1)="{" SET OK=$$DECODE^MIOJSON(PAYLOAD,.TREE,.TERR)
+	. SET TERMID=$GET(TREE("terminalId")),COLS=+$GET(TREE("cols")),ROWS=+$GET(TREE("rows"))
+	. IF '$$RESIZE^MIOMOSTPIPE(.STATE,TERMID,COLS,ROWS,.OUT,.TERR) DO  QUIT
+	. . SET RESP=$$ERRJSON("terminal_resize_failed",$GET(TERR("error")))
+	. . DO SENDTEXT^MIOWS(.DEV,RESP)
+	. SET RESP=$$TERMEVT("terminal.resize",.OUT)
+	. DO SENDTEXT^MIOWS(.DEV,RESP)
+	IF EVT="terminal.poll" DO  QUIT
+	. NEW TREE,TERR,OUT,TERMID
+	. IF $EXTRACT($GET(PAYLOAD),1)="{" SET OK=$$DECODE^MIOJSON(PAYLOAD,.TREE,.TERR)
+	. SET TERMID=$GET(TREE("terminalId"))
+	. IF '$$POLL^MIOMOSTPIPE(.STATE,TERMID,.OUT,.TERR) DO  QUIT
+	. . SET RESP=$$ERRJSON("terminal_poll_failed",$GET(TERR("error")))
+	. . DO SENDTEXT^MIOWS(.DEV,RESP)
+	. SET RESP=$$TERMEVT("terminal.stdout",.OUT)
+	. DO SENDTEXT^MIOWS(.DEV,RESP)
+	IF EVT="terminal.close" DO  QUIT
+	. NEW TREE,TERR,OUT,TERMID
+	. IF $EXTRACT($GET(PAYLOAD),1)="{" SET OK=$$DECODE^MIOJSON(PAYLOAD,.TREE,.TERR)
+	. SET TERMID=$GET(TREE("terminalId"))
+	. IF '$$CLOSE^MIOMOSTPIPE(.STATE,TERMID,.OUT,.TERR) DO  QUIT
+	. . SET RESP=$$ERRJSON("terminal_close_failed",$GET(TERR("error")))
+	. . DO SENDTEXT^MIOWS(.DEV,RESP)
+	. SET RESP=$$TERMEVT("terminal.close",.OUT)
+	. DO SENDTEXT^MIOWS(.DEV,RESP)
 	DO EVENTX^MIOMOSAUD("ws_unsupported",.CTX,.STATE,EVT)
 	SET RESP=$$ERRJSON("unsupported_event",EVT)
 	DO SENDTEXT^MIOWS(.DEV,RESP)
@@ -148,6 +206,22 @@ ACK(EVT,APPKEY,STATE)
 	SET OBJ("sessionId")=$GET(STATE("sessionId"))
 	SET OBJ("serverTime")=$$NOWISO^MIOUTIL()
 	SET OBJ("savedAt")=$GET(^MIO("MIOMOS","SESSION",$GET(STATE("sessionId")),"layoutSavedAt"))
+	QUIT $$EN^MIOJSON1(.OBJ)
+
+	;
+TERMEVT(EVT,OUT)
+	NEW OBJ,N
+	SET OBJ("ok")=1
+	SET OBJ("event")=$GET(EVT)
+	SET OBJ("terminalId")=$GET(OUT("terminalId"))
+	IF $DATA(OUT("profile")) MERGE OBJ("profile")=OUT("profile")
+	IF $GET(OUT("clear")) SET OBJ("clear")=1
+	IF $GET(OUT("closed")) SET OBJ("closed")=1
+	IF $GET(OUT("transport"))'="" SET OBJ("transport")=$GET(OUT("transport"))
+	SET N=""
+	FOR  SET N=$ORDER(OUT("write",N)) QUIT:N=""  SET OBJ("write",N)=OUT("write",N)
+	IF $DATA(OUT("cols")) SET OBJ("cols")=+$GET(OUT("cols"))
+	IF $DATA(OUT("rows")) SET OBJ("rows")=+$GET(OUT("rows"))
 	QUIT $$EN^MIOJSON1(.OBJ)
 	;
 ERRJSON(CODE,DETAIL)

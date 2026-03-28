@@ -16,22 +16,83 @@ BOOTSTRAP(DEV,CONF,REQ,CTX)
 	DO ACCESS^MIOMOSOBS("bootstrap",.CTX,.STATE)
 	QUIT
 	;
+VIEW(DEV,CONF,REQ,CTX)
+	NEW STATE,ERR,OBJ,VIEW
+	IF '$$ENSURE^MIOMOSST(.CONF,.REQ,.CTX,.STATE,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,401,"login_required",$GET(ERR("error")),.CTX)
+	DO BUILD^MIOMOSVM(.STATE,.CONF,.VIEW)
+	MERGE OBJ("view")=VIEW
+	SET OBJ("ok")=1
+	DO RESPJSONX^MIOHTTP(.DEV,.CONF,200,.OBJ,$GET(CTX("request_id")),.CTX)
+	SET CTX("status")=200
+	DO EVENT^MIOMOSAUD("view_model",.CTX,.STATE)
+	DO ACCESS^MIOMOSOBS("view_model",.CTX,.STATE)
+	QUIT
+	;
+COMMAND(DEV,CONF,REQ,CTX)
+	NEW STATE,ERR,TREE,OBJ
+	IF '$$ENSURE^MIOMOSST(.CONF,.REQ,.CTX,.STATE,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,401,"login_required",$GET(ERR("error")),.CTX)
+	IF '$$PARSEBODY(.REQ,.TREE,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,400,"invalid_json",$GET(ERR("error")),.CTX)
+	IF '$$EXEC^MIOMOSCMD(.STATE,.CONF,.TREE,.OBJ,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,$SELECT($GET(ERR("status"))>0:+$GET(ERR("status")),1:400),$GET(ERR("error"),"command_failed"),$GET(ERR("detail"),$GET(ERR("error"))),.CTX)
+	SET OBJ("ok")=1
+	DO RESPJSONX^MIOHTTP(.DEV,.CONF,200,.OBJ,$GET(CTX("request_id")),.CTX)
+	SET CTX("status")=200
+	DO EVENTX^MIOMOSAUD("command_exec",.CTX,.STATE,$GET(TREE("command")))
+	DO ACCESS^MIOMOSOBS("command_exec",.CTX,.STATE)
+	QUIT
+	;
+GETSETTINGS(DEV,CONF,REQ,CTX)
+	NEW STATE,ERR,OBJ,CUR
+	IF '$$ENSURE^MIOMOSST(.CONF,.REQ,.CTX,.STATE,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,401,"login_required",$GET(ERR("error")),.CTX)
+	IF '$$HAS^MIOMOSPERM(.STATE,"settings.self") DO  QUIT
+	. DO RESPERR(.DEV,.CONF,403,"forbidden","settings.self",.CTX)
+	DO CURRENT^MIOMOSSET($GET(STATE("principal")),.CUR)
+	MERGE OBJ("settings")=CUR
+	SET OBJ("ok")=1
+	DO RESPJSONX^MIOHTTP(.DEV,.CONF,200,.OBJ,$GET(CTX("request_id")),.CTX)
+	SET CTX("status")=200
+	DO EVENT^MIOMOSAUD("settings_view",.CTX,.STATE)
+	DO ACCESS^MIOMOSOBS("settings_view",.CTX,.STATE)
+	QUIT
+	;
+SAVESETTINGS(DEV,CONF,REQ,CTX)
+	NEW STATE,ERR,TREE,OBJ,CUR
+	IF '$$ENSURE^MIOMOSST(.CONF,.REQ,.CTX,.STATE,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,401,"login_required",$GET(ERR("error")),.CTX)
+	IF '$$HAS^MIOMOSPERM(.STATE,"settings.self") DO  QUIT
+	. DO RESPERR(.DEV,.CONF,403,"forbidden","settings.self",.CTX)
+	IF '$$PARSEBODY(.REQ,.TREE,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,400,"invalid_json",$GET(ERR("error")),.CTX)
+	IF '$$SAVE^MIOMOSSET($GET(STATE("principal")),.TREE,.CUR,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,400,"settings_invalid",$GET(ERR("error")),.CTX)
+	MERGE OBJ("settings")=CUR
+	SET OBJ("ok")=1
+	DO RESPJSONX^MIOHTTP(.DEV,.CONF,200,.OBJ,$GET(CTX("request_id")),.CTX)
+	SET CTX("status")=200
+	DO EVENTX^MIOMOSAUD("settings_save",.CTX,.STATE,$GET(TREE("themeKey")))
+	DO ACCESS^MIOMOSOBS("settings_save",.CTX,.STATE)
+	QUIT
+	;
 SETTHEME(DEV,CONF,REQ,CTX)
-	NEW STATE,ERR,TREE,KEY,OBJ
+	NEW STATE,ERR,TREE,OBJ,CUR
 	IF '$$ENSURE^MIOMOSST(.CONF,.REQ,.CTX,.STATE,.ERR) DO  QUIT
 	. DO RESPERR(.DEV,.CONF,401,"login_required",$GET(ERR("error")),.CTX)
 	IF '$$HAS^MIOMOSPERM(.STATE,"theme.self") DO  QUIT
 	. DO RESPERR(.DEV,.CONF,403,"forbidden","theme.self",.CTX)
 	IF '$$PARSEBODY(.REQ,.TREE,.ERR) DO  QUIT
 	. DO RESPERR(.DEV,.CONF,400,"invalid_json",$GET(ERR("error")),.CTX)
-	SET KEY=$GET(TREE("themeKey"))
-	IF '$$SAVE^MIOMOSTH($GET(STATE("principal")),KEY,.ERR) DO  QUIT
+	IF '$$SAVE^MIOMOSSET($GET(STATE("principal")),.TREE,.CUR,.ERR) DO  QUIT
 	. DO RESPERR(.DEV,.CONF,400,"theme_invalid",$GET(ERR("error")),.CTX)
-	SET OBJ("ok")=1,OBJ("themeKey")=KEY
-	DO PUTOBJ^MIOMOSTH($NAME(OBJ("theme")),KEY)
+	SET OBJ("ok")=1,OBJ("themeKey")=$GET(CUR("current","themeKey"))
+	DO PUTOBJ^MIOMOSTH($NAME(OBJ("theme")),$GET(CUR("current","themeKey")))
+	MERGE OBJ("settings")=CUR
 	DO RESPJSONX^MIOHTTP(.DEV,.CONF,200,.OBJ,$GET(CTX("request_id")),.CTX)
 	SET CTX("status")=200
-	DO EVENTX^MIOMOSAUD("theme_update",.CTX,.STATE,KEY)
+	DO EVENTX^MIOMOSAUD("theme_update",.CTX,.STATE,$GET(CUR("current","themeKey")))
 	DO ACCESS^MIOMOSOBS("theme_update",.CTX,.STATE)
 	QUIT
 	;
@@ -319,6 +380,7 @@ PRUNERET(DEV,CONF,REQ,CTX)
 	DO EVENT^MIOMOSAUD("retention_prune",.CTX,.STATE)
 	DO ACCESS^MIOMOSOBS("retention_prune",.CTX,.STATE)
 	QUIT
+	;
 RESPJSONDL(DEV,CONF,OBJ,FN,CTX)
 	NEW HEAD,JSON
 	SET JSON=$$EN^MIOJSON1(.OBJ)

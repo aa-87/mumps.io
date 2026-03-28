@@ -10,6 +10,9 @@ CONFDEF(CONF)
 	IF $GET(CONF("miomos","route","bootstrap"))="" SET CONF("miomos","route","bootstrap")="/api/miomos/bootstrap"
 	IF $GET(CONF("miomos","route","ws"))="" SET CONF("miomos","route","ws")="/ws/miomos"
 	IF $GET(CONF("miomos","route","theme"))="" SET CONF("miomos","route","theme")="/api/miomos/theme"
+	IF $GET(CONF("miomos","route","settings"))="" SET CONF("miomos","route","settings")="/api/miomos/settings"
+	IF $GET(CONF("miomos","route","view"))="" SET CONF("miomos","route","view")="/api/miomos/view"
+	IF $GET(CONF("miomos","route","command"))="" SET CONF("miomos","route","command")="/api/miomos/command"
 	IF $GET(CONF("miomos","route","signin"))="" SET CONF("miomos","route","signin")="/api/miomos/auth/signin"
 	IF $GET(CONF("miomos","route","signup"))="" SET CONF("miomos","route","signup")="/api/miomos/auth/signup"
 	IF $GET(CONF("miomos","route","signout"))="" SET CONF("miomos","route","signout")="/api/miomos/auth/signout"
@@ -34,8 +37,31 @@ CONFDEF(CONF)
 	IF $GET(CONF("miomos","desktop","accent"))="" SET CONF("miomos","desktop","accent")="#2f6fed"
 	IF $GET(CONF("miomos","desktop","density"))="" SET CONF("miomos","desktop","density")="dense"
 	IF $GET(CONF("miomos","desktop","snapMargin"))="" SET CONF("miomos","desktop","snapMargin")=18
+	IF $GET(CONF("miomos","wm","defaultPreset"))="" SET CONF("miomos","wm","defaultPreset")="analyst"
+	IF $GET(CONF("miomos","wm","defaultSnapMode"))="" SET CONF("miomos","wm","defaultSnapMode")="quadrant"
+	IF $GET(CONF("miomos","wm","defaultMotionProfile"))="" SET CONF("miomos","wm","defaultMotionProfile")="standard"
+	IF $GET(CONF("miomos","wm","defaultTitlebarStyle"))="" SET CONF("miomos","wm","defaultTitlebarStyle")="accent"
 	IF $GET(CONF("miomos","theme","default"))="" SET CONF("miomos","theme","default")="midnight-professional"
 	IF $GET(CONF("miomos","theme","allowSelfService"))="" SET CONF("miomos","theme","allowSelfService")=1
+	IF $GET(CONF("miomos","settings","default","fontFamily"))="" SET CONF("miomos","settings","default","fontFamily")="Segoe UI"
+	IF $GET(CONF("miomos","settings","default","fontSize"))="" SET CONF("miomos","settings","default","fontSize")=13
+	IF $GET(CONF("miomos","settings","default","titleAccent"))="" SET CONF("miomos","settings","default","titleAccent")="theme"
+	IF $GET(CONF("miomos","settings","default","iconStyle"))="" SET CONF("miomos","settings","default","iconStyle")="glass"
+	IF $GET(CONF("miomos","settings","default","animations"))="" SET CONF("miomos","settings","default","animations")="reduced"
+	IF $GET(CONF("miomos","terminal","enabled"))="" SET CONF("miomos","terminal","enabled")=1
+	IF $GET(CONF("miomos","terminal","pipe","enabled"))="" SET CONF("miomos","terminal","pipe","enabled")=1
+	IF $GET(CONF("miomos","terminal","pipe","command"))="" SET CONF("miomos","terminal","pipe","command")="yottadb"
+	IF $GET(CONF("miomos","terminal","pipe","shell"))="" SET CONF("miomos","terminal","pipe","shell")="/bin/sh"
+	IF $GET(CONF("miomos","terminal","pipe","independent"))="" SET CONF("miomos","terminal","pipe","independent")=0
+	IF $GET(CONF("miomos","terminal","default","fontFamily"))="" SET CONF("miomos","terminal","default","fontFamily")="JetBrains Mono"
+	IF $GET(CONF("miomos","terminal","default","fontSize"))="" SET CONF("miomos","terminal","default","fontSize")=13
+	IF $GET(CONF("miomos","terminal","default","cursorBlink"))="" SET CONF("miomos","terminal","default","cursorBlink")=1
+	IF $GET(CONF("miomos","terminal","default","cursorStyle"))="" SET CONF("miomos","terminal","default","cursorStyle")="block"
+	IF $GET(CONF("miomos","terminal","default","scrollback"))="" SET CONF("miomos","terminal","default","scrollback")=3000
+	IF $GET(CONF("miomos","terminal","default","renderer"))="" SET CONF("miomos","terminal","default","renderer")="canvas"
+	IF $GET(CONF("miomos","terminal","default","unicode"))="" SET CONF("miomos","terminal","default","unicode")="unicode11"
+	IF $GET(CONF("miomos","terminal","default","rows"))="" SET CONF("miomos","terminal","default","rows")=28
+	IF $GET(CONF("miomos","terminal","default","cols"))="" SET CONF("miomos","terminal","default","cols")=120
 	IF $GET(CONF("miomos","session","idleTimeoutSeconds"))="" SET CONF("miomos","session","idleTimeoutSeconds")=900
 	IF $GET(CONF("miomos","session","absoluteTimeoutSeconds"))="" SET CONF("miomos","session","absoluteTimeoutSeconds")=28800
 	IF $GET(CONF("miomos","dev","enabled"))="" SET CONF("miomos","dev","enabled")=ISDEV
@@ -87,6 +113,14 @@ REG(CONF)
 	DO ADDM^MIOROUTE("GET",$GET(CONF("miomos","route","bootstrap")),"BOOTSTRAP^MIOMOSAPI",.META)
 	KILL META SET META("authRequired")=AUTHREQ
 	DO ADDM^MIOROUTE("POST",$GET(CONF("miomos","route","theme")),"SETTHEME^MIOMOSAPI",.META)
+	KILL META SET META("authRequired")=AUTHREQ
+	DO ADDM^MIOROUTE("GET",$GET(CONF("miomos","route","settings")),"GETSETTINGS^MIOMOSAPI",.META)
+	KILL META SET META("authRequired")=AUTHREQ
+	DO ADDM^MIOROUTE("POST",$GET(CONF("miomos","route","settings")),"SAVESETTINGS^MIOMOSAPI",.META)
+	KILL META SET META("authRequired")=AUTHREQ
+	DO ADDM^MIOROUTE("GET",$GET(CONF("miomos","route","view")),"VIEW^MIOMOSAPI",.META)
+	KILL META SET META("authRequired")=AUTHREQ
+	DO ADDM^MIOROUTE("POST",$GET(CONF("miomos","route","command")),"COMMAND^MIOMOSAPI",.META)
 	KILL META SET META("authRequired")=0
 	DO ADDM^MIOROUTE("POST",$GET(CONF("miomos","route","signin")),"SIGNIN^MIOMOSAPI",.META)
 	KILL META SET META("authRequired")=0
@@ -145,6 +179,9 @@ DEVEXEMPT(CONF)
 	DO ADDEXEMPT(.CONF,$GET(CONF("miomos","route","desktop")))
 	DO ADDEXEMPT(.CONF,$GET(CONF("miomos","route","bootstrap")))
 	DO ADDEXEMPT(.CONF,$GET(CONF("miomos","route","theme")))
+	DO ADDEXEMPT(.CONF,$GET(CONF("miomos","route","settings")))
+	DO ADDEXEMPT(.CONF,$GET(CONF("miomos","route","view")))
+	DO ADDEXEMPT(.CONF,$GET(CONF("miomos","route","command")))
 	DO ADDEXEMPT(.CONF,$GET(CONF("miomos","route","ws")))
 	DO ADDEXEMPT(.CONF,$GET(CONF("miomos","route","signin")))
 	DO ADDEXEMPT(.CONF,$GET(CONF("miomos","route","signup")))

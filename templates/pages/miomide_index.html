@@ -1,0 +1,306 @@
+<div id="mioide-app" class="mioide-shell" data-workbench="mioide" data-boot-route="{{bootRoute}}" data-events-ws="{{eventsWsRoute}}" data-terminal-ws="{{terminalWsRoute}}">
+  <header class="mioide-titlebar flex items-center justify-between gap-3 px-3 text-xs">
+    <div class="flex items-center gap-3 min-w-0">
+      <div class="font-semibold tracking-[0.18em] text-[11px] uppercase text-[var(--wb-title)]">{{productTitle}}</div>
+      <div class="truncate text-[11px] text-[var(--wb-text-soft)]">{{productSubtitle}}</div>
+      <div class="hidden md:flex items-center gap-2 rounded-md border border-[var(--wb-border)] bg-black/10 px-3 py-1 text-[11px] text-[var(--wb-text-soft)]">
+        <span class="text-[var(--wb-text)]" v-text="activeRoutine || 'Welcome'"></span>
+        <span>•</span>
+        <span v-text="statusMessage"></span>
+      </div>
+    </div>
+    <div class="flex items-center gap-1 min-w-0 text-[11px] text-[var(--wb-text-soft)]">
+      <button type="button" class="mioide-title-btn px-2 py-1" @click="toggleSidebar">Sidebar</button>
+      <button type="button" class="mioide-title-btn px-2 py-1" @click="togglePanel">Panel</button>
+      <button type="button" class="mioide-title-btn px-2 py-1" @click="openQuickOpen">Go to File</button>
+      <button type="button" class="mioide-title-btn px-2 py-1" @click="openCommandPalette">Commands</button>
+      <button type="button" class="mioide-title-btn px-2 py-1" @click="toggleTheme" v-text="theme==='mioide-light' ? 'Light' : 'Dark'"></button>
+      <div class="ml-2 truncate">{{userName}} · {{profile}}</div>
+    </div>
+  </header>
+
+  <section class="mioide-workbench" @click="closeTabMenu">
+    <nav class="mioide-activity" aria-label="Activity Bar">
+      <button type="button" class="mioide-activity-btn" :class="{'is-active': activeSidebar==='explorer'}" @click.stop="setSidebar('explorer')"><span class="text-[11px] font-semibold tracking-[0.18em]">EX</span></button>
+      <button type="button" class="mioide-activity-btn" :class="{'is-active': activeSidebar==='search'}" @click.stop="setSidebar('search')"><span class="text-[11px] font-semibold tracking-[0.18em]">SR</span></button>
+      <button type="button" class="mioide-activity-btn" :class="{'is-active': activeSidebar==='globals'}" @click.stop="setSidebar('globals')"><span class="text-[11px] font-semibold tracking-[0.18em]">GL</span></button>
+      <button type="button" class="mioide-activity-btn" :class="{'is-active': activeSidebar==='snippets'}" @click.stop="setSidebar('snippets')"><span class="text-[11px] font-semibold tracking-[0.18em]">SN</span></button>
+      <button type="button" class="mioide-activity-btn" :class="{'is-active': activeSidebar==='debug'}" @click.stop="setSidebar('debug')"><span class="text-[11px] font-semibold tracking-[0.18em]">DB</span></button>
+      <div class="mt-auto flex w-full flex-col items-center gap-1 pb-2">
+        <button type="button" class="mioide-activity-btn" @click.stop="selectPanel('terminal')"><span class="text-[11px] font-semibold tracking-[0.18em]">TM</span></button>
+      </div>
+    </nav>
+
+    <aside v-if="sidebarVisible" class="mioide-sidebar-shell" :style="sidebarStyle">
+      <div class="mioide-sidebar-header flex items-center justify-between gap-2 px-3 py-2">
+        <div class="text-[11px] uppercase tracking-[0.18em] text-[var(--wb-text-soft)]" v-text="sidebarTitle"></div>
+        <div class="flex items-center gap-1 text-[11px] text-[var(--wb-text-soft)]">
+          <button type="button" class="mioide-window-action px-2 py-1" data-window-action="dock">Dock</button>
+          <button type="button" class="mioide-window-action px-2 py-1" data-window-action="pin">Pin</button>
+          <button type="button" class="mioide-side-action px-2 py-1" @click.stop="toggleSidebar">×</button>
+        </div>
+      </div>
+      <div class="mioide-sidebar-body" data-drop-zone="sidebar">
+        <div v-show="activeSidebar==='explorer'" class="flex h-full min-h-0 flex-col">
+          <div class="mioide-open-editors flex items-center justify-between gap-3 px-3 py-2 text-[11px] uppercase tracking-[0.18em] text-[var(--wb-text-soft)]">
+            <span>Open Editors</span><span class="text-[10px]" v-text="tabs.length"></span>
+          </div>
+          <div class="max-h-36 overflow-auto px-2 py-2 space-y-1">
+            <button v-for="tab in tabs" :key="'open-'+tab.name" type="button" class="mioide-list-row text-sm" @click.stop="activateTab(tab.name)" @contextmenu.prevent.stop="openTabContextMenu(tab,$event)">
+              <span class="text-sky-400">M</span><span class="truncate flex-1" v-text="tab.name"></span><span v-if="tab.dirty" class="text-[var(--wb-warning)]">●</span>
+            </button>
+            <div v-if="!tabs.length" class="px-3 py-3 text-sm text-[var(--wb-text-soft)]">No editors are open.</div>
+          </div>
+          <div class="mioide-open-editors flex items-center justify-between gap-3 px-3 py-2 text-[11px] uppercase tracking-[0.18em] text-[var(--wb-text-soft)]">
+            <span>Routines</span><button type="button" class="mioide-side-action px-2 py-1 text-[10px]" @click.stop="loadRoutines">Refresh</button>
+          </div>
+          <div class="mioide-routine-list flex-1 overflow-auto px-2 py-2 space-y-1">
+            <button v-for="item in routines" :key="item.name" type="button" class="mioide-list-row text-sm" @click.stop="openRoutine(item.name)"><span class="text-sky-400">M</span><span class="truncate flex-1" v-text="item.name"></span></button>
+          </div>
+        </div>
+        <div v-show="activeSidebar==='search'" class="flex h-full min-h-0 flex-col">
+          <div class="px-3 py-3"><input v-model="searchTerm" @keydown.enter.prevent="runSearch" type="text" class="w-full rounded-md border border-[var(--wb-border)] bg-black/10 px-3 py-2 text-sm outline-none focus:border-[var(--wb-accent)]" placeholder="Find across routines"></div>
+          <div class="flex-1 overflow-auto px-2 pb-2 space-y-1">
+            <button v-for="(item,idx) in searchResults" :key="'sr-'+idx" type="button" class="mioide-list-row text-sm flex-col items-start" @click.stop="openSearchResult(item)">
+              <div class="flex w-full items-center justify-between gap-3"><span class="font-medium" v-text="item.routine"></span><span class="text-[10px] text-[var(--wb-text-soft)]">Ln <span v-text="item.line"></span></span></div>
+              <div class="w-full truncate text-[12px] text-[var(--wb-text-soft)]" v-text="item.preview"></div>
+            </button>
+            <div v-if="!searchResults.length" class="px-3 py-3 text-sm text-[var(--wb-text-soft)]">No search results yet.</div>
+          </div>
+        </div>
+        <div v-show="activeSidebar==='globals'" class="flex h-full min-h-0 flex-col">
+          <div class="px-3 py-3 flex items-center gap-2"><input v-model="globalRoot" @keydown.enter.prevent="loadGlobals" type="text" class="flex-1 rounded-md border border-[var(--wb-border)] bg-black/10 px-3 py-2 text-sm outline-none focus:border-[var(--wb-accent)]" placeholder="^MIO"><button type="button" class="rounded-md border border-[var(--wb-border)] px-3 py-2 text-sm" @click.stop="loadGlobals">Load</button></div>
+          <div class="flex-1 overflow-auto px-2 pb-2 space-y-1">
+            <div v-for="(item,idx) in globals" :key="'gl-'+idx" class="mioide-list-row items-start text-sm"><div class="min-w-0 flex-1"><div class="truncate font-medium" v-text="item.node"></div><div class="truncate text-[12px] text-[var(--wb-text-soft)]" v-text="item.value"></div></div></div>
+            <div v-if="!globals.length" class="px-3 py-3 text-sm text-[var(--wb-text-soft)]">No globals loaded.</div>
+          </div>
+        </div>
+        <div v-show="activeSidebar==='snippets'" class="flex h-full min-h-0 flex-col overflow-auto px-2 py-2 space-y-1">
+          <button v-for="(snippet,idx) in snippets" :key="'sn-'+idx" type="button" class="mioide-list-row text-sm flex-col items-start" @click.stop="insertSnippet(snippet)"><div class="font-medium" v-text="snippet.label"></div><div class="w-full truncate text-[12px] text-[var(--wb-text-soft)]" v-text="snippet.body"></div></button>
+        </div>
+        <div v-show="activeSidebar==='debug'" class="flex h-full min-h-0 flex-col overflow-auto px-3 py-3 gap-3">
+          <div class="rounded-xl border border-[var(--wb-border)] bg-black/10 p-4">
+            <div class="text-[11px] uppercase tracking-[0.18em] text-[var(--wb-text-soft)]">Run and Debug</div>
+            <div class="mt-2 text-sm text-[var(--wb-text-soft)]">Debugger transport is still an MVP, but the shell now behaves much closer to VS Code.</div>
+            <div class="mt-4 flex gap-2"><button type="button" class="rounded-md border border-[var(--wb-border)] px-3 py-2 text-sm" @click.stop="runActive">Run</button><button type="button" class="rounded-md border border-[var(--wb-border)] px-3 py-2 text-sm" @click.stop="loadDebug">Refresh Debug</button></div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <div v-if="sidebarVisible" class="mioide-resizer mioide-resizer--sidebar" :class="{'is-active': resizeState.type==='sidebar'}" data-resizer="sidebar" @pointerdown.prevent.stop="beginResize('sidebar',$event)"></div>
+
+    <section class="mioide-editor-shell">
+      <div class="mioide-tab-strip" data-tab-strip @contextmenu.prevent.stop="openTabStripMenu($event)" @dragover.prevent @drop.prevent.stop="dropTabAtEnd">
+        <div class="mioide-tab-scroll">
+          <div v-for="tab in tabs" :key="tab.name" class="mioide-tab" :class="{'is-active': tab.name===activeRoutine, 'is-drag-target': tab.name===tabDragTarget}" :style="tabStyle" draggable="true" data-tab-item @click.stop="activateTab(tab.name)" @contextmenu.prevent.stop="openTabContextMenu(tab,$event)" @dragstart="beginTabDrag(tab,$event)" @dragover.prevent.stop="setTabDragTarget(tab.name)" @drop.prevent.stop="dropTabOn(tab.name)">
+            <span class="text-sky-400">M</span><span class="truncate flex-1" v-text="tab.name"></span><span v-if="tab.dirty" class="text-[var(--wb-warning)]">●</span><button type="button" class="mioide-tab-close" @click.stop="closeTab(tab.name)">×</button>
+          </div>
+        </div>
+        <button type="button" class="mioide-tab-plus" @click.stop="openQuickOpen">+</button>
+      </div>
+      <div class="mioide-editor-toolbar text-sm">
+        <div class="flex items-center gap-2 min-w-0 overflow-hidden text-[var(--wb-text-soft)]"><span>Explorer</span><span>›</span><span class="truncate" v-text="activeRoutine || 'Welcome'"></span><span v-if="activePath" class="truncate text-[11px]">· <span v-text="activePath"></span></span></div>
+        <div class="flex items-center gap-2 text-[11px] text-[var(--wb-text-soft)]"><button type="button" class="mioide-title-btn px-2 py-1" @click.stop="reloadActive">Reload</button><button type="button" class="mioide-title-btn px-2 py-1" @click.stop="revertActive">Revert</button><button type="button" class="mioide-title-btn px-2 py-1" @click.stop="saveActive">Save</button><button type="button" class="mioide-title-btn px-2 py-1" @click.stop="compileActive">Compile</button><button type="button" class="mioide-title-btn px-2 py-1" @click.stop="runActive">Run</button></div>
+      </div>
+      <div class="mioide-editor-stage">
+        <div v-if="!activeRoutine" class="mioide-editor-empty" data-welcome-surface>
+          <div class="w-full max-w-4xl grid gap-6 lg:grid-cols-[1.2fr,.8fr] items-start">
+            <section class="mioide-card p-6">
+              <div class="text-[12px] uppercase tracking-[0.24em] text-sky-300">MIOIDE</div>
+              <h2 class="mt-3 text-3xl font-semibold text-[var(--wb-title)]">A cleaner VS Code-like shell for M developers.</h2>
+              <p class="mt-3 max-w-2xl text-sm leading-6 text-[var(--wb-text-soft)]">Open routines, drag tabs into the order you want, use the right-click editor menu, and keep your terminal, output, and problems panel in the same workbench.</p>
+              <div class="mt-5 flex flex-wrap gap-2"><span class="mioide-chip">Drag tabs to reorder</span><span class="mioide-chip">Tab context menu</span><span class="mioide-chip">Persistent layout</span><span class="mioide-chip">Xterm.js terminal</span></div>
+              <div class="mt-6 flex flex-wrap gap-3"><button type="button" class="rounded-md bg-[var(--wb-accent)] px-4 py-2 text-sm font-medium text-white" @click.stop="openQuickOpen">Open a routine</button><button type="button" class="rounded-md border border-[var(--wb-border)] px-4 py-2 text-sm" @click.stop="openCommandPalette">Command Palette</button></div>
+            </section>
+            <section class="rounded-xl border border-[var(--wb-border)] bg-black/10 p-5"><div class="text-[11px] uppercase tracking-[0.18em] text-[var(--wb-text-soft)]">Recent routines</div><div class="mt-3 space-y-2"><button v-for="name in recentRoutines" :key="'recent-'+name" type="button" class="mioide-list-row text-sm" @click.stop="openRoutine(name)"><span class="text-sky-400">M</span><span class="truncate" v-text="name"></span></button><div v-if="!recentRoutines.length" class="py-2 text-sm text-[var(--wb-text-soft)]">Your recent routines will appear here.</div></div></section>
+          </div>
+        </div>
+        <div v-else class="mioide-editor-wrap">
+          <pre class="mioide-gutter" :style="editorMetricsStyle" v-text="lineNumbers"></pre>
+          <div class="mioide-code-area"><pre class="mioide-code-layer" :style="editorMetricsStyle" v-html="highlightedCode"></pre><textarea ref="editor" class="mioide-code-input" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" :style="editorMetricsStyle" v-model="editorText" @input="syncEditor" @scroll="syncScroll" @click="updateCursor" @keyup="updateCursor" @keydown.tab.prevent="insertTab"></textarea></div>
+        </div>
+      </div>
+      <div v-if="panelVisible" class="mioide-resizer mioide-resizer--panel" :class="{'is-active': resizeState.type==='panel'}" data-resizer="panel" @pointerdown.prevent.stop="beginResize('panel',$event)"></div>
+      <section v-show="panelVisible" class="mioide-panel-shell" :style="panelStyle" data-drop-zone="panel">
+        <div class="mioide-panel-header flex items-center justify-between gap-3 px-2">
+          <div class="mioide-panel-tabs"><button type="button" class="mioide-panel-tab" :class="{'is-active': activePanel==='problems'}" @click.stop="selectPanel('problems')">Problems</button><button type="button" class="mioide-panel-tab" :class="{'is-active': activePanel==='output'}" @click.stop="selectPanel('output')">Output</button><button type="button" class="mioide-panel-tab" :class="{'is-active': activePanel==='terminal'}" @click.stop="selectPanel('terminal')">Terminal</button><button type="button" class="mioide-panel-tab" :class="{'is-active': activePanel==='debug'}" @click.stop="selectPanel('debug')">Debug Console</button></div>
+          <div class="flex items-center gap-2 text-[11px] text-[var(--wb-text-soft)]"><button type="button" class="mioide-side-action px-2 py-1" @click.stop="togglePanel">Hide</button></div>
+        </div>
+        <div class="mioide-panel-stage">
+          <section v-show="activePanel==='problems'" class="mioide-panel-pane" data-panel-mount="problems"><div class="mioide-panel-scroll px-3 py-3 space-y-2"><div class="text-[11px] uppercase tracking-[0.18em] text-[var(--wb-text-soft)]">Compile failed</div><div v-if="!problems.length" class="text-sm text-[var(--wb-text-soft)]">No problems reported.</div><button v-for="(problem,idx) in problems" :key="'pb-'+idx" type="button" class="w-full rounded-lg border border-[var(--wb-border)] bg-black/10 px-3 py-3 text-left" @click.stop="goToProblem(problem)"><div class="flex items-center justify-between gap-3"><div class="font-medium" v-text="problem.message || problem.code || 'Problem'"></div><div class="text-[11px] text-[var(--wb-text-soft)]">Ln <span v-text="problem.line || '?'"></span></div></div><div class="mt-1 text-xs text-[var(--wb-text-soft)]" v-text="problem.detail || problem.routine || ''"></div></button></div></section>
+          <section v-show="activePanel==='output'" class="mioide-panel-pane" data-panel-mount="output"><pre class="mioide-panel-scroll m-0 px-3 py-3 text-[12px] leading-6 text-[var(--wb-text)]" v-text="outputText"></pre></section>
+          <section v-show="activePanel==='terminal'" class="mioide-panel-pane" data-panel-mount="terminal"><div class="mioide-terminal-stage"><div class="mioide-terminal-toolbar"><div class="flex items-center gap-3 min-w-0 text-sm"><span class="font-medium">Integrated Terminal</span><span class="mioide-terminal-status" :class="terminalStatusClass" v-text="terminalStatusLabel"></span><span class="truncate text-[11px] text-[var(--wb-text-soft)]" v-text="terminalStatusDetail"></span></div><div class="flex items-center gap-2 text-[11px] text-[var(--wb-text-soft)]"><button type="button" class="mioide-side-action px-2 py-1" data-terminal-action="reconnect" @click.stop="reconnectTerminal">Reconnect</button><button type="button" class="mioide-side-action px-2 py-1" data-terminal-action="clear" @click.stop="clearTerminal">Clear</button><button type="button" class="mioide-side-action px-2 py-1" data-terminal-action="close" @click.stop="closeTerminal">Close</button></div></div><div class="min-h-0 overflow-hidden bg-black/70"><div ref="terminalHost" class="mioide-terminal-host"></div></div></div></section>
+          <section v-show="activePanel==='debug'" class="mioide-panel-pane" data-panel-mount="debug"><pre class="mioide-panel-scroll m-0 px-3 py-3 text-[12px] leading-6 text-[var(--wb-text)]" v-text="debugText"></pre></section>
+        </div>
+      </section>
+    </section>
+  </section>
+
+  <footer class="mioide-statusbar"><div class="flex items-center gap-3 min-w-0 overflow-hidden"><span class="truncate" v-text="statusMessage"></span><span>Ln <span v-text="currentLine"></span>, Col <span v-text="currentColumn"></span></span><span v-if="activeRoutine" class="truncate" v-text="activeRoutine"></span></div><div class="flex items-center gap-3 text-[11px]"><span v-text="themeLabel"></span><span v-text="activePanelLabel"></span><span v-if="terminalSessionId" class="truncate max-w-52" v-text="terminalSessionId"></span></div></footer>
+
+  <div v-if="showCommandPalette" class="mioide-overlay" data-command-palette @click.self="closeOverlays"><div class="mioide-dialog"><div class="mioide-dialog-header">Command Palette</div><input ref="commandInput" v-model="commandQuery" class="mioide-command-input" type="text" placeholder="Type a command"><div class="mioide-command-list"><button v-for="(item,idx) in filteredCommands" :key="'cmd-'+item.id" type="button" class="mioide-command-item" :class="{'is-active': idx===commandIndex}" @click.stop="runCommand(item.id)"><span v-text="item.label"></span><span class="mioide-kbd" v-text="item.shortcut || item.id"></span></button></div></div></div>
+  <div v-if="showQuickOpen" class="mioide-overlay" data-quick-open @click.self="closeOverlays"><div class="mioide-dialog"><div class="mioide-dialog-header">Go to File</div><input ref="quickOpenInput" v-model="quickOpenQuery" class="mioide-command-input" type="text" placeholder="Search routines"><div class="mioide-command-list"><button v-for="(item,idx) in filteredRoutines" :key="'qo-'+item.name" type="button" class="mioide-command-item" :class="{'is-active': idx===quickOpenIndex}" @click.stop="pickQuickOpen(item)"><span v-text="item.name"></span><span class="mioide-kbd" v-text="item.path || 'routine'"></span></button></div></div></div>
+  <div v-if="tabMenu.visible" class="mioide-context-menu" data-tab-context-menu :style="tabMenuStyle" @click.stop><button type="button" class="mioide-context-item" data-tab-action="close" @click.stop="closeTabMenuAction('close')"><span>Close</span></button><button type="button" class="mioide-context-item" data-tab-action="closeOthers" @click.stop="closeTabMenuAction('closeOthers')"><span>Close Others</span></button><button type="button" class="mioide-context-item" data-tab-action="closeToRight" @click.stop="closeTabMenuAction('closeToRight')"><span>Close to the Right</span></button><button type="button" class="mioide-context-item" data-tab-action="closeSaved" @click.stop="closeTabMenuAction('closeSaved')"><span>Close Saved</span></button><button type="button" class="mioide-context-item" data-tab-action="closeAll" @click.stop="closeTabMenuAction('closeAll')"><span>Close All</span></button></div>
+  <div class="mioide-toast-stack"><div v-for="item in notifications" :key="item.id" class="mioide-toast"><div class="font-medium" v-text="item.title"></div><div class="mt-1 text-sm text-[var(--wb-text-soft)]" v-text="item.detail"></div></div></div>
+</div>
+
+<script>
+(function(){
+  const escapeHtml = (value) => String(value == null ? '' : value).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const syntaxHighlight = (source) => {
+    let html = escapeHtml(source || '');
+    html = html.replace(/(;.*)$/gm,'<span class="tok-cmt">$1</span>');
+    html = html.replace(/"([^"\\]|\\.)*"/g,'<span class="tok-str">$&</span>');
+    html = html.replace(/\b(SET|S|DO|D|QUIT|Q|IF|I|ELSE|E|FOR|F|NEW|N|KILL|K|MERGE|M|USE|U|WRITE|W|READ|R|OPEN|O|CLOSE|C|VIEW|XECUTE|X)\b/g,'<span class="tok-key">$1</span>');
+    html = html.replace(/(\$[A-Z%]+)/g,'<span class="tok-sys">$1</span>');
+    html = html.replace(/^([A-Za-z%][A-Za-z0-9]*)(?=\s|\()/gm,'<span class="tok-lbl">$1</span>');
+    return html || '&nbsp;';
+  };
+  const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+  const ordered = (obj) => Object.keys(obj || {}).filter((key) => /^\d+$/.test(key)).sort((a,b) => Number(a) - Number(b)).map((key) => obj[key]);
+  const app = Vue.createApp({
+    data() {
+      return { boot:null, activeSidebar:'explorer', activePanel:'output', sidebarVisible:true, panelVisible:true, routines:[], tabs:[], recentRoutines:[], activeRoutine:'', activePath:'', editorText:'', outputText:'Booting MIOIDE...', debugText:'Debugger transport not initialized yet.', problems:[], searchTerm:'', searchResults:[], globalRoot:'^MIO', globals:[], snippets:[], commands:[], statusMessage:'Loading workspace…', currentLine:1, currentColumn:1, theme:'mioide-dark', sidebarWidth:300, panelHeight:220, sidebarMinWidth:220, sidebarMaxWidth:520, panelMinHeight:140, panelMaxHeight:420, tabMinWidth:140, tabMaxWidth:240, editorFontSize:13, editorLineHeight:1.6, storageKey:'miomide:workspace', showCommandPalette:false, showQuickOpen:false, commandQuery:'', quickOpenQuery:'', commandIndex:0, quickOpenIndex:0, resizeState:{type:'',startX:0,startY:0,startSidebarWidth:300,startPanelHeight:220}, notifications:[], nextToastId:1, compileAutoSave:true, tabDragName:'', tabDragTarget:'', tabMenu:{visible:false,x:0,y:0,tabName:''}, terminal:null, fitAddon:null, terminalSocket:null, terminalResizeObserver:null, terminalClientId:'', terminalSessionId:'', terminalStatus:'idle', terminalStatusDetail:'Terminal offline', terminalIntendedClose:false, eventSocket:null };
+    },
+    computed: {
+      sidebarTitle() { return ({ explorer:'Explorer', search:'Search', globals:'Globals', snippets:'Snippets', debug:'Run and Debug' })[this.activeSidebar] || 'Explorer'; },
+      activePanelLabel() { return ({ problems:'Problems', output:'Output', terminal:'Terminal', debug:'Debug' })[this.activePanel] || 'Output'; },
+      lineNumbers() { const count = Math.max(1, String(this.editorText || '').split('\n').length); return Array.from({length:count}, (_, idx) => idx + 1).join('\n'); },
+      highlightedCode() { return syntaxHighlight(this.editorText); },
+      sidebarStyle() { return { width: this.sidebarWidth + 'px' }; },
+      panelStyle() { return { height: this.panelHeight + 'px' }; },
+      editorMetricsStyle() { return { fontSize: this.editorFontSize + 'px', lineHeight: String(this.editorLineHeight) }; },
+      tabStyle() { return { minWidth: this.tabMinWidth + 'px', maxWidth: this.tabMaxWidth + 'px' }; },
+      filteredCommands() { const q = (this.commandQuery || '').toLowerCase().trim(); return !q ? this.commands : this.commands.filter((item) => (item.label || '').toLowerCase().includes(q) || (item.id || '').toLowerCase().includes(q) || (item.shortcut || '').toLowerCase().includes(q)); },
+      filteredRoutines() { const q = (this.quickOpenQuery || '').toLowerCase().trim(); return !q ? this.routines.slice(0,100) : this.routines.filter((item) => (item.name || '').toLowerCase().includes(q)).slice(0,100); },
+      themeLabel() { return this.theme === 'mioide-light' ? 'Light Theme' : 'Dark Theme'; },
+      tabMenuStyle() { return { left: this.tabMenu.x + 'px', top: this.tabMenu.y + 'px' }; },
+      terminalStatusLabel() { return ({ idle:'Idle', connecting:'Connecting', connected:'Connected', disconnected:'Disconnected', error:'Error' })[this.terminalStatus] || 'Idle'; },
+      terminalStatusClass() { return { 'is-connected': this.terminalStatus === 'connected', 'is-connecting': this.terminalStatus === 'connecting', 'is-error': this.terminalStatus === 'error' }; }
+    },
+    watch: {
+      activeSidebar() { this.persistWorkspace(); },
+      activePanel(value) { this.persistWorkspace(); if (value === 'terminal' && this.panelVisible) this.$nextTick(() => this.ensureTerminalConnected(false)); },
+      sidebarVisible() { this.persistWorkspace(); this.$nextTick(() => this.fitTerminal()); },
+      panelVisible(value) { this.persistWorkspace(); if (value && this.activePanel === 'terminal') this.$nextTick(() => this.ensureTerminalConnected(false)); },
+      sidebarWidth() { this.persistWorkspace(); },
+      panelHeight() { this.persistWorkspace(); this.$nextTick(() => this.fitTerminal()); },
+      theme() { this.applyTheme(); this.persistWorkspace(); this.applyTerminalTheme(); this.$nextTick(() => this.fitTerminal()); },
+      activeRoutine() { this.persistWorkspace(); },
+      recentRoutines() { this.persistWorkspace(); },
+      tabs: { deep:true, handler() { this.persistWorkspace(); } },
+      editorText() { const tab = this.tabs.find((item) => item.name === this.activeRoutine); if (tab) { tab.source = this.editorText; tab.lineCount = this.buildSourceLines(this.editorText).length; tab.dirty = tab.originalSource !== this.editorText; } },
+      showCommandPalette(value) { if (value) this.$nextTick(() => { if (this.$refs.commandInput) this.$refs.commandInput.focus(); }); },
+      showQuickOpen(value) { if (value) this.$nextTick(() => { if (this.$refs.quickOpenInput) this.$refs.quickOpenInput.focus(); }); }
+    },
+    mounted() {
+      window.addEventListener('keydown', this.handleGlobalKeydown); window.addEventListener('pointermove', this.handlePointerMove); window.addEventListener('pointerup', this.endResize); window.addEventListener('resize', this.fitTerminal); window.addEventListener('beforeunload', this.handleBeforeUnload); document.addEventListener('click', this.closeTabMenu); this.loadBootstrap();
+    },
+    beforeUnmount() {
+      window.removeEventListener('keydown', this.handleGlobalKeydown); window.removeEventListener('pointermove', this.handlePointerMove); window.removeEventListener('pointerup', this.endResize); window.removeEventListener('resize', this.fitTerminal); window.removeEventListener('beforeunload', this.handleBeforeUnload); document.removeEventListener('click', this.closeTabMenu); if (this.eventSocket) this.eventSocket.close(); this.disposeTerminal();
+    },
+    methods: {
+      wsUrl(path) { const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:'; return proto + '//' + window.location.host + path; },
+      applyTheme() { const root = document.documentElement; root.classList.remove('mioide-dark', 'mioide-light'); root.classList.add(this.theme || 'mioide-dark'); },
+      getTerminalTheme() { return this.theme === 'mioide-light' ? { background:'#ffffff', foreground:'#111827', cursor:'#005fb8' } : { background:'#111111', foreground:'#d1d5db', cursor:'#0ea5e9' }; },
+      applyTerminalTheme() { if (this.terminal) this.terminal.options.theme = this.getTerminalTheme(); },
+      pushToast(title, detail) { const id = this.nextToastId++; this.notifications.push({id, title, detail}); window.setTimeout(() => { this.notifications = this.notifications.filter((item) => item.id !== id); }, 2800); },
+      safeParseStorage() { try { const raw = window.localStorage.getItem(this.storageKey); return raw ? JSON.parse(raw) : {}; } catch (err) { return {}; } },
+      persistWorkspace() { if (!this.storageKey) return; try { window.localStorage.setItem(this.storageKey, JSON.stringify({ activeSidebar:this.activeSidebar, activePanel:this.activePanel, sidebarVisible:this.sidebarVisible, panelVisible:this.panelVisible, sidebarWidth:this.sidebarWidth, panelHeight:this.panelHeight, theme:this.theme, activeRoutine:this.activeRoutine, recentRoutines:this.recentRoutines, terminalClientId:this.terminalClientId, tabs:this.tabs.map((tab) => ({ name:tab.name, path:tab.path || '', source:tab.source || '', originalSource:tab.originalSource || tab.source || '', dirty:!!tab.dirty, lineCount:tab.lineCount || 0, byteCount:tab.byteCount || 0, checksum:tab.checksum || '' })) })); } catch (err) {} },
+      restoreWorkspace() { const state = this.safeParseStorage(); if (state.activeSidebar) this.activeSidebar = state.activeSidebar; if (state.activePanel) this.activePanel = state.activePanel; if (typeof state.sidebarVisible === 'boolean') this.sidebarVisible = state.sidebarVisible; if (typeof state.panelVisible === 'boolean') this.panelVisible = state.panelVisible; if (state.sidebarWidth) this.sidebarWidth = clamp(+state.sidebarWidth, this.sidebarMinWidth, this.sidebarMaxWidth); if (state.panelHeight) this.panelHeight = clamp(+state.panelHeight, this.panelMinHeight, this.panelMaxHeight); if (state.theme) this.theme = state.theme; if (Array.isArray(state.recentRoutines)) this.recentRoutines = state.recentRoutines.slice(0,15); if (typeof state.terminalClientId === 'string' && state.terminalClientId) this.terminalClientId = state.terminalClientId; if (Array.isArray(state.tabs) && state.tabs.length) this.tabs = state.tabs; if (state.activeRoutine && this.tabs.find((item) => item.name === state.activeRoutine)) this.activateTab(state.activeRoutine, false); },
+      ensureTerminalClientId() { if (!this.terminalClientId) this.terminalClientId = 'client-' + Math.random().toString(36).slice(2,10); },
+      buildSourceLines(sourceText) { const text = String(sourceText == null ? '' : sourceText).replace(/\r\n/g,'\n').replace(/\r/g,'\n'); const parts = text.split('\n'); return parts.length ? parts : ['']; },
+      hasDirtyTabs() { return this.tabs.some((tab) => !!tab.dirty); },
+      handleBeforeUnload(event) { if (!this.hasDirtyTabs()) return; event.preventDefault(); event.returnValue = ''; },
+      markRecent(name) { if (!name) return; const next = [name].concat(this.recentRoutines.filter((item) => item !== name)); this.recentRoutines = next.slice(0, ((this.boot && this.boot.workspace && this.boot.workspace.recentLimit) || 15)); },
+      extractMapArray(obj) { return ordered(obj || {}); },
+      sourceFromPayload(data) { const lines = this.extractMapArray(data.sourceLines || {}); return typeof data.source === 'string' && data.source.length ? data.source : lines.join('\n'); },
+      async fetchJson(url, options) { const response = await fetch(url, Object.assign({ credentials:'same-origin' }, options || {})); const data = await response.json(); if (!response.ok || data.ok === 0) { const error = new Error(data.detail || data.error || 'Request failed'); error.payload = data; throw error; } return data; },
+      async loadBootstrap() {
+        try {
+          this.boot = await this.fetchJson(document.getElementById('mioide-app').dataset.bootRoute); this.commands = this.extractMapArray(this.boot.commands || {}); this.snippets = this.extractMapArray(this.boot.snippets || {}); this.theme = (this.boot.appearance && this.boot.appearance.theme) || 'mioide-dark'; this.sidebarWidth = +((this.boot.layout && this.boot.layout.sidebarWidth) || 300); this.panelHeight = +((this.boot.layout && this.boot.layout.panelHeight) || 220); this.sidebarMinWidth = +((this.boot.layout && this.boot.layout.sidebarMinWidth) || 220); this.sidebarMaxWidth = +((this.boot.layout && this.boot.layout.sidebarMaxWidth) || 520); this.panelMinHeight = +((this.boot.layout && this.boot.layout.panelMinHeight) || 140); this.panelMaxHeight = +((this.boot.layout && this.boot.layout.panelMaxHeight) || 420); this.tabMinWidth = +((this.boot.layout && this.boot.layout.tabMinWidth) || 140); this.tabMaxWidth = +((this.boot.layout && this.boot.layout.tabMaxWidth) || 240); this.editorFontSize = +((this.boot.layout && this.boot.layout.fontSize) || 13); this.editorLineHeight = +((this.boot.layout && this.boot.layout.lineHeight) || 1.6); this.storageKey = (this.boot.layout && this.boot.layout.storageKey) || 'miomide:workspace'; this.activePanel = (this.boot.layout && this.boot.layout.panelTab) || 'output'; this.compileAutoSave = !this.boot.workspace || this.boot.workspace.compileAutoSave !== 0; this.sidebarVisible = !this.boot.layout || this.boot.layout.sidebarVisible !== 0; this.panelVisible = !this.boot.layout || this.boot.layout.panelVisible !== 0; this.statusMessage = (this.boot.status && this.boot.status.message) || 'Ready'; this.applyTheme(); this.restoreWorkspace(); await this.loadRoutines(); this.ensureEventSocket(); this.ensureTerminalClientId(); this.pushToast('Workbench ready', 'VS Code-like shell loaded.');
+        } catch (err) { this.statusMessage = 'Failed to load workspace'; this.outputText = String(err.message || err); this.pushToast('Bootstrap failed', String(err.message || err)); }
+      },
+      async loadRoutines() { const data = await this.fetchJson(this.boot.routes.routines); this.routines = this.extractMapArray(data.items || data).map((item) => ({ name:item.name, path:item.path, type:item.type })); },
+      async openRoutine(name) { try { const existing = this.tabs.find((tab) => tab.name === name); if (existing) { this.activateTab(name); this.markRecent(name); return existing; } const data = await this.fetchJson(this.boot.routes.routine.replace(':name', encodeURIComponent(name))); const source = this.sourceFromPayload(data); const tab = { name:data.name, path:data.path, source:source, originalSource:source, dirty:false, lineCount:Number(data.lineCount || this.buildSourceLines(source).length || 1), byteCount:Number(data.byteCount || source.length || 0), checksum:data.checksum || '' }; this.tabs.push(tab); this.activateTab(tab.name); this.markRecent(tab.name); this.pushToast('Routine opened', tab.name); return tab; } catch (err) { this.pushToast('Open failed', String(err.message || err)); throw err; } },
+      activateTab(name, announce) { const tab = this.tabs.find((item) => item.name === name); if (!tab) return; this.activeRoutine = tab.name; this.activePath = tab.path || ''; this.editorText = tab.source || ''; this.updateCursor(); this.markRecent(tab.name); if (announce !== false) this.statusMessage = 'Editing ' + tab.name; this.$nextTick(() => { if (this.$refs.editor) this.$refs.editor.focus(); }); },
+      closeTab(name, force) { const idx = this.tabs.findIndex((item) => item.name === name); if (idx < 0) return; const tab = this.tabs[idx]; if (tab.dirty && !force && !window.confirm('Close ' + name + ' and discard unsaved changes?')) return; const wasActive = tab.name === this.activeRoutine; this.tabs.splice(idx,1); if (!this.tabs.length) { this.activeRoutine=''; this.activePath=''; this.editorText=''; this.statusMessage='Editor closed'; return; } if (wasActive) { const next = this.tabs[Math.max(0, idx - 1)] || this.tabs[0]; this.activateTab(next.name, false); } },
+      closeOtherTabs(name) { this.tabs = this.tabs.filter((tab) => tab.name === name || tab.dirty); if (this.tabs.length) this.activateTab(name, false); },
+      closeTabsToRight(name) { const idx = this.tabs.findIndex((tab) => tab.name === name); if (idx < 0) return; const keep = this.tabs.slice(0, idx + 1); const dirtyRight = this.tabs.slice(idx + 1).filter((tab) => tab.dirty); this.tabs = keep.concat(dirtyRight); if (!this.tabs.find((tab) => tab.name === this.activeRoutine)) this.activateTab(name, false); },
+      closeSavedTabs() { this.tabs = this.tabs.filter((tab) => tab.dirty); if (!this.tabs.length) { this.activeRoutine=''; this.activePath=''; this.editorText=''; return; } if (!this.tabs.find((tab) => tab.name === this.activeRoutine)) this.activateTab(this.tabs[0].name, false); },
+      closeAllTabs(force) { if (!force && this.hasDirtyTabs() && !window.confirm('Close all editors and discard unsaved changes?')) return; this.tabs=[]; this.activeRoutine=''; this.activePath=''; this.editorText=''; this.statusMessage='All editors closed'; },
+      beginTabDrag(tab, event) { this.tabDragName = tab.name; this.tabDragTarget = tab.name; if (event.dataTransfer) { event.dataTransfer.effectAllowed='move'; try { event.dataTransfer.setData('text/plain', tab.name); } catch (err) {} } },
+      setTabDragTarget(name) { this.tabDragTarget = name; },
+      reorderTabs(fromName, toName) { if (!fromName || !toName || fromName === toName) return; const fromIdx = this.tabs.findIndex((tab) => tab.name === fromName); const toIdx = this.tabs.findIndex((tab) => tab.name === toName); if (fromIdx < 0 || toIdx < 0) return; const moved = this.tabs.splice(fromIdx,1)[0]; this.tabs.splice(toIdx,0,moved); },
+      dropTabOn(name) { if (this.tabDragName) this.reorderTabs(this.tabDragName, name); this.tabDragName=''; this.tabDragTarget=''; },
+      dropTabAtEnd() { if (!this.tabDragName) return; const idx = this.tabs.findIndex((tab) => tab.name === this.tabDragName); if (idx >= 0) { const moved = this.tabs.splice(idx,1)[0]; this.tabs.push(moved); } this.tabDragName=''; this.tabDragTarget=''; },
+      openTabContextMenu(tab, event) { this.tabMenu = { visible:true, x:event.clientX, y:event.clientY, tabName:tab.name }; },
+      openTabStripMenu(event) { this.tabMenu = { visible:true, x:event.clientX, y:event.clientY, tabName:this.activeRoutine || '' }; },
+      closeTabMenu() { this.tabMenu.visible = false; },
+      closeTabMenuAction(action) { const name = this.tabMenu.tabName || this.activeRoutine; if (action === 'close' && name) this.closeTab(name); if (action === 'closeOthers' && name) this.closeOtherTabs(name); if (action === 'closeToRight' && name) this.closeTabsToRight(name); if (action === 'closeSaved') this.closeSavedTabs(); if (action === 'closeAll') this.closeAllTabs(false); this.closeTabMenu(); },
+      syncEditor() { this.updateCursor(); },
+      syncScroll() { const textarea = this.$refs.editor; if (!textarea) return; const code = textarea.previousElementSibling; const gutter = textarea.parentElement.previousElementSibling; if (code) { code.scrollTop = textarea.scrollTop; code.scrollLeft = textarea.scrollLeft; } if (gutter) gutter.scrollTop = textarea.scrollTop; this.updateCursor(); },
+      updateCursor() { const textarea = this.$refs.editor; if (!textarea) return; const pos = textarea.selectionStart || 0; const prefix = this.editorText.slice(0,pos); const lines = prefix.split('\n'); this.currentLine = lines.length; this.currentColumn = (lines[lines.length - 1] || '').length + 1; },
+      insertTab() { const textarea = this.$refs.editor; if (!textarea) return; const start = textarea.selectionStart; const end = textarea.selectionEnd; this.editorText = this.editorText.slice(0,start) + '  ' + this.editorText.slice(end); this.$nextTick(() => { textarea.selectionStart = textarea.selectionEnd = start + 2; this.updateCursor(); }); },
+      setSidebar(name) { this.activeSidebar = name; this.sidebarVisible = true; },
+      toggleSidebar() { this.sidebarVisible = !this.sidebarVisible; },
+      togglePanel() { this.panelVisible = !this.panelVisible; if (this.panelVisible && this.activePanel === 'terminal') this.$nextTick(() => this.ensureTerminalConnected(false)); },
+      toggleTheme() { this.theme = this.theme === 'mioide-light' ? 'mioide-dark' : 'mioide-light'; this.pushToast('Theme changed', this.themeLabel); },
+      openCommandPalette() { this.commandQuery=''; this.commandIndex=0; this.showQuickOpen=false; this.showCommandPalette=true; },
+      openQuickOpen() { this.quickOpenQuery=''; this.quickOpenIndex=0; this.showCommandPalette=false; this.showQuickOpen=true; },
+      closeOverlays() { this.showCommandPalette=false; this.showQuickOpen=false; },
+      pickQuickOpen(item) { this.openRoutine(item.name); this.closeOverlays(); },
+      runCommand(id) { this.closeOverlays(); ({ 'file.quickOpen':() => this.openQuickOpen(), 'workbench.commandPalette':() => this.openCommandPalette(), 'view.toggleSidebar':() => this.toggleSidebar(), 'workbench.action.terminal':() => this.selectPanel('terminal'), 'workbench.action.theme':() => this.toggleTheme(), 'file.save':() => this.saveActive(), 'routine.compile':() => this.compileActive(), 'routine.reload':() => this.reloadActive(), 'routine.revert':() => this.revertActive(), 'tab.closeAll':() => this.closeAllTabs(false), 'tab.closeSaved':() => this.closeSavedTabs(), 'terminal.reconnect':() => this.reconnectTerminal() }[id] || (() => this.pushToast('Command unavailable', id)))(); },
+      handleGlobalKeydown(event) {
+        if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'p' && event.shiftKey) { event.preventDefault(); this.openCommandPalette(); return; }
+        if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'p') { event.preventDefault(); this.openQuickOpen(); return; }
+        if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'b') { event.preventDefault(); this.toggleSidebar(); return; }
+        if ((event.ctrlKey || event.metaKey) && event.key === '`') { event.preventDefault(); this.togglePanel(); if (this.panelVisible) this.selectPanel('terminal'); return; }
+        if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') { event.preventDefault(); this.saveActive(); return; }
+        if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === 'b') { event.preventDefault(); this.compileActive(); return; }
+        if (event.key === 'Escape') { this.closeOverlays(); this.closeTabMenu(); return; }
+        if (this.showCommandPalette) { if (event.key === 'ArrowDown') { event.preventDefault(); this.commandIndex = Math.min(this.commandIndex + 1, Math.max(this.filteredCommands.length - 1, 0)); } else if (event.key === 'ArrowUp') { event.preventDefault(); this.commandIndex = Math.max(this.commandIndex - 1, 0); } else if (event.key === 'Enter') { event.preventDefault(); const item = this.filteredCommands[this.commandIndex]; if (item) this.runCommand(item.id); } }
+        if (this.showQuickOpen) { if (event.key === 'ArrowDown') { event.preventDefault(); this.quickOpenIndex = Math.min(this.quickOpenIndex + 1, Math.max(this.filteredRoutines.length - 1, 0)); } else if (event.key === 'ArrowUp') { event.preventDefault(); this.quickOpenIndex = Math.max(this.quickOpenIndex - 1, 0); } else if (event.key === 'Enter') { event.preventDefault(); const item = this.filteredRoutines[this.quickOpenIndex]; if (item) this.pickQuickOpen(item); } }
+      },
+      beginResize(type, event) { this.resizeState = { type:type, startX:event.clientX, startY:event.clientY, startSidebarWidth:this.sidebarWidth, startPanelHeight:this.panelHeight }; },
+      handlePointerMove(event) { if (this.resizeState.type === 'sidebar') this.sidebarWidth = clamp(this.resizeState.startSidebarWidth + (event.clientX - this.resizeState.startX), this.sidebarMinWidth, this.sidebarMaxWidth); else if (this.resizeState.type === 'panel') this.panelHeight = clamp(this.resizeState.startPanelHeight - (event.clientY - this.resizeState.startY), this.panelMinHeight, this.panelMaxHeight); },
+      endResize() { if (this.resizeState.type) this.$nextTick(() => this.fitTerminal()); this.resizeState.type=''; },
+      gotoLine(line) { const textarea = this.$refs.editor; const target = Math.max(Number(line || 1),1); if (!textarea) return; const lines = this.editorText.split('\n'); let offset = 0; for (let i=0; i<Math.min(target - 1, lines.length); i++) offset += lines[i].length + 1; textarea.focus(); textarea.selectionStart = textarea.selectionEnd = offset; this.updateCursor(); },
+      async openSearchResult(item) { await this.openRoutine(item.routine); this.gotoLine(item.line || 1); },
+      goToProblem(problem) { if (problem && problem.line) this.gotoLine(problem.line); },
+      async reloadActive() { if (!this.activeRoutine) return this.pushToast('No routine selected','Open a routine first.'); const active = this.tabs.find((item) => item.name === this.activeRoutine); if (active && active.dirty && !window.confirm('Reload and discard unsaved changes?')) return; const data = await this.fetchJson(this.boot.routes.routine.replace(':name', encodeURIComponent(this.activeRoutine))); const source = this.sourceFromPayload(data); if (active) { active.source = source; active.originalSource = source; active.path = data.path || active.path; active.lineCount = Number(data.lineCount || this.buildSourceLines(source).length || 1); active.byteCount = Number(data.byteCount || source.length || 0); active.checksum = data.checksum || active.checksum || ''; active.dirty = false; } this.activateTab(this.activeRoutine, false); this.statusMessage = 'Routine reloaded from disk'; this.pushToast('Reloaded', this.activeRoutine); },
+      revertActive() { if (!this.activeRoutine) return this.pushToast('No routine selected','Open a routine first.'); const active = this.tabs.find((item) => item.name === this.activeRoutine); if (!active) return; this.editorText = active.originalSource || ''; active.source = this.editorText; active.dirty = false; this.statusMessage = 'Unsaved changes reverted'; this.pushToast('Reverted', this.activeRoutine); },
+      ensureEventSocket() { if (this.eventSocket) return; this.eventSocket = new WebSocket(this.wsUrl(document.getElementById('mioide-app').dataset.eventsWs)); this.eventSocket.addEventListener('open', () => { this.eventSocket.send(JSON.stringify({event:'hello'})); }); this.eventSocket.addEventListener('message', (event) => { try { const payload = JSON.parse(event.data); if (payload.event === 'hello') this.statusMessage = 'Connected as ' + (payload.user || 'Developer'); } catch (err) {} }); },
+      async saveActive() { if (!this.activeRoutine) return this.pushToast('No routine selected','Open a routine first.'); try { const payload = { name:this.activeRoutine, sourceLines:this.buildSourceLines(this.editorText) }; const data = await this.fetchJson(this.boot.routes.save.replace(':name', encodeURIComponent(this.activeRoutine)), { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) }); const tab = this.tabs.find((item) => item.name === this.activeRoutine); if (tab) { tab.originalSource = this.editorText; tab.source = this.editorText; tab.dirty = false; tab.lineCount = Number(data.lineCount || payload.sourceLines.length || 1); tab.byteCount = Number(data.byteCount || this.editorText.length || 0); tab.checksum = data.checksum || tab.checksum || ''; } this.statusMessage = data.message || 'Routine saved'; this.outputText = JSON.stringify(data, null, 2); this.problems = []; this.selectPanel('output'); this.pushToast('Saved', this.activeRoutine + ' written successfully.'); } catch (err) { const payload = (err && err.payload) || {}; this.problems = this.extractMapArray(payload.problems || {}); if (!this.problems.length) this.problems = [{ message:'Save failed', detail:String(err.message || err) }]; this.outputText = JSON.stringify(payload || { error:String(err.message || err) }, null, 2); this.selectPanel('problems'); this.pushToast('Save failed', String(err.message || err)); } },
+      async compileActive() { if (!this.activeRoutine) return this.pushToast('No routine selected','Open a routine first.'); try { const options = { method:'POST' }; if (this.compileAutoSave) { options.headers = {'Content-Type':'application/json'}; options.body = JSON.stringify({ name:this.activeRoutine, sourceLines:this.buildSourceLines(this.editorText) }); } const data = await this.fetchJson(this.boot.routes.compile.replace(':name', encodeURIComponent(this.activeRoutine)), options); const tab = this.tabs.find((item) => item.name === this.activeRoutine); if (tab && (data.saved || this.compileAutoSave)) { tab.originalSource = this.editorText; tab.source = this.editorText; tab.dirty = false; if (data.save && data.save.checksum) tab.checksum = data.save.checksum; } this.outputText = JSON.stringify(data, null, 2); this.statusMessage = data.message || 'Compile complete'; this.problems = this.extractMapArray(data.problems || {}); this.selectPanel(this.problems.length ? 'problems' : 'output'); this.pushToast('Compiled', this.activeRoutine + ' linked successfully.'); } catch (err) { const payload = (err && err.payload) || { error:String(err.message || err) }; const tab = this.tabs.find((item) => item.name === this.activeRoutine); if (tab && payload.saved) { tab.originalSource = this.editorText; tab.source = this.editorText; tab.dirty = false; if (payload.save && payload.save.checksum) tab.checksum = payload.save.checksum; } this.outputText = JSON.stringify(payload, null, 2); this.problems = this.extractMapArray(payload.problems || {}); if (!this.problems.length) this.problems = [{ message:'Compile failed', detail:String(err.message || err) }]; this.statusMessage = 'Compile failed'; this.selectPanel('problems'); this.pushToast('Compile failed', String(err.message || err)); } },
+      async runActive() { if (!this.activeRoutine) return this.pushToast('No routine selected','Open a routine first.'); try { const data = await this.fetchJson(this.boot.routes.run, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ name:this.activeRoutine }) }); this.outputText = data.output || JSON.stringify(data, null, 2); this.statusMessage = data.status || 'Run complete'; this.selectPanel('output'); this.pushToast('Run finished', this.activeRoutine + ' finished execution.'); } catch (err) { this.outputText = JSON.stringify((err && err.payload) || { error:String(err.message || err) }, null, 2); this.selectPanel('output'); this.pushToast('Run failed', String(err.message || err)); } },
+      async runSearch() { try { const data = await this.fetchJson(this.boot.routes.search + '?q=' + encodeURIComponent(this.searchTerm)); this.searchResults = this.extractMapArray(data).filter((item) => item && item.routine).map((item) => ({ routine:item.routine, line:Number(item.line || 1), preview:item.preview || '' })); this.setSidebar('search'); this.pushToast('Search complete', String(this.searchResults.length) + ' matches found.'); } catch (err) { this.pushToast('Search failed', String(err.message || err)); } },
+      async loadGlobals() { try { const data = await this.fetchJson(this.boot.routes.globals + '?root=' + encodeURIComponent(this.globalRoot) + '&limit=50'); this.globals = this.extractMapArray(data).filter((item) => item && item.node); this.setSidebar('globals'); } catch (err) { this.pushToast('Globals failed', String(err.message || err)); } },
+      insertSnippet(snippet) { this.editorText = (this.editorText ? this.editorText + '\n' : '') + (snippet.body || ''); this.statusMessage = 'Inserted snippet ' + snippet.label; this.pushToast('Snippet inserted', snippet.label); },
+      async loadDebug() { try { const name = this.activeRoutine ? ('?name=' + encodeURIComponent(this.activeRoutine)) : ''; const data = await this.fetchJson(this.boot.routes.debug + name); this.debugText = JSON.stringify(data, null, 2); this.selectPanel('debug'); } catch (err) { this.pushToast('Debug refresh failed', String(err.message || err)); } },
+      selectPanel(name) { this.activePanel = name; this.panelVisible = true; if (name === 'terminal') this.$nextTick(() => this.ensureTerminalConnected(false)); },
+      ensureTerminalInstance() {
+        if (!this.$refs.terminalHost) return;
+        if (!this.terminal) {
+          this.terminal = new Terminal({ cursorBlink:true, cols:(this.boot && this.boot.terminal && this.boot.terminal.cols) || 132, rows:(this.boot && this.boot.terminal && this.boot.terminal.rows) || 32, theme:this.getTerminalTheme(), fontFamily:'Consolas, Monaco, monospace', fontSize:13 });
+          this.fitAddon = new FitAddon.FitAddon(); this.terminal.loadAddon(this.fitAddon); this.terminal.open(this.$refs.terminalHost); this.terminal.onData((data) => { if (this.terminalSocket && this.terminalSocket.readyState === WebSocket.OPEN) this.terminalSocket.send(JSON.stringify({ event:'input', clientId:this.terminalClientId, data:data })); }); if (window.ResizeObserver) { this.terminalResizeObserver = new ResizeObserver(() => this.fitTerminal()); this.terminalResizeObserver.observe(this.$refs.terminalHost); }
+        }
+        this.applyTerminalTheme(); this.fitTerminal();
+      },
+      ensureTerminalConnected(force) {
+        this.ensureTerminalClientId(); this.ensureTerminalInstance(); if (!this.$refs.terminalHost) return; if (!force && this.terminalSocket && this.terminalSocket.readyState === WebSocket.OPEN) { this.fitTerminal(); return; } if (force) this.closeTerminalSocket(true); this.terminalStatus = 'connecting'; this.terminalStatusDetail = 'Opening YottaDB terminal bridge'; this.terminalIntendedClose = false; const socket = new WebSocket(this.wsUrl(document.getElementById('mioide-app').dataset.terminalWs)); this.terminalSocket = socket; socket.addEventListener('open', () => { if (this.terminalSocket !== socket) return; this.sendTerminalEvent('hello'); }); socket.addEventListener('message', (event) => { if (this.terminalSocket !== socket) return; this.handleTerminalMessage(event); }); socket.addEventListener('close', () => { if (this.terminalSocket !== socket) return; this.terminalSocket = null; this.terminalStatus = this.terminalIntendedClose ? 'idle' : 'disconnected'; this.terminalStatusDetail = this.terminalIntendedClose ? 'Terminal closed' : 'Terminal connection closed'; this.terminalIntendedClose = false; }); socket.addEventListener('error', () => { if (this.terminalSocket !== socket) return; this.terminalStatus = 'error'; this.terminalStatusDetail = 'Terminal websocket error'; });
+      },
+      sendTerminalEvent(eventName, extra) { if (!this.terminalSocket || this.terminalSocket.readyState !== WebSocket.OPEN) return; const payload = Object.assign({ event:eventName, clientId:this.terminalClientId }, extra || {}); this.terminalSocket.send(JSON.stringify(payload)); },
+      handleTerminalMessage(event) { let payload; try { payload = JSON.parse(event.data); } catch (err) { payload = { event:'data', data:String(event.data || '') }; } if (payload.sid) this.terminalSessionId = payload.sid; if (payload.event === 'ready') { this.terminalStatus = 'connected'; this.terminalStatusDetail = 'Interactive terminal ready'; if (payload.data && this.terminal) this.terminal.write(payload.data); this.fitTerminal(); return; } if (payload.event === 'data') { if (payload.data && this.terminal) this.terminal.write(payload.data); return; } if (payload.event === 'pong') { this.terminalStatus = 'connected'; this.terminalStatusDetail = 'Terminal heartbeat OK'; return; } if (payload.event === 'error') { this.terminalStatus = 'error'; this.terminalStatusDetail = payload.detail || payload.error || 'Terminal error'; this.pushToast('Terminal error', this.terminalStatusDetail); return; } if (payload.event === 'resize') this.terminalStatusDetail = 'Terminal resized to ' + (payload.detail || 'current view'); },
+      fitTerminal() { if (!this.fitAddon || !this.panelVisible || this.activePanel !== 'terminal' || !this.$refs.terminalHost) return; if (this.$refs.terminalHost.offsetParent === null) return; try { this.fitAddon.fit(); if (this.terminal) this.sendTerminalEvent('resize', { cols:this.terminal.cols, rows:this.terminal.rows }); } catch (err) {} },
+      clearTerminal() { if (this.terminal) this.terminal.clear(); },
+      reconnectTerminal() { this.ensureTerminalConnected(true); this.pushToast('Terminal reconnect', 'Attempting a fresh terminal session.'); },
+      closeTerminalSocket(notifyServer) { const socket = this.terminalSocket; if (!socket) return; this.terminalIntendedClose = true; if (notifyServer && socket.readyState === WebSocket.OPEN) { try { socket.send(JSON.stringify({ event:'close', clientId:this.terminalClientId })); } catch (err) {} } try { socket.close(); } catch (err) {} this.terminalSocket = null; },
+      closeTerminal() { this.closeTerminalSocket(true); this.terminalStatus = 'idle'; this.terminalStatusDetail = 'Terminal closed'; },
+      disposeTerminal() { this.closeTerminalSocket(true); if (this.terminalResizeObserver) { try { this.terminalResizeObserver.disconnect(); } catch (err) {} this.terminalResizeObserver = null; } if (this.terminal) { try { this.terminal.dispose(); } catch (err) {} this.terminal = null; this.fitAddon = null; } }
+    }
+  });
+  app.mount('#mioide-app');
+})();
+</script>
