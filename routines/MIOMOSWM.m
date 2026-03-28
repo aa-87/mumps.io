@@ -48,8 +48,9 @@ CATALOG(ROOT)
 	KILL @ROOT
 	DO OPTS($NAME(@ROOT@("windowPresets")),"analyst^Analyst Workspace,terminal^Terminal Focus,review^Review Console,operations^Operations Wall")
 	DO OPTS($NAME(@ROOT@("snapModes")),"edge^Edge Snap,quadrant^Quadrant Snap,grid^Grid + Quadrant,off^Off")
-	DO OPTS($NAME(@ROOT@("motionProfiles")),"reduced^Reduced,standard^Standard,polished^Polished")
+	DO OPTS($NAME(@ROOT@("motionProfiles")),"reduced^Reduced,standard^Standard,polished^Polished,silky^Silky")
 	DO OPTS($NAME(@ROOT@("titlebarStyles")),"accent^Accent,solid^Solid,glass^Glass,contrast^Contrast")
+	DO OPTS($NAME(@ROOT@("nativeCapabilities")),"drag^Window dragging,resize^Edge resizing,snap^Edge and quadrant snap,focus^Native focus and z-order")
 	QUIT
 	;
 ACTIONS(ROOT)
@@ -59,7 +60,6 @@ ACTIONS(ROOT)
 	SET @ROOT@(3,"key")="minimizeAll",@ROOT@(3,"label")="Minimize all",@ROOT@(3,"subtitle")="Clear the workspace quickly",@ROOT@(3,"shortcut")="Alt+N"
 	SET @ROOT@(4,"key")="restoreAll",@ROOT@(4,"label")="Restore all",@ROOT@(4,"subtitle")="Bring every surface back",@ROOT@(4,"shortcut")="Alt+R"
 	SET @ROOT@(5,"key")="focusTerminal",@ROOT@(5,"label")="Focus terminal",@ROOT@(5,"subtitle")="Jump to the YDB console",@ROOT@(5,"shortcut")="Alt+T"
-	SET @ROOT@(6,"key")="focusEditor",@ROOT@(6,"label")="Focus editor",@ROOT@(6,"subtitle")="Open the Monaco code studio",@ROOT@(6,"shortcut")="Alt+E"
 	QUIT
 	;
 DEFAULTWINS(ROOT,PRESET)
@@ -69,42 +69,38 @@ DEFAULTWINS(ROOT,PRESET)
 	IF 'USEIND KILL ROOT
 	SET PRESET=$SELECT($$PRESETOK($GET(PRESET)):$GET(PRESET),1:"analyst")
 	IF PRESET="terminal" DO  QUIT
-	. DO SETWIN(.ROOT,USEIND,1,"win-workspace","workspace","Workspace",14,14,990,640,6,"normal")
-	. DO SETWIN(.ROOT,USEIND,2,"win-collaboration","collaboration","Chat",1018,14,360,300,4,"minimized")
-	. DO SETWIN(.ROOT,USEIND,3,"win-security","security","Security",1018,324,360,330,3,"minimized")
-	. DO SETWIN(.ROOT,USEIND,4,"win-admin","admin","Admin",180,62,820,520,5,"minimized")
-	. DO SETWIN(.ROOT,USEIND,5,"win-settings","settings","Settings",210,84,760,560,7,"minimized")
-	. DO SETWIN(.ROOT,USEIND,6,"win-terminal","terminal","Terminal",70,60,1310,700,8,"minimized")
-	. DO SETWIN(.ROOT,USEIND,7,"win-editor","editor","Code Studio",128,42,1180,680,9,"minimized")
+	. DO SETWIN(.ROOT,USEIND,1,"win-workspace","workspace","Workspace",14,14,990,640,6,"normal",1)
+	. DO SETWIN(.ROOT,USEIND,2,"win-collaboration","collaboration","Chat",1018,14,360,300,4,"minimized",2)
+	. DO SETWIN(.ROOT,USEIND,3,"win-security","security","Security",1018,324,360,330,3,"minimized",3)
+	. DO SETWIN(.ROOT,USEIND,4,"win-admin","admin","Admin",180,62,820,520,5,"minimized",4)
+	. DO SETWIN(.ROOT,USEIND,5,"win-settings","settings","Settings",210,84,760,560,7,"minimized",5)
+	. DO SETWIN(.ROOT,USEIND,6,"win-terminal","terminal","Terminal",70,60,1310,700,8,"minimized",6)
 	IF PRESET="review" DO  QUIT
-	. DO SETWIN(.ROOT,USEIND,1,"win-workspace","workspace","Workspace",20,16,860,650,6,"normal")
-	. DO SETWIN(.ROOT,USEIND,2,"win-collaboration","collaboration","Chat",894,16,486,260,4,"minimized")
-	. DO SETWIN(.ROOT,USEIND,3,"win-security","security","Security",894,288,486,378,5,"minimized")
-	. DO SETWIN(.ROOT,USEIND,4,"win-admin","admin","Admin",118,70,880,560,3,"minimized")
-	. DO SETWIN(.ROOT,USEIND,5,"win-settings","settings","Settings",160,88,780,560,7,"minimized")
-	. DO SETWIN(.ROOT,USEIND,6,"win-terminal","terminal","Terminal",90,76,1080,600,8,"minimized")
-	. DO SETWIN(.ROOT,USEIND,7,"win-editor","editor","Code Studio",116,44,1080,660,9,"minimized")
+	. DO SETWIN(.ROOT,USEIND,1,"win-workspace","workspace","Workspace",20,16,860,650,6,"normal",1)
+	. DO SETWIN(.ROOT,USEIND,2,"win-collaboration","collaboration","Chat",894,16,486,260,4,"minimized",2)
+	. DO SETWIN(.ROOT,USEIND,3,"win-security","security","Security",894,288,486,378,5,"minimized",3)
+	. DO SETWIN(.ROOT,USEIND,4,"win-admin","admin","Admin",118,70,880,560,3,"minimized",4)
+	. DO SETWIN(.ROOT,USEIND,5,"win-settings","settings","Settings",160,88,780,560,7,"minimized",5)
+	. DO SETWIN(.ROOT,USEIND,6,"win-terminal","terminal","Terminal",90,76,1080,600,8,"minimized",6)
 	IF PRESET="operations" DO  QUIT
-	. DO SETWIN(.ROOT,USEIND,1,"win-workspace","workspace","Workspace",16,14,930,650,6,"normal")
-	. DO SETWIN(.ROOT,USEIND,2,"win-collaboration","collaboration","Chat",958,14,420,260,4,"normal")
-	. DO SETWIN(.ROOT,USEIND,3,"win-security","security","Security",958,286,420,230,5,"normal")
-	. DO SETWIN(.ROOT,USEIND,4,"win-admin","admin","Admin",958,528,420,176,3,"minimized")
-	. DO SETWIN(.ROOT,USEIND,5,"win-settings","settings","Settings",170,76,820,560,2,"minimized")
-	. DO SETWIN(.ROOT,USEIND,6,"win-terminal","terminal","Terminal",120,92,1180,600,7,"minimized")
-	. DO SETWIN(.ROOT,USEIND,7,"win-editor","editor","Code Studio",84,38,1088,650,8,"minimized")
-	DO SETWIN(.ROOT,USEIND,1,"win-workspace","workspace","Workspace",16,14,1180,690,6,"normal")
-	DO SETWIN(.ROOT,USEIND,2,"win-collaboration","collaboration","Chat",940,44,420,430,3,"minimized")
-	DO SETWIN(.ROOT,USEIND,3,"win-security","security","Security",970,488,390,258,2,"minimized")
-	DO SETWIN(.ROOT,USEIND,4,"win-admin","admin","Admin",220,68,820,520,4,"minimized")
-	DO SETWIN(.ROOT,USEIND,5,"win-settings","settings","Settings",240,88,760,560,5,"minimized")
-	DO SETWIN(.ROOT,USEIND,6,"win-terminal","terminal","Terminal",110,80,1180,620,7,"minimized")
-	DO SETWIN(.ROOT,USEIND,7,"win-editor","editor","Code Studio",86,34,1100,660,8,"minimized")
+	. DO SETWIN(.ROOT,USEIND,1,"win-workspace","workspace","Workspace",16,14,930,650,6,"normal",1)
+	. DO SETWIN(.ROOT,USEIND,2,"win-collaboration","collaboration","Chat",958,14,420,260,4,"normal",2)
+	. DO SETWIN(.ROOT,USEIND,3,"win-security","security","Security",958,286,420,230,5,"normal",3)
+	. DO SETWIN(.ROOT,USEIND,4,"win-admin","admin","Admin",958,528,420,176,3,"minimized",4)
+	. DO SETWIN(.ROOT,USEIND,5,"win-settings","settings","Settings",170,76,820,560,2,"minimized",5)
+	. DO SETWIN(.ROOT,USEIND,6,"win-terminal","terminal","Terminal",120,92,1180,600,7,"minimized",6)
+	DO SETWIN(.ROOT,USEIND,1,"win-workspace","workspace","Workspace",16,14,1180,690,6,"normal",1)
+	DO SETWIN(.ROOT,USEIND,2,"win-collaboration","collaboration","Chat",940,44,420,430,3,"minimized",2)
+	DO SETWIN(.ROOT,USEIND,3,"win-security","security","Security",970,488,390,258,2,"minimized",3)
+	DO SETWIN(.ROOT,USEIND,4,"win-admin","admin","Admin",220,68,820,520,4,"minimized",4)
+	DO SETWIN(.ROOT,USEIND,5,"win-settings","settings","Settings",240,88,760,560,5,"minimized",5)
+	DO SETWIN(.ROOT,USEIND,6,"win-terminal","terminal","Terminal",110,80,1180,620,7,"minimized",6)
 	QUIT
 	;
-SETWIN(ROOT,USEIND,N,ID,APPKEY,TITLE,LEFT,TOP,WIDTH,HEIGHT,Z,STATE)
+SETWIN(ROOT,USEIND,N,ID,APPKEY,TITLE,LEFT,TOP,WIDTH,HEIGHT,Z,STATE,TASKORDER)
 	IF USEIND DO  QUIT
-	. SET @ROOT@(N,"id")=ID,@ROOT@(N,"appKey")=APPKEY,@ROOT@(N,"title")=TITLE,@ROOT@(N,"left")=LEFT,@ROOT@(N,"top")=TOP,@ROOT@(N,"width")=WIDTH,@ROOT@(N,"height")=HEIGHT,@ROOT@(N,"z")=Z,@ROOT@(N,"state")=STATE
-	SET ROOT(N,"id")=ID,ROOT(N,"appKey")=APPKEY,ROOT(N,"title")=TITLE,ROOT(N,"left")=LEFT,ROOT(N,"top")=TOP,ROOT(N,"width")=WIDTH,ROOT(N,"height")=HEIGHT,ROOT(N,"z")=Z,ROOT(N,"state")=STATE
+	. SET @ROOT@(N,"id")=ID,@ROOT@(N,"appKey")=APPKEY,@ROOT@(N,"title")=TITLE,@ROOT@(N,"left")=LEFT,@ROOT@(N,"top")=TOP,@ROOT@(N,"width")=WIDTH,@ROOT@(N,"height")=HEIGHT,@ROOT@(N,"z")=Z,@ROOT@(N,"state")=STATE,@ROOT@(N,"taskOrder")=+$GET(TASKORDER,N)
+	SET ROOT(N,"id")=ID,ROOT(N,"appKey")=APPKEY,ROOT(N,"title")=TITLE,ROOT(N,"left")=LEFT,ROOT(N,"top")=TOP,ROOT(N,"width")=WIDTH,ROOT(N,"height")=HEIGHT,ROOT(N,"z")=Z,ROOT(N,"state")=STATE,ROOT(N,"taskOrder")=+$GET(TASKORDER,N)
 	QUIT
 	;
 GETP(USER,KEY,DEF)
@@ -123,7 +119,7 @@ SNAPOK(X)
 	;
 MOTIONOK(X)
 	SET X=$$TRIM^MIOUTIL($GET(X))
-	QUIT $SELECT((X="reduced")!(X="standard")!(X="polished"):1,1:0)
+	QUIT $SELECT((X="reduced")!(X="standard")!(X="polished")!(X="silky"):1,1:0)
 	;
 TITLESTYLE(X)
 	SET X=$$TRIM^MIOUTIL($GET(X))

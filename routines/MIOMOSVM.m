@@ -7,11 +7,11 @@ BUILD(STATE,CONF,OUT)
 	DO SECURITY(.STATE,.CONF,$NAME(OUT("security")))
 	DO ADMIN(.STATE,.CONF,$NAME(OUT("admin")))
 	DO SETTINGS(.STATE,.CONF,$NAME(OUT("settings")))
+	DO UILIB(.STATE,.CONF,$NAME(OUT("uiLibrary")))
 	DO CHAT(.STATE,.CONF,$NAME(OUT("chat")))
 	DO TERMINAL(.STATE,.CONF,$NAME(OUT("terminal")))
-	DO SESSION(.STATE,.CONF,$NAME(OUT("session")))
-	DO UX(.STATE,.CONF,$NAME(OUT("ux")))
 	DO WINDOWS(.STATE,.CONF,$NAME(OUT("windowManager")))
+	DO SHELL(.STATE,.CONF,$NAME(OUT("shellChrome")))
 	QUIT
 	;
 WORKSPACE(STATE,CONF,ROOT)
@@ -20,7 +20,7 @@ WORKSPACE(STATE,CONF,ROOT)
 	DO COUNTS^MIOMOSOBS(.CNT)
 	DO LIST^MIOMOSPERM($GET(STATE("roles")),.PERMS)
 	SET @ROOT@("headline")="Production workspace"
-	SET @ROOT@("subheadline")="MUMPS-first desktop with server-authored state, routes, settings, operational summaries, and session-backed shell restore."
+	SET @ROOT@("subheadline")="MUMPS-first desktop with a native Vue/CSS window manager, server-authored state, routes, settings, and operational summaries."
 	SET @ROOT@("kpis",1,"label")="Access events"
 	SET @ROOT@("kpis",1,"value")=+$GET(CNT("access"))
 	SET @ROOT@("kpis",1,"copy")="Recent authenticated desktop actions."
@@ -51,8 +51,8 @@ NOTES(ROOT)
 	SET @ROOT@(1,"title")="MUMPS-first render contract",@ROOT@(1,"copy")="Apps, windows, settings, permissions, and summaries are authored in MUMPS and emitted as JSON to the thin Vue layer."
 	SET @ROOT@(2,"title")="Server-authored settings",@ROOT@(2,"copy")="Theme, typography, density, wallpaper, icons, and terminal profile are persisted server-side in MUMPS globals."
 	SET @ROOT@(3,"title")="Operational exports",@ROOT@(3,"copy")="Access, error, audit, digest, and retention posture remain server-managed and permission-controlled."
-	SET @ROOT@(4,"title")="PIPE terminal bridge",@ROOT@(4,"copy")="The browser renders xterm.js while MUMPS launches and supervises a child YottaDB session over PIPE devices and websockets."
-	SET @ROOT@(5,"title")="Session-backed shell restore",@ROOT@(5,"copy")="Active window, menu posture, layout mode, and last command are now persisted in MUMPS as part of the desktop session contract."
+	SET @ROOT@(4,"title")="Native window manager foundation",@ROOT@(4,"copy")="The browser now uses a MIOMOS-native Vue/CSS window manager with server-backed layout, focus, and UI state."
+	SET @ROOT@(5,"title")="PIPE terminal bridge",@ROOT@(5,"copy")="The browser renders xterm.js while MUMPS launches and supervises a child YottaDB session over PIPE devices and websockets."
 	QUIT
 	;
 SECURITY(STATE,CONF,ROOT)
@@ -95,6 +95,184 @@ SETTINGS(STATE,CONF,ROOT)
 	SET @ROOT@("contract")="server-authored"
 	QUIT
 	;
+UILIB(STATE,CONF,ROOT)
+	NEW THEMES
+	KILL @ROOT
+	SET @ROOT@("headline")="UI Library and component contract"
+	SET @ROOT@("subheadline")="7.css-influenced foundations refined with MIOMOS-native shell chrome, WinXP-inspired taskbar and Start menu structure, clinical readability, and mobile-aware behavior."
+	SET @ROOT@("overview",1,"label")="Buttons"
+	SET @ROOT@("overview",1,"value")=6
+	SET @ROOT@("overview",1,"copy")="Primary, subtle, quiet, destructive, and toolbar actions."
+	SET @ROOT@("overview",2,"label")="Form controls"
+	SET @ROOT@("overview",2,"value")=8
+	SET @ROOT@("overview",2,"copy")="Inputs, selects, textareas, toggles, validation, and helper copy."
+	SET @ROOT@("overview",3,"label")="Data patterns"
+	SET @ROOT@("overview",3,"value")=5
+	SET @ROOT@("overview",3,"copy")="Tables, badges, segmented tabs, drawers, command palette rows, and shell chrome surfaces."
+	SET @ROOT@("overview",4,"label")="Theme packs"
+	SET @ROOT@("overview",4,"value")=0
+	SET @ROOT@("overview",4,"copy")="7.css-inspired window chrome with MIOMOS modern contrast tuning, XP taskbar cues, and tray/dialog patterns."
+	SET @ROOT@("overview",5,"label")="Mobile-ready patterns"
+	SET @ROOT@("overview",5,"value")=4
+	SET @ROOT@("overview",5,"copy")="Stacked shell, touch targets, and small-screen workspace behavior."
+	SET @ROOT@("buttons",1,"label")="Primary action"
+	SET @ROOT@("buttons",1,"tone")="primary"
+	SET @ROOT@("buttons",1,"copy")="Use for one strong commit action per surface."
+	SET @ROOT@("buttons",2,"label")="Secondary action"
+	SET @ROOT@("buttons",2,"tone")="secondary"
+	SET @ROOT@("buttons",2,"copy")="Use for adjacent non-destructive actions."
+	SET @ROOT@("buttons",3,"label")="Quiet action"
+	SET @ROOT@("buttons",3,"tone")="quiet"
+	SET @ROOT@("buttons",3,"copy")="Use inside dense toolbars and command bars."
+	SET @ROOT@("buttons",4,"label")="Destructive action"
+	SET @ROOT@("buttons",4,"tone")="danger"
+	SET @ROOT@("buttons",4,"copy")="Reserve for high intent actions only."
+	SET @ROOT@("tabs",1,"label")="Overview"
+	SET @ROOT@("tabs",1,"state")="active"
+	SET @ROOT@("tabs",2,"label")="Forms"
+	SET @ROOT@("tabs",3,"label")="Tables"
+	SET @ROOT@("tabs",4,"label")="Overlays"
+	SET @ROOT@("fields",1,"label")="Patient batch search"
+	SET @ROOT@("fields",1,"value")="Search by batch, payer, or profile"
+	SET @ROOT@("fields",1,"help")="Compact search field for command bars and filter rails."
+	SET @ROOT@("fields",1,"state")="default"
+	SET @ROOT@("fields",2,"label")="Workspace density"
+	SET @ROOT@("fields",2,"value")=$GET(STATE("density"),"dense")
+	SET @ROOT@("fields",2,"help")="Server-authored preference with live shell impact."
+	SET @ROOT@("fields",2,"state")="default"
+	SET @ROOT@("fields",3,"label")="Invite email"
+	SET @ROOT@("fields",3,"value")="operator@clinic.local"
+	SET @ROOT@("fields",3,"help")="Example validation and helper text pattern."
+	SET @ROOT@("fields",3,"state")="success"
+	SET @ROOT@("fields",4,"label")="Security digest cadence"
+	SET @ROOT@("fields",4,"value")="Daily at 06:00"
+	SET @ROOT@("fields",4,"help")="Surface non-editable operational values with quiet emphasis."
+	SET @ROOT@("fields",4,"state")="readonly"
+	SET @ROOT@("statusPills",1,"label")="Healthy"
+	SET @ROOT@("statusPills",1,"tone")="ok"
+	SET @ROOT@("statusPills",2,"label")="Review"
+	SET @ROOT@("statusPills",2,"tone")="warn"
+	SET @ROOT@("statusPills",3,"label")="Locked"
+	SET @ROOT@("statusPills",3,"tone")="danger"
+	SET @ROOT@("statusPills",4,"label")="Info"
+	SET @ROOT@("statusPills",4,"tone")="info"
+	SET @ROOT@("tableRows",1,"name")="Blue Cross 837P"
+	SET @ROOT@("tableRows",1,"owner")="Farah"
+	SET @ROOT@("tableRows",1,"status")="Ready"
+	SET @ROOT@("tableRows",1,"eta")="02m"
+	SET @ROOT@("tableRows",2,"name")="Aetna Inpatient"
+	SET @ROOT@("tableRows",2,"owner")="Ahmed"
+	SET @ROOT@("tableRows",2,"status")="Mapped"
+	SET @ROOT@("tableRows",2,"eta")="05m"
+	SET @ROOT@("tableRows",3,"name")="Dental Review"
+	SET @ROOT@("tableRows",3,"owner")="Sara"
+	SET @ROOT@("tableRows",3,"status")="Exception"
+	SET @ROOT@("tableRows",3,"eta")="Needs analyst"
+	SET @ROOT@("commands",1,"title")="Open command palette"
+	SET @ROOT@("commands",1,"shortcut")="Alt+M"
+	SET @ROOT@("commands",1,"copy")="Global launcher and command routing pattern."
+	SET @ROOT@("commands",2,"title")="Tile the workspace"
+	SET @ROOT@("commands",2,"shortcut")="Alt+G"
+	SET @ROOT@("commands",2,"copy")="Window tool pattern for dense review sessions."
+	SET @ROOT@("commands",3,"title")="Focus terminal"
+	SET @ROOT@("commands",3,"shortcut")="Alt+T"
+	SET @ROOT@("commands",3,"copy")="Operational jump action for MUMPS power users."
+	SET @ROOT@("tokens",1,"label")="Corner radius"
+	SET @ROOT@("tokens",1,"value")="14 / 16 / 18 px"
+	SET @ROOT@("tokens",2,"label")="Shadow stack"
+	SET @ROOT@("tokens",2,"value")="Soft glass + active focus"
+	SET @ROOT@("tokens",3,"label")="Focus ring"
+	SET @ROOT@("tokens",3,"value")="Accent outline with 2px offset"
+	SET @ROOT@("shellPatterns",1,"title")="Quick Launch rail"
+	SET @ROOT@("shellPatterns",1,"copy")="Compact pinned launchers with XP-like separators and tray balance."
+	SET @ROOT@("shellPatterns",2,"title")="Shell dialogs"
+	SET @ROOT@("shellPatterns",2,"copy")="Run, About, and Turn Off Computer dialogs share one consistent shell contract."
+	SET @ROOT@("shellPatterns",3,"title")="Notification area"
+	SET @ROOT@("shellPatterns",3,"copy")="Status chips, live clock, and taskbar-side actions stay readable on light shells."
+	SET @ROOT@("shellPatterns",4,"title")="Stable taskbar order"
+	SET @ROOT@("shellPatterns",4,"copy")="Task buttons keep their slot while focus changes so the strip behaves like a real desktop instead of reshuffling on every click."
+	SET @ROOT@("tokens",4,"label")="Density scale"
+	SET @ROOT@("tokens",4,"value")="compact / dense / comfortable"
+	SET @ROOT@("tokens",5,"label")="Touch target"
+	SET @ROOT@("tokens",5,"value")="44 px minimum on compact screens"
+	SET @ROOT@("lightChecks",1,"title")="Dark-enough body text"
+	SET @ROOT@("lightChecks",1,"copy")="Light themes keep body copy, pills, and table text in a deep slate range instead of washed-out gray."
+	SET @ROOT@("lightChecks",2,"title")="Action chrome stays visible"
+	SET @ROOT@("lightChecks",2,"copy")="Top bar, taskbar, and window frames retain contrast even when the desktop theme switches to light mode."
+	SET @ROOT@("lightChecks",3,"title")="High Contrast Light is available"
+	SET @ROOT@("lightChecks",3,"copy")="Accessibility-sensitive operators can choose a bright shell with strong outlines and assertive text values."
+	;	
+	SET @ROOT@("shellChrome",1,"title")="WinXP-inspired shell chrome"
+	SET @ROOT@("shellChrome",1,"copy")="Taskbar, Start menu, and context menus use XP-like gradients, highlights, and tray patterns without abandoning MIOMOS ownership of state and permissions."
+	SET @ROOT@("shellChrome",2,"title")="Professional not nostalgic"
+	SET @ROOT@("shellChrome",2,"copy")="The chrome borrows recognizable XP structure while keeping healthcare-friendly spacing, cleaner typography, and calmer content density."
+	SET @ROOT@("shellChrome",3,"title")="Context actions stay focused"
+	SET @ROOT@("shellChrome",3,"copy")="Right-click menus expose only a small, predictable set of launch and window actions rather than a crowded desktop imitation."
+	SET @ROOT@("shellChrome",4,"title")="Start menu sections stay predictable"
+	SET @ROOT@("shellChrome",4,"copy")="Programs, pinned entries, directories, and system actions keep a consistent order so operators build muscle memory."
+	SET @ROOT@("responsive",1,"title")="Stacked shell under 900 px"
+	SET @ROOT@("responsive",1,"copy")="Windows render as a single-column flow, drag handles are suppressed, and the launcher becomes a mobile-friendly sheet."
+	SET @ROOT@("responsive",2,"title")="Touch-safe controls"
+	SET @ROOT@("responsive",2,"copy")="Task buttons, menu actions, and shell controls keep comfortable spacing for smaller touch devices."
+	SET @ROOT@("responsive",3,"title")="Desktop still remains server-authored"
+	SET @ROOT@("responsive",3,"copy")="The browser only changes layout strategy. Window/app metadata, routes, and session state continue to come from MUMPS."
+	SET @ROOT@("responsive",4,"title")="Terminal stays secondary on handheld"
+	SET @ROOT@("responsive",4,"copy")="The shell prepares for mobile by favoring workspace and UI surfaces first while keeping the terminal available when needed."
+	SET @ROOT@("nativeWindowManager",1,"title")="Native Vue/CSS shell"
+	SET @ROOT@("nativeWindowManager",1,"copy")="No OS.js runtime bridge is required. Windows are managed by MIOMOS Vue state, CSS chrome, and MUMPS-authored metadata."
+	SET @ROOT@("nativeWindowManager",2,"title")="Server-backed UI state"
+	SET @ROOT@("nativeWindowManager",2,"copy")="Active window, launcher state, layout mode, and focused surface can be persisted back through the MIOMOS command boundary."
+	SET @ROOT@("nativeWindowManager",3,"title")="Mobile-friendly windowing"
+	SET @ROOT@("nativeWindowManager",3,"copy")="Compact viewports switch to a stacked shell without changing the MUMPS-authored desktop contract."
+	DO CATALOG^MIOMOSTH($NAME(THEMES))
+	NEW N,M SET N=0,M=0
+	FOR  SET N=$ORDER(THEMES(N)) QUIT:N=""  DO
+	. SET M=M+1
+	. MERGE @ROOT@("themes",M)=THEMES(N)
+	. SET @ROOT@("themes",M,"isCurrent")=$SELECT($GET(THEMES(N,"key"))=$GET(STATE("themeKey")):1,1:0)
+	SET @ROOT@("overview",4,"value")=M
+	QUIT
+	;
+SHELL(STATE,CONF,ROOT)
+	KILL @ROOT
+	SET @ROOT@("headline")="WinXP-inspired shell correctness"
+	SET @ROOT@("taskbarBehavior")="stable-order"
+	SET @ROOT@("taskbarOverflowBehavior")="preserve-order-and-overflow"
+	SET @ROOT@("startMenuBehavior")="predictable-sections"
+	SET @ROOT@("startSearchBehavior")="filter-programs-and-actions"
+	SET @ROOT@("taskbarClickPolicy")="xp-toggle"
+	SET @ROOT@("shellSurfacePolicy")="single-open-surface"
+	SET @ROOT@("contextMenuStatefulness")="window-aware"
+	SET @ROOT@("startMenuSectionMemory")="server-backed"
+	SET @ROOT@("keyboardModel")="ctrl-escape-enter-search"
+	SET @ROOT@("taskbarBehaviorCopy")="Taskbar order stays stable while focus changes."
+	SET @ROOT@("taskbarOverflowCopy")="Overflow windows move into a More Windows list without changing taskbar order."
+	SET @ROOT@("startMenuBehaviorCopy")="Start menu sections stay pinned and predictable."
+	SET @ROOT@("startSearchBehaviorCopy")="Start search filters programs, actions, and directories from one field."
+	SET @ROOT@("taskbarClickPolicyCopy")="Clicking a task button toggles minimize or restore without shuffling neighboring items."
+	SET @ROOT@("shellSurfacePolicyCopy")="Only one shell surface stays open at a time: Start menu, context menu, or dialog."
+	SET @ROOT@("quickLaunchLabel")="Quick Launch"
+	SET @ROOT@("overflowLabel")="More Windows"
+	SET @ROOT@("recentLabel")="Recently used"
+	SET @ROOT@("searchPlaceholder")="Search programs and shell actions"
+	SET @ROOT@("taskbarStyle")="xp-plus-tray"
+	SET @ROOT@("startMenuStyle")="winxp-dual-pane"
+	SET @ROOT@("trayStyle")="xp-notify-area"
+	SET @ROOT@("dialogStyle")="xp-shell-classic"
+	SET @ROOT@("tray",1,"key")="network",@ROOT@("tray",1,"label")="Network connected",@ROOT@("tray",1,"icon")="LAN",@ROOT@("tray",1,"action")="about"
+	SET @ROOT@("tray",2,"key")="workspace",@ROOT@("tray",2,"label")="Workspace ready",@ROOT@("tray",2,"icon")="✓",@ROOT@("tray",2,"action")="refresh"
+	SET @ROOT@("tray",3,"key")="power",@ROOT@("tray",3,"label")="Power options",@ROOT@("tray",3,"icon")="⏻",@ROOT@("tray",3,"action")="power"
+	SET @ROOT@("recentFallback",1,"key")="workspace",@ROOT@("recentFallback",1,"label")="Workspace"
+	SET @ROOT@("recentFallback",2,"key")="terminal",@ROOT@("recentFallback",2,"label")="Terminal"
+	SET @ROOT@("recentFallback",3,"key")="settings",@ROOT@("recentFallback",3,"label")="Settings"
+	SET @ROOT@("startFooter",1,"key")="run",@ROOT@("startFooter",1,"label")="Run…",@ROOT@("startFooter",1,"copy")="Launch a desktop command or app."
+	SET @ROOT@("startFooter",2,"key")="signout",@ROOT@("startFooter",2,"label")="Log Off",@ROOT@("startFooter",2,"copy")="End the authenticated desktop session."
+	SET @ROOT@("startFooter",3,"key")="power",@ROOT@("startFooter",3,"label")="Turn Off Computer",@ROOT@("startFooter",3,"copy")="Open the shell power dialog."
+	SET @ROOT@("dialogs",1,"key")="run",@ROOT@("dialogs",1,"title")="Run",@ROOT@("dialogs",1,"copy")="Open a MIOMOS app by name, such as workspace, terminal, or settings."
+	SET @ROOT@("dialogs",2,"key")="about",@ROOT@("dialogs",2,"title")="About MIOMOS",@ROOT@("dialogs",2,"copy")="WinXP-inspired shell chrome on a native Vue/CSS window manager with MUMPS-owned state."
+	SET @ROOT@("dialogs",3,"key")="power",@ROOT@("dialogs",3,"title")="Turn off computer",@ROOT@("dialogs",3,"copy")="Choose whether to log off, restart the shell, or close all windows."
+	QUIT
+	;
 CHAT(STATE,CONF,ROOT)
 	KILL @ROOT
 	SET @ROOT@("enabled")=+$GET(STATE("chatEnabled"))
@@ -112,7 +290,7 @@ TERMINAL(STATE,CONF,ROOT)
 	SET @ROOT@("shell")=$GET(CONF("miomos","terminal","pipe","shell"),"/bin/sh")
 	SET @ROOT@("bridge")="mumps-owned"
 	QUIT
-
+	;
 	;
 WINDOWS(STATE,CONF,ROOT)
 	KILL @ROOT
@@ -120,57 +298,9 @@ WINDOWS(STATE,CONF,ROOT)
 	SET @ROOT@("snapMode")=$GET(STATE("snapMode"),"quadrant")
 	SET @ROOT@("motionProfile")=$GET(STATE("motionProfile"),"standard")
 	SET @ROOT@("titlebarStyle")=$GET(STATE("titlebarStyle"),"accent")
+	SET @ROOT@("engine")="miomos-native-vue-css"
+	SET @ROOT@("nativeShell")=1
+	SET @ROOT@("serverBackedUiState")=1
 	DO CATALOG^MIOMOSWM($NAME(@ROOT@("catalog")))
 	QUIT
-
-SESSION(STATE,CONF,ROOT)
-	NEW SNAP
-	KILL @ROOT
-	DO SNAPSHOT^MIOMOSST($GET(STATE("sessionId")),.SNAP)
-	SET @ROOT@("headline")="Server-owned session posture"
-	SET @ROOT@("subheadline")="Idle timers, layout restore, active window, and shell chrome are persisted in MUMPS and emitted back into the SSR desktop."
-	SET @ROOT@("summary","id")=$GET(SNAP("id"),$GET(STATE("sessionId")))
-	SET @ROOT@("summary","startedAt")=$GET(SNAP("startedAt"),$GET(STATE("startedAt")))
-	SET @ROOT@("summary","lastSeenAt")=$GET(SNAP("lastSeenAt"),$GET(STATE("lastSeenAt")))
-	SET @ROOT@("summary","lastEvent")=$GET(SNAP("lastEvent"),"desktop_render")
-	SET @ROOT@("summary","ageSeconds")=+$GET(SNAP("ageSeconds"))
-	SET @ROOT@("summary","idleSeconds")=+$GET(SNAP("idleSeconds"))
-	SET @ROOT@("summary","layoutSavedAt")=$GET(SNAP("layoutSavedAt"))
-	SET @ROOT@("summary","uiSavedAt")=$GET(SNAP("uiSavedAt"))
-	SET @ROOT@("summary","menuOpen")=+$GET(SNAP("ui","menuOpen"))
-	SET @ROOT@("summary","activeWindowId")=$GET(SNAP("ui","activeWindowId"))
-	SET @ROOT@("summary","focusedAppKey")=$GET(SNAP("ui","focusedAppKey"))
-	SET @ROOT@("summary","layoutMode")=$GET(SNAP("ui","layoutMode"))
-	SET @ROOT@("summary","lastCommandName")=$GET(SNAP("ui","lastCommandName"))
-	SET @ROOT@("summary","hasLayout")=+$GET(SNAP("hasLayout"))
-	SET @ROOT@("summary","heartbeatCount")=+$GET(SNAP("eventCounts","heartbeat"))
-	SET @ROOT@("summary","viewRefreshCount")=+$GET(SNAP("eventCounts","view.refresh"))
-	SET @ROOT@("summary","uiSaveCount")=+$GET(SNAP("eventCounts","ui_state_save"))
-	QUIT
 	;
-UX(STATE,CONF,ROOT)
-	KILL @ROOT
-	SET @ROOT@("headline")="UI contract hardening"
-	SET @ROOT@("subheadline")="Buttons, forms, tabs, pills, tables, and shell shortcuts now follow one production-facing render contract that can be tested by tokens."
-	SET @ROOT@("tabs",1,"label")="Overview",@ROOT@("tabs",1,"active")=1
-	SET @ROOT@("tabs",2,"label")="Forms",@ROOT@("tabs",2,"active")=0
-	SET @ROOT@("tabs",3,"label")="Tables",@ROOT@("tabs",3,"active")=0
-	SET @ROOT@("buttons",1,"label")="Primary action",@ROOT@("buttons",1,"kind")="primary"
-	SET @ROOT@("buttons",2,"label")="Secondary action",@ROOT@("buttons",2,"kind")="secondary"
-	SET @ROOT@("buttons",3,"label")="Quiet action",@ROOT@("buttons",3,"kind")="quiet"
-	SET @ROOT@("states",1,"label")="Ready",@ROOT@("states",1,"kind")="ok"
-	SET @ROOT@("states",2,"label")="Review",@ROOT@("states",2,"kind")="warn"
-	SET @ROOT@("states",3,"label")="Protected",@ROOT@("states",3,"kind")="neutral"
-	SET @ROOT@("form","title")="Profile and permission workflow"
-	SET @ROOT@("form","copy")="Use explicit labels, compact spacing, inline help, and visible validation language for all privileged workflows."
-	SET @ROOT@("form","fields",1,"label")="Display name",@ROOT@("form","fields",1,"value")=$GET(STATE("userName"))
-	SET @ROOT@("form","fields",2,"label")="Role bundle",@ROOT@("form","fields",2,"value")=$GET(STATE("roles"))
-	SET @ROOT@("form","fields",3,"label")="Session identifier",@ROOT@("form","fields",3,"value")=$GET(STATE("sessionId"))
-	SET @ROOT@("table",1,"surface")="Buttons and pills",@ROOT@("table",1,"status")="Ready",@ROOT@("table",1,"detail")="Consistent sizing, focus, density, and badge styling."
-	SET @ROOT@("table",2,"surface")="Forms and validation",@ROOT@("table",2,"status")="Ready",@ROOT@("table",2,"detail")="Inline labels, helper copy, and compact field grouping."
-	SET @ROOT@("table",3,"surface")="Session restore",@ROOT@("table",3,"status")="Ready",@ROOT@("table",3,"detail")="Menu posture, active window, layout mode, and restore timestamps persisted in MUMPS."
-	SET @ROOT@("table",4,"surface")="Admin tables",@ROOT@("table",4,"status")="Ready",@ROOT@("table",4,"detail")="Clear action columns and state badges for identity operations."
-	SET @ROOT@("shortcuts",1,"label")="Open menu",@ROOT@("shortcuts",1,"keys")="Alt+M"
-	SET @ROOT@("shortcuts",2,"label")="Tile windows",@ROOT@("shortcuts",2,"keys")="Alt+G"
-	SET @ROOT@("shortcuts",3,"label")="Focus terminal",@ROOT@("shortcuts",3,"keys")="Alt+T"
-	QUIT

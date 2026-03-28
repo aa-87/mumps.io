@@ -61,11 +61,8 @@ DESKCTX(STATE,CONF,DATA)
 	SET DATA("themeKey")=$GET(STATE("themeKey"),"midnight-professional")
 	SET DATA("bootJson")=$$BOOTJSON^MIOMOSST(.STATE,.CONF)
 	SET DATA("vueScript")="https://unpkg.com/vue@3/dist/vue.global.prod.js"
-	SET DATA("osjsClientScript")="https://cdn.jsdelivr.net/npm/@osjs/client/dist/main.js"
+	SET DATA("nativeShellEngine")="miomos-native-vue-css"
 	SET DATA("sevenCssHref")="https://unpkg.com/7.css/dist/7.scoped.css"
-	SET DATA("xtermCssHref")="https://cdn.jsdelivr.net/npm/@xterm/xterm/css/xterm.css"
-	SET DATA("xtermScript")="https://cdn.jsdelivr.net/npm/@xterm/xterm/lib/xterm.js"
-	SET DATA("monacoLoaderScript")="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs/loader.js"
 	DO APPSSR(.DATA,.STATE)
 	DO WINSSR(.DATA,.STATE)
 	DO THEMESSR(.DATA,$GET(STATE("themeKey"),"midnight-professional"))
@@ -88,36 +85,34 @@ AUTHCTX(CONF,DATA)
 	SET DATA("allowSignup")=+$GET(CONF("miomos","localAuth","allowSignup"),1)
 	SET DATA("inviteOnly")=+$GET(CONF("miomos","localAuth","inviteOnly"),0)
 	SET DATA("sevenCssHref")="https://unpkg.com/7.css/dist/7.scoped.css"
-	SET DATA("xtermCssHref")="https://cdn.jsdelivr.net/npm/@xterm/xterm/css/xterm.css"
-	SET DATA("xtermScript")="https://cdn.jsdelivr.net/npm/@xterm/xterm/lib/xterm.js"
 	QUIT
 	;
 APPSSR(DATA,STATE)
 	KILL DATA("apps")
 	SET DATA("apps",1,"key")="workspace",DATA("apps",1,"title")="Workspace",DATA("apps",1,"subtitle")="Queues, intake, review, and export",DATA("apps",1,"icon")=$GET(STATE("icon","workspace"),"W"),DATA("apps",1,"badge")="Live"
-	SET DATA("apps",2,"key")="collaboration",DATA("apps",2,"title")="Chat",DATA("apps",2,"subtitle")="User chat and analyst coordination",DATA("apps",2,"icon")=$GET(STATE("icon","collaboration"),"C"),DATA("apps",2,"badge")="Team"
-	SET DATA("apps",3,"key")="security",DATA("apps",3,"title")="Security",DATA("apps",3,"subtitle")="Access, errors, permissions, and audit",DATA("apps",3,"icon")=$GET(STATE("icon","security"),"S"),DATA("apps",3,"badge")="Audit"
-	SET DATA("apps",4,"key")="admin",DATA("apps",4,"title")="Admin",DATA("apps",4,"subtitle")="Users, invites, resets, and lockout posture",DATA("apps",4,"icon")=$GET(STATE("icon","admin"),"A"),DATA("apps",4,"badge")="Ops"
-	SET DATA("apps",5,"key")="settings",DATA("apps",5,"title")="Settings",DATA("apps",5,"subtitle")="Themes, fonts, density, colors, and icons",DATA("apps",5,"icon")=$GET(STATE("icon","settings"),"T"),DATA("apps",5,"badge")="Prefs"
-	SET DATA("apps",6,"key")="terminal",DATA("apps",6,"title")="Terminal",DATA("apps",6,"subtitle")="xterm.js foundation over the MIOMOS websocket",DATA("apps",6,"icon")=$GET(STATE("icon","terminal"),">_"),DATA("apps",6,"badge")="CLI"
-	SET DATA("apps",7,"key")="editor",DATA("apps",7,"title")="Code Studio",DATA("apps",7,"subtitle")="Monaco routine workspace over MIOIDE APIs",DATA("apps",7,"icon")=$GET(STATE("icon","editor"),"EDT"),DATA("apps",7,"badge")="Code"
+	SET DATA("apps",2,"key")="ui-library",DATA("apps",2,"title")="UI Library",DATA("apps",2,"subtitle")="7.css-influenced forms, tables, overlays, navigation, and tokens",DATA("apps",2,"icon")="UIL",DATA("apps",2,"badge")="Design"
+	SET DATA("apps",3,"key")="collaboration",DATA("apps",3,"title")="Chat",DATA("apps",3,"subtitle")="User chat and analyst coordination",DATA("apps",3,"icon")=$GET(STATE("icon","collaboration"),"C"),DATA("apps",3,"badge")="Team"
+	SET DATA("apps",4,"key")="security",DATA("apps",4,"title")="Security",DATA("apps",4,"subtitle")="Access, errors, permissions, and audit",DATA("apps",4,"icon")=$GET(STATE("icon","security"),"S"),DATA("apps",4,"badge")="Audit"
+	SET DATA("apps",5,"key")="admin",DATA("apps",5,"title")="Admin",DATA("apps",5,"subtitle")="Users, invites, resets, and lockout posture",DATA("apps",5,"icon")=$GET(STATE("icon","admin"),"A"),DATA("apps",5,"badge")="Ops"
+	SET DATA("apps",6,"key")="settings",DATA("apps",6,"title")="Settings",DATA("apps",6,"subtitle")="Themes, fonts, density, colors, and icons",DATA("apps",6,"icon")=$GET(STATE("icon","settings"),"T"),DATA("apps",6,"badge")="Prefs"
+	SET DATA("apps",7,"key")="terminal",DATA("apps",7,"title")="Terminal",DATA("apps",7,"subtitle")="Native MIOMOS replica terminal over the native window manager",DATA("apps",7,"icon")=$GET(STATE("icon","terminal"),">_"),DATA("apps",7,"badge")="CLI"
 	QUIT
 	;
 WINSSR(DATA,STATE)
 	DO WIN(.DATA,1,"win-workspace","workspace","Workspace",16,14,1180,690,6,"normal",$GET(STATE("icon","workspace"),"W"))
 	SET DATA("windows",1,"isWorkspace")=1
-	DO WIN(.DATA,2,"win-collaboration","collaboration","Chat",940,44,420,430,3,"minimized",$GET(STATE("icon","collaboration"),"C"))
-	SET DATA("windows",2,"isCollaboration")=1
-	DO WIN(.DATA,3,"win-security","security","Security",970,488,390,258,2,"minimized",$GET(STATE("icon","security"),"S"))
-	SET DATA("windows",3,"isSecurity")=1
-	DO WIN(.DATA,4,"win-admin","admin","Admin",220,68,820,520,4,"minimized",$GET(STATE("icon","admin"),"A"))
-	SET DATA("windows",4,"isAdmin")=1
-	DO WIN(.DATA,5,"win-settings","settings","Settings",240,88,700,520,5,"minimized",$GET(STATE("icon","settings"),"T"))
-	SET DATA("windows",5,"isSettings")=1
-	DO WIN(.DATA,6,"win-terminal","terminal","Terminal",110,80,960,540,7,"minimized",$GET(STATE("icon","terminal"),">_"))
-	SET DATA("windows",6,"isTerminal")=1
-	DO WIN(.DATA,7,"win-editor","editor","Code Studio",86,34,1100,660,8,"minimized",$GET(STATE("icon","editor"),"EDT"))
-	SET DATA("windows",7,"isEditor")=1
+	DO WIN(.DATA,2,"win-ui-library","ui-library","UI Library",268,94,920,600,5,"minimized","UIL")
+	SET DATA("windows",2,"isUiLibrary")=1
+	DO WIN(.DATA,3,"win-collaboration","collaboration","Chat",940,44,420,430,3,"minimized",$GET(STATE("icon","collaboration"),"C"))
+	SET DATA("windows",3,"isCollaboration")=1
+	DO WIN(.DATA,4,"win-security","security","Security",970,488,390,258,2,"minimized",$GET(STATE("icon","security"),"S"))
+	SET DATA("windows",4,"isSecurity")=1
+	DO WIN(.DATA,5,"win-admin","admin","Admin",220,68,820,520,4,"minimized",$GET(STATE("icon","admin"),"A"))
+	SET DATA("windows",5,"isAdmin")=1
+	DO WIN(.DATA,6,"win-settings","settings","Settings",240,88,700,520,5,"minimized",$GET(STATE("icon","settings"),"T"))
+	SET DATA("windows",6,"isSettings")=1
+	DO WIN(.DATA,7,"win-terminal","terminal","Terminal",110,80,960,540,7,"minimized",$GET(STATE("icon","terminal"),">_"))
+	SET DATA("windows",7,"isTerminal")=1
 	QUIT
 	;
 WIN(DATA,N,ID,APPKEY,TITLE,LEFT,TOP,WIDTH,HEIGHT,Z,STATE,GLYPH)

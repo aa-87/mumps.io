@@ -58,7 +58,7 @@ CONFDEF(CONF)
 	IF $GET(CONF("miomos","settings","default","animations"))="" SET CONF("miomos","settings","default","animations")="reduced"
 	IF $GET(CONF("miomos","terminal","enabled"))="" SET CONF("miomos","terminal","enabled")=1
 	IF $GET(CONF("miomos","terminal","pipe","enabled"))="" SET CONF("miomos","terminal","pipe","enabled")=1
-	IF $GET(CONF("miomos","terminal","pipe","command"))="" SET CONF("miomos","terminal","pipe","command")="yottadb"
+	IF $GET(CONF("miomos","terminal","pipe","command"))="" SET CONF("miomos","terminal","pipe","command")="ydb"
 	IF $GET(CONF("miomos","terminal","pipe","shell"))="" SET CONF("miomos","terminal","pipe","shell")="/bin/sh"
 	IF $GET(CONF("miomos","terminal","pipe","independent"))="" SET CONF("miomos","terminal","pipe","independent")=0
 	IF $GET(CONF("miomos","terminal","default","fontFamily"))="" SET CONF("miomos","terminal","default","fontFamily")="JetBrains Mono"
@@ -104,7 +104,7 @@ CONFDEF(CONF)
 	;
 INIT(CONF)
 	DO CONFDEF(.CONF)
-	DO START^MIOTPL(.CONF)
+	;DO START^MIOTPL(.CONF)
 	QUIT
 	;
 REG(CONF)
@@ -269,4 +269,5 @@ RESPERR(DEV,CONF,STATUS,CODE,DETAIL,CTX)
 	DO RESPJSONX^MIOHTTP(.DEV,.CONF,+$GET(STATUS,500),.OBJ,$GET(CTX("request_id")),.CTX)
 	SET CTX("status")=+$GET(STATUS,500)
 	QUIT
+	;
 	;

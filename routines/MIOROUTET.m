@@ -585,3 +585,4 @@ T040 ; HEAD 404 should not emit a body
 	DO EQ^MIOTASSERT($GET(CTX("status")),404,"[T040][status 404]")
 	DO EQ^MIOTASSERT($$FILEHAS(OUTP,"not_found"),0,"[T040][no body]")
 	QUIT
+	;

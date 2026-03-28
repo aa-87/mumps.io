@@ -22,16 +22,14 @@ EXEC(STATE,CONF,TREE,OUT,ERR)
 	. SET OUT("saved")=1
 	IF CMD="theme.quick" QUIT $$THEME(.STATE,.TREE,.OUT,.ERR)
 	IF CMD="settings.save" QUIT $$SETSAVE(.STATE,.TREE,.OUT,.ERR)
-	IF CMD="session.touch" QUIT $$SESSNTO(.STATE,.TREE,.OUT,.ERR)
-	IF CMD="session.ui.save" QUIT $$SESSUISV(.STATE,.TREE,.OUT,.ERR)
-	IF CMD="session.snapshot" QUIT $$SESSSNAP(.STATE,.OUT,.ERR)
 	IF CMD="view.refresh" DO  QUIT 1
-	. DO TOUCH^MIOMOSST($GET(STATE("sessionId")),"view.refresh")
 	. DO BUILD^MIOMOSVM(.STATE,.CONF,.VIEW)
 	. MERGE OUT("view")=VIEW
 	. SET OUT("command")=CMD
+	IF CMD="session.ui.save" QUIT $$SAVEUI(.STATE,.TREE,.OUT,.ERR)
 	IF CMD="wm.layout.apply" QUIT $$WMLAYOUT(.STATE,.CONF,.TREE,.OUT,.ERR)
 	IF CMD="terminal.open" QUIT $$TERMOPEN(.STATE,.CONF,.TREE,.OUT,.ERR)
+	IF CMD="terminal.input" QUIT $$TERMINPUT(.STATE,.TREE,.OUT,.ERR)
 	IF CMD="terminal.close" QUIT $$TERMCLOSE(.STATE,.TREE,.OUT,.ERR)
 	IF CMD="terminal.poll" QUIT $$TERMPOLL(.STATE,.TREE,.OUT,.ERR)
 	IF CMD="terminal.resize" QUIT $$TERMRESZ(.STATE,.TREE,.OUT,.ERR)
@@ -39,7 +37,7 @@ EXEC(STATE,CONF,TREE,OUT,ERR)
 	QUIT 0
 	;
 THEME(STATE,TREE,OUT,ERR)
-	NEW SAVE,SESSION,CUR
+	NEW SAVE,CUR
 	IF '$$HAS^MIOMOSPERM(.STATE,"settings.self") SET ERR("error")="forbidden",ERR("detail")="settings.self",ERR("status")=403 QUIT 0
 	SET SAVE("themeKey")=$GET(TREE("themeKey"))
 	IF SAVE("themeKey")="" SET ERR("error")="theme_missing",ERR("status")=400 QUIT 0
@@ -56,7 +54,21 @@ SETSAVE(STATE,TREE,OUT,ERR)
 	SET OUT("command")="settings.save"
 	QUIT 1
 	;
+SAVEUI(STATE,TREE,OUT,ERR)
+	NEW RAW,UI
+	IF '$$HAS^MIOMOSPERM(.STATE,"settings.self") SET ERR("error")="forbidden",ERR("detail")="settings.self",ERR("status")=403 QUIT 0
+	SET RAW=$GET(TREE("uiJson"))
+	IF RAW="" DO
+	. MERGE UI=TREE
+	. KILL UI("command")
+	. SET RAW=$$EN^MIOJSON1(.UI)
+	IF '$$SAVEUIOK^MIOMOSST($GET(STATE("sessionId")),RAW) SET ERR("error")="ui_state_save_failed",ERR("status")=400 QUIT 0
+	SET OUT("command")="session.ui.save"
+	SET OUT("saved")=1
+	DO LOADUI^MIOMOSST($GET(STATE("sessionId")),$NAME(OUT("ui")))
+	QUIT 1
 	;
+
 LOW(X)
 	NEW Y
 	SET Y=$TR($GET(X),"ABCDEFGHIJKLMNOPQRSTUVWXYZ","abcdefghijklmnopqrstuvwxyz")
@@ -77,15 +89,24 @@ TERMOPEN(STATE,CONF,TREE,OUT,ERR)
 	NEW TERMOUT,TERMID
 	IF '$$HAS^MIOMOSPERM(.STATE,"terminal.use") SET ERR("error")="forbidden",ERR("detail")="terminal.use",ERR("status")=403 QUIT 0
 	SET TERMID=$GET(TREE("terminalId"))
-	IF '$$OPEN^MIOMOSTPIPE(.STATE,.CONF,TERMID,.TERMOUT,.ERR) SET ERR("status")=400 QUIT 0
+	IF '$$OPEN^MIOMOSTERM(.STATE,.CONF,TERMID,.TERMOUT,.ERR) SET ERR("status")=400 QUIT 0
 	MERGE OUT("terminal")=TERMOUT
 	SET OUT("command")="terminal.open"
+	QUIT 1
+	;
+
+TERMINPUT(STATE,TREE,OUT,ERR)
+	NEW TERMOUT
+	IF '$$HAS^MIOMOSPERM(.STATE,"terminal.use") SET ERR("error")="forbidden",ERR("detail")="terminal.use",ERR("status")=403 QUIT 0
+	IF '$$INPUT^MIOMOSTERM(.STATE,$GET(TREE("terminalId")),$SELECT($DATA(TREE("line")):$GET(TREE("line")),1:$GET(TREE("data"))),.TERMOUT,.ERR) SET ERR("status")=400 QUIT 0
+	MERGE OUT("terminal")=TERMOUT
+	SET OUT("command")="terminal.input"
 	QUIT 1
 	;
 TERMCLOSE(STATE,TREE,OUT,ERR)
 	NEW TERMOUT
 	IF '$$HAS^MIOMOSPERM(.STATE,"terminal.use") SET ERR("error")="forbidden",ERR("detail")="terminal.use",ERR("status")=403 QUIT 0
-	IF '$$CLOSE^MIOMOSTPIPE(.STATE,$GET(TREE("terminalId")),.TERMOUT,.ERR) SET ERR("status")=400 QUIT 0
+	IF '$$CLOSE^MIOMOSTERM(.STATE,$GET(TREE("terminalId")),.TERMOUT,.ERR) SET ERR("status")=400 QUIT 0
 	MERGE OUT("terminal")=TERMOUT
 	SET OUT("command")="terminal.close"
 	QUIT 1
@@ -93,7 +114,7 @@ TERMCLOSE(STATE,TREE,OUT,ERR)
 TERMPOLL(STATE,TREE,OUT,ERR)
 	NEW TERMOUT
 	IF '$$HAS^MIOMOSPERM(.STATE,"terminal.use") SET ERR("error")="forbidden",ERR("detail")="terminal.use",ERR("status")=403 QUIT 0
-	IF '$$POLL^MIOMOSTPIPE(.STATE,$GET(TREE("terminalId")),.TERMOUT,.ERR) SET ERR("status")=400 QUIT 0
+	IF '$$POLL^MIOMOSTERM(.STATE,$GET(TREE("terminalId")),.TERMOUT,.ERR) SET ERR("status")=400 QUIT 0
 	MERGE OUT("terminal")=TERMOUT
 	SET OUT("command")="terminal.poll"
 	QUIT 1
@@ -101,32 +122,7 @@ TERMPOLL(STATE,TREE,OUT,ERR)
 TERMRESZ(STATE,TREE,OUT,ERR)
 	NEW TERMOUT
 	IF '$$HAS^MIOMOSPERM(.STATE,"terminal.use") SET ERR("error")="forbidden",ERR("detail")="terminal.use",ERR("status")=403 QUIT 0
-	IF '$$RESIZE^MIOMOSTPIPE(.STATE,$GET(TREE("terminalId")),+$GET(TREE("cols")),+$GET(TREE("rows")),.TERMOUT,.ERR) SET ERR("status")=400 QUIT 0
+	IF '$$RESIZE^MIOMOSTERM(.STATE,$GET(TREE("terminalId")),+$GET(TREE("cols")),+$GET(TREE("rows")),.TERMOUT,.ERR) SET ERR("status")=400 QUIT 0
 	MERGE OUT("terminal")=TERMOUT
 	SET OUT("command")="terminal.resize"
-	QUIT 1
-	;
-SESSNTO(STATE,TREE,OUT,ERR)
-	NEW EVENT,SESSION
-	SET EVENT=$EXTRACT($GET(TREE("event")),1,64)
-	IF EVENT="" SET EVENT="session.touch"
-	DO TOUCH^MIOMOSST($GET(STATE("sessionId")),EVENT)
-	NEW OK SET OK=$$SNAPOK^MIOMOSST($GET(STATE("sessionId")),.SESSION) MERGE OUT("session")=SESSION
-	SET OUT("command")="session.touch"
-	QUIT 1
-	;
-SESSUISV(STATE,TREE,OUT,ERR)
-	NEW SAVE,SESSION
-	MERGE SAVE=TREE
-	KILL SAVE("command")
-	IF '$$SAVEUI^MIOMOSST($GET(STATE("sessionId")),$$EN^MIOJSON1(.SAVE)) SET ERR("error")="session_ui_save_failed",ERR("status")=400 QUIT 0
-	NEW OK SET OK=$$SNAPOK^MIOMOSST($GET(STATE("sessionId")),.SESSION) MERGE OUT("session")=SESSION
-	SET OUT("command")="session.ui.save"
-	QUIT 1
-	;
-SESSSNAP(STATE,OUT,ERR)
-	NEW SESSION
-	IF '$$SNAPOK^MIOMOSST($GET(STATE("sessionId")),.SESSION) SET ERR("error")="session_not_found",ERR("status")=404 QUIT 0
-	MERGE OUT("session")=SESSION
-	SET OUT("command")="session.snapshot"
 	QUIT 1
