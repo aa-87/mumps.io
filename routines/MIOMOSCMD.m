@@ -111,7 +111,7 @@ SESSNTO(STATE,TREE,OUT,ERR)
 	SET EVENT=$EXTRACT($GET(TREE("event")),1,64)
 	IF EVENT="" SET EVENT="session.touch"
 	DO TOUCH^MIOMOSST($GET(STATE("sessionId")),EVENT)
-	NEW OK SET OK=$$SNAPSHOT^MIOMOSST($GET(STATE("sessionId")),.SESSION) MERGE OUT("session")=SESSION
+	NEW OK SET OK=$$SNAPOK^MIOMOSST($GET(STATE("sessionId")),.SESSION) MERGE OUT("session")=SESSION
 	SET OUT("command")="session.touch"
 	QUIT 1
 	;
@@ -120,13 +120,13 @@ SESSUISV(STATE,TREE,OUT,ERR)
 	MERGE SAVE=TREE
 	KILL SAVE("command")
 	IF '$$SAVEUI^MIOMOSST($GET(STATE("sessionId")),$$EN^MIOJSON1(.SAVE)) SET ERR("error")="session_ui_save_failed",ERR("status")=400 QUIT 0
-	NEW OK SET OK=$$SNAPSHOT^MIOMOSST($GET(STATE("sessionId")),.SESSION) MERGE OUT("session")=SESSION
+	NEW OK SET OK=$$SNAPOK^MIOMOSST($GET(STATE("sessionId")),.SESSION) MERGE OUT("session")=SESSION
 	SET OUT("command")="session.ui.save"
 	QUIT 1
 	;
 SESSSNAP(STATE,OUT,ERR)
 	NEW SESSION
-	IF '$$SNAPSHOT^MIOMOSST($GET(STATE("sessionId")),.SESSION) SET ERR("error")="session_not_found",ERR("status")=404 QUIT 0
+	IF '$$SNAPOK^MIOMOSST($GET(STATE("sessionId")),.SESSION) SET ERR("error")="session_not_found",ERR("status")=404 QUIT 0
 	MERGE OUT("session")=SESSION
 	SET OUT("command")="session.snapshot"
 	QUIT 1

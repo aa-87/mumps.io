@@ -151,7 +151,7 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("session","idleTimeoutSeconds")=+$GET(STATE("idleTimeoutSeconds"))
 	SET OBJ("session","absoluteTimeoutSeconds")=+$GET(STATE("absoluteTimeoutSeconds"))
 	NEW SNAP
-	NEW SNAPOK SET SNAPOK=$$SNAPSHOT($GET(STATE("sessionId")),.SNAP)
+	NEW SNAPOK SET SNAPOK=$$SNAPOK($GET(STATE("sessionId")),.SNAP)
 	MERGE OBJ("session","ui")=SNAP("ui")
 	SET OBJ("session","lastEvent")=$GET(SNAP("lastEvent"))
 	SET OBJ("session","layoutSavedAt")=$GET(SNAP("layoutSavedAt"))
@@ -371,23 +371,33 @@ TOUCH(SID,EVENT)
 	QUIT 1
 	;
 SNAPSHOT(SID,OUT)
-	NEW NOWD,NOWS
-	KILL OUT
-	IF $GET(SID)="" QUIT 0
-	IF '$DATA(^MIO("MIOMOS","SESSION",SID,"principal")) QUIT 0
-	SET NOWD=+$PIECE($HOROLOG,",",1),NOWS=+$PIECE($HOROLOG,",",2)
-	SET OUT("id")=SID
-	SET OUT("principal")=$GET(^MIO("MIOMOS","SESSION",SID,"principal"))
-	SET OUT("userName")=$GET(^MIO("MIOMOS","SESSION",SID,"userName"))
-	SET OUT("roles")=$GET(^MIO("MIOMOS","SESSION",SID,"roles"))
-	SET OUT("startedAt")=$GET(^MIO("MIOMOS","SESSION",SID,"startedAt"))
-	SET OUT("lastSeenAt")=$GET(^MIO("MIOMOS","SESSION",SID,"lastSeenAt"))
-	SET OUT("lastEvent")=$GET(^MIO("MIOMOS","SESSION",SID,"lastEvent"))
-	SET OUT("layoutSavedAt")=$GET(^MIO("MIOMOS","SESSION",SID,"layoutSavedAt"))
-	SET OUT("uiSavedAt")=$GET(^MIO("MIOMOS","SESSION",SID,"uiSavedAt"))
-	SET OUT("hasLayout")=$SELECT($GET(^MIO("MIOMOS","SESSION",SID,"layoutJson"))'="":1,1:0)
-	SET OUT("ageSeconds")=$$AGESEC(+$GET(^MIO("MIOMOS","SESSION",SID,"startedDay")),+$GET(^MIO("MIOMOS","SESSION",SID,"startedSec")),NOWD,NOWS)
-	SET OUT("idleSeconds")=$$AGESEC(+$GET(^MIO("MIOMOS","SESSION",SID,"lastDay")),+$GET(^MIO("MIOMOS","SESSION",SID,"lastSec")),NOWD,NOWS)
-	NEW UISTATE DO LOADUI(SID,.UISTATE) MERGE OUT("ui")=UISTATE
-	MERGE OUT("eventCounts")=^MIO("MIOMOS","SESSION",SID,"eventCounts")
-	QUIT 1
+		DO SNAPCORE(SID,.OUT)
+		QUIT
+		;
+SNAPOK(SID,OUT)
+		DO SNAPCORE(SID,.OUT)
+		QUIT +$GET(OUT("ok"))
+		;
+SNAPCORE(SID,OUT)
+		NEW NOWD,NOWS
+		KILL OUT
+		SET OUT("ok")=0
+		IF $GET(SID)="" QUIT
+		IF '$DATA(^MIO("MIOMOS","SESSION",SID,"principal")) QUIT
+		SET NOWD=+$PIECE($HOROLOG,",",1),NOWS=+$PIECE($HOROLOG,",",2)
+		SET OUT("id")=SID
+		SET OUT("principal")=$GET(^MIO("MIOMOS","SESSION",SID,"principal"))
+		SET OUT("userName")=$GET(^MIO("MIOMOS","SESSION",SID,"userName"))
+		SET OUT("roles")=$GET(^MIO("MIOMOS","SESSION",SID,"roles"))
+		SET OUT("startedAt")=$GET(^MIO("MIOMOS","SESSION",SID,"startedAt"))
+		SET OUT("lastSeenAt")=$GET(^MIO("MIOMOS","SESSION",SID,"lastSeenAt"))
+		SET OUT("lastEvent")=$GET(^MIO("MIOMOS","SESSION",SID,"lastEvent"))
+		SET OUT("layoutSavedAt")=$GET(^MIO("MIOMOS","SESSION",SID,"layoutSavedAt"))
+		SET OUT("uiSavedAt")=$GET(^MIO("MIOMOS","SESSION",SID,"uiSavedAt"))
+		SET OUT("hasLayout")=$SELECT($GET(^MIO("MIOMOS","SESSION",SID,"layoutJson"))'="":1,1:0)
+		SET OUT("ageSeconds")=$$AGESEC(+$GET(^MIO("MIOMOS","SESSION",SID,"startedDay")),+$GET(^MIO("MIOMOS","SESSION",SID,"startedSec")),NOWD,NOWS)
+		SET OUT("idleSeconds")=$$AGESEC(+$GET(^MIO("MIOMOS","SESSION",SID,"lastDay")),+$GET(^MIO("MIOMOS","SESSION",SID,"lastSec")),NOWD,NOWS)
+		NEW UISTATE DO LOADUI(SID,.UISTATE) MERGE OUT("ui")=UISTATE
+		MERGE OUT("eventCounts")=^MIO("MIOMOS","SESSION",SID,"eventCounts")
+		SET OUT("ok")=1
+		QUIT
