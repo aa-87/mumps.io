@@ -77,3 +77,11 @@ Add and expand tests around:
 This ROI is part of the move from “desktop concept” to “deliverable product shell.”
 
 It supports the v1 posture by making the shell transport simpler to reason about, easier to test, and closer to how a real persistent desktop session should behave.
+
+
+## Clarified test-helper and terminal contract
+
+- `COMMANDJSON^MIOMOSWS` remains the strict runtime websocket command entrypoint.
+- `COMMANDSIDJSON^MIOMOSWS` is the explicit test/helper entrypoint when a suite already has a valid MIOMOS session ID.
+- ROI35 websocket terminal commands now route through `MIOMOSTPIPE` so the live shell uses one websocket-owned pipe terminal backend.
+- Because the pipe backend launches `yottadb -direct`, websocket terminal tests must validate a real MUMPS command rather than a shell-only command such as `whoami`.

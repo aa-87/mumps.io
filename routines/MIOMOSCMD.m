@@ -96,16 +96,17 @@ TERMOPEN(STATE,CONF,TREE,OUT,ERR)
 	NEW TERMOUT,TERMID
 	IF '$$HAS^MIOMOSPERM(.STATE,"terminal.use") SET ERR("error")="forbidden",ERR("detail")="terminal.use",ERR("status")=403 QUIT 0
 	SET TERMID=$GET(TREE("terminalId"))
-	IF '$$OPEN^MIOMOSTERM(.STATE,.CONF,TERMID,.TERMOUT,.ERR) SET ERR("status")=400 QUIT 0
+	IF '$$OPEN^MIOMOSTPIPE(.STATE,.CONF,TERMID,.TERMOUT,.ERR) SET ERR("status")=400 QUIT 0
 	MERGE OUT("terminal")=TERMOUT
 	SET OUT("command")="terminal.open"
 	QUIT 1
 	;
 
 TERMINPUT(STATE,TREE,OUT,ERR)
-	NEW TERMOUT
+	NEW TERMOUT,DATA
 	IF '$$HAS^MIOMOSPERM(.STATE,"terminal.use") SET ERR("error")="forbidden",ERR("detail")="terminal.use",ERR("status")=403 QUIT 0
-	IF '$$INPUT^MIOMOSTERM(.STATE,$GET(TREE("terminalId")),$SELECT($DATA(TREE("line")):$GET(TREE("line")),1:$GET(TREE("data"))),.TERMOUT,.ERR) SET ERR("status")=400 QUIT 0
+	SET DATA=$SELECT($DATA(TREE("line")):$$TERMNL($GET(TREE("line"))),1:$GET(TREE("data")))
+	IF '$$INPUT^MIOMOSTPIPE(.STATE,$GET(TREE("terminalId")),DATA,.TERMOUT,.ERR) SET ERR("status")=400 QUIT 0
 	MERGE OUT("terminal")=TERMOUT
 	SET OUT("command")="terminal.input"
 	QUIT 1
@@ -113,7 +114,7 @@ TERMINPUT(STATE,TREE,OUT,ERR)
 TERMCLOSE(STATE,TREE,OUT,ERR)
 	NEW TERMOUT
 	IF '$$HAS^MIOMOSPERM(.STATE,"terminal.use") SET ERR("error")="forbidden",ERR("detail")="terminal.use",ERR("status")=403 QUIT 0
-	IF '$$CLOSE^MIOMOSTERM(.STATE,$GET(TREE("terminalId")),.TERMOUT,.ERR) SET ERR("status")=400 QUIT 0
+	IF '$$CLOSE^MIOMOSTPIPE(.STATE,$GET(TREE("terminalId")),.TERMOUT,.ERR) SET ERR("status")=400 QUIT 0
 	MERGE OUT("terminal")=TERMOUT
 	SET OUT("command")="terminal.close"
 	QUIT 1
@@ -121,7 +122,7 @@ TERMCLOSE(STATE,TREE,OUT,ERR)
 TERMPOLL(STATE,TREE,OUT,ERR)
 	NEW TERMOUT
 	IF '$$HAS^MIOMOSPERM(.STATE,"terminal.use") SET ERR("error")="forbidden",ERR("detail")="terminal.use",ERR("status")=403 QUIT 0
-	IF '$$ATTACH^MIOMOSTERM(.STATE,$GET(TREE("terminalId")),.TERMOUT,.ERR) SET ERR("status")=400 QUIT 0
+	IF '$$POLL^MIOMOSTPIPE(.STATE,$GET(TREE("terminalId")),.TERMOUT,.ERR) SET ERR("status")=400 QUIT 0
 	MERGE OUT("terminal")=TERMOUT
 	SET OUT("command")="terminal.poll"
 	QUIT 1
@@ -129,7 +130,15 @@ TERMPOLL(STATE,TREE,OUT,ERR)
 TERMRESZ(STATE,TREE,OUT,ERR)
 	NEW TERMOUT
 	IF '$$HAS^MIOMOSPERM(.STATE,"terminal.use") SET ERR("error")="forbidden",ERR("detail")="terminal.use",ERR("status")=403 QUIT 0
-	IF '$$RESIZE^MIOMOSTERM(.STATE,$GET(TREE("terminalId")),+$GET(TREE("cols")),+$GET(TREE("rows")),.TERMOUT,.ERR) SET ERR("status")=400 QUIT 0
+	IF '$$RESIZE^MIOMOSTPIPE(.STATE,$GET(TREE("terminalId")),+$GET(TREE("cols")),+$GET(TREE("rows")),.TERMOUT,.ERR) SET ERR("status")=400 QUIT 0
 	MERGE OUT("terminal")=TERMOUT
 	SET OUT("command")="terminal.resize"
 	QUIT 1
+	;
+TERMNL(X)
+	NEW Y
+	SET Y=$GET(X)
+	IF Y="" QUIT $CHAR(10)
+	IF $EXTRACT(Y,$LENGTH(Y))=$CHAR(10) QUIT Y
+	IF $EXTRACT(Y,$LENGTH(Y))=$CHAR(13) QUIT Y
+	QUIT Y_$CHAR(10)

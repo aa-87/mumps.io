@@ -287,37 +287,46 @@ START
 	DO EQ^MIOTASSERT(+$GET(ARR(1,"taskOrder")),1,"[MIOMOST][T015][wm task order]")
 	DO EQ^MIOTASSERT(+$GET(ARR(6,"width"))>1000,1,"[MIOMOST][T015][wm terminal width]")
 	;
-	KILL CTX,REQ,ERR,OBJ,ARR
-	SET CTX("request_id")="miomost-ws-cmd"
-	DO OK^MIOTASSERT($$COMMANDJSON^MIOMOSWS(.CONF,.REQ,.CTX,"{""event"":""command.exec"",""requestId"":""ws-1"",""command"":""desktop.ping""}",.OBJ,.ERR),"[MIOMOST][T016][ws ping exec]")
+	NEW WSREQ,WSCTX,WSSTATE,WSSID,WSTERM,WSPAY,TERMARR
+	KILL ERR,OBJ,ARR
+	SET WSREQ("hdr","cookie")="miomos_auth="_TOKEN
+	SET WSCTX("request_id")="miomost-ws-bootstrap"
+	DO OK^MIOTASSERT($$LOADLOCAL^MIOMOSAUTH(.CONF,.WSREQ,.WSCTX,.ERR),"[MIOMOST][T016][ws local auth]")
+	DO OK^MIOTASSERT($$ENSURE^MIOMOSST(.CONF,.WSREQ,.WSCTX,.WSSTATE,.ERR),"[MIOMOST][T016][ws ensure]")
+	SET WSSID=$GET(WSSTATE("sessionId"))
+	DO EQ^MIOTASSERT(WSSID'="",1,"[MIOMOST][T016][ws session id]")
+	SET WSCTX("miomos","sessionId")=WSSID
+	SET WSCTX("request_id")="miomost-ws-cmd"
+	DO OK^MIOTASSERT($$COMMANDSIDJSON^MIOMOSWS(.CONF,.WSREQ,.WSCTX,WSSID,"{""event"":""command.exec"",""requestId"":""ws-1"",""command"":""desktop.ping""}",.OBJ,.ERR),"[MIOMOST][T016][ws ping exec]")
 	DO OK^MIOTASSERT($$DECODE^MIOJSON(OBJ,.ARR,.ERR),"[MIOMOST][T016][ws ping decode]")
 	DO EQ^MIOTASSERT($GET(ARR("event")),"command.result","[MIOMOST][T016][ws ping event]")
 	DO EQ^MIOTASSERT($GET(ARR("transport")),"websocket","[MIOMOST][T016][ws ping transport]")
 	DO EQ^MIOTASSERT($GET(ARR("pong")),1,"[MIOMOST][T016][ws ping pong]")
-	KILL CTX,REQ,ERR,OBJ,ARR
-	SET CTX("request_id")="miomost-ws-view"
-	DO OK^MIOTASSERT($$COMMANDJSON^MIOMOSWS(.CONF,.REQ,.CTX,"{""event"":""command.exec"",""requestId"":""ws-2"",""command"":""view.refresh""}",.OBJ,.ERR),"[MIOMOST][T016][ws view exec]")
+	KILL OBJ,ARR,ERR
+	SET WSCTX("request_id")="miomost-ws-view"
+	DO OK^MIOTASSERT($$COMMANDSIDJSON^MIOMOSWS(.CONF,.WSREQ,.WSCTX,WSSID,"{""event"":""command.exec"",""requestId"":""ws-2"",""command"":""view.refresh""}",.OBJ,.ERR),"[MIOMOST][T016][ws view exec]")
 	DO OK^MIOTASSERT($$DECODE^MIOJSON(OBJ,.ARR,.ERR),"[MIOMOST][T016][ws view decode]")
 	DO EQ^MIOTASSERT($GET(ARR("view","workspace","headline")),"Production workspace","[MIOMOST][T016][ws view headline]")
-	KILL CTX,REQ,ERR,OBJ,ARR
-	SET CTX("request_id")="miomost-ws-ui"
-	DO OK^MIOTASSERT($$COMMANDJSON^MIOMOSWS(.CONF,.REQ,.CTX,"{""event"":""command.exec"",""requestId"":""ws-3"",""command"":""session.ui.save"",""startMenuSection"":""Applications"",""startMenuQuery"":""ops""}",.OBJ,.ERR),"[MIOMOST][T016][ws ui save exec]")
+	KILL OBJ,ARR,ERR
+	SET WSCTX("request_id")="miomost-ws-ui"
+	DO OK^MIOTASSERT($$COMMANDSIDJSON^MIOMOSWS(.CONF,.WSREQ,.WSCTX,WSSID,"{""event"":""command.exec"",""requestId"":""ws-3"",""command"":""session.ui.save"",""startMenuSection"":""Applications"",""startMenuQuery"":""ops""}",.OBJ,.ERR),"[MIOMOST][T016][ws ui save exec]")
 	DO OK^MIOTASSERT($$DECODE^MIOJSON(OBJ,.ARR,.ERR),"[MIOMOST][T016][ws ui save decode]")
 	DO EQ^MIOTASSERT($GET(ARR("saved")),1,"[MIOMOST][T016][ws ui save flag]")
 	DO EQ^MIOTASSERT($GET(ARR("ui","startMenuQuery")),"ops","[MIOMOST][T016][ws ui save query]")
-	KILL CTX,REQ,ERR,OBJ,ARR
-	SET CTX("request_id")="miomost-ws-term"
-	DO OK^MIOTASSERT($$COMMANDJSON^MIOMOSWS(.CONF,.REQ,.CTX,"{""event"":""command.exec"",""requestId"":""ws-4"",""command"":""terminal.open""}",.OBJ,.ERR),"[MIOMOST][T016][ws term open exec]")
+	KILL OBJ,ARR,ERR
+	SET WSCTX("request_id")="miomost-ws-term"
+	DO OK^MIOTASSERT($$COMMANDSIDJSON^MIOMOSWS(.CONF,.WSREQ,.WSCTX,WSSID,"{""event"":""command.exec"",""requestId"":""ws-4"",""command"":""terminal.open""}",.OBJ,.ERR),"[MIOMOST][T016][ws term open exec]")
 	DO OK^MIOTASSERT($$DECODE^MIOJSON(OBJ,.ARR,.ERR),"[MIOMOST][T016][ws term open decode]")
 	DO EQ^MIOTASSERT($GET(ARR("terminal","terminalId"))'="",1,"[MIOMOST][T016][ws term id]")
-	NEW WSTERM,WSPAY,TERMARR SET WSTERM=$GET(ARR("terminal","terminalId"))
-	KILL CTX,REQ,ERR,OBJ,ARR
-	SET CTX("request_id")="miomost-ws-term-in"
-	SET WSPAY="{""event"":""command.exec"",""requestId"":""ws-5"",""command"":""terminal.input"",""terminalId"":"""_WSTERM_""",""line"":""whoami""}"
-	DO OK^MIOTASSERT($$COMMANDJSON^MIOMOSWS(.CONF,.REQ,.CTX,WSPAY,.OBJ,.ERR),"[MIOMOST][T016][ws term input exec]")
+	DO EQ^MIOTASSERT($GET(ARR("terminal","transport")),"pipe","[MIOMOST][T016][ws term transport]")
+	SET WSTERM=$GET(ARR("terminal","terminalId"))
+	KILL OBJ,ARR,ERR
+	SET WSCTX("request_id")="miomost-ws-term-in"
+	SET WSPAY="{""event"":""command.exec"",""requestId"":""ws-5"",""command"":""terminal.input"",""terminalId"":"""_WSTERM_""",""line"":""write 123,!""}"
+	DO OK^MIOTASSERT($$COMMANDSIDJSON^MIOMOSWS(.CONF,.WSREQ,.WSCTX,WSSID,WSPAY,.OBJ,.ERR),"[MIOMOST][T016][ws term input exec]")
 	DO OK^MIOTASSERT($$DECODE^MIOJSON(OBJ,.ARR,.ERR),"[MIOMOST][T016][ws term input decode]")
 	MERGE TERMARR=ARR("terminal")
-	DO EQ^MIOTASSERT($$HASWRITE(.TERMARR,"Developer"),1,"[MIOMOST][T016][ws term whoami]")
+	DO EQ^MIOTASSERT($$HASWRITE(.TERMARR,"123"),1,"[MIOMOST][T016][ws term mumps output]")
 	QUIT
 	;
 HASWRITE(OUT,TEXT)

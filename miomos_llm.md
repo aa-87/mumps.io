@@ -453,3 +453,13 @@ The goal is no longer “can MIOMOS do this visually?”
 The goal is:
 
 **does MIOMOS behave like a stable, production-minded product shell with a clear MUMPS-owned contract?**
+
+
+## Websocket helper and terminal contract
+
+Keep these rules aligned with the tests:
+
+- direct websocket command tests in `^MIOMOST` should create a real MIOMOS session first in prod/local-auth mode
+- use an explicit session-aware helper for direct websocket command tests rather than depending on ambient auth state
+- the live websocket terminal path should use `MIOMOSTPIPE`
+- websocket terminal assertions should use valid MUMPS input when the pipe backend runs `yottadb -direct`
