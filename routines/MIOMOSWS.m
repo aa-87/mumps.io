@@ -25,6 +25,25 @@ MESSAGE(DEV,CONF,REQ,CTX)
 	IF EVT="ping" DO  QUIT
 	. SET RESP=$$PONG(.STATE)
 	. DO SENDTEXT^MIOWS(.DEV,RESP)
+	IF EVT="command.exec"!(EVT="command") DO  QUIT
+	. NEW CMDERR,TREE,REQID,CMD
+	. SET REQID=$$REQID(PAYLOAD)
+	. IF '$$COMMANDJSON(.CONF,.REQ,.CTX,PAYLOAD,.RESP,.CMDERR) DO
+	. . IF $GET(CMDERR("error"))'="session_error" DO
+	. . . IF $$DECODEPAY(PAYLOAD,.TREE,.CMDERR) SET CMD=$GET(TREE("command"))
+	. . . DO EVENTX^MIOMOSAUD("ws_command_error",.CTX,.STATE,CMD)
+	. . . DO ACCESS^MIOMOSOBS("ws_command_error",.CTX,.STATE)
+	. ELSE  DO
+	. . NEW TREE2
+	. . IF $$DECODEPAY(PAYLOAD,.TREE2,.CMDERR) SET CMD=$GET(TREE2("command"))
+	. . DO EVENTX^MIOMOSAUD("ws_command_exec",.CTX,.STATE,CMD)
+	. . DO ACCESS^MIOMOSOBS("ws_command_exec",.CTX,.STATE)
+	. DO SENDTEXT^MIOWS(.DEV,RESP)
+	IF EVT="auth.signout" DO  QUIT
+	. NEW REQID,SIGNERR
+	. SET REQID=$$REQID(PAYLOAD)
+	. IF '$$SIGNOUTJSON(.CONF,.REQ,.CTX,PAYLOAD,.RESP,.SIGNERR) SET RESP=$$CMDERRJSON(REQID,"auth.signout",400,$GET(SIGNERR("error"),"signout_failed"),$GET(SIGNERR("detail")))
+	. DO SENDTEXT^MIOWS(.DEV,RESP)
 	IF EVT="launcher.open" DO  QUIT
 	. SET APPKEY=$$APPKEY(PAYLOAD)
 	. IF APPKEY="" SET APPKEY="workspace"
@@ -55,8 +74,8 @@ MESSAGE(DEV,CONF,REQ,CTX)
 	. DO ACCESS^MIOMOSOBS("chat_send",.CTX,.STATE)
 	. DO MESSAGE^MIOMOSCHAT(.MSG,.RESP)
 	. DO SENDTEXT^MIOWS(.DEV,RESP)
-
-
+	;
+	;
 	IF EVT="terminal.open"!(EVT="terminal.attach") DO  QUIT
 	. IF '$$HAS^MIOMOSPERM(.STATE,"terminal.use") DO  QUIT
 	. . SET RESP=$$ERRJSON("forbidden","terminal.use")
@@ -204,7 +223,108 @@ ACK(EVT,APPKEY,STATE)
 	SET OBJ("serverTime")=$$NOWISO^MIOUTIL()
 	SET OBJ("savedAt")=$GET(^MIO("MIOMOS","SESSION",$GET(STATE("sessionId")),"layoutSavedAt"))
 	QUIT $$EN^MIOJSON1(.OBJ)
-
+	;
+DECODEPAY(PAYLOAD,TREE,ERR)
+	KILL TREE,ERR
+	SET ERR("routine")="MIOMOSWS"
+	IF $EXTRACT($GET(PAYLOAD),1)'="{" SET ERR("error")="payload_not_json" QUIT 0
+	QUIT $$DECODE^MIOJSON($GET(PAYLOAD),.TREE,.ERR)
+	;
+CMDOKJSON(REQID,CMD,OUT)
+	NEW OBJ
+	MERGE OBJ=OUT
+	SET OBJ("ok")=1
+	SET OBJ("event")="command.result"
+	SET OBJ("requestId")=$GET(REQID)
+	SET OBJ("command")=$SELECT($GET(CMD)'="":$GET(CMD),1:$GET(OUT("command")))
+	SET OBJ("transport")="websocket"
+	QUIT $$EN^MIOJSON1(.OBJ)
+	;
+CMDERRJSON(REQID,CMD,STATUS,CODE,DETAIL)
+	NEW OBJ
+	SET OBJ("ok")=0
+	SET OBJ("event")="command.error"
+	SET OBJ("requestId")=$GET(REQID)
+	SET OBJ("command")=$GET(CMD)
+	SET OBJ("status")=+$GET(STATUS,400)
+	SET OBJ("error")=$GET(CODE)
+	SET OBJ("detail")=$GET(DETAIL)
+	SET OBJ("transport")="websocket"
+	SET OBJ("routine")="MIOMOSWS"
+	QUIT $$EN^MIOJSON1(.OBJ)
+	;
+COMMANDJSON(CONF,REQ,CTX,PAYLOAD,RESP,ERR)
+	NEW STATE,TREE,TERR,COUT,CERR,REQID,CMD,OK,SID,DEVKEY,USER,ROLES,I,X
+	KILL RESP,ERR
+	SET ERR("routine")="MIOMOSWS"
+	DO CONFDEF^MIOMOS(.CONF)
+	IF '$$DECODEPAY(PAYLOAD,.TREE,.TERR) DO  QUIT 0
+	. MERGE ERR=TERR
+	. SET RESP=$$CMDERRJSON("","",400,"invalid_json",$GET(TERR("error")))
+	SET REQID=$GET(TREE("requestId"))
+	SET CMD=$GET(TREE("command"))
+	SET SID=$GET(TREE("sessionId"))
+	IF SID'="",$GET(CTX("miomos","sessionId"))="" SET CTX("miomos","sessionId")=SID
+	SET OK=$$ENSURE^MIOMOSST(.CONF,.REQ,.CTX,.STATE,.ERR)
+	IF 'OK DO
+	. SET SID=$GET(CTX("miomos","sessionId"))
+	. IF SID="" SET SID=$GET(TREE("sessionId"))
+	. IF SID'="" DO
+	. . IF $$INJECTAUTH(.CONF,SID,.CTX,.ERR) SET OK=$$ENSURE^MIOMOSST(.CONF,.REQ,.CTX,.STATE,.ERR)
+	IF 'OK,$$DEVPROFILE^MIOMOS(.CONF) DO
+	. SET DEVKEY=$GET(CONF("miomos","dev","principal"),"dev-user")
+	. IF $GET(^MIO("MIOMOS","SESSION","BYKEY",DEVKEY))'="" SET CTX("miomos","sessionId")=$GET(^MIO("MIOMOS","SESSION","BYKEY",DEVKEY))
+	. KILL CTX("auth")
+	. SET USER=$GET(CONF("miomos","dev","userName"),"Developer")
+	. SET ROLES=$GET(CONF("miomos","dev","roles"),"developer,admin")
+	. SET CTX("auth","ok")=1
+	. SET CTX("auth","claims","sub")=DEVKEY
+	. SET CTX("auth","claims","name")=USER
+	. FOR I=1:1:$LENGTH(ROLES,",") DO
+	. . SET X=$$TRIM^MIOUTIL($PIECE(ROLES,",",I))
+	. . IF X'="" SET CTX("auth","roles",X)=1
+	. SET OK=$$ENSURE^MIOMOSST(.CONF,.REQ,.CTX,.STATE,.ERR)
+	IF 'OK SET RESP=$$CMDERRJSON(REQID,CMD,400,"session_error",$GET(ERR("error"))) QUIT 0
+	KILL TREE("event"),TREE("requestId"),TREE("sessionId")
+	IF '$$EXEC^MIOMOSCMD(.STATE,.CONF,.TREE,.COUT,.CERR) DO  QUIT 0
+	. MERGE ERR=CERR
+	. SET RESP=$$CMDERRJSON(REQID,CMD,+$GET(CERR("status"),400),$GET(CERR("error"),"command_failed"),$SELECT($GET(CERR("detail"))'="":$GET(CERR("detail")),1:$GET(CERR("error"))))
+	DO TOUCH^MIOMOSST($GET(STATE("sessionId")),"command."_CMD)
+	SET RESP=$$CMDOKJSON(REQID,CMD,.COUT)
+	QUIT 1
+	;
+SIGNOUTJSON(CONF,REQ,CTX,PAYLOAD,RESP,ERR)
+	NEW STATE,OK,SID,REQID
+	KILL RESP,ERR
+	SET ERR("routine")="MIOMOSWS"
+	SET REQID=$$REQID(PAYLOAD)
+	SET OK=$$ENSURE^MIOMOSST(.CONF,.REQ,.CTX,.STATE,.ERR)
+	IF 'OK DO
+	. SET SID=$GET(CTX("miomos","sessionId"))
+	. IF SID="" SET SID=$$SESSIONID(PAYLOAD)
+	. IF $$INJECTAUTH(.CONF,SID,.CTX,.ERR) SET OK=$$ENSURE^MIOMOSST(.CONF,.REQ,.CTX,.STATE,.ERR)
+	IF 'OK SET RESP=$$ERRJSON("session_error",$GET(ERR("error"))) QUIT 0
+	DO SIGNOUT^MIOMOSAUTH(.CONF,.REQ,.CTX)
+	DO EVENTX^MIOMOSAUD("auth_signout",.CTX,.STATE,"")
+	DO ACCESS^MIOMOSOBS("auth_signout",.CTX,.STATE)
+	SET RESP=$$AUTHACKJSON("auth.signout.ack",REQID,.STATE)
+	QUIT 1
+	;
+REQID(PAYLOAD)
+	NEW TREE,ERR
+	IF '$$DECODEPAY($GET(PAYLOAD),.TREE,.ERR) QUIT ""
+	QUIT $GET(TREE("requestId"))
+	;
+AUTHACKJSON(EVT,REQID,STATE)
+	NEW OBJ
+	SET OBJ("ok")=1
+	SET OBJ("event")=$GET(EVT)
+	SET OBJ("requestId")=$GET(REQID)
+	SET OBJ("sessionId")=$GET(STATE("sessionId"))
+	SET OBJ("transport")="websocket"
+	SET OBJ("serverTime")=$$NOWISO^MIOUTIL()
+	QUIT $$EN^MIOJSON1(.OBJ)
+	;
 	;
 TERMEVT(EVT,OUT)
 	NEW OBJ,N
@@ -230,4 +350,5 @@ ERRJSON(CODE,DETAIL)
 	SET OBJ("detail")=$GET(DETAIL)
 	SET OBJ("routine")="MIOMOSWS"
 	QUIT $$EN^MIOJSON1(.OBJ)
+	;
 	;

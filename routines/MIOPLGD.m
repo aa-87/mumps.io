@@ -116,7 +116,6 @@ HOME(DEV,CONF,REQ,CTX)
 	K PAR D BUILDPAR(.PAR,.OPT)
 	S PAR("view")="list" S TCTX("links","viewList")=$$MKURL("/plgd",.PAR,0)
 	;
-	D START^MIOTPL(.CONF)
 	D RENDERPAGE^MIOTPL("pages/plgd_home.html","layouts/plgd_layout.html",.CONF,.TCTX,.OUT,.ERR)
 	I $D(ERR) D RESPERR(DEV,.CONF,.CTX,500,"template_error") Q
 	D RESPHTML(DEV,.CONF,.CTX,.OUT)
@@ -166,7 +165,6 @@ PLAY(DEV,CONF,REQ,CTX)
 	S OPT("view")=VIEW
 	D LOADLIB(.TCTX,.OPT)
 	;
-	D START^MIOTPL(.CONF)
 	D RENDERPAGE^MIOTPL("pages/plgd_playground.html","layouts/plgd_layout.html",.CONF,.TCTX,.OUT,.ERR)
 	I $D(ERR) D RESPERR(DEV,.CONF,.CTX,500,"template_error") Q
 	D RESPHTML(DEV,.CONF,.CTX,.OUT)
@@ -180,7 +178,6 @@ ABOUT(DEV,CONF,REQ,CTX)
 	D BASECTX(.TCTX)
 	S TCTX("page","heading")="About"
 	S TCTX("page","lead")="MIOPLGD is a MIOTPL-powered playground designed for fast iteration, safe rendering, and reusable template libraries."
-	D START^MIOTPL(.CONF)
 	D RENDERPAGE^MIOTPL("pages/plgd_about.html","layouts/plgd_layout.html",.CONF,.TCTX,.OUT,.ERR)
 	I $D(ERR) D RESPERR(DEV,.CONF,.CTX,500,"template_error") Q
 	D RESPHTML(DEV,.CONF,.CTX,.OUT)
@@ -217,7 +214,6 @@ APIRENDER(DEV,CONF,REQ,CTX)
 	; (Library templates are server-stored; ad-hoc templates are user-provided.)
 	I $$HASTAG(TPL,"{{>")!$$HASTAG(TPL,"{{<") D RESPERR(DEV,.CONF,.CTX,400,"partials_disabled") Q
 	;
-	D START^MIOTPL(.CONF)
 	D RENDERANY^MIOTPL(TPL,.CONF,.TCTX,.OUT,.ERR)
 	I $D(ERR) D RESPERR(DEV,.CONF,.CTX,500,"render_failed",$$ERR2TXT(.ERR)) Q
 	;

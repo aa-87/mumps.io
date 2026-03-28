@@ -31,20 +31,18 @@ CONFDEF(CONF)
 	IF $GET(CONF("miomos","route","auditExport"))="" SET CONF("miomos","route","auditExport")="/api/miomos/observability/audit/export"
 	IF $GET(CONF("miomos","route","securityDigest"))="" SET CONF("miomos","route","securityDigest")="/api/miomos/observability/digest"
 	IF $GET(CONF("miomos","route","retentionPrune"))="" SET CONF("miomos","route","retentionPrune")="/api/miomos/observability/retention/prune"
-	IF $GET(CONF("miomos","editor","enabled"))="" SET CONF("miomos","editor","enabled")=1
-	IF $GET(CONF("miomos","editor","route","routines"))="" SET CONF("miomos","editor","route","routines")="/mioide/api/routines"
-	IF $GET(CONF("miomos","editor","route","routine"))="" SET CONF("miomos","editor","route","routine")="/mioide/api/routine/:name"
-	IF $GET(CONF("miomos","editor","route","save"))="" SET CONF("miomos","editor","route","save")="/mioide/api/routine/:name/save"
-	IF $GET(CONF("miomos","editor","route","compile"))="" SET CONF("miomos","editor","route","compile")="/mioide/api/routine/:name/compile"
-	IF $GET(CONF("miomos","editor","route","search"))="" SET CONF("miomos","editor","route","search")="/mioide/api/search"
-	IF $GET(CONF("miomos","editor","route","globals"))="" SET CONF("miomos","editor","route","globals")="/mioide/api/globals"
-	IF $GET(CONF("miomos","editor","route","debug"))="" SET CONF("miomos","editor","route","debug")="/mioide/api/debug"
 	IF $GET(CONF("miomos","brand","title"))="" SET CONF("miomos","brand","title")="MIOMOS"
 	IF $GET(CONF("miomos","brand","subtitle"))="" SET CONF("miomos","brand","subtitle")="MUMPS-first clinical workspace"
 	IF $GET(CONF("miomos","desktop","wallpaper"))="" SET CONF("miomos","desktop","wallpaper")="midnight-clinic"
 	IF $GET(CONF("miomos","desktop","accent"))="" SET CONF("miomos","desktop","accent")="#2f6fed"
 	IF $GET(CONF("miomos","desktop","density"))="" SET CONF("miomos","desktop","density")="dense"
 	IF $GET(CONF("miomos","desktop","snapMargin"))="" SET CONF("miomos","desktop","snapMargin")=18
+	IF $GET(CONF("miomos","desktop","transport","commandBus"))="" SET CONF("miomos","desktop","transport","commandBus")="websocket-only"
+	IF $GET(CONF("miomos","desktop","transport","eventName"))="" SET CONF("miomos","desktop","transport","eventName")="command.exec"
+	IF $GET(CONF("miomos","desktop","transport","resultEvent"))="" SET CONF("miomos","desktop","transport","resultEvent")="command.result"
+	IF $GET(CONF("miomos","desktop","transport","errorEvent"))="" SET CONF("miomos","desktop","transport","errorEvent")="command.error"
+	IF $GET(CONF("miomos","desktop","policy","commandMaxInflight"))="" SET CONF("miomos","desktop","policy","commandMaxInflight")=3
+	IF $GET(CONF("miomos","desktop","policy","commandTimeoutMs"))="" SET CONF("miomos","desktop","policy","commandTimeoutMs")=8000
 	IF $GET(CONF("miomos","wm","defaultPreset"))="" SET CONF("miomos","wm","defaultPreset")="analyst"
 	IF $GET(CONF("miomos","wm","defaultSnapMode"))="" SET CONF("miomos","wm","defaultSnapMode")="quadrant"
 	IF $GET(CONF("miomos","wm","defaultMotionProfile"))="" SET CONF("miomos","wm","defaultMotionProfile")="standard"
@@ -58,9 +56,13 @@ CONFDEF(CONF)
 	IF $GET(CONF("miomos","settings","default","animations"))="" SET CONF("miomos","settings","default","animations")="reduced"
 	IF $GET(CONF("miomos","terminal","enabled"))="" SET CONF("miomos","terminal","enabled")=1
 	IF $GET(CONF("miomos","terminal","pipe","enabled"))="" SET CONF("miomos","terminal","pipe","enabled")=1
-	IF $GET(CONF("miomos","terminal","pipe","command"))="" SET CONF("miomos","terminal","pipe","command")="ydb"
+	IF $GET(CONF("miomos","terminal","pipe","command"))="" SET CONF("miomos","terminal","pipe","command")="yottadb -direct"
 	IF $GET(CONF("miomos","terminal","pipe","shell"))="" SET CONF("miomos","terminal","pipe","shell")="/bin/sh"
 	IF $GET(CONF("miomos","terminal","pipe","independent"))="" SET CONF("miomos","terminal","pipe","independent")=0
+	IF $GET(CONF("miomos","terminal","pipe","readLimit"))="" SET CONF("miomos","terminal","pipe","readLimit")=16384
+	IF $GET(CONF("miomos","terminal","pipe","readPolls"))="" SET CONF("miomos","terminal","pipe","readPolls")=8
+	IF $GET(CONF("miomos","terminal","pipe","drainPause"))="" SET CONF("miomos","terminal","pipe","drainPause")=.04
+	IF $GET(CONF("miomos","terminal","pipe","sessionIdleSeconds"))="" SET CONF("miomos","terminal","pipe","sessionIdleSeconds")=900
 	IF $GET(CONF("miomos","terminal","default","fontFamily"))="" SET CONF("miomos","terminal","default","fontFamily")="JetBrains Mono"
 	IF $GET(CONF("miomos","terminal","default","fontSize"))="" SET CONF("miomos","terminal","default","fontSize")=13
 	IF $GET(CONF("miomos","terminal","default","cursorBlink"))="" SET CONF("miomos","terminal","default","cursorBlink")=1
@@ -104,7 +106,7 @@ CONFDEF(CONF)
 	;
 INIT(CONF)
 	DO CONFDEF(.CONF)
-	;DO START^MIOTPL(.CONF)
+	DO START^MIOTPL(.CONF)
 	QUIT
 	;
 REG(CONF)
@@ -269,5 +271,4 @@ RESPERR(DEV,CONF,STATUS,CODE,DETAIL,CTX)
 	DO RESPJSONX^MIOHTTP(.DEV,.CONF,+$GET(STATUS,500),.OBJ,$GET(CTX("request_id")),.CTX)
 	SET CTX("status")=+$GET(STATUS,500)
 	QUIT
-	;
 	;

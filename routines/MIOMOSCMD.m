@@ -22,11 +22,11 @@ EXEC(STATE,CONF,TREE,OUT,ERR)
 	. SET OUT("saved")=1
 	IF CMD="theme.quick" QUIT $$THEME(.STATE,.TREE,.OUT,.ERR)
 	IF CMD="settings.save" QUIT $$SETSAVE(.STATE,.TREE,.OUT,.ERR)
+	IF CMD="session.ui.save" QUIT $$UISAVE(.STATE,.TREE,.OUT,.ERR)
 	IF CMD="view.refresh" DO  QUIT 1
 	. DO BUILD^MIOMOSVM(.STATE,.CONF,.VIEW)
 	. MERGE OUT("view")=VIEW
 	. SET OUT("command")=CMD
-	IF CMD="session.ui.save" QUIT $$SAVEUI(.STATE,.TREE,.OUT,.ERR)
 	IF CMD="wm.layout.apply" QUIT $$WMLAYOUT(.STATE,.CONF,.TREE,.OUT,.ERR)
 	IF CMD="terminal.open" QUIT $$TERMOPEN(.STATE,.CONF,.TREE,.OUT,.ERR)
 	IF CMD="terminal.input" QUIT $$TERMINPUT(.STATE,.TREE,.OUT,.ERR)
@@ -54,21 +54,28 @@ SETSAVE(STATE,TREE,OUT,ERR)
 	SET OUT("command")="settings.save"
 	QUIT 1
 	;
-SAVEUI(STATE,TREE,OUT,ERR)
-	NEW RAW,UI
+UISAVE(STATE,TREE,OUT,ERR)
+	NEW SAVE,RAW,UI
 	IF '$$HAS^MIOMOSPERM(.STATE,"settings.self") SET ERR("error")="forbidden",ERR("detail")="settings.self",ERR("status")=403 QUIT 0
-	SET RAW=$GET(TREE("uiJson"))
-	IF RAW="" DO
-	. MERGE UI=TREE
-	. KILL UI("command")
-	. SET RAW=$$EN^MIOJSON1(.UI)
+	SET SAVE("menuOpen")=+$GET(TREE("menuOpen"))
+	SET SAVE("activeWindowId")=$GET(TREE("activeWindowId"))
+	SET SAVE("focusedAppKey")=$GET(TREE("focusedAppKey"))
+	SET SAVE("layoutMode")=$GET(TREE("layoutMode"))
+	SET SAVE("lastCommandName")=$GET(TREE("lastCommandName"))
+	SET SAVE("terminalId")=$GET(TREE("terminalId"))
+	SET SAVE("reason")=$GET(TREE("reason"))
+	SET SAVE("startMenuSection")=$GET(TREE("startMenuSection"))
+	SET SAVE("startMenuQuery")=$GET(TREE("startMenuQuery"))
+	SET SAVE("shellSurface")=$GET(TREE("shellSurface"))
+	SET RAW=$$EN^MIOJSON1(.SAVE)
 	IF '$$SAVEUIOK^MIOMOSST($GET(STATE("sessionId")),RAW) SET ERR("error")="ui_state_save_failed",ERR("status")=400 QUIT 0
-	SET OUT("command")="session.ui.save"
+	DO LOADUI^MIOMOSST($GET(STATE("sessionId")),.UI)
+	MERGE OUT("ui")=UI
 	SET OUT("saved")=1
-	DO LOADUI^MIOMOSST($GET(STATE("sessionId")),$NAME(OUT("ui")))
+	SET OUT("command")="session.ui.save"
 	QUIT 1
 	;
-
+	;
 LOW(X)
 	NEW Y
 	SET Y=$TR($GET(X),"ABCDEFGHIJKLMNOPQRSTUVWXYZ","abcdefghijklmnopqrstuvwxyz")
@@ -114,7 +121,7 @@ TERMCLOSE(STATE,TREE,OUT,ERR)
 TERMPOLL(STATE,TREE,OUT,ERR)
 	NEW TERMOUT
 	IF '$$HAS^MIOMOSPERM(.STATE,"terminal.use") SET ERR("error")="forbidden",ERR("detail")="terminal.use",ERR("status")=403 QUIT 0
-	IF '$$POLL^MIOMOSTERM(.STATE,$GET(TREE("terminalId")),.TERMOUT,.ERR) SET ERR("status")=400 QUIT 0
+	IF '$$ATTACH^MIOMOSTERM(.STATE,$GET(TREE("terminalId")),.TERMOUT,.ERR) SET ERR("status")=400 QUIT 0
 	MERGE OUT("terminal")=TERMOUT
 	SET OUT("command")="terminal.poll"
 	QUIT 1

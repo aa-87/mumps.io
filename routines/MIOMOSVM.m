@@ -52,7 +52,7 @@ NOTES(ROOT)
 	SET @ROOT@(2,"title")="Server-authored settings",@ROOT@(2,"copy")="Theme, typography, density, wallpaper, icons, and terminal profile are persisted server-side in MUMPS globals."
 	SET @ROOT@(3,"title")="Operational exports",@ROOT@(3,"copy")="Access, error, audit, digest, and retention posture remain server-managed and permission-controlled."
 	SET @ROOT@(4,"title")="Native window manager foundation",@ROOT@(4,"copy")="The browser now uses a MIOMOS-native Vue/CSS window manager with server-backed layout, focus, and UI state."
-	SET @ROOT@(5,"title")="PIPE terminal bridge",@ROOT@(5,"copy")="The browser renders xterm.js while MUMPS launches and supervises a child YottaDB session over PIPE devices and websockets."
+	SET @ROOT@(5,"title")="Websocket shell bus",@ROOT@(5,"copy")="Shell commands, layout saves, settings, and terminal actions all ride the single MIOMOS websocket while MUMPS remains the source of truth."
 	QUIT
 	;
 SECURITY(STATE,CONF,ROOT)
@@ -221,7 +221,7 @@ UILIB(STATE,CONF,ROOT)
 	SET @ROOT@("nativeWindowManager",1,"title")="Native Vue/CSS shell"
 	SET @ROOT@("nativeWindowManager",1,"copy")="No OS.js runtime bridge is required. Windows are managed by MIOMOS Vue state, CSS chrome, and MUMPS-authored metadata."
 	SET @ROOT@("nativeWindowManager",2,"title")="Server-backed UI state"
-	SET @ROOT@("nativeWindowManager",2,"copy")="Active window, launcher state, layout mode, and focused surface can be persisted back through the MIOMOS command boundary."
+	SET @ROOT@("nativeWindowManager",2,"copy")="Active window, launcher state, layout mode, and focused surface persist back through the MIOMOS websocket command bus."
 	SET @ROOT@("nativeWindowManager",3,"title")="Mobile-friendly windowing"
 	SET @ROOT@("nativeWindowManager",3,"copy")="Compact viewports switch to a stacked shell without changing the MUMPS-authored desktop contract."
 	DO CATALOG^MIOMOSTH($NAME(THEMES))
@@ -235,7 +235,7 @@ UILIB(STATE,CONF,ROOT)
 	;
 SHELL(STATE,CONF,ROOT)
 	KILL @ROOT
-	SET @ROOT@("headline")="WinXP-inspired shell correctness"
+	SET @ROOT@("headline")="Product shell correctness and desktop folders"
 	SET @ROOT@("taskbarBehavior")="stable-order"
 	SET @ROOT@("taskbarOverflowBehavior")="preserve-order-and-overflow"
 	SET @ROOT@("startMenuBehavior")="predictable-sections"
@@ -245,12 +245,19 @@ SHELL(STATE,CONF,ROOT)
 	SET @ROOT@("contextMenuStatefulness")="window-aware"
 	SET @ROOT@("startMenuSectionMemory")="server-backed"
 	SET @ROOT@("keyboardModel")="ctrl-escape-enter-search"
+	SET @ROOT@("dialogDragBehavior")="titlebar-drag"
+	SET @ROOT@("folderCreateBehavior")="desktop-context-menu"
+	SET @ROOT@("desktopComposition")="ui-samples-settings-terminal"
+	SET @ROOT@("mutationSaveBehavior")="layout-on-shell-mutation"
 	SET @ROOT@("taskbarBehaviorCopy")="Taskbar order stays stable while focus changes."
 	SET @ROOT@("taskbarOverflowCopy")="Overflow windows move into a More Windows list without changing taskbar order."
 	SET @ROOT@("startMenuBehaviorCopy")="Start menu sections stay pinned and predictable."
 	SET @ROOT@("startSearchBehaviorCopy")="Start search filters programs, actions, and directories from one field."
 	SET @ROOT@("taskbarClickPolicyCopy")="Clicking a task button toggles minimize or restore without shuffling neighboring items."
 	SET @ROOT@("shellSurfacePolicyCopy")="Only one shell surface stays open at a time: Start menu, context menu, or dialog."
+	SET @ROOT@("dialogDragBehaviorCopy")="Shell dialogs can be dragged by their title bars like real desktop dialogs."
+	SET @ROOT@("folderCreateBehaviorCopy")="New Folder is available from the desktop context menu and saves immediately."
+	SET @ROOT@("desktopCompositionCopy")="The desktop now stays curated: UI Samples, Settings, and Terminal."
 	SET @ROOT@("quickLaunchLabel")="Quick Launch"
 	SET @ROOT@("overflowLabel")="More Windows"
 	SET @ROOT@("recentLabel")="Recently used"
@@ -262,7 +269,7 @@ SHELL(STATE,CONF,ROOT)
 	SET @ROOT@("tray",1,"key")="network",@ROOT@("tray",1,"label")="Network connected",@ROOT@("tray",1,"icon")="LAN",@ROOT@("tray",1,"action")="about"
 	SET @ROOT@("tray",2,"key")="workspace",@ROOT@("tray",2,"label")="Workspace ready",@ROOT@("tray",2,"icon")="✓",@ROOT@("tray",2,"action")="refresh"
 	SET @ROOT@("tray",3,"key")="power",@ROOT@("tray",3,"label")="Power options",@ROOT@("tray",3,"icon")="⏻",@ROOT@("tray",3,"action")="power"
-	SET @ROOT@("recentFallback",1,"key")="workspace",@ROOT@("recentFallback",1,"label")="Workspace"
+	SET @ROOT@("recentFallback",1,"key")="ui-samples",@ROOT@("recentFallback",1,"label")="UI Samples"
 	SET @ROOT@("recentFallback",2,"key")="terminal",@ROOT@("recentFallback",2,"label")="Terminal"
 	SET @ROOT@("recentFallback",3,"key")="settings",@ROOT@("recentFallback",3,"label")="Settings"
 	SET @ROOT@("startFooter",1,"key")="run",@ROOT@("startFooter",1,"label")="Run…",@ROOT@("startFooter",1,"copy")="Launch a desktop command or app."
@@ -271,6 +278,8 @@ SHELL(STATE,CONF,ROOT)
 	SET @ROOT@("dialogs",1,"key")="run",@ROOT@("dialogs",1,"title")="Run",@ROOT@("dialogs",1,"copy")="Open a MIOMOS app by name, such as workspace, terminal, or settings."
 	SET @ROOT@("dialogs",2,"key")="about",@ROOT@("dialogs",2,"title")="About MIOMOS",@ROOT@("dialogs",2,"copy")="WinXP-inspired shell chrome on a native Vue/CSS window manager with MUMPS-owned state."
 	SET @ROOT@("dialogs",3,"key")="power",@ROOT@("dialogs",3,"title")="Turn off computer",@ROOT@("dialogs",3,"copy")="Choose whether to log off, restart the shell, or close all windows."
+	SET @ROOT@("transportLabel")="WebSocket shell bus"
+	SET @ROOT@("transportCopy")="All live shell communication now goes through the primary websocket session."
 	QUIT
 	;
 CHAT(STATE,CONF,ROOT)
@@ -286,6 +295,7 @@ TERMINAL(STATE,CONF,ROOT)
 	SET @ROOT@("status")="Terminal idle"
 	SET @ROOT@("enabled")=+$GET(CONF("miomos","terminal","enabled"),1)
 	SET @ROOT@("transport")="pipe"
+	SET @ROOT@("commandTransport")=$GET(CONF("miomos","desktop","transport","commandBus"),"websocket-only")
 	SET @ROOT@("command")=$GET(CONF("miomos","terminal","pipe","command"),"yottadb")
 	SET @ROOT@("shell")=$GET(CONF("miomos","terminal","pipe","shell"),"/bin/sh")
 	SET @ROOT@("bridge")="mumps-owned"

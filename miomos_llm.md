@@ -348,3 +348,108 @@ When continuing MIOMOS, keep these rules intact:
 3. Start menu search should stay deterministic and test-backed.
 4. Shell overlays must continue to obey the single-open-surface rule.
 5. Persisted UI state may include Start-menu section and query, but it must remain bounded and safe for MUMPS globals.
+
+
+## Current productization track
+
+MIOMOS is no longer just a shell concept. The current ROI track is about turning it into a deliverable product surface.
+
+The current focus areas are:
+
+- draggable shell dialogs with desktop-correct title-bar behavior
+- desktop context menus with **New Folder**
+- draggable desktop icons with automatic layout persistence
+- a curated product desktop where only **UI Samples**, **Settings**, and **Terminal** remain on the root desktop
+- future user, role, and permission product surfaces that behave like application administration rather than generic OS administration
+
+## Desktop curation rule
+
+Keep the root desktop restrained.
+
+The root desktop should prefer:
+- UI Samples
+- Settings
+- Terminal
+
+UI-only or showcase-oriented surfaces should live inside the **UI Samples** folder rather than being sprayed across the desktop.
+
+## Immediate next ROIs after this one
+
+- ROI35: desktop icon rename/change-icon, stronger folder behavior, restore custom desktop state on reload
+- ROI36: product desktop curation, folder views, and UI Samples content quality
+- ROI37: users, roles, permissions, and admin product surfaces
+- ROI38: permission-aware launch visibility and action enforcement
+- ROI39: packaging, install bootstrap, and product docs
+
+
+## ROI34 — Product shell folders and curated desktop
+
+The current MIOMOS shell now treats the root desktop as a product surface instead of a catch-all launcher.
+
+Important rules from ROI34:
+
+- shell dialogs should behave like draggable desktop dialogs
+- the desktop context menu should include **New Folder**
+- desktop icon moves should autosave
+- the root desktop should stay curated around **UI Samples**, **Settings**, and **Terminal**
+- UI/demo-only surfaces should prefer the **UI Samples** folder instead of living on the root desktop
+
+Persistence now includes:
+
+- dialog positions
+- custom folders
+- desktop icon positions
+- existing window layout state
+
+When extending MIOMOS from this point, keep product restraint as a design rule. A cleaner desktop is more important than exposing every capability at once.
+
+
+## ROI35 update — websocket-first live shell
+
+The current live-shell direction is now **websocket-first**.
+
+Important rule for future development:
+
+- keep initial page bootstrap SSR over HTTP
+- keep live shell traffic on the primary websocket session
+- do not reintroduce `fetch()` for routine shell actions unless a very narrow exception is clearly justified
+
+That means the following should prefer the websocket bus:
+
+- layout saves
+- UI-state saves
+- settings saves
+- theme changes
+- view refreshes
+- terminal open/input/poll/resize/close
+- signout eventing
+
+### Command bus contract
+
+The browser shell should treat the websocket as a request/response bus with request IDs.
+
+Current event names:
+
+- `command.exec`
+- `command.result`
+- `command.error`
+- `auth.signout`
+- `auth.signout.ack`
+
+### v1 stability posture
+
+The next productization work should keep increasing tests around:
+
+- shell transport correctness
+- taskbar/start/context-menu correctness
+- persisted desktop/layout behavior
+- dialogs and drag behavior
+- desktop icon behavior
+- authorization-aware shell visibility and actions
+- user and permission admin surfaces
+
+The goal is no longer “can MIOMOS do this visually?”
+
+The goal is:
+
+**does MIOMOS behave like a stable, production-minded product shell with a clear MUMPS-owned contract?**

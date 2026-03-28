@@ -141,7 +141,7 @@ BOOTARY(STATE,CONF,OBJ)
 	KILL OBJ
 	SET OBJ("product","name")=$GET(STATE("brandTitle"),"MIOMOS")
 	SET OBJ("product","subtitle")=$GET(STATE("brandSubtitle"),"MUMPS-first clinical workspace")
-	SET OBJ("product","version")="roi33-shell-navigation-search-overflow"
+	SET OBJ("product","version")="roi35-websocket-shell-bus"
 	SET OBJ("product","profile")=$GET(STATE("profile"),"dev")
 	SET OBJ("user","id")=$GET(STATE("principal"))
 	SET OBJ("user","displayName")=$GET(STATE("userName"))
@@ -168,6 +168,10 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("routes","settings")=$GET(STATE("settingsPath"))
 	SET OBJ("routes","view")=$GET(STATE("viewPath"))
 	SET OBJ("routes","command")=$GET(STATE("commandPath"))
+	SET OBJ("routes","commandEvent")=$GET(CONF("miomos","desktop","transport","eventName"),"command.exec")
+	SET OBJ("routes","commandResultEvent")=$GET(CONF("miomos","desktop","transport","resultEvent"),"command.result")
+	SET OBJ("routes","commandErrorEvent")=$GET(CONF("miomos","desktop","transport","errorEvent"),"command.error")
+	SET OBJ("routes","signoutEvent")="auth.signout"
 	SET OBJ("routes","signin")=$GET(STATE("signinPath"))
 	SET OBJ("routes","signup")=$GET(STATE("signupPath"))
 	SET OBJ("routes","signout")=$GET(STATE("signoutPath"))
@@ -219,13 +223,18 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","contextMenuStatefulness")="window-aware"
 	SET OBJ("desktop","trayStyle")="xp-notify-area"
 	SET OBJ("desktop","dialogStyle")="xp-shell-classic"
+	SET OBJ("desktop","dialogBehavior")="draggable-shell-dialogs"
+	SET OBJ("desktop","folderCreateBehavior")="desktop-context-menu"
+	SET OBJ("desktop","desktopIconBehavior")="draggable-autosave"
+	SET OBJ("desktop","desktopComposition")="ui-samples-settings-terminal"
+	SET OBJ("desktop","mutationSaveBehavior")="layout-on-shell-mutation"
 	SET OBJ("desktop","engine")="miomos-native-vue-css"
 	SET OBJ("desktop","windowManagerName")="miomos-native-window-manager"
 	SET OBJ("desktop","nativeShell")=1
 	SET OBJ("desktop","osjsEnabled")=0
 	SET OBJ("desktop","savedLayoutJson")=$GET(^MIO("MIOMOS","SESSION",$GET(STATE("sessionId")),"layoutJson"))
 	SET OBJ("desktop","savedLayoutAt")=$GET(^MIO("MIOMOS","SESSION",$GET(STATE("sessionId")),"layoutSavedAt"))
-	SET OBJ("desktop","contractVersion")="2026-03-roi33"
+	SET OBJ("desktop","contractVersion")="2026-03-roi35"
 	SET OBJ("desktop","mobile","enabled")=1
 	SET OBJ("desktop","mobile","breakpoint")=900
 	SET OBJ("desktop","mobile","mode")="stacked-shell"
@@ -233,6 +242,12 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","mobile","dragging")="disabled-under-breakpoint"
 	SET OBJ("desktop","renderMode")="mumps-first"
 	SET OBJ("desktop","renderer")="vue-thin"
+	SET OBJ("desktop","commandTransport")=$GET(CONF("miomos","desktop","transport","commandBus"),"websocket-only")
+	SET OBJ("desktop","commandEvent")=$GET(CONF("miomos","desktop","transport","eventName"),"command.exec")
+	SET OBJ("desktop","commandResultEvent")=$GET(CONF("miomos","desktop","transport","resultEvent"),"command.result")
+	SET OBJ("desktop","commandErrorEvent")=$GET(CONF("miomos","desktop","transport","errorEvent"),"command.error")
+	SET OBJ("desktop","realtimeContract")="single-websocket-command-and-events"
+	SET OBJ("desktop","signoutTransport")="websocket-event"
 	SET OBJ("desktop","motionProfile")=$GET(STATE("motionProfile"))
 	SET OBJ("desktop","titlebarStyle")=$GET(STATE("titlebarStyle"))
 	SET OBJ("desktop","windowPreset")=$GET(STATE("windowPreset"))
@@ -249,7 +264,8 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","policy","reconnectBaseMs")=+$GET(CONF("miomos","desktop","policy","reconnectBaseMs"),1000)
 	SET OBJ("desktop","policy","reconnectMaxMs")=+$GET(CONF("miomos","desktop","policy","reconnectMaxMs"),15000)
 	SET OBJ("desktop","policy","staleSocketMs")=+$GET(CONF("miomos","desktop","policy","staleSocketMs"),45000)
-	SET OBJ("desktop","policy","commandMaxInflight")=+$GET(CONF("miomos","desktop","policy","commandMaxInflight"),1)
+	SET OBJ("desktop","policy","commandMaxInflight")=+$GET(CONF("miomos","desktop","policy","commandMaxInflight"),3)
+	SET OBJ("desktop","policy","commandTimeoutMs")=+$GET(CONF("miomos","desktop","policy","commandTimeoutMs"),8000)
 	SET OBJ("desktop","policy","persistMenuState")=+$GET(CONF("miomos","desktop","policy","persistMenuState"),1)
 	SET OBJ("desktop","policy","persistActiveWindow")=+$GET(CONF("miomos","desktop","policy","persistActiveWindow"),1)
 	SET OBJ("desktop","policy","persistLayout")=+$GET(CONF("miomos","desktop","policy","persistLayout"),1)
@@ -267,6 +283,7 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("chat","room")=$GET(STATE("chatRoom"))
 	SET OBJ("chat","limit")=+$GET(STATE("chatLimit"),20)
 	SET OBJ("terminal","transport")="pipe"
+	SET OBJ("terminal","commandTransport")=$GET(CONF("miomos","desktop","transport","commandBus"),"websocket-only")
 	SET OBJ("terminal","pipeEnabled")=+$GET(STATE("terminalPipeEnabled"),1)
 	SET OBJ("terminal","command")=$GET(STATE("terminalPipeCommand"))
 	SET OBJ("terminal","shell")=$GET(STATE("terminalPipeShell"))
@@ -306,26 +323,29 @@ TRIM(X)
 	;
 APPS(ROOT,STATE)
 	KILL @ROOT
-	SET @ROOT@(1,"key")="workspace",@ROOT@(1,"title")="Workspace",@ROOT@(1,"subtitle")="Core queues, review, export, and operational work surfaces",@ROOT@(1,"icon")=$GET(STATE("icon","workspace"),"APP"),@ROOT@(1,"badge")="Primary",@ROOT@(1,"kind")="app",@ROOT@(1,"group")="Pinned",@ROOT@(1,"order")=10,@ROOT@(1,"launchKey")="workspace",@ROOT@(1,"desktopPinned")=1,@ROOT@(1,"status")="available"
+	SET @ROOT@(1,"key")="workspace",@ROOT@(1,"title")="Workspace",@ROOT@(1,"subtitle")="Core queues, review, export, and operational work surfaces",@ROOT@(1,"icon")=$GET(STATE("icon","workspace"),"APP"),@ROOT@(1,"badge")="Primary",@ROOT@(1,"kind")="app",@ROOT@(1,"group")="Applications",@ROOT@(1,"order")=10,@ROOT@(1,"launchKey")="workspace",@ROOT@(1,"desktopPinned")=0,@ROOT@(1,"status")="available"
 	SET @ROOT@(2,"key")="settings",@ROOT@(2,"title")="Settings",@ROOT@(2,"subtitle")="Themes, fonts, density, motion, icons, and preferences",@ROOT@(2,"icon")=$GET(STATE("icon","settings"),"SET"),@ROOT@(2,"badge")="Prefs",@ROOT@(2,"kind")="settings",@ROOT@(2,"group")="Pinned",@ROOT@(2,"order")=20,@ROOT@(2,"launchKey")="settings",@ROOT@(2,"desktopPinned")=1,@ROOT@(2,"status")="available"
-	SET @ROOT@(3,"key")="ui-library",@ROOT@(3,"title")="UI Library",@ROOT@(3,"subtitle")="7.css-influenced forms, tables, overlays, navigation, and tokens",@ROOT@(3,"icon")="UIL",@ROOT@(3,"badge")="Design",@ROOT@(3,"kind")="app",@ROOT@(3,"group")="Pinned",@ROOT@(3,"order")=25,@ROOT@(3,"launchKey")="ui-library",@ROOT@(3,"desktopPinned")=1,@ROOT@(3,"status")="available"
-	SET @ROOT@(4,"key")="jobs",@ROOT@(4,"title")="Jobs",@ROOT@(4,"subtitle")="Incoming work, queues, and monitored processing directories",@ROOT@(4,"icon")="DIR",@ROOT@(4,"badge")="Folder",@ROOT@(4,"kind")="directory",@ROOT@(4,"group")="Directories",@ROOT@(4,"order")=30,@ROOT@(4,"launchKey")="workspace",@ROOT@(4,"desktopPinned")=1,@ROOT@(4,"status")="available",@ROOT@(4,"summary")="142 active items"
-	SET @ROOT@(5,"key")="exports",@ROOT@(5,"title")="Exports",@ROOT@(5,"subtitle")="Output artifacts, delivery staging, and downstream release folders",@ROOT@(5,"icon")="OUT",@ROOT@(5,"badge")="Folder",@ROOT@(5,"kind")="directory",@ROOT@(5,"group")="Directories",@ROOT@(5,"order")=40,@ROOT@(5,"launchKey")="workspace",@ROOT@(5,"desktopPinned")=1,@ROOT@(5,"status")="available",@ROOT@(5,"summary")="328 exports today"
-	SET @ROOT@(6,"key")="profiles",@ROOT@(6,"title")="Profiles",@ROOT@(6,"subtitle")="Theme, terminal, workspace, and automation profile definitions",@ROOT@(6,"icon")="PRF",@ROOT@(6,"badge")="Folder",@ROOT@(6,"kind")="directory",@ROOT@(6,"group")="Directories",@ROOT@(6,"order")=50,@ROOT@(6,"launchKey")="settings",@ROOT@(6,"desktopPinned")=1,@ROOT@(6,"status")="available",@ROOT@(6,"summary")="Personalized"
+	SET @ROOT@(3,"key")="ui-library",@ROOT@(3,"title")="UI Library",@ROOT@(3,"subtitle")="7.css-influenced forms, tables, overlays, navigation, and tokens",@ROOT@(3,"icon")="UIL",@ROOT@(3,"badge")="Design",@ROOT@(3,"kind")="app",@ROOT@(3,"group")="Applications",@ROOT@(3,"order")=25,@ROOT@(3,"launchKey")="ui-library",@ROOT@(3,"desktopPinned")=0,@ROOT@(3,"status")="available"
+	SET @ROOT@(4,"key")="jobs",@ROOT@(4,"title")="Jobs",@ROOT@(4,"subtitle")="Incoming work, queues, and monitored processing directories",@ROOT@(4,"icon")="DIR",@ROOT@(4,"badge")="Folder",@ROOT@(4,"kind")="directory",@ROOT@(4,"group")="Directories",@ROOT@(4,"order")=30,@ROOT@(4,"launchKey")="workspace",@ROOT@(4,"desktopPinned")=0,@ROOT@(4,"status")="available",@ROOT@(4,"summary")="142 active items"
+	SET @ROOT@(5,"key")="exports",@ROOT@(5,"title")="Exports",@ROOT@(5,"subtitle")="Output artifacts, delivery staging, and downstream release folders",@ROOT@(5,"icon")="OUT",@ROOT@(5,"badge")="Folder",@ROOT@(5,"kind")="directory",@ROOT@(5,"group")="Directories",@ROOT@(5,"order")=40,@ROOT@(5,"launchKey")="workspace",@ROOT@(5,"desktopPinned")=0,@ROOT@(5,"status")="available",@ROOT@(5,"summary")="328 exports today"
+	SET @ROOT@(6,"key")="profiles",@ROOT@(6,"title")="Profiles",@ROOT@(6,"subtitle")="Theme, terminal, workspace, and automation profile definitions",@ROOT@(6,"icon")="PRF",@ROOT@(6,"badge")="Folder",@ROOT@(6,"kind")="directory",@ROOT@(6,"group")="Directories",@ROOT@(6,"order")=50,@ROOT@(6,"launchKey")="settings",@ROOT@(6,"desktopPinned")=0,@ROOT@(6,"status")="available",@ROOT@(6,"summary")="Personalized"
 	SET @ROOT@(7,"key")="terminal",@ROOT@(7,"title")="Terminal",@ROOT@(7,"subtitle")="Standard YottaDB session and future admin console",@ROOT@(7,"icon")=$GET(STATE("icon","terminal"),"YDB"),@ROOT@(7,"badge")="CLI",@ROOT@(7,"kind")="app",@ROOT@(7,"group")="Pinned",@ROOT@(7,"order")=60,@ROOT@(7,"launchKey")="terminal",@ROOT@(7,"desktopPinned")=1,@ROOT@(7,"status")="available"
 	SET @ROOT@(8,"key")="collaboration",@ROOT@(8,"title")="Chat",@ROOT@(8,"subtitle")="User chat and analyst coordination workspace",@ROOT@(8,"icon")=$GET(STATE("icon","collaboration"),"CHT"),@ROOT@(8,"badge")="Team",@ROOT@(8,"kind")="app",@ROOT@(8,"group")="Applications",@ROOT@(8,"order")=70,@ROOT@(8,"launchKey")="collaboration",@ROOT@(8,"status")="available"
 	SET @ROOT@(9,"key")="security",@ROOT@(9,"title")="Security",@ROOT@(9,"subtitle")="Access, errors, permissions, audit, and retention posture",@ROOT@(9,"icon")=$GET(STATE("icon","security"),"SEC"),@ROOT@(9,"badge")="Audit",@ROOT@(9,"kind")="app",@ROOT@(9,"group")="System",@ROOT@(9,"order")=80,@ROOT@(9,"launchKey")="security",@ROOT@(9,"status")="available"
 	SET @ROOT@(10,"key")="admin",@ROOT@(10,"title")="Admin",@ROOT@(10,"subtitle")="Users, invites, reset tokens, and operational identity health",@ROOT@(10,"icon")=$GET(STATE("icon","admin"),"ADM"),@ROOT@(10,"badge")="Ops",@ROOT@(10,"kind")="app",@ROOT@(10,"group")="System",@ROOT@(10,"order")=90,@ROOT@(10,"launchKey")="admin",@ROOT@(10,"status")="available"
-	SET @ROOT@(11,"key")="logs",@ROOT@(11,"title")="Logs",@ROOT@(11,"subtitle")="Audit, access, and operational trace directories",@ROOT@(11,"icon")="LOG",@ROOT@(11,"badge")="Folder",@ROOT@(11,"kind")="directory",@ROOT@(11,"group")="Directories",@ROOT@(11,"order")=100,@ROOT@(11,"launchKey")="security",@ROOT@(11,"status")="available",@ROOT@(11,"summary")="Retention managed"
+	SET @ROOT@(11,"key")="logs",@ROOT@(11,"title")="Logs",@ROOT@(11,"subtitle")="Audit, access, and operational trace directories",@ROOT@(11,"icon")="LOG",@ROOT@(11,"badge")="Folder",@ROOT@(11,"kind")="directory",@ROOT@(11,"group")="Directories",@ROOT@(11,"order")=100,@ROOT@(11,"desktopPinned")=0,@ROOT@(11,"launchKey")="security",@ROOT@(11,"status")="available",@ROOT@(11,"summary")="Retention managed"
 	SET @ROOT@(12,"key")="automation",@ROOT@(12,"title")="Automation",@ROOT@(12,"subtitle")="Planned orchestration workspace for future workflow runners",@ROOT@(12,"icon")="AUT",@ROOT@(12,"badge")="Planned",@ROOT@(12,"kind")="future",@ROOT@(12,"group")="Planned",@ROOT@(12,"order")=110,@ROOT@(12,"disabled")=1,@ROOT@(12,"status")="planned"
 	SET @ROOT@(13,"key")="integrations",@ROOT@(13,"title")="Integrations",@ROOT@(13,"subtitle")="Planned connectors, data exchange, and endpoint surfaces",@ROOT@(13,"icon")="API",@ROOT@(13,"badge")="Planned",@ROOT@(13,"kind")="future",@ROOT@(13,"group")="Planned",@ROOT@(13,"order")=120,@ROOT@(13,"disabled")=1,@ROOT@(13,"status")="planned"
+	SET @ROOT@(14,"key")="ui-samples",@ROOT@(14,"title")="UI Samples",@ROOT@(14,"subtitle")="Shell samples, UI library, and curated showcase surfaces",@ROOT@(14,"icon")="UI",@ROOT@(14,"badge")="Folder",@ROOT@(14,"kind")="directory",@ROOT@(14,"group")="Pinned",@ROOT@(14,"order")=15,@ROOT@(14,"launchKey")="ui-samples",@ROOT@(14,"desktopPinned")=1,@ROOT@(14,"status")="available",@ROOT@(14,"summary")="Product shell samples"
 	QUIT
 	;
 WINS(ROOT,STATE)
 	NEW N
 	DO DEFAULTWINS^MIOMOSWM(ROOT,$GET(STATE("windowPreset"),"analyst"))
 	SET N=$ORDER(@ROOT@(""),-1)+1
-	SET @ROOT@(N,"id")="win-ui-library",@ROOT@(N,"appKey")="ui-library",@ROOT@(N,"title")="UI Library",@ROOT@(N,"left")=268,@ROOT@(N,"top")=94,@ROOT@(N,"width")=920,@ROOT@(N,"height")=600,@ROOT@(N,"z")=6,@ROOT@(N,"state")="minimized"
+	SET @ROOT@(N,"id")="win-ui-samples",@ROOT@(N,"appKey")="ui-samples",@ROOT@(N,"title")="UI Samples",@ROOT@(N,"left")=240,@ROOT@(N,"top")=82,@ROOT@(N,"width")=860,@ROOT@(N,"height")=560,@ROOT@(N,"z")=5,@ROOT@(N,"state")="minimized",@ROOT@(N,"taskOrder")=7
+	SET N=N+1
+	SET @ROOT@(N,"id")="win-ui-library",@ROOT@(N,"appKey")="ui-library",@ROOT@(N,"title")="UI Library",@ROOT@(N,"left")=268,@ROOT@(N,"top")=94,@ROOT@(N,"width")=920,@ROOT@(N,"height")=600,@ROOT@(N,"z")=6,@ROOT@(N,"state")="minimized",@ROOT@(N,"taskOrder")=8
 	QUIT
 	;
 SAVELAYOUT(SID,PAYLOAD)
