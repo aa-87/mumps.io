@@ -36,10 +36,10 @@ ROLEHAS(ROLE,PERM)
 PRIMARYROLE(ROLES)
 	NEW I,R
 	IF $$HASCSV($GET(ROLES),"admin.users.view") QUIT "admin"
-	FOR I=1:1:$LENGTH($GET(ROLES),",") DO
+	FOR I=1:1:$LENGTH($GET(ROLES),",") DO  QUIT:$GET(R)'=""
 	. SET R=$$TRIM($PIECE(ROLES,",",I))
-	. IF R="" QUIT
-	. IF R'="admin" QUIT
+	. IF R="" SET R="" QUIT
+	. IF R="admin" SET R="" QUIT
 	IF $GET(R)'="" QUIT R
 	IF $$HASCSV($GET(ROLES),"workspace.use") QUIT "operator"
 	QUIT "guest"
@@ -54,6 +54,47 @@ ROLELABEL(ROLE)
 	IF ROLE="support" QUIT "Support"
 	IF ROLE="security" QUIT "Security"
 	QUIT $SELECT(ROLE'="":$$TITLE^MIOMOSAUTH(ROLE),1:"User")
+	;
+ROLECAT(OUT)
+	KILL OUT
+	SET OUT(1,"key")="admin",OUT(1,"label")="Administrator",OUT(1,"copy")="Full MIOMOS administration and desktop oversight.",OUT(1,"recommended")=1
+	SET OUT(2,"key")="developer",OUT(2,"label")="Developer",OUT(2,"copy")="Operational power user with terminal, logs, and admin visibility.",OUT(2,"recommended")=0
+	SET OUT(3,"key")="operator",OUT(3,"label")="User",OUT(3,"copy")="Standard workspace operator with terminal and settings access.",OUT(3,"recommended")=1
+	SET OUT(4,"key")="auditor",OUT(4,"label")="Auditor",OUT(4,"copy")="Read-focused audit and log reviewer.",OUT(4,"recommended")=0
+	SET OUT(5,"key")="support",OUT(5,"label")="Support",OUT(5,"copy")="Support visibility for troubleshooting and guided operations.",OUT(5,"recommended")=0
+	SET OUT(6,"key")="security",OUT(6,"label")="Security",OUT(6,"copy")="Security-focused oversight, retention, and reset control.",OUT(6,"recommended")=0
+	SET OUT(7,"key")="guest",OUT(7,"label")="Guest",OUT(7,"copy")="Limited workspace and settings access without privileged tools.",OUT(7,"recommended")=0
+	QUIT
+	;
+VALIDROLE(ROLE)
+	NEW CAT,N,OK
+	SET ROLE=$$TRIM($GET(ROLE))
+	IF ROLE="" QUIT 0
+	DO ROLECAT(.CAT)
+	SET (N,OK)=0
+	FOR  SET N=$ORDER(CAT(N)) QUIT:N=""  DO  QUIT:OK
+	. IF $GET(CAT(N,"key"))=ROLE SET OK=1
+	QUIT OK
+	;
+NORMALIZE(ROLES,OUTCSV)
+	NEW CAT,N,KEY,I,X,SEEN
+	SET OUTCSV=""
+	DO ROLECAT(.CAT)
+	SET N=0
+	FOR  SET N=$ORDER(CAT(N)) QUIT:N=""  DO
+	. SET KEY=$GET(CAT(N,"key"))
+	. IF KEY="" QUIT
+	. FOR I=1:1:$LENGTH($GET(ROLES),",") DO  QUIT:$DATA(SEEN(KEY))
+	. . SET X=$$TRIM($PIECE(ROLES,",",I))
+	. . IF X'=KEY QUIT
+	. . SET SEEN(KEY)=1
+	. . IF OUTCSV'="" SET OUTCSV=OUTCSV_","
+	. . SET OUTCSV=OUTCSV_KEY
+	QUIT
+	;
+PREVIEW(ROLES,OUT)
+	DO LIST($GET(ROLES),.OUT)
+	QUIT
 	;
 APPPERM(KEY)
 	SET KEY=$$TRIM($GET(KEY))

@@ -43,6 +43,8 @@ DESKCTX(STATE,CONF,DATA)
 	SET DATA("adminInvitePath")=$GET(STATE("adminInviteCreatePath"))
 	SET DATA("adminResetRequestPath")=$GET(STATE("adminResetRequestPath"))
 	SET DATA("adminResetPath")=$GET(STATE("adminResetRequestPath"))
+	SET DATA("adminUserRolesPath")=$GET(STATE("adminUserRolesPath"))
+	SET DATA("adminGuestTogglePath")=$GET(STATE("adminGuestTogglePath"))
 	SET DATA("observSummaryPath")=$GET(STATE("observSummaryPath"))
 	SET DATA("accessExportPath")=$GET(STATE("accessExportPath"))
 	SET DATA("errorExportPath")=$GET(STATE("errorExportPath"))
@@ -73,7 +75,7 @@ DESKCTX(STATE,CONF,DATA)
 	DO AUDITSSR(.DATA)
 	DO LOGSSR(.DATA)
 	DO PERMSSR(.DATA,$GET(STATE("roles")))
-	DO ADMINSSR(.DATA)
+	DO ADMINSSR(.DATA,.CONF)
 	DO OBSSSR(.STATE,.CONF,.DATA)
 	QUIT
 	;
@@ -86,28 +88,15 @@ AUTHCTX(CONF,DATA)
 	SET DATA("signinPath")=$GET(CONF("miomos","route","signin"),"/api/miomos/auth/signin")
 	SET DATA("signupPath")=$GET(CONF("miomos","route","signup"),"/api/miomos/auth/signup")
 	SET DATA("guestSigninPath")=$GET(CONF("miomos","route","guestSignin"),"/api/miomos/auth/guest")
-	SET DATA("resetApplyPath")=$GET(CONF("miomos","route","resetApply"),"/api/miomos/auth/reset")
 	SET DATA("desktopPath")=$GET(CONF("miomos","route","desktop"),"/miomos")
 	SET DATA("allowSignup")=+$GET(CONF("miomos","localAuth","allowSignup"),1)
 	SET DATA("inviteOnly")=+$GET(CONF("miomos","localAuth","inviteOnly"),0)
-	SET DATA("guestLoginEnabled")=+$GET(CONF("miomos","localAuth","guestLoginEnabled"),1)
+	SET DATA("guestLoginEnabled")=+$$GUESTLOGIN^MIOMOSADMIN(.CONF)
 	SET DATA("bootstrapAuthEnabled")=+$GET(CONF("miomos","bootstrapAuth","enabled"),1)
 	SET DATA("seededVisible")=+$GET(CONF("miomos","bootstrapAuth","showSeededCredentials"),1)
 	SET DATA("authWorkflow")=$SELECT(+$GET(CONF("miomos","localAuth","enabled"),0)=1:"local-auth",1:"guest-only")
-	SET DATA("profile")=$GET(CONF("miomos","profile"),"dev")
-	SET DATA("prodSeededWarning")=$SELECT(($GET(CONF("miomos","profile"))="prod")&(+$GET(CONF("miomos","localAuth","enabled"),0)=1)&(+$GET(CONF("miomos","bootstrapAuth","showSeededCredentials"),1)=1):1,1:0)
-	DO POLICYSSR(.CONF,.DATA)
 	DO SEEDSSR(.CONF,.DATA)
 	SET DATA("sevenCssHref")="https://unpkg.com/7.css/dist/7.scoped.css"
-	QUIT
-	;
-
-POLICYSSR(CONF,DATA)
-	SET DATA("passwordPolicy","minLength")=+$GET(CONF("miomos","localAuth","passwordPolicy","minLength"),8)
-	SET DATA("passwordPolicy","requireUpper")=+$GET(CONF("miomos","localAuth","passwordPolicy","requireUpper"),0)
-	SET DATA("passwordPolicy","requireLower")=+$GET(CONF("miomos","localAuth","passwordPolicy","requireLower"),0)
-	SET DATA("passwordPolicy","requireDigit")=+$GET(CONF("miomos","localAuth","passwordPolicy","requireDigit"),0)
-	SET DATA("passwordPolicy","requireSymbol")=+$GET(CONF("miomos","localAuth","passwordPolicy","requireSymbol"),0)
 	QUIT
 	;
 SEEDSSR(CONF,DATA)
@@ -129,7 +118,6 @@ SEEDSSR(CONF,DATA)
 	. SET DATA("seeded",N,"isAdmin")=$SELECT(ROLE="admin":1,1:0)
 	. SET DATA("seeded",N,"isUser")=$SELECT(ROLE="user":1,1:0)
 	. SET DATA("seeded",N,"isGuest")=$SELECT(ROLE="guest":1,1:0)
-	. SET DATA("seeded",N,"forcePasswordChange")=+$GET(CONF("miomos","bootstrapAuth",ROLE,"forcePasswordChange"),$SELECT(ROLE="guest":0,1:1))
 	. IF ROLE="admin" SET DATA("seededAdminUsername")=USER,DATA("seededAdminPassword")=PASS
 	. IF ROLE="user" SET DATA("seededUserUsername")=USER,DATA("seededUserPassword")=PASS
 	. IF ROLE="guest" SET DATA("seededGuestUsername")=USER,DATA("seededGuestPassword")=PASS
@@ -225,8 +213,8 @@ PERMSSR(DATA,ROLES)
 	FOR  SET N=$ORDER(LIST(N)) QUIT:N=""  MERGE DATA("permissions",N)=LIST(N)
 	QUIT
 	;
-ADMINSSR(DATA)
-	NEW CNT,USR,INV,RST,N
+ADMINSSR(DATA,CONF)
+	NEW CNT,USR,INV,RST,N,CAT,BST,PRE
 	DO COUNTS^MIOMOSADMIN(.CNT)
 	SET DATA("adminCounts","users")=+$GET(CNT("users"))
 	SET DATA("adminCounts","enabled")=+$GET(CNT("enabled"))
@@ -243,5 +231,13 @@ ADMINSSR(DATA)
 	DO RESETLIST^MIOMOSADMIN(4,.RST)
 	KILL DATA("adminResets")
 	SET N=0 FOR  SET N=$ORDER(RST(N)) QUIT:N=""  MERGE DATA("adminResets",N)=RST(N)
+	DO ROLECAT^MIOMOSPERM(.CAT)
+	KILL DATA("adminRoleCatalog")
+	SET N=0 FOR  SET N=$ORDER(CAT(N)) QUIT:N=""  DO
+	. MERGE DATA("adminRoleCatalog",N)=CAT(N)
+	. KILL PRE DO PREVIEW^MIOMOSPERM($GET(CAT(N,"key")),.PRE)
+	. MERGE DATA("adminRoleCatalog",N,"permissions")=PRE
+	DO BOOTSTATUS^MIOMOSADMIN(.CONF,.BST)
+	MERGE DATA("adminBootstrapStatus")=BST
 	QUIT
 	;

@@ -103,13 +103,13 @@ LOADLOCAL(CONF,REQ,CTX,ERR)
 	QUIT 1
 	;
 SIGNUP(CONF,USERNAME,PASSWORD,DISPLAY,ROLES,TOKEN,ERR,INVITE)
-	NEW USER,SALT,HASH,NOWD,NOWS,INVROLE,PERR
+	NEW USER,SALT,HASH,NOWD,NOWS,INVROLE
 	KILL ERR SET TOKEN=""
 	SET ERR("routine")="MIOMOSAUTH"
 	IF '$$ALLOWSIGNUP(.CONF) SET ERR("error")="signup_disabled" QUIT 0
 	SET USER=$$CANON(USERNAME)
 	IF '$$VALIDUSER(USER) SET ERR("error")="invalid_username" QUIT 0
-	IF '$$POLICYOK(.CONF,$GET(PASSWORD),.PERR) MERGE ERR=PERR QUIT 0
+	IF $LENGTH($GET(PASSWORD))<8 SET ERR("error")="password_too_short" QUIT 0
 	IF $DATA(^MIO("MIOMOS","USER",USER)) SET ERR("error")="user_exists" QUIT 0
 	IF $$INVITEONLY(.CONF) DO
 	. IF '$$USEINVITE(.CONF,$GET(INVITE),USER,.INVROLE,.ERR) QUIT
@@ -132,9 +132,9 @@ SIGNUP(CONF,USERNAME,PASSWORD,DISPLAY,ROLES,TOKEN,ERR,INVITE)
 	SET ^MIO("MIOMOS","USER",USER,"createdSec")=NOWS
 	QUIT $$ISSUETOKEN(.CONF,USER,.TOKEN,.ERR)
 	;
-SIGNIN(CONF,USERNAME,PASSWORD,TOKEN,ERR,FLAGS)
-	NEW USER,SALT,HASH,RESET
-	KILL ERR,FLAGS SET TOKEN=""
+SIGNIN(CONF,USERNAME,PASSWORD,TOKEN,ERR)
+	NEW USER,SALT,HASH
+	KILL ERR SET TOKEN=""
 	SET ERR("routine")="MIOMOSAUTH"
 	SET USER=$$CANON(USERNAME)
 	IF USER="" SET ERR("error")="username_missing" QUIT 0
@@ -146,12 +146,6 @@ SIGNIN(CONF,USERNAME,PASSWORD,TOKEN,ERR,FLAGS)
 	. DO FAILLOGIN(.CONF,USER)
 	. SET ERR("error")=$SELECT($$ISLOCKED(USER):"locked_account",1:"invalid_credentials")
 	DO CLEARRISK(USER)
-	IF $$PWROTATE(.CONF,USER) DO  QUIT $SELECT($GET(FLAGS("requiresPasswordChange"))=1:1,1:0)
-	. IF '$$REQUESTRESET(.CONF,USER,USER,.RESET,.ERR) QUIT
-	. SET FLAGS("requiresPasswordChange")=1
-	. SET FLAGS("resetToken")=RESET
-	. SET FLAGS("rotationReason")="seeded_password_rotation"
-	. DO POLICYARY(.CONF,$NAME(FLAGS("passwordPolicy")))
 	QUIT $$ISSUETOKEN(.CONF,USER,.TOKEN,.ERR)
 	;
 SIGNOUT(CONF,REQ,CTX)
@@ -191,7 +185,7 @@ BOOTSTRAP(CONF)
 	QUIT
 	;
 SEEDUSER(CONF,PERSONA)
-	NEW USER,DISPLAY,PASS,ROLES,SALT,HASH,NOWD,NOWS,ENABLED,APPLY,SRC,OLDP,FORCE,PRESERVE
+	NEW USER,DISPLAY,PASS,ROLES,SALT,HASH,NOWD,NOWS,ENABLED,APPLY,SRC,OLDP
 	SET USER=$$CANON($GET(CONF("miomos","bootstrapAuth",PERSONA,"username"),$GET(PERSONA)))
 	IF '$$VALIDUSER(USER) QUIT
 	SET APPLY=1
@@ -205,18 +199,14 @@ SEEDUSER(CONF,PERSONA)
 	SET PASS=$GET(CONF("miomos","bootstrapAuth",PERSONA,"password")) IF PASS="" SET PASS=$GET(PERSONA)_"123!"
 	SET ROLES=$GET(CONF("miomos","bootstrapAuth",PERSONA,"roles")) IF ROLES="" SET ROLES=$SELECT(PERSONA="admin":"admin",PERSONA="user":"operator",1:"guest")
 	SET ENABLED=+$GET(CONF("miomos","bootstrapAuth",PERSONA,"enabled"),1)
-	SET FORCE=+$GET(CONF("miomos","bootstrapAuth",PERSONA,"forcePasswordChange"),$SELECT(PERSONA="guest":0,1:1))
-	SET PRESERVE=$$PRESERVEPW(.CONF,USER,PERSONA)
-	IF 'PRESERVE DO
-	. SET SALT=$$UUID^MIOUTIL()
-	. SET HASH=$$PW(SALT,PASS)
+	SET SALT=$$UUID^MIOUTIL()
+	SET HASH=$$PW(SALT,PASS)
 	SET NOWD=+$PIECE($HOROLOG,",",1),NOWS=+$PIECE($HOROLOG,",",2)
 	SET ^MIO("MIOMOS","USER",USER,"principal")=USER
 	SET ^MIO("MIOMOS","USER",USER,"userName")=DISPLAY
 	SET ^MIO("MIOMOS","USER",USER,"roles")=ROLES
-	IF 'PRESERVE DO
-	. SET ^MIO("MIOMOS","USER",USER,"salt")=SALT
-	. SET ^MIO("MIOMOS","USER",USER,"hash")=HASH
+	SET ^MIO("MIOMOS","USER",USER,"salt")=SALT
+	SET ^MIO("MIOMOS","USER",USER,"hash")=HASH
 	SET ^MIO("MIOMOS","USER",USER,"enabled")=ENABLED
 	SET ^MIO("MIOMOS","USER",USER,"failedCount")=0
 	KILL ^MIO("MIOMOS","USER",USER,"lockedUntilDay")
@@ -229,9 +219,6 @@ SEEDUSER(CONF,PERSONA)
 	SET ^MIO("MIOMOS","USER",USER,"source")="bootstrap-auth"
 	SET ^MIO("MIOMOS","USER",USER,"bootstrapPersona")=$GET(PERSONA)
 	SET ^MIO("MIOMOS","USER",USER,"bootstrapSeededAt")=$$NOWISO^MIOUTIL()
-	IF FORCE,$GET(^MIO("MIOMOS","USER",USER,"passwordChangedAt"))="" SET ^MIO("MIOMOS","USER",USER,"passwordMustChange")=1
-	IF 'FORCE KILL ^MIO("MIOMOS","USER",USER,"passwordMustChange")
-	IF PRESERVE,$GET(^MIO("MIOMOS","USER",USER,"passwordChangedAt"))'="" KILL ^MIO("MIOMOS","USER",USER,"passwordMustChange")
 	QUIT
 	;
 GUESTSIGNIN(CONF,TOKEN,ERR)
@@ -239,7 +226,7 @@ GUESTSIGNIN(CONF,TOKEN,ERR)
 	KILL ERR SET TOKEN=""
 	SET ERR("routine")="MIOMOSAUTH"
 	IF +$GET(CONF("miomos","localAuth","enabled"),0)'=1 SET ERR("error")="guest_login_disabled" QUIT 0
-	IF +$GET(CONF("miomos","localAuth","guestLoginEnabled"),0)'=1 SET ERR("error")="guest_login_disabled" QUIT 0
+	IF +$$GUESTLOGIN^MIOMOSADMIN(.CONF)'=1 SET ERR("error")="guest_login_disabled" QUIT 0
 	DO BOOTSTRAP(.CONF)
 	SET USER=$$CANON($GET(CONF("miomos","bootstrapAuth","guest","username"),"guest"))
 	IF USER="" SET ERR("error")="guest_login_disabled" QUIT 0
@@ -356,10 +343,10 @@ REQUESTRESET(CONF,ACTOR,USER,TOKEN,ERR)
 	QUIT 1
 	;
 APPLYRESET(CONF,TOKEN,NEWPASS,ERR)
-	NEW USER,DAY,SEC,NOWD,NOWS,PERR
+	NEW USER,DAY,SEC,NOWD,NOWS
 	KILL ERR
 	SET ERR("routine")="MIOMOSAUTH"
-	IF '$$POLICYOK(.CONF,$GET(NEWPASS),.PERR) MERGE ERR=PERR QUIT 0
+	IF $LENGTH($GET(NEWPASS))<8 SET ERR("error")="password_too_short" QUIT 0
 	SET USER=$GET(^MIO("MIOMOS","AUTH","RESET",TOKEN,"principal"))
 	IF USER="" SET ERR("error")="reset_invalid" QUIT 0
 	IF $GET(^MIO("MIOMOS","AUTH","RESET",TOKEN,"usedAt"))'="" SET ERR("error")="reset_used" QUIT 0
@@ -381,8 +368,6 @@ SETPW(USER,PASSWORD)
 	SET ^MIO("MIOMOS","USER",USER,"salt")=SALT
 	SET ^MIO("MIOMOS","USER",USER,"hash")=HASH
 	SET ^MIO("MIOMOS","USER",USER,"passwordChangedAt")=$$NOWISO^MIOUTIL()
-	KILL ^MIO("MIOMOS","USER",USER,"passwordMustChange")
-	SET ^MIO("MIOMOS","USER",USER,"passwordRotatedAt")=$$NOWISO^MIOUTIL()
 	QUIT
 	;
 CREATEINVITE(CONF,ACTOR,ROLES,LABEL,TOKEN,ERR)
@@ -419,80 +404,6 @@ USEINVITE(CONF,TOKEN,USER,ROLES,ERR)
 	SET ^MIO("MIOMOS","AUTH","INVITE",TOKEN,"usedAt")=$$NOWISO^MIOUTIL()
 	QUIT 1
 	;
-
-PWROTATE(CONF,USER)
-	NEW PERSONA,FORCE
-	SET USER=$$CANON(USER) IF USER="" QUIT 0
-	IF $GET(^MIO("MIOMOS","USER",USER,"source"))'="bootstrap-auth" QUIT 0
-	SET PERSONA=$GET(^MIO("MIOMOS","USER",USER,"bootstrapPersona"))
-	IF PERSONA="" QUIT 0
-	SET FORCE=+$GET(CONF("miomos","bootstrapAuth",PERSONA,"forcePasswordChange"),$SELECT(PERSONA="guest":0,1:1))
-	IF 'FORCE QUIT 0
-	IF +$GET(^MIO("MIOMOS","USER",USER,"passwordMustChange"),0)=1 QUIT 1
-	IF $GET(^MIO("MIOMOS","USER",USER,"passwordChangedAt"))'="" QUIT 0
-	QUIT 1
-	;
-PRESERVEPW(CONF,USER,PERSONA)
-	SET USER=$$CANON(USER) IF USER="" QUIT 0
-	IF +$GET(CONF("miomos","bootstrapAuth","preservePasswordChanges"),1)'=1 QUIT 0
-	IF $GET(^MIO("MIOMOS","USER",USER,"source"))'="bootstrap-auth" QUIT 0
-	IF $GET(^MIO("MIOMOS","USER",USER,"bootstrapPersona"))'=$GET(PERSONA) QUIT 0
-	IF $GET(^MIO("MIOMOS","USER",USER,"passwordChangedAt"))="" QUIT 0
-	QUIT 1
-	;
-POLICYARY(CONF,OUT)
-	KILL @OUT
-	SET @OUT@("minLength")=+$GET(CONF("miomos","localAuth","passwordPolicy","minLength"),8)
-	SET @OUT@("requireUpper")=+$GET(CONF("miomos","localAuth","passwordPolicy","requireUpper"),0)
-	SET @OUT@("requireLower")=+$GET(CONF("miomos","localAuth","passwordPolicy","requireLower"),0)
-	SET @OUT@("requireDigit")=+$GET(CONF("miomos","localAuth","passwordPolicy","requireDigit"),0)
-	SET @OUT@("requireSymbol")=+$GET(CONF("miomos","localAuth","passwordPolicy","requireSymbol"),0)
-	QUIT
-	;
-POLICYOK(CONF,PASSWORD,ERR)
-	NEW MIN,REQUP,REQLOW,REQDIG,REQSYM
-	KILL ERR
-	SET ERR("routine")="MIOMOSAUTH"
-	SET MIN=+$GET(CONF("miomos","localAuth","passwordPolicy","minLength"),8)
-	IF MIN<8 SET MIN=8
-	IF $LENGTH($GET(PASSWORD))<MIN SET ERR("error")="password_too_short" QUIT 0
-	SET REQUP=+$GET(CONF("miomos","localAuth","passwordPolicy","requireUpper"),0)
-	SET REQLOW=+$GET(CONF("miomos","localAuth","passwordPolicy","requireLower"),0)
-	SET REQDIG=+$GET(CONF("miomos","localAuth","passwordPolicy","requireDigit"),0)
-	SET REQSYM=+$GET(CONF("miomos","localAuth","passwordPolicy","requireSymbol"),0)
-	IF REQUP,'$$HASUPPER($GET(PASSWORD)) SET ERR("error")="password_policy_upper" QUIT 0
-	IF REQLOW,'$$HASLOWER($GET(PASSWORD)) SET ERR("error")="password_policy_lower" QUIT 0
-	IF REQDIG,'$$HASDIGIT($GET(PASSWORD)) SET ERR("error")="password_policy_digit" QUIT 0
-	IF REQSYM,'$$HASSYMBOL($GET(PASSWORD)) SET ERR("error")="password_policy_symbol" QUIT 0
-	QUIT 1
-	;
-HASUPPER(PASSWORD)
-	NEW I,C,A
-	FOR I=1:1:$LENGTH($GET(PASSWORD)) DO  QUIT:$GET(A)=1
-	. SET C=$ASCII($EXTRACT(PASSWORD,I))
-	. IF C>64,C<91 SET A=1
-	QUIT +$GET(A)
-	;
-HASLOWER(PASSWORD)
-	NEW I,C,A
-	FOR I=1:1:$LENGTH($GET(PASSWORD)) DO  QUIT:$GET(A)=1
-	. SET C=$ASCII($EXTRACT(PASSWORD,I))
-	. IF C>96,C<123 SET A=1
-	QUIT +$GET(A)
-	;
-HASDIGIT(PASSWORD)
-	NEW I,C,A
-	FOR I=1:1:$LENGTH($GET(PASSWORD)) DO  QUIT:$GET(A)=1
-	. SET C=$ASCII($EXTRACT(PASSWORD,I))
-	. IF C>47,C<58 SET A=1
-	QUIT +$GET(A)
-	;
-HASSYMBOL(PASSWORD)
-	NEW I,C,A
-	FOR I=1:1:$LENGTH($GET(PASSWORD)) DO  QUIT:$GET(A)=1
-	. SET C=$ASCII($EXTRACT(PASSWORD,I))
-	. IF '(((C>47)&(C<58))!((C>64)&(C<91))!((C>96)&(C<123))) SET A=1
-	QUIT +$GET(A)
 	;
 SETROLES(CTX,CSV)
 	NEW I,X

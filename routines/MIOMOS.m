@@ -26,6 +26,8 @@ CONFDEF(CONF)
 	IF $GET(CONF("miomos","route","adminInviteCreate"))="" SET CONF("miomos","route","adminInviteCreate")="/api/miomos/admin/invites/create"
 	IF $GET(CONF("miomos","route","adminInvites"))="" SET CONF("miomos","route","adminInvites")="/api/miomos/admin/invites"
 	IF $GET(CONF("miomos","route","adminResetRequest"))="" SET CONF("miomos","route","adminResetRequest")="/api/miomos/admin/users/reset/request"
+	IF $GET(CONF("miomos","route","adminUserRoles"))="" SET CONF("miomos","route","adminUserRoles")="/api/miomos/admin/users/roles"
+	IF $GET(CONF("miomos","route","adminGuestToggle"))="" SET CONF("miomos","route","adminGuestToggle")="/api/miomos/admin/config/guest-login"
 	IF $GET(CONF("miomos","route","observSummary"))="" SET CONF("miomos","route","observSummary")="/api/miomos/observability/summary"
 	IF $GET(CONF("miomos","route","accessExport"))="" SET CONF("miomos","route","accessExport")="/api/miomos/observability/access/export"
 	IF $GET(CONF("miomos","route","errorExport"))="" SET CONF("miomos","route","errorExport")="/api/miomos/observability/error/export"
@@ -97,20 +99,11 @@ CONFDEF(CONF)
 	IF $GET(CONF("miomos","localAuth","resetTokenSeconds"))="" SET CONF("miomos","localAuth","resetTokenSeconds")=3600
 	IF $GET(CONF("miomos","localAuth","lockThreshold"))="" SET CONF("miomos","localAuth","lockThreshold")=5
 	IF $GET(CONF("miomos","localAuth","lockMinutes"))="" SET CONF("miomos","localAuth","lockMinutes")=15
-	IF $GET(CONF("miomos","localAuth","passwordPolicy","minLength"))="" SET CONF("miomos","localAuth","passwordPolicy","minLength")=8
-	IF $GET(CONF("miomos","localAuth","passwordPolicy","requireUpper"))="" SET CONF("miomos","localAuth","passwordPolicy","requireUpper")=0
-	IF $GET(CONF("miomos","localAuth","passwordPolicy","requireLower"))="" SET CONF("miomos","localAuth","passwordPolicy","requireLower")=0
-	IF $GET(CONF("miomos","localAuth","passwordPolicy","requireDigit"))="" SET CONF("miomos","localAuth","passwordPolicy","requireDigit")=0
-	IF $GET(CONF("miomos","localAuth","passwordPolicy","requireSymbol"))="" SET CONF("miomos","localAuth","passwordPolicy","requireSymbol")=0
-	IF $GET(CONF("miomos","localAuth","guestLoginEnabled"))="" SET CONF("miomos","localAuth","guestLoginEnabled")=$SELECT($GET(CONF("miomos","profile"))="prod":0,1:1)
+	IF $GET(CONF("miomos","localAuth","guestLoginEnabled"))="" SET CONF("miomos","localAuth","guestLoginEnabled")=1
 	IF $GET(CONF("miomos","bootstrapAuth","enabled"))="" SET CONF("miomos","bootstrapAuth","enabled")=1
 	IF $GET(CONF("miomos","bootstrapAuth","seedIfMissing"))="" SET CONF("miomos","bootstrapAuth","seedIfMissing")=1
 	IF $GET(CONF("miomos","bootstrapAuth","syncOnBoot"))="" SET CONF("miomos","bootstrapAuth","syncOnBoot")=1
 	IF $GET(CONF("miomos","bootstrapAuth","showSeededCredentials"))="" SET CONF("miomos","bootstrapAuth","showSeededCredentials")=1
-	IF $GET(CONF("miomos","bootstrapAuth","preservePasswordChanges"))="" SET CONF("miomos","bootstrapAuth","preservePasswordChanges")=1
-	IF $GET(CONF("miomos","bootstrapAuth","admin","forcePasswordChange"))="" SET CONF("miomos","bootstrapAuth","admin","forcePasswordChange")=1
-	IF $GET(CONF("miomos","bootstrapAuth","user","forcePasswordChange"))="" SET CONF("miomos","bootstrapAuth","user","forcePasswordChange")=1
-	IF $GET(CONF("miomos","bootstrapAuth","guest","forcePasswordChange"))="" SET CONF("miomos","bootstrapAuth","guest","forcePasswordChange")=0
 	IF $GET(CONF("miomos","bootstrapAuth","admin","username"))="" SET CONF("miomos","bootstrapAuth","admin","username")="admin"
 	IF $GET(CONF("miomos","bootstrapAuth","admin","displayName"))="" SET CONF("miomos","bootstrapAuth","admin","displayName")="Administrator"
 	IF $GET(CONF("miomos","bootstrapAuth","admin","password"))="" SET CONF("miomos","bootstrapAuth","admin","password")="admin123!"
@@ -157,8 +150,7 @@ INIT(CONF)
 	SET CONF("miomos","profile")="prod"
 	SET CONF("miomos","localAuth","enabled")=1
 	SET CONF("miomos","dev","authDisabled")=0
-	SET CONF("miomos","bootstrapAuth","showSeededCredentials")=0
-	SET CONF("miomos","localAuth","guestLoginEnabled")=1
+	SET CONF("miomos","bootstrapAuth","showSeededCredentials")=1
 	;
 	SET CONF("miomos","bootstrapAuth","admin","username")="admin"
 	SET CONF("miomos","bootstrapAuth","admin","password")="admin123!"
@@ -220,6 +212,10 @@ REG(CONF)
 	KILL META SET META("authRequired")=AUTHREQ
 	DO ADDM^MIOROUTE("POST",$GET(CONF("miomos","route","adminResetRequest")),"ADMINRESETREQUEST^MIOMOSAPI",.META)
 	KILL META SET META("authRequired")=AUTHREQ
+	DO ADDM^MIOROUTE("POST",$GET(CONF("miomos","route","adminUserRoles")),"ADMINUSERROLES^MIOMOSAPI",.META)
+	KILL META SET META("authRequired")=AUTHREQ
+	DO ADDM^MIOROUTE("POST",$GET(CONF("miomos","route","adminGuestToggle")),"ADMINGUESTTOGGLE^MIOMOSAPI",.META)
+	KILL META SET META("authRequired")=AUTHREQ
 	DO ADDM^MIOROUTE("GET",$GET(CONF("miomos","route","observSummary")),"OBSSUMMARY^MIOMOSAPI",.META)
 	KILL META SET META("authRequired")=AUTHREQ
 	DO ADDM^MIOROUTE("GET",$GET(CONF("miomos","route","accessExport")),"ACCESSX^MIOMOSAPI",.META)
@@ -270,6 +266,8 @@ DEVEXEMPT(CONF)
 	DO ADDEXEMPT(.CONF,$GET(CONF("miomos","route","adminInviteCreate")))
 	DO ADDEXEMPT(.CONF,$GET(CONF("miomos","route","adminInvites")))
 	DO ADDEXEMPT(.CONF,$GET(CONF("miomos","route","adminResetRequest")))
+	DO ADDEXEMPT(.CONF,$GET(CONF("miomos","route","adminUserRoles")))
+	DO ADDEXEMPT(.CONF,$GET(CONF("miomos","route","adminGuestToggle")))
 	DO ADDEXEMPT(.CONF,$GET(CONF("miomos","route","observSummary")))
 	DO ADDEXEMPT(.CONF,$GET(CONF("miomos","route","accessExport")))
 	DO ADDEXEMPT(.CONF,$GET(CONF("miomos","route","errorExport")))

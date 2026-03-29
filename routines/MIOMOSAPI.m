@@ -121,23 +121,14 @@ SIGNUP(DEV,CONF,REQ,CTX)
 	QUIT
 	;
 SIGNIN(DEV,CONF,REQ,CTX)
-	NEW TREE,ERR,TOKEN,OBJ,HEAD,JSON,STATE,USER,FLAGS
+	NEW TREE,ERR,TOKEN,OBJ,HEAD,JSON,STATE,USER
 	IF '$$PARSEBODY(.REQ,.TREE,.ERR) DO  QUIT
 	. DO RESPERR(.DEV,.CONF,400,"invalid_json",$GET(ERR("error")),.CTX)
-	IF '$$SIGNIN^MIOMOSAUTH(.CONF,$GET(TREE("username")),$GET(TREE("password")),.TOKEN,.ERR,.FLAGS) DO  QUIT
+	M ^C=CONF,^T=TREE,^TK=TOKEN
+	IF '$$SIGNIN^MIOMOSAUTH(.CONF,$GET(TREE("username")),$GET(TREE("password")),.TOKEN,.ERR) DO  QUIT
 	. DO ERROR^MIOMOSOBS("auth_signin_error",$GET(ERR("error")),.CTX,.STATE,$GET(ERR("error")))
 	. DO RESPERR(.DEV,.CONF,401,"signin_failed",$GET(ERR("error")),.CTX)
 	SET USER=$$CANON^MIOMOSAUTH($GET(TREE("username")))
-	IF +$GET(FLAGS("requiresPasswordChange"))=1 DO  QUIT
-	. SET OBJ("ok")=1,OBJ("tokenIssued")=0,OBJ("requiresPasswordChange")=1,OBJ("username")=USER
-	. SET OBJ("resetToken")=$GET(FLAGS("resetToken"))
-	. SET OBJ("rotationReason")=$GET(FLAGS("rotationReason"))
-	. MERGE OBJ("passwordPolicy")=FLAGS("passwordPolicy")
-	. DO RESPJSONX^MIOHTTP(.DEV,.CONF,200,.OBJ,$GET(CTX("request_id")),.CTX)
-	. SET CTX("status")=200
-	. SET STATE("principal")=USER,STATE("sessionId")="pending",STATE("profile")="signin-rotation"
-	. DO EVENTX^MIOMOSAUD("auth_signin_rotation_required",.CTX,.STATE,USER)
-	. DO ACCESS^MIOMOSOBS("auth_signin_rotation_required",.CTX,.STATE)
 	SET OBJ("ok")=1,OBJ("tokenIssued")=1,OBJ("username")=USER
 	SET JSON=$$EN^MIOJSON1(.OBJ)
 	SET HEAD("Content-Type")="application/json; charset=utf-8"
@@ -309,6 +300,42 @@ ADMINRESETREQUEST(DEV,CONF,REQ,CTX)
 	SET CTX("status")=200
 	DO EVENTX^MIOMOSAUD("admin_reset_request",.CTX,.STATE,USER)
 	DO ACCESS^MIOMOSOBS("admin_reset_request",.CTX,.STATE)
+	QUIT
+	;
+ADMINUSERROLES(DEV,CONF,REQ,CTX)
+	NEW STATE,ERR,TREE,OBJ,OUT,USER
+	IF '$$ENSURE^MIOMOSST(.CONF,.REQ,.CTX,.STATE,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,401,"login_required",$GET(ERR("error")),.CTX)
+	IF '$$HAS^MIOMOSPERM(.STATE,"admin.users.manage") DO  QUIT
+	. DO RESPERR(.DEV,.CONF,403,"forbidden","admin.users.manage",.CTX)
+	IF '$$PARSEBODY(.REQ,.TREE,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,400,"invalid_json",$GET(ERR("error")),.CTX)
+	SET USER=$$CANON^MIOMOSAUTH($GET(TREE("username")))
+	IF '$$SETROLES^MIOMOSADMIN(USER,$GET(TREE("roles")),.OUT,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,400,"roles_update_failed",$GET(ERR("error")),.CTX)
+	SET OBJ("ok")=1,OBJ("username")=$GET(OUT("principal")),OBJ("roles")=$GET(OUT("roles"))
+	MERGE OBJ("permissions")=OUT("permissions")
+	DO RESPJSONX^MIOHTTP(.DEV,.CONF,200,.OBJ,$GET(CTX("request_id")),.CTX)
+	SET CTX("status")=200
+	DO EVENTX^MIOMOSAUD("admin_user_roles_update",.CTX,.STATE,USER_":"_$GET(OUT("roles")))
+	DO ACCESS^MIOMOSOBS("admin_user_roles_update",.CTX,.STATE)
+	QUIT
+	;
+ADMINGUESTTOGGLE(DEV,CONF,REQ,CTX)
+	NEW STATE,ERR,TREE,OBJ,OUT,VAL
+	IF '$$ENSURE^MIOMOSST(.CONF,.REQ,.CTX,.STATE,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,401,"login_required",$GET(ERR("error")),.CTX)
+	IF '$$HAS^MIOMOSPERM(.STATE,"admin.users.manage") DO  QUIT
+	. DO RESPERR(.DEV,.CONF,403,"forbidden","admin.users.manage",.CTX)
+	IF '$$PARSEBODY(.REQ,.TREE,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,400,"invalid_json",$GET(ERR("error")),.CTX)
+	SET VAL=+$GET(TREE("enabled"))
+	DO SETGUESTLOGIN^MIOMOSADMIN(VAL,.OUT)
+	SET OBJ("ok")=1,OBJ("guestLoginEnabled")=+$GET(OUT("guestLoginEnabled")),OBJ("managedRuntime")=+$GET(OUT("managedRuntime")),OBJ("updatedAt")=$GET(OUT("updatedAt"))
+	DO RESPJSONX^MIOHTTP(.DEV,.CONF,200,.OBJ,$GET(CTX("request_id")),.CTX)
+	SET CTX("status")=200
+	DO EVENTX^MIOMOSAUD("admin_guest_toggle",.CTX,.STATE,$GET(OBJ("guestLoginEnabled")))
+	DO ACCESS^MIOMOSOBS("admin_guest_toggle",.CTX,.STATE)
 	QUIT
 	;
 	;

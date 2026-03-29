@@ -21,7 +21,7 @@ COUNTS(OUT)
 	QUIT
 	;
 USERLIST(LIMIT,OUT)
-	NEW U,N,NOWD,NOWS
+	NEW U,N,NOWD,NOWS,STATE
 	KILL OUT
 	SET LIMIT=+$GET(LIMIT,20) IF LIMIT<1 SET LIMIT=20
 	SET N=0,NOWD=+$PIECE($HOROLOG,",",1),NOWS=+$PIECE($HOROLOG,",",2)
@@ -30,15 +30,21 @@ USERLIST(LIMIT,OUT)
 	. SET N=N+1
 	. SET OUT(N,"principal")=U
 	. SET OUT(N,"userName")=$GET(^MIO("MIOMOS","USER",U,"userName"),U)
+	. SET OUT(N,"displayName")=$GET(^MIO("MIOMOS","USER",U,"userName"),U)
 	. SET OUT(N,"roles")=$GET(^MIO("MIOMOS","USER",U,"roles"))
+	. SET OUT(N,"primaryRole")=$$PRIMARYROLE^MIOMOSPERM($GET(OUT(N,"roles")))
+	. SET OUT(N,"roleLabel")=$$ROLELABEL^MIOMOSPERM($GET(OUT(N,"primaryRole")))
 	. SET OUT(N,"enabled")=+$GET(^MIO("MIOMOS","USER",U,"enabled"),1)
 	. SET OUT(N,"failedCount")=+$GET(^MIO("MIOMOS","USER",U,"failedCount"))
 	. SET OUT(N,"createdAt")=$GET(^MIO("MIOMOS","USER",U,"createdAt"))
+	. SET OUT(N,"updatedAt")=$GET(^MIO("MIOMOS","USER",U,"updatedAt"))
 	. SET OUT(N,"lastFailedAt")=$GET(^MIO("MIOMOS","USER",U,"lastFailedAt"))
+	. SET OUT(N,"source")=$GET(^MIO("MIOMOS","USER",U,"source"),"manual")
+	. SET OUT(N,"bootstrapPersona")=$GET(^MIO("MIOMOS","USER",U,"bootstrapPersona"))
 	. SET OUT(N,"locked")=$SELECT($$AGESEC(NOWD,NOWS,+$GET(^MIO("MIOMOS","USER",U,"lockedUntilDay")),+$GET(^MIO("MIOMOS","USER",U,"lockedUntilSec")))>0:1,1:0)
-	. IF +$GET(OUT(N,"enabled"))'=1 SET OUT(N,"state")="Disabled" QUIT
-	. IF +$GET(OUT(N,"locked"))=1 SET OUT(N,"state")="Locked" QUIT
-	. SET OUT(N,"state")="Active"
+	. SET STATE=$$USERSTATE(U,+$GET(OUT(N,"enabled")),+$GET(OUT(N,"locked")))
+	. SET OUT(N,"state")=STATE
+	. SET OUT(N,"status")=STATE
 	QUIT
 	;
 INVITELIST(LIMIT,OUT)
@@ -80,9 +86,87 @@ ACTIONS(CONF,OUT)
 	SET OUT(4,"key")="unlock",OUT(4,"label")="Unlock account",OUT(4,"copy")="Clear lockout after verification.",OUT(4,"route")=$GET(CONF("miomos","route","adminUnlock"),"/api/miomos/admin/users/unlock"),OUT(4,"permission")="admin.users.manage"
 	SET OUT(5,"key")="invite",OUT(5,"label")="Create invite",OUT(5,"copy")="Issue an invite-only onboarding token.",OUT(5,"route")=$GET(CONF("miomos","route","adminInviteCreate"),"/api/miomos/admin/invites/create"),OUT(5,"permission")="admin.invites.manage"
 	SET OUT(6,"key")="reset",OUT(6,"label")="Issue reset token",OUT(6,"copy")="Create a temporary password reset token.",OUT(6,"route")=$GET(CONF("miomos","route","adminResetRequest"),"/api/miomos/admin/users/reset/request"),OUT(6,"permission")="admin.reset.manage"
+	SET OUT(7,"key")="roles",OUT(7,"label")="Update roles",OUT(7,"copy")="Apply a new role set and refresh effective permissions.",OUT(7,"route")=$GET(CONF("miomos","route","adminUserRoles"),"/api/miomos/admin/users/roles"),OUT(7,"permission")="admin.users.manage"
+	SET OUT(8,"key")="guestToggle",OUT(8,"label")="Guest quick login",OUT(8,"copy")="Control whether the access page offers guest quick login.",OUT(8,"route")=$GET(CONF("miomos","route","adminGuestToggle"),"/api/miomos/admin/config/guest-login"),OUT(8,"permission")="admin.users.manage"
 	QUIT
+	;
+GUESTLOGIN(CONF)
+	NEW OVR
+	SET OVR=$GET(^MIO("MIOMOS","ADMIN","CONFIG","guestLoginEnabled"),"")
+	IF OVR'="" QUIT +OVR
+	QUIT +$GET(CONF("miomos","localAuth","guestLoginEnabled"),1)
+	;
+SETGUESTLOGIN(VALUE,OUT)
+	SET ^MIO("MIOMOS","ADMIN","CONFIG","guestLoginEnabled")=$SELECT(+VALUE:1,1:0)
+	SET ^MIO("MIOMOS","ADMIN","CONFIG","guestLoginUpdatedAt")=$$NOWISO^MIOUTIL()
+	KILL OUT
+	SET OUT("guestLoginEnabled")=+$GET(^MIO("MIOMOS","ADMIN","CONFIG","guestLoginEnabled"))
+	SET OUT("updatedAt")=$GET(^MIO("MIOMOS","ADMIN","CONFIG","guestLoginUpdatedAt"))
+	SET OUT("managedRuntime")=1
+	QUIT
+	;
+BOOTSTATUS(CONF,OUT)
+	NEW MAP,N,ROLE,USER
+	KILL OUT
+	SET OUT("localAuthEnabled")=+$$LOCALAUTHEN^MIOMOS(.CONF)
+	SET OUT("guestLoginConfigured")=+$GET(CONF("miomos","localAuth","guestLoginEnabled"),1)
+	SET OUT("guestLoginEnabled")=+$$GUESTLOGIN(.CONF)
+	SET OUT("guestLoginManaged")=$SELECT($DATA(^MIO("MIOMOS","ADMIN","CONFIG","guestLoginEnabled")):1,1:0)
+	SET OUT("seedIfMissing")=+$GET(CONF("miomos","bootstrapAuth","seedIfMissing"),1)
+	SET OUT("syncOnBoot")=+$GET(CONF("miomos","bootstrapAuth","syncOnBoot"),1)
+	SET OUT("showSeededCredentials")=+$GET(CONF("miomos","bootstrapAuth","showSeededCredentials"),1)
+	SET OUT("bootstrapEnabled")=+$GET(CONF("miomos","bootstrapAuth","enabled"),1)
+	SET OUT("lastBootstrapAt")=$GET(^MIO("MIOMOS","AUTH","BOOTSTRAP","lastRunAt"))
+	SET MAP(1)="admin",MAP(2)="user",MAP(3)="guest"
+	SET N=0 FOR  SET N=$ORDER(MAP(N)) QUIT:N=""  DO
+	. SET ROLE=MAP(N)
+	. SET USER=$$CANON^MIOMOSAUTH($GET(CONF("miomos","bootstrapAuth",ROLE,"username"),ROLE))
+	. SET OUT("seeded",N,"key")=ROLE
+	. SET OUT("seeded",N,"username")=USER
+	. SET OUT("seeded",N,"displayName")=$GET(CONF("miomos","bootstrapAuth",ROLE,"displayName"),$$TITLE^MIOMOSAUTH(ROLE))
+	. SET OUT("seeded",N,"configuredRoles")=$GET(CONF("miomos","bootstrapAuth",ROLE,"roles"),$SELECT(ROLE="admin":"admin",ROLE="user":"operator",1:"guest"))
+	. SET OUT("seeded",N,"configuredEnabled")=+$GET(CONF("miomos","bootstrapAuth",ROLE,"enabled"),1)
+	. SET OUT("seeded",N,"exists")=$SELECT($DATA(^MIO("MIOMOS","USER",USER)):1,1:0)
+	. SET OUT("seeded",N,"runtimeRoles")=$GET(^MIO("MIOMOS","USER",USER,"roles"))
+	. SET OUT("seeded",N,"runtimeEnabled")=+$GET(^MIO("MIOMOS","USER",USER,"enabled"),1)
+	. SET OUT("seeded",N,"source")=$GET(^MIO("MIOMOS","USER",USER,"source"))
+	. SET OUT("seeded",N,"bootstrapPersona")=$GET(^MIO("MIOMOS","USER",USER,"bootstrapPersona"))
+	QUIT
+	;
+SETROLES(USER,ROLECSV,OUT,ERR)
+	NEW CSV
+	KILL ERR,OUT
+	SET ERR("routine")="MIOMOSADMIN"
+	SET USER=$$CANON^MIOMOSAUTH($GET(USER))
+	IF USER="" SET ERR("error")="username_missing" QUIT 0
+	IF '$DATA(^MIO("MIOMOS","USER",USER)) SET ERR("error")="user_not_found" QUIT 0
+	DO NORMALIZE^MIOMOSPERM($GET(ROLECSV),.CSV)
+	IF CSV="" SET ERR("error")="roles_invalid" QUIT 0
+	SET ^MIO("MIOMOS","USER",USER,"roles")=CSV
+	SET ^MIO("MIOMOS","USER",USER,"updatedAt")=$$NOWISO^MIOUTIL()
+	DO SYNCAUTH(USER,CSV)
+	SET OUT("principal")=USER
+	SET OUT("roles")=CSV
+	NEW TT M TT=OUT("permissions") DO PREVIEW^MIOMOSPERM(CSV,.TT) M OUT("permissions")=TT K TT
+	QUIT 1
+	;
+SYNCAUTH(USER,ROLES)
+	NEW T,SID
+	SET T=""
+	FOR  SET T=$ORDER(^MIO("MIOMOS","AUTH","TOKEN",T)) QUIT:T=""  DO
+	. IF $GET(^MIO("MIOMOS","AUTH","TOKEN",T,"principal"))'=$GET(USER) QUIT
+	. SET ^MIO("MIOMOS","AUTH","TOKEN",T,"roles")=$GET(ROLES)
+	SET SID=$GET(^MIO("MIOMOS","SESSION","BYKEY",$GET(USER)))
+	IF SID'="" SET ^MIO("MIOMOS","SESSION",SID,"roles")=$GET(ROLES)
+	QUIT
+	;
+USERSTATE(USER,ENABLED,LOCKED)
+	IF +$GET(ENABLED)'=1 QUIT "Disabled"
+	IF +$GET(LOCKED)=1 QUIT "Locked"
+	QUIT "Active"
 	;
 AGESEC(D1,S1,D2,S2)
 	IF (+$GET(D2)=0),(+$GET(S2)=0) QUIT 999999999
 	QUIT (((+$GET(D2)-+$GET(D1))*86400)+(+$GET(S2)-+$GET(S1)))
+	;
 	;

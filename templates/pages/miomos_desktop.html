@@ -84,6 +84,8 @@
   <span hidden data-desktop-icons-draggable="1">Desktop icons can be dragged and saved.</span>
   <span hidden data-desktop-curation="ui-samples-settings-terminal">UI Samples</span>
   <a hidden href="{{adminUsersPath}}" data-admin-route>{{adminUsersPath}}</a>
+  <a hidden href="{{adminUserRolesPath}}" data-admin-roles-route>{{adminUserRolesPath}}</a>
+  <a hidden href="{{adminGuestTogglePath}}" data-admin-guest-toggle-route>{{adminGuestTogglePath}}</a>
 
   <div v-if="showShellAlert" class="miomos-shell-alert" :class="shellAlertClass">
     <div class="miomos-shell-alert-copy">
@@ -348,8 +350,8 @@
 
         <template v-else-if="win.appKey === 'admin'">
           <div class="miomos-surface-header" data-admin-surface>
-            <div class="miomos-surface-title"><strong>Identity hardening and admin operations</strong><span>Users, invites, reset tokens, and account state remain MUMPS-controlled.</span></div>
-            <div class="miomos-chips"><span class="miomos-pill">Users [[ view.admin.counts.users || 0 ]]</span><span class="miomos-pill">Locked [[ view.admin.counts.locked || 0 ]]</span></div>
+            <div class="miomos-surface-title"><strong>Identity hardening and admin operations</strong><span>Users, invites, resets, role assignment, and bootstrap-auth posture remain MUMPS-controlled.</span></div>
+            <div class="miomos-chips"><span class="miomos-pill">Users [[ view.admin.counts.users || 0 ]]</span><span class="miomos-pill">Locked [[ view.admin.counts.locked || 0 ]]</span><span class="miomos-pill">Guest [[ adminBootstrapStatus.guestLoginEnabled ? 'Enabled' : 'Disabled' ]]</span></div>
           </div>
           <div class="miomos-security-grid">
             <section class="miomos-card"><div class="miomos-kpi-value">[[ view.admin.counts.users || 0 ]]</div><div class="miomos-kpi-copy">Users</div></section>
@@ -357,12 +359,46 @@
             <section class="miomos-card"><div class="miomos-kpi-value">[[ view.admin.counts.resets || 0 ]]</div><div class="miomos-kpi-copy">Reset requests</div></section>
           </div>
           <section class="miomos-card">
-            <div class="miomos-surface-title"><strong>Recent identities</strong><span>Current server-side user summary.</span></div>
+            <div class="miomos-surface-title"><strong>Recent identities</strong><span>User directory with state, role summary, and bootstrap provenance.</span></div>
             <table class="miomos-table" style="margin-top:8px;">
-              <thead><tr><th>User</th><th>Roles</th><th>Status</th></tr></thead>
-              <tbody><tr v-for="user in view.admin.users || []" :key="user.principal || user.userName"><td>[[ user.displayName || user.userName || user.principal || 'User' ]]</td><td>[[ user.roles || user.roleCsv || 'operator' ]]</td><td>[[ user.status || 'active' ]]</td></tr></tbody>
+              <thead><tr><th>User</th><th>Roles</th><th>Status</th><th>Failed</th><th>Source</th></tr></thead>
+              <tbody><tr v-for="user in adminUsersList" :key="user.principal || user.userName"><td>[[ user.displayName || user.userName || user.principal || 'User' ]]</td><td>[[ user.roles || 'operator' ]]</td><td>[[ user.status || 'Active' ]]</td><td>[[ user.failedCount || 0 ]]</td><td>[[ user.source || 'manual' ]]</td></tr></tbody>
             </table>
           </section>
+          <div class="miomos-settings-grid">
+            <section class="miomos-setting-card" data-admin-role-editor>
+              <strong>Role assignment editor</strong>
+              <label class="miomos-field"><span>Selected user</span><select v-model="adminForm.selectedUser" @change="syncAdminRoleSelection"><option v-for="user in adminUsersList" :key="user.principal || user.userName" :value="user.principal || user.userName">[[ user.displayName || user.userName || user.principal ]]</option></select></label>
+              <div class="miomos-list dense" style="margin-top:8px; display:grid; gap:8px;">
+                <label v-for="role in adminRoleCatalog" :key="role.key" style="display:flex; gap:8px; align-items:flex-start; padding:8px 9px; border-radius:10px; border:1px solid var(--border); background:rgba(255,255,255,0.03);">
+                  <input type="checkbox" :checked="!!adminForm.roles[role.key]" @change="setAdminRole(role.key, $event.target.checked)">
+                  <span><strong>[[ role.label || role.key ]]</strong><span class="miomos-subtle" style="display:block; margin-top:2px;">[[ role.copy || '' ]]</span></span>
+                </label>
+              </div>
+              <div class="miomos-actions" style="margin-top:10px;"><button type="button" class="miomos-btn" @click="saveAdminRoles">Save roles</button><span class="miomos-save-status">[[ adminStatus ]]</span></div>
+            </section>
+            <section class="miomos-setting-card">
+              <strong>Effective permission preview</strong>
+              <div class="miomos-subtle">Server-authored union of the permissions granted by the selected roles.</div>
+              <ul class="miomos-list dense" style="margin-top:8px;" data-admin-permission-preview>
+                <li v-for="perm in adminPermissionPreview" :key="perm.key"><strong>[[ perm.label || perm.key ]]</strong><span>[[ perm.key ]]</span></li>
+                <li v-if="!adminPermissionPreview.length"><strong>No permissions selected</strong><span>Select at least one role to preview the resulting access.</span></li>
+              </ul>
+            </section>
+            <section class="miomos-setting-card">
+              <strong>Access workflow controls</strong>
+              <label class="miomos-field"><span>Guest quick login</span><span class="miomos-subtle">Control whether the access screen offers guest quick login.</span><span style="display:flex; align-items:center; gap:8px; margin-top:6px;"><input type="checkbox" v-model="adminForm.guestLoginEnabled"><span>Enabled</span></span></label>
+              <div class="miomos-actions"><button type="button" class="miomos-btn" @click="saveGuestLoginToggle">Save access workflow</button><span class="miomos-save-status">Configured [[ adminBootstrapStatus.guestLoginConfigured ? 'on' : 'off' ]], effective [[ adminBootstrapStatus.guestLoginEnabled ? 'on' : 'off' ]]</span></div>
+            </section>
+            <section class="miomos-setting-card" data-admin-bootstrap-status>
+              <strong>Bootstrap-auth status</strong>
+              <div class="miomos-subtle">Current bootstrap identity posture, seeded visibility, and guest-login behavior.</div>
+              <table class="miomos-table" style="margin-top:8px;">
+                <thead><tr><th>Seed</th><th>User</th><th>Configured roles</th><th>Runtime roles</th><th>State</th></tr></thead>
+                <tbody><tr v-for="seed in adminBootstrapSeeds" :key="seed.key"><td>[[ seed.key ]]</td><td>[[ seed.username ]]</td><td>[[ seed.configuredRoles || '-' ]]</td><td>[[ seed.runtimeRoles || '-' ]]</td><td>[[ seed.exists ? (seed.runtimeEnabled ? 'Active' : 'Disabled') : 'Missing' ]]</td></tr></tbody>
+              </table>
+            </section>
+          </div>
         </template>
 
         <template v-else-if="win.appKey === 'settings'">
@@ -618,6 +654,7 @@
       return Object.keys(val).sort(function(a,b){ return Number(a)-Number(b); }).map(function(k){ return val[k]; });
     }
     function parseBoot() { try { return JSON.parse(bootNode.textContent || '{}'); } catch (e) { return {}; } }
+    function postJson(url, payload) { return window.fetch(url, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload || {}) }).then(function(res){ return res.text().then(function(txt){ var data={}; try { data=JSON.parse(txt || '{}'); } catch (e) { data={ detail: txt || '' }; } if (!res.ok || data.ok===0) { var err=new Error(data.detail || data.error || ('http_' + res.status)); err.payload=data; throw err; } return data; }); }); }
     var app = window.Vue.createApp({
       data: function () {
         var boot = parseBoot(), view = boot.view || {};
@@ -674,6 +711,8 @@
           snapPreview: { visible: false, left: 0, top: 0, width: 0, height: 0 },
           resizeEdges: ['n','s','e','w','ne','nw','se','sw'],
           settingsStatus: 'Ready',
+          adminStatus: 'Ready',
+          adminForm: { selectedUser: (((arr((view.admin||{}).users)[0])||{}).principal || ''), guestLoginEnabled: !!((((view.admin||{}).bootstrapStatus)||{}).guestLoginEnabled), roles: {} },
           layoutMode: ((((boot.desktop||{}).uiState)||{}).layoutMode || ''),
           contextMenu: { visible:false, kind:'', x:0, y:0, items:[], targetId:'', targetKey:'', targetKind:'' },
           dialogs: { run:false, about:false, power:false },
@@ -732,6 +771,13 @@
         terminalRenderers: function(){ return arr((((this.view.settings||{}).catalog||{}).terminal||{}).renderers); },
         terminalPalettes: function(){ return arr((((this.view.settings||{}).catalog||{}).terminal||{}).palettes); },
         terminalUnicodeModes: function(){ return arr((((this.view.settings||{}).catalog||{}).terminal||{}).unicodeModes); },
+        adminUsersList: function(){ return arr((((this.view.admin||{}).users))); },
+        adminRoleCatalog: function(){ return arr((((this.view.admin||{}).roleCatalog))); },
+        adminBootstrapStatus: function(){ return (((this.view.admin||{}).bootstrapStatus)||{}); },
+        adminBootstrapSeeds: function(){ return arr((this.adminBootstrapStatus||{}).seeded); },
+        selectedAdminUserRecord: function(){ var key=(this.adminForm||{}).selectedUser || ''; var users=this.adminUsersList; for (var i=0;i<users.length;i+=1) { if ((users[i].principal || users[i].userName || '')===key) return users[i]; } return users[0] || {}; },
+        adminSelectedRolesCsv: function(){ var self=this; return this.adminRoleCatalog.filter(function(role){ return !!(((self.adminForm||{}).roles||{})[role.key]); }).map(function(role){ return role.key; }).join(','); },
+        adminPermissionPreview: function(){ var seen={}, out=[]; this.adminRoleCatalog.forEach(function(role){ if (!(((this.adminForm||{}).roles||{})[role.key])) return; arr(role.permissions).forEach(function(perm){ if (!perm || !perm.key || seen[perm.key]) return; seen[perm.key]=1; out.push(perm); }); }, this); return out; },
         terminalThemeSpec: function(){
           var palette=String((((this.settingsForm||{}).terminal||{}).palette) || 'theme'), mode=String(((this.currentThemeDefinition||{}).mode) || 'dark');
           if (palette==='black-on-white') return { background:'#ffffff', foreground:'#111111', cursor:'#111111', cursorAccent:'#ffffff', selectionBackground:'rgba(17,17,17,0.18)', chromeBorder:'rgba(24,24,24,0.26)', chromeBackground:'linear-gradient(180deg, rgba(255,255,255,0.985), rgba(241,243,246,0.99))', statusBackground:'rgba(255,255,255,0.86)', statusText:'#222222', dot:'#111111', dotHalo:'rgba(17,17,17,0.16)' };
@@ -864,6 +910,7 @@
         this.loadLayoutLocal();
         this.normalizeTaskOrder();
         this.refreshView().catch(function(){});
+        this.syncAdminForm();
         this.connectSocket();
         this.$nextTick(function(){ self.ensureXtermMounted(); });
         if (this.terminal.terminalId) this.startTerminalPolling();
@@ -975,10 +1022,15 @@
         ensureSocketReady: function(){ var self=this, timeoutMs=Number(this.desktopPolicy.commandTimeoutMs || 8000) || 8000; if (this.socket && this.socket.readyState===1) return Promise.resolve(true); this.connectSocket(); return new Promise(function(resolve,reject){ var stopAt=Date.now()+timeoutMs; (function waitForSocket(){ if (self.socket && self.socket.readyState===1) return resolve(true); if (Date.now() >= stopAt) return reject(new Error('socket_timeout')); window.setTimeout(waitForSocket, 75); }()); }); },
         socketRequest: function(event, payload, options){ var self=this, opts=options || {}, maxInflight=Number(this.desktopPolicy.commandMaxInflight || 3) || 3, timeoutMs=Number(opts.timeoutMs || this.desktopPolicy.commandTimeoutMs || 8000) || 8000, label=String(opts.command || event || 'socket.request'), key=opts.dedupeKey || (label + '|' + JSON.stringify(payload || {})); if (this.pendingCommands[key]) return this.pendingCommands[key]; if (this.inflightCommandCount >= maxInflight) { this.commandError='Another shell command is still in flight. Please wait for it to finish before submitting a new action.'; return Promise.reject(new Error('command_busy')); } this.commandError=''; this.dismissedAlertKey=''; this.lastCommandName=label; this.saveUiStateLocal(); this.inflightCommandCount += 1; var requestId='ws-' + (++this.socketRequestSeq) + '-' + Date.now(); var req=this.ensureSocketReady().then(function(){ return new Promise(function(resolve,reject){ var pending={ key:key, command:label, timer:null, resolve:function(msg){ if (pending.timer) window.clearTimeout(pending.timer); delete self.socketPending[requestId]; resolve(msg); }, reject:function(err){ if (pending.timer) window.clearTimeout(pending.timer); delete self.socketPending[requestId]; reject(err); } }; pending.timer=window.setTimeout(function(){ pending.reject(new Error('socket_request_timeout')); }, timeoutMs); self.socketPending[requestId]=pending; if (!self.sendSocket(Object.assign({ event:event, requestId:requestId, sessionId:((self.boot.session||{}).id || root.getAttribute('data-miomos-session') || '') }, payload || {}))) { pending.reject(new Error('socket_send_failed')); } }); }).catch(function(err){ self.commandError='Command ' + label + ' failed: ' + (err && err.message ? err.message : 'unknown error'); self.dismissedAlertKey=''; throw err; }).finally(function(){ self.inflightCommandCount=Math.max(0,self.inflightCommandCount-1); delete self.pendingCommands[key]; self.saveUiStateLocal(); }); this.pendingCommands[key]=req; return req; },
         command: function(command, payload){ var eventName=(this.boot.routes||{}).commandEvent || root.getAttribute('data-miomos-command-event') || 'command.exec'; var body=Object.assign({ command: command }, payload || {}); var key=command + '|' + JSON.stringify(body); return this.socketRequest(eventName, body, { dedupeKey:key, command:command }); },
-        refreshView: function(){ var self=this; return this.command('view.refresh', {}).then(function(json){ if (json.view) self.view = json.view; self.syncSettingsForm(); self.applySettings(); self.commandError=''; return json; }).catch(function(err){ self.commandError='View refresh failed: ' + (err && err.message ? err.message : 'unknown error'); self.dismissedAlertKey=''; throw err; }); },
+        refreshView: function(){ var self=this; return this.command('view.refresh', {}).then(function(json){ if (json.view) self.view = json.view; self.syncSettingsForm(); self.syncAdminForm(); self.applySettings(); self.commandError=''; return json; }).catch(function(err){ self.commandError='View refresh failed: ' + (err && err.message ? err.message : 'unknown error'); self.dismissedAlertKey=''; throw err; }); },
         syncSettingsForm: function(){ var cur=((this.view.settings||{}).current)||{}; this.settingsForm.themeKey = cur.themeKey || this.settingsForm.themeKey; this.settingsForm.fontFamily = cur.fontFamily || this.settingsForm.fontFamily; this.settingsForm.fontSize = String(cur.fontSize || this.settingsForm.fontSize); this.settingsForm.titleAccent = cur.titleAccent || this.settingsForm.titleAccent; this.settingsForm.iconStyle = cur.iconStyle || this.settingsForm.iconStyle; this.settingsForm.wallpaper = cur.wallpaper || this.settingsForm.wallpaper; this.settingsForm.density = cur.density || this.settingsForm.density; this.settingsForm.animations = cur.animations || this.settingsForm.animations; this.settingsForm.windowPreset = cur.windowPreset || this.settingsForm.windowPreset; this.settingsForm.snapMode = cur.snapMode || this.settingsForm.snapMode; this.settingsForm.motionProfile = cur.motionProfile || this.settingsForm.motionProfile; this.settingsForm.titlebarStyle = cur.titlebarStyle || this.settingsForm.titlebarStyle; this.settingsForm.icons = Object.assign({}, this.settingsForm.icons, cur.icon || {}); if (cur.terminal) { var self=this; Object.keys(cur.terminal).forEach(function(k){ self.settingsForm.terminal[k] = String(cur.terminal[k]); }); } },
         buildSettingsPayload: function(){ return { themeKey:this.settingsForm.themeKey, fontFamily:this.settingsForm.fontFamily, fontSize:parseInt(this.settingsForm.fontSize,10), titleAccent:this.settingsForm.titleAccent, iconStyle:this.settingsForm.iconStyle, wallpaper:this.settingsForm.wallpaper, density:this.settingsForm.density, animations:this.settingsForm.animations, windowPreset:this.settingsForm.windowPreset, snapMode:this.settingsForm.snapMode, motionProfile:this.settingsForm.motionProfile, titlebarStyle:this.settingsForm.titlebarStyle, icons: clone(this.settingsForm.icons), terminal: { fontFamily:this.settingsForm.terminal.fontFamily, fontSize:parseInt(this.settingsForm.terminal.fontSize,10), cursorBlink:parseInt(this.settingsForm.terminal.cursorBlink,10), cursorStyle:this.settingsForm.terminal.cursorStyle, palette:this.settingsForm.terminal.palette, scrollback:parseInt(this.settingsForm.terminal.scrollback,10), renderer:this.settingsForm.terminal.renderer, unicode:this.settingsForm.terminal.unicode, cols:parseInt(this.settingsForm.terminal.cols || '120',10), rows:parseInt(this.settingsForm.terminal.rows || '28',10) } }; },
         saveSettings: function(){ var self=this; this.settingsStatus='Saving…'; this.command('settings.save', this.buildSettingsPayload()).then(function(){ self.settingsStatus='Saved'; self.refreshView().catch(function(){}); }).catch(function(){ self.settingsStatus='Save failed'; }); },
+        syncAdminForm: function(){ var users=this.adminUsersList, record, selected={}; if (!((this.adminForm||{}).selectedUser) && users.length) this.adminForm.selectedUser = users[0].principal || users[0].userName || ''; record=this.selectedAdminUserRecord || {}; this.adminRoleCatalog.forEach(function(role){ selected[role.key]=false; }); String(record.roles || '').split(',').forEach(function(role){ role=String(role || '').trim(); if (role) selected[role]=true; }); this.adminForm.roles = selected; this.adminForm.guestLoginEnabled = !!(this.adminBootstrapStatus.guestLoginEnabled); },
+        syncAdminRoleSelection: function(){ this.syncAdminForm(); },
+        setAdminRole: function(roleKey, checked){ var next=Object.assign({}, this.adminForm.roles || {}); next[roleKey]=!!checked; this.adminForm.roles=next; },
+        saveAdminRoles: function(){ var self=this, url=((this.boot.routes||{}).adminUserRoles) || root.getAttribute('data-admin-roles-route') || '{{adminUserRolesPath}}', csv=this.adminSelectedRolesCsv; if (!this.adminForm.selectedUser) { this.adminStatus='Select a user'; return; } if (!csv) { this.adminStatus='Select at least one role'; return; } this.adminStatus='Saving roles…'; postJson(url, { username:this.adminForm.selectedUser, roles:csv }).then(function(){ self.adminStatus='Roles updated'; return self.refreshView(); }).catch(function(err){ self.adminStatus='Role update failed: ' + (err && err.message ? err.message : 'unknown error'); }); },
+        saveGuestLoginToggle: function(){ var self=this, url=((this.boot.routes||{}).adminGuestToggle) || root.getAttribute('data-admin-guest-toggle-route') || '{{adminGuestTogglePath}}'; this.adminStatus='Saving access workflow…'; postJson(url, { enabled:this.adminForm.guestLoginEnabled ? 1 : 0 }).then(function(){ self.adminStatus='Access workflow updated'; return self.refreshView(); }).catch(function(err){ self.adminStatus='Access workflow update failed: ' + (err && err.message ? err.message : 'unknown error'); }); },
         quickTheme: function(key){ var self=this; this.settingsForm.themeKey=key; this.command('theme.quick', { themeKey:key }).then(function(){ self.settingsStatus='Theme updated'; self.refreshView().catch(function(){}); }).catch(function(){ self.settingsStatus='Theme update failed'; }); },
         signout: function(){ var self=this; var evt=(this.boot.routes||{}).signoutEvent || root.getAttribute('data-miomos-signout-event') || 'auth.signout'; var desk=((this.boot.routes||{}).desktop || root.getAttribute('data-miomos-desktop-path') || '/miomos'); return this.socketRequest(evt, {}, { dedupeKey:'auth.signout', command:'auth.signout', timeoutMs:4000 }).finally(function(){ window.location.href = desk + '?signedOut=1'; }); },
         connectSocket: function(){ var self=this, path=((this.boot.routes||{}).websocket)||root.getAttribute('data-miomos-ws'); if (!path) return; if (this.socketConnecting) return; if (this.socket && (this.socket.readyState===0 || this.socket.readyState===1)) return; var proto=window.location.protocol==='https:'?'wss://':'ws://'; var url=/^wss?:\/\//i.test(path)?path:(proto + window.location.host + path); this.socketConnecting=true; try { this.socket=new WebSocket(url); } catch(e){ this.socketConnecting=false; this.scheduleReconnect(); return; } this.socket.addEventListener('open', function(){ self.socketConnecting=false; self.socketConnected=true; self.reconnectDelay=Number(self.desktopPolicy.reconnectBaseMs || 1000) || 1000; self.markSocketActivity(); self.sendSocket({ event:'hello', sessionId:(self.boot.session||{}).id || root.getAttribute('data-miomos-session') }); self.startHeartbeat(); self.startStaleMonitor(); }); this.socket.addEventListener('message', function(ev){ self.markSocketActivity(); self.handleSocketMessage(ev.data); }); this.socket.addEventListener('close', function(){ self.socketConnected=false; self.socketConnecting=false; self.clearHeartbeat(); self.clearStaleMonitor(); self.rejectPendingSocketRequests('socket_closed'); self.socket=null; self.lastReconnectAt=(new Date()).toISOString(); self.reconnectCount += 1; self.dismissedAlertKey=''; if (self.shouldReconnect) self.scheduleReconnect(); }); this.socket.addEventListener('error', function(){ self.socketConnected=false; if (self.socket && self.socket.readyState < 2) { try { self.socket.close(); } catch(e){} } }); },

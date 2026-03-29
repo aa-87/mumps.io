@@ -530,6 +530,8 @@ Completed:
 
 - **ROI46** — startup identity bootstrap and guest login toggle
 
+Current passing baseline: **ROI52**.
+
 TODO next:
 
 - **ROI47** — guest role and role-aware login workflow
@@ -557,20 +559,25 @@ TODO next:
   - keep seeded users configurable through `CONF("miomos","bootstrapAuth",...)`
   - repair stale seeded guest state on sign-in by resyncing bootstrap-backed guest users when needed
 
-TODO next:
-
 - **ROI51** — seeded password rotation and policy hardening
   - first-login password change for seeded accounts
   - password policy settings
   - seeded credential warnings for production installs
   - stricter production defaults for guest quick login
-  - status: implemented in the current source of truth
+
+- **ROI52** — admin role center and guest workflow control
+  - role catalog authored in MUMPS
+  - role assignment editor in the admin desktop surface
+  - effective permission preview for selected role sets
+  - runtime guest quick-login toggle in admin UI
+  - bootstrap-auth status panel with seeded identity posture
 
 TODO next:
 
-- **ROI52** — admin role center
-  - user directory improvements
-  - role assignment editor
-  - effective permission preview
-  - guest-login toggle in admin UI
-  - bootstrap-auth status panel
+- **ROI53** — admin reports and workflow analytics
+  - active users and recent session posture
+  - guest usage analytics
+  - failed logins and lockout trends
+  - reset/invite activity summaries
+  - permission and session posture summaries
+  - exportable admin operational reports

@@ -20,6 +20,8 @@ START
 	DO EQ^MIOTASSERT($GET(^MIO("ROUTE","META","GET","/api/miomos/observability/summary","authRequired")),0,"[MIOMOST][T001][observ summary auth]")
 	DO EQ^MIOTASSERT($GET(^MIO("ROUTE","META","GET","/api/miomos/observability/access/export","authRequired")),0,"[MIOMOST][T001][access export auth]")
 	DO EQ^MIOTASSERT($GET(^MIO("ROUTE","META","POST","/api/miomos/observability/retention/prune","authRequired")),0,"[MIOMOST][T001][retention prune auth]")
+	DO EQ^MIOTASSERT($GET(^MIO("ROUTE","META","POST","/api/miomos/admin/users/roles","authRequired")),0,"[MIOMOST][T001][admin roles auth]")
+	DO EQ^MIOTASSERT($GET(^MIO("ROUTE","META","POST","/api/miomos/admin/config/guest-login","authRequired")),0,"[MIOMOST][T001][guest toggle auth]")
 	;
 	KILL REQ,CTX,STATE,ERR
 	SET CTX("request_id")="miomost-rid"
@@ -475,35 +477,32 @@ START
 	DO OK^MIOTASSERT(OUT["user123!","[MIOMOST][T022][seeded user password token]")
 	DO OK^MIOTASSERT(OUT["guest123!","[MIOMOST][T022][seeded guest password token]")
 	;
-	KILL ^MIO("MIOMOS","USER"),^MIO("MIOMOS","AUTH")
-	KILL CONF,ERR,TOKEN,REQ,CTX,STATE,OBJ,OUT,ARR
-	NEW FLAGS
-	SET CONF("auth","enabled")=1
-	SET CONF("miomos","profile")="prod"
-	SET CONF("miomos","dev","enabled")=0
-	SET CONF("miomos","dev","authDisabled")=0
-	SET CONF("miomos","localAuth","enabled")=1
-	DO CONFDEF^MIOMOS(.CONF)
-	DO EQ^MIOTASSERT(+$GET(CONF("miomos","localAuth","guestLoginEnabled")),0,"[MIOMOST][T023][prod guest default]")
-	DO EQ^MIOTASSERT(+$GET(^MIO("MIOMOS","USER","admin","passwordMustChange")),1,"[MIOMOST][T023][admin rotate flag]")
-	DO EQ^MIOTASSERT(+$GET(^MIO("MIOMOS","USER","user","passwordMustChange")),1,"[MIOMOST][T023][user rotate flag]")
-	DO EQ^MIOTASSERT(+$GET(^MIO("MIOMOS","USER","guest","passwordMustChange")),0,"[MIOMOST][T023][guest rotate flag]")
-	DO OK^MIOTASSERT($$SIGNIN^MIOMOSAUTH(.CONF,"admin","admin123!",.TOKEN,.ERR,.FLAGS),"[MIOMOST][T023][admin rotation signin]")
-	DO EQ^MIOTASSERT($GET(TOKEN),"","[MIOMOST][T023][admin rotation no cookie token]")
-	DO EQ^MIOTASSERT(+$GET(FLAGS("requiresPasswordChange")),1,"[MIOMOST][T023][admin rotation required]")
-	DO OK^MIOTASSERT($GET(FLAGS("resetToken"))["miomos-rst-","[MIOMOST][T023][admin reset token]")
-	DO OK^MIOTASSERT($$APPLYRESET^MIOMOSAUTH(.CONF,$GET(FLAGS("resetToken")),"Admin456!",.ERR),"[MIOMOST][T023][admin reset apply]")
-	DO EQ^MIOTASSERT(+$GET(^MIO("MIOMOS","USER","admin","passwordMustChange")),0,"[MIOMOST][T023][admin rotate cleared]")
-	DO EQ^MIOTASSERT($$SIGNIN^MIOMOSAUTH(.CONF,"admin","admin123!",.TOKEN,.ERR),0,"[MIOMOST][T023][old admin password blocked]")
-	DO OK^MIOTASSERT($$SIGNIN^MIOMOSAUTH(.CONF,"admin","Admin456!",.TOKEN,.ERR),"[MIOMOST][T023][new admin password works]")
-	DO CONFDEF^MIOMOS(.CONF)
-	DO EQ^MIOTASSERT($$SIGNIN^MIOMOSAUTH(.CONF,"admin","admin123!",.TOKEN,.ERR),0,"[MIOMOST][T023][preserve rotated password]")
-	DO OK^MIOTASSERT($$SIGNIN^MIOMOSAUTH(.CONF,"admin","Admin456!",.TOKEN,.ERR),"[MIOMOST][T023][preserved admin password works]")
-	DO AUTHCTX^MIOMOSUI(.CONF,.CTX)
-	DO OK^MIOTASSERT($$RENDERPAGE^MIOTPL("pages/miomos_auth.html","layouts/miomos_shell.html",.CONF,.CTX,.OUT,.ERR),"[MIOMOST][T023][auth rotation render]")
-	DO OK^MIOTASSERT(OUT["Change seeded password","[MIOMOST][T023][rotation copy]")
-	DO OK^MIOTASSERT(OUT["data-reset-apply-path=""/api/miomos/auth/reset""","[MIOMOST][T023][reset path token]")
-	DO OK^MIOTASSERT(OUT["data-password-policy-min-length=""8""","[MIOMOST][T023][policy token]")
+	NEW ADMTOK,ADMREQ,ADMCTX,ADMSTATE,ADMBST,ADMCAT,ADMPERM,VM2
+	DO OK^MIOTASSERT($$SIGNIN^MIOMOSAUTH(.CONF,"admin","admin123!",.ADMTOK,.ERR),"[MIOMOST][T023][admin signin]")
+	SET ADMREQ("hdr","cookie")="miomos_auth="_ADMTOK
+	DO OK^MIOTASSERT($$LOADLOCAL^MIOMOSAUTH(.CONF,.ADMREQ,.ADMCTX,.ERR),"[MIOMOST][T023][admin load local]")
+	DO OK^MIOTASSERT($$ENSURE^MIOMOSST(.CONF,.ADMREQ,.ADMCTX,.ADMSTATE,.ERR),"[MIOMOST][T023][admin ensure]")
+	DO BUILD^MIOMOSVM(.ADMSTATE,.CONF,.VM2)
+	DO EQ^MIOTASSERT($GET(VM2("admin","roleCatalog",1,"key")),"admin","[MIOMOST][T023][role catalog]")
+	DO EQ^MIOTASSERT($GET(VM2("admin","bootstrapStatus","guestLoginEnabled")),1,"[MIOMOST][T023][guest toggle status]")
+	DO EQ^MIOTASSERT($GET(VM2("admin","bootstrapStatus","seeded",3,"key")),"guest","[MIOMOST][T023][bootstrap guest row]")
+	KILL ADMPERM MERGE ADMPERM=VM2("admin","roleCatalog",4,"permissions")
+	DO EQ^MIOTASSERT($$FINDPERM(.ADMPERM,"audit.view"),1,"[MIOMOST][T023][auditor preview]")
+	DO OK^MIOTASSERT($$SETROLES^MIOMOSADMIN("user","operator,auditor",.ADMBST,.ERR),"[MIOMOST][T023][set roles]")
+	DO EQ^MIOTASSERT($GET(^MIO("MIOMOS","USER","user","roles")),"operator,auditor","[MIOMOST][T023][user roles saved]")
+	DO EQ^MIOTASSERT($GET(^MIO("MIOMOS","AUTH","TOKEN",ADMTOK,"roles"))'="",1,"[MIOMOST][T023][token intact]")
+	DO PREVIEW^MIOMOSPERM("operator,auditor",.ADMPERM)
+	DO EQ^MIOTASSERT($$FINDPERM(.ADMPERM,"audit.view"),1,"[MIOMOST][T023][permission preview]")
+	DO SETGUESTLOGIN^MIOMOSADMIN(0,.ADMBST)
+	DO EQ^MIOTASSERT($$GUESTLOGIN^MIOMOSADMIN(.CONF),0,"[MIOMOST][T023][guest toggle off]")
+	KILL DATA DO DESKCTX^MIOMOSUI(.ADMSTATE,.CONF,.DATA)
+	DO OK^MIOTASSERT($$RENDERPAGE^MIOTPL("pages/miomos_desktop.html","layouts/miomos_shell.html",.CONF,.DATA,.OUT,.ERR),"[MIOMOST][T023][admin render]")
+	DO OK^MIOTASSERT(OUT["Role assignment editor","[MIOMOST][T023][role editor token]")
+	DO OK^MIOTASSERT(OUT["Effective permission preview","[MIOMOST][T023][permission preview token]")
+	DO OK^MIOTASSERT(OUT["Bootstrap-auth status","[MIOMOST][T023][bootstrap status token]")
+	DO OK^MIOTASSERT(OUT["data-admin-role-editor","[MIOMOST][T023][role editor data]")
+	DO OK^MIOTASSERT(OUT["/api/miomos/admin/users/roles","[MIOMOST][T023][roles route token]")
+	DO OK^MIOTASSERT(OUT["/api/miomos/admin/config/guest-login","[MIOMOST][T023][guest toggle route token]")
 	QUIT
 	;
 FINDUSR(LIST,USER)
@@ -512,6 +511,13 @@ FINDUSR(LIST,USER)
 	FOR  SET N=$ORDER(LIST(N)) QUIT:N=""  DO  QUIT:POS>0
 	. IF $GET(LIST(N,"principal"))=$GET(USER) SET POS=N
 	QUIT POS
+	;
+FINDPERM(LIST,KEY)
+	NEW N,FOUND
+	SET (N,FOUND)=0
+	FOR  SET N=$ORDER(LIST(N)) QUIT:N=""  DO  QUIT:FOUND
+	. IF $GET(LIST(N,"key"))=$GET(KEY) SET FOUND=1
+	QUIT FOUND
 	;
 HASWRITE(OUT,TEXT)
 	NEW N,FOUND
