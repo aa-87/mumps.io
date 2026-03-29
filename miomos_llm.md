@@ -482,3 +482,9 @@ The source-of-truth terminal contract is now:
 - The terminal settings catalog includes `terminal.palette` with `theme`, `midnight-blue`, `black-on-white`, and `white-on-black`.
 - The Clear button is a client-side xterm viewport clear, not a command sent into YottaDB.
 - xterm remains a renderer only; transport, session ownership, and terminal process ownership stay in MUMPS.
+
+
+## Animation settings note
+- The `animations` setting supports only `off`, `standard`, and `full`.
+- Legacy `reduced` animation preferences must be normalized to `standard`.
+- Do not reintroduce `data-animations="reduced"` CSS branches; the separate `motionProfile` setting remains independent.

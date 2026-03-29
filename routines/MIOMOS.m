@@ -53,7 +53,7 @@ CONFDEF(CONF)
 	IF $GET(CONF("miomos","settings","default","fontSize"))="" SET CONF("miomos","settings","default","fontSize")=13
 	IF $GET(CONF("miomos","settings","default","titleAccent"))="" SET CONF("miomos","settings","default","titleAccent")="theme"
 	IF $GET(CONF("miomos","settings","default","iconStyle"))="" SET CONF("miomos","settings","default","iconStyle")="glass"
-	IF $GET(CONF("miomos","settings","default","animations"))="" SET CONF("miomos","settings","default","animations")="reduced"
+	IF $GET(CONF("miomos","settings","default","animations"))="" SET CONF("miomos","settings","default","animations")="standard"
 	IF $GET(CONF("miomos","terminal","enabled"))="" SET CONF("miomos","terminal","enabled")=1
 	IF $GET(CONF("miomos","terminal","pipe","enabled"))="" SET CONF("miomos","terminal","pipe","enabled")=1
 	IF $GET(CONF("miomos","terminal","pipe","command"))="" SET CONF("miomos","terminal","pipe","command")="yottadb -direct"

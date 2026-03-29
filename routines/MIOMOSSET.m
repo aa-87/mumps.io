@@ -12,7 +12,7 @@ LOAD(STATE,CONF)
 	SET STATE("iconStyle")=$$GETP(USER,"iconStyle",$GET(CONF("miomos","settings","default","iconStyle"),"glass"))
 	SET STATE("wallpaper")=$$GETP(USER,"wallpaper",$GET(CONF("miomos","desktop","wallpaper"),"midnight-clinic"))
 	SET STATE("density")=$$GETP(USER,"density",$GET(CONF("miomos","desktop","density"),"dense"))
-	SET STATE("animations")=$$GETP(USER,"animations",$GET(CONF("miomos","settings","default","animations"),"reduced"))
+	SET STATE("animations")=$$ANIMLOAD($$GETP(USER,"animations",$GET(CONF("miomos","settings","default","animations"),"standard")))
 	SET STATE("fontScaleClass")=$$FONTSCALE(+$GET(STATE("fontSize"),13))
 	DO THEME^MIOMOSTH($GET(STATE("themeKey")),.THEME)
 	SET STATE("themeMode")=$GET(THEME("mode"),"dark")
@@ -112,7 +112,7 @@ CATALOG(ROOT)
 	DO OPTS($NAME(@ROOT@("iconStyles")),"glass^Glass,classic^Classic,minimal^Minimal,contrast^Contrast")
 	DO OPTS($NAME(@ROOT@("densities")),"compact^Compact,dense^Dense,comfortable^Comfortable")
 	DO OPTS($NAME(@ROOT@("wallpapers")),"midnight-clinic^Midnight Clinic,slate-grid^Slate Grid,aurora-blue^Aurora Blue,contrast-grid^Contrast Grid,soft-grid^Soft Grid")
-	DO OPTS($NAME(@ROOT@("animations")),"off^Off,reduced^Reduced,standard^Standard,full^Full")
+	DO OPTS($NAME(@ROOT@("animations")),"off^Off,standard^Standard,full^Full")
 	DO OPTS($NAME(@ROOT@("accessibilityPresets")),"balanced^Balanced,high-contrast^High Contrast,quiet-focus^Quiet Focus,large-text^Large Text")
 	DO CATALOG^MIOMOSTERM($NAME(@ROOT@("terminal")))
 	DO CATALOG^MIOMOSWM($NAME(@ROOT@("windowManager")))
@@ -196,9 +196,16 @@ DENSITYOK(X)
 	IF X="compact"!(X="dense")!(X="comfortable") QUIT X
 	QUIT ""
 	;
+
+ANIMLOAD(X)
+	SET X=$$TRIM^MIOUTIL($GET(X))
+	IF X="reduced" QUIT "standard"
+	IF X="" QUIT "standard"
+	QUIT $$ANIMOK(X)
+	;
 ANIMOK(X)
 	SET X=$$TRIM^MIOUTIL($GET(X))
-	IF X="full"!(X="standard")!(X="reduced")!(X="off") QUIT X
+	IF X="full"!(X="standard")!(X="off") QUIT X
 	QUIT ""
 	;
 ICONTXT(X)
