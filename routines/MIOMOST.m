@@ -12,6 +12,7 @@ START
 	DO EQ^MIOTASSERT($GET(^MIO("ROUTE","META","GET","/api/miomos/admin/users","authRequired")),0,"[MIOMOST][T001][admin users auth]")
 	DO EQ^MIOTASSERT($GET(^MIO("ROUTE","META","POST","/api/miomos/admin/invites/create","authRequired")),0,"[MIOMOST][T001][invite auth]")
 	DO EQ^MIOTASSERT($GET(^MIO("ROUTE","META","POST","/api/miomos/auth/reset","authRequired")),0,"[MIOMOST][T001][reset auth]")
+	DO EQ^MIOTASSERT($GET(^MIO("ROUTE","META","POST","/api/miomos/auth/guest","authRequired")),0,"[MIOMOST][T001][guest auth]")
 	DO EQ^MIOTASSERT($GET(^MIO("ROUTE","META","GET","/api/miomos/settings","authRequired")),0,"[MIOMOST][T001][settings get auth]")
 	DO EQ^MIOTASSERT($GET(^MIO("ROUTE","META","GET","/api/miomos/view","authRequired")),0,"[MIOMOST][T001][view auth]")
 	DO EQ^MIOTASSERT($GET(^MIO("ROUTE","META","POST","/api/miomos/command","authRequired")),0,"[MIOMOST][T001][command auth]")
@@ -126,12 +127,16 @@ START
 	DO EQ^MIOTASSERT($GET(OBJ("routes","commandEvent")),"command.exec","[MIOMOST][T004][command event]")
 	DO EQ^MIOTASSERT($GET(OBJ("routes","commandResultEvent")),"command.result","[MIOMOST][T004][command result event]")
 	DO EQ^MIOTASSERT($GET(OBJ("routes","signoutEvent")),"auth.signout","[MIOMOST][T004][signout event]")
+	DO EQ^MIOTASSERT($GET(OBJ("routes","guestSignin")),"/api/miomos/auth/guest","[MIOMOST][T004][guest signin route]")
 	DO EQ^MIOTASSERT($GET(OBJ("routes","accessExport")),"/api/miomos/observability/access/export","[MIOMOST][T004][access export route]")
 	DO EQ^MIOTASSERT($GET(OBJ("observability","retention","accessDays")),30,"[MIOMOST][T004][access retain]")
 	DO EQ^MIOTASSERT($GET(OBJ("observability","websocket","registryEnabled")),1,"[MIOMOST][T004][ws registry enabled]")
 	DO EQ^MIOTASSERT($GET(OBJ("observability","websocket","model")),"session-connection-registry","[MIOMOST][T004][ws registry model]")
 	DO EQ^MIOTASSERT($GET(OBJ("observability","websocket","controlModel")),"inspect-only","[MIOMOST][T004][ws control model]")
 	DO EQ^MIOTASSERT($GET(OBJ("auth","inviteOnly")),0,"[MIOMOST][T004][invite only boot]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("auth","guestLoginEnabled")),1,"[MIOMOST][T004][guest login boot]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("auth","bootstrapEnabled")),1,"[MIOMOST][T004][bootstrap enabled boot]")
+	DO EQ^MIOTASSERT($GET(OBJ("auth","seededUsers","guest","roles")),"guest","[MIOMOST][T004][guest role boot]")
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","fontFamily")),"Segoe UI","[MIOMOST][T004][font family]")
 	DO EQ^MIOTASSERT(+$GET(OBJ("desktop","fontSize")),13,"[MIOMOST][T004][font size]")
 	DO EQ^MIOTASSERT(+$DATA(OBJ("desktop","settings","catalog","themes",1,"key"))>0,1,"[MIOMOST][T004][settings catalog]")
@@ -216,7 +221,7 @@ START
 	DO EQ^MIOTASSERT($$HAS^MIOMOSPERM(.STATE,"admin.reset.manage"),1,"[MIOMOST][T009][perm reset]")
 	DO EQ^MIOTASSERT($$HAS^MIOMOSPERM(.STATE,"terminal.use"),1,"[MIOMOST][T009][perm terminal]")
 	DO USERLIST^MIOMOSADMIN(10,.ARR)
-	DO EQ^MIOTASSERT($GET(ARR(1,"principal")),"phaseone","[MIOMOST][T009][user list]")
+	DO EQ^MIOTASSERT($$FINDUSR(.ARR,"phaseone")>0,1,"[MIOMOST][T009][user list]")
 	DO COUNTS^MIOMOSADMIN(.ARR)
 	DO EQ^MIOTASSERT(+$GET(ARR("users"))>0,1,"[MIOMOST][T009][admin counts]")
 	DO EQ^MIOTASSERT($$HAS^MIOMOSPERM(.STATE,"logs.export"),1,"[MIOMOST][T009][perm logs export]")
@@ -428,7 +433,46 @@ START
 	DO EQ^MIOTASSERT($GET(ARR("smoke","websocket",1,"key")),"hello","[MIOMOST][T021][release ws smoke]")
 	DO EQ^MIOTASSERT($GET(ARR("smoke","browser",4,"key")),"reconnect","[MIOMOST][T021][release browser smoke]")
 	DO EQ^MIOTASSERT(+$GET(ARR("docsCurrent")),1,"[MIOMOST][T021][release docs current]")
+	;
+	KILL ^MIO("MIOMOS","USER"),^MIO("MIOMOS","AUTH")
+	KILL CONF,ERR,TOKEN,REQ,WCTX,STATE,OBJ,OUT,ARR,CTX
+	SET CONF("auth","enabled")=1
+	SET CONF("miomos","profile")="prod"
+	SET CONF("miomos","dev","enabled")=0
+	SET CONF("miomos","dev","authDisabled")=0
+	SET CONF("miomos","localAuth","enabled")=1
+	SET CONF("miomos","localAuth","guestLoginEnabled")=1
+	DO CONFDEF^MIOMOS(.CONF)
+	DO EQ^MIOTASSERT($DATA(^MIO("MIOMOS","USER","admin"))>0,1,"[MIOMOST][T022][seed admin]")
+	DO EQ^MIOTASSERT($DATA(^MIO("MIOMOS","USER","user"))>0,1,"[MIOMOST][T022][seed user]")
+	DO EQ^MIOTASSERT($DATA(^MIO("MIOMOS","USER","guest"))>0,1,"[MIOMOST][T022][seed guest]")
+	DO EQ^MIOTASSERT($GET(^MIO("MIOMOS","USER","guest","roles")),"guest","[MIOMOST][T022][guest role]")
+	DO EQ^MIOTASSERT($GET(^MIO("MIOMOS","USER","admin","hash"))=$$PW^MIOMOSAUTH($GET(^MIO("MIOMOS","USER","admin","salt")),"admin123!"),1,"[MIOMOST][T022][admin hash]")
+	DO EQ^MIOTASSERT($GET(^MIO("MIOMOS","USER","user","hash"))=$$PW^MIOMOSAUTH($GET(^MIO("MIOMOS","USER","user","salt")),"user123!"),1,"[MIOMOST][T022][user hash]")
+	DO EQ^MIOTASSERT($GET(^MIO("MIOMOS","USER","guest","hash"))=$$PW^MIOMOSAUTH($GET(^MIO("MIOMOS","USER","guest","salt")),"guest123!"),1,"[MIOMOST][T022][guest hash]")
+	DO EQ^MIOTASSERT($DATA(^MIO("MIOMOS","USER","admin","password")),0,"[MIOMOST][T022][no plain password]")
+	DO OK^MIOTASSERT($$GUESTSIGNIN^MIOMOSAUTH(.CONF,.TOKEN,.ERR),"[MIOMOST][T022][guest signin]")
+	SET REQ("hdr","cookie")="miomos_auth="_TOKEN
+	DO OK^MIOTASSERT($$LOADLOCAL^MIOMOSAUTH(.CONF,.REQ,.CTX,.ERR),"[MIOMOST][T022][guest load local]")
+	DO EQ^MIOTASSERT($GET(CTX("auth","claims","sub")),"guest","[MIOMOST][T022][guest principal]")
+	DO OK^MIOTASSERT($$ENSURE^MIOMOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOMOST][T022][guest ensure]")
+	DO EQ^MIOTASSERT($$HAS^MIOMOSPERM(.STATE,"terminal.use"),0,"[MIOMOST][T022][guest no terminal]")
+	DO EQ^MIOTASSERT($$HAS^MIOMOSPERM(.STATE,"settings.self"),1,"[MIOMOST][T022][guest settings]")
+	DO BOOTARY^MIOMOSST(.STATE,.CONF,.OBJ)
+	DO EQ^MIOTASSERT(+$GET(OBJ("auth","guestLoginEnabled")),1,"[MIOMOST][T022][guest toggle boot]")
+	DO EQ^MIOTASSERT($GET(OBJ("routes","guestSignin")),"/api/miomos/auth/guest","[MIOMOST][T022][guest route boot]")
+	DO AUTHCTX^MIOMOSUI(.CONF,.CTX)
+	DO OK^MIOTASSERT($$RENDERPAGE^MIOTPL("pages/miomos_auth.html","layouts/miomos_shell.html",.CONF,.CTX,.OUT,.ERR),"[MIOMOST][T022][auth render]")
+	DO OK^MIOTASSERT(OUT["Continue as guest","[MIOMOST][T022][guest button]")
+	DO OK^MIOTASSERT(OUT["data-guest-login-enabled=""1""","[MIOMOST][T022][guest token]")
 	QUIT
+	;
+FINDUSR(LIST,USER)
+	NEW N,POS
+	SET (N,POS)=0
+	FOR  SET N=$ORDER(LIST(N)) QUIT:N=""  DO  QUIT:POS>0
+	. IF $GET(LIST(N,"principal"))=$GET(USER) SET POS=N
+	QUIT POS
 	;
 HASWRITE(OUT,TEXT)
 	NEW N,FOUND

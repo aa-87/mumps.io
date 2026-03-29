@@ -19,6 +19,7 @@ HASCSV(ROLES,PERM)
 	;
 ROLEHAS(ROLE,PERM)
 	IF $GET(ROLE)="admin" QUIT 1
+	IF $GET(ROLE)="guest" QUIT $SELECT((PERM="workspace.use")!(PERM="theme.self")!(PERM="settings.self")!(PERM="chat.use"):1,1:0)
 	IF $GET(PERM)="workspace.use" QUIT 1
 	IF $GET(PERM)="theme.self" QUIT 1
 	IF $GET(PERM)="settings.self" QUIT 1

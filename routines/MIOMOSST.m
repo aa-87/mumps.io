@@ -60,6 +60,7 @@ ENSURE(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("signinPath")=$GET(CONF("miomos","route","signin"),"/api/miomos/auth/signin")
 	SET STATE("signupPath")=$GET(CONF("miomos","route","signup"),"/api/miomos/auth/signup")
 	SET STATE("signoutPath")=$GET(CONF("miomos","route","signout"),"/api/miomos/auth/signout")
+	SET STATE("guestSigninPath")=$GET(CONF("miomos","route","guestSignin"),"/api/miomos/auth/guest")
 	SET STATE("resetApplyPath")=$GET(CONF("miomos","route","resetApply"),"/api/miomos/auth/reset")
 	SET STATE("adminUsersPath")=$GET(CONF("miomos","route","adminUsers"),"/api/miomos/admin/users")
 	SET STATE("adminDisablePath")=$GET(CONF("miomos","route","adminDisable"),"/api/miomos/admin/users/disable")
@@ -89,6 +90,8 @@ ENSURE(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("localAuthEnabled")=+$$LOCALAUTHEN^MIOMOS(.CONF)
 	SET STATE("allowSignup")=+$$ALLOWSIGNUP^MIOMOSAUTH(.CONF)
 	SET STATE("inviteOnly")=+$$INVITEONLY^MIOMOSAUTH(.CONF)
+	SET STATE("guestLoginEnabled")=+$GET(CONF("miomos","localAuth","guestLoginEnabled"),1)
+	SET STATE("bootstrapAuthEnabled")=+$GET(CONF("miomos","bootstrapAuth","enabled"),1)
 	SET STATE("chatEnabled")=+$GET(CONF("miomos","chat","enabled"),1)
 	SET STATE("chatRoom")=$GET(CONF("miomos","chat","defaultRoom"),"general")
 	SET STATE("chatLimit")=+$GET(CONF("miomos","chat","messageLimit"),20)
@@ -191,6 +194,7 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("routes","signin")=$GET(STATE("signinPath"))
 	SET OBJ("routes","signup")=$GET(STATE("signupPath"))
 	SET OBJ("routes","signout")=$GET(STATE("signoutPath"))
+	SET OBJ("routes","guestSignin")=$GET(STATE("guestSigninPath"))
 	SET OBJ("routes","resetApply")=$GET(STATE("resetApplyPath"))
 	SET OBJ("routes","adminUsers")=$GET(STATE("adminUsersPath"))
 	SET OBJ("routes","adminDisable")=$GET(STATE("adminDisablePath"))
@@ -301,6 +305,10 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("auth","localEnabled")=+$GET(STATE("localAuthEnabled"))
 	SET OBJ("auth","allowSignup")=+$GET(STATE("allowSignup"))
 	SET OBJ("auth","inviteOnly")=+$GET(STATE("inviteOnly"))
+	SET OBJ("auth","guestLoginEnabled")=+$GET(STATE("guestLoginEnabled"),1)
+	SET OBJ("auth","guestRole")="guest"
+	SET OBJ("auth","bootstrapEnabled")=+$GET(STATE("bootstrapAuthEnabled"),1)
+	DO BOOTUSERS(.CONF,$NAME(OBJ("auth","seededUsers")))
 	SET OBJ("chat","enabled")=+$GET(STATE("chatEnabled"))
 	SET OBJ("chat","room")=$GET(STATE("chatRoom"))
 	SET OBJ("chat","limit")=+$GET(STATE("chatLimit"),20)
@@ -338,6 +346,15 @@ BOOTARY(STATE,CONF,OBJ)
 	NEW VIEW
 	DO BUILD^MIOMOSVM(.STATE,.CONF,.VIEW)
 	MERGE OBJ("view")=VIEW
+	QUIT
+	;
+BOOTUSERS(CONF,ROOT)
+	NEW P
+	KILL @ROOT
+	FOR P="admin","user","guest" DO
+	. SET @ROOT@(P,"username")=$$CANON^MIOMOSAUTH($GET(CONF("miomos","bootstrapAuth",P,"username"),P))
+	. SET @ROOT@(P,"displayName")=$GET(CONF("miomos","bootstrapAuth",P,"displayName"),$$TITLE^MIOMOSAUTH(P))
+	. SET @ROOT@(P,"roles")=$GET(CONF("miomos","bootstrapAuth",P,"roles"),$SELECT(P="admin":"admin",P="user":"operator",1:"guest"))
 	QUIT
 	;
 RELEASEARY(STATE,CONF,ROOT)

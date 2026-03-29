@@ -85,8 +85,11 @@ AUTHCTX(CONF,DATA)
 	SET DATA("brandSubtitle")=$GET(CONF("miomos","brand","subtitle"),"MUMPS-first clinical workspace")
 	SET DATA("signinPath")=$GET(CONF("miomos","route","signin"),"/api/miomos/auth/signin")
 	SET DATA("signupPath")=$GET(CONF("miomos","route","signup"),"/api/miomos/auth/signup")
+	SET DATA("guestSigninPath")=$GET(CONF("miomos","route","guestSignin"),"/api/miomos/auth/guest")
 	SET DATA("allowSignup")=+$GET(CONF("miomos","localAuth","allowSignup"),1)
 	SET DATA("inviteOnly")=+$GET(CONF("miomos","localAuth","inviteOnly"),0)
+	SET DATA("guestLoginEnabled")=+$GET(CONF("miomos","localAuth","guestLoginEnabled"),1)
+	SET DATA("bootstrapAuthEnabled")=+$GET(CONF("miomos","bootstrapAuth","enabled"),1)
 	SET DATA("sevenCssHref")="https://unpkg.com/7.css/dist/7.scoped.css"
 	QUIT
 	;

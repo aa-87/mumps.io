@@ -16,6 +16,7 @@ CONFDEF(CONF)
 	IF $GET(CONF("miomos","route","signin"))="" SET CONF("miomos","route","signin")="/api/miomos/auth/signin"
 	IF $GET(CONF("miomos","route","signup"))="" SET CONF("miomos","route","signup")="/api/miomos/auth/signup"
 	IF $GET(CONF("miomos","route","signout"))="" SET CONF("miomos","route","signout")="/api/miomos/auth/signout"
+	IF $GET(CONF("miomos","route","guestSignin"))="" SET CONF("miomos","route","guestSignin")="/api/miomos/auth/guest"
 	IF $GET(CONF("miomos","route","resetApply"))="" SET CONF("miomos","route","resetApply")="/api/miomos/auth/reset"
 	IF $GET(CONF("miomos","route","adminUsers"))="" SET CONF("miomos","route","adminUsers")="/api/miomos/admin/users"
 	IF $GET(CONF("miomos","route","adminDisable"))="" SET CONF("miomos","route","adminDisable")="/api/miomos/admin/users/disable"
@@ -96,6 +97,24 @@ CONFDEF(CONF)
 	IF $GET(CONF("miomos","localAuth","resetTokenSeconds"))="" SET CONF("miomos","localAuth","resetTokenSeconds")=3600
 	IF $GET(CONF("miomos","localAuth","lockThreshold"))="" SET CONF("miomos","localAuth","lockThreshold")=5
 	IF $GET(CONF("miomos","localAuth","lockMinutes"))="" SET CONF("miomos","localAuth","lockMinutes")=15
+	IF $GET(CONF("miomos","localAuth","guestLoginEnabled"))="" SET CONF("miomos","localAuth","guestLoginEnabled")=1
+	IF $GET(CONF("miomos","bootstrapAuth","enabled"))="" SET CONF("miomos","bootstrapAuth","enabled")=1
+	IF $GET(CONF("miomos","bootstrapAuth","seedIfMissing"))="" SET CONF("miomos","bootstrapAuth","seedIfMissing")=1
+	IF $GET(CONF("miomos","bootstrapAuth","admin","username"))="" SET CONF("miomos","bootstrapAuth","admin","username")="admin"
+	IF $GET(CONF("miomos","bootstrapAuth","admin","displayName"))="" SET CONF("miomos","bootstrapAuth","admin","displayName")="Administrator"
+	IF $GET(CONF("miomos","bootstrapAuth","admin","password"))="" SET CONF("miomos","bootstrapAuth","admin","password")="admin123!"
+	IF $GET(CONF("miomos","bootstrapAuth","admin","roles"))="" SET CONF("miomos","bootstrapAuth","admin","roles")="admin"
+	IF $GET(CONF("miomos","bootstrapAuth","admin","enabled"))="" SET CONF("miomos","bootstrapAuth","admin","enabled")=1
+	IF $GET(CONF("miomos","bootstrapAuth","user","username"))="" SET CONF("miomos","bootstrapAuth","user","username")="user"
+	IF $GET(CONF("miomos","bootstrapAuth","user","displayName"))="" SET CONF("miomos","bootstrapAuth","user","displayName")="User"
+	IF $GET(CONF("miomos","bootstrapAuth","user","password"))="" SET CONF("miomos","bootstrapAuth","user","password")="user123!"
+	IF $GET(CONF("miomos","bootstrapAuth","user","roles"))="" SET CONF("miomos","bootstrapAuth","user","roles")="operator"
+	IF $GET(CONF("miomos","bootstrapAuth","user","enabled"))="" SET CONF("miomos","bootstrapAuth","user","enabled")=1
+	IF $GET(CONF("miomos","bootstrapAuth","guest","username"))="" SET CONF("miomos","bootstrapAuth","guest","username")="guest"
+	IF $GET(CONF("miomos","bootstrapAuth","guest","displayName"))="" SET CONF("miomos","bootstrapAuth","guest","displayName")="Guest"
+	IF $GET(CONF("miomos","bootstrapAuth","guest","password"))="" SET CONF("miomos","bootstrapAuth","guest","password")="guest123!"
+	IF $GET(CONF("miomos","bootstrapAuth","guest","roles"))="" SET CONF("miomos","bootstrapAuth","guest","roles")="guest"
+	IF $GET(CONF("miomos","bootstrapAuth","guest","enabled"))="" SET CONF("miomos","bootstrapAuth","guest","enabled")=1
 	IF $GET(CONF("miomos","chat","enabled"))="" SET CONF("miomos","chat","enabled")=1
 	IF $GET(CONF("miomos","chat","defaultRoom"))="" SET CONF("miomos","chat","defaultRoom")="general"
 	IF $GET(CONF("miomos","chat","messageLimit"))="" SET CONF("miomos","chat","messageLimit")=20
@@ -120,6 +139,7 @@ CONFDEF(CONF)
 	IF $GET(CONF("server","templateDir"))="" SET CONF("server","templateDir")="templates"
 	IF $GET(CONF("templates","root"))="" SET CONF("templates","root")=$GET(CONF("server","templateDir"))_"/"
 	IF $GET(CONF("templates","ext"))="" SET CONF("templates","ext")=""
+	DO BOOTSTRAP^MIOMOSAUTH(.CONF)
 	QUIT
 	;
 INIT(CONF)
@@ -155,6 +175,8 @@ REG(CONF)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("miomos","route","signup")),"SIGNUP^MIOMOSAPI",.META)
 	KILL META SET META("authRequired")=0
 	DO ADDM^MIOROUTE("POST",$GET(CONF("miomos","route","signout")),"SIGNOUT^MIOMOSAPI",.META)
+	KILL META SET META("authRequired")=0
+	DO ADDM^MIOROUTE("POST",$GET(CONF("miomos","route","guestSignin")),"GUESTSIGNIN^MIOMOSAPI",.META)
 	KILL META SET META("authRequired")=0
 	DO ADDM^MIOROUTE("POST",$GET(CONF("miomos","route","resetApply")),"RESETAPPLY^MIOMOSAPI",.META)
 	KILL META SET META("authRequired")=AUTHREQ
@@ -214,6 +236,7 @@ DEVEXEMPT(CONF)
 	DO ADDEXEMPT(.CONF,$GET(CONF("miomos","route","signin")))
 	DO ADDEXEMPT(.CONF,$GET(CONF("miomos","route","signup")))
 	DO ADDEXEMPT(.CONF,$GET(CONF("miomos","route","signout")))
+	DO ADDEXEMPT(.CONF,$GET(CONF("miomos","route","guestSignin")))
 	DO ADDEXEMPT(.CONF,$GET(CONF("miomos","route","resetApply")))
 	DO ADDEXEMPT(.CONF,$GET(CONF("miomos","route","adminUsers")))
 	DO ADDEXEMPT(.CONF,$GET(CONF("miomos","route","adminDisable")))

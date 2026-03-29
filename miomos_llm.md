@@ -512,3 +512,47 @@ The source-of-truth terminal contract is now:
 - Preserve explicit runbook metadata for deploy, restart, and route rebuild operations.
 - Keep websocket smoke and browser smoke checklists visible in SSR tokens and boot metadata.
 - Do not use the release-gates ROI to change working runtime behavior.
+
+
+## Current auth and role workflow posture
+
+As of ROI46:
+
+- MIOMOS supports startup-seeded local identities for `admin`, `user`, and `guest`
+- seeded passwords use the existing salted `MIOSHA256` path through `MIOMOSAUTH`
+- guest quick login is now an explicit config-backed workflow rather than an implicit no-auth shortcut
+- boot JSON exposes only safe auth bootstrap metadata such as usernames, display names, roles, and the guest-login toggle
+- the `guest` role exists as a limited permission role and should stay more constrained than `operator` or `developer`
+
+## Role and workflow roadmap
+
+Completed:
+
+- **ROI46** — startup identity bootstrap and guest login toggle
+
+TODO next:
+
+- **ROI47** — guest role and role-aware login workflow
+  - hide or disable desktop apps and shell actions that guest should not use
+  - surface clearer role badges and session copy in the shell
+  - keep terminal/admin/security actions unavailable to guest at the UI layer, not just by server permission checks
+
+- **ROI48** — admin role center
+  - user directory improvements
+  - role assignment editor
+  - effective permission preview
+  - guest-login toggle in admin UI
+  - bootstrap-auth status panel
+
+- **ROI49** — admin reports and workflow analytics
+  - active users
+  - guest usage
+  - failed logins / lockouts
+  - reset/invite activity
+  - permission and session summaries
+
+- **ROI50** — seeded password rotation and policy hardening
+  - first-login password change for seeded accounts
+  - password policy settings
+  - seeded credential warnings
+  - stricter production defaults for guest quick login

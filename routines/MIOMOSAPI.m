@@ -153,6 +153,23 @@ SIGNOUT(DEV,CONF,REQ,CTX)
 	DO ACCESS^MIOMOSOBS("auth_signout",.CTX,.STATE)
 	QUIT
 	;
+GUESTSIGNIN(DEV,CONF,REQ,CTX)
+	NEW ERR,TOKEN,OBJ,HEAD,JSON,STATE,USER
+	IF '$$GUESTSIGNIN^MIOMOSAUTH(.CONF,.TOKEN,.ERR) DO  QUIT
+	. DO ERROR^MIOMOSOBS("auth_guest_signin_error",$GET(ERR("error")),.CTX,.STATE,$GET(ERR("error")))
+	. DO RESPERR(.DEV,.CONF,403,"guest_signin_failed",$GET(ERR("error")),.CTX)
+	SET USER=$$CANON^MIOMOSAUTH($GET(CONF("miomos","bootstrapAuth","guest","username"),"guest"))
+	SET OBJ("ok")=1,OBJ("tokenIssued")=1,OBJ("guestAccess")=1,OBJ("username")=USER
+	SET JSON=$$EN^MIOJSON1(.OBJ)
+	SET HEAD("Content-Type")="application/json; charset=utf-8"
+	SET HEAD("Set-Cookie")=$$COOKIEHDR(.CONF,TOKEN,0)
+	DO RESPX^MIOHTTP(.DEV,.CONF,200,.HEAD,JSON,$GET(CTX("request_id")),.CTX)
+	SET CTX("status")=200
+	SET STATE("principal")=USER,STATE("sessionId")="pending",STATE("profile")="guest"
+	DO EVENTX^MIOMOSAUD("auth_guest_signin",.CTX,.STATE,USER)
+	DO ACCESS^MIOMOSOBS("auth_guest_signin",.CTX,.STATE)
+	QUIT
+	;
 RESETAPPLY(DEV,CONF,REQ,CTX)
 	NEW TREE,ERR,OBJ,STATE
 	IF '$$PARSEBODY(.REQ,.TREE,.ERR) DO  QUIT

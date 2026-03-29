@@ -42,7 +42,7 @@
       </div>
     </section>
 
-    <section class="miomos-auth-panel miomos-auth-forms">
+    <section class="miomos-auth-panel miomos-auth-forms" data-bootstrap-auth="{{bootstrapAuthEnabled}}" data-guest-login-enabled="{{guestLoginEnabled}}">
       <div class="miomos-auth-box">
         <h2>Sign in</h2>
         <form class="miomos-auth-form" id="miomosSigninForm">
@@ -51,6 +51,15 @@
           <div class="miomos-auth-actions"><span class="miomos-auth-status" id="miomosSigninStatus"></span><button type="submit" class="miomos-auth-btn">Sign in</button></div>
         </form>
       </div>
+      {{#guestLoginEnabled}}
+      <div class="miomos-auth-box">
+        <h2>Guest access</h2>
+        <form class="miomos-auth-form" id="miomosGuestForm">
+          <div class="miomos-auth-card"><strong>Current workflow</strong><span>When guest access is enabled, MIOMOS signs in with the seeded guest persona and its limited <code>guest</code> role.</span></div>
+          <div class="miomos-auth-actions"><span class="miomos-auth-status" id="miomosGuestStatus"></span><button type="submit" class="miomos-auth-btn">Continue as guest</button></div>
+        </form>
+      </div>
+      {{/guestLoginEnabled}}
       {{#allowSignup}}
       <div class="miomos-auth-box">
         <h2>Sign up</h2>
@@ -73,14 +82,23 @@
       }
       var signin = document.getElementById('miomosSigninForm');
       var signup = document.getElementById('miomosSignupForm');
+      var guest = document.getElementById('miomosGuestForm');
       var signinStatus = document.getElementById('miomosSigninStatus');
       var signupStatus = document.getElementById('miomosSignupStatus');
+      var guestStatus = document.getElementById('miomosGuestStatus');
       if (signin) signin.addEventListener('submit', function (ev) {
         ev.preventDefault(); signinStatus.textContent = 'Signing in…';
         postJson('{{signinPath}}', {username: signin.username.value, password: signin.password.value}).then(function (json) {
           if (json && json.ok) { window.location.reload(); return; }
           signinStatus.textContent = (json && json.detail) || (json && json.error) || 'Unable to sign in';
         }).catch(function () { signinStatus.textContent = 'Unable to sign in'; });
+      });
+      if (guest) guest.addEventListener('submit', function (ev) {
+        ev.preventDefault(); guestStatus.textContent = 'Opening guest workspace…';
+        postJson('{{guestSigninPath}}', {}).then(function (json) {
+          if (json && json.ok) { window.location.reload(); return; }
+          guestStatus.textContent = (json && json.detail) || (json && json.error) || 'Unable to continue as guest';
+        }).catch(function () { guestStatus.textContent = 'Unable to continue as guest'; });
       });
       if (signup) signup.addEventListener('submit', function (ev) {
         ev.preventDefault(); signupStatus.textContent = 'Creating account…';
