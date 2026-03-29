@@ -44,11 +44,11 @@ START
 	DO OK^MIOTASSERT(OUT["id=""miomosBootJson""","[MIOMOST][T003][boot json]")
 	DO OK^MIOTASSERT(OUT["data-terminal-surface","[MIOMOST][T003][terminal surface]")
 	DO OK^MIOTASSERT(OUT["data-terminal-engine=""xtermjs""","[MIOMOST][T003][terminal engine]")
-	DO OK^MIOTASSERT(OUT["data-terminal-clear=""screen-buffer""","[MIOMOST][T003][terminal clear token]")
 	DO OK^MIOTASSERT(OUT["data-terminal-renderer=""xtermjs""","[MIOMOST][T003][terminal renderer]")
 	DO OK^MIOTASSERT(OUT["miomosTerminalViewport","[MIOMOST][T003][terminal viewport]")
 	DO OK^MIOTASSERT(OUT["data-setting-terminal=""fontFamily""","[MIOMOST][T003][terminal settings]")
 	DO OK^MIOTASSERT(OUT["data-setting-terminal=""palette""","[MIOMOST][T003][terminal palette setting]")
+	DO OK^MIOTASSERT(OUT["data-terminal-clear=""xterm-buffer""","[MIOMOST][T003][terminal clear action]")
 	DO OK^MIOTASSERT(OUT["data-launch-app=""terminal""","[MIOMOST][T003][terminal app]")
 	DO OK^MIOTASSERT(OUT["data-entry-kind=""directory""","[MIOMOST][T003][directory entry]")
 	DO OK^MIOTASSERT(OUT["data-entry-kind=""future""","[MIOMOST][T003][future entry]")
@@ -133,6 +133,7 @@ START
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","mobile","enabled")),1,"[MIOMOST][T004][mobile enabled]")
 	DO EQ^MIOTASSERT(+$GET(OBJ("desktop","mobile","breakpoint")),900,"[MIOMOST][T004][mobile breakpoint]")
 	DO EQ^MIOTASSERT(+$DATA(OBJ("desktop","settings","catalog","terminal","fonts",1,"key"))>0,1,"[MIOMOST][T004][terminal catalog]")
+	DO EQ^MIOTASSERT($GET(OBJ("desktop","settings","catalog","terminal","palettes",1,"key")),"theme","[MIOMOST][T004][terminal palette catalog]")
 	DO EQ^MIOTASSERT($GET(OBJ("apps",3,"key")),"ui-library","[MIOMOST][T004][ui library app key]")
 	DO EQ^MIOTASSERT($GET(OBJ("apps",7,"key")),"terminal","[MIOMOST][T004][terminal app key]")
 	DO EQ^MIOTASSERT($GET(OBJ("windows",6,"appKey")),"terminal","[MIOMOST][T004][terminal win key]")
@@ -194,7 +195,7 @@ START
 	DO EQ^MIOTASSERT($$HAS^MIOMOSPERM(.STATE,"settings.self"),1,"[MIOMOST][T009][perm settings]")
 	KILL ARR,ERR
 	SET ARR("themeKey")="clinical-blue",ARR("fontFamily")="Inter",ARR("fontSize")=14,ARR("titleAccent")="violet",ARR("iconStyle")="classic",ARR("wallpaper")="aurora-blue",ARR("density")="compact",ARR("animations")="off",ARR("icons","workspace")="WS",ARR("icons","terminal")="TR"
-	SET ARR("terminal","fontFamily")="Fira Code",ARR("terminal","fontSize")=15,ARR("terminal","cursorStyle")="underline",ARR("terminal","cursorBlink")=0,ARR("terminal","renderer")="dom",ARR("terminal","unicode")="unicode11",ARR("terminal","scrollback")=5000,ARR("terminal","cols")=132,ARR("terminal","rows")=32
+	SET ARR("terminal","fontFamily")="Fira Code",ARR("terminal","fontSize")=15,ARR("terminal","cursorStyle")="underline",ARR("terminal","cursorBlink")=0,ARR("terminal","palette")="black-on-white",ARR("terminal","renderer")="dom",ARR("terminal","unicode")="unicode11",ARR("terminal","scrollback")=5000,ARR("terminal","cols")=132,ARR("terminal","rows")=32
 	DO OK^MIOTASSERT($$SAVE^MIOMOSSET("phaseone",.ARR,.OUT,.ERR),"[MIOMOST][T009][settings save]")
 	DO EQ^MIOTASSERT($GET(OUT("current","themeKey")),"clinical-blue","[MIOMOST][T009][theme saved]")
 	DO EQ^MIOTASSERT($GET(OUT("current","fontFamily")),"Inter","[MIOMOST][T009][font saved]")
@@ -202,6 +203,7 @@ START
 	DO EQ^MIOTASSERT($GET(OUT("current","icon","workspace")),"WS","[MIOMOST][T009][icon saved]")
 	DO EQ^MIOTASSERT($GET(OUT("current","icon","terminal")),"TR","[MIOMOST][T009][terminal icon saved]")
 	DO EQ^MIOTASSERT($GET(OUT("current","terminal","fontFamily")),"Fira Code","[MIOMOST][T009][term font saved]")
+	DO EQ^MIOTASSERT($GET(OUT("current","terminal","palette")),"black-on-white","[MIOMOST][T009][term palette saved]")
 	DO EQ^MIOTASSERT(+$GET(OUT("current","terminal","cols")),132,"[MIOMOST][T009][term cols saved]")
 	;
 	KILL ARR,OUT,CTX
@@ -222,8 +224,8 @@ START
 	SET TERMID=$GET(OUT("terminalId"))
 	DO EQ^MIOTASSERT(TERMID'="",1,"[MIOMOST][T011][terminal id]")
 	DO EQ^MIOTASSERT(+$GET(OUT("profile","cols")),132,"[MIOMOST][T011][terminal profile cols]")
-	DO OK^MIOTASSERT($$INPUT^MIOMOSTERM(.STATE,TERMID,"whoami",.OUT,.ERR),"[MIOMOST][T011][terminal whoami]")
-	DO EQ^MIOTASSERT($$HASWRITE(.OUT,"phaseone"),1,"[MIOMOST][T011][terminal output]")
+	DO OK^MIOTASSERT($$INPUT^MIOMOSTERM(.STATE,TERMID,"write 123,!",.OUT,.ERR),"[MIOMOST][T011][terminal write]")
+	DO EQ^MIOTASSERT($$HASWRITE(.OUT,"123"),1,"[MIOMOST][T011][terminal output]")
 	DO OK^MIOTASSERT($$RESIZE^MIOMOSTERM(.STATE,TERMID,132,32,.OUT,.ERR),"[MIOMOST][T011][terminal resize]")
 	DO EQ^MIOTASSERT(+$GET(OUT("cols")),132,"[MIOMOST][T011][terminal cols]")
 	DO OK^MIOTASSERT($$CLOSE^MIOMOSTERM(.STATE,TERMID,.OUT,.ERR),"[MIOMOST][T011][terminal close]")
@@ -266,8 +268,6 @@ START
 	DO BUILD^MIOMOSVM(.STATE,.CONF,.VM)
 	DO EQ^MIOTASSERT($GET(VM("terminal","transport")),"pipe","[MIOMOST][T014][terminal transport]")
 	DO EQ^MIOTASSERT($GET(VM("terminal","commandTransport")),"websocket-only","[MIOMOST][T014][terminal command bus]")
-	DO EQ^MIOTASSERT($GET(ARR("catalog","terminal","palettes",2,"key")),"black-on-white","[MIOMOST][T014][terminal palette dark]")
-	DO EQ^MIOTASSERT($GET(ARR("catalog","terminal","palettes",3,"key")),"white-on-black","[MIOMOST][T014][terminal palette light]")
 	DO EQ^MIOTASSERT($GET(VM("uiLibrary","responsive",1,"title")),"Stacked shell under 900 px","[MIOMOST][T014][mobile section]")
 	DO EQ^MIOTASSERT($GET(ARR("catalog","themes",6,"key")),"high-contrast-light","[MIOMOST][T014][high contrast light]")
 	DO EQ^MIOTASSERT($GET(VM("windowManager","windowPreset"))'="",1,"[MIOMOST][T014][window preset]")

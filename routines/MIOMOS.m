@@ -68,6 +68,7 @@ CONFDEF(CONF)
 	IF $GET(CONF("miomos","terminal","default","cursorBlink"))="" SET CONF("miomos","terminal","default","cursorBlink")=1
 	IF $GET(CONF("miomos","terminal","default","cursorStyle"))="" SET CONF("miomos","terminal","default","cursorStyle")="block"
 	IF $GET(CONF("miomos","terminal","default","scrollback"))="" SET CONF("miomos","terminal","default","scrollback")=3000
+	IF $GET(CONF("miomos","terminal","default","palette"))="" SET CONF("miomos","terminal","default","palette")="midnight-blue"
 	IF $GET(CONF("miomos","terminal","default","renderer"))="" SET CONF("miomos","terminal","default","renderer")="canvas"
 	IF $GET(CONF("miomos","terminal","default","unicode"))="" SET CONF("miomos","terminal","default","unicode")="unicode11"
 	IF $GET(CONF("miomos","terminal","default","rows"))="" SET CONF("miomos","terminal","default","rows")=28

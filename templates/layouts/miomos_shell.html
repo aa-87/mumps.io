@@ -1800,19 +1800,12 @@
     .miomos-terminal-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
     .miomos-terminal-toolbar .miomos-actions { justify-content: flex-end; }
     .miomos-terminal-viewport {
-      --miomos-terminal-border: rgba(53, 78, 107, 0.92);
-      --miomos-terminal-bg-1: rgba(13,21,33,0.98);
-      --miomos-terminal-bg-2: rgba(7,12,20,0.98);
-      --miomos-terminal-status-bg: rgba(7,12,20,0.55);
-      --miomos-terminal-status-fg: rgba(207,221,240,0.72);
-      --miomos-terminal-dot-bg: #7aa0f7;
-      --miomos-terminal-dot-ring: rgba(122,160,247,0.18);
       width: 100%;
       height: 100%;
       min-height: 340px;
       border-radius: 12px;
-      border: 1px solid var(--miomos-terminal-border);
-      background: linear-gradient(180deg, var(--miomos-terminal-bg-1), var(--miomos-terminal-bg-2));
+      border: 1px solid rgba(53, 78, 107, 0.92);
+      background: linear-gradient(180deg, rgba(13,21,33,0.98), rgba(7,12,20,0.98));
       box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), inset 0 0 0 1px rgba(255,255,255,0.03), 0 18px 34px rgba(5,10,17,0.24);
       overflow: hidden;
       padding: 0;
@@ -1827,24 +1820,6 @@
       outline: 0;
     }
     .miomos-terminal-host[data-xterm-mounted="1"] { cursor: text; }
-    .miomos-terminal-viewport[data-terminal-palette="black-on-white"] {
-      --miomos-terminal-border: rgba(255,255,255,0.92);
-      --miomos-terminal-bg-1: rgba(0,0,0,0.99);
-      --miomos-terminal-bg-2: rgba(0,0,0,0.99);
-      --miomos-terminal-status-bg: rgba(0,0,0,0.78);
-      --miomos-terminal-status-fg: rgba(255,255,255,0.84);
-      --miomos-terminal-dot-bg: #ffffff;
-      --miomos-terminal-dot-ring: rgba(255,255,255,0.22);
-    }
-    .miomos-terminal-viewport[data-terminal-palette="white-on-black"] {
-      --miomos-terminal-border: rgba(0,0,0,0.82);
-      --miomos-terminal-bg-1: rgba(255,255,255,0.99);
-      --miomos-terminal-bg-2: rgba(246,246,246,0.99);
-      --miomos-terminal-status-bg: rgba(255,255,255,0.88);
-      --miomos-terminal-status-fg: rgba(0,0,0,0.68);
-      --miomos-terminal-dot-bg: #000000;
-      --miomos-terminal-dot-ring: rgba(0,0,0,0.18);
-    }
     .miomos-terminal-host .xterm { height: 100%; }
     .miomos-terminal-host .xterm-viewport { overflow-y: auto !important; }
     .miomos-terminal-host .xterm-screen canvas { image-rendering: auto; }
@@ -1860,9 +1835,9 @@
       gap: 8px;
       padding: 4px 8px;
       border-radius: 999px;
-      color: var(--miomos-terminal-status-fg);
+      color: rgba(207,221,240,0.72);
       font-size: 11px;
-      background: var(--miomos-terminal-status-bg);
+      background: rgba(7,12,20,0.55);
       backdrop-filter: blur(8px);
       pointer-events: none;
     }
@@ -1870,8 +1845,8 @@
       width: 8px;
       height: 8px;
       border-radius: 999px;
-      background: var(--miomos-terminal-dot-bg);
-      box-shadow: 0 0 0 3px var(--miomos-terminal-dot-ring);
+      background: var(--miomos-terminal-dot, #7aa0f7);
+      box-shadow: 0 0 0 3px var(--miomos-terminal-dot-halo, rgba(122,160,247,0.18));
     }
     .miomos-terminal-statusline[data-terminal-connected="0"] .miomos-terminal-dot {
       background: #c77c35;
@@ -2593,6 +2568,7 @@
     .miomos-stage { inset: 12px 12px calc(var(--miomos-taskbar-h) + 16px) 12px !important; padding: 0 !important; }
     .miomos-root { background: radial-gradient(circle at top right, rgba(95,141,255,.16), transparent 24%), radial-gradient(circle at bottom left, rgba(20,184,166,.10), transparent 20%), linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0) 28%), #0b1320 !important; }
     .miomos-root[data-motion-profile="reduced"] * , .miomos-root[data-animations="off"] * { transition-duration: .01ms !important; animation-duration: .01ms !important; }
+    .miomos-root[data-motion-profile="reduced"] .miomos-terminal-host *, .miomos-root[data-animations="off"] .miomos-terminal-host * { transition-duration: initial !important; animation-duration: initial !important; }
     .miomos-root[data-motion-profile="polished"] .miomos-window, .miomos-root[data-motion-profile="polished"] .miomos-launcher, .miomos-root[data-motion-profile="polished"] .miomos-task-button, .miomos-root[data-motion-profile="polished"] .miomos-desktop-icon { transition-duration: 180ms !important; }
     .miomos-launcher { display: block !important; opacity: 0; visibility: hidden; pointer-events: none; transform: translateY(12px) scale(.985); transition: opacity 140ms ease, transform 160ms ease, visibility 140ms linear; background: rgba(10,16,26,.96) !important; border: 1px solid rgba(148,163,184,.14) !important; box-shadow: 0 26px 68px rgba(0,0,0,.38) !important; width: 420px !important; max-height: min(680px, calc(100% - 88px)); }
     .miomos-launcher.is-open { opacity: 1; visibility: visible; pointer-events: auto; transform: translateY(0) scale(1); }

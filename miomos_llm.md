@@ -476,9 +476,9 @@ The source-of-truth terminal contract is now:
 - prefer a thin renderer integration that preserves the passing MIOMOST suite and the current YottaDB-over-pipe backend behavior
 
 
-## Terminal UI conventions
+## Terminal contract updates
 
-- The MIOMOS terminal remains a YottaDB session over the existing PIPE/websocket backend.
-- xterm.js is the browser renderer and owns the visible terminal surface.
-- The toolbar **Clear** action is client-side only and clears the xterm screen buffer rather than sending a command into YottaDB.
-- Terminal color presets are saved under terminal settings using `palette` and currently include `midnight-blue`, `black-on-white`, and `white-on-black`.
+- MIOMOS terminal runtime is `yottadb -direct` over the PIPE transport. Tests must use real MUMPS input, not shell commands.
+- The terminal settings catalog includes `terminal.palette` with `theme`, `midnight-blue`, `black-on-white`, and `white-on-black`.
+- The Clear button is a client-side xterm viewport clear, not a command sent into YottaDB.
+- xterm remains a renderer only; transport, session ownership, and terminal process ownership stay in MUMPS.
