@@ -16,19 +16,26 @@ MESSAGE(DEV,CONF,REQ,CTX)
 	. DO SENDTEXT^MIOWS(.DEV,RESP)
 	SET CTX("miomos","sessionId")=$GET(STATE("sessionId"))
 	IF EVT="hello" DO  QUIT
+	. NEW CONNID
+	. SET CONNID=$$CONNID(PAYLOAD,.CTX,.STATE)
 	. DO EVENT^MIOMOSAUD("ws_hello",.CTX,.STATE)
 	. DO ACCESS^MIOMOSOBS("ws_hello",.CTX,.STATE)
-	. SET RESP=$$HELLO(.STATE,.CONF)
+	. DO WSREG^MIOMOSOBS("hello",CONNID,.CTX,.STATE,"ws_hello")
+	. SET RESP=$$HELLO(.STATE,CONNID)
 	. DO SENDTEXT^MIOWS(.DEV,RESP)
 	. DO SNAPSHOT^MIOMOSCHAT($GET(STATE("chatRoom")),+$GET(STATE("chatLimit"),20),.RESP)
 	. DO SENDTEXT^MIOWS(.DEV,RESP)
 	IF EVT="ping" DO  QUIT
-	. SET RESP=$$PONG(.STATE,.CONF)
+	. NEW CONNID
+	. SET CONNID=$$CONNID(PAYLOAD,.CTX,.STATE)
+	. DO WSREG^MIOMOSOBS("pong",CONNID,.CTX,.STATE,"ping")
+	. SET RESP=$$PONG(.STATE,CONNID)
 	. DO SENDTEXT^MIOWS(.DEV,RESP)
 	IF EVT="command.exec"!(EVT="command") DO  QUIT
-	. NEW CMDERR,TREE,REQID,CMD
-	. SET REQID=$$REQID(PAYLOAD)
+	. NEW CMDERR,TREE,REQID,CMD,CONNID,REGEVT
+	. SET REQID=$$REQID(PAYLOAD),REGEVT="command.exec"
 	. IF '$$COMMANDJSON(.CONF,.REQ,.CTX,PAYLOAD,.RESP,.CMDERR) DO
+	. . SET REGEVT="command.error"
 	. . IF $GET(CMDERR("error"))'="session_error" DO
 	. . . IF $$DECODEPAY(PAYLOAD,.TREE,.CMDERR) SET CMD=$GET(TREE("command"))
 	. . . DO EVENTX^MIOMOSAUD("ws_command_error",.CTX,.STATE,CMD)
@@ -38,6 +45,8 @@ MESSAGE(DEV,CONF,REQ,CTX)
 	. . IF $$DECODEPAY(PAYLOAD,.TREE2,.CMDERR) SET CMD=$GET(TREE2("command"))
 	. . DO EVENTX^MIOMOSAUD("ws_command_exec",.CTX,.STATE,CMD)
 	. . DO ACCESS^MIOMOSOBS("ws_command_exec",.CTX,.STATE)
+	. SET CONNID=$$CONNID(PAYLOAD,.CTX,.STATE)
+	. DO WSREG^MIOMOSOBS(REGEVT,CONNID,.CTX,.STATE,CMD)
 	. DO SENDTEXT^MIOWS(.DEV,RESP)
 	IF EVT="auth.signout" DO  QUIT
 	. NEW REQID,SIGNERR
@@ -88,6 +97,7 @@ MESSAGE(DEV,CONF,REQ,CTX)
 	. . SET RESP=$$ERRJSON("terminal_open_failed",$GET(TERR("error")))
 	. . DO SENDTEXT^MIOWS(.DEV,RESP)
 	. SET RESP=$$TERMEVT("terminal.open",.OUT)
+	. DO WSREG^MIOMOSOBS("terminal.open",$$WSCONN^MIOMOSOBS($GET(TERMID),$GET(STATE("sessionId"))),.CTX,.STATE,$GET(TERMID))
 	. DO SENDTEXT^MIOWS(.DEV,RESP)
 	IF EVT="terminal.input" DO  QUIT
 	. NEW TREE,TERR,OUT,TERMID,DATA
@@ -99,6 +109,7 @@ MESSAGE(DEV,CONF,REQ,CTX)
 	. . SET RESP=$$ERRJSON("terminal_input_failed",$GET(TERR("error")))
 	. . DO SENDTEXT^MIOWS(.DEV,RESP)
 	. SET RESP=$$TERMEVT("terminal.stdout",.OUT)
+	. DO WSREG^MIOMOSOBS("terminal.stdout",$$WSCONN^MIOMOSOBS($GET(TERMID),$GET(STATE("sessionId"))),.CTX,.STATE,$GET(TERMID))
 	. DO SENDTEXT^MIOWS(.DEV,RESP)
 	IF EVT="terminal.resize" DO  QUIT
 	. NEW TREE,TERR,OUT,TERMID,COLS,ROWS
@@ -119,6 +130,7 @@ MESSAGE(DEV,CONF,REQ,CTX)
 	. . SET RESP=$$ERRJSON("terminal_poll_failed",$GET(TERR("error")))
 	. . DO SENDTEXT^MIOWS(.DEV,RESP)
 	. SET RESP=$$TERMEVT("terminal.stdout",.OUT)
+	. DO WSREG^MIOMOSOBS("terminal.stdout",$$WSCONN^MIOMOSOBS($GET(TERMID),$GET(STATE("sessionId"))),.CTX,.STATE,$GET(TERMID))
 	. DO SENDTEXT^MIOWS(.DEV,RESP)
 	IF EVT="terminal.close" DO  QUIT
 	. NEW TREE,TERR,OUT,TERMID
@@ -144,6 +156,16 @@ EVENT(PAY)
 	IF PAY="hello" QUIT "hello"
 	IF PAY="ping" QUIT "ping"
 	QUIT EVT
+	;
+CONNID(PAYLOAD,CTX,STATE)
+	NEW TREE,ERR,ID
+	SET ID=$GET(CTX("miomos","connectionId"))
+	IF ID'="" QUIT ID
+	IF $EXTRACT($GET(PAYLOAD),1)="{" DO
+	. IF $$DECODE^MIOJSON($GET(PAYLOAD),.TREE,.ERR) SET ID=$GET(TREE("connectionId"))
+	IF ID="" SET ID=$$WSCONN^MIOMOSOBS("",$GET(STATE("sessionId")))
+	SET CTX("miomos","connectionId")=ID
+	QUIT ID
 	;
 APPKEY(PAY)
 	NEW TREE,ERR
@@ -193,33 +215,27 @@ INJECTAUTH(CONF,SID,CTX,ERR)
 	. IF X'="" SET CTX("auth","roles",X)=1
 	QUIT 1
 	;
-HELLO(STATE,CONF)
+HELLO(STATE,CONNID)
 	NEW OBJ
 	SET OBJ("ok")=1
 	SET OBJ("event")="hello"
 	SET OBJ("sessionId")=$GET(STATE("sessionId"))
+	SET OBJ("connectionId")=$$WSCONN^MIOMOSOBS($GET(CONNID),$GET(STATE("sessionId")))
 	SET OBJ("userName")=$GET(STATE("userName"))
 	SET OBJ("profile")=$GET(STATE("profile"))
 	SET OBJ("themeKey")=$GET(STATE("themeKey"))
 	SET OBJ("serverTime")=$$NOWISO^MIOUTIL()
 	SET OBJ("idleTimeoutSeconds")=+$GET(STATE("idleTimeoutSeconds"))
 	SET OBJ("absoluteTimeoutSeconds")=+$GET(STATE("absoluteTimeoutSeconds"))
-	SET OBJ("retryAfterMs")=+$GET(CONF("miomos","desktop","policy","reconnectCooldownMs"),30000)
-	SET OBJ("reconnectModel")="jitter-window-bounded"
-	SET OBJ("outboxModel")="drop-oldest-noncritical"
-	SET OBJ("outboxFlushBatch")=+$GET(CONF("miomos","desktop","policy","socketOutboxFlushBatch"),4)
 	QUIT $$EN^MIOJSON1(.OBJ)
 	;
-PONG(STATE,CONF)
+PONG(STATE,CONNID)
 	NEW OBJ
 	SET OBJ("ok")=1
 	SET OBJ("event")="pong"
 	SET OBJ("sessionId")=$GET(STATE("sessionId"))
+	SET OBJ("connectionId")=$$WSCONN^MIOMOSOBS($GET(CONNID),$GET(STATE("sessionId")))
 	SET OBJ("serverTime")=$$NOWISO^MIOUTIL()
-	SET OBJ("retryAfterMs")=+$GET(CONF("miomos","desktop","policy","reconnectCooldownMs"),30000)
-	SET OBJ("reconnectModel")="jitter-window-bounded"
-	SET OBJ("outboxModel")="drop-oldest-noncritical"
-	SET OBJ("outboxFlushBatch")=+$GET(CONF("miomos","desktop","policy","socketOutboxFlushBatch"),4)
 	QUIT $$EN^MIOJSON1(.OBJ)
 	;
 ACK(EVT,APPKEY,STATE)

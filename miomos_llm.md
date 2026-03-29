@@ -488,3 +488,9 @@ The source-of-truth terminal contract is now:
 - The `animations` setting supports only `off`, `standard`, and `full`.
 - Legacy `reduced` animation preferences must be normalized to `standard`.
 - Do not reintroduce `data-animations="reduced"` CSS branches; the separate `motionProfile` setting remains independent.
+
+
+## ROI43 websocket observability
+- Maintain a server-authored websocket registry keyed by session and connection.
+- Keep runtime behavior unchanged; use the registry for diagnostics, admin counts, and future controls.
+- Preserve additive tests/docs for websocket metrics and export helpers.

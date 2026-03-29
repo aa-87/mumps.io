@@ -122,7 +122,7 @@ REVERSE(OUT)
 	QUIT
 	;
 SUMMARY(STATE,CONF,OUT)
-	NEW CNT,A,E,AT,DT,ALIM,ELIM,DLIM
+	NEW CNT,A,E,AT,DT,ALIM,ELIM,DLIM,WS
 	KILL OUT
 	DO COUNTS(.CNT)
 	MERGE OUT("counts")=CNT
@@ -140,9 +140,109 @@ SUMMARY(STATE,CONF,OUT)
 	IF $TEXT(TAIL^MIOMOSAUD)'="" DO
 	. DO TAIL^MIOMOSAUD(1,.AT)
 	. IF $DATA(AT(1)) MERGE OUT("lastAudit")=AT(1)
+	DO WSSUMMARY(.WS)
+	MERGE OUT("websocket")=WS
 	SET OUT("profile")=$GET(STATE("profile"))
 	SET OUT("sessionId")=$GET(STATE("sessionId"))
 	QUIT
+	;
+WSREG(EVENT,CONNID,CTX,STATE,DETAIL)
+	NEW SID,NOW,ROOT
+	SET SID=$GET(STATE("sessionId")) IF SID="" SET SID=$GET(CTX("miomos","sessionId"))
+	IF SID="" QUIT
+	SET CONNID=$$WSCONN($GET(CONNID),SID)
+	SET NOW=$$NOWISO^MIOUTIL()
+	SET ROOT=$NAME(^MIO("MIOMOS","WS","REG",SID,CONNID))
+	SET @ROOT@("sessionId")=SID
+	SET @ROOT@("connectionId")=CONNID
+	SET @ROOT@("principal")=$GET(STATE("principal"))
+	SET @ROOT@("userName")=$GET(STATE("userName"))
+	SET @ROOT@("profile")=$GET(STATE("profile"))
+	SET @ROOT@("lastEvent")=$GET(EVENT)
+	SET @ROOT@("lastEventAt")=NOW
+	SET @ROOT@("lastRequestId")=$GET(CTX("request_id"))
+	SET @ROOT@("lastDetail")=$$DETAIL($GET(DETAIL))
+	SET @ROOT@("active")=1
+	SET ^MIO("MIOMOS","WS","REG",SID,"LAST")=CONNID
+	SET ^MIO("MIOMOS","WS","LAST","sessionId")=SID
+	SET ^MIO("MIOMOS","WS","LAST","connectionId")=CONNID
+	SET ^MIO("MIOMOS","WS","LAST","event")=$GET(EVENT)
+	SET ^MIO("MIOMOS","WS","LAST","ts")=NOW
+	SET ^MIO("MIOMOS","WS","COUNT","event",$GET(EVENT))=+$GET(^MIO("MIOMOS","WS","COUNT","event",$GET(EVENT)))+1
+	SET @ROOT@("count",$GET(EVENT))=+$GET(@ROOT@("count",$GET(EVENT)))+1
+	QUIT
+	;
+WSSUMMARY(OUT)
+	NEW SID,CONN,ACTIVE,SESS,HELLO,PONG,CMDERR,CMDEXEC,TERMOUT,LASTSID,LASTCONN,LASTEVT,LASTTS,HAD
+	KILL OUT
+	SET (ACTIVE,SESS)=0
+	SET SID=""
+	FOR  SET SID=$ORDER(^MIO("MIOMOS","WS","REG",SID)) QUIT:SID=""  DO
+	. SET HAD=0
+	. SET CONN=""
+	. FOR  SET CONN=$ORDER(^MIO("MIOMOS","WS","REG",SID,CONN)) QUIT:CONN=""  DO
+	. . IF CONN="LAST" QUIT
+	. . SET ACTIVE=ACTIVE+$SELECT(+$GET(^MIO("MIOMOS","WS","REG",SID,CONN,"active"))=1:1,1:0)
+	. . SET HAD=1
+	. IF HAD SET SESS=SESS+1
+	SET HELLO=+$GET(^MIO("MIOMOS","WS","COUNT","event","hello"))
+	SET PONG=+$GET(^MIO("MIOMOS","WS","COUNT","event","pong"))
+	SET CMDEXEC=+$GET(^MIO("MIOMOS","WS","COUNT","event","command.exec"))
+	SET CMDERR=+$GET(^MIO("MIOMOS","WS","COUNT","event","command.error"))
+	SET TERMOUT=+$GET(^MIO("MIOMOS","WS","COUNT","event","terminal.stdout"))
+	SET LASTSID=$GET(^MIO("MIOMOS","WS","LAST","sessionId"))
+	SET LASTCONN=$GET(^MIO("MIOMOS","WS","LAST","connectionId"))
+	SET LASTEVT=$GET(^MIO("MIOMOS","WS","LAST","event"))
+	SET LASTTS=$GET(^MIO("MIOMOS","WS","LAST","ts"))
+	SET OUT("registryEnabled")=1
+	SET OUT("model")="session-connection-registry"
+	SET OUT("controlModel")="inspect-only"
+	SET OUT("activeConnections")=ACTIVE
+	SET OUT("sessions")=SESS
+	SET OUT("helloCount")=HELLO
+	SET OUT("pongCount")=PONG
+	SET OUT("commandExecCount")=CMDEXEC
+	SET OUT("commandErrorCount")=CMDERR
+	SET OUT("terminalStdoutCount")=TERMOUT
+	SET OUT("lastSessionId")=LASTSID
+	SET OUT("lastConnectionId")=LASTCONN
+	SET OUT("lastEvent")=LASTEVT
+	SET OUT("lastEventAt")=LASTTS
+	QUIT
+	;
+WSEXPORT(LIMIT,OUT)
+	NEW SID,CONN,N
+	KILL OUT
+	SET LIMIT=+$GET(LIMIT,12) IF LIMIT<1 SET LIMIT=12
+	SET N=0,SID=""
+	FOR  SET SID=$ORDER(^MIO("MIOMOS","WS","REG",SID),-1) QUIT:SID=""  DO  QUIT:N'<LIMIT
+	. SET CONN=""
+	. FOR  SET CONN=$ORDER(^MIO("MIOMOS","WS","REG",SID,CONN),-1) QUIT:CONN=""  DO  QUIT:N'<LIMIT
+	. . IF CONN="LAST" QUIT
+	. . SET N=N+1
+	. . DO WSMERGE(SID,CONN,$NAME(OUT(N)))
+	QUIT
+	;
+WSMERGE(SID,CONN,ROOT)
+	SET @ROOT@("sessionId")=$GET(^MIO("MIOMOS","WS","REG",SID,CONN,"sessionId"))
+	SET @ROOT@("connectionId")=$GET(^MIO("MIOMOS","WS","REG",SID,CONN,"connectionId"))
+	SET @ROOT@("principal")=$GET(^MIO("MIOMOS","WS","REG",SID,CONN,"principal"))
+	SET @ROOT@("userName")=$GET(^MIO("MIOMOS","WS","REG",SID,CONN,"userName"))
+	SET @ROOT@("profile")=$GET(^MIO("MIOMOS","WS","REG",SID,CONN,"profile"))
+	SET @ROOT@("lastEvent")=$GET(^MIO("MIOMOS","WS","REG",SID,CONN,"lastEvent"))
+	SET @ROOT@("lastEventAt")=$GET(^MIO("MIOMOS","WS","REG",SID,CONN,"lastEventAt"))
+	SET @ROOT@("lastDetail")=$GET(^MIO("MIOMOS","WS","REG",SID,CONN,"lastDetail"))
+	SET @ROOT@("active")=+$GET(^MIO("MIOMOS","WS","REG",SID,CONN,"active"))
+	SET @ROOT@("helloCount")=+$GET(^MIO("MIOMOS","WS","REG",SID,CONN,"count","hello"))
+	SET @ROOT@("pongCount")=+$GET(^MIO("MIOMOS","WS","REG",SID,CONN,"count","pong"))
+	SET @ROOT@("commandExecCount")=+$GET(^MIO("MIOMOS","WS","REG",SID,CONN,"count","command.exec"))
+	SET @ROOT@("terminalStdoutCount")=+$GET(^MIO("MIOMOS","WS","REG",SID,CONN,"count","terminal.stdout"))
+	QUIT
+	;
+WSCONN(CONNID,SID)
+	SET CONNID=$GET(CONNID)
+	IF CONNID'="" QUIT CONNID
+	QUIT "ws-"_$GET(SID)
 	;
 PRUNE(TYPE,KEEP,DAYS,OUT)
 	NEW NOWD,NOWS,ID,REMOVED,ACTIVE,ROOTDAY,ROOTSEC,EXPIRE

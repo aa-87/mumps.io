@@ -43,14 +43,6 @@ CONFDEF(CONF)
 	IF $GET(CONF("miomos","desktop","transport","errorEvent"))="" SET CONF("miomos","desktop","transport","errorEvent")="command.error"
 	IF $GET(CONF("miomos","desktop","policy","commandMaxInflight"))="" SET CONF("miomos","desktop","policy","commandMaxInflight")=3
 	IF $GET(CONF("miomos","desktop","policy","commandTimeoutMs"))="" SET CONF("miomos","desktop","policy","commandTimeoutMs")=8000
-	IF $GET(CONF("miomos","desktop","policy","reconnectJitterMs"))="" SET CONF("miomos","desktop","policy","reconnectJitterMs")=400
-	IF $GET(CONF("miomos","desktop","policy","reconnectWindowMs"))="" SET CONF("miomos","desktop","policy","reconnectWindowMs")=20000
-	IF $GET(CONF("miomos","desktop","policy","reconnectBurstLimit"))="" SET CONF("miomos","desktop","policy","reconnectBurstLimit")=4
-	IF $GET(CONF("miomos","desktop","policy","reconnectCooldownMs"))="" SET CONF("miomos","desktop","policy","reconnectCooldownMs")=30000
-	IF $GET(CONF("miomos","desktop","policy","socketOutboxSoftLimit"))="" SET CONF("miomos","desktop","policy","socketOutboxSoftLimit")=8
-	IF $GET(CONF("miomos","desktop","policy","socketOutboxHardLimit"))="" SET CONF("miomos","desktop","policy","socketOutboxHardLimit")=20
-	IF $GET(CONF("miomos","desktop","policy","socketOutboxFlushBatch"))="" SET CONF("miomos","desktop","policy","socketOutboxFlushBatch")=4
-	IF $GET(CONF("miomos","desktop","policy","staleProbeGraceMs"))="" SET CONF("miomos","desktop","policy","staleProbeGraceMs")=12000
 	IF $GET(CONF("miomos","wm","defaultPreset"))="" SET CONF("miomos","wm","defaultPreset")="analyst"
 	IF $GET(CONF("miomos","wm","defaultSnapMode"))="" SET CONF("miomos","wm","defaultSnapMode")="quadrant"
 	IF $GET(CONF("miomos","wm","defaultMotionProfile"))="" SET CONF("miomos","wm","defaultMotionProfile")="standard"
@@ -108,6 +100,9 @@ CONFDEF(CONF)
 	IF $GET(CONF("miomos","log","access","retainDays"))="" SET CONF("miomos","log","access","retainDays")=30
 	IF $GET(CONF("miomos","log","error","retainDays"))="" SET CONF("miomos","log","error","retainDays")=90
 	IF $GET(CONF("miomos","audit","retainDays"))="" SET CONF("miomos","audit","retainDays")=180
+	IF $GET(CONF("miomos","websocket","observability","registryEnabled"))="" SET CONF("miomos","websocket","observability","registryEnabled")=1
+	IF $GET(CONF("miomos","websocket","observability","tailLimit"))="" SET CONF("miomos","websocket","observability","tailLimit")=12
+	IF $GET(CONF("miomos","websocket","observability","controlModel"))="" SET CONF("miomos","websocket","observability","controlModel")="inspect-only"
 	IF $GET(CONF("server","templateDir"))="" SET CONF("server","templateDir")="templates"
 	IF $GET(CONF("templates","root"))="" SET CONF("templates","root")=$GET(CONF("server","templateDir"))_"/"
 	IF $GET(CONF("templates","ext"))="" SET CONF("templates","ext")=""
