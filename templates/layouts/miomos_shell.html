@@ -612,7 +612,8 @@
         #000;
       background-size: auto, 22px 22px, 22px 22px, auto;
     }
-    .miomos-root[data-animations="off"] * {
+    .miomos-root[data-animations="off"] *,
+    .miomos-root[data-animations="reduced"] * {
       transition-duration: .01ms !important;
       animation-duration: .01ms !important;
     }
@@ -1432,7 +1433,8 @@
         #000;
       background-size: auto, 22px 22px, 22px 22px, auto;
     }
-    .miomos-root[data-animations="off"] * {
+    .miomos-root[data-animations="off"] *,
+    .miomos-root[data-animations="reduced"] * {
       transition-duration: .01ms !important;
       animation-duration: .01ms !important;
     }
@@ -2409,11 +2411,6 @@
     .miomos-menu-card[data-entry-kind="settings"] .miomos-menu-glyph {
       background: linear-gradient(180deg, #7b8aa3, #4f617d);
     }
-    .miomos-desktop-icon[data-entry-kind="future"] .miomos-desktop-icon-glyph,
-    .miomos-menu-card[data-entry-kind="future"] .miomos-menu-glyph {
-      background: linear-gradient(180deg, #6c7da0, #4a5975);
-      filter: saturate(.65);
-    }
     .miomos-desktop-icon[data-entry-kind="app"] .miomos-desktop-icon-glyph,
     .miomos-menu-card[data-entry-kind="app"] .miomos-menu-glyph {
       background: linear-gradient(180deg, rgba(126,166,255,1), rgba(74,115,230,1));
@@ -2567,6 +2564,7 @@
     .miomos-root { background: radial-gradient(circle at top right, rgba(95,141,255,.16), transparent 24%), radial-gradient(circle at bottom left, rgba(20,184,166,.10), transparent 20%), linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0) 28%), #0b1320 !important; }
     .miomos-root[data-motion-profile="reduced"] * , .miomos-root[data-animations="off"] * { transition-duration: .01ms !important; animation-duration: .01ms !important; }
     .miomos-root[data-motion-profile="reduced"] .miomos-terminal-host *, .miomos-root[data-animations="off"] .miomos-terminal-host * { transition-duration: initial !important; animation-duration: initial !important; }
+    .miomos-root[data-motion-profile="reduced"] .miomos-terminal-host .xterm .xterm-cursor[class*="xterm-cursor-blink"], .miomos-root[data-animations="off"] .miomos-terminal-host .xterm .xterm-cursor[class*="xterm-cursor-blink"] { animation-duration: 1.2s !important; animation-timing-function: step-end !important; }
     .miomos-root[data-motion-profile="polished"] .miomos-window, .miomos-root[data-motion-profile="polished"] .miomos-launcher, .miomos-root[data-motion-profile="polished"] .miomos-task-button, .miomos-root[data-motion-profile="polished"] .miomos-desktop-icon { transition-duration: 180ms !important; }
     .miomos-launcher { display: block !important; opacity: 0; visibility: hidden; pointer-events: none; transform: translateY(12px) scale(.985); transition: opacity 140ms ease, transform 160ms ease, visibility 140ms linear; background: rgba(10,16,26,.96) !important; border: 1px solid rgba(148,163,184,.14) !important; box-shadow: 0 26px 68px rgba(0,0,0,.38) !important; width: 420px !important; max-height: min(680px, calc(100% - 88px)); }
     .miomos-launcher.is-open { opacity: 1; visibility: visible; pointer-events: auto; transform: translateY(0) scale(1); }
@@ -2584,9 +2582,7 @@
     .miomos-desktop-icon-glyph, .miomos-menu-glyph, .miomos-directory-glyph, .miomos-window-glyph { border: 1px solid rgba(255,255,255,.12); }
     [data-entry-kind="directory"] .miomos-desktop-icon-glyph, [data-entry-kind="directory"] .miomos-menu-glyph, .miomos-directory-glyph { background: linear-gradient(180deg, #f8c44f, #c69018) !important; }
     [data-entry-kind="settings"] .miomos-desktop-icon-glyph, [data-entry-kind="settings"] .miomos-menu-glyph { background: linear-gradient(180deg, #a78bfa, #7c3aed) !important; }
-    [data-entry-kind="future"] .miomos-desktop-icon-glyph, [data-entry-kind="future"] .miomos-menu-glyph { background: linear-gradient(180deg, #64748b, #334155) !important; border-style: dashed !important; }
-    [data-entry-kind="future"], .miomos-menu-card.is-disabled, .miomos-desktop-icon.is-disabled { opacity: .74; }
-    .miomos-desktop-icon-kind, .miomos-entry-meta { display: inline-flex; align-items: center; justify-content: center; padding: 2px 7px; border-radius: 999px; font-size: 9px; letter-spacing: .05em; text-transform: uppercase; border: 1px solid rgba(148,163,184,.14); background: rgba(255,255,255,.04); color: #9bb0cb; }
+     .miomos-desktop-icon-kind, .miomos-entry-meta { display: inline-flex; align-items: center; justify-content: center; padding: 2px 7px; border-radius: 999px; font-size: 9px; letter-spacing: .05em; text-transform: uppercase; border: 1px solid rgba(148,163,184,.14); background: rgba(255,255,255,.04); color: #9bb0cb; }
     .miomos-menu-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .miomos-menu-card { border: 1px solid rgba(148,163,184,.14) !important; background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)) !important; transition: transform 140ms ease, border-color 140ms ease, background 140ms ease; }
     .miomos-menu-card:hover { transform: translateY(-1px); border-color: rgba(95,141,255,.30) !important; background: linear-gradient(180deg, rgba(95,141,255,.14), rgba(95,141,255,.05)) !important; }
@@ -3062,15 +3058,13 @@
       background: rgba(255,255,255,.05) !important;
       color:#dfe8f6 !important;
     }
-    .miomos-root [data-entry-kind="future"] { opacity: .84; }
+
     .miomos-root [data-entry-kind="directory"] .miomos-desktop-icon-kind,
     .miomos-root [data-entry-kind="directory"] .miomos-entry-meta { color:#fbbf24 !important; }
     .miomos-root [data-entry-kind="settings"] .miomos-desktop-icon-kind,
     .miomos-root [data-entry-kind="settings"] .miomos-entry-meta { color:#c084fc !important; }
     .miomos-root [data-entry-kind="app"] .miomos-desktop-icon-kind,
     .miomos-root [data-entry-kind="app"] .miomos-entry-meta { color:#93c5fd !important; }
-    .miomos-root [data-entry-kind="future"] .miomos-desktop-icon-kind,
-    .miomos-root [data-entry-kind="future"] .miomos-entry-meta { color:#cbd5e1 !important; }
     .miomos-root :focus-visible {
       outline: 2px solid rgba(125,211,252,.72);
       outline-offset: 2px;
@@ -3081,7 +3075,14 @@
     .miomos-root[data-animations="off"] .miomos-menu-card,
     .miomos-root[data-animations="off"] .miomos-task-button,
     .miomos-root[data-animations="off"] .miomos-btn,
-    .miomos-root[data-animations="off"] .miomos-shell-tool-btn {
+    .miomos-root[data-animations="off"] .miomos-shell-tool-btn,
+    .miomos-root[data-animations="reduced"] .miomos-launcher,
+    .miomos-root[data-animations="reduced"] .miomos-window,
+    .miomos-root[data-animations="reduced"] .miomos-desktop-icon,
+    .miomos-root[data-animations="reduced"] .miomos-menu-card,
+    .miomos-root[data-animations="reduced"] .miomos-task-button,
+    .miomos-root[data-animations="reduced"] .miomos-btn,
+    .miomos-root[data-animations="reduced"] .miomos-shell-tool-btn {
       transition-duration: .01ms !important;
       animation-duration: .01ms !important;
       transform: none !important;

@@ -31,6 +31,9 @@ LOAD(STATE,CONF)
 	SET DEF("chatLimit")=+$GET(CONF("miomos","chat","messageLimit"),20)
 	SET DEF("terminalLaunchMode")=$GET(CONF("miomos","settings","shell","terminalLaunchMode"),"resume-last")
 	SET DEF("quickLaunch")=$GET(CONF("miomos","settings","shell","quickLaunch"),"workspace,collaboration,terminal")
+	SET DEF("notificationPreviewCount")=+$$NOTEPREVIEW($GET(CONF("miomos","settings","shell","notificationPreviewCount"),4))
+	SET DEF("showAccountName")=+$GET(CONF("miomos","settings","shell","showAccountName"),1)
+	SET DEF("showNotificationBadge")=+$GET(CONF("miomos","settings","shell","showNotificationBadge"),1)
 	SET STATE("shell","startMenuSection")=$$SHELLSECTIONOK($$GETS(USER,"startMenuSection",DEF("startMenuSection")),DEF("startMenuSection"))
 	SET STATE("shell","showClockSeconds")=+$GET(^MIO("MIOMOS","PREF",USER,"shell","showClockSeconds"),DEF("showClockSeconds"))
 	SET STATE("shell","showTrayLabels")=+$GET(^MIO("MIOMOS","PREF",USER,"shell","showTrayLabels"),DEF("showTrayLabels"))
@@ -38,6 +41,9 @@ LOAD(STATE,CONF)
 	SET STATE("shell","chatLimit")=$$CHATLIMIT(+$GET(^MIO("MIOMOS","PREF",USER,"shell","chatLimit"),DEF("chatLimit")))
 	SET STATE("shell","terminalLaunchMode")=$$LAUNCHMODEOK($$GETS(USER,"terminalLaunchMode",DEF("terminalLaunchMode")),DEF("terminalLaunchMode"))
 	SET STATE("shell","quickLaunch")=$$QUICKCSV($$GETS(USER,"quickLaunch",DEF("quickLaunch")),DEF("quickLaunch"))
+	SET STATE("shell","notificationPreviewCount")=$$NOTEPREVIEW(+$GET(^MIO("MIOMOS","PREF",USER,"shell","notificationPreviewCount"),DEF("notificationPreviewCount")))
+	SET STATE("shell","showAccountName")=+$GET(^MIO("MIOMOS","PREF",USER,"shell","showAccountName"),DEF("showAccountName"))
+	SET STATE("shell","showNotificationBadge")=+$GET(^MIO("MIOMOS","PREF",USER,"shell","showNotificationBadge"),DEF("showNotificationBadge"))
 	QUIT
 	;
 GETP(USER,KEY,DEF)
@@ -112,6 +118,11 @@ SAVE(USER,TREE,OUT,ERR)
 	. IF $DATA(TREE("shell","quickLaunch")) DO
 	. . SET VAL=$$QUICKCSV($GET(TREE("shell","quickLaunch")),"") IF VAL="" SET ERR("error")="quick_launch_invalid" QUIT
 	. . SET ^MIO("MIOMOS","PREF",USER,"shell","quickLaunch")=VAL
+	. IF $DATA(TREE("shell","notificationPreviewCount")) DO
+	. . SET VAL=$$NOTEPREVIEW(+$GET(TREE("shell","notificationPreviewCount"))) IF VAL<1 SET ERR("error")="notification_preview_invalid" QUIT
+	. . SET ^MIO("MIOMOS","PREF",USER,"shell","notificationPreviewCount")=VAL
+	. IF $DATA(TREE("shell","showAccountName")) SET ^MIO("MIOMOS","PREF",USER,"shell","showAccountName")=+$GET(TREE("shell","showAccountName"))
+	. IF $DATA(TREE("shell","showNotificationBadge")) SET ^MIO("MIOMOS","PREF",USER,"shell","showNotificationBadge")=+$GET(TREE("shell","showNotificationBadge"))
 	SET ^MIO("MIOMOS","PREF",USER,"savedAt")=$$NOWISO^MIOUTIL()
 	DO CURRENT(USER,.OUT)
 	QUIT 1
@@ -201,6 +212,9 @@ SHELLCAT(ROOT)
 	DO OPTS($NAME(@ROOT@("chatRooms")),"general^General,ops^Operations,admin^Admin")
 	DO OPTS($NAME(@ROOT@("chatLimits")),"15^15 messages,20^20 messages,30^30 messages,50^50 messages")
 	DO OPTS($NAME(@ROOT@("terminalLaunchModes")),"resume-last^Resume last session,new-session^Always new session,multi-session^Multi-session tabs")
+	DO OPTS($NAME(@ROOT@("notificationPreviewCounts")),"2^2 items,3^3 items,4^4 items,5^5 items,6^6 items")
+	DO BOOL($NAME(@ROOT@("showAccountName")),"Show account name","Hide account name")
+	DO BOOL($NAME(@ROOT@("showNotificationBadge")),"Show notification badge","Hide notification badge")
 	DO OPTS($NAME(@ROOT@("quickLaunchApps")),"workspace^Workspace,collaboration^Chat,terminal^Terminal,settings^Settings,security^Security,admin^Admin,ui-library^UI Library")
 	QUIT
 	;
@@ -347,3 +361,9 @@ QUICKAPP(X)
 	IF X="workspace"!(X="collaboration")!(X="terminal")!(X="settings")!(X="security")!(X="admin")!(X="ui-library") QUIT X
 	QUIT ""
 	;
+
+NOTEPREVIEW(N)
+	SET N=+N
+	IF N<1 SET N=4
+	IF N>8 SET N=8
+	QUIT N

@@ -11,6 +11,7 @@ BUILD(STATE,CONF,OUT)
 	DO CHAT(.STATE,.CONF,$NAME(OUT("chat")))
 	DO TERMINAL(.STATE,.CONF,$NAME(OUT("terminal")))
 	DO WINDOWS(.STATE,.CONF,$NAME(OUT("windowManager")))
+	DO NOTIFICATIONS(.STATE,.CONF,$NAME(OUT("notifications")))
 	DO SHELL(.STATE,.CONF,$NAME(OUT("shellChrome")))
 	QUIT
 	;
@@ -233,6 +234,13 @@ UILIB(STATE,CONF,ROOT)
 	SET @ROOT@("overview",4,"value")=M
 	QUIT
 	;
+NOTIFICATIONS(STATE,CONF,ROOT)
+	NEW TMP
+	KILL @ROOT,TMP
+	DO META^MIOMOSNOTE(.STATE,.CONF,.TMP)
+	MERGE @ROOT=TMP
+	QUIT
+	;
 SHELL(STATE,CONF,ROOT)
 	KILL @ROOT
 	SET @ROOT@("headline")="Product shell correctness and desktop folders"
@@ -268,12 +276,26 @@ SHELL(STATE,CONF,ROOT)
 	SET @ROOT@("dialogStyle")="xp-shell-classic"
 	SET @ROOT@("showClockSeconds")=+$GET(STATE("shell","showClockSeconds"))
 	SET @ROOT@("showTrayLabels")=+$GET(STATE("shell","showTrayLabels"))
+	SET @ROOT@("showAccountName")=+$GET(STATE("shell","showAccountName"),1)
+	SET @ROOT@("showNotificationBadge")=+$GET(STATE("shell","showNotificationBadge"),1)
+	SET @ROOT@("notificationPreviewCount")=+$GET(STATE("shell","notificationPreviewCount"),4)
 	SET @ROOT@("startMenuSection")=$GET(STATE("shell","startMenuSection"),"Pinned")
 	SET @ROOT@("quickLaunch")=$GET(STATE("shell","quickLaunch"),"workspace,collaboration,terminal")
 	SET @ROOT@("userMenuStyle")="xp-account-menu"
-	SET @ROOT@("tray",1,"key")="network",@ROOT@("tray",1,"label")="Network connected",@ROOT@("tray",1,"icon")="LAN",@ROOT@("tray",1,"action")="about"
-	SET @ROOT@("tray",2,"key")="workspace",@ROOT@("tray",2,"label")="Workspace ready",@ROOT@("tray",2,"icon")="✓",@ROOT@("tray",2,"action")="refresh"
-	SET @ROOT@("tray",3,"key")="power",@ROOT@("tray",3,"label")="Power options",@ROOT@("tray",3,"icon")="⏻",@ROOT@("tray",3,"action")="power"
+	SET @ROOT@("accountLabel")=$GET(STATE("userName"),$GET(STATE("principal"),"Operator"))
+	SET @ROOT@("accountRoleLabel")=$GET(STATE("roleLabel"),$$ROLELABEL^MIOMOSPERM($GET(STATE("roles"))))
+	SET @ROOT@("notificationLabel")="Notifications"
+	SET @ROOT@("tray",1,"key")="notifications",@ROOT@("tray",1,"label")="Notifications",@ROOT@("tray",1,"icon")="✦",@ROOT@("tray",1,"action")="notifications"
+	SET @ROOT@("tray",2,"key")="account",@ROOT@("tray",2,"label")="Account",@ROOT@("tray",2,"icon")="☺",@ROOT@("tray",2,"action")="account"
+	SET @ROOT@("tray",3,"key")="workspace",@ROOT@("tray",3,"label")="Workspace ready",@ROOT@("tray",3,"icon")="✓",@ROOT@("tray",3,"action")="refresh"
+	SET @ROOT@("tray",4,"key")="power",@ROOT@("tray",4,"label")="Power options",@ROOT@("tray",4,"icon")="⏻",@ROOT@("tray",4,"action")="power"
+	SET @ROOT@("accountMenu",1,"key")="settings",@ROOT@("accountMenu",1,"label")="Settings",@ROOT@("accountMenu",1,"copy")="Open personal desktop preferences.",@ROOT@("accountMenu",1,"action")="launch:settings"
+	SET @ROOT@("accountMenu",2,"key")="collaboration",@ROOT@("accountMenu",2,"label")="Collaboration",@ROOT@("accountMenu",2,"copy")="Open the team chat surface.",@ROOT@("accountMenu",2,"action")="launch:collaboration"
+	SET @ROOT@("accountMenu",3,"key")="terminal",@ROOT@("accountMenu",3,"label")="Terminal",@ROOT@("accountMenu",3,"copy")="Launch a new YottaDB terminal window.",@ROOT@("accountMenu",3,"action")="launch:terminal"
+	SET @ROOT@("accountMenu",4,"key")="switchUser",@ROOT@("accountMenu",4,"label")="Switch User",@ROOT@("accountMenu",4,"copy")="Return to the access screen without closing the server session.",@ROOT@("accountMenu",4,"action")="switch-user"
+	SET @ROOT@("accountMenu",5,"key")="signout",@ROOT@("accountMenu",5,"label")="Sign Out",@ROOT@("accountMenu",5,"copy")="End the authenticated desktop session.",@ROOT@("accountMenu",5,"action")="signout"
+	SET @ROOT@("accountMenu",6,"key")="power",@ROOT@("accountMenu",6,"label")="Turn Off Computer",@ROOT@("accountMenu",6,"copy")="Open shell power options.",@ROOT@("accountMenu",6,"action")="power"
+	IF $$HAS^MIOMOSPERM(.STATE,"admin.users.view")!$$HAS^MIOMOSPERM(.STATE,"admin.users.manage") SET @ROOT@("accountMenu",7,"key")="admin",@ROOT@("accountMenu",7,"label")="Admin Center",@ROOT@("accountMenu",7,"copy")="Open user administration and reports.",@ROOT@("accountMenu",7,"action")="launch:admin"
 	SET @ROOT@("recentFallback",1,"key")="ui-samples",@ROOT@("recentFallback",1,"label")="UI Samples"
 	SET @ROOT@("recentFallback",2,"key")="terminal",@ROOT@("recentFallback",2,"label")="Terminal"
 	SET @ROOT@("recentFallback",3,"key")="settings",@ROOT@("recentFallback",3,"label")="Settings"
@@ -288,10 +310,15 @@ SHELL(STATE,CONF,ROOT)
 	QUIT
 	;
 CHAT(STATE,CONF,ROOT)
-	NEW META
+	NEW ROOMS,ROSTER
 	KILL @ROOT
-	DO META^MIOMOSCHAT(.STATE,.META)
-	MERGE @ROOT=META
+	SET @ROOT@("enabled")=+$GET(STATE("chatEnabled"))
+	SET @ROOT@("room")=$GET(STATE("chatRoom"),"general")
+	SET @ROOT@("limit")=+$GET(STATE("chatLimit"),20)
+	DO ROOMS^MIOMOSCHAT(.STATE,.ROOMS)
+	MERGE @ROOT@("rooms")=ROOMS
+	DO ROSTER^MIOMOSCHAT(.STATE,.ROSTER)
+	MERGE @ROOT@("roster")=ROSTER
 	QUIT
 	;
 TERMINAL(STATE,CONF,ROOT)

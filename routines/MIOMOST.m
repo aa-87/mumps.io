@@ -62,7 +62,7 @@ START
 	DO OK^MIOTASSERT(OUT["data-terminal-clear=""xterm-buffer""","[MIOMOST][T003][terminal clear action]")
 	DO OK^MIOTASSERT(OUT["data-launch-app=""terminal""","[MIOMOST][T003][terminal app]")
 	DO OK^MIOTASSERT(OUT["data-entry-kind=""directory""","[MIOMOST][T003][directory entry]")
-	DO OK^MIOTASSERT(OUT["data-entry-kind=""future""","[MIOMOST][T003][future entry]")
+	DO EQ^MIOTASSERT(OUT["data-entry-kind=""future""",0,"[MIOMOST][T003][future removed]")
 	DO OK^MIOTASSERT(OUT["data-mobile-ready=""1""","[MIOMOST][T003][mobile ready]")
 	DO OK^MIOTASSERT(OUT["data-window-fade=""off""","[MIOMOST][T003][window fade off]")
 	DO OK^MIOTASSERT(OUT["Mobile-friendly render prep","[MIOMOST][T003][mobile ui copy]")
@@ -156,6 +156,7 @@ START
 	DO EQ^MIOTASSERT($GET(OBJ("apps",7,"key")),"terminal","[MIOMOST][T004][terminal app key]")
 	DO EQ^MIOTASSERT($GET(OBJ("windows",6,"appKey")),"terminal","[MIOMOST][T004][terminal win key]")
 	DO EQ^MIOTASSERT($GET(OBJ("apps",14,"key")),"ui-samples","[MIOMOST][T004][ui samples app key]")
+	DO EQ^MIOTASSERT($DATA(OBJ("apps",12)),0,"[MIOMOST][T004][planned app removed]")
 	DO EQ^MIOTASSERT($GET(OBJ("windows",7,"appKey")),"ui-samples","[MIOMOST][T004][ui samples win key]")
 	DO EQ^MIOTASSERT(+$DATA(OBJ("security","adminCounts","users"))>0,1,"[MIOMOST][T004][admin counts]")
 	DO EQ^MIOTASSERT($GET(OBJ("security","sessionBinding")),"principal-and-session","[MIOMOST][T004][session binding]")
@@ -470,32 +471,20 @@ START
 	DO OK^MIOTASSERT($$RENDERPAGE^MIOTPL("pages/miomos_auth.html","layouts/miomos_shell.html",.CONF,.CTX,.OUT,.ERR),"[MIOMOST][T022][auth render]")
 	DO OK^MIOTASSERT(OUT["Continue as guest","[MIOMOST][T022][guest button]")
 	DO OK^MIOTASSERT(OUT["data-guest-login-enabled=""1""","[MIOMOST][T022][guest token]")
-
-	NEW ASTATE,USTATE,ROOM,CHATOUT,CHATMETA,CHATREQ,CHATCTX
-	KILL ERR,TOKEN,REQ,CTX,CHATOUT,CHATMETA
-	DO OK^MIOTASSERT($$SIGNIN^MIOMOSAUTH(.CONF,"admin","admin123!",.TOKEN,.ERR),"[MIOMOST][T023][admin signin]")
-	SET REQ("hdr","cookie")="miomos_auth="_TOKEN
-	DO OK^MIOTASSERT($$LOADLOCAL^MIOMOSAUTH(.CONF,.REQ,.CTX,.ERR),"[MIOMOST][T023][admin load]")
-	DO OK^MIOTASSERT($$ENSURE^MIOMOSST(.CONF,.REQ,.CTX,.ASTATE,.ERR),"[MIOMOST][T023][admin ensure]")
-	KILL ERR,TOKEN,REQ,CTX
-	DO OK^MIOTASSERT($$SIGNIN^MIOMOSAUTH(.CONF,"user","user123!",.TOKEN,.ERR),"[MIOMOST][T023][user signin]")
-	SET REQ("hdr","cookie")="miomos_auth="_TOKEN
-	DO OK^MIOTASSERT($$LOADLOCAL^MIOMOSAUTH(.CONF,.REQ,.CTX,.ERR),"[MIOMOST][T023][user load]")
-	DO OK^MIOTASSERT($$ENSURE^MIOMOSST(.CONF,.REQ,.CTX,.USTATE,.ERR),"[MIOMOST][T023][user ensure]")
-	SET ROOM=$$DIRECTROOM^MIOMOSCHAT("admin","user")
-	DO EQ^MIOTASSERT($$CANUSE^MIOMOSCHAT(.ASTATE,ROOM),1,"[MIOMOST][T023][direct admin access]")
-	DO EQ^MIOTASSERT($$CANUSE^MIOMOSCHAT(.USTATE,ROOM),1,"[MIOMOST][T023][direct user access]")
-	DO OK^MIOTASSERT($$SEND^MIOMOSCHAT(.ASTATE,ROOM,"Follow up on export queue",.CHATOUT,.ERR),"[MIOMOST][T023][direct send]")
-	DO META^MIOMOSCHAT(.USTATE,.CHATMETA)
-	DO EQ^MIOTASSERT($$FINDROOM($NAME(CHATMETA("directs")),ROOM)>0,1,"[MIOMOST][T023][direct listed]")
-	DO EQ^MIOTASSERT(+$GET(CHATMETA("unreadTotal"))>0,1,"[MIOMOST][T023][direct unread]")
-	KILL ARR DO FETCH^MIOMOSCHAT(ROOM,20,.ARR)
-	DO EQ^MIOTASSERT($GET(ARR(1,"principal")),"admin","[MIOMOST][T023][direct principal]")
-	DO OK^MIOTASSERT($$DELETE^MIOMOSCHAT(.ASTATE,ROOM,1,.CHATOUT,.ERR),"[MIOMOST][T023][moderation delete]")
-	KILL ARR DO FETCH^MIOMOSCHAT(ROOM,20,.ARR)
-	DO EQ^MIOTASSERT(+$GET(ARR(1,"deleted")),1,"[MIOMOST][T023][moderation deleted flag]")
-	DO OK^MIOTASSERT($$MARKREAD^MIOMOSCHAT(.USTATE,ROOM),"[MIOMOST][T023][mark read]")
-	DO EQ^MIOTASSERT($$UNREADCOUNT^MIOMOSCHAT("user",ROOM),0,"[MIOMOST][T023][unread cleared]")
+	;
+	KILL STATE,OUT,ERR,CTX,ARR
+	SET STATE("principal")="phaseone",STATE("roles")="developer",STATE("userName")="Phase One Tester",STATE("roleLabel")="Developer",STATE("sessionId")="term-session-1",STATE("profile")="prod"
+	DO LOAD^MIOMOSSET(.STATE,.CONF)
+	DO BUILD^MIOMOSVM(.STATE,.CONF,.ARR)
+	DO EQ^MIOTASSERT($GET(ARR("notifications","headline")),"Notification Center","[MIOMOST][T023][notification headline]")
+	DO EQ^MIOTASSERT($GET(ARR("shellChrome","notificationLabel")),"Notifications","[MIOMOST][T023][notification label]")
+	DO EQ^MIOTASSERT($GET(ARR("shellChrome","accountMenu",4,"action")),"switch-user","[MIOMOST][T023][account switch user]")
+	DO EQ^MIOTASSERT(+$GET(ARR("shellChrome","showAccountName")),1,"[MIOMOST][T023][account name toggle]")
+	DO DESKCTX^MIOMOSUI(.STATE,.CONF,.CTX)
+	DO OK^MIOTASSERT($$RENDERPAGE^MIOTPL("pages/miomos_desktop.html","layouts/miomos_shell.html",.CONF,.CTX,.OUT,.ERR),"[MIOMOST][T023][desktop render]")
+	DO OK^MIOTASSERT(OUT["Notification Center","[MIOMOST][T023][notification copy]")
+	DO OK^MIOTASSERT(OUT["Switch User","[MIOMOST][T023][switch user copy]")
+	DO EQ^MIOTASSERT(OUT["Planned surfaces",0,"[MIOMOST][T023][planned surface removed]")
 	QUIT
 	;
 FINDUSR(LIST,USER)
@@ -503,13 +492,6 @@ FINDUSR(LIST,USER)
 	SET (N,POS)=0
 	FOR  SET N=$ORDER(LIST(N)) QUIT:N=""  DO  QUIT:POS>0
 	. IF $GET(LIST(N,"principal"))=$GET(USER) SET POS=N
-	QUIT POS
-	;
-FINDROOM(ROOT,ROOM)
-	NEW N,POS
-	SET (N,POS)=0
-	FOR  SET N=$ORDER(@ROOT@(N)) QUIT:N=""  DO  QUIT:POS>0
-	. IF $GET(@ROOT@(N,"room"))=$GET(ROOM) SET POS=N
 	QUIT POS
 	;
 HASWRITE(OUT,TEXT)

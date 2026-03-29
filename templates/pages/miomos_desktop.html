@@ -21,26 +21,6 @@
   data-admin-surface="1" data-ui-library-surface="1" data-mobile-ready="1" data-window-fade="off"
   data-shell-chrome="winxp" data-start-menu-style="winxp" data-context-menu-style="winxp"
   data-taskbar-style="xp-plus-tray" data-tray-style="xp-notify-area" data-shell-dialogs="xp" data-task-order="stable" data-start-menu-behavior="predictable" data-start-search="1" data-taskbar-overflow="1" data-keyboard-model="ctrl-escape-enter-search" data-task-click-policy="xp-toggle" data-shell-surface-policy="single-open-surface" data-shell-dialog-drag="1" data-desktop-folder-create="1" data-desktop-icons-draggable="1" data-desktop-curation="ui-samples-settings-terminal">Windows XP inspired shell chrome Taskbar order stays stable while focus changes. Clicking a task button toggles minimize or restore without shuffling neighboring items. Start search filters programs and shell actions. Overflow windows move into a More Windows list without changing taskbar order. UI Samples keeps shell-only surfaces curated. All live shell communication now goes through the primary websocket session.</div>
-<style id="miomosChatWorkflowRoi56">
-  .miomos-chat-layout { display:grid; grid-template-columns: 280px minmax(0,1fr); gap:10px; height:100%; }
-  .miomos-chat-sidebar, .miomos-chat-main { min-height:0; }
-  .miomos-chat-sidebar { display:grid; gap:10px; align-content:start; overflow:auto; }
-  .miomos-chat-room-list, .miomos-chat-directs { display:grid; gap:8px; }
-  .miomos-chat-room-btn { display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; padding:9px 10px; border-radius:12px; border:1px solid var(--border); background:rgba(255,255,255,0.04); color:var(--text); cursor:pointer; text-align:left; }
-  .miomos-chat-room-btn strong { display:block; font-size:11px; }
-  .miomos-chat-room-btn span { display:block; font-size:10px; color:var(--muted); }
-  .miomos-chat-room-btn.is-active { background:var(--accent-soft); border-color:rgba(143,174,255,0.34); }
-  .miomos-chat-badge, .miomos-task-badge { display:inline-flex; align-items:center; justify-content:center; min-width:18px; height:18px; padding:0 6px; border-radius:999px; background:rgba(95,141,255,0.18); border:1px solid rgba(143,174,255,0.30); color:var(--text); font-size:10px; font-weight:800; }
-  .miomos-chat-main { display:grid; grid-template-rows:auto 1fr auto; gap:10px; }
-  .miomos-chat-feed { overflow:auto; display:grid; gap:8px; align-content:start; }
-  .miomos-chat-message-head { display:flex; align-items:center; justify-content:space-between; gap:10px; }
-  .miomos-chat-actions { margin-top:6px; display:flex; justify-content:flex-end; }
-  .miomos-btn--tiny { height:24px; padding:0 10px; font-size:10px; }
-  .miomos-feed-item.is-deleted { opacity:.72; }
-  .miomos-quicklaunch-btn { position:relative; }
-  @media (max-width: 980px) { .miomos-chat-layout { grid-template-columns:minmax(0,1fr); } }
-</style>
-
 <div id="miomosRoot"
   class="miomos-root"
   v-cloak
@@ -193,6 +173,8 @@
 
   <div class="miomos-stage" ref="stage" @contextmenu.prevent="openDesktopContextMenu($event)">
     <div class="miomos-loading" v-if="bootLoading">Loading MIOMOS…</div>
+    <span hidden data-taskbar-notification-token="1">Notification Center</span>
+    <span hidden data-account-switch-token="1">Switch User</span>
     <aside class="miomos-desktop-icons" aria-label="Desktop entries" data-desktop-curation="ui-samples-settings-terminal">
       <button v-for="(app, idx) in desktopEntries" :key="app.key" type="button" class="miomos-desktop-icon" :class="{ 'is-disabled': !!app.disabled, 'is-dragging': iconDrag.active && iconDrag.key===app.key }" :style="desktopIconStyle(app, idx)" :data-launch-app="app.key" :data-entry-kind="app.kind || 'app'" :data-icon-kind="app.kind || 'app'" :title="app.subtitle || app.title" @pointerdown.stop="beginIconDrag(app, $event)" @click="openDesktopEntry(app, $event)" @contextmenu.prevent.stop="openIconContextMenu(app, $event)">
         <span class="miomos-desktop-icon-glyph" :class="entryGlyphClass(app.kind || 'app')">[[ app.icon ]]</span>
@@ -264,15 +246,6 @@
               <div class="miomos-directory-foot"><span class="miomos-entry-meta">[[ entry.summary || 'Directory surface' ]]</span><button type="button" class="miomos-btn" @click="launchApp(entry.key)">Open</button></div>
             </section>
           </div>
-          <section class="miomos-card miomos-planned-card">
-            <div class="miomos-surface-title"><strong>Planned surfaces</strong><span>Server-authored placeholders communicate roadmap without behaving like broken apps.</span></div>
-            <div class="miomos-planned-grid">
-              <button v-for="entry in plannedEntries" :key="entry.key" type="button" class="miomos-planned-item" disabled>
-                <span class="miomos-menu-glyph miomos-entry-glyph--future">[[ entry.icon ]]</span>
-                <div class="miomos-menu-copy"><strong>[[ entry.title ]]</strong><span>[[ entry.subtitle ]]</span></div>
-              </button>
-            </div>
-          </section>
           <div class="miomos-kpi-row">
             <section v-for="kpi in view.workspace.kpis || []" :key="kpi.label" class="miomos-card">
               <div class="miomos-kpi-label">[[ kpi.label ]]</div>
@@ -318,47 +291,19 @@
         </template>
 
         <template v-else-if="win.appKey === 'collaboration'">
-          <div class="miomos-chat-layout" data-chat-surface="1">
-            <aside class="miomos-card miomos-chat-sidebar" data-chat-sidebar="1">
-              <div class="miomos-surface-title"><strong>Channels</strong><span>Unread counts, direct threads, and moderation state are server-authored in MUMPS.</span></div>
-              <div class="miomos-chat-room-list">
-                <button v-for="room in chatRooms" :key="room.key" type="button" class="miomos-chat-room-btn" :class="{ 'is-active': activeChatRoomKey === room.key }" @click="selectChatRoom(room.key)">
-                  <div><strong>[[ room.label ]]</strong><span>[[ room.key ]]</span></div>
-                  <span v-if="Number(room.unread||0)" class="miomos-chat-badge">[[ room.unread ]]</span>
-                </button>
+          <div class="miomos-chat-shell">
+            <div class="miomos-chat-feed">
+              <div v-if="!messages.length" class="miomos-empty-state"><strong>No chat messages yet</strong><span>This room will populate from the current MIOMOS websocket session once collaboration traffic arrives.</span></div>
+              <div v-for="msg in messages" :key="msg.id || msg.ts || msg.text" class="miomos-feed-item">
+                <strong>[[ msg.userName || 'System' ]]</strong>
+                <span>[[ msg.text || 'No messages.' ]]</span>
+                <time>[[ msg.ts || msg.time || 'Now' ]]</time>
               </div>
-              <div v-if="chatDirects.length" class="miomos-chat-directs">
-                <div class="miomos-kpi-label">Direct messages</div>
-                <button v-for="person in chatDirects" :key="person.room" type="button" class="miomos-chat-room-btn miomos-chat-room-btn--direct" :class="{ 'is-active': activeChatRoomKey === person.room }" @click="selectChatRoom(person.room)">
-                  <div><strong>[[ person.label ]]</strong><span>[[ person.roleLabel || (person.online ? 'Online' : 'Offline') ]]</span></div>
-                  <span v-if="Number(person.unread||0)" class="miomos-chat-badge">[[ person.unread ]]</span>
-                </button>
-              </div>
-              <div class="miomos-chat-roster">
-                <div class="miomos-kpi-label">Active now</div>
-                <ul class="miomos-list dense">
-                  <li v-for="user in (view.chat.roster || [])" :key="user.sessionId || user.principal"><strong>[[ user.userName || user.principal ]]</strong><span>[[ user.roleLabel || user.roles || 'User' ]]</span></li>
-                </ul>
-              </div>
-            </aside>
-            <section class="miomos-card miomos-chat-main">
-              <div class="miomos-surface-header">
-                <div class="miomos-surface-title"><strong>[[ activeChatLabel ]]</strong><span>[[ canModerateChat ? 'Moderated collaboration surface' : 'User collaboration surface' ]]</span></div>
-                <div class="miomos-chips"><span class="miomos-pill">Unread [[ chatUnreadTotal ]]</span><span v-if="canModerateChat" class="miomos-pill">Moderator</span></div>
-              </div>
-              <div class="miomos-chat-feed">
-                <div v-if="!messages.length" class="miomos-empty-state"><strong>No chat messages yet</strong><span>Choose a room or direct conversation and send the first message.</span></div>
-                <div v-for="msg in messages" :key="msg.id || msg.ts || msg.text" class="miomos-feed-item" :class="{ 'is-deleted': !!msg.deleted }">
-                  <div class="miomos-chat-message-head"><strong>[[ msg.userName || msg.principal || 'System' ]]</strong><span class="miomos-subtle">[[ msg.ts || msg.time || 'Now' ]]</span></div>
-                  <span>[[ msg.text || 'No messages.' ]]</span>
-                  <div v-if="canDeleteChatMessage(msg)" class="miomos-chat-actions"><button type="button" class="miomos-btn miomos-btn--tiny" @click="deleteChatMessage(msg)">Remove</button></div>
-                </div>
-              </div>
-              <form class="miomos-chat-form" @submit.prevent="sendChat">
-                <textarea v-model="chatDraft" :placeholder="activeChatRoomKey.indexOf('dm:')===0 ? 'Send a direct message.' : 'Send a short update to the room.'"></textarea>
-                <div class="miomos-actions"><span class="miomos-pill">Room [[ activeChatLabel ]]</span><button type="submit" class="miomos-btn">Send</button></div>
-              </form>
-            </section>
+            </div>
+            <form class="miomos-chat-form" @submit.prevent="sendChat">
+              <textarea v-model="chatDraft" placeholder="Send a short update to the room."></textarea>
+              <div class="miomos-actions"><span class="miomos-pill">Room [[ view.chat.room || 'general' ]]</span><button type="submit" class="miomos-btn">Send</button></div>
+            </form>
           </div>
         </template>
 
@@ -448,6 +393,17 @@
                 <label class="miomos-field"><span>Unicode mode</span><select v-model="settingsForm.terminal.unicode"><option v-for="opt in terminalUnicodeModes" :key="opt.key" :value="opt.key">[[ opt.label ]]</option></select></label>
               </section>
             </div>
+            <section class="miomos-setting-card">
+              <strong>Shell chrome and notifications</strong>
+              <div class="miomos-settings-grid">
+                <label class="miomos-field"><span>Start menu default section</span><select v-model="settingsForm.shell.startMenuSection"><option v-for="opt in shellStartSections" :key="opt.key" :value="opt.key">[[ opt.label ]]</option></select></label>
+                <label class="miomos-field"><span>Notification preview count</span><select v-model="settingsForm.shell.notificationPreviewCount"><option v-for="opt in shellNotificationPreviewCounts" :key="opt.key" :value="String(opt.key)">[[ opt.label ]]</option></select></label>
+                <label class="miomos-field"><span>Clock seconds</span><select v-model="settingsForm.shell.showClockSeconds"><option v-for="opt in shellClockOptions" :key="opt.key" :value="String(opt.key)">[[ opt.label ]]</option></select></label>
+                <label class="miomos-field"><span>Tray labels</span><select v-model="settingsForm.shell.showTrayLabels"><option v-for="opt in shellTrayLabelOptions" :key="opt.key" :value="String(opt.key)">[[ opt.label ]]</option></select></label>
+                <label class="miomos-field"><span>Taskbar account name</span><select v-model="settingsForm.shell.showAccountName"><option v-for="opt in shellAccountNameOptions" :key="opt.key" :value="String(opt.key)">[[ opt.label ]]</option></select></label>
+                <label class="miomos-field"><span>Notification badge</span><select v-model="settingsForm.shell.showNotificationBadge"><option v-for="opt in shellNotificationBadgeOptions" :key="opt.key" :value="String(opt.key)">[[ opt.label ]]</option></select></label>
+              </div>
+            </section>
             <section class="miomos-setting-card">
               <strong>Custom icons</strong>
               <div class="miomos-icon-grid">
@@ -588,20 +544,36 @@
       <button type="button" class="miomos-menu-button miomos-start-button" data-start-button="winxp" @click="toggleMenu"><span class="miomos-start-orb"></span><span>Start</span></button>
       <div class="miomos-quicklaunch" aria-label="Quick Launch" data-quick-launch="xp">
         <span class="miomos-quicklaunch-label">[[ shellQuickLaunchLabel ]]</span>
-        <button v-for="app in quickLaunchEntries" :key="app.key" type="button" class="miomos-quicklaunch-btn" :title="app.title" @click="launchApp(app.key)"><span>[[ app.icon ]]</span><span v-if="quickLaunchBadge(app)" class="miomos-task-badge">[[ quickLaunchBadge(app) ]]</span></button>
+        <button v-for="app in quickLaunchEntries" :key="app.key" type="button" class="miomos-quicklaunch-btn" :title="app.title" @click="launchApp(app.key)">[[ app.icon ]]</button>
       </div>
     </div>
     <div class="miomos-taskband">
-      <button v-for="win in visibleTaskWindows" :key="win.id" type="button" class="miomos-task-button" :class="taskButtonClass(win)" :data-task-state="taskButtonState(win)" :aria-pressed="activeWindowId === win.id && !win.minimized && !win.closed ? 'true' : 'false'" @click="toggleTaskWindow(win.id)" @contextmenu.prevent.stop="openWindowContextMenu(win, $event)"><span class="miomos-task-glyph">[[ appIcon(win.appKey) ]]</span><span class="miomos-task-title">[[ win.title ]]</span><span v-if="taskBadgeForWindow(win)" class="miomos-task-badge">[[ taskBadgeForWindow(win) ]]</span></button>
+      <button v-for="win in visibleTaskWindows" :key="win.id" type="button" class="miomos-task-button" :class="taskButtonClass(win)" :data-task-state="taskButtonState(win)" :aria-pressed="activeWindowId === win.id && !win.minimized && !win.closed ? 'true' : 'false'" @click="toggleTaskWindow(win.id)" @contextmenu.prevent.stop="openWindowContextMenu(win, $event)"><span class="miomos-task-glyph">[[ appIcon(win.appKey) ]]</span><span class="miomos-task-title">[[ win.title ]]</span></button>
       <button v-if="overflowTaskWindows.length" type="button" class="miomos-task-overflow-btn" data-taskbar-overflow="1" @click="openTaskOverflowMenu($event)"><span>[[ shellOverflowLabel ]]</span><strong>[[ overflowTaskWindows.length ]]</strong></button>
     </div>
     <div class="miomos-taskbar-meta" data-tray-style="xp-notify-area">
       <div class="miomos-tray-strip">
-        <button v-for="tray in trayItems" :key="tray.key || tray.label" type="button" class="miomos-tray-chip miomos-tray-chip--action" :class="tray.className || ''" @click="onTrayAction(tray)"><span class="miomos-tray-icon">[[ tray.icon || '' ]]</span><span>[[ tray.label ]]</span></button>
+        <button v-for="tray in trayItems" :key="tray.key || tray.label" type="button" class="miomos-tray-chip miomos-tray-chip--action" :class="tray.className || ''" @click="onTrayAction(tray)"><span class="miomos-tray-icon">[[ tray.icon || '' ]]</span><span v-if="showTrayLabels()">[[ tray.label ]]</span></button>
       </div>
       <span class="miomos-tray-separator"></span>
       <span v-for="tray in trayBadges" :key="tray.label" class="miomos-tray-chip" :class="tray.className || ''">[[ tray.label ]]</span>
-      <button type="button" class="miomos-tray-clock" @click="refreshView">[[ currentClock ]]</button>
+      <div class="miomos-taskbar-actions">
+        <button type="button" class="miomos-tray-chip miomos-tray-chip--action miomos-taskbar-utility-btn" @click="toggleNotifications"><span class="miomos-tray-icon">✦</span><span v-if="showTrayLabels()">[[ notificationButtonLabel ]]</span><span v-if="showNotificationBadge && notificationBadgeCount>0" class="miomos-taskbar-badge-dot">[[ notificationBadgeCount ]]</span></button>
+        <button type="button" class="miomos-tray-chip miomos-tray-chip--action miomos-taskbar-utility-btn" @click="toggleAccountMenu"><span class="miomos-tray-icon">☺</span><div v-if="showAccountName" class="miomos-taskbar-usercopy"><strong>[[ accountButtonLabel ]]</strong><span>[[ accountRoleLabel ]]</span></div></button>
+        <button type="button" class="miomos-tray-clock" @click="refreshView">[[ currentClock ]]</button>
+      </div>
+      <aside v-if="panels.notifications" class="miomos-taskbar-flyout" data-shell-surface="notifications">
+        <div class="miomos-taskbar-flyout-head"><strong>[[ notificationHeadline ]]</strong><span>[[ notificationSubheadline ]]</span></div>
+        <div class="miomos-notice-list">
+          <button v-for="item in notificationItems" :key="item.key || item.title" type="button" class="miomos-notice-item" :data-tone="item.tone || 'info'" @click="openNotificationAction(item)"><div class="miomos-notice-item-head"><strong>[[ item.title ]]</strong><span class="miomos-notice-badge">[[ item.count || 0 ]]</span></div><span>[[ item.copy ]]</span></button>
+        </div>
+      </aside>
+      <aside v-if="panels.account" class="miomos-taskbar-flyout" data-shell-surface="account">
+        <div class="miomos-taskbar-flyout-head"><strong>[[ accountButtonLabel ]]</strong><span>[[ accountSummaryCopy ]]</span></div>
+        <div class="miomos-account-menu-list">
+          <button v-for="item in accountMenuItems" :key="item.key || item.label" type="button" class="miomos-account-menu-item" @click="runAccountAction(item)"><div class="miomos-account-menu-head"><strong>[[ item.label ]]</strong><span class="miomos-account-badge">[[ item.key ]]</span></div><span>[[ item.copy ]]</span></button>
+        </div>
+      </aside>
     </div>
   </footer>
 
@@ -726,6 +698,7 @@
           layoutMode: ((((boot.desktop||{}).uiState)||{}).layoutMode || ''),
           contextMenu: { visible:false, kind:'', x:0, y:0, items:[], targetId:'', targetKey:'', targetKind:'' },
           dialogs: { run:false, about:false, power:false },
+          panels: { notifications:false, account:false },
           runDialogInput: 'terminal',
           settingsForm: {
             themeKey: (((view.settings||{}).current||{}).themeKey || ((boot.desktop||{}).theme||{}).currentKey || 'midnight-professional'),
@@ -741,6 +714,14 @@
             motionProfile: (((view.settings||{}).current||{}).motionProfile || root.getAttribute('data-motion-profile') || 'standard'),
             titlebarStyle: (((view.settings||{}).current||{}).titlebarStyle || root.getAttribute('data-titlebar-style') || 'accent'),
             icons: clone((((view.settings||{}).current||{}).icon) || {}),
+            shell: {
+              startMenuSection: String(((((view.settings||{}).current||{}).shell)||{}).startMenuSection || (((view.shellChrome||{}).startMenuSection) || 'Pinned')),
+              showClockSeconds: String(((((view.settings||{}).current||{}).shell)||{}).showClockSeconds != null ? ((((view.settings||{}).current||{}).shell)||{}).showClockSeconds : (((view.shellChrome||{}).showClockSeconds != null) ? ((view.shellChrome||{}).showClockSeconds) : 0)),
+              showTrayLabels: String(((((view.settings||{}).current||{}).shell)||{}).showTrayLabels != null ? ((((view.settings||{}).current||{}).shell)||{}).showTrayLabels : (((view.shellChrome||{}).showTrayLabels != null) ? ((view.shellChrome||{}).showTrayLabels) : 1)),
+              notificationPreviewCount: String(((((view.settings||{}).current||{}).shell)||{}).notificationPreviewCount || (((view.shellChrome||{}).notificationPreviewCount || 4))),
+              showAccountName: String(((((view.settings||{}).current||{}).shell)||{}).showAccountName != null ? ((((view.settings||{}).current||{}).shell)||{}).showAccountName : (((view.shellChrome||{}).showAccountName != null) ? ((view.shellChrome||{}).showAccountName) : 1)),
+              showNotificationBadge: String(((((view.settings||{}).current||{}).shell)||{}).showNotificationBadge != null ? ((((view.settings||{}).current||{}).shell)||{}).showNotificationBadge : (((view.shellChrome||{}).showNotificationBadge != null) ? ((view.shellChrome||{}).showNotificationBadge) : 1))
+            },
             terminal: {
               fontFamily: String(((((view.settings||{}).current||{}).terminal)||{}).fontFamily || ((((view.terminal||{}).profile)||{}).fontFamily || 'JetBrains Mono')),
               fontSize: String(((((view.settings||{}).current||{}).terminal)||{}).fontSize || ((((view.terminal||{}).profile)||{}).fontSize || 13)),
@@ -781,6 +762,12 @@
         terminalRenderers: function(){ return arr((((this.view.settings||{}).catalog||{}).terminal||{}).renderers); },
         terminalPalettes: function(){ return arr((((this.view.settings||{}).catalog||{}).terminal||{}).palettes); },
         terminalUnicodeModes: function(){ return arr((((this.view.settings||{}).catalog||{}).terminal||{}).unicodeModes); },
+        shellStartSections: function(){ return arr((((this.view.settings||{}).catalog||{}).shell||{}).startMenuSections); },
+        shellClockOptions: function(){ return arr((((this.view.settings||{}).catalog||{}).shell||{}).showClockSeconds); },
+        shellTrayLabelOptions: function(){ return arr((((this.view.settings||{}).catalog||{}).shell||{}).showTrayLabels); },
+        shellNotificationPreviewCounts: function(){ return arr((((this.view.settings||{}).catalog||{}).shell||{}).notificationPreviewCounts); },
+        shellAccountNameOptions: function(){ return arr((((this.view.settings||{}).catalog||{}).shell||{}).showAccountName); },
+        shellNotificationBadgeOptions: function(){ return arr((((this.view.settings||{}).catalog||{}).shell||{}).showNotificationBadge); },
         terminalThemeSpec: function(){
           var palette=String((((this.settingsForm||{}).terminal||{}).palette) || 'theme'), mode=String(((this.currentThemeDefinition||{}).mode) || 'dark');
           if (palette==='black-on-white') return { background:'#ffffff', foreground:'#111111', cursor:'#111111', cursorAccent:'#ffffff', selectionBackground:'rgba(17,17,17,0.18)', chromeBorder:'rgba(24,24,24,0.26)', chromeBackground:'linear-gradient(180deg, rgba(255,255,255,0.985), rgba(241,243,246,0.99))', statusBackground:'rgba(255,255,255,0.86)', statusText:'#222222', dot:'#111111', dotHalo:'rgba(17,17,17,0.16)' };
@@ -806,12 +793,6 @@
         shellOverflowLabel: function(){ return (this.shellChrome.overflowLabel || 'More Windows'); },
         shellRecentLabel: function(){ return (this.shellChrome.recentLabel || 'Recently used'); },
         shellSearchPlaceholder: function(){ return (this.shellChrome.searchPlaceholder || 'Search programs and shell actions'); },
-        chatRooms: function(){ return arr((this.view.chat||{}).rooms); },
-        chatDirects: function(){ return arr((this.view.chat||{}).directs); },
-        chatUnreadTotal: function(){ return Number((this.view.chat||{}).unreadTotal || 0); },
-        activeChatRoomKey: function(){ return String((this.view.chat||{}).room || 'general'); },
-        activeChatLabel: function(){ var key=this.activeChatRoomKey, item=this.chatRooms.find(function(r){ return r.key===key; }) || this.chatDirects.find(function(r){ return r.room===key || r.key===key; }); return (item && (item.label || item.key || item.room)) || key; },
-        canModerateChat: function(){ return !!((this.view.chat||{}).canModerate); },
         trayItems: function(){ var tray=arr(this.shellChrome.tray); if (tray.length) return tray; return [{ key:'network', label:'Network connected', icon:'LAN', action:'about', className:'is-ok' }, { key:'workspace', label:'Workspace ready', icon:'✓', action:'refresh' }, { key:'power', label:'Power options', icon:'⏻', action:'power' }]; },
         anyDialogOpen: function(){ return !!(this.dialogs.run || this.dialogs.about || this.dialogs.power); },
         desktopEntries: function(){
@@ -824,8 +805,19 @@
           });
         },
         directoryEntries: function(){ return this.allEntries.filter(function(app){ return (app.kind || '')==='directory'; }).sort(function(a,b){ return Number(a.order||0)-Number(b.order||0); }); },
-        plannedEntries: function(){ return this.allEntries.filter(function(app){ return (app.kind || '')==='future'; }).sort(function(a,b){ return Number(a.order||0)-Number(b.order||0); }); },
-        shellSummary: function(){ return { pinned: this.desktopEntries.length, directories: this.directoryEntries.length, planned: this.plannedEntries.length }; },
+        notificationCenter: function(){ return this.view.notifications || {}; },
+        notificationItems: function(){ return arr(this.notificationCenter.items).slice(0, Number((this.shellChrome.notificationPreviewCount || 4) || 4)); },
+        notificationBadgeCount: function(){ return Number(this.notificationCenter.badge || 0) || 0; },
+        showNotificationBadge: function(){ return Number(this.shellChrome.showNotificationBadge != null ? this.shellChrome.showNotificationBadge : 1)===1; },
+        showAccountName: function(){ return Number(this.shellChrome.showAccountName != null ? this.shellChrome.showAccountName : 1)===1; },
+        accountMenuItems: function(){ return arr(this.shellChrome.accountMenu); },
+        accountButtonLabel: function(){ return this.shellChrome.accountLabel || ((this.boot.session||{}).userName || 'Operator'); },
+        accountRoleLabel: function(){ return this.shellChrome.accountRoleLabel || ((this.boot.user||{}).roleLabel || 'User'); },
+        accountSummaryCopy: function(){ return 'Signed in as ' + this.accountButtonLabel + ' · ' + this.accountRoleLabel + '.'; },
+        notificationHeadline: function(){ return this.notificationCenter.headline || 'Notification Center'; },
+        notificationSubheadline: function(){ return this.notificationCenter.subheadline || 'Server-authored shell notifications.'; },
+        notificationButtonLabel: function(){ return this.shellChrome.notificationLabel || 'Notifications'; },
+        shellSummary: function(){ return { pinned: this.desktopEntries.length, directories: this.directoryEntries.length, alerts: this.notificationBadgeCount }; },
         mobileBreakpoint: function(){ return Number((((this.boot.desktop||{}).mobile)||{}).breakpoint || 900) || 900; },
         isCompactViewport: function(){ return Number(this.viewportWidth || 0) <= this.mobileBreakpoint; },
         qualitySummary: function(){
@@ -872,9 +864,10 @@
         taskbarSlotCount: function(){ if (this.isCompactViewport) return 4; if ((this.viewportWidth || 0) <= 1180) return 5; if ((this.viewportWidth || 0) <= 1420) return 6; return 7; },
         visibleTaskWindows: function(){ return this.taskWindows.slice(0, this.taskbarSlotCount); },
         overflowTaskWindows: function(){ return this.taskWindows.slice(this.taskbarSlotCount); },
-        currentShellSurface: function(){ if (this.anyDialogOpen) return 'dialog'; if (this.contextMenu.visible) return 'context-menu'; if (this.menuOpen) return 'start-menu'; return 'desktop'; },
+        anyFlyoutOpen: function(){ return !!(this.panels.notifications || this.panels.account); },
+        currentShellSurface: function(){ if (this.anyDialogOpen) return 'dialog'; if (this.contextMenu.visible) return 'context-menu'; if (this.anyFlyoutOpen) return 'taskbar-flyout'; if (this.menuOpen) return 'start-menu'; return 'desktop'; },
         menuSections: function(){
-          var order=['Pinned','Directories','Applications','System','Planned'], buckets={}, out=[];
+          var order=['Pinned','Directories','Applications','System'], buckets={}, out=[];
           this.allEntries.forEach(function(app){ var key=app.group || 'Applications'; if (!buckets[key]) buckets[key]=[]; buckets[key].push(app); });
           order.forEach(function(label){ if (buckets[label] && buckets[label].length) { buckets[label].sort(function(a,b){ return Number(a.order||0)-Number(b.order||0); }); out.push({ label: label, items: buckets[label] }); } });
           return out;
@@ -974,12 +967,19 @@
         openDialog: function(kind){ this.dialogs.run=false; this.dialogs.about=false; this.dialogs.power=false; this.closeShellSurfaces('dialog'); if (kind && this.dialogs.hasOwnProperty(kind)) { this.dialogs[kind]=true; this.ensureDialogPosition(kind); } this.persistUiState('dialog-' + (kind || 'none')); if (kind==='run') this.$nextTick(function(){ var el=root.querySelector('.miomos-shell-dialog-input'); if (el && el.focus) el.focus(); }); },
         closeDialogs: function(){ this.dialogs.run=false; this.dialogs.about=false; this.dialogs.power=false; this.persistUiState('dialog-close'); },
         executeRunDialog: function(){ var key=String(this.runDialogInput || '').trim().toLowerCase(); if (!key) return; if (key==='cmd' || key==='ydb') key='terminal'; if (key==='desk') key='workspace'; this.closeDialogs(); this.launchApp(key); },
-        onTrayAction: function(tray){ if (!tray) return; if (tray.action==='refresh') { this.refreshView(); return; } if (tray.action==='power') { this.openDialog('power'); return; } this.openDialog('about'); },
+        showTrayLabels: function(){ return Number(this.settingsForm.shell.showTrayLabels || "1")===1; },
+        onTrayAction: function(tray){ if (!tray) return; if (tray.action==='refresh') { this.refreshView(); return; } if (tray.action==='power') { this.openDialog('power'); return; } if (tray.action==='notifications') { this.toggleNotifications(); return; } if (tray.action==='account') { this.toggleAccountMenu(); return; } this.openDialog('about'); },
+        closeFlyouts: function(){ this.panels.notifications=false; this.panels.account=false; this.persistUiState('flyout-close'); },
+        toggleNotifications: function(){ var open=!this.panels.notifications; this.closeShellSurfaces(open ? 'notifications' : ''); this.panels.notifications=open; if (open) this.panels.account=false; this.persistUiState('notifications'); },
+        toggleAccountMenu: function(){ var open=!this.panels.account; this.closeShellSurfaces(open ? 'account' : ''); this.panels.account=open; if (open) this.panels.notifications=false; this.persistUiState('account'); },
+        openNotificationAction: function(item){ if (!item) return; this.closeFlyouts(); if ((item.action||'').indexOf('launch:')===0) { this.launchApp((item.action||'').split(':').slice(1).join(':')); return; } if (item.action==='power') { this.openDialog('power'); return; } if (item.action==='signout') { this.signout('/miomos?signedOut=1'); return; } this.openDialog('about'); },
+        accountIconFor: function(item){ var act=(item&&item.action)||''; if (act==='signout') return '⇦'; if (act==='switch-user') return '⇄'; if (act==='power') return '⏻'; if (act.indexOf('launch:')===0) return this.appIcon(act.split(':').slice(1).join(':')); return '•'; },
+        runAccountAction: function(item){ var act=(item&&item.action)||''; this.closeFlyouts(); if (act==='signout') { this.signout('/miomos?signedOut=1'); return; } if (act==='switch-user') { this.signout('/miomos?switchUser=1'); return; } if (act==='power') { this.openDialog('power'); return; } if (act.indexOf('launch:')===0) { this.launchApp(act.split(':').slice(1).join(':')); return; } this.openDialog('about'); },
         markSocketActivity: function(){ this.lastSocketAt=Date.now(); },
-        entryKindLabel: function(kind){ if (kind==='directory') return 'Directory'; if (kind==='settings') return 'Settings'; if (kind==='future') return 'Planned'; return 'App'; },
-        entryStatusLabel: function(status){ if (status==='planned') return 'Roadmap'; if (status==='available') return 'Ready'; return String(status || ''); },
+        entryKindLabel: function(kind){ if (kind==='directory') return 'Directory'; if (kind==='settings') return 'Settings'; return 'App'; },
+        entryStatusLabel: function(status){ if (status==='available') return 'Ready'; return String(status || ''); },
         entryGlyphClass: function(kind){ kind=String(kind || 'app'); return 'miomos-entry-glyph--' + kind; },
-        installWindowListeners: function(){ var self=this; this._miomosKeydown=function(ev){ self.onGlobalKeydown(ev); }; window.addEventListener('resize', function(){ self.syncViewportMode(); self.onWindowResize(); }); window.addEventListener('keydown', this._miomosKeydown); document.addEventListener('pointerdown', function(ev){ if (self.contextMenu.visible && !(ev.target && ev.target.closest && ev.target.closest('.miomos-context-menu'))) self.closeContextMenu('pointerdown'); if (!root.contains(ev.target) && self.menuOpen) { self.menuOpen=false; self.persistUiState('outside-click'); } }); window.addEventListener('beforeunload', function(){ self.shouldReconnect=false; self.saveLayoutLocal(); self.saveUiStateLocal(); self.clearReconnectTimer(); self.clearHeartbeat(); self.clearStaleMonitor(); self.stopTerminalPolling(); }); },
+        installWindowListeners: function(){ var self=this; this._miomosKeydown=function(ev){ self.onGlobalKeydown(ev); }; window.addEventListener('resize', function(){ self.syncViewportMode(); self.onWindowResize(); }); window.addEventListener('keydown', this._miomosKeydown); document.addEventListener('pointerdown', function(ev){ if (self.contextMenu.visible && !(ev.target && ev.target.closest && ev.target.closest('.miomos-context-menu'))) self.closeContextMenu('pointerdown'); if (!root.contains(ev.target) && self.menuOpen) { self.menuOpen=false; self.persistUiState('outside-click'); } if ((self.panels.notifications || self.panels.account) && !(ev.target && ev.target.closest && ev.target.closest('.miomos-taskbar-flyout')) && !(ev.target && ev.target.closest && ev.target.closest('.miomos-taskbar-utility-btn'))) { self.closeFlyouts(); } }); window.addEventListener('beforeunload', function(){ self.shouldReconnect=false; self.saveLayoutLocal(); self.saveUiStateLocal(); self.clearReconnectTimer(); self.clearHeartbeat(); self.clearStaleMonitor(); self.stopTerminalPolling(); }); },
         applySettings: function(){ var self=this, theme=this.currentThemeDefinition || {}; root.dataset.density=this.settingsForm.density || 'dense'; root.dataset.wallpaper=this.settingsForm.wallpaper || 'midnight-clinic'; root.dataset.animations=this.settingsForm.animations || 'standard'; root.dataset.windowPreset=this.settingsForm.windowPreset || 'analyst'; root.dataset.snapMode=this.settingsForm.snapMode || 'quadrant'; root.dataset.motionProfile=this.settingsForm.motionProfile || 'standard'; root.dataset.titlebarStyle=this.settingsForm.titlebarStyle || 'accent'; root.dataset.themeMode=theme.mode || 'dark'; root.style.setProperty('--miomos-font', this.settingsForm.fontFamily || 'Segoe UI'); root.style.fontSize=(parseInt(this.settingsForm.fontSize || '13',10) || 13) + 'px'; this.applyThemeVariables(theme); this.syncViewportMode(); this.windows.forEach(function(win){ if (win.appKey==='terminal' && !win.closed) { self.ensureXtermMounted(win.id); self.applyXtermProfile(win.id); } }); },
         applyThemeVariables: function(theme){ theme=theme || {}; root.style.setProperty('--desktop', theme.desktop || '#0b1320'); root.style.setProperty('--surface', theme.surface || 'rgba(15, 23, 36, 0.95)'); root.style.setProperty('--surface-alt', theme.surfaceAlt || 'rgba(11, 18, 29, 0.96)'); root.style.setProperty('--surface-soft', theme.surfaceSoft || 'rgba(255,255,255,0.03)'); root.style.setProperty('--border', theme.border || 'rgba(148,163,184,0.18)'); root.style.setProperty('--text', theme.text || '#ecf3ff'); root.style.setProperty('--muted', theme.muted || '#93a7c4'); root.style.setProperty('--accent', theme.accent || '#5f8dff'); root.style.setProperty('--accent-soft', theme.accentSoft || 'rgba(95,141,255,0.18)'); root.style.setProperty('--accent-strong', theme.accentStrong || 'rgba(95,141,255,0.34)'); root.style.setProperty('--title-accent', theme.accent || '#5f8dff'); root.style.setProperty('--active-title', theme.titleActive || 'linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.03)), linear-gradient(90deg, #5f8dff, rgba(255,255,255,0.02) 40%)'); root.style.setProperty('--inactive-title', theme.titleInactive || 'linear-gradient(180deg, rgba(91,103,122,0.42), rgba(45,56,72,0.36))'); root.style.setProperty('--miomos-shadow', theme.shadow || '0 18px 42px rgba(0,0,0,.26)'); },
         syncViewportMode: function(){ this.viewportWidth = (window.innerWidth || document.documentElement.clientWidth || 1400); root.dataset.mobileLayout = this.isCompactViewport ? '1' : '0'; },
@@ -1031,11 +1031,11 @@
         socketRequest: function(event, payload, options){ var self=this, opts=options || {}, maxInflight=Number(this.desktopPolicy.commandMaxInflight || 3) || 3, timeoutMs=Number(opts.timeoutMs || this.desktopPolicy.commandTimeoutMs || 8000) || 8000, label=String(opts.command || event || 'socket.request'), key=opts.dedupeKey || (label + '|' + JSON.stringify(payload || {})); if (this.pendingCommands[key]) return this.pendingCommands[key]; if (this.inflightCommandCount >= maxInflight) { this.commandError='Another shell command is still in flight. Please wait for it to finish before submitting a new action.'; return Promise.reject(new Error('command_busy')); } this.commandError=''; this.dismissedAlertKey=''; this.lastCommandName=label; this.saveUiStateLocal(); this.inflightCommandCount += 1; var requestId='ws-' + (++this.socketRequestSeq) + '-' + Date.now(); var req=this.ensureSocketReady().then(function(){ return new Promise(function(resolve,reject){ var pending={ key:key, command:label, timer:null, resolve:function(msg){ if (pending.timer) window.clearTimeout(pending.timer); delete self.socketPending[requestId]; resolve(msg); }, reject:function(err){ if (pending.timer) window.clearTimeout(pending.timer); delete self.socketPending[requestId]; reject(err); } }; pending.timer=window.setTimeout(function(){ pending.reject(new Error('socket_request_timeout')); }, timeoutMs); self.socketPending[requestId]=pending; if (!self.sendSocket(Object.assign({ event:event, requestId:requestId, sessionId:((self.boot.session||{}).id || root.getAttribute('data-miomos-session') || '') }, payload || {}))) { pending.reject(new Error('socket_send_failed')); } }); }).catch(function(err){ self.commandError='Command ' + label + ' failed: ' + (err && err.message ? err.message : 'unknown error'); self.dismissedAlertKey=''; throw err; }).finally(function(){ self.inflightCommandCount=Math.max(0,self.inflightCommandCount-1); delete self.pendingCommands[key]; self.saveUiStateLocal(); }); this.pendingCommands[key]=req; return req; },
         command: function(command, payload){ var eventName=(this.boot.routes||{}).commandEvent || root.getAttribute('data-miomos-command-event') || 'command.exec'; var body=Object.assign({ command: command }, payload || {}); var key=command + '|' + JSON.stringify(body); return this.socketRequest(eventName, body, { dedupeKey:key, command:command }); },
         refreshView: function(){ var self=this; return this.command('view.refresh', {}).then(function(json){ if (json.view) self.view = json.view; self.syncSettingsForm(); self.applySettings(); self.commandError=''; return json; }).catch(function(err){ self.commandError='View refresh failed: ' + (err && err.message ? err.message : 'unknown error'); self.dismissedAlertKey=''; throw err; }); },
-        syncSettingsForm: function(){ var cur=((this.view.settings||{}).current)||{}; this.settingsForm.themeKey = cur.themeKey || this.settingsForm.themeKey; this.settingsForm.fontFamily = cur.fontFamily || this.settingsForm.fontFamily; this.settingsForm.fontSize = String(cur.fontSize || this.settingsForm.fontSize); this.settingsForm.titleAccent = cur.titleAccent || this.settingsForm.titleAccent; this.settingsForm.iconStyle = cur.iconStyle || this.settingsForm.iconStyle; this.settingsForm.wallpaper = cur.wallpaper || this.settingsForm.wallpaper; this.settingsForm.density = cur.density || this.settingsForm.density; this.settingsForm.animations = cur.animations || this.settingsForm.animations; this.settingsForm.windowPreset = cur.windowPreset || this.settingsForm.windowPreset; this.settingsForm.snapMode = cur.snapMode || this.settingsForm.snapMode; this.settingsForm.motionProfile = cur.motionProfile || this.settingsForm.motionProfile; this.settingsForm.titlebarStyle = cur.titlebarStyle || this.settingsForm.titlebarStyle; this.settingsForm.icons = Object.assign({}, this.settingsForm.icons, cur.icon || {}); if (cur.terminal) { var self=this; Object.keys(cur.terminal).forEach(function(k){ self.settingsForm.terminal[k] = String(cur.terminal[k]); }); } },
-        buildSettingsPayload: function(){ return { themeKey:this.settingsForm.themeKey, fontFamily:this.settingsForm.fontFamily, fontSize:parseInt(this.settingsForm.fontSize,10), titleAccent:this.settingsForm.titleAccent, iconStyle:this.settingsForm.iconStyle, wallpaper:this.settingsForm.wallpaper, density:this.settingsForm.density, animations:this.settingsForm.animations, windowPreset:this.settingsForm.windowPreset, snapMode:this.settingsForm.snapMode, motionProfile:this.settingsForm.motionProfile, titlebarStyle:this.settingsForm.titlebarStyle, icons: clone(this.settingsForm.icons), terminal: { fontFamily:this.settingsForm.terminal.fontFamily, fontSize:parseInt(this.settingsForm.terminal.fontSize,10), cursorBlink:parseInt(this.settingsForm.terminal.cursorBlink,10), cursorStyle:this.settingsForm.terminal.cursorStyle, palette:this.settingsForm.terminal.palette, scrollback:parseInt(this.settingsForm.terminal.scrollback,10), renderer:this.settingsForm.terminal.renderer, unicode:this.settingsForm.terminal.unicode, cols:parseInt(this.settingsForm.terminal.cols || '120',10), rows:parseInt(this.settingsForm.terminal.rows || '28',10) } }; },
+        syncSettingsForm: function(){ var cur=((this.view.settings||{}).current)||{}; this.settingsForm.themeKey = cur.themeKey || this.settingsForm.themeKey; this.settingsForm.fontFamily = cur.fontFamily || this.settingsForm.fontFamily; this.settingsForm.fontSize = String(cur.fontSize || this.settingsForm.fontSize); this.settingsForm.titleAccent = cur.titleAccent || this.settingsForm.titleAccent; this.settingsForm.iconStyle = cur.iconStyle || this.settingsForm.iconStyle; this.settingsForm.wallpaper = cur.wallpaper || this.settingsForm.wallpaper; this.settingsForm.density = cur.density || this.settingsForm.density; this.settingsForm.animations = cur.animations || this.settingsForm.animations; this.settingsForm.windowPreset = cur.windowPreset || this.settingsForm.windowPreset; this.settingsForm.snapMode = cur.snapMode || this.settingsForm.snapMode; this.settingsForm.motionProfile = cur.motionProfile || this.settingsForm.motionProfile; this.settingsForm.titlebarStyle = cur.titlebarStyle || this.settingsForm.titlebarStyle; this.settingsForm.icons = Object.assign({}, this.settingsForm.icons, cur.icon || {}); if (cur.terminal) { var self=this; Object.keys(cur.terminal).forEach(function(k){ self.settingsForm.terminal[k] = String(cur.terminal[k]); }); } if (cur.shell) { this.settingsForm.shell.startMenuSection = cur.shell.startMenuSection || this.settingsForm.shell.startMenuSection; this.settingsForm.shell.showClockSeconds = String(cur.shell.showClockSeconds != null ? cur.shell.showClockSeconds : this.settingsForm.shell.showClockSeconds); this.settingsForm.shell.showTrayLabels = String(cur.shell.showTrayLabels != null ? cur.shell.showTrayLabels : this.settingsForm.shell.showTrayLabels); this.settingsForm.shell.notificationPreviewCount = String(cur.shell.notificationPreviewCount || this.settingsForm.shell.notificationPreviewCount); this.settingsForm.shell.showAccountName = String(cur.shell.showAccountName != null ? cur.shell.showAccountName : this.settingsForm.shell.showAccountName); this.settingsForm.shell.showNotificationBadge = String(cur.shell.showNotificationBadge != null ? cur.shell.showNotificationBadge : this.settingsForm.shell.showNotificationBadge); } },
+        buildSettingsPayload: function(){ return { themeKey:this.settingsForm.themeKey, fontFamily:this.settingsForm.fontFamily, fontSize:parseInt(this.settingsForm.fontSize,10), titleAccent:this.settingsForm.titleAccent, iconStyle:this.settingsForm.iconStyle, wallpaper:this.settingsForm.wallpaper, density:this.settingsForm.density, animations:this.settingsForm.animations, windowPreset:this.settingsForm.windowPreset, snapMode:this.settingsForm.snapMode, motionProfile:this.settingsForm.motionProfile, titlebarStyle:this.settingsForm.titlebarStyle, icons: clone(this.settingsForm.icons), terminal: { fontFamily:this.settingsForm.terminal.fontFamily, fontSize:parseInt(this.settingsForm.terminal.fontSize,10), cursorBlink:parseInt(this.settingsForm.terminal.cursorBlink,10), cursorStyle:this.settingsForm.terminal.cursorStyle, palette:this.settingsForm.terminal.palette, scrollback:parseInt(this.settingsForm.terminal.scrollback,10), renderer:this.settingsForm.terminal.renderer, unicode:this.settingsForm.terminal.unicode, cols:parseInt(this.settingsForm.terminal.cols || '120',10), rows:parseInt(this.settingsForm.terminal.rows || '28',10) }, shell: { startMenuSection:this.settingsForm.shell.startMenuSection, showClockSeconds:parseInt(this.settingsForm.shell.showClockSeconds,10), showTrayLabels:parseInt(this.settingsForm.shell.showTrayLabels,10), notificationPreviewCount:parseInt(this.settingsForm.shell.notificationPreviewCount,10), showAccountName:parseInt(this.settingsForm.shell.showAccountName,10), showNotificationBadge:parseInt(this.settingsForm.shell.showNotificationBadge,10) } }; },
         saveSettings: function(){ var self=this; this.settingsStatus='Saving…'; this.command('settings.save', this.buildSettingsPayload()).then(function(){ self.settingsStatus='Saved'; self.refreshView().catch(function(){}); }).catch(function(){ self.settingsStatus='Save failed'; }); },
         quickTheme: function(key){ var self=this; this.settingsForm.themeKey=key; this.command('theme.quick', { themeKey:key }).then(function(){ self.settingsStatus='Theme updated'; self.refreshView().catch(function(){}); }).catch(function(){ self.settingsStatus='Theme update failed'; }); },
-        signout: function(){ var evt=(this.boot.routes||{}).signoutEvent || root.getAttribute('data-miomos-signout-event') || 'auth.signout'; return this.socketRequest(evt, {}, { dedupeKey:'auth.signout', command:'auth.signout', timeoutMs:4000 }).finally(function(){ window.location.reload(); }); },
+        signout: function(targetUrl){ var evt=(this.boot.routes||{}).signoutEvent || root.getAttribute('data-miomos-signout-event') || 'auth.signout'; var next=targetUrl || '/miomos?signedOut=1'; return this.socketRequest(evt, {}, { dedupeKey:'auth.signout', command:'auth.signout', timeoutMs:4000 }).finally(function(){ window.location.href=next; }); },
         connectSocket: function(){ var self=this, path=((this.boot.routes||{}).websocket)||root.getAttribute('data-miomos-ws'); if (!path) return; if (this.socketConnecting) return; if (this.socket && (this.socket.readyState===0 || this.socket.readyState===1)) return; var proto=window.location.protocol==='https:'?'wss://':'ws://'; var url=/^wss?:\/\//i.test(path)?path:(proto + window.location.host + path); this.socketConnecting=true; try { this.socket=new WebSocket(url); } catch(e){ this.socketConnecting=false; this.scheduleReconnect(); return; } this.socket.addEventListener('open', function(){ self.socketConnecting=false; self.socketConnected=true; self.reconnectDelay=Number(self.desktopPolicy.reconnectBaseMs || 1000) || 1000; self.markSocketActivity(); self.sendSocket({ event:'hello', sessionId:(self.boot.session||{}).id || root.getAttribute('data-miomos-session') }); self.startHeartbeat(); self.startStaleMonitor(); }); this.socket.addEventListener('message', function(ev){ self.markSocketActivity(); self.handleSocketMessage(ev.data); }); this.socket.addEventListener('close', function(){ self.socketConnected=false; self.socketConnecting=false; self.clearHeartbeat(); self.clearStaleMonitor(); self.rejectPendingSocketRequests('socket_closed'); self.socket=null; self.lastReconnectAt=(new Date()).toISOString(); self.reconnectCount += 1; self.dismissedAlertKey=''; if (self.shouldReconnect) self.scheduleReconnect(); }); this.socket.addEventListener('error', function(){ self.socketConnected=false; if (self.socket && self.socket.readyState < 2) { try { self.socket.close(); } catch(e){} } }); },
         markSocketActivity: function(){ this.lastSocketAt=Date.now(); },
         rejectPendingSocketRequests: function(reason){ var pending=this.socketPending || {}, ids=Object.keys(pending), message=reason || 'socket_closed'; this.socketPending={}; ids.forEach(function(id){ try { pending[id].reject(new Error(message)); } catch(e){} }); },
@@ -1046,13 +1046,8 @@
         clearStaleMonitor: function(){ if (this.staleSocketTimer) window.clearInterval(this.staleSocketTimer); this.staleSocketTimer=null; },
         scheduleReconnect: function(){ var self=this, maxMs=Number(this.desktopPolicy.reconnectMaxMs || 15000) || 15000; this.clearReconnectTimer(); this.reconnectTimer=window.setTimeout(function(){ self.reconnectTimer=null; self.connectSocket(); }, this.reconnectDelay); this.reconnectDelay=Math.min(this.reconnectDelay*1.6, maxMs); },
         clearReconnectTimer: function(){ if (this.reconnectTimer) window.clearTimeout(this.reconnectTimer); this.reconnectTimer=null; },
-        handleSocketMessage: function(raw){ var msg, pending; try { msg=JSON.parse(raw||'{}'); } catch(e){ return; } if (msg.requestId && this.socketPending[msg.requestId]) { pending=this.socketPending[msg.requestId]; if (msg.ok===0 || msg.event==='command.error') pending.reject(new Error(msg.detail || msg.error || 'request_failed')); else pending.resolve(msg); return; } if (msg.event==='hello' || msg.event==='pong') { this.socketConnected=true; this.commandError=''; return; } if (msg.event==='session.signout') { this.commandError = msg.detail || msg.reason || 'Session signed out.'; this.terminalStatus = 'Session signed out'; this.shouldReconnect = false; this.clearReconnectTimer(); if (this.socket && this.socket.readyState < 2) { try { this.socket.close(); } catch(e){} } return; } if (msg.event==='chat.snapshot') { this.messages = arr(msg.messages); this.view.chat = Object.assign({}, this.view.chat || {}, { room: (msg.room || ((this.view.chat||{}).room) || 'general') }); return; } if (msg.event==='chat.meta') { this.view.chat = Object.assign({}, this.view.chat || {}, msg.chat || {}); return; } if (msg.event==='chat.message') { if ((msg.message||{}).room && (msg.message.room !== this.activeChatRoomKey)) return; this.messages = this.messages.concat([msg.message || { userName:'System', text:'Message received.', ts:'Now' }]).slice(-30); return; } },
-        sendChat: function(){ var text=(this.chatDraft||'').trim(); if (!text) return; this.sendSocket({ event:'chat.send', room:this.activeChatRoomKey, text:text, sessionId:((this.boot.session||{}).id || root.getAttribute('data-miomos-session')) }); this.chatDraft=''; },
-        selectChatRoom: function(roomKey){ if (!roomKey) return; this.view.chat = Object.assign({}, this.view.chat || {}, { room: roomKey }); this.sendSocket({ event:'chat.fetch', room:roomKey, sessionId:((this.boot.session||{}).id || root.getAttribute('data-miomos-session')) }); },
-        canDeleteChatMessage: function(msg){ return !!(msg && !msg.deleted && this.canModerateChat && Number(msg.id||0)); },
-        deleteChatMessage: function(msg){ if (!this.canDeleteChatMessage(msg)) return; this.sendSocket({ event:'chat.delete', room:this.activeChatRoomKey, id:Number(msg.id||0), sessionId:((this.boot.session||{}).id || root.getAttribute('data-miomos-session')) }); },
-        quickLaunchBadge: function(app){ if (!app) return ''; if (app.key==='collaboration' && this.chatUnreadTotal>0) return String(this.chatUnreadTotal); return ''; },
-        taskBadgeForWindow: function(win){ if (!win) return ''; if (win.appKey==='collaboration' && this.chatUnreadTotal>0) return String(this.chatUnreadTotal); return ''; },
+        handleSocketMessage: function(raw){ var msg, pending; try { msg=JSON.parse(raw||'{}'); } catch(e){ return; } if (msg.requestId && this.socketPending[msg.requestId]) { pending=this.socketPending[msg.requestId]; if (msg.ok===0 || msg.event==='command.error') pending.reject(new Error(msg.detail || msg.error || 'request_failed')); else pending.resolve(msg); return; } if (msg.event==='hello' || msg.event==='pong') { this.socketConnected=true; this.commandError=''; return; } if (msg.event==='session.signout') { this.commandError = msg.detail || msg.reason || 'Session signed out.'; this.terminalStatus = 'Session signed out'; this.shouldReconnect = false; this.clearReconnectTimer(); if (this.socket && this.socket.readyState < 2) { try { this.socket.close(); } catch(e){} } return; } if (msg.event==='chat.snapshot') { this.messages = arr(msg.messages); return; } if (msg.event==='chat.message') { this.messages = this.messages.concat([msg.message || { userName:'System', text:'Message received.', ts:'Now' }]).slice(-30); return; } },
+        sendChat: function(){ var text=(this.chatDraft||'').trim(); if (!text) return; this.sendSocket({ event:'chat.send', room:((this.view.chat||{}).room || 'general'), text:text, sessionId:((this.boot.session||{}).id || root.getAttribute('data-miomos-session')) }); this.chatDraft=''; },
         terminalCtor: function(){ return window.Terminal || ((window.Xterm||{}).Terminal) || ((window.XTerm||{}).Terminal) || null; },
         terminalViewportId: function(winId){ return 'miomosTerminalViewport-' + String(winId || '').replace(/[^A-Za-z0-9_-]/g,'_'); },
         terminalHostId: function(winId){ return 'miomosTerminalHost-' + String(winId || '').replace(/[^A-Za-z0-9_-]/g,'_'); },
