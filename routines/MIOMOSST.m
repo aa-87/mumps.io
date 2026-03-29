@@ -33,8 +33,6 @@ ENSURE(CONF,REQ,CTX,STATE,ERR)
 	. SET ^MIO("MIOMOS","SESSION",SID,"startedAt")=$$NOWISO^MIOUTIL()
 	. SET ^MIO("MIOMOS","SESSION",SID,"startedDay")=NOWD
 	. SET ^MIO("MIOMOS","SESSION",SID,"startedSec")=NOWS
-	IF $GET(^MIO("MIOMOS","SESSION",SID,"resumeToken"))="" SET ^MIO("MIOMOS","SESSION",SID,"resumeToken")="resume-"_$$UUID^MIOUTIL()
-	IF '$DATA(^MIO("MIOMOS","SESSION",SID,"WS","meta","lastSeq")) SET ^MIO("MIOMOS","SESSION",SID,"WS","meta","lastSeq")=0
 	SET STATE("principal")=KEY
 	SET STATE("userName")=USER
 	SET STATE("roles")=ROLES
@@ -43,11 +41,6 @@ ENSURE(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("lastSeenAt")=$GET(^MIO("MIOMOS","SESSION",SID,"lastSeenAt"))
 	SET STATE("layoutSavedAt")=$GET(^MIO("MIOMOS","SESSION",SID,"layoutSavedAt"))
 	SET STATE("savedLayoutJson")=$GET(^MIO("MIOMOS","SESSION",SID,"layoutJson"))
-	SET STATE("resumeToken")=$GET(^MIO("MIOMOS","SESSION",SID,"resumeToken"))
-	SET STATE("lastEventSeq")=+$GET(^MIO("MIOMOS","SESSION",SID,"WS","meta","lastSeq"))
-	SET STATE("resumeReplayLimit")=+$GET(CONF("miomos","desktop","policy","resumeReplayLimit"),64)
-	SET STATE("terminalResumeMode")=$GET(CONF("miomos","desktop","policy","terminalResumeMode"),"same-session-terminal-id")
-	SET STATE("terminalReconnectGraceSeconds")=+$GET(CONF("miomos","desktop","policy","terminalReconnectGraceSeconds"),+$GET(CONF("miomos","terminal","pipe","reconnectGraceSeconds"),180))
 	NEW UISTATE DO LOADUI(SID,.UISTATE) MERGE STATE("ui")=UISTATE
 	SET STATE("startMenuQuery")=$GET(STATE("ui","startMenuQuery"))
 	SET STATE("idleTimeoutSeconds")=IDLE
@@ -158,8 +151,6 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("session","lastSeenAt")=$GET(STATE("lastSeenAt"))
 	SET OBJ("session","idleTimeoutSeconds")=+$GET(STATE("idleTimeoutSeconds"))
 	SET OBJ("session","absoluteTimeoutSeconds")=+$GET(STATE("absoluteTimeoutSeconds"))
-	SET OBJ("session","resumeToken")=$GET(STATE("resumeToken"))
-	SET OBJ("session","lastEventSeq")=+$GET(STATE("lastEventSeq"))
 	NEW SNAP
 	NEW SNAPOK SET SNAPOK=$$SNAPOK($GET(STATE("sessionId")),.SNAP)
 	MERGE OBJ("session","ui")=SNAP("ui")
@@ -273,12 +264,19 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","policy","reconnectBaseMs")=+$GET(CONF("miomos","desktop","policy","reconnectBaseMs"),1000)
 	SET OBJ("desktop","policy","reconnectMaxMs")=+$GET(CONF("miomos","desktop","policy","reconnectMaxMs"),15000)
 	SET OBJ("desktop","policy","staleSocketMs")=+$GET(CONF("miomos","desktop","policy","staleSocketMs"),45000)
+	SET OBJ("desktop","policy","staleProbeGraceMs")=+$GET(CONF("miomos","desktop","policy","staleProbeGraceMs"),12000)
 	SET OBJ("desktop","policy","commandMaxInflight")=+$GET(CONF("miomos","desktop","policy","commandMaxInflight"),3)
 	SET OBJ("desktop","policy","commandTimeoutMs")=+$GET(CONF("miomos","desktop","policy","commandTimeoutMs"),8000)
-	SET OBJ("desktop","policy","resumeTransport")=$GET(CONF("miomos","desktop","policy","resumeTransport"),"resume-token-seq")
-	SET OBJ("desktop","policy","resumeReplayLimit")=+$GET(CONF("miomos","desktop","policy","resumeReplayLimit"),64)
-	SET OBJ("desktop","policy","terminalResumeMode")=$GET(CONF("miomos","desktop","policy","terminalResumeMode"),"same-session-terminal-id")
-	SET OBJ("desktop","policy","terminalReconnectGraceSeconds")=+$GET(CONF("miomos","desktop","policy","terminalReconnectGraceSeconds"),+$GET(CONF("miomos","terminal","pipe","reconnectGraceSeconds"),180))
+	SET OBJ("desktop","policy","reconnectJitterMs")=+$GET(CONF("miomos","desktop","policy","reconnectJitterMs"),400)
+	SET OBJ("desktop","policy","reconnectWindowMs")=+$GET(CONF("miomos","desktop","policy","reconnectWindowMs"),20000)
+	SET OBJ("desktop","policy","reconnectBurstLimit")=+$GET(CONF("miomos","desktop","policy","reconnectBurstLimit"),4)
+	SET OBJ("desktop","policy","reconnectCooldownMs")=+$GET(CONF("miomos","desktop","policy","reconnectCooldownMs"),30000)
+	SET OBJ("desktop","policy","socketOutboxSoftLimit")=+$GET(CONF("miomos","desktop","policy","socketOutboxSoftLimit"),8)
+	SET OBJ("desktop","policy","socketOutboxHardLimit")=+$GET(CONF("miomos","desktop","policy","socketOutboxHardLimit"),20)
+	SET OBJ("desktop","policy","socketOutboxFlushBatch")=+$GET(CONF("miomos","desktop","policy","socketOutboxFlushBatch"),4)
+	SET OBJ("desktop","policy","heartbeatModel")="probe-before-recycle"
+	SET OBJ("desktop","policy","reconnectModel")="jitter-window-bounded"
+	SET OBJ("desktop","policy","outboxModel")="drop-oldest-noncritical"
 	SET OBJ("desktop","policy","persistMenuState")=+$GET(CONF("miomos","desktop","policy","persistMenuState"),1)
 	SET OBJ("desktop","policy","persistActiveWindow")=+$GET(CONF("miomos","desktop","policy","persistActiveWindow"),1)
 	SET OBJ("desktop","policy","persistLayout")=+$GET(CONF("miomos","desktop","policy","persistLayout"),1)
@@ -300,8 +298,6 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("terminal","pipeEnabled")=+$GET(STATE("terminalPipeEnabled"),1)
 	SET OBJ("terminal","command")=$GET(STATE("terminalPipeCommand"))
 	SET OBJ("terminal","shell")=$GET(STATE("terminalPipeShell"))
-	SET OBJ("terminal","resumeMode")=$GET(STATE("terminalResumeMode"),"same-session-terminal-id")
-	SET OBJ("terminal","reconnectGraceSeconds")=+$GET(STATE("terminalReconnectGraceSeconds"),180)
 	NEW CNT,USR,INV,RST,OBS
 	DO LIST^MIOMOSPERM($GET(STATE("roles")),$NAME(OBJ("security","permissions")))
 	DO SUMMARY^MIOMOSOBS(.STATE,.CONF,.OBS)
@@ -391,7 +387,7 @@ SAVELAYOUTCORE(SID,PAYLOAD,OK)
 	SET:$DATA(OK) OK=1
 	QUIT
 	;
-	;
+
 SAVEUI(SID,PAYLOAD)
 	DO SAVEUICORE(SID,$GET(PAYLOAD))
 	QUIT
@@ -486,56 +482,6 @@ TOUCHCORE(SID,EVENT,OK)
 	SET:$DATA(OK) OK=1
 	QUIT
 	;
-RESUMETOKEN(SID)
-	NEW TOKEN
-	SET TOKEN=""
-	IF $GET(SID)="" QUIT TOKEN
-	SET TOKEN=$GET(^MIO("MIOMOS","SESSION",SID,"resumeToken"))
-	IF TOKEN="" DO
-	. SET TOKEN="resume-"_$$UUID^MIOUTIL()
-	. SET ^MIO("MIOMOS","SESSION",SID,"resumeToken")=TOKEN
-	QUIT TOKEN
-	;
-LASTSEQ(SID)
-	IF $GET(SID)="" QUIT 0
-	QUIT +$GET(^MIO("MIOMOS","SESSION",SID,"WS","meta","lastSeq"))
-	;
-NEXTSEQ(SID)
-	NEW SEQ
-	IF $GET(SID)="" QUIT 0
-	SET SEQ=$INCREMENT(^MIO("MIOMOS","SESSION",SID,"WS","meta","lastSeq"))
-	SET ^MIO("MIOMOS","SESSION",SID,"lastEventSeq")=SEQ
-	QUIT SEQ
-	;
-APPENDOUTBOX(SID,SEQ,JSON,LIMIT)
-	NEW ROOT,COUNT,S
-	IF $GET(SID)="" QUIT 0
-	SET SEQ=+$GET(SEQ) IF SEQ<1 QUIT 0
-	SET LIMIT=+$GET(LIMIT,64) IF LIMIT<1 SET LIMIT=64
-	SET ROOT=$NAME(^MIO("MIOMOS","SESSION",SID,"WS","outbox","data"))
-	SET @ROOT@(SEQ)=$EXTRACT($GET(JSON),1,32767)
-	SET ^MIO("MIOMOS","SESSION",SID,"WS","outbox","meta","lastSeq")=SEQ
-	SET COUNT=0,S=0
-	FOR  SET S=$ORDER(@ROOT@(S)) QUIT:S=""  SET COUNT=COUNT+1
-	FOR  QUIT:COUNT'>LIMIT  DO
-	. SET S=$ORDER(@ROOT@(0)) QUIT:S=""
-	. KILL @ROOT@(S)
-	. SET COUNT=COUNT-1
-	QUIT 1
-	;
-REPLAYJSONS(SID,LASTSEQ,LIMIT,OUT)
-	NEW ROOT,S,N
-	KILL OUT
-	IF $GET(SID)="" QUIT 0
-	SET LASTSEQ=+$GET(LASTSEQ),LIMIT=+$GET(LIMIT,64) IF LIMIT<1 SET LIMIT=64
-	SET ROOT=$NAME(^MIO("MIOMOS","SESSION",SID,"WS","outbox","data"))
-	SET (N,S)=0
-	FOR  SET S=$ORDER(@ROOT@(S)) QUIT:S=""  DO
-	. IF +S'>LASTSEQ QUIT
-	. SET N=N+1 QUIT:N>LIMIT
-	. SET OUT(N)=@ROOT@(S)
-	QUIT $SELECT(N>LIMIT:LIMIT,1:N)
-	;
 SNAPSHOT(SID,OUT)
 		DO SNAPCORE(SID,.OUT)
 		QUIT
@@ -558,8 +504,6 @@ SNAPCORE(SID,OUT)
 		SET OUT("startedAt")=$GET(^MIO("MIOMOS","SESSION",SID,"startedAt"))
 		SET OUT("lastSeenAt")=$GET(^MIO("MIOMOS","SESSION",SID,"lastSeenAt"))
 		SET OUT("lastEvent")=$GET(^MIO("MIOMOS","SESSION",SID,"lastEvent"))
-		SET OUT("resumeToken")=$GET(^MIO("MIOMOS","SESSION",SID,"resumeToken"))
-		SET OUT("lastEventSeq")=+$GET(^MIO("MIOMOS","SESSION",SID,"WS","meta","lastSeq"))
 		SET OUT("layoutSavedAt")=$GET(^MIO("MIOMOS","SESSION",SID,"layoutSavedAt"))
 		SET OUT("uiSavedAt")=$GET(^MIO("MIOMOS","SESSION",SID,"uiSavedAt"))
 		SET OUT("hasLayout")=$SELECT($GET(^MIO("MIOMOS","SESSION",SID,"layoutJson"))'="":1,1:0)
@@ -569,4 +513,3 @@ SNAPCORE(SID,OUT)
 		MERGE OUT("eventCounts")=^MIO("MIOMOS","SESSION",SID,"eventCounts")
 		SET OUT("ok")=1
 		QUIT
-	;

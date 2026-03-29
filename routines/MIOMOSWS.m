@@ -16,18 +16,14 @@ MESSAGE(DEV,CONF,REQ,CTX)
 	. DO SENDTEXT^MIOWS(.DEV,RESP)
 	SET CTX("miomos","sessionId")=$GET(STATE("sessionId"))
 	IF EVT="hello" DO  QUIT
-	. NEW HOUT,N
 	. DO EVENT^MIOMOSAUD("ws_hello",.CTX,.STATE)
 	. DO ACCESS^MIOMOSOBS("ws_hello",.CTX,.STATE)
-	. SET RESP=$$HELLOJSON(.STATE,.CONF,PAYLOAD,.HOUT)
+	. SET RESP=$$HELLO(.STATE,.CONF)
 	. DO SENDTEXT^MIOWS(.DEV,RESP)
 	. DO SNAPSHOT^MIOMOSCHAT($GET(STATE("chatRoom")),+$GET(STATE("chatLimit"),20),.RESP)
 	. DO SENDTEXT^MIOWS(.DEV,RESP)
-	. IF +$GET(HOUT("resumed")),+$GET(HOUT("replayCount"))>0 DO
-	. . FOR N=1:1:+$GET(HOUT("replayCount")) DO
-	. . . IF $GET(HOUT("replay",N))'="" DO SENDTEXT^MIOWS(.DEV,$GET(HOUT("replay",N)))
 	IF EVT="ping" DO  QUIT
-	. SET RESP=$$PONG(.STATE)
+	. SET RESP=$$PONG(.STATE,.CONF)
 	. DO SENDTEXT^MIOWS(.DEV,RESP)
 	IF EVT="command.exec"!(EVT="command") DO  QUIT
 	. NEW CMDERR,TREE,REQID,CMD
@@ -92,7 +88,7 @@ MESSAGE(DEV,CONF,REQ,CTX)
 	. . SET RESP=$$ERRJSON("terminal_open_failed",$GET(TERR("error")))
 	. . DO SENDTEXT^MIOWS(.DEV,RESP)
 	. SET RESP=$$TERMEVT("terminal.open",.OUT)
-	. DO SENDREPLAY(.DEV,.STATE,RESP,1,.CONF)
+	. DO SENDTEXT^MIOWS(.DEV,RESP)
 	IF EVT="terminal.input" DO  QUIT
 	. NEW TREE,TERR,OUT,TERMID,DATA
 	. DO PURGESTALE^MIOMOSTPIPE(.CONF)
@@ -103,7 +99,7 @@ MESSAGE(DEV,CONF,REQ,CTX)
 	. . SET RESP=$$ERRJSON("terminal_input_failed",$GET(TERR("error")))
 	. . DO SENDTEXT^MIOWS(.DEV,RESP)
 	. SET RESP=$$TERMEVT("terminal.stdout",.OUT)
-	. DO SENDREPLAY(.DEV,.STATE,RESP,1,.CONF)
+	. DO SENDTEXT^MIOWS(.DEV,RESP)
 	IF EVT="terminal.resize" DO  QUIT
 	. NEW TREE,TERR,OUT,TERMID,COLS,ROWS
 	. DO PURGESTALE^MIOMOSTPIPE(.CONF)
@@ -113,7 +109,7 @@ MESSAGE(DEV,CONF,REQ,CTX)
 	. . SET RESP=$$ERRJSON("terminal_resize_failed",$GET(TERR("error")))
 	. . DO SENDTEXT^MIOWS(.DEV,RESP)
 	. SET RESP=$$TERMEVT("terminal.resize",.OUT)
-	. DO SENDREPLAY(.DEV,.STATE,RESP,1,.CONF)
+	. DO SENDTEXT^MIOWS(.DEV,RESP)
 	IF EVT="terminal.poll"!(EVT="terminal.drain")!(EVT="ping.terminal") DO  QUIT
 	. NEW TREE,TERR,OUT,TERMID
 	. DO PURGESTALE^MIOMOSTPIPE(.CONF)
@@ -123,17 +119,7 @@ MESSAGE(DEV,CONF,REQ,CTX)
 	. . SET RESP=$$ERRJSON("terminal_poll_failed",$GET(TERR("error")))
 	. . DO SENDTEXT^MIOWS(.DEV,RESP)
 	. SET RESP=$$TERMEVT("terminal.stdout",.OUT)
-	. DO SENDREPLAY(.DEV,.STATE,RESP,1,.CONF)
-	IF EVT="terminal.reattach" DO  QUIT
-	. NEW TREE,TERR,OUT,TERMID
-	. DO PURGESTALE^MIOMOSTPIPE(.CONF)
-	. IF $EXTRACT($GET(PAYLOAD),1)="{" SET OK=$$DECODE^MIOJSON(PAYLOAD,.TREE,.TERR)
-	. SET TERMID=$GET(TREE("terminalId"))
-	. IF '$$REATTACH^MIOMOSTPIPE(.STATE,.CONF,TERMID,.OUT,.TERR) DO  QUIT
-	. . SET RESP=$$ERRJSON("terminal_reattach_failed",$GET(TERR("error")))
-	. . DO SENDTEXT^MIOWS(.DEV,RESP)
-	. SET RESP=$$TERMEVT("terminal.open",.OUT)
-	. DO SENDREPLAY(.DEV,.STATE,RESP,1,.CONF)
+	. DO SENDTEXT^MIOWS(.DEV,RESP)
 	IF EVT="terminal.close" DO  QUIT
 	. NEW TREE,TERR,OUT,TERMID
 	. IF $EXTRACT($GET(PAYLOAD),1)="{" SET OK=$$DECODE^MIOJSON(PAYLOAD,.TREE,.TERR)
@@ -142,7 +128,7 @@ MESSAGE(DEV,CONF,REQ,CTX)
 	. . SET RESP=$$ERRJSON("terminal_close_failed",$GET(TERR("error")))
 	. . DO SENDTEXT^MIOWS(.DEV,RESP)
 	. SET RESP=$$TERMEVT("terminal.close",.OUT)
-	. DO SENDREPLAY(.DEV,.STATE,RESP,1,.CONF)
+	. DO SENDTEXT^MIOWS(.DEV,RESP)
 	DO EVENTX^MIOMOSAUD("ws_unsupported",.CTX,.STATE,EVT)
 	SET RESP=$$ERRJSON("unsupported_event",EVT)
 	DO SENDTEXT^MIOWS(.DEV,RESP)
@@ -207,21 +193,8 @@ INJECTAUTH(CONF,SID,CTX,ERR)
 	. IF X'="" SET CTX("auth","roles",X)=1
 	QUIT 1
 	;
-HELLOJSON(STATE,CONF,PAYLOAD,OUT)
-	NEW OBJ,TREE,ERR,SID,TOKEN,CLIENTTOK,LASTSEQ,COUNT,N,LIMIT,CURSEQ,REPLAY
-	KILL OUT
-	SET SID=$GET(STATE("sessionId"))
-	SET TOKEN=$$RESUMETOKEN^MIOMOSST(SID)
-	SET CURSEQ=$$LASTSEQ^MIOMOSST(SID)
-	SET LIMIT=+$GET(STATE("resumeReplayLimit"),64) IF LIMIT<1 SET LIMIT=64
-	IF $EXTRACT($GET(PAYLOAD),1)="{" DO
-	. IF $$DECODE^MIOJSON($GET(PAYLOAD),.TREE,.ERR) DO
-	. . SET CLIENTTOK=$GET(TREE("resumeToken"))
-	. . SET LASTSEQ=+$GET(TREE("lastSeenEventSeq"))
-	SET OUT("resumed")=$SELECT((CLIENTTOK=TOKEN)&(CLIENTTOK'=""):1,1:0)
-	IF +$GET(OUT("resumed")) DO
-	. SET OUT("replayCount")=$$REPLAYJSONS^MIOMOSST(SID,+$GET(LASTSEQ),LIMIT,.REPLAY)
-	. MERGE OUT("replay")=REPLAY
+HELLO(STATE,CONF)
+	NEW OBJ
 	SET OBJ("ok")=1
 	SET OBJ("event")="hello"
 	SET OBJ("sessionId")=$GET(STATE("sessionId"))
@@ -231,25 +204,22 @@ HELLOJSON(STATE,CONF,PAYLOAD,OUT)
 	SET OBJ("serverTime")=$$NOWISO^MIOUTIL()
 	SET OBJ("idleTimeoutSeconds")=+$GET(STATE("idleTimeoutSeconds"))
 	SET OBJ("absoluteTimeoutSeconds")=+$GET(STATE("absoluteTimeoutSeconds"))
-	SET OBJ("resumeSupported")=1
-	SET OBJ("resumeTransport")="resume-token-seq"
-	SET OBJ("resumeToken")=TOKEN
-	SET OBJ("resumed")=+$GET(OUT("resumed"))
-	SET OBJ("lastEventSeq")=CURSEQ
-	SET OBJ("replayCount")=+$GET(OUT("replayCount"))
-	SET OBJ("terminalResumeMode")=$GET(STATE("terminalResumeMode"),"same-session-terminal-id")
-	SET OBJ("terminalReconnectGraceSeconds")=+$GET(STATE("terminalReconnectGraceSeconds"),+$GET(CONF("miomos","terminal","pipe","reconnectGraceSeconds"),180))
-	SET OBJ("terminalResumeReady")=$SELECT($GET(STATE("ui","terminalId"))'="":1,1:0)
-	IF $GET(STATE("ui","terminalId"))'="" SET OBJ("terminalId")=$GET(STATE("ui","terminalId"))
+	SET OBJ("retryAfterMs")=+$GET(CONF("miomos","desktop","policy","reconnectCooldownMs"),30000)
+	SET OBJ("reconnectModel")="jitter-window-bounded"
+	SET OBJ("outboxModel")="drop-oldest-noncritical"
+	SET OBJ("outboxFlushBatch")=+$GET(CONF("miomos","desktop","policy","socketOutboxFlushBatch"),4)
 	QUIT $$EN^MIOJSON1(.OBJ)
 	;
-PONG(STATE)
+PONG(STATE,CONF)
 	NEW OBJ
 	SET OBJ("ok")=1
 	SET OBJ("event")="pong"
 	SET OBJ("sessionId")=$GET(STATE("sessionId"))
 	SET OBJ("serverTime")=$$NOWISO^MIOUTIL()
-	SET OBJ("lastEventSeq")=$$LASTSEQ^MIOMOSST($GET(STATE("sessionId")))
+	SET OBJ("retryAfterMs")=+$GET(CONF("miomos","desktop","policy","reconnectCooldownMs"),30000)
+	SET OBJ("reconnectModel")="jitter-window-bounded"
+	SET OBJ("outboxModel")="drop-oldest-noncritical"
+	SET OBJ("outboxFlushBatch")=+$GET(CONF("miomos","desktop","policy","socketOutboxFlushBatch"),4)
 	QUIT $$EN^MIOJSON1(.OBJ)
 	;
 ACK(EVT,APPKEY,STATE)
@@ -381,50 +351,6 @@ AUTHACKJSON(EVT,REQID,STATE)
 	SET OBJ("serverTime")=$$NOWISO^MIOUTIL()
 	QUIT $$EN^MIOJSON1(.OBJ)
 	;
-	;
-SENDREPLAY(DEV,STATE,JSON,REPLAYABLE,CONF)
-	NEW OUT,ERR,STAMPED
-	SET OUT=$GET(JSON),STAMPED=0
-	IF +$GET(REPLAYABLE) DO
-	. SET STAMPED=$$STAMPREPLAYJSON($GET(STATE("sessionId")),$GET(JSON),.OUT,.ERR,+$GET(CONF("miomos","desktop","policy","resumeReplayLimit"),64))
-	DO SENDTEXT^MIOWS(.DEV,OUT)
-	QUIT
-	;
-STAMPREPLAYJSON(SID,JSON,RESP,ERR,LIMIT)
-	NEW TREE,SEQ,EVT,TERR
-	KILL ERR
-	SET ERR("routine")="MIOMOSWS"
-	SET RESP=$GET(JSON)
-	IF $GET(SID)="" SET ERR("error")="session_id_missing" QUIT 0
-	SET EVT=$$EVENT($GET(JSON))
-	IF EVT="" SET ERR("error")="event_missing" QUIT 0
-	SET SEQ=$$NEXTSEQ^MIOMOSST(SID) IF SEQ<1 SET ERR("error")="seq_issue" QUIT 0
-	IF $$DECODEPAY($GET(JSON),.TREE,.TERR) DO  IF 1
-	. SET TREE("eventSeq")=SEQ
-	. SET RESP=$$EN^MIOJSON1(.TREE)
-	E  IF '''$$STAMPTEXT(JSON,SEQ,.RESP,.ERR) QUIT 0
-	QUIT $$APPENDOUTBOX^MIOMOSST(SID,SEQ,RESP,+$GET(LIMIT,64))
-	;
-STAMPTEXT(JSON,SEQ,RESP,ERR)
-	NEW X,L
-	SET X=$GET(JSON),RESP=X
-	IF X="" SET ERR("error")="json_missing" QUIT 0
-	SET L=$LENGTH(X)
-	IF $EXTRACT(X,1)'="{"!($EXTRACT(X,L)'="}") SET ERR("error")="json_object_required" QUIT 0
-	SET RESP=$EXTRACT(X,1,L-1)_","_eventSeq_":"_+$GET(SEQ)_"}"
-	QUIT 1
-	;
-HELLOSIDJSON(CONF,REQ,CTX,SID,PAYLOAD,RESP,ERR,REPLAY)
-	NEW STATE,OK,OUT
-	KILL RESP,ERR,REPLAY
-	SET ERR("routine")="MIOMOSWS"
-	DO CONFDEF^MIOMOS(.CONF)
-	IF $GET(SID)'="" SET CTX("miomos","sessionId")=$GET(SID)
-	SET OK=$$ENSURE^MIOMOSST(.CONF,.REQ,.CTX,.STATE,.ERR)
-	IF 'OK SET RESP=$$ERRJSON("session_error",$GET(ERR("error"))) QUIT 0
-	SET RESP=$$HELLOJSON(.STATE,.CONF,$GET(PAYLOAD),.OUT)
-	MERGE REPLAY=OUT("replay")
-	QUIT 1
 	;
 TERMEVT(EVT,OUT)
 	NEW OBJ,N
