@@ -503,3 +503,12 @@ The source-of-truth terminal contract is now:
 - Maintain session registry snapshots under `^MIO("MIOMOS","SESSION","REG",...)`.
 - Emit `session.signout` for direct websocket session-guard failures.
 - Audit forbidden websocket actions and privileged terminal actions.
+
+
+## ROI45 — Release gates and runbooks
+
+- Keep release/readiness metadata additive and server-authored in boot JSON.
+- Tie the authoritative release test gate to `^MIOMOST`.
+- Preserve explicit runbook metadata for deploy, restart, and route rebuild operations.
+- Keep websocket smoke and browser smoke checklists visible in SSR tokens and boot metadata.
+- Do not use the release-gates ROI to change working runtime behavior.

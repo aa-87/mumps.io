@@ -330,6 +330,7 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("security","sessionRegistry","enabled")=+$GET(STATE("securitySessionRegistryEnabled"),1)
 	SET OBJ("security","sessionRegistry","model")=$GET(STATE("securitySessionRegistryModel"),"server-authored")
 	N TTMP M TTMP=OBJ("security","sessionRegistry","current") DO REGSNAP($GET(STATE("sessionId")),.TTMP) M OBJ("security","sessionRegistry","current")=TTMP K TTMP
+	DO RELEASEARY(.STATE,.CONF,$NAME(OBJ("release")))
 	DO APPS($NAME(OBJ("desktop","apps")),.STATE)
 	DO WINS($NAME(OBJ("desktop","windows")),.STATE)
 		MERGE OBJ("apps")=OBJ("desktop","apps")
@@ -338,6 +339,26 @@ BOOTARY(STATE,CONF,OBJ)
 	DO BUILD^MIOMOSVM(.STATE,.CONF,.VIEW)
 	MERGE OBJ("view")=VIEW
 	QUIT
+	;
+RELEASEARY(STATE,CONF,ROOT)
+	KILL @ROOT
+	SET @ROOT@("model")=$GET(CONF("miomos","release","model"),"test-runbook-checklist")
+	SET @ROOT@("docsCurrent")=+$GET(CONF("miomos","release","docsCurrent"),1)
+	SET @ROOT@("tests","suite")=$GET(CONF("miomos","release","tests","suite"),"^MIOMOST")
+	SET @ROOT@("tests","quietSuccess")=+$GET(CONF("miomos","release","tests","quietSuccess"),1)
+	SET @ROOT@("runbooks","deploy")=$GET(CONF("miomos","release","runbooks","deploy"),"systemd-caddy-nginx")
+	SET @ROOT@("runbooks","restart")=$GET(CONF("miomos","release","runbooks","restart"),"graceful-websocket-aware")
+	SET @ROOT@("runbooks","routeRebuild")=$GET(CONF("miomos","release","runbooks","routeRebuild"),"REG^MIOMOS+COMPILE^MIOROUTE")
+	SET @ROOT@("smoke","websocket",1,"key")="hello",@ROOT@("smoke","websocket",1,"label")="Hello handshake"
+	SET @ROOT@("smoke","websocket",2,"key")="ping",@ROOT@("smoke","websocket",2,"label")="Heartbeat ping/pong"
+	SET @ROOT@("smoke","websocket",3,"key")="command",@ROOT@("smoke","websocket",3,"label")="Command bus request/response"
+	SET @ROOT@("smoke","websocket",4,"key")="terminal",@ROOT@("smoke","websocket",4,"label")="Terminal open/input/output"
+	SET @ROOT@("smoke","browser",1,"key")="start-menu",@ROOT@("smoke","browser",1,"label")="Start menu and shell chrome"
+	SET @ROOT@("smoke","browser",2,"key")="theme",@ROOT@("smoke","browser",2,"label")="Theme and settings persistence"
+	SET @ROOT@("smoke","browser",3,"key")="terminal-focus",@ROOT@("smoke","browser",3,"label")="Terminal input, clear, and palette"
+	SET @ROOT@("smoke","browser",4,"key")="reconnect",@ROOT@("smoke","browser",4,"label")="Reconnect banner and socket recovery"
+	QUIT
+	;
 	;
 CSV2ARY(CSV,ROOT)
 	NEW I,X,N

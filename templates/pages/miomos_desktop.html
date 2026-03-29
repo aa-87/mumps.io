@@ -9,6 +9,11 @@
   data-miomos-command-transport="websocket-only"
   data-miomos-realtime-contract="single-websocket-command-and-events"
   data-miomos-ws-observability="session-connection-registry"
+  data-miomos-release-gates="test-runbook-checklist"
+  data-miomos-deploy-runbook="systemd-caddy-nginx"
+  data-miomos-route-rebuild="REG^MIOMOS+COMPILE^MIOROUTE"
+  data-miomos-ws-smoke="hello-ping-command-terminal"
+  data-miomos-browser-checklist="start-theme-terminal-reconnect"
   data-ws-registry-surface="1"
   data-settings-form="1"
   data-setting-terminal="fontFamily"
@@ -52,6 +57,11 @@
   <span hidden data-miomos-command-transport="websocket-only">All live shell communication now goes through the primary websocket session.</span>
   <span hidden data-miomos-realtime-contract="single-websocket-command-and-events">A single websocket carries shell commands, saves, refreshes, and live events.</span>
   <span hidden data-miomos-ws-observability="session-connection-registry">Websocket registry tracks active session and connection activity.</span>
+  <span hidden data-miomos-release-gates="test-runbook-checklist">Release gates track tests, runbooks, websocket smoke, and browser checks.</span>
+  <span hidden data-miomos-deploy-runbook="systemd-caddy-nginx">Deploy MIOMOS behind systemd and the supported reverse-proxy stack.</span>
+  <span hidden data-miomos-route-rebuild="REG^MIOMOS+COMPILE^MIOROUTE">Route rebuild runbook uses REG^MIOMOS and COMPILE^MIOROUTE.</span>
+  <span hidden data-miomos-ws-smoke="hello-ping-command-terminal">Websocket smoke covers hello, ping, command bus, and terminal continuity.</span>
+  <span hidden data-miomos-browser-checklist="start-theme-terminal-reconnect">Browser checklist covers start menu, theme persistence, terminal, and reconnect posture.</span>
   <span hidden data-miomos-session-binding="principal-and-session">Websocket sessions stay bound to the authenticated principal.</span>
   <span hidden data-miomos-idle-lock="server-authored-idle-lock">Idle lock policy is server-authored for MIOMOS sessions.</span>
   <span hidden data-miomos-session-registry="1">Session registry tracks lock and forced signout state.</span>

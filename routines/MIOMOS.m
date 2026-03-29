@@ -110,6 +110,13 @@ CONFDEF(CONF)
 	IF $GET(CONF("miomos","websocket","observability","registryEnabled"))="" SET CONF("miomos","websocket","observability","registryEnabled")=1
 	IF $GET(CONF("miomos","websocket","observability","tailLimit"))="" SET CONF("miomos","websocket","observability","tailLimit")=12
 	IF $GET(CONF("miomos","websocket","observability","controlModel"))="" SET CONF("miomos","websocket","observability","controlModel")="inspect-only"
+	IF $GET(CONF("miomos","release","model"))="" SET CONF("miomos","release","model")="test-runbook-checklist"
+	IF $GET(CONF("miomos","release","tests","suite"))="" SET CONF("miomos","release","tests","suite")="^MIOMOST"
+	IF $GET(CONF("miomos","release","tests","quietSuccess"))="" SET CONF("miomos","release","tests","quietSuccess")=1
+	IF $GET(CONF("miomos","release","runbooks","deploy"))="" SET CONF("miomos","release","runbooks","deploy")="systemd-caddy-nginx"
+	IF $GET(CONF("miomos","release","runbooks","restart"))="" SET CONF("miomos","release","runbooks","restart")="graceful-websocket-aware"
+	IF $GET(CONF("miomos","release","runbooks","routeRebuild"))="" SET CONF("miomos","release","runbooks","routeRebuild")="REG^MIOMOS+COMPILE^MIOROUTE"
+	IF $GET(CONF("miomos","release","docsCurrent"))="" SET CONF("miomos","release","docsCurrent")=1
 	IF $GET(CONF("server","templateDir"))="" SET CONF("server","templateDir")="templates"
 	IF $GET(CONF("templates","root"))="" SET CONF("templates","root")=$GET(CONF("server","templateDir"))_"/"
 	IF $GET(CONF("templates","ext"))="" SET CONF("templates","ext")=""

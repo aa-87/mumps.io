@@ -39,6 +39,11 @@ START
 	DO OK^MIOTASSERT(OUT["data-miomos-command-event=""command.exec""","[MIOMOST][T003][ws command event]")
 	DO OK^MIOTASSERT(OUT["data-miomos-realtime-contract=""single-websocket-command-and-events""","[MIOMOST][T003][ws realtime token]")
 	DO OK^MIOTASSERT(OUT["data-miomos-ws-observability=""session-connection-registry""","[MIOMOST][T003][ws observability token]")
+	DO OK^MIOTASSERT(OUT["data-miomos-release-gates=""test-runbook-checklist""","[MIOMOST][T003][release gates token]")
+	DO OK^MIOTASSERT(OUT["data-miomos-deploy-runbook=""systemd-caddy-nginx""","[MIOMOST][T003][deploy runbook token]")
+	DO OK^MIOTASSERT(OUT["data-miomos-route-rebuild=""REG^MIOMOS+COMPILE^MIOROUTE""","[MIOMOST][T003][route rebuild token]")
+	DO OK^MIOTASSERT(OUT["data-miomos-ws-smoke=""hello-ping-command-terminal""","[MIOMOST][T003][ws smoke token]")
+	DO OK^MIOTASSERT(OUT["data-miomos-browser-checklist=""start-theme-terminal-reconnect""","[MIOMOST][T003][browser checklist token]")
 	DO OK^MIOTASSERT(OUT["data-miomos-session-binding=""principal-and-session""","[MIOMOST][T003][session binding token]")
 	DO OK^MIOTASSERT(OUT["data-miomos-idle-lock=""server-authored-idle-lock""","[MIOMOST][T003][idle lock token]")
 	DO OK^MIOTASSERT(OUT["data-miomos-session-registry=""1""","[MIOMOST][T003][session registry token]")
@@ -155,6 +160,15 @@ START
 	DO EQ^MIOTASSERT(+$GET(OBJ("security","idleLock","seconds")),300,"[MIOMOST][T004][idle lock seconds]")
 	DO EQ^MIOTASSERT(+$GET(OBJ("security","sessionRegistry","enabled")),1,"[MIOMOST][T004][session registry enabled]")
 	DO EQ^MIOTASSERT($GET(OBJ("security","sessionRegistry","model")),"server-authored","[MIOMOST][T004][session registry model]")
+	DO EQ^MIOTASSERT($GET(OBJ("release","model")),"test-runbook-checklist","[MIOMOST][T004][release model]")
+	DO EQ^MIOTASSERT($GET(OBJ("release","tests","suite")),"^MIOMOST","[MIOMOST][T004][release suite]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("release","tests","quietSuccess")),1,"[MIOMOST][T004][release quiet success]")
+	DO EQ^MIOTASSERT($GET(OBJ("release","runbooks","deploy")),"systemd-caddy-nginx","[MIOMOST][T004][deploy runbook]")
+	DO EQ^MIOTASSERT($GET(OBJ("release","runbooks","restart")),"graceful-websocket-aware","[MIOMOST][T004][restart runbook]")
+	DO EQ^MIOTASSERT($GET(OBJ("release","runbooks","routeRebuild")),"REG^MIOMOS+COMPILE^MIOROUTE","[MIOMOST][T004][route rebuild runbook]")
+	DO EQ^MIOTASSERT($GET(OBJ("release","smoke","websocket",4,"key")),"terminal","[MIOMOST][T004][release ws smoke]")
+	DO EQ^MIOTASSERT($GET(OBJ("release","smoke","browser",3,"key")),"terminal-focus","[MIOMOST][T004][release browser smoke]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("release","docsCurrent")),1,"[MIOMOST][T004][release docs current]")
 	;
 	KILL CONF
 	SET CONF("auth","enabled")=1
@@ -404,6 +418,16 @@ START
 	DO REGSNAP^MIOMOSST(SECSID,.SECA)
 	DO EQ^MIOTASSERT($GET(SECA("sessionId")),SECSID,"[MIOMOST][T020][registry sid]")
 	DO EQ^MIOTASSERT($GET(SECA("principal")),"phaseone","[MIOMOST][T020][registry principal]")
+	;
+	KILL ARR
+	DO RELEASEARY^MIOMOSST(.STATE,.CONF,$NA(ARR))
+	DO EQ^MIOTASSERT($GET(ARR("model")),"test-runbook-checklist","[MIOMOST][T021][release model]")
+	DO EQ^MIOTASSERT($GET(ARR("tests","suite")),"^MIOMOST","[MIOMOST][T021][release suite]")
+	DO EQ^MIOTASSERT($GET(ARR("runbooks","deploy")),"systemd-caddy-nginx","[MIOMOST][T021][release deploy]")
+	DO EQ^MIOTASSERT($GET(ARR("runbooks","routeRebuild")),"REG^MIOMOS+COMPILE^MIOROUTE","[MIOMOST][T021][release rebuild]")
+	DO EQ^MIOTASSERT($GET(ARR("smoke","websocket",1,"key")),"hello","[MIOMOST][T021][release ws smoke]")
+	DO EQ^MIOTASSERT($GET(ARR("smoke","browser",4,"key")),"reconnect","[MIOMOST][T021][release browser smoke]")
+	DO EQ^MIOTASSERT(+$GET(ARR("docsCurrent")),1,"[MIOMOST][T021][release docs current]")
 	QUIT
 	;
 HASWRITE(OUT,TEXT)
