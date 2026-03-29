@@ -28,6 +28,7 @@ CONFDEF(CONF)
 	IF $GET(CONF("miomos","route","adminResetRequest"))="" SET CONF("miomos","route","adminResetRequest")="/api/miomos/admin/users/reset/request"
 	IF $GET(CONF("miomos","route","adminUserRoles"))="" SET CONF("miomos","route","adminUserRoles")="/api/miomos/admin/users/roles"
 	IF $GET(CONF("miomos","route","adminGuestToggle"))="" SET CONF("miomos","route","adminGuestToggle")="/api/miomos/admin/config/guest-login"
+	IF $GET(CONF("miomos","route","adminReports"))="" SET CONF("miomos","route","adminReports")="/api/miomos/admin/reports"
 	IF $GET(CONF("miomos","route","observSummary"))="" SET CONF("miomos","route","observSummary")="/api/miomos/observability/summary"
 	IF $GET(CONF("miomos","route","accessExport"))="" SET CONF("miomos","route","accessExport")="/api/miomos/observability/access/export"
 	IF $GET(CONF("miomos","route","errorExport"))="" SET CONF("miomos","route","errorExport")="/api/miomos/observability/error/export"
@@ -216,6 +217,8 @@ REG(CONF)
 	KILL META SET META("authRequired")=AUTHREQ
 	DO ADDM^MIOROUTE("POST",$GET(CONF("miomos","route","adminGuestToggle")),"ADMINGUESTTOGGLE^MIOMOSAPI",.META)
 	KILL META SET META("authRequired")=AUTHREQ
+	DO ADDM^MIOROUTE("GET",$GET(CONF("miomos","route","adminReports")),"ADMINREPORTS^MIOMOSAPI",.META)
+	KILL META SET META("authRequired")=AUTHREQ
 	DO ADDM^MIOROUTE("GET",$GET(CONF("miomos","route","observSummary")),"OBSSUMMARY^MIOMOSAPI",.META)
 	KILL META SET META("authRequired")=AUTHREQ
 	DO ADDM^MIOROUTE("GET",$GET(CONF("miomos","route","accessExport")),"ACCESSX^MIOMOSAPI",.META)
@@ -268,6 +271,7 @@ DEVEXEMPT(CONF)
 	DO ADDEXEMPT(.CONF,$GET(CONF("miomos","route","adminResetRequest")))
 	DO ADDEXEMPT(.CONF,$GET(CONF("miomos","route","adminUserRoles")))
 	DO ADDEXEMPT(.CONF,$GET(CONF("miomos","route","adminGuestToggle")))
+	DO ADDEXEMPT(.CONF,$GET(CONF("miomos","route","adminReports")))
 	DO ADDEXEMPT(.CONF,$GET(CONF("miomos","route","observSummary")))
 	DO ADDEXEMPT(.CONF,$GET(CONF("miomos","route","accessExport")))
 	DO ADDEXEMPT(.CONF,$GET(CONF("miomos","route","errorExport")))

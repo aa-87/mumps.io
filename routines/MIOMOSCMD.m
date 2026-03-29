@@ -97,6 +97,7 @@ TERMOPEN(STATE,CONF,TREE,OUT,ERR)
 	NEW TERMOUT,TERMID
 	IF '$$HAS^MIOMOSPERM(.STATE,"terminal.use") SET ERR("error")="forbidden",ERR("detail")="terminal.use",ERR("status")=403 QUIT 0
 	SET TERMID=$GET(TREE("terminalId"))
+	IF +$GET(TREE("forceNew")),TERMID="" SET TERMID="__new__"
 	IF '$$OPEN^MIOMOSTPIPE(.STATE,.CONF,TERMID,.TERMOUT,.ERR) SET ERR("status")=400 QUIT 0
 	MERGE OUT("terminal")=TERMOUT
 	SET OUT("command")="terminal.open"

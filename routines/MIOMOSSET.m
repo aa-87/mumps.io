@@ -23,11 +23,32 @@ LOAD(STATE,CONF)
 	. SET VAL=$GET(^MIO("MIOMOS","PREF",USER,"icon",APP))
 	. IF VAL="" SET VAL=$$ICONSTYLE($GET(STATE("iconStyle")),APP)
 	. SET STATE("icon",APP)=VAL
+	NEW DEF
+	SET DEF("startMenuSection")=$GET(CONF("miomos","settings","shell","startMenuSection"),"Pinned")
+	SET DEF("showClockSeconds")=+$GET(CONF("miomos","settings","shell","showClockSeconds"),0)
+	SET DEF("showTrayLabels")=+$GET(CONF("miomos","settings","shell","showTrayLabels"),1)
+	SET DEF("chatRoom")=$GET(CONF("miomos","chat","defaultRoom"),"general")
+	SET DEF("chatLimit")=+$GET(CONF("miomos","chat","messageLimit"),20)
+	SET DEF("terminalLaunchMode")=$GET(CONF("miomos","settings","shell","terminalLaunchMode"),"resume-last")
+	SET DEF("quickLaunch")=$GET(CONF("miomos","settings","shell","quickLaunch"),"workspace,collaboration,terminal")
+	SET STATE("shell","startMenuSection")=$$SHELLSECTIONOK($$GETS(USER,"startMenuSection",DEF("startMenuSection")),DEF("startMenuSection"))
+	SET STATE("shell","showClockSeconds")=+$GET(^MIO("MIOMOS","PREF",USER,"shell","showClockSeconds"),DEF("showClockSeconds"))
+	SET STATE("shell","showTrayLabels")=+$GET(^MIO("MIOMOS","PREF",USER,"shell","showTrayLabels"),DEF("showTrayLabels"))
+	SET STATE("shell","chatRoom")=$$CHATROOMOK($$GETS(USER,"chatRoom",DEF("chatRoom")),DEF("chatRoom"))
+	SET STATE("shell","chatLimit")=$$CHATLIMIT(+$GET(^MIO("MIOMOS","PREF",USER,"shell","chatLimit"),DEF("chatLimit")))
+	SET STATE("shell","terminalLaunchMode")=$$LAUNCHMODEOK($$GETS(USER,"terminalLaunchMode",DEF("terminalLaunchMode")),DEF("terminalLaunchMode"))
+	SET STATE("shell","quickLaunch")=$$QUICKCSV($$GETS(USER,"quickLaunch",DEF("quickLaunch")),DEF("quickLaunch"))
 	QUIT
 	;
 GETP(USER,KEY,DEF)
 	NEW X
 	SET X=$GET(^MIO("MIOMOS","PREF",$GET(USER),$GET(KEY)))
+	IF X'="" QUIT X
+	QUIT $GET(DEF)
+	;
+GETS(USER,KEY,DEF)
+	NEW X
+	SET X=$GET(^MIO("MIOMOS","PREF",$GET(USER),"shell",$GET(KEY)))
 	IF X'="" QUIT X
 	QUIT $GET(DEF)
 	;
@@ -73,6 +94,24 @@ SAVE(USER,TREE,OUT,ERR)
 	IF $DATA(TREE("windowPreset"))!$DATA(TREE("snapMode"))!$DATA(TREE("motionProfile"))!$DATA(TREE("titlebarStyle")) DO  QUIT:$GET(ERR("error"))'=""
 	. NEW WMOUT,WMERR
 	. IF '$$SAVE^MIOMOSWM(USER,.TREE,.WMOUT,.WMERR) MERGE ERR=WMERR QUIT
+	IF $DATA(TREE("shell")) DO  QUIT:$GET(ERR("error"))'=""
+	. IF $DATA(TREE("shell","startMenuSection")) DO
+	. . SET VAL=$$SHELLSECTIONOK($GET(TREE("shell","startMenuSection")),"") IF VAL="" SET ERR("error")="start_menu_section_invalid" QUIT
+	. . SET ^MIO("MIOMOS","PREF",USER,"shell","startMenuSection")=VAL
+	. IF $DATA(TREE("shell","showClockSeconds")) SET ^MIO("MIOMOS","PREF",USER,"shell","showClockSeconds")=+$GET(TREE("shell","showClockSeconds"))
+	. IF $DATA(TREE("shell","showTrayLabels")) SET ^MIO("MIOMOS","PREF",USER,"shell","showTrayLabels")=+$GET(TREE("shell","showTrayLabels"))
+	. IF $DATA(TREE("shell","chatRoom")) DO
+	. . SET VAL=$$CHATROOMOK($GET(TREE("shell","chatRoom")),"") IF VAL="" SET ERR("error")="chat_room_invalid" QUIT
+	. . SET ^MIO("MIOMOS","PREF",USER,"shell","chatRoom")=VAL
+	. IF $DATA(TREE("shell","chatLimit")) DO
+	. . SET VAL=$$CHATLIMIT(+$GET(TREE("shell","chatLimit"))) IF VAL<1 SET ERR("error")="chat_limit_invalid" QUIT
+	. . SET ^MIO("MIOMOS","PREF",USER,"shell","chatLimit")=VAL
+	. IF $DATA(TREE("shell","terminalLaunchMode")) DO
+	. . SET VAL=$$LAUNCHMODEOK($GET(TREE("shell","terminalLaunchMode")),"") IF VAL="" SET ERR("error")="terminal_launch_mode_invalid" QUIT
+	. . SET ^MIO("MIOMOS","PREF",USER,"shell","terminalLaunchMode")=VAL
+	. IF $DATA(TREE("shell","quickLaunch")) DO
+	. . SET VAL=$$QUICKCSV($GET(TREE("shell","quickLaunch")),"") IF VAL="" SET ERR("error")="quick_launch_invalid" QUIT
+	. . SET ^MIO("MIOMOS","PREF",USER,"shell","quickLaunch")=VAL
 	SET ^MIO("MIOMOS","PREF",USER,"savedAt")=$$NOWISO^MIOUTIL()
 	DO CURRENT(USER,.OUT)
 	QUIT 1
@@ -116,6 +155,7 @@ CATALOG(ROOT)
 	DO OPTS($NAME(@ROOT@("accessibilityPresets")),"balanced^Balanced,high-contrast^High Contrast,quiet-focus^Quiet Focus,large-text^Large Text")
 	DO CATALOG^MIOMOSTERM($NAME(@ROOT@("terminal")))
 	DO CATALOG^MIOMOSWM($NAME(@ROOT@("windowManager")))
+	DO SHELLCAT($NAME(@ROOT@("shell")))
 	QUIT
 	;
 OPTS(ROOT,CSV)
@@ -151,6 +191,23 @@ INTOPTS(ROOT,START,STOP)
 	. SET N=N+1
 	. SET @ROOT@(N,"key")=V
 	. SET @ROOT@(N,"label")=V_" px"
+	QUIT
+	;
+SHELLCAT(ROOT)
+	KILL @ROOT
+	DO OPTS($NAME(@ROOT@("startMenuSections")),"Pinned^Pinned,Directories^Directories,Applications^Applications,System^System")
+	DO BOOL($NAME(@ROOT@("showClockSeconds")),"Show seconds","Hide seconds")
+	DO BOOL($NAME(@ROOT@("showTrayLabels")),"Show tray labels","Hide tray labels")
+	DO OPTS($NAME(@ROOT@("chatRooms")),"general^General,ops^Operations,admin^Admin")
+	DO OPTS($NAME(@ROOT@("chatLimits")),"15^15 messages,20^20 messages,30^30 messages,50^50 messages")
+	DO OPTS($NAME(@ROOT@("terminalLaunchModes")),"resume-last^Resume last session,new-session^Always new session,multi-session^Multi-session tabs")
+	DO OPTS($NAME(@ROOT@("quickLaunchApps")),"workspace^Workspace,collaboration^Chat,terminal^Terminal,settings^Settings,security^Security,admin^Admin,ui-library^UI Library")
+	QUIT
+	;
+BOOL(ROOT,ONLBL,OFFLBL)
+	KILL @ROOT
+	SET @ROOT@(1,"key")=1,@ROOT@(1,"label")=$GET(ONLBL,"On")
+	SET @ROOT@(2,"key")=0,@ROOT@(2,"label")=$GET(OFFLBL,"Off")
 	QUIT
 	;
 FONTOK(X)
@@ -248,4 +305,45 @@ FONTSCALE(SIZE)
 	IF +$GET(SIZE)'>12 QUIT "is-tight"
 	IF +$GET(SIZE)'<15 QUIT "is-large"
 	QUIT "is-normal"
+	;
+	;
+SHELLSECTIONOK(X,DEF)
+	SET X=$$TRIM^MIOUTIL($GET(X))
+	IF X="Pinned"!(X="Directories")!(X="Applications")!(X="System") QUIT X
+	QUIT $GET(DEF)
+	;
+CHATROOMOK(X,DEF)
+	SET X=$$TRIM^MIOUTIL($GET(X))
+	IF X="general"!(X="ops")!(X="admin") QUIT X
+	QUIT $GET(DEF)
+	;
+CHATLIMIT(N)
+	IF N<1 QUIT 20
+	IF N>100 QUIT 100
+	QUIT N
+	;
+LAUNCHMODEOK(X,DEF)
+	SET X=$$TRIM^MIOUTIL($GET(X))
+	IF X="resume-last"!(X="new-session")!(X="multi-session") QUIT X
+	QUIT $GET(DEF)
+	;
+QUICKCSV(X,DEF)
+	NEW OUT,I,APP,VAL,USED,CNT
+	SET X=$$TRIM^MIOUTIL($GET(X))
+	IF X="" SET X=$GET(DEF)
+	SET OUT="",CNT=0
+	FOR I=1:1:$LENGTH(X,",") DO  QUIT:CNT>3
+	. SET APP=$$TRIM^MIOUTIL($PIECE(X,",",I))
+	. SET VAL=$$QUICKAPP(APP)
+	. IF VAL="" QUIT
+	. IF $DATA(USED(VAL)) QUIT
+	. SET USED(VAL)=1,CNT=CNT+1
+	. SET OUT=OUT_$SELECT(OUT'="":",",1:"")_VAL
+	IF OUT="" QUIT $GET(DEF)
+	QUIT OUT
+	;
+QUICKAPP(X)
+	SET X=$$TRIM^MIOUTIL($GET(X))
+	IF X="workspace"!(X="collaboration")!(X="terminal")!(X="settings")!(X="security")!(X="admin")!(X="ui-library") QUIT X
+	QUIT ""
 	;

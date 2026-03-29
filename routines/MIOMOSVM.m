@@ -74,7 +74,7 @@ SECURITY(STATE,CONF,ROOT)
 	QUIT
 	;
 ADMIN(STATE,CONF,ROOT)
-	NEW CNT,USR,INV,RST,N,CAT,BST,PRE
+	NEW CNT,USR,INV,RST,N
 	KILL @ROOT
 	DO COUNTS^MIOMOSADMIN(.CNT)
 	MERGE @ROOT@("counts")=CNT
@@ -84,15 +84,6 @@ ADMIN(STATE,CONF,ROOT)
 	SET N=0 F  S N=$O(INV(N)) Q:N=""  MERGE @ROOT@("invites",N)=INV(N)
 	DO RESETLIST^MIOMOSADMIN(6,.RST)
 	SET N=0 F  S N=$O(RST(N)) Q:N=""  MERGE @ROOT@("resets",N)=RST(N)
-	DO ROLECAT^MIOMOSPERM(.CAT)
-	SET N=0 F  S N=$O(CAT(N)) Q:N=""  DO
-	. MERGE @ROOT@("roleCatalog",N)=CAT(N)
-	. KILL PRE DO PREVIEW^MIOMOSPERM($GET(CAT(N,"key")),.PRE)
-	. MERGE @ROOT@("roleCatalog",N,"permissions")=PRE
-	DO BOOTSTATUS^MIOMOSADMIN(.CONF,.BST)
-	MERGE @ROOT@("bootstrapStatus")=BST
-	DO PREVIEW^MIOMOSPERM("operator",.PRE)
-	MERGE @ROOT@("permissionPreview")=PRE
 	QUIT
 	;
 SETTINGS(STATE,CONF,ROOT)
@@ -275,6 +266,11 @@ SHELL(STATE,CONF,ROOT)
 	SET @ROOT@("startMenuStyle")="winxp-dual-pane"
 	SET @ROOT@("trayStyle")="xp-notify-area"
 	SET @ROOT@("dialogStyle")="xp-shell-classic"
+	SET @ROOT@("showClockSeconds")=+$GET(STATE("shell","showClockSeconds"))
+	SET @ROOT@("showTrayLabels")=+$GET(STATE("shell","showTrayLabels"))
+	SET @ROOT@("startMenuSection")=$GET(STATE("shell","startMenuSection"),"Pinned")
+	SET @ROOT@("quickLaunch")=$GET(STATE("shell","quickLaunch"),"workspace,collaboration,terminal")
+	SET @ROOT@("userMenuStyle")="xp-account-menu"
 	SET @ROOT@("tray",1,"key")="network",@ROOT@("tray",1,"label")="Network connected",@ROOT@("tray",1,"icon")="LAN",@ROOT@("tray",1,"action")="about"
 	SET @ROOT@("tray",2,"key")="workspace",@ROOT@("tray",2,"label")="Workspace ready",@ROOT@("tray",2,"icon")="✓",@ROOT@("tray",2,"action")="refresh"
 	SET @ROOT@("tray",3,"key")="power",@ROOT@("tray",3,"label")="Power options",@ROOT@("tray",3,"icon")="⏻",@ROOT@("tray",3,"action")="power"
@@ -287,22 +283,24 @@ SHELL(STATE,CONF,ROOT)
 	SET @ROOT@("dialogs",1,"key")="run",@ROOT@("dialogs",1,"title")="Run",@ROOT@("dialogs",1,"copy")="Open a MIOMOS app by name, such as workspace, terminal, or settings."
 	SET @ROOT@("dialogs",2,"key")="about",@ROOT@("dialogs",2,"title")="About MIOMOS",@ROOT@("dialogs",2,"copy")="WinXP-inspired shell chrome on a native Vue/CSS window manager with MUMPS-owned state."
 	SET @ROOT@("dialogs",3,"key")="power",@ROOT@("dialogs",3,"title")="Turn off computer",@ROOT@("dialogs",3,"copy")="Choose whether to log off, restart the shell, or close all windows."
-	SET @ROOT@("accessWorkflow")="role-aware"
-	SET @ROOT@("accessWorkflowCopy")="Guest quick login can stay enabled while standard users and administrators use the seeded credential screen."
-	SET @ROOT@("accountActions",1,"key")="switchUser",@ROOT@("accountActions",1,"label")="Switch user",@ROOT@("accountActions",1,"copy")="End the local session and return to the access screen."
-	SET @ROOT@("accountActions",2,"key")="signout",@ROOT@("accountActions",2,"label")="Sign out",@ROOT@("accountActions",2,"copy")="Close the authenticated desktop session."
 	SET @ROOT@("transportLabel")="WebSocket shell bus"
 	SET @ROOT@("transportCopy")="All live shell communication now goes through the primary websocket session."
 	QUIT
 	;
 CHAT(STATE,CONF,ROOT)
+	NEW ROOMS,ROSTER
 	KILL @ROOT
 	SET @ROOT@("enabled")=+$GET(STATE("chatEnabled"))
 	SET @ROOT@("room")=$GET(STATE("chatRoom"),"general")
 	SET @ROOT@("limit")=+$GET(STATE("chatLimit"),20)
+	DO ROOMS^MIOMOSCHAT(.STATE,.ROOMS)
+	MERGE @ROOT@("rooms")=ROOMS
+	DO ROSTER^MIOMOSCHAT(.STATE,.ROSTER)
+	MERGE @ROOT@("roster")=ROSTER
 	QUIT
 	;
 TERMINAL(STATE,CONF,ROOT)
+	NEW SESS
 	KILL @ROOT
 	MERGE @ROOT@("profile")=STATE("terminal")
 	SET @ROOT@("status")="Terminal idle"
@@ -312,6 +310,9 @@ TERMINAL(STATE,CONF,ROOT)
 	SET @ROOT@("command")=$GET(CONF("miomos","terminal","pipe","command"),"yottadb")
 	SET @ROOT@("shell")=$GET(CONF("miomos","terminal","pipe","shell"),"/bin/sh")
 	SET @ROOT@("bridge")="mumps-owned"
+	SET @ROOT@("launchMode")=$SELECT($GET(STATE("terminalLaunchMode"))'="":$GET(STATE("terminalLaunchMode")),$GET(STATE("shell","terminalLaunchMode"))'="":$GET(STATE("shell","terminalLaunchMode")),1:"resume-last")
+	DO LIST^MIOMOSTERM(.STATE,.SESS)
+	MERGE @ROOT@("sessions")=SESS
 	QUIT
 	;
 	;

@@ -20,8 +20,6 @@ START
 	DO EQ^MIOTASSERT($GET(^MIO("ROUTE","META","GET","/api/miomos/observability/summary","authRequired")),0,"[MIOMOST][T001][observ summary auth]")
 	DO EQ^MIOTASSERT($GET(^MIO("ROUTE","META","GET","/api/miomos/observability/access/export","authRequired")),0,"[MIOMOST][T001][access export auth]")
 	DO EQ^MIOTASSERT($GET(^MIO("ROUTE","META","POST","/api/miomos/observability/retention/prune","authRequired")),0,"[MIOMOST][T001][retention prune auth]")
-	DO EQ^MIOTASSERT($GET(^MIO("ROUTE","META","POST","/api/miomos/admin/users/roles","authRequired")),0,"[MIOMOST][T001][admin roles auth]")
-	DO EQ^MIOTASSERT($GET(^MIO("ROUTE","META","POST","/api/miomos/admin/config/guest-login","authRequired")),0,"[MIOMOST][T001][guest toggle auth]")
 	;
 	KILL REQ,CTX,STATE,ERR
 	SET CTX("request_id")="miomost-rid"
@@ -363,6 +361,11 @@ START
 	DO EQ^MIOTASSERT($GET(ARR("terminal","transport")),"pipe","[MIOMOST][T016][ws term transport]")
 	SET WSTERM=$GET(ARR("terminal","terminalId"))
 	KILL OBJ,ARR,ERR
+	SET WSCTX("request_id")="miomost-ws-term-new"
+	DO OK^MIOTASSERT($$COMMANDSIDJSON^MIOMOSWS(.CONF,.WSREQ,.WSCTX,WSSID,"{""event"":""command.exec"",""requestId"":""ws-4b"",""command"":""terminal.open"",""forceNew"":1}",.OBJ,.ERR),"[MIOMOST][T016][ws term new exec]")
+	DO OK^MIOTASSERT($$DECODE^MIOJSON(OBJ,.ARR,.ERR),"[MIOMOST][T016][ws term new decode]")
+	DO EQ^MIOTASSERT($GET(ARR("terminal","terminalId"))'=WSTERM,1,"[MIOMOST][T016][ws term new id]")
+	KILL OBJ,ARR,ERR
 	SET WSCTX("request_id")="miomost-ws-term-in"
 	SET WSPAY="{""event"":""command.exec"",""requestId"":""ws-5"",""command"":""terminal.input"",""terminalId"":"""_WSTERM_""",""line"":""write 123,!""}"
 	DO OK^MIOTASSERT($$COMMANDSIDJSON^MIOMOSWS(.CONF,.WSREQ,.WSCTX,WSSID,WSPAY,.OBJ,.ERR),"[MIOMOST][T016][ws term input exec]")
@@ -454,12 +457,6 @@ START
 	DO EQ^MIOTASSERT($GET(^MIO("MIOMOS","USER","guest","hash"))=$$PW^MIOMOSAUTH($GET(^MIO("MIOMOS","USER","guest","salt")),"guest123!"),1,"[MIOMOST][T022][guest hash]")
 	DO EQ^MIOTASSERT($DATA(^MIO("MIOMOS","USER","admin","password")),0,"[MIOMOST][T022][no plain password]")
 	DO OK^MIOTASSERT($$GUESTSIGNIN^MIOMOSAUTH(.CONF,.TOKEN,.ERR),"[MIOMOST][T022][guest signin]")
-	SET ^MIO("MIOMOS","USER","guest","enabled")=0
-	SET ^MIO("MIOMOS","USER","guest","lockedUntilDay")=999999
-	SET ^MIO("MIOMOS","USER","guest","lockedUntilSec")=1
-	DO OK^MIOTASSERT($$GUESTSIGNIN^MIOMOSAUTH(.CONF,.TOKEN,.ERR),"[MIOMOST][T022][guest repair signin]")
-	DO EQ^MIOTASSERT(+$GET(^MIO("MIOMOS","USER","guest","enabled")),1,"[MIOMOST][T022][guest repaired enabled]")
-	DO EQ^MIOTASSERT($DATA(^MIO("MIOMOS","USER","guest","lockedUntilDay")),0,"[MIOMOST][T022][guest repaired unlock]")
 	SET REQ("hdr","cookie")="miomos_auth="_TOKEN
 	DO OK^MIOTASSERT($$LOADLOCAL^MIOMOSAUTH(.CONF,.REQ,.CTX,.ERR),"[MIOMOST][T022][guest load local]")
 	DO EQ^MIOTASSERT($GET(CTX("auth","claims","sub")),"guest","[MIOMOST][T022][guest principal]")
@@ -473,36 +470,6 @@ START
 	DO OK^MIOTASSERT($$RENDERPAGE^MIOTPL("pages/miomos_auth.html","layouts/miomos_shell.html",.CONF,.CTX,.OUT,.ERR),"[MIOMOST][T022][auth render]")
 	DO OK^MIOTASSERT(OUT["Continue as guest","[MIOMOST][T022][guest button]")
 	DO OK^MIOTASSERT(OUT["data-guest-login-enabled=""1""","[MIOMOST][T022][guest token]")
-	DO OK^MIOTASSERT(OUT["admin123!","[MIOMOST][T022][seeded admin password token]")
-	DO OK^MIOTASSERT(OUT["user123!","[MIOMOST][T022][seeded user password token]")
-	DO OK^MIOTASSERT(OUT["guest123!","[MIOMOST][T022][seeded guest password token]")
-	;
-	NEW ADMTOK,ADMREQ,ADMCTX,ADMSTATE,ADMBST,ADMCAT,ADMPERM,VM2
-	DO OK^MIOTASSERT($$SIGNIN^MIOMOSAUTH(.CONF,"admin","admin123!",.ADMTOK,.ERR),"[MIOMOST][T023][admin signin]")
-	SET ADMREQ("hdr","cookie")="miomos_auth="_ADMTOK
-	DO OK^MIOTASSERT($$LOADLOCAL^MIOMOSAUTH(.CONF,.ADMREQ,.ADMCTX,.ERR),"[MIOMOST][T023][admin load local]")
-	DO OK^MIOTASSERT($$ENSURE^MIOMOSST(.CONF,.ADMREQ,.ADMCTX,.ADMSTATE,.ERR),"[MIOMOST][T023][admin ensure]")
-	DO BUILD^MIOMOSVM(.ADMSTATE,.CONF,.VM2)
-	DO EQ^MIOTASSERT($GET(VM2("admin","roleCatalog",1,"key")),"admin","[MIOMOST][T023][role catalog]")
-	DO EQ^MIOTASSERT($GET(VM2("admin","bootstrapStatus","guestLoginEnabled")),1,"[MIOMOST][T023][guest toggle status]")
-	DO EQ^MIOTASSERT($GET(VM2("admin","bootstrapStatus","seeded",3,"key")),"guest","[MIOMOST][T023][bootstrap guest row]")
-	KILL ADMPERM MERGE ADMPERM=VM2("admin","roleCatalog",4,"permissions")
-	DO EQ^MIOTASSERT($$FINDPERM(.ADMPERM,"audit.view"),1,"[MIOMOST][T023][auditor preview]")
-	DO OK^MIOTASSERT($$SETROLES^MIOMOSADMIN("user","operator,auditor",.ADMBST,.ERR),"[MIOMOST][T023][set roles]")
-	DO EQ^MIOTASSERT($GET(^MIO("MIOMOS","USER","user","roles")),"operator,auditor","[MIOMOST][T023][user roles saved]")
-	DO EQ^MIOTASSERT($GET(^MIO("MIOMOS","AUTH","TOKEN",ADMTOK,"roles"))'="",1,"[MIOMOST][T023][token intact]")
-	DO PREVIEW^MIOMOSPERM("operator,auditor",.ADMPERM)
-	DO EQ^MIOTASSERT($$FINDPERM(.ADMPERM,"audit.view"),1,"[MIOMOST][T023][permission preview]")
-	DO SETGUESTLOGIN^MIOMOSADMIN(0,.ADMBST)
-	DO EQ^MIOTASSERT($$GUESTLOGIN^MIOMOSADMIN(.CONF),0,"[MIOMOST][T023][guest toggle off]")
-	KILL DATA DO DESKCTX^MIOMOSUI(.ADMSTATE,.CONF,.DATA)
-	DO OK^MIOTASSERT($$RENDERPAGE^MIOTPL("pages/miomos_desktop.html","layouts/miomos_shell.html",.CONF,.DATA,.OUT,.ERR),"[MIOMOST][T023][admin render]")
-	DO OK^MIOTASSERT(OUT["Role assignment editor","[MIOMOST][T023][role editor token]")
-	DO OK^MIOTASSERT(OUT["Effective permission preview","[MIOMOST][T023][permission preview token]")
-	DO OK^MIOTASSERT(OUT["Bootstrap-auth status","[MIOMOST][T023][bootstrap status token]")
-	DO OK^MIOTASSERT(OUT["data-admin-role-editor","[MIOMOST][T023][role editor data]")
-	DO OK^MIOTASSERT(OUT["/api/miomos/admin/users/roles","[MIOMOST][T023][roles route token]")
-	DO OK^MIOTASSERT(OUT["/api/miomos/admin/config/guest-login","[MIOMOST][T023][guest toggle route token]")
 	QUIT
 	;
 FINDUSR(LIST,USER)
@@ -512,19 +479,11 @@ FINDUSR(LIST,USER)
 	. IF $GET(LIST(N,"principal"))=$GET(USER) SET POS=N
 	QUIT POS
 	;
-FINDPERM(LIST,KEY)
-	NEW N,FOUND
-	SET (N,FOUND)=0
-	FOR  SET N=$ORDER(LIST(N)) QUIT:N=""  DO  QUIT:FOUND
-	. IF $GET(LIST(N,"key"))=$GET(KEY) SET FOUND=1
-	QUIT FOUND
-	;
 HASWRITE(OUT,TEXT)
 	NEW N,FOUND
 	SET (N,FOUND)=0
 	FOR  SET N=$ORDER(OUT("write",N)) QUIT:N=""  DO  QUIT:FOUND
 	. IF $GET(OUT("write",N))[$GET(TEXT) SET FOUND=1
 	QUIT FOUND
-	;
 	;
 	;

@@ -530,8 +530,6 @@ Completed:
 
 - **ROI46** — startup identity bootstrap and guest login toggle
 
-Current passing baseline: **ROI52**.
-
 TODO next:
 
 - **ROI47** — guest role and role-aware login workflow
@@ -553,31 +551,25 @@ TODO next:
   - reset/invite activity
   - permission and session summaries
 
-- **ROI50** — seeded access visibility and guest-account repair
-  - make seeded bootstrap identities visibly discoverable on the access screen when enabled by config
-  - expose `showSeededCredentials` and `syncOnBoot` as explicit bootstrap-auth config switches
-  - keep seeded users configurable through `CONF("miomos","bootstrapAuth",...)`
-  - repair stale seeded guest state on sign-in by resyncing bootstrap-backed guest users when needed
-
-- **ROI51** — seeded password rotation and policy hardening
+- **ROI50** — seeded password rotation and policy hardening
   - first-login password change for seeded accounts
   - password policy settings
-  - seeded credential warnings for production installs
+  - seeded credential warnings
   - stricter production defaults for guest quick login
 
-- **ROI52** — admin role center and guest workflow control
-  - role catalog authored in MUMPS
-  - role assignment editor in the admin desktop surface
-  - effective permission preview for selected role sets
-  - runtime guest quick-login toggle in admin UI
-  - bootstrap-auth status panel with seeded identity posture
 
-TODO next:
+## ROI55 — Dedicated terminal window sessions
 
-- **ROI53** — admin reports and workflow analytics
-  - active users and recent session posture
-  - guest usage analytics
-  - failed logins and lockout trends
-  - reset/invite activity summaries
-  - permission and session posture summaries
-  - exportable admin operational reports
+Completed after ROI54:
+
+- launching the Terminal app now opens a new MIOMOS window instead of restoring the shared singleton terminal surface
+- new launches request a fresh backend PIPE session using `terminal.open` with `forceNew=1`
+- each terminal window now owns its own xterm.js renderer, transcript, input history, terminalId, and lifecycle state in the Vue shell
+- closing a terminal window closes that specific backend terminal session instead of leaving a shared session behind
+- the websocket command path preserves explicit reattach/poll/input/resize behavior by terminalId, so multiple terminal windows can coexist under the single MIOMOS websocket
+
+Guardrails:
+
+- default `terminal.open` without `forceNew` should continue to attach to an existing session when a specific terminal window wants to reuse its current terminalId
+- a fresh launch from the shell must not reuse `^MIO("MIOMOS","PIPE","BYSESSION",sessionId)`; it must request a new session explicitly
+- terminal taskbar entries should reflect real independent windows rather than one global terminal model

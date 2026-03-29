@@ -70,8 +70,6 @@ ENSURE(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("adminInviteCreatePath")=$GET(CONF("miomos","route","adminInviteCreate"),"/api/miomos/admin/invites/create")
 	SET STATE("adminInvitesPath")=$GET(CONF("miomos","route","adminInvites"),"/api/miomos/admin/invites")
 	SET STATE("adminResetRequestPath")=$GET(CONF("miomos","route","adminResetRequest"),"/api/miomos/admin/users/reset/request")
-	SET STATE("adminUserRolesPath")=$GET(CONF("miomos","route","adminUserRoles"),"/api/miomos/admin/users/roles")
-	SET STATE("adminGuestTogglePath")=$GET(CONF("miomos","route","adminGuestToggle"),"/api/miomos/admin/config/guest-login")
 	SET STATE("observSummaryPath")=$GET(CONF("miomos","route","observSummary"),"/api/miomos/observability/summary")
 	SET STATE("accessExportPath")=$GET(CONF("miomos","route","accessExport"),"/api/miomos/observability/access/export")
 	SET STATE("errorExportPath")=$GET(CONF("miomos","route","errorExport"),"/api/miomos/observability/error/export")
@@ -92,11 +90,13 @@ ENSURE(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("localAuthEnabled")=+$$LOCALAUTHEN^MIOMOS(.CONF)
 	SET STATE("allowSignup")=+$$ALLOWSIGNUP^MIOMOSAUTH(.CONF)
 	SET STATE("inviteOnly")=+$$INVITEONLY^MIOMOSAUTH(.CONF)
-	SET STATE("guestLoginEnabled")=+$$GUESTLOGIN^MIOMOSADMIN(.CONF)
+	SET STATE("guestLoginEnabled")=+$GET(CONF("miomos","localAuth","guestLoginEnabled"),1)
 	SET STATE("bootstrapAuthEnabled")=+$GET(CONF("miomos","bootstrapAuth","enabled"),1)
 	SET STATE("chatEnabled")=+$GET(CONF("miomos","chat","enabled"),1)
-	SET STATE("chatRoom")=$GET(CONF("miomos","chat","defaultRoom"),"general")
-	SET STATE("chatLimit")=+$GET(CONF("miomos","chat","messageLimit"),20)
+	SET STATE("chatRoom")=$GET(STATE("shell","chatRoom"),$GET(CONF("miomos","chat","defaultRoom"),"general"))
+	SET STATE("chatLimit")=+$GET(STATE("shell","chatLimit"),+$GET(CONF("miomos","chat","messageLimit"),20))
+	SET STATE("terminalLaunchMode")=$GET(STATE("shell","terminalLaunchMode"),"resume-last")
+	SET STATE("shellQuickLaunch")=$GET(STATE("shell","quickLaunch"),"workspace,collaboration,terminal")
 	SET STATE("logMaxEntries")=+$GET(CONF("miomos","log","maxEntries"),500)
 	SET STATE("logExportLimit")=+$GET(CONF("miomos","log","exportLimit"),250)
 	SET STATE("logDigestTail")=+$GET(CONF("miomos","log","digestTail"),6)
@@ -119,21 +119,15 @@ ENSURE(CONF,REQ,CTX,STATE,ERR)
 	;
 PRINCIPAL(CONF,REQ,CTX,ERR)
 	NEW KEY
-	IF $$LOCALAUTHEN^MIOMOS(.CONF),'$$IGNOREAUTH(.REQ) DO
-	. SET KEY=$$PRINCIPAL^MIOMOSAUTH(.CTX)
-	. IF KEY'="" QUIT
+	IF $$DEVAUTH(.CONF) QUIT $GET(CONF("miomos","dev","principal"),"dev-user")
+	SET KEY=$$PRINCIPAL^MIOMOSAUTH(.CTX)
+	IF KEY'="" QUIT KEY
+	IF $$LOCALAUTHEN^MIOMOS(.CONF) DO  QUIT KEY
 	. IF '$$LOADLOCAL^MIOMOSAUTH(.CONF,.REQ,.CTX,.ERR) SET KEY="" QUIT
 	. SET KEY=$$PRINCIPAL^MIOMOSAUTH(.CTX)
-	IF $GET(KEY)'="" QUIT KEY
-	IF $$DEVAUTH(.CONF) QUIT $GET(CONF("miomos","dev","principal"),"dev-user")
 	IF $$LOCALAUTHEN^MIOMOS(.CONF) SET ERR("error")="login_required" QUIT ""
 	SET ERR("error")="auth_context_missing"
 	QUIT ""
-	;
-IGNOREAUTH(REQ)
-	IF +$GET(REQ("query","switchUser"),0)=1 QUIT 1
-	IF +$GET(REQ("query","signedOut"),0)=1 QUIT 1
-	QUIT 0
 	;
 PROFILE(CONF)
 	IF $$DEVPROFILE^MIOMOS(.CONF) QUIT "dev"
@@ -141,7 +135,6 @@ PROFILE(CONF)
 	;
 DEVAUTH(CONF)
 	IF $$PROFILE(.CONF)="dev" QUIT 1
-	IF $$LOCALAUTHEN^MIOMOS(.CONF)=1 QUIT 0
 	IF +$GET(CONF("miomos","dev","authDisabled"),0)=1 QUIT 1
 	QUIT 0
 	;
@@ -213,8 +206,6 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("routes","adminInviteCreate")=$GET(STATE("adminInviteCreatePath"))
 	SET OBJ("routes","adminInvites")=$GET(STATE("adminInvitesPath"))
 	SET OBJ("routes","adminResetRequest")=$GET(STATE("adminResetRequestPath"))
-	SET OBJ("routes","adminUserRoles")=$GET(STATE("adminUserRolesPath"))
-	SET OBJ("routes","adminGuestToggle")=$GET(STATE("adminGuestTogglePath"))
 	SET OBJ("routes","observSummary")=$GET(STATE("observSummaryPath"))
 	SET OBJ("routes","accessExport")=$GET(STATE("accessExportPath"))
 	SET OBJ("routes","errorExport")=$GET(STATE("errorExportPath"))
@@ -291,6 +282,8 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","uiState","startMenuSection")=$GET(STATE("ui","startMenuSection"))
 	SET OBJ("desktop","uiState","startMenuQuery")=$GET(STATE("ui","startMenuQuery"))
 	SET OBJ("desktop","uiState","shellSurface")=$GET(STATE("ui","shellSurface"))
+	SET OBJ("desktop","uiState","activeTerminalTabId")=$GET(STATE("ui","activeTerminalTabId"))
+	MERGE OBJ("desktop","shell")=STATE("shell")
 	SET OBJ("desktop","policy","heartbeatMs")=+$GET(CONF("miomos","desktop","policy","heartbeatMs"),15000)
 	SET OBJ("desktop","policy","reconnectBaseMs")=+$GET(CONF("miomos","desktop","policy","reconnectBaseMs"),1000)
 	SET OBJ("desktop","policy","reconnectMaxMs")=+$GET(CONF("miomos","desktop","policy","reconnectMaxMs"),15000)
@@ -328,6 +321,7 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("terminal","pipeEnabled")=+$GET(STATE("terminalPipeEnabled"),1)
 	SET OBJ("terminal","command")=$GET(STATE("terminalPipeCommand"))
 	SET OBJ("terminal","shell")=$GET(STATE("terminalPipeShell"))
+	SET OBJ("terminal","launchMode")=$GET(STATE("terminalLaunchMode"),"resume-last")
 	NEW CNT,USR,INV,RST,OBS
 	DO LIST^MIOMOSPERM($GET(STATE("roles")),$NAME(OBJ("security","permissions")))
 	DO SUMMARY^MIOMOSOBS(.STATE,.CONF,.OBS)
@@ -484,6 +478,7 @@ SAVEUICORE(SID,PAYLOAD,OK)
 	. . SET SAVE("startMenuSection")=$EXTRACT($GET(TREE("startMenuSection")),1,64)
 	. . SET SAVE("startMenuQuery")=$EXTRACT($GET(TREE("startMenuQuery")),1,128)
 	. . SET SAVE("shellSurface")=$EXTRACT($GET(TREE("shellSurface")),1,32)
+	. . SET SAVE("activeTerminalTabId")=$EXTRACT($GET(TREE("activeTerminalTabId")),1,128)
 	ELSE  DO
 	. SET SAVE("menuOpen")=0
 	. SET SAVE("activeWindowId")=""
@@ -495,6 +490,7 @@ SAVEUICORE(SID,PAYLOAD,OK)
 	. SET SAVE("startMenuSection")=""
 	. SET SAVE("startMenuQuery")=""
 	. SET SAVE("shellSurface")=""
+	. SET SAVE("activeTerminalTabId")=""
 	KILL ^MIO("MIOMOS","SESSION",SID,"ui")
 	SET ^MIO("MIOMOS","SESSION",SID,"ui","menuOpen")=+$GET(SAVE("menuOpen"))
 	SET ^MIO("MIOMOS","SESSION",SID,"ui","activeWindowId")=$GET(SAVE("activeWindowId"))
@@ -506,6 +502,7 @@ SAVEUICORE(SID,PAYLOAD,OK)
 	SET ^MIO("MIOMOS","SESSION",SID,"ui","startMenuSection")=$GET(SAVE("startMenuSection"))
 	SET ^MIO("MIOMOS","SESSION",SID,"ui","startMenuQuery")=$GET(SAVE("startMenuQuery"))
 	SET ^MIO("MIOMOS","SESSION",SID,"ui","shellSurface")=$GET(SAVE("shellSurface"))
+	SET ^MIO("MIOMOS","SESSION",SID,"ui","activeTerminalTabId")=$GET(SAVE("activeTerminalTabId"))
 	SET ^MIO("MIOMOS","SESSION",SID,"uiJson")=$EXTRACT($$EN^MIOJSON1(.SAVE),1,4096)
 	SET ^MIO("MIOMOS","SESSION",SID,"uiSavedAt")=$$NOWISO^MIOUTIL()
 	DO TOUCH(SID,"ui_state_save")
@@ -525,6 +522,7 @@ LOADUI(SID,OUT)
 	SET OUT("startMenuSection")=$GET(^MIO("MIOMOS","SESSION",SID,"ui","startMenuSection"))
 	SET OUT("startMenuQuery")=$GET(^MIO("MIOMOS","SESSION",SID,"ui","startMenuQuery"))
 	SET OUT("shellSurface")=$GET(^MIO("MIOMOS","SESSION",SID,"ui","shellSurface"))
+	SET OUT("activeTerminalTabId")=$GET(^MIO("MIOMOS","SESSION",SID,"ui","activeTerminalTabId"))
 	QUIT
 	;
 TOUCH(SID,EVENT)

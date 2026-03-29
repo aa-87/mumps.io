@@ -133,6 +133,181 @@ BOOTSTATUS(CONF,OUT)
 	. SET OUT("seeded",N,"bootstrapPersona")=$GET(^MIO("MIOMOS","USER",USER,"bootstrapPersona"))
 	QUIT
 	;
+
+REPORTS(CONF,STATE,OUT)
+	NEW TMP
+	KILL OUT
+	SET OUT("contract")="server-authored-admin-analytics"
+	SET OUT("headline")="Operational reports and workflow analytics"
+	SET OUT("generatedAt")=$$NOWISO^MIOUTIL()
+	SET OUT("jsonRoute")=$GET(CONF("miomos","route","adminReports"),"/api/miomos/admin/reports")
+	KILL TMP DO SESSIONRPT(.TMP) MERGE OUT("sessions")=TMP
+	KILL TMP DO GUESTRPT(.TMP) MERGE OUT("guest")=TMP
+	KILL TMP DO FAILRPT(.TMP) MERGE OUT("failures")=TMP
+	KILL TMP DO WORKRPT(.TMP) MERGE OUT("workflow")=TMP
+	KILL TMP DO PERMRPT(.CONF,.TMP) MERGE OUT("permissions")=TMP
+	QUIT
+	;
+SESSIONRPT(OUT)
+	NEW SID,N,LOCKED,FORCED
+	KILL OUT
+	SET (OUT("active"),OUT("locked"),OUT("forced"),N)=0
+	SET SID=""
+	FOR  SET SID=$ORDER(^MIO("MIOMOS","SESSION",SID),-1) QUIT:SID=""  DO
+	. IF SID="BYKEY" QUIT
+	. IF '$DATA(^MIO("MIOMOS","SESSION",SID,"principal")) QUIT
+	. SET LOCKED=+$GET(^MIO("MIOMOS","SESSION",SID,"locked"))
+	. SET FORCED=$GET(^MIO("MIOMOS","SESSION",SID,"forcedSignout"))
+	. SET OUT("active")=OUT("active")+1
+	. IF LOCKED=1 SET OUT("locked")=OUT("locked")+1
+	. IF FORCED'="" SET OUT("forced")=OUT("forced")+1
+	. IF N'<6 QUIT
+	. SET N=N+1
+	. SET OUT("recent",N,"sessionId")=SID
+	. SET OUT("recent",N,"principal")=$GET(^MIO("MIOMOS","SESSION",SID,"principal"))
+	. SET OUT("recent",N,"userName")=$GET(^MIO("MIOMOS","SESSION",SID,"userName"))
+	. SET OUT("recent",N,"roles")=$GET(^MIO("MIOMOS","SESSION",SID,"roles"))
+	. SET OUT("recent",N,"startedAt")=$GET(^MIO("MIOMOS","SESSION",SID,"startedAt"))
+	. SET OUT("recent",N,"lastSeenAt")=$GET(^MIO("MIOMOS","SESSION",SID,"lastSeenAt"))
+	. SET OUT("recent",N,"state")=$SELECT(FORCED'="":"Forced sign-out",LOCKED=1:"Locked",1:"Active")
+	QUIT
+	;
+GUESTRPT(OUT)
+	NEW SID,N,LAST
+	KILL OUT
+	SET (OUT("activeSessions"),OUT("accessEvents"),OUT("auditEvents"),N)=0,LAST=""
+	SET SID=""
+	FOR  SET SID=$ORDER(^MIO("MIOMOS","SESSION",SID),-1) QUIT:SID=""  DO
+	. IF SID="BYKEY" QUIT
+	. IF $GET(^MIO("MIOMOS","SESSION",SID,"principal"))'="guest" QUIT
+	. SET OUT("activeSessions")=OUT("activeSessions")+1
+	. IF LAST="" SET LAST=$GET(^MIO("MIOMOS","SESSION",SID,"lastSeenAt"))
+	. IF N'<4 QUIT
+	. SET N=N+1
+	. SET OUT("recent",N,"sessionId")=SID
+	. SET OUT("recent",N,"lastSeenAt")=$GET(^MIO("MIOMOS","SESSION",SID,"lastSeenAt"))
+	. SET OUT("recent",N,"roles")=$GET(^MIO("MIOMOS","SESSION",SID,"roles"))
+	SET OUT("accessEvents")=$$PRINCOUNT("ACCESS","guest")
+	SET OUT("auditEvents")=$$AUDPRIN("guest")
+	SET OUT("lastSeenAt")=$SELECT(LAST'="":LAST,1:$$LASTPRIN("ACCESS","guest"))
+	QUIT
+	;
+FAILRPT(OUT)
+	NEW U,NOWD,NOWS,N,FAIL,LOCKED
+	KILL OUT
+	SET (OUT("usersWithFailures"),OUT("failedAttempts"),OUT("lockedUsers"),N)=0
+	SET NOWD=+$PIECE($HOROLOG,",",1),NOWS=+$PIECE($HOROLOG,",",2)
+	SET U=""
+	FOR  SET U=$ORDER(^MIO("MIOMOS","USER",U)) QUIT:U=""  DO
+	. SET FAIL=+$GET(^MIO("MIOMOS","USER",U,"failedCount"))
+	. SET LOCKED=$$USERLOCKED(U,NOWD,NOWS)
+	. IF FAIL>0 DO
+	. . SET OUT("usersWithFailures")=OUT("usersWithFailures")+1
+	. . SET OUT("failedAttempts")=OUT("failedAttempts")+FAIL
+	. . IF N<6 SET N=N+1 D
+	. . . SET OUT("recent",N,"principal")=U
+	. . . SET OUT("recent",N,"failedCount")=FAIL
+	. . . SET OUT("recent",N,"lastFailedAt")=$GET(^MIO("MIOMOS","USER",U,"lastFailedAt"))
+	. . . SET OUT("recent",N,"state")=$SELECT(LOCKED:"Locked",1:"Retry allowed")
+	. IF LOCKED SET OUT("lockedUsers")=OUT("lockedUsers")+1
+	QUIT
+	;
+WORKRPT(OUT)
+	NEW I,R,N
+	KILL OUT
+	SET (OUT("openInvites"),OUT("usedInvites"),OUT("openResets"),OUT("usedResets"),N)=0
+	SET I=""
+	FOR  SET I=$ORDER(^MIO("MIOMOS","AUTH","INVITE",I),-1) QUIT:I=""  DO
+	. IF '$DATA(^MIO("MIOMOS","AUTH","INVITE",I)) QUIT
+	. IF $GET(^MIO("MIOMOS","AUTH","INVITE",I,"usedAt"))="" SET OUT("openInvites")=OUT("openInvites")+1
+	. ELSE  SET OUT("usedInvites")=OUT("usedInvites")+1
+	. IF N<4 SET N=N+1 D
+	. . SET OUT("recentInvites",N,"token")=I
+	. . SET OUT("recentInvites",N,"label")=$GET(^MIO("MIOMOS","AUTH","INVITE",I,"label"))
+	. . SET OUT("recentInvites",N,"createdAt")=$GET(^MIO("MIOMOS","AUTH","INVITE",I,"createdAt"))
+	. . SET OUT("recentInvites",N,"state")=$SELECT($GET(^MIO("MIOMOS","AUTH","INVITE",I,"usedAt"))="":"Open",1:"Used")
+	SET N=0,R=""
+	FOR  SET R=$ORDER(^MIO("MIOMOS","AUTH","RESET",R),-1) QUIT:R=""  DO
+	. IF '$DATA(^MIO("MIOMOS","AUTH","RESET",R)) QUIT
+	. IF $GET(^MIO("MIOMOS","AUTH","RESET",R,"usedAt"))="" SET OUT("openResets")=OUT("openResets")+1
+	. ELSE  SET OUT("usedResets")=OUT("usedResets")+1
+	. IF N<4 SET N=N+1 D
+	. . SET OUT("recentResets",N,"token")=R
+	. . SET OUT("recentResets",N,"principal")=$GET(^MIO("MIOMOS","AUTH","RESET",R,"principal"))
+	. . SET OUT("recentResets",N,"createdAt")=$GET(^MIO("MIOMOS","AUTH","RESET",R,"createdAt"))
+	. . SET OUT("recentResets",N,"state")=$SELECT($GET(^MIO("MIOMOS","AUTH","RESET",R,"usedAt"))="":"Open",1:"Used")
+	QUIT
+	;
+PERMRPT(CONF,OUT)
+	NEW U,CAT,N,ROLE,RC,ROLES
+	KILL OUT
+	SET (OUT("adminManagers"),OUT("terminalUsers"),OUT("auditViewUsers"),OUT("settingsUsers"))=0
+	SET U=""
+	FOR  SET U=$ORDER(^MIO("MIOMOS","USER",U)) QUIT:U=""  DO
+	. SET ROLES=$GET(^MIO("MIOMOS","USER",U,"roles"))
+	. IF $$HASCSV^MIOMOSPERM(ROLES,"admin.users.manage") SET OUT("adminManagers")=OUT("adminManagers")+1
+	. IF $$HASCSV^MIOMOSPERM(ROLES,"terminal.use") SET OUT("terminalUsers")=OUT("terminalUsers")+1
+	. IF $$HASCSV^MIOMOSPERM(ROLES,"audit.view") SET OUT("auditViewUsers")=OUT("auditViewUsers")+1
+	. IF $$HASCSV^MIOMOSPERM(ROLES,"settings.self") SET OUT("settingsUsers")=OUT("settingsUsers")+1
+	. FOR N=1:1:$LENGTH(ROLES,",") DO
+	. . SET ROLE=$$TRIM($PIECE(ROLES,",",N))
+	. . IF ROLE'="" SET RC(ROLE)=+$GET(RC(ROLE))+1
+	DO ROLECAT^MIOMOSPERM(.CAT)
+	SET N=0
+	FOR  SET N=$ORDER(CAT(N)) QUIT:N=""  DO
+	. SET ROLE=$GET(CAT(N,"key"))
+	. SET OUT("roleMix",N,"key")=ROLE
+	. SET OUT("roleMix",N,"label")=$GET(CAT(N,"label"),ROLE)
+	. SET OUT("roleMix",N,"count")=+$GET(RC(ROLE))
+	SET OUT("sessionBinding")=$GET(CONF("miomos","security","sessionBinding"),"principal-and-session")
+	SET OUT("idleLockEnabled")=+$GET(CONF("miomos","security","idleLockEnabled"),1)
+	SET OUT("idleLockSeconds")=+$GET(CONF("miomos","security","idleLockSeconds"),300)
+	SET OUT("registryEnabled")=+$GET(CONF("miomos","security","sessionRegistryEnabled"),1)
+	SET OUT("registryModel")=$GET(CONF("miomos","security","sessionRegistryModel"),"server-authored")
+	QUIT
+	;
+PRINCOUNT(TYPE,USER)
+	NEW ID,N,KIND
+	SET KIND=$$TYPE($GET(TYPE))
+	SET (ID,N)=0
+	FOR  SET ID=$ORDER(^MIO("MIOMOS","LOG",KIND,ID)) QUIT:ID=""  DO
+	. IF +ID'>0 QUIT
+	. IF $GET(^MIO("MIOMOS","LOG",KIND,ID,"principal"))=$GET(USER) SET N=N+1
+	QUIT N
+	;
+LASTPRIN(TYPE,USER)
+	NEW ID,KIND
+	SET KIND=$$TYPE($GET(TYPE))
+	SET ID=+$GET(^MIO("MIOMOS","LOG",KIND,"LAST"))
+	FOR  QUIT:ID<1  DO  QUIT:$GET(^MIO("MIOMOS","LOG",KIND,ID,"principal"))=$GET(USER)
+	. SET ID=ID-1
+	IF ID<1 QUIT ""
+	QUIT $GET(^MIO("MIOMOS","LOG",KIND,ID,"ts"))
+	;
+AUDPRIN(USER)
+	NEW ID,N
+	SET (ID,N)=0
+	FOR  SET ID=$ORDER(^MIO("MIOMOS","AUDIT",ID)) QUIT:ID=""  DO
+	. IF +ID'>0 QUIT
+	. IF $GET(^MIO("MIOMOS","AUDIT",ID,"principal"))=$GET(USER) SET N=N+1
+	QUIT N
+	;
+TYPE(X)
+	SET X=$GET(X)
+	IF X="ERROR" QUIT "ERROR"
+	QUIT "ACCESS"
+	;
+USERLOCKED(USER,NOWD,NOWS)
+	NEW DAY,SEC
+	SET DAY=+$GET(^MIO("MIOMOS","USER",$GET(USER),"lockedUntilDay"))
+	SET SEC=+$GET(^MIO("MIOMOS","USER",$GET(USER),"lockedUntilSec"))
+	IF (DAY=0),(SEC=0) QUIT 0
+	QUIT $SELECT($$AGESEC(NOWD,NOWS,DAY,SEC)>0:1,1:0)
+	;
+TRIM(X)
+	QUIT $$TRIM^MIOUTIL($GET(X))
+	;
+
 SETROLES(USER,ROLECSV,OUT,ERR)
 	NEW CSV
 	KILL ERR,OUT

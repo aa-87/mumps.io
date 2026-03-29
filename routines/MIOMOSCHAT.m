@@ -79,3 +79,34 @@ REVERSE(OUT)
 	. MERGE OUT(N)=TMP(M)
 	QUIT
 	;
+	;
+ROOMS(STATE,OUT)
+	KILL OUT
+	SET OUT(1,"key")="general",OUT(1,"label")="General"
+	SET OUT(2,"key")="ops",OUT(2,"label")="Operations"
+	IF $$HAS^MIOMOSPERM(.STATE,"chat.moderate")!$$HAS^MIOMOSPERM(.STATE,"admin.users.view") SET OUT(3,"key")="admin",OUT(3,"label")="Admin"
+	QUIT
+	;
+CANUSE(STATE,ROOM)
+	SET ROOM=$$ROOM($GET(ROOM))
+	IF ROOM="general" QUIT $$HAS^MIOMOSPERM(.STATE,"chat.use")
+	IF ROOM="ops" QUIT $$HAS^MIOMOSPERM(.STATE,"chat.use")
+	IF ROOM="admin" QUIT $$HAS^MIOMOSPERM(.STATE,"chat.moderate")!$$HAS^MIOMOSPERM(.STATE,"admin.users.view")
+	QUIT 0
+	;
+ROSTER(STATE,OUT)
+	NEW SID,N,USER,ROLES
+	KILL OUT
+	SET SID="",N=0
+	FOR  SET SID=$ORDER(^MIO("MIOMOS","SESSION","REG",SID)) QUIT:SID=""  DO
+	. SET USER=$GET(^MIO("MIOMOS","SESSION","REG",SID,"userName"))
+	. SET ROLES=$GET(^MIO("MIOMOS","SESSION","REG",SID,"roles"))
+	. SET N=N+1
+	. SET OUT(N,"sessionId")=SID
+	. SET OUT(N,"principal")=$GET(^MIO("MIOMOS","SESSION","REG",SID,"principal"))
+	. SET OUT(N,"userName")=$SELECT(USER'="":USER,1:$GET(^MIO("MIOMOS","SESSION","REG",SID,"principal"),"User"))
+	. SET OUT(N,"roles")=ROLES
+	. SET OUT(N,"roleLabel")=$$ROLELABEL^MIOMOSPERM(ROLES)
+	. SET OUT(N,"isCurrent")=$SELECT(SID=$GET(STATE("sessionId")):1,1:0)
+	QUIT
+	;
