@@ -121,14 +121,23 @@ SIGNUP(DEV,CONF,REQ,CTX)
 	QUIT
 	;
 SIGNIN(DEV,CONF,REQ,CTX)
-	NEW TREE,ERR,TOKEN,OBJ,HEAD,JSON,STATE,USER
+	NEW TREE,ERR,TOKEN,OBJ,HEAD,JSON,STATE,USER,FLAGS
 	IF '$$PARSEBODY(.REQ,.TREE,.ERR) DO  QUIT
 	. DO RESPERR(.DEV,.CONF,400,"invalid_json",$GET(ERR("error")),.CTX)
-	M ^C=CONF,^T=TREE,^TK=TOKEN
-	IF '$$SIGNIN^MIOMOSAUTH(.CONF,$GET(TREE("username")),$GET(TREE("password")),.TOKEN,.ERR) DO  QUIT
+	IF '$$SIGNIN^MIOMOSAUTH(.CONF,$GET(TREE("username")),$GET(TREE("password")),.TOKEN,.ERR,.FLAGS) DO  QUIT
 	. DO ERROR^MIOMOSOBS("auth_signin_error",$GET(ERR("error")),.CTX,.STATE,$GET(ERR("error")))
 	. DO RESPERR(.DEV,.CONF,401,"signin_failed",$GET(ERR("error")),.CTX)
 	SET USER=$$CANON^MIOMOSAUTH($GET(TREE("username")))
+	IF +$GET(FLAGS("requiresPasswordChange"))=1 DO  QUIT
+	. SET OBJ("ok")=1,OBJ("tokenIssued")=0,OBJ("requiresPasswordChange")=1,OBJ("username")=USER
+	. SET OBJ("resetToken")=$GET(FLAGS("resetToken"))
+	. SET OBJ("rotationReason")=$GET(FLAGS("rotationReason"))
+	. MERGE OBJ("passwordPolicy")=FLAGS("passwordPolicy")
+	. DO RESPJSONX^MIOHTTP(.DEV,.CONF,200,.OBJ,$GET(CTX("request_id")),.CTX)
+	. SET CTX("status")=200
+	. SET STATE("principal")=USER,STATE("sessionId")="pending",STATE("profile")="signin-rotation"
+	. DO EVENTX^MIOMOSAUD("auth_signin_rotation_required",.CTX,.STATE,USER)
+	. DO ACCESS^MIOMOSOBS("auth_signin_rotation_required",.CTX,.STATE)
 	SET OBJ("ok")=1,OBJ("tokenIssued")=1,OBJ("username")=USER
 	SET JSON=$$EN^MIOJSON1(.OBJ)
 	SET HEAD("Content-Type")="application/json; charset=utf-8"

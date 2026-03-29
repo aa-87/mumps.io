@@ -564,3 +564,13 @@ TODO next:
   - password policy settings
   - seeded credential warnings for production installs
   - stricter production defaults for guest quick login
+  - status: implemented in the current source of truth
+
+TODO next:
+
+- **ROI52** — admin role center
+  - user directory improvements
+  - role assignment editor
+  - effective permission preview
+  - guest-login toggle in admin UI
+  - bootstrap-auth status panel

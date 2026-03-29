@@ -474,6 +474,36 @@ START
 	DO OK^MIOTASSERT(OUT["admin123!","[MIOMOST][T022][seeded admin password token]")
 	DO OK^MIOTASSERT(OUT["user123!","[MIOMOST][T022][seeded user password token]")
 	DO OK^MIOTASSERT(OUT["guest123!","[MIOMOST][T022][seeded guest password token]")
+	;
+	KILL ^MIO("MIOMOS","USER"),^MIO("MIOMOS","AUTH")
+	KILL CONF,ERR,TOKEN,REQ,CTX,STATE,OBJ,OUT,ARR
+	NEW FLAGS
+	SET CONF("auth","enabled")=1
+	SET CONF("miomos","profile")="prod"
+	SET CONF("miomos","dev","enabled")=0
+	SET CONF("miomos","dev","authDisabled")=0
+	SET CONF("miomos","localAuth","enabled")=1
+	DO CONFDEF^MIOMOS(.CONF)
+	DO EQ^MIOTASSERT(+$GET(CONF("miomos","localAuth","guestLoginEnabled")),0,"[MIOMOST][T023][prod guest default]")
+	DO EQ^MIOTASSERT(+$GET(^MIO("MIOMOS","USER","admin","passwordMustChange")),1,"[MIOMOST][T023][admin rotate flag]")
+	DO EQ^MIOTASSERT(+$GET(^MIO("MIOMOS","USER","user","passwordMustChange")),1,"[MIOMOST][T023][user rotate flag]")
+	DO EQ^MIOTASSERT(+$GET(^MIO("MIOMOS","USER","guest","passwordMustChange")),0,"[MIOMOST][T023][guest rotate flag]")
+	DO OK^MIOTASSERT($$SIGNIN^MIOMOSAUTH(.CONF,"admin","admin123!",.TOKEN,.ERR,.FLAGS),"[MIOMOST][T023][admin rotation signin]")
+	DO EQ^MIOTASSERT($GET(TOKEN),"","[MIOMOST][T023][admin rotation no cookie token]")
+	DO EQ^MIOTASSERT(+$GET(FLAGS("requiresPasswordChange")),1,"[MIOMOST][T023][admin rotation required]")
+	DO OK^MIOTASSERT($GET(FLAGS("resetToken"))["miomos-rst-","[MIOMOST][T023][admin reset token]")
+	DO OK^MIOTASSERT($$APPLYRESET^MIOMOSAUTH(.CONF,$GET(FLAGS("resetToken")),"Admin456!",.ERR),"[MIOMOST][T023][admin reset apply]")
+	DO EQ^MIOTASSERT(+$GET(^MIO("MIOMOS","USER","admin","passwordMustChange")),0,"[MIOMOST][T023][admin rotate cleared]")
+	DO EQ^MIOTASSERT($$SIGNIN^MIOMOSAUTH(.CONF,"admin","admin123!",.TOKEN,.ERR),0,"[MIOMOST][T023][old admin password blocked]")
+	DO OK^MIOTASSERT($$SIGNIN^MIOMOSAUTH(.CONF,"admin","Admin456!",.TOKEN,.ERR),"[MIOMOST][T023][new admin password works]")
+	DO CONFDEF^MIOMOS(.CONF)
+	DO EQ^MIOTASSERT($$SIGNIN^MIOMOSAUTH(.CONF,"admin","admin123!",.TOKEN,.ERR),0,"[MIOMOST][T023][preserve rotated password]")
+	DO OK^MIOTASSERT($$SIGNIN^MIOMOSAUTH(.CONF,"admin","Admin456!",.TOKEN,.ERR),"[MIOMOST][T023][preserved admin password works]")
+	DO AUTHCTX^MIOMOSUI(.CONF,.CTX)
+	DO OK^MIOTASSERT($$RENDERPAGE^MIOTPL("pages/miomos_auth.html","layouts/miomos_shell.html",.CONF,.CTX,.OUT,.ERR),"[MIOMOST][T023][auth rotation render]")
+	DO OK^MIOTASSERT(OUT["Change seeded password","[MIOMOST][T023][rotation copy]")
+	DO OK^MIOTASSERT(OUT["data-reset-apply-path=""/api/miomos/auth/reset""","[MIOMOST][T023][reset path token]")
+	DO OK^MIOTASSERT(OUT["data-password-policy-min-length=""8""","[MIOMOST][T023][policy token]")
 	QUIT
 	;
 FINDUSR(LIST,USER)
