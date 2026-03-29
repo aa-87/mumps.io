@@ -43,6 +43,8 @@ START
 	DO OK^MIOTASSERT(OUT["data-miomos-command=""/api/miomos/command""","[MIOMOST][T003][command route]")
 	DO OK^MIOTASSERT(OUT["id=""miomosBootJson""","[MIOMOST][T003][boot json]")
 	DO OK^MIOTASSERT(OUT["data-terminal-surface","[MIOMOST][T003][terminal surface]")
+	DO OK^MIOTASSERT(OUT["data-terminal-engine=""xtermjs""","[MIOMOST][T003][terminal engine]")
+	DO OK^MIOTASSERT(OUT["data-terminal-renderer=""xtermjs""","[MIOMOST][T003][terminal renderer]")
 	DO OK^MIOTASSERT(OUT["miomosTerminalViewport","[MIOMOST][T003][terminal viewport]")
 	DO OK^MIOTASSERT(OUT["data-setting-terminal=""fontFamily""","[MIOMOST][T003][terminal settings]")
 	DO OK^MIOTASSERT(OUT["data-launch-app=""terminal""","[MIOMOST][T003][terminal app]")

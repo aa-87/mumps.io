@@ -79,7 +79,7 @@ As of the latest ROI baseline:
 - Vue is a thin render/interaction layer over MUMPS-owned state
 - the browser shell now uses a **MIOMOS-native Vue/CSS window manager foundation**
 - the shell includes workspace, admin, security, settings, UI Library, chat, and terminal surfaces
-- terminal rendering now uses a lightweight native MIOMOS replica terminal over the existing command/websocket boundaries
+- terminal rendering now uses xterm.js as the browser renderer over the existing MIOMOS command/websocket boundaries
 - themes are server-authored in `MIOMOSTH`
 - settings and window manager catalogs are server-authored
 - admin/auth/observability/session posture exists and is tested
@@ -149,7 +149,7 @@ The browser may change layout strategy, but the following remain server-authored
 
 ## Terminal direction
 
-The terminal is important and should continue to move toward a real terminal feel without reintroducing heavy client-side terminal dependencies.
+The terminal is important and should keep the server-side MIOMOS ownership model while using a real browser terminal renderer.
 
 Guidelines:
 
@@ -267,7 +267,7 @@ When you deliver an ROI:
 - per-window persistence and mobile task switching
 - deeper admin governance screens
 - stronger terminal UX without regressing session ownership
-- no dependency on xterm.js; keep terminal rendering native to the shell CSS/JS layer
+- xterm.js is now the intended browser-side renderer; do not reintroduce fake transcript or textarea terminal UI layers on top of it
 - reusable SSR UI components outside the desktop shell
 
 
@@ -309,11 +309,10 @@ Development guidance:
 
 ## ROI30 terminal rewrite note
 
-The current MIOMOS terminal should be treated as a **native Vue/CSS terminal surface** backed by a **MUMPS-owned shell emulator** in `MIOMOSTERM`, not as an xterm.js surface and not as an OS.js terminal.
+The current MIOMOS terminal should be treated as an **xterm.js browser renderer** backed by a **MUMPS-owned terminal session**. The browser renderer is not the owner of session or transport state, and MIOMOS should not regress back to OS.js or a fake textarea-based emulator.
 
 Important constraints for future work:
 - keep terminal ownership on the MUMPS side
-- do not reintroduce xterm.js
 - prefer one coherent transport contract over split HTTP/websocket terminal ownership
 - preserve `session.ui.save` support because the desktop shell persists UI state frequently
 - keep tests quiet on success and avoid introducing compile-time extrinsic/procedure mismatches
@@ -463,3 +462,15 @@ Keep these rules aligned with the tests:
 - use an explicit session-aware helper for direct websocket command tests rather than depending on ambient auth state
 - the live websocket terminal path should use `MIOMOSTPIPE`
 - websocket terminal assertions should use valid MUMPS input when the pipe backend runs `yottadb -direct`
+
+
+## ROI36 xterm renderer reintegration note
+
+The source-of-truth terminal contract is now:
+
+- server-side terminal ownership stays in MIOMOS MUMPS routines, primarily the websocket/command path and `MIOMOSTPIPE` for the live YottaDB session
+- browser-side rendering should be done by xterm.js, not by a fake transcript textarea or CSS-only emulator
+- xterm.js should own focus, key capture, local echo, and cursor rendering
+- MIOMOS should only send whole command lines to the backend command boundary unless a future ROI introduces true character-stream transport end-to-end
+- avoid repeated forced focus on every poll/result cycle, as that can make the cursor appear to blink incorrectly or make typing unreliable
+- prefer a thin renderer integration that preserves the passing MIOMOST suite and the current YottaDB-over-pipe backend behavior

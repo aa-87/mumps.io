@@ -87,7 +87,7 @@ CURRENT(USER,OUT)
 	;
 CATALOG(ROOT)
 	KILL @ROOT
-	DO OPTS($NAME(@ROOT@("fonts")),"JetBrains Mono^JetBrains Mono,IBM Plex Mono^IBM Plex Mono,Fira Code^Fira Code,Cascadia Mono^Cascadia Mono")
+	DO OPTS($NAME(@ROOT@("fonts")),"JetBrains Mono^JetBrains Mono,IBM Plex Mono^IBM Plex Mono,Fira Code^Fira Code,Cascadia Mono^Cascadia Mono,Consolas^Consolas,Source Code Pro^Source Code Pro")
 	DO INTOPTS($NAME(@ROOT@("fontSizes")),12,18)
 	DO BOOL($NAME(@ROOT@("cursorBlink")))
 	DO OPTS($NAME(@ROOT@("cursorStyles")),"block^Block,underline^Underline,bar^Bar")
@@ -146,6 +146,8 @@ FONTOK(X)
 	IF X="IBM Plex Mono" QUIT X
 	IF X="Fira Code" QUIT X
 	IF X="Cascadia Mono" QUIT X
+	IF X="Consolas" QUIT X
+	IF X="Source Code Pro" QUIT X
 	QUIT ""
 	;
 FONTSIZE(N)
@@ -184,116 +186,20 @@ COLS(N)
 	QUIT N
 	;
 OPEN(STATE,CONF,TERMID,OUT,ERR)
-	NEW SID,TERMROOT
-	KILL OUT,ERR
-	SET ERR("routine")="MIOMOSTERM"
-	DO LOADTERM(.STATE,.CONF)
-	SET SID=$GET(STATE("sessionId"))
-	IF SID="" SET ERR("error")="session_missing" QUIT 0
-	IF $GET(TERMID)="" SET TERMID=$GET(^MIO("MIOMOS","TERM","BYSESSION",SID))
-	IF TERMID="" SET TERMID="term-"_$$UUID^MIOUTIL()
-	SET TERMROOT=$NAME(^MIO("MIOMOS","TERM","SESSION",TERMID))
-	IF '$DATA(@TERMROOT@("createdAt")) DO
-	. DO INITTERM(TERMROOT,.STATE,TERMID)
-	. DO ADDLINE(TERMROOT,$$BANNER(.STATE))
-	. DO ADDLINE(TERMROOT,"Type help for commands. Use pwd, ls, cd, cat, history, clear, and exit.")
-	SET ^MIO("MIOMOS","TERM","BYSESSION",SID)=TERMID
-	SET @TERMROOT@("lastAt")=$$NOWISO^MIOUTIL()
-	DO PROFILEOUT(.STATE,TERMROOT,.OUT)
-	SET OUT("ok")=1,OUT("terminalId")=TERMID,OUT("opened")=1
-	DO SNAPSHOT(TERMID,.OUT)
-	DO SETCURSOR(TERMROOT,SID,+$GET(@TERMROOT@("lineSeq")))
-	QUIT 1
+	QUIT $$OPEN^MIOMOSTPIPE(.STATE,.CONF,$GET(TERMID),.OUT,.ERR)
 	;
 ATTACH(STATE,TERMID,OUT,ERR)
-	NEW CONF,SID,ROOT
-	KILL OUT,ERR
-	SET ERR("routine")="MIOMOSTERM"
-	DO LOADTERM(.STATE,.CONF)
-	SET SID=$GET(STATE("sessionId"))
-	IF $GET(TERMID)="" SET TERMID=$GET(^MIO("MIOMOS","TERM","BYSESSION",SID))
-	IF TERMID="" QUIT $$OPEN(.STATE,.CONF,TERMID,.OUT,.ERR)
-	SET ROOT=$NAME(^MIO("MIOMOS","TERM","SESSION",TERMID))
-	IF '$DATA(@ROOT@("createdAt")) SET ERR("error")="terminal_not_found" QUIT 0
-	IF $GET(@ROOT@("principal"))'=$GET(STATE("principal")) SET ERR("error")="terminal_forbidden" QUIT 0
-	SET @ROOT@("lastAt")=$$NOWISO^MIOUTIL()
-	DO PROFILEOUT(.STATE,ROOT,.OUT)
-	SET OUT("ok")=1,OUT("terminalId")=TERMID,OUT("attached")=1
-	DO SNAPSHOT(TERMID,.OUT)
-	DO SETCURSOR(ROOT,SID,+$GET(@ROOT@("lineSeq")))
-	QUIT 1
+	NEW CONF
+	QUIT $$ATTACH^MIOMOSTPIPE(.STATE,$GET(TERMID),.OUT,.ERR)
 	;
 POLL(STATE,TERMID,OUT,ERR)
-	NEW ROOT,SID,FROMSEQ
-	KILL OUT,ERR
-	SET ERR("routine")="MIOMOSTERM"
-	SET SID=$GET(STATE("sessionId"))
-	IF $GET(TERMID)="" SET TERMID=$GET(^MIO("MIOMOS","TERM","BYSESSION",SID))
-	SET ROOT=$NAME(^MIO("MIOMOS","TERM","SESSION",TERMID))
-	IF '$DATA(@ROOT@("createdAt")) SET ERR("error")="terminal_not_found" QUIT 0
-	IF $GET(@ROOT@("principal"))'=$GET(STATE("principal")) SET ERR("error")="terminal_forbidden" QUIT 0
-	SET FROMSEQ=$$GETCURSOR(ROOT,SID)
-	DO PROFILEOUT(.STATE,ROOT,.OUT)
-	SET OUT("ok")=1,OUT("terminalId")=TERMID
-	DO DELTA(ROOT,FROMSEQ,.OUT)
-	DO SETCURSOR(ROOT,SID,+$GET(@ROOT@("lineSeq")))
-	QUIT 1
+	QUIT $$POLL^MIOMOSTPIPE(.STATE,$GET(TERMID),.OUT,.ERR)
 	;
 INPUT(STATE,TERMID,LINE,OUT,ERR)
-	NEW ROOT,SID,FROMSEQ,CMD,ARGS,CNT,OBS
-	KILL OUT,ERR
-	SET ERR("routine")="MIOMOSTERM"
-	SET SID=$GET(STATE("sessionId"))
-	SET ROOT=$NAME(^MIO("MIOMOS","TERM","SESSION",$GET(TERMID)))
-	IF '$DATA(@ROOT@("createdAt")) SET ERR("error")="terminal_not_found" QUIT 0
-	IF $GET(@ROOT@("principal"))'=$GET(STATE("principal")) SET ERR("error")="terminal_forbidden" QUIT 0
-	SET @ROOT@("lastAt")=$$NOWISO^MIOUTIL()
-	SET FROMSEQ=+$GET(@ROOT@("lineSeq"))
-	SET LINE=$$SANIN($GET(LINE))
-	SET OUT("ok")=1,OUT("terminalId")=$GET(TERMID)
-	DO PROFILEOUT(.STATE,ROOT,.OUT)
-	IF LINE="" DO  QUIT 1
-	. DO DELTA(ROOT,FROMSEQ,.OUT)
-	. DO SETCURSOR(ROOT,SID,+$GET(@ROOT@("lineSeq")))
-	DO ADDHIST(ROOT,LINE)
-	DO ADDLINE(ROOT,$$PROMPT(.STATE,$GET(@ROOT@("cwd")))_" "_LINE)
-	SET CMD=$$LC($PIECE(LINE," ",1))
-	SET ARGS=$$TRIM^MIOUTIL($EXTRACT(LINE,$LENGTH($PIECE(LINE," ",1))+1,999))
-	IF CMD="clear"!(CMD="cls") DO  QUIT 1
-	. KILL @ROOT@("line")
-	. SET @ROOT@("lineSeq")=0
-	. SET OUT("clear")=1
-	. DO DELTA(ROOT,0,.OUT)
-	. DO SETCURSOR(ROOT,SID,+$GET(@ROOT@("lineSeq")))
-	IF CMD="help" DO HELP(ROOT) QUIT $$FINISH(ROOT,SID,FROMSEQ,.OUT)
-	IF CMD="whoami" DO ADDLINE(ROOT,$SELECT($GET(STATE("userName"))'="":$GET(STATE("userName")),1:$GET(STATE("principal")))) QUIT $$FINISH(ROOT,SID,FROMSEQ,.OUT)
-	IF CMD="roles" DO ADDLINE(ROOT,$GET(STATE("roles"))) QUIT $$FINISH(ROOT,SID,FROMSEQ,.OUT)
-	IF CMD="date"!(CMD="time") DO ADDLINE(ROOT,$$NOWISO^MIOUTIL()) QUIT $$FINISH(ROOT,SID,FROMSEQ,.OUT)
-	IF CMD="pwd" DO ADDLINE(ROOT,$GET(@ROOT@("cwd"),"/")) QUIT $$FINISH(ROOT,SID,FROMSEQ,.OUT)
-	IF CMD="echo" DO ADDLINE(ROOT,ARGS) QUIT $$FINISH(ROOT,SID,FROMSEQ,.OUT)
-	IF CMD="uname" DO ADDLINE(ROOT,"YottaDB MIOMOS") QUIT $$FINISH(ROOT,SID,FROMSEQ,.OUT)
-	IF CMD="hostname" DO ADDLINE(ROOT,"miomos") QUIT $$FINISH(ROOT,SID,FROMSEQ,.OUT)
-	IF CMD="theme" DO ADDLINE(ROOT,"Theme "_$GET(STATE("themeKey"))_" · Accent "_$GET(STATE("titleAccentValue"))) QUIT $$FINISH(ROOT,SID,FROMSEQ,.OUT)
-	IF CMD="settings" DO ADDLINE(ROOT,"Desktop "_$GET(STATE("fontFamily"))_" "_$GET(STATE("fontSize"))_"px · "_$GET(STATE("density"))_" · "_$GET(STATE("wallpaper"))) QUIT $$FINISH(ROOT,SID,FROMSEQ,.OUT)
-	IF CMD="profile" DO  QUIT $$FINISH(ROOT,SID,FROMSEQ,.OUT)
-	. DO ADDLINE(ROOT,"Terminal "_$GET(STATE("terminal","fontFamily"))_" "_$GET(STATE("terminal","fontSize"))_"px · "_$GET(STATE("terminal","renderer"))_" · "_$GET(STATE("terminal","unicode")))
-	. DO ADDLINE(ROOT,"Cursor "_$GET(STATE("terminal","cursorStyle"))_" · Blink "_$GET(STATE("terminal","cursorBlink"))_" · "_$GET(STATE("terminal","cols"))_"x"_$GET(STATE("terminal","rows")))
-	IF CMD="logs" DO  QUIT $$FINISH(ROOT,SID,FROMSEQ,.OUT)
-	. DO COUNTS^MIOMOSOBS(.OBS)
-	. DO ADDLINE(ROOT,"Access "_$GET(OBS("access"))_" · Error "_$GET(OBS("error"))_" · Audit "_$GET(OBS("audit")))
-	IF CMD="history" DO  QUIT $$FINISH(ROOT,SID,FROMSEQ,.OUT)
-	. SET CNT=+$GET(@ROOT@("historySeq"))
-	. IF CNT<1 DO ADDLINE(ROOT,"No history yet.")
-	. FOR  QUIT:CNT<1  DO  QUIT:CNT<1
-	. . DO ADDLINE(ROOT,$GET(@ROOT@("history",CNT)))
-	. . SET CNT=CNT-1
-	. . IF CNT<+$GET(@ROOT@("historySeq"))-20 SET CNT=0
-	IF CMD="ls"!(CMD="dir") DO LISTDIR(ROOT,$$ABSPATH($GET(@ROOT@("cwd"),"/"),ARGS),.STATE) QUIT $$FINISH(ROOT,SID,FROMSEQ,.OUT)
-	IF CMD="cd" DO CHDIR(ROOT,$SELECT(ARGS="":"~",1:ARGS),.STATE) QUIT $$FINISH(ROOT,SID,FROMSEQ,.OUT)
-	IF CMD="cat"!(CMD="type") DO CATFILE(ROOT,$$ABSPATH($GET(@ROOT@("cwd"),"/"),ARGS),.STATE) QUIT $$FINISH(ROOT,SID,FROMSEQ,.OUT)
-	IF CMD="exit" QUIT $$CLOSE(.STATE,TERMID,.OUT,.ERR)
-	DO ADDLINE(ROOT,LINE_": command not found")
-	QUIT $$FINISH(ROOT,SID,FROMSEQ,.OUT)
+	NEW DATA
+	SET DATA=$GET(LINE)
+	IF DATA'="",($EXTRACT(DATA,$LENGTH(DATA))'=$CHAR(10)),($EXTRACT(DATA,$LENGTH(DATA))'=$CHAR(13)) SET DATA=DATA_$CHAR(10)
+	QUIT $$INPUT^MIOMOSTPIPE(.STATE,$GET(TERMID),DATA,.OUT,.ERR)
 	;
 FINISH(ROOT,SID,FROMSEQ,OUT)
 	DO DELTA(ROOT,FROMSEQ,.OUT)
@@ -301,33 +207,10 @@ FINISH(ROOT,SID,FROMSEQ,OUT)
 	QUIT 1
 	;
 RESIZE(STATE,TERMID,COLS,ROWS,OUT,ERR)
-	NEW ROOT
-	KILL OUT,ERR
-	SET ERR("routine")="MIOMOSTERM"
-	SET ROOT=$NAME(^MIO("MIOMOS","TERM","SESSION",$GET(TERMID)))
-	IF '$DATA(@ROOT@("createdAt")) SET ERR("error")="terminal_not_found" QUIT 0
-	SET COLS=$$COLS(+$GET(COLS)) IF COLS<1 SET COLS=120
-	SET ROWS=$$ROWS(+$GET(ROWS)) IF ROWS<1 SET ROWS=28
-	SET @ROOT@("cols")=COLS,@ROOT@("rows")=ROWS,@ROOT@("lastAt")=$$NOWISO^MIOUTIL()
-	SET OUT("ok")=1,OUT("terminalId")=$GET(TERMID),OUT("cols")=COLS,OUT("rows")=ROWS
-	SET OUT("prompt")=$$PROMPT(.STATE,$GET(@ROOT@("cwd")))
-	QUIT 1
+	QUIT $$RESIZE^MIOMOSTPIPE(.STATE,$GET(TERMID),+$GET(COLS),+$GET(ROWS),.OUT,.ERR)
 	;
 CLOSE(STATE,TERMID,OUT,ERR)
-	NEW ROOT,SID
-	KILL OUT,ERR
-	SET ERR("routine")="MIOMOSTERM"
-	SET ROOT=$NAME(^MIO("MIOMOS","TERM","SESSION",$GET(TERMID)))
-	IF '$DATA(@ROOT@("createdAt")) SET ERR("error")="terminal_not_found" QUIT 0
-	SET SID=$GET(@ROOT@("sessionId"))
-	SET @ROOT@("status")="closed",@ROOT@("closedAt")=$$NOWISO^MIOUTIL()
-	KILL ^MIO("MIOMOS","TERM","BYSESSION",SID)
-	KILL ^MIO("MIOMOS","TERM","CURSOR",SID,TERMID)
-	SET OUT("ok")=1,OUT("terminalId")=$GET(TERMID),OUT("closed")=1
-	SET OUT("prompt")=$$PROMPT(.STATE,$GET(@ROOT@("cwd")))
-	SET OUT("write",1)="logout"_$CHAR(13,10)
-	SET OUT("write",2)="Terminal session closed."_$CHAR(13,10)
-	QUIT 1
+	QUIT $$CLOSE^MIOMOSTPIPE(.STATE,$GET(TERMID),.OUT,.ERR)
 	;
 PROFILEOUT(STATE,ROOT,OUT)
 	MERGE OUT("profile")=STATE("terminal")

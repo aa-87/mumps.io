@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{page.title}}{{^page.title}}MIOMOS Desktop{{/page.title}}</title>
   <link rel="stylesheet" href="https://unpkg.com/7.css/dist/7.scoped.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.css">
   <style>
     :root {
       --miomos-bg-0: #0d1522;
@@ -1073,7 +1074,7 @@
       background: #34d399;
       box-shadow: 0 0 0 3px rgba(52,211,153,0.18);
     }
-    .miomos-terminal-shell[data-terminal-engine="miomos-terminal-native"] .miomos-btn { min-width: 68px; }
+    .miomos-terminal-shell .miomos-btn { min-width: 68px; }
 
     .miomos-resize-handle { position: absolute; z-index: 12; }
     .miomos-resize-handle[data-edge="n"], .miomos-resize-handle[data-edge="s"] { left: 8px; right: 8px; height: 6px; }
@@ -1804,114 +1805,41 @@
       min-height: 340px;
       border-radius: 12px;
       border: 1px solid rgba(53, 78, 107, 0.92);
-      background:
-        linear-gradient(180deg, rgba(13,21,33,0.98), rgba(7,12,20,0.98)),
-        linear-gradient(90deg, rgba(255,255,255,0.03), rgba(255,255,255,0));
+      background: linear-gradient(180deg, rgba(13,21,33,0.98), rgba(7,12,20,0.98));
       box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), inset 0 0 0 1px rgba(255,255,255,0.03), 0 18px 34px rgba(5,10,17,0.24);
       overflow: hidden;
       padding: 0;
       position: relative;
     }
-    .miomos-terminal-viewport::before {
-      content: "";
+    .miomos-terminal-host {
       position: absolute;
       inset: 0;
-      background:
-        linear-gradient(transparent 0, rgba(255,255,255,0.02) 50%, transparent 100%),
-        repeating-linear-gradient(180deg, rgba(255,255,255,0.03) 0 1px, transparent 1px 24px);
-      opacity: 0.26;
-      pointer-events: none;
-    }
-    .miomos-terminal-replica {
-      position: relative;
-      z-index: 1;
-      height: 100%;
-      display: grid;
-      grid-template-rows: auto 1fr auto;
-      color: #dce9ff;
-      font-family: "JetBrains Mono", "Cascadia Mono", "Fira Code", Consolas, monospace;
-    }
-    .miomos-terminal-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      min-height: 34px;
-      padding: 0 12px;
-      border-bottom: 1px solid rgba(133,163,201,0.18);
-      background: linear-gradient(180deg, rgba(35,53,76,0.92), rgba(18,28,42,0.92));
-      color: #eaf2ff;
-      font-size: 11px;
-      letter-spacing: 0.02em;
-    }
-    .miomos-terminal-head strong { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; }
-    .miomos-terminal-head span { color: rgba(224,234,248,0.76); }
-    .miomos-terminal-screen {
-      overflow: auto;
-      padding: 14px 16px 10px;
-      white-space: pre-wrap;
-      word-break: break-word;
-      font-size: 13px;
-      line-height: 1.56;
-      scrollbar-color: rgba(139,175,220,0.45) rgba(7,12,20,0.55);
-      scrollbar-width: thin;
-    }
-    .miomos-terminal-transcript {
-      min-height: 100%;
-      margin: 0;
-      color: #dce9ff;
-      font: inherit;
-      white-space: pre-wrap;
-    }
-    .miomos-terminal-footer {
-      display: grid;
-      grid-template-columns: auto 1fr auto;
-      align-items: center;
-      gap: 10px;
-      padding: 9px 12px 10px;
-      border-top: 1px solid rgba(133,163,201,0.16);
-      background: linear-gradient(180deg, rgba(11,18,28,0.98), rgba(8,13,21,0.98));
-    }
-    .miomos-terminal-prompt {
-      color: #8fb3ff;
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-    }
-    .miomos-terminal-input {
       width: 100%;
-      min-width: 0;
-      border: 0;
-      outline: none;
-      padding: 0;
-      margin: 0;
-      background: transparent;
-      color: #eff6ff;
-      font: inherit;
-      caret-color: #eff6ff;
+      height: 100%;
+      padding: 10px 12px;
+      outline: 0;
     }
-    .miomos-terminal-input::placeholder { color: rgba(206,220,240,0.36); }
-    .miomos-terminal-send {
-      min-width: 76px;
-      height: 28px;
-      padding: 0 10px;
-      border-radius: 7px;
-      border: 1px solid rgba(144,176,220,0.28);
-      background: linear-gradient(180deg, rgba(59,96,152,0.88), rgba(34,60,102,0.92));
-      color: #f4f8ff;
-      font-size: 11px;
-      font-weight: 700;
-      cursor: pointer;
-    }
-    .miomos-terminal-send:hover { filter: brightness(1.06); }
-    .miomos-terminal-send:disabled { opacity: 0.55; cursor: default; }
+    .miomos-terminal-host[data-xterm-mounted="1"] { cursor: text; }
+    .miomos-terminal-host .xterm { height: 100%; }
+    .miomos-terminal-host .xterm-viewport { overflow-y: auto !important; }
+    .miomos-terminal-host .xterm-screen canvas { image-rendering: auto; }
+    .miomos-terminal-host .xterm-helper-textarea { opacity: 0; left: -9999em; }
     .miomos-terminal-statusline {
+      position: absolute;
+      left: 12px;
+      right: 12px;
+      bottom: 8px;
+      z-index: 3;
       display: flex;
       align-items: center;
       gap: 8px;
+      padding: 4px 8px;
+      border-radius: 999px;
       color: rgba(207,221,240,0.72);
       font-size: 11px;
+      background: rgba(7,12,20,0.55);
+      backdrop-filter: blur(8px);
+      pointer-events: none;
     }
     .miomos-terminal-dot {
       width: 8px;
@@ -1920,14 +1848,21 @@
       background: #7aa0f7;
       box-shadow: 0 0 0 3px rgba(122,160,247,0.18);
     }
-    .miomos-terminal-footer[data-terminal-connected="0"] .miomos-terminal-dot {
+    .miomos-terminal-statusline[data-terminal-connected="0"] .miomos-terminal-dot {
       background: #c77c35;
       box-shadow: 0 0 0 3px rgba(199,124,53,0.18);
     }
     .miomos-terminal-fallback {
-      padding: 12px;
-      color: var(--muted);
+      position: absolute;
+      inset: auto 12px 44px 12px;
+      z-index: 3;
+      padding: 10px 12px;
+      border-radius: 10px;
+      color: #dce9ff;
+      border: 1px solid rgba(97,119,150,.18);
+      background: rgba(11,18,28,0.92);
       font-size: 12px;
+      pointer-events: none;
     }
 
     .miomos-resize-handle { position: absolute; z-index: 7; }
@@ -2625,6 +2560,7 @@
   </style>
 
   <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.js"></script>
 
   <style id="miomosRoi14Polish">
     :root { --miomos-taskbar-h: 42px; }
