@@ -2,19 +2,26 @@ MIOMOSCHAT ; MIOMOS collaboration chat helpers
 	QUIT
 	;
 SEND(STATE,ROOM,TEXT,MSG,ERR)
-	NEW ID,CLEAN
+	NEW ID,CLEAN,PRINCIPAL,USER,TS
 	KILL ERR,MSG
 	SET ERR("routine")="MIOMOSCHAT"
 	SET ROOM=$$ROOM($GET(ROOM))
 	SET CLEAN=$$TEXT($GET(TEXT))
 	IF CLEAN="" SET ERR("error")="chat_text_missing" QUIT 0
+	SET PRINCIPAL=$GET(STATE("principal"))
+	IF PRINCIPAL="" SET ERR("error")="chat_principal_missing" QUIT 0
+	SET USER=$GET(STATE("userName")) IF USER="" SET USER=PRINCIPAL
 	SET ID=$INCREMENT(^MIO("MIOMOS","CHAT",ROOM,"SEQ"))
-	SET ^MIO("MIOMOS","CHAT",ROOM,ID,"ts")=$$NOWISO^MIOUTIL()
-	SET ^MIO("MIOMOS","CHAT",ROOM,ID,"principal")=$GET(STATE("principal"))
-	SET ^MIO("MIOMOS","CHAT",ROOM,ID,"userName")=$GET(STATE("userName"))
+	SET TS=$$NOWISO^MIOUTIL()
+	SET ^MIO("MIOMOS","CHAT",ROOM,ID,"ts")=TS
+	SET ^MIO("MIOMOS","CHAT",ROOM,ID,"principal")=PRINCIPAL
+	SET ^MIO("MIOMOS","CHAT",ROOM,ID,"userName")=USER
 	SET ^MIO("MIOMOS","CHAT",ROOM,ID,"text")=CLEAN
-	SET MSG("id")=ID,MSG("room")=ROOM,MSG("ts")=$GET(^MIO("MIOMOS","CHAT",ROOM,ID,"ts"))
-	SET MSG("principal")=$GET(STATE("principal")),MSG("userName")=$GET(STATE("userName")),MSG("text")=CLEAN
+	SET ^MIO("MIOMOS","CHAT",ROOM,ID,"deleted")=0
+	SET ^MIO("MIOMOS","CHAT",ROOM,ID,"kind")=$SELECT($$ISDIRECT(ROOM):"direct",1:"room")
+	SET MSG("id")=ID,MSG("room")=ROOM,MSG("ts")=TS
+	SET MSG("principal")=PRINCIPAL,MSG("userName")=USER,MSG("text")=CLEAN
+	SET MSG("deleted")=0,MSG("kind")=$GET(^MIO("MIOMOS","CHAT",ROOM,ID,"kind"))
 	QUIT 1
 	;
 FETCH(ROOM,LIMIT,OUT)
@@ -27,13 +34,27 @@ FETCH(ROOM,LIMIT,OUT)
 	FOR ID=LAST:-1:1 QUIT:N'<LIMIT  DO
 	. IF '$DATA(^MIO("MIOMOS","CHAT",ROOM,ID)) QUIT
 	. SET N=N+1
-	. SET OUT(N,"id")=ID
-	. SET OUT(N,"room")=ROOM
-	. SET OUT(N,"ts")=$GET(^MIO("MIOMOS","CHAT",ROOM,ID,"ts"))
-	. SET OUT(N,"principal")=$GET(^MIO("MIOMOS","CHAT",ROOM,ID,"principal"))
-	. SET OUT(N,"userName")=$GET(^MIO("MIOMOS","CHAT",ROOM,ID,"userName"))
-	. SET OUT(N,"text")=$GET(^MIO("MIOMOS","CHAT",ROOM,ID,"text"))
+	. DO FILLMSG(ROOM,ID,$NAME(OUT(N)))
 	DO REVERSE(.OUT)
+	QUIT
+	;
+FILLMSG(ROOM,ID,ROOT)
+	NEW TXT
+	KILL @ROOT
+	SET @ROOT@("id")=ID
+	SET @ROOT@("room")=$GET(ROOM)
+	SET @ROOT@("ts")=$GET(^MIO("MIOMOS","CHAT",ROOM,ID,"ts"))
+	SET @ROOT@("principal")=$GET(^MIO("MIOMOS","CHAT",ROOM,ID,"principal"))
+	SET @ROOT@("userName")=$GET(^MIO("MIOMOS","CHAT",ROOM,ID,"userName"))
+	SET @ROOT@("deleted")=+$GET(^MIO("MIOMOS","CHAT",ROOM,ID,"deleted"))
+	SET @ROOT@("kind")=$GET(^MIO("MIOMOS","CHAT",ROOM,ID,"kind"),$SELECT($$ISDIRECT(ROOM):"direct",1:"room"))
+	IF +$GET(@ROOT@("deleted")) DO
+	. SET @ROOT@("text")="[Message removed by moderator]"
+	. SET @ROOT@("deletedBy")=$GET(^MIO("MIOMOS","CHAT",ROOM,ID,"deletedBy"))
+	. SET @ROOT@("deletedAt")=$GET(^MIO("MIOMOS","CHAT",ROOM,ID,"deletedAt"))
+	ELSE  DO
+	. SET TXT=$GET(^MIO("MIOMOS","CHAT",ROOM,ID,"text"))
+	. SET @ROOT@("text")=TXT
 	QUIT
 	;
 SNAPSHOT(ROOM,LIMIT,JSON)
@@ -42,12 +63,7 @@ SNAPSHOT(ROOM,LIMIT,JSON)
 	SET OBJ("ok")=1,OBJ("event")="chat.snapshot",OBJ("room")=$$ROOM($GET(ROOM))
 	SET N=0
 	FOR  SET N=$ORDER(ARR(N)) QUIT:N=""  DO
-	. SET OBJ("messages",N,"id")=$GET(ARR(N,"id"))
-	. SET OBJ("messages",N,"room")=$GET(ARR(N,"room"))
-	. SET OBJ("messages",N,"ts")=$GET(ARR(N,"ts"))
-	. SET OBJ("messages",N,"principal")=$GET(ARR(N,"principal"))
-	. SET OBJ("messages",N,"userName")=$GET(ARR(N,"userName"))
-	. SET OBJ("messages",N,"text")=$GET(ARR(N,"text"))
+	. MERGE OBJ("messages",N)=ARR(N)
 	SET JSON=$$EN^MIOJSON1(.OBJ)
 	QUIT
 	;
@@ -55,6 +71,31 @@ MESSAGE(MSG,JSON)
 	NEW OBJ
 	SET OBJ("ok")=1,OBJ("event")="chat.message"
 	MERGE OBJ("message")=MSG
+	SET JSON=$$EN^MIOJSON1(.OBJ)
+	QUIT
+	;
+META(STATE,OUT)
+	NEW ROOMS,DIRECTS,ROST
+	KILL OUT
+	SET OUT("enabled")=+$GET(STATE("chatEnabled"),1)
+	SET OUT("room")=$$ROOM($GET(STATE("chatRoom"),"general"))
+	SET OUT("limit")=+$GET(STATE("chatLimit"),20)
+	SET OUT("canModerate")=$SELECT($$HAS^MIOMOSPERM(.STATE,"chat.moderate")!$$HAS^MIOMOSPERM(.STATE,"admin.users.view"):1,1:0)
+	SET OUT("canDirect")=$SELECT($$HAS^MIOMOSPERM(.STATE,"chat.direct"):1,1:0)
+	DO ROOMS(.STATE,.ROOMS)
+	MERGE OUT("rooms")=ROOMS
+	DO DIRECTS(.STATE,.DIRECTS)
+	MERGE OUT("directs")=DIRECTS
+	SET OUT("unreadTotal")=$$TOTALUNREAD(.STATE)
+	DO ROSTER(.STATE,.ROST)
+	MERGE OUT("roster")=ROST
+	QUIT
+	;
+METAJSON(STATE,JSON)
+	NEW OBJ,CHAT
+	SET OBJ("ok")=1,OBJ("event")="chat.meta"
+	DO META(.STATE,.CHAT)
+	MERGE OBJ("chat")=CHAT
 	SET JSON=$$EN^MIOJSON1(.OBJ)
 	QUIT
 	;
@@ -79,20 +120,37 @@ REVERSE(OUT)
 	. MERGE OUT(N)=TMP(M)
 	QUIT
 	;
-	;
 ROOMS(STATE,OUT)
+	NEW N
 	KILL OUT
-	SET OUT(1,"key")="general",OUT(1,"label")="General"
-	SET OUT(2,"key")="ops",OUT(2,"label")="Operations"
-	IF $$HAS^MIOMOSPERM(.STATE,"chat.moderate")!$$HAS^MIOMOSPERM(.STATE,"admin.users.view") SET OUT(3,"key")="admin",OUT(3,"label")="Admin"
+	SET N=0
+	DO ADDROOM(.STATE,"general","General",.N,.OUT)
+	DO ADDROOM(.STATE,"ops","Operations",.N,.OUT)
+	IF $$HAS^MIOMOSPERM(.STATE,"chat.moderate")!$$HAS^MIOMOSPERM(.STATE,"admin.users.view") DO ADDROOM(.STATE,"admin","Admin",.N,.OUT)
+	QUIT
+	;
+ADDROOM(STATE,KEY,LABEL,N,OUT)
+	SET N=+$GET(N)+1
+	SET OUT(N,"key")=$GET(KEY)
+	SET OUT(N,"label")=$GET(LABEL)
+	SET OUT(N,"unread")=$$UNREADCOUNT($GET(STATE("principal")),$GET(KEY))
+	SET OUT(N,"isActive")=$SELECT($$ROOM($GET(STATE("chatRoom")))=$GET(KEY):1,1:0)
 	QUIT
 	;
 CANUSE(STATE,ROOM)
+	NEW PRINCIPAL,P1,P2,OK
 	SET ROOM=$$ROOM($GET(ROOM))
 	IF ROOM="general" QUIT $$HAS^MIOMOSPERM(.STATE,"chat.use")
 	IF ROOM="ops" QUIT $$HAS^MIOMOSPERM(.STATE,"chat.use")
 	IF ROOM="admin" QUIT $$HAS^MIOMOSPERM(.STATE,"chat.moderate")!$$HAS^MIOMOSPERM(.STATE,"admin.users.view")
-	QUIT 0
+	IF '$$ISDIRECT(ROOM) QUIT 0
+	SET PRINCIPAL=$GET(STATE("principal"))
+	SET P1=$PIECE(ROOM,":",2)
+	SET P2=$PIECE(ROOM,":",3)
+	SET OK=0
+	IF (PRINCIPAL=P1)!(PRINCIPAL=P2) SET OK=$$HAS^MIOMOSPERM(.STATE,"chat.direct")
+	IF 'OK,$$HAS^MIOMOSPERM(.STATE,"chat.moderate")!$$HAS^MIOMOSPERM(.STATE,"admin.users.view") SET OK=1
+	QUIT OK
 	;
 ROSTER(STATE,OUT)
 	NEW SID,N,USER,ROLES
@@ -109,4 +167,91 @@ ROSTER(STATE,OUT)
 	. SET OUT(N,"roleLabel")=$$ROLELABEL^MIOMOSPERM(ROLES)
 	. SET OUT(N,"isCurrent")=$SELECT(SID=$GET(STATE("sessionId")):1,1:0)
 	QUIT
+	;
+DIRECTROOM(A,B)
+	NEW X,Y
+	SET X=$$LOW($$TRIM^MIOUTIL($GET(A)))
+	SET Y=$$LOW($$TRIM^MIOUTIL($GET(B)))
+	IF X="" QUIT "dm:"_Y
+	IF Y="" QUIT "dm:"_X
+	IF X]Y QUIT "dm:"_Y_":"_X
+	QUIT "dm:"_X_":"_Y
+	;
+ISDIRECT(ROOM)
+	QUIT $SELECT($EXTRACT($GET(ROOM),1,3)="dm:":1,1:0)
+	;
+DIRECTS(STATE,OUT)
+	NEW USER,SELF,N,ROOM,NAME,ROLES
+	KILL OUT
+	IF '$$HAS^MIOMOSPERM(.STATE,"chat.direct") QUIT
+	SET SELF=$GET(STATE("principal"))
+	SET USER="",N=0
+	FOR  SET USER=$ORDER(^MIO("MIOMOS","USER",USER)) QUIT:USER=""  DO
+	. IF USER=SELF QUIT
+	. IF USER="guest" QUIT
+	. IF +$GET(^MIO("MIOMOS","USER",USER,"enabled"))=0 QUIT
+	. SET ROOM=$$DIRECTROOM(SELF,USER)
+	. SET NAME=$GET(^MIO("MIOMOS","USER",USER,"displayName")) IF NAME="" SET NAME=$GET(^MIO("MIOMOS","USER",USER,"userName"))
+	. IF NAME="" SET NAME=USER
+	. SET ROLES=$GET(^MIO("MIOMOS","USER",USER,"roles"))
+	. SET N=N+1
+	. SET OUT(N,"key")=ROOM
+	. SET OUT(N,"room")=ROOM
+	. SET OUT(N,"peer")=USER
+	. SET OUT(N,"label")=NAME
+	. SET OUT(N,"roleLabel")=$$ROLELABEL^MIOMOSPERM(ROLES)
+	. SET OUT(N,"online")=$$ONLINE(USER)
+	. SET OUT(N,"unread")=$$UNREADCOUNT(SELF,ROOM)
+	. SET OUT(N,"isActive")=$SELECT($$ROOM($GET(STATE("chatRoom")))=ROOM:1,1:0)
+	QUIT
+	;
+ONLINE(USER)
+	NEW SID,OK
+	SET (SID,OK)=0
+	FOR  SET SID=$ORDER(^MIO("MIOMOS","SESSION","REG",SID)) QUIT:SID=""  DO  QUIT:OK
+	. IF $GET(^MIO("MIOMOS","SESSION","REG",SID,"principal"))=$GET(USER) SET OK=1
+	QUIT OK
+	;
+MARKREAD(STATE,ROOM)
+	NEW PRINCIPAL
+	SET PRINCIPAL=$GET(STATE("principal"))
+	SET ROOM=$$ROOM($GET(ROOM))
+	IF PRINCIPAL="" QUIT
+	SET ^MIO("MIOMOS","CHAT","READ",PRINCIPAL,ROOM)=+$GET(^MIO("MIOMOS","CHAT",ROOM,"SEQ"))
+	QUIT
+	;
+LASTREAD(PRINCIPAL,ROOM)
+	QUIT +$GET(^MIO("MIOMOS","CHAT","READ",$GET(PRINCIPAL),$$ROOM($GET(ROOM))))
+	;
+UNREADCOUNT(PRINCIPAL,ROOM)
+	NEW SEQ,LAST
+	SET ROOM=$$ROOM($GET(ROOM))
+	SET SEQ=+$GET(^MIO("MIOMOS","CHAT",ROOM,"SEQ"))
+	SET LAST=$$LASTREAD($GET(PRINCIPAL),ROOM)
+	IF SEQ<LAST QUIT 0
+	QUIT (SEQ-LAST)
+	;
+TOTALUNREAD(STATE)
+	NEW TMP,N,TOTAL
+	SET TOTAL=0
+	DO ROOMS(.STATE,.TMP)
+	SET N=0 FOR  SET N=$ORDER(TMP(N)) QUIT:N=""  SET TOTAL=TOTAL+$GET(TMP(N,"unread"))
+	KILL TMP DO DIRECTS(.STATE,.TMP)
+	SET N=0 FOR  SET N=$ORDER(TMP(N)) QUIT:N=""  SET TOTAL=TOTAL+$GET(TMP(N,"unread"))
+	QUIT TOTAL
+	;
+DELETE(STATE,ROOM,ID,OUT,ERR)
+	KILL OUT,ERR
+	SET ERR("routine")="MIOMOSCHAT"
+	SET ROOM=$$ROOM($GET(ROOM)),ID=+ID
+	IF ID<1 SET ERR("error")="chat_message_missing" QUIT 0
+	IF '$DATA(^MIO("MIOMOS","CHAT",ROOM,ID,"ts")) SET ERR("error")="chat_message_missing" QUIT 0
+	SET ^MIO("MIOMOS","CHAT",ROOM,ID,"deleted")=1
+	SET ^MIO("MIOMOS","CHAT",ROOM,ID,"deletedBy")=$GET(STATE("principal"))
+	SET ^MIO("MIOMOS","CHAT",ROOM,ID,"deletedAt")=$$NOWISO^MIOUTIL()
+	DO FILLMSG(ROOM,ID,$NAME(OUT))
+	QUIT 1
+	;
+LOW(X)
+	QUIT $TR($GET(X),"ABCDEFGHIJKLMNOPQRSTUVWXYZ","abcdefghijklmnopqrstuvwxyz")
 	;

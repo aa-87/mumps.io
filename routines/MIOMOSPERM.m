@@ -24,6 +24,7 @@ ROLEHAS(ROLE,PERM)
 	IF $GET(PERM)="theme.self" QUIT 1
 	IF $GET(PERM)="settings.self" QUIT 1
 	IF $GET(PERM)="chat.use" QUIT 1
+	IF $GET(PERM)="chat.direct" QUIT $SELECT($GET(ROLE)="guest":0,1:1)
 	IF $GET(PERM)="terminal.use" QUIT 1
 	IF $GET(PERM)="editor.use" QUIT 1
 	IF $GET(ROLE)="developer",((PERM="logs.view")!(PERM="audit.view")!(PERM="logs.export")!(PERM="audit.export")!(PERM="digest.export")!(PERM="retention.manage")!(PERM="permissions.view")!(PERM="theme.manage")!(PERM="user.manage")!(PERM="admin.users.view")!(PERM="admin.users.manage")!(PERM="admin.invites.manage")!(PERM="admin.reset.manage")) QUIT 1
@@ -40,6 +41,7 @@ LIST(ROLES,OUT)
 	SET ALL("theme.self")="Theme selection"
 	SET ALL("settings.self")="Desktop settings"
 	SET ALL("chat.use")="User chat"
+	SET ALL("chat.direct")="Direct messages"
 	SET ALL("terminal.use")="Terminal access"
 	SET ALL("editor.use")="Code studio access"
 	SET ALL("queue.manage")="Queue operations"

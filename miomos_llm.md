@@ -573,3 +573,20 @@ Guardrails:
 - default `terminal.open` without `forceNew` should continue to attach to an existing session when a specific terminal window wants to reuse its current terminalId
 - a fresh launch from the shell must not reuse `^MIO("MIOMOS","PIPE","BYSESSION",sessionId)`; it must request a new session explicitly
 - terminal taskbar entries should reflect real independent windows rather than one global terminal model
+
+## ROI56 — Real chat workflow with moderation and unread shell badges
+
+Completed after ROI55:
+
+- collaboration chat now supports real direct-message room keys between users rather than only shared room snapshots
+- chat metadata is MUMPS-authored and includes room lists, direct-contact lists, unread counts, moderation capability, and active-room state
+- unread counts now reflect per-user last-read state stored in MUMPS globals and surface back into the collaboration window and taskbar badges
+- support/admin moderators can remove chat messages and the room snapshot preserves moderated history with deleted markers instead of silently dropping rows
+- the collaboration surface now renders a real room/direct-message sidebar, active-user roster, moderated message controls, and unread-aware shell badges
+
+Guardrails:
+
+- direct rooms must stay permission-aware and only expose messages to participants or moderators with admin visibility
+- guest users may use shared chat if enabled by role, but should not receive direct-message capability
+- unread counts must be durable per principal and should clear only when the room is fetched/read for that principal
+- taskbar and quick-launch badges must reflect server-authored unread totals rather than browser-only counters

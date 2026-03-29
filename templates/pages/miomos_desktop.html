@@ -21,6 +21,26 @@
   data-admin-surface="1" data-ui-library-surface="1" data-mobile-ready="1" data-window-fade="off"
   data-shell-chrome="winxp" data-start-menu-style="winxp" data-context-menu-style="winxp"
   data-taskbar-style="xp-plus-tray" data-tray-style="xp-notify-area" data-shell-dialogs="xp" data-task-order="stable" data-start-menu-behavior="predictable" data-start-search="1" data-taskbar-overflow="1" data-keyboard-model="ctrl-escape-enter-search" data-task-click-policy="xp-toggle" data-shell-surface-policy="single-open-surface" data-shell-dialog-drag="1" data-desktop-folder-create="1" data-desktop-icons-draggable="1" data-desktop-curation="ui-samples-settings-terminal">Windows XP inspired shell chrome Taskbar order stays stable while focus changes. Clicking a task button toggles minimize or restore without shuffling neighboring items. Start search filters programs and shell actions. Overflow windows move into a More Windows list without changing taskbar order. UI Samples keeps shell-only surfaces curated. All live shell communication now goes through the primary websocket session.</div>
+<style id="miomosChatWorkflowRoi56">
+  .miomos-chat-layout { display:grid; grid-template-columns: 280px minmax(0,1fr); gap:10px; height:100%; }
+  .miomos-chat-sidebar, .miomos-chat-main { min-height:0; }
+  .miomos-chat-sidebar { display:grid; gap:10px; align-content:start; overflow:auto; }
+  .miomos-chat-room-list, .miomos-chat-directs { display:grid; gap:8px; }
+  .miomos-chat-room-btn { display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; padding:9px 10px; border-radius:12px; border:1px solid var(--border); background:rgba(255,255,255,0.04); color:var(--text); cursor:pointer; text-align:left; }
+  .miomos-chat-room-btn strong { display:block; font-size:11px; }
+  .miomos-chat-room-btn span { display:block; font-size:10px; color:var(--muted); }
+  .miomos-chat-room-btn.is-active { background:var(--accent-soft); border-color:rgba(143,174,255,0.34); }
+  .miomos-chat-badge, .miomos-task-badge { display:inline-flex; align-items:center; justify-content:center; min-width:18px; height:18px; padding:0 6px; border-radius:999px; background:rgba(95,141,255,0.18); border:1px solid rgba(143,174,255,0.30); color:var(--text); font-size:10px; font-weight:800; }
+  .miomos-chat-main { display:grid; grid-template-rows:auto 1fr auto; gap:10px; }
+  .miomos-chat-feed { overflow:auto; display:grid; gap:8px; align-content:start; }
+  .miomos-chat-message-head { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .miomos-chat-actions { margin-top:6px; display:flex; justify-content:flex-end; }
+  .miomos-btn--tiny { height:24px; padding:0 10px; font-size:10px; }
+  .miomos-feed-item.is-deleted { opacity:.72; }
+  .miomos-quicklaunch-btn { position:relative; }
+  @media (max-width: 980px) { .miomos-chat-layout { grid-template-columns:minmax(0,1fr); } }
+</style>
+
 <div id="miomosRoot"
   class="miomos-root"
   v-cloak
@@ -298,19 +318,47 @@
         </template>
 
         <template v-else-if="win.appKey === 'collaboration'">
-          <div class="miomos-chat-shell">
-            <div class="miomos-chat-feed">
-              <div v-if="!messages.length" class="miomos-empty-state"><strong>No chat messages yet</strong><span>This room will populate from the current MIOMOS websocket session once collaboration traffic arrives.</span></div>
-              <div v-for="msg in messages" :key="msg.id || msg.ts || msg.text" class="miomos-feed-item">
-                <strong>[[ msg.userName || 'System' ]]</strong>
-                <span>[[ msg.text || 'No messages.' ]]</span>
-                <time>[[ msg.ts || msg.time || 'Now' ]]</time>
+          <div class="miomos-chat-layout" data-chat-surface="1">
+            <aside class="miomos-card miomos-chat-sidebar" data-chat-sidebar="1">
+              <div class="miomos-surface-title"><strong>Channels</strong><span>Unread counts, direct threads, and moderation state are server-authored in MUMPS.</span></div>
+              <div class="miomos-chat-room-list">
+                <button v-for="room in chatRooms" :key="room.key" type="button" class="miomos-chat-room-btn" :class="{ 'is-active': activeChatRoomKey === room.key }" @click="selectChatRoom(room.key)">
+                  <div><strong>[[ room.label ]]</strong><span>[[ room.key ]]</span></div>
+                  <span v-if="Number(room.unread||0)" class="miomos-chat-badge">[[ room.unread ]]</span>
+                </button>
               </div>
-            </div>
-            <form class="miomos-chat-form" @submit.prevent="sendChat">
-              <textarea v-model="chatDraft" placeholder="Send a short update to the room."></textarea>
-              <div class="miomos-actions"><span class="miomos-pill">Room [[ view.chat.room || 'general' ]]</span><button type="submit" class="miomos-btn">Send</button></div>
-            </form>
+              <div v-if="chatDirects.length" class="miomos-chat-directs">
+                <div class="miomos-kpi-label">Direct messages</div>
+                <button v-for="person in chatDirects" :key="person.room" type="button" class="miomos-chat-room-btn miomos-chat-room-btn--direct" :class="{ 'is-active': activeChatRoomKey === person.room }" @click="selectChatRoom(person.room)">
+                  <div><strong>[[ person.label ]]</strong><span>[[ person.roleLabel || (person.online ? 'Online' : 'Offline') ]]</span></div>
+                  <span v-if="Number(person.unread||0)" class="miomos-chat-badge">[[ person.unread ]]</span>
+                </button>
+              </div>
+              <div class="miomos-chat-roster">
+                <div class="miomos-kpi-label">Active now</div>
+                <ul class="miomos-list dense">
+                  <li v-for="user in (view.chat.roster || [])" :key="user.sessionId || user.principal"><strong>[[ user.userName || user.principal ]]</strong><span>[[ user.roleLabel || user.roles || 'User' ]]</span></li>
+                </ul>
+              </div>
+            </aside>
+            <section class="miomos-card miomos-chat-main">
+              <div class="miomos-surface-header">
+                <div class="miomos-surface-title"><strong>[[ activeChatLabel ]]</strong><span>[[ canModerateChat ? 'Moderated collaboration surface' : 'User collaboration surface' ]]</span></div>
+                <div class="miomos-chips"><span class="miomos-pill">Unread [[ chatUnreadTotal ]]</span><span v-if="canModerateChat" class="miomos-pill">Moderator</span></div>
+              </div>
+              <div class="miomos-chat-feed">
+                <div v-if="!messages.length" class="miomos-empty-state"><strong>No chat messages yet</strong><span>Choose a room or direct conversation and send the first message.</span></div>
+                <div v-for="msg in messages" :key="msg.id || msg.ts || msg.text" class="miomos-feed-item" :class="{ 'is-deleted': !!msg.deleted }">
+                  <div class="miomos-chat-message-head"><strong>[[ msg.userName || msg.principal || 'System' ]]</strong><span class="miomos-subtle">[[ msg.ts || msg.time || 'Now' ]]</span></div>
+                  <span>[[ msg.text || 'No messages.' ]]</span>
+                  <div v-if="canDeleteChatMessage(msg)" class="miomos-chat-actions"><button type="button" class="miomos-btn miomos-btn--tiny" @click="deleteChatMessage(msg)">Remove</button></div>
+                </div>
+              </div>
+              <form class="miomos-chat-form" @submit.prevent="sendChat">
+                <textarea v-model="chatDraft" :placeholder="activeChatRoomKey.indexOf('dm:')===0 ? 'Send a direct message.' : 'Send a short update to the room.'"></textarea>
+                <div class="miomos-actions"><span class="miomos-pill">Room [[ activeChatLabel ]]</span><button type="submit" class="miomos-btn">Send</button></div>
+              </form>
+            </section>
           </div>
         </template>
 
@@ -540,11 +588,11 @@
       <button type="button" class="miomos-menu-button miomos-start-button" data-start-button="winxp" @click="toggleMenu"><span class="miomos-start-orb"></span><span>Start</span></button>
       <div class="miomos-quicklaunch" aria-label="Quick Launch" data-quick-launch="xp">
         <span class="miomos-quicklaunch-label">[[ shellQuickLaunchLabel ]]</span>
-        <button v-for="app in quickLaunchEntries" :key="app.key" type="button" class="miomos-quicklaunch-btn" :title="app.title" @click="launchApp(app.key)">[[ app.icon ]]</button>
+        <button v-for="app in quickLaunchEntries" :key="app.key" type="button" class="miomos-quicklaunch-btn" :title="app.title" @click="launchApp(app.key)"><span>[[ app.icon ]]</span><span v-if="quickLaunchBadge(app)" class="miomos-task-badge">[[ quickLaunchBadge(app) ]]</span></button>
       </div>
     </div>
     <div class="miomos-taskband">
-      <button v-for="win in visibleTaskWindows" :key="win.id" type="button" class="miomos-task-button" :class="taskButtonClass(win)" :data-task-state="taskButtonState(win)" :aria-pressed="activeWindowId === win.id && !win.minimized && !win.closed ? 'true' : 'false'" @click="toggleTaskWindow(win.id)" @contextmenu.prevent.stop="openWindowContextMenu(win, $event)"><span class="miomos-task-glyph">[[ appIcon(win.appKey) ]]</span><span class="miomos-task-title">[[ win.title ]]</span></button>
+      <button v-for="win in visibleTaskWindows" :key="win.id" type="button" class="miomos-task-button" :class="taskButtonClass(win)" :data-task-state="taskButtonState(win)" :aria-pressed="activeWindowId === win.id && !win.minimized && !win.closed ? 'true' : 'false'" @click="toggleTaskWindow(win.id)" @contextmenu.prevent.stop="openWindowContextMenu(win, $event)"><span class="miomos-task-glyph">[[ appIcon(win.appKey) ]]</span><span class="miomos-task-title">[[ win.title ]]</span><span v-if="taskBadgeForWindow(win)" class="miomos-task-badge">[[ taskBadgeForWindow(win) ]]</span></button>
       <button v-if="overflowTaskWindows.length" type="button" class="miomos-task-overflow-btn" data-taskbar-overflow="1" @click="openTaskOverflowMenu($event)"><span>[[ shellOverflowLabel ]]</span><strong>[[ overflowTaskWindows.length ]]</strong></button>
     </div>
     <div class="miomos-taskbar-meta" data-tray-style="xp-notify-area">
@@ -758,6 +806,12 @@
         shellOverflowLabel: function(){ return (this.shellChrome.overflowLabel || 'More Windows'); },
         shellRecentLabel: function(){ return (this.shellChrome.recentLabel || 'Recently used'); },
         shellSearchPlaceholder: function(){ return (this.shellChrome.searchPlaceholder || 'Search programs and shell actions'); },
+        chatRooms: function(){ return arr((this.view.chat||{}).rooms); },
+        chatDirects: function(){ return arr((this.view.chat||{}).directs); },
+        chatUnreadTotal: function(){ return Number((this.view.chat||{}).unreadTotal || 0); },
+        activeChatRoomKey: function(){ return String((this.view.chat||{}).room || 'general'); },
+        activeChatLabel: function(){ var key=this.activeChatRoomKey, item=this.chatRooms.find(function(r){ return r.key===key; }) || this.chatDirects.find(function(r){ return r.room===key || r.key===key; }); return (item && (item.label || item.key || item.room)) || key; },
+        canModerateChat: function(){ return !!((this.view.chat||{}).canModerate); },
         trayItems: function(){ var tray=arr(this.shellChrome.tray); if (tray.length) return tray; return [{ key:'network', label:'Network connected', icon:'LAN', action:'about', className:'is-ok' }, { key:'workspace', label:'Workspace ready', icon:'✓', action:'refresh' }, { key:'power', label:'Power options', icon:'⏻', action:'power' }]; },
         anyDialogOpen: function(){ return !!(this.dialogs.run || this.dialogs.about || this.dialogs.power); },
         desktopEntries: function(){
@@ -992,8 +1046,13 @@
         clearStaleMonitor: function(){ if (this.staleSocketTimer) window.clearInterval(this.staleSocketTimer); this.staleSocketTimer=null; },
         scheduleReconnect: function(){ var self=this, maxMs=Number(this.desktopPolicy.reconnectMaxMs || 15000) || 15000; this.clearReconnectTimer(); this.reconnectTimer=window.setTimeout(function(){ self.reconnectTimer=null; self.connectSocket(); }, this.reconnectDelay); this.reconnectDelay=Math.min(this.reconnectDelay*1.6, maxMs); },
         clearReconnectTimer: function(){ if (this.reconnectTimer) window.clearTimeout(this.reconnectTimer); this.reconnectTimer=null; },
-        handleSocketMessage: function(raw){ var msg, pending; try { msg=JSON.parse(raw||'{}'); } catch(e){ return; } if (msg.requestId && this.socketPending[msg.requestId]) { pending=this.socketPending[msg.requestId]; if (msg.ok===0 || msg.event==='command.error') pending.reject(new Error(msg.detail || msg.error || 'request_failed')); else pending.resolve(msg); return; } if (msg.event==='hello' || msg.event==='pong') { this.socketConnected=true; this.commandError=''; return; } if (msg.event==='session.signout') { this.commandError = msg.detail || msg.reason || 'Session signed out.'; this.terminalStatus = 'Session signed out'; this.shouldReconnect = false; this.clearReconnectTimer(); if (this.socket && this.socket.readyState < 2) { try { this.socket.close(); } catch(e){} } return; } if (msg.event==='chat.snapshot') { this.messages = arr(msg.messages); return; } if (msg.event==='chat.message') { this.messages = this.messages.concat([msg.message || { userName:'System', text:'Message received.', ts:'Now' }]).slice(-30); return; } },
-        sendChat: function(){ var text=(this.chatDraft||'').trim(); if (!text) return; this.sendSocket({ event:'chat.send', room:((this.view.chat||{}).room || 'general'), text:text, sessionId:((this.boot.session||{}).id || root.getAttribute('data-miomos-session')) }); this.chatDraft=''; },
+        handleSocketMessage: function(raw){ var msg, pending; try { msg=JSON.parse(raw||'{}'); } catch(e){ return; } if (msg.requestId && this.socketPending[msg.requestId]) { pending=this.socketPending[msg.requestId]; if (msg.ok===0 || msg.event==='command.error') pending.reject(new Error(msg.detail || msg.error || 'request_failed')); else pending.resolve(msg); return; } if (msg.event==='hello' || msg.event==='pong') { this.socketConnected=true; this.commandError=''; return; } if (msg.event==='session.signout') { this.commandError = msg.detail || msg.reason || 'Session signed out.'; this.terminalStatus = 'Session signed out'; this.shouldReconnect = false; this.clearReconnectTimer(); if (this.socket && this.socket.readyState < 2) { try { this.socket.close(); } catch(e){} } return; } if (msg.event==='chat.snapshot') { this.messages = arr(msg.messages); this.view.chat = Object.assign({}, this.view.chat || {}, { room: (msg.room || ((this.view.chat||{}).room) || 'general') }); return; } if (msg.event==='chat.meta') { this.view.chat = Object.assign({}, this.view.chat || {}, msg.chat || {}); return; } if (msg.event==='chat.message') { if ((msg.message||{}).room && (msg.message.room !== this.activeChatRoomKey)) return; this.messages = this.messages.concat([msg.message || { userName:'System', text:'Message received.', ts:'Now' }]).slice(-30); return; } },
+        sendChat: function(){ var text=(this.chatDraft||'').trim(); if (!text) return; this.sendSocket({ event:'chat.send', room:this.activeChatRoomKey, text:text, sessionId:((this.boot.session||{}).id || root.getAttribute('data-miomos-session')) }); this.chatDraft=''; },
+        selectChatRoom: function(roomKey){ if (!roomKey) return; this.view.chat = Object.assign({}, this.view.chat || {}, { room: roomKey }); this.sendSocket({ event:'chat.fetch', room:roomKey, sessionId:((this.boot.session||{}).id || root.getAttribute('data-miomos-session')) }); },
+        canDeleteChatMessage: function(msg){ return !!(msg && !msg.deleted && this.canModerateChat && Number(msg.id||0)); },
+        deleteChatMessage: function(msg){ if (!this.canDeleteChatMessage(msg)) return; this.sendSocket({ event:'chat.delete', room:this.activeChatRoomKey, id:Number(msg.id||0), sessionId:((this.boot.session||{}).id || root.getAttribute('data-miomos-session')) }); },
+        quickLaunchBadge: function(app){ if (!app) return ''; if (app.key==='collaboration' && this.chatUnreadTotal>0) return String(this.chatUnreadTotal); return ''; },
+        taskBadgeForWindow: function(win){ if (!win) return ''; if (win.appKey==='collaboration' && this.chatUnreadTotal>0) return String(this.chatUnreadTotal); return ''; },
         terminalCtor: function(){ return window.Terminal || ((window.Xterm||{}).Terminal) || ((window.XTerm||{}).Terminal) || null; },
         terminalViewportId: function(winId){ return 'miomosTerminalViewport-' + String(winId || '').replace(/[^A-Za-z0-9_-]/g,'_'); },
         terminalHostId: function(winId){ return 'miomosTerminalHost-' + String(winId || '').replace(/[^A-Za-z0-9_-]/g,'_'); },
