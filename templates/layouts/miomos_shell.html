@@ -558,6 +558,145 @@
       margin: 16px auto;
     }
 
+    .miomos-desktop-icon.is-selected {
+      background: linear-gradient(180deg, rgba(117,166,241,.32), rgba(52,98,196,.28)) !important;
+      border-color: rgba(255,255,255,.34) !important;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.20), 0 0 0 1px rgba(28,71,148,.28);
+    }
+    .miomos-desktop-icon.is-drop-target,
+    .miomos-explorer-content.is-drop-target {
+      box-shadow: 0 0 0 2px rgba(255,206,84,.68), inset 0 0 0 1px rgba(255,255,255,.34);
+      border-color: rgba(214,163,32,.42) !important;
+      background: rgba(255,244,194,.14) !important;
+    }
+    .miomos-explorer-shell {
+      display: grid;
+      grid-template-rows: auto auto minmax(0,1fr) auto;
+      height: 100%;
+      border-radius: 16px;
+      overflow: hidden;
+      background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(243,247,255,.90));
+      border: 1px solid rgba(127,158,214,.34);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.75);
+      color: #1f3554;
+    }
+    .miomos-explorer-header {
+      margin: 0 !important;
+      padding: 14px 16px 10px;
+      background: linear-gradient(180deg, #ffffff, #edf4ff);
+      border-bottom: 1px solid rgba(127,158,214,.28);
+    }
+    .miomos-explorer-toolbar {
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding: 8px 12px;
+      background: linear-gradient(180deg, #fefefe, #e6eefb);
+      border-bottom: 1px solid rgba(127,158,214,.24);
+      flex-wrap: wrap;
+    }
+    .miomos-explorer-tool,
+    .miomos-explorer-pane-link {
+      appearance:none;
+      border:1px solid rgba(127,158,214,.34);
+      border-radius: 6px;
+      background: linear-gradient(180deg, #ffffff, #dde9fb);
+      color:#24456e;
+      font: inherit;
+      padding: 6px 10px;
+      cursor:pointer;
+      text-align:left;
+    }
+    .miomos-explorer-tool:hover,
+    .miomos-explorer-pane-link:hover {
+      border-color: rgba(72,110,178,.42);
+      background: linear-gradient(180deg, #ffffff, #d2e2fb);
+    }
+    .miomos-explorer-pane-link:disabled {
+      opacity:.55;
+      cursor:default;
+    }
+    .miomos-explorer-address {
+      margin-left: auto;
+      min-width: min(420px, 100%);
+      display:grid;
+      gap:4px;
+      color:#36537c;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .miomos-explorer-address-bar {
+      min-height: 34px;
+      display:flex;
+      align-items:center;
+      padding: 0 10px;
+      border-radius: 8px;
+      border:1px solid rgba(127,158,214,.34);
+      background: linear-gradient(180deg, #ffffff, #f7faff);
+      color:#233f65;
+      font-size: 12px;
+      letter-spacing: 0;
+      text-transform:none;
+      font-weight: 600;
+    }
+    .miomos-explorer-body {
+      min-height: 0;
+      display:grid;
+      grid-template-columns: 220px minmax(0,1fr);
+      gap: 0;
+    }
+    .miomos-explorer-pane {
+      min-height: 0;
+      overflow:auto;
+      padding: 12px;
+      background: linear-gradient(180deg, #d7e7ff, #eef5ff 45%, #f6f9ff 100%);
+      border-right: 1px solid rgba(127,158,214,.28);
+      display:grid;
+      align-content:start;
+      gap:12px;
+    }
+    .miomos-explorer-pane-card {
+      display:grid;
+      gap:8px;
+      padding: 10px;
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(231,240,255,.96));
+      border:1px solid rgba(127,158,214,.26);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
+      color:#27456f;
+    }
+    .miomos-explorer-pane-card strong {
+      font-size: 11px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color:#31527d;
+    }
+    .miomos-explorer-content {
+      min-height: 0;
+      overflow:auto;
+      padding: 12px;
+      background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(247,250,255,.98));
+    }
+    .miomos-explorer-statusbar {
+      display:flex;
+      justify-content: space-between;
+      gap:12px;
+      padding: 6px 10px;
+      border-top: 1px solid rgba(127,158,214,.24);
+      background: linear-gradient(180deg, #edf4ff, #dce8fb);
+      color:#36537c;
+      font-size: 11px;
+    }
+    .miomos-root[data-mobile-layout="1"] .miomos-explorer-body {
+      grid-template-columns: minmax(0,1fr);
+    }
+    .miomos-root[data-mobile-layout="1"] .miomos-explorer-pane {
+      border-right: 0;
+      border-bottom: 1px solid rgba(127,158,214,.28);
+    }
+
   </style>
   <style>
     [v-cloak] { display: none; }
@@ -1379,6 +1518,145 @@
       margin: 16px auto;
     }
 
+    .miomos-desktop-icon.is-selected {
+      background: linear-gradient(180deg, rgba(117,166,241,.32), rgba(52,98,196,.28)) !important;
+      border-color: rgba(255,255,255,.34) !important;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.20), 0 0 0 1px rgba(28,71,148,.28);
+    }
+    .miomos-desktop-icon.is-drop-target,
+    .miomos-explorer-content.is-drop-target {
+      box-shadow: 0 0 0 2px rgba(255,206,84,.68), inset 0 0 0 1px rgba(255,255,255,.34);
+      border-color: rgba(214,163,32,.42) !important;
+      background: rgba(255,244,194,.14) !important;
+    }
+    .miomos-explorer-shell {
+      display: grid;
+      grid-template-rows: auto auto minmax(0,1fr) auto;
+      height: 100%;
+      border-radius: 16px;
+      overflow: hidden;
+      background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(243,247,255,.90));
+      border: 1px solid rgba(127,158,214,.34);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.75);
+      color: #1f3554;
+    }
+    .miomos-explorer-header {
+      margin: 0 !important;
+      padding: 14px 16px 10px;
+      background: linear-gradient(180deg, #ffffff, #edf4ff);
+      border-bottom: 1px solid rgba(127,158,214,.28);
+    }
+    .miomos-explorer-toolbar {
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding: 8px 12px;
+      background: linear-gradient(180deg, #fefefe, #e6eefb);
+      border-bottom: 1px solid rgba(127,158,214,.24);
+      flex-wrap: wrap;
+    }
+    .miomos-explorer-tool,
+    .miomos-explorer-pane-link {
+      appearance:none;
+      border:1px solid rgba(127,158,214,.34);
+      border-radius: 6px;
+      background: linear-gradient(180deg, #ffffff, #dde9fb);
+      color:#24456e;
+      font: inherit;
+      padding: 6px 10px;
+      cursor:pointer;
+      text-align:left;
+    }
+    .miomos-explorer-tool:hover,
+    .miomos-explorer-pane-link:hover {
+      border-color: rgba(72,110,178,.42);
+      background: linear-gradient(180deg, #ffffff, #d2e2fb);
+    }
+    .miomos-explorer-pane-link:disabled {
+      opacity:.55;
+      cursor:default;
+    }
+    .miomos-explorer-address {
+      margin-left: auto;
+      min-width: min(420px, 100%);
+      display:grid;
+      gap:4px;
+      color:#36537c;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .miomos-explorer-address-bar {
+      min-height: 34px;
+      display:flex;
+      align-items:center;
+      padding: 0 10px;
+      border-radius: 8px;
+      border:1px solid rgba(127,158,214,.34);
+      background: linear-gradient(180deg, #ffffff, #f7faff);
+      color:#233f65;
+      font-size: 12px;
+      letter-spacing: 0;
+      text-transform:none;
+      font-weight: 600;
+    }
+    .miomos-explorer-body {
+      min-height: 0;
+      display:grid;
+      grid-template-columns: 220px minmax(0,1fr);
+      gap: 0;
+    }
+    .miomos-explorer-pane {
+      min-height: 0;
+      overflow:auto;
+      padding: 12px;
+      background: linear-gradient(180deg, #d7e7ff, #eef5ff 45%, #f6f9ff 100%);
+      border-right: 1px solid rgba(127,158,214,.28);
+      display:grid;
+      align-content:start;
+      gap:12px;
+    }
+    .miomos-explorer-pane-card {
+      display:grid;
+      gap:8px;
+      padding: 10px;
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(231,240,255,.96));
+      border:1px solid rgba(127,158,214,.26);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
+      color:#27456f;
+    }
+    .miomos-explorer-pane-card strong {
+      font-size: 11px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color:#31527d;
+    }
+    .miomos-explorer-content {
+      min-height: 0;
+      overflow:auto;
+      padding: 12px;
+      background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(247,250,255,.98));
+    }
+    .miomos-explorer-statusbar {
+      display:flex;
+      justify-content: space-between;
+      gap:12px;
+      padding: 6px 10px;
+      border-top: 1px solid rgba(127,158,214,.24);
+      background: linear-gradient(180deg, #edf4ff, #dce8fb);
+      color:#36537c;
+      font-size: 11px;
+    }
+    .miomos-root[data-mobile-layout="1"] .miomos-explorer-body {
+      grid-template-columns: minmax(0,1fr);
+    }
+    .miomos-root[data-mobile-layout="1"] .miomos-explorer-pane {
+      border-right: 0;
+      border-bottom: 1px solid rgba(127,158,214,.28);
+    }
+
   </style>
   <style>
     [v-cloak] { display: none; }
@@ -2066,6 +2344,145 @@
       margin: 16px auto;
     }
 
+    .miomos-desktop-icon.is-selected {
+      background: linear-gradient(180deg, rgba(117,166,241,.32), rgba(52,98,196,.28)) !important;
+      border-color: rgba(255,255,255,.34) !important;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.20), 0 0 0 1px rgba(28,71,148,.28);
+    }
+    .miomos-desktop-icon.is-drop-target,
+    .miomos-explorer-content.is-drop-target {
+      box-shadow: 0 0 0 2px rgba(255,206,84,.68), inset 0 0 0 1px rgba(255,255,255,.34);
+      border-color: rgba(214,163,32,.42) !important;
+      background: rgba(255,244,194,.14) !important;
+    }
+    .miomos-explorer-shell {
+      display: grid;
+      grid-template-rows: auto auto minmax(0,1fr) auto;
+      height: 100%;
+      border-radius: 16px;
+      overflow: hidden;
+      background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(243,247,255,.90));
+      border: 1px solid rgba(127,158,214,.34);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.75);
+      color: #1f3554;
+    }
+    .miomos-explorer-header {
+      margin: 0 !important;
+      padding: 14px 16px 10px;
+      background: linear-gradient(180deg, #ffffff, #edf4ff);
+      border-bottom: 1px solid rgba(127,158,214,.28);
+    }
+    .miomos-explorer-toolbar {
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding: 8px 12px;
+      background: linear-gradient(180deg, #fefefe, #e6eefb);
+      border-bottom: 1px solid rgba(127,158,214,.24);
+      flex-wrap: wrap;
+    }
+    .miomos-explorer-tool,
+    .miomos-explorer-pane-link {
+      appearance:none;
+      border:1px solid rgba(127,158,214,.34);
+      border-radius: 6px;
+      background: linear-gradient(180deg, #ffffff, #dde9fb);
+      color:#24456e;
+      font: inherit;
+      padding: 6px 10px;
+      cursor:pointer;
+      text-align:left;
+    }
+    .miomos-explorer-tool:hover,
+    .miomos-explorer-pane-link:hover {
+      border-color: rgba(72,110,178,.42);
+      background: linear-gradient(180deg, #ffffff, #d2e2fb);
+    }
+    .miomos-explorer-pane-link:disabled {
+      opacity:.55;
+      cursor:default;
+    }
+    .miomos-explorer-address {
+      margin-left: auto;
+      min-width: min(420px, 100%);
+      display:grid;
+      gap:4px;
+      color:#36537c;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .miomos-explorer-address-bar {
+      min-height: 34px;
+      display:flex;
+      align-items:center;
+      padding: 0 10px;
+      border-radius: 8px;
+      border:1px solid rgba(127,158,214,.34);
+      background: linear-gradient(180deg, #ffffff, #f7faff);
+      color:#233f65;
+      font-size: 12px;
+      letter-spacing: 0;
+      text-transform:none;
+      font-weight: 600;
+    }
+    .miomos-explorer-body {
+      min-height: 0;
+      display:grid;
+      grid-template-columns: 220px minmax(0,1fr);
+      gap: 0;
+    }
+    .miomos-explorer-pane {
+      min-height: 0;
+      overflow:auto;
+      padding: 12px;
+      background: linear-gradient(180deg, #d7e7ff, #eef5ff 45%, #f6f9ff 100%);
+      border-right: 1px solid rgba(127,158,214,.28);
+      display:grid;
+      align-content:start;
+      gap:12px;
+    }
+    .miomos-explorer-pane-card {
+      display:grid;
+      gap:8px;
+      padding: 10px;
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(231,240,255,.96));
+      border:1px solid rgba(127,158,214,.26);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
+      color:#27456f;
+    }
+    .miomos-explorer-pane-card strong {
+      font-size: 11px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color:#31527d;
+    }
+    .miomos-explorer-content {
+      min-height: 0;
+      overflow:auto;
+      padding: 12px;
+      background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(247,250,255,.98));
+    }
+    .miomos-explorer-statusbar {
+      display:flex;
+      justify-content: space-between;
+      gap:12px;
+      padding: 6px 10px;
+      border-top: 1px solid rgba(127,158,214,.24);
+      background: linear-gradient(180deg, #edf4ff, #dce8fb);
+      color:#36537c;
+      font-size: 11px;
+    }
+    .miomos-root[data-mobile-layout="1"] .miomos-explorer-body {
+      grid-template-columns: minmax(0,1fr);
+    }
+    .miomos-root[data-mobile-layout="1"] .miomos-explorer-pane {
+      border-right: 0;
+      border-bottom: 1px solid rgba(127,158,214,.28);
+    }
+
   </style>
   <style>
     /* Vue runtime chrome hotfix: restore explicit window styling without touching socket logic */
@@ -2253,6 +2670,145 @@
       position: relative;
       inset: auto;
       margin: 16px auto;
+    }
+
+    .miomos-desktop-icon.is-selected {
+      background: linear-gradient(180deg, rgba(117,166,241,.32), rgba(52,98,196,.28)) !important;
+      border-color: rgba(255,255,255,.34) !important;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.20), 0 0 0 1px rgba(28,71,148,.28);
+    }
+    .miomos-desktop-icon.is-drop-target,
+    .miomos-explorer-content.is-drop-target {
+      box-shadow: 0 0 0 2px rgba(255,206,84,.68), inset 0 0 0 1px rgba(255,255,255,.34);
+      border-color: rgba(214,163,32,.42) !important;
+      background: rgba(255,244,194,.14) !important;
+    }
+    .miomos-explorer-shell {
+      display: grid;
+      grid-template-rows: auto auto minmax(0,1fr) auto;
+      height: 100%;
+      border-radius: 16px;
+      overflow: hidden;
+      background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(243,247,255,.90));
+      border: 1px solid rgba(127,158,214,.34);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.75);
+      color: #1f3554;
+    }
+    .miomos-explorer-header {
+      margin: 0 !important;
+      padding: 14px 16px 10px;
+      background: linear-gradient(180deg, #ffffff, #edf4ff);
+      border-bottom: 1px solid rgba(127,158,214,.28);
+    }
+    .miomos-explorer-toolbar {
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding: 8px 12px;
+      background: linear-gradient(180deg, #fefefe, #e6eefb);
+      border-bottom: 1px solid rgba(127,158,214,.24);
+      flex-wrap: wrap;
+    }
+    .miomos-explorer-tool,
+    .miomos-explorer-pane-link {
+      appearance:none;
+      border:1px solid rgba(127,158,214,.34);
+      border-radius: 6px;
+      background: linear-gradient(180deg, #ffffff, #dde9fb);
+      color:#24456e;
+      font: inherit;
+      padding: 6px 10px;
+      cursor:pointer;
+      text-align:left;
+    }
+    .miomos-explorer-tool:hover,
+    .miomos-explorer-pane-link:hover {
+      border-color: rgba(72,110,178,.42);
+      background: linear-gradient(180deg, #ffffff, #d2e2fb);
+    }
+    .miomos-explorer-pane-link:disabled {
+      opacity:.55;
+      cursor:default;
+    }
+    .miomos-explorer-address {
+      margin-left: auto;
+      min-width: min(420px, 100%);
+      display:grid;
+      gap:4px;
+      color:#36537c;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .miomos-explorer-address-bar {
+      min-height: 34px;
+      display:flex;
+      align-items:center;
+      padding: 0 10px;
+      border-radius: 8px;
+      border:1px solid rgba(127,158,214,.34);
+      background: linear-gradient(180deg, #ffffff, #f7faff);
+      color:#233f65;
+      font-size: 12px;
+      letter-spacing: 0;
+      text-transform:none;
+      font-weight: 600;
+    }
+    .miomos-explorer-body {
+      min-height: 0;
+      display:grid;
+      grid-template-columns: 220px minmax(0,1fr);
+      gap: 0;
+    }
+    .miomos-explorer-pane {
+      min-height: 0;
+      overflow:auto;
+      padding: 12px;
+      background: linear-gradient(180deg, #d7e7ff, #eef5ff 45%, #f6f9ff 100%);
+      border-right: 1px solid rgba(127,158,214,.28);
+      display:grid;
+      align-content:start;
+      gap:12px;
+    }
+    .miomos-explorer-pane-card {
+      display:grid;
+      gap:8px;
+      padding: 10px;
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(231,240,255,.96));
+      border:1px solid rgba(127,158,214,.26);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
+      color:#27456f;
+    }
+    .miomos-explorer-pane-card strong {
+      font-size: 11px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color:#31527d;
+    }
+    .miomos-explorer-content {
+      min-height: 0;
+      overflow:auto;
+      padding: 12px;
+      background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(247,250,255,.98));
+    }
+    .miomos-explorer-statusbar {
+      display:flex;
+      justify-content: space-between;
+      gap:12px;
+      padding: 6px 10px;
+      border-top: 1px solid rgba(127,158,214,.24);
+      background: linear-gradient(180deg, #edf4ff, #dce8fb);
+      color:#36537c;
+      font-size: 11px;
+    }
+    .miomos-root[data-mobile-layout="1"] .miomos-explorer-body {
+      grid-template-columns: minmax(0,1fr);
+    }
+    .miomos-root[data-mobile-layout="1"] .miomos-explorer-pane {
+      border-right: 0;
+      border-bottom: 1px solid rgba(127,158,214,.28);
     }
 
   </style>
@@ -2552,6 +3108,145 @@
       margin: 16px auto;
     }
 
+    .miomos-desktop-icon.is-selected {
+      background: linear-gradient(180deg, rgba(117,166,241,.32), rgba(52,98,196,.28)) !important;
+      border-color: rgba(255,255,255,.34) !important;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.20), 0 0 0 1px rgba(28,71,148,.28);
+    }
+    .miomos-desktop-icon.is-drop-target,
+    .miomos-explorer-content.is-drop-target {
+      box-shadow: 0 0 0 2px rgba(255,206,84,.68), inset 0 0 0 1px rgba(255,255,255,.34);
+      border-color: rgba(214,163,32,.42) !important;
+      background: rgba(255,244,194,.14) !important;
+    }
+    .miomos-explorer-shell {
+      display: grid;
+      grid-template-rows: auto auto minmax(0,1fr) auto;
+      height: 100%;
+      border-radius: 16px;
+      overflow: hidden;
+      background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(243,247,255,.90));
+      border: 1px solid rgba(127,158,214,.34);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.75);
+      color: #1f3554;
+    }
+    .miomos-explorer-header {
+      margin: 0 !important;
+      padding: 14px 16px 10px;
+      background: linear-gradient(180deg, #ffffff, #edf4ff);
+      border-bottom: 1px solid rgba(127,158,214,.28);
+    }
+    .miomos-explorer-toolbar {
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding: 8px 12px;
+      background: linear-gradient(180deg, #fefefe, #e6eefb);
+      border-bottom: 1px solid rgba(127,158,214,.24);
+      flex-wrap: wrap;
+    }
+    .miomos-explorer-tool,
+    .miomos-explorer-pane-link {
+      appearance:none;
+      border:1px solid rgba(127,158,214,.34);
+      border-radius: 6px;
+      background: linear-gradient(180deg, #ffffff, #dde9fb);
+      color:#24456e;
+      font: inherit;
+      padding: 6px 10px;
+      cursor:pointer;
+      text-align:left;
+    }
+    .miomos-explorer-tool:hover,
+    .miomos-explorer-pane-link:hover {
+      border-color: rgba(72,110,178,.42);
+      background: linear-gradient(180deg, #ffffff, #d2e2fb);
+    }
+    .miomos-explorer-pane-link:disabled {
+      opacity:.55;
+      cursor:default;
+    }
+    .miomos-explorer-address {
+      margin-left: auto;
+      min-width: min(420px, 100%);
+      display:grid;
+      gap:4px;
+      color:#36537c;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .miomos-explorer-address-bar {
+      min-height: 34px;
+      display:flex;
+      align-items:center;
+      padding: 0 10px;
+      border-radius: 8px;
+      border:1px solid rgba(127,158,214,.34);
+      background: linear-gradient(180deg, #ffffff, #f7faff);
+      color:#233f65;
+      font-size: 12px;
+      letter-spacing: 0;
+      text-transform:none;
+      font-weight: 600;
+    }
+    .miomos-explorer-body {
+      min-height: 0;
+      display:grid;
+      grid-template-columns: 220px minmax(0,1fr);
+      gap: 0;
+    }
+    .miomos-explorer-pane {
+      min-height: 0;
+      overflow:auto;
+      padding: 12px;
+      background: linear-gradient(180deg, #d7e7ff, #eef5ff 45%, #f6f9ff 100%);
+      border-right: 1px solid rgba(127,158,214,.28);
+      display:grid;
+      align-content:start;
+      gap:12px;
+    }
+    .miomos-explorer-pane-card {
+      display:grid;
+      gap:8px;
+      padding: 10px;
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(231,240,255,.96));
+      border:1px solid rgba(127,158,214,.26);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
+      color:#27456f;
+    }
+    .miomos-explorer-pane-card strong {
+      font-size: 11px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color:#31527d;
+    }
+    .miomos-explorer-content {
+      min-height: 0;
+      overflow:auto;
+      padding: 12px;
+      background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(247,250,255,.98));
+    }
+    .miomos-explorer-statusbar {
+      display:flex;
+      justify-content: space-between;
+      gap:12px;
+      padding: 6px 10px;
+      border-top: 1px solid rgba(127,158,214,.24);
+      background: linear-gradient(180deg, #edf4ff, #dce8fb);
+      color:#36537c;
+      font-size: 11px;
+    }
+    .miomos-root[data-mobile-layout="1"] .miomos-explorer-body {
+      grid-template-columns: minmax(0,1fr);
+    }
+    .miomos-root[data-mobile-layout="1"] .miomos-explorer-pane {
+      border-right: 0;
+      border-bottom: 1px solid rgba(127,158,214,.28);
+    }
+
   </style>
 
   <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
@@ -2693,6 +3388,145 @@
       margin: 16px auto;
     }
 
+    .miomos-desktop-icon.is-selected {
+      background: linear-gradient(180deg, rgba(117,166,241,.32), rgba(52,98,196,.28)) !important;
+      border-color: rgba(255,255,255,.34) !important;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.20), 0 0 0 1px rgba(28,71,148,.28);
+    }
+    .miomos-desktop-icon.is-drop-target,
+    .miomos-explorer-content.is-drop-target {
+      box-shadow: 0 0 0 2px rgba(255,206,84,.68), inset 0 0 0 1px rgba(255,255,255,.34);
+      border-color: rgba(214,163,32,.42) !important;
+      background: rgba(255,244,194,.14) !important;
+    }
+    .miomos-explorer-shell {
+      display: grid;
+      grid-template-rows: auto auto minmax(0,1fr) auto;
+      height: 100%;
+      border-radius: 16px;
+      overflow: hidden;
+      background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(243,247,255,.90));
+      border: 1px solid rgba(127,158,214,.34);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.75);
+      color: #1f3554;
+    }
+    .miomos-explorer-header {
+      margin: 0 !important;
+      padding: 14px 16px 10px;
+      background: linear-gradient(180deg, #ffffff, #edf4ff);
+      border-bottom: 1px solid rgba(127,158,214,.28);
+    }
+    .miomos-explorer-toolbar {
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding: 8px 12px;
+      background: linear-gradient(180deg, #fefefe, #e6eefb);
+      border-bottom: 1px solid rgba(127,158,214,.24);
+      flex-wrap: wrap;
+    }
+    .miomos-explorer-tool,
+    .miomos-explorer-pane-link {
+      appearance:none;
+      border:1px solid rgba(127,158,214,.34);
+      border-radius: 6px;
+      background: linear-gradient(180deg, #ffffff, #dde9fb);
+      color:#24456e;
+      font: inherit;
+      padding: 6px 10px;
+      cursor:pointer;
+      text-align:left;
+    }
+    .miomos-explorer-tool:hover,
+    .miomos-explorer-pane-link:hover {
+      border-color: rgba(72,110,178,.42);
+      background: linear-gradient(180deg, #ffffff, #d2e2fb);
+    }
+    .miomos-explorer-pane-link:disabled {
+      opacity:.55;
+      cursor:default;
+    }
+    .miomos-explorer-address {
+      margin-left: auto;
+      min-width: min(420px, 100%);
+      display:grid;
+      gap:4px;
+      color:#36537c;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .miomos-explorer-address-bar {
+      min-height: 34px;
+      display:flex;
+      align-items:center;
+      padding: 0 10px;
+      border-radius: 8px;
+      border:1px solid rgba(127,158,214,.34);
+      background: linear-gradient(180deg, #ffffff, #f7faff);
+      color:#233f65;
+      font-size: 12px;
+      letter-spacing: 0;
+      text-transform:none;
+      font-weight: 600;
+    }
+    .miomos-explorer-body {
+      min-height: 0;
+      display:grid;
+      grid-template-columns: 220px minmax(0,1fr);
+      gap: 0;
+    }
+    .miomos-explorer-pane {
+      min-height: 0;
+      overflow:auto;
+      padding: 12px;
+      background: linear-gradient(180deg, #d7e7ff, #eef5ff 45%, #f6f9ff 100%);
+      border-right: 1px solid rgba(127,158,214,.28);
+      display:grid;
+      align-content:start;
+      gap:12px;
+    }
+    .miomos-explorer-pane-card {
+      display:grid;
+      gap:8px;
+      padding: 10px;
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(231,240,255,.96));
+      border:1px solid rgba(127,158,214,.26);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
+      color:#27456f;
+    }
+    .miomos-explorer-pane-card strong {
+      font-size: 11px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color:#31527d;
+    }
+    .miomos-explorer-content {
+      min-height: 0;
+      overflow:auto;
+      padding: 12px;
+      background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(247,250,255,.98));
+    }
+    .miomos-explorer-statusbar {
+      display:flex;
+      justify-content: space-between;
+      gap:12px;
+      padding: 6px 10px;
+      border-top: 1px solid rgba(127,158,214,.24);
+      background: linear-gradient(180deg, #edf4ff, #dce8fb);
+      color:#36537c;
+      font-size: 11px;
+    }
+    .miomos-root[data-mobile-layout="1"] .miomos-explorer-body {
+      grid-template-columns: minmax(0,1fr);
+    }
+    .miomos-root[data-mobile-layout="1"] .miomos-explorer-pane {
+      border-right: 0;
+      border-bottom: 1px solid rgba(127,158,214,.28);
+    }
+
   </style>
 
   <style id="miomosRoi15IAQuality">
@@ -2795,6 +3629,145 @@
       position: relative;
       inset: auto;
       margin: 16px auto;
+    }
+
+    .miomos-desktop-icon.is-selected {
+      background: linear-gradient(180deg, rgba(117,166,241,.32), rgba(52,98,196,.28)) !important;
+      border-color: rgba(255,255,255,.34) !important;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.20), 0 0 0 1px rgba(28,71,148,.28);
+    }
+    .miomos-desktop-icon.is-drop-target,
+    .miomos-explorer-content.is-drop-target {
+      box-shadow: 0 0 0 2px rgba(255,206,84,.68), inset 0 0 0 1px rgba(255,255,255,.34);
+      border-color: rgba(214,163,32,.42) !important;
+      background: rgba(255,244,194,.14) !important;
+    }
+    .miomos-explorer-shell {
+      display: grid;
+      grid-template-rows: auto auto minmax(0,1fr) auto;
+      height: 100%;
+      border-radius: 16px;
+      overflow: hidden;
+      background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(243,247,255,.90));
+      border: 1px solid rgba(127,158,214,.34);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.75);
+      color: #1f3554;
+    }
+    .miomos-explorer-header {
+      margin: 0 !important;
+      padding: 14px 16px 10px;
+      background: linear-gradient(180deg, #ffffff, #edf4ff);
+      border-bottom: 1px solid rgba(127,158,214,.28);
+    }
+    .miomos-explorer-toolbar {
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding: 8px 12px;
+      background: linear-gradient(180deg, #fefefe, #e6eefb);
+      border-bottom: 1px solid rgba(127,158,214,.24);
+      flex-wrap: wrap;
+    }
+    .miomos-explorer-tool,
+    .miomos-explorer-pane-link {
+      appearance:none;
+      border:1px solid rgba(127,158,214,.34);
+      border-radius: 6px;
+      background: linear-gradient(180deg, #ffffff, #dde9fb);
+      color:#24456e;
+      font: inherit;
+      padding: 6px 10px;
+      cursor:pointer;
+      text-align:left;
+    }
+    .miomos-explorer-tool:hover,
+    .miomos-explorer-pane-link:hover {
+      border-color: rgba(72,110,178,.42);
+      background: linear-gradient(180deg, #ffffff, #d2e2fb);
+    }
+    .miomos-explorer-pane-link:disabled {
+      opacity:.55;
+      cursor:default;
+    }
+    .miomos-explorer-address {
+      margin-left: auto;
+      min-width: min(420px, 100%);
+      display:grid;
+      gap:4px;
+      color:#36537c;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .miomos-explorer-address-bar {
+      min-height: 34px;
+      display:flex;
+      align-items:center;
+      padding: 0 10px;
+      border-radius: 8px;
+      border:1px solid rgba(127,158,214,.34);
+      background: linear-gradient(180deg, #ffffff, #f7faff);
+      color:#233f65;
+      font-size: 12px;
+      letter-spacing: 0;
+      text-transform:none;
+      font-weight: 600;
+    }
+    .miomos-explorer-body {
+      min-height: 0;
+      display:grid;
+      grid-template-columns: 220px minmax(0,1fr);
+      gap: 0;
+    }
+    .miomos-explorer-pane {
+      min-height: 0;
+      overflow:auto;
+      padding: 12px;
+      background: linear-gradient(180deg, #d7e7ff, #eef5ff 45%, #f6f9ff 100%);
+      border-right: 1px solid rgba(127,158,214,.28);
+      display:grid;
+      align-content:start;
+      gap:12px;
+    }
+    .miomos-explorer-pane-card {
+      display:grid;
+      gap:8px;
+      padding: 10px;
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(231,240,255,.96));
+      border:1px solid rgba(127,158,214,.26);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
+      color:#27456f;
+    }
+    .miomos-explorer-pane-card strong {
+      font-size: 11px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color:#31527d;
+    }
+    .miomos-explorer-content {
+      min-height: 0;
+      overflow:auto;
+      padding: 12px;
+      background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(247,250,255,.98));
+    }
+    .miomos-explorer-statusbar {
+      display:flex;
+      justify-content: space-between;
+      gap:12px;
+      padding: 6px 10px;
+      border-top: 1px solid rgba(127,158,214,.24);
+      background: linear-gradient(180deg, #edf4ff, #dce8fb);
+      color:#36537c;
+      font-size: 11px;
+    }
+    .miomos-root[data-mobile-layout="1"] .miomos-explorer-body {
+      grid-template-columns: minmax(0,1fr);
+    }
+    .miomos-root[data-mobile-layout="1"] .miomos-explorer-pane {
+      border-right: 0;
+      border-bottom: 1px solid rgba(127,158,214,.28);
     }
 
   </style>
@@ -3206,6 +4179,145 @@
       margin: 16px auto;
     }
 
+    .miomos-desktop-icon.is-selected {
+      background: linear-gradient(180deg, rgba(117,166,241,.32), rgba(52,98,196,.28)) !important;
+      border-color: rgba(255,255,255,.34) !important;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.20), 0 0 0 1px rgba(28,71,148,.28);
+    }
+    .miomos-desktop-icon.is-drop-target,
+    .miomos-explorer-content.is-drop-target {
+      box-shadow: 0 0 0 2px rgba(255,206,84,.68), inset 0 0 0 1px rgba(255,255,255,.34);
+      border-color: rgba(214,163,32,.42) !important;
+      background: rgba(255,244,194,.14) !important;
+    }
+    .miomos-explorer-shell {
+      display: grid;
+      grid-template-rows: auto auto minmax(0,1fr) auto;
+      height: 100%;
+      border-radius: 16px;
+      overflow: hidden;
+      background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(243,247,255,.90));
+      border: 1px solid rgba(127,158,214,.34);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.75);
+      color: #1f3554;
+    }
+    .miomos-explorer-header {
+      margin: 0 !important;
+      padding: 14px 16px 10px;
+      background: linear-gradient(180deg, #ffffff, #edf4ff);
+      border-bottom: 1px solid rgba(127,158,214,.28);
+    }
+    .miomos-explorer-toolbar {
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding: 8px 12px;
+      background: linear-gradient(180deg, #fefefe, #e6eefb);
+      border-bottom: 1px solid rgba(127,158,214,.24);
+      flex-wrap: wrap;
+    }
+    .miomos-explorer-tool,
+    .miomos-explorer-pane-link {
+      appearance:none;
+      border:1px solid rgba(127,158,214,.34);
+      border-radius: 6px;
+      background: linear-gradient(180deg, #ffffff, #dde9fb);
+      color:#24456e;
+      font: inherit;
+      padding: 6px 10px;
+      cursor:pointer;
+      text-align:left;
+    }
+    .miomos-explorer-tool:hover,
+    .miomos-explorer-pane-link:hover {
+      border-color: rgba(72,110,178,.42);
+      background: linear-gradient(180deg, #ffffff, #d2e2fb);
+    }
+    .miomos-explorer-pane-link:disabled {
+      opacity:.55;
+      cursor:default;
+    }
+    .miomos-explorer-address {
+      margin-left: auto;
+      min-width: min(420px, 100%);
+      display:grid;
+      gap:4px;
+      color:#36537c;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .miomos-explorer-address-bar {
+      min-height: 34px;
+      display:flex;
+      align-items:center;
+      padding: 0 10px;
+      border-radius: 8px;
+      border:1px solid rgba(127,158,214,.34);
+      background: linear-gradient(180deg, #ffffff, #f7faff);
+      color:#233f65;
+      font-size: 12px;
+      letter-spacing: 0;
+      text-transform:none;
+      font-weight: 600;
+    }
+    .miomos-explorer-body {
+      min-height: 0;
+      display:grid;
+      grid-template-columns: 220px minmax(0,1fr);
+      gap: 0;
+    }
+    .miomos-explorer-pane {
+      min-height: 0;
+      overflow:auto;
+      padding: 12px;
+      background: linear-gradient(180deg, #d7e7ff, #eef5ff 45%, #f6f9ff 100%);
+      border-right: 1px solid rgba(127,158,214,.28);
+      display:grid;
+      align-content:start;
+      gap:12px;
+    }
+    .miomos-explorer-pane-card {
+      display:grid;
+      gap:8px;
+      padding: 10px;
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(231,240,255,.96));
+      border:1px solid rgba(127,158,214,.26);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
+      color:#27456f;
+    }
+    .miomos-explorer-pane-card strong {
+      font-size: 11px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color:#31527d;
+    }
+    .miomos-explorer-content {
+      min-height: 0;
+      overflow:auto;
+      padding: 12px;
+      background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(247,250,255,.98));
+    }
+    .miomos-explorer-statusbar {
+      display:flex;
+      justify-content: space-between;
+      gap:12px;
+      padding: 6px 10px;
+      border-top: 1px solid rgba(127,158,214,.24);
+      background: linear-gradient(180deg, #edf4ff, #dce8fb);
+      color:#36537c;
+      font-size: 11px;
+    }
+    .miomos-root[data-mobile-layout="1"] .miomos-explorer-body {
+      grid-template-columns: minmax(0,1fr);
+    }
+    .miomos-root[data-mobile-layout="1"] .miomos-explorer-pane {
+      border-right: 0;
+      border-bottom: 1px solid rgba(127,158,214,.28);
+    }
+
   </style>
 
 
@@ -3301,6 +4413,145 @@
       position: relative;
       inset: auto;
       margin: 16px auto;
+    }
+
+    .miomos-desktop-icon.is-selected {
+      background: linear-gradient(180deg, rgba(117,166,241,.32), rgba(52,98,196,.28)) !important;
+      border-color: rgba(255,255,255,.34) !important;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.20), 0 0 0 1px rgba(28,71,148,.28);
+    }
+    .miomos-desktop-icon.is-drop-target,
+    .miomos-explorer-content.is-drop-target {
+      box-shadow: 0 0 0 2px rgba(255,206,84,.68), inset 0 0 0 1px rgba(255,255,255,.34);
+      border-color: rgba(214,163,32,.42) !important;
+      background: rgba(255,244,194,.14) !important;
+    }
+    .miomos-explorer-shell {
+      display: grid;
+      grid-template-rows: auto auto minmax(0,1fr) auto;
+      height: 100%;
+      border-radius: 16px;
+      overflow: hidden;
+      background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(243,247,255,.90));
+      border: 1px solid rgba(127,158,214,.34);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.75);
+      color: #1f3554;
+    }
+    .miomos-explorer-header {
+      margin: 0 !important;
+      padding: 14px 16px 10px;
+      background: linear-gradient(180deg, #ffffff, #edf4ff);
+      border-bottom: 1px solid rgba(127,158,214,.28);
+    }
+    .miomos-explorer-toolbar {
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding: 8px 12px;
+      background: linear-gradient(180deg, #fefefe, #e6eefb);
+      border-bottom: 1px solid rgba(127,158,214,.24);
+      flex-wrap: wrap;
+    }
+    .miomos-explorer-tool,
+    .miomos-explorer-pane-link {
+      appearance:none;
+      border:1px solid rgba(127,158,214,.34);
+      border-radius: 6px;
+      background: linear-gradient(180deg, #ffffff, #dde9fb);
+      color:#24456e;
+      font: inherit;
+      padding: 6px 10px;
+      cursor:pointer;
+      text-align:left;
+    }
+    .miomos-explorer-tool:hover,
+    .miomos-explorer-pane-link:hover {
+      border-color: rgba(72,110,178,.42);
+      background: linear-gradient(180deg, #ffffff, #d2e2fb);
+    }
+    .miomos-explorer-pane-link:disabled {
+      opacity:.55;
+      cursor:default;
+    }
+    .miomos-explorer-address {
+      margin-left: auto;
+      min-width: min(420px, 100%);
+      display:grid;
+      gap:4px;
+      color:#36537c;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .miomos-explorer-address-bar {
+      min-height: 34px;
+      display:flex;
+      align-items:center;
+      padding: 0 10px;
+      border-radius: 8px;
+      border:1px solid rgba(127,158,214,.34);
+      background: linear-gradient(180deg, #ffffff, #f7faff);
+      color:#233f65;
+      font-size: 12px;
+      letter-spacing: 0;
+      text-transform:none;
+      font-weight: 600;
+    }
+    .miomos-explorer-body {
+      min-height: 0;
+      display:grid;
+      grid-template-columns: 220px minmax(0,1fr);
+      gap: 0;
+    }
+    .miomos-explorer-pane {
+      min-height: 0;
+      overflow:auto;
+      padding: 12px;
+      background: linear-gradient(180deg, #d7e7ff, #eef5ff 45%, #f6f9ff 100%);
+      border-right: 1px solid rgba(127,158,214,.28);
+      display:grid;
+      align-content:start;
+      gap:12px;
+    }
+    .miomos-explorer-pane-card {
+      display:grid;
+      gap:8px;
+      padding: 10px;
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(231,240,255,.96));
+      border:1px solid rgba(127,158,214,.26);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
+      color:#27456f;
+    }
+    .miomos-explorer-pane-card strong {
+      font-size: 11px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color:#31527d;
+    }
+    .miomos-explorer-content {
+      min-height: 0;
+      overflow:auto;
+      padding: 12px;
+      background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(247,250,255,.98));
+    }
+    .miomos-explorer-statusbar {
+      display:flex;
+      justify-content: space-between;
+      gap:12px;
+      padding: 6px 10px;
+      border-top: 1px solid rgba(127,158,214,.24);
+      background: linear-gradient(180deg, #edf4ff, #dce8fb);
+      color:#36537c;
+      font-size: 11px;
+    }
+    .miomos-root[data-mobile-layout="1"] .miomos-explorer-body {
+      grid-template-columns: minmax(0,1fr);
+    }
+    .miomos-root[data-mobile-layout="1"] .miomos-explorer-pane {
+      border-right: 0;
+      border-bottom: 1px solid rgba(127,158,214,.28);
     }
 
   </style>
@@ -3505,6 +4756,145 @@
       position: relative;
       inset: auto;
       margin: 16px auto;
+    }
+
+    .miomos-desktop-icon.is-selected {
+      background: linear-gradient(180deg, rgba(117,166,241,.32), rgba(52,98,196,.28)) !important;
+      border-color: rgba(255,255,255,.34) !important;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.20), 0 0 0 1px rgba(28,71,148,.28);
+    }
+    .miomos-desktop-icon.is-drop-target,
+    .miomos-explorer-content.is-drop-target {
+      box-shadow: 0 0 0 2px rgba(255,206,84,.68), inset 0 0 0 1px rgba(255,255,255,.34);
+      border-color: rgba(214,163,32,.42) !important;
+      background: rgba(255,244,194,.14) !important;
+    }
+    .miomos-explorer-shell {
+      display: grid;
+      grid-template-rows: auto auto minmax(0,1fr) auto;
+      height: 100%;
+      border-radius: 16px;
+      overflow: hidden;
+      background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(243,247,255,.90));
+      border: 1px solid rgba(127,158,214,.34);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.75);
+      color: #1f3554;
+    }
+    .miomos-explorer-header {
+      margin: 0 !important;
+      padding: 14px 16px 10px;
+      background: linear-gradient(180deg, #ffffff, #edf4ff);
+      border-bottom: 1px solid rgba(127,158,214,.28);
+    }
+    .miomos-explorer-toolbar {
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding: 8px 12px;
+      background: linear-gradient(180deg, #fefefe, #e6eefb);
+      border-bottom: 1px solid rgba(127,158,214,.24);
+      flex-wrap: wrap;
+    }
+    .miomos-explorer-tool,
+    .miomos-explorer-pane-link {
+      appearance:none;
+      border:1px solid rgba(127,158,214,.34);
+      border-radius: 6px;
+      background: linear-gradient(180deg, #ffffff, #dde9fb);
+      color:#24456e;
+      font: inherit;
+      padding: 6px 10px;
+      cursor:pointer;
+      text-align:left;
+    }
+    .miomos-explorer-tool:hover,
+    .miomos-explorer-pane-link:hover {
+      border-color: rgba(72,110,178,.42);
+      background: linear-gradient(180deg, #ffffff, #d2e2fb);
+    }
+    .miomos-explorer-pane-link:disabled {
+      opacity:.55;
+      cursor:default;
+    }
+    .miomos-explorer-address {
+      margin-left: auto;
+      min-width: min(420px, 100%);
+      display:grid;
+      gap:4px;
+      color:#36537c;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .miomos-explorer-address-bar {
+      min-height: 34px;
+      display:flex;
+      align-items:center;
+      padding: 0 10px;
+      border-radius: 8px;
+      border:1px solid rgba(127,158,214,.34);
+      background: linear-gradient(180deg, #ffffff, #f7faff);
+      color:#233f65;
+      font-size: 12px;
+      letter-spacing: 0;
+      text-transform:none;
+      font-weight: 600;
+    }
+    .miomos-explorer-body {
+      min-height: 0;
+      display:grid;
+      grid-template-columns: 220px minmax(0,1fr);
+      gap: 0;
+    }
+    .miomos-explorer-pane {
+      min-height: 0;
+      overflow:auto;
+      padding: 12px;
+      background: linear-gradient(180deg, #d7e7ff, #eef5ff 45%, #f6f9ff 100%);
+      border-right: 1px solid rgba(127,158,214,.28);
+      display:grid;
+      align-content:start;
+      gap:12px;
+    }
+    .miomos-explorer-pane-card {
+      display:grid;
+      gap:8px;
+      padding: 10px;
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(231,240,255,.96));
+      border:1px solid rgba(127,158,214,.26);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
+      color:#27456f;
+    }
+    .miomos-explorer-pane-card strong {
+      font-size: 11px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color:#31527d;
+    }
+    .miomos-explorer-content {
+      min-height: 0;
+      overflow:auto;
+      padding: 12px;
+      background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(247,250,255,.98));
+    }
+    .miomos-explorer-statusbar {
+      display:flex;
+      justify-content: space-between;
+      gap:12px;
+      padding: 6px 10px;
+      border-top: 1px solid rgba(127,158,214,.24);
+      background: linear-gradient(180deg, #edf4ff, #dce8fb);
+      color:#36537c;
+      font-size: 11px;
+    }
+    .miomos-root[data-mobile-layout="1"] .miomos-explorer-body {
+      grid-template-columns: minmax(0,1fr);
+    }
+    .miomos-root[data-mobile-layout="1"] .miomos-explorer-pane {
+      border-right: 0;
+      border-bottom: 1px solid rgba(127,158,214,.28);
     }
 
   </style>

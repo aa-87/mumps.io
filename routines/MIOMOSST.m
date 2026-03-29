@@ -249,6 +249,12 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","folderCreateBehavior")="desktop-context-menu"
 	SET OBJ("desktop","desktopIconBehavior")="draggable-autosave"
 	SET OBJ("desktop","desktopComposition")="ui-samples-settings-terminal"
+	SET OBJ("desktop","replicaModel")="windows-xp-development-platform"
+	SET OBJ("desktop","xpReplica")=1
+	SET OBJ("desktop","explorerStyle")="xp-classic"
+	SET OBJ("desktop","desktopSelectionModel")="single-click-select-double-click-open"
+	SET OBJ("desktop","dragDropModel")="desktop-icons-to-folders"
+	SET OBJ("desktop","folderWindowModel")="explorer-left-pane-address-status"
 	SET OBJ("desktop","mutationSaveBehavior")="layout-on-shell-mutation"
 	SET OBJ("desktop","engine")="miomos-native-vue-css"
 	SET OBJ("desktop","windowManagerName")="miomos-native-window-manager"
@@ -409,6 +415,10 @@ APPS(ROOT,STATE)
 	SET @ROOT@(10,"key")="admin",@ROOT@(10,"title")="Admin",@ROOT@(10,"subtitle")="Users, invites, reset tokens, and operational identity health",@ROOT@(10,"icon")=$GET(STATE("icon","admin"),"ADM"),@ROOT@(10,"badge")="Ops",@ROOT@(10,"kind")="app",@ROOT@(10,"group")="System",@ROOT@(10,"order")=90,@ROOT@(10,"launchKey")="admin",@ROOT@(10,"status")="available"
 	SET @ROOT@(11,"key")="logs",@ROOT@(11,"title")="Logs",@ROOT@(11,"subtitle")="Audit, access, and operational trace directories",@ROOT@(11,"icon")="LOG",@ROOT@(11,"badge")="Folder",@ROOT@(11,"kind")="directory",@ROOT@(11,"group")="Directories",@ROOT@(11,"order")=100,@ROOT@(11,"desktopPinned")=0,@ROOT@(11,"launchKey")="security",@ROOT@(11,"status")="available",@ROOT@(11,"summary")="Retention managed"
 	SET @ROOT@(14,"key")="ui-samples",@ROOT@(14,"title")="UI Samples",@ROOT@(14,"subtitle")="Shell samples, UI library, and curated showcase surfaces",@ROOT@(14,"icon")="UI",@ROOT@(14,"badge")="Folder",@ROOT@(14,"kind")="directory",@ROOT@(14,"group")="Pinned",@ROOT@(14,"order")=15,@ROOT@(14,"launchKey")="ui-samples",@ROOT@(14,"desktopPinned")=1,@ROOT@(14,"status")="available",@ROOT@(14,"summary")="Product shell samples"
+	SET @ROOT@(15,"key")="my-computer",@ROOT@(15,"title")="My Computer",@ROOT@(15,"subtitle")="System drives, routines, terminal surfaces, and operator workspaces",@ROOT@(15,"icon")="CMP",@ROOT@(15,"badge")="System",@ROOT@(15,"kind")="directory",@ROOT@(15,"group")="Pinned",@ROOT@(15,"order")=11,@ROOT@(15,"launchKey")="my-computer",@ROOT@(15,"desktopPinned")=1,@ROOT@(15,"status")="available",@ROOT@(15,"summary")="XP system shell"
+	SET @ROOT@(16,"key")="my-documents",@ROOT@(16,"title")="My Documents",@ROOT@(16,"subtitle")="Personal notes, UI samples, and analyst-ready desktop artifacts",@ROOT@(16,"icon")="DOC",@ROOT@(16,"badge")="System",@ROOT@(16,"kind")="directory",@ROOT@(16,"group")="Pinned",@ROOT@(16,"order")=12,@ROOT@(16,"launchKey")="my-documents",@ROOT@(16,"desktopPinned")=1,@ROOT@(16,"status")="available",@ROOT@(16,"summary")="Operator documents"
+	SET @ROOT@(17,"key")="my-network-places",@ROOT@(17,"title")="My Network Places",@ROOT@(17,"subtitle")="Realtime collaboration, chat, security endpoints, and shared services",@ROOT@(17,"icon")="NET",@ROOT@(17,"badge")="System",@ROOT@(17,"kind")="directory",@ROOT@(17,"group")="Pinned",@ROOT@(17,"order")=13,@ROOT@(17,"launchKey")="my-network-places",@ROOT@(17,"desktopPinned")=1,@ROOT@(17,"status")="available",@ROOT@(17,"summary")="Connected services"
+	SET @ROOT@(18,"key")="recycle-bin",@ROOT@(18,"title")="Recycle Bin",@ROOT@(18,"subtitle")="Deleted shell items will land here once file verbs are wired end-to-end",@ROOT@(18,"icon")="BIN",@ROOT@(18,"badge")="System",@ROOT@(18,"kind")="directory",@ROOT@(18,"group")="Pinned",@ROOT@(18,"order")=14,@ROOT@(18,"launchKey")="recycle-bin",@ROOT@(18,"desktopPinned")=1,@ROOT@(18,"status")="available",@ROOT@(18,"summary")="Ready for shell delete verbs"
 	QUIT
 	;
 WINS(ROOT,STATE)

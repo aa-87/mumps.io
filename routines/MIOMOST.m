@@ -92,6 +92,20 @@ START
 	DO OK^MIOTASSERT(OUT["data-desktop-folder-create=""1""","[MIOMOST][T003][folder create token]")
 	DO OK^MIOTASSERT(OUT["data-desktop-icons-draggable=""1""","[MIOMOST][T003][icon drag token]")
 	DO OK^MIOTASSERT(OUT["data-desktop-curation=""ui-samples-settings-terminal""","[MIOMOST][T003][desktop curation token]")
+	DO OK^MIOTASSERT(OUT["data-shell-replica=""windows-xp""","[MIOMOST][T003][xp replica token]")
+	DO OK^MIOTASSERT(OUT["data-xp-explorer=""1""","[MIOMOST][T003][xp explorer token]")
+	DO OK^MIOTASSERT(OUT["data-xp-common-tasks=""1""","[MIOMOST][T003][xp tasks token]")
+	DO OK^MIOTASSERT(OUT["data-xp-address-bar=""1""","[MIOMOST][T003][xp address token]")
+	DO OK^MIOTASSERT(OUT["data-drop-mode=""desktop-to-folder""","[MIOMOST][T003][drop mode token]")
+	DO OK^MIOTASSERT(OUT["My Computer","[MIOMOST][T003][my computer token]")
+	DO OK^MIOTASSERT(OUT["My Documents","[MIOMOST][T003][my documents token]")
+	DO OK^MIOTASSERT(OUT["My Network Places","[MIOMOST][T003][my network token]")
+	DO OK^MIOTASSERT(OUT["Recycle Bin","[MIOMOST][T003][recycle bin token]")
+	DO OK^MIOTASSERT(OUT["File and Folder Tasks","[MIOMOST][T003][explorer tasks copy]")
+	DO OK^MIOTASSERT(OUT["Address","[MIOMOST][T003][explorer address copy]")
+	DO OK^MIOTASSERT(OUT["Details","[MIOMOST][T003][explorer details copy]")
+	DO OK^MIOTASSERT(OUT["Single-click selects and double-click opens like Windows XP.","[MIOMOST][T003][xp selection copy]")
+	DO OK^MIOTASSERT(OUT["Drag desktop entries onto folders to move them into explorer surfaces.","[MIOMOST][T003][xp drop copy]")
 	DO OK^MIOTASSERT(OUT["UI Samples","[MIOMOST][T003][ui samples copy]")
 	DO EQ^MIOTASSERT(OUT["@osjs/client",0,"[MIOMOST][T003][osjs removed]")
 	;
@@ -118,6 +132,12 @@ START
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","folderCreateBehavior")),"desktop-context-menu","[MIOMOST][T004][folder create behavior]")
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","desktopIconBehavior")),"draggable-autosave","[MIOMOST][T004][icon behavior]")
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","desktopComposition")),"ui-samples-settings-terminal","[MIOMOST][T004][desktop composition]")
+	DO EQ^MIOTASSERT($GET(OBJ("desktop","replicaModel")),"windows-xp-development-platform","[MIOMOST][T004][xp replica model]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("desktop","xpReplica")),1,"[MIOMOST][T004][xp replica enabled]")
+	DO EQ^MIOTASSERT($GET(OBJ("desktop","explorerStyle")),"xp-classic","[MIOMOST][T004][explorer style]")
+	DO EQ^MIOTASSERT($GET(OBJ("desktop","desktopSelectionModel")),"single-click-select-double-click-open","[MIOMOST][T004][desktop selection model]")
+	DO EQ^MIOTASSERT($GET(OBJ("desktop","dragDropModel")),"desktop-icons-to-folders","[MIOMOST][T004][drag drop model]")
+	DO EQ^MIOTASSERT($GET(OBJ("desktop","folderWindowModel")),"explorer-left-pane-address-status","[MIOMOST][T004][folder window model]")
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","mutationSaveBehavior")),"layout-on-shell-mutation","[MIOMOST][T004][mutation save behavior]")
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","startMenuBehavior")),"predictable-sections","[MIOMOST][T004][start behavior]")
 	DO EQ^MIOTASSERT($GET(OBJ("routes","adminUsers")),"/api/miomos/admin/users","[MIOMOST][T004][admin users route]")
@@ -158,6 +178,10 @@ START
 	DO EQ^MIOTASSERT($GET(OBJ("apps",7,"key")),"terminal","[MIOMOST][T004][terminal app key]")
 	DO EQ^MIOTASSERT($GET(OBJ("windows",6,"appKey")),"terminal","[MIOMOST][T004][terminal win key]")
 	DO EQ^MIOTASSERT($GET(OBJ("apps",14,"key")),"ui-samples","[MIOMOST][T004][ui samples app key]")
+	DO EQ^MIOTASSERT($GET(OBJ("apps",15,"key")),"my-computer","[MIOMOST][T004][my computer app key]")
+	DO EQ^MIOTASSERT($GET(OBJ("apps",16,"key")),"my-documents","[MIOMOST][T004][my documents app key]")
+	DO EQ^MIOTASSERT($GET(OBJ("apps",17,"key")),"my-network-places","[MIOMOST][T004][my network app key]")
+	DO EQ^MIOTASSERT($GET(OBJ("apps",18,"key")),"recycle-bin","[MIOMOST][T004][recycle bin app key]")
 	DO EQ^MIOTASSERT($GET(OBJ("windows",7,"appKey")),"ui-samples","[MIOMOST][T004][ui samples win key]")
 	DO EQ^MIOTASSERT(+$DATA(OBJ("security","adminCounts","users"))>0,1,"[MIOMOST][T004][admin counts]")
 	DO EQ^MIOTASSERT($GET(OBJ("security","sessionBinding")),"principal-and-session","[MIOMOST][T004][session binding]")
@@ -483,5 +507,6 @@ HASWRITE(OUT,TEXT)
 	FOR  SET N=$ORDER(OUT("write",N)) QUIT:N=""  DO  QUIT:FOUND
 	. IF $GET(OUT("write",N))[$GET(TEXT) SET FOUND=1
 	QUIT FOUND
+	;
 	;
 	;

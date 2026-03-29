@@ -243,7 +243,7 @@ NOTIFICATIONS(STATE,CONF,ROOT)
 	;
 SHELL(STATE,CONF,ROOT)
 	KILL @ROOT
-	SET @ROOT@("headline")="Product shell correctness and desktop folders"
+	SET @ROOT@("headline")="Windows XP shell fidelity foundation"
 	SET @ROOT@("taskbarBehavior")="stable-order"
 	SET @ROOT@("taskbarOverflowBehavior")="preserve-order-and-overflow"
 	SET @ROOT@("startMenuBehavior")="predictable-sections"
@@ -256,6 +256,11 @@ SHELL(STATE,CONF,ROOT)
 	SET @ROOT@("dialogDragBehavior")="titlebar-drag"
 	SET @ROOT@("folderCreateBehavior")="desktop-context-menu"
 	SET @ROOT@("desktopComposition")="ui-samples-settings-terminal"
+	SET @ROOT@("replicaModel")="windows-xp-development-platform"
+	SET @ROOT@("explorerStyle")="xp-classic"
+	SET @ROOT@("desktopSelectionModel")="single-click-select-double-click-open"
+	SET @ROOT@("dragDropModel")="desktop-icons-to-folders"
+	SET @ROOT@("folderWindowModel")="explorer-left-pane-address-status"
 	SET @ROOT@("mutationSaveBehavior")="layout-on-shell-mutation"
 	SET @ROOT@("taskbarBehaviorCopy")="Taskbar order stays stable while focus changes."
 	SET @ROOT@("taskbarOverflowCopy")="Overflow windows move into a More Windows list without changing taskbar order."
@@ -265,7 +270,11 @@ SHELL(STATE,CONF,ROOT)
 	SET @ROOT@("shellSurfacePolicyCopy")="Only one shell surface stays open at a time: Start menu, context menu, or dialog."
 	SET @ROOT@("dialogDragBehaviorCopy")="Shell dialogs can be dragged by their title bars like real desktop dialogs."
 	SET @ROOT@("folderCreateBehaviorCopy")="New Folder is available from the desktop context menu and saves immediately."
-	SET @ROOT@("desktopCompositionCopy")="The desktop now stays curated: UI Samples, Settings, and Terminal."
+	SET @ROOT@("desktopCompositionCopy")="The desktop now stays curated while adding XP system shell affordances for development-focused folders and explorer windows."
+	SET @ROOT@("replicaModelCopy")="MIOMOS is now explicitly targeting a Windows XP shell replica in UI and interaction, while keeping the MUMPS desktop contract and websocket event system intact."
+	SET @ROOT@("desktopSelectionModelCopy")="Desktop icons follow the XP model: one click selects, double-click opens, and drag remains available for folder drop targets."
+	SET @ROOT@("dragDropModelCopy")="Desktop entries can be dragged onto folder icons or open explorer windows to move them out of the desktop strip and into a folder surface."
+	SET @ROOT@("folderWindowModelCopy")="Directory windows now gain an XP-style explorer frame with an address bar, common tasks pane, and a status strip."
 	SET @ROOT@("quickLaunchLabel")="Quick Launch"
 	SET @ROOT@("overflowLabel")="More Windows"
 	SET @ROOT@("recentLabel")="Recently used"
@@ -278,6 +287,10 @@ SHELL(STATE,CONF,ROOT)
 	SET @ROOT@("showTrayLabels")=+$GET(STATE("shell","showTrayLabels"))
 	SET @ROOT@("showAccountName")=+$GET(STATE("shell","showAccountName"),1)
 	SET @ROOT@("showNotificationBadge")=+$GET(STATE("shell","showNotificationBadge"),1)
+	SET @ROOT@("systemDesktopIcons",1,"key")="my-computer",@ROOT@("systemDesktopIcons",1,"label")="My Computer"
+	SET @ROOT@("systemDesktopIcons",2,"key")="my-documents",@ROOT@("systemDesktopIcons",2,"label")="My Documents"
+	SET @ROOT@("systemDesktopIcons",3,"key")="my-network-places",@ROOT@("systemDesktopIcons",3,"label")="My Network Places"
+	SET @ROOT@("systemDesktopIcons",4,"key")="recycle-bin",@ROOT@("systemDesktopIcons",4,"label")="Recycle Bin"
 	SET @ROOT@("notificationPreviewCount")=+$GET(STATE("shell","notificationPreviewCount"),4)
 	SET @ROOT@("startMenuSection")=$GET(STATE("shell","startMenuSection"),"Pinned")
 	SET @ROOT@("quickLaunch")=$GET(STATE("shell","quickLaunch"),"workspace,collaboration,terminal")

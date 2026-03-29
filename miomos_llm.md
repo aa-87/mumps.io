@@ -562,3 +562,25 @@ TODO next:
   - terminal sizing defaults to fit-container
   - browser sends initial fitted cols/rows on terminal.open
   - terminal default window opens slightly larger for better first-use readability
+
+
+## XP replica roadmap after session.ui.save rebuild
+
+The current baseline is stable enough to push MIOMOS toward a stricter Windows XP shell replica.
+
+Recommended next ROI sequence:
+
+- **ROI 165 — XP Explorer foundation**: system desktop icons, single-click select/double-click open, explorer left pane, address bar, status bar, and desktop-to-folder drop targets.
+- **ROI 166 — Desktop verbs and rename parity**: desktop blank selection, marquee selection, rename, F2, Delete, context verbs, and recycle-bin routing.
+- **ROI 167 — Explorer file list parity**: details/list/icon views, sortable columns, status bar counts, breadcrumb/address semantics, and folder task panes.
+- **ROI 168 — Shell drag/drop semantics**: move/copy/link gestures, hover expand, folder-drop previews, and persisted folder membership.
+- **ROI 169 — Filesystem bridge over websocket**: real create, rename, move, copy, delete, restore, upload, and download boundaries authored in MUMPS.
+- **ROI 170 — XP shell services**: recycle bin, My Computer drives, Control Panel surfaces, Run dialog parity, and taskbar notification-area behaviors.
+- **ROI 171 — Development-platform essence**: MUMPS routine explorer, workspace drives, compile/debug verbs, and terminal/explorer coordination under the XP shell model.
+
+Maintain these constraints while pursuing XP fidelity:
+
+- do not break auth or the current websocket ownership model
+- keep MUMPS as the source of truth for shell metadata and persisted state
+- prefer additive shell/UI work before deeper command-bus rewrites
+- keep each ROI test-backed with SSR tokens and boot-contract assertions
