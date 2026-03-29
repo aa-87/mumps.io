@@ -1824,6 +1824,18 @@
     .miomos-terminal-host .xterm-viewport { overflow-y: auto !important; }
     .miomos-terminal-host .xterm-screen canvas { image-rendering: auto; }
     .miomos-terminal-host .xterm-helper-textarea { opacity: 0; left: -9999em; }
+    .miomos-root[data-animations="off"] .miomos-terminal-host .xterm *,
+    .miomos-root[data-animations="reduced"] .miomos-terminal-host .xterm *,
+    .miomos-root[data-motion-profile="reduced"] .miomos-terminal-host .xterm * {
+      transition-duration: revert !important;
+      animation-duration: revert !important;
+    }
+    .miomos-terminal-host .xterm .xterm-cursor,
+    .miomos-terminal-host .xterm .xterm-cursor-layer,
+    .miomos-terminal-host .xterm .xterm-cursor.xterm-cursor-blink,
+    .miomos-terminal-host .xterm .xterm-cursor-layer .xterm-cursor.xterm-cursor-blink {
+      animation-duration: 1s !important;
+    }
     .miomos-terminal-statusline {
       position: absolute;
       left: 12px;

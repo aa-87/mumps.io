@@ -29,3 +29,13 @@ The previous pass mixed browser-renderer ownership with custom CSS/input overrid
 - `data-terminal-textarea="xterm-owned"`
 
 The backend terminal tests remain YDB/PIPE-first and should not regress because of browser-only renderer changes.
+
+## Cursor blink note
+
+MIOMOS has broad reduced-motion selectors that can compress `animation-duration` for all descendants under the desktop root. When xterm.js is mounted inside that tree, those selectors can unintentionally shorten xterm's own cursor-blink animation to nearly zero, which looks like a rapid flicker even though the terminal renderer is otherwise healthy.
+
+The CSS should explicitly exempt the mounted xterm subtree from MIOMOS reduced-motion animation compression, or restore xterm's own animation duration inside the terminal host.
+
+## Test posture update
+
+`T011` should validate the backend terminal contract with a real MUMPS command such as `write 123,!`, not a shell command like `whoami`. The PIPE terminal launches `yottadb -direct`, so the terminal-output test should assert MUMPS output rather than POSIX shell identity output.

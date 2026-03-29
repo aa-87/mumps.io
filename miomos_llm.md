@@ -474,3 +474,9 @@ The source-of-truth terminal contract is now:
 - MIOMOS should only send whole command lines to the backend command boundary unless a future ROI introduces true character-stream transport end-to-end
 - avoid repeated forced focus on every poll/result cycle, as that can make the cursor appear to blink incorrectly or make typing unreliable
 - prefer a thin renderer integration that preserves the passing MIOMOST suite and the current YottaDB-over-pipe backend behavior
+
+
+## 2026-03 xterm cursor and test alignment note
+
+- The MIOMOS desktop may use broad reduced-motion CSS selectors for shell chrome, but those selectors must not compress xterm.js cursor animations inside the mounted terminal subtree. If reduced-motion is applied globally, explicitly exempt `.miomos-terminal-host .xterm *` or restore xterm animation duration in a more specific rule.
+- `^MIOMOST` terminal smoke tests must follow the YottaDB direct terminal contract. Use real MUMPS input like `write 123,!` and assert `123` in terminal output; do not assert shell commands such as `whoami` for PIPE-backed terminal tests.
