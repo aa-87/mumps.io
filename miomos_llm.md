@@ -476,7 +476,9 @@ The source-of-truth terminal contract is now:
 - prefer a thin renderer integration that preserves the passing MIOMOST suite and the current YottaDB-over-pipe backend behavior
 
 
-## 2026-03 xterm cursor and test alignment note
+## Terminal UI conventions
 
-- The MIOMOS desktop may use broad reduced-motion CSS selectors for shell chrome, but those selectors must not compress xterm.js cursor animations inside the mounted terminal subtree. If reduced-motion is applied globally, explicitly exempt `.miomos-terminal-host .xterm *` or restore xterm animation duration in a more specific rule.
-- `^MIOMOST` terminal smoke tests must follow the YottaDB direct terminal contract. Use real MUMPS input like `write 123,!` and assert `123` in terminal output; do not assert shell commands such as `whoami` for PIPE-backed terminal tests.
+- The MIOMOS terminal remains a YottaDB session over the existing PIPE/websocket backend.
+- xterm.js is the browser renderer and owns the visible terminal surface.
+- The toolbar **Clear** action is client-side only and clears the xterm screen buffer rather than sending a command into YottaDB.
+- Terminal color presets are saved under terminal settings using `palette` and currently include `midnight-blue`, `black-on-white`, and `white-on-black`.

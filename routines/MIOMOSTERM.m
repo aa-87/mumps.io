@@ -13,6 +13,7 @@ LOADTERM(STATE,CONF)
 	SET DEF("unicode")=$GET(CONF("miomos","terminal","default","unicode"),"unicode11")
 	SET DEF("rows")=+$GET(CONF("miomos","terminal","default","rows"),28)
 	SET DEF("cols")=+$GET(CONF("miomos","terminal","default","cols"),120)
+	SET DEF("palette")=$GET(CONF("miomos","terminal","default","palette"),"midnight-blue")
 	SET STATE("terminal","fontFamily")=$$GETP(USER,"fontFamily",DEF("fontFamily"))
 	SET STATE("terminal","fontSize")=+$$GETP(USER,"fontSize",DEF("fontSize"))
 	IF STATE("terminal","fontSize")<12 SET STATE("terminal","fontSize")=13
@@ -33,6 +34,8 @@ LOADTERM(STATE,CONF)
 	SET STATE("terminal","cols")=+$$GETP(USER,"cols",DEF("cols"))
 	IF STATE("terminal","cols")<80 SET STATE("terminal","cols")=DEF("cols")
 	IF STATE("terminal","cols")>220 SET STATE("terminal","cols")=DEF("cols")
+	SET STATE("terminal","palette")=$$PALETTEOK($$GETP(USER,"palette",DEF("palette")))
+	IF STATE("terminal","palette")="" SET STATE("terminal","palette")=DEF("palette")
 	QUIT
 	;
 GETP(USER,KEY,DEF)
@@ -72,6 +75,9 @@ SAVEPROF(USER,TREE,OUT,ERR)
 	IF $DATA(TREE("cols")) DO  QUIT:$GET(ERR("error"))'=""
 	. SET VAL=$$COLS(+$GET(TREE("cols"))) IF VAL<1 SET ERR("error")="terminal_cols_invalid" QUIT
 	. SET ^MIO("MIOMOS","PREF",USER,"terminal","cols")=VAL
+	IF $DATA(TREE("palette")) DO  QUIT:$GET(ERR("error"))'=""
+	. SET VAL=$$PALETTEOK($GET(TREE("palette"))) IF VAL="" SET ERR("error")="terminal_palette_invalid" QUIT
+	. SET ^MIO("MIOMOS","PREF",USER,"terminal","palette")=VAL
 	SET ^MIO("MIOMOS","PREF",USER,"terminal","savedAt")=$$NOWISO^MIOUTIL()
 	DO CURRENT(USER,.OUT)
 	QUIT 1
@@ -96,6 +102,7 @@ CATALOG(ROOT)
 	DO OPTS($NAME(@ROOT@("unicodeModes")),"unicode11^Unicode 11,graphemes^Grapheme experimental")
 	DO VALUEOPTS($NAME(@ROOT@("rows")),"24^24 rows^24,28^28 rows^28,32^32 rows^32,36^36 rows^36")
 	DO VALUEOPTS($NAME(@ROOT@("cols")),"100^100 cols^100,120^120 cols^120,132^132 cols^132,160^160 cols^160")
+	DO OPTS($NAME(@ROOT@("palettes")),"midnight-blue^Midnight Blue,black-on-white^Black on White,white-on-black^White on Black")
 	DO OPTS($NAME(@ROOT@("transport")),"pipe^YottaDB PIPE WebSocket")
 	QUIT
 	;
@@ -184,6 +191,11 @@ COLS(N)
 	IF N<80 QUIT 0
 	IF N>220 QUIT 0
 	QUIT N
+	;
+PALETTEOK(X)
+	SET X=$$TRIM^MIOUTIL($GET(X))
+	IF X="midnight-blue"!(X="black-on-white")!(X="white-on-black") QUIT X
+	QUIT ""
 	;
 OPEN(STATE,CONF,TERMID,OUT,ERR)
 	QUIT $$OPEN^MIOMOSTPIPE(.STATE,.CONF,$GET(TERMID),.OUT,.ERR)
