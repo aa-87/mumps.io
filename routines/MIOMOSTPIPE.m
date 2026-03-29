@@ -13,14 +13,14 @@ OPEN(STATE,CONF,TERMID,OUT,ERR)
 	IF $$SESSIONOK(TERMID,.STATE) DO  QUIT 1
 	. DO TOUCH(TERMID,.STATE,"","")
 	. DO PROFILE(.STATE,TERMID,.OUT)
-	. SET OUT("ok")=1,OUT("opened")=0,OUT("terminalId")=TERMID,OUT("transport")="pipe"
+	. SET OUT("ok")=1,OUT("opened")=0,OUT("attached")=1,OUT("reattached")=1,OUT("terminalId")=TERMID,OUT("transport")="pipe",OUT("reconnectGraceSeconds")=$$GRACE(.CONF)
 	. DO PAUSE(TERMID)
 	. DO DRAIN(TERMID,.OUT,.ERR)
 	IF $DATA(^MIO("MIOMOS","PIPE","SESSION",TERMID)) DO CLOSEMETA(TERMID)
 	IF '$$OPENP(.CONF,TERMID,.STATE,.ERR) QUIT 0
 	DO TOUCH(TERMID,.STATE,"","")
 	DO PROFILE(.STATE,TERMID,.OUT)
-	SET OUT("ok")=1,OUT("opened")=1,OUT("terminalId")=TERMID,OUT("transport")="pipe"
+	SET OUT("ok")=1,OUT("opened")=1,OUT("terminalId")=TERMID,OUT("transport")="pipe",OUT("reconnectGraceSeconds")=$$GRACE(.CONF)
 	DO PAUSE(TERMID)
 	DO DRAIN(TERMID,.OUT,.ERR)
 	QUIT 1
@@ -32,6 +32,23 @@ ATTACH(STATE,TERMID,OUT,ERR)
 	DO LOADTERM^MIOMOSTERM(.STATE,.CONF)
 	QUIT $$OPEN(.STATE,.CONF,$GET(TERMID),.OUT,.ERR)
 	;
+REATTACH(STATE,CONF,TERMID,OUT,ERR)
+	KILL OUT,ERR
+	SET ERR("routine")="MIOMOSTPIPE"
+	DO LOADTERM^MIOMOSTERM(.STATE,.CONF)
+	DO PURGESTALE(.CONF)
+	SET TERMID=$$TERMID($GET(TERMID),$GET(STATE("sessionId")))
+	IF $$SESSIONOK(TERMID,.STATE) DO  QUIT 1
+	. DO TOUCH(TERMID,.STATE,"","")
+	. DO PROFILE(.STATE,TERMID,.OUT)
+	. SET OUT("ok")=1,OUT("opened")=0,OUT("attached")=1,OUT("reattached")=1,OUT("terminalId")=TERMID,OUT("transport")="pipe",OUT("reconnectGraceSeconds")=$$GRACE(.CONF)
+	. DO PAUSE(TERMID)
+	. DO DRAIN(TERMID,.OUT,.ERR)
+	IF '$$OPEN(.STATE,.CONF,TERMID,.OUT,.ERR) QUIT 0
+	SET OUT("attached")=1,OUT("reattached")=1
+	SET OUT("reconnectGraceSeconds")=$$GRACE(.CONF)
+	QUIT 1
+	;
 INPUT(STATE,TERMID,DATA,OUT,ERR)
 	KILL OUT,ERR
 	SET ERR("routine")="MIOMOSTPIPE"
@@ -39,7 +56,7 @@ INPUT(STATE,TERMID,DATA,OUT,ERR)
 	IF '$$WRITEP($GET(TERMID),$GET(DATA),.ERR) QUIT 0
 	DO TOUCH($GET(TERMID),.STATE,"","")
 	DO PROFILE(.STATE,$GET(TERMID),.OUT)
-	SET OUT("ok")=1,OUT("terminalId")=$GET(TERMID),OUT("transport")="pipe"
+	SET OUT("ok")=1,OUT("terminalId")=$GET(TERMID),OUT("transport")="pipe",OUT("reconnectGraceSeconds")=+$GET(^MIO("MIOMOS","PIPE","SESSION",$GET(TERMID),"reconnectGraceSeconds"),180)
 	DO DRAINTRY($GET(TERMID),.OUT,.ERR)
 	QUIT 1
 	;
@@ -49,7 +66,7 @@ POLL(STATE,TERMID,OUT,ERR)
 	IF '$$SESSIONOK($GET(TERMID),.STATE) SET ERR("error")="terminal_not_ready" QUIT 0
 	DO TOUCH($GET(TERMID),.STATE,"","")
 	DO PROFILE(.STATE,$GET(TERMID),.OUT)
-	SET OUT("ok")=1,OUT("terminalId")=$GET(TERMID),OUT("transport")="pipe"
+	SET OUT("ok")=1,OUT("terminalId")=$GET(TERMID),OUT("transport")="pipe",OUT("reconnectGraceSeconds")=+$GET(^MIO("MIOMOS","PIPE","SESSION",$GET(TERMID),"reconnectGraceSeconds"),180)
 	DO DRAIN($GET(TERMID),.OUT,.ERR)
 	QUIT 1
 	;
@@ -59,7 +76,7 @@ RESIZE(STATE,TERMID,COLS,ROWS,OUT,ERR)
 	IF '$$SESSIONOK($GET(TERMID),.STATE) SET ERR("error")="terminal_not_ready" QUIT 0
 	DO TOUCH($GET(TERMID),.STATE,+$GET(COLS),+$GET(ROWS))
 	DO PROFILE(.STATE,$GET(TERMID),.OUT)
-	SET OUT("ok")=1,OUT("terminalId")=$GET(TERMID),OUT("transport")="pipe"
+	SET OUT("ok")=1,OUT("terminalId")=$GET(TERMID),OUT("transport")="pipe",OUT("reconnectGraceSeconds")=+$GET(^MIO("MIOMOS","PIPE","SESSION",$GET(TERMID),"reconnectGraceSeconds"),180)
 	SET OUT("cols")=+$GET(^MIO("MIOMOS","PIPE","SESSION",$GET(TERMID),"cols"))
 	SET OUT("rows")=+$GET(^MIO("MIOMOS","PIPE","SESSION",$GET(TERMID),"rows"))
 	QUIT 1
@@ -107,6 +124,7 @@ OPENP(CONF,TERMID,STATE,ERR)
 	SET ^MIO("MIOMOS","PIPE","SESSION",TERMID,"readLimit")=$$READLIM(.CONF)
 	SET ^MIO("MIOMOS","PIPE","SESSION",TERMID,"readPolls")=$$READPOLLS(.CONF)
 	SET ^MIO("MIOMOS","PIPE","SESSION",TERMID,"drainPause")=$$DRAINPAUSE(.CONF)
+	SET ^MIO("MIOMOS","PIPE","SESSION",TERMID,"reconnectGraceSeconds")=$$GRACE(.CONF)
 	SET ^MIO("MIOMOS","PIPE","SESSION",TERMID,"openedAt")=$$NOWISO^MIOUTIL()
 	SET ^MIO("MIOMOS","PIPE","BYSESSION",$GET(STATE("sessionId")))=TERMID
 	QUIT 1
@@ -288,6 +306,13 @@ DRAINPAUSE(CONF)
 	NEW N
 	SET N=+$GET(CONF("miomos","terminal","pipe","drainPause"),.04)
 	IF N'>0 SET N=.04
+	QUIT N
+	;
+GRACE(CONF)
+	NEW N
+	SET N=+$GET(CONF("miomos","terminal","pipe","reconnectGraceSeconds"),180)
+	IF N<30 SET N=30
+	IF N>900 SET N=900
 	QUIT N
 	;
 IDLE(CONF)

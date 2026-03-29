@@ -50,6 +50,7 @@ START
 	DO OK^MIOTASSERT(OUT["data-setting-terminal=""fontFamily""","[MIOMOST][T003][terminal settings]")
 	DO OK^MIOTASSERT(OUT["data-setting-terminal=""palette""","[MIOMOST][T003][terminal palette setting]")
 	DO OK^MIOTASSERT(OUT["data-terminal-clear=""xterm-buffer""","[MIOMOST][T003][terminal clear action]")
+	DO OK^MIOTASSERT(OUT["data-terminal-resume=""same-session-terminal-id""","[MIOMOST][T003][terminal resume token]")
 	DO OK^MIOTASSERT(OUT["data-launch-app=""terminal""","[MIOMOST][T003][terminal app]")
 	DO OK^MIOTASSERT(OUT["data-entry-kind=""directory""","[MIOMOST][T003][directory entry]")
 	DO OK^MIOTASSERT(OUT["data-entry-kind=""future""","[MIOMOST][T003][future entry]")
@@ -126,6 +127,10 @@ START
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","commandTransport")),"websocket-only","[MIOMOST][T004][command transport]")
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","policy","resumeTransport")),"resume-token-seq","[MIOMOST][T004][resume transport]")
 	DO EQ^MIOTASSERT(+$GET(OBJ("desktop","policy","resumeReplayLimit")),64,"[MIOMOST][T004][resume replay limit]")
+	DO EQ^MIOTASSERT($GET(OBJ("desktop","policy","terminalResumeMode")),"same-session-terminal-id","[MIOMOST][T004][terminal resume mode]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("desktop","policy","terminalReconnectGraceSeconds"))>0,1,"[MIOMOST][T004][terminal reconnect grace]")
+	DO EQ^MIOTASSERT($GET(OBJ("terminal","resumeMode")),"same-session-terminal-id","[MIOMOST][T004][terminal boot resume mode]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("terminal","reconnectGraceSeconds"))>0,1,"[MIOMOST][T004][terminal boot grace]")
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","commandEvent")),"command.exec","[MIOMOST][T004][desktop command event]")
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","commandResultEvent")),"command.result","[MIOMOST][T004][desktop command result]")
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","realtimeContract")),"single-websocket-command-and-events","[MIOMOST][T004][realtime contract]")
@@ -354,6 +359,25 @@ START
 	DO OK^MIOTASSERT($$DECODE^MIOJSON($GET(REPLAY(1)),.ARR2,.ERR),"[MIOMOST][T017][replay decode]")
 	DO EQ^MIOTASSERT($GET(ARR2("event")),"terminal.stdout","[MIOMOST][T017][replay event]")
 	DO EQ^MIOTASSERT(+$GET(ARR2("eventSeq")),SEQ,"[MIOMOST][T017][replay seq]")
+	;
+	KILL OUT,ERR,OBJ,ARR
+	DO OK^MIOTASSERT($$OPEN^MIOMOSTPIPE(.STATE,.CONF,"",.OUT,.ERR),"[MIOMOST][T018][pipe open]")
+	SET TERMID=$GET(OUT("terminalId"))
+	DO EQ^MIOTASSERT(TERMID'="",1,"[MIOMOST][T018][pipe term id]")
+	DO OK^MIOTASSERT($$REATTACH^MIOMOSTPIPE(.STATE,.CONF,TERMID,.OUT,.ERR),"[MIOMOST][T018][pipe reattach]")
+	DO EQ^MIOTASSERT($GET(OUT("attached")),1,"[MIOMOST][T018][pipe attached]")
+	DO EQ^MIOTASSERT($GET(OUT("reattached")),1,"[MIOMOST][T018][pipe reattached flag]")
+	DO EQ^MIOTASSERT($GET(OUT("terminalId")),TERMID,"[MIOMOST][T018][pipe same term]")
+	DO OK^MIOTASSERT($$INPUT^MIOMOSTERM(.STATE,TERMID,"write 456,!",.OUT,.ERR),"[MIOMOST][T018][pipe input after reattach]")
+	DO EQ^MIOTASSERT($$HASWRITE(.OUT,"456"),1,"[MIOMOST][T018][pipe output after reattach]")
+	KILL OBJ,ARR,ERR
+	SET WSCTX("request_id")="miomost-ws-reattach"
+	SET WSPAY="{""event"":""command.exec"",""requestId"":""ws-6"",""command"":""terminal.reattach"",""terminalId"":"""_TERMID_"""}"
+	DO OK^MIOTASSERT($$COMMANDSIDJSON^MIOMOSWS(.CONF,.WSREQ,.WSCTX,WSSID,WSPAY,.OBJ,.ERR),"[MIOMOST][T018][ws reattach exec]")
+	DO OK^MIOTASSERT($$DECODE^MIOJSON(OBJ,.ARR,.ERR),"[MIOMOST][T018][ws reattach decode]")
+	DO EQ^MIOTASSERT($GET(ARR("terminal","attached")),1,"[MIOMOST][T018][ws attached]")
+	DO EQ^MIOTASSERT($GET(ARR("terminal","reattached")),1,"[MIOMOST][T018][ws reattached flag]")
+	DO OK^MIOTASSERT($$CLOSE^MIOMOSTPIPE(.STATE,TERMID,.OUT,.ERR),"[MIOMOST][T018][pipe close]")
 	QUIT
 	;
 HASWRITE(OUT,TEXT)

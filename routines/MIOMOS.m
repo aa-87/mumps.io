@@ -45,6 +45,8 @@ CONFDEF(CONF)
 	IF $GET(CONF("miomos","desktop","policy","commandTimeoutMs"))="" SET CONF("miomos","desktop","policy","commandTimeoutMs")=8000
 	IF $GET(CONF("miomos","desktop","policy","resumeTransport"))="" SET CONF("miomos","desktop","policy","resumeTransport")="resume-token-seq"
 	IF $GET(CONF("miomos","desktop","policy","resumeReplayLimit"))="" SET CONF("miomos","desktop","policy","resumeReplayLimit")=64
+	IF $GET(CONF("miomos","desktop","policy","terminalResumeMode"))="" SET CONF("miomos","desktop","policy","terminalResumeMode")="same-session-terminal-id"
+	IF $GET(CONF("miomos","desktop","policy","terminalReconnectGraceSeconds"))="" SET CONF("miomos","desktop","policy","terminalReconnectGraceSeconds")=180
 	IF $GET(CONF("miomos","wm","defaultPreset"))="" SET CONF("miomos","wm","defaultPreset")="analyst"
 	IF $GET(CONF("miomos","wm","defaultSnapMode"))="" SET CONF("miomos","wm","defaultSnapMode")="quadrant"
 	IF $GET(CONF("miomos","wm","defaultMotionProfile"))="" SET CONF("miomos","wm","defaultMotionProfile")="standard"
@@ -65,6 +67,7 @@ CONFDEF(CONF)
 	IF $GET(CONF("miomos","terminal","pipe","readPolls"))="" SET CONF("miomos","terminal","pipe","readPolls")=8
 	IF $GET(CONF("miomos","terminal","pipe","drainPause"))="" SET CONF("miomos","terminal","pipe","drainPause")=.04
 	IF $GET(CONF("miomos","terminal","pipe","sessionIdleSeconds"))="" SET CONF("miomos","terminal","pipe","sessionIdleSeconds")=900
+	IF $GET(CONF("miomos","terminal","pipe","reconnectGraceSeconds"))="" SET CONF("miomos","terminal","pipe","reconnectGraceSeconds")=180
 	IF $GET(CONF("miomos","terminal","default","fontFamily"))="" SET CONF("miomos","terminal","default","fontFamily")="JetBrains Mono"
 	IF $GET(CONF("miomos","terminal","default","fontSize"))="" SET CONF("miomos","terminal","default","fontSize")=13
 	IF $GET(CONF("miomos","terminal","default","cursorBlink"))="" SET CONF("miomos","terminal","default","cursorBlink")=1

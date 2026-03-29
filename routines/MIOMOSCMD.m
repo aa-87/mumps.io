@@ -30,6 +30,7 @@ EXEC(STATE,CONF,TREE,OUT,ERR)
 	IF CMD="wm.layout.apply" QUIT $$WMLAYOUT(.STATE,.CONF,.TREE,.OUT,.ERR)
 	IF CMD="terminal.open" QUIT $$TERMOPEN(.STATE,.CONF,.TREE,.OUT,.ERR)
 	IF CMD="terminal.input" QUIT $$TERMINPUT(.STATE,.TREE,.OUT,.ERR)
+	IF CMD="terminal.reattach" QUIT $$TERMREATT(.STATE,.CONF,.TREE,.OUT,.ERR)
 	IF CMD="terminal.close" QUIT $$TERMCLOSE(.STATE,.TREE,.OUT,.ERR)
 	IF CMD="terminal.poll" QUIT $$TERMPOLL(.STATE,.TREE,.OUT,.ERR)
 	IF CMD="terminal.resize" QUIT $$TERMRESZ(.STATE,.TREE,.OUT,.ERR)
@@ -99,6 +100,15 @@ TERMOPEN(STATE,CONF,TREE,OUT,ERR)
 	IF '$$OPEN^MIOMOSTPIPE(.STATE,.CONF,TERMID,.TERMOUT,.ERR) SET ERR("status")=400 QUIT 0
 	MERGE OUT("terminal")=TERMOUT
 	SET OUT("command")="terminal.open"
+	QUIT 1
+	;
+
+TERMREATT(STATE,CONF,TREE,OUT,ERR)
+	NEW TERMOUT
+	IF '$$HAS^MIOMOSPERM(.STATE,"terminal.use") SET ERR("error")="forbidden",ERR("detail")="terminal.use",ERR("status")=403 QUIT 0
+	IF '$$REATTACH^MIOMOSTPIPE(.STATE,.CONF,$GET(TREE("terminalId")),.TERMOUT,.ERR) SET ERR("status")=400 QUIT 0
+	MERGE OUT("terminal")=TERMOUT
+	SET OUT("command")="terminal.reattach"
 	QUIT 1
 	;
 

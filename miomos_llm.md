@@ -506,3 +506,9 @@ The source-of-truth terminal contract is now:
 
 
 Resume note: the hello handshake now uses an explicit non-empty token equality check when deciding whether a reconnect is resumable, so replay eligibility is no longer gated by a malformed conditional.
+
+## ROI41 terminal continuity foundation
+- Treat the terminal as a YottaDB PIPE session that may be reattached by `terminalId` for the same MIOMOS session.
+- Preserve `terminalId` across transient websocket loss and prefer `terminal.reattach` before a fresh `terminal.open`.
+- Publish `terminalResumeMode` and `terminalReconnectGraceSeconds` in boot JSON and SSR tokens so the browser remains server-authored.
+- Keep terminal ownership in MUMPS and add tests/docs for reattach behavior.
