@@ -9,6 +9,7 @@ ENSURE(CONF,REQ,CTX,STATE,ERR)
 	IF KEY="" QUIT 0
 	SET USER=$$USERNAME(.CONF,.CTX)
 	SET ROLES=$$ROLECSV(.CONF,.CTX)
+	DO ENSURE^MIOMOSVFS(KEY,USER)
 	SET ABS=+$GET(CONF("miomos","session","absoluteTimeoutSeconds"),28800)
 	SET IDLE=+$GET(CONF("miomos","session","idleTimeoutSeconds"),900)
 	SET SID=$GET(CTX("miomos","sessionId"))
@@ -272,6 +273,7 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","mobile","mode")="stacked-shell"
 	SET OBJ("desktop","mobile","touchTargets")="comfortable"
 	SET OBJ("desktop","mobile","dragging")="disabled-under-breakpoint"
+	DO BOOT^MIOMOSVFS($GET(STATE("principal")),.CONF,$NAME(OBJ("desktop","vfs")))
 	SET OBJ("desktop","renderMode")="mumps-first"
 	SET OBJ("desktop","renderer")="vue-thin"
 	SET OBJ("desktop","commandTransport")=$GET(CONF("miomos","desktop","transport","commandBus"),"websocket-only")

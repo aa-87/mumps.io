@@ -611,3 +611,40 @@ Recommended next ROI order remains:
 - ROI 169 — filesystem bridge over websocket
 - ROI 170 — XP shell services
 - ROI 171 — development-platform essence
+
+
+## ROI 167 completion note
+
+ROI 167 adds the first globals-backed per-user virtual filesystem foundation for the XP shell.
+
+Key rules going forward:
+- VFS storage remains in globals, not server local disk
+- the websocket shell remains the primary realtime bus
+- upload/download must be permission-aware and browser-capability-aware
+- browser drag-out to the local filesystem is a progressive enhancement, not an unconditional assumption
+
+### Next ROI sequence
+
+- ROI 168 — Browser drag/drop and picker upload into the VFS
+  - desktop and explorer drop targets
+  - upload staging and metadata writes in globals
+  - permission flags per folder root
+  - websocket progress / completion events
+
+- ROI 169 — Browser download and drag-out bridge from the VFS
+  - explicit save/download actions
+  - browser-compatible drag-out where available
+  - safe fallback to ordinary download when drag-out is restricted
+  - audit and permission checks for download flows
+
+- ROI 170 — XP shell verbs over the VFS
+  - copy / cut / paste
+  - move between folders
+  - rename for virtual files and folders
+  - delete / restore flows aligned with Recycle Bin semantics
+
+- ROI 171 — MUMPS development-platform essence inside the XP shell
+  - routine manifests
+  - globals-browser exports
+  - terminal shortcut artifacts
+  - project snapshots and generated outputs in the VFS

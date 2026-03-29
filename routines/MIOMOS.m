@@ -44,6 +44,12 @@ CONFDEF(CONF)
 	IF $GET(CONF("miomos","desktop","transport","errorEvent"))="" SET CONF("miomos","desktop","transport","errorEvent")="command.error"
 	IF $GET(CONF("miomos","desktop","policy","commandMaxInflight"))="" SET CONF("miomos","desktop","policy","commandMaxInflight")=3
 	IF $GET(CONF("miomos","desktop","policy","commandTimeoutMs"))="" SET CONF("miomos","desktop","policy","commandTimeoutMs")=8000
+	IF $GET(CONF("miomos","vfs","enabled"))="" SET CONF("miomos","vfs","enabled")=1
+	IF $GET(CONF("miomos","vfs","storage"))="" SET CONF("miomos","vfs","storage")="globals-only"
+	IF $GET(CONF("miomos","vfs","ownership"))="" SET CONF("miomos","vfs","ownership")="per-user"
+	IF $GET(CONF("miomos","vfs","uploadModel"))="" SET CONF("miomos","vfs","uploadModel")="browser-drop-or-picker"
+	IF $GET(CONF("miomos","vfs","downloadModel"))="" SET CONF("miomos","vfs","downloadModel")="browser-save"
+	IF $GET(CONF("miomos","vfs","dragOutModel"))="" SET CONF("miomos","vfs","dragOutModel")="permission-gated-progressive-enhancement"
 	IF $GET(CONF("miomos","wm","defaultPreset"))="" SET CONF("miomos","wm","defaultPreset")="analyst"
 	IF $GET(CONF("miomos","wm","defaultSnapMode"))="" SET CONF("miomos","wm","defaultSnapMode")="quadrant"
 	IF $GET(CONF("miomos","wm","defaultMotionProfile"))="" SET CONF("miomos","wm","defaultMotionProfile")="standard"

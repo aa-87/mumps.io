@@ -320,13 +320,19 @@
                   <strong>Details</strong>
                   <span>[[ explorerDetails(windowEntry(win)) ]]</span>
                 </section>
+                <section v-if="folderVfsPolicy(windowEntry(win))" class="miomos-explorer-pane-card" data-vfs-pane="1">
+                  <strong>Virtual file system</strong>
+                  <span>Globals-backed per-user storage with browser upload in ROI 168 and browser download in ROI 169.</span>
+                  <button type="button" class="miomos-explorer-pane-link" disabled data-vfs-upload="roi168">Upload from browser (ROI 168)</button>
+                  <button type="button" class="miomos-explorer-pane-link" disabled data-vfs-download="roi169">Download to browser (ROI 169)</button>
+                </section>
               </aside>
               <section class="miomos-explorer-content" :class="{ 'is-drop-target': folderDropTargetKey===windowEntry(win).key }" :data-directory-window-key="windowEntry(win).key">
-                <div class="miomos-surface-title"><strong>Folder contents</strong><span>Single-click selects and double-click opens like Windows XP.</span></div>
+                <div class="miomos-surface-title"><strong>Folder contents</strong><span>Single-click selects and double-click opens like Windows XP. Files and folders are now seeded from a globals-backed per-user virtual file system.</span></div>
                 <div v-if="folderItemsFor(windowEntry(win)).length" class="miomos-directory-grid" style="margin-top:10px;" :data-folder-window="windowEntry(win).key">
                   <div v-for="item in folderItemsFor(windowEntry(win))" :key="item.key" class="miomos-directory-card" :class="{ 'is-selected': isFolderItemSelected(windowEntry(win).key, item.key), 'is-recycle-item': !!item.recycleState, 'is-renaming': renameState.visible && renameState.targetKey===item.key }" :data-entry-kind="item.kind || 'app'" @click="selectFolderItem(windowEntry(win).key, item, $event)" @dblclick.stop.prevent="openFolderItem(windowEntry(win).key, item)">
-                    <div class="miomos-directory-head"><span class="miomos-directory-glyph" :class="entryGlyphClass(item.kind || 'app')">[[ item.icon || appIcon(item.key) ]]</span><div class="miomos-directory-copy"><strong v-if="!(renameState.visible && renameState.targetKey===item.key)">[[ item.title ]]</strong><input v-else class="miomos-inline-rename" ref="renameInput" v-model="renameState.value" @keydown.enter.stop.prevent="commitRename()" @keydown.esc.stop.prevent="cancelRename()" @blur="commitRename()" /><span>[[ item.subtitle || (item.recycleState ? 'Deleted item' : 'Launch from folder') ]]</span></div></div>
-                    <div class="miomos-directory-foot"><span class="miomos-entry-meta">[[ item.recycleState ? 'Recycle Bin' : (item.badge || entryKindLabel(item.kind)) ]]</span><div class="miomos-actions"><button v-if="!item.recycleState" type="button" class="miomos-btn" @click.stop="launchApp(item.key)">Open</button><button v-if="isEntryAssignedToFolder(item.key, windowEntry(win).key) && !item.recycleState" type="button" class="miomos-btn" @click.stop="sendEntryToDesktop(item.key)">Send to Desktop</button><button v-if="canRenameEntry(item)" type="button" class="miomos-btn" @click.stop="startRenameForEntry(item.key, windowEntry(win).key)">Rename</button><button v-if="canDeleteEntry(item)" type="button" class="miomos-btn" @click.stop="moveEntryToRecycleBin(item.key, windowEntry(win).key)">Delete</button><button v-if="item.recycleState" type="button" class="miomos-btn" @click.stop="restoreRecycleBinItem(item.key)">Restore</button><button v-if="item.recycleState" type="button" class="miomos-btn" @click.stop="permanentlyDeleteRecycleBinItem(item.key)">Delete Permanently</button></div></div>
+                    <div class="miomos-directory-head"><span class="miomos-directory-glyph" :class="entryGlyphClass(item.kind || 'app')">[[ item.icon || appIcon(item.key) ]]</span><div class="miomos-directory-copy"><strong v-if="!(renameState.visible && renameState.targetKey===item.key)">[[ item.title ]]</strong><input v-else class="miomos-inline-rename" ref="renameInput" v-model="renameState.value" @keydown.enter.stop.prevent="commitRename()" @keydown.esc.stop.prevent="cancelRename()" @blur="commitRename()" /><span>[[ fileSubtitle(item) ]]</span></div></div>
+                    <div class="miomos-directory-foot"><span class="miomos-entry-meta">[[ item.recycleState ? 'Recycle Bin' : entryMetaLabel(item) ]]</span><div class="miomos-actions"><button v-if="isVfsFile(item)" type="button" class="miomos-btn" @click.stop="previewVfsFile(item)">Preview</button><button v-if="isVfsFile(item)" type="button" class="miomos-btn" disabled data-download-future="1">Download</button><button v-if="!item.recycleState && !isVfsFile(item)" type="button" class="miomos-btn" @click.stop="launchApp(item.key)">Open</button><button v-if="isEntryAssignedToFolder(item.key, windowEntry(win).key) && !item.recycleState && !item.vfsEntry" type="button" class="miomos-btn" @click.stop="sendEntryToDesktop(item.key)">Send to Desktop</button><button v-if="canRenameEntry(item)" type="button" class="miomos-btn" @click.stop="startRenameForEntry(item.key, windowEntry(win).key)">Rename</button><button v-if="canDeleteEntry(item)" type="button" class="miomos-btn" @click.stop="moveEntryToRecycleBin(item.key, windowEntry(win).key)">Delete</button><button v-if="item.recycleState" type="button" class="miomos-btn" @click.stop="restoreRecycleBinItem(item.key)">Restore</button><button v-if="item.recycleState" type="button" class="miomos-btn" @click.stop="permanentlyDeleteRecycleBinItem(item.key)">Delete Permanently</button></div></div>
                   </div>
                 </div>
                 <div v-else class="miomos-empty-state"><strong>This folder is ready</strong><span>Use the desktop context menu to create more folders or drag icons into place. [[ folderEmptyCopy(windowEntry(win)) ]]</span></div>
@@ -802,6 +808,9 @@
         pinnedEntries: function(){ return this.allEntries.filter(function(app){ return !!app.desktopPinned; }).sort(function(a,b){ return Number(a.order||0)-Number(b.order||0); }); },
         quickLaunchEntries: function(){ return this.pinnedEntries.filter(function(app){ return (app.kind || '') !== 'directory'; }).slice(0,3); },
         shellChrome: function(){ return this.view.shellChrome || {}; },
+        vfsRoot: function(){ return this.view.vfs || {}; },
+        vfsRoots: function(){ return arr((this.vfsRoot || {}).roots); },
+        vfsEntries: function(){ return arr((this.vfsRoot || {}).entries); },
         startSectionTabs: function(){ return this.menuSections.map(function(section){ return section.label; }); },
         shellQuickLaunchLabel: function(){ return (this.shellChrome.quickLaunchLabel || 'Quick Launch'); },
         shellOverflowLabel: function(){ return (this.shellChrome.overflowLabel || 'More Windows'); },
@@ -928,31 +937,40 @@
         this.clearXtermMountTimer();
       },
       methods: {
-        appEntry: function(key){ return this.allEntries.find(function(x){ return x.key===key; }) || this.apps.find(function(x){ return x.key===key; }) || null; },
+        appEntry: function(key){ return this.allEntries.find(function(x){ return x.key===key; }) || this.apps.find(function(x){ return x.key===key; }) || this.vfsEntries.find(function(x){ return x.key===key; }) || null; },
         windowEntry: function(win){ return this.appEntry(win.appKey) || { key: win.appKey, title: win.title || 'Window', kind:'app', subtitle:'' }; },
         appIcon: function(appKey){ var icons=this.settingsForm.icons || {}; if (icons[appKey]) return icons[appKey]; var app=this.appEntry(appKey); return (app && app.icon) || (appKey || '?').slice(0,2).toUpperCase(); },
         isFolderEntry: function(entry){ return !!(entry && (entry.kind || '')==='directory'); },
-        explorerPath: function(entry){ return 'Desktop\\' + String((entry && entry.title) || 'Folder'); },
+        explorerPath: function(entry){ if (entry && entry.path) return entry.path; return 'Desktop\\' + String((entry && entry.title) || 'Folder'); },
         explorerPlacesFor: function(entry){ return ['my-computer','my-documents','my-network-places','ui-samples'].filter(function(key){ return (!entry || key!==entry.key); }).map(function(key){ return this.appEntry(key); }, this).filter(Boolean).slice(0,4); },
-        explorerDetails: function(entry){ var count=this.folderItemsFor(entry).length; return (entry && entry.summary ? entry.summary + ' · ' : '') + count + ' item(s)'; },
+        explorerDetails: function(entry){ var count=this.folderItemsFor(entry).length, policy=this.folderVfsPolicy(entry); return (entry && entry.summary ? entry.summary + ' · ' : '') + count + ' item(s)' + (policy ? ' · globals-backed' : ''); },
+        vfsChildrenFor: function(folderKey){ return this.vfsEntries.filter(function(item){ return item.parentKey===folderKey; }).sort(function(a,b){ var ao=Number(a.order||0), bo=Number(b.order||0); if (ao!==bo) return ao-bo; return String(a.title||a.key||'').localeCompare(String(b.title||b.key||'')); }); },
+        folderVfsPolicy: function(entry){ var key=(entry&&entry.key)||'', roots=this.vfsRoots, hit=null; if (!key) return null; hit=roots.find(function(root){ return root.key===key; }); if (hit) return hit; hit=this.vfsEntries.find(function(item){ return item.key===key && item.kind==='directory'; }); return hit || null; },
+        isVfsFile: function(item){ return !!(item && item.vfsEntry && item.kind==='file'); },
+        isVfsDirectory: function(item){ return !!(item && item.vfsEntry && item.kind==='directory'); },
+        fileSubtitle: function(item){ if (!item) return ''; if (item.recycleState) return 'Deleted item'; if (this.isVfsFile(item)) return [item.sizeLabel || '', item.modifiedAt || '', item.summary || 'Virtual file'].filter(Boolean).join(' · '); return item.subtitle || 'Launch from folder'; },
+        entryMetaLabel: function(item){ if (!item) return ''; if (item.recycleState) return 'Recycle Bin'; if (this.isVfsFile(item)) return (item.badge || entryKindLabel(item.kind)) + (item.extension ? ' · .' + item.extension : ''); return item.badge || entryKindLabel(item.kind); },
+        previewVfsFile: function(item){ if (!item) return; this.commandError='Preview and transfer for ' + (item.title || 'this file') + ' land in ROI 168 and ROI 169.'; this.dismissedAlertKey=''; },
         isEntryAssignedToFolder: function(entryKey, folderKey){ return arr(this.folderAssignments[folderKey]).indexOf(entryKey) > -1; },
         removeEntryFromFolders: function(entryKey){ var self=this; Object.keys(this.folderAssignments).forEach(function(folderKey){ var next=arr(self.folderAssignments[folderKey]).filter(function(key){ return key!==entryKey; }); if (next.length) self.folderAssignments[folderKey]=next; else delete self.folderAssignments[folderKey]; }); },
         folderItemsFor: function(entry){
-          var assigned=[];
+          var assigned=[], list=[], seen={}, self=this;
+          function pushItem(item){ if (!item || !item.key || seen[item.key]) return; seen[item.key]=1; list.push(item); }
           if (!entry) return [];
-          assigned=arr(this.folderAssignments[entry.key]).map(function(key){ return this.appEntry(key); }, this).filter(Boolean);
-          if (assigned.length) return assigned;
-          if (entry.key==='ui-samples') return ['ui-library','workspace','collaboration','security','admin'].map(function(key){ return this.appEntry(key); }, this).filter(Boolean);
-          if (entry.key==='my-computer') return ['workspace','terminal','jobs','exports','profiles','logs','settings'].map(function(key){ return this.appEntry(key); }, this).filter(Boolean);
-          if (entry.key==='my-documents') return ['ui-samples','ui-library','settings'].map(function(key){ return this.appEntry(key); }, this).filter(Boolean);
-          if (entry.key==='my-network-places') return ['collaboration','security','admin'].map(function(key){ return this.appEntry(key); }, this).filter(Boolean);
+          assigned=arr(this.folderAssignments[entry.key]).map(function(key){ return self.appEntry(key); }).filter(Boolean);
           if (entry.key==='recycle-bin') return this.recycleBinItems.slice().sort(function(a,b){ return Number(b.deletedAt||0)-Number(a.deletedAt||0); });
-          if (entry.key==='jobs' || entry.key==='exports') return [this.appEntry('workspace')].filter(Boolean);
-          if (entry.key==='profiles') return [this.appEntry('settings'), this.appEntry('ui-library')].filter(Boolean);
-          if (entry.key==='logs') return [this.appEntry('security'), this.appEntry('admin')].filter(Boolean);
-          return [];
+          assigned.forEach(pushItem);
+          if (entry.key==='ui-samples') ['ui-library','workspace','collaboration','security','admin'].map(function(key){ return self.appEntry(key); }).filter(Boolean).forEach(pushItem);
+          if (entry.key==='my-computer') ['workspace','terminal','jobs','exports','profiles','logs','settings'].map(function(key){ return self.appEntry(key); }).filter(Boolean).forEach(pushItem);
+          if (entry.key==='my-documents') ['ui-samples','ui-library','settings'].map(function(key){ return self.appEntry(key); }).filter(Boolean).forEach(pushItem);
+          if (entry.key==='my-network-places') ['collaboration','security','admin'].map(function(key){ return self.appEntry(key); }).filter(Boolean).forEach(pushItem);
+          if (entry.key==='jobs' || entry.key==='exports') [this.appEntry('workspace')].filter(Boolean).forEach(pushItem);
+          if (entry.key==='profiles') [this.appEntry('settings'), this.appEntry('ui-library')].filter(Boolean).forEach(pushItem);
+          if (entry.key==='logs') [this.appEntry('security'), this.appEntry('admin')].filter(Boolean).forEach(pushItem);
+          this.vfsChildrenFor(entry.key).forEach(pushItem);
+          return list;
         },
-        folderEmptyCopy: function(entry){ return (entry && entry.key && String(entry.key).indexOf('folder-')===0) ? 'This folder was created from the desktop context menu.' : ((entry && entry.key==='recycle-bin') ? 'Deleted custom folders land here until they are restored or permanently deleted.' : 'This folder is ready for future product surfaces.'); },
+        folderEmptyCopy: function(entry){ return (entry && entry.key && String(entry.key).indexOf('folder-')===0) ? 'This folder was created from the desktop context menu.' : ((entry && entry.key==='recycle-bin') ? 'Deleted custom folders land here until they are restored or permanently deleted.' : (this.folderVfsPolicy(entry) ? 'This virtual folder is backed by MUMPS globals for the current user.' : 'This folder is ready for future product surfaces.')); },
         defaultDesktopIconPosition: function(index){ var col=0, row=index; return { x: 18 + (col*104), y: 22 + (row*102) }; },
         normalizeDesktopIconPositions: function(){ var self=this; this.desktopEntries.forEach(function(entry, idx){ if (!self.desktopIconPositions[entry.key]) self.desktopIconPositions[entry.key]=self.defaultDesktopIconPosition(idx); }); },
         desktopIconStyle: function(entry, idx){ if (this.isCompactViewport) return {}; var pos=this.desktopIconPositions[entry.key] || this.defaultDesktopIconPosition(idx); return { left: (pos.x||0)+'px', top: (pos.y||0)+'px' }; },
@@ -976,7 +994,7 @@
           this.cancelRename(); this.saveLayout(); this.persistUiState('rename-entry'); },
         cancelRename: function(){ this.renameState={ visible:false, targetKey:'', sourceFolderKey:'', value:'' }; },
         launchDesktopEntry: function(app, ev){ if (!app || app.disabled) return; if (this.renameState.visible && this.renameState.targetKey===app.key) return; if (this.suppressIconLaunchKey===app.key && Date.now() < this.suppressIconLaunchUntil) { if (ev && ev.preventDefault) ev.preventDefault(); return; } this.setDesktopSelection([app.key]); this.launchApp(app.key); },
-        openFolderItem: function(folderKey, item){ if (!item) return; if (item.recycleState) { this.restoreRecycleBinItem(item.key); return; } this.selectFolderItem(folderKey, item, null); this.launchApp(item.key); },
+        openFolderItem: function(folderKey, item){ if (!item) return; if (item.recycleState) { this.restoreRecycleBinItem(item.key); return; } this.selectFolderItem(folderKey, item, null); if (this.isVfsFile(item)) { this.previewVfsFile(item); return; } this.launchApp(item.key); },
         resolveFolderDropTarget: function(x, y, dragKey){ var node=document.elementFromPoint(x, y), iconKey='', winKey=''; if (!node || !node.closest) return ''; var iconNode=node.closest('.miomos-desktop-icon[data-accept-drop="1"]'); if (iconNode) { iconKey=String(iconNode.getAttribute('data-launch-app') || ''); if (iconKey && iconKey!==dragKey) return iconKey; } var winNode=node.closest('[data-directory-window-key]'); if (winNode) { winKey=String(winNode.getAttribute('data-directory-window-key') || ''); if (winKey && winKey!==dragKey) return winKey; } return ''; },
         moveEntryToFolder: function(entryKey, folderKey){ var entry=this.appEntry(entryKey), folder=this.appEntry(folderKey); if (!entry || !folder || !this.isFolderEntry(folder) || entryKey===folderKey) return; this.removeEntryFromFolders(entryKey); if (!Array.isArray(this.folderAssignments[folderKey])) this.folderAssignments[folderKey]=[]; if (this.folderAssignments[folderKey].indexOf(entryKey)<0) this.folderAssignments[folderKey].push(entryKey); entry.desktopPinned=0; this.setDesktopSelection([folderKey]); this.folderDropTargetKey=''; this.saveLayout(); this.persistUiState('folder-drop'); },
         sendEntryToDesktop: function(entryKey){ var entry=this.appEntry(entryKey); if (!entry) return; this.removeEntryFromFolders(entryKey); entry.desktopPinned=1; if (!entry.desktopOrder) entry.desktopOrder=200 + this.desktopEntries.length; if (!this.desktopIconPositions[entry.key]) this.desktopIconPositions[entry.key]=this.clampDesktopIconPosition({ x:18, y:22 + (this.desktopEntries.length*102) }); this.normalizeDesktopIconPositions(); this.setDesktopSelection([entry.key]); this.saveLayout(); this.persistUiState('send-to-desktop'); },
@@ -1016,7 +1034,7 @@
         executeRunDialog: function(){ var key=String(this.runDialogInput || '').trim().toLowerCase(); if (!key) return; if (key==='cmd' || key==='ydb') key='terminal'; if (key==='desk') key='workspace'; this.closeDialogs(); this.launchApp(key); },
         onTrayAction: function(tray){ if (!tray) return; if (tray.action==='refresh') { this.refreshView(); return; } if (tray.action==='power') { this.openDialog('power'); return; } this.openDialog('about'); },
         markSocketActivity: function(){ this.lastSocketAt=Date.now(); },
-        entryKindLabel: function(kind){ if (kind==='directory') return 'Directory'; if (kind==='settings') return 'Settings'; if (kind==='future') return 'Planned'; return 'App'; },
+        entryKindLabel: function(kind){ if (kind==='directory') return 'Directory'; if (kind==='file') return 'File'; if (kind==='settings') return 'Settings'; if (kind==='future') return 'Planned'; return 'App'; },
         entryStatusLabel: function(status){ if (status==='planned') return 'Roadmap'; if (status==='available') return 'Ready'; return String(status || ''); },
         entryGlyphClass: function(kind){ kind=String(kind || 'app'); return 'miomos-entry-glyph--' + kind; },
         installWindowListeners: function(){ var self=this; this._miomosKeydown=function(ev){ self.onGlobalKeydown(ev); }; window.addEventListener('resize', function(){ self.syncViewportMode(); self.onWindowResize(); }); window.addEventListener('keydown', this._miomosKeydown); document.addEventListener('pointerdown', function(ev){ if (self.contextMenu.visible && !(ev.target && ev.target.closest && ev.target.closest('.miomos-context-menu'))) self.closeContextMenu('pointerdown'); if (!root.contains(ev.target) && self.menuOpen) { self.menuOpen=false; self.persistUiState('outside-click'); } }); window.addEventListener('beforeunload', function(){ self.shouldReconnect=false; self.saveLayoutLocal(); self.saveUiStateLocal(); self.clearReconnectTimer(); self.clearHeartbeat(); self.clearStaleMonitor(); self.stopTerminalPolling(); }); },

@@ -1,4 +1,4 @@
-MIOWS ; WebSocket protocol handler (RFC 6455).
+MIOWS ; WebSocket protocol handler (RFC 6455).;
 ;
 WSECHO(DEV,CONF,REQ,CTX)
 	F  Q:$G(CTX("stop"))  H 0.5 S X=$G(X)_"X" D:'$G(CTX("stop")) SENDTEXT(.DEV,"THE TIME NOW IS "_$H) D:'$G(CTX("stop")) SENDTEXT(.DEV,$c(10)_X_$C(10)_$L(X))

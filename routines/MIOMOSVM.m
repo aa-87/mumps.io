@@ -10,6 +10,7 @@ BUILD(STATE,CONF,OUT)
 	DO UILIB(.STATE,.CONF,$NAME(OUT("uiLibrary")))
 	DO CHAT(.STATE,.CONF,$NAME(OUT("chat")))
 	DO TERMINAL(.STATE,.CONF,$NAME(OUT("terminal")))
+	DO VFS(.STATE,.CONF,$NAME(OUT("vfs")))
 	DO WINDOWS(.STATE,.CONF,$NAME(OUT("windowManager")))
 	DO NOTIFICATIONS(.STATE,.CONF,$NAME(OUT("notifications")))
 	DO SHELL(.STATE,.CONF,$NAME(OUT("shellChrome")))
@@ -329,6 +330,10 @@ SHELL(STATE,CONF,ROOT)
 	SET @ROOT@("dialogs",3,"key")="power",@ROOT@("dialogs",3,"title")="Turn off computer",@ROOT@("dialogs",3,"copy")="Choose whether to log off, restart the shell, or close all windows."
 	SET @ROOT@("transportLabel")="WebSocket shell bus"
 	SET @ROOT@("transportCopy")="All live shell communication now goes through the primary websocket session."
+	QUIT
+	;
+VFS(STATE,CONF,ROOT)
+	DO VIEW^MIOMOSVFS($GET(STATE("principal")),.CONF,ROOT)
 	QUIT
 	;
 CHAT(STATE,CONF,ROOT)
