@@ -105,7 +105,7 @@ SIGNUP(DEV,CONF,REQ,CTX)
 	. DO RESPERR(.DEV,.CONF,403,"signup_disabled","signup_disabled",.CTX)
 	IF '$$PARSEBODY(.REQ,.TREE,.ERR) DO  QUIT
 	. DO RESPERR(.DEV,.CONF,400,"invalid_json",$GET(ERR("error")),.CTX)
-	IF '$$SIGNUP^MIOMOSAUTH(.CONF,$GET(TREE("username")),$GET(TREE("password")),$GET(TREE("displayName")),"",.TOKEN,.ERR,$GET(TREE("inviteToken")))=0 DO  QUIT
+	IF '$$SIGNUP^MIOMOSAUTH(.CONF,$GET(TREE("username")),$GET(TREE("password")),$GET(TREE("displayName")),"",.TOKEN,.ERR,$GET(TREE("inviteToken"))) DO  QUIT
 	. DO ERROR^MIOMOSOBS("auth_signup_error",$GET(ERR("error")),.CTX,.STATE,$GET(ERR("error")))
 	. DO RESPERR(.DEV,.CONF,400,"signup_failed",$GET(ERR("error")),.CTX)
 	SET OBJ("ok")=1,OBJ("tokenIssued")=1,OBJ("username")=$$CANON^MIOMOSAUTH($GET(TREE("username")))
@@ -124,7 +124,8 @@ SIGNIN(DEV,CONF,REQ,CTX)
 	NEW TREE,ERR,TOKEN,OBJ,HEAD,JSON,STATE,USER
 	IF '$$PARSEBODY(.REQ,.TREE,.ERR) DO  QUIT
 	. DO RESPERR(.DEV,.CONF,400,"invalid_json",$GET(ERR("error")),.CTX)
-	IF '$$SIGNIN^MIOMOSAUTH(.CONF,$GET(TREE("username")),$GET(TREE("password")),.TOKEN,.ERR)=0 DO  QUIT
+	M ^C=CONF,^T=TREE,^TK=TOKEN
+	IF '$$SIGNIN^MIOMOSAUTH(.CONF,$GET(TREE("username")),$GET(TREE("password")),.TOKEN,.ERR) DO  QUIT
 	. DO ERROR^MIOMOSOBS("auth_signin_error",$GET(ERR("error")),.CTX,.STATE,$GET(ERR("error")))
 	. DO RESPERR(.DEV,.CONF,401,"signin_failed",$GET(ERR("error")),.CTX)
 	SET USER=$$CANON^MIOMOSAUTH($GET(TREE("username")))
@@ -301,7 +302,7 @@ ADMINRESETREQUEST(DEV,CONF,REQ,CTX)
 	DO ACCESS^MIOMOSOBS("admin_reset_request",.CTX,.STATE)
 	QUIT
 	;
-
+	;
 OBSSUMMARY(DEV,CONF,REQ,CTX)
 	NEW STATE,ERR,OBJ
 	IF '$$ENSURE^MIOMOSST(.CONF,.REQ,.CTX,.STATE,.ERR) DO  QUIT
@@ -464,4 +465,5 @@ RESPERR(DEV,CONF,STATUS,CODE,DETAIL,CTX)
 	DO RESPJSONX^MIOHTTP(.DEV,.CONF,+$GET(STATUS,500),.OBJ,$GET(CTX("request_id")),.CTX)
 	SET CTX("status")=+$GET(STATUS,500)
 	QUIT
+	;
 	;

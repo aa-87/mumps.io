@@ -33,6 +33,50 @@ ROLEHAS(ROLE,PERM)
 	IF $GET(ROLE)="security",((PERM="logs.view")!(PERM="audit.view")!(PERM="logs.export")!(PERM="audit.export")!(PERM="digest.export")!(PERM="retention.manage")!(PERM="permissions.view")!(PERM="admin.users.view")!(PERM="admin.reset.manage")) QUIT 1
 	QUIT 0
 	;
+PRIMARYROLE(ROLES)
+	NEW I,R
+	IF $$HASCSV($GET(ROLES),"admin.users.view") QUIT "admin"
+	FOR I=1:1:$LENGTH($GET(ROLES),",") DO
+	. SET R=$$TRIM($PIECE(ROLES,",",I))
+	. IF R="" QUIT
+	. IF R'="admin" QUIT
+	IF $GET(R)'="" QUIT R
+	IF $$HASCSV($GET(ROLES),"workspace.use") QUIT "operator"
+	QUIT "guest"
+	;
+ROLELABEL(ROLE)
+	SET ROLE=$$TRIM($GET(ROLE))
+	IF ROLE="admin" QUIT "Administrator"
+	IF ROLE="operator" QUIT "User"
+	IF ROLE="guest" QUIT "Guest"
+	IF ROLE="developer" QUIT "Developer"
+	IF ROLE="auditor" QUIT "Auditor"
+	IF ROLE="support" QUIT "Support"
+	IF ROLE="security" QUIT "Security"
+	QUIT $SELECT(ROLE'="":$$TITLE^MIOMOSAUTH(ROLE),1:"User")
+	;
+APPPERM(KEY)
+	SET KEY=$$TRIM($GET(KEY))
+	IF KEY="workspace" QUIT "workspace.use"
+	IF KEY="settings" QUIT "settings.self"
+	IF KEY="ui-library" QUIT "workspace.use"
+	IF KEY="jobs" QUIT "workspace.use"
+	IF KEY="exports" QUIT "workspace.use"
+	IF KEY="profiles" QUIT "settings.self"
+	IF KEY="terminal" QUIT "terminal.use"
+	IF KEY="collaboration" QUIT "chat.use"
+	IF KEY="security" QUIT "audit.view"
+	IF KEY="admin" QUIT "admin.users.view"
+	IF KEY="logs" QUIT "logs.view"
+	IF KEY="ui-samples" QUIT "workspace.use"
+	QUIT ""
+	;
+APPALLOWED(ROLES,KEY)
+	NEW PERM
+	SET PERM=$$APPPERM($GET(KEY))
+	IF PERM="" QUIT 1
+	QUIT $$HASCSV($GET(ROLES),PERM)
+	;
 LIST(ROLES,OUT)
 	NEW ALL,P,N
 	KILL OUT

@@ -278,6 +278,10 @@ SHELL(STATE,CONF,ROOT)
 	SET @ROOT@("dialogs",1,"key")="run",@ROOT@("dialogs",1,"title")="Run",@ROOT@("dialogs",1,"copy")="Open a MIOMOS app by name, such as workspace, terminal, or settings."
 	SET @ROOT@("dialogs",2,"key")="about",@ROOT@("dialogs",2,"title")="About MIOMOS",@ROOT@("dialogs",2,"copy")="WinXP-inspired shell chrome on a native Vue/CSS window manager with MUMPS-owned state."
 	SET @ROOT@("dialogs",3,"key")="power",@ROOT@("dialogs",3,"title")="Turn off computer",@ROOT@("dialogs",3,"copy")="Choose whether to log off, restart the shell, or close all windows."
+	SET @ROOT@("accessWorkflow")="role-aware"
+	SET @ROOT@("accessWorkflowCopy")="Guest quick login can stay enabled while standard users and administrators use the seeded credential screen."
+	SET @ROOT@("accountActions",1,"key")="switchUser",@ROOT@("accountActions",1,"label")="Switch user",@ROOT@("accountActions",1,"copy")="End the local session and return to the access screen."
+	SET @ROOT@("accountActions",2,"key")="signout",@ROOT@("accountActions",2,"label")="Sign out",@ROOT@("accountActions",2,"copy")="Close the authenticated desktop session."
 	SET @ROOT@("transportLabel")="WebSocket shell bus"
 	SET @ROOT@("transportCopy")="All live shell communication now goes through the primary websocket session."
 	QUIT

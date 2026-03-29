@@ -86,11 +86,39 @@ AUTHCTX(CONF,DATA)
 	SET DATA("signinPath")=$GET(CONF("miomos","route","signin"),"/api/miomos/auth/signin")
 	SET DATA("signupPath")=$GET(CONF("miomos","route","signup"),"/api/miomos/auth/signup")
 	SET DATA("guestSigninPath")=$GET(CONF("miomos","route","guestSignin"),"/api/miomos/auth/guest")
+	SET DATA("desktopPath")=$GET(CONF("miomos","route","desktop"),"/miomos")
 	SET DATA("allowSignup")=+$GET(CONF("miomos","localAuth","allowSignup"),1)
 	SET DATA("inviteOnly")=+$GET(CONF("miomos","localAuth","inviteOnly"),0)
 	SET DATA("guestLoginEnabled")=+$GET(CONF("miomos","localAuth","guestLoginEnabled"),1)
 	SET DATA("bootstrapAuthEnabled")=+$GET(CONF("miomos","bootstrapAuth","enabled"),1)
+	SET DATA("seededVisible")=+$GET(CONF("miomos","bootstrapAuth","showSeededCredentials"),1)
+	SET DATA("authWorkflow")=$SELECT(+$GET(CONF("miomos","localAuth","enabled"),0)=1:"local-auth",1:"guest-only")
+	DO SEEDSSR(.CONF,.DATA)
 	SET DATA("sevenCssHref")="https://unpkg.com/7.css/dist/7.scoped.css"
+	QUIT
+	;
+SEEDSSR(CONF,DATA)
+	NEW MAP,ROLE,N,USER,PASS,DISPLAY,ENABLED,LABEL
+	SET MAP(1)="admin",MAP(2)="user",MAP(3)="guest"
+	SET N=0 FOR  SET N=$ORDER(MAP(N)) QUIT:N=""  DO
+	. SET ROLE=MAP(N)
+	. SET ENABLED=+$GET(CONF("miomos","bootstrapAuth",ROLE,"enabled"),1)
+	. SET USER=$GET(CONF("miomos","bootstrapAuth",ROLE,"username"),ROLE)
+	. SET PASS=$GET(CONF("miomos","bootstrapAuth",ROLE,"password"))
+	. SET DISPLAY=$GET(CONF("miomos","bootstrapAuth",ROLE,"displayName"),$ZCONVERT(ROLE,"U"))
+	. SET LABEL=$SELECT(ROLE="admin":"Administrator",ROLE="user":"Standard user",1:"Guest")
+	. SET DATA("seeded",N,"key")=ROLE
+	. SET DATA("seeded",N,"username")=USER
+	. SET DATA("seeded",N,"password")=PASS
+	. SET DATA("seeded",N,"displayName")=DISPLAY
+	. SET DATA("seeded",N,"roleLabel")=LABEL
+	. SET DATA("seeded",N,"enabled")=ENABLED
+	. SET DATA("seeded",N,"isAdmin")=$SELECT(ROLE="admin":1,1:0)
+	. SET DATA("seeded",N,"isUser")=$SELECT(ROLE="user":1,1:0)
+	. SET DATA("seeded",N,"isGuest")=$SELECT(ROLE="guest":1,1:0)
+	. IF ROLE="admin" SET DATA("seededAdminUsername")=USER,DATA("seededAdminPassword")=PASS
+	. IF ROLE="user" SET DATA("seededUserUsername")=USER,DATA("seededUserPassword")=PASS
+	. IF ROLE="guest" SET DATA("seededGuestUsername")=USER,DATA("seededGuestPassword")=PASS
 	QUIT
 	;
 APPSSR(DATA,STATE)

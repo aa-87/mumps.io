@@ -452,6 +452,12 @@ START
 	DO EQ^MIOTASSERT($GET(^MIO("MIOMOS","USER","guest","hash"))=$$PW^MIOMOSAUTH($GET(^MIO("MIOMOS","USER","guest","salt")),"guest123!"),1,"[MIOMOST][T022][guest hash]")
 	DO EQ^MIOTASSERT($DATA(^MIO("MIOMOS","USER","admin","password")),0,"[MIOMOST][T022][no plain password]")
 	DO OK^MIOTASSERT($$GUESTSIGNIN^MIOMOSAUTH(.CONF,.TOKEN,.ERR),"[MIOMOST][T022][guest signin]")
+	SET ^MIO("MIOMOS","USER","guest","enabled")=0
+	SET ^MIO("MIOMOS","USER","guest","lockedUntilDay")=999999
+	SET ^MIO("MIOMOS","USER","guest","lockedUntilSec")=1
+	DO OK^MIOTASSERT($$GUESTSIGNIN^MIOMOSAUTH(.CONF,.TOKEN,.ERR),"[MIOMOST][T022][guest repair signin]")
+	DO EQ^MIOTASSERT(+$GET(^MIO("MIOMOS","USER","guest","enabled")),1,"[MIOMOST][T022][guest repaired enabled]")
+	DO EQ^MIOTASSERT($DATA(^MIO("MIOMOS","USER","guest","lockedUntilDay")),0,"[MIOMOST][T022][guest repaired unlock]")
 	SET REQ("hdr","cookie")="miomos_auth="_TOKEN
 	DO OK^MIOTASSERT($$LOADLOCAL^MIOMOSAUTH(.CONF,.REQ,.CTX,.ERR),"[MIOMOST][T022][guest load local]")
 	DO EQ^MIOTASSERT($GET(CTX("auth","claims","sub")),"guest","[MIOMOST][T022][guest principal]")
@@ -465,6 +471,9 @@ START
 	DO OK^MIOTASSERT($$RENDERPAGE^MIOTPL("pages/miomos_auth.html","layouts/miomos_shell.html",.CONF,.CTX,.OUT,.ERR),"[MIOMOST][T022][auth render]")
 	DO OK^MIOTASSERT(OUT["Continue as guest","[MIOMOST][T022][guest button]")
 	DO OK^MIOTASSERT(OUT["data-guest-login-enabled=""1""","[MIOMOST][T022][guest token]")
+	DO OK^MIOTASSERT(OUT["admin123!","[MIOMOST][T022][seeded admin password token]")
+	DO OK^MIOTASSERT(OUT["user123!","[MIOMOST][T022][seeded user password token]")
+	DO OK^MIOTASSERT(OUT["guest123!","[MIOMOST][T022][seeded guest password token]")
 	QUIT
 	;
 FINDUSR(LIST,USER)
@@ -480,5 +489,6 @@ HASWRITE(OUT,TEXT)
 	FOR  SET N=$ORDER(OUT("write",N)) QUIT:N=""  DO  QUIT:FOUND
 	. IF $GET(OUT("write",N))[$GET(TEXT) SET FOUND=1
 	QUIT FOUND
+	;
 	;
 	;

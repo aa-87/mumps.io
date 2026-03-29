@@ -153,7 +153,8 @@ SIGNOUT(CONF,REQ,CTX)
 	SET TOKEN=$GET(CTX("miomos","authToken"))
 	IF TOKEN="" SET TOKEN=$$COOKIE(.REQ,$GET(CONF("miomos","localAuth","tokenCookie"),"miomos_auth"))
 	IF TOKEN'="" KILL ^MIO("MIOMOS","AUTH","TOKEN",TOKEN)
-	QUIT 1
+	QUIT:$Q 1
+	Q
 	;
 ISSUETOKEN(CONF,USER,TOKEN,ERR)
 	NEW NOWD,NOWS,DISPLAY,ROLES
@@ -176,20 +177,24 @@ ISSUETOKEN(CONF,USER,TOKEN,ERR)
 BOOTSTRAP(CONF)
 	NEW KEY
 	IF +$GET(CONF("miomos","bootstrapAuth","enabled"),1)'=1 QUIT
-	IF +$GET(CONF("miomos","bootstrapAuth","seedIfMissing"),1)'=1 QUIT 
+	IF +$GET(CONF("miomos","bootstrapAuth","seedIfMissing"),1)'=1 QUIT
 	DO SEEDUSER(.CONF,"admin")
 	DO SEEDUSER(.CONF,"user")
 	DO SEEDUSER(.CONF,"guest")
 	SET ^MIO("MIOMOS","AUTH","BOOTSTRAP","lastRunAt")=$$NOWISO^MIOUTIL()
-	QUIT 
+	QUIT
 	;
 SEEDUSER(CONF,PERSONA)
-	NEW USER,DISPLAY,PASS,ROLES,SALT,HASH,NOWD,NOWS,ENABLED
+	NEW USER,DISPLAY,PASS,ROLES,SALT,HASH,NOWD,NOWS,ENABLED,APPLY,SRC,OLDP
 	SET USER=$$CANON($GET(CONF("miomos","bootstrapAuth",PERSONA,"username"),$GET(PERSONA)))
 	IF '$$VALIDUSER(USER) QUIT
-	IF $DATA(^MIO("MIOMOS","USER",USER)) DO  QUIT
-	. IF $GET(^MIO("MIOMOS","USER",USER,"bootstrapPersona"))="" SET ^MIO("MIOMOS","USER",USER,"bootstrapPersona")=$GET(PERSONA)
-	. IF $GET(^MIO("MIOMOS","USER",USER,"source"))="" SET ^MIO("MIOMOS","USER",USER,"source")="bootstrap-auth"
+	SET APPLY=1
+	IF $DATA(^MIO("MIOMOS","USER",USER)) DO
+	. IF +$GET(CONF("miomos","bootstrapAuth","syncOnBoot"),1)'=1 SET APPLY=0 QUIT
+	. SET SRC=$GET(^MIO("MIOMOS","USER",USER,"source"))
+	. SET OLDP=$GET(^MIO("MIOMOS","USER",USER,"bootstrapPersona"))
+	. IF SRC'="bootstrap-auth",OLDP'=$GET(PERSONA) SET APPLY=0
+	IF 'APPLY QUIT
 	SET DISPLAY=$GET(CONF("miomos","bootstrapAuth",PERSONA,"displayName")) IF DISPLAY="" SET DISPLAY=$$TITLE(PERSONA)
 	SET PASS=$GET(CONF("miomos","bootstrapAuth",PERSONA,"password")) IF PASS="" SET PASS=$GET(PERSONA)_"123!"
 	SET ROLES=$GET(CONF("miomos","bootstrapAuth",PERSONA,"roles")) IF ROLES="" SET ROLES=$SELECT(PERSONA="admin":"admin",PERSONA="user":"operator",1:"guest")
@@ -204,9 +209,13 @@ SEEDUSER(CONF,PERSONA)
 	SET ^MIO("MIOMOS","USER",USER,"hash")=HASH
 	SET ^MIO("MIOMOS","USER",USER,"enabled")=ENABLED
 	SET ^MIO("MIOMOS","USER",USER,"failedCount")=0
-	SET ^MIO("MIOMOS","USER",USER,"createdAt")=$$NOWISO^MIOUTIL()
-	SET ^MIO("MIOMOS","USER",USER,"createdDay")=NOWD
-	SET ^MIO("MIOMOS","USER",USER,"createdSec")=NOWS
+	KILL ^MIO("MIOMOS","USER",USER,"lockedUntilDay")
+	KILL ^MIO("MIOMOS","USER",USER,"lockedUntilSec")
+	KILL ^MIO("MIOMOS","USER",USER,"lastFailedAt")
+	IF '$DATA(^MIO("MIOMOS","USER",USER,"createdAt")) DO
+	. SET ^MIO("MIOMOS","USER",USER,"createdAt")=$$NOWISO^MIOUTIL()
+	. SET ^MIO("MIOMOS","USER",USER,"createdDay")=NOWD
+	. SET ^MIO("MIOMOS","USER",USER,"createdSec")=NOWS
 	SET ^MIO("MIOMOS","USER",USER,"source")="bootstrap-auth"
 	SET ^MIO("MIOMOS","USER",USER,"bootstrapPersona")=$GET(PERSONA)
 	SET ^MIO("MIOMOS","USER",USER,"bootstrapSeededAt")=$$NOWISO^MIOUTIL()
@@ -221,6 +230,10 @@ GUESTSIGNIN(CONF,TOKEN,ERR)
 	DO BOOTSTRAP(.CONF)
 	SET USER=$$CANON($GET(CONF("miomos","bootstrapAuth","guest","username"),"guest"))
 	IF USER="" SET ERR("error")="guest_login_disabled" QUIT 0
+	IF '$$USEROK(.CONF,USER,.ERR) DO
+	. IF $GET(^MIO("MIOMOS","USER",USER,"bootstrapPersona"))'="guest",$GET(^MIO("MIOMOS","USER",USER,"source"))'="bootstrap-auth" QUIT
+	. DO SEEDUSER(.CONF,"guest")
+	. KILL ERR SET ERR("routine")="MIOMOSAUTH"
 	IF '$$USEROK(.CONF,USER,.ERR) QUIT 0
 	QUIT $$ISSUETOKEN(.CONF,USER,.TOKEN,.ERR)
 	;

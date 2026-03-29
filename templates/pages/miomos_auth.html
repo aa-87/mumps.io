@@ -5,7 +5,7 @@
       background:radial-gradient(circle at top right, rgba(255,255,255,.08), transparent 28%), linear-gradient(180deg, #132033, #0b1220 58%, #09101b);
     }
     .miomos-auth-frame {
-      width:min(960px, 100%); display:grid; grid-template-columns:minmax(0,1.05fr) minmax(340px,.95fr); gap:16px;
+      width:min(1080px, 100%); display:grid; grid-template-columns:minmax(0,1.05fr) minmax(360px,.95fr); gap:16px;
       border:1px solid rgba(170,188,214,.18); border-radius:24px; padding:16px; background:rgba(14,21,33,.88); backdrop-filter:blur(18px);
       box-shadow:0 30px 80px rgba(0,0,0,.28);
     }
@@ -28,6 +28,13 @@
       height:34px; padding:0 14px; border-radius:10px; border:1px solid rgba(170,188,214,.18); background:rgba(95,141,255,.20); color:#eef4fa; font:inherit; font-size:12px; font-weight:800; cursor:pointer;
     }
     .miomos-auth-status { min-height:18px; color:#9cb0c7; font-size:11px; }
+    .miomos-auth-seeded-grid { display:grid; gap:10px; margin-top:8px; }
+    .miomos-auth-seeded { display:grid; gap:8px; }
+    .miomos-auth-seeded-meta { display:grid; gap:4px; }
+    .miomos-auth-seeded-meta code { color:#f7fbff; font-weight:700; }
+    .miomos-auth-note { display:none; margin-bottom:10px; padding:10px 12px; border-radius:12px; border:1px solid rgba(170,188,214,.16); background:rgba(255,255,255,.05); }
+    .miomos-auth-note strong { display:block; font-size:12px; }
+    .miomos-auth-note span { display:block; margin-top:4px; color:#9cb0c7; font-size:12px; }
     @media (max-width: 900px) { .miomos-auth-frame { grid-template-columns:minmax(0,1fr); } }
   </style>
 
@@ -37,12 +44,19 @@
       <p>{{brandSubtitle}}</p>
       <div class="miomos-auth-grid">
         <div class="miomos-auth-card"><strong>Optional local sign in</strong><span>Enable built-in accounts for evaluation or smaller installations without changing the desktop entry path. Invite-only onboarding can be enforced when desired.</span></div>
-        <div class="miomos-auth-card"><strong>Theme-ready desktop</strong><span>Theme, permissions, access logs, error logs, audit trail, and team chat stay managed on the MUMPS side.</span></div>
-        <div class="miomos-auth-card"><strong>Development stays frictionless</strong><span>When the MIOMOS profile is <code>dev</code>, authentication can remain disabled for rapid iteration.</span></div>
+        <div class="miomos-auth-card"><strong>Seeded access can stay configurable</strong><span>Admin, user, and guest credentials are read from <code>CONF("miomos","bootstrapAuth",...)</code> so operators can change them without editing templates.</span></div>
+        <div class="miomos-auth-card"><strong>Development stays frictionless</strong><span>When the MIOMOS profile is <code>dev</code>, authentication can remain disabled for rapid iteration. In <code>prod</code> with local auth enabled, the access screen is shown until a valid session exists.</span></div>
       </div>
     </section>
 
-    <section class="miomos-auth-panel miomos-auth-forms" data-bootstrap-auth="{{bootstrapAuthEnabled}}" data-guest-login-enabled="{{guestLoginEnabled}}">
+    <section class="miomos-auth-panel miomos-auth-forms" data-bootstrap-auth="{{bootstrapAuthEnabled}}" data-guest-login-enabled="{{guestLoginEnabled}}" data-auth-workflow="{{authWorkflow}}" data-seeded-visible="{{seededVisible}}">
+      <div class="miomos-auth-note" id="miomosAccessNotice">
+        <strong id="miomosAccessNoticeTitle">Signed out</strong>
+        <span id="miomosAccessNoticeCopy">Your MIOMOS desktop session has ended.</span>
+      </div>
+
+      <div hidden data-seeded-admin-username="{{seededAdminUsername}}" data-seeded-admin-password="{{seededAdminPassword}}" data-seeded-user-username="{{seededUserUsername}}" data-seeded-user-password="{{seededUserPassword}}" data-seeded-guest-username="{{seededGuestUsername}}" data-seeded-guest-password="{{seededGuestPassword}}"></div>
+
       <div class="miomos-auth-box">
         <h2>Sign in</h2>
         <form class="miomos-auth-form" id="miomosSigninForm">
@@ -51,6 +65,31 @@
           <div class="miomos-auth-actions"><span class="miomos-auth-status" id="miomosSigninStatus"></span><button type="submit" class="miomos-auth-btn">Sign in</button></div>
         </form>
       </div>
+      <!--
+      {{#seededVisible}}
+      <div class="miomos-auth-box">
+        <h2>Seeded access</h2>
+        <div class="miomos-auth-seeded-grid">
+          {{#seeded}}
+          {{#enabled}}
+          <div class="miomos-auth-card miomos-auth-seeded" data-seeded-key="{{key}}" data-seeded-username="{{username}}" data-seeded-password="{{password}}">
+            <div class="miomos-auth-seeded-meta">
+              <strong>{{displayName}}</strong>
+              <span>{{roleLabel}}</span>
+              <span>Username: <code>{{username}}</code></span>
+              <span>Password: <code>{{password}}</code></span>
+            </div>
+            <div class="miomos-auth-actions">
+              <span class="miomos-auth-status">Uses <code>{{key}}</code> bootstrap credentials from <code>CONF</code>.</span>
+              <button type="button" class="miomos-auth-btn miomos-seeded-fill" data-fill-username="{{username}}" data-fill-password="{{password}}">Use {{key}}</button>
+            </div>
+          </div>
+          {{/enabled}}
+          {{/seeded}}
+        </div>
+      </div>
+      {{/seededVisible}}
+      -->
       {{#guestLoginEnabled}}
       <div class="miomos-auth-box">
         <h2>Guest access</h2>
@@ -86,24 +125,45 @@
       var signinStatus = document.getElementById('miomosSigninStatus');
       var signupStatus = document.getElementById('miomosSignupStatus');
       var guestStatus = document.getElementById('miomosGuestStatus');
+      var notice = document.getElementById('miomosAccessNotice');
+      var noticeTitle = document.getElementById('miomosAccessNoticeTitle');
+      var noticeCopy = document.getElementById('miomosAccessNoticeCopy');
+      var fillButtons = document.querySelectorAll('.miomos-seeded-fill');
+      if (window.location.search.indexOf('switchUser=1') >= 0 && notice) {
+        notice.style.display = 'block';
+        noticeTitle.textContent = 'Switch user';
+        noticeCopy.textContent = 'The previous desktop session ended. Sign in with another account or continue as guest.';
+      } else if (window.location.search.indexOf('signedOut=1') >= 0 && notice) {
+        notice.style.display = 'block';
+        noticeTitle.textContent = 'Signed out';
+        noticeCopy.textContent = 'Your MIOMOS desktop session has ended.';
+      }
+      fillButtons.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          if (!signin) return;
+          signin.username.value = btn.getAttribute('data-fill-username') || '';
+          signin.password.value = btn.getAttribute('data-fill-password') || '';
+          if (signinStatus) signinStatus.textContent = 'Seeded credentials loaded.';
+        });
+      });
       if (signin) signin.addEventListener('submit', function (ev) {
         ev.preventDefault(); signinStatus.textContent = 'Signing in…';
         postJson('{{signinPath}}', {username: signin.username.value, password: signin.password.value}).then(function (json) {
-          if (json && json.ok) { window.location.reload(); return; }
+          if (json && json.ok) { window.location.href = '{{desktopPath}}'; return; }
           signinStatus.textContent = (json && json.detail) || (json && json.error) || 'Unable to sign in';
         }).catch(function () { signinStatus.textContent = 'Unable to sign in'; });
       });
       if (guest) guest.addEventListener('submit', function (ev) {
         ev.preventDefault(); guestStatus.textContent = 'Opening guest workspace…';
         postJson('{{guestSigninPath}}', {}).then(function (json) {
-          if (json && json.ok) { window.location.reload(); return; }
+          if (json && json.ok) { window.location.href = '{{desktopPath}}'; return; }
           guestStatus.textContent = (json && json.detail) || (json && json.error) || 'Unable to continue as guest';
         }).catch(function () { guestStatus.textContent = 'Unable to continue as guest'; });
       });
       if (signup) signup.addEventListener('submit', function (ev) {
         ev.preventDefault(); signupStatus.textContent = 'Creating account…';
         postJson('{{signupPath}}', {displayName: signup.displayName.value, username: signup.username.value, password: signup.password.value, inviteToken: signup.inviteToken ? signup.inviteToken.value : ''}).then(function (json) {
-          if (json && json.ok) { window.location.reload(); return; }
+          if (json && json.ok) { window.location.href = '{{desktopPath}}'; return; }
           signupStatus.textContent = (json && json.detail) || (json && json.error) || 'Unable to sign up';
         }).catch(function () { signupStatus.textContent = 'Unable to sign up'; });
       });

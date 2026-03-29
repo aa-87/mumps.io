@@ -125,6 +125,10 @@ linkui
 	Q
 	;	
 	;
+RESETMIOMOS
+	K ^MIO("MIOMOS","USER")
+	K ^MIO("MIOMOS","AUTH")
+	D INIT^MIOMOS(.CONF)
+	D REG^MIOMOS(.CONF)
 	;
-	;
-	;
+	Q

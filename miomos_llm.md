@@ -551,8 +551,16 @@ TODO next:
   - reset/invite activity
   - permission and session summaries
 
-- **ROI50** — seeded password rotation and policy hardening
+- **ROI50** — seeded access visibility and guest-account repair
+  - make seeded bootstrap identities visibly discoverable on the access screen when enabled by config
+  - expose `showSeededCredentials` and `syncOnBoot` as explicit bootstrap-auth config switches
+  - keep seeded users configurable through `CONF("miomos","bootstrapAuth",...)`
+  - repair stale seeded guest state on sign-in by resyncing bootstrap-backed guest users when needed
+
+TODO next:
+
+- **ROI51** — seeded password rotation and policy hardening
   - first-login password change for seeded accounts
   - password policy settings
-  - seeded credential warnings
+  - seeded credential warnings for production installs
   - stricter production defaults for guest quick login

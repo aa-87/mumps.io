@@ -25,18 +25,15 @@ MIOAUTHJWT ; JWT validation using MIOSHA256 with original compat behavior
 	;
 VERIFY(CONF,REQ,CTX,ERR)
 	KILL ERR
-	NEW AH,PFX,TOK,H64,P64,S64,HJSON,PJSON,HOBJ,POBJ,OK,ALG,DATA
+	NEW AH,PFX,TOK,H64,P64,S64,HJSON,PJSON,HOBJ,POBJ,OK,ALG,DATA,CNAME
 	;
 	SET AH=$GET(REQ("hdr","authorization"))
-	IF AH="" DO  QUIT 0
-	. SET ERR("routine")="MIOAUTHJWT",ERR("error")="jwt_missing",ERR("status")=401
-	;
 	SET PFX=$GET(CONF("auth","jwt","bearerPrefix"),"Bearer ")
-	IF $EXTRACT(AH,1,$L(PFX))'=PFX DO  QUIT 0
-	. SET ERR("routine")="MIOAUTHJWT",ERR("error")="jwt_missing",ERR("status")=401
-	;
-	SET TOK=$EXTRACT(AH,$L(PFX)+1,999999)
-	IF TOK="" DO  QUIT 0
+	IF AH'="",$EXTRACT(AH,1,$L(PFX))=PFX SET TOK=$EXTRACT(AH,$L(PFX)+1,999999)
+	IF $GET(TOK)="" DO
+	. SET CNAME=$GET(CONF("auth","jwt","cookieName"),"miomos_auth")
+	. SET TOK=$$COOKIEJWT(.REQ,CNAME)
+	IF $GET(TOK)="" DO  QUIT 0
 	. SET ERR("routine")="MIOAUTHJWT",ERR("error")="jwt_missing",ERR("status")=401
 	;
 	SET H64=$PIECE(TOK,".",1),P64=$PIECE(TOK,".",2),S64=$PIECE(TOK,".",3)
@@ -206,6 +203,19 @@ ISID(S)
 	. SET C=$EXTRACT(S,I)
 	. IF '(C?1AN) SET OK=0
 	QUIT OK
+	;
+
+COOKIEJWT(REQ,NAME)
+	NEW RAW,I,PAIR,K,V
+	SET RAW=$GET(REQ("hdr","cookie"))
+	IF RAW="" SET RAW=$GET(REQ("hdr","Cookie"))
+	IF RAW="" QUIT ""
+	FOR I=1:1:$LENGTH(RAW,";") DO  QUIT:$GET(V)'=""
+	. SET PAIR=$$TRIM($PIECE(RAW,";",I))
+	. SET K=$$TRIM($PIECE(PAIR,"=",1))
+	. IF K'=$GET(NAME) QUIT
+	. SET V=$PIECE(PAIR,"=",2,999)
+	QUIT $GET(V)
 	;
 APPLY(CONF,CTX,POBJ)
 	SET CTX("auth","ok")=1
