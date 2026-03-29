@@ -10,7 +10,6 @@ BUILD(STATE,CONF,OUT)
 	DO UILIB(.STATE,.CONF,$NAME(OUT("uiLibrary")))
 	DO CHAT(.STATE,.CONF,$NAME(OUT("chat")))
 	DO TERMINAL(.STATE,.CONF,$NAME(OUT("terminal")))
-	DO VFS(.STATE,.CONF,$NAME(OUT("vfs")))
 	DO WINDOWS(.STATE,.CONF,$NAME(OUT("windowManager")))
 	DO NOTIFICATIONS(.STATE,.CONF,$NAME(OUT("notifications")))
 	DO SHELL(.STATE,.CONF,$NAME(OUT("shellChrome")))
@@ -244,7 +243,7 @@ NOTIFICATIONS(STATE,CONF,ROOT)
 	;
 SHELL(STATE,CONF,ROOT)
 	KILL @ROOT
-	SET @ROOT@("headline")="Windows XP shell fidelity foundation"
+	SET @ROOT@("headline")="Product shell correctness and desktop folders"
 	SET @ROOT@("taskbarBehavior")="stable-order"
 	SET @ROOT@("taskbarOverflowBehavior")="preserve-order-and-overflow"
 	SET @ROOT@("startMenuBehavior")="predictable-sections"
@@ -257,15 +256,10 @@ SHELL(STATE,CONF,ROOT)
 	SET @ROOT@("dialogDragBehavior")="titlebar-drag"
 	SET @ROOT@("folderCreateBehavior")="desktop-context-menu"
 	SET @ROOT@("desktopComposition")="ui-samples-settings-terminal"
-	SET @ROOT@("replicaModel")="windows-xp-development-platform"
-	SET @ROOT@("explorerStyle")="xp-classic"
-	SET @ROOT@("desktopSelectionModel")="single-click-select-double-click-open"
-	SET @ROOT@("dragDropModel")="desktop-icons-to-folders"
-	SET @ROOT@("desktopSelectionExtension")="marquee-and-multi-select"
-	SET @ROOT@("renameBehavior")="inline-f2-custom-folders"
-	SET @ROOT@("deleteBehavior")="recycle-bin-routing"
-	SET @ROOT@("recycleBinModel")="soft-delete-custom-folders"
-	SET @ROOT@("folderWindowModel")="explorer-left-pane-address-status"
+	SET @ROOT@("explorerStyle")="windows-xp-folder-view"
+	SET @ROOT@("explorerDefaultView")="large-icons"
+	SET @ROOT@("explorerSortModel")="name-size-type-modified"
+	SET @ROOT@("explorerDragBehavior")="manual-icon-placement"
 	SET @ROOT@("mutationSaveBehavior")="layout-on-shell-mutation"
 	SET @ROOT@("taskbarBehaviorCopy")="Taskbar order stays stable while focus changes."
 	SET @ROOT@("taskbarOverflowCopy")="Overflow windows move into a More Windows list without changing taskbar order."
@@ -275,15 +269,8 @@ SHELL(STATE,CONF,ROOT)
 	SET @ROOT@("shellSurfacePolicyCopy")="Only one shell surface stays open at a time: Start menu, context menu, or dialog."
 	SET @ROOT@("dialogDragBehaviorCopy")="Shell dialogs can be dragged by their title bars like real desktop dialogs."
 	SET @ROOT@("folderCreateBehaviorCopy")="New Folder is available from the desktop context menu and saves immediately."
-	SET @ROOT@("desktopCompositionCopy")="The desktop now stays curated while adding XP system shell affordances for development-focused folders and explorer windows."
-	SET @ROOT@("replicaModelCopy")="MIOMOS is now explicitly targeting a Windows XP shell replica in UI and interaction, while keeping the MUMPS desktop contract and websocket event system intact."
-	SET @ROOT@("desktopSelectionModelCopy")="Desktop icons follow the XP model: one click selects, double-click opens, and drag remains available for folder drop targets."
-	SET @ROOT@("dragDropModelCopy")="Desktop entries can be dragged onto folder icons or open explorer windows to move them out of the desktop strip and into a folder surface."
-	SET @ROOT@("desktopSelectionExtensionCopy")="Desktop blank space now supports marquee selection and multi-select style behavior so XP desktop verbs can scale past one icon."
-	SET @ROOT@("renameBehaviorCopy")="Custom folders now support inline rename from the context menu or F2 without breaking shell focus or the websocket event model."
-	SET @ROOT@("deleteBehaviorCopy")="Delete no longer destroys custom folders immediately; it routes them into Recycle Bin so restore and permanent delete can follow XP semantics."
-	SET @ROOT@("recycleBinModelCopy")="Recycle Bin is now the first stop for soft-deleted custom folders and a staging point for restore, purge, and empty-bin actions."
-	SET @ROOT@("folderWindowModelCopy")="Directory windows now gain an XP-style explorer frame with an address bar, common tasks pane, and a status strip."
+	SET @ROOT@("explorerStyleCopy")="Folder windows now target the Windows XP Explorer look with large icons, sortable columns, common tasks, and saved icon layout."
+	SET @ROOT@("desktopCompositionCopy")="The desktop now stays curated: UI Samples, Settings, and Terminal."
 	SET @ROOT@("quickLaunchLabel")="Quick Launch"
 	SET @ROOT@("overflowLabel")="More Windows"
 	SET @ROOT@("recentLabel")="Recently used"
@@ -296,10 +283,6 @@ SHELL(STATE,CONF,ROOT)
 	SET @ROOT@("showTrayLabels")=+$GET(STATE("shell","showTrayLabels"))
 	SET @ROOT@("showAccountName")=+$GET(STATE("shell","showAccountName"),1)
 	SET @ROOT@("showNotificationBadge")=+$GET(STATE("shell","showNotificationBadge"),1)
-	SET @ROOT@("systemDesktopIcons",1,"key")="my-computer",@ROOT@("systemDesktopIcons",1,"label")="My Computer"
-	SET @ROOT@("systemDesktopIcons",2,"key")="my-documents",@ROOT@("systemDesktopIcons",2,"label")="My Documents"
-	SET @ROOT@("systemDesktopIcons",3,"key")="my-network-places",@ROOT@("systemDesktopIcons",3,"label")="My Network Places"
-	SET @ROOT@("systemDesktopIcons",4,"key")="recycle-bin",@ROOT@("systemDesktopIcons",4,"label")="Recycle Bin"
 	SET @ROOT@("notificationPreviewCount")=+$GET(STATE("shell","notificationPreviewCount"),4)
 	SET @ROOT@("startMenuSection")=$GET(STATE("shell","startMenuSection"),"Pinned")
 	SET @ROOT@("quickLaunch")=$GET(STATE("shell","quickLaunch"),"workspace,collaboration,terminal")
@@ -328,12 +311,18 @@ SHELL(STATE,CONF,ROOT)
 	SET @ROOT@("dialogs",1,"key")="run",@ROOT@("dialogs",1,"title")="Run",@ROOT@("dialogs",1,"copy")="Open a MIOMOS app by name, such as workspace, terminal, or settings."
 	SET @ROOT@("dialogs",2,"key")="about",@ROOT@("dialogs",2,"title")="About MIOMOS",@ROOT@("dialogs",2,"copy")="WinXP-inspired shell chrome on a native Vue/CSS window manager with MUMPS-owned state."
 	SET @ROOT@("dialogs",3,"key")="power",@ROOT@("dialogs",3,"title")="Turn off computer",@ROOT@("dialogs",3,"copy")="Choose whether to log off, restart the shell, or close all windows."
+	SET @ROOT@("explorerViews",1,"key")="thumbnails",@ROOT@("explorerViews",1,"label")="Thumbnails"
+	SET @ROOT@("explorerViews",2,"key")="tiles",@ROOT@("explorerViews",2,"label")="Tiles"
+	SET @ROOT@("explorerViews",3,"key")="large-icons",@ROOT@("explorerViews",3,"label")="Large Icons"
+	SET @ROOT@("explorerViews",4,"key")="icons",@ROOT@("explorerViews",4,"label")="Icons"
+	SET @ROOT@("explorerViews",5,"key")="list",@ROOT@("explorerViews",5,"label")="List"
+	SET @ROOT@("explorerViews",6,"key")="details",@ROOT@("explorerViews",6,"label")="Details"
+	SET @ROOT@("explorerSort",1,"key")="name",@ROOT@("explorerSort",1,"label")="Name"
+	SET @ROOT@("explorerSort",2,"key")="size",@ROOT@("explorerSort",2,"label")="Size"
+	SET @ROOT@("explorerSort",3,"key")="type",@ROOT@("explorerSort",3,"label")="Type"
+	SET @ROOT@("explorerSort",4,"key")="modified",@ROOT@("explorerSort",4,"label")="Modified"
 	SET @ROOT@("transportLabel")="WebSocket shell bus"
 	SET @ROOT@("transportCopy")="All live shell communication now goes through the primary websocket session."
-	QUIT
-	;
-VFS(STATE,CONF,ROOT)
-	DO VIEW^MIOMOSVFS($GET(STATE("principal")),.CONF,ROOT)
 	QUIT
 	;
 CHAT(STATE,CONF,ROOT)
@@ -360,7 +349,7 @@ TERMINAL(STATE,CONF,ROOT)
 	SET @ROOT@("shell")=$GET(CONF("miomos","terminal","pipe","shell"),"/bin/sh")
 	SET @ROOT@("bridge")="mumps-owned"
 	SET @ROOT@("launchMode")=$SELECT($GET(STATE("terminalLaunchMode"))'="":$GET(STATE("terminalLaunchMode")),$GET(STATE("shell","terminalLaunchMode"))'="":$GET(STATE("shell","terminalLaunchMode")),1:"resume-last")
-	DO LIST^MIOMOSPERM(.STATE,.SESS)
+	DO LIST^MIOMOSTERM(.STATE,.SESS)
 	MERGE @ROOT@("sessions")=SESS
 	QUIT:$QUIT 1
 	QUIT

@@ -564,87 +564,57 @@ TODO next:
   - terminal default window opens slightly larger for better first-use readability
 
 
-## XP replica roadmap after session.ui.save rebuild
+## Terminal launch restore note
 
-The current baseline is stable enough to push MIOMOS toward a stricter Windows XP shell replica.
-
-Recommended next ROI sequence:
-
-- **ROI 165 — XP Explorer foundation**: system desktop icons, single-click select/double-click open, explorer left pane, address bar, status bar, and desktop-to-folder drop targets.
-- **ROI 166 — Desktop verbs and rename parity**: desktop blank selection, marquee selection, rename, F2, Delete, context verbs, and recycle-bin routing.
-- **ROI 167 — Explorer file list parity**: details/list/icon views, sortable columns, status bar counts, breadcrumb/address semantics, and folder task panes.
-- **ROI 168 — Shell drag/drop semantics**: move/copy/link gestures, hover expand, folder-drop previews, and persisted folder membership.
-- **ROI 169 — Filesystem bridge over websocket**: real create, rename, move, copy, delete, restore, upload, and download boundaries authored in MUMPS.
-- **ROI 170 — XP shell services**: recycle bin, My Computer drives, Control Panel surfaces, Run dialog parity, and taskbar notification-area behaviors.
-- **ROI 171 — Development-platform essence**: MUMPS routine explorer, workspace drives, compile/debug verbs, and terminal/explorer coordination under the XP shell model.
-
-Maintain these constraints while pursuing XP fidelity:
-
-- do not break auth or the current websocket ownership model
-- keep MUMPS as the source of truth for shell metadata and persisted state
-- prefer additive shell/UI work before deeper command-bus rewrites
-- keep each ROI test-backed with SSR tokens and boot-contract assertions
+- Latest terminal hotfix restores classic desktop behavior: launching Terminal from the shell now opens a fresh terminal window with a fresh backend session each time, instead of collapsing launches into a single shared surface.
+- Focus-terminal shell actions prefer the most recent open terminal window.
+- This patch does not alter auth, websocket ownership, or the command bus.
 
 
-## ROI 166 — Desktop verbs, rename parity, and recycle-bin routing
+## ROI 168 — XP folder view parity
 
-Completed on top of the stable XP explorer baseline.
+Completed on the current passing baseline:
 
-What changed:
-- desktop blank space now supports **marquee selection**
-- custom folders support **inline rename** and **F2 rename**
-- custom folder delete no longer destroys immediately; it routes through **Recycle Bin**
-- Recycle Bin now supports **restore**, **delete permanently**, and **empty bin** shell verbs
-- desktop context menu now includes **Arrange Icons by Name**
-- explorer cards now participate in selection and desktop-like verbs
+- Explorer windows now target a Windows XP folder-view replica rather than a generic card grid.
+- Default folder view is **Large Icons**.
+- Folder windows support view switching across:
+  - Thumbnails
+  - Tiles
+  - Large Icons
+  - Icons
+  - List
+  - Details
+- Folder items can be sorted by:
+  - Name
+  - Size
+  - Type
+  - Modified
+- Icon-style folder views support manual drag placement plus Arrange Icons.
+- Explorer view preferences and icon positions persist through the existing layout save path.
+- This ROI intentionally leaves auth, websocket ownership, and terminal multi-window behavior untouched.
 
-What did **not** change:
-- auth workflow
-- sign-in/sign-out flow
-- websocket event ownership
-- `command.exec` / `command.result` semantics
-- `session.ui.save` transport contract
+Next XP-fidelity wave:
 
-Recommended next ROI order remains:
-- ROI 167 — explorer file list parity
-- ROI 168 — shell drag/drop semantics
-- ROI 169 — filesystem bridge over websocket
-- ROI 170 — XP shell services
-- ROI 171 — development-platform essence
+- **ROI 169** — shell drag/drop semantics
+  - desktop ↔ folder drag cues
+  - hover targets and insertion feedback
+  - multi-select friendly shell semantics
+  - no real browser file transfer yet
 
+- **ROI 170** — filesystem bridge over websocket
+  - VFS enumerate/mutate commands
+  - create / rename / delete / move
+  - permission-aware upload intent handshake
+  - browser upload/download staged on top of the VFS
 
-## ROI 167 completion note
+- **ROI 171** — XP shell services
+  - richer file verbs
+  - association-aware open behavior
+  - My Computer / My Documents / Recycle Bin parity
+  - XP-style service copy and common tasks polish
 
-ROI 167 adds the first globals-backed per-user virtual filesystem foundation for the XP shell.
-
-Key rules going forward:
-- VFS storage remains in globals, not server local disk
-- the websocket shell remains the primary realtime bus
-- upload/download must be permission-aware and browser-capability-aware
-- browser drag-out to the local filesystem is a progressive enhancement, not an unconditional assumption
-
-### Next ROI sequence
-
-- ROI 168 — Browser drag/drop and picker upload into the VFS
-  - desktop and explorer drop targets
-  - upload staging and metadata writes in globals
-  - permission flags per folder root
-  - websocket progress / completion events
-
-- ROI 169 — Browser download and drag-out bridge from the VFS
-  - explicit save/download actions
-  - browser-compatible drag-out where available
-  - safe fallback to ordinary download when drag-out is restricted
-  - audit and permission checks for download flows
-
-- ROI 170 — XP shell verbs over the VFS
-  - copy / cut / paste
-  - move between folders
-  - rename for virtual files and folders
-  - delete / restore flows aligned with Recycle Bin semantics
-
-- ROI 171 — MUMPS development-platform essence inside the XP shell
-  - routine manifests
-  - globals-browser exports
-  - terminal shortcut artifacts
-  - project snapshots and generated outputs in the VFS
+- **ROI 172** — MUMPS development-platform essence under the XP shell
+  - Routine Explorer
+  - Globals Browser
+  - terminal shortcuts and dev artifacts in the VFS
+  - YottaDB-first workflows aimed at InterSystems users evaluating MIOMOS services

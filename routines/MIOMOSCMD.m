@@ -97,6 +97,7 @@ TERMOPEN(STATE,CONF,TREE,OUT,ERR)
 	NEW TERMOUT,TERMID,COLS,ROWS
 	IF '$$HAS^MIOMOSPERM(.STATE,"terminal.use") SET ERR("error")="forbidden",ERR("detail")="terminal.use",ERR("status")=403 QUIT 0
 	SET TERMID=$GET(TREE("terminalId"))
+	IF $$BOOL($GET(TREE("forceNew"))) SET TERMID="__new__"
 	SET COLS=$$COLS^MIOMOSTERM(+$GET(TREE("cols")))
 	SET ROWS=$$ROWS^MIOMOSTERM(+$GET(TREE("rows")))
 	IF COLS>0 SET STATE("terminal","cols")=COLS
@@ -156,3 +157,12 @@ TERMNL(X)
 	IF $EXTRACT(Y,$LENGTH(Y))=$CHAR(10) QUIT Y
 	IF $EXTRACT(Y,$LENGTH(Y))=$CHAR(13) QUIT Y
 	QUIT Y_$CHAR(10)
+
+BOOL(X)
+	NEW V
+	SET V=$ZCONVERT($$TRIM^MIOUTIL($GET(X)),"L")
+	IF V="true" QUIT 1
+	IF V="yes" QUIT 1
+	IF V="on" QUIT 1
+	QUIT $SELECT(+$GET(X):1,1:0)
+	;

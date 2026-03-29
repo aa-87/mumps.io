@@ -209,6 +209,28 @@ PALOK(X)
 	IF X="theme"!(X="midnight-blue")!(X="black-on-white")!(X="white-on-black") QUIT X
 	QUIT ""
 	;
+LIST(STATE,OUT)
+	NEW TERMID,N,SID
+	KILL OUT
+	SET SID=$GET(STATE("sessionId"))
+	SET TERMID="",N=0
+	FOR  SET TERMID=$ORDER(^MIO("MIOMOS","PIPE","SESSION",TERMID)) QUIT:TERMID=""  DO
+	. IF $GET(^MIO("MIOMOS","PIPE","SESSION",TERMID,"principal"))'=$GET(STATE("principal")) QUIT
+	. IF SID'="",$GET(^MIO("MIOMOS","PIPE","SESSION",TERMID,"sessionId"))'=SID QUIT
+	. IF '$GET(^MIO("MIOMOS","PIPE","SESSION",TERMID,"open")) QUIT
+	. SET N=N+1
+	. SET OUT(N,"key")=TERMID
+	. SET OUT(N,"terminalId")=TERMID
+	. SET OUT(N,"label")="Session "_N
+	. SET OUT(N,"transport")=$GET(^MIO("MIOMOS","PIPE","SESSION",TERMID,"transport"),"pipe")
+	. SET OUT(N,"command")=$GET(^MIO("MIOMOS","PIPE","SESSION",TERMID,"command"))
+	. SET OUT(N,"openedAt")=$GET(^MIO("MIOMOS","PIPE","SESSION",TERMID,"openedAt"))
+	. SET OUT(N,"lastSeenAt")=$GET(^MIO("MIOMOS","PIPE","SESSION",TERMID,"lastSeenAt"))
+	. SET OUT(N,"cols")=+$GET(^MIO("MIOMOS","PIPE","SESSION",TERMID,"cols"))
+	. SET OUT(N,"rows")=+$GET(^MIO("MIOMOS","PIPE","SESSION",TERMID,"rows"))
+	. SET OUT(N,"status")=$SELECT(+$GET(^MIO("MIOMOS","PIPE","SESSION",TERMID,"job"))=$JOB:"live",1:"resume")
+	QUIT
+	;
 OPEN(STATE,CONF,TERMID,OUT,ERR)
 	QUIT $$OPEN^MIOMOSTPIPE(.STATE,.CONF,$GET(TERMID),.OUT,.ERR)
 	;

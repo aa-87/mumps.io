@@ -559,175 +559,398 @@
     }
 
     .miomos-desktop-icon.is-selected {
-      background: linear-gradient(180deg, rgba(117,166,241,.32), rgba(52,98,196,.28)) !important;
-      border-color: rgba(255,255,255,.34) !important;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.20), 0 0 0 1px rgba(28,71,148,.28);
+      background: rgba(95,141,255,.16) !important;
+      border-color: rgba(95,141,255,.38) !important;
+      box-shadow: 0 0 0 1px rgba(255,255,255,.08), inset 0 1px 0 rgba(255,255,255,.1);
     }
-    .miomos-desktop-icon.is-drop-target,
-    .miomos-explorer-content.is-drop-target {
-      box-shadow: 0 0 0 2px rgba(255,206,84,.68), inset 0 0 0 1px rgba(255,255,255,.34);
-      border-color: rgba(214,163,32,.42) !important;
-      background: rgba(255,244,194,.14) !important;
+    .miomos-desktop-icon.is-renaming {
+      background: rgba(95,141,255,.12) !important;
+      border-color: rgba(95,141,255,.34) !important;
     }
+    .miomos-desktop-rename-input {
+      width: 100%; margin-top: 4px; border-radius: 4px; border: 1px solid rgba(95,141,255,.45);
+      background: rgba(255,255,255,.96); color: #102033; font: inherit; font-size: 11px; padding: 3px 5px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.7), 0 0 0 1px rgba(95,141,255,.14);
+    }
+    .miomos-desktop-marquee {
+      position: absolute; z-index: 8; pointer-events: none;
+      border: 1px dashed rgba(141,190,255,.86);
+      background: rgba(95,141,255,.16);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
+    }
+    .miomos-directory-card[data-entry-kind="recycle"] {
+      align-items: stretch;
+    }
+
+    .miomos-xp-explorer {
+      padding: 0 !important;
+      overflow: hidden;
+      border-radius: 12px;
+    }
+    .miomos-xp-explorer-toolbar, .miomos-xp-explorer-address, .miomos-xp-explorer-status {
+      display:flex; align-items:center; gap:8px;
+      padding: 8px 10px;
+      border-bottom: 1px solid rgba(148,163,184,.16);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+    }
+    .miomos-xp-explorer-address {
+      justify-content:flex-start;
+      font-size: 11px;
+    }
+    .miomos-xp-explorer-address strong { color:#f8fbff; }
+    .miomos-xp-explorer-address span {
+      display:inline-flex; align-items:center; min-height: 26px; padding: 0 10px;
+      border-radius: 999px; border: 1px solid rgba(148,163,184,.18);
+      background: rgba(8,14,24,.36); color:#d7e6fb;
+    }
+    .miomos-xp-explorer-body {
+      display:grid; grid-template-columns: 220px minmax(0,1fr);
+      min-height: 360px;
+    }
+    .miomos-xp-explorer-side {
+      padding: 12px 10px;
+      border-right: 1px solid rgba(148,163,184,.16);
+      background: linear-gradient(180deg, rgba(28,51,92,.34), rgba(10,18,30,.22));
+    }
+    .miomos-xp-side-group + .miomos-xp-side-group { margin-top: 16px; }
+    .miomos-xp-side-heading {
+      margin-bottom: 8px; font-size: 11px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color:#f8fbff;
+    }
+    .miomos-xp-side-link {
+      display:block; width:100%; text-align:left; margin-bottom:6px; padding:6px 8px; border-radius:8px; border:1px solid rgba(148,163,184,.14);
+      background: rgba(255,255,255,.04); color:#d8e6fb; font: inherit;
+    }
+    .miomos-xp-side-link:disabled { opacity:.45; }
+    .miomos-xp-side-copy strong, .miomos-xp-side-copy span { display:block; }
+    .miomos-xp-side-copy span { margin-top: 4px; color:#a8bdd7; line-height:1.4; }
+    .miomos-xp-explorer-main { padding: 10px; overflow:auto; }
+    .miomos-xp-file-table {
+      width:100%; border-collapse: collapse; font-size:12px;
+      border: 1px solid rgba(148,163,184,.14); background: rgba(10,15,24,.22);
+    }
+    .miomos-xp-file-table thead th {
+      position: sticky; top: 0; z-index: 1; text-align:left;
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+      border-bottom: 1px solid rgba(148,163,184,.18);
+      padding: 0;
+    }
+    .miomos-xp-col-btn {
+      width:100%; text-align:left; padding: 8px 10px; border:0; background:transparent; color:#f8fbff; font: inherit; font-weight:700;
+    }
+    .miomos-xp-file-row td {
+      padding: 7px 10px; border-bottom: 1px solid rgba(148,163,184,.08); color:#d9e7fb;
+    }
+    .miomos-xp-file-row:hover td { background: rgba(255,255,255,.03); }
+    .miomos-xp-file-row.is-selected td {
+      background: rgba(95,141,255,.18); box-shadow: inset 0 1px 0 rgba(255,255,255,.08), inset 0 -1px 0 rgba(255,255,255,.04);
+    }
+    .miomos-xp-name-cell {
+      display:flex; align-items:center; gap:10px;
+    }
+    .miomos-xp-explorer-status {
+      border-top: 1px solid rgba(148,163,184,.16);
+      border-bottom: 0;
+      color:#d4e4fa;
+      font-size:11px;
+    }
+    .miomos-root[data-mobile-layout="1"] .miomos-xp-explorer-body {
+      grid-template-columns: minmax(0,1fr);
+    }
+    .miomos-root[data-mobile-layout="1"] .miomos-xp-explorer-side {
+      border-right: 0;
+      border-bottom: 1px solid rgba(148,163,184,.16);
+    }
+
+    .miomos-xp-folder-window {
+      display: grid;
+      grid-template-rows: auto minmax(0,1fr);
+      gap: 10px;
+      height: 100%;
+      min-height: 0;
+    }
+    .miomos-explorer-window-header { margin-bottom: 0; }
     .miomos-explorer-shell {
       display: grid;
       grid-template-rows: auto auto minmax(0,1fr) auto;
+      min-height: 0;
       height: 100%;
-      border-radius: 16px;
+      border-radius: 14px;
       overflow: hidden;
-      background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(243,247,255,.90));
-      border: 1px solid rgba(127,158,214,.34);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.75);
-      color: #1f3554;
+      border: 1px solid rgba(90,132,210,.32);
+      background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(232,240,253,.92));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 10px 28px rgba(15,23,42,.16);
     }
-    .miomos-explorer-header {
-      margin: 0 !important;
-      padding: 14px 16px 10px;
-      background: linear-gradient(180deg, #ffffff, #edf4ff);
-      border-bottom: 1px solid rgba(127,158,214,.28);
-    }
-    .miomos-explorer-toolbar {
-      display:flex;
-      align-items:center;
-      gap:8px;
-      padding: 8px 12px;
-      background: linear-gradient(180deg, #fefefe, #e6eefb);
-      border-bottom: 1px solid rgba(127,158,214,.24);
+    .miomos-explorer-toolbar-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 10px;
+      background: linear-gradient(180deg, #fefefe, #dfe9f9);
+      border-bottom: 1px solid rgba(120,150,196,.34);
       flex-wrap: wrap;
     }
-    .miomos-explorer-tool,
-    .miomos-explorer-pane-link {
-      appearance:none;
-      border:1px solid rgba(127,158,214,.34);
-      border-radius: 6px;
-      background: linear-gradient(180deg, #ffffff, #dde9fb);
-      color:#24456e;
+    .miomos-explorer-toolbar { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+    .miomos-explorer-toolbtn {
+      border: 1px solid rgba(111,138,189,.5);
+      border-radius: 4px;
+      background: linear-gradient(180deg, #ffffff, #d7e5fb);
+      color: #15325f;
       font: inherit;
-      padding: 6px 10px;
-      cursor:pointer;
-      text-align:left;
-    }
-    .miomos-explorer-tool:hover,
-    .miomos-explorer-pane-link:hover {
-      border-color: rgba(72,110,178,.42);
-      background: linear-gradient(180deg, #ffffff, #d2e2fb);
-    }
-    .miomos-explorer-pane-link:disabled {
-      opacity:.55;
-      cursor:default;
-    }
-    .miomos-explorer-address {
-      margin-left: auto;
-      min-width: min(420px, 100%);
-      display:grid;
-      gap:4px;
-      color:#36537c;
       font-size: 11px;
       font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .04em;
+      padding: 4px 10px;
+      min-height: 26px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.92);
     }
-    .miomos-explorer-address-bar {
-      min-height: 34px;
+    .miomos-explorer-toolbtn.is-active {
+      background: linear-gradient(180deg, #cfe3ff, #a6c4f5);
+      border-color: rgba(72,104,164,.66);
+    }
+    .miomos-explorer-address-row {
+      display:grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 8px;
+      align-items:center;
+      padding: 8px 10px;
+      background: linear-gradient(180deg, #eef4fd, #d7e5fb);
+      border-bottom: 1px solid rgba(120,150,196,.30);
+    }
+    .miomos-explorer-address-label, .miomos-explorer-sort-box {
+      color:#22406f;
+      font-size:11px;
+      font-weight:700;
+    }
+    .miomos-explorer-address-box {
+      min-height: 28px;
       display:flex;
       align-items:center;
       padding: 0 10px;
-      border-radius: 8px;
-      border:1px solid rgba(127,158,214,.34);
-      background: linear-gradient(180deg, #ffffff, #f7faff);
-      color:#233f65;
-      font-size: 12px;
-      letter-spacing: 0;
-      text-transform:none;
-      font-weight: 600;
+      border-radius: 3px;
+      border:1px solid rgba(111,138,189,.46);
+      background:#ffffff;
+      color:#15325f;
+      box-shadow: inset 0 1px 2px rgba(15,23,42,.08);
+      font-size: 11px;
     }
-    .miomos-explorer-body {
-      min-height: 0;
+    .miomos-explorer-sort-box { display:flex; align-items:center; gap:6px; }
+    .miomos-explorer-sort-box select {
+      min-height: 28px;
+      border-radius: 3px;
+      border:1px solid rgba(111,138,189,.46);
+      background:#fff;
+      color:#15325f;
+      font: inherit;
+      padding: 0 8px;
+    }
+    .miomos-explorer-frame {
       display:grid;
       grid-template-columns: 220px minmax(0,1fr);
-      gap: 0;
-    }
-    .miomos-explorer-pane {
       min-height: 0;
-      overflow:auto;
-      padding: 12px;
-      background: linear-gradient(180deg, #d7e7ff, #eef5ff 45%, #f6f9ff 100%);
-      border-right: 1px solid rgba(127,158,214,.28);
+      background: linear-gradient(180deg, #e8f1fb, #f7fbff);
+    }
+    .miomos-explorer-side-pane {
+      background: linear-gradient(180deg, #d9e8fb, #edf5ff 18%, #d8e8fb);
+      border-right: 1px solid rgba(120,150,196,.30);
+      padding: 12px 10px;
       display:grid;
       align-content:start;
-      gap:12px;
+      gap: 12px;
     }
-    .miomos-explorer-pane-card {
+    .miomos-explorer-pane-group {
       display:grid;
-      gap:8px;
+      gap: 6px;
       padding: 10px;
-      border-radius: 12px;
-      background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(231,240,255,.96));
-      border:1px solid rgba(127,158,214,.26);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
-      color:#27456f;
+      border-radius: 8px;
+      background: linear-gradient(180deg, rgba(255,255,255,.84), rgba(226,236,251,.86));
+      border: 1px solid rgba(120,150,196,.26);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.86);
     }
-    .miomos-explorer-pane-card strong {
+    .miomos-explorer-pane-group strong {
+      color:#1d4277;
       font-size: 11px;
-      letter-spacing: .06em;
       text-transform: uppercase;
-      color:#31527d;
+      letter-spacing: .04em;
+    }
+    .miomos-explorer-pane-group span {
+      color:#355884;
+      font-size: 11px;
+      line-height:1.4;
+    }
+    .miomos-explorer-pane-link {
+      border:0;
+      background:transparent;
+      color:#0f4fa9;
+      text-align:left;
+      padding: 2px 0;
+      font: inherit;
+      font-size: 12px;
+      cursor:pointer;
     }
     .miomos-explorer-content {
-      min-height: 0;
-      overflow:auto;
-      padding: 12px;
-      background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(247,250,255,.98));
+      min-height:0;
+      overflow:hidden;
+      background: linear-gradient(180deg, #ffffff, #f7fbff 70%, #eef4ff);
+      display:grid;
     }
+    .miomos-explorer-icon-canvas {
+      position: relative;
+      min-height: 0;
+      overflow: auto;
+      padding: 8px 10px 14px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.96), rgba(242,247,255,.98)),
+        linear-gradient(90deg, rgba(121,163,230,.08), rgba(121,163,230,0) 40%);
+    }
+    .miomos-explorer-item {
+      position:absolute;
+      border:1px solid transparent;
+      border-radius: 4px;
+      background: transparent;
+      padding: 6px 4px;
+      color:#10325d;
+      display:grid;
+      justify-items:center;
+      gap: 4px;
+      text-align:center;
+      font: inherit;
+      cursor: default;
+      user-select:none;
+    }
+    .miomos-explorer-item:hover {
+      border-color: rgba(111,138,189,.32);
+      background: rgba(214,228,250,.38);
+    }
+    .miomos-explorer-item.is-selected {
+      border-color: rgba(72,104,164,.58);
+      background: linear-gradient(180deg, rgba(201,224,255,.82), rgba(167,198,245,.86));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.88);
+    }
+    .miomos-explorer-item-glyph {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display:grid;
+      place-items:center;
+      background: linear-gradient(180deg, #ffd76e, #e5a72c);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.8), 0 6px 14px rgba(15,23,42,.18);
+      color:#4f2d00;
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .miomos-explorer-item.is-thumbnails { width: 126px; }
+    .miomos-explorer-item.is-thumbnails .miomos-explorer-item-glyph { width: 64px; height: 64px; font-size: 13px; }
+    .miomos-explorer-item.is-large-icons { width: 98px; }
+    .miomos-explorer-item.is-icons { width: 84px; }
+    .miomos-explorer-item.is-icons .miomos-explorer-item-glyph { width: 36px; height: 36px; border-radius: 10px; }
+    .miomos-explorer-item.is-tiles {
+      width: 176px;
+      grid-template-columns: 44px 1fr;
+      grid-template-rows: auto auto;
+      text-align:left;
+      justify-items:start;
+      align-items:center;
+      gap: 2px 10px;
+      padding: 8px 10px;
+    }
+    .miomos-explorer-item.is-tiles .miomos-explorer-item-glyph {
+      grid-row: 1 / span 2;
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+    }
+    .miomos-explorer-item-label {
+      color:#163864;
+      font-size: 12px;
+      line-height: 1.25;
+      text-shadow: 0 1px 0 rgba(255,255,255,.75);
+      word-break: break-word;
+    }
+    .miomos-explorer-item-meta {
+      color:#4d6b95;
+      font-size: 10px;
+      line-height: 1.2;
+    }
+    .miomos-explorer-list {
+      overflow:auto;
+      padding: 6px 0;
+      background: linear-gradient(180deg, #ffffff, #f5f9ff);
+    }
+    .miomos-explorer-list-row {
+      width:100%;
+      display:grid;
+      grid-template-columns: 24px minmax(0,1fr) 160px;
+      align-items:center;
+      gap: 10px;
+      padding: 7px 12px;
+      border:0;
+      border-bottom:1px solid rgba(120,150,196,.18);
+      background:transparent;
+      color:#15325f;
+      font: inherit;
+      text-align:left;
+    }
+    .miomos-explorer-list-row:hover { background: rgba(214,228,250,.34); }
+    .miomos-explorer-list-row.is-selected { background: linear-gradient(180deg, rgba(201,224,255,.8), rgba(167,198,245,.84)); }
+    .miomos-explorer-row-glyph {
+      width:18px;
+      height:18px;
+      border-radius: 5px;
+      display:grid;
+      place-items:center;
+      background: linear-gradient(180deg, #ffd76e, #e5a72c);
+      color:#4f2d00;
+      font-size: 9px;
+      font-weight: 800;
+    }
+    .miomos-explorer-details {
+      width:100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      background: linear-gradient(180deg, #ffffff, #f5f9ff);
+      color:#15325f;
+    }
+    .miomos-explorer-details thead th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      padding: 7px 10px;
+      text-align:left;
+      font-size:11px;
+      color:#24426f;
+      background: linear-gradient(180deg, #fefefe, #d8e6fb);
+      border-bottom:1px solid rgba(120,150,196,.36);
+      cursor: pointer;
+      user-select:none;
+    }
+    .miomos-explorer-details tbody td {
+      padding: 7px 10px;
+      border-bottom:1px solid rgba(120,150,196,.14);
+      font-size:12px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .miomos-explorer-details tbody tr:hover td { background: rgba(214,228,250,.32); }
+    .miomos-explorer-details tbody tr.is-selected td { background: linear-gradient(180deg, rgba(201,224,255,.8), rgba(167,198,245,.84)); }
+    .miomos-explorer-details td strong { color:#15325f; margin-left:8px; }
     .miomos-explorer-statusbar {
       display:flex;
-      justify-content: space-between;
-      gap:12px;
-      padding: 6px 10px;
-      border-top: 1px solid rgba(127,158,214,.24);
-      background: linear-gradient(180deg, #edf4ff, #dce8fb);
-      color:#36537c;
-      font-size: 11px;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+      min-height: 26px;
+      padding: 0 10px;
+      border-top:1px solid rgba(120,150,196,.28);
+      background: linear-gradient(180deg, #f0f6ff, #d9e8fb);
+      color:#24426f;
+      font-size:11px;
     }
-    .miomos-root[data-mobile-layout="1"] .miomos-explorer-body {
+    .miomos-root[data-mobile-layout="1"] .miomos-explorer-frame {
       grid-template-columns: minmax(0,1fr);
     }
-    .miomos-root[data-mobile-layout="1"] .miomos-explorer-pane {
-      border-right: 0;
-      border-bottom: 1px solid rgba(127,158,214,.28);
-    }
-
-    .miomos-selection-marquee {
-      position:absolute;
-      z-index: 4;
-      pointer-events:none;
-      border:1px dotted rgba(31,82,163,.95);
-      background: rgba(84,144,255,.20);
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.35);
-    }
-    .miomos-inline-rename {
-      width: 100%;
-      min-width: 0;
-      padding: 2px 4px;
-      border: 1px solid #6a8fcb;
-      background:#fffef7;
-      color:#14345d;
-      font: inherit;
-      font-size: 11px;
-      line-height: 1.25;
-      box-shadow: inset 0 1px 2px rgba(13,31,61,.08);
-    }
-    .miomos-desktop-icon.is-renaming .miomos-desktop-icon-kind,
-    .miomos-directory-card.is-renaming .miomos-entry-meta {
-      visibility:hidden;
-    }
-    .miomos-directory-card.is-selected {
-      border-color: rgba(35,91,181,.58) !important;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.6), 0 0 0 1px rgba(35,91,181,.22);
-      background: linear-gradient(180deg, rgba(230,241,255,.98), rgba(214,229,251,.96)) !important;
-    }
-    .miomos-directory-card.is-recycle-item .miomos-directory-glyph {
-      opacity: .92;
+    .miomos-root[data-mobile-layout="1"] .miomos-explorer-address-row {
+      grid-template-columns: 1fr;
     }
 
   </style>
@@ -1552,175 +1775,398 @@
     }
 
     .miomos-desktop-icon.is-selected {
-      background: linear-gradient(180deg, rgba(117,166,241,.32), rgba(52,98,196,.28)) !important;
-      border-color: rgba(255,255,255,.34) !important;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.20), 0 0 0 1px rgba(28,71,148,.28);
+      background: rgba(95,141,255,.16) !important;
+      border-color: rgba(95,141,255,.38) !important;
+      box-shadow: 0 0 0 1px rgba(255,255,255,.08), inset 0 1px 0 rgba(255,255,255,.1);
     }
-    .miomos-desktop-icon.is-drop-target,
-    .miomos-explorer-content.is-drop-target {
-      box-shadow: 0 0 0 2px rgba(255,206,84,.68), inset 0 0 0 1px rgba(255,255,255,.34);
-      border-color: rgba(214,163,32,.42) !important;
-      background: rgba(255,244,194,.14) !important;
+    .miomos-desktop-icon.is-renaming {
+      background: rgba(95,141,255,.12) !important;
+      border-color: rgba(95,141,255,.34) !important;
     }
+    .miomos-desktop-rename-input {
+      width: 100%; margin-top: 4px; border-radius: 4px; border: 1px solid rgba(95,141,255,.45);
+      background: rgba(255,255,255,.96); color: #102033; font: inherit; font-size: 11px; padding: 3px 5px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.7), 0 0 0 1px rgba(95,141,255,.14);
+    }
+    .miomos-desktop-marquee {
+      position: absolute; z-index: 8; pointer-events: none;
+      border: 1px dashed rgba(141,190,255,.86);
+      background: rgba(95,141,255,.16);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
+    }
+    .miomos-directory-card[data-entry-kind="recycle"] {
+      align-items: stretch;
+    }
+
+    .miomos-xp-explorer {
+      padding: 0 !important;
+      overflow: hidden;
+      border-radius: 12px;
+    }
+    .miomos-xp-explorer-toolbar, .miomos-xp-explorer-address, .miomos-xp-explorer-status {
+      display:flex; align-items:center; gap:8px;
+      padding: 8px 10px;
+      border-bottom: 1px solid rgba(148,163,184,.16);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+    }
+    .miomos-xp-explorer-address {
+      justify-content:flex-start;
+      font-size: 11px;
+    }
+    .miomos-xp-explorer-address strong { color:#f8fbff; }
+    .miomos-xp-explorer-address span {
+      display:inline-flex; align-items:center; min-height: 26px; padding: 0 10px;
+      border-radius: 999px; border: 1px solid rgba(148,163,184,.18);
+      background: rgba(8,14,24,.36); color:#d7e6fb;
+    }
+    .miomos-xp-explorer-body {
+      display:grid; grid-template-columns: 220px minmax(0,1fr);
+      min-height: 360px;
+    }
+    .miomos-xp-explorer-side {
+      padding: 12px 10px;
+      border-right: 1px solid rgba(148,163,184,.16);
+      background: linear-gradient(180deg, rgba(28,51,92,.34), rgba(10,18,30,.22));
+    }
+    .miomos-xp-side-group + .miomos-xp-side-group { margin-top: 16px; }
+    .miomos-xp-side-heading {
+      margin-bottom: 8px; font-size: 11px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color:#f8fbff;
+    }
+    .miomos-xp-side-link {
+      display:block; width:100%; text-align:left; margin-bottom:6px; padding:6px 8px; border-radius:8px; border:1px solid rgba(148,163,184,.14);
+      background: rgba(255,255,255,.04); color:#d8e6fb; font: inherit;
+    }
+    .miomos-xp-side-link:disabled { opacity:.45; }
+    .miomos-xp-side-copy strong, .miomos-xp-side-copy span { display:block; }
+    .miomos-xp-side-copy span { margin-top: 4px; color:#a8bdd7; line-height:1.4; }
+    .miomos-xp-explorer-main { padding: 10px; overflow:auto; }
+    .miomos-xp-file-table {
+      width:100%; border-collapse: collapse; font-size:12px;
+      border: 1px solid rgba(148,163,184,.14); background: rgba(10,15,24,.22);
+    }
+    .miomos-xp-file-table thead th {
+      position: sticky; top: 0; z-index: 1; text-align:left;
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+      border-bottom: 1px solid rgba(148,163,184,.18);
+      padding: 0;
+    }
+    .miomos-xp-col-btn {
+      width:100%; text-align:left; padding: 8px 10px; border:0; background:transparent; color:#f8fbff; font: inherit; font-weight:700;
+    }
+    .miomos-xp-file-row td {
+      padding: 7px 10px; border-bottom: 1px solid rgba(148,163,184,.08); color:#d9e7fb;
+    }
+    .miomos-xp-file-row:hover td { background: rgba(255,255,255,.03); }
+    .miomos-xp-file-row.is-selected td {
+      background: rgba(95,141,255,.18); box-shadow: inset 0 1px 0 rgba(255,255,255,.08), inset 0 -1px 0 rgba(255,255,255,.04);
+    }
+    .miomos-xp-name-cell {
+      display:flex; align-items:center; gap:10px;
+    }
+    .miomos-xp-explorer-status {
+      border-top: 1px solid rgba(148,163,184,.16);
+      border-bottom: 0;
+      color:#d4e4fa;
+      font-size:11px;
+    }
+    .miomos-root[data-mobile-layout="1"] .miomos-xp-explorer-body {
+      grid-template-columns: minmax(0,1fr);
+    }
+    .miomos-root[data-mobile-layout="1"] .miomos-xp-explorer-side {
+      border-right: 0;
+      border-bottom: 1px solid rgba(148,163,184,.16);
+    }
+
+    .miomos-xp-folder-window {
+      display: grid;
+      grid-template-rows: auto minmax(0,1fr);
+      gap: 10px;
+      height: 100%;
+      min-height: 0;
+    }
+    .miomos-explorer-window-header { margin-bottom: 0; }
     .miomos-explorer-shell {
       display: grid;
       grid-template-rows: auto auto minmax(0,1fr) auto;
+      min-height: 0;
       height: 100%;
-      border-radius: 16px;
+      border-radius: 14px;
       overflow: hidden;
-      background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(243,247,255,.90));
-      border: 1px solid rgba(127,158,214,.34);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.75);
-      color: #1f3554;
+      border: 1px solid rgba(90,132,210,.32);
+      background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(232,240,253,.92));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 10px 28px rgba(15,23,42,.16);
     }
-    .miomos-explorer-header {
-      margin: 0 !important;
-      padding: 14px 16px 10px;
-      background: linear-gradient(180deg, #ffffff, #edf4ff);
-      border-bottom: 1px solid rgba(127,158,214,.28);
-    }
-    .miomos-explorer-toolbar {
-      display:flex;
-      align-items:center;
-      gap:8px;
-      padding: 8px 12px;
-      background: linear-gradient(180deg, #fefefe, #e6eefb);
-      border-bottom: 1px solid rgba(127,158,214,.24);
+    .miomos-explorer-toolbar-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 10px;
+      background: linear-gradient(180deg, #fefefe, #dfe9f9);
+      border-bottom: 1px solid rgba(120,150,196,.34);
       flex-wrap: wrap;
     }
-    .miomos-explorer-tool,
-    .miomos-explorer-pane-link {
-      appearance:none;
-      border:1px solid rgba(127,158,214,.34);
-      border-radius: 6px;
-      background: linear-gradient(180deg, #ffffff, #dde9fb);
-      color:#24456e;
+    .miomos-explorer-toolbar { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+    .miomos-explorer-toolbtn {
+      border: 1px solid rgba(111,138,189,.5);
+      border-radius: 4px;
+      background: linear-gradient(180deg, #ffffff, #d7e5fb);
+      color: #15325f;
       font: inherit;
-      padding: 6px 10px;
-      cursor:pointer;
-      text-align:left;
-    }
-    .miomos-explorer-tool:hover,
-    .miomos-explorer-pane-link:hover {
-      border-color: rgba(72,110,178,.42);
-      background: linear-gradient(180deg, #ffffff, #d2e2fb);
-    }
-    .miomos-explorer-pane-link:disabled {
-      opacity:.55;
-      cursor:default;
-    }
-    .miomos-explorer-address {
-      margin-left: auto;
-      min-width: min(420px, 100%);
-      display:grid;
-      gap:4px;
-      color:#36537c;
       font-size: 11px;
       font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .04em;
+      padding: 4px 10px;
+      min-height: 26px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.92);
     }
-    .miomos-explorer-address-bar {
-      min-height: 34px;
+    .miomos-explorer-toolbtn.is-active {
+      background: linear-gradient(180deg, #cfe3ff, #a6c4f5);
+      border-color: rgba(72,104,164,.66);
+    }
+    .miomos-explorer-address-row {
+      display:grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 8px;
+      align-items:center;
+      padding: 8px 10px;
+      background: linear-gradient(180deg, #eef4fd, #d7e5fb);
+      border-bottom: 1px solid rgba(120,150,196,.30);
+    }
+    .miomos-explorer-address-label, .miomos-explorer-sort-box {
+      color:#22406f;
+      font-size:11px;
+      font-weight:700;
+    }
+    .miomos-explorer-address-box {
+      min-height: 28px;
       display:flex;
       align-items:center;
       padding: 0 10px;
-      border-radius: 8px;
-      border:1px solid rgba(127,158,214,.34);
-      background: linear-gradient(180deg, #ffffff, #f7faff);
-      color:#233f65;
-      font-size: 12px;
-      letter-spacing: 0;
-      text-transform:none;
-      font-weight: 600;
+      border-radius: 3px;
+      border:1px solid rgba(111,138,189,.46);
+      background:#ffffff;
+      color:#15325f;
+      box-shadow: inset 0 1px 2px rgba(15,23,42,.08);
+      font-size: 11px;
     }
-    .miomos-explorer-body {
-      min-height: 0;
+    .miomos-explorer-sort-box { display:flex; align-items:center; gap:6px; }
+    .miomos-explorer-sort-box select {
+      min-height: 28px;
+      border-radius: 3px;
+      border:1px solid rgba(111,138,189,.46);
+      background:#fff;
+      color:#15325f;
+      font: inherit;
+      padding: 0 8px;
+    }
+    .miomos-explorer-frame {
       display:grid;
       grid-template-columns: 220px minmax(0,1fr);
-      gap: 0;
-    }
-    .miomos-explorer-pane {
       min-height: 0;
-      overflow:auto;
-      padding: 12px;
-      background: linear-gradient(180deg, #d7e7ff, #eef5ff 45%, #f6f9ff 100%);
-      border-right: 1px solid rgba(127,158,214,.28);
+      background: linear-gradient(180deg, #e8f1fb, #f7fbff);
+    }
+    .miomos-explorer-side-pane {
+      background: linear-gradient(180deg, #d9e8fb, #edf5ff 18%, #d8e8fb);
+      border-right: 1px solid rgba(120,150,196,.30);
+      padding: 12px 10px;
       display:grid;
       align-content:start;
-      gap:12px;
+      gap: 12px;
     }
-    .miomos-explorer-pane-card {
+    .miomos-explorer-pane-group {
       display:grid;
-      gap:8px;
+      gap: 6px;
       padding: 10px;
-      border-radius: 12px;
-      background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(231,240,255,.96));
-      border:1px solid rgba(127,158,214,.26);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
-      color:#27456f;
+      border-radius: 8px;
+      background: linear-gradient(180deg, rgba(255,255,255,.84), rgba(226,236,251,.86));
+      border: 1px solid rgba(120,150,196,.26);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.86);
     }
-    .miomos-explorer-pane-card strong {
+    .miomos-explorer-pane-group strong {
+      color:#1d4277;
       font-size: 11px;
-      letter-spacing: .06em;
       text-transform: uppercase;
-      color:#31527d;
+      letter-spacing: .04em;
+    }
+    .miomos-explorer-pane-group span {
+      color:#355884;
+      font-size: 11px;
+      line-height:1.4;
+    }
+    .miomos-explorer-pane-link {
+      border:0;
+      background:transparent;
+      color:#0f4fa9;
+      text-align:left;
+      padding: 2px 0;
+      font: inherit;
+      font-size: 12px;
+      cursor:pointer;
     }
     .miomos-explorer-content {
-      min-height: 0;
-      overflow:auto;
-      padding: 12px;
-      background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(247,250,255,.98));
+      min-height:0;
+      overflow:hidden;
+      background: linear-gradient(180deg, #ffffff, #f7fbff 70%, #eef4ff);
+      display:grid;
     }
+    .miomos-explorer-icon-canvas {
+      position: relative;
+      min-height: 0;
+      overflow: auto;
+      padding: 8px 10px 14px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.96), rgba(242,247,255,.98)),
+        linear-gradient(90deg, rgba(121,163,230,.08), rgba(121,163,230,0) 40%);
+    }
+    .miomos-explorer-item {
+      position:absolute;
+      border:1px solid transparent;
+      border-radius: 4px;
+      background: transparent;
+      padding: 6px 4px;
+      color:#10325d;
+      display:grid;
+      justify-items:center;
+      gap: 4px;
+      text-align:center;
+      font: inherit;
+      cursor: default;
+      user-select:none;
+    }
+    .miomos-explorer-item:hover {
+      border-color: rgba(111,138,189,.32);
+      background: rgba(214,228,250,.38);
+    }
+    .miomos-explorer-item.is-selected {
+      border-color: rgba(72,104,164,.58);
+      background: linear-gradient(180deg, rgba(201,224,255,.82), rgba(167,198,245,.86));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.88);
+    }
+    .miomos-explorer-item-glyph {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display:grid;
+      place-items:center;
+      background: linear-gradient(180deg, #ffd76e, #e5a72c);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.8), 0 6px 14px rgba(15,23,42,.18);
+      color:#4f2d00;
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .miomos-explorer-item.is-thumbnails { width: 126px; }
+    .miomos-explorer-item.is-thumbnails .miomos-explorer-item-glyph { width: 64px; height: 64px; font-size: 13px; }
+    .miomos-explorer-item.is-large-icons { width: 98px; }
+    .miomos-explorer-item.is-icons { width: 84px; }
+    .miomos-explorer-item.is-icons .miomos-explorer-item-glyph { width: 36px; height: 36px; border-radius: 10px; }
+    .miomos-explorer-item.is-tiles {
+      width: 176px;
+      grid-template-columns: 44px 1fr;
+      grid-template-rows: auto auto;
+      text-align:left;
+      justify-items:start;
+      align-items:center;
+      gap: 2px 10px;
+      padding: 8px 10px;
+    }
+    .miomos-explorer-item.is-tiles .miomos-explorer-item-glyph {
+      grid-row: 1 / span 2;
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+    }
+    .miomos-explorer-item-label {
+      color:#163864;
+      font-size: 12px;
+      line-height: 1.25;
+      text-shadow: 0 1px 0 rgba(255,255,255,.75);
+      word-break: break-word;
+    }
+    .miomos-explorer-item-meta {
+      color:#4d6b95;
+      font-size: 10px;
+      line-height: 1.2;
+    }
+    .miomos-explorer-list {
+      overflow:auto;
+      padding: 6px 0;
+      background: linear-gradient(180deg, #ffffff, #f5f9ff);
+    }
+    .miomos-explorer-list-row {
+      width:100%;
+      display:grid;
+      grid-template-columns: 24px minmax(0,1fr) 160px;
+      align-items:center;
+      gap: 10px;
+      padding: 7px 12px;
+      border:0;
+      border-bottom:1px solid rgba(120,150,196,.18);
+      background:transparent;
+      color:#15325f;
+      font: inherit;
+      text-align:left;
+    }
+    .miomos-explorer-list-row:hover { background: rgba(214,228,250,.34); }
+    .miomos-explorer-list-row.is-selected { background: linear-gradient(180deg, rgba(201,224,255,.8), rgba(167,198,245,.84)); }
+    .miomos-explorer-row-glyph {
+      width:18px;
+      height:18px;
+      border-radius: 5px;
+      display:grid;
+      place-items:center;
+      background: linear-gradient(180deg, #ffd76e, #e5a72c);
+      color:#4f2d00;
+      font-size: 9px;
+      font-weight: 800;
+    }
+    .miomos-explorer-details {
+      width:100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      background: linear-gradient(180deg, #ffffff, #f5f9ff);
+      color:#15325f;
+    }
+    .miomos-explorer-details thead th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      padding: 7px 10px;
+      text-align:left;
+      font-size:11px;
+      color:#24426f;
+      background: linear-gradient(180deg, #fefefe, #d8e6fb);
+      border-bottom:1px solid rgba(120,150,196,.36);
+      cursor: pointer;
+      user-select:none;
+    }
+    .miomos-explorer-details tbody td {
+      padding: 7px 10px;
+      border-bottom:1px solid rgba(120,150,196,.14);
+      font-size:12px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .miomos-explorer-details tbody tr:hover td { background: rgba(214,228,250,.32); }
+    .miomos-explorer-details tbody tr.is-selected td { background: linear-gradient(180deg, rgba(201,224,255,.8), rgba(167,198,245,.84)); }
+    .miomos-explorer-details td strong { color:#15325f; margin-left:8px; }
     .miomos-explorer-statusbar {
       display:flex;
-      justify-content: space-between;
-      gap:12px;
-      padding: 6px 10px;
-      border-top: 1px solid rgba(127,158,214,.24);
-      background: linear-gradient(180deg, #edf4ff, #dce8fb);
-      color:#36537c;
-      font-size: 11px;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+      min-height: 26px;
+      padding: 0 10px;
+      border-top:1px solid rgba(120,150,196,.28);
+      background: linear-gradient(180deg, #f0f6ff, #d9e8fb);
+      color:#24426f;
+      font-size:11px;
     }
-    .miomos-root[data-mobile-layout="1"] .miomos-explorer-body {
+    .miomos-root[data-mobile-layout="1"] .miomos-explorer-frame {
       grid-template-columns: minmax(0,1fr);
     }
-    .miomos-root[data-mobile-layout="1"] .miomos-explorer-pane {
-      border-right: 0;
-      border-bottom: 1px solid rgba(127,158,214,.28);
-    }
-
-    .miomos-selection-marquee {
-      position:absolute;
-      z-index: 4;
-      pointer-events:none;
-      border:1px dotted rgba(31,82,163,.95);
-      background: rgba(84,144,255,.20);
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.35);
-    }
-    .miomos-inline-rename {
-      width: 100%;
-      min-width: 0;
-      padding: 2px 4px;
-      border: 1px solid #6a8fcb;
-      background:#fffef7;
-      color:#14345d;
-      font: inherit;
-      font-size: 11px;
-      line-height: 1.25;
-      box-shadow: inset 0 1px 2px rgba(13,31,61,.08);
-    }
-    .miomos-desktop-icon.is-renaming .miomos-desktop-icon-kind,
-    .miomos-directory-card.is-renaming .miomos-entry-meta {
-      visibility:hidden;
-    }
-    .miomos-directory-card.is-selected {
-      border-color: rgba(35,91,181,.58) !important;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.6), 0 0 0 1px rgba(35,91,181,.22);
-      background: linear-gradient(180deg, rgba(230,241,255,.98), rgba(214,229,251,.96)) !important;
-    }
-    .miomos-directory-card.is-recycle-item .miomos-directory-glyph {
-      opacity: .92;
+    .miomos-root[data-mobile-layout="1"] .miomos-explorer-address-row {
+      grid-template-columns: 1fr;
     }
 
   </style>
@@ -2411,175 +2857,398 @@
     }
 
     .miomos-desktop-icon.is-selected {
-      background: linear-gradient(180deg, rgba(117,166,241,.32), rgba(52,98,196,.28)) !important;
-      border-color: rgba(255,255,255,.34) !important;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.20), 0 0 0 1px rgba(28,71,148,.28);
+      background: rgba(95,141,255,.16) !important;
+      border-color: rgba(95,141,255,.38) !important;
+      box-shadow: 0 0 0 1px rgba(255,255,255,.08), inset 0 1px 0 rgba(255,255,255,.1);
     }
-    .miomos-desktop-icon.is-drop-target,
-    .miomos-explorer-content.is-drop-target {
-      box-shadow: 0 0 0 2px rgba(255,206,84,.68), inset 0 0 0 1px rgba(255,255,255,.34);
-      border-color: rgba(214,163,32,.42) !important;
-      background: rgba(255,244,194,.14) !important;
+    .miomos-desktop-icon.is-renaming {
+      background: rgba(95,141,255,.12) !important;
+      border-color: rgba(95,141,255,.34) !important;
     }
+    .miomos-desktop-rename-input {
+      width: 100%; margin-top: 4px; border-radius: 4px; border: 1px solid rgba(95,141,255,.45);
+      background: rgba(255,255,255,.96); color: #102033; font: inherit; font-size: 11px; padding: 3px 5px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.7), 0 0 0 1px rgba(95,141,255,.14);
+    }
+    .miomos-desktop-marquee {
+      position: absolute; z-index: 8; pointer-events: none;
+      border: 1px dashed rgba(141,190,255,.86);
+      background: rgba(95,141,255,.16);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
+    }
+    .miomos-directory-card[data-entry-kind="recycle"] {
+      align-items: stretch;
+    }
+
+    .miomos-xp-explorer {
+      padding: 0 !important;
+      overflow: hidden;
+      border-radius: 12px;
+    }
+    .miomos-xp-explorer-toolbar, .miomos-xp-explorer-address, .miomos-xp-explorer-status {
+      display:flex; align-items:center; gap:8px;
+      padding: 8px 10px;
+      border-bottom: 1px solid rgba(148,163,184,.16);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+    }
+    .miomos-xp-explorer-address {
+      justify-content:flex-start;
+      font-size: 11px;
+    }
+    .miomos-xp-explorer-address strong { color:#f8fbff; }
+    .miomos-xp-explorer-address span {
+      display:inline-flex; align-items:center; min-height: 26px; padding: 0 10px;
+      border-radius: 999px; border: 1px solid rgba(148,163,184,.18);
+      background: rgba(8,14,24,.36); color:#d7e6fb;
+    }
+    .miomos-xp-explorer-body {
+      display:grid; grid-template-columns: 220px minmax(0,1fr);
+      min-height: 360px;
+    }
+    .miomos-xp-explorer-side {
+      padding: 12px 10px;
+      border-right: 1px solid rgba(148,163,184,.16);
+      background: linear-gradient(180deg, rgba(28,51,92,.34), rgba(10,18,30,.22));
+    }
+    .miomos-xp-side-group + .miomos-xp-side-group { margin-top: 16px; }
+    .miomos-xp-side-heading {
+      margin-bottom: 8px; font-size: 11px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color:#f8fbff;
+    }
+    .miomos-xp-side-link {
+      display:block; width:100%; text-align:left; margin-bottom:6px; padding:6px 8px; border-radius:8px; border:1px solid rgba(148,163,184,.14);
+      background: rgba(255,255,255,.04); color:#d8e6fb; font: inherit;
+    }
+    .miomos-xp-side-link:disabled { opacity:.45; }
+    .miomos-xp-side-copy strong, .miomos-xp-side-copy span { display:block; }
+    .miomos-xp-side-copy span { margin-top: 4px; color:#a8bdd7; line-height:1.4; }
+    .miomos-xp-explorer-main { padding: 10px; overflow:auto; }
+    .miomos-xp-file-table {
+      width:100%; border-collapse: collapse; font-size:12px;
+      border: 1px solid rgba(148,163,184,.14); background: rgba(10,15,24,.22);
+    }
+    .miomos-xp-file-table thead th {
+      position: sticky; top: 0; z-index: 1; text-align:left;
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+      border-bottom: 1px solid rgba(148,163,184,.18);
+      padding: 0;
+    }
+    .miomos-xp-col-btn {
+      width:100%; text-align:left; padding: 8px 10px; border:0; background:transparent; color:#f8fbff; font: inherit; font-weight:700;
+    }
+    .miomos-xp-file-row td {
+      padding: 7px 10px; border-bottom: 1px solid rgba(148,163,184,.08); color:#d9e7fb;
+    }
+    .miomos-xp-file-row:hover td { background: rgba(255,255,255,.03); }
+    .miomos-xp-file-row.is-selected td {
+      background: rgba(95,141,255,.18); box-shadow: inset 0 1px 0 rgba(255,255,255,.08), inset 0 -1px 0 rgba(255,255,255,.04);
+    }
+    .miomos-xp-name-cell {
+      display:flex; align-items:center; gap:10px;
+    }
+    .miomos-xp-explorer-status {
+      border-top: 1px solid rgba(148,163,184,.16);
+      border-bottom: 0;
+      color:#d4e4fa;
+      font-size:11px;
+    }
+    .miomos-root[data-mobile-layout="1"] .miomos-xp-explorer-body {
+      grid-template-columns: minmax(0,1fr);
+    }
+    .miomos-root[data-mobile-layout="1"] .miomos-xp-explorer-side {
+      border-right: 0;
+      border-bottom: 1px solid rgba(148,163,184,.16);
+    }
+
+    .miomos-xp-folder-window {
+      display: grid;
+      grid-template-rows: auto minmax(0,1fr);
+      gap: 10px;
+      height: 100%;
+      min-height: 0;
+    }
+    .miomos-explorer-window-header { margin-bottom: 0; }
     .miomos-explorer-shell {
       display: grid;
       grid-template-rows: auto auto minmax(0,1fr) auto;
+      min-height: 0;
       height: 100%;
-      border-radius: 16px;
+      border-radius: 14px;
       overflow: hidden;
-      background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(243,247,255,.90));
-      border: 1px solid rgba(127,158,214,.34);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.75);
-      color: #1f3554;
+      border: 1px solid rgba(90,132,210,.32);
+      background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(232,240,253,.92));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 10px 28px rgba(15,23,42,.16);
     }
-    .miomos-explorer-header {
-      margin: 0 !important;
-      padding: 14px 16px 10px;
-      background: linear-gradient(180deg, #ffffff, #edf4ff);
-      border-bottom: 1px solid rgba(127,158,214,.28);
-    }
-    .miomos-explorer-toolbar {
-      display:flex;
-      align-items:center;
-      gap:8px;
-      padding: 8px 12px;
-      background: linear-gradient(180deg, #fefefe, #e6eefb);
-      border-bottom: 1px solid rgba(127,158,214,.24);
+    .miomos-explorer-toolbar-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 10px;
+      background: linear-gradient(180deg, #fefefe, #dfe9f9);
+      border-bottom: 1px solid rgba(120,150,196,.34);
       flex-wrap: wrap;
     }
-    .miomos-explorer-tool,
-    .miomos-explorer-pane-link {
-      appearance:none;
-      border:1px solid rgba(127,158,214,.34);
-      border-radius: 6px;
-      background: linear-gradient(180deg, #ffffff, #dde9fb);
-      color:#24456e;
+    .miomos-explorer-toolbar { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+    .miomos-explorer-toolbtn {
+      border: 1px solid rgba(111,138,189,.5);
+      border-radius: 4px;
+      background: linear-gradient(180deg, #ffffff, #d7e5fb);
+      color: #15325f;
       font: inherit;
-      padding: 6px 10px;
-      cursor:pointer;
-      text-align:left;
-    }
-    .miomos-explorer-tool:hover,
-    .miomos-explorer-pane-link:hover {
-      border-color: rgba(72,110,178,.42);
-      background: linear-gradient(180deg, #ffffff, #d2e2fb);
-    }
-    .miomos-explorer-pane-link:disabled {
-      opacity:.55;
-      cursor:default;
-    }
-    .miomos-explorer-address {
-      margin-left: auto;
-      min-width: min(420px, 100%);
-      display:grid;
-      gap:4px;
-      color:#36537c;
       font-size: 11px;
       font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .04em;
+      padding: 4px 10px;
+      min-height: 26px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.92);
     }
-    .miomos-explorer-address-bar {
-      min-height: 34px;
+    .miomos-explorer-toolbtn.is-active {
+      background: linear-gradient(180deg, #cfe3ff, #a6c4f5);
+      border-color: rgba(72,104,164,.66);
+    }
+    .miomos-explorer-address-row {
+      display:grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 8px;
+      align-items:center;
+      padding: 8px 10px;
+      background: linear-gradient(180deg, #eef4fd, #d7e5fb);
+      border-bottom: 1px solid rgba(120,150,196,.30);
+    }
+    .miomos-explorer-address-label, .miomos-explorer-sort-box {
+      color:#22406f;
+      font-size:11px;
+      font-weight:700;
+    }
+    .miomos-explorer-address-box {
+      min-height: 28px;
       display:flex;
       align-items:center;
       padding: 0 10px;
-      border-radius: 8px;
-      border:1px solid rgba(127,158,214,.34);
-      background: linear-gradient(180deg, #ffffff, #f7faff);
-      color:#233f65;
-      font-size: 12px;
-      letter-spacing: 0;
-      text-transform:none;
-      font-weight: 600;
+      border-radius: 3px;
+      border:1px solid rgba(111,138,189,.46);
+      background:#ffffff;
+      color:#15325f;
+      box-shadow: inset 0 1px 2px rgba(15,23,42,.08);
+      font-size: 11px;
     }
-    .miomos-explorer-body {
-      min-height: 0;
+    .miomos-explorer-sort-box { display:flex; align-items:center; gap:6px; }
+    .miomos-explorer-sort-box select {
+      min-height: 28px;
+      border-radius: 3px;
+      border:1px solid rgba(111,138,189,.46);
+      background:#fff;
+      color:#15325f;
+      font: inherit;
+      padding: 0 8px;
+    }
+    .miomos-explorer-frame {
       display:grid;
       grid-template-columns: 220px minmax(0,1fr);
-      gap: 0;
-    }
-    .miomos-explorer-pane {
       min-height: 0;
-      overflow:auto;
-      padding: 12px;
-      background: linear-gradient(180deg, #d7e7ff, #eef5ff 45%, #f6f9ff 100%);
-      border-right: 1px solid rgba(127,158,214,.28);
+      background: linear-gradient(180deg, #e8f1fb, #f7fbff);
+    }
+    .miomos-explorer-side-pane {
+      background: linear-gradient(180deg, #d9e8fb, #edf5ff 18%, #d8e8fb);
+      border-right: 1px solid rgba(120,150,196,.30);
+      padding: 12px 10px;
       display:grid;
       align-content:start;
-      gap:12px;
+      gap: 12px;
     }
-    .miomos-explorer-pane-card {
+    .miomos-explorer-pane-group {
       display:grid;
-      gap:8px;
+      gap: 6px;
       padding: 10px;
-      border-radius: 12px;
-      background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(231,240,255,.96));
-      border:1px solid rgba(127,158,214,.26);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
-      color:#27456f;
+      border-radius: 8px;
+      background: linear-gradient(180deg, rgba(255,255,255,.84), rgba(226,236,251,.86));
+      border: 1px solid rgba(120,150,196,.26);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.86);
     }
-    .miomos-explorer-pane-card strong {
+    .miomos-explorer-pane-group strong {
+      color:#1d4277;
       font-size: 11px;
-      letter-spacing: .06em;
       text-transform: uppercase;
-      color:#31527d;
+      letter-spacing: .04em;
+    }
+    .miomos-explorer-pane-group span {
+      color:#355884;
+      font-size: 11px;
+      line-height:1.4;
+    }
+    .miomos-explorer-pane-link {
+      border:0;
+      background:transparent;
+      color:#0f4fa9;
+      text-align:left;
+      padding: 2px 0;
+      font: inherit;
+      font-size: 12px;
+      cursor:pointer;
     }
     .miomos-explorer-content {
-      min-height: 0;
-      overflow:auto;
-      padding: 12px;
-      background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(247,250,255,.98));
+      min-height:0;
+      overflow:hidden;
+      background: linear-gradient(180deg, #ffffff, #f7fbff 70%, #eef4ff);
+      display:grid;
     }
+    .miomos-explorer-icon-canvas {
+      position: relative;
+      min-height: 0;
+      overflow: auto;
+      padding: 8px 10px 14px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.96), rgba(242,247,255,.98)),
+        linear-gradient(90deg, rgba(121,163,230,.08), rgba(121,163,230,0) 40%);
+    }
+    .miomos-explorer-item {
+      position:absolute;
+      border:1px solid transparent;
+      border-radius: 4px;
+      background: transparent;
+      padding: 6px 4px;
+      color:#10325d;
+      display:grid;
+      justify-items:center;
+      gap: 4px;
+      text-align:center;
+      font: inherit;
+      cursor: default;
+      user-select:none;
+    }
+    .miomos-explorer-item:hover {
+      border-color: rgba(111,138,189,.32);
+      background: rgba(214,228,250,.38);
+    }
+    .miomos-explorer-item.is-selected {
+      border-color: rgba(72,104,164,.58);
+      background: linear-gradient(180deg, rgba(201,224,255,.82), rgba(167,198,245,.86));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.88);
+    }
+    .miomos-explorer-item-glyph {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display:grid;
+      place-items:center;
+      background: linear-gradient(180deg, #ffd76e, #e5a72c);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.8), 0 6px 14px rgba(15,23,42,.18);
+      color:#4f2d00;
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .miomos-explorer-item.is-thumbnails { width: 126px; }
+    .miomos-explorer-item.is-thumbnails .miomos-explorer-item-glyph { width: 64px; height: 64px; font-size: 13px; }
+    .miomos-explorer-item.is-large-icons { width: 98px; }
+    .miomos-explorer-item.is-icons { width: 84px; }
+    .miomos-explorer-item.is-icons .miomos-explorer-item-glyph { width: 36px; height: 36px; border-radius: 10px; }
+    .miomos-explorer-item.is-tiles {
+      width: 176px;
+      grid-template-columns: 44px 1fr;
+      grid-template-rows: auto auto;
+      text-align:left;
+      justify-items:start;
+      align-items:center;
+      gap: 2px 10px;
+      padding: 8px 10px;
+    }
+    .miomos-explorer-item.is-tiles .miomos-explorer-item-glyph {
+      grid-row: 1 / span 2;
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+    }
+    .miomos-explorer-item-label {
+      color:#163864;
+      font-size: 12px;
+      line-height: 1.25;
+      text-shadow: 0 1px 0 rgba(255,255,255,.75);
+      word-break: break-word;
+    }
+    .miomos-explorer-item-meta {
+      color:#4d6b95;
+      font-size: 10px;
+      line-height: 1.2;
+    }
+    .miomos-explorer-list {
+      overflow:auto;
+      padding: 6px 0;
+      background: linear-gradient(180deg, #ffffff, #f5f9ff);
+    }
+    .miomos-explorer-list-row {
+      width:100%;
+      display:grid;
+      grid-template-columns: 24px minmax(0,1fr) 160px;
+      align-items:center;
+      gap: 10px;
+      padding: 7px 12px;
+      border:0;
+      border-bottom:1px solid rgba(120,150,196,.18);
+      background:transparent;
+      color:#15325f;
+      font: inherit;
+      text-align:left;
+    }
+    .miomos-explorer-list-row:hover { background: rgba(214,228,250,.34); }
+    .miomos-explorer-list-row.is-selected { background: linear-gradient(180deg, rgba(201,224,255,.8), rgba(167,198,245,.84)); }
+    .miomos-explorer-row-glyph {
+      width:18px;
+      height:18px;
+      border-radius: 5px;
+      display:grid;
+      place-items:center;
+      background: linear-gradient(180deg, #ffd76e, #e5a72c);
+      color:#4f2d00;
+      font-size: 9px;
+      font-weight: 800;
+    }
+    .miomos-explorer-details {
+      width:100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      background: linear-gradient(180deg, #ffffff, #f5f9ff);
+      color:#15325f;
+    }
+    .miomos-explorer-details thead th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      padding: 7px 10px;
+      text-align:left;
+      font-size:11px;
+      color:#24426f;
+      background: linear-gradient(180deg, #fefefe, #d8e6fb);
+      border-bottom:1px solid rgba(120,150,196,.36);
+      cursor: pointer;
+      user-select:none;
+    }
+    .miomos-explorer-details tbody td {
+      padding: 7px 10px;
+      border-bottom:1px solid rgba(120,150,196,.14);
+      font-size:12px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .miomos-explorer-details tbody tr:hover td { background: rgba(214,228,250,.32); }
+    .miomos-explorer-details tbody tr.is-selected td { background: linear-gradient(180deg, rgba(201,224,255,.8), rgba(167,198,245,.84)); }
+    .miomos-explorer-details td strong { color:#15325f; margin-left:8px; }
     .miomos-explorer-statusbar {
       display:flex;
-      justify-content: space-between;
-      gap:12px;
-      padding: 6px 10px;
-      border-top: 1px solid rgba(127,158,214,.24);
-      background: linear-gradient(180deg, #edf4ff, #dce8fb);
-      color:#36537c;
-      font-size: 11px;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+      min-height: 26px;
+      padding: 0 10px;
+      border-top:1px solid rgba(120,150,196,.28);
+      background: linear-gradient(180deg, #f0f6ff, #d9e8fb);
+      color:#24426f;
+      font-size:11px;
     }
-    .miomos-root[data-mobile-layout="1"] .miomos-explorer-body {
+    .miomos-root[data-mobile-layout="1"] .miomos-explorer-frame {
       grid-template-columns: minmax(0,1fr);
     }
-    .miomos-root[data-mobile-layout="1"] .miomos-explorer-pane {
-      border-right: 0;
-      border-bottom: 1px solid rgba(127,158,214,.28);
-    }
-
-    .miomos-selection-marquee {
-      position:absolute;
-      z-index: 4;
-      pointer-events:none;
-      border:1px dotted rgba(31,82,163,.95);
-      background: rgba(84,144,255,.20);
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.35);
-    }
-    .miomos-inline-rename {
-      width: 100%;
-      min-width: 0;
-      padding: 2px 4px;
-      border: 1px solid #6a8fcb;
-      background:#fffef7;
-      color:#14345d;
-      font: inherit;
-      font-size: 11px;
-      line-height: 1.25;
-      box-shadow: inset 0 1px 2px rgba(13,31,61,.08);
-    }
-    .miomos-desktop-icon.is-renaming .miomos-desktop-icon-kind,
-    .miomos-directory-card.is-renaming .miomos-entry-meta {
-      visibility:hidden;
-    }
-    .miomos-directory-card.is-selected {
-      border-color: rgba(35,91,181,.58) !important;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.6), 0 0 0 1px rgba(35,91,181,.22);
-      background: linear-gradient(180deg, rgba(230,241,255,.98), rgba(214,229,251,.96)) !important;
-    }
-    .miomos-directory-card.is-recycle-item .miomos-directory-glyph {
-      opacity: .92;
+    .miomos-root[data-mobile-layout="1"] .miomos-explorer-address-row {
+      grid-template-columns: 1fr;
     }
 
   </style>
@@ -2772,175 +3441,398 @@
     }
 
     .miomos-desktop-icon.is-selected {
-      background: linear-gradient(180deg, rgba(117,166,241,.32), rgba(52,98,196,.28)) !important;
-      border-color: rgba(255,255,255,.34) !important;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.20), 0 0 0 1px rgba(28,71,148,.28);
+      background: rgba(95,141,255,.16) !important;
+      border-color: rgba(95,141,255,.38) !important;
+      box-shadow: 0 0 0 1px rgba(255,255,255,.08), inset 0 1px 0 rgba(255,255,255,.1);
     }
-    .miomos-desktop-icon.is-drop-target,
-    .miomos-explorer-content.is-drop-target {
-      box-shadow: 0 0 0 2px rgba(255,206,84,.68), inset 0 0 0 1px rgba(255,255,255,.34);
-      border-color: rgba(214,163,32,.42) !important;
-      background: rgba(255,244,194,.14) !important;
+    .miomos-desktop-icon.is-renaming {
+      background: rgba(95,141,255,.12) !important;
+      border-color: rgba(95,141,255,.34) !important;
     }
+    .miomos-desktop-rename-input {
+      width: 100%; margin-top: 4px; border-radius: 4px; border: 1px solid rgba(95,141,255,.45);
+      background: rgba(255,255,255,.96); color: #102033; font: inherit; font-size: 11px; padding: 3px 5px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.7), 0 0 0 1px rgba(95,141,255,.14);
+    }
+    .miomos-desktop-marquee {
+      position: absolute; z-index: 8; pointer-events: none;
+      border: 1px dashed rgba(141,190,255,.86);
+      background: rgba(95,141,255,.16);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
+    }
+    .miomos-directory-card[data-entry-kind="recycle"] {
+      align-items: stretch;
+    }
+
+    .miomos-xp-explorer {
+      padding: 0 !important;
+      overflow: hidden;
+      border-radius: 12px;
+    }
+    .miomos-xp-explorer-toolbar, .miomos-xp-explorer-address, .miomos-xp-explorer-status {
+      display:flex; align-items:center; gap:8px;
+      padding: 8px 10px;
+      border-bottom: 1px solid rgba(148,163,184,.16);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+    }
+    .miomos-xp-explorer-address {
+      justify-content:flex-start;
+      font-size: 11px;
+    }
+    .miomos-xp-explorer-address strong { color:#f8fbff; }
+    .miomos-xp-explorer-address span {
+      display:inline-flex; align-items:center; min-height: 26px; padding: 0 10px;
+      border-radius: 999px; border: 1px solid rgba(148,163,184,.18);
+      background: rgba(8,14,24,.36); color:#d7e6fb;
+    }
+    .miomos-xp-explorer-body {
+      display:grid; grid-template-columns: 220px minmax(0,1fr);
+      min-height: 360px;
+    }
+    .miomos-xp-explorer-side {
+      padding: 12px 10px;
+      border-right: 1px solid rgba(148,163,184,.16);
+      background: linear-gradient(180deg, rgba(28,51,92,.34), rgba(10,18,30,.22));
+    }
+    .miomos-xp-side-group + .miomos-xp-side-group { margin-top: 16px; }
+    .miomos-xp-side-heading {
+      margin-bottom: 8px; font-size: 11px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color:#f8fbff;
+    }
+    .miomos-xp-side-link {
+      display:block; width:100%; text-align:left; margin-bottom:6px; padding:6px 8px; border-radius:8px; border:1px solid rgba(148,163,184,.14);
+      background: rgba(255,255,255,.04); color:#d8e6fb; font: inherit;
+    }
+    .miomos-xp-side-link:disabled { opacity:.45; }
+    .miomos-xp-side-copy strong, .miomos-xp-side-copy span { display:block; }
+    .miomos-xp-side-copy span { margin-top: 4px; color:#a8bdd7; line-height:1.4; }
+    .miomos-xp-explorer-main { padding: 10px; overflow:auto; }
+    .miomos-xp-file-table {
+      width:100%; border-collapse: collapse; font-size:12px;
+      border: 1px solid rgba(148,163,184,.14); background: rgba(10,15,24,.22);
+    }
+    .miomos-xp-file-table thead th {
+      position: sticky; top: 0; z-index: 1; text-align:left;
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+      border-bottom: 1px solid rgba(148,163,184,.18);
+      padding: 0;
+    }
+    .miomos-xp-col-btn {
+      width:100%; text-align:left; padding: 8px 10px; border:0; background:transparent; color:#f8fbff; font: inherit; font-weight:700;
+    }
+    .miomos-xp-file-row td {
+      padding: 7px 10px; border-bottom: 1px solid rgba(148,163,184,.08); color:#d9e7fb;
+    }
+    .miomos-xp-file-row:hover td { background: rgba(255,255,255,.03); }
+    .miomos-xp-file-row.is-selected td {
+      background: rgba(95,141,255,.18); box-shadow: inset 0 1px 0 rgba(255,255,255,.08), inset 0 -1px 0 rgba(255,255,255,.04);
+    }
+    .miomos-xp-name-cell {
+      display:flex; align-items:center; gap:10px;
+    }
+    .miomos-xp-explorer-status {
+      border-top: 1px solid rgba(148,163,184,.16);
+      border-bottom: 0;
+      color:#d4e4fa;
+      font-size:11px;
+    }
+    .miomos-root[data-mobile-layout="1"] .miomos-xp-explorer-body {
+      grid-template-columns: minmax(0,1fr);
+    }
+    .miomos-root[data-mobile-layout="1"] .miomos-xp-explorer-side {
+      border-right: 0;
+      border-bottom: 1px solid rgba(148,163,184,.16);
+    }
+
+    .miomos-xp-folder-window {
+      display: grid;
+      grid-template-rows: auto minmax(0,1fr);
+      gap: 10px;
+      height: 100%;
+      min-height: 0;
+    }
+    .miomos-explorer-window-header { margin-bottom: 0; }
     .miomos-explorer-shell {
       display: grid;
       grid-template-rows: auto auto minmax(0,1fr) auto;
+      min-height: 0;
       height: 100%;
-      border-radius: 16px;
+      border-radius: 14px;
       overflow: hidden;
-      background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(243,247,255,.90));
-      border: 1px solid rgba(127,158,214,.34);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.75);
-      color: #1f3554;
+      border: 1px solid rgba(90,132,210,.32);
+      background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(232,240,253,.92));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 10px 28px rgba(15,23,42,.16);
     }
-    .miomos-explorer-header {
-      margin: 0 !important;
-      padding: 14px 16px 10px;
-      background: linear-gradient(180deg, #ffffff, #edf4ff);
-      border-bottom: 1px solid rgba(127,158,214,.28);
-    }
-    .miomos-explorer-toolbar {
-      display:flex;
-      align-items:center;
-      gap:8px;
-      padding: 8px 12px;
-      background: linear-gradient(180deg, #fefefe, #e6eefb);
-      border-bottom: 1px solid rgba(127,158,214,.24);
+    .miomos-explorer-toolbar-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 10px;
+      background: linear-gradient(180deg, #fefefe, #dfe9f9);
+      border-bottom: 1px solid rgba(120,150,196,.34);
       flex-wrap: wrap;
     }
-    .miomos-explorer-tool,
-    .miomos-explorer-pane-link {
-      appearance:none;
-      border:1px solid rgba(127,158,214,.34);
-      border-radius: 6px;
-      background: linear-gradient(180deg, #ffffff, #dde9fb);
-      color:#24456e;
+    .miomos-explorer-toolbar { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+    .miomos-explorer-toolbtn {
+      border: 1px solid rgba(111,138,189,.5);
+      border-radius: 4px;
+      background: linear-gradient(180deg, #ffffff, #d7e5fb);
+      color: #15325f;
       font: inherit;
-      padding: 6px 10px;
-      cursor:pointer;
-      text-align:left;
-    }
-    .miomos-explorer-tool:hover,
-    .miomos-explorer-pane-link:hover {
-      border-color: rgba(72,110,178,.42);
-      background: linear-gradient(180deg, #ffffff, #d2e2fb);
-    }
-    .miomos-explorer-pane-link:disabled {
-      opacity:.55;
-      cursor:default;
-    }
-    .miomos-explorer-address {
-      margin-left: auto;
-      min-width: min(420px, 100%);
-      display:grid;
-      gap:4px;
-      color:#36537c;
       font-size: 11px;
       font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .04em;
+      padding: 4px 10px;
+      min-height: 26px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.92);
     }
-    .miomos-explorer-address-bar {
-      min-height: 34px;
+    .miomos-explorer-toolbtn.is-active {
+      background: linear-gradient(180deg, #cfe3ff, #a6c4f5);
+      border-color: rgba(72,104,164,.66);
+    }
+    .miomos-explorer-address-row {
+      display:grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 8px;
+      align-items:center;
+      padding: 8px 10px;
+      background: linear-gradient(180deg, #eef4fd, #d7e5fb);
+      border-bottom: 1px solid rgba(120,150,196,.30);
+    }
+    .miomos-explorer-address-label, .miomos-explorer-sort-box {
+      color:#22406f;
+      font-size:11px;
+      font-weight:700;
+    }
+    .miomos-explorer-address-box {
+      min-height: 28px;
       display:flex;
       align-items:center;
       padding: 0 10px;
-      border-radius: 8px;
-      border:1px solid rgba(127,158,214,.34);
-      background: linear-gradient(180deg, #ffffff, #f7faff);
-      color:#233f65;
-      font-size: 12px;
-      letter-spacing: 0;
-      text-transform:none;
-      font-weight: 600;
+      border-radius: 3px;
+      border:1px solid rgba(111,138,189,.46);
+      background:#ffffff;
+      color:#15325f;
+      box-shadow: inset 0 1px 2px rgba(15,23,42,.08);
+      font-size: 11px;
     }
-    .miomos-explorer-body {
-      min-height: 0;
+    .miomos-explorer-sort-box { display:flex; align-items:center; gap:6px; }
+    .miomos-explorer-sort-box select {
+      min-height: 28px;
+      border-radius: 3px;
+      border:1px solid rgba(111,138,189,.46);
+      background:#fff;
+      color:#15325f;
+      font: inherit;
+      padding: 0 8px;
+    }
+    .miomos-explorer-frame {
       display:grid;
       grid-template-columns: 220px minmax(0,1fr);
-      gap: 0;
-    }
-    .miomos-explorer-pane {
       min-height: 0;
-      overflow:auto;
-      padding: 12px;
-      background: linear-gradient(180deg, #d7e7ff, #eef5ff 45%, #f6f9ff 100%);
-      border-right: 1px solid rgba(127,158,214,.28);
+      background: linear-gradient(180deg, #e8f1fb, #f7fbff);
+    }
+    .miomos-explorer-side-pane {
+      background: linear-gradient(180deg, #d9e8fb, #edf5ff 18%, #d8e8fb);
+      border-right: 1px solid rgba(120,150,196,.30);
+      padding: 12px 10px;
       display:grid;
       align-content:start;
-      gap:12px;
+      gap: 12px;
     }
-    .miomos-explorer-pane-card {
+    .miomos-explorer-pane-group {
       display:grid;
-      gap:8px;
+      gap: 6px;
       padding: 10px;
-      border-radius: 12px;
-      background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(231,240,255,.96));
-      border:1px solid rgba(127,158,214,.26);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
-      color:#27456f;
+      border-radius: 8px;
+      background: linear-gradient(180deg, rgba(255,255,255,.84), rgba(226,236,251,.86));
+      border: 1px solid rgba(120,150,196,.26);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.86);
     }
-    .miomos-explorer-pane-card strong {
+    .miomos-explorer-pane-group strong {
+      color:#1d4277;
       font-size: 11px;
-      letter-spacing: .06em;
       text-transform: uppercase;
-      color:#31527d;
+      letter-spacing: .04em;
+    }
+    .miomos-explorer-pane-group span {
+      color:#355884;
+      font-size: 11px;
+      line-height:1.4;
+    }
+    .miomos-explorer-pane-link {
+      border:0;
+      background:transparent;
+      color:#0f4fa9;
+      text-align:left;
+      padding: 2px 0;
+      font: inherit;
+      font-size: 12px;
+      cursor:pointer;
     }
     .miomos-explorer-content {
-      min-height: 0;
-      overflow:auto;
-      padding: 12px;
-      background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(247,250,255,.98));
+      min-height:0;
+      overflow:hidden;
+      background: linear-gradient(180deg, #ffffff, #f7fbff 70%, #eef4ff);
+      display:grid;
     }
+    .miomos-explorer-icon-canvas {
+      position: relative;
+      min-height: 0;
+      overflow: auto;
+      padding: 8px 10px 14px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.96), rgba(242,247,255,.98)),
+        linear-gradient(90deg, rgba(121,163,230,.08), rgba(121,163,230,0) 40%);
+    }
+    .miomos-explorer-item {
+      position:absolute;
+      border:1px solid transparent;
+      border-radius: 4px;
+      background: transparent;
+      padding: 6px 4px;
+      color:#10325d;
+      display:grid;
+      justify-items:center;
+      gap: 4px;
+      text-align:center;
+      font: inherit;
+      cursor: default;
+      user-select:none;
+    }
+    .miomos-explorer-item:hover {
+      border-color: rgba(111,138,189,.32);
+      background: rgba(214,228,250,.38);
+    }
+    .miomos-explorer-item.is-selected {
+      border-color: rgba(72,104,164,.58);
+      background: linear-gradient(180deg, rgba(201,224,255,.82), rgba(167,198,245,.86));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.88);
+    }
+    .miomos-explorer-item-glyph {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display:grid;
+      place-items:center;
+      background: linear-gradient(180deg, #ffd76e, #e5a72c);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.8), 0 6px 14px rgba(15,23,42,.18);
+      color:#4f2d00;
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .miomos-explorer-item.is-thumbnails { width: 126px; }
+    .miomos-explorer-item.is-thumbnails .miomos-explorer-item-glyph { width: 64px; height: 64px; font-size: 13px; }
+    .miomos-explorer-item.is-large-icons { width: 98px; }
+    .miomos-explorer-item.is-icons { width: 84px; }
+    .miomos-explorer-item.is-icons .miomos-explorer-item-glyph { width: 36px; height: 36px; border-radius: 10px; }
+    .miomos-explorer-item.is-tiles {
+      width: 176px;
+      grid-template-columns: 44px 1fr;
+      grid-template-rows: auto auto;
+      text-align:left;
+      justify-items:start;
+      align-items:center;
+      gap: 2px 10px;
+      padding: 8px 10px;
+    }
+    .miomos-explorer-item.is-tiles .miomos-explorer-item-glyph {
+      grid-row: 1 / span 2;
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+    }
+    .miomos-explorer-item-label {
+      color:#163864;
+      font-size: 12px;
+      line-height: 1.25;
+      text-shadow: 0 1px 0 rgba(255,255,255,.75);
+      word-break: break-word;
+    }
+    .miomos-explorer-item-meta {
+      color:#4d6b95;
+      font-size: 10px;
+      line-height: 1.2;
+    }
+    .miomos-explorer-list {
+      overflow:auto;
+      padding: 6px 0;
+      background: linear-gradient(180deg, #ffffff, #f5f9ff);
+    }
+    .miomos-explorer-list-row {
+      width:100%;
+      display:grid;
+      grid-template-columns: 24px minmax(0,1fr) 160px;
+      align-items:center;
+      gap: 10px;
+      padding: 7px 12px;
+      border:0;
+      border-bottom:1px solid rgba(120,150,196,.18);
+      background:transparent;
+      color:#15325f;
+      font: inherit;
+      text-align:left;
+    }
+    .miomos-explorer-list-row:hover { background: rgba(214,228,250,.34); }
+    .miomos-explorer-list-row.is-selected { background: linear-gradient(180deg, rgba(201,224,255,.8), rgba(167,198,245,.84)); }
+    .miomos-explorer-row-glyph {
+      width:18px;
+      height:18px;
+      border-radius: 5px;
+      display:grid;
+      place-items:center;
+      background: linear-gradient(180deg, #ffd76e, #e5a72c);
+      color:#4f2d00;
+      font-size: 9px;
+      font-weight: 800;
+    }
+    .miomos-explorer-details {
+      width:100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      background: linear-gradient(180deg, #ffffff, #f5f9ff);
+      color:#15325f;
+    }
+    .miomos-explorer-details thead th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      padding: 7px 10px;
+      text-align:left;
+      font-size:11px;
+      color:#24426f;
+      background: linear-gradient(180deg, #fefefe, #d8e6fb);
+      border-bottom:1px solid rgba(120,150,196,.36);
+      cursor: pointer;
+      user-select:none;
+    }
+    .miomos-explorer-details tbody td {
+      padding: 7px 10px;
+      border-bottom:1px solid rgba(120,150,196,.14);
+      font-size:12px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .miomos-explorer-details tbody tr:hover td { background: rgba(214,228,250,.32); }
+    .miomos-explorer-details tbody tr.is-selected td { background: linear-gradient(180deg, rgba(201,224,255,.8), rgba(167,198,245,.84)); }
+    .miomos-explorer-details td strong { color:#15325f; margin-left:8px; }
     .miomos-explorer-statusbar {
       display:flex;
-      justify-content: space-between;
-      gap:12px;
-      padding: 6px 10px;
-      border-top: 1px solid rgba(127,158,214,.24);
-      background: linear-gradient(180deg, #edf4ff, #dce8fb);
-      color:#36537c;
-      font-size: 11px;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+      min-height: 26px;
+      padding: 0 10px;
+      border-top:1px solid rgba(120,150,196,.28);
+      background: linear-gradient(180deg, #f0f6ff, #d9e8fb);
+      color:#24426f;
+      font-size:11px;
     }
-    .miomos-root[data-mobile-layout="1"] .miomos-explorer-body {
+    .miomos-root[data-mobile-layout="1"] .miomos-explorer-frame {
       grid-template-columns: minmax(0,1fr);
     }
-    .miomos-root[data-mobile-layout="1"] .miomos-explorer-pane {
-      border-right: 0;
-      border-bottom: 1px solid rgba(127,158,214,.28);
-    }
-
-    .miomos-selection-marquee {
-      position:absolute;
-      z-index: 4;
-      pointer-events:none;
-      border:1px dotted rgba(31,82,163,.95);
-      background: rgba(84,144,255,.20);
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.35);
-    }
-    .miomos-inline-rename {
-      width: 100%;
-      min-width: 0;
-      padding: 2px 4px;
-      border: 1px solid #6a8fcb;
-      background:#fffef7;
-      color:#14345d;
-      font: inherit;
-      font-size: 11px;
-      line-height: 1.25;
-      box-shadow: inset 0 1px 2px rgba(13,31,61,.08);
-    }
-    .miomos-desktop-icon.is-renaming .miomos-desktop-icon-kind,
-    .miomos-directory-card.is-renaming .miomos-entry-meta {
-      visibility:hidden;
-    }
-    .miomos-directory-card.is-selected {
-      border-color: rgba(35,91,181,.58) !important;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.6), 0 0 0 1px rgba(35,91,181,.22);
-      background: linear-gradient(180deg, rgba(230,241,255,.98), rgba(214,229,251,.96)) !important;
-    }
-    .miomos-directory-card.is-recycle-item .miomos-directory-glyph {
-      opacity: .92;
+    .miomos-root[data-mobile-layout="1"] .miomos-explorer-address-row {
+      grid-template-columns: 1fr;
     }
 
   </style>
@@ -3241,175 +4133,398 @@
     }
 
     .miomos-desktop-icon.is-selected {
-      background: linear-gradient(180deg, rgba(117,166,241,.32), rgba(52,98,196,.28)) !important;
-      border-color: rgba(255,255,255,.34) !important;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.20), 0 0 0 1px rgba(28,71,148,.28);
+      background: rgba(95,141,255,.16) !important;
+      border-color: rgba(95,141,255,.38) !important;
+      box-shadow: 0 0 0 1px rgba(255,255,255,.08), inset 0 1px 0 rgba(255,255,255,.1);
     }
-    .miomos-desktop-icon.is-drop-target,
-    .miomos-explorer-content.is-drop-target {
-      box-shadow: 0 0 0 2px rgba(255,206,84,.68), inset 0 0 0 1px rgba(255,255,255,.34);
-      border-color: rgba(214,163,32,.42) !important;
-      background: rgba(255,244,194,.14) !important;
+    .miomos-desktop-icon.is-renaming {
+      background: rgba(95,141,255,.12) !important;
+      border-color: rgba(95,141,255,.34) !important;
     }
+    .miomos-desktop-rename-input {
+      width: 100%; margin-top: 4px; border-radius: 4px; border: 1px solid rgba(95,141,255,.45);
+      background: rgba(255,255,255,.96); color: #102033; font: inherit; font-size: 11px; padding: 3px 5px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.7), 0 0 0 1px rgba(95,141,255,.14);
+    }
+    .miomos-desktop-marquee {
+      position: absolute; z-index: 8; pointer-events: none;
+      border: 1px dashed rgba(141,190,255,.86);
+      background: rgba(95,141,255,.16);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
+    }
+    .miomos-directory-card[data-entry-kind="recycle"] {
+      align-items: stretch;
+    }
+
+    .miomos-xp-explorer {
+      padding: 0 !important;
+      overflow: hidden;
+      border-radius: 12px;
+    }
+    .miomos-xp-explorer-toolbar, .miomos-xp-explorer-address, .miomos-xp-explorer-status {
+      display:flex; align-items:center; gap:8px;
+      padding: 8px 10px;
+      border-bottom: 1px solid rgba(148,163,184,.16);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+    }
+    .miomos-xp-explorer-address {
+      justify-content:flex-start;
+      font-size: 11px;
+    }
+    .miomos-xp-explorer-address strong { color:#f8fbff; }
+    .miomos-xp-explorer-address span {
+      display:inline-flex; align-items:center; min-height: 26px; padding: 0 10px;
+      border-radius: 999px; border: 1px solid rgba(148,163,184,.18);
+      background: rgba(8,14,24,.36); color:#d7e6fb;
+    }
+    .miomos-xp-explorer-body {
+      display:grid; grid-template-columns: 220px minmax(0,1fr);
+      min-height: 360px;
+    }
+    .miomos-xp-explorer-side {
+      padding: 12px 10px;
+      border-right: 1px solid rgba(148,163,184,.16);
+      background: linear-gradient(180deg, rgba(28,51,92,.34), rgba(10,18,30,.22));
+    }
+    .miomos-xp-side-group + .miomos-xp-side-group { margin-top: 16px; }
+    .miomos-xp-side-heading {
+      margin-bottom: 8px; font-size: 11px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color:#f8fbff;
+    }
+    .miomos-xp-side-link {
+      display:block; width:100%; text-align:left; margin-bottom:6px; padding:6px 8px; border-radius:8px; border:1px solid rgba(148,163,184,.14);
+      background: rgba(255,255,255,.04); color:#d8e6fb; font: inherit;
+    }
+    .miomos-xp-side-link:disabled { opacity:.45; }
+    .miomos-xp-side-copy strong, .miomos-xp-side-copy span { display:block; }
+    .miomos-xp-side-copy span { margin-top: 4px; color:#a8bdd7; line-height:1.4; }
+    .miomos-xp-explorer-main { padding: 10px; overflow:auto; }
+    .miomos-xp-file-table {
+      width:100%; border-collapse: collapse; font-size:12px;
+      border: 1px solid rgba(148,163,184,.14); background: rgba(10,15,24,.22);
+    }
+    .miomos-xp-file-table thead th {
+      position: sticky; top: 0; z-index: 1; text-align:left;
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+      border-bottom: 1px solid rgba(148,163,184,.18);
+      padding: 0;
+    }
+    .miomos-xp-col-btn {
+      width:100%; text-align:left; padding: 8px 10px; border:0; background:transparent; color:#f8fbff; font: inherit; font-weight:700;
+    }
+    .miomos-xp-file-row td {
+      padding: 7px 10px; border-bottom: 1px solid rgba(148,163,184,.08); color:#d9e7fb;
+    }
+    .miomos-xp-file-row:hover td { background: rgba(255,255,255,.03); }
+    .miomos-xp-file-row.is-selected td {
+      background: rgba(95,141,255,.18); box-shadow: inset 0 1px 0 rgba(255,255,255,.08), inset 0 -1px 0 rgba(255,255,255,.04);
+    }
+    .miomos-xp-name-cell {
+      display:flex; align-items:center; gap:10px;
+    }
+    .miomos-xp-explorer-status {
+      border-top: 1px solid rgba(148,163,184,.16);
+      border-bottom: 0;
+      color:#d4e4fa;
+      font-size:11px;
+    }
+    .miomos-root[data-mobile-layout="1"] .miomos-xp-explorer-body {
+      grid-template-columns: minmax(0,1fr);
+    }
+    .miomos-root[data-mobile-layout="1"] .miomos-xp-explorer-side {
+      border-right: 0;
+      border-bottom: 1px solid rgba(148,163,184,.16);
+    }
+
+    .miomos-xp-folder-window {
+      display: grid;
+      grid-template-rows: auto minmax(0,1fr);
+      gap: 10px;
+      height: 100%;
+      min-height: 0;
+    }
+    .miomos-explorer-window-header { margin-bottom: 0; }
     .miomos-explorer-shell {
       display: grid;
       grid-template-rows: auto auto minmax(0,1fr) auto;
+      min-height: 0;
       height: 100%;
-      border-radius: 16px;
+      border-radius: 14px;
       overflow: hidden;
-      background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(243,247,255,.90));
-      border: 1px solid rgba(127,158,214,.34);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.75);
-      color: #1f3554;
+      border: 1px solid rgba(90,132,210,.32);
+      background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(232,240,253,.92));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 10px 28px rgba(15,23,42,.16);
     }
-    .miomos-explorer-header {
-      margin: 0 !important;
-      padding: 14px 16px 10px;
-      background: linear-gradient(180deg, #ffffff, #edf4ff);
-      border-bottom: 1px solid rgba(127,158,214,.28);
-    }
-    .miomos-explorer-toolbar {
-      display:flex;
-      align-items:center;
-      gap:8px;
-      padding: 8px 12px;
-      background: linear-gradient(180deg, #fefefe, #e6eefb);
-      border-bottom: 1px solid rgba(127,158,214,.24);
+    .miomos-explorer-toolbar-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 10px;
+      background: linear-gradient(180deg, #fefefe, #dfe9f9);
+      border-bottom: 1px solid rgba(120,150,196,.34);
       flex-wrap: wrap;
     }
-    .miomos-explorer-tool,
-    .miomos-explorer-pane-link {
-      appearance:none;
-      border:1px solid rgba(127,158,214,.34);
-      border-radius: 6px;
-      background: linear-gradient(180deg, #ffffff, #dde9fb);
-      color:#24456e;
+    .miomos-explorer-toolbar { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+    .miomos-explorer-toolbtn {
+      border: 1px solid rgba(111,138,189,.5);
+      border-radius: 4px;
+      background: linear-gradient(180deg, #ffffff, #d7e5fb);
+      color: #15325f;
       font: inherit;
-      padding: 6px 10px;
-      cursor:pointer;
-      text-align:left;
-    }
-    .miomos-explorer-tool:hover,
-    .miomos-explorer-pane-link:hover {
-      border-color: rgba(72,110,178,.42);
-      background: linear-gradient(180deg, #ffffff, #d2e2fb);
-    }
-    .miomos-explorer-pane-link:disabled {
-      opacity:.55;
-      cursor:default;
-    }
-    .miomos-explorer-address {
-      margin-left: auto;
-      min-width: min(420px, 100%);
-      display:grid;
-      gap:4px;
-      color:#36537c;
       font-size: 11px;
       font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .04em;
+      padding: 4px 10px;
+      min-height: 26px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.92);
     }
-    .miomos-explorer-address-bar {
-      min-height: 34px;
+    .miomos-explorer-toolbtn.is-active {
+      background: linear-gradient(180deg, #cfe3ff, #a6c4f5);
+      border-color: rgba(72,104,164,.66);
+    }
+    .miomos-explorer-address-row {
+      display:grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 8px;
+      align-items:center;
+      padding: 8px 10px;
+      background: linear-gradient(180deg, #eef4fd, #d7e5fb);
+      border-bottom: 1px solid rgba(120,150,196,.30);
+    }
+    .miomos-explorer-address-label, .miomos-explorer-sort-box {
+      color:#22406f;
+      font-size:11px;
+      font-weight:700;
+    }
+    .miomos-explorer-address-box {
+      min-height: 28px;
       display:flex;
       align-items:center;
       padding: 0 10px;
-      border-radius: 8px;
-      border:1px solid rgba(127,158,214,.34);
-      background: linear-gradient(180deg, #ffffff, #f7faff);
-      color:#233f65;
-      font-size: 12px;
-      letter-spacing: 0;
-      text-transform:none;
-      font-weight: 600;
+      border-radius: 3px;
+      border:1px solid rgba(111,138,189,.46);
+      background:#ffffff;
+      color:#15325f;
+      box-shadow: inset 0 1px 2px rgba(15,23,42,.08);
+      font-size: 11px;
     }
-    .miomos-explorer-body {
-      min-height: 0;
+    .miomos-explorer-sort-box { display:flex; align-items:center; gap:6px; }
+    .miomos-explorer-sort-box select {
+      min-height: 28px;
+      border-radius: 3px;
+      border:1px solid rgba(111,138,189,.46);
+      background:#fff;
+      color:#15325f;
+      font: inherit;
+      padding: 0 8px;
+    }
+    .miomos-explorer-frame {
       display:grid;
       grid-template-columns: 220px minmax(0,1fr);
-      gap: 0;
-    }
-    .miomos-explorer-pane {
       min-height: 0;
-      overflow:auto;
-      padding: 12px;
-      background: linear-gradient(180deg, #d7e7ff, #eef5ff 45%, #f6f9ff 100%);
-      border-right: 1px solid rgba(127,158,214,.28);
+      background: linear-gradient(180deg, #e8f1fb, #f7fbff);
+    }
+    .miomos-explorer-side-pane {
+      background: linear-gradient(180deg, #d9e8fb, #edf5ff 18%, #d8e8fb);
+      border-right: 1px solid rgba(120,150,196,.30);
+      padding: 12px 10px;
       display:grid;
       align-content:start;
-      gap:12px;
+      gap: 12px;
     }
-    .miomos-explorer-pane-card {
+    .miomos-explorer-pane-group {
       display:grid;
-      gap:8px;
+      gap: 6px;
       padding: 10px;
-      border-radius: 12px;
-      background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(231,240,255,.96));
-      border:1px solid rgba(127,158,214,.26);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
-      color:#27456f;
+      border-radius: 8px;
+      background: linear-gradient(180deg, rgba(255,255,255,.84), rgba(226,236,251,.86));
+      border: 1px solid rgba(120,150,196,.26);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.86);
     }
-    .miomos-explorer-pane-card strong {
+    .miomos-explorer-pane-group strong {
+      color:#1d4277;
       font-size: 11px;
-      letter-spacing: .06em;
       text-transform: uppercase;
-      color:#31527d;
+      letter-spacing: .04em;
+    }
+    .miomos-explorer-pane-group span {
+      color:#355884;
+      font-size: 11px;
+      line-height:1.4;
+    }
+    .miomos-explorer-pane-link {
+      border:0;
+      background:transparent;
+      color:#0f4fa9;
+      text-align:left;
+      padding: 2px 0;
+      font: inherit;
+      font-size: 12px;
+      cursor:pointer;
     }
     .miomos-explorer-content {
-      min-height: 0;
-      overflow:auto;
-      padding: 12px;
-      background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(247,250,255,.98));
+      min-height:0;
+      overflow:hidden;
+      background: linear-gradient(180deg, #ffffff, #f7fbff 70%, #eef4ff);
+      display:grid;
     }
+    .miomos-explorer-icon-canvas {
+      position: relative;
+      min-height: 0;
+      overflow: auto;
+      padding: 8px 10px 14px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.96), rgba(242,247,255,.98)),
+        linear-gradient(90deg, rgba(121,163,230,.08), rgba(121,163,230,0) 40%);
+    }
+    .miomos-explorer-item {
+      position:absolute;
+      border:1px solid transparent;
+      border-radius: 4px;
+      background: transparent;
+      padding: 6px 4px;
+      color:#10325d;
+      display:grid;
+      justify-items:center;
+      gap: 4px;
+      text-align:center;
+      font: inherit;
+      cursor: default;
+      user-select:none;
+    }
+    .miomos-explorer-item:hover {
+      border-color: rgba(111,138,189,.32);
+      background: rgba(214,228,250,.38);
+    }
+    .miomos-explorer-item.is-selected {
+      border-color: rgba(72,104,164,.58);
+      background: linear-gradient(180deg, rgba(201,224,255,.82), rgba(167,198,245,.86));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.88);
+    }
+    .miomos-explorer-item-glyph {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display:grid;
+      place-items:center;
+      background: linear-gradient(180deg, #ffd76e, #e5a72c);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.8), 0 6px 14px rgba(15,23,42,.18);
+      color:#4f2d00;
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .miomos-explorer-item.is-thumbnails { width: 126px; }
+    .miomos-explorer-item.is-thumbnails .miomos-explorer-item-glyph { width: 64px; height: 64px; font-size: 13px; }
+    .miomos-explorer-item.is-large-icons { width: 98px; }
+    .miomos-explorer-item.is-icons { width: 84px; }
+    .miomos-explorer-item.is-icons .miomos-explorer-item-glyph { width: 36px; height: 36px; border-radius: 10px; }
+    .miomos-explorer-item.is-tiles {
+      width: 176px;
+      grid-template-columns: 44px 1fr;
+      grid-template-rows: auto auto;
+      text-align:left;
+      justify-items:start;
+      align-items:center;
+      gap: 2px 10px;
+      padding: 8px 10px;
+    }
+    .miomos-explorer-item.is-tiles .miomos-explorer-item-glyph {
+      grid-row: 1 / span 2;
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+    }
+    .miomos-explorer-item-label {
+      color:#163864;
+      font-size: 12px;
+      line-height: 1.25;
+      text-shadow: 0 1px 0 rgba(255,255,255,.75);
+      word-break: break-word;
+    }
+    .miomos-explorer-item-meta {
+      color:#4d6b95;
+      font-size: 10px;
+      line-height: 1.2;
+    }
+    .miomos-explorer-list {
+      overflow:auto;
+      padding: 6px 0;
+      background: linear-gradient(180deg, #ffffff, #f5f9ff);
+    }
+    .miomos-explorer-list-row {
+      width:100%;
+      display:grid;
+      grid-template-columns: 24px minmax(0,1fr) 160px;
+      align-items:center;
+      gap: 10px;
+      padding: 7px 12px;
+      border:0;
+      border-bottom:1px solid rgba(120,150,196,.18);
+      background:transparent;
+      color:#15325f;
+      font: inherit;
+      text-align:left;
+    }
+    .miomos-explorer-list-row:hover { background: rgba(214,228,250,.34); }
+    .miomos-explorer-list-row.is-selected { background: linear-gradient(180deg, rgba(201,224,255,.8), rgba(167,198,245,.84)); }
+    .miomos-explorer-row-glyph {
+      width:18px;
+      height:18px;
+      border-radius: 5px;
+      display:grid;
+      place-items:center;
+      background: linear-gradient(180deg, #ffd76e, #e5a72c);
+      color:#4f2d00;
+      font-size: 9px;
+      font-weight: 800;
+    }
+    .miomos-explorer-details {
+      width:100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      background: linear-gradient(180deg, #ffffff, #f5f9ff);
+      color:#15325f;
+    }
+    .miomos-explorer-details thead th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      padding: 7px 10px;
+      text-align:left;
+      font-size:11px;
+      color:#24426f;
+      background: linear-gradient(180deg, #fefefe, #d8e6fb);
+      border-bottom:1px solid rgba(120,150,196,.36);
+      cursor: pointer;
+      user-select:none;
+    }
+    .miomos-explorer-details tbody td {
+      padding: 7px 10px;
+      border-bottom:1px solid rgba(120,150,196,.14);
+      font-size:12px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .miomos-explorer-details tbody tr:hover td { background: rgba(214,228,250,.32); }
+    .miomos-explorer-details tbody tr.is-selected td { background: linear-gradient(180deg, rgba(201,224,255,.8), rgba(167,198,245,.84)); }
+    .miomos-explorer-details td strong { color:#15325f; margin-left:8px; }
     .miomos-explorer-statusbar {
       display:flex;
-      justify-content: space-between;
-      gap:12px;
-      padding: 6px 10px;
-      border-top: 1px solid rgba(127,158,214,.24);
-      background: linear-gradient(180deg, #edf4ff, #dce8fb);
-      color:#36537c;
-      font-size: 11px;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+      min-height: 26px;
+      padding: 0 10px;
+      border-top:1px solid rgba(120,150,196,.28);
+      background: linear-gradient(180deg, #f0f6ff, #d9e8fb);
+      color:#24426f;
+      font-size:11px;
     }
-    .miomos-root[data-mobile-layout="1"] .miomos-explorer-body {
+    .miomos-root[data-mobile-layout="1"] .miomos-explorer-frame {
       grid-template-columns: minmax(0,1fr);
     }
-    .miomos-root[data-mobile-layout="1"] .miomos-explorer-pane {
-      border-right: 0;
-      border-bottom: 1px solid rgba(127,158,214,.28);
-    }
-
-    .miomos-selection-marquee {
-      position:absolute;
-      z-index: 4;
-      pointer-events:none;
-      border:1px dotted rgba(31,82,163,.95);
-      background: rgba(84,144,255,.20);
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.35);
-    }
-    .miomos-inline-rename {
-      width: 100%;
-      min-width: 0;
-      padding: 2px 4px;
-      border: 1px solid #6a8fcb;
-      background:#fffef7;
-      color:#14345d;
-      font: inherit;
-      font-size: 11px;
-      line-height: 1.25;
-      box-shadow: inset 0 1px 2px rgba(13,31,61,.08);
-    }
-    .miomos-desktop-icon.is-renaming .miomos-desktop-icon-kind,
-    .miomos-directory-card.is-renaming .miomos-entry-meta {
-      visibility:hidden;
-    }
-    .miomos-directory-card.is-selected {
-      border-color: rgba(35,91,181,.58) !important;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.6), 0 0 0 1px rgba(35,91,181,.22);
-      background: linear-gradient(180deg, rgba(230,241,255,.98), rgba(214,229,251,.96)) !important;
-    }
-    .miomos-directory-card.is-recycle-item .miomos-directory-glyph {
-      opacity: .92;
+    .miomos-root[data-mobile-layout="1"] .miomos-explorer-address-row {
+      grid-template-columns: 1fr;
     }
 
   </style>
@@ -3554,175 +4669,398 @@
     }
 
     .miomos-desktop-icon.is-selected {
-      background: linear-gradient(180deg, rgba(117,166,241,.32), rgba(52,98,196,.28)) !important;
-      border-color: rgba(255,255,255,.34) !important;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.20), 0 0 0 1px rgba(28,71,148,.28);
+      background: rgba(95,141,255,.16) !important;
+      border-color: rgba(95,141,255,.38) !important;
+      box-shadow: 0 0 0 1px rgba(255,255,255,.08), inset 0 1px 0 rgba(255,255,255,.1);
     }
-    .miomos-desktop-icon.is-drop-target,
-    .miomos-explorer-content.is-drop-target {
-      box-shadow: 0 0 0 2px rgba(255,206,84,.68), inset 0 0 0 1px rgba(255,255,255,.34);
-      border-color: rgba(214,163,32,.42) !important;
-      background: rgba(255,244,194,.14) !important;
+    .miomos-desktop-icon.is-renaming {
+      background: rgba(95,141,255,.12) !important;
+      border-color: rgba(95,141,255,.34) !important;
     }
+    .miomos-desktop-rename-input {
+      width: 100%; margin-top: 4px; border-radius: 4px; border: 1px solid rgba(95,141,255,.45);
+      background: rgba(255,255,255,.96); color: #102033; font: inherit; font-size: 11px; padding: 3px 5px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.7), 0 0 0 1px rgba(95,141,255,.14);
+    }
+    .miomos-desktop-marquee {
+      position: absolute; z-index: 8; pointer-events: none;
+      border: 1px dashed rgba(141,190,255,.86);
+      background: rgba(95,141,255,.16);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
+    }
+    .miomos-directory-card[data-entry-kind="recycle"] {
+      align-items: stretch;
+    }
+
+    .miomos-xp-explorer {
+      padding: 0 !important;
+      overflow: hidden;
+      border-radius: 12px;
+    }
+    .miomos-xp-explorer-toolbar, .miomos-xp-explorer-address, .miomos-xp-explorer-status {
+      display:flex; align-items:center; gap:8px;
+      padding: 8px 10px;
+      border-bottom: 1px solid rgba(148,163,184,.16);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+    }
+    .miomos-xp-explorer-address {
+      justify-content:flex-start;
+      font-size: 11px;
+    }
+    .miomos-xp-explorer-address strong { color:#f8fbff; }
+    .miomos-xp-explorer-address span {
+      display:inline-flex; align-items:center; min-height: 26px; padding: 0 10px;
+      border-radius: 999px; border: 1px solid rgba(148,163,184,.18);
+      background: rgba(8,14,24,.36); color:#d7e6fb;
+    }
+    .miomos-xp-explorer-body {
+      display:grid; grid-template-columns: 220px minmax(0,1fr);
+      min-height: 360px;
+    }
+    .miomos-xp-explorer-side {
+      padding: 12px 10px;
+      border-right: 1px solid rgba(148,163,184,.16);
+      background: linear-gradient(180deg, rgba(28,51,92,.34), rgba(10,18,30,.22));
+    }
+    .miomos-xp-side-group + .miomos-xp-side-group { margin-top: 16px; }
+    .miomos-xp-side-heading {
+      margin-bottom: 8px; font-size: 11px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color:#f8fbff;
+    }
+    .miomos-xp-side-link {
+      display:block; width:100%; text-align:left; margin-bottom:6px; padding:6px 8px; border-radius:8px; border:1px solid rgba(148,163,184,.14);
+      background: rgba(255,255,255,.04); color:#d8e6fb; font: inherit;
+    }
+    .miomos-xp-side-link:disabled { opacity:.45; }
+    .miomos-xp-side-copy strong, .miomos-xp-side-copy span { display:block; }
+    .miomos-xp-side-copy span { margin-top: 4px; color:#a8bdd7; line-height:1.4; }
+    .miomos-xp-explorer-main { padding: 10px; overflow:auto; }
+    .miomos-xp-file-table {
+      width:100%; border-collapse: collapse; font-size:12px;
+      border: 1px solid rgba(148,163,184,.14); background: rgba(10,15,24,.22);
+    }
+    .miomos-xp-file-table thead th {
+      position: sticky; top: 0; z-index: 1; text-align:left;
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+      border-bottom: 1px solid rgba(148,163,184,.18);
+      padding: 0;
+    }
+    .miomos-xp-col-btn {
+      width:100%; text-align:left; padding: 8px 10px; border:0; background:transparent; color:#f8fbff; font: inherit; font-weight:700;
+    }
+    .miomos-xp-file-row td {
+      padding: 7px 10px; border-bottom: 1px solid rgba(148,163,184,.08); color:#d9e7fb;
+    }
+    .miomos-xp-file-row:hover td { background: rgba(255,255,255,.03); }
+    .miomos-xp-file-row.is-selected td {
+      background: rgba(95,141,255,.18); box-shadow: inset 0 1px 0 rgba(255,255,255,.08), inset 0 -1px 0 rgba(255,255,255,.04);
+    }
+    .miomos-xp-name-cell {
+      display:flex; align-items:center; gap:10px;
+    }
+    .miomos-xp-explorer-status {
+      border-top: 1px solid rgba(148,163,184,.16);
+      border-bottom: 0;
+      color:#d4e4fa;
+      font-size:11px;
+    }
+    .miomos-root[data-mobile-layout="1"] .miomos-xp-explorer-body {
+      grid-template-columns: minmax(0,1fr);
+    }
+    .miomos-root[data-mobile-layout="1"] .miomos-xp-explorer-side {
+      border-right: 0;
+      border-bottom: 1px solid rgba(148,163,184,.16);
+    }
+
+    .miomos-xp-folder-window {
+      display: grid;
+      grid-template-rows: auto minmax(0,1fr);
+      gap: 10px;
+      height: 100%;
+      min-height: 0;
+    }
+    .miomos-explorer-window-header { margin-bottom: 0; }
     .miomos-explorer-shell {
       display: grid;
       grid-template-rows: auto auto minmax(0,1fr) auto;
+      min-height: 0;
       height: 100%;
-      border-radius: 16px;
+      border-radius: 14px;
       overflow: hidden;
-      background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(243,247,255,.90));
-      border: 1px solid rgba(127,158,214,.34);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.75);
-      color: #1f3554;
+      border: 1px solid rgba(90,132,210,.32);
+      background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(232,240,253,.92));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 10px 28px rgba(15,23,42,.16);
     }
-    .miomos-explorer-header {
-      margin: 0 !important;
-      padding: 14px 16px 10px;
-      background: linear-gradient(180deg, #ffffff, #edf4ff);
-      border-bottom: 1px solid rgba(127,158,214,.28);
-    }
-    .miomos-explorer-toolbar {
-      display:flex;
-      align-items:center;
-      gap:8px;
-      padding: 8px 12px;
-      background: linear-gradient(180deg, #fefefe, #e6eefb);
-      border-bottom: 1px solid rgba(127,158,214,.24);
+    .miomos-explorer-toolbar-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 10px;
+      background: linear-gradient(180deg, #fefefe, #dfe9f9);
+      border-bottom: 1px solid rgba(120,150,196,.34);
       flex-wrap: wrap;
     }
-    .miomos-explorer-tool,
-    .miomos-explorer-pane-link {
-      appearance:none;
-      border:1px solid rgba(127,158,214,.34);
-      border-radius: 6px;
-      background: linear-gradient(180deg, #ffffff, #dde9fb);
-      color:#24456e;
+    .miomos-explorer-toolbar { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+    .miomos-explorer-toolbtn {
+      border: 1px solid rgba(111,138,189,.5);
+      border-radius: 4px;
+      background: linear-gradient(180deg, #ffffff, #d7e5fb);
+      color: #15325f;
       font: inherit;
-      padding: 6px 10px;
-      cursor:pointer;
-      text-align:left;
-    }
-    .miomos-explorer-tool:hover,
-    .miomos-explorer-pane-link:hover {
-      border-color: rgba(72,110,178,.42);
-      background: linear-gradient(180deg, #ffffff, #d2e2fb);
-    }
-    .miomos-explorer-pane-link:disabled {
-      opacity:.55;
-      cursor:default;
-    }
-    .miomos-explorer-address {
-      margin-left: auto;
-      min-width: min(420px, 100%);
-      display:grid;
-      gap:4px;
-      color:#36537c;
       font-size: 11px;
       font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .04em;
+      padding: 4px 10px;
+      min-height: 26px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.92);
     }
-    .miomos-explorer-address-bar {
-      min-height: 34px;
+    .miomos-explorer-toolbtn.is-active {
+      background: linear-gradient(180deg, #cfe3ff, #a6c4f5);
+      border-color: rgba(72,104,164,.66);
+    }
+    .miomos-explorer-address-row {
+      display:grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 8px;
+      align-items:center;
+      padding: 8px 10px;
+      background: linear-gradient(180deg, #eef4fd, #d7e5fb);
+      border-bottom: 1px solid rgba(120,150,196,.30);
+    }
+    .miomos-explorer-address-label, .miomos-explorer-sort-box {
+      color:#22406f;
+      font-size:11px;
+      font-weight:700;
+    }
+    .miomos-explorer-address-box {
+      min-height: 28px;
       display:flex;
       align-items:center;
       padding: 0 10px;
-      border-radius: 8px;
-      border:1px solid rgba(127,158,214,.34);
-      background: linear-gradient(180deg, #ffffff, #f7faff);
-      color:#233f65;
-      font-size: 12px;
-      letter-spacing: 0;
-      text-transform:none;
-      font-weight: 600;
+      border-radius: 3px;
+      border:1px solid rgba(111,138,189,.46);
+      background:#ffffff;
+      color:#15325f;
+      box-shadow: inset 0 1px 2px rgba(15,23,42,.08);
+      font-size: 11px;
     }
-    .miomos-explorer-body {
-      min-height: 0;
+    .miomos-explorer-sort-box { display:flex; align-items:center; gap:6px; }
+    .miomos-explorer-sort-box select {
+      min-height: 28px;
+      border-radius: 3px;
+      border:1px solid rgba(111,138,189,.46);
+      background:#fff;
+      color:#15325f;
+      font: inherit;
+      padding: 0 8px;
+    }
+    .miomos-explorer-frame {
       display:grid;
       grid-template-columns: 220px minmax(0,1fr);
-      gap: 0;
-    }
-    .miomos-explorer-pane {
       min-height: 0;
-      overflow:auto;
-      padding: 12px;
-      background: linear-gradient(180deg, #d7e7ff, #eef5ff 45%, #f6f9ff 100%);
-      border-right: 1px solid rgba(127,158,214,.28);
+      background: linear-gradient(180deg, #e8f1fb, #f7fbff);
+    }
+    .miomos-explorer-side-pane {
+      background: linear-gradient(180deg, #d9e8fb, #edf5ff 18%, #d8e8fb);
+      border-right: 1px solid rgba(120,150,196,.30);
+      padding: 12px 10px;
       display:grid;
       align-content:start;
-      gap:12px;
+      gap: 12px;
     }
-    .miomos-explorer-pane-card {
+    .miomos-explorer-pane-group {
       display:grid;
-      gap:8px;
+      gap: 6px;
       padding: 10px;
-      border-radius: 12px;
-      background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(231,240,255,.96));
-      border:1px solid rgba(127,158,214,.26);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
-      color:#27456f;
+      border-radius: 8px;
+      background: linear-gradient(180deg, rgba(255,255,255,.84), rgba(226,236,251,.86));
+      border: 1px solid rgba(120,150,196,.26);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.86);
     }
-    .miomos-explorer-pane-card strong {
+    .miomos-explorer-pane-group strong {
+      color:#1d4277;
       font-size: 11px;
-      letter-spacing: .06em;
       text-transform: uppercase;
-      color:#31527d;
+      letter-spacing: .04em;
+    }
+    .miomos-explorer-pane-group span {
+      color:#355884;
+      font-size: 11px;
+      line-height:1.4;
+    }
+    .miomos-explorer-pane-link {
+      border:0;
+      background:transparent;
+      color:#0f4fa9;
+      text-align:left;
+      padding: 2px 0;
+      font: inherit;
+      font-size: 12px;
+      cursor:pointer;
     }
     .miomos-explorer-content {
-      min-height: 0;
-      overflow:auto;
-      padding: 12px;
-      background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(247,250,255,.98));
+      min-height:0;
+      overflow:hidden;
+      background: linear-gradient(180deg, #ffffff, #f7fbff 70%, #eef4ff);
+      display:grid;
     }
+    .miomos-explorer-icon-canvas {
+      position: relative;
+      min-height: 0;
+      overflow: auto;
+      padding: 8px 10px 14px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.96), rgba(242,247,255,.98)),
+        linear-gradient(90deg, rgba(121,163,230,.08), rgba(121,163,230,0) 40%);
+    }
+    .miomos-explorer-item {
+      position:absolute;
+      border:1px solid transparent;
+      border-radius: 4px;
+      background: transparent;
+      padding: 6px 4px;
+      color:#10325d;
+      display:grid;
+      justify-items:center;
+      gap: 4px;
+      text-align:center;
+      font: inherit;
+      cursor: default;
+      user-select:none;
+    }
+    .miomos-explorer-item:hover {
+      border-color: rgba(111,138,189,.32);
+      background: rgba(214,228,250,.38);
+    }
+    .miomos-explorer-item.is-selected {
+      border-color: rgba(72,104,164,.58);
+      background: linear-gradient(180deg, rgba(201,224,255,.82), rgba(167,198,245,.86));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.88);
+    }
+    .miomos-explorer-item-glyph {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display:grid;
+      place-items:center;
+      background: linear-gradient(180deg, #ffd76e, #e5a72c);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.8), 0 6px 14px rgba(15,23,42,.18);
+      color:#4f2d00;
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .miomos-explorer-item.is-thumbnails { width: 126px; }
+    .miomos-explorer-item.is-thumbnails .miomos-explorer-item-glyph { width: 64px; height: 64px; font-size: 13px; }
+    .miomos-explorer-item.is-large-icons { width: 98px; }
+    .miomos-explorer-item.is-icons { width: 84px; }
+    .miomos-explorer-item.is-icons .miomos-explorer-item-glyph { width: 36px; height: 36px; border-radius: 10px; }
+    .miomos-explorer-item.is-tiles {
+      width: 176px;
+      grid-template-columns: 44px 1fr;
+      grid-template-rows: auto auto;
+      text-align:left;
+      justify-items:start;
+      align-items:center;
+      gap: 2px 10px;
+      padding: 8px 10px;
+    }
+    .miomos-explorer-item.is-tiles .miomos-explorer-item-glyph {
+      grid-row: 1 / span 2;
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+    }
+    .miomos-explorer-item-label {
+      color:#163864;
+      font-size: 12px;
+      line-height: 1.25;
+      text-shadow: 0 1px 0 rgba(255,255,255,.75);
+      word-break: break-word;
+    }
+    .miomos-explorer-item-meta {
+      color:#4d6b95;
+      font-size: 10px;
+      line-height: 1.2;
+    }
+    .miomos-explorer-list {
+      overflow:auto;
+      padding: 6px 0;
+      background: linear-gradient(180deg, #ffffff, #f5f9ff);
+    }
+    .miomos-explorer-list-row {
+      width:100%;
+      display:grid;
+      grid-template-columns: 24px minmax(0,1fr) 160px;
+      align-items:center;
+      gap: 10px;
+      padding: 7px 12px;
+      border:0;
+      border-bottom:1px solid rgba(120,150,196,.18);
+      background:transparent;
+      color:#15325f;
+      font: inherit;
+      text-align:left;
+    }
+    .miomos-explorer-list-row:hover { background: rgba(214,228,250,.34); }
+    .miomos-explorer-list-row.is-selected { background: linear-gradient(180deg, rgba(201,224,255,.8), rgba(167,198,245,.84)); }
+    .miomos-explorer-row-glyph {
+      width:18px;
+      height:18px;
+      border-radius: 5px;
+      display:grid;
+      place-items:center;
+      background: linear-gradient(180deg, #ffd76e, #e5a72c);
+      color:#4f2d00;
+      font-size: 9px;
+      font-weight: 800;
+    }
+    .miomos-explorer-details {
+      width:100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      background: linear-gradient(180deg, #ffffff, #f5f9ff);
+      color:#15325f;
+    }
+    .miomos-explorer-details thead th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      padding: 7px 10px;
+      text-align:left;
+      font-size:11px;
+      color:#24426f;
+      background: linear-gradient(180deg, #fefefe, #d8e6fb);
+      border-bottom:1px solid rgba(120,150,196,.36);
+      cursor: pointer;
+      user-select:none;
+    }
+    .miomos-explorer-details tbody td {
+      padding: 7px 10px;
+      border-bottom:1px solid rgba(120,150,196,.14);
+      font-size:12px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .miomos-explorer-details tbody tr:hover td { background: rgba(214,228,250,.32); }
+    .miomos-explorer-details tbody tr.is-selected td { background: linear-gradient(180deg, rgba(201,224,255,.8), rgba(167,198,245,.84)); }
+    .miomos-explorer-details td strong { color:#15325f; margin-left:8px; }
     .miomos-explorer-statusbar {
       display:flex;
-      justify-content: space-between;
-      gap:12px;
-      padding: 6px 10px;
-      border-top: 1px solid rgba(127,158,214,.24);
-      background: linear-gradient(180deg, #edf4ff, #dce8fb);
-      color:#36537c;
-      font-size: 11px;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+      min-height: 26px;
+      padding: 0 10px;
+      border-top:1px solid rgba(120,150,196,.28);
+      background: linear-gradient(180deg, #f0f6ff, #d9e8fb);
+      color:#24426f;
+      font-size:11px;
     }
-    .miomos-root[data-mobile-layout="1"] .miomos-explorer-body {
+    .miomos-root[data-mobile-layout="1"] .miomos-explorer-frame {
       grid-template-columns: minmax(0,1fr);
     }
-    .miomos-root[data-mobile-layout="1"] .miomos-explorer-pane {
-      border-right: 0;
-      border-bottom: 1px solid rgba(127,158,214,.28);
-    }
-
-    .miomos-selection-marquee {
-      position:absolute;
-      z-index: 4;
-      pointer-events:none;
-      border:1px dotted rgba(31,82,163,.95);
-      background: rgba(84,144,255,.20);
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.35);
-    }
-    .miomos-inline-rename {
-      width: 100%;
-      min-width: 0;
-      padding: 2px 4px;
-      border: 1px solid #6a8fcb;
-      background:#fffef7;
-      color:#14345d;
-      font: inherit;
-      font-size: 11px;
-      line-height: 1.25;
-      box-shadow: inset 0 1px 2px rgba(13,31,61,.08);
-    }
-    .miomos-desktop-icon.is-renaming .miomos-desktop-icon-kind,
-    .miomos-directory-card.is-renaming .miomos-entry-meta {
-      visibility:hidden;
-    }
-    .miomos-directory-card.is-selected {
-      border-color: rgba(35,91,181,.58) !important;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.6), 0 0 0 1px rgba(35,91,181,.22);
-      background: linear-gradient(180deg, rgba(230,241,255,.98), rgba(214,229,251,.96)) !important;
-    }
-    .miomos-directory-card.is-recycle-item .miomos-directory-glyph {
-      opacity: .92;
+    .miomos-root[data-mobile-layout="1"] .miomos-explorer-address-row {
+      grid-template-columns: 1fr;
     }
 
   </style>
@@ -3830,175 +5168,398 @@
     }
 
     .miomos-desktop-icon.is-selected {
-      background: linear-gradient(180deg, rgba(117,166,241,.32), rgba(52,98,196,.28)) !important;
-      border-color: rgba(255,255,255,.34) !important;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.20), 0 0 0 1px rgba(28,71,148,.28);
+      background: rgba(95,141,255,.16) !important;
+      border-color: rgba(95,141,255,.38) !important;
+      box-shadow: 0 0 0 1px rgba(255,255,255,.08), inset 0 1px 0 rgba(255,255,255,.1);
     }
-    .miomos-desktop-icon.is-drop-target,
-    .miomos-explorer-content.is-drop-target {
-      box-shadow: 0 0 0 2px rgba(255,206,84,.68), inset 0 0 0 1px rgba(255,255,255,.34);
-      border-color: rgba(214,163,32,.42) !important;
-      background: rgba(255,244,194,.14) !important;
+    .miomos-desktop-icon.is-renaming {
+      background: rgba(95,141,255,.12) !important;
+      border-color: rgba(95,141,255,.34) !important;
     }
+    .miomos-desktop-rename-input {
+      width: 100%; margin-top: 4px; border-radius: 4px; border: 1px solid rgba(95,141,255,.45);
+      background: rgba(255,255,255,.96); color: #102033; font: inherit; font-size: 11px; padding: 3px 5px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.7), 0 0 0 1px rgba(95,141,255,.14);
+    }
+    .miomos-desktop-marquee {
+      position: absolute; z-index: 8; pointer-events: none;
+      border: 1px dashed rgba(141,190,255,.86);
+      background: rgba(95,141,255,.16);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
+    }
+    .miomos-directory-card[data-entry-kind="recycle"] {
+      align-items: stretch;
+    }
+
+    .miomos-xp-explorer {
+      padding: 0 !important;
+      overflow: hidden;
+      border-radius: 12px;
+    }
+    .miomos-xp-explorer-toolbar, .miomos-xp-explorer-address, .miomos-xp-explorer-status {
+      display:flex; align-items:center; gap:8px;
+      padding: 8px 10px;
+      border-bottom: 1px solid rgba(148,163,184,.16);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+    }
+    .miomos-xp-explorer-address {
+      justify-content:flex-start;
+      font-size: 11px;
+    }
+    .miomos-xp-explorer-address strong { color:#f8fbff; }
+    .miomos-xp-explorer-address span {
+      display:inline-flex; align-items:center; min-height: 26px; padding: 0 10px;
+      border-radius: 999px; border: 1px solid rgba(148,163,184,.18);
+      background: rgba(8,14,24,.36); color:#d7e6fb;
+    }
+    .miomos-xp-explorer-body {
+      display:grid; grid-template-columns: 220px minmax(0,1fr);
+      min-height: 360px;
+    }
+    .miomos-xp-explorer-side {
+      padding: 12px 10px;
+      border-right: 1px solid rgba(148,163,184,.16);
+      background: linear-gradient(180deg, rgba(28,51,92,.34), rgba(10,18,30,.22));
+    }
+    .miomos-xp-side-group + .miomos-xp-side-group { margin-top: 16px; }
+    .miomos-xp-side-heading {
+      margin-bottom: 8px; font-size: 11px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color:#f8fbff;
+    }
+    .miomos-xp-side-link {
+      display:block; width:100%; text-align:left; margin-bottom:6px; padding:6px 8px; border-radius:8px; border:1px solid rgba(148,163,184,.14);
+      background: rgba(255,255,255,.04); color:#d8e6fb; font: inherit;
+    }
+    .miomos-xp-side-link:disabled { opacity:.45; }
+    .miomos-xp-side-copy strong, .miomos-xp-side-copy span { display:block; }
+    .miomos-xp-side-copy span { margin-top: 4px; color:#a8bdd7; line-height:1.4; }
+    .miomos-xp-explorer-main { padding: 10px; overflow:auto; }
+    .miomos-xp-file-table {
+      width:100%; border-collapse: collapse; font-size:12px;
+      border: 1px solid rgba(148,163,184,.14); background: rgba(10,15,24,.22);
+    }
+    .miomos-xp-file-table thead th {
+      position: sticky; top: 0; z-index: 1; text-align:left;
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+      border-bottom: 1px solid rgba(148,163,184,.18);
+      padding: 0;
+    }
+    .miomos-xp-col-btn {
+      width:100%; text-align:left; padding: 8px 10px; border:0; background:transparent; color:#f8fbff; font: inherit; font-weight:700;
+    }
+    .miomos-xp-file-row td {
+      padding: 7px 10px; border-bottom: 1px solid rgba(148,163,184,.08); color:#d9e7fb;
+    }
+    .miomos-xp-file-row:hover td { background: rgba(255,255,255,.03); }
+    .miomos-xp-file-row.is-selected td {
+      background: rgba(95,141,255,.18); box-shadow: inset 0 1px 0 rgba(255,255,255,.08), inset 0 -1px 0 rgba(255,255,255,.04);
+    }
+    .miomos-xp-name-cell {
+      display:flex; align-items:center; gap:10px;
+    }
+    .miomos-xp-explorer-status {
+      border-top: 1px solid rgba(148,163,184,.16);
+      border-bottom: 0;
+      color:#d4e4fa;
+      font-size:11px;
+    }
+    .miomos-root[data-mobile-layout="1"] .miomos-xp-explorer-body {
+      grid-template-columns: minmax(0,1fr);
+    }
+    .miomos-root[data-mobile-layout="1"] .miomos-xp-explorer-side {
+      border-right: 0;
+      border-bottom: 1px solid rgba(148,163,184,.16);
+    }
+
+    .miomos-xp-folder-window {
+      display: grid;
+      grid-template-rows: auto minmax(0,1fr);
+      gap: 10px;
+      height: 100%;
+      min-height: 0;
+    }
+    .miomos-explorer-window-header { margin-bottom: 0; }
     .miomos-explorer-shell {
       display: grid;
       grid-template-rows: auto auto minmax(0,1fr) auto;
+      min-height: 0;
       height: 100%;
-      border-radius: 16px;
+      border-radius: 14px;
       overflow: hidden;
-      background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(243,247,255,.90));
-      border: 1px solid rgba(127,158,214,.34);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.75);
-      color: #1f3554;
+      border: 1px solid rgba(90,132,210,.32);
+      background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(232,240,253,.92));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 10px 28px rgba(15,23,42,.16);
     }
-    .miomos-explorer-header {
-      margin: 0 !important;
-      padding: 14px 16px 10px;
-      background: linear-gradient(180deg, #ffffff, #edf4ff);
-      border-bottom: 1px solid rgba(127,158,214,.28);
-    }
-    .miomos-explorer-toolbar {
-      display:flex;
-      align-items:center;
-      gap:8px;
-      padding: 8px 12px;
-      background: linear-gradient(180deg, #fefefe, #e6eefb);
-      border-bottom: 1px solid rgba(127,158,214,.24);
+    .miomos-explorer-toolbar-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 10px;
+      background: linear-gradient(180deg, #fefefe, #dfe9f9);
+      border-bottom: 1px solid rgba(120,150,196,.34);
       flex-wrap: wrap;
     }
-    .miomos-explorer-tool,
-    .miomos-explorer-pane-link {
-      appearance:none;
-      border:1px solid rgba(127,158,214,.34);
-      border-radius: 6px;
-      background: linear-gradient(180deg, #ffffff, #dde9fb);
-      color:#24456e;
+    .miomos-explorer-toolbar { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+    .miomos-explorer-toolbtn {
+      border: 1px solid rgba(111,138,189,.5);
+      border-radius: 4px;
+      background: linear-gradient(180deg, #ffffff, #d7e5fb);
+      color: #15325f;
       font: inherit;
-      padding: 6px 10px;
-      cursor:pointer;
-      text-align:left;
-    }
-    .miomos-explorer-tool:hover,
-    .miomos-explorer-pane-link:hover {
-      border-color: rgba(72,110,178,.42);
-      background: linear-gradient(180deg, #ffffff, #d2e2fb);
-    }
-    .miomos-explorer-pane-link:disabled {
-      opacity:.55;
-      cursor:default;
-    }
-    .miomos-explorer-address {
-      margin-left: auto;
-      min-width: min(420px, 100%);
-      display:grid;
-      gap:4px;
-      color:#36537c;
       font-size: 11px;
       font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .04em;
+      padding: 4px 10px;
+      min-height: 26px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.92);
     }
-    .miomos-explorer-address-bar {
-      min-height: 34px;
+    .miomos-explorer-toolbtn.is-active {
+      background: linear-gradient(180deg, #cfe3ff, #a6c4f5);
+      border-color: rgba(72,104,164,.66);
+    }
+    .miomos-explorer-address-row {
+      display:grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 8px;
+      align-items:center;
+      padding: 8px 10px;
+      background: linear-gradient(180deg, #eef4fd, #d7e5fb);
+      border-bottom: 1px solid rgba(120,150,196,.30);
+    }
+    .miomos-explorer-address-label, .miomos-explorer-sort-box {
+      color:#22406f;
+      font-size:11px;
+      font-weight:700;
+    }
+    .miomos-explorer-address-box {
+      min-height: 28px;
       display:flex;
       align-items:center;
       padding: 0 10px;
-      border-radius: 8px;
-      border:1px solid rgba(127,158,214,.34);
-      background: linear-gradient(180deg, #ffffff, #f7faff);
-      color:#233f65;
-      font-size: 12px;
-      letter-spacing: 0;
-      text-transform:none;
-      font-weight: 600;
+      border-radius: 3px;
+      border:1px solid rgba(111,138,189,.46);
+      background:#ffffff;
+      color:#15325f;
+      box-shadow: inset 0 1px 2px rgba(15,23,42,.08);
+      font-size: 11px;
     }
-    .miomos-explorer-body {
-      min-height: 0;
+    .miomos-explorer-sort-box { display:flex; align-items:center; gap:6px; }
+    .miomos-explorer-sort-box select {
+      min-height: 28px;
+      border-radius: 3px;
+      border:1px solid rgba(111,138,189,.46);
+      background:#fff;
+      color:#15325f;
+      font: inherit;
+      padding: 0 8px;
+    }
+    .miomos-explorer-frame {
       display:grid;
       grid-template-columns: 220px minmax(0,1fr);
-      gap: 0;
-    }
-    .miomos-explorer-pane {
       min-height: 0;
-      overflow:auto;
-      padding: 12px;
-      background: linear-gradient(180deg, #d7e7ff, #eef5ff 45%, #f6f9ff 100%);
-      border-right: 1px solid rgba(127,158,214,.28);
+      background: linear-gradient(180deg, #e8f1fb, #f7fbff);
+    }
+    .miomos-explorer-side-pane {
+      background: linear-gradient(180deg, #d9e8fb, #edf5ff 18%, #d8e8fb);
+      border-right: 1px solid rgba(120,150,196,.30);
+      padding: 12px 10px;
       display:grid;
       align-content:start;
-      gap:12px;
+      gap: 12px;
     }
-    .miomos-explorer-pane-card {
+    .miomos-explorer-pane-group {
       display:grid;
-      gap:8px;
+      gap: 6px;
       padding: 10px;
-      border-radius: 12px;
-      background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(231,240,255,.96));
-      border:1px solid rgba(127,158,214,.26);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
-      color:#27456f;
+      border-radius: 8px;
+      background: linear-gradient(180deg, rgba(255,255,255,.84), rgba(226,236,251,.86));
+      border: 1px solid rgba(120,150,196,.26);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.86);
     }
-    .miomos-explorer-pane-card strong {
+    .miomos-explorer-pane-group strong {
+      color:#1d4277;
       font-size: 11px;
-      letter-spacing: .06em;
       text-transform: uppercase;
-      color:#31527d;
+      letter-spacing: .04em;
+    }
+    .miomos-explorer-pane-group span {
+      color:#355884;
+      font-size: 11px;
+      line-height:1.4;
+    }
+    .miomos-explorer-pane-link {
+      border:0;
+      background:transparent;
+      color:#0f4fa9;
+      text-align:left;
+      padding: 2px 0;
+      font: inherit;
+      font-size: 12px;
+      cursor:pointer;
     }
     .miomos-explorer-content {
-      min-height: 0;
-      overflow:auto;
-      padding: 12px;
-      background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(247,250,255,.98));
+      min-height:0;
+      overflow:hidden;
+      background: linear-gradient(180deg, #ffffff, #f7fbff 70%, #eef4ff);
+      display:grid;
     }
+    .miomos-explorer-icon-canvas {
+      position: relative;
+      min-height: 0;
+      overflow: auto;
+      padding: 8px 10px 14px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.96), rgba(242,247,255,.98)),
+        linear-gradient(90deg, rgba(121,163,230,.08), rgba(121,163,230,0) 40%);
+    }
+    .miomos-explorer-item {
+      position:absolute;
+      border:1px solid transparent;
+      border-radius: 4px;
+      background: transparent;
+      padding: 6px 4px;
+      color:#10325d;
+      display:grid;
+      justify-items:center;
+      gap: 4px;
+      text-align:center;
+      font: inherit;
+      cursor: default;
+      user-select:none;
+    }
+    .miomos-explorer-item:hover {
+      border-color: rgba(111,138,189,.32);
+      background: rgba(214,228,250,.38);
+    }
+    .miomos-explorer-item.is-selected {
+      border-color: rgba(72,104,164,.58);
+      background: linear-gradient(180deg, rgba(201,224,255,.82), rgba(167,198,245,.86));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.88);
+    }
+    .miomos-explorer-item-glyph {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display:grid;
+      place-items:center;
+      background: linear-gradient(180deg, #ffd76e, #e5a72c);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.8), 0 6px 14px rgba(15,23,42,.18);
+      color:#4f2d00;
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .miomos-explorer-item.is-thumbnails { width: 126px; }
+    .miomos-explorer-item.is-thumbnails .miomos-explorer-item-glyph { width: 64px; height: 64px; font-size: 13px; }
+    .miomos-explorer-item.is-large-icons { width: 98px; }
+    .miomos-explorer-item.is-icons { width: 84px; }
+    .miomos-explorer-item.is-icons .miomos-explorer-item-glyph { width: 36px; height: 36px; border-radius: 10px; }
+    .miomos-explorer-item.is-tiles {
+      width: 176px;
+      grid-template-columns: 44px 1fr;
+      grid-template-rows: auto auto;
+      text-align:left;
+      justify-items:start;
+      align-items:center;
+      gap: 2px 10px;
+      padding: 8px 10px;
+    }
+    .miomos-explorer-item.is-tiles .miomos-explorer-item-glyph {
+      grid-row: 1 / span 2;
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+    }
+    .miomos-explorer-item-label {
+      color:#163864;
+      font-size: 12px;
+      line-height: 1.25;
+      text-shadow: 0 1px 0 rgba(255,255,255,.75);
+      word-break: break-word;
+    }
+    .miomos-explorer-item-meta {
+      color:#4d6b95;
+      font-size: 10px;
+      line-height: 1.2;
+    }
+    .miomos-explorer-list {
+      overflow:auto;
+      padding: 6px 0;
+      background: linear-gradient(180deg, #ffffff, #f5f9ff);
+    }
+    .miomos-explorer-list-row {
+      width:100%;
+      display:grid;
+      grid-template-columns: 24px minmax(0,1fr) 160px;
+      align-items:center;
+      gap: 10px;
+      padding: 7px 12px;
+      border:0;
+      border-bottom:1px solid rgba(120,150,196,.18);
+      background:transparent;
+      color:#15325f;
+      font: inherit;
+      text-align:left;
+    }
+    .miomos-explorer-list-row:hover { background: rgba(214,228,250,.34); }
+    .miomos-explorer-list-row.is-selected { background: linear-gradient(180deg, rgba(201,224,255,.8), rgba(167,198,245,.84)); }
+    .miomos-explorer-row-glyph {
+      width:18px;
+      height:18px;
+      border-radius: 5px;
+      display:grid;
+      place-items:center;
+      background: linear-gradient(180deg, #ffd76e, #e5a72c);
+      color:#4f2d00;
+      font-size: 9px;
+      font-weight: 800;
+    }
+    .miomos-explorer-details {
+      width:100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      background: linear-gradient(180deg, #ffffff, #f5f9ff);
+      color:#15325f;
+    }
+    .miomos-explorer-details thead th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      padding: 7px 10px;
+      text-align:left;
+      font-size:11px;
+      color:#24426f;
+      background: linear-gradient(180deg, #fefefe, #d8e6fb);
+      border-bottom:1px solid rgba(120,150,196,.36);
+      cursor: pointer;
+      user-select:none;
+    }
+    .miomos-explorer-details tbody td {
+      padding: 7px 10px;
+      border-bottom:1px solid rgba(120,150,196,.14);
+      font-size:12px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .miomos-explorer-details tbody tr:hover td { background: rgba(214,228,250,.32); }
+    .miomos-explorer-details tbody tr.is-selected td { background: linear-gradient(180deg, rgba(201,224,255,.8), rgba(167,198,245,.84)); }
+    .miomos-explorer-details td strong { color:#15325f; margin-left:8px; }
     .miomos-explorer-statusbar {
       display:flex;
-      justify-content: space-between;
-      gap:12px;
-      padding: 6px 10px;
-      border-top: 1px solid rgba(127,158,214,.24);
-      background: linear-gradient(180deg, #edf4ff, #dce8fb);
-      color:#36537c;
-      font-size: 11px;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+      min-height: 26px;
+      padding: 0 10px;
+      border-top:1px solid rgba(120,150,196,.28);
+      background: linear-gradient(180deg, #f0f6ff, #d9e8fb);
+      color:#24426f;
+      font-size:11px;
     }
-    .miomos-root[data-mobile-layout="1"] .miomos-explorer-body {
+    .miomos-root[data-mobile-layout="1"] .miomos-explorer-frame {
       grid-template-columns: minmax(0,1fr);
     }
-    .miomos-root[data-mobile-layout="1"] .miomos-explorer-pane {
-      border-right: 0;
-      border-bottom: 1px solid rgba(127,158,214,.28);
-    }
-
-    .miomos-selection-marquee {
-      position:absolute;
-      z-index: 4;
-      pointer-events:none;
-      border:1px dotted rgba(31,82,163,.95);
-      background: rgba(84,144,255,.20);
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.35);
-    }
-    .miomos-inline-rename {
-      width: 100%;
-      min-width: 0;
-      padding: 2px 4px;
-      border: 1px solid #6a8fcb;
-      background:#fffef7;
-      color:#14345d;
-      font: inherit;
-      font-size: 11px;
-      line-height: 1.25;
-      box-shadow: inset 0 1px 2px rgba(13,31,61,.08);
-    }
-    .miomos-desktop-icon.is-renaming .miomos-desktop-icon-kind,
-    .miomos-directory-card.is-renaming .miomos-entry-meta {
-      visibility:hidden;
-    }
-    .miomos-directory-card.is-selected {
-      border-color: rgba(35,91,181,.58) !important;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.6), 0 0 0 1px rgba(35,91,181,.22);
-      background: linear-gradient(180deg, rgba(230,241,255,.98), rgba(214,229,251,.96)) !important;
-    }
-    .miomos-directory-card.is-recycle-item .miomos-directory-glyph {
-      opacity: .92;
+    .miomos-root[data-mobile-layout="1"] .miomos-explorer-address-row {
+      grid-template-columns: 1fr;
     }
 
   </style>
@@ -4411,175 +5972,398 @@
     }
 
     .miomos-desktop-icon.is-selected {
-      background: linear-gradient(180deg, rgba(117,166,241,.32), rgba(52,98,196,.28)) !important;
-      border-color: rgba(255,255,255,.34) !important;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.20), 0 0 0 1px rgba(28,71,148,.28);
+      background: rgba(95,141,255,.16) !important;
+      border-color: rgba(95,141,255,.38) !important;
+      box-shadow: 0 0 0 1px rgba(255,255,255,.08), inset 0 1px 0 rgba(255,255,255,.1);
     }
-    .miomos-desktop-icon.is-drop-target,
-    .miomos-explorer-content.is-drop-target {
-      box-shadow: 0 0 0 2px rgba(255,206,84,.68), inset 0 0 0 1px rgba(255,255,255,.34);
-      border-color: rgba(214,163,32,.42) !important;
-      background: rgba(255,244,194,.14) !important;
+    .miomos-desktop-icon.is-renaming {
+      background: rgba(95,141,255,.12) !important;
+      border-color: rgba(95,141,255,.34) !important;
     }
+    .miomos-desktop-rename-input {
+      width: 100%; margin-top: 4px; border-radius: 4px; border: 1px solid rgba(95,141,255,.45);
+      background: rgba(255,255,255,.96); color: #102033; font: inherit; font-size: 11px; padding: 3px 5px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.7), 0 0 0 1px rgba(95,141,255,.14);
+    }
+    .miomos-desktop-marquee {
+      position: absolute; z-index: 8; pointer-events: none;
+      border: 1px dashed rgba(141,190,255,.86);
+      background: rgba(95,141,255,.16);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
+    }
+    .miomos-directory-card[data-entry-kind="recycle"] {
+      align-items: stretch;
+    }
+
+    .miomos-xp-explorer {
+      padding: 0 !important;
+      overflow: hidden;
+      border-radius: 12px;
+    }
+    .miomos-xp-explorer-toolbar, .miomos-xp-explorer-address, .miomos-xp-explorer-status {
+      display:flex; align-items:center; gap:8px;
+      padding: 8px 10px;
+      border-bottom: 1px solid rgba(148,163,184,.16);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+    }
+    .miomos-xp-explorer-address {
+      justify-content:flex-start;
+      font-size: 11px;
+    }
+    .miomos-xp-explorer-address strong { color:#f8fbff; }
+    .miomos-xp-explorer-address span {
+      display:inline-flex; align-items:center; min-height: 26px; padding: 0 10px;
+      border-radius: 999px; border: 1px solid rgba(148,163,184,.18);
+      background: rgba(8,14,24,.36); color:#d7e6fb;
+    }
+    .miomos-xp-explorer-body {
+      display:grid; grid-template-columns: 220px minmax(0,1fr);
+      min-height: 360px;
+    }
+    .miomos-xp-explorer-side {
+      padding: 12px 10px;
+      border-right: 1px solid rgba(148,163,184,.16);
+      background: linear-gradient(180deg, rgba(28,51,92,.34), rgba(10,18,30,.22));
+    }
+    .miomos-xp-side-group + .miomos-xp-side-group { margin-top: 16px; }
+    .miomos-xp-side-heading {
+      margin-bottom: 8px; font-size: 11px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color:#f8fbff;
+    }
+    .miomos-xp-side-link {
+      display:block; width:100%; text-align:left; margin-bottom:6px; padding:6px 8px; border-radius:8px; border:1px solid rgba(148,163,184,.14);
+      background: rgba(255,255,255,.04); color:#d8e6fb; font: inherit;
+    }
+    .miomos-xp-side-link:disabled { opacity:.45; }
+    .miomos-xp-side-copy strong, .miomos-xp-side-copy span { display:block; }
+    .miomos-xp-side-copy span { margin-top: 4px; color:#a8bdd7; line-height:1.4; }
+    .miomos-xp-explorer-main { padding: 10px; overflow:auto; }
+    .miomos-xp-file-table {
+      width:100%; border-collapse: collapse; font-size:12px;
+      border: 1px solid rgba(148,163,184,.14); background: rgba(10,15,24,.22);
+    }
+    .miomos-xp-file-table thead th {
+      position: sticky; top: 0; z-index: 1; text-align:left;
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+      border-bottom: 1px solid rgba(148,163,184,.18);
+      padding: 0;
+    }
+    .miomos-xp-col-btn {
+      width:100%; text-align:left; padding: 8px 10px; border:0; background:transparent; color:#f8fbff; font: inherit; font-weight:700;
+    }
+    .miomos-xp-file-row td {
+      padding: 7px 10px; border-bottom: 1px solid rgba(148,163,184,.08); color:#d9e7fb;
+    }
+    .miomos-xp-file-row:hover td { background: rgba(255,255,255,.03); }
+    .miomos-xp-file-row.is-selected td {
+      background: rgba(95,141,255,.18); box-shadow: inset 0 1px 0 rgba(255,255,255,.08), inset 0 -1px 0 rgba(255,255,255,.04);
+    }
+    .miomos-xp-name-cell {
+      display:flex; align-items:center; gap:10px;
+    }
+    .miomos-xp-explorer-status {
+      border-top: 1px solid rgba(148,163,184,.16);
+      border-bottom: 0;
+      color:#d4e4fa;
+      font-size:11px;
+    }
+    .miomos-root[data-mobile-layout="1"] .miomos-xp-explorer-body {
+      grid-template-columns: minmax(0,1fr);
+    }
+    .miomos-root[data-mobile-layout="1"] .miomos-xp-explorer-side {
+      border-right: 0;
+      border-bottom: 1px solid rgba(148,163,184,.16);
+    }
+
+    .miomos-xp-folder-window {
+      display: grid;
+      grid-template-rows: auto minmax(0,1fr);
+      gap: 10px;
+      height: 100%;
+      min-height: 0;
+    }
+    .miomos-explorer-window-header { margin-bottom: 0; }
     .miomos-explorer-shell {
       display: grid;
       grid-template-rows: auto auto minmax(0,1fr) auto;
+      min-height: 0;
       height: 100%;
-      border-radius: 16px;
+      border-radius: 14px;
       overflow: hidden;
-      background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(243,247,255,.90));
-      border: 1px solid rgba(127,158,214,.34);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.75);
-      color: #1f3554;
+      border: 1px solid rgba(90,132,210,.32);
+      background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(232,240,253,.92));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 10px 28px rgba(15,23,42,.16);
     }
-    .miomos-explorer-header {
-      margin: 0 !important;
-      padding: 14px 16px 10px;
-      background: linear-gradient(180deg, #ffffff, #edf4ff);
-      border-bottom: 1px solid rgba(127,158,214,.28);
-    }
-    .miomos-explorer-toolbar {
-      display:flex;
-      align-items:center;
-      gap:8px;
-      padding: 8px 12px;
-      background: linear-gradient(180deg, #fefefe, #e6eefb);
-      border-bottom: 1px solid rgba(127,158,214,.24);
+    .miomos-explorer-toolbar-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 10px;
+      background: linear-gradient(180deg, #fefefe, #dfe9f9);
+      border-bottom: 1px solid rgba(120,150,196,.34);
       flex-wrap: wrap;
     }
-    .miomos-explorer-tool,
-    .miomos-explorer-pane-link {
-      appearance:none;
-      border:1px solid rgba(127,158,214,.34);
-      border-radius: 6px;
-      background: linear-gradient(180deg, #ffffff, #dde9fb);
-      color:#24456e;
+    .miomos-explorer-toolbar { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+    .miomos-explorer-toolbtn {
+      border: 1px solid rgba(111,138,189,.5);
+      border-radius: 4px;
+      background: linear-gradient(180deg, #ffffff, #d7e5fb);
+      color: #15325f;
       font: inherit;
-      padding: 6px 10px;
-      cursor:pointer;
-      text-align:left;
-    }
-    .miomos-explorer-tool:hover,
-    .miomos-explorer-pane-link:hover {
-      border-color: rgba(72,110,178,.42);
-      background: linear-gradient(180deg, #ffffff, #d2e2fb);
-    }
-    .miomos-explorer-pane-link:disabled {
-      opacity:.55;
-      cursor:default;
-    }
-    .miomos-explorer-address {
-      margin-left: auto;
-      min-width: min(420px, 100%);
-      display:grid;
-      gap:4px;
-      color:#36537c;
       font-size: 11px;
       font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .04em;
+      padding: 4px 10px;
+      min-height: 26px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.92);
     }
-    .miomos-explorer-address-bar {
-      min-height: 34px;
+    .miomos-explorer-toolbtn.is-active {
+      background: linear-gradient(180deg, #cfe3ff, #a6c4f5);
+      border-color: rgba(72,104,164,.66);
+    }
+    .miomos-explorer-address-row {
+      display:grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 8px;
+      align-items:center;
+      padding: 8px 10px;
+      background: linear-gradient(180deg, #eef4fd, #d7e5fb);
+      border-bottom: 1px solid rgba(120,150,196,.30);
+    }
+    .miomos-explorer-address-label, .miomos-explorer-sort-box {
+      color:#22406f;
+      font-size:11px;
+      font-weight:700;
+    }
+    .miomos-explorer-address-box {
+      min-height: 28px;
       display:flex;
       align-items:center;
       padding: 0 10px;
-      border-radius: 8px;
-      border:1px solid rgba(127,158,214,.34);
-      background: linear-gradient(180deg, #ffffff, #f7faff);
-      color:#233f65;
-      font-size: 12px;
-      letter-spacing: 0;
-      text-transform:none;
-      font-weight: 600;
+      border-radius: 3px;
+      border:1px solid rgba(111,138,189,.46);
+      background:#ffffff;
+      color:#15325f;
+      box-shadow: inset 0 1px 2px rgba(15,23,42,.08);
+      font-size: 11px;
     }
-    .miomos-explorer-body {
-      min-height: 0;
+    .miomos-explorer-sort-box { display:flex; align-items:center; gap:6px; }
+    .miomos-explorer-sort-box select {
+      min-height: 28px;
+      border-radius: 3px;
+      border:1px solid rgba(111,138,189,.46);
+      background:#fff;
+      color:#15325f;
+      font: inherit;
+      padding: 0 8px;
+    }
+    .miomos-explorer-frame {
       display:grid;
       grid-template-columns: 220px minmax(0,1fr);
-      gap: 0;
-    }
-    .miomos-explorer-pane {
       min-height: 0;
-      overflow:auto;
-      padding: 12px;
-      background: linear-gradient(180deg, #d7e7ff, #eef5ff 45%, #f6f9ff 100%);
-      border-right: 1px solid rgba(127,158,214,.28);
+      background: linear-gradient(180deg, #e8f1fb, #f7fbff);
+    }
+    .miomos-explorer-side-pane {
+      background: linear-gradient(180deg, #d9e8fb, #edf5ff 18%, #d8e8fb);
+      border-right: 1px solid rgba(120,150,196,.30);
+      padding: 12px 10px;
       display:grid;
       align-content:start;
-      gap:12px;
+      gap: 12px;
     }
-    .miomos-explorer-pane-card {
+    .miomos-explorer-pane-group {
       display:grid;
-      gap:8px;
+      gap: 6px;
       padding: 10px;
-      border-radius: 12px;
-      background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(231,240,255,.96));
-      border:1px solid rgba(127,158,214,.26);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
-      color:#27456f;
+      border-radius: 8px;
+      background: linear-gradient(180deg, rgba(255,255,255,.84), rgba(226,236,251,.86));
+      border: 1px solid rgba(120,150,196,.26);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.86);
     }
-    .miomos-explorer-pane-card strong {
+    .miomos-explorer-pane-group strong {
+      color:#1d4277;
       font-size: 11px;
-      letter-spacing: .06em;
       text-transform: uppercase;
-      color:#31527d;
+      letter-spacing: .04em;
+    }
+    .miomos-explorer-pane-group span {
+      color:#355884;
+      font-size: 11px;
+      line-height:1.4;
+    }
+    .miomos-explorer-pane-link {
+      border:0;
+      background:transparent;
+      color:#0f4fa9;
+      text-align:left;
+      padding: 2px 0;
+      font: inherit;
+      font-size: 12px;
+      cursor:pointer;
     }
     .miomos-explorer-content {
-      min-height: 0;
-      overflow:auto;
-      padding: 12px;
-      background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(247,250,255,.98));
+      min-height:0;
+      overflow:hidden;
+      background: linear-gradient(180deg, #ffffff, #f7fbff 70%, #eef4ff);
+      display:grid;
     }
+    .miomos-explorer-icon-canvas {
+      position: relative;
+      min-height: 0;
+      overflow: auto;
+      padding: 8px 10px 14px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.96), rgba(242,247,255,.98)),
+        linear-gradient(90deg, rgba(121,163,230,.08), rgba(121,163,230,0) 40%);
+    }
+    .miomos-explorer-item {
+      position:absolute;
+      border:1px solid transparent;
+      border-radius: 4px;
+      background: transparent;
+      padding: 6px 4px;
+      color:#10325d;
+      display:grid;
+      justify-items:center;
+      gap: 4px;
+      text-align:center;
+      font: inherit;
+      cursor: default;
+      user-select:none;
+    }
+    .miomos-explorer-item:hover {
+      border-color: rgba(111,138,189,.32);
+      background: rgba(214,228,250,.38);
+    }
+    .miomos-explorer-item.is-selected {
+      border-color: rgba(72,104,164,.58);
+      background: linear-gradient(180deg, rgba(201,224,255,.82), rgba(167,198,245,.86));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.88);
+    }
+    .miomos-explorer-item-glyph {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display:grid;
+      place-items:center;
+      background: linear-gradient(180deg, #ffd76e, #e5a72c);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.8), 0 6px 14px rgba(15,23,42,.18);
+      color:#4f2d00;
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .miomos-explorer-item.is-thumbnails { width: 126px; }
+    .miomos-explorer-item.is-thumbnails .miomos-explorer-item-glyph { width: 64px; height: 64px; font-size: 13px; }
+    .miomos-explorer-item.is-large-icons { width: 98px; }
+    .miomos-explorer-item.is-icons { width: 84px; }
+    .miomos-explorer-item.is-icons .miomos-explorer-item-glyph { width: 36px; height: 36px; border-radius: 10px; }
+    .miomos-explorer-item.is-tiles {
+      width: 176px;
+      grid-template-columns: 44px 1fr;
+      grid-template-rows: auto auto;
+      text-align:left;
+      justify-items:start;
+      align-items:center;
+      gap: 2px 10px;
+      padding: 8px 10px;
+    }
+    .miomos-explorer-item.is-tiles .miomos-explorer-item-glyph {
+      grid-row: 1 / span 2;
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+    }
+    .miomos-explorer-item-label {
+      color:#163864;
+      font-size: 12px;
+      line-height: 1.25;
+      text-shadow: 0 1px 0 rgba(255,255,255,.75);
+      word-break: break-word;
+    }
+    .miomos-explorer-item-meta {
+      color:#4d6b95;
+      font-size: 10px;
+      line-height: 1.2;
+    }
+    .miomos-explorer-list {
+      overflow:auto;
+      padding: 6px 0;
+      background: linear-gradient(180deg, #ffffff, #f5f9ff);
+    }
+    .miomos-explorer-list-row {
+      width:100%;
+      display:grid;
+      grid-template-columns: 24px minmax(0,1fr) 160px;
+      align-items:center;
+      gap: 10px;
+      padding: 7px 12px;
+      border:0;
+      border-bottom:1px solid rgba(120,150,196,.18);
+      background:transparent;
+      color:#15325f;
+      font: inherit;
+      text-align:left;
+    }
+    .miomos-explorer-list-row:hover { background: rgba(214,228,250,.34); }
+    .miomos-explorer-list-row.is-selected { background: linear-gradient(180deg, rgba(201,224,255,.8), rgba(167,198,245,.84)); }
+    .miomos-explorer-row-glyph {
+      width:18px;
+      height:18px;
+      border-radius: 5px;
+      display:grid;
+      place-items:center;
+      background: linear-gradient(180deg, #ffd76e, #e5a72c);
+      color:#4f2d00;
+      font-size: 9px;
+      font-weight: 800;
+    }
+    .miomos-explorer-details {
+      width:100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      background: linear-gradient(180deg, #ffffff, #f5f9ff);
+      color:#15325f;
+    }
+    .miomos-explorer-details thead th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      padding: 7px 10px;
+      text-align:left;
+      font-size:11px;
+      color:#24426f;
+      background: linear-gradient(180deg, #fefefe, #d8e6fb);
+      border-bottom:1px solid rgba(120,150,196,.36);
+      cursor: pointer;
+      user-select:none;
+    }
+    .miomos-explorer-details tbody td {
+      padding: 7px 10px;
+      border-bottom:1px solid rgba(120,150,196,.14);
+      font-size:12px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .miomos-explorer-details tbody tr:hover td { background: rgba(214,228,250,.32); }
+    .miomos-explorer-details tbody tr.is-selected td { background: linear-gradient(180deg, rgba(201,224,255,.8), rgba(167,198,245,.84)); }
+    .miomos-explorer-details td strong { color:#15325f; margin-left:8px; }
     .miomos-explorer-statusbar {
       display:flex;
-      justify-content: space-between;
-      gap:12px;
-      padding: 6px 10px;
-      border-top: 1px solid rgba(127,158,214,.24);
-      background: linear-gradient(180deg, #edf4ff, #dce8fb);
-      color:#36537c;
-      font-size: 11px;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+      min-height: 26px;
+      padding: 0 10px;
+      border-top:1px solid rgba(120,150,196,.28);
+      background: linear-gradient(180deg, #f0f6ff, #d9e8fb);
+      color:#24426f;
+      font-size:11px;
     }
-    .miomos-root[data-mobile-layout="1"] .miomos-explorer-body {
+    .miomos-root[data-mobile-layout="1"] .miomos-explorer-frame {
       grid-template-columns: minmax(0,1fr);
     }
-    .miomos-root[data-mobile-layout="1"] .miomos-explorer-pane {
-      border-right: 0;
-      border-bottom: 1px solid rgba(127,158,214,.28);
-    }
-
-    .miomos-selection-marquee {
-      position:absolute;
-      z-index: 4;
-      pointer-events:none;
-      border:1px dotted rgba(31,82,163,.95);
-      background: rgba(84,144,255,.20);
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.35);
-    }
-    .miomos-inline-rename {
-      width: 100%;
-      min-width: 0;
-      padding: 2px 4px;
-      border: 1px solid #6a8fcb;
-      background:#fffef7;
-      color:#14345d;
-      font: inherit;
-      font-size: 11px;
-      line-height: 1.25;
-      box-shadow: inset 0 1px 2px rgba(13,31,61,.08);
-    }
-    .miomos-desktop-icon.is-renaming .miomos-desktop-icon-kind,
-    .miomos-directory-card.is-renaming .miomos-entry-meta {
-      visibility:hidden;
-    }
-    .miomos-directory-card.is-selected {
-      border-color: rgba(35,91,181,.58) !important;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.6), 0 0 0 1px rgba(35,91,181,.22);
-      background: linear-gradient(180deg, rgba(230,241,255,.98), rgba(214,229,251,.96)) !important;
-    }
-    .miomos-directory-card.is-recycle-item .miomos-directory-glyph {
-      opacity: .92;
+    .miomos-root[data-mobile-layout="1"] .miomos-explorer-address-row {
+      grid-template-columns: 1fr;
     }
 
   </style>
@@ -4680,175 +6464,398 @@
     }
 
     .miomos-desktop-icon.is-selected {
-      background: linear-gradient(180deg, rgba(117,166,241,.32), rgba(52,98,196,.28)) !important;
-      border-color: rgba(255,255,255,.34) !important;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.20), 0 0 0 1px rgba(28,71,148,.28);
+      background: rgba(95,141,255,.16) !important;
+      border-color: rgba(95,141,255,.38) !important;
+      box-shadow: 0 0 0 1px rgba(255,255,255,.08), inset 0 1px 0 rgba(255,255,255,.1);
     }
-    .miomos-desktop-icon.is-drop-target,
-    .miomos-explorer-content.is-drop-target {
-      box-shadow: 0 0 0 2px rgba(255,206,84,.68), inset 0 0 0 1px rgba(255,255,255,.34);
-      border-color: rgba(214,163,32,.42) !important;
-      background: rgba(255,244,194,.14) !important;
+    .miomos-desktop-icon.is-renaming {
+      background: rgba(95,141,255,.12) !important;
+      border-color: rgba(95,141,255,.34) !important;
     }
+    .miomos-desktop-rename-input {
+      width: 100%; margin-top: 4px; border-radius: 4px; border: 1px solid rgba(95,141,255,.45);
+      background: rgba(255,255,255,.96); color: #102033; font: inherit; font-size: 11px; padding: 3px 5px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.7), 0 0 0 1px rgba(95,141,255,.14);
+    }
+    .miomos-desktop-marquee {
+      position: absolute; z-index: 8; pointer-events: none;
+      border: 1px dashed rgba(141,190,255,.86);
+      background: rgba(95,141,255,.16);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
+    }
+    .miomos-directory-card[data-entry-kind="recycle"] {
+      align-items: stretch;
+    }
+
+    .miomos-xp-explorer {
+      padding: 0 !important;
+      overflow: hidden;
+      border-radius: 12px;
+    }
+    .miomos-xp-explorer-toolbar, .miomos-xp-explorer-address, .miomos-xp-explorer-status {
+      display:flex; align-items:center; gap:8px;
+      padding: 8px 10px;
+      border-bottom: 1px solid rgba(148,163,184,.16);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+    }
+    .miomos-xp-explorer-address {
+      justify-content:flex-start;
+      font-size: 11px;
+    }
+    .miomos-xp-explorer-address strong { color:#f8fbff; }
+    .miomos-xp-explorer-address span {
+      display:inline-flex; align-items:center; min-height: 26px; padding: 0 10px;
+      border-radius: 999px; border: 1px solid rgba(148,163,184,.18);
+      background: rgba(8,14,24,.36); color:#d7e6fb;
+    }
+    .miomos-xp-explorer-body {
+      display:grid; grid-template-columns: 220px minmax(0,1fr);
+      min-height: 360px;
+    }
+    .miomos-xp-explorer-side {
+      padding: 12px 10px;
+      border-right: 1px solid rgba(148,163,184,.16);
+      background: linear-gradient(180deg, rgba(28,51,92,.34), rgba(10,18,30,.22));
+    }
+    .miomos-xp-side-group + .miomos-xp-side-group { margin-top: 16px; }
+    .miomos-xp-side-heading {
+      margin-bottom: 8px; font-size: 11px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color:#f8fbff;
+    }
+    .miomos-xp-side-link {
+      display:block; width:100%; text-align:left; margin-bottom:6px; padding:6px 8px; border-radius:8px; border:1px solid rgba(148,163,184,.14);
+      background: rgba(255,255,255,.04); color:#d8e6fb; font: inherit;
+    }
+    .miomos-xp-side-link:disabled { opacity:.45; }
+    .miomos-xp-side-copy strong, .miomos-xp-side-copy span { display:block; }
+    .miomos-xp-side-copy span { margin-top: 4px; color:#a8bdd7; line-height:1.4; }
+    .miomos-xp-explorer-main { padding: 10px; overflow:auto; }
+    .miomos-xp-file-table {
+      width:100%; border-collapse: collapse; font-size:12px;
+      border: 1px solid rgba(148,163,184,.14); background: rgba(10,15,24,.22);
+    }
+    .miomos-xp-file-table thead th {
+      position: sticky; top: 0; z-index: 1; text-align:left;
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+      border-bottom: 1px solid rgba(148,163,184,.18);
+      padding: 0;
+    }
+    .miomos-xp-col-btn {
+      width:100%; text-align:left; padding: 8px 10px; border:0; background:transparent; color:#f8fbff; font: inherit; font-weight:700;
+    }
+    .miomos-xp-file-row td {
+      padding: 7px 10px; border-bottom: 1px solid rgba(148,163,184,.08); color:#d9e7fb;
+    }
+    .miomos-xp-file-row:hover td { background: rgba(255,255,255,.03); }
+    .miomos-xp-file-row.is-selected td {
+      background: rgba(95,141,255,.18); box-shadow: inset 0 1px 0 rgba(255,255,255,.08), inset 0 -1px 0 rgba(255,255,255,.04);
+    }
+    .miomos-xp-name-cell {
+      display:flex; align-items:center; gap:10px;
+    }
+    .miomos-xp-explorer-status {
+      border-top: 1px solid rgba(148,163,184,.16);
+      border-bottom: 0;
+      color:#d4e4fa;
+      font-size:11px;
+    }
+    .miomos-root[data-mobile-layout="1"] .miomos-xp-explorer-body {
+      grid-template-columns: minmax(0,1fr);
+    }
+    .miomos-root[data-mobile-layout="1"] .miomos-xp-explorer-side {
+      border-right: 0;
+      border-bottom: 1px solid rgba(148,163,184,.16);
+    }
+
+    .miomos-xp-folder-window {
+      display: grid;
+      grid-template-rows: auto minmax(0,1fr);
+      gap: 10px;
+      height: 100%;
+      min-height: 0;
+    }
+    .miomos-explorer-window-header { margin-bottom: 0; }
     .miomos-explorer-shell {
       display: grid;
       grid-template-rows: auto auto minmax(0,1fr) auto;
+      min-height: 0;
       height: 100%;
-      border-radius: 16px;
+      border-radius: 14px;
       overflow: hidden;
-      background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(243,247,255,.90));
-      border: 1px solid rgba(127,158,214,.34);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.75);
-      color: #1f3554;
+      border: 1px solid rgba(90,132,210,.32);
+      background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(232,240,253,.92));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 10px 28px rgba(15,23,42,.16);
     }
-    .miomos-explorer-header {
-      margin: 0 !important;
-      padding: 14px 16px 10px;
-      background: linear-gradient(180deg, #ffffff, #edf4ff);
-      border-bottom: 1px solid rgba(127,158,214,.28);
-    }
-    .miomos-explorer-toolbar {
-      display:flex;
-      align-items:center;
-      gap:8px;
-      padding: 8px 12px;
-      background: linear-gradient(180deg, #fefefe, #e6eefb);
-      border-bottom: 1px solid rgba(127,158,214,.24);
+    .miomos-explorer-toolbar-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 10px;
+      background: linear-gradient(180deg, #fefefe, #dfe9f9);
+      border-bottom: 1px solid rgba(120,150,196,.34);
       flex-wrap: wrap;
     }
-    .miomos-explorer-tool,
-    .miomos-explorer-pane-link {
-      appearance:none;
-      border:1px solid rgba(127,158,214,.34);
-      border-radius: 6px;
-      background: linear-gradient(180deg, #ffffff, #dde9fb);
-      color:#24456e;
+    .miomos-explorer-toolbar { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+    .miomos-explorer-toolbtn {
+      border: 1px solid rgba(111,138,189,.5);
+      border-radius: 4px;
+      background: linear-gradient(180deg, #ffffff, #d7e5fb);
+      color: #15325f;
       font: inherit;
-      padding: 6px 10px;
-      cursor:pointer;
-      text-align:left;
-    }
-    .miomos-explorer-tool:hover,
-    .miomos-explorer-pane-link:hover {
-      border-color: rgba(72,110,178,.42);
-      background: linear-gradient(180deg, #ffffff, #d2e2fb);
-    }
-    .miomos-explorer-pane-link:disabled {
-      opacity:.55;
-      cursor:default;
-    }
-    .miomos-explorer-address {
-      margin-left: auto;
-      min-width: min(420px, 100%);
-      display:grid;
-      gap:4px;
-      color:#36537c;
       font-size: 11px;
       font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .04em;
+      padding: 4px 10px;
+      min-height: 26px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.92);
     }
-    .miomos-explorer-address-bar {
-      min-height: 34px;
+    .miomos-explorer-toolbtn.is-active {
+      background: linear-gradient(180deg, #cfe3ff, #a6c4f5);
+      border-color: rgba(72,104,164,.66);
+    }
+    .miomos-explorer-address-row {
+      display:grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 8px;
+      align-items:center;
+      padding: 8px 10px;
+      background: linear-gradient(180deg, #eef4fd, #d7e5fb);
+      border-bottom: 1px solid rgba(120,150,196,.30);
+    }
+    .miomos-explorer-address-label, .miomos-explorer-sort-box {
+      color:#22406f;
+      font-size:11px;
+      font-weight:700;
+    }
+    .miomos-explorer-address-box {
+      min-height: 28px;
       display:flex;
       align-items:center;
       padding: 0 10px;
-      border-radius: 8px;
-      border:1px solid rgba(127,158,214,.34);
-      background: linear-gradient(180deg, #ffffff, #f7faff);
-      color:#233f65;
-      font-size: 12px;
-      letter-spacing: 0;
-      text-transform:none;
-      font-weight: 600;
+      border-radius: 3px;
+      border:1px solid rgba(111,138,189,.46);
+      background:#ffffff;
+      color:#15325f;
+      box-shadow: inset 0 1px 2px rgba(15,23,42,.08);
+      font-size: 11px;
     }
-    .miomos-explorer-body {
-      min-height: 0;
+    .miomos-explorer-sort-box { display:flex; align-items:center; gap:6px; }
+    .miomos-explorer-sort-box select {
+      min-height: 28px;
+      border-radius: 3px;
+      border:1px solid rgba(111,138,189,.46);
+      background:#fff;
+      color:#15325f;
+      font: inherit;
+      padding: 0 8px;
+    }
+    .miomos-explorer-frame {
       display:grid;
       grid-template-columns: 220px minmax(0,1fr);
-      gap: 0;
-    }
-    .miomos-explorer-pane {
       min-height: 0;
-      overflow:auto;
-      padding: 12px;
-      background: linear-gradient(180deg, #d7e7ff, #eef5ff 45%, #f6f9ff 100%);
-      border-right: 1px solid rgba(127,158,214,.28);
+      background: linear-gradient(180deg, #e8f1fb, #f7fbff);
+    }
+    .miomos-explorer-side-pane {
+      background: linear-gradient(180deg, #d9e8fb, #edf5ff 18%, #d8e8fb);
+      border-right: 1px solid rgba(120,150,196,.30);
+      padding: 12px 10px;
       display:grid;
       align-content:start;
-      gap:12px;
+      gap: 12px;
     }
-    .miomos-explorer-pane-card {
+    .miomos-explorer-pane-group {
       display:grid;
-      gap:8px;
+      gap: 6px;
       padding: 10px;
-      border-radius: 12px;
-      background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(231,240,255,.96));
-      border:1px solid rgba(127,158,214,.26);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
-      color:#27456f;
+      border-radius: 8px;
+      background: linear-gradient(180deg, rgba(255,255,255,.84), rgba(226,236,251,.86));
+      border: 1px solid rgba(120,150,196,.26);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.86);
     }
-    .miomos-explorer-pane-card strong {
+    .miomos-explorer-pane-group strong {
+      color:#1d4277;
       font-size: 11px;
-      letter-spacing: .06em;
       text-transform: uppercase;
-      color:#31527d;
+      letter-spacing: .04em;
+    }
+    .miomos-explorer-pane-group span {
+      color:#355884;
+      font-size: 11px;
+      line-height:1.4;
+    }
+    .miomos-explorer-pane-link {
+      border:0;
+      background:transparent;
+      color:#0f4fa9;
+      text-align:left;
+      padding: 2px 0;
+      font: inherit;
+      font-size: 12px;
+      cursor:pointer;
     }
     .miomos-explorer-content {
-      min-height: 0;
-      overflow:auto;
-      padding: 12px;
-      background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(247,250,255,.98));
+      min-height:0;
+      overflow:hidden;
+      background: linear-gradient(180deg, #ffffff, #f7fbff 70%, #eef4ff);
+      display:grid;
     }
+    .miomos-explorer-icon-canvas {
+      position: relative;
+      min-height: 0;
+      overflow: auto;
+      padding: 8px 10px 14px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.96), rgba(242,247,255,.98)),
+        linear-gradient(90deg, rgba(121,163,230,.08), rgba(121,163,230,0) 40%);
+    }
+    .miomos-explorer-item {
+      position:absolute;
+      border:1px solid transparent;
+      border-radius: 4px;
+      background: transparent;
+      padding: 6px 4px;
+      color:#10325d;
+      display:grid;
+      justify-items:center;
+      gap: 4px;
+      text-align:center;
+      font: inherit;
+      cursor: default;
+      user-select:none;
+    }
+    .miomos-explorer-item:hover {
+      border-color: rgba(111,138,189,.32);
+      background: rgba(214,228,250,.38);
+    }
+    .miomos-explorer-item.is-selected {
+      border-color: rgba(72,104,164,.58);
+      background: linear-gradient(180deg, rgba(201,224,255,.82), rgba(167,198,245,.86));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.88);
+    }
+    .miomos-explorer-item-glyph {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display:grid;
+      place-items:center;
+      background: linear-gradient(180deg, #ffd76e, #e5a72c);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.8), 0 6px 14px rgba(15,23,42,.18);
+      color:#4f2d00;
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .miomos-explorer-item.is-thumbnails { width: 126px; }
+    .miomos-explorer-item.is-thumbnails .miomos-explorer-item-glyph { width: 64px; height: 64px; font-size: 13px; }
+    .miomos-explorer-item.is-large-icons { width: 98px; }
+    .miomos-explorer-item.is-icons { width: 84px; }
+    .miomos-explorer-item.is-icons .miomos-explorer-item-glyph { width: 36px; height: 36px; border-radius: 10px; }
+    .miomos-explorer-item.is-tiles {
+      width: 176px;
+      grid-template-columns: 44px 1fr;
+      grid-template-rows: auto auto;
+      text-align:left;
+      justify-items:start;
+      align-items:center;
+      gap: 2px 10px;
+      padding: 8px 10px;
+    }
+    .miomos-explorer-item.is-tiles .miomos-explorer-item-glyph {
+      grid-row: 1 / span 2;
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+    }
+    .miomos-explorer-item-label {
+      color:#163864;
+      font-size: 12px;
+      line-height: 1.25;
+      text-shadow: 0 1px 0 rgba(255,255,255,.75);
+      word-break: break-word;
+    }
+    .miomos-explorer-item-meta {
+      color:#4d6b95;
+      font-size: 10px;
+      line-height: 1.2;
+    }
+    .miomos-explorer-list {
+      overflow:auto;
+      padding: 6px 0;
+      background: linear-gradient(180deg, #ffffff, #f5f9ff);
+    }
+    .miomos-explorer-list-row {
+      width:100%;
+      display:grid;
+      grid-template-columns: 24px minmax(0,1fr) 160px;
+      align-items:center;
+      gap: 10px;
+      padding: 7px 12px;
+      border:0;
+      border-bottom:1px solid rgba(120,150,196,.18);
+      background:transparent;
+      color:#15325f;
+      font: inherit;
+      text-align:left;
+    }
+    .miomos-explorer-list-row:hover { background: rgba(214,228,250,.34); }
+    .miomos-explorer-list-row.is-selected { background: linear-gradient(180deg, rgba(201,224,255,.8), rgba(167,198,245,.84)); }
+    .miomos-explorer-row-glyph {
+      width:18px;
+      height:18px;
+      border-radius: 5px;
+      display:grid;
+      place-items:center;
+      background: linear-gradient(180deg, #ffd76e, #e5a72c);
+      color:#4f2d00;
+      font-size: 9px;
+      font-weight: 800;
+    }
+    .miomos-explorer-details {
+      width:100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      background: linear-gradient(180deg, #ffffff, #f5f9ff);
+      color:#15325f;
+    }
+    .miomos-explorer-details thead th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      padding: 7px 10px;
+      text-align:left;
+      font-size:11px;
+      color:#24426f;
+      background: linear-gradient(180deg, #fefefe, #d8e6fb);
+      border-bottom:1px solid rgba(120,150,196,.36);
+      cursor: pointer;
+      user-select:none;
+    }
+    .miomos-explorer-details tbody td {
+      padding: 7px 10px;
+      border-bottom:1px solid rgba(120,150,196,.14);
+      font-size:12px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .miomos-explorer-details tbody tr:hover td { background: rgba(214,228,250,.32); }
+    .miomos-explorer-details tbody tr.is-selected td { background: linear-gradient(180deg, rgba(201,224,255,.8), rgba(167,198,245,.84)); }
+    .miomos-explorer-details td strong { color:#15325f; margin-left:8px; }
     .miomos-explorer-statusbar {
       display:flex;
-      justify-content: space-between;
-      gap:12px;
-      padding: 6px 10px;
-      border-top: 1px solid rgba(127,158,214,.24);
-      background: linear-gradient(180deg, #edf4ff, #dce8fb);
-      color:#36537c;
-      font-size: 11px;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+      min-height: 26px;
+      padding: 0 10px;
+      border-top:1px solid rgba(120,150,196,.28);
+      background: linear-gradient(180deg, #f0f6ff, #d9e8fb);
+      color:#24426f;
+      font-size:11px;
     }
-    .miomos-root[data-mobile-layout="1"] .miomos-explorer-body {
+    .miomos-root[data-mobile-layout="1"] .miomos-explorer-frame {
       grid-template-columns: minmax(0,1fr);
     }
-    .miomos-root[data-mobile-layout="1"] .miomos-explorer-pane {
-      border-right: 0;
-      border-bottom: 1px solid rgba(127,158,214,.28);
-    }
-
-    .miomos-selection-marquee {
-      position:absolute;
-      z-index: 4;
-      pointer-events:none;
-      border:1px dotted rgba(31,82,163,.95);
-      background: rgba(84,144,255,.20);
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.35);
-    }
-    .miomos-inline-rename {
-      width: 100%;
-      min-width: 0;
-      padding: 2px 4px;
-      border: 1px solid #6a8fcb;
-      background:#fffef7;
-      color:#14345d;
-      font: inherit;
-      font-size: 11px;
-      line-height: 1.25;
-      box-shadow: inset 0 1px 2px rgba(13,31,61,.08);
-    }
-    .miomos-desktop-icon.is-renaming .miomos-desktop-icon-kind,
-    .miomos-directory-card.is-renaming .miomos-entry-meta {
-      visibility:hidden;
-    }
-    .miomos-directory-card.is-selected {
-      border-color: rgba(35,91,181,.58) !important;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.6), 0 0 0 1px rgba(35,91,181,.22);
-      background: linear-gradient(180deg, rgba(230,241,255,.98), rgba(214,229,251,.96)) !important;
-    }
-    .miomos-directory-card.is-recycle-item .miomos-directory-glyph {
-      opacity: .92;
+    .miomos-root[data-mobile-layout="1"] .miomos-explorer-address-row {
+      grid-template-columns: 1fr;
     }
 
   </style>
@@ -5056,175 +7063,398 @@
     }
 
     .miomos-desktop-icon.is-selected {
-      background: linear-gradient(180deg, rgba(117,166,241,.32), rgba(52,98,196,.28)) !important;
-      border-color: rgba(255,255,255,.34) !important;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.20), 0 0 0 1px rgba(28,71,148,.28);
+      background: rgba(95,141,255,.16) !important;
+      border-color: rgba(95,141,255,.38) !important;
+      box-shadow: 0 0 0 1px rgba(255,255,255,.08), inset 0 1px 0 rgba(255,255,255,.1);
     }
-    .miomos-desktop-icon.is-drop-target,
-    .miomos-explorer-content.is-drop-target {
-      box-shadow: 0 0 0 2px rgba(255,206,84,.68), inset 0 0 0 1px rgba(255,255,255,.34);
-      border-color: rgba(214,163,32,.42) !important;
-      background: rgba(255,244,194,.14) !important;
+    .miomos-desktop-icon.is-renaming {
+      background: rgba(95,141,255,.12) !important;
+      border-color: rgba(95,141,255,.34) !important;
     }
+    .miomos-desktop-rename-input {
+      width: 100%; margin-top: 4px; border-radius: 4px; border: 1px solid rgba(95,141,255,.45);
+      background: rgba(255,255,255,.96); color: #102033; font: inherit; font-size: 11px; padding: 3px 5px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.7), 0 0 0 1px rgba(95,141,255,.14);
+    }
+    .miomos-desktop-marquee {
+      position: absolute; z-index: 8; pointer-events: none;
+      border: 1px dashed rgba(141,190,255,.86);
+      background: rgba(95,141,255,.16);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
+    }
+    .miomos-directory-card[data-entry-kind="recycle"] {
+      align-items: stretch;
+    }
+
+    .miomos-xp-explorer {
+      padding: 0 !important;
+      overflow: hidden;
+      border-radius: 12px;
+    }
+    .miomos-xp-explorer-toolbar, .miomos-xp-explorer-address, .miomos-xp-explorer-status {
+      display:flex; align-items:center; gap:8px;
+      padding: 8px 10px;
+      border-bottom: 1px solid rgba(148,163,184,.16);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+    }
+    .miomos-xp-explorer-address {
+      justify-content:flex-start;
+      font-size: 11px;
+    }
+    .miomos-xp-explorer-address strong { color:#f8fbff; }
+    .miomos-xp-explorer-address span {
+      display:inline-flex; align-items:center; min-height: 26px; padding: 0 10px;
+      border-radius: 999px; border: 1px solid rgba(148,163,184,.18);
+      background: rgba(8,14,24,.36); color:#d7e6fb;
+    }
+    .miomos-xp-explorer-body {
+      display:grid; grid-template-columns: 220px minmax(0,1fr);
+      min-height: 360px;
+    }
+    .miomos-xp-explorer-side {
+      padding: 12px 10px;
+      border-right: 1px solid rgba(148,163,184,.16);
+      background: linear-gradient(180deg, rgba(28,51,92,.34), rgba(10,18,30,.22));
+    }
+    .miomos-xp-side-group + .miomos-xp-side-group { margin-top: 16px; }
+    .miomos-xp-side-heading {
+      margin-bottom: 8px; font-size: 11px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color:#f8fbff;
+    }
+    .miomos-xp-side-link {
+      display:block; width:100%; text-align:left; margin-bottom:6px; padding:6px 8px; border-radius:8px; border:1px solid rgba(148,163,184,.14);
+      background: rgba(255,255,255,.04); color:#d8e6fb; font: inherit;
+    }
+    .miomos-xp-side-link:disabled { opacity:.45; }
+    .miomos-xp-side-copy strong, .miomos-xp-side-copy span { display:block; }
+    .miomos-xp-side-copy span { margin-top: 4px; color:#a8bdd7; line-height:1.4; }
+    .miomos-xp-explorer-main { padding: 10px; overflow:auto; }
+    .miomos-xp-file-table {
+      width:100%; border-collapse: collapse; font-size:12px;
+      border: 1px solid rgba(148,163,184,.14); background: rgba(10,15,24,.22);
+    }
+    .miomos-xp-file-table thead th {
+      position: sticky; top: 0; z-index: 1; text-align:left;
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+      border-bottom: 1px solid rgba(148,163,184,.18);
+      padding: 0;
+    }
+    .miomos-xp-col-btn {
+      width:100%; text-align:left; padding: 8px 10px; border:0; background:transparent; color:#f8fbff; font: inherit; font-weight:700;
+    }
+    .miomos-xp-file-row td {
+      padding: 7px 10px; border-bottom: 1px solid rgba(148,163,184,.08); color:#d9e7fb;
+    }
+    .miomos-xp-file-row:hover td { background: rgba(255,255,255,.03); }
+    .miomos-xp-file-row.is-selected td {
+      background: rgba(95,141,255,.18); box-shadow: inset 0 1px 0 rgba(255,255,255,.08), inset 0 -1px 0 rgba(255,255,255,.04);
+    }
+    .miomos-xp-name-cell {
+      display:flex; align-items:center; gap:10px;
+    }
+    .miomos-xp-explorer-status {
+      border-top: 1px solid rgba(148,163,184,.16);
+      border-bottom: 0;
+      color:#d4e4fa;
+      font-size:11px;
+    }
+    .miomos-root[data-mobile-layout="1"] .miomos-xp-explorer-body {
+      grid-template-columns: minmax(0,1fr);
+    }
+    .miomos-root[data-mobile-layout="1"] .miomos-xp-explorer-side {
+      border-right: 0;
+      border-bottom: 1px solid rgba(148,163,184,.16);
+    }
+
+    .miomos-xp-folder-window {
+      display: grid;
+      grid-template-rows: auto minmax(0,1fr);
+      gap: 10px;
+      height: 100%;
+      min-height: 0;
+    }
+    .miomos-explorer-window-header { margin-bottom: 0; }
     .miomos-explorer-shell {
       display: grid;
       grid-template-rows: auto auto minmax(0,1fr) auto;
+      min-height: 0;
       height: 100%;
-      border-radius: 16px;
+      border-radius: 14px;
       overflow: hidden;
-      background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(243,247,255,.90));
-      border: 1px solid rgba(127,158,214,.34);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.75);
-      color: #1f3554;
+      border: 1px solid rgba(90,132,210,.32);
+      background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(232,240,253,.92));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 10px 28px rgba(15,23,42,.16);
     }
-    .miomos-explorer-header {
-      margin: 0 !important;
-      padding: 14px 16px 10px;
-      background: linear-gradient(180deg, #ffffff, #edf4ff);
-      border-bottom: 1px solid rgba(127,158,214,.28);
-    }
-    .miomos-explorer-toolbar {
-      display:flex;
-      align-items:center;
-      gap:8px;
-      padding: 8px 12px;
-      background: linear-gradient(180deg, #fefefe, #e6eefb);
-      border-bottom: 1px solid rgba(127,158,214,.24);
+    .miomos-explorer-toolbar-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 10px;
+      background: linear-gradient(180deg, #fefefe, #dfe9f9);
+      border-bottom: 1px solid rgba(120,150,196,.34);
       flex-wrap: wrap;
     }
-    .miomos-explorer-tool,
-    .miomos-explorer-pane-link {
-      appearance:none;
-      border:1px solid rgba(127,158,214,.34);
-      border-radius: 6px;
-      background: linear-gradient(180deg, #ffffff, #dde9fb);
-      color:#24456e;
+    .miomos-explorer-toolbar { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+    .miomos-explorer-toolbtn {
+      border: 1px solid rgba(111,138,189,.5);
+      border-radius: 4px;
+      background: linear-gradient(180deg, #ffffff, #d7e5fb);
+      color: #15325f;
       font: inherit;
-      padding: 6px 10px;
-      cursor:pointer;
-      text-align:left;
-    }
-    .miomos-explorer-tool:hover,
-    .miomos-explorer-pane-link:hover {
-      border-color: rgba(72,110,178,.42);
-      background: linear-gradient(180deg, #ffffff, #d2e2fb);
-    }
-    .miomos-explorer-pane-link:disabled {
-      opacity:.55;
-      cursor:default;
-    }
-    .miomos-explorer-address {
-      margin-left: auto;
-      min-width: min(420px, 100%);
-      display:grid;
-      gap:4px;
-      color:#36537c;
       font-size: 11px;
       font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .04em;
+      padding: 4px 10px;
+      min-height: 26px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.92);
     }
-    .miomos-explorer-address-bar {
-      min-height: 34px;
+    .miomos-explorer-toolbtn.is-active {
+      background: linear-gradient(180deg, #cfe3ff, #a6c4f5);
+      border-color: rgba(72,104,164,.66);
+    }
+    .miomos-explorer-address-row {
+      display:grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 8px;
+      align-items:center;
+      padding: 8px 10px;
+      background: linear-gradient(180deg, #eef4fd, #d7e5fb);
+      border-bottom: 1px solid rgba(120,150,196,.30);
+    }
+    .miomos-explorer-address-label, .miomos-explorer-sort-box {
+      color:#22406f;
+      font-size:11px;
+      font-weight:700;
+    }
+    .miomos-explorer-address-box {
+      min-height: 28px;
       display:flex;
       align-items:center;
       padding: 0 10px;
-      border-radius: 8px;
-      border:1px solid rgba(127,158,214,.34);
-      background: linear-gradient(180deg, #ffffff, #f7faff);
-      color:#233f65;
-      font-size: 12px;
-      letter-spacing: 0;
-      text-transform:none;
-      font-weight: 600;
+      border-radius: 3px;
+      border:1px solid rgba(111,138,189,.46);
+      background:#ffffff;
+      color:#15325f;
+      box-shadow: inset 0 1px 2px rgba(15,23,42,.08);
+      font-size: 11px;
     }
-    .miomos-explorer-body {
-      min-height: 0;
+    .miomos-explorer-sort-box { display:flex; align-items:center; gap:6px; }
+    .miomos-explorer-sort-box select {
+      min-height: 28px;
+      border-radius: 3px;
+      border:1px solid rgba(111,138,189,.46);
+      background:#fff;
+      color:#15325f;
+      font: inherit;
+      padding: 0 8px;
+    }
+    .miomos-explorer-frame {
       display:grid;
       grid-template-columns: 220px minmax(0,1fr);
-      gap: 0;
-    }
-    .miomos-explorer-pane {
       min-height: 0;
-      overflow:auto;
-      padding: 12px;
-      background: linear-gradient(180deg, #d7e7ff, #eef5ff 45%, #f6f9ff 100%);
-      border-right: 1px solid rgba(127,158,214,.28);
+      background: linear-gradient(180deg, #e8f1fb, #f7fbff);
+    }
+    .miomos-explorer-side-pane {
+      background: linear-gradient(180deg, #d9e8fb, #edf5ff 18%, #d8e8fb);
+      border-right: 1px solid rgba(120,150,196,.30);
+      padding: 12px 10px;
       display:grid;
       align-content:start;
-      gap:12px;
+      gap: 12px;
     }
-    .miomos-explorer-pane-card {
+    .miomos-explorer-pane-group {
       display:grid;
-      gap:8px;
+      gap: 6px;
       padding: 10px;
-      border-radius: 12px;
-      background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(231,240,255,.96));
-      border:1px solid rgba(127,158,214,.26);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
-      color:#27456f;
+      border-radius: 8px;
+      background: linear-gradient(180deg, rgba(255,255,255,.84), rgba(226,236,251,.86));
+      border: 1px solid rgba(120,150,196,.26);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.86);
     }
-    .miomos-explorer-pane-card strong {
+    .miomos-explorer-pane-group strong {
+      color:#1d4277;
       font-size: 11px;
-      letter-spacing: .06em;
       text-transform: uppercase;
-      color:#31527d;
+      letter-spacing: .04em;
+    }
+    .miomos-explorer-pane-group span {
+      color:#355884;
+      font-size: 11px;
+      line-height:1.4;
+    }
+    .miomos-explorer-pane-link {
+      border:0;
+      background:transparent;
+      color:#0f4fa9;
+      text-align:left;
+      padding: 2px 0;
+      font: inherit;
+      font-size: 12px;
+      cursor:pointer;
     }
     .miomos-explorer-content {
-      min-height: 0;
-      overflow:auto;
-      padding: 12px;
-      background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(247,250,255,.98));
+      min-height:0;
+      overflow:hidden;
+      background: linear-gradient(180deg, #ffffff, #f7fbff 70%, #eef4ff);
+      display:grid;
     }
+    .miomos-explorer-icon-canvas {
+      position: relative;
+      min-height: 0;
+      overflow: auto;
+      padding: 8px 10px 14px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.96), rgba(242,247,255,.98)),
+        linear-gradient(90deg, rgba(121,163,230,.08), rgba(121,163,230,0) 40%);
+    }
+    .miomos-explorer-item {
+      position:absolute;
+      border:1px solid transparent;
+      border-radius: 4px;
+      background: transparent;
+      padding: 6px 4px;
+      color:#10325d;
+      display:grid;
+      justify-items:center;
+      gap: 4px;
+      text-align:center;
+      font: inherit;
+      cursor: default;
+      user-select:none;
+    }
+    .miomos-explorer-item:hover {
+      border-color: rgba(111,138,189,.32);
+      background: rgba(214,228,250,.38);
+    }
+    .miomos-explorer-item.is-selected {
+      border-color: rgba(72,104,164,.58);
+      background: linear-gradient(180deg, rgba(201,224,255,.82), rgba(167,198,245,.86));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.88);
+    }
+    .miomos-explorer-item-glyph {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display:grid;
+      place-items:center;
+      background: linear-gradient(180deg, #ffd76e, #e5a72c);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.8), 0 6px 14px rgba(15,23,42,.18);
+      color:#4f2d00;
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .miomos-explorer-item.is-thumbnails { width: 126px; }
+    .miomos-explorer-item.is-thumbnails .miomos-explorer-item-glyph { width: 64px; height: 64px; font-size: 13px; }
+    .miomos-explorer-item.is-large-icons { width: 98px; }
+    .miomos-explorer-item.is-icons { width: 84px; }
+    .miomos-explorer-item.is-icons .miomos-explorer-item-glyph { width: 36px; height: 36px; border-radius: 10px; }
+    .miomos-explorer-item.is-tiles {
+      width: 176px;
+      grid-template-columns: 44px 1fr;
+      grid-template-rows: auto auto;
+      text-align:left;
+      justify-items:start;
+      align-items:center;
+      gap: 2px 10px;
+      padding: 8px 10px;
+    }
+    .miomos-explorer-item.is-tiles .miomos-explorer-item-glyph {
+      grid-row: 1 / span 2;
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+    }
+    .miomos-explorer-item-label {
+      color:#163864;
+      font-size: 12px;
+      line-height: 1.25;
+      text-shadow: 0 1px 0 rgba(255,255,255,.75);
+      word-break: break-word;
+    }
+    .miomos-explorer-item-meta {
+      color:#4d6b95;
+      font-size: 10px;
+      line-height: 1.2;
+    }
+    .miomos-explorer-list {
+      overflow:auto;
+      padding: 6px 0;
+      background: linear-gradient(180deg, #ffffff, #f5f9ff);
+    }
+    .miomos-explorer-list-row {
+      width:100%;
+      display:grid;
+      grid-template-columns: 24px minmax(0,1fr) 160px;
+      align-items:center;
+      gap: 10px;
+      padding: 7px 12px;
+      border:0;
+      border-bottom:1px solid rgba(120,150,196,.18);
+      background:transparent;
+      color:#15325f;
+      font: inherit;
+      text-align:left;
+    }
+    .miomos-explorer-list-row:hover { background: rgba(214,228,250,.34); }
+    .miomos-explorer-list-row.is-selected { background: linear-gradient(180deg, rgba(201,224,255,.8), rgba(167,198,245,.84)); }
+    .miomos-explorer-row-glyph {
+      width:18px;
+      height:18px;
+      border-radius: 5px;
+      display:grid;
+      place-items:center;
+      background: linear-gradient(180deg, #ffd76e, #e5a72c);
+      color:#4f2d00;
+      font-size: 9px;
+      font-weight: 800;
+    }
+    .miomos-explorer-details {
+      width:100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      background: linear-gradient(180deg, #ffffff, #f5f9ff);
+      color:#15325f;
+    }
+    .miomos-explorer-details thead th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      padding: 7px 10px;
+      text-align:left;
+      font-size:11px;
+      color:#24426f;
+      background: linear-gradient(180deg, #fefefe, #d8e6fb);
+      border-bottom:1px solid rgba(120,150,196,.36);
+      cursor: pointer;
+      user-select:none;
+    }
+    .miomos-explorer-details tbody td {
+      padding: 7px 10px;
+      border-bottom:1px solid rgba(120,150,196,.14);
+      font-size:12px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .miomos-explorer-details tbody tr:hover td { background: rgba(214,228,250,.32); }
+    .miomos-explorer-details tbody tr.is-selected td { background: linear-gradient(180deg, rgba(201,224,255,.8), rgba(167,198,245,.84)); }
+    .miomos-explorer-details td strong { color:#15325f; margin-left:8px; }
     .miomos-explorer-statusbar {
       display:flex;
-      justify-content: space-between;
-      gap:12px;
-      padding: 6px 10px;
-      border-top: 1px solid rgba(127,158,214,.24);
-      background: linear-gradient(180deg, #edf4ff, #dce8fb);
-      color:#36537c;
-      font-size: 11px;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+      min-height: 26px;
+      padding: 0 10px;
+      border-top:1px solid rgba(120,150,196,.28);
+      background: linear-gradient(180deg, #f0f6ff, #d9e8fb);
+      color:#24426f;
+      font-size:11px;
     }
-    .miomos-root[data-mobile-layout="1"] .miomos-explorer-body {
+    .miomos-root[data-mobile-layout="1"] .miomos-explorer-frame {
       grid-template-columns: minmax(0,1fr);
     }
-    .miomos-root[data-mobile-layout="1"] .miomos-explorer-pane {
-      border-right: 0;
-      border-bottom: 1px solid rgba(127,158,214,.28);
-    }
-
-    .miomos-selection-marquee {
-      position:absolute;
-      z-index: 4;
-      pointer-events:none;
-      border:1px dotted rgba(31,82,163,.95);
-      background: rgba(84,144,255,.20);
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.35);
-    }
-    .miomos-inline-rename {
-      width: 100%;
-      min-width: 0;
-      padding: 2px 4px;
-      border: 1px solid #6a8fcb;
-      background:#fffef7;
-      color:#14345d;
-      font: inherit;
-      font-size: 11px;
-      line-height: 1.25;
-      box-shadow: inset 0 1px 2px rgba(13,31,61,.08);
-    }
-    .miomos-desktop-icon.is-renaming .miomos-desktop-icon-kind,
-    .miomos-directory-card.is-renaming .miomos-entry-meta {
-      visibility:hidden;
-    }
-    .miomos-directory-card.is-selected {
-      border-color: rgba(35,91,181,.58) !important;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.6), 0 0 0 1px rgba(35,91,181,.22);
-      background: linear-gradient(180deg, rgba(230,241,255,.98), rgba(214,229,251,.96)) !important;
-    }
-    .miomos-directory-card.is-recycle-item .miomos-directory-glyph {
-      opacity: .92;
+    .miomos-root[data-mobile-layout="1"] .miomos-explorer-address-row {
+      grid-template-columns: 1fr;
     }
 
   </style>
@@ -5234,7 +7464,3 @@
   {{{content}}}
 </body>
 </html>
-
-    .miomos-entry-glyph--file { background: linear-gradient(180deg, #f5f8ff, #c7d7ff) !important; color:#17336a !important; }
-    .miomos-root [data-entry-kind="file"] .miomos-desktop-icon-kind,
-    .miomos-root [data-entry-kind="file"] .miomos-entry-meta { color:#60a5fa !important; }
