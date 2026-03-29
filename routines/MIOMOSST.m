@@ -2,7 +2,7 @@ MIOMOSST ; MIOMOS state/session helpers
 	QUIT
 	;
 ENSURE(CONF,REQ,CTX,STATE,ERR)
-	NEW KEY,SID,NOWD,NOWS,ABS,IDLE,USER,ROLES,STARTD,STARTS,LASTD,LASTS
+	NEW KEY,SID,NOWD,NOWS,ABS,IDLE,USER,ROLES,STARTD,STARTS,LASTD,LASTS,BINDOK
 	KILL ERR,STATE
 	SET ERR("routine")="MIOMOSST"
 	SET KEY=$$PRINCIPAL(.CONF,.REQ,.CTX,.ERR)
@@ -14,13 +14,18 @@ ENSURE(CONF,REQ,CTX,STATE,ERR)
 	SET SID=$GET(CTX("miomos","sessionId"))
 	IF SID="" SET SID=$GET(^MIO("MIOMOS","SESSION","BYKEY",KEY))
 	SET NOWD=+$PIECE($HOROLOG,",",1),NOWS=+$PIECE($HOROLOG,",",2)
+	SET BINDOK=1
 	IF SID'="" DO
+	. IF $GET(^MIO("MIOMOS","SESSION",SID,"principal"))'="",$GET(^MIO("MIOMOS","SESSION",SID,"principal"))'=KEY SET ERR("error")="session_binding_mismatch",ERR("detail")=SID,BINDOK=0 QUIT
+	. IF +$GET(^MIO("MIOMOS","SESSION",SID,"locked"))=1 SET ERR("error")="session_locked",ERR("detail")=$GET(^MIO("MIOMOS","SESSION",SID,"lockReason")),BINDOK=0 QUIT
+	. IF $GET(^MIO("MIOMOS","SESSION",SID,"forcedSignout"))'="" SET ERR("error")="forced_signout",ERR("detail")=$GET(^MIO("MIOMOS","SESSION",SID,"forcedSignout")),BINDOK=0 QUIT
 	. SET STARTD=+$GET(^MIO("MIOMOS","SESSION",SID,"startedDay"))
 	. SET STARTS=+$GET(^MIO("MIOMOS","SESSION",SID,"startedSec"))
 	. SET LASTD=+$GET(^MIO("MIOMOS","SESSION",SID,"lastDay"))
 	. SET LASTS=+$GET(^MIO("MIOMOS","SESSION",SID,"lastSec"))
 	. IF $$AGESEC(STARTD,STARTS,NOWD,NOWS)>ABS SET SID="" QUIT
 	. IF $$AGESEC(LASTD,LASTS,NOWD,NOWS)>IDLE SET SID=""
+	IF 'BINDOK QUIT 0
 	IF SID="" SET SID=$$NEWSID(KEY)
 	SET ^MIO("MIOMOS","SESSION","BYKEY",KEY)=SID
 	SET ^MIO("MIOMOS","SESSION",SID,"principal")=KEY
@@ -97,6 +102,14 @@ ENSURE(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("wsRegistryEnabled")=+$GET(CONF("miomos","websocket","observability","registryEnabled"),1)
 	SET STATE("wsRegistryTailLimit")=+$GET(CONF("miomos","websocket","observability","tailLimit"),12)
 	SET STATE("wsControlModel")=$GET(CONF("miomos","websocket","observability","controlModel"),"inspect-only")
+	SET STATE("securitySessionBinding")=$GET(CONF("miomos","security","sessionBinding"),"principal-and-session")
+	SET STATE("securityForcedSignoutEvent")=$GET(CONF("miomos","security","forcedSignoutEvent"),"session.signout")
+	SET STATE("securityPermissionDeniedEvent")=$GET(CONF("miomos","security","permissionDeniedEvent"),"command.error")
+	SET STATE("securityIdleLockEnabled")=+$GET(CONF("miomos","security","idleLockEnabled"),1)
+	SET STATE("securityIdleLockSeconds")=+$GET(CONF("miomos","security","idleLockSeconds"),300)
+	SET STATE("securitySessionRegistryEnabled")=+$GET(CONF("miomos","security","sessionRegistryEnabled"),1)
+	SET STATE("securitySessionRegistryModel")=$GET(CONF("miomos","security","sessionRegistryModel"),"server-authored")
+	DO REGSYNC(SID,KEY,USER,ROLES,.STATE,.CONF)
 	QUIT 1
 	;
 PRINCIPAL(CONF,REQ,CTX,ERR)
@@ -308,6 +321,15 @@ BOOTARY(STATE,CONF,OBJ)
 	MERGE OBJ("security","invites")=INV
 	DO RESETLIST^MIOMOSADMIN(6,.RST)
 	MERGE OBJ("security","resets")=RST
+	SET OBJ("security","sessionBinding")=$GET(STATE("securitySessionBinding"),"principal-and-session")
+	SET OBJ("security","forcedSignoutEvent")=$GET(STATE("securityForcedSignoutEvent"),"session.signout")
+	SET OBJ("security","permissionDeniedEvent")=$GET(STATE("securityPermissionDeniedEvent"),"command.error")
+	SET OBJ("security","idleLock","enabled")=+$GET(STATE("securityIdleLockEnabled"),1)
+	SET OBJ("security","idleLock","seconds")=+$GET(STATE("securityIdleLockSeconds"),300)
+	SET OBJ("security","idleLock","model")="server-authored-idle-lock"
+	SET OBJ("security","sessionRegistry","enabled")=+$GET(STATE("securitySessionRegistryEnabled"),1)
+	SET OBJ("security","sessionRegistry","model")=$GET(STATE("securitySessionRegistryModel"),"server-authored")
+	N TTMP M TTMP=OBJ("security","sessionRegistry","current") DO REGSNAP($GET(STATE("sessionId")),.TTMP) M OBJ("security","sessionRegistry","current")=TTMP K TTMP
 	DO APPS($NAME(OBJ("desktop","apps")),.STATE)
 	DO WINS($NAME(OBJ("desktop","windows")),.STATE)
 		MERGE OBJ("apps")=OBJ("desktop","apps")
@@ -385,7 +407,7 @@ SAVELAYOUTCORE(SID,PAYLOAD,OK)
 	SET:$DATA(OK) OK=1
 	QUIT
 	;
-
+	;
 SAVEUI(SID,PAYLOAD)
 	DO SAVEUICORE(SID,$GET(PAYLOAD))
 	QUIT
@@ -480,6 +502,70 @@ TOUCHCORE(SID,EVENT,OK)
 	SET:$DATA(OK) OK=1
 	QUIT
 	;
+LOCK(SID,REASON)
+	IF $GET(SID)="" QUIT 0
+	SET ^MIO("MIOMOS","SESSION",SID,"locked")=1
+	SET ^MIO("MIOMOS","SESSION",SID,"lockReason")=$SELECT($GET(REASON)'="":$GET(REASON),1:"session_locked")
+	SET ^MIO("MIOMOS","SESSION",SID,"lockedAt")=$$NOWISO^MIOUTIL()
+	DO REGSNAPUPD(SID)
+	QUIT 1
+	;
+UNLOCK(SID)
+	IF $GET(SID)="" QUIT 0
+	KILL ^MIO("MIOMOS","SESSION",SID,"locked"),^MIO("MIOMOS","SESSION",SID,"lockReason"),^MIO("MIOMOS","SESSION",SID,"lockedAt")
+	DO REGSNAPUPD(SID)
+	QUIT 1
+	;
+FORCESIGNOUT(SID,REASON)
+	IF $GET(SID)="" QUIT 0
+	SET ^MIO("MIOMOS","SESSION",SID,"forcedSignout")=$SELECT($GET(REASON)'="":$GET(REASON),1:"forced_signout")
+	SET ^MIO("MIOMOS","SESSION",SID,"forcedSignoutAt")=$$NOWISO^MIOUTIL()
+	DO REGSNAPUPD(SID)
+	QUIT 1
+	;
+CLEARFORCE(SID)
+	IF $GET(SID)="" QUIT 0
+	KILL ^MIO("MIOMOS","SESSION",SID,"forcedSignout"),^MIO("MIOMOS","SESSION",SID,"forcedSignoutAt")
+	DO REGSNAPUPD(SID)
+	QUIT 1
+	;
+REGSYNC(SID,KEY,USER,ROLES,STATE,CONF)
+	IF $GET(SID)="" QUIT
+	IF +$GET(CONF("miomos","security","sessionRegistryEnabled"),1)'=1 QUIT
+	SET ^MIO("MIOMOS","SESSION","REG",SID,"sessionId")=$GET(SID)
+	SET ^MIO("MIOMOS","SESSION","REG",SID,"principal")=$GET(KEY)
+	SET ^MIO("MIOMOS","SESSION","REG",SID,"userName")=$GET(USER)
+	SET ^MIO("MIOMOS","SESSION","REG",SID,"roles")=$GET(ROLES)
+	SET ^MIO("MIOMOS","SESSION","REG",SID,"profile")=$GET(STATE("profile"))
+	SET ^MIO("MIOMOS","SESSION","REG",SID,"lastSeenAt")=$$NOWISO^MIOUTIL()
+	SET ^MIO("MIOMOS","SESSION","REG",SID,"lastEvent")=$GET(^MIO("MIOMOS","SESSION",SID,"lastEvent"))
+	SET ^MIO("MIOMOS","SESSION","REG",SID,"locked")=+$GET(^MIO("MIOMOS","SESSION",SID,"locked"))
+	SET ^MIO("MIOMOS","SESSION","REG",SID,"lockReason")=$GET(^MIO("MIOMOS","SESSION",SID,"lockReason"))
+	SET ^MIO("MIOMOS","SESSION","REG",SID,"forcedSignout")=$GET(^MIO("MIOMOS","SESSION",SID,"forcedSignout"))
+	QUIT
+	;
+REGSNAPUPD(SID)
+	IF $GET(SID)="" QUIT
+	IF '$DATA(^MIO("MIOMOS","SESSION","REG",SID)) QUIT
+	SET ^MIO("MIOMOS","SESSION","REG",SID,"lastSeenAt")=$$NOWISO^MIOUTIL()
+	SET ^MIO("MIOMOS","SESSION","REG",SID,"locked")=+$GET(^MIO("MIOMOS","SESSION",SID,"locked"))
+	SET ^MIO("MIOMOS","SESSION","REG",SID,"lockReason")=$GET(^MIO("MIOMOS","SESSION",SID,"lockReason"))
+	SET ^MIO("MIOMOS","SESSION","REG",SID,"forcedSignout")=$GET(^MIO("MIOMOS","SESSION",SID,"forcedSignout"))
+	QUIT
+	;
+REGSNAP(SID,OUT)
+	KILL OUT
+	IF $GET(SID)="" QUIT
+	SET OUT("sessionId")=$GET(^MIO("MIOMOS","SESSION","REG",SID,"sessionId"))
+	SET OUT("principal")=$GET(^MIO("MIOMOS","SESSION","REG",SID,"principal"))
+	SET OUT("userName")=$GET(^MIO("MIOMOS","SESSION","REG",SID,"userName"))
+	SET OUT("profile")=$GET(^MIO("MIOMOS","SESSION","REG",SID,"profile"))
+	SET OUT("lastSeenAt")=$GET(^MIO("MIOMOS","SESSION","REG",SID,"lastSeenAt"))
+	SET OUT("locked")=+$GET(^MIO("MIOMOS","SESSION","REG",SID,"locked"))
+	SET OUT("lockReason")=$GET(^MIO("MIOMOS","SESSION","REG",SID,"lockReason"))
+	SET OUT("forcedSignout")=$GET(^MIO("MIOMOS","SESSION","REG",SID,"forcedSignout"))
+	QUIT
+	;
 SNAPSHOT(SID,OUT)
 		DO SNAPCORE(SID,.OUT)
 		QUIT
@@ -511,3 +597,4 @@ SNAPCORE(SID,OUT)
 		MERGE OUT("eventCounts")=^MIO("MIOMOS","SESSION",SID,"eventCounts")
 		SET OUT("ok")=1
 		QUIT
+	;

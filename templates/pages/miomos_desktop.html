@@ -29,6 +29,9 @@
   data-miomos-command-event="{{commandEvent}}"
   data-miomos-command-result-event="{{commandResultEvent}}"
   data-miomos-signout-event="{{signoutEvent}}"
+  data-miomos-session-binding="{{security.sessionBinding}}"
+  data-miomos-idle-lock="{{security.idleLock.model}}"
+  data-miomos-session-registry="{{security.sessionRegistry.enabled}}"
   data-miomos-command-transport="websocket-only"
   data-miomos-settings="{{settingsPath}}"
   data-miomos-signout="{{signoutPath}}"
@@ -49,6 +52,9 @@
   <span hidden data-miomos-command-transport="websocket-only">All live shell communication now goes through the primary websocket session.</span>
   <span hidden data-miomos-realtime-contract="single-websocket-command-and-events">A single websocket carries shell commands, saves, refreshes, and live events.</span>
   <span hidden data-miomos-ws-observability="session-connection-registry">Websocket registry tracks active session and connection activity.</span>
+  <span hidden data-miomos-session-binding="principal-and-session">Websocket sessions stay bound to the authenticated principal.</span>
+  <span hidden data-miomos-idle-lock="server-authored-idle-lock">Idle lock policy is server-authored for MIOMOS sessions.</span>
+  <span hidden data-miomos-session-registry="1">Session registry tracks lock and forced signout state.</span>
   <span hidden data-ws-registry-surface="1">Admin diagnostics include websocket registry metrics.</span>
   <span hidden data-mobile-ready="1"></span>
   <span hidden data-window-fade="off"></span>
@@ -975,7 +981,7 @@
         clearStaleMonitor: function(){ if (this.staleSocketTimer) window.clearInterval(this.staleSocketTimer); this.staleSocketTimer=null; },
         scheduleReconnect: function(){ var self=this, maxMs=Number(this.desktopPolicy.reconnectMaxMs || 15000) || 15000; this.clearReconnectTimer(); this.reconnectTimer=window.setTimeout(function(){ self.reconnectTimer=null; self.connectSocket(); }, this.reconnectDelay); this.reconnectDelay=Math.min(this.reconnectDelay*1.6, maxMs); },
         clearReconnectTimer: function(){ if (this.reconnectTimer) window.clearTimeout(this.reconnectTimer); this.reconnectTimer=null; },
-        handleSocketMessage: function(raw){ var msg, pending; try { msg=JSON.parse(raw||'{}'); } catch(e){ return; } if (msg.requestId && this.socketPending[msg.requestId]) { pending=this.socketPending[msg.requestId]; if (msg.ok===0 || msg.event==='command.error') pending.reject(new Error(msg.detail || msg.error || 'request_failed')); else pending.resolve(msg); return; } if (msg.event==='hello' || msg.event==='pong') { this.socketConnected=true; this.commandError=''; return; } if (msg.event==='chat.snapshot') { this.messages = arr(msg.messages); return; } if (msg.event==='chat.message') { this.messages = this.messages.concat([msg.message || { userName:'System', text:'Message received.', ts:'Now' }]).slice(-30); return; } },
+        handleSocketMessage: function(raw){ var msg, pending; try { msg=JSON.parse(raw||'{}'); } catch(e){ return; } if (msg.requestId && this.socketPending[msg.requestId]) { pending=this.socketPending[msg.requestId]; if (msg.ok===0 || msg.event==='command.error') pending.reject(new Error(msg.detail || msg.error || 'request_failed')); else pending.resolve(msg); return; } if (msg.event==='hello' || msg.event==='pong') { this.socketConnected=true; this.commandError=''; return; } if (msg.event==='session.signout') { this.commandError = msg.detail || msg.reason || 'Session signed out.'; this.terminalStatus = 'Session signed out'; this.shouldReconnect = false; this.clearReconnectTimer(); if (this.socket && this.socket.readyState < 2) { try { this.socket.close(); } catch(e){} } return; } if (msg.event==='chat.snapshot') { this.messages = arr(msg.messages); return; } if (msg.event==='chat.message') { this.messages = this.messages.concat([msg.message || { userName:'System', text:'Message received.', ts:'Now' }]).slice(-30); return; } },
         sendChat: function(){ var text=(this.chatDraft||'').trim(); if (!text) return; this.sendSocket({ event:'chat.send', room:((this.view.chat||{}).room || 'general'), text:text, sessionId:((this.boot.session||{}).id || root.getAttribute('data-miomos-session')) }); this.chatDraft=''; },
         terminalCtor: function(){ return window.Terminal || ((window.Xterm||{}).Terminal) || ((window.XTerm||{}).Terminal) || null; },
         resolveTerminalViewport: function(){ var viewport=this.$refs.terminalViewport; if (Array.isArray(viewport)) viewport = viewport[0] || null; if (!viewport || viewport.nodeType !== 1) return null; return viewport; },

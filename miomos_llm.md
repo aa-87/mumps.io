@@ -494,3 +494,12 @@ The source-of-truth terminal contract is now:
 - Maintain a server-authored websocket registry keyed by session and connection.
 - Keep runtime behavior unchanged; use the registry for diagnostics, admin counts, and future controls.
 - Preserve additive tests/docs for websocket metrics and export helpers.
+
+
+## ROI44 — Security and session hardening
+
+- Enforce principal/session binding in `ENSURE^MIOMOSST`.
+- Add `LOCK^MIOMOSST`, `UNLOCK^MIOMOSST`, `FORCESIGNOUT^MIOMOSST`, and `CLEARFORCE^MIOMOSST`.
+- Maintain session registry snapshots under `^MIO("MIOMOS","SESSION","REG",...)`.
+- Emit `session.signout` for direct websocket session-guard failures.
+- Audit forbidden websocket actions and privileged terminal actions.

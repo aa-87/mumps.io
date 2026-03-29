@@ -39,6 +39,9 @@ START
 	DO OK^MIOTASSERT(OUT["data-miomos-command-event=""command.exec""","[MIOMOST][T003][ws command event]")
 	DO OK^MIOTASSERT(OUT["data-miomos-realtime-contract=""single-websocket-command-and-events""","[MIOMOST][T003][ws realtime token]")
 	DO OK^MIOTASSERT(OUT["data-miomos-ws-observability=""session-connection-registry""","[MIOMOST][T003][ws observability token]")
+	DO OK^MIOTASSERT(OUT["data-miomos-session-binding=""principal-and-session""","[MIOMOST][T003][session binding token]")
+	DO OK^MIOTASSERT(OUT["data-miomos-idle-lock=""server-authored-idle-lock""","[MIOMOST][T003][idle lock token]")
+	DO OK^MIOTASSERT(OUT["data-miomos-session-registry=""1""","[MIOMOST][T003][session registry token]")
 	DO OK^MIOTASSERT(OUT["data-ws-registry-surface=""1""","[MIOMOST][T003][ws registry token]")
 	DO OK^MIOTASSERT(OUT["All live shell communication now goes through the primary websocket session.","[MIOMOST][T003][ws shell copy]")
 	DO OK^MIOTASSERT(OUT["data-settings-form","[MIOMOST][T003][settings surface]")
@@ -145,6 +148,13 @@ START
 	DO EQ^MIOTASSERT($GET(OBJ("apps",14,"key")),"ui-samples","[MIOMOST][T004][ui samples app key]")
 	DO EQ^MIOTASSERT($GET(OBJ("windows",7,"appKey")),"ui-samples","[MIOMOST][T004][ui samples win key]")
 	DO EQ^MIOTASSERT(+$DATA(OBJ("security","adminCounts","users"))>0,1,"[MIOMOST][T004][admin counts]")
+	DO EQ^MIOTASSERT($GET(OBJ("security","sessionBinding")),"principal-and-session","[MIOMOST][T004][session binding]")
+	DO EQ^MIOTASSERT($GET(OBJ("security","forcedSignoutEvent")),"session.signout","[MIOMOST][T004][forced signout event]")
+	DO EQ^MIOTASSERT($GET(OBJ("security","permissionDeniedEvent")),"command.error","[MIOMOST][T004][permission denied event]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("security","idleLock","enabled")),1,"[MIOMOST][T004][idle lock enabled]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("security","idleLock","seconds")),300,"[MIOMOST][T004][idle lock seconds]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("security","sessionRegistry","enabled")),1,"[MIOMOST][T004][session registry enabled]")
+	DO EQ^MIOTASSERT($GET(OBJ("security","sessionRegistry","model")),"server-authored","[MIOMOST][T004][session registry model]")
 	;
 	KILL CONF
 	SET CONF("auth","enabled")=1
@@ -362,6 +372,38 @@ START
 	DO EQ^MIOTASSERT($GET(ARR(1,"connectionId")),"ws-reg-1","[MIOMOST][T019][ws export conn]")
 	DO EQ^MIOTASSERT($GET(ARR(1,"lastEvent")),"terminal.stdout","[MIOMOST][T019][ws export event]")
 	DO EQ^MIOTASSERT(+$GET(ARR(1,"commandExecCount"))>0,1,"[MIOMOST][T019][ws export command count]")
+	;
+	NEW SECCTX,SECSTATE,SECSID,SECREQ,SECA,SECERR,SECJSON
+	SET SECREQ("hdr","cookie")="miomos_auth="_TOKEN
+	SET SECCTX("request_id")="miomost-sec-1"
+	DO OK^MIOTASSERT($$LOADLOCAL^MIOMOSAUTH(.CONF,.SECREQ,.SECCTX,.SECERR),"[MIOMOST][T020][sec load local]")
+	DO OK^MIOTASSERT($$ENSURE^MIOMOSST(.CONF,.SECREQ,.SECCTX,.SECSTATE,.SECERR),"[MIOMOST][T020][sec ensure]")
+	SET SECSID=$GET(SECSTATE("sessionId"))
+	DO OK^MIOTASSERT($$LOCK^MIOMOSST(SECSID,"idle_lock"),"[MIOMOST][T020][lock]")
+	KILL SECSTATE,SECERR
+	DO EQ^MIOTASSERT($$ENSURE^MIOMOSST(.CONF,.SECREQ,.SECCTX,.SECSTATE,.SECERR),0,"[MIOMOST][T020][lock denied]")
+	DO EQ^MIOTASSERT($GET(SECERR("error")),"session_locked","[MIOMOST][T020][lock code]")
+	DO OK^MIOTASSERT($$UNLOCK^MIOMOSST(SECSID),"[MIOMOST][T020][unlock]")
+	KILL SECSTATE,SECERR
+	DO OK^MIOTASSERT($$ENSURE^MIOMOSST(.CONF,.SECREQ,.SECCTX,.SECSTATE,.SECERR),"[MIOMOST][T020][unlock ensure]")
+	DO OK^MIOTASSERT($$FORCESIGNOUT^MIOMOSST(SECSID,"admin_forced"),"[MIOMOST][T020][force signout]")
+	SET SECJSON=$$SESSIONJSON^MIOMOSWS("forced_signout","admin_forced",.SECSTATE,SECSID)
+	DO OK^MIOTASSERT($$DECODE^MIOJSON(SECJSON,.SECA,.SECERR),"[MIOMOST][T020][signout decode]")
+	DO EQ^MIOTASSERT($GET(SECA("event")),"session.signout","[MIOMOST][T020][signout event]")
+	DO EQ^MIOTASSERT($GET(SECA("reason")),"forced_signout","[MIOMOST][T020][signout reason]")
+	KILL SECSTATE,SECERR
+	DO EQ^MIOTASSERT($$ENSURE^MIOMOSST(.CONF,.SECREQ,.SECCTX,.SECSTATE,.SECERR),0,"[MIOMOST][T020][forced denied]")
+	DO EQ^MIOTASSERT($GET(SECERR("error")),"forced_signout","[MIOMOST][T020][forced code]")
+	DO OK^MIOTASSERT($$CLEARFORCE^MIOMOSST(SECSID),"[MIOMOST][T020][clear force]")
+	KILL SECCTX,SECSTATE,SECERR
+	SET SECCTX("request_id")="miomost-sec-bind",SECCTX("miomos","sessionId")=SECSID
+	SET SECCTX("auth","ok")=1,SECCTX("auth","claims","sub")="intruder",SECCTX("auth","claims","name")="Intruder"
+	SET SECCTX("auth","roles","viewer")=1
+	DO EQ^MIOTASSERT($$ENSURE^MIOMOSST(.CONF,.SECREQ,.SECCTX,.SECSTATE,.SECERR),0,"[MIOMOST][T020][binding denied]")
+	DO EQ^MIOTASSERT($GET(SECERR("error")),"session_binding_mismatch","[MIOMOST][T020][binding code]")
+	DO REGSNAP^MIOMOSST(SECSID,.SECA)
+	DO EQ^MIOTASSERT($GET(SECA("sessionId")),SECSID,"[MIOMOST][T020][registry sid]")
+	DO EQ^MIOTASSERT($GET(SECA("principal")),"phaseone","[MIOMOST][T020][registry principal]")
 	QUIT
 	;
 HASWRITE(OUT,TEXT)

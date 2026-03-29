@@ -12,7 +12,11 @@ MESSAGE(DEV,CONF,REQ,CTX)
 	. IF SID="" SET SID=$$SESSIONID(PAYLOAD)
 	. IF $$INJECTAUTH(.CONF,SID,.CTX,.ERR) SET OK=$$ENSURE^MIOMOSST(.CONF,.REQ,.CTX,.STATE,.ERR)
 	IF 'OK DO  QUIT
-	. SET RESP=$$ERRJSON("session_error",$GET(ERR("error")))
+	. IF $$SIGNOUTCODE($GET(ERR("error"))) DO
+	. . SET RESP=$$SESSIONJSON($GET(ERR("error")),$GET(ERR("detail")),.STATE,$GET(SID))
+	. . DO EVENTX^MIOMOSAUD("ws_session_signout",.CTX,.STATE,$GET(ERR("error")))
+	. . DO ACCESS^MIOMOSOBS("ws_session_signout",.CTX,.STATE)
+	. ELSE  SET RESP=$$ERRJSON("session_error",$GET(ERR("error")))
 	. DO SENDTEXT^MIOWS(.DEV,RESP)
 	SET CTX("miomos","sessionId")=$GET(STATE("sessionId"))
 	IF EVT="hello" DO  QUIT
@@ -71,7 +75,9 @@ MESSAGE(DEV,CONF,REQ,CTX)
 	. DO SENDTEXT^MIOWS(.DEV,RESP)
 	IF EVT="chat.send" DO  QUIT
 	. IF '$$HAS^MIOMOSPERM(.STATE,"chat.use") DO  QUIT
-	. . SET RESP=$$ERRJSON("forbidden","chat.use")
+	. . DO EVENTX^MIOMOSAUD("ws_forbidden",.CTX,.STATE,"chat.use")
+	. . DO ACCESS^MIOMOSOBS("ws_forbidden",.CTX,.STATE)
+	. . SET RESP=$$FORBIDDENJSON("chat.use")
 	. . DO SENDTEXT^MIOWS(.DEV,RESP)
 	. SET ROOM=$$ROOM(PAYLOAD,.STATE)
 	. SET TEXT=$$TEXT(PAYLOAD)
@@ -87,7 +93,9 @@ MESSAGE(DEV,CONF,REQ,CTX)
 	;
 	IF EVT="terminal.open"!(EVT="terminal.attach") DO  QUIT
 	. IF '$$HAS^MIOMOSPERM(.STATE,"terminal.use") DO  QUIT
-	. . SET RESP=$$ERRJSON("forbidden","terminal.use")
+	. . DO EVENTX^MIOMOSAUD("ws_forbidden",.CTX,.STATE,"terminal.use")
+	. . DO ACCESS^MIOMOSOBS("ws_forbidden",.CTX,.STATE)
+	. . SET RESP=$$FORBIDDENJSON("terminal.use")
 	. . DO SENDTEXT^MIOWS(.DEV,RESP)
 	. NEW TREE,TERR,OUT,TERMID
 	. DO PURGESTALE^MIOMOSTPIPE(.CONF)
@@ -96,6 +104,8 @@ MESSAGE(DEV,CONF,REQ,CTX)
 	. IF '$$OPEN^MIOMOSTPIPE(.STATE,.CONF,TERMID,.OUT,.TERR) DO  QUIT
 	. . SET RESP=$$ERRJSON("terminal_open_failed",$GET(TERR("error")))
 	. . DO SENDTEXT^MIOWS(.DEV,RESP)
+	. DO EVENTX^MIOMOSAUD("ws_terminal_open",.CTX,.STATE,$GET(OUT("terminalId")))
+	. DO ACCESS^MIOMOSOBS("ws_terminal_open",.CTX,.STATE)
 	. SET RESP=$$TERMEVT("terminal.open",.OUT)
 	. DO WSREG^MIOMOSOBS("terminal.open",$$WSCONN^MIOMOSOBS($GET(TERMID),$GET(STATE("sessionId"))),.CTX,.STATE,$GET(TERMID))
 	. DO SENDTEXT^MIOWS(.DEV,RESP)
@@ -108,6 +118,8 @@ MESSAGE(DEV,CONF,REQ,CTX)
 	. IF '$$INPUT^MIOMOSTPIPE(.STATE,TERMID,DATA,.OUT,.TERR) DO  QUIT
 	. . SET RESP=$$ERRJSON("terminal_input_failed",$GET(TERR("error")))
 	. . DO SENDTEXT^MIOWS(.DEV,RESP)
+	. DO EVENTX^MIOMOSAUD("ws_terminal_input",.CTX,.STATE,$GET(TERMID))
+	. DO ACCESS^MIOMOSOBS("ws_terminal_input",.CTX,.STATE)
 	. SET RESP=$$TERMEVT("terminal.stdout",.OUT)
 	. DO WSREG^MIOMOSOBS("terminal.stdout",$$WSCONN^MIOMOSOBS($GET(TERMID),$GET(STATE("sessionId"))),.CTX,.STATE,$GET(TERMID))
 	. DO SENDTEXT^MIOWS(.DEV,RESP)
@@ -119,6 +131,8 @@ MESSAGE(DEV,CONF,REQ,CTX)
 	. IF '$$RESIZE^MIOMOSTPIPE(.STATE,TERMID,COLS,ROWS,.OUT,.TERR) DO  QUIT
 	. . SET RESP=$$ERRJSON("terminal_resize_failed",$GET(TERR("error")))
 	. . DO SENDTEXT^MIOWS(.DEV,RESP)
+	. DO EVENTX^MIOMOSAUD("ws_terminal_resize",.CTX,.STATE,$GET(TERMID))
+	. DO ACCESS^MIOMOSOBS("ws_terminal_resize",.CTX,.STATE)
 	. SET RESP=$$TERMEVT("terminal.resize",.OUT)
 	. DO SENDTEXT^MIOWS(.DEV,RESP)
 	IF EVT="terminal.poll"!(EVT="terminal.drain")!(EVT="ping.terminal") DO  QUIT
@@ -139,6 +153,8 @@ MESSAGE(DEV,CONF,REQ,CTX)
 	. IF '$$CLOSE^MIOMOSTPIPE(.STATE,TERMID,.OUT,.TERR) DO  QUIT
 	. . SET RESP=$$ERRJSON("terminal_close_failed",$GET(TERR("error")))
 	. . DO SENDTEXT^MIOWS(.DEV,RESP)
+	. DO EVENTX^MIOMOSAUD("ws_terminal_close",.CTX,.STATE,$GET(TERMID))
+	. DO ACCESS^MIOMOSOBS("ws_terminal_close",.CTX,.STATE)
 	. SET RESP=$$TERMEVT("terminal.close",.OUT)
 	. DO SENDTEXT^MIOWS(.DEV,RESP)
 	DO EVENTX^MIOMOSAUD("ws_unsupported",.CTX,.STATE,EVT)
@@ -367,6 +383,33 @@ AUTHACKJSON(EVT,REQID,STATE)
 	SET OBJ("serverTime")=$$NOWISO^MIOUTIL()
 	QUIT $$EN^MIOJSON1(.OBJ)
 	;
+	;
+SIGNOUTCODE(CODE)
+	NEW X
+	SET X=$GET(CODE)
+	QUIT $SELECT((X="login_required")!(X="session_locked")!(X="forced_signout")!(X="session_binding_mismatch"):1,1:0)
+	;
+SESSIONJSON(CODE,DETAIL,STATE,SID)
+	NEW OBJ
+	SET OBJ("ok")=0
+	SET OBJ("event")="session.signout"
+	SET OBJ("reason")=$GET(CODE)
+	SET OBJ("detail")=$GET(DETAIL)
+	SET OBJ("sessionId")=$SELECT($GET(SID)'="":$GET(SID),1:$GET(STATE("sessionId")))
+	SET OBJ("serverTime")=$$NOWISO^MIOUTIL()
+	SET OBJ("transport")="websocket"
+	QUIT $$EN^MIOJSON1(.OBJ)
+	;
+FORBIDDENJSON(DETAIL)
+	NEW OBJ
+	SET OBJ("ok")=0
+	SET OBJ("event")="command.error"
+	SET OBJ("status")=403
+	SET OBJ("error")="forbidden"
+	SET OBJ("detail")=$GET(DETAIL)
+	SET OBJ("transport")="websocket"
+	SET OBJ("routine")="MIOMOSWS"
+	QUIT $$EN^MIOJSON1(.OBJ)
 	;
 TERMEVT(EVT,OUT)
 	NEW OBJ,N

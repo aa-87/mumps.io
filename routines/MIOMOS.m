@@ -75,6 +75,13 @@ CONFDEF(CONF)
 	IF $GET(CONF("miomos","terminal","default","cols"))="" SET CONF("miomos","terminal","default","cols")=120
 	IF $GET(CONF("miomos","session","idleTimeoutSeconds"))="" SET CONF("miomos","session","idleTimeoutSeconds")=900
 	IF $GET(CONF("miomos","session","absoluteTimeoutSeconds"))="" SET CONF("miomos","session","absoluteTimeoutSeconds")=28800
+	IF $GET(CONF("miomos","security","sessionBinding"))="" SET CONF("miomos","security","sessionBinding")="principal-and-session"
+	IF $GET(CONF("miomos","security","forcedSignoutEvent"))="" SET CONF("miomos","security","forcedSignoutEvent")="session.signout"
+	IF $GET(CONF("miomos","security","permissionDeniedEvent"))="" SET CONF("miomos","security","permissionDeniedEvent")="command.error"
+	IF $GET(CONF("miomos","security","idleLockEnabled"))="" SET CONF("miomos","security","idleLockEnabled")=1
+	IF $GET(CONF("miomos","security","idleLockSeconds"))="" SET CONF("miomos","security","idleLockSeconds")=300
+	IF $GET(CONF("miomos","security","sessionRegistryEnabled"))="" SET CONF("miomos","security","sessionRegistryEnabled")=1
+	IF $GET(CONF("miomos","security","sessionRegistryModel"))="" SET CONF("miomos","security","sessionRegistryModel")="server-authored"
 	IF $GET(CONF("miomos","dev","enabled"))="" SET CONF("miomos","dev","enabled")=ISDEV
 	IF $GET(CONF("miomos","dev","authDisabled"))="" SET CONF("miomos","dev","authDisabled")=ISDEV
 	IF $GET(CONF("miomos","dev","principal"))="" SET CONF("miomos","dev","principal")="dev-user"
