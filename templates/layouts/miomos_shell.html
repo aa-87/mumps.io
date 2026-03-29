@@ -697,6 +697,39 @@
       border-bottom: 1px solid rgba(127,158,214,.28);
     }
 
+    .miomos-selection-marquee {
+      position:absolute;
+      z-index: 4;
+      pointer-events:none;
+      border:1px dotted rgba(31,82,163,.95);
+      background: rgba(84,144,255,.20);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.35);
+    }
+    .miomos-inline-rename {
+      width: 100%;
+      min-width: 0;
+      padding: 2px 4px;
+      border: 1px solid #6a8fcb;
+      background:#fffef7;
+      color:#14345d;
+      font: inherit;
+      font-size: 11px;
+      line-height: 1.25;
+      box-shadow: inset 0 1px 2px rgba(13,31,61,.08);
+    }
+    .miomos-desktop-icon.is-renaming .miomos-desktop-icon-kind,
+    .miomos-directory-card.is-renaming .miomos-entry-meta {
+      visibility:hidden;
+    }
+    .miomos-directory-card.is-selected {
+      border-color: rgba(35,91,181,.58) !important;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.6), 0 0 0 1px rgba(35,91,181,.22);
+      background: linear-gradient(180deg, rgba(230,241,255,.98), rgba(214,229,251,.96)) !important;
+    }
+    .miomos-directory-card.is-recycle-item .miomos-directory-glyph {
+      opacity: .92;
+    }
+
   </style>
   <style>
     [v-cloak] { display: none; }
@@ -1657,6 +1690,39 @@
       border-bottom: 1px solid rgba(127,158,214,.28);
     }
 
+    .miomos-selection-marquee {
+      position:absolute;
+      z-index: 4;
+      pointer-events:none;
+      border:1px dotted rgba(31,82,163,.95);
+      background: rgba(84,144,255,.20);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.35);
+    }
+    .miomos-inline-rename {
+      width: 100%;
+      min-width: 0;
+      padding: 2px 4px;
+      border: 1px solid #6a8fcb;
+      background:#fffef7;
+      color:#14345d;
+      font: inherit;
+      font-size: 11px;
+      line-height: 1.25;
+      box-shadow: inset 0 1px 2px rgba(13,31,61,.08);
+    }
+    .miomos-desktop-icon.is-renaming .miomos-desktop-icon-kind,
+    .miomos-directory-card.is-renaming .miomos-entry-meta {
+      visibility:hidden;
+    }
+    .miomos-directory-card.is-selected {
+      border-color: rgba(35,91,181,.58) !important;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.6), 0 0 0 1px rgba(35,91,181,.22);
+      background: linear-gradient(180deg, rgba(230,241,255,.98), rgba(214,229,251,.96)) !important;
+    }
+    .miomos-directory-card.is-recycle-item .miomos-directory-glyph {
+      opacity: .92;
+    }
+
   </style>
   <style>
     [v-cloak] { display: none; }
@@ -2483,6 +2549,39 @@
       border-bottom: 1px solid rgba(127,158,214,.28);
     }
 
+    .miomos-selection-marquee {
+      position:absolute;
+      z-index: 4;
+      pointer-events:none;
+      border:1px dotted rgba(31,82,163,.95);
+      background: rgba(84,144,255,.20);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.35);
+    }
+    .miomos-inline-rename {
+      width: 100%;
+      min-width: 0;
+      padding: 2px 4px;
+      border: 1px solid #6a8fcb;
+      background:#fffef7;
+      color:#14345d;
+      font: inherit;
+      font-size: 11px;
+      line-height: 1.25;
+      box-shadow: inset 0 1px 2px rgba(13,31,61,.08);
+    }
+    .miomos-desktop-icon.is-renaming .miomos-desktop-icon-kind,
+    .miomos-directory-card.is-renaming .miomos-entry-meta {
+      visibility:hidden;
+    }
+    .miomos-directory-card.is-selected {
+      border-color: rgba(35,91,181,.58) !important;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.6), 0 0 0 1px rgba(35,91,181,.22);
+      background: linear-gradient(180deg, rgba(230,241,255,.98), rgba(214,229,251,.96)) !important;
+    }
+    .miomos-directory-card.is-recycle-item .miomos-directory-glyph {
+      opacity: .92;
+    }
+
   </style>
   <style>
     /* Vue runtime chrome hotfix: restore explicit window styling without touching socket logic */
@@ -2809,6 +2908,39 @@
     .miomos-root[data-mobile-layout="1"] .miomos-explorer-pane {
       border-right: 0;
       border-bottom: 1px solid rgba(127,158,214,.28);
+    }
+
+    .miomos-selection-marquee {
+      position:absolute;
+      z-index: 4;
+      pointer-events:none;
+      border:1px dotted rgba(31,82,163,.95);
+      background: rgba(84,144,255,.20);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.35);
+    }
+    .miomos-inline-rename {
+      width: 100%;
+      min-width: 0;
+      padding: 2px 4px;
+      border: 1px solid #6a8fcb;
+      background:#fffef7;
+      color:#14345d;
+      font: inherit;
+      font-size: 11px;
+      line-height: 1.25;
+      box-shadow: inset 0 1px 2px rgba(13,31,61,.08);
+    }
+    .miomos-desktop-icon.is-renaming .miomos-desktop-icon-kind,
+    .miomos-directory-card.is-renaming .miomos-entry-meta {
+      visibility:hidden;
+    }
+    .miomos-directory-card.is-selected {
+      border-color: rgba(35,91,181,.58) !important;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.6), 0 0 0 1px rgba(35,91,181,.22);
+      background: linear-gradient(180deg, rgba(230,241,255,.98), rgba(214,229,251,.96)) !important;
+    }
+    .miomos-directory-card.is-recycle-item .miomos-directory-glyph {
+      opacity: .92;
     }
 
   </style>
@@ -3247,6 +3379,39 @@
       border-bottom: 1px solid rgba(127,158,214,.28);
     }
 
+    .miomos-selection-marquee {
+      position:absolute;
+      z-index: 4;
+      pointer-events:none;
+      border:1px dotted rgba(31,82,163,.95);
+      background: rgba(84,144,255,.20);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.35);
+    }
+    .miomos-inline-rename {
+      width: 100%;
+      min-width: 0;
+      padding: 2px 4px;
+      border: 1px solid #6a8fcb;
+      background:#fffef7;
+      color:#14345d;
+      font: inherit;
+      font-size: 11px;
+      line-height: 1.25;
+      box-shadow: inset 0 1px 2px rgba(13,31,61,.08);
+    }
+    .miomos-desktop-icon.is-renaming .miomos-desktop-icon-kind,
+    .miomos-directory-card.is-renaming .miomos-entry-meta {
+      visibility:hidden;
+    }
+    .miomos-directory-card.is-selected {
+      border-color: rgba(35,91,181,.58) !important;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.6), 0 0 0 1px rgba(35,91,181,.22);
+      background: linear-gradient(180deg, rgba(230,241,255,.98), rgba(214,229,251,.96)) !important;
+    }
+    .miomos-directory-card.is-recycle-item .miomos-directory-glyph {
+      opacity: .92;
+    }
+
   </style>
 
   <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
@@ -3527,6 +3692,39 @@
       border-bottom: 1px solid rgba(127,158,214,.28);
     }
 
+    .miomos-selection-marquee {
+      position:absolute;
+      z-index: 4;
+      pointer-events:none;
+      border:1px dotted rgba(31,82,163,.95);
+      background: rgba(84,144,255,.20);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.35);
+    }
+    .miomos-inline-rename {
+      width: 100%;
+      min-width: 0;
+      padding: 2px 4px;
+      border: 1px solid #6a8fcb;
+      background:#fffef7;
+      color:#14345d;
+      font: inherit;
+      font-size: 11px;
+      line-height: 1.25;
+      box-shadow: inset 0 1px 2px rgba(13,31,61,.08);
+    }
+    .miomos-desktop-icon.is-renaming .miomos-desktop-icon-kind,
+    .miomos-directory-card.is-renaming .miomos-entry-meta {
+      visibility:hidden;
+    }
+    .miomos-directory-card.is-selected {
+      border-color: rgba(35,91,181,.58) !important;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.6), 0 0 0 1px rgba(35,91,181,.22);
+      background: linear-gradient(180deg, rgba(230,241,255,.98), rgba(214,229,251,.96)) !important;
+    }
+    .miomos-directory-card.is-recycle-item .miomos-directory-glyph {
+      opacity: .92;
+    }
+
   </style>
 
   <style id="miomosRoi15IAQuality">
@@ -3768,6 +3966,39 @@
     .miomos-root[data-mobile-layout="1"] .miomos-explorer-pane {
       border-right: 0;
       border-bottom: 1px solid rgba(127,158,214,.28);
+    }
+
+    .miomos-selection-marquee {
+      position:absolute;
+      z-index: 4;
+      pointer-events:none;
+      border:1px dotted rgba(31,82,163,.95);
+      background: rgba(84,144,255,.20);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.35);
+    }
+    .miomos-inline-rename {
+      width: 100%;
+      min-width: 0;
+      padding: 2px 4px;
+      border: 1px solid #6a8fcb;
+      background:#fffef7;
+      color:#14345d;
+      font: inherit;
+      font-size: 11px;
+      line-height: 1.25;
+      box-shadow: inset 0 1px 2px rgba(13,31,61,.08);
+    }
+    .miomos-desktop-icon.is-renaming .miomos-desktop-icon-kind,
+    .miomos-directory-card.is-renaming .miomos-entry-meta {
+      visibility:hidden;
+    }
+    .miomos-directory-card.is-selected {
+      border-color: rgba(35,91,181,.58) !important;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.6), 0 0 0 1px rgba(35,91,181,.22);
+      background: linear-gradient(180deg, rgba(230,241,255,.98), rgba(214,229,251,.96)) !important;
+    }
+    .miomos-directory-card.is-recycle-item .miomos-directory-glyph {
+      opacity: .92;
     }
 
   </style>
@@ -4318,6 +4549,39 @@
       border-bottom: 1px solid rgba(127,158,214,.28);
     }
 
+    .miomos-selection-marquee {
+      position:absolute;
+      z-index: 4;
+      pointer-events:none;
+      border:1px dotted rgba(31,82,163,.95);
+      background: rgba(84,144,255,.20);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.35);
+    }
+    .miomos-inline-rename {
+      width: 100%;
+      min-width: 0;
+      padding: 2px 4px;
+      border: 1px solid #6a8fcb;
+      background:#fffef7;
+      color:#14345d;
+      font: inherit;
+      font-size: 11px;
+      line-height: 1.25;
+      box-shadow: inset 0 1px 2px rgba(13,31,61,.08);
+    }
+    .miomos-desktop-icon.is-renaming .miomos-desktop-icon-kind,
+    .miomos-directory-card.is-renaming .miomos-entry-meta {
+      visibility:hidden;
+    }
+    .miomos-directory-card.is-selected {
+      border-color: rgba(35,91,181,.58) !important;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.6), 0 0 0 1px rgba(35,91,181,.22);
+      background: linear-gradient(180deg, rgba(230,241,255,.98), rgba(214,229,251,.96)) !important;
+    }
+    .miomos-directory-card.is-recycle-item .miomos-directory-glyph {
+      opacity: .92;
+    }
+
   </style>
 
 
@@ -4552,6 +4816,39 @@
     .miomos-root[data-mobile-layout="1"] .miomos-explorer-pane {
       border-right: 0;
       border-bottom: 1px solid rgba(127,158,214,.28);
+    }
+
+    .miomos-selection-marquee {
+      position:absolute;
+      z-index: 4;
+      pointer-events:none;
+      border:1px dotted rgba(31,82,163,.95);
+      background: rgba(84,144,255,.20);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.35);
+    }
+    .miomos-inline-rename {
+      width: 100%;
+      min-width: 0;
+      padding: 2px 4px;
+      border: 1px solid #6a8fcb;
+      background:#fffef7;
+      color:#14345d;
+      font: inherit;
+      font-size: 11px;
+      line-height: 1.25;
+      box-shadow: inset 0 1px 2px rgba(13,31,61,.08);
+    }
+    .miomos-desktop-icon.is-renaming .miomos-desktop-icon-kind,
+    .miomos-directory-card.is-renaming .miomos-entry-meta {
+      visibility:hidden;
+    }
+    .miomos-directory-card.is-selected {
+      border-color: rgba(35,91,181,.58) !important;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.6), 0 0 0 1px rgba(35,91,181,.22);
+      background: linear-gradient(180deg, rgba(230,241,255,.98), rgba(214,229,251,.96)) !important;
+    }
+    .miomos-directory-card.is-recycle-item .miomos-directory-glyph {
+      opacity: .92;
     }
 
   </style>
@@ -4895,6 +5192,39 @@
     .miomos-root[data-mobile-layout="1"] .miomos-explorer-pane {
       border-right: 0;
       border-bottom: 1px solid rgba(127,158,214,.28);
+    }
+
+    .miomos-selection-marquee {
+      position:absolute;
+      z-index: 4;
+      pointer-events:none;
+      border:1px dotted rgba(31,82,163,.95);
+      background: rgba(84,144,255,.20);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.35);
+    }
+    .miomos-inline-rename {
+      width: 100%;
+      min-width: 0;
+      padding: 2px 4px;
+      border: 1px solid #6a8fcb;
+      background:#fffef7;
+      color:#14345d;
+      font: inherit;
+      font-size: 11px;
+      line-height: 1.25;
+      box-shadow: inset 0 1px 2px rgba(13,31,61,.08);
+    }
+    .miomos-desktop-icon.is-renaming .miomos-desktop-icon-kind,
+    .miomos-directory-card.is-renaming .miomos-entry-meta {
+      visibility:hidden;
+    }
+    .miomos-directory-card.is-selected {
+      border-color: rgba(35,91,181,.58) !important;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.6), 0 0 0 1px rgba(35,91,181,.22);
+      background: linear-gradient(180deg, rgba(230,241,255,.98), rgba(214,229,251,.96)) !important;
+    }
+    .miomos-directory-card.is-recycle-item .miomos-directory-glyph {
+      opacity: .92;
     }
 
   </style>

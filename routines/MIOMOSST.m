@@ -254,6 +254,10 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","explorerStyle")="xp-classic"
 	SET OBJ("desktop","desktopSelectionModel")="single-click-select-double-click-open"
 	SET OBJ("desktop","dragDropModel")="desktop-icons-to-folders"
+	SET OBJ("desktop","desktopSelectionExtension")="marquee-and-multi-select"
+	SET OBJ("desktop","renameBehavior")="inline-f2-custom-folders"
+	SET OBJ("desktop","deleteBehavior")="recycle-bin-routing"
+	SET OBJ("desktop","recycleBinModel")="soft-delete-custom-folders"
 	SET OBJ("desktop","folderWindowModel")="explorer-left-pane-address-status"
 	SET OBJ("desktop","mutationSaveBehavior")="layout-on-shell-mutation"
 	SET OBJ("desktop","engine")="miomos-native-vue-css"
@@ -418,7 +422,7 @@ APPS(ROOT,STATE)
 	SET @ROOT@(15,"key")="my-computer",@ROOT@(15,"title")="My Computer",@ROOT@(15,"subtitle")="System drives, routines, terminal surfaces, and operator workspaces",@ROOT@(15,"icon")="CMP",@ROOT@(15,"badge")="System",@ROOT@(15,"kind")="directory",@ROOT@(15,"group")="Pinned",@ROOT@(15,"order")=11,@ROOT@(15,"launchKey")="my-computer",@ROOT@(15,"desktopPinned")=1,@ROOT@(15,"status")="available",@ROOT@(15,"summary")="XP system shell"
 	SET @ROOT@(16,"key")="my-documents",@ROOT@(16,"title")="My Documents",@ROOT@(16,"subtitle")="Personal notes, UI samples, and analyst-ready desktop artifacts",@ROOT@(16,"icon")="DOC",@ROOT@(16,"badge")="System",@ROOT@(16,"kind")="directory",@ROOT@(16,"group")="Pinned",@ROOT@(16,"order")=12,@ROOT@(16,"launchKey")="my-documents",@ROOT@(16,"desktopPinned")=1,@ROOT@(16,"status")="available",@ROOT@(16,"summary")="Operator documents"
 	SET @ROOT@(17,"key")="my-network-places",@ROOT@(17,"title")="My Network Places",@ROOT@(17,"subtitle")="Realtime collaboration, chat, security endpoints, and shared services",@ROOT@(17,"icon")="NET",@ROOT@(17,"badge")="System",@ROOT@(17,"kind")="directory",@ROOT@(17,"group")="Pinned",@ROOT@(17,"order")=13,@ROOT@(17,"launchKey")="my-network-places",@ROOT@(17,"desktopPinned")=1,@ROOT@(17,"status")="available",@ROOT@(17,"summary")="Connected services"
-	SET @ROOT@(18,"key")="recycle-bin",@ROOT@(18,"title")="Recycle Bin",@ROOT@(18,"subtitle")="Deleted shell items will land here once file verbs are wired end-to-end",@ROOT@(18,"icon")="BIN",@ROOT@(18,"badge")="System",@ROOT@(18,"kind")="directory",@ROOT@(18,"group")="Pinned",@ROOT@(18,"order")=14,@ROOT@(18,"launchKey")="recycle-bin",@ROOT@(18,"desktopPinned")=1,@ROOT@(18,"status")="available",@ROOT@(18,"summary")="Ready for shell delete verbs"
+	SET @ROOT@(18,"key")="recycle-bin",@ROOT@(18,"title")="Recycle Bin",@ROOT@(18,"subtitle")="Deleted custom folders route here first so restore and purge behave like a desktop shell",@ROOT@(18,"icon")="BIN",@ROOT@(18,"badge")="System",@ROOT@(18,"kind")="directory",@ROOT@(18,"group")="Pinned",@ROOT@(18,"order")=14,@ROOT@(18,"launchKey")="recycle-bin",@ROOT@(18,"desktopPinned")=1,@ROOT@(18,"status")="available",@ROOT@(18,"summary")="XP delete workflow"
 	QUIT
 	;
 WINS(ROOT,STATE)

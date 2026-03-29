@@ -584,3 +584,30 @@ Maintain these constraints while pursuing XP fidelity:
 - keep MUMPS as the source of truth for shell metadata and persisted state
 - prefer additive shell/UI work before deeper command-bus rewrites
 - keep each ROI test-backed with SSR tokens and boot-contract assertions
+
+
+## ROI 166 — Desktop verbs, rename parity, and recycle-bin routing
+
+Completed on top of the stable XP explorer baseline.
+
+What changed:
+- desktop blank space now supports **marquee selection**
+- custom folders support **inline rename** and **F2 rename**
+- custom folder delete no longer destroys immediately; it routes through **Recycle Bin**
+- Recycle Bin now supports **restore**, **delete permanently**, and **empty bin** shell verbs
+- desktop context menu now includes **Arrange Icons by Name**
+- explorer cards now participate in selection and desktop-like verbs
+
+What did **not** change:
+- auth workflow
+- sign-in/sign-out flow
+- websocket event ownership
+- `command.exec` / `command.result` semantics
+- `session.ui.save` transport contract
+
+Recommended next ROI order remains:
+- ROI 167 — explorer file list parity
+- ROI 168 — shell drag/drop semantics
+- ROI 169 — filesystem bridge over websocket
+- ROI 170 — XP shell services
+- ROI 171 — development-platform essence
