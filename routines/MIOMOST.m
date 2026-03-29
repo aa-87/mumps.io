@@ -484,6 +484,8 @@ START
 	DO OK^MIOTASSERT($$RENDERPAGE^MIOTPL("pages/miomos_desktop.html","layouts/miomos_shell.html",.CONF,.CTX,.OUT,.ERR),"[MIOMOST][T023][desktop render]")
 	DO OK^MIOTASSERT(OUT["Notification Center","[MIOMOST][T023][notification copy]")
 	DO OK^MIOTASSERT(OUT["Switch User","[MIOMOST][T023][switch user copy]")
+	DO OK^MIOTASSERT(OUT[".miomos-taskbar-flyout","[MIOMOST][T023][taskbar flyout css]")
+	DO OK^MIOTASSERT(OUT[".miomos-start-button","[MIOMOST][T023][xp start css]")
 	DO EQ^MIOTASSERT(OUT["Planned surfaces",0,"[MIOMOST][T023][planned surface removed]")
 	QUIT
 	;

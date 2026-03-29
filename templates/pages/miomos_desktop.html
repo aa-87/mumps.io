@@ -1,4 +1,368 @@
 <script id="miomosBootJson" type="application/json">{{{bootJson}}}</script>
+<style id="miomosThemeSystem">
+  .miomos-root, .miomos-root * { box-sizing: border-box; }
+  .miomos-root {
+    --desktop: #dbe8f5;
+    --surface: rgba(255,255,255,.98);
+    --surface-alt: rgba(244,248,252,.98);
+    --surface-soft: rgba(233,240,248,.94);
+    --border: rgba(48,78,112,.30);
+    --text: #10243a;
+    --muted: #36506c;
+    --accent: #0a64ad;
+    --accent-soft: rgba(10,100,173,.14);
+    --accent-strong: rgba(10,100,173,.24);
+    --active-title: linear-gradient(180deg,#4f8ed8,#1457ab);
+    --inactive-title: linear-gradient(180deg,#f7fbff,#dfe8f4);
+    --miomos-shadow: 0 16px 34px rgba(15,42,78,.16);
+    --taskbar-bg: linear-gradient(180deg,#3d8ad3,#215ea8 54%,#154986);
+    --taskbar-text: #ffffff;
+    --taskbar-border: #0f3768;
+    --menu-bg: linear-gradient(180deg,#ffffff,#edf4fc);
+    --menu-side-bg: linear-gradient(180deg,#dcedfc,#bfd7f0);
+    --menu-banner-bg: linear-gradient(180deg,#2d78cd,#1457ab);
+    --menu-text: #10243a;
+    --menu-muted: #58708a;
+    --flyout-bg: linear-gradient(180deg,#ffffff,#edf4fc);
+    --dialog-bg: linear-gradient(180deg,#ffffff,#eef5fc);
+    --field-bg: #ffffff;
+    --field-text: #10243a;
+    --field-border: #58799b;
+    --button-face: linear-gradient(180deg,#ffffff,#dceaf9);
+    --button-face-hover: linear-gradient(180deg,#ffffff,#cfe3f9);
+    --button-text: #0b2742;
+    --terminal-bg: #fbfdff;
+    --terminal-fg: #13273d;
+    --terminal-border: rgba(67,98,132,.28);
+    --selection-bg: rgba(10,100,173,.16);
+    min-height: 100vh;
+    position: relative;
+    overflow: hidden;
+    color: var(--text);
+    background:
+      radial-gradient(circle at top left, rgba(255,255,255,.44), transparent 24%),
+      radial-gradient(circle at bottom right, rgba(49,114,190,.12), transparent 26%),
+      linear-gradient(180deg, rgba(255,255,255,.36), rgba(255,255,255,0) 25%),
+      var(--desktop);
+    font-family: var(--miomos-font, Tahoma), "Segoe UI", Tahoma, Verdana, Arial, sans-serif;
+    font-size: 13px;
+    line-height: 1.35;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  .miomos-root[data-theme-mode="dark"] {
+    --desktop: #0b1320;
+    --surface: rgba(15,23,36,.96);
+    --surface-alt: rgba(11,18,29,.97);
+    --surface-soft: rgba(255,255,255,.04);
+    --border: rgba(166,182,204,.28);
+    --text: #ecf3ff;
+    --muted: #b8c7dc;
+    --accent: #5f8dff;
+    --accent-soft: rgba(95,141,255,.18);
+    --accent-strong: rgba(95,141,255,.34);
+    --active-title: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.03)), linear-gradient(90deg, #5f8dff, rgba(255,255,255,0.02) 40%);
+    --inactive-title: linear-gradient(180deg, rgba(91,103,122,0.42), rgba(45,56,72,0.36));
+    --miomos-shadow: 0 18px 42px rgba(0,0,0,.26);
+    --taskbar-bg: linear-gradient(180deg, rgba(17,28,45,.98), rgba(8,14,24,.98));
+    --taskbar-text: #eef5ff;
+    --taskbar-border: rgba(148,163,184,.18);
+    --menu-bg: linear-gradient(180deg, rgba(17,28,45,.98), rgba(10,16,26,.98));
+    --menu-side-bg: linear-gradient(180deg, rgba(31,53,82,.94), rgba(16,27,42,.96));
+    --menu-banner-bg: linear-gradient(180deg,#3a77cf,#164f9b);
+    --menu-text: #eef4ff;
+    --menu-muted: #b9c9de;
+    --flyout-bg: linear-gradient(180deg, rgba(18,28,45,.98), rgba(9,15,24,.99));
+    --dialog-bg: linear-gradient(180deg, rgba(17,28,45,.98), rgba(10,16,26,.99));
+    --field-bg: rgba(255,255,255,.06);
+    --field-text: #edf5ff;
+    --field-border: rgba(176,193,214,.30);
+    --button-face: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.03));
+    --button-face-hover: linear-gradient(180deg, rgba(95,141,255,.22), rgba(95,141,255,.08));
+    --button-text: #eef5ff;
+    --terminal-bg: #0b1220;
+    --terminal-fg: #dce9ff;
+    --terminal-border: rgba(53,78,107,.92);
+    --selection-bg: rgba(143,179,255,.30);
+    background:
+      radial-gradient(circle at top left, rgba(95,141,255,.16), transparent 24%),
+      radial-gradient(circle at bottom right, rgba(20,184,166,.10), transparent 22%),
+      linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,0) 18%),
+      var(--desktop);
+  }
+  .miomos-root[data-theme-key="high-contrast-light"] {
+    --field-border: rgba(7,19,31,.42);
+    --border: rgba(7,19,31,.34);
+    --menu-text: #07131f;
+    --text: #07131f;
+    --muted: #23384f;
+    --button-face: linear-gradient(180deg,#ffffff,#edf4fb);
+    --button-face-hover: linear-gradient(180deg,#ffffff,#d9e8fb);
+  }
+  .miomos-root[data-theme-key="xp-classic-olive"] {
+    --taskbar-bg: linear-gradient(180deg,#92a94e,#6e832c 54%,#55661e);
+  }
+  .miomos-root[data-theme-key="xp-classic-silver"] {
+    --taskbar-bg: linear-gradient(180deg,#95a5c3,#6a7c99 54%,#51617c);
+  }
+  .miomos-root button,
+  .miomos-root input,
+  .miomos-root select,
+  .miomos-root textarea { font: inherit; }
+  .miomos-root input,
+  .miomos-root select,
+  .miomos-root textarea {
+    color: var(--field-text);
+    background: var(--field-bg);
+    border: 1px solid var(--field-border);
+  }
+  .miomos-root input::placeholder,
+  .miomos-root textarea::placeholder { color: color-mix(in srgb, var(--field-text) 52%, transparent); }
+  .miomos-root strong,
+  .miomos-root label,
+  .miomos-root th,
+  .miomos-root td,
+  .miomos-root span,
+  .miomos-root p,
+  .miomos-root em { color: inherit; }
+  .miomos-shell-alert {
+    position: absolute; right: 18px; top: 18px; z-index: 90; width: min(420px, calc(100% - 36px));
+    display: flex; align-items: center; justify-content: space-between; gap: 14px;
+    padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border); background: var(--flyout-bg); box-shadow: var(--miomos-shadow);
+  }
+  .miomos-shell-alert-copy strong { display:block; font-size: 12px; }
+  .miomos-shell-alert-copy span { display:block; margin-top: 4px; color: var(--muted); }
+  .miomos-shell-alert-btn,
+  .miomos-btn,
+  .miomos-link-btn,
+  .miomos-start-footer-btn,
+  .miomos-start-side-link,
+  .miomos-shell-tool-btn,
+  .miomos-taskbar-utility-btn,
+  .miomos-window-controls button,
+  .miomos-menu-button,
+  .miomos-quicklaunch-btn,
+  .miomos-task-button,
+  .miomos-task-overflow-btn,
+  .miomos-context-item,
+  .miomos-shell-dialog-close {
+    appearance: none; -webkit-appearance: none; cursor: pointer; color: var(--button-text);
+    background: var(--button-face); border: 1px solid var(--field-border); box-shadow: inset 0 1px 0 rgba(255,255,255,.58);
+  }
+  .miomos-btn:hover,
+  .miomos-link-btn:hover,
+  .miomos-start-footer-btn:hover,
+  .miomos-start-side-link:hover,
+  .miomos-shell-tool-btn:hover,
+  .miomos-taskbar-utility-btn:hover,
+  .miomos-menu-button:hover,
+  .miomos-quicklaunch-btn:hover,
+  .miomos-task-button:hover,
+  .miomos-task-overflow-btn:hover,
+  .miomos-window-controls button:hover,
+  .miomos-context-item:hover { background: var(--button-face-hover); }
+  .miomos-stage { position: absolute; inset: 14px 12px 58px 12px; overflow: hidden; }
+  .miomos-desktop-icons { position: absolute; left: 16px; top: 16px; display: block; width: calc(100% - 32px); min-height: calc(100% - 32px); pointer-events:none; }
+  .miomos-desktop-icon { position: absolute; width: 92px; min-height: 92px; padding: 6px; display: grid; justify-items: center; gap: 6px; border: 1px solid transparent; border-radius: 8px; background: transparent; pointer-events: auto; }
+  .miomos-desktop-icon:hover, .miomos-desktop-icon:focus-visible { background: color-mix(in srgb, var(--surface) 72%, transparent); border-color: var(--border); outline: none; }
+  .miomos-desktop-icon-glyph, .miomos-menu-glyph, .miomos-window-glyph, .miomos-task-glyph, .miomos-start-menu-avatar, .miomos-tray-icon {
+    display: inline-flex; align-items: center; justify-content: center; font-weight: 700;
+  }
+  .miomos-desktop-icon-glyph { width: 34px; height: 34px; border-radius: 8px; color: #fff; background: var(--icon, linear-gradient(180deg,#4ea1ef,#1d67ba)); box-shadow: inset 0 1px 0 rgba(255,255,255,.28), 0 5px 12px rgba(0,0,0,.16); }
+  .miomos-desktop-icon-label { font-size: 11px; font-weight: 700; text-align: center; color: color-mix(in srgb, var(--text) 92%, #000 8%); text-shadow: 0 1px 0 rgba(255,255,255,.6); }
+  .miomos-root[data-theme-mode="dark"] .miomos-desktop-icon-label { text-shadow:none; color: var(--text); }
+  .miomos-desktop-icon-kind { font-size: 9px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+  .miomos-window {
+    position: absolute; min-width: 340px; min-height: 220px; overflow: hidden; border-radius: 9px; border: 1px solid var(--field-border);
+    background: var(--surface); box-shadow: var(--miomos-shadow);
+  }
+  .miomos-window.is-active { box-shadow: 0 20px 48px color-mix(in srgb, var(--accent) 18%, rgba(0,0,0,.18)); }
+  .miomos-window.is-minimized, .miomos-window.is-closed { display:none; }
+  .miomos-window.is-maximized { border-radius: 0; }
+  .miomos-window-bar { height: 31px; display:flex; align-items:center; justify-content:space-between; gap: 8px; padding: 0 8px 0 10px; background: var(--inactive-title); border-bottom: 1px solid color-mix(in srgb, var(--field-border) 82%, transparent); cursor: grab; user-select:none; }
+  .miomos-window.is-active .miomos-window-bar { background: var(--active-title); }
+  .miomos-window-meta { min-width: 0; display:flex; align-items:center; gap:8px; }
+  .miomos-window-glyph { width: 17px; height: 17px; border-radius: 4px; color:#fff; background: color-mix(in srgb, var(--accent) 85%, #1d67ba 15%); }
+  .miomos-window-title strong { display:block; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--taskbar-text); }
+  .miomos-window-title span { display:block; font-size: 10px; color: color-mix(in srgb, var(--taskbar-text) 72%, transparent); }
+  .miomos-root[data-theme-mode="light"] .miomos-window:not(.is-active) .miomos-window-title strong { color: #173255; }
+  .miomos-root[data-theme-mode="light"] .miomos-window:not(.is-active) .miomos-window-title span { color: #5e7591; }
+  .miomos-window-controls { display:flex; align-items:center; gap:4px; }
+  .miomos-window-controls button { width: 24px; height: 20px; border-radius: 4px; font-weight:700; padding:0; }
+  .miomos-window-controls button[data-window-action="close"] { background: linear-gradient(180deg,#fefefe,#d55c4f); color: #fff; border-color: #a63f34; }
+  .miomos-window-body { height: calc(100% - 31px); padding: 10px; overflow: auto; background: var(--surface-alt); color: var(--text); }
+  .miomos-surface-header, .miomos-actions, .miomos-link-row, .miomos-chips, .miomos-taskbar-left, .miomos-taskbar-meta, .miomos-taskbar-actions, .miomos-taskband, .miomos-shell-dialog-footer, .miomos-shell-power-grid, .miomos-tray-strip { display:flex; align-items:center; gap:8px; }
+  .miomos-surface-header, .miomos-actions, .miomos-shell-dialog-footer { justify-content: space-between; }
+  .miomos-surface-title strong, .miomos-setting-card strong, .miomos-menu-copy strong, .miomos-notice-item strong, .miomos-account-menu-head strong { display:block; color: var(--text); }
+  .miomos-surface-title span, .miomos-kpi-copy, .miomos-menu-copy span, .miomos-notice-item span, .miomos-account-menu-item span, .miomos-save-status, .miomos-shell-dialog-copy, .miomos-kpi-copy { color: var(--muted); }
+  .miomos-card, .miomos-setting-card, .miomos-ops-card, .miomos-directory-card, .miomos-ui-command-item, .miomos-ui-theme-item {
+    border:1px solid var(--border); background: var(--surface); border-radius: 8px; padding: 10px; box-shadow: inset 0 1px 0 rgba(255,255,255,.48);
+  }
+  .miomos-root[data-theme-mode="dark"] .miomos-card,
+  .miomos-root[data-theme-mode="dark"] .miomos-setting-card,
+  .miomos-root[data-theme-mode="dark"] .miomos-ops-card,
+  .miomos-root[data-theme-mode="dark"] .miomos-directory-card,
+  .miomos-root[data-theme-mode="dark"] .miomos-ui-command-item,
+  .miomos-root[data-theme-mode="dark"] .miomos-ui-theme-item { box-shadow: inset 0 1px 0 rgba(255,255,255,.06); }
+  .miomos-kpi-value { font-size: 20px; font-weight: 700; color: var(--text); }
+  .miomos-pill, .miomos-status-pill, .miomos-permission-pill, .miomos-preview-chip, .miomos-entry-meta, .miomos-tray-chip, .miomos-notice-badge, .miomos-account-badge {
+    display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height: 22px; padding: 0 8px; border-radius: 999px; border: 1px solid var(--field-border); background: color-mix(in srgb, var(--surface-soft) 72%, var(--surface) 28%); color: var(--button-text); font-size: 10px; font-weight: 700;
+  }
+  .miomos-settings-form, .miomos-chat-form, .miomos-terminal-shell, .miomos-chat-shell { display:grid; gap: 10px; }
+  .miomos-settings-grid { display:grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+  .miomos-field { display:grid; gap: 5px; margin-bottom: 8px; }
+  .miomos-field span { color: var(--menu-text); font-size: 11px; font-weight: 700; }
+  .miomos-field select, .miomos-field input, .miomos-chat-form textarea, .miomos-shell-dialog-input { width:100%; min-height:32px; border-radius: 4px; padding: 6px 9px; }
+  .miomos-chat-form textarea { min-height: 84px; resize: vertical; }
+  .miomos-table { width:100%; border-collapse: collapse; font-size: 11px; }
+  .miomos-table th { text-align:left; padding: 7px 8px; color: var(--menu-text); border-bottom: 1px solid var(--border); background: color-mix(in srgb, var(--surface-soft) 74%, transparent); }
+  .miomos-table td { padding: 8px; color: var(--text); border-bottom: 1px solid color-mix(in srgb, var(--border) 66%, transparent); }
+  .miomos-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 8%, var(--surface)); }
+  .miomos-list, .miomos-notice-list, .miomos-account-menu-list, .miomos-start-recent-list { display:grid; gap: 8px; margin:0; padding:0; list-style:none; }
+  .miomos-taskbar {
+    position:absolute; left: 10px; right: 10px; bottom: 10px; height: 40px; z-index: 60; padding: 0 10px; display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap: 8px;
+    border: 1px solid var(--taskbar-border); border-radius: 6px 6px 0 0; background: var(--taskbar-bg); color: var(--taskbar-text); box-shadow: 0 -3px 10px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.26);
+  }
+  .miomos-taskbar-left { min-width: 0; }
+  .miomos-start-button { min-width: 88px; height: 28px; border-radius: 16px 8px 16px 8px; font-weight:700; color:#fff; background: linear-gradient(180deg,#5fc257,#2f8b2e); border-color:#1f5f1e; text-shadow: 0 1px 0 rgba(0,0,0,.28); }
+  .miomos-start-orb { width: 14px; height: 14px; border-radius: 999px; background: radial-gradient(circle at 35% 35%, #fafffe, #61d15d 54%, #2b912d 72%); box-shadow: inset 0 1px 0 rgba(255,255,255,.5); }
+  .miomos-quicklaunch { display:flex; align-items:center; gap: 6px; min-width:0; padding-left: 8px; border-left: 1px solid rgba(255,255,255,.28); }
+  .miomos-quicklaunch-label { font-size: 10px; color: rgba(255,255,255,.82); text-transform: uppercase; letter-spacing: .06em; }
+  .miomos-quicklaunch-btn { width: 26px; height: 24px; border-radius: 4px; padding:0; color:#fff; background: linear-gradient(180deg, rgba(255,255,255,.24), rgba(255,255,255,.06)); border-color: rgba(255,255,255,.22); }
+  .miomos-taskband { min-width: 0; overflow: auto hidden; padding-bottom: 2px; }
+  .miomos-task-button, .miomos-task-overflow-btn { height: 29px; border-radius: 4px; padding: 0 10px; color: var(--taskbar-text); background: linear-gradient(180deg, rgba(255,255,255,.24), rgba(255,255,255,.08)); border-color: rgba(255,255,255,.18); white-space: nowrap; }
+  .miomos-task-button.is-active { background: linear-gradient(180deg, rgba(255,255,255,.42), rgba(255,255,255,.16)); box-shadow: inset 0 1px 0 rgba(255,255,255,.44); }
+  .miomos-task-button.is-minimized { opacity: .76; }
+  .miomos-task-title { overflow:hidden; text-overflow:ellipsis; max-width: 180px; color: inherit; }
+  .miomos-task-glyph { width: 18px; height: 18px; border-radius: 4px; background: rgba(255,255,255,.24); color: inherit; }
+  .miomos-taskbar-meta { position: relative; justify-content: flex-end; color: var(--taskbar-text); }
+  .miomos-tray-chip, .miomos-tray-clock { color: var(--taskbar-text); background: linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,.07)); border-color: rgba(255,255,255,.16); }
+  .miomos-tray-chip--action { cursor:pointer; }
+  .miomos-tray-separator { width:1px; height: 22px; background: rgba(255,255,255,.22); }
+  .miomos-taskbar-usercopy strong { display:block; color: inherit; font-size: 11px; }
+  .miomos-taskbar-usercopy span { display:block; margin-top:1px; color: rgba(255,255,255,.82); font-size: 10px; }
+  .miomos-taskbar-badge-dot { min-width: 18px; height: 18px; padding: 0 6px; border-radius: 999px; background: #e03d2f; color: #fff; font-size: 10px; font-weight: 700; }
+  .miomos-taskbar-flyout {
+    position: absolute; right: 0; bottom: calc(100% + 10px); width: 320px; max-height: min(480px, calc(100vh - 110px)); overflow:auto; z-index: 70;
+    border-radius: 10px; border:1px solid var(--field-border); background: var(--flyout-bg); box-shadow: var(--miomos-shadow); padding: 12px;
+  }
+  .miomos-taskbar-flyout-head { display:grid; gap:4px; margin-bottom: 10px; }
+  .miomos-taskbar-flyout-head strong { color: var(--menu-text); font-size: 12px; }
+  .miomos-taskbar-flyout-head span { color: var(--menu-muted); font-size: 11px; }
+  .miomos-notice-item, .miomos-account-menu-item, .miomos-start-recent-item, .miomos-menu-card, .miomos-start-side-link {
+    width:100%; text-align:left; border-radius: 6px; padding: 9px 10px; border:1px solid var(--border); background: color-mix(in srgb, var(--surface) 88%, var(--surface-soft) 12%);
+  }
+  .miomos-notice-item[data-tone="warn"] { border-left: 4px solid #d77b14; }
+  .miomos-notice-item[data-tone="danger"] { border-left: 4px solid #c23b30; }
+  .miomos-notice-item[data-tone="ok"] { border-left: 4px solid #2f8b2e; }
+  .miomos-notice-item-head, .miomos-account-menu-head, .miomos-ui-theme-head { display:flex; align-items:center; justify-content:space-between; gap: 8px; }
+  .miomos-start-menu {
+    position:absolute; left: 10px; bottom: 54px; width: min(600px, calc(100% - 20px)); max-height: min(680px, calc(100vh - 86px)); display:none; overflow:hidden; z-index: 68;
+    border-radius: 8px 8px 0 0; border: 1px solid var(--taskbar-border); background: var(--menu-bg); box-shadow: 0 20px 40px rgba(0,0,0,.22);
+  }
+  .miomos-start-menu.is-open { display:block; }
+  .miomos-start-menu-banner { display:flex; align-items:center; gap: 10px; padding: 12px; background: var(--menu-banner-bg); color: #fff; }
+  .miomos-start-menu-avatar { width: 36px; height: 36px; border-radius: 8px; background: linear-gradient(180deg, rgba(255,255,255,.30), rgba(255,255,255,.08)); color: #fff; }
+  .miomos-start-menu-copy strong { color:#fff; font-size: 14px; }
+  .miomos-start-menu-copy span { color: rgba(255,255,255,.9); font-size:11px; }
+  .miomos-start-menu-body { display:grid; grid-template-columns: minmax(0,1.65fr) 190px; min-height: 380px; }
+  .miomos-start-menu-main { padding: 12px; background: var(--menu-bg); color: var(--menu-text); overflow:auto; }
+  .miomos-start-menu-side { padding: 12px; background: var(--menu-side-bg); border-left:1px solid color-mix(in srgb, var(--taskbar-border) 30%, transparent); color: var(--menu-text); }
+  .miomos-start-side-section { display:grid; gap: 8px; margin-bottom: 12px; }
+  .miomos-start-side-section strong, .miomos-menu-heading { color: var(--menu-text); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
+  .miomos-start-section-tabs, .miomos-start-pills { display:flex; flex-wrap:wrap; gap:6px; }
+  .miomos-start-section-tab { min-height: 24px; padding: 0 10px; border-radius: 999px; border:1px solid var(--field-border); background: color-mix(in srgb, var(--surface) 85%, transparent); color: var(--button-text); }
+  .miomos-start-section-tab.is-active { background: var(--button-face-hover); font-weight:700; }
+  .miomos-start-search { display:flex; align-items:center; gap:8px; padding: 7px 9px; margin: 10px 0 12px; border:1px solid var(--field-border); background: var(--field-bg); border-radius: 6px; }
+  .miomos-start-search-input { border:0; background: transparent; color: var(--field-text); width:100%; min-height: 24px; padding:0; }
+  .miomos-start-search-clear { border:0; background: transparent; color: var(--accent); cursor:pointer; }
+  .miomos-shell-tool-grid, .miomos-menu-grid, .miomos-directory-grid, .miomos-icon-grid { display:grid; gap: 8px; grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .miomos-shell-tool-btn em { color: var(--muted); font-style: normal; font-size: 10px; }
+  .miomos-start-empty { padding: 12px; border:1px dashed var(--field-border); border-radius:6px; color: var(--muted); }
+  .miomos-start-menu-footer { display:flex; align-items:center; justify-content:flex-end; gap: 8px; padding: 10px 12px; background: linear-gradient(180deg, color-mix(in srgb, var(--menu-side-bg) 78%, #fff 22%), color-mix(in srgb, var(--menu-side-bg) 94%, #d8e7f8 6%)); border-top:1px solid color-mix(in srgb, var(--taskbar-border) 26%, transparent); }
+  .miomos-start-footer-btn { min-height: 28px; padding: 0 12px; border-radius: 4px; }
+  .miomos-start-footer-btn.is-power { background: linear-gradient(180deg,#ffefcf,#e3a132); border-color:#a96c0c; color:#623a00; }
+  .miomos-start-footer-btn.is-secondary { background: linear-gradient(180deg,#ffffff,#e8eef6); }
+  .miomos-context-menu {
+    position:absolute; min-width: 220px; z-index: 72; padding: 6px; border-radius: 6px; border:1px solid var(--field-border); background: var(--menu-bg); box-shadow: var(--miomos-shadow);
+  }
+  .miomos-context-item { width:100%; min-height: 28px; display:grid; grid-template-columns: 18px 1fr auto; align-items:center; gap:8px; padding: 0 8px; border-radius: 4px; border:1px solid transparent; background: transparent; color: var(--menu-text); }
+  .miomos-context-item.is-separator { border-top:1px solid var(--border); border-radius:0; min-height:0; height:0; padding:0; margin:6px 0; }
+  .miomos-context-item.is-disabled { opacity:.5; cursor:default; }
+  .miomos-shell-dialog-mask { position:absolute; inset:0; z-index: 74; display:block; background: rgba(18,25,36,.10); }
+  .miomos-shell-dialog { position:absolute; width:min(430px, calc(100vw - 28px)); border-radius: 8px; border:1px solid var(--field-border); background: var(--dialog-bg); box-shadow: var(--miomos-shadow); }
+  .miomos-shell-dialog-header { display:flex; align-items:center; justify-content:space-between; gap:10px; min-height:32px; padding: 0 10px; background: var(--active-title); color: var(--taskbar-text); border-bottom:1px solid color-mix(in srgb, var(--field-border) 80%, transparent); cursor: grab; }
+  .miomos-shell-dialog-header strong { color: var(--taskbar-text); }
+  .miomos-shell-dialog-body { padding: 12px; color: var(--text); display:grid; gap: 10px; }
+  .miomos-shell-dialog-close { width: 22px; height: 22px; padding:0; border-radius:4px; color: var(--taskbar-text); border-color: rgba(255,255,255,.22); background: rgba(255,255,255,.12); }
+  .miomos-terminal-viewport { width:100%; min-height: 340px; border-radius: 6px; border:1px solid var(--terminal-border); background: linear-gradient(180deg, color-mix(in srgb, var(--terminal-bg) 90%, #fff 10%), var(--terminal-bg)); box-shadow: inset 0 1px 0 rgba(255,255,255,.08); overflow:hidden; position:relative; }
+  .miomos-terminal-host { position:absolute; inset: 0; padding: 10px 12px; }
+  .miomos-terminal-statusline { position:absolute; left: 10px; right: 10px; bottom: 8px; display:flex; align-items:center; gap:8px; padding:4px 8px; border-radius: 999px; background: color-mix(in srgb, var(--terminal-bg) 74%, transparent); color: color-mix(in srgb, var(--terminal-fg) 78%, transparent); }
+  .miomos-terminal-dot { width: 8px; height: 8px; border-radius:999px; background: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
+  .miomos-ui-theme-list { display:grid; gap: 8px; }
+  .miomos-ui-theme-sample { display:flex; align-items:center; gap: 6px; margin-top: 8px; }
+  .miomos-ui-theme-sample i { display:inline-block; width: 26px; height: 14px; border-radius: 999px; border:1px solid var(--border); }
+  .miomos-ui-command-item em { display:block; margin-top:4px; color: var(--accent); font-size: 10px; }
+  .miomos-root[data-theme-mode="light"] .miomos-pill,
+  .miomos-root[data-theme-mode="light"] .miomos-status-pill,
+  .miomos-root[data-theme-mode="light"] .miomos-permission-pill,
+  .miomos-root[data-theme-mode="light"] .miomos-preview-chip,
+  .miomos-root[data-theme-mode="light"] .miomos-entry-meta,
+  .miomos-root[data-theme-mode="light"] .miomos-tray-chip,
+  .miomos-root[data-theme-mode="light"] .miomos-notice-badge,
+  .miomos-root[data-theme-mode="light"] .miomos-account-badge { color: var(--button-text); background: color-mix(in srgb, var(--surface-soft) 84%, #fff 16%); }
+  .miomos-root[data-theme-mode="light"] .miomos-menu-button,
+  .miomos-root[data-theme-mode="light"] .miomos-task-overflow-btn,
+  .miomos-root[data-theme-mode="light"] .miomos-task-button,
+  .miomos-root[data-theme-mode="light"] .miomos-tray-clock,
+  .miomos-root[data-theme-mode="light"] .miomos-tray-chip,
+  .miomos-root[data-theme-mode="light"] .miomos-taskbar-utility-btn { color: #fff; }
+  .miomos-root[data-theme-mode="light"] .miomos-start-menu-side .miomos-start-side-link,
+  .miomos-root[data-theme-mode="light"] .miomos-menu-card,
+  .miomos-root[data-theme-mode="light"] .miomos-notice-item,
+  .miomos-root[data-theme-mode="light"] .miomos-account-menu-item,
+  .miomos-root[data-theme-mode="light"] .miomos-start-recent-item,
+  .miomos-root[data-theme-mode="light"] .miomos-shell-tool-btn { color: var(--menu-text); }
+  .miomos-root[data-theme-mode="light"] .miomos-start-menu-copy strong,
+  .miomos-root[data-theme-mode="light"] .miomos-start-menu-copy span,
+  .miomos-root[data-theme-mode="light"] .miomos-taskbar-usercopy strong,
+  .miomos-root[data-theme-mode="light"] .miomos-taskbar-usercopy span { color: inherit; }
+  .miomos-root[data-theme-mode="light"] .miomos-shell-dialog-copy,
+  .miomos-root[data-theme-mode="light"] .miomos-kpi-copy,
+  .miomos-root[data-theme-mode="light"] .miomos-surface-title span,
+  .miomos-root[data-theme-mode="light"] .miomos-window-title span,
+  .miomos-root[data-theme-mode="light"] .miomos-menu-copy span,
+  .miomos-root[data-theme-mode="light"] .miomos-start-side-section strong + span,
+  .miomos-root[data-theme-mode="light"] .miomos-save-status,
+  .miomos-root[data-theme-mode="light"] .miomos-notice-item span,
+  .miomos-root[data-theme-mode="light"] .miomos-account-menu-item span { color: var(--muted); }
+  .miomos-root[data-theme-mode="dark"] .miomos-window-body,
+  .miomos-root[data-theme-mode="dark"] .miomos-card,
+  .miomos-root[data-theme-mode="dark"] .miomos-setting-card,
+  .miomos-root[data-theme-mode="dark"] .miomos-shell-tool-btn,
+  .miomos-root[data-theme-mode="dark"] .miomos-menu-card,
+  .miomos-root[data-theme-mode="dark"] .miomos-notice-item,
+  .miomos-root[data-theme-mode="dark"] .miomos-account-menu-item { color: var(--text); }
+  .miomos-root[data-theme-mode="dark"] .miomos-start-menu-side { color: var(--menu-text); }
+  .miomos-root[data-theme-mode="dark"] .miomos-taskbar,
+  .miomos-root[data-theme-mode="dark"] .miomos-start-menu,
+  .miomos-root[data-theme-mode="dark"] .miomos-taskbar-flyout,
+  .miomos-root[data-theme-mode="dark"] .miomos-context-menu,
+  .miomos-root[data-theme-mode="dark"] .miomos-shell-dialog { box-shadow: 0 20px 42px rgba(0,0,0,.32); }
+  @media (max-width: 1120px) {
+    .miomos-settings-grid, .miomos-shell-tool-grid, .miomos-menu-grid, .miomos-directory-grid, .miomos-icon-grid { grid-template-columns: minmax(0,1fr); }
+    .miomos-start-menu-body { grid-template-columns: minmax(0,1fr); }
+    .miomos-start-menu-side { border-left: 0; border-top:1px solid var(--border); }
+  }
+  @media (max-width: 840px) {
+    .miomos-taskbar { grid-template-columns: 1fr; height: auto; padding: 8px; gap: 8px; }
+    .miomos-stage { bottom: 88px; }
+    .miomos-taskbar-meta, .miomos-taskbar-left { justify-content: space-between; }
+    .miomos-taskband { width:100%; }
+    .miomos-taskbar-flyout { width: min(340px, calc(100vw - 28px)); }
+  }
+</style>
 <div hidden id="miomosMobileContract" data-mobile-ready="1" data-window-fade="off">Mobile-friendly render prep</div>
 <div hidden id="miomosContractTokens"
   data-miomos-single-socket="1"
@@ -50,6 +414,7 @@
   data-titlebar-style="{{titlebarStyle}}"
   data-native-shell="1"
   data-window-manager-engine="miomos-native-vue-css"
+  :data-theme-key="settingsForm.themeKey || """
   :data-mobile-layout="isCompactViewport ? '1' : '0'">
   <span hidden data-launch-app="terminal"></span>
   <span hidden data-launch-app="ui-library"></span>
@@ -980,8 +1345,8 @@
         entryStatusLabel: function(status){ if (status==='available') return 'Ready'; return String(status || ''); },
         entryGlyphClass: function(kind){ kind=String(kind || 'app'); return 'miomos-entry-glyph--' + kind; },
         installWindowListeners: function(){ var self=this; this._miomosKeydown=function(ev){ self.onGlobalKeydown(ev); }; window.addEventListener('resize', function(){ self.syncViewportMode(); self.onWindowResize(); }); window.addEventListener('keydown', this._miomosKeydown); document.addEventListener('pointerdown', function(ev){ if (self.contextMenu.visible && !(ev.target && ev.target.closest && ev.target.closest('.miomos-context-menu'))) self.closeContextMenu('pointerdown'); if (!root.contains(ev.target) && self.menuOpen) { self.menuOpen=false; self.persistUiState('outside-click'); } if ((self.panels.notifications || self.panels.account) && !(ev.target && ev.target.closest && ev.target.closest('.miomos-taskbar-flyout')) && !(ev.target && ev.target.closest && ev.target.closest('.miomos-taskbar-utility-btn'))) { self.closeFlyouts(); } }); window.addEventListener('beforeunload', function(){ self.shouldReconnect=false; self.saveLayoutLocal(); self.saveUiStateLocal(); self.clearReconnectTimer(); self.clearHeartbeat(); self.clearStaleMonitor(); self.stopTerminalPolling(); }); },
-        applySettings: function(){ var self=this, theme=this.currentThemeDefinition || {}; root.dataset.density=this.settingsForm.density || 'dense'; root.dataset.wallpaper=this.settingsForm.wallpaper || 'midnight-clinic'; root.dataset.animations=this.settingsForm.animations || 'standard'; root.dataset.windowPreset=this.settingsForm.windowPreset || 'analyst'; root.dataset.snapMode=this.settingsForm.snapMode || 'quadrant'; root.dataset.motionProfile=this.settingsForm.motionProfile || 'standard'; root.dataset.titlebarStyle=this.settingsForm.titlebarStyle || 'accent'; root.dataset.themeMode=theme.mode || 'dark'; root.style.setProperty('--miomos-font', this.settingsForm.fontFamily || 'Segoe UI'); root.style.fontSize=(parseInt(this.settingsForm.fontSize || '13',10) || 13) + 'px'; this.applyThemeVariables(theme); this.syncViewportMode(); this.windows.forEach(function(win){ if (win.appKey==='terminal' && !win.closed) { self.ensureXtermMounted(win.id); self.applyXtermProfile(win.id); } }); },
-        applyThemeVariables: function(theme){ theme=theme || {}; root.style.setProperty('--desktop', theme.desktop || '#0b1320'); root.style.setProperty('--surface', theme.surface || 'rgba(15, 23, 36, 0.95)'); root.style.setProperty('--surface-alt', theme.surfaceAlt || 'rgba(11, 18, 29, 0.96)'); root.style.setProperty('--surface-soft', theme.surfaceSoft || 'rgba(255,255,255,0.03)'); root.style.setProperty('--border', theme.border || 'rgba(148,163,184,0.18)'); root.style.setProperty('--text', theme.text || '#ecf3ff'); root.style.setProperty('--muted', theme.muted || '#93a7c4'); root.style.setProperty('--accent', theme.accent || '#5f8dff'); root.style.setProperty('--accent-soft', theme.accentSoft || 'rgba(95,141,255,0.18)'); root.style.setProperty('--accent-strong', theme.accentStrong || 'rgba(95,141,255,0.34)'); root.style.setProperty('--title-accent', theme.accent || '#5f8dff'); root.style.setProperty('--active-title', theme.titleActive || 'linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.03)), linear-gradient(90deg, #5f8dff, rgba(255,255,255,0.02) 40%)'); root.style.setProperty('--inactive-title', theme.titleInactive || 'linear-gradient(180deg, rgba(91,103,122,0.42), rgba(45,56,72,0.36))'); root.style.setProperty('--miomos-shadow', theme.shadow || '0 18px 42px rgba(0,0,0,.26)'); },
+        applySettings: function(){ var self=this, theme=this.currentThemeDefinition || {}; root.dataset.density=this.settingsForm.density || 'dense'; root.dataset.wallpaper=this.settingsForm.wallpaper || 'midnight-clinic'; root.dataset.animations=this.settingsForm.animations || 'standard'; root.dataset.windowPreset=this.settingsForm.windowPreset || 'analyst'; root.dataset.snapMode=this.settingsForm.snapMode || 'quadrant'; root.dataset.motionProfile=this.settingsForm.motionProfile || 'standard'; root.dataset.titlebarStyle=this.settingsForm.titlebarStyle || 'accent'; root.dataset.themeMode=theme.mode || 'dark'; root.dataset.themeKey=this.settingsForm.themeKey || theme.key || ''; root.style.setProperty('--miomos-font', this.settingsForm.fontFamily || 'Tahoma'); root.style.fontSize=(parseInt(this.settingsForm.fontSize || '13',10) || 13) + 'px'; this.applyThemeVariables(theme); this.syncViewportMode(); this.windows.forEach(function(win){ if (win.appKey==='terminal' && !win.closed) { self.ensureXtermMounted(win.id); self.applyXtermProfile(win.id); } }); },
+        applyThemeVariables: function(theme){ theme=theme || {}; root.style.setProperty('--desktop', theme.desktop || '#0b1320'); root.style.setProperty('--surface', theme.surface || 'rgba(15, 23, 36, 0.95)'); root.style.setProperty('--surface-alt', theme.surfaceAlt || 'rgba(11, 18, 29, 0.96)'); root.style.setProperty('--surface-soft', theme.surfaceSoft || 'rgba(255,255,255,0.03)'); root.style.setProperty('--border', theme.border || 'rgba(148,163,184,0.18)'); root.style.setProperty('--text', theme.text || '#ecf3ff'); root.style.setProperty('--muted', theme.muted || '#93a7c4'); root.style.setProperty('--accent', theme.accent || '#5f8dff'); root.style.setProperty('--accent-soft', theme.accentSoft || 'rgba(95,141,255,0.18)'); root.style.setProperty('--accent-strong', theme.accentStrong || 'rgba(95,141,255,0.34)'); root.style.setProperty('--title-accent', theme.accent || '#5f8dff'); root.style.setProperty('--active-title', theme.titleActive || 'linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.03)), linear-gradient(90deg, #5f8dff, rgba(255,255,255,0.02) 40%)'); root.style.setProperty('--inactive-title', theme.titleInactive || 'linear-gradient(180deg, rgba(91,103,122,0.42), rgba(45,56,72,0.36))'); root.style.setProperty('--miomos-shadow', theme.shadow || '0 18px 42px rgba(0,0,0,.26)'); root.style.setProperty('--icon', theme.icon || 'linear-gradient(180deg,#4ea1ef,#1d67ba)'); },
         syncViewportMode: function(){ this.viewportWidth = (window.innerWidth || document.documentElement.clientWidth || 1400); root.dataset.mobileLayout = this.isCompactViewport ? '1' : '0'; },
         focusWindow: function(id){ var win=this.windows.find(function(w){ return w.id===id; }); if (!win || win.closed) return; this.activeWindowId=win.id; this.zCounter+=1; win.z=this.zCounter; if (win.appKey==='terminal') this.terminal=this.ensureTerminalState(win.id); this.persistUiState('focus-window'); },
         normalizeTaskOrder: function(){ var used={}, next=1; this.windows.slice().sort(function(a,b){ var ao=Number(a.taskOrder||0), bo=Number(b.taskOrder||0); if (ao && bo && ao!==bo) return ao-bo; return Number(a.z||0)-Number(b.z||0); }).forEach(function(win){ var slot=Number(win.taskOrder||0); if (!slot || used[slot]) { while (used[next]) next += 1; slot=next; } used[slot]=1; win.taskOrder=slot; if (slot>=next) next=slot+1; }); },

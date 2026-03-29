@@ -589,3 +589,11 @@ Guardrails:
 - shell notification counts and copy must stay server-authored in MUMPS rather than computed only in the browser
 - the taskbar account menu should use existing desktop commands and signout flows instead of inventing a second auth path
 - placeholder-only desktop entries should not be reintroduced once a surface is removed from the curated shell
+
+
+## ROI60 - Theme legibility hardening
+- Added authored theme CSS to the desktop template so shell surfaces remain readable before runtime theme variables apply.
+- Strengthened muted, border, and field contrast for light and dark themes.
+- Added explicit semantic contrast rules for metadata, badges, pills, notices, account menu items, and table headings.
+- Bound theme key on the root shell element and propagated icon/theme variables during runtime application.
+- Changed fallback theme default to clinical-blue for more sensible daytime contrast.

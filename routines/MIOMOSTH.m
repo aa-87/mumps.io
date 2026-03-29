@@ -6,9 +6,9 @@ CURRENT(STATE,CONF)
 	SET USER=$GET(STATE("principal"))
 	SET KEY=$GET(^MIO("MIOMOS","PREF",USER,"theme"))
 	IF $$VALID(KEY) QUIT KEY
-	SET KEY=$GET(CONF("miomos","theme","default"),"midnight-professional")
+	SET KEY=$GET(CONF("miomos","theme","default"),"clinical-blue")
 	IF $$VALID(KEY) QUIT KEY
-	QUIT "midnight-professional"
+	QUIT "clinical-blue"
 	;
 SAVE(USER,KEY,ERR)
 	KILL ERR
@@ -30,7 +30,7 @@ THEME(KEY,OUT)
 	. SET OUT("key")="midnight-professional",OUT("label")="Midnight Professional",OUT("mode")="dark",OUT("family")="7.css Noir",OUT("story")="Dark flagship palette for long operational sessions.",OUT("chrome")="glass"
 	. SET OUT("accent")="#5f8dff",OUT("accentSoft")="rgba(95,141,255,.18)",OUT("accentStrong")="rgba(95,141,255,.34)"
 	. SET OUT("wallpaper")="midnight-clinic",OUT("desktop")="#0b1320",OUT("surface")="rgba(15,23,36,.95)",OUT("surfaceAlt")="rgba(11,18,29,.96)"
-	. SET OUT("border")="rgba(148,163,184,.18)",OUT("text")="#ecf3ff",OUT("muted")="#93a7c4",OUT("icon")="linear-gradient(180deg,#7ea6ff,#4a73e6)"
+	. SET OUT("border")="rgba(166,182,204,.28)",OUT("text")="#f1f6ff",OUT("muted")="#b8c7dc",OUT("icon")="linear-gradient(180deg,#7ea6ff,#4a73e6)"
 	. SET OUT("titleActive")="linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.03)), linear-gradient(90deg, #5f8dff, rgba(255,255,255,0.02) 38%)"
 	. SET OUT("titleInactive")="linear-gradient(180deg, rgba(91,103,122,0.42), rgba(45,56,72,0.36))"
 	. SET OUT("shadow")="0 18px 42px rgba(0,0,0,.26)"
@@ -38,19 +38,19 @@ THEME(KEY,OUT)
 	. SET OUT("key")="slate-light",OUT("label")="Slate Light",OUT("mode")="light",OUT("family")="7.css Porcelain",OUT("story")="Bright clinical shell with restrained blue-gray chrome and darker body text.",OUT("chrome")="solid"
 	. SET OUT("accent")="#2f6fed",OUT("accentSoft")="rgba(47,111,237,.14)",OUT("accentStrong")="rgba(47,111,237,.24)"
 	. SET OUT("wallpaper")="soft-grid",OUT("desktop")="#e8eef6",OUT("surface")="rgba(255,255,255,.97)",OUT("surfaceAlt")="rgba(244,247,251,.96)",OUT("surfaceSoft")="rgba(234,240,247,.92)"
-	. SET OUT("border")="rgba(74,96,124,.22)",OUT("text")="#0f1c2a",OUT("muted")="#4e627a",OUT("icon")="linear-gradient(180deg,#5a8ff2,#2b63d4)"
+	. SET OUT("border")="rgba(48,78,112,.30)",OUT("text")="#081b2d",OUT("muted")="#36506c",OUT("icon")="linear-gradient(180deg,#5a8ff2,#2b63d4)"
 	. SET OUT("titleActive")="linear-gradient(180deg,#ffffff,#e8effb)",OUT("titleInactive")="linear-gradient(180deg,#f3f6fa,#e4eaf1)",OUT("shadow")="0 16px 36px rgba(8,18,33,.18)"
 	IF $GET(KEY)="clinical-blue" DO  QUIT
 	. SET OUT("key")="clinical-blue",OUT("label")="Clinical Blue",OUT("mode")="light",OUT("family")="7.css Classic",OUT("story")="Classic cobalt title bars with stronger body contrast for long daytime sessions.",OUT("chrome")="accent"
 	. SET OUT("accent")="#1384d7",OUT("accentSoft")="rgba(19,132,215,.16)",OUT("accentStrong")="rgba(19,132,215,.28)"
 	. SET OUT("wallpaper")="aurora-blue",OUT("desktop")="#dfeef8",OUT("surface")="rgba(255,255,255,.97)",OUT("surfaceAlt")="rgba(241,247,252,.95)",OUT("surfaceSoft")="rgba(231,240,247,.92)"
-	. SET OUT("border")="rgba(54,103,132,.22)",OUT("text")="#102738",OUT("muted")="#4b6779",OUT("icon")="linear-gradient(180deg,#46a8ec,#0a74c6)"
+	. SET OUT("border")="rgba(41,84,117,.30)",OUT("text")="#0a2234",OUT("muted")="#34536b",OUT("icon")="linear-gradient(180deg,#46a8ec,#0a74c6)"
 	. SET OUT("titleActive")="linear-gradient(180deg,#ffffff,#edf7fd)",OUT("titleInactive")="linear-gradient(180deg,#edf5fa,#d8e8f4)",OUT("shadow")="0 16px 36px rgba(7,62,96,.16)"
 	IF $GET(KEY)="surgical-teal" DO  QUIT
 	. SET OUT("key")="surgical-teal",OUT("label")="Surgical Teal",OUT("mode")="dark",OUT("family")="7.css Surgical",OUT("story")="Cool green-dark chrome tuned for dense workstation tasks.",OUT("chrome")="accent"
 	. SET OUT("accent")="#14b8a6",OUT("accentSoft")="rgba(20,184,166,.18)",OUT("accentStrong")="rgba(20,184,166,.30)"
 	. SET OUT("wallpaper")="aurora-blue",OUT("desktop")="#07141a",OUT("surface")="rgba(8,24,29,.95)",OUT("surfaceAlt")="rgba(6,18,23,.96)"
-	. SET OUT("border")="rgba(89,161,154,.22)",OUT("text")="#e7fcf8",OUT("muted")="#8ab4b0",OUT("icon")="linear-gradient(180deg,#2dd4bf,#0f766e)"
+	. SET OUT("border")="rgba(98,171,163,.28)",OUT("text")="#eefefb",OUT("muted")="#b4d3d0",OUT("icon")="linear-gradient(180deg,#2dd4bf,#0f766e)"
 	. SET OUT("titleActive")="linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.02)), linear-gradient(90deg,#14b8a6, rgba(255,255,255,0.02) 42%)"
 	. SET OUT("titleInactive")="linear-gradient(180deg, rgba(71,98,102,0.36), rgba(32,46,48,0.34))",OUT("shadow")="0 18px 42px rgba(0,0,0,.28)"
 	IF $GET(KEY)="high-contrast" DO  QUIT
@@ -70,7 +70,7 @@ THEME(KEY,OUT)
 	. SET OUT("key")="violet-dusk",OUT("label")="Violet Dusk",OUT("mode")="dark",OUT("family")="MIOMOS Modern",OUT("story")="A softer modern palette for design review and library work.",OUT("chrome")="glass"
 	. SET OUT("accent")="#8b5cf6",OUT("accentSoft")="rgba(139,92,246,.18)",OUT("accentStrong")="rgba(139,92,246,.30)"
 	. SET OUT("wallpaper")="midnight-clinic",OUT("desktop")="#110f1d",OUT("surface")="rgba(21,18,36,.95)",OUT("surfaceAlt")="rgba(17,15,29,.96)"
-	. SET OUT("border")="rgba(173,153,255,.18)",OUT("text")="#f3eeff",OUT("muted")="#b8abd8",OUT("icon")="linear-gradient(180deg,#a78bfa,#7c3aed)"
+	. SET OUT("border")="rgba(183,168,255,.26)",OUT("text")="#f7f2ff",OUT("muted")="#cdc2e8",OUT("icon")="linear-gradient(180deg,#a78bfa,#7c3aed)"
 	. SET OUT("titleActive")="linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.02)), linear-gradient(90deg,#8b5cf6, rgba(255,255,255,0.02) 42%)"
 	. SET OUT("titleInactive")="linear-gradient(180deg, rgba(94,82,134,0.36), rgba(53,43,80,0.34))",OUT("shadow")="0 18px 44px rgba(5,3,12,.30)"
 	QUIT
