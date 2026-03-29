@@ -94,10 +94,13 @@ WMLAYOUT(STATE,CONF,TREE,OUT,ERR)
 	QUIT 1
 	;
 TERMOPEN(STATE,CONF,TREE,OUT,ERR)
-	NEW TERMOUT,TERMID
+	NEW TERMOUT,TERMID,COLS,ROWS
 	IF '$$HAS^MIOMOSPERM(.STATE,"terminal.use") SET ERR("error")="forbidden",ERR("detail")="terminal.use",ERR("status")=403 QUIT 0
 	SET TERMID=$GET(TREE("terminalId"))
-	IF +$GET(TREE("forceNew")),TERMID="" SET TERMID="__new__"
+	SET COLS=$$COLS^MIOMOSTERM(+$GET(TREE("cols")))
+	SET ROWS=$$ROWS^MIOMOSTERM(+$GET(TREE("rows")))
+	IF COLS>0 SET STATE("terminal","cols")=COLS
+	IF ROWS>0 SET STATE("terminal","rows")=ROWS
 	IF '$$OPEN^MIOMOSTPIPE(.STATE,.CONF,TERMID,.TERMOUT,.ERR) SET ERR("status")=400 QUIT 0
 	MERGE OUT("terminal")=TERMOUT
 	SET OUT("command")="terminal.open"

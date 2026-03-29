@@ -26,9 +26,6 @@ CONFDEF(CONF)
 	IF $GET(CONF("miomos","route","adminInviteCreate"))="" SET CONF("miomos","route","adminInviteCreate")="/api/miomos/admin/invites/create"
 	IF $GET(CONF("miomos","route","adminInvites"))="" SET CONF("miomos","route","adminInvites")="/api/miomos/admin/invites"
 	IF $GET(CONF("miomos","route","adminResetRequest"))="" SET CONF("miomos","route","adminResetRequest")="/api/miomos/admin/users/reset/request"
-	IF $GET(CONF("miomos","route","adminUserRoles"))="" SET CONF("miomos","route","adminUserRoles")="/api/miomos/admin/users/roles"
-	IF $GET(CONF("miomos","route","adminGuestToggle"))="" SET CONF("miomos","route","adminGuestToggle")="/api/miomos/admin/config/guest-login"
-	IF $GET(CONF("miomos","route","adminReports"))="" SET CONF("miomos","route","adminReports")="/api/miomos/admin/reports"
 	IF $GET(CONF("miomos","route","observSummary"))="" SET CONF("miomos","route","observSummary")="/api/miomos/observability/summary"
 	IF $GET(CONF("miomos","route","accessExport"))="" SET CONF("miomos","route","accessExport")="/api/miomos/observability/access/export"
 	IF $GET(CONF("miomos","route","errorExport"))="" SET CONF("miomos","route","errorExport")="/api/miomos/observability/error/export"
@@ -67,13 +64,14 @@ CONFDEF(CONF)
 	IF $GET(CONF("miomos","terminal","pipe","readPolls"))="" SET CONF("miomos","terminal","pipe","readPolls")=8
 	IF $GET(CONF("miomos","terminal","pipe","drainPause"))="" SET CONF("miomos","terminal","pipe","drainPause")=.04
 	IF $GET(CONF("miomos","terminal","pipe","sessionIdleSeconds"))="" SET CONF("miomos","terminal","pipe","sessionIdleSeconds")=900
-	IF $GET(CONF("miomos","terminal","default","fontFamily"))="" SET CONF("miomos","terminal","default","fontFamily")="JetBrains Mono"
+	IF $GET(CONF("miomos","terminal","default","fontFamily"))="" SET CONF("miomos","terminal","default","fontFamily")="Consolas"
 	IF $GET(CONF("miomos","terminal","default","fontSize"))="" SET CONF("miomos","terminal","default","fontSize")=13
 	IF $GET(CONF("miomos","terminal","default","cursorBlink"))="" SET CONF("miomos","terminal","default","cursorBlink")=1
 	IF $GET(CONF("miomos","terminal","default","cursorStyle"))="" SET CONF("miomos","terminal","default","cursorStyle")="block"
 	IF $GET(CONF("miomos","terminal","default","scrollback"))="" SET CONF("miomos","terminal","default","scrollback")=3000
 	IF $GET(CONF("miomos","terminal","default","palette"))="" SET CONF("miomos","terminal","default","palette")="midnight-blue"
 	IF $GET(CONF("miomos","terminal","default","renderer"))="" SET CONF("miomos","terminal","default","renderer")="canvas"
+	IF $GET(CONF("miomos","terminal","default","sizeMode"))="" SET CONF("miomos","terminal","default","sizeMode")="fit-container"
 	IF $GET(CONF("miomos","terminal","default","unicode"))="" SET CONF("miomos","terminal","default","unicode")="unicode11"
 	IF $GET(CONF("miomos","terminal","default","rows"))="" SET CONF("miomos","terminal","default","rows")=28
 	IF $GET(CONF("miomos","terminal","default","cols"))="" SET CONF("miomos","terminal","default","cols")=120
@@ -103,8 +101,6 @@ CONFDEF(CONF)
 	IF $GET(CONF("miomos","localAuth","guestLoginEnabled"))="" SET CONF("miomos","localAuth","guestLoginEnabled")=1
 	IF $GET(CONF("miomos","bootstrapAuth","enabled"))="" SET CONF("miomos","bootstrapAuth","enabled")=1
 	IF $GET(CONF("miomos","bootstrapAuth","seedIfMissing"))="" SET CONF("miomos","bootstrapAuth","seedIfMissing")=1
-	IF $GET(CONF("miomos","bootstrapAuth","syncOnBoot"))="" SET CONF("miomos","bootstrapAuth","syncOnBoot")=1
-	IF $GET(CONF("miomos","bootstrapAuth","showSeededCredentials"))="" SET CONF("miomos","bootstrapAuth","showSeededCredentials")=1
 	IF $GET(CONF("miomos","bootstrapAuth","admin","username"))="" SET CONF("miomos","bootstrapAuth","admin","username")="admin"
 	IF $GET(CONF("miomos","bootstrapAuth","admin","displayName"))="" SET CONF("miomos","bootstrapAuth","admin","displayName")="Administrator"
 	IF $GET(CONF("miomos","bootstrapAuth","admin","password"))="" SET CONF("miomos","bootstrapAuth","admin","password")="admin123!"
@@ -148,25 +144,13 @@ CONFDEF(CONF)
 	QUIT
 	;
 INIT(CONF)
-	SET CONF("miomos","profile")="prod"
-	SET CONF("miomos","localAuth","enabled")=1
-	SET CONF("miomos","dev","authDisabled")=0
-	SET CONF("miomos","bootstrapAuth","showSeededCredentials")=1
-	;
-	SET CONF("miomos","bootstrapAuth","admin","username")="admin"
-	SET CONF("miomos","bootstrapAuth","admin","password")="admin123!"
-	SET CONF("miomos","bootstrapAuth","user","username")="user"
-	SET CONF("miomos","bootstrapAuth","user","password")="user123!"
-	SET CONF("miomos","bootstrapAuth","guest","username")="guest"
-	SET CONF("miomos","bootstrapAuth","guest","password")="guest123!"
-	;
 	DO CONFDEF(.CONF)
-	;
+	DO START^MIOTPL(.CONF)
 	QUIT
 	;
 REG(CONF)
 	NEW EN,AUTHREQ,META,WSMETA
-	DO INIT(.CONF)
+	DO CONFDEF(.CONF)
 	SET EN=+$GET(CONF("miomos","enabled"),1)
 	IF EN'=1 QUIT
 	IF $$DEVAUTHOFF(.CONF)!$$LOCALAUTHEN(.CONF) DO DEVEXEMPT(.CONF)
@@ -212,12 +196,6 @@ REG(CONF)
 	DO ADDM^MIOROUTE("GET",$GET(CONF("miomos","route","adminInvites")),"ADMININVITES^MIOMOSAPI",.META)
 	KILL META SET META("authRequired")=AUTHREQ
 	DO ADDM^MIOROUTE("POST",$GET(CONF("miomos","route","adminResetRequest")),"ADMINRESETREQUEST^MIOMOSAPI",.META)
-	KILL META SET META("authRequired")=AUTHREQ
-	DO ADDM^MIOROUTE("POST",$GET(CONF("miomos","route","adminUserRoles")),"ADMINUSERROLES^MIOMOSAPI",.META)
-	KILL META SET META("authRequired")=AUTHREQ
-	DO ADDM^MIOROUTE("POST",$GET(CONF("miomos","route","adminGuestToggle")),"ADMINGUESTTOGGLE^MIOMOSAPI",.META)
-	KILL META SET META("authRequired")=AUTHREQ
-	DO ADDM^MIOROUTE("GET",$GET(CONF("miomos","route","adminReports")),"ADMINREPORTS^MIOMOSAPI",.META)
 	KILL META SET META("authRequired")=AUTHREQ
 	DO ADDM^MIOROUTE("GET",$GET(CONF("miomos","route","observSummary")),"OBSSUMMARY^MIOMOSAPI",.META)
 	KILL META SET META("authRequired")=AUTHREQ
@@ -269,9 +247,6 @@ DEVEXEMPT(CONF)
 	DO ADDEXEMPT(.CONF,$GET(CONF("miomos","route","adminInviteCreate")))
 	DO ADDEXEMPT(.CONF,$GET(CONF("miomos","route","adminInvites")))
 	DO ADDEXEMPT(.CONF,$GET(CONF("miomos","route","adminResetRequest")))
-	DO ADDEXEMPT(.CONF,$GET(CONF("miomos","route","adminUserRoles")))
-	DO ADDEXEMPT(.CONF,$GET(CONF("miomos","route","adminGuestToggle")))
-	DO ADDEXEMPT(.CONF,$GET(CONF("miomos","route","adminReports")))
 	DO ADDEXEMPT(.CONF,$GET(CONF("miomos","route","observSummary")))
 	DO ADDEXEMPT(.CONF,$GET(CONF("miomos","route","accessExport")))
 	DO ADDEXEMPT(.CONF,$GET(CONF("miomos","route","errorExport")))
@@ -338,5 +313,4 @@ RESPERR(DEV,CONF,STATUS,CODE,DETAIL,CTX)
 	DO RESPJSONX^MIOHTTP(.DEV,.CONF,+$GET(STATUS,500),.OBJ,$GET(CTX("request_id")),.CTX)
 	SET CTX("status")=+$GET(STATUS,500)
 	QUIT
-	;
 	;

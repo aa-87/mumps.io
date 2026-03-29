@@ -334,8 +334,9 @@ TERMINAL(STATE,CONF,ROOT)
 	SET @ROOT@("shell")=$GET(CONF("miomos","terminal","pipe","shell"),"/bin/sh")
 	SET @ROOT@("bridge")="mumps-owned"
 	SET @ROOT@("launchMode")=$SELECT($GET(STATE("terminalLaunchMode"))'="":$GET(STATE("terminalLaunchMode")),$GET(STATE("shell","terminalLaunchMode"))'="":$GET(STATE("shell","terminalLaunchMode")),1:"resume-last")
-	DO LIST^MIOMOSTERM(.STATE,.SESS)
+	DO LIST^MIOMOSPERM(.STATE,.SESS)
 	MERGE @ROOT@("sessions")=SESS
+	QUIT:$QUIT 1
 	QUIT
 	;
 	;

@@ -557,43 +557,8 @@ TODO next:
   - seeded credential warnings
   - stricter production defaults for guest quick login
 
-
-## ROI55 — Dedicated terminal window sessions
-
-Completed after ROI54:
-
-- launching the Terminal app now opens a new MIOMOS window instead of restoring the shared singleton terminal surface
-- new launches request a fresh backend PIPE session using `terminal.open` with `forceNew=1`
-- each terminal window now owns its own xterm.js renderer, transcript, input history, terminalId, and lifecycle state in the Vue shell
-- closing a terminal window closes that specific backend terminal session instead of leaving a shared session behind
-- the websocket command path preserves explicit reattach/poll/input/resize behavior by terminalId, so multiple terminal windows can coexist under the single MIOMOS websocket
-
-Guardrails:
-
-- default `terminal.open` without `forceNew` should continue to attach to an existing session when a specific terminal window wants to reuse its current terminalId
-- a fresh launch from the shell must not reuse `^MIO("MIOMOS","PIPE","BYSESSION",sessionId)`; it must request a new session explicitly
-- terminal taskbar entries should reflect real independent windows rather than one global terminal model
-
-
-## ROI57 — Taskbar notification center and account menu
-
-Completed after ROI56:
-
-- MIOMOS now exposes a server-authored shell notification center with taskbar flyout metadata for collaboration readiness, terminal posture, and admin workflow attention
-- the taskbar now has a real account menu with launch actions for Settings, Collaboration, Terminal, Switch User, Sign Out, and power options
-- per-user shell settings now include notification preview count, account-name visibility, and notification badge visibility
-- the remaining roadmap-only placeholder apps and the Planned surfaces workspace block were removed from the desktop shell
-
-Guardrails:
-
-- shell notification counts and copy must stay server-authored in MUMPS rather than computed only in the browser
-- the taskbar account menu should use existing desktop commands and signout flows instead of inventing a second auth path
-- placeholder-only desktop entries should not be reintroduced once a surface is removed from the curated shell
-
-
-## ROI60 - Theme legibility hardening
-- Added authored theme CSS to the desktop template so shell surfaces remain readable before runtime theme variables apply.
-- Strengthened muted, border, and field contrast for light and dark themes.
-- Added explicit semantic contrast rules for metadata, badges, pills, notices, account menu items, and table headings.
-- Bound theme key on the root shell element and propagated icon/theme variables during runtime application.
-- Changed fallback theme default to clinical-blue for more sensible daytime contrast.
+- **ROI62** — terminal defaults and fit-container sizing
+  - default terminal font becomes Consolas
+  - terminal sizing defaults to fit-container
+  - browser sends initial fitted cols/rows on terminal.open
+  - terminal default window opens slightly larger for better first-use readability

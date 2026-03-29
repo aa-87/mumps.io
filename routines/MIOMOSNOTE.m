@@ -9,7 +9,7 @@ META(STATE,CONF,OUT)
 	SET MAX=+$$PREVIEW($GET(STATE("shell","notificationPreviewCount"),$GET(CONF("miomos","settings","shell","notificationPreviewCount"),4)))
 	IF MAX<1 SET MAX=4
 	DO COUNTS^MIOMOSADMIN(.CNT)
-	DO LIST^MIOMOSTERM(.STATE,.TERM)
+	DO LIST^MIOMOSPERM(.STATE,.TERM)
 	SET N=0
 	IF $$HAS^MIOMOSPERM(.STATE,"chat.use") DO
 	. SET N=N+1

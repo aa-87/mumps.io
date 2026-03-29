@@ -4,12 +4,13 @@ MIOMOSTERM ; MIOMOS terminal foundation helpers
 LOADTERM(STATE,CONF)
 	NEW USER,DEF
 	SET USER=$GET(STATE("principal"))
-	SET DEF("fontFamily")=$GET(CONF("miomos","terminal","default","fontFamily"),"JetBrains Mono")
+	SET DEF("fontFamily")=$GET(CONF("miomos","terminal","default","fontFamily"),"Consolas")
 	SET DEF("fontSize")=+$GET(CONF("miomos","terminal","default","fontSize"),13)
 	SET DEF("cursorBlink")=+$GET(CONF("miomos","terminal","default","cursorBlink"),1)
 	SET DEF("cursorStyle")=$GET(CONF("miomos","terminal","default","cursorStyle"),"block")
 	SET DEF("scrollback")=+$GET(CONF("miomos","terminal","default","scrollback"),3000)
 	SET DEF("renderer")=$GET(CONF("miomos","terminal","default","renderer"),"canvas")
+	SET DEF("sizeMode")=$GET(CONF("miomos","terminal","default","sizeMode"),"fit-container")
 	SET DEF("unicode")=$GET(CONF("miomos","terminal","default","unicode"),"unicode11")
 	SET DEF("rows")=+$GET(CONF("miomos","terminal","default","rows"),28)
 	SET DEF("cols")=+$GET(CONF("miomos","terminal","default","cols"),120)
@@ -28,6 +29,8 @@ LOADTERM(STATE,CONF)
 	IF STATE("terminal","renderer")="" SET STATE("terminal","renderer")=DEF("renderer")
 	SET STATE("terminal","unicode")=$$UNICODEOK($$GETP(USER,"unicode",DEF("unicode")))
 	IF STATE("terminal","unicode")="" SET STATE("terminal","unicode")=DEF("unicode")
+	SET STATE("terminal","sizeMode")=$$SIZEOK($$GETP(USER,"sizeMode",DEF("sizeMode")))
+	IF STATE("terminal","sizeMode")="" SET STATE("terminal","sizeMode")=DEF("sizeMode")
 	SET STATE("terminal","rows")=+$$GETP(USER,"rows",DEF("rows"))
 	IF STATE("terminal","rows")<20 SET STATE("terminal","rows")=DEF("rows")
 	IF STATE("terminal","rows")>60 SET STATE("terminal","rows")=DEF("rows")
@@ -66,6 +69,9 @@ SAVEPROF(USER,TREE,OUT,ERR)
 	IF $DATA(TREE("renderer")) DO  QUIT:$GET(ERR("error"))'=""
 	. SET VAL=$$RENDEREROK($GET(TREE("renderer"))) IF VAL="" SET ERR("error")="terminal_renderer_invalid" QUIT
 	. SET ^MIO("MIOMOS","PREF",USER,"terminal","renderer")=VAL
+	IF $DATA(TREE("sizeMode")) DO  QUIT:$GET(ERR("error"))'=""
+	. SET VAL=$$SIZEOK($GET(TREE("sizeMode"))) IF VAL="" SET ERR("error")="terminal_size_mode_invalid" QUIT
+	. SET ^MIO("MIOMOS","PREF",USER,"terminal","sizeMode")=VAL
 	IF $DATA(TREE("unicode")) DO  QUIT:$GET(ERR("error"))'=""
 	. SET VAL=$$UNICODEOK($GET(TREE("unicode"))) IF VAL="" SET ERR("error")="terminal_unicode_invalid" QUIT
 	. SET ^MIO("MIOMOS","PREF",USER,"terminal","unicode")=VAL
@@ -93,12 +99,13 @@ CURRENT(USER,OUT)
 	;
 CATALOG(ROOT)
 	KILL @ROOT
-	DO OPTS($NAME(@ROOT@("fonts")),"JetBrains Mono^JetBrains Mono,IBM Plex Mono^IBM Plex Mono,Fira Code^Fira Code,Cascadia Mono^Cascadia Mono,Consolas^Consolas,Source Code Pro^Source Code Pro")
+	DO OPTS($NAME(@ROOT@("fonts")),"Consolas^Consolas,JetBrains Mono^JetBrains Mono,IBM Plex Mono^IBM Plex Mono,Fira Code^Fira Code,Cascadia Mono^Cascadia Mono,Source Code Pro^Source Code Pro")
 	DO INTOPTS($NAME(@ROOT@("fontSizes")),12,18)
 	DO BOOL($NAME(@ROOT@("cursorBlink")))
 	DO OPTS($NAME(@ROOT@("cursorStyles")),"block^Block,underline^Underline,bar^Bar")
 	DO VALUEOPTS($NAME(@ROOT@("scrollbacks")),"2000^2,000 lines^2000,3000^3,000 lines^3000,5000^5,000 lines^5000,10000^10,000 lines^10000")
 	DO OPTS($NAME(@ROOT@("renderers")),"canvas^Canvas,dom^DOM")
+	DO OPTS($NAME(@ROOT@("sizeModes")),"fit-container^Fit terminal to window,fixed-grid^Use saved rows and cols")
 	DO OPTS($NAME(@ROOT@("unicodeModes")),"unicode11^Unicode 11,graphemes^Grapheme experimental")
 	DO VALUEOPTS($NAME(@ROOT@("rows")),"24^24 rows^24,28^28 rows^28,32^32 rows^32,36^36 rows^36")
 	DO VALUEOPTS($NAME(@ROOT@("cols")),"100^100 cols^100,120^120 cols^120,132^132 cols^132,160^160 cols^160")
@@ -175,6 +182,11 @@ SCROLLBACK(N)
 RENDEREROK(X)
 	SET X=$$TRIM^MIOUTIL($GET(X))
 	IF X="canvas"!(X="dom") QUIT X
+	QUIT ""
+	;
+SIZEOK(X)
+	SET X=$$TRIM^MIOUTIL($GET(X))
+	IF X="fit-container"!(X="fixed-grid") QUIT X
 	QUIT ""
 	;
 UNICODEOK(X)
@@ -270,8 +282,9 @@ INITTERM(ROOT,STATE,TERMID)
 	SET @ROOT@("cols")=+$GET(STATE("terminal","cols"),120)
 	SET @ROOT@("rows")=+$GET(STATE("terminal","rows"),28)
 	SET @ROOT@("renderer")=$GET(STATE("terminal","renderer"),"canvas")
+	SET @ROOT@("sizeMode")=$GET(STATE("terminal","sizeMode"),"fit-container")
 	SET @ROOT@("unicode")=$GET(STATE("terminal","unicode"),"unicode11")
-	SET @ROOT@("fontFamily")=$GET(STATE("terminal","fontFamily"),"JetBrains Mono")
+	SET @ROOT@("fontFamily")=$GET(STATE("terminal","fontFamily"),"Consolas")
 	SET @ROOT@("fontSize")=+$GET(STATE("terminal","fontSize"),13)
 	SET @ROOT@("cwd")="/home/"_$GET(STATE("principal"),"user")
 	QUIT
@@ -441,30 +454,4 @@ LC(X)
 	SET Y=$TRANSLATE($GET(X),"ABCDEFGHIJKLMNOPQRSTUVWXYZ","abcdefghijklmnopqrstuvwxyz")
 	QUIT $$TRIM^MIOUTIL(Y)
 	;
-	;
-	;
-LIST(STATE,OUT)
-	NEW TERMID,N,TMP,OWN,SID
-	KILL OUT
-	SET OWN=$GET(STATE("principal")),SID=$GET(STATE("sessionId"))
-	SET TERMID="",N=0
-	FOR  SET TERMID=$ORDER(^MIO("MIOMOS","PIPE","SESSION",TERMID)) QUIT:TERMID=""  DO
-	. IF OWN'="",$GET(^MIO("MIOMOS","PIPE","SESSION",TERMID,"principal"))'=OWN QUIT
-	. IF SID'="",$GET(^MIO("MIOMOS","PIPE","SESSION",TERMID,"sessionId"))'=SID QUIT
-	. KILL TMP DO TERMROW(TERMID,.TMP)
-	. SET N=N+1 MERGE OUT(N)=TMP
-	QUIT
-	;
-TERMROW(TERMID,OUT)
-	KILL OUT
-	SET OUT("id")=$GET(TERMID)
-	SET OUT("title")="Terminal "_$EXTRACT($GET(TERMID),1,8)
-	SET OUT("openedAt")=$GET(^MIO("MIOMOS","PIPE","SESSION",TERMID,"openedAt"))
-	SET OUT("lastSeenAt")=$GET(^MIO("MIOMOS","PIPE","SESSION",TERMID,"lastReadAt"))
-	SET OUT("cwd")=$GET(^MIO("MIOMOS","PIPE","SESSION",TERMID,"cwd"),"/")
-	SET OUT("transport")=$GET(^MIO("MIOMOS","PIPE","SESSION",TERMID,"transport"),"pipe")
-	SET OUT("cols")=+$GET(^MIO("MIOMOS","PIPE","SESSION",TERMID,"cols"),120)
-	SET OUT("rows")=+$GET(^MIO("MIOMOS","PIPE","SESSION",TERMID,"rows"),28)
-	SET OUT("status")=$SELECT($DATA(^MIO("MIOMOS","PIPE","SESSION",TERMID)):"open",1:"closed")
-	QUIT
 	;

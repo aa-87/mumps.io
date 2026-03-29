@@ -73,7 +73,7 @@ DESKCTX(STATE,CONF,DATA)
 	DO AUDITSSR(.DATA)
 	DO LOGSSR(.DATA)
 	DO PERMSSR(.DATA,$GET(STATE("roles")))
-	DO ADMINSSR(.DATA,.STATE,.CONF)
+	DO ADMINSSR(.DATA)
 	DO OBSSSR(.STATE,.CONF,.DATA)
 	QUIT
 	;
@@ -117,7 +117,7 @@ WINSSR(DATA,STATE)
 	SET DATA("windows",5,"isAdmin")=1
 	DO WIN(.DATA,6,"win-settings","settings","Settings",240,88,700,520,5,"minimized",$GET(STATE("icon","settings"),"T"))
 	SET DATA("windows",6,"isSettings")=1
-	DO WIN(.DATA,7,"win-terminal","terminal","Terminal",110,80,960,540,7,"minimized",$GET(STATE("icon","terminal"),">_"))
+	DO WIN(.DATA,7,"win-terminal","terminal","Terminal",90,68,1000,620,7,"minimized",$GET(STATE("icon","terminal"),">_"))
 	SET DATA("windows",7,"isTerminal")=1
 	QUIT
 	;
@@ -183,7 +183,7 @@ PERMSSR(DATA,ROLES)
 	FOR  SET N=$ORDER(LIST(N)) QUIT:N=""  MERGE DATA("permissions",N)=LIST(N)
 	QUIT
 	;
-ADMINSSR(DATA,STATE,CONF)
+ADMINSSR(DATA)
 	NEW CNT,USR,INV,RST,N
 	DO COUNTS^MIOMOSADMIN(.CNT)
 	SET DATA("adminCounts","users")=+$GET(CNT("users"))

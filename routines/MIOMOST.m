@@ -62,7 +62,7 @@ START
 	DO OK^MIOTASSERT(OUT["data-terminal-clear=""xterm-buffer""","[MIOMOST][T003][terminal clear action]")
 	DO OK^MIOTASSERT(OUT["data-launch-app=""terminal""","[MIOMOST][T003][terminal app]")
 	DO OK^MIOTASSERT(OUT["data-entry-kind=""directory""","[MIOMOST][T003][directory entry]")
-	DO EQ^MIOTASSERT(OUT["data-entry-kind=""future""",0,"[MIOMOST][T003][future removed]")
+	DO OK^MIOTASSERT(OUT["data-entry-kind=""future""","[MIOMOST][T003][future entry]")
 	DO OK^MIOTASSERT(OUT["data-mobile-ready=""1""","[MIOMOST][T003][mobile ready]")
 	DO OK^MIOTASSERT(OUT["data-window-fade=""off""","[MIOMOST][T003][window fade off]")
 	DO OK^MIOTASSERT(OUT["Mobile-friendly render prep","[MIOMOST][T003][mobile ui copy]")
@@ -146,6 +146,8 @@ START
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","realtimeContract")),"single-websocket-command-and-events","[MIOMOST][T004][realtime contract]")
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","signoutTransport")),"websocket-event","[MIOMOST][T004][signout transport]")
 	DO EQ^MIOTASSERT($GET(OBJ("terminal","commandTransport")),"websocket-only","[MIOMOST][T004][terminal command transport]")
+	DO EQ^MIOTASSERT($GET(OBJ("terminal","profile","fontFamily")),"Consolas","[MIOMOST][T004][terminal default font]")
+	DO EQ^MIOTASSERT($GET(OBJ("terminal","profile","sizeMode")),"fit-container","[MIOMOST][T004][terminal size mode]")
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","policy","commandMaxInflight")),3,"[MIOMOST][T004][command max inflight]")
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","policy","commandTimeoutMs")),8000,"[MIOMOST][T004][command timeout]")
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","mobile","enabled")),1,"[MIOMOST][T004][mobile enabled]")
@@ -156,7 +158,6 @@ START
 	DO EQ^MIOTASSERT($GET(OBJ("apps",7,"key")),"terminal","[MIOMOST][T004][terminal app key]")
 	DO EQ^MIOTASSERT($GET(OBJ("windows",6,"appKey")),"terminal","[MIOMOST][T004][terminal win key]")
 	DO EQ^MIOTASSERT($GET(OBJ("apps",14,"key")),"ui-samples","[MIOMOST][T004][ui samples app key]")
-	DO EQ^MIOTASSERT($DATA(OBJ("apps",12)),0,"[MIOMOST][T004][planned app removed]")
 	DO EQ^MIOTASSERT($GET(OBJ("windows",7,"appKey")),"ui-samples","[MIOMOST][T004][ui samples win key]")
 	DO EQ^MIOTASSERT(+$DATA(OBJ("security","adminCounts","users"))>0,1,"[MIOMOST][T004][admin counts]")
 	DO EQ^MIOTASSERT($GET(OBJ("security","sessionBinding")),"principal-and-session","[MIOMOST][T004][session binding]")
@@ -259,6 +260,7 @@ START
 	SET TERMID=$GET(OUT("terminalId"))
 	DO EQ^MIOTASSERT(TERMID'="",1,"[MIOMOST][T011][terminal id]")
 	DO EQ^MIOTASSERT(+$GET(OUT("profile","cols")),132,"[MIOMOST][T011][terminal profile cols]")
+	DO EQ^MIOTASSERT($GET(OUT("profile","fontFamily")),"Fira Code","[MIOMOST][T011][terminal profile font]")
 	DO OK^MIOTASSERT($$INPUT^MIOMOSTERM(.STATE,TERMID,"write 123,!",.OUT,.ERR),"[MIOMOST][T011][terminal write]")
 	DO EQ^MIOTASSERT($$HASWRITE(.OUT,"123"),1,"[MIOMOST][T011][terminal output]")
 	DO OK^MIOTASSERT($$RESIZE^MIOMOSTERM(.STATE,TERMID,132,32,.OUT,.ERR),"[MIOMOST][T011][terminal resize]")
@@ -361,11 +363,6 @@ START
 	DO EQ^MIOTASSERT($GET(ARR("terminal","terminalId"))'="",1,"[MIOMOST][T016][ws term id]")
 	DO EQ^MIOTASSERT($GET(ARR("terminal","transport")),"pipe","[MIOMOST][T016][ws term transport]")
 	SET WSTERM=$GET(ARR("terminal","terminalId"))
-	KILL OBJ,ARR,ERR
-	SET WSCTX("request_id")="miomost-ws-term-new"
-	DO OK^MIOTASSERT($$COMMANDSIDJSON^MIOMOSWS(.CONF,.WSREQ,.WSCTX,WSSID,"{""event"":""command.exec"",""requestId"":""ws-4b"",""command"":""terminal.open"",""forceNew"":1}",.OBJ,.ERR),"[MIOMOST][T016][ws term new exec]")
-	DO OK^MIOTASSERT($$DECODE^MIOJSON(OBJ,.ARR,.ERR),"[MIOMOST][T016][ws term new decode]")
-	DO EQ^MIOTASSERT($GET(ARR("terminal","terminalId"))'=WSTERM,1,"[MIOMOST][T016][ws term new id]")
 	KILL OBJ,ARR,ERR
 	SET WSCTX("request_id")="miomost-ws-term-in"
 	SET WSPAY="{""event"":""command.exec"",""requestId"":""ws-5"",""command"":""terminal.input"",""terminalId"":"""_WSTERM_""",""line"":""write 123,!""}"
@@ -471,22 +468,6 @@ START
 	DO OK^MIOTASSERT($$RENDERPAGE^MIOTPL("pages/miomos_auth.html","layouts/miomos_shell.html",.CONF,.CTX,.OUT,.ERR),"[MIOMOST][T022][auth render]")
 	DO OK^MIOTASSERT(OUT["Continue as guest","[MIOMOST][T022][guest button]")
 	DO OK^MIOTASSERT(OUT["data-guest-login-enabled=""1""","[MIOMOST][T022][guest token]")
-	;
-	KILL STATE,OUT,ERR,CTX,ARR
-	SET STATE("principal")="phaseone",STATE("roles")="developer",STATE("userName")="Phase One Tester",STATE("roleLabel")="Developer",STATE("sessionId")="term-session-1",STATE("profile")="prod"
-	DO LOAD^MIOMOSSET(.STATE,.CONF)
-	DO BUILD^MIOMOSVM(.STATE,.CONF,.ARR)
-	DO EQ^MIOTASSERT($GET(ARR("notifications","headline")),"Notification Center","[MIOMOST][T023][notification headline]")
-	DO EQ^MIOTASSERT($GET(ARR("shellChrome","notificationLabel")),"Notifications","[MIOMOST][T023][notification label]")
-	DO EQ^MIOTASSERT($GET(ARR("shellChrome","accountMenu",4,"action")),"switch-user","[MIOMOST][T023][account switch user]")
-	DO EQ^MIOTASSERT(+$GET(ARR("shellChrome","showAccountName")),1,"[MIOMOST][T023][account name toggle]")
-	DO DESKCTX^MIOMOSUI(.STATE,.CONF,.CTX)
-	DO OK^MIOTASSERT($$RENDERPAGE^MIOTPL("pages/miomos_desktop.html","layouts/miomos_shell.html",.CONF,.CTX,.OUT,.ERR),"[MIOMOST][T023][desktop render]")
-	DO OK^MIOTASSERT(OUT["Notification Center","[MIOMOST][T023][notification copy]")
-	DO OK^MIOTASSERT(OUT["Switch User","[MIOMOST][T023][switch user copy]")
-	DO OK^MIOTASSERT(OUT[".miomos-taskbar-flyout","[MIOMOST][T023][taskbar flyout css]")
-	DO OK^MIOTASSERT(OUT[".miomos-start-button","[MIOMOST][T023][xp start css]")
-	DO EQ^MIOTASSERT(OUT["Planned surfaces",0,"[MIOMOST][T023][planned surface removed]")
 	QUIT
 	;
 FINDUSR(LIST,USER)

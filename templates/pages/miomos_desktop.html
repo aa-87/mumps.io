@@ -1,368 +1,4 @@
 <script id="miomosBootJson" type="application/json">{{{bootJson}}}</script>
-<style id="miomosThemeSystem">
-  .miomos-root, .miomos-root * { box-sizing: border-box; }
-  .miomos-root {
-    --desktop: #dbe8f5;
-    --surface: rgba(255,255,255,.98);
-    --surface-alt: rgba(244,248,252,.98);
-    --surface-soft: rgba(233,240,248,.94);
-    --border: rgba(48,78,112,.30);
-    --text: #10243a;
-    --muted: #36506c;
-    --accent: #0a64ad;
-    --accent-soft: rgba(10,100,173,.14);
-    --accent-strong: rgba(10,100,173,.24);
-    --active-title: linear-gradient(180deg,#4f8ed8,#1457ab);
-    --inactive-title: linear-gradient(180deg,#f7fbff,#dfe8f4);
-    --miomos-shadow: 0 16px 34px rgba(15,42,78,.16);
-    --taskbar-bg: linear-gradient(180deg,#3d8ad3,#215ea8 54%,#154986);
-    --taskbar-text: #ffffff;
-    --taskbar-border: #0f3768;
-    --menu-bg: linear-gradient(180deg,#ffffff,#edf4fc);
-    --menu-side-bg: linear-gradient(180deg,#dcedfc,#bfd7f0);
-    --menu-banner-bg: linear-gradient(180deg,#2d78cd,#1457ab);
-    --menu-text: #10243a;
-    --menu-muted: #58708a;
-    --flyout-bg: linear-gradient(180deg,#ffffff,#edf4fc);
-    --dialog-bg: linear-gradient(180deg,#ffffff,#eef5fc);
-    --field-bg: #ffffff;
-    --field-text: #10243a;
-    --field-border: #58799b;
-    --button-face: linear-gradient(180deg,#ffffff,#dceaf9);
-    --button-face-hover: linear-gradient(180deg,#ffffff,#cfe3f9);
-    --button-text: #0b2742;
-    --terminal-bg: #fbfdff;
-    --terminal-fg: #13273d;
-    --terminal-border: rgba(67,98,132,.28);
-    --selection-bg: rgba(10,100,173,.16);
-    min-height: 100vh;
-    position: relative;
-    overflow: hidden;
-    color: var(--text);
-    background:
-      radial-gradient(circle at top left, rgba(255,255,255,.44), transparent 24%),
-      radial-gradient(circle at bottom right, rgba(49,114,190,.12), transparent 26%),
-      linear-gradient(180deg, rgba(255,255,255,.36), rgba(255,255,255,0) 25%),
-      var(--desktop);
-    font-family: var(--miomos-font, Tahoma), "Segoe UI", Tahoma, Verdana, Arial, sans-serif;
-    font-size: 13px;
-    line-height: 1.35;
-    text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-  .miomos-root[data-theme-mode="dark"] {
-    --desktop: #0b1320;
-    --surface: rgba(15,23,36,.96);
-    --surface-alt: rgba(11,18,29,.97);
-    --surface-soft: rgba(255,255,255,.04);
-    --border: rgba(166,182,204,.28);
-    --text: #ecf3ff;
-    --muted: #b8c7dc;
-    --accent: #5f8dff;
-    --accent-soft: rgba(95,141,255,.18);
-    --accent-strong: rgba(95,141,255,.34);
-    --active-title: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.03)), linear-gradient(90deg, #5f8dff, rgba(255,255,255,0.02) 40%);
-    --inactive-title: linear-gradient(180deg, rgba(91,103,122,0.42), rgba(45,56,72,0.36));
-    --miomos-shadow: 0 18px 42px rgba(0,0,0,.26);
-    --taskbar-bg: linear-gradient(180deg, rgba(17,28,45,.98), rgba(8,14,24,.98));
-    --taskbar-text: #eef5ff;
-    --taskbar-border: rgba(148,163,184,.18);
-    --menu-bg: linear-gradient(180deg, rgba(17,28,45,.98), rgba(10,16,26,.98));
-    --menu-side-bg: linear-gradient(180deg, rgba(31,53,82,.94), rgba(16,27,42,.96));
-    --menu-banner-bg: linear-gradient(180deg,#3a77cf,#164f9b);
-    --menu-text: #eef4ff;
-    --menu-muted: #b9c9de;
-    --flyout-bg: linear-gradient(180deg, rgba(18,28,45,.98), rgba(9,15,24,.99));
-    --dialog-bg: linear-gradient(180deg, rgba(17,28,45,.98), rgba(10,16,26,.99));
-    --field-bg: rgba(255,255,255,.06);
-    --field-text: #edf5ff;
-    --field-border: rgba(176,193,214,.30);
-    --button-face: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.03));
-    --button-face-hover: linear-gradient(180deg, rgba(95,141,255,.22), rgba(95,141,255,.08));
-    --button-text: #eef5ff;
-    --terminal-bg: #0b1220;
-    --terminal-fg: #dce9ff;
-    --terminal-border: rgba(53,78,107,.92);
-    --selection-bg: rgba(143,179,255,.30);
-    background:
-      radial-gradient(circle at top left, rgba(95,141,255,.16), transparent 24%),
-      radial-gradient(circle at bottom right, rgba(20,184,166,.10), transparent 22%),
-      linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,0) 18%),
-      var(--desktop);
-  }
-  .miomos-root[data-theme-key="high-contrast-light"] {
-    --field-border: rgba(7,19,31,.42);
-    --border: rgba(7,19,31,.34);
-    --menu-text: #07131f;
-    --text: #07131f;
-    --muted: #23384f;
-    --button-face: linear-gradient(180deg,#ffffff,#edf4fb);
-    --button-face-hover: linear-gradient(180deg,#ffffff,#d9e8fb);
-  }
-  .miomos-root[data-theme-key="xp-classic-olive"] {
-    --taskbar-bg: linear-gradient(180deg,#92a94e,#6e832c 54%,#55661e);
-  }
-  .miomos-root[data-theme-key="xp-classic-silver"] {
-    --taskbar-bg: linear-gradient(180deg,#95a5c3,#6a7c99 54%,#51617c);
-  }
-  .miomos-root button,
-  .miomos-root input,
-  .miomos-root select,
-  .miomos-root textarea { font: inherit; }
-  .miomos-root input,
-  .miomos-root select,
-  .miomos-root textarea {
-    color: var(--field-text);
-    background: var(--field-bg);
-    border: 1px solid var(--field-border);
-  }
-  .miomos-root input::placeholder,
-  .miomos-root textarea::placeholder { color: color-mix(in srgb, var(--field-text) 52%, transparent); }
-  .miomos-root strong,
-  .miomos-root label,
-  .miomos-root th,
-  .miomos-root td,
-  .miomos-root span,
-  .miomos-root p,
-  .miomos-root em { color: inherit; }
-  .miomos-shell-alert {
-    position: absolute; right: 18px; top: 18px; z-index: 90; width: min(420px, calc(100% - 36px));
-    display: flex; align-items: center; justify-content: space-between; gap: 14px;
-    padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border); background: var(--flyout-bg); box-shadow: var(--miomos-shadow);
-  }
-  .miomos-shell-alert-copy strong { display:block; font-size: 12px; }
-  .miomos-shell-alert-copy span { display:block; margin-top: 4px; color: var(--muted); }
-  .miomos-shell-alert-btn,
-  .miomos-btn,
-  .miomos-link-btn,
-  .miomos-start-footer-btn,
-  .miomos-start-side-link,
-  .miomos-shell-tool-btn,
-  .miomos-taskbar-utility-btn,
-  .miomos-window-controls button,
-  .miomos-menu-button,
-  .miomos-quicklaunch-btn,
-  .miomos-task-button,
-  .miomos-task-overflow-btn,
-  .miomos-context-item,
-  .miomos-shell-dialog-close {
-    appearance: none; -webkit-appearance: none; cursor: pointer; color: var(--button-text);
-    background: var(--button-face); border: 1px solid var(--field-border); box-shadow: inset 0 1px 0 rgba(255,255,255,.58);
-  }
-  .miomos-btn:hover,
-  .miomos-link-btn:hover,
-  .miomos-start-footer-btn:hover,
-  .miomos-start-side-link:hover,
-  .miomos-shell-tool-btn:hover,
-  .miomos-taskbar-utility-btn:hover,
-  .miomos-menu-button:hover,
-  .miomos-quicklaunch-btn:hover,
-  .miomos-task-button:hover,
-  .miomos-task-overflow-btn:hover,
-  .miomos-window-controls button:hover,
-  .miomos-context-item:hover { background: var(--button-face-hover); }
-  .miomos-stage { position: absolute; inset: 14px 12px 58px 12px; overflow: hidden; }
-  .miomos-desktop-icons { position: absolute; left: 16px; top: 16px; display: block; width: calc(100% - 32px); min-height: calc(100% - 32px); pointer-events:none; }
-  .miomos-desktop-icon { position: absolute; width: 92px; min-height: 92px; padding: 6px; display: grid; justify-items: center; gap: 6px; border: 1px solid transparent; border-radius: 8px; background: transparent; pointer-events: auto; }
-  .miomos-desktop-icon:hover, .miomos-desktop-icon:focus-visible { background: color-mix(in srgb, var(--surface) 72%, transparent); border-color: var(--border); outline: none; }
-  .miomos-desktop-icon-glyph, .miomos-menu-glyph, .miomos-window-glyph, .miomos-task-glyph, .miomos-start-menu-avatar, .miomos-tray-icon {
-    display: inline-flex; align-items: center; justify-content: center; font-weight: 700;
-  }
-  .miomos-desktop-icon-glyph { width: 34px; height: 34px; border-radius: 8px; color: #fff; background: var(--icon, linear-gradient(180deg,#4ea1ef,#1d67ba)); box-shadow: inset 0 1px 0 rgba(255,255,255,.28), 0 5px 12px rgba(0,0,0,.16); }
-  .miomos-desktop-icon-label { font-size: 11px; font-weight: 700; text-align: center; color: color-mix(in srgb, var(--text) 92%, #000 8%); text-shadow: 0 1px 0 rgba(255,255,255,.6); }
-  .miomos-root[data-theme-mode="dark"] .miomos-desktop-icon-label { text-shadow:none; color: var(--text); }
-  .miomos-desktop-icon-kind { font-size: 9px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
-  .miomos-window {
-    position: absolute; min-width: 340px; min-height: 220px; overflow: hidden; border-radius: 9px; border: 1px solid var(--field-border);
-    background: var(--surface); box-shadow: var(--miomos-shadow);
-  }
-  .miomos-window.is-active { box-shadow: 0 20px 48px color-mix(in srgb, var(--accent) 18%, rgba(0,0,0,.18)); }
-  .miomos-window.is-minimized, .miomos-window.is-closed { display:none; }
-  .miomos-window.is-maximized { border-radius: 0; }
-  .miomos-window-bar { height: 31px; display:flex; align-items:center; justify-content:space-between; gap: 8px; padding: 0 8px 0 10px; background: var(--inactive-title); border-bottom: 1px solid color-mix(in srgb, var(--field-border) 82%, transparent); cursor: grab; user-select:none; }
-  .miomos-window.is-active .miomos-window-bar { background: var(--active-title); }
-  .miomos-window-meta { min-width: 0; display:flex; align-items:center; gap:8px; }
-  .miomos-window-glyph { width: 17px; height: 17px; border-radius: 4px; color:#fff; background: color-mix(in srgb, var(--accent) 85%, #1d67ba 15%); }
-  .miomos-window-title strong { display:block; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--taskbar-text); }
-  .miomos-window-title span { display:block; font-size: 10px; color: color-mix(in srgb, var(--taskbar-text) 72%, transparent); }
-  .miomos-root[data-theme-mode="light"] .miomos-window:not(.is-active) .miomos-window-title strong { color: #173255; }
-  .miomos-root[data-theme-mode="light"] .miomos-window:not(.is-active) .miomos-window-title span { color: #5e7591; }
-  .miomos-window-controls { display:flex; align-items:center; gap:4px; }
-  .miomos-window-controls button { width: 24px; height: 20px; border-radius: 4px; font-weight:700; padding:0; }
-  .miomos-window-controls button[data-window-action="close"] { background: linear-gradient(180deg,#fefefe,#d55c4f); color: #fff; border-color: #a63f34; }
-  .miomos-window-body { height: calc(100% - 31px); padding: 10px; overflow: auto; background: var(--surface-alt); color: var(--text); }
-  .miomos-surface-header, .miomos-actions, .miomos-link-row, .miomos-chips, .miomos-taskbar-left, .miomos-taskbar-meta, .miomos-taskbar-actions, .miomos-taskband, .miomos-shell-dialog-footer, .miomos-shell-power-grid, .miomos-tray-strip { display:flex; align-items:center; gap:8px; }
-  .miomos-surface-header, .miomos-actions, .miomos-shell-dialog-footer { justify-content: space-between; }
-  .miomos-surface-title strong, .miomos-setting-card strong, .miomos-menu-copy strong, .miomos-notice-item strong, .miomos-account-menu-head strong { display:block; color: var(--text); }
-  .miomos-surface-title span, .miomos-kpi-copy, .miomos-menu-copy span, .miomos-notice-item span, .miomos-account-menu-item span, .miomos-save-status, .miomos-shell-dialog-copy, .miomos-kpi-copy { color: var(--muted); }
-  .miomos-card, .miomos-setting-card, .miomos-ops-card, .miomos-directory-card, .miomos-ui-command-item, .miomos-ui-theme-item {
-    border:1px solid var(--border); background: var(--surface); border-radius: 8px; padding: 10px; box-shadow: inset 0 1px 0 rgba(255,255,255,.48);
-  }
-  .miomos-root[data-theme-mode="dark"] .miomos-card,
-  .miomos-root[data-theme-mode="dark"] .miomos-setting-card,
-  .miomos-root[data-theme-mode="dark"] .miomos-ops-card,
-  .miomos-root[data-theme-mode="dark"] .miomos-directory-card,
-  .miomos-root[data-theme-mode="dark"] .miomos-ui-command-item,
-  .miomos-root[data-theme-mode="dark"] .miomos-ui-theme-item { box-shadow: inset 0 1px 0 rgba(255,255,255,.06); }
-  .miomos-kpi-value { font-size: 20px; font-weight: 700; color: var(--text); }
-  .miomos-pill, .miomos-status-pill, .miomos-permission-pill, .miomos-preview-chip, .miomos-entry-meta, .miomos-tray-chip, .miomos-notice-badge, .miomos-account-badge {
-    display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height: 22px; padding: 0 8px; border-radius: 999px; border: 1px solid var(--field-border); background: color-mix(in srgb, var(--surface-soft) 72%, var(--surface) 28%); color: var(--button-text); font-size: 10px; font-weight: 700;
-  }
-  .miomos-settings-form, .miomos-chat-form, .miomos-terminal-shell, .miomos-chat-shell { display:grid; gap: 10px; }
-  .miomos-settings-grid { display:grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
-  .miomos-field { display:grid; gap: 5px; margin-bottom: 8px; }
-  .miomos-field span { color: var(--menu-text); font-size: 11px; font-weight: 700; }
-  .miomos-field select, .miomos-field input, .miomos-chat-form textarea, .miomos-shell-dialog-input { width:100%; min-height:32px; border-radius: 4px; padding: 6px 9px; }
-  .miomos-chat-form textarea { min-height: 84px; resize: vertical; }
-  .miomos-table { width:100%; border-collapse: collapse; font-size: 11px; }
-  .miomos-table th { text-align:left; padding: 7px 8px; color: var(--menu-text); border-bottom: 1px solid var(--border); background: color-mix(in srgb, var(--surface-soft) 74%, transparent); }
-  .miomos-table td { padding: 8px; color: var(--text); border-bottom: 1px solid color-mix(in srgb, var(--border) 66%, transparent); }
-  .miomos-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 8%, var(--surface)); }
-  .miomos-list, .miomos-notice-list, .miomos-account-menu-list, .miomos-start-recent-list { display:grid; gap: 8px; margin:0; padding:0; list-style:none; }
-  .miomos-taskbar {
-    position:absolute; left: 10px; right: 10px; bottom: 10px; height: 40px; z-index: 60; padding: 0 10px; display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap: 8px;
-    border: 1px solid var(--taskbar-border); border-radius: 6px 6px 0 0; background: var(--taskbar-bg); color: var(--taskbar-text); box-shadow: 0 -3px 10px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.26);
-  }
-  .miomos-taskbar-left { min-width: 0; }
-  .miomos-start-button { min-width: 88px; height: 28px; border-radius: 16px 8px 16px 8px; font-weight:700; color:#fff; background: linear-gradient(180deg,#5fc257,#2f8b2e); border-color:#1f5f1e; text-shadow: 0 1px 0 rgba(0,0,0,.28); }
-  .miomos-start-orb { width: 14px; height: 14px; border-radius: 999px; background: radial-gradient(circle at 35% 35%, #fafffe, #61d15d 54%, #2b912d 72%); box-shadow: inset 0 1px 0 rgba(255,255,255,.5); }
-  .miomos-quicklaunch { display:flex; align-items:center; gap: 6px; min-width:0; padding-left: 8px; border-left: 1px solid rgba(255,255,255,.28); }
-  .miomos-quicklaunch-label { font-size: 10px; color: rgba(255,255,255,.82); text-transform: uppercase; letter-spacing: .06em; }
-  .miomos-quicklaunch-btn { width: 26px; height: 24px; border-radius: 4px; padding:0; color:#fff; background: linear-gradient(180deg, rgba(255,255,255,.24), rgba(255,255,255,.06)); border-color: rgba(255,255,255,.22); }
-  .miomos-taskband { min-width: 0; overflow: auto hidden; padding-bottom: 2px; }
-  .miomos-task-button, .miomos-task-overflow-btn { height: 29px; border-radius: 4px; padding: 0 10px; color: var(--taskbar-text); background: linear-gradient(180deg, rgba(255,255,255,.24), rgba(255,255,255,.08)); border-color: rgba(255,255,255,.18); white-space: nowrap; }
-  .miomos-task-button.is-active { background: linear-gradient(180deg, rgba(255,255,255,.42), rgba(255,255,255,.16)); box-shadow: inset 0 1px 0 rgba(255,255,255,.44); }
-  .miomos-task-button.is-minimized { opacity: .76; }
-  .miomos-task-title { overflow:hidden; text-overflow:ellipsis; max-width: 180px; color: inherit; }
-  .miomos-task-glyph { width: 18px; height: 18px; border-radius: 4px; background: rgba(255,255,255,.24); color: inherit; }
-  .miomos-taskbar-meta { position: relative; justify-content: flex-end; color: var(--taskbar-text); }
-  .miomos-tray-chip, .miomos-tray-clock { color: var(--taskbar-text); background: linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,.07)); border-color: rgba(255,255,255,.16); }
-  .miomos-tray-chip--action { cursor:pointer; }
-  .miomos-tray-separator { width:1px; height: 22px; background: rgba(255,255,255,.22); }
-  .miomos-taskbar-usercopy strong { display:block; color: inherit; font-size: 11px; }
-  .miomos-taskbar-usercopy span { display:block; margin-top:1px; color: rgba(255,255,255,.82); font-size: 10px; }
-  .miomos-taskbar-badge-dot { min-width: 18px; height: 18px; padding: 0 6px; border-radius: 999px; background: #e03d2f; color: #fff; font-size: 10px; font-weight: 700; }
-  .miomos-taskbar-flyout {
-    position: absolute; right: 0; bottom: calc(100% + 10px); width: 320px; max-height: min(480px, calc(100vh - 110px)); overflow:auto; z-index: 70;
-    border-radius: 10px; border:1px solid var(--field-border); background: var(--flyout-bg); box-shadow: var(--miomos-shadow); padding: 12px;
-  }
-  .miomos-taskbar-flyout-head { display:grid; gap:4px; margin-bottom: 10px; }
-  .miomos-taskbar-flyout-head strong { color: var(--menu-text); font-size: 12px; }
-  .miomos-taskbar-flyout-head span { color: var(--menu-muted); font-size: 11px; }
-  .miomos-notice-item, .miomos-account-menu-item, .miomos-start-recent-item, .miomos-menu-card, .miomos-start-side-link {
-    width:100%; text-align:left; border-radius: 6px; padding: 9px 10px; border:1px solid var(--border); background: color-mix(in srgb, var(--surface) 88%, var(--surface-soft) 12%);
-  }
-  .miomos-notice-item[data-tone="warn"] { border-left: 4px solid #d77b14; }
-  .miomos-notice-item[data-tone="danger"] { border-left: 4px solid #c23b30; }
-  .miomos-notice-item[data-tone="ok"] { border-left: 4px solid #2f8b2e; }
-  .miomos-notice-item-head, .miomos-account-menu-head, .miomos-ui-theme-head { display:flex; align-items:center; justify-content:space-between; gap: 8px; }
-  .miomos-start-menu {
-    position:absolute; left: 10px; bottom: 54px; width: min(600px, calc(100% - 20px)); max-height: min(680px, calc(100vh - 86px)); display:none; overflow:hidden; z-index: 68;
-    border-radius: 8px 8px 0 0; border: 1px solid var(--taskbar-border); background: var(--menu-bg); box-shadow: 0 20px 40px rgba(0,0,0,.22);
-  }
-  .miomos-start-menu.is-open { display:block; }
-  .miomos-start-menu-banner { display:flex; align-items:center; gap: 10px; padding: 12px; background: var(--menu-banner-bg); color: #fff; }
-  .miomos-start-menu-avatar { width: 36px; height: 36px; border-radius: 8px; background: linear-gradient(180deg, rgba(255,255,255,.30), rgba(255,255,255,.08)); color: #fff; }
-  .miomos-start-menu-copy strong { color:#fff; font-size: 14px; }
-  .miomos-start-menu-copy span { color: rgba(255,255,255,.9); font-size:11px; }
-  .miomos-start-menu-body { display:grid; grid-template-columns: minmax(0,1.65fr) 190px; min-height: 380px; }
-  .miomos-start-menu-main { padding: 12px; background: var(--menu-bg); color: var(--menu-text); overflow:auto; }
-  .miomos-start-menu-side { padding: 12px; background: var(--menu-side-bg); border-left:1px solid color-mix(in srgb, var(--taskbar-border) 30%, transparent); color: var(--menu-text); }
-  .miomos-start-side-section { display:grid; gap: 8px; margin-bottom: 12px; }
-  .miomos-start-side-section strong, .miomos-menu-heading { color: var(--menu-text); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
-  .miomos-start-section-tabs, .miomos-start-pills { display:flex; flex-wrap:wrap; gap:6px; }
-  .miomos-start-section-tab { min-height: 24px; padding: 0 10px; border-radius: 999px; border:1px solid var(--field-border); background: color-mix(in srgb, var(--surface) 85%, transparent); color: var(--button-text); }
-  .miomos-start-section-tab.is-active { background: var(--button-face-hover); font-weight:700; }
-  .miomos-start-search { display:flex; align-items:center; gap:8px; padding: 7px 9px; margin: 10px 0 12px; border:1px solid var(--field-border); background: var(--field-bg); border-radius: 6px; }
-  .miomos-start-search-input { border:0; background: transparent; color: var(--field-text); width:100%; min-height: 24px; padding:0; }
-  .miomos-start-search-clear { border:0; background: transparent; color: var(--accent); cursor:pointer; }
-  .miomos-shell-tool-grid, .miomos-menu-grid, .miomos-directory-grid, .miomos-icon-grid { display:grid; gap: 8px; grid-template-columns: repeat(2,minmax(0,1fr)); }
-  .miomos-shell-tool-btn em { color: var(--muted); font-style: normal; font-size: 10px; }
-  .miomos-start-empty { padding: 12px; border:1px dashed var(--field-border); border-radius:6px; color: var(--muted); }
-  .miomos-start-menu-footer { display:flex; align-items:center; justify-content:flex-end; gap: 8px; padding: 10px 12px; background: linear-gradient(180deg, color-mix(in srgb, var(--menu-side-bg) 78%, #fff 22%), color-mix(in srgb, var(--menu-side-bg) 94%, #d8e7f8 6%)); border-top:1px solid color-mix(in srgb, var(--taskbar-border) 26%, transparent); }
-  .miomos-start-footer-btn { min-height: 28px; padding: 0 12px; border-radius: 4px; }
-  .miomos-start-footer-btn.is-power { background: linear-gradient(180deg,#ffefcf,#e3a132); border-color:#a96c0c; color:#623a00; }
-  .miomos-start-footer-btn.is-secondary { background: linear-gradient(180deg,#ffffff,#e8eef6); }
-  .miomos-context-menu {
-    position:absolute; min-width: 220px; z-index: 72; padding: 6px; border-radius: 6px; border:1px solid var(--field-border); background: var(--menu-bg); box-shadow: var(--miomos-shadow);
-  }
-  .miomos-context-item { width:100%; min-height: 28px; display:grid; grid-template-columns: 18px 1fr auto; align-items:center; gap:8px; padding: 0 8px; border-radius: 4px; border:1px solid transparent; background: transparent; color: var(--menu-text); }
-  .miomos-context-item.is-separator { border-top:1px solid var(--border); border-radius:0; min-height:0; height:0; padding:0; margin:6px 0; }
-  .miomos-context-item.is-disabled { opacity:.5; cursor:default; }
-  .miomos-shell-dialog-mask { position:absolute; inset:0; z-index: 74; display:block; background: rgba(18,25,36,.10); }
-  .miomos-shell-dialog { position:absolute; width:min(430px, calc(100vw - 28px)); border-radius: 8px; border:1px solid var(--field-border); background: var(--dialog-bg); box-shadow: var(--miomos-shadow); }
-  .miomos-shell-dialog-header { display:flex; align-items:center; justify-content:space-between; gap:10px; min-height:32px; padding: 0 10px; background: var(--active-title); color: var(--taskbar-text); border-bottom:1px solid color-mix(in srgb, var(--field-border) 80%, transparent); cursor: grab; }
-  .miomos-shell-dialog-header strong { color: var(--taskbar-text); }
-  .miomos-shell-dialog-body { padding: 12px; color: var(--text); display:grid; gap: 10px; }
-  .miomos-shell-dialog-close { width: 22px; height: 22px; padding:0; border-radius:4px; color: var(--taskbar-text); border-color: rgba(255,255,255,.22); background: rgba(255,255,255,.12); }
-  .miomos-terminal-viewport { width:100%; min-height: 340px; border-radius: 6px; border:1px solid var(--terminal-border); background: linear-gradient(180deg, color-mix(in srgb, var(--terminal-bg) 90%, #fff 10%), var(--terminal-bg)); box-shadow: inset 0 1px 0 rgba(255,255,255,.08); overflow:hidden; position:relative; }
-  .miomos-terminal-host { position:absolute; inset: 0; padding: 10px 12px; }
-  .miomos-terminal-statusline { position:absolute; left: 10px; right: 10px; bottom: 8px; display:flex; align-items:center; gap:8px; padding:4px 8px; border-radius: 999px; background: color-mix(in srgb, var(--terminal-bg) 74%, transparent); color: color-mix(in srgb, var(--terminal-fg) 78%, transparent); }
-  .miomos-terminal-dot { width: 8px; height: 8px; border-radius:999px; background: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
-  .miomos-ui-theme-list { display:grid; gap: 8px; }
-  .miomos-ui-theme-sample { display:flex; align-items:center; gap: 6px; margin-top: 8px; }
-  .miomos-ui-theme-sample i { display:inline-block; width: 26px; height: 14px; border-radius: 999px; border:1px solid var(--border); }
-  .miomos-ui-command-item em { display:block; margin-top:4px; color: var(--accent); font-size: 10px; }
-  .miomos-root[data-theme-mode="light"] .miomos-pill,
-  .miomos-root[data-theme-mode="light"] .miomos-status-pill,
-  .miomos-root[data-theme-mode="light"] .miomos-permission-pill,
-  .miomos-root[data-theme-mode="light"] .miomos-preview-chip,
-  .miomos-root[data-theme-mode="light"] .miomos-entry-meta,
-  .miomos-root[data-theme-mode="light"] .miomos-tray-chip,
-  .miomos-root[data-theme-mode="light"] .miomos-notice-badge,
-  .miomos-root[data-theme-mode="light"] .miomos-account-badge { color: var(--button-text); background: color-mix(in srgb, var(--surface-soft) 84%, #fff 16%); }
-  .miomos-root[data-theme-mode="light"] .miomos-menu-button,
-  .miomos-root[data-theme-mode="light"] .miomos-task-overflow-btn,
-  .miomos-root[data-theme-mode="light"] .miomos-task-button,
-  .miomos-root[data-theme-mode="light"] .miomos-tray-clock,
-  .miomos-root[data-theme-mode="light"] .miomos-tray-chip,
-  .miomos-root[data-theme-mode="light"] .miomos-taskbar-utility-btn { color: #fff; }
-  .miomos-root[data-theme-mode="light"] .miomos-start-menu-side .miomos-start-side-link,
-  .miomos-root[data-theme-mode="light"] .miomos-menu-card,
-  .miomos-root[data-theme-mode="light"] .miomos-notice-item,
-  .miomos-root[data-theme-mode="light"] .miomos-account-menu-item,
-  .miomos-root[data-theme-mode="light"] .miomos-start-recent-item,
-  .miomos-root[data-theme-mode="light"] .miomos-shell-tool-btn { color: var(--menu-text); }
-  .miomos-root[data-theme-mode="light"] .miomos-start-menu-copy strong,
-  .miomos-root[data-theme-mode="light"] .miomos-start-menu-copy span,
-  .miomos-root[data-theme-mode="light"] .miomos-taskbar-usercopy strong,
-  .miomos-root[data-theme-mode="light"] .miomos-taskbar-usercopy span { color: inherit; }
-  .miomos-root[data-theme-mode="light"] .miomos-shell-dialog-copy,
-  .miomos-root[data-theme-mode="light"] .miomos-kpi-copy,
-  .miomos-root[data-theme-mode="light"] .miomos-surface-title span,
-  .miomos-root[data-theme-mode="light"] .miomos-window-title span,
-  .miomos-root[data-theme-mode="light"] .miomos-menu-copy span,
-  .miomos-root[data-theme-mode="light"] .miomos-start-side-section strong + span,
-  .miomos-root[data-theme-mode="light"] .miomos-save-status,
-  .miomos-root[data-theme-mode="light"] .miomos-notice-item span,
-  .miomos-root[data-theme-mode="light"] .miomos-account-menu-item span { color: var(--muted); }
-  .miomos-root[data-theme-mode="dark"] .miomos-window-body,
-  .miomos-root[data-theme-mode="dark"] .miomos-card,
-  .miomos-root[data-theme-mode="dark"] .miomos-setting-card,
-  .miomos-root[data-theme-mode="dark"] .miomos-shell-tool-btn,
-  .miomos-root[data-theme-mode="dark"] .miomos-menu-card,
-  .miomos-root[data-theme-mode="dark"] .miomos-notice-item,
-  .miomos-root[data-theme-mode="dark"] .miomos-account-menu-item { color: var(--text); }
-  .miomos-root[data-theme-mode="dark"] .miomos-start-menu-side { color: var(--menu-text); }
-  .miomos-root[data-theme-mode="dark"] .miomos-taskbar,
-  .miomos-root[data-theme-mode="dark"] .miomos-start-menu,
-  .miomos-root[data-theme-mode="dark"] .miomos-taskbar-flyout,
-  .miomos-root[data-theme-mode="dark"] .miomos-context-menu,
-  .miomos-root[data-theme-mode="dark"] .miomos-shell-dialog { box-shadow: 0 20px 42px rgba(0,0,0,.32); }
-  @media (max-width: 1120px) {
-    .miomos-settings-grid, .miomos-shell-tool-grid, .miomos-menu-grid, .miomos-directory-grid, .miomos-icon-grid { grid-template-columns: minmax(0,1fr); }
-    .miomos-start-menu-body { grid-template-columns: minmax(0,1fr); }
-    .miomos-start-menu-side { border-left: 0; border-top:1px solid var(--border); }
-  }
-  @media (max-width: 840px) {
-    .miomos-taskbar { grid-template-columns: 1fr; height: auto; padding: 8px; gap: 8px; }
-    .miomos-stage { bottom: 88px; }
-    .miomos-taskbar-meta, .miomos-taskbar-left { justify-content: space-between; }
-    .miomos-taskband { width:100%; }
-    .miomos-taskbar-flyout { width: min(340px, calc(100vw - 28px)); }
-  }
-</style>
 <div hidden id="miomosMobileContract" data-mobile-ready="1" data-window-fade="off">Mobile-friendly render prep</div>
 <div hidden id="miomosContractTokens"
   data-miomos-single-socket="1"
@@ -414,7 +50,6 @@
   data-titlebar-style="{{titlebarStyle}}"
   data-native-shell="1"
   data-window-manager-engine="miomos-native-vue-css"
-  :data-theme-key="settingsForm.themeKey || """
   :data-mobile-layout="isCompactViewport ? '1' : '0'">
   <span hidden data-launch-app="terminal"></span>
   <span hidden data-launch-app="ui-library"></span>
@@ -538,8 +173,6 @@
 
   <div class="miomos-stage" ref="stage" @contextmenu.prevent="openDesktopContextMenu($event)">
     <div class="miomos-loading" v-if="bootLoading">Loading MIOMOS…</div>
-    <span hidden data-taskbar-notification-token="1">Notification Center</span>
-    <span hidden data-account-switch-token="1">Switch User</span>
     <aside class="miomos-desktop-icons" aria-label="Desktop entries" data-desktop-curation="ui-samples-settings-terminal">
       <button v-for="(app, idx) in desktopEntries" :key="app.key" type="button" class="miomos-desktop-icon" :class="{ 'is-disabled': !!app.disabled, 'is-dragging': iconDrag.active && iconDrag.key===app.key }" :style="desktopIconStyle(app, idx)" :data-launch-app="app.key" :data-entry-kind="app.kind || 'app'" :data-icon-kind="app.kind || 'app'" :title="app.subtitle || app.title" @pointerdown.stop="beginIconDrag(app, $event)" @click="openDesktopEntry(app, $event)" @contextmenu.prevent.stop="openIconContextMenu(app, $event)">
         <span class="miomos-desktop-icon-glyph" :class="entryGlyphClass(app.kind || 'app')">[[ app.icon ]]</span>
@@ -611,6 +244,15 @@
               <div class="miomos-directory-foot"><span class="miomos-entry-meta">[[ entry.summary || 'Directory surface' ]]</span><button type="button" class="miomos-btn" @click="launchApp(entry.key)">Open</button></div>
             </section>
           </div>
+          <section class="miomos-card miomos-planned-card">
+            <div class="miomos-surface-title"><strong>Planned surfaces</strong><span>Server-authored placeholders communicate roadmap without behaving like broken apps.</span></div>
+            <div class="miomos-planned-grid">
+              <button v-for="entry in plannedEntries" :key="entry.key" type="button" class="miomos-planned-item" disabled>
+                <span class="miomos-menu-glyph miomos-entry-glyph--future">[[ entry.icon ]]</span>
+                <div class="miomos-menu-copy"><strong>[[ entry.title ]]</strong><span>[[ entry.subtitle ]]</span></div>
+              </button>
+            </div>
+          </section>
           <div class="miomos-kpi-row">
             <section v-for="kpi in view.workspace.kpis || []" :key="kpi.label" class="miomos-card">
               <div class="miomos-kpi-label">[[ kpi.label ]]</div>
@@ -755,20 +397,10 @@
                 <label class="miomos-field" data-setting-terminal="palette"><span>Terminal palette</span><select v-model="settingsForm.terminal.palette"><option v-for="opt in terminalPalettes" :key="opt.key" :value="opt.key">[[ opt.label ]]</option></select></label>
                 <label class="miomos-field"><span>Scrollback</span><select v-model="settingsForm.terminal.scrollback"><option v-for="opt in terminalScrollbacks" :key="opt.key" :value="String(opt.value || opt.key)">[[ opt.label ]]</option></select></label>
                 <label class="miomos-field"><span>Renderer</span><select v-model="settingsForm.terminal.renderer"><option v-for="opt in terminalRenderers" :key="opt.key" :value="opt.key">[[ opt.label ]]</option></select></label>
+                <label class="miomos-field"><span>Launch sizing</span><select v-model="settingsForm.terminal.sizeMode"><option v-for="opt in terminalSizeModes" :key="opt.key" :value="opt.key">[[ opt.label ]]</option></select></label>
                 <label class="miomos-field"><span>Unicode mode</span><select v-model="settingsForm.terminal.unicode"><option v-for="opt in terminalUnicodeModes" :key="opt.key" :value="opt.key">[[ opt.label ]]</option></select></label>
               </section>
             </div>
-            <section class="miomos-setting-card">
-              <strong>Shell chrome and notifications</strong>
-              <div class="miomos-settings-grid">
-                <label class="miomos-field"><span>Start menu default section</span><select v-model="settingsForm.shell.startMenuSection"><option v-for="opt in shellStartSections" :key="opt.key" :value="opt.key">[[ opt.label ]]</option></select></label>
-                <label class="miomos-field"><span>Notification preview count</span><select v-model="settingsForm.shell.notificationPreviewCount"><option v-for="opt in shellNotificationPreviewCounts" :key="opt.key" :value="String(opt.key)">[[ opt.label ]]</option></select></label>
-                <label class="miomos-field"><span>Clock seconds</span><select v-model="settingsForm.shell.showClockSeconds"><option v-for="opt in shellClockOptions" :key="opt.key" :value="String(opt.key)">[[ opt.label ]]</option></select></label>
-                <label class="miomos-field"><span>Tray labels</span><select v-model="settingsForm.shell.showTrayLabels"><option v-for="opt in shellTrayLabelOptions" :key="opt.key" :value="String(opt.key)">[[ opt.label ]]</option></select></label>
-                <label class="miomos-field"><span>Taskbar account name</span><select v-model="settingsForm.shell.showAccountName"><option v-for="opt in shellAccountNameOptions" :key="opt.key" :value="String(opt.key)">[[ opt.label ]]</option></select></label>
-                <label class="miomos-field"><span>Notification badge</span><select v-model="settingsForm.shell.showNotificationBadge"><option v-for="opt in shellNotificationBadgeOptions" :key="opt.key" :value="String(opt.key)">[[ opt.label ]]</option></select></label>
-              </div>
-            </section>
             <section class="miomos-setting-card">
               <strong>Custom icons</strong>
               <div class="miomos-icon-grid">
@@ -881,19 +513,19 @@
         </template>
 
         <template v-else-if="win.appKey === 'terminal'">
-          <div class="miomos-terminal-shell" data-terminal-surface data-terminal-engine="xtermjs" :data-terminal-window="win.id">
+          <div class="miomos-terminal-shell" data-terminal-surface data-terminal-engine="xtermjs">
             <div class="miomos-terminal-toolbar">
-              <div class="miomos-surface-title"><strong>[[ win.title ]]</strong><span>Each MIOMOS terminal window owns its own YottaDB PIPE session and xterm.js renderer while transport and process ownership stay in MUMPS.</span></div>
-              <div class="miomos-actions"><span class="miomos-pill">[[ terminalStatusFor(win.id) ]]</span><button type="button" class="miomos-btn" @click="openTerminalForWindow(win.id, false)">Open</button><button type="button" class="miomos-btn" @click="pollTerminalForWindow(win.id)">Refresh</button><button type="button" class="miomos-btn" @click="launchApp('terminal')">New Window</button><button type="button" class="miomos-btn" @click="closeTerminalForWindow(win.id, false)">Close</button><button type="button" class="miomos-btn" data-terminal-clear="xterm-buffer" @click="clearTerminalForWindow(win.id)">Clear</button></div>
+              <div class="miomos-surface-title"><strong>Xterm terminal</strong><span>xterm.js renders the live YottaDB terminal session while MIOMOS keeps transport, session, and command ownership in MUMPS.</span></div>
+              <div class="miomos-actions"><span class="miomos-pill">[[ terminalStatus ]]</span><button type="button" class="miomos-btn" @click="openTerminal">Open</button><button type="button" class="miomos-btn" @click="pollTerminal">Refresh</button><button type="button" class="miomos-btn" @click="closeTerminal">Close</button><button type="button" class="miomos-btn" data-terminal-clear="xterm-buffer" @click="clearTerminal">Clear</button></div>
             </div>
-            <div :id="terminalViewportId(win.id)" class="miomos-terminal-viewport" :data-terminal-palette="settingsForm.terminal.palette || 'theme'" :style="terminalViewportStyleFor(win.id)" @click="focusTerminalInput(win.id)">
-              <div :id="terminalHostId(win.id)" class="miomos-terminal-host" data-terminal-renderer="xtermjs" data-terminal-runtime="yottadb-pipe" tabindex="0" aria-label="MIOMOS YottaDB terminal"></div>
-              <div v-if="terminalStateFor(win.id).loadError" class="miomos-terminal-fallback">[[ terminalStateFor(win.id).loadError ]]</div>
-              <div class="miomos-terminal-statusline" :data-terminal-connected="terminalStateFor(win.id).terminalId ? '1' : '0'" :style="terminalStatuslineStyleFor(win.id)">
+            <div id="miomosTerminalViewport" ref="terminalViewport" class="miomos-terminal-viewport" :data-terminal-palette="settingsForm.terminal.palette || 'theme'" :style="terminalViewportStyle" @click="focusTerminalInput">
+              <div ref="terminalHost" class="miomos-terminal-host" data-terminal-renderer="xtermjs" data-terminal-runtime="yottadb-pipe" tabindex="0" aria-label="MIOMOS YottaDB terminal"></div>
+              <div v-if="terminalLoadError" class="miomos-terminal-fallback">[[ terminalLoadError ]]</div>
+              <div class="miomos-terminal-statusline" :data-terminal-connected="terminal.terminalId ? '1' : '0'" :style="terminalStatuslineStyle">
                 <span class="miomos-terminal-dot"></span>
-                <span>[[ terminalStateFor(win.id).transport || 'pipe' ]]</span>
-                <span>[[ terminalStateFor(win.id).history.length ]] cmds</span>
-                <span v-if="terminalStateFor(win.id).busy">busy</span>
+                <span>[[ terminal.transport || 'pipe' ]]</span>
+                <span>[[ terminal.history.length ]] cmds</span>
+                <span v-if="terminal.busy">busy</span>
                 <span v-else>ready</span>
               </div>
             </div>
@@ -918,27 +550,11 @@
     </div>
     <div class="miomos-taskbar-meta" data-tray-style="xp-notify-area">
       <div class="miomos-tray-strip">
-        <button v-for="tray in trayItems" :key="tray.key || tray.label" type="button" class="miomos-tray-chip miomos-tray-chip--action" :class="tray.className || ''" @click="onTrayAction(tray)"><span class="miomos-tray-icon">[[ tray.icon || '' ]]</span><span v-if="showTrayLabels()">[[ tray.label ]]</span></button>
+        <button v-for="tray in trayItems" :key="tray.key || tray.label" type="button" class="miomos-tray-chip miomos-tray-chip--action" :class="tray.className || ''" @click="onTrayAction(tray)"><span class="miomos-tray-icon">[[ tray.icon || '' ]]</span><span>[[ tray.label ]]</span></button>
       </div>
       <span class="miomos-tray-separator"></span>
       <span v-for="tray in trayBadges" :key="tray.label" class="miomos-tray-chip" :class="tray.className || ''">[[ tray.label ]]</span>
-      <div class="miomos-taskbar-actions">
-        <button type="button" class="miomos-tray-chip miomos-tray-chip--action miomos-taskbar-utility-btn" @click="toggleNotifications"><span class="miomos-tray-icon">✦</span><span v-if="showTrayLabels()">[[ notificationButtonLabel ]]</span><span v-if="showNotificationBadge && notificationBadgeCount>0" class="miomos-taskbar-badge-dot">[[ notificationBadgeCount ]]</span></button>
-        <button type="button" class="miomos-tray-chip miomos-tray-chip--action miomos-taskbar-utility-btn" @click="toggleAccountMenu"><span class="miomos-tray-icon">☺</span><div v-if="showAccountName" class="miomos-taskbar-usercopy"><strong>[[ accountButtonLabel ]]</strong><span>[[ accountRoleLabel ]]</span></div></button>
-        <button type="button" class="miomos-tray-clock" @click="refreshView">[[ currentClock ]]</button>
-      </div>
-      <aside v-if="panels.notifications" class="miomos-taskbar-flyout" data-shell-surface="notifications">
-        <div class="miomos-taskbar-flyout-head"><strong>[[ notificationHeadline ]]</strong><span>[[ notificationSubheadline ]]</span></div>
-        <div class="miomos-notice-list">
-          <button v-for="item in notificationItems" :key="item.key || item.title" type="button" class="miomos-notice-item" :data-tone="item.tone || 'info'" @click="openNotificationAction(item)"><div class="miomos-notice-item-head"><strong>[[ item.title ]]</strong><span class="miomos-notice-badge">[[ item.count || 0 ]]</span></div><span>[[ item.copy ]]</span></button>
-        </div>
-      </aside>
-      <aside v-if="panels.account" class="miomos-taskbar-flyout" data-shell-surface="account">
-        <div class="miomos-taskbar-flyout-head"><strong>[[ accountButtonLabel ]]</strong><span>[[ accountSummaryCopy ]]</span></div>
-        <div class="miomos-account-menu-list">
-          <button v-for="item in accountMenuItems" :key="item.key || item.label" type="button" class="miomos-account-menu-item" @click="runAccountAction(item)"><div class="miomos-account-menu-head"><strong>[[ item.label ]]</strong><span class="miomos-account-badge">[[ item.key ]]</span></div><span>[[ item.copy ]]</span></button>
-        </div>
-      </aside>
+      <button type="button" class="miomos-tray-clock" @click="refreshView">[[ currentClock ]]</button>
     </div>
   </footer>
 
@@ -1040,14 +656,13 @@
           messages: [{ id: 'pending', userName: 'System', text: 'Waiting for server chat snapshot.', ts: 'Pending connect' }],
           chatDraft: '',
           terminalStatus: (view.terminal || {}).status || 'Terminal idle',
-          terminal: { terminalId: ((((boot.desktop||{}).uiState)||{}).terminalId || ''), inputLine: '', transcript: '', history: [], historyIndex: -1, prompt: 'YDB>', cwd: '/', transport: 'pipe', seq: 0, busy: false, loadError: '' },
+          terminal: { terminalId: ((((boot.desktop||{}).uiState)||{}).terminalId || ''), inputLine: '', transcript: '', history: [], historyIndex: -1, prompt: 'YDB>', cwd: '/', transport: 'pipe', seq: 0, busy: false },
           terminalLoadError: '',
           terminalPollTimer: null,
-          terminalWindowSeq: 0,
           view: view,
           apps: arr((boot.desktop || {}).apps),
           windows: arr((boot.desktop || {}).windows).map(function(win, idx){
-            return { id: win.id || ('win-'+idx), appKey: win.appKey || win.key || 'workspace', title: win.title || win.appKey || 'Window', left: Number(win.left || 120), top: Number(win.top || 60), width: Number(win.width || 720), height: Number(win.height || 520), z: Number(win.z || (idx+1)), taskOrder: Number(win.taskOrder || (idx+1)), minimized: (win.state || '') === 'minimized', closed: ((win.appKey || win.key || '')==='terminal'), maximized: false, restoreRect: null, snap: '', terminalOrdinal: 0, term: null };
+            return { id: win.id || ('win-'+idx), appKey: win.appKey || win.key || 'workspace', title: win.title || win.appKey || 'Window', left: Number(win.left || 120), top: Number(win.top || 60), width: Number(win.width || 720), height: Number(win.height || 520), z: Number(win.z || (idx+1)), taskOrder: Number(win.taskOrder || (idx+1)), minimized: (win.state || '') === 'minimized', closed: false, maximized: false, restoreRect: null, snap: '' };
           }),
           customFolders: [],
           desktopIconPositions: {},
@@ -1063,7 +678,6 @@
           layoutMode: ((((boot.desktop||{}).uiState)||{}).layoutMode || ''),
           contextMenu: { visible:false, kind:'', x:0, y:0, items:[], targetId:'', targetKey:'', targetKind:'' },
           dialogs: { run:false, about:false, power:false },
-          panels: { notifications:false, account:false },
           runDialogInput: 'terminal',
           settingsForm: {
             themeKey: (((view.settings||{}).current||{}).themeKey || ((boot.desktop||{}).theme||{}).currentKey || 'midnight-professional'),
@@ -1079,16 +693,8 @@
             motionProfile: (((view.settings||{}).current||{}).motionProfile || root.getAttribute('data-motion-profile') || 'standard'),
             titlebarStyle: (((view.settings||{}).current||{}).titlebarStyle || root.getAttribute('data-titlebar-style') || 'accent'),
             icons: clone((((view.settings||{}).current||{}).icon) || {}),
-            shell: {
-              startMenuSection: String(((((view.settings||{}).current||{}).shell)||{}).startMenuSection || (((view.shellChrome||{}).startMenuSection) || 'Pinned')),
-              showClockSeconds: String(((((view.settings||{}).current||{}).shell)||{}).showClockSeconds != null ? ((((view.settings||{}).current||{}).shell)||{}).showClockSeconds : (((view.shellChrome||{}).showClockSeconds != null) ? ((view.shellChrome||{}).showClockSeconds) : 0)),
-              showTrayLabels: String(((((view.settings||{}).current||{}).shell)||{}).showTrayLabels != null ? ((((view.settings||{}).current||{}).shell)||{}).showTrayLabels : (((view.shellChrome||{}).showTrayLabels != null) ? ((view.shellChrome||{}).showTrayLabels) : 1)),
-              notificationPreviewCount: String(((((view.settings||{}).current||{}).shell)||{}).notificationPreviewCount || (((view.shellChrome||{}).notificationPreviewCount || 4))),
-              showAccountName: String(((((view.settings||{}).current||{}).shell)||{}).showAccountName != null ? ((((view.settings||{}).current||{}).shell)||{}).showAccountName : (((view.shellChrome||{}).showAccountName != null) ? ((view.shellChrome||{}).showAccountName) : 1)),
-              showNotificationBadge: String(((((view.settings||{}).current||{}).shell)||{}).showNotificationBadge != null ? ((((view.settings||{}).current||{}).shell)||{}).showNotificationBadge : (((view.shellChrome||{}).showNotificationBadge != null) ? ((view.shellChrome||{}).showNotificationBadge) : 1))
-            },
             terminal: {
-              fontFamily: String(((((view.settings||{}).current||{}).terminal)||{}).fontFamily || ((((view.terminal||{}).profile)||{}).fontFamily || 'JetBrains Mono')),
+              fontFamily: String(((((view.settings||{}).current||{}).terminal)||{}).fontFamily || ((((view.terminal||{}).profile)||{}).fontFamily || 'Consolas')),
               fontSize: String(((((view.settings||{}).current||{}).terminal)||{}).fontSize || ((((view.terminal||{}).profile)||{}).fontSize || 13)),
               cursorBlink: String(((((view.settings||{}).current||{}).terminal)||{}).cursorBlink != null ? ((((view.settings||{}).current||{}).terminal)||{}).cursorBlink : (((((view.terminal||{}).profile)||{}).cursorBlink != null) ? (((view.terminal||{}).profile)||{}).cursorBlink : 1)),
               cursorStyle: String(((((view.settings||{}).current||{}).terminal)||{}).cursorStyle || ((((view.terminal||{}).profile)||{}).cursorStyle || 'block')),
@@ -1097,6 +703,7 @@
               unicode: String(((((view.settings||{}).current||{}).terminal)||{}).unicode || ((((view.terminal||{}).profile)||{}).unicode || 'unicode11')),
               cols: String(((((view.settings||{}).current||{}).terminal)||{}).cols || ((((view.terminal||{}).profile)||{}).cols || 120)),
               rows: String(((((view.settings||{}).current||{}).terminal)||{}).rows || ((((view.terminal||{}).profile)||{}).rows || 28)),
+              sizeMode: String(((((view.settings||{}).current||{}).terminal)||{}).sizeMode || ((((view.terminal||{}).profile)||{}).sizeMode || 'fit-container')),
               palette: String(((((view.settings||{}).current||{}).terminal)||{}).palette || ((((view.terminal||{}).profile)||{}).palette || 'theme'))
             }
           }
@@ -1125,14 +732,9 @@
         terminalCursorBlink: function(){ return arr((((this.view.settings||{}).catalog||{}).terminal||{}).cursorBlink); },
         terminalScrollbacks: function(){ return arr((((this.view.settings||{}).catalog||{}).terminal||{}).scrollbacks); },
         terminalRenderers: function(){ return arr((((this.view.settings||{}).catalog||{}).terminal||{}).renderers); },
+        terminalSizeModes: function(){ return arr((((this.view.settings||{}).catalog||{}).terminal||{}).sizeModes); },
         terminalPalettes: function(){ return arr((((this.view.settings||{}).catalog||{}).terminal||{}).palettes); },
         terminalUnicodeModes: function(){ return arr((((this.view.settings||{}).catalog||{}).terminal||{}).unicodeModes); },
-        shellStartSections: function(){ return arr((((this.view.settings||{}).catalog||{}).shell||{}).startMenuSections); },
-        shellClockOptions: function(){ return arr((((this.view.settings||{}).catalog||{}).shell||{}).showClockSeconds); },
-        shellTrayLabelOptions: function(){ return arr((((this.view.settings||{}).catalog||{}).shell||{}).showTrayLabels); },
-        shellNotificationPreviewCounts: function(){ return arr((((this.view.settings||{}).catalog||{}).shell||{}).notificationPreviewCounts); },
-        shellAccountNameOptions: function(){ return arr((((this.view.settings||{}).catalog||{}).shell||{}).showAccountName); },
-        shellNotificationBadgeOptions: function(){ return arr((((this.view.settings||{}).catalog||{}).shell||{}).showNotificationBadge); },
         terminalThemeSpec: function(){
           var palette=String((((this.settingsForm||{}).terminal||{}).palette) || 'theme'), mode=String(((this.currentThemeDefinition||{}).mode) || 'dark');
           if (palette==='black-on-white') return { background:'#ffffff', foreground:'#111111', cursor:'#111111', cursorAccent:'#ffffff', selectionBackground:'rgba(17,17,17,0.18)', chromeBorder:'rgba(24,24,24,0.26)', chromeBackground:'linear-gradient(180deg, rgba(255,255,255,0.985), rgba(241,243,246,0.99))', statusBackground:'rgba(255,255,255,0.86)', statusText:'#222222', dot:'#111111', dotHalo:'rgba(17,17,17,0.16)' };
@@ -1170,19 +772,8 @@
           });
         },
         directoryEntries: function(){ return this.allEntries.filter(function(app){ return (app.kind || '')==='directory'; }).sort(function(a,b){ return Number(a.order||0)-Number(b.order||0); }); },
-        notificationCenter: function(){ return this.view.notifications || {}; },
-        notificationItems: function(){ return arr(this.notificationCenter.items).slice(0, Number((this.shellChrome.notificationPreviewCount || 4) || 4)); },
-        notificationBadgeCount: function(){ return Number(this.notificationCenter.badge || 0) || 0; },
-        showNotificationBadge: function(){ return Number(this.shellChrome.showNotificationBadge != null ? this.shellChrome.showNotificationBadge : 1)===1; },
-        showAccountName: function(){ return Number(this.shellChrome.showAccountName != null ? this.shellChrome.showAccountName : 1)===1; },
-        accountMenuItems: function(){ return arr(this.shellChrome.accountMenu); },
-        accountButtonLabel: function(){ return this.shellChrome.accountLabel || ((this.boot.session||{}).userName || 'Operator'); },
-        accountRoleLabel: function(){ return this.shellChrome.accountRoleLabel || ((this.boot.user||{}).roleLabel || 'User'); },
-        accountSummaryCopy: function(){ return 'Signed in as ' + this.accountButtonLabel + ' · ' + this.accountRoleLabel + '.'; },
-        notificationHeadline: function(){ return this.notificationCenter.headline || 'Notification Center'; },
-        notificationSubheadline: function(){ return this.notificationCenter.subheadline || 'Server-authored shell notifications.'; },
-        notificationButtonLabel: function(){ return this.shellChrome.notificationLabel || 'Notifications'; },
-        shellSummary: function(){ return { pinned: this.desktopEntries.length, directories: this.directoryEntries.length, alerts: this.notificationBadgeCount }; },
+        plannedEntries: function(){ return this.allEntries.filter(function(app){ return (app.kind || '')==='future'; }).sort(function(a,b){ return Number(a.order||0)-Number(b.order||0); }); },
+        shellSummary: function(){ return { pinned: this.desktopEntries.length, directories: this.directoryEntries.length, planned: this.plannedEntries.length }; },
         mobileBreakpoint: function(){ return Number((((this.boot.desktop||{}).mobile)||{}).breakpoint || 900) || 900; },
         isCompactViewport: function(){ return Number(this.viewportWidth || 0) <= this.mobileBreakpoint; },
         qualitySummary: function(){
@@ -1229,10 +820,9 @@
         taskbarSlotCount: function(){ if (this.isCompactViewport) return 4; if ((this.viewportWidth || 0) <= 1180) return 5; if ((this.viewportWidth || 0) <= 1420) return 6; return 7; },
         visibleTaskWindows: function(){ return this.taskWindows.slice(0, this.taskbarSlotCount); },
         overflowTaskWindows: function(){ return this.taskWindows.slice(this.taskbarSlotCount); },
-        anyFlyoutOpen: function(){ return !!(this.panels.notifications || this.panels.account); },
-        currentShellSurface: function(){ if (this.anyDialogOpen) return 'dialog'; if (this.contextMenu.visible) return 'context-menu'; if (this.anyFlyoutOpen) return 'taskbar-flyout'; if (this.menuOpen) return 'start-menu'; return 'desktop'; },
+        currentShellSurface: function(){ if (this.anyDialogOpen) return 'dialog'; if (this.contextMenu.visible) return 'context-menu'; if (this.menuOpen) return 'start-menu'; return 'desktop'; },
         menuSections: function(){
-          var order=['Pinned','Directories','Applications','System'], buckets={}, out=[];
+          var order=['Pinned','Directories','Applications','System','Planned'], buckets={}, out=[];
           this.allEntries.forEach(function(app){ var key=app.group || 'Applications'; if (!buckets[key]) buckets[key]=[]; buckets[key].push(app); });
           order.forEach(function(label){ if (buckets[label] && buckets[label].length) { buckets[label].sort(function(a,b){ return Number(a.order||0)-Number(b.order||0); }); out.push({ label: label, items: buckets[label] }); } });
           return out;
@@ -1278,13 +868,13 @@
         this.normalizeTaskOrder();
         this.refreshView().catch(function(){});
         this.connectSocket();
-        this.$nextTick(function(){ self.ensureVisibleXtermsMounted(); });
-        this.startTerminalPolling();
+        this.$nextTick(function(){ self.ensureXtermMounted(); });
+        if (this.terminal.terminalId) this.startTerminalPolling();
       },
       beforeUnmount: function(){
         this.stopTerminalPolling();
-        this.disposeAllXterms();
-        this.clearAllXtermMountTimers();
+        this.disposeXterm();
+        this.clearXtermMountTimer();
       },
       methods: {
         appEntry: function(key){ return this.allEntries.find(function(x){ return x.key===key; }) || this.apps.find(function(x){ return x.key===key; }) || null; },
@@ -1332,27 +922,20 @@
         openDialog: function(kind){ this.dialogs.run=false; this.dialogs.about=false; this.dialogs.power=false; this.closeShellSurfaces('dialog'); if (kind && this.dialogs.hasOwnProperty(kind)) { this.dialogs[kind]=true; this.ensureDialogPosition(kind); } this.persistUiState('dialog-' + (kind || 'none')); if (kind==='run') this.$nextTick(function(){ var el=root.querySelector('.miomos-shell-dialog-input'); if (el && el.focus) el.focus(); }); },
         closeDialogs: function(){ this.dialogs.run=false; this.dialogs.about=false; this.dialogs.power=false; this.persistUiState('dialog-close'); },
         executeRunDialog: function(){ var key=String(this.runDialogInput || '').trim().toLowerCase(); if (!key) return; if (key==='cmd' || key==='ydb') key='terminal'; if (key==='desk') key='workspace'; this.closeDialogs(); this.launchApp(key); },
-        showTrayLabels: function(){ return Number(this.settingsForm.shell.showTrayLabels || "1")===1; },
-        onTrayAction: function(tray){ if (!tray) return; if (tray.action==='refresh') { this.refreshView(); return; } if (tray.action==='power') { this.openDialog('power'); return; } if (tray.action==='notifications') { this.toggleNotifications(); return; } if (tray.action==='account') { this.toggleAccountMenu(); return; } this.openDialog('about'); },
-        closeFlyouts: function(){ this.panels.notifications=false; this.panels.account=false; this.persistUiState('flyout-close'); },
-        toggleNotifications: function(){ var open=!this.panels.notifications; this.closeShellSurfaces(open ? 'notifications' : ''); this.panels.notifications=open; if (open) this.panels.account=false; this.persistUiState('notifications'); },
-        toggleAccountMenu: function(){ var open=!this.panels.account; this.closeShellSurfaces(open ? 'account' : ''); this.panels.account=open; if (open) this.panels.notifications=false; this.persistUiState('account'); },
-        openNotificationAction: function(item){ if (!item) return; this.closeFlyouts(); if ((item.action||'').indexOf('launch:')===0) { this.launchApp((item.action||'').split(':').slice(1).join(':')); return; } if (item.action==='power') { this.openDialog('power'); return; } if (item.action==='signout') { this.signout('/miomos?signedOut=1'); return; } this.openDialog('about'); },
-        accountIconFor: function(item){ var act=(item&&item.action)||''; if (act==='signout') return '⇦'; if (act==='switch-user') return '⇄'; if (act==='power') return '⏻'; if (act.indexOf('launch:')===0) return this.appIcon(act.split(':').slice(1).join(':')); return '•'; },
-        runAccountAction: function(item){ var act=(item&&item.action)||''; this.closeFlyouts(); if (act==='signout') { this.signout('/miomos?signedOut=1'); return; } if (act==='switch-user') { this.signout('/miomos?switchUser=1'); return; } if (act==='power') { this.openDialog('power'); return; } if (act.indexOf('launch:')===0) { this.launchApp(act.split(':').slice(1).join(':')); return; } this.openDialog('about'); },
+        onTrayAction: function(tray){ if (!tray) return; if (tray.action==='refresh') { this.refreshView(); return; } if (tray.action==='power') { this.openDialog('power'); return; } this.openDialog('about'); },
         markSocketActivity: function(){ this.lastSocketAt=Date.now(); },
-        entryKindLabel: function(kind){ if (kind==='directory') return 'Directory'; if (kind==='settings') return 'Settings'; return 'App'; },
-        entryStatusLabel: function(status){ if (status==='available') return 'Ready'; return String(status || ''); },
+        entryKindLabel: function(kind){ if (kind==='directory') return 'Directory'; if (kind==='settings') return 'Settings'; if (kind==='future') return 'Planned'; return 'App'; },
+        entryStatusLabel: function(status){ if (status==='planned') return 'Roadmap'; if (status==='available') return 'Ready'; return String(status || ''); },
         entryGlyphClass: function(kind){ kind=String(kind || 'app'); return 'miomos-entry-glyph--' + kind; },
-        installWindowListeners: function(){ var self=this; this._miomosKeydown=function(ev){ self.onGlobalKeydown(ev); }; window.addEventListener('resize', function(){ self.syncViewportMode(); self.onWindowResize(); }); window.addEventListener('keydown', this._miomosKeydown); document.addEventListener('pointerdown', function(ev){ if (self.contextMenu.visible && !(ev.target && ev.target.closest && ev.target.closest('.miomos-context-menu'))) self.closeContextMenu('pointerdown'); if (!root.contains(ev.target) && self.menuOpen) { self.menuOpen=false; self.persistUiState('outside-click'); } if ((self.panels.notifications || self.panels.account) && !(ev.target && ev.target.closest && ev.target.closest('.miomos-taskbar-flyout')) && !(ev.target && ev.target.closest && ev.target.closest('.miomos-taskbar-utility-btn'))) { self.closeFlyouts(); } }); window.addEventListener('beforeunload', function(){ self.shouldReconnect=false; self.saveLayoutLocal(); self.saveUiStateLocal(); self.clearReconnectTimer(); self.clearHeartbeat(); self.clearStaleMonitor(); self.stopTerminalPolling(); }); },
-        applySettings: function(){ var self=this, theme=this.currentThemeDefinition || {}; root.dataset.density=this.settingsForm.density || 'dense'; root.dataset.wallpaper=this.settingsForm.wallpaper || 'midnight-clinic'; root.dataset.animations=this.settingsForm.animations || 'standard'; root.dataset.windowPreset=this.settingsForm.windowPreset || 'analyst'; root.dataset.snapMode=this.settingsForm.snapMode || 'quadrant'; root.dataset.motionProfile=this.settingsForm.motionProfile || 'standard'; root.dataset.titlebarStyle=this.settingsForm.titlebarStyle || 'accent'; root.dataset.themeMode=theme.mode || 'dark'; root.dataset.themeKey=this.settingsForm.themeKey || theme.key || ''; root.style.setProperty('--miomos-font', this.settingsForm.fontFamily || 'Tahoma'); root.style.fontSize=(parseInt(this.settingsForm.fontSize || '13',10) || 13) + 'px'; this.applyThemeVariables(theme); this.syncViewportMode(); this.windows.forEach(function(win){ if (win.appKey==='terminal' && !win.closed) { self.ensureXtermMounted(win.id); self.applyXtermProfile(win.id); } }); },
-        applyThemeVariables: function(theme){ theme=theme || {}; root.style.setProperty('--desktop', theme.desktop || '#0b1320'); root.style.setProperty('--surface', theme.surface || 'rgba(15, 23, 36, 0.95)'); root.style.setProperty('--surface-alt', theme.surfaceAlt || 'rgba(11, 18, 29, 0.96)'); root.style.setProperty('--surface-soft', theme.surfaceSoft || 'rgba(255,255,255,0.03)'); root.style.setProperty('--border', theme.border || 'rgba(148,163,184,0.18)'); root.style.setProperty('--text', theme.text || '#ecf3ff'); root.style.setProperty('--muted', theme.muted || '#93a7c4'); root.style.setProperty('--accent', theme.accent || '#5f8dff'); root.style.setProperty('--accent-soft', theme.accentSoft || 'rgba(95,141,255,0.18)'); root.style.setProperty('--accent-strong', theme.accentStrong || 'rgba(95,141,255,0.34)'); root.style.setProperty('--title-accent', theme.accent || '#5f8dff'); root.style.setProperty('--active-title', theme.titleActive || 'linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.03)), linear-gradient(90deg, #5f8dff, rgba(255,255,255,0.02) 40%)'); root.style.setProperty('--inactive-title', theme.titleInactive || 'linear-gradient(180deg, rgba(91,103,122,0.42), rgba(45,56,72,0.36))'); root.style.setProperty('--miomos-shadow', theme.shadow || '0 18px 42px rgba(0,0,0,.26)'); root.style.setProperty('--icon', theme.icon || 'linear-gradient(180deg,#4ea1ef,#1d67ba)'); },
+        installWindowListeners: function(){ var self=this; this._miomosKeydown=function(ev){ self.onGlobalKeydown(ev); }; window.addEventListener('resize', function(){ self.syncViewportMode(); self.onWindowResize(); }); window.addEventListener('keydown', this._miomosKeydown); document.addEventListener('pointerdown', function(ev){ if (self.contextMenu.visible && !(ev.target && ev.target.closest && ev.target.closest('.miomos-context-menu'))) self.closeContextMenu('pointerdown'); if (!root.contains(ev.target) && self.menuOpen) { self.menuOpen=false; self.persistUiState('outside-click'); } }); window.addEventListener('beforeunload', function(){ self.shouldReconnect=false; self.saveLayoutLocal(); self.saveUiStateLocal(); self.clearReconnectTimer(); self.clearHeartbeat(); self.clearStaleMonitor(); self.stopTerminalPolling(); }); },
+        applySettings: function(){ var theme=this.currentThemeDefinition || {}; root.dataset.density=this.settingsForm.density || 'dense'; root.dataset.wallpaper=this.settingsForm.wallpaper || 'midnight-clinic'; root.dataset.animations=this.settingsForm.animations || 'standard'; root.dataset.windowPreset=this.settingsForm.windowPreset || 'analyst'; root.dataset.snapMode=this.settingsForm.snapMode || 'quadrant'; root.dataset.motionProfile=this.settingsForm.motionProfile || 'standard'; root.dataset.titlebarStyle=this.settingsForm.titlebarStyle || 'accent'; root.dataset.themeMode=theme.mode || 'dark'; root.style.setProperty('--miomos-font', this.settingsForm.fontFamily || 'Segoe UI'); root.style.fontSize=(parseInt(this.settingsForm.fontSize || '13',10) || 13) + 'px'; this.applyThemeVariables(theme); this.syncViewportMode(); this.ensureXtermMounted(); this.applyXtermProfile(); },
+        applyThemeVariables: function(theme){ theme=theme || {}; root.style.setProperty('--desktop', theme.desktop || '#0b1320'); root.style.setProperty('--surface', theme.surface || 'rgba(15, 23, 36, 0.95)'); root.style.setProperty('--surface-alt', theme.surfaceAlt || 'rgba(11, 18, 29, 0.96)'); root.style.setProperty('--surface-soft', theme.surfaceSoft || 'rgba(255,255,255,0.03)'); root.style.setProperty('--border', theme.border || 'rgba(148,163,184,0.18)'); root.style.setProperty('--text', theme.text || '#ecf3ff'); root.style.setProperty('--muted', theme.muted || '#93a7c4'); root.style.setProperty('--accent', theme.accent || '#5f8dff'); root.style.setProperty('--accent-soft', theme.accentSoft || 'rgba(95,141,255,0.18)'); root.style.setProperty('--accent-strong', theme.accentStrong || 'rgba(95,141,255,0.34)'); root.style.setProperty('--title-accent', theme.accent || '#5f8dff'); root.style.setProperty('--active-title', theme.titleActive || 'linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.03)), linear-gradient(90deg, #5f8dff, rgba(255,255,255,0.02) 40%)'); root.style.setProperty('--inactive-title', theme.titleInactive || 'linear-gradient(180deg, rgba(91,103,122,0.42), rgba(45,56,72,0.36))'); root.style.setProperty('--miomos-shadow', theme.shadow || '0 18px 42px rgba(0,0,0,.26)'); },
         syncViewportMode: function(){ this.viewportWidth = (window.innerWidth || document.documentElement.clientWidth || 1400); root.dataset.mobileLayout = this.isCompactViewport ? '1' : '0'; },
-        focusWindow: function(id){ var win=this.windows.find(function(w){ return w.id===id; }); if (!win || win.closed) return; this.activeWindowId=win.id; this.zCounter+=1; win.z=this.zCounter; if (win.appKey==='terminal') this.terminal=this.ensureTerminalState(win.id); this.persistUiState('focus-window'); },
+        focusWindow: function(id){ var win=this.windows.find(function(w){ return w.id===id; }); if (!win || win.closed) return; this.activeWindowId=win.id; this.zCounter+=1; win.z=this.zCounter; this.persistUiState('focus-window'); },
         normalizeTaskOrder: function(){ var used={}, next=1; this.windows.slice().sort(function(a,b){ var ao=Number(a.taskOrder||0), bo=Number(b.taskOrder||0); if (ao && bo && ao!==bo) return ao-bo; return Number(a.z||0)-Number(b.z||0); }).forEach(function(win){ var slot=Number(win.taskOrder||0); if (!slot || used[slot]) { while (used[next]) next += 1; slot=next; } used[slot]=1; win.taskOrder=slot; if (slot>=next) next=slot+1; }); },
-        launchApp: function(key){ var entry=this.appEntry(key) || {}, launchKey=entry.launchKey || key, win=null; if (entry.disabled) { this.closeShellSurfaces(''); this.persistUiState('disabled-launch'); return; } this.closeShellSurfaces(''); this.recordRecentLaunch(launchKey); if (launchKey==='terminal') { win=this.createTerminalWindow(); this.lastCommandName='launch.' + launchKey; this.saveLayout(); this.persistUiState('launch-terminal-window'); this.$nextTick(function(){ this.openTerminalForWindow(win.id, true); }.bind(this)); return; } win=this.windows.find(function(w){ return w.appKey===launchKey || w.id===launchKey || w.id===('win-dir-' + launchKey); }); if (!win && (entry.kind || '')==='directory') win=this.ensureWindowForEntry(entry); if (!win) { this.persistUiState('missing-window'); return; } win.title=entry.title || win.title; win.closed=false; win.minimized=false; this.focusWindow(win.id); this.lastCommandName='launch.' + launchKey; this.saveLayout(); this.persistUiState('launch-app'); },
+        launchApp: function(key){ var entry=this.appEntry(key) || {}, launchKey=entry.launchKey || key; if (entry.disabled) { this.closeShellSurfaces(''); this.persistUiState('disabled-launch'); return; } var win=this.windows.find(function(w){ return w.appKey===launchKey || w.id===launchKey || w.id===('win-dir-' + launchKey); }); if (!win && (entry.kind || '')==='directory') win=this.ensureWindowForEntry(entry); if (!win) { this.closeShellSurfaces(''); this.persistUiState('missing-window'); return; } this.closeShellSurfaces(''); this.recordRecentLaunch(launchKey); win.title=entry.title || win.title; win.closed=false; win.minimized=false; this.focusWindow(win.id); this.lastCommandName='launch.' + launchKey; if (launchKey==='terminal') this.openTerminal(); this.saveLayout(); this.persistUiState('launch-app'); },
         minimizeWindow: function(id){ var win=this.windows.find(function(w){ return w.id===id; }); if (!win) return; win.minimized=true; if (this.activeWindowId===win.id) this.activeWindowId=''; this.saveLayout(); this.persistUiState('minimize-window'); },
-        closeWindow: function(id){ var win=this.windows.find(function(w){ return w.id===id; }); if (!win) return; if (win.appKey==='terminal') { this.closeTerminalForWindow(id, true); return; } win.closed=true; win.minimized=false; if (this.activeWindowId===win.id) this.activeWindowId=''; this.saveLayout(); this.persistUiState('close-window'); },
+        closeWindow: function(id){ var win=this.windows.find(function(w){ return w.id===id; }); if (!win) return; win.closed=true; win.minimized=false; if (this.activeWindowId===win.id) this.activeWindowId=''; this.saveLayout(); this.persistUiState('close-window'); },
         toggleTaskWindow: function(id){ var win=this.windows.find(function(w){ return w.id===id; }); if (!win) return; this.closeShellSurfaces(''); if (!win.closed && !win.minimized && this.activeWindowId===win.id) { win.minimized=true; this.activeWindowId=''; } else if (win.minimized) { win.minimized=false; this.focusWindow(win.id); } else { win.closed=false; win.minimized=false; this.focusWindow(win.id); } this.saveLayout(); this.persistUiState('task-toggle'); },
         toggleMenu: function(){ if (this.menuOpen) { this.menuOpen=false; this.persistUiState('toggle-menu-close'); return; } if (this.startSectionTabs.length && this.startSectionTabs.indexOf(this.activeStartSection)<0) this.activeStartSection=this.startSectionTabs[0]; this.closeShellSurfaces('menu'); this.menuOpen=true; this.persistUiState('toggle-menu-open'); this.focusStartSearch(); },
         focusStartSearch: function(){ var self=this; this.$nextTick(function(){ var node=self.$refs.startSearchInput; if (Array.isArray(node)) node=node[0] || null; if (node && node.focus) node.focus(); }); },
@@ -1371,7 +954,7 @@
         cascadeWindows: function(){ if (this.isCompactViewport) { this.layoutMode='stack'; this.saveLayout(); return; } var wins=this.windows.filter(function(w){ return !w.closed; }); if (!wins.length) return; var rect=this.stageRect(), offsetX=28, offsetY=24, width=Math.max(560, Math.floor(rect.width*0.72)), height=Math.max(360, Math.floor(rect.height*0.72)); wins.forEach(function(win, idx){ win.minimized=false; win.maximized=false; win.snap='cascade'; win.left=Math.min((idx*offsetX), Math.max(0, rect.width-width-20)); win.top=Math.min((idx*offsetY), Math.max(0, rect.height-height-20)); win.width=width; win.height=height; }); this.layoutMode='cascade'; this.focusWindow(wins[wins.length-1].id); this.saveLayout(); },
         minimizeAllWindows: function(){ this.windows.forEach(function(win){ if (!win.closed) win.minimized=true; }); this.layoutMode=''; this.activeWindowId=''; this.saveLayout(); this.persistUiState('minimize-all'); },
         restoreAllWindows: function(){ var self=this; this.windows.forEach(function(win){ if (!win.closed) win.minimized=false; if (win.snap==='grid' || win.snap==='cascade') win.snap=''; self.clampWindow(win); }); this.layoutMode=''; if (this.windows.length) this.focusWindow(this.windows[0].id); this.saveLayout(); this.persistUiState('restore-all'); },
-        focusTerminalWindow: function(){ var win=this.windows.filter(function(w){ return w.appKey==='terminal' && !w.closed; }).sort(function(a,b){ return Number(b.z||0)-Number(a.z||0); })[0]; this.lastCommandName='shell.focusTerminal'; if (!win) { this.launchApp('terminal'); return; } win.minimized=false; this.focusWindow(win.id); this.$nextTick(function(){ this.ensureXtermMounted(win.id); this.focusTerminalInput(win.id); }.bind(this)); },
+        focusTerminalWindow: function(){ this.lastCommandName='shell.focusTerminal'; this.launchApp('terminal'); },
         focusWindowByIndex: function(step){ var wins=this.taskWindows.filter(function(win){ return !win.minimized && !win.closed; }); if (!wins.length) return; var idx=wins.findIndex(function(win){ return win.id===this.activeWindowId; }, this); if (idx<0) idx=0; idx=(idx+step+wins.length)%wins.length; this.focusWindow(wins[idx].id); },
         onGlobalKeydown: function(ev){ if ((ev.ctrlKey && ev.key==='Escape') || (!ev.ctrlKey && !ev.altKey && !ev.shiftKey && ev.key==='Meta')) { ev.preventDefault(); this.toggleMenu(); return; } if (ev.altKey && !ev.shiftKey && !ev.ctrlKey && (ev.key==='m' || ev.key==='M')) { ev.preventDefault(); this.toggleMenu(); return; } if (ev.altKey && !ev.shiftKey && !ev.ctrlKey && (ev.key==='g' || ev.key==='G')) { ev.preventDefault(); this.tileWindows(); return; } if (ev.altKey && !ev.shiftKey && !ev.ctrlKey && (ev.key==='c' || ev.key==='C')) { ev.preventDefault(); this.cascadeWindows(); return; } if (ev.altKey && !ev.shiftKey && !ev.ctrlKey && (ev.key==='n' || ev.key==='N')) { ev.preventDefault(); this.minimizeAllWindows(); return; } if (ev.altKey && !ev.shiftKey && !ev.ctrlKey && (ev.key==='r' || ev.key==='R')) { ev.preventDefault(); this.restoreAllWindows(); return; } if (ev.altKey && !ev.shiftKey && !ev.ctrlKey && (ev.key==='t' || ev.key==='T')) { ev.preventDefault(); this.focusTerminalWindow(); return; } if (this.menuOpen && !ev.altKey && !ev.ctrlKey && (ev.key==='ArrowRight' || ev.key==='ArrowDown')) { ev.preventDefault(); this.cycleStartSection(1); return; } if (this.menuOpen && !ev.altKey && !ev.ctrlKey && (ev.key==='ArrowLeft' || ev.key==='ArrowUp')) { ev.preventDefault(); this.cycleStartSection(-1); return; } if (this.menuOpen && ev.key==='Enter' && this.normalizedStartSearch) { ev.preventDefault(); this.executeStartSearch(); return; } if (ev.key==='Escape' && this.anyDialogOpen) { ev.preventDefault(); this.closeDialogs(); return; } if (ev.key==='Escape' && this.contextMenu.visible) { ev.preventDefault(); this.closeContextMenu('escape'); return; } if (ev.key==='Escape' && this.menuOpen && this.startSearch) { ev.preventDefault(); this.clearStartSearch(); return; } if (ev.key==='Escape' && this.menuOpen) { ev.preventDefault(); this.menuOpen=false; this.saveUiStateLocal(); return; } if (ev.altKey && !ev.ctrlKey && /^[1-9]$/.test(ev.key)) { ev.preventDefault(); var idx=parseInt(ev.key,10)-1; if (this.taskWindows[idx]) this.toggleTaskWindow(this.taskWindows[idx].id); } },
         windowClassMap: function(win){ return { 'is-active': this.activeWindowId===win.id && !win.minimized && !win.closed, 'is-minimized': !!win.minimized, 'is-closed': !!win.closed, 'is-maximized': !!win.maximized, 'is-tiled': (win.snap||'')==='grid', 'is-cascaded': (win.snap||'')==='cascade' }; },
@@ -1391,16 +974,16 @@
         loadLayoutLocal: function(){ var key='miomos.layout.' + (this.boot.session||{}).id, raw=''; this.applySavedLayout(this.parseLayoutRaw((((this.boot.desktop||{}).savedLayoutJson)||''))); try { raw=window.localStorage.getItem(key)||''; } catch(e){} this.applySavedLayout(this.parseLayoutRaw(raw)); },
         saveLayoutLocal: function(){ var key='miomos.layout.' + (this.boot.session||{}).id; try { window.localStorage.setItem(key, JSON.stringify(this.serializeLayout())); } catch(e){} },
         saveLayout: function(){ this.saveLayoutLocal(); this.command('layout.save', { layout: this.serializeLayout() }).catch(function(){}); },
-        onWindowResize: function(){ var self=this; if (this.isCompactViewport) { this.resizeAllTerminals(); return; } this.windows.forEach(function(w){ if (['left','right','maximize','top-left','top-right','bottom-left','bottom-right'].indexOf(w.snap||'')>-1 || w.maximized) self.applySnap(w.id, w.snap || 'maximize'); else self.clampWindow(w); }); if (this.layoutMode==='tile') this.tileWindows(); this.resizeAllTerminals(); },
+        onWindowResize: function(){ var self=this; if (this.isCompactViewport) { this.resizeTerminal(); return; } this.windows.forEach(function(w){ if (['left','right','maximize','top-left','top-right','bottom-left','bottom-right'].indexOf(w.snap||'')>-1 || w.maximized) self.applySnap(w.id, w.snap || 'maximize'); else self.clampWindow(w); }); if (this.layoutMode==='tile') this.tileWindows(); this.resizeTerminal(); },
         ensureSocketReady: function(){ var self=this, timeoutMs=Number(this.desktopPolicy.commandTimeoutMs || 8000) || 8000; if (this.socket && this.socket.readyState===1) return Promise.resolve(true); this.connectSocket(); return new Promise(function(resolve,reject){ var stopAt=Date.now()+timeoutMs; (function waitForSocket(){ if (self.socket && self.socket.readyState===1) return resolve(true); if (Date.now() >= stopAt) return reject(new Error('socket_timeout')); window.setTimeout(waitForSocket, 75); }()); }); },
         socketRequest: function(event, payload, options){ var self=this, opts=options || {}, maxInflight=Number(this.desktopPolicy.commandMaxInflight || 3) || 3, timeoutMs=Number(opts.timeoutMs || this.desktopPolicy.commandTimeoutMs || 8000) || 8000, label=String(opts.command || event || 'socket.request'), key=opts.dedupeKey || (label + '|' + JSON.stringify(payload || {})); if (this.pendingCommands[key]) return this.pendingCommands[key]; if (this.inflightCommandCount >= maxInflight) { this.commandError='Another shell command is still in flight. Please wait for it to finish before submitting a new action.'; return Promise.reject(new Error('command_busy')); } this.commandError=''; this.dismissedAlertKey=''; this.lastCommandName=label; this.saveUiStateLocal(); this.inflightCommandCount += 1; var requestId='ws-' + (++this.socketRequestSeq) + '-' + Date.now(); var req=this.ensureSocketReady().then(function(){ return new Promise(function(resolve,reject){ var pending={ key:key, command:label, timer:null, resolve:function(msg){ if (pending.timer) window.clearTimeout(pending.timer); delete self.socketPending[requestId]; resolve(msg); }, reject:function(err){ if (pending.timer) window.clearTimeout(pending.timer); delete self.socketPending[requestId]; reject(err); } }; pending.timer=window.setTimeout(function(){ pending.reject(new Error('socket_request_timeout')); }, timeoutMs); self.socketPending[requestId]=pending; if (!self.sendSocket(Object.assign({ event:event, requestId:requestId, sessionId:((self.boot.session||{}).id || root.getAttribute('data-miomos-session') || '') }, payload || {}))) { pending.reject(new Error('socket_send_failed')); } }); }).catch(function(err){ self.commandError='Command ' + label + ' failed: ' + (err && err.message ? err.message : 'unknown error'); self.dismissedAlertKey=''; throw err; }).finally(function(){ self.inflightCommandCount=Math.max(0,self.inflightCommandCount-1); delete self.pendingCommands[key]; self.saveUiStateLocal(); }); this.pendingCommands[key]=req; return req; },
         command: function(command, payload){ var eventName=(this.boot.routes||{}).commandEvent || root.getAttribute('data-miomos-command-event') || 'command.exec'; var body=Object.assign({ command: command }, payload || {}); var key=command + '|' + JSON.stringify(body); return this.socketRequest(eventName, body, { dedupeKey:key, command:command }); },
         refreshView: function(){ var self=this; return this.command('view.refresh', {}).then(function(json){ if (json.view) self.view = json.view; self.syncSettingsForm(); self.applySettings(); self.commandError=''; return json; }).catch(function(err){ self.commandError='View refresh failed: ' + (err && err.message ? err.message : 'unknown error'); self.dismissedAlertKey=''; throw err; }); },
-        syncSettingsForm: function(){ var cur=((this.view.settings||{}).current)||{}; this.settingsForm.themeKey = cur.themeKey || this.settingsForm.themeKey; this.settingsForm.fontFamily = cur.fontFamily || this.settingsForm.fontFamily; this.settingsForm.fontSize = String(cur.fontSize || this.settingsForm.fontSize); this.settingsForm.titleAccent = cur.titleAccent || this.settingsForm.titleAccent; this.settingsForm.iconStyle = cur.iconStyle || this.settingsForm.iconStyle; this.settingsForm.wallpaper = cur.wallpaper || this.settingsForm.wallpaper; this.settingsForm.density = cur.density || this.settingsForm.density; this.settingsForm.animations = cur.animations || this.settingsForm.animations; this.settingsForm.windowPreset = cur.windowPreset || this.settingsForm.windowPreset; this.settingsForm.snapMode = cur.snapMode || this.settingsForm.snapMode; this.settingsForm.motionProfile = cur.motionProfile || this.settingsForm.motionProfile; this.settingsForm.titlebarStyle = cur.titlebarStyle || this.settingsForm.titlebarStyle; this.settingsForm.icons = Object.assign({}, this.settingsForm.icons, cur.icon || {}); if (cur.terminal) { var self=this; Object.keys(cur.terminal).forEach(function(k){ self.settingsForm.terminal[k] = String(cur.terminal[k]); }); } if (cur.shell) { this.settingsForm.shell.startMenuSection = cur.shell.startMenuSection || this.settingsForm.shell.startMenuSection; this.settingsForm.shell.showClockSeconds = String(cur.shell.showClockSeconds != null ? cur.shell.showClockSeconds : this.settingsForm.shell.showClockSeconds); this.settingsForm.shell.showTrayLabels = String(cur.shell.showTrayLabels != null ? cur.shell.showTrayLabels : this.settingsForm.shell.showTrayLabels); this.settingsForm.shell.notificationPreviewCount = String(cur.shell.notificationPreviewCount || this.settingsForm.shell.notificationPreviewCount); this.settingsForm.shell.showAccountName = String(cur.shell.showAccountName != null ? cur.shell.showAccountName : this.settingsForm.shell.showAccountName); this.settingsForm.shell.showNotificationBadge = String(cur.shell.showNotificationBadge != null ? cur.shell.showNotificationBadge : this.settingsForm.shell.showNotificationBadge); } },
-        buildSettingsPayload: function(){ return { themeKey:this.settingsForm.themeKey, fontFamily:this.settingsForm.fontFamily, fontSize:parseInt(this.settingsForm.fontSize,10), titleAccent:this.settingsForm.titleAccent, iconStyle:this.settingsForm.iconStyle, wallpaper:this.settingsForm.wallpaper, density:this.settingsForm.density, animations:this.settingsForm.animations, windowPreset:this.settingsForm.windowPreset, snapMode:this.settingsForm.snapMode, motionProfile:this.settingsForm.motionProfile, titlebarStyle:this.settingsForm.titlebarStyle, icons: clone(this.settingsForm.icons), terminal: { fontFamily:this.settingsForm.terminal.fontFamily, fontSize:parseInt(this.settingsForm.terminal.fontSize,10), cursorBlink:parseInt(this.settingsForm.terminal.cursorBlink,10), cursorStyle:this.settingsForm.terminal.cursorStyle, palette:this.settingsForm.terminal.palette, scrollback:parseInt(this.settingsForm.terminal.scrollback,10), renderer:this.settingsForm.terminal.renderer, unicode:this.settingsForm.terminal.unicode, cols:parseInt(this.settingsForm.terminal.cols || '120',10), rows:parseInt(this.settingsForm.terminal.rows || '28',10) }, shell: { startMenuSection:this.settingsForm.shell.startMenuSection, showClockSeconds:parseInt(this.settingsForm.shell.showClockSeconds,10), showTrayLabels:parseInt(this.settingsForm.shell.showTrayLabels,10), notificationPreviewCount:parseInt(this.settingsForm.shell.notificationPreviewCount,10), showAccountName:parseInt(this.settingsForm.shell.showAccountName,10), showNotificationBadge:parseInt(this.settingsForm.shell.showNotificationBadge,10) } }; },
+        syncSettingsForm: function(){ var cur=((this.view.settings||{}).current)||{}; this.settingsForm.themeKey = cur.themeKey || this.settingsForm.themeKey; this.settingsForm.fontFamily = cur.fontFamily || this.settingsForm.fontFamily; this.settingsForm.fontSize = String(cur.fontSize || this.settingsForm.fontSize); this.settingsForm.titleAccent = cur.titleAccent || this.settingsForm.titleAccent; this.settingsForm.iconStyle = cur.iconStyle || this.settingsForm.iconStyle; this.settingsForm.wallpaper = cur.wallpaper || this.settingsForm.wallpaper; this.settingsForm.density = cur.density || this.settingsForm.density; this.settingsForm.animations = cur.animations || this.settingsForm.animations; this.settingsForm.windowPreset = cur.windowPreset || this.settingsForm.windowPreset; this.settingsForm.snapMode = cur.snapMode || this.settingsForm.snapMode; this.settingsForm.motionProfile = cur.motionProfile || this.settingsForm.motionProfile; this.settingsForm.titlebarStyle = cur.titlebarStyle || this.settingsForm.titlebarStyle; this.settingsForm.icons = Object.assign({}, this.settingsForm.icons, cur.icon || {}); if (cur.terminal) { var self=this; Object.keys(cur.terminal).forEach(function(k){ self.settingsForm.terminal[k] = String(cur.terminal[k]); }); } },
+        buildSettingsPayload: function(){ return { themeKey:this.settingsForm.themeKey, fontFamily:this.settingsForm.fontFamily, fontSize:parseInt(this.settingsForm.fontSize,10), titleAccent:this.settingsForm.titleAccent, iconStyle:this.settingsForm.iconStyle, wallpaper:this.settingsForm.wallpaper, density:this.settingsForm.density, animations:this.settingsForm.animations, windowPreset:this.settingsForm.windowPreset, snapMode:this.settingsForm.snapMode, motionProfile:this.settingsForm.motionProfile, titlebarStyle:this.settingsForm.titlebarStyle, icons: clone(this.settingsForm.icons), terminal: { fontFamily:this.settingsForm.terminal.fontFamily, fontSize:parseInt(this.settingsForm.terminal.fontSize,10), cursorBlink:parseInt(this.settingsForm.terminal.cursorBlink,10), cursorStyle:this.settingsForm.terminal.cursorStyle, palette:this.settingsForm.terminal.palette, scrollback:parseInt(this.settingsForm.terminal.scrollback,10), renderer:this.settingsForm.terminal.renderer, sizeMode:this.settingsForm.terminal.sizeMode, unicode:this.settingsForm.terminal.unicode, cols:parseInt(this.settingsForm.terminal.cols || '120',10), rows:parseInt(this.settingsForm.terminal.rows || '28',10) } }; },
         saveSettings: function(){ var self=this; this.settingsStatus='Saving…'; this.command('settings.save', this.buildSettingsPayload()).then(function(){ self.settingsStatus='Saved'; self.refreshView().catch(function(){}); }).catch(function(){ self.settingsStatus='Save failed'; }); },
         quickTheme: function(key){ var self=this; this.settingsForm.themeKey=key; this.command('theme.quick', { themeKey:key }).then(function(){ self.settingsStatus='Theme updated'; self.refreshView().catch(function(){}); }).catch(function(){ self.settingsStatus='Theme update failed'; }); },
-        signout: function(targetUrl){ var evt=(this.boot.routes||{}).signoutEvent || root.getAttribute('data-miomos-signout-event') || 'auth.signout'; var next=targetUrl || '/miomos?signedOut=1'; return this.socketRequest(evt, {}, { dedupeKey:'auth.signout', command:'auth.signout', timeoutMs:4000 }).finally(function(){ window.location.href=next; }); },
+        signout: function(){ var evt=(this.boot.routes||{}).signoutEvent || root.getAttribute('data-miomos-signout-event') || 'auth.signout'; return this.socketRequest(evt, {}, { dedupeKey:'auth.signout', command:'auth.signout', timeoutMs:4000 }).finally(function(){ window.location.reload(); }); },
         connectSocket: function(){ var self=this, path=((this.boot.routes||{}).websocket)||root.getAttribute('data-miomos-ws'); if (!path) return; if (this.socketConnecting) return; if (this.socket && (this.socket.readyState===0 || this.socket.readyState===1)) return; var proto=window.location.protocol==='https:'?'wss://':'ws://'; var url=/^wss?:\/\//i.test(path)?path:(proto + window.location.host + path); this.socketConnecting=true; try { this.socket=new WebSocket(url); } catch(e){ this.socketConnecting=false; this.scheduleReconnect(); return; } this.socket.addEventListener('open', function(){ self.socketConnecting=false; self.socketConnected=true; self.reconnectDelay=Number(self.desktopPolicy.reconnectBaseMs || 1000) || 1000; self.markSocketActivity(); self.sendSocket({ event:'hello', sessionId:(self.boot.session||{}).id || root.getAttribute('data-miomos-session') }); self.startHeartbeat(); self.startStaleMonitor(); }); this.socket.addEventListener('message', function(ev){ self.markSocketActivity(); self.handleSocketMessage(ev.data); }); this.socket.addEventListener('close', function(){ self.socketConnected=false; self.socketConnecting=false; self.clearHeartbeat(); self.clearStaleMonitor(); self.rejectPendingSocketRequests('socket_closed'); self.socket=null; self.lastReconnectAt=(new Date()).toISOString(); self.reconnectCount += 1; self.dismissedAlertKey=''; if (self.shouldReconnect) self.scheduleReconnect(); }); this.socket.addEventListener('error', function(){ self.socketConnected=false; if (self.socket && self.socket.readyState < 2) { try { self.socket.close(); } catch(e){} } }); },
         markSocketActivity: function(){ this.lastSocketAt=Date.now(); },
         rejectPendingSocketRequests: function(reason){ var pending=this.socketPending || {}, ids=Object.keys(pending), message=reason || 'socket_closed'; this.socketPending={}; ids.forEach(function(id){ try { pending[id].reject(new Error(message)); } catch(e){} }); },
@@ -1414,66 +997,46 @@
         handleSocketMessage: function(raw){ var msg, pending; try { msg=JSON.parse(raw||'{}'); } catch(e){ return; } if (msg.requestId && this.socketPending[msg.requestId]) { pending=this.socketPending[msg.requestId]; if (msg.ok===0 || msg.event==='command.error') pending.reject(new Error(msg.detail || msg.error || 'request_failed')); else pending.resolve(msg); return; } if (msg.event==='hello' || msg.event==='pong') { this.socketConnected=true; this.commandError=''; return; } if (msg.event==='session.signout') { this.commandError = msg.detail || msg.reason || 'Session signed out.'; this.terminalStatus = 'Session signed out'; this.shouldReconnect = false; this.clearReconnectTimer(); if (this.socket && this.socket.readyState < 2) { try { this.socket.close(); } catch(e){} } return; } if (msg.event==='chat.snapshot') { this.messages = arr(msg.messages); return; } if (msg.event==='chat.message') { this.messages = this.messages.concat([msg.message || { userName:'System', text:'Message received.', ts:'Now' }]).slice(-30); return; } },
         sendChat: function(){ var text=(this.chatDraft||'').trim(); if (!text) return; this.sendSocket({ event:'chat.send', room:((this.view.chat||{}).room || 'general'), text:text, sessionId:((this.boot.session||{}).id || root.getAttribute('data-miomos-session')) }); this.chatDraft=''; },
         terminalCtor: function(){ return window.Terminal || ((window.Xterm||{}).Terminal) || ((window.XTerm||{}).Terminal) || null; },
-        terminalViewportId: function(winId){ return 'miomosTerminalViewport-' + String(winId || '').replace(/[^A-Za-z0-9_-]/g,'_'); },
-        terminalHostId: function(winId){ return 'miomosTerminalHost-' + String(winId || '').replace(/[^A-Za-z0-9_-]/g,'_'); },
-        resolveTerminalViewport: function(winId){ return document.getElementById(this.terminalViewportId(winId)); },
-        resolveTerminalHost: function(winId){ return document.getElementById(this.terminalHostId(winId)); },
-        terminalStateFor: function(winId){ return this.ensureTerminalState(winId); },
-        terminalStatusFor: function(winId){ var term=this.ensureTerminalState(winId); if (term.status) return term.status; return term.terminalId ? 'Terminal live' : 'Terminal idle'; },
-        terminalViewportStyleFor: function(){ var spec=this.terminalThemeSpec || {}; return { borderColor: spec.chromeBorder || '', background: spec.chromeBackground || '', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06), inset 0 0 0 1px rgba(255,255,255,0.03), 0 18px 34px rgba(5,10,17,0.24)' }; },
-        terminalStatuslineStyleFor: function(winId){ var spec=this.terminalThemeSpec || {}, term=this.ensureTerminalState(winId), connected=!!term.terminalId; return { color: spec.statusText || '', background: spec.statusBackground || '', '--miomos-terminal-dot': connected ? (spec.dot || '#7aa0f7') : '#c77c35', '--miomos-terminal-dot-halo': connected ? (spec.dotHalo || 'rgba(122,160,247,0.18)') : 'rgba(199,124,53,0.18)' }; },
-        ensureTerminalState: function(winId){ var win=this.windows.find(function(w){ return w.id===winId; }); if (!win) return this.terminal; if (!win.term) win.term={ terminalId:'', inputLine:'', transcript:'', history:[], historyIndex:-1, prompt:'YDB>', cwd:'/', transport:'pipe', seq:0, busy:false, status:'Terminal idle', loadError:'' }; return win.term; },
-        nextTerminalOrdinal: function(){ var max=0; this.windows.forEach(function(w){ if (w.appKey!=='terminal') return; max=Math.max(max, Number(w.terminalOrdinal||0)); }); return max+1; },
-        createTerminalWindow: function(){ var ordinal=this.nextTerminalOrdinal(), base=this.windows.find(function(w){ return w.appKey==='terminal' && w.id==='win-terminal' && !Number(w.terminalOrdinal||0); }), seed=this.windows.filter(function(w){ return w.appKey==='terminal'; }).sort(function(a,b){ return Number(a.taskOrder||0)-Number(b.taskOrder||0); })[0], win; if (base) { win=base; win.terminalOrdinal=ordinal; win.title='Terminal ' + ordinal; win.closed=false; win.minimized=false; win.left=Number(win.left||110); win.top=Number(win.top||80); } else { seed=seed || { left:110, top:80, width:960, height:540 }; win={ id:'win-terminal-' + ordinal + '-' + Date.now(), appKey:'terminal', title:'Terminal ' + ordinal, left:Number(seed.left||110)+(ordinal>1?((ordinal-1)*24):0), top:Number(seed.top||80)+(ordinal>1?((ordinal-1)*20):0), width:Number(seed.width||960), height:Number(seed.height||540), z:++this.zCounter, taskOrder:this.nextTaskOrder(), minimized:false, closed:false, maximized:false, restoreRect:null, snap:'', terminalOrdinal:ordinal, term:null }; this.windows.push(win); } this.terminalWindowSeq=Math.max(this.terminalWindowSeq||0, ordinal); this.ensureTerminalState(win.id); this.focusWindow(win.id); this.saveLayout(); return win; },
-        activeTerminalWindowId: function(){ var win=this.windows.find(function(w){ return w.id===this.activeWindowId && w.appKey==='terminal' && !w.closed; }, this); if (win) return win.id; win=this.windows.filter(function(w){ return w.appKey==='terminal' && !w.closed && !w.minimized; }).sort(function(a,b){ return Number(b.z||0)-Number(a.z||0); })[0]; return win ? win.id : ''; },
-        xtermStore: function(){ if (!this._xtermByWin) this._xtermByWin={}; return this._xtermByWin; },
-        xtermTimerStore: function(){ if (!this._xtermMountTimers) this._xtermMountTimers={}; return this._xtermMountTimers; },
-        clearXtermMountTimer: function(winId){ var timers=this.xtermTimerStore(); if (timers[winId]) window.clearTimeout(timers[winId]); delete timers[winId]; },
-        clearAllXtermMountTimers: function(){ var self=this, timers=this.xtermTimerStore(); Object.keys(timers).forEach(function(winId){ self.clearXtermMountTimer(winId); }); },
-        scheduleXtermMount: function(winId){ var self=this; this.clearXtermMountTimer(winId); this.xtermTimerStore()[winId]=window.setTimeout(function(){ self.clearXtermMountTimer(winId); self.ensureXtermMounted(winId); }, 60); },
-        buildXtermOptions: function(){ return {
-          fontFamily: String((((this.settingsForm||{}).terminal||{}).fontFamily) || 'JetBrains Mono'),
+        resolveTerminalViewport: function(){ var viewport=this.$refs.terminalViewport; if (Array.isArray(viewport)) viewport = viewport[0] || null; if (!viewport || viewport.nodeType !== 1) return null; return viewport; },
+        resolveTerminalHost: function(){ var host=this.$refs.terminalHost; if (Array.isArray(host)) host = host[0] || null; if (!host || host.nodeType !== 1) return null; return host; },
+        clearXtermMountTimer: function(){ if (this._xtermMountTimer) window.clearTimeout(this._xtermMountTimer); this._xtermMountTimer=null; },
+        scheduleXtermMount: function(){ var self=this; this.clearXtermMountTimer(); this._xtermMountTimer=window.setTimeout(function(){ self._xtermMountTimer=null; self.ensureXtermMounted(); }, 60); },
+        terminalSizingMode: function(){ return String(((((this.settingsForm||{}).terminal)||{}).sizeMode) || 'fit-container'); },
+        computeTerminalGrid: function(){ var viewport=this.resolveTerminalViewport(), size=parseInt(this.settingsForm.terminal.fontSize || '13',10) || 13, cols=parseInt(this.settingsForm.terminal.cols || '120',10) || 120, rows=parseInt(this.settingsForm.terminal.rows || '28',10) || 28; if (this.terminalSizingMode()!=='fit-container') return { cols:cols, rows:rows }; if (viewport) { cols=Math.max(80, Math.min(220, Math.floor((viewport.clientWidth-26)/(Math.max(8,size*0.62))))); rows=Math.max(20, Math.min(60, Math.floor((viewport.clientHeight-22)/(Math.max(16,size*1.68))))); } return { cols:cols, rows:rows }; },
+        buildXtermOptions: function(){ var grid=this.computeTerminalGrid(); return {
+          fontFamily: String((((this.settingsForm||{}).terminal||{}).fontFamily) || 'Consolas'),
           fontSize: parseInt((((this.settingsForm||{}).terminal||{}).fontSize) || '13',10) || 13,
           cursorBlink: String(((((this.settingsForm||{}).terminal||{}).cursorBlink) != null ? (((this.settingsForm||{}).terminal||{}).cursorBlink) : '1')) !== '0',
           cursorStyle: String((((this.settingsForm||{}).terminal||{}).cursorStyle) || 'block'),
           scrollback: parseInt((((this.settingsForm||{}).terminal||{}).scrollback) || '3000',10) || 3000,
-          cols: parseInt((((this.settingsForm||{}).terminal||{}).cols) || '120',10) || 120,
-          rows: parseInt((((this.settingsForm||{}).terminal||{}).rows) || '28',10) || 28,
+          cols: grid.cols,
+          rows: grid.rows,
           convertEol: true,
           allowTransparency: true,
           theme: clone(this.terminalThemeSpec || { background: '#0b1220', foreground: '#dce9ff', cursor: '#dce9ff', cursorAccent: '#0b1220', selectionBackground: 'rgba(143,179,255,0.30)' })
         }; },
-        applyXtermProfile: function(winId){ var xterm=this.xtermStore()[winId]; if (!xterm) return; var opts=this.buildXtermOptions(); xterm.options.fontFamily=opts.fontFamily; xterm.options.fontSize=opts.fontSize; xterm.options.cursorBlink=opts.cursorBlink; xterm.options.cursorStyle=opts.cursorStyle; xterm.options.scrollback=opts.scrollback; xterm.options.theme=opts.theme; this.resizeXtermClient(winId, opts.cols, opts.rows); },
-        ensureXtermMounted: function(winId){ var ctor=this.terminalCtor(), host=this.resolveTerminalHost(winId), self=this, term=this.ensureTerminalState(winId), xterms=this.xtermStore(); if (!host) return; if (!ctor) { term.loadError='xterm.js failed to load for this page.'; this.terminalLoadError=term.loadError; return; } if (!host.clientWidth || !host.clientHeight) { this.scheduleXtermMount(winId); return; } term.loadError=''; this.terminalLoadError=''; if (!xterms[winId]) { xterms[winId]=new ctor(this.buildXtermOptions()); xterms[winId].open(host); host.setAttribute('data-xterm-mounted','1'); if (xterms[winId].onData) xterms[winId].onData(function(data){ self.onXtermData(winId, String(data || '')); }); this.renderXtermTranscript(winId); } this.applyXtermProfile(winId); },
-        ensureVisibleXtermsMounted: function(){ var self=this; this.windows.forEach(function(win){ if (win.appKey==='terminal' && !win.closed && !win.minimized) self.ensureXtermMounted(win.id); }); },
-        disposeXterm: function(winId){ var host=this.resolveTerminalHost(winId), xterms=this.xtermStore(); this.clearXtermMountTimer(winId); if (xterms[winId] && xterms[winId].dispose) { try { xterms[winId].dispose(); } catch(e) {} } delete xterms[winId]; if (host) host.removeAttribute('data-xterm-mounted'); },
-        disposeAllXterms: function(){ var self=this; Object.keys(this.xtermStore()).forEach(function(winId){ self.disposeXterm(winId); }); },
-        focusTerminalInput: function(winId){ winId=winId || this.activeTerminalWindowId(); if (!winId) return; this.ensureXtermMounted(winId); var xterm=this.xtermStore()[winId]; if (xterm && xterm.focus) xterm.focus(); this.terminal=this.ensureTerminalState(winId); },
+        applyXtermProfile: function(){ if (!this._xterm) return; var opts=this.buildXtermOptions(); this._xterm.options.fontFamily=opts.fontFamily; this._xterm.options.fontSize=opts.fontSize; this._xterm.options.cursorBlink=opts.cursorBlink; this._xterm.options.cursorStyle=opts.cursorStyle; this._xterm.options.scrollback=opts.scrollback; this._xterm.options.theme=opts.theme; this.resizeXtermClient(opts.cols, opts.rows); },
+        ensureXtermMounted: function(){ var ctor=this.terminalCtor(), host=this.resolveTerminalHost(), self=this; if (!host) return; if (!ctor) { this.terminalLoadError='xterm.js failed to load for this page.'; return; } if (!host.clientWidth || !host.clientHeight) { this.scheduleXtermMount(); return; } this.terminalLoadError=''; if (!this._xterm) { this._xterm=new ctor(this.buildXtermOptions()); this._xterm.open(host); host.setAttribute('data-xterm-mounted','1'); if (this._xterm.onData) this._xterm.onData(function(data){ self.onXtermData(String(data || '')); }); this.renderXtermTranscript(); } this.applyXtermProfile(); },
+        disposeXterm: function(){ var host=this.resolveTerminalHost(); this.clearXtermMountTimer(); if (this._xterm && this._xterm.dispose) { try { this._xterm.dispose(); } catch(e) {} } this._xterm=null; if (host) host.removeAttribute('data-xterm-mounted'); },
+        focusTerminalInput: function(){ this.ensureXtermMounted(); if (this._xterm && this._xterm.focus) this._xterm.focus(); },
         normalizeTerminalChunk: function(chunk){ return String(chunk || '').replace(/\r\n/g,'\n').replace(/\r/g,'\n'); },
-        appendTerminalChunk: function(winId, chunk){ var normalized=this.normalizeTerminalChunk(chunk), term=this.ensureTerminalState(winId), xterm=this.xtermStore()[winId]; if (!normalized) return; var limit=parseInt(this.settingsForm.terminal.scrollback || '3000',10) || 3000; var lines=(term.transcript + normalized).split('\n'); if (lines.length > limit) lines=lines.slice(lines.length-limit); term.transcript = lines.join('\n'); if (xterm && xterm.write) { xterm.write(normalized); if (xterm.scrollToBottom) xterm.scrollToBottom(); } },
-        renderXtermTranscript: function(winId){ var xterm=this.xtermStore()[winId], term=this.ensureTerminalState(winId); if (!xterm) return; xterm.reset(); if (term.transcript) xterm.write(term.transcript); if (term.inputLine) xterm.write(term.inputLine); if (xterm.scrollToBottom) xterm.scrollToBottom(); },
-        rewriteTerminalInput: function(winId, nextLine){ var next=String(nextLine || ''), xterm=this.xtermStore()[winId], term=this.ensureTerminalState(winId); if (!xterm) { term.inputLine=next; return; } while (term.inputLine.length) { xterm.write('\b \b'); term.inputLine=term.inputLine.slice(0,-1); } if (next) { term.inputLine=next; xterm.write(next); } },
-        recallTerminalHistory: function(winId, step){ var term=this.ensureTerminalState(winId); if (!term.history.length) return; if (step < 0) { if (term.historyIndex < 0) term.historyIndex = term.history.length - 1; else if (term.historyIndex > 0) term.historyIndex -= 1; } else { if (term.historyIndex < 0) return; if (term.historyIndex >= term.history.length - 1) { term.historyIndex = -1; this.rewriteTerminalInput(winId, ''); return; } term.historyIndex += 1; } this.rewriteTerminalInput(winId, term.history[term.historyIndex] || ''); },
-        onXtermData: function(winId, data){ var i=0, chunk='', term=this.ensureTerminalState(winId), xterm=this.xtermStore()[winId]; if (!data) return; this.terminal=term; while (i < data.length) { if (data.slice(i,i+3)==='\x1b[A') { this.recallTerminalHistory(winId,-1); i+=3; continue; } if (data.slice(i,i+3)==='\x1b[B') { this.recallTerminalHistory(winId,1); i+=3; continue; } chunk=data.charAt(i); if (chunk==='\r') { if (xterm) xterm.write('\r\n'); this.submitTerminalLineForWindow(winId, term.inputLine); i+=1; continue; } if (chunk==='\u007f') { if (term.inputLine.length) { term.inputLine=term.inputLine.slice(0,-1); if (xterm) xterm.write('\b \b'); } i+=1; continue; } if (chunk==='\u0003') { term.inputLine=''; if (xterm) xterm.write('^C\r\n'); term.transcript = (term.transcript || '') + '^C\n'; i+=1; continue; } if (chunk==='\u000c') { this.sendTerminalControl(winId,'clear'); i+=1; continue; } if (chunk<' ') { i+=1; continue; } term.inputLine += chunk; if (xterm) xterm.write(chunk); i+=1; } },
-        startTerminalPolling: function(){ var self=this; if (this.terminalPollTimer) return; this.terminalPollTimer=window.setInterval(function(){ self.windows.forEach(function(win){ var term; if (win.appKey!=='terminal' || win.closed) return; term=self.ensureTerminalState(win.id); if (!term.terminalId || term.busy) return; self.pollTerminalForWindow(win.id); }); }, 1500); },
+        appendTerminalChunk: function(chunk){ var normalized=this.normalizeTerminalChunk(chunk); if (!normalized) return; var limit=parseInt(this.settingsForm.terminal.scrollback || '3000',10) || 3000; var lines=(this.terminal.transcript + normalized).split('\n'); if (lines.length > limit) lines=lines.slice(lines.length-limit); this.terminal.transcript = lines.join('\n'); if (this._xterm && this._xterm.write) { this._xterm.write(normalized); if (this._xterm.scrollToBottom) this._xterm.scrollToBottom(); } },
+        renderXtermTranscript: function(){ if (!this._xterm) return; this._xterm.reset(); if (this.terminal.transcript) this._xterm.write(this.terminal.transcript); if (this.terminal.inputLine) this._xterm.write(this.terminal.inputLine); if (this._xterm.scrollToBottom) this._xterm.scrollToBottom(); },
+        rewriteTerminalInput: function(nextLine){ var next=String(nextLine || ''); if (!this._xterm) { this.terminal.inputLine=next; return; } while (this.terminal.inputLine.length) { this._xterm.write('\b \b'); this.terminal.inputLine=this.terminal.inputLine.slice(0,-1); } if (next) { this.terminal.inputLine=next; this._xterm.write(next); } },
+        recallTerminalHistory: function(step){ if (!this.terminal.history.length) return; if (step < 0) { if (this.terminal.historyIndex < 0) this.terminal.historyIndex = this.terminal.history.length - 1; else if (this.terminal.historyIndex > 0) this.terminal.historyIndex -= 1; } else { if (this.terminal.historyIndex < 0) return; if (this.terminal.historyIndex >= this.terminal.history.length - 1) { this.terminal.historyIndex = -1; this.rewriteTerminalInput(''); return; } this.terminal.historyIndex += 1; } this.rewriteTerminalInput(this.terminal.history[this.terminal.historyIndex] || ''); },
+        onXtermData: function(data){ var i=0, chunk=''; if (!data) return; while (i < data.length) { if (data.slice(i,i+3)==='\x1b[A') { this.recallTerminalHistory(-1); i+=3; continue; } if (data.slice(i,i+3)==='\x1b[B') { this.recallTerminalHistory(1); i+=3; continue; } chunk=data.charAt(i); if (chunk==='\r') { if (this._xterm) this._xterm.write('\r\n'); this.submitTerminalLine(this.terminal.inputLine); i+=1; continue; } if (chunk==='\u007f') { if (this.terminal.inputLine.length) { this.terminal.inputLine=this.terminal.inputLine.slice(0,-1); if (this._xterm) this._xterm.write('\b \b'); } i+=1; continue; } if (chunk==='\u0003') { this.terminal.inputLine=''; if (this._xterm) this._xterm.write('^C\r\n'); this.terminal.transcript = (this.terminal.transcript || '') + '^C\n'; i+=1; continue; } if (chunk==='\u000c') { this.sendTerminalControl('clear'); i+=1; continue; } if (chunk<' ') { i+=1; continue; } this.terminal.inputLine += chunk; if (this._xterm) this._xterm.write(chunk); i+=1; } },
+        startTerminalPolling: function(){ var self=this; if (this.terminalPollTimer) return; this.terminalPollTimer=window.setInterval(function(){ if (!self.terminal.terminalId || self.terminal.busy) return; self.pollTerminal(); }, 1500); },
         stopTerminalPolling: function(){ if (this.terminalPollTimer) window.clearInterval(this.terminalPollTimer); this.terminalPollTimer=null; },
-        openTerminalForWindow: function(winId, forceNew){ var self=this, term=this.ensureTerminalState(winId), wantNew=(!!forceNew || !term.terminalId); this.ensureXtermMounted(winId); term.busy=true; term.status='Opening terminal'; this.terminal=term; return this.command('terminal.open', { terminalId: wantNew ? '' : (term.terminalId || ''), forceNew: wantNew ? 1 : 0 }).then(function(json){ self.handleTerminalMessage(winId, (json && json.terminal) || {}); term.status='Terminal ready'; self.terminalStatus=term.status; self.startTerminalPolling(); self.resizeTerminalForWindow(winId); self.focusTerminalInput(winId); return json; }).catch(function(err){ term.status='Terminal unavailable'; self.terminalStatus=term.status; throw err; }).finally(function(){ term.busy=false; }); },
-        pollTerminalForWindow: function(winId){ var self=this, term=this.ensureTerminalState(winId); if (!term.terminalId) return; this.command('terminal.poll', { terminalId:term.terminalId || '' }).then(function(json){ self.handleTerminalMessage(winId, (json && json.terminal) || {}); }).catch(function(){}); },
-        submitTerminalLineForWindow: function(winId, lineOverride){ var self=this, term=this.ensureTerminalState(winId), line=(lineOverride!=null)?String(lineOverride):String(term.inputLine || ''); if (!term.terminalId) { this.openTerminalForWindow(winId, false).then(function(){ self.submitTerminalLineForWindow(winId, line); }).catch(function(){}); return; } term.busy=true; this.terminal=term; if (line.trim()) { term.history.push(line); if (term.history.length > 100) term.history=term.history.slice(-100); } term.historyIndex=-1; term.inputLine=''; this.command('terminal.input', { terminalId:term.terminalId || '', line:line }).then(function(json){ self.handleTerminalMessage(winId, (json && json.terminal) || {}); term.status='Terminal live'; self.terminalStatus=term.status; }).catch(function(){ term.status='Terminal input failed'; self.terminalStatus=term.status; }).finally(function(){ term.busy=false; }); },
-        closeTerminalForWindow: function(winId, fromWindowClose){ var self=this, term=this.ensureTerminalState(winId), finish=function(){ var win=self.windows.find(function(w){ return w.id===winId; }); term.status='Terminal closed'; self.terminalStatus=term.status; term.terminalId=''; term.cwd='/'; term.inputLine=''; term.seq=0; if (self.xtermStore()[winId]) { if (self.xtermStore()[winId].clear) self.xtermStore()[winId].clear(); else self.renderXtermTranscript(winId); } if (fromWindowClose && win) { win.closed=true; win.minimized=false; if (self.activeWindowId===win.id) self.activeWindowId=''; self.disposeXterm(winId); } self.saveLayout(); self.persistUiState(fromWindowClose ? 'close-terminal-window' : 'terminal-close'); }; if (!term.terminalId) { finish(); return; } this.command('terminal.close', { terminalId:term.terminalId || '' }).then(function(json){ self.handleTerminalMessage(winId, (json && json.terminal) || { closed:1 }); }).finally(finish); },
-        handleTerminalMessage: function(winId, msg){ var term=this.ensureTerminalState(winId), writes=[]; if (msg.terminalId) term.terminalId = msg.terminalId; if (msg.prompt) term.prompt = msg.prompt; if (msg.cwd) term.cwd = msg.cwd; if (msg.transport) term.transport = msg.transport; if (msg.seq != null) term.seq = Number(msg.seq || 0); if (msg.profile && msg.profile.transport) term.transport = msg.profile.transport; if (msg.clear) { term.transcript=''; var xterm=this.xtermStore()[winId]; if (xterm) xterm.reset(); } if (Array.isArray(msg.write)) writes=msg.write; else if (msg.write) Object.keys(msg.write).sort(function(a,b){ return Number(a)-Number(b); }).forEach(function(k){ writes.push(msg.write[k]); }); writes.forEach(function(chunk){ this.appendTerminalChunk(winId, chunk || ''); }, this); this.ensureXtermMounted(winId); this.terminal=term; if (msg.closed) { term.status='Terminal closed'; } else if (term.terminalId) { term.status='Terminal live'; } this.terminalStatus=term.status; },
-        sendTerminalControl: function(winId, word){ var xterm=this.xtermStore()[winId]; if (!word) return; this.rewriteTerminalInput(winId, String(word)); if (xterm) xterm.write('\r\n'); this.submitTerminalLineForWindow(winId, String(word)); },
+        openTerminal: function(){ var self=this, grid=this.computeTerminalGrid(), payload={ terminalId: self.terminal.terminalId || '', cols:grid.cols, rows:grid.rows }; this.ensureXtermMounted(); this.terminal.busy=true; return this.command('terminal.open', payload).then(function(json){ self.handleTerminalMessage((json && json.terminal) || {}); self.terminalStatus='Terminal ready'; self.startTerminalPolling(); self.resizeTerminal(); self.focusTerminalInput(); return json; }).catch(function(err){ self.terminalStatus='Terminal unavailable'; throw err; }).finally(function(){ self.terminal.busy=false; }); },
+        pollTerminal: function(){ var self=this; if (!this.terminal.terminalId) return; this.command('terminal.poll', { terminalId:this.terminal.terminalId || '' }).then(function(json){ self.handleTerminalMessage((json && json.terminal) || {}); }).catch(function(){}); },
+        submitTerminalLine: function(lineOverride){ var self=this, line=(lineOverride!=null)?String(lineOverride):String((this.terminal||{}).inputLine || ''); if (!this.terminal.terminalId) { this.openTerminal().then(function(){ self.submitTerminalLine(line); }).catch(function(){}); return; } this.terminal.busy=true; if (line.trim()) { this.terminal.history.push(line); if (this.terminal.history.length > 100) this.terminal.history=this.terminal.history.slice(-100); } this.terminal.historyIndex=-1; this.terminal.inputLine=''; this.command('terminal.input', { terminalId:this.terminal.terminalId || '', line:line }).then(function(json){ self.handleTerminalMessage((json && json.terminal) || {}); self.terminalStatus='Terminal live'; }).catch(function(){ self.terminalStatus='Terminal input failed'; }).finally(function(){ self.terminal.busy=false; }); },
+        closeTerminal: function(){ var self=this; this.stopTerminalPolling(); this.command('terminal.close', { terminalId:this.terminal.terminalId || '' }).then(function(json){ self.handleTerminalMessage((json && json.terminal) || { closed:1 }); }).finally(function(){ self.terminalStatus='Terminal closed'; self.terminal.terminalId=''; self.terminal.cwd='/'; self.terminal.inputLine=''; }); },
+        handleTerminalMessage: function(msg){ if (msg.terminalId) this.terminal.terminalId = msg.terminalId; if (msg.prompt) this.terminal.prompt = msg.prompt; if (msg.cwd) this.terminal.cwd = msg.cwd; if (msg.transport) this.terminal.transport = msg.transport; if (msg.seq != null) this.terminal.seq = Number(msg.seq || 0); if (msg.clear) { this.terminal.transcript=''; if (this._xterm) this._xterm.reset(); } var writes=[]; if (Array.isArray(msg.write)) writes=msg.write; else if (msg.write) Object.keys(msg.write).sort(function(a,b){ return Number(a)-Number(b); }).forEach(function(k){ writes.push(msg.write[k]); }); writes.forEach(function(chunk){ this.appendTerminalChunk(chunk || ''); }, this); this.ensureXtermMounted(); if (msg.closed) { this.terminalStatus='Terminal closed'; this.stopTerminalPolling(); } else if (this.terminal.terminalId) { this.terminalStatus='Terminal live'; } },
+        sendTerminalControl: function(word){ if (!word) return; this.rewriteTerminalInput(String(word)); if (this._xterm) this._xterm.write('\r\n'); this.submitTerminalLine(String(word)); },
         onTerminalKeydown: function(ev){ if (ev && ev.preventDefault) ev.preventDefault(); },
-        clearTerminalForWindow: function(winId){ var term=this.ensureTerminalState(winId), xterm=this.xtermStore()[winId]; term.transcript=''; term.inputLine=''; if (xterm) { if (xterm.clear) xterm.clear(); else if (xterm.reset) xterm.reset(); } this.focusTerminalInput(winId); },
-        resizeXtermClient: function(winId, cols, rows){ var xterm=this.xtermStore()[winId]; if (!xterm || !xterm.resize) return; try { xterm.resize(Math.max(80, cols || 80), Math.max(20, rows || 20)); if (xterm.scrollToBottom) xterm.scrollToBottom(); } catch(e) {} },
-        resizeTerminalForWindow: function(winId){ var self=this, viewport=this.resolveTerminalViewport(winId), term=this.ensureTerminalState(winId), size=parseInt(this.settingsForm.terminal.fontSize || '13',10) || 13, cols=parseInt(this.settingsForm.terminal.cols || '120',10) || 120, rows=parseInt(this.settingsForm.terminal.rows || '28',10) || 28; this.ensureXtermMounted(winId); if (viewport) { cols=Math.max(80, Math.min(220, Math.floor((viewport.clientWidth-26)/(Math.max(8,size*0.62))))); rows=Math.max(20, Math.min(60, Math.floor((viewport.clientHeight-22)/(Math.max(16,size*1.68))))); } this.resizeXtermClient(winId, cols, rows); if (!term.terminalId) return; this.command('terminal.resize', { terminalId:term.terminalId || '', cols:cols, rows:rows }).then(function(json){ self.handleTerminalMessage(winId, (json && json.terminal) || {}); }).catch(function(){}); },
-        resizeAllTerminals: function(){ var self=this; this.windows.forEach(function(win){ if (win.appKey==='terminal' && !win.closed && !win.minimized) self.resizeTerminalForWindow(win.id); }); },
-        openTerminal: function(){ var winId=this.activeTerminalWindowId(), win; if (!winId) { win=this.createTerminalWindow(); winId=win.id; } return this.openTerminalForWindow(winId, false); },
-        pollTerminal: function(){ var winId=this.activeTerminalWindowId(); if (!winId) return; this.pollTerminalForWindow(winId); },
-        submitTerminalLine: function(lineOverride){ var winId=this.activeTerminalWindowId(); if (!winId) return; this.submitTerminalLineForWindow(winId, lineOverride); },
-        closeTerminal: function(){ var winId=this.activeTerminalWindowId(); if (!winId) return; this.closeTerminalForWindow(winId, false); },
-        clearTerminal: function(){ var winId=this.activeTerminalWindowId(); if (!winId) return; this.clearTerminalForWindow(winId); },
-        resizeTerminal: function(){ this.resizeAllTerminals(); },
+        clearTerminal: function(){ this.terminal.transcript=''; this.terminal.inputLine=''; if (this._xterm) { if (this._xterm.clear) this._xterm.clear(); else if (this._xterm.reset) this._xterm.reset(); } this.focusTerminalInput(); },
+        resizeXtermClient: function(cols, rows){ if (!this._xterm || !this._xterm.resize) return; try { this._xterm.resize(Math.max(80, cols || 80), Math.max(20, rows || 20)); if (this._xterm.scrollToBottom) this._xterm.scrollToBottom(); } catch(e) {} },
+        resizeTerminal: function(){ var self=this, grid=this.computeTerminalGrid(), cols=grid.cols, rows=grid.rows; this.ensureXtermMounted(); this.resizeXtermClient(cols, rows); if (!this.terminal.terminalId) return; this.command('terminal.resize', { terminalId:this.terminal.terminalId || '', cols:cols, rows:rows }).then(function(json){ self.handleTerminalMessage((json && json.terminal) || {}); }).catch(function(){}); },
       }
     });
     app.config.compilerOptions.delimiters = ['[[', ']]'];
