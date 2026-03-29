@@ -488,3 +488,21 @@ The source-of-truth terminal contract is now:
 - The `animations` setting supports only `off`, `standard`, and `full`.
 - Legacy `reduced` animation preferences must be normalized to `standard`.
 - Do not reintroduce `data-animations="reduced"` CSS branches; the separate `motionProfile` setting remains independent.
+
+
+## ROI40 update — websocket resume/replay foundation
+- Source of truth remains the attached repo baseline that passed `^MIOMOST` before this ROI.
+- The current ROI adds a conservative resume foundation only:
+  - session `resumeToken`
+  - session `eventSeq`
+  - per-session websocket replay outbox
+  - hello handshake fields `resumeToken` and `lastSeenEventSeq`
+  - hello response fields `resumeSupported`, `resumeTransport`, `resumeToken`, `resumed`, `lastEventSeq`, `replayCount`
+- The browser now persists websocket resume state in local storage per MIOMOS session and sends it back on hello.
+- Replay is intentionally limited to safe websocket terminal events for now. The working command bus stays unchanged.
+- Do not reintroduce aggressive reconnect logic while expanding replay. Keep reconnect behavior conservative and additive.
+
+- Resume foundation note: replay stamping now prefers structured JSON re-encode and falls back to direct `eventSeq` injection for internal event payloads, so replay does not depend on a single terminal payload shape.
+
+
+Resume note: the hello handshake now uses an explicit non-empty token equality check when deciding whether a reconnect is resumable, so replay eligibility is no longer gated by a malformed conditional.

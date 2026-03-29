@@ -43,6 +43,8 @@ CONFDEF(CONF)
 	IF $GET(CONF("miomos","desktop","transport","errorEvent"))="" SET CONF("miomos","desktop","transport","errorEvent")="command.error"
 	IF $GET(CONF("miomos","desktop","policy","commandMaxInflight"))="" SET CONF("miomos","desktop","policy","commandMaxInflight")=3
 	IF $GET(CONF("miomos","desktop","policy","commandTimeoutMs"))="" SET CONF("miomos","desktop","policy","commandTimeoutMs")=8000
+	IF $GET(CONF("miomos","desktop","policy","resumeTransport"))="" SET CONF("miomos","desktop","policy","resumeTransport")="resume-token-seq"
+	IF $GET(CONF("miomos","desktop","policy","resumeReplayLimit"))="" SET CONF("miomos","desktop","policy","resumeReplayLimit")=64
 	IF $GET(CONF("miomos","wm","defaultPreset"))="" SET CONF("miomos","wm","defaultPreset")="analyst"
 	IF $GET(CONF("miomos","wm","defaultSnapMode"))="" SET CONF("miomos","wm","defaultSnapMode")="quadrant"
 	IF $GET(CONF("miomos","wm","defaultMotionProfile"))="" SET CONF("miomos","wm","defaultMotionProfile")="standard"
