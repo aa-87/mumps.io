@@ -144,13 +144,25 @@ CONFDEF(CONF)
 	QUIT
 	;
 INIT(CONF)
+	SET CONF("miomos","profile")="prod"
+	SET CONF("miomos","localAuth","enabled")=1
+	SET CONF("miomos","dev","authDisabled")=0
+	SET CONF("miomos","bootstrapAuth","showSeededCredentials")=1
+	;
+	SET CONF("miomos","bootstrapAuth","admin","username")="admin"
+	SET CONF("miomos","bootstrapAuth","admin","password")="admin123!"
+	SET CONF("miomos","bootstrapAuth","user","username")="user"
+	SET CONF("miomos","bootstrapAuth","user","password")="user123!"
+	SET CONF("miomos","bootstrapAuth","guest","username")="guest"
+	SET CONF("miomos","bootstrapAuth","guest","password")="guest123!"
+	;
 	DO CONFDEF(.CONF)
-	DO START^MIOTPL(.CONF)
+	;
 	QUIT
 	;
 REG(CONF)
 	NEW EN,AUTHREQ,META,WSMETA
-	DO CONFDEF(.CONF)
+	DO INIT(.CONF)
 	SET EN=+$GET(CONF("miomos","enabled"),1)
 	IF EN'=1 QUIT
 	IF $$DEVAUTHOFF(.CONF)!$$LOCALAUTHEN(.CONF) DO DEVEXEMPT(.CONF)
@@ -313,4 +325,5 @@ RESPERR(DEV,CONF,STATUS,CODE,DETAIL,CTX)
 	DO RESPJSONX^MIOHTTP(.DEV,.CONF,+$GET(STATUS,500),.OBJ,$GET(CTX("request_id")),.CTX)
 	SET CTX("status")=+$GET(STATUS,500)
 	QUIT
+	;
 	;
