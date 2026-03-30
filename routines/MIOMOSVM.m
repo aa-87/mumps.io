@@ -327,6 +327,12 @@ SHELL(STATE,CONF,ROOT)
 	SET @ROOT@("dragDropShortcutModifier")="alt"
 	SET @ROOT@("dragDropDirectoryTarget")="folder-and-explorer-directory"
 	SET @ROOT@("dragDropBridge")="layout-preview-until-websocket-fs-bridge"
+	SET @ROOT@("filesystemBridgeModel")="websocket-command-bus-v1"
+	SET @ROOT@("filesystemBridgeCommands")="vfs.list,vfs.mkdir,vfs.rename,vfs.delete,vfs.move,vfs.recycle.restore,vfs.recycle.empty"
+	SET @ROOT@("shellServicesModel")="xp-classic-shell-services"
+	SET @ROOT@("systemPlaces")="my-computer,my-documents,my-network-places,recycle-bin"
+	SET @ROOT@("shortcutServicesEnabled")=1
+	SET @ROOT@("recycleBinEnabled")=1
 	SET @ROOT@("dragDropPrompt",1,"key")="move",@ROOT@("dragDropPrompt",1,"label")="Move here"
 	SET @ROOT@("dragDropPrompt",2,"key")="copy",@ROOT@("dragDropPrompt",2,"label")="Copy here"
 	SET @ROOT@("dragDropPrompt",3,"key")="shortcut",@ROOT@("dragDropPrompt",3,"label")="Create shortcut here"

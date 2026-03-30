@@ -653,7 +653,7 @@ SENDFILE(DEV,CONF,PATH,HEAD,REQID,CTX,METHOD)
 	NEW OIO SET OIO=$IO
 	NEW FDEV SET FDEV=P
 	; open file (no trap); on failure return 0 with CTX(err)
-	OPEN FDEV:(readonly:stream:nowrap):1 ELSE  DO  QUIT 0
+	OPEN FDEV:(readonly:fixed:recordsize=CHSZ:chset="m"):1 ELSE  DO  QUIT 0
 	. SET CTX("err","routine")="MIOHTTP",CTX("err","error")="open_failed"
 	USE FDEV
 	IF M="head" DO  QUIT 1
@@ -664,8 +664,8 @@ SENDFILE(DEV,CONF,PATH,HEAD,REQID,CTX,METHOD)
 	. USE OIO
 	DO STREAMBEGIN(.DEV,.CONF,200,.HEAD,REQID,.CTX,$G(METHOD))
 	NEW X
-	FOR  DO  QUIT:$ZEOF
-	. READ X#CHSZ
+	FOR  DO  QUIT:$ZEOF  QUIT:'$TEST
+	. READ X:2
 	. IF X'="" DO STREAMWRITE(.DEV,X)
 	DO STREAMEND(.DEV)
 	CLOSE FDEV

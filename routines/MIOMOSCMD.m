@@ -34,6 +34,13 @@ EXEC(STATE,CONF,TREE,OUT,ERR)
 	IF CMD="terminal.close" QUIT $$TERMCLOSE(.STATE,.TREE,.OUT,.ERR)
 	IF CMD="terminal.poll" QUIT $$TERMPOLL(.STATE,.TREE,.OUT,.ERR)
 	IF CMD="terminal.resize" QUIT $$TERMRESZ(.STATE,.TREE,.OUT,.ERR)
+	IF CMD="vfs.list" QUIT $$VFSLIST(.STATE,.CONF,.TREE,.OUT,.ERR)
+	IF CMD="vfs.mkdir" QUIT $$VFSMKDIR(.STATE,.CONF,.TREE,.OUT,.ERR)
+	IF CMD="vfs.rename" QUIT $$VFSREN(.STATE,.CONF,.TREE,.OUT,.ERR)
+	IF CMD="vfs.delete" QUIT $$VFSDEL(.STATE,.CONF,.TREE,.OUT,.ERR)
+	IF CMD="vfs.move" QUIT $$VFSMOVE(.STATE,.CONF,.TREE,.OUT,.ERR)
+	IF CMD="vfs.recycle.restore" QUIT $$VFSREST(.STATE,.CONF,.TREE,.OUT,.ERR)
+	IF CMD="vfs.recycle.empty" QUIT $$VFSEMPTY(.STATE,.CONF,.TREE,.OUT,.ERR)
 	SET ERR("error")="command_unsupported",ERR("detail")=CMD,ERR("status")=400
 	QUIT 0
 	;
@@ -76,6 +83,65 @@ UISAVE(STATE,TREE,OUT,ERR)
 	SET OUT("command")="session.ui.save"
 	QUIT 1
 	;
+	;
+
+PUTVFS(STATE,CONF,OUT)
+	DO CATALOG^MIOMOSVFS($GET(STATE("principal")),.CONF,$NAME(OUT("vfs")))
+	QUIT
+	;
+VFSLIST(STATE,CONF,TREE,OUT,ERR)
+	DO PUTVFS(.STATE,.CONF,.OUT)
+	SET OUT("command")="vfs.list"
+	SET OUT("parentKey")=$GET(TREE("parentKey"))
+	QUIT 1
+	;
+VFSMKDIR(STATE,CONF,TREE,OUT,ERR)
+	NEW ITEM
+	IF '$$MKDIRCMD^MIOMOSVFS($GET(STATE("principal")),$GET(TREE("parentKey")),$GET(TREE("parentTitle")),$GET(TREE("title")),.ITEM,.ERR) QUIT 0
+	MERGE OUT("entry")=ITEM
+	DO PUTVFS(.STATE,.CONF,.OUT)
+	SET OUT("command")="vfs.mkdir"
+	QUIT 1
+	;
+VFSREN(STATE,CONF,TREE,OUT,ERR)
+	NEW ITEM
+	IF '$$RENAME^MIOMOSVFS($GET(STATE("principal")),$GET(TREE("key")),$GET(TREE("title")),.ITEM,.ERR) QUIT 0
+	MERGE OUT("entry")=ITEM
+	DO PUTVFS(.STATE,.CONF,.OUT)
+	SET OUT("command")="vfs.rename"
+	QUIT 1
+	;
+VFSDEL(STATE,CONF,TREE,OUT,ERR)
+	NEW ITEM
+	IF '$$DELETE^MIOMOSVFS($GET(STATE("principal")),$GET(TREE("key")),$GET(TREE("mode")),.ITEM,.ERR) QUIT 0
+	MERGE OUT("entry")=ITEM
+	DO PUTVFS(.STATE,.CONF,.OUT)
+	SET OUT("command")="vfs.delete"
+	QUIT 1
+	;
+VFSMOVE(STATE,CONF,TREE,OUT,ERR)
+	NEW ITEM
+	IF '$$MOVE^MIOMOSVFS($GET(STATE("principal")),$GET(TREE("key")),$GET(TREE("targetParentKey")),$GET(TREE("operation")),.ITEM,.ERR) QUIT 0
+	MERGE OUT("entry")=ITEM
+	DO PUTVFS(.STATE,.CONF,.OUT)
+	SET OUT("command")="vfs.move"
+	QUIT 1
+	;
+VFSREST(STATE,CONF,TREE,OUT,ERR)
+	NEW ITEM
+	IF '$$RESTORE^MIOMOSVFS($GET(STATE("principal")),$GET(TREE("key")),.ITEM,.ERR) QUIT 0
+	MERGE OUT("entry")=ITEM
+	DO PUTVFS(.STATE,.CONF,.OUT)
+	SET OUT("command")="vfs.recycle.restore"
+	QUIT 1
+	;
+VFSEMPTY(STATE,CONF,TREE,OUT,ERR)
+	NEW ITEM
+	IF '$$EMPTYBIN^MIOMOSVFS($GET(STATE("principal")),.ITEM,.ERR) QUIT 0
+	MERGE OUT("entry")=ITEM
+	DO PUTVFS(.STATE,.CONF,.OUT)
+	SET OUT("command")="vfs.recycle.empty"
+	QUIT 1
 	;
 LOW(X)
 	NEW Y

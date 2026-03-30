@@ -323,3 +323,14 @@ GETFILE(PRINCIPAL,KEY,ROOT)
 	QUIT
 	;
 	;
+DOWNLOAD(PRINCIPAL,KEY,OUT,ERR)
+	NEW ROOT,I
+	KILL OUT
+	SET ROOT=$NAME(^MIO("MIOMOS","VFS","USER",PRINCIPAL))
+	IF '$DATA(@ROOT@("file",KEY)) SET ERR("routine")="MIOMOSVFS",ERR("error")="file_missing",ERR("detail")=$GET(KEY),ERR("status")=404 QUIT 0
+	IF '+$GET(@ROOT@("file",KEY,"downloadAllowed")) SET ERR("routine")="MIOMOSVFS",ERR("error")="download_forbidden",ERR("detail")=$GET(KEY),ERR("status")=403 QUIT 0
+	DO GETFILE(PRINCIPAL,KEY,$NAME(OUT("entry")))
+	SET I=0
+	FOR  SET I=$ORDER(@ROOT@("blob",KEY,I)) QUIT:'I  SET OUT("blob",I)=$GET(@ROOT@("blob",KEY,I))
+	QUIT 1
+	;

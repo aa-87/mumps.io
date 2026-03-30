@@ -1,0 +1,13 @@
+2026-03-30 00:22:31 watcher_start pid=571781 pattern=*.html
+{"ts":"2026-03-30 00:22:31","event":"add","file":"/home/aa/work/mumps.io/templates/layouts/miomos_shell.html"}
+{"ts":"2026-03-30 00:22:31","event":"add","file":"/home/aa/work/mumps.io/templates/layouts/mioui_app.html"}
+{"ts":"2026-03-30 00:22:31","event":"add","file":"/home/aa/work/mumps.io/templates/layouts/plgd_layout.html"}
+{"ts":"2026-03-30 00:22:31","event":"add","file":"/home/aa/work/mumps.io/templates/pages/miomos_auth.html"}
+{"ts":"2026-03-30 00:22:31","event":"add","file":"/home/aa/work/mumps.io/templates/pages/miomos_desktop.html"}
+{"ts":"2026-03-30 00:22:31","event":"add","file":"/home/aa/work/mumps.io/templates/pages/plgd_about.html"}
+{"ts":"2026-03-30 00:22:31","event":"add","file":"/home/aa/work/mumps.io/templates/pages/plgd_home.html"}
+{"ts":"2026-03-30 00:22:31","event":"add","file":"/home/aa/work/mumps.io/templates/pages/plgd_playground.html"}
+{"ts":"2026-03-30 00:22:31","event":"add","file":"/home/aa/work/mumps.io/templates/partials/ui_tpl_card_grid.html"}
+{"ts":"2026-03-30 00:22:31","event":"add","file":"/home/aa/work/mumps.io/templates/partials/ui_tpl_card_list.html"}
+{"ts":"2026-03-30 00:24:59","event":"mod","file":"/home/aa/work/mumps.io/templates/layouts/miomos_shell.html"}
+{"ts":"2026-03-30 00:25:47","event":"mod","file":"/home/aa/work/mumps.io/templates/layouts/miomos_shell.html"}

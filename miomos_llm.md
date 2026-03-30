@@ -636,3 +636,9 @@ Next XP-fidelity wave:
 - Browser file drops now prevent default navigation and upload into folder targets instead.
 - Custom desktop folders (`folder-*`) now materialize as upload-capable virtual directories on first file drop.
 - Theme rule remains mandatory: new UI inherits the active system font family and font size by default.
+
+## Explorer/VFS repair note
+- Native browser file drops must prevent default browser navigation and must result in a real globals-backed VFS upload with non-zero content when the file is non-empty.
+- Explorer file surfaces must remain download-capable through a server-authored route once `downloadAllowed=1` is present.
+- New MIOMOS shell UI must inherit the active theme font family and font size by default. Do not introduce hardcoded Explorer/taskbar/menu/control typography that bypasses the theme tokens.
+- XP Explorer chrome must use theme-token-driven colors for both light and dark themes so text stays legible on dark shells.

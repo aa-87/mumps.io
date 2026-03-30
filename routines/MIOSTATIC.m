@@ -507,10 +507,10 @@ GETMETA(CONF,FS,META)
 	NEW X
 	NEW OKREAD SET OKREAD=1
 	NEW $ETRAP SET $ETRAP="SET $ECODE="""" SET OKREAD=0"
-	OPEN FS:(readonly:stream:nowrap)
+	OPEN FS:(readonly:fixed:recordsize=CHSZ:chset="m")
 	USE FS
 	FOR  DO  QUIT:$ZEOF  QUIT:LENAD>MAXB
-	. READ X#CHSZ
+	. READ X#CHSZ:2
 	. IF X="" QUIT
 	. DO ADLERUP(.S1,.S2,X,.LENAD,MAXB)
 	CLOSE FS
@@ -607,7 +607,7 @@ SETMTIME(FS,MHD,MHS)
 	QUIT
 	;
 TOUCH(FS)
-	; Bump server-known version key and update mtime for cache invalidation.
+	; Bump server-known version key and update mtime for cache invalidation.;
 	NEW CREF SET CREF=$NA(^MIO("STATIC","META",FS))
 	SET @CREF@("ver")=+$GET(@CREF@("ver"))+1
 	NEW HD,HS SET HD=+$P($H,",",1),HS=+$P($H,",",2)
@@ -735,10 +735,10 @@ FILESIZE(CONF,FS)
 	NEW LEN SET LEN=0
 	NEW X
 	NEW $ETRAP SET $ETRAP="SET $ECODE="""" QUIT -1"
-	OPEN FS:(readonly:stream:nowrap)
+	OPEN FS:(readonly:fixed:recordsize=CHSZ:chset="m")
 	USE FS
 	FOR  DO  QUIT:$ZEOF
-	. READ X#CHSZ
+	. READ X#CHSZ:2
 	. SET LEN=LEN+$L(X)
 	CLOSE FS
 	SET @CREF@("len")=LEN
@@ -751,7 +751,7 @@ SENDRANGE(DEV,CONF,FS,OFF,LEN)
 	IF CHSZ<1024 SET CHSZ=1024
 	IF CHSZ>262144 SET CHSZ=262144
 	NEW $ETRAP SET $ETRAP="SET $ECODE="""" QUIT 0"
-	OPEN FS:(readonly:stream:nowrap)
+	OPEN FS:(readonly:fixed:recordsize=CHSZ:chset="m")
 	USE FS
 	NEW SK SET SK=OFF
 	NEW X,N
@@ -770,14 +770,14 @@ SENDRANGE(DEV,CONF,FS,OFF,LEN)
 	CLOSE FS
 	QUIT $SELECT(REM=0:1,1:0)
 	;
-
+	;
 	;
 ; -------------------------------------------------------------------------
 ; Cache policy layer (ROI #10)
 ;
 APPLYCACHE(CONF,ORFS,HEAD)
-	; Apply Cache-Control/Expires for static responses when enabled.
-	; Default is off.
+	; Apply Cache-Control/Expires for static responses when enabled.;
+	; Default is off.;
 	IF '$GET(CONF("server","static","cache","enabled")) QUIT
 	; Do not override if handler already set Cache-Control
 	IF $DATA(HEAD("Cache-Control")) QUIT
@@ -793,7 +793,7 @@ APPLYCACHE(CONF,ORFS,HEAD)
 	NEW CC SET CC="public, max-age="_+MAXA
 	IF IMM SET CC=CC_", immutable"
 	SET HEAD("Cache-Control")=CC
-	; Optional Expires: deterministic default is derived from mtime when known.
+	; Optional Expires: deterministic default is derived from mtime when known.;
 	IF +$GET(CONF("server","static","cache","sendExpires"),0) DO
 	. NEW FROM SET FROM=$$LOW^MIOHTTP($GET(CONF("server","static","cache","expiresFrom"),"mtime"))
 	. NEW HD,HS,NHD,NHS
@@ -821,3 +821,4 @@ ADDSEC(HD,HS,SEC,NHD,NHS)
 	SET NHD=T\86400
 	SET NHS=T#86400
 	QUIT
+	;

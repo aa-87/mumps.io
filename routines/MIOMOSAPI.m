@@ -453,7 +453,7 @@ PRUNERET(DEV,CONF,REQ,CTX)
 	QUIT
 	;
 VFSUPLOAD(DEV,CONF,REQ,CTX)
-	NEW STATE,ERR,MP,OBJ,PARENT,PTITLE,IDX,FN,MIME,TMP,OUT,CUR,CH,OK
+	NEW STATE,ERR,MP,OBJ,PARENT,PTITLE,IDX,FILEIDX,FN,MIME,TMP,OUT,CUR,CH,OK
 	IF '$$ENSURE^MIOMOSST(.CONF,.REQ,.CTX,.STATE,.ERR) DO  QUIT
 	. DO RESPERR(.DEV,.CONF,401,"login_required",$GET(ERR("error")),.CTX)
 	SET CONF("server","multipart","maxFieldScalarBytes")=8192
@@ -463,19 +463,20 @@ VFSUPLOAD(DEV,CONF,REQ,CTX)
 	. DO RESPERR(.DEV,.CONF,400,"invalid_multipart",$GET(ERR("error")),.CTX)
 	SET PARENT=$GET(MP("field","parentKey"))
 	SET PTITLE=$GET(MP("field","parentTitle"))
+	SET FILEIDX=0
 	IF PARENT="" DO  QUIT
 	. DO FREE^MIOHTTPMPU(.MP)
 	. DO RESPERR(.DEV,.CONF,400,"parent_missing","parent_missing",.CTX)
 	SET IDX=0,FN=""
 	FOR  SET IDX=$ORDER(MP("part",IDX)) QUIT:'IDX!(FN'="")  DO
-	. IF $GET(MP("part",IDX,"filename"))'="" SET FN=$GET(MP("part",IDX,"filename")),MIME=$GET(MP("part",IDX,"contentType"),"application/octet-stream")
+	. IF $GET(MP("part",IDX,"filename"))'="" SET FILEIDX=IDX,FN=$GET(MP("part",IDX,"filename")),MIME=$GET(MP("part",IDX,"ctype"),$GET(MP("part",IDX,"contentType"),"application/octet-stream"))
 	IF FN="" DO  QUIT
 	. DO FREE^MIOHTTPMPU(.MP)
 	. DO RESPERR(.DEV,.CONF,400,"file_missing","file_missing",.CTX)
 	KILL ^TMP($J,"MIOMOSAPI","UPLOAD")
 	SET TMP=$NAME(^TMP($J,"MIOMOSAPI","UPLOAD"))
-	DO PARTOPEN^MIOHTTPMPU(.MP,IDX,.CUR,.CONF)
-	FOR  QUIT:'$$PARTNEXT^MIOHTTPMPU(.MP,IDX,.CUR,.CH)  SET ^TMP($J,"MIOMOSAPI","UPLOAD",$ORDER(^TMP($J,"MIOMOSAPI","UPLOAD",""),-1)+1)=CH
+	DO PARTOPEN^MIOHTTPMPU(.MP,FILEIDX,.CUR,.CONF)
+	FOR  QUIT:'$$PARTNEXT^MIOHTTPMPU(.MP,FILEIDX,.CUR,.CH)  SET ^TMP($J,"MIOMOSAPI","UPLOAD",$ORDER(^TMP($J,"MIOMOSAPI","UPLOAD",""),-1)+1)=CH
 	DO ITCLOSE^MIOHTTPMPU(.CUR)
 	IF '$$UPLOAD^MIOMOSVFS($GET(STATE("principal")),PARENT,PTITLE,FN,MIME,TMP,.OUT,.ERR) DO  QUIT
 	. DO FREE^MIOHTTPMPU(.MP)
@@ -489,6 +490,26 @@ VFSUPLOAD(DEV,CONF,REQ,CTX)
 	SET CTX("status")=200
 	DO EVENTX^MIOMOSAUD("vfs_upload",.CTX,.STATE,$GET(OUT("entry","key")))
 	DO ACCESS^MIOMOSOBS("vfs_upload",.CTX,.STATE)
+	QUIT
+	;
+VFSDOWNLOAD(DEV,CONF,REQ,CTX)
+	NEW STATE,ERR,KEY,OUT,HEAD,FN,I,BODY
+	IF '$$ENSURE^MIOMOSST(.CONF,.REQ,.CTX,.STATE,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,401,"login_required",$GET(ERR("error")),.CTX)
+	SET KEY=$GET(REQ("query","key"))
+	IF KEY="" DO  QUIT
+	. DO RESPERR(.DEV,.CONF,400,"key_missing","key_missing",.CTX)
+	IF '$$DOWNLOAD^MIOMOSVFS($GET(STATE("principal")),KEY,.OUT,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,$SELECT($GET(ERR("status"))>0:+$GET(ERR("status")),1:404),$GET(ERR("error"),"download_failed"),$GET(ERR("detail"),$GET(ERR("error"))),.CTX)
+	SET FN=$$SAFENAME^MIOMOSVFS($GET(OUT("entry","title"))) IF FN="" SET FN="download.bin"
+	SET HEAD("Content-Type")=$GET(OUT("entry","mime"),"application/octet-stream")
+	SET HEAD("Content-Disposition")="attachment; filename="_FN
+	SET BODY="",I=0
+	FOR  SET I=$ORDER(OUT("blob",I)) QUIT:'I  SET BODY=BODY_$GET(OUT("blob",I))
+	DO RESPX^MIOHTTP(.DEV,.CONF,200,.HEAD,BODY,$GET(CTX("request_id")),.CTX)
+	SET CTX("status")=200
+	DO EVENTX^MIOMOSAUD("vfs_download",.CTX,.STATE,$GET(OUT("entry","key")))
+	DO ACCESS^MIOMOSOBS("vfs_download",.CTX,.STATE)
 	QUIT
 	;
 RESPJSONDL(DEV,CONF,OBJ,FN,CTX)

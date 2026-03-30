@@ -14,6 +14,7 @@ CONFDEF(CONF)
 	IF $GET(CONF("miomos","route","view"))="" SET CONF("miomos","route","view")="/api/miomos/view"
 	IF $GET(CONF("miomos","route","command"))="" SET CONF("miomos","route","command")="/api/miomos/command"
 	IF $GET(CONF("miomos","route","vfsUpload"))="" SET CONF("miomos","route","vfsUpload")="/api/miomos/vfs/upload"
+	IF $GET(CONF("miomos","route","vfsDownload"))="" SET CONF("miomos","route","vfsDownload")="/api/miomos/vfs/download"
 	IF $GET(CONF("miomos","route","signin"))="" SET CONF("miomos","route","signin")="/api/miomos/auth/signin"
 	IF $GET(CONF("miomos","route","signup"))="" SET CONF("miomos","route","signup")="/api/miomos/auth/signup"
 	IF $GET(CONF("miomos","route","signout"))="" SET CONF("miomos","route","signout")="/api/miomos/auth/signout"
@@ -190,6 +191,7 @@ REG(CONF)
 	KILL META SET META("authRequired")=AUTHREQ
 	DO ADDM^MIOROUTE("POST",$GET(CONF("miomos","route","command")),"COMMAND^MIOMOSAPI",.META)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("miomos","route","vfsUpload")),"VFSUPLOAD^MIOMOSAPI",.META)
+	DO ADDM^MIOROUTE("GET",$GET(CONF("miomos","route","vfsDownload")),"VFSDOWNLOAD^MIOMOSAPI",.META)
 	KILL META SET META("authRequired")=0
 	DO ADDM^MIOROUTE("POST",$GET(CONF("miomos","route","signin")),"SIGNIN^MIOMOSAPI",.META)
 	KILL META SET META("authRequired")=0
@@ -226,6 +228,13 @@ REG(CONF)
 	DO ADDM^MIOROUTE("GET",$GET(CONF("miomos","route","auditExport")),"AUDITX^MIOMOSAPI",.META)
 	KILL META SET META("authRequired")=AUTHREQ
 	DO ADDM^MIOROUTE("GET",$GET(CONF("miomos","route","securityDigest")),"DIGEST^MIOMOSAPI",.META)
+	;
+	KILL META SET META("authRequired")=0
+	DO ADDM^MIOROUTE("GET","/public/miomos/*","GET^MIOMOSSTATIC",.META)
+	;
+	;	
+	;	
+	;	
 	KILL META SET META("authRequired")=AUTHREQ
 	DO ADDM^MIOROUTE("POST",$GET(CONF("miomos","route","retentionPrune")),"PRUNERET^MIOMOSAPI",.META)
 	KILL WSMETA SET WSMETA("authRequired")=AUTHREQ,WSMETA("wsPersistent")=1
@@ -334,5 +343,4 @@ RESPERR(DEV,CONF,STATUS,CODE,DETAIL,CTX)
 	DO RESPJSONX^MIOHTTP(.DEV,.CONF,+$GET(STATUS,500),.OBJ,$GET(CTX("request_id")),.CTX)
 	SET CTX("status")=+$GET(STATUS,500)
 	QUIT
-	;
 	;

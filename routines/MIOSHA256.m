@@ -32,7 +32,7 @@ SHA256(DATA) ;
 	S DATA=DATA_$$BE32(HI)_$$BE32(LO)
 	;
 	; initial hash values
-	F I=0:1:7 S HV(I)=^TMP($J,"MIOSHA256","IV",I)
+	F I=0:1:7 S HV(I)=^MIO("MIOSHA256","IV",I)
 	;
 	F OFF=1:64:$L(DATA) D
 	. ; message schedule
@@ -44,7 +44,7 @@ SHA256(DATA) ;
 	. S E=HV(4),F=HV(5),G=HV(6),H=HV(7)
 	. ;
 	. F T=0:1:63 D
-	. . S T1=$$U32(H+$$BSIG1(E)+$$CH(E,F,G)+^TMP($J,"MIOSHA256","K",T)+W(T))
+	. . S T1=$$U32(H+$$BSIG1(E)+$$CH(E,F,G)+^MIO("MIOSHA256","K",T)+W(T))
 	. . S T2=$$U32($$BSIG0(A)+$$MAJ(A,B,C))
 	. . S H=G
 	. . S G=F
@@ -80,8 +80,8 @@ HMAC(KEY,DATA) ;
 	S IPAD="",OPAD=""
 	F I=1:1:64 D
 	. S LEN=$A(BKEY,I)
-	. S IPAD=IPAD_$C(^TMP($J,"MIOSHA256","xor",LEN,54))
-	. S OPAD=OPAD_$C(^TMP($J,"MIOSHA256","xor",LEN,92))
+	. S IPAD=IPAD_$C(^MIO("MIOSHA256","xor",LEN,54))
+	. S OPAD=OPAD_$C(^MIO("MIOSHA256","xor",LEN,92))
 	;
 	Q $$SHA256(OPAD_$$HEX2RAW($$SHA256(IPAD_$G(DATA))))
 	;
@@ -94,22 +94,22 @@ HMACHEX(KEYHEX,DATA) ;
 	;
 INIT ;
 	N A,B,I,X,LIST,CNT
-	I $G(^TMP($J,"MIOSHA256","READY")) Q
-	K ^TMP($J,"MIOSHA256")
+	I $G(^MIO("MIOSHA256","READY")) Q
+	K ^MIO("MIOSHA256")
 	;
 	; powers of two
-	S ^TMP($J,"MIOSHA256","P2",0)=1
-	F I=1:1:32 S ^TMP($J,"MIOSHA256","P2",I)=^TMP($J,"MIOSHA256","P2",I-1)*2
+	S ^MIO("MIOSHA256","P2",0)=1
+	F I=1:1:32 S ^MIO("MIOSHA256","P2",I)=^MIO("MIOSHA256","P2",I-1)*2
 	;
 	; bytewise XOR / AND lookup tables
 	F A=0:1:255 D
 	. F B=0:1:255 D
-	. . S ^TMP($J,"MIOSHA256","xor",A,B)=$$XORB(A,B)
-	. . S ^TMP($J,"MIOSHA256","and",A,B)=$$ANDB(A,B)
+	. . S ^MIO("MIOSHA256","xor",A,B)=$$XORB(A,B)
+	. . S ^MIO("MIOSHA256","and",A,B)=$$ANDB(A,B)
 	;
 	; initial hash values
 	S LIST="6a09e667,bb67ae85,3c6ef372,a54ff53a,510e527f,9b05688c,1f83d9ab,5be0cd19"
-	F I=1:1:8 S ^TMP($J,"MIOSHA256","IV",I-1)=$$HEX2DEC($P(LIST,",",I))
+	F I=1:1:8 S ^MIO("MIOSHA256","IV",I-1)=$$HEX2DEC($P(LIST,",",I))
 	;
 	; round constants
 	S LIST="428a2f98,71374491,b5c0fbcf,e9b5dba5,3956c25b,59f111f1,923f82a4,ab1c5ed5"
@@ -120,9 +120,9 @@ INIT ;
 	S LIST=LIST_",a2bfe8a1,a81a664b,c24b8b70,c76c51a3,d192e819,d6990624,f40e3585,106aa070"
 	S LIST=LIST_",19a4c116,1e376c08,2748774c,34b0bcb5,391c0cb3,4ed8aa4a,5b9cca4f,682e6ff3"
 	S LIST=LIST_",748f82ee,78a5636f,84c87814,8cc70208,90befffa,a4506ceb,bef9a3f7,c67178f2"
-	F I=1:1:64 S ^TMP($J,"MIOSHA256","K",I-1)=$$HEX2DEC($P(LIST,",",I))
+	F I=1:1:64 S ^MIO("MIOSHA256","K",I-1)=$$HEX2DEC($P(LIST,",",I))
 	;
-	S ^TMP($J,"MIOSHA256","READY")=1
+	S ^MIO("MIOSHA256","READY")=1
 	Q
 	;
 U32(X) ;
@@ -144,23 +144,23 @@ BE32(N) ;
 ROTR(X,N) ;
 	N LOW
 	I N=0 Q $$U32(X)
-	S LOW=X#^TMP($J,"MIOSHA256","P2",N)
-	Q $$U32((X\^TMP($J,"MIOSHA256","P2",N))+(LOW*^TMP($J,"MIOSHA256","P2",32-N)))
+	S LOW=X#^MIO("MIOSHA256","P2",N)
+	Q $$U32((X\^MIO("MIOSHA256","P2",N))+(LOW*^MIO("MIOSHA256","P2",32-N)))
 	;
 SHR(X,N) ;
-	Q X\^TMP($J,"MIOSHA256","P2",N)
+	Q X\^MIO("MIOSHA256","P2",N)
 	;
 XOR(X,Y) ;
 	N A0,A1,A2,A3,B0,B1,B2,B3
 	S A0=(X\16777216)#256,A1=(X\65536)#256,A2=(X\256)#256,A3=X#256
 	S B0=(Y\16777216)#256,B1=(Y\65536)#256,B2=(Y\256)#256,B3=Y#256
-	Q (^TMP($J,"MIOSHA256","xor",A0,B0)*16777216)+(^TMP($J,"MIOSHA256","xor",A1,B1)*65536)+(^TMP($J,"MIOSHA256","xor",A2,B2)*256)+^TMP($J,"MIOSHA256","xor",A3,B3)
+	Q (^MIO("MIOSHA256","xor",A0,B0)*16777216)+(^MIO("MIOSHA256","xor",A1,B1)*65536)+(^MIO("MIOSHA256","xor",A2,B2)*256)+^MIO("MIOSHA256","xor",A3,B3)
 	;
 AND(X,Y) ;
 	N A0,A1,A2,A3,B0,B1,B2,B3
 	S A0=(X\16777216)#256,A1=(X\65536)#256,A2=(X\256)#256,A3=X#256
 	S B0=(Y\16777216)#256,B1=(Y\65536)#256,B2=(Y\256)#256,B3=Y#256
-	Q (^TMP($J,"MIOSHA256","and",A0,B0)*16777216)+(^TMP($J,"MIOSHA256","and",A1,B1)*65536)+(^TMP($J,"MIOSHA256","and",A2,B2)*256)+^TMP($J,"MIOSHA256","and",A3,B3)
+	Q (^MIO("MIOSHA256","and",A0,B0)*16777216)+(^MIO("MIOSHA256","and",A1,B1)*65536)+(^MIO("MIOSHA256","and",A2,B2)*256)+^MIO("MIOSHA256","and",A3,B3)
 	;
 NOT32(X) ;
 	Q 4294967295-X
@@ -187,7 +187,7 @@ XORB(A,B) ;
 	N I,AA,BB,R,BIT
 	S R=0
 	F I=0:1:7 D
-	. S BIT=^TMP($J,"MIOSHA256","P2",I)
+	. S BIT=^MIO("MIOSHA256","P2",I)
 	. S AA=(A\BIT)#2
 	. S BB=(B\BIT)#2
 	. I AA'=BB S R=R+BIT
@@ -197,7 +197,7 @@ ANDB(A,B) ;
 	N I,AA,BB,R,BIT
 	S R=0
 	F I=0:1:7 D
-	. S BIT=^TMP($J,"MIOSHA256","P2",I)
+	. S BIT=^MIO("MIOSHA256","P2",I)
 	. S AA=(A\BIT)#2
 	. S BB=(B\BIT)#2
 	. I AA,BB S R=R+BIT
@@ -207,7 +207,7 @@ HEX8(N) ;
 	N H,I,R,D
 	S H="0123456789abcdef",R=""
 	F I=7:-1:0 D
-	. S D=(N\(^TMP($J,"MIOSHA256","P2",I*4)))#16
+	. S D=(N\(^MIO("MIOSHA256","P2",I*4)))#16
 	. S R=R_$E(H,D+1)
 	Q R
 	;

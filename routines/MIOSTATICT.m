@@ -170,7 +170,7 @@ T004 ; Range 0-0 -> 206 and first byte
 	USE $PRINCIPAL
 	DO READALL(OP,.OUT)
 	DO EQ^MIOTASSERT($SELECT(OUT["206":1,1:0),1,"[MIOSTATICT][T004][status]")
-	DO EQ^MIOTASSERT($SELECT(OUT["Content-Range: bytes 0-0/2":1,1:0),1,"[MIOSTATICT][T004][content-range]")
+	DO EQ^MIOTASSERT($SELECT(OUT["Content-Range: bytes 0-0/3":1,1:0),1,"[MIOSTATICT][T004][content-range]")
 	DO EQ^MIOTASSERT($SELECT(OUT["Content-Length: 1":1,1:0),1,"[MIOSTATICT][T004][content-length]")
 	DO EQ^MIOTASSERT($SELECT(OUT["h":1,1:0),1,"[MIOSTATICT][T004][body]")
 	QUIT
@@ -200,7 +200,7 @@ T005 ; Range suffix -1 -> last byte
 	USE $PRINCIPAL
 	DO READALL(OP,.OUT)
 	DO EQ^MIOTASSERT($SELECT(OUT["206":1,1:0),1,"[MIOSTATICT][T005][status]")
-	DO EQ^MIOTASSERT($SELECT(OUT["Content-Range: bytes 1-1/2":1,1:0),1,"[MIOSTATICT][T005][content-range]")
+	DO EQ^MIOTASSERT($SELECT(OUT["Content-Range: bytes 2-2/3":1,1:0),1,"[MIOSTATICT][T005][content-range]")
 	DO EQ^MIOTASSERT($SELECT(OUT["Content-Length: 1":1,1:0),1,"[MIOSTATICT][T005][content-length]")
 	DO EQ^MIOTASSERT($SELECT(OUT["i":1,1:0),1,"[MIOSTATICT][T005][body]")
 	QUIT
@@ -230,7 +230,7 @@ T006 ; Invalid range -> 416
 	USE $PRINCIPAL
 	DO READALL(OP,.OUT)
 	DO EQ^MIOTASSERT($SELECT(OUT["416":1,1:0),1,"[MIOSTATICT][T006][status]")
-	DO EQ^MIOTASSERT($SELECT(OUT["Content-Range: bytes */2":1,1:0),1,"[MIOSTATICT][T006][content-range]")
+	DO EQ^MIOTASSERT($SELECT(OUT["Content-Range: bytes */3":1,1:0),1,"[MIOSTATICT][T006][content-range]")
 	QUIT
 	;
 	; (T001-T006 unchanged in your tree)
