@@ -618,3 +618,21 @@ Next XP-fidelity wave:
   - Globals Browser
   - terminal shortcuts and dev artifacts in the VFS
   - YottaDB-first workflows aimed at InterSystems users evaluating MIOMOS services
+
+
+## ROI 169 complete — XP shell drag/drop semantics
+- Source of truth remained the latest passing XP shell baseline with terminal multi-window launch preserved.
+- Added server-authored drag/drop policy metadata: default move, Ctrl copy, Alt shortcut, and directory-target rules.
+- Added shell drag cue overlay and drop-target highlighting for desktop folders and Explorer directories.
+- Added layout-backed VFS parent overrides plus staged Explorer shortcuts/copies as a bridge step before real websocket filesystem mutation.
+- Kept auth, session transport, and terminal launch model untouched.
+
+## Next recommended ROI
+- ROI 170 — filesystem bridge over websocket: convert staged drag/drop preview semantics into real permission-aware VFS move/copy/upload/download commands.
+
+
+## ROI 169A hotfix — native file drop into VFS folders
+- Added authenticated VFS upload route and per-user globals-backed file storage.
+- Browser file drops now prevent default navigation and upload into folder targets instead.
+- Custom desktop folders (`folder-*`) now materialize as upload-capable virtual directories on first file drop.
+- Theme rule remains mandatory: new UI inherits the active system font family and font size by default.

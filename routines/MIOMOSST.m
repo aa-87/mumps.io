@@ -57,6 +57,7 @@ ENSURE(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("settingsPath")=$GET(CONF("miomos","route","settings"),"/api/miomos/settings")
 	SET STATE("viewPath")=$GET(CONF("miomos","route","view"),"/api/miomos/view")
 	SET STATE("commandPath")=$GET(CONF("miomos","route","command"),"/api/miomos/command")
+	SET STATE("vfsUploadPath")=$GET(CONF("miomos","route","vfsUpload"),"/api/miomos/vfs/upload")
 	SET STATE("signinPath")=$GET(CONF("miomos","route","signin"),"/api/miomos/auth/signin")
 	SET STATE("signupPath")=$GET(CONF("miomos","route","signup"),"/api/miomos/auth/signup")
 	SET STATE("signoutPath")=$GET(CONF("miomos","route","signout"),"/api/miomos/auth/signout")
@@ -190,6 +191,7 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("routes","settings")=$GET(STATE("settingsPath"))
 	SET OBJ("routes","view")=$GET(STATE("viewPath"))
 	SET OBJ("routes","command")=$GET(STATE("commandPath"))
+	SET OBJ("routes","vfsUpload")=$GET(STATE("vfsUploadPath"))
 	SET OBJ("routes","commandEvent")=$GET(CONF("miomos","desktop","transport","eventName"),"command.exec")
 	SET OBJ("routes","commandResultEvent")=$GET(CONF("miomos","desktop","transport","resultEvent"),"command.result")
 	SET OBJ("routes","commandErrorEvent")=$GET(CONF("miomos","desktop","transport","errorEvent"),"command.error")
@@ -262,6 +264,14 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","explorerSidePane")="common-tasks-other-places-details"
 	SET OBJ("desktop","explorerStatusBar")="selection-summary"
 	SET OBJ("desktop","explorerReplicaTarget")="windows-xp-folder-view"
+	SET OBJ("desktop","dragDropModel")="xp-shell-semantics"
+	SET OBJ("desktop","dragDropDefaultOperation")="move"
+	SET OBJ("desktop","dragDropCopyModifier")="ctrl"
+	SET OBJ("desktop","dragDropShortcutModifier")="alt"
+	SET OBJ("desktop","dragDropDirectoryTarget")="folder-and-explorer-directory"
+	SET OBJ("desktop","dragDropPermissionModel")="directory-flags-and-shell-rules"
+	SET OBJ("desktop","dragDropBridge")="layout-preview-until-websocket-fs-bridge"
+	SET OBJ("desktop","dragDropProgressiveEnhancement")="browser-safe-no-native-dragout-required"
 	SET OBJ("desktop","mutationSaveBehavior")="layout-on-shell-mutation"
 	SET OBJ("desktop","engine")="miomos-native-vue-css"
 	SET OBJ("desktop","windowManagerName")="miomos-native-window-manager"

@@ -173,6 +173,7 @@ PUTFILE(PRINCIPAL,KEY,ROOT,N)
 	SET @ROOT@("entries",N,"icon")=$GET(@BASE@("icon"))
 	SET @ROOT@("entries",N,"badge")=$GET(@BASE@("badge"))
 	SET @ROOT@("entries",N,"summary")=$GET(@BASE@("summary"))
+	SET @ROOT@("entries",N,"path")=$GET(@BASE@("path"))
 	SET @ROOT@("entries",N,"kind")="file"
 	SET @ROOT@("entries",N,"vfsEntry")=1
 	SET @ROOT@("entries",N,"extension")=$GET(@BASE@("extension"))
@@ -193,6 +194,132 @@ SUMMARY(PRINCIPAL,OUT)
 	FOR  SET KEY=$ORDER(^MIO("MIOMOS","VFS","USER",PRINCIPAL,"file",KEY)) QUIT:KEY=""  DO
 	. SET OUT("totalFiles")=+$GET(OUT("totalFiles"))+1
 	. SET OUT("totalBytes")=+$GET(OUT("totalBytes"))+$GET(^MIO("MIOMOS","VFS","USER",PRINCIPAL,"file",KEY,"sizeBytes"))
+	QUIT
+	;
+	;
+UPLOAD(PRINCIPAL,PARENTKEY,PARENTTITLE,FILENAME,MIME,REF,OUT,ERR)
+	NEW ROOT,SAFE,EXT,KEY,SIZE,I,NODE,ORDER,TITLE
+	KILL OUT
+	SET PRINCIPAL=$GET(PRINCIPAL)
+	IF PRINCIPAL="" SET ERR("routine")="MIOMOSVFS",ERR("error")="principal_missing",ERR("status")=401 QUIT 0
+	DO ENSURE(PRINCIPAL,"")
+	SET ROOT=$NAME(^MIO("MIOMOS","VFS","USER",PRINCIPAL))
+	SET PARENTKEY=$GET(PARENTKEY)
+	SET PARENTTITLE=$GET(PARENTTITLE)
+	IF '$$ENSUREPARENT(PRINCIPAL,PARENTKEY,PARENTTITLE,.ERR) QUIT 0
+	IF '$$DIRUPLOADOK(PRINCIPAL,PARENTKEY) SET ERR("routine")="MIOMOSVFS",ERR("error")="upload_forbidden",ERR("detail")=PARENTKEY,ERR("status")=403 QUIT 0
+	SET SAFE=$$SAFENAME($GET(FILENAME))
+	IF SAFE="" SET SAFE="Upload.bin"
+	SET TITLE=SAFE
+	SET EXT=$$EXT(SAFE)
+	SET KEY="file-"_$TR($$UUID^MIOUTIL(),"-","")
+	SET ORDER=$$NEXTORD(PRINCIPAL,PARENTKEY)
+	SET SIZE=0
+	SET @ROOT@("file",KEY,"key")=KEY
+	SET @ROOT@("file",KEY,"title")=TITLE
+	SET @ROOT@("file",KEY,"parentKey")=PARENTKEY
+	SET @ROOT@("file",KEY,"order")=ORDER
+	SET @ROOT@("file",KEY,"icon")=$$ICON(EXT,$GET(MIME))
+	SET @ROOT@("file",KEY,"badge")=$$BADGE(EXT,$GET(MIME))
+	SET @ROOT@("file",KEY,"extension")=EXT
+	SET @ROOT@("file",KEY,"mime")=$GET(MIME,"application/octet-stream")
+	SET @ROOT@("file",KEY,"summary")="Uploaded from browser into virtual storage."
+	SET @ROOT@("file",KEY,"kind")="file"
+	SET @ROOT@("file",KEY,"vfsEntry")=1
+	SET @ROOT@("file",KEY,"downloadAllowed")=1
+	SET @ROOT@("file",KEY,"dragOutAllowed")=0
+	SET @ROOT@("file",KEY,"modifiedAt")="Today"
+	SET I=0,NODE=0
+	FOR  SET I=$ORDER(@REF@(I)) QUIT:'I  DO
+	. SET NODE=NODE+1
+	. SET @ROOT@("blob",KEY,NODE)=$GET(@REF@(I))
+	. SET SIZE=SIZE+$L($GET(@REF@(I)))
+	SET @ROOT@("file",KEY,"sizeBytes")=SIZE
+	SET @ROOT@("file",KEY,"sizeLabel")=$$SIZELBL(SIZE)
+	SET @ROOT@("file",KEY,"path")=$$PATH(KEY,ROOT)
+	DO GETFILE(PRINCIPAL,KEY,$NAME(OUT("entry")))
+	QUIT 1
+	;
+ENSUREPARENT(PRINCIPAL,PARENTKEY,PARENTTITLE,ERR)
+	NEW ROOT
+	SET ROOT=$NAME(^MIO("MIOMOS","VFS","USER",PRINCIPAL))
+	IF $DATA(@ROOT@("dir",PARENTKEY)) QUIT 1
+	IF $EXTRACT($GET(PARENTKEY),1,7)="folder-" DO  QUIT 1
+	. DO MKDIR(ROOT,PARENTKEY,$SELECT($GET(PARENTTITLE)'="":PARENTTITLE,1:"Folder"),"",900+$$COUNTDIR(PRINCIPAL),"DIR","Folder","Desktop folder backed by virtual storage.",1,1,0,"Today")
+	SET ERR("routine")="MIOMOSVFS",ERR("error")="parent_missing",ERR("detail")=$GET(PARENTKEY),ERR("status")=404
+	QUIT 0
+	;
+DIRUPLOADOK(PRINCIPAL,PARENTKEY)
+	IF $EXTRACT($GET(PARENTKEY),1,7)="folder-" QUIT 1
+	QUIT +$GET(^MIO("MIOMOS","VFS","USER",PRINCIPAL,"dir",PARENTKEY,"uploadAllowed"))
+	;
+COUNTDIR(PRINCIPAL)
+	NEW N,KEY SET N=0,KEY=""
+	FOR  SET KEY=$ORDER(^MIO("MIOMOS","VFS","USER",PRINCIPAL,"dir",KEY)) QUIT:KEY=""  SET N=N+1
+	QUIT N
+	;
+NEXTORD(PRINCIPAL,PARENTKEY)
+	NEW MAX,KEY
+	SET MAX=0,KEY=""
+	FOR  SET KEY=$ORDER(^MIO("MIOMOS","VFS","USER",PRINCIPAL,"file",KEY)) QUIT:KEY=""  DO
+	. IF $GET(^MIO("MIOMOS","VFS","USER",PRINCIPAL,"file",KEY,"parentKey"))=$GET(PARENTKEY) SET MAX=$SELECT(+$GET(^MIO("MIOMOS","VFS","USER",PRINCIPAL,"file",KEY,"order"))>MAX:+$GET(^MIO("MIOMOS","VFS","USER",PRINCIPAL,"file",KEY,"order")),1:MAX)
+	FOR  SET KEY=$ORDER(^MIO("MIOMOS","VFS","USER",PRINCIPAL,"dir",KEY)) QUIT:KEY=""  DO
+	. IF $GET(^MIO("MIOMOS","VFS","USER",PRINCIPAL,"dir",KEY,"parentKey"))=$GET(PARENTKEY) SET MAX=$SELECT(+$GET(^MIO("MIOMOS","VFS","USER",PRINCIPAL,"dir",KEY,"order"))>MAX:+$GET(^MIO("MIOMOS","VFS","USER",PRINCIPAL,"dir",KEY,"order")),1:MAX)
+	QUIT MAX+1
+	;
+SAFENAME(NAME)
+	NEW X,I,C,OUT
+	SET X=$PIECE($GET(NAME),"/",$L($GET(NAME),"/"))
+	SET X=$PIECE(X,"\",$L(X,"\"))
+	SET OUT=""
+	FOR I=1:1:$L(X) SET C=$E(X,I) DO
+	. IF $A(C)<32 QUIT
+	. IF C=":"!(C="*")!(C="?")!(C="""")!(C="<")!(C=">")!(C="|") QUIT
+	. SET OUT=OUT_C
+	QUIT OUT
+	;
+EXT(NAME)
+	NEW X,P
+	SET X=$GET(NAME)
+	IF X'["." QUIT ""
+	SET P=$PIECE(X,".",$L(X,"."))
+	QUIT $ZCONVERT(P,"L")
+	;
+ICON(EXT,MIME)
+	IF $GET(MIME)["text/plain" QUIT "TXT"
+	IF $GET(MIME)["json" QUIT "JSN"
+	IF $GET(MIME)["csv" QUIT "CSV"
+	IF $GET(EXT)'="" QUIT $EXTRACT($ZCONVERT(EXT,"U")_"DOC",1,3)
+	QUIT "DOC"
+	;
+BADGE(EXT,MIME)
+	IF $GET(MIME)["text/plain" QUIT "Text"
+	IF $GET(MIME)["json" QUIT "Config"
+	IF $GET(MIME)["csv" QUIT "Data"
+	IF $GET(EXT)="md" QUIT "Document"
+	QUIT "File"
+	;
+GETFILE(PRINCIPAL,KEY,ROOT)
+	NEW BASE
+	KILL @ROOT
+	SET BASE=$NAME(^MIO("MIOMOS","VFS","USER",PRINCIPAL,"file",KEY))
+	SET @ROOT@("key")=$GET(@BASE@("key"))
+	SET @ROOT@("title")=$GET(@BASE@("title"))
+	SET @ROOT@("parentKey")=$GET(@BASE@("parentKey"))
+	SET @ROOT@("order")=+$GET(@BASE@("order"))
+	SET @ROOT@("icon")=$GET(@BASE@("icon"))
+	SET @ROOT@("badge")=$GET(@BASE@("badge"))
+	SET @ROOT@("summary")=$GET(@BASE@("summary"))
+	SET @ROOT@("path")=$GET(@BASE@("path"))
+	SET @ROOT@("kind")="file"
+	SET @ROOT@("vfsEntry")=1
+	SET @ROOT@("extension")=$GET(@BASE@("extension"))
+	SET @ROOT@("sizeBytes")=+$GET(@BASE@("sizeBytes"))
+	SET @ROOT@("sizeLabel")=$GET(@BASE@("sizeLabel"))
+	SET @ROOT@("mime")=$GET(@BASE@("mime"))
+	SET @ROOT@("downloadAllowed")=+$GET(@BASE@("downloadAllowed"))
+	SET @ROOT@("dragOutAllowed")=+$GET(@BASE@("dragOutAllowed"))
+	SET @ROOT@("modifiedAt")=$GET(@BASE@("modifiedAt"))
 	QUIT
 	;
 	;

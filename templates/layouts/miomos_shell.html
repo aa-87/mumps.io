@@ -43,6 +43,10 @@
       overflow: hidden;
     }
     body.miomos-dragging, body.miomos-resizing { cursor: default; }
+    .miomos-root, .miomos-root button, .miomos-root input, .miomos-root select, .miomos-root textarea, .miomos-root option {
+      font-family: inherit;
+      font-size: inherit;
+    }
     .miomos-root {
       position: relative;
       width: 100vw;
@@ -951,6 +955,32 @@
     }
     .miomos-root[data-mobile-layout="1"] .miomos-explorer-address-row {
       grid-template-columns: 1fr;
+    }
+
+  
+    .miomos-drop-cue {
+      position: fixed; z-index: 2400; pointer-events: none; display: inline-flex; align-items: center; gap: 8px;
+      padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(56,98,176,0.58);
+      background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(230,238,251,0.96));
+      color: #17325f; font-size: 11px; font-weight: 700; box-shadow: 0 10px 24px rgba(16,40,83,0.22);
+    }
+    .miomos-drop-cue.is-blocked {
+      border-color: rgba(166,54,54,0.56); background: linear-gradient(180deg, rgba(255,248,248,0.98), rgba(248,226,226,0.98)); color: #7a1f1f;
+    }
+    .miomos-stage[data-drop-hover="1"] {
+      box-shadow: inset 0 0 0 1px rgba(76,127,222,0.35), inset 0 0 0 3px rgba(132,172,242,0.16);
+    }
+    .miomos-desktop-icon.is-drop-target,
+    .miomos-explorer-item.is-drop-target { position: relative; }
+    .miomos-desktop-icon.is-drop-hover,
+    .miomos-explorer-item.is-drop-hover,
+    .miomos-explorer-shell[data-drop-hover="1"] {
+      box-shadow: inset 0 0 0 1px rgba(76,127,222,0.42), 0 0 0 2px rgba(132,172,242,0.18);
+      border-color: rgba(76,127,222,0.48) !important;
+      background: linear-gradient(180deg, rgba(236,244,255,0.92), rgba(216,231,255,0.92)) !important;
+    }
+    .miomos-root[data-theme-mode="dark"] .miomos-drop-cue {
+      background: linear-gradient(180deg, rgba(22,33,52,0.96), rgba(11,19,33,0.96)); color: #dfe9ff; border-color: rgba(121,160,247,0.45);
     }
 
   </style>

@@ -13,6 +13,7 @@ CONFDEF(CONF)
 	IF $GET(CONF("miomos","route","settings"))="" SET CONF("miomos","route","settings")="/api/miomos/settings"
 	IF $GET(CONF("miomos","route","view"))="" SET CONF("miomos","route","view")="/api/miomos/view"
 	IF $GET(CONF("miomos","route","command"))="" SET CONF("miomos","route","command")="/api/miomos/command"
+	IF $GET(CONF("miomos","route","vfsUpload"))="" SET CONF("miomos","route","vfsUpload")="/api/miomos/vfs/upload"
 	IF $GET(CONF("miomos","route","signin"))="" SET CONF("miomos","route","signin")="/api/miomos/auth/signin"
 	IF $GET(CONF("miomos","route","signup"))="" SET CONF("miomos","route","signup")="/api/miomos/auth/signup"
 	IF $GET(CONF("miomos","route","signout"))="" SET CONF("miomos","route","signout")="/api/miomos/auth/signout"
@@ -188,6 +189,7 @@ REG(CONF)
 	DO ADDM^MIOROUTE("GET",$GET(CONF("miomos","route","view")),"VIEW^MIOMOSAPI",.META)
 	KILL META SET META("authRequired")=AUTHREQ
 	DO ADDM^MIOROUTE("POST",$GET(CONF("miomos","route","command")),"COMMAND^MIOMOSAPI",.META)
+	DO ADDM^MIOROUTE("POST",$GET(CONF("miomos","route","vfsUpload")),"VFSUPLOAD^MIOMOSAPI",.META)
 	KILL META SET META("authRequired")=0
 	DO ADDM^MIOROUTE("POST",$GET(CONF("miomos","route","signin")),"SIGNIN^MIOMOSAPI",.META)
 	KILL META SET META("authRequired")=0
@@ -251,6 +253,7 @@ DEVEXEMPT(CONF)
 	DO ADDEXEMPT(.CONF,$GET(CONF("miomos","route","settings")))
 	DO ADDEXEMPT(.CONF,$GET(CONF("miomos","route","view")))
 	DO ADDEXEMPT(.CONF,$GET(CONF("miomos","route","command")))
+	DO ADDEXEMPT(.CONF,$GET(CONF("miomos","route","vfsUpload")))
 	DO ADDEXEMPT(.CONF,$GET(CONF("miomos","route","ws")))
 	DO ADDEXEMPT(.CONF,$GET(CONF("miomos","route","signin")))
 	DO ADDEXEMPT(.CONF,$GET(CONF("miomos","route","signup")))
