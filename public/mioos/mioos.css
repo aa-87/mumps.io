@@ -1,0 +1,63 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+    font-family: "segoe-ui";
+    src: url("/public/mioos/mFonts/Segoe UI.TTF");
+}
+button {
+    font-size: 11px;
+    box-sizing: border-box;
+    border: 1px solid #003c74;
+    background: linear-gradient(180deg,#fff,#ecebe5 86%,#d8d0c4);
+    box-shadow: none;
+    border-radius: 3px;
+    padding: 1px 4px;
+    }
+    button:hover{
+    box-shadow: 2px 2px 1px orange inset, -2px -2px 1px orange inset;
+    }
+    button:active{
+    box-shadow: none;
+    background: linear-gradient(180deg,#cdcac3,#e3e3db 8%,#e5e5de 94%,#f2f2f1);
+    }
+    button:focus {
+    outline: 1px dotted #000;
+    outline-offset: -4px;
+    box-shadow: inset -1px 1px #cee7ff, inset 1px 2px #98b8ea, inset -2px 2px #bcd4f6, inset 1px -1px #89ade4, inset 2px -2px #89ade4;
+    }
+
+   html{
+    background-image: url("/public/mioos/assets/941898.jpg");
+    background-position: center center;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      background-size: cover;
+  
+  }
+  *{
+    font-family: "Pixelated MS Sans Serif",Arial;
+      -webkit-font-smoothing: antialiased;
+  }
+  
+.text-shadow{
+  text-shadow: 1px 1px 1px #000000, -1px -1px 1px #000000, -1px 1px 1px #000000, -1px 1px 1px #000000;
+}
+
+#rightclickmenu .selectarea {
+  @apply hover:text-white hover:bg-[#316ac5] 
+        pl-4 pr-1
+        my-1
+        font-thin
+        font-segoe-ui
+        tracking-tight
+        leading-4;
+}
+
+#rightclickmenu .rc-shadow{
+    -webkit-box-shadow: 6px 6px 5px -4px rgba(0,0,0,0.75);
+-moz-box-shadow: 6px 6px 5px -4px rgba(0,0,0,0.75);
+box-shadow: 6px 6px 5px -4px rgba(0,0,0,0.75);
+}
+
