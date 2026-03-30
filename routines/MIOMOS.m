@@ -36,7 +36,7 @@ CONFDEF(CONF)
 	IF $GET(CONF("miomos","route","retentionPrune"))="" SET CONF("miomos","route","retentionPrune")="/api/miomos/observability/retention/prune"
 	IF $GET(CONF("miomos","brand","title"))="" SET CONF("miomos","brand","title")="MIOMOS"
 	IF $GET(CONF("miomos","brand","subtitle"))="" SET CONF("miomos","brand","subtitle")="MUMPS-first clinical workspace"
-	IF $GET(CONF("miomos","desktop","wallpaper"))="" SET CONF("miomos","desktop","wallpaper")="aurora-blue"
+	IF $GET(CONF("miomos","desktop","wallpaper"))="" SET CONF("miomos","desktop","wallpaper")="midnight-clinic"
 	IF $GET(CONF("miomos","desktop","accent"))="" SET CONF("miomos","desktop","accent")="#2f6fed"
 	IF $GET(CONF("miomos","desktop","density"))="" SET CONF("miomos","desktop","density")="dense"
 	IF $GET(CONF("miomos","desktop","snapMargin"))="" SET CONF("miomos","desktop","snapMargin")=18
@@ -56,7 +56,7 @@ CONFDEF(CONF)
 	IF $GET(CONF("miomos","wm","defaultSnapMode"))="" SET CONF("miomos","wm","defaultSnapMode")="quadrant"
 	IF $GET(CONF("miomos","wm","defaultMotionProfile"))="" SET CONF("miomos","wm","defaultMotionProfile")="standard"
 	IF $GET(CONF("miomos","wm","defaultTitlebarStyle"))="" SET CONF("miomos","wm","defaultTitlebarStyle")="accent"
-	IF $GET(CONF("miomos","theme","default"))="" SET CONF("miomos","theme","default")="clinical-blue"
+	IF $GET(CONF("miomos","theme","default"))="" SET CONF("miomos","theme","default")="midnight-professional"
 	IF $GET(CONF("miomos","theme","allowSelfService"))="" SET CONF("miomos","theme","allowSelfService")=1
 	IF $GET(CONF("miomos","settings","default","fontFamily"))="" SET CONF("miomos","settings","default","fontFamily")="Segoe UI"
 	IF $GET(CONF("miomos","settings","default","fontSize"))="" SET CONF("miomos","settings","default","fontSize")=13
@@ -103,6 +103,13 @@ CONFDEF(CONF)
 	IF $GET(CONF("miomos","localAuth","inviteTokenDays"))="" SET CONF("miomos","localAuth","inviteTokenDays")=7
 	IF $GET(CONF("miomos","localAuth","tokenCookie"))="" SET CONF("miomos","localAuth","tokenCookie")="miomos_auth"
 	IF $GET(CONF("miomos","localAuth","tokenMaxAgeSeconds"))="" SET CONF("miomos","localAuth","tokenMaxAgeSeconds")=604800
+	IF $GET(CONF("auth","protectMode"))="" SET CONF("auth","protectMode")="route"
+	IF $GET(CONF("auth","mode"))="" SET CONF("auth","mode")="jwt"
+	IF $GET(CONF("auth","jwt","cookieName"))="" SET CONF("auth","jwt","cookieName")=$GET(CONF("miomos","localAuth","tokenCookie"),"miomos_auth")
+	IF $GET(CONF("auth","jwt","rolesClaim"))="" SET CONF("auth","jwt","rolesClaim")="roles"
+	IF $GET(CONF("auth","jwt","issuer"))="" SET CONF("auth","jwt","issuer")="miomos-local-auth"
+	IF $GET(CONF("auth","jwt","audience"))="" SET CONF("auth","jwt","audience")="miomos"
+	IF $GET(CONF("auth","jwt","hmacSecret"))="" SET CONF("auth","jwt","hmacSecret")="miomos-local-auth-change-me"
 	IF $GET(CONF("miomos","localAuth","resetTokenSeconds"))="" SET CONF("miomos","localAuth","resetTokenSeconds")=3600
 	IF $GET(CONF("miomos","localAuth","lockThreshold"))="" SET CONF("miomos","localAuth","lockThreshold")=5
 	IF $GET(CONF("miomos","localAuth","lockMinutes"))="" SET CONF("miomos","localAuth","lockMinutes")=15
@@ -330,8 +337,8 @@ DESKTOP(DEV,CONF,REQ,CTX)
 	SET HEAD("Content-Type")="text/html; charset=utf-8"
 	DO RESPX^MIOHTTP(.DEV,.CONF,200,.HEAD,OUT,$GET(CTX("request_id")),.CTX)
 	SET CTX("status")=200
-	;DO EVENT^MIOMOSAUD("desktop_render",.CTX,.STATE)
-	;DO ACCESS^MIOMOSOBS("desktop_render",.CTX,.STATE)
+	DO EVENT^MIOMOSAUD("desktop_render",.CTX,.STATE)
+	DO ACCESS^MIOMOSOBS("desktop_render",.CTX,.STATE)
 	QUIT
 	;
 RESPERR(DEV,CONF,STATUS,CODE,DETAIL,CTX)

@@ -121,9 +121,16 @@ ENSURE(CONF,REQ,CTX,STATE,ERR)
 	QUIT 1
 	;
 PRINCIPAL(CONF,REQ,CTX,ERR)
-	NEW KEY
+	NEW KEY,SID,BOUND
 	IF $$DEVAUTH(.CONF) QUIT $GET(CONF("miomos","dev","principal"),"dev-user")
 	SET KEY=$$PRINCIPAL^MIOMOSAUTH(.CTX)
+	IF KEY'="",$$LOCALAUTHEN^MIOMOS(.CONF) DO  QUIT:KEY="" ""
+	. IF '$$USEROK^MIOMOSAUTH(.CONF,KEY,.ERR) DO
+	. . SET SID=$GET(CTX("miomos","sessionId"))
+	. . SET BOUND=$SELECT(SID'="":$GET(^MIO("MIOMOS","SESSION",SID,"principal")),1:"")
+	. . IF SID'="",BOUND'="",BOUND'=KEY SET ERR("error")="session_binding_mismatch",ERR("detail")=SID,KEY="" QUIT
+	. . DO REVOKE^MIOAUTHSESS(.CONF,"miomos",.REQ,.CTX)
+	. . SET KEY=""
 	IF KEY'="" QUIT KEY
 	IF $$LOCALAUTHEN^MIOMOS(.CONF) DO  QUIT KEY
 	. IF '$$LOADLOCAL^MIOMOSAUTH(.CONF,.REQ,.CTX,.ERR) SET KEY="" QUIT
@@ -425,7 +432,7 @@ APPS(ROOT,STATE)
 	KILL @ROOT
 	SET @ROOT@(1,"key")="workspace",@ROOT@(1,"title")="Workspace",@ROOT@(1,"subtitle")="Core queues, review, export, and operational work surfaces",@ROOT@(1,"icon")=$GET(STATE("icon","workspace"),"APP"),@ROOT@(1,"badge")="Primary",@ROOT@(1,"kind")="app",@ROOT@(1,"group")="Applications",@ROOT@(1,"order")=10,@ROOT@(1,"launchKey")="workspace",@ROOT@(1,"desktopPinned")=0,@ROOT@(1,"status")="available"
 	SET @ROOT@(2,"key")="settings",@ROOT@(2,"title")="Settings",@ROOT@(2,"subtitle")="Themes, fonts, density, motion, icons, and preferences",@ROOT@(2,"icon")=$GET(STATE("icon","settings"),"SET"),@ROOT@(2,"badge")="Prefs",@ROOT@(2,"kind")="settings",@ROOT@(2,"group")="Pinned",@ROOT@(2,"order")=20,@ROOT@(2,"launchKey")="settings",@ROOT@(2,"desktopPinned")=1,@ROOT@(2,"status")="available"
-	SET @ROOT@(3,"key")="ui-library",@ROOT@(3,"title")="UI Library",@ROOT@(3,"subtitle")="Tailwind-oriented forms, tables, overlays, navigation, and shell tokens",@ROOT@(3,"icon")="UIL",@ROOT@(3,"badge")="Design",@ROOT@(3,"kind")="app",@ROOT@(3,"group")="Applications",@ROOT@(3,"order")=25,@ROOT@(3,"launchKey")="ui-library",@ROOT@(3,"desktopPinned")=0,@ROOT@(3,"status")="available"
+	SET @ROOT@(3,"key")="ui-library",@ROOT@(3,"title")="UI Library",@ROOT@(3,"subtitle")="7.css-influenced forms, tables, overlays, navigation, and tokens",@ROOT@(3,"icon")="UIL",@ROOT@(3,"badge")="Design",@ROOT@(3,"kind")="app",@ROOT@(3,"group")="Applications",@ROOT@(3,"order")=25,@ROOT@(3,"launchKey")="ui-library",@ROOT@(3,"desktopPinned")=0,@ROOT@(3,"status")="available"
 	SET @ROOT@(4,"key")="jobs",@ROOT@(4,"title")="Jobs",@ROOT@(4,"subtitle")="Incoming work, queues, and monitored processing directories",@ROOT@(4,"icon")="DIR",@ROOT@(4,"badge")="Folder",@ROOT@(4,"kind")="directory",@ROOT@(4,"group")="Directories",@ROOT@(4,"order")=30,@ROOT@(4,"launchKey")="workspace",@ROOT@(4,"desktopPinned")=0,@ROOT@(4,"status")="available",@ROOT@(4,"summary")="142 active items"
 	SET @ROOT@(5,"key")="exports",@ROOT@(5,"title")="Exports",@ROOT@(5,"subtitle")="Output artifacts, delivery staging, and downstream release folders",@ROOT@(5,"icon")="OUT",@ROOT@(5,"badge")="Folder",@ROOT@(5,"kind")="directory",@ROOT@(5,"group")="Directories",@ROOT@(5,"order")=40,@ROOT@(5,"launchKey")="workspace",@ROOT@(5,"desktopPinned")=0,@ROOT@(5,"status")="available",@ROOT@(5,"summary")="328 exports today"
 	SET @ROOT@(6,"key")="profiles",@ROOT@(6,"title")="Profiles",@ROOT@(6,"subtitle")="Theme, terminal, workspace, and automation profile definitions",@ROOT@(6,"icon")="PRF",@ROOT@(6,"badge")="Folder",@ROOT@(6,"kind")="directory",@ROOT@(6,"group")="Directories",@ROOT@(6,"order")=50,@ROOT@(6,"launchKey")="settings",@ROOT@(6,"desktopPinned")=0,@ROOT@(6,"status")="available",@ROOT@(6,"summary")="Personalized"

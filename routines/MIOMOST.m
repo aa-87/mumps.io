@@ -1,7 +1,7 @@
 MIOMOST ; MIOMOS ROI 10 smoke tests
 START
 	NEW CONF,REQ,CTX,OUT,ERR,STATE,OBJ,TOKEN,INVITE,RESET,ARR,WCTX,TERMID
-	KILL ^MIO("MIOMOS"),^MIO("ROUTE")
+	KILL ^MIO("MIOMOS"),^MIO("AUTH"),^MIO("ROUTE")
 	SET CONF("auth","enabled")=0
 	DO CONFDEF^MIOMOS(.CONF)
 	DO START^MIOTPL(.CONF)
@@ -59,13 +59,6 @@ START
 	DO OK^MIOTASSERT(OUT["miomosTerminalViewport","[MIOMOST][T003][terminal viewport]")
 	DO OK^MIOTASSERT(OUT["data-setting-terminal=""fontFamily""","[MIOMOST][T003][terminal settings]")
 	DO OK^MIOTASSERT(OUT["data-setting-terminal=""palette""","[MIOMOST][T003][terminal palette setting]")
-	DO OK^MIOTASSERT(OUT["<meta name=""miomos-style-architecture"" content=""tailwind-shell-native""","[MIOMOST][T003][style architecture meta]")
-	DO OK^MIOTASSERT(OUT["/public/miomos/miomos_tailwind.css","[MIOMOST][T003][tailwind asset]")
-	DO OK^MIOTASSERT(OUT["/public/miomos/miomos_chrome.css","[MIOMOST][T003][chrome asset]")
-	DO OK^MIOTASSERT($FIND(OUT,"/public/miomos/miomos_tailwind.css")<$FIND(OUT,"/public/miomos/xterm.css"),"[MIOMOST][T003][tailwind before xterm]")
-	DO OK^MIOTASSERT($FIND(OUT,"/public/miomos/miomos_tailwind.css")<$FIND(OUT,"/public/miomos/miomos_chrome.css"),"[MIOMOST][T003][chrome after tailwind]")
-	DO EQ^MIOTASSERT(OUT["/public/miomos/7.scoped.css",0,"[MIOMOST][T003][7css removed]")
-	DO EQ^MIOTASSERT(OUT["/public/miomos/miomos_shell.css",0,"[MIOMOST][T003][legacy shell css removed]")
 	DO OK^MIOTASSERT(OUT["data-terminal-clear=""xterm-buffer""","[MIOMOST][T003][terminal clear action]")
 	DO OK^MIOTASSERT(OUT["data-launch-app=""terminal""","[MIOMOST][T003][terminal app]")
 	DO OK^MIOTASSERT(OUT["data-entry-kind=""directory""","[MIOMOST][T003][directory entry]")
@@ -162,10 +155,6 @@ START
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","fontFamily")),"Segoe UI","[MIOMOST][T004][font family]")
 	DO EQ^MIOTASSERT(+$GET(OBJ("desktop","fontSize")),13,"[MIOMOST][T004][font size]")
 	DO EQ^MIOTASSERT(+$DATA(OBJ("desktop","settings","catalog","themes",1,"key"))>0,1,"[MIOMOST][T004][settings catalog]")
-	DO EQ^MIOTASSERT($GET(OBJ("desktop","theme","current","taskbarStart"))'="",1,"[MIOMOST][T004][theme taskbar token]")
-	DO EQ^MIOTASSERT($GET(OBJ("desktop","theme","current","startBannerText"))'="",1,"[MIOMOST][T004][theme banner token]")
-	DO EQ^MIOTASSERT($GET(OBJ("desktop","theme","current","titleTextActive"))'="",1,"[MIOMOST][T004][theme title text token]")
-	DO EQ^MIOTASSERT($GET(OBJ("desktop","theme","current","focusRing"))'="",1,"[MIOMOST][T004][theme focus token]")
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","commandTransport")),"websocket-only","[MIOMOST][T004][command transport]")
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","commandEvent")),"command.exec","[MIOMOST][T004][desktop command event]")
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","commandResultEvent")),"command.result","[MIOMOST][T004][desktop command result]")
@@ -214,6 +203,9 @@ START
 	SET CONF("miomos","localAuth","lockThreshold")=2
 	SET CONF("miomos","localAuth","lockMinutes")=15
 	DO CONFDEF^MIOMOS(.CONF)
+	DO EQ^MIOTASSERT($GET(CONF("auth","mode")),"jwt","[MIOMOST][T005][auth mode]")
+	DO EQ^MIOTASSERT($GET(CONF("auth","protectMode")),"route","[MIOMOST][T005][protect mode]")
+	DO EQ^MIOTASSERT($GET(CONF("auth","jwt","cookieName")),"miomos_auth","[MIOMOST][T005][jwt cookie]")
 	KILL ERR,TOKEN
 	DO EQ^MIOTASSERT($$SIGNUP^MIOMOSAUTH(.CONF,"phaseone","supersecret","Phase One Tester","operator",.TOKEN,.ERR),0,"[MIOMOST][T005][invite required]")
 	DO EQ^MIOTASSERT($GET(ERR("error")),"invite_required","[MIOMOST][T005][invite error]")
@@ -227,6 +219,7 @@ START
 	DO EQ^MIOTASSERT($$SIGNIN^MIOMOSAUTH(.CONF,"phaseone","supersecret",.TOKEN,.ERR),0,"[MIOMOST][T006][signin blocked]")
 	DO OK^MIOTASSERT($$UNLOCK^MIOMOSAUTH("phaseone"),"[MIOMOST][T006][unlock]")
 	DO OK^MIOTASSERT($$SIGNIN^MIOMOSAUTH(.CONF,"phaseone","supersecret",.TOKEN,.ERR),"[MIOMOST][T006][signin success]")
+	DO OK^MIOTASSERT(TOKEN[".","[MIOMOST][T006][jwt token]")
 	;
 	DO OK^MIOTASSERT($$REQUESTRESET^MIOMOSAUTH(.CONF,"admin","phaseone",.RESET,.ERR),"[MIOMOST][T007][reset request]")
 	DO OK^MIOTASSERT($$APPLYRESET^MIOMOSAUTH(.CONF,RESET,"freshsecret",.ERR),"[MIOMOST][T007][reset apply]")
@@ -243,6 +236,9 @@ START
 	;
 	SET REQ("hdr","cookie")="miomos_auth="_TOKEN
 	DO OK^MIOTASSERT($$LOADLOCAL^MIOMOSAUTH(.CONF,.REQ,.WCTX,.ERR),"[MIOMOST][T009][load local]")
+	DO EQ^MIOTASSERT($DATA(^MIO("MIOMOS","AUTH","TOKEN",TOKEN)),0,"[MIOMOST][T009][legacy token retired]")
+	DO EQ^MIOTASSERT($GET(WCTX("auth","claims","sid"))'="",1,"[MIOMOST][T009][session claim]")
+	DO EQ^MIOTASSERT($DATA(^MIO("AUTH","SESSION","miomos",$GET(WCTX("auth","claims","sid"))))>0,1,"[MIOMOST][T009][shared auth session]")
 	SET STATE("principal")="phaseone",STATE("roles")="developer",STATE("userName")="Phase One Tester",STATE("sessionId")="term-session-1",STATE("profile")="prod"
 	DO LOAD^MIOMOSSET(.STATE,.CONF)
 	DO EQ^MIOTASSERT($$HAS^MIOMOSPERM(.STATE,"admin.users.view"),1,"[MIOMOST][T009][perm view]")
@@ -333,9 +329,6 @@ START
 	DO EQ^MIOTASSERT($GET(VM("terminal","commandTransport")),"websocket-only","[MIOMOST][T014][terminal command bus]")
 	DO EQ^MIOTASSERT($GET(VM("uiLibrary","responsive",1,"title")),"Stacked shell under 900 px","[MIOMOST][T014][mobile section]")
 	DO EQ^MIOTASSERT($GET(ARR("catalog","themes",6,"key")),"high-contrast-light","[MIOMOST][T014][high contrast light]")
-	DO EQ^MIOTASSERT($GET(ARR("catalog","themes",3,"taskbarStart"))'="",1,"[MIOMOST][T014][catalog taskbar token]")
-	DO EQ^MIOTASSERT($GET(ARR("catalog","themes",3,"startBannerText")),"#ffffff","[MIOMOST][T014][catalog banner text]")
-	DO EQ^MIOTASSERT($GET(ARR("catalog","themes",5,"focusRing"))'="",1,"[MIOMOST][T014][catalog focus token]")
 	DO EQ^MIOTASSERT($GET(VM("windowManager","windowPreset"))'="",1,"[MIOMOST][T014][window preset]")
 	DO EQ^MIOTASSERT($GET(VM("windowManager","engine")),"miomos-native-vue-css","[MIOMOST][T014][wm engine]")
 	DO EQ^MIOTASSERT($GET(VM("shellChrome","quickLaunchLabel")),"Quick Launch","[MIOMOST][T014][quick launch label]")
@@ -469,7 +462,7 @@ START
 	DO EQ^MIOTASSERT($GET(ARR("smoke","browser",4,"key")),"reconnect","[MIOMOST][T021][release browser smoke]")
 	DO EQ^MIOTASSERT(+$GET(ARR("docsCurrent")),1,"[MIOMOST][T021][release docs current]")
 	;
-	KILL ^MIO("MIOMOS","USER"),^MIO("MIOMOS","AUTH")
+	KILL ^MIO("MIOMOS","USER"),^MIO("MIOMOS","AUTH"),^MIO("AUTH")
 	KILL CONF,ERR,TOKEN,REQ,WCTX,STATE,OBJ,OUT,ARR,CTX
 	SET CONF("auth","enabled")=1
 	SET CONF("miomos","profile")="prod"

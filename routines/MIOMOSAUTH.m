@@ -2,53 +2,19 @@ MIOMOSAUTH ; MIOMOS auth/session helpers
 	QUIT
 	;
 PRINCIPAL(CTX)
-	NEW SUB,KID
-	SET SUB=$GET(CTX("auth","claims","sub"))
-	IF SUB'="" QUIT SUB
-	SET KID=$GET(CTX("auth","key_id"))
-	IF KID'="" QUIT "apikey-"_KID
-	IF +$GET(CTX("auth","ok"))=1 QUIT "authenticated"
-	QUIT ""
+	QUIT $$PRINCIPAL^MIOAUTHCTX(.CTX)
 	;
 USERNAME(CTX)
-	NEW X
-	SET X=$GET(CTX("auth","claims","preferred_username")) IF X'="" QUIT X
-	SET X=$GET(CTX("auth","claims","name")) IF X'="" QUIT X
-	SET X=$GET(CTX("auth","claims","sub")) IF X'="" QUIT X
-	SET X=$GET(CTX("auth","key_id")) IF X'="" QUIT "API key "_X
-	QUIT "Authenticated user"
+	QUIT $$USERNAME^MIOAUTHCTX(.CTX)
 	;
 ROLECSV(CTX)
-	NEW OUT,R
-	SET OUT=""
-	SET R=""
-	FOR  SET R=$ORDER(CTX("auth","roles",R)) QUIT:R=""  DO
-	. IF OUT'="" SET OUT=OUT_"," 
-	. SET OUT=OUT_R
-	IF OUT'="" QUIT OUT
-	SET OUT=$GET(CTX("auth","claims","roles"))
-	QUIT OUT
+	QUIT $$ROLECSV^MIOAUTHCTX(.CTX)
 	;
 HASROLE(CTX,ROLE)
-	NEW CSV,I,X,FOUND
-	IF $GET(ROLE)="" QUIT 0
-	IF +$DATA(CTX("auth","roles",ROLE)) QUIT 1
-	SET CSV=$$ROLECSV(.CTX)
-	SET FOUND=0
-	FOR I=1:1:$LENGTH(CSV,",") DO  QUIT:FOUND
-	. SET X=$$TRIM($PIECE(CSV,",",I))
-	. IF X=ROLE SET FOUND=1
-	QUIT FOUND
+	QUIT $$HASROLE^MIOAUTHCTX(.CTX,$GET(ROLE))
 	;
 ROLEARY(CTX,OUT)
-	NEW CSV,I,X,N
-	KILL OUT
-	SET CSV=$$ROLECSV(.CTX)
-	SET N=0
-	FOR I=1:1:$LENGTH(CSV,",") DO
-	. SET X=$$TRIM($PIECE(CSV,",",I))
-	. IF X="" QUIT
-	. SET N=N+1,OUT(N)=X
+	DO ROLEARY^MIOAUTHCTX(.CTX,.OUT)
 	QUIT
 	;
 LOCALEN(CONF)
@@ -61,45 +27,18 @@ INVITEONLY(CONF)
 	QUIT +$GET(CONF("miomos","localAuth","inviteOnly"),0)
 	;
 COOKIE(REQ,NAME)
-	NEW RAW,I,PAIR,K,V
-	SET RAW=$GET(REQ("hdr","cookie"))
-	IF RAW="" SET RAW=$GET(REQ("hdr","Cookie"))
-	IF RAW="" QUIT ""
-	FOR I=1:1:$LENGTH(RAW,";") DO  QUIT:$GET(V)'=""
-	. SET PAIR=$$TRIM($PIECE(RAW,";",I))
-	. SET K=$$TRIM($PIECE(PAIR,"=",1))
-	. IF K'=$GET(NAME) QUIT
-	. SET V=$PIECE(PAIR,"=",2,999)
-	QUIT $GET(V)
+	QUIT $$COOKIE^MIOAUTHCTX(.REQ,$GET(NAME))
 	;
 LOADLOCAL(CONF,REQ,CTX,ERR)
-	NEW TOKEN,USER,DISPLAY,ROLES,NOWD,NOWS,DAY,SEC,MAXAGE
+	NEW USER
 	KILL ERR
 	SET ERR("routine")="MIOMOSAUTH"
-	SET TOKEN=$$COOKIE(.REQ,$GET(CONF("miomos","localAuth","tokenCookie"),"miomos_auth"))
-	IF TOKEN="" SET TOKEN=$GET(REQ("hdr","x-miomos-auth"))
-	IF TOKEN="" SET ERR("error")="login_required" QUIT 0
-	SET USER=$GET(^MIO("MIOMOS","AUTH","TOKEN",TOKEN,"principal"))
+	IF '$$LOAD^MIOAUTHSESS(.CONF,"miomos",.REQ,.CTX,.ERR) QUIT 0
+	SET USER=$$PRINCIPAL(.CTX)
 	IF USER="" SET ERR("error")="login_required" QUIT 0
-	SET DAY=+$GET(^MIO("MIOMOS","AUTH","TOKEN",TOKEN,"createdDay"))
-	SET SEC=+$GET(^MIO("MIOMOS","AUTH","TOKEN",TOKEN,"createdSec"))
-	SET NOWD=+$PIECE($HOROLOG,",",1),NOWS=+$PIECE($HOROLOG,",",2)
-	SET MAXAGE=+$GET(CONF("miomos","localAuth","tokenMaxAgeSeconds"),604800)
-	IF $$AGESEC(DAY,SEC,NOWD,NOWS)>MAXAGE DO  QUIT 0
-	. KILL ^MIO("MIOMOS","AUTH","TOKEN",TOKEN)
-	. SET ERR("error")="login_required"
-	IF '$$USEROK(.CONF,USER,.ERR) QUIT 0
-	SET DISPLAY=$GET(^MIO("MIOMOS","AUTH","TOKEN",TOKEN,"userName"))
-	SET ROLES=$GET(^MIO("MIOMOS","AUTH","TOKEN",TOKEN,"roles"))
-	IF DISPLAY="" SET DISPLAY=USER
-	KILL CTX("auth")
-	SET CTX("auth","ok")=1
-	SET CTX("auth","claims","sub")=USER
-	SET CTX("auth","claims","name")=DISPLAY
-	SET CTX("auth","claims","roles")=ROLES
-	DO SETROLES(.CTX,ROLES)
-	SET CTX("miomos","authToken")=TOKEN
-	SET ^MIO("MIOMOS","AUTH","TOKEN",TOKEN,"lastSeenAt")=$$NOWISO^MIOUTIL()
+	IF '$$USEROK(.CONF,USER,.ERR) DO  QUIT 0
+	. DO REVOKE^MIOAUTHSESS(.CONF,"miomos",.REQ,.CTX)
+	. IF $GET(ERR("error"))="" SET ERR("error")="login_required"
 	QUIT 1
 	;
 SIGNUP(CONF,USERNAME,PASSWORD,DISPLAY,ROLES,TOKEN,ERR,INVITE)
@@ -149,30 +88,19 @@ SIGNIN(CONF,USERNAME,PASSWORD,TOKEN,ERR)
 	QUIT $$ISSUETOKEN(.CONF,USER,.TOKEN,.ERR)
 	;
 SIGNOUT(CONF,REQ,CTX)
-	NEW TOKEN
-	SET TOKEN=$GET(CTX("miomos","authToken"))
-	IF TOKEN="" SET TOKEN=$$COOKIE(.REQ,$GET(CONF("miomos","localAuth","tokenCookie"),"miomos_auth"))
-	IF TOKEN'="" KILL ^MIO("MIOMOS","AUTH","TOKEN",TOKEN)
+	DO REVOKE^MIOAUTHSESS(.CONF,"miomos",.REQ,.CTX)
 	QUIT:$Q 1
 	Q
 	;
 ISSUETOKEN(CONF,USER,TOKEN,ERR)
-	NEW NOWD,NOWS,DISPLAY,ROLES
+	NEW DISPLAY,ROLES
 	KILL ERR SET TOKEN=""
 	SET ERR("routine")="MIOMOSAUTH"
 	IF '$DATA(^MIO("MIOMOS","USER",USER)) SET ERR("error")="user_not_found" QUIT 0
 	IF '$$USEROK(.CONF,USER,.ERR) QUIT 0
-	SET TOKEN="miomos-tk-"_$$UUID^MIOUTIL()
-	SET NOWD=+$PIECE($HOROLOG,",",1),NOWS=+$PIECE($HOROLOG,",",2)
 	SET DISPLAY=$GET(^MIO("MIOMOS","USER",USER,"userName"))
 	SET ROLES=$GET(^MIO("MIOMOS","USER",USER,"roles"))
-	SET ^MIO("MIOMOS","AUTH","TOKEN",TOKEN,"principal")=USER
-	SET ^MIO("MIOMOS","AUTH","TOKEN",TOKEN,"userName")=DISPLAY
-	SET ^MIO("MIOMOS","AUTH","TOKEN",TOKEN,"roles")=ROLES
-	SET ^MIO("MIOMOS","AUTH","TOKEN",TOKEN,"createdAt")=$$NOWISO^MIOUTIL()
-	SET ^MIO("MIOMOS","AUTH","TOKEN",TOKEN,"createdDay")=NOWD
-	SET ^MIO("MIOMOS","AUTH","TOKEN",TOKEN,"createdSec")=NOWS
-	QUIT 1
+	QUIT $$ISSUE^MIOAUTHSESS(.CONF,"miomos",USER,DISPLAY,ROLES,.TOKEN,.ERR)
 	;
 BOOTSTRAP(CONF)
 	NEW KEY
@@ -406,10 +334,7 @@ USEINVITE(CONF,TOKEN,USER,ROLES,ERR)
 	;
 	;
 SETROLES(CTX,CSV)
-	NEW I,X
-	FOR I=1:1:$LENGTH($GET(CSV),",") DO
-	. SET X=$$TRIM($PIECE(CSV,",",I))
-	. IF X'="" SET CTX("auth","roles",X)=1
+	DO SETROLES^MIOAUTHCTX(.CTX,$GET(CSV))
 	QUIT
 	;
 VALIDUSER(USER)

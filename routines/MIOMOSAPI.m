@@ -124,7 +124,6 @@ SIGNIN(DEV,CONF,REQ,CTX)
 	NEW TREE,ERR,TOKEN,OBJ,HEAD,JSON,STATE,USER
 	IF '$$PARSEBODY(.REQ,.TREE,.ERR) DO  QUIT
 	. DO RESPERR(.DEV,.CONF,400,"invalid_json",$GET(ERR("error")),.CTX)
-	M ^C=CONF,^T=TREE,^TK=TOKEN
 	IF '$$SIGNIN^MIOMOSAUTH(.CONF,$GET(TREE("username")),$GET(TREE("password")),.TOKEN,.ERR) DO  QUIT
 	. DO ERROR^MIOMOSOBS("auth_signin_error",$GET(ERR("error")),.CTX,.STATE,$GET(ERR("error")))
 	. DO RESPERR(.DEV,.CONF,401,"signin_failed",$GET(ERR("error")),.CTX)
@@ -559,12 +558,7 @@ BODYTXT(REQ)
 	QUIT TXT
 	;
 COOKIEHDR(CONF,TOKEN,CLEAR)
-	NEW NAME,OUT,MAXAGE
-	SET NAME=$GET(CONF("miomos","localAuth","tokenCookie"),"miomos_auth")
-	SET MAXAGE=+$GET(CONF("miomos","localAuth","tokenMaxAgeSeconds"),604800)
-	IF +$GET(CLEAR)=1 QUIT NAME_"=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax"
-	SET OUT=NAME_"="_$GET(TOKEN)_"; Path=/; Max-Age="_MAXAGE_"; HttpOnly; SameSite=Lax"
-	QUIT OUT
+	QUIT $$COOKIEHDR^MIOAUTHSESS(.CONF,"miomos",$GET(TOKEN),+$GET(CLEAR))
 	;
 RESPERR(DEV,CONF,STATUS,CODE,DETAIL,CTX)
 	NEW OBJ
