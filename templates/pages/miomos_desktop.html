@@ -91,6 +91,7 @@
   <span hidden data-explorer-view-option="details"></span>
   <span hidden data-explorer-view-option="large-icons"></span>
   <span hidden data-explorer-draggable="1">Explorer items can be arranged by drag within icon views.</span>
+  <span hidden data-vfs-dragout="1">Downloadable VFS files support progressive browser drag-out using the authenticated VFS download route.</span>
   <span hidden data-explorer-sortable="1">Explorer items can be sorted by name, size, type, and modified.</span>
   <span hidden data-shell-dragdrop="xp" data-desktop-dropzone="1" data-explorer-dropzone="1" data-drop-operation-default="move" data-drop-modifier-copy="ctrl" data-drop-modifier-shortcut="alt">Move here Copy here Create shortcut here</span>
   <span hidden data-xp-shell-services="1" data-shortcut-services="1" data-recycle-service="1" data-system-place="my-computer" data-system-place="my-documents" data-system-place="my-network-places" data-system-place="recycle-bin">Create Shortcut Empty Recycle Bin</span>
@@ -188,7 +189,7 @@
     <div class="miomos-loading" v-if="bootLoading">Loading MIOMOS…</div>
     <div v-if="shellDrag.active && shellDrag.moved" class="miomos-drop-cue" :class="{ 'is-allowed': shellDrag.hoverAllowed, 'is-blocked': !shellDrag.hoverAllowed }" :style="dragCueStyle">[[ dragCueText ]]</div>
     <aside class="miomos-desktop-icons" aria-label="Desktop entries" data-desktop-curation="ui-samples-settings-terminal">
-      <button v-for="(app, idx) in desktopEntries" :key="app.key" type="button" class="miomos-desktop-icon" :class="{ 'is-disabled': !!app.disabled, 'is-dragging': iconDrag.active && iconDrag.key===app.key, 'is-drop-target': isDesktopDropTarget(app), 'is-drop-hover': shellDropTargetMatches('desktop-icon', app.key) && shellDrag.hoverAllowed }" :style="desktopIconStyle(app, idx)" :data-launch-app="app.key" :data-entry-kind="app.kind || 'app'" :data-icon-kind="app.kind || 'app'" :data-drop-target-kind="isDesktopDropTarget(app) ? 'directory' : ''" :title="app.subtitle || app.title" @pointerdown.stop="beginIconDrag(app, $event)" @click="openDesktopEntry(app, $event)" @contextmenu.prevent.stop="openIconContextMenu(app, $event)">
+      <button v-for="(app, idx) in desktopEntries" :key="app.key" type="button" class="miomos-desktop-icon" :draggable="isDragOutEntry(app)" @dragstart="onEntryDragStart(app, $event)" :class="{ 'is-disabled': !!app.disabled, 'is-dragging': iconDrag.active && iconDrag.key===app.key, 'is-drop-target': isDesktopDropTarget(app), 'is-drop-hover': shellDropTargetMatches('desktop-icon', app.key) && shellDrag.hoverAllowed }" :style="desktopIconStyle(app, idx)" :data-launch-app="app.key" :data-entry-kind="app.kind || 'app'" :data-icon-kind="app.kind || 'app'" :data-drop-target-kind="isDesktopDropTarget(app) ? 'directory' : ''" :title="app.subtitle || app.title" @pointerdown.stop="beginIconDrag(app, $event)" @click="openDesktopEntry(app, $event)" @contextmenu.prevent.stop="openIconContextMenu(app, $event)">
         <span class="miomos-desktop-icon-glyph" :class="entryGlyphClass(app.kind || 'app')">[[ app.icon ]]</span>
         <span class="miomos-desktop-icon-label">[[ app.title ]]</span>
         <span class="miomos-desktop-icon-kind">[[ entryKindLabel(app.kind) ]]</span>
@@ -341,14 +342,14 @@
                 </aside>
                 <section class="miomos-explorer-content">
                   <div v-if="isExplorerIconMode(win)" class="miomos-explorer-icon-canvas" :class="'is-' + explorerStateFor(win).viewMode" :style="explorerCanvasStyle(win)" @click="selectExplorerItem(win, { key:'' })">
-                    <button v-for="(item, idx) in explorerItemsFor(win)" :key="item.key" type="button" class="miomos-explorer-item" :class="[ explorerIconSizeClass(win), { 'is-selected': explorerItemSelected(win, item), 'is-directory': item.kind==='directory', 'is-drop-target': item.kind==='directory', 'is-drop-hover': shellDropTargetMatches('explorer-item', item.key) && shellDrag.hoverAllowed } ]" :data-entry-kind="item.kind || 'file'" :data-entry-key="item.key" :data-drop-target-kind="item.kind==='directory' ? 'directory' : ''" :style="explorerItemStyle(win, item, idx)" @click.stop="selectExplorerItem(win, item)" @dblclick.stop="openExplorerItem(item, win)" @pointerdown.stop="beginExplorerItemDrag(win, item, $event)">
+                    <button v-for="(item, idx) in explorerItemsFor(win)" :key="item.key" type="button" class="miomos-explorer-item" :draggable="isDragOutEntry(item)" @dragstart="onEntryDragStart(item, $event)" :class="[ explorerIconSizeClass(win), { 'is-selected': explorerItemSelected(win, item), 'is-directory': item.kind==='directory', 'is-drop-target': item.kind==='directory', 'is-drop-hover': shellDropTargetMatches('explorer-item', item.key) && shellDrag.hoverAllowed } ]" :data-entry-kind="item.kind || 'file'" :data-entry-key="item.key" :data-drop-target-kind="item.kind==='directory' ? 'directory' : ''" :style="explorerItemStyle(win, item, idx)" @click.stop="selectExplorerItem(win, item)" @dblclick.stop="openExplorerItem(item, win)" @pointerdown.stop="beginExplorerItemDrag(win, item, $event)">
                       <span class="miomos-explorer-item-glyph" :class="entryGlyphClass(item.kind || 'file')">[[ item.icon || (item.kind==='directory' ? 'DIR' : 'DOC') ]]</span>
                       <span class="miomos-explorer-item-label">[[ item.title ]]</span>
                       <span class="miomos-explorer-item-meta">[[ item.kind==='directory' ? 'File Folder' : (item.sizeLabel || item.typeLabel) ]]</span>
                     </button>
                   </div>
                   <div v-else-if="explorerStateFor(win).viewMode==='list'" class="miomos-explorer-list" data-explorer-file-list="list">
-                    <button v-for="item in explorerItemsFor(win)" :key="item.key" type="button" class="miomos-explorer-list-row" :class="{ 'is-selected': explorerItemSelected(win, item) }" :data-entry-kind="item.kind || 'file'" @click="selectExplorerItem(win, item)" @dblclick="openExplorerItem(item, win)">
+                    <button v-for="item in explorerItemsFor(win)" :key="item.key" type="button" class="miomos-explorer-list-row" :draggable="isDragOutEntry(item)" @dragstart="onEntryDragStart(item, $event)" :class="{ 'is-selected': explorerItemSelected(win, item) }" :data-entry-kind="item.kind || 'file'" @click="selectExplorerItem(win, item)" @dblclick="openExplorerItem(item, win)">
                       <span class="miomos-explorer-row-glyph" :class="entryGlyphClass(item.kind || 'file')">[[ item.icon || (item.kind==='directory' ? 'DIR' : 'DOC') ]]</span>
                       <strong>[[ item.title ]]</strong>
                       <span>[[ item.kind==='directory' ? 'File Folder' : item.typeLabel ]]</span>
@@ -364,7 +365,7 @@
                       </tr>
                     </thead>
                     <tbody>
-                      <tr v-for="item in explorerItemsFor(win)" :key="item.key" :class="{ 'is-selected': explorerItemSelected(win, item) }" :data-entry-kind="item.kind || 'file'" @click="selectExplorerItem(win, item)" @dblclick="openExplorerItem(item, win)">
+                      <tr v-for="item in explorerItemsFor(win)" :key="item.key" :class="{ 'is-selected': explorerItemSelected(win, item) }" :draggable="isDragOutEntry(item)" @dragstart="onEntryDragStart(item, $event)" :data-entry-kind="item.kind || 'file'" @click="selectExplorerItem(win, item)" @dblclick="openExplorerItem(item, win)">
                         <td><span class="miomos-explorer-row-glyph" :class="entryGlyphClass(item.kind || 'file')">[[ item.icon || (item.kind==='directory' ? 'DIR' : 'DOC') ]]</span><strong>[[ item.title ]]</strong></td>
                         <td>[[ item.kind==='directory' ? '' : (item.sizeLabel || '') ]]</td>
                         <td>[[ item.kind==='directory' ? 'File Folder' : item.typeLabel ]]</td>

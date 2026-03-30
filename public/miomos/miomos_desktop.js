@@ -4048,10 +4048,59 @@
         this.lastCommandName = "vfs.download";
         this.persistUiState("vfs-download");
       },
+      isDragOutEntry: function (item) {
+        return !!(
+          item &&
+          item.vfsEntry &&
+          String(item.kind || "") === "file" &&
+          Number(item.downloadAllowed || 0) &&
+          Number(item.dragOutAllowed || 0)
+        );
+      },
+      vfsDownloadUrl: function (item) {
+        var route =
+            (this.boot.routes || {}).vfsDownload || "/api/miomos/vfs/download",
+          key = encodeURIComponent(String((item || {}).key || ""));
+        if (!key) return "";
+        if (/^https?:\/\//i.test(route)) return route + "?key=" + key;
+        return window.location.origin + route + "?key=" + key;
+      },
+      onEntryDragStart: function (item, ev) {
+        var dt = ev && ev.dataTransfer,
+          url,
+          mime,
+          name;
+        if (!this.isDragOutEntry(item) || !dt) return;
+        url = this.vfsDownloadUrl(item);
+        if (!url) return;
+        mime = String((item || {}).mime || "application/octet-stream");
+        name = String((item || {}).title || "download.bin");
+        try {
+          dt.effectAllowed = "copy";
+          if (dt.setData) {
+            dt.setData("DownloadURL", mime + ":" + name + ":" + url);
+            dt.setData("text/uri-list", url);
+            dt.setData("text/plain", name);
+          }
+        } catch (e) {}
+        this.lastCommandName = "vfs.dragout";
+        this.persistUiState("vfs-dragout");
+      },
       canUploadToFolderKey: function (folderKey) {
         var key = String(folderKey || "");
         if (!key || key === "desktop") return false;
         if (key.indexOf("folder-") === 0) return true;
+        if (
+          arr((((this.boot || {}).desktop || {}).vfs || {}).roots).some(
+            function (row) {
+              return (
+                String((row || {}).key || "") === key &&
+                !!Number((row || {}).uploadAllowed || 0)
+              );
+            },
+          )
+        )
+          return true;
         return arr((((this.boot || {}).desktop || {}).vfs || {}).entries).some(
           function (row) {
             return (

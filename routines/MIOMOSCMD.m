@@ -5,7 +5,8 @@ EXEC(STATE,CONF,TREE,OUT,ERR)
 	NEW CMD,RAW,LAYOUT,VIEW
 	KILL OUT,ERR
 	SET ERR("routine")="MIOMOSCMD"
-	SET CMD=$$LOW($GET(TREE("command")))
+	SET CMD=$$LOW($$TRIM^MIOUTIL($GET(TREE("command"))))
+	IF CMD="",$GET(TREE("action"))'="" SET CMD=$$LOW($$TRIM^MIOUTIL($GET(TREE("action"))))
 	IF CMD="" SET ERR("error")="command_missing",ERR("status")=400 QUIT 0
 	IF CMD="desktop.ping" DO  QUIT 1
 	. SET OUT("command")=CMD
@@ -34,13 +35,13 @@ EXEC(STATE,CONF,TREE,OUT,ERR)
 	IF CMD="terminal.close" QUIT $$TERMCLOSE(.STATE,.TREE,.OUT,.ERR)
 	IF CMD="terminal.poll" QUIT $$TERMPOLL(.STATE,.TREE,.OUT,.ERR)
 	IF CMD="terminal.resize" QUIT $$TERMRESZ(.STATE,.TREE,.OUT,.ERR)
-	IF CMD="vfs.list" QUIT $$VFSLIST(.STATE,.CONF,.TREE,.OUT,.ERR)
-	IF CMD="vfs.mkdir" QUIT $$VFSMKDIR(.STATE,.CONF,.TREE,.OUT,.ERR)
-	IF CMD="vfs.rename" QUIT $$VFSREN(.STATE,.CONF,.TREE,.OUT,.ERR)
-	IF CMD="vfs.delete" QUIT $$VFSDEL(.STATE,.CONF,.TREE,.OUT,.ERR)
-	IF CMD="vfs.move" QUIT $$VFSMOVE(.STATE,.CONF,.TREE,.OUT,.ERR)
-	IF CMD="vfs.recycle.restore" QUIT $$VFSREST(.STATE,.CONF,.TREE,.OUT,.ERR)
-	IF CMD="vfs.recycle.empty" QUIT $$VFSEMPTY(.STATE,.CONF,.TREE,.OUT,.ERR)
+	IF CMD="vfs.list"!(CMD="filesystem.list") QUIT $$VFSLIST(.STATE,.CONF,.TREE,.OUT,.ERR)
+	IF CMD="vfs.mkdir"!(CMD="filesystem.mkdir") QUIT $$VFSMKDIR(.STATE,.CONF,.TREE,.OUT,.ERR)
+	IF CMD="vfs.rename"!(CMD="vfs.entry.rename")!(CMD="filesystem.rename") QUIT $$VFSREN(.STATE,.CONF,.TREE,.OUT,.ERR)
+	IF CMD="vfs.delete"!(CMD="vfs.entry.delete")!(CMD="vfs.recycle.move")!(CMD="filesystem.delete") QUIT $$VFSDEL(.STATE,.CONF,.TREE,.OUT,.ERR)
+	IF CMD="vfs.move"!(CMD="vfs.entry.move")!(CMD="filesystem.move") QUIT $$VFSMOVE(.STATE,.CONF,.TREE,.OUT,.ERR)
+	IF CMD="vfs.recycle.restore"!(CMD="vfs.restore")!(CMD="filesystem.restore") QUIT $$VFSREST(.STATE,.CONF,.TREE,.OUT,.ERR)
+	IF CMD="vfs.recycle.empty"!(CMD="vfs.empty")!(CMD="filesystem.empty") QUIT $$VFSEMPTY(.STATE,.CONF,.TREE,.OUT,.ERR)
 	SET ERR("error")="command_unsupported",ERR("detail")=CMD,ERR("status")=400
 	QUIT 0
 	;
@@ -83,8 +84,6 @@ UISAVE(STATE,TREE,OUT,ERR)
 	SET OUT("command")="session.ui.save"
 	QUIT 1
 	;
-	;
-
 PUTVFS(STATE,CONF,OUT)
 	DO CATALOG^MIOMOSVFS($GET(STATE("principal")),.CONF,$NAME(OUT("vfs")))
 	QUIT
@@ -92,62 +91,228 @@ PUTVFS(STATE,CONF,OUT)
 VFSLIST(STATE,CONF,TREE,OUT,ERR)
 	DO PUTVFS(.STATE,.CONF,.OUT)
 	SET OUT("command")="vfs.list"
-	SET OUT("parentKey")=$GET(TREE("parentKey"))
+	SET OUT("parentKey")=$$VFSPARENT(.TREE)
 	QUIT 1
 	;
 VFSMKDIR(STATE,CONF,TREE,OUT,ERR)
-	NEW ITEM
-	IF '$$MKDIRCMD^MIOMOSVFS($GET(STATE("principal")),$GET(TREE("parentKey")),$GET(TREE("parentTitle")),$GET(TREE("title")),.ITEM,.ERR) QUIT 0
+	NEW ITEM,PRINCIPAL,PARENTKEY,PARENTTITLE,TITLE
+	SET PRINCIPAL=$GET(STATE("principal"))
+	SET PARENTKEY=$$VFSPARENT(.TREE)
+	SET PARENTTITLE=$$VFSPARENTTITLE(.TREE)
+	SET TITLE=$$VFSTITLE(.TREE)
+	IF '$$MKDIRCMD^MIOMOSVFS(PRINCIPAL,PARENTKEY,PARENTTITLE,TITLE,.ITEM,.ERR) QUIT 0
 	MERGE OUT("entry")=ITEM
-	DO PUTVFS(.STATE,.CONF,.OUT)
 	SET OUT("command")="vfs.mkdir"
 	QUIT 1
 	;
 VFSREN(STATE,CONF,TREE,OUT,ERR)
 	NEW ITEM
-	IF '$$RENAME^MIOMOSVFS($GET(STATE("principal")),$GET(TREE("key")),$GET(TREE("title")),.ITEM,.ERR) QUIT 0
+	IF '$$WSRENAME($GET(STATE("principal")),.TREE,.ITEM,.ERR) QUIT 0
 	MERGE OUT("entry")=ITEM
-	DO PUTVFS(.STATE,.CONF,.OUT)
 	SET OUT("command")="vfs.rename"
 	QUIT 1
 	;
 VFSDEL(STATE,CONF,TREE,OUT,ERR)
 	NEW ITEM
-	IF '$$DELETE^MIOMOSVFS($GET(STATE("principal")),$GET(TREE("key")),$GET(TREE("mode")),.ITEM,.ERR) QUIT 0
+	IF '$$WSDELETE($GET(STATE("principal")),.TREE,.ITEM,.ERR) QUIT 0
 	MERGE OUT("entry")=ITEM
-	DO PUTVFS(.STATE,.CONF,.OUT)
 	SET OUT("command")="vfs.delete"
 	QUIT 1
 	;
 VFSMOVE(STATE,CONF,TREE,OUT,ERR)
 	NEW ITEM
-	IF '$$MOVE^MIOMOSVFS($GET(STATE("principal")),$GET(TREE("key")),$GET(TREE("targetParentKey")),$GET(TREE("operation")),.ITEM,.ERR) QUIT 0
+	IF '$$WSMOVE($GET(STATE("principal")),.TREE,.ITEM,.ERR) QUIT 0
 	MERGE OUT("entry")=ITEM
-	DO PUTVFS(.STATE,.CONF,.OUT)
 	SET OUT("command")="vfs.move"
 	QUIT 1
 	;
 VFSREST(STATE,CONF,TREE,OUT,ERR)
 	NEW ITEM
-	IF '$$RESTORE^MIOMOSVFS($GET(STATE("principal")),$GET(TREE("key")),.ITEM,.ERR) QUIT 0
+	IF '$$WSRESTORE($GET(STATE("principal")),.TREE,.ITEM,.ERR) QUIT 0
 	MERGE OUT("entry")=ITEM
-	DO PUTVFS(.STATE,.CONF,.OUT)
 	SET OUT("command")="vfs.recycle.restore"
 	QUIT 1
 	;
 VFSEMPTY(STATE,CONF,TREE,OUT,ERR)
 	NEW ITEM
-	IF '$$EMPTYBIN^MIOMOSVFS($GET(STATE("principal")),.ITEM,.ERR) QUIT 0
+	IF '$$WSEMPTY($GET(STATE("principal")),.ITEM,.ERR) QUIT 0
 	MERGE OUT("entry")=ITEM
-	DO PUTVFS(.STATE,.CONF,.OUT)
 	SET OUT("command")="vfs.recycle.empty"
 	QUIT 1
+	;
+WSRENAME(PRINCIPAL,TREE,OUT,ERR)
+	NEW KEY,TITLE,KIND,BASE,PARENT,SAFE,EXTN
+	KILL OUT,ERR
+	DO ENSURE^MIOMOSVFS(PRINCIPAL,"")
+	SET ERR("routine")="MIOMOSCMD"
+	SET KEY=$$VFSKEY(.TREE)
+	SET TITLE=$$VFSTITLE(.TREE)
+	IF KEY="" SET ERR("error")="key_missing",ERR("status")=400 QUIT 0
+	SET KIND=$$ENTRYKIND^MIOMOSVFS(PRINCIPAL,KEY)
+	IF KIND="" SET ERR("error")="entry_missing",ERR("detail")=KEY,ERR("status")=404 QUIT 0
+	IF KIND="directory",$$BLOCKDIR(KEY) SET ERR("error")="system_entry_forbidden",ERR("detail")=KEY,ERR("status")=403 QUIT 0
+	SET BASE=$$BASE^MIOMOSVFS(PRINCIPAL,KEY,KIND)
+	IF BASE="" SET ERR("error")="entry_missing",ERR("detail")=KEY,ERR("status")=404 QUIT 0
+	SET PARENT=$GET(@BASE@("parentKey"))
+	SET SAFE=$$SAFENAME^MIOMOSVFS(TITLE)
+	IF SAFE="" SET SAFE=$SELECT(KIND="directory":"New Folder",1:"New File")
+	SET SAFE=$$UNIQUETITLE^MIOMOSVFS(PRINCIPAL,PARENT,SAFE,KIND,KEY)
+	SET @BASE@("title")=SAFE
+	SET @BASE@("modifiedAt")="Today"
+	IF KIND="file" DO
+	. SET EXTN=$$EXT^MIOMOSVFS(SAFE)
+	. SET @BASE@("extension")=EXTN
+	. SET @BASE@("icon")=$$ICON^MIOMOSVFS(EXTN,$GET(@BASE@("mime")))
+	. SET @BASE@("badge")=$$BADGE^MIOMOSVFS(EXTN,$GET(@BASE@("mime")))
+	DO REPATH^MIOMOSVFS(PRINCIPAL,KEY,KIND)
+	DO GETENTRY^MIOMOSVFS(PRINCIPAL,KEY,$NAME(OUT))
+	QUIT 1
+	;
+WSDELETE(PRINCIPAL,TREE,OUT,ERR)
+	NEW KEY,MODE,KIND,BASE,PARENT,TTL
+	KILL OUT,ERR
+	DO ENSURE^MIOMOSVFS(PRINCIPAL,"")
+	SET ERR("routine")="MIOMOSCMD"
+	SET KEY=$$VFSKEY(.TREE)
+	SET MODE=$$VFSMODE(.TREE)
+	IF KEY="" SET ERR("error")="key_missing",ERR("status")=400 QUIT 0
+	SET KIND=$$ENTRYKIND^MIOMOSVFS(PRINCIPAL,KEY)
+	IF KIND="" SET ERR("error")="entry_missing",ERR("detail")=KEY,ERR("status")=404 QUIT 0
+	IF KIND="directory",$$BLOCKDIR(KEY) SET ERR("error")="system_entry_forbidden",ERR("detail")=KEY,ERR("status")=403 QUIT 0
+	SET BASE=$$BASE^MIOMOSVFS(PRINCIPAL,KEY,KIND)
+	IF BASE="" SET ERR("error")="entry_missing",ERR("detail")=KEY,ERR("status")=404 QUIT 0
+	IF $$LOW(MODE)="permanent" DO  QUIT 1
+	. DO PURGEENTRY^MIOMOSVFS(PRINCIPAL,KEY,KIND)
+	. SET OUT("removed")=1,OUT("mode")="permanent",OUT("key")=KEY
+	SET PARENT=$GET(@BASE@("parentKey"))
+	IF PARENT="recycle-bin" DO GETENTRY^MIOMOSVFS(PRINCIPAL,KEY,$NAME(OUT)) QUIT 1
+	SET @BASE@("recycle","originalParentKey")=PARENT
+	SET @BASE@("recycle","originalTitle")=$GET(@BASE@("title"))
+	SET TTL=$$UNIQUETITLE^MIOMOSVFS(PRINCIPAL,"recycle-bin",$GET(@BASE@("title")),KIND,KEY)
+	SET @BASE@("title")=TTL
+	SET @BASE@("parentKey")="recycle-bin"
+	SET @BASE@("modifiedAt")="Today"
+	DO REPATH^MIOMOSVFS(PRINCIPAL,KEY,KIND)
+	DO GETENTRY^MIOMOSVFS(PRINCIPAL,KEY,$NAME(OUT))
+	QUIT 1
+	;
+WSMOVE(PRINCIPAL,TREE,OUT,ERR)
+	NEW KEY,TARGETPARENTKEY,OPERATION,KIND,BASE,TITLE
+	KILL OUT,ERR
+	DO ENSURE^MIOMOSVFS(PRINCIPAL,"")
+	SET ERR("routine")="MIOMOSCMD"
+	SET KEY=$$VFSKEY(.TREE)
+	SET TARGETPARENTKEY=$$VFSTARGET(.TREE)
+	SET OPERATION=$$VFSOP(.TREE)
+	IF KEY="" SET ERR("error")="key_missing",ERR("status")=400 QUIT 0
+	IF TARGETPARENTKEY="" SET ERR("error")="target_parent_missing",ERR("status")=400 QUIT 0
+	SET KIND=$$ENTRYKIND^MIOMOSVFS(PRINCIPAL,KEY)
+	IF KIND="" SET ERR("error")="entry_missing",ERR("detail")=KEY,ERR("status")=404 QUIT 0
+	IF $$LOW($SELECT(OPERATION'="":OPERATION,1:"move"))'="move" SET ERR("error")="operation_unsupported",ERR("detail")=OPERATION,ERR("status")=400 QUIT 0
+	IF '$$ENSUREPARENT^MIOMOSVFS(PRINCIPAL,TARGETPARENTKEY,"",.ERR) SET ERR("routine")="MIOMOSCMD" QUIT 0
+	IF KIND="directory",$$ISDESC^MIOMOSVFS(PRINCIPAL,KEY,TARGETPARENTKEY) SET ERR("error")="invalid_move_target",ERR("detail")=TARGETPARENTKEY,ERR("status")=409 QUIT 0
+	IF KIND="directory",$$BLOCKDIR(KEY) SET ERR("error")="system_entry_forbidden",ERR("detail")=KEY,ERR("status")=403 QUIT 0
+	SET BASE=$$BASE^MIOMOSVFS(PRINCIPAL,KEY,KIND)
+	IF BASE="" SET ERR("error")="entry_missing",ERR("detail")=KEY,ERR("status")=404 QUIT 0
+	IF $GET(@BASE@("parentKey"))=TARGETPARENTKEY DO GETENTRY^MIOMOSVFS(PRINCIPAL,KEY,$NAME(OUT)) QUIT 1
+	SET TITLE=$$UNIQUETITLE^MIOMOSVFS(PRINCIPAL,TARGETPARENTKEY,$GET(@BASE@("title")),KIND,KEY)
+	SET @BASE@("title")=TITLE
+	SET @BASE@("parentKey")=TARGETPARENTKEY
+	SET @BASE@("modifiedAt")="Today"
+	DO REPATH^MIOMOSVFS(PRINCIPAL,KEY,KIND)
+	DO GETENTRY^MIOMOSVFS(PRINCIPAL,KEY,$NAME(OUT))
+	QUIT 1
+	;
+WSRESTORE(PRINCIPAL,TREE,OUT,ERR)
+	NEW KEY,KIND,BASE,TARGET,TITLE
+	KILL OUT,ERR
+	DO ENSURE^MIOMOSVFS(PRINCIPAL,"")
+	SET ERR("routine")="MIOMOSCMD"
+	SET KEY=$$VFSKEY(.TREE)
+	IF KEY="" SET ERR("error")="key_missing",ERR("status")=400 QUIT 0
+	SET KIND=$$ENTRYKIND^MIOMOSVFS(PRINCIPAL,KEY)
+	IF KIND="" SET ERR("error")="entry_missing",ERR("detail")=KEY,ERR("status")=404 QUIT 0
+	SET BASE=$$BASE^MIOMOSVFS(PRINCIPAL,KEY,KIND)
+	IF BASE="" SET ERR("error")="entry_missing",ERR("detail")=KEY,ERR("status")=404 QUIT 0
+	SET TARGET=$GET(@BASE@("recycle","originalParentKey"),"my-documents")
+	IF '$$TARGETOK^MIOMOSVFS(PRINCIPAL,TARGET) SET TARGET="my-documents"
+	SET TITLE=$$UNIQUETITLE^MIOMOSVFS(PRINCIPAL,TARGET,$GET(@BASE@("recycle","originalTitle"),$GET(@BASE@("title"))),KIND,KEY)
+	SET @BASE@("title")=TITLE
+	SET @BASE@("parentKey")=TARGET
+	KILL @BASE@("recycle")
+	SET @BASE@("modifiedAt")="Today"
+	DO REPATH^MIOMOSVFS(PRINCIPAL,KEY,KIND)
+	DO GETENTRY^MIOMOSVFS(PRINCIPAL,KEY,$NAME(OUT))
+	QUIT 1
+	;
+WSEMPTY(PRINCIPAL,OUT,ERR)
+	NEW KEY,REMOVED,N,FILES,DIRS
+	KILL OUT,ERR
+	DO ENSURE^MIOMOSVFS(PRINCIPAL,"")
+	SET ERR("routine")="MIOMOSCMD"
+	SET (REMOVED,N)=0,KEY=""
+	FOR  SET KEY=$ORDER(^MIO("MIOMOS","VFS","USER",PRINCIPAL,"file",KEY)) QUIT:KEY=""  DO
+	. IF $GET(^MIO("MIOMOS","VFS","USER",PRINCIPAL,"file",KEY,"parentKey"))="recycle-bin" SET N=N+1,FILES(N)=KEY
+	SET N=0
+	FOR  SET KEY=$ORDER(^MIO("MIOMOS","VFS","USER",PRINCIPAL,"dir",KEY)) QUIT:KEY=""  DO
+	. IF $GET(^MIO("MIOMOS","VFS","USER",PRINCIPAL,"dir",KEY,"parentKey"))="recycle-bin" SET N=N+1,DIRS(N)=KEY
+	SET N=0
+	FOR  SET N=$ORDER(FILES(N)) QUIT:'N  DO
+	. DO PURGEENTRY^MIOMOSVFS(PRINCIPAL,FILES(N),"file")
+	. SET REMOVED=REMOVED+1
+	SET N=0
+	FOR  SET N=$ORDER(DIRS(N)) QUIT:'N  DO
+	. DO PURGEENTRY^MIOMOSVFS(PRINCIPAL,DIRS(N),"directory")
+	. SET REMOVED=REMOVED+1
+	SET OUT("emptied")=1
+	SET OUT("removedCount")=REMOVED
+	SET OUT("key")="recycle-bin"
+	QUIT 1
+	;
+VFSKEY(TREE)
+	QUIT $$PICK(.TREE,"key,entryKey,itemKey,folderKey,selectedKey,sourceKey")
+	;
+VFSTITLE(TREE)
+	QUIT $$PICK(.TREE,"title,newTitle,name,entryTitle,folderTitle")
+	;
+VFSPARENT(TREE)
+	QUIT $$PICK(.TREE,"parentKey,currentFolderKey,folderKey,targetKey")
+	;
+VFSPARENTTITLE(TREE)
+	QUIT $$PICK(.TREE,"parentTitle,currentFolderTitle,folderTitle,targetTitle")
+	;
+VFSTARGET(TREE)
+	QUIT $$PICK(.TREE,"targetParentKey,destinationKey,targetKey,dropTargetKey,parentKey")
+	;
+VFSMODE(TREE)
+	QUIT $$PICK(.TREE,"mode,deleteMode")
+	;
+VFSOP(TREE)
+	NEW X
+	SET X=$$PICK(.TREE,"operation,mode")
+	IF X="" SET X="move"
+	QUIT X
+	;
+PICK(TREE,CSV)
+	NEW I,NM,VAL
+	FOR I=1:1:$L(CSV,",") DO  QUIT:VAL'=""
+	. SET NM=$$TRIM^MIOUTIL($P(CSV,",",I))
+	. QUIT:NM=""
+	. SET VAL=$GET(TREE(NM))
+	QUIT $GET(VAL)
+	;
+BLOCKDIR(KEY)
+	NEW X,SYS
+	SET X=$GET(KEY)
+	IF $EXTRACT(X,1,4)="dir-" QUIT 0
+	IF $EXTRACT(X,1,7)="folder-" QUIT 0
+	SET SYS=",downloads,uploads,projects,routines,globals-browser,terminal-shortcuts,team-share,theme-packs,"
+	QUIT SYS[","_X_","
 	;
 LOW(X)
 	NEW Y
 	SET Y=$TR($GET(X),"ABCDEFGHIJKLMNOPQRSTUVWXYZ","abcdefghijklmnopqrstuvwxyz")
 	QUIT Y
-
 	;
 WMLAYOUT(STATE,CONF,TREE,OUT,ERR)
 	NEW PRESET,WIN
@@ -173,7 +338,6 @@ TERMOPEN(STATE,CONF,TREE,OUT,ERR)
 	SET OUT("command")="terminal.open"
 	QUIT 1
 	;
-
 TERMREATT(STATE,CONF,TREE,OUT,ERR)
 	NEW TERMOUT
 	IF '$$HAS^MIOMOSPERM(.STATE,"terminal.use") SET ERR("error")="forbidden",ERR("detail")="terminal.use",ERR("status")=403 QUIT 0
@@ -182,7 +346,6 @@ TERMREATT(STATE,CONF,TREE,OUT,ERR)
 	SET OUT("command")="terminal.reattach"
 	QUIT 1
 	;
-
 TERMINPUT(STATE,TREE,OUT,ERR)
 	NEW TERMOUT,DATA
 	IF '$$HAS^MIOMOSPERM(.STATE,"terminal.use") SET ERR("error")="forbidden",ERR("detail")="terminal.use",ERR("status")=403 QUIT 0
@@ -223,7 +386,7 @@ TERMNL(X)
 	IF $EXTRACT(Y,$LENGTH(Y))=$CHAR(10) QUIT Y
 	IF $EXTRACT(Y,$LENGTH(Y))=$CHAR(13) QUIT Y
 	QUIT Y_$CHAR(10)
-
+	;
 BOOL(X)
 	NEW V
 	SET V=$ZCONVERT($$TRIM^MIOUTIL($GET(X)),"L")
@@ -231,4 +394,5 @@ BOOL(X)
 	IF V="yes" QUIT 1
 	IF V="on" QUIT 1
 	QUIT $SELECT(+$GET(X):1,1:0)
+	;
 	;

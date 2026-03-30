@@ -205,6 +205,41 @@ Tests should assert:
 
 Do not treat UI polish as untestable.
 
+## Current roadmap after ROI63
+
+The current immediate roadmap should proceed in this order unless the repo state forces a smaller hotfix first:
+
+### ROI64 — globals-backed virtual file system hardening
+
+- treat the VFS as a first-class per-user platform surface stored entirely in globals
+- support upload, download, list, mkdir, rename, move, recycle, restore, and empty-bin flows cleanly
+- keep transport diskless on the server
+- support browser drag/drop into MIOMOS and progressive drag-out/download from MIOMOS
+- cover direct routine-level behavior and websocket command transport with tests
+
+### ROI65 — MUMPS-oriented file type experiences
+
+- text, markdown, JSON, CSV, `.m`, and `.gbl` should gain file-type-aware shell behavior
+- file associations should remain server-authored
+- Explorer and desktop verbs should start feeling like a real development workstation
+
+### ROI66 — debugger foundation
+
+- add a server-authored debugger contract over the existing MIOMOS session and websocket transport
+- cover breakpoints, stack, locals, watches, and execution transcript surfaces
+- keep debugger permissions and audit posture explicit and tested
+
+## Current UX priority
+
+The shell should keep moving toward an **XP-replica MUMPS development environment**.
+
+That means the next work should favor:
+
+- a convincing Explorer and desktop metaphor
+- polished drag/drop and file transfer semantics
+- routine/global/terminal workflows that feel native to the shell
+- correctness and responsiveness over flashy novelty
+
 ## Recommended workflow in a new chat
 
 1. Audit the repo and existing MIOMOS docs first.
