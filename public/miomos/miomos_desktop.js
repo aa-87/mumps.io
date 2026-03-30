@@ -192,7 +192,7 @@
           themeKey:
             ((view.settings || {}).current || {}).themeKey ||
             ((boot.desktop || {}).theme || {}).currentKey ||
-            "clinical-blue",
+            "midnight-professional",
           fontFamily:
             ((view.settings || {}).current || {}).fontFamily ||
             (boot.desktop || {}).fontFamily ||
@@ -213,7 +213,7 @@
           wallpaper:
             ((view.settings || {}).current || {}).wallpaper ||
             root.getAttribute("data-wallpaper") ||
-            "aurora-blue",
+            "midnight-clinic",
           density:
             ((view.settings || {}).current || {}).density ||
             root.getAttribute("data-density") ||
@@ -409,7 +409,7 @@
         var key =
           this.settingsForm.themeKey ||
           ((this.boot.desktop || {}).theme || {}).currentKey ||
-          "clinical-blue";
+          "midnight-professional";
         var themes = this.currentThemes || [];
         for (var i = 0; i < themes.length; i += 1) {
           if ((themes[i] || {}).key === key) return themes[i] || {};
@@ -2465,15 +2465,10 @@
         });
       },
       applySettings: function () {
-        var theme = this.currentThemeDefinition || {},
-          themeKey =
-            theme.key ||
-            this.settingsForm.themeKey ||
-            ((this.boot.desktop || {}).theme || {}).currentKey ||
-            "clinical-blue";
+        var theme = this.currentThemeDefinition || {};
         root.dataset.density = this.settingsForm.density || "dense";
         root.dataset.wallpaper =
-          this.settingsForm.wallpaper || "aurora-blue";
+          this.settingsForm.wallpaper || "midnight-clinic";
         root.dataset.animations = this.settingsForm.animations || "standard";
         root.dataset.windowPreset = this.settingsForm.windowPreset || "analyst";
         root.dataset.snapMode = this.settingsForm.snapMode || "quadrant";
@@ -2481,10 +2476,9 @@
           this.settingsForm.motionProfile || "standard";
         root.dataset.titlebarStyle =
           this.settingsForm.titlebarStyle || "accent";
-        root.dataset.themeKey = themeKey;
-        root.dataset.themeMode = theme.mode || "light";
-        root.dataset.themeChrome = theme.chrome || "";
-        root.dataset.themeFamily = theme.family || "";
+        root.dataset.themeMode = theme.mode || "dark";
+        root.dataset.themeChrome = theme.chrome || "accent";
+        root.dataset.themeVariant = theme.chromeVariant || "default";
         root.style.setProperty(
           "--miomos-font",
           this.settingsForm.fontFamily || "Segoe UI",
@@ -2501,110 +2495,194 @@
         }, this);
       },
       applyThemeVariables: function (theme) {
-        var shellVars, key;
         theme = theme || {};
-        root.style.setProperty("--desktop", theme.desktop || "#dfeef8");
+        root.style.setProperty("--desktop", theme.desktop || "#0b1320");
         root.style.setProperty(
           "--surface",
-          theme.surface || "rgba(255,255,255,0.97)",
+          theme.surface || "rgba(15, 23, 36, 0.95)",
         );
         root.style.setProperty(
           "--surface-alt",
-          theme.surfaceAlt || "rgba(241,247,252,0.95)",
+          theme.surfaceAlt || "rgba(11, 18, 29, 0.96)",
         );
         root.style.setProperty(
           "--surface-soft",
-          theme.surfaceSoft || "rgba(231,240,247,0.92)",
+          theme.surfaceSoft || "rgba(255,255,255,0.03)",
         );
         root.style.setProperty(
           "--border",
-          theme.border || "rgba(41,84,117,0.30)",
+          theme.border || "rgba(148,163,184,0.18)",
         );
-        root.style.setProperty("--text", theme.text || "#0a2234");
-        root.style.setProperty("--muted", theme.muted || "#34536b");
-        root.style.setProperty("--accent", theme.accent || "#1384d7");
+        root.style.setProperty("--text", theme.text || "#ecf3ff");
+        root.style.setProperty("--muted", theme.muted || "#93a7c4");
+        root.style.setProperty("--accent", theme.accent || "#5f8dff");
         root.style.setProperty(
           "--accent-soft",
-          theme.accentSoft || "rgba(19,132,215,0.16)",
+          theme.accentSoft || "rgba(95,141,255,0.18)",
         );
         root.style.setProperty(
           "--accent-strong",
-          theme.accentStrong || "rgba(19,132,215,0.28)",
+          theme.accentStrong || "rgba(95,141,255,0.34)",
         );
-        root.style.setProperty("--title-accent", theme.accent || "#1384d7");
+        root.style.setProperty("--title-accent", theme.accent || "#5f8dff");
         root.style.setProperty(
           "--active-title",
-          theme.titleActive || "linear-gradient(180deg,#ffffff,#edf7fd)",
+          theme.titleActive ||
+            "linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.03)), linear-gradient(90deg, #5f8dff, rgba(255,255,255,0.02) 40%)",
         );
         root.style.setProperty(
           "--inactive-title",
-          theme.titleInactive || "linear-gradient(180deg,#edf5fa,#d8e8f4)",
+          theme.titleInactive ||
+            "linear-gradient(180deg, rgba(91,103,122,0.42), rgba(45,56,72,0.36))",
         );
         root.style.setProperty(
-          "--icon",
-          theme.icon || "linear-gradient(180deg,#46a8ec,#0a74c6)",
+          "--title-text-active",
+          theme.titleTextActive || (theme.mode === "light" ? "#17324c" : "#ffffff"),
+        );
+        root.style.setProperty(
+          "--title-text-inactive",
+          theme.titleTextInactive || (theme.mode === "light" ? "#34536b" : "#d8e6fb"),
+        );
+        root.style.setProperty(
+          "--title-glow",
+          theme.titleGlow || (theme.mode === "light" ? "rgba(255,255,255,.28)" : "rgba(255,255,255,.18)"),
+        );
+        root.style.setProperty(
+          "--desktop-highlight",
+          theme.desktopHighlight || (theme.mode === "light" ? "rgba(255,255,255,.10)" : "rgba(255,255,255,.04)"),
+        );
+        root.style.setProperty(
+          "--desktop-glow",
+          theme.desktopGlow || (theme.mode === "light" ? "rgba(19,132,215,.10)" : "rgba(95,141,255,.12)"),
+        );
+        root.style.setProperty(
+          "--topbar-start",
+          theme.topbarStart || (theme.mode === "light" ? "#dfe8f4" : "rgba(45,76,142,.96)"),
+        );
+        root.style.setProperty(
+          "--topbar-end",
+          theme.topbarEnd || (theme.mode === "light" ? "#bccfe5" : "rgba(20,34,68,.96)"),
+        );
+        root.style.setProperty(
+          "--topbar-border",
+          theme.topbarBorder || (theme.mode === "light" ? "rgba(76,106,138,.34)" : "rgba(130,164,230,.26)"),
+        );
+        root.style.setProperty(
+          "--taskbar-start",
+          theme.taskbarStart || (theme.mode === "light" ? "#d5e1f0" : "#2d5aa8"),
+        );
+        root.style.setProperty(
+          "--taskbar-end",
+          theme.taskbarEnd || (theme.mode === "light" ? "#adc2da" : "#173a7a"),
+        );
+        root.style.setProperty(
+          "--taskbar-border",
+          theme.taskbarBorder || (theme.mode === "light" ? "rgba(76,106,138,.34)" : "rgba(150,184,240,.26)"),
+        );
+        root.style.setProperty(
+          "--taskbar-text",
+          theme.taskbarText || (theme.mode === "light" ? "#16324d" : "#f4f8ff"),
+        );
+        root.style.setProperty(
+          "--taskbar-text-muted",
+          theme.taskbarTextMuted || (theme.mode === "light" ? "rgba(22,50,77,.72)" : "rgba(221,232,250,.76)"),
+        );
+        root.style.setProperty(
+          "--taskband-face",
+          theme.taskbandFace || (theme.mode === "light" ? "linear-gradient(180deg, rgba(255,255,255,.76), rgba(255,255,255,.36))" : "linear-gradient(180deg, rgba(255,255,255,.20), rgba(255,255,255,.06))"),
+        );
+        root.style.setProperty(
+          "--taskband-face-active",
+          theme.taskbandFaceActive || (theme.mode === "light" ? "linear-gradient(180deg, rgba(255,255,255,.96), rgba(227,237,248,.68))" : "linear-gradient(180deg, rgba(140,179,255,.34), rgba(70,110,220,.16))"),
+        );
+        root.style.setProperty(
+          "--taskband-border",
+          theme.taskbandBorder || (theme.mode === "light" ? "rgba(92,121,151,.28)" : "rgba(162,193,255,.24)"),
+        );
+        root.style.setProperty(
+          "--start-menu-start",
+          theme.startMenuStart || (theme.mode === "light" ? "rgba(255,255,255,.99)" : "rgba(19,29,47,.98)"),
+        );
+        root.style.setProperty(
+          "--start-menu-end",
+          theme.startMenuEnd || (theme.mode === "light" ? "rgba(236,242,248,.97)" : "rgba(10,18,32,.96)"),
+        );
+        root.style.setProperty(
+          "--start-menu-border",
+          theme.startMenuBorder || (theme.mode === "light" ? "rgba(85,111,143,.28)" : "rgba(156,180,224,.22)"),
+        );
+        root.style.setProperty(
+          "--start-banner-start",
+          theme.startBannerStart || (theme.mode === "light" ? "#dbe8f5" : "#335fae"),
+        );
+        root.style.setProperty(
+          "--start-banner-end",
+          theme.startBannerEnd || (theme.mode === "light" ? "#a9c0db" : "#1a3d80"),
+        );
+        root.style.setProperty(
+          "--start-banner-text",
+          theme.startBannerText || (theme.mode === "light" ? "#17324d" : "#f5f9ff"),
+        );
+        root.style.setProperty(
+          "--menu-text",
+          theme.menuText || (theme.mode === "light" ? theme.text || "#0a2234" : theme.text || "#f1f6ff"),
+        );
+        root.style.setProperty(
+          "--button-face",
+          theme.buttonFace || (theme.mode === "light" ? "linear-gradient(180deg,#ffffff,#e6eef8)" : "linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,.06))"),
+        );
+        root.style.setProperty(
+          "--button-face-alt",
+          theme.buttonFaceAlt || (theme.mode === "light" ? "linear-gradient(180deg,#f8fbff,#dde8f4)" : "linear-gradient(180deg, rgba(104,136,206,.28), rgba(39,68,126,.16))"),
+        );
+        root.style.setProperty(
+          "--button-border",
+          theme.buttonBorder || (theme.mode === "light" ? "rgba(86,110,140,.22)" : "rgba(173,195,232,.22)"),
+        );
+        root.style.setProperty(
+          "--button-text",
+          theme.buttonText || (theme.mode === "light" ? "#244462" : theme.text || "#eef4ff"),
+        );
+        root.style.setProperty(
+          "--input-face",
+          theme.inputFace || (theme.mode === "light" ? "rgba(255,255,255,.98)" : "rgba(8,15,28,.88)"),
+        );
+        root.style.setProperty(
+          "--input-border",
+          theme.inputBorder || (theme.mode === "light" ? "rgba(86,110,140,.20)" : "rgba(166,182,204,.22)"),
+        );
+        root.style.setProperty(
+          "--input-text",
+          theme.inputText || (theme.mode === "light" ? theme.text || "#081b2d" : theme.text || "#f1f6ff"),
+        );
+        root.style.setProperty(
+          "--selection-fill",
+          theme.selectionFill || (theme.mode === "light" ? "rgba(47,111,237,.12)" : "rgba(95,141,255,.20)"),
+        );
+        root.style.setProperty(
+          "--selection-border",
+          theme.selectionBorder || (theme.mode === "light" ? "rgba(47,111,237,.26)" : "rgba(131,165,255,.34)"),
+        );
+        root.style.setProperty(
+          "--selection-text",
+          theme.selectionText || (theme.mode === "light" ? theme.text || "#123152" : "#f5f8ff"),
+        );
+        root.style.setProperty(
+          "--focus-ring",
+          theme.focusRing || (theme.mode === "light" ? "rgba(47,111,237,.22)" : "rgba(95,141,255,.34)"),
+        );
+        root.style.setProperty(
+          "--focus-ring-inset",
+          theme.focusRingInset || (theme.mode === "light" ? "rgba(255,255,255,.94)" : "rgba(3,7,18,.92)"),
         );
         root.style.setProperty(
           "--miomos-shadow",
-          theme.shadow || "0 16px 36px rgba(7,62,96,.16)",
+          theme.shadow || "0 18px 42px rgba(0,0,0,.26)",
         );
-        shellVars = {
-          shellChromeFont: "Tahoma",
-          shellTaskbar:
-            "linear-gradient(180deg,#4aa1f0 0%, #2578d9 48%, #1a5bb4 100%)",
-          shellTaskbarBorderTop: "rgba(255,255,255,.56)",
-          shellStartButton:
-            "linear-gradient(180deg,#5bd55b 0%, #38a838 55%, #247f24 100%)",
-          shellStartButtonBorder: "rgba(28,88,22,.64)",
-          shellStartButtonText: "#f8fff8",
-          shellQuickLaunchLabel: "#f0f6ff",
-          shellTaskActive:
-            "linear-gradient(180deg,#ffd970 0%, #f5c84c 48%, #d9a82d 100%)",
-          shellTaskActiveText: "#253142",
-          shellMenuFrame:
-            "linear-gradient(180deg,#3184e7 0%, #0d58b8 100%)",
-          shellMenuBanner:
-            "linear-gradient(180deg,#3184e7 0%, #0d58b8 100%)",
-          shellMenuBannerText: "#ffffff",
-          shellMenuBody:
-            "linear-gradient(90deg,#ffffff 0 72%, #d9e8ff 72% 73%, #f3e0a4 73% 100%)",
-          shellMenuMain: "rgba(255,255,255,.96)",
-          shellMenuSide: "linear-gradient(180deg,#f7eec4,#f2d689)",
-          shellMenuSideBorder: "rgba(157,126,28,.28)",
-          shellMenuFooter:
-            "linear-gradient(180deg,#3184e7 0%, #1a60be 100%)",
-          shellWindowControl: "linear-gradient(180deg,#fff5eb,#f1c88c)",
-          shellWindowControlBorder: "rgba(9,35,91,.38)",
-          shellWindowControlText: "#6a2d00",
-          shellWindowControlDanger: "#ba2f1e",
-          shellWindowActiveText: "#ffffff",
-          shellWindowInactiveText: "#375176",
-          shellContextMenu: "linear-gradient(180deg,#ffffff,#eef4ff)",
-          shellContextMenuBorder: "#295ba9",
-          shellContextMenuText: "#18385c",
-          shellExplorerToolbar: "linear-gradient(180deg,#ffffff 0%, #ebf4ff 100%)",
-          shellExplorerPane: "linear-gradient(180deg,#f7f3d8,#efe1a5)",
-          shellExplorerContent: "rgba(255,255,255,.98)",
-          shellExplorerBorder: "rgba(54,94,158,.28)",
-          shellExplorerText: "#18324d",
-          shellExplorerMuted: "#4d617e",
-          shellExplorerSelection: "linear-gradient(180deg,#d7ebff 0%, #a8d0ff 100%)",
-          shellExplorerSelectionBorder: "rgba(44,97,171,.38)",
-          shellExplorerGlyph: "#295fae",
-          shellDialogFrame: "linear-gradient(180deg,#f7fbff 0%, #e8f0fb 100%)",
-          shellDialogBorder: "#0c3a9a",
-          shellDialogHeader: "linear-gradient(180deg,#3184e7 0%, #0d58b8 100%)",
-          shellDialogHeaderText: "#ffffff",
-          shellDialogBodyText: "#19375f",
-        };
-        Object.keys(shellVars).forEach(function (name) {
-          key =
-            "--" +
-            name
-              .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
-              .toLowerCase();
-          root.style.setProperty(key, theme[name] || shellVars[name]);
-        });
+        root.style.setProperty(
+          "--miomos-shadow-soft",
+          theme.shadowSoft || (theme.mode === "light" ? "0 12px 28px rgba(8,18,33,.10)" : "0 12px 28px rgba(0,0,0,.24)"),
+        );
       },
       syncViewportMode: function () {
         this.viewportWidth =

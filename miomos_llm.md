@@ -20,7 +20,7 @@ Use these project assumptions unless the repo proves otherwise:
 - **MIOTPL** for SSR rendering
 - **MIOWS** or existing websocket support for realtime channels
 - **Vue 3 Options API UMD only** in the browser
-- **7.css** as a strong UI influence
+- a **Tailwind-oriented static shell foundation** with a thin MIOMOS chrome layer
 - **Native Vue 3 Options API UMD + CSS window manager** in the browser
 
 ## Hard constraints
@@ -89,7 +89,7 @@ As of the latest ROI baseline:
 
 The UI should combine:
 
-- **7.css desktop influence**
+- **Tailwind-native desktop foundation**
 - **MIOMOS modern polish**
 - a **Windows XP inspired shell chrome** for the taskbar, Start menu, and context menus when it helps clarity
 - compact, professional healthcare-oriented readability
@@ -106,6 +106,35 @@ Themes should be server-authored and include enough metadata to drive:
 - icon/chrome feel
 
 Light themes must be first-class, not an afterthought.
+
+## Current styling migration direction
+
+The next styling phase should be handled as a **layered Tailwind migration**, not a one-shot CSS deletion.
+
+Current visual guidance after the aggressive restyle regressions:
+
+- use the stable ROI 67 shell baseline as the visual source of truth when in doubt
+- prefer **append-only visual normalization overrides** over structural shell rewrites
+- keep changes inside CSS unless a test-backed functional ROI explicitly requires template or Vue work
+- tune colors, borders, shadows, radii, and typography before changing sizing models or layout flows
+
+Guidelines:
+
+- keep `xterm.css` separate so terminal rendering stays stable
+- introduce a committed static Tailwind-style foundation file for MIOMOS shell pages
+- keep a thin handcrafted chrome layer for XP taskbar/titlebar/menu/window chrome
+- preserve existing MIOMOS semantic classes while templates migrate gradually
+- retire legacy shell CSS only after each area is moved and test-backed
+
+The intended ROI chain after the current baseline is:
+
+- ROI 65 — Tailwind foundation and compatibility shell
+- ROI 66 — theme-token rebuild
+- ROI 67 — window/taskbar chrome rewrite
+- ROI 68 — explorer and VFS visual system
+- ROI 69 — controls, menus, dialogs, status surfaces
+- ROI 70 — legacy CSS retirement and final hardening
+- ROI 71 — safe visual normalization on the stable ROI 67 baseline
 
 ## Current shell correctness priorities
 
@@ -205,40 +234,40 @@ Tests should assert:
 
 Do not treat UI polish as untestable.
 
-## Current roadmap after ROI63
+## Recent styling migration status
 
-The current immediate roadmap should proceed in this order unless the repo state forces a smaller hotfix first:
+### ROI 65 completed
 
-### ROI64 — globals-backed virtual file system hardening
+The MIOMOS shell now has a non-destructive style architecture split:
 
-- treat the VFS as a first-class per-user platform surface stored entirely in globals
-- support upload, download, list, mkdir, rename, move, recycle, restore, and empty-bin flows cleanly
-- keep transport diskless on the server
-- support browser drag/drop into MIOMOS and progressive drag-out/download from MIOMOS
-- cover direct routine-level behavior and websocket command transport with tests
+- `miomos_tailwind.css`
+- `xterm.css`
+- `miomos_chrome.css`
 
-### ROI65 — MUMPS-oriented file type experiences
+`xterm.css` remains explicitly outside the migration.
 
-- text, markdown, JSON, CSV, `.m`, and `.gbl` should gain file-type-aware shell behavior
-- file associations should remain server-authored
-- Explorer and desktop verbs should start feeling like a real development workstation
+### ROI 66 completed
 
-### ROI66 — debugger foundation
+The theme system is now normalized around a larger shell-token family authored in `MIOMOSTH`.
 
-- add a server-authored debugger contract over the existing MIOMOS session and websocket transport
-- cover breakpoints, stack, locals, watches, and execution transcript surfaces
-- keep debugger permissions and audit posture explicit and tested
+That means future styling work should prefer:
 
-## Current UX priority
+- adding or refining tokens in `MIOMOSTH`
+- applying tokens in `miomos_desktop.js`
+- consuming tokens in `miomos_chrome.css` or future Tailwind-driven markup
 
-The shell should keep moving toward an **XP-replica MUMPS development environment**.
+instead of reintroducing a large legacy shell stylesheet.
 
-That means the next work should favor:
+The current token family includes XP-shell-specific chrome values for:
 
-- a convincing Explorer and desktop metaphor
-- polished drag/drop and file transfer semantics
-- routine/global/terminal workflows that feel native to the shell
-- correctness and responsiveness over flashy novelty
+- topbar and taskbar gradients
+- task button states
+- start menu and banner surfaces
+- titlebar text and glow
+- button and input faces
+- focus and selection treatments
+
+The next styling ROI should reduce legacy CSS by migrating actual shell surfaces to the token-driven stack rather than expanding the old stylesheet.
 
 ## Recommended workflow in a new chat
 
@@ -677,24 +706,3 @@ Next XP-fidelity wave:
 - Explorer file surfaces must remain download-capable through a server-authored route once `downloadAllowed=1` is present.
 - New MIOMOS shell UI must inherit the active theme font family and font size by default. Do not introduce hardcoded Explorer/taskbar/menu/control typography that bypasses the theme tokens.
 - XP Explorer chrome must use theme-token-driven colors for both light and dark themes so text stays legible on dark shells.
-
-
-## Post-ROI62 roadmap
-
-The immediate post-ROI62 sequence should be:
-
-- **ROI 63** — XP theme system polish and default-theme contract alignment
-- **ROI 64** — shell chrome spacing, typography, and parity tuning
-- **ROI 65** — window frame, drag, resize, and snap polish
-- **ROI 66** — Explorer visual parity and folder-view refinement
-- **ROI 67** — terminal palette and shell-chrome alignment
-- **ROI 68** — Settings theme studio and preview workflow
-- **ROI 69** — desktop icon, shortcut, and recycle-bin polish
-- **ROI 70** — realtime shell services over the primary websocket
-- **ROI 71** — MIOMOS as a MUMPS development workstation surface
-- **ROI 72** — browser rendering and performance hardening
-- **ROI 73** — accessibility and contrast verification
-- **ROI 74** — production-profile hardening
-- **ROI 75** — release gates, ship checklist, and final production readiness
-
-The first implementation focus should stay on shell correctness and visual consistency before taking on larger feature expansion.

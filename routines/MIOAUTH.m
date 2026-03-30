@@ -46,8 +46,8 @@ ENFORCE(DEV,CONF,REQ,CTX)
 	;   - "prefix": protect by prefixes list (or defaults)
 	;   - "route": protect only if matched route meta authRequired=1
 	NEW PMODE SET PMODE=$GET(CONF("auth","protectMode"),"prefix")
-	; Route-based protection: enforce only when route meta authRequired=1.
-	; This must work both when CTX("match",...) is populated and when only CTX("route") is set.
+	; Route-based protection: enforce only when route meta authRequired=1.;
+	; This must work both when CTX("match",...) is populated and when only CTX("route") is set.;
 	IF PMODE="route" DO
 	. NEW RP SET RP=$GET(CTX("match","route"))
 	. IF RP="" SET RP=$GET(CTX("route"))
@@ -204,4 +204,5 @@ INITJWT(CONF,ERR)
 	. IF $GET(CONF("auth","jwt","rs256Verify"))="" SET CONF("auth","jwt","rs256Verify")="VERIFYOSSL^MIOAUTHRS"
 	. IF '$$INIT^MIOAUTHRS(.CONF,.ERR) QUIT
 	QUIT $SELECT($DATA(ERR):0,1:1)
+	;
 	;

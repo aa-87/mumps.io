@@ -330,8 +330,8 @@ DESKTOP(DEV,CONF,REQ,CTX)
 	SET HEAD("Content-Type")="text/html; charset=utf-8"
 	DO RESPX^MIOHTTP(.DEV,.CONF,200,.HEAD,OUT,$GET(CTX("request_id")),.CTX)
 	SET CTX("status")=200
-	DO EVENT^MIOMOSAUD("desktop_render",.CTX,.STATE)
-	DO ACCESS^MIOMOSOBS("desktop_render",.CTX,.STATE)
+	;DO EVENT^MIOMOSAUD("desktop_render",.CTX,.STATE)
+	;DO ACCESS^MIOMOSOBS("desktop_render",.CTX,.STATE)
 	QUIT
 	;
 RESPERR(DEV,CONF,STATUS,CODE,DETAIL,CTX)

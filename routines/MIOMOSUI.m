@@ -60,16 +60,14 @@ DESKCTX(STATE,CONF,DATA)
 	SET DATA("snapMode")=$GET(STATE("snapMode"),"quadrant")
 	SET DATA("motionProfile")=$GET(STATE("motionProfile"),"standard")
 	SET DATA("titlebarStyle")=$GET(STATE("titlebarStyle"),"accent")
-	SET DATA("wallpaper")=$GET(STATE("wallpaper"),"aurora-blue")
-	SET DATA("themeKey")=$GET(STATE("themeKey"),"clinical-blue")
-	SET DATA("themeMode")=$GET(STATE("themeMode"),"light")
+	SET DATA("wallpaper")=$GET(STATE("wallpaper"),"midnight-clinic")
+	SET DATA("themeKey")=$GET(STATE("themeKey"),"midnight-professional")
 	SET DATA("bootJson")=$$BOOTJSON^MIOMOSST(.STATE,.CONF)
 	SET DATA("vueScript")="https://unpkg.com/vue@3/dist/vue.global.prod.js"
 	SET DATA("nativeShellEngine")="miomos-native-vue-css"
-	SET DATA("sevenCssHref")="https://unpkg.com/7.css/dist/7.scoped.css"
-	DO APPSSR(.DATA,.STATE)
+		DO APPSSR(.DATA,.STATE)
 	DO WINSSR(.DATA,.STATE)
-	DO THEMESSR(.DATA,$GET(STATE("themeKey"),"clinical-blue"))
+	DO THEMESSR(.DATA,$GET(STATE("themeKey"),"midnight-professional"))
 	DO SETTINGSSSR(.DATA,.STATE,.CONF)
 	DO AUDITSSR(.DATA)
 	DO LOGSSR(.DATA)
@@ -91,13 +89,12 @@ AUTHCTX(CONF,DATA)
 	SET DATA("inviteOnly")=+$GET(CONF("miomos","localAuth","inviteOnly"),0)
 	SET DATA("guestLoginEnabled")=+$GET(CONF("miomos","localAuth","guestLoginEnabled"),1)
 	SET DATA("bootstrapAuthEnabled")=+$GET(CONF("miomos","bootstrapAuth","enabled"),1)
-	SET DATA("sevenCssHref")="https://unpkg.com/7.css/dist/7.scoped.css"
-	QUIT
+		QUIT
 	;
 APPSSR(DATA,STATE)
 	KILL DATA("apps")
 	SET DATA("apps",1,"key")="workspace",DATA("apps",1,"title")="Workspace",DATA("apps",1,"subtitle")="Queues, intake, review, and export",DATA("apps",1,"icon")=$GET(STATE("icon","workspace"),"W"),DATA("apps",1,"badge")="Live"
-	SET DATA("apps",2,"key")="ui-library",DATA("apps",2,"title")="UI Library",DATA("apps",2,"subtitle")="7.css-influenced forms, tables, overlays, navigation, and tokens",DATA("apps",2,"icon")="UIL",DATA("apps",2,"badge")="Design"
+	SET DATA("apps",2,"key")="ui-library",DATA("apps",2,"title")="UI Library",DATA("apps",2,"subtitle")="Tailwind-oriented forms, tables, overlays, navigation, and shell tokens",DATA("apps",2,"icon")="UIL",DATA("apps",2,"badge")="Design"
 	SET DATA("apps",3,"key")="collaboration",DATA("apps",3,"title")="Chat",DATA("apps",3,"subtitle")="User chat and analyst coordination",DATA("apps",3,"icon")=$GET(STATE("icon","collaboration"),"C"),DATA("apps",3,"badge")="Team"
 	SET DATA("apps",4,"key")="security",DATA("apps",4,"title")="Security",DATA("apps",4,"subtitle")="Access, errors, permissions, and audit",DATA("apps",4,"icon")=$GET(STATE("icon","security"),"S"),DATA("apps",4,"badge")="Audit"
 	SET DATA("apps",5,"key")="admin",DATA("apps",5,"title")="Admin",DATA("apps",5,"subtitle")="Users, invites, resets, and lockout posture",DATA("apps",5,"icon")=$GET(STATE("icon","admin"),"A"),DATA("apps",5,"badge")="Ops"

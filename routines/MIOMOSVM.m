@@ -100,7 +100,7 @@ UILIB(STATE,CONF,ROOT)
 	NEW THEMES
 	KILL @ROOT
 	SET @ROOT@("headline")="UI Library and component contract"
-	SET @ROOT@("subheadline")="7.css-influenced foundations refined with MIOMOS-native shell chrome, WinXP-inspired taskbar and Start menu structure, clinical readability, and mobile-aware behavior."
+	SET @ROOT@("subheadline")="Tailwind-oriented foundations refined into MIOMOS-native shell chrome, WinXP-inspired taskbar and Start menu structure, clinical readability, and mobile-aware behavior."
 	SET @ROOT@("overview",1,"label")="Buttons"
 	SET @ROOT@("overview",1,"value")=6
 	SET @ROOT@("overview",1,"copy")="Primary, subtle, quiet, destructive, and toolbar actions."
@@ -112,7 +112,7 @@ UILIB(STATE,CONF,ROOT)
 	SET @ROOT@("overview",3,"copy")="Tables, badges, segmented tabs, drawers, command palette rows, and shell chrome surfaces."
 	SET @ROOT@("overview",4,"label")="Theme packs"
 	SET @ROOT@("overview",4,"value")=0
-	SET @ROOT@("overview",4,"copy")="7.css-inspired window chrome with MIOMOS modern contrast tuning, XP taskbar cues, and tray/dialog patterns."
+	SET @ROOT@("overview",4,"copy")="Tailwind-native window chrome with MIOMOS modern contrast tuning, XP taskbar cues, and tray/dialog patterns."
 	SET @ROOT@("overview",5,"label")="Mobile-ready patterns"
 	SET @ROOT@("overview",5,"value")=4
 	SET @ROOT@("overview",5,"copy")="Stacked shell, touch targets, and small-screen workspace behavior."

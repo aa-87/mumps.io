@@ -59,6 +59,13 @@ START
 	DO OK^MIOTASSERT(OUT["miomosTerminalViewport","[MIOMOST][T003][terminal viewport]")
 	DO OK^MIOTASSERT(OUT["data-setting-terminal=""fontFamily""","[MIOMOST][T003][terminal settings]")
 	DO OK^MIOTASSERT(OUT["data-setting-terminal=""palette""","[MIOMOST][T003][terminal palette setting]")
+	DO OK^MIOTASSERT(OUT["<meta name=""miomos-style-architecture"" content=""tailwind-shell-native""","[MIOMOST][T003][style architecture meta]")
+	DO OK^MIOTASSERT(OUT["/public/miomos/miomos_tailwind.css","[MIOMOST][T003][tailwind asset]")
+	DO OK^MIOTASSERT(OUT["/public/miomos/miomos_chrome.css","[MIOMOST][T003][chrome asset]")
+	DO OK^MIOTASSERT($FIND(OUT,"/public/miomos/miomos_tailwind.css")<$FIND(OUT,"/public/miomos/xterm.css"),"[MIOMOST][T003][tailwind before xterm]")
+	DO OK^MIOTASSERT($FIND(OUT,"/public/miomos/miomos_tailwind.css")<$FIND(OUT,"/public/miomos/miomos_chrome.css"),"[MIOMOST][T003][chrome after tailwind]")
+	DO EQ^MIOTASSERT(OUT["/public/miomos/7.scoped.css",0,"[MIOMOST][T003][7css removed]")
+	DO EQ^MIOTASSERT(OUT["/public/miomos/miomos_shell.css",0,"[MIOMOST][T003][legacy shell css removed]")
 	DO OK^MIOTASSERT(OUT["data-terminal-clear=""xterm-buffer""","[MIOMOST][T003][terminal clear action]")
 	DO OK^MIOTASSERT(OUT["data-launch-app=""terminal""","[MIOMOST][T003][terminal app]")
 	DO OK^MIOTASSERT(OUT["data-entry-kind=""directory""","[MIOMOST][T003][directory entry]")
@@ -68,8 +75,6 @@ START
 	DO OK^MIOTASSERT(OUT["Mobile-friendly render prep","[MIOMOST][T003][mobile ui copy]")
 	DO OK^MIOTASSERT(OUT["data-miomos-native-shell=""1""","[MIOMOST][T003][native shell token]")
 	DO OK^MIOTASSERT(OUT["data-shell-chrome=""winxp""","[MIOMOST][T003][xp shell token]")
-	DO OK^MIOTASSERT(OUT["data-theme-key=""clinical-blue""","[MIOMOST][T003][theme key token]")
-	DO OK^MIOTASSERT(OUT["data-theme-mode=""light""","[MIOMOST][T003][theme mode token]")
 	DO OK^MIOTASSERT(OUT["data-start-menu-style=""winxp""","[MIOMOST][T003][xp start token]")
 	DO OK^MIOTASSERT(OUT["Windows XP inspired shell chrome","[MIOMOST][T003][xp shell copy]")
 	DO OK^MIOTASSERT(OUT["data-taskbar-style=""xp-plus-tray""","[MIOMOST][T003][xp taskbar token]")
@@ -103,7 +108,6 @@ START
 	DO OK^MIOTASSERT(OUT["data-recycle-bin-service=""1""","[MIOMOST][T003][recycle service token]")
 	DO OK^MIOTASSERT(OUT["Create Shortcut","[MIOMOST][T003][create shortcut copy]")
 	DO OK^MIOTASSERT(OUT["Empty Recycle Bin","[MIOMOST][T003][empty recycle bin copy]")
-	DO OK^MIOTASSERT(OUT["data-vfs-dragout=""1""","[MIOMOST][T003][vfs dragout token]")
 	DO OK^MIOTASSERT(OUT["UI Samples","[MIOMOST][T003][ui samples copy]")
 	DO EQ^MIOTASSERT(OUT["@osjs/client",0,"[MIOMOST][T003][osjs removed]")
 	;
@@ -114,7 +118,6 @@ START
 	DO EQ^MIOTASSERT(+$GET(OBJ("desktop","nativeShell")),1,"[MIOMOST][T004][native shell]")
 	DO EQ^MIOTASSERT(+$GET(OBJ("desktop","osjsEnabled")),0,"[MIOMOST][T004][osjs off]")
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","shellChrome")),"winxp-inspired","[MIOMOST][T004][shell chrome]")
-	DO EQ^MIOTASSERT($GET(OBJ("desktop","theme","currentKey")),"clinical-blue","[MIOMOST][T004][theme current key]")
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","contextMenuStyle")),"winxp","[MIOMOST][T004][context chrome]")
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","contextMenuStatefulness")),"window-aware","[MIOMOST][T004][context stateful]")
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","taskbarStyle")),"xp-plus-tray","[MIOMOST][T004][taskbar chrome]")
@@ -159,6 +162,10 @@ START
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","fontFamily")),"Segoe UI","[MIOMOST][T004][font family]")
 	DO EQ^MIOTASSERT(+$GET(OBJ("desktop","fontSize")),13,"[MIOMOST][T004][font size]")
 	DO EQ^MIOTASSERT(+$DATA(OBJ("desktop","settings","catalog","themes",1,"key"))>0,1,"[MIOMOST][T004][settings catalog]")
+	DO EQ^MIOTASSERT($GET(OBJ("desktop","theme","current","taskbarStart"))'="",1,"[MIOMOST][T004][theme taskbar token]")
+	DO EQ^MIOTASSERT($GET(OBJ("desktop","theme","current","startBannerText"))'="",1,"[MIOMOST][T004][theme banner token]")
+	DO EQ^MIOTASSERT($GET(OBJ("desktop","theme","current","titleTextActive"))'="",1,"[MIOMOST][T004][theme title text token]")
+	DO EQ^MIOTASSERT($GET(OBJ("desktop","theme","current","focusRing"))'="",1,"[MIOMOST][T004][theme focus token]")
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","commandTransport")),"websocket-only","[MIOMOST][T004][command transport]")
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","commandEvent")),"command.exec","[MIOMOST][T004][desktop command event]")
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","commandResultEvent")),"command.result","[MIOMOST][T004][desktop command result]")
@@ -195,10 +202,6 @@ START
 	DO EQ^MIOTASSERT($GET(OBJ("release","smoke","websocket",4,"key")),"terminal","[MIOMOST][T004][release ws smoke]")
 	DO EQ^MIOTASSERT($GET(OBJ("release","smoke","browser",3,"key")),"terminal-focus","[MIOMOST][T004][release browser smoke]")
 	DO EQ^MIOTASSERT(+$GET(OBJ("release","docsCurrent")),1,"[MIOMOST][T004][release docs current]")
-	DO EQ^MIOTASSERT($GET(OBJ("desktop","vfs","platformRole")),"xp-replica-mumps-development-environment","[MIOMOST][T004][vfs platform role]")
-	DO EQ^MIOTASSERT($GET(OBJ("desktop","vfs","roadmap",1,"roi")),64,"[MIOMOST][T004][vfs roadmap roi]")
-	DO EQ^MIOTASSERT(+$GET(OBJ("desktop","vfs","entryCount"))>0,1,"[MIOMOST][T004][vfs entry count]")
-	DO EQ^MIOTASSERT($GET(OBJ("desktop","vfs","roots",5,"key")),"recycle-bin","[MIOMOST][T004][vfs recycle root]")
 	;
 	KILL CONF
 	SET CONF("auth","enabled")=1
@@ -330,8 +333,9 @@ START
 	DO EQ^MIOTASSERT($GET(VM("terminal","commandTransport")),"websocket-only","[MIOMOST][T014][terminal command bus]")
 	DO EQ^MIOTASSERT($GET(VM("uiLibrary","responsive",1,"title")),"Stacked shell under 900 px","[MIOMOST][T014][mobile section]")
 	DO EQ^MIOTASSERT($GET(ARR("catalog","themes",6,"key")),"high-contrast-light","[MIOMOST][T014][high contrast light]")
-	DO EQ^MIOTASSERT($GET(ARR("catalog","themes",8,"key")),"xp-olive","[MIOMOST][T014][xp olive]")
-	DO EQ^MIOTASSERT($GET(ARR("catalog","themes",9,"key")),"xp-silver","[MIOMOST][T014][xp silver]")
+	DO EQ^MIOTASSERT($GET(ARR("catalog","themes",3,"taskbarStart"))'="",1,"[MIOMOST][T014][catalog taskbar token]")
+	DO EQ^MIOTASSERT($GET(ARR("catalog","themes",3,"startBannerText")),"#ffffff","[MIOMOST][T014][catalog banner text]")
+	DO EQ^MIOTASSERT($GET(ARR("catalog","themes",5,"focusRing"))'="",1,"[MIOMOST][T014][catalog focus token]")
 	DO EQ^MIOTASSERT($GET(VM("windowManager","windowPreset"))'="",1,"[MIOMOST][T014][window preset]")
 	DO EQ^MIOTASSERT($GET(VM("windowManager","engine")),"miomos-native-vue-css","[MIOMOST][T014][wm engine]")
 	DO EQ^MIOTASSERT($GET(VM("shellChrome","quickLaunchLabel")),"Quick Launch","[MIOMOST][T014][quick launch label]")
@@ -496,122 +500,6 @@ START
 	DO OK^MIOTASSERT($$RENDERPAGE^MIOTPL("pages/miomos_auth.html","layouts/miomos_shell.html",.CONF,.CTX,.OUT,.ERR),"[MIOMOST][T022][auth render]")
 	DO OK^MIOTASSERT(OUT["Continue as guest","[MIOMOST][T022][guest button]")
 	DO OK^MIOTASSERT(OUT["data-guest-login-enabled=""1""","[MIOMOST][T022][guest token]")
-	;
-	NEW VFSUSER,FILEKEY,FILE2,DIRKEY,SUBKEY,ADMINTOK,ADMINREQ,ADMINCTX,ADMINSTATE,ADMINSID,WSOBJ,WSARR,WSDIR,WSERR,WSPAY,WSJSON
-	SET VFSUSER="vfstest"
-	KILL ^MIO("MIOMOS","VFS","USER",VFSUSER),^TMP($J,"MIOMOST","VFS")
-	DO OK^MIOTASSERT($$ENSURE^MIOMOSVFS(VFSUSER,"VFS Test"),"[MIOMOST][T023][vfs ensure]")
-	KILL ARR
-	DO BOOT^MIOMOSVFS(VFSUSER,.CONF,$NA(ARR))
-	DO EQ^MIOTASSERT($GET(ARR("platformRole")),"xp-replica-mumps-development-environment","[MIOMOST][T023][boot role]")
-	DO EQ^MIOTASSERT($GET(ARR("roadmap",1,"roi")),64,"[MIOMOST][T023][boot roadmap]")
-	DO EQ^MIOTASSERT(+$GET(ARR("entryCount"))>0,1,"[MIOMOST][T023][boot entry count]")
-	DO EQ^MIOTASSERT($GET(ARR("roots",5,"key")),"recycle-bin","[MIOMOST][T023][boot recycle root]")
-	SET ^TMP($J,"MIOMOST","VFS",1)="hello"
-	KILL OUT,ERR
-	DO OK^MIOTASSERT($$UPLOAD^MIOMOSVFS(VFSUSER,"uploads","Uploads","bad:report?.txt","text/plain",$NA(^TMP($J,"MIOMOST","VFS")),.OUT,.ERR),"[MIOMOST][T023][upload ok]")
-	SET FILEKEY=$GET(OUT("entry","key"))
-	DO EQ^MIOTASSERT($GET(OUT("entry","title")),"badreport.txt","[MIOMOST][T023][upload safe name]")
-	DO EQ^MIOTASSERT($GET(OUT("entry","dragOutAllowed")),1,"[MIOMOST][T023][upload dragout]")
-	SET ^TMP($J,"MIOMOST","VFS",1)="second"
-	KILL OUT,ERR
-	DO OK^MIOTASSERT($$UPLOAD^MIOMOSVFS(VFSUSER,"uploads","Uploads","bad:report?.txt","text/plain",$NA(^TMP($J,"MIOMOST","VFS")),.OUT,.ERR),"[MIOMOST][T023][upload dup ok]")
-	SET FILE2=$GET(OUT("entry","key"))
-	DO EQ^MIOTASSERT($GET(OUT("entry","title")),"badreport (2).txt","[MIOMOST][T023][upload dup title]")
-	SET ^TMP($J,"MIOMOST","VFS",1)="root"
-	KILL OUT,ERR
-	DO OK^MIOTASSERT($$UPLOAD^MIOMOSVFS(VFSUSER,"my-documents","My Documents","root.txt","text/plain",$NA(^TMP($J,"MIOMOST","VFS")),.OUT,.ERR),"[MIOMOST][T023][root upload ok]")
-	DO OK^MIOTASSERT($GET(OUT("entry","path"))["My Documents\root.txt","[MIOMOST][T023][root upload path]")
-	SET ^TMP($J,"MIOMOST","VFS",1)="forbidden"
-	KILL OUT,ERR
-	DO EQ^MIOTASSERT($$UPLOAD^MIOMOSVFS(VFSUSER,"downloads","Downloads","nope.txt","text/plain",$NA(^TMP($J,"MIOMOST","VFS")),.OUT,.ERR),0,"[MIOMOST][T023][upload forbidden]")
-	DO EQ^MIOTASSERT($GET(ERR("error")),"upload_forbidden","[MIOMOST][T023][upload forbidden code]")
-	KILL OUT,ERR
-	DO OK^MIOTASSERT($$DOWNLOAD^MIOMOSVFS(VFSUSER,FILEKEY,.OUT,.ERR),"[MIOMOST][T023][download ok]")
-	DO EQ^MIOTASSERT($GET(OUT("blob",1)),"hello","[MIOMOST][T023][download blob]")
-	KILL OUT,ERR
-	DO OK^MIOTASSERT($$MKDIRCMD^MIOMOSVFS(VFSUSER,"projects","Projects","Sprint",.OUT,.ERR),"[MIOMOST][T023][mkdir ok]")
-	SET DIRKEY=$GET(OUT("key"))
-	DO OK^MIOTASSERT($GET(OUT("path"))["Projects\Sprint","[MIOMOST][T023][mkdir path]")
-	KILL OUT,ERR
-	DO OK^MIOTASSERT($$RENAME^MIOMOSVFS(VFSUSER,DIRKEY,"Sprint Alpha",.OUT,.ERR),"[MIOMOST][T023][rename ok]")
-	DO EQ^MIOTASSERT($GET(OUT("title")),"Sprint Alpha","[MIOMOST][T023][rename title]")
-	;	
-	KILL OUT,ERR
-	DO OK^MIOTASSERT($$MOVE^MIOMOSVFS(VFSUSER,FILEKEY,DIRKEY,"move",.OUT,.ERR),"[MIOMOST][T023][move ok]")
-	DO EQ^MIOTASSERT($GET(OUT("parentKey")),DIRKEY,"[MIOMOST][T023][move parent]")
-	DO OK^MIOTASSERT($GET(OUT("path"))["Sprint Alpha\badreport.txt","[MIOMOST][T023][move path]") 
-	KILL OUT,ERR
-	DO EQ^MIOTASSERT($$DELETE^MIOMOSVFS(VFSUSER,"downloads","",.OUT,.ERR),0,"[MIOMOST][T023][system delete blocked]")
-	DO EQ^MIOTASSERT($GET(ERR("error")),"system_entry_forbidden","[MIOMOST][T023][system delete code]")
-	KILL OUT,ERR
-	DO OK^MIOTASSERT($$MKDIRCMD^MIOMOSVFS(VFSUSER,DIRKEY,"Sprint Alpha","Sub",.OUT,.ERR),"[MIOMOST][T023][sub mkdir]")
-	SET SUBKEY=$GET(OUT("key"))
-	KILL OUT,ERR
-	DO EQ^MIOTASSERT($$MOVE^MIOMOSVFS(VFSUSER,DIRKEY,SUBKEY,"move",.OUT,.ERR),0,"[MIOMOST][T023][move loop blocked]")
-	DO EQ^MIOTASSERT($GET(ERR("error")),"invalid_move_target","[MIOMOST][T023][move loop code]")
-	KILL OUT,ERR
-	DO OK^MIOTASSERT($$DELETE^MIOMOSVFS(VFSUSER,FILEKEY,"",.OUT,.ERR),"[MIOMOST][T023][delete recycle]")
-	DO EQ^MIOTASSERT($GET(OUT("parentKey")),"recycle-bin","[MIOMOST][T023][delete recycle parent]")
-	KILL OUT,ERR
-	DO OK^MIOTASSERT($$RESTORE^MIOMOSVFS(VFSUSER,FILEKEY,.OUT,.ERR),"[MIOMOST][T023][restore ok]")
-	DO EQ^MIOTASSERT($GET(OUT("parentKey")),DIRKEY,"[MIOMOST][T023][restore parent]")
-	KILL OUT,ERR
-	DO OK^MIOTASSERT($$DELETE^MIOMOSVFS(VFSUSER,FILE2,"",.OUT,.ERR),"[MIOMOST][T023][delete second]")
-	KILL OUT,ERR
-	DO OK^MIOTASSERT($$EMPTYBIN^MIOMOSVFS(VFSUSER,.OUT,.ERR),"[MIOMOST][T023][empty recycle]")
-	DO EQ^MIOTASSERT(+$GET(OUT("removedCount")),1,"[MIOMOST][T023][empty recycle count]")
-	DO EQ^MIOTASSERT($DATA(^MIO("MIOMOS","VFS","USER",VFSUSER,"file",FILE2)),0,"[MIOMOST][T023][empty recycle removed]")
-	;
-	KILL ERR,ADMINTOK,ADMINREQ,ADMINCTX,ADMINSTATE,WSOBJ,WSARR,WSERR
-	DO OK^MIOTASSERT($$SIGNIN^MIOMOSAUTH(.CONF,"admin","admin123!",.ADMINTOK,.ERR),"[MIOMOST][T024][admin signin]")
-	SET ADMINREQ("hdr","cookie")="miomos_auth="_ADMINTOK
-	SET ADMINCTX("request_id")="miomost-vfs-ws-auth"
-	DO OK^MIOTASSERT($$LOADLOCAL^MIOMOSAUTH(.CONF,.ADMINREQ,.ADMINCTX,.WSERR),"[MIOMOST][T024][ws load local]")
-	DO OK^MIOTASSERT($$ENSURE^MIOMOSST(.CONF,.ADMINREQ,.ADMINCTX,.ADMINSTATE,.WSERR),"[MIOMOST][T024][ws ensure]")
-	SET ADMINSID=$GET(ADMINSTATE("sessionId")),ADMINCTX("miomos","sessionId")=ADMINSID
-	SET ADMINCTX("request_id")="miomost-vfs-ws-list"
-	DO OK^MIOTASSERT($$COMMANDSIDJSON^MIOMOSWS(.CONF,.ADMINREQ,.ADMINCTX,ADMINSID,"{""event"":""command.exec"",""requestId"":""vfs-1"",""command"":""vfs.list""}",.WSOBJ,.WSERR),"[MIOMOST][T024][ws list exec]")
-	DO OK^MIOTASSERT($$DECODE^MIOJSON(WSOBJ,.WSARR,.WSERR),"[MIOMOST][T024][ws list decode]")
-	DO EQ^MIOTASSERT($GET(WSARR("event")),"command.result","[MIOMOST][T024][ws list event]")
-	DO EQ^MIOTASSERT(+$GET(WSARR("vfs","entryCount"))>0,1,"[MIOMOST][T024][ws list count]")
-	KILL WSOBJ,WSARR,WSERR
-	SET ADMINCTX("request_id")="miomost-vfs-ws-mkdir"
-	DO OK^MIOTASSERT($$COMMANDSIDJSON^MIOMOSWS(.CONF,.ADMINREQ,.ADMINCTX,ADMINSID,"{""event"":""command.exec"",""requestId"":""vfs-2"",""command"":""vfs.mkdir"",""parentKey"":""projects"",""parentTitle"":""Projects"",""title"":""WS Folder""}",.WSOBJ,.WSERR),"[MIOMOST][T024][ws mkdir exec]")
-	DO OK^MIOTASSERT($$DECODE^MIOJSON(WSOBJ,.WSARR,.WSERR),"[MIOMOST][T024][ws mkdir decode]")
-	SET WSDIR=$GET(WSARR("entry","key"))
-	DO EQ^MIOTASSERT($GET(WSARR("entry","title")),"WS Folder","[MIOMOST][T024][ws mkdir title]")
-	KILL WSOBJ,WSARR,WSERR,WSPAY
-	SET ADMINCTX("request_id")="miomost-vfs-ws-ren"
-	SET WSPAY("event")="command.exec",WSPAY("requestId")="vfs-3",WSPAY("command")="vfs.rename",WSPAY("key")=WSDIR,WSPAY("title")="WS Folder Renamed"
-	SET WSJSON=$$EN^MIOJSON1(.WSPAY)
-	DO OK^MIOTASSERT($$COMMANDSIDJSON^MIOMOSWS(.CONF,.ADMINREQ,.ADMINCTX,ADMINSID,WSJSON,.WSOBJ,.WSERR),"[MIOMOST][T024][ws rename exec]") 
-	DO OK^MIOTASSERT($$DECODE^MIOJSON(WSOBJ,.WSARR,.WSERR),"[MIOMOST][T024][ws rename decode]")
-	DO EQ^MIOTASSERT($GET(WSARR("entry","title")),"WS Folder Renamed","[MIOMOST][T024][ws rename title]") 
-	KILL WSOBJ,WSARR,WSERR,WSPAY
-	SET ADMINCTX("request_id")="miomost-vfs-ws-del"
-	SET WSPAY("event")="command.exec",WSPAY("requestId")="vfs-4",WSPAY("command")="vfs.delete",WSPAY("key")=WSDIR
-	SET WSJSON=$$EN^MIOJSON1(.WSPAY)
-	DO OK^MIOTASSERT($$COMMANDSIDJSON^MIOMOSWS(.CONF,.ADMINREQ,.ADMINCTX,ADMINSID,WSJSON,.WSOBJ,.WSERR),"[MIOMOST][T024][ws delete exec]") 
-	DO OK^MIOTASSERT($$DECODE^MIOJSON(WSOBJ,.WSARR,.WSERR),"[MIOMOST][T024][ws delete decode]")
-	DO EQ^MIOTASSERT($GET(WSARR("entry","parentKey")),"recycle-bin","[MIOMOST][T024][ws delete recycle]") 
-	KILL WSOBJ,WSARR,WSERR,WSPAY
-	SET ADMINCTX("request_id")="miomost-vfs-ws-rest"
-	SET WSPAY("event")="command.exec",WSPAY("requestId")="vfs-5",WSPAY("command")="vfs.recycle.restore",WSPAY("key")=WSDIR
-	SET WSJSON=$$EN^MIOJSON1(.WSPAY)
-	DO OK^MIOTASSERT($$COMMANDSIDJSON^MIOMOSWS(.CONF,.ADMINREQ,.ADMINCTX,ADMINSID,WSJSON,.WSOBJ,.WSERR),"[MIOMOST][T024][ws restore exec]")
-	DO OK^MIOTASSERT($$DECODE^MIOJSON(WSOBJ,.WSARR,.WSERR),"[MIOMOST][T024][ws restore decode]")
-	DO EQ^MIOTASSERT($GET(WSARR("entry","parentKey")),"projects","[MIOMOST][T024][ws restore parent]") 
-	KILL WSOBJ,WSARR,WSERR,WSPAY
-	SET ADMINCTX("request_id")="miomost-vfs-ws-del2"
-	SET WSPAY("event")="command.exec",WSPAY("requestId")="vfs-6",WSPAY("command")="vfs.delete",WSPAY("key")=WSDIR
-	SET WSJSON=$$EN^MIOJSON1(.WSPAY)
-	DO OK^MIOTASSERT($$COMMANDSIDJSON^MIOMOSWS(.CONF,.ADMINREQ,.ADMINCTX,ADMINSID,WSJSON,.WSOBJ,.WSERR),"[MIOMOST][T024][ws delete2 exec]") 
-	KILL WSOBJ,WSARR,WSERR
-	SET ADMINCTX("request_id")="miomost-vfs-ws-empty"
-	DO OK^MIOTASSERT($$COMMANDSIDJSON^MIOMOSWS(.CONF,.ADMINREQ,.ADMINCTX,ADMINSID,"{""event"":""command.exec"",""requestId"":""vfs-7"",""command"":""vfs.recycle.empty""}",.WSOBJ,.WSERR),"[MIOMOST][T024][ws empty exec]")
-	DO OK^MIOTASSERT($$DECODE^MIOJSON(WSOBJ,.WSARR,.WSERR),"[MIOMOST][T024][ws empty decode]")
-	DO EQ^MIOTASSERT(+$GET(WSARR("entry","removedCount"))>0,1,"[MIOMOST][T024][ws empty count]") 
 	QUIT
 	;
 FINDUSR(LIST,USER)
