@@ -5,6 +5,7 @@
      "rightclick-comp":window["rightclick-comp"],
      "selectarea-comp":window["selectarea-comp"],
      "window-comp":window["window-comp"],
+     "errorwindow-comp":window["errorwindow-comp"],
     },
     data: function () {
       return { };
