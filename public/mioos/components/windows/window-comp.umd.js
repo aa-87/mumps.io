@@ -4,8 +4,8 @@
     data() {
       return {
         windowDraggableElement: null,
-        x: 0,
-        y: 0,
+        x: 80,
+        y: 80,
         isDragging: false,
         offsetX: 0,
         offsetY: 0,
@@ -39,7 +39,7 @@
       },
     },
     template: `
-    <div data-attr="window" :style="style"  @mousedown="startDrag" :id="id" class="z-[990] shrink-0 absolute top-10">
+    <div data-attr="window" :style="style"  @mousedown="startDrag" :id="id" :class="'!z-[9999] ' + ' z-[990] shrink-0 absolute top-10'">
     <div class="window w-fit bg-[#fcfcfe]">
         <div ref="windowDraggableElement" class=" title-bar shrink-0">
             <div class="title-bar-text shrink-0">{{ titleBar }}</div>

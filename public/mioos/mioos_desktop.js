@@ -7,6 +7,7 @@
       "window-comp": window["window-comp"],
       "errorwindow-comp": window["errorwindow-comp"],
       "mycomputer-comp": window["mycomputer-comp"],
+      "taskbar-comp": window["taskbar-comp"],
     },
     data: function () {
       return {};

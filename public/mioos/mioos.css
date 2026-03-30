@@ -49,7 +49,7 @@ html {
   background-size: cover;
 }
 * {
-  font-family: "Pixelated MS Sans Serif", Arial;
+  font-family: "segoe-ui", "Pixelated MS Sans Serif", Arial;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -60,89 +60,29 @@ html {
     -1px 1px 1px #000000,
     -1px 1px 1px #000000;
 }
+[data-attr="rightclickmenu"] * {
+  .selectarea {
+  }
 
-[data-attr="rightclickmenu"] .selectarea {
-  @apply hover:text-white hover:bg-[#316ac5] 
-        pl-4 pr-1
-        my-1
-        font-thin
-        font-segoe-ui
-        tracking-tight
-        leading-4;
+  .rc-shadow {
+    -webkit-box-shadow: 6px 6px 5px -4px rgba(0, 0, 0, 0.75);
+    -moz-box-shadow: 6px 6px 5px -4px rgba(0, 0, 0, 0.75);
+    box-shadow: 6px 6px 5px -4px rgba(0, 0, 0, 0.75);
+  }
 }
-
-[data-attr="rightclickmenu"] .rc-shadow {
-  -webkit-box-shadow: 6px 6px 5px -4px rgba(0, 0, 0, 0.75);
-  -moz-box-shadow: 6px 6px 5px -4px rgba(0, 0, 0, 0.75);
-  box-shadow: 6px 6px 5px -4px rgba(0, 0, 0, 0.75);
-}
-
-[data-attr="window"] .title-bar {
-  font-family: Trebuchet MS;
-  background: linear-gradient(
-    180deg,
-    #0997ff,
-    #0053ee 8%,
-    #0050ee 40%,
-    #06f 88%,
-    #06f 93%,
-    #005bff 95%,
-    #003dd7 96%,
-    #003dd7
-  );
-  padding: 3px 5px 3px 3px;
-  border-top: 1px solid #0831d9;
-  border-left: 1px solid #0831d9;
-  border-right: 1px solid #001ea0;
-  border-top-left-radius: 8px;
-  border-top-right-radius: 7px;
-  font-size: 13px;
-  text-shadow: 1px 1px #0f1089;
-  height: 32px;
-  color: white;
-  user-select: none;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-[data-attr="window"] .title-bar-text {
-  font-weight: 700;
-  color: #fff;
-  letter-spacing: 0;
-  margin-right: 24px;
-  padding-left: 3px;
-}
-[data-attr="window"] .window {
-  box-shadow:
-    inset -1px -1px #00138c,
-    inset 1px 1px #0831d9,
-    inset -2px -2px #001ea0,
-    inset 2px 2px #166aee,
-    inset -3px -3px #003bda,
-    inset 3px 3px #0855dd;
-  border-top-left-radius: 8px;
-  border-top-right-radius: 8px;
-  padding: 0 0 3px;
-  -webkit-font-smoothing: antialiased;
-}
-
-[data-attr="window"] .minimize {
-  background-color: white;
-  background-image: url("/public/mioos/assets/minimize.svg");
-}
-[data-attr="window"] .fullsize {
-  background-color: white;
-  background-image: url("/public/mioos/assets/fullsize.svg");
-}
-[data-attr="window"] .close {
-  background-color: white;
-  background-image: url("/public/mioos/assets/close.svg");
-}
-
-
-[data-attr="error"] .title-bar {
+  .title-bar {
     font-family: Trebuchet MS;
-    background: linear-gradient(180deg,#0997ff,#0053ee 8%,#0050ee 40%,#06f 88%,#06f 93%,#005bff 95%,#003dd7 96%,#003dd7);
+    background: linear-gradient(
+      180deg,
+      #0997ff,
+      #0053ee 8%,
+      #0050ee 40%,
+      #06f 88%,
+      #06f 93%,
+      #005bff 95%,
+      #003dd7 96%,
+      #003dd7
+    );
     padding: 3px 5px 3px 3px;
     border-top: 1px solid #0831d9;
     border-left: 1px solid #0831d9;
@@ -157,69 +97,277 @@ html {
     display: flex;
     justify-content: space-between;
     align-items: center;
-}
-[data-attr="error"] .title-bar-text {
+  }
+  .title-bar-text {
     font-weight: 700;
     color: #fff;
     letter-spacing: 0;
     margin-right: 24px;
-    padding-left: 3px ;
-}
-[data-attr="error"] .window {
-    box-shadow: inset -1px -1px #00138c, inset 1px 1px #0831d9, inset -2px -2px #001ea0, inset 2px 2px #166aee, inset -3px -3px #003bda, inset 3px 3px #0855dd;
+    padding-left: 3px;
+  }
+  .window {
+    box-shadow:
+      inset -1px -1px #00138c,
+      inset 1px 1px #0831d9,
+      inset -2px -2px #001ea0,
+      inset 2px 2px #166aee,
+      inset -3px -3px #003bda,
+      inset 3px 3px #0855dd;
     border-top-left-radius: 8px;
     border-top-right-radius: 8px;
     padding: 0 0 3px;
     -webkit-font-smoothing: antialiased;
-}
+  }
 
-[data-attr="error"] .close{
-    background-color: white;
-    background-image: url("/public/mioos/assets/close.svg");
-}
-
-[data-attr="computerwindow"]  .title-bar {
-    font-family: Trebuchet MS;
-    background: linear-gradient(180deg,#0997ff,#0053ee 8%,#0050ee 40%,#06f 88%,#06f 93%,#005bff 95%,#003dd7 96%,#003dd7);
-    padding: 3px 5px 3px 3px;
-    border-top: 1px solid #0831d9;
-    border-left: 1px solid #0831d9;
-    border-right: 1px solid #001ea0;
-    border-top-left-radius: 8px;
-    border-top-right-radius: 7px;
-    font-size: 13px;
-    text-shadow: 1px 1px #0f1089;
-    height: 32px;
-    color: white;
-    user-select: none;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-[data-attr="computerwindow"] .title-bar-text {
-    font-weight: 700;
-    color: #fff;
-    letter-spacing: 0;
-    margin-right: 24px;
-    padding-left: 3px ;
-}
-[data-attr="computerwindow"] .window {
-    box-shadow: inset -1px -1px #00138c, inset 1px 1px #0831d9, inset -2px -2px #001ea0, inset 2px 2px #166aee, inset -3px -3px #003bda, inset 3px 3px #0855dd;
-    border-top-left-radius: 8px;
-    border-top-right-radius: 8px;
-    padding: 0 0 3px;
-    -webkit-font-smoothing: antialiased;
-}
-
-[data-attr="computerwindow"] .minimize{
+  .minimize {
     background-color: white;
     background-image: url("/public/mioos/assets/minimize.svg");
-}
-[data-attr="computerwindow"] .fullsize{
+  }
+  .fullsize {
     background-color: white;
     background-image: url("/public/mioos/assets/fullsize.svg");
-}
-[data-attr="computerwindow"] .close{
+  }
+  .close {
     background-color: white;
     background-image: url("/public/mioos/assets/close.svg");
+  }
+  .title-bar {
+    font-family: Trebuchet MS;
+    background: linear-gradient(
+      180deg,
+      #0997ff,
+      #0053ee 8%,
+      #0050ee 40%,
+      #06f 88%,
+      #06f 93%,
+      #005bff 95%,
+      #003dd7 96%,
+      #003dd7
+    );
+    padding: 3px 5px 3px 3px;
+    border-top: 1px solid #0831d9;
+    border-left: 1px solid #0831d9;
+    border-right: 1px solid #001ea0;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 7px;
+    font-size: 13px;
+    text-shadow: 1px 1px #0f1089;
+    height: 32px;
+    color: white;
+    user-select: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .title-bar-text {
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 0;
+    margin-right: 24px;
+    padding-left: 3px;
+  }
+  .window {
+    box-shadow:
+      inset -1px -1px #00138c,
+      inset 1px 1px #0831d9,
+      inset -2px -2px #001ea0,
+      inset 2px 2px #166aee,
+      inset -3px -3px #003bda,
+      inset 3px 3px #0855dd;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    padding: 0 0 3px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .close {
+    background-color: white;
+    background-image: url("/public/mioos/assets/close.svg");
+  }
+
+  .title-bar {
+    font-family: Trebuchet MS;
+    background: linear-gradient(
+      180deg,
+      #0997ff,
+      #0053ee 8%,
+      #0050ee 40%,
+      #06f 88%,
+      #06f 93%,
+      #005bff 95%,
+      #003dd7 96%,
+      #003dd7
+    );
+    padding: 3px 5px 3px 3px;
+    border-top: 1px solid #0831d9;
+    border-left: 1px solid #0831d9;
+    border-right: 1px solid #001ea0;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 7px;
+    font-size: 13px;
+    text-shadow: 1px 1px #0f1089;
+    height: 32px;
+    color: white;
+    user-select: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .title-bar-text {
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 0;
+    margin-right: 24px;
+    padding-left: 3px;
+  }
+  .window {
+    box-shadow:
+      inset -1px -1px #00138c,
+      inset 1px 1px #0831d9,
+      inset -2px -2px #001ea0,
+      inset 2px 2px #166aee,
+      inset -3px -3px #003bda,
+      inset 3px 3px #0855dd;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    padding: 0 0 3px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .minimize {
+    background-color: white;
+    background-image: url("/public/mioos/assets/minimize.svg");
+  }
+  .fullsize {
+    background-color: white;
+    background-image: url("/public/mioos/assets/fullsize.svg");
+  }
+  .close {
+    background-color: white;
+    background-image: url("/public/mioos/assets/close.svg");
+  }
+
+  .windows-blue-gradient {
+    background-image: linear-gradient(
+      0deg,
+      #0072f4 0%,
+      #3889e6 11%,
+      #1472e6 42%,
+      #004cb0 92%,
+      #70aafb 96%,
+      #255db5 100%
+    );
+    border-top: 1px solid #0831d9;
+    border-left: 1px solid #0831d9;
+    border-right: 1px solid #001ea0;
+
+    box-shadow: 0px 1px 22px #0832d99f inset;
+    text-shadow: 2px 2px 1px #020236;
+  }
+  .windows-blue-gradient-bottom {
+    background-image: linear-gradient(
+      0deg,
+      #004cb0 0%,
+      #004cb0 11%,
+      #2b7ce3 42%,
+      #418be4 92%,
+      #418fe4 96%
+    );
+    border-top: 1px solid #0831d9;
+    border-left: 1px solid #0831d9;
+    border-right: 1px solid #001ea0;
+    box-shadow: 10px -2px 51px #02029267 inset;
+  }
+
+  .backdrop-saturate-anim {
+    animation: saturate-zero 4s ease both;
+  }
+@keyframes saturate-zero {
+  from {
+    backdrop-filter: saturate(100%);
+  }
+  to {
+    backdrop-filter: saturate(0%);
+  }
 }
+
+ .taskbar {
+    user-select: none;
+    position: fixed;
+    bottom: 0;
+    background-image: linear-gradient(
+      0deg,
+      #042b8e 0%,
+      #0551f6 6%,
+      #0453ff 51%,
+      #0551f6 63%,
+      #0551f6 81%,
+      #3a8be8 90%,
+      #0453ff 100%
+    );
+    width: 100vw;
+    height: 30px;
+  }
+  .taskbar__start {
+    height: 100%;
+    width: 100px;
+    color: white;
+    font-weight: 500;
+    font-size: 1.1rem;
+    font-style: italic;
+    border: none;
+    box-shadow: -2px -2px 10px #0000008e inset;
+    background-image: linear-gradient(
+      0deg,
+      #0c450c 0%,
+      #308f2f 6%,
+      #308f2f 51%,
+      #308f2f 63%,
+      #308f2f 77%,
+      #97c597 85%,
+      #97c597 93%,
+      #308f2f 97%
+    );
+    display: flex;
+    align-items: center;
+    transition: all;
+  }
+.taskbar__start:active {
+    background-image: linear-gradient(
+      0deg,
+      #2f892f 0%,
+      #4eb64e 6%,
+      #4eb64e 51%,
+      #4eb64e 63%,
+      #4eb64e 77%,
+      #c4ffc4 85%,
+      #c4ffc4 93%,
+      #2f892f 97%
+    );
+  }
+ .taskbar__start p {
+    filter: drop-shadow(2px 2px 2px rgba(0, 0, 0, 0.685));
+  }
+ .taskbar__start--logo {
+    filter: drop-shadow(2px 2px 2px rgba(0, 0, 0, 0.705));
+  }
+
+.taskbar__end {
+    background-image: linear-gradient(
+      0deg,
+      #0a5bc6 0%,
+      #1198e9 6%,
+      #1198e9 51%,
+      #1198e9 63%,
+      #1198e9 77%,
+      #19b9f3 85%,
+      #19b9f3 93%,
+      #075dca 97%
+    );
+    box-shadow: 2px -0px 3px #20e2fc inset;
+  }
+
+  .tab {
+    box-shadow: 2px 2px 5px rgba(255, 255, 255, 0.267) inset;
+  }
