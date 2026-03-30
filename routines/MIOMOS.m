@@ -36,7 +36,7 @@ CONFDEF(CONF)
 	IF $GET(CONF("miomos","route","retentionPrune"))="" SET CONF("miomos","route","retentionPrune")="/api/miomos/observability/retention/prune"
 	IF $GET(CONF("miomos","brand","title"))="" SET CONF("miomos","brand","title")="MIOMOS"
 	IF $GET(CONF("miomos","brand","subtitle"))="" SET CONF("miomos","brand","subtitle")="MUMPS-first clinical workspace"
-	IF $GET(CONF("miomos","desktop","wallpaper"))="" SET CONF("miomos","desktop","wallpaper")="midnight-clinic"
+	IF $GET(CONF("miomos","desktop","wallpaper"))="" SET CONF("miomos","desktop","wallpaper")="aurora-blue"
 	IF $GET(CONF("miomos","desktop","accent"))="" SET CONF("miomos","desktop","accent")="#2f6fed"
 	IF $GET(CONF("miomos","desktop","density"))="" SET CONF("miomos","desktop","density")="dense"
 	IF $GET(CONF("miomos","desktop","snapMargin"))="" SET CONF("miomos","desktop","snapMargin")=18
@@ -56,7 +56,7 @@ CONFDEF(CONF)
 	IF $GET(CONF("miomos","wm","defaultSnapMode"))="" SET CONF("miomos","wm","defaultSnapMode")="quadrant"
 	IF $GET(CONF("miomos","wm","defaultMotionProfile"))="" SET CONF("miomos","wm","defaultMotionProfile")="standard"
 	IF $GET(CONF("miomos","wm","defaultTitlebarStyle"))="" SET CONF("miomos","wm","defaultTitlebarStyle")="accent"
-	IF $GET(CONF("miomos","theme","default"))="" SET CONF("miomos","theme","default")="midnight-professional"
+	IF $GET(CONF("miomos","theme","default"))="" SET CONF("miomos","theme","default")="clinical-blue"
 	IF $GET(CONF("miomos","theme","allowSelfService"))="" SET CONF("miomos","theme","allowSelfService")=1
 	IF $GET(CONF("miomos","settings","default","fontFamily"))="" SET CONF("miomos","settings","default","fontFamily")="Segoe UI"
 	IF $GET(CONF("miomos","settings","default","fontSize"))="" SET CONF("miomos","settings","default","fontSize")=13

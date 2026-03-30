@@ -192,7 +192,7 @@
           themeKey:
             ((view.settings || {}).current || {}).themeKey ||
             ((boot.desktop || {}).theme || {}).currentKey ||
-            "midnight-professional",
+            "clinical-blue",
           fontFamily:
             ((view.settings || {}).current || {}).fontFamily ||
             (boot.desktop || {}).fontFamily ||
@@ -213,7 +213,7 @@
           wallpaper:
             ((view.settings || {}).current || {}).wallpaper ||
             root.getAttribute("data-wallpaper") ||
-            "midnight-clinic",
+            "aurora-blue",
           density:
             ((view.settings || {}).current || {}).density ||
             root.getAttribute("data-density") ||
@@ -409,7 +409,7 @@
         var key =
           this.settingsForm.themeKey ||
           ((this.boot.desktop || {}).theme || {}).currentKey ||
-          "midnight-professional";
+          "clinical-blue";
         var themes = this.currentThemes || [];
         for (var i = 0; i < themes.length; i += 1) {
           if ((themes[i] || {}).key === key) return themes[i] || {};
@@ -2465,10 +2465,15 @@
         });
       },
       applySettings: function () {
-        var theme = this.currentThemeDefinition || {};
+        var theme = this.currentThemeDefinition || {},
+          themeKey =
+            theme.key ||
+            this.settingsForm.themeKey ||
+            ((this.boot.desktop || {}).theme || {}).currentKey ||
+            "clinical-blue";
         root.dataset.density = this.settingsForm.density || "dense";
         root.dataset.wallpaper =
-          this.settingsForm.wallpaper || "midnight-clinic";
+          this.settingsForm.wallpaper || "aurora-blue";
         root.dataset.animations = this.settingsForm.animations || "standard";
         root.dataset.windowPreset = this.settingsForm.windowPreset || "analyst";
         root.dataset.snapMode = this.settingsForm.snapMode || "quadrant";
@@ -2476,7 +2481,10 @@
           this.settingsForm.motionProfile || "standard";
         root.dataset.titlebarStyle =
           this.settingsForm.titlebarStyle || "accent";
-        root.dataset.themeMode = theme.mode || "dark";
+        root.dataset.themeKey = themeKey;
+        root.dataset.themeMode = theme.mode || "light";
+        root.dataset.themeChrome = theme.chrome || "";
+        root.dataset.themeFamily = theme.family || "";
         root.style.setProperty(
           "--miomos-font",
           this.settingsForm.fontFamily || "Segoe UI",
@@ -2493,50 +2501,110 @@
         }, this);
       },
       applyThemeVariables: function (theme) {
+        var shellVars, key;
         theme = theme || {};
-        root.style.setProperty("--desktop", theme.desktop || "#0b1320");
+        root.style.setProperty("--desktop", theme.desktop || "#dfeef8");
         root.style.setProperty(
           "--surface",
-          theme.surface || "rgba(15, 23, 36, 0.95)",
+          theme.surface || "rgba(255,255,255,0.97)",
         );
         root.style.setProperty(
           "--surface-alt",
-          theme.surfaceAlt || "rgba(11, 18, 29, 0.96)",
+          theme.surfaceAlt || "rgba(241,247,252,0.95)",
         );
         root.style.setProperty(
           "--surface-soft",
-          theme.surfaceSoft || "rgba(255,255,255,0.03)",
+          theme.surfaceSoft || "rgba(231,240,247,0.92)",
         );
         root.style.setProperty(
           "--border",
-          theme.border || "rgba(148,163,184,0.18)",
+          theme.border || "rgba(41,84,117,0.30)",
         );
-        root.style.setProperty("--text", theme.text || "#ecf3ff");
-        root.style.setProperty("--muted", theme.muted || "#93a7c4");
-        root.style.setProperty("--accent", theme.accent || "#5f8dff");
+        root.style.setProperty("--text", theme.text || "#0a2234");
+        root.style.setProperty("--muted", theme.muted || "#34536b");
+        root.style.setProperty("--accent", theme.accent || "#1384d7");
         root.style.setProperty(
           "--accent-soft",
-          theme.accentSoft || "rgba(95,141,255,0.18)",
+          theme.accentSoft || "rgba(19,132,215,0.16)",
         );
         root.style.setProperty(
           "--accent-strong",
-          theme.accentStrong || "rgba(95,141,255,0.34)",
+          theme.accentStrong || "rgba(19,132,215,0.28)",
         );
-        root.style.setProperty("--title-accent", theme.accent || "#5f8dff");
+        root.style.setProperty("--title-accent", theme.accent || "#1384d7");
         root.style.setProperty(
           "--active-title",
-          theme.titleActive ||
-            "linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.03)), linear-gradient(90deg, #5f8dff, rgba(255,255,255,0.02) 40%)",
+          theme.titleActive || "linear-gradient(180deg,#ffffff,#edf7fd)",
         );
         root.style.setProperty(
           "--inactive-title",
-          theme.titleInactive ||
-            "linear-gradient(180deg, rgba(91,103,122,0.42), rgba(45,56,72,0.36))",
+          theme.titleInactive || "linear-gradient(180deg,#edf5fa,#d8e8f4)",
+        );
+        root.style.setProperty(
+          "--icon",
+          theme.icon || "linear-gradient(180deg,#46a8ec,#0a74c6)",
         );
         root.style.setProperty(
           "--miomos-shadow",
-          theme.shadow || "0 18px 42px rgba(0,0,0,.26)",
+          theme.shadow || "0 16px 36px rgba(7,62,96,.16)",
         );
+        shellVars = {
+          shellChromeFont: "Tahoma",
+          shellTaskbar:
+            "linear-gradient(180deg,#4aa1f0 0%, #2578d9 48%, #1a5bb4 100%)",
+          shellTaskbarBorderTop: "rgba(255,255,255,.56)",
+          shellStartButton:
+            "linear-gradient(180deg,#5bd55b 0%, #38a838 55%, #247f24 100%)",
+          shellStartButtonBorder: "rgba(28,88,22,.64)",
+          shellStartButtonText: "#f8fff8",
+          shellQuickLaunchLabel: "#f0f6ff",
+          shellTaskActive:
+            "linear-gradient(180deg,#ffd970 0%, #f5c84c 48%, #d9a82d 100%)",
+          shellTaskActiveText: "#253142",
+          shellMenuFrame:
+            "linear-gradient(180deg,#3184e7 0%, #0d58b8 100%)",
+          shellMenuBanner:
+            "linear-gradient(180deg,#3184e7 0%, #0d58b8 100%)",
+          shellMenuBannerText: "#ffffff",
+          shellMenuBody:
+            "linear-gradient(90deg,#ffffff 0 72%, #d9e8ff 72% 73%, #f3e0a4 73% 100%)",
+          shellMenuMain: "rgba(255,255,255,.96)",
+          shellMenuSide: "linear-gradient(180deg,#f7eec4,#f2d689)",
+          shellMenuSideBorder: "rgba(157,126,28,.28)",
+          shellMenuFooter:
+            "linear-gradient(180deg,#3184e7 0%, #1a60be 100%)",
+          shellWindowControl: "linear-gradient(180deg,#fff5eb,#f1c88c)",
+          shellWindowControlBorder: "rgba(9,35,91,.38)",
+          shellWindowControlText: "#6a2d00",
+          shellWindowControlDanger: "#ba2f1e",
+          shellWindowActiveText: "#ffffff",
+          shellWindowInactiveText: "#375176",
+          shellContextMenu: "linear-gradient(180deg,#ffffff,#eef4ff)",
+          shellContextMenuBorder: "#295ba9",
+          shellContextMenuText: "#18385c",
+          shellExplorerToolbar: "linear-gradient(180deg,#ffffff 0%, #ebf4ff 100%)",
+          shellExplorerPane: "linear-gradient(180deg,#f7f3d8,#efe1a5)",
+          shellExplorerContent: "rgba(255,255,255,.98)",
+          shellExplorerBorder: "rgba(54,94,158,.28)",
+          shellExplorerText: "#18324d",
+          shellExplorerMuted: "#4d617e",
+          shellExplorerSelection: "linear-gradient(180deg,#d7ebff 0%, #a8d0ff 100%)",
+          shellExplorerSelectionBorder: "rgba(44,97,171,.38)",
+          shellExplorerGlyph: "#295fae",
+          shellDialogFrame: "linear-gradient(180deg,#f7fbff 0%, #e8f0fb 100%)",
+          shellDialogBorder: "#0c3a9a",
+          shellDialogHeader: "linear-gradient(180deg,#3184e7 0%, #0d58b8 100%)",
+          shellDialogHeaderText: "#ffffff",
+          shellDialogBodyText: "#19375f",
+        };
+        Object.keys(shellVars).forEach(function (name) {
+          key =
+            "--" +
+            name
+              .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
+              .toLowerCase();
+          root.style.setProperty(key, theme[name] || shellVars[name]);
+        });
       },
       syncViewportMode: function () {
         this.viewportWidth =

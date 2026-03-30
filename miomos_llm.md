@@ -642,3 +642,24 @@ Next XP-fidelity wave:
 - Explorer file surfaces must remain download-capable through a server-authored route once `downloadAllowed=1` is present.
 - New MIOMOS shell UI must inherit the active theme font family and font size by default. Do not introduce hardcoded Explorer/taskbar/menu/control typography that bypasses the theme tokens.
 - XP Explorer chrome must use theme-token-driven colors for both light and dark themes so text stays legible on dark shells.
+
+
+## Post-ROI62 roadmap
+
+The immediate post-ROI62 sequence should be:
+
+- **ROI 63** — XP theme system polish and default-theme contract alignment
+- **ROI 64** — shell chrome spacing, typography, and parity tuning
+- **ROI 65** — window frame, drag, resize, and snap polish
+- **ROI 66** — Explorer visual parity and folder-view refinement
+- **ROI 67** — terminal palette and shell-chrome alignment
+- **ROI 68** — Settings theme studio and preview workflow
+- **ROI 69** — desktop icon, shortcut, and recycle-bin polish
+- **ROI 70** — realtime shell services over the primary websocket
+- **ROI 71** — MIOMOS as a MUMPS development workstation surface
+- **ROI 72** — browser rendering and performance hardening
+- **ROI 73** — accessibility and contrast verification
+- **ROI 74** — production-profile hardening
+- **ROI 75** — release gates, ship checklist, and final production readiness
+
+The first implementation focus should stay on shell correctness and visual consistency before taking on larger feature expansion.

@@ -10,7 +10,7 @@ LOAD(STATE,CONF)
 	IF STATE("fontSize")<12 SET STATE("fontSize")=13
 	SET STATE("titleAccent")=$$GETP(USER,"titleAccent",$GET(CONF("miomos","settings","default","titleAccent"),"theme"))
 	SET STATE("iconStyle")=$$GETP(USER,"iconStyle",$GET(CONF("miomos","settings","default","iconStyle"),"glass"))
-	SET STATE("wallpaper")=$$GETP(USER,"wallpaper",$GET(CONF("miomos","desktop","wallpaper"),"midnight-clinic"))
+	SET STATE("wallpaper")=$$GETP(USER,"wallpaper",$GET(CONF("miomos","desktop","wallpaper"),"aurora-blue"))
 	SET STATE("density")=$$GETP(USER,"density",$GET(CONF("miomos","desktop","density"),"dense"))
 	SET STATE("animations")=$$ANIMLOAD($$GETP(USER,"animations",$GET(CONF("miomos","settings","default","animations"),"standard")))
 	SET STATE("fontScaleClass")=$$FONTSCALE(+$GET(STATE("fontSize"),13))
@@ -131,8 +131,8 @@ CURRENT(USER,OUT)
 	NEW STATE,CONF
 	KILL OUT
 	SET STATE("principal")=$GET(USER)
-	SET CONF("miomos","theme","default")="midnight-professional"
-	SET CONF("miomos","desktop","wallpaper")="midnight-clinic"
+	SET CONF("miomos","theme","default")="clinical-blue"
+	SET CONF("miomos","desktop","wallpaper")="aurora-blue"
 	SET CONF("miomos","desktop","density")="dense"
 	DO LOAD(.STATE,.CONF)
 	MERGE OUT("current")=STATE

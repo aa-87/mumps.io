@@ -6518,3 +6518,260 @@
     .miomos-root[data-mobile-layout="1"] .miomos-explorer-address-row {
       grid-template-columns: 1fr;
     }
+
+/* ROI63 — XP theme system polish */
+.miomos-root {
+  --shell-chrome-font: Tahoma;
+  --shell-taskbar: linear-gradient(180deg,#4aa1f0 0%, #2578d9 48%, #1a5bb4 100%);
+  --shell-taskbar-border-top: rgba(255,255,255,.56);
+  --shell-start-button: linear-gradient(180deg,#5bd55b 0%, #38a838 55%, #247f24 100%);
+  --shell-start-button-border: rgba(28,88,22,.64);
+  --shell-start-button-text: #f8fff8;
+  --shell-quick-launch-label: #f0f6ff;
+  --shell-task-active: linear-gradient(180deg,#ffd970 0%, #f5c84c 48%, #d9a82d 100%);
+  --shell-task-active-text: #253142;
+  --shell-menu-frame: linear-gradient(180deg,#3184e7 0%, #0d58b8 100%);
+  --shell-menu-banner: linear-gradient(180deg,#3184e7 0%, #0d58b8 100%);
+  --shell-menu-banner-text: #ffffff;
+  --shell-menu-body: linear-gradient(90deg,#ffffff 0 72%, #d9e8ff 72% 73%, #f3e0a4 73% 100%);
+  --shell-menu-main: rgba(255,255,255,.96);
+  --shell-menu-side: linear-gradient(180deg,#f7eec4,#f2d689);
+  --shell-menu-side-border: rgba(157,126,28,.28);
+  --shell-menu-footer: linear-gradient(180deg,#3184e7 0%, #1a60be 100%);
+  --shell-window-control: linear-gradient(180deg,#fff5eb,#f1c88c);
+  --shell-window-control-border: rgba(9,35,91,.38);
+  --shell-window-control-text: #6a2d00;
+  --shell-window-control-danger: #ba2f1e;
+  --shell-window-active-text: #ffffff;
+  --shell-window-inactive-text: #375176;
+  --shell-context-menu: linear-gradient(180deg,#ffffff,#eef4ff);
+  --shell-context-menu-border: #295ba9;
+  --shell-context-menu-text: #18385c;
+  --shell-explorer-toolbar: linear-gradient(180deg,#ffffff 0%, #ebf4ff 100%);
+  --shell-explorer-pane: linear-gradient(180deg,#f7f3d8,#efe1a5);
+  --shell-explorer-content: rgba(255,255,255,.98);
+  --shell-explorer-border: rgba(54,94,158,.28);
+  --shell-explorer-text: #18324d;
+  --shell-explorer-muted: #4d617e;
+  --shell-explorer-selection: linear-gradient(180deg,#d7ebff 0%, #a8d0ff 100%);
+  --shell-explorer-selection-border: rgba(44,97,171,.38);
+  --shell-explorer-glyph: #295fae;
+  --shell-dialog-frame: linear-gradient(180deg,#f7fbff 0%, #e8f0fb 100%);
+  --shell-dialog-border: #0c3a9a;
+  --shell-dialog-header: linear-gradient(180deg,#3184e7 0%, #0d58b8 100%);
+  --shell-dialog-header-text: #ffffff;
+  --shell-dialog-body-text: #19375f;
+}
+
+.miomos-root .miomos-taskbar--xp,
+.miomos-root .miomos-start-menu,
+.miomos-root .miomos-start-menu button,
+.miomos-root .miomos-window-bar,
+.miomos-root .miomos-window-controls button,
+.miomos-root .miomos-context-menu,
+.miomos-root .miomos-shell-dialog,
+.miomos-root .miomos-shell-dialog button,
+.miomos-root .miomos-shell-dialog input,
+.miomos-root .miomos-explorer-shell,
+.miomos-root .miomos-explorer-shell button,
+.miomos-root .miomos-explorer-shell input,
+.miomos-root .miomos-explorer-shell select {
+  font-family: var(--shell-chrome-font), var(--miomos-font), "Segoe UI", sans-serif !important;
+}
+
+.miomos-root .miomos-taskbar--xp {
+  background: var(--shell-taskbar) !important;
+  border-top: 1px solid var(--shell-taskbar-border-top) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.22), 0 -1px 0 rgba(0,0,0,.15) !important;
+}
+
+.miomos-root .miomos-taskbar--xp .miomos-taskbar-meta,
+.miomos-root .miomos-taskbar--xp .miomos-tray {
+  color: var(--shell-quick-launch-label) !important;
+}
+
+.miomos-root .miomos-start-button {
+  background: var(--shell-start-button) !important;
+  border-color: var(--shell-start-button-border) !important;
+  color: var(--shell-start-button-text) !important;
+  text-shadow: 0 1px 0 rgba(0,0,0,.24) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.34), 0 1px 0 rgba(255,255,255,.10) !important;
+}
+
+.miomos-root .miomos-start-button .miomos-start-orb {
+  background: radial-gradient(circle at 35% 35%, rgba(255,255,255,.95), rgba(255,255,255,0) 48%), var(--icon) !important;
+}
+
+.miomos-root .miomos-quicklaunch-label {
+  color: var(--shell-quick-launch-label) !important;
+}
+
+.miomos-root .miomos-taskbar--xp .miomos-task-button.is-active,
+.miomos-root .miomos-taskbar--xp .miomos-task-button.is-pressed {
+  background: var(--shell-task-active) !important;
+  color: var(--shell-task-active-text) !important;
+}
+
+.miomos-root .miomos-start-menu {
+  background: var(--shell-menu-frame) !important;
+  border-color: #214a95 !important;
+  box-shadow: 0 20px 48px rgba(9,20,48,.34), inset 0 1px 0 rgba(255,255,255,.34) !important;
+}
+
+.miomos-root .miomos-start-menu-banner {
+  background: var(--shell-menu-banner) !important;
+  color: var(--shell-menu-banner-text) !important;
+}
+
+.miomos-root .miomos-start-menu-avatar {
+  color: #14479f !important;
+}
+
+.miomos-root .miomos-start-menu-copy strong,
+.miomos-root .miomos-start-menu-copy span {
+  color: var(--shell-menu-banner-text) !important;
+}
+
+.miomos-root .miomos-start-menu-body {
+  background: var(--shell-menu-body) !important;
+}
+
+.miomos-root .miomos-start-menu-main {
+  background: var(--shell-menu-main) !important;
+}
+
+.miomos-root .miomos-start-menu-side {
+  background: var(--shell-menu-side) !important;
+  border-left-color: var(--shell-menu-side-border) !important;
+}
+
+.miomos-root .miomos-start-menu-footer {
+  background: var(--shell-menu-footer) !important;
+}
+
+.miomos-root .miomos-start-menu .miomos-menu-copy span,
+.miomos-root .miomos-start-menu .miomos-shell-tool-btn span,
+.miomos-root .miomos-start-menu .miomos-shell-tool-btn em {
+  color: var(--shell-context-menu-text) !important;
+}
+
+.miomos-root .miomos-start-menu .miomos-menu-heading,
+.miomos-root .miomos-start-menu .miomos-entry-meta {
+  color: #4d617e !important;
+}
+
+.miomos-root .miomos-window-bar {
+  color: var(--shell-window-active-text) !important;
+}
+
+.miomos-root .miomos-window.is-inactive .miomos-window-bar {
+  color: var(--shell-window-inactive-text) !important;
+}
+
+.miomos-root .miomos-window-controls button {
+  background: var(--shell-window-control) !important;
+  border-color: var(--shell-window-control-border) !important;
+  color: var(--shell-window-control-text) !important;
+}
+
+.miomos-root .miomos-window-controls button[data-window-action="close"]:hover {
+  background: linear-gradient(180deg, #ffdbc8, var(--shell-window-control-danger)) !important;
+  border-color: #892018 !important;
+  color: #ffffff !important;
+}
+
+.miomos-root .miomos-context-menu {
+  background: var(--shell-context-menu) !important;
+  border-color: var(--shell-context-menu-border) !important;
+  color: var(--shell-context-menu-text) !important;
+}
+
+.miomos-root .miomos-context-menu .miomos-menu-item,
+.miomos-root .miomos-context-menu .miomos-menu-heading {
+  color: var(--shell-context-menu-text) !important;
+}
+
+.miomos-root .miomos-shell-dialog {
+  background: var(--shell-dialog-frame) !important;
+  border-color: var(--shell-dialog-border) !important;
+}
+
+.miomos-root .miomos-shell-dialog-header {
+  background: var(--shell-dialog-header) !important;
+  color: var(--shell-dialog-header-text) !important;
+}
+
+.miomos-root .miomos-shell-dialog-body,
+.miomos-root .miomos-shell-dialog-copy,
+.miomos-root .miomos-shell-dialog-input {
+  color: var(--shell-dialog-body-text) !important;
+}
+
+.miomos-root .miomos-shell-dialog-input {
+  border-color: var(--shell-dialog-border) !important;
+  background: rgba(255,255,255,.96) !important;
+}
+
+.miomos-root .miomos-explorer-shell,
+.miomos-root .miomos-explorer-frame,
+.miomos-root .miomos-explorer-content {
+  background: var(--shell-explorer-content) !important;
+  border-color: var(--shell-explorer-border) !important;
+  color: var(--shell-explorer-text) !important;
+}
+
+.miomos-root .miomos-explorer-toolbar-row,
+.miomos-root .miomos-explorer-toolbar,
+.miomos-root .miomos-explorer-address {
+  background: var(--shell-explorer-toolbar) !important;
+  border-color: var(--shell-explorer-border) !important;
+  color: var(--shell-explorer-text) !important;
+}
+
+.miomos-root .miomos-explorer-side-pane,
+.miomos-root .miomos-explorer-pane-group {
+  background: var(--shell-explorer-pane) !important;
+  border-color: var(--shell-explorer-border) !important;
+}
+
+.miomos-root .miomos-explorer-pane-group strong,
+.miomos-root .miomos-explorer-pane-link,
+.miomos-root .miomos-explorer-content strong,
+.miomos-root .miomos-explorer-content td,
+.miomos-root .miomos-explorer-content th {
+  color: var(--shell-explorer-text) !important;
+}
+
+.miomos-root .miomos-explorer-pane-group span,
+.miomos-root .miomos-explorer-empty,
+.miomos-root .miomos-explorer-summary {
+  color: var(--shell-explorer-muted) !important;
+}
+
+.miomos-root .miomos-explorer-item.is-selected,
+.miomos-root .miomos-explorer-row.is-selected,
+.miomos-root .miomos-entry-row.is-selected {
+  background: var(--shell-explorer-selection) !important;
+  border-color: var(--shell-explorer-selection-border) !important;
+  color: var(--shell-explorer-text) !important;
+}
+
+.miomos-root .miomos-explorer-glyph,
+.miomos-root .miomos-entry-glyph,
+.miomos-root .miomos-folder-glyph {
+  color: var(--shell-explorer-glyph) !important;
+}
+
+.miomos-root[data-theme-mode="dark"] .miomos-start-menu .miomos-pill {
+  background: rgba(255,255,255,.16) !important;
+  color: var(--shell-menu-banner-text) !important;
+  border-color: rgba(255,255,255,.18) !important;
+}
+
+.miomos-root[data-theme-mode="dark"] .miomos-start-menu .miomos-menu-copy span,
+.miomos-root[data-theme-mode="dark"] .miomos-start-menu .miomos-shell-tool-btn span,
+.miomos-root[data-theme-mode="dark"] .miomos-start-menu .miomos-shell-tool-btn em,
+.miomos-root[data-theme-mode="dark"] .miomos-start-menu .miomos-menu-heading,
+.miomos-root[data-theme-mode="dark"] .miomos-start-menu .miomos-entry-meta {
+  color: rgba(241,246,255,.84) !important;
+}
