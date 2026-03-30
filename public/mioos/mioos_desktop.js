@@ -1,14 +1,15 @@
 (function () {
   if (!window.Vue || !window.Vue.createApp) return;
   var app = window.Vue.createApp({
-    components:{
-     "rightclick-comp":window["rightclick-comp"],
-     "selectarea-comp":window["selectarea-comp"],
-     "window-comp":window["window-comp"],
-     "errorwindow-comp":window["errorwindow-comp"],
+    components: {
+      "rightclick-comp": window["rightclick-comp"],
+      "selectarea-comp": window["selectarea-comp"],
+      "window-comp": window["window-comp"],
+      "errorwindow-comp": window["errorwindow-comp"],
+      "mycomputer-comp": window["mycomputer-comp"],
     },
     data: function () {
-      return { };
+      return {};
     },
     computed: {},
     mounted: function () {},
@@ -16,5 +17,5 @@
     methods: {},
   });
   app.mount("#app");
-  window['mioosApp']=app
+  window["mioosApp"] = app;
 })();

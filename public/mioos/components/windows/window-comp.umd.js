@@ -16,17 +16,13 @@
     methods: {
           startDrag(e) {
       this.isDragging = true;
-      // Calculate mouse position inside the window
       this.offsetX = e.clientX - this.x;
       this.offsetY = e.clientY - this.y;
-      
-      // Add listeners to document to handle fast movement/leaving header
       document.addEventListener('mousemove', this.onDrag);
       document.addEventListener('mouseup', this.stopDrag);
     },
     onDrag(e) {
       if (this.isDragging) {
-        // Update position based on mouse position minus initial offset
         this.x = e.clientX - this.offsetX;
         this.y = e.clientY - this.offsetY;
       }
