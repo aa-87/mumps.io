@@ -2,7 +2,9 @@
   if (!window.Vue || !window.Vue.createApp) return;
   var app = window.Vue.createApp({
     components:{
-     "rightclick-comp":window["rightclick-comp"]
+     "rightclick-comp":window["rightclick-comp"],
+     "selectarea-comp":window["selectarea-comp"],
+     "window-comp":window["window-comp"],
     },
     data: function () {
       return { };

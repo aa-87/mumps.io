@@ -1,7 +1,11 @@
 <body class="overflow-hidden">
     <div id="app">
         <rightclick-comp></rightclick-comp>
+        <selectarea-comp></selectarea-comp>
+        <window-comp v-for="i in 3" :key="i" :position="i" :id="'window'+i" :titleBar="'window '+i+' !'"></window-comp>
     </div>
-    <script src="/public/mioos/components/rightclick-comp.umd.js"></script>
+    <script src="/public/mioos/components/desktop/rightclick-comp.umd.js"></script>
+    <script src="/public/mioos/components/desktop/selectarea-comp.umd.js"></script>
+    <script src="/public/mioos/components/windows/window-comp.umd.js"></script>
     <script src="/public/mioos/mioos_desktop.js"></script>
 </body>
