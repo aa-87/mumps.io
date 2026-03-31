@@ -1,11 +1,17 @@
 <body class="overflow-hidden">
     <div id="app">
+
+        <mioos-window-comp></mioos-window-comp>
+
+
+        <!--
         <rightclick-comp></rightclick-comp>
         <selectarea-comp></selectarea-comp>
         <window-comp v-for="i in 3" :key="i" :position="i" :id="'window'+i" :titleBar="'window '+i+' !'"></window-comp>
         <errorwindow-comp :show="true" :content="'Folder limit is 1 !'"></errorwindow-comp>
         <mycomputer-comp></mycomputer-comp>
         <taskbar-comp></taskbar-comp>
+       -->
     </div>
     <script src="/public/mioos/components/desktop/rightclick-comp.umd.js"></script>
     <script src="/public/mioos/components/desktop/selectarea-comp.umd.js"></script>
@@ -17,5 +23,11 @@
     <script src="/public/mioos/components/taskbar/taskbar-comp.umd.js"></script>
 
 
+    <script src="/public/mioos/components/windows/mioos-title-bar-comp.umd.js"></script>
+    <script src="/public/mioos/components/windows/mioos-window-comp.umd.js"></script>
+
     <script src="/public/mioos/mioos_desktop.js"></script>
+
+
+
 </body>

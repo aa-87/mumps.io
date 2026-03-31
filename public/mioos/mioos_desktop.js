@@ -8,6 +8,7 @@
       "errorwindow-comp": window["errorwindow-comp"],
       "mycomputer-comp": window["mycomputer-comp"],
       "taskbar-comp": window["taskbar-comp"],
+      "mioos-window-comp": window["mioos-window-comp"],
     },
     data: function () {
       return {};
