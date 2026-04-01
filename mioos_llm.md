@@ -174,7 +174,7 @@ Keep tests:
 - Added regression coverage in `^MIOOST` for VFS CRUD and command-bus integration.
 
 
-## ROI 8 — Explorer actions and text workflow polish
-- Explorer now supports New Folder, Rename, Move, and Delete actions on top of the existing VFS websocket command contract.
-- Actions are intentionally thin on the client and rely on `fs.mkdir`, `fs.rename`, `fs.move`, and `fs.delete` so policy remains server-owned.
-- The desktop surface is refreshed after explorer mutations so VFS-backed desktop entries stay in sync with shell state.
+## ROI 10 — Explorer upload and image viewer
+- Added browser-side upload to the global-backed VFS using existing `fs.write` commands.
+- Added image-aware file association handling in Explorer with preview and a dedicated image viewer window.
+- Kept the backend stable by reusing existing VFS websocket commands rather than changing server storage contracts.

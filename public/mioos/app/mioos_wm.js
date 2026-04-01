@@ -3,7 +3,10 @@
     methods: {
       appIcon: function (appKey) {
         var entry = this.desktopEntries.find(function (item) { return item.key === appKey; });
-        return entry ? entry.icon : '□';
+        if (entry) return entry.icon;
+        if (appKey === 'text-viewer') return '📄';
+        if (appKey === 'image-viewer') return '🖼';
+        return '□';
       },
       openApp: function (appKey) {
         if (this.requiresSignin) {

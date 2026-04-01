@@ -56,7 +56,12 @@ Current terminal behavior follows MIOMOS: xterm.js on the client, a YottaDB PIPE
 ## Terminal reset note
 - Reset MIOOS terminal handling to mirror the working MIOMOS model: one core websocket, promise-based command bus, xterm local line editing, and MIOMOSTPIPE-style pipe session lifecycle adapted into MIOOSTPIPE.
 
+## Latest ROI: VFS foundation
 
-### Terminal performance note
+MIOOS now includes a global-backed virtual file system foundation. The current ROI focuses on contracts and durability rather than explorer UI. Files and folders live under globals, support metadata and permissions, and are available over both HTTP routes and websocket commands for later explorer integration.
 
-The current MIOOS terminal uses an adaptive poll cadence rather than one fixed interval. It polls faster immediately after input, output, open, and resize events, then backs off during idle periods. This keeps the terminal feeling more live without continuously hammering the websocket command channel or the pipe drain path.
+
+## ROI 10 — Explorer upload and image viewer
+- Added browser-side upload to the global-backed VFS using existing `fs.write` commands.
+- Added image-aware file association handling in Explorer with preview and a dedicated image viewer window.
+- Kept the backend stable by reusing existing VFS websocket commands rather than changing server storage contracts.

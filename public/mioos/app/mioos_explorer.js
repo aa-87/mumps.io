@@ -11,11 +11,35 @@
   function detectTextLike(entry) {
     var mime = ((entry || {}).mime || '').toLowerCase();
     var name = ((entry || {}).name || (entry || {}).title || '').toLowerCase();
-    return mime.indexOf('text/') === 0 || mime.indexOf('json') >= 0 || /\.(txt|md|m|json|js|css|html|xml|log)$/i.test(name);
+    return mime.indexOf('text/') === 0 || mime.indexOf('json') >= 0 || /\.(txt|md|m|json|js|css|html|xml|log|csv)$/i.test(name);
+  }
+
+  function detectImageLike(entry) {
+    var mime = ((entry || {}).mime || '').toLowerCase();
+    var name = ((entry || {}).name || (entry || {}).title || '').toLowerCase();
+    return mime.indexOf('image/') === 0 || /\.(png|jpg|jpeg|gif|bmp|webp|svg)$/i.test(name);
+  }
+
+  function payloadRoot(msg) {
+    return (msg && (msg.vfs || msg.fs || msg.result || msg)) || {};
   }
 
   function extractItems(payload) {
-    return clone((payload && (payload.entries || payload.items || payload.children || (payload.folder || {}).entries)) || []);
+    var raw = clone((payload && (payload.entries || payload.items || payload.children || (payload.folder || {}).entries)) || []);
+    var out = [];
+    var keys;
+    if (Array.isArray(raw)) return raw;
+    if (!raw || typeof raw !== 'object') return [];
+    keys = Object.keys(raw).sort(function (a, b) {
+      var an = +a;
+      var bn = +b;
+      if (!isNaN(an) && !isNaN(bn)) return an - bn;
+      return a < b ? -1 : (a > b ? 1 : 0);
+    });
+    keys.forEach(function (key) {
+      if (raw[key] && typeof raw[key] === 'object') out.push(raw[key]);
+    });
+    return out;
   }
 
   function extractFolder(payload, folderId) {
@@ -24,6 +48,21 @@
     if (!folder.name) folder.name = folder.title || 'Folder';
     if (!folder.path) folder.path = folder.name || '/';
     return folder;
+  }
+
+  function textFromPayload(payload) {
+    return String(payload.text || payload.content || payload.data || '');
+  }
+
+  function createUploadInput(onchange) {
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.style.position = 'fixed';
+    input.style.left = '-9999px';
+    input.style.top = '-9999px';
+    input.addEventListener('change', onchange, { once: true });
+    document.body.appendChild(input);
+    input.click();
   }
 
   window.MIOOSExplorer = {
@@ -38,9 +77,8 @@
             folder: { id: '', name: '', path: '' },
             items: [],
             selection: null,
-            breadcrumb: [],
             error: '',
-            preview: { title: '', content: '', mime: 'text/plain' }
+            preview: { title: '', content: '', mime: 'text/plain', imageSrc: '' }
           };
         }
         return win.explorerState;
@@ -64,8 +102,8 @@
         if (!win || !state || !folderId || !this.command) return Promise.resolve();
         state.loading = true;
         state.error = '';
-        return this.command('fs.list', { id: folderId }).then(function (msg) {
-          var payload = (msg && (msg.vfs || msg.fs || msg.result || msg)) || {};
+        return this.command('fs.list', { id: folderId, parent: folderId }).then(function (msg) {
+          var payload = payloadRoot(msg);
           var folder = extractFolder(payload, folderId);
           var items = extractItems(payload);
           items.sort(function (a, b) {
@@ -84,6 +122,7 @@
           state.items = items;
           state.loading = false;
           state.selection = null;
+          state.preview = { title: '', content: '', mime: 'text/plain', imageSrc: '' };
           if ((options || {}).selectFirst && items.length) self.selectExplorerItem(win.id, items[0]);
           win.title = folder.name || win.title;
           return msg;
@@ -100,30 +139,55 @@
         state.selection = clone(item || null);
         if (state.selection && detectTextLike(state.selection)) {
           this.previewTextFile(windowId, state.selection);
+        } else if (state.selection && detectImageLike(state.selection)) {
+          this.previewImageFile(windowId, state.selection);
         } else {
-          state.preview = { title: '', content: '', mime: 'text/plain' };
+          state.preview = { title: '', content: '', mime: 'text/plain', imageSrc: '' };
         }
       },
       previewTextFile: function (windowId, item) {
-        var self = this;
         var win = this.windows.find(function (entry) { return entry.id === windowId; });
         var state = this.ensureExplorerWindowState(win);
         if (!win || !state || !item || !this.command) return Promise.resolve();
-        state.preview = { title: item.name || item.title || '', content: '', mime: item.mime || 'text/plain' };
+        state.preview = { title: item.name || item.title || '', content: '', mime: item.mime || 'text/plain', imageSrc: '' };
         return this.command('fs.read', { id: item.id || item.key || item.fileId }).then(function (msg) {
-          var payload = (msg && (msg.vfs || msg.fs || msg.result || msg)) || {};
-          var text = payload.text || payload.content || payload.data || '';
+          var payload = payloadRoot(msg);
           state.preview = {
             title: item.name || item.title || '',
-            content: String(text || ''),
-            mime: item.mime || payload.mime || 'text/plain'
+            content: textFromPayload(payload),
+            mime: item.mime || payload.mime || 'text/plain',
+            imageSrc: ''
           };
           return msg;
         }).catch(function (err) {
           state.preview = {
             title: item.name || item.title || '',
             content: (err && err.message) || 'Unable to load preview.',
-            mime: item.mime || 'text/plain'
+            mime: item.mime || 'text/plain',
+            imageSrc: ''
+          };
+        });
+      },
+      previewImageFile: function (windowId, item) {
+        var win = this.windows.find(function (entry) { return entry.id === windowId; });
+        var state = this.ensureExplorerWindowState(win);
+        if (!win || !state || !item || !this.command) return Promise.resolve();
+        state.preview = { title: item.name || item.title || '', content: '', mime: item.mime || 'image/*', imageSrc: '' };
+        return this.command('fs.read', { id: item.id || item.key || item.fileId }).then(function (msg) {
+          var payload = payloadRoot(msg);
+          state.preview = {
+            title: item.name || item.title || '',
+            content: '',
+            mime: item.mime || payload.mime || 'image/*',
+            imageSrc: textFromPayload(payload)
+          };
+          return msg;
+        }).catch(function (err) {
+          state.preview = {
+            title: item.name || item.title || '',
+            content: (err && err.message) || 'Unable to load image preview.',
+            mime: item.mime || 'image/*',
+            imageSrc: ''
           };
         });
       },
@@ -138,6 +202,10 @@
         var kind = ((item || {}).kind || (item || {}).type || '').toLowerCase();
         if (kind === 'folder') {
           this.loadExplorerFolder(windowId, item.id || item.key || item.folderId, { selectFirst: true });
+          return;
+        }
+        if (detectImageLike(item)) {
+          this.openImageViewerWindow(item);
           return;
         }
         if (detectTextLike(item)) {
@@ -157,6 +225,47 @@
         var state = this.ensureExplorerWindowState(win);
         if (!state) return Promise.resolve();
         return this.loadExplorerFolder(windowId, state.folderId, { selectFirst: false });
+      },
+      explorerPromptUpload: function (windowId) {
+        var self = this;
+        var win = this.windows.find(function (entry) { return entry.id === windowId; });
+        var state = this.ensureExplorerWindowState(win);
+        if (!state || !this.command) return;
+        createUploadInput(function (event) {
+          var file = event.target.files && event.target.files[0];
+          var reader;
+          var mime;
+          if (!file) {
+            if (event.target && event.target.parentNode) event.target.parentNode.removeChild(event.target);
+            return;
+          }
+          reader = new FileReader();
+          mime = file.type || 'application/octet-stream';
+          reader.onload = function (loadEvent) {
+            var result = loadEvent.target && loadEvent.target.result;
+            self.command('fs.write', {
+              parent: state.folderId,
+              name: file.name,
+              mime: mime,
+              data: result,
+              content: result,
+              text: result
+            }).then(function () {
+              return self.refreshExplorerWindow(windowId).then(function () {
+                if (self.refreshView) self.refreshView();
+              });
+            }).catch(function (err) {
+              if (self.showAlert) self.showAlert(self.t('alerts.shellEventError.title', 'Explorer'), (err && err.message) || 'fs_write_failed');
+            }).finally(function () {
+              if (event.target && event.target.parentNode) event.target.parentNode.removeChild(event.target);
+            });
+          };
+          if (detectTextLike({ name: file.name, mime: mime })) {
+            reader.readAsText(file);
+          } else {
+            reader.readAsDataURL(file);
+          }
+        });
       },
       explorerCreateFolder: function (windowId) {
         var self = this;
@@ -204,7 +313,7 @@
         if (!window.confirm(this.t('explorer.confirmDelete', 'Delete the selected item?'))) return Promise.resolve();
         return this.command('fs.delete', { id: item.id || item.key || '' }).then(function () {
           state.selection = null;
-          state.preview = { title: '', content: '', mime: 'text/plain' };
+          state.preview = { title: '', content: '', mime: 'text/plain', imageSrc: '' };
           return self.refreshExplorerWindow(windowId).then(function () {
             if (self.refreshView) self.refreshView();
           });
@@ -224,12 +333,12 @@
         destination = String(destination || '').trim();
         if (!destination) return Promise.resolve();
         return this.command('fs.meta', { id: destination, path: destination }).then(function (msg) {
-          var payload = (msg && (msg.vfs || msg.fs || msg.result || msg)) || {};
+          var payload = payloadRoot(msg);
           var targetId = payload.id || destination;
           return self.command('fs.move', { id: item.id || item.key || '', parent: targetId });
         }).then(function () {
           state.selection = null;
-          state.preview = { title: '', content: '', mime: 'text/plain' };
+          state.preview = { title: '', content: '', mime: 'text/plain', imageSrc: '' };
           return self.refreshExplorerWindow(windowId).then(function () {
             if (self.refreshView) self.refreshView();
           });
@@ -238,7 +347,6 @@
         });
       },
       openTextViewerWindow: function (item) {
-        var self = this;
         var id = nextWindowId(this, 'win-text');
         var win = {
           id: id,
@@ -257,13 +365,42 @@
         this.focusWindow(id);
         if (!this.command) return;
         this.command('fs.read', { id: item.id || item.key || item.fileId }).then(function (msg) {
-          var payload = (msg && (msg.vfs || msg.fs || msg.result || msg)) || {};
+          var payload = payloadRoot(msg);
           win.fileView.loading = false;
-          win.fileView.content = String(payload.text || payload.content || payload.data || '');
+          win.fileView.content = textFromPayload(payload);
           win.fileView.mime = payload.mime || win.fileView.mime;
         }).catch(function (err) {
           win.fileView.loading = false;
           win.fileView.content = (err && err.message) || 'Unable to open file.';
+        });
+      },
+      openImageViewerWindow: function (item) {
+        var id = nextWindowId(this, 'win-image');
+        var win = {
+          id: id,
+          appKey: 'image-viewer',
+          title: item.name || item.title || 'Image file',
+          state: 'normal',
+          left: 150,
+          top: 110,
+          width: 700,
+          height: 520,
+          z: this.zCounter + 1,
+          meta: { fileId: item.id || item.key || '', mime: item.mime || 'image/*', fileName: item.name || item.title || 'Image file' },
+          fileView: { loading: true, content: '', mime: item.mime || 'image/*' }
+        };
+        this.windows.push(win);
+        this.focusWindow(id);
+        if (!this.command) return;
+        this.command('fs.read', { id: item.id || item.key || item.fileId }).then(function (msg) {
+          var payload = payloadRoot(msg);
+          win.fileView.loading = false;
+          win.fileView.content = textFromPayload(payload);
+          win.fileView.mime = payload.mime || win.fileView.mime;
+        }).catch(function (err) {
+          win.fileView.loading = false;
+          win.fileView.content = '';
+          win.fileView.error = (err && err.message) || 'Unable to open image.';
         });
       }
     }

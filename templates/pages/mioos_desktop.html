@@ -150,10 +150,7 @@
               <button type="button" @click="explorerGoUp(win.id)">Up</button>
               <button type="button" @click="loadExplorerFolder(win.id, ((boot.vfs || {}).rootId || 'root'), { selectFirst: true })">My Computer</button>
               <button type="button" @click="loadExplorerFolder(win.id, ((boot.vfs || {}).homeId || (boot.vfs || {}).rootId || 'root'), { selectFirst: true })">Documents</button>
-              <button type="button" @click="explorerCreateFolder(win.id)">New Folder</button>
-              <button type="button" :disabled="!((win.explorerState || {}).selection || {}).id" @click="explorerRenameSelected(win.id)">Rename</button>
-              <button type="button" :disabled="!((win.explorerState || {}).selection || {}).id" @click="explorerMoveSelected(win.id)">Move</button>
-              <button type="button" :disabled="!((win.explorerState || {}).selection || {}).id" @click="explorerDeleteSelected(win.id)">Delete</button>
+              <button type="button" @click="explorerPromptUpload(win.id)">Upload</button>
               <span class="mioos-explorer-path">[[ ((win.explorerState || {}).folder || {}).path || ((win.explorerState || {}).folder || {}).name || '/' ]]</span>
             </div>
             <div class="mioos-explorer-main">
@@ -175,7 +172,7 @@
                   :class="{ 'is-selected': (((win.explorerState || {}).selection || {}).id || '') === (item.id || '') }"
                   @click="selectExplorerItem(win.id, item)"
                   @dblclick="explorerOpenItem(win.id, item)">
-                  <span class="mioos-entry-icon">[[ (item.kind || item.type) === 'folder' ? '📁' : '📄' ]]</span>
+                  <span class="mioos-entry-icon">[[ (item.kind || item.type) === 'folder' ? '📁' : ((((item.mime || '').indexOf('image/') === 0) ? '🖼' : '📄')) ]]</span>
                   <span class="mioos-explorer-item-copy">
                     <strong>[[ item.name || item.title ]]</strong>
                     <em>[[ item.kind || item.type || item.mime || '' ]]</em>
@@ -187,6 +184,13 @@
                   <strong>[[ ((win.explorerState || {}).selection || {}).name || 'Folder' ]]</strong>
                   <span>Folder</span>
                 </template>
+                <template v-else-if="((win.explorerState || {}).preview || {}).imageSrc">
+                  <strong>[[ (win.explorerState || {}).preview.title ]]</strong>
+                  <div class="mioos-image-preview-frame">
+                    <img class="mioos-image-preview" :src="(win.explorerState || {}).preview.imageSrc" :alt="(win.explorerState || {}).preview.title">
+                  </div>
+                  <button type="button" @click="explorerOpenSelected(win.id)">Open</button>
+                </template>
                 <template v-else-if="((win.explorerState || {}).preview || {}).title">
                   <strong>[[ (win.explorerState || {}).preview.title ]]</strong>
                   <pre class="mioos-text-preview">[[ (win.explorerState || {}).preview.content ]]</pre>
@@ -196,11 +200,6 @@
                   <strong>Preview</strong>
                   <span>Select a file to preview text content.</span>
                 </template>
-                <div class="mioos-explorer-preview-actions">
-                  <button type="button" :disabled="!((win.explorerState || {}).selection || {}).id" @click="explorerOpenSelected(win.id)">Open</button>
-                  <button type="button" :disabled="!((win.explorerState || {}).selection || {}).id" @click="explorerRenameSelected(win.id)">Rename</button>
-                  <button type="button" :disabled="!((win.explorerState || {}).selection || {}).id" @click="explorerDeleteSelected(win.id)">Delete</button>
-                </div>
               </aside>
             </div>
           </div>
@@ -218,6 +217,19 @@
               <span>[[ ((win.fileView || {}).mime || 'text/plain') ]]</span>
             </div>
             <pre class="mioos-textviewer-body">[[ ((win.fileView || {}).loading ? 'Loading…' : ((win.fileView || {}).content || '')) ]]</pre>
+          </div>
+        </template>
+        <template v-else-if="win.appKey === 'image-viewer'">
+          <div class="mioos-imageviewer-shell">
+            <div class="mioos-imageviewer-head">
+              <strong>[[ (win.meta || {}).fileName || win.title ]]</strong>
+              <span>[[ ((win.fileView || {}).mime || 'image/*') ]]</span>
+            </div>
+            <div class="mioos-imageviewer-body">
+              <div v-if="(win.fileView || {}).loading" class="mioos-imageviewer-empty">Loading…</div>
+              <img v-else-if="(win.fileView || {}).content" class="mioos-imageviewer-image" :src="(win.fileView || {}).content" :alt="(win.meta || {}).fileName || win.title">
+              <div v-else class="mioos-imageviewer-empty">Unable to open image.</div>
+            </div>
           </div>
         </template>
         <template v-else-if="win.appKey === 'terminal'">
