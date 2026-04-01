@@ -5,11 +5,74 @@
     return JSON.parse(JSON.stringify(value || {}));
   }
 
+  function defaultBoot() {
+    return {
+      product: {
+        name: 'MIOOS',
+        subtitle: '',
+        profile: 'dev'
+      },
+      desktop: {
+        themeKey: '',
+        launcherLabel: 'Menu'
+      },
+      routes: {
+        websocket: '',
+        bootstrap: '',
+        view: ''
+      },
+      apps: [],
+      windows: []
+    };
+  }
+
+  function defaultView() {
+    return {
+      summary: {
+        headline: '',
+        subheadline: ''
+      },
+      documents: [],
+      controlPanel: [],
+      terminal: {
+        headline: '',
+        subheadline: '',
+        status: '',
+        transport: ''
+      }
+    };
+  }
+
+  function normalizeBoot(value) {
+    var src = value || {};
+    var out = defaultBoot();
+
+    out.product = Object.assign({}, out.product, src.product || {});
+    out.desktop = Object.assign({}, out.desktop, src.desktop || {});
+    out.routes = Object.assign({}, out.routes, src.routes || {});
+    out.apps = Array.isArray(src.apps) ? src.apps : [];
+    out.windows = Array.isArray(src.windows) ? src.windows : [];
+
+    return out;
+  }
+
+  function normalizeView(value) {
+    var src = value || {};
+    var out = defaultView();
+
+    out.summary = Object.assign({}, out.summary, src.summary || {});
+    out.documents = Array.isArray(src.documents) ? src.documents : [];
+    out.controlPanel = Array.isArray(src.controlPanel) ? src.controlPanel : [];
+    out.terminal = Object.assign({}, out.terminal, src.terminal || {});
+
+    return out;
+  }
+
   var app = window.Vue.createApp({
     data: function () {
       return {
-        boot: {},
-        view: { summary: {}, documents: [], controlPanel: [], terminal: {} },
+        boot: defaultBoot(),
+        view: defaultView(),
         desktopEntries: [],
         windows: [],
         activeWindowId: '',
@@ -74,10 +137,10 @@
         var node = document.getElementById('mioosBootJson');
         if (!node) return;
         try {
-          this.boot = JSON.parse(node.textContent || '{}');
+          this.boot = normalizeBoot(JSON.parse(node.textContent || '{}'));
         } catch (err) {
           this.showAlert('Boot error', 'Unable to parse the server boot contract.');
-          this.boot = {};
+          this.boot = defaultBoot();
         }
         this.profile = ((this.boot.product || {}).profile) || 'dev';
         this.desktopEntries = deepClone(this.boot.apps || []);
@@ -128,7 +191,7 @@
           return;
         }
         if (msg.event === 'view.refresh' && msg.view) {
-          this.view = msg.view;
+          this.view = normalizeView(msg.view);
           return;
         }
         if (msg.event === 'error') {
@@ -146,7 +209,7 @@
         window.fetch(path, { headers: { Accept: 'application/json' } })
           .then(function (resp) { return resp.json(); })
           .then(function (json) {
-            self.view = json || {};
+            self.view = normalizeView(json);
           })
           .catch(function () {
             self.showAlert('View refresh failed', 'The shell view model could not be refreshed.');
