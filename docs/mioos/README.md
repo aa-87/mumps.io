@@ -61,5 +61,13 @@ Current terminal behavior follows MIOMOS: xterm.js on the client, a YottaDB PIPE
 MIOOS now includes a global-backed virtual file system foundation. The current ROI focuses on contracts and durability rather than explorer UI. Files and folders live under globals, support metadata and permissions, and are available over both HTTP routes and websocket commands for later explorer integration.
 
 
-## Explorer actions
-This ROI adds basic Explorer file operations on top of the VFS contract: create folder, rename, move, delete, and text-file open/preview workflows. Client UI remains thin and server policy remains in the M routines.
+## ROI 10 — Explorer upload and image viewer
+- Added browser-side upload to the global-backed VFS using existing `fs.write` commands.
+- Added image-aware file association handling in Explorer with preview and a dedicated image viewer window.
+- Kept the backend stable by reusing existing VFS websocket commands rather than changing server storage contracts.
+
+
+## ROI — Upload throughput and progress UX
+- Added Explorer upload progress UI with percentage and stage text.
+- Increased default chunk size for chunked uploads.
+- Added a small parallel chunk pipeline on the browser for better upload throughput without sending a single oversized websocket frame.

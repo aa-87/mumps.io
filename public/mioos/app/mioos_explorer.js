@@ -20,6 +20,18 @@
     return mime.indexOf('image/') === 0 || /\.(png|jpg|jpeg|gif|bmp|webp|svg)$/i.test(name);
   }
 
+  function detectAudioLike(entry) {
+    var mime = ((entry || {}).mime || '').toLowerCase();
+    var name = ((entry || {}).name || (entry || {}).title || '').toLowerCase();
+    return mime.indexOf('audio/') === 0 || /\.(mp3|wav|ogg|m4a|aac|flac|weba)$/i.test(name);
+  }
+
+  function detectVideoLike(entry) {
+    var mime = ((entry || {}).mime || '').toLowerCase();
+    var name = ((entry || {}).name || (entry || {}).title || '').toLowerCase();
+    return mime.indexOf('video/') === 0 || /\.(mp4|webm|ogv|mov|m4v)$/i.test(name);
+  }
+
   function payloadRoot(msg) {
     return (msg && (msg.vfs || msg.fs || msg.result || msg)) || {};
   }
@@ -65,8 +77,216 @@
     input.click();
   }
 
+  function fileToText(file) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function (evt) { resolve(String((evt.target && evt.target.result) || '')); };
+      reader.onerror = function () { reject(new Error('file_read_failed')); };
+      reader.readAsText(file);
+    });
+  }
+
+  function blobToArrayBuffer(blob) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function (evt) { resolve((evt.target && evt.target.result) || new ArrayBuffer(0)); };
+      reader.onerror = function () { reject(new Error('file_read_failed')); };
+      reader.readAsArrayBuffer(blob);
+    });
+  }
+
+  function uint8ToBase64(uint8) {
+    var binary = '';
+    var i;
+    for (i = 0; i < uint8.length; i += 1) binary += String.fromCharCode(uint8[i]);
+    return window.btoa(binary);
+  }
+
+  function useChunkedUpload(file, isText) {
+    var limit = 32768;
+    if (!file) return false;
+    if (file.size > limit) return true;
+    return !isText;
+  }
+
+
+  function uploadSocketPath(vm) {
+    var root = window.MIOOSState && window.MIOOSState.getRootNode ? window.MIOOSState.getRootNode() : null;
+    return ((vm.boot || {}).routes || {}).websocket || (root ? root.dataset.mioosWs : '');
+  }
+
+  function createUploadSocket(vm, ordinal) {
+    var protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+    var path = uploadSocketPath(vm);
+    var ws;
+    var client;
+    var seq = 0;
+    var pending = {};
+    if (!path || !window.WebSocket) throw new Error('socket_unavailable');
+    ws = new window.WebSocket(protocol + window.location.host + path);
+    client = {
+      socket: ws,
+      ready: false,
+      closed: false,
+      openPromise: null,
+      close: function () {
+        this.closed = true;
+        try { ws.close(); } catch (err) {}
+      },
+      command: function (command, payload) {
+        var self = this;
+        return self.openPromise.then(function () {
+          return new Promise(function (resolve, reject) {
+            var requestId = 'up-' + ordinal + '-' + Date.now() + '-' + (++seq);
+            pending[requestId] = { resolve: resolve, reject: reject };
+            try {
+              ws.send(JSON.stringify(Object.assign({ event: 'desktop.command', command: command, requestId: requestId }, payload || {})));
+            } catch (err) {
+              delete pending[requestId];
+              reject(err);
+            }
+          });
+        });
+      }
+    };
+    client.openPromise = new Promise(function (resolve, reject) {
+      var settled = false;
+      var timer = window.setTimeout(function () {
+        if (settled) return;
+        settled = true;
+        reject(new Error('socket_open_timeout'));
+      }, 8000);
+      ws.addEventListener('open', function () {
+        if (settled) return;
+        settled = true;
+        window.clearTimeout(timer);
+        client.ready = true;
+        try { ws.send(JSON.stringify({ event: 'hello' })); } catch (err) {}
+        resolve();
+      });
+      ws.addEventListener('error', function () {
+        if (settled) return;
+        settled = true;
+        window.clearTimeout(timer);
+        reject(new Error('socket_error'));
+      });
+      ws.addEventListener('close', function () {
+        var keys = Object.keys(pending);
+        client.ready = false;
+        client.closed = true;
+        keys.forEach(function (key) {
+          try { pending[key].reject(new Error('socket_closed')); } catch (err) {}
+          delete pending[key];
+        });
+      });
+      ws.addEventListener('message', function (evt) {
+        var msg;
+        var ref;
+        try { msg = JSON.parse(evt.data); } catch (err) { return; }
+        if (msg.event === 'hello' || msg.event === 'pong') return;
+        ref = msg.requestId && pending[msg.requestId];
+        if (ref) {
+          delete pending[msg.requestId];
+          if (msg.ok === 0 || msg.error) {
+            ref.reject(new Error(msg.detail || msg.error || 'command_failed'));
+          } else {
+            ref.resolve(msg);
+          }
+        }
+      });
+    });
+    return client;
+  }
+
   window.MIOOSExplorer = {
     methods: {
+
+      resetExplorerUpload: function (state) {
+        if (!state) return;
+        state.upload = { active: false, name: '', totalBytes: 0, sentBytes: 0, progress: 0, stage: '', error: '', uploadId: '' };
+      },
+      setExplorerUploadProgress: function (state, patch) {
+        var next;
+        if (!state) return;
+        next = Object.assign({ active: true, name: '', totalBytes: 0, sentBytes: 0, progress: 0, stage: '', error: '', uploadId: '' }, state.upload || {}, patch || {});
+        if (next.totalBytes > 0) {
+          next.progress = Math.max(0, Math.min(100, Math.round((next.sentBytes / next.totalBytes) * 100)));
+        }
+        state.upload = next;
+      },
+      uploadChunkedSegments: function (uploadId, segments, state, fileName, concurrency) {
+        var self = this;
+        var workers = [];
+        var nextIndex = 0;
+        var completed = 0;
+        var sentBytes = 0;
+        var active = Math.max(1, Math.min(7, +(concurrency || 2)));
+        return new Promise(function (resolve, reject) {
+          function cleanup() {
+            workers.forEach(function (worker) {
+              if (worker && worker.close) worker.close();
+            });
+          }
+          function maybeDone() {
+            if (completed >= segments.length) {
+              cleanup();
+              resolve();
+              return 1;
+            }
+            return 0;
+          }
+          function launchWorker(slot) {
+            var worker;
+            function pump() {
+              var seq;
+              var segment;
+              if (nextIndex >= segments.length) return;
+              seq = nextIndex;
+              segment = segments[seq];
+              nextIndex += 1;
+              worker.command('fs.upload.chunk', { uploadId: uploadId, index: seq + 1, data: segment.data }).then(function () {
+                completed += 1;
+                sentBytes += segment.bytes;
+                self.setExplorerUploadProgress(state, {
+                  active: true,
+                  name: fileName,
+                  totalBytes: state.upload.totalBytes,
+                  sentBytes: sentBytes,
+                  stage: 'Uploading ' + completed + ' / ' + segments.length
+                });
+                if (!maybeDone()) pump();
+              }).catch(function (err) {
+                cleanup();
+                reject(err);
+              });
+            }
+            try {
+              worker = createUploadSocket(self, slot + 1);
+              workers.push(worker);
+              worker.openPromise.then(function () {
+                pump();
+              }).catch(function (err) {
+                cleanup();
+                reject(err);
+              });
+            } catch (err) {
+              cleanup();
+              reject(err);
+            }
+          }
+          if (!segments.length) { resolve(); return; }
+          for (var i = 0; i < active; i += 1) launchWorker(i);
+        });
+      },
+      explorerItemGlyph: function (item) {
+        if (detectImageLike(item)) return '🖼';
+        if (detectAudioLike(item)) return '🎵';
+        if (detectVideoLike(item)) return '🎬';
+        return ((item || {}).kind || (item || {}).type) === 'folder' ? '📁' : '📄';
+      },
+      explorerCanPreviewInline: function (item) {
+        return detectTextLike(item) || detectImageLike(item) || detectAudioLike(item) || detectVideoLike(item);
+      },
       ensureExplorerWindowState: function (win) {
         if (!win) return null;
         if (!win.explorerState) {
@@ -78,7 +298,8 @@
             items: [],
             selection: null,
             error: '',
-            preview: { title: '', content: '', mime: 'text/plain', imageSrc: '' }
+            preview: { title: '', content: '', mime: 'text/plain', imageSrc: '', mediaSrc: '', mediaKind: '' },
+            upload: { active: false, name: '', totalBytes: 0, sentBytes: 0, progress: 0, stage: '', error: '', uploadId: '' }
           };
         }
         return win.explorerState;
@@ -122,7 +343,7 @@
           state.items = items;
           state.loading = false;
           state.selection = null;
-          state.preview = { title: '', content: '', mime: 'text/plain', imageSrc: '' };
+          state.preview = { title: '', content: '', mime: 'text/plain', imageSrc: '', mediaSrc: '', mediaKind: '' };
           if ((options || {}).selectFirst && items.length) self.selectExplorerItem(win.id, items[0]);
           win.title = folder.name || win.title;
           return msg;
@@ -142,21 +363,23 @@
         } else if (state.selection && detectImageLike(state.selection)) {
           this.previewImageFile(windowId, state.selection);
         } else {
-          state.preview = { title: '', content: '', mime: 'text/plain', imageSrc: '' };
+          state.preview = { title: '', content: '', mime: 'text/plain', imageSrc: '', mediaSrc: '', mediaKind: '' };
         }
       },
       previewTextFile: function (windowId, item) {
         var win = this.windows.find(function (entry) { return entry.id === windowId; });
         var state = this.ensureExplorerWindowState(win);
         if (!win || !state || !item || !this.command) return Promise.resolve();
-        state.preview = { title: item.name || item.title || '', content: '', mime: item.mime || 'text/plain', imageSrc: '' };
+        state.preview = { title: item.name || item.title || '', content: '', mime: item.mime || 'text/plain', imageSrc: '', mediaSrc: '', mediaKind: '' };
         return this.command('fs.read', { id: item.id || item.key || item.fileId }).then(function (msg) {
           var payload = payloadRoot(msg);
           state.preview = {
             title: item.name || item.title || '',
             content: textFromPayload(payload),
             mime: item.mime || payload.mime || 'text/plain',
-            imageSrc: ''
+            imageSrc: '',
+            mediaSrc: '',
+            mediaKind: ''
           };
           return msg;
         }).catch(function (err) {
@@ -172,14 +395,16 @@
         var win = this.windows.find(function (entry) { return entry.id === windowId; });
         var state = this.ensureExplorerWindowState(win);
         if (!win || !state || !item || !this.command) return Promise.resolve();
-        state.preview = { title: item.name || item.title || '', content: '', mime: item.mime || 'image/*', imageSrc: '' };
+        state.preview = { title: item.name || item.title || '', content: '', mime: item.mime || 'image/*', imageSrc: '', mediaSrc: '', mediaKind: '' };
         return this.command('fs.read', { id: item.id || item.key || item.fileId }).then(function (msg) {
           var payload = payloadRoot(msg);
           state.preview = {
             title: item.name || item.title || '',
             content: '',
             mime: item.mime || payload.mime || 'image/*',
-            imageSrc: textFromPayload(payload)
+            imageSrc: textFromPayload(payload),
+            mediaSrc: '',
+            mediaKind: ''
           };
           return msg;
         }).catch(function (err) {
@@ -187,7 +412,37 @@
             title: item.name || item.title || '',
             content: (err && err.message) || 'Unable to load image preview.',
             mime: item.mime || 'image/*',
-            imageSrc: ''
+            imageSrc: '',
+            mediaSrc: '',
+            mediaKind: ''
+          };
+        });
+      },
+      previewMediaFile: function (windowId, item) {
+        var win = this.windows.find(function (entry) { return entry.id === windowId; });
+        var state = this.ensureExplorerWindowState(win);
+        var mediaKind = detectVideoLike(item) ? 'video' : 'audio';
+        if (!win || !state || !item || !this.command) return Promise.resolve();
+        state.preview = { title: item.name || item.title || '', content: '', mime: item.mime || (mediaKind + '/*'), imageSrc: '', mediaSrc: '', mediaKind: mediaKind };
+        return this.command('fs.read', { id: item.id || item.key || item.fileId }).then(function (msg) {
+          var payload = payloadRoot(msg);
+          state.preview = {
+            title: item.name || item.title || '',
+            content: '',
+            mime: item.mime || payload.mime || (mediaKind + '/*'),
+            imageSrc: '',
+            mediaSrc: textFromPayload(payload),
+            mediaKind: mediaKind
+          };
+          return msg;
+        }).catch(function (err) {
+          state.preview = {
+            title: item.name || item.title || '',
+            content: (err && err.message) || ('Unable to load ' + mediaKind + ' preview.'),
+            mime: item.mime || (mediaKind + '/*'),
+            imageSrc: '',
+            mediaSrc: '',
+            mediaKind: mediaKind
           };
         });
       },
@@ -206,6 +461,10 @@
         }
         if (detectImageLike(item)) {
           this.openImageViewerWindow(item);
+          return;
+        }
+        if (detectAudioLike(item) || detectVideoLike(item)) {
+          this.openMediaViewerWindow(item);
           return;
         }
         if (detectTextLike(item)) {
@@ -233,38 +492,123 @@
         if (!state || !this.command) return;
         createUploadInput(function (event) {
           var file = event.target.files && event.target.files[0];
-          var reader;
           var mime;
-          if (!file) {
+          var isText;
+          function cleanup() {
             if (event.target && event.target.parentNode) event.target.parentNode.removeChild(event.target);
+          }
+          function finalize() {
+            return self.refreshExplorerWindow(windowId).then(function () {
+              if (self.refreshView) self.refreshView();
+              self.setExplorerUploadProgress(state, {
+                active: false,
+                name: file.name,
+                totalBytes: file.size,
+                sentBytes: file.size,
+                progress: 100,
+                stage: 'Complete',
+                error: '',
+                uploadId: ''
+              });
+              window.setTimeout(function () { self.resetExplorerUpload(state); }, 1200);
+            });
+          }
+          function fail(err, fallback) {
+            self.setExplorerUploadProgress(state, { active: false, stage: 'Failed', error: (err && err.message) || fallback, uploadId: '' });
+            if (self.showAlert) self.showAlert(self.t('alerts.shellEventError.title', 'Explorer'), (err && err.message) || fallback);
+          }
+          if (!file) { cleanup(); return; }
+          mime = file.type || 'application/octet-stream';
+          isText = detectTextLike({ name: file.name, mime: mime });
+          self.setExplorerUploadProgress(state, {
+            active: true,
+            name: file.name,
+            totalBytes: file.size,
+            sentBytes: 0,
+            progress: 0,
+            stage: 'Preparing',
+            error: '',
+            uploadId: ''
+          });
+          if (!useChunkedUpload(file, isText)) {
+            self.setExplorerUploadProgress(state, { stage: 'Uploading' });
+            if (isText) {
+              fileToText(file).then(function (result) {
+                return self.command('fs.write', {
+                  parent: state.folderId,
+                  name: file.name,
+                  mime: mime,
+                  data: result,
+                  content: result,
+                  text: result
+                });
+              }).then(finalize).catch(function (err) {
+                fail(err, 'fs_write_failed');
+              }).finally(cleanup);
+              return;
+            }
+            blobToArrayBuffer(file).then(function (buffer) {
+              var result = 'data:' + mime + ';base64,' + uint8ToBase64(new Uint8Array(buffer));
+              return self.command('fs.write', {
+                parent: state.folderId,
+                name: file.name,
+                mime: mime,
+                data: result,
+                content: result,
+                text: result
+              });
+            }).then(finalize).catch(function (err) {
+              fail(err, 'fs_write_failed');
+            }).finally(cleanup);
             return;
           }
-          reader = new FileReader();
-          mime = file.type || 'application/octet-stream';
-          reader.onload = function (loadEvent) {
-            var result = loadEvent.target && loadEvent.target.result;
-            self.command('fs.write', {
-              parent: state.folderId,
-              name: file.name,
-              mime: mime,
-              data: result,
-              content: result,
-              text: result
-            }).then(function () {
-              return self.refreshExplorerWindow(windowId).then(function () {
-                if (self.refreshView) self.refreshView();
+          self.command('fs.upload.begin', {
+            parent: state.folderId,
+            name: file.name,
+            mime: mime,
+            totalBytes: file.size,
+            encoding: isText ? 'text' : 'base64-dataurl'
+          }).then(function (msg) {
+            var payload = payloadRoot(msg);
+            var uploadId = payload.uploadId;
+            var chunkChars = (payload && payload.chunkBytes) || ((self.boot && self.boot.vfs && self.boot.vfs.uploadChunkBytes) || 32768);
+            var uploadConcurrency = (payload && payload.concurrencyDefault) || ((self.boot && self.boot.vfs && self.boot.vfs.uploadConcurrency) || 7);
+            if (!uploadId) throw new Error('upload_begin_failed');
+            state.upload.uploadId = uploadId;
+            self.setExplorerUploadProgress(state, { stage: 'Uploading chunks', uploadId: uploadId });
+            if (isText) {
+              return fileToText(file).then(function (text) {
+                var segments = [];
+                var offset = 0;
+                while (offset < text.length || (text.length === 0 && segments.length === 0)) {
+                  var piece = text.slice(offset, offset + chunkChars);
+                  segments.push({ data: piece, bytes: piece.length });
+                  offset += chunkChars;
+                  if (text.length === 0) break;
+                }
+                return self.uploadChunkedSegments(uploadId, segments, state, file.name, uploadConcurrency);
               });
-            }).catch(function (err) {
-              if (self.showAlert) self.showAlert(self.t('alerts.shellEventError.title', 'Explorer'), (err && err.message) || 'fs_write_failed');
-            }).finally(function () {
-              if (event.target && event.target.parentNode) event.target.parentNode.removeChild(event.target);
+            }
+            return blobToArrayBuffer(file).then(function (buffer) {
+              var bytes = new Uint8Array(buffer);
+              var rawChunkBytes = Math.max(12288, Math.floor(chunkChars * 3 / 4));
+              var segments = [];
+              var offset = 0;
+              while (offset < bytes.length || (bytes.length === 0 && segments.length === 0)) {
+                var end = Math.min(offset + rawChunkBytes, bytes.length);
+                var slice = bytes.slice(offset, end);
+                segments.push({ data: uint8ToBase64(slice), bytes: Math.max(0, end - offset) });
+                offset = end;
+                if (bytes.length === 0) break;
+              }
+              return self.uploadChunkedSegments(uploadId, segments, state, file.name, uploadConcurrency);
             });
-          };
-          if (detectTextLike({ name: file.name, mime: mime })) {
-            reader.readAsText(file);
-          } else {
-            reader.readAsDataURL(file);
-          }
+          }).then(function () {
+            self.setExplorerUploadProgress(state, { stage: 'Finalizing', progress: 100, sentBytes: state.upload.totalBytes });
+            return self.command('fs.upload.commit', { uploadId: (state.upload && state.upload.uploadId) });
+          }).then(finalize).catch(function (err) {
+            fail(err, 'fs_upload_failed');
+          }).finally(cleanup);
         });
       },
       explorerCreateFolder: function (windowId) {
@@ -313,7 +657,7 @@
         if (!window.confirm(this.t('explorer.confirmDelete', 'Delete the selected item?'))) return Promise.resolve();
         return this.command('fs.delete', { id: item.id || item.key || '' }).then(function () {
           state.selection = null;
-          state.preview = { title: '', content: '', mime: 'text/plain', imageSrc: '' };
+          state.preview = { title: '', content: '', mime: 'text/plain', imageSrc: '', mediaSrc: '', mediaKind: '' };
           return self.refreshExplorerWindow(windowId).then(function () {
             if (self.refreshView) self.refreshView();
           });
@@ -338,13 +682,52 @@
           return self.command('fs.move', { id: item.id || item.key || '', parent: targetId });
         }).then(function () {
           state.selection = null;
-          state.preview = { title: '', content: '', mime: 'text/plain', imageSrc: '' };
+          state.preview = { title: '', content: '', mime: 'text/plain', imageSrc: '', mediaSrc: '', mediaKind: '' };
           return self.refreshExplorerWindow(windowId).then(function () {
             if (self.refreshView) self.refreshView();
           });
         }).catch(function (err) {
           if (self.showAlert) self.showAlert(self.t('alerts.shellEventError.title', 'Explorer'), (err && err.message) || 'fs_move_failed');
         });
+      },
+      downloadFileEntry: function (item, fallbackData) {
+        var anchor;
+        var href = fallbackData || '';
+        var name = (item && (item.name || item.title)) || 'download';
+        if (!item) return Promise.resolve();
+        if (href && href.indexOf('data:') === 0) {
+          anchor = document.createElement('a');
+          anchor.href = href;
+          anchor.download = name;
+          document.body.appendChild(anchor);
+          anchor.click();
+          document.body.removeChild(anchor);
+          return Promise.resolve();
+        }
+        if (!this.command) return Promise.resolve();
+        return this.command('fs.read', { id: item.id || item.key || item.fileId }).then(function (msg) {
+          var payload = payloadRoot(msg);
+          var data = textFromPayload(payload);
+          if (!data) return;
+          anchor = document.createElement('a');
+          anchor.href = data;
+          anchor.download = name;
+          document.body.appendChild(anchor);
+          anchor.click();
+          document.body.removeChild(anchor);
+        });
+      },
+      explorerDownloadSelected: function (windowId) {
+        var win = this.windows.find(function (entry) { return entry.id === windowId; });
+        var state = this.ensureExplorerWindowState(win);
+        var item = state && state.selection;
+        var preview = (state || {}).preview || {};
+        if (!item) return Promise.resolve();
+        return this.downloadFileEntry(item, preview.imageSrc || preview.mediaSrc || '');
+      },
+      downloadViewerFile: function (win) {
+        if (!win) return Promise.resolve();
+        return this.downloadFileEntry({ id: (win.meta || {}).fileId, name: (win.meta || {}).fileName || win.title }, (win.fileView || {}).content || '');
       },
       openTextViewerWindow: function (item) {
         var id = nextWindowId(this, 'win-text');
@@ -401,6 +784,36 @@
           win.fileView.loading = false;
           win.fileView.content = '';
           win.fileView.error = (err && err.message) || 'Unable to open image.';
+        });
+      },
+      openMediaViewerWindow: function (item) {
+        var mediaKind = detectVideoLike(item) ? 'video' : 'audio';
+        var id = nextWindowId(this, 'win-media');
+        var win = {
+          id: id,
+          appKey: 'media-viewer',
+          title: item.name || item.title || (mediaKind === 'video' ? 'Video file' : 'Audio file'),
+          state: 'normal',
+          left: 170,
+          top: 120,
+          width: mediaKind === 'video' ? 760 : 560,
+          height: mediaKind === 'video' ? 560 : 260,
+          z: this.zCounter + 1,
+          meta: { fileId: item.id || item.key || '', mime: item.mime || (mediaKind + '/*'), fileName: item.name || item.title || 'Media file', mediaKind: mediaKind },
+          fileView: { loading: true, content: '', mime: item.mime || (mediaKind + '/*'), mediaKind: mediaKind }
+        };
+        this.windows.push(win);
+        this.focusWindow(id);
+        if (!this.command) return;
+        this.command('fs.read', { id: item.id || item.key || item.fileId }).then(function (msg) {
+          var payload = payloadRoot(msg);
+          win.fileView.loading = false;
+          win.fileView.content = textFromPayload(payload);
+          win.fileView.mime = payload.mime || win.fileView.mime;
+        }).catch(function (err) {
+          win.fileView.loading = false;
+          win.fileView.content = '';
+          win.fileView.error = (err && err.message) || 'Unable to open media.';
         });
       }
     }

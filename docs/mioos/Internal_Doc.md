@@ -92,5 +92,5 @@ The active MIOOS browser terminal path follows the proven MIOMOS pattern: termin
 The VFS foundation lives in `MIOOSFS`. It stores entries, child indexes, and file chunks entirely in globals and keeps root bootstrap folders available from `INIT^MIOOSFS`. The current contract supports list, read, write, mkdir, meta, rename, move, and delete. Permissions currently follow an owner plus role CSV plus read/write/delete flag model so later explorer and file-app surfaces can build on a stable backend.
 
 
-## Explorer actions
-This ROI adds basic Explorer file operations on top of the VFS contract: create folder, rename, move, delete, and text-file open/preview workflows. Client UI remains thin and server policy remains in the M routines.
+## Chunked upload transport
+Staging lives under `^MIO("MIOOS","UPLOAD",...)`. Commit writes directly into the existing VFS chunk store under `^MIO("MIOOS","FS","DATA",...)`, so server-side storage remains chunked even when the original upload arrives over multiple websocket frames.

@@ -509,3 +509,19 @@ button, input { font: inherit; }
   color: #27496d;
   font-weight: 600;
 }
+
+
+.mioos-upload-progress { padding: 8px 12px; border-bottom: 1px solid rgba(0,0,0,.12); background: rgba(255,255,255,.85); }
+.mioos-upload-progress-head { display:flex; gap:10px; align-items:center; font-size:12px; }
+.mioos-upload-progress-head strong { flex:1 1 auto; }
+.mioos-upload-progress-bar { margin-top:6px; height:10px; border:1px solid #7f9db9; background:#fff; overflow:hidden; }
+.mioos-upload-progress-bar span { display:block; height:100%; background: linear-gradient(180deg,#6eb4ff,#2f78d8); }
+.mioos-preview-actions { display:flex; gap:8px; margin-top:10px; }
+.mioos-media-preview-frame { display:flex; align-items:center; justify-content:center; min-height:120px; padding:8px; border:1px solid rgba(0,0,0,.15); background:#fff; }
+.mioos-media-preview-video { width:100%; max-height:220px; background:#000; }
+.mioos-media-preview-audio { width:100%; }
+.mioos-mediaviewer-shell { display:flex; flex-direction:column; height:100%; }
+.mioos-mediaviewer-head { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:10px 12px; border-bottom:1px solid rgba(0,0,0,.12); }
+.mioos-mediaviewer-body { flex:1 1 auto; display:flex; align-items:center; justify-content:center; padding:12px; background:#111; }
+.mioos-mediaviewer-video { width:100%; height:100%; max-height:100%; background:#000; }
+.mioos-mediaviewer-audio { width:min(100%, 520px); }
