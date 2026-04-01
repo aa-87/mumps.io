@@ -191,12 +191,12 @@
         this.terminalPollTimer = window.setInterval(function () {
           self.windows.forEach(function (win) {
             var state;
-            if (!win || win.appKey !== 'terminal' || win.state === 'closed') return;
+            if (!win || win.appKey !== 'terminal' || win.state === 'closed' || win.state === 'minimized') return;
             state = self.ensureTerminalState(win.id);
             if (!state.terminalId || state.busy) return;
             self.pollTerminal(win.id);
           });
-        }, 1500);
+        }, 2000);
       },
       stopTerminalPolling: function () { if (this.terminalPollTimer) window.clearInterval(this.terminalPollTimer); this.terminalPollTimer = null; },
       openTerminal: function (winId, forceNew) {

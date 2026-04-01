@@ -75,14 +75,8 @@ Terminal windows now use xterm.js in the browser and a server-owned websocket co
 MIOOS terminals now run as real YottaDB `-direct` PIPE sessions owned by the websocket shell rather than a simulated command surface.
 
 
-## Terminal transport architecture
-Use the primary MIOOS websocket for desktop state and shell commands. Use `MIOOSTWS` on `/ws/mioos/terminal` for terminal-only events such as `terminal.open`, `terminal.attach`, `terminal.input`, `terminal.resize`, and `terminal.close`. After a terminal is created, the browser should bind that window to a terminal-specific websocket URL such as `/ws/mioos/terminal?terminalId=<uuid>&windowId=<id>` so terminal traffic stays isolated and no steady-state poll loop is needed for routine typing. This same pattern can later be reused by the debugger and other realtime apps that need isolation.
+## Terminal hardening update
 
-
-## Terminal transport note
-
-The active MIOOS browser terminal path follows the proven MIOMOS pattern: terminal.open / terminal.input / terminal.poll / terminal.resize / terminal.close all travel over the core shell websocket command bus. Dedicated per-terminal websocket experimentation is deferred until the MIOMOS-equivalent behavior is stable.
-
-
-## Terminal reset note
-- Reset MIOOS terminal handling to mirror the working MIOMOS model: one core websocket, promise-based command bus, xterm local line editing, and MIOMOSTPIPE-style pipe session lifecycle adapted into MIOOSTPIPE.
+- Dedicated terminal websocket sessions now use keepalive pings and reconnect backoff.
+- Browser terminal input normalizes lone Enter as LF so empty new lines do not destabilize the socket.
+- Terminal viewport fitting now uses ResizeObserver-based refit behavior for cleaner dimensions inside the window chrome.

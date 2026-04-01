@@ -142,6 +142,40 @@
         this.dragState.active = false;
         this.dragState.windowId = '';
       },
+      beginResize: function (win, event) {
+        if (!win || win.state === 'maximized') return;
+        if (event && event.preventDefault) event.preventDefault();
+        if (event && event.stopPropagation) event.stopPropagation();
+        this.focusWindow(win.id);
+        this.resizeState.active = true;
+        this.resizeState.windowId = win.id;
+        this.resizeState.startX = event.clientX;
+        this.resizeState.startY = event.clientY;
+        this.resizeState.width = win.width || 600;
+        this.resizeState.height = win.height || 420;
+      },
+      onResizeMove: function (event) {
+        var self = this;
+        if (!this.resizeState.active) return;
+        var win = this.windows.find(function (item) { return item.id === self.resizeState.windowId; });
+        var width, height, grid;
+        if (!win) return;
+        width = this.resizeState.width + (event.clientX - this.resizeState.startX);
+        height = this.resizeState.height + (event.clientY - this.resizeState.startY);
+        win.width = Math.max(win.appKey === 'terminal' ? 640 : 420, width);
+        win.height = Math.max(win.appKey === 'terminal' ? 360 : 260, height);
+        if (win.appKey === 'terminal' && this.resizeXtermClient && this.computeTerminalGrid) {
+          grid = this.computeTerminalGrid(win.id);
+          this.resizeXtermClient(win.id, grid.cols, grid.rows);
+        }
+      },
+      endResize: function () {
+        var winId = this.resizeState.windowId;
+        var win = this.windows.find(function (item) { return item.id === winId; });
+        this.resizeState.active = false;
+        this.resizeState.windowId = '';
+        if (win && win.appKey === 'terminal' && this.syncTerminalWindow) this.syncTerminalWindow(winId);
+      },
       windowToggleLabel: function (win) {
         return this.t(win && win.state === 'maximized' ? 'action.restore' : 'action.maximize');
       }
