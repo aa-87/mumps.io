@@ -193,18 +193,6 @@ button, input { font: inherit; }
   contain: layout paint style;
 }
 .mioos-window.is-maximized { border-radius: 0; }
-.mioos-window-resize {
-  position: absolute;
-  right: 2px;
-  bottom: 2px;
-  width: 18px;
-  height: 18px;
-  border: 0;
-  padding: 0;
-  background: linear-gradient(135deg, transparent 0 35%, rgba(255,255,255,0.18) 35% 45%, transparent 45% 55%, rgba(255,255,255,0.28) 55% 65%, transparent 65% 75%, rgba(255,255,255,0.38) 75% 85%, transparent 85% 100%);
-  cursor: nwse-resize;
-}
-.mioos-window.is-maximized .mioos-window-resize { display: none; }
 .mioos-titlebar {
   display: flex;
   align-items: center;
@@ -439,13 +427,12 @@ button, input { font: inherit; }
 }
 
 
-.mioos-window-body.is-terminal-body { padding: 0; background: #08101a; }
-.mioos-terminal-shell { display: flex; flex-direction: column; min-height: 100%; height: 100%; background: linear-gradient(180deg, #0f1724 0%, #08101a 100%); color: #d3e7ff; }
-.mioos-terminal-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03); }
-.mioos-terminal-toolbar-copy { display: flex; flex-direction: column; gap: 3px; }
-.mioos-terminal-toolbar-copy span { color: rgba(211,231,255,0.78); font-size: 12px; }
-.mioos-terminal-toolbar-actions { display: flex; gap: 8px; }
-.mioos-terminal-toolbar-actions button { border: 1px solid rgba(255,255,255,0.18); border-radius: 6px; background: rgba(255,255,255,0.08); color: #d3e7ff; padding: 6px 10px; }
-.mioos-terminal-meta { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 14px 0; }
-.mioos-terminal-viewport { flex: 1; min-height: 260px; height: 100%; padding: 12px 14px 14px; overflow: hidden; }
-.mioos-terminal-viewport .xterm { height: 100%; }
+.mioos-window-body.is-terminal-body { padding: 0; overflow: hidden; background: #08101a; }
+.mioos-terminal-shell { display: flex; flex-direction: column; width: 100%; height: 100%; min-height: 100%; background: #08101a; color: #d3e7ff; }
+.mioos-terminal-viewport { flex: 1; width: 100%; height: 100%; min-height: 0; padding: 0; }
+.mioos-terminal-viewport .xterm,
+.mioos-terminal-viewport .xterm-viewport,
+.mioos-terminal-viewport .xterm-screen { height: 100%; }
+.mioos-window-resize { position: absolute; right: 0; bottom: 0; width: 18px; height: 18px; padding: 0; border: 0; background: linear-gradient(135deg, transparent 0 40%, rgba(255,255,255,0.38) 40% 48%, transparent 48% 60%, rgba(255,255,255,0.55) 60% 68%, transparent 68%); cursor: nwse-resize; opacity: 0.9; }
+.mioos-window-resize:hover { opacity: 1; }
+.mioos-window.is-maximized .mioos-window-resize { display: none; }

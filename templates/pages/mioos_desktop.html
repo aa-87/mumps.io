@@ -171,26 +171,11 @@
         </template>
         <template v-else-if="win.appKey === 'terminal'">
           <div class="mioos-terminal-shell" data-terminal-surface data-terminal-engine="xtermjs-ydb" data-terminal-renderer="xtermjs" data-terminal-focus="xterm-managed" data-terminal-textarea="xterm-owned" :data-terminal-window="win.id">
-            <div class="mioos-terminal-toolbar">
-              <div class="mioos-terminal-toolbar-copy">
-                <strong>[[ view.terminal.headline ]]</strong>
-                <span>[[ view.terminal.subheadline ]]</span>
-              </div>
-              <div class="mioos-terminal-toolbar-actions">
-                <button type="button" @click="createTerminalWindow">[[ t('terminal.newSession', 'New session') ]]</button>
-                <button type="button" @click="clearTerminalWindow(win.id)">[[ t('terminal.clear', 'Clear') ]]</button>
-              </div>
-            </div>
-            <div class="mioos-terminal-meta">
-              <span class="mioos-badge">[[ terminalStatusText(win) ]]</span>
-              <span class="mioos-badge">[[ (win.terminalState || {}).transport || view.terminal.transport ]]</span>
-              <span class="mioos-badge">[[ view.terminal.engine ]]</span>
-            </div>
             <div class="mioos-terminal-viewport" :id="terminalContainerId(win.id)" data-terminal-viewport="xtermjs"></div>
           </div>
         </template>
       </div>
-      <button type="button" class="mioos-window-resize" :aria-label="t('action.resize', 'Resize window')" @mousedown.stop="beginResize(win, $event)"></button>
+      <button type="button" class="mioos-window-resize" :aria-label="t('action.resize', 'Resize window')" @mousedown.stop.prevent="beginResize(win, $event)"></button>
     </section>
   </main>
 

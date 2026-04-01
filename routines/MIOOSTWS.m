@@ -7,7 +7,7 @@ MESSAGE(DEV,CONF,REQ,CTX)
 	IF '$$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR) DO  QUIT
 	. DO SENDTEXT^MIOWS(.DEV,$$ERRJSON(.STATE,"session_error",$GET(ERR("error")),""))
 	IF $$EVENTJSON(.CONF,.REQ,.CTX,.STATE,$GET(CTX("payload")),.RESP,.ERR) DO  QUIT
-	. IF $GET(RESP)'="" DO SENDTEXT^MIOWS(.DEV,RESP)
+	. DO SENDTEXT^MIOWS(.DEV,RESP)
 	DO SENDTEXT^MIOWS(.DEV,$$ERRJSON(.STATE,$GET(ERR("error"),"terminal_event_error"),$GET(ERR("detail")),$GET(ERR("requestId"))))
 	QUIT
 	;
@@ -35,6 +35,7 @@ EVENTJSON(CONF,REQ,CTX,STATE,PAYLOAD,OUTJSON,ERR)
 	. SET OUTJSON=$$TERMEVTJSON(.STATE,"terminal.stdout",.OUT,REQID)
 	IF EVT="terminal.poll"!(EVT="terminal.drain")!(EVT="ping.terminal") DO  QUIT $SELECT($GET(ERR("error"))="":1,1:0)
 	. IF '$$POLL^MIOOSTERM(.STATE,.CONF,$GET(TREE("terminalId")),.OUT,.ERR) QUIT
+	. IF +$GET(OUT("writeCount"))<1,+$GET(OUT("closed"))'=1 SET OUTJSON="" QUIT
 	. SET OUT("windowId")=$GET(TREE("windowId"))
 	. SET OUTJSON=$$TERMEVTJSON(.STATE,"terminal.stdout",.OUT,REQID)
 	IF EVT="terminal.resize" DO  QUIT $SELECT($GET(ERR("error"))="":1,1:0)

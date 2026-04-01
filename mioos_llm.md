@@ -123,15 +123,13 @@ The current recommended sequence is:
 
 - ROI 3 — docs, i18n/RTL, accessibility/performance baseline, frontend split
 - ROI 4 — xterm.js terminal foundation
-- ROI 4 delivered the xterm.js terminal foundation.
-- ROI 5 delivered the YottaDB pipe-backed terminal baseline.
-- ROI 6 is the current hardening pass for terminal resilience, reconnect behavior, empty-line safety, and viewport fitting.
+- ROI 4 is the current landed baseline for terminal work. ROI 5 should harden durability, reconnect, resume, and session longevity.
 - ROI 5 — dependable multi-session terminal and reconnect/reattach posture
-- ROI 7 — global-backed virtual file system foundation
-- ROI 8 — explorer and file associations
-- ROI 9 — shell polish, motion, snapping, and “wow” details
-- ROI 10 — chat / users / groups / rooms
-- ROI 11 — production-ready MUMPS debugger
+- ROI 6 — global-backed virtual file system foundation
+- ROI 7 — explorer and file associations
+- ROI 8 — shell polish, motion, snapping, and “wow” details
+- ROI 9 — chat / users / groups / rooms
+- ROI 10 — production-ready MUMPS debugger
 
 ## Testing posture
 
@@ -153,32 +151,26 @@ Keep tests:
 - Updated the browser terminal module to poll active terminal windows over the primary websocket.
 
 
-- Multi-window terminal allocation follows the MIOMOS pattern: new terminal windows must call `terminal.open` with `terminalId="__new__"` on first open so each window gets a distinct pipe-backed YottaDB session. Reusing an existing `terminalId` is only for reattach/restore.
+## ROI 6 — core socket plus dedicated terminal sockets
+- The desktop now treats the primary `/ws/mioos` socket as the shell/control channel.
+- Terminal windows use a separate dedicated websocket at `/ws/mioos/terminal`.
+- Each terminal window now re-binds to its own terminal-specific websocket URL, for example `/ws/mioos/terminal?terminalId=<uuid>&windowId=<id>`, after the terminal is created.
+- The browser terminal no longer relies on a continuous `terminal.poll` loop for normal typing and command execution.
+- The browser terminal sends raw `data` frames and lets the YottaDB session own visible echo/output, which reduces malformed duplicate rendering.
+- Terminal writes are normalized and batched before being flushed into xterm to reduce malformed line rendering and repaint churn.
+- `MIOOSTWS` resolves `terminalId` and `windowId` from either message payloads or websocket query parameters, which lays the groundwork for future debugger-specific sockets too.
 
 
-## Terminal hardening update
+- Terminal browser path realigned to the working MIOMOS model: one core websocket for shell commands/events, with xterm line handling and controlled terminal polling. Dedicated per-terminal websocket experiments should be treated as deferred until the MIOMOS-equivalent path is fully stable.
 
-- Dedicated terminal websocket sessions now use keepalive pings and reconnect backoff.
-- Browser terminal input normalizes lone Enter as LF so empty new lines do not destabilize the socket.
-- Terminal viewport fitting now uses ResizeObserver-based refit behavior for cleaner dimensions inside the window chrome.
 
-## ROI 6 — Terminal hardening and resilience
+## Terminal reset note
+- Reset MIOOS terminal handling to mirror the working MIOMOS model: one core websocket, promise-based command bus, xterm local line editing, and MIOMOSTPIPE-style pipe session lifecycle adapted into MIOOSTPIPE.
 
-This ROI hardens the active terminal application without changing the standing backend test contract.
 
-Delivered goals:
-- normalize Enter and empty-line submission more safely
-- improve websocket keepalive behavior
-- queue outbound terminal events while reconnecting
-- tighten terminal fit and resize behavior in the browser
-- reduce terminal UI clutter while preserving the XP-style shell language
-
-Implementation notes:
-- keep the passing `MIOOST` contract intact while strengthening browser/runtime behavior
-- treat empty newlines as valid terminal input, not a disconnect condition
-- preserve compatibility with the existing MIOMOSTPIPE-backed terminal backend
-- prefer incremental hardening over architectural churn until the browser terminal is stable again
-
-Follow-up after ROI 6:
-- continue terminal hardening around long-lived sessions, reconnect/resume, and backpressure
-- after the terminal is stable in-browser, move to the VFS foundation ROI
+## ROI 7 — adaptive terminal polling and drain posture
+- Lowered terminal latency by moving the browser from a coarse fixed poll to an adaptive poll cadence.
+- Active terminals now poll aggressively after input, output, open, and resize, then back off during warm and deep idle periods.
+- Added a one-in-flight poll guard per terminal window so the browser never stacks overlapping terminal polls.
+- Dedicated terminal websocket poll events now suppress empty `terminal.stdout` envelopes when no bytes were drained, which reduces noisy idle traffic and repaint churn.
+- This ROI is intentionally performance-focused and keeps the current source-of-truth terminal architecture intact rather than introducing a new socket model.

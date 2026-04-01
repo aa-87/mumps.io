@@ -14,6 +14,10 @@
       transport: 'pipe',
       seq: 0,
       busy: false,
+      pollInFlight: false,
+      lastActivityAt: 0,
+      lastOutputAt: 0,
+      lastPollAt: 0,
       status: 'Terminal idle',
       loadError: '',
       profile: {}
@@ -185,27 +189,47 @@
           state.inputLine += chunk; if (win._term) win._term.write(chunk); i += 1;
         }
       },
+      markTerminalActive: function (winId) {
+        var state = this.ensureTerminalState(winId), now = Date.now();
+        state.lastActivityAt = now;
+        if (!state.lastOutputAt) state.lastOutputAt = now;
+      },
+      terminalPollDelay: function (winId) {
+        var state = this.ensureTerminalState(winId), now = Date.now(), ref = Math.max(state.lastActivityAt || 0, state.lastOutputAt || 0), age = ref ? (now - ref) : 999999;
+        if (state.busy || state.pollInFlight) return 35;
+        if (age < 1200) return 25;
+        if (age < 5000) return 75;
+        return 180;
+      },
       startTerminalPolling: function () {
         var self = this;
         if (this.terminalPollTimer) return;
-        this.terminalPollTimer = window.setInterval(function () {
+        function tick() {
+          var nextDelay = 180;
           self.windows.forEach(function (win) {
-            var state;
+            var state, delay;
             if (!win || win.appKey !== 'terminal' || win.state === 'closed' || win.state === 'minimized') return;
             state = self.ensureTerminalState(win.id);
-            if (!state.terminalId || state.busy) return;
+            delay = self.terminalPollDelay(win.id);
+            if (delay < nextDelay) nextDelay = delay;
+            if (!state.terminalId || state.busy || state.pollInFlight) return;
+            if ((Date.now() - (state.lastPollAt || 0)) < delay) return;
             self.pollTerminal(win.id);
           });
-        }, 2000);
+          self.terminalPollTimer = window.setTimeout(tick, nextDelay);
+        }
+        this.terminalPollTimer = window.setTimeout(tick, 25);
       },
-      stopTerminalPolling: function () { if (this.terminalPollTimer) window.clearInterval(this.terminalPollTimer); this.terminalPollTimer = null; },
+      stopTerminalPolling: function () { if (this.terminalPollTimer) window.clearTimeout(this.terminalPollTimer); this.terminalPollTimer = null; },
       openTerminal: function (winId, forceNew) {
         var self = this, state = this.ensureTerminalState(winId), grid = this.computeTerminalGrid(winId), payload = { terminalId: forceNew ? '__new__' : (state.terminalId || ''), cols: grid.cols, rows: grid.rows };
         this.ensureXtermMounted(winId);
         state.busy = true; state.status = 'Opening terminal...';
+        this.markTerminalActive(winId);
         return this.command('terminal.open', payload).then(function (json) {
           self.handleTerminalMessage(winId, (json && json.terminal) || {});
           state.status = 'Terminal ready';
+          self.markTerminalActive(winId);
           self.startTerminalPolling();
           self.resizeTerminal(winId);
           self.focusTerminalWindow(winId);
@@ -219,10 +243,14 @@
       requestTerminalOpen: function (winId, forceNew) { return this.openTerminal(winId, forceNew === true); },
       pollTerminal: function (winId) {
         var self = this, state = this.ensureTerminalState(winId);
-        if (!state.terminalId) return;
+        if (!state.terminalId || state.pollInFlight) return;
+        state.pollInFlight = true;
+        state.lastPollAt = Date.now();
         this.command('terminal.poll', { terminalId: state.terminalId || '' }).then(function (json) {
           self.handleTerminalMessage(winId, (json && json.terminal) || {});
-        }).catch(function () {});
+        }).catch(function () {}).finally(function () {
+          state.pollInFlight = false;
+        });
       },
       submitTerminalLine: function (winId, lineOverride) {
         var self = this, state = this.ensureTerminalState(winId), line = lineOverride != null ? String(lineOverride) : String(state.inputLine || '');
@@ -231,11 +259,13 @@
           return;
         }
         state.busy = true;
+        this.markTerminalActive(winId);
         if (line.trim()) { state.history.push(line); if (state.history.length > 100) state.history = state.history.slice(-100); }
         state.historyIndex = -1; state.inputLine = '';
         this.command('terminal.input', { terminalId: state.terminalId || '', line: line }).then(function (json) {
           self.handleTerminalMessage(winId, (json && json.terminal) || {});
           state.status = 'Terminal live';
+          self.markTerminalActive(winId);
         }).catch(function (err) {
           state.status = 'Terminal input failed';
           self.showAlert(self.t('alerts.terminalCommandFailed.title', 'Terminal command failed'), (err && (err.detail || err.error || err.message)) || self.t('alerts.terminalCommandFailed.message', 'The terminal command did not complete.'));
@@ -244,6 +274,7 @@
       resizeTerminal: function (winId) {
         var self = this, state = this.ensureTerminalState(winId), grid = this.computeTerminalGrid(winId);
         this.ensureXtermMounted(winId); this.resizeXtermClient(winId, grid.cols, grid.rows);
+        this.markTerminalActive(winId);
         if (!state.terminalId) return;
         this.command('terminal.resize', { terminalId: state.terminalId || '', cols: grid.cols, rows: grid.rows }).then(function (json) {
           self.handleTerminalMessage(winId, (json && json.terminal) || {});
@@ -271,7 +302,7 @@
         }).catch(function () {}).finally(function () { finalize(); });
       },
       handleTerminalMessage: function (winId, msg) {
-        var state = this.ensureTerminalState(winId), win = this.getWindowById(winId), writes = [];
+        var state = this.ensureTerminalState(winId), win = this.getWindowById(winId), writes = [], writeCount = 0;
         if (!win) return;
         if (msg.terminalId) state.terminalId = msg.terminalId;
         if (msg.prompt) state.prompt = msg.prompt;
@@ -280,10 +311,15 @@
         if (msg.seq != null) state.seq = Number(msg.seq || 0);
         if (msg.clear) { state.transcript = ''; if (win._term && win._term.reset) win._term.reset(); }
         if (Array.isArray(msg.write)) writes = msg.write; else if (msg.write) Object.keys(msg.write).sort(function (a, b) { return Number(a) - Number(b); }).forEach(function (k) { writes.push(msg.write[k]); });
+        writeCount = Number(msg.writeCount || writes.length || 0);
         if (msg.profile) state.profile = clone(msg.profile);
         this.ensureXtermMounted(winId);
         if (msg.profile) this.applyXtermProfile(winId);
         writes.forEach(function (chunk) { this.appendTerminalChunk(winId, chunk || ''); }, this);
+        if (writeCount > 0) {
+          state.lastOutputAt = Date.now();
+          state.lastActivityAt = state.lastOutputAt;
+        }
         if (msg.closed) state.status = 'Terminal closed'; else if (state.terminalId) state.status = 'Terminal live';
       },
       handleTerminalCommandResult: function (msg) {
