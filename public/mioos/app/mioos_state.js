@@ -15,7 +15,7 @@
     return {
       product: { name: 'MIOOS', subtitle: '', profile: 'dev', version: '' },
       user: { id: 'guest', displayName: 'Guest', authenticated: false, roles: [] },
-      session: { id: 'mioos-shell', transportModel: 'single-websocket-command-and-events' },
+      session: { id: 'mioos-shell', transportModel: 'core-websocket-plus-app-websockets' },
       locale: { code: 'en', dir: 'ltr', label: 'English', rtl: false, supported: defaultLocales() },
       i18n: { strings: {} },
       routes: {
@@ -26,6 +26,7 @@
         signout: '/api/mioos/auth/signout',
         guestSignin: '/api/mioos/auth/guest',
         websocket: '/ws/mioos',
+        terminalWebsocket: '/ws/mioos/terminal',
         commandEvent: 'desktop.command',
         commandResultEvent: 'desktop.result',
         commandErrorEvent: 'desktop.error'
@@ -42,7 +43,7 @@
         startMenuStyle: 'xp-two-column',
         windowManager: 'mioos-native-vue-css',
         commandTransport: 'websocket-only',
-        realtimeContract: 'single-websocket-command-and-events',
+        realtimeContract: 'core-websocket-plus-app-websockets',
         themes: [],
         accessibility: {
           rtl: false,
@@ -58,6 +59,27 @@
         }
       },
       auth: { enabled: false, required: false, guestLoginEnabled: false, mode: 'anonymous' },
+      terminal: {
+        enabled: true,
+        engine: 'xtermjs',
+        transport: 'pipe',
+        commandTransport: 'dedicated-websocket',
+        sessionModel: 'multi-window-ydb-direct',
+        websocketPath: '/ws/mioos/terminal',
+        websocketPollMs: 250,
+        maxSessionsPerUser: 8,
+        profile: {
+          fontFamily: 'Consolas',
+          fontSize: 14,
+          cursorBlink: true,
+          cursorStyle: 'block',
+          scrollback: 2500,
+          renderer: 'canvas',
+          unicode: 'unicode11',
+          rows: 28,
+          cols: 112
+        }
+      },
       apps: [],
       windows: []
     };
@@ -76,7 +98,17 @@
       },
       documents: [],
       controlPanel: [],
-      terminal: { status: 'ready', transport: 'websocket', headline: 'Terminal ready', subheadline: '' }
+      terminal: {
+        status: 'ready',
+        transport: 'pipe',
+        engine: 'xtermjs',
+        renderer: 'canvas',
+        sessionModel: 'multi-window-ydb-direct',
+        headline: 'MIOOS YottaDB terminal ready',
+        subheadline: '',
+        profile: { fontFamily: 'Consolas', fontSize: 14, rows: 28, cols: 112 },
+        sessions: []
+      }
     };
   }
 
@@ -95,6 +127,8 @@
     base.desktop.accessibility = Object.assign(base.desktop.accessibility, (boot.desktop || {}).accessibility || {});
     base.desktop.performance = Object.assign(base.desktop.performance, (boot.desktop || {}).performance || {});
     base.auth = Object.assign(base.auth, boot.auth || {});
+    base.terminal = Object.assign(base.terminal, boot.terminal || {});
+    base.terminal.profile = Object.assign(base.terminal.profile, (boot.terminal || {}).profile || {});
     base.apps = Array.isArray(boot.apps) ? deepClone(boot.apps) : [];
     base.windows = Array.isArray(boot.windows) ? deepClone(boot.windows) : [];
     base.locale.supported = Array.isArray((boot.locale || {}).supported) ? deepClone(boot.locale.supported) : defaultLocales();
@@ -108,6 +142,8 @@
     base.documents = Array.isArray(view.documents) ? deepClone(view.documents) : [];
     base.controlPanel = Array.isArray(view.controlPanel) ? deepClone(view.controlPanel) : [];
     base.terminal = Object.assign(base.terminal, view.terminal || {});
+    base.terminal.profile = Object.assign(base.terminal.profile, (view.terminal || {}).profile || {});
+    base.terminal.sessions = Array.isArray((view.terminal || {}).sessions) ? deepClone(view.terminal.sessions) : [];
     return base;
   }
 

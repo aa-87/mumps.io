@@ -123,6 +123,7 @@ The current recommended sequence is:
 
 - ROI 3 — docs, i18n/RTL, accessibility/performance baseline, frontend split
 - ROI 4 — xterm.js terminal foundation
+- ROI 4 is the current landed baseline for terminal work. ROI 5 should harden durability, reconnect, resume, and session longevity.
 - ROI 5 — dependable multi-session terminal and reconnect/reattach posture
 - ROI 6 — global-backed virtual file system foundation
 - ROI 7 — explorer and file associations
@@ -140,3 +141,28 @@ Keep tests:
 - explicit on failure
 - focused on contracts and regressions
 - able to validate locale, accessibility, performance, and doc presence where reasonable
+
+
+## ROI 5 — YottaDB pipe terminal
+- Replaced the simulated terminal foundation with a real `yottadb -direct` PIPE-backed terminal session model.
+- Added `MIOOSPIPE` for websocket-owned terminal lifecycle, I/O, drain, poll, resize, close, and stale-session purge.
+- Updated `MIOOSTERM` to present xterm.js profile data while delegating session work to the PIPE layer.
+- Updated websocket command handling to support `terminal.poll` and to keep the browser aligned with pipe transport.
+- Updated the browser terminal module to poll active terminal windows over the primary websocket.
+
+
+## ROI 6 — core socket plus dedicated terminal sockets
+- The desktop now treats the primary `/ws/mioos` socket as the shell/control channel.
+- Terminal windows use a separate dedicated websocket at `/ws/mioos/terminal`.
+- Each terminal window now re-binds to its own terminal-specific websocket URL, for example `/ws/mioos/terminal?terminalId=<uuid>&windowId=<id>`, after the terminal is created.
+- The browser terminal no longer relies on a continuous `terminal.poll` loop for normal typing and command execution.
+- The browser terminal sends raw `data` frames and lets the YottaDB session own visible echo/output, which reduces malformed duplicate rendering.
+- Terminal writes are normalized and batched before being flushed into xterm to reduce malformed line rendering and repaint churn.
+- `MIOOSTWS` resolves `terminalId` and `windowId` from either message payloads or websocket query parameters, which lays the groundwork for future debugger-specific sockets too.
+
+
+- Terminal browser path realigned to the working MIOMOS model: one core websocket for shell commands/events, with xterm line handling and controlled terminal polling. Dedicated per-terminal websocket experiments should be treated as deferred until the MIOMOS-equivalent path is fully stable.
+
+
+## Terminal reset note
+- Reset MIOOS terminal handling to mirror the working MIOMOS model: one core websocket, promise-based command bus, xterm local line editing, and MIOMOSTPIPE-style pipe session lifecycle adapted into MIOOSTPIPE.

@@ -34,7 +34,15 @@ BUILD(STATE,CONF,VIEW)
 	. SET AUTHTXT=$$TXT^MIOOSI18N(CODE,"auth.state.guest","Desktop available without sign-in")
 	SET VIEW("controlPanel",4,"detail")=AUTHTXT
 	SET VIEW("terminal","status")="ready"
-	SET VIEW("terminal","transport")="single-websocket-command-and-events"
-	SET VIEW("terminal","headline")=$$TXT^MIOOSI18N(CODE,"terminal.headline","MUMPS terminal path ready")
-	SET VIEW("terminal","subheadline")=$$TXT^MIOOSI18N(CODE,"terminal.subheadline","Open the window from the taskbar or Menu; live shell transport belongs on the websocket boundary.")
+	SET VIEW("terminal","transport")=$GET(STATE("terminal","transport"),"pipe")
+	SET VIEW("terminal","engine")=$GET(STATE("terminal","engine"),"xtermjs")
+	SET VIEW("terminal","renderer")=$GET(STATE("terminal","renderer"),"canvas")
+	SET VIEW("terminal","sessionModel")=$GET(STATE("terminal","sessionModel"),"multi-window-ydb-direct")
+	SET VIEW("terminal","headline")=$$TXT^MIOOSI18N(CODE,"terminal.headline","MIOOS YottaDB terminal ready")
+	SET VIEW("terminal","subheadline")=$$TXT^MIOOSI18N(CODE,"terminal.subheadline","Open Terminal from the desktop or Menu. Each window attaches to its own YottaDB pipe session over the primary websocket.")
+	SET VIEW("terminal","profile","fontFamily")=$GET(STATE("terminal","fontFamily"),"Consolas")
+	SET VIEW("terminal","profile","fontSize")=+$GET(STATE("terminal","fontSize"),14)
+	SET VIEW("terminal","profile","rows")=+$GET(STATE("terminal","rows"),28)
+	SET VIEW("terminal","profile","cols")=+$GET(STATE("terminal","cols"),112)
+	DO LIST^MIOOSTERM(.STATE,$NAME(VIEW("terminal","sessions")))
 	QUIT

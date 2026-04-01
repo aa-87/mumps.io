@@ -8,6 +8,7 @@
     var Auth = (window.MIOOSAuth || {}).methods || {};
     var WS = (window.MIOOSWSClient || {}).methods || {};
     var WM = (window.MIOOSWM || {}).methods || {};
+    var Terminal = (window.MIOOSTerminal || {}).methods || {};
     var I18N = window.MIOOSI18N || {};
 
     var app = window.Vue.createApp({
@@ -41,7 +42,13 @@
           authForm: {
             username: 'admin',
             password: 'admin123!'
-          }
+          },
+          commandSeq: 0,
+          socketRequestSeq: 0,
+          socketPending: {},
+          pendingCommands: {},
+          terminalWindowSeq: 0,
+          terminalPollTimer: null
         };
       },
       computed: {
@@ -80,6 +87,7 @@
         this.startClock();
         this.refreshView();
         this.initSocket();
+        if (this.startTerminalPolling) this.startTerminalPolling();
         this._dragMove = this.onDragMove.bind(this);
         this._dragEnd = this.endDrag.bind(this);
         window.addEventListener('mousemove', this._dragMove);
@@ -88,9 +96,13 @@
       beforeUnmount: function () {
         if (this.clockTimer) window.clearInterval(this.clockTimer);
         if (this.pingTimer) window.clearInterval(this.pingTimer);
+        if (this.terminalPollTimer) window.clearInterval(this.terminalPollTimer);
         if (this.socket) this.socket.close();
         window.removeEventListener('mousemove', this._dragMove);
         window.removeEventListener('mouseup', this._dragEnd);
+        this.windows.forEach(function (win) {
+          if (win._term) win._term.dispose();
+        });
       },
       methods: Object.assign({
         bootstrapFromDom: function () {
@@ -125,8 +137,17 @@
         },
         changeLocale: function (code) {
           if (I18N.changeLocale) I18N.changeLocale(this, code);
+        },
+        terminalStatusText: function (win) {
+          if (Terminal && typeof Terminal.terminalStatusText === 'function') {
+            return Terminal.terminalStatusText.call(this, win);
+          }
+          if (Terminal && typeof Terminal.methods === 'object' && typeof Terminal.methods.terminalStatusText === 'function') {
+            return Terminal.methods.terminalStatusText.call(this, win);
+          }
+          return (((win || {}).terminalState || {}).status) || this.t('terminal.status.ready', 'Terminal idle');
         }
-      }, Auth, WS, WM)
+      }, Auth, WS, WM, Terminal)
     });
 
     app.config.compilerOptions.delimiters = ['[[', ']]'];

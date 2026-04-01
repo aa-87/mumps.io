@@ -4,9 +4,9 @@ MIOOSWS ; MIOOS websocket handlers
 MESSAGE(DEV,CONF,REQ,CTX)
 	NEW STATE,ERR,RESP,EVT,VIEW
 	SET CTX("ws","keep_open")=1
-	SET EVT=$$EVENT($GET(CTX("payload")))
 	IF '$$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR) DO  QUIT
-	. DO SENDTEXT^MIOWS(.DEV,$$ERRJSON("session_error",$GET(ERR("error"),"session_error")))
+	. DO SENDTEXT^MIOWS(.DEV,$$ERRJSON(.STATE,"session_error",$GET(ERR("error"),"session_error"),""))
+	SET EVT=$$EVENT($GET(CTX("payload")))
 	IF EVT="hello" DO  QUIT
 	. SET RESP=$$HELLOJSON(.STATE,.CONF)
 	. DO SENDTEXT^MIOWS(.DEV,RESP)
@@ -19,11 +19,79 @@ MESSAGE(DEV,CONF,REQ,CTX)
 	. DO SENDTEXT^MIOWS(.DEV,RESP)
 	IF EVT="shell.open" DO  QUIT
 	. IF +$GET(STATE("authRequired"),0)=1,+$GET(STATE("authenticated"),0)'=1 DO
-	. . DO SENDTEXT^MIOWS(.DEV,$$ERRJSON("login_required","shell.open"))
+	. . DO SENDTEXT^MIOWS(.DEV,$$ERRJSON(.STATE,"login_required","shell.open",""))
 	. . QUIT
-	. DO SENDTEXT^MIOWS(.DEV,$$ACKJSON("shell.open",$$FIELD($GET(CTX("payload")),"appKey")))
-	DO SENDTEXT^MIOWS(.DEV,$$ERRJSON("unsupported_event",EVT))
+	. DO SENDTEXT^MIOWS(.DEV,$$ACKJSON(.STATE,"shell.open",$$FIELD($GET(CTX("payload")),"appKey")))
+	IF EVT="desktop.command"!(EVT="command.exec") DO  QUIT
+	. IF $$COMMANDJSON(.CONF,.REQ,.CTX,.STATE,$GET(CTX("payload")),.RESP,.ERR) DO
+	. . DO SENDTEXT^MIOWS(.DEV,RESP)
+	. ELSE  DO
+	. . DO SENDTEXT^MIOWS(.DEV,$$CMDERRJSON(.STATE,$GET(ERR("requestId")),$GET(ERR("command")),500,$GET(ERR("error"),"command_error"),$GET(ERR("detail"))))
+	DO SENDTEXT^MIOWS(.DEV,$$ERRJSON(.STATE,"unsupported_event",EVT,""))
 	QUIT
+	;
+COMMANDJSON(CONF,REQ,CTX,STATE,PAYLOAD,OUTJSON,ERR)
+	NEW TREE,CMD,REQID
+	KILL ERR
+	SET ERR("routine")="MIOOSWS"
+	IF '$$DECODE^MIOJSON($GET(PAYLOAD),.TREE,.ERR) SET ERR("error")="payload_invalid_json" QUIT 0
+	SET CMD=$GET(TREE("command"))
+	SET REQID=$GET(TREE("requestId"))
+	SET ERR("requestId")=REQID,ERR("command")=CMD
+	IF CMD="" SET ERR("error")="command_missing" QUIT 0
+	IF +$GET(STATE("authRequired"),0)=1,+$GET(STATE("authenticated"),0)'=1 DO  QUIT 0
+	. SET ERR("error")="login_required",ERR("detail")=CMD
+	IF CMD="terminal.open"!(CMD="terminal.attach") QUIT $$CMDOPEN(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
+	IF CMD="terminal.input" QUIT $$CMDINPUT(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
+	IF CMD="terminal.poll" QUIT $$CMDPOLL(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
+	IF CMD="terminal.resize" QUIT $$CMDRESIZE(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
+	IF CMD="terminal.close" QUIT $$CMDCLOSE(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
+	IF CMD="terminal.list" QUIT $$CMDLIST(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
+	SET ERR("error")="command_unsupported",ERR("detail")=CMD
+	QUIT 0
+	;
+CMDOPEN(STATE,CONF,TREE,OUTJSON,ERR)
+	NEW OUT,SZ
+	IF '$$OPEN^MIOOSTERM(.STATE,.CONF,$GET(TREE("terminalId")),.OUT,.ERR) QUIT 0
+	IF +$GET(TREE("cols"))>0!(+$GET(TREE("rows"))>0) DO
+	. IF $$RESIZE^MIOOSTERM(.STATE,.CONF,$GET(OUT("terminalId")),+$GET(TREE("cols")),+$GET(TREE("rows")),.SZ,.ERR) MERGE OUT=SZ
+	SET OUT("windowId")=$GET(TREE("windowId"))
+	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"terminal.open","terminal",.OUT)
+	QUIT 1
+	;
+CMDINPUT(STATE,CONF,TREE,OUTJSON,ERR)
+	NEW OUT
+	IF '$$INPUT^MIOOSTERM(.STATE,.CONF,$GET(TREE("terminalId")),$GET(TREE("line")),.OUT,.ERR) QUIT 0
+	SET OUT("windowId")=$GET(TREE("windowId"))
+	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"terminal.input","terminal",.OUT)
+	QUIT 1
+	;
+CMDPOLL(STATE,CONF,TREE,OUTJSON,ERR)
+	NEW OUT
+	IF '$$POLL^MIOOSTERM(.STATE,.CONF,$GET(TREE("terminalId")),.OUT,.ERR) QUIT 0
+	SET OUT("windowId")=$GET(TREE("windowId"))
+	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"terminal.poll","terminal",.OUT)
+	QUIT 1
+	;
+CMDRESIZE(STATE,CONF,TREE,OUTJSON,ERR)
+	NEW OUT
+	IF '$$RESIZE^MIOOSTERM(.STATE,.CONF,$GET(TREE("terminalId")),+$GET(TREE("cols")),+$GET(TREE("rows")),.OUT,.ERR) QUIT 0
+	SET OUT("windowId")=$GET(TREE("windowId"))
+	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"terminal.resize","terminal",.OUT)
+	QUIT 1
+	;
+CMDCLOSE(STATE,CONF,TREE,OUTJSON,ERR)
+	NEW OUT
+	IF '$$CLOSE^MIOOSTERM(.STATE,.CONF,$GET(TREE("terminalId")),.OUT,.ERR) QUIT 0
+	SET OUT("windowId")=$GET(TREE("windowId"))
+	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"terminal.close","terminal",.OUT)
+	QUIT 1
+	;
+CMDLIST(STATE,CONF,TREE,OUTJSON,ERR)
+	NEW OUT
+	DO LIST^MIOOSTERM(.STATE,$NAME(OUT("sessions")))
+	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"terminal.list","terminal",.OUT)
+	QUIT 1
 	;
 EVENT(PAYLOAD)
 	NEW TREE,ERR
@@ -52,7 +120,9 @@ HELLOJSON(STATE,CONF)
 	SET OBJ("localeDir")=$GET(STATE("localeDir"),"ltr")
 	SET OBJ("commandEvent")=$GET(STATE("commandEvent"),"desktop.command")
 	SET OBJ("commandResultEvent")=$GET(STATE("commandResultEvent"),"desktop.result")
-	SET OBJ("realtimeContract")=$GET(STATE("transportModel"),"single-websocket-command-and-events")
+	SET OBJ("realtimeContract")=$GET(STATE("transportModel"),"core-websocket-plus-app-websockets")
+	SET OBJ("terminalEngine")=$GET(STATE("terminal","engine"),"xtermjs")
+	SET OBJ("terminalTransport")=$GET(STATE("terminal","transport"),"pipe")
 	QUIT $$EN^MIOJSON1(.OBJ)
 	;
 PONGJSON(STATE)
@@ -72,18 +142,43 @@ VIEWJSON(STATE,VIEW)
 	MERGE OBJ("view")=VIEW
 	QUIT $$EN^MIOJSON1(.OBJ)
 	;
-ACKJSON(EVENT,VALUE)
+ACKJSON(STATE,EVENT,VALUE)
 	NEW OBJ
 	SET OBJ("event")=$GET(EVENT)
 	SET OBJ("ok")=1
 	SET OBJ("value")=$GET(VALUE)
+	SET OBJ("sessionId")=$GET(STATE("sessionId"))
 	QUIT $$EN^MIOJSON1(.OBJ)
 	;
-ERRJSON(CODE,DETAIL)
+CMDOKJSON(STATE,REQID,CMD,ROOT,OUT)
+	NEW OBJ
+	SET OBJ("event")=$GET(STATE("commandResultEvent"),"desktop.result")
+	SET OBJ("ok")=1
+	SET OBJ("requestId")=$GET(REQID)
+	SET OBJ("command")=$GET(CMD)
+	SET OBJ("sessionId")=$GET(STATE("sessionId"))
+	MERGE OBJ($GET(ROOT,"result"))=OUT
+	QUIT $$EN^MIOJSON1(.OBJ)
+	;
+CMDERRJSON(STATE,REQID,CMD,STATUS,CODE,DETAIL)
+	NEW OBJ
+	SET OBJ("event")=$GET(STATE("commandErrorEvent"),"desktop.error")
+	SET OBJ("ok")=0
+	SET OBJ("requestId")=$GET(REQID)
+	SET OBJ("command")=$GET(CMD)
+	SET OBJ("status")=+$GET(STATUS,400)
+	SET OBJ("error")=$GET(CODE)
+	SET OBJ("detail")=$GET(DETAIL)
+	SET OBJ("routine")="MIOOSWS"
+	QUIT $$EN^MIOJSON1(.OBJ)
+	;
+ERRJSON(STATE,CODE,DETAIL,REQID)
 	NEW OBJ
 	SET OBJ("event")="error"
 	SET OBJ("ok")=0
 	SET OBJ("error")=$GET(CODE)
 	SET OBJ("detail")=$GET(DETAIL)
+	SET OBJ("requestId")=$GET(REQID)
+	SET OBJ("sessionId")=$GET(STATE("sessionId"))
 	SET OBJ("routine")="MIOOSWS"
 	QUIT $$EN^MIOJSON1(.OBJ)

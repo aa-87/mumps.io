@@ -1,11 +1,13 @@
 <script id="mioosBootJson" type="application/json">{{{bootJson}}}</script>
 <div hidden id="mioosContractTokens"
-  data-mioos-single-socket="1"
+  data-mioos-core-socket="1"
+  data-mioos-app-sockets="1"
   data-mioos-native-shell="1"
   data-mioos-command-event="{{commandEvent}}"
   data-mioos-command-result-event="{{commandResultEvent}}"
+  data-mioos-terminal-command-transport="dedicated-websocket"
   data-mioos-command-transport="websocket-only"
-  data-mioos-realtime-contract="single-websocket-command-and-events"
+  data-mioos-realtime-contract="core-websocket-plus-app-websockets"
   data-mioos-route-rebuild="REG^MIOOS+COMPILE^MIOROUTE"
   data-mioos-signin="{{signinPath}}"
   data-mioos-signout="{{signoutPath}}"
@@ -24,6 +26,7 @@
   data-mioos-root
   data-mioos-session="{{sessionId}}"
   data-mioos-ws="{{wsPath}}"
+  data-mioos-terminal-ws="{{wsTerminalPath}}"
   data-mioos-bootstrap="{{bootstrapPath}}"
   data-mioos-view="{{viewPath}}"
   data-mioos-signin="{{signinPath}}"
@@ -31,6 +34,7 @@
   data-mioos-guest-signin="{{guestSigninPath}}"
   data-mioos-command-event="{{commandEvent}}"
   data-mioos-command-result-event="{{commandResultEvent}}"
+  data-mioos-terminal-command-transport="dedicated-websocket"
   data-shell-chrome="winxp"
   data-taskbar-style="xp-professional"
   data-start-menu-style="xp-two-column"
@@ -81,7 +85,7 @@
           <span aria-hidden="true">🔎</span>
           <input v-model="menuFilter" type="text" :placeholder="t('search.placeholder')" :aria-label="t('search.placeholder')">
         </label>
-        <button v-for="entry in filteredEntries" :key="entry.key" type="button" class="mioos-start-entry" @click="openApp(entry.key)">
+        <button v-for="entry in filteredEntries" :key="entry.key" type="button" class="mioos-start-entry" :data-launch-app="entry.key" @click="openApp(entry.key)">
           <span class="mioos-entry-icon">[[ entry.icon ]]</span>
           <span class="mioos-entry-copy"><strong>[[ entry.title ]]</strong><em>[[ entry.subtitle ]]</em></span>
         </button>
@@ -121,7 +125,7 @@
 
   <main class="mioos-desktop" @click="menuOpen=false">
     <section class="mioos-desktop-icons" :aria-label="t('desktop.icons')">
-      <button v-for="entry in desktopEntries" :key="entry.key" type="button" class="mioos-desktop-icon" @dblclick="openApp(entry.key)" @keydown.enter.prevent="openApp(entry.key)">
+      <button v-for="entry in desktopEntries" :key="entry.key" type="button" class="mioos-desktop-icon" :data-launch-app="entry.key" @dblclick="openApp(entry.key)" @keydown.enter.prevent="openApp(entry.key)">
         <span class="mioos-entry-icon">[[ entry.icon ]]</span>
         <span class="mioos-entry-title">[[ entry.title ]]</span>
       </button>
@@ -139,7 +143,7 @@
           <button type="button" :title="t('action.close')" :aria-label="t('action.close')" @click.stop="closeWindow(win.id)">×</button>
         </div>
       </header>
-      <div class="mioos-window-body">
+      <div class="mioos-window-body" :class="{ 'is-terminal-body': win.appKey === 'terminal' }">
         <template v-if="win.appKey === 'my-computer'">
           <div class="mioos-panel-head">
             <strong>[[ view.summary.headline ]]</strong>
@@ -166,13 +170,23 @@
           </div>
         </template>
         <template v-else-if="win.appKey === 'terminal'">
-          <div class="mioos-terminal-placeholder">
-            <strong>[[ view.terminal.headline ]]</strong>
-            <span>[[ view.terminal.subheadline ]]</span>
-            <div class="mioos-terminal-badges">
-              <span class="mioos-badge">[[ view.terminal.status ]]</span>
-              <span class="mioos-badge">[[ view.terminal.transport ]]</span>
+          <div class="mioos-terminal-shell" data-terminal-surface data-terminal-engine="xtermjs-ydb" data-terminal-renderer="xtermjs" data-terminal-focus="xterm-managed" data-terminal-textarea="xterm-owned" :data-terminal-window="win.id">
+            <div class="mioos-terminal-toolbar">
+              <div class="mioos-terminal-toolbar-copy">
+                <strong>[[ view.terminal.headline ]]</strong>
+                <span>[[ view.terminal.subheadline ]]</span>
+              </div>
+              <div class="mioos-terminal-toolbar-actions">
+                <button type="button" @click="createTerminalWindow">[[ t('terminal.newSession', 'New session') ]]</button>
+                <button type="button" @click="clearTerminalWindow(win.id)">[[ t('terminal.clear', 'Clear') ]]</button>
+              </div>
             </div>
+            <div class="mioos-terminal-meta">
+              <span class="mioos-badge">[[ terminalStatusText(win) ]]</span>
+              <span class="mioos-badge">[[ (win.terminalState || {}).transport || view.terminal.transport ]]</span>
+              <span class="mioos-badge">[[ view.terminal.engine ]]</span>
+            </div>
+            <div class="mioos-terminal-viewport" :id="terminalContainerId(win.id)" data-terminal-viewport="xtermjs"></div>
           </div>
         </template>
       </div>

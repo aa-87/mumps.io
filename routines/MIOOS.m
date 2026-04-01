@@ -14,6 +14,7 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","route","signout"))="" SET CONF("mioos","route","signout")="/api/mioos/auth/signout"
 	IF $GET(CONF("mioos","route","guestSignin"))="" SET CONF("mioos","route","guestSignin")="/api/mioos/auth/guest"
 	IF $GET(CONF("mioos","route","ws"))="" SET CONF("mioos","route","ws")="/ws/mioos"
+	IF $GET(CONF("mioos","route","wsTerminal"))="" SET CONF("mioos","route","wsTerminal")="/ws/mioos/terminal"
 	IF $GET(CONF("mioos","brand","title"))="" SET CONF("mioos","brand","title")="MIOOS"
 	IF $GET(CONF("mioos","brand","subtitle"))="" SET CONF("mioos","brand","subtitle")="MUMPS powered Windows XP style desktop"
 	IF $GET(CONF("mioos","i18n","default"))="" SET CONF("mioos","i18n","default")="en"
@@ -26,7 +27,7 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","desktop","transport","eventName"))="" SET CONF("mioos","desktop","transport","eventName")="desktop.command"
 	IF $GET(CONF("mioos","desktop","transport","resultEvent"))="" SET CONF("mioos","desktop","transport","resultEvent")="desktop.result"
 	IF $GET(CONF("mioos","desktop","transport","errorEvent"))="" SET CONF("mioos","desktop","transport","errorEvent")="desktop.error"
-	IF $GET(CONF("mioos","desktop","transport","model"))="" SET CONF("mioos","desktop","transport","model")="single-websocket-command-and-events"
+	IF $GET(CONF("mioos","desktop","transport","model"))="" SET CONF("mioos","desktop","transport","model")="core-websocket-plus-app-websockets"
 	IF $GET(CONF("mioos","desktop","chrome"))="" SET CONF("mioos","desktop","chrome")="winxp-professional"
 	IF $GET(CONF("mioos","desktop","taskbarStyle"))="" SET CONF("mioos","desktop","taskbarStyle")="xp-professional"
 	IF $GET(CONF("mioos","desktop","startMenuStyle"))="" SET CONF("mioos","desktop","startMenuStyle")="xp-two-column"
@@ -61,6 +62,28 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","bootstrapAuth","guest","password"))="" SET CONF("mioos","bootstrapAuth","guest","password")="guest123!"
 	IF $GET(CONF("mioos","bootstrapAuth","guest","roles"))="" SET CONF("mioos","bootstrapAuth","guest","roles")="guest"
 	IF $GET(CONF("mioos","bootstrapAuth","guest","enabled"))="" SET CONF("mioos","bootstrapAuth","guest","enabled")=1
+	IF $GET(CONF("mioos","terminal","enabled"))="" SET CONF("mioos","terminal","enabled")=1
+	IF $GET(CONF("mioos","terminal","commandTransport"))="" SET CONF("mioos","terminal","commandTransport")="dedicated-websocket"
+	IF $GET(CONF("mioos","terminal","websocket","pollMs"))="" SET CONF("mioos","terminal","websocket","pollMs")=250
+	IF $GET(CONF("mioos","terminal","default","engine"))="" SET CONF("mioos","terminal","default","engine")="xtermjs"
+	IF $GET(CONF("mioos","terminal","default","fontFamily"))="" SET CONF("mioos","terminal","default","fontFamily")="Consolas"
+	IF $GET(CONF("mioos","terminal","default","fontSize"))="" SET CONF("mioos","terminal","default","fontSize")=14
+	IF $GET(CONF("mioos","terminal","default","cursorBlink"))="" SET CONF("mioos","terminal","default","cursorBlink")=1
+	IF $GET(CONF("mioos","terminal","default","cursorStyle"))="" SET CONF("mioos","terminal","default","cursorStyle")="block"
+	IF $GET(CONF("mioos","terminal","default","scrollback"))="" SET CONF("mioos","terminal","default","scrollback")=2500
+	IF $GET(CONF("mioos","terminal","default","renderer"))="" SET CONF("mioos","terminal","default","renderer")="canvas"
+	IF $GET(CONF("mioos","terminal","default","unicode"))="" SET CONF("mioos","terminal","default","unicode")="unicode11"
+	IF $GET(CONF("mioos","terminal","default","rows"))="" SET CONF("mioos","terminal","default","rows")=28
+	IF $GET(CONF("mioos","terminal","default","cols"))="" SET CONF("mioos","terminal","default","cols")=112
+	IF $GET(CONF("mioos","terminal","maxSessionsPerUser"))="" SET CONF("mioos","terminal","maxSessionsPerUser")=8
+	IF $GET(CONF("mioos","terminal","historyLimit"))="" SET CONF("mioos","terminal","historyLimit")=400
+	IF $GET(CONF("mioos","terminal","pipe","command"))="" SET CONF("mioos","terminal","pipe","command")=""
+	IF $GET(CONF("mioos","terminal","pipe","shell"))="" SET CONF("mioos","terminal","pipe","shell")=""
+	IF $GET(CONF("mioos","terminal","pipe","readLimit"))="" SET CONF("mioos","terminal","pipe","readLimit")=16384
+	IF $GET(CONF("mioos","terminal","pipe","readPolls"))="" SET CONF("mioos","terminal","pipe","readPolls")=8
+	IF $GET(CONF("mioos","terminal","pipe","drainPause"))="" SET CONF("mioos","terminal","pipe","drainPause")=.04
+	IF $GET(CONF("mioos","terminal","pipe","reconnectGraceSeconds"))="" SET CONF("mioos","terminal","pipe","reconnectGraceSeconds")=180
+	IF $GET(CONF("mioos","terminal","pipe","sessionIdleSeconds"))="" SET CONF("mioos","terminal","pipe","sessionIdleSeconds")=900
 	IF $GET(CONF("auth","protectMode"))="" SET CONF("auth","protectMode")="route"
 	IF $GET(CONF("auth","mode"))="" SET CONF("auth","mode")="jwt"
 	IF $GET(CONF("auth","jwt","cookieName"))="" SET CONF("auth","jwt","cookieName")=$GET(CONF("mioos","localAuth","tokenCookie"),"mioos_auth")
@@ -95,6 +118,7 @@ REG(CONF)
 	DO ADDM^MIOROUTE("GET","/public/mioos/*","STATIC^MIOOS",.META)
 	KILL WSMETA SET WSMETA("authRequired")=0,WSMETA("wsPersistent")=1
 	DO ADDWSM^MIOROUTE($GET(CONF("mioos","route","ws")),"MESSAGE^MIOOSWS",.WSMETA)
+	DO ADDWSM^MIOROUTE($GET(CONF("mioos","route","wsTerminal")),"MESSAGE^MIOOSTWS",.WSMETA)
 	QUIT
 	;
 STATIC(DEV,CONF,REQ,CTX)

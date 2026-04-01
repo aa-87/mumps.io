@@ -6,12 +6,17 @@
         return entry ? entry.icon : '□';
       },
       openApp: function (appKey) {
-        var win = this.windows.find(function (item) { return item.appKey === appKey; });
-        if (!win) return;
         if (this.requiresSignin) {
           this.showAlert(this.t('alerts.signinRequired.title'), this.t('alerts.signinRequired.open'));
           return;
         }
+        if (appKey === 'terminal' && this.createTerminalWindow) {
+          this.menuOpen = false;
+          this.createTerminalWindow();
+          return;
+        }
+        var win = this.windows.find(function (item) { return item.appKey === appKey; });
+        if (!win) return;
         this.menuOpen = false;
         if (win.state === 'closed' || win.state === 'minimized') {
           win.state = 'normal';
@@ -35,6 +40,10 @@
       closeWindow: function (windowId) {
         var win = this.windows.find(function (item) { return item.id === windowId; });
         if (!win) return;
+        if (win.appKey === 'terminal' && this.closeTerminalWindow) {
+          this.closeTerminalWindow(windowId);
+          return;
+        }
         win.state = 'closed';
         if (this.activeWindowId === windowId) this.activeWindowId = '';
       },
@@ -46,8 +55,16 @@
           return;
         }
         if (win.state === 'minimized' || win.state === 'closed') {
+          var wasTerminal = win.appKey === 'terminal';
           win.state = 'normal';
           this.focusWindow(windowId);
+          if (wasTerminal) {
+            var self = this;
+            this.$nextTick(function () {
+              if (self.mountTerminalWindow) self.mountTerminalWindow(windowId);
+              if (self.requestTerminalOpen) self.requestTerminalOpen(windowId);
+            });
+          }
           return;
         }
         if (this.activeWindowId === windowId) {
@@ -67,6 +84,13 @@
             win.height = win.restore.height;
           }
           win.state = 'normal';
+          if (win.appKey === 'terminal') {
+            var self = this;
+            this.$nextTick(function () {
+              if (self.mountTerminalWindow) self.mountTerminalWindow(windowId);
+              if (self.requestTerminalOpen) self.requestTerminalOpen(windowId);
+            });
+          }
           return;
         }
         win.restore = { left: win.left, top: win.top, width: win.width, height: win.height };
@@ -76,6 +100,7 @@
         win.height = window.innerHeight - 40;
         win.state = 'maximized';
         this.focusWindow(windowId);
+        if (win.appKey === 'terminal' && this.syncTerminalWindow) this.syncTerminalWindow(windowId);
       },
       toggleMenu: function () {
         this.menuOpen = !this.menuOpen;

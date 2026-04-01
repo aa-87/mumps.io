@@ -37,5 +37,17 @@ Use the language controls in the start menu side panel. Arabic switches the shel
 
 ## Current limitations
 
-- terminal is still a placeholder shell surface in this ROI
+- terminal is a foundation shell surface in this ROI, but reconnect durability and richer backends are still planned
 - explorer/VFS, chat, rich playback apps, and debugger are planned for later ROIs
+
+## Terminal foundation
+
+Open **Terminal** from the desktop or Menu. Each new terminal window creates its own session and supports commands like `help`, `whoami`, `locale`, `profile`, and `date`.
+
+
+## ROI 5 update
+MIOOS terminals now run as real YottaDB `-direct` PIPE sessions owned by the websocket shell rather than a simulated command surface.
+
+
+## Terminal behavior update
+Each terminal window now opens its own websocket-backed terminal channel. The terminal should feel cleaner because typed input is no longer locally echoed into xterm before YottaDB responds.

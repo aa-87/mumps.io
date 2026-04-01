@@ -425,3 +425,15 @@ button, input { font: inherit; }
   .mioos-start-side { display: none; }
   .mioos-window { inset: 12px 12px 52px 12px !important; width: auto !important; height: auto !important; }
 }
+
+
+.mioos-window-body.is-terminal-body { padding: 0; background: #08101a; }
+.mioos-terminal-shell { display: flex; flex-direction: column; min-height: 100%; background: linear-gradient(180deg, #0f1724 0%, #08101a 100%); color: #d3e7ff; }
+.mioos-terminal-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03); }
+.mioos-terminal-toolbar-copy { display: flex; flex-direction: column; gap: 3px; }
+.mioos-terminal-toolbar-copy span { color: rgba(211,231,255,0.78); font-size: 12px; }
+.mioos-terminal-toolbar-actions { display: flex; gap: 8px; }
+.mioos-terminal-toolbar-actions button { border: 1px solid rgba(255,255,255,0.18); border-radius: 6px; background: rgba(255,255,255,0.08); color: #d3e7ff; padding: 6px 10px; }
+.mioos-terminal-meta { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 14px 0; }
+.mioos-terminal-viewport { flex: 1; min-height: 260px; padding: 12px 14px 14px; }
+.mioos-terminal-viewport .xterm { height: 100%; }
