@@ -1,221 +1,322 @@
-
-  @layer base {
-    html {
-      /* font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,"Helvetica Neue",sans-serif; */
-      /* font-family: Lucida Console,Lucida Sans Typewriter,monaco,Bitstream Vera Sans Mono,monospace; */
-    }
-}
-
-@layer components {
-  .btn-gradient {
-    @apply bg-gradient-to-r from-[#b721ff] to-[#21d4fd] border-none text-white;
-  }
-  .tooltip-mod {
-    @apply tooltip before:left-[calc(50%+15px)] before:content-[attr(data-tip)];
-  }
-}
-
-@font-face {
-  font-family: 'MSSS';
-  src: url('/public/mioos/static/fonts/ms_sans_serif.ttf');
-  font-weight: normal;
-}
-
-@font-face {
-  font-family: 'MSSS';
-  src: url('/public/mioos/static/fonts/ms_sans_serif_bold.ttf');
-  font-weight: bold;
-}
-
-@font-face {
-  font-family: 'Levi';
-  src: url('/public/mioos/static/fonts/levi.ttf');
-}
-
-@font-face {
-  font-family: 'Trebuchet';
-  src: url('/public/mioos/static/fonts/trebuchet.ttf');
-}
-
 :root {
-  --xp-gradient: rgb(31, 47, 134) 0px, rgb(49, 101, 196) 3%, rgb(54, 130, 229) 6%, rgb(68, 144, 230) 10%, rgb(56, 131, 229) 12%, rgb(43, 113, 224) 15%, rgb(38, 99, 218) 18%, rgb(35, 91, 214) 20%, rgb(34, 88, 213) 23%, rgb(33, 87, 214) 38%, rgb(36, 93, 219) 54%, rgb(37, 98, 223) 86%, rgb(36, 95, 220) 89%, rgb(33, 88, 212) 92%, rgb(29, 78, 192) 95%, rgb(25, 65, 165) 98%;
-  --titlebar-gradient: 180deg,#0997ff,#0053ee 8%,#0050ee 40%,#06f 88%,#06f 93%,#005bff 95%,#003dd7 96%,#003dd7;
-  --titlebar-gradient-inactive: rgb(118, 151, 231) 0%, rgb(126, 158, 227) 3%, rgb(148, 175, 232) 6%, rgb(151, 180, 233) 8%, rgb(130, 165, 228) 14%, rgb(124, 159, 226) 17%, rgb(121, 150, 222) 25%, rgb(123, 153, 225) 56%, rgb(130, 169, 233) 81%, rgb(128, 165, 231) 89%, rgb(123, 150, 225) 94%, rgb(122, 147, 223) 97%, rgb(171, 186, 227) 100%;
-  --window-box-shadow-inactive: inset -1px -1px rgb(130, 165, 228), inset 1px 1px rgb(130, 165, 228), inset -2px -2px rgb(130, 165, 228), inset 2px 2px rgb(130, 165, 228), inset -3px -3px rgb(130, 165, 228), inset 3px 3px rgb(130, 165, 228);
-  --window-box-shadow:inset -1px -1px #424fa2, inset 1px 1px #4e68d1, inset -2px -2px #5669c0, inset 2px 2px #528eef, inset -3px -3px #4e73d7, inset 3px 3px #5284da;
-  --tile-box-shadow: rgb(0 0 0 / 30%) -1px 0px inset, rgb(255 255 255 / 20%) 1px 1px 1px inset;
-  --tile-box-shadow-focus: rgb(0 0 0 / 20%) 0px 0px 1px 1px inset, rgb(0 0 0 / 70%) 1px 0px 1px inset;
+  --mioos-font: "Segoe UI", Tahoma, sans-serif;
+  --mioos-blue-1: #3a6ee8;
+  --mioos-blue-2: #1f4fbf;
+  --mioos-blue-3: #173a8f;
+  --mioos-sky: #6db6ff;
+  --mioos-taskbar: #245edb;
+  --mioos-taskbar-dark: #1844a0;
+  --mioos-start: #2aa12a;
+  --mioos-border: #7f9db9;
+  --mioos-panel: #f4f7fb;
+  --mioos-panel-2: #ffffff;
+  --mioos-text: #0b1830;
+  --mioos-muted: #44536d;
+  --mioos-shadow: 0 16px 40px rgba(0, 24, 64, 0.34);
 }
 
-html {
-  font-family: 'MSSS', Arial, system-ui, "Segoe UI", Roboto, Helvetica, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; font-family: var(--mioos-font); color: var(--mioos-text); }
+body { overflow: hidden; background: linear-gradient(180deg, #8cc3ff 0%, #72b0ff 35%, #4f91ea 100%); }
+[v-cloak] { display: none !important; }
+
+.mioos-root {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  background:
+    radial-gradient(circle at 18% 20%, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.0) 26%),
+    radial-gradient(circle at 78% 26%, rgba(255,255,255,0.24) 0%, rgba(255,255,255,0.0) 20%),
+    linear-gradient(180deg, #8ed0ff 0%, #6ab1ff 36%, #4b97ef 70%, #3f86de 100%);
 }
 
-* {
-  -webkit-user-select: none;  /* Chrome all / Safari all */
-  -moz-user-select: none;     /* Firefox all */
-  -ms-user-select: none;      /* IE 10+ */
-  user-select: none;    
+.mioos-alert {
+  position: absolute;
+  top: 14px;
+  right: 18px;
+  z-index: 40;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid rgba(255,255,255,0.7);
+  border-radius: 10px;
+  background: rgba(255,255,255,0.92);
+  box-shadow: 0 8px 24px rgba(0, 24, 64, 0.22);
 }
+.mioos-alert button { border: 1px solid var(--mioos-border); background: #fff; border-radius: 6px; padding: 6px 10px; }
 
-::-webkit-scrollbar {
-  width: 17px;
+.mioos-start-menu {
+  position: absolute;
+  left: 10px;
+  bottom: 48px;
+  z-index: 35;
+  width: 430px;
+  border-radius: 8px 8px 0 0;
+  overflow: hidden;
+  border: 1px solid #1546a6;
+  box-shadow: var(--mioos-shadow);
+  transform: translateY(16px);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform .18s ease, opacity .18s ease;
 }
-::-webkit-scrollbar-corner {
-  background: #dfdfdf;
+.mioos-start-menu.is-open { transform: translateY(0); opacity: 1; pointer-events: auto; }
+.mioos-start-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  color: #fff;
+  background: linear-gradient(180deg, #3278ea 0%, #1e55cb 100%);
 }
-::-webkit-scrollbar-track:vertical {
-  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -0.5 17 1' shape-rendering='crispEdges'%3E%3Cpath stroke='%23eeede5' d='M0 0h1m15 0h1'/%3E%3Cpath stroke='%23f3f1ec' d='M1 0h1'/%3E%3Cpath stroke='%23f4f1ec' d='M2 0h1'/%3E%3Cpath stroke='%23f4f3ee' d='M3 0h1'/%3E%3Cpath stroke='%23f5f4ef' d='M4 0h1'/%3E%3Cpath stroke='%23f6f5f0' d='M5 0h1'/%3E%3Cpath stroke='%23f7f7f3' d='M6 0h1'/%3E%3Cpath stroke='%23f9f8f4' d='M7 0h1'/%3E%3Cpath stroke='%23f9f9f7' d='M8 0h1'/%3E%3Cpath stroke='%23fbfbf8' d='M9 0h1'/%3E%3Cpath stroke='%23fbfbf9' d='M10 0h2'/%3E%3Cpath stroke='%23fdfdfa' d='M12 0h1'/%3E%3Cpath stroke='%23fefefb' d='M13 0h3'/%3E%3C/svg%3E");
+.mioos-start-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  font-weight: 700;
+  background: linear-gradient(180deg, #ffffff 0%, #dbe9ff 100%);
+  color: var(--mioos-blue-3);
 }
-::-webkit-scrollbar-track:horizontal {
-  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -0.5 1 17' shape-rendering='crispEdges'%3E%3Cpath stroke='%23eeede5' d='M0 0h1M0 16h1'/%3E%3Cpath stroke='%23f3f1ec' d='M0 1h1'/%3E%3Cpath stroke='%23f4f1ec' d='M0 2h1'/%3E%3Cpath stroke='%23f4f3ee' d='M0 3h1'/%3E%3Cpath stroke='%23f5f4ef' d='M0 4h1'/%3E%3Cpath stroke='%23f6f5f0' d='M0 5h1'/%3E%3Cpath stroke='%23f7f7f3' d='M0 6h1'/%3E%3Cpath stroke='%23f9f8f4' d='M0 7h1'/%3E%3Cpath stroke='%23f9f9f7' d='M0 8h1'/%3E%3Cpath stroke='%23fbfbf8' d='M0 9h1'/%3E%3Cpath stroke='%23fbfbf9' d='M0 10h1m-1 1h1'/%3E%3Cpath stroke='%23fdfdfa' d='M0 12h1'/%3E%3Cpath stroke='%23fefefb' d='M0 13h1m-1 1h1m-1 1h1'/%3E%3C/svg%3E");
+.mioos-start-copy { display: flex; flex-direction: column; gap: 2px; }
+.mioos-start-copy span { opacity: .92; font-size: 12px; }
+.mioos-start-body { display: grid; grid-template-columns: 1.4fr .8fr; background: #f7fbff; }
+.mioos-start-main { padding: 12px; min-height: 340px; }
+.mioos-start-side {
+  padding: 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  color: #fff;
+  background: linear-gradient(180deg, #4b8ef1 0%, #2a67dc 100%);
 }
-::-webkit-scrollbar-thumb {
-  background-position: 50%;
-  background-repeat: no-repeat;
-  background-color: #c8d6fb;
-  background-size: 7px;
-  border: 1px solid #fff;
-  border-radius: 2px;
-  box-shadow: inset -3px 0 #bad1fc, inset 1px 1px #b7caf5;
+.mioos-start-side button {
+  border: 1px solid rgba(255,255,255,0.6);
+  background: rgba(255,255,255,0.16);
+  color: #fff;
+  border-radius: 6px;
+  padding: 7px 8px;
+  text-align: left;
 }
-
-::-webkit-scrollbar-button:horizontal:end:increment,
-::-webkit-scrollbar-button:horizontal:start:decrement,
-::-webkit-scrollbar-button:vertical:end:increment,
-::-webkit-scrollbar-button:vertical:start:decrement {
-  display: block;
+.mioos-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+  border-radius: 8px;
+  border: 1px solid #abc5f5;
+  background: #fff;
 }
-
-::-webkit-scrollbar-thumb:vertical {
-  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -0.5 7 8' shape-rendering='crispEdges'%3E%3Cpath stroke='%23eef4fe' d='M0 0h6M0 2h6M0 4h6M0 6h6'/%3E%3Cpath stroke='%23bad1fc' d='M6 0h1M6 2h1M6 4h1'/%3E%3Cpath stroke='%23c8d6fb' d='M0 1h1M0 3h1M0 5h1M0 7h1'/%3E%3Cpath stroke='%238cb0f8' d='M1 1h6M1 3h6M1 5h6M1 7h6'/%3E%3Cpath stroke='%23bad3fc' d='M6 6h1'/%3E%3C/svg%3E");
-}
-::-webkit-scrollbar-thumb:horizontal {
-  background-size: 8px;
-  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -0.5 8 7' shape-rendering='crispEdges'%3E%3Cpath stroke='%23eef4fe' d='M0 0h1m1 0h1m1 0h1m1 0h1M0 1h1m1 0h1m1 0h1m1 0h1M0 2h1m1 0h1m1 0h1m1 0h1M0 3h1m1 0h1m1 0h1m1 0h1M0 4h1m1 0h1m1 0h1m1 0h1M0 5h1m1 0h1m1 0h1m1 0h1'/%3E%3Cpath stroke='%23c8d6fb' d='M1 0h1m1 0h1m1 0h1m1 0h1'/%3E%3Cpath stroke='%238cb0f8' d='M1 1h1m1 0h1m1 0h1m1 0h1M1 2h1m1 0h1m1 0h1m1 0h1M1 3h1m1 0h1m1 0h1m1 0h1M1 4h1m1 0h1m1 0h1m1 0h1M1 5h1m1 0h1m1 0h1m1 0h1M1 6h1m1 0h1m1 0h1m1 0h1'/%3E%3Cpath stroke='%23bad1fc' d='M0 6h1m1 0h1'/%3E%3Cpath stroke='%23bad3fc' d='M4 6h1m1 0h1'/%3E%3C/svg%3E");
-}
-::-webkit-scrollbar-button:vertical:start {
-  height: 17px;
-  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -0.5 17 17' shape-rendering='crispEdges'%3E%3Cpath stroke='%23eeede5' d='M0 0h1m15 0h1M0 1h1M0 2h1M0 3h1M0 4h1M0 5h1M0 6h1M0 7h1M0 8h1M0 9h1m-1 1h1m-1 1h1m-1 1h1m-1 1h1m-1 1h1m-1 1h1m15 0h1M0 16h1m15 0h1'/%3E%3Cpath stroke='%23fdfdfa' d='M1 0h1'/%3E%3Cpath stroke='%23fff' d='M2 0h14M1 1h1m13 0h1M1 2h1m13 0h1M1 3h1m13 0h1M1 4h1m13 0h1M1 5h1m13 0h1M1 6h1m13 0h1M1 7h1m13 0h1M1 8h1m13 0h1M1 9h1m13 0h1M1 10h1m13 0h1M1 11h1m13 0h1M1 12h1m13 0h1M1 13h1m13 0h1M1 14h1m13 0h1M2 15h13'/%3E%3Cpath stroke='%23e6eefc' d='M2 1h1'/%3E%3Cpath stroke='%23d0dffc' d='M3 1h1M2 2h1'/%3E%3Cpath stroke='%23cad8f9' d='M4 1h1M2 3h1'/%3E%3Cpath stroke='%23c4d2f7' d='M5 1h1'/%3E%3Cpath stroke='%23c0d0f7' d='M6 1h1'/%3E%3Cpath stroke='%23bdcef7' d='M7 1h1M2 6h1'/%3E%3Cpath stroke='%23bbcdf5' d='M8 1h1'/%3E%3Cpath stroke='%23b8cbf6' d='M9 1h1M2 7h1'/%3E%3Cpath stroke='%23b7caf5' d='M10 1h1M2 8h1'/%3E%3Cpath stroke='%23b5c8f7' d='M11 1h1'/%3E%3Cpath stroke='%23b3c7f5' d='M12 1h1'/%3E%3Cpath stroke='%23afc5f4' d='M13 1h1'/%3E%3Cpath stroke='%23dce6f9' d='M14 1h1'/%3E%3Cpath stroke='%23dfe2e1' d='M16 1h1'/%3E%3Cpath stroke='%23e1eafe' d='M3 2h1'/%3E%3Cpath stroke='%23dae6fe' d='M4 2h1M3 3h1'/%3E%3Cpath stroke='%23d4e1fc' d='M5 2h1M3 4h1'/%3E%3Cpath stroke='%23d1e0fd' d='M6 2h1M4 4h1'/%3E%3Cpath stroke='%23d0ddfc' d='M7 2h1M3 5h1'/%3E%3Cpath stroke='%23cedbfd' d='M8 2h1M6 3h1'/%3E%3Cpath stroke='%23cad9fd' d='M9 2h1M7 3h1M5 5h1'/%3E%3Cpath stroke='%23c8d8fb' d='M10 2h1'/%3E%3Cpath stroke='%23c5d6fc' d='M11 2h1m-8 8h1m1 0h1'/%3E%3Cpath stroke='%23c2d3fc' d='M12 2h1m-2 1h1m-9 7h1m0 1h1'/%3E%3Cpath stroke='%23bccefa' d='M13 2h1m-1 2h1m-9 9h2'/%3E%3Cpath stroke='%23b9c9f3' d='M14 2h1M5 14h3'/%3E%3Cpath stroke='%23cfd7dd' d='M16 2h1'/%3E%3Cpath stroke='%23d8e3fc' d='M4 3h1'/%3E%3Cpath stroke='%23d1defd' d='M5 3h1'/%3E%3Cpath stroke='%23c9d8fc' d='M8 3h1M6 4h2M5 6h2M3 7h1'/%3E%3Cpath stroke='%23c5d5fc' d='M9 3h1M3 9h1m3 0h1'/%3E%3Cpath stroke='%23c5d3fc' d='M10 3h1'/%3E%3Cpath stroke='%23bed0fc' d='M12 3h1M9 4h1m-7 7h1m0 1h1'/%3E%3Cpath stroke='%23bccdfa' d='M13 3h1'/%3E%3Cpath stroke='%23baccf4' d='M14 3h1'/%3E%3Cpath stroke='%23bdcbda' d='M16 3h1'/%3E%3Cpath stroke='%23c4d4f7' d='M2 4h1'/%3E%3Cpath stroke='%23cddbfc' d='M5 4h1M3 6h1'/%3E%3Cpath stroke='%23c8d5fb' d='M8 4h1'/%3E%3Cpath stroke='%23bbcefd' d='M10 4h3M9 5h1'/%3E%3Cpath stroke='%23bcccf3' d='M14 4h1m-1 1h1m-1 1h1'/%3E%3Cpath stroke='%23b1c2d5' d='M16 4h1'/%3E%3Cpath stroke='%23bed0f8' d='M2 5h1'/%3E%3Cpath stroke='%23ceddfd' d='M4 5h1'/%3E%3Cpath stroke='%23c8d6fb' d='M6 5h2M3 8h2'/%3E%3Cpath stroke='%234d6185' d='M8 5h1M7 6h3M6 7h5M5 8h3m1 0h3M4 9h3m3 0h3m-8 1h1m5 0h1'/%3E%3Cpath stroke='%23bacdfc' d='M10 5h1m1 0h2M3 12h1'/%3E%3Cpath stroke='%23b9cdfb' d='M11 5h1m-2 1h1m1 0h2m-1 1h1'/%3E%3Cpath stroke='%23a8bbd4' d='M16 5h1'/%3E%3Cpath stroke='%23cddafc' d='M4 6h1'/%3E%3Cpath stroke='%23b7cdfc' d='M11 6h1m0 1h1'/%3E%3Cpath stroke='%23a4b8d3' d='M16 6h1'/%3E%3Cpath stroke='%23cad8fd' d='M4 7h2'/%3E%3Cpath stroke='%23b6cefb' d='M11 7h1m0 1h1'/%3E%3Cpath stroke='%23bacbf4' d='M14 7h1'/%3E%3Cpath stroke='%23a0b5d3' d='M16 7h1m-1 1h1m-1 5h1'/%3E%3Cpath stroke='%23c1d3fb' d='M8 8h1'/%3E%3Cpath stroke='%23b6cdfb' d='M13 8h1m-5 5h1'/%3E%3Cpath stroke='%23b9cbf3' d='M14 8h1'/%3E%3Cpath stroke='%23b4c8f6' d='M2 9h1'/%3E%3Cpath stroke='%23c2d5fc' d='M8 9h1m-1 1h1m-3 1h2'/%3E%3Cpath stroke='%23bdd3fb' d='M9 9h1m-2 3h1'/%3E%3Cpath stroke='%23b5cdfa' d='M13 9h1'/%3E%3Cpath stroke='%23b5c9f3' d='M14 9h1'/%3E%3Cpath stroke='%239fb5d2' d='M16 9h1m-1 1h1m-1 1h1m-1 1h1'/%3E%3Cpath stroke='%23b1c7f6' d='M2 10h1'/%3E%3Cpath stroke='%23c3d5fd' d='M7 10h1'/%3E%3Cpath stroke='%23bad4fc' d='M9 10h1m-1 1h1'/%3E%3Cpath stroke='%23b2cffb' d='M10 10h1m1 0h1m-2 2h1'/%3E%3Cpath stroke='%23b1cbfa' d='M13 10h1'/%3E%3Cpath stroke='%23b3c8f5' d='M14 10h1m-6 4h2'/%3E%3Cpath stroke='%23adc3f6' d='M2 11h1'/%3E%3Cpath stroke='%23c3d3fd' d='M5 11h1'/%3E%3Cpath stroke='%23c1d5fb' d='M8 11h1'/%3E%3Cpath stroke='%23b7d3fc' d='M10 11h1m-2 1h1'/%3E%3Cpath stroke='%23b3d1fc' d='M11 11h1'/%3E%3Cpath stroke='%23afcefb' d='M12 11h1'/%3E%3Cpath stroke='%23aecafa' d='M13 11h1'/%3E%3Cpath stroke='%23b1c8f3' d='M14 11h1'/%3E%3Cpath stroke='%23acc2f5' d='M2 12h1'/%3E%3Cpath stroke='%23c1d2fb' d='M5 12h1'/%3E%3Cpath stroke='%23bed1fc' d='M6 12h2'/%3E%3Cpath stroke='%23b6d1fb' d='M10 12h1'/%3E%3Cpath stroke='%23afccfb' d='M12 12h1'/%3E%3Cpath stroke='%23adc9f9' d='M13 12h1m-2 1h1'/%3E%3Cpath stroke='%23b1c5f3' d='M14 12h1'/%3E%3Cpath stroke='%23aac0f3' d='M2 13h1'/%3E%3Cpath stroke='%23b7cbf9' d='M3 13h1'/%3E%3Cpath stroke='%23b9cefb' d='M4 13h1'/%3E%3Cpath stroke='%23bbcef9' d='M7 13h1'/%3E%3Cpath stroke='%23b9cffb' d='M8 13h1'/%3E%3Cpath stroke='%23b2cdfb' d='M10 13h1'/%3E%3Cpath stroke='%23b0cbf9' d='M11 13h1'/%3E%3Cpath stroke='%23aec8f7' d='M13 13h1'/%3E%3Cpath stroke='%23b0c5f2' d='M14 13h1'/%3E%3Cpath stroke='%23dbe3f8' d='M2 14h1'/%3E%3Cpath stroke='%23b7c6f1' d='M3 14h1'/%3E%3Cpath stroke='%23b8c9f2' d='M4 14h1m3 0h1'/%3E%3Cpath stroke='%23b2c8f4' d='M11 14h1'/%3E%3Cpath stroke='%23b1c6f3' d='M12 14h1'/%3E%3Cpath stroke='%23b0c4f2' d='M13 14h1'/%3E%3Cpath stroke='%23d9e3f6' d='M14 14h1'/%3E%3Cpath stroke='%23aec0d6' d='M16 14h1'/%3E%3Cpath stroke='%23c3d4e7' d='M1 15h1'/%3E%3Cpath stroke='%23aec4e5' d='M15 15h1'/%3E%3Cpath stroke='%23edf1f3' d='M1 16h1'/%3E%3Cpath stroke='%23aac0e1' d='M2 16h1'/%3E%3Cpath stroke='%2394b1d9' d='M3 16h1'/%3E%3Cpath stroke='%2388a7d8' d='M4 16h1'/%3E%3Cpath stroke='%2383a4d3' d='M5 16h1'/%3E%3Cpath stroke='%237da0d4' d='M6 16h1m3 0h3'/%3E%3Cpath stroke='%237e9fd2' d='M7 16h1'/%3E%3Cpath stroke='%237c9fd3' d='M8 16h2'/%3E%3Cpath stroke='%2382a4d6' d='M13 16h1'/%3E%3Cpath stroke='%2394b0dd' d='M14 16h1'/%3E%3Cpath stroke='%23ecf2f7' d='M15 16h1'/%3E%3C/svg%3E");
-}
-::-webkit-scrollbar-button:vertical:end {
-  height: 17px;
-  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -0.5 17 17' shape-rendering='crispEdges'%3E%3Cpath stroke='%23eeede5' d='M0 0h1m15 0h1M0 1h1M0 2h1M0 3h1M0 4h1M0 5h1M0 6h1M0 7h1M0 8h1M0 9h1m-1 1h1m-1 1h1m-1 1h1m-1 1h1m-1 1h1m-1 1h1m15 0h1M0 16h1m15 0h1'/%3E%3Cpath stroke='%23fdfdfa' d='M1 0h1'/%3E%3Cpath stroke='%23fff' d='M2 0h14M1 1h1m13 0h1M1 2h1m13 0h1M1 3h1m13 0h1M1 4h1m13 0h1M1 5h1m13 0h1M1 6h1m13 0h1M1 7h1m13 0h1M1 8h1m13 0h1M1 9h1m13 0h1M1 10h1m13 0h1M1 11h1m13 0h1M1 12h1m13 0h1M1 13h1m13 0h1M1 14h1m13 0h1M2 15h13'/%3E%3Cpath stroke='%23e6eefc' d='M2 1h1'/%3E%3Cpath stroke='%23d0dffc' d='M3 1h1M2 2h1'/%3E%3Cpath stroke='%23cad8f9' d='M4 1h1M2 3h1'/%3E%3Cpath stroke='%23c4d2f7' d='M5 1h1'/%3E%3Cpath stroke='%23c0d0f7' d='M6 1h1'/%3E%3Cpath stroke='%23bdcef7' d='M7 1h1M2 6h1'/%3E%3Cpath stroke='%23bbcdf5' d='M8 1h1'/%3E%3Cpath stroke='%23b8cbf6' d='M9 1h1M2 7h1'/%3E%3Cpath stroke='%23b7caf5' d='M10 1h1M2 8h1'/%3E%3Cpath stroke='%23b5c8f7' d='M11 1h1'/%3E%3Cpath stroke='%23b3c7f5' d='M12 1h1'/%3E%3Cpath stroke='%23afc5f4' d='M13 1h1'/%3E%3Cpath stroke='%23dce6f9' d='M14 1h1'/%3E%3Cpath stroke='%23dfe2e1' d='M16 1h1'/%3E%3Cpath stroke='%23e1eafe' d='M3 2h1'/%3E%3Cpath stroke='%23dae6fe' d='M4 2h1M3 3h1'/%3E%3Cpath stroke='%23d4e1fc' d='M5 2h1M3 4h1'/%3E%3Cpath stroke='%23d1e0fd' d='M6 2h1M4 4h1'/%3E%3Cpath stroke='%23d0ddfc' d='M7 2h1M3 5h1'/%3E%3Cpath stroke='%23cedbfd' d='M8 2h1M6 3h1'/%3E%3Cpath stroke='%23cad9fd' d='M9 2h1M7 3h1M5 5h1'/%3E%3Cpath stroke='%23c8d8fb' d='M10 2h1'/%3E%3Cpath stroke='%23c5d6fc' d='M11 2h1m-8 8h3'/%3E%3Cpath stroke='%23c2d3fc' d='M12 2h1m-2 1h1m-9 7h1m0 1h1'/%3E%3Cpath stroke='%23bccefa' d='M13 2h1m-1 2h1m-9 9h2'/%3E%3Cpath stroke='%23b9c9f3' d='M14 2h1M5 14h3'/%3E%3Cpath stroke='%23cfd7dd' d='M16 2h1'/%3E%3Cpath stroke='%23d8e3fc' d='M4 3h1'/%3E%3Cpath stroke='%23d1defd' d='M5 3h1'/%3E%3Cpath stroke='%23c9d8fc' d='M8 3h1M6 4h2M6 6h2M3 7h1'/%3E%3Cpath stroke='%23c5d5fc' d='M9 3h1M3 9h3'/%3E%3Cpath stroke='%23c5d3fc' d='M10 3h1'/%3E%3Cpath stroke='%23bed0fc' d='M12 3h1M9 4h1m-7 7h1m0 1h1'/%3E%3Cpath stroke='%23bccdfa' d='M13 3h1'/%3E%3Cpath stroke='%23baccf4' d='M14 3h1'/%3E%3Cpath stroke='%23bdcbda' d='M16 3h1'/%3E%3Cpath stroke='%23c4d4f7' d='M2 4h1'/%3E%3Cpath stroke='%23cddbfc' d='M5 4h1M3 6h1'/%3E%3Cpath stroke='%23c8d5fb' d='M8 4h1'/%3E%3Cpath stroke='%23bbcefd' d='M10 4h3M9 5h1M8 6h1'/%3E%3Cpath stroke='%23bcccf3' d='M14 4h1m-1 1h1m-1 1h1'/%3E%3Cpath stroke='%23b1c2d5' d='M16 4h1'/%3E%3Cpath stroke='%23bed0f8' d='M2 5h1'/%3E%3Cpath stroke='%23ceddfd' d='M4 5h1'/%3E%3Cpath stroke='%23c8d6fb' d='M6 5h3M3 8h2'/%3E%3Cpath stroke='%23bacdfc' d='M10 5h1m1 0h2M3 12h1'/%3E%3Cpath stroke='%23b9cdfb' d='M11 5h1M9 6h2m1 0h2m-1 1h1'/%3E%3Cpath stroke='%23a8bbd4' d='M16 5h1'/%3E%3Cpath stroke='%23cddafc' d='M4 6h1'/%3E%3Cpath stroke='%234d6185' d='M5 6h1m5 0h1M4 7h3m3 0h3M5 8h3m1 0h3M6 9h5m-4 1h3m-2 1h1'/%3E%3Cpath stroke='%23a4b8d3' d='M16 6h1'/%3E%3Cpath stroke='%23c1d3fb' d='M7 7h2M8 8h1'/%3E%3Cpath stroke='%23b6cefb' d='M9 7h1m2 1h1m-2 1h2'/%3E%3Cpath stroke='%23bacbf4' d='M14 7h1'/%3E%3Cpath stroke='%23a0b5d3' d='M16 7h1m-1 1h1m-1 5h1'/%3E%3Cpath stroke='%23b6cdfb' d='M13 8h1m-5 5h1'/%3E%3Cpath stroke='%23b9cbf3' d='M14 8h1'/%3E%3Cpath stroke='%23b4c8f6' d='M2 9h1'/%3E%3Cpath stroke='%23b5cdfa' d='M13 9h1'/%3E%3Cpath stroke='%23b5c9f3' d='M14 9h1'/%3E%3Cpath stroke='%239fb5d2' d='M16 9h1m-1 1h1m-1 1h1m-1 1h1'/%3E%3Cpath stroke='%23b1c7f6' d='M2 10h1'/%3E%3Cpath stroke='%23b2cffb' d='M10 10h3m-2 2h1'/%3E%3Cpath stroke='%23b1cbfa' d='M13 10h1'/%3E%3Cpath stroke='%23b3c8f5' d='M14 10h1m-6 4h2'/%3E%3Cpath stroke='%23adc3f6' d='M2 11h1'/%3E%3Cpath stroke='%23c3d3fd' d='M5 11h1'/%3E%3Cpath stroke='%23c2d5fc' d='M6 11h2'/%3E%3Cpath stroke='%23bad4fc' d='M9 11h1'/%3E%3Cpath stroke='%23b7d3fc' d='M10 11h1m-2 1h1'/%3E%3Cpath stroke='%23b3d1fc' d='M11 11h1'/%3E%3Cpath stroke='%23afcefb' d='M12 11h1'/%3E%3Cpath stroke='%23aecafa' d='M13 11h1'/%3E%3Cpath stroke='%23b1c8f3' d='M14 11h1'/%3E%3Cpath stroke='%23acc2f5' d='M2 12h1'/%3E%3Cpath stroke='%23c1d2fb' d='M5 12h1'/%3E%3Cpath stroke='%23bed1fc' d='M6 12h2'/%3E%3Cpath stroke='%23bdd3fb' d='M8 12h1'/%3E%3Cpath stroke='%23b6d1fb' d='M10 12h1'/%3E%3Cpath stroke='%23afccfb' d='M12 12h1'/%3E%3Cpath stroke='%23adc9f9' d='M13 12h1m-2 1h1'/%3E%3Cpath stroke='%23b1c5f3' d='M14 12h1'/%3E%3Cpath stroke='%23aac0f3' d='M2 13h1'/%3E%3Cpath stroke='%23b7cbf9' d='M3 13h1'/%3E%3Cpath stroke='%23b9cefb' d='M4 13h1'/%3E%3Cpath stroke='%23bbcef9' d='M7 13h1'/%3E%3Cpath stroke='%23b9cffb' d='M8 13h1'/%3E%3Cpath stroke='%23b2cdfb' d='M10 13h1'/%3E%3Cpath stroke='%23b0cbf9' d='M11 13h1'/%3E%3Cpath stroke='%23aec8f7' d='M13 13h1'/%3E%3Cpath stroke='%23b0c5f2' d='M14 13h1'/%3E%3Cpath stroke='%23dbe3f8' d='M2 14h1'/%3E%3Cpath stroke='%23b7c6f1' d='M3 14h1'/%3E%3Cpath stroke='%23b8c9f2' d='M4 14h1m3 0h1'/%3E%3Cpath stroke='%23b2c8f4' d='M11 14h1'/%3E%3Cpath stroke='%23b1c6f3' d='M12 14h1'/%3E%3Cpath stroke='%23b0c4f2' d='M13 14h1'/%3E%3Cpath stroke='%23d9e3f6' d='M14 14h1'/%3E%3Cpath stroke='%23aec0d6' d='M16 14h1'/%3E%3Cpath stroke='%23c3d4e7' d='M1 15h1'/%3E%3Cpath stroke='%23aec4e5' d='M15 15h1'/%3E%3Cpath stroke='%23edf1f3' d='M1 16h1'/%3E%3Cpath stroke='%23aac0e1' d='M2 16h1'/%3E%3Cpath stroke='%2394b1d9' d='M3 16h1'/%3E%3Cpath stroke='%2388a7d8' d='M4 16h1'/%3E%3Cpath stroke='%2383a4d3' d='M5 16h1'/%3E%3Cpath stroke='%237da0d4' d='M6 16h1m3 0h3'/%3E%3Cpath stroke='%237e9fd2' d='M7 16h1'/%3E%3Cpath stroke='%237c9fd3' d='M8 16h2'/%3E%3Cpath stroke='%2382a4d6' d='M13 16h1'/%3E%3Cpath stroke='%2394b0dd' d='M14 16h1'/%3E%3Cpath stroke='%23ecf2f7' d='M15 16h1'/%3E%3C/svg%3E");
-}
-::-webkit-scrollbar-button:horizontal:start {
-  width: 17px;
-  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -0.5 17 17' shape-rendering='crispEdges'%3E%3Cpath stroke='%23eeede5' d='M0 0h17m-1 1h1m-1 14h1m-1 1h1'/%3E%3Cpath stroke='%23fdfdfa' d='M0 1h1'/%3E%3Cpath stroke='%23fff' d='M1 1h15M0 2h1m14 0h1M0 3h1m14 0h1M0 4h1m14 0h1M0 5h1m14 0h1M0 6h1m14 0h1M0 7h1m14 0h1M0 8h1m14 0h1M0 9h1m14 0h1M0 10h1m14 0h1M0 11h1m14 0h1M0 12h1m14 0h1M0 13h1m14 0h1M0 14h1m14 0h1M1 15h14'/%3E%3Cpath stroke='%23e6eefc' d='M1 2h1'/%3E%3Cpath stroke='%23d0dffc' d='M2 2h1M1 3h1'/%3E%3Cpath stroke='%23cad8f9' d='M3 2h1M1 4h1'/%3E%3Cpath stroke='%23c4d2f7' d='M4 2h1'/%3E%3Cpath stroke='%23c0d0f7' d='M5 2h1'/%3E%3Cpath stroke='%23bdcef7' d='M6 2h1M1 7h1'/%3E%3Cpath stroke='%23bbcdf5' d='M7 2h2'/%3E%3Cpath stroke='%23b8cbf6' d='M9 2h1M1 8h1'/%3E%3Cpath stroke='%23b7caf5' d='M10 2h1M1 9h1'/%3E%3Cpath stroke='%23b5c8f7' d='M11 2h1'/%3E%3Cpath stroke='%23b3c7f5' d='M12 2h1'/%3E%3Cpath stroke='%23afc5f4' d='M13 2h1'/%3E%3Cpath stroke='%23dce6f9' d='M14 2h1'/%3E%3Cpath stroke='%23dfe2e1' d='M16 2h1'/%3E%3Cpath stroke='%23e1eafe' d='M2 3h1'/%3E%3Cpath stroke='%23dae6fe' d='M3 3h1M2 4h1'/%3E%3Cpath stroke='%23d4e1fc' d='M4 3h1M2 5h1'/%3E%3Cpath stroke='%23d1e0fd' d='M5 3h1M3 5h1'/%3E%3Cpath stroke='%23d0ddfc' d='M6 3h1M2 6h1'/%3E%3Cpath stroke='%23cedbfd' d='M7 3h1M5 4h1'/%3E%3Cpath stroke='%23cddbfc' d='M8 3h1M4 5h1M2 7h1'/%3E%3Cpath stroke='%23cad9fd' d='M9 3h1M6 4h1M4 6h1'/%3E%3Cpath stroke='%23c8d8fb' d='M10 3h1'/%3E%3Cpath stroke='%23c5d6fc' d='M11 3h1m-9 7h3'/%3E%3Cpath stroke='%23c2d3fc' d='M12 3h1m-2 1h1M2 10h1m0 1h1'/%3E%3Cpath stroke='%23bccefa' d='M13 3h1m-1 2h1M4 13h2'/%3E%3Cpath stroke='%23b9c9f3' d='M14 3h1M4 14h3'/%3E%3Cpath stroke='%23cfd7dd' d='M16 3h1'/%3E%3Cpath stroke='%23d8e3fc' d='M3 4h1'/%3E%3Cpath stroke='%23d1defd' d='M4 4h1'/%3E%3Cpath stroke='%23c9d8fc' d='M7 4h1M5 5h2M4 7h1M2 8h1'/%3E%3Cpath stroke='%234d6185' d='M8 4h1M7 5h3M6 6h3M5 7h3M4 8h3M5 9h3m-2 1h3m-2 1h3m-2 1h1'/%3E%3Cpath stroke='%23c5d5fc' d='M9 4h1'/%3E%3Cpath stroke='%23c5d3fc' d='M10 4h1'/%3E%3Cpath stroke='%23bed0fc' d='M12 4h1M2 11h1m0 1h1'/%3E%3Cpath stroke='%23bccdfa' d='M13 4h1'/%3E%3Cpath stroke='%23baccf4' d='M14 4h1'/%3E%3Cpath stroke='%23bdcbda' d='M16 4h1'/%3E%3Cpath stroke='%23c4d4f7' d='M1 5h1'/%3E%3Cpath stroke='%23bbcefd' d='M10 5h3M9 6h1'/%3E%3Cpath stroke='%23bcccf3' d='M14 5h1m-1 1h1m-1 1h1'/%3E%3Cpath stroke='%23b1c2d5' d='M16 5h1'/%3E%3Cpath stroke='%23bed0f8' d='M1 6h1'/%3E%3Cpath stroke='%23ceddfd' d='M3 6h1'/%3E%3Cpath stroke='%23c8d6fb' d='M5 6h1M2 9h3'/%3E%3Cpath stroke='%23bacdfc' d='M10 6h1m1 0h2M2 12h1'/%3E%3Cpath stroke='%23b9cdfb' d='M11 6h1M8 7h3m1 0h2m-1 1h1'/%3E%3Cpath stroke='%23a8bbd4' d='M16 6h1'/%3E%3Cpath stroke='%23cddafc' d='M3 7h1'/%3E%3Cpath stroke='%23b7cdfc' d='M11 7h1m0 1h1'/%3E%3Cpath stroke='%23a4b8d3' d='M16 7h1'/%3E%3Cpath stroke='%23cad8fd' d='M3 8h1'/%3E%3Cpath stroke='%23c1d3fb' d='M7 8h2'/%3E%3Cpath stroke='%23b6cefb' d='M9 8h3M9 9h4'/%3E%3Cpath stroke='%23bacbf4' d='M14 8h1'/%3E%3Cpath stroke='%23a0b5d3' d='M16 8h1m-1 1h1m-1 4h1'/%3E%3Cpath stroke='%23bdd3fb' d='M8 9h1m-2 3h1'/%3E%3Cpath stroke='%23b6cdfb' d='M13 9h1m-5 4h1'/%3E%3Cpath stroke='%23b9cbf3' d='M14 9h1'/%3E%3Cpath stroke='%23b1c7f6' d='M1 10h1'/%3E%3Cpath stroke='%23bad4fc' d='M9 10h1'/%3E%3Cpath stroke='%23b2cffb' d='M10 10h3m-2 2h1'/%3E%3Cpath stroke='%23b1cbfa' d='M13 10h1'/%3E%3Cpath stroke='%23b3c8f5' d='M14 10h1m-6 4h2'/%3E%3Cpath stroke='%239fb5d2' d='M16 10h1m-1 1h1m-1 1h1'/%3E%3Cpath stroke='%23adc3f6' d='M1 11h1'/%3E%3Cpath stroke='%23c3d3fd' d='M4 11h1'/%3E%3Cpath stroke='%23c2d5fc' d='M5 11h2'/%3E%3Cpath stroke='%23b7d3fc' d='M10 11h1m-2 1h1'/%3E%3Cpath stroke='%23b3d1fc' d='M11 11h1'/%3E%3Cpath stroke='%23afcefb' d='M12 11h1'/%3E%3Cpath stroke='%23aecafa' d='M13 11h1'/%3E%3Cpath stroke='%23b1c8f3' d='M14 11h1'/%3E%3Cpath stroke='%23acc2f5' d='M1 12h1'/%3E%3Cpath stroke='%23c1d2fb' d='M4 12h1'/%3E%3Cpath stroke='%23bed1fc' d='M5 12h2'/%3E%3Cpath stroke='%23b6d1fb' d='M10 12h1'/%3E%3Cpath stroke='%23afccfb' d='M12 12h1'/%3E%3Cpath stroke='%23adc9f9' d='M13 12h1m-2 1h1'/%3E%3Cpath stroke='%23b1c5f3' d='M14 12h1'/%3E%3Cpath stroke='%23aac0f3' d='M1 13h1'/%3E%3Cpath stroke='%23b7cbf9' d='M2 13h1'/%3E%3Cpath stroke='%23b9cefb' d='M3 13h1'/%3E%3Cpath stroke='%23bbcef9' d='M6 13h1'/%3E%3Cpath stroke='%23b9cffb' d='M7 13h1'/%3E%3Cpath stroke='%23b8cffa' d='M8 13h1'/%3E%3Cpath stroke='%23b2cdfb' d='M10 13h1'/%3E%3Cpath stroke='%23b0cbf9' d='M11 13h1'/%3E%3Cpath stroke='%23aec8f7' d='M13 13h1'/%3E%3Cpath stroke='%23b0c5f2' d='M14 13h1'/%3E%3Cpath stroke='%23dbe3f8' d='M1 14h1'/%3E%3Cpath stroke='%23b7c6f1' d='M2 14h1'/%3E%3Cpath stroke='%23b8c9f2' d='M3 14h1m3 0h2'/%3E%3Cpath stroke='%23b2c8f4' d='M11 14h1'/%3E%3Cpath stroke='%23b1c6f3' d='M12 14h1'/%3E%3Cpath stroke='%23b0c4f2' d='M13 14h1'/%3E%3Cpath stroke='%23d9e3f6' d='M14 14h1'/%3E%3Cpath stroke='%23aec0d6' d='M16 14h1'/%3E%3Cpath stroke='%23c3d4e7' d='M0 15h1'/%3E%3Cpath stroke='%23aec4e5' d='M15 15h1'/%3E%3Cpath stroke='%23edf1f3' d='M0 16h1'/%3E%3Cpath stroke='%23aac0e1' d='M1 16h1'/%3E%3Cpath stroke='%2394b1d9' d='M2 16h1'/%3E%3Cpath stroke='%2388a7d8' d='M3 16h1'/%3E%3Cpath stroke='%2383a4d3' d='M4 16h1'/%3E%3Cpath stroke='%237da0d4' d='M5 16h1m4 0h3'/%3E%3Cpath stroke='%237e9fd2' d='M6 16h1'/%3E%3Cpath stroke='%237c9fd3' d='M7 16h3'/%3E%3Cpath stroke='%2382a4d6' d='M13 16h1'/%3E%3Cpath stroke='%2394b0dd' d='M14 16h1'/%3E%3Cpath stroke='%23ecf2f7' d='M15 16h1'/%3E%3C/svg%3E");
-}
-::-webkit-scrollbar-button:horizontal:end {
-  width: 17px;
-  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -0.5 17 17' shape-rendering='crispEdges'%3E%3Cpath stroke='%23eeede5' d='M0 0h17m-1 1h1m-1 14h1m-1 1h1'/%3E%3Cpath stroke='%23fdfdfa' d='M0 1h1'/%3E%3Cpath stroke='%23fff' d='M1 1h15M0 2h1m14 0h1M0 3h1m14 0h1M0 4h1m14 0h1M0 5h1m14 0h1M0 6h1m14 0h1M0 7h1m14 0h1M0 8h1m14 0h1M0 9h1m14 0h1M0 10h1m14 0h1M0 11h1m14 0h1M0 12h1m14 0h1M0 13h1m14 0h1M0 14h1m14 0h1M1 15h14'/%3E%3Cpath stroke='%23e6eefc' d='M1 2h1'/%3E%3Cpath stroke='%23d0dffc' d='M2 2h1M1 3h1'/%3E%3Cpath stroke='%23cad8f9' d='M3 2h1M1 4h1'/%3E%3Cpath stroke='%23c4d2f7' d='M4 2h1'/%3E%3Cpath stroke='%23c0d0f7' d='M5 2h1'/%3E%3Cpath stroke='%23bdcef7' d='M6 2h1M1 7h1'/%3E%3Cpath stroke='%23bbcdf5' d='M7 2h2'/%3E%3Cpath stroke='%23b8cbf6' d='M9 2h1M1 8h1'/%3E%3Cpath stroke='%23b7caf5' d='M10 2h1'/%3E%3Cpath stroke='%23b5c8f7' d='M11 2h1'/%3E%3Cpath stroke='%23b3c7f5' d='M12 2h1'/%3E%3Cpath stroke='%23afc5f4' d='M13 2h1'/%3E%3Cpath stroke='%23dce6f9' d='M14 2h1'/%3E%3Cpath stroke='%23dfe2e1' d='M16 2h1'/%3E%3Cpath stroke='%23e1eafe' d='M2 3h1'/%3E%3Cpath stroke='%23dae6fe' d='M3 3h1M2 4h1'/%3E%3Cpath stroke='%23d4e1fc' d='M4 3h1M2 5h1'/%3E%3Cpath stroke='%23d1e0fd' d='M5 3h1M3 5h1'/%3E%3Cpath stroke='%23d0ddfc' d='M6 3h1M2 6h1'/%3E%3Cpath stroke='%23cedbfd' d='M7 3h1M5 4h1'/%3E%3Cpath stroke='%23cddbfc' d='M8 3h1M4 5h1M2 7h1'/%3E%3Cpath stroke='%23cad9fd' d='M9 3h1M6 4h1M4 6h1'/%3E%3Cpath stroke='%23c8d8fb' d='M10 3h1'/%3E%3Cpath stroke='%23c5d6fc' d='M11 3h1m-9 7h3'/%3E%3Cpath stroke='%23c2d3fc' d='M12 3h1m-2 1h1M2 10h1m0 1h1'/%3E%3Cpath stroke='%23bccefa' d='M13 3h1m-1 2h1M4 13h2'/%3E%3Cpath stroke='%23b9c9f3' d='M14 3h1M4 14h3'/%3E%3Cpath stroke='%23cfd7dd' d='M16 3h1'/%3E%3Cpath stroke='%23d8e3fc' d='M3 4h1'/%3E%3Cpath stroke='%23d1defd' d='M4 4h1'/%3E%3Cpath stroke='%234d6185' d='M7 4h1M6 5h3M7 6h3M8 7h3M9 8h3M8 9h3m-4 1h3m-4 1h3m-2 1h1'/%3E%3Cpath stroke='%23c8d6fb' d='M8 4h1M5 6h2'/%3E%3Cpath stroke='%23c5d5fc' d='M9 4h1M2 9h5'/%3E%3Cpath stroke='%23c5d3fc' d='M10 4h1'/%3E%3Cpath stroke='%23bed0fc' d='M12 4h1M9 5h1m-8 6h1m0 1h1'/%3E%3Cpath stroke='%23bccdfa' d='M13 4h1'/%3E%3Cpath stroke='%23baccf4' d='M14 4h1'/%3E%3Cpath stroke='%23bdcbda' d='M16 4h1'/%3E%3Cpath stroke='%23c4d4f7' d='M1 5h1'/%3E%3Cpath stroke='%23c9d8fc' d='M5 5h1M4 7h3M2 8h1'/%3E%3Cpath stroke='%23bbcefd' d='M10 5h3M7 7h1'/%3E%3Cpath stroke='%23bcccf3' d='M14 5h1m-1 1h1m-1 1h1'/%3E%3Cpath stroke='%23b1c2d5' d='M16 5h1'/%3E%3Cpath stroke='%23bed0f8' d='M1 6h1'/%3E%3Cpath stroke='%23ceddfd' d='M3 6h1'/%3E%3Cpath stroke='%23bacdfc' d='M10 6h1m1 0h2M2 12h1'/%3E%3Cpath stroke='%23b9cdfb' d='M11 6h1m0 1h2m-1 1h1'/%3E%3Cpath stroke='%23a8bbd4' d='M16 6h1'/%3E%3Cpath stroke='%23cddafc' d='M3 7h1'/%3E%3Cpath stroke='%23b7cdfc' d='M11 7h1m0 1h1'/%3E%3Cpath stroke='%23a4b8d3' d='M16 7h1'/%3E%3Cpath stroke='%23cad8fd' d='M3 8h3'/%3E%3Cpath stroke='%23c1d3fb' d='M6 8h3'/%3E%3Cpath stroke='%23bacbf4' d='M14 8h1'/%3E%3Cpath stroke='%23a0b5d3' d='M16 8h1m-1 5h1'/%3E%3Cpath stroke='%23b4c8f6' d='M1 9h1'/%3E%3Cpath stroke='%23c2d5fc' d='M7 9h1m-3 2h1'/%3E%3Cpath stroke='%23b6cefb' d='M11 9h2'/%3E%3Cpath stroke='%23b5cdfa' d='M13 9h1'/%3E%3Cpath stroke='%23b5c9f3' d='M14 9h1'/%3E%3Cpath stroke='%239fb5d2' d='M16 9h1m-1 1h1m-1 1h1m-1 1h1'/%3E%3Cpath stroke='%23b1c7f6' d='M1 10h1'/%3E%3Cpath stroke='%23c3d5fd' d='M6 10h1'/%3E%3Cpath stroke='%23b2cffb' d='M10 10h3m-2 2h1'/%3E%3Cpath stroke='%23b1cbfa' d='M13 10h1'/%3E%3Cpath stroke='%23b3c8f5' d='M14 10h1m-6 4h2'/%3E%3Cpath stroke='%23adc3f6' d='M1 11h1'/%3E%3Cpath stroke='%23c3d3fd' d='M4 11h1'/%3E%3Cpath stroke='%23bad4fc' d='M9 11h1'/%3E%3Cpath stroke='%23b7d3fc' d='M10 11h1m-2 1h1'/%3E%3Cpath stroke='%23b3d1fc' d='M11 11h1'/%3E%3Cpath stroke='%23afcefb' d='M12 11h1'/%3E%3Cpath stroke='%23aecafa' d='M13 11h1'/%3E%3Cpath stroke='%23b1c8f3' d='M14 11h1'/%3E%3Cpath stroke='%23acc2f5' d='M1 12h1'/%3E%3Cpath stroke='%23c1d2fb' d='M4 12h1'/%3E%3Cpath stroke='%23bed1fc' d='M5 12h2'/%3E%3Cpath stroke='%23bbd3fd' d='M8 12h1'/%3E%3Cpath stroke='%23b6d1fb' d='M10 12h1'/%3E%3Cpath stroke='%23afccfb' d='M12 12h1'/%3E%3Cpath stroke='%23adc9f9' d='M13 12h1m-2 1h1'/%3E%3Cpath stroke='%23b1c5f3' d='M14 12h1'/%3E%3Cpath stroke='%23aac0f3' d='M1 13h1'/%3E%3Cpath stroke='%23b7cbf9' d='M2 13h1'/%3E%3Cpath stroke='%23b9cefb' d='M3 13h1'/%3E%3Cpath stroke='%23bbcef9' d='M6 13h1'/%3E%3Cpath stroke='%23b9cffb' d='M7 13h1'/%3E%3Cpath stroke='%23b8cffa' d='M8 13h1'/%3E%3Cpath stroke='%23b6cdfb' d='M9 13h1'/%3E%3Cpath stroke='%23b2cdfb' d='M10 13h1'/%3E%3Cpath stroke='%23b0cbf9' d='M11 13h1'/%3E%3Cpath stroke='%23aec8f7' d='M13 13h1'/%3E%3Cpath stroke='%23b0c5f2' d='M14 13h1'/%3E%3Cpath stroke='%23dbe3f8' d='M1 14h1'/%3E%3Cpath stroke='%23b7c6f1' d='M2 14h1'/%3E%3Cpath stroke='%23b8c9f2' d='M3 14h1m3 0h2'/%3E%3Cpath stroke='%23b2c8f4' d='M11 14h1'/%3E%3Cpath stroke='%23b1c6f3' d='M12 14h1'/%3E%3Cpath stroke='%23b0c4f2' d='M13 14h1'/%3E%3Cpath stroke='%23d9e3f6' d='M14 14h1'/%3E%3Cpath stroke='%23aec0d6' d='M16 14h1'/%3E%3Cpath stroke='%23c3d4e7' d='M0 15h1'/%3E%3Cpath stroke='%23aec4e5' d='M15 15h1'/%3E%3Cpath stroke='%23edf1f3' d='M0 16h1'/%3E%3Cpath stroke='%23aac0e1' d='M1 16h1'/%3E%3Cpath stroke='%2394b1d9' d='M2 16h1'/%3E%3Cpath stroke='%2388a7d8' d='M3 16h1'/%3E%3Cpath stroke='%2383a4d3' d='M4 16h1'/%3E%3Cpath stroke='%237da0d4' d='M5 16h1m4 0h3'/%3E%3Cpath stroke='%237e9fd2' d='M6 16h1'/%3E%3Cpath stroke='%237c9fd3' d='M7 16h3'/%3E%3Cpath stroke='%2382a4d6' d='M13 16h1'/%3E%3Cpath stroke='%2394b0dd' d='M14 16h1'/%3E%3Cpath stroke='%23ecf2f7' d='M15 16h1'/%3E%3C/svg%3E");
-}
-
-.thumb {
-  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -0.5 17 17' shape-rendering='crispEdges'%3E%3Cpath stroke='%23eeede5' d='M0 0h1m15 0h1M0 1h1M0 2h1M0 3h1M0 4h1M0 5h1M0 6h1M0 7h1M0 8h1M0 9h1m-1 1h1m-1 1h1m-1 1h1m-1 1h1m-1 1h1m-1 1h1m15 0h1M0 16h1m15 0h1'/%3E%3Cpath stroke='%23fdfdfa' d='M1 0h1'/%3E%3Cpath stroke='%23fff' d='M2 0h14M1 1h1m13 0h1M1 2h1m13 0h1M1 3h1m13 0h1M1 4h1m13 0h1M1 5h1m13 0h1M1 6h1m13 0h1M1 7h1m13 0h1M1 8h1m13 0h1M1 9h1m13 0h1M1 10h1m13 0h1M1 11h1m13 0h1M1 12h1m13 0h1M1 13h1m13 0h1M1 14h1m13 0h1M2 15h13'/%3E%3Cpath stroke='%23e6eefc' d='M2 1h1'/%3E%3Cpath stroke='%23d0dffc' d='M3 1h1M2 2h1'/%3E%3Cpath stroke='%23cad8f9' d='M4 1h1M2 3h1'/%3E%3Cpath stroke='%23c4d2f7' d='M5 1h1'/%3E%3Cpath stroke='%23c0d0f7' d='M6 1h1'/%3E%3Cpath stroke='%23bdcef7' d='M7 1h1M2 6h1'/%3E%3Cpath stroke='%23bbcdf5' d='M8 1h1'/%3E%3Cpath stroke='%23b8cbf6' d='M9 1h1M2 7h1'/%3E%3Cpath stroke='%23b7caf5' d='M10 1h1M2 8h1'/%3E%3Cpath stroke='%23b5c8f7' d='M11 1h1'/%3E%3Cpath stroke='%23b3c7f5' d='M12 1h1'/%3E%3Cpath stroke='%23afc5f4' d='M13 1h1'/%3E%3Cpath stroke='%23dce6f9' d='M14 1h1'/%3E%3Cpath stroke='%23dfe2e1' d='M16 1h1'/%3E%3Cpath stroke='%23e1eafe' d='M3 2h1'/%3E%3Cpath stroke='%23dae6fe' d='M4 2h1M3 3h1'/%3E%3Cpath stroke='%23d4e1fc' d='M5 2h1M3 4h1'/%3E%3Cpath stroke='%23d1e0fd' d='M6 2h1M4 4h1'/%3E%3Cpath stroke='%23d0ddfc' d='M7 2h1M3 5h1'/%3E%3Cpath stroke='%23cedbfd' d='M8 2h1M6 3h1'/%3E%3Cpath stroke='%23cad9fd' d='M9 2h1M7 3h1M5 5h1'/%3E%3Cpath stroke='%23c8d8fb' d='M10 2h1'/%3E%3Cpath stroke='%23c5d6fc' d='M11 2h1m-8 8h3'/%3E%3Cpath stroke='%23c2d3fc' d='M12 2h1m-2 1h1m-9 7h1m0 1h1'/%3E%3Cpath stroke='%23bccefa' d='M13 2h1m-1 2h1m-9 9h2'/%3E%3Cpath stroke='%23b9c9f3' d='M14 2h1M5 14h3'/%3E%3Cpath stroke='%23cfd7dd' d='M16 2h1'/%3E%3Cpath stroke='%23d8e3fc' d='M4 3h1'/%3E%3Cpath stroke='%23d1defd' d='M5 3h1'/%3E%3Cpath stroke='%23c9d8fc' d='M8 3h1M6 4h2M6 6h2M3 7h1'/%3E%3Cpath stroke='%23c5d5fc' d='M9 3h1M3 9h3'/%3E%3Cpath stroke='%23c5d3fc' d='M10 3h1'/%3E%3Cpath stroke='%23bed0fc' d='M12 3h1M9 4h1m-7 7h1m0 1h1'/%3E%3Cpath stroke='%23bccdfa' d='M13 3h1'/%3E%3Cpath stroke='%23baccf4' d='M14 3h1'/%3E%3Cpath stroke='%23bdcbda' d='M16 3h1'/%3E%3Cpath stroke='%23c4d4f7' d='M2 4h1'/%3E%3Cpath stroke='%23cddbfc' d='M5 4h1M3 6h1'/%3E%3Cpath stroke='%23c8d5fb' d='M8 4h1'/%3E%3Cpath stroke='%23bbcefd' d='M10 4h3M9 5h1M8 6h1'/%3E%3Cpath stroke='%23bcccf3' d='M14 4h1m-1 1h1m-1 1h1'/%3E%3Cpath stroke='%23b1c2d5' d='M16 4h1'/%3E%3Cpath stroke='%23bed0f8' d='M2 5h1'/%3E%3Cpath stroke='%23ceddfd' d='M4 5h1'/%3E%3Cpath stroke='%23c8d6fb' d='M6 5h3M3 8h2'/%3E%3Cpath stroke='%23bacdfc' d='M10 5h1m1 0h2M3 12h1'/%3E%3Cpath stroke='%23b9cdfb' d='M11 5h1M9 6h2m1 0h2m-1 1h1'/%3E%3Cpath stroke='%23a8bbd4' d='M16 5h1'/%3E%3Cpath stroke='%23cddafc' d='M4 6h1'/%3E%3Cpath stroke='%234d6185' d='M5 6h1m5 0h1M4 7h3m3 0h3M5 8h3m1 0h3M6 9h5m-4 1h3m-2 1h1'/%3E%3Cpath stroke='%23a4b8d3' d='M16 6h1'/%3E%3Cpath stroke='%23c1d3fb' d='M7 7h2M8 8h1'/%3E%3Cpath stroke='%23b6cefb' d='M9 7h1m2 1h1m-2 1h2'/%3E%3Cpath stroke='%23bacbf4' d='M14 7h1'/%3E%3Cpath stroke='%23a0b5d3' d='M16 7h1m-1 1h1m-1 5h1'/%3E%3Cpath stroke='%23b6cdfb' d='M13 8h1m-5 5h1'/%3E%3Cpath stroke='%23b9cbf3' d='M14 8h1'/%3E%3Cpath stroke='%23b4c8f6' d='M2 9h1'/%3E%3Cpath stroke='%23b5cdfa' d='M13 9h1'/%3E%3Cpath stroke='%23b5c9f3' d='M14 9h1'/%3E%3Cpath stroke='%239fb5d2' d='M16 9h1m-1 1h1m-1 1h1m-1 1h1'/%3E%3Cpath stroke='%23b1c7f6' d='M2 10h1'/%3E%3Cpath stroke='%23b2cffb' d='M10 10h3m-2 2h1'/%3E%3Cpath stroke='%23b1cbfa' d='M13 10h1'/%3E%3Cpath stroke='%23b3c8f5' d='M14 10h1m-6 4h2'/%3E%3Cpath stroke='%23adc3f6' d='M2 11h1'/%3E%3Cpath stroke='%23c3d3fd' d='M5 11h1'/%3E%3Cpath stroke='%23c2d5fc' d='M6 11h2'/%3E%3Cpath stroke='%23bad4fc' d='M9 11h1'/%3E%3Cpath stroke='%23b7d3fc' d='M10 11h1m-2 1h1'/%3E%3Cpath stroke='%23b3d1fc' d='M11 11h1'/%3E%3Cpath stroke='%23afcefb' d='M12 11h1'/%3E%3Cpath stroke='%23aecafa' d='M13 11h1'/%3E%3Cpath stroke='%23b1c8f3' d='M14 11h1'/%3E%3Cpath stroke='%23acc2f5' d='M2 12h1'/%3E%3Cpath stroke='%23c1d2fb' d='M5 12h1'/%3E%3Cpath stroke='%23bed1fc' d='M6 12h2'/%3E%3Cpath stroke='%23bdd3fb' d='M8 12h1'/%3E%3Cpath stroke='%23b6d1fb' d='M10 12h1'/%3E%3Cpath stroke='%23afccfb' d='M12 12h1'/%3E%3Cpath stroke='%23adc9f9' d='M13 12h1m-2 1h1'/%3E%3Cpath stroke='%23b1c5f3' d='M14 12h1'/%3E%3Cpath stroke='%23aac0f3' d='M2 13h1'/%3E%3Cpath stroke='%23b7cbf9' d='M3 13h1'/%3E%3Cpath stroke='%23b9cefb' d='M4 13h1'/%3E%3Cpath stroke='%23bbcef9' d='M7 13h1'/%3E%3Cpath stroke='%23b9cffb' d='M8 13h1'/%3E%3Cpath stroke='%23b2cdfb' d='M10 13h1'/%3E%3Cpath stroke='%23b0cbf9' d='M11 13h1'/%3E%3Cpath stroke='%23aec8f7' d='M13 13h1'/%3E%3Cpath stroke='%23b0c5f2' d='M14 13h1'/%3E%3Cpath stroke='%23dbe3f8' d='M2 14h1'/%3E%3Cpath stroke='%23b7c6f1' d='M3 14h1'/%3E%3Cpath stroke='%23b8c9f2' d='M4 14h1m3 0h1'/%3E%3Cpath stroke='%23b2c8f4' d='M11 14h1'/%3E%3Cpath stroke='%23b1c6f3' d='M12 14h1'/%3E%3Cpath stroke='%23b0c4f2' d='M13 14h1'/%3E%3Cpath stroke='%23d9e3f6' d='M14 14h1'/%3E%3Cpath stroke='%23aec0d6' d='M16 14h1'/%3E%3Cpath stroke='%23c3d4e7' d='M1 15h1'/%3E%3Cpath stroke='%23aec4e5' d='M15 15h1'/%3E%3Cpath stroke='%23edf1f3' d='M1 16h1'/%3E%3Cpath stroke='%23aac0e1' d='M2 16h1'/%3E%3Cpath stroke='%2394b1d9' d='M3 16h1'/%3E%3Cpath stroke='%2388a7d8' d='M4 16h1'/%3E%3Cpath stroke='%2383a4d3' d='M5 16h1'/%3E%3Cpath stroke='%237da0d4' d='M6 16h1m3 0h3'/%3E%3Cpath stroke='%237e9fd2' d='M7 16h1'/%3E%3Cpath stroke='%237c9fd3' d='M8 16h2'/%3E%3Cpath stroke='%2382a4d6' d='M13 16h1'/%3E%3Cpath stroke='%2394b0dd' d='M14 16h1'/%3E%3Cpath stroke='%23ecf2f7' d='M15 16h1'/%3E%3C/svg%3E");
-}
-
-#wmp-slider {
-  border-radius: 0;
-}
-#wmp-slider .rangeHandle {
-  width: 16px;
-  height: 16px;
-}
-#wmp-slider .rangeHandle::before {
-  border-radius: 0;
-  display: none;
-}
-
-#wmp-slider .rangeNub {
-  border-radius: 0;
-  width: 16px;
-  height: 16px;
-}
-#wmp-slider .rangeHandle .rangeNub {
-  background-color: #ece9d8;
-  border-color: #00138c;
-  border-width: 1px;
-  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-}
-#wmp-slider .rangeHandle.active .rangeNub {
-  background-color: #ece9d8;
-}
-
-#wmp-slider.focus .rangeNub {
-  background-color: #ece9d8;
-}
-
-#wmp-volume-slider {
-  border-radius: 0;
+.mioos-search input { border: 0; outline: none; width: 100%; font: inherit; background: transparent; }
+.mioos-start-entry {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 8px;
   background: transparent;
-  margin:0;
-  padding:0;
-  height: 20px;
+  text-align: left;
+}
+.mioos-start-entry:hover { background: #dfeeff; }
+.mioos-entry-copy { display: flex; flex-direction: column; gap: 2px; }
+.mioos-entry-copy em { font-style: normal; font-size: 12px; color: var(--mioos-muted); }
+.mioos-entry-icon {
+  width: 24px;
+  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
 }
 
-#wmp-volume-slider .rangeHandle {
-  width: 10px;
-  height: 20px;
-  top: auto;
-  bottom: -2px;
-  transform: translate(0);
+.mioos-desktop {
+  position: absolute;
+  inset: 0 0 40px 0;
 }
-#wmp-volume-slider .rangeHandle::before {
-  display: none;
+.mioos-desktop-icons {
+  display: grid;
+  grid-auto-flow: row;
+  grid-auto-rows: 92px;
+  gap: 12px;
+  width: 96px;
+  padding: 18px 16px;
+}
+.mioos-desktop-icon {
+  border: 0;
+  background: transparent;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.55);
+}
+.mioos-entry-title {
+  font-size: 12px;
+  line-height: 1.2;
+  text-align: center;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+.mioos-desktop-icon:hover .mioos-entry-title { background: rgba(32, 94, 199, 0.34); }
+
+.mioos-window {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 8px 8px 0 0;
+  border: 1px solid #2050ac;
+  background: var(--mioos-panel);
+  box-shadow: var(--mioos-shadow);
+}
+.mioos-window.is-maximized { border-radius: 0; }
+.mioos-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 8px;
+  color: #fff;
+  background: linear-gradient(180deg, #438cf7 0%, #1d59cc 55%, #1d50b7 100%);
+  user-select: none;
+  cursor: grab;
+}
+.mioos-titlebar-copy { display: flex; align-items: center; gap: 8px; }
+.mioos-window-actions { display: flex; gap: 4px; }
+.mioos-window-actions button {
+  width: 28px;
+  height: 24px;
+  border: 1px solid rgba(255,255,255,0.8);
+  border-radius: 5px;
+  color: #08336f;
+  background: linear-gradient(180deg, #ffffff 0%, #d8e8ff 100%);
+}
+.mioos-window-body {
+  flex: 1;
+  padding: 14px;
+  overflow: auto;
+  background: linear-gradient(180deg, #ffffff 0%, #f3f8fe 100%);
+}
+.mioos-panel-head { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; }
+.mioos-panel-head span { color: var(--mioos-muted); }
+.mioos-card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+.mioos-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 10px;
+  border: 1px solid #ccdaf2;
+  background: #fff;
+}
+.mioos-card-head { display: flex; align-items: center; gap: 8px; }
+.mioos-card p { margin: 0; color: var(--mioos-muted); font-size: 13px; line-height: 1.45; }
+.mioos-card button,
+.mioos-list-row,
+.mioos-terminal-placeholder,
+.mioos-alert button,
+.mioos-task-button,
+.mioos-start-button {
+  font: inherit;
+}
+.mioos-card button {
+  align-self: flex-start;
+  border: 1px solid var(--mioos-border);
+  border-radius: 6px;
+  background: linear-gradient(180deg, #fff 0%, #e8f1ff 100%);
+  padding: 6px 10px;
+}
+.mioos-list-row {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 12px 0;
+  border-bottom: 1px solid #d7e4f6;
+}
+.mioos-list-row span { color: var(--mioos-muted); }
+.mioos-terminal-placeholder {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 100%;
+  border-radius: 10px;
+  border: 1px solid #0a274d;
+  background: linear-gradient(180deg, #0f1724 0%, #08101a 100%);
+  color: #d3e7ff;
+  padding: 18px;
+}
+.mioos-terminal-badges { display: flex; gap: 8px; flex-wrap: wrap; }
+.mioos-badge {
+  display: inline-flex;
+  padding: 5px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.07);
 }
 
-#wmp-volume-slider .rangeNub {
-  border-radius: 3px;
-  width: 10px;
-  height: 20px;
+.mioos-taskbar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 40px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: stretch;
+  gap: 8px;
+  padding: 0 8px 0 0;
+  background: linear-gradient(180deg, var(--mioos-blue-1) 0%, var(--mioos-taskbar) 55%, var(--mioos-taskbar-dark) 100%);
+  border-top: 1px solid rgba(255,255,255,0.35);
 }
-#wmp-volume-slider .rangeHandle .rangeNub {
-  background-color: #16a34a;
-  border-color: #15803d;
-  border-width: 0px;
+.mioos-start-button {
+  min-width: 110px;
+  border: 0;
+  color: #fff;
+  font-weight: 700;
+  background: linear-gradient(180deg, #39b83a 0%, #2f9f2d 58%, #228320 100%);
+  border-radius: 0 12px 12px 0;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.35);
 }
-#wmp-volume-slider .rangeHandle.active .rangeNub {
-  background-color: #16a34a;
+.mioos-task-strip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
 }
+.mioos-task-button {
+  max-width: 220px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border: 1px solid rgba(255,255,255,0.22);
+  border-radius: 6px;
+  color: #fff;
+  background: rgba(255,255,255,0.14);
+}
+.mioos-task-button.is-active { background: rgba(255,255,255,0.25); }
+.mioos-tray {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 10px;
+  color: #fff;
+  background: linear-gradient(180deg, rgba(139, 205, 255, 0.8) 0%, rgba(104, 180, 255, 0.75) 100%);
+  border-left: 1px solid rgba(255,255,255,0.28);
+}
+.mioos-tray-pill { font-size: 12px; }
+.mioos-tray-clock { min-width: 60px; text-align: right; font-weight: 700; }
 
-#wmp-volume-slider.focus .rangeNub {
-  background-color: #16a34a;
-}
-
-
-#system-volume-slider {
-  border-radius: 0;
-  height: 100%;
-  min-height: auto;
-}
-
-#system-volume-slider .rangeHandle {
-  width: 20px;
-  height: 10px;
-}
-#system-volume-slider .rangeHandle::before {
-  display: none;
-}
-
-#system-volume-slider .rangeNub {
-  border-radius: 3px;
-  width: 20px;
-  height: 10px;
-}
-#system-volume-slider .rangeHandle .rangeNub {
-  background-color: #16a34a;
-  border-color: #15803d;
-  border-width: 0px;
-}
-#system-volume-slider .rangeHandle.active .rangeNub {
-  background-color: #16a34a;
-}
-
-#system-volume-slider.focus .rangeNub {
-  background-color: #16a34a;
-}
-
-.waiting {
-  cursor: wait;
+@media (max-width: 900px) {
+  .mioos-start-menu { width: calc(100vw - 20px); }
+  .mioos-start-body { grid-template-columns: 1fr; }
+  .mioos-start-side { display: none; }
+  .mioos-window { inset: 12px 12px 52px 12px !important; width: auto !important; height: auto !important; }
 }

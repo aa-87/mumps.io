@@ -1,33 +1,144 @@
-<body class="overflow-hidden">
-    <div id="app">
+<script id="mioosBootJson" type="application/json">{{{bootJson}}}</script>
+<div hidden id="mioosContractTokens"
+  data-mioos-single-socket="1"
+  data-mioos-native-shell="1"
+  data-mioos-command-event="{{commandEvent}}"
+  data-mioos-command-result-event="{{commandResultEvent}}"
+  data-mioos-command-transport="websocket-only"
+  data-mioos-realtime-contract="single-websocket-command-and-events"
+  data-mioos-route-rebuild="REG^MIOOS+COMPILE^MIOROUTE"
+  data-shell-chrome="winxp"
+  data-taskbar-style="xp-professional"
+  data-start-menu-style="xp-two-column">
+  Production MIOOS shell contract.
+</div>
 
-        <mioos-window-comp></mioos-window-comp>
+<div id="mioosRoot"
+  class="mioos-root"
+  v-cloak
+  data-mioos-root
+  data-mioos-session="{{sessionId}}"
+  data-mioos-ws="{{wsPath}}"
+  data-mioos-bootstrap="{{bootstrapPath}}"
+  data-mioos-view="{{viewPath}}"
+  data-mioos-command-event="{{commandEvent}}"
+  data-mioos-command-result-event="{{commandResultEvent}}"
+  data-shell-chrome="winxp"
+  data-taskbar-style="xp-professional"
+  data-start-menu-style="xp-two-column"
+  data-density="{{density}}"
+  data-wallpaper="{{wallpaper}}"
+  data-theme-key="{{themeKey}}"
+  data-window-manager="{{windowManager}}">
 
+  <div class="mioos-alert" v-if="alertMessage">
+    <strong>[[ alertTitle ]]</strong>
+    <span>[[ alertMessage ]]</span>
+    <button type="button" @click="dismissAlert">Dismiss</button>
+  </div>
 
-        <!--
-        <rightclick-comp></rightclick-comp>
-        <selectarea-comp></selectarea-comp>
-        <window-comp v-for="i in 3" :key="i" :position="i" :id="'window'+i" :titleBar="'window '+i+' !'"></window-comp>
-        <errorwindow-comp :show="true" :content="'Folder limit is 1 !'"></errorwindow-comp>
-        <mycomputer-comp></mycomputer-comp>
-        <taskbar-comp></taskbar-comp>
-       -->
+  <aside class="mioos-start-menu" :class="{ 'is-open': menuOpen }">
+    <div class="mioos-start-head">
+      <div class="mioos-start-avatar">M</div>
+      <div class="mioos-start-copy">
+        <strong>[[ boot.product.name || 'MIOOS' ]]</strong>
+        <span>[[ boot.product.subtitle || '' ]]</span>
+      </div>
     </div>
-    <script src="/public/mioos/components/desktop/rightclick-comp.umd.js"></script>
-    <script src="/public/mioos/components/desktop/selectarea-comp.umd.js"></script>
-    <script src="/public/mioos/components/windows/window-comp.umd.js"></script>
-    <script src="/public/mioos/components/windows/errorwindow-comp.umd.js"></script>
-    <script src="/public/mioos/components/windows/mycomputer-comp.umd.js"></script>
-    <script src="/public/mioos/components/taskbar/clock-comp.umd.js"></script>
-    <script src="/public/mioos/components/taskbar/startmenu-comp.umd.js"></script>
-    <script src="/public/mioos/components/taskbar/taskbar-comp.umd.js"></script>
+    <div class="mioos-start-body">
+      <div class="mioos-start-main">
+        <label class="mioos-search">
+          <span>🔎</span>
+          <input v-model="menuFilter" type="text" placeholder="Search programs and actions">
+        </label>
+        <button v-for="entry in filteredEntries" :key="entry.key" type="button" class="mioos-start-entry" @click="openApp(entry.key)">
+          <span class="mioos-entry-icon">[[ entry.icon ]]</span>
+          <span class="mioos-entry-copy"><strong>[[ entry.title ]]</strong><em>[[ entry.subtitle ]]</em></span>
+        </button>
+      </div>
+      <aside class="mioos-start-side">
+        <strong>System</strong>
+        <span>Profile [[ boot.product.profile || profile ]]</span>
+        <span>Theme [[ boot.desktop.themeKey || '' ]]</span>
+        <span>Socket [[ socketConnected ? 'Live' : 'Offline' ]]</span>
+        <button type="button" @click="refreshView">Refresh desktop</button>
+      </aside>
+    </div>
+  </aside>
 
+  <main class="mioos-desktop" @click="menuOpen=false">
+    <section class="mioos-desktop-icons" aria-label="Desktop icons">
+      <button v-for="entry in desktopEntries" :key="entry.key" type="button" class="mioos-desktop-icon" @dblclick="openApp(entry.key)">
+        <span class="mioos-entry-icon">[[ entry.icon ]]</span>
+        <span class="mioos-entry-title">[[ entry.title ]]</span>
+      </button>
+    </section>
 
-    <script src="/public/mioos/components/windows/mioos-title-bar-comp.umd.js"></script>
-    <script src="/public/mioos/components/windows/mioos-window-comp.umd.js"></script>
+    <section v-for="win in visibleWindows" :key="win.id" class="mioos-window" :class="windowClass(win)" :style="windowStyle(win)" @mousedown="focusWindow(win.id)">
+      <header class="mioos-titlebar" @mousedown.stop="beginDrag(win, $event)">
+        <div class="mioos-titlebar-copy">
+          <span class="mioos-entry-icon">[[ appIcon(win.appKey) ]]</span>
+          <strong>[[ win.title ]]</strong>
+        </div>
+        <div class="mioos-window-actions">
+          <button type="button" @click.stop="minimizeWindow(win.id)">_</button>
+          <button type="button" @click.stop="toggleMaximize(win.id)">▢</button>
+          <button type="button" @click.stop="closeWindow(win.id)">×</button>
+        </div>
+      </header>
+      <div class="mioos-window-body">
+        <template v-if="win.appKey === 'my-computer'">
+          <div class="mioos-panel-head">
+            <strong>[[ view.summary.headline || 'Production shell foundation' ]]</strong>
+            <span>[[ view.summary.subheadline || '' ]]</span>
+          </div>
+          <div class="mioos-card-grid">
+            <article v-for="entry in desktopEntries" :key="entry.key" class="mioos-card">
+              <div class="mioos-card-head"><span class="mioos-entry-icon">[[ entry.icon ]]</span><strong>[[ entry.title ]]</strong></div>
+              <p>[[ entry.subtitle ]]</p>
+              <button type="button" @click="openApp(entry.key)">Open</button>
+            </article>
+          </div>
+        </template>
+        <template v-else-if="win.appKey === 'documents'">
+          <div class="mioos-list-row" v-for="item in view.documents" :key="item.title">
+            <strong>[[ item.title ]]</strong>
+            <span>[[ item.detail ]]</span>
+          </div>
+        </template>
+        <template v-else-if="win.appKey === 'control-panel'">
+          <div class="mioos-list-row" v-for="item in view.controlPanel" :key="item.title">
+            <strong>[[ item.title ]]</strong>
+            <span>[[ item.detail ]]</span>
+          </div>
+        </template>
+        <template v-else-if="win.appKey === 'terminal'">
+          <div class="mioos-terminal-placeholder">
+            <strong>[[ view.terminal.headline || 'Terminal ready' ]]</strong>
+            <span>[[ view.terminal.subheadline || '' ]]</span>
+            <div class="mioos-terminal-badges">
+              <span class="mioos-badge">[[ view.terminal.status || 'ready' ]]</span>
+              <span class="mioos-badge">[[ view.terminal.transport || 'websocket' ]]</span>
+            </div>
+          </div>
+        </template>
+      </div>
+    </section>
+  </main>
 
-    <script src="/public/mioos/mioos_desktop.js"></script>
+  <footer class="mioos-taskbar">
+    <button type="button" class="mioos-start-button" @click.stop="toggleMenu">[[ boot.desktop.launcherLabel || 'Menu' ]]</button>
+    <div class="mioos-task-strip">
+      <button v-for="win in taskbarWindows" :key="win.id" type="button" class="mioos-task-button" :class="{ 'is-active': activeWindowId===win.id }" @click.stop="taskbarToggle(win.id)">
+        <span class="mioos-entry-icon">[[ appIcon(win.appKey) ]]</span>
+        <span>[[ win.title ]]</span>
+      </button>
+    </div>
+    <div class="mioos-tray">
+      <span class="mioos-tray-pill">[[ socketConnected ? 'Socket live' : 'Socket offline' ]]</span>
+      <span class="mioos-tray-clock">[[ clockText ]]</span>
+    </div>
+  </footer>
+</div>
 
-
-
-</body>
+<script src="/public/mioos/mioos_desktop.js"></script>

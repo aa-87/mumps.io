@@ -1,0 +1,13 @@
+2026-03-31 21:42:00 watcher_start pid=19075 pattern=*.html
+{"ts":"2026-03-31 21:42:00","event":"add","file":"/home/aa/work/mio/templates/layouts/miomos_shell.html"}
+{"ts":"2026-03-31 21:42:00","event":"add","file":"/home/aa/work/mio/templates/layouts/mioos_shell.html"}
+{"ts":"2026-03-31 21:42:00","event":"add","file":"/home/aa/work/mio/templates/layouts/mioui_app.html"}
+{"ts":"2026-03-31 21:42:00","event":"add","file":"/home/aa/work/mio/templates/layouts/plgd_layout.html"}
+{"ts":"2026-03-31 21:42:00","event":"add","file":"/home/aa/work/mio/templates/pages/miomos_auth.html"}
+{"ts":"2026-03-31 21:42:00","event":"add","file":"/home/aa/work/mio/templates/pages/miomos_desktop.html"}
+{"ts":"2026-03-31 21:42:00","event":"add","file":"/home/aa/work/mio/templates/pages/mioos_desktop.html"}
+{"ts":"2026-03-31 21:42:00","event":"add","file":"/home/aa/work/mio/templates/pages/plgd_about.html"}
+{"ts":"2026-03-31 21:42:00","event":"add","file":"/home/aa/work/mio/templates/pages/plgd_home.html"}
+{"ts":"2026-03-31 21:42:00","event":"add","file":"/home/aa/work/mio/templates/pages/plgd_playground.html"}
+{"ts":"2026-03-31 21:42:00","event":"add","file":"/home/aa/work/mio/templates/partials/ui_tpl_card_grid.html"}
+{"ts":"2026-03-31 21:42:00","event":"add","file":"/home/aa/work/mio/templates/partials/ui_tpl_card_list.html"}

@@ -1,19 +1,16 @@
 <!doctype html>
 <html lang="en">
-
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="mioos-style-architecture" content="tailwind-shell-native">
-    <title>MIO-OS</title>
-    <script src="/public/mioos/vue.global.prod.js"></script>
-    <script src="/public/mioos/xterm.js"></script>
-    <script src="/public/mioos/tailwindcss.js"></script>
-    <link rel="stylesheet" href="/public/mioos/7.scoped.css">
-    <link rel="stylesheet" href="/public/mioos/xterm.css">
-    <link rel="stylesheet" href="/public/mioos/mioos.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="mioos-style-architecture" content="tailwind-shell-native">
+  <title>{{page.title}}{{^page.title}}MIOOS Desktop{{/page.title}}</title>
+  <link rel="stylesheet" href="/public/mioos/xterm.css">
+  <link rel="stylesheet" href="/public/mioos/mioos.css">
+  <script src="/public/mioos/vue.global.prod.js"></script>
+  <script src="/public/mioos/xterm.js"></script>
 </head>
-{{{content}}}
+<body>
+  {{{content}}}
 </body>
-
 </html>
