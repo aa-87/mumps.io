@@ -15,6 +15,11 @@
           this.createTerminalWindow();
           return;
         }
+        if ((appKey === 'my-computer' || appKey === 'documents') && this.openExplorerWindow) {
+          this.menuOpen = false;
+          this.openExplorerWindow(appKey === 'my-computer' ? 'win-my-computer' : 'win-documents');
+          return;
+        }
         var win = this.windows.find(function (item) { return item.appKey === appKey; });
         if (!win) return;
         this.menuOpen = false;
@@ -64,6 +69,8 @@
               if (self.mountTerminalWindow) self.mountTerminalWindow(windowId);
               if (self.requestTerminalOpen) self.requestTerminalOpen(windowId);
             });
+          } else if ((win.appKey === 'my-computer' || win.appKey === 'documents') && this.openExplorerWindow) {
+            this.openExplorerWindow(windowId);
           }
           return;
         }
@@ -141,33 +148,6 @@
       endDrag: function () {
         this.dragState.active = false;
         this.dragState.windowId = '';
-      },
-
-      beginResize: function (win, event) {
-        if (!win || win.state === 'maximized') return;
-        this.focusWindow(win.id);
-        this.resizeState.active = true;
-        this.resizeState.windowId = win.id;
-        this.resizeState.startX = event.clientX;
-        this.resizeState.startY = event.clientY;
-        this.resizeState.width = win.width || 600;
-        this.resizeState.height = win.height || 420;
-      },
-      onResizeMove: function (event) {
-        var self = this, minWidth = 320, minHeight = 220;
-        if (!this.resizeState.active) return;
-        var win = this.windows.find(function (item) { return item.id === self.resizeState.windowId; });
-        if (!win) return;
-        win.width = Math.max(minWidth, this.resizeState.width + (event.clientX - this.resizeState.startX));
-        win.height = Math.max(minHeight, this.resizeState.height + (event.clientY - this.resizeState.startY));
-        if (win.appKey === 'terminal' && this.syncTerminalWindow) this.syncTerminalWindow(win.id);
-      },
-      endResize: function () {
-        var winId = this.resizeState.windowId;
-        if (!this.resizeState.active) return;
-        this.resizeState.active = false;
-        this.resizeState.windowId = '';
-        if (winId && this.syncTerminalWindow) this.syncTerminalWindow(winId);
       },
       windowToggleLabel: function (win) {
         return this.t(win && win.state === 'maximized' ? 'action.restore' : 'action.maximize');

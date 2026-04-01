@@ -90,3 +90,10 @@ The active MIOOS browser terminal path follows the proven MIOMOS pattern: termin
 ## VFS subsystem foundation
 
 The VFS foundation lives in `MIOOSFS`. It stores entries, child indexes, and file chunks entirely in globals and keeps root bootstrap folders available from `INIT^MIOOSFS`. The current contract supports list, read, write, mkdir, meta, rename, move, and delete. Permissions currently follow an owner plus role CSV plus read/write/delete flag model so later explorer and file-app surfaces can build on a stable backend.
+
+
+## ROI 8 — Explorer UI atop the global-backed VFS
+- Added a lightweight Explorer surface for My Computer and My Documents windows.
+- Explorer uses the existing fs.list and fs.read command contracts over the core websocket.
+- Folders can be opened and text files can be previewed without leaving the shell.
+- This ROI intentionally avoids rename, move, delete, and editor flows until the explorer contract is stable.

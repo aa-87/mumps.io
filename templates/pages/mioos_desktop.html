@@ -144,23 +144,44 @@
         </div>
       </header>
       <div class="mioos-window-body" :class="{ 'is-terminal-body': win.appKey === 'terminal' }">
-        <template v-if="win.appKey === 'my-computer'">
-          <div class="mioos-panel-head">
-            <strong>[[ view.summary.headline ]]</strong>
-            <span>[[ view.summary.subheadline ]]</span>
-          </div>
-          <div class="mioos-card-grid">
-            <article v-for="entry in desktopEntries" :key="entry.key" class="mioos-card">
-              <div class="mioos-card-head"><span class="mioos-entry-icon">[[ entry.icon ]]</span><strong>[[ entry.title ]]</strong></div>
-              <p>[[ entry.subtitle ]]</p>
-              <button type="button" @click="openApp(entry.key)">[[ t('action.open') ]]</button>
-            </article>
-          </div>
-        </template>
-        <template v-else-if="win.appKey === 'documents'">
-          <div class="mioos-list-row" v-for="item in view.documents" :key="item.title">
-            <strong>[[ item.title ]]</strong>
-            <span>[[ item.detail ]]</span>
+        <template v-if="win.appKey === 'my-computer' || win.appKey === 'documents'">
+          <div class="mioos-explorer" data-mioos-explorer="1">
+            <aside class="mioos-explorer-sidebar">
+              <div class="mioos-panel-head">
+                <strong>[[ view.explorer.headline || t('explorer.headline', 'Global-backed explorer') ]]</strong>
+                <span>[[ view.explorer.subheadline || t('explorer.subheadline', 'Browse the MIOOS virtual file system.') ]]</span>
+              </div>
+              <button type="button" class="mioos-explorer-place" v-for="place in explorerLocations()" :key="place.key" @click="explorerJump(win.id, place.id)">
+                <span class="mioos-entry-icon">[[ place.icon ]]</span>
+                <strong>[[ place.title ]]</strong>
+              </button>
+              <div class="mioos-explorer-sidebar-note">[[ explorerStatusText(win) ]]</div>
+            </aside>
+            <section class="mioos-explorer-main">
+              <div class="mioos-explorer-toolbar">
+                <button type="button" @click="explorerGoUp(win.id)">[[ t('action.up', 'Up') ]]</button>
+                <button type="button" @click="loadExplorerFolder(win.id, (win.explorerState || {}).currentFolderId)">[[ t('action.refreshDesktop') ]]</button>
+                <div class="mioos-explorer-path">[[ ((win.explorerState || {}).path) || '/' ]]</div>
+              </div>
+              <div class="mioos-explorer-content">
+                <div class="mioos-explorer-list" role="list">
+                  <button type="button" class="mioos-explorer-row" :class="{ 'is-selected': ((win.explorerState || {}).selectedId) === entry.id }" v-for="entry in explorerEntries(win)" :key="entry.id" @click="explorerSelect(win.id, entry)" @dblclick="explorerOpen(win.id, entry)">
+                    <span class="mioos-entry-icon">[[ explorerIcon(entry) ]]</span>
+                    <span class="mioos-explorer-name">[[ entry.name ]]</span>
+                    <span class="mioos-explorer-kind">[[ entry.kind ]]</span>
+                    <span class="mioos-explorer-size">[[ entry.kind === 'folder' ? '—' : ((entry.size || 0) + ' B') ]]</span>
+                  </button>
+                </div>
+                <aside class="mioos-explorer-preview">
+                  <strong>[[ ((explorerSelected(win) || {}).name) || t('explorer.previewTitle', 'Preview') ]]</strong>
+                  <div class="mioos-explorer-preview-meta" v-if="explorerSelected(win)">
+                    <span>[[ (explorerSelected(win) || {}).kind ]]</span>
+                    <span>[[ (explorerSelected(win) || {}).mime || t('common.none') ]]</span>
+                  </div>
+                  <pre class="mioos-explorer-preview-body">[[ explorerPreview(win) || t('explorer.previewEmpty', 'Select a text file to preview its contents.') ]]</pre>
+                </aside>
+              </div>
+            </section>
           </div>
         </template>
         <template v-else-if="win.appKey === 'control-panel'">
@@ -171,11 +192,25 @@
         </template>
         <template v-else-if="win.appKey === 'terminal'">
           <div class="mioos-terminal-shell" data-terminal-surface data-terminal-engine="xtermjs-ydb" data-terminal-renderer="xtermjs" data-terminal-focus="xterm-managed" data-terminal-textarea="xterm-owned" :data-terminal-window="win.id">
+            <div class="mioos-terminal-toolbar">
+              <div class="mioos-terminal-toolbar-copy">
+                <strong>[[ view.terminal.headline ]]</strong>
+                <span>[[ view.terminal.subheadline ]]</span>
+              </div>
+              <div class="mioos-terminal-toolbar-actions">
+                <button type="button" @click="createTerminalWindow">[[ t('terminal.newSession', 'New session') ]]</button>
+                <button type="button" @click="clearTerminalWindow(win.id)">[[ t('terminal.clear', 'Clear') ]]</button>
+              </div>
+            </div>
+            <div class="mioos-terminal-meta">
+              <span class="mioos-badge">[[ terminalStatusText(win) ]]</span>
+              <span class="mioos-badge">[[ (win.terminalState || {}).transport || view.terminal.transport ]]</span>
+              <span class="mioos-badge">[[ view.terminal.engine ]]</span>
+            </div>
             <div class="mioos-terminal-viewport" :id="terminalContainerId(win.id)" data-terminal-viewport="xtermjs"></div>
           </div>
         </template>
       </div>
-      <button type="button" class="mioos-window-resize" :aria-label="t('action.resize', 'Resize window')" @mousedown.stop.prevent="beginResize(win, $event)"></button>
     </section>
   </main>
 

@@ -172,3 +172,10 @@ Keep tests:
 - Added HTTP routes and websocket command handlers for `fs.list`, `fs.read`, `fs.write`, `fs.mkdir`, `fs.meta`, `fs.rename`, `fs.move`, and `fs.delete`.
 - Boot state now advertises the VFS contract including root id, home id, chunk size, globals-only storage, and owner/role/flag permissions.
 - Added regression coverage in `^MIOOST` for VFS CRUD and command-bus integration.
+
+
+## ROI 8 — Explorer UI atop the global-backed VFS
+- Added a lightweight Explorer surface for My Computer and My Documents windows.
+- Explorer uses the existing fs.list and fs.read command contracts over the core websocket.
+- Folders can be opened and text files can be previewed without leaving the shell.
+- This ROI intentionally avoids rename, move, delete, and editor flows until the explorer contract is stable.

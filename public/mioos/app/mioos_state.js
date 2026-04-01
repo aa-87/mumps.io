@@ -59,6 +59,12 @@
         }
       },
       auth: { enabled: false, required: false, guestLoginEnabled: false, mode: 'anonymous' },
+      explorer: {
+        headline: 'Global-backed explorer',
+        subheadline: 'Browse the MIOOS virtual file system backed entirely by globals.',
+        rootId: 'root',
+        homeId: 'root'
+      },
       terminal: {
         enabled: true,
         engine: 'xtermjs',
@@ -98,6 +104,12 @@
       },
       documents: [],
       controlPanel: [],
+      explorer: {
+        headline: 'Global-backed explorer',
+        subheadline: 'Browse the MIOOS virtual file system backed entirely by globals.',
+        rootId: 'root',
+        homeId: 'root'
+      },
       terminal: {
         status: 'ready',
         transport: 'pipe',
@@ -141,6 +153,7 @@
     base.summary = Object.assign(base.summary, view.summary || {});
     base.documents = Array.isArray(view.documents) ? deepClone(view.documents) : [];
     base.controlPanel = Array.isArray(view.controlPanel) ? deepClone(view.controlPanel) : [];
+    base.explorer = Object.assign(base.explorer, view.explorer || {});
     base.terminal = Object.assign(base.terminal, view.terminal || {});
     base.terminal.profile = Object.assign(base.terminal.profile, (view.terminal || {}).profile || {});
     base.terminal.sessions = Array.isArray((view.terminal || {}).sessions) ? deepClone(view.terminal.sessions) : [];

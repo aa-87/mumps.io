@@ -30,6 +30,10 @@ BUILD(STATE,CONF,VIEW)
 	SET VIEW("controlPanel",4,"title")=$$TXT^MIOOSI18N(CODE,"view.controlPanel.4.title","Authentication")
 	SET VIEW("controlPanel",5,"title")="VFS"
 	SET VIEW("controlPanel",5,"detail")=$GET(STATE("fsTransport"),"http-and-websocket")_" / root "_$GET(STATE("fsRootId"),"root")
+	SET VIEW("explorer","headline")=$$TXT^MIOOSI18N(CODE,"explorer.headline","Global-backed explorer")
+	SET VIEW("explorer","subheadline")=$$TXT^MIOOSI18N(CODE,"explorer.subheadline","Browse folders and preview text files from the MIOOS virtual file system.")
+	SET VIEW("explorer","rootId")=$GET(STATE("fsRootId"),"root")
+	SET VIEW("explorer","homeId")=$GET(STATE("fsHomeId"),"root")
 	IF +$GET(STATE("authenticated"),0)=1 DO
 	. SET AUTHTXT=$$TXT^MIOOSI18N(CODE,"auth.state.signedInAs","Signed in as")_" "_$GET(STATE("userName"))
 	ELSE  IF +$GET(STATE("authRequired"),0)=1 DO

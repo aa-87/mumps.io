@@ -8,6 +8,7 @@
     var Auth = (window.MIOOSAuth || {}).methods || {};
     var WS = (window.MIOOSWSClient || {}).methods || {};
     var WM = (window.MIOOSWM || {}).methods || {};
+    var Explorer = (window.MIOOSExplorer || {}).methods || {};
     var Terminal = (window.MIOOSTerminal || {}).methods || {};
     var I18N = window.MIOOSI18N || {};
 
@@ -34,14 +35,6 @@
             startY: 0,
             left: 0,
             top: 0
-          },
-          resizeState: {
-            active: false,
-            windowId: '',
-            startX: 0,
-            startY: 0,
-            width: 0,
-            height: 0
           },
           clockTimer: null,
           pingTimer: null,
@@ -96,14 +89,14 @@
         this.refreshView();
         this.initSocket();
         if (this.startTerminalPolling) this.startTerminalPolling();
+        var self = this;
+        this.$nextTick(function () {
+          if (self.primeExplorerWindows) self.primeExplorerWindows();
+        });
         this._dragMove = this.onDragMove.bind(this);
         this._dragEnd = this.endDrag.bind(this);
-        this._resizeMove = this.onResizeMove.bind(this);
-        this._resizeEnd = this.endResize.bind(this);
         window.addEventListener('mousemove', this._dragMove);
         window.addEventListener('mouseup', this._dragEnd);
-        window.addEventListener('mousemove', this._resizeMove);
-        window.addEventListener('mouseup', this._resizeEnd);
       },
       beforeUnmount: function () {
         if (this.clockTimer) window.clearInterval(this.clockTimer);
@@ -112,8 +105,6 @@
         if (this.socket) this.socket.close();
         window.removeEventListener('mousemove', this._dragMove);
         window.removeEventListener('mouseup', this._dragEnd);
-        window.removeEventListener('mousemove', this._resizeMove);
-        window.removeEventListener('mouseup', this._resizeEnd);
         this.windows.forEach(function (win) {
           if (win._term) win._term.dispose();
         });
@@ -161,7 +152,7 @@
           }
           return (((win || {}).terminalState || {}).status) || this.t('terminal.status.ready', 'Terminal idle');
         }
-      }, Auth, WS, WM, Terminal)
+      }, Auth, WS, WM, Explorer, Terminal)
     });
 
     app.config.compilerOptions.delimiters = ['[[', ']]'];

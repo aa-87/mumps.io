@@ -427,12 +427,31 @@ button, input { font: inherit; }
 }
 
 
-.mioos-window-body.is-terminal-body { padding: 0; overflow: hidden; background: #08101a; }
-.mioos-terminal-shell { display: flex; flex-direction: column; width: 100%; height: 100%; min-height: 100%; background: #08101a; color: #d3e7ff; }
-.mioos-terminal-viewport { flex: 1; width: 100%; height: 100%; min-height: 0; padding: 0; }
-.mioos-terminal-viewport .xterm,
-.mioos-terminal-viewport .xterm-viewport,
-.mioos-terminal-viewport .xterm-screen { height: 100%; }
-.mioos-window-resize { position: absolute; right: 0; bottom: 0; width: 18px; height: 18px; padding: 0; border: 0; background: linear-gradient(135deg, transparent 0 40%, rgba(255,255,255,0.38) 40% 48%, transparent 48% 60%, rgba(255,255,255,0.55) 60% 68%, transparent 68%); cursor: nwse-resize; opacity: 0.9; }
-.mioos-window-resize:hover { opacity: 1; }
-.mioos-window.is-maximized .mioos-window-resize { display: none; }
+.mioos-window-body.is-terminal-body { padding: 0; background: #08101a; }
+.mioos-terminal-shell { display: flex; flex-direction: column; min-height: 100%; background: linear-gradient(180deg, #0f1724 0%, #08101a 100%); color: #d3e7ff; }
+.mioos-terminal-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03); }
+.mioos-terminal-toolbar-copy { display: flex; flex-direction: column; gap: 3px; }
+.mioos-terminal-toolbar-copy span { color: rgba(211,231,255,0.78); font-size: 12px; }
+.mioos-terminal-toolbar-actions { display: flex; gap: 8px; }
+.mioos-terminal-toolbar-actions button { border: 1px solid rgba(255,255,255,0.18); border-radius: 6px; background: rgba(255,255,255,0.08); color: #d3e7ff; padding: 6px 10px; }
+.mioos-terminal-meta { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 14px 0; }
+.mioos-terminal-viewport { flex: 1; min-height: 260px; padding: 12px 14px 14px; }
+.mioos-terminal-viewport .xterm { height: 100%; }
+
+.mioos-explorer { display: grid; grid-template-columns: 220px 1fr; gap: 12px; height: 100%; min-height: 0; }
+.mioos-explorer-sidebar { display: flex; flex-direction: column; gap: 10px; padding: 12px; border-right: 1px solid #d7e4f6; background: linear-gradient(180deg, #f9fbff 0%, #edf5ff 100%); }
+.mioos-explorer-place { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 10px; border: 1px solid #c7daf8; border-radius: 8px; background: #fff; text-align: left; }
+.mioos-explorer-sidebar-note { font-size: 12px; color: var(--mioos-muted); padding-top: 4px; }
+.mioos-explorer-main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.mioos-explorer-toolbar { display: flex; align-items: center; gap: 8px; padding-bottom: 10px; }
+.mioos-explorer-toolbar button { border: 1px solid var(--mioos-border); border-radius: 6px; background: linear-gradient(180deg, #fff 0%, #e8f1ff 100%); padding: 6px 10px; }
+.mioos-explorer-path { flex: 1; min-width: 0; padding: 7px 10px; border: 1px solid #c7daf8; border-radius: 6px; background: #fff; color: var(--mioos-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mioos-explorer-content { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 12px; min-height: 0; flex: 1; }
+.mioos-explorer-list { min-height: 0; overflow: auto; border: 1px solid #d7e4f6; border-radius: 8px; background: #fff; }
+.mioos-explorer-row { display: grid; grid-template-columns: 24px minmax(0,1fr) 70px 70px; gap: 8px; width: 100%; align-items: center; padding: 8px 10px; border: 0; border-bottom: 1px solid #edf2fb; background: transparent; text-align: left; }
+.mioos-explorer-row:hover, .mioos-explorer-row.is-selected { background: #dfeeff; }
+.mioos-explorer-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mioos-explorer-kind, .mioos-explorer-size { color: var(--mioos-muted); font-size: 12px; text-transform: capitalize; }
+.mioos-explorer-preview { min-height: 0; display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px solid #d7e4f6; border-radius: 8px; background: linear-gradient(180deg, #fff 0%, #f7fbff 100%); }
+.mioos-explorer-preview-meta { display: flex; gap: 8px; color: var(--mioos-muted); font-size: 12px; }
+.mioos-explorer-preview-body { flex: 1; min-height: 0; margin: 0; padding: 10px; overflow: auto; border-radius: 6px; background: #ffffff; border: 1px solid #e4edf8; color: #142744; white-space: pre-wrap; word-break: break-word; }
