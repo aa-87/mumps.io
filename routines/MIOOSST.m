@@ -2,27 +2,59 @@ MIOOSST ; MIOOS session and boot state
 	QUIT
 	;
 LOAD(CONF,REQ,CTX,STATE,ERR)
-	NEW USER,ROLES
+	NEW USER,ROLES,AUTHOK,AUTHERR,AUTHREQ,DEVOK,UNAME,LOC,CODE
 	KILL STATE,ERR
+	SET ERR("routine")="MIOOSST"
+	DO BOOTSTRAP^MIOOSAUTH(.CONF)
+	DO RESOLVE^MIOOSI18N(.CONF,.REQ,.CTX,.LOC)
+	SET CODE=$GET(LOC("code"),"en")
+	SET AUTHREQ=+$$AUTHREQ^MIOOSAUTH(.CONF)
+	SET AUTHOK=0
+	IF +$$LOCALEN^MIOOSAUTH(.CONF)=1 DO
+	. SET AUTHOK=$$LOADLOCAL^MIOOSAUTH(.CONF,.REQ,.CTX,.AUTHERR)
+	SET DEVOK=$$DEVAUTH(.CONF)
+	IF AUTHOK DO
+	. SET USER=$$PRINCIPAL^MIOAUTHCTX(.CTX)
+	. SET UNAME=$$USERNAME^MIOAUTHCTX(.CTX)
+	. SET ROLES=$$ROLECSV^MIOAUTHCTX(.CTX)
+	ELSE  IF DEVOK DO
+	. SET USER=$GET(CONF("mioos","dev","principal"),"dev-user")
+	. SET UNAME=$GET(CONF("mioos","dev","userName"),"Developer")
+	. SET ROLES=$GET(CONF("mioos","dev","roles"),"developer,admin")
+	ELSE  DO
+	. SET USER=""
+	. SET UNAME=""
+	. SET ROLES=""
+	SET STATE("localeCode")=CODE
+	SET STATE("localeDir")=$GET(LOC("dir"),"ltr")
+	SET STATE("localeLabel")=$GET(LOC("label"),$$LABEL^MIOOSI18N(CODE))
+	SET STATE("localeRtl")=+$GET(LOC("rtl"),0)
+	SET STATE("authenticated")=$SELECT(USER'="":1,1:0)
+	SET STATE("authRequired")=AUTHREQ
+	SET STATE("authMode")=$SELECT(+$$LOCALEN^MIOOSAUTH(.CONF)=1:"local-session",DEVOK=1:"dev-bypass",1:"anonymous")
+	SET STATE("guestLoginEnabled")=+$$GUESTEN^MIOOSAUTH(.CONF)
+	SET STATE("localAuthEnabled")=+$$LOCALEN^MIOOSAUTH(.CONF)
 	SET STATE("brandTitle")=$GET(CONF("mioos","brand","title"),"MIOOS")
-	SET STATE("brandSubtitle")=$GET(CONF("mioos","brand","subtitle"),"MUMPS powered Windows XP style desktop")
-	SET STATE("profile")=$SELECT($GET(CONF("mioos","profile"))'="":$GET(CONF("mioos","profile")),1:"dev")
-	SET USER=$GET(CTX("auth","claims","sub")) IF USER="" SET USER=$SELECT(+$GET(CONF("mioos","desktop","authRequired"),0)=1:"unknown",1:"guest")
-	SET ROLES=$GET(CTX("auth","claims","roles")) IF ROLES="" SET ROLES=$SELECT(USER="guest":"guest",1:"operator")
-	SET STATE("principal")=USER
-	SET STATE("userName")=$SELECT(USER="guest":"Guest",1:USER)
+	SET STATE("brandSubtitle")=$$TXT^MIOOSI18N(CODE,"product.subtitle","MUMPS powered Windows XP style desktop")
+	SET STATE("profile")=$$PROFILE(.CONF)
+	SET STATE("principal")=$SELECT(USER'="":USER,AUTHREQ=1:"anonymous",1:"guest")
+	SET STATE("userName")=$SELECT(UNAME'="":UNAME,AUTHREQ=1:$$TXT^MIOOSI18N(CODE,"auth.state.required","Sign in required"),1:$$TXT^MIOOSI18N(CODE,"common.guest","Guest"))
+	IF ROLES="" SET ROLES=$SELECT(STATE("principal")="guest":"guest",1:"")
 	SET STATE("roles")=ROLES
-	SET STATE("sessionId")=$GET(CTX("auth","claims","sid")) IF STATE("sessionId")="" SET STATE("sessionId")="mioos-local"
+	SET STATE("sessionId")=$GET(CTX("auth","claims","sid")) IF STATE("sessionId")="" SET STATE("sessionId")=$SELECT(STATE("authenticated")=1:"mioos-auth",1:"mioos-shell")
 	SET STATE("desktopPath")=$GET(CONF("mioos","route","desktop"),"/mioos")
 	SET STATE("bootstrapPath")=$GET(CONF("mioos","route","bootstrap"),"/api/mioos/bootstrap")
 	SET STATE("viewPath")=$GET(CONF("mioos","route","view"),"/api/mioos/view")
+	SET STATE("signinPath")=$GET(CONF("mioos","route","signin"),"/api/mioos/auth/signin")
+	SET STATE("signoutPath")=$GET(CONF("mioos","route","signout"),"/api/mioos/auth/signout")
+	SET STATE("guestSigninPath")=$GET(CONF("mioos","route","guestSignin"),"/api/mioos/auth/guest")
 	SET STATE("wsPath")=$GET(CONF("mioos","route","ws"),"/ws/mioos")
 	SET STATE("themeKey")=$GET(CONF("mioos","desktop","theme"),"xp-classic-blue")
 	SET STATE("wallpaper")=$GET(CONF("mioos","desktop","wallpaper"),"bliss")
 	SET STATE("density")=$GET(CONF("mioos","desktop","density"),"comfortable")
 	SET STATE("fontFamily")=$GET(CONF("mioos","desktop","fontFamily"),"Segoe UI")
 	SET STATE("fontSize")=+$GET(CONF("mioos","desktop","fontSize"),13)
-	SET STATE("launcherLabel")=$GET(CONF("mioos","desktop","launcherLabel"),"Menu")
+	SET STATE("launcherLabel")=$$TXT^MIOOSI18N(CODE,"launcher.menu","Menu")
 	SET STATE("commandEvent")=$GET(CONF("mioos","desktop","transport","eventName"),"desktop.command")
 	SET STATE("commandResultEvent")=$GET(CONF("mioos","desktop","transport","resultEvent"),"desktop.result")
 	SET STATE("commandErrorEvent")=$GET(CONF("mioos","desktop","transport","errorEvent"),"desktop.error")
@@ -31,9 +63,27 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("taskbarStyle")=$GET(CONF("mioos","desktop","taskbarStyle"),"xp-professional")
 	SET STATE("startMenuStyle")=$GET(CONF("mioos","desktop","startMenuStyle"),"xp-two-column")
 	SET STATE("windowManager")=$GET(CONF("mioos","desktop","windowManager"),"mioos-native-vue-css")
+	SET STATE("a11yRtl")=+$GET(STATE("localeRtl"),0)
+	SET STATE("a11yKeyboardModel")="desktop-first"
+	SET STATE("a11yScreenReaderHints")=1
+	SET STATE("a11yMotionPreference")="respect-user-preference"
+	SET STATE("perfClientModel")="thin-vue-umd"
+	SET STATE("perfRenderBudgetMs")=16
+	SET STATE("perfPayloadMode")="tmp-global-safe"
+	SET STATE("perfTransport")="websocket-first-http-refresh"
 	DO APPS(.STATE)
 	DO WINDOWS(.STATE)
 	QUIT 1
+	;
+PROFILE(CONF)
+	IF $$DEVAUTH(.CONF) QUIT "dev"
+	QUIT $SELECT($GET(CONF("mioos","profile"))'="":$GET(CONF("mioos","profile")),1:"prod")
+	;
+DEVAUTH(CONF)
+	IF +$$LOCALEN^MIOOSAUTH(.CONF)=1 QUIT 0
+	IF +$GET(CONF("mioos","dev","authDisabled"),0)=1 QUIT 1
+	IF +$GET(CONF("mioos","dev","enabled"),0)=1,$GET(CONF("mioos","profile"))="dev" QUIT 1
+	QUIT 0
 	;
 BOOTJSON(STATE,CONF)
 	NEW OBJ
@@ -44,16 +94,26 @@ BOOTARY(STATE,CONF,OBJ)
 	KILL OBJ
 	SET OBJ("product","name")=$GET(STATE("brandTitle"),"MIOOS")
 	SET OBJ("product","subtitle")=$GET(STATE("brandSubtitle"),"MUMPS powered Windows XP style desktop")
-	SET OBJ("product","version")="roi1-shell-foundation"
+	SET OBJ("product","version")="roi3-docs-i18n-modular-shell"
 	SET OBJ("product","profile")=$GET(STATE("profile"),"dev")
 	SET OBJ("user","id")=$GET(STATE("principal"))
 	SET OBJ("user","displayName")=$GET(STATE("userName"))
+	SET OBJ("user","authenticated")=+$GET(STATE("authenticated"),0)
 	DO CSV2ARY($GET(STATE("roles")),$NAME(OBJ("user","roles")))
 	SET OBJ("session","id")=$GET(STATE("sessionId"))
 	SET OBJ("session","transportModel")=$GET(STATE("transportModel"),"single-websocket-command-and-events")
+	SET OBJ("locale","code")=$GET(STATE("localeCode"),"en")
+	SET OBJ("locale","dir")=$GET(STATE("localeDir"),"ltr")
+	SET OBJ("locale","label")=$GET(STATE("localeLabel"),"English")
+	SET OBJ("locale","rtl")=+$GET(STATE("localeRtl"),0)
+	DO SUPPORTED^MIOOSI18N($NAME(OBJ("locale","supported")),$GET(CONF("mioos","i18n","default"),"en"))
+	DO CATALOG^MIOOSI18N($GET(STATE("localeCode"),"en"),$NAME(OBJ("i18n","strings")))
 	SET OBJ("routes","desktop")=$GET(STATE("desktopPath"))
 	SET OBJ("routes","bootstrap")=$GET(STATE("bootstrapPath"))
 	SET OBJ("routes","view")=$GET(STATE("viewPath"))
+	SET OBJ("routes","signin")=$GET(STATE("signinPath"))
+	SET OBJ("routes","signout")=$GET(STATE("signoutPath"))
+	SET OBJ("routes","guestSignin")=$GET(STATE("guestSigninPath"))
 	SET OBJ("routes","websocket")=$GET(STATE("wsPath"))
 	SET OBJ("routes","commandEvent")=$GET(STATE("commandEvent"))
 	SET OBJ("routes","commandResultEvent")=$GET(STATE("commandResultEvent"))
@@ -72,41 +132,57 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","realtimeContract")=$GET(STATE("transportModel"),"single-websocket-command-and-events")
 	SET OBJ("desktop","taskbarOrder")="stable-order"
 	SET OBJ("desktop","noMarkupData")=1
+	SET OBJ("desktop","accessibility","rtl")=+$GET(STATE("a11yRtl"),0)
+	SET OBJ("desktop","accessibility","keyboardModel")=$GET(STATE("a11yKeyboardModel"),"desktop-first")
+	SET OBJ("desktop","accessibility","screenReaderHints")=+$GET(STATE("a11yScreenReaderHints"),1)
+	SET OBJ("desktop","accessibility","motionPreference")=$GET(STATE("a11yMotionPreference"),"respect-user-preference")
+	SET OBJ("desktop","performance","clientModel")=$GET(STATE("perfClientModel"),"thin-vue-umd")
+	SET OBJ("desktop","performance","renderBudgetMs")=+$GET(STATE("perfRenderBudgetMs"),16)
+	SET OBJ("desktop","performance","payloadMode")=$GET(STATE("perfPayloadMode"),"tmp-global-safe")
+	SET OBJ("desktop","performance","transport")=$GET(STATE("perfTransport"),"websocket-first-http-refresh")
+	SET OBJ("auth","required")=+$GET(STATE("authRequired"),0)
+	SET OBJ("auth","enabled")=+$GET(STATE("localAuthEnabled"),0)
+	SET OBJ("auth","guestLoginEnabled")=+$GET(STATE("guestLoginEnabled"),0)
+	SET OBJ("auth","mode")=$GET(STATE("authMode"),"anonymous")
 	DO THEMES($NAME(OBJ("desktop","themes")),$GET(STATE("themeKey")))
 	MERGE OBJ("apps")=STATE("apps")
 	MERGE OBJ("windows")=STATE("windows")
 	QUIT
 	;
 APPS(STATE)
+	NEW CODE
+	SET CODE=$GET(STATE("localeCode"),"en")
 	KILL STATE("apps")
 	SET STATE("apps",1,"key")="my-computer"
-	SET STATE("apps",1,"title")="My Computer"
-	SET STATE("apps",1,"subtitle")="Browse drives, folders, and shell locations"
+	SET STATE("apps",1,"title")=$$TXT^MIOOSI18N(CODE,"app.my-computer.title","My Computer")
+	SET STATE("apps",1,"subtitle")=$$TXT^MIOOSI18N(CODE,"app.my-computer.subtitle","Browse drives, folders, and shell locations")
 	SET STATE("apps",1,"icon")="💻"
 	SET STATE("apps",1,"kind")="folder"
 	SET STATE("apps",2,"key")="documents"
-	SET STATE("apps",2,"title")="My Documents"
-	SET STATE("apps",2,"subtitle")="Personal workspace documents"
+	SET STATE("apps",2,"title")=$$TXT^MIOOSI18N(CODE,"app.documents.title","My Documents")
+	SET STATE("apps",2,"subtitle")=$$TXT^MIOOSI18N(CODE,"app.documents.subtitle","Personal workspace documents")
 	SET STATE("apps",2,"icon")="📁"
 	SET STATE("apps",2,"kind")="folder"
 	SET STATE("apps",3,"key")="control-panel"
-	SET STATE("apps",3,"title")="Control Panel"
-	SET STATE("apps",3,"subtitle")="Desktop settings and shell behavior"
+	SET STATE("apps",3,"title")=$$TXT^MIOOSI18N(CODE,"app.control-panel.title","Control Panel")
+	SET STATE("apps",3,"subtitle")=$$TXT^MIOOSI18N(CODE,"app.control-panel.subtitle","Desktop settings and shell behavior")
 	SET STATE("apps",3,"icon")="🛠"
 	SET STATE("apps",3,"kind")="system"
 	SET STATE("apps",4,"key")="terminal"
-	SET STATE("apps",4,"title")="Terminal"
-	SET STATE("apps",4,"subtitle")="Websocket-backed MUMPS terminal surface"
+	SET STATE("apps",4,"title")=$$TXT^MIOOSI18N(CODE,"app.terminal.title","Terminal")
+	SET STATE("apps",4,"subtitle")=$$TXT^MIOOSI18N(CODE,"app.terminal.subtitle","Websocket-backed MUMPS terminal surface")
 	SET STATE("apps",4,"icon")=">_"
 	SET STATE("apps",4,"kind")="tool"
 	QUIT
 	;
 WINDOWS(STATE)
+	NEW CODE
+	SET CODE=$GET(STATE("localeCode"),"en")
 	KILL STATE("windows")
-	DO WIN(.STATE,1,"win-my-computer","my-computer","My Computer",88,72,760,500,4,"normal")
-	DO WIN(.STATE,2,"win-documents","documents","My Documents",180,118,620,420,2,"minimized")
-	DO WIN(.STATE,3,"win-control-panel","control-panel","Control Panel",240,92,540,400,1,"minimized")
-	DO WIN(.STATE,4,"win-terminal","terminal","Terminal",120,88,820,430,3,"minimized")
+	DO WIN(.STATE,1,"win-my-computer","my-computer",$$TXT^MIOOSI18N(CODE,"app.my-computer.title","My Computer"),88,72,760,500,4,"normal")
+	DO WIN(.STATE,2,"win-documents","documents",$$TXT^MIOOSI18N(CODE,"app.documents.title","My Documents"),180,118,620,420,2,"minimized")
+	DO WIN(.STATE,3,"win-control-panel","control-panel",$$TXT^MIOOSI18N(CODE,"app.control-panel.title","Control Panel"),240,92,540,400,1,"minimized")
+	DO WIN(.STATE,4,"win-terminal","terminal",$$TXT^MIOOSI18N(CODE,"app.terminal.title","Terminal"),120,88,820,430,3,"minimized")
 	QUIT
 	;
 WIN(STATE,N,ID,APPKEY,TITLE,LEFT,TOP,WIDTH,HEIGHT,Z,MODE)
@@ -138,10 +214,11 @@ THEMES(ROOT,CURRENT)
 	QUIT
 	;
 CSV2ARY(CSV,ROOT)
-	NEW I,ITEM
+	NEW I,ITEM,N
 	KILL @ROOT
+	SET N=0
 	FOR I=1:1:$LENGTH($GET(CSV),",") DO
 	. SET ITEM=$PIECE($GET(CSV),",",I)
 	. QUIT:ITEM=""
-	. SET @ROOT@(I)=ITEM
+	. SET N=N+1,@ROOT@(N)=ITEM
 	QUIT

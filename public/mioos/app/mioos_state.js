@@ -1,0 +1,123 @@
+(function () {
+  function deepClone(value) {
+    return JSON.parse(JSON.stringify(value || {}));
+  }
+
+  function defaultLocales() {
+    return [
+      { code: 'en', label: 'English', dir: 'ltr', isDefault: true },
+      { code: 'ar', label: 'العربية', dir: 'rtl', isDefault: false },
+      { code: 'es', label: 'Español', dir: 'ltr', isDefault: false }
+    ];
+  }
+
+  function defaultBoot() {
+    return {
+      product: { name: 'MIOOS', subtitle: '', profile: 'dev', version: '' },
+      user: { id: 'guest', displayName: 'Guest', authenticated: false, roles: [] },
+      session: { id: 'mioos-shell', transportModel: 'single-websocket-command-and-events' },
+      locale: { code: 'en', dir: 'ltr', label: 'English', rtl: false, supported: defaultLocales() },
+      i18n: { strings: {} },
+      routes: {
+        desktop: '/mioos',
+        bootstrap: '/api/mioos/bootstrap',
+        view: '/api/mioos/view',
+        signin: '/api/mioos/auth/signin',
+        signout: '/api/mioos/auth/signout',
+        guestSignin: '/api/mioos/auth/guest',
+        websocket: '/ws/mioos',
+        commandEvent: 'desktop.command',
+        commandResultEvent: 'desktop.result',
+        commandErrorEvent: 'desktop.error'
+      },
+      desktop: {
+        themeKey: 'xp-classic-blue',
+        wallpaper: 'bliss',
+        density: 'comfortable',
+        fontFamily: 'Segoe UI',
+        fontSize: 13,
+        launcherLabel: 'Menu',
+        shellChrome: 'winxp-professional',
+        taskbarStyle: 'xp-professional',
+        startMenuStyle: 'xp-two-column',
+        windowManager: 'mioos-native-vue-css',
+        commandTransport: 'websocket-only',
+        realtimeContract: 'single-websocket-command-and-events',
+        themes: [],
+        accessibility: {
+          rtl: false,
+          keyboardModel: 'desktop-first',
+          screenReaderHints: 1,
+          motionPreference: 'respect-user-preference'
+        },
+        performance: {
+          clientModel: 'thin-vue-umd',
+          renderBudgetMs: 16,
+          payloadMode: 'tmp-global-safe',
+          transport: 'websocket-first-http-refresh'
+        }
+      },
+      auth: { enabled: false, required: false, guestLoginEnabled: false, mode: 'anonymous' },
+      apps: [],
+      windows: []
+    };
+  }
+
+  function defaultView() {
+    return {
+      summary: {
+        headline: 'Production shell foundation',
+        subheadline: '',
+        theme: 'xp-classic-blue',
+        launcherLabel: 'Menu',
+        windowManager: 'mioos-native-vue-css',
+        authMode: 'anonymous',
+        authenticated: false
+      },
+      documents: [],
+      controlPanel: [],
+      terminal: { status: 'ready', transport: 'websocket', headline: 'Terminal ready', subheadline: '' }
+    };
+  }
+
+  function normalizeBoot(source) {
+    var base = defaultBoot();
+    var boot = source || {};
+    base.product = Object.assign(base.product, boot.product || {});
+    base.user = Object.assign(base.user, boot.user || {});
+    if (!Array.isArray(base.user.roles)) base.user.roles = [];
+    base.session = Object.assign(base.session, boot.session || {});
+    base.locale = Object.assign(base.locale, boot.locale || {});
+    base.i18n = Object.assign(base.i18n, boot.i18n || {});
+    base.i18n.strings = Object.assign({}, base.i18n.strings || {}, (boot.i18n || {}).strings || {});
+    base.routes = Object.assign(base.routes, boot.routes || {});
+    base.desktop = Object.assign(base.desktop, boot.desktop || {});
+    base.desktop.accessibility = Object.assign(base.desktop.accessibility, (boot.desktop || {}).accessibility || {});
+    base.desktop.performance = Object.assign(base.desktop.performance, (boot.desktop || {}).performance || {});
+    base.auth = Object.assign(base.auth, boot.auth || {});
+    base.apps = Array.isArray(boot.apps) ? deepClone(boot.apps) : [];
+    base.windows = Array.isArray(boot.windows) ? deepClone(boot.windows) : [];
+    base.locale.supported = Array.isArray((boot.locale || {}).supported) ? deepClone(boot.locale.supported) : defaultLocales();
+    return base;
+  }
+
+  function normalizeView(source) {
+    var base = defaultView();
+    var view = source || {};
+    base.summary = Object.assign(base.summary, view.summary || {});
+    base.documents = Array.isArray(view.documents) ? deepClone(view.documents) : [];
+    base.controlPanel = Array.isArray(view.controlPanel) ? deepClone(view.controlPanel) : [];
+    base.terminal = Object.assign(base.terminal, view.terminal || {});
+    return base;
+  }
+
+  window.MIOOSState = {
+    deepClone: deepClone,
+    defaultBoot: defaultBoot,
+    defaultView: defaultView,
+    normalizeBoot: normalizeBoot,
+    normalizeView: normalizeView,
+    getBootNode: function () { return document.getElementById('mioosBootJson'); },
+    getRootNode: function () { return document.getElementById('mioosRoot'); }
+  };
+})();

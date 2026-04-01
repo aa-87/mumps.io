@@ -7,6 +7,9 @@
   data-mioos-command-transport="websocket-only"
   data-mioos-realtime-contract="single-websocket-command-and-events"
   data-mioos-route-rebuild="REG^MIOOS+COMPILE^MIOROUTE"
+  data-mioos-signin="{{signinPath}}"
+  data-mioos-signout="{{signoutPath}}"
+  data-mioos-guest-signin="{{guestSigninPath}}"
   data-shell-chrome="winxp"
   data-taskbar-style="xp-professional"
   data-start-menu-style="xp-two-column">
@@ -16,11 +19,16 @@
 <div id="mioosRoot"
   class="mioos-root"
   v-cloak
+  dir="{{localeDir}}"
+  lang="{{localeCode}}"
   data-mioos-root
   data-mioos-session="{{sessionId}}"
   data-mioos-ws="{{wsPath}}"
   data-mioos-bootstrap="{{bootstrapPath}}"
   data-mioos-view="{{viewPath}}"
+  data-mioos-signin="{{signinPath}}"
+  data-mioos-signout="{{signoutPath}}"
+  data-mioos-guest-signin="{{guestSigninPath}}"
   data-mioos-command-event="{{commandEvent}}"
   data-mioos-command-result-event="{{commandResultEvent}}"
   data-shell-chrome="winxp"
@@ -31,25 +39,47 @@
   data-theme-key="{{themeKey}}"
   data-window-manager="{{windowManager}}">
 
-  <div class="mioos-alert" v-if="alertMessage">
+  <div class="mioos-alert" v-if="alertMessage" aria-live="polite" role="status">
     <strong>[[ alertTitle ]]</strong>
     <span>[[ alertMessage ]]</span>
-    <button type="button" @click="dismissAlert">Dismiss</button>
+    <button type="button" @click="dismissAlert">[[ t('alert.dismiss') ]]</button>
   </div>
 
-  <aside class="mioos-start-menu" :class="{ 'is-open': menuOpen }">
+  <section class="mioos-auth-overlay" v-if="requiresSignin" aria-hidden="false">
+    <div class="mioos-auth-card" role="dialog" aria-modal="true" :aria-label="boot.product.name">
+      <div class="mioos-auth-head">
+        <strong>[[ boot.product.name ]]</strong>
+        <span>[[ boot.product.subtitle ]]</span>
+      </div>
+      <p class="mioos-auth-copy">[[ t('auth.requiredCopy') ]]</p>
+      <label class="mioos-auth-field">
+        <span>[[ t('auth.username') ]]</span>
+        <input v-model="authForm.username" type="text" autocomplete="username" :aria-label="t('auth.username')">
+      </label>
+      <label class="mioos-auth-field">
+        <span>[[ t('auth.password') ]]</span>
+        <input v-model="authForm.password" type="password" autocomplete="current-password" :aria-label="t('auth.password')">
+      </label>
+      <div class="mioos-auth-actions">
+        <button type="button" class="mioos-auth-primary" @click="submitSignin">[[ t('auth.signin') ]]</button>
+        <button type="button" v-if="boot.auth.guestLoginEnabled" @click="submitGuestSignin">[[ t('auth.continueGuest') ]]</button>
+      </div>
+    </div>
+  </section>
+
+  <aside class="mioos-start-menu" :class="{ 'is-open': menuOpen }" :aria-label="boot.desktop.launcherLabel">
     <div class="mioos-start-head">
       <div class="mioos-start-avatar">M</div>
       <div class="mioos-start-copy">
-        <strong>[[ boot.product.name || 'MIOOS' ]]</strong>
-        <span>[[ boot.product.subtitle || '' ]]</span>
+        <strong>[[ boot.product.name ]]</strong>
+        <span>[[ boot.product.subtitle ]]</span>
       </div>
     </div>
     <div class="mioos-start-body">
       <div class="mioos-start-main">
         <label class="mioos-search">
-          <span>🔎</span>
-          <input v-model="menuFilter" type="text" placeholder="Search programs and actions">
+          <span aria-hidden="true">🔎</span>
+          <input v-model="menuFilter" type="text" :placeholder="t('search.placeholder')" :aria-label="t('search.placeholder')">
         </label>
         <button v-for="entry in filteredEntries" :key="entry.key" type="button" class="mioos-start-entry" @click="openApp(entry.key)">
           <span class="mioos-entry-icon">[[ entry.icon ]]</span>
@@ -57,46 +87,69 @@
         </button>
       </div>
       <aside class="mioos-start-side">
-        <strong>System</strong>
-        <span>Profile [[ boot.product.profile || profile ]]</span>
-        <span>Theme [[ boot.desktop.themeKey || '' ]]</span>
-        <span>Socket [[ socketConnected ? 'Live' : 'Offline' ]]</span>
-        <button type="button" @click="refreshView">Refresh desktop</button>
+        <strong>[[ t('section.system') ]]</strong>
+        <span>[[ t('system.profile') ]] [[ boot.product.profile || profile ]]</span>
+        <span>[[ t('system.theme') ]] [[ boot.desktop.themeKey ]]</span>
+        <span>[[ t('system.socket') ]] [[ socketConnected ? t('socket.live') : t('socket.offline') ]]</span>
+        <span>[[ t('system.session') ]] [[ boot.user.authenticated ? boot.user.displayName : t('auth.notSignedIn') ]]</span>
+        <div class="mioos-locale-picker" role="group" :aria-label="t('locale.language')">
+          <strong>[[ t('locale.language') ]]</strong>
+          <div class="mioos-locale-options">
+            <button v-for="locale in localeOptions" :key="locale.code" type="button" :class="{ 'is-current': currentLocale.code === locale.code }" @click="changeLocale(locale.code)">[[ locale.label ]]</button>
+          </div>
+        </div>
+        <div class="mioos-auth-mini" v-if="authEnabled && !boot.user.authenticated">
+          <label class="mioos-auth-field">
+            <span>[[ t('auth.username') ]]</span>
+            <input v-model="authForm.username" type="text" autocomplete="username" :aria-label="t('auth.username')">
+          </label>
+          <label class="mioos-auth-field">
+            <span>[[ t('auth.password') ]]</span>
+            <input v-model="authForm.password" type="password" autocomplete="current-password" :aria-label="t('auth.password')">
+          </label>
+          <button type="button" @click="submitSignin">[[ t('auth.signin') ]]</button>
+          <button type="button" v-if="boot.auth.guestLoginEnabled" @click="submitGuestSignin">[[ t('auth.guest') ]]</button>
+        </div>
+        <div class="mioos-auth-mini" v-else-if="authEnabled && boot.user.authenticated">
+          <span>[[ t('auth.roles') ]] [[ (boot.user.roles || []).join(', ') || t('common.none') ]]</span>
+          <button type="button" @click="submitSignout">[[ t('auth.signout') ]]</button>
+        </div>
+        <button type="button" @click="refreshView">[[ t('action.refreshDesktop') ]]</button>
       </aside>
     </div>
   </aside>
 
   <main class="mioos-desktop" @click="menuOpen=false">
-    <section class="mioos-desktop-icons" aria-label="Desktop icons">
-      <button v-for="entry in desktopEntries" :key="entry.key" type="button" class="mioos-desktop-icon" @dblclick="openApp(entry.key)">
+    <section class="mioos-desktop-icons" :aria-label="t('desktop.icons')">
+      <button v-for="entry in desktopEntries" :key="entry.key" type="button" class="mioos-desktop-icon" @dblclick="openApp(entry.key)" @keydown.enter.prevent="openApp(entry.key)">
         <span class="mioos-entry-icon">[[ entry.icon ]]</span>
         <span class="mioos-entry-title">[[ entry.title ]]</span>
       </button>
     </section>
 
-    <section v-for="win in visibleWindows" :key="win.id" class="mioos-window" :class="windowClass(win)" :style="windowStyle(win)" @mousedown="focusWindow(win.id)">
+    <section v-for="win in visibleWindows" :key="win.id" class="mioos-window" :class="windowClass(win)" :style="windowStyle(win)" @mousedown="focusWindow(win.id)" role="dialog" :aria-label="win.title">
       <header class="mioos-titlebar" @mousedown.stop="beginDrag(win, $event)">
         <div class="mioos-titlebar-copy">
           <span class="mioos-entry-icon">[[ appIcon(win.appKey) ]]</span>
           <strong>[[ win.title ]]</strong>
         </div>
         <div class="mioos-window-actions">
-          <button type="button" @click.stop="minimizeWindow(win.id)">_</button>
-          <button type="button" @click.stop="toggleMaximize(win.id)">▢</button>
-          <button type="button" @click.stop="closeWindow(win.id)">×</button>
+          <button type="button" :title="t('action.minimize')" :aria-label="t('action.minimize')" @click.stop="minimizeWindow(win.id)">_</button>
+          <button type="button" :title="windowToggleLabel(win)" :aria-label="windowToggleLabel(win)" @click.stop="toggleMaximize(win.id)">▢</button>
+          <button type="button" :title="t('action.close')" :aria-label="t('action.close')" @click.stop="closeWindow(win.id)">×</button>
         </div>
       </header>
       <div class="mioos-window-body">
         <template v-if="win.appKey === 'my-computer'">
           <div class="mioos-panel-head">
-            <strong>[[ view.summary.headline || 'Production shell foundation' ]]</strong>
-            <span>[[ view.summary.subheadline || '' ]]</span>
+            <strong>[[ view.summary.headline ]]</strong>
+            <span>[[ view.summary.subheadline ]]</span>
           </div>
           <div class="mioos-card-grid">
             <article v-for="entry in desktopEntries" :key="entry.key" class="mioos-card">
               <div class="mioos-card-head"><span class="mioos-entry-icon">[[ entry.icon ]]</span><strong>[[ entry.title ]]</strong></div>
               <p>[[ entry.subtitle ]]</p>
-              <button type="button" @click="openApp(entry.key)">Open</button>
+              <button type="button" @click="openApp(entry.key)">[[ t('action.open') ]]</button>
             </article>
           </div>
         </template>
@@ -114,11 +167,11 @@
         </template>
         <template v-else-if="win.appKey === 'terminal'">
           <div class="mioos-terminal-placeholder">
-            <strong>[[ view.terminal.headline || 'Terminal ready' ]]</strong>
-            <span>[[ view.terminal.subheadline || '' ]]</span>
+            <strong>[[ view.terminal.headline ]]</strong>
+            <span>[[ view.terminal.subheadline ]]</span>
             <div class="mioos-terminal-badges">
-              <span class="mioos-badge">[[ view.terminal.status || 'ready' ]]</span>
-              <span class="mioos-badge">[[ view.terminal.transport || 'websocket' ]]</span>
+              <span class="mioos-badge">[[ view.terminal.status ]]</span>
+              <span class="mioos-badge">[[ view.terminal.transport ]]</span>
             </div>
           </div>
         </template>
@@ -126,16 +179,17 @@
     </section>
   </main>
 
-  <footer class="mioos-taskbar">
-    <button type="button" class="mioos-start-button" @click.stop="toggleMenu">[[ boot.desktop.launcherLabel || 'Menu' ]]</button>
+  <footer class="mioos-taskbar" aria-label="taskbar">
+    <button type="button" class="mioos-start-button" @click.stop="toggleMenu">[[ boot.desktop.launcherLabel ]]</button>
     <div class="mioos-task-strip">
-      <button v-for="win in taskbarWindows" :key="win.id" type="button" class="mioos-task-button" :class="{ 'is-active': activeWindowId===win.id }" @click.stop="taskbarToggle(win.id)">
+      <button v-for="win in taskbarWindows" :key="win.id" type="button" class="mioos-task-button" :class="{ 'is-active': activeWindowId===win.id }" :aria-pressed="activeWindowId===win.id ? 'true' : 'false'" @click.stop="taskbarToggle(win.id)">
         <span class="mioos-entry-icon">[[ appIcon(win.appKey) ]]</span>
         <span>[[ win.title ]]</span>
       </button>
     </div>
-    <div class="mioos-tray">
-      <span class="mioos-tray-pill">[[ socketConnected ? 'Socket live' : 'Socket offline' ]]</span>
+    <div class="mioos-tray" aria-live="polite">
+      <span class="mioos-tray-pill">[[ socketConnected ? t('tray.socketLive') : t('tray.socketOffline') ]]</span>
+      <span class="mioos-tray-pill">[[ boot.user.authenticated ? t('tray.signedIn') : t('tray.anonymous') ]]</span>
       <span class="mioos-tray-clock">[[ clockText ]]</span>
     </div>
   </footer>

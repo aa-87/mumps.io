@@ -18,6 +18,9 @@ MESSAGE(DEV,CONF,REQ,CTX)
 	. SET RESP=$$VIEWJSON(.STATE,.VIEW)
 	. DO SENDTEXT^MIOWS(.DEV,RESP)
 	IF EVT="shell.open" DO  QUIT
+	. IF +$GET(STATE("authRequired"),0)=1,+$GET(STATE("authenticated"),0)'=1 DO
+	. . DO SENDTEXT^MIOWS(.DEV,$$ERRJSON("login_required","shell.open"))
+	. . QUIT
 	. DO SENDTEXT^MIOWS(.DEV,$$ACKJSON("shell.open",$$FIELD($GET(CTX("payload")),"appKey")))
 	DO SENDTEXT^MIOWS(.DEV,$$ERRJSON("unsupported_event",EVT))
 	QUIT
@@ -44,6 +47,9 @@ HELLOJSON(STATE,CONF)
 	SET OBJ("profile")=$GET(STATE("profile"),"dev")
 	SET OBJ("sessionId")=$GET(STATE("sessionId"))
 	SET OBJ("user")=$GET(STATE("principal"))
+	SET OBJ("authenticated")=+$GET(STATE("authenticated"),0)
+	SET OBJ("localeCode")=$GET(STATE("localeCode"),"en")
+	SET OBJ("localeDir")=$GET(STATE("localeDir"),"ltr")
 	SET OBJ("commandEvent")=$GET(STATE("commandEvent"),"desktop.command")
 	SET OBJ("commandResultEvent")=$GET(STATE("commandResultEvent"),"desktop.result")
 	SET OBJ("realtimeContract")=$GET(STATE("transportModel"),"single-websocket-command-and-events")
@@ -62,6 +68,7 @@ VIEWJSON(STATE,VIEW)
 	SET OBJ("event")="view.refresh"
 	SET OBJ("ok")=1
 	SET OBJ("sessionId")=$GET(STATE("sessionId"))
+	SET OBJ("localeCode")=$GET(STATE("localeCode"),"en")
 	MERGE OBJ("view")=VIEW
 	QUIT $$EN^MIOJSON1(.OBJ)
 	;
