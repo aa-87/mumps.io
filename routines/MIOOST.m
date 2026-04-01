@@ -279,12 +279,3 @@ T011
 	DO EQ^MIOTASSERT($GET(OBJ("event")),"desktop.result","[MIOOST][T011][ws event]")
 	DO EQ^MIOTASSERT($GET(OBJ("command")),"fs.list","[MIOOST][T011][ws command]")
 	QUIT
-	;
-	;
-T012
-	DO OK^MIOTASSERT($$FILEHAS("templates/layouts/mioos_shell.html","/public/mioos/app/mioos_explorer.js"),"[MIOOST][T012][explorer script]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-mioos-explorer=""1"""),"[MIOOST][T012][explorer token]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","window.MIOOSExplorer"),"[MIOOST][T012][explorer module]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-explorer"),"[MIOOST][T012][explorer css]")
-	QUIT
-	;

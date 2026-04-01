@@ -61,8 +61,5 @@ Current terminal behavior follows MIOMOS: xterm.js on the client, a YottaDB PIPE
 MIOOS now includes a global-backed virtual file system foundation. The current ROI focuses on contracts and durability rather than explorer UI. Files and folders live under globals, support metadata and permissions, and are available over both HTTP routes and websocket commands for later explorer integration.
 
 
-## ROI 8 — Explorer UI atop the global-backed VFS
-- Added a lightweight Explorer surface for My Computer and My Documents windows.
-- Explorer uses the existing fs.list and fs.read command contracts over the core websocket.
-- Folders can be opened and text files can be previewed without leaving the shell.
-- This ROI intentionally avoids rename, move, delete, and editor flows until the explorer contract is stable.
+## Explorer actions
+This ROI adds basic Explorer file operations on top of the VFS contract: create folder, rename, move, delete, and text-file open/preview workflows. Client UI remains thin and server policy remains in the M routines.

@@ -144,50 +144,80 @@
         </div>
       </header>
       <div class="mioos-window-body" :class="{ 'is-terminal-body': win.appKey === 'terminal' }">
-        <template v-if="win.appKey === 'my-computer' || win.appKey === 'documents'">
-          <div class="mioos-explorer" data-mioos-explorer="1">
-            <aside class="mioos-explorer-sidebar">
-              <div class="mioos-panel-head">
-                <strong>[[ view.explorer.headline || t('explorer.headline', 'Global-backed explorer') ]]</strong>
-                <span>[[ view.explorer.subheadline || t('explorer.subheadline', 'Browse the MIOOS virtual file system.') ]]</span>
-              </div>
-              <button type="button" class="mioos-explorer-place" v-for="place in explorerLocations()" :key="place.key" @click="explorerJump(win.id, place.id)">
-                <span class="mioos-entry-icon">[[ place.icon ]]</span>
-                <strong>[[ place.title ]]</strong>
-              </button>
-              <div class="mioos-explorer-sidebar-note">[[ explorerStatusText(win) ]]</div>
-            </aside>
-            <section class="mioos-explorer-main">
-              <div class="mioos-explorer-toolbar">
-                <button type="button" @click="explorerGoUp(win.id)">[[ t('action.up', 'Up') ]]</button>
-                <button type="button" @click="loadExplorerFolder(win.id, (win.explorerState || {}).currentFolderId)">[[ t('action.refreshDesktop') ]]</button>
-                <div class="mioos-explorer-path">[[ ((win.explorerState || {}).path) || '/' ]]</div>
-              </div>
-              <div class="mioos-explorer-content">
-                <div class="mioos-explorer-list" role="list">
-                  <button type="button" class="mioos-explorer-row" :class="{ 'is-selected': ((win.explorerState || {}).selectedId) === entry.id }" v-for="entry in explorerEntries(win)" :key="entry.id" @click="explorerSelect(win.id, entry)" @dblclick="explorerOpen(win.id, entry)">
-                    <span class="mioos-entry-icon">[[ explorerIcon(entry) ]]</span>
-                    <span class="mioos-explorer-name">[[ entry.name ]]</span>
-                    <span class="mioos-explorer-kind">[[ entry.kind ]]</span>
-                    <span class="mioos-explorer-size">[[ entry.kind === 'folder' ? '—' : ((entry.size || 0) + ' B') ]]</span>
-                  </button>
+        <template v-if="win.appKey === 'my-computer' || win.appKey === 'documents' || win.appKey === 'explorer'">
+          <div class="mioos-explorer-shell" :data-explorer-window="win.id">
+            <div class="mioos-explorer-topbar">
+              <button type="button" @click="explorerGoUp(win.id)">Up</button>
+              <button type="button" @click="loadExplorerFolder(win.id, ((boot.vfs || {}).rootId || 'root'), { selectFirst: true })">My Computer</button>
+              <button type="button" @click="loadExplorerFolder(win.id, ((boot.vfs || {}).homeId || (boot.vfs || {}).rootId || 'root'), { selectFirst: true })">Documents</button>
+              <button type="button" @click="explorerCreateFolder(win.id)">New Folder</button>
+              <button type="button" :disabled="!((win.explorerState || {}).selection || {}).id" @click="explorerRenameSelected(win.id)">Rename</button>
+              <button type="button" :disabled="!((win.explorerState || {}).selection || {}).id" @click="explorerMoveSelected(win.id)">Move</button>
+              <button type="button" :disabled="!((win.explorerState || {}).selection || {}).id" @click="explorerDeleteSelected(win.id)">Delete</button>
+              <span class="mioos-explorer-path">[[ ((win.explorerState || {}).folder || {}).path || ((win.explorerState || {}).folder || {}).name || '/' ]]</span>
+            </div>
+            <div class="mioos-explorer-main">
+              <aside class="mioos-explorer-sidebar">
+                <button type="button" class="mioos-explorer-place" @click="loadExplorerFolder(win.id, ((boot.vfs || {}).rootId || 'root'), { selectFirst: true })">My Computer</button>
+                <button type="button" class="mioos-explorer-place" @click="loadExplorerFolder(win.id, ((boot.vfs || {}).homeId || (boot.vfs || {}).rootId || 'root'), { selectFirst: true })">My Documents</button>
+                <div class="mioos-explorer-sidebar-copy">
+                  <strong>[[ view.summary.headline ]]</strong>
+                  <span>[[ view.summary.subheadline ]]</span>
                 </div>
-                <aside class="mioos-explorer-preview">
-                  <strong>[[ ((explorerSelected(win) || {}).name) || t('explorer.previewTitle', 'Preview') ]]</strong>
-                  <div class="mioos-explorer-preview-meta" v-if="explorerSelected(win)">
-                    <span>[[ (explorerSelected(win) || {}).kind ]]</span>
-                    <span>[[ (explorerSelected(win) || {}).mime || t('common.none') ]]</span>
-                  </div>
-                  <pre class="mioos-explorer-preview-body">[[ explorerPreview(win) || t('explorer.previewEmpty', 'Select a text file to preview its contents.') ]]</pre>
-                </aside>
-              </div>
-            </section>
+              </aside>
+              <section class="mioos-explorer-listing">
+                <div class="mioos-explorer-empty" v-if="(win.explorerState || {}).loading">Loading…</div>
+                <button
+                  v-for="item in ((win.explorerState || {}).items || [])"
+                  :key="item.id || item.key || item.name"
+                  type="button"
+                  class="mioos-explorer-item"
+                  :class="{ 'is-selected': (((win.explorerState || {}).selection || {}).id || '') === (item.id || '') }"
+                  @click="selectExplorerItem(win.id, item)"
+                  @dblclick="explorerOpenItem(win.id, item)">
+                  <span class="mioos-entry-icon">[[ (item.kind || item.type) === 'folder' ? '📁' : '📄' ]]</span>
+                  <span class="mioos-explorer-item-copy">
+                    <strong>[[ item.name || item.title ]]</strong>
+                    <em>[[ item.kind || item.type || item.mime || '' ]]</em>
+                  </span>
+                </button>
+              </section>
+              <aside class="mioos-explorer-preview">
+                <template v-if="(win.explorerState || {}).selection && (((win.explorerState || {}).selection || {}).kind || ((win.explorerState || {}).selection || {}).type) === 'folder'">
+                  <strong>[[ ((win.explorerState || {}).selection || {}).name || 'Folder' ]]</strong>
+                  <span>Folder</span>
+                </template>
+                <template v-else-if="((win.explorerState || {}).preview || {}).title">
+                  <strong>[[ (win.explorerState || {}).preview.title ]]</strong>
+                  <pre class="mioos-text-preview">[[ (win.explorerState || {}).preview.content ]]</pre>
+                  <button type="button" @click="explorerOpenSelected(win.id)">Open</button>
+                </template>
+                <template v-else>
+                  <strong>Preview</strong>
+                  <span>Select a file to preview text content.</span>
+                </template>
+                <div class="mioos-explorer-preview-actions">
+                  <button type="button" :disabled="!((win.explorerState || {}).selection || {}).id" @click="explorerOpenSelected(win.id)">Open</button>
+                  <button type="button" :disabled="!((win.explorerState || {}).selection || {}).id" @click="explorerRenameSelected(win.id)">Rename</button>
+                  <button type="button" :disabled="!((win.explorerState || {}).selection || {}).id" @click="explorerDeleteSelected(win.id)">Delete</button>
+                </div>
+              </aside>
+            </div>
           </div>
         </template>
         <template v-else-if="win.appKey === 'control-panel'">
           <div class="mioos-list-row" v-for="item in view.controlPanel" :key="item.title">
             <strong>[[ item.title ]]</strong>
             <span>[[ item.detail ]]</span>
+          </div>
+        </template>
+        <template v-else-if="win.appKey === 'text-viewer'">
+          <div class="mioos-textviewer-shell">
+            <div class="mioos-textviewer-head">
+              <strong>[[ (win.meta || {}).fileName || win.title ]]</strong>
+              <span>[[ ((win.fileView || {}).mime || 'text/plain') ]]</span>
+            </div>
+            <pre class="mioos-textviewer-body">[[ ((win.fileView || {}).loading ? 'Loading…' : ((win.fileView || {}).content || '')) ]]</pre>
           </div>
         </template>
         <template v-else-if="win.appKey === 'terminal'">

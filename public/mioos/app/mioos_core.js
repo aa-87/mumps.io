@@ -8,8 +8,8 @@
     var Auth = (window.MIOOSAuth || {}).methods || {};
     var WS = (window.MIOOSWSClient || {}).methods || {};
     var WM = (window.MIOOSWM || {}).methods || {};
-    var Explorer = (window.MIOOSExplorer || {}).methods || {};
     var Terminal = (window.MIOOSTerminal || {}).methods || {};
+    var Explorer = (window.MIOOSExplorer || {}).methods || {};
     var I18N = window.MIOOSI18N || {};
 
     var app = window.Vue.createApp({
@@ -18,6 +18,7 @@
           boot: window.MIOOSState.defaultBoot(),
           view: window.MIOOSState.defaultView(),
           desktopEntries: [],
+          launcherEntries: [],
           windows: [],
           activeWindowId: '',
           menuOpen: false,
@@ -63,8 +64,9 @@
         },
         filteredEntries: function () {
           var needle = (this.menuFilter || '').trim().toLowerCase();
-          if (!needle) return this.desktopEntries;
-          return this.desktopEntries.filter(function (entry) {
+          var source = this.launcherEntries && this.launcherEntries.length ? this.launcherEntries : this.desktopEntries;
+          if (!needle) return source;
+          return source.filter(function (entry) {
             var hay = ((entry.title || '') + ' ' + (entry.subtitle || '')).toLowerCase();
             return hay.indexOf(needle) !== -1;
           });
@@ -82,6 +84,16 @@
           return I18N.currentLocale ? I18N.currentLocale(this) : { code: 'en', dir: 'ltr', label: 'English', rtl: false };
         }
       },
+      watch: {
+        'view.desktopEntries': {
+          deep: true,
+          handler: function (entries) {
+            if (Array.isArray(entries) && entries.length) {
+              this.desktopEntries = window.MIOOSState.deepClone(entries);
+            }
+          }
+        }
+      },
       mounted: function () {
         this.bootstrapFromDom();
         this.applyDocumentLocale();
@@ -89,10 +101,6 @@
         this.refreshView();
         this.initSocket();
         if (this.startTerminalPolling) this.startTerminalPolling();
-        var self = this;
-        this.$nextTick(function () {
-          if (self.primeExplorerWindows) self.primeExplorerWindows();
-        });
         this._dragMove = this.onDragMove.bind(this);
         this._dragEnd = this.endDrag.bind(this);
         window.addEventListener('mousemove', this._dragMove);
@@ -120,7 +128,8 @@
             this.boot = window.MIOOSState.defaultBoot();
           }
           this.profile = this.boot.product.profile || 'dev';
-          this.desktopEntries = window.MIOOSState.deepClone(this.boot.apps || []);
+          this.launcherEntries = window.MIOOSState.deepClone(this.boot.apps || []);
+          this.desktopEntries = window.MIOOSState.deepClone((this.view && this.view.desktopEntries) || this.boot.desktopEntries || this.boot.apps || []);
           this.windows = window.MIOOSState.deepClone(this.boot.windows || []);
           this.zCounter = this.windows.reduce(function (max, win) { return Math.max(max, win.z || 0); }, 10) + 1;
           if (this.windows.length) this.activeWindowId = this.windows[0].id;
@@ -152,7 +161,7 @@
           }
           return (((win || {}).terminalState || {}).status) || this.t('terminal.status.ready', 'Terminal idle');
         }
-      }, Auth, WS, WM, Explorer, Terminal)
+      }, Auth, WS, WM, Terminal, Explorer)
     });
 
     app.config.compilerOptions.delimiters = ['[[', ']]'];

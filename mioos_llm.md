@@ -174,8 +174,7 @@ Keep tests:
 - Added regression coverage in `^MIOOST` for VFS CRUD and command-bus integration.
 
 
-## ROI 8 — Explorer UI atop the global-backed VFS
-- Added a lightweight Explorer surface for My Computer and My Documents windows.
-- Explorer uses the existing fs.list and fs.read command contracts over the core websocket.
-- Folders can be opened and text files can be previewed without leaving the shell.
-- This ROI intentionally avoids rename, move, delete, and editor flows until the explorer contract is stable.
+## ROI 8 — Explorer actions and text workflow polish
+- Explorer now supports New Folder, Rename, Move, and Delete actions on top of the existing VFS websocket command contract.
+- Actions are intentionally thin on the client and rely on `fs.mkdir`, `fs.rename`, `fs.move`, and `fs.delete` so policy remains server-owned.
+- The desktop surface is refreshed after explorer mutations so VFS-backed desktop entries stay in sync with shell state.

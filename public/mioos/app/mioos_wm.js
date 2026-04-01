@@ -15,11 +15,6 @@
           this.createTerminalWindow();
           return;
         }
-        if ((appKey === 'my-computer' || appKey === 'documents') && this.openExplorerWindow) {
-          this.menuOpen = false;
-          this.openExplorerWindow(appKey === 'my-computer' ? 'win-my-computer' : 'win-documents');
-          return;
-        }
         var win = this.windows.find(function (item) { return item.appKey === appKey; });
         if (!win) return;
         this.menuOpen = false;
@@ -27,6 +22,9 @@
           win.state = 'normal';
         }
         this.focusWindow(win.id);
+        if ((appKey === 'my-computer' || appKey === 'documents' || appKey === 'explorer') && this.bootstrapExplorerWindow) {
+          this.$nextTick(this.bootstrapExplorerWindow.bind(this, win.id));
+        }
         this.sendSocket({ event: 'shell.open', appKey: appKey });
       },
       focusWindow: function (windowId) {
@@ -69,8 +67,8 @@
               if (self.mountTerminalWindow) self.mountTerminalWindow(windowId);
               if (self.requestTerminalOpen) self.requestTerminalOpen(windowId);
             });
-          } else if ((win.appKey === 'my-computer' || win.appKey === 'documents') && this.openExplorerWindow) {
-            this.openExplorerWindow(windowId);
+          } else if ((win.appKey === 'my-computer' || win.appKey === 'documents' || win.appKey === 'explorer') && this.bootstrapExplorerWindow) {
+            this.$nextTick(this.bootstrapExplorerWindow.bind(this, windowId));
           }
           return;
         }

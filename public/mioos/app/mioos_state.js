@@ -59,12 +59,7 @@
         }
       },
       auth: { enabled: false, required: false, guestLoginEnabled: false, mode: 'anonymous' },
-      explorer: {
-        headline: 'Global-backed explorer',
-        subheadline: 'Browse the MIOOS virtual file system backed entirely by globals.',
-        rootId: 'root',
-        homeId: 'root'
-      },
+      explorer: { currentFolderId: 'root', quickPlaces: [], preview: { enabled: true, mime: 'text/plain' } },
       terminal: {
         enabled: true,
         engine: 'xtermjs',
@@ -86,6 +81,7 @@
           cols: 112
         }
       },
+      vfs: { enabled: false, rootId: 'root', homeId: 'home', chunkSize: 32000, globalsOnly: true },
       apps: [],
       windows: []
     };
@@ -104,12 +100,7 @@
       },
       documents: [],
       controlPanel: [],
-      explorer: {
-        headline: 'Global-backed explorer',
-        subheadline: 'Browse the MIOOS virtual file system backed entirely by globals.',
-        rootId: 'root',
-        homeId: 'root'
-      },
+      explorer: { currentFolderId: 'root', quickPlaces: [], preview: { enabled: true, mime: 'text/plain' } },
       terminal: {
         status: 'ready',
         transport: 'pipe',
@@ -139,6 +130,7 @@
     base.desktop.accessibility = Object.assign(base.desktop.accessibility, (boot.desktop || {}).accessibility || {});
     base.desktop.performance = Object.assign(base.desktop.performance, (boot.desktop || {}).performance || {});
     base.auth = Object.assign(base.auth, boot.auth || {});
+    base.vfs = Object.assign(base.vfs, boot.vfs || {});
     base.terminal = Object.assign(base.terminal, boot.terminal || {});
     base.terminal.profile = Object.assign(base.terminal.profile, (boot.terminal || {}).profile || {});
     base.apps = Array.isArray(boot.apps) ? deepClone(boot.apps) : [];
