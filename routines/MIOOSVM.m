@@ -19,6 +19,8 @@ BUILD(STATE,CONF,VIEW)
 	SET VIEW("documents",2,"detail")=$$TXT^MIOOSI18N(CODE,"view.documents.2.detail","The shell keeps one primary websocket and optional local JWT cookie sessions for sign-in.")
 	SET VIEW("documents",3,"title")=$$TXT^MIOOSI18N(CODE,"view.documents.3.title","Front-end model")
 	SET VIEW("documents",3,"detail")=$$TXT^MIOOSI18N(CODE,"view.documents.3.detail","Vue Options API UMD renders the current server contract without markup placeholders.")
+	SET VIEW("documents",4,"title")="VFS foundation"
+	SET VIEW("documents",4,"detail")="Global-backed file system contracts are enabled for explorer, file apps, chat attachments, and debugger artifacts."
 	SET VIEW("controlPanel",1,"title")=$$TXT^MIOOSI18N(CODE,"view.controlPanel.1.title","Theme")
 	SET VIEW("controlPanel",1,"detail")=$GET(STATE("themeKey"))
 	SET VIEW("controlPanel",2,"title")=$$TXT^MIOOSI18N(CODE,"view.controlPanel.2.title","Font")
@@ -26,6 +28,8 @@ BUILD(STATE,CONF,VIEW)
 	SET VIEW("controlPanel",3,"title")=$$TXT^MIOOSI18N(CODE,"view.controlPanel.3.title","Transport")
 	SET VIEW("controlPanel",3,"detail")="websocket-only"
 	SET VIEW("controlPanel",4,"title")=$$TXT^MIOOSI18N(CODE,"view.controlPanel.4.title","Authentication")
+	SET VIEW("controlPanel",5,"title")="VFS"
+	SET VIEW("controlPanel",5,"detail")=$GET(STATE("fsTransport"),"http-and-websocket")_" / root "_$GET(STATE("fsRootId"),"root")
 	IF +$GET(STATE("authenticated"),0)=1 DO
 	. SET AUTHTXT=$$TXT^MIOOSI18N(CODE,"auth.state.signedInAs","Signed in as")_" "_$GET(STATE("userName"))
 	ELSE  IF +$GET(STATE("authRequired"),0)=1 DO

@@ -167,10 +167,8 @@ Keep tests:
 ## Terminal reset note
 - Reset MIOOS terminal handling to mirror the working MIOMOS model: one core websocket, promise-based command bus, xterm local line editing, and MIOMOSTPIPE-style pipe session lifecycle adapted into MIOOSTPIPE.
 
-
-## ROI 7 — adaptive terminal polling and drain posture
-- Lowered terminal latency by moving the browser from a coarse fixed poll to an adaptive poll cadence.
-- Active terminals now poll aggressively after input, output, open, and resize, then back off during warm and deep idle periods.
-- Added a one-in-flight poll guard per terminal window so the browser never stacks overlapping terminal polls.
-- Dedicated terminal websocket poll events now suppress empty `terminal.stdout` envelopes when no bytes were drained, which reduces noisy idle traffic and repaint churn.
-- This ROI is intentionally performance-focused and keeps the current source-of-truth terminal architecture intact rather than introducing a new socket model.
+## ROI 7 — VFS foundation
+- Added `MIOOSFS` as a global-backed virtual file system foundation with root, Desktop, Documents, metadata, permissions, and chunked file storage.
+- Added HTTP routes and websocket command handlers for `fs.list`, `fs.read`, `fs.write`, `fs.mkdir`, `fs.meta`, `fs.rename`, `fs.move`, and `fs.delete`.
+- Boot state now advertises the VFS contract including root id, home id, chunk size, globals-only storage, and owner/role/flag permissions.
+- Added regression coverage in `^MIOOST` for VFS CRUD and command-bus integration.

@@ -46,8 +46,16 @@ ROI 4 lands an xterm.js terminal foundation with websocket command handling and 
 MIOOS terminals now run as real YottaDB `-direct` PIPE sessions owned by the websocket shell rather than a simulated command surface.
 
 
-## Terminal hardening update
+## ROI 6 update
+MIOOS now uses a split websocket posture: the core shell stays on `/ws/mioos`, while terminal windows use `/ws/mioos/terminal`. Each terminal window should re-bind to a terminal-specific websocket URL such as `/ws/mioos/terminal?terminalId=<uuid>&windowId=<id>` after open so shell actions stay responsive and the terminal path behaves more like a real terminal surface without a noisy poll loop.
 
-- Dedicated terminal websocket sessions now use keepalive pings and reconnect backoff.
-- Browser terminal input normalizes lone Enter as LF so empty new lines do not destabilize the socket.
-- Terminal viewport fitting now uses ResizeObserver-based refit behavior for cleaner dimensions inside the window chrome.
+
+Current terminal behavior follows MIOMOS: xterm.js on the client, a YottaDB PIPE-backed terminal on the server, and a core websocket command bus for terminal open/input/poll/resize/close.
+
+
+## Terminal reset note
+- Reset MIOOS terminal handling to mirror the working MIOMOS model: one core websocket, promise-based command bus, xterm local line editing, and MIOMOSTPIPE-style pipe session lifecycle adapted into MIOOSTPIPE.
+
+## Latest ROI: VFS foundation
+
+MIOOS now includes a global-backed virtual file system foundation. The current ROI focuses on contracts and durability rather than explorer UI. Files and folders live under globals, support metadata and permissions, and are available over both HTTP routes and websocket commands for later explorer integration.

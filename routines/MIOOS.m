@@ -13,6 +13,14 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","route","signin"))="" SET CONF("mioos","route","signin")="/api/mioos/auth/signin"
 	IF $GET(CONF("mioos","route","signout"))="" SET CONF("mioos","route","signout")="/api/mioos/auth/signout"
 	IF $GET(CONF("mioos","route","guestSignin"))="" SET CONF("mioos","route","guestSignin")="/api/mioos/auth/guest"
+	IF $GET(CONF("mioos","route","fsList"))="" SET CONF("mioos","route","fsList")="/api/mioos/fs/list"
+	IF $GET(CONF("mioos","route","fsRead"))="" SET CONF("mioos","route","fsRead")="/api/mioos/fs/read"
+	IF $GET(CONF("mioos","route","fsWrite"))="" SET CONF("mioos","route","fsWrite")="/api/mioos/fs/write"
+	IF $GET(CONF("mioos","route","fsMkdir"))="" SET CONF("mioos","route","fsMkdir")="/api/mioos/fs/mkdir"
+	IF $GET(CONF("mioos","route","fsMeta"))="" SET CONF("mioos","route","fsMeta")="/api/mioos/fs/meta"
+	IF $GET(CONF("mioos","route","fsRename"))="" SET CONF("mioos","route","fsRename")="/api/mioos/fs/rename"
+	IF $GET(CONF("mioos","route","fsMove"))="" SET CONF("mioos","route","fsMove")="/api/mioos/fs/move"
+	IF $GET(CONF("mioos","route","fsDelete"))="" SET CONF("mioos","route","fsDelete")="/api/mioos/fs/delete"
 	IF $GET(CONF("mioos","route","ws"))="" SET CONF("mioos","route","ws")="/ws/mioos"
 	IF $GET(CONF("mioos","route","wsTerminal"))="" SET CONF("mioos","route","wsTerminal")="/ws/mioos/terminal"
 	IF $GET(CONF("mioos","brand","title"))="" SET CONF("mioos","brand","title")="MIOOS"
@@ -83,6 +91,9 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","terminal","pipe","readPolls"))="" SET CONF("mioos","terminal","pipe","readPolls")=8
 	IF $GET(CONF("mioos","terminal","pipe","drainPause"))="" SET CONF("mioos","terminal","pipe","drainPause")=.04
 	IF $GET(CONF("mioos","terminal","pipe","reconnectGraceSeconds"))="" SET CONF("mioos","terminal","pipe","reconnectGraceSeconds")=180
+	IF $GET(CONF("mioos","fs","enabled"))="" SET CONF("mioos","fs","enabled")=1
+	IF $GET(CONF("mioos","fs","chunkSize"))="" SET CONF("mioos","fs","chunkSize")=2048
+	IF $GET(CONF("mioos","fs","transport"))="" SET CONF("mioos","fs","transport")="http-and-websocket"
 	IF $GET(CONF("mioos","terminal","pipe","sessionIdleSeconds"))="" SET CONF("mioos","terminal","pipe","sessionIdleSeconds")=900
 	IF $GET(CONF("auth","protectMode"))="" SET CONF("auth","protectMode")="route"
 	IF $GET(CONF("auth","mode"))="" SET CONF("auth","mode")="jwt"
@@ -101,6 +112,7 @@ CONFDEF(CONF)
 INIT(CONF)
 	DO CONFDEF(.CONF)
 	DO BOOTSTRAP^MIOOSAUTH(.CONF)
+	DO INIT^MIOOSFS(.CONF)
 	QUIT
 	;
 REG(CONF)
@@ -115,6 +127,14 @@ REG(CONF)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","signin")),"SIGNIN^MIOOSAPI",.META)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","signout")),"SIGNOUT^MIOOSAPI",.META)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","guestSignin")),"GUESTSIGNIN^MIOOSAPI",.META)
+	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsList")),"FSLIST^MIOOSAPI",.META)
+	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsRead")),"FSREAD^MIOOSAPI",.META)
+	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsWrite")),"FSWRITE^MIOOSAPI",.META)
+	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsMkdir")),"FSMKDIR^MIOOSAPI",.META)
+	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsMeta")),"FSMETA^MIOOSAPI",.META)
+	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsRename")),"FSRENAME^MIOOSAPI",.META)
+	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsMove")),"FSMOVE^MIOOSAPI",.META)
+	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsDelete")),"FSDELETE^MIOOSAPI",.META)
 	DO ADDM^MIOROUTE("GET","/public/mioos/*","STATIC^MIOOS",.META)
 	KILL WSMETA SET WSMETA("authRequired")=0,WSMETA("wsPersistent")=1
 	DO ADDWSM^MIOROUTE($GET(CONF("mioos","route","ws")),"MESSAGE^MIOOSWS",.WSMETA)

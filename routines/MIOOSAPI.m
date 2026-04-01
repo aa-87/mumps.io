@@ -84,3 +84,101 @@ RESPERR(DEV,CONF,STATUS,CODE,DETAIL,CTX)
 	DO RESPJSONX^MIOHTTP(.DEV,.CONF,+$GET(STATUS),.OBJ,$GET(CTX("request_id")),.CTX)
 	SET CTX("status")=+$GET(STATUS)
 	QUIT
+	;
+FSLIST(DEV,CONF,REQ,CTX)
+	NEW TREE,ERR,STATE,OUT
+	IF '$$PARSEBODY(.REQ,.TREE,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,400,"invalid_json",$GET(ERR("error")),.CTX)
+	IF '$$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,500,"fs_state_error",$GET(ERR("error")),.CTX)
+	IF '$$LIST^MIOOSFS(.STATE,$SELECT($GET(TREE("parent"))'="":$GET(TREE("parent")),1:"root"),.OUT,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,403,"fs_list_failed",$GET(ERR("error")),.CTX)
+	DO RESPJSONX^MIOHTTP(.DEV,.CONF,200,.OUT,$GET(CTX("request_id")),.CTX)
+	SET CTX("status")=200
+	QUIT
+	;
+FSREAD(DEV,CONF,REQ,CTX)
+	NEW TREE,ERR,STATE,OUT,ID
+	IF '$$PARSEBODY(.REQ,.TREE,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,400,"invalid_json",$GET(ERR("error")),.CTX)
+	IF '$$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,500,"fs_state_error",$GET(ERR("error")),.CTX)
+	SET ID=$SELECT($GET(TREE("id"))'="":$GET(TREE("id")),1:$GET(TREE("path")))
+	IF '$$READ^MIOOSFS(.STATE,ID,.OUT,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,403,"fs_read_failed",$GET(ERR("error")),.CTX)
+	DO RESPJSONX^MIOHTTP(.DEV,.CONF,200,.OUT,$GET(CTX("request_id")),.CTX)
+	SET CTX("status")=200
+	QUIT
+	;
+FSWRITE(DEV,CONF,REQ,CTX)
+	NEW TREE,ERR,STATE,OUT
+	IF '$$PARSEBODY(.REQ,.TREE,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,400,"invalid_json",$GET(ERR("error")),.CTX)
+	IF '$$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,500,"fs_state_error",$GET(ERR("error")),.CTX)
+	IF '$$WRITE^MIOOSFS(.STATE,$SELECT($GET(TREE("parent"))'="":$GET(TREE("parent")),1:"root"),$GET(TREE("name")),$GET(TREE("content")),$GET(TREE("mime"),"text/plain"),.OUT,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,403,"fs_write_failed",$GET(ERR("error")),.CTX)
+	DO RESPJSONX^MIOHTTP(.DEV,.CONF,200,.OUT,$GET(CTX("request_id")),.CTX)
+	SET CTX("status")=200
+	QUIT
+	;
+FSMKDIR(DEV,CONF,REQ,CTX)
+	NEW TREE,ERR,STATE,OUT
+	IF '$$PARSEBODY(.REQ,.TREE,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,400,"invalid_json",$GET(ERR("error")),.CTX)
+	IF '$$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,500,"fs_state_error",$GET(ERR("error")),.CTX)
+	IF '$$MKDIR^MIOOSFS(.STATE,$SELECT($GET(TREE("parent"))'="":$GET(TREE("parent")),1:"root"),$GET(TREE("name")),.OUT,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,403,"fs_mkdir_failed",$GET(ERR("error")),.CTX)
+	DO RESPJSONX^MIOHTTP(.DEV,.CONF,200,.OUT,$GET(CTX("request_id")),.CTX)
+	SET CTX("status")=200
+	QUIT
+	;
+FSMETA(DEV,CONF,REQ,CTX)
+	NEW TREE,ERR,STATE,OUT,ID
+	IF '$$PARSEBODY(.REQ,.TREE,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,400,"invalid_json",$GET(ERR("error")),.CTX)
+	IF '$$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,500,"fs_state_error",$GET(ERR("error")),.CTX)
+	SET ID=$SELECT($GET(TREE("id"))'="":$GET(TREE("id")),1:$GET(TREE("path")))
+	IF '$$META^MIOOSFS(.STATE,ID,.OUT,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,403,"fs_meta_failed",$GET(ERR("error")),.CTX)
+	DO RESPJSONX^MIOHTTP(.DEV,.CONF,200,.OUT,$GET(CTX("request_id")),.CTX)
+	SET CTX("status")=200
+	QUIT
+	;
+FSRENAME(DEV,CONF,REQ,CTX)
+	NEW TREE,ERR,STATE,OUT
+	IF '$$PARSEBODY(.REQ,.TREE,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,400,"invalid_json",$GET(ERR("error")),.CTX)
+	IF '$$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,500,"fs_state_error",$GET(ERR("error")),.CTX)
+	IF '$$RENAME^MIOOSFS(.STATE,$GET(TREE("id")),$GET(TREE("name")),.OUT,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,403,"fs_rename_failed",$GET(ERR("error")),.CTX)
+	DO RESPJSONX^MIOHTTP(.DEV,.CONF,200,.OUT,$GET(CTX("request_id")),.CTX)
+	SET CTX("status")=200
+	QUIT
+	;
+FSMOVE(DEV,CONF,REQ,CTX)
+	NEW TREE,ERR,STATE,OUT
+	IF '$$PARSEBODY(.REQ,.TREE,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,400,"invalid_json",$GET(ERR("error")),.CTX)
+	IF '$$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,500,"fs_state_error",$GET(ERR("error")),.CTX)
+	IF '$$MOVE^MIOOSFS(.STATE,$GET(TREE("id")),$GET(TREE("parent")),.OUT,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,403,"fs_move_failed",$GET(ERR("error")),.CTX)
+	DO RESPJSONX^MIOHTTP(.DEV,.CONF,200,.OUT,$GET(CTX("request_id")),.CTX)
+	SET CTX("status")=200
+	QUIT
+	;
+FSDELETE(DEV,CONF,REQ,CTX)
+	NEW TREE,ERR,STATE,OUT
+	IF '$$PARSEBODY(.REQ,.TREE,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,400,"invalid_json",$GET(ERR("error")),.CTX)
+	IF '$$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,500,"fs_state_error",$GET(ERR("error")),.CTX)
+	IF '$$DELETE^MIOOSFS(.STATE,$GET(TREE("id")),.OUT,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,403,"fs_delete_failed",$GET(ERR("error")),.CTX)
+	DO RESPJSONX^MIOHTTP(.DEV,.CONF,200,.OUT,$GET(CTX("request_id")),.CTX)
+	SET CTX("status")=200
+	QUIT
