@@ -180,13 +180,15 @@ Keep tests:
 - Kept the backend stable by reusing existing VFS websocket commands rather than changing server storage contracts.
 
 
-## ROI — Upload throughput and progress UX
-- Added Explorer upload progress UI with percentage and stage text.
-- Increased default chunk size for chunked uploads.
-- Added a small parallel chunk pipeline on the browser for better upload throughput without sending a single oversized websocket frame.
+## ROI A.1 — Explorer upload integration
+- Route non-small uploads through `/ws/mioos/transfer` using `transfer.upload.begin`, `transfer.upload.chunk`, and `transfer.upload.commit`.
+- Keep tiny text uploads on the direct `fs.write` path for simplicity and lower overhead.
+- Use conservative chunk size and a single worker at this stage to avoid shell socket closure regressions before worker-pool ROIs.
 
 
-## ROI 14B — Parallel upload sockets
-- Chunk uploads now use multiple concurrent `/ws/mioos` websocket connections rather than serial chunk sends on the core shell socket.
-- Default upload concurrency is server-configurable and now defaults to 7, with the browser honoring the server-provided `concurrencyDefault`.
-- Chunk size remains conservative at 32768 to reduce mid-upload socket closure risk.
+## ROI B — upload worker pool
+- Explorer uploads now use a dedicated `/ws/mioos/transfer` worker pool instead of one sequential transfer socket.
+- Non-small uploads begin on a coordinator socket and then fan out chunk sends across multiple worker sockets.
+- The upload worker count now defaults to `2` and is still bounded by the transfer config.
+- Transfer chunks now carry `workerId`, and server-side transfer state records per-worker activity metadata for later resume and retry ROIs.
+- This ROI keeps commit/abort on the coordinator path and does not yet add download workers or resume.

@@ -61,13 +61,22 @@ Current terminal behavior follows MIOMOS: xterm.js on the client, a YottaDB PIPE
 MIOOS now includes a global-backed virtual file system foundation. The current ROI focuses on contracts and durability rather than explorer UI. Files and folders live under globals, support metadata and permissions, and are available over both HTTP routes and websocket commands for later explorer integration.
 
 
-## ROI 10 — Explorer upload and image viewer
-- Added browser-side upload to the global-backed VFS using existing `fs.write` commands.
-- Added image-aware file association handling in Explorer with preview and a dedicated image viewer window.
-- Kept the backend stable by reusing existing VFS websocket commands rather than changing server storage contracts.
+## Explorer actions
+This ROI adds basic Explorer file operations on top of the VFS contract: create folder, rename, move, delete, and text-file open/preview workflows. Client UI remains thin and server policy remains in the M routines.
 
 
-## ROI — Upload throughput and progress UX
-- Added Explorer upload progress UI with percentage and stage text.
-- Increased default chunk size for chunked uploads.
-- Added a small parallel chunk pipeline on the browser for better upload throughput without sending a single oversized websocket frame.
+## ROI A — transfer protocol foundation
+- Added a dedicated transfer websocket route at `/ws/mioos/transfer`.
+- Added shared transfer orchestration in `MIOOSTRX`, with separate upload and download entry points in `MIOOSTRXUP` and `MIOOSTRXDN`.
+- Added core command-bus support and dedicated websocket support for `transfer.upload.*` and `transfer.download.*` verbs.
+- Transfer state is now tracked in `^MIO("MIOOS","TRANSFER",...)` with durable `transferId`, direction, owner, session, chunk counters, byte counters, resume window, and worker-count metadata.
+- ROI A is intentionally foundation-only: it proves begin/chunk/commit/end/abort/status contracts without changing the current Explorer UX baseline.
+
+### Planned transfer ROI checklist
+- [x] ROI A — transfer protocol foundation
+- [x] ROI B — upload worker pool
+- [ ] ROI C — download worker pool
+- [ ] ROI D — transfer manager UI
+- [ ] ROI E — websocket route rewrite and concurrency hardening
+- [ ] ROI F — polling/backoff hardening
+- [ ] ROI G — resumable uploads and downloads

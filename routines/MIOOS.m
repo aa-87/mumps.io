@@ -23,6 +23,7 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","route","fsDelete"))="" SET CONF("mioos","route","fsDelete")="/api/mioos/fs/delete"
 	IF $GET(CONF("mioos","route","ws"))="" SET CONF("mioos","route","ws")="/ws/mioos"
 	IF $GET(CONF("mioos","route","wsTerminal"))="" SET CONF("mioos","route","wsTerminal")="/ws/mioos/terminal"
+	IF $GET(CONF("mioos","route","wsTransfer"))="" SET CONF("mioos","route","wsTransfer")="/ws/mioos/transfer"
 	IF $GET(CONF("mioos","brand","title"))="" SET CONF("mioos","brand","title")="MIOOS"
 	IF $GET(CONF("mioos","brand","subtitle"))="" SET CONF("mioos","brand","subtitle")="MUMPS powered Windows XP style desktop"
 	IF $GET(CONF("mioos","i18n","default"))="" SET CONF("mioos","i18n","default")="en"
@@ -94,6 +95,13 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","fs","enabled"))="" SET CONF("mioos","fs","enabled")=1
 	IF $GET(CONF("mioos","fs","chunkSize"))="" SET CONF("mioos","fs","chunkSize")=2048
 	IF $GET(CONF("mioos","fs","transport"))="" SET CONF("mioos","fs","transport")="http-and-websocket"
+	IF $GET(CONF("mioos","transfer","enabled"))="" SET CONF("mioos","transfer","enabled")=1
+	IF $GET(CONF("mioos","transfer","chunkSize"))="" SET CONF("mioos","transfer","chunkSize")=16384
+	IF $GET(CONF("mioos","transfer","uploadWorkers"))="" SET CONF("mioos","transfer","uploadWorkers")=2
+	IF $GET(CONF("mioos","transfer","downloadWorkers"))="" SET CONF("mioos","transfer","downloadWorkers")=1
+	IF $GET(CONF("mioos","transfer","resumeSeconds"))="" SET CONF("mioos","transfer","resumeSeconds")=1800
+	IF $GET(CONF("mioos","transfer","activePollMs"))="" SET CONF("mioos","transfer","activePollMs")=25
+	IF $GET(CONF("mioos","transfer","idlePollMs"))="" SET CONF("mioos","transfer","idlePollMs")=180
 	IF $GET(CONF("mioos","terminal","pipe","sessionIdleSeconds"))="" SET CONF("mioos","terminal","pipe","sessionIdleSeconds")=900
 	IF $GET(CONF("auth","protectMode"))="" SET CONF("auth","protectMode")="route"
 	IF $GET(CONF("auth","mode"))="" SET CONF("auth","mode")="jwt"
@@ -139,6 +147,7 @@ REG(CONF)
 	KILL WSMETA SET WSMETA("authRequired")=0,WSMETA("wsPersistent")=1
 	DO ADDWSM^MIOROUTE($GET(CONF("mioos","route","ws")),"MESSAGE^MIOOSWS",.WSMETA)
 	DO ADDWSM^MIOROUTE($GET(CONF("mioos","route","wsTerminal")),"MESSAGE^MIOOSTWS",.WSMETA)
+	DO ADDWSM^MIOROUTE($GET(CONF("mioos","route","wsTransfer")),"MESSAGE^MIOOSTRXWS",.WSMETA)
 	QUIT
 	;
 STATIC(DEV,CONF,REQ,CTX)

@@ -161,7 +161,7 @@
           }
           return (((win || {}).terminalState || {}).status) || this.t('terminal.status.ready', 'Terminal idle');
         }
-      }, Auth, WS, WM, Terminal, Explorer)
+      }, Auth, WS, WM, Terminal, Explorer, (window.MIOOSTransfer || {}).methods || {})
     });
 
     app.config.compilerOptions.delimiters = ['[[', ']]'];

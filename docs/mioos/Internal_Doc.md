@@ -92,5 +92,22 @@ The active MIOOS browser terminal path follows the proven MIOMOS pattern: termin
 The VFS foundation lives in `MIOOSFS`. It stores entries, child indexes, and file chunks entirely in globals and keeps root bootstrap folders available from `INIT^MIOOSFS`. The current contract supports list, read, write, mkdir, meta, rename, move, and delete. Permissions currently follow an owner plus role CSV plus read/write/delete flag model so later explorer and file-app surfaces can build on a stable backend.
 
 
-## Chunked upload transport
-Staging lives under `^MIO("MIOOS","UPLOAD",...)`. Commit writes directly into the existing VFS chunk store under `^MIO("MIOOS","FS","DATA",...)`, so server-side storage remains chunked even when the original upload arrives over multiple websocket frames.
+## Explorer actions
+This ROI adds basic Explorer file operations on top of the VFS contract: create folder, rename, move, delete, and text-file open/preview workflows. Client UI remains thin and server policy remains in the M routines.
+
+
+## ROI A — transfer protocol foundation
+- Added a dedicated transfer websocket route at `/ws/mioos/transfer`.
+- Added shared transfer orchestration in `MIOOSTRX`, with separate upload and download entry points in `MIOOSTRXUP` and `MIOOSTRXDN`.
+- Added core command-bus support and dedicated websocket support for `transfer.upload.*` and `transfer.download.*` verbs.
+- Transfer state is now tracked in `^MIO("MIOOS","TRANSFER",...)` with durable `transferId`, direction, owner, session, chunk counters, byte counters, resume window, and worker-count metadata.
+- ROI A is intentionally foundation-only: it proves begin/chunk/commit/end/abort/status contracts without changing the current Explorer UX baseline.
+
+### Planned transfer ROI checklist
+- [x] ROI A — transfer protocol foundation
+- [x] ROI B — upload worker pool
+- [ ] ROI C — download worker pool
+- [ ] ROI D — transfer manager UI
+- [ ] ROI E — websocket route rewrite and concurrency hardening
+- [ ] ROI F — polling/backoff hardening
+- [ ] ROI G — resumable uploads and downloads
