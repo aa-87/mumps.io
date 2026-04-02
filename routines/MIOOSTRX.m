@@ -20,7 +20,7 @@ LEASE(CONF,DIR)
 	NEW N
 	SET N=+$SELECT($GET(DIR)="download":$GET(CONF("mioos","transfer","downloadWorkers"),2),1:$GET(CONF("mioos","transfer","uploadWorkers"),2))
 	IF N<1 SET N=1
-	IF N>7 SET N=7
+	IF N>70 SET N=70
 	QUIT N
 	;
 RESUME(CONF)
@@ -96,4 +96,5 @@ DONE(ID,FILEID)
 	DO TOUCH($GET(ID))
 	KILL ^MIO("MIOOS","TRANSFER","ACTIVE",$GET(ID))
 	QUIT
+	;
 	;

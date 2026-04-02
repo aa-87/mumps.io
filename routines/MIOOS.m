@@ -98,7 +98,7 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","transfer","enabled"))="" SET CONF("mioos","transfer","enabled")=1
 	IF $GET(CONF("mioos","transfer","chunkSize"))="" SET CONF("mioos","transfer","chunkSize")=16384
 	IF $GET(CONF("mioos","transfer","uploadWorkers"))="" SET CONF("mioos","transfer","uploadWorkers")=2
-	IF $GET(CONF("mioos","transfer","downloadWorkers"))="" SET CONF("mioos","transfer","downloadWorkers")=1
+	IF $GET(CONF("mioos","transfer","downloadWorkers"))="" SET CONF("mioos","transfer","downloadWorkers")=2
 	IF $GET(CONF("mioos","transfer","resumeSeconds"))="" SET CONF("mioos","transfer","resumeSeconds")=1800
 	IF $GET(CONF("mioos","transfer","activePollMs"))="" SET CONF("mioos","transfer","activePollMs")=25
 	IF $GET(CONF("mioos","transfer","idlePollMs"))="" SET CONF("mioos","transfer","idlePollMs")=180

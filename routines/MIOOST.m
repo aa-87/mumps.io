@@ -107,6 +107,7 @@ T002
 	DO EQ^MIOTASSERT(+$GET(OBJ("transfer","enabled")),1,"[MIOOST][T002][transfer enabled]")
 	DO EQ^MIOTASSERT(+$GET(OBJ("transfer","protocolVersion")),1,"[MIOOST][T002][transfer protocol]")
 	DO EQ^MIOTASSERT(+$GET(OBJ("transfer","uploadWorkers")),2,"[MIOOST][T002][transfer upload workers]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("transfer","downloadWorkers")),2,"[MIOOST][T002][transfer download workers]")
 	QUIT
 	;
 T003
@@ -329,4 +330,7 @@ T013
 	DO EQ^MIOTASSERT($GET(OBJ("transfer","data")),"alpha","[MIOOST][T013][transfer ws data]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI A — transfer protocol foundation"),"[MIOOST][T013][llm roia]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI B — upload worker pool"),"[MIOOST][T013][llm roib]")
+	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI C — download worker pool"),"[MIOOST][T013][llm roic]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_transfer.js","transferDownloadFile"),"[MIOOST][T013][download worker method]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","explorerDownloadSelected"),"[MIOOST][T013][explorer download method]")
 	QUIT

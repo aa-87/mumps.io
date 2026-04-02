@@ -216,7 +216,8 @@
             items: [],
             selection: null,
             error: '',
-            preview: { title: '', content: '', mime: 'text/plain', imageSrc: '' }
+            preview: { title: '', content: '', mime: 'text/plain', imageSrc: '' },
+            download: null
           };
         }
         return win.explorerState;
@@ -497,6 +498,31 @@
         }).catch(function (err) {
           if (self.showAlert) self.showAlert(self.t('alerts.shellEventError.title', 'Explorer'), (err && err.message) || 'fs_move_failed');
         });
+      },
+      explorerDownloadSelected: function (windowId) {
+        var win = this.windows.find(function (entry) { return entry.id === windowId; });
+        var state = this.ensureExplorerWindowState(win);
+        var item = state && state.selection;
+        if (!item || !this.transferDownloadFile) return Promise.resolve();
+        return this.transferDownloadFile({
+          id: item.id || item.key || '',
+          path: item.path || '',
+          name: item.name || item.title || 'download',
+          mime: item.mime || 'application/octet-stream'
+        }, state);
+      },
+      downloadViewerFile: function (win) {
+        var fileId = ((win || {}).meta || {}).fileId || '';
+        var name = ((win || {}).meta || {}).fileName || (win && win.title) || 'download';
+        if (!fileId || !this.transferDownloadFile) return Promise.resolve();
+        return this.transferDownloadFile({ id: fileId, name: name, mime: (((win || {}).fileView || {}).mime || ((win || {}).meta || {}).mime || 'application/octet-stream') }, null);
+      },
+      explorerOpenSelected: function (windowId) {
+        var win = this.windows.find(function (entry) { return entry.id === windowId; });
+        var state = this.ensureExplorerWindowState(win);
+        var item = state && state.selection;
+        if (!item) return Promise.resolve();
+        return this.explorerOpenItem(windowId, item);
       },
       openTextViewerWindow: function (item) {
         var id = nextWindowId(this, 'win-text');

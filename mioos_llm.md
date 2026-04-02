@@ -192,3 +192,11 @@ Keep tests:
 - The upload worker count now defaults to `2` and is still bounded by the transfer config.
 - Transfer chunks now carry `workerId`, and server-side transfer state records per-worker activity metadata for later resume and retry ROIs.
 - This ROI keeps commit/abort on the coordinator path and does not yet add download workers or resume.
+
+
+## ROI C — download worker pool
+- [x] Add chunked download worker pool over dedicated `/ws/mioos/transfer` sockets.
+- [x] Keep one coordinator socket for `transfer.download.begin` and `transfer.download.end`.
+- [x] Use multiple worker sockets for `transfer.download.chunk`.
+- [x] Track per-worker activity metadata on the server for later resume and retry ROIs.
+- [x] Reassemble downloaded chunks in the browser and save as a Blob or decoded data URL.
