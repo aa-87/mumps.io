@@ -90,6 +90,47 @@
     return { mime: mime, text: decodeURIComponent(data) };
   }
 
+
+
+  function transferGlyph(direction, state) {
+    if (state === 'failed') return '⚠';
+    if (direction === 'download') return '↓';
+    return '↑';
+  }
+
+  function ensureTransferScaffold(vm) {
+    var hasApp, hasWindow;
+    if (!vm.launcherEntries) vm.launcherEntries = [];
+    hasApp = vm.launcherEntries.some(function (entry) { return entry.key === 'transfers'; });
+    if (!hasApp) {
+      vm.launcherEntries.push({ key: 'transfers', icon: '⇅', title: 'Transfers', subtitle: 'Active uploads and downloads', kind: 'system' });
+    }
+    if (!vm.windows) vm.windows = [];
+    hasWindow = vm.windows.some(function (win) { return win.appKey === 'transfers'; });
+    if (!hasWindow) {
+      vm.windows.push({ id: 'win-transfers', appKey: 'transfers', title: 'Transfers', left: 220, top: 120, width: 560, height: 360, state: 'closed', z: ((vm.zCounter || 10) + 1) });
+    }
+    if (!Array.isArray(vm.transferItems)) vm.transferItems = [];
+  }
+
+  function touchTransfer(vm, meta) {
+    var item, now;
+    ensureTransferScaffold(vm);
+    now = Date.now();
+    item = (vm.transferItems || []).find(function (entry) { return entry.id === meta.id; });
+    if (!item) {
+      item = { id: meta.id, name: meta.name || 'Transfer', direction: meta.direction || 'upload', stage: meta.stage || 'Queued', progress: Number(meta.progress || 0) || 0, active: meta.active !== false, failed: !!meta.failed, complete: !!meta.complete, bytesDone: Number(meta.bytesDone || 0) || 0, sizeBytes: Number(meta.sizeBytes || 0) || 0, workerCount: Number(meta.workerCount || 1) || 1, updatedAt: now, glyph: transferGlyph(meta.direction || 'upload', meta.failed ? 'failed' : (meta.complete ? 'complete' : 'active')) };
+      vm.transferItems.unshift(item);
+    }
+    Object.assign(item, meta || {});
+    item.active = meta.active !== false;
+    item.failed = !!meta.failed;
+    item.complete = !!meta.complete;
+    item.updatedAt = now;
+    item.glyph = transferGlyph(item.direction, item.failed ? 'failed' : (item.complete ? 'complete' : 'active'));
+    return item;
+  }
+
   function triggerDownload(name, mime, joined) {
     var a, blob, url, parsed;
     parsed = decodeDataUrl(joined);
@@ -125,13 +166,18 @@
       var pieces = [];
       var failed = false;
       function setProgress(stage) {
+        var progress;
+        progress = chunkTotal > 0 ? Math.min(100, Math.round((completed / chunkTotal) * 100)) : 0;
         if (!state) return;
         state.download = {
           active: true,
           name: spec.name || 'Download',
           stage: stage || 'Downloading',
-          progress: chunkTotal > 0 ? Math.min(100, Math.round((completed / chunkTotal) * 100)) : 0
+          progress: progress
         };
+        if (vm && vm.transferBeginOrUpdate) {
+          vm.transferBeginOrUpdate({ id: transferId || ('download-' + (spec.id || spec.name || 'file')), direction: 'download', name: spec.name || 'Download', stage: stage || 'Downloading', progress: progress, active: true, complete: false, failed: false, sizeBytes: Number((spec && spec.sizeBytes) || 0) || 0, workerCount: workerCount || 1, bytesDone: completed * chunkSize });
+        }
       }
       function cleanup() {
         sockets.forEach(function (socket) { try { socket.close(); } catch (err) {} });
@@ -142,6 +188,7 @@
         if (failed) return;
         failed = true;
         if (state) state.download = { active: false, name: spec.name || 'Download', stage: 'Failed', progress: chunkTotal > 0 ? Math.min(100, Math.round((completed / chunkTotal) * 100)) : 0, error: (err && err.message) || 'transfer_download_failed' };
+        if (vm && vm.transferBeginOrUpdate) vm.transferBeginOrUpdate({ id: transferId || ('download-' + (spec.id || spec.name || 'file')), direction: 'download', name: spec.name || 'Download', stage: 'Failed', progress: chunkTotal > 0 ? Math.min(100, Math.round((completed / chunkTotal) * 100)) : 0, active: false, failed: true, complete: false, workerCount: workerCount || 1 });
         if (transferId) request(coordinator, 'transfer.download.abort', { transferId: transferId }, 10000).catch(function () {});
         cleanup();
         reject(err || new Error('transfer_download_failed'));
@@ -169,6 +216,7 @@
           state.download = { active: false, name: (meta && meta.name) || spec.name || 'Download', stage: 'Complete', progress: 100 };
           window.setTimeout(function () { if (state.download && state.download.progress === 100) state.download = null; }, 1200);
         }
+        if (vm && vm.transferBeginOrUpdate) vm.transferBeginOrUpdate({ id: transferId || ('download-' + ((meta && meta.name) || spec.name || 'file')), direction: 'download', name: (meta && meta.name) || spec.name || 'Download', stage: 'Complete', progress: 100, active: false, complete: true, failed: false, workerCount: workerCount || 1 });
         cleanup();
         resolve({ ok: 1, transferId: transferId, name: (meta && meta.name) || spec.name });
       }
@@ -216,6 +264,28 @@ window.MIOOSTransfer = {
       request: request
     },
     methods: {
+      ensureTransferScaffold: function () {
+        ensureTransferScaffold(this);
+      },
+      openTransferManager: function () {
+        var win;
+        ensureTransferScaffold(this);
+        win = this.windows.find(function (entry) { return entry.appKey === 'transfers'; });
+        if (!win) return;
+        win.state = 'normal';
+        if (this.focusWindow) this.focusWindow(win.id);
+      },
+      transferBeginOrUpdate: function (meta) {
+        var item = touchTransfer(this, meta || {});
+        if (item && item.active && this.openTransferManager) this.openTransferManager();
+        return item;
+      },
+      transferClearCompleted: function () {
+        this.transferItems = (this.transferItems || []).filter(function (item) { return item.active || item.failed; });
+      },
+      transferRetryPlaceholder: function () {
+        if (this.showAlert) this.showAlert('Transfers', 'Retry/resume arrives in a later ROI.');
+      },
       transferUploadBegin: function (payload) {
         return this.socketRequest('transfer.upload.begin', buildPayload('transfer.upload.begin', payload || {}), { command: 'transfer.upload.begin', dedupeKey: 'transfer.upload.begin|' + JSON.stringify(payload || {}), timeoutMs: 12000 });
       },
@@ -227,6 +297,12 @@ window.MIOOSTransfer = {
       },
       transferDownloadStatus: function (transferId) {
         return this.socketRequest('transfer.download.status', { transferId: transferId }, { command: 'transfer.download.status', dedupeKey: 'transfer.download.status|' + String(transferId || ''), timeoutMs: 12000 });
+      },
+      transferActiveItems: function () {
+        return (this.transferItems || []).filter(function (item) { return item.active; });
+      },
+      transferHistoryItems: function () {
+        return (this.transferItems || []).filter(function (item) { return !item.active; });
       },
       transferDownloadFile: function (spec, state) {
         return downloadWithWorkers(this, spec || {}, state || null);

@@ -6,6 +6,7 @@
         if (entry) return entry.icon;
         if (appKey === 'text-viewer') return '📄';
         if (appKey === 'image-viewer') return '🖼';
+        if (appKey === 'transfers') return '⇅';
         return '□';
       },
       openApp: function (appKey) {

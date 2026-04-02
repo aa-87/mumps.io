@@ -12,6 +12,7 @@ MIOOST ; MIOOS tests
 	DO T011
 	DO T012
 	DO T013
+	DO T014
 	QUIT
 	;
 RESET
@@ -333,4 +334,13 @@ T013
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI C — download worker pool"),"[MIOOST][T013][llm roic]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_transfer.js","transferDownloadFile"),"[MIOOST][T013][download worker method]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","explorerDownloadSelected"),"[MIOOST][T013][explorer download method]")
+	QUIT
+
+T014
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","Transfer manager"),"[MIOOST][T014][transfer manager token]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","openTransferManager"),"[MIOOST][T014][transfer manager action]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_transfer.js","transferBeginOrUpdate"),"[MIOOST][T014][transfer tracker method]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_transfer.js","transferClearCompleted"),"[MIOOST][T014][transfer clear method]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-transfers-shell"),"[MIOOST][T014][transfer manager css]")
+	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI D — transfer manager UI"),"[MIOOST][T014][llm roid]")
 	QUIT

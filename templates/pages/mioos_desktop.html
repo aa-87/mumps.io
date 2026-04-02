@@ -151,6 +151,7 @@
               <button type="button" @click="loadExplorerFolder(win.id, ((boot.vfs || {}).rootId || 'root'), { selectFirst: true })">My Computer</button>
               <button type="button" @click="loadExplorerFolder(win.id, ((boot.vfs || {}).homeId || (boot.vfs || {}).rootId || 'root'), { selectFirst: true })">Documents</button>
               <button type="button" @click="explorerPromptUpload(win.id)">Upload</button>
+              <button type="button" @click="openTransferManager">Transfers</button>
               <span class="mioos-explorer-path">[[ ((win.explorerState || {}).folder || {}).path || ((win.explorerState || {}).folder || {}).name || '/' ]]</span>
             </div>
             <div class="mioos-explorer-main">
@@ -232,6 +233,52 @@
             </div>
           </div>
         </template>
+
+        <template v-else-if="win.appKey === 'transfers'">
+          <div class="mioos-transfers-shell">
+            <div class="mioos-transfers-head">
+              <strong>Transfer manager</strong>
+              <div class="mioos-transfers-actions">
+                <button type="button" @click="transferClearCompleted">Clear completed</button>
+              </div>
+            </div>
+            <div class="mioos-transfers-section">
+              <strong>Active transfers</strong>
+              <div v-if="!transferActiveItems().length" class="mioos-transfers-empty">No active transfers.</div>
+              <div v-for="item in transferActiveItems()" :key="item.id" class="mioos-transfer-row">
+                <div class="mioos-transfer-row-copy">
+                  <span class="mioos-entry-icon">[[ item.glyph ]]</span>
+                  <div>
+                    <strong>[[ item.name ]]</strong>
+                    <span>[[ item.stage ]] • [[ item.workerCount || 1 ]] worker(s)</span>
+                  </div>
+                </div>
+                <div class="mioos-transfer-row-meter">
+                  <div class="mioos-transfer-meter-track"><div class="mioos-transfer-meter-fill" :style="{ width: (item.progress || 0) + '%' }"></div></div>
+                  <em>[[ item.progress || 0 ]]%</em>
+                </div>
+              </div>
+            </div>
+            <div class="mioos-transfers-section mioos-transfers-history">
+              <strong>History</strong>
+              <div v-if="!transferHistoryItems().length" class="mioos-transfers-empty">No completed or failed transfers yet.</div>
+              <div v-for="item in transferHistoryItems()" :key="item.id" class="mioos-transfer-row is-history" :class="{ 'is-failed': item.failed }">
+                <div class="mioos-transfer-row-copy">
+                  <span class="mioos-entry-icon">[[ item.glyph ]]</span>
+                  <div>
+                    <strong>[[ item.name ]]</strong>
+                    <span>[[ item.stage ]]</span>
+                  </div>
+                </div>
+                <div class="mioos-transfer-row-meter">
+                  <div class="mioos-transfer-meter-track"><div class="mioos-transfer-meter-fill" :style="{ width: (item.progress || 0) + '%' }"></div></div>
+                  <em>[[ item.progress || 0 ]]%</em>
+                </div>
+              </div>
+            </div>
+          </div>
+        </template>
+
         <template v-else-if="win.appKey === 'terminal'">
           <div class="mioos-terminal-shell" data-terminal-surface data-terminal-engine="xtermjs-ydb" data-terminal-renderer="xtermjs" data-terminal-focus="xterm-managed" data-terminal-textarea="xterm-owned" :data-terminal-window="win.id">
             <div class="mioos-terminal-toolbar">

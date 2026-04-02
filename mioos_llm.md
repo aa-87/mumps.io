@@ -200,3 +200,10 @@ Keep tests:
 - [x] Use multiple worker sockets for `transfer.download.chunk`.
 - [x] Track per-worker activity metadata on the server for later resume and retry ROIs.
 - [x] Reassemble downloaded chunks in the browser and save as a Blob or decoded data URL.
+
+
+## ROI D — transfer manager UI
+- [x] Add a dedicated Transfers window on the desktop shell.
+- [x] Show active uploads and downloads with progress, stage, and worker counts.
+- [x] Preserve completed and failed transfers in a lightweight history list.
+- [x] Keep Explorer focused on starting transfers while the transfer manager owns long-running visibility.

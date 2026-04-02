@@ -76,12 +76,16 @@
       var failed = false;
       var committed = false;
       function updateProgress() {
+        var progress = chunkTotal > 0 ? Math.min(100, Math.round((completed / chunkTotal) * 100)) : 0;
         state.upload = {
           active: true,
           name: file.name,
           stage: committed ? 'Complete' : 'Uploading',
-          progress: chunkTotal > 0 ? Math.min(100, Math.round((completed / chunkTotal) * 100)) : 0
+          progress: progress
         };
+        if (vm && vm.transferBeginOrUpdate) {
+          vm.transferBeginOrUpdate({ id: transferId || ('upload-' + file.name), direction: 'upload', name: file.name, stage: committed ? 'Complete' : 'Uploading', progress: progress, active: !committed, complete: !!committed, failed: false, sizeBytes: file.size || 0, workerCount: workerCount || 1, bytesDone: completed * chunkSize });
+        }
       }
       function cleanup() {
         sockets.forEach(function (socket) {
@@ -100,6 +104,7 @@
           progress: chunkTotal > 0 ? Math.min(100, Math.round((completed / chunkTotal) * 100)) : 0,
           error: (err && err.message) || 'transfer_upload_failed'
         };
+        if (vm && vm.transferBeginOrUpdate) vm.transferBeginOrUpdate({ id: transferId || ('upload-' + file.name), direction: 'upload', name: file.name, stage: 'Failed', progress: chunkTotal > 0 ? Math.min(100, Math.round((completed / chunkTotal) * 100)) : 0, active: false, failed: true, complete: false, sizeBytes: file.size || 0, workerCount: workerCount || 1 });
         if (transferId) {
           request(coordinator, 'transfer.upload.abort', { transferId: transferId }, 10000).catch(function () {});
         }
@@ -111,6 +116,7 @@
         committed = true;
         request(coordinator, 'transfer.upload.commit', { transferId: transferId }, 30000).then(function (msg) {
           state.upload = { active: false, name: file.name, stage: 'Complete', progress: 100 };
+          if (vm && vm.transferBeginOrUpdate) vm.transferBeginOrUpdate({ id: transferId || ('upload-' + file.name), direction: 'upload', name: file.name, stage: 'Complete', progress: 100, active: false, complete: true, failed: false, sizeBytes: file.size || 0, workerCount: workerCount || 1, bytesDone: file.size || 0 });
           window.setTimeout(function () { if (state.upload && state.upload.progress === 100) state.upload = null; }, 800);
           cleanup();
           resolve(msg);
