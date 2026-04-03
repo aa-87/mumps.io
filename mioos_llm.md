@@ -220,3 +220,6 @@ A detailed Theme Studio UI tool is available in MIOOS as a dedicated desktop app
 - Desktop icons are draggable with small, medium, and large size modes.
 - Desktop and icon context menus expose refresh, rearrange, sorting, sizing, personalization, and Control Panel shortcuts.
 - Icon layout preferences are persisted per user through the shell transport and also cached locally for responsiveness.
+
+
+- ROI-H reapply: added chunked websocket downloads plus PDF and structured file viewers without changing the existing shell/window baseline.

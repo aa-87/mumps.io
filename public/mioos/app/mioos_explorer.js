@@ -14,6 +14,18 @@
     return mime.indexOf('text/') === 0 || mime.indexOf('json') >= 0 || /\.(txt|md|m|json|js|css|html|xml|log|csv)$/i.test(name);
   }
 
+  function detectPdfLike(entry) {
+    var mime = ((entry || {}).mime || '').toLowerCase();
+    var name = ((entry || {}).name || (entry || {}).title || '').toLowerCase();
+    return mime.indexOf('application/pdf') === 0 || /\.pdf$/i.test(name);
+  }
+
+  function detectStructuredLike(entry) {
+    var mime = ((entry || {}).mime || '').toLowerCase();
+    var name = ((entry || {}).name || (entry || {}).title || '').toLowerCase();
+    return mime.indexOf('json') >= 0 || mime.indexOf('markdown') >= 0 || /\.(json|md|markdown|yml|yaml|xml|csv)$/i.test(name);
+  }
+
   function detectImageLike(entry) {
     var mime = ((entry || {}).mime || '').toLowerCase();
     var name = ((entry || {}).name || (entry || {}).title || '').toLowerCase();
@@ -32,8 +44,25 @@
     return mime.indexOf('video/') === 0 || /\.(mp4|webm|ogv|mov|m4v)$/i.test(name);
   }
 
+  function makeDownloadHref(data, mime) {
+    var blob;
+    if (!data) return '';
+    if (typeof data === 'string' && data.indexOf('data:') === 0) return data;
+    blob = new window.Blob([data], { type: mime || 'application/octet-stream' });
+    return window.URL.createObjectURL(blob);
+  }
+
+  function normalizeStructuredContent(content, mime) {
+    var out = content || '';
+    if (!out) return '';
+    if ((mime || '').toLowerCase().indexOf('json') >= 0) {
+      try { return JSON.stringify(JSON.parse(out), null, 2); } catch (err) {}
+    }
+    return out;
+  }
+
   function payloadRoot(msg) {
-    return (msg && (msg.vfs || msg.fs || msg.result || msg)) || {};
+    return (msg && (msg.vfs || msg.fs || msg.download || msg.result || msg)) || {};
   }
 
   function extractItems(payload) {
@@ -528,6 +557,14 @@
           this.openMediaViewerWindow(item);
           return;
         }
+        if (detectPdfLike(item)) {
+          this.openPdfViewerWindow(item);
+          return;
+        }
+        if (detectStructuredLike(item)) {
+          this.openStructuredViewerWindow(item);
+          return;
+        }
         if (detectTextLike(item)) {
           this.openTextViewerWindow(item);
         }
@@ -762,35 +799,64 @@
         var anchor;
         var href = fallbackData || '';
         var name = (item && (item.name || item.title)) || 'download';
+        var mime = (item && item.mime) || 'application/octet-stream';
         var transferId = this.registerTransfer ? this.registerTransfer({ kind: 'download', name: name, status: 'preparing', stage: 'Preparing', totalBytes: 0, processedBytes: 0 }) : '';
-        if (!item) return Promise.resolve();
-        if (href && href.indexOf('data:') === 0) {
+        var self = this;
+        function triggerSave(raw) {
+          var url = makeDownloadHref(raw, mime);
+          if (!url) return;
           anchor = document.createElement('a');
-          anchor.href = href;
+          anchor.href = url;
           anchor.download = name;
           document.body.appendChild(anchor);
           anchor.click();
           document.body.removeChild(anchor);
+          if (url.indexOf('blob:') === 0) window.setTimeout(function () { try { window.URL.revokeObjectURL(url); } catch (err) {} }, 2000);
+        }
+        if (!item) return Promise.resolve();
+        if (href) {
+          triggerSave(href);
           if (transferId && this.finalizeTransfer) this.finalizeTransfer(transferId, true, { progress: 100, stage: 'Saved to browser download manager' });
           return Promise.resolve();
         }
         if (!this.command) return Promise.resolve();
         if (transferId && this.updateTransfer) this.updateTransfer(transferId, { status: 'downloading', stage: 'Downloading' });
-        return this.command('fs.read', { id: item.id || item.key || item.fileId }).then(function (msg) {
-          var payload = payloadRoot(msg);
-          var data = textFromPayload(payload);
-          if (!data) return;
-          anchor = document.createElement('a');
-          anchor.href = data;
-          anchor.download = name;
-          document.body.appendChild(anchor);
-          anchor.click();
-          document.body.removeChild(anchor);
-          if (transferId && this.finalizeTransfer) this.finalizeTransfer(transferId, true, { progress: 100, stage: 'Saved to browser download manager' });
-        }.bind(this)).catch(function (err) {
-          if (transferId && this.finalizeTransfer) this.finalizeTransfer(transferId, false, { error: (err && err.message) || 'download_failed' });
-          throw err;
-        }.bind(this));
+        return this.command('fs.download.begin', { id: item.id || item.key || item.fileId }).then(function (msg) {
+          var begin = payloadRoot(msg);
+          var totalBytes = +begin.transferBytes || +begin.size || 0;
+          var logicalBytes = +begin.size || totalBytes;
+          var chunkSize = +begin.chunkSize || 32768;
+          var offset = 0;
+          var pieces = [];
+          if (transferId && self.updateTransfer) self.updateTransfer(transferId, { totalBytes: totalBytes, logicalBytes: logicalBytes, processedBytes: 0, progress: 0, stage: 'Downloading' });
+          function nextChunk() {
+            if (totalBytes > 0 && offset >= totalBytes) return Promise.resolve(pieces.join(''));
+            return self.command('fs.download.chunk', { downloadId: begin.downloadId, offset: offset, size: chunkSize }).then(function (chunkMsg) {
+              var chunk = payloadRoot(chunkMsg);
+              var data = chunk.data || '';
+              var nextOffset = +chunk.nextOffset || (offset + data.length);
+              pieces.push(data);
+              if (nextOffset <= offset && !(+chunk.eof === 1 || chunk.eof === true)) throw new Error('download_offset_stalled');
+              offset = nextOffset;
+              if (transferId && self.updateTransfer) self.updateTransfer(transferId, { processedBytes: offset, totalBytes: +chunk.totalBytes || totalBytes, progress: totalBytes > 0 ? Math.round((offset / totalBytes) * 100) : 0, stage: (+chunk.eof === 1 || chunk.eof === true) ? 'Finalizing' : 'Downloading' });
+              if (+chunk.eof === 1 || chunk.eof === true) return pieces.join('');
+              return nextChunk();
+            });
+          }
+          return nextChunk().then(function (raw) {
+            triggerSave(raw);
+            if (transferId && self.finalizeTransfer) self.finalizeTransfer(transferId, true, { processedBytes: totalBytes || raw.length, totalBytes: totalBytes || raw.length, logicalBytes: logicalBytes, progress: 100, stage: 'Saved to browser download manager' });
+            return self.command('fs.download.abort', { downloadId: begin.downloadId }).catch(function () { return null; });
+          });
+        }).catch(function (err) {
+          if (transferId && self.finalizeTransfer) self.finalizeTransfer(transferId, false, { error: (err && err.message) || 'download_failed' });
+          return self.command('fs.read', { id: item.id || item.key || item.fileId }).then(function (msg) {
+            var payload = payloadRoot(msg);
+            var data = textFromPayload(payload);
+            triggerSave(data);
+            if (transferId && self.finalizeTransfer) self.finalizeTransfer(transferId, true, { progress: 100, stage: 'Saved to browser download manager' });
+          });
+        });
       },
       explorerDownloadSelected: function (windowId) {
         var win = this.windows.find(function (entry) { return entry.id === windowId; });
@@ -889,6 +955,64 @@
           win.fileView.loading = false;
           win.fileView.content = '';
           win.fileView.error = (err && err.message) || 'Unable to open media.';
+        });
+      },
+      openPdfViewerWindow: function (item) {
+        var id = nextWindowId(this, 'win-pdf');
+        var win = {
+          id: id,
+          appKey: 'pdf-viewer',
+          title: item.name || item.title || 'PDF file',
+          state: 'normal',
+          left: 160,
+          top: 100,
+          width: 820,
+          height: 600,
+          z: this.zCounter + 1,
+          meta: { fileId: item.id || item.key || '', mime: item.mime || 'application/pdf', fileName: item.name || item.title || 'PDF file' },
+          fileView: { loading: true, content: '', mime: item.mime || 'application/pdf' }
+        };
+        this.windows.push(win);
+        this.focusWindow(id);
+        if (!this.command) return;
+        this.command('fs.read', { id: item.id || item.key || item.fileId }).then(function (msg) {
+          var payload = payloadRoot(msg);
+          var raw = textFromPayload(payload);
+          win.fileView.loading = false;
+          win.fileView.mime = payload.mime || win.fileView.mime;
+          win.fileView.content = makeDownloadHref(raw, win.fileView.mime);
+        }).catch(function (err) {
+          win.fileView.loading = false;
+          win.fileView.error = (err && err.message) || 'Unable to open PDF.';
+        });
+      },
+      openStructuredViewerWindow: function (item) {
+        var id = nextWindowId(this, 'win-structured');
+        var win = {
+          id: id,
+          appKey: 'structured-viewer',
+          title: item.name || item.title || 'Structured file',
+          state: 'normal',
+          left: 150,
+          top: 95,
+          width: 720,
+          height: 540,
+          z: this.zCounter + 1,
+          meta: { fileId: item.id || item.key || '', mime: item.mime || 'text/plain', fileName: item.name || item.title || 'Structured file' },
+          fileView: { loading: true, content: '', mime: item.mime || 'text/plain' }
+        };
+        this.windows.push(win);
+        this.focusWindow(id);
+        if (!this.command) return;
+        this.command('fs.read', { id: item.id || item.key || item.fileId }).then(function (msg) {
+          var payload = payloadRoot(msg);
+          var raw = textFromPayload(payload);
+          win.fileView.loading = false;
+          win.fileView.mime = payload.mime || win.fileView.mime;
+          win.fileView.content = normalizeStructuredContent(raw, win.fileView.mime);
+        }).catch(function (err) {
+          win.fileView.loading = false;
+          win.fileView.content = (err && err.message) || 'Unable to open file.';
         });
       }
     }

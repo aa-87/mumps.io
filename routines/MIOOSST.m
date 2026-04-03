@@ -215,6 +215,12 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","performance","payloadMode")=$GET(STATE("perfPayloadMode"),"tmp-global-safe")
 	SET OBJ("desktop","performance","transport")=$GET(STATE("perfTransport"),"websocket-first-http-refresh")
 	SET OBJ("desktop","performance","uploadStrategy")="batched-chunk-pool"
+	SET OBJ("desktop","performance","downloadStrategy")="chunked-websocket"
+	SET OBJ("desktop","viewers","text")=1
+	SET OBJ("desktop","viewers","image")=1
+	SET OBJ("desktop","viewers","media")=1
+	SET OBJ("desktop","viewers","pdf")=1
+	SET OBJ("desktop","viewers","structured")=1
 	SET OBJ("desktop","windowing","engine")=$GET(STATE("windowManager"),"mioos-native-vue-css")
 	SET OBJ("desktop","windowing","snapThreshold")=+$GET(STATE("windowSnapThreshold"),28)
 	SET OBJ("desktop","windowing","taskbarHeight")=+$GET(STATE("windowTaskbarHeight"),40)
