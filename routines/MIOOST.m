@@ -74,7 +74,6 @@ T001
 	KILL EP DO AMATCH("[MIOOST][T001][fs mkdir]","POST","/api/mioos/fs/mkdir",1,"FSMKDIR^MIOOSAPI","/api/mioos/fs/mkdir",.EP)
 	KILL EP DO AMATCH("[MIOOST][T001][ws]","WS","/ws/mioos",1,"MESSAGE^MIOOSWS","/ws/mioos",.EP)
 	KILL EP DO AMATCH("[MIOOST][T001][ws terminal]","WS","/ws/mioos/terminal",1,"MESSAGE^MIOOSTWS","/ws/mioos/terminal",.EP)
-	KILL EP DO AMATCH("[MIOOST][T001][ws transfer]","WS","/ws/mioos/transfer",1,"MESSAGE^MIOOSTRXWS","/ws/mioos/transfer",.EP)
 	DO EQ^MIOTASSERT(+$GET(^MIO("ROUTE","META","GET","/mioos","authRequired")),0,"[MIOOST][T001][desktop auth]")
 	DO EQ^MIOTASSERT(+$GET(^MIO("ROUTE","META","POST","/api/mioos/auth/signin","authRequired")),0,"[MIOOST][T001][signin auth]")
 	QUIT
@@ -104,11 +103,9 @@ T002
 	DO EQ^MIOTASSERT(+$GET(OBJ("vfs","enabled")),1,"[MIOOST][T002][vfs enabled]")
 	DO EQ^MIOTASSERT($GET(OBJ("vfs","storage")),"globals-only","[MIOOST][T002][vfs storage]")
 	DO EQ^MIOTASSERT($GET(OBJ("routes","fsList")),"/api/mioos/fs/list","[MIOOST][T002][fs list route]")
-	DO EQ^MIOTASSERT($GET(OBJ("routes","transferWebsocket")),"/ws/mioos/transfer","[MIOOST][T002][transfer ws route]")
-	DO EQ^MIOTASSERT(+$GET(OBJ("transfer","enabled")),1,"[MIOOST][T002][transfer enabled]")
-	DO EQ^MIOTASSERT(+$GET(OBJ("transfer","protocolVersion")),1,"[MIOOST][T002][transfer protocol]")
-	DO EQ^MIOTASSERT(+$GET(OBJ("transfer","uploadWorkers")),2,"[MIOOST][T002][transfer upload workers]")
-	DO EQ^MIOTASSERT(+$GET(OBJ("transfer","downloadWorkers")),2,"[MIOOST][T002][transfer download workers]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("websocket","maxSocketsPerSession")),4,"[MIOOST][T002][max sockets]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("websocket","fsSockets")),3,"[MIOOST][T002][fs sockets]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("vfs","uploadBatchSize")),4,"[MIOOST][T002][upload batch size]")
 	QUIT
 	;
 T003
@@ -121,6 +118,8 @@ T003
 	DO EQ^MIOTASSERT($GET(DATA("commandEvent")),"desktop.command","[MIOOST][T003][command event]")
 	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-mioos-core-socket=""1"""),"[MIOOST][T003][core socket token]")
 	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-mioos-app-sockets=""1"""),"[MIOOST][T003][app sockets token]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-mioos-max-sockets="),"[MIOOST][T003][max sockets token]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-mioos-upload-batch-size="),"[MIOOST][T003][upload batch token]")
 	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-mioos-signin="),"[MIOOST][T003][signin token]")
 	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-auth-overlay"),"[MIOOST][T003][auth overlay]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_auth.js","submitSignin"),"[MIOOST][T003][signin method]")
@@ -138,6 +137,7 @@ T004
 	DO EQ^MIOTASSERT($GET(OBJ("commandResultEvent")),"desktop.result","[MIOOST][T004][result event]")
 	DO EQ^MIOTASSERT($GET(OBJ("terminalEngine")),"xtermjs","[MIOOST][T004][engine]")
 	DO EQ^MIOTASSERT($GET(OBJ("realtimeContract")),"core-websocket-plus-app-websockets","[MIOOST][T004][realtime contract]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("socketPool","maxSocketsPerSession")),4,"[MIOOST][T004][hello max sockets]")
 	SET JSON=$$PONGJSON^MIOOSWS(.STATE)
 	DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T004][pong decode]")
 	DO EQ^MIOTASSERT($GET(OBJ("event")),"pong","[MIOOST][T004][pong event]")
@@ -189,8 +189,6 @@ T007
 	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","changeLocale(locale.code)"),"[MIOOST][T007][locale switch]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_state.js","window.MIOOSState"),"[MIOOST][T007][state module]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","window.MIOOSCore"),"[MIOOST][T007][core module]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/layouts/mioos_shell.html","/public/mioos/app/mioos_transfer.js"),"[MIOOST][T007][transfer script]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_transfer.js","window.MIOOSTransfer"),"[MIOOST][T007][transfer module]")
 	QUIT
 	;
 T008
@@ -299,48 +297,18 @@ T012
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-imageviewer-shell"),"[MIOOST][T012][image viewer css]")
 	QUIT
 
+	;
 T013
-	NEW CONF,REQ,CTX,STATE,ERR,JSON,OBJ,TRID,PAY
-	DO RESET
-	DO CONFDEF^MIOOS(.CONF)
-	DO INIT^MIOOS(.CONF)
-	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T013][load]")
-	SET PAY="{""event"":""desktop.command"",""requestId"":""tr-1"",""command"":""transfer.upload.begin"",""parent"":""/Documents"",""name"":""roiA.txt"",""mime"":""text/plain"",""sizeBytes"":5,""chunkTotal"":1}"
-	DO OK^MIOTASSERT($$COMMANDJSON^MIOOSWS(.CONF,.REQ,.CTX,.STATE,PAY,.JSON,.ERR),"[MIOOST][T013][upload begin]")
-	DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T013][upload begin decode]")
-	SET TRID=$GET(OBJ("transfer","transferId"))
-	DO EQ^MIOTASSERT(TRID'="",1,"[MIOOST][T013][transfer id]")
-	SET PAY="{""event"":""desktop.command"",""requestId"":""tr-2"",""command"":""transfer.upload.chunk"",""transferId"":"""_TRID_""",""chunkIndex"":1,""data"":""alpha""}"
-	DO OK^MIOTASSERT($$COMMANDJSON^MIOOSWS(.CONF,.REQ,.CTX,.STATE,PAY,.JSON,.ERR),"[MIOOST][T013][upload chunk]")
-	DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T013][upload chunk decode]")
-	DO EQ^MIOTASSERT(+$GET(OBJ("transfer","chunkReceived")),1,"[MIOOST][T013][chunk received]")
-	SET PAY="{""event"":""desktop.command"",""requestId"":""tr-3"",""command"":""transfer.upload.commit"",""transferId"":"""_TRID_"""}"
-	DO OK^MIOTASSERT($$COMMANDJSON^MIOOSWS(.CONF,.REQ,.CTX,.STATE,PAY,.JSON,.ERR),"[MIOOST][T013][upload commit]")
-	DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T013][upload commit decode]")
-	DO EQ^MIOTASSERT($GET(OBJ("transfer","state")),"complete","[MIOOST][T013][upload complete]")
-	DO EQ^MIOTASSERT($GET(OBJ("transfer","file","name")),"roiA.txt","[MIOOST][T013][upload file]")
-	SET PAY="{""event"":""desktop.command"",""requestId"":""tr-4"",""command"":""transfer.download.begin"",""id"":""/Documents/roiA.txt""}"
-	DO OK^MIOTASSERT($$COMMANDJSON^MIOOSWS(.CONF,.REQ,.CTX,.STATE,PAY,.JSON,.ERR),"[MIOOST][T013][download begin]")
-	DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T013][download begin decode]")
-	SET TRID=$GET(OBJ("transfer","transferId"))
-	DO EQ^MIOTASSERT(TRID'="",1,"[MIOOST][T013][download id]")
-	SET PAY="{""event"":""transfer.download.chunk"",""requestId"":""tw-tr-1"",""transferId"":"""_TRID_""",""chunkIndex"":1}"
-	DO OK^MIOTASSERT($$EVENTJSON^MIOOSTRXWS(.CONF,.REQ,.CTX,.STATE,PAY,.JSON,.ERR),"[MIOOST][T013][transfer ws chunk]")
-	DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T013][transfer ws decode]")
-	DO EQ^MIOTASSERT($GET(OBJ("event")),"transfer.download.chunk","[MIOOST][T013][transfer ws event]")
-	DO EQ^MIOTASSERT($GET(OBJ("transfer","data")),"alpha","[MIOOST][T013][transfer ws data]")
-	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI A — transfer protocol foundation"),"[MIOOST][T013][llm roia]")
-	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI B — upload worker pool"),"[MIOOST][T013][llm roib]")
-	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI C — download worker pool"),"[MIOOST][T013][llm roic]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_transfer.js","transferDownloadFile"),"[MIOOST][T013][download worker method]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","explorerDownloadSelected"),"[MIOOST][T013][explorer download method]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-mediaviewer-shell"),"[MIOOST][T013][media viewer token]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","explorerDownloadSelected(win.id)"),"[MIOOST][T013][download action]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","openMediaViewerWindow"),"[MIOOST][T013][media viewer method]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","downloadViewerFile"),"[MIOOST][T013][download method]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-mediaviewer-shell"),"[MIOOST][T013][media viewer css]")
 	QUIT
-
+	;
 T014
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","Transfer manager"),"[MIOOST][T014][transfer manager token]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","openTransferManager"),"[MIOOST][T014][transfer manager action]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_transfer.js","transferBeginOrUpdate"),"[MIOOST][T014][transfer tracker method]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_transfer.js","transferClearCompleted"),"[MIOOST][T014][transfer clear method]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-transfers-shell"),"[MIOOST][T014][transfer manager css]")
-	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI D — transfer manager UI"),"[MIOOST][T014][llm roid]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","fs.upload.batch"),"[MIOOST][T014][upload batch command]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","socketPoolConfig"),"[MIOOST][T014][socket pool config]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","fs.upload.batch"),"[MIOOST][T014][ws upload batch]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSFSUP.m","BATCH(STATE,CONF,UPLOADID,CHROOT,OUT,ERR)"),"[MIOOST][T014][fsup batch]")
 	QUIT

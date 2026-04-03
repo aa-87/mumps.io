@@ -51,3 +51,9 @@ MIOOS terminals now run as real YottaDB `-direct` PIPE sessions owned by the web
 
 ## Terminal behavior update
 Each terminal window now opens its own websocket-backed terminal channel. The terminal should feel cleaner because typed input is no longer locally echoed into xterm before YottaDB responds.
+
+
+## ROI 15 — Explorer search and VFS integrity
+- Added VFS-level `fs.search` and `fs.hash` contracts over HTTP and websocket.
+- Explorer now supports in-folder search, optional deep search, and a details panel with path, MIME, size, and SHA-256 for selected files.
+- Boot metadata now advertises VFS search/hash capabilities so future apps can stay contract-driven.

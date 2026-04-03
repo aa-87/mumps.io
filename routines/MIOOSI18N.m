@@ -136,7 +136,7 @@ CATALOG(CODE,ROOT)
 	SET @ROOT@("view.documents.1.title")=$$TXT(CODE,"view.documents.1.title","Desktop contract")
 	SET @ROOT@("view.documents.1.detail")=$$TXT(CODE,"view.documents.1.detail","Routes, theme, apps, windows, locale, and auth posture are authored by MUMPS.")
 	SET @ROOT@("view.documents.2.title")=$$TXT(CODE,"view.documents.2.title","Session posture")
-	SET @ROOT@("view.documents.2.detail")=$$TXT(CODE,"view.documents.2.detail","The shell keeps one primary websocket and optional local JWT cookie sessions for sign-in.")
+	SET @ROOT@("view.documents.2.detail")=$$TXT(CODE,"view.documents.2.detail","The shell keeps a pooled websocket transport with dedicated app sockets and optional local JWT cookie sessions for sign-in.")
 	SET @ROOT@("view.documents.3.title")=$$TXT(CODE,"view.documents.3.title","Front-end model")
 	SET @ROOT@("view.documents.3.detail")=$$TXT(CODE,"view.documents.3.detail","Vue Options API UMD renders the current server contract without markup placeholders.")
 	SET @ROOT@("view.controlPanel.1.title")=$$TXT(CODE,"view.controlPanel.1.title","Theme")
@@ -144,7 +144,7 @@ CATALOG(CODE,ROOT)
 	SET @ROOT@("view.controlPanel.3.title")=$$TXT(CODE,"view.controlPanel.3.title","Transport")
 	SET @ROOT@("view.controlPanel.4.title")=$$TXT(CODE,"view.controlPanel.4.title","Authentication")
 	SET @ROOT@("terminal.headline")=$$TXT(CODE,"terminal.headline","MUMPS terminal path ready")
-	SET @ROOT@("terminal.subheadline")=$$TXT(CODE,"terminal.subheadline","Open the window from the taskbar or Menu; live shell transport belongs on the websocket boundary.")
+	SET @ROOT@("terminal.subheadline")=$$TXT(CODE,"terminal.subheadline","Open the window from the taskbar or Menu; live shell transport stays on the pooled websocket boundary.")
 	SET @ROOT@("terminal.newSession")=$$TXT(CODE,"terminal.newSession","New session")
 	SET @ROOT@("terminal.clear")=$$TXT(CODE,"terminal.clear","Clear")
 	SET @ROOT@("terminal.status.opening")=$$TXT(CODE,"terminal.status.opening","Opening")
@@ -255,7 +255,7 @@ TABLE
 	;;view.documents.1.title=Desktop contract
 	;;view.documents.1.detail=Routes, theme, apps, windows, locale, and auth posture are authored by MUMPS.;
 	;;view.documents.2.title=Session posture
-	;;view.documents.2.detail=The shell keeps one primary websocket and optional local JWT cookie sessions for sign-in.;
+	;;view.documents.2.detail=The shell keeps a pooled websocket transport with dedicated app sockets and optional local JWT cookie sessions for sign-in.;
 	;;view.documents.3.title=Front-end model
 	;;view.documents.3.detail=Vue Options API UMD renders the current server contract without markup placeholders.;
 	;;view.controlPanel.1.title=Theme
@@ -263,7 +263,7 @@ TABLE
 	;;view.controlPanel.3.title=Transport
 	;;view.controlPanel.4.title=Authentication
 	;;terminal.headline=MUMPS terminal path ready
-	;;terminal.subheadline=Open the window from the taskbar or Menu; live shell transport belongs on the websocket boundary.;
+	;;terminal.subheadline=Open the window from the taskbar or Menu; live shell transport stays on the pooled websocket boundary.;
 	;;terminal.newSession=New session
 	;;terminal.clear=Clear
 	;;terminal.status.opening=Opening

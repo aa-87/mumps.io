@@ -65,3 +65,15 @@ MIOOS now includes a global-backed virtual file system foundation. The current R
 - Added browser-side upload to the global-backed VFS using existing `fs.write` commands.
 - Added image-aware file association handling in Explorer with preview and a dedicated image viewer window.
 - Kept the backend stable by reusing existing VFS websocket commands rather than changing server storage contracts.
+
+
+## ROI — Upload throughput and progress UX
+- Added Explorer upload progress UI with percentage and stage text.
+- Increased default chunk size for chunked uploads.
+- Added a small parallel chunk pipeline on the browser for better upload throughput without sending a single oversized websocket frame.
+
+
+## ROI 14B — Parallel upload sockets
+- Chunk uploads now use multiple concurrent `/ws/mioos` websocket connections rather than serial chunk sends on the core shell socket.
+- Default upload concurrency is server-configurable and now defaults to 7, with the browser honoring the server-provided `concurrencyDefault`.
+- Chunk size remains conservative at 32768 to reduce mid-upload socket closure risk.

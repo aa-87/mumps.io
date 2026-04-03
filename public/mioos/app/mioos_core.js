@@ -50,8 +50,7 @@
           socketPending: {},
           pendingCommands: {},
           terminalWindowSeq: 0,
-          terminalPollTimer: null,
-          transferItems: []
+          terminalPollTimer: null
         };
       },
       computed: {
@@ -132,10 +131,6 @@
           this.launcherEntries = window.MIOOSState.deepClone(this.boot.apps || []);
           this.desktopEntries = window.MIOOSState.deepClone((this.view && this.view.desktopEntries) || this.boot.desktopEntries || this.boot.apps || []);
           this.windows = window.MIOOSState.deepClone(this.boot.windows || []);
-          this.transferItems = [];
-          if ((window.MIOOSTransfer || {}).methods && typeof window.MIOOSTransfer.methods.ensureTransferScaffold === 'function') {
-            window.MIOOSTransfer.methods.ensureTransferScaffold.call(this);
-          }
           this.zCounter = this.windows.reduce(function (max, win) { return Math.max(max, win.z || 0); }, 10) + 1;
           if (this.windows.length) this.activeWindowId = this.windows[0].id;
         },
@@ -166,7 +161,7 @@
           }
           return (((win || {}).terminalState || {}).status) || this.t('terminal.status.ready', 'Terminal idle');
         }
-      }, Auth, WS, WM, Terminal, Explorer, (window.MIOOSTransfer || {}).methods || {})
+      }, Auth, WS, WM, Terminal, Explorer)
     });
 
     app.config.compilerOptions.delimiters = ['[[', ']]'];

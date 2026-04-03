@@ -34,9 +34,12 @@ COMMANDJSON(CONF,REQ,CTX,STATE,PAYLOAD,OUTJSON,ERR)
 	NEW TREE,CMD,REQID
 	KILL ERR
 	SET ERR("routine")="MIOOSWS"
+	SET REQID=$$RAWJSONFIELD($GET(PAYLOAD),"requestId")
+	SET CMD=$$RAWJSONFIELD($GET(PAYLOAD),"command")
+	SET ERR("requestId")=REQID,ERR("command")=CMD
 	IF '$$DECODE^MIOJSON($GET(PAYLOAD),.TREE,.ERR) SET ERR("error")="payload_invalid_json" QUIT 0
-	SET CMD=$GET(TREE("command"))
-	SET REQID=$GET(TREE("requestId"))
+	SET CMD=$SELECT($GET(TREE("command"))'="":$GET(TREE("command")),1:CMD)
+	SET REQID=$SELECT($GET(TREE("requestId"))'="":$GET(TREE("requestId")),1:REQID)
 	SET ERR("requestId")=REQID,ERR("command")=CMD
 	IF CMD="" SET ERR("error")="command_missing" QUIT 0
 	IF +$GET(STATE("authRequired"),0)=1,+$GET(STATE("authenticated"),0)'=1 DO  QUIT 0
@@ -50,21 +53,16 @@ COMMANDJSON(CONF,REQ,CTX,STATE,PAYLOAD,OUTJSON,ERR)
 	IF CMD="fs.list" QUIT $$FSLIST(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="fs.read" QUIT $$FSREAD(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="fs.write" QUIT $$FSWRITE(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
+	IF CMD="fs.upload.begin" QUIT $$FSUPBEGIN(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
+	IF CMD="fs.upload.chunk" QUIT $$FSUPCHUNK(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
+	IF CMD="fs.upload.batch" QUIT $$FSUPBATCH(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
+	IF CMD="fs.upload.commit" QUIT $$FSUPCOMMIT(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
+	IF CMD="fs.upload.abort" QUIT $$FSUPABORT(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="fs.mkdir" QUIT $$FSMKDIR(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="fs.meta" QUIT $$FSMETA(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="fs.rename" QUIT $$FSRENAME(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="fs.move" QUIT $$FSMOVE(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="fs.delete" QUIT $$FSDELETE(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
-	IF CMD="transfer.upload.begin" QUIT $$TRUPBEGIN(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
-	IF CMD="transfer.upload.chunk" QUIT $$TRUPCHUNK(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
-	IF CMD="transfer.upload.commit" QUIT $$TRUPCOMMIT(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
-	IF CMD="transfer.upload.abort" QUIT $$TRUPABORT(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
-	IF CMD="transfer.upload.status" QUIT $$TRUPSTATUS(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
-	IF CMD="transfer.download.begin" QUIT $$TRDNBGIN(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
-	IF CMD="transfer.download.chunk" QUIT $$TRDNCHNK(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
-	IF CMD="transfer.download.end" QUIT $$TRDNEND(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
-	IF CMD="transfer.download.abort" QUIT $$TRDNABRT(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
-	IF CMD="transfer.download.status" QUIT $$TRDNSTAT(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	SET ERR("error")="command_unsupported",ERR("detail")=CMD
 	QUIT 0
 	;
@@ -132,6 +130,41 @@ FSWRITE(STATE,CONF,TREE,OUTJSON,ERR)
 	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"fs.write","vfs",.OUT)
 	QUIT 1
 	;
+FSUPBEGIN(STATE,CONF,TREE,OUTJSON,ERR)
+	NEW OUT,PARENT,NAME,MIME,TOTAL,ENC
+	SET PARENT=$SELECT($GET(TREE("parent"))'="":$GET(TREE("parent")),1:"root")
+	SET NAME=$GET(TREE("name"))
+	SET MIME=$GET(TREE("mime"),"application/octet-stream")
+	SET TOTAL=+$GET(TREE("totalBytes"))
+	SET ENC=$GET(TREE("encoding"),"base64-dataurl")
+	IF '$$BEGIN^MIOOSFSUP(.STATE,.CONF,PARENT,NAME,MIME,TOTAL,ENC,.OUT,.ERR) QUIT 0
+	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"fs.upload.begin","vfs",.OUT)
+	QUIT 1
+	;
+FSUPCHUNK(STATE,CONF,TREE,OUTJSON,ERR)
+	NEW OUT
+	IF '$$CHUNK^MIOOSFSUP(.STATE,.CONF,$GET(TREE("uploadId")),+$GET(TREE("index")),$GET(TREE("data")),.OUT,.ERR) QUIT 0
+	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"fs.upload.chunk","vfs",.OUT)
+	QUIT 1
+	;
+FSUPBATCH(STATE,CONF,TREE,OUTJSON,ERR)
+	NEW OUT
+	IF '$$BATCH^MIOOSFSUP(.STATE,.CONF,$GET(TREE("uploadId")),$NAME(TREE("chunks")),.OUT,.ERR) QUIT 0
+	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"fs.upload.batch","vfs",.OUT)
+	QUIT 1
+	;
+FSUPCOMMIT(STATE,CONF,TREE,OUTJSON,ERR)
+	NEW OUT
+	IF '$$COMMIT^MIOOSFSUP(.STATE,.CONF,$GET(TREE("uploadId")),.OUT,.ERR) QUIT 0
+	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"fs.upload.commit","vfs",.OUT)
+	QUIT 1
+	;
+FSUPABORT(STATE,CONF,TREE,OUTJSON,ERR)
+	NEW OUT
+	IF '$$ABORT^MIOOSFSUP(.STATE,.CONF,$GET(TREE("uploadId")),.OUT,.ERR) QUIT 0
+	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"fs.upload.abort","vfs",.OUT)
+	QUIT 1
+	;
 FSMKDIR(STATE,CONF,TREE,OUTJSON,ERR)
 	NEW OUT
 	IF '$$MKDIR^MIOOSFS(.STATE,$SELECT($GET(TREE("parent"))'="":$GET(TREE("parent")),1:"root"),$GET(TREE("name")),.OUT,.ERR) QUIT 0
@@ -162,7 +195,19 @@ FSDELETE(STATE,CONF,TREE,OUTJSON,ERR)
 	IF '$$DELETE^MIOOSFS(.STATE,$GET(TREE("id")),.OUT,.ERR) QUIT 0
 	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"fs.delete","vfs",.OUT)
 	QUIT 1
-
+	;
+	;
+RAWJSONFIELD(PAYLOAD,NAME)
+	NEW PAT,POS,REST,ENDQ,VAL
+	SET PAT=""""_$GET(NAME)_""":"""
+	SET POS=$FIND($GET(PAYLOAD),PAT)
+	IF POS'>0 QUIT ""
+	SET REST=$EXTRACT($GET(PAYLOAD),POS,1048576)
+	SET ENDQ=$FIND(REST,"""")
+	IF ENDQ'>0 QUIT ""
+	SET VAL=$EXTRACT(REST,1,ENDQ-2)
+	QUIT VAL
+	;
 EVENT(PAYLOAD)
 	NEW TREE,ERR
 	IF $GET(PAYLOAD)="hello" QUIT "hello"
@@ -191,6 +236,10 @@ HELLOJSON(STATE,CONF)
 	SET OBJ("commandEvent")=$GET(STATE("commandEvent"),"desktop.command")
 	SET OBJ("commandResultEvent")=$GET(STATE("commandResultEvent"),"desktop.result")
 	SET OBJ("realtimeContract")=$GET(STATE("transportModel"),"core-websocket-plus-app-websockets")
+	SET OBJ("socketPool","maxSocketsPerSession")=+$GET(STATE("wsMaxSockets"),4)
+	SET OBJ("socketPool","coreSockets")=+$GET(STATE("wsCoreSockets"),1)
+	SET OBJ("socketPool","fsSockets")=+$GET(STATE("wsFsSockets"),3)
+	SET OBJ("socketPool","uploadBatchSize")=+$GET(STATE("wsUploadBatchSize"),4)
 	SET OBJ("terminalEngine")=$GET(STATE("terminal","engine"),"xtermjs")
 	SET OBJ("terminalTransport")=$GET(STATE("terminal","transport"),"pipe")
 	QUIT $$EN^MIOJSON1(.OBJ)
@@ -252,65 +301,4 @@ ERRJSON(STATE,CODE,DETAIL,REQID)
 	SET OBJ("sessionId")=$GET(STATE("sessionId"))
 	SET OBJ("routine")="MIOOSWS"
 	QUIT $$EN^MIOJSON1(.OBJ)
-
-
-TRUPBEGIN(STATE,CONF,TREE,OUTJSON,ERR)
-	NEW OUT
-	IF '$$BEGIN^MIOOSTRXUP(.STATE,.CONF,.TREE,.OUT,.ERR) QUIT 0
-	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"transfer.upload.begin","transfer",.OUT)
-	QUIT 1
-	;
-TRUPCHUNK(STATE,CONF,TREE,OUTJSON,ERR)
-	NEW OUT
-	IF '$$CHUNK^MIOOSTRXUP(.STATE,.CONF,.TREE,.OUT,.ERR) QUIT 0
-	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"transfer.upload.chunk","transfer",.OUT)
-	QUIT 1
-	;
-TRUPCOMMIT(STATE,CONF,TREE,OUTJSON,ERR)
-	NEW OUT
-	IF '$$COMMIT^MIOOSTRXUP(.STATE,.CONF,.TREE,.OUT,.ERR) QUIT 0
-	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"transfer.upload.commit","transfer",.OUT)
-	QUIT 1
-	;
-TRUPABORT(STATE,CONF,TREE,OUTJSON,ERR)
-	NEW OUT
-	IF '$$ABORT^MIOOSTRXUP(.STATE,.CONF,.TREE,.OUT,.ERR) QUIT 0
-	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"transfer.upload.abort","transfer",.OUT)
-	QUIT 1
-	;
-TRUPSTATUS(STATE,CONF,TREE,OUTJSON,ERR)
-	NEW OUT
-	IF '$$STATUS^MIOOSTRXUP(.STATE,.CONF,.TREE,.OUT,.ERR) QUIT 0
-	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"transfer.upload.status","transfer",.OUT)
-	QUIT 1
-	;
-TRDNBGIN(STATE,CONF,TREE,OUTJSON,ERR)
-	NEW OUT
-	IF '$$BEGIN^MIOOSTRXDN(.STATE,.CONF,.TREE,.OUT,.ERR) QUIT 0
-	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"transfer.download.begin","transfer",.OUT)
-	QUIT 1
-	;
-TRDNCHNK(STATE,CONF,TREE,OUTJSON,ERR)
-	NEW OUT
-	IF '$$CHUNK^MIOOSTRXDN(.STATE,.CONF,.TREE,.OUT,.ERR) QUIT 0
-	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"transfer.download.chunk","transfer",.OUT)
-	QUIT 1
-	;
-TRDNEND(STATE,CONF,TREE,OUTJSON,ERR)
-	NEW OUT
-	IF '$$END^MIOOSTRXDN(.STATE,.CONF,.TREE,.OUT,.ERR) QUIT 0
-	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"transfer.download.end","transfer",.OUT)
-	QUIT 1
-	;
-TRDNABRT(STATE,CONF,TREE,OUTJSON,ERR)
-	NEW OUT
-	IF '$$ABORT^MIOOSTRXDN(.STATE,.CONF,.TREE,.OUT,.ERR) QUIT 0
-	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"transfer.download.abort","transfer",.OUT)
-	QUIT 1
-	;
-TRDNSTAT(STATE,CONF,TREE,OUTJSON,ERR)
-	NEW OUT
-	IF '$$STATUS^MIOOSTRXDN(.STATE,.CONF,.TREE,.OUT,.ERR) QUIT 0
-	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"transfer.download.status","transfer",.OUT)
-	QUIT 1
 	;
