@@ -255,6 +255,11 @@ APPS(STATE)
 	SET STATE("apps",4,"subtitle")=$$TXT^MIOOSI18N(CODE,"app.terminal.subtitle","Websocket-backed MUMPS terminal surface")
 	SET STATE("apps",4,"icon")=">_"
 	SET STATE("apps",4,"kind")="tool"
+	SET STATE("apps",5,"key")="theme-studio"
+	SET STATE("apps",5,"title")="Theme Studio"
+	SET STATE("apps",5,"subtitle")="Customize wallpapers, colors, fonts, metrics, and shell recipes"
+	SET STATE("apps",5,"icon")="🎨"
+	SET STATE("apps",5,"kind")="tool"
 	QUIT
 	;
 WINDOWS(STATE)
@@ -265,6 +270,8 @@ WINDOWS(STATE)
 	DO WIN(.STATE,2,"win-documents","documents",$$TXT^MIOOSI18N(CODE,"app.documents.title","My Documents"),180,118,620,420,2,"minimized",420,280,1,1)
 	DO WIN(.STATE,3,"win-control-panel","control-panel",$$TXT^MIOOSI18N(CODE,"app.control-panel.title","Control Panel"),240,92,540,400,1,"minimized",420,280,1,1)
 	DO WIN(.STATE,4,"win-terminal-template","terminal",$$TXT^MIOOSI18N(CODE,"app.terminal.title","Terminal"),120,88,820,430,3,"closed",560,300,1,1)
+	DO WIN(.STATE,5,"win-theme-studio","theme-studio","Theme Studio",156,76,900,610,5,"closed",700,520,1,1)
+	SET STATE("windows",5,"themeStudioEnabled")=1
 	QUIT
 	;
 WIN(STATE,N,ID,APPKEY,TITLE,LEFT,TOP,WIDTH,HEIGHT,Z,MODE,MINW,MINH,RESIZE,DRAG)

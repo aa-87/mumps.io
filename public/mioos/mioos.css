@@ -570,3 +570,36 @@ button, input { font: inherit; }
 .mioos-explorer-searchbar input[type="search"]{min-width:220px;flex:1 1 240px;padding:6px 8px;border:1px solid rgba(19,48,99,.22);border-radius:6px;background:#fff}
 .mioos-explorer-searchtoggle{display:inline-flex;align-items:center;gap:4px;font-size:12px;color:#27405f}
 .mioos-explorer-details{display:flex;flex-direction:column;gap:6px;margin-top:12px;padding-top:10px;border-top:1px solid rgba(19,48,99,.12);font-size:12px;color:#27405f;word-break:break-word}
+
+.mioos-theme-studio-shell { height: 100%; }
+.mioos-theme-studio-shell.win7 { color: #1c2432; }
+.mioos-theme-studio-seven.window,
+.mioos-theme-studio-seven .window { width: 100%; max-width: none; }
+.mioos-theme-studio-body { height: 100%; padding: 10px; background: linear-gradient(180deg, #f7fafd 0%, #edf3fb 100%); }
+.mioos-theme-studio-layout { display: grid; grid-template-columns: 300px minmax(0,1fr); gap: 12px; min-height: 100%; }
+.mioos-theme-studio-sidebar, .mioos-theme-studio-main { display: flex; flex-direction: column; gap: 12px; }
+.mioos-theme-studio-profilebox, .mioos-theme-studio-export { padding: 10px; border: 1px solid #c8d7ee; border-radius: 8px; background: rgba(255,255,255,0.72); }
+.mioos-theme-studio-profile-actions, .mioos-theme-studio-actions, .mioos-theme-studio-preset-grid { display: flex; gap: 8px; flex-wrap: wrap; }
+.mioos-theme-studio-profile-list { display: flex; flex-direction: column; gap: 6px; max-height: 200px; overflow: auto; margin-top: 10px; }
+.mioos-theme-studio-profile { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; width: 100%; }
+.mioos-theme-studio-profile.is-current { outline: 2px solid rgba(67,140,247,.35); }
+.mioos-theme-studio-note, .mioos-theme-studio-footnote { font-size: 12px; line-height: 1.45; color: #4f5d75; }
+.mioos-theme-studio-tabs { flex: 1; min-height: 0; }
+.mioos-theme-studio-tabs [role="tabpanel"] { padding: 10px 2px 2px; }
+.mioos-theme-studio-form { display: grid; gap: 10px; }
+.mioos-theme-studio-form.two-col { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.mioos-theme-studio-form.one-col { grid-template-columns: 1fr; }
+.mioos-theme-studio-form.color-grid { grid-template-columns: repeat(4, minmax(120px, 1fr)); }
+.mioos-theme-studio-form label { display: flex; flex-direction: column; gap: 5px; font-size: 12px; }
+.mioos-theme-studio-form textarea { min-height: 110px; resize: vertical; }
+.mioos-theme-studio-checks { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px 12px; }
+.mioos-theme-preview-desktop { position: relative; min-height: 230px; border-radius: 10px; overflow: hidden; border: 1px solid rgba(60, 91, 137, 0.35); }
+.mioos-theme-preview-window { position: absolute; left: 16px; top: 18px; width: 210px; overflow: hidden; }
+.mioos-theme-preview-titlebar { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; }
+.mioos-theme-preview-controls { display: flex; gap: 4px; }
+.mioos-theme-preview-controls i { width: 10px; height: 10px; display: inline-block; border-radius: 50%; background: rgba(255,255,255,0.8); }
+.mioos-theme-preview-content { padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+.mioos-theme-preview-taskbar { position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; color: #fff; font-size: 12px; }
+.mioos-theme-studio-footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 8px; }
+.mioos-theme-studio-export textarea { width: 100%; margin-top: 8px; }
+@media (max-width: 1100px) { .mioos-theme-studio-layout { grid-template-columns: 1fr; } .mioos-theme-studio-form.two-col, .mioos-theme-studio-form.color-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

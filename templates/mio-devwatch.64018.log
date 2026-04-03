@@ -14,3 +14,16 @@
 {"ts":"2026-04-02 19:53:41","event":"mod","file":"/home/aa/work/mio/templates/pages/mioos_desktop.html"}
 {"ts":"2026-04-02 19:53:45","event":"mod","file":"/home/aa/work/mio/templates/pages/mioos_desktop.html"}
 {"ts":"2026-04-03 06:19:18","event":"mod","file":"/home/aa/work/mio/templates/pages/mioos_desktop.html"}
+{"ts":"2026-04-03 07:22:02","event":"add","file":"/home/aa/work/mio/templates/layouts/mioos_shell.html"}
+{"ts":"2026-04-03 07:22:02","event":"add","file":"/home/aa/work/mio/templates/layouts/mioui_app.html"}
+{"ts":"2026-04-03 07:22:02","event":"add","file":"/home/aa/work/mio/templates/layouts/plgd_layout.html"}
+{"ts":"2026-04-03 07:22:05","event":"add","file":"/home/aa/work/mio/templates/pages/miomos_auth.html"}
+{"ts":"2026-04-03 07:22:05","event":"add","file":"/home/aa/work/mio/templates/pages/miomos_desktop.html"}
+{"ts":"2026-04-03 07:22:05","event":"add","file":"/home/aa/work/mio/templates/pages/mioos_desktop.html"}
+{"ts":"2026-04-03 07:22:05","event":"add","file":"/home/aa/work/mio/templates/pages/plgd_about.html"}
+{"ts":"2026-04-03 07:22:05","event":"add","file":"/home/aa/work/mio/templates/pages/plgd_home.html"}
+{"ts":"2026-04-03 07:22:05","event":"add","file":"/home/aa/work/mio/templates/pages/plgd_playground.html"}
+{"ts":"2026-04-03 07:22:05","event":"add","file":"/home/aa/work/mio/templates/partials/ui_tpl_card_grid.html"}
+{"ts":"2026-04-03 07:22:05","event":"add","file":"/home/aa/work/mio/templates/partials/ui_tpl_card_list.html"}
+{"ts":"2026-04-03 07:24:35","event":"mod","file":"/home/aa/work/mio/templates/pages/mioos_desktop.html"}
+{"ts":"2026-04-03 07:44:01","event":"mod","file":"/home/aa/work/mio/templates/pages/mioos_desktop.html"}

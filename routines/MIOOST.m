@@ -13,6 +13,8 @@ MIOOST ; MIOOS tests
 	DO T012
 	DO T013
 	DO T014
+	DO T015
+	DO T016
 	QUIT
 	;
 RESET
@@ -318,5 +320,28 @@ T014
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSFSUP.m","BATCH(STATE,CONF,UPLOADID,CHROOT,OUT,ERR)"),"[MIOOST][T014][fsup batch]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_wm.js","beginResize"),"[MIOOST][T014][wm resize method]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","uploadFilesToExplorer"),"[MIOOST][T014][explorer drop upload helper]")
+	QUIT
+	;
+	;
+T015
+	NEW CONF,REQ,CTX,STATE,ERR,JSON,OBJ
+	DO RESET
+	DO CONFDEF^MIOOS(.CONF)
+	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T015][load]")
+	SET JSON=$$BOOTJSON^MIOOSST(.STATE,.CONF)
+	DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T015][decode]")
+	DO EQ^MIOTASSERT($GET(OBJ("apps",5,"key")),"theme-studio","[MIOOST][T015][theme studio app]")
+	DO EQ^MIOTASSERT($GET(OBJ("windows",5,"appKey")),"theme-studio","[MIOOST][T015][theme studio window]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("windows",5,"themeStudioEnabled")),1,"[MIOOST][T015][theme studio enabled]")
+	QUIT
+	;
+T016
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","https://unpkg.com/7.css/dist/7.scoped.css"),"[MIOOST][T016][7css scoped link]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-theme-studio-shell win7"),"[MIOOST][T016][theme studio win7 shell]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","role=""tablist"""),"[MIOOST][T016][tablist token]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","Theme Studio"),"[MIOOST][T016][theme studio copy]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","themeStudioApplyPreset"),"[MIOOST][T016][theme studio preset method]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","themeStudioExportProfile"),"[MIOOST][T016][theme studio export method]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-theme-studio-layout"),"[MIOOST][T016][theme studio css]")
 	QUIT
 	;

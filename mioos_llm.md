@@ -203,3 +203,8 @@ Keep tests:
 - Added edge and corner snap preview plus resize handles so explorer, control panel, media viewers, and terminal all share the same shell chrome behavior.
 - Added drop-to-upload support for explorer-class windows so dragged files can enter the VFS from a window surface, not just the upload button.
 - Added boot contract metadata for windowing: snap threshold, taskbar height, min size, animation mode, resize handle model, and drop-upload capability.
+
+
+## Theme Studio ROI
+
+A detailed Theme Studio UI tool is available in MIOOS as a dedicated desktop app/window. It focuses on profile authoring and preview only, without changing the current native shell/taskbar/window styling baseline. The tool supports wallpaper choices, typography, sizing, color tokens, class recipes, extra CSS, import/export, local profile storage, and XP/Windows 7/Mac-inspired starter looks.
