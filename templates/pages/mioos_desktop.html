@@ -368,6 +368,7 @@
                           <label><span>Image fit</span><select v-model="themeStudioState(win).profile.wallpaperFit"><option>cover</option><option>contain</option><option>center</option><option>tile</option><option>stretch</option></select></label>
                           <label><span>Desktop class recipe</span><input type="text" v-model="themeStudioState(win).profile.desktopClass"></label>
                           <label><span>Desktop extra CSS</span><input type="text" v-model="themeStudioState(win).profile.desktopCssHint"></label>
+                          <label><span>Icon shadow</span><input type="text" v-model="themeStudioState(win).profile.colors.desktopGlow"></label>
                         </div></fieldset>
                       </article>
                       <article role="tabpanel" id="theme-tab-colors" v-else-if="themeStudioState(win).activeTab === 'colors'">
@@ -377,8 +378,16 @@
                           <label><span>Panel</span><input type="color" v-model="themeStudioState(win).profile.colors.panel"></label>
                           <label><span>Panel text</span><input type="color" v-model="themeStudioState(win).profile.colors.panelText"></label>
                           <label><span>Title bar</span><input type="color" v-model="themeStudioState(win).profile.colors.titlebar"></label>
+                          <label><span>Inactive title</span><input type="color" v-model="themeStudioState(win).profile.colors.inactiveTitlebar"></label>
+                          <label><span>Title text</span><input type="color" v-model="themeStudioState(win).profile.colors.titleText"></label>
                           <label><span>Taskbar</span><input type="color" v-model="themeStudioState(win).profile.colors.taskbar"></label>
+                          <label><span>Taskbar dark</span><input type="color" v-model="themeStudioState(win).profile.colors.taskbarDark"></label>
+                          <label><span>Taskbar text</span><input type="color" v-model="themeStudioState(win).profile.colors.taskbarText"></label>
+                          <label><span>Start button</span><input type="color" v-model="themeStudioState(win).profile.colors.startButton"></label>
                           <label><span>Desktop icon text</span><input type="color" v-model="themeStudioState(win).profile.colors.iconText"></label>
+                          <label><span>Muted text</span><input type="color" v-model="themeStudioState(win).profile.colors.muted"></label>
+                          <label><span>Focus ring</span><input type="color" v-model="themeStudioState(win).profile.colors.focus"></label>
+                          <label><span>Panel alt</span><input type="color" v-model="themeStudioState(win).profile.colors.panelAlt"></label>
                           <label><span>Border</span><input type="color" v-model="themeStudioState(win).profile.colors.border"></label>
                         </div></fieldset>
                       </article>
@@ -419,6 +428,7 @@
                         <button type="button" @click="themeStudioResetProfile(win.id)">Reset</button>
                         <button type="button" @click="themeStudioImportProfile(win.id)">Import JSON</button>
                         <button type="button" @click="themeStudioExportProfile(win.id)">Export JSON</button>
+                        <button type="button" @click="themeStudioApplyCurrent(win.id)">Apply Theme</button>
                         <button type="button" class="default" @click="themeStudioSaveProfile(win.id)">Save Draft</button>
                       </div>
                     </div>

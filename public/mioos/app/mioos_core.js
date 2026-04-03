@@ -55,7 +55,9 @@
           socketPending: {},
           pendingCommands: {},
           terminalWindowSeq: 0,
-          terminalPollTimer: null
+          terminalPollTimer: null,
+          appliedThemeProfile: null,
+          themeStyleNodeId: 'mioos-theme-studio-style'
         };
       },
       computed: {
@@ -101,6 +103,7 @@
       },
       mounted: function () {
         this.bootstrapFromDom();
+        this.applyPersistedThemeStudioProfile();
         this.applyDocumentLocale();
         this.startClock();
         this.refreshView();
@@ -160,6 +163,121 @@
         changeLocale: function (code) {
           if (I18N.changeLocale) I18N.changeLocale(this, code);
         },
+        themeStudioStorageKey: function () {
+          return 'mioos.themeStudio.applied.v1';
+        },
+        themeStudioProfilesKey: function () {
+          return 'mioos.themeStudio.profiles.v1';
+        },
+        themeStudioRootNode: function () {
+          return window.MIOOSState.getRootNode ? window.MIOOSState.getRootNode() : null;
+        },
+        themeStudioSanitizeColor: function (value, fallback) {
+          return (/^#[0-9a-fA-F]{6}$/).test(String(value || '')) ? String(value) : fallback;
+        },
+        themeStudioNormalizeProfile: function (profile) {
+          var base = this.themeStudioFactoryProfile('Custom Theme', 'Custom', 'light');
+          var next = Object.assign({}, base, profile || {});
+          next.targets = Object.assign({}, base.targets, (profile || {}).targets || {});
+          next.colors = Object.assign({}, base.colors, (profile || {}).colors || {});
+          next.fonts = Object.assign({}, base.fonts, (profile || {}).fonts || {});
+          next.metrics = Object.assign({}, base.metrics, (profile || {}).metrics || {});
+          next.recipes = Object.assign({}, base.recipes, (profile || {}).recipes || {});
+          return next;
+        },
+        themeStudioPersistProfiles: function () {
+          try {
+            var payload = [];
+            this.windows.forEach(function (win) {
+              var state = win && win.themeStudioState;
+              if (!state || !Array.isArray(state.profiles)) return;
+              payload = state.profiles;
+            });
+            window.localStorage.setItem(this.themeStudioProfilesKey(), JSON.stringify(payload || []));
+          } catch (err) {}
+        },
+        themeStudioEnsureStyleNode: function () {
+          var node = document.getElementById(this.themeStyleNodeId);
+          if (!node) {
+            node = document.createElement('style');
+            node.id = this.themeStyleNodeId;
+            document.head.appendChild(node);
+          }
+          return node;
+        },
+        themeStudioWallpaperCss: function (profile) {
+          var bg = this.themeStudioPreviewWallpaper(profile || {});
+          if (String(bg).indexOf('url(') === 0) return (profile.desktopColor || '#3a6ea5') + ' ' + bg + ' center / ' + ((profile.wallpaperFit === 'tile') ? '240px auto' : (profile.wallpaperFit || 'cover')) + ' ' + ((profile.wallpaperFit === 'tile') ? 'repeat' : 'no-repeat');
+          return bg;
+        },
+        applyPersistedThemeStudioProfile: function () {
+          var raw;
+          try {
+            raw = window.localStorage.getItem(this.themeStudioStorageKey());
+            if (!raw) return;
+            this.appliedThemeProfile = this.themeStudioNormalizeProfile(JSON.parse(raw));
+            this.applyThemeStudioProfile(this.appliedThemeProfile, { silent: true, persist: false });
+          } catch (err) {}
+        },
+        applyThemeStudioProfile: function (profile, options) {
+          var rootNode = this.themeStudioRootNode();
+          var opts = options || {};
+          var p = this.themeStudioNormalizeProfile(profile || {});
+          var colors = p.colors || {};
+          var fonts = p.fonts || {};
+          var metrics = p.metrics || {};
+          var body = document.body;
+          var styleNode = this.themeStudioEnsureStyleNode();
+          var vars;
+          if (!rootNode) return;
+          vars = {
+            '--mioos-font': fonts.ui || 'Tahoma, "Segoe UI", sans-serif',
+            '--mioos-font-mono': fonts.mono || 'Consolas, monospace',
+            '--mioos-blue-1': this.themeStudioSanitizeColor(colors.accent, '#3a6ee8'),
+            '--mioos-blue-2': this.themeStudioSanitizeColor(colors.accentStrong, '#1f4fbf'),
+            '--mioos-blue-3': this.themeStudioSanitizeColor(colors.accentStrong, '#173a8f'),
+            '--mioos-taskbar': this.themeStudioSanitizeColor(colors.taskbar, '#245edb'),
+            '--mioos-taskbar-dark': this.themeStudioSanitizeColor(colors.taskbarDark || colors.taskbar, '#1844a0'),
+            '--mioos-start': this.themeStudioSanitizeColor(colors.startButton || '#2aa12a', '#2aa12a'),
+            '--mioos-border': this.themeStudioSanitizeColor(colors.border, '#7f9db9'),
+            '--mioos-panel': this.themeStudioSanitizeColor(colors.panel, '#f4f7fb'),
+            '--mioos-panel-2': this.themeStudioSanitizeColor(colors.panelAlt || '#ffffff', '#ffffff'),
+            '--mioos-text': this.themeStudioSanitizeColor(colors.panelText, '#0b1830'),
+            '--mioos-muted': this.themeStudioSanitizeColor(colors.muted || '#44536d', '#44536d'),
+            '--mioos-focus': this.themeStudioSanitizeColor(colors.focus || '#ffd043', '#ffd043'),
+            '--mioos-titlebar': this.themeStudioSanitizeColor(colors.titlebar, '#2b5bc7'),
+            '--mioos-titlebar-inactive': this.themeStudioSanitizeColor(colors.inactiveTitlebar || '#5877a9', '#5877a9'),
+            '--mioos-titlebar-text': this.themeStudioSanitizeColor(colors.titleText || '#ffffff', '#ffffff'),
+            '--mioos-taskbar-text': this.themeStudioSanitizeColor(colors.taskbarText || '#ffffff', '#ffffff'),
+            '--mioos-icon-text': this.themeStudioSanitizeColor(colors.iconText || '#ffffff', '#ffffff'),
+            '--mioos-window-radius': Math.max(0, +(metrics.windowRadius || 8)) + 'px',
+            '--mioos-window-border-width': Math.max(1, +(metrics.windowBorder || 1)) + 'px',
+            '--mioos-button-radius': Math.max(0, +(metrics.buttonRadius || 6)) + 'px',
+            '--mioos-taskbar-height': Math.max(32, +(metrics.taskbarHeight || 40)) + 'px',
+            '--mioos-base-size': Math.max(11, +(fonts.baseSize || 13)) + 'px',
+            '--mioos-title-size': Math.max(11, +(fonts.titleSize || 13)) + 'px',
+            '--mioos-shadow': '0 ' + (Math.max(6, +(metrics.shadowDepth || 18))) + 'px ' + (Math.max(18, +(metrics.shadowDepth || 18) * 2)) + 'px rgba(0, 24, 64, 0.34)',
+            '--mioos-desktop-background': this.themeStudioWallpaperCss(p),
+            '--mioos-body-background': this.themeStudioSanitizeColor(p.desktopColor || '#4f91ea', '#4f91ea'),
+            '--mioos-icon-shadow': colors.desktopGlow || '0 1px 2px rgba(0,0,0,0.55)'
+          };
+          Object.keys(vars).forEach(function (key) { rootNode.style.setProperty(key, vars[key]); });
+          rootNode.dataset.themeMode = p.mode || 'light';
+          rootNode.dataset.themeFamily = p.family || 'Custom';
+          rootNode.dataset.themeDensity = p.density || 'comfortable';
+          rootNode.classList.remove('mioos-theme-dark', 'mioos-theme-light', 'mioos-density-compact', 'mioos-density-spacious');
+          rootNode.classList.add((p.mode || 'light') === 'dark' ? 'mioos-theme-dark' : 'mioos-theme-light');
+          if ((p.density || '') === 'compact') rootNode.classList.add('mioos-density-compact');
+          if ((p.density || '') === 'spacious') rootNode.classList.add('mioos-density-spacious');
+          if (p.desktopClass) rootNode.dataset.themeDesktopClass = p.desktopClass;
+          body.style.background = p.desktopColor || '#4f91ea';
+          styleNode.textContent = (p.extraCss || '') + '\n' + (p.desktopCssHint ? ('#mioosRoot{' + p.desktopCssHint + '}') : '');
+          if (!opts.silent) this.showAlert('Theme Studio', (p.name || 'Custom Theme') + ' applied.');
+          this.appliedThemeProfile = window.MIOOSState.deepClone(p);
+          if (opts.persist !== false) {
+            try { window.localStorage.setItem(this.themeStudioStorageKey(), JSON.stringify(p)); } catch (err) {}
+          }
+        },
         themeStudioTabList: function () {
           return [
             { key: 'overview', label: 'Overview' },
@@ -174,7 +292,7 @@
           return {
             name: name || 'Custom Theme', author: (this.boot.user && this.boot.user.displayName) || 'MIOOS User', family: family || 'Custom', mode: mode || 'light', density: 'comfortable', cornerModel: 'soft', wallpaperPreset: 'bliss', wallpaperUrl: '', wallpaperFit: 'cover', desktopColor: '#3a6ea5', desktopClass: '', desktopCssHint: '',
             targets: { shell: true, taskbar: true, windows: true, controls: true },
-            colors: { accent: '#245edb', accentStrong: '#1f4fa5', panel: '#f7fbff', panelText: '#132136', titlebar: '#2b5bc7', taskbar: '#245edb', iconText: '#ffffff', border: '#4e79c7' },
+            colors: { accent: '#245edb', accentStrong: '#1f4fa5', panel: '#f7fbff', panelAlt: '#ffffff', panelText: '#132136', muted: '#44536d', titlebar: '#2b5bc7', inactiveTitlebar: '#5877a9', titleText: '#ffffff', taskbar: '#245edb', taskbarDark: '#1844a0', taskbarText: '#ffffff', startButton: '#2aa12a', iconText: '#ffffff', border: '#4e79c7', focus: '#ffd043', desktopGlow: '0 1px 2px rgba(0,0,0,0.55)' },
             fonts: { ui: 'Tahoma, "Segoe UI", sans-serif', mono: 'Consolas, monospace', baseSize: 13, titleSize: 13, menuSize: 13, weight: '500' },
             metrics: { taskbarHeight: 40, windowRadius: 8, windowBorder: 1, buttonRadius: 6, iconSize: 36, shadowDepth: 18 },
             recipes: { shell: '', window: '', taskbar: '' },
@@ -190,14 +308,16 @@
         ensureThemeStudioState: function (win) {
           if (!win) return { activeTab: 'overview', profiles: [], profileKey: '', profile: {}, exportText: '' };
           if (!win.themeStudioState) {
+            var storedProfiles = [];
+            try { storedProfiles = JSON.parse(window.localStorage.getItem(this.themeStudioProfilesKey()) || '[]'); } catch (err) { storedProfiles = []; }
             win.themeStudioState = {
               activeTab: 'overview',
-              profiles: [
+              profiles: (Array.isArray(storedProfiles) && storedProfiles.length) ? storedProfiles : [
                 { key: 'xp', name: 'Windows XP Inspired', family: 'Windows XP', mode: 'light', data: this.themeStudioPresetProfile('xp') },
                 { key: 'win7', name: 'Windows 7 Inspired', family: 'Windows 7', mode: 'light', data: this.themeStudioPresetProfile('win7') },
                 { key: 'mac', name: 'Mac Inspired', family: 'Mac', mode: 'light', data: this.themeStudioPresetProfile('mac') }
               ],
-              profileKey: 'xp', profile: this.themeStudioPresetProfile('xp'), exportText: ''
+              profileKey: 'xp', profile: this.appliedThemeProfile ? window.MIOOSState.deepClone(this.appliedThemeProfile) : this.themeStudioPresetProfile('xp'), exportText: ''
             };
           }
           return win.themeStudioState;
@@ -210,9 +330,10 @@
         themeStudioNewProfile: function (windowId) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); state.profileKey = 'custom-' + Date.now(); state.profile = this.themeStudioFactoryProfile('New Custom Theme', 'Custom', 'light'); state.activeTab = 'overview'; },
         themeStudioDuplicateProfile: function (windowId) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); state.profile = window.MIOOSState.deepClone(state.profile); state.profile.name = (state.profile.name || 'Custom Theme') + ' Copy'; state.profileKey = 'custom-' + Date.now(); },
         themeStudioResetProfile: function (windowId) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); state.profile = this.themeStudioFactoryProfile('Custom Theme', 'Custom', 'light'); state.exportText = ''; state.activeTab = 'overview'; },
-        themeStudioSaveProfile: function (windowId) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); var entry = { key: state.profileKey || ('custom-' + Date.now()), name: state.profile.name || 'Custom Theme', family: state.profile.family || 'Custom', mode: state.profile.mode || 'light', data: window.MIOOSState.deepClone(state.profile) }; var idx = (state.profiles || []).findIndex(function (item) { return item.key === entry.key; }); state.profileKey = entry.key; if (idx >= 0) state.profiles.splice(idx, 1, entry); else state.profiles.push(entry); state.exportText = JSON.stringify(entry.data, null, 2); this.showAlert('Theme Studio', 'Draft saved inside Theme Studio.'); },
-        themeStudioExportProfile: function (windowId) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); state.exportText = JSON.stringify(state.profile, null, 2); this.showAlert('Theme Studio', 'Export JSON is ready in the buffer below.'); },
-        themeStudioImportProfile: function (windowId) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); try { if (!state.exportText) return; state.profile = Object.assign(this.themeStudioFactoryProfile('Imported Theme', 'Custom', 'light'), JSON.parse(state.exportText)); this.showAlert('Theme Studio', 'Import buffer applied to the current draft.'); } catch (err) { this.showAlert('Theme Studio', 'Import buffer is not valid JSON yet.'); } },
+        themeStudioSaveProfile: function (windowId) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); var entry = { key: state.profileKey || ('custom-' + Date.now()), name: state.profile.name || 'Custom Theme', family: state.profile.family || 'Custom', mode: state.profile.mode || 'light', data: window.MIOOSState.deepClone(this.themeStudioNormalizeProfile(state.profile)) }; var idx = (state.profiles || []).findIndex(function (item) { return item.key === entry.key; }); state.profileKey = entry.key; if (idx >= 0) state.profiles.splice(idx, 1, entry); else state.profiles.push(entry); state.exportText = JSON.stringify(entry.data, null, 2); this.themeStudioPersistProfiles(); this.showAlert('Theme Studio', 'Draft saved inside Theme Studio.'); },
+        themeStudioApplyCurrent: function (windowId) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); this.applyThemeStudioProfile(state.profile, { persist: true }); },
+        themeStudioExportProfile: function (windowId) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); state.exportText = JSON.stringify(this.themeStudioNormalizeProfile(state.profile), null, 2); this.showAlert('Theme Studio', 'Export JSON is ready in the buffer below.'); },
+        themeStudioImportProfile: function (windowId) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); try { if (!state.exportText) return; state.profile = this.themeStudioNormalizeProfile(Object.assign(this.themeStudioFactoryProfile('Imported Theme', 'Custom', 'light'), JSON.parse(state.exportText))); this.showAlert('Theme Studio', 'Import buffer applied to the current draft.'); } catch (err) { this.showAlert('Theme Studio', 'Import buffer is not valid JSON yet.'); } },
         themeStudioPreviewWallpaper: function (profile) { profile = profile || {}; if (profile.wallpaperPreset === 'custom-url' && profile.wallpaperUrl) return 'url(' + profile.wallpaperUrl + ')'; if (profile.wallpaperPreset === 'aurora') return 'linear-gradient(180deg, #183b66 0%, #365d93 42%, #87a6cf 100%)'; if (profile.wallpaperPreset === 'solid-blue') return '#245edb'; if (profile.wallpaperPreset === 'solid-graphite') return '#5f6773'; return 'linear-gradient(180deg, #8ac04c 0%, #74b94b 38%, #5ea140 100%)'; },
         themeStudioPreviewDesktopStyle: function (win) { var profile = this.ensureThemeStudioState(win).profile; var bg = this.themeStudioPreviewWallpaper(profile); return { background: bg.indexOf('url(') === 0 ? profile.desktopColor : bg, backgroundImage: bg.indexOf('url(') === 0 ? bg : '', backgroundSize: profile.wallpaperFit === 'tile' ? '240px auto' : (profile.wallpaperFit || 'cover'), backgroundRepeat: profile.wallpaperFit === 'tile' ? 'repeat' : 'no-repeat', color: (profile.colors || {}).iconText || '#ffffff' }; },
         themeStudioPreviewWindowStyle: function (win) { var p = this.ensureThemeStudioState(win).profile; return { background: (p.colors || {}).panel || '#ffffff', color: (p.colors || {}).panelText || '#132136', borderColor: (p.colors || {}).border || '#4e79c7', borderWidth: ((p.metrics || {}).windowBorder || 1) + 'px', borderStyle: 'solid', borderRadius: ((p.metrics || {}).windowRadius || 8) + 'px', boxShadow: '0 ' + (((p.metrics || {}).shadowDepth || 18)) + 'px ' + ((((p.metrics || {}).shadowDepth || 18) * 2)) + 'px rgba(0,0,0,0.22)', fontFamily: ((p.fonts || {}).ui || 'Tahoma, sans-serif'), fontSize: (((p.fonts || {}).baseSize || 13)) + 'px' }; },

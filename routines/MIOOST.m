@@ -341,7 +341,11 @@ T016
 	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","role=""tablist"""),"[MIOOST][T016][tablist token]")
 	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","Theme Studio"),"[MIOOST][T016][theme studio copy]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","themeStudioApplyPreset"),"[MIOOST][T016][theme studio preset method]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","themeStudioApplyCurrent"),"[MIOOST][T016][theme studio apply method]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","applyThemeStudioProfile"),"[MIOOST][T016][theme studio live apply]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","themeStudioExportProfile"),"[MIOOST][T016][theme studio export method]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","Apply Theme"),"[MIOOST][T016][theme studio apply copy]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","--mioos-desktop-background"),"[MIOOST][T016][theme studio css vars]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-theme-studio-layout"),"[MIOOST][T016][theme studio css]")
 	QUIT
 	;

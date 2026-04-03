@@ -137,6 +137,7 @@
       socket: ws,
       ready: false,
       closed: false,
+      helloReady: false,
       openPromise: null,
       close: function () {
         this.closed = true;
@@ -147,11 +148,16 @@
         return self.openPromise.then(function () {
           return new Promise(function (resolve, reject) {
             var requestId = 'up-' + ordinal + '-' + Date.now() + '-' + (++seq);
-            pending[requestId] = { resolve: resolve, reject: reject };
+            var timer = window.setTimeout(function () {
+              if (pending[requestId]) delete pending[requestId];
+              reject(new Error('worker_command_timeout'));
+            }, 6000);
+            pending[requestId] = { resolve: function (msg) { window.clearTimeout(timer); resolve(msg); }, reject: function (err) { window.clearTimeout(timer); reject(err); } };
             try {
               ws.send(JSON.stringify(Object.assign({ event: 'desktop.command', command: command, requestId: requestId }, payload || {})));
             } catch (err) {
               delete pending[requestId];
+              window.clearTimeout(timer);
               reject(err);
             }
           });
@@ -166,12 +172,14 @@
         reject(new Error('socket_open_timeout'));
       }, 8000);
       ws.addEventListener('open', function () {
-        if (settled) return;
-        settled = true;
-        window.clearTimeout(timer);
         client.ready = true;
         try { ws.send(JSON.stringify({ event: 'hello', role: 'fs', socketOrdinal: ordinal })); } catch (err) {}
-        resolve();
+        window.setTimeout(function () {
+          if (settled) return;
+          settled = true;
+          window.clearTimeout(timer);
+          resolve();
+        }, 250);
       });
       ws.addEventListener('error', function () {
         if (settled) return;
@@ -192,7 +200,16 @@
         var msg;
         var ref;
         try { msg = JSON.parse(evt.data); } catch (err) { return; }
-        if (msg.event === 'hello' || msg.event === 'pong') return;
+        if (msg.event === 'hello') {
+          client.helloReady = true;
+          if (!settled) {
+            settled = true;
+            window.clearTimeout(timer);
+            resolve();
+          }
+          return;
+        }
+        if (msg.event === 'pong') return;
         ref = msg.requestId && pending[msg.requestId];
         if (ref) {
           delete pending[msg.requestId];
@@ -231,7 +248,7 @@
         var sentBytes = 0;
         var pool = socketPoolConfig(this);
         var active = Math.max(1, Math.min(pool.maxSocketsPerSession, Math.min(pool.fsSockets, +(concurrency || pool.fsSockets || 2))));
-        var batchWidth = Math.max(1, Math.min(2, +(batchSize || pool.uploadBatchSize || 1)));
+        var batchWidth = 1;
         var frameBudget = 65536;
         return new Promise(function (resolve, reject) {
           function cleanup() {
@@ -261,7 +278,9 @@
             return batch;
           }
           function sendSingle(worker, item) {
-            return worker.command('fs.upload.chunk', { uploadId: uploadId, index: item.index, data: item.data });
+            return worker.command('fs.upload.chunk', { uploadId: uploadId, index: item.index, data: item.data }).catch(function () {
+              return self.command('fs.upload.chunk', { uploadId: uploadId, index: item.index, data: item.data });
+            });
           }
           function sendBatch(worker, batch) {
             if (batch.length <= 1) return sendSingle(worker, batch[0]);

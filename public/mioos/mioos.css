@@ -1,5 +1,6 @@
 :root {
   --mioos-font: "Segoe UI", Tahoma, sans-serif;
+  --mioos-font-mono: Consolas, monospace;
   --mioos-blue-1: #3a6ee8;
   --mioos-blue-2: #1f4fbf;
   --mioos-blue-3: #173a8f;
@@ -14,11 +15,25 @@
   --mioos-muted: #44536d;
   --mioos-focus: #ffd043;
   --mioos-shadow: 0 16px 40px rgba(0, 24, 64, 0.34);
+  --mioos-titlebar: #2b5bc7;
+  --mioos-titlebar-inactive: #5877a9;
+  --mioos-titlebar-text: #ffffff;
+  --mioos-taskbar-text: #ffffff;
+  --mioos-icon-text: #ffffff;
+  --mioos-window-radius: 8px;
+  --mioos-window-border-width: 1px;
+  --mioos-button-radius: 6px;
+  --mioos-taskbar-height: var(--mioos-taskbar-height);
+  --mioos-base-size: 13px;
+  --mioos-title-size: 13px;
+  --mioos-desktop-background: radial-gradient(circle at 18% 20%, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.0) 26%), radial-gradient(circle at 78% 26%, rgba(255,255,255,0.24) 0%, rgba(255,255,255,0.0) 20%), linear-gradient(180deg, #8ed0ff 0%, #6ab1ff 36%, #4b97ef 70%, #3f86de 100%);
+  --mioos-body-background: linear-gradient(180deg, #8cc3ff 0%, #72b0ff 35%, #4f91ea 100%);
+  --mioos-icon-shadow: 0 1px 2px rgba(0,0,0,0.55);
 }
 
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; font-family: var(--mioos-font); color: var(--mioos-text); }
-body { overflow: hidden; background: linear-gradient(180deg, #8cc3ff 0%, #72b0ff 35%, #4f91ea 100%); }
+body { overflow: hidden; background: var(--mioos-body-background); }
 button, input { font: inherit; }
 [v-cloak] { display: none !important; }
 
@@ -31,10 +46,7 @@ button, input { font: inherit; }
   position: relative;
   width: 100vw;
   height: 100vh;
-  background:
-    radial-gradient(circle at 18% 20%, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.0) 26%),
-    radial-gradient(circle at 78% 26%, rgba(255,255,255,0.24) 0%, rgba(255,255,255,0.0) 20%),
-    linear-gradient(180deg, #8ed0ff 0%, #6ab1ff 36%, #4b97ef 70%, #3f86de 100%);
+  background: var(--mioos-desktop-background);
 }
 
 .mioos-alert {
@@ -152,7 +164,7 @@ button, input { font: inherit; }
 
 .mioos-desktop {
   position: absolute;
-  inset: 0 0 40px 0;
+  inset: 0 0 var(--mioos-taskbar-height) 0;
 }
 .mioos-desktop-icons {
   display: grid;
@@ -165,12 +177,12 @@ button, input { font: inherit; }
 .mioos-desktop-icon {
   border: 0;
   background: transparent;
-  color: #fff;
+  color: var(--mioos-icon-text);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.55);
+  text-shadow: var(--mioos-icon-shadow);
 }
 .mioos-entry-title {
   font-size: 12px;
@@ -186,8 +198,8 @@ button, input { font: inherit; }
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-radius: 8px 8px 0 0;
-  border: 1px solid #2050ac;
+  border-radius: var(--mioos-window-radius) var(--mioos-window-radius) 0 0;
+  border: var(--mioos-window-border-width) solid var(--mioos-border);
   background: var(--mioos-panel);
   box-shadow: var(--mioos-shadow);
   contain: layout paint style;
@@ -203,13 +215,14 @@ button, input { font: inherit; }
   justify-content: space-between;
   gap: 12px;
   padding: 6px 8px;
-  color: #fff;
-  background: linear-gradient(180deg, #438cf7 0%, #1d59cc 55%, #1d50b7 100%);
+  color: var(--mioos-titlebar-text);
+  font-size: var(--mioos-title-size);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--mioos-titlebar) 74%, #ffffff 26%) 0%, var(--mioos-titlebar) 55%, color-mix(in srgb, var(--mioos-titlebar) 70%, #000000 30%) 100%);
   user-select: none;
   cursor: grab;
 }
 .mioos-window:not(.is-active) .mioos-titlebar {
-  background: linear-gradient(180deg, #7fa0d8 0%, #5877a9 55%, #4d6791 100%);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--mioos-titlebar-inactive) 70%, #ffffff 30%) 0%, var(--mioos-titlebar-inactive) 55%, color-mix(in srgb, var(--mioos-titlebar-inactive) 70%, #000000 30%) 100%);
 }
 .mioos-titlebar-copy { display: flex; align-items: center; gap: 8px; }
 .mioos-window-actions { display: flex; gap: 4px; }
@@ -217,7 +230,7 @@ button, input { font: inherit; }
   width: 28px;
   height: 24px;
   border: 1px solid rgba(255,255,255,0.8);
-  border-radius: 5px;
+  border-radius: var(--mioos-button-radius);
   color: #08336f;
   background: linear-gradient(180deg, #ffffff 0%, #d8e8ff 100%);
 }
@@ -225,7 +238,7 @@ button, input { font: inherit; }
   flex: 1;
   padding: 14px;
   overflow: auto;
-  background: linear-gradient(180deg, #ffffff 0%, #f3f8fe 100%);
+  background: linear-gradient(180deg, var(--mioos-panel-2) 0%, var(--mioos-panel) 100%);
 }
 
 .mioos-snap-preview {
@@ -321,7 +334,7 @@ button, input { font: inherit; }
   left: 0;
   right: 0;
   bottom: 0;
-  height: 40px;
+  height: var(--mioos-taskbar-height);
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: stretch;
@@ -333,9 +346,9 @@ button, input { font: inherit; }
 .mioos-start-button {
   min-width: 110px;
   border: 0;
-  color: #fff;
+  color: var(--mioos-taskbar-text);
   font-weight: 700;
-  background: linear-gradient(180deg, #39b83a 0%, #2f9f2d 58%, #228320 100%);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--mioos-start) 70%, #ffffff 30%) 0%, var(--mioos-start) 58%, color-mix(in srgb, var(--mioos-start) 70%, #000000 30%) 100%);
   border-radius: 0 12px 12px 0;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.35);
 }
@@ -353,7 +366,7 @@ button, input { font: inherit; }
   padding: 0 12px;
   border: 1px solid rgba(255,255,255,0.22);
   border-radius: 6px;
-  color: #fff;
+  color: var(--mioos-taskbar-text);
   background: rgba(255,255,255,0.14);
 }
 .mioos-task-button.is-active { background: rgba(255,255,255,0.25); }
