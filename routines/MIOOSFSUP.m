@@ -10,9 +10,9 @@ UPCHUNK(CONF)
 	;
 UPCONCUR(CONF)
 	NEW N
-	SET N=+$GET(CONF("mioos","upload","concurrency"),7)
+	SET N=+$GET(CONF("mioos","upload","concurrency"),70)
 	IF N<1 SET N=1
-	IF N>7 SET N=7
+	IF N>70 SET N=70
 	QUIT N
 	;
 NEXTUP()
@@ -153,3 +153,4 @@ CLEAN(UPLOADID)
 	KILL ^MIO("MIOOS","UPLOAD","INFO",$GET(UPLOADID))
 	KILL ^MIO("MIOOS","UPLOAD","CHUNK",$GET(UPLOADID))
 	QUIT
+	;

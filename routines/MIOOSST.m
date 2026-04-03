@@ -260,6 +260,11 @@ APPS(STATE)
 	SET STATE("apps",5,"subtitle")="Customize wallpapers, colors, fonts, metrics, and shell recipes"
 	SET STATE("apps",5,"icon")="🎨"
 	SET STATE("apps",5,"kind")="tool"
+	SET STATE("apps",6,"key")="transfers"
+	SET STATE("apps",6,"title")="Transfers"
+	SET STATE("apps",6,"subtitle")="Uploads, downloads, queue activity, and progress"
+	SET STATE("apps",6,"icon")="⇅"
+	SET STATE("apps",6,"kind")="tool"
 	QUIT
 	;
 WINDOWS(STATE)
@@ -272,6 +277,8 @@ WINDOWS(STATE)
 	DO WIN(.STATE,4,"win-terminal-template","terminal",$$TXT^MIOOSI18N(CODE,"app.terminal.title","Terminal"),120,88,820,430,3,"closed",560,300,1,1)
 	DO WIN(.STATE,5,"win-theme-studio","theme-studio","Theme Studio",156,76,900,610,5,"closed",700,520,1,1)
 	SET STATE("windows",5,"themeStudioEnabled")=1
+	DO WIN(.STATE,6,"win-transfers","transfers","Transfers",218,108,760,520,6,"closed",620,420,1,1)
+	SET STATE("windows",6,"transferCenterEnabled")=1
 	QUIT
 	;
 WIN(STATE,N,ID,APPKEY,TITLE,LEFT,TOP,WIDTH,HEIGHT,Z,MODE,MINW,MINH,RESIZE,DRAG)

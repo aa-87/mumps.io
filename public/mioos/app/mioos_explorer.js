@@ -314,6 +314,7 @@
                   sentBytes: sentBytes,
                   stage: 'Uploading ' + completed + ' / ' + segments.length
                 });
+                if (state.upload && state.upload.transferId && self.updateTransfer) self.updateTransfer(state.upload.transferId, { status: 'uploading', stage: 'Uploading ' + completed + ' / ' + segments.length, processedBytes: sentBytes, totalBytes: state.upload.totalBytes });
                 if (!maybeDone()) pump();
               }).catch(function (err) {
                 cleanup();
@@ -555,6 +556,7 @@
         if (!state || !this.command || !file) return Promise.resolve();
         mime = file.type || 'application/octet-stream';
         isText = detectTextLike({ name: file.name, mime: mime });
+        var transferId = self.registerTransfer ? self.registerTransfer({ kind: 'upload', name: file.name, status: 'preparing', stage: 'Preparing', totalBytes: file.size, processedBytes: 0, sourceWindowId: windowId }) : '';
         self.setExplorerUploadProgress(state, {
           active: true,
           name: file.name,
@@ -578,11 +580,13 @@
               error: '',
               uploadId: ''
             });
+            if (transferId && self.finalizeTransfer) self.finalizeTransfer(transferId, true, { processedBytes: file.size, totalBytes: file.size, progress: 100 });
             window.setTimeout(function () { self.resetExplorerUpload(state); }, 1200);
           });
         }
         function fail(err, fallback) {
           self.setExplorerUploadProgress(state, { active: false, stage: 'Failed', error: (err && err.message) || fallback, uploadId: '' });
+          if (transferId && self.finalizeTransfer) self.finalizeTransfer(transferId, false, { error: (err && err.message) || fallback, processedBytes: ((state.upload || {}).sentBytes || 0), totalBytes: file.size });
           if (self.showAlert) self.showAlert(self.t('alerts.shellEventError.title', 'Explorer'), (err && err.message) || fallback);
           throw (err || new Error(fallback));
         }
@@ -626,7 +630,9 @@
           var uploadBatchSize = (payload && payload.batchSize) || ((self.boot && self.boot.vfs && self.boot.vfs.uploadBatchSize) || ((self.boot && self.boot.websocket && self.boot.websocket.uploadBatchSize) || 1));
           if (!uploadId) throw new Error('upload_begin_failed');
           state.upload.uploadId = uploadId;
+          state.upload.transferId = transferId || '';
           self.setExplorerUploadProgress(state, { stage: 'Uploading chunks', uploadId: uploadId });
+          if (transferId && self.updateTransfer) self.updateTransfer(transferId, { status: 'uploading', stage: 'Uploading chunks', processedBytes: 0, totalBytes: file.size });
             if (isText) {
               return fileToText(file).then(function (text) {
                 var segments = [];
@@ -656,6 +662,7 @@
             });
         }).then(function () {
           self.setExplorerUploadProgress(state, { stage: 'Finalizing', progress: 100, sentBytes: state.upload.totalBytes });
+          if (transferId && self.updateTransfer) self.updateTransfer(transferId, { status: 'finalizing', stage: 'Finalizing', processedBytes: state.upload.totalBytes, totalBytes: state.upload.totalBytes });
           return self.command('fs.upload.commit', { uploadId: (state.upload && state.upload.uploadId) });
         }).then(finalize).catch(function (err) {
           return fail(err, 'fs_upload_failed');
@@ -755,6 +762,7 @@
         var anchor;
         var href = fallbackData || '';
         var name = (item && (item.name || item.title)) || 'download';
+        var transferId = this.registerTransfer ? this.registerTransfer({ kind: 'download', name: name, status: 'preparing', stage: 'Preparing', totalBytes: 0, processedBytes: 0 }) : '';
         if (!item) return Promise.resolve();
         if (href && href.indexOf('data:') === 0) {
           anchor = document.createElement('a');
@@ -763,9 +771,11 @@
           document.body.appendChild(anchor);
           anchor.click();
           document.body.removeChild(anchor);
+          if (transferId && this.finalizeTransfer) this.finalizeTransfer(transferId, true, { progress: 100, stage: 'Saved to browser download manager' });
           return Promise.resolve();
         }
         if (!this.command) return Promise.resolve();
+        if (transferId && this.updateTransfer) this.updateTransfer(transferId, { status: 'downloading', stage: 'Downloading' });
         return this.command('fs.read', { id: item.id || item.key || item.fileId }).then(function (msg) {
           var payload = payloadRoot(msg);
           var data = textFromPayload(payload);
@@ -776,7 +786,11 @@
           document.body.appendChild(anchor);
           anchor.click();
           document.body.removeChild(anchor);
-        });
+          if (transferId && this.finalizeTransfer) this.finalizeTransfer(transferId, true, { progress: 100, stage: 'Saved to browser download manager' });
+        }.bind(this)).catch(function (err) {
+          if (transferId && this.finalizeTransfer) this.finalizeTransfer(transferId, false, { error: (err && err.message) || 'download_failed' });
+          throw err;
+        }.bind(this));
       },
       explorerDownloadSelected: function (windowId) {
         var win = this.windows.find(function (entry) { return entry.id === windowId; });

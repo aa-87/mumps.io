@@ -155,97 +155,207 @@
       </header>
       <div class="mioos-window-body" :class="{ 'is-terminal-body': win.appKey === 'terminal' }">
         <template v-if="win.appKey === 'my-computer' || win.appKey === 'documents' || win.appKey === 'explorer'">
-          <div class="mioos-explorer-shell" :data-explorer-window="win.id">
-            <div class="mioos-explorer-topbar">
-              <button type="button" @click="explorerGoUp(win.id)">Up</button>
-              <button type="button" @click="loadExplorerFolder(win.id, ((boot.vfs || {}).rootId || 'root'), { selectFirst: true })">My Computer</button>
-              <button type="button" @click="loadExplorerFolder(win.id, ((boot.vfs || {}).homeId || (boot.vfs || {}).rootId || 'root'), { selectFirst: true })">Documents</button>
-              <button type="button" @click="explorerPromptUpload(win.id)">Upload</button>
-              <button type="button" @click="explorerDownloadSelected(win.id)" :disabled="!((win.explorerState || {}).selection)">Download</button>
-              <span class="mioos-explorer-path">[[ ((win.explorerState || {}).folder || {}).path || ((win.explorerState || {}).folder || {}).name || '/' ]]</span>
-            </div>
-            <div class="mioos-upload-progress" v-if="((win.explorerState || {}).upload || {}).active">
-              <div class="mioos-upload-progress-head">
-                <strong>[[ ((win.explorerState || {}).upload || {}).name || 'Uploading file' ]]</strong>
-                <span>[[ ((win.explorerState || {}).upload || {}).stage || 'Uploading' ]]</span>
-                <em>[[ (((win.explorerState || {}).upload || {}).progress || 0) + '%' ]]</em>
-              </div>
-              <div class="mioos-upload-progress-bar"><span :style="{ width: ((((win.explorerState || {}).upload || {}).progress || 0) + '%') }"></span></div>
-            </div>
-            <div class="mioos-explorer-main">
-              <aside class="mioos-explorer-sidebar">
-                <button type="button" class="mioos-explorer-place" @click="loadExplorerFolder(win.id, ((boot.vfs || {}).rootId || 'root'), { selectFirst: true })">My Computer</button>
-                <button type="button" class="mioos-explorer-place" @click="loadExplorerFolder(win.id, ((boot.vfs || {}).homeId || (boot.vfs || {}).rootId || 'root'), { selectFirst: true })">My Documents</button>
-                <div class="mioos-explorer-sidebar-copy">
-                  <strong>[[ view.summary.headline ]]</strong>
-                  <span>[[ view.summary.subheadline ]]</span>
+          <div class="mioos-explorer-shell mioos-explorer-shell--xp" :data-explorer-window="win.id">
+            <div class="mioos-explorer-appframe mioos-explorer-appframe--xp">
+              <div class="mioos-explorer-chrome">
+                <div class="mioos-explorer-menubar">
+                  <button type="button">File</button>
+                  <button type="button">Edit</button>
+                  <button type="button">View</button>
+                  <button type="button">Favorites</button>
+                  <button type="button">Tools</button>
+                  <button type="button">Help</button>
                 </div>
-              </aside>
-              <section class="mioos-explorer-listing">
-                <div class="mioos-explorer-empty" v-if="(win.explorerState || {}).loading">Loading…</div>
-                <button
-                  v-for="item in ((win.explorerState || {}).items || [])"
-                  :key="item.id || item.key || item.name"
-                  type="button"
-                  class="mioos-explorer-item"
-                  :class="{ 'is-selected': (((win.explorerState || {}).selection || {}).id || '') === (item.id || '') }"
-                  @click="selectExplorerItem(win.id, item)"
-                  @dblclick="explorerOpenItem(win.id, item)">
-                  <span class="mioos-entry-icon">[[ explorerItemGlyph(item) ]]</span>
-                  <span class="mioos-explorer-item-copy">
-                    <strong>[[ item.name || item.title ]]</strong>
-                    <em>[[ item.kind || item.type || item.mime || '' ]]</em>
-                  </span>
-                </button>
-              </section>
-              <aside class="mioos-explorer-preview">
-                <template v-if="(win.explorerState || {}).selection && (((win.explorerState || {}).selection || {}).kind || ((win.explorerState || {}).selection || {}).type) === 'folder'">
-                  <strong>[[ ((win.explorerState || {}).selection || {}).name || 'Folder' ]]</strong>
-                  <span>Folder</span>
-                </template>
-                <template v-else-if="((win.explorerState || {}).preview || {}).imageSrc">
-                  <strong>[[ (win.explorerState || {}).preview.title ]]</strong>
-                  <div class="mioos-image-preview-frame">
-                    <img class="mioos-image-preview" :src="(win.explorerState || {}).preview.imageSrc" :alt="(win.explorerState || {}).preview.title">
+                <div class="mioos-explorer-commandbar">
+                  <button type="button" class="mioos-explorer-command" @click="explorerGoUp(win.id)">
+                    <span class="mioos-explorer-command-glyph">↩</span>
+                    <span>Up</span>
+                  </button>
+                  <button type="button" class="mioos-explorer-command" @click="loadExplorerFolder(win.id, ((boot.vfs || {}).rootId || 'root'), { selectFirst: true })">
+                    <span class="mioos-explorer-command-glyph">🖥</span>
+                    <span>Folders</span>
+                  </button>
+                  <button type="button" class="mioos-explorer-command" @click="refreshExplorerWindow(win.id)">
+                    <span class="mioos-explorer-command-glyph">⟳</span>
+                    <span>Refresh</span>
+                  </button>
+                  <button type="button" class="mioos-explorer-command mioos-explorer-command--primary" @click="explorerPromptUpload(win.id)">
+                    <span class="mioos-explorer-command-glyph">⬆</span>
+                    <span>Upload</span>
+                  </button>
+                  <button type="button" class="mioos-explorer-command" @click="explorerDownloadSelected(win.id)" :disabled="!((win.explorerState || {}).selection)">
+                    <span class="mioos-explorer-command-glyph">⬇</span>
+                    <span>Download</span>
+                  </button>
+                </div>
+                <div class="mioos-explorer-addressbar">
+                  <label class="mioos-explorer-addressfield">
+                    <span>Address</span>
+                    <input type="text" readonly :value="((win.explorerState || {}).folder || {}).path || ((win.explorerState || {}).folder || {}).name || '/'">
+                  </label>
+                </div>
+                <div class="mioos-upload-progress mioos-upload-progress--xp" v-if="((win.explorerState || {}).upload || {}).active">
+                  <div class="mioos-upload-progress-head">
+                    <strong>[[ ((win.explorerState || {}).upload || {}).name || 'Uploading file' ]]</strong>
+                    <span>[[ ((win.explorerState || {}).upload || {}).stage || 'Uploading' ]]</span>
+                    <em>[[ (((win.explorerState || {}).upload || {}).progress || 0) + '%' ]]</em>
                   </div>
-                  <div class="mioos-preview-actions">
-                    <button type="button" @click="explorerOpenSelected(win.id)">Open</button>
-                    <button type="button" @click="explorerDownloadSelected(win.id)">Download</button>
-                  </div>
-                </template>
-                <template v-else-if="((win.explorerState || {}).preview || {}).mediaSrc && (((win.explorerState || {}).preview || {}).mediaKind === 'video')">
-                  <strong>[[ (win.explorerState || {}).preview.title ]]</strong>
-                  <div class="mioos-media-preview-frame">
-                    <video class="mioos-media-preview-video" controls :src="(win.explorerState || {}).preview.mediaSrc"></video>
-                  </div>
-                  <div class="mioos-preview-actions">
-                    <button type="button" @click="explorerOpenSelected(win.id)">Open</button>
-                    <button type="button" @click="explorerDownloadSelected(win.id)">Download</button>
-                  </div>
-                </template>
-                <template v-else-if="((win.explorerState || {}).preview || {}).mediaSrc && (((win.explorerState || {}).preview || {}).mediaKind === 'audio')">
-                  <strong>[[ (win.explorerState || {}).preview.title ]]</strong>
-                  <div class="mioos-media-preview-frame">
-                    <audio class="mioos-media-preview-audio" controls :src="(win.explorerState || {}).preview.mediaSrc"></audio>
-                  </div>
-                  <div class="mioos-preview-actions">
-                    <button type="button" @click="explorerOpenSelected(win.id)">Open</button>
-                    <button type="button" @click="explorerDownloadSelected(win.id)">Download</button>
-                  </div>
-                </template>
-                <template v-else-if="((win.explorerState || {}).preview || {}).title">
-                  <strong>[[ (win.explorerState || {}).preview.title ]]</strong>
-                  <pre class="mioos-text-preview">[[ (win.explorerState || {}).preview.content ]]</pre>
-                  <div class="mioos-preview-actions">
-                    <button type="button" @click="explorerOpenSelected(win.id)">Open</button>
-                    <button type="button" @click="explorerDownloadSelected(win.id)">Download</button>
-                  </div>
-                </template>
-                <template v-else>
-                  <strong>Preview</strong>
-                  <span>Select a file to preview text content.</span>
-                </template>
-              </aside>
+                  <div class="mioos-upload-progress-bar"><span :style="{ width: ((((win.explorerState || {}).upload || {}).progress || 0) + '%') }"></span></div>
+                </div>
+                <div class="mioos-explorer-main mioos-explorer-main--xp">
+                  <aside class="mioos-explorer-sidebar mioos-explorer-sidebar--xp">
+                    <section class="mioos-explorer-taskpane">
+                      <header class="mioos-explorer-taskhead">File and Folder Tasks</header>
+                      <div class="mioos-explorer-taskbody">
+                        <button type="button" class="mioos-explorer-tasklink" @click="explorerOpenSelected(win.id)" :disabled="!((win.explorerState || {}).selection)">Open this item</button>
+                        <button type="button" class="mioos-explorer-tasklink" @click="explorerCreateFolder(win.id)">Make a new folder</button>
+                        <button type="button" class="mioos-explorer-tasklink" @click="explorerRenameSelected(win.id)" :disabled="!((win.explorerState || {}).selection)">Rename this item</button>
+                        <button type="button" class="mioos-explorer-tasklink" @click="explorerDeleteSelected(win.id)" :disabled="!((win.explorerState || {}).selection)">Delete this item</button>
+                      </div>
+                    </section>
+                    <section class="mioos-explorer-taskpane">
+                      <header class="mioos-explorer-taskhead">Other Places</header>
+                      <div class="mioos-explorer-taskbody">
+                        <button type="button" class="mioos-explorer-tasklink" @click="loadExplorerFolder(win.id, ((boot.vfs || {}).rootId || 'root'), { selectFirst: true })">My Computer</button>
+                        <button type="button" class="mioos-explorer-tasklink" @click="loadExplorerFolder(win.id, ((boot.vfs || {}).homeId || (boot.vfs || {}).rootId || 'root'), { selectFirst: true })">My Documents</button>
+                        <button type="button" class="mioos-explorer-tasklink" @click="openTransfersWindow()">View transfers</button>
+                      </div>
+                    </section>
+                    <section class="mioos-explorer-taskpane">
+                      <header class="mioos-explorer-taskhead">Details</header>
+                      <div class="mioos-explorer-taskbody mioos-explorer-taskbody--details">
+                        <template v-if="(win.explorerState || {}).selection">
+                          <strong class="mioos-explorer-detailtitle">[[ ((win.explorerState || {}).selection || {}).name || ((win.explorerState || {}).selection || {}).title || 'Selected item' ]]</strong>
+                          <span>Type: [[ ((win.explorerState || {}).selection || {}).kind || ((win.explorerState || {}).selection || {}).type || ((win.explorerState || {}).selection || {}).mime || 'Item' ]]</span>
+                          <span v-if="((win.explorerState || {}).selection || {}).path">Path: [[ ((win.explorerState || {}).selection || {}).path ]]</span>
+                          <span v-if="((win.explorerState || {}).selection || {}).sizeLabel">Size: [[ ((win.explorerState || {}).selection || {}).sizeLabel ]]</span>
+                        </template>
+                        <template v-else>
+                          <strong class="mioos-explorer-detailtitle">No item selected</strong>
+                          <span>Select an item to see its details.</span>
+                        </template>
+                      </div>
+                    </section>
+                  </aside>
+                  <section class="mioos-explorer-grid mioos-explorer-grid--xp">
+                    <div class="mioos-explorer-listhead mioos-explorer-listhead--xp">
+                      <strong>Name</strong>
+                      <span>Type</span>
+                    </div>
+                    <section class="mioos-explorer-list mioos-explorer-list--xp">
+                      <button
+                        v-for="item in ((win.explorerState || {}).items || [])"
+                        :key="item.id || item.name"
+                        type="button"
+                        class="mioos-explorer-item mioos-explorer-item--xp"
+                        :class="{ 'is-selected': (((win.explorerState || {}).selection || {}).id || '') === (item.id || '') }"
+                        @click="selectExplorerItem(win.id, item)"
+                        @dblclick="explorerOpenItem(win.id, item)">
+                        <span class="mioos-entry-icon mioos-explorer-itemicon">[[ explorerItemGlyph(item) ]]</span>
+                        <span class="mioos-explorer-item-copy">
+                          <strong>[[ item.name || item.title ]]</strong>
+                          <em>[[ item.kind || item.type || item.mime || '' ]]</em>
+                        </span>
+                      </button>
+                    </section>
+                  </section>
+                  <aside class="mioos-explorer-preview mioos-explorer-preview--xp">
+                    <div class="mioos-explorer-previewhead">Preview</div>
+                    <div class="mioos-explorer-previewbody">
+                      <template v-if="(win.explorerState || {}).selection && (((win.explorerState || {}).selection || {}).kind || ((win.explorerState || {}).selection || {}).type) === 'folder'">
+                        <strong>[[ ((win.explorerState || {}).selection || {}).name || 'Folder' ]]</strong>
+                        <span>Folder</span>
+                      </template>
+                      <template v-else-if="((win.explorerState || {}).preview || {}).imageSrc">
+                        <strong>[[ (win.explorerState || {}).preview.title ]]</strong>
+                        <div class="mioos-image-preview-frame">
+                          <img class="mioos-image-preview" :src="(win.explorerState || {}).preview.imageSrc" :alt="(win.explorerState || {}).preview.title">
+                        </div>
+                      </template>
+                      <template v-else-if="((win.explorerState || {}).preview || {}).mediaSrc && (((win.explorerState || {}).preview || {}).mediaKind === 'video')">
+                        <strong>[[ (win.explorerState || {}).preview.title ]]</strong>
+                        <div class="mioos-media-preview-frame">
+                          <video class="mioos-media-preview-video" controls :src="(win.explorerState || {}).preview.mediaSrc"></video>
+                        </div>
+                      </template>
+                      <template v-else-if="((win.explorerState || {}).preview || {}).mediaSrc && (((win.explorerState || {}).preview || {}).mediaKind === 'audio')">
+                        <strong>[[ (win.explorerState || {}).preview.title ]]</strong>
+                        <div class="mioos-media-preview-frame">
+                          <audio class="mioos-media-preview-audio" controls :src="(win.explorerState || {}).preview.mediaSrc"></audio>
+                        </div>
+                      </template>
+                      <template v-else-if="((win.explorerState || {}).preview || {}).title">
+                        <strong>[[ (win.explorerState || {}).preview.title ]]</strong>
+                        <pre class="mioos-text-preview">[[ (win.explorerState || {}).preview.content ]]</pre>
+                      </template>
+                      <template v-else>
+                        <strong>Preview</strong>
+                        <span>Select a file to preview text content.</span>
+                      </template>
+                      <div class="mioos-preview-actions mioos-preview-actions--xp">
+                        <button type="button" @click="explorerOpenSelected(win.id)" :disabled="!((win.explorerState || {}).selection)">Open</button>
+                        <button type="button" @click="explorerDownloadSelected(win.id)" :disabled="!((win.explorerState || {}).selection)">Copy</button>
+                        <button type="button" @click="explorerMoveSelected(win.id)" :disabled="!((win.explorerState || {}).selection)">Move</button>
+                      </div>
+                    </div>
+                  </aside>
+                </div>
+                <div class="status-bar mioos-statusbar--xp">
+                  <p class="status-bar-field">[[ (((win.explorerState || {}).items || []).length) ]] objects</p>
+                  <p class="status-bar-field">[[ ((win.explorerState || {}).folder || {}).name || '/' ]]</p>
+                  <p class="status-bar-field">[[ transferSummaryText() ]]</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </template>
+        <template v-else-if="win.appKey === 'transfers'">
+          <div class="mioos-transfers-shell win7" data-transfer-window="1">
+            <div class="window-body mioos-seven-body">
+              <div class="mioos-transfers-head">
+                <div>
+                  <strong>Transfer Center</strong>
+                  <span>Upload and download activity for this session.</span>
+                </div>
+                <div class="mioos-seven-toolbar">
+                  <button type="button" @click="clearFinishedTransfers()">Clear finished</button>
+                  <button type="button" @click="refreshView()">Refresh desktop</button>
+                </div>
+              </div>
+              <div class="mioos-transfers-summary">
+                <span>[[ transferSummaryText() ]]</span>
+              </div>
+              <div class="mioos-transfers-sections">
+                <section>
+                  <fieldset>
+                    <legend>Active transfers</legend>
+                    <div class="mioos-transfer-card" v-for="item in activeTransfers()" :key="item.id">
+                      <div class="mioos-transfer-copy">
+                        <strong>[[ item.name ]]</strong>
+                        <span>[[ item.kind ]] · [[ item.stage || item.status ]]</span>
+                      </div>
+                      <div class="mioos-transfer-progress">
+                        <div class="mioos-upload-progress-bar"><span :style="{ width: (transferPercent(item) + '%') }"></span></div>
+                        <em>[[ transferPercent(item) ]]%</em>
+                      </div>
+                    </div>
+                    <div class="mioos-transfer-empty" v-if="!activeTransfers().length">No active transfers.</div>
+                  </fieldset>
+                </section>
+                <section>
+                  <fieldset>
+                    <legend>History</legend>
+                    <div class="mioos-transfer-card is-history" v-for="item in completedTransfers()" :key="item.id">
+                      <div class="mioos-transfer-copy">
+                        <strong>[[ item.name ]]</strong>
+                        <span>[[ item.kind ]] · [[ item.stage || item.status ]]</span>
+                      </div>
+                      <em class="mioos-transfer-state" :class="{ 'is-failed': item.status === 'failed' }">[[ item.status ]]</em>
+                    </div>
+                    <div class="mioos-transfer-empty" v-if="!completedTransfers().length">No completed transfers yet.</div>
+                  </fieldset>
+                </section>
+              </div>
             </div>
           </div>
         </template>

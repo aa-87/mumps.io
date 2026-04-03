@@ -109,3 +109,9 @@ MIOOS now uses a shared window manager contract for shell windows. Windows suppo
 ## Theme Studio ROI
 
 A detailed Theme Studio UI tool is available in MIOOS as a dedicated desktop app/window. It focuses on profile authoring and preview only, without changing the current native shell/taskbar/window styling baseline. The tool supports wallpaper choices, typography, sizing, color tokens, class recipes, extra CSS, import/export, local profile storage, and XP/Windows 7/Mac-inspired starter looks.
+
+
+## ROI-F — Explorer + Transfers polish
+- Explorer now uses 7.css as an interior accent layer while preserving native MIOOS shell chrome.
+- Added a Transfers window for upload/download queue visibility and progress tracking.
+- Transfer progress is surfaced across Explorer and the dedicated Transfers center.

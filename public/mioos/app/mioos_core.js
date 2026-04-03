@@ -57,7 +57,8 @@
           terminalWindowSeq: 0,
           terminalPollTimer: null,
           appliedThemeProfile: null,
-          themeStyleNodeId: 'mioos-theme-studio-style'
+          themeStyleNodeId: 'mioos-theme-studio-style',
+          transferCenter: { items: [], seq: 0, autoOpen: true }
         };
       },
       computed: {
@@ -162,6 +163,70 @@
         },
         changeLocale: function (code) {
           if (I18N.changeLocale) I18N.changeLocale(this, code);
+        },
+        openTransfersWindow: function () {
+          var win = this.windows.find(function (item) { return item.appKey === 'transfers'; });
+          if (!win) return;
+          if (win.state === 'closed' || win.state === 'minimized') win.state = 'normal';
+          this.focusWindow(win.id);
+        },
+        transferPercent: function (item) {
+          if (!item) return 0;
+          if (+item.totalBytes > 0) return Math.max(0, Math.min(100, Math.round(((+item.processedBytes || 0) / (+item.totalBytes || 1)) * 100)));
+          return +item.progress || 0;
+        },
+        activeTransfers: function () {
+          return (this.transferCenter.items || []).filter(function (item) {
+            return ['queued','preparing','uploading','downloading','finalizing'].indexOf(item.status) >= 0;
+          });
+        },
+        completedTransfers: function () {
+          return (this.transferCenter.items || []).filter(function (item) {
+            return ['completed','failed','cancelled'].indexOf(item.status) >= 0;
+          });
+        },
+        transferSummaryText: function () {
+          var active = this.activeTransfers().length;
+          var done = this.completedTransfers().length;
+          return active + ' active · ' + done + ' finished';
+        },
+        registerTransfer: function (payload) {
+          var next = Object.assign({
+            id: 'transfer-' + Date.now() + '-' + (++this.transferCenter.seq),
+            kind: 'upload',
+            name: 'Transfer',
+            status: 'queued',
+            stage: 'Queued',
+            totalBytes: 0,
+            processedBytes: 0,
+            progress: 0,
+            startedAt: Date.now(),
+            updatedAt: Date.now(),
+            error: '',
+            sourceWindowId: ''
+          }, payload || {});
+          this.transferCenter.items.unshift(next);
+          if (this.transferCenter.items.length > 40) this.transferCenter.items = this.transferCenter.items.slice(0, 40);
+          if (this.transferCenter.autoOpen && (next.kind === 'upload' || next.kind === 'download')) this.openTransfersWindow();
+          return next.id;
+        },
+        updateTransfer: function (transferId, patch) {
+          var item = (this.transferCenter.items || []).find(function (entry) { return entry.id === transferId; });
+          if (!item) return;
+          Object.assign(item, patch || {});
+          item.updatedAt = Date.now();
+          item.progress = this.transferPercent(item);
+        },
+        finalizeTransfer: function (transferId, ok, patch) {
+          this.updateTransfer(transferId, Object.assign({
+            status: ok ? 'completed' : 'failed',
+            stage: ok ? 'Completed' : 'Failed'
+          }, patch || {}));
+        },
+        clearFinishedTransfers: function () {
+          this.transferCenter.items = (this.transferCenter.items || []).filter(function (item) {
+            return ['queued','preparing','uploading','downloading','finalizing'].indexOf(item.status) >= 0;
+          });
         },
         themeStudioStorageKey: function () {
           return 'mioos.themeStudio.applied.v1';

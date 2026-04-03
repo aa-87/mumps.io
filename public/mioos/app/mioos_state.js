@@ -57,6 +57,7 @@
           payloadMode: 'tmp-global-safe',
           transport: 'websocket-first-http-refresh'
         },
+        moduleSystem: { enabled: true, launcher: 'desktop-icons-and-menu', manifestVersion: 1, debugAppKey: 'debug-center' },
         windowing: {
           engine: 'mioos-native-vue-css',
           snapThreshold: 28,
@@ -95,7 +96,8 @@
       },
       vfs: { enabled: false, rootId: 'root', homeId: 'home', chunkSize: 32000, globalsOnly: true },
       apps: [],
-      windows: []
+      windows: [],
+      modules: []
     };
   }
 
@@ -148,6 +150,7 @@
     base.terminal.profile = Object.assign(base.terminal.profile, (boot.terminal || {}).profile || {});
     base.apps = Array.isArray(boot.apps) ? deepClone(boot.apps) : [];
     base.windows = Array.isArray(boot.windows) ? deepClone(boot.windows) : [];
+    base.modules = Array.isArray(boot.modules) ? deepClone(boot.modules) : [];
     base.locale.supported = Array.isArray((boot.locale || {}).supported) ? deepClone(boot.locale.supported) : defaultLocales();
     return base;
   }
