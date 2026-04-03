@@ -132,13 +132,30 @@
     </div>
   </aside>
 
-  <main class="mioos-desktop" @click="menuOpen=false">
+  <main class="mioos-desktop" @click="menuOpen=false; closeDesktopContextMenu()" @contextmenu.prevent="openDesktopContextMenu($event)">
     <div v-if="snapPreview.active" class="mioos-snap-preview" :data-snap-zone="snapPreview.zone" :style="snapPreviewStyle()"></div>
-    <section class="mioos-desktop-icons" :aria-label="t('desktop.icons')">
-      <button v-for="entry in desktopEntries" :key="entry.key" type="button" class="mioos-desktop-icon" :data-launch-app="entry.key" @dblclick="openApp(entry.key)" @keydown.enter.prevent="openApp(entry.key)">
+    <section class="mioos-desktop-icons" :aria-label="t('desktop.icons')" :data-icon-size="desktopUi.iconSize">
+      <button v-for="entry in desktopEntries" :key="entry.key" type="button" class="mioos-desktop-icon" :class="desktopIconClass(entry)" :style="desktopIconStyle(entry)" :data-launch-app="entry.key" @click.stop="selectDesktopEntry(entry)" @mousedown.stop="beginDesktopIconDrag(entry, $event)" @contextmenu.prevent.stop="openDesktopIconContextMenu(entry, $event)" @dblclick.stop="openApp(entry.key)" @keydown.enter.prevent="openApp(entry.key)">
         <span class="mioos-entry-icon">[[ entry.icon ]]</span>
         <span class="mioos-entry-title">[[ entry.title ]]</span>
       </button>
+    </section>
+    <section v-if="desktopUi.contextMenu.open" class="mioos-context-menu" :class="{ 'is-icon-menu': desktopUi.contextMenu.type === 'icon' }" :style="contextMenuStyle()" @click.stop>
+      <button v-if="desktopUi.contextMenu.type === 'icon'" type="button" @click="contextOpenSelected()">Open</button>
+      <button v-if="desktopUi.contextMenu.type === 'icon'" type="button" @click="contextDeleteIcon()">Remove shortcut</button>
+      <hr v-if="desktopUi.contextMenu.type === 'icon'">
+      <button type="button" @click="refreshDesktopIcons()">Refresh</button>
+      <button type="button" @click="rearrangeDesktopIcons()">Rearrange Icons</button>
+      <button type="button" @click="sortDesktopEntries('name')">Sort by Name</button>
+      <button type="button" @click="sortDesktopEntries('type')">Sort by Type</button>
+      <button type="button" @click="sortDesktopEntries('manual')">Manual Layout</button>
+      <hr>
+      <button type="button" @click="setDesktopIconSize('small'); closeDesktopContextMenu()">Small Icons</button>
+      <button type="button" @click="setDesktopIconSize('medium'); closeDesktopContextMenu()">Medium Icons</button>
+      <button type="button" @click="setDesktopIconSize('large'); closeDesktopContextMenu()">Large Icons</button>
+      <hr>
+      <button type="button" @click="contextPersonalize()">Personalize</button>
+      <button type="button" @click="contextControlPanel()">Control Panel</button>
     </section>
 
     <section v-for="win in visibleWindows" :key="win.id" class="mioos-window" :class="windowClass(win)" :style="windowStyle(win)" @mousedown="focusWindow(win.id)" @dragover="onWindowDragOver(win, $event)" @drop="onWindowDrop(win, $event)" role="dialog" :aria-label="win.title" :data-window-state="win.state" :data-window-app="win.appKey">

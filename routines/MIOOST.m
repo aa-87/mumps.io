@@ -17,6 +17,8 @@ MIOOST ; MIOOS tests
 	DO T016
 	DO T017
 	DO T018
+	DO T019
+	DO T020
 	QUIT
 	;
 RESET
@@ -377,4 +379,35 @@ T018
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-transfers-shell"),"[MIOOST][T018][transfers css]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-explorer-taskpane"),"[MIOOST][T018][explorer xp taskpane css]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-explorer-menubar"),"[MIOOST][T018][explorer xp menubar css]")
+	QUIT
+
+	;
+T019
+	NEW CONF,REQ,CTX,STATE,ERR,JSON,OBJ
+	DO RESET
+	DO CONFDEF^MIOOS(.CONF)
+	SET ^MIO("MIOOS","PREF","guest","desktop","iconSize")="large"
+	SET ^MIO("MIOOS","PREF","guest","desktop","sortMode")="manual"
+	SET ^MIO("MIOOS","PREF","guest","desktop","positions","terminal","left")=144
+	SET ^MIO("MIOOS","PREF","guest","desktop","positions","terminal","top")=88
+	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T019][load]")
+	SET JSON=$$BOOTJSON^MIOOSST(.STATE,.CONF)
+	DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T019][decode]")
+	DO EQ^MIOTASSERT($GET(OBJ("desktop","icons","enabled")),1,"[MIOOST][T019][icons enabled]")
+	DO EQ^MIOTASSERT($GET(OBJ("desktop","icons","draggable")),1,"[MIOOST][T019][icons draggable]")
+	DO EQ^MIOTASSERT($GET(OBJ("desktop","icons","size")),"large","[MIOOST][T019][icon size]")
+	DO EQ^MIOTASSERT($GET(OBJ("desktop","contextMenu","desktop")),1,"[MIOOST][T019][desktop menu]")
+	DO EQ^MIOTASSERT($GET(OBJ("apps",4,"iconLeft")),144,"[MIOOST][T019][terminal icon left]")
+	QUIT
+	;
+T020
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-context-menu"),"[MIOOST][T020][context menu token]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","openDesktopContextMenu($event)"),"[MIOOST][T020][desktop menu handler]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","openDesktopIconContextMenu(entry, $event)"),"[MIOOST][T020][icon menu handler]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","beginDesktopIconDrag"),"[MIOOST][T020][icon drag method]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","desktop.layout.save"),"[MIOOST][T020][layout save command]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","setDesktopIconSize"),"[MIOOST][T020][icon size method]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-context-menu"),"[MIOOST][T020][context menu css]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-desktop-icon.is-large"),"[MIOOST][T020][large icon css]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","desktop.layout.save"),"[MIOOST][T020][ws layout save]")
 	QUIT

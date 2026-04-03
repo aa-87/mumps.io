@@ -106,6 +106,45 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	DO LOADTERM^MIOOSTERM(.STATE,.CONF)
 	DO APPS(.STATE)
 	DO WINDOWS(.STATE)
+	DO LOADPREFS(.STATE,.CONF)
+	QUIT 1
+	;
+LOADPREFS(STATE,CONF)
+	NEW USER,ROOT,KEY
+	SET USER=$SELECT($GET(STATE("principal"))'="":$GET(STATE("principal")),1:"guest")
+	SET ROOT=$NAME(^MIO("MIOOS","PREF",USER,"desktop"))
+	SET STATE("desktopIconSize")=$SELECT($GET(@ROOT@("iconSize"))'="":$GET(@ROOT@("iconSize")),1:"medium")
+	SET STATE("desktopSortMode")=$SELECT($GET(@ROOT@("sortMode"))'="":$GET(@ROOT@("sortMode")),1:"manual")
+	KILL STATE("desktopLayout")
+	SET KEY="" FOR  SET KEY=$ORDER(@ROOT@("positions",KEY)) QUIT:KEY=""  DO
+	. SET STATE("desktopLayout","positions",KEY,"left")=+$GET(@ROOT@("positions",KEY,"left"))
+	. SET STATE("desktopLayout","positions",KEY,"top")=+$GET(@ROOT@("positions",KEY,"top"))
+	QUIT
+	;
+MERGELAYOUT(STATE,ROOT)
+	NEW IDX,KEY
+	SET IDX=0 FOR  SET IDX=$ORDER(@ROOT@(IDX)) QUIT:'IDX  DO
+	. SET KEY=$GET(@ROOT@(IDX,"key")) QUIT:KEY=""
+	. IF $DATA(STATE("desktopLayout","positions",KEY)) DO
+	. . SET @ROOT@(IDX,"iconLeft")=+$GET(STATE("desktopLayout","positions",KEY,"left"))
+	. . SET @ROOT@(IDX,"iconTop")=+$GET(STATE("desktopLayout","positions",KEY,"top"))
+	. SET @ROOT@(IDX,"desktopIconSize")=$GET(STATE("desktopIconSize"),"medium")
+	QUIT
+	;
+SAVELAYOUT(STATE,TREE,OUT,ERR)
+	NEW USER,ROOT,KEY
+	SET USER=$SELECT($GET(STATE("principal"))'="":$GET(STATE("principal")),1:"guest")
+	SET ROOT=$NAME(^MIO("MIOOS","PREF",USER,"desktop"))
+	KILL @ROOT
+	SET @ROOT@("iconSize")=$SELECT($GET(TREE("iconSize"))'="":$GET(TREE("iconSize")),1:"medium")
+	SET @ROOT@("sortMode")=$SELECT($GET(TREE("sortMode"))'="":$GET(TREE("sortMode")),1:"manual")
+	SET KEY="" FOR  SET KEY=$ORDER(TREE("positions",KEY)) QUIT:KEY=""  DO
+	. SET @ROOT@("positions",KEY,"left")=+$GET(TREE("positions",KEY,"left"))
+	. SET @ROOT@("positions",KEY,"top")=+$GET(TREE("positions",KEY,"top"))
+	SET OUT("saved")=1
+	SET OUT("user")=USER
+	SET OUT("iconSize")=@ROOT@("iconSize")
+	SET OUT("sortMode")=@ROOT@("sortMode")
 	QUIT 1
 	;
 PROFILE(CONF)
@@ -205,8 +244,28 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("vfs","uploadBatchSize")=+$GET(STATE("wsUploadBatchSize"),4)
 	SET OBJ("vfs","storage")="globals-only"
 	SET OBJ("vfs","permissionsModel")="owner-role-flags"
+	SET OBJ("desktop","icons","enabled")=1
+	SET OBJ("desktop","icons","draggable")=1
+	SET OBJ("desktop","icons","size")=$GET(STATE("desktopIconSize"),"medium")
+	SET OBJ("desktop","icons","sortMode")=$GET(STATE("desktopSortMode"),"manual")
+	SET OBJ("desktop","icons","sizeOptions",1)="small"
+	SET OBJ("desktop","icons","sizeOptions",2)="medium"
+	SET OBJ("desktop","icons","sizeOptions",3)="large"
+	SET OBJ("desktop","contextMenu","desktop")=1
+	SET OBJ("desktop","contextMenu","icon")=1
+	SET OBJ("desktop","contextMenu","verbs",1)="refresh"
+	SET OBJ("desktop","contextMenu","verbs",2)="rearrange"
+	SET OBJ("desktop","contextMenu","verbs",3)="sort-name"
+	SET OBJ("desktop","contextMenu","verbs",4)="sort-type"
+	SET OBJ("desktop","contextMenu","verbs",5)="size-small"
+	SET OBJ("desktop","contextMenu","verbs",6)="size-medium"
+	SET OBJ("desktop","contextMenu","verbs",7)="size-large"
+	SET OBJ("desktop","contextMenu","verbs",8)="personalize"
+	SET OBJ("desktop","contextMenu","verbs",9)="control-panel"
+	SET OBJ("desktop","contextMenu","verbs",10)="open"
 	DO THEMES($NAME(OBJ("desktop","themes")),$GET(STATE("themeKey")))
 	MERGE OBJ("apps")=STATE("apps")
+	DO MERGELAYOUT(.STATE,$NAME(OBJ("apps")))
 	MERGE OBJ("windows")=STATE("windows")
 	SET OBJ("websocket","maxSocketsPerSession")=+$GET(STATE("wsMaxSockets"),4)
 	SET OBJ("websocket","coreSockets")=+$GET(STATE("wsCoreSockets"),1)

@@ -58,6 +58,18 @@
           transport: 'websocket-first-http-refresh'
         },
         moduleSystem: { enabled: true, launcher: 'desktop-icons-and-menu', manifestVersion: 1, debugAppKey: 'debug-center' },
+        icons: {
+          enabled: true,
+          draggable: true,
+          size: 'medium',
+          sizeOptions: ['small', 'medium', 'large'],
+          sortMode: 'manual'
+        },
+        contextMenu: {
+          desktop: true,
+          icon: true,
+          verbs: ['refresh', 'rearrange', 'sort-name', 'sort-type', 'size-small', 'size-medium', 'size-large', 'personalize', 'control-panel', 'open']
+        },
         windowing: {
           engine: 'mioos-native-vue-css',
           snapThreshold: 28,

@@ -58,7 +58,15 @@
           terminalPollTimer: null,
           appliedThemeProfile: null,
           themeStyleNodeId: 'mioos-theme-studio-style',
-          transferCenter: { items: [], seq: 0, autoOpen: true }
+          transferCenter: { items: [], seq: 0, autoOpen: true },
+          desktopUi: {
+            iconSize: 'medium',
+            sortMode: 'manual',
+            positions: {},
+            selectedKey: '',
+            drag: { armed: false, active: false, moved: false, key: '', startX: 0, startY: 0, left: 0, top: 0 },
+            contextMenu: { open: false, type: 'desktop', key: '', left: 0, top: 0 }
+          }
         };
       },
       computed: {
@@ -98,20 +106,22 @@
           handler: function (entries) {
             if (Array.isArray(entries) && entries.length) {
               this.desktopEntries = window.MIOOSState.deepClone(entries);
+              this.ensureDesktopLayout();
             }
           }
         }
       },
       mounted: function () {
         this.bootstrapFromDom();
+        this.ensureDesktopLayout();
         this.applyPersistedThemeStudioProfile();
         this.applyDocumentLocale();
         this.startClock();
         this.refreshView();
         this.initSocket();
         if (this.startTerminalPolling) this.startTerminalPolling();
-        this._dragMove = this.onDragMove.bind(this);
-        this._dragEnd = this.endDrag.bind(this);
+        this._dragMove = this.handleGlobalMouseMove.bind(this);
+        this._dragEnd = this.handleGlobalMouseUp.bind(this);
         this._viewportResize = this.handleViewportResize.bind(this);
         window.addEventListener('mousemove', this._dragMove);
         window.addEventListener('mouseup', this._dragEnd);
@@ -143,6 +153,8 @@
           this.launcherEntries = window.MIOOSState.deepClone(this.boot.apps || []);
           this.desktopEntries = window.MIOOSState.deepClone((this.view && this.view.desktopEntries) || this.boot.desktopEntries || this.boot.apps || []);
           this.windows = window.MIOOSState.deepClone(this.boot.windows || []);
+          this.desktopUi.iconSize = ((((this.boot || {}).desktop || {}).icons || {}).size) || 'medium';
+          this.desktopUi.sortMode = ((((this.boot || {}).desktop || {}).icons || {}).sortMode) || 'manual';
           this.zCounter = this.windows.reduce(function (max, win) { return Math.max(max, win.z || 0); }, 10) + 1;
           if (this.windows.length) this.activeWindowId = this.windows[0].id;
         },
@@ -228,6 +240,172 @@
             return ['queued','preparing','uploading','downloading','finalizing'].indexOf(item.status) >= 0;
           });
         },
+        desktopGridMetrics: function () {
+          var size = this.desktopUi.iconSize || 'medium';
+          if (size === 'small') return { width: 88, height: 90, icon: 28 };
+          if (size === 'large') return { width: 112, height: 122, icon: 48 };
+          return { width: 96, height: 104, icon: 36 };
+        },
+        desktopViewportHeight: function () {
+          return Math.max(240, (window.innerHeight || document.documentElement.clientHeight || 720) - (+(((((this.boot || {}).desktop || {}).windowing || {}).taskbarHeight) || 40)) - 10);
+        },
+        desktopLayoutPayload: function () {
+          return { iconSize: this.desktopUi.iconSize || 'medium', sortMode: this.desktopUi.sortMode || 'manual', positions: window.MIOOSState.deepClone(this.desktopUi.positions || {}) };
+        },
+        ensureDesktopLayout: function () {
+          var self = this;
+          var metrics = this.desktopGridMetrics();
+          var col = 0;
+          var row = 0;
+          var viewportHeight = this.desktopViewportHeight();
+          var cached = null;
+          if (!this.desktopUi.positions) this.desktopUi.positions = {};
+          if (!Object.keys(this.desktopUi.positions).length) {
+            try { cached = JSON.parse(window.localStorage.getItem(this.desktopLayoutStorageKey()) || 'null'); } catch (err) { cached = null; }
+            if (cached && cached.positions) {
+              this.desktopUi.positions = window.MIOOSState.deepClone(cached.positions || {});
+              if (cached.iconSize) this.desktopUi.iconSize = cached.iconSize;
+              if (cached.sortMode) this.desktopUi.sortMode = cached.sortMode;
+            }
+          }
+          (this.desktopEntries || []).forEach(function (entry) {
+            if (!entry || !entry.key) return;
+            if (!self.desktopUi.positions[entry.key]) {
+              var left = +(entry.iconLeft || 0);
+              var top = +(entry.iconTop || 0);
+              if (!(left >= 0 && top >= 0)) {
+                left = 16 + (col * metrics.width);
+                top = 16 + (row * metrics.height);
+                row += 1;
+                if ((16 + ((row + 1) * metrics.height)) > viewportHeight) { row = 0; col += 1; }
+              }
+              self.desktopUi.positions[entry.key] = { left: left, top: top };
+            }
+          });
+          Object.keys(this.desktopUi.positions).forEach(function (key) {
+            var exists = (self.desktopEntries || []).some(function (entry) { return entry.key === key; });
+            if (!exists) delete self.desktopUi.positions[key];
+          });
+          this.sortDesktopEntries(this.desktopUi.sortMode || 'manual', true);
+        },
+        desktopIconStyle: function (entry) {
+          var pos = ((this.desktopUi || {}).positions || {})[entry.key] || { left: 16, top: 16 };
+          return { left: (+pos.left || 16) + 'px', top: (+pos.top || 16) + 'px' };
+        },
+        desktopIconClass: function (entry) {
+          return {
+            'is-selected': ((this.desktopUi || {}).selectedKey || '') === entry.key,
+            'is-small': (this.desktopUi.iconSize || 'medium') === 'small',
+            'is-large': (this.desktopUi.iconSize || 'medium') === 'large'
+          };
+        },
+        selectDesktopEntry: function (entry) {
+          this.desktopUi.selectedKey = entry && entry.key ? entry.key : '';
+        },
+        beginDesktopIconDrag: function (entry, event) {
+          var pos;
+          if (!entry || !entry.key || !event || event.button !== 0) return;
+          this.closeDesktopContextMenu();
+          this.selectDesktopEntry(entry);
+          pos = (this.desktopUi.positions || {})[entry.key] || { left: 16, top: 16 };
+          this.desktopUi.drag = { armed: true, active: false, moved: false, key: entry.key, startX: event.clientX, startY: event.clientY, left: +pos.left || 16, top: +pos.top || 16 };
+        },
+        handleGlobalMouseMove: function (event) {
+          if (this.onDragMove) this.onDragMove(event);
+          this.onDesktopIconMove(event);
+        },
+        handleGlobalMouseUp: function (event) {
+          if (this.endDrag) this.endDrag(event);
+          this.endDesktopIconDrag(event);
+        },
+        onDesktopIconMove: function (event) {
+          var drag = this.desktopUi.drag || {};
+          var dx, dy, pos;
+          if (!drag.armed || !drag.key) return;
+          dx = event.clientX - (+drag.startX || 0);
+          dy = event.clientY - (+drag.startY || 0);
+          if (!drag.active && ((Math.abs(dx) > 4) || (Math.abs(dy) > 4))) drag.active = true;
+          if (!drag.active) return;
+          drag.moved = true;
+          pos = this.desktopUi.positions[drag.key] || { left: drag.left || 16, top: drag.top || 16 };
+          pos.left = Math.max(8, (drag.left || 16) + dx);
+          pos.top = Math.max(8, Math.min(this.desktopViewportHeight() - this.desktopGridMetrics().height, (drag.top || 16) + dy));
+          this.desktopUi.positions[drag.key] = pos;
+        },
+        endDesktopIconDrag: function () {
+          var drag = this.desktopUi.drag || {};
+          if (!drag.armed) return;
+          if (drag.moved) this.persistDesktopLayout();
+          this.desktopUi.drag = { armed: false, active: false, moved: false, key: '', startX: 0, startY: 0, left: 0, top: 0 };
+        },
+        desktopLayoutStorageKey: function () {
+          return 'mioos.desktop.layout.' + (((this.boot || {}).user || {}).id || 'guest');
+        },
+        persistDesktopLayout: function () {
+          var payload = this.desktopLayoutPayload();
+          try { window.localStorage.setItem(this.desktopLayoutStorageKey(), JSON.stringify(payload)); } catch (err) {}
+          if (this.socketRequest) {
+            this.socketRequest((this.boot.routes || {}).commandEvent || 'desktop.command', { command: 'desktop.layout.save', iconSize: payload.iconSize, sortMode: payload.sortMode, positions: payload.positions }, { command: 'desktop.layout.save', dedupeKey: 'desktop.layout.save', timeoutMs: 3000 }).catch(function () {});
+          }
+        },
+        refreshDesktopIcons: function () {
+          this.refreshView();
+          this.showAlert('Desktop', 'Desktop refreshed.');
+        },
+        rearrangeDesktopIcons: function () {
+          var self = this;
+          var metrics = this.desktopGridMetrics();
+          var viewportHeight = this.desktopViewportHeight();
+          var col = 0;
+          var row = 0;
+          (this.desktopEntries || []).forEach(function (entry) {
+            self.desktopUi.positions[entry.key] = { left: 16 + (col * metrics.width), top: 16 + (row * metrics.height) };
+            row += 1;
+            if ((16 + ((row + 1) * metrics.height)) > viewportHeight) { row = 0; col += 1; }
+          });
+          this.desktopUi.sortMode = 'manual';
+          this.persistDesktopLayout();
+        },
+        sortDesktopEntries: function (mode, silent) {
+          var nextMode = mode || 'manual';
+          if (nextMode === 'name') {
+            this.desktopEntries.sort(function (a, b) { return String(a.title || a.key || '').localeCompare(String(b.title || b.key || '')); });
+          } else if (nextMode === 'type') {
+            this.desktopEntries.sort(function (a, b) { var ak = String(a.kind || ''); var bk = String(b.kind || ''); return ak.localeCompare(bk) || String(a.title || '').localeCompare(String(b.title || '')); });
+          }
+          this.desktopUi.sortMode = nextMode;
+          if (nextMode !== 'manual') this.rearrangeDesktopIcons();
+          else if (!silent) this.persistDesktopLayout();
+        },
+        setDesktopIconSize: function (size) {
+          this.desktopUi.iconSize = size || 'medium';
+          this.persistDesktopLayout();
+        },
+        openDesktopContextMenu: function (event) {
+          if (!event) return;
+          this.desktopUi.contextMenu = { open: true, type: 'desktop', key: '', left: event.clientX, top: event.clientY };
+        },
+        openDesktopIconContextMenu: function (entry, event) {
+          if (!entry || !event) return;
+          this.selectDesktopEntry(entry);
+          this.desktopUi.contextMenu = { open: true, type: 'icon', key: entry.key, left: event.clientX, top: event.clientY };
+        },
+        closeDesktopContextMenu: function () { this.desktopUi.contextMenu.open = false; },
+        contextMenuStyle: function () {
+          return { left: (this.desktopUi.contextMenu.left || 0) + 'px', top: (this.desktopUi.contextMenu.top || 0) + 'px' };
+        },
+        desktopContextEntry: function () {
+          var key = (this.desktopUi.contextMenu || {}).key || (this.desktopUi.selectedKey || '');
+          return (this.desktopEntries || []).find(function (entry) { return entry.key === key; }) || null;
+        },
+        contextOpenSelected: function () {
+          var entry = this.desktopContextEntry();
+          this.closeDesktopContextMenu();
+          if (entry) this.openApp(entry.key);
+        },
+        contextControlPanel: function () { this.closeDesktopContextMenu(); this.openApp('control-panel'); },
+        contextPersonalize: function () { this.closeDesktopContextMenu(); this.openApp('theme-studio'); },
+        contextDeleteIcon: function () { this.closeDesktopContextMenu(); this.showAlert('Desktop', 'Desktop shortcuts are managed by installed modules.'); },
         themeStudioStorageKey: function () {
           return 'mioos.themeStudio.applied.v1';
         },

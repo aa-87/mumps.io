@@ -72,3 +72,9 @@ A detailed Theme Studio UI tool is available in MIOOS as a dedicated desktop app
 - Explorer now uses 7.css as an interior accent layer while preserving native MIOOS shell chrome.
 - Added a Transfers window for upload/download queue visibility and progress tracking.
 - Transfer progress is surfaced across Explorer and the dedicated Transfers center.
+
+
+## ROI-G — Desktop Icons, Layouts, and Context Menus
+- Desktop icons are draggable with small, medium, and large size modes.
+- Desktop and icon context menus expose refresh, rearrange, sorting, sizing, personalization, and Control Panel shortcuts.
+- Icon layout preferences are persisted per user through the shell transport and also cached locally for responsiveness.

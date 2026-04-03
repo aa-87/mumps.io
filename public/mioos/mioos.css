@@ -670,3 +670,18 @@ button, input { font: inherit; }
 .mioos-transfer-empty { color: var(--mioos-muted); font-size: 12px; padding: 12px 0; }
 .mioos-transfer-state { text-transform: capitalize; color: var(--mioos-muted); font-size: 12px; }
 .mioos-transfer-state.is-failed { color: #9d1d20; font-weight: 700; }
+
+
+.mioos-desktop-icons { position: relative; min-height: calc(100vh - var(--mioos-taskbar-height, 40px) - 16px); }
+.mioos-desktop-icon { position: absolute; width: 96px; min-height: 92px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 6px; padding: 8px 6px; background: transparent; border: 1px solid transparent; border-radius: 6px; color: var(--mioos-icon-text, #fff); text-shadow: var(--mioos-icon-shadow, 0 1px 2px rgba(0,0,0,.6)); }
+.mioos-desktop-icon .mioos-entry-icon { font-size: 34px; line-height: 1; }
+.mioos-desktop-icon .mioos-entry-title { font-size: 12px; text-align: center; max-width: 100%; overflow-wrap: anywhere; }
+.mioos-desktop-icon.is-selected { background: rgba(49,106,197,0.32); border-color: rgba(255,255,255,0.7); }
+.mioos-desktop-icon.is-small { width: 88px; min-height: 82px; }
+.mioos-desktop-icon.is-small .mioos-entry-icon { font-size: 28px; }
+.mioos-desktop-icon.is-large { width: 112px; min-height: 112px; }
+.mioos-desktop-icon.is-large .mioos-entry-icon { font-size: 46px; }
+.mioos-context-menu { position: fixed; z-index: 4000; min-width: 208px; padding: 4px; background: #fcfcfd; border: 1px solid #7f9db9; border-radius: 4px; box-shadow: 0 8px 18px rgba(0,0,0,.28); display: flex; flex-direction: column; gap: 2px; }
+.mioos-context-menu button { text-align: left; border: 0; background: transparent; color: #0b1830; padding: 7px 10px; border-radius: 3px; font: inherit; }
+.mioos-context-menu button:hover { background: linear-gradient(180deg, #f7fbff 0%, #dbeafc 100%); }
+.mioos-context-menu hr { width: 100%; border: 0; border-top: 1px solid #d6deea; margin: 4px 0; }
