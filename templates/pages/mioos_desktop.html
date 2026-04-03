@@ -295,16 +295,7 @@
         </template>
         <template v-else-if="win.appKey === 'theme-studio'">
           <div class="mioos-theme-studio-shell win7" :data-theme-studio-window="win.id">
-            <div class="window active mioos-theme-studio-seven">
-              <div class="title-bar">
-                <div class="title-bar-text">Theme Studio</div>
-                <div class="title-bar-controls" aria-hidden="true">
-                  <button aria-label="Minimize"></button>
-                  <button aria-label="Maximize"></button>
-                  <button aria-label="Close"></button>
-                </div>
-              </div>
-              <div class="window-body has-space mioos-theme-studio-body">
+            <div> <div>
                 <div class="mioos-theme-studio-layout">
                   <aside class="mioos-theme-studio-sidebar">
                     <section class="mioos-theme-studio-profilebox">
@@ -423,7 +414,7 @@
                       </article>
                     </section>
                     <div class="mioos-theme-studio-footer">
-                      <div class="mioos-theme-studio-footnote">Use Windows XP, Windows 7, and Mac-inspired presets as a starting point, then refine every token in one place.</div>
+                      <div class="mioos-theme-studio-footnote"></div>
                       <div class="mioos-theme-studio-actions">
                         <button type="button" @click="themeStudioResetProfile(win.id)">Reset</button>
                         <button type="button" @click="themeStudioImportProfile(win.id)">Import JSON</button>
