@@ -120,7 +120,7 @@
     return {
       maxSocketsPerSession: Math.max(1, +(conf.maxSocketsPerSession || 4)),
       fsSockets: Math.max(1, +(conf.fsSockets || 3)),
-      uploadBatchSize: Math.max(1, Math.min(1, +(conf.uploadBatchSize || 1)))
+      uploadBatchSize: Math.max(1, Math.min(2, +(conf.uploadBatchSize || 1)))
     };
   }
 
@@ -147,16 +147,10 @@
         return self.openPromise.then(function () {
           return new Promise(function (resolve, reject) {
             var requestId = 'up-' + ordinal + '-' + Date.now() + '-' + (++seq);
-            var timer = window.setTimeout(function () {
-              if (!pending[requestId]) return;
-              delete pending[requestId];
-              reject(new Error('command_timeout'));
-            }, 15000);
-            pending[requestId] = { resolve: resolve, reject: reject, timer: timer };
+            pending[requestId] = { resolve: resolve, reject: reject };
             try {
               ws.send(JSON.stringify(Object.assign({ event: 'desktop.command', command: command, requestId: requestId }, payload || {})));
             } catch (err) {
-              window.clearTimeout(timer);
               delete pending[requestId];
               reject(err);
             }
@@ -190,10 +184,7 @@
         client.ready = false;
         client.closed = true;
         keys.forEach(function (key) {
-          try {
-            if (pending[key].timer) window.clearTimeout(pending[key].timer);
-            pending[key].reject(new Error('socket_closed'));
-          } catch (err) {}
+          try { pending[key].reject(new Error('socket_closed')); } catch (err) {}
           delete pending[key];
         });
       });
@@ -204,7 +195,6 @@
         if (msg.event === 'hello' || msg.event === 'pong') return;
         ref = msg.requestId && pending[msg.requestId];
         if (ref) {
-          if (ref.timer) window.clearTimeout(ref.timer);
           delete pending[msg.requestId];
           if (msg.ok === 0 || msg.error) {
             ref.reject(new Error(msg.detail || msg.error || 'command_failed'));
@@ -241,8 +231,8 @@
         var sentBytes = 0;
         var pool = socketPoolConfig(this);
         var active = Math.max(1, Math.min(pool.maxSocketsPerSession, Math.min(pool.fsSockets, +(concurrency || pool.fsSockets || 2))));
-        var batchWidth = Math.max(1, Math.min(1, +(batchSize || pool.uploadBatchSize || 1)));
-        var frameBudget = 24576;
+        var batchWidth = Math.max(1, Math.min(2, +(batchSize || pool.uploadBatchSize || 1)));
+        var frameBudget = 65536;
         return new Promise(function (resolve, reject) {
           function cleanup() {
             workers.forEach(function (worker) {
@@ -536,70 +526,51 @@
         if (!state) return Promise.resolve();
         return this.loadExplorerFolder(windowId, state.folderId, { selectFirst: false });
       },
-      explorerPromptUpload: function (windowId) {
+      uploadFilesToExplorer: function (windowId, filesLike) {
         var self = this;
         var win = this.windows.find(function (entry) { return entry.id === windowId; });
         var state = this.ensureExplorerWindowState(win);
-        if (!state || !this.command) return;
-        createUploadInput(function (event) {
-          var file = event.target.files && event.target.files[0];
-          var mime;
-          var isText;
-          function cleanup() {
-            if (event.target && event.target.parentNode) event.target.parentNode.removeChild(event.target);
-          }
-          function finalize() {
-            return self.refreshExplorerWindow(windowId).then(function () {
-              if (self.refreshView) self.refreshView();
-              self.setExplorerUploadProgress(state, {
-                active: false,
-                name: file.name,
-                totalBytes: file.size,
-                sentBytes: file.size,
-                progress: 100,
-                stage: 'Complete',
-                error: '',
-                uploadId: ''
-              });
-              window.setTimeout(function () { self.resetExplorerUpload(state); }, 1200);
+        var file = filesLike && filesLike[0];
+        var mime;
+        var isText;
+        if (!state || !this.command || !file) return Promise.resolve();
+        mime = file.type || 'application/octet-stream';
+        isText = detectTextLike({ name: file.name, mime: mime });
+        self.setExplorerUploadProgress(state, {
+          active: true,
+          name: file.name,
+          totalBytes: file.size,
+          sentBytes: 0,
+          progress: 0,
+          stage: 'Preparing',
+          error: '',
+          uploadId: ''
+        });
+        function finalize() {
+          return self.refreshExplorerWindow(windowId).then(function () {
+            if (self.refreshView) self.refreshView();
+            self.setExplorerUploadProgress(state, {
+              active: false,
+              name: file.name,
+              totalBytes: file.size,
+              sentBytes: file.size,
+              progress: 100,
+              stage: 'Complete',
+              error: '',
+              uploadId: ''
             });
-          }
-          function fail(err, fallback) {
-            self.setExplorerUploadProgress(state, { active: false, stage: 'Failed', error: (err && err.message) || fallback, uploadId: '' });
-            if (self.showAlert) self.showAlert(self.t('alerts.shellEventError.title', 'Explorer'), (err && err.message) || fallback);
-          }
-          if (!file) { cleanup(); return; }
-          mime = file.type || 'application/octet-stream';
-          isText = detectTextLike({ name: file.name, mime: mime });
-          self.setExplorerUploadProgress(state, {
-            active: true,
-            name: file.name,
-            totalBytes: file.size,
-            sentBytes: 0,
-            progress: 0,
-            stage: 'Preparing',
-            error: '',
-            uploadId: ''
+            window.setTimeout(function () { self.resetExplorerUpload(state); }, 1200);
           });
-          if (!useChunkedUpload(file, isText)) {
-            self.setExplorerUploadProgress(state, { stage: 'Uploading' });
-            if (isText) {
-              fileToText(file).then(function (result) {
-                return self.command('fs.write', {
-                  parent: state.folderId,
-                  name: file.name,
-                  mime: mime,
-                  data: result,
-                  content: result,
-                  text: result
-                });
-              }).then(finalize).catch(function (err) {
-                fail(err, 'fs_write_failed');
-              }).finally(cleanup);
-              return;
-            }
-            blobToArrayBuffer(file).then(function (buffer) {
-              var result = 'data:' + mime + ';base64,' + uint8ToBase64(new Uint8Array(buffer));
+        }
+        function fail(err, fallback) {
+          self.setExplorerUploadProgress(state, { active: false, stage: 'Failed', error: (err && err.message) || fallback, uploadId: '' });
+          if (self.showAlert) self.showAlert(self.t('alerts.shellEventError.title', 'Explorer'), (err && err.message) || fallback);
+          throw (err || new Error(fallback));
+        }
+        if (!useChunkedUpload(file, isText)) {
+          self.setExplorerUploadProgress(state, { stage: 'Uploading' });
+          if (isText) {
+            return fileToText(file).then(function (result) {
               return self.command('fs.write', {
                 parent: state.folderId,
                 name: file.name,
@@ -608,35 +579,43 @@
                 content: result,
                 text: result
               });
-            }).then(finalize).catch(function (err) {
-              fail(err, 'fs_write_failed');
-            }).finally(cleanup);
-            return;
+            }).then(finalize).catch(function (err) { return fail(err, 'fs_write_failed'); });
           }
-          self.command('fs.upload.begin', {
-            parent: state.folderId,
-            name: file.name,
-            mime: mime,
-            totalBytes: file.size,
-            encoding: isText ? 'text' : 'base64-dataurl'
-          }).then(function (msg) {
-            var payload = payloadRoot(msg);
-            var uploadId = payload.uploadId;
-            var chunkChars = (payload && payload.chunkBytes) || ((self.boot && self.boot.vfs && self.boot.vfs.uploadChunkBytes) || 32768);
-            var safeChunkChars = Math.max(4096, Math.min(chunkChars, 16384));
-            var uploadConcurrency = (payload && payload.concurrencyDefault) || ((self.boot && self.boot.vfs && self.boot.vfs.uploadConcurrency) || 7);
-            var uploadBatchSize = (payload && payload.batchSize) || ((self.boot && self.boot.vfs && self.boot.vfs.uploadBatchSize) || ((self.boot && self.boot.websocket && self.boot.websocket.uploadBatchSize) || 1));
-            if (!uploadId) throw new Error('upload_begin_failed');
-            state.upload.uploadId = uploadId;
-            self.setExplorerUploadProgress(state, { stage: 'Uploading chunks', uploadId: uploadId });
+          return blobToArrayBuffer(file).then(function (buffer) {
+            var result = 'data:' + mime + ';base64,' + uint8ToBase64(new Uint8Array(buffer));
+            return self.command('fs.write', {
+              parent: state.folderId,
+              name: file.name,
+              mime: mime,
+              data: result,
+              content: result,
+              text: result
+            });
+          }).then(finalize).catch(function (err) { return fail(err, 'fs_write_failed'); });
+        }
+        return self.command('fs.upload.begin', {
+          parent: state.folderId,
+          name: file.name,
+          mime: mime,
+          totalBytes: file.size,
+          encoding: isText ? 'text' : 'base64-dataurl'
+        }).then(function (msg) {
+          var payload = payloadRoot(msg);
+          var uploadId = payload.uploadId;
+          var chunkChars = (payload && payload.chunkBytes) || ((self.boot && self.boot.vfs && self.boot.vfs.uploadChunkBytes) || 32768);
+          var uploadConcurrency = (payload && payload.concurrencyDefault) || ((self.boot && self.boot.vfs && self.boot.vfs.uploadConcurrency) || 7);
+          var uploadBatchSize = (payload && payload.batchSize) || ((self.boot && self.boot.vfs && self.boot.vfs.uploadBatchSize) || ((self.boot && self.boot.websocket && self.boot.websocket.uploadBatchSize) || 1));
+          if (!uploadId) throw new Error('upload_begin_failed');
+          state.upload.uploadId = uploadId;
+          self.setExplorerUploadProgress(state, { stage: 'Uploading chunks', uploadId: uploadId });
             if (isText) {
               return fileToText(file).then(function (text) {
                 var segments = [];
                 var offset = 0;
                 while (offset < text.length || (text.length === 0 && segments.length === 0)) {
-                  var piece = text.slice(offset, offset + safeChunkChars);
+                  var piece = text.slice(offset, offset + chunkChars);
                   segments.push({ data: piece, bytes: piece.length });
-                  offset += safeChunkChars;
+                  offset += chunkChars;
                   if (text.length === 0) break;
                 }
                 return self.uploadChunkedSegments(uploadId, segments, state, file.name, uploadConcurrency, uploadBatchSize);
@@ -644,7 +623,7 @@
             }
             return blobToArrayBuffer(file).then(function (buffer) {
               var bytes = new Uint8Array(buffer);
-              var rawChunkBytes = Math.max(6144, Math.floor(safeChunkChars * 3 / 4));
+              var rawChunkBytes = Math.max(12288, Math.floor(chunkChars * 3 / 4));
               var segments = [];
               var offset = 0;
               while (offset < bytes.length || (bytes.length === 0 && segments.length === 0)) {
@@ -656,12 +635,22 @@
               }
               return self.uploadChunkedSegments(uploadId, segments, state, file.name, uploadConcurrency, uploadBatchSize);
             });
-          }).then(function () {
-            self.setExplorerUploadProgress(state, { stage: 'Finalizing', progress: 100, sentBytes: state.upload.totalBytes });
-            return self.command('fs.upload.commit', { uploadId: (state.upload && state.upload.uploadId) });
-          }).then(finalize).catch(function (err) {
-            fail(err, 'fs_upload_failed');
-          }).finally(cleanup);
+        }).then(function () {
+          self.setExplorerUploadProgress(state, { stage: 'Finalizing', progress: 100, sentBytes: state.upload.totalBytes });
+          return self.command('fs.upload.commit', { uploadId: (state.upload && state.upload.uploadId) });
+        }).then(finalize).catch(function (err) {
+          return fail(err, 'fs_upload_failed');
+        });
+      },
+      explorerPromptUpload: function (windowId) {
+        var self = this;
+        createUploadInput(function (event) {
+          var file = event.target.files && event.target.files[0];
+          function cleanup() {
+            if (event.target && event.target.parentNode) event.target.parentNode.removeChild(event.target);
+          }
+          if (!file) { cleanup(); return; }
+          self.uploadFilesToExplorer(windowId, [file]).finally(cleanup);
         });
       },
       explorerCreateFolder: function (windowId) {

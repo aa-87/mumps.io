@@ -47,7 +47,9 @@
   data-density="{{density}}"
   data-wallpaper="{{wallpaper}}"
   data-theme-key="{{themeKey}}"
-  data-window-manager="{{windowManager}}">
+  data-window-manager="{{windowManager}}"
+  data-window-snap-threshold="{{windowSnapThreshold}}"
+  data-window-resize-model="{{windowResizeModel}}">
 
   <div class="mioos-alert" v-if="alertMessage" aria-live="polite" role="status">
     <strong>[[ alertTitle ]]</strong>
@@ -130,6 +132,7 @@
   </aside>
 
   <main class="mioos-desktop" @click="menuOpen=false">
+    <div v-if="snapPreview.active" class="mioos-snap-preview" :data-snap-zone="snapPreview.zone" :style="snapPreviewStyle()"></div>
     <section class="mioos-desktop-icons" :aria-label="t('desktop.icons')">
       <button v-for="entry in desktopEntries" :key="entry.key" type="button" class="mioos-desktop-icon" :data-launch-app="entry.key" @dblclick="openApp(entry.key)" @keydown.enter.prevent="openApp(entry.key)">
         <span class="mioos-entry-icon">[[ entry.icon ]]</span>
@@ -137,8 +140,8 @@
       </button>
     </section>
 
-    <section v-for="win in visibleWindows" :key="win.id" class="mioos-window" :class="windowClass(win)" :style="windowStyle(win)" @mousedown="focusWindow(win.id)" role="dialog" :aria-label="win.title">
-      <header class="mioos-titlebar" @mousedown.stop="beginDrag(win, $event)">
+    <section v-for="win in visibleWindows" :key="win.id" class="mioos-window" :class="windowClass(win)" :style="windowStyle(win)" @mousedown="focusWindow(win.id)" @dragover="onWindowDragOver(win, $event)" @drop="onWindowDrop(win, $event)" role="dialog" :aria-label="win.title" :data-window-state="win.state" :data-window-app="win.appKey">
+      <header class="mioos-titlebar" @mousedown.stop="beginDrag(win, $event)" @dblclick.stop="onWindowTitleDblClick(win.id)">
         <div class="mioos-titlebar-copy">
           <span class="mioos-entry-icon">[[ appIcon(win.appKey) ]]</span>
           <strong>[[ win.title ]]</strong>
@@ -310,6 +313,14 @@
           </div>
         </template>
       </div>
+      <button v-if="win.resizable !== 0" type="button" class="mioos-resize-handle is-n" data-resize-edge="n" @mousedown.stop.prevent="beginResize(win, 'n', $event)" aria-hidden="true" tabindex="-1"></button>
+      <button v-if="win.resizable !== 0" type="button" class="mioos-resize-handle is-e" data-resize-edge="e" @mousedown.stop.prevent="beginResize(win, 'e', $event)" aria-hidden="true" tabindex="-1"></button>
+      <button v-if="win.resizable !== 0" type="button" class="mioos-resize-handle is-s" data-resize-edge="s" @mousedown.stop.prevent="beginResize(win, 's', $event)" aria-hidden="true" tabindex="-1"></button>
+      <button v-if="win.resizable !== 0" type="button" class="mioos-resize-handle is-w" data-resize-edge="w" @mousedown.stop.prevent="beginResize(win, 'w', $event)" aria-hidden="true" tabindex="-1"></button>
+      <button v-if="win.resizable !== 0" type="button" class="mioos-resize-handle is-ne" data-resize-edge="ne" @mousedown.stop.prevent="beginResize(win, 'ne', $event)" aria-hidden="true" tabindex="-1"></button>
+      <button v-if="win.resizable !== 0" type="button" class="mioos-resize-handle is-se" data-resize-edge="se" @mousedown.stop.prevent="beginResize(win, 'se', $event)" aria-hidden="true" tabindex="-1"></button>
+      <button v-if="win.resizable !== 0" type="button" class="mioos-resize-handle is-sw" data-resize-edge="sw" @mousedown.stop.prevent="beginResize(win, 'sw', $event)" aria-hidden="true" tabindex="-1"></button>
+      <button v-if="win.resizable !== 0" type="button" class="mioos-resize-handle is-nw" data-resize-edge="nw" @mousedown.stop.prevent="beginResize(win, 'nw', $event)" aria-hidden="true" tabindex="-1"></button>
     </section>
   </main>
 

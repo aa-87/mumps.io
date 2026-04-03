@@ -191,8 +191,12 @@ button, input { font: inherit; }
   background: var(--mioos-panel);
   box-shadow: var(--mioos-shadow);
   contain: layout paint style;
+  transition: box-shadow .14s ease, transform .14s ease, opacity .14s ease;
 }
-.mioos-window.is-maximized { border-radius: 0; }
+.mioos-window.is-active { box-shadow: 0 18px 46px rgba(0, 24, 64, 0.38); }
+.mioos-window.is-maximized,
+.mioos-window.is-snapped { border-radius: 0; }
+.mioos-window.is-dragging { opacity: .98; }
 .mioos-titlebar {
   display: flex;
   align-items: center;
@@ -203,6 +207,9 @@ button, input { font: inherit; }
   background: linear-gradient(180deg, #438cf7 0%, #1d59cc 55%, #1d50b7 100%);
   user-select: none;
   cursor: grab;
+}
+.mioos-window:not(.is-active) .mioos-titlebar {
+  background: linear-gradient(180deg, #7fa0d8 0%, #5877a9 55%, #4d6791 100%);
 }
 .mioos-titlebar-copy { display: flex; align-items: center; gap: 8px; }
 .mioos-window-actions { display: flex; gap: 4px; }
@@ -220,6 +227,38 @@ button, input { font: inherit; }
   overflow: auto;
   background: linear-gradient(180deg, #ffffff 0%, #f3f8fe 100%);
 }
+
+.mioos-snap-preview {
+  position: absolute;
+  z-index: 29;
+  pointer-events: none;
+  border: 2px solid rgba(255,255,255,0.8);
+  background: rgba(170, 211, 255, 0.22);
+  box-shadow: inset 0 0 0 1px rgba(36,94,219,0.45);
+}
+.mioos-resize-handle {
+  position: absolute;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  z-index: 2;
+}
+.mioos-resize-handle.is-n,
+.mioos-resize-handle.is-s { left: 12px; right: 12px; height: 8px; cursor: ns-resize; }
+.mioos-resize-handle.is-n { top: 0; }
+.mioos-resize-handle.is-s { bottom: 0; }
+.mioos-resize-handle.is-e,
+.mioos-resize-handle.is-w { top: 28px; bottom: 10px; width: 8px; cursor: ew-resize; }
+.mioos-resize-handle.is-e { right: 0; }
+.mioos-resize-handle.is-w { left: 0; }
+.mioos-resize-handle.is-ne,
+.mioos-resize-handle.is-se,
+.mioos-resize-handle.is-sw,
+.mioos-resize-handle.is-nw { width: 14px; height: 14px; }
+.mioos-resize-handle.is-ne { top: 0; right: 0; cursor: nesw-resize; }
+.mioos-resize-handle.is-se { right: 0; bottom: 0; cursor: nwse-resize; }
+.mioos-resize-handle.is-sw { left: 0; bottom: 0; cursor: nesw-resize; }
+.mioos-resize-handle.is-nw { top: 0; left: 0; cursor: nwse-resize; }
 .mioos-panel-head { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; }
 .mioos-panel-head span { color: var(--mioos-muted); }
 .mioos-card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }

@@ -53,6 +53,11 @@
           height: 470,
           z: ++this.zCounter,
           state: 'normal',
+          minWidth: 560,
+          minHeight: 300,
+          resizable: 1,
+          draggable: 1,
+          snappable: 1,
           terminalState: defaultTerminalState(),
           _term: null,
           _appliedProfileKey: ''

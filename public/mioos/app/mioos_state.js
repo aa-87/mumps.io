@@ -56,6 +56,18 @@
           renderBudgetMs: 16,
           payloadMode: 'tmp-global-safe',
           transport: 'websocket-first-http-refresh'
+        },
+        windowing: {
+          engine: 'mioos-native-vue-css',
+          snapThreshold: 28,
+          taskbarHeight: 40,
+          minWidth: 320,
+          minHeight: 220,
+          animations: 'subtle',
+          resizeHandles: 'all-edges-and-corners',
+          snapModel: 'edges-and-corners',
+          doubleClickTitlebar: 1,
+          dropUpload: 1
         }
       },
       auth: { enabled: false, required: false, guestLoginEnabled: false, mode: 'anonymous' },
@@ -129,6 +141,7 @@
     base.desktop = Object.assign(base.desktop, boot.desktop || {});
     base.desktop.accessibility = Object.assign(base.desktop.accessibility, (boot.desktop || {}).accessibility || {});
     base.desktop.performance = Object.assign(base.desktop.performance, (boot.desktop || {}).performance || {});
+    base.desktop.windowing = Object.assign(base.desktop.windowing, (boot.desktop || {}).windowing || {});
     base.auth = Object.assign(base.auth, boot.auth || {});
     base.vfs = Object.assign(base.vfs, boot.vfs || {});
     base.terminal = Object.assign(base.terminal, boot.terminal || {});

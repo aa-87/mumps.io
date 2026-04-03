@@ -86,6 +86,15 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("taskbarStyle")=$GET(CONF("mioos","desktop","taskbarStyle"),"xp-professional")
 	SET STATE("startMenuStyle")=$GET(CONF("mioos","desktop","startMenuStyle"),"xp-two-column")
 	SET STATE("windowManager")=$GET(CONF("mioos","desktop","windowManager"),"mioos-native-vue-css")
+	SET STATE("windowSnapThreshold")=+$GET(CONF("mioos","desktop","windowSnapThreshold"),28)
+	IF STATE("windowSnapThreshold")<12 SET STATE("windowSnapThreshold")=12
+	SET STATE("windowTaskbarHeight")=+$GET(CONF("mioos","desktop","taskbarHeight"),40)
+	IF STATE("windowTaskbarHeight")<32 SET STATE("windowTaskbarHeight")=32
+	SET STATE("windowMinWidth")=+$GET(CONF("mioos","desktop","minWindowWidth"),320)
+	IF STATE("windowMinWidth")<240 SET STATE("windowMinWidth")=240
+	SET STATE("windowMinHeight")=+$GET(CONF("mioos","desktop","minWindowHeight"),220)
+	IF STATE("windowMinHeight")<180 SET STATE("windowMinHeight")=180
+	SET STATE("windowAnimations")=$GET(CONF("mioos","desktop","windowAnimations"),"subtle")
 	SET STATE("a11yRtl")=+$GET(STATE("localeRtl"),0)
 	SET STATE("a11yKeyboardModel")="desktop-first"
 	SET STATE("a11yScreenReaderHints")=1
@@ -167,6 +176,16 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","performance","payloadMode")=$GET(STATE("perfPayloadMode"),"tmp-global-safe")
 	SET OBJ("desktop","performance","transport")=$GET(STATE("perfTransport"),"websocket-first-http-refresh")
 	SET OBJ("desktop","performance","uploadStrategy")="batched-chunk-pool"
+	SET OBJ("desktop","windowing","engine")=$GET(STATE("windowManager"),"mioos-native-vue-css")
+	SET OBJ("desktop","windowing","snapThreshold")=+$GET(STATE("windowSnapThreshold"),28)
+	SET OBJ("desktop","windowing","taskbarHeight")=+$GET(STATE("windowTaskbarHeight"),40)
+	SET OBJ("desktop","windowing","minWidth")=+$GET(STATE("windowMinWidth"),320)
+	SET OBJ("desktop","windowing","minHeight")=+$GET(STATE("windowMinHeight"),220)
+	SET OBJ("desktop","windowing","animations")=$GET(STATE("windowAnimations"),"subtle")
+	SET OBJ("desktop","windowing","resizeHandles")="all-edges-and-corners"
+	SET OBJ("desktop","windowing","snapModel")="edges-and-corners"
+	SET OBJ("desktop","windowing","doubleClickTitlebar")=1
+	SET OBJ("desktop","windowing","dropUpload")=1
 	SET OBJ("auth","required")=+$GET(STATE("authRequired"),0)
 	SET OBJ("auth","enabled")=+$GET(STATE("localAuthEnabled"),0)
 	SET OBJ("auth","guestLoginEnabled")=+$GET(STATE("guestLoginEnabled"),0)
@@ -242,13 +261,13 @@ WINDOWS(STATE)
 	NEW CODE
 	SET CODE=$GET(STATE("localeCode"),"en")
 	KILL STATE("windows")
-	DO WIN(.STATE,1,"win-my-computer","my-computer",$$TXT^MIOOSI18N(CODE,"app.my-computer.title","My Computer"),88,72,760,500,4,"normal")
-	DO WIN(.STATE,2,"win-documents","documents",$$TXT^MIOOSI18N(CODE,"app.documents.title","My Documents"),180,118,620,420,2,"minimized")
-	DO WIN(.STATE,3,"win-control-panel","control-panel",$$TXT^MIOOSI18N(CODE,"app.control-panel.title","Control Panel"),240,92,540,400,1,"minimized")
-	DO WIN(.STATE,4,"win-terminal-template","terminal",$$TXT^MIOOSI18N(CODE,"app.terminal.title","Terminal"),120,88,820,430,3,"closed")
+	DO WIN(.STATE,1,"win-my-computer","my-computer",$$TXT^MIOOSI18N(CODE,"app.my-computer.title","My Computer"),88,72,760,500,4,"normal",460,320,1,1)
+	DO WIN(.STATE,2,"win-documents","documents",$$TXT^MIOOSI18N(CODE,"app.documents.title","My Documents"),180,118,620,420,2,"minimized",420,280,1,1)
+	DO WIN(.STATE,3,"win-control-panel","control-panel",$$TXT^MIOOSI18N(CODE,"app.control-panel.title","Control Panel"),240,92,540,400,1,"minimized",420,280,1,1)
+	DO WIN(.STATE,4,"win-terminal-template","terminal",$$TXT^MIOOSI18N(CODE,"app.terminal.title","Terminal"),120,88,820,430,3,"closed",560,300,1,1)
 	QUIT
 	;
-WIN(STATE,N,ID,APPKEY,TITLE,LEFT,TOP,WIDTH,HEIGHT,Z,MODE)
+WIN(STATE,N,ID,APPKEY,TITLE,LEFT,TOP,WIDTH,HEIGHT,Z,MODE,MINW,MINH,RESIZE,DRAG)
 	SET STATE("windows",N,"id")=ID
 	SET STATE("windows",N,"appKey")=APPKEY
 	SET STATE("windows",N,"title")=TITLE
@@ -258,6 +277,11 @@ WIN(STATE,N,ID,APPKEY,TITLE,LEFT,TOP,WIDTH,HEIGHT,Z,MODE)
 	SET STATE("windows",N,"height")=HEIGHT
 	SET STATE("windows",N,"z")=Z
 	SET STATE("windows",N,"state")=MODE
+	SET STATE("windows",N,"minWidth")=+$GET(MINW,320)
+	SET STATE("windows",N,"minHeight")=+$GET(MINH,220)
+	SET STATE("windows",N,"resizable")=+$GET(RESIZE,1)
+	SET STATE("windows",N,"draggable")=+$GET(DRAG,1)
+	SET STATE("windows",N,"snappable")=1
 	QUIT
 	;
 THEMES(ROOT,CURRENT)

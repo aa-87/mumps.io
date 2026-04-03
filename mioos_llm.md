@@ -196,3 +196,10 @@ Keep tests:
 - Added configurable websocket pool boot contract for MIOOS with max sockets per session, FS socket budget, and upload batch size.
 - Added `fs.upload.batch` websocket command to reduce per-chunk round trips during explorer uploads.
 - Explorer uploads now use a bounded pooled websocket worker model with batched chunk sends for faster large-file transfers.
+
+
+## ROI B — shared window manager foundation
+- Added a common window contract for all MIOOS windows with min size, drag, resize, snap, maximize, minimize, and restore behavior.
+- Added edge and corner snap preview plus resize handles so explorer, control panel, media viewers, and terminal all share the same shell chrome behavior.
+- Added drop-to-upload support for explorer-class windows so dragged files can enter the VFS from a window surface, not just the upload button.
+- Added boot contract metadata for windowing: snap threshold, taskbar height, min size, animation mode, resize handle model, and drop-upload capability.

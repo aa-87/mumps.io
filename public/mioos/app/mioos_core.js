@@ -35,8 +35,13 @@
             startX: 0,
             startY: 0,
             left: 0,
-            top: 0
+            top: 0,
+            mode: 'move',
+            edge: '',
+            width: 0,
+            height: 0
           },
+          snapPreview: { active: false, zone: '', left: 0, top: 0, width: 0, height: 0 },
           clockTimer: null,
           pingTimer: null,
           profile: 'dev',
@@ -103,8 +108,10 @@
         if (this.startTerminalPolling) this.startTerminalPolling();
         this._dragMove = this.onDragMove.bind(this);
         this._dragEnd = this.endDrag.bind(this);
+        this._viewportResize = this.handleViewportResize.bind(this);
         window.addEventListener('mousemove', this._dragMove);
         window.addEventListener('mouseup', this._dragEnd);
+        window.addEventListener('resize', this._viewportResize);
       },
       beforeUnmount: function () {
         if (this.clockTimer) window.clearInterval(this.clockTimer);
@@ -113,6 +120,7 @@
         if (this.socket) this.socket.close();
         window.removeEventListener('mousemove', this._dragMove);
         window.removeEventListener('mouseup', this._dragEnd);
+        window.removeEventListener('resize', this._viewportResize);
         this.windows.forEach(function (win) {
           if (win._term) win._term.dispose();
         });

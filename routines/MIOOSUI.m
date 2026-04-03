@@ -29,6 +29,8 @@ DESKCTX(STATE,CONF,DATA)
 	SET DATA("taskbarStyle")=$GET(STATE("taskbarStyle"),"xp-professional")
 	SET DATA("startMenuStyle")=$GET(STATE("startMenuStyle"),"xp-two-column")
 	SET DATA("windowManager")=$GET(STATE("windowManager"),"mioos-native-vue-css")
+	SET DATA("windowSnapThreshold")=+$GET(STATE("windowSnapThreshold"),28)
+	SET DATA("windowResizeModel")="all-edges-and-corners"
 	SET DATA("authRequired")=+$GET(STATE("authRequired"),0)
 	SET DATA("localAuthEnabled")=+$GET(STATE("localAuthEnabled"),0)
 	SET DATA("guestLoginEnabled")=+$GET(STATE("guestLoginEnabled"),0)

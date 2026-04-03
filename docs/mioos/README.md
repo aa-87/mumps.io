@@ -77,3 +77,7 @@ MIOOS now includes a global-backed virtual file system foundation. The current R
 - Added VFS-level `fs.search` and `fs.hash` contracts over HTTP and websocket.
 - Explorer now supports in-folder search, optional deep search, and a details panel with path, MIME, size, and SHA-256 for selected files.
 - Boot metadata now advertises VFS search/hash capabilities so future apps can stay contract-driven.
+
+
+## ROI B — Shared window manager foundation
+MIOOS now uses a shared window manager contract for shell windows. Windows support drag, resize, maximize, minimize, restore, edge/corner snapping, and explorer drop-upload on supported windows. Terminal windows now inherit the same shell frame behavior rather than using a one-off interaction model.
