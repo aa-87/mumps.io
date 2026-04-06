@@ -23,10 +23,18 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","route","fsDelete"))="" SET CONF("mioos","route","fsDelete")="/api/mioos/fs/delete"
 	IF $GET(CONF("mioos","route","ws"))="" SET CONF("mioos","route","ws")="/ws/mioos"
 	IF $GET(CONF("mioos","route","wsTerminal"))="" SET CONF("mioos","route","wsTerminal")="/ws/mioos/terminal"
-	IF $GET(CONF("mioos","websocket","maxSocketsPerSession"))="" SET CONF("mioos","websocket","maxSocketsPerSession")=4
+	IF $GET(CONF("mioos","websocket","maxSocketsPerSession"))="" SET CONF("mioos","websocket","maxSocketsPerSession")=6
 	IF $GET(CONF("mioos","websocket","coreSockets"))="" SET CONF("mioos","websocket","coreSockets")=1
-	IF $GET(CONF("mioos","websocket","fsSockets"))="" SET CONF("mioos","websocket","fsSockets")=3
-	IF $GET(CONF("mioos","websocket","uploadBatchSize"))="" SET CONF("mioos","websocket","uploadBatchSize")=4
+	IF $GET(CONF("mioos","websocket","fsSockets"))="" SET CONF("mioos","websocket","fsSockets")=5
+	IF $GET(CONF("mioos","websocket","uploadBatchSize"))="" SET CONF("mioos","websocket","uploadBatchSize")=1
+	IF $GET(CONF("mioos","websocket","requestTimeoutMs"))="" SET CONF("mioos","websocket","requestTimeoutMs")=15000
+	IF $GET(CONF("mioos","websocket","uploadBeginTimeoutMs"))="" SET CONF("mioos","websocket","uploadBeginTimeoutMs")=20000
+	IF $GET(CONF("mioos","websocket","uploadChunkTimeoutMs"))="" SET CONF("mioos","websocket","uploadChunkTimeoutMs")=30000
+	IF $GET(CONF("mioos","websocket","uploadCommitTimeoutMs"))="" SET CONF("mioos","websocket","uploadCommitTimeoutMs")=120000
+	IF $GET(CONF("mioos","websocket","uploadAbortTimeoutMs"))="" SET CONF("mioos","websocket","uploadAbortTimeoutMs")=15000
+	IF $GET(CONF("mioos","websocket","uploadSocketOpenTimeoutMs"))="" SET CONF("mioos","websocket","uploadSocketOpenTimeoutMs")=15000
+	IF $GET(CONF("websocket","maxFrameBytes"))="" SET CONF("websocket","maxFrameBytes")=262144
+	IF $GET(CONF("websocket","maxMessageBytes"))="" SET CONF("websocket","maxMessageBytes")=1048576
 	IF $GET(CONF("mioos","brand","title"))="" SET CONF("mioos","brand","title")="MIOOS"
 	IF $GET(CONF("mioos","brand","subtitle"))="" SET CONF("mioos","brand","subtitle")="MUMPS powered Windows XP style desktop"
 	IF $GET(CONF("mioos","i18n","default"))="" SET CONF("mioos","i18n","default")="en"
@@ -98,8 +106,8 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","fs","enabled"))="" SET CONF("mioos","fs","enabled")=1
 	IF $GET(CONF("mioos","fs","chunkSize"))="" SET CONF("mioos","fs","chunkSize")=2048
 	IF $GET(CONF("mioos","fs","transport"))="" SET CONF("mioos","fs","transport")="http-and-websocket"
-	IF $GET(CONF("mioos","upload","chunkBytes"))="" SET CONF("mioos","upload","chunkBytes")=32768
-	IF $GET(CONF("mioos","upload","concurrency"))="" SET CONF("mioos","upload","concurrency")=70
+	IF $GET(CONF("mioos","upload","chunkBytes"))="" SET CONF("mioos","upload","chunkBytes")=131072
+	IF $GET(CONF("mioos","upload","concurrency"))="" SET CONF("mioos","upload","concurrency")=5
 	IF $GET(CONF("mioos","terminal","pipe","sessionIdleSeconds"))="" SET CONF("mioos","terminal","pipe","sessionIdleSeconds")=900
 	IF $GET(CONF("auth","protectMode"))="" SET CONF("auth","protectMode")="route"
 	IF $GET(CONF("auth","mode"))="" SET CONF("auth","mode")="jwt"

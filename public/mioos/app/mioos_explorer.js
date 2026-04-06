@@ -153,6 +153,18 @@
     };
   }
 
+  function uploadTimeoutConfig(vm) {
+    var conf = (vm.boot || {}).websocket || {};
+    return {
+      requestTimeoutMs: Math.max(8000, +(conf.requestTimeoutMs || 15000)),
+      uploadBeginTimeoutMs: Math.max(10000, +(conf.uploadBeginTimeoutMs || 20000)),
+      uploadChunkTimeoutMs: Math.max(15000, +(conf.uploadChunkTimeoutMs || 30000)),
+      uploadCommitTimeoutMs: Math.max(30000, +(conf.uploadCommitTimeoutMs || 120000)),
+      uploadAbortTimeoutMs: Math.max(8000, +(conf.uploadAbortTimeoutMs || 15000)),
+      uploadSocketOpenTimeoutMs: Math.max(8000, +(conf.uploadSocketOpenTimeoutMs || 15000))
+    };
+  }
+
   function createUploadSocket(vm, ordinal) {
     var protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
     var path = uploadSocketPath(vm);
@@ -160,6 +172,7 @@
     var client;
     var seq = 0;
     var pending = {};
+    var timeouts = uploadTimeoutConfig(vm);
     if (!path || !window.WebSocket) throw new Error('socket_unavailable');
     ws = new window.WebSocket(protocol + window.location.host + path);
     client = {
@@ -170,17 +183,22 @@
       openPromise: null,
       close: function () {
         this.closed = true;
-        try { ws.close(); } catch (err) {}
+        try {
+          if (ws && ws.readyState === window.WebSocket.CONNECTING) return;
+          if (ws && ws.readyState < window.WebSocket.CLOSING) ws.close();
+        } catch (err) {}
       },
       command: function (command, payload) {
         var self = this;
         return self.openPromise.then(function () {
           return new Promise(function (resolve, reject) {
             var requestId = 'up-' + ordinal + '-' + Date.now() + '-' + (++seq);
+            var payloadChars = (((payload || {}).data && (payload || {}).data.length) || 0);
+            var timeoutMs = Math.max(timeouts.uploadChunkTimeoutMs, Math.min(180000, timeouts.uploadChunkTimeoutMs + Math.floor(payloadChars / 2048) * 250));
             var timer = window.setTimeout(function () {
               if (pending[requestId]) delete pending[requestId];
               reject(new Error('worker_command_timeout'));
-            }, 6000);
+            }, timeoutMs);
             pending[requestId] = { resolve: function (msg) { window.clearTimeout(timer); resolve(msg); }, reject: function (err) { window.clearTimeout(timer); reject(err); } };
             try {
               ws.send(JSON.stringify(Object.assign({ event: 'desktop.command', command: command, requestId: requestId }, payload || {})));
@@ -199,16 +217,16 @@
         if (settled) return;
         settled = true;
         reject(new Error('socket_open_timeout'));
-      }, 8000);
+      }, timeouts.uploadSocketOpenTimeoutMs);
       ws.addEventListener('open', function () {
         client.ready = true;
         try { ws.send(JSON.stringify({ event: 'hello', role: 'fs', socketOrdinal: ordinal })); } catch (err) {}
         window.setTimeout(function () {
-          if (settled) return;
+          if (settled || client.helloReady) return;
           settled = true;
           window.clearTimeout(timer);
           resolve();
-        }, 250);
+        }, 1000);
       });
       ws.addEventListener('error', function () {
         if (settled) return;
@@ -307,8 +325,23 @@
             return batch;
           }
           function sendSingle(worker, item) {
-            return worker.command('fs.upload.chunk', { uploadId: uploadId, index: item.index, data: item.data }).catch(function () {
-              return self.command('fs.upload.chunk', { uploadId: uploadId, index: item.index, data: item.data });
+            var payload = { uploadId: uploadId, index: item.index, data: item.data };
+            return worker.command('fs.upload.chunk', payload).catch(function () {
+              var retryWorker;
+              try {
+                retryWorker = createUploadSocket(self, (workers.length % Math.max(1, active)) + 1);
+                workers.push(retryWorker);
+              } catch (err) {
+                retryWorker = null;
+              }
+              if (retryWorker) {
+                return retryWorker.openPromise.then(function () {
+                  return retryWorker.command('fs.upload.chunk', payload);
+                }).catch(function () {
+                  return self.socketRequest((self.boot.routes || {}).commandEvent || 'desktop.command', Object.assign({ command: 'fs.upload.chunk' }, payload), { command: 'fs.upload.chunk', dedupeKey: 'fs.upload.chunk|' + item.index + '|' + uploadId, timeoutMs: uploadTimeoutConfig(self).uploadChunkTimeoutMs });
+                });
+              }
+              return self.socketRequest((self.boot.routes || {}).commandEvent || 'desktop.command', Object.assign({ command: 'fs.upload.chunk' }, payload), { command: 'fs.upload.chunk', dedupeKey: 'fs.upload.chunk|' + item.index + '|' + uploadId, timeoutMs: uploadTimeoutConfig(self).uploadChunkTimeoutMs });
             });
           }
           function sendBatch(worker, batch) {
@@ -653,13 +686,14 @@
             });
           }).then(finalize).catch(function (err) { return fail(err, 'fs_write_failed'); });
         }
-        return self.command('fs.upload.begin', {
+        return self.socketRequest((self.boot.routes || {}).commandEvent || 'desktop.command', {
+          command: 'fs.upload.begin',
           parent: state.folderId,
           name: file.name,
           mime: mime,
           totalBytes: file.size,
           encoding: isText ? 'text' : 'base64-dataurl'
-        }).then(function (msg) {
+        }, { command: 'fs.upload.begin', dedupeKey: 'fs.upload.begin|' + windowId + '|' + file.name + '|' + file.size, timeoutMs: uploadTimeoutConfig(self).uploadBeginTimeoutMs }).then(function (msg) {
           var payload = payloadRoot(msg);
           var uploadId = payload.uploadId;
           var chunkChars = (payload && payload.chunkBytes) || ((self.boot && self.boot.vfs && self.boot.vfs.uploadChunkBytes) || 32768);
@@ -700,8 +734,12 @@
         }).then(function () {
           self.setExplorerUploadProgress(state, { stage: 'Finalizing', progress: 100, sentBytes: state.upload.totalBytes });
           if (transferId && self.updateTransfer) self.updateTransfer(transferId, { status: 'finalizing', stage: 'Finalizing', processedBytes: state.upload.totalBytes, totalBytes: state.upload.totalBytes });
-          return self.command('fs.upload.commit', { uploadId: (state.upload && state.upload.uploadId) });
+          return self.socketRequest((self.boot.routes || {}).commandEvent || 'desktop.command', { command: 'fs.upload.commit', uploadId: (state.upload && state.upload.uploadId) }, { command: 'fs.upload.commit', dedupeKey: 'fs.upload.commit|' + ((state.upload && state.upload.uploadId) || ''), timeoutMs: uploadTimeoutConfig(self).uploadCommitTimeoutMs });
         }).then(finalize).catch(function (err) {
+          var uploadId = state.upload && state.upload.uploadId;
+          if (uploadId) {
+            self.socketRequest((self.boot.routes || {}).commandEvent || 'desktop.command', { command: 'fs.upload.abort', uploadId: uploadId }, { command: 'fs.upload.abort', dedupeKey: 'fs.upload.abort|' + uploadId, timeoutMs: uploadTimeoutConfig(self).uploadAbortTimeoutMs }).catch(function () {});
+          }
           return fail(err, 'fs_upload_failed');
         });
       },

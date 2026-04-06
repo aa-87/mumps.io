@@ -106,6 +106,20 @@
           cols: 112
         }
       },
+      websocket: {
+        maxSocketsPerSession: 4,
+        coreSockets: 1,
+        fsSockets: 3,
+        uploadBatchSize: 1,
+        requestTimeoutMs: 15000,
+        uploadBeginTimeoutMs: 20000,
+        uploadChunkTimeoutMs: 30000,
+        uploadCommitTimeoutMs: 120000,
+        uploadAbortTimeoutMs: 15000,
+        uploadSocketOpenTimeoutMs: 15000,
+        maxFrameBytes: 262144,
+        maxMessageBytes: 1048576
+      },
       vfs: { enabled: false, rootId: 'root', homeId: 'home', chunkSize: 32000, globalsOnly: true },
       apps: [],
       windows: [],
@@ -157,6 +171,7 @@
     base.desktop.performance = Object.assign(base.desktop.performance, (boot.desktop || {}).performance || {});
     base.desktop.windowing = Object.assign(base.desktop.windowing, (boot.desktop || {}).windowing || {});
     base.auth = Object.assign(base.auth, boot.auth || {});
+    base.websocket = Object.assign(base.websocket || {}, boot.websocket || {});
     base.vfs = Object.assign(base.vfs, boot.vfs || {});
     base.terminal = Object.assign(base.terminal, boot.terminal || {});
     base.terminal.profile = Object.assign(base.terminal.profile, (boot.terminal || {}).profile || {});

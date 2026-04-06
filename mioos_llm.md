@@ -223,3 +223,11 @@ A detailed Theme Studio UI tool is available in MIOOS as a dedicated desktop app
 
 
 - ROI-H reapply: added chunked websocket downloads plus PDF and structured file viewers without changing the existing shell/window baseline.
+
+
+## ROI-I — VFS transfer hardening and streamed downloads
+- Upload defaults were tuned for production-oriented transfer behavior: 128 KB upload chunks, 5-way upload concurrency, and a larger bounded socket pool for filesystem work.
+- Upload staging now tracks distinct chunk indexes and raw byte counts so duplicate chunk retries stay idempotent instead of inflating received byte totals.
+- Upload commit now validates chunk completeness and source byte totals before assembling the VFS file, preventing silent corruption when chunks arrive out of order or are missing.
+- Downloads now stream slices directly from VFS chunk storage through `READRANGE^MIOOSFS` instead of reconstructing the whole file on every chunk request.
+- VFS name and move guards were hardened with invalid-name rejection, sibling conflict detection, and folder loop prevention.

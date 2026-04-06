@@ -17,44 +17,75 @@
         var self = this;
         var root = window.MIOOSState.getRootNode();
         var path = (this.boot.routes || {}).websocket || (root ? root.dataset.mioosWs : '');
-        if (!path || !window.WebSocket) return;
         var protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-        try {
-          this.socket = new window.WebSocket(protocol + window.location.host + path);
-        } catch (err) {
-          this.showAlert(this.t('alerts.socketError.title'), this.t('alerts.socketError.message'));
-          return;
-        }
-        this.socket.addEventListener('open', function () {
-          self.socketConnected = true;
-          self.sendSocket({ event: 'hello' });
-          if (self.pingTimer) window.clearInterval(self.pingTimer);
-          self.pingTimer = window.setInterval(function () {
-            self.sendSocket({ event: 'ping' });
-          }, 15000);
+        var waitMs = Number((((this.boot || {}).websocket || {}).requestTimeoutMs) || 15000) || 15000;
+        if (!path || !window.WebSocket) return Promise.reject(new Error('socket_unavailable'));
+        if (this.socket && this.socket.readyState === 1) return Promise.resolve(this.socket);
+        if (this.socketOpenPromise) return this.socketOpenPromise;
+        this.socketOpenPromise = new Promise(function (resolve, reject) {
+          var sock;
+          var settled = false;
+          var timer = window.setTimeout(function () {
+            if (settled) return;
+            settled = true;
+            self.socketOpenPromise = null;
+            try { if (sock) sock.close(); } catch (err) {}
+            reject(new Error('socket_timeout'));
+          }, waitMs);
+          try {
+            sock = new window.WebSocket(protocol + window.location.host + path);
+            self.socket = sock;
+          } catch (err) {
+            window.clearTimeout(timer);
+            self.socketOpenPromise = null;
+            if (self.showAlert) self.showAlert(self.t ? self.t('alerts.socketError.title') : 'Socket Error', self.t ? self.t('alerts.socketError.message') : 'Unable to connect');
+            reject(err);
+            return;
+          }
+          sock.addEventListener('open', function () {
+            self.socketConnected = true;
+            try { sock.send(JSON.stringify({ event: 'hello' })); } catch (err) {}
+            if (self.pingTimer) window.clearInterval(self.pingTimer);
+            self.pingTimer = window.setInterval(function () {
+              self.sendSocket({ event: 'ping' });
+            }, 15000);
+            if (!settled) {
+              settled = true;
+              window.clearTimeout(timer);
+              resolve(sock);
+            }
+          });
+          sock.addEventListener('close', function () {
+            self.socketConnected = false;
+            if (self.pingTimer) window.clearInterval(self.pingTimer);
+            if (self.socket === sock) self.socket = null;
+            self.socketOpenPromise = null;
+            rejectPending(self.socketPending || {}, 'socket_closed');
+            if (!settled) {
+              settled = true;
+              window.clearTimeout(timer);
+              reject(new Error('socket_closed'));
+            }
+          });
+          sock.addEventListener('error', function () {
+            if (!settled) {
+              settled = true;
+              window.clearTimeout(timer);
+              self.socketOpenPromise = null;
+              reject(new Error('socket_error'));
+            }
+          });
+          sock.addEventListener('message', function (evt) {
+            self.handleSocketMessage(evt.data);
+          });
         });
-        this.socket.addEventListener('close', function () {
-          self.socketConnected = false;
-          if (self.pingTimer) window.clearInterval(self.pingTimer);
-          rejectPending(self.socketPending || {}, 'socket_closed');
-        });
-        this.socket.addEventListener('message', function (evt) {
-          self.handleSocketMessage(evt.data);
-        });
+        return this.socketOpenPromise;
       },
       ensureSocketReady: function (timeoutMs) {
         var self = this;
-        var waitMs = Number(timeoutMs || 5000) || 5000;
+        var waitMs = Number(timeoutMs || ((((this.boot || {}).websocket || {}).requestTimeoutMs) || 15000)) || 15000;
         if (this.socket && this.socket.readyState === 1) return Promise.resolve(true);
-        this.initSocket();
-        return new Promise(function (resolve, reject) {
-          var stopAt = Date.now() + waitMs;
-          (function waitForSocket() {
-            if (self.socket && self.socket.readyState === 1) return resolve(true);
-            if (Date.now() >= stopAt) return reject(new Error('socket_timeout'));
-            window.setTimeout(waitForSocket, 75);
-          })();
-        });
+        return self.initSocket().then(function () { return true; });
       },
       handleSocketMessage: function (raw) {
         var msg;
@@ -106,7 +137,7 @@
         var self = this;
         var opts = options || {};
         var key = opts.dedupeKey || ((opts.command || eventName || 'socket.request') + '|' + JSON.stringify(payload || {}));
-        var timeoutMs = Number(opts.timeoutMs || 8000) || 8000;
+        var timeoutMs = Number(opts.timeoutMs || ((((this.boot || {}).websocket || {}).requestTimeoutMs) || 15000)) || 15000;
         if (this.pendingCommands[key]) return this.pendingCommands[key];
         var requestId = 'ws-' + (++this.socketRequestSeq) + '-' + Date.now();
         var req = this.ensureSocketReady(timeoutMs)

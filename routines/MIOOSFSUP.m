@@ -3,16 +3,23 @@ MIOOSFSUP ; MIOOS chunked upload helpers
 	;
 UPCHUNK(CONF)
 	NEW N
-	SET N=+$GET(CONF("mioos","upload","chunkBytes"),32768)
+	SET N=+$GET(CONF("mioos","upload","chunkBytes"),131072)
 	IF N<4096 SET N=4096
-	IF N>32768 SET N=32768
+	IF N>131072 SET N=131072
 	QUIT N
 	;
 UPCONCUR(CONF)
 	NEW N
-	SET N=+$GET(CONF("mioos","upload","concurrency"),70)
+	SET N=+$GET(CONF("mioos","upload","concurrency"),5)
 	IF N<1 SET N=1
-	IF N>70 SET N=70
+	IF N>5 SET N=5
+	QUIT N
+	;
+UPBATCH(CONF)
+	NEW N
+	SET N=+$GET(CONF("mioos","websocket","uploadBatchSize"),1)
+	IF N<1 SET N=1
+	IF N>2 SET N=2
 	QUIT N
 	;
 NEXTUP()
@@ -43,6 +50,7 @@ BEGIN(STATE,CONF,PARENT,NAME,MIME,TOTAL,ENCODING,OUT,ERR)
 	SET OUT("chunkBytes")=$$UPCHUNK(.CONF)
 	SET OUT("strategy")="chunked"
 	SET OUT("concurrencyDefault")=$$UPCONCUR(.CONF)
+	SET OUT("batchSize")=$$UPBATCH(.CONF)
 	QUIT 1
 	;
 CHUNK(STATE,CONF,UPLOADID,INDEX,DATA,OUT,ERR)

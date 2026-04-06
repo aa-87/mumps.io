@@ -3116,7 +3116,7 @@ TEST197 ; [Errors] line/col + include stack (partials) + failing tag
 	S CTX("meta","partialsRef")="PART"
 	S CTX("meta","templateName")="root"
 	N CONF K CONF
-	; (CONF can be mostly empty; MIOTPL2 has internal defaults)
+	; (CONF can be mostly empty; MIOTPL has internal defaults)
 	S CONF("compat","truthiness")="legacy"
 	N TOK,OUT,ERR
 	D COMPILE^MIOTPL(TEMPLATE,.TOK,.ERR)
@@ -3141,10 +3141,10 @@ TEST197 ; [Errors] line/col + include stack (partials) + failing tag
 	D TASSERTN("EVAL",DESC,+$G(ERR("stack",3,"line")),2)
 	D TASSERTN("EVAL",DESC,+$G(ERR("stack",3,"col")),1)
 	Q
-; Lambda used by TEST197: intentionally triggers a runtime error that MIOTPL2 must trap
+; Lambda used by TEST197: intentionally triggers a runtime error that MIOTPL must trap
 LAMBOOM(TEXT,LRID) ; [test helper] provoke an error inside lambda execution
 	N X
-	S X=1/0  ; DIVZERO -> should be trapped by MIOTPL2 lambda trap
+	S X=1/0  ; DIVZERO -> should be trapped by MIOTPL lambda trap
 	Q ""
 TFAIL(STAGE,DESC,GOT,EXP)
 	W "FAIL: ["_STAGE_"]"_DESC_": got="_GOT_" expected="_EXP,!

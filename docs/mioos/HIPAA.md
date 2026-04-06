@@ -67,3 +67,9 @@ To move closer to HIPAA-ready operation, later ROIs should add or harden:
 - secure terminal attach and debugger authz
 - PHI-aware file playback permissions and logging
 - deployment guidance for encryption, cookies, logs, and backups
+
+
+## ROI-I alignment
+- Transfer validation now checks staged upload completeness before commit, which reduces the risk of silent corruption for sensitive document workflows.
+- Chunked downloads now avoid reconstructing the entire stored file for every chunk request, which narrows memory exposure during transfer handling.
+- Invalid-name rejection and parent-loop protection reduce accidental namespace misuse and folder structure corruption.

@@ -56,7 +56,7 @@ BUILD() ; build stamp (you can update per release)
 	Q "2026-02-21"
 	;
 BANNER() ; one-line banner
-	Q "MIOTPL2 "_$$VERSION()_" ("_$$BUILD()_")"
+	Q "MIOTPL "_$$VERSION()_" ("_$$BUILD()_")"
 	;
 PRINTBANNER() ; convenience
 	W $$BANNER(),!
@@ -395,7 +395,7 @@ READFILE(FP,TXT,ERR,CRLF) ;
 	N IO S IO=$PRINCIPAL
 	S MAX=2*1024*1024
 	S PREV=-1
-	O FP:(READONLY:EXCEPTION="G RFERR^MIOTPL2":CHSET="M"):2
+	O FP:(READONLY:EXCEPTION="G RFERR^MIOTPL":CHSET="M"):2
 	F  U FP R *LINE Q:$ZEOF  D  Q:('$T!$D(ERR))
 	. I PREV=13,LINE=10 S CRLF=1
 	. S PREV=LINE
@@ -433,7 +433,7 @@ READFILE2REF(FP,ROOT,CONF,H,ERR,CRLF) ;
 	S N=0,PREV=""
 	S CRLF=0
 	S LASTC=-1
-	O FP:(READONLY:EXCEPTION="GOTO RF2ERR^MIOTPL2":CHSET="M"):2
+	O FP:(READONLY:EXCEPTION="GOTO RF2ERR^MIOTPL":CHSET="M"):2
 	F  U FP R *BUF  D  Q:$ZEOF
 	. I LASTC=13,BUF=10 S CRLF=1
 	. S LASTC=BUF
@@ -1197,7 +1197,7 @@ EVALX(TOK,CONF,CTX,OUTMODE,OUT,OREF,ERR)
 	N PDEPTHMAX S PDEPTHMAX=+$G(CONF("templates","maxPartialDepth")) I PDEPTHMAX<1 S PDEPTHMAX=20
 	N PACTIVE,PTCACHE
 	; IMPORTANT: compiled partial-token cache moved to PARTTOKC to avoid colliding with partial source maps
-	K ^TMP($J,"MIOTPL2","PARTTOKC")
+	K ^TMP($J,"MIOTPL","PARTTOKC")
 	; parent override stack (scoped to each {{<parent}} call)
 	N BOVRSP,BOVR
 	S BOVRSP=0
@@ -1649,7 +1649,7 @@ RENDERREFNAME(NAME,CONF,CTX,OREF,ERR)
 	D EVALX(.TOK,.CONF,.CTX,"R",.DUM,$G(OREF),.ERR)
 	Q
 DEFOREF()
-	Q $NA(^TMP($J,"MIOTPL2","OUT"))
+	Q $NA(^TMP($J,"MIOTPL","OUT"))
 OUTLEN(ROOT,LEN,CHUNKS)
 	N S,REF
 	S LEN=0,CHUNKS=0
@@ -1875,7 +1875,7 @@ GETPTOK(PN,PKEY,CONF,CTX,PTREF,PMX,ERR) ; resolve partial tokens via map OR file
 	. K TMP
 	. D COMPILE(SRC,.TMP,.ERR) Q:$D(ERR)
 	. ; IMPORTANT: store compiled partial TOKENS in PARTTOKC (not PARTTOK)
-	. S PTREF=$NA(^TMP($J,"MIOTPL2","PARTTOKC",PKEY))
+	. S PTREF=$NA(^TMP($J,"MIOTPL","PARTTOKC",PKEY))
 	. K @PTREF M @PTREF=TMP
 	. S MREF=$$APPREF(PTREF,"meta")
 	. S PMX=+$G(@($$APPREF(MREF,"pmax")))
@@ -1920,17 +1920,17 @@ LAMTRAP(ERR)
 	Q
 LAMHNEW(CONF,CTX,CST,CTSP,LRID) ; create render-handle for subRender
 	N ID,I
-	S ID=$INCREMENT(^TMP($J,"MIOTPL2","LAMBDA","H"))
-	K ^TMP($J,"MIOTPL2","LAMBDA",ID)
-	M ^TMP($J,"MIOTPL2","LAMBDA",ID,"CONF")=CONF
-	M ^TMP($J,"MIOTPL2","LAMBDA",ID,"CTX")=CTX
-	S ^TMP($J,"MIOTPL2","LAMBDA",ID,"CTSP")=+$G(CTSP)
-	F I=1:1:+$G(CTSP) S ^TMP($J,"MIOTPL2","LAMBDA",ID,"CST",I)=$G(CST(I))
+	S ID=$INCREMENT(^TMP($J,"MIOTPL","LAMBDA","H"))
+	K ^TMP($J,"MIOTPL","LAMBDA",ID)
+	M ^TMP($J,"MIOTPL","LAMBDA",ID,"CONF")=CONF
+	M ^TMP($J,"MIOTPL","LAMBDA",ID,"CTX")=CTX
+	S ^TMP($J,"MIOTPL","LAMBDA",ID,"CTSP")=+$G(CTSP)
+	F I=1:1:+$G(CTSP) S ^TMP($J,"MIOTPL","LAMBDA",ID,"CST",I)=$G(CST(I))
 	S LRID=ID
 	Q
 LAMHKILL(LRID)
 	Q:LRID=""
-	K ^TMP($J,"MIOTPL2","LAMBDA",+$G(LRID))
+	K ^TMP($J,"MIOTPL","LAMBDA",+$G(LRID))
 	Q
 TOK2TPL(TN,BS,BE) ; reconstruct inner template text from tokens BS..BE (best-effort)
 	N OUT,OD,CD,I,TYP,K,ESC,INV,NEWOD,NEWCD,BLK,BN
@@ -1969,13 +1969,13 @@ LRENDER(LRID,TEMPLATE) ; subRender callback for section lambdas: $$LRENDER^MIOTP
 	S OUT=""
 	I +$G(LRID)<1 Q OUT
 	; restore snapshot
-	M CONF=^TMP($J,"MIOTPL2","LAMBDA",LRID,"CONF")
-	M CTX=^TMP($J,"MIOTPL2","LAMBDA",LRID,"CTX")
-	S CTSP=+$G(^TMP($J,"MIOTPL2","LAMBDA",LRID,"CTSP"))
+	M CONF=^TMP($J,"MIOTPL","LAMBDA",LRID,"CONF")
+	M CTX=^TMP($J,"MIOTPL","LAMBDA",LRID,"CTX")
+	S CTSP=+$G(^TMP($J,"MIOTPL","LAMBDA",LRID,"CTSP"))
 	I CTSP<1 S CTSP=1
 	; embed the preserved stack into CTX meta ( to be used by EVALX)
 	S CTX("meta","__ctsp")=CTSP
-	F I=1:1:CTSP S CTX("meta","__cst",I)=$G(^TMP($J,"MIOTPL2","LAMBDA",LRID,"CST",I))
+	F I=1:1:CTSP S CTX("meta","__cst",I)=$G(^TMP($J,"MIOTPL","LAMBDA",LRID,"CST",I))
 	; compile + render
 	D COMPILE($G(TEMPLATE),.TOK,.ERR) Q:$D(ERR) ""
 	D EVALX(.TOK,.CONF,.CTX,"S",.OUT,"",.ERR) Q:$D(ERR) ""

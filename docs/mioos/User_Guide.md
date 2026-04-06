@@ -81,3 +81,9 @@ A detailed Theme Studio UI tool is available in MIOOS as a dedicated desktop app
 
 
 - ROI-H reapply: added chunked websocket downloads plus PDF and structured file viewers without changing the existing shell/window baseline.
+
+
+## ROI-I — File transfer reliability update
+- Uploads are more resilient under parallel chunk delivery and now fail fast if the browser did not send a complete file.
+- Downloads now stream in smaller slices directly from virtual storage, which improves responsiveness for larger files.
+- When an upload fails, the staged server-side transfer is aborted and removed instead of leaving partial upload state behind.

@@ -109,9 +109,9 @@ T002
 	DO EQ^MIOTASSERT(+$GET(OBJ("vfs","enabled")),1,"[MIOOST][T002][vfs enabled]")
 	DO EQ^MIOTASSERT($GET(OBJ("vfs","storage")),"globals-only","[MIOOST][T002][vfs storage]")
 	DO EQ^MIOTASSERT($GET(OBJ("routes","fsList")),"/api/mioos/fs/list","[MIOOST][T002][fs list route]")
-	DO EQ^MIOTASSERT(+$GET(OBJ("websocket","maxSocketsPerSession")),4,"[MIOOST][T002][max sockets]")
-	DO EQ^MIOTASSERT(+$GET(OBJ("websocket","fsSockets")),3,"[MIOOST][T002][fs sockets]")
-	DO EQ^MIOTASSERT(+$GET(OBJ("vfs","uploadBatchSize")),4,"[MIOOST][T002][upload batch size]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("websocket","maxSocketsPerSession")),6,"[MIOOST][T002][max sockets]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("websocket","fsSockets")),5,"[MIOOST][T002][fs sockets]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("vfs","uploadBatchSize")),1,"[MIOOST][T002][upload batch size]")
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","windowing","engine")),"mioos-native-vue-css","[MIOOST][T002][windowing engine]")
 	DO EQ^MIOTASSERT(+$GET(OBJ("desktop","windowing","snapThreshold")),28,"[MIOOST][T002][snap threshold]")
 	DO EQ^MIOTASSERT(+$GET(OBJ("windows",1,"resizable")),1,"[MIOOST][T002][window resizable]")
@@ -148,7 +148,7 @@ T004
 	DO EQ^MIOTASSERT($GET(OBJ("commandResultEvent")),"desktop.result","[MIOOST][T004][result event]")
 	DO EQ^MIOTASSERT($GET(OBJ("terminalEngine")),"xtermjs","[MIOOST][T004][engine]")
 	DO EQ^MIOTASSERT($GET(OBJ("realtimeContract")),"core-websocket-plus-app-websockets","[MIOOST][T004][realtime contract]")
-	DO EQ^MIOTASSERT(+$GET(OBJ("socketPool","maxSocketsPerSession")),4,"[MIOOST][T004][hello max sockets]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("socketPool","maxSocketsPerSession")),6,"[MIOOST][T004][hello max sockets]")
 	SET JSON=$$PONGJSON^MIOOSWS(.STATE)
 	DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T004][pong decode]")
 	DO EQ^MIOTASSERT($GET(OBJ("event")),"pong","[MIOOST][T004][pong event]")
@@ -353,7 +353,7 @@ T016
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-theme-studio-layout"),"[MIOOST][T016][theme studio css]")
 	QUIT
 	;
-
+	;
 	;
 T017
 	NEW CONF,REQ,CTX,STATE,ERR,JSON,OBJ
@@ -380,7 +380,7 @@ T018
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-explorer-taskpane"),"[MIOOST][T018][explorer xp taskpane css]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-explorer-menubar"),"[MIOOST][T018][explorer xp menubar css]")
 	QUIT
-
+	;
 	;
 T019
 	NEW CONF,REQ,CTX,STATE,ERR,JSON,OBJ
@@ -416,3 +416,4 @@ T020
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","openPdfViewerWindow"),"[MIOOST][T020][pdf viewer method]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","fs.download.chunk"),"[MIOOST][T020][chunked download method]")
 	QUIT
+	;

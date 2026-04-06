@@ -1,6 +1,6 @@
 MIOTPLB ; # MIOTPLB
 	;
-	; Benchmark harness for MIOTPL2 (compile/render throughput + output size)
+	; Benchmark harness for MIOTPL (compile/render throughput + output size)
 	; - Pure MUMPS, no external deps.;
 	;
 	; Usage:
@@ -21,7 +21,7 @@ MIOTPLB ; # MIOTPLB
 RUN(CONF) ;
 	NEW BCONF M BCONF=CONF
 	DO INITCONF(.BCONF)
-	; ensure MIOTPL2 defaults are present, but avoid precompile during benchmarks
+	; ensure MIOTPL defaults are present, but avoid precompile during benchmarks
 	SET BCONF("templates","precompileEnabled")=0
 	DO START^MIOTPL(.BCONF)
 	NEW PREF DO DEFPART(.PREF)
@@ -40,7 +40,7 @@ INITCONF(CONF) ;
 	;
 DEFPART(PREF) ;
 	; Build a partials/parents map under ^TMP so we can benchmark partials/parents without filesystem.;
-	; MIOTPL2 resolves both {{>partial}} and {{<parent}} through CTX("meta","partialsRef") when provided.;
+	; MIOTPL resolves both {{>partial}} and {{<parent}} through CTX("meta","partialsRef") when provided.;
 	NEW R SET R=$NA(^TMP($J,"MIOTPLB","partials"))
 	KILL @R
 	; Partial "p"
@@ -93,7 +93,7 @@ REPORT(CONF,CASES,PREF) ;
 	SET RI=+$G(CONF("bench","iters","render"))  IF RI<1 SET RI=1
 	SET WARM=+$G(CONF("bench","warmup"))
 	NEW NOW SET NOW=$$TS()
-	WRITE !,"MIOTPL2 Bench Report  ",NOW,!
+	WRITE !,"MIOTPL Bench Report  ",NOW,!
 	WRITE "Engine: ",$$VER(),!
 	WRITE "Iters : compile=",CI," render=",RI," warmup=",WARM,!
 	WRITE "Modes : MIN(local TOK->scalar), PERF(token-ref->scalar), BIG(token-ref->REF)",!
@@ -266,9 +266,9 @@ TS() ;
 	;
 VER() ;
 	NEW V SET V=""
-	; Avoid LABELMISSING if VERSION() was not added to MIOTPL2
-	IF $T(VERSION^MIOTPL2)'="" SET V=$$VERSION^MIOTPL()
-	IF V="" SET V="MIOTPL2 (no VERSION() label)"
+	; Avoid LABELMISSING if VERSION() was not added to MIOTPL
+	IF $T(VERSION^MIOTPL)'="" SET V=$$VERSION^MIOTPL()
+	IF V="" SET V="MIOTPL (no VERSION() label)"
 	QUIT V
 	;
 	;

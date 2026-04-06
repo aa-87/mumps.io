@@ -100,7 +100,8 @@
       "prefix": [
         "/api/",
         "/ws/app"
-      ]},
+      ]
+    },
     "exempt": {
       "prefix": [
         "/v1/",
@@ -110,7 +111,8 @@
         "/bench",
         "/app",
         "/ws"
-      ]},
+      ]
+    },
     "protectMode": "route",
     "jwt": {
       "bearerPrefix": "Bearer ",
@@ -128,5 +130,10 @@
       "jwksRefreshMaxCooldownSeconds": 300,
       "jwksNegativeCacheMax": 1000
     }
+  },
+  "websocket": {
+    "idleTimeoutSeconds": 3600,
+    "maxFrameBytes": 262144,
+    "maxMessageBytes": 1048576
   }
 }
