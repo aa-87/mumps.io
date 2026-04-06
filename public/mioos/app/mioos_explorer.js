@@ -52,6 +52,30 @@
     return window.URL.createObjectURL(blob);
   }
 
+  function stringToBytes(raw) {
+    var value = String(raw || '');
+    var bytes = new Uint8Array(value.length);
+    var i;
+    for (i = 0; i < value.length; i += 1) bytes[i] = value.charCodeAt(i) & 255;
+    return bytes;
+  }
+
+  function bytesToHex(bytes) {
+    var out = '';
+    var i;
+    for (i = 0; i < bytes.length; i += 1) out += bytes[i].toString(16).padStart(2, '0');
+    return out;
+  }
+
+  function sha256Hex(raw) {
+    if (!window.crypto || !window.crypto.subtle) return Promise.resolve('');
+    return window.crypto.subtle.digest('SHA-256', stringToBytes(raw)).then(function (hash) {
+      return bytesToHex(new Uint8Array(hash));
+    }).catch(function () {
+      return '';
+    });
+  }
+
   function normalizeStructuredContent(content, mime) {
     var out = content || '';
     if (!out) return '';
@@ -840,6 +864,7 @@
         var mime = (item && item.mime) || 'application/octet-stream';
         var transferId = this.registerTransfer ? this.registerTransfer({ kind: 'download', name: name, status: 'preparing', stage: 'Preparing', totalBytes: 0, processedBytes: 0 }) : '';
         var self = this;
+        var activeDownloadId = '';
         function triggerSave(raw) {
           var url = makeDownloadHref(raw, mime);
           if (!url) return;
@@ -850,6 +875,12 @@
           anchor.click();
           document.body.removeChild(anchor);
           if (url.indexOf('blob:') === 0) window.setTimeout(function () { try { window.URL.revokeObjectURL(url); } catch (err) {} }, 2000);
+        }
+        function abortDownload() {
+          if (!activeDownloadId || !self.command) return Promise.resolve();
+          return self.command('fs.download.abort', { downloadId: activeDownloadId }).catch(function () { return null; }).then(function () {
+            activeDownloadId = '';
+          });
         }
         if (!item) return Promise.resolve();
         if (href) {
@@ -866,6 +897,7 @@
           var chunkSize = +begin.chunkSize || 32768;
           var offset = 0;
           var pieces = [];
+          activeDownloadId = begin.downloadId || '';
           if (transferId && self.updateTransfer) self.updateTransfer(transferId, { totalBytes: totalBytes, logicalBytes: logicalBytes, processedBytes: 0, progress: 0, stage: 'Downloading' });
           function nextChunk() {
             if (totalBytes > 0 && offset >= totalBytes) return Promise.resolve(pieces.join(''));
@@ -882,17 +914,42 @@
             });
           }
           return nextChunk().then(function (raw) {
+            if (+begin.verifyHash === 1 || begin.verifyHash === true) {
+              if (transferId && self.updateTransfer) self.updateTransfer(transferId, { status: 'verifying', stage: 'Verifying download', processedBytes: totalBytes || raw.length, totalBytes: totalBytes || raw.length, progress: 100 });
+              return sha256Hex(raw).then(function (actualHash) {
+                var expectedHash = String(begin.sha256 || '').toLowerCase();
+                if (expectedHash && actualHash && expectedHash !== actualHash) throw new Error('download_hash_mismatch');
+                return raw;
+              });
+            }
+            return raw;
+          }).then(function (raw) {
             triggerSave(raw);
             if (transferId && self.finalizeTransfer) self.finalizeTransfer(transferId, true, { processedBytes: totalBytes || raw.length, totalBytes: totalBytes || raw.length, logicalBytes: logicalBytes, progress: 100, stage: 'Saved to browser download manager' });
-            return self.command('fs.download.abort', { downloadId: begin.downloadId }).catch(function () { return null; });
+            return abortDownload();
           });
         }).catch(function (err) {
-          if (transferId && self.finalizeTransfer) self.finalizeTransfer(transferId, false, { error: (err && err.message) || 'download_failed' });
-          return self.command('fs.read', { id: item.id || item.key || item.fileId }).then(function (msg) {
-            var payload = payloadRoot(msg);
-            var data = textFromPayload(payload);
-            triggerSave(data);
-            if (transferId && self.finalizeTransfer) self.finalizeTransfer(transferId, true, { progress: 100, stage: 'Saved to browser download manager' });
+          var code = (err && err.message) || 'download_failed';
+          var size = +((item && item.size) || 0);
+          var canFallbackRead = detectTextLike(item) && size > 0 && size <= 32768;
+          return abortDownload().then(function () {
+            if (code === 'download_hash_mismatch' || code === 'download_offset_stalled') {
+              if (transferId && self.finalizeTransfer) self.finalizeTransfer(transferId, false, { error: code, stage: 'Download verification failed' });
+              throw err;
+            }
+            if (!canFallbackRead) {
+              if (transferId && self.finalizeTransfer) self.finalizeTransfer(transferId, false, { error: code, stage: 'Download failed' });
+              throw err;
+            }
+            return self.command('fs.read', { id: item.id || item.key || item.fileId }).then(function (msg) {
+              var payload = payloadRoot(msg);
+              var data = textFromPayload(payload);
+              triggerSave(data);
+              if (transferId && self.finalizeTransfer) self.finalizeTransfer(transferId, true, { progress: 100, stage: 'Saved to browser download manager' });
+            }).catch(function (fallbackErr) {
+              if (transferId && self.finalizeTransfer) self.finalizeTransfer(transferId, false, { error: (fallbackErr && fallbackErr.message) || code, stage: 'Download failed' });
+              throw fallbackErr || err;
+            });
           });
         });
       },

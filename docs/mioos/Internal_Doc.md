@@ -126,8 +126,5 @@ A detailed Theme Studio UI tool is available in MIOOS as a dedicated desktop app
 - ROI-H reapply: added chunked websocket downloads plus PDF and structured file viewers without changing the existing shell/window baseline.
 
 
-## ROI-I — VFS transfer hardening and streamed downloads
-- `MIOOSFS` now provides `VALIDNAME` and `READRANGE` so higher-level transfer code can validate user-supplied names and serve file slices without rebuilding the full payload.
-- `MIOOSFSUP` now tracks upload chunk metadata per index, including raw source bytes, distinct chunk count, and encoded byte totals. Commit verifies chunk completeness and byte totals before writing into `^MIO("MIOOS","FS","DATA",...)`.
-- `MIOOSFSDN` no longer calls `READRAW` for each requested download chunk. It resolves the file once, records session-scoped download metadata, and serves later chunk requests through `READRANGE^MIOOSFS`.
-- `MIOOSFS` move semantics now reject parent loops and sibling name collisions, which protects explorer workflows from recursive folder corruption.
+## ROI 20 — Verified chunked downloads and VFS download hardening
+`MIOOSFSDN` now uses `READRANGE^MIOOSFS` for chunk delivery, keeps per-download session state under `^MIO("MIOOS","DL",...)`, and advertises `sha256` plus `verifyHash` in `fs.download.begin`. `MIOOSFS` now supports range reads directly from global-backed chunk storage, which avoids reconstructing the whole file for every chunk request.

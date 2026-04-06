@@ -19,6 +19,8 @@ MIOOST ; MIOOS tests
 	DO T018
 	DO T019
 	DO T020
+	DO T021
+	DO T022
 	QUIT
 	;
 RESET
@@ -109,9 +111,9 @@ T002
 	DO EQ^MIOTASSERT(+$GET(OBJ("vfs","enabled")),1,"[MIOOST][T002][vfs enabled]")
 	DO EQ^MIOTASSERT($GET(OBJ("vfs","storage")),"globals-only","[MIOOST][T002][vfs storage]")
 	DO EQ^MIOTASSERT($GET(OBJ("routes","fsList")),"/api/mioos/fs/list","[MIOOST][T002][fs list route]")
-	DO EQ^MIOTASSERT(+$GET(OBJ("websocket","maxSocketsPerSession")),6,"[MIOOST][T002][max sockets]")
-	DO EQ^MIOTASSERT(+$GET(OBJ("websocket","fsSockets")),5,"[MIOOST][T002][fs sockets]")
-	DO EQ^MIOTASSERT(+$GET(OBJ("vfs","uploadBatchSize")),1,"[MIOOST][T002][upload batch size]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("websocket","maxSocketsPerSession")),4,"[MIOOST][T002][max sockets]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("websocket","fsSockets")),3,"[MIOOST][T002][fs sockets]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("vfs","uploadBatchSize")),4,"[MIOOST][T002][upload batch size]")
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","windowing","engine")),"mioos-native-vue-css","[MIOOST][T002][windowing engine]")
 	DO EQ^MIOTASSERT(+$GET(OBJ("desktop","windowing","snapThreshold")),28,"[MIOOST][T002][snap threshold]")
 	DO EQ^MIOTASSERT(+$GET(OBJ("windows",1,"resizable")),1,"[MIOOST][T002][window resizable]")
@@ -148,7 +150,7 @@ T004
 	DO EQ^MIOTASSERT($GET(OBJ("commandResultEvent")),"desktop.result","[MIOOST][T004][result event]")
 	DO EQ^MIOTASSERT($GET(OBJ("terminalEngine")),"xtermjs","[MIOOST][T004][engine]")
 	DO EQ^MIOTASSERT($GET(OBJ("realtimeContract")),"core-websocket-plus-app-websockets","[MIOOST][T004][realtime contract]")
-	DO EQ^MIOTASSERT(+$GET(OBJ("socketPool","maxSocketsPerSession")),6,"[MIOOST][T004][hello max sockets]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("socketPool","maxSocketsPerSession")),4,"[MIOOST][T004][hello max sockets]")
 	SET JSON=$$PONGJSON^MIOOSWS(.STATE)
 	DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T004][pong decode]")
 	DO EQ^MIOTASSERT($GET(OBJ("event")),"pong","[MIOOST][T004][pong event]")
@@ -353,7 +355,7 @@ T016
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-theme-studio-layout"),"[MIOOST][T016][theme studio css]")
 	QUIT
 	;
-	;
+
 	;
 T017
 	NEW CONF,REQ,CTX,STATE,ERR,JSON,OBJ
@@ -380,7 +382,7 @@ T018
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-explorer-taskpane"),"[MIOOST][T018][explorer xp taskpane css]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-explorer-menubar"),"[MIOOST][T018][explorer xp menubar css]")
 	QUIT
-	;
+
 	;
 T019
 	NEW CONF,REQ,CTX,STATE,ERR,JSON,OBJ
@@ -416,4 +418,36 @@ T020
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","openPdfViewerWindow"),"[MIOOST][T020][pdf viewer method]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","fs.download.chunk"),"[MIOOST][T020][chunked download method]")
 	QUIT
+
 	;
+T021
+	NEW CONF,REQ,CTX,STATE,ERR,OUT,ID,DL,HASH,JSON,OBJ,PAY
+	DO RESET
+	DO CONFDEF^MIOOS(.CONF)
+	DO INIT^MIOOS(.CONF)
+	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T021][load]")
+	KILL OUT DO OK^MIOTASSERT($$WRITE^MIOOSFS(.STATE,$$HOMEID^MIOOSFS(),"download.txt","alpha beta gamma delta","text/plain",.OUT,.ERR),"[MIOOST][T021][write]")
+	SET ID=$GET(OUT("id"))
+	KILL DL DO OK^MIOTASSERT($$BEGIN^MIOOSFSDN(.STATE,.CONF,ID,.DL,.ERR),"[MIOOST][T021][download begin]")
+	DO EQ^MIOTASSERT($GET(DL("verifyHash")),1,"[MIOOST][T021][verify flag]")
+	DO EQ^MIOTASSERT($GET(DL("sha256"))'="",1,"[MIOOST][T021][sha present]")
+	DO EQ^MIOTASSERT($GET(DL("sha256")),$$SHA256^MIOSHA256("alpha beta gamma delta"),"[MIOOST][T021][sha value]")
+	KILL OUT DO OK^MIOTASSERT($$CHUNK^MIOOSFSDN(.STATE,$GET(DL("downloadId")),0,6,.OUT,.ERR),"[MIOOST][T021][chunk one]")
+	DO EQ^MIOTASSERT($GET(OUT("data")),"alpha ","[MIOOST][T021][chunk one data]")
+	DO EQ^MIOTASSERT(+$GET(OUT("eof")),0,"[MIOOST][T021][chunk one eof]")
+	KILL OUT DO OK^MIOTASSERT($$CHUNK^MIOOSFSDN(.STATE,$GET(DL("downloadId")),6,99,.OUT,.ERR),"[MIOOST][T021][chunk two]")
+	DO EQ^MIOTASSERT($GET(OUT("data")),"beta gamma delta","[MIOOST][T021][chunk two data]")
+	DO EQ^MIOTASSERT(+$GET(OUT("eof")),1,"[MIOOST][T021][chunk two eof]")
+	SET PAY="{""event"":""desktop.command"",""requestId"":""fs-dl-1"",""command"":""fs.download.begin"",""id"":"""_ID_"""}"
+	DO OK^MIOTASSERT($$COMMANDJSON^MIOOSWS(.CONF,.REQ,.CTX,.STATE,PAY,.JSON,.ERR),"[MIOOST][T021][ws download begin]")
+	DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T021][ws download decode]")
+	DO EQ^MIOTASSERT($GET(OBJ("download","verifyHash")),1,"[MIOOST][T021][ws verify flag]")
+	QUIT
+	;
+T022
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","download_hash_mismatch"),"[MIOOST][T022][download hash guard]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","Verifying download"),"[MIOOST][T022][download verify stage]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSFSDN.m","READRANGE^MIOOSFS"),"[MIOOST][T022][range read]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSST.m","downloadVerifyHash"),"[MIOOST][T022][boot verify flag]")
+	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 20 — Verified chunked downloads and VFS download hardening"),"[MIOOST][T022][llm roi20]")
+	QUIT

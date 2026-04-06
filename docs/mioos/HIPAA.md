@@ -69,7 +69,5 @@ To move closer to HIPAA-ready operation, later ROIs should add or harden:
 - deployment guidance for encryption, cookies, logs, and backups
 
 
-## ROI-I alignment
-- Transfer validation now checks staged upload completeness before commit, which reduces the risk of silent corruption for sensitive document workflows.
-- Chunked downloads now avoid reconstructing the entire stored file for every chunk request, which narrows memory exposure during transfer handling.
-- Invalid-name rejection and parent-loop protection reduce accidental namespace misuse and folder structure corruption.
+## Transfer integrity note
+Verified chunked downloads reduce the chance of silent corruption during browser saves, which is helpful in regulated environments, but they do not replace audit logging, encryption, access controls, or deployment policy.

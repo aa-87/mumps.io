@@ -229,7 +229,7 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","performance","payloadMode")=$GET(STATE("perfPayloadMode"),"tmp-global-safe")
 	SET OBJ("desktop","performance","transport")=$GET(STATE("perfTransport"),"websocket-first-http-refresh")
 	SET OBJ("desktop","performance","uploadStrategy")="batched-chunk-pool"
-	SET OBJ("desktop","performance","downloadStrategy")="chunked-websocket"
+	SET OBJ("desktop","performance","downloadStrategy")="chunked-websocket-verified"
 	SET OBJ("desktop","viewers","text")=1
 	SET OBJ("desktop","viewers","image")=1
 	SET OBJ("desktop","viewers","media")=1
@@ -262,6 +262,8 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("vfs","uploadChunkBytes")=$$UPCHUNK^MIOOSFSUP(.CONF)
 	SET OBJ("vfs","uploadConcurrency")=$$UPCONCUR^MIOOSFSUP(.CONF)
 	SET OBJ("vfs","uploadBatchSize")=+$GET(STATE("wsUploadBatchSize"),1)
+	SET OBJ("vfs","downloadChunkBytes")=$$DLCHUNK^MIOOSFSDN(.CONF)
+	SET OBJ("vfs","downloadVerifyHash")=1
 	SET OBJ("vfs","storage")="globals-only"
 	SET OBJ("vfs","permissionsModel")="owner-role-flags"
 	SET OBJ("desktop","icons","enabled")=1
