@@ -60,6 +60,8 @@
           themeStyleNodeId: 'mioos-theme-studio-style',
           transferCenter: { items: [], seq: 0, autoOpen: true },
           transferControllers: {},
+          transportDiagnostics: { loading: false, refreshedAt: 0, error: '', report: {} },
+          socketTelemetry: {},
           desktopUi: {
             iconSize: 'medium',
             sortMode: 'manual',
@@ -202,6 +204,45 @@
           var active = this.activeTransfers().length;
           var done = this.completedTransfers().length;
           return active + ' active · ' + done + ' finished';
+        },
+        setSocketTelemetry: function (socketId, patch) {
+          var base;
+          if (!socketId) return;
+          base = this.socketTelemetry[socketId] || { id: socketId, role: 'core', label: socketId, state: 'idle', pendingCount: 0, openedAt: 0, helloAt: 0, lastMessageAt: 0, lastEvent: '', lastError: '', ordinal: 0 };
+          this.socketTelemetry[socketId] = Object.assign({}, base, patch || {});
+        },
+        removeSocketTelemetry: function (socketId) {
+          if (!socketId || !this.socketTelemetry) return;
+          delete this.socketTelemetry[socketId];
+        },
+        transportSocketRows: function () {
+          return Object.keys(this.socketTelemetry || {}).map(function (key) { return Object.assign({ id: key }, (this.socketTelemetry || {})[key] || {}); }, this).sort(function (a, b) {
+            var ar = String(a.role || '');
+            var br = String(b.role || '');
+            return ar.localeCompare(br) || (+a.ordinal || 0) - (+b.ordinal || 0) || String(a.id || '').localeCompare(String(b.id || ''));
+          });
+        },
+        formatTransportTime: function (value) {
+          if (!value) return '—';
+          try { return new Date(value).toLocaleTimeString(); } catch (err) { return '—'; }
+        },
+        transportReport: function () {
+          return (this.transportDiagnostics && this.transportDiagnostics.report) || {};
+        },
+        refreshTransportDiagnostics: function () {
+          var self = this;
+          this.transportDiagnostics.loading = true;
+          this.transportDiagnostics.error = '';
+          return this.command('transport.health', {}).then(function (msg) {
+            self.transportDiagnostics.loading = false;
+            self.transportDiagnostics.refreshedAt = Date.now();
+            self.transportDiagnostics.report = (msg && msg.transport) || {};
+            return self.transportDiagnostics.report;
+          }).catch(function (err) {
+            self.transportDiagnostics.loading = false;
+            self.transportDiagnostics.error = (err && (err.detail || err.error || err.message)) || 'transport_health_failed';
+            throw err;
+          });
         },
         setTransferController: function (transferId, controller) {
           if (!transferId) return;

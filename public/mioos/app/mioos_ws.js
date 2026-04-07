@@ -24,6 +24,7 @@
         if (this.socketOpenPromise) return this.socketOpenPromise;
         this.socketOpenPromise = new Promise(function (resolve, reject) {
           var sock;
+          var socketId = 'core-1';
           var settled = false;
           var timer = window.setTimeout(function () {
             if (settled) return;
@@ -35,6 +36,7 @@
           try {
             sock = new window.WebSocket(protocol + window.location.host + path);
             self.socket = sock;
+            if (self.setSocketTelemetry) self.setSocketTelemetry(socketId, { role: 'core', ordinal: 1, label: 'Core Socket', state: 'connecting', openedAt: 0, helloAt: 0, lastMessageAt: 0, lastEvent: 'connect', lastError: '' });
           } catch (err) {
             window.clearTimeout(timer);
             self.socketOpenPromise = null;
@@ -44,6 +46,7 @@
           }
           sock.addEventListener('open', function () {
             self.socketConnected = true;
+            if (self.setSocketTelemetry) self.setSocketTelemetry(socketId, { state: 'open', openedAt: Date.now(), lastEvent: 'open', lastError: '' });
             try { sock.send(JSON.stringify({ event: 'hello' })); } catch (err) {}
             if (self.pingTimer) window.clearInterval(self.pingTimer);
             self.pingTimer = window.setInterval(function () {
@@ -57,6 +60,7 @@
           });
           sock.addEventListener('close', function () {
             self.socketConnected = false;
+            if (self.setSocketTelemetry) self.setSocketTelemetry(socketId, { state: 'closed', lastEvent: 'close', lastError: 'socket_closed', lastMessageAt: Date.now(), pendingCount: 0 });
             if (self.pingTimer) window.clearInterval(self.pingTimer);
             if (self.socket === sock) self.socket = null;
             self.socketOpenPromise = null;
@@ -68,6 +72,7 @@
             }
           });
           sock.addEventListener('error', function () {
+            if (self.setSocketTelemetry) self.setSocketTelemetry(socketId, { state: 'error', lastEvent: 'error', lastError: 'socket_error', lastMessageAt: Date.now() });
             if (!settled) {
               settled = true;
               window.clearTimeout(timer);
@@ -96,6 +101,9 @@
         } catch (err) {
           return;
         }
+        if (this.setSocketTelemetry) this.setSocketTelemetry('core-1', { lastMessageAt: Date.now(), lastEvent: msg.event || 'message', lastError: (msg.event === ((this.boot.routes || {}).commandErrorEvent || 'desktop.error')) ? (msg.detail || msg.error || 'desktop.error') : '' });
+        if (msg.event === 'hello' && this.setSocketTelemetry) this.setSocketTelemetry('core-1', { helloAt: Date.now(), state: 'ready', lastEvent: 'hello' });
+        if (msg.event === 'pong' && this.setSocketTelemetry) this.setSocketTelemetry('core-1', { lastEvent: 'pong' });
         if (msg.event === 'view.refresh' && msg.view) {
           this.view = window.MIOOSState.normalizeView(msg.view);
           return;
@@ -106,6 +114,7 @@
           if (pending) {
             if (pending.timer) window.clearTimeout(pending.timer);
             delete this.socketPending[requestId];
+            if (this.setSocketTelemetry) this.setSocketTelemetry('core-1', { pendingCount: Object.keys(this.socketPending || {}).length });
             pending.resolve(msg);
             return;
           }
@@ -117,6 +126,7 @@
           if (pending) {
             if (pending.timer) window.clearTimeout(pending.timer);
             delete this.socketPending[requestId];
+            if (this.setSocketTelemetry) this.setSocketTelemetry('core-1', { pendingCount: Object.keys(this.socketPending || {}).length, lastError: msg.detail || msg.error || 'desktop.error' });
             pending.reject(msg);
             return;
           }
@@ -150,15 +160,18 @@
               };
               pending.timer = window.setTimeout(function () {
                 if (self.socketPending[requestId]) delete self.socketPending[requestId];
+                if (self.setSocketTelemetry) self.setSocketTelemetry('core-1', { pendingCount: Object.keys(self.socketPending || {}).length, lastError: 'socket_request_timeout', lastEvent: 'timeout' });
                 reject(new Error('socket_request_timeout'));
               }, timeoutMs);
               self.socketPending[requestId] = pending;
+              if (self.setSocketTelemetry) self.setSocketTelemetry('core-1', { pendingCount: Object.keys(self.socketPending || {}).length, lastEvent: 'request:' + (opts.command || eventName || 'socket') });
               if (!self.sendSocket(Object.assign({}, payload || {}, {
                 event: eventName,
                 requestId: requestId
               }))) {
                 if (pending.timer) window.clearTimeout(pending.timer);
                 delete self.socketPending[requestId];
+                if (self.setSocketTelemetry) self.setSocketTelemetry('core-1', { pendingCount: Object.keys(self.socketPending || {}).length, lastError: 'socket_send_failed', lastEvent: 'send_failed' });
                 reject(new Error('socket_send_failed'));
               }
             });

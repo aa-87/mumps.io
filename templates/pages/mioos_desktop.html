@@ -383,6 +383,67 @@
             </div>
           </div>
         </template>
+        <template v-else-if="win.appKey === 'diagnostics'">
+          <div class="mioos-diagnostics-shell win7" data-transport-diagnostics-window="1">
+            <div class="window-body mioos-seven-body">
+              <div class="mioos-diagnostics-head">
+                <div>
+                  <strong>Transport Diagnostics</strong>
+                  <span>Socket pool, transfer health, and current session telemetry.</span>
+                </div>
+                <div class="mioos-seven-toolbar">
+                  <button type="button" @click="refreshTransportDiagnostics()" :disabled="transportDiagnostics.loading">[[ transportDiagnostics.loading ? 'Refreshing…' : 'Refresh diagnostics' ]]</button>
+                </div>
+              </div>
+              <div class="mioos-diagnostics-summary">
+                <span>Session [[ (transportReport().sessionId || boot.session.id || 'mioos-shell') ]]</span>
+                <span>Profile [[ transportReport().profile || boot.product.profile || 'dev' ]]</span>
+                <span>Updated [[ formatTransportTime(transportDiagnostics.refreshedAt) ]]</span>
+              </div>
+              <div class="mioos-diagnostics-grid">
+                <section class="mioos-diagnostics-card">
+                  <h4>Server transport contract</h4>
+                  <dl>
+                    <div><dt>Max sockets</dt><dd>[[ (((transportReport().websocket || {}).maxSocketsPerSession) || ((boot.websocket || {}).maxSocketsPerSession) || 0) ]]</dd></div>
+                    <div><dt>FS sockets</dt><dd>[[ (((transportReport().websocket || {}).fsSockets) || ((boot.websocket || {}).fsSockets) || 0) ]]</dd></div>
+                    <div><dt>Heartbeat</dt><dd>[[ (((transportReport().websocket || {}).heartbeatSeconds) || ((boot.websocket || {}).heartbeatSeconds) || 0) ]]s</dd></div>
+                    <div><dt>Resume window</dt><dd>[[ (((transportReport().websocket || {}).resumeWindowSeconds) || ((boot.websocket || {}).resumeWindowSeconds) || 0) ]]s</dd></div>
+                    <div><dt>Inflight / channel</dt><dd>[[ (((transportReport().websocket || {}).maxInflightPerChannel) || ((boot.websocket || {}).maxInflightPerChannel) || 0) ]]</dd></div>
+                    <div><dt>Timeout</dt><dd>[[ (((transportReport().websocket || {}).requestTimeoutMs) || ((boot.websocket || {}).requestTimeoutMs) || 0) ]] ms</dd></div>
+                  </dl>
+                </section>
+                <section class="mioos-diagnostics-card">
+                  <h4>VFS and terminal</h4>
+                  <dl>
+                    <div><dt>Uploads</dt><dd>[[ (((transportReport().uploads || {}).activeCount) || 0) ]] active</dd></div>
+                    <div><dt>Downloads</dt><dd>[[ (((transportReport().downloads || {}).activeCount) || 0) ]] active</dd></div>
+                    <div><dt>Upload bytes</dt><dd>[[ (((transportReport().uploads || {}).receivedBytes) || 0) ]]</dd></div>
+                    <div><dt>Download bytes</dt><dd>[[ (((transportReport().downloads || {}).bytes) || 0) ]]</dd></div>
+                    <div><dt>Terminals</dt><dd>[[ (((transportReport().terminal || {}).openCount) || 0) ]] / [[ (((transportReport().terminal || {}).maxSessions) || ((boot.terminal || {}).maxSessionsPerUser) || 0) ]]</dd></div>
+                    <div><dt>Diagnostics</dt><dd>[[ (((transportReport().diagnosticsEnabled) || ((boot.websocket || {}).diagnosticsEnabled)) ? 'enabled' : 'disabled') ]]</dd></div>
+                  </dl>
+                </section>
+                <section class="mioos-diagnostics-card mioos-diagnostics-card--wide">
+                  <h4>Client socket telemetry</h4>
+                  <div class="mioos-diagnostics-empty" v-if="!transportSocketRows().length">No socket telemetry yet.</div>
+                  <div class="mioos-diagnostics-table" v-else>
+                    <div class="mioos-diagnostics-row mioos-diagnostics-row--head">
+                      <strong>Socket</strong><strong>State</strong><strong>Pending</strong><strong>Last event</strong><strong>Updated</strong>
+                    </div>
+                    <div class="mioos-diagnostics-row" v-for="item in transportSocketRows()" :key="item.id">
+                      <span>[[ item.label || item.id ]]</span>
+                      <span class="mioos-diagnostics-badge" :class="'is-' + (item.state || 'idle')">[[ item.state || 'idle' ]]</span>
+                      <span>[[ item.pendingCount || 0 ]]</span>
+                      <span>[[ item.lastError || item.lastEvent || '—' ]]</span>
+                      <span>[[ formatTransportTime(item.lastMessageAt || item.helloAt || item.openedAt) ]]</span>
+                    </div>
+                  </div>
+                  <div class="mioos-diagnostics-error" v-if="transportDiagnostics.error">[[ transportDiagnostics.error ]]</div>
+                </section>
+              </div>
+            </div>
+          </div>
+        </template>
         <template v-else-if="win.appKey === 'control-panel'">
           <div class="mioos-list-row" v-for="item in view.controlPanel" :key="item.title">
             <strong>[[ item.title ]]</strong>

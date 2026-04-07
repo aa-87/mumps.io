@@ -27,6 +27,10 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","websocket","coreSockets"))="" SET CONF("mioos","websocket","coreSockets")=1
 	IF $GET(CONF("mioos","websocket","fsSockets"))="" SET CONF("mioos","websocket","fsSockets")=5
 	IF $GET(CONF("mioos","websocket","uploadBatchSize"))="" SET CONF("mioos","websocket","uploadBatchSize")=1
+	IF $GET(CONF("mioos","websocket","heartbeatSeconds"))="" SET CONF("mioos","websocket","heartbeatSeconds")=15
+	IF $GET(CONF("mioos","websocket","resumeWindowSeconds"))="" SET CONF("mioos","websocket","resumeWindowSeconds")=180
+	IF $GET(CONF("mioos","websocket","maxInflightPerChannel"))="" SET CONF("mioos","websocket","maxInflightPerChannel")=4
+	IF $GET(CONF("mioos","websocket","diagnosticsEnabled"))="" SET CONF("mioos","websocket","diagnosticsEnabled")=1
 	IF $GET(CONF("mioos","websocket","requestTimeoutMs"))="" SET CONF("mioos","websocket","requestTimeoutMs")=15000
 	IF $GET(CONF("mioos","websocket","uploadBeginTimeoutMs"))="" SET CONF("mioos","websocket","uploadBeginTimeoutMs")=20000
 	IF $GET(CONF("mioos","websocket","uploadChunkTimeoutMs"))="" SET CONF("mioos","websocket","uploadChunkTimeoutMs")=30000

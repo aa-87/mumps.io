@@ -109,3 +109,9 @@ MIOOS now treats download integrity as part of the VFS contract. Chunked downloa
 
 ## ROI 21 — Transfer resiliency and cleanup
 MIOOS now treats transfer lifecycle cleanup as part of the production VFS contract. Active uploads and downloads can be cancelled from the Transfers window, failed or cancelled transfers can be retried in the same browser session, and stale staged transfer state is purged server-side after a configurable TTL.
+
+
+## ROI 22 — Transport diagnostics and socket health
+- Added a Diagnostics desktop app/window so the shell can inspect the advertised websocket contract, active transfer counts, terminal usage, and client-side socket telemetry without leaving the desktop.
+- `transport.health` now returns session-scoped transport health including socket pool limits, heartbeat/resume settings, upload/download activity, and open terminal counts.
+- The browser now records core and FS worker socket state transitions, pending request counts, last events, and recent socket errors for diagnostics.

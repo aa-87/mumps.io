@@ -75,6 +75,10 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("wsUploadBatchSize")=+$GET(CONF("mioos","websocket","uploadBatchSize"),1)
 	IF STATE("wsUploadBatchSize")<1 SET STATE("wsUploadBatchSize")=1
 	IF STATE("wsUploadBatchSize")>8 SET STATE("wsUploadBatchSize")=8
+	SET STATE("wsHeartbeatSeconds")=+$GET(CONF("mioos","websocket","heartbeatSeconds"),15)
+	SET STATE("wsResumeWindowSeconds")=+$GET(CONF("mioos","websocket","resumeWindowSeconds"),180)
+	SET STATE("wsMaxInflightPerChannel")=+$GET(CONF("mioos","websocket","maxInflightPerChannel"),4)
+	SET STATE("wsDiagnosticsEnabled")=+$GET(CONF("mioos","websocket","diagnosticsEnabled"),1)
 	SET STATE("wsRequestTimeoutMs")=+$GET(CONF("mioos","websocket","requestTimeoutMs"),15000)
 	IF STATE("wsRequestTimeoutMs")<1000 SET STATE("wsRequestTimeoutMs")=15000
 	SET STATE("wsUploadBeginTimeoutMs")=+$GET(CONF("mioos","websocket","uploadBeginTimeoutMs"),20000)
@@ -302,6 +306,10 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("websocket","coreSockets")=+$GET(STATE("wsCoreSockets"),1)
 	SET OBJ("websocket","fsSockets")=+$GET(STATE("wsFsSockets"),5)
 	SET OBJ("websocket","uploadBatchSize")=+$GET(STATE("wsUploadBatchSize"),1)
+	SET OBJ("websocket","heartbeatSeconds")=+$GET(STATE("wsHeartbeatSeconds"),15)
+	SET OBJ("websocket","resumeWindowSeconds")=+$GET(STATE("wsResumeWindowSeconds"),180)
+	SET OBJ("websocket","maxInflightPerChannel")=+$GET(STATE("wsMaxInflightPerChannel"),4)
+	SET OBJ("websocket","diagnosticsEnabled")=+$GET(STATE("wsDiagnosticsEnabled"),1)
 	SET OBJ("websocket","requestTimeoutMs")=+$GET(STATE("wsRequestTimeoutMs"),15000)
 	SET OBJ("websocket","uploadBeginTimeoutMs")=+$GET(STATE("wsUploadBeginTimeoutMs"),20000)
 	SET OBJ("websocket","uploadChunkTimeoutMs")=+$GET(STATE("wsUploadChunkTimeoutMs"),30000)
@@ -363,6 +371,11 @@ APPS(STATE)
 	SET STATE("apps",6,"subtitle")="Uploads, downloads, queue activity, and progress"
 	SET STATE("apps",6,"icon")="⇅"
 	SET STATE("apps",6,"kind")="tool"
+	SET STATE("apps",7,"key")="diagnostics"
+	SET STATE("apps",7,"title")="Diagnostics"
+	SET STATE("apps",7,"subtitle")="Socket pool, transfer health, and session telemetry"
+	SET STATE("apps",7,"icon")="📈"
+	SET STATE("apps",7,"kind")="tool"
 	QUIT
 	;
 WINDOWS(STATE)
@@ -377,6 +390,8 @@ WINDOWS(STATE)
 	SET STATE("windows",5,"themeStudioEnabled")=1
 	DO WIN(.STATE,6,"win-transfers","transfers","Transfers",218,108,760,520,6,"closed",620,420,1,1)
 	SET STATE("windows",6,"transferCenterEnabled")=1
+	DO WIN(.STATE,7,"win-diagnostics","diagnostics","Diagnostics",244,126,820,520,7,"closed",640,420,1,1)
+	SET STATE("windows",7,"transportDiagnosticsEnabled")=+$GET(STATE("wsDiagnosticsEnabled"),1)
 	QUIT
 	;
 WIN(STATE,N,ID,APPKEY,TITLE,LEFT,TOP,WIDTH,HEIGHT,Z,MODE,MINW,MINH,RESIZE,DRAG)

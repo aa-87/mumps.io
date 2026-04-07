@@ -75,3 +75,9 @@ Verified chunked downloads reduce the chance of silent corruption during browser
 
 ## Transfer cleanup note
 Automatic cleanup of abandoned upload/download staging reduces the chance of stale transfer payloads lingering longer than necessary in server globals. This is a helpful operational hardening step, but it still needs to be paired with deployment-level retention, encryption, logging, and access-control policy.
+
+
+## ROI 22 — Transport diagnostics and socket health
+- Added a Diagnostics desktop app/window so the shell can inspect the advertised websocket contract, active transfer counts, terminal usage, and client-side socket telemetry without leaving the desktop.
+- `transport.health` now returns session-scoped transport health including socket pool limits, heartbeat/resume settings, upload/download activity, and open terminal counts.
+- The browser now records core and FS worker socket state transitions, pending request counts, last events, and recent socket errors for diagnostics.

@@ -239,3 +239,9 @@ A detailed Theme Studio UI tool is available in MIOOS as a dedicated desktop app
 - `MIOOSFSUP` now tracks upload timestamps plus per-chunk raw byte counts, exposes `fs.upload.status`, and purges abandoned staged uploads after a configurable TTL.
 - `MIOOSFSDN` now timestamps active download sessions and purges stale download state after a configurable TTL.
 - `MIOOSST` performs lightweight transfer cleanup during state load so abandoned transfer globals do not accumulate between refreshes.
+
+
+## ROI 22 — Transport diagnostics and socket health
+- Added a Diagnostics desktop app/window so the shell can inspect the advertised websocket contract, active transfer counts, terminal usage, and client-side socket telemetry without leaving the desktop.
+- `transport.health` now returns session-scoped transport health including socket pool limits, heartbeat/resume settings, upload/download activity, and open terminal counts.
+- The browser now records core and FS worker socket state transitions, pending request counts, last events, and recent socket errors for diagnostics.

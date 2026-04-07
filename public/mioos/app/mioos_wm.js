@@ -108,6 +108,9 @@
         if ((appKey === 'my-computer' || appKey === 'documents' || appKey === 'explorer') && this.bootstrapExplorerWindow) {
           this.$nextTick(this.bootstrapExplorerWindow.bind(this, win.id));
         }
+        if (appKey === 'diagnostics' && this.refreshTransportDiagnostics) {
+          this.$nextTick(function () { this.refreshTransportDiagnostics().catch(function () {}); }.bind(this));
+        }
         this.sendSocket({ event: 'shell.open', appKey: appKey });
       },
       focusWindow: function (windowId) {

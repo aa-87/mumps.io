@@ -68,6 +68,7 @@ COMMANDJSON(CONF,REQ,CTX,STATE,PAYLOAD,OUTJSON,ERR)
 	IF CMD="fs.rename" QUIT $$FSRENAME(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="fs.move" QUIT $$FSMOVE(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="fs.delete" QUIT $$FSDELETE(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
+	IF CMD="transport.health" QUIT $$TRANHEALTH(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="desktop.layout.save" QUIT $$DESKLAYOUT(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	SET ERR("error")="command_unsupported",ERR("detail")=CMD
 	QUIT 0
@@ -230,6 +231,63 @@ FSDELETE(STATE,CONF,TREE,OUTJSON,ERR)
 	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"fs.delete","vfs",.OUT)
 	QUIT 1
 	;
+TRANHEALTH(STATE,CONF,TREE,OUTJSON,ERR)
+	NEW OUT
+	IF '$$HEALTH(.STATE,.CONF,.OUT,.ERR) QUIT 0
+	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"transport.health","transport",.OUT)
+	QUIT 1
+	;
+HEALTH(STATE,CONF,OUT,ERR)
+	NEW TERM,COUNT,SKEY,DLID,UPID,META,OWNER,IDX
+	KILL OUT
+	SET ERR("routine")="MIOOSWS"
+	SET OUT("sessionId")=$GET(STATE("sessionId"))
+	SET OUT("principal")=$GET(STATE("principal"),"guest")
+	SET OUT("authenticated")=+$GET(STATE("authenticated"),0)
+	SET OUT("profile")=$GET(STATE("profile"),"dev")
+	SET OUT("localeCode")=$GET(STATE("localeCode"),"en")
+	SET OUT("transportModel")=$GET(STATE("transportModel"),"core-websocket-plus-app-websockets")
+	SET OUT("diagnosticsEnabled")=+$GET(STATE("wsDiagnosticsEnabled"),1)
+	SET OUT("websocket","maxSocketsPerSession")=+$GET(STATE("wsMaxSockets"),6)
+	SET OUT("websocket","coreSockets")=+$GET(STATE("wsCoreSockets"),1)
+	SET OUT("websocket","fsSockets")=+$GET(STATE("wsFsSockets"),5)
+	SET OUT("websocket","uploadBatchSize")=+$GET(STATE("wsUploadBatchSize"),1)
+	SET OUT("websocket","heartbeatSeconds")=+$GET(STATE("wsHeartbeatSeconds"),15)
+	SET OUT("websocket","resumeWindowSeconds")=+$GET(STATE("wsResumeWindowSeconds"),180)
+	SET OUT("websocket","maxInflightPerChannel")=+$GET(STATE("wsMaxInflightPerChannel"),4)
+	SET OUT("websocket","requestTimeoutMs")=+$GET(STATE("wsRequestTimeoutMs"),15000)
+	SET OUT("websocket","maxFrameBytes")=+$GET(STATE("wsMaxFrameBytes"),262144)
+	SET OUT("websocket","maxMessageBytes")=+$GET(STATE("wsMaxMessageBytes"),1048576)
+	SET OUT("vfs","rootId")=$GET(STATE("fsRootId"),"root")
+	SET OUT("vfs","homeId")=$GET(STATE("fsHomeId"),"root")
+	SET OUT("vfs","uploadStaleSeconds")=+$GET(STATE("uploadStaleSeconds"),1800)
+	SET OUT("vfs","downloadStaleSeconds")=+$GET(STATE("downloadStaleSeconds"),900)
+	SET OUT("vfs","uploadConcurrency")=$$UPCONCUR^MIOOSFSUP(.CONF)
+	SET OUT("vfs","uploadChunkBytes")=$$UPCHUNK^MIOOSFSUP(.CONF)
+	SET OUT("vfs","downloadChunkBytes")=$$DLCHUNK^MIOOSFSDN(.CONF)
+	SET (OUT("uploads","activeCount"),OUT("uploads","receivedBytes"),OUT("uploads","declaredBytes"))=0
+	SET UPID=""
+	FOR  SET UPID=$ORDER(^MIO("MIOOS","UPLOAD","META",UPID)) QUIT:UPID=""  DO
+	. SET META=$GET(^MIO("MIOOS","UPLOAD","META",UPID))
+	. SET OWNER=$PIECE(META,"^",4)
+	. IF OWNER'=$GET(STATE("principal"),"guest") QUIT
+	. SET OUT("uploads","activeCount")=OUT("uploads","activeCount")+1
+	. SET OUT("uploads","receivedBytes")=OUT("uploads","receivedBytes")+$GET(^MIO("MIOOS","UPLOAD","INFO",UPID,"bytes"))
+	. SET OUT("uploads","declaredBytes")=OUT("uploads","declaredBytes")+$PIECE(META,"^",7)
+	SET SKEY=$$SESSIONKEY^MIOOSFSDN(.STATE)
+	SET (OUT("downloads","activeCount"),OUT("downloads","bytes"))=0
+	SET DLID=""
+	FOR  SET DLID=$ORDER(^MIO("MIOOS","DL",SKEY,DLID)) QUIT:DLID=""  DO
+	. SET OUT("downloads","activeCount")=OUT("downloads","activeCount")+1
+	. SET OUT("downloads","bytes")=OUT("downloads","bytes")+$GET(^MIO("MIOOS","DL",SKEY,DLID,"size"))
+	KILL TERM DO LIST^MIOOSTERM(.STATE,$NAME(TERM("sessions")))
+	SET (COUNT,IDX)=0 FOR  SET IDX=$ORDER(TERM("sessions",IDX)) QUIT:IDX'>0  SET COUNT=COUNT+1
+	SET OUT("terminal","openCount")=COUNT
+	SET OUT("terminal","maxSessions")=+$GET(STATE("terminal","maxSessions"),8)
+	SET OUT("terminal","engine")=$GET(STATE("terminal","engine"),"xtermjs")
+	SET OUT("terminal","transport")=$GET(STATE("terminal","transport"),"pipe")
+	QUIT 1
+	;
 	;
 RAWJSONFIELD(PAYLOAD,NAME)
 	NEW PAT,POS,REST,ENDQ,VAL
@@ -274,6 +332,10 @@ HELLOJSON(STATE,CONF)
 	SET OBJ("socketPool","coreSockets")=+$GET(STATE("wsCoreSockets"),1)
 	SET OBJ("socketPool","fsSockets")=+$GET(STATE("wsFsSockets"),5)
 	SET OBJ("socketPool","uploadBatchSize")=+$GET(STATE("wsUploadBatchSize"),1)
+	SET OBJ("socketPool","heartbeatSeconds")=+$GET(STATE("wsHeartbeatSeconds"),15)
+	SET OBJ("socketPool","resumeWindowSeconds")=+$GET(STATE("wsResumeWindowSeconds"),180)
+	SET OBJ("socketPool","maxInflightPerChannel")=+$GET(STATE("wsMaxInflightPerChannel"),4)
+	SET OBJ("socketPool","diagnosticsEnabled")=+$GET(STATE("wsDiagnosticsEnabled"),1)
 	SET OBJ("terminalEngine")=$GET(STATE("terminal","engine"),"xtermjs")
 	SET OBJ("terminalTransport")=$GET(STATE("terminal","transport"),"pipe")
 	QUIT $$EN^MIOJSON1(.OBJ)

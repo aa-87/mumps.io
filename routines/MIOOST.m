@@ -23,6 +23,8 @@ MIOOST ; MIOOS tests
 	DO T022
 	DO T023
 	DO T024
+	DO T025
+	DO T026
 	QUIT
 	;
 RESET
@@ -491,4 +493,35 @@ T024
 	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","@click=""retryTransfer(item)"""),"[MIOOST][T024][retry transfer button]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","fs.upload.status"),"[MIOOST][T024][ws upload status]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 21 — Transfer resiliency, cancellation, retry, and stale-session cleanup"),"[MIOOST][T024][llm roi21]")
+	QUIT
+
+	;
+T025
+	NEW CONF,REQ,CTX,STATE,ERR,JSON,OBJ,PAY
+	DO RESET
+	DO CONFDEF^MIOOS(.CONF)
+	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T025][load]")
+	SET JSON=$$BOOTJSON^MIOOSST(.STATE,.CONF)
+	DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T025][decode]")
+	DO EQ^MIOTASSERT($GET(OBJ("websocket","heartbeatSeconds")),15,"[MIOOST][T025][heartbeat]")
+	DO EQ^MIOTASSERT($GET(OBJ("websocket","resumeWindowSeconds")),180,"[MIOOST][T025][resume]")
+	DO EQ^MIOTASSERT($GET(OBJ("websocket","maxInflightPerChannel")),4,"[MIOOST][T025][inflight]")
+	DO EQ^MIOTASSERT($GET(OBJ("websocket","diagnosticsEnabled")),1,"[MIOOST][T025][diagnostics enabled]")
+	DO EQ^MIOTASSERT($GET(OBJ("apps",7,"key")),"diagnostics","[MIOOST][T025][diagnostics app]")
+	SET PAY="{""event"":""desktop.command"",""requestId"":""transport-1"",""command"":""transport.health""}"
+	DO OK^MIOTASSERT($$COMMANDJSON^MIOOSWS(.CONF,.REQ,.CTX,.STATE,PAY,.JSON,.ERR),"[MIOOST][T025][transport health]")
+	DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T025][transport decode]")
+	DO EQ^MIOTASSERT($GET(OBJ("transport","websocket","maxSocketsPerSession")),6,"[MIOOST][T025][health max sockets]")
+	DO EQ^MIOTASSERT($GET(OBJ("transport","diagnosticsEnabled")),1,"[MIOOST][T025][health diagnostics]")
+	QUIT
+	;
+T026
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-transport-diagnostics-window=""1"""),"[MIOOST][T026][diagnostics window token]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","refreshTransportDiagnostics()"),"[MIOOST][T026][diagnostics refresh]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","transportSocketRows"),"[MIOOST][T026][socket telemetry rows]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_ws.js","setSocketTelemetry('core-1'"),"[MIOOST][T026][core socket telemetry]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","label: 'FS Worker ' + ordinal"),"[MIOOST][T026][worker socket telemetry]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","transport.health"),"[MIOOST][T026][ws transport health]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-diagnostics-shell"),"[MIOOST][T026][diagnostics css]")
+	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 22 — Transport diagnostics and socket health"),"[MIOOST][T026][llm roi22]")
 	QUIT

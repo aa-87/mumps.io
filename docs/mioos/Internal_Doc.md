@@ -132,3 +132,9 @@ A detailed Theme Studio UI tool is available in MIOOS as a dedicated desktop app
 
 ## ROI 21 — Transfer lifecycle controls
 `MIOOSFSUP` now records `createdAt`/`updatedAt`, keeps raw chunk byte accounting by chunk index, exposes `STATUS^MIOOSFSUP`, and purges abandoned staged uploads through `PURGE^MIOOSFSUP`. `MIOOSFSDN` mirrors that pattern for active download sessions. The Transfers window now uses controller hooks from `mioos_core.js` so cancel and retry behavior stays in the browser shell rather than leaking transfer state into generic window code.
+
+
+## ROI 22 — Transport diagnostics and socket health
+- Added a Diagnostics desktop app/window so the shell can inspect the advertised websocket contract, active transfer counts, terminal usage, and client-side socket telemetry without leaving the desktop.
+- `transport.health` now returns session-scoped transport health including socket pool limits, heartbeat/resume settings, upload/download activity, and open terminal counts.
+- The browser now records core and FS worker socket state transitions, pending request counts, last events, and recent socket errors for diagnostics.

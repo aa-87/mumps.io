@@ -197,8 +197,10 @@
     var seq = 0;
     var pending = {};
     var timeouts = uploadTimeoutConfig(vm);
+    var socketId = 'fs-' + ordinal + '-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
     if (!path || !window.WebSocket) throw new Error('socket_unavailable');
     ws = new window.WebSocket(protocol + window.location.host + path);
+    if (vm.setSocketTelemetry) vm.setSocketTelemetry(socketId, { role: 'fs', ordinal: ordinal, label: 'FS Worker ' + ordinal, state: 'connecting', pendingCount: 0, openedAt: 0, helloAt: 0, lastMessageAt: 0, lastEvent: 'connect', lastError: '' });
     client = {
       socket: ws,
       ready: false,
@@ -207,6 +209,7 @@
       openPromise: null,
       close: function () {
         this.closed = true;
+        if (vm.setSocketTelemetry) vm.setSocketTelemetry(socketId, { state: 'closing', lastEvent: 'close_request' });
         try {
           if (ws && ws.readyState === window.WebSocket.CONNECTING) return;
           if (ws && ws.readyState < window.WebSocket.CLOSING) ws.close();
@@ -221,10 +224,12 @@
             var timeoutMs = Math.max(timeouts.uploadChunkTimeoutMs, Math.min(180000, timeouts.uploadChunkTimeoutMs + Math.floor(payloadChars / 2048) * 250));
             var timer = window.setTimeout(function () {
               if (pending[requestId]) delete pending[requestId];
+              if (vm.setSocketTelemetry) vm.setSocketTelemetry(socketId, { pendingCount: Object.keys(pending || {}).length, lastError: 'worker_command_timeout', lastEvent: 'timeout' });
               reject(new Error('worker_command_timeout'));
             }, timeoutMs);
-            pending[requestId] = { resolve: function (msg) { window.clearTimeout(timer); resolve(msg); }, reject: function (err) { window.clearTimeout(timer); reject(err); } };
+            pending[requestId] = { resolve: function (msg) { window.clearTimeout(timer); if (vm.setSocketTelemetry) vm.setSocketTelemetry(socketId, { pendingCount: Math.max(0, Object.keys(pending || {}).length - 1), lastMessageAt: Date.now(), lastEvent: command }); resolve(msg); }, reject: function (err) { window.clearTimeout(timer); if (vm.setSocketTelemetry) vm.setSocketTelemetry(socketId, { pendingCount: Math.max(0, Object.keys(pending || {}).length - 1), lastMessageAt: Date.now(), lastError: (err && err.message) || 'worker_reject', lastEvent: 'reject' }); reject(err); } };
             try {
+              if (vm.setSocketTelemetry) vm.setSocketTelemetry(socketId, { pendingCount: Object.keys(pending || {}).length, lastEvent: command });
               ws.send(JSON.stringify(Object.assign({ event: 'desktop.command', command: command, requestId: requestId }, payload || {})));
             } catch (err) {
               delete pending[requestId];
@@ -244,6 +249,7 @@
       }, timeouts.uploadSocketOpenTimeoutMs);
       ws.addEventListener('open', function () {
         client.ready = true;
+        if (vm.setSocketTelemetry) vm.setSocketTelemetry(socketId, { state: 'open', openedAt: Date.now(), lastEvent: 'open', lastError: '' });
         try { ws.send(JSON.stringify({ event: 'hello', role: 'fs', socketOrdinal: ordinal })); } catch (err) {}
         window.setTimeout(function () {
           if (settled || client.helloReady) return;
@@ -253,6 +259,7 @@
         }, 1000);
       });
       ws.addEventListener('error', function () {
+        if (vm.setSocketTelemetry) vm.setSocketTelemetry(socketId, { state: 'error', lastEvent: 'error', lastError: 'socket_error', lastMessageAt: Date.now() });
         if (settled) return;
         settled = true;
         window.clearTimeout(timer);
@@ -260,6 +267,7 @@
       });
       ws.addEventListener('close', function () {
         var keys = Object.keys(pending);
+        if (vm.setSocketTelemetry) vm.setSocketTelemetry(socketId, { state: 'closed', pendingCount: 0, lastEvent: 'close', lastError: 'socket_closed', lastMessageAt: Date.now() });
         client.ready = false;
         client.closed = true;
         keys.forEach(function (key) {
@@ -271,8 +279,10 @@
         var msg;
         var ref;
         try { msg = JSON.parse(evt.data); } catch (err) { return; }
+        if (vm.setSocketTelemetry) vm.setSocketTelemetry(socketId, { lastMessageAt: Date.now(), lastEvent: msg.event || 'message', lastError: (msg.event === ((vm.boot.routes || {}).commandErrorEvent || 'desktop.error')) ? (msg.detail || msg.error || 'desktop.error') : '' });
         if (msg.event === 'hello') {
           client.helloReady = true;
+          if (vm.setSocketTelemetry) vm.setSocketTelemetry(socketId, { state: 'ready', helloAt: Date.now(), lastEvent: 'hello' });
           if (!settled) {
             settled = true;
             window.clearTimeout(timer);
