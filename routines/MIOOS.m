@@ -57,6 +57,13 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","desktop","startMenuStyle"))="" SET CONF("mioos","desktop","startMenuStyle")="xp-two-column"
 	IF $GET(CONF("mioos","desktop","windowManager"))="" SET CONF("mioos","desktop","windowManager")="mioos-native-vue-css"
 	IF $GET(CONF("mioos","desktop","authRequired"))="" SET CONF("mioos","desktop","authRequired")=0
+	IF $GET(CONF("mioos","modules","enabled"))="" SET CONF("mioos","modules","enabled")=1
+	IF $GET(CONF("mioos","modules","manifestVersion"))="" SET CONF("mioos","modules","manifestVersion")=1
+	IF $GET(CONF("mioos","modules","launcher"))="" SET CONF("mioos","modules","launcher")="desktop-icons-and-menu"
+	IF $GET(CONF("mioos","modules","appCatalogEnabled"))="" SET CONF("mioos","modules","appCatalogEnabled")=1
+	IF $GET(CONF("mioos","modules","dynamicWindows"))="" SET CONF("mioos","modules","dynamicWindows")=1
+	IF $GET(CONF("mioos","modules","notes","enabled"))="" SET CONF("mioos","modules","notes","enabled")=1
+	IF $GET(CONF("mioos","modules","opsCenter","enabled"))="" SET CONF("mioos","modules","opsCenter","enabled")=1
 	IF $GET(CONF("mioos","dev","enabled"))="" SET CONF("mioos","dev","enabled")=ISDEV
 	IF $GET(CONF("mioos","dev","authDisabled"))="" SET CONF("mioos","dev","authDisabled")=0
 	IF $GET(CONF("mioos","dev","principal"))="" SET CONF("mioos","dev","principal")="dev-user"

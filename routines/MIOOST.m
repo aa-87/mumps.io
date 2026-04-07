@@ -25,6 +25,8 @@ MIOOST ; MIOOS tests
 	DO T024
 	DO T025
 	DO T026
+	DO T027
+	DO T028
 	QUIT
 	;
 RESET
@@ -524,4 +526,32 @@ T026
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","transport.health"),"[MIOOST][T026][ws transport health]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-diagnostics-shell"),"[MIOOST][T026][diagnostics css]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 22 — Transport diagnostics and socket health"),"[MIOOST][T026][llm roi22]")
+	QUIT
+
+T027
+	NEW CONF,REQ,CTX,STATE,ERR,JSON,OBJ,PAY
+	DO RESET
+	DO CONFDEF^MIOOS(.CONF)
+	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T027][load]")
+	SET JSON=$$BOOTJSON^MIOOSST(.STATE,.CONF)
+	DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T027][decode]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("desktop","moduleSystem","enabled")),1,"[MIOOST][T027][module enabled]")
+	DO EQ^MIOTASSERT($GET(OBJ("apps",8,"key")),"app-catalog","[MIOOST][T027][catalog app]")
+	DO EQ^MIOTASSERT($GET(OBJ("modules",1,"id")),"module-notes","[MIOOST][T027][module notes]")
+	DO EQ^MIOTASSERT($GET(OBJ("windows",9,"moduleId")),"module-notes","[MIOOST][T027][module window]")
+	SET PAY="{""event"":""desktop.command"",""requestId"":""module-1"",""command"":""module.catalog""}"
+	DO OK^MIOTASSERT($$COMMANDJSON^MIOOSWS(.CONF,.REQ,.CTX,.STATE,PAY,.JSON,.ERR),"[MIOOST][T027][module catalog]")
+	DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T027][module decode]")
+	DO EQ^MIOTASSERT($GET(OBJ("command")),"module.catalog","[MIOOST][T027][module command]")
+	DO EQ^MIOTASSERT($GET(OBJ("module","count"))>1,1,"[MIOOST][T027][module count]")
+	QUIT
+	;
+T028
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-module-catalog-window=""1"""),"[MIOOST][T028][catalog token]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-module-window=""1"""),"[MIOOST][T028][module window token]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","refreshModuleCatalog"),"[MIOOST][T028][refresh catalog]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","openModuleEntry"),"[MIOOST][T028][open module entry]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","module.catalog"),"[MIOOST][T028][ws module catalog]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-module-catalog-shell"),"[MIOOST][T028][module catalog css]")
+	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 23 — Module catalog and built-in module host"),"[MIOOST][T028][llm roi23]")
 	QUIT

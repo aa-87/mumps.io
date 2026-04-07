@@ -81,3 +81,9 @@ Automatic cleanup of abandoned upload/download staging reduces the chance of sta
 - Added a Diagnostics desktop app/window so the shell can inspect the advertised websocket contract, active transfer counts, terminal usage, and client-side socket telemetry without leaving the desktop.
 - `transport.health` now returns session-scoped transport health including socket pool limits, heartbeat/resume settings, upload/download activity, and open terminal counts.
 - The browser now records core and FS worker socket state transitions, pending request counts, last events, and recent socket errors for diagnostics.
+
+
+## ROI 23 — Module catalog and built-in module host
+- Landed a server-authored module registry in the boot contract with manifest versioning, launcher metadata, and built-in module descriptors.
+- Added an App Catalog window plus reusable module-host windows so built-in modules can ship on the same chrome and transport contract as core MIOOS apps.
+- Added built-in Notes and Ops Center modules as the first module-host examples, alongside a `module.catalog` websocket command for refresh and later extensibility work.

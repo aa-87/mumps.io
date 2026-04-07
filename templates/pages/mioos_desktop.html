@@ -444,6 +444,91 @@
             </div>
           </div>
         </template>
+        <template v-else-if="win.appKey === 'app-catalog'">
+          <div class="mioos-module-catalog-shell win7" data-module-catalog-window="1">
+            <div class="window-body mioos-seven-body">
+              <div class="mioos-module-catalog-head">
+                <div>
+                  <strong>App Catalog</strong>
+                  <span>Installed built-in modules, launch policy, and reusable window hosts.</span>
+                </div>
+                <div class="mioos-seven-toolbar">
+                  <button type="button" @click="refreshModuleCatalog()" :disabled="moduleCatalog.loading">[[ moduleCatalog.loading ? 'Refreshing…' : 'Refresh catalog' ]]</button>
+                </div>
+              </div>
+              <div class="mioos-module-catalog-summary">
+                <span>[[ moduleCatalogRows().length ]] installed</span>
+                <span>Manifest [[ (((boot.desktop || {}).moduleSystem || {}).manifestVersion) || 1 ]]</span>
+                <span>Updated [[ formatTransportTime(moduleCatalog.refreshedAt) ]]</span>
+              </div>
+              <div class="mioos-module-catalog-grid">
+                <article class="mioos-module-card" v-for="module in moduleCatalogRows()" :key="module.id">
+                  <div class="mioos-module-card-head">
+                    <span class="mioos-module-icon">[[ module.icon || '🧩' ]]</span>
+                    <div>
+                      <strong>[[ module.title || module.id ]]</strong>
+                      <span>[[ module.subtitle || module.description || '' ]]</span>
+                    </div>
+                  </div>
+                  <div class="mioos-module-badges">
+                    <span class="mioos-module-badge" v-for="badge in moduleBadges(module)" :key="badge">[[ badge ]]</span>
+                  </div>
+                  <p class="mioos-module-card-copy">[[ module.description || module.subtitle || '' ]]</p>
+                  <div class="mioos-module-card-meta">
+                    <span>Version [[ module.version || '1.0' ]]</span>
+                    <span>App key [[ module.appKey || module.id ]]</span>
+                  </div>
+                  <div class="mioos-module-card-actions">
+                    <button type="button" @click="openModuleEntry(module.id)">Open</button>
+                  </div>
+                </article>
+              </div>
+              <div class="mioos-module-catalog-error" v-if="moduleCatalog.error">[[ moduleCatalog.error ]]</div>
+            </div>
+          </div>
+        </template>
+        <template v-else-if="win.moduleWindow">
+          <div class="mioos-module-window-shell win7" data-module-window="1" :data-module-id="win.moduleId || win.appKey">
+            <div class="window-body mioos-seven-body">
+              <div class="mioos-module-window-head">
+                <div>
+                  <strong>[[ ((moduleWindowMeta(win) || {}).title) || win.title ]]</strong>
+                  <span>[[ moduleWindowStatus(win) ]]</span>
+                </div>
+                <div class="mioos-module-badges">
+                  <span class="mioos-module-badge" v-for="badge in moduleBadges(moduleWindowMeta(win))" :key="badge">[[ badge ]]</span>
+                </div>
+              </div>
+              <div class="mioos-module-window-grid">
+                <section class="mioos-module-panel mioos-module-panel--primary" v-if="(win.moduleId || '') === 'module-notes'">
+                  <h4>Scratch note</h4>
+                  <textarea v-model="win.moduleState.draft" class="mioos-module-notes" placeholder="Capture release notes, file transfer follow-ups, or shell TODOs here."></textarea>
+                  <small>This stays in the current shell session and demonstrates module-local UI state inside the shared window host.</small>
+                </section>
+                <section class="mioos-module-panel mioos-module-panel--primary" v-else-if="(win.moduleId || '') === 'module-ops-center'">
+                  <h4>Operational snapshot</h4>
+                  <dl class="mioos-module-facts">
+                    <div><dt>User</dt><dd>[[ (boot.user || {}).displayName || 'Guest' ]]</dd></div>
+                    <div><dt>Profile</dt><dd>[[ (boot.product || {}).profile || 'dev' ]]</dd></div>
+                    <div><dt>Locale</dt><dd>[[ (boot.locale || {}).code || 'en' ]] / [[ (boot.locale || {}).dir || 'ltr' ]]</dd></div>
+                    <div><dt>Realtime</dt><dd>[[ ((boot.desktop || {}).realtimeContract) || ((boot.session || {}).transportModel) || 'core-websocket-plus-app-websockets' ]]</dd></div>
+                    <div><dt>Modules</dt><dd>[[ moduleCatalogRows().length ]] installed</dd></div>
+                    <div><dt>Diagnostics</dt><dd>[[ (((boot.websocket || {}).diagnosticsEnabled) ? 'enabled' : 'disabled') ]]</dd></div>
+                  </dl>
+                </section>
+                <section class="mioos-module-panel">
+                  <h4>Manifest cards</h4>
+                  <div class="mioos-module-cardlist">
+                    <article class="mioos-module-mini-card" v-for="card in moduleCards(moduleWindowMeta(win))" :key="card.title">
+                      <strong>[[ card.title ]]</strong>
+                      <p>[[ card.detail ]]</p>
+                    </article>
+                  </div>
+                </section>
+              </div>
+            </div>
+          </div>
+        </template>
         <template v-else-if="win.appKey === 'control-panel'">
           <div class="mioos-list-row" v-for="item in view.controlPanel" :key="item.title">
             <strong>[[ item.title ]]</strong>

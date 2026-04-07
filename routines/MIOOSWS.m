@@ -69,6 +69,7 @@ COMMANDJSON(CONF,REQ,CTX,STATE,PAYLOAD,OUTJSON,ERR)
 	IF CMD="fs.move" QUIT $$FSMOVE(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="fs.delete" QUIT $$FSDELETE(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="transport.health" QUIT $$TRANHEALTH(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
+	IF CMD="module.catalog" QUIT $$MODCAT(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="desktop.layout.save" QUIT $$DESKLAYOUT(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	SET ERR("error")="command_unsupported",ERR("detail")=CMD
 	QUIT 0
@@ -229,6 +230,18 @@ FSDELETE(STATE,CONF,TREE,OUTJSON,ERR)
 	NEW OUT
 	IF '$$DELETE^MIOOSFS(.STATE,$GET(TREE("id")),.OUT,.ERR) QUIT 0
 	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"fs.delete","vfs",.OUT)
+	QUIT 1
+	;
+MODCAT(STATE,CONF,TREE,OUTJSON,ERR)
+	NEW OUT
+	KILL OUT
+	SET OUT("enabled")=+$GET(STATE("moduleSystemEnabled"),1)
+	SET OUT("manifestVersion")=+$GET(STATE("moduleManifestVersion"),1)
+	SET OUT("launcher")=$GET(STATE("moduleLauncher"),"desktop-icons-and-menu")
+	SET OUT("appCatalogEnabled")=+$GET(STATE("moduleAppCatalogEnabled"),1)
+	SET OUT("count")=+$GET(STATE("moduleCount"),0)
+	MERGE OUT("modules")=STATE("modules")
+	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"module.catalog","module",.OUT)
 	QUIT 1
 	;
 TRANHEALTH(STATE,CONF,TREE,OUTJSON,ERR)

@@ -62,6 +62,7 @@
           transferControllers: {},
           transportDiagnostics: { loading: false, refreshedAt: 0, error: '', report: {} },
           socketTelemetry: {},
+          moduleCatalog: { loading: false, refreshedAt: 0, error: '' },
           desktopUi: {
             iconSize: 'medium',
             sortMode: 'manual',
@@ -156,6 +157,7 @@
           this.launcherEntries = window.MIOOSState.deepClone(this.boot.apps || []);
           this.desktopEntries = window.MIOOSState.deepClone((this.view && this.view.desktopEntries) || this.boot.desktopEntries || this.boot.apps || []);
           this.windows = window.MIOOSState.deepClone(this.boot.windows || []);
+          this.ensureModuleWindowState();
           this.desktopUi.iconSize = ((((this.boot || {}).desktop || {}).icons || {}).size) || 'medium';
           this.desktopUi.sortMode = ((((this.boot || {}).desktop || {}).icons || {}).sortMode) || 'manual';
           this.zCounter = this.windows.reduce(function (max, win) { return Math.max(max, win.z || 0); }, 10) + 1;
@@ -243,6 +245,73 @@
             self.transportDiagnostics.error = (err && (err.detail || err.error || err.message)) || 'transport_health_failed';
             throw err;
           });
+        },
+        ensureModuleWindowState: function () {
+          var modules = this.boot.modules || [];
+          (this.windows || []).forEach(function (win) {
+            if (!win || !win.moduleWindow) return;
+            if (!win.moduleState) win.moduleState = {};
+            if (win.moduleState.draft == null) win.moduleState.draft = '';
+            if (win.moduleState.filter == null) win.moduleState.filter = '';
+            if (win.moduleState.lastOpenedAt == null) win.moduleState.lastOpenedAt = 0;
+          });
+          return modules;
+        },
+        moduleCatalogRows: function () {
+          return (this.boot.modules || []).slice().sort(function (a, b) {
+            return String(a.category || '').localeCompare(String(b.category || '')) || String(a.title || a.id || '').localeCompare(String(b.title || b.id || ''));
+          });
+        },
+        moduleRecord: function (moduleId) {
+          return (this.boot.modules || []).find(function (item) { return item.id === moduleId || item.appKey === moduleId; }) || null;
+        },
+        moduleWindowMeta: function (win) {
+          if (!win) return null;
+          return this.moduleRecord(win.moduleId || win.appKey);
+        },
+        moduleCards: function (module) {
+          var cards = (module && module.cards) || [];
+          return Array.isArray(cards) ? cards : [];
+        },
+        moduleBadges: function (module) {
+          var badges = [];
+          if (!module) return badges;
+          if (module.builtIn) badges.push('Built-in');
+          if (module.installed) badges.push('Installed');
+          if (module.singleton) badges.push('Singleton');
+          if (module.category) badges.push(String(module.category));
+          return badges;
+        },
+        refreshModuleCatalog: function () {
+          var self = this;
+          this.moduleCatalog.loading = true;
+          this.moduleCatalog.error = '';
+          return this.command('module.catalog', {}).then(function (msg) {
+            self.moduleCatalog.loading = false;
+            self.moduleCatalog.refreshedAt = Date.now();
+            self.boot.modules = window.MIOOSState.deepClone((((msg || {}).module || {}).modules) || []);
+            self.ensureModuleWindowState();
+            return self.boot.modules;
+          }).catch(function (err) {
+            self.moduleCatalog.loading = false;
+            self.moduleCatalog.error = (err && (err.detail || err.error || err.message)) || 'module_catalog_failed';
+            throw err;
+          });
+        },
+        openModuleCatalog: function () {
+          this.openApp('app-catalog');
+        },
+        openModuleEntry: function (moduleId) {
+          var module = this.moduleRecord(moduleId);
+          if (!module) return;
+          this.openApp(module.appKey || module.id);
+        },
+        moduleWindowStatus: function (win) {
+          var module = this.moduleWindowMeta(win);
+          if (!module) return 'Module unavailable';
+          if (module.id === 'module-ops-center') return 'Session ' + (this.boot.session.id || 'mioos-shell') + ' · ' + (this.boot.user.displayName || 'Guest');
+          if (module.id === 'module-notes') return 'Scratch surface · ' + ((win.moduleState && win.moduleState.draft && win.moduleState.draft.length) || 0) + ' chars';
+          return module.description || module.subtitle || 'Ready';
         },
         setTransferController: function (transferId, controller) {
           if (!transferId) return;

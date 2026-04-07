@@ -126,7 +126,14 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("perfRenderBudgetMs")=16
 	SET STATE("perfPayloadMode")="tmp-global-safe"
 	SET STATE("perfTransport")="websocket-first-http-refresh"
+	SET STATE("moduleSystemEnabled")=+$GET(CONF("mioos","modules","enabled"),1)
+	SET STATE("moduleManifestVersion")=+$GET(CONF("mioos","modules","manifestVersion"),1)
+	IF STATE("moduleManifestVersion")<1 SET STATE("moduleManifestVersion")=1
+	SET STATE("moduleLauncher")=$GET(CONF("mioos","modules","launcher"),"desktop-icons-and-menu")
+	SET STATE("moduleAppCatalogEnabled")=+$GET(CONF("mioos","modules","appCatalogEnabled"),1)
+	SET STATE("moduleDynamicWindows")=+$GET(CONF("mioos","modules","dynamicWindows"),1)
 	DO LOADTERM^MIOOSTERM(.STATE,.CONF)
+	DO MODULES(.STATE,.CONF)
 	DO APPS(.STATE)
 	DO WINDOWS(.STATE)
 	DO LOADPREFS(.STATE,.CONF)
@@ -254,6 +261,13 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","windowing","snapModel")="edges-and-corners"
 	SET OBJ("desktop","windowing","doubleClickTitlebar")=1
 	SET OBJ("desktop","windowing","dropUpload")=1
+	SET OBJ("desktop","moduleSystem","enabled")=+$GET(STATE("moduleSystemEnabled"),1)
+	SET OBJ("desktop","moduleSystem","launcher")=$GET(STATE("moduleLauncher"),"desktop-icons-and-menu")
+	SET OBJ("desktop","moduleSystem","manifestVersion")=+$GET(STATE("moduleManifestVersion"),1)
+	SET OBJ("desktop","moduleSystem","appCatalogEnabled")=+$GET(STATE("moduleAppCatalogEnabled"),1)
+	SET OBJ("desktop","moduleSystem","dynamicWindows")=+$GET(STATE("moduleDynamicWindows"),1)
+	SET OBJ("desktop","moduleSystem","appCatalogKey")="app-catalog"
+	SET OBJ("desktop","moduleSystem","moduleCount")=+$GET(STATE("moduleCount"),0)
 	SET OBJ("auth","required")=+$GET(STATE("authRequired"),0)
 	SET OBJ("auth","enabled")=+$GET(STATE("localAuthEnabled"),0)
 	SET OBJ("auth","guestLoginEnabled")=+$GET(STATE("guestLoginEnabled"),0)
@@ -302,6 +316,7 @@ BOOTARY(STATE,CONF,OBJ)
 	MERGE OBJ("apps")=STATE("apps")
 	DO MERGELAYOUT(.STATE,$NAME(OBJ("apps")))
 	MERGE OBJ("windows")=STATE("windows")
+	MERGE OBJ("modules")=STATE("modules")
 	SET OBJ("websocket","maxSocketsPerSession")=+$GET(STATE("wsMaxSockets"),6)
 	SET OBJ("websocket","coreSockets")=+$GET(STATE("wsCoreSockets"),1)
 	SET OBJ("websocket","fsSockets")=+$GET(STATE("wsFsSockets"),5)
@@ -338,7 +353,7 @@ BOOTARY(STATE,CONF,OBJ)
 	QUIT
 	;
 APPS(STATE)
-	NEW CODE
+	NEW CODE,N,I,KEY
 	SET CODE=$GET(STATE("localeCode"),"en")
 	KILL STATE("apps")
 	SET STATE("apps",1,"key")="my-computer"
@@ -376,10 +391,90 @@ APPS(STATE)
 	SET STATE("apps",7,"subtitle")="Socket pool, transfer health, and session telemetry"
 	SET STATE("apps",7,"icon")="📈"
 	SET STATE("apps",7,"kind")="tool"
+	SET N=7
+	IF +$GET(STATE("moduleAppCatalogEnabled"),1)=1 DO
+	. SET N=N+1
+	. SET STATE("apps",N,"key")="app-catalog"
+	. SET STATE("apps",N,"title")=$$TXT^MIOOSI18N(CODE,"app.app-catalog.title","App Catalog")
+	. SET STATE("apps",N,"subtitle")=$$TXT^MIOOSI18N(CODE,"app.app-catalog.subtitle","Installed modules, launch policy, and built-in surfaces")
+	. SET STATE("apps",N,"icon")="🧩"
+	. SET STATE("apps",N,"kind")="system"
+	SET I=0 FOR  SET I=$ORDER(STATE("modules",I)) QUIT:'I  DO
+	. QUIT:+$GET(STATE("modules",I,"enabled"))'=1
+	. SET N=N+1
+	. SET KEY=$GET(STATE("modules",I,"appKey"),$GET(STATE("modules",I,"id")))
+	. SET STATE("apps",N,"key")=KEY
+	. SET STATE("apps",N,"title")=$GET(STATE("modules",I,"title"),KEY)
+	. SET STATE("apps",N,"subtitle")=$GET(STATE("modules",I,"subtitle"),$GET(STATE("modules",I,"description")))
+	. SET STATE("apps",N,"icon")=$GET(STATE("modules",I,"icon"),"🧩")
+	. SET STATE("apps",N,"kind")="module"
+	. SET STATE("apps",N,"moduleId")=$GET(STATE("modules",I,"id"))
+	. SET STATE("apps",N,"moduleCategory")=$GET(STATE("modules",I,"category"),"general")
+	. SET STATE("apps",N,"moduleBuiltIn")=+$GET(STATE("modules",I,"builtIn"),1)
+	. SET STATE("apps",N,"moduleVersion")=$GET(STATE("modules",I,"version"),"1.0")
+	QUIT
+	;
+MODULES(STATE,CONF)
+	NEW CODE,N
+	SET CODE=$GET(STATE("localeCode"),"en")
+	KILL STATE("modules")
+	SET N=0
+	IF +$GET(STATE("moduleSystemEnabled"),1)'=1 SET STATE("moduleCount")=0 QUIT
+	IF +$GET(CONF("mioos","modules","notes","enabled"),1)=1 DO
+	. SET N=N+1
+	. SET STATE("modules",N,"id")="module-notes"
+	. SET STATE("modules",N,"appKey")="module-notes"
+	. SET STATE("modules",N,"windowId")="win-module-notes"
+	. SET STATE("modules",N,"title")=$$TXT^MIOOSI18N(CODE,"module.notes.title","Notes")
+	. SET STATE("modules",N,"subtitle")=$$TXT^MIOOSI18N(CODE,"module.notes.subtitle","A lightweight notes surface for quick capture inside MIOOS")
+	. SET STATE("modules",N,"description")=$$TXT^MIOOSI18N(CODE,"module.notes.description","Capture a short scratch note, track a few pinned cards, and keep module state inside the shell contract.")
+	. SET STATE("modules",N,"icon")="📝"
+	. SET STATE("modules",N,"category")="productivity"
+	. SET STATE("modules",N,"version")="1.0"
+	. SET STATE("modules",N,"kind")="module"
+	. SET STATE("modules",N,"surface")="notes-board"
+	. SET STATE("modules",N,"windowTitle")=$GET(STATE("modules",N,"title"))
+	. SET STATE("modules",N,"installed")=1
+	. SET STATE("modules",N,"enabled")=1
+	. SET STATE("modules",N,"builtIn")=1
+	. SET STATE("modules",N,"singleton")=1
+	. SET STATE("modules",N,"launcherEnabled")=1
+	. SET STATE("modules",N,"cards",1,"title")="Quick capture"
+	. SET STATE("modules",N,"cards",1,"detail")="Use this space for release notes, shell TODOs, or operator breadcrumbs that do not belong in the terminal buffer."
+	. SET STATE("modules",N,"cards",2,"title")="Server-authored"
+	. SET STATE("modules",N,"cards",2,"detail")="The module manifest, window contract, and launcher metadata are emitted by MUMPS in the desktop boot payload."
+	. SET STATE("modules",N,"cards",3,"title")="No extra runtime"
+	. SET STATE("modules",N,"cards",3,"detail")="Modules stay inside the existing SSR plus Vue UMD shell model without introducing a separate package manager."
+	IF +$GET(CONF("mioos","modules","opsCenter","enabled"),1)=1 DO
+	. SET N=N+1
+	. SET STATE("modules",N,"id")="module-ops-center"
+	. SET STATE("modules",N,"appKey")="module-ops-center"
+	. SET STATE("modules",N,"windowId")="win-module-ops-center"
+	. SET STATE("modules",N,"title")=$$TXT^MIOOSI18N(CODE,"module.ops.title","Ops Center")
+	. SET STATE("modules",N,"subtitle")=$$TXT^MIOOSI18N(CODE,"module.ops.subtitle","A built-in operational summary surface for the current shell session")
+	. SET STATE("modules",N,"description")=$$TXT^MIOOSI18N(CODE,"module.ops.description","Review session identity, transport posture, and desktop contract metadata from one reusable module host.")
+	. SET STATE("modules",N,"icon")="🧭"
+	. SET STATE("modules",N,"category")="operations"
+	. SET STATE("modules",N,"version")="1.0"
+	. SET STATE("modules",N,"kind")="module"
+	. SET STATE("modules",N,"surface")="ops-overview"
+	. SET STATE("modules",N,"windowTitle")=$GET(STATE("modules",N,"title"))
+	. SET STATE("modules",N,"installed")=1
+	. SET STATE("modules",N,"enabled")=1
+	. SET STATE("modules",N,"builtIn")=1
+	. SET STATE("modules",N,"singleton")=1
+	. SET STATE("modules",N,"launcherEnabled")=1
+	. SET STATE("modules",N,"cards",1,"title")="Session"
+	. SET STATE("modules",N,"cards",1,"detail")="Inspect the current principal, locale, and profile without opening the raw JSON boot payload."
+	. SET STATE("modules",N,"cards",2,"title")="Transport"
+	. SET STATE("modules",N,"cards",2,"detail")="Pairs well with Diagnostics: module hosts can consume existing shell state instead of building bespoke websocket channels."
+	. SET STATE("modules",N,"cards",3,"title")="Extensibility"
+	. SET STATE("modules",N,"cards",3,"detail")="This module demonstrates how built-ins can share one host template and one window contract while keeping their own manifest metadata."
+	SET STATE("moduleCount")=N
 	QUIT
 	;
 WINDOWS(STATE)
-	NEW CODE
+	NEW CODE,N,I,APPKEY,TITLE,MODW,MINW,MINH,LEFT,TOP,WIDTH,HEIGHT
 	SET CODE=$GET(STATE("localeCode"),"en")
 	KILL STATE("windows")
 	DO WIN(.STATE,1,"win-my-computer","my-computer",$$TXT^MIOOSI18N(CODE,"app.my-computer.title","My Computer"),88,72,760,500,4,"normal",460,320,1,1)
@@ -392,6 +487,25 @@ WINDOWS(STATE)
 	SET STATE("windows",6,"transferCenterEnabled")=1
 	DO WIN(.STATE,7,"win-diagnostics","diagnostics","Diagnostics",244,126,820,520,7,"closed",640,420,1,1)
 	SET STATE("windows",7,"transportDiagnosticsEnabled")=+$GET(STATE("wsDiagnosticsEnabled"),1)
+	SET N=7
+	IF +$GET(STATE("moduleAppCatalogEnabled"),1)=1 DO
+	. SET N=N+1
+	. DO WIN(.STATE,N,"win-app-catalog","app-catalog",$$TXT^MIOOSI18N(CODE,"app.app-catalog.title","App Catalog"),268,122,860,560,N,"closed",660,420,1,1)
+	. SET STATE("windows",N,"moduleCatalogEnabled")=1
+	. SET STATE("windows",N,"moduleCatalogWindow")=1
+	SET I=0 FOR  SET I=$ORDER(STATE("modules",I)) QUIT:'I  DO
+	. QUIT:+$GET(STATE("modules",I,"enabled"))'=1
+	. SET N=N+1
+	. SET APPKEY=$GET(STATE("modules",I,"appKey"),$GET(STATE("modules",I,"id")))
+	. SET TITLE=$GET(STATE("modules",I,"windowTitle"),$GET(STATE("modules",I,"title"),APPKEY))
+	. SET LEFT=160+(I*26),TOP=94+(I*22),WIDTH=720,HEIGHT=500,MINW=560,MINH=340
+	. DO WIN(.STATE,N,$GET(STATE("modules",I,"windowId"),"win-"_APPKEY),APPKEY,TITLE,LEFT,TOP,WIDTH,HEIGHT,N,"closed",MINW,MINH,1,1)
+	. SET STATE("windows",N,"moduleWindow")=1
+	. SET STATE("windows",N,"moduleId")=$GET(STATE("modules",I,"id"))
+	. SET STATE("windows",N,"moduleCategory")=$GET(STATE("modules",I,"category"),"general")
+	. SET STATE("windows",N,"moduleSurface")=$GET(STATE("modules",I,"surface"),"generic")
+	. SET STATE("windows",N,"moduleBuiltIn")=+$GET(STATE("modules",I,"builtIn"),1)
+	. SET STATE("windows",N,"moduleSingleton")=+$GET(STATE("modules",I,"singleton"),1)
 	QUIT
 	;
 WIN(STATE,N,ID,APPKEY,TITLE,LEFT,TOP,WIDTH,HEIGHT,Z,MODE,MINW,MINH,RESIZE,DRAG)

@@ -57,7 +57,7 @@
           payloadMode: 'tmp-global-safe',
           transport: 'websocket-first-http-refresh'
         },
-        moduleSystem: { enabled: true, launcher: 'desktop-icons-and-menu', manifestVersion: 1, debugAppKey: 'debug-center' },
+        moduleSystem: { enabled: true, launcher: 'desktop-icons-and-menu', manifestVersion: 1, appCatalogEnabled: true, appCatalogKey: 'app-catalog', dynamicWindows: true, debugAppKey: 'debug-center' },
         icons: {
           enabled: true,
           draggable: true,
@@ -173,6 +173,7 @@
     base.desktop = Object.assign(base.desktop, boot.desktop || {});
     base.desktop.accessibility = Object.assign(base.desktop.accessibility, (boot.desktop || {}).accessibility || {});
     base.desktop.performance = Object.assign(base.desktop.performance, (boot.desktop || {}).performance || {});
+    base.desktop.moduleSystem = Object.assign(base.desktop.moduleSystem, (boot.desktop || {}).moduleSystem || {});
     base.desktop.windowing = Object.assign(base.desktop.windowing, (boot.desktop || {}).windowing || {});
     base.auth = Object.assign(base.auth, boot.auth || {});
     base.websocket = Object.assign(base.websocket || {}, boot.websocket || {});
