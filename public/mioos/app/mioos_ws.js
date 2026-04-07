@@ -200,6 +200,7 @@
       },
       refreshView: function () {
         var self = this;
+        if (this.requiresSignin) return;
         var root = window.MIOOSState.getRootNode();
         var path = (this.boot.routes || {}).view || (root ? root.dataset.mioosView : '');
         if (!path || !window.fetch) return;

@@ -14,7 +14,7 @@
   function defaultBoot() {
     return {
       product: { name: 'MIOOS', subtitle: '', profile: 'dev', version: '' },
-      user: { id: 'guest', displayName: 'Guest', authenticated: false, roles: [] },
+      user: { id: '', displayName: '', authenticated: false, roles: [] },
       session: { id: 'mioos-shell', transportModel: 'core-websocket-plus-app-websockets' },
       locale: { code: 'en', dir: 'ltr', label: 'English', rtl: false, supported: defaultLocales() },
       i18n: { strings: {} },
@@ -25,6 +25,7 @@
         signin: '/api/mioos/auth/signin',
         signout: '/api/mioos/auth/signout',
         guestSignin: '/api/mioos/auth/guest',
+        auditExport: '/api/mioos/auth/audit/export',
         websocket: '/ws/mioos',
         terminalWebsocket: '/ws/mioos/terminal',
         commandEvent: 'desktop.command',
@@ -83,7 +84,7 @@
           dropUpload: 1
         }
       },
-      auth: { enabled: false, required: false, guestLoginEnabled: false, mode: 'anonymous' },
+      auth: { enabled: true, required: true, guestLoginEnabled: false, mode: 'local-session-required', unauthenticatedAccessAllowed: false, providers: { local: { enabled: true, loginMode: 'username-password', guestAllowed: false }, framework: { enabled: true, mode: 'mioauth-session-jwt', tokenType: 'jwt', sessionCookie: 'mioos_auth' } }, lockout: { threshold: 5, minutes: 15 }, audit: { enabled: true, retainDays: 365, reportLimit: 20, reportWindowDays: 30, scope: 'self' } },
       explorer: { currentFolderId: 'root', quickPlaces: [], preview: { enabled: true, mime: 'text/plain' } },
       terminal: {
         enabled: true,
@@ -176,6 +177,11 @@
     base.desktop.moduleSystem = Object.assign(base.desktop.moduleSystem, (boot.desktop || {}).moduleSystem || {});
     base.desktop.windowing = Object.assign(base.desktop.windowing, (boot.desktop || {}).windowing || {});
     base.auth = Object.assign(base.auth, boot.auth || {});
+    base.auth.providers = Object.assign({}, (defaultBoot().auth.providers || {}), base.auth.providers || {}, (boot.auth || {}).providers || {});
+    base.auth.providers.local = Object.assign({}, (defaultBoot().auth.providers || {}).local || {}, ((base.auth || {}).providers || {}).local || {}, (((boot.auth || {}).providers || {}).local || {}));
+    base.auth.providers.framework = Object.assign({}, (defaultBoot().auth.providers || {}).framework || {}, ((base.auth || {}).providers || {}).framework || {}, (((boot.auth || {}).providers || {}).framework || {}));
+    base.auth.lockout = Object.assign({}, (defaultBoot().auth.lockout || {}), base.auth.lockout || {}, (boot.auth || {}).lockout || {});
+    base.auth.audit = Object.assign({}, (defaultBoot().auth.audit || {}), base.auth.audit || {}, (boot.auth || {}).audit || {});
     base.websocket = Object.assign(base.websocket || {}, boot.websocket || {});
     base.vfs = Object.assign(base.vfs, boot.vfs || {});
     base.terminal = Object.assign(base.terminal, boot.terminal || {});

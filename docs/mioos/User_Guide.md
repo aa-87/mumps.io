@@ -101,3 +101,9 @@ The Transfers window now shows cancel controls for active uploads/downloads and 
 - Landed a server-authored module registry in the boot contract with manifest versioning, launcher metadata, and built-in module descriptors.
 - Added an App Catalog window plus reusable module-host windows so built-in modules can ship on the same chrome and transport contract as core MIOOS apps.
 - Added built-in Notes and Ops Center modules as the first module-host examples, alongside a `module.catalog` websocket command for refresh and later extensibility work.
+
+
+ROI 24 — Typed authentication, local/framework auditability, and HIPAA reportability
+- Local sign-in remains the primary provider.
+- Guest mode is disabled by default and unauthenticated access to protected API and websocket surfaces is blocked.
+- Auth events are written to the MIOOS audit log for security review, HIPAA-oriented auditability, and export reporting.

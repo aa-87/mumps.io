@@ -866,3 +866,70 @@ button, input { font: inherit; }
   color: #a42323;
   font-size: 12px;
 }
+
+
+.mioos-security-center-shell {
+  display: flex;
+  height: 100%;
+  background: #f3f6fb;
+}
+.mioos-security-center-head,
+.mioos-security-center-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.mioos-security-center-head strong { display: block; }
+.mioos-security-center-head span,
+.mioos-security-center-summary span { color: #35506f; }
+.mioos-security-center-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.mioos-security-card {
+  background: #fff;
+  border: 1px solid #c8d6ea;
+  border-radius: 10px;
+  padding: 14px;
+  box-shadow: 0 8px 20px rgba(26, 53, 88, 0.08);
+}
+.mioos-security-card--wide { grid-column: 1 / -1; }
+.mioos-security-card dl { margin: 0; display: grid; gap: 8px; }
+.mioos-security-card dl div { display: flex; justify-content: space-between; gap: 12px; }
+.mioos-security-card dt { font-weight: 700; color: #1a3558; }
+.mioos-security-card dd { margin: 0; color: #35506f; text-align: right; }
+.mioos-security-table { display: grid; gap: 6px; }
+.mioos-security-row {
+  display: grid;
+  grid-template-columns: 1.2fr 1.1fr .8fr 1fr .8fr 1.4fr;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 10px;
+  border: 1px solid #d8e2f0;
+  border-radius: 8px;
+  background: #fbfdff;
+}
+.mioos-security-row--head {
+  background: #eaf1fb;
+  border-color: #c8d6ea;
+}
+.mioos-security-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.mioos-security-badge.is-success { background: #e5f5ea; color: #146b35; }
+.mioos-security-badge.is-failure { background: #fde8e8; color: #a61d24; }
+.mioos-security-badge.is-denied { background: #fff2d8; color: #a05a00; }
+.mioos-security-badge.is-unknown { background: #edf2f7; color: #46566b; }
+.mioos-security-empty,
+.mioos-security-error { color: #5a708d; padding: 8px 0; }
+.mioos-security-error { color: #a61d24; }

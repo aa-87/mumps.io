@@ -61,6 +61,7 @@
           transferCenter: { items: [], seq: 0, autoOpen: true },
           transferControllers: {},
           transportDiagnostics: { loading: false, refreshedAt: 0, error: '', report: {} },
+          securityCenter: { loading: false, refreshedAt: 0, error: '', report: {}, trail: [] },
           socketTelemetry: {},
           moduleCatalog: { loading: false, refreshedAt: 0, error: '' },
           desktopUi: {
@@ -121,9 +122,11 @@
         this.applyPersistedThemeStudioProfile();
         this.applyDocumentLocale();
         this.startClock();
-        this.refreshView();
-        this.initSocket();
-        if (this.startTerminalPolling) this.startTerminalPolling();
+        if (!this.requiresSignin) {
+          this.refreshView();
+          this.initSocket();
+          if (this.startTerminalPolling) this.startTerminalPolling();
+        }
         this._dragMove = this.handleGlobalMouseMove.bind(this);
         this._dragEnd = this.handleGlobalMouseUp.bind(this);
         this._viewportResize = this.handleViewportResize.bind(this);
@@ -174,6 +177,41 @@
         },
         t: function (key, fallback) {
           return I18N.t ? I18N.t(this, key, fallback) : (fallback || key);
+        },
+        refreshSecurityCenter: function () {
+          var self = this;
+          this.securityCenter.loading = true;
+          this.securityCenter.error = '';
+          return Promise.all([
+            this.command('auth.report', {}),
+            this.command('auth.audit', { limit: (((this.boot || {}).auth || {}).audit || {}).reportLimit || 20 })
+          ])
+            .then(function (results) {
+              var report = (((results[0] || {}).auth) || {});
+              var audit = (((results[1] || {}).auth) || {});
+              self.securityCenter.report = report;
+              self.securityCenter.trail = Array.isArray(audit.entries) ? audit.entries : [];
+              self.securityCenter.refreshedAt = Date.now();
+              return report;
+            })
+            .catch(function (err) {
+              self.securityCenter.error = (err && (err.detail || err.error || err.message)) || 'security_center_failed';
+              throw err;
+            })
+            .finally(function () {
+              self.securityCenter.loading = false;
+            });
+        },
+        securityReport: function () {
+          return (this.securityCenter || {}).report || {};
+        },
+        securityTrail: function () {
+          return Array.isArray((this.securityCenter || {}).trail) ? this.securityCenter.trail : [];
+        },
+        exportSecurityAudit: function () {
+          var path = ((this.boot || {}).routes || {}).auditExport || '/api/mioos/auth/audit/export';
+          if (!path) return;
+          window.open(path, '_blank');
         },
         applyDocumentLocale: function () {
           if (I18N.applyDocumentLocale) I18N.applyDocumentLocale(this);

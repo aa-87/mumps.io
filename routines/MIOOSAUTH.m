@@ -8,14 +8,14 @@ AUTHREQ(CONF)
 	QUIT +$GET(CONF("mioos","desktop","authRequired"),0)
 	;
 GUESTEN(CONF)
-	QUIT +$GET(CONF("mioos","localAuth","guestLoginEnabled"),1)
+	QUIT +$GET(CONF("mioos","localAuth","guestLoginEnabled"),0)
 	;
 BOOTSTRAP(CONF)
 	IF +$GET(CONF("mioos","bootstrapAuth","enabled"),1)'=1 QUIT
 	IF +$GET(CONF("mioos","bootstrapAuth","seedIfMissing"),1)'=1 QUIT
 	DO SEEDUSER(.CONF,"admin")
 	DO SEEDUSER(.CONF,"user")
-	DO SEEDUSER(.CONF,"guest")
+	IF +$$GUESTEN(.CONF)=1,+$GET(CONF("mioos","bootstrapAuth","guest","enabled"),0)=1 DO SEEDUSER(.CONF,"guest")
 	SET ^MIO("MIOOS","AUTH","BOOTSTRAP","lastRunAt")=$$NOWISO^MIOUTIL()
 	QUIT
 	;
@@ -58,46 +58,55 @@ SEEDUSER(CONF,PERSONA)
 	QUIT
 	;
 LOADLOCAL(CONF,REQ,CTX,ERR)
-	NEW USER
+	NEW USER,STATE
 	KILL ERR
 	SET ERR("routine")="MIOOSAUTH"
 	IF '$$LOAD^MIOAUTHSESS(.CONF,"mioos",.REQ,.CTX,.ERR) QUIT 0
 	SET USER=$$PRINCIPAL^MIOAUTHCTX(.CTX)
-	IF USER="" SET ERR("error")="login_required" QUIT 0
+	IF USER="" DO  QUIT 0
+	. SET ERR("error")="login_required"
+	. DO AUDSTATE(.CONF,USER,.CTX,.STATE)
+	. DO EVENT^MIOOSAUD("framework_session_invalid",.CTX,.STATE,"login_required","failure",USER,"framework")
 	IF '$$USEROK(.CONF,USER,.ERR) DO  QUIT 0
 	. DO REVOKE^MIOAUTHSESS(.CONF,"mioos",.REQ,.CTX)
 	. IF $GET(ERR("error"))="" SET ERR("error")="login_required"
+	. DO AUDSTATE(.CONF,USER,.CTX,.STATE)
+	. DO EVENT^MIOOSAUD("framework_session_invalid",.CTX,.STATE,$GET(ERR("error")),"failure",USER,"framework")
 	QUIT 1
 	;
 SIGNIN(CONF,USERNAME,PASSWORD,TOKEN,ERR)
-	NEW USER,SALT,HASH
+	NEW USER,SALT,HASH,OK
 	KILL ERR SET TOKEN=""
 	SET ERR("routine")="MIOOSAUTH"
 	SET USER=$$CANON(USERNAME)
-	IF USER="" SET ERR("error")="username_missing" QUIT 0
-	IF '$$USEROK(.CONF,USER,.ERR) QUIT 0
+	IF USER="" DO AUDLOG(.CONF,"local_signin_failure",USER,"username_missing","failure","local") SET ERR("error")="username_missing" QUIT 0
+	IF '$$USEROK(.CONF,USER,.ERR) DO AUDLOG(.CONF,"local_signin_failure",USER,$GET(ERR("error")),"failure","local") QUIT 0
 	SET SALT=$GET(^MIO("MIOOS","USER",USER,"salt"))
 	SET HASH=$GET(^MIO("MIOOS","USER",USER,"hash"))
-	IF SALT=""!(HASH="") SET ERR("error")="invalid_credentials" QUIT 0
+	IF SALT=""!(HASH="") DO AUDLOG(.CONF,"local_signin_failure",USER,"invalid_credentials","failure","local") SET ERR("error")="invalid_credentials" QUIT 0
 	IF $$PW(SALT,$GET(PASSWORD))'=HASH DO  QUIT 0
 	. DO FAILLOGIN(.CONF,USER)
 	. SET ERR("error")=$SELECT($$ISLOCKED(USER):"locked_account",1:"invalid_credentials")
+	. DO AUDLOG(.CONF,"local_signin_failure",USER,$GET(ERR("error")),"failure","local")
 	DO CLEARRISK(USER)
-	QUIT $$ISSUETOKEN(.CONF,USER,.TOKEN,.ERR)
+	SET OK=$$ISSUETOKEN(.CONF,USER,.TOKEN,.ERR)
+	IF 'OK DO AUDLOG(.CONF,"framework_session_issue_failed",USER,$GET(ERR("error")),"failure","framework") QUIT 0
+	DO AUDLOG(.CONF,"local_signin_success",USER,"username_password","success","local")
+	DO AUDLOG(.CONF,"framework_session_issued",USER,"mioauth-session-jwt","success","framework")
+	QUIT 1
 	;
 GUESTSIGNIN(CONF,TOKEN,ERR)
-	NEW USER
 	KILL ERR SET TOKEN=""
 	SET ERR("routine")="MIOOSAUTH"
-	IF +$$LOCALEN(.CONF)'=1 SET ERR("error")="guest_login_disabled" QUIT 0
-	IF +$$GUESTEN(.CONF)'=1 SET ERR("error")="guest_login_disabled" QUIT 0
-	DO BOOTSTRAP(.CONF)
-	SET USER=$$CANON($GET(CONF("mioos","bootstrapAuth","guest","username"),"guest"))
-	IF USER="" SET ERR("error")="guest_login_disabled" QUIT 0
-	IF '$$USEROK(.CONF,USER,.ERR) QUIT 0
-	QUIT $$ISSUETOKEN(.CONF,USER,.TOKEN,.ERR)
+	DO AUDLOG(.CONF,"guest_signin_denied","guest","guest_login_disabled","denied","local")
+	SET ERR("error")="guest_login_disabled"
+	QUIT 0
 	;
 SIGNOUT(CONF,REQ,CTX)
+	NEW STATE,USER
+	SET USER=$$PRINCIPAL^MIOAUTHCTX(.CTX)
+	DO AUDSTATE(.CONF,USER,.CTX,.STATE)
+	IF USER'="" DO EVENT^MIOOSAUD("auth_signout",.CTX,.STATE,"signout","success",USER,"framework")
 	DO REVOKE^MIOAUTHSESS(.CONF,"mioos",.REQ,.CTX)
 	QUIT:$Q 1
 	QUIT
@@ -148,6 +157,7 @@ FAILLOGIN(CONF,USER)
 	SET DAY=TOT\86400,SEC=TOT#86400
 	SET ^MIO("MIOOS","USER",USER,"lockedUntilDay")=DAY
 	SET ^MIO("MIOOS","USER",USER,"lockedUntilSec")=SEC
+	DO AUDLOG(.CONF,"local_account_locked",USER,"lock_threshold","denied","local")
 	QUIT
 	;
 CLEARRISK(USER)
@@ -185,4 +195,17 @@ PW(SALT,PASSWORD)
 AGESEC(D1,S1,D2,S2)
 	IF (+$GET(D1)=0),(+$GET(S1)=0) QUIT 999999999
 	QUIT (((+$GET(D2)-+$GET(D1))*86400)+(+$GET(S2)-+$GET(S1)))
+	;
+AUDLOG(CONF,EVENT,USER,DETAIL,OUTCOME,PROVIDER)
+	NEW STATE,CTX
+	DO AUDSTATE(.CONF,$GET(USER),.CTX,.STATE)
+	DO EVENT^MIOOSAUD($GET(EVENT),.CTX,.STATE,$GET(DETAIL),$GET(OUTCOME),$GET(USER),$GET(PROVIDER))
+	QUIT
+	;
+AUDSTATE(CONF,USER,CTX,STATE)
+	KILL STATE
+	SET STATE("principal")=$GET(USER)
+	SET STATE("sessionId")=$GET(CTX("auth","claims","sid"))
+	SET STATE("profile")=$SELECT($GET(CONF("mioos","profile"))'="":$GET(CONF("mioos","profile")),1:"prod")
+	QUIT
 	;

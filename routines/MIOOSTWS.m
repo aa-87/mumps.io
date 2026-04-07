@@ -6,6 +6,10 @@ MESSAGE(DEV,CONF,REQ,CTX)
 	SET CTX("ws","keep_open")=1
 	IF '$$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR) DO  QUIT
 	. DO SENDTEXT^MIOWS(.DEV,$$ERRJSON(.STATE,"session_error",$GET(ERR("error")),""))
+	NEW EVT,TREE
+	SET EVT=$$EVENT($GET(CTX("payload")),.TREE,.ERR)
+	IF EVT'="",EVT'="hello",EVT'="ping",+$GET(STATE("authRequired"),0)=1,+$GET(STATE("authenticated"),0)'=1 DO  QUIT
+	. DO SENDTEXT^MIOWS(.DEV,$$ERRJSON(.STATE,"login_required",EVT,$GET(TREE("requestId"))))
 	IF $$EVENTJSON(.CONF,.REQ,.CTX,.STATE,$GET(CTX("payload")),.RESP,.ERR) DO  QUIT
 	. DO SENDTEXT^MIOWS(.DEV,RESP)
 	DO SENDTEXT^MIOWS(.DEV,$$ERRJSON(.STATE,$GET(ERR("error"),"terminal_event_error"),$GET(ERR("detail")),$GET(ERR("requestId"))))
@@ -21,8 +25,6 @@ EVENTJSON(CONF,REQ,CTX,STATE,PAYLOAD,OUTJSON,ERR)
 	IF EVT="" SET ERR("error")="event_missing" QUIT 0
 	IF EVT="hello" SET OUTJSON=$$HELLOJSON(.STATE,.CONF) QUIT 1
 	IF EVT="ping" SET OUTJSON=$$PONGJSON(.STATE,.TREE) QUIT 1
-	IF +$GET(STATE("authRequired"),0)=1,+$GET(STATE("authenticated"),0)'=1 DO  QUIT 0
-	. SET ERR("error")="login_required",ERR("detail")=EVT
 	IF EVT="terminal.open"!(EVT="terminal.attach") DO  QUIT $SELECT($GET(ERR("error"))="":1,1:0)
 	. IF '$$OPEN^MIOOSTERM(.STATE,.CONF,$GET(TREE("terminalId")),.OUT,.ERR) QUIT
 	. IF +$GET(TREE("cols"))>0!(+$GET(TREE("rows"))>0) DO

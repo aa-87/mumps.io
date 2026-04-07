@@ -14,6 +14,9 @@ MESSAGE(DEV,CONF,REQ,CTX)
 	. SET RESP=$$PONGJSON(.STATE)
 	. DO SENDTEXT^MIOWS(.DEV,RESP)
 	IF EVT="view.refresh" DO  QUIT
+	. IF +$GET(STATE("authRequired"),0)=1,+$GET(STATE("authenticated"),0)'=1 DO
+	. . DO SENDTEXT^MIOWS(.DEV,$$ERRJSON(.STATE,"login_required","view.refresh",""))
+	. . QUIT
 	. DO BUILD^MIOOSVM(.STATE,.CONF,.VIEW)
 	. SET RESP=$$VIEWJSON(.STATE,.VIEW)
 	. DO SENDTEXT^MIOWS(.DEV,RESP)
@@ -23,6 +26,8 @@ MESSAGE(DEV,CONF,REQ,CTX)
 	. . QUIT
 	. DO SENDTEXT^MIOWS(.DEV,$$ACKJSON(.STATE,"shell.open",$$FIELD($GET(CTX("payload")),"appKey")))
 	IF EVT="desktop.command"!(EVT="command.exec") DO  QUIT
+	. IF +$GET(STATE("authRequired"),0)=1,+$GET(STATE("authenticated"),0)'=1 DO  QUIT
+	. . DO SENDTEXT^MIOWS(.DEV,$$CMDERRJSON(.STATE,$$RAWJSONFIELD($GET(CTX("payload")),"requestId"),$$RAWJSONFIELD($GET(CTX("payload")),"command"),401,"login_required",$$RAWJSONFIELD($GET(CTX("payload")),"command")))
 	. IF $$COMMANDJSON(.CONF,.REQ,.CTX,.STATE,$GET(CTX("payload")),.RESP,.ERR) DO  IF 1
 	. . DO SENDTEXT^MIOWS(.DEV,RESP)
 	. ELSE  DO
@@ -43,8 +48,6 @@ COMMANDJSON(CONF,REQ,CTX,STATE,PAYLOAD,OUTJSON,ERR)
 	SET REQID=$SELECT($GET(TREE("requestId"))'="":$GET(TREE("requestId")),1:REQID)
 	SET ERR("requestId")=REQID,ERR("command")=CMD
 	IF CMD="" SET ERR("error")="command_missing" QUIT 0
-	IF +$GET(STATE("authRequired"),0)=1,+$GET(STATE("authenticated"),0)'=1 DO  QUIT 0
-	. SET ERR("error")="login_required",ERR("detail")=CMD
 	IF CMD="terminal.open"!(CMD="terminal.attach") QUIT $$CMDOPEN(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="terminal.input" QUIT $$CMDINPUT(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="terminal.poll" QUIT $$CMDPOLL(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
@@ -69,6 +72,8 @@ COMMANDJSON(CONF,REQ,CTX,STATE,PAYLOAD,OUTJSON,ERR)
 	IF CMD="fs.move" QUIT $$FSMOVE(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="fs.delete" QUIT $$FSDELETE(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="transport.health" QUIT $$TRANHEALTH(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
+	IF CMD="auth.report" QUIT $$AUTHREPORT(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
+	IF CMD="auth.audit" QUIT $$AUTHAUDIT(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="module.catalog" QUIT $$MODCAT(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="desktop.layout.save" QUIT $$DESKLAYOUT(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	SET ERR("error")="command_unsupported",ERR("detail")=CMD
@@ -230,6 +235,20 @@ FSDELETE(STATE,CONF,TREE,OUTJSON,ERR)
 	NEW OUT
 	IF '$$DELETE^MIOOSFS(.STATE,$GET(TREE("id")),.OUT,.ERR) QUIT 0
 	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"fs.delete","vfs",.OUT)
+	QUIT 1
+	;
+AUTHREPORT(STATE,CONF,TREE,OUTJSON,ERR)
+	NEW OUT
+	IF '$$REPORT^MIOOSAUD(.STATE,.CONF,.OUT,.ERR) QUIT 0
+	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"auth.report","auth",.OUT)
+	QUIT 1
+	;
+AUTHAUDIT(STATE,CONF,TREE,OUTJSON,ERR)
+	NEW OUT,LIMIT
+	SET LIMIT=+$GET(TREE("limit"),+$GET(CONF("mioos","audit","reportLimit"),20))
+	IF LIMIT<1 SET LIMIT=+$GET(CONF("mioos","audit","reportLimit"),20)
+	IF '$$TAIL^MIOOSAUD(.STATE,.CONF,LIMIT,.OUT,.ERR) QUIT 0
+	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"auth.audit","auth",.OUT)
 	QUIT 1
 	;
 MODCAT(STATE,CONF,TREE,OUTJSON,ERR)

@@ -111,6 +111,9 @@
         if (appKey === 'diagnostics' && this.refreshTransportDiagnostics) {
           this.$nextTick(function () { this.refreshTransportDiagnostics().catch(function () {}); }.bind(this));
         }
+        if (appKey === 'security-center' && this.refreshSecurityCenter) {
+          this.$nextTick(function () { this.refreshSecurityCenter().catch(function () {}); }.bind(this));
+        }
         this.sendSocket({ event: 'shell.open', appKey: appKey });
       },
       focusWindow: function (windowId) {

@@ -13,6 +13,7 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","route","signin"))="" SET CONF("mioos","route","signin")="/api/mioos/auth/signin"
 	IF $GET(CONF("mioos","route","signout"))="" SET CONF("mioos","route","signout")="/api/mioos/auth/signout"
 	IF $GET(CONF("mioos","route","guestSignin"))="" SET CONF("mioos","route","guestSignin")="/api/mioos/auth/guest"
+	IF $GET(CONF("mioos","route","auditExport"))="" SET CONF("mioos","route","auditExport")="/api/mioos/auth/audit/export"
 	IF $GET(CONF("mioos","route","fsList"))="" SET CONF("mioos","route","fsList")="/api/mioos/fs/list"
 	IF $GET(CONF("mioos","route","fsRead"))="" SET CONF("mioos","route","fsRead")="/api/mioos/fs/read"
 	IF $GET(CONF("mioos","route","fsWrite"))="" SET CONF("mioos","route","fsWrite")="/api/mioos/fs/write"
@@ -27,18 +28,6 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","websocket","coreSockets"))="" SET CONF("mioos","websocket","coreSockets")=1
 	IF $GET(CONF("mioos","websocket","fsSockets"))="" SET CONF("mioos","websocket","fsSockets")=5
 	IF $GET(CONF("mioos","websocket","uploadBatchSize"))="" SET CONF("mioos","websocket","uploadBatchSize")=1
-	IF $GET(CONF("mioos","websocket","heartbeatSeconds"))="" SET CONF("mioos","websocket","heartbeatSeconds")=15
-	IF $GET(CONF("mioos","websocket","resumeWindowSeconds"))="" SET CONF("mioos","websocket","resumeWindowSeconds")=180
-	IF $GET(CONF("mioos","websocket","maxInflightPerChannel"))="" SET CONF("mioos","websocket","maxInflightPerChannel")=4
-	IF $GET(CONF("mioos","websocket","diagnosticsEnabled"))="" SET CONF("mioos","websocket","diagnosticsEnabled")=1
-	IF $GET(CONF("mioos","websocket","requestTimeoutMs"))="" SET CONF("mioos","websocket","requestTimeoutMs")=15000
-	IF $GET(CONF("mioos","websocket","uploadBeginTimeoutMs"))="" SET CONF("mioos","websocket","uploadBeginTimeoutMs")=20000
-	IF $GET(CONF("mioos","websocket","uploadChunkTimeoutMs"))="" SET CONF("mioos","websocket","uploadChunkTimeoutMs")=30000
-	IF $GET(CONF("mioos","websocket","uploadCommitTimeoutMs"))="" SET CONF("mioos","websocket","uploadCommitTimeoutMs")=120000
-	IF $GET(CONF("mioos","websocket","uploadAbortTimeoutMs"))="" SET CONF("mioos","websocket","uploadAbortTimeoutMs")=15000
-	IF $GET(CONF("mioos","websocket","uploadSocketOpenTimeoutMs"))="" SET CONF("mioos","websocket","uploadSocketOpenTimeoutMs")=15000
-	IF $GET(CONF("websocket","maxFrameBytes"))="" SET CONF("websocket","maxFrameBytes")=262144
-	IF $GET(CONF("websocket","maxMessageBytes"))="" SET CONF("websocket","maxMessageBytes")=1048576
 	IF $GET(CONF("mioos","brand","title"))="" SET CONF("mioos","brand","title")="MIOOS"
 	IF $GET(CONF("mioos","brand","subtitle"))="" SET CONF("mioos","brand","subtitle")="MUMPS powered Windows XP style desktop"
 	IF $GET(CONF("mioos","i18n","default"))="" SET CONF("mioos","i18n","default")="en"
@@ -56,25 +45,23 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","desktop","taskbarStyle"))="" SET CONF("mioos","desktop","taskbarStyle")="xp-professional"
 	IF $GET(CONF("mioos","desktop","startMenuStyle"))="" SET CONF("mioos","desktop","startMenuStyle")="xp-two-column"
 	IF $GET(CONF("mioos","desktop","windowManager"))="" SET CONF("mioos","desktop","windowManager")="mioos-native-vue-css"
-	IF $GET(CONF("mioos","desktop","authRequired"))="" SET CONF("mioos","desktop","authRequired")=0
-	IF $GET(CONF("mioos","modules","enabled"))="" SET CONF("mioos","modules","enabled")=1
-	IF $GET(CONF("mioos","modules","manifestVersion"))="" SET CONF("mioos","modules","manifestVersion")=1
-	IF $GET(CONF("mioos","modules","launcher"))="" SET CONF("mioos","modules","launcher")="desktop-icons-and-menu"
-	IF $GET(CONF("mioos","modules","appCatalogEnabled"))="" SET CONF("mioos","modules","appCatalogEnabled")=1
-	IF $GET(CONF("mioos","modules","dynamicWindows"))="" SET CONF("mioos","modules","dynamicWindows")=1
-	IF $GET(CONF("mioos","modules","notes","enabled"))="" SET CONF("mioos","modules","notes","enabled")=1
-	IF $GET(CONF("mioos","modules","opsCenter","enabled"))="" SET CONF("mioos","modules","opsCenter","enabled")=1
+	IF $GET(CONF("mioos","desktop","authRequired"))="" SET CONF("mioos","desktop","authRequired")=1
 	IF $GET(CONF("mioos","dev","enabled"))="" SET CONF("mioos","dev","enabled")=ISDEV
 	IF $GET(CONF("mioos","dev","authDisabled"))="" SET CONF("mioos","dev","authDisabled")=0
 	IF $GET(CONF("mioos","dev","principal"))="" SET CONF("mioos","dev","principal")="dev-user"
 	IF $GET(CONF("mioos","dev","userName"))="" SET CONF("mioos","dev","userName")="Developer"
 	IF $GET(CONF("mioos","dev","roles"))="" SET CONF("mioos","dev","roles")="developer,admin"
 	IF $GET(CONF("mioos","localAuth","enabled"))="" SET CONF("mioos","localAuth","enabled")=1
-	IF $GET(CONF("mioos","localAuth","guestLoginEnabled"))="" SET CONF("mioos","localAuth","guestLoginEnabled")=1
+	IF $GET(CONF("mioos","localAuth","guestLoginEnabled"))="" SET CONF("mioos","localAuth","guestLoginEnabled")=0
 	IF $GET(CONF("mioos","localAuth","tokenCookie"))="" SET CONF("mioos","localAuth","tokenCookie")="mioos_auth"
 	IF $GET(CONF("mioos","localAuth","tokenMaxAgeSeconds"))="" SET CONF("mioos","localAuth","tokenMaxAgeSeconds")=604800
 	IF $GET(CONF("mioos","localAuth","lockThreshold"))="" SET CONF("mioos","localAuth","lockThreshold")=5
 	IF $GET(CONF("mioos","localAuth","lockMinutes"))="" SET CONF("mioos","localAuth","lockMinutes")=15
+	IF $GET(CONF("mioos","auth","frameworkProvider"))="" SET CONF("mioos","auth","frameworkProvider")="mioauth-session-jwt"
+	IF $GET(CONF("mioos","audit","enabled"))="" SET CONF("mioos","audit","enabled")=1
+	IF $GET(CONF("mioos","audit","retainDays"))="" SET CONF("mioos","audit","retainDays")=365
+	IF $GET(CONF("mioos","audit","reportLimit"))="" SET CONF("mioos","audit","reportLimit")=20
+	IF $GET(CONF("mioos","audit","reportWindowDays"))="" SET CONF("mioos","audit","reportWindowDays")=30
 	IF $GET(CONF("mioos","bootstrapAuth","enabled"))="" SET CONF("mioos","bootstrapAuth","enabled")=1
 	IF $GET(CONF("mioos","bootstrapAuth","seedIfMissing"))="" SET CONF("mioos","bootstrapAuth","seedIfMissing")=1
 	IF $GET(CONF("mioos","bootstrapAuth","syncOnBoot"))="" SET CONF("mioos","bootstrapAuth","syncOnBoot")=1
@@ -92,7 +79,7 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","bootstrapAuth","guest","displayName"))="" SET CONF("mioos","bootstrapAuth","guest","displayName")="Guest"
 	IF $GET(CONF("mioos","bootstrapAuth","guest","password"))="" SET CONF("mioos","bootstrapAuth","guest","password")="guest123!"
 	IF $GET(CONF("mioos","bootstrapAuth","guest","roles"))="" SET CONF("mioos","bootstrapAuth","guest","roles")="guest"
-	IF $GET(CONF("mioos","bootstrapAuth","guest","enabled"))="" SET CONF("mioos","bootstrapAuth","guest","enabled")=1
+	IF $GET(CONF("mioos","bootstrapAuth","guest","enabled"))="" SET CONF("mioos","bootstrapAuth","guest","enabled")=0
 	IF $GET(CONF("mioos","terminal","enabled"))="" SET CONF("mioos","terminal","enabled")=1
 	IF $GET(CONF("mioos","terminal","commandTransport"))="" SET CONF("mioos","terminal","commandTransport")="dedicated-websocket"
 	IF $GET(CONF("mioos","terminal","websocket","pollMs"))="" SET CONF("mioos","terminal","websocket","pollMs")=250
@@ -119,8 +106,6 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","fs","transport"))="" SET CONF("mioos","fs","transport")="http-and-websocket"
 	IF $GET(CONF("mioos","upload","chunkBytes"))="" SET CONF("mioos","upload","chunkBytes")=131072
 	IF $GET(CONF("mioos","upload","concurrency"))="" SET CONF("mioos","upload","concurrency")=5
-	IF $GET(CONF("mioos","upload","staleSeconds"))="" SET CONF("mioos","upload","staleSeconds")=1800
-	IF $GET(CONF("mioos","download","staleSeconds"))="" SET CONF("mioos","download","staleSeconds")=900
 	IF $GET(CONF("mioos","terminal","pipe","sessionIdleSeconds"))="" SET CONF("mioos","terminal","pipe","sessionIdleSeconds")=900
 	IF $GET(CONF("auth","protectMode"))="" SET CONF("auth","protectMode")="route"
 	IF $GET(CONF("auth","mode"))="" SET CONF("auth","mode")="jwt"
@@ -143,25 +128,27 @@ INIT(CONF)
 	QUIT
 	;
 REG(CONF)
-	NEW META,WSMETA
+	NEW META,PROT,WSMETA
 	DO INIT(.CONF)
 	IF +$GET(CONF("mioos","enabled"),1)'=1 QUIT
 	KILL META SET META("authRequired")=0
 	DO ADDM^MIOROUTE("GET",$GET(CONF("mioos","route","desktop")),"DESKTOP^MIOOS",.META)
 	DO ADDM^MIOROUTE("GET",$GET(CONF("mioos","route","desktopAlias")),"DESKTOP^MIOOS",.META)
-	DO ADDM^MIOROUTE("GET",$GET(CONF("mioos","route","bootstrap")),"BOOTSTRAP^MIOOSAPI",.META)
-	DO ADDM^MIOROUTE("GET",$GET(CONF("mioos","route","view")),"VIEW^MIOOSAPI",.META)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","signin")),"SIGNIN^MIOOSAPI",.META)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","signout")),"SIGNOUT^MIOOSAPI",.META)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","guestSignin")),"GUESTSIGNIN^MIOOSAPI",.META)
-	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsList")),"FSLIST^MIOOSAPI",.META)
-	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsRead")),"FSREAD^MIOOSAPI",.META)
-	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsWrite")),"FSWRITE^MIOOSAPI",.META)
-	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsMkdir")),"FSMKDIR^MIOOSAPI",.META)
-	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsMeta")),"FSMETA^MIOOSAPI",.META)
-	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsRename")),"FSRENAME^MIOOSAPI",.META)
-	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsMove")),"FSMOVE^MIOOSAPI",.META)
-	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsDelete")),"FSDELETE^MIOOSAPI",.META)
+	KILL PROT SET PROT("authRequired")=1
+	DO ADDM^MIOROUTE("GET",$GET(CONF("mioos","route","bootstrap")),"BOOTSTRAP^MIOOSAPI",.PROT)
+	DO ADDM^MIOROUTE("GET",$GET(CONF("mioos","route","view")),"VIEW^MIOOSAPI",.PROT)
+	DO ADDM^MIOROUTE("GET",$GET(CONF("mioos","route","auditExport")),"AUTHEXPORT^MIOOSAPI",.PROT)
+	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsList")),"FSLIST^MIOOSAPI",.PROT)
+	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsRead")),"FSREAD^MIOOSAPI",.PROT)
+	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsWrite")),"FSWRITE^MIOOSAPI",.PROT)
+	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsMkdir")),"FSMKDIR^MIOOSAPI",.PROT)
+	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsMeta")),"FSMETA^MIOOSAPI",.PROT)
+	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsRename")),"FSRENAME^MIOOSAPI",.PROT)
+	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsMove")),"FSMOVE^MIOOSAPI",.PROT)
+	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsDelete")),"FSDELETE^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("GET","/public/mioos/*","STATIC^MIOOS",.META)
 	KILL WSMETA SET WSMETA("authRequired")=0,WSMETA("wsPersistent")=1
 	DO ADDWSM^MIOROUTE($GET(CONF("mioos","route","ws")),"MESSAGE^MIOOSWS",.WSMETA)

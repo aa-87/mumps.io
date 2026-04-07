@@ -27,6 +27,8 @@ MIOOST ; MIOOS tests
 	DO T026
 	DO T027
 	DO T028
+	DO T029
+	DO T030
 	QUIT
 	;
 RESET
@@ -177,7 +179,9 @@ T005
 	SET REQ("hdr","cookie")=$PIECE($$COOKIEHDR^MIOOSAUTH(.CONF,TOKEN,0),";",1)
 	DO OK^MIOTASSERT($$LOADLOCAL^MIOOSAUTH(.CONF,.REQ,.CTX,.ERR),"[MIOOST][T005][load local]")
 	DO EQ^MIOTASSERT($GET(CTX("auth","claims","sub")),"admin","[MIOOST][T005][principal]")
-	DO OK^MIOTASSERT($$GUESTSIGNIN^MIOOSAUTH(.CONF,.TOKEN,.ERR),"[MIOOST][T005][guest signin]")
+	KILL ERR
+	DO EQ^MIOTASSERT($$GUESTSIGNIN^MIOOSAUTH(.CONF,.TOKEN,.ERR),0,"[MIOOST][T005][guest signin disabled]")
+	DO EQ^MIOTASSERT($GET(ERR("error")),"guest_login_disabled","[MIOOST][T005][guest error]")
 	DO SIGNOUT^MIOOSAUTH(.CONF,.REQ,.CTX)
 	DO EQ^MIOTASSERT($DATA(^MIO("AUTH","SESSION","mioos",$GET(CTX("auth","claims","sid"))))#2,0,"[MIOOST][T005][session revoked]")
 	QUIT
@@ -554,4 +558,37 @@ T028
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","module.catalog"),"[MIOOST][T028][ws module catalog]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-module-catalog-shell"),"[MIOOST][T028][module catalog css]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 23 — Module catalog and built-in module host"),"[MIOOST][T028][llm roi23]")
+	QUIT
+
+T029
+	NEW CONF,REQ,CTX,STATE,ERR,JSON,OBJ,TOKEN
+	DO RESET
+	DO CONFDEF^MIOOS(.CONF)
+	DO INIT^MIOOS(.CONF)
+	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T029][load]")
+	SET JSON=$$BOOTJSON^MIOOSST(.STATE,.CONF)
+	DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T029][decode]")
+	DO EQ^MIOTASSERT($GET(OBJ("auth","required")),1,"[MIOOST][T029][auth required]")
+	DO EQ^MIOTASSERT($GET(OBJ("auth","guestLoginEnabled")),0,"[MIOOST][T029][guest disabled]")
+	DO EQ^MIOTASSERT($GET(OBJ("auth","unauthenticatedAccessAllowed")),0,"[MIOOST][T029][unauth blocked]")
+	DO EQ^MIOTASSERT($GET(OBJ("auth","providers","local","enabled")),1,"[MIOOST][T029][local provider]")
+	DO EQ^MIOTASSERT($GET(OBJ("auth","providers","framework","enabled")),1,"[MIOOST][T029][framework provider]")
+	DO EQ^MIOTASSERT($GET(OBJ("routes","auditExport")),"/api/mioos/auth/audit/export","[MIOOST][T029][audit export route]")
+	DO EQ^MIOTASSERT($GET(OBJ("apps",11,"key")),"security-center","[MIOOST][T029][security app]")
+	DO EQ^MIOTASSERT($GET(OBJ("windows",11,"appKey")),"security-center","[MIOOST][T029][security window]")
+	KILL ERR
+	DO EQ^MIOTASSERT($$GUESTSIGNIN^MIOOSAUTH(.CONF,.TOKEN,.ERR),0,"[MIOOST][T029][guest disabled auth]")
+	DO EQ^MIOTASSERT($GET(ERR("error")),"guest_login_disabled","[MIOOST][T029][guest disabled reason]")
+	DO OK^MIOTASSERT($$SIGNIN^MIOOSAUTH(.CONF,"admin","admin123!",.TOKEN,.ERR),"[MIOOST][T029][signin admin]")
+	DO OK^MIOTASSERT($$COUNT^MIOOSAUD()>0,"[MIOOST][T029][audit count]")
+	QUIT
+	;
+T030
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-security-center-window=""1"""),"[MIOOST][T030][security window token]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","refreshSecurityCenter"),"[MIOOST][T030][refresh security method]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","exportSecurityAudit"),"[MIOOST][T030][export security method]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","auth.report"),"[MIOOST][T030][ws auth report]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","auth.audit"),"[MIOOST][T030][ws auth audit]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","AUDITX(DEV,CONF,REQ,CTX)"),"[MIOOST][T030][audit export handler]")
+	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 24 — Typed authentication, local/framework auditability, and HIPAA reportability"),"[MIOOST][T030][llm roi24]")
 	QUIT

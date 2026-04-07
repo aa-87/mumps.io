@@ -5,6 +5,7 @@ BOOTSTRAP(DEV,CONF,REQ,CTX)
 	NEW STATE,ERR,OBJ
 	IF '$$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR) DO  QUIT
 	. DO RESPERR(.DEV,.CONF,500,"bootstrap_state_error",$GET(ERR("error"),"bootstrap_state_error"),.CTX)
+	IF '$$REQUIREAUTH(.DEV,.CONF,.CTX,.STATE) QUIT
 	DO BOOTARY^MIOOSST(.STATE,.CONF,.OBJ)
 	SET OBJ("ok")=1
 	DO RESPJSONX^MIOHTTP(.DEV,.CONF,200,.OBJ,$GET(CTX("request_id")),.CTX)
@@ -15,6 +16,7 @@ VIEW(DEV,CONF,REQ,CTX)
 	NEW STATE,ERR,OBJ
 	IF '$$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR) DO  QUIT
 	. DO RESPERR(.DEV,.CONF,500,"view_state_error",$GET(ERR("error"),"view_state_error"),.CTX)
+	IF '$$REQUIREAUTH(.DEV,.CONF,.CTX,.STATE) QUIT
 	DO BUILD^MIOOSVM(.STATE,.CONF,.OBJ)
 	SET OBJ("ok")=1
 	DO RESPJSONX^MIOHTTP(.DEV,.CONF,200,.OBJ,$GET(CTX("request_id")),.CTX)
@@ -48,15 +50,23 @@ SIGNOUT(DEV,CONF,REQ,CTX)
 	QUIT
 	;
 GUESTSIGNIN(DEV,CONF,REQ,CTX)
-	NEW ERR,TOKEN,OBJ,HEAD,JSON,USER
+	NEW ERR,TOKEN
 	IF '$$GUESTSIGNIN^MIOOSAUTH(.CONF,.TOKEN,.ERR) DO  QUIT
 	. DO RESPERR(.DEV,.CONF,403,"guest_signin_failed",$GET(ERR("error")),.CTX)
-	SET USER=$$CANON^MIOOSAUTH($GET(CONF("mioos","bootstrapAuth","guest","username"),"guest"))
-	SET OBJ("ok")=1,OBJ("tokenIssued")=1,OBJ("guestAccess")=1,OBJ("username")=USER
-	SET JSON=$$EN^MIOJSON1(.OBJ)
-	SET HEAD("Content-Type")="application/json; charset=utf-8"
-	SET HEAD("Set-Cookie")=$$COOKIEHDR^MIOOSAUTH(.CONF,TOKEN,0)
-	DO RESPX^MIOHTTP(.DEV,.CONF,200,.HEAD,JSON,$GET(CTX("request_id")),.CTX)
+	DO RESPERR(.DEV,.CONF,403,"guest_signin_failed","guest_login_disabled",.CTX)
+	QUIT
+	;
+AUDITX(DEV,CONF,REQ,CTX)
+	NEW STATE,ERR,OBJ,LIMIT
+	IF '$$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,500,"audit_state_error",$GET(ERR("error"),"audit_state_error"),.CTX)
+	IF '$$REQUIREAUTH(.DEV,.CONF,.CTX,.STATE) QUIT
+	SET LIMIT=+$GET(REQ("query","limit"),+$GET(CONF("mioos","audit","reportLimit"),50))
+	IF LIMIT<1 SET LIMIT=+$GET(CONF("mioos","audit","reportLimit"),50)
+	IF '$$EXPORT^MIOOSAUD(.STATE,.CONF,LIMIT,.OBJ,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,403,"audit_export_failed",$GET(ERR("error"),"audit_export_failed"),.CTX)
+	SET OBJ("ok")=1
+	DO RESPJSONX^MIOHTTP(.DEV,.CONF,200,.OBJ,$GET(CTX("request_id")),.CTX)
 	SET CTX("status")=200
 	QUIT
 	;
@@ -78,6 +88,12 @@ BODYTXT(REQ)
 	FOR I=1:1:N SET TXT=TXT_$GET(@REF@(I))
 	QUIT TXT
 	;
+REQUIREAUTH(DEV,CONF,CTX,STATE)
+	IF +$GET(STATE("authRequired"),0)'=1 QUIT 1
+	IF +$GET(STATE("authenticated"),0)=1 QUIT 1
+	DO RESPERR(.DEV,.CONF,401,"login_required","login_required",.CTX)
+	QUIT 0
+	;
 RESPERR(DEV,CONF,STATUS,CODE,DETAIL,CTX)
 	NEW OBJ
 	SET OBJ("ok")=0,OBJ("error")=$GET(CODE),OBJ("detail")=$GET(DETAIL),OBJ("routine")="MIOOSAPI"
@@ -91,6 +107,7 @@ FSLIST(DEV,CONF,REQ,CTX)
 	. DO RESPERR(.DEV,.CONF,400,"invalid_json",$GET(ERR("error")),.CTX)
 	IF '$$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR) DO  QUIT
 	. DO RESPERR(.DEV,.CONF,500,"fs_state_error",$GET(ERR("error")),.CTX)
+	IF '$$REQUIREAUTH(.DEV,.CONF,.CTX,.STATE) QUIT
 	IF '$$LIST^MIOOSFS(.STATE,$SELECT($GET(TREE("parent"))'="":$GET(TREE("parent")),1:"root"),.OUT,.ERR) DO  QUIT
 	. DO RESPERR(.DEV,.CONF,403,"fs_list_failed",$GET(ERR("error")),.CTX)
 	DO RESPJSONX^MIOHTTP(.DEV,.CONF,200,.OUT,$GET(CTX("request_id")),.CTX)
@@ -103,6 +120,7 @@ FSREAD(DEV,CONF,REQ,CTX)
 	. DO RESPERR(.DEV,.CONF,400,"invalid_json",$GET(ERR("error")),.CTX)
 	IF '$$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR) DO  QUIT
 	. DO RESPERR(.DEV,.CONF,500,"fs_state_error",$GET(ERR("error")),.CTX)
+	IF '$$REQUIREAUTH(.DEV,.CONF,.CTX,.STATE) QUIT
 	SET ID=$SELECT($GET(TREE("id"))'="":$GET(TREE("id")),1:$GET(TREE("path")))
 	IF '$$READ^MIOOSFS(.STATE,ID,.OUT,.ERR) DO  QUIT
 	. DO RESPERR(.DEV,.CONF,403,"fs_read_failed",$GET(ERR("error")),.CTX)
@@ -116,6 +134,7 @@ FSWRITE(DEV,CONF,REQ,CTX)
 	. DO RESPERR(.DEV,.CONF,400,"invalid_json",$GET(ERR("error")),.CTX)
 	IF '$$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR) DO  QUIT
 	. DO RESPERR(.DEV,.CONF,500,"fs_state_error",$GET(ERR("error")),.CTX)
+	IF '$$REQUIREAUTH(.DEV,.CONF,.CTX,.STATE) QUIT
 	IF '$$WRITE^MIOOSFS(.STATE,$SELECT($GET(TREE("parent"))'="":$GET(TREE("parent")),1:"root"),$GET(TREE("name")),$GET(TREE("content")),$GET(TREE("mime"),"text/plain"),.OUT,.ERR) DO  QUIT
 	. DO RESPERR(.DEV,.CONF,403,"fs_write_failed",$GET(ERR("error")),.CTX)
 	DO RESPJSONX^MIOHTTP(.DEV,.CONF,200,.OUT,$GET(CTX("request_id")),.CTX)
@@ -128,6 +147,7 @@ FSMKDIR(DEV,CONF,REQ,CTX)
 	. DO RESPERR(.DEV,.CONF,400,"invalid_json",$GET(ERR("error")),.CTX)
 	IF '$$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR) DO  QUIT
 	. DO RESPERR(.DEV,.CONF,500,"fs_state_error",$GET(ERR("error")),.CTX)
+	IF '$$REQUIREAUTH(.DEV,.CONF,.CTX,.STATE) QUIT
 	IF '$$MKDIR^MIOOSFS(.STATE,$SELECT($GET(TREE("parent"))'="":$GET(TREE("parent")),1:"root"),$GET(TREE("name")),.OUT,.ERR) DO  QUIT
 	. DO RESPERR(.DEV,.CONF,403,"fs_mkdir_failed",$GET(ERR("error")),.CTX)
 	DO RESPJSONX^MIOHTTP(.DEV,.CONF,200,.OUT,$GET(CTX("request_id")),.CTX)
@@ -140,6 +160,7 @@ FSHASH(DEV,CONF,REQ,CTX)
 	. DO RESPERR(.DEV,.CONF,400,"invalid_json",$GET(ERR("error")),.CTX)
 	IF '$$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR) DO  QUIT
 	. DO RESPERR(.DEV,.CONF,500,"fs_state_error",$GET(ERR("error")),.CTX)
+	IF '$$REQUIREAUTH(.DEV,.CONF,.CTX,.STATE) QUIT
 	SET ID=$SELECT($GET(TREE("id"))'="":$GET(TREE("id")),1:$GET(TREE("path")))
 	IF '$$HASH^MIOOSFS(.STATE,ID,.OUT,.ERR) DO  QUIT
 	. DO RESPERR(.DEV,.CONF,403,"fs_hash_failed",$GET(ERR("error")),.CTX)
@@ -153,6 +174,7 @@ FSSEARCH(DEV,CONF,REQ,CTX)
 	. DO RESPERR(.DEV,.CONF,400,"invalid_json",$GET(ERR("error")),.CTX)
 	IF '$$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR) DO  QUIT
 	. DO RESPERR(.DEV,.CONF,500,"fs_state_error",$GET(ERR("error")),.CTX)
+	IF '$$REQUIREAUTH(.DEV,.CONF,.CTX,.STATE) QUIT
 	IF '$$SEARCH^MIOOSFS(.STATE,$SELECT($GET(TREE("parent"))'="":$GET(TREE("parent")),1:"root"),$GET(TREE("query")),+$GET(TREE("recurse")),+$GET(TREE("limit")),.OUT,.ERR) DO  QUIT
 	. DO RESPERR(.DEV,.CONF,403,"fs_search_failed",$GET(ERR("error")),.CTX)
 	DO RESPJSONX^MIOHTTP(.DEV,.CONF,200,.OUT,$GET(CTX("request_id")),.CTX)
@@ -165,6 +187,7 @@ FSMETA(DEV,CONF,REQ,CTX)
 	. DO RESPERR(.DEV,.CONF,400,"invalid_json",$GET(ERR("error")),.CTX)
 	IF '$$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR) DO  QUIT
 	. DO RESPERR(.DEV,.CONF,500,"fs_state_error",$GET(ERR("error")),.CTX)
+	IF '$$REQUIREAUTH(.DEV,.CONF,.CTX,.STATE) QUIT
 	SET ID=$SELECT($GET(TREE("id"))'="":$GET(TREE("id")),1:$GET(TREE("path")))
 	IF '$$META^MIOOSFS(.STATE,ID,.OUT,.ERR) DO  QUIT
 	. DO RESPERR(.DEV,.CONF,403,"fs_meta_failed",$GET(ERR("error")),.CTX)
@@ -178,6 +201,7 @@ FSRENAME(DEV,CONF,REQ,CTX)
 	. DO RESPERR(.DEV,.CONF,400,"invalid_json",$GET(ERR("error")),.CTX)
 	IF '$$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR) DO  QUIT
 	. DO RESPERR(.DEV,.CONF,500,"fs_state_error",$GET(ERR("error")),.CTX)
+	IF '$$REQUIREAUTH(.DEV,.CONF,.CTX,.STATE) QUIT
 	IF '$$RENAME^MIOOSFS(.STATE,$GET(TREE("id")),$GET(TREE("name")),.OUT,.ERR) DO  QUIT
 	. DO RESPERR(.DEV,.CONF,403,"fs_rename_failed",$GET(ERR("error")),.CTX)
 	DO RESPJSONX^MIOHTTP(.DEV,.CONF,200,.OUT,$GET(CTX("request_id")),.CTX)
@@ -190,6 +214,7 @@ FSMOVE(DEV,CONF,REQ,CTX)
 	. DO RESPERR(.DEV,.CONF,400,"invalid_json",$GET(ERR("error")),.CTX)
 	IF '$$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR) DO  QUIT
 	. DO RESPERR(.DEV,.CONF,500,"fs_state_error",$GET(ERR("error")),.CTX)
+	IF '$$REQUIREAUTH(.DEV,.CONF,.CTX,.STATE) QUIT
 	IF '$$MOVE^MIOOSFS(.STATE,$GET(TREE("id")),$GET(TREE("parent")),.OUT,.ERR) DO  QUIT
 	. DO RESPERR(.DEV,.CONF,403,"fs_move_failed",$GET(ERR("error")),.CTX)
 	DO RESPJSONX^MIOHTTP(.DEV,.CONF,200,.OUT,$GET(CTX("request_id")),.CTX)
@@ -202,8 +227,10 @@ FSDELETE(DEV,CONF,REQ,CTX)
 	. DO RESPERR(.DEV,.CONF,400,"invalid_json",$GET(ERR("error")),.CTX)
 	IF '$$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR) DO  QUIT
 	. DO RESPERR(.DEV,.CONF,500,"fs_state_error",$GET(ERR("error")),.CTX)
+	IF '$$REQUIREAUTH(.DEV,.CONF,.CTX,.STATE) QUIT
 	IF '$$DELETE^MIOOSFS(.STATE,$GET(TREE("id")),.OUT,.ERR) DO  QUIT
 	. DO RESPERR(.DEV,.CONF,403,"fs_delete_failed",$GET(ERR("error")),.CTX)
 	DO RESPJSONX^MIOHTTP(.DEV,.CONF,200,.OUT,$GET(CTX("request_id")),.CTX)
 	SET CTX("status")=200
 	QUIT
+	;

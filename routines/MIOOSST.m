@@ -35,16 +35,23 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("localeRtl")=+$GET(LOC("rtl"),0)
 	SET STATE("authenticated")=$SELECT(USER'="":1,1:0)
 	SET STATE("authRequired")=AUTHREQ
-	SET STATE("authMode")=$SELECT(+$$LOCALEN^MIOOSAUTH(.CONF)=1:"local-session",DEVOK=1:"dev-bypass",1:"anonymous")
+	SET STATE("authMode")=$SELECT(+$$LOCALEN^MIOOSAUTH(.CONF)=1:"local-session-required",DEVOK=1:"dev-bypass",1:"local-session-required")
 	SET STATE("guestLoginEnabled")=+$$GUESTEN^MIOOSAUTH(.CONF)
 	SET STATE("localAuthEnabled")=+$$LOCALEN^MIOOSAUTH(.CONF)
+	SET STATE("frameworkAuthEnabled")=1
+	SET STATE("frameworkAuthMode")=$GET(CONF("mioos","auth","frameworkProvider"),"mioauth-session-jwt")
+	SET STATE("auditEnabled")=+$GET(CONF("mioos","audit","enabled"),1)
+	SET STATE("auditRetainDays")=+$GET(CONF("mioos","audit","retainDays"),365)
+	SET STATE("auditReportLimit")=+$GET(CONF("mioos","audit","reportLimit"),20)
+	SET STATE("auditReportWindowDays")=+$GET(CONF("mioos","audit","reportWindowDays"),30)
 	SET STATE("brandTitle")=$GET(CONF("mioos","brand","title"),"MIOOS")
 	SET STATE("brandSubtitle")=$$TXT^MIOOSI18N(CODE,"product.subtitle","MUMPS powered Windows XP style desktop")
 	SET STATE("profile")=$$PROFILE(.CONF)
-	SET STATE("principal")=$SELECT(USER'="":USER,AUTHREQ=1:"anonymous",1:"guest")
+	SET STATE("principal")=$SELECT(USER'="":USER,1:"guest")
 	SET STATE("userName")=$SELECT(UNAME'="":UNAME,AUTHREQ=1:$$TXT^MIOOSI18N(CODE,"auth.state.required","Sign in required"),1:$$TXT^MIOOSI18N(CODE,"common.guest","Guest"))
 	IF ROLES="" SET ROLES=$SELECT(STATE("principal")="guest":"guest",1:"")
 	SET STATE("roles")=ROLES
+	SET STATE("authAdmin")=$$HASROLECSV(ROLES,"admin")
 	SET STATE("sessionId")=$GET(CTX("auth","claims","sid")) IF STATE("sessionId")="" SET STATE("sessionId")=$SELECT(STATE("authenticated")=1:"mioos-auth",1:"mioos-shell")
 	SET STATE("desktopPath")=$GET(CONF("mioos","route","desktop"),"/mioos")
 	SET STATE("bootstrapPath")=$GET(CONF("mioos","route","bootstrap"),"/api/mioos/bootstrap")
@@ -52,6 +59,7 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("signinPath")=$GET(CONF("mioos","route","signin"),"/api/mioos/auth/signin")
 	SET STATE("signoutPath")=$GET(CONF("mioos","route","signout"),"/api/mioos/auth/signout")
 	SET STATE("guestSigninPath")=$GET(CONF("mioos","route","guestSignin"),"/api/mioos/auth/guest")
+	SET STATE("auditExportPath")=$GET(CONF("mioos","route","auditExport"),"/api/mioos/auth/audit/export")
 	SET STATE("fsListPath")=$GET(CONF("mioos","route","fsList"),"/api/mioos/fs/list")
 	SET STATE("fsReadPath")=$GET(CONF("mioos","route","fsRead"),"/api/mioos/fs/read")
 	SET STATE("fsWritePath")=$GET(CONF("mioos","route","fsWrite"),"/api/mioos/fs/write")
@@ -177,6 +185,14 @@ SAVELAYOUT(STATE,TREE,OUT,ERR)
 	SET OUT("sortMode")=@ROOT@("sortMode")
 	QUIT 1
 	;
+HASROLECSV(CSV,ROLE)
+	NEW I,X,FOUND
+	SET FOUND=0
+	FOR I=1:1:$LENGTH($GET(CSV),",") DO  QUIT:FOUND
+	. SET X=$$LOW^MIOUTIL($$TRIM^MIOUTIL($PIECE($GET(CSV),",",I)))
+	. IF X=$$LOW^MIOUTIL($GET(ROLE)) SET FOUND=1
+	QUIT FOUND
+	;
 PROFILE(CONF)
 	IF $$DEVAUTH(.CONF) QUIT "dev"
 	QUIT $SELECT($GET(CONF("mioos","profile"))'="":$GET(CONF("mioos","profile")),1:"prod")
@@ -271,7 +287,23 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("auth","required")=+$GET(STATE("authRequired"),0)
 	SET OBJ("auth","enabled")=+$GET(STATE("localAuthEnabled"),0)
 	SET OBJ("auth","guestLoginEnabled")=+$GET(STATE("guestLoginEnabled"),0)
-	SET OBJ("auth","mode")=$GET(STATE("authMode"),"anonymous")
+	SET OBJ("auth","mode")=$GET(STATE("authMode"),"local-session-required")
+	SET OBJ("auth","unauthenticatedAccessAllowed")=0
+	SET OBJ("auth","providers","local","enabled")=+$GET(STATE("localAuthEnabled"),0)
+	SET OBJ("auth","providers","local","loginMode")="username-password"
+	SET OBJ("auth","providers","local","guestAllowed")=+$GET(STATE("guestLoginEnabled"),0)
+	SET OBJ("auth","providers","framework","enabled")=+$GET(STATE("frameworkAuthEnabled"),1)
+	SET OBJ("auth","providers","framework","mode")=$GET(STATE("frameworkAuthMode"),"mioauth-session-jwt")
+	SET OBJ("auth","providers","framework","tokenType")="jwt"
+	SET OBJ("auth","providers","framework","sessionCookie")=$GET(CONF("mioos","localAuth","tokenCookie"),"mioos_auth")
+	SET OBJ("auth","lockout","threshold")=+$GET(CONF("mioos","localAuth","lockThreshold"),5)
+	SET OBJ("auth","lockout","minutes")=+$GET(CONF("mioos","localAuth","lockMinutes"),15)
+	SET OBJ("auth","audit","enabled")=+$GET(STATE("auditEnabled"),1)
+	SET OBJ("auth","audit","retainDays")=+$GET(STATE("auditRetainDays"),365)
+	SET OBJ("auth","audit","reportLimit")=+$GET(STATE("auditReportLimit"),20)
+	SET OBJ("auth","audit","reportWindowDays")=+$GET(STATE("auditReportWindowDays"),30)
+	SET OBJ("auth","audit","scope")=$SELECT(+$GET(STATE("authAdmin"),0)=1:"all",1:"self")
+	SET OBJ("routes","auditExport")=$GET(STATE("auditExportPath"))
 	SET OBJ("routes","fsList")=$GET(STATE("fsListPath"))
 	SET OBJ("routes","fsRead")=$GET(STATE("fsReadPath"))
 	SET OBJ("routes","fsWrite")=$GET(STATE("fsWritePath"))
@@ -412,6 +444,12 @@ APPS(STATE)
 	. SET STATE("apps",N,"moduleCategory")=$GET(STATE("modules",I,"category"),"general")
 	. SET STATE("apps",N,"moduleBuiltIn")=+$GET(STATE("modules",I,"builtIn"),1)
 	. SET STATE("apps",N,"moduleVersion")=$GET(STATE("modules",I,"version"),"1.0")
+	SET N=N+1
+	SET STATE("apps",N,"key")="security-center"
+	SET STATE("apps",N,"title")="Security Center"
+	SET STATE("apps",N,"subtitle")="Authentication posture, audit trail, and report export"
+	SET STATE("apps",N,"icon")="🔐"
+	SET STATE("apps",N,"kind")="system"
 	QUIT
 	;
 MODULES(STATE,CONF)
@@ -506,6 +544,9 @@ WINDOWS(STATE)
 	. SET STATE("windows",N,"moduleSurface")=$GET(STATE("modules",I,"surface"),"generic")
 	. SET STATE("windows",N,"moduleBuiltIn")=+$GET(STATE("modules",I,"builtIn"),1)
 	. SET STATE("windows",N,"moduleSingleton")=+$GET(STATE("modules",I,"singleton"),1)
+	SET N=N+1
+	DO WIN(.STATE,N,"win-security-center","security-center","Security Center",284,134,860,560,N,"closed",680,420,1,1)
+	SET STATE("windows",N,"securityCenterEnabled")=1
 	QUIT
 	;
 WIN(STATE,N,ID,APPKEY,TITLE,LEFT,TOP,WIDTH,HEIGHT,Z,MODE,MINW,MINH,RESIZE,DRAG)
