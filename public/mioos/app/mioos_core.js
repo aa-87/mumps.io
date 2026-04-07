@@ -59,6 +59,7 @@
           appliedThemeProfile: null,
           themeStyleNodeId: 'mioos-theme-studio-style',
           transferCenter: { items: [], seq: 0, autoOpen: true },
+          transferControllers: {},
           desktopUi: {
             iconSize: 'medium',
             sortMode: 'manual',
@@ -189,7 +190,7 @@
         },
         activeTransfers: function () {
           return (this.transferCenter.items || []).filter(function (item) {
-            return ['queued','preparing','uploading','downloading','finalizing'].indexOf(item.status) >= 0;
+            return ['queued','preparing','uploading','downloading','finalizing','verifying','cancelling'].indexOf(item.status) >= 0;
           });
         },
         completedTransfers: function () {
@@ -201,6 +202,43 @@
           var active = this.activeTransfers().length;
           var done = this.completedTransfers().length;
           return active + ' active · ' + done + ' finished';
+        },
+        setTransferController: function (transferId, controller) {
+          if (!transferId) return;
+          this.transferControllers[transferId] = Object.assign({}, this.transferControllers[transferId] || {}, controller || {});
+        },
+        clearTransferController: function (transferId) {
+          if (!transferId || !this.transferControllers) return;
+          delete this.transferControllers[transferId];
+        },
+        transferController: function (transferId) {
+          if (!transferId || !this.transferControllers) return null;
+          return this.transferControllers[transferId] || null;
+        },
+        canCancelTransfer: function (item) {
+          var ctrl = this.transferController(item && item.id);
+          return !!(item && ctrl && ctrl.onCancel && ['queued','preparing','uploading','downloading','finalizing','verifying'].indexOf(item.status) >= 0);
+        },
+        canRetryTransfer: function (item) {
+          var ctrl = this.transferController(item && item.id);
+          return !!(item && ctrl && ctrl.onRetry && ['failed','cancelled'].indexOf(item.status) >= 0);
+        },
+        cancelTransfer: function (item) {
+          var self = this;
+          var ctrl = this.transferController(item && item.id);
+          if (!item || !ctrl || !ctrl.onCancel) return Promise.resolve();
+          this.updateTransfer(item.id, { status: 'cancelling', stage: 'Cancelling' });
+          return Promise.resolve(ctrl.onCancel()).then(function () {
+            self.updateTransfer(item.id, { status: 'cancelled', stage: 'Cancelled' });
+          }).catch(function (err) {
+            self.updateTransfer(item.id, { status: 'failed', stage: 'Cancel failed', error: (err && err.message) || 'transfer_cancel_failed' });
+            throw err;
+          });
+        },
+        retryTransfer: function (item) {
+          var ctrl = this.transferController(item && item.id);
+          if (!item || !ctrl || !ctrl.onRetry) return Promise.resolve();
+          return Promise.resolve(ctrl.onRetry());
         },
         registerTransfer: function (payload) {
           var next = Object.assign({
@@ -234,11 +272,18 @@
             status: ok ? 'completed' : 'failed',
             stage: ok ? 'Completed' : 'Failed'
           }, patch || {}));
+          if (ok) this.clearTransferController(transferId);
         },
         clearFinishedTransfers: function () {
+          var keep = {};
           this.transferCenter.items = (this.transferCenter.items || []).filter(function (item) {
-            return ['queued','preparing','uploading','downloading','finalizing'].indexOf(item.status) >= 0;
+            var active = ['queued','preparing','uploading','downloading','finalizing','verifying','cancelling'].indexOf(item.status) >= 0;
+            if (active) keep[item.id] = 1;
+            return active;
           });
+          Object.keys(this.transferControllers || {}).forEach(function (key) {
+            if (!keep[key]) delete (this.transferControllers || {})[key];
+          }, this);
         },
         desktopGridMetrics: function () {
           var size = this.desktopUi.iconSize || 'medium';

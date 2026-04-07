@@ -355,6 +355,9 @@
                         <div class="mioos-upload-progress-bar"><span :style="{ width: (transferPercent(item) + '%') }"></span></div>
                         <em>[[ transferPercent(item) ]]%</em>
                       </div>
+                      <div class="mioos-transfer-actions" v-if="canCancelTransfer(item)">
+                        <button type="button" class="mioos-transfer-btn" @click="cancelTransfer(item)">Cancel</button>
+                      </div>
                     </div>
                     <div class="mioos-transfer-empty" v-if="!activeTransfers().length">No active transfers.</div>
                   </fieldset>
@@ -366,8 +369,12 @@
                       <div class="mioos-transfer-copy">
                         <strong>[[ item.name ]]</strong>
                         <span>[[ item.kind ]] · [[ item.stage || item.status ]]</span>
+                        <small v-if="item.error">[[ item.error ]]</small>
                       </div>
                       <em class="mioos-transfer-state" :class="{ 'is-failed': item.status === 'failed' }">[[ item.status ]]</em>
+                      <div class="mioos-transfer-actions" v-if="canRetryTransfer(item)">
+                        <button type="button" class="mioos-transfer-btn" @click="retryTransfer(item)">Retry</button>
+                      </div>
                     </div>
                     <div class="mioos-transfer-empty" v-if="!completedTransfers().length">No completed transfers yet.</div>
                   </fieldset>

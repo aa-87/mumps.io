@@ -108,6 +108,8 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","fs","transport"))="" SET CONF("mioos","fs","transport")="http-and-websocket"
 	IF $GET(CONF("mioos","upload","chunkBytes"))="" SET CONF("mioos","upload","chunkBytes")=131072
 	IF $GET(CONF("mioos","upload","concurrency"))="" SET CONF("mioos","upload","concurrency")=5
+	IF $GET(CONF("mioos","upload","staleSeconds"))="" SET CONF("mioos","upload","staleSeconds")=1800
+	IF $GET(CONF("mioos","download","staleSeconds"))="" SET CONF("mioos","download","staleSeconds")=900
 	IF $GET(CONF("mioos","terminal","pipe","sessionIdleSeconds"))="" SET CONF("mioos","terminal","pipe","sessionIdleSeconds")=900
 	IF $GET(CONF("auth","protectMode"))="" SET CONF("auth","protectMode")="route"
 	IF $GET(CONF("auth","mode"))="" SET CONF("auth","mode")="jwt"

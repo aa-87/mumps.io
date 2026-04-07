@@ -7,6 +7,9 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	SET ERR("routine")="MIOOSST"
 	DO BOOTSTRAP^MIOOSAUTH(.CONF)
 	DO INIT^MIOOSFS(.CONF)
+	NEW PURGEUP,PURGEDN
+	SET PURGEUP=$$PURGE^MIOOSFSUP(.CONF)
+	SET PURGEDN=$$PURGE^MIOOSFSDN(.CONF)
 	DO RESOLVE^MIOOSI18N(.CONF,.REQ,.CTX,.LOC)
 	SET CODE=$GET(LOC("code"),"en")
 	SET AUTHREQ=+$$AUTHREQ^MIOOSAUTH(.CONF)
@@ -86,6 +89,8 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	IF STATE("wsUploadSocketOpenTimeoutMs")<1000 SET STATE("wsUploadSocketOpenTimeoutMs")=15000
 	SET STATE("wsMaxFrameBytes")=+$GET(CONF("websocket","maxFrameBytes"),262144)
 	SET STATE("wsMaxMessageBytes")=+$GET(CONF("websocket","maxMessageBytes"),1048576)
+	SET STATE("uploadStaleSeconds")=+$GET(CONF("mioos","upload","staleSeconds"),1800)
+	SET STATE("downloadStaleSeconds")=+$GET(CONF("mioos","download","staleSeconds"),900)
 	SET STATE("themeKey")=$GET(CONF("mioos","desktop","theme"),"xp-classic-blue")
 	SET STATE("wallpaper")=$GET(CONF("mioos","desktop","wallpaper"),"bliss")
 	SET STATE("density")=$GET(CONF("mioos","desktop","density"),"comfortable")
@@ -264,6 +269,10 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("vfs","uploadBatchSize")=+$GET(STATE("wsUploadBatchSize"),1)
 	SET OBJ("vfs","downloadChunkBytes")=$$DLCHUNK^MIOOSFSDN(.CONF)
 	SET OBJ("vfs","downloadVerifyHash")=1
+	SET OBJ("vfs","uploadStaleSeconds")=+$GET(STATE("uploadStaleSeconds"),1800)
+	SET OBJ("vfs","downloadStaleSeconds")=+$GET(STATE("downloadStaleSeconds"),900)
+	SET OBJ("vfs","transferControls","cancel")=1
+	SET OBJ("vfs","transferControls","retry")=1
 	SET OBJ("vfs","storage")="globals-only"
 	SET OBJ("vfs","permissionsModel")="owner-role-flags"
 	SET OBJ("desktop","icons","enabled")=1

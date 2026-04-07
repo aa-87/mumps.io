@@ -231,3 +231,11 @@ A detailed Theme Studio UI tool is available in MIOOS as a dedicated desktop app
 - Explorer verifies chunked download payloads before saving when the browser exposes Web Crypto.
 - Hash mismatch and stalled-offset failures now fail closed instead of silently falling back to a potentially corrupted save.
 - This ROI is intended to harden large-file round trips and reduce avoidable shell instability under transfer load.
+
+
+## ROI 21 — Transfer resiliency, cancellation, retry, and stale-session cleanup
+- Transfers now expose cancel and retry actions in the Transfers window through a small controller registry in the Vue shell.
+- Explorer upload/download flows register per-transfer control hooks so active transfers can abort cleanly and failed or cancelled transfers can be retried in-session.
+- `MIOOSFSUP` now tracks upload timestamps plus per-chunk raw byte counts, exposes `fs.upload.status`, and purges abandoned staged uploads after a configurable TTL.
+- `MIOOSFSDN` now timestamps active download sessions and purges stale download state after a configurable TTL.
+- `MIOOSST` performs lightweight transfer cleanup during state load so abandoned transfer globals do not accumulate between refreshes.

@@ -107,9 +107,9 @@
         }
       },
       websocket: {
-        maxSocketsPerSession: 4,
+        maxSocketsPerSession: 6,
         coreSockets: 1,
-        fsSockets: 3,
+        fsSockets: 5,
         uploadBatchSize: 1,
         requestTimeoutMs: 15000,
         uploadBeginTimeoutMs: 20000,
@@ -120,7 +120,7 @@
         maxFrameBytes: 262144,
         maxMessageBytes: 1048576
       },
-      vfs: { enabled: false, rootId: 'root', homeId: 'home', chunkSize: 32000, globalsOnly: true },
+      vfs: { enabled: false, rootId: 'root', homeId: 'home', chunkSize: 32000, globalsOnly: true, uploadStaleSeconds: 1800, downloadStaleSeconds: 900, transferControls: { cancel: true, retry: true } },
       apps: [],
       windows: [],
       modules: []

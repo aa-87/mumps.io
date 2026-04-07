@@ -128,3 +128,7 @@ A detailed Theme Studio UI tool is available in MIOOS as a dedicated desktop app
 
 ## ROI 20 — Verified chunked downloads and VFS download hardening
 `MIOOSFSDN` now uses `READRANGE^MIOOSFS` for chunk delivery, keeps per-download session state under `^MIO("MIOOS","DL",...)`, and advertises `sha256` plus `verifyHash` in `fs.download.begin`. `MIOOSFS` now supports range reads directly from global-backed chunk storage, which avoids reconstructing the whole file for every chunk request.
+
+
+## ROI 21 — Transfer lifecycle controls
+`MIOOSFSUP` now records `createdAt`/`updatedAt`, keeps raw chunk byte accounting by chunk index, exposes `STATUS^MIOOSFSUP`, and purges abandoned staged uploads through `PURGE^MIOOSFSUP`. `MIOOSFSDN` mirrors that pattern for active download sessions. The Transfers window now uses controller hooks from `mioos_core.js` so cancel and retry behavior stays in the browser shell rather than leaking transfer state into generic window code.

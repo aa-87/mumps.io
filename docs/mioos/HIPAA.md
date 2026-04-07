@@ -71,3 +71,7 @@ To move closer to HIPAA-ready operation, later ROIs should add or harden:
 
 ## Transfer integrity note
 Verified chunked downloads reduce the chance of silent corruption during browser saves, which is helpful in regulated environments, but they do not replace audit logging, encryption, access controls, or deployment policy.
+
+
+## Transfer cleanup note
+Automatic cleanup of abandoned upload/download staging reduces the chance of stale transfer payloads lingering longer than necessary in server globals. This is a helpful operational hardening step, but it still needs to be paired with deployment-level retention, encryption, logging, and access-control policy.

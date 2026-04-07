@@ -311,7 +311,7 @@
         }
         state.upload = next;
       },
-      uploadChunkedSegments: function (uploadId, segments, state, fileName, concurrency, batchSize) {
+      uploadChunkedSegments: function (uploadId, segments, state, transferControl, fileName, concurrency, batchSize) {
         var self = this;
         var workers = [];
         var nextIndex = 0;
@@ -322,12 +322,21 @@
         var batchWidth = 1;
         var frameBudget = 65536;
         return new Promise(function (resolve, reject) {
+          function cancelled() {
+            return !!(transferControl && transferControl.cancelled);
+          }
           function cleanup() {
             workers.forEach(function (worker) {
               if (worker && worker.close) worker.close();
             });
+            if (transferControl) transferControl.workers = [];
           }
           function maybeDone() {
+            if (cancelled()) {
+              cleanup();
+              reject(new Error('transfer_cancelled'));
+              return 1;
+            }
             if (completed >= segments.length) {
               cleanup();
               resolve();
@@ -349,7 +358,8 @@
             return batch;
           }
           function sendSingle(worker, item) {
-            var payload = { uploadId: uploadId, index: item.index, data: item.data };
+            var payload = { uploadId: uploadId, index: item.index, data: item.data, bytes: item.bytes || 0 };
+            if (cancelled()) return Promise.reject(new Error('transfer_cancelled'));
             return worker.command('fs.upload.chunk', payload).catch(function () {
               var retryWorker;
               try {
@@ -369,11 +379,12 @@
             });
           }
           function sendBatch(worker, batch) {
+            if (cancelled()) return Promise.reject(new Error('transfer_cancelled'));
             if (batch.length <= 1) return sendSingle(worker, batch[0]);
             return worker.command('fs.upload.batch', {
               uploadId: uploadId,
               chunks: batch.map(function (item) {
-                return { index: item.index, data: item.data };
+                return { index: item.index, data: item.data, bytes: item.bytes || 0 };
               })
             }).catch(function () {
               var chain = Promise.resolve();
@@ -388,6 +399,11 @@
             function pump() {
               var batch = nextBatch();
               var batchBytes = 0;
+              if (cancelled()) {
+                cleanup();
+                reject(new Error('transfer_cancelled'));
+                return;
+              }
               if (!batch.length) return;
               batch.forEach(function (item) { batchBytes += (item.bytes || 0); });
               sendBatch(worker, batch).then(function () {
@@ -410,6 +426,7 @@
             try {
               worker = createUploadSocket(self, slot + 1);
               workers.push(worker);
+              if (transferControl) transferControl.workers = workers;
               worker.openPromise.then(function () {
                 pump();
               }).catch(function (err) {
@@ -651,6 +668,22 @@
         mime = file.type || 'application/octet-stream';
         isText = detectTextLike({ name: file.name, mime: mime });
         var transferId = self.registerTransfer ? self.registerTransfer({ kind: 'upload', name: file.name, status: 'preparing', stage: 'Preparing', totalBytes: file.size, processedBytes: 0, sourceWindowId: windowId }) : '';
+        var transferControl = { cancelled: false, workers: [], uploadId: '', windowId: windowId };
+        if (transferId && self.setTransferController) {
+          self.setTransferController(transferId, {
+            onRetry: function () { return self.uploadFilesToExplorer(windowId, [file]); },
+            onCancel: function () {
+              transferControl.cancelled = true;
+              (transferControl.workers || []).forEach(function (worker) {
+                if (worker && worker.close) worker.close();
+              });
+              if (transferControl.uploadId && self.socketRequest) {
+                return self.socketRequest((self.boot.routes || {}).commandEvent || 'desktop.command', { command: 'fs.upload.abort', uploadId: transferControl.uploadId }, { command: 'fs.upload.abort', dedupeKey: 'fs.upload.abort|' + transferControl.uploadId, timeoutMs: uploadTimeoutConfig(self).uploadAbortTimeoutMs }).catch(function () { return null; });
+              }
+              return Promise.resolve();
+            }
+          });
+        }
         self.setExplorerUploadProgress(state, {
           active: true,
           name: file.name,
@@ -662,6 +695,7 @@
           uploadId: ''
         });
         function finalize() {
+          transferControl.cancelled = false;
           return self.refreshExplorerWindow(windowId).then(function () {
             if (self.refreshView) self.refreshView();
             self.setExplorerUploadProgress(state, {
@@ -679,9 +713,15 @@
           });
         }
         function fail(err, fallback) {
-          self.setExplorerUploadProgress(state, { active: false, stage: 'Failed', error: (err && err.message) || fallback, uploadId: '' });
-          if (transferId && self.finalizeTransfer) self.finalizeTransfer(transferId, false, { error: (err && err.message) || fallback, processedBytes: ((state.upload || {}).sentBytes || 0), totalBytes: file.size });
-          if (self.showAlert) self.showAlert(self.t('alerts.shellEventError.title', 'Explorer'), (err && err.message) || fallback);
+          var message = (err && err.message) || fallback;
+          if (message === 'transfer_cancelled') {
+            self.setExplorerUploadProgress(state, { active: false, stage: 'Cancelled', error: '', uploadId: '' });
+            if (transferId && self.updateTransfer) self.updateTransfer(transferId, { status: 'cancelled', stage: 'Cancelled', processedBytes: ((state.upload || {}).sentBytes || 0), totalBytes: file.size });
+            return Promise.resolve();
+          }
+          self.setExplorerUploadProgress(state, { active: false, stage: 'Failed', error: message, uploadId: '' });
+          if (transferId && self.finalizeTransfer) self.finalizeTransfer(transferId, false, { error: message, processedBytes: ((state.upload || {}).sentBytes || 0), totalBytes: file.size });
+          if (self.showAlert) self.showAlert(self.t('alerts.shellEventError.title', 'Explorer'), message);
           throw (err || new Error(fallback));
         }
         if (!useChunkedUpload(file, isText)) {
@@ -726,6 +766,7 @@
           if (!uploadId) throw new Error('upload_begin_failed');
           state.upload.uploadId = uploadId;
           state.upload.transferId = transferId || '';
+          transferControl.uploadId = uploadId;
           self.setExplorerUploadProgress(state, { stage: 'Uploading chunks', uploadId: uploadId });
           if (transferId && self.updateTransfer) self.updateTransfer(transferId, { status: 'uploading', stage: 'Uploading chunks', processedBytes: 0, totalBytes: file.size });
             if (isText) {
@@ -738,7 +779,7 @@
                   offset += chunkChars;
                   if (text.length === 0) break;
                 }
-                return self.uploadChunkedSegments(uploadId, segments, state, file.name, uploadConcurrency, uploadBatchSize);
+                return self.uploadChunkedSegments(uploadId, segments, state, transferControl, file.name, uploadConcurrency, uploadBatchSize);
               });
             }
             return blobToArrayBuffer(file).then(function (buffer) {
@@ -753,7 +794,7 @@
                 offset = end;
                 if (bytes.length === 0) break;
               }
-              return self.uploadChunkedSegments(uploadId, segments, state, file.name, uploadConcurrency, uploadBatchSize);
+              return self.uploadChunkedSegments(uploadId, segments, state, transferControl, file.name, uploadConcurrency, uploadBatchSize);
             });
         }).then(function () {
           self.setExplorerUploadProgress(state, { stage: 'Finalizing', progress: 100, sentBytes: state.upload.totalBytes });
@@ -865,6 +906,12 @@
         var transferId = this.registerTransfer ? this.registerTransfer({ kind: 'download', name: name, status: 'preparing', stage: 'Preparing', totalBytes: 0, processedBytes: 0 }) : '';
         var self = this;
         var activeDownloadId = '';
+        if (transferId && this.setTransferController) {
+          this.setTransferController(transferId, {
+            onRetry: function () { return self.downloadFileEntry(item, fallbackData); },
+            onCancel: function () { return abortDownload(); }
+          });
+        }
         function triggerSave(raw) {
           var url = makeDownloadHref(raw, mime);
           if (!url) return;

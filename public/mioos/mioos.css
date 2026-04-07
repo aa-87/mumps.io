@@ -670,6 +670,9 @@ button, input { font: inherit; }
 .mioos-transfer-empty { color: var(--mioos-muted); font-size: 12px; padding: 12px 0; }
 .mioos-transfer-state { text-transform: capitalize; color: var(--mioos-muted); font-size: 12px; }
 .mioos-transfer-state.is-failed { color: #9d1d20; font-weight: 700; }
+.mioos-transfer-actions { display: flex; align-items: center; gap: 8px; }
+.mioos-transfer-btn { min-width: 72px; }
+.mioos-transfer-copy small { color: #9d1d20; font-size: 11px; }
 
 
 .mioos-desktop-icons { position: relative; min-height: calc(100vh - var(--mioos-taskbar-height, 40px) - 16px); }

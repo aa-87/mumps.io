@@ -85,3 +85,7 @@ A detailed Theme Studio UI tool is available in MIOOS as a dedicated desktop app
 
 ## Download behavior
 Large downloads continue through the Transfers experience, but MIOOS now performs an integrity check before saving when the browser supports secure hashing. If a download fails verification, the save is blocked instead of silently writing a corrupted file.
+
+
+## Transfer controls
+The Transfers window now shows cancel controls for active uploads/downloads and retry controls for failed or cancelled transfers. Retry works within the current browser session and is intended for operational recovery after a transient socket or refresh interruption.

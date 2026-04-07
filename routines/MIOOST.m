@@ -21,6 +21,8 @@ MIOOST ; MIOOS tests
 	DO T020
 	DO T021
 	DO T022
+	DO T023
+	DO T024
 	QUIT
 	;
 RESET
@@ -111,9 +113,9 @@ T002
 	DO EQ^MIOTASSERT(+$GET(OBJ("vfs","enabled")),1,"[MIOOST][T002][vfs enabled]")
 	DO EQ^MIOTASSERT($GET(OBJ("vfs","storage")),"globals-only","[MIOOST][T002][vfs storage]")
 	DO EQ^MIOTASSERT($GET(OBJ("routes","fsList")),"/api/mioos/fs/list","[MIOOST][T002][fs list route]")
-	DO EQ^MIOTASSERT(+$GET(OBJ("websocket","maxSocketsPerSession")),4,"[MIOOST][T002][max sockets]")
-	DO EQ^MIOTASSERT(+$GET(OBJ("websocket","fsSockets")),3,"[MIOOST][T002][fs sockets]")
-	DO EQ^MIOTASSERT(+$GET(OBJ("vfs","uploadBatchSize")),4,"[MIOOST][T002][upload batch size]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("websocket","maxSocketsPerSession")),6,"[MIOOST][T002][max sockets]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("websocket","fsSockets")),5,"[MIOOST][T002][fs sockets]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("vfs","uploadBatchSize")),1,"[MIOOST][T002][upload batch size]")
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","windowing","engine")),"mioos-native-vue-css","[MIOOST][T002][windowing engine]")
 	DO EQ^MIOTASSERT(+$GET(OBJ("desktop","windowing","snapThreshold")),28,"[MIOOST][T002][snap threshold]")
 	DO EQ^MIOTASSERT(+$GET(OBJ("windows",1,"resizable")),1,"[MIOOST][T002][window resizable]")
@@ -150,7 +152,7 @@ T004
 	DO EQ^MIOTASSERT($GET(OBJ("commandResultEvent")),"desktop.result","[MIOOST][T004][result event]")
 	DO EQ^MIOTASSERT($GET(OBJ("terminalEngine")),"xtermjs","[MIOOST][T004][engine]")
 	DO EQ^MIOTASSERT($GET(OBJ("realtimeContract")),"core-websocket-plus-app-websockets","[MIOOST][T004][realtime contract]")
-	DO EQ^MIOTASSERT(+$GET(OBJ("socketPool","maxSocketsPerSession")),4,"[MIOOST][T004][hello max sockets]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("socketPool","maxSocketsPerSession")),6,"[MIOOST][T004][hello max sockets]")
 	SET JSON=$$PONGJSON^MIOOSWS(.STATE)
 	DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T004][pong decode]")
 	DO EQ^MIOTASSERT($GET(OBJ("event")),"pong","[MIOOST][T004][pong event]")
@@ -450,4 +452,43 @@ T022
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSFSDN.m","READRANGE^MIOOSFS"),"[MIOOST][T022][range read]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSST.m","downloadVerifyHash"),"[MIOOST][T022][boot verify flag]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 20 — Verified chunked downloads and VFS download hardening"),"[MIOOST][T022][llm roi20]")
+	QUIT
+
+T023
+	NEW CONF,REQ,CTX,STATE,ERR,OUT,UP,STAT,PURGE,NOW
+	DO RESET
+	DO CONFDEF^MIOOS(.CONF)
+	DO INIT^MIOOS(.CONF)
+	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T023][load]")
+	KILL OUT DO OK^MIOTASSERT($$BEGIN^MIOOSFSUP(.STATE,.CONF,$$HOMEID^MIOOSFS(),"resume.txt","text/plain",11,"text",.OUT,.ERR),"[MIOOST][T023][upload begin]")
+	SET UP=$GET(OUT("uploadId"))
+	KILL OUT DO OK^MIOTASSERT($$CHUNK^MIOOSFSUP(.STATE,.CONF,UP,1,"hello",5,.OUT,.ERR),"[MIOOST][T023][upload chunk]")
+	KILL STAT DO OK^MIOTASSERT($$STATUS^MIOOSFSUP(.STATE,.CONF,UP,.STAT,.ERR),"[MIOOST][T023][upload status]")
+	DO EQ^MIOTASSERT(+$GET(STAT("receivedBytes")),5,"[MIOOST][T023][status bytes]")
+	SET NOW=$HOROLOG
+	SET ^MIO("MIOOS","UPLOAD","INFO",UP,"updatedAt")=(+NOW-1)_","_$PIECE(NOW,",",2)
+	KILL OUT SET PURGE=$$PURGE^MIOOSFSUP(.CONF,.OUT)
+	DO EQ^MIOTASSERT(PURGE,1,"[MIOOST][T023][purge count]")
+	DO EQ^MIOTASSERT($DATA(^MIO("MIOOS","UPLOAD","META",UP))#2,0,"[MIOOST][T023][purged meta]")
+	QUIT
+	;
+T024
+	NEW CONF,REQ,CTX,STATE,ERR,OUT,ID,DL,PURGE,NOW,SKEY
+	DO RESET
+	DO CONFDEF^MIOOS(.CONF)
+	DO INIT^MIOOS(.CONF)
+	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T024][load]")
+	KILL OUT DO OK^MIOTASSERT($$WRITE^MIOOSFS(.STATE,$$HOMEID^MIOOSFS(),"purge-download.txt","download me","text/plain",.OUT,.ERR),"[MIOOST][T024][write]")
+	SET ID=$GET(OUT("id"))
+	KILL DL DO OK^MIOTASSERT($$BEGIN^MIOOSFSDN(.STATE,.CONF,ID,.DL,.ERR),"[MIOOST][T024][download begin]")
+	SET NOW=$HOROLOG,SKEY=$$SESSIONKEY^MIOOSFSDN(.STATE)
+	SET ^MIO("MIOOS","DL",SKEY,$GET(DL("downloadId")),"updatedAt")=(+NOW-1)_","_$PIECE(NOW,",",2)
+	KILL OUT SET PURGE=$$PURGE^MIOOSFSDN(.CONF,.OUT)
+	DO EQ^MIOTASSERT(PURGE,1,"[MIOOST][T024][download purge]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","cancelTransfer"),"[MIOOST][T024][cancel transfer method]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","retryTransfer"),"[MIOOST][T024][retry transfer method]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","@click=""cancelTransfer(item)"""),"[MIOOST][T024][cancel transfer button]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","@click=""retryTransfer(item)"""),"[MIOOST][T024][retry transfer button]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","fs.upload.status"),"[MIOOST][T024][ws upload status]")
+	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 21 — Transfer resiliency, cancellation, retry, and stale-session cleanup"),"[MIOOST][T024][llm roi21]")
 	QUIT

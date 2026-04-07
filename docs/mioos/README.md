@@ -105,3 +105,7 @@ A detailed Theme Studio UI tool is available in MIOOS as a dedicated desktop app
 
 ## ROI 20 — Verified chunked downloads and VFS download hardening
 MIOOS now treats download integrity as part of the VFS contract. Chunked downloads expose a verification hint and server hash, Explorer verifies the assembled payload before save where Web Crypto is available, and the server serves only the requested byte range for each chunk request.
+
+
+## ROI 21 — Transfer resiliency and cleanup
+MIOOS now treats transfer lifecycle cleanup as part of the production VFS contract. Active uploads and downloads can be cancelled from the Transfers window, failed or cancelled transfers can be retried in the same browser session, and stale staged transfer state is purged server-side after a configurable TTL.
