@@ -29,6 +29,10 @@ MIOOST ; MIOOS tests
 	DO T028
 	DO T029
 	DO T030
+	DO T031
+	DO T032
+	DO T033
+	DO T034
 	QUIT
 	;
 RESET
@@ -83,6 +87,7 @@ T001
 	KILL EP DO AMATCH("[MIOOST][T001][signin]","POST","/api/mioos/auth/signin",1,"SIGNIN^MIOOSAPI","/api/mioos/auth/signin",.EP)
 	KILL EP DO AMATCH("[MIOOST][T001][signout]","POST","/api/mioos/auth/signout",1,"SIGNOUT^MIOOSAPI","/api/mioos/auth/signout",.EP)
 	KILL EP DO AMATCH("[MIOOST][T001][guest]","POST","/api/mioos/auth/guest",1,"GUESTSIGNIN^MIOOSAPI","/api/mioos/auth/guest",.EP)
+	KILL EP DO AMATCH("[MIOOST][T001][password change]","POST","/api/mioos/auth/password/change",1,"CHANGEPASSWORD^MIOOSAPI","/api/mioos/auth/password/change",.EP)
 	KILL EP DO AMATCH("[MIOOST][T001][static]","GET","/public/mioos/mioos.css",1,"STATIC^MIOOS","/public/mioos/*",.EP)
 	KILL EP DO AMATCH("[MIOOST][T001][fs list]","POST","/api/mioos/fs/list",1,"FSLIST^MIOOSAPI","/api/mioos/fs/list",.EP)
 	KILL EP DO AMATCH("[MIOOST][T001][fs read]","POST","/api/mioos/fs/read",1,"FSREAD^MIOOSAPI","/api/mioos/fs/read",.EP)
@@ -105,6 +110,7 @@ T002
 	DO EQ^MIOTASSERT($GET(OBJ("routes","websocket")),"/ws/mioos","[MIOOST][T002][ws route]")
 	DO EQ^MIOTASSERT($GET(OBJ("routes","terminalWebsocket")),"/ws/mioos/terminal","[MIOOST][T002][terminal ws route]")
 	DO EQ^MIOTASSERT($GET(OBJ("routes","signin")),"/api/mioos/auth/signin","[MIOOST][T002][signin route]")
+	DO EQ^MIOTASSERT($GET(OBJ("routes","passwordChange")),"/api/mioos/auth/password/change","[MIOOST][T002][password change route]")
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","launcherLabel")),"Menu","[MIOOST][T002][launcher]")
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","commandTransport")),"websocket-only","[MIOOST][T002][transport]")
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","realtimeContract")),"core-websocket-plus-app-websockets","[MIOOST][T002][realtime]")
@@ -591,4 +597,106 @@ T030
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","auth.audit"),"[MIOOST][T030][ws auth audit]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","AUDITX(DEV,CONF,REQ,CTX)"),"[MIOOST][T030][audit export handler]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 24 — Typed authentication, local/framework auditability, and HIPAA reportability"),"[MIOOST][T030][llm roi24]")
+	QUIT
+
+T031
+	NEW CONF,REQ,CTX,STATE,ERR,JSON,OBJ,PAY,TOKEN,TOKEN2,SID,FOUND,I
+	DO RESET
+	DO CONFDEF^MIOOS(.CONF)
+	DO INIT^MIOOS(.CONF)
+	DO OK^MIOTASSERT($$SIGNIN^MIOOSAUTH(.CONF,"admin","admin123!",.TOKEN,.ERR),"[MIOOST][T031][signin admin]")
+	DO OK^MIOTASSERT($$SIGNIN^MIOOSAUTH(.CONF,"user","user123!",.TOKEN2,.ERR),"[MIOOST][T031][signin user]")
+	SET REQ("hdr","cookie")=$PIECE($$COOKIEHDR^MIOOSAUTH(.CONF,TOKEN,0),";",1)
+	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T031][load]")
+	FOR I=1:1:5 DO FAILLOGIN^MIOOSAUTH(.CONF,"user")
+	SET PAY="{""event"":""desktop.command"",""requestId"":""sec-1"",""command"":""auth.sessions""}"
+	DO OK^MIOTASSERT($$COMMANDJSON^MIOOSWS(.CONF,.REQ,.CTX,.STATE,PAY,.JSON,.ERR),"[MIOOST][T031][auth sessions]")
+	DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T031][sessions decode]")
+	DO EQ^MIOTASSERT($GET(OBJ("command")),"auth.sessions","[MIOOST][T031][sessions command]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("auth","count"))>1,1,"[MIOOST][T031][sessions count]")
+	SET SID="",FOUND=0
+	FOR I=1:1 QUIT:'$DATA(OBJ("auth","entries",I))  DO  QUIT:FOUND
+	. IF +$GET(OBJ("auth","entries",I,"current"))=1 QUIT
+	. SET SID=$GET(OBJ("auth","entries",I,"sessionId"))
+	. IF SID'="" SET FOUND=1
+	DO EQ^MIOTASSERT(FOUND,1,"[MIOOST][T031][revoke sid found]")
+	SET PAY="{""event"":""desktop.command"",""requestId"":""sec-2"",""command"":""auth.session.revoke"",""sessionId"":"""_SID_"""}"
+	DO OK^MIOTASSERT($$COMMANDJSON^MIOOSWS(.CONF,.REQ,.CTX,.STATE,PAY,.JSON,.ERR),"[MIOOST][T031][revoke session]")
+	DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T031][revoke decode]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("auth","revoked")),1,"[MIOOST][T031][revoke flag]")
+	SET PAY="{""event"":""desktop.command"",""requestId"":""sec-3"",""command"":""auth.accounts""}"
+	DO OK^MIOTASSERT($$COMMANDJSON^MIOOSWS(.CONF,.REQ,.CTX,.STATE,PAY,.JSON,.ERR),"[MIOOST][T031][auth accounts]")
+	DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T031][accounts decode]")
+	DO EQ^MIOTASSERT($GET(OBJ("command")),"auth.accounts","[MIOOST][T031][accounts command]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("auth","lockedCount"))>0,1,"[MIOOST][T031][locked count]")
+	SET PAY="{""event"":""desktop.command"",""requestId"":""sec-4"",""command"":""auth.user.unlock"",""username"":""user""}"
+	DO OK^MIOTASSERT($$COMMANDJSON^MIOOSWS(.CONF,.REQ,.CTX,.STATE,PAY,.JSON,.ERR),"[MIOOST][T031][unlock user]")
+	DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T031][unlock decode]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("auth","unlocked")),1,"[MIOOST][T031][unlock flag]")
+	DO EQ^MIOTASSERT($$ISLOCKED^MIOOSAUTH("user"),0,"[MIOOST][T031][unlock cleared]")
+	QUIT
+	;
+T032
+	NEW CONF,REQ,CTX,STATE,ERR,JSON,OBJ
+	DO RESET
+	DO CONFDEF^MIOOS(.CONF)
+	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T032][load]")
+	SET JSON=$$BOOTJSON^MIOOSST(.STATE,.CONF)
+	DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T032][decode]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("auth","management","sessionAdminEnabled")),1,"[MIOOST][T032][session admin enabled]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("auth","management","accountAdminEnabled")),1,"[MIOOST][T032][account admin enabled]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("auth","management","sessionLimit")),20,"[MIOOST][T032][session limit]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("auth","management","accountLimit")),20,"[MIOOST][T032][account limit]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-security-session-admin=""1"""),"[MIOOST][T032][session admin token]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-security-account-admin=""1"""),"[MIOOST][T032][account admin token]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","revokeSecuritySession"),"[MIOOST][T032][revoke session method]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","unlockSecurityUser"),"[MIOOST][T032][unlock user method]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","auth.sessions"),"[MIOOST][T032][ws auth sessions]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","auth.session.revoke"),"[MIOOST][T032][ws auth revoke]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","auth.accounts"),"[MIOOST][T032][ws auth accounts]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","auth.user.unlock"),"[MIOOST][T032][ws auth unlock]")
+	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 25 — Session governance, account lockout administration, and auditable security operations"),"[MIOOST][T032][llm roi25]")
+	QUIT
+
+T033
+	NEW CONF,ERR,TOKEN,OUT,TOKEN2,CHANGETOKEN
+	DO RESET
+	DO CONFDEF^MIOOS(.CONF)
+	SET CONF("mioos","bootstrapAuth","admin","forcePasswordChange")=1
+	DO INIT^MIOOS(.CONF)
+	DO EQ^MIOTASSERT($$SIGNIN^MIOOSAUTH(.CONF,"admin","admin123!",.TOKEN,.ERR),0,"[MIOOST][T033][signin requires change]")
+	DO EQ^MIOTASSERT($GET(ERR("error")),"password_change_required","[MIOOST][T033][signin error]")
+	SET CHANGETOKEN=$GET(ERR("changeToken"))
+	DO EQ^MIOTASSERT(CHANGETOKEN'="",1,"[MIOOST][T033][change token]")
+	DO EQ^MIOTASSERT(+$GET(ERR("passwordStatus","requiresChange")),1,"[MIOOST][T033][requires change]")
+	KILL OUT,ERR
+	DO OK^MIOTASSERT($$CHANGEPASSWORD^MIOOSAUTH(.CONF,CHANGETOKEN,"Admin2026!X1",.TOKEN2,.OUT,.ERR),"[MIOOST][T033][change password]")
+	DO EQ^MIOTASSERT(+$GET(OUT("passwordChanged")),1,"[MIOOST][T033][password changed]")
+	DO EQ^MIOTASSERT($GET(^MIO("MIOOS","USER","admin","passwordSource")),"local-rotated","[MIOOST][T033][password source]")
+	DO EQ^MIOTASSERT(+$GET(^MIO("MIOOS","USER","admin","forcePasswordChange")),0,"[MIOOST][T033][force cleared]")
+	KILL ERR
+	DO EQ^MIOTASSERT($$SIGNIN^MIOOSAUTH(.CONF,"admin","admin123!",.TOKEN,.ERR),0,"[MIOOST][T033][old password denied]")
+	DO EQ^MIOTASSERT($GET(ERR("error")),"invalid_credentials","[MIOOST][T033][old password error]")
+	KILL ERR
+	DO OK^MIOTASSERT($$SIGNIN^MIOOSAUTH(.CONF,"admin","Admin2026!X1",.TOKEN,.ERR),"[MIOOST][T033][new password signin]")
+	QUIT
+	;
+T034
+	NEW CONF,REQ,CTX,STATE,ERR,JSON,OBJ
+	DO RESET
+	DO CONFDEF^MIOOS(.CONF)
+	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T034][load]")
+	SET JSON=$$BOOTJSON^MIOOSST(.STATE,.CONF)
+	DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T034][decode]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("auth","passwordPolicy","minLength")),12,"[MIOOST][T034][min length]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("auth","passwordPolicy","maxAgeDays")),90,"[MIOOST][T034][max age]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("auth","passwordPolicy","changeTokenMinutes")),15,"[MIOOST][T034][change token minutes]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-auth-password-change=""1"""),"[MIOOST][T034][password change token]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-security-password-posture=""1"""),"[MIOOST][T034][password posture token]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_auth.js","submitPasswordChange"),"[MIOOST][T034][submit password change]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_auth.js","passwordPolicyLines"),"[MIOOST][T034][password policy lines]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","CHANGEPASSWORD(DEV,CONF,REQ,CTX)"),"[MIOOST][T034][password change route handler]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","CREDREPORT^MIOOSAUTH"),"[MIOOST][T034][credential report hook]")
+	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 26 — Password policy, rotation, and credential health"),"[MIOOST][T034][llm roi26]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","ROI 26 — Password policy, rotation, and credential health"),"[MIOOST][T034][docs roi26]")
 	QUIT

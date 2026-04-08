@@ -930,6 +930,43 @@ button, input { font: inherit; }
 .mioos-security-badge.is-failure { background: #fde8e8; color: #a61d24; }
 .mioos-security-badge.is-denied { background: #fff2d8; color: #a05a00; }
 .mioos-security-badge.is-unknown { background: #edf2f7; color: #46566b; }
+.mioos-security-row--session { grid-template-columns: 1fr 1fr 1fr 1fr .7fr .8fr; }
+.mioos-security-row--account { grid-template-columns: 1fr 1fr .7fr .7fr .8fr .8fr; }
+.mioos-security-actions { display: flex; justify-content: flex-end; }
+.mioos-security-action-btn {
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid #b9c9df;
+  background: #f7fbff;
+  color: #1a3558;
+  cursor: pointer;
+}
+.mioos-security-action-btn:disabled { opacity: 0.55; cursor: not-allowed; }
 .mioos-security-empty,
 .mioos-security-error { color: #5a708d; padding: 8px 0; }
 .mioos-security-error { color: #a61d24; }
+
+.mioos-auth-statusline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.mioos-auth-policy {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px solid rgba(0,0,0,.16);
+  border-radius: 8px;
+  background: rgba(255,255,255,.78);
+}
+
+.mioos-auth-policy ul {
+  margin: 8px 0 0 18px;
+  padding: 0;
+}
+
+.mioos-auth-policy li {
+  margin: 4px 0;
+}

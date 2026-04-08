@@ -50,6 +50,15 @@
             username: 'admin',
             password: 'admin123!'
           },
+          authPasswordChange: {
+            required: false,
+            username: '',
+            changeToken: '',
+            newPassword: '',
+            confirmPassword: '',
+            status: {},
+            policy: {}
+          },
           commandSeq: 0,
           socketRequestSeq: 0,
           socketPending: {},
@@ -61,7 +70,7 @@
           transferCenter: { items: [], seq: 0, autoOpen: true },
           transferControllers: {},
           transportDiagnostics: { loading: false, refreshedAt: 0, error: '', report: {} },
-          securityCenter: { loading: false, refreshedAt: 0, error: '', report: {}, trail: [] },
+          securityCenter: { loading: false, refreshedAt: 0, error: '', report: {}, trail: [], sessions: [], accounts: [] },
           socketTelemetry: {},
           moduleCatalog: { loading: false, refreshedAt: 0, error: '' },
           desktopUi: {
@@ -124,7 +133,7 @@
         this.startClock();
         if (!this.requiresSignin) {
           this.refreshView();
-          this.initSocket();
+          this.initSocket().catch(function () {});
           if (this.startTerminalPolling) this.startTerminalPolling();
         }
         this._dragMove = this.handleGlobalMouseMove.bind(this);
@@ -180,17 +189,25 @@
         },
         refreshSecurityCenter: function () {
           var self = this;
+          var auditLimit = ((((this.boot || {}).auth || {}).audit || {}).reportLimit) || 20;
+          var management = (((this.boot || {}).auth || {}).management) || {};
           this.securityCenter.loading = true;
           this.securityCenter.error = '';
           return Promise.all([
             this.command('auth.report', {}),
-            this.command('auth.audit', { limit: (((this.boot || {}).auth || {}).audit || {}).reportLimit || 20 })
+            this.command('auth.audit', { limit: auditLimit }),
+            this.command('auth.sessions', { limit: management.sessionLimit || 20 }),
+            this.command('auth.accounts', { limit: management.accountLimit || 20 })
           ])
             .then(function (results) {
               var report = (((results[0] || {}).auth) || {});
               var audit = (((results[1] || {}).auth) || {});
+              var sessions = (((results[2] || {}).auth) || {});
+              var accounts = (((results[3] || {}).auth) || {});
               self.securityCenter.report = report;
               self.securityCenter.trail = Array.isArray(audit.entries) ? audit.entries : [];
+              self.securityCenter.sessions = Array.isArray(sessions.entries) ? sessions.entries : [];
+              self.securityCenter.accounts = Array.isArray(accounts.entries) ? accounts.entries : [];
               self.securityCenter.refreshedAt = Date.now();
               return report;
             })
@@ -207,6 +224,51 @@
         },
         securityTrail: function () {
           return Array.isArray((this.securityCenter || {}).trail) ? this.securityCenter.trail : [];
+        },
+        securitySessions: function () {
+          return Array.isArray((this.securityCenter || {}).sessions) ? this.securityCenter.sessions : [];
+        },
+        securityAccounts: function () {
+          return Array.isArray((this.securityCenter || {}).accounts) ? this.securityCenter.accounts : [];
+        },
+        lockedSecurityAccounts: function () {
+          return this.securityAccounts().filter(function (entry) { return !!entry.locked; });
+        },
+        rotationRequiredSecurityAccounts: function () {
+          return this.securityAccounts().filter(function (entry) { return !!entry.requiresChange; });
+        },
+        expiredSecurityAccounts: function () {
+          return this.securityAccounts().filter(function (entry) { return !!entry.passwordExpired; });
+        },
+        warningSecurityAccounts: function () {
+          return this.securityAccounts().filter(function (entry) { return !!entry.passwordExpiresSoon && !entry.passwordExpired; });
+        },
+        passwordStatusLabel: function (entry) {
+          var status = (entry || {}).passwordStatus || 'healthy';
+          if (status === 'rotation-required') return 'rotation required';
+          if (status === 'expired') return 'expired';
+          if (status === 'warning') return 'warning';
+          return 'healthy';
+        },
+        revokeSecuritySession: function (sessionId) {
+          var self = this;
+          if (!sessionId) return Promise.resolve();
+          this.securityCenter.loading = true;
+          return this.command('auth.session.revoke', { sessionId: sessionId }).then(function () {
+            return self.refreshSecurityCenter();
+          }).finally(function () {
+            self.securityCenter.loading = false;
+          });
+        },
+        unlockSecurityUser: function (username) {
+          var self = this;
+          if (!username) return Promise.resolve();
+          this.securityCenter.loading = true;
+          return this.command('auth.user.unlock', { username: username }).then(function () {
+            return self.refreshSecurityCenter();
+          }).finally(function () {
+            self.securityCenter.loading = false;
+          });
         },
         exportSecurityAudit: function () {
           var path = ((this.boot || {}).routes || {}).auditExport || '/api/mioos/auth/audit/export';

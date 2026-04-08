@@ -24,13 +24,37 @@ VIEW(DEV,CONF,REQ,CTX)
 	QUIT
 	;
 SIGNIN(DEV,CONF,REQ,CTX)
-	NEW TREE,ERR,TOKEN,OBJ,HEAD,JSON,USER
+	NEW TREE,ERR,TOKEN,OBJ,HEAD,JSON,USER,POLICY
 	IF '$$PARSEBODY(.REQ,.TREE,.ERR) DO  QUIT
 	. DO RESPERR(.DEV,.CONF,400,"invalid_json",$GET(ERR("error")),.CTX)
 	IF '$$SIGNIN^MIOOSAUTH(.CONF,$GET(TREE("username")),$GET(TREE("password")),.TOKEN,.ERR) DO  QUIT
+	. IF $GET(ERR("error"))="password_change_required" DO  QUIT
+	. . SET USER=$GET(ERR("username"),$$CANON^MIOOSAUTH($GET(TREE("username"))))
+	. . DO PWPOLICY^MIOOSAUTH(.CONF,.POLICY)
+	. . SET OBJ("ok")=1,OBJ("requiresPasswordChange")=1,OBJ("username")=USER,OBJ("changeToken")=$GET(ERR("changeToken"))
+	. . MERGE OBJ("passwordStatus")=ERR("passwordStatus")
+	. . MERGE OBJ("passwordPolicy")=POLICY
+	. . DO RESPJSONX^MIOHTTP(.DEV,.CONF,200,.OBJ,$GET(CTX("request_id")),.CTX)
+	. . SET CTX("status")=200
 	. DO RESPERR(.DEV,.CONF,401,"signin_failed",$GET(ERR("error")),.CTX)
 	SET USER=$$CANON^MIOOSAUTH($GET(TREE("username")))
 	SET OBJ("ok")=1,OBJ("tokenIssued")=1,OBJ("username")=USER
+	SET JSON=$$EN^MIOJSON1(.OBJ)
+	SET HEAD("Content-Type")="application/json; charset=utf-8"
+	SET HEAD("Set-Cookie")=$$COOKIEHDR^MIOOSAUTH(.CONF,TOKEN,0)
+	DO RESPX^MIOHTTP(.DEV,.CONF,200,.HEAD,JSON,$GET(CTX("request_id")),.CTX)
+	SET CTX("status")=200
+	QUIT
+	;
+CHANGEPASSWORD(DEV,CONF,REQ,CTX)
+	NEW TREE,ERR,TOKEN,OBJ,HEAD,JSON
+	IF '$$PARSEBODY(.REQ,.TREE,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,400,"invalid_json",$GET(ERR("error")),.CTX)
+	IF $GET(TREE("newPassword"))'=$GET(TREE("confirmPassword")) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,400,"password_change_failed","password_confirmation_mismatch",.CTX)
+	IF '$$CHANGEPASSWORD^MIOOSAUTH(.CONF,$GET(TREE("changeToken")),$GET(TREE("newPassword")),.TOKEN,.OBJ,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,400,"password_change_failed",$GET(ERR("error")),.CTX)
+	SET OBJ("ok")=1,OBJ("tokenIssued")=1
 	SET JSON=$$EN^MIOJSON1(.OBJ)
 	SET HEAD("Content-Type")="application/json; charset=utf-8"
 	SET HEAD("Set-Cookie")=$$COOKIEHDR^MIOOSAUTH(.CONF,TOKEN,0)

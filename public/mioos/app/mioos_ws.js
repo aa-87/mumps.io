@@ -16,6 +16,7 @@
       initSocket: function () {
         var self = this;
         var root = window.MIOOSState.getRootNode();
+        if (this.requiresSignin) return Promise.reject(new Error('login_required'));
         var path = (this.boot.routes || {}).websocket || (root ? root.dataset.mioosWs : '');
         var protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
         var waitMs = Number((((this.boot || {}).websocket || {}).requestTimeoutMs) || 15000) || 15000;
@@ -89,6 +90,7 @@
       ensureSocketReady: function (timeoutMs) {
         var self = this;
         var waitMs = Number(timeoutMs || ((((this.boot || {}).websocket || {}).requestTimeoutMs) || 15000)) || 15000;
+        if (this.requiresSignin) return Promise.reject(new Error('login_required'));
         if (this.socket && this.socket.readyState === 1) return Promise.resolve(true);
         return self.initSocket().then(function () { return true; });
       },
@@ -139,6 +141,7 @@
         }
       },
       sendSocket: function (payload) {
+        if (this.requiresSignin) return false;
         if (!this.socket || this.socket.readyState !== 1) return false;
         this.socket.send(JSON.stringify(payload));
         return true;
@@ -200,17 +203,22 @@
       },
       refreshView: function () {
         var self = this;
-        if (this.requiresSignin) return;
-        var root = window.MIOOSState.getRootNode();
-        var path = (this.boot.routes || {}).view || (root ? root.dataset.mioosView : '');
-        if (!path || !window.fetch) return;
-        window.fetch(path, { headers: { Accept: 'application/json' }, credentials: 'same-origin' })
-          .then(function (resp) { return resp.json(); })
-          .then(function (json) {
-            self.view = window.MIOOSState.normalizeView(json || {});
+        if (this.requiresSignin) return Promise.resolve();
+        return this.socketRequest((this.boot.routes || {}).commandEvent || 'desktop.command', {
+          command: 'view.refresh'
+        }, {
+          command: 'view.refresh',
+          dedupeKey: 'view.refresh',
+          timeoutMs: Number((((this.boot || {}).websocket || {}).requestTimeoutMs) || 15000) || 15000
+        })
+          .then(function (msg) {
+            var view = (msg && msg.view) ? msg.view : {};
+            self.view = window.MIOOSState.normalizeView(view || {});
+            return self.view;
           })
-          .catch(function () {
-            self.showAlert(self.t('alerts.viewRefreshFailed.title'), self.t('alerts.viewRefreshFailed.message'));
+          .catch(function (err) {
+            self.showAlert(self.t('alerts.viewRefreshFailed.title'), (err && (err.detail || err.error || err.message)) || self.t('alerts.viewRefreshFailed.message'));
+            throw err;
           });
       }
     }

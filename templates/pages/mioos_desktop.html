@@ -59,24 +59,50 @@
   </div>
 
   <section class="mioos-auth-overlay" v-if="requiresSignin" aria-hidden="false">
-    <div class="mioos-auth-card" role="dialog" aria-modal="true" :aria-label="boot.product.name">
+    <div class="mioos-auth-card" role="dialog" aria-modal="true" :aria-label="boot.product.name" data-auth-password-change="1">
       <div class="mioos-auth-head">
         <strong>[[ boot.product.name ]]</strong>
         <span>[[ boot.product.subtitle ]]</span>
       </div>
-      <p class="mioos-auth-copy">[[ t('auth.requiredCopy') ]]</p>
-      <label class="mioos-auth-field">
-        <span>[[ t('auth.username') ]]</span>
-        <input v-model="authForm.username" type="text" autocomplete="username" :aria-label="t('auth.username')">
-      </label>
-      <label class="mioos-auth-field">
-        <span>[[ t('auth.password') ]]</span>
-        <input v-model="authForm.password" type="password" autocomplete="current-password" :aria-label="t('auth.password')">
-      </label>
-      <div class="mioos-auth-actions">
-        <button type="button" class="mioos-auth-primary" @click="submitSignin">[[ t('auth.signin') ]]</button>
-        <button type="button" v-if="boot.auth.guestLoginEnabled" @click="submitGuestSignin">[[ t('auth.continueGuest') ]]</button>
-      </div>
+      <template v-if="!authPasswordChange.required">
+        <p class="mioos-auth-copy">[[ t('auth.requiredCopy') ]]</p>
+        <label class="mioos-auth-field">
+          <span>[[ t('auth.username') ]]</span>
+          <input v-model="authForm.username" type="text" autocomplete="username" :aria-label="t('auth.username')">
+        </label>
+        <label class="mioos-auth-field">
+          <span>[[ t('auth.password') ]]</span>
+          <input v-model="authForm.password" type="password" autocomplete="current-password" :aria-label="t('auth.password')">
+        </label>
+        <div class="mioos-auth-actions">
+          <button type="button" class="mioos-auth-primary" @click="submitSignin">[[ t('auth.signin') ]]</button>
+          <button type="button" v-if="boot.auth.guestLoginEnabled" @click="submitGuestSignin">[[ t('auth.continueGuest') ]]</button>
+        </div>
+      </template>
+      <template v-else>
+        <p class="mioos-auth-copy">Password rotation is required before shell access can continue.</p>
+        <div class="mioos-auth-statusline">
+          <strong>[[ authPasswordChange.username || authForm.username || 'user' ]]</strong>
+          <span class="mioos-security-badge" :class="'is-' + (((authPasswordChange.status || {}).passwordStatus || 'warning').replace('rotation-required','denied'))">[[ ((authPasswordChange.status || {}).passwordStatus) || 'rotation-required' ]]</span>
+        </div>
+        <label class="mioos-auth-field">
+          <span>New password</span>
+          <input v-model="authPasswordChange.newPassword" type="password" autocomplete="new-password" aria-label="New password">
+        </label>
+        <label class="mioos-auth-field">
+          <span>Confirm password</span>
+          <input v-model="authPasswordChange.confirmPassword" type="password" autocomplete="new-password" aria-label="Confirm password">
+        </label>
+        <div class="mioos-auth-policy">
+          <strong>Password policy</strong>
+          <ul>
+            <li v-for="line in passwordPolicyLines()" :key="line">[[ line ]]</li>
+          </ul>
+        </div>
+        <div class="mioos-auth-actions">
+          <button type="button" class="mioos-auth-primary" @click="submitPasswordChange">Change password</button>
+        </div>
+      </template>
     </div>
   </section>
 
@@ -460,6 +486,9 @@
               <div class="mioos-security-center-summary">
                 <span>Required [[ ((boot.auth || {}).required ? 'yes' : 'no') ]]</span>
                 <span>Guest mode [[ ((boot.auth || {}).guestLoginEnabled ? 'enabled' : 'disabled') ]]</span>
+                <span>Sessions [[ securitySessions().length ]]</span>
+                <span>Locked [[ lockedSecurityAccounts().length ]]</span>
+                <span>Rotation required [[ rotationRequiredSecurityAccounts().length ]]</span>
                 <span>Updated [[ formatTransportTime(securityCenter.refreshedAt) ]]</span>
               </div>
               <div class="mioos-security-center-grid">
@@ -472,6 +501,8 @@
                     <div><dt>Unauthenticated access</dt><dd>[[ (((boot.auth || {}).unauthenticatedAccessAllowed) ? 'allowed' : 'blocked') ]]</dd></div>
                     <div><dt>Guest access</dt><dd>[[ (((boot.auth || {}).guestLoginEnabled) ? 'allowed' : 'blocked') ]]</dd></div>
                     <div><dt>Lockout</dt><dd>[[ ((((boot.auth || {}).lockout || {}).threshold) || 0) ]] attempts / [[ ((((boot.auth || {}).lockout || {}).minutes) || 0) ]] min</dd></div>
+                    <div><dt>Password policy</dt><dd>[[ ((((boot.auth || {}).passwordPolicy || {}).minLength) || 12) ]] chars minimum</dd></div>
+                    <div><dt>Rotation</dt><dd>[[ ((((boot.auth || {}).passwordPolicy || {}).maxAgeDays) || 0) ]] days / warn [[ ((((boot.auth || {}).passwordPolicy || {}).warnDays) || 0) ]]</dd></div>
                   </dl>
                 </section>
                 <section class="mioos-security-card">
@@ -483,6 +514,53 @@
                     <div><dt>Events</dt><dd>[[ (((securityReport() || {}).count) || 0) ]] in scope</dd></div>
                     <div><dt>Success</dt><dd>[[ ((((securityReport() || {}).outcomes || {}).success) || 0) ]]</dd></div>
                     <div><dt>Failures / denied</dt><dd>[[ ((((securityReport() || {}).outcomes || {}).failure) || 0) + ((((securityReport() || {}).outcomes || {}).denied) || 0) ]]</dd></div>
+                  </dl>
+                </section>
+                <section class="mioos-security-card" data-security-session-admin="1">
+                  <h4>Active sessions</h4>
+                  <div class="mioos-security-empty" v-if="!securitySessions().length">No active sessions visible in this scope.</div>
+                  <div class="mioos-security-table" v-else>
+                    <div class="mioos-security-row mioos-security-row--head mioos-security-row--session">
+                      <strong>User</strong><strong>Created</strong><strong>Last seen</strong><strong>Roles</strong><strong>Current</strong><strong>Action</strong>
+                    </div>
+                    <div class="mioos-security-row mioos-security-row--session" v-for="entry in securitySessions()" :key="entry.sessionId">
+                      <span>[[ entry.userName || entry.principal || '—' ]]</span>
+                      <span>[[ entry.createdAt || '—' ]]</span>
+                      <span>[[ entry.lastSeenAt || entry.tokenIssuedAt || '—' ]]</span>
+                      <span>[[ entry.roles || '—' ]]</span>
+                      <span>[[ entry.current ? 'yes' : 'no' ]]</span>
+                      <span class="mioos-security-actions">
+                        <button type="button" class="mioos-security-action-btn" @click="revokeSecuritySession(entry.sessionId)" :disabled="securityCenter.loading || !entry.revokeAllowed">Revoke</button>
+                      </span>
+                    </div>
+                  </div>
+                </section>
+                <section class="mioos-security-card" data-security-account-admin="1">
+                  <h4>Account risk and lockouts</h4>
+                  <div class="mioos-security-empty" v-if="!securityAccounts().length">No account records visible in this scope.</div>
+                  <div class="mioos-security-table" v-else>
+                    <div class="mioos-security-row mioos-security-row--head mioos-security-row--account">
+                      <strong>User</strong><strong>Roles</strong><strong>Enabled</strong><strong>Failed</strong><strong>Password</strong><strong>Action</strong>
+                    </div>
+                    <div class="mioos-security-row mioos-security-row--account" v-for="entry in securityAccounts()" :key="entry.username">
+                      <span>[[ entry.displayName || entry.username || '—' ]]</span>
+                      <span>[[ entry.roles || '—' ]]</span>
+                      <span>[[ entry.enabled ? 'yes' : 'no' ]]</span>
+                      <span>[[ entry.failedCount || 0 ]]</span>
+                      <span class="mioos-security-badge" :class="'is-' + (((entry.passwordStatus || 'healthy').replace('rotation-required','denied')))" :title="entry.passwordChangedAt || ''">[[ passwordStatusLabel(entry) ]]</span>
+                      <span class="mioos-security-actions">
+                        <button type="button" class="mioos-security-action-btn" @click="unlockSecurityUser(entry.username)" :disabled="securityCenter.loading || !entry.unlockAllowed || !entry.locked">Unlock</button>
+                      </span>
+                    </div>
+                  </div>
+                </section>
+                <section class="mioos-security-card" data-security-password-posture="1">
+                  <h4>Password and credential health</h4>
+                  <dl>
+                    <div><dt>Rotation required</dt><dd>[[ (((securityReport() || {}).credentials || {}).rotationRequiredCount) || rotationRequiredSecurityAccounts().length ]]</dd></div>
+                    <div><dt>Expired</dt><dd>[[ (((securityReport() || {}).credentials || {}).expiredCount) || expiredSecurityAccounts().length ]]</dd></div>
+                    <div><dt>Warning</dt><dd>[[ (((securityReport() || {}).credentials || {}).warningCount) || warningSecurityAccounts().length ]]</dd></div>
+                    <div><dt>Healthy</dt><dd>[[ (((securityReport() || {}).credentials || {}).healthyCount) || 0 ]]</dd></div>
                   </dl>
                 </section>
                 <section class="mioos-security-card mioos-security-card--wide">

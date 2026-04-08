@@ -23,8 +23,10 @@
         bootstrap: '/api/mioos/bootstrap',
         view: '/api/mioos/view',
         signin: '/api/mioos/auth/signin',
+        publicSignin: '/api/mioos/auth/signin',
         signout: '/api/mioos/auth/signout',
         guestSignin: '/api/mioos/auth/guest',
+        passwordChange: '/api/mioos/auth/password/change',
         auditExport: '/api/mioos/auth/audit/export',
         websocket: '/ws/mioos',
         terminalWebsocket: '/ws/mioos/terminal',
@@ -84,7 +86,7 @@
           dropUpload: 1
         }
       },
-      auth: { enabled: true, required: true, guestLoginEnabled: false, mode: 'local-session-required', unauthenticatedAccessAllowed: false, providers: { local: { enabled: true, loginMode: 'username-password', guestAllowed: false }, framework: { enabled: true, mode: 'mioauth-session-jwt', tokenType: 'jwt', sessionCookie: 'mioos_auth' } }, lockout: { threshold: 5, minutes: 15 }, audit: { enabled: true, retainDays: 365, reportLimit: 20, reportWindowDays: 30, scope: 'self' } },
+      auth: { enabled: true, required: true, guestLoginEnabled: false, mode: 'local-session-required', unauthenticatedAccessAllowed: false, providers: { local: { enabled: true, loginMode: 'username-password', guestAllowed: false }, framework: { enabled: true, mode: 'mioauth-session-jwt', tokenType: 'jwt', sessionCookie: 'mioos_auth' } }, lockout: { threshold: 5, minutes: 15 }, passwordPolicy: { minLength: 12, requireUpper: true, requireLower: true, requireDigit: true, requireSymbol: true, maxAgeDays: 90, warnDays: 14, changeTokenMinutes: 15 }, audit: { enabled: true, retainDays: 365, reportLimit: 20, reportWindowDays: 30, scope: 'self' }, management: { sessionAdminEnabled: true, accountAdminEnabled: true, sessionLimit: 20, accountLimit: 20, adminRole: 'admin' } },
       explorer: { currentFolderId: 'root', quickPlaces: [], preview: { enabled: true, mime: 'text/plain' } },
       terminal: {
         enabled: true,
@@ -181,7 +183,9 @@
     base.auth.providers.local = Object.assign({}, (defaultBoot().auth.providers || {}).local || {}, ((base.auth || {}).providers || {}).local || {}, (((boot.auth || {}).providers || {}).local || {}));
     base.auth.providers.framework = Object.assign({}, (defaultBoot().auth.providers || {}).framework || {}, ((base.auth || {}).providers || {}).framework || {}, (((boot.auth || {}).providers || {}).framework || {}));
     base.auth.lockout = Object.assign({}, (defaultBoot().auth.lockout || {}), base.auth.lockout || {}, (boot.auth || {}).lockout || {});
+    base.auth.passwordPolicy = Object.assign({}, (defaultBoot().auth.passwordPolicy || {}), base.auth.passwordPolicy || {}, (boot.auth || {}).passwordPolicy || {});
     base.auth.audit = Object.assign({}, (defaultBoot().auth.audit || {}), base.auth.audit || {}, (boot.auth || {}).audit || {});
+    base.auth.management = Object.assign({}, (defaultBoot().auth.management || {}), base.auth.management || {}, (boot.auth || {}).management || {});
     base.websocket = Object.assign(base.websocket || {}, boot.websocket || {});
     base.vfs = Object.assign(base.vfs, boot.vfs || {});
     base.terminal = Object.assign(base.terminal, boot.terminal || {});

@@ -257,3 +257,13 @@ ROI 24 — Typed authentication, local/framework auditability, and HIPAA reporta
 - Local sign-in remains the primary provider.
 - Guest mode is disabled by default and unauthenticated access to protected API and websocket surfaces is blocked.
 - Auth events are written to the MIOOS audit log for security review, HIPAA-oriented auditability, and export reporting.
+
+## ROI 25 — Session governance, account lockout administration, and auditable security operations
+- Extended the Security Center with active session visibility, revocation controls, account lockout visibility, and administrative unlock actions.
+- Added websocket commands for `auth.sessions`, `auth.session.revoke`, `auth.accounts`, and `auth.user.unlock`.
+- Kept guest mode disabled and all live shell access authenticated while adding more HIPAA-oriented operational visibility for session and account risk handling.
+
+## ROI 26 — Password policy, rotation, and credential health
+
+This ROI adds typed password policy defaults, forced password change support for bootstrap accounts, one-time password rotation tokens, self-service password change, and credential health reporting. The Security Center now surfaces password posture metrics such as rotation-required, expired, warning, and healthy accounts, supporting HIPAA-oriented access hygiene, auditability, and administrative review.
+
