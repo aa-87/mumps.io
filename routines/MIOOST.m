@@ -33,6 +33,8 @@ MIOOST ; MIOOS tests
 	DO T032
 	DO T033
 	DO T034
+	DO T035
+	DO T036
 	QUIT
 	;
 RESET
@@ -699,4 +701,43 @@ T034
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","CREDREPORT^MIOOSAUTH"),"[MIOOST][T034][credential report hook]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 26 — Password policy, rotation, and credential health"),"[MIOOST][T034][llm roi26]")
 	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","ROI 26 — Password policy, rotation, and credential health"),"[MIOOST][T034][docs roi26]")
+	QUIT
+
+
+T035
+	NEW CONF,REQ,CTX,STATE,ERR,JSON,OBJ,PAY
+	DO RESET
+	DO CONFDEF^MIOOS(.CONF)
+	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T035][load]")
+	SET PAY="{""event"":""desktop.command"",""requestId"":""dbg-1"",""command"":""debug.snapshot""}"
+	DO OK^MIOTASSERT($$COMMANDJSON^MIOOSWS(.CONF,.REQ,.CTX,.STATE,PAY,.JSON,.ERR),"[MIOOST][T035][debug snapshot]")
+	DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T035][decode]")
+	DO EQ^MIOTASSERT($GET(OBJ("event")),"desktop.result","[MIOOST][T035][event]")
+	DO EQ^MIOTASSERT($GET(OBJ("command")),"debug.snapshot","[MIOOST][T035][command]")
+	DO EQ^MIOTASSERT($GET(OBJ("debug","routes","viewCommand")),"view.refresh","[MIOOST][T035][view command]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("debug","transport","maxSocketsPerSession")),6,"[MIOOST][T035][max sockets]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("debug","transport","diagnosticsEnabled")),1,"[MIOOST][T035][diagnostics enabled]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("debug","counts","apps"))>0,1,"[MIOOST][T035][apps count]")
+	DO EQ^MIOTASSERT($GET(OBJ("debug","debug","commands",10)),"debug.snapshot","[MIOOST][T035][command registry]")
+	QUIT
+	;
+T036
+	NEW CONF,REQ,CTX,STATE,ERR,JSON,OBJ
+	DO RESET
+	DO CONFDEF^MIOOS(.CONF)
+	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T036][load]")
+	SET JSON=$$BOOTJSON^MIOOSST(.STATE,.CONF)
+	DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T036][decode]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("desktop","debugCenter","enabled")),1,"[MIOOST][T036][debug center enabled]")
+	DO EQ^MIOTASSERT($GET(OBJ("routes","debugSnapshotCommand")),"debug.snapshot","[MIOOST][T036][debug route]")
+	DO EQ^MIOTASSERT($GET(OBJ("desktop","moduleSystem","debugAppKey")),"debug-center","[MIOOST][T036][debug app key]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-debug-center-window=""1"""),"[MIOOST][T036][debug window token]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","refreshDebugCenter"),"[MIOOST][T036][refresh debug method]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","pushDebugEvent"),"[MIOOST][T036][push event method]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","clearDebugEvents"),"[MIOOST][T036][clear event method]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","debugCommandRows"),"[MIOOST][T036][command rows method]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_ws.js","pushDebugEvent('socket.message'"),"[MIOOST][T036][socket message debug]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","debug.snapshot"),"[MIOOST][T036][ws debug snapshot]")
+	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 27 — Debug Center and developer tools"),"[MIOOST][T036][llm roi27]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","ROI 27 — Debug Center and developer tools"),"[MIOOST][T036][docs roi27]")
 	QUIT

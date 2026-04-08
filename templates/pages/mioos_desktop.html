@@ -585,6 +585,64 @@
             </div>
           </div>
         </template>
+        <template v-else-if="win.appKey === 'debug-center'">
+          <div class="mioos-debug-center-shell win7" data-debug-center-window="1">
+            <div class="window-body mioos-seven-body">
+              <div class="mioos-debug-center-head">
+                <div>
+                  <strong>Debug Center</strong>
+                  <span>Developer tools for shell snapshot, command registry, and recent websocket activity.</span>
+                </div>
+                <div class="mioos-seven-toolbar">
+                  <button type="button" @click="refreshDebugCenter()" :disabled="debugCenter.loading">[[ debugCenter.loading ? 'Refreshing…' : 'Refresh snapshot' ]]</button>
+                  <button type="button" @click="exportDebugSnapshot()">Copy snapshot</button>
+                  <button type="button" @click="clearDebugEvents()">Clear events</button>
+                </div>
+              </div>
+              <div class="mioos-debug-center-summary">
+                <span>Snapshot [[ ((debugSnapshot() || {}).snapshotVersion) || (((boot.desktop || {}).debugCenter || {}).snapshotVersion) || 1 ]]</span>
+                <span>Events [[ debugEvents().length ]] / [[ (((boot.desktop || {}).debugCenter || {}).eventLimit) || 50 ]]</span>
+                <span>Updated [[ formatTransportTime(debugCenter.refreshedAt) ]]</span>
+              </div>
+              <div class="mioos-debug-center-grid">
+                <section class="mioos-debug-card">
+                  <h4>Server snapshot</h4>
+                  <dl>
+                    <div><dt>Session</dt><dd>[[ ((debugSnapshot() || {}).sessionId) || (boot.session || {}).id || 'mioos-shell' ]]</dd></div>
+                    <div><dt>Principal</dt><dd>[[ ((debugSnapshot() || {}).principal) || (boot.user || {}).displayName || 'Guest' ]]</dd></div>
+                    <div><dt>Profile</dt><dd>[[ ((debugSnapshot() || {}).profile) || (boot.product || {}).profile || 'dev' ]]</dd></div>
+                    <div><dt>Apps</dt><dd>[[ (((debugSnapshot() || {}).counts || {}).apps) || (boot.apps || []).length ]]</dd></div>
+                    <div><dt>Windows</dt><dd>[[ (((debugSnapshot() || {}).counts || {}).windows) || (boot.windows || []).length ]]</dd></div>
+                    <div><dt>Modules</dt><dd>[[ (((debugSnapshot() || {}).counts || {}).modules) || (boot.modules || []).length ]]</dd></div>
+                  </dl>
+                </section>
+                <section class="mioos-debug-card" data-debug-command-list="1">
+                  <h4>Command registry</h4>
+                  <div class="mioos-debug-empty" v-if="!debugCommandRows().length">No debug command list available yet.</div>
+                  <div class="mioos-debug-command-list" v-else>
+                    <span class="mioos-debug-command" v-for="cmd in debugCommandRows()" :key="cmd">[[ cmd ]]</span>
+                  </div>
+                </section>
+                <section class="mioos-debug-card mioos-debug-card--wide">
+                  <h4>Recent websocket activity</h4>
+                  <div class="mioos-debug-empty" v-if="!debugEvents().length">No client websocket activity recorded yet.</div>
+                  <div class="mioos-debug-table" v-else>
+                    <div class="mioos-debug-row mioos-debug-row--head">
+                      <strong>Time</strong><strong>Kind</strong><strong>Name</strong><strong>Detail</strong>
+                    </div>
+                    <div class="mioos-debug-row" v-for="entry in debugEvents()" :key="entry.id">
+                      <span>[[ formatTransportTime(entry.ts) ]]</span>
+                      <span>[[ entry.kind || 'event' ]]</span>
+                      <span>[[ entry.name || '—' ]]</span>
+                      <span>[[ entry.detail || '—' ]]</span>
+                    </div>
+                  </div>
+                  <div class="mioos-debug-error" v-if="debugCenter.error">[[ debugCenter.error ]]</div>
+                </section>
+              </div>
+            </div>
+          </div>
+        </template>
         <template v-else-if="win.appKey === 'app-catalog'">
           <div class="mioos-module-catalog-shell win7" data-module-catalog-window="1">
             <div class="window-body mioos-seven-body">

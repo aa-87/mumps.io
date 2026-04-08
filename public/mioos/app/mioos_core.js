@@ -71,6 +71,7 @@
           transferControllers: {},
           transportDiagnostics: { loading: false, refreshedAt: 0, error: '', report: {} },
           securityCenter: { loading: false, refreshedAt: 0, error: '', report: {}, trail: [], sessions: [], accounts: [] },
+          debugCenter: { loading: false, refreshedAt: 0, error: '', snapshot: {}, events: [], seq: 0 },
           socketTelemetry: {},
           moduleCatalog: { loading: false, refreshedAt: 0, error: '' },
           desktopUi: {
@@ -274,6 +275,49 @@
           var path = ((this.boot || {}).routes || {}).auditExport || '/api/mioos/auth/audit/export';
           if (!path) return;
           window.open(path, '_blank');
+        },
+        pushDebugEvent: function (kind, name, detail, meta) {
+          var limit = +((((this.boot || {}).desktop || {}).debugCenter || {}).eventLimit || 50) || 50;
+          var entry = Object.assign({ id: 'dbg-' + (++this.debugCenter.seq), ts: Date.now(), kind: kind || 'event', name: name || '', detail: detail || '' }, meta || {});
+          this.debugCenter.events.unshift(entry);
+          if (this.debugCenter.events.length > limit) this.debugCenter.events.splice(limit);
+          return entry;
+        },
+        clearDebugEvents: function () {
+          this.debugCenter.events.splice(0, this.debugCenter.events.length);
+        },
+        debugSnapshot: function () {
+          return (this.debugCenter || {}).snapshot || {};
+        },
+        debugEvents: function () {
+          return Array.isArray((this.debugCenter || {}).events) ? this.debugCenter.events : [];
+        },
+        debugCommandRows: function () {
+          return (((this.debugSnapshot() || {}).debug || {}).commands) || [];
+        },
+        refreshDebugCenter: function () {
+          var self = this;
+          this.debugCenter.loading = true;
+          this.debugCenter.error = '';
+          return this.command((((this.boot || {}).routes || {}).debugSnapshotCommand) || 'debug.snapshot', {}).then(function (msg) {
+            self.debugCenter.snapshot = (msg && msg.debug) || {};
+            self.debugCenter.refreshedAt = Date.now();
+            self.pushDebugEvent('debug', 'snapshot', 'Debug snapshot refreshed', { source: 'server' });
+            return self.debugCenter.snapshot;
+          }).catch(function (err) {
+            self.debugCenter.error = (err && (err.detail || err.error || err.message)) || 'debug_snapshot_failed';
+            throw err;
+          }).finally(function () {
+            self.debugCenter.loading = false;
+          });
+        },
+        exportDebugSnapshot: function () {
+          var text = JSON.stringify(this.debugSnapshot() || {}, null, 2);
+          this.pushDebugEvent('debug', 'export', 'Snapshot copied to debug buffer', { source: 'client' });
+          if (window.navigator && window.navigator.clipboard && window.navigator.clipboard.writeText) {
+            window.navigator.clipboard.writeText(text).catch(function () {});
+          }
+          return text;
         },
         applyDocumentLocale: function () {
           if (I18N.applyDocumentLocale) I18N.applyDocumentLocale(this);

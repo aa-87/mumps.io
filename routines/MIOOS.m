@@ -72,6 +72,9 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","auth","management","accountAdminEnabled"))="" SET CONF("mioos","auth","management","accountAdminEnabled")=1
 	IF $GET(CONF("mioos","auth","management","sessionLimit"))="" SET CONF("mioos","auth","management","sessionLimit")=20
 	IF $GET(CONF("mioos","auth","management","accountLimit"))="" SET CONF("mioos","auth","management","accountLimit")=20
+	IF $GET(CONF("mioos","debug","enabled"))="" SET CONF("mioos","debug","enabled")=1
+	IF $GET(CONF("mioos","debug","eventLimit"))="" SET CONF("mioos","debug","eventLimit")=50
+	IF $GET(CONF("mioos","debug","snapshotVersion"))="" SET CONF("mioos","debug","snapshotVersion")=1
 	IF $GET(CONF("mioos","audit","enabled"))="" SET CONF("mioos","audit","enabled")=1
 	IF $GET(CONF("mioos","audit","retainDays"))="" SET CONF("mioos","audit","retainDays")=365
 	IF $GET(CONF("mioos","audit","reportLimit"))="" SET CONF("mioos","audit","reportLimit")=20

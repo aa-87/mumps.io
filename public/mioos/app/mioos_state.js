@@ -28,6 +28,7 @@
         guestSignin: '/api/mioos/auth/guest',
         passwordChange: '/api/mioos/auth/password/change',
         auditExport: '/api/mioos/auth/audit/export',
+        debugSnapshotCommand: 'debug.snapshot',
         websocket: '/ws/mioos',
         terminalWebsocket: '/ws/mioos/terminal',
         commandEvent: 'desktop.command',
@@ -61,6 +62,7 @@
           transport: 'websocket-first-http-refresh'
         },
         moduleSystem: { enabled: true, launcher: 'desktop-icons-and-menu', manifestVersion: 1, appCatalogEnabled: true, appCatalogKey: 'app-catalog', dynamicWindows: true, debugAppKey: 'debug-center' },
+        debugCenter: { enabled: true, eventLimit: 50, snapshotVersion: 1 },
         icons: {
           enabled: true,
           draggable: true,
@@ -177,6 +179,7 @@
     base.desktop.accessibility = Object.assign(base.desktop.accessibility, (boot.desktop || {}).accessibility || {});
     base.desktop.performance = Object.assign(base.desktop.performance, (boot.desktop || {}).performance || {});
     base.desktop.moduleSystem = Object.assign(base.desktop.moduleSystem, (boot.desktop || {}).moduleSystem || {});
+    base.desktop.debugCenter = Object.assign(base.desktop.debugCenter || {}, (boot.desktop || {}).debugCenter || {});
     base.desktop.windowing = Object.assign(base.desktop.windowing, (boot.desktop || {}).windowing || {});
     base.auth = Object.assign(base.auth, boot.auth || {});
     base.auth.providers = Object.assign({}, (defaultBoot().auth.providers || {}), base.auth.providers || {}, (boot.auth || {}).providers || {});

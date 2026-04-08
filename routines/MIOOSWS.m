@@ -78,8 +78,9 @@ COMMANDJSON(CONF,REQ,CTX,STATE,PAYLOAD,OUTJSON,ERR)
 	IF CMD="auth.session.revoke" QUIT $$AUTHREVOKE(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="auth.accounts" QUIT $$AUTHACCTS(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="auth.user.unlock" QUIT $$AUTHUNLOCK(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
-	IF CMD="module.catalog" QUIT $$MODCAT(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="view.refresh" QUIT $$CMDVIEW(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
+	IF CMD="module.catalog" QUIT $$MODCAT(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
+	IF CMD="debug.snapshot" QUIT $$DEBUGSNAP(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="desktop.layout.save" QUIT $$DESKLAYOUT(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	SET ERR("error")="command_unsupported",ERR("detail")=CMD
 	QUIT 0
@@ -297,22 +298,74 @@ MODCAT(STATE,CONF,TREE,OUTJSON,ERR)
 	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"module.catalog","module",.OUT)
 	QUIT 1
 	;
+DEBUGSNAP(STATE,CONF,TREE,OUTJSON,ERR)
+	NEW OUT
+	IF '$$SNAPSHOT(.STATE,.CONF,.OUT,.ERR) QUIT 0
+	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"debug.snapshot","debug",.OUT)
+	QUIT 1
+	;
+SNAPSHOT(STATE,CONF,OUT,ERR)
+	NEW I
+	KILL OUT
+	SET ERR("routine")="MIOOSWS"
+	SET OUT("snapshotVersion")=+$GET(STATE("debugSnapshotVersion"),1)
+	SET OUT("sessionId")=$GET(STATE("sessionId"))
+	SET OUT("profile")=$GET(STATE("profile"),"dev")
+	SET OUT("principal")=$GET(STATE("principal"),"guest")
+	SET OUT("authenticated")=+$GET(STATE("authenticated"),0)
+	SET OUT("localeCode")=$GET(STATE("localeCode"),"en")
+	SET OUT("localeDir")=$GET(STATE("localeDir"),"ltr")
+	SET OUT("routes","commandEvent")=$GET(STATE("commandEvent"),"desktop.command")
+	SET OUT("routes","commandResultEvent")=$GET(STATE("commandResultEvent"),"desktop.result")
+	SET OUT("routes","commandErrorEvent")=$GET(STATE("commandErrorEvent"),"desktop.error")
+	SET OUT("routes","debugSnapshotCommand")="debug.snapshot"
+	SET OUT("routes","viewCommand")="view.refresh"
+	SET OUT("counts","apps")=$$COUNTARY("apps",.STATE)
+	SET OUT("counts","windows")=$$COUNTARY("windows",.STATE)
+	SET OUT("counts","modules")=+$GET(STATE("moduleCount"),0)
+	SET OUT("transport","model")=$GET(STATE("transportModel"),"core-websocket-plus-app-websockets")
+	SET OUT("transport","maxSocketsPerSession")=+$GET(STATE("wsMaxSockets"),6)
+	SET OUT("transport","fsSockets")=+$GET(STATE("wsFsSockets"),5)
+	SET OUT("transport","heartbeatSeconds")=+$GET(STATE("wsHeartbeatSeconds"),15)
+	SET OUT("transport","resumeWindowSeconds")=+$GET(STATE("wsResumeWindowSeconds"),180)
+	SET OUT("transport","maxInflightPerChannel")=+$GET(STATE("wsMaxInflightPerChannel"),4)
+	SET OUT("transport","diagnosticsEnabled")=+$GET(STATE("wsDiagnosticsEnabled"),1)
+	SET OUT("vfs","enabled")=+$GET(STATE("fsEnabled"),1)
+	SET OUT("vfs","rootId")=$GET(STATE("fsRootId"),"root")
+	SET OUT("vfs","homeId")=$GET(STATE("fsHomeId"),"root")
+	SET OUT("terminal","engine")=$GET(STATE("terminal","engine"),"xtermjs")
+	SET OUT("terminal","transport")=$GET(STATE("terminal","transport"),"pipe")
+	SET OUT("auth","required")=+$GET(STATE("authRequired"),0)
+	SET OUT("auth","mode")=$GET(STATE("authMode"),"local-session-required")
+	SET OUT("auth","framework")=$GET(STATE("frameworkAuthMode"),"mioauth-session-jwt")
+	SET OUT("debug","enabled")=+$GET(STATE("debugEnabled"),1)
+	SET OUT("debug","eventLimit")=+$GET(STATE("debugEventLimit"),50)
+	SET OUT("debug","commands",1)="view.refresh"
+	SET OUT("debug","commands",2)="transport.health"
+	SET OUT("debug","commands",3)="module.catalog"
+	SET OUT("debug","commands",4)="auth.report"
+	SET OUT("debug","commands",5)="auth.audit"
+	SET OUT("debug","commands",6)="auth.sessions"
+	SET OUT("debug","commands",7)="auth.session.revoke"
+	SET OUT("debug","commands",8)="auth.accounts"
+	SET OUT("debug","commands",9)="auth.user.unlock"
+	SET OUT("debug","commands",10)="debug.snapshot"
+	SET I=0 FOR  SET I=$ORDER(STATE("modules",I)) QUIT:I'>0  DO
+	. SET OUT("modules",I,"id")=$GET(STATE("modules",I,"id"))
+	. SET OUT("modules",I,"title")=$GET(STATE("modules",I,"title"))
+	. SET OUT("modules",I,"surface")=$GET(STATE("modules",I,"surface"))
+	QUIT 1
+	;
+COUNTARY(NAME,STATE)
+	NEW I,N
+	SET (I,N)=0
+	FOR  SET I=$ORDER(STATE(NAME,I)) QUIT:I'>0  SET N=N+1
+	QUIT N
+	;
 TRANHEALTH(STATE,CONF,TREE,OUTJSON,ERR)
 	NEW OUT
 	IF '$$HEALTH(.STATE,.CONF,.OUT,.ERR) QUIT 0
 	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"transport.health","transport",.OUT)
-	QUIT 1
-	;
-CMDVIEW(STATE,CONF,TREE,OUTJSON,ERR)
-	NEW OUT
-	DO BUILD^MIOOSVM(.STATE,.CONF,.OUT)
-	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"view.refresh","view",.OUT)
-	QUIT 1
-	;
-DESKLAYOUT(STATE,CONF,TREE,OUTJSON,ERR)
-	NEW OUT
-	IF '$$SAVELAYOUT^MIOOSST(.STATE,.TREE,.OUT,.ERR) QUIT 0
-	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"desktop.layout.save","layout",.OUT)
 	QUIT 1
 	;
 HEALTH(STATE,CONF,OUT,ERR)
@@ -364,6 +417,18 @@ HEALTH(STATE,CONF,OUT,ERR)
 	SET OUT("terminal","maxSessions")=+$GET(STATE("terminal","maxSessions"),8)
 	SET OUT("terminal","engine")=$GET(STATE("terminal","engine"),"xtermjs")
 	SET OUT("terminal","transport")=$GET(STATE("terminal","transport"),"pipe")
+	QUIT 1
+	;
+DESKLAYOUT(STATE,CONF,TREE,OUTJSON,ERR)
+	NEW OUT
+	IF '$$SAVELAYOUT^MIOOSST(.STATE,.TREE,.OUT,.ERR) QUIT 0
+	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"desktop.layout.save","desktop",.OUT)
+	QUIT 1
+	;
+CMDVIEW(STATE,CONF,TREE,OUTJSON,ERR)
+	NEW OUT
+	DO BUILD^MIOOSVM(.STATE,.CONF,.OUT)
+	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"view.refresh","view",.OUT)
 	QUIT 1
 	;
 	;

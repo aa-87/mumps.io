@@ -114,6 +114,9 @@
         if (appKey === 'security-center' && this.refreshSecurityCenter) {
           this.$nextTick(function () { this.refreshSecurityCenter().catch(function () {}); }.bind(this));
         }
+        if (appKey === 'debug-center' && this.refreshDebugCenter) {
+          this.$nextTick(function () { this.refreshDebugCenter().catch(function () {}); }.bind(this));
+        }
         this.sendSocket({ event: 'shell.open', appKey: appKey });
       },
       focusWindow: function (windowId) {

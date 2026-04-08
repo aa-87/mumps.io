@@ -104,6 +104,7 @@
           return;
         }
         if (this.setSocketTelemetry) this.setSocketTelemetry('core-1', { lastMessageAt: Date.now(), lastEvent: msg.event || 'message', lastError: (msg.event === ((this.boot.routes || {}).commandErrorEvent || 'desktop.error')) ? (msg.detail || msg.error || 'desktop.error') : '' });
+        if (this.pushDebugEvent) this.pushDebugEvent('socket.message', msg.event || 'message', msg.command || msg.detail || '', { requestId: msg.requestId || '', ok: msg.ok, source: 'core' });
         if (msg.event === 'hello' && this.setSocketTelemetry) this.setSocketTelemetry('core-1', { helloAt: Date.now(), state: 'ready', lastEvent: 'hello' });
         if (msg.event === 'pong' && this.setSocketTelemetry) this.setSocketTelemetry('core-1', { lastEvent: 'pong' });
         if (msg.event === 'view.refresh' && msg.view) {
@@ -168,6 +169,7 @@
               }, timeoutMs);
               self.socketPending[requestId] = pending;
               if (self.setSocketTelemetry) self.setSocketTelemetry('core-1', { pendingCount: Object.keys(self.socketPending || {}).length, lastEvent: 'request:' + (opts.command || eventName || 'socket') });
+              if (self.pushDebugEvent) self.pushDebugEvent('socket.request', opts.command || eventName || 'socket.request', JSON.stringify(payload || {}), { requestId: requestId, source: 'core' });
               if (!self.sendSocket(Object.assign({}, payload || {}, {
                 event: eventName,
                 requestId: requestId

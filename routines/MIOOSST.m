@@ -143,6 +143,10 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("perfPayloadMode")="tmp-global-safe"
 	SET STATE("perfTransport")="websocket-first-http-refresh"
 	SET STATE("moduleSystemEnabled")=+$GET(CONF("mioos","modules","enabled"),1)
+	SET STATE("debugEnabled")=+$GET(CONF("mioos","debug","enabled"),1)
+	SET STATE("debugEventLimit")=+$GET(CONF("mioos","debug","eventLimit"),50)
+	IF STATE("debugEventLimit")<10 SET STATE("debugEventLimit")=10
+	SET STATE("debugSnapshotVersion")=+$GET(CONF("mioos","debug","snapshotVersion"),1)
 	SET STATE("moduleManifestVersion")=+$GET(CONF("mioos","modules","manifestVersion"),1)
 	IF STATE("moduleManifestVersion")<1 SET STATE("moduleManifestVersion")=1
 	SET STATE("moduleLauncher")=$GET(CONF("mioos","modules","launcher"),"desktop-icons-and-menu")
@@ -293,6 +297,10 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","moduleSystem","dynamicWindows")=+$GET(STATE("moduleDynamicWindows"),1)
 	SET OBJ("desktop","moduleSystem","appCatalogKey")="app-catalog"
 	SET OBJ("desktop","moduleSystem","moduleCount")=+$GET(STATE("moduleCount"),0)
+	SET OBJ("desktop","moduleSystem","debugAppKey")="debug-center"
+	SET OBJ("desktop","debugCenter","enabled")=+$GET(STATE("debugEnabled"),1)
+	SET OBJ("desktop","debugCenter","eventLimit")=+$GET(STATE("debugEventLimit"),50)
+	SET OBJ("desktop","debugCenter","snapshotVersion")=+$GET(STATE("debugSnapshotVersion"),1)
 	SET OBJ("auth","required")=+$GET(STATE("authRequired"),0)
 	SET OBJ("auth","enabled")=+$GET(STATE("localAuthEnabled"),0)
 	SET OBJ("auth","guestLoginEnabled")=+$GET(STATE("guestLoginEnabled"),0)
@@ -327,6 +335,7 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("auth","management","adminRole")="admin"
 	SET OBJ("routes","passwordChange")=$GET(STATE("passwordChangePath"))
 	SET OBJ("routes","auditExport")=$GET(STATE("auditExportPath"))
+	SET OBJ("routes","debugSnapshotCommand")="debug.snapshot"
 	SET OBJ("routes","fsList")=$GET(STATE("fsListPath"))
 	SET OBJ("routes","fsRead")=$GET(STATE("fsReadPath"))
 	SET OBJ("routes","fsWrite")=$GET(STATE("fsWritePath"))
@@ -473,6 +482,13 @@ APPS(STATE)
 	SET STATE("apps",N,"subtitle")="Authentication posture, active sessions, account risk, and report export"
 	SET STATE("apps",N,"icon")="🔐"
 	SET STATE("apps",N,"kind")="system"
+	IF +$GET(STATE("debugEnabled"),1)=1 DO
+	. SET N=N+1
+	. SET STATE("apps",N,"key")="debug-center"
+	. SET STATE("apps",N,"title")=$$TXT^MIOOSI18N(CODE,"app.debug-center.title","Debug Center")
+	. SET STATE("apps",N,"subtitle")=$$TXT^MIOOSI18N(CODE,"app.debug-center.subtitle","Server snapshot, command registry, and recent websocket activity")
+	. SET STATE("apps",N,"icon")="🧪"
+	. SET STATE("apps",N,"kind")="tool"
 	QUIT
 	;
 MODULES(STATE,CONF)
@@ -570,6 +586,10 @@ WINDOWS(STATE)
 	SET N=N+1
 	DO WIN(.STATE,N,"win-security-center","security-center","Security Center",284,134,860,560,N,"closed",680,420,1,1)
 	SET STATE("windows",N,"securityCenterEnabled")=1
+	IF +$GET(STATE("debugEnabled"),1)=1 DO
+	. SET N=N+1
+	. DO WIN(.STATE,N,"win-debug-center","debug-center",$$TXT^MIOOSI18N(CODE,"app.debug-center.title","Debug Center"),308,146,900,580,N,"closed",700,440,1,1)
+	. SET STATE("windows",N,"debugCenterEnabled")=1
 	QUIT
 	;
 WIN(STATE,N,ID,APPKEY,TITLE,LEFT,TOP,WIDTH,HEIGHT,Z,MODE,MINW,MINH,RESIZE,DRAG)

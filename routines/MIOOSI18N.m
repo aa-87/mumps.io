@@ -166,6 +166,8 @@ CATALOG(CODE,ROOT)
 	SET @ROOT@("app.control-panel.subtitle")=$$TXT(CODE,"app.control-panel.subtitle","Desktop settings and shell behavior")
 	SET @ROOT@("app.terminal.title")=$$TXT(CODE,"app.terminal.title","Terminal")
 	SET @ROOT@("app.terminal.subtitle")=$$TXT(CODE,"app.terminal.subtitle","Websocket-backed MUMPS terminal surface")
+	SET @ROOT@("app.debug-center.title")=$$TXT(CODE,"app.debug-center.title","Debug Center")
+	SET @ROOT@("app.debug-center.subtitle")=$$TXT(CODE,"app.debug-center.subtitle","Server snapshot, command registry, and recent websocket activity")
 	QUIT
 	;
 TXT(CODE,KEY,DEFAULT)
@@ -285,6 +287,8 @@ TABLE
 	;;app.control-panel.subtitle=Desktop settings and shell behavior
 	;;app.terminal.title=Terminal
 	;;app.terminal.subtitle=Websocket-backed MUMPS terminal surface
+;;app.debug-center.title=Debug Center
+;;app.debug-center.subtitle=Server snapshot, command registry, and recent websocket activity
 	;;[ar]
 	;;product.subtitle=سطح مكتب بنمط ويندوز XP ومدعوم بواسطة MUMPS
 	;;page.desktop=سطح المكتب
