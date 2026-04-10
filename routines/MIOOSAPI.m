@@ -39,6 +39,7 @@ SIGNIN(DEV,CONF,REQ,CTX)
 	. DO RESPERR(.DEV,.CONF,401,"signin_failed",$GET(ERR("error")),.CTX)
 	SET USER=$$CANON^MIOOSAUTH($GET(TREE("username")))
 	SET OBJ("ok")=1,OBJ("tokenIssued")=1,OBJ("username")=USER
+	DO TOKSTATUS^MIOOSAUTH(.CONF,TOKEN,$NAME(OBJ("tokenStatus")))
 	SET JSON=$$EN^MIOJSON1(.OBJ)
 	SET HEAD("Content-Type")="application/json; charset=utf-8"
 	SET HEAD("Set-Cookie")=$$COOKIEHDR^MIOOSAUTH(.CONF,TOKEN,0)
@@ -55,6 +56,7 @@ CHANGEPASSWORD(DEV,CONF,REQ,CTX)
 	IF '$$CHANGEPASSWORD^MIOOSAUTH(.CONF,$GET(TREE("changeToken")),$GET(TREE("newPassword")),.TOKEN,.OBJ,.ERR) DO  QUIT
 	. DO RESPERR(.DEV,.CONF,400,"password_change_failed",$GET(ERR("error")),.CTX)
 	SET OBJ("ok")=1,OBJ("tokenIssued")=1
+	DO TOKSTATUS^MIOOSAUTH(.CONF,TOKEN,$NAME(OBJ("tokenStatus")))
 	SET JSON=$$EN^MIOJSON1(.OBJ)
 	SET HEAD("Content-Type")="application/json; charset=utf-8"
 	SET HEAD("Set-Cookie")=$$COOKIEHDR^MIOOSAUTH(.CONF,TOKEN,0)
@@ -73,11 +75,31 @@ SIGNOUT(DEV,CONF,REQ,CTX)
 	SET CTX("status")=200
 	QUIT
 	;
+AUTHREFRESH(DEV,CONF,REQ,CTX)
+	NEW ERR,TOKEN,OBJ,HEAD,JSON
+	IF '$$REFRESH^MIOOSAUTH(.CONF,.REQ,.CTX,.TOKEN,.OBJ,.ERR) DO  QUIT
+	. SET HEAD("Content-Type")="application/json; charset=utf-8"
+	. SET HEAD("Set-Cookie")=$$COOKIEHDR^MIOOSAUTH(.CONF,"",1)
+	. SET OBJ("ok")=0,OBJ("error")="auth_refresh_failed",OBJ("detail")=$GET(ERR("error"),"login_required"),OBJ("routine")="MIOOSAPI"
+	. DO RESPX^MIOHTTP(.DEV,.CONF,401,.HEAD,$$EN^MIOJSON1(.OBJ),$GET(CTX("request_id")),.CTX)
+	. SET CTX("status")=401
+	SET JSON=$$EN^MIOJSON1(.OBJ)
+	SET HEAD("Content-Type")="application/json; charset=utf-8"
+	SET HEAD("Set-Cookie")=$$COOKIEHDR^MIOOSAUTH(.CONF,TOKEN,0)
+	DO RESPX^MIOHTTP(.DEV,.CONF,200,.HEAD,JSON,$GET(CTX("request_id")),.CTX)
+	SET CTX("status")=200
+	QUIT
+	;
 GUESTSIGNIN(DEV,CONF,REQ,CTX)
-	NEW ERR,TOKEN
-	IF '$$GUESTSIGNIN^MIOOSAUTH(.CONF,.TOKEN,.ERR) DO  QUIT
+	NEW ERR,TOKEN,OBJ,HEAD,JSON
+	IF '''$$GUESTSIGNIN^MIOOSAUTH(.CONF,.TOKEN,.ERR) DO  QUIT
 	. DO RESPERR(.DEV,.CONF,403,"guest_signin_failed",$GET(ERR("error")),.CTX)
-	DO RESPERR(.DEV,.CONF,403,"guest_signin_failed","guest_login_disabled",.CTX)
+	SET OBJ("ok")=1,OBJ("tokenIssued")=1,OBJ("guest")=1,OBJ("username")="guest"
+	SET JSON=$$EN^MIOJSON1(.OBJ)
+	SET HEAD("Content-Type")="application/json; charset=utf-8"
+	SET HEAD("Set-Cookie")=$$COOKIEHDR^MIOOSAUTH(.CONF,TOKEN,0)
+	DO RESPX^MIOHTTP(.DEV,.CONF,200,.HEAD,JSON,$GET(CTX("request_id")),.CTX)
+	SET CTX("status")=200
 	QUIT
 	;
 AUDITX(DEV,CONF,REQ,CTX)
@@ -164,6 +186,50 @@ FSWRITE(DEV,CONF,REQ,CTX)
 	DO RESPJSONX^MIOHTTP(.DEV,.CONF,200,.OUT,$GET(CTX("request_id")),.CTX)
 	SET CTX("status")=200
 	QUIT
+	;
+FSUPLOAD(DEV,CONF,REQ,CTX)
+	NEW STATE,ERR,OUT,MP,CT,IDX,PARENT,NAME,MIME
+	SET ERR("routine")="MIOOSAPI"
+	IF '$$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,500,"fs_state_error",$GET(ERR("error")),.CTX)
+	IF '$$REQUIREAUTH(.DEV,.CONF,.CTX,.STATE) QUIT
+	SET CT=$$LOW^MIOUTIL($GET(REQ("hdr","content-type")))
+	IF CT'["multipart/form-data" DO  QUIT
+	. DO RESPERR(.DEV,.CONF,400,"invalid_upload_content_type","multipart_required",.CTX)
+	IF '$$PARSE^MIOHTTPMPU(.CONF,.REQ,.MP,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,400,"invalid_multipart",$GET(ERR("error"),"invalid_multipart"),.CTX)
+	SET IDX=$$UPLOADFILE(.MP)
+	IF IDX<1 DO  QUIT
+	. DO FREE^MIOHTTPMPU(.MP)
+	. DO RESPERR(.DEV,.CONF,400,"upload_file_missing","upload_file_missing",.CTX)
+	SET PARENT=$GET(MP("field","parent"))
+	IF PARENT="" SET PARENT=$GET(STATE("fsHomeId"),"root")
+	SET NAME=$$UPLOADNAME(.MP,IDX)
+	SET MIME=$GET(MP("part",IDX,"ctype")) IF MIME="" SET MIME="application/octet-stream"
+	IF '$$WRITEPART^MIOOSFS(.STATE,PARENT,NAME,MIME,.MP,IDX,.OUT,.ERR) DO  QUIT
+	. DO FREE^MIOHTTPMPU(.MP)
+	. DO RESPERR(.DEV,.CONF,403,"fs_upload_failed",$GET(ERR("error"),"fs_upload_failed"),.CTX)
+	DO FREE^MIOHTTPMPU(.MP)
+	SET OUT("ok")=1,OUT("uploaded")=1
+	DO RESPJSONX^MIOHTTP(.DEV,.CONF,200,.OUT,$GET(CTX("request_id")),.CTX)
+	SET CTX("status")=200
+	QUIT
+	;
+UPLOADFILE(MP)
+	NEW I,OUT
+	SET I=0,OUT=0
+	FOR  SET I=$ORDER(MP("part",I)) QUIT:I'>0  DO  QUIT:OUT>0
+	. IF $GET(MP("part",I,"filename"))'="" SET OUT=I
+	QUIT OUT
+	;
+UPLOADNAME(MP,IDX)
+	NEW X
+	SET X=$GET(MP("part",+$GET(IDX),"filename"))
+	IF X="" SET X=$GET(MP("part",+$GET(IDX),"name"),"upload.bin")
+	IF X["/" SET X=$PIECE(X,"/",$L(X,"/"))
+	IF X[$CHAR(92) SET X=$PIECE(X,$CHAR(92),$L(X,$CHAR(92)))
+	IF X="" SET X="upload.bin"
+	QUIT X
 	;
 FSMKDIR(DEV,CONF,REQ,CTX)
 	NEW TREE,ERR,STATE,OUT

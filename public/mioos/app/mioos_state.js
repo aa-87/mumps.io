@@ -28,6 +28,7 @@
         guestSignin: '/api/mioos/auth/guest',
         passwordChange: '/api/mioos/auth/password/change',
         auditExport: '/api/mioos/auth/audit/export',
+        fsUpload: '/api/mioos/fs/upload',
         debugSnapshotCommand: 'debug.snapshot',
         websocket: '/ws/mioos',
         terminalWebsocket: '/ws/mioos/terminal',
@@ -99,6 +100,7 @@
         websocketPath: '/ws/mioos/terminal',
         websocketPollMs: 250,
         maxSessionsPerUser: 8,
+        maxSessionsPerSession: 4,
         profile: {
           fontFamily: 'Consolas',
           fontSize: 14,

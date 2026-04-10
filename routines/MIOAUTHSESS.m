@@ -16,8 +16,8 @@ ISSUE(CONF,APP,USER,DISPLAY,ROLES,TOKEN,ERR)
 	SET CLAIMS("name")=$SELECT($GET(DISPLAY)'="":$GET(DISPLAY),1:$GET(USER))
 	SET CLAIMS("roles")=$GET(ROLES)
 	SET CLAIMS("sid")=SID
-	SET CLAIMS("iss")=$$ISSUER(APPKEY)
-	SET CLAIMS("aud")=APPKEY
+	SET CLAIMS("iss")=$$ISSUER(.CONF,APPKEY)
+	SET CLAIMS("aud")=$$AUDIENCE(.CONF,APPKEY)
 	SET CLAIMS("iat")=NOW
 	SET CLAIMS("exp")=NOW+MAXAGE
 	IF '$$MAKEHS256^MIOJWT(.CONF,.CLAIMS,.TOKEN,.ERR) QUIT 0
@@ -46,8 +46,8 @@ LOAD(CONF,APP,REQ,CTX,ERR)
 	. SET ERR("error")="login_required"
 	SET SID=$GET(CLAIMS("sid")),USER=$GET(CLAIMS("sub"))
 	IF SID=""!(USER="") SET ERR("error")="login_required" QUIT 0
-	IF $GET(CLAIMS("iss"))'=$$ISSUER(APPKEY) SET ERR("error")="login_required" QUIT 0
-	IF $GET(CLAIMS("aud"))'="",$GET(CLAIMS("aud"))'=APPKEY SET ERR("error")="login_required" QUIT 0
+	IF $GET(CLAIMS("iss"))'=$$ISSUER(.CONF,APPKEY) SET ERR("error")="login_required" QUIT 0
+	IF $GET(CLAIMS("aud"))'="",$GET(CLAIMS("aud"))'=$$AUDIENCE(.CONF,APPKEY) SET ERR("error")="login_required" QUIT 0
 	IF '$DATA(^MIO("AUTH","SESSION",APPKEY,SID)) SET ERR("error")="login_required" QUIT 0
 	IF $GET(^MIO("AUTH","SESSION",APPKEY,SID,"principal"))'=USER SET ERR("error")="login_required" QUIT 0
 	IF $$EXPIRED(APPKEY,SID) DO  QUIT 0
@@ -107,10 +107,9 @@ TOKEN(CONF,APP,REQ)
 COOKIENAME(CONF,APP)
 	NEW APPKEY,NAME
 	SET APPKEY=$$APPKEY($GET(APP))
-	SET NAME=$GET(CONF("auth","jwt","cookieName"))
-	IF NAME'="" QUIT NAME
-	IF APPKEY="miomos" SET NAME=$GET(CONF("miomos","localAuth","tokenCookie")) IF NAME'="" QUIT NAME
 	SET NAME=$GET(CONF("auth","session",APPKEY,"cookieName"))
+	IF NAME'="" QUIT NAME
+	SET NAME=$GET(CONF("auth","jwt","cookieName"))
 	IF NAME'="" QUIT NAME
 	QUIT APPKEY_"_auth"
 	;
@@ -126,7 +125,8 @@ MAXAGE(CONF,APP)
 	SET APPKEY=$$APPKEY($GET(APP))
 	SET X=+$GET(CONF("auth","session",APPKEY,"maxAgeSeconds"))
 	IF X>0 QUIT X
-	IF APPKEY="miomos" QUIT +$GET(CONF("miomos","localAuth","tokenMaxAgeSeconds"),604800)
+	SET X=+$GET(CONF("auth","session","maxAgeSeconds"))
+	IF X>0 QUIT X
 	QUIT 604800
 	;
 EXPIRED(APP,SID)
@@ -144,8 +144,23 @@ REVOKESID(APP,SID)
 	KILL ^MIO("AUTH","SESSION",$GET(APP),$GET(SID))
 	QUIT
 	;
-ISSUER(APP)
-	QUIT $$APPKEY($GET(APP))_"-local-auth"
+ISSUER(CONF,APP)
+	NEW APPKEY,VALUE
+	SET APPKEY=$$APPKEY($GET(APP))
+	SET VALUE=$GET(CONF("auth","session",APPKEY,"issuer"))
+	IF VALUE'="" QUIT VALUE
+	SET VALUE=$GET(CONF("auth","jwt","issuer"))
+	IF VALUE'="" QUIT VALUE
+	QUIT APPKEY_"-local-auth"
+	;
+AUDIENCE(CONF,APP)
+	NEW APPKEY,VALUE
+	SET APPKEY=$$APPKEY($GET(APP))
+	SET VALUE=$GET(CONF("auth","session",APPKEY,"audience"))
+	IF VALUE'="" QUIT VALUE
+	SET VALUE=$GET(CONF("auth","jwt","audience"))
+	IF VALUE'="" QUIT VALUE
+	QUIT APPKEY
 	;
 APPKEY(APP)
 	QUIT $$LOW^MIOUTIL($$TRIM^MIOUTIL($GET(APP)))

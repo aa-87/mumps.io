@@ -124,6 +124,40 @@
       dismissAlert: function () {
         this.alertTitle = '';
         this.alertMessage = '';
+      },
+      refreshAuthSession: function () {
+        var self = this;
+        var route = (((this.boot || {}).routes || {}).authRefresh);
+        if (!route) return Promise.resolve({ ok: 1, skipped: 1 });
+        return window.fetch(route, {
+          method: 'POST',
+          headers: { Accept: 'application/json' },
+          credentials: 'same-origin'
+        }).then(function (resp) {
+          return resp.json().catch(function () { return {}; }).then(function (json) {
+            if (!resp.ok || !json || json.ok !== 1) {
+              var err = new Error((json || {}).detail || (json || {}).error || 'auth_refresh_failed');
+              err.code = (json || {}).detail || (json || {}).error || 'auth_refresh_failed';
+              throw err;
+            }
+            return json;
+          });
+        });
+      },
+      handleExpiredAuth: function (message) {
+        var self = this;
+        var route = (((this.boot || {}).routes || {}).signout);
+        var text = message || 'Your session expired. Please sign in again.';
+        var done = function () {
+          if (self.showAlert) self.showAlert(self.t('alerts.signinRequired.title', 'Sign in required'), text);
+          window.setTimeout(function () { window.location.reload(); }, 250);
+        };
+        if (!route) { done(); return Promise.resolve(); }
+        return window.fetch(route, {
+          method: 'POST',
+          headers: { Accept: 'application/json' },
+          credentials: 'same-origin'
+        }).catch(function () { return null; }).then(done);
       }
     }
   };

@@ -6,7 +6,7 @@ MIOAUTHJWT ; JWT validation using MIOSHA256 with original compat behavior
 	;   $$HMACSHA256(DATA,SECRET,.ERR) -> 32-byte binary
 	;   $$B64DURL(S,.ERR) -> binary
 	;   $$B64EURL(BIN) -> base64url (no padding)
-	;   $$NOWS() -> seconds since $H origin (1840-12-31)
+	;   $$NOWS() -> current unix epoch seconds
 	;
 	; Notes
 	; - Keeps the original Base64URL implementation for framework compatibility.;
@@ -204,7 +204,7 @@ ISID(S)
 	. IF '(C?1AN) SET OK=0
 	QUIT OK
 	;
-
+	;
 COOKIEJWT(REQ,NAME)
 	NEW RAW,I,PAIR,K,V
 	SET RAW=$GET(REQ("hdr","cookie"))
@@ -324,7 +324,6 @@ SETR(ERR,RTN,ST)
 	QUIT
 	;
 NOWS()
-	NEW H
-	SET H=$HOROLOG
-	QUIT +$PIECE(H,",",1)*86400+$PIECE(H,",",2)
+	QUIT $$NOW^MIOSJWT()
+	;
 	;

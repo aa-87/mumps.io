@@ -206,36 +206,157 @@
         if (age < 5000) return 75;
         return 180;
       },
-      startTerminalPolling: function () {
-        var self = this;
-        if (this.terminalPollTimer) return;
-        function tick() {
-          var nextDelay = 180;
-          self.windows.forEach(function (win) {
-            var state, delay;
-            if (!win || win.appKey !== 'terminal' || win.state === 'closed' || win.state === 'minimized') return;
-            state = self.ensureTerminalState(win.id);
-            delay = self.terminalPollDelay(win.id);
-            if (delay < nextDelay) nextDelay = delay;
-            if (!state.terminalId || state.busy || state.pollInFlight) return;
-            if ((Date.now() - (state.lastPollAt || 0)) < delay) return;
-            self.pollTerminal(win.id);
-          });
-          self.terminalPollTimer = window.setTimeout(tick, nextDelay);
-        }
-        this.terminalPollTimer = window.setTimeout(tick, 25);
-      },
+      startTerminalPolling: function () { return; },
       stopTerminalPolling: function () { if (this.terminalPollTimer) window.clearTimeout(this.terminalPollTimer); this.terminalPollTimer = null; },
+      terminalSocketState: function (winId) {
+        this._terminalSockets = this._terminalSockets || {};
+        if (!this._terminalSockets[winId]) this._terminalSockets[winId] = { socket: null, openPromise: null, pending: {}, seq: 0 };
+        return this._terminalSockets[winId];
+      },
+      terminalSocketPath: function (winId, terminalId) {
+        var root = window.MIOOSState.getRootNode();
+        var path = ((this.boot || {}).routes || {}).terminalWebsocket || ((this.boot || {}).terminal || {}).websocketPath || (root ? root.dataset.mioosTerminalWs : '');
+        var query = ['windowId=' + encodeURIComponent(winId || '')];
+        if (terminalId) query.push('terminalId=' + encodeURIComponent(terminalId));
+        return path + (path.indexOf('?') >= 0 ? '&' : '?') + query.join('&');
+      },
+      closeTerminalSocket: function (winId) {
+        var slot = this.terminalSocketState(winId);
+        Object.keys(slot.pending || {}).forEach(function (requestId) {
+          var pending = slot.pending[requestId];
+          if (!pending) return;
+          if (pending.timer) window.clearTimeout(pending.timer);
+          try { pending.reject(new Error('socket_closed')); } catch (err) {}
+          delete slot.pending[requestId];
+        });
+        slot.openPromise = null;
+        if (slot.socket) {
+          try { slot.socket.close(); } catch (err2) {}
+          slot.socket = null;
+        }
+      },
+      ensureTerminalSocket: function (winId) {
+        var self = this;
+        var slot = this.terminalSocketState(winId);
+        var state = this.ensureTerminalState(winId);
+        var waitMs = Number((((this.boot || {}).websocket || {}).requestTimeoutMs) || 15000) || 15000;
+        var protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+        var path = this.terminalSocketPath(winId, state.terminalId || '');
+        if (slot.socket && slot.socket.readyState === 1) return Promise.resolve(slot.socket);
+        if (slot.openPromise) return slot.openPromise;
+        slot.openPromise = new Promise(function (resolve, reject) {
+          var settled = false;
+          var sock;
+          var timer = window.setTimeout(function () {
+            if (settled) return;
+            settled = true;
+            slot.openPromise = null;
+            try { if (sock) sock.close(); } catch (err) {}
+            reject(new Error('socket_timeout'));
+          }, waitMs);
+          try {
+            sock = new window.WebSocket(protocol + window.location.host + path);
+            slot.socket = sock;
+          } catch (err) {
+            window.clearTimeout(timer);
+            slot.openPromise = null;
+            reject(err);
+            return;
+          }
+          sock.addEventListener('open', function () {
+            try { sock.send(JSON.stringify({ event: 'hello', windowId: winId || '', terminalId: state.terminalId || '' })); } catch (err) {}
+            if (!settled) {
+              settled = true;
+              window.clearTimeout(timer);
+              resolve(sock);
+            }
+          });
+          sock.addEventListener('message', function (evt) {
+            self.handleTerminalSocketMessage(winId, evt.data);
+          });
+          sock.addEventListener('close', function () {
+            Object.keys(slot.pending || {}).forEach(function (requestId) {
+              var pending = slot.pending[requestId];
+              if (!pending) return;
+              if (pending.timer) window.clearTimeout(pending.timer);
+              try { pending.reject(new Error('socket_closed')); } catch (err) {}
+              delete slot.pending[requestId];
+            });
+            slot.socket = null;
+            slot.openPromise = null;
+            if (!settled) {
+              settled = true;
+              window.clearTimeout(timer);
+              reject(new Error('socket_closed'));
+            }
+          });
+          sock.addEventListener('error', function () {
+            if (!settled) {
+              settled = true;
+              window.clearTimeout(timer);
+              slot.openPromise = null;
+              reject(new Error('socket_error'));
+            }
+          });
+        });
+        return slot.openPromise;
+      },
+      terminalSocketRequest: function (winId, eventName, payload) {
+        var self = this;
+        var slot = this.terminalSocketState(winId);
+        var timeoutMs = Number((((this.boot || {}).websocket || {}).requestTimeoutMs) || 15000) || 15000;
+        var requestId = 'tw-' + (++slot.seq) + '-' + Date.now();
+        return this.ensureTerminalSocket(winId).then(function (sock) {
+          return new Promise(function (resolve, reject) {
+            var pending = { resolve: resolve, reject: reject, timer: null };
+            pending.timer = window.setTimeout(function () {
+              delete slot.pending[requestId];
+              reject(new Error('socket_request_timeout'));
+            }, timeoutMs);
+            slot.pending[requestId] = pending;
+            try {
+              sock.send(JSON.stringify(Object.assign({}, payload || {}, { event: eventName, requestId: requestId, windowId: winId || '' })));
+            } catch (err) {
+              if (pending.timer) window.clearTimeout(pending.timer);
+              delete slot.pending[requestId];
+              reject(err);
+            }
+          });
+        });
+      },
+      handleTerminalSocketMessage: function (winId, raw) {
+        var msg;
+        var slot = this.terminalSocketState(winId);
+        var pending;
+        try { msg = JSON.parse(raw); } catch (err) { return; }
+        if (msg.event === 'hello' || msg.event === 'pong') return;
+        pending = slot.pending[msg.requestId || ''];
+        if (msg.event === 'error') {
+          if (pending) {
+            if (pending.timer) window.clearTimeout(pending.timer);
+            delete slot.pending[msg.requestId || ''];
+            pending.reject(msg);
+            return;
+          }
+          this.showAlert(this.t('alerts.terminalCommandFailed.title', 'Terminal command failed'), msg.detail || msg.error || this.t('alerts.terminalCommandFailed.message', 'The terminal command did not complete.'));
+          return;
+        }
+        if (msg.terminal) this.handleTerminalMessage(winId, msg.terminal || {});
+        if (pending) {
+          if (pending.timer) window.clearTimeout(pending.timer);
+          delete slot.pending[msg.requestId || ''];
+          pending.resolve(msg);
+        }
+      },
       openTerminal: function (winId, forceNew) {
         var self = this, state = this.ensureTerminalState(winId), grid = this.computeTerminalGrid(winId), payload = { terminalId: forceNew ? '__new__' : (state.terminalId || ''), cols: grid.cols, rows: grid.rows };
         this.ensureXtermMounted(winId);
         state.busy = true; state.status = 'Opening terminal...';
         this.markTerminalActive(winId);
-        return this.command('terminal.open', payload).then(function (json) {
+        return this.terminalSocketRequest(winId, 'terminal.open', payload).then(function (json) {
           self.handleTerminalMessage(winId, (json && json.terminal) || {});
           state.status = 'Terminal ready';
           self.markTerminalActive(winId);
-          self.startTerminalPolling();
           self.resizeTerminal(winId);
           self.focusTerminalWindow(winId);
           return json;
@@ -248,14 +369,13 @@
       requestTerminalOpen: function (winId, forceNew) { return this.openTerminal(winId, forceNew === true); },
       pollTerminal: function (winId) {
         var self = this, state = this.ensureTerminalState(winId);
-        if (!state.terminalId || state.pollInFlight) return;
+        if (!state.terminalId || state.pollInFlight) return Promise.resolve();
         state.pollInFlight = true;
         state.lastPollAt = Date.now();
-        this.command('terminal.poll', { terminalId: state.terminalId || '' }).then(function (json) {
+        return this.terminalSocketRequest(winId, 'terminal.poll', { terminalId: state.terminalId || '' }).then(function (json) {
           self.handleTerminalMessage(winId, (json && json.terminal) || {});
-        }).catch(function () {}).finally(function () {
-          state.pollInFlight = false;
-        });
+          return json;
+        }).catch(function () { return null; }).finally(function () { state.pollInFlight = false; });
       },
       submitTerminalLine: function (winId, lineOverride) {
         var self = this, state = this.ensureTerminalState(winId), line = lineOverride != null ? String(lineOverride) : String(state.inputLine || '');
@@ -267,7 +387,7 @@
         this.markTerminalActive(winId);
         if (line.trim()) { state.history.push(line); if (state.history.length > 100) state.history = state.history.slice(-100); }
         state.historyIndex = -1; state.inputLine = '';
-        this.command('terminal.input', { terminalId: state.terminalId || '', line: line }).then(function (json) {
+        this.terminalSocketRequest(winId, 'terminal.input', { terminalId: state.terminalId || '', line: line }).then(function (json) {
           self.handleTerminalMessage(winId, (json && json.terminal) || {});
           state.status = 'Terminal live';
           self.markTerminalActive(winId);
@@ -281,7 +401,7 @@
         this.ensureXtermMounted(winId); this.resizeXtermClient(winId, grid.cols, grid.rows);
         this.markTerminalActive(winId);
         if (!state.terminalId) return;
-        this.command('terminal.resize', { terminalId: state.terminalId || '', cols: grid.cols, rows: grid.rows }).then(function (json) {
+        this.terminalSocketRequest(winId, 'terminal.resize', { terminalId: state.terminalId || '', cols: grid.cols, rows: grid.rows }).then(function (json) {
           self.handleTerminalMessage(winId, (json && json.terminal) || {});
         }).catch(function () {});
       },
@@ -298,11 +418,12 @@
         function finalize() {
           state.status = 'Terminal closed'; state.terminalId = ''; state.cwd = '/'; state.inputLine = ''; state.busy = false;
           if (win && win._term) { try { win._term.dispose(); } catch (e) {} win._term = null; }
+          self.closeTerminalSocket(winId);
           if (win) win.state = 'closed';
           if (self.activeWindowId === winId) self.activeWindowId = '';
         }
         if (!termId) { finalize(); return; }
-        this.command('terminal.close', { terminalId: termId }).then(function (json) {
+        this.terminalSocketRequest(winId, 'terminal.close', { terminalId: termId }).then(function (json) {
           self.handleTerminalMessage(winId, (json && json.terminal) || { closed: 1 });
         }).catch(function () {}).finally(function () { finalize(); });
       },

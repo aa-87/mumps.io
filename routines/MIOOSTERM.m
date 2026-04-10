@@ -18,6 +18,7 @@ LOADTERM(STATE,CONF)
 	SET STATE("terminal","rows")=+$GET(CONF("mioos","terminal","default","rows"),28)
 	SET STATE("terminal","cols")=+$GET(CONF("mioos","terminal","default","cols"),112)
 	SET STATE("terminal","maxSessions")=+$GET(CONF("mioos","terminal","maxSessionsPerUser"),8)
+	SET STATE("terminal","maxSessionsPerSession")=+$GET(CONF("mioos","terminal","maxSessionsPerSession"),4)
 	SET STATE("terminal","historyLimit")=+$GET(CONF("mioos","terminal","historyLimit"),400)
 	SET STATE("terminal","command")=$$CMD^MIOOSPIPE(.CONF)
 	SET STATE("terminal","shell")=$$SHELL^MIOOSPIPE(.CONF)
@@ -49,6 +50,12 @@ LIST(STATE,OUT)
 	QUIT
 	;
 OPEN(STATE,CONF,TERMID,OUT,ERR)
+	NEW USERCOUNT,SESSIONCOUNT
+	IF $GET(TERMID)=""!($GET(TERMID)="__new__") DO  QUIT:$GET(ERR("error"))'="" 0
+	. SET USERCOUNT=$$COUNTUSER(.STATE)
+	. SET SESSIONCOUNT=$$COUNTSESSION(.STATE)
+	. IF +$GET(STATE("terminal","maxSessions"),8)>0,USERCOUNT>=+$GET(STATE("terminal","maxSessions"),8) SET ERR("routine")="MIOOSTERM",ERR("error")="terminal_limit_reached" QUIT
+	. IF +$GET(STATE("terminal","maxSessionsPerSession"),4)>0,SESSIONCOUNT>=+$GET(STATE("terminal","maxSessionsPerSession"),4) SET ERR("routine")="MIOOSTERM",ERR("error")="terminal_session_limit_reached" QUIT
 	IF '$$OPEN^MIOOSPIPE(.STATE,.CONF,$GET(TERMID),.OUT,.ERR) QUIT 0
 	DO PROFILE(.STATE,.CONF,$GET(OUT("terminalId")),.OUT)
 	QUIT 1
@@ -101,5 +108,26 @@ PROFILE(STATE,CONF,TERMID,OUT)
 	SET OUT("profile","cols")=+$GET(^MIO("MIOOS","PIPE","SESSION",$GET(TERMID),"cols"),+$GET(STATE("terminal","cols"),112))
 	SET OUT("profile","transport")="pipe"
 	SET OUT("profile","command")=$GET(^MIO("MIOOS","PIPE","SESSION",$GET(TERMID),"command"),$$CMD^MIOOSPIPE(.CONF))
+	SET OUT("maxSessionsPerUser")=+$GET(STATE("terminal","maxSessions"),8)
+	SET OUT("maxSessionsPerSession")=+$GET(STATE("terminal","maxSessionsPerSession"),4)
 	SET OUT("profile","shell")=$GET(^MIO("MIOOS","PIPE","SESSION",$GET(TERMID),"shell"),$$SHELL^MIOOSPIPE(.CONF))
 	QUIT
+COUNTUSER(STATE)
+	NEW TERMID,N
+	SET TERMID="",N=0
+	FOR  SET TERMID=$ORDER(^MIO("MIOOS","PIPE","SESSION",TERMID)) QUIT:TERMID=""  DO
+	. IF $GET(^MIO("MIOOS","PIPE","SESSION",TERMID,"principal"))'=$GET(STATE("principal")) QUIT
+	. IF '$GET(^MIO("MIOOS","PIPE","SESSION",TERMID,"open")) QUIT
+	. SET N=N+1
+	QUIT N
+	;
+COUNTSESSION(STATE)
+	NEW TERMID,N,SID
+	SET TERMID="",N=0,SID=$GET(STATE("sessionId"))
+	FOR  SET TERMID=$ORDER(^MIO("MIOOS","PIPE","SESSION",TERMID)) QUIT:TERMID=""  DO
+	. IF $GET(^MIO("MIOOS","PIPE","SESSION",TERMID,"principal"))'=$GET(STATE("principal")) QUIT
+	. IF SID'="",$GET(^MIO("MIOOS","PIPE","SESSION",TERMID,"sessionId"))'=SID QUIT
+	. IF '$GET(^MIO("MIOOS","PIPE","SESSION",TERMID,"open")) QUIT
+	. SET N=N+1
+	QUIT N
+	;

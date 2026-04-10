@@ -667,29 +667,113 @@
         if (!state) return Promise.resolve();
         return this.loadExplorerFolder(windowId, state.folderId, { selectFirst: false });
       },
+      ensureFreshUploadAuth: function () {
+        var auth = ((this.boot || {}).auth || {});
+        if (!auth.enabled || !auth.required) return Promise.resolve();
+        if (this.refreshAuthSession) return this.refreshAuthSession().catch(function () { return null; });
+        return Promise.resolve();
+      },
+      handleUploadAuthFailure: function (err) {
+        var reason = (err && (err.detail || err.reason || err.code || err.message)) || '';
+        if (reason === 'jwt_expired' || reason === 'login_required' || reason === 'auth_refresh_failed') {
+          if (this.handleExpiredAuth) return this.handleExpiredAuth('Your session expired before the upload completed. Please sign in again.');
+        }
+        return Promise.resolve();
+      },
+      explorerUploadRoute: function () {
+        return ((this.boot.routes || {}).fsUpload) || '/api/mioos/fs/upload';
+      },
+      httpUploadFilesToExplorer: function (windowId, file, win, state, transferId, transferControl) {
+        var self = this;
+        return new Promise(function (resolve, reject) {
+          var xhr;
+          var form;
+          if (!window.XMLHttpRequest || !window.FormData) {
+            reject(new Error('http_upload_unavailable'));
+            return;
+          }
+          xhr = new window.XMLHttpRequest();
+          form = new window.FormData();
+          form.append('parent', state.folderId || ((self.boot.vfs || {}).rootId || 'root'));
+          form.append('parentTitle', (((state || {}).folder || {}).name) || (((state || {}).folder || {}).path) || '/');
+          form.append('file', file, file.name || 'upload.bin');
+          transferControl.xhr = xhr;
+          xhr.open('POST', self.explorerUploadRoute(), true);
+          xhr.withCredentials = true;
+          xhr.responseType = 'json';
+          xhr.setRequestHeader('Accept', 'application/json');
+          xhr.upload.addEventListener('progress', function (evt) {
+            var total = evt && evt.total ? evt.total : (file.size || 0);
+            var loaded = evt && evt.loaded ? evt.loaded : 0;
+            var progress = total > 0 ? Math.min(100, Math.round((loaded / total) * 100)) : 0;
+            self.setExplorerUploadProgress(state, {
+              active: true,
+              name: file.name,
+              totalBytes: total || file.size || 0,
+              sentBytes: loaded,
+              progress: progress,
+              stage: progress >= 100 ? 'Finalizing' : 'Uploading via HTTP',
+              error: '',
+              uploadId: ''
+            });
+            if (transferId && self.updateTransfer) {
+              self.updateTransfer(transferId, {
+                status: progress >= 100 ? 'finalizing' : 'uploading',
+                stage: progress >= 100 ? 'Finalizing' : 'Uploading via HTTP',
+                processedBytes: loaded,
+                totalBytes: total || file.size || 0,
+                progress: progress
+              });
+            }
+          });
+          xhr.addEventListener('abort', function () {
+            reject(new Error('transfer_cancelled'));
+          });
+          xhr.addEventListener('error', function () {
+            reject(new Error('fs_upload_failed'));
+          });
+          xhr.addEventListener('load', function () {
+            var body = xhr.response;
+            var err;
+            if (!body && xhr.responseText) {
+              try { body = JSON.parse(xhr.responseText); } catch (parseErr) { body = null; }
+            }
+            if (xhr.status < 200 || xhr.status >= 300 || !body || body.ok !== 1) {
+              err = new Error(((body || {}).detail) || ((body || {}).reason) || ((body || {}).error) || 'fs_upload_failed');
+              if (body && typeof body === 'object') {
+                if (body.detail) err.detail = body.detail;
+                if (body.reason) err.reason = body.reason;
+                if (body.error) err.code = body.error;
+              }
+              reject(err);
+              return;
+            }
+            resolve(body);
+          });
+          xhr.send(form);
+        });
+      },
       uploadFilesToExplorer: function (windowId, filesLike) {
         var self = this;
         var win = this.windows.find(function (entry) { return entry.id === windowId; });
         var state = this.ensureExplorerWindowState(win);
         var file = filesLike && filesLike[0];
         var mime;
-        var isText;
-        if (!state || !this.command || !file) return Promise.resolve();
+        if (!state || !file) return Promise.resolve();
         mime = file.type || 'application/octet-stream';
-        isText = detectTextLike({ name: file.name, mime: mime });
         var transferId = self.registerTransfer ? self.registerTransfer({ kind: 'upload', name: file.name, status: 'preparing', stage: 'Preparing', totalBytes: file.size, processedBytes: 0, sourceWindowId: windowId }) : '';
-        var transferControl = { cancelled: false, workers: [], uploadId: '', windowId: windowId };
+        var transferControl = { cancelled: false, workers: [], uploadId: '', windowId: windowId, xhr: null };
         if (transferId && self.setTransferController) {
           self.setTransferController(transferId, {
             onRetry: function () { return self.uploadFilesToExplorer(windowId, [file]); },
             onCancel: function () {
               transferControl.cancelled = true;
+              if (transferControl.xhr) {
+                try { transferControl.xhr.abort(); } catch (err) {}
+              }
               (transferControl.workers || []).forEach(function (worker) {
                 if (worker && worker.close) worker.close();
               });
-              if (transferControl.uploadId && self.socketRequest) {
-                return self.socketRequest((self.boot.routes || {}).commandEvent || 'desktop.command', { command: 'fs.upload.abort', uploadId: transferControl.uploadId }, { command: 'fs.upload.abort', dedupeKey: 'fs.upload.abort|' + transferControl.uploadId, timeoutMs: uploadTimeoutConfig(self).uploadAbortTimeoutMs }).catch(function () { return null; });
-              }
               return Promise.resolve();
             }
           });
@@ -706,6 +790,7 @@
         });
         function finalize() {
           transferControl.cancelled = false;
+          transferControl.xhr = null;
           return self.refreshExplorerWindow(windowId).then(function () {
             if (self.refreshView) self.refreshView();
             self.setExplorerUploadProgress(state, {
@@ -718,103 +803,34 @@
               error: '',
               uploadId: ''
             });
-            if (transferId && self.finalizeTransfer) self.finalizeTransfer(transferId, true, { processedBytes: file.size, totalBytes: file.size, progress: 100 });
+            if (transferId && self.finalizeTransfer) self.finalizeTransfer(transferId, true, { processedBytes: file.size, totalBytes: file.size, progress: 100, stage: 'Completed' });
             window.setTimeout(function () { self.resetExplorerUpload(state); }, 1200);
           });
         }
         function fail(err, fallback) {
-          var message = (err && err.message) || fallback;
+          var detail = (err && (err.detail || err.reason || err.code)) || '';
+          var message = detail || (err && err.message) || fallback;
+          transferControl.xhr = null;
           if (message === 'transfer_cancelled') {
             self.setExplorerUploadProgress(state, { active: false, stage: 'Cancelled', error: '', uploadId: '' });
             if (transferId && self.updateTransfer) self.updateTransfer(transferId, { status: 'cancelled', stage: 'Cancelled', processedBytes: ((state.upload || {}).sentBytes || 0), totalBytes: file.size });
             return Promise.resolve();
           }
           self.setExplorerUploadProgress(state, { active: false, stage: 'Failed', error: message, uploadId: '' });
-          if (transferId && self.finalizeTransfer) self.finalizeTransfer(transferId, false, { error: message, processedBytes: ((state.upload || {}).sentBytes || 0), totalBytes: file.size });
-          if (self.showAlert) self.showAlert(self.t('alerts.shellEventError.title', 'Explorer'), message);
-          throw (err || new Error(fallback));
+          if (transferId && self.finalizeTransfer) self.finalizeTransfer(transferId, false, { error: message, processedBytes: ((state.upload || {}).sentBytes || 0), totalBytes: file.size, stage: 'Upload failed' });
+          return self.handleUploadAuthFailure(err).then(function () {
+            if (detail !== 'jwt_expired' && self.showAlert) self.showAlert(self.t('alerts.shellEventError.title', 'Explorer'), message);
+            throw (err || new Error(fallback));
+          });
         }
-        if (!useChunkedUpload(file, isText)) {
-          self.setExplorerUploadProgress(state, { stage: 'Uploading' });
-          if (isText) {
-            return fileToText(file).then(function (result) {
-              return self.command('fs.write', {
-                parent: state.folderId,
-                name: file.name,
-                mime: mime,
-                data: result,
-                content: result,
-                text: result
-              });
-            }).then(finalize).catch(function (err) { return fail(err, 'fs_write_failed'); });
-          }
-          return blobToArrayBuffer(file).then(function (buffer) {
-            var result = 'data:' + mime + ';base64,' + uint8ToBase64(new Uint8Array(buffer));
-            return self.command('fs.write', {
-              parent: state.folderId,
-              name: file.name,
-              mime: mime,
-              data: result,
-              content: result,
-              text: result
-            });
-          }).then(finalize).catch(function (err) { return fail(err, 'fs_write_failed'); });
+        self.setExplorerUploadProgress(state, { stage: 'Uploading via HTTP' });
+        if (transferId && self.updateTransfer) self.updateTransfer(transferId, { status: 'uploading', stage: 'Uploading via HTTP', processedBytes: 0, totalBytes: file.size, progress: 0 });
+        if (!window.XMLHttpRequest || !window.FormData) {
+          return fail(new Error('http_upload_unavailable'), 'http_upload_unavailable');
         }
-        return self.socketRequest((self.boot.routes || {}).commandEvent || 'desktop.command', {
-          command: 'fs.upload.begin',
-          parent: state.folderId,
-          name: file.name,
-          mime: mime,
-          totalBytes: file.size,
-          encoding: isText ? 'text' : 'base64-dataurl'
-        }, { command: 'fs.upload.begin', dedupeKey: 'fs.upload.begin|' + windowId + '|' + file.name + '|' + file.size, timeoutMs: uploadTimeoutConfig(self).uploadBeginTimeoutMs }).then(function (msg) {
-          var payload = payloadRoot(msg);
-          var uploadId = payload.uploadId;
-          var chunkChars = (payload && payload.chunkBytes) || ((self.boot && self.boot.vfs && self.boot.vfs.uploadChunkBytes) || 32768);
-          var uploadConcurrency = (payload && payload.concurrencyDefault) || ((self.boot && self.boot.vfs && self.boot.vfs.uploadConcurrency) || 7);
-          var uploadBatchSize = (payload && payload.batchSize) || ((self.boot && self.boot.vfs && self.boot.vfs.uploadBatchSize) || ((self.boot && self.boot.websocket && self.boot.websocket.uploadBatchSize) || 1));
-          if (!uploadId) throw new Error('upload_begin_failed');
-          state.upload.uploadId = uploadId;
-          state.upload.transferId = transferId || '';
-          transferControl.uploadId = uploadId;
-          self.setExplorerUploadProgress(state, { stage: 'Uploading chunks', uploadId: uploadId });
-          if (transferId && self.updateTransfer) self.updateTransfer(transferId, { status: 'uploading', stage: 'Uploading chunks', processedBytes: 0, totalBytes: file.size });
-            if (isText) {
-              return fileToText(file).then(function (text) {
-                var segments = [];
-                var offset = 0;
-                while (offset < text.length || (text.length === 0 && segments.length === 0)) {
-                  var piece = text.slice(offset, offset + chunkChars);
-                  segments.push({ data: piece, bytes: piece.length });
-                  offset += chunkChars;
-                  if (text.length === 0) break;
-                }
-                return self.uploadChunkedSegments(uploadId, segments, state, transferControl, file.name, uploadConcurrency, uploadBatchSize);
-              });
-            }
-            return blobToArrayBuffer(file).then(function (buffer) {
-              var bytes = new Uint8Array(buffer);
-              var rawChunkBytes = Math.max(12288, Math.floor(chunkChars * 3 / 4));
-              var segments = [];
-              var offset = 0;
-              while (offset < bytes.length || (bytes.length === 0 && segments.length === 0)) {
-                var end = Math.min(offset + rawChunkBytes, bytes.length);
-                var slice = bytes.slice(offset, end);
-                segments.push({ data: uint8ToBase64(slice), bytes: Math.max(0, end - offset) });
-                offset = end;
-                if (bytes.length === 0) break;
-              }
-              return self.uploadChunkedSegments(uploadId, segments, state, transferControl, file.name, uploadConcurrency, uploadBatchSize);
-            });
-        }).then(function () {
-          self.setExplorerUploadProgress(state, { stage: 'Finalizing', progress: 100, sentBytes: state.upload.totalBytes });
-          if (transferId && self.updateTransfer) self.updateTransfer(transferId, { status: 'finalizing', stage: 'Finalizing', processedBytes: state.upload.totalBytes, totalBytes: state.upload.totalBytes });
-          return self.socketRequest((self.boot.routes || {}).commandEvent || 'desktop.command', { command: 'fs.upload.commit', uploadId: (state.upload && state.upload.uploadId) }, { command: 'fs.upload.commit', dedupeKey: 'fs.upload.commit|' + ((state.upload && state.upload.uploadId) || ''), timeoutMs: uploadTimeoutConfig(self).uploadCommitTimeoutMs });
+        return self.ensureFreshUploadAuth().then(function () {
+          return self.httpUploadFilesToExplorer(windowId, file, win, state, transferId, transferControl);
         }).then(finalize).catch(function (err) {
-          var uploadId = state.upload && state.upload.uploadId;
-          if (uploadId) {
-            self.socketRequest((self.boot.routes || {}).commandEvent || 'desktop.command', { command: 'fs.upload.abort', uploadId: uploadId }, { command: 'fs.upload.abort', dedupeKey: 'fs.upload.abort|' + uploadId, timeoutMs: uploadTimeoutConfig(self).uploadAbortTimeoutMs }).catch(function () {});
-          }
           return fail(err, 'fs_upload_failed');
         });
       },
