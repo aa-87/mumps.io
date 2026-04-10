@@ -143,3 +143,9 @@ This ROI adds typed password policy defaults, forced password change support for
 - Added a built-in Debug Center desktop app/window for server snapshot inspection, command registry visibility, and recent websocket activity.
 - Added websocket command `debug.snapshot` in `MIOOSWS` so developers can inspect shell counts, routes, transport posture, auth posture, and module manifests without relying on extra HTTP endpoints.
 - Added bounded client-side websocket event history in the shell so recent command and message activity can be inspected inside MIOOS while preserving the existing websocket-first model.
+
+
+## ROI 28 — HTTP VFS downloads and streamed preview routes
+- Added protected HTTP routes for `/api/mioos/fs/download` and `/api/mioos/fs/preview` so downloads and common file previews no longer need to pull full payloads across the websocket command bus.
+- Explorer now prefers browser-native HTTP downloads and HTTP preview URLs for image, audio, video, PDF, and large text/structured files, while keeping the legacy websocket download path as a compatibility fallback.
+- Preview/download responses stream VFS content in bounded chunks, advertise byte-range support, and allow larger files to be downloaded or previewed without triggering websocket transport pressure.

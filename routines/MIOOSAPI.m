@@ -39,7 +39,6 @@ SIGNIN(DEV,CONF,REQ,CTX)
 	. DO RESPERR(.DEV,.CONF,401,"signin_failed",$GET(ERR("error")),.CTX)
 	SET USER=$$CANON^MIOOSAUTH($GET(TREE("username")))
 	SET OBJ("ok")=1,OBJ("tokenIssued")=1,OBJ("username")=USER
-	DO TOKSTATUS^MIOOSAUTH(.CONF,TOKEN,$NAME(OBJ("tokenStatus")))
 	SET JSON=$$EN^MIOJSON1(.OBJ)
 	SET HEAD("Content-Type")="application/json; charset=utf-8"
 	SET HEAD("Set-Cookie")=$$COOKIEHDR^MIOOSAUTH(.CONF,TOKEN,0)
@@ -56,7 +55,6 @@ CHANGEPASSWORD(DEV,CONF,REQ,CTX)
 	IF '$$CHANGEPASSWORD^MIOOSAUTH(.CONF,$GET(TREE("changeToken")),$GET(TREE("newPassword")),.TOKEN,.OBJ,.ERR) DO  QUIT
 	. DO RESPERR(.DEV,.CONF,400,"password_change_failed",$GET(ERR("error")),.CTX)
 	SET OBJ("ok")=1,OBJ("tokenIssued")=1
-	DO TOKSTATUS^MIOOSAUTH(.CONF,TOKEN,$NAME(OBJ("tokenStatus")))
 	SET JSON=$$EN^MIOJSON1(.OBJ)
 	SET HEAD("Content-Type")="application/json; charset=utf-8"
 	SET HEAD("Set-Cookie")=$$COOKIEHDR^MIOOSAUTH(.CONF,TOKEN,0)
@@ -323,4 +321,122 @@ FSDELETE(DEV,CONF,REQ,CTX)
 	DO RESPJSONX^MIOHTTP(.DEV,.CONF,200,.OUT,$GET(CTX("request_id")),.CTX)
 	SET CTX("status")=200
 	QUIT
+	;
+
+FSDOWNLOAD(DEV,CONF,REQ,CTX)
+	DO FSBLOB(.DEV,.CONF,.REQ,.CTX,"attachment")
+	QUIT
+	;
+FSPREVIEW(DEV,CONF,REQ,CTX)
+	DO FSBLOB(.DEV,.CONF,.REQ,.CTX,"inline")
+	QUIT
+	;
+FSBLOB(DEV,CONF,REQ,CTX,DISPOSITION)
+	NEW META,ERR,HEAD,STATUS,TOTAL,START,END,COUNT,CHUNK,POS,NEED,SLICE,READ,FERR
+	IF '$$FSFILECTX(.CONF,.REQ,.CTX,.META,.ERR,$GET(DISPOSITION)) DO  QUIT
+	. DO FSRESPERR(.DEV,.CONF,.CTX,.ERR)
+	SET STATUS=+$GET(META("status"),200)
+	SET TOTAL=+$GET(META("size"),0)
+	SET START=+$GET(META("start"),0)
+	SET END=+$GET(META("end"),$SELECT(TOTAL>0:TOTAL-1,1:0))
+	SET COUNT=+$GET(META("count"),0)
+	SET HEAD("Content-Type")=$GET(META("mime"),"application/octet-stream")
+	SET HEAD("Accept-Ranges")="bytes"
+	SET HEAD("Cache-Control")="private, no-store, max-age=0"
+	SET HEAD("Pragma")="no-cache"
+	SET HEAD("X-Content-Type-Options")="nosniff"
+	IF $GET(META("disposition"))'="" SET HEAD("Content-Disposition")=$GET(META("disposition"))
+	IF STATUS=206 SET HEAD("Content-Range")="bytes "_START_"-"_END_"/"_TOTAL
+	DO STREAMBEGIN^MIOHTTP(.DEV,.CONF,STATUS,.HEAD,$GET(CTX("request_id")),.CTX,$GET(REQ("method")))
+	IF COUNT<1 DO  QUIT
+	. DO STREAMEND^MIOHTTP(.DEV)
+	. DO FSCTXMETA(.CTX,$GET(DISPOSITION),STATUS,START,END,COUNT,TOTAL)
+	SET CHUNK=+$GET(CONF("mioos","download","httpChunkBytes"),65536)
+	IF CHUNK<1024 SET CHUNK=1024
+	IF CHUNK>262144 SET CHUNK=262144
+	SET POS=START
+	FOR  QUIT:POS>END  DO
+	. SET NEED=END-POS+1 IF NEED>CHUNK SET NEED=CHUNK
+	. KILL FERR SET SLICE="",READ=0
+	. IF '$$READRANGE^MIOOSFS($GET(META("id")),POS,NEED,.SLICE,.READ,.FERR) SET POS=END+1 QUIT
+	. IF READ<1 SET POS=END+1 QUIT
+	. DO STREAMWRITE^MIOHTTP(.DEV,SLICE)
+	. SET POS=POS+READ
+	DO STREAMEND^MIOHTTP(.DEV)
+	DO FSCTXMETA(.CTX,$GET(DISPOSITION),STATUS,START,END,COUNT,TOTAL)
+	QUIT
+	;
+FSFILECTX(CONF,REQ,CTX,OUT,ERR,DISPOSITION)
+	NEW STATE,SERR,ID,RID,TOTAL,MIME,NAME,RNG,RS,RE,STATUS
+	KILL OUT
+	SET ERR("routine")="MIOOSAPI"
+	IF '$$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.SERR) DO  QUIT 0
+	. SET ERR("status")=500,ERR("error")=$GET(SERR("error"),"fs_state_error"),ERR("code")="fs_state_error"
+	SET ID=$GET(REQ("query","id")) IF ID="" SET ID=$GET(REQ("query","path"))
+	IF ID="" DO  QUIT 0
+	. SET ERR("status")=400,ERR("error")="file_missing",ERR("code")="file_missing"
+	IF '$$RESOLVE^MIOOSFS(ID,.RID,.SERR) DO  QUIT 0
+	. SET ERR("status")=404,ERR("error")=$GET(SERR("error"),"not_found"),ERR("code")="not_found"
+	IF '$$CAN^MIOOSFS(RID,.STATE,"read") DO  QUIT 0
+	. SET ERR("status")=403,ERR("error")="access_denied",ERR("code")="access_denied"
+	IF $$FIELD^MIOOSFS(RID,1)'="file" DO  QUIT 0
+	. SET ERR("status")=400,ERR("error")="not_file",ERR("code")="not_file"
+	SET TOTAL=+$$FIELD^MIOOSFS(RID,5)
+	SET MIME=$$FIELD^MIOOSFS(RID,4) IF MIME="" SET MIME="application/octet-stream"
+	SET NAME=$$FIELD^MIOOSFS(RID,3) IF NAME="" SET NAME="download.bin"
+	SET STATUS=200,RS=0,RE=$SELECT(TOTAL>0:TOTAL-1,1:0)
+	SET RNG=$GET(REQ("hdr","range")) IF RNG="" SET RNG=$GET(REQ("hdr","Range"))
+	IF RNG'="" DO
+	. IF '$$PARSERANGE^MIOSTATIC(RNG,TOTAL,.RS,.RE) SET STATUS=416,ERR("status")=416,ERR("error")="range_not_satisfiable",ERR("code")="range_not_satisfiable",ERR("total")=TOTAL QUIT
+	. SET STATUS=206
+	IF STATUS=416 QUIT 0
+	SET OUT("id")=RID
+	SET OUT("name")=NAME
+	SET OUT("path")=$$PATH^MIOOSFS(RID)
+	SET OUT("mime")=MIME
+	SET OUT("size")=TOTAL
+	SET OUT("status")=STATUS
+	SET OUT("start")=RS
+	SET OUT("end")=RE
+	SET OUT("count")=$SELECT(TOTAL<1:0,1:(RE-RS)+1)
+	SET OUT("dispositionMode")=$SELECT($GET(DISPOSITION)'="":$GET(DISPOSITION),1:"attachment")
+	SET OUT("disposition")=$$DISPHDR(NAME,$GET(OUT("dispositionMode")))
+	QUIT 1
+	;
+FSCTXMETA(CTX,DISPOSITION,STATUS,START,END,COUNT,TOTAL)
+	NEW ROOT
+	SET CTX("status")=+$GET(STATUS)
+	SET ROOT=$SELECT($$LOW^MIOUTIL($GET(DISPOSITION))="inline":"fsPreview",1:"fsDownload")
+	SET CTX(ROOT,"status")=+$GET(STATUS)
+	SET CTX(ROOT,"start")=+$GET(START)
+	SET CTX(ROOT,"end")=+$GET(END)
+	SET CTX(ROOT,"count")=+$GET(COUNT)
+	SET CTX(ROOT,"total")=+$GET(TOTAL)
+	QUIT
+	;
+FSRESPERR(DEV,CONF,CTX,ERR)
+	NEW STATUS,HEAD
+	SET STATUS=+$GET(ERR("status"),500)
+	IF STATUS=416 DO  QUIT
+	. SET HEAD("Content-Range")="bytes */"_+$GET(ERR("total"),0)
+	. DO RESPX^MIOHTTP(.DEV,.CONF,416,.HEAD,"",$GET(CTX("request_id")),.CTX)
+	. SET CTX("status")=416
+	DO RESPERR(.DEV,.CONF,STATUS,$GET(ERR("code"),$GET(ERR("error"),"request_failed")),$GET(ERR("error"),"request_failed"),.CTX)
+	QUIT
+	;
+DISPHDR(NAME,MODE)
+	NEW SAFE,KIND
+	SET SAFE=$$SAFEFNAME($GET(NAME))
+	SET KIND=$SELECT($$LOW^MIOUTIL($GET(MODE))="inline":"inline",1:"attachment")
+	QUIT KIND_"; filename="_$CHAR(34)_SAFE_$CHAR(34)
+	;
+SAFEFNAME(NAME)
+	NEW X
+	SET X=$GET(NAME)
+	IF X="" SET X="download.bin"
+	SET X=$TRANSLATE(X,$CHAR(13,10,9)_$CHAR(34),"")
+	IF X["/" SET X=$PIECE(X,"/",$L(X,"/"))
+	IF X[$CHAR(92) SET X=$PIECE(X,$CHAR(92),$L(X,$CHAR(92)))
+	IF X="" SET X="download.bin"
+	QUIT X
 	;

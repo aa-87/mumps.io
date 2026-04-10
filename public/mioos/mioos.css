@@ -536,6 +536,8 @@ button, input { font: inherit; }
 .mioos-textviewer-shell { display:flex; flex-direction:column; height:100%; min-height:0; }
 .mioos-textviewer-head { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:10px 12px; border-bottom:1px solid #d7e3f7; background:#f6f9ff; }
 .mioos-textviewer-body { flex:1; min-height:0; border:0; border-radius:0 0 8px 8px; }
+.mioos-textviewer-frame,
+.mioos-structuredviewer-frame { width:100%; height:100%; min-height:420px; border:0; background:#fff; flex:1 1 auto; }
 .mioos-preview-actions--xp { display:flex; gap:8px; margin-top:4px; flex-wrap:wrap; }
 .mioos-preview-actions--xp button { border:1px solid #8aa8cc; background:linear-gradient(180deg,#ffffff 0%,#e8f0fb 100%); border-radius:3px; padding:5px 10px; }
 .mioos-statusbar--xp { border-top:1px solid #cad9ea; background:linear-gradient(180deg,#f7fbff 0%,#eaf2fb 100%); }

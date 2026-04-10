@@ -21,6 +21,8 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","route","fsRead"))="" SET CONF("mioos","route","fsRead")="/api/mioos/fs/read"
 	IF $GET(CONF("mioos","route","fsWrite"))="" SET CONF("mioos","route","fsWrite")="/api/mioos/fs/write"
 	IF $GET(CONF("mioos","route","fsUpload"))="" SET CONF("mioos","route","fsUpload")="/api/mioos/fs/upload"
+	IF $GET(CONF("mioos","route","fsDownload"))="" SET CONF("mioos","route","fsDownload")="/api/mioos/fs/download"
+	IF $GET(CONF("mioos","route","fsPreview"))="" SET CONF("mioos","route","fsPreview")="/api/mioos/fs/preview"
 	IF $GET(CONF("mioos","route","fsMkdir"))="" SET CONF("mioos","route","fsMkdir")="/api/mioos/fs/mkdir"
 	IF $GET(CONF("mioos","route","fsMeta"))="" SET CONF("mioos","route","fsMeta")="/api/mioos/fs/meta"
 	IF $GET(CONF("mioos","route","fsRename"))="" SET CONF("mioos","route","fsRename")="/api/mioos/fs/rename"
@@ -32,6 +34,8 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","websocket","coreSockets"))="" SET CONF("mioos","websocket","coreSockets")=1
 	IF $GET(CONF("mioos","websocket","fsSockets"))="" SET CONF("mioos","websocket","fsSockets")=5
 	IF $GET(CONF("mioos","websocket","uploadBatchSize"))="" SET CONF("mioos","websocket","uploadBatchSize")=1
+	IF $GET(CONF("mioos","download","httpChunkBytes"))="" SET CONF("mioos","download","httpChunkBytes")=65536
+	IF $GET(CONF("mioos","preview","inlineTextMaxBytes"))="" SET CONF("mioos","preview","inlineTextMaxBytes")=262144
 	IF $GET(CONF("mioos","brand","title"))="" SET CONF("mioos","brand","title")="MIOOS"
 	IF $GET(CONF("mioos","brand","subtitle"))="" SET CONF("mioos","brand","subtitle")="MUMPS powered Windows XP style desktop"
 	IF $GET(CONF("mioos","i18n","default"))="" SET CONF("mioos","i18n","default")="en"
@@ -59,9 +63,6 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","localAuth","guestLoginEnabled"))="" SET CONF("mioos","localAuth","guestLoginEnabled")=0
 	IF $GET(CONF("mioos","localAuth","tokenCookie"))="" SET CONF("mioos","localAuth","tokenCookie")="mioos_auth"
 	IF $GET(CONF("mioos","localAuth","tokenMaxAgeSeconds"))="" SET CONF("mioos","localAuth","tokenMaxAgeSeconds")=604800
-	IF $GET(CONF("mioos","localAuth","tokenIssuer"))="" SET CONF("mioos","localAuth","tokenIssuer")="mioos-local-auth"
-	IF $GET(CONF("mioos","localAuth","tokenAudience"))="" SET CONF("mioos","localAuth","tokenAudience")="mioos"
-	IF $GET(CONF("mioos","localAuth","hmacSecret"))="" SET CONF("mioos","localAuth","hmacSecret")="mioos-local-auth-change-me"
 	IF $GET(CONF("mioos","localAuth","lockThreshold"))="" SET CONF("mioos","localAuth","lockThreshold")=5
 	IF $GET(CONF("mioos","localAuth","lockMinutes"))="" SET CONF("mioos","localAuth","lockMinutes")=15
 	IF $GET(CONF("mioos","localAuth","passwordPolicy","minLength"))="" SET CONF("mioos","localAuth","passwordPolicy","minLength")=12
@@ -135,20 +136,16 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","terminal","pipe","sessionIdleSeconds"))="" SET CONF("mioos","terminal","pipe","sessionIdleSeconds")=900
 	IF $GET(CONF("auth","protectMode"))="" SET CONF("auth","protectMode")="route"
 	IF $GET(CONF("auth","mode"))="" SET CONF("auth","mode")="jwt"
-	IF +$GET(CONF("mioos","desktop","authRequired"),1)=1,$GET(CONF("mioos","localAuth","enabled"),1)=1 DO
-	. IF $GET(CONF("mioos","auth","frameworkProvider"),"mioauth-session-jwt")="mioauth-session-jwt" DO
-	. . IF $GET(CONF("auth","mode"))="either" SET CONF("auth","mode")="jwt"
-	. . IF $GET(CONF("auth","mode"))="api_key" SET CONF("auth","mode")="jwt"
-	IF $GET(CONF("auth","jwt","cookieName"))=""!($GET(CONF("auth","jwt","cookieName"))="miomos_auth") SET CONF("auth","jwt","cookieName")=$GET(CONF("mioos","localAuth","tokenCookie"),"mioos_auth")
+	IF +$GET(CONF("mioos","desktop","authRequired"),1)=1 DO
+	. IF $GET(CONF("mioos","auth","frameworkProvider"))="mioauth-session-jwt",$GET(CONF("auth","mode"))="api_key" SET CONF("auth","mode")="jwt"
+	. IF $GET(CONF("mioos","auth","frameworkProvider"))="mioauth-session-jwt",$GET(CONF("auth","mode"))="either" SET CONF("auth","mode")="jwt"
+	IF $GET(CONF("auth","jwt","cookieName"))="" SET CONF("auth","jwt","cookieName")=$GET(CONF("mioos","localAuth","tokenCookie"),"mioos_auth")
 	IF $GET(CONF("auth","jwt","rolesClaim"))="" SET CONF("auth","jwt","rolesClaim")="roles"
-	IF $GET(CONF("auth","jwt","issuer"))=""!($GET(CONF("auth","jwt","issuer"))="miomos-local-auth") SET CONF("auth","jwt","issuer")=$GET(CONF("mioos","localAuth","tokenIssuer"),"mioos-local-auth")
-	IF $GET(CONF("auth","jwt","audience"))=""!($GET(CONF("auth","jwt","audience"))="miomos") SET CONF("auth","jwt","audience")=$GET(CONF("mioos","localAuth","tokenAudience"),"mioos")
-	IF $GET(CONF("auth","jwt","hmacSecret"))=""!($GET(CONF("auth","jwt","hmacSecret"))="miomos-local-auth-change-me") SET CONF("auth","jwt","hmacSecret")=$GET(CONF("mioos","localAuth","hmacSecret"),"mioos-local-auth-change-me")
+	IF $GET(CONF("auth","jwt","issuer"))="" SET CONF("auth","jwt","issuer")="mioos-local-auth"
+	IF $GET(CONF("auth","jwt","audience"))="" SET CONF("auth","jwt","audience")="mioos"
+	IF $GET(CONF("auth","jwt","hmacSecret"))="" SET CONF("auth","jwt","hmacSecret")="mioos-local-auth-change-me"
 	IF $GET(CONF("auth","session","mioos","cookieName"))="" SET CONF("auth","session","mioos","cookieName")=$GET(CONF("mioos","localAuth","tokenCookie"),"mioos_auth")
 	IF $GET(CONF("auth","session","mioos","maxAgeSeconds"))="" SET CONF("auth","session","mioos","maxAgeSeconds")=+$GET(CONF("mioos","localAuth","tokenMaxAgeSeconds"),604800)
-	IF $GET(CONF("auth","session","mioos","issuer"))="" SET CONF("auth","session","mioos","issuer")=$GET(CONF("mioos","localAuth","tokenIssuer"),"mioos-local-auth")
-	IF $GET(CONF("auth","session","mioos","audience"))="" SET CONF("auth","session","mioos","audience")=$GET(CONF("mioos","localAuth","tokenAudience"),"mioos")
-	IF $GET(CONF("auth","session","mioos","hmacSecret"))="" SET CONF("auth","session","mioos","hmacSecret")=$GET(CONF("mioos","localAuth","hmacSecret"),"mioos-local-auth-change-me")
 	IF $GET(CONF("server","templateDir"))="" SET CONF("server","templateDir")="templates"
 	IF $GET(CONF("templates","root"))="" SET CONF("templates","root")=$GET(CONF("server","templateDir"))_"/"
 	IF $GET(CONF("templates","ext"))="" SET CONF("templates","ext")=""
@@ -184,6 +181,10 @@ REG(CONF)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsRead")),"FSREAD^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsWrite")),"FSWRITE^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsUpload")),"FSUPLOAD^MIOOSAPI",.PROT)
+	DO ADDM^MIOROUTE("GET",$GET(CONF("mioos","route","fsDownload")),"FSDOWNLOAD^MIOOSAPI",.PROT)
+	DO ADDM^MIOROUTE("HEAD",$GET(CONF("mioos","route","fsDownload")),"FSDOWNLOAD^MIOOSAPI",.PROT)
+	DO ADDM^MIOROUTE("GET",$GET(CONF("mioos","route","fsPreview")),"FSPREVIEW^MIOOSAPI",.PROT)
+	DO ADDM^MIOROUTE("HEAD",$GET(CONF("mioos","route","fsPreview")),"FSPREVIEW^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsMkdir")),"FSMKDIR^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsMeta")),"FSMETA^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsRename")),"FSRENAME^MIOOSAPI",.PROT)
@@ -209,6 +210,8 @@ REG(CONF)
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","fsRead")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","fsWrite")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","fsUpload")))
+	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","fsDownload")))
+	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","fsPreview")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","fsMkdir")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","fsMeta")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","fsRename")))

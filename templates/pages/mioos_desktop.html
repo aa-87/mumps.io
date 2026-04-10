@@ -37,6 +37,8 @@
   data-mioos-bootstrap="{{bootstrapPath}}"
   data-mioos-view="{{viewPath}}"
   data-mioos-fs-upload="{{fsUploadPath}}"
+  data-mioos-fs-download="{{fsDownloadPath}}"
+  data-mioos-fs-preview="{{fsPreviewPath}}"
   data-mioos-signin="{{signinPath}}"
   data-mioos-signout="{{signoutPath}}"
   data-mioos-guest-signin="{{guestSigninPath}}"
@@ -739,9 +741,14 @@
           <div class="mioos-textviewer-shell">
             <div class="mioos-textviewer-head">
               <strong>[[ (win.meta || {}).fileName || win.title ]]</strong>
-              <span>[[ ((win.fileView || {}).mime || 'text/plain') ]]</span>
+              <div class="mioos-preview-actions">
+                <span>[[ ((win.fileView || {}).mime || 'text/plain') ]]</span>
+                <button type="button" @click="downloadViewerFile(win)">Download</button>
+              </div>
             </div>
-            <pre class="mioos-textviewer-body">[[ ((win.fileView || {}).loading ? 'Loading…' : ((win.fileView || {}).content || '')) ]]</pre>
+            <div v-if="(win.fileView || {}).loading" class="mioos-imageviewer-empty">Loading…</div>
+            <iframe v-else-if="(win.fileView || {}).sourceUrl" class="mioos-textviewer-frame" :src="(win.fileView || {}).sourceUrl" title="Text preview"></iframe>
+            <pre v-else class="mioos-textviewer-body">[[ ((win.fileView || {}).content || '') ]]</pre>
           </div>
         </template>
         <template v-else-if="win.appKey === 'image-viewer'">
@@ -796,7 +803,9 @@
                 <button type="button" @click="downloadViewerFile(win)">Download</button>
               </div>
             </div>
-            <pre class="mioos-structuredviewer-body">[[ ((win.fileView || {}).loading ? 'Loading…' : ((win.fileView || {}).content || '')) ]]</pre>
+            <div v-if="(win.fileView || {}).loading" class="mioos-imageviewer-empty">Loading…</div>
+            <iframe v-else-if="(win.fileView || {}).sourceUrl" class="mioos-structuredviewer-frame" :src="(win.fileView || {}).sourceUrl" title="Structured preview"></iframe>
+            <pre v-else class="mioos-structuredviewer-body">[[ ((win.fileView || {}).content || '') ]]</pre>
           </div>
         </template>
         <template v-else-if="win.appKey === 'theme-studio'">

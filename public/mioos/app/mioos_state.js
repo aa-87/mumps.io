@@ -29,6 +29,8 @@
         passwordChange: '/api/mioos/auth/password/change',
         auditExport: '/api/mioos/auth/audit/export',
         fsUpload: '/api/mioos/fs/upload',
+        fsDownload: '/api/mioos/fs/download',
+        fsPreview: '/api/mioos/fs/preview',
         debugSnapshotCommand: 'debug.snapshot',
         websocket: '/ws/mioos',
         terminalWebsocket: '/ws/mioos/terminal',
@@ -60,7 +62,8 @@
           clientModel: 'thin-vue-umd',
           renderBudgetMs: 16,
           payloadMode: 'tmp-global-safe',
-          transport: 'websocket-first-http-refresh'
+          transport: 'websocket-first-http-refresh',
+          downloadStrategy: 'http-stream-browser-native-with-websocket-fallback'
         },
         moduleSystem: { enabled: true, launcher: 'desktop-icons-and-menu', manifestVersion: 1, appCatalogEnabled: true, appCatalogKey: 'app-catalog', dynamicWindows: true, debugAppKey: 'debug-center' },
         debugCenter: { enabled: true, eventLimit: 50, snapshotVersion: 1 },
@@ -131,7 +134,7 @@
         maxFrameBytes: 262144,
         maxMessageBytes: 1048576
       },
-      vfs: { enabled: false, rootId: 'root', homeId: 'home', chunkSize: 32000, globalsOnly: true, uploadStaleSeconds: 1800, downloadStaleSeconds: 900, transferControls: { cancel: true, retry: true } },
+      vfs: { enabled: false, rootId: 'root', homeId: 'home', chunkSize: 32000, globalsOnly: true, uploadStaleSeconds: 1800, downloadStaleSeconds: 900, downloadHttpChunkBytes: 65536, previewInlineTextMaxBytes: 262144, transferControls: { cancel: true, retry: true } },
       apps: [],
       windows: [],
       modules: []

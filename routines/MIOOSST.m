@@ -73,6 +73,8 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("fsReadPath")=$GET(CONF("mioos","route","fsRead"),"/api/mioos/fs/read")
 	SET STATE("fsWritePath")=$GET(CONF("mioos","route","fsWrite"),"/api/mioos/fs/write")
 	SET STATE("fsUploadPath")=$GET(CONF("mioos","route","fsUpload"),"/api/mioos/fs/upload")
+	SET STATE("fsDownloadPath")=$GET(CONF("mioos","route","fsDownload"),"/api/mioos/fs/download")
+	SET STATE("fsPreviewPath")=$GET(CONF("mioos","route","fsPreview"),"/api/mioos/fs/preview")
 	SET STATE("fsMkdirPath")=$GET(CONF("mioos","route","fsMkdir"),"/api/mioos/fs/mkdir")
 	SET STATE("fsMetaPath")=$GET(CONF("mioos","route","fsMeta"),"/api/mioos/fs/meta")
 	SET STATE("wsPath")=$GET(CONF("mioos","route","ws"),"/ws/mioos")
@@ -113,6 +115,10 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("wsMaxMessageBytes")=+$GET(CONF("websocket","maxMessageBytes"),1048576)
 	SET STATE("uploadStaleSeconds")=+$GET(CONF("mioos","upload","staleSeconds"),1800)
 	SET STATE("downloadStaleSeconds")=+$GET(CONF("mioos","download","staleSeconds"),900)
+	SET STATE("downloadHttpChunkBytes")=+$GET(CONF("mioos","download","httpChunkBytes"),65536)
+	IF STATE("downloadHttpChunkBytes")<4096 SET STATE("downloadHttpChunkBytes")=65536
+	SET STATE("previewInlineTextMaxBytes")=+$GET(CONF("mioos","preview","inlineTextMaxBytes"),262144)
+	IF STATE("previewInlineTextMaxBytes")<4096 SET STATE("previewInlineTextMaxBytes")=262144
 	SET STATE("themeKey")=$GET(CONF("mioos","desktop","theme"),"xp-classic-blue")
 	SET STATE("wallpaper")=$GET(CONF("mioos","desktop","wallpaper"),"bliss")
 	SET STATE("density")=$GET(CONF("mioos","desktop","density"),"comfortable")
@@ -276,8 +282,8 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","performance","renderBudgetMs")=+$GET(STATE("perfRenderBudgetMs"),16)
 	SET OBJ("desktop","performance","payloadMode")=$GET(STATE("perfPayloadMode"),"tmp-global-safe")
 	SET OBJ("desktop","performance","transport")=$GET(STATE("perfTransport"),"websocket-first-http-refresh")
-	SET OBJ("desktop","performance","uploadStrategy")="http-multipart-with-auth-refresh"
-	SET OBJ("desktop","performance","downloadStrategy")="chunked-websocket-verified"
+	SET OBJ("desktop","performance","uploadStrategy")="batched-chunk-pool"
+	SET OBJ("desktop","performance","downloadStrategy")="http-stream-browser-native-with-websocket-fallback"
 	SET OBJ("desktop","viewers","text")=1
 	SET OBJ("desktop","viewers","image")=1
 	SET OBJ("desktop","viewers","media")=1
@@ -316,8 +322,6 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("auth","providers","framework","mode")=$GET(STATE("frameworkAuthMode"),"mioauth-session-jwt")
 	SET OBJ("auth","providers","framework","tokenType")="jwt"
 	SET OBJ("auth","providers","framework","sessionCookie")=$GET(CONF("mioos","localAuth","tokenCookie"),"mioos_auth")
-	SET OBJ("auth","tokenMaxAgeSeconds")=+$GET(CONF("mioos","localAuth","tokenMaxAgeSeconds"),604800)
-	SET OBJ("auth","refreshWindowSeconds")=+$GET(CONF("mioos","localAuth","refreshWindowSeconds"),300)
 	SET OBJ("auth","lockout","threshold")=+$GET(CONF("mioos","localAuth","lockThreshold"),5)
 	SET OBJ("auth","lockout","minutes")=+$GET(CONF("mioos","localAuth","lockMinutes"),15)
 	SET OBJ("auth","passwordPolicy","minLength")=+$GET(CONF("mioos","localAuth","passwordPolicy","minLength"),12)
@@ -345,6 +349,8 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("routes","fsRead")=$GET(STATE("fsReadPath"))
 	SET OBJ("routes","fsWrite")=$GET(STATE("fsWritePath"))
 	SET OBJ("routes","fsUpload")=$GET(STATE("fsUploadPath"))
+	SET OBJ("routes","fsDownload")=$GET(STATE("fsDownloadPath"))
+	SET OBJ("routes","fsPreview")=$GET(STATE("fsPreviewPath"))
 	SET OBJ("routes","fsMkdir")=$GET(STATE("fsMkdirPath"))
 	SET OBJ("routes","fsMeta")=$GET(STATE("fsMetaPath"))
 	SET OBJ("vfs","enabled")=+$GET(STATE("fsEnabled"),1)
@@ -356,6 +362,8 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("vfs","uploadConcurrency")=$$UPCONCUR^MIOOSFSUP(.CONF)
 	SET OBJ("vfs","uploadBatchSize")=+$GET(STATE("wsUploadBatchSize"),1)
 	SET OBJ("vfs","downloadChunkBytes")=$$DLCHUNK^MIOOSFSDN(.CONF)
+	SET OBJ("vfs","downloadHttpChunkBytes")=+$GET(STATE("downloadHttpChunkBytes"),65536)
+	SET OBJ("vfs","previewInlineTextMaxBytes")=+$GET(STATE("previewInlineTextMaxBytes"),262144)
 	SET OBJ("vfs","downloadVerifyHash")=1
 	SET OBJ("vfs","uploadStaleSeconds")=+$GET(STATE("uploadStaleSeconds"),1800)
 	SET OBJ("vfs","downloadStaleSeconds")=+$GET(STATE("downloadStaleSeconds"),900)
