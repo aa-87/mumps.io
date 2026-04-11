@@ -148,8 +148,7 @@ ROI 33 — HTTP binary chunk transport for resumable uploads and hardened pause/
 
 ## ROI 34 — Binary upload integrity, chunked download decoding, and preview hardening
 - Normalized uploaded binary storage so both HTTP raw-binary uploads and websocket base64 uploads commit into the VFS as raw bytes instead of JSON-transport strings.
-- Hardened `fs.download.begin`/`fs.download.chunk` to advertise and return binary-safe base64 chunks over websocket/JSON, preserving byte offsets while keeping the current high-performance upload workflow.
-- Moved image/media/PDF preview loading to the chunked download path and added regression coverage in `MIOOST` for upload -> commit -> read -> chunk-download roundtrip integrity.
+- Superseded by the current direct authenticated HTTP blob/range workflow for binary download and preview.
 
 
 ## ROI 35 — Direct HTTP blob/range download and large preview acceleration
@@ -199,3 +198,12 @@ ROI 33 — HTTP binary chunk transport for resumable uploads and hardened pause/
 - Tuned default transport values for higher throughput: VFS chunk size `131072`, upload chunk bytes `262144`, upload concurrency `6`, HTTP blob send target `1048576`, media initial bytes `2097152`.
 - Reduced main-thread upload overhead by throttling transfer progress updates during parallel HTTP chunk uploads.
 - Note: raw HTTP binary upload already sends `Blob.slice()` directly, so web workers are not the primary lever there; the next upload ROI should focus on optional dedicated upload workers for scheduling/telemetry and measuring whether they improve real throughput on the target browsers.
+
+
+## ROI 51 — Transfer workflow simplification and dead-code removal
+
+MIOOS now keeps one supported transfer workflow in the app runtime:
+- uploads use HTTP binary chunk session routes only
+- binary download and preview use direct authenticated HTTP blob/range only
+- websocket `fs.read.range` remains only for bounded text preview and text viewers
+- redundant websocket upload/download fallback plumbing and the unused upload worker file were removed

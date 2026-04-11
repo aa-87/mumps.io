@@ -7,9 +7,8 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	SET ERR("routine")="MIOOSST"
 	DO BOOTSTRAP^MIOOSAUTH(.CONF)
 	DO INIT^MIOOSFS(.CONF)
-	NEW PURGEUP,PURGEDN
+	NEW PURGEUP
 	SET PURGEUP=$$PURGE^MIOOSFSUP(.CONF)
-	SET PURGEDN=$$PURGE^MIOOSFSDN(.CONF)
 	DO RESOLVE^MIOOSI18N(.CONF,.REQ,.CTX,.LOC)
 	SET CODE=$GET(LOC("code"),"en")
 	SET AUTHREQ=+$$AUTHREQ^MIOOSAUTH(.CONF)
@@ -79,10 +78,6 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("fsUploadCommitPath")=$GET(CONF("mioos","route","fsUploadCommit"),"/api/mioos/fs/upload/commit")
 	SET STATE("fsUploadAbortPath")=$GET(CONF("mioos","route","fsUploadAbort"),"/api/mioos/fs/upload/abort")
 	SET STATE("fsBlobPath")=$GET(CONF("mioos","route","fsBlob"),"/api/mioos/fs/blob")
-	SET STATE("fsDownloadPath")=STATE("fsBlobPath")
-	SET STATE("fsPreviewPath")=STATE("fsBlobPath")
-	SET STATE("uploadChunkTransport")=$GET(CONF("mioos","upload","chunkTransport"),"http-binary")
-	SET STATE("uploadCommitStrategy")=$GET(CONF("mioos","upload","commitStrategy"),"binary-direct-stage-promote-with-copy-on-overwrite")
 	SET STATE("wsPath")=$GET(CONF("mioos","route","ws"),"/ws/mioos")
 	SET STATE("fsEnabled")=+$GET(CONF("mioos","fs","enabled"),1)
 	SET STATE("fsChunkSize")=+$GET(CONF("mioos","fs","chunkSize"),131072)
@@ -92,21 +87,17 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("fsTransferPersistence")=$GET(CONF("mioos","fs","transferPersistence"),"localstorage-resumable-transfer-list")
 	SET STATE("fsMediaInitialBytes")=+$GET(CONF("mioos","download","mediaInitialBytes"),2097152)
 	SET STATE("fsTransport")=$GET(CONF("mioos","fs","transport"),"http-and-websocket")
-	SET STATE("fsHashOnWrite")=$GET(CONF("mioos","fs","hashOnWrite"),"deferred-job")
 	SET STATE("fsRootId")=$$ROOTID^MIOOSFS()
 	SET STATE("fsHomeId")=$$HOMEID^MIOOSFS()
 	SET STATE("wsTerminalPath")=$GET(CONF("mioos","route","wsTerminal"),"/ws/mioos/terminal")
 	SET STATE("wsMaxSockets")=+$GET(CONF("mioos","websocket","maxSocketsPerSession"),6)
-	IF STATE("wsMaxSockets")<1 SET STATE("wsMaxSockets")=1
 	SET STATE("wsCoreSockets")=+$GET(CONF("mioos","websocket","coreSockets"),1)
+	SET STATE("wsFsSockets")=+$GET(CONF("mioos","websocket","fsSockets"),5)
+	IF STATE("wsMaxSockets")<1 SET STATE("wsMaxSockets")=1
 	IF STATE("wsCoreSockets")<1 SET STATE("wsCoreSockets")=1
 	IF STATE("wsCoreSockets")>STATE("wsMaxSockets") SET STATE("wsCoreSockets")=STATE("wsMaxSockets")
-	SET STATE("wsFsSockets")=+$GET(CONF("mioos","websocket","fsSockets"),5)
 	IF STATE("wsFsSockets")<1 SET STATE("wsFsSockets")=1
 	IF STATE("wsFsSockets")>STATE("wsMaxSockets") SET STATE("wsFsSockets")=STATE("wsMaxSockets")
-	SET STATE("wsUploadBatchSize")=+$GET(CONF("mioos","websocket","uploadBatchSize"),1)
-	IF STATE("wsUploadBatchSize")<1 SET STATE("wsUploadBatchSize")=1
-	IF STATE("wsUploadBatchSize")>8 SET STATE("wsUploadBatchSize")=8
 	SET STATE("wsHeartbeatSeconds")=+$GET(CONF("mioos","websocket","heartbeatSeconds"),15)
 	SET STATE("wsResumeWindowSeconds")=+$GET(CONF("mioos","websocket","resumeWindowSeconds"),180)
 	SET STATE("wsMaxInflightPerChannel")=+$GET(CONF("mioos","websocket","maxInflightPerChannel"),4)
@@ -263,7 +254,6 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("routes","guestSignin")=$GET(STATE("guestSigninPath"))
 	SET OBJ("routes","websocket")=$GET(STATE("wsPath"))
 	SET OBJ("routes","terminalWebsocket")=$GET(STATE("wsTerminalPath"))
-	SET OBJ("routes","websocketPool")=$GET(STATE("wsPath"))
 	SET OBJ("routes","commandEvent")=$GET(STATE("commandEvent"))
 	SET OBJ("routes","commandResultEvent")=$GET(STATE("commandResultEvent"))
 	SET OBJ("routes","commandErrorEvent")=$GET(STATE("commandErrorEvent"))
@@ -290,11 +280,14 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","performance","payloadMode")=$GET(STATE("perfPayloadMode"),"tmp-global-safe")
 	SET OBJ("desktop","performance","transport")=$GET(STATE("perfTransport"),"websocket-first-http-refresh")
 	SET OBJ("desktop","performance","uploadStrategy")="batched-chunk-pool"
-	SET OBJ("desktop","performance","uploadFinalizeStrategy")=$GET(STATE("uploadCommitStrategy"),"binary-direct-stage-promote-with-copy-on-overwrite")
 	SET OBJ("desktop","performance","transferPersistence")=$GET(STATE("fsTransferPersistence"),"localstorage-resumable-transfer-list")
-	SET OBJ("desktop","performance","downloadStrategy")="direct-http-range-native-with-websocket-fallback"
+	SET OBJ("desktop","performance","downloadStrategy")="direct-http-range-native"
 	SET OBJ("desktop","performance","downloadSendStrategy")="vfs-segment-streaming-http-blob"
 	SET OBJ("desktop","performance","mediaStreamStrategy")="range-kickstart-http-blob-partial-window"
+	SET OBJ("desktop","performance","uploadPreparation")="blob-slice-no-base64"
+	SET OBJ("desktop","performance","uploadStrategy")="http-binary-parallel-slice-xhr-with-auto-pause"
+	SET OBJ("desktop","performance","uploadFinalizeStrategy")="binary-direct-stage-promote-with-copy-on-overwrite"
+	SET OBJ("desktop","performance","downloadStrategy")="direct-http-range-native"
 	SET OBJ("desktop","performance","textPreviewStrategy")="windowed-websocket-range-read"
 	SET OBJ("desktop","viewers","text")=1
 	SET OBJ("desktop","viewers","image")=1
@@ -375,17 +368,11 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("vfs","chunkSize")=+$GET(STATE("fsChunkSize"),131072)
 	SET OBJ("vfs","uploadChunkBytes")=$$UPCHUNK^MIOOSFSUP(.CONF)
 	SET OBJ("vfs","uploadConcurrency")=$$UPCONCUR^MIOOSFSUP(.CONF)
-	SET OBJ("vfs","uploadBatchSize")=+$GET(STATE("wsUploadBatchSize"),1)
-	SET OBJ("vfs","uploadChunkTransport")=$GET(STATE("uploadChunkTransport"),"http-binary")
-	SET OBJ("vfs","uploadCommitStrategy")=$GET(STATE("uploadCommitStrategy"),"binary-direct-stage-promote-with-copy-on-overwrite")
-	SET OBJ("vfs","downloadChunkBytes")=$$DLCHUNK^MIOOSFSDN(.CONF)
 	SET OBJ("vfs","httpChunkBytes")=+$GET(STATE("fsHttpChunkBytes"),1048576)
 	SET OBJ("vfs","readPreviewBytes")=+$GET(STATE("fsReadPreviewBytes"),16384)
 	SET OBJ("vfs","readWindowBytes")=+$GET(STATE("fsReadWindowBytes"),131072)
 	SET OBJ("vfs","mediaInitialBytes")=+$GET(STATE("fsMediaInitialBytes"),2097152)
 	SET OBJ("vfs","transferPersistence")=$GET(STATE("fsTransferPersistence"),"localstorage-resumable-transfer-list")
-	SET OBJ("vfs","hashOnWrite")=$GET(STATE("fsHashOnWrite"),"deferred-job")
-	SET OBJ("vfs","downloadVerifyHash")=1
 	SET OBJ("vfs","uploadStaleSeconds")=+$GET(STATE("uploadStaleSeconds"),1800)
 	SET OBJ("vfs","downloadStaleSeconds")=+$GET(STATE("downloadStaleSeconds"),900)
 	SET OBJ("vfs","transferControls","cancel")=1
@@ -411,18 +398,12 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","contextMenu","verbs",8)="personalize"
 	SET OBJ("desktop","contextMenu","verbs",9)="control-panel"
 	SET OBJ("desktop","contextMenu","verbs",10)="open"
-	SET OBJ("desktop","performance","uploadPreparation")=$SELECT($GET(STATE("uploadChunkTransport"))="http-binary":"blob-slice-no-base64",1:"base64-main-thread")
-	SET OBJ("desktop","performance","uploadStrategy")=$SELECT($GET(STATE("uploadChunkTransport"))="http-binary":"http-binary-parallel-slice-xhr-with-auto-pause",1:"websocket-base64-chunk-session")
 	SET OBJ("desktop","performance","uploadUiStrategy")="throttled-progress-updates-and-persistent-resume"
 	DO THEMES($NAME(OBJ("desktop","themes")),$GET(STATE("themeKey")))
 	MERGE OBJ("apps")=STATE("apps")
 	DO MERGELAYOUT(.STATE,$NAME(OBJ("apps")))
 	MERGE OBJ("windows")=STATE("windows")
 	MERGE OBJ("modules")=STATE("modules")
-	SET OBJ("websocket","maxSocketsPerSession")=+$GET(STATE("wsMaxSockets"),6)
-	SET OBJ("websocket","coreSockets")=+$GET(STATE("wsCoreSockets"),1)
-	SET OBJ("websocket","fsSockets")=+$GET(STATE("wsFsSockets"),5)
-	SET OBJ("websocket","uploadBatchSize")=+$GET(STATE("wsUploadBatchSize"),1)
 	SET OBJ("websocket","heartbeatSeconds")=+$GET(STATE("wsHeartbeatSeconds"),15)
 	SET OBJ("websocket","resumeWindowSeconds")=+$GET(STATE("wsResumeWindowSeconds"),180)
 	SET OBJ("websocket","maxInflightPerChannel")=+$GET(STATE("wsMaxInflightPerChannel"),4)

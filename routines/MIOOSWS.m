@@ -60,13 +60,8 @@ COMMANDJSON(CONF,REQ,CTX,STATE,PAYLOAD,OUTJSON,ERR)
 	IF CMD="fs.write" QUIT $$FSWRITE(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="fs.upload.begin" QUIT $$FSUPBEGIN(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="fs.upload.chunk" QUIT $$FSUPCHUNK(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
-	IF CMD="fs.upload.batch" QUIT $$FSUPBATCH(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="fs.upload.commit" QUIT $$FSUPCOMMIT(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="fs.upload.abort" QUIT $$FSUPABORT(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
-	IF CMD="fs.upload.status" QUIT $$FSUPSTATUS(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
-	IF CMD="fs.download.begin" QUIT $$FSDNBEGIN(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
-	IF CMD="fs.download.chunk" QUIT $$FSDNCHUNK(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
-	IF CMD="fs.download.abort" QUIT $$FSDNABORT(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="fs.mkdir" QUIT $$FSMKDIR(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="fs.meta" QUIT $$FSMETA(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="fs.rename" QUIT $$FSRENAME(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
@@ -151,24 +146,8 @@ FSREADRNG(STATE,CONF,TREE,OUTJSON,ERR)
 	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"fs.read.range","vfs",.OUT)
 	QUIT 1
 	;
-FSDNBEGIN(STATE,CONF,TREE,OUTJSON,ERR)
-	NEW OUT,ID
-	SET ID=$SELECT($GET(TREE("id"))'="":$GET(TREE("id")),1:$GET(TREE("path")))
-	IF '$$BEGIN^MIOOSFSDN(.STATE,.CONF,ID,.OUT,.ERR) QUIT 0
-	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"fs.download.begin","download",.OUT)
-	QUIT 1
 	;
-FSDNCHUNK(STATE,CONF,TREE,OUTJSON,ERR)
-	NEW OUT
-	IF '$$CHUNK^MIOOSFSDN(.STATE,$GET(TREE("downloadId")),+$GET(TREE("offset")),+$GET(TREE("size")),.OUT,.ERR) QUIT 0
-	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"fs.download.chunk","download",.OUT)
-	QUIT 1
 	;
-FSDNABORT(STATE,CONF,TREE,OUTJSON,ERR)
-	NEW OUT
-	IF '$$ABORT^MIOOSFSDN(.STATE,$GET(TREE("downloadId")),.OUT,.ERR) QUIT 0
-	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"fs.download.abort","download",.OUT)
-	QUIT 1
 	;
 FSWRITE(STATE,CONF,TREE,OUTJSON,ERR)
 	NEW OUT,PARENT,NAME
@@ -195,14 +174,6 @@ FSUPCHUNK(STATE,CONF,TREE,OUTJSON,ERR)
 	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"fs.upload.chunk","vfs",.OUT)
 	QUIT 1
 	;
-FSUPBATCH(STATE,CONF,TREE,OUTJSON,ERR)
-	NEW OUT
-	M ^AHM("STATE")=STATE
-	M ^AHM("CONF")=CONF
-	M ^AHM("TREE")=TREE
-	IF '$$BATCH^MIOOSFSUP(.STATE,.CONF,$GET(TREE("uploadId")),$NAME(TREE("chunks")),.OUT,.ERR) QUIT 0
-	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"fs.upload.batch","vfs",.OUT)
-	QUIT 1
 	;
 FSUPCOMMIT(STATE,CONF,TREE,OUTJSON,ERR)
 	NEW OUT
@@ -216,11 +187,6 @@ FSUPABORT(STATE,CONF,TREE,OUTJSON,ERR)
 	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"fs.upload.abort","vfs",.OUT)
 	QUIT 1
 	;
-FSUPSTATUS(STATE,CONF,TREE,OUTJSON,ERR)
-	NEW OUT
-	IF '$$STATUS^MIOOSFSUP(.STATE,.CONF,$GET(TREE("uploadId")),.OUT,.ERR) QUIT 0
-	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"fs.upload.status","vfs",.OUT)
-	QUIT 1
 	;
 FSMKDIR(STATE,CONF,TREE,OUTJSON,ERR)
 	NEW OUT
@@ -340,8 +306,6 @@ SNAPSHOT(STATE,CONF,OUT,ERR)
 	SET OUT("counts","windows")=$$COUNTARY("windows",.STATE)
 	SET OUT("counts","modules")=+$GET(STATE("moduleCount"),0)
 	SET OUT("transport","model")=$GET(STATE("transportModel"),"core-websocket-plus-app-websockets")
-	SET OUT("transport","maxSocketsPerSession")=+$GET(STATE("wsMaxSockets"),6)
-	SET OUT("transport","fsSockets")=+$GET(STATE("wsFsSockets"),5)
 	SET OUT("transport","heartbeatSeconds")=+$GET(STATE("wsHeartbeatSeconds"),15)
 	SET OUT("transport","resumeWindowSeconds")=+$GET(STATE("wsResumeWindowSeconds"),180)
 	SET OUT("transport","maxInflightPerChannel")=+$GET(STATE("wsMaxInflightPerChannel"),4)
@@ -395,10 +359,6 @@ HEALTH(STATE,CONF,OUT,ERR)
 	SET OUT("localeCode")=$GET(STATE("localeCode"),"en")
 	SET OUT("transportModel")=$GET(STATE("transportModel"),"core-websocket-plus-app-websockets")
 	SET OUT("diagnosticsEnabled")=+$GET(STATE("wsDiagnosticsEnabled"),1)
-	SET OUT("websocket","maxSocketsPerSession")=+$GET(STATE("wsMaxSockets"),6)
-	SET OUT("websocket","coreSockets")=+$GET(STATE("wsCoreSockets"),1)
-	SET OUT("websocket","fsSockets")=+$GET(STATE("wsFsSockets"),5)
-	SET OUT("websocket","uploadBatchSize")=+$GET(STATE("wsUploadBatchSize"),1)
 	SET OUT("websocket","heartbeatSeconds")=+$GET(STATE("wsHeartbeatSeconds"),15)
 	SET OUT("websocket","resumeWindowSeconds")=+$GET(STATE("wsResumeWindowSeconds"),180)
 	SET OUT("websocket","maxInflightPerChannel")=+$GET(STATE("wsMaxInflightPerChannel"),4)
@@ -411,7 +371,6 @@ HEALTH(STATE,CONF,OUT,ERR)
 	SET OUT("vfs","downloadStaleSeconds")=+$GET(STATE("downloadStaleSeconds"),900)
 	SET OUT("vfs","uploadConcurrency")=$$UPCONCUR^MIOOSFSUP(.CONF)
 	SET OUT("vfs","uploadChunkBytes")=$$UPCHUNK^MIOOSFSUP(.CONF)
-	SET OUT("vfs","downloadChunkBytes")=$$DLCHUNK^MIOOSFSDN(.CONF)
 	SET (OUT("uploads","activeCount"),OUT("uploads","receivedBytes"),OUT("uploads","declaredBytes"))=0
 	SET UPID=""
 	FOR  SET UPID=$ORDER(^MIO("MIOOS","UPLOAD","META",UPID)) QUIT:UPID=""  DO
@@ -421,7 +380,6 @@ HEALTH(STATE,CONF,OUT,ERR)
 	. SET OUT("uploads","activeCount")=OUT("uploads","activeCount")+1
 	. SET OUT("uploads","receivedBytes")=OUT("uploads","receivedBytes")+$GET(^MIO("MIOOS","UPLOAD","INFO",UPID,"bytes"))
 	. SET OUT("uploads","declaredBytes")=OUT("uploads","declaredBytes")+$PIECE(META,"^",7)
-	SET SKEY=$$SESSIONKEY^MIOOSFSDN(.STATE)
 	SET (OUT("downloads","activeCount"),OUT("downloads","bytes"))=0
 	SET DLID=""
 	FOR  SET DLID=$ORDER(^MIO("MIOOS","DL",SKEY,DLID)) QUIT:DLID=""  DO
@@ -487,10 +445,6 @@ HELLOJSON(STATE,CONF)
 	SET OBJ("commandEvent")=$GET(STATE("commandEvent"),"desktop.command")
 	SET OBJ("commandResultEvent")=$GET(STATE("commandResultEvent"),"desktop.result")
 	SET OBJ("realtimeContract")=$GET(STATE("transportModel"),"core-websocket-plus-app-websockets")
-	SET OBJ("socketPool","maxSocketsPerSession")=+$GET(STATE("wsMaxSockets"),6)
-	SET OBJ("socketPool","coreSockets")=+$GET(STATE("wsCoreSockets"),1)
-	SET OBJ("socketPool","fsSockets")=+$GET(STATE("wsFsSockets"),5)
-	SET OBJ("socketPool","uploadBatchSize")=+$GET(STATE("wsUploadBatchSize"),1)
 	SET OBJ("socketPool","heartbeatSeconds")=+$GET(STATE("wsHeartbeatSeconds"),15)
 	SET OBJ("socketPool","resumeWindowSeconds")=+$GET(STATE("wsResumeWindowSeconds"),180)
 	SET OBJ("socketPool","maxInflightPerChannel")=+$GET(STATE("wsMaxInflightPerChannel"),4)

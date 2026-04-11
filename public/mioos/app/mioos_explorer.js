@@ -269,7 +269,7 @@
   function socketPoolConfig(vm) {
     var conf = (vm.boot || {}).websocket || {};
     return {
-      maxSocketsPerSession: Math.max(1, +(conf.maxSocketsPerSession || 4)),
+      maxSocketsPerSession: Math.max(1, +(conf.maxSocketsPerSession || 6)),
       fsSockets: Math.max(1, +(conf.fsSockets || 3)),
       uploadBatchSize: Math.max(1, Math.min(2, +(conf.uploadBatchSize || 1)))
     };

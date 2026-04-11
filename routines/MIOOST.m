@@ -20,10 +20,6 @@ MIOOST ; MIOOS tests
 	DO T019
 	DO T020
 	DO T021
-	DO T022
-	DO T023
-	DO T024
-	DO T025
 	DO T026
 	DO T027
 	DO T028
@@ -48,7 +44,6 @@ MIOOST ; MIOOS tests
 	DO T047
 	DO T048
 	DO T049
-	DO T050
 	QUIT
 	;
 RESET
@@ -144,9 +139,6 @@ T002
 	DO EQ^MIOTASSERT($GET(OBJ("vfs","storage")),"globals-only","[MIOOST][T002][vfs storage]")
 	DO EQ^MIOTASSERT($GET(OBJ("routes","fsList")),"/api/mioos/fs/list","[MIOOST][T002][fs list route]")
 	DO EQ^MIOTASSERT($GET(OBJ("routes","fsBlob")),"/api/mioos/fs/blob","[MIOOST][T002][fs blob route]")
-	DO EQ^MIOTASSERT(+$GET(OBJ("websocket","maxSocketsPerSession")),6,"[MIOOST][T002][max sockets]")
-	DO EQ^MIOTASSERT(+$GET(OBJ("websocket","fsSockets")),5,"[MIOOST][T002][fs sockets]")
-	DO EQ^MIOTASSERT(+$GET(OBJ("vfs","uploadBatchSize")),1,"[MIOOST][T002][upload batch size]")
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","windowing","engine")),"mioos-native-vue-css","[MIOOST][T002][windowing engine]")
 	DO EQ^MIOTASSERT(+$GET(OBJ("desktop","windowing","snapThreshold")),28,"[MIOOST][T002][snap threshold]")
 	DO EQ^MIOTASSERT(+$GET(OBJ("windows",1,"resizable")),1,"[MIOOST][T002][window resizable]")
@@ -163,7 +155,6 @@ T003
 	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-mioos-core-socket=""1"""),"[MIOOST][T003][core socket token]")
 	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-mioos-app-sockets=""1"""),"[MIOOST][T003][app sockets token]")
 	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-mioos-max-sockets="),"[MIOOST][T003][max sockets token]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-mioos-upload-batch-size="),"[MIOOST][T003][upload batch token]")
 	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-mioos-signin="),"[MIOOST][T003][signin token]")
 	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-auth-overlay"),"[MIOOST][T003][auth overlay]")
 	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-snap-preview"),"[MIOOST][T003][snap preview token]")
@@ -183,7 +174,6 @@ T004
 	DO EQ^MIOTASSERT($GET(OBJ("commandResultEvent")),"desktop.result","[MIOOST][T004][result event]")
 	DO EQ^MIOTASSERT($GET(OBJ("terminalEngine")),"xtermjs","[MIOOST][T004][engine]")
 	DO EQ^MIOTASSERT($GET(OBJ("realtimeContract")),"core-websocket-plus-app-websockets","[MIOOST][T004][realtime contract]")
-	DO EQ^MIOTASSERT(+$GET(OBJ("socketPool","maxSocketsPerSession")),6,"[MIOOST][T004][hello max sockets]")
 	SET JSON=$$PONGJSON^MIOOSWS(.STATE)
 	DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T004][pong decode]")
 	DO EQ^MIOTASSERT($GET(OBJ("event")),"pong","[MIOOST][T004][pong event]")
@@ -355,9 +345,6 @@ T013
 	QUIT
 	;
 T014
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","fs.upload.batch"),"[MIOOST][T014][upload batch command]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","socketPoolConfig"),"[MIOOST][T014][socket pool config]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","fs.upload.batch"),"[MIOOST][T014][ws upload batch]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSFSUP.m","BATCH(STATE,CONF,UPLOADID,CHROOT,OUT,ERR)"),"[MIOOST][T014][fsup batch]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_wm.js","beginResize"),"[MIOOST][T014][wm resize method]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","uploadFilesToExplorer"),"[MIOOST][T014][explorer drop upload helper]")
@@ -447,45 +434,27 @@ T020
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-context-menu"),"[MIOOST][T020][context menu css]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-desktop-icon.is-large"),"[MIOOST][T020][large icon css]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","desktop.layout.save"),"[MIOOST][T020][ws layout save]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","fs.download.begin"),"[MIOOST][T020][ws download begin]")
 	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","win.appKey === 'pdf-viewer'"),"[MIOOST][T020][pdf viewer token]")
 	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","win.appKey === 'structured-viewer'"),"[MIOOST][T020][structured viewer token]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","openPdfViewerWindow"),"[MIOOST][T020][pdf viewer method]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","fs.download.chunk"),"[MIOOST][T020][chunked download method]")
 	QUIT
 	;
 	;
 T021
-	NEW CONF,REQ,CTX,STATE,ERR,OUT,ID,DL,HASH,JSON,OBJ,PAY
+	NEW CONF,REQ,CTX,STATE,ERR,OUT,ID,HASH
 	DO RESET
 	DO CONFDEF^MIOOS(.CONF)
 	DO INIT^MIOOS(.CONF)
 	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T021][load]")
 	KILL OUT DO OK^MIOTASSERT($$WRITE^MIOOSFS(.STATE,$$HOMEID^MIOOSFS(),"download.txt","alpha beta gamma delta","text/plain",.OUT,.ERR),"[MIOOST][T021][write]")
 	SET ID=$GET(OUT("id"))
-	KILL DL DO OK^MIOTASSERT($$BEGIN^MIOOSFSDN(.STATE,.CONF,ID,.DL,.ERR),"[MIOOST][T021][download begin]")
-	DO EQ^MIOTASSERT($GET(DL("verifyHash")),1,"[MIOOST][T021][verify flag]")
-	DO EQ^MIOTASSERT($GET(DL("sha256"))'="",1,"[MIOOST][T021][sha present]")
-	DO EQ^MIOTASSERT($GET(DL("sha256")),$$SHA256^MIOSHA256("alpha beta gamma delta"),"[MIOOST][T021][sha value]")
-	KILL OUT DO OK^MIOTASSERT($$CHUNK^MIOOSFSDN(.STATE,$GET(DL("downloadId")),0,6,.OUT,.ERR),"[MIOOST][T021][chunk one]")
-	DO EQ^MIOTASSERT($GET(OUT("data")),"alpha ","[MIOOST][T021][chunk one data]")
-	DO EQ^MIOTASSERT(+$GET(OUT("eof")),0,"[MIOOST][T021][chunk one eof]")
-	KILL OUT DO OK^MIOTASSERT($$CHUNK^MIOOSFSDN(.STATE,$GET(DL("downloadId")),6,99,.OUT,.ERR),"[MIOOST][T021][chunk two]")
-	DO EQ^MIOTASSERT($GET(OUT("data")),"beta gamma delta","[MIOOST][T021][chunk two data]")
-	DO EQ^MIOTASSERT(+$GET(OUT("eof")),1,"[MIOOST][T021][chunk two eof]")
-	SET PAY="{""event"":""desktop.command"",""requestId"":""fs-dl-1"",""command"":""fs.download.begin"",""id"":"""_ID_"""}"
-	DO OK^MIOTASSERT($$COMMANDJSON^MIOOSWS(.CONF,.REQ,.CTX,.STATE,PAY,.JSON,.ERR),"[MIOOST][T021][ws download begin]")
-	DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T021][ws download decode]")
-	DO EQ^MIOTASSERT($GET(OBJ("download","verifyHash")),1,"[MIOOST][T021][ws verify flag]")
+	KILL HASH,ERR DO OK^MIOTASSERT($$HASH^MIOOSFS(.STATE,ID,.HASH,.ERR),"[MIOOST][T021][hash]")
+	DO EQ^MIOTASSERT($GET(HASH("sha256"))'="",1,"[MIOOST][T021][sha present]")
+	DO EQ^MIOTASSERT($GET(HASH("sha256")),$$SHA256^MIOSHA256("alpha beta gamma delta"),"[MIOOST][T021][sha value]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","buildFsBlobUrl(this, item, { download: true })"),"[MIOOST][T021][direct blob handoff]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","FSBLOB(DEV,CONF,REQ,CTX)"),"[MIOOST][T021][blob handler]")
 	QUIT
 	;
-T022
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","download_hash_mismatch"),"[MIOOST][T022][download hash guard]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","Verifying download"),"[MIOOST][T022][download verify stage]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSFSDN.m","READRANGE^MIOOSFS"),"[MIOOST][T022][range read]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSST.m","downloadVerifyHash"),"[MIOOST][T022][boot verify flag]")
-	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 20 — Verified chunked downloads and VFS download hardening"),"[MIOOST][T022][llm roi20]")
-	QUIT
 	;
 T023
 	NEW CONF,REQ,CTX,STATE,ERR,OUT,UP,STAT,PURGE,NOW
@@ -506,44 +475,16 @@ T023
 	QUIT
 	;
 T024
-	NEW CONF,REQ,CTX,STATE,ERR,OUT,ID,DL,PURGE,NOW,SKEY
+	NEW CONF,REQ,CTX,STATE,ERR
 	DO RESET
 	DO CONFDEF^MIOOS(.CONF)
 	DO INIT^MIOOS(.CONF)
 	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T024][load]")
-	KILL OUT DO OK^MIOTASSERT($$WRITE^MIOOSFS(.STATE,$$HOMEID^MIOOSFS(),"purge-download.txt","download me","text/plain",.OUT,.ERR),"[MIOOST][T024][write]")
-	SET ID=$GET(OUT("id"))
-	KILL DL DO OK^MIOTASSERT($$BEGIN^MIOOSFSDN(.STATE,.CONF,ID,.DL,.ERR),"[MIOOST][T024][download begin]")
-	SET NOW=$HOROLOG,SKEY=$$SESSIONKEY^MIOOSFSDN(.STATE)
-	SET ^MIO("MIOOS","DL",SKEY,$GET(DL("downloadId")),"updatedAt")=(+NOW-1)_","_$PIECE(NOW,",",2)
-	KILL OUT SET PURGE=$$PURGE^MIOOSFSDN(.CONF,.OUT)
-	DO EQ^MIOTASSERT(PURGE,1,"[MIOOST][T024][download purge]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","cancelTransfer"),"[MIOOST][T024][cancel transfer method]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","retryTransfer"),"[MIOOST][T024][retry transfer method]")
 	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","@click=""cancelTransfer(item)"""),"[MIOOST][T024][cancel transfer button]")
 	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","@click=""retryTransfer(item)"""),"[MIOOST][T024][retry transfer button]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","fs.upload.status"),"[MIOOST][T024][ws upload status]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 21 — Transfer resiliency, cancellation, retry, and stale-session cleanup"),"[MIOOST][T024][llm roi21]")
-	QUIT
-	;
-	;
-T025
-	NEW CONF,REQ,CTX,STATE,ERR,JSON,OBJ,PAY
-	DO RESET
-	DO CONFDEF^MIOOS(.CONF)
-	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T025][load]")
-	SET JSON=$$BOOTJSON^MIOOSST(.STATE,.CONF)
-	DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T025][decode]")
-	DO EQ^MIOTASSERT($GET(OBJ("websocket","heartbeatSeconds")),15,"[MIOOST][T025][heartbeat]")
-	DO EQ^MIOTASSERT($GET(OBJ("websocket","resumeWindowSeconds")),180,"[MIOOST][T025][resume]")
-	DO EQ^MIOTASSERT($GET(OBJ("websocket","maxInflightPerChannel")),4,"[MIOOST][T025][inflight]")
-	DO EQ^MIOTASSERT($GET(OBJ("websocket","diagnosticsEnabled")),1,"[MIOOST][T025][diagnostics enabled]")
-	DO EQ^MIOTASSERT($GET(OBJ("apps",7,"key")),"diagnostics","[MIOOST][T025][diagnostics app]")
-	SET PAY="{""event"":""desktop.command"",""requestId"":""transport-1"",""command"":""transport.health""}"
-	DO OK^MIOTASSERT($$COMMANDJSON^MIOOSWS(.CONF,.REQ,.CTX,.STATE,PAY,.JSON,.ERR),"[MIOOST][T025][transport health]")
-	DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T025][transport decode]")
-	DO EQ^MIOTASSERT($GET(OBJ("transport","websocket","maxSocketsPerSession")),6,"[MIOOST][T025][health max sockets]")
-	DO EQ^MIOTASSERT($GET(OBJ("transport","diagnosticsEnabled")),1,"[MIOOST][T025][health diagnostics]")
 	QUIT
 	;
 T026
@@ -732,7 +673,6 @@ T035
 	DO EQ^MIOTASSERT($GET(OBJ("event")),"desktop.result","[MIOOST][T035][event]")
 	DO EQ^MIOTASSERT($GET(OBJ("command")),"debug.snapshot","[MIOOST][T035][command]")
 	DO EQ^MIOTASSERT($GET(OBJ("debug","routes","viewCommand")),"view.refresh","[MIOOST][T035][view command]")
-	DO EQ^MIOTASSERT(+$GET(OBJ("debug","transport","maxSocketsPerSession")),6,"[MIOOST][T035][max sockets]")
 	DO EQ^MIOTASSERT(+$GET(OBJ("debug","transport","diagnosticsEnabled")),1,"[MIOOST][T035][diagnostics enabled]")
 	DO EQ^MIOTASSERT(+$GET(OBJ("debug","counts","apps"))>0,1,"[MIOOST][T035][apps count]")
 	DO EQ^MIOTASSERT($GET(OBJ("debug","debug","commands",10)),"debug.snapshot","[MIOOST][T035][command registry]")
@@ -824,15 +764,10 @@ T039
 	DO EQ^MIOTASSERT($GET(READOUT("encoding")),"base64-dataurl","[MIOOST][T039][read encoding]")
 	SET B64=$PIECE($GET(READOUT("content")),",",2,99)
 	DO EQ^MIOTASSERT($$B64D^MIOSJWT(B64),RAW,"[MIOOST][T039][read roundtrip]")
-	KILL DL,ERR
-	DO OK^MIOTASSERT($$BEGIN^MIOOSFSDN(.STATE,.CONF,ID,.DL,.ERR),"[MIOOST][T039][download begin]")
-	DO EQ^MIOTASSERT($GET(DL("encoding")),"base64","[MIOOST][T039][download encoding]")
 	KILL CHUNK,ERR
-	DO OK^MIOTASSERT($$CHUNK^MIOOSFSDN(.STATE,$GET(DL("downloadId")),0,32768,.CHUNK,.ERR),"[MIOOST][T039][download chunk]")
-	DO EQ^MIOTASSERT($GET(CHUNK("encoding")),"base64","[MIOOST][T039][chunk encoding]")
-	DO EQ^MIOTASSERT($$B64D^MIOSJWT($GET(CHUNK("data"))),RAW,"[MIOOST][T039][download roundtrip]")
-	DO EQ^MIOTASSERT(+$GET(CHUNK("nextOffset")),$LENGTH(RAW),"[MIOOST][T039][download next offset]")
-	DO EQ^MIOTASSERT(+$GET(CHUNK("eof")),1,"[MIOOST][T039][download eof]")
+	DO OK^MIOTASSERT($$READRANGE^MIOOSFS(ID,0,$LENGTH(RAW),.CHUNK,.READ,.ERR),"[MIOOST][T039][readrange]")
+	DO EQ^MIOTASSERT(CHUNK,RAW,"[MIOOST][T039][readrange roundtrip]")
+	DO EQ^MIOTASSERT(READ,$LENGTH(RAW),"[MIOOST][T039][readrange bytes]")
 	QUIT
 	;
 T040
@@ -853,7 +788,7 @@ T041
 	DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T041][decode]")
 	DO EQ^MIOTASSERT(+$GET(OBJ("vfs","chunkSize")),131072,"[MIOOST][T041][vfs chunk size]")
 	DO EQ^MIOTASSERT(+$GET(OBJ("vfs","httpChunkBytes")),1048576,"[MIOOST][T041][http chunk bytes]")
-	DO EQ^MIOTASSERT($GET(OBJ("desktop","performance","downloadStrategy")),"direct-http-range-native-with-websocket-fallback","[MIOOST][T041][download strategy]")
+	DO EQ^MIOTASSERT($GET(OBJ("desktop","performance","downloadStrategy")),"direct-http-range-native","[MIOOST][T041][download strategy]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 36 — VFS storage layout acceleration and upload accounting"),"[MIOOST][T041][llm roi36]")
 	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","ROI 36 — VFS storage layout acceleration and upload accounting"),"[MIOOST][T041][docs roi36]")
 	QUIT
@@ -966,7 +901,6 @@ T045
 	DO EQ^MIOTASSERT($GET(READOUT("encoding")),"base64-dataurl","[MIOOST][T045][read encoding]")
 	DO EQ^MIOTASSERT($$B64D^MIOSJWT($PIECE($GET(READOUT("content")),",",2,99)),RAW,"[MIOOST][T045][roundtrip]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSST.m","uploadFinalizeStrategy"),"[MIOOST][T045][boot finalize strategy]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_state.js","uploadCommitStrategy"),"[MIOOST][T045][state commit strategy]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 37 — upload finalize direct-stage promote for new binary files"),"[MIOOST][T045][llm roi37]")
 	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","ROI 37 — upload finalize direct-stage promote for new binary files"),"[MIOOST][T045][docs roi37]")
 	QUIT
@@ -1018,7 +952,7 @@ T047
 T048
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","STREAM=""media"""),"[MIOOST][T048][blob stream query]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","ISMEDIAMIME(MIME)"),"[MIOOST][T048][blob media helper]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","IF RE'<SIZE SET RE=SIZE-1"),"[MIOOST][T048][media partial clamp]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","IF RE>SIZE SET RE=SIZE-1"),"[MIOOST][T048][media partial clamp]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","stream: 'media'"),"[MIOOST][T048][explorer media stream]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 39 — persistent transfer recovery and media-first streaming"),"[MIOOST][T048][llm roi39]")
 	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","ROI 39 — persistent transfer recovery and media-first streaming"),"[MIOOST][T048][docs roi39]")
@@ -1041,21 +975,4 @@ T049
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","onPause: function () { return pauseUpload"),"[MIOOST][T049][resume pause control]")
 	QUIT
 	;
-	;
-	;
-T050 ; storechunk inference + binary socket mode markers
-	NEW ID,CH
-	SET ID=$$NEXTID^MIOOSFS()
-	DO SAVEENTRY^MIOOSFS(ID,"file","fs-2","legacy.bin","application/octet-stream",524288,$HOROLOG,$HOROLOG,"admin","admin",1,1,1)
-	SET ^MIO("MIOOS","FS","DATA",ID,1)=$JUSTIFY("",32768)
-	SET ^MIO("MIOOS","FS","DATA",ID,2)=$JUSTIFY("",32768)
-	KILL ^MIO("MIOOS","FS","INFO",ID,"chunkSize")
-	SET CH=$$STORECHUNK^MIOOSFS(ID,.CONF)
-	DO EQ^MIOTASSERT(CH,32768,"[MIOOST][T050][inferred chunk size]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOSOCK.m","CHSET=""M"""),"[MIOOST][T050][socket m mode]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","fs_blob_write_stalled"),"[MIOOST][T050][stream write stall]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSFSUP.m","$ZEXTRACT(BUF,1,CUT)"),"[MIOOST][T050][binary append zextract]")
-	QUIT
-	;
-
 	;

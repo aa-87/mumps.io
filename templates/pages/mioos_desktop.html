@@ -5,7 +5,6 @@
   data-mioos-app-sockets="1"
   data-mioos-max-sockets="{{wsMaxSockets}}"
   data-mioos-fs-sockets="{{wsFsSockets}}"
-  data-mioos-upload-batch-size="{{wsUploadBatchSize}}"
   data-mioos-native-shell="1"
   data-mioos-command-event="{{commandEvent}}"
   data-mioos-command-result-event="{{commandResultEvent}}"
@@ -33,7 +32,6 @@
   data-mioos-terminal-ws="{{wsTerminalPath}}"
   data-mioos-max-sockets="{{wsMaxSockets}}"
   data-mioos-fs-sockets="{{wsFsSockets}}"
-  data-mioos-upload-batch-size="{{wsUploadBatchSize}}"
   data-mioos-bootstrap="{{bootstrapPath}}"
   data-mioos-view="{{viewPath}}"
   data-mioos-signin="{{signinPath}}"
@@ -432,8 +430,6 @@
                 <section class="mioos-diagnostics-card">
                   <h4>Server transport contract</h4>
                   <dl>
-                    <div><dt>Max sockets</dt><dd>[[ (((transportReport().websocket || {}).maxSocketsPerSession) || ((boot.websocket || {}).maxSocketsPerSession) || 0) ]]</dd></div>
-                    <div><dt>FS sockets</dt><dd>[[ (((transportReport().websocket || {}).fsSockets) || ((boot.websocket || {}).fsSockets) || 0) ]]</dd></div>
                     <div><dt>Heartbeat</dt><dd>[[ (((transportReport().websocket || {}).heartbeatSeconds) || ((boot.websocket || {}).heartbeatSeconds) || 0) ]]s</dd></div>
                     <div><dt>Resume window</dt><dd>[[ (((transportReport().websocket || {}).resumeWindowSeconds) || ((boot.websocket || {}).resumeWindowSeconds) || 0) ]]s</dd></div>
                     <div><dt>Inflight / channel</dt><dd>[[ (((transportReport().websocket || {}).maxInflightPerChannel) || ((boot.websocket || {}).maxInflightPerChannel) || 0) ]]</dd></div>

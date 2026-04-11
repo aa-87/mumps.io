@@ -67,10 +67,10 @@
           payloadMode: 'tmp-global-safe',
           transport: 'websocket-first-http-refresh',
           uploadPreparation: 'blob-slice-no-base64',
-          uploadStrategy: 'http-binary-chunk-session-with-websocket-fallback',
+          uploadStrategy: 'http-binary-parallel-slice-xhr-with-auto-pause',
           uploadFinalizeStrategy: 'binary-direct-stage-promote-with-copy-on-overwrite',
           transferPersistence: 'localstorage-resumable-transfer-list',
-          downloadStrategy: 'direct-http-range-native-with-websocket-fallback',
+          downloadStrategy: 'direct-http-range-native',
           downloadSendStrategy: 'vfs-segment-streaming-http-blob',
           mediaStreamStrategy: 'range-kickstart-http-blob-partial-window',
           textPreviewStrategy: 'windowed-websocket-range-read'
@@ -126,10 +126,6 @@
         }
       },
       websocket: {
-        maxSocketsPerSession: 6,
-        coreSockets: 1,
-        fsSockets: 5,
-        uploadBatchSize: 1,
         heartbeatSeconds: 15,
         resumeWindowSeconds: 180,
         maxInflightPerChannel: 4,
@@ -143,7 +139,7 @@
         maxFrameBytes: 262144,
         maxMessageBytes: 1048576
       },
-      vfs: { enabled: false, rootId: 'root', homeId: 'home', chunkSize: 131072, httpChunkBytes: 1048576, readPreviewBytes: 16384, readWindowBytes: 131072, mediaInitialBytes: 2097152, globalsOnly: true, uploadStaleSeconds: 1800, downloadStaleSeconds: 900, uploadChunkBytes: 262144, uploadConcurrency: 6, uploadChunkTransport: 'http-binary', uploadCommitStrategy: 'binary-direct-stage-promote-with-copy-on-overwrite', transferPersistence: 'localstorage-resumable-transfer-list', transferControls: { cancel: true, retry: true, pause: true, resume: true } },
+      vfs: { enabled: false, rootId: 'root', homeId: 'home', chunkSize: 131072, httpChunkBytes: 1048576, readPreviewBytes: 16384, readWindowBytes: 131072, mediaInitialBytes: 2097152, globalsOnly: true, uploadStaleSeconds: 1800, downloadStaleSeconds: 900, uploadChunkBytes: 262144, uploadConcurrency: 6, transferPersistence: 'localstorage-resumable-transfer-list', transferControls: { cancel: true, retry: true, pause: true, resume: true } },
       apps: [],
       windows: [],
       modules: []

@@ -127,11 +127,11 @@ A detailed Theme Studio UI tool is available in MIOOS as a dedicated desktop app
 
 
 ## ROI 20 — Verified chunked downloads and VFS download hardening
-`MIOOSFSDN` now uses `READRANGE^MIOOSFS` for chunk delivery, keeps per-download session state under `^MIO("MIOOS","DL",...)`, and advertises `sha256` plus `verifyHash` in `fs.download.begin`. `MIOOSFS` now supports range reads directly from global-backed chunk storage, which avoids reconstructing the whole file for every chunk request.
+The current runtime uses direct authenticated HTTP blob/range delivery for binary download and preview. `MIOOSFS` range reads remain the storage primitive, while the legacy websocket chunked download workflow has been removed from the app path.
 
 
 ## ROI 21 — Transfer lifecycle controls
-`MIOOSFSUP` now records `createdAt`/`updatedAt`, keeps raw chunk byte accounting by chunk index, exposes `STATUS^MIOOSFSUP`, and purges abandoned staged uploads through `PURGE^MIOOSFSUP`. `MIOOSFSDN` mirrors that pattern for active download sessions. The Transfers window now uses controller hooks from `mioos_core.js` so cancel and retry behavior stays in the browser shell rather than leaking transfer state into generic window code.
+`MIOOSFSUP` now records `createdAt`/`updatedAt`, keeps raw chunk byte accounting by chunk index, exposes `STATUS^MIOOSFSUP`, and purges abandoned staged uploads through `PURGE^MIOOSFSUP`. The Transfers window now uses controller hooks from `mioos_core.js` so cancel and retry behavior stays in the browser shell rather than leaking transfer state into generic window code.
 
 
 ## ROI 22 — Transport diagnostics and socket health
@@ -215,3 +215,12 @@ ROI 33 — HTTP binary chunk transport for resumable uploads and hardened pause/
 - Tuned default transport values for higher throughput: VFS chunk size `131072`, upload chunk bytes `262144`, upload concurrency `6`, HTTP blob send target `1048576`, media initial bytes `2097152`.
 - Reduced main-thread upload overhead by throttling transfer progress updates during parallel HTTP chunk uploads.
 - Note: raw HTTP binary upload already sends `Blob.slice()` directly, so web workers are not the primary lever there; the next upload ROI should focus on optional dedicated upload workers for scheduling/telemetry and measuring whether they improve real throughput on the target browsers.
+
+
+## ROI 51 — Transfer workflow simplification and dead-code removal
+
+MIOOS now keeps one supported transfer workflow in the app runtime:
+- uploads use HTTP binary chunk session routes only
+- binary download and preview use direct authenticated HTTP blob/range only
+- websocket `fs.read.range` remains only for bounded text preview and text viewers
+- redundant websocket upload/download fallback plumbing and the unused upload worker file were removed

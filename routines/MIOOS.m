@@ -32,11 +32,6 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","route","fsBlob"))="" SET CONF("mioos","route","fsBlob")="/api/mioos/fs/blob"
 	IF $GET(CONF("mioos","route","ws"))="" SET CONF("mioos","route","ws")="/ws/mioos"
 	IF $GET(CONF("mioos","route","wsTerminal"))="" SET CONF("mioos","route","wsTerminal")="/ws/mioos/terminal"
-	IF $GET(CONF("mioos","websocket","maxSocketsPerSession"))="" SET CONF("mioos","websocket","maxSocketsPerSession")=6
-	IF $GET(CONF("mioos","websocket","coreSockets"))="" SET CONF("mioos","websocket","coreSockets")=1
-	IF $GET(CONF("mioos","websocket","fsSockets"))="" SET CONF("mioos","websocket","fsSockets")=5
-	IF $GET(CONF("mioos","websocket","uploadBatchSize"))="" SET CONF("mioos","websocket","uploadBatchSize")=1
-	IF $GET(CONF("mioos","upload","chunkTransport"))="" SET CONF("mioos","upload","chunkTransport")="http-binary"
 	IF $GET(CONF("mioos","brand","title"))="" SET CONF("mioos","brand","title")="MIOOS"
 	IF $GET(CONF("mioos","brand","subtitle"))="" SET CONF("mioos","brand","subtitle")="MUMPS powered Windows XP style desktop"
 	IF $GET(CONF("mioos","i18n","default"))="" SET CONF("mioos","i18n","default")="en"
@@ -139,9 +134,10 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","fs","transport"))="" SET CONF("mioos","fs","transport")="http-and-websocket"
 	IF $GET(CONF("mioos","upload","chunkBytes"))="" SET CONF("mioos","upload","chunkBytes")=262144
 	IF $GET(CONF("mioos","upload","concurrency"))="" SET CONF("mioos","upload","concurrency")=6
-	IF $GET(CONF("mioos","upload","commitStrategy"))="" SET CONF("mioos","upload","commitStrategy")="binary-direct-stage-promote-with-copy-on-overwrite"
-	IF $GET(CONF("mioos","fs","hashOnWrite"))="" SET CONF("mioos","fs","hashOnWrite")="deferred-job"
 	IF $GET(CONF("mioos","terminal","pipe","sessionIdleSeconds"))="" SET CONF("mioos","terminal","pipe","sessionIdleSeconds")=900
+	IF $GET(CONF("mioos","websocket","maxSocketsPerSession"))="" SET CONF("mioos","websocket","maxSocketsPerSession")=6
+	IF $GET(CONF("mioos","websocket","coreSockets"))="" SET CONF("mioos","websocket","coreSockets")=1
+	IF $GET(CONF("mioos","websocket","fsSockets"))="" SET CONF("mioos","websocket","fsSockets")=1
 	IF $GET(CONF("auth","protectMode"))="" SET CONF("auth","protectMode")="route"
 	IF $GET(CONF("auth","mode"))="" SET CONF("auth","mode")="jwt"
 	IF +$GET(CONF("mioos","desktop","authRequired"),1)=1 DO

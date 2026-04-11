@@ -1040,3 +1040,12 @@ T049
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","onPause: function () { return pauseUpload"),"[MIOOST][T049][resume pause control]")
 	QUIT
 	;
+
+
+## ROI 51 — Transfer workflow simplification and dead-code removal
+
+MIOOS now keeps one supported transfer workflow in the app runtime:
+- uploads use HTTP binary chunk session routes only
+- binary download and preview use direct authenticated HTTP blob/range only
+- websocket `fs.read.range` remains only for bounded text preview and text viewers
+- redundant websocket upload/download fallback plumbing and the unused upload worker file were removed

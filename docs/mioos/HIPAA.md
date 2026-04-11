@@ -70,7 +70,7 @@ To move closer to HIPAA-ready operation, later ROIs should add or harden:
 
 
 ## Transfer integrity note
-Verified chunked downloads reduce the chance of silent corruption during browser saves, which is helpful in regulated environments, but they do not replace audit logging, encryption, access controls, or deployment policy.
+Direct authenticated HTTP blob/range delivery reduces browser-side transfer complexity for binary files, which is helpful operationally, but it does not replace audit logging, encryption, access controls, or deployment policy.
 
 
 ## Transfer cleanup note
