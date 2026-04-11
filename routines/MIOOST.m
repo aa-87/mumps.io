@@ -42,6 +42,8 @@ MIOOST ; MIOOS tests
 	DO T041
 	DO T042
 	DO T043
+	DO T044
+	DO T045
 	QUIT
 	;
 RESET
@@ -383,7 +385,7 @@ T016
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-theme-studio-layout"),"[MIOOST][T016][theme studio css]")
 	QUIT
 	;
-
+	;
 	;
 T017
 	NEW CONF,REQ,CTX,STATE,ERR,JSON,OBJ
@@ -410,7 +412,7 @@ T018
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-explorer-taskpane"),"[MIOOST][T018][explorer xp taskpane css]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-explorer-menubar"),"[MIOOST][T018][explorer xp menubar css]")
 	QUIT
-
+	;
 	;
 T019
 	NEW CONF,REQ,CTX,STATE,ERR,JSON,OBJ
@@ -446,7 +448,7 @@ T020
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","openPdfViewerWindow"),"[MIOOST][T020][pdf viewer method]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","fs.download.chunk"),"[MIOOST][T020][chunked download method]")
 	QUIT
-
+	;
 	;
 T021
 	NEW CONF,REQ,CTX,STATE,ERR,OUT,ID,DL,HASH,JSON,OBJ,PAY
@@ -479,7 +481,7 @@ T022
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSST.m","downloadVerifyHash"),"[MIOOST][T022][boot verify flag]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 20 — Verified chunked downloads and VFS download hardening"),"[MIOOST][T022][llm roi20]")
 	QUIT
-
+	;
 T023
 	NEW CONF,REQ,CTX,STATE,ERR,OUT,UP,STAT,PURGE,NOW
 	DO RESET
@@ -518,7 +520,7 @@ T024
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","fs.upload.status"),"[MIOOST][T024][ws upload status]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 21 — Transfer resiliency, cancellation, retry, and stale-session cleanup"),"[MIOOST][T024][llm roi21]")
 	QUIT
-
+	;
 	;
 T025
 	NEW CONF,REQ,CTX,STATE,ERR,JSON,OBJ,PAY
@@ -549,7 +551,7 @@ T026
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-diagnostics-shell"),"[MIOOST][T026][diagnostics css]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 22 — Transport diagnostics and socket health"),"[MIOOST][T026][llm roi22]")
 	QUIT
-
+	;
 T027
 	NEW CONF,REQ,CTX,STATE,ERR,JSON,OBJ,PAY
 	DO RESET
@@ -577,7 +579,7 @@ T028
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-module-catalog-shell"),"[MIOOST][T028][module catalog css]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 23 — Module catalog and built-in module host"),"[MIOOST][T028][llm roi23]")
 	QUIT
-
+	;
 T029
 	NEW CONF,REQ,CTX,STATE,ERR,JSON,OBJ,TOKEN
 	DO RESET
@@ -610,7 +612,7 @@ T030
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","AUDITX(DEV,CONF,REQ,CTX)"),"[MIOOST][T030][audit export handler]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 24 — Typed authentication, local/framework auditability, and HIPAA reportability"),"[MIOOST][T030][llm roi24]")
 	QUIT
-
+	;
 T031
 	NEW CONF,REQ,CTX,STATE,ERR,JSON,OBJ,PAY,TOKEN,TOKEN2,SID,FOUND,I
 	DO RESET
@@ -669,7 +671,7 @@ T032
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","auth.user.unlock"),"[MIOOST][T032][ws auth unlock]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 25 — Session governance, account lockout administration, and auditable security operations"),"[MIOOST][T032][llm roi25]")
 	QUIT
-
+	;
 T033
 	NEW CONF,ERR,TOKEN,OUT,TOKEN2,CHANGETOKEN
 	DO RESET
@@ -712,8 +714,8 @@ T034
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 26 — Password policy, rotation, and credential health"),"[MIOOST][T034][llm roi26]")
 	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","ROI 26 — Password policy, rotation, and credential health"),"[MIOOST][T034][docs roi26]")
 	QUIT
-
-
+	;
+	;
 T035
 	NEW CONF,REQ,CTX,STATE,ERR,JSON,OBJ,PAY
 	DO RESET
@@ -751,7 +753,7 @@ T036
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 27 — Debug Center and developer tools"),"[MIOOST][T036][llm roi27]")
 	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","ROI 27 — Debug Center and developer tools"),"[MIOOST][T036][docs roi27]")
 	QUIT
-
+	;
 	;
 T037
 	NEW CONF,EP
@@ -836,7 +838,7 @@ T040
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","Accept-Ranges"),"[MIOOST][T040][range header]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","PARSERANGE^MIOSTATIC"),"[MIOOST][T040][range parser]")
 	QUIT
-
+	;
 T041
 	NEW CONF,REQ,CTX,STATE,ERR,JSON,OBJ
 	DO RESET
@@ -844,8 +846,8 @@ T041
 	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T041][load]")
 	SET JSON=$$BOOTJSON^MIOOSST(.STATE,.CONF)
 	DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T041][decode]")
-	DO EQ^MIOTASSERT(+$GET(OBJ("vfs","chunkSize")),32768,"[MIOOST][T041][vfs chunk size]")
-	DO EQ^MIOTASSERT(+$GET(OBJ("vfs","httpChunkBytes")),524288,"[MIOOST][T041][http chunk bytes]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("vfs","chunkSize")),65536,"[MIOOST][T041][vfs chunk size]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("vfs","httpChunkBytes")),262144,"[MIOOST][T041][http chunk bytes]")
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","performance","downloadStrategy")),"direct-http-range-native-with-websocket-fallback","[MIOOST][T041][download strategy]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 36 — VFS storage layout acceleration and upload accounting"),"[MIOOST][T041][llm roi36]")
 	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","ROI 36 — VFS storage layout acceleration and upload accounting"),"[MIOOST][T041][docs roi36]")
@@ -904,4 +906,64 @@ T043
 	DO OK^MIOTASSERT($$STATUS^MIOOSFSUP(.STATE,.CONF,UP,.OUT,.ERR),"[MIOOST][T043][status]")
 	DO EQ^MIOTASSERT(+$GET(OUT("receivedBytes")),7,"[MIOOST][T043][status bytes]")
 	QUIT
+	;
+T044
+	NEW CONF,STATE,OUT,ERR,UP,TEMPID,ID,RAW
+	DO RESET
+	DO CONFDEF^MIOOS(.CONF)
+	DO INIT^MIOOS(.CONF)
+	SET STATE("principal")=$GET(CONF("mioos","bootstrapAuth","admin","username"),"admin")
+	SET STATE("roles")=$GET(CONF("mioos","bootstrapAuth","admin","roles"),"admin")
+	SET RAW="PROMOTE-FAST-PATH"
+	DO OK^MIOTASSERT($$BEGIN^MIOOSFSUP(.STATE,.CONF,"fs-2","fast.bin","application/octet-stream",$LENGTH(RAW),"binary",.OUT,.ERR),"[MIOOST][T044][begin]")
+	SET UP=$GET(OUT("uploadId"))
+	SET TEMPID=$GET(^MIO("MIOOS","UPLOAD","INFO",UP,"tempId"))
+	DO EQ^MIOTASSERT(+$GET(^MIO("MIOOS","UPLOAD","INFO",UP,"fastPromote")),1,"[MIOOST][T044][fast promote]")
+	DO EQ^MIOTASSERT($GET(OUT("commitStrategy")),"direct-stage-promote","[MIOOST][T044][begin strategy]")
+	KILL OUT,ERR
+	DO OK^MIOTASSERT($$CHUNK^MIOOSFSUP(.STATE,.CONF,UP,1,RAW,$LENGTH(RAW),.OUT,.ERR),"[MIOOST][T044][chunk]")
+	DO EQ^MIOTASSERT($GET(^MIO("MIOOS","FS","DATA",TEMPID,1)),RAW,"[MIOOST][T044][staged data]")
+	KILL OUT,ERR
+	DO OK^MIOTASSERT($$STATUS^MIOOSFSUP(.STATE,.CONF,UP,.OUT,.ERR),"[MIOOST][T044][status]")
+	DO EQ^MIOTASSERT($GET(OUT("commitStrategy")),"direct-stage-promote","[MIOOST][T044][status strategy]")
+	KILL OUT,ERR
+	DO OK^MIOTASSERT($$COMMIT^MIOOSFSUP(.STATE,.CONF,UP,.OUT,.ERR),"[MIOOST][T044][commit]")
+	SET ID=$GET(OUT("id"))
+	DO EQ^MIOTASSERT(ID,TEMPID,"[MIOOST][T044][promoted id]")
+	DO EQ^MIOTASSERT(+$GET(^MIO("MIOOS","FS","INFO",ID,"chunkSize")),131072,"[MIOOST][T044][promoted chunk size]")
+	DO EQ^MIOTASSERT($GET(^MIO("MIOOS","FS","DATA",ID,1)),RAW,"[MIOOST][T044][final data]")
+	DO EQ^MIOTASSERT($DATA(^MIO("MIOOS","UPLOAD","INFO",UP)),0,"[MIOOST][T044][stage cleaned]")
+	QUIT
+	;
+T045
+	NEW CONF,STATE,OUT,ERR,UP,ID1,ID2,READOUT,RAW
+	DO RESET
+	DO CONFDEF^MIOOS(.CONF)
+	DO INIT^MIOOS(.CONF)
+	SET STATE("principal")=$GET(CONF("mioos","bootstrapAuth","admin","username"),"admin")
+	SET STATE("roles")=$GET(CONF("mioos","bootstrapAuth","admin","roles"),"admin")
+	DO OK^MIOTASSERT($$WRITE^MIOOSFS(.STATE,"fs-2","overwrite.bin","OLD","application/octet-stream",.OUT,.ERR),"[MIOOST][T045][seed]")
+	SET ID1=$GET(OUT("id"))
+	SET RAW=$CHAR(1,2,3)_"OVERWRITE"
+	KILL OUT,ERR
+	DO OK^MIOTASSERT($$BEGIN^MIOOSFSUP(.STATE,.CONF,"fs-2","overwrite.bin","application/octet-stream",$LENGTH(RAW),"binary",.OUT,.ERR),"[MIOOST][T045][begin]")
+	SET UP=$GET(OUT("uploadId"))
+	DO EQ^MIOTASSERT(+$GET(^MIO("MIOOS","UPLOAD","INFO",UP,"fastPromote")),0,"[MIOOST][T045][overwrite fallback]")
+	DO EQ^MIOTASSERT($GET(OUT("commitStrategy")),"copy-on-commit","[MIOOST][T045][begin strategy]")
+	KILL OUT,ERR
+	DO OK^MIOTASSERT($$CHUNK^MIOOSFSUP(.STATE,.CONF,UP,1,RAW,$LENGTH(RAW),.OUT,.ERR),"[MIOOST][T045][chunk]")
+	KILL OUT,ERR
+	DO OK^MIOTASSERT($$COMMIT^MIOOSFSUP(.STATE,.CONF,UP,.OUT,.ERR),"[MIOOST][T045][commit]")
+	SET ID2=$GET(OUT("id"))
+	DO EQ^MIOTASSERT(ID2,ID1,"[MIOOST][T045][preserve id]")
+	KILL READOUT,ERR
+	DO OK^MIOTASSERT($$READ^MIOOSFS(.STATE,ID2,.READOUT,.ERR),"[MIOOST][T045][read]")
+	DO EQ^MIOTASSERT($GET(READOUT("encoding")),"base64-dataurl","[MIOOST][T045][read encoding]")
+	DO EQ^MIOTASSERT($$B64D^MIOSJWT($PIECE($GET(READOUT("content")),",",2,99)),RAW,"[MIOOST][T045][roundtrip]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSST.m","uploadFinalizeStrategy"),"[MIOOST][T045][boot finalize strategy]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_state.js","uploadCommitStrategy"),"[MIOOST][T045][state commit strategy]")
+	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 37 — upload finalize direct-stage promote for new binary files"),"[MIOOST][T045][llm roi37]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","ROI 37 — upload finalize direct-stage promote for new binary files"),"[MIOOST][T045][docs roi37]")
+	QUIT
+	;
 	;

@@ -166,3 +166,11 @@ ROI 33 — HTTP binary chunk transport for resumable uploads and hardened pause/
 - Added per-file chunk-size metadata so new files use the faster layout while older files remain readable without migration.
 - Increased direct HTTP blob send chunk defaults to 512 KB to reduce server-side loop overhead for browser-native download and preview.
 - Reworked upload received-byte tracking to update incrementally per chunk instead of rescanning the full staged upload on every write.
+
+
+## ROI 37 — upload finalize direct-stage promote for new binary files
+
+- New binary uploads on the HTTP chunk path now stage directly into final VFS file nodes under a provisional file id.
+- When the destination name does not already exist, commit promotes that staged file id directly instead of copying or repacking the payload again at finalize time.
+- Overwrite uploads intentionally keep the older copy-on-commit behavior so existing file ids and entry metadata stay stable.
+- Upload status and boot metadata now expose the active commit strategy so diagnostics can distinguish direct-stage promote from overwrite fallback.

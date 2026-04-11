@@ -845,7 +845,7 @@
             encoding: 'binary'
           }).then(function (msg) {
             var uploadId = (msg && (msg.uploadId || ((msg.vfs || {}).uploadId))) || '';
-            var chunkBytes = +((msg && (msg.chunkBytes || ((msg.vfs || {}).chunkBytes))) || ((self.boot && self.boot.vfs && self.boot.vfs.uploadChunkBytes) || 65536));
+            var chunkBytes = +((msg && (msg.chunkBytes || ((msg.vfs || {}).chunkBytes))) || ((self.boot && self.boot.vfs && self.boot.vfs.uploadChunkBytes) || 256000));
             var concurrency = +((msg && (msg.concurrencyDefault || ((msg.vfs || {}).concurrencyDefault))) || ((self.boot && self.boot.vfs && self.boot.vfs.uploadConcurrency) || 4));
             var totalChunks = file.size > 0 ? Math.ceil(file.size / chunkBytes) : 0;
             if (!uploadId) throw new Error('upload_begin_failed');
