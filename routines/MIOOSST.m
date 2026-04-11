@@ -84,7 +84,8 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("uploadChunkTransport")=$GET(CONF("mioos","upload","chunkTransport"),"http-binary")
 	SET STATE("wsPath")=$GET(CONF("mioos","route","ws"),"/ws/mioos")
 	SET STATE("fsEnabled")=+$GET(CONF("mioos","fs","enabled"),1)
-	SET STATE("fsChunkSize")=+$GET(CONF("mioos","fs","chunkSize"),2048)
+	SET STATE("fsChunkSize")=+$GET(CONF("mioos","fs","chunkSize"),32768)
+	SET STATE("fsHttpChunkBytes")=+$GET(CONF("mioos","download","httpChunkBytes"),524288)
 	SET STATE("fsTransport")=$GET(CONF("mioos","fs","transport"),"http-and-websocket")
 	SET STATE("fsRootId")=$$ROOTID^MIOOSFS()
 	SET STATE("fsHomeId")=$$HOMEID^MIOOSFS()
@@ -283,7 +284,7 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","performance","payloadMode")=$GET(STATE("perfPayloadMode"),"tmp-global-safe")
 	SET OBJ("desktop","performance","transport")=$GET(STATE("perfTransport"),"websocket-first-http-refresh")
 	SET OBJ("desktop","performance","uploadStrategy")="batched-chunk-pool"
-	SET OBJ("desktop","performance","downloadStrategy")="chunked-websocket-verified"
+	SET OBJ("desktop","performance","downloadStrategy")="direct-http-range-native-with-websocket-fallback"
 	SET OBJ("desktop","viewers","text")=1
 	SET OBJ("desktop","viewers","image")=1
 	SET OBJ("desktop","viewers","media")=1
@@ -360,12 +361,13 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("vfs","transport")=$GET(STATE("fsTransport"),"http-and-websocket")
 	SET OBJ("vfs","rootId")=$GET(STATE("fsRootId"),"root")
 	SET OBJ("vfs","homeId")=$GET(STATE("fsHomeId"),"root")
-	SET OBJ("vfs","chunkSize")=+$GET(STATE("fsChunkSize"),2048)
+	SET OBJ("vfs","chunkSize")=+$GET(STATE("fsChunkSize"),32768)
 	SET OBJ("vfs","uploadChunkBytes")=$$UPCHUNK^MIOOSFSUP(.CONF)
 	SET OBJ("vfs","uploadConcurrency")=$$UPCONCUR^MIOOSFSUP(.CONF)
 	SET OBJ("vfs","uploadBatchSize")=+$GET(STATE("wsUploadBatchSize"),1)
 	SET OBJ("vfs","uploadChunkTransport")=$GET(STATE("uploadChunkTransport"),"http-binary")
 	SET OBJ("vfs","downloadChunkBytes")=$$DLCHUNK^MIOOSFSDN(.CONF)
+	SET OBJ("vfs","httpChunkBytes")=+$GET(STATE("fsHttpChunkBytes"),524288)
 	SET OBJ("vfs","downloadVerifyHash")=1
 	SET OBJ("vfs","uploadStaleSeconds")=+$GET(STATE("uploadStaleSeconds"),1800)
 	SET OBJ("vfs","downloadStaleSeconds")=+$GET(STATE("downloadStaleSeconds"),900)
@@ -652,3 +654,4 @@ CSV2ARY(CSV,ROOT)
 	. QUIT:ITEM=""
 	. SET N=N+1,@ROOT@(N)=ITEM
 	QUIT
+	;

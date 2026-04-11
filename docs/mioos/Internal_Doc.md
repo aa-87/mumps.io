@@ -174,3 +174,11 @@ ROI 33 — HTTP binary chunk transport for resumable uploads and hardened pause/
 - When the server reports a gap, the client now rewinds to the next missing chunk, replays the missing range, and only then retries final commit.
 - This reduces false-finalize failures such as `fs_upload_commit_failed` with `missing_chunk` under concurrent or bursty upload conditions.
 
+
+
+## ROI 36 — VFS storage layout acceleration and upload accounting
+
+- Raised the default VFS storage segment size for new files from 2 KB to 32 KB, while preserving transparent read compatibility for legacy 2 KB-segment files.
+- Added per-file chunk-size metadata so `READRANGE^MIOOSFS` and HTTP blob delivery can read each file using its actual stored layout instead of assuming one global segment size.
+- Increased HTTP blob send chunk defaults to 512 KB to reduce server loop overhead during native browser download and preview.
+- Reworked upload byte accounting in `MIOOSFSUP` to update received-byte totals incrementally instead of rescanning all chunk metadata on every chunk write.

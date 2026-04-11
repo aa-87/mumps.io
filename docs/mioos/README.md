@@ -158,3 +158,11 @@ ROI 33 — HTTP binary chunk transport for resumable uploads and hardened pause/
 - Supports `Range` requests for native browser streaming of images, audio, video, and PDF content.
 - Explorer preview, image viewer, media viewer, PDF viewer, and browser download handoff now use direct file URLs instead of websocket `fs.read` or serial chunk download for large binary payloads.
 - Keeps websocket control paths in place for text-oriented reads while moving bulk binary transfer onto HTTP for significantly better preview and download performance.
+
+
+## ROI 36 — VFS storage layout acceleration and upload accounting
+
+- Raised the default VFS storage segment size for new files from 2 KB to 32 KB, reducing global node count and read amplification for large files.
+- Added per-file chunk-size metadata so new files use the faster layout while older files remain readable without migration.
+- Increased direct HTTP blob send chunk defaults to 512 KB to reduce server-side loop overhead for browser-native download and preview.
+- Reworked upload received-byte tracking to update incrementally per chunk instead of rescanning the full staged upload on every write.

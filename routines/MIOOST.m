@@ -39,6 +39,9 @@ MIOOST ; MIOOS tests
 	DO T038
 	DO T039
 	DO T040
+	DO T041
+	DO T042
+	DO T043
 	QUIT
 	;
 RESET
@@ -833,3 +836,72 @@ T040
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","Accept-Ranges"),"[MIOOST][T040][range header]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","PARSERANGE^MIOSTATIC"),"[MIOOST][T040][range parser]")
 	QUIT
+
+T041
+	NEW CONF,REQ,CTX,STATE,ERR,JSON,OBJ
+	DO RESET
+	DO CONFDEF^MIOOS(.CONF)
+	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T041][load]")
+	SET JSON=$$BOOTJSON^MIOOSST(.STATE,.CONF)
+	DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T041][decode]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("vfs","chunkSize")),32768,"[MIOOST][T041][vfs chunk size]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("vfs","httpChunkBytes")),524288,"[MIOOST][T041][http chunk bytes]")
+	DO EQ^MIOTASSERT($GET(OBJ("desktop","performance","downloadStrategy")),"direct-http-range-native-with-websocket-fallback","[MIOOST][T041][download strategy]")
+	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 36 — VFS storage layout acceleration and upload accounting"),"[MIOOST][T041][llm roi36]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","ROI 36 — VFS storage layout acceleration and upload accounting"),"[MIOOST][T041][docs roi36]")
+	QUIT
+	;
+T042
+	NEW CONF,STATE,OUT,ERR,ID,BIG,SEG1,SEG2,SEG3,SLICE,READ,EXPECT,LID,LEGACY,NOW,I
+	DO RESET
+	DO CONFDEF^MIOOS(.CONF)
+	DO INIT^MIOOS(.CONF)
+	SET STATE("principal")=$GET(CONF("mioos","bootstrapAuth","admin","username"),"admin")
+	SET STATE("roles")=$GET(CONF("mioos","bootstrapAuth","admin","roles"),"admin")
+	SET SEG1=$TRANSLATE($JUSTIFY("",32768)," ","A")
+	SET SEG2=$TRANSLATE($JUSTIFY("",32768)," ","B")
+	SET SEG3=$TRANSLATE($JUSTIFY("",4464)," ","C")
+	SET BIG=SEG1_SEG2_SEG3
+	DO OK^MIOTASSERT($$WRITE^MIOOSFS(.STATE,$$HOMEID^MIOOSFS(),"big.txt",BIG,"text/plain",.OUT,.ERR),"[MIOOST][T042][write]")
+	SET ID=$GET(OUT("id"))
+	DO EQ^MIOTASSERT(+$GET(^MIO("MIOOS","FS","INFO",ID,"chunkSize")),32768,"[MIOOST][T042][stored chunk size]")
+	DO EQ^MIOTASSERT($ORDER(^MIO("MIOOS","FS","DATA",ID,""),-1),3,"[MIOOST][T042][segment count]")
+	KILL SLICE,ERR
+	DO OK^MIOTASSERT($$READRANGE^MIOOSFS(ID,32000,8000,.SLICE,.READ,.ERR),"[MIOOST][T042][readrange new]")
+	SET EXPECT=$TRANSLATE($JUSTIFY("",768)," ","A")_$TRANSLATE($JUSTIFY("",7232)," ","B")
+	DO EQ^MIOTASSERT(SLICE,EXPECT,"[MIOOST][T042][readrange new content]")
+	SET LID=$$NEXTID^MIOOSFS(),NOW=$HOROLOG,LEGACY=""
+	FOR I=1:1:5000 SET LEGACY=LEGACY_$CHAR(97+((I-1)#26))
+	DO SAVEENTRY^MIOOSFS(LID,"file",$$HOMEID^MIOOSFS(),"legacy.txt","text/plain",$LENGTH(LEGACY),NOW,NOW,STATE("principal"),STATE("roles"),1,1,1)
+	SET ^MIO("MIOOS","FS","CHILD",$$HOMEID^MIOOSFS(),"legacy.txt")=LID
+	SET ^MIO("MIOOS","FS","DATA",LID,1)=$EXTRACT(LEGACY,1,2048)
+	SET ^MIO("MIOOS","FS","DATA",LID,2)=$EXTRACT(LEGACY,2049,4096)
+	SET ^MIO("MIOOS","FS","DATA",LID,3)=$EXTRACT(LEGACY,4097,5000)
+	KILL SLICE,ERR
+	DO OK^MIOTASSERT($$READRANGE^MIOOSFS(LID,1900,600,.SLICE,.READ,.ERR),"[MIOOST][T042][readrange legacy]")
+	DO EQ^MIOTASSERT(SLICE,$EXTRACT(LEGACY,1901,2500),"[MIOOST][T042][readrange legacy content]")
+	QUIT
+	;
+T043
+	NEW CONF,STATE,OUT,ERR,UP
+	DO RESET
+	DO CONFDEF^MIOOS(.CONF)
+	DO INIT^MIOOS(.CONF)
+	SET STATE("principal")=$GET(CONF("mioos","bootstrapAuth","admin","username"),"admin")
+	SET STATE("roles")=$GET(CONF("mioos","bootstrapAuth","admin","roles"),"admin")
+	DO OK^MIOTASSERT($$BEGIN^MIOOSFSUP(.STATE,.CONF,"fs-2","delta.bin","application/octet-stream",8,"binary",.OUT,.ERR),"[MIOOST][T043][begin]")
+	SET UP=$GET(OUT("uploadId"))
+	KILL OUT,ERR
+	DO OK^MIOTASSERT($$CHUNK^MIOOSFSUP(.STATE,.CONF,UP,1,"ABCD",4,.OUT,.ERR),"[MIOOST][T043][chunk1]")
+	DO EQ^MIOTASSERT(+$GET(OUT("receivedBytes")),4,"[MIOOST][T043][bytes 4]")
+	KILL OUT,ERR
+	DO OK^MIOTASSERT($$CHUNK^MIOOSFSUP(.STATE,.CONF,UP,2,"EFGH",4,.OUT,.ERR),"[MIOOST][T043][chunk2]")
+	DO EQ^MIOTASSERT(+$GET(OUT("receivedBytes")),8,"[MIOOST][T043][bytes 8]")
+	KILL OUT,ERR
+	DO OK^MIOTASSERT($$CHUNK^MIOOSFSUP(.STATE,.CONF,UP,1,"ABC",3,.OUT,.ERR),"[MIOOST][T043][chunk1 replace]")
+	DO EQ^MIOTASSERT(+$GET(OUT("receivedBytes")),7,"[MIOOST][T043][bytes 7]")
+	KILL OUT,ERR
+	DO OK^MIOTASSERT($$STATUS^MIOOSFSUP(.STATE,.CONF,UP,.OUT,.ERR),"[MIOOST][T043][status]")
+	DO EQ^MIOTASSERT(+$GET(OUT("receivedBytes")),7,"[MIOOST][T043][status bytes]")
+	QUIT
+	;
