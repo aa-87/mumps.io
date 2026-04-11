@@ -1053,7 +1053,9 @@ T050 ; storechunk inference + binary socket mode markers
 	SET CH=$$STORECHUNK^MIOOSFS(ID,.CONF)
 	DO EQ^MIOTASSERT(CH,32768,"[MIOOST][T050][inferred chunk size]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOSOCK.m","CHSET=""M"""),"[MIOOST][T050][socket m mode]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","LOGSTREAM(.CTX,RID,RS,RLEN,.SERR)"),"[MIOOST][T050][stream log range]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","fs_blob_write_stalled"),"[MIOOST][T050][stream write stall]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSFSUP.m","$ZEXTRACT(BUF,1,CUT)"),"[MIOOST][T050][binary append zextract]")
 	QUIT
 	;
+
 	;
