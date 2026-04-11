@@ -60,6 +60,37 @@
     return bytes;
   }
 
+  function base64ToBytes(raw) {
+    var value = String(raw || '');
+    var binary = value ? window.atob(value) : '';
+    return stringToBytes(binary);
+  }
+
+  function concatBytes(chunks) {
+    var total = 0;
+    var index = 0;
+    var out;
+    chunks = chunks || [];
+    for (index = 0; index < chunks.length; index += 1) total += (chunks[index] && chunks[index].length) || 0;
+    out = new Uint8Array(total);
+    total = 0;
+    for (index = 0; index < chunks.length; index += 1) {
+      if (!chunks[index] || !chunks[index].length) continue;
+      out.set(chunks[index], total);
+      total += chunks[index].length;
+    }
+    return out;
+  }
+
+  function sha256HexBytes(bytes) {
+    if (!window.crypto || !window.crypto.subtle) return Promise.resolve('');
+    return window.crypto.subtle.digest('SHA-256', bytes instanceof Uint8Array ? bytes : stringToBytes(bytes)).then(function (hash) {
+      return bytesToHex(new Uint8Array(hash));
+    }).catch(function () {
+      return '';
+    });
+  }
+
   function bytesToHex(bytes) {
     var out = '';
     var i;
@@ -1103,28 +1134,33 @@
           var totalBytes = +begin.transferBytes || +begin.size || 0;
           var logicalBytes = +begin.size || totalBytes;
           var chunkSize = +begin.chunkSize || 32768;
+          var downloadEncoding = String(begin.encoding || 'text').toLowerCase();
           var offset = 0;
           var pieces = [];
           activeDownloadId = begin.downloadId || '';
           if (transferId && self.updateTransfer) self.updateTransfer(transferId, { totalBytes: totalBytes, logicalBytes: logicalBytes, processedBytes: 0, progress: 0, stage: 'Downloading' });
+          function assembledResult() {
+            return downloadEncoding === 'base64' ? concatBytes(pieces) : pieces.join('');
+          }
           function nextChunk() {
-            if (totalBytes > 0 && offset >= totalBytes) return Promise.resolve(pieces.join(''));
+            if (totalBytes > 0 && offset >= totalBytes) return Promise.resolve(assembledResult());
             return self.command('fs.download.chunk', { downloadId: begin.downloadId, offset: offset, size: chunkSize }).then(function (chunkMsg) {
               var chunk = payloadRoot(chunkMsg);
               var data = chunk.data || '';
-              var nextOffset = +chunk.nextOffset || (offset + data.length);
-              pieces.push(data);
+              var chunkEncoding = String(chunk.encoding || downloadEncoding).toLowerCase();
+              var nextOffset = +chunk.nextOffset || (offset + (+chunk.size || 0) || (chunkEncoding === 'base64' ? 0 : String(data).length));
+              pieces.push(chunkEncoding === 'base64' ? base64ToBytes(data) : String(data));
               if (nextOffset <= offset && !(+chunk.eof === 1 || chunk.eof === true)) throw new Error('download_offset_stalled');
               offset = nextOffset;
               if (transferId && self.updateTransfer) self.updateTransfer(transferId, { processedBytes: offset, totalBytes: +chunk.totalBytes || totalBytes, progress: totalBytes > 0 ? Math.round((offset / totalBytes) * 100) : 0, stage: (+chunk.eof === 1 || chunk.eof === true) ? 'Finalizing' : 'Downloading' });
-              if (+chunk.eof === 1 || chunk.eof === true) return pieces.join('');
+              if (+chunk.eof === 1 || chunk.eof === true) return assembledResult();
               return nextChunk();
             });
           }
           return nextChunk().then(function (raw) {
             if (+begin.verifyHash === 1 || begin.verifyHash === true) {
-              if (transferId && self.updateTransfer) self.updateTransfer(transferId, { status: 'verifying', stage: 'Verifying download', processedBytes: totalBytes || raw.length, totalBytes: totalBytes || raw.length, progress: 100 });
-              return sha256Hex(raw).then(function (actualHash) {
+              if (transferId && self.updateTransfer) self.updateTransfer(transferId, { status: 'verifying', stage: 'Verifying download', processedBytes: totalBytes || logicalBytes || 0, totalBytes: totalBytes || logicalBytes || 0, progress: 100 });
+              return (downloadEncoding === 'base64' ? sha256HexBytes(raw) : sha256Hex(raw)).then(function (actualHash) {
                 var expectedHash = String(begin.sha256 || '').toLowerCase();
                 if (expectedHash && actualHash && expectedHash !== actualHash) throw new Error('download_hash_mismatch');
                 return raw;
@@ -1133,7 +1169,7 @@
             return raw;
           }).then(function (raw) {
             triggerSave(raw);
-            if (transferId && self.finalizeTransfer) self.finalizeTransfer(transferId, true, { processedBytes: totalBytes || raw.length, totalBytes: totalBytes || raw.length, logicalBytes: logicalBytes, progress: 100, stage: 'Saved to browser download manager' });
+            if (transferId && self.finalizeTransfer) self.finalizeTransfer(transferId, true, { processedBytes: totalBytes || logicalBytes || 0, totalBytes: totalBytes || logicalBytes || 0, logicalBytes: logicalBytes, progress: 100, stage: 'Saved to browser download manager' });
             return abortDownload();
           });
         }).catch(function (err) {

@@ -37,6 +37,7 @@ MIOOST ; MIOOS tests
 	DO T036
 	DO T037
 	DO T038
+	DO T039
 	QUIT
 	;
 RESET
@@ -781,3 +782,40 @@ T038
 	DO EQ^MIOTASSERT($$COMMIT^MIOOSFSUP(.STATE,.CONF,UP,.OUT,.ERR),0,"[MIOOST][T038][commit blocked]")
 	DO EQ^MIOTASSERT($GET(ERR("error")),"missing_chunk","[MIOOST][T038][missing chunk]")
 	QUIT
+	;
+T039
+	NEW CONF,STATE,OUT,ERR,UP,ID,RAW,READOUT,DL,CHUNK,B64
+	DO RESET
+	DO CONFDEF^MIOOS(.CONF)
+	DO INIT^MIOOS(.CONF)
+	SET STATE("principal")=$GET(CONF("mioos","bootstrapAuth","admin","username"),"admin")
+	SET STATE("roles")=$GET(CONF("mioos","bootstrapAuth","admin","roles"),"admin")
+	SET RAW=$CHAR(1,2,3,34,92,127)_"MIO"
+	DO OK^MIOTASSERT($$BEGIN^MIOOSFSUP(.STATE,.CONF,"fs-2","roundtrip.bin","application/octet-stream",$LENGTH(RAW),"binary",.OUT,.ERR),"[MIOOST][T039][begin]")
+	SET UP=$GET(OUT("uploadId"))
+	KILL OUT,ERR
+	DO OK^MIOTASSERT($$CHUNK^MIOOSFSUP(.STATE,.CONF,UP,1,RAW,$LENGTH(RAW),.OUT,.ERR),"[MIOOST][T039][chunk]")
+	KILL OUT,ERR
+	DO OK^MIOTASSERT($$STATUS^MIOOSFSUP(.STATE,.CONF,UP,.OUT,.ERR),"[MIOOST][T039][status]")
+	DO EQ^MIOTASSERT(+$GET(OUT("nextIndex")),2,"[MIOOST][T039][next index]")
+	DO EQ^MIOTASSERT(+$GET(OUT("chunkCount")),1,"[MIOOST][T039][chunk count]")
+	DO EQ^MIOTASSERT(+$GET(OUT("expectedChunks")),1,"[MIOOST][T039][expected chunks]")
+	DO EQ^MIOTASSERT(+$GET(OUT("contiguousBytes")),$LENGTH(RAW),"[MIOOST][T039][contiguous bytes]")
+	KILL OUT,ERR
+	DO OK^MIOTASSERT($$COMMIT^MIOOSFSUP(.STATE,.CONF,UP,.OUT,.ERR),"[MIOOST][T039][commit]")
+	SET ID=$GET(OUT("id"))
+	DO OK^MIOTASSERT(ID'="","[MIOOST][T039][file id]")
+	KILL READOUT,ERR
+	DO OK^MIOTASSERT($$READ^MIOOSFS(.STATE,ID,.READOUT,.ERR),"[MIOOST][T039][read]")
+	DO EQ^MIOTASSERT($GET(READOUT("encoding")),"base64-dataurl","[MIOOST][T039][read encoding]")
+	SET B64=$PIECE($GET(READOUT("content")),",",2,99)
+	DO EQ^MIOTASSERT($$B64D^MIOSJWT(B64),RAW,"[MIOOST][T039][read roundtrip]")
+	KILL DL,ERR
+	DO OK^MIOTASSERT($$BEGIN^MIOOSFSDN(.STATE,.CONF,ID,.DL,.ERR),"[MIOOST][T039][download begin]")
+	DO EQ^MIOTASSERT($GET(DL("encoding")),"base64","[MIOOST][T039][download encoding]")
+	KILL CHUNK,ERR
+	DO OK^MIOTASSERT($$CHUNK^MIOOSFSDN(.STATE,$GET(DL("downloadId")),0,32768,.CHUNK,.ERR),"[MIOOST][T039][download chunk]")
+	DO EQ^MIOTASSERT($GET(CHUNK("encoding")),"base64","[MIOOST][T039][chunk encoding]")
+	DO EQ^MIOTASSERT($$B64D^MIOSJWT($GET(CHUNK("data"))),RAW,"[MIOOST][T039][download roundtrip]")
+	DO EQ^MIOTASSERT(+$GET(CHUNK("nextOffset")),$LENGTH(RAW),"[MIOOST][T039][download next offset]")
+	DO EQ^MIOTASSERT(+$GET(CHUNK("eof")),1,"[MIOOST][T039][download eof]")

@@ -125,3 +125,9 @@ This ROI adds typed password policy defaults, forced password change support for
 - Added bounded client-side websocket event history in the shell so recent command and message activity can be inspected inside MIOOS while preserving the existing websocket-first model.
 
 ROI 33 — HTTP binary chunk transport for resumable uploads and hardened pause/resume
+
+## ROI 34 — Upload commit reconciliation and missing-chunk self-heal
+- Hardened HTTP binary uploads so Explorer reconciles staged server state through `fs.upload.status` before commit instead of assuming every acknowledged chunk is durably complete.
+- When the server reports a gap, the client now rewinds to the next missing chunk, replays the missing range, and only then retries final commit.
+- This reduces false-finalize failures such as `fs_upload_commit_failed` with `missing_chunk` under concurrent or bursty upload conditions.
+

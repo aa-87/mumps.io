@@ -275,3 +275,8 @@ This ROI adds typed password policy defaults, forced password change support for
 - Added bounded client-side websocket event history in the shell so recent command and message activity can be inspected inside MIOOS while preserving the existing websocket-first model.
 
 ROI 33 — HTTP binary chunk transport for resumable uploads and hardened pause/resume
+
+## ROI 34 — Binary upload integrity, chunked download decoding, and preview hardening
+- Normalized uploaded binary storage so both HTTP raw-binary uploads and websocket base64 uploads commit into the VFS as raw bytes instead of JSON-transport strings.
+- Hardened `fs.download.begin`/`fs.download.chunk` to advertise and return binary-safe base64 chunks over websocket/JSON, preserving byte offsets while keeping the current high-performance upload workflow.
+- Moved image/media/PDF preview loading to the chunked download path and added regression coverage in `MIOOST` for upload -> commit -> read -> chunk-download roundtrip integrity.

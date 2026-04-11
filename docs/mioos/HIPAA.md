@@ -109,3 +109,9 @@ This ROI adds typed password policy defaults, forced password change support for
 - Added a built-in Debug Center desktop app/window for server snapshot inspection, command registry visibility, and recent websocket activity.
 - Added websocket command `debug.snapshot` in `MIOOSWS` so developers can inspect shell counts, routes, transport posture, auth posture, and module manifests without relying on extra HTTP endpoints.
 - Added bounded client-side websocket event history in the shell so recent command and message activity can be inspected inside MIOOS while preserving the existing websocket-first model.
+
+## ROI 34 — Upload commit reconciliation and missing-chunk self-heal
+- Hardened HTTP binary uploads so Explorer reconciles staged server state through `fs.upload.status` before commit instead of assuming every acknowledged chunk is durably complete.
+- When the server reports a gap, the client now rewinds to the next missing chunk, replays the missing range, and only then retries final commit.
+- This reduces false-finalize failures such as `fs_upload_commit_failed` with `missing_chunk` under concurrent or bursty upload conditions.
+
