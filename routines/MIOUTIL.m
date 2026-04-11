@@ -292,3 +292,4 @@ REPLACE(s,f,t)
 	n o,i s o="" f i=1:1:$l(s,f)  s o=o_$s(i<$l(s,f):$p(s,f,i)_t,1:$p(s,f,i))
 	q o
 LOW(X) Q $ZCONVERT(X,"L")
+	;	

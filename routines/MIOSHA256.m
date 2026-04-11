@@ -1,99 +1,141 @@
 MIOSHA256 ; Pure MUMPS SHA-256 / HMAC-SHA256
 	;
 	; Public entry points
-	;   $$SHA256^MIOSHA256(DATA)        -> 64-char lowercase hex digest
-	;   $$HMAC^MIOSHA256(KEY,DATA)      -> 64-char lowercase hex HMAC-SHA256
-	;   $$HMACHEX^MIOSHA256(KEYHEX,DATA)-> 64-char lowercase hex HMAC-SHA256, hex key input
-	;   $$HEX2RAW^MIOSHA256(HEX)        -> raw bytes from hex
-	;   $$RAW2HEX^MIOSHA256(BIN)        -> lowercase hex from raw bytes
+	;   $$SHA256^MIOSHA256(DATA)          -> 64-char lowercase hex digest
+	;   $$SHA256RAW^MIOSHA256(DATA)       -> 32 raw digest bytes
+	;   $$SHA256REF^MIOSHA256(REF)        -> 64-char lowercase hex digest from ref root
+	;   $$SHA256REFRAW^MIOSHA256(REF)     -> 32 raw digest bytes from ref root
+	;   $$HMAC^MIOSHA256(KEY,DATA)        -> 64-char lowercase hex HMAC-SHA256
+	;   $$HMACRAW^MIOSHA256(KEY,DATA)     -> 32 raw HMAC-SHA256 bytes
+	;   $$HMACHEX^MIOSHA256(KEYHEX,DATA)  -> 64-char lowercase hex HMAC-SHA256, hex key input
+	;   $$HEX2RAW^MIOSHA256(HEX)          -> raw bytes from hex
+	;   $$RAW2HEX^MIOSHA256(BIN)          -> lowercase hex from raw bytes
 	;
 	; Notes
-	; - Pure MUMPS implementation; no shell calls, no external libraries.;
-	; - Optimized for YottaDB / GT.M style runtimes.;
-	; - Input strings are treated as raw byte strings.;
+	; - Pure MUMPS implementation; no shell calls, no external libraries.
+	; - Input strings are treated as byte strings.
+	; - Streaming update/final flow avoids building one giant padded message copy.
 	;
 	Q
 	;
 SHA256(DATA) ;
-	N J,I,ML,PAD,BITLEN,HI,LO,OFF,T
-	N A,B,C,D,E,F,G,H,T1,T2
-	N W,HV,OUT,BLK
-	D INIT
+	Q $$RAW2HEX($$SHA256RAW($G(DATA)))
 	;
-	S ML=$L($G(DATA))
-	S DATA=$G(DATA)_$C(128)
-	S PAD=((56-((ML+1)#64))+64)#64
-	I PAD>0 S DATA=DATA_$$REPEAT($C(0),PAD)
+SHA256RAW(DATA) ;
+	N CTX
+	D CTXINIT(.CTX)
+	D UPDATE($G(DATA),.CTX)
+	Q $$FINAL(.CTX)
 	;
-	; append 64-bit big-endian bit length
-	S BITLEN=ML*8
-	S HI=(BITLEN\4294967296)#4294967296
-	S LO=BITLEN#4294967296
-	S DATA=DATA_$$BE32(HI)_$$BE32(LO)
+SHA256REF(REF) ;
+	Q $$RAW2HEX($$SHA256REFRAW($G(REF)))
 	;
-	; initial hash values
-	F I=0:1:7 S HV(I)=^MIO("MIOSHA256","IV",I)
+SHA256REFRAW(REF) ;
+	N ROOT,PREFIX,NODE,CTX
+	D CTXINIT(.CTX)
+	S ROOT=$G(REF)
+	I ROOT="" Q $$FINAL(.CTX)
+	I $D(@ROOT)#10 D UPDATE($G(@ROOT),.CTX)
+	S PREFIX=$$REFPFX(ROOT)
+	S NODE=$Q(@ROOT)
+	F  Q:NODE=""  Q:$E(NODE,1,$L(PREFIX))'=PREFIX  D  S NODE=$Q(@NODE)
+	. I $D(@NODE)#10 D UPDATE($G(@NODE),.CTX)
+	Q $$FINAL(.CTX)
 	;
-	F OFF=1:64:$L(DATA) D
-	. ; message schedule
-	. F T=0:1:15 S W(T)=$$GET32(DATA,OFF+(T*4))
-	. F T=16:1:63 D
-	. . S W(T)=$$U32($$SSIG1(W(T-2))+W(T-7)+$$SSIG0(W(T-15))+W(T-16))
-	. ;
-	. S A=HV(0),B=HV(1),C=HV(2),D=HV(3)
-	. S E=HV(4),F=HV(5),G=HV(6),H=HV(7)
-	. ;
-	. F T=0:1:63 D
-	. . S T1=$$U32(H+$$BSIG1(E)+$$CH(E,F,G)+^MIO("MIOSHA256","K",T)+W(T))
-	. . S T2=$$U32($$BSIG0(A)+$$MAJ(A,B,C))
-	. . S H=G
-	. . S G=F
-	. . S F=E
-	. . S E=$$U32(D+T1)
-	. . S D=C
-	. . S C=B
-	. . S B=A
-	. . S A=$$U32(T1+T2)
-	. ;
-	. S HV(0)=$$U32(HV(0)+A)
-	. S HV(1)=$$U32(HV(1)+B)
-	. S HV(2)=$$U32(HV(2)+C)
-	. S HV(3)=$$U32(HV(3)+D)
-	. S HV(4)=$$U32(HV(4)+E)
-	. S HV(5)=$$U32(HV(5)+F)
-	. S HV(6)=$$U32(HV(6)+G)
-	. S HV(7)=$$U32(HV(7)+H)
-	;
-	S OUT=""
-	F I=0:1:7 S OUT=OUT_$$HEX8(HV(I))
-	Q OUT
+REFPFX(ROOT) ;
+	N LAST
+	S ROOT=$G(ROOT)
+	I ROOT="" Q ""
+	S LAST=$E(ROOT,$L(ROOT))
+	I LAST=")",ROOT["(" Q $E(ROOT,1,$L(ROOT)-1)_","
+	Q ROOT_"("
 	;
 HMAC(KEY,DATA) ;
-	N BKEY,IPAD,OPAD,I,LEN
+	Q $$RAW2HEX($$HMACRAW($G(KEY),$G(DATA)))
+	;
+HMACRAW(KEY,DATA) ;
+	N BKEY,IPAD,OPAD,I,B,INNER
 	D INIT
 	S BKEY=$G(KEY)
-	;
-	; RFC 2104 / 4231 key normalization
-	I $L(BKEY)>64 S BKEY=$$HEX2RAW($$SHA256(BKEY))
+	I $L(BKEY)>64 S BKEY=$$SHA256RAW(BKEY)
 	I $L(BKEY)<64 S BKEY=BKEY_$$REPEAT($C(0),64-$L(BKEY))
-	;
 	S IPAD="",OPAD=""
 	F I=1:1:64 D
-	. S LEN=$A(BKEY,I)
-	. S IPAD=IPAD_$C(^MIO("MIOSHA256","xor",LEN,54))
-	. S OPAD=OPAD_$C(^MIO("MIOSHA256","xor",LEN,92))
-	;
-	Q $$SHA256(OPAD_$$HEX2RAW($$SHA256(IPAD_$G(DATA))))
+	. S B=$A(BKEY,I)
+	. S IPAD=IPAD_$C(^MIO("MIOSHA256","xor",B,54))
+	. S OPAD=OPAD_$C(^MIO("MIOSHA256","xor",B,92))
+	S INNER=$$SHA256RAW(IPAD_$G(DATA))
+	Q $$SHA256RAW(OPAD_INNER)
 	;
 HMACHEX(KEYHEX,DATA) ;
 	Q $$HMAC($$HEX2RAW($G(KEYHEX)),$G(DATA))
+	;
+CTXINIT(CTX) ;
+	N I
+	D INIT
+	K CTX
+	F I=0:1:7 S CTX("H",I)=^MIO("MIOSHA256","IV",I)
+	F I=0:1:63 S CTX("K",I)=^MIO("MIOSHA256","K",I)
+	S CTX("ML")=0
+	S CTX("BUF")=""
+	Q
+	;
+UPDATE(DATA,CTX) ;
+	N WORK,WLEN,PROC,OFF
+	S DATA=$G(DATA)
+	I DATA="" Q
+	S CTX("ML")=+$G(CTX("ML"))+$L(DATA)
+	S WORK=$G(CTX("BUF"))_DATA
+	S WLEN=$L(WORK),PROC=(WLEN\64)*64
+	F OFF=1:64:PROC D COMPRESS($E(WORK,OFF,OFF+63),.CTX)
+	S CTX("BUF")=$E(WORK,PROC+1,WLEN)
+	Q
+	;
+FINAL(CTX) ;
+	N BUF,ML,PAD,BITLEN,HI,LO,OFF
+	S BUF=$G(CTX("BUF")),ML=+$G(CTX("ML"))
+	S BUF=BUF_$C(128)
+	S PAD=((56-((ML+1)#64))+64)#64
+	I PAD>0 S BUF=BUF_$$REPEAT($C(0),PAD)
+	S BITLEN=ML*8
+	S HI=(BITLEN\4294967296)#4294967296
+	S LO=BITLEN#4294967296
+	S BUF=BUF_$$BE32(HI)_$$BE32(LO)
+	F OFF=1:64:$L(BUF) D COMPRESS($E(BUF,OFF,OFF+63),.CTX)
+	Q $$DIGESTRAW(.CTX)
+	;
+DIGESTRAW(CTX) ;
+	N I,OUT
+	S OUT=""
+	F I=0:1:7 S OUT=OUT_$$BE32(+$G(CTX("H",I)))
+	Q OUT
+	;
+COMPRESS(BLK,CTX) ;
+	N T,W,A,B,C,D,E,F,G,H,T1,T2
+	F T=0:1:15 S W(T)=$$GET32(BLK,(T*4)+1)
+	F T=16:1:63 S W(T)=$$U32($$SSIG1(W(T-2))+W(T-7)+$$SSIG0(W(T-15))+W(T-16))
+	S A=CTX("H",0),B=CTX("H",1),C=CTX("H",2),D=CTX("H",3)
+	S E=CTX("H",4),F=CTX("H",5),G=CTX("H",6),H=CTX("H",7)
+	F T=0:1:63 D
+	. S T1=$$U32(H+$$BSIG1(E)+$$CH(E,F,G)+CTX("K",T)+W(T))
+	. S T2=$$U32($$BSIG0(A)+$$MAJ(A,B,C))
+	. S H=G,G=F,F=E,E=$$U32(D+T1),D=C,C=B,B=A,A=$$U32(T1+T2)
+	S CTX("H",0)=$$U32(CTX("H",0)+A)
+	S CTX("H",1)=$$U32(CTX("H",1)+B)
+	S CTX("H",2)=$$U32(CTX("H",2)+C)
+	S CTX("H",3)=$$U32(CTX("H",3)+D)
+	S CTX("H",4)=$$U32(CTX("H",4)+E)
+	S CTX("H",5)=$$U32(CTX("H",5)+F)
+	S CTX("H",6)=$$U32(CTX("H",6)+G)
+	S CTX("H",7)=$$U32(CTX("H",7)+H)
+	Q
 	;
 	; =========================
 	; Internal helpers
 	; =========================
 	;
 INIT ;
-	N A,B,I,X,LIST,CNT
+	N A,B,I,LIST
 	I $G(^MIO("MIOSHA256","READY")) Q
 	K ^MIO("MIOSHA256")
 	;
@@ -249,8 +291,11 @@ LOW(S) ;
 	Q R
 	;
 REPEAT(CH,N) ;
-	N I,R
-	S R=""
-	F I=1:1:N S R=R_CH
+	N R,UNIT
+	S R="",UNIT=$G(CH),N=+$G(N)
+	F  Q:N<1  D
+	. I N#2 S R=R_UNIT
+	. S N=N\2
+	. I N>0 S UNIT=UNIT_UNIT
 	Q R
 	;

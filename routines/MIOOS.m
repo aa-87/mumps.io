@@ -140,6 +140,7 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","upload","chunkBytes"))="" SET CONF("mioos","upload","chunkBytes")=262144
 	IF $GET(CONF("mioos","upload","concurrency"))="" SET CONF("mioos","upload","concurrency")=6
 	IF $GET(CONF("mioos","upload","commitStrategy"))="" SET CONF("mioos","upload","commitStrategy")="binary-direct-stage-promote-with-copy-on-overwrite"
+	IF $GET(CONF("mioos","fs","hashOnWrite"))="" SET CONF("mioos","fs","hashOnWrite")="deferred-job"
 	IF $GET(CONF("mioos","terminal","pipe","sessionIdleSeconds"))="" SET CONF("mioos","terminal","pipe","sessionIdleSeconds")=900
 	IF $GET(CONF("auth","protectMode"))="" SET CONF("auth","protectMode")="route"
 	IF $GET(CONF("auth","mode"))="" SET CONF("auth","mode")="jwt"

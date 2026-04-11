@@ -48,6 +48,7 @@ MIOOST ; MIOOS tests
 	DO T047
 	DO T048
 	DO T049
+	DO T050
 	QUIT
 	;
 RESET
@@ -1013,7 +1014,7 @@ T047
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","autoPauseTransfersByReason"),"[MIOOST][T047][auto pause method]")
 	QUIT
 	;
-
+	;
 T048
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","STREAM=""media"""),"[MIOOST][T048][blob stream query]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","ISMEDIAMIME(MIME)"),"[MIOOST][T048][blob media helper]")
@@ -1023,7 +1024,7 @@ T048
 	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","ROI 39 — persistent transfer recovery and media-first streaming"),"[MIOOST][T048][docs roi39]")
 	QUIT
 	;
-
+	;
 T049
 	NEW CONF,REQ,CTX,STATE,BOOT,ERR
 	DO RESET
@@ -1039,4 +1040,20 @@ T049
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","pauseForDisconnect"),"[MIOOST][T049][disconnect pause]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","onPause: function () { return pauseUpload"),"[MIOOST][T049][resume pause control]")
 	QUIT
+	;
+	;
+	;
+T050 ; storechunk inference + binary socket mode markers
+	NEW ID,CH
+	SET ID=$$NEXTID^MIOOSFS()
+	DO SAVEENTRY^MIOOSFS(ID,"file","fs-2","legacy.bin","application/octet-stream",524288,$HOROLOG,$HOROLOG,"admin","admin",1,1,1)
+	SET ^MIO("MIOOS","FS","DATA",ID,1)=$JUSTIFY("",32768)
+	SET ^MIO("MIOOS","FS","DATA",ID,2)=$JUSTIFY("",32768)
+	KILL ^MIO("MIOOS","FS","INFO",ID,"chunkSize")
+	SET CH=$$STORECHUNK^MIOOSFS(ID,.CONF)
+	DO EQ^MIOTASSERT(CH,32768,"[MIOOST][T050][inferred chunk size]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOSOCK.m","CHSET=""M"""),"[MIOOST][T050][socket m mode]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","LOGSTREAM(.CTX,RID,RS,RLEN,.SERR)"),"[MIOOST][T050][stream log range]")
+	QUIT
+	;
 	;
