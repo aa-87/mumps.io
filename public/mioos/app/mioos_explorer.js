@@ -388,7 +388,7 @@
         var pool = socketPoolConfig(this);
         var active = Math.max(1, Math.min(pool.maxSocketsPerSession, Math.min(pool.fsSockets, +(concurrency || pool.fsSockets || 2))));
         var batchWidth = 1;
-        var frameBudget = 65536;
+        var frameBudget = 256000;
         return new Promise(function (resolve, reject) {
           function cancelled() {
             return !!(transferControl && transferControl.cancelled);
@@ -840,6 +840,12 @@
       explorerUploadStatusRoute: function () { return ((this.boot.routes || {}).fsUploadStatus) || '/api/mioos/fs/upload/status'; },
       explorerUploadCommitRoute: function () { return ((this.boot.routes || {}).fsUploadCommit) || '/api/mioos/fs/upload/commit'; },
       explorerUploadAbortRoute: function () { return ((this.boot.routes || {}).fsUploadAbort) || '/api/mioos/fs/upload/abort'; },
+      explorerUploadMode: function () {
+        var mode = ((((this.boot || {}).vfs || {}).uploadMode) || 'resumable-chunk-session');
+        mode = String(mode || '').toLowerCase();
+        if (mode === 'single' || mode === 'single-request-http' || mode === 'single-request-multipart') return 'single-request';
+        return mode === 'single-request' ? mode : 'resumable-chunk-session';
+      },
       explorerCopyRoute: function () { return ((this.boot.routes || {}).fsCopy) || '/api/mioos/fs/copy'; },
       explorerDownloadRoute: function () {
         return ((this.boot.routes || {}).fsDownload) || '/api/mioos/fs/download';
@@ -937,16 +943,16 @@
         var mime;
         if (!state || !file) return Promise.resolve();
         mime = file.type || 'application/octet-stream';
-        if ((this.boot.routes || {}).fsUploadBegin) {
-          if ((filesLike || []).length > 1) {
-            return Array.prototype.slice.call(filesLike).reduce(function (chain, nextFile) {
-              return chain.then(function () { return self.uploadFilesToExplorer(windowId, [nextFile]); });
-            }, Promise.resolve());
-          }
+        if ((filesLike || []).length > 1) {
+          return Array.prototype.slice.call(filesLike).reduce(function (chain, nextFile) {
+            return chain.then(function () { return self.uploadFilesToExplorer(windowId, [nextFile]); });
+          }, Promise.resolve());
+        }
+        if (this.explorerUploadMode() === 'resumable-chunk-session' && (this.boot.routes || {}).fsUploadBegin) {
           var transferId2 = this.registerTransfer ? this.registerTransfer({ kind: 'upload', name: file.name, status: 'preparing', stage: 'Preparing', totalBytes: file.size, processedBytes: 0, sourceWindowId: windowId }) : '';
-          var chunkBytes = +((((self.boot || {}).vfs || {}).uploadChunkBytes) || 1048576);
+          var chunkBytes = +((((self.boot || {}).vfs || {}).uploadChunkBytes) || 256000);
           var concurrency = +((((self.boot || {}).vfs || {}).uploadConcurrency) || 4);
-          if (!Number.isFinite(chunkBytes) || chunkBytes < 4096) chunkBytes = 1048576;
+          if (!Number.isFinite(chunkBytes) || chunkBytes < 4096) chunkBytes = 256000;
           if (!Number.isFinite(concurrency) || concurrency < 1) concurrency = 1;
           if (concurrency > 8) concurrency = 8;
           var totalChunks = file.size > 0 ? Math.ceil(file.size / chunkBytes) : 0;
@@ -1180,6 +1186,7 @@
         if (transferId && self.setTransferController) {
           self.setTransferController(transferId, {
             onRetry: function () { return self.uploadFilesToExplorer(windowId, [file]); },
+            onRestart: function () { return self.uploadFilesToExplorer(windowId, [file]); },
             onCancel: function () {
               transferControl.cancelled = true;
               if (transferControl.xhr) {
@@ -1380,7 +1387,7 @@
           return Promise.resolve();
         }
         if (httpHref) {
-          var chunkBytes = +((((this.boot || {}).vfs || {}).downloadHttpChunkBytes) || 1048576);
+          var chunkBytes = +((((this.boot || {}).vfs || {}).downloadHttpChunkBytes) || 256000);
           var totalBytes = +((item || {}).size || 0);
           var offset = 0;
           var buffers = [];

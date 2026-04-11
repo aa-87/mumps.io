@@ -118,11 +118,11 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("wsUploadSocketOpenTimeoutMs")=+$GET(CONF("mioos","websocket","uploadSocketOpenTimeoutMs"),15000)
 	IF STATE("wsUploadSocketOpenTimeoutMs")<1000 SET STATE("wsUploadSocketOpenTimeoutMs")=15000
 	SET STATE("wsMaxFrameBytes")=+$GET(CONF("websocket","maxFrameBytes"),262144)
-	SET STATE("wsMaxMessageBytes")=+$GET(CONF("websocket","maxMessageBytes"),1048576)
+	SET STATE("wsMaxMessageBytes")=+$GET(CONF("websocket","maxMessageBytes"),256000)
 	SET STATE("uploadStaleSeconds")=+$GET(CONF("mioos","upload","staleSeconds"),1800)
 	SET STATE("downloadStaleSeconds")=+$GET(CONF("mioos","download","staleSeconds"),900)
-	SET STATE("downloadHttpChunkBytes")=+$GET(CONF("mioos","download","httpChunkBytes"),1048576)
-	IF STATE("downloadHttpChunkBytes")<4096 SET STATE("downloadHttpChunkBytes")=1048576
+	SET STATE("downloadHttpChunkBytes")=+$GET(CONF("mioos","download","httpChunkBytes"),256000)
+	IF STATE("downloadHttpChunkBytes")<4096 SET STATE("downloadHttpChunkBytes")=256000
 	SET STATE("previewInlineTextMaxBytes")=+$GET(CONF("mioos","preview","inlineTextMaxBytes"),262144)
 	IF STATE("previewInlineTextMaxBytes")<4096 SET STATE("previewInlineTextMaxBytes")=262144
 	SET STATE("themeKey")=$GET(CONF("mioos","desktop","theme"),"xp-classic-blue")
@@ -288,7 +288,7 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","performance","renderBudgetMs")=+$GET(STATE("perfRenderBudgetMs"),16)
 	SET OBJ("desktop","performance","payloadMode")=$GET(STATE("perfPayloadMode"),"tmp-global-safe")
 	SET OBJ("desktop","performance","transport")=$GET(STATE("perfTransport"),"websocket-first-http-refresh")
-	SET OBJ("desktop","performance","uploadStrategy")="http-resumable-chunk-session-with-websocket-fallback"
+	SET OBJ("desktop","performance","uploadStrategy")=$SELECT($$UPMODE^MIOOSFSUP(.CONF)="single-request":"http-single-request-multipart-browser-native",1:"http-resumable-chunk-session-with-websocket-fallback")
 	SET OBJ("desktop","performance","downloadStrategy")="http-stream-browser-native-with-websocket-fallback"
 	SET OBJ("desktop","viewers","text")=1
 	SET OBJ("desktop","viewers","image")=1
@@ -370,11 +370,12 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("vfs","rootId")=$GET(STATE("fsRootId"),"root")
 	SET OBJ("vfs","homeId")=$GET(STATE("fsHomeId"),"root")
 	SET OBJ("vfs","chunkSize")=+$GET(STATE("fsChunkSize"),2048)
+	SET OBJ("vfs","uploadMode")=$$UPMODE^MIOOSFSUP(.CONF)
 	SET OBJ("vfs","uploadChunkBytes")=$$UPCHUNK^MIOOSFSUP(.CONF)
 	SET OBJ("vfs","uploadConcurrency")=$$UPCONCUR^MIOOSFSUP(.CONF)
 	SET OBJ("vfs","uploadBatchSize")=+$GET(STATE("wsUploadBatchSize"),1)
 	SET OBJ("vfs","downloadChunkBytes")=$$DLCHUNK^MIOOSFSDN(.CONF)
-	SET OBJ("vfs","downloadHttpChunkBytes")=+$GET(STATE("downloadHttpChunkBytes"),1048576)
+	SET OBJ("vfs","downloadHttpChunkBytes")=+$GET(STATE("downloadHttpChunkBytes"),256000)
 	SET OBJ("vfs","previewInlineTextMaxBytes")=+$GET(STATE("previewInlineTextMaxBytes"),262144)
 	SET OBJ("vfs","downloadVerifyHash")=1
 	SET OBJ("vfs","uploadStaleSeconds")=+$GET(STATE("uploadStaleSeconds"),1800)
@@ -425,7 +426,7 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("websocket","uploadAbortTimeoutMs")=+$GET(STATE("wsUploadAbortTimeoutMs"),15000)
 	SET OBJ("websocket","uploadSocketOpenTimeoutMs")=+$GET(STATE("wsUploadSocketOpenTimeoutMs"),15000)
 	SET OBJ("websocket","maxFrameBytes")=+$GET(STATE("wsMaxFrameBytes"),262144)
-	SET OBJ("websocket","maxMessageBytes")=+$GET(STATE("wsMaxMessageBytes"),1048576)
+	SET OBJ("websocket","maxMessageBytes")=+$GET(STATE("wsMaxMessageBytes"),256000)
 	SET OBJ("terminal","enabled")=1
 	SET OBJ("terminal","commandTransport")=$GET(CONF("mioos","terminal","commandTransport"),"dedicated-websocket")
 	SET OBJ("terminal","websocketPath")=$GET(STATE("wsTerminalPath"))

@@ -1,11 +1,24 @@
 MIOOSFSUP ; MIOOS chunked upload helpers
 	QUIT
 	;
+UPMODE(CONF)
+	NEW MODE
+	SET MODE=$$LOW^MIOUTIL($GET(CONF("mioos","upload","mode"),"resumable-chunk-session"))
+	IF MODE="" SET MODE="resumable-chunk-session"
+	IF MODE="resumable" SET MODE="resumable-chunk-session"
+	IF MODE="chunked" SET MODE="resumable-chunk-session"
+	IF MODE="chunked-session" SET MODE="resumable-chunk-session"
+	IF MODE="single" SET MODE="single-request"
+	IF MODE="single-request-http" SET MODE="single-request"
+	IF MODE="single-request-multipart" SET MODE="single-request"
+	IF MODE'="single-request",MODE'="resumable-chunk-session" SET MODE="resumable-chunk-session"
+	QUIT MODE
+	;
 UPCHUNK(CONF)
 	NEW N
-	SET N=+$GET(CONF("mioos","upload","chunkBytes"),1048576)
+	SET N=+$GET(CONF("mioos","upload","chunkBytes"),256000)
 	IF N<4096 SET N=4096
-	IF N>1048576 SET N=1048576
+	IF N>(65536*10) SET N=65536*10
 	QUIT N
 	;
 UPCONCUR(CONF)
@@ -215,7 +228,7 @@ APPEND(ID,SEG,IDX,BUF,SIZE,CHSZ)
 	FOR  QUIT:$LENGTH(BUF)<+$GET(CHSZ)  DO
 	. SET IDX=+$GET(IDX)+1
 	. SET ^MIO("MIOOS","FS","DATA",ID,IDX)=$EXTRACT(BUF,1,CHSZ)
-	. SET BUF=$EXTRACT(BUF,CHSZ+1,1048576)
+	. SET BUF=$EXTRACT(BUF,CHSZ+1,256000)
 	QUIT
 	;
 DECODECHUNK(DATA,ENC)

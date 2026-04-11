@@ -131,3 +131,5 @@ This ROI adds typed password policy defaults, forced password change support for
 - Preview/download responses stream VFS content in bounded chunks, advertise byte-range support, and allow larger files to be downloaded or previewed without triggering websocket transport pressure.
 
 ROI 29 — Resumable VFS transfers, Windows-style transfer dialog, and explorer drag/drop polish
+
+ROI 30 — Boot-selectable upload mode: single-request multipart or resumable chunk session
