@@ -28,15 +28,11 @@
         guestSignin: '/api/mioos/auth/guest',
         passwordChange: '/api/mioos/auth/password/change',
         auditExport: '/api/mioos/auth/audit/export',
-        fsUpload: '/api/mioos/fs/upload',
         fsUploadBegin: '/api/mioos/fs/upload/begin',
         fsUploadChunk: '/api/mioos/fs/upload/chunk',
         fsUploadStatus: '/api/mioos/fs/upload/status',
         fsUploadCommit: '/api/mioos/fs/upload/commit',
         fsUploadAbort: '/api/mioos/fs/upload/abort',
-        fsCopy: '/api/mioos/fs/copy',
-        fsDownload: '/api/mioos/fs/download',
-        fsPreview: '/api/mioos/fs/preview',
         debugSnapshotCommand: 'debug.snapshot',
         websocket: '/ws/mioos',
         terminalWebsocket: '/ws/mioos/terminal',
@@ -69,7 +65,8 @@
           renderBudgetMs: 16,
           payloadMode: 'tmp-global-safe',
           transport: 'websocket-first-http-refresh',
-          downloadStrategy: 'http-stream-browser-native-with-websocket-fallback'
+          uploadPreparation: 'blob-slice-no-base64',
+          uploadStrategy: 'http-binary-chunk-session-with-websocket-fallback'
         },
         moduleSystem: { enabled: true, launcher: 'desktop-icons-and-menu', manifestVersion: 1, appCatalogEnabled: true, appCatalogKey: 'app-catalog', dynamicWindows: true, debugAppKey: 'debug-center' },
         debugCenter: { enabled: true, eventLimit: 50, snapshotVersion: 1 },
@@ -109,7 +106,6 @@
         websocketPath: '/ws/mioos/terminal',
         websocketPollMs: 250,
         maxSessionsPerUser: 8,
-        maxSessionsPerSession: 4,
         profile: {
           fontFamily: 'Consolas',
           fontSize: 14,
@@ -138,9 +134,9 @@
         uploadAbortTimeoutMs: 15000,
         uploadSocketOpenTimeoutMs: 15000,
         maxFrameBytes: 262144,
-        maxMessageBytes: 128000
+        maxMessageBytes: 1048576
       },
-      vfs: { enabled: false, rootId: 'root', homeId: 'home', chunkSize: 128000, globalsOnly: true, uploadMode: 'resumable-chunk-session', uploadWorkerEnabled: true, persistTransfers: true, uploadStaleSeconds: 1800, downloadStaleSeconds: 900, downloadHttpChunkBytes: 128000, previewInlineTextMaxBytes: 262144, transferControls: { cancel: true, retry: true, pause: true, resume: true, restart: true } },
+      vfs: { enabled: false, rootId: 'root', homeId: 'home', chunkSize: 32000, globalsOnly: true, uploadStaleSeconds: 1800, downloadStaleSeconds: 900, uploadChunkTransport: 'http-binary', transferControls: { cancel: true, retry: true, pause: true, resume: true } },
       apps: [],
       windows: [],
       modules: []

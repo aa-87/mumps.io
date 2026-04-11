@@ -74,15 +74,6 @@
           debugCenter: { loading: false, refreshedAt: 0, error: '', snapshot: {}, events: [], seq: 0 },
           socketTelemetry: {},
           moduleCatalog: { loading: false, refreshedAt: 0, error: '' },
-          namingDialog: {
-            open: false,
-            title: '',
-            label: '',
-            submitLabel: 'OK',
-            value: '',
-            placeholder: '',
-            callback: null
-          },
           desktopUi: {
             iconSize: 'medium',
             sortMode: 'manual',
@@ -137,11 +128,11 @@
       },
       mounted: function () {
         this.bootstrapFromDom();
-        this.restoreTransferCenter();
+        this.normalizeDesktopUiState();
         this.ensureDesktopLayout();
+        this.normalizeDesktopUiState();
         this.applyPersistedThemeStudioProfile();
         this.applyDocumentLocale();
-        if (this.restorePersistedUploadTransfers) this.restorePersistedUploadTransfers();
         this.startClock();
         if (!this.requiresSignin) {
           this.refreshView();
@@ -168,6 +159,19 @@
         });
       },
       methods: Object.assign({
+        normalizeDesktopUiState: function () {
+          if (!this.desktopUi) this.desktopUi = {};
+          if (!this.desktopUi.drag) this.desktopUi.drag = { armed: false, active: false, moved: false, key: '', startX: 0, startY: 0, left: 0, top: 0 };
+          if (!this.desktopUi.positions) this.desktopUi.positions = {};
+          if (!this.desktopUi.contextMenu) this.desktopUi.contextMenu = { open: false, type: 'desktop', key: '', left: 0, top: 0 };
+          if (!this.desktopUi.iconSize) this.desktopUi.iconSize = 'medium';
+          if (!this.desktopUi.sortMode) this.desktopUi.sortMode = 'manual';
+          if (typeof this.desktopUi.selectedKey === 'undefined') this.desktopUi.selectedKey = '';
+        },
+        desktopContextMenuState: function () {
+          this.normalizeDesktopUiState();
+          return this.desktopUi.contextMenu || { open: false, type: 'desktop', key: '', left: 0, top: 0 };
+        },
         bootstrapFromDom: function () {
           var node = window.MIOOSState.getBootNode();
           if (!node) return;
@@ -182,8 +186,10 @@
           this.desktopEntries = window.MIOOSState.deepClone((this.view && this.view.desktopEntries) || this.boot.desktopEntries || this.boot.apps || []);
           this.windows = window.MIOOSState.deepClone(this.boot.windows || []);
           this.ensureModuleWindowState();
+          this.normalizeDesktopUiState();
           this.desktopUi.iconSize = ((((this.boot || {}).desktop || {}).icons || {}).size) || 'medium';
           this.desktopUi.sortMode = ((((this.boot || {}).desktop || {}).icons || {}).sortMode) || 'manual';
+          this.normalizeDesktopUiState();
           this.zCounter = this.windows.reduce(function (max, win) { return Math.max(max, win.z || 0); }, 10) + 1;
           if (this.windows.length) this.activeWindowId = this.windows[0].id;
         },
@@ -358,45 +364,10 @@
           });
         },
         transferSummaryText: function () {
-          var active = this.activeTransfers().length;
-          var paused = (this.transferCenter.items || []).filter(function (item) { return item.status === 'paused'; }).length;
+          var active = this.activeTransfers().filter(function (item) { return item.status !== 'paused'; }).length;
+          var paused = this.activeTransfers().filter(function (item) { return item.status === 'paused'; }).length;
           var done = this.completedTransfers().length;
           return active + ' active · ' + paused + ' paused · ' + done + ' finished';
-        },
-        transferPersistenceEnabled: function () {
-          return !((((this.boot || {}).vfs || {}).persistTransfers) === false || +((((this.boot || {}).vfs || {}).persistTransfers) || 0) === 0);
-        },
-        transferPersistenceKey: function () {
-          return 'mioos.transferCenter.v2';
-        },
-        persistTransferCenter: function () {
-          var payload;
-          if (!this.transferPersistenceEnabled()) return;
-          try {
-            payload = {
-              seq: +((this.transferCenter || {}).seq || 0),
-              items: window.MIOOSState.deepClone(((this.transferCenter || {}).items || []).slice(0, 80))
-            };
-            window.localStorage.setItem(this.transferPersistenceKey(), JSON.stringify(payload));
-          } catch (err) {}
-        },
-        restoreTransferCenter: function () {
-          var raw;
-          var payload;
-          var activeStatuses = { queued: 1, preparing: 1, uploading: 1, downloading: 1, finalizing: 1, verifying: 1, cancelling: 1 };
-          if (!this.transferPersistenceEnabled()) return;
-          try { raw = window.localStorage.getItem(this.transferPersistenceKey()) || ''; } catch (err) { raw = ''; }
-          if (!raw) return;
-          try { payload = JSON.parse(raw); } catch (err2) { payload = null; }
-          if (!payload || !Array.isArray(payload.items)) return;
-          this.transferCenter.seq = +(payload.seq || 0);
-          this.transferCenter.items = window.MIOOSState.deepClone(payload.items || []).map(function (item) {
-            if (item && item.kind === 'upload' && activeStatuses[item.status]) {
-              item.status = 'paused';
-              item.stage = 'Paused after refresh';
-            }
-            return item;
-          });
         },
         setSocketTelemetry: function (socketId, patch) {
           var base;
@@ -518,7 +489,7 @@
         },
         canCancelTransfer: function (item) {
           var ctrl = this.transferController(item && item.id);
-          return !!(item && ctrl && ctrl.onCancel && ['queued','preparing','uploading','downloading','finalizing','verifying','paused'].indexOf(item.status) >= 0);
+          return !!(item && ctrl && ctrl.onCancel && ['queued','preparing','uploading','downloading','finalizing','verifying'].indexOf(item.status) >= 0);
         },
         canRetryTransfer: function (item) {
           var ctrl = this.transferController(item && item.id);
@@ -531,10 +502,6 @@
         canResumeTransfer: function (item) {
           var ctrl = this.transferController(item && item.id);
           return !!(item && ctrl && ctrl.onResume && item.status === 'paused');
-        },
-        canRestartTransfer: function (item) {
-          var ctrl = this.transferController(item && item.id);
-          return !!(item && ctrl && ctrl.onRestart && ['paused','failed','cancelled'].indexOf(item.status) >= 0);
         },
         cancelTransfer: function (item) {
           var self = this;
@@ -557,50 +524,23 @@
           var self = this;
           var ctrl = this.transferController(item && item.id);
           if (!item || !ctrl || !ctrl.onPause) return Promise.resolve();
+          this.updateTransfer(item.id, { status: 'paused', stage: 'Pausing' });
           return Promise.resolve(ctrl.onPause()).then(function () {
             self.updateTransfer(item.id, { status: 'paused', stage: 'Paused' });
+          }).catch(function (err) {
+            self.updateTransfer(item.id, { status: 'failed', stage: 'Pause failed', error: (err && err.message) || 'transfer_pause_failed' });
+            throw err;
           });
         },
         resumeTransfer: function (item) {
           var self = this;
           var ctrl = this.transferController(item && item.id);
           if (!item || !ctrl || !ctrl.onResume) return Promise.resolve();
-          self.updateTransfer(item.id, { status: item.kind === 'download' ? 'downloading' : 'uploading', stage: 'Resuming' });
-          return Promise.resolve(ctrl.onResume());
-        },
-        restartTransfer: function (item) {
-          var self = this;
-          var ctrl = this.transferController(item && item.id);
-          if (!item || !ctrl || !ctrl.onRestart) return Promise.resolve();
-          self.updateTransfer(item.id, { status: 'preparing', stage: 'Restarting', processedBytes: 0, progress: 0 });
-          return Promise.resolve(ctrl.onRestart());
-        },
-        transferBytesLabel: function (value) {
-          var bytes = +value || 0;
-          if (bytes >= 1073741824) return (bytes / 1073741824).toFixed(2) + ' GB';
-          if (bytes >= 1048576) return (bytes / 1048576).toFixed(2) + ' MB';
-          if (bytes >= 1024) return (bytes / 1024).toFixed(1) + ' KB';
-          return bytes + ' B';
-        },
-        openNamingDialog: function (options) {
-          var opts = options || {};
-          this.namingDialog.open = true;
-          this.namingDialog.title = opts.title || 'Name';
-          this.namingDialog.label = opts.label || 'Name';
-          this.namingDialog.submitLabel = opts.submitLabel || 'OK';
-          this.namingDialog.value = opts.value || '';
-          this.namingDialog.placeholder = opts.placeholder || '';
-          this.namingDialog.callback = typeof opts.onSubmit === 'function' ? opts.onSubmit : null;
-        },
-        closeNamingDialog: function () {
-          this.namingDialog.open = false;
-          this.namingDialog.callback = null;
-        },
-        submitNamingDialog: function () {
-          var cb = this.namingDialog.callback;
-          var value = this.namingDialog.value;
-          this.closeNamingDialog();
-          if (cb) cb(value);
+          this.updateTransfer(item.id, { status: item.kind === 'download' ? 'downloading' : 'uploading', stage: 'Resuming' });
+          return Promise.resolve(ctrl.onResume()).catch(function (err) {
+            self.updateTransfer(item.id, { status: 'failed', stage: 'Resume failed', error: (err && err.message) || 'transfer_resume_failed' });
+            throw err;
+          });
         },
         registerTransfer: function (payload) {
           var next = Object.assign({
@@ -620,7 +560,6 @@
           this.transferCenter.items.unshift(next);
           if (this.transferCenter.items.length > 40) this.transferCenter.items = this.transferCenter.items.slice(0, 40);
           if (this.transferCenter.autoOpen && (next.kind === 'upload' || next.kind === 'download')) this.openTransfersWindow();
-          this.persistTransferCenter();
           return next.id;
         },
         updateTransfer: function (transferId, patch) {
@@ -629,7 +568,6 @@
           Object.assign(item, patch || {});
           item.updatedAt = Date.now();
           item.progress = this.transferPercent(item);
-          this.persistTransferCenter();
         },
         finalizeTransfer: function (transferId, ok, patch) {
           this.updateTransfer(transferId, Object.assign({
@@ -637,7 +575,6 @@
             stage: ok ? 'Completed' : 'Failed'
           }, patch || {}));
           if (ok) this.clearTransferController(transferId);
-          this.persistTransferCenter();
         },
         clearFinishedTransfers: function () {
           var keep = {};
@@ -649,7 +586,6 @@
           Object.keys(this.transferControllers || {}).forEach(function (key) {
             if (!keep[key]) delete (this.transferControllers || {})[key];
           }, this);
-          this.persistTransferCenter();
         },
         desktopGridMetrics: function () {
           var size = this.desktopUi.iconSize || 'medium';
@@ -801,12 +737,14 @@
           this.selectDesktopEntry(entry);
           this.desktopUi.contextMenu = { open: true, type: 'icon', key: entry.key, left: event.clientX, top: event.clientY };
         },
-        closeDesktopContextMenu: function () { this.desktopUi.contextMenu.open = false; },
+        closeDesktopContextMenu: function () { var menu = this.desktopContextMenuState(); menu.open = false; },
         contextMenuStyle: function () {
-          return { left: (this.desktopUi.contextMenu.left || 0) + 'px', top: (this.desktopUi.contextMenu.top || 0) + 'px' };
+          var menu = this.desktopContextMenuState();
+          return { left: (menu.left || 0) + 'px', top: (menu.top || 0) + 'px' };
         },
         desktopContextEntry: function () {
-          var key = (this.desktopUi.contextMenu || {}).key || (this.desktopUi.selectedKey || '');
+          var menu = this.desktopContextMenuState();
+          var key = (menu || {}).key || (this.desktopUi.selectedKey || '');
           return (this.desktopEntries || []).find(function (entry) { return entry.key === key; }) || null;
         },
         contextOpenSelected: function () {

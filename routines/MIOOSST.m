@@ -65,24 +65,20 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("signinPath")=$GET(CONF("mioos","route","signin"),"/api/mioos/auth/signin")
 	SET STATE("publicSigninPath")=$GET(CONF("mioos","route","publicSignin"),STATE("signinPath"))
 	SET STATE("signoutPath")=$GET(CONF("mioos","route","signout"),"/api/mioos/auth/signout")
-	SET STATE("authRefreshPath")=$GET(CONF("mioos","route","authRefresh"),"/api/mioos/auth/refresh")
 	SET STATE("guestSigninPath")=$GET(CONF("mioos","route","guestSignin"),"/api/mioos/auth/guest")
 	SET STATE("passwordChangePath")=$GET(CONF("mioos","route","passwordChange"),"/api/mioos/auth/password/change")
 	SET STATE("auditExportPath")=$GET(CONF("mioos","route","auditExport"),"/api/mioos/auth/audit/export")
 	SET STATE("fsListPath")=$GET(CONF("mioos","route","fsList"),"/api/mioos/fs/list")
 	SET STATE("fsReadPath")=$GET(CONF("mioos","route","fsRead"),"/api/mioos/fs/read")
 	SET STATE("fsWritePath")=$GET(CONF("mioos","route","fsWrite"),"/api/mioos/fs/write")
-	SET STATE("fsUploadPath")=$GET(CONF("mioos","route","fsUpload"),"/api/mioos/fs/upload")
+	SET STATE("fsMkdirPath")=$GET(CONF("mioos","route","fsMkdir"),"/api/mioos/fs/mkdir")
+	SET STATE("fsMetaPath")=$GET(CONF("mioos","route","fsMeta"),"/api/mioos/fs/meta")
 	SET STATE("fsUploadBeginPath")=$GET(CONF("mioos","route","fsUploadBegin"),"/api/mioos/fs/upload/begin")
 	SET STATE("fsUploadChunkPath")=$GET(CONF("mioos","route","fsUploadChunk"),"/api/mioos/fs/upload/chunk")
 	SET STATE("fsUploadStatusPath")=$GET(CONF("mioos","route","fsUploadStatus"),"/api/mioos/fs/upload/status")
 	SET STATE("fsUploadCommitPath")=$GET(CONF("mioos","route","fsUploadCommit"),"/api/mioos/fs/upload/commit")
 	SET STATE("fsUploadAbortPath")=$GET(CONF("mioos","route","fsUploadAbort"),"/api/mioos/fs/upload/abort")
-	SET STATE("fsCopyPath")=$GET(CONF("mioos","route","fsCopy"),"/api/mioos/fs/copy")
-	SET STATE("fsDownloadPath")=$GET(CONF("mioos","route","fsDownload"),"/api/mioos/fs/download")
-	SET STATE("fsPreviewPath")=$GET(CONF("mioos","route","fsPreview"),"/api/mioos/fs/preview")
-	SET STATE("fsMkdirPath")=$GET(CONF("mioos","route","fsMkdir"),"/api/mioos/fs/mkdir")
-	SET STATE("fsMetaPath")=$GET(CONF("mioos","route","fsMeta"),"/api/mioos/fs/meta")
+	SET STATE("uploadChunkTransport")=$GET(CONF("mioos","upload","chunkTransport"),"http-binary")
 	SET STATE("wsPath")=$GET(CONF("mioos","route","ws"),"/ws/mioos")
 	SET STATE("fsEnabled")=+$GET(CONF("mioos","fs","enabled"),1)
 	SET STATE("fsChunkSize")=+$GET(CONF("mioos","fs","chunkSize"),2048)
@@ -118,15 +114,9 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("wsUploadSocketOpenTimeoutMs")=+$GET(CONF("mioos","websocket","uploadSocketOpenTimeoutMs"),15000)
 	IF STATE("wsUploadSocketOpenTimeoutMs")<1000 SET STATE("wsUploadSocketOpenTimeoutMs")=15000
 	SET STATE("wsMaxFrameBytes")=+$GET(CONF("websocket","maxFrameBytes"),262144)
-	SET STATE("wsMaxMessageBytes")=+$GET(CONF("websocket","maxMessageBytes"),128000)
+	SET STATE("wsMaxMessageBytes")=+$GET(CONF("websocket","maxMessageBytes"),1048576)
 	SET STATE("uploadStaleSeconds")=+$GET(CONF("mioos","upload","staleSeconds"),1800)
 	SET STATE("downloadStaleSeconds")=+$GET(CONF("mioos","download","staleSeconds"),900)
-	SET STATE("downloadHttpChunkBytes")=+$GET(CONF("mioos","download","httpChunkBytes"),128000)
-	IF STATE("downloadHttpChunkBytes")<4096 SET STATE("downloadHttpChunkBytes")=128000
-	SET STATE("uploadWorkerEnabled")=+$$UPWORKER^MIOOSFSUP(.CONF)
-	SET STATE("persistTransfers")=+$$UPPERSIST^MIOOSFSUP(.CONF)
-	SET STATE("previewInlineTextMaxBytes")=+$GET(CONF("mioos","preview","inlineTextMaxBytes"),262144)
-	IF STATE("previewInlineTextMaxBytes")<4096 SET STATE("previewInlineTextMaxBytes")=262144
 	SET STATE("themeKey")=$GET(CONF("mioos","desktop","theme"),"xp-classic-blue")
 	SET STATE("wallpaper")=$GET(CONF("mioos","desktop","wallpaper"),"bliss")
 	SET STATE("density")=$GET(CONF("mioos","desktop","density"),"comfortable")
@@ -260,7 +250,6 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("routes","signin")=$GET(STATE("signinPath"))
 	SET OBJ("routes","publicSignin")=$GET(STATE("publicSigninPath"),$GET(STATE("signinPath")))
 	SET OBJ("routes","signout")=$GET(STATE("signoutPath"))
-	SET OBJ("routes","authRefresh")=$GET(STATE("authRefreshPath"))
 	SET OBJ("routes","guestSignin")=$GET(STATE("guestSigninPath"))
 	SET OBJ("routes","websocket")=$GET(STATE("wsPath"))
 	SET OBJ("routes","terminalWebsocket")=$GET(STATE("wsTerminalPath"))
@@ -290,8 +279,8 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","performance","renderBudgetMs")=+$GET(STATE("perfRenderBudgetMs"),16)
 	SET OBJ("desktop","performance","payloadMode")=$GET(STATE("perfPayloadMode"),"tmp-global-safe")
 	SET OBJ("desktop","performance","transport")=$GET(STATE("perfTransport"),"websocket-first-http-refresh")
-	SET OBJ("desktop","performance","uploadStrategy")=$SELECT($$UPMODE^MIOOSFSUP(.CONF)="single-request":"http-single-request-multipart-browser-native",+$$UPWORKER^MIOOSFSUP(.CONF)=1:"http-resumable-chunk-session-web-worker-persistent",1:"http-resumable-chunk-session-with-websocket-fallback")
-	SET OBJ("desktop","performance","downloadStrategy")="http-stream-browser-native-with-websocket-fallback"
+	SET OBJ("desktop","performance","uploadStrategy")="batched-chunk-pool"
+	SET OBJ("desktop","performance","downloadStrategy")="chunked-websocket-verified"
 	SET OBJ("desktop","viewers","text")=1
 	SET OBJ("desktop","viewers","image")=1
 	SET OBJ("desktop","viewers","media")=1
@@ -356,39 +345,28 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("routes","fsList")=$GET(STATE("fsListPath"))
 	SET OBJ("routes","fsRead")=$GET(STATE("fsReadPath"))
 	SET OBJ("routes","fsWrite")=$GET(STATE("fsWritePath"))
-	SET OBJ("routes","fsUpload")=$GET(STATE("fsUploadPath"))
+	SET OBJ("routes","fsMkdir")=$GET(STATE("fsMkdirPath"))
+	SET OBJ("routes","fsMeta")=$GET(STATE("fsMetaPath"))
 	SET OBJ("routes","fsUploadBegin")=$GET(STATE("fsUploadBeginPath"))
 	SET OBJ("routes","fsUploadChunk")=$GET(STATE("fsUploadChunkPath"))
 	SET OBJ("routes","fsUploadStatus")=$GET(STATE("fsUploadStatusPath"))
 	SET OBJ("routes","fsUploadCommit")=$GET(STATE("fsUploadCommitPath"))
 	SET OBJ("routes","fsUploadAbort")=$GET(STATE("fsUploadAbortPath"))
-	SET OBJ("routes","fsCopy")=$GET(STATE("fsCopyPath"))
-	SET OBJ("routes","fsDownload")=$GET(STATE("fsDownloadPath"))
-	SET OBJ("routes","fsPreview")=$GET(STATE("fsPreviewPath"))
-	SET OBJ("routes","fsMkdir")=$GET(STATE("fsMkdirPath"))
-	SET OBJ("routes","fsMeta")=$GET(STATE("fsMetaPath"))
 	SET OBJ("vfs","enabled")=+$GET(STATE("fsEnabled"),1)
 	SET OBJ("vfs","transport")=$GET(STATE("fsTransport"),"http-and-websocket")
 	SET OBJ("vfs","rootId")=$GET(STATE("fsRootId"),"root")
 	SET OBJ("vfs","homeId")=$GET(STATE("fsHomeId"),"root")
 	SET OBJ("vfs","chunkSize")=+$GET(STATE("fsChunkSize"),2048)
-	SET OBJ("vfs","uploadMode")=$$UPMODE^MIOOSFSUP(.CONF)
 	SET OBJ("vfs","uploadChunkBytes")=$$UPCHUNK^MIOOSFSUP(.CONF)
 	SET OBJ("vfs","uploadConcurrency")=$$UPCONCUR^MIOOSFSUP(.CONF)
-	SET OBJ("vfs","uploadWorkerEnabled")=+$GET(STATE("uploadWorkerEnabled"),1)
-	SET OBJ("vfs","persistTransfers")=+$GET(STATE("persistTransfers"),1)
 	SET OBJ("vfs","uploadBatchSize")=+$GET(STATE("wsUploadBatchSize"),1)
+	SET OBJ("vfs","uploadChunkTransport")=$GET(STATE("uploadChunkTransport"),"http-binary")
 	SET OBJ("vfs","downloadChunkBytes")=$$DLCHUNK^MIOOSFSDN(.CONF)
-	SET OBJ("vfs","downloadHttpChunkBytes")=+$GET(STATE("downloadHttpChunkBytes"),128000)
-	SET OBJ("vfs","previewInlineTextMaxBytes")=+$GET(STATE("previewInlineTextMaxBytes"),262144)
 	SET OBJ("vfs","downloadVerifyHash")=1
 	SET OBJ("vfs","uploadStaleSeconds")=+$GET(STATE("uploadStaleSeconds"),1800)
 	SET OBJ("vfs","downloadStaleSeconds")=+$GET(STATE("downloadStaleSeconds"),900)
 	SET OBJ("vfs","transferControls","cancel")=1
 	SET OBJ("vfs","transferControls","retry")=1
-	SET OBJ("vfs","transferControls","pause")=1
-	SET OBJ("vfs","transferControls","resume")=1
-	SET OBJ("vfs","transferControls","restart")=1
 	SET OBJ("vfs","storage")="globals-only"
 	SET OBJ("vfs","permissionsModel")="owner-role-flags"
 	SET OBJ("desktop","icons","enabled")=1
@@ -410,6 +388,8 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","contextMenu","verbs",8)="personalize"
 	SET OBJ("desktop","contextMenu","verbs",9)="control-panel"
 	SET OBJ("desktop","contextMenu","verbs",10)="open"
+	SET OBJ("desktop","performance","uploadPreparation")=$SELECT($GET(STATE("uploadChunkTransport"))="http-binary":"blob-slice-no-base64",1:"base64-main-thread")
+	SET OBJ("desktop","performance","uploadStrategy")=$SELECT($GET(STATE("uploadChunkTransport"))="http-binary":"http-binary-chunk-session-with-websocket-fallback",1:"websocket-base64-chunk-session")
 	DO THEMES($NAME(OBJ("desktop","themes")),$GET(STATE("themeKey")))
 	MERGE OBJ("apps")=STATE("apps")
 	DO MERGELAYOUT(.STATE,$NAME(OBJ("apps")))
@@ -430,7 +410,7 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("websocket","uploadAbortTimeoutMs")=+$GET(STATE("wsUploadAbortTimeoutMs"),15000)
 	SET OBJ("websocket","uploadSocketOpenTimeoutMs")=+$GET(STATE("wsUploadSocketOpenTimeoutMs"),15000)
 	SET OBJ("websocket","maxFrameBytes")=+$GET(STATE("wsMaxFrameBytes"),262144)
-	SET OBJ("websocket","maxMessageBytes")=+$GET(STATE("wsMaxMessageBytes"),128000)
+	SET OBJ("websocket","maxMessageBytes")=+$GET(STATE("wsMaxMessageBytes"),1048576)
 	SET OBJ("terminal","enabled")=1
 	SET OBJ("terminal","commandTransport")=$GET(CONF("mioos","terminal","commandTransport"),"dedicated-websocket")
 	SET OBJ("terminal","websocketPath")=$GET(STATE("wsTerminalPath"))
@@ -668,4 +648,3 @@ CSV2ARY(CSV,ROOT)
 	. QUIT:ITEM=""
 	. SET N=N+1,@ROOT@(N)=ITEM
 	QUIT
-	;
