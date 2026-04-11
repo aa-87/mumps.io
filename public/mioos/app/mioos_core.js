@@ -127,7 +127,9 @@
         }
       },
       mounted: function () {
+        var self = this;
         this.bootstrapFromDom();
+        this.restorePersistedTransfers();
         this.normalizeDesktopUiState();
         this.ensureDesktopLayout();
         this.normalizeDesktopUiState();
@@ -144,16 +146,21 @@
         this._viewportResize = this.handleViewportResize.bind(this);
         window.addEventListener('mousemove', this._dragMove);
         window.addEventListener('mouseup', this._dragEnd);
+        this._persistTransfersOnUnload = this.persistTransferCenter.bind(this);
         window.addEventListener('resize', this._viewportResize);
+        window.addEventListener('beforeunload', this._persistTransfersOnUnload);
+        if (!this.requiresSignin) window.setTimeout(function () { if (self.revivePersistedTransfers) self.revivePersistedTransfers(); }, 400);
       },
       beforeUnmount: function () {
         if (this.clockTimer) window.clearInterval(this.clockTimer);
         if (this.pingTimer) window.clearInterval(this.pingTimer);
         if (this.terminalPollTimer) window.clearInterval(this.terminalPollTimer);
         if (this.socket) this.socket.close();
+        this.persistTransferCenter();
         window.removeEventListener('mousemove', this._dragMove);
         window.removeEventListener('mouseup', this._dragEnd);
         window.removeEventListener('resize', this._viewportResize);
+        window.removeEventListener('beforeunload', this._persistTransfersOnUnload);
         this.windows.forEach(function (win) {
           if (win._term) win._term.dispose();
         });
@@ -475,6 +482,46 @@
           if (module.id === 'module-notes') return 'Scratch surface · ' + ((win.moduleState && win.moduleState.draft && win.moduleState.draft.length) || 0) + ' chars';
           return module.description || module.subtitle || 'Ready';
         },
+        transferStorageKey: function () {
+          var sessionId = (((this.boot || {}).session || {}).id) || 'mioos-shell';
+          var userId = ((((this.boot || {}).user || {}).id) || (((this.boot || {}).user || {}).username) || (((this.boot || {}).user || {}).displayName) || 'guest');
+          return 'mioos:transfers:' + sessionId + ':' + userId;
+        },
+        serializeTransferItem: function (item) {
+          if (!item) return null;
+          return window.MIOOSState.deepClone({ id: item.id, kind: item.kind, name: item.name, status: item.status, stage: item.stage, totalBytes: item.totalBytes, logicalBytes: item.logicalBytes, processedBytes: item.processedBytes, progress: item.progress, startedAt: item.startedAt, updatedAt: item.updatedAt, error: item.error, sourceWindowId: item.sourceWindowId, persistent: item.persistent, resume: item.resume || {} });
+        },
+        persistTransferCenter: function () {
+          var payload;
+          if (!window.localStorage) return;
+          payload = { seq: (this.transferCenter || {}).seq || 0, items: ((this.transferCenter || {}).items || []).map(this.serializeTransferItem.bind(this)).filter(Boolean) };
+          try { window.localStorage.setItem(this.transferStorageKey(), JSON.stringify(payload)); } catch (err) {}
+        },
+        restorePersistedTransfers: function () {
+          var payload = null;
+          if (!window.localStorage) return;
+          try { payload = JSON.parse(window.localStorage.getItem(this.transferStorageKey()) || 'null'); } catch (err) { payload = null; }
+          if (!payload) return;
+          this.transferCenter.seq = +payload.seq || 0;
+          this.transferCenter.items = Array.isArray(payload.items) ? payload.items : [];
+        },
+        revivePersistedTransfers: function () {
+          var self = this;
+          if (this._transferRecoveryRunning) return Promise.resolve();
+          this._transferRecoveryRunning = true;
+          return Promise.all(((this.transferCenter || {}).items || []).map(function (item) {
+            if (!item || ['completed', 'cancelled'].indexOf(item.status) >= 0) return Promise.resolve();
+            return self.recoverPersistedTransfer(item).catch(function () { return null; });
+          })).finally(function () {
+            self._transferRecoveryRunning = false;
+            self.persistTransferCenter();
+          });
+        },
+        recoverPersistedTransfer: function (item) {
+          if (!item) return Promise.resolve();
+          if (item.kind === 'upload' && this.recoverPersistedUploadTransfer) return this.recoverPersistedUploadTransfer(item, false);
+          return Promise.resolve();
+        },
         setTransferController: function (transferId, controller) {
           if (!transferId) return;
           this.transferControllers[transferId] = Object.assign({}, this.transferControllers[transferId] || {}, controller || {});
@@ -560,6 +607,7 @@
           this.transferCenter.items.unshift(next);
           if (this.transferCenter.items.length > 40) this.transferCenter.items = this.transferCenter.items.slice(0, 40);
           if (this.transferCenter.autoOpen && (next.kind === 'upload' || next.kind === 'download')) this.openTransfersWindow();
+          this.persistTransferCenter();
           return next.id;
         },
         updateTransfer: function (transferId, patch) {
@@ -568,6 +616,7 @@
           Object.assign(item, patch || {});
           item.updatedAt = Date.now();
           item.progress = this.transferPercent(item);
+          this.persistTransferCenter();
         },
         finalizeTransfer: function (transferId, ok, patch) {
           this.updateTransfer(transferId, Object.assign({
@@ -575,6 +624,7 @@
             stage: ok ? 'Completed' : 'Failed'
           }, patch || {}));
           if (ok) this.clearTransferController(transferId);
+          this.persistTransferCenter();
         },
         clearFinishedTransfers: function () {
           var keep = {};
@@ -586,6 +636,7 @@
           Object.keys(this.transferControllers || {}).forEach(function (key) {
             if (!keep[key]) delete (this.transferControllers || {})[key];
           }, this);
+          this.persistTransferCenter();
         },
         desktopGridMetrics: function () {
           var size = this.desktopUi.iconSize || 'medium';

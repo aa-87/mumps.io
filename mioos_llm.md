@@ -311,3 +311,11 @@ ROI 33 — HTTP binary chunk transport for resumable uploads and hardened pause/
 - Added `fs.read.range` for bounded websocket text reads so Explorer preview, text viewer, and structured viewer can open large text-like files without loading the whole file into one websocket response.
 - Boot metadata now exposes direct-segment blob delivery and windowed text preview as explicit performance strategies.
 
+
+
+## ROI 39 — persistent transfer recovery and media-first streaming
+
+- The transfer center now persists upload and download entries in browser local storage so activity remains visible after refresh.
+- Upload entries store server-side resume metadata (`uploadId`, `nextIndex`, `contiguousBytes`, `parentId`) so a refreshed session can reattach to in-flight uploads and continue from the first missing chunk after the user re-selects the same file.
+- Media preview URLs now request `stream=media`, and `FSBLOB^MIOOSAPI` answers a first non-range media GET with an initial partial-content window to reduce time-to-first-frame while keeping later browser range fetches intact.
+- The next ROI should focus on worker-assisted upload scheduling, main-thread contention audits, and measurements of true end-to-end upload throughput under parallel load.

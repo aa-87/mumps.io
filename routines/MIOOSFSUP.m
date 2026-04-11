@@ -195,6 +195,8 @@ STATUS(STATE,CONF,UPLOADID,OUT,ERR)
 	SET OUT("receivedBytes")=+$GET(^MIO("MIOOS","UPLOAD","INFO",UPLOADID,"bytes"))
 	SET OUT("chunkCount")=+$GET(^MIO("MIOOS","UPLOAD","INFO",UPLOADID,"chunks"))
 	SET OUT("expectedChunks")=+$GET(^MIO("MIOOS","UPLOAD","INFO",UPLOADID,"expectedChunks"))
+	SET OUT("chunkBytes")=+$GET(^MIO("MIOOS","UPLOAD","INFO",UPLOADID,"chunkBytesTarget"))
+	SET OUT("concurrencyDefault")=$$UPCONCUR(.CONF)
 	SET OUT("nextIndex")=$$NEXTMISS(UPLOADID)
 	SET OUT("contiguousBytes")=$$CONTIGBYTES(UPLOADID)
 	SET OUT("createdAt")=CREATED

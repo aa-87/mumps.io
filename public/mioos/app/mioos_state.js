@@ -69,8 +69,10 @@
           uploadPreparation: 'blob-slice-no-base64',
           uploadStrategy: 'http-binary-chunk-session-with-websocket-fallback',
           uploadFinalizeStrategy: 'binary-direct-stage-promote-with-copy-on-overwrite',
+          transferPersistence: 'localstorage-resumable-transfer-list',
           downloadStrategy: 'direct-http-range-native-with-websocket-fallback',
           downloadSendStrategy: 'vfs-segment-streaming-http-blob',
+          mediaStreamStrategy: 'range-kickstart-http-blob',
           textPreviewStrategy: 'windowed-websocket-range-read'
         },
         moduleSystem: { enabled: true, launcher: 'desktop-icons-and-menu', manifestVersion: 1, appCatalogEnabled: true, appCatalogKey: 'app-catalog', dynamicWindows: true, debugAppKey: 'debug-center' },
@@ -141,7 +143,7 @@
         maxFrameBytes: 262144,
         maxMessageBytes: 1048576
       },
-      vfs: { enabled: false, rootId: 'root', homeId: 'home', chunkSize: 32768, httpChunkBytes: 256000, readPreviewBytes: 16384, readWindowBytes: 131072, globalsOnly: true, uploadStaleSeconds: 1800, downloadStaleSeconds: 900, uploadChunkTransport: 'http-binary', uploadCommitStrategy: 'binary-direct-stage-promote-with-copy-on-overwrite', transferControls: { cancel: true, retry: true, pause: true, resume: true } },
+      vfs: { enabled: false, rootId: 'root', homeId: 'home', chunkSize: 32768, httpChunkBytes: 256000, readPreviewBytes: 16384, readWindowBytes: 131072, mediaInitialBytes: 1048576, globalsOnly: true, uploadStaleSeconds: 1800, downloadStaleSeconds: 900, uploadChunkTransport: 'http-binary', uploadCommitStrategy: 'binary-direct-stage-promote-with-copy-on-overwrite', transferPersistence: 'localstorage-resumable-transfer-list', transferControls: { cancel: true, retry: true, pause: true, resume: true } },
       apps: [],
       windows: [],
       modules: []

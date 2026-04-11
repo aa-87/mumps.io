@@ -89,6 +89,8 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("fsHttpChunkBytes")=+$GET(CONF("mioos","download","httpChunkBytes"),1048576)
 	SET STATE("fsReadPreviewBytes")=+$GET(CONF("mioos","fs","readPreviewBytes"),16384)
 	SET STATE("fsReadWindowBytes")=+$GET(CONF("mioos","fs","readWindowBytes"),131072)
+	SET STATE("fsTransferPersistence")=$GET(CONF("mioos","fs","transferPersistence"),"localstorage-resumable-transfer-list")
+	SET STATE("fsMediaInitialBytes")=+$GET(CONF("mioos","download","mediaInitialBytes"),1048576)
 	SET STATE("fsTransport")=$GET(CONF("mioos","fs","transport"),"http-and-websocket")
 	SET STATE("fsRootId")=$$ROOTID^MIOOSFS()
 	SET STATE("fsHomeId")=$$HOMEID^MIOOSFS()
@@ -288,8 +290,10 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","performance","transport")=$GET(STATE("perfTransport"),"websocket-first-http-refresh")
 	SET OBJ("desktop","performance","uploadStrategy")="batched-chunk-pool"
 	SET OBJ("desktop","performance","uploadFinalizeStrategy")=$GET(STATE("uploadCommitStrategy"),"binary-direct-stage-promote-with-copy-on-overwrite")
+	SET OBJ("desktop","performance","transferPersistence")=$GET(STATE("fsTransferPersistence"),"localstorage-resumable-transfer-list")
 	SET OBJ("desktop","performance","downloadStrategy")="direct-http-range-native-with-websocket-fallback"
 	SET OBJ("desktop","performance","downloadSendStrategy")="vfs-segment-streaming-http-blob"
+	SET OBJ("desktop","performance","mediaStreamStrategy")="range-kickstart-http-blob"
 	SET OBJ("desktop","performance","textPreviewStrategy")="windowed-websocket-range-read"
 	SET OBJ("desktop","viewers","text")=1
 	SET OBJ("desktop","viewers","image")=1
@@ -377,6 +381,8 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("vfs","httpChunkBytes")=+$GET(STATE("fsHttpChunkBytes"),262144)
 	SET OBJ("vfs","readPreviewBytes")=+$GET(STATE("fsReadPreviewBytes"),16384)
 	SET OBJ("vfs","readWindowBytes")=+$GET(STATE("fsReadWindowBytes"),131072)
+	SET OBJ("vfs","mediaInitialBytes")=+$GET(STATE("fsMediaInitialBytes"),1048576)
+	SET OBJ("vfs","transferPersistence")=$GET(STATE("fsTransferPersistence"),"localstorage-resumable-transfer-list")
 	SET OBJ("vfs","downloadVerifyHash")=1
 	SET OBJ("vfs","uploadStaleSeconds")=+$GET(STATE("uploadStaleSeconds"),1800)
 	SET OBJ("vfs","downloadStaleSeconds")=+$GET(STATE("downloadStaleSeconds"),900)
