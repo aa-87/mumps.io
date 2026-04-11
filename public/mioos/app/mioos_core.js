@@ -147,8 +147,16 @@
         window.addEventListener('mousemove', this._dragMove);
         window.addEventListener('mouseup', this._dragEnd);
         this._persistTransfersOnUnload = this.persistTransferCenter.bind(this);
+        this._networkOffline = function () {
+          if (self.autoPauseTransfersByReason) self.autoPauseTransfersByReason('Paused (connection lost)', 'upload');
+        };
+        this._networkOnline = function () {
+          if (self.persistTransferCenter) self.persistTransferCenter();
+        };
         window.addEventListener('resize', this._viewportResize);
         window.addEventListener('beforeunload', this._persistTransfersOnUnload);
+        window.addEventListener('offline', this._networkOffline);
+        window.addEventListener('online', this._networkOnline);
         if (!this.requiresSignin) window.setTimeout(function () { if (self.revivePersistedTransfers) self.revivePersistedTransfers(); }, 400);
       },
       beforeUnmount: function () {
@@ -161,6 +169,8 @@
         window.removeEventListener('mouseup', this._dragEnd);
         window.removeEventListener('resize', this._viewportResize);
         window.removeEventListener('beforeunload', this._persistTransfersOnUnload);
+        window.removeEventListener('offline', this._networkOffline);
+        window.removeEventListener('online', this._networkOnline);
         this.windows.forEach(function (win) {
           if (win._term) win._term.dispose();
         });
@@ -587,6 +597,26 @@
           return Promise.resolve(ctrl.onResume()).catch(function (err) {
             self.updateTransfer(item.id, { status: 'failed', stage: 'Resume failed', error: (err && err.message) || 'transfer_resume_failed' });
             throw err;
+          });
+        },
+        autoPauseTransfer: function (item, stage) {
+          var self = this;
+          var ctrl = this.transferController(item && item.id);
+          if (!item || !ctrl || !ctrl.onPause) return Promise.resolve();
+          if (['paused','completed','cancelled','failed'].indexOf(item.status) >= 0) return Promise.resolve();
+          return Promise.resolve(ctrl.onPause('auto')).catch(function () { return null; }).then(function () {
+            self.updateTransfer(item.id, { status: 'paused', stage: stage || 'Paused (connection lost)', error: '' });
+          });
+        },
+        autoPauseTransfersByReason: function (stage, kind) {
+          var self = this;
+          return Promise.all(((this.transferCenter || {}).items || []).map(function (item) {
+            if (!item) return Promise.resolve();
+            if (kind && item.kind !== kind) return Promise.resolve();
+            if (['queued','preparing','uploading','downloading','finalizing','verifying'].indexOf(item.status) < 0) return Promise.resolve();
+            return self.autoPauseTransfer(item, stage);
+          })).then(function () {
+            self.persistTransferCenter();
           });
         },
         registerTransfer: function (payload) {

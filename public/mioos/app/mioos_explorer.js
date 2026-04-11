@@ -44,6 +44,11 @@
     return mime.indexOf('video/') === 0 || /\.(mp4|webm|ogv|mov|m4v)$/i.test(name);
   }
 
+  function navigatorOnline() {
+    if (typeof navigator === 'undefined' || typeof navigator.onLine === 'undefined') return true;
+    return !!navigator.onLine;
+  }
+
   function makeDownloadHref(data, mime) {
     var blob;
     if (!data) return '';
@@ -793,6 +798,7 @@
             onRetry: function () { return self.uploadFilesToExplorer(windowId, [file]); },
             onPause: function () {
               transferControl.paused = true;
+              transferControl.disconnectPaused = false;
               Object.keys(transferControl.xh || {}).forEach(function (key) {
                 try { if (transferControl.xh[key]) transferControl.xh[key].abort(); } catch (err) {}
               });
@@ -800,6 +806,7 @@
             },
             onResume: function () {
               transferControl.paused = false;
+              transferControl.disconnectPaused = false;
               if (!transferControl.uploadId || chunkTransport !== 'http-binary') return Promise.resolve();
               return httpJson((((self.boot || {}).routes || {}).fsUploadStatus || '/api/mioos/fs/upload/status'), { uploadId: transferControl.uploadId }).then(function (msg) {
                 var nextIndex = +(((msg || {}).nextIndex) || ((((msg || {}).vfs || {}).nextIndex) || 1));
@@ -812,6 +819,13 @@
                 if (state.upload && state.upload.transferId && self.updateTransfer) self.updateTransfer(state.upload.transferId, { status: 'uploading', stage: 'Resuming upload', processedBytes: contiguousBytes, totalBytes: file.size });
                 self.setExplorerUploadProgress(state, { active: true, name: file.name, totalBytes: file.size, sentBytes: contiguousBytes, stage: 'Resuming upload', uploadId: transferControl.uploadId });
                 return transferControl.resumePump ? transferControl.resumePump() : Promise.resolve();
+              }).catch(function (err) {
+                if ((err && err.message) === 'network_error' || !navigatorOnline()) {
+                  transferControl.paused = true;
+                  if (self.updateTransfer) self.updateTransfer(transferId, { status: 'paused', stage: 'Paused (connection lost)', processedBytes: transferControl.completedBytes || 0, totalBytes: file.size, error: '' });
+                  return null;
+                }
+                throw err;
               });
             },
             onCancel: function () {
@@ -936,6 +950,26 @@
                 transferControl.completedBytes += bytes;
               }
             }
+            function syncProgress(stage, force) {
+              var now = Date.now();
+              var patch;
+              if (!force && transferControl.lastUiAt && (now - transferControl.lastUiAt) < 120 && Math.abs((transferControl.completedBytes || 0) - (transferControl.lastUiBytes || 0)) < chunkBytes) return;
+              transferControl.lastUiAt = now;
+              transferControl.lastUiBytes = transferControl.completedBytes || 0;
+              self.setExplorerUploadProgress(state, { active: true, name: file.name, totalBytes: file.size, sentBytes: transferControl.completedBytes, stage: stage, uploadId: uploadId });
+              patch = { status: transferControl.paused ? 'paused' : 'uploading', stage: transferControl.paused ? 'Paused' : stage, processedBytes: transferControl.completedBytes, totalBytes: file.size, resume: { kind: 'upload', parentId: state.folderId, sourceWindowId: windowId, fileName: file.name, mime: mime, totalBytes: file.size, chunkTransport: chunkTransport, uploadId: uploadId, contiguousBytes: transferControl.completedBytes, nextIndex: transferControl.nextIndex } };
+              if (transferId && self.updateTransfer) self.updateTransfer(transferId, patch);
+            }
+            function pauseForDisconnect(stageText) {
+              transferControl.paused = true;
+              transferControl.disconnectPaused = true;
+              Object.keys(transferControl.xh || {}).forEach(function (key) {
+                try { if (transferControl.xh[key]) transferControl.xh[key].abort(); } catch (err) {}
+              });
+              self.setExplorerUploadProgress(state, { active: true, name: file.name, totalBytes: file.size, sentBytes: transferControl.completedBytes, stage: stageText || 'Paused (connection lost)', uploadId: uploadId, error: '' });
+              if (transferId && self.updateTransfer) self.updateTransfer(transferId, { status: 'paused', stage: stageText || 'Paused (connection lost)', processedBytes: transferControl.completedBytes, totalBytes: file.size, error: '', resume: { kind: 'upload', parentId: state.folderId, sourceWindowId: windowId, fileName: file.name, mime: mime, totalBytes: file.size, chunkTransport: chunkTransport, uploadId: uploadId, contiguousBytes: transferControl.completedBytes, nextIndex: transferControl.nextIndex } });
+              return Promise.resolve();
+            }
             function pump() {
               var activeCount;
               if (transferControl.cancelled || transferControl.paused) return Promise.resolve();
@@ -961,23 +995,23 @@
                     delete transferControl.xh[index];
                     if (xhr.status >= 200 && xhr.status < 300) {
                       markDone(index, bytes);
-                      self.setExplorerUploadProgress(state, { active: true, name: file.name, totalBytes: file.size, sentBytes: transferControl.completedBytes, stage: 'Uploading chunks', uploadId: uploadId });
-                      if (transferId && self.updateTransfer) self.updateTransfer(transferId, { status: transferControl.paused ? 'paused' : 'uploading', stage: transferControl.paused ? 'Paused' : 'Uploading chunks', processedBytes: transferControl.completedBytes, totalBytes: file.size, resume: { kind: 'upload', parentId: state.folderId, sourceWindowId: windowId, fileName: file.name, mime: mime, totalBytes: file.size, chunkTransport: chunkTransport, uploadId: uploadId, contiguousBytes: transferControl.completedBytes, nextIndex: transferControl.nextIndex } });
+                      syncProgress('Uploading chunks', false);
                       if (allDone()) {
-                        httpJson((((self.boot || {}).routes || {}).fsUploadCommit || '/api/mioos/fs/upload/commit'), { uploadId: uploadId }).then(finalize).catch(function (err) { fail(err, 'fs_upload_commit_failed'); });
+                        httpJson((((self.boot || {}).routes || {}).fsUploadCommit || '/api/mioos/fs/upload/commit'), { uploadId: uploadId }).then(finalize).catch(function (err) { if ((err && err.message) === 'network_error' || !navigatorOnline()) return pauseForDisconnect('Paused before finalize'); fail(err, 'fs_upload_commit_failed'); });
                       } else if (!transferControl.paused && !transferControl.cancelled) {
                         pump();
                       }
                       return;
                     }
-                    if (transferControl.paused || transferControl.cancelled || xhr.status === 0) return;
+                    if (transferControl.paused || transferControl.cancelled) return;
+                    if (xhr.status === 0 || !navigatorOnline()) { pauseForDisconnect('Paused (connection lost)'); return; }
                     try { body = JSON.parse(xhr.responseText || '{}'); } catch (errx) { body = {}; }
                     fail(new Error(body.detail || body.reason || body.error || ('http_' + xhr.status)), 'fs_upload_chunk_failed');
                   };
                   xhr.onerror = function () {
                     delete transferControl.xh[index];
                     if (transferControl.paused || transferControl.cancelled) return;
-                    fail(new Error('network_error'), 'fs_upload_chunk_failed');
+                    pauseForDisconnect('Paused (connection lost)');
                   };
                   xhr.send(part);
                 }(nextPending()));
@@ -1069,12 +1103,34 @@
         var cancelled = false;
         var xh = {};
         if (!item || !resume.uploadId || !file) return Promise.resolve();
+        function pauseUpload(stageText) {
+          cancelled = false;
+          Object.keys(xh).forEach(function (key) { try { if (xh[key]) xh[key].abort(); } catch (err) {} });
+          if (self.updateTransfer) self.updateTransfer(item.id, { status: 'paused', stage: stageText || 'Paused', processedBytes: completedBytes, totalBytes: file.size, error: '', resume: Object.assign({}, resume, { contiguousBytes: completedBytes, nextIndex: nextIndex }) });
+          return Promise.resolve();
+        }
         function abortUpload() {
           cancelled = true;
           Object.keys(xh).forEach(function (key) { try { if (xh[key]) xh[key].abort(); } catch (err) {} });
           return httpJsonPost((((self.boot || {}).routes || {}).fsUploadAbort || '/api/mioos/fs/upload/abort'), { uploadId: resume.uploadId }).catch(function () { return null; });
         }
-        if (self.setTransferController) self.setTransferController(item.id, { onResume: function () { return self.recoverPersistedUploadTransfer(item, true); }, onRetry: function () { return self.recoverPersistedUploadTransfer(item, true); }, onCancel: abortUpload });
+        function resumeUpload() {
+          cancelled = false;
+          return httpJsonPost((((self.boot || {}).routes || {}).fsUploadStatus || '/api/mioos/fs/upload/status'), { uploadId: resume.uploadId }).then(function (msg) {
+            var payload = payloadRoot(msg);
+            nextIndex = +payload.nextIndex || 1;
+            completedBytes = +payload.contiguousBytes || 0;
+            resume.contiguousBytes = completedBytes;
+            resume.nextIndex = nextIndex;
+            active = {};
+            if (self.updateTransfer) self.updateTransfer(item.id, { status: 'uploading', stage: 'Resuming upload', processedBytes: completedBytes, totalBytes: file.size, resume: Object.assign({}, resume) });
+            return pump();
+          }).catch(function (err) {
+            if ((err && err.message) === 'network_error' || !navigatorOnline()) return pauseUpload('Paused (connection lost)');
+            throw err;
+          });
+        }
+        if (self.setTransferController) self.setTransferController(item.id, { onPause: function () { return pauseUpload('Paused'); }, onResume: resumeUpload, onRetry: function () { return self.recoverPersistedUploadTransfer(item, true); }, onCancel: abortUpload });
         if (self.updateTransfer) self.updateTransfer(item.id, { status: 'uploading', stage: 'Resuming upload', processedBytes: completedBytes, totalBytes: file.size, resume: Object.assign({}, resume) });
         function nextPending() {
           while (nextIndex <= totalChunks && active[nextIndex]) nextIndex += 1;
@@ -1089,6 +1145,9 @@
             return httpJsonPost((((self.boot || {}).routes || {}).fsUploadCommit || '/api/mioos/fs/upload/commit'), { uploadId: resume.uploadId }).then(function () {
               if (self.finalizeTransfer) self.finalizeTransfer(item.id, true, { processedBytes: file.size, totalBytes: file.size, progress: 100, resume: Object.assign({}, resume, { contiguousBytes: file.size, completed: 1 }) });
               if (self.refreshView) self.refreshView();
+            }).catch(function (err) {
+              if ((err && err.message) === 'network_error' || !navigatorOnline()) return pauseUpload('Paused before finalize');
+              throw err;
             });
           }
           while (running < Math.max(1, concurrency)) {
@@ -1114,11 +1173,11 @@
                   pump();
                   return;
                 }
-                if (!cancelled && self.finalizeTransfer) self.finalizeTransfer(item.id, false, { error: 'fs_upload_chunk_failed', stage: 'Resume failed', processedBytes: completedBytes, totalBytes: file.size, resume: Object.assign({}, resume, { contiguousBytes: completedBytes }) });
+                if (!cancelled) { if (xhr.status === 0 || !navigatorOnline()) { pauseUpload('Paused (connection lost)'); return; } if (self.finalizeTransfer) self.finalizeTransfer(item.id, false, { error: 'fs_upload_chunk_failed', stage: 'Resume failed', processedBytes: completedBytes, totalBytes: file.size, resume: Object.assign({}, resume, { contiguousBytes: completedBytes }) }); }
               };
               xhr.onerror = function () {
                 delete xh[index];
-                if (!cancelled && self.finalizeTransfer) self.finalizeTransfer(item.id, false, { error: 'network_error', stage: 'Resume failed', processedBytes: completedBytes, totalBytes: file.size, resume: Object.assign({}, resume, { contiguousBytes: completedBytes }) });
+                if (!cancelled) pauseUpload('Paused (connection lost)');
               };
               xhr.send(file.slice(start, end));
             }(nextPending()));
@@ -1133,7 +1192,7 @@
         var self = this;
         var resume = (item && item.resume) || {};
         if (!item || !resume.uploadId) return Promise.resolve();
-        if (self.setTransferController) self.setTransferController(item.id, { onResume: function () { return self.recoverPersistedUploadTransfer(item, true); }, onRetry: function () { return self.recoverPersistedUploadTransfer(item, true); }, onCancel: function () { return httpJsonPost((((self.boot || {}).routes || {}).fsUploadAbort || '/api/mioos/fs/upload/abort'), { uploadId: resume.uploadId }).catch(function () { return null; }); } });
+        if (self.setTransferController) self.setTransferController(item.id, { onPause: function () { if (self.updateTransfer) self.updateTransfer(item.id, { status: 'paused', stage: 'Paused', error: '', resume: Object.assign({}, resume) }); return Promise.resolve(); }, onResume: function () { return self.recoverPersistedUploadTransfer(item, true); }, onRetry: function () { return self.recoverPersistedUploadTransfer(item, true); }, onCancel: function () { return httpJsonPost((((self.boot || {}).routes || {}).fsUploadAbort || '/api/mioos/fs/upload/abort'), { uploadId: resume.uploadId }).catch(function () { return null; }); } });
         return httpJsonPost((((self.boot || {}).routes || {}).fsUploadStatus || '/api/mioos/fs/upload/status'), { uploadId: resume.uploadId }).then(function (msg) {
           var payload = payloadRoot(msg);
           resume.contiguousBytes = +payload.contiguousBytes || 0;
@@ -1149,6 +1208,10 @@
             return self.resumePersistedUpload(item, entry.file);
           });
         }).catch(function (err) {
+          if ((err && err.message) === 'network_error' || !navigatorOnline()) {
+            if (self.updateTransfer) self.updateTransfer(item.id, { status: 'paused', stage: 'Paused (connection lost)', processedBytes: resume.contiguousBytes || 0, totalBytes: resume.totalBytes || 0, error: '', resume: Object.assign({}, resume) });
+            return null;
+          }
           if (self.finalizeTransfer) self.finalizeTransfer(item.id, false, { error: (err && err.message) || 'upload_recovery_failed', stage: 'Upload recovery failed', processedBytes: resume.contiguousBytes || 0, totalBytes: resume.totalBytes || 0, resume: Object.assign({}, resume) });
           return null;
         });

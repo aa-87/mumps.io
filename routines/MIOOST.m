@@ -45,6 +45,9 @@ MIOOST ; MIOOS tests
 	DO T044
 	DO T045
 	DO T046
+	DO T047
+	DO T048
+	DO T049
 	QUIT
 	;
 RESET
@@ -847,8 +850,8 @@ T041
 	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T041][load]")
 	SET JSON=$$BOOTJSON^MIOOSST(.STATE,.CONF)
 	DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T041][decode]")
-	DO EQ^MIOTASSERT(+$GET(OBJ("vfs","chunkSize")),65536,"[MIOOST][T041][vfs chunk size]")
-	DO EQ^MIOTASSERT(+$GET(OBJ("vfs","httpChunkBytes")),262144,"[MIOOST][T041][http chunk bytes]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("vfs","chunkSize")),131072,"[MIOOST][T041][vfs chunk size]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("vfs","httpChunkBytes")),1048576,"[MIOOST][T041][http chunk bytes]")
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","performance","downloadStrategy")),"direct-http-range-native-with-websocket-fallback","[MIOOST][T041][download strategy]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 36 — VFS storage layout acceleration and upload accounting"),"[MIOOST][T041][llm roi36]")
 	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","ROI 36 — VFS storage layout acceleration and upload accounting"),"[MIOOST][T041][docs roi36]")
@@ -861,17 +864,17 @@ T042
 	DO INIT^MIOOS(.CONF)
 	SET STATE("principal")=$GET(CONF("mioos","bootstrapAuth","admin","username"),"admin")
 	SET STATE("roles")=$GET(CONF("mioos","bootstrapAuth","admin","roles"),"admin")
-	SET SEG1=$TRANSLATE($JUSTIFY("",32768)," ","A")
-	SET SEG2=$TRANSLATE($JUSTIFY("",32768)," ","B")
+	SET SEG1=$TRANSLATE($JUSTIFY("",131072)," ","A")
+	SET SEG2=$TRANSLATE($JUSTIFY("",131072)," ","B")
 	SET SEG3=$TRANSLATE($JUSTIFY("",4464)," ","C")
 	SET BIG=SEG1_SEG2_SEG3
 	DO OK^MIOTASSERT($$WRITE^MIOOSFS(.STATE,$$HOMEID^MIOOSFS(),"big.txt",BIG,"text/plain",.OUT,.ERR),"[MIOOST][T042][write]")
 	SET ID=$GET(OUT("id"))
-	DO EQ^MIOTASSERT(+$GET(^MIO("MIOOS","FS","INFO",ID,"chunkSize")),32768,"[MIOOST][T042][stored chunk size]")
+	DO EQ^MIOTASSERT(+$GET(^MIO("MIOOS","FS","INFO",ID,"chunkSize")),131072,"[MIOOST][T042][stored chunk size]")
 	DO EQ^MIOTASSERT($ORDER(^MIO("MIOOS","FS","DATA",ID,""),-1),3,"[MIOOST][T042][segment count]")
 	KILL SLICE,ERR
-	DO OK^MIOTASSERT($$READRANGE^MIOOSFS(ID,32000,8000,.SLICE,.READ,.ERR),"[MIOOST][T042][readrange new]")
-	SET EXPECT=$TRANSLATE($JUSTIFY("",768)," ","A")_$TRANSLATE($JUSTIFY("",7232)," ","B")
+	DO OK^MIOTASSERT($$READRANGE^MIOOSFS(ID,131000,8000,.SLICE,.READ,.ERR),"[MIOOST][T042][readrange new]")
+	SET EXPECT=$TRANSLATE($JUSTIFY("",72)," ","A")_$TRANSLATE($JUSTIFY("",7928)," ","B")
 	DO EQ^MIOTASSERT(SLICE,EXPECT,"[MIOOST][T042][readrange new content]")
 	SET LID=$$NEXTID^MIOOSFS(),NOW=$HOROLOG,LEGACY=""
 	FOR I=1:1:5000 SET LEGACY=LEGACY_$CHAR(97+((I-1)#26))
@@ -931,7 +934,7 @@ T044
 	DO OK^MIOTASSERT($$COMMIT^MIOOSFSUP(.STATE,.CONF,UP,.OUT,.ERR),"[MIOOST][T044][commit]")
 	SET ID=$GET(OUT("id"))
 	DO EQ^MIOTASSERT(ID,TEMPID,"[MIOOST][T044][promoted id]")
-	DO EQ^MIOTASSERT(+$GET(^MIO("MIOOS","FS","INFO",ID,"chunkSize")),131072,"[MIOOST][T044][promoted chunk size]")
+	DO EQ^MIOTASSERT(+$GET(^MIO("MIOOS","FS","INFO",ID,"chunkSize")),262144,"[MIOOST][T044][promoted chunk size]")
 	DO EQ^MIOTASSERT($GET(^MIO("MIOOS","FS","DATA",ID,1)),RAW,"[MIOOST][T044][final data]")
 	DO EQ^MIOTASSERT($DATA(^MIO("MIOOS","UPLOAD","INFO",UP)),0,"[MIOOST][T044][stage cleaned]")
 	QUIT
@@ -1002,19 +1005,38 @@ T047
 	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T047][load]")
 	DO BOOTARY^MIOOSST(.STATE,.CONF,.BOOT)
 	DO EQ^MIOTASSERT($GET(BOOT("desktop","performance","transferPersistence")),"localstorage-resumable-transfer-list","[MIOOST][T047][boot transfer persistence]")
-	DO EQ^MIOTASSERT($GET(BOOT("desktop","performance","mediaStreamStrategy")),"range-kickstart-http-blob","[MIOOST][T047][boot media strategy]")
+	DO EQ^MIOTASSERT($GET(BOOT("desktop","performance","mediaStreamStrategy")),"range-kickstart-http-blob-partial-window","[MIOOST][T047][boot media strategy]")
 	DO EQ^MIOTASSERT($GET(BOOT("vfs","transferPersistence")),"localstorage-resumable-transfer-list","[MIOOST][T047][boot vfs transfer persistence]")
-	DO EQ^MIOTASSERT(+$GET(BOOT("vfs","mediaInitialBytes")),1048576,"[MIOOST][T047][boot media bytes]")
+	DO EQ^MIOTASSERT(+$GET(BOOT("vfs","mediaInitialBytes")),2097152,"[MIOOST][T047][boot media bytes]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","transferStorageKey"),"[MIOOST][T047][core transfer storage key]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","recoverPersistedUploadTransfer"),"[MIOOST][T047][recover upload]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","autoPauseTransfersByReason"),"[MIOOST][T047][auto pause method]")
 	QUIT
 	;
 
 T048
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","STREAM=""media"""),"[MIOOST][T048][blob stream query]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","ISMEDIAMIME(MIME)"),"[MIOOST][T048][blob media helper]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","IF RE'<SIZE SET RE=SIZE-1"),"[MIOOST][T048][media partial clamp]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","stream: 'media'"),"[MIOOST][T048][explorer media stream]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 39 — persistent transfer recovery and media-first streaming"),"[MIOOST][T048][llm roi39]")
 	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","ROI 39 — persistent transfer recovery and media-first streaming"),"[MIOOST][T048][docs roi39]")
+	QUIT
+	;
+
+T049
+	NEW CONF,REQ,CTX,STATE,BOOT,ERR
+	DO RESET
+	DO CONFDEF^MIOOS(.CONF)
+	DO INIT^MIOOS(.CONF)
+	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T049][load]")
+	DO BOOTARY^MIOOSST(.STATE,.CONF,.BOOT)
+	DO EQ^MIOTASSERT(+$GET(BOOT("vfs","uploadChunkBytes")),262144,"[MIOOST][T049][upload chunk bytes]")
+	DO EQ^MIOTASSERT(+$GET(BOOT("vfs","uploadConcurrency")),6,"[MIOOST][T049][upload concurrency]")
+	DO EQ^MIOTASSERT(+$GET(BOOT("vfs","httpChunkBytes")),1048576,"[MIOOST][T049][http chunk bytes]")
+	DO EQ^MIOTASSERT(+$GET(BOOT("vfs","chunkSize")),131072,"[MIOOST][T049][chunk size]")
+	DO EQ^MIOTASSERT(+$GET(BOOT("vfs","mediaInitialBytes")),2097152,"[MIOOST][T049][media initial bytes]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","pauseForDisconnect"),"[MIOOST][T049][disconnect pause]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","onPause: function () { return pauseUpload"),"[MIOOST][T049][resume pause control]")
 	QUIT
 	;

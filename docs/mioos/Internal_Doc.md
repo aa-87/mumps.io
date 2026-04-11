@@ -205,3 +205,13 @@ ROI 33 — HTTP binary chunk transport for resumable uploads and hardened pause/
 - Upload entries store server-side resume metadata (`uploadId`, `nextIndex`, `contiguousBytes`, `parentId`) so a refreshed session can reattach to in-flight uploads and continue from the first missing chunk after the user re-selects the same file.
 - Media preview URLs now request `stream=media`, and `FSBLOB^MIOOSAPI` answers a first non-range media GET with an initial partial-content window to reduce time-to-first-frame while keeping later browser range fetches intact.
 - The next ROI should focus on worker-assisted upload scheduling, main-thread contention audits, and measurements of true end-to-end upload throughput under parallel load.
+
+
+## ROI 40 — resilient resumable uploads and tuned media/download transport
+
+- Added automatic upload auto-pause on connection loss and browser offline events so interrupted HTTP chunk uploads stay resumable instead of flipping to failed immediately.
+- Fixed resumed-upload transfer controls so Pause remains available after Resume, including persisted transfer recovery flows.
+- Corrected `FSBLOB^MIOOSAPI` media-first partial-window behavior so `stream=media` no longer expands to the full file on the first non-range request.
+- Tuned default transport values for higher throughput: VFS chunk size `131072`, upload chunk bytes `262144`, upload concurrency `6`, HTTP blob send target `1048576`, media initial bytes `2097152`.
+- Reduced main-thread upload overhead by throttling transfer progress updates during parallel HTTP chunk uploads.
+- Note: raw HTTP binary upload already sends `Blob.slice()` directly, so web workers are not the primary lever there; the next upload ROI should focus on optional dedicated upload workers for scheduling/telemetry and measuring whether they improve real throughput on the target browsers.

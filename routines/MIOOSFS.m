@@ -3,7 +3,7 @@ MIOOSFS ; MIOOS global-backed virtual file system
 	;
 CHUNK(CONF)
 	NEW N
-	SET N=+$GET(CONF("mioos","fs","chunkSize"),32768)
+	SET N=+$GET(CONF("mioos","fs","chunkSize"),131072)
 	IF N<2048 SET N=2048
 	IF N>262144 SET N=262144
 	QUIT N

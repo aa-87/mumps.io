@@ -85,12 +85,12 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("uploadCommitStrategy")=$GET(CONF("mioos","upload","commitStrategy"),"binary-direct-stage-promote-with-copy-on-overwrite")
 	SET STATE("wsPath")=$GET(CONF("mioos","route","ws"),"/ws/mioos")
 	SET STATE("fsEnabled")=+$GET(CONF("mioos","fs","enabled"),1)
-	SET STATE("fsChunkSize")=+$GET(CONF("mioos","fs","chunkSize"),65536)
+	SET STATE("fsChunkSize")=+$GET(CONF("mioos","fs","chunkSize"),131072)
 	SET STATE("fsHttpChunkBytes")=+$GET(CONF("mioos","download","httpChunkBytes"),1048576)
 	SET STATE("fsReadPreviewBytes")=+$GET(CONF("mioos","fs","readPreviewBytes"),16384)
 	SET STATE("fsReadWindowBytes")=+$GET(CONF("mioos","fs","readWindowBytes"),131072)
 	SET STATE("fsTransferPersistence")=$GET(CONF("mioos","fs","transferPersistence"),"localstorage-resumable-transfer-list")
-	SET STATE("fsMediaInitialBytes")=+$GET(CONF("mioos","download","mediaInitialBytes"),1048576)
+	SET STATE("fsMediaInitialBytes")=+$GET(CONF("mioos","download","mediaInitialBytes"),2097152)
 	SET STATE("fsTransport")=$GET(CONF("mioos","fs","transport"),"http-and-websocket")
 	SET STATE("fsRootId")=$$ROOTID^MIOOSFS()
 	SET STATE("fsHomeId")=$$HOMEID^MIOOSFS()
@@ -293,7 +293,7 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","performance","transferPersistence")=$GET(STATE("fsTransferPersistence"),"localstorage-resumable-transfer-list")
 	SET OBJ("desktop","performance","downloadStrategy")="direct-http-range-native-with-websocket-fallback"
 	SET OBJ("desktop","performance","downloadSendStrategy")="vfs-segment-streaming-http-blob"
-	SET OBJ("desktop","performance","mediaStreamStrategy")="range-kickstart-http-blob"
+	SET OBJ("desktop","performance","mediaStreamStrategy")="range-kickstart-http-blob-partial-window"
 	SET OBJ("desktop","performance","textPreviewStrategy")="windowed-websocket-range-read"
 	SET OBJ("desktop","viewers","text")=1
 	SET OBJ("desktop","viewers","image")=1
@@ -371,17 +371,17 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("vfs","transport")=$GET(STATE("fsTransport"),"http-and-websocket")
 	SET OBJ("vfs","rootId")=$GET(STATE("fsRootId"),"root")
 	SET OBJ("vfs","homeId")=$GET(STATE("fsHomeId"),"root")
-	SET OBJ("vfs","chunkSize")=+$GET(STATE("fsChunkSize"),32768)
+	SET OBJ("vfs","chunkSize")=+$GET(STATE("fsChunkSize"),131072)
 	SET OBJ("vfs","uploadChunkBytes")=$$UPCHUNK^MIOOSFSUP(.CONF)
 	SET OBJ("vfs","uploadConcurrency")=$$UPCONCUR^MIOOSFSUP(.CONF)
 	SET OBJ("vfs","uploadBatchSize")=+$GET(STATE("wsUploadBatchSize"),1)
 	SET OBJ("vfs","uploadChunkTransport")=$GET(STATE("uploadChunkTransport"),"http-binary")
 	SET OBJ("vfs","uploadCommitStrategy")=$GET(STATE("uploadCommitStrategy"),"binary-direct-stage-promote-with-copy-on-overwrite")
 	SET OBJ("vfs","downloadChunkBytes")=$$DLCHUNK^MIOOSFSDN(.CONF)
-	SET OBJ("vfs","httpChunkBytes")=+$GET(STATE("fsHttpChunkBytes"),262144)
+	SET OBJ("vfs","httpChunkBytes")=+$GET(STATE("fsHttpChunkBytes"),1048576)
 	SET OBJ("vfs","readPreviewBytes")=+$GET(STATE("fsReadPreviewBytes"),16384)
 	SET OBJ("vfs","readWindowBytes")=+$GET(STATE("fsReadWindowBytes"),131072)
-	SET OBJ("vfs","mediaInitialBytes")=+$GET(STATE("fsMediaInitialBytes"),1048576)
+	SET OBJ("vfs","mediaInitialBytes")=+$GET(STATE("fsMediaInitialBytes"),2097152)
 	SET OBJ("vfs","transferPersistence")=$GET(STATE("fsTransferPersistence"),"localstorage-resumable-transfer-list")
 	SET OBJ("vfs","downloadVerifyHash")=1
 	SET OBJ("vfs","uploadStaleSeconds")=+$GET(STATE("uploadStaleSeconds"),1800)
@@ -410,7 +410,8 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","contextMenu","verbs",9)="control-panel"
 	SET OBJ("desktop","contextMenu","verbs",10)="open"
 	SET OBJ("desktop","performance","uploadPreparation")=$SELECT($GET(STATE("uploadChunkTransport"))="http-binary":"blob-slice-no-base64",1:"base64-main-thread")
-	SET OBJ("desktop","performance","uploadStrategy")=$SELECT($GET(STATE("uploadChunkTransport"))="http-binary":"http-binary-chunk-session-with-websocket-fallback",1:"websocket-base64-chunk-session")
+	SET OBJ("desktop","performance","uploadStrategy")=$SELECT($GET(STATE("uploadChunkTransport"))="http-binary":"http-binary-parallel-slice-xhr-with-auto-pause",1:"websocket-base64-chunk-session")
+	SET OBJ("desktop","performance","uploadUiStrategy")="throttled-progress-updates-and-persistent-resume"
 	DO THEMES($NAME(OBJ("desktop","themes")),$GET(STATE("themeKey")))
 	MERGE OBJ("apps")=STATE("apps")
 	DO MERGELAYOUT(.STATE,$NAME(OBJ("apps")))
