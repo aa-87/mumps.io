@@ -150,3 +150,11 @@ ROI 33 — HTTP binary chunk transport for resumable uploads and hardened pause/
 - Normalized uploaded binary storage so both HTTP raw-binary uploads and websocket base64 uploads commit into the VFS as raw bytes instead of JSON-transport strings.
 - Hardened `fs.download.begin`/`fs.download.chunk` to advertise and return binary-safe base64 chunks over websocket/JSON, preserving byte offsets while keeping the current high-performance upload workflow.
 - Moved image/media/PDF preview loading to the chunked download path and added regression coverage in `MIOOST` for upload -> commit -> read -> chunk-download roundtrip integrity.
+
+
+## ROI 35 — Direct HTTP blob/range download and large preview acceleration
+
+- Added authenticated `GET/HEAD /api/mioos/fs/blob` for direct file delivery from the globals-backed VFS.
+- Supports `Range` requests for native browser streaming of images, audio, video, and PDF content.
+- Explorer preview, image viewer, media viewer, PDF viewer, and browser download handoff now use direct file URLs instead of websocket `fs.read` or serial chunk download for large binary payloads.
+- Keeps websocket control paths in place for text-oriented reads while moving bulk binary transfer onto HTTP for significantly better preview and download performance.

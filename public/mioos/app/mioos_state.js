@@ -33,6 +33,7 @@
         fsUploadStatus: '/api/mioos/fs/upload/status',
         fsUploadCommit: '/api/mioos/fs/upload/commit',
         fsUploadAbort: '/api/mioos/fs/upload/abort',
+        fsBlob: '/api/mioos/fs/blob',
         debugSnapshotCommand: 'debug.snapshot',
         websocket: '/ws/mioos',
         terminalWebsocket: '/ws/mioos/terminal',

@@ -52,6 +52,20 @@
     return window.URL.createObjectURL(blob);
   }
 
+  function buildFsBlobUrl(vm, item, options) {
+    var route = ((((vm || {}).boot || {}).routes || {}).fsBlob) || '/api/mioos/fs/blob';
+    var id = ((item || {}).id || (item || {}).key || (item || {}).fileId || '');
+    var path = ((item || {}).path || '');
+    var params = [];
+    options = options || {};
+    if (id) params.push('id=' + encodeURIComponent(id));
+    else if (path) params.push('path=' + encodeURIComponent(path));
+    else return '';
+    if (options.download) params.push('download=1');
+    if (options.inline) params.push('inline=1');
+    return route + (route.indexOf('?') >= 0 ? '&' : '?') + params.join('&');
+  }
+
   function stringToBytes(raw) {
     var value = String(raw || '');
     var bytes = new Uint8Array(value.length);
@@ -567,6 +581,8 @@
           this.previewTextFile(windowId, state.selection);
         } else if (state.selection && detectImageLike(state.selection)) {
           this.previewImageFile(windowId, state.selection);
+        } else if (state.selection && (detectAudioLike(state.selection) || detectVideoLike(state.selection))) {
+          this.previewMediaFile(windowId, state.selection);
         } else {
           state.preview = { title: '', content: '', mime: 'text/plain', imageSrc: '', mediaSrc: '', mediaKind: '' };
         }
@@ -599,57 +615,33 @@
       previewImageFile: function (windowId, item) {
         var win = this.windows.find(function (entry) { return entry.id === windowId; });
         var state = this.ensureExplorerWindowState(win);
-        if (!win || !state || !item || !this.command) return Promise.resolve();
-        state.preview = { title: item.name || item.title || '', content: '', mime: item.mime || 'image/*', imageSrc: '', mediaSrc: '', mediaKind: '' };
-        return this.command('fs.read', { id: item.id || item.key || item.fileId }).then(function (msg) {
-          var payload = payloadRoot(msg);
-          state.preview = {
-            title: item.name || item.title || '',
-            content: '',
-            mime: item.mime || payload.mime || 'image/*',
-            imageSrc: textFromPayload(payload),
-            mediaSrc: '',
-            mediaKind: ''
-          };
-          return msg;
-        }).catch(function (err) {
-          state.preview = {
-            title: item.name || item.title || '',
-            content: (err && err.message) || 'Unable to load image preview.',
-            mime: item.mime || 'image/*',
-            imageSrc: '',
-            mediaSrc: '',
-            mediaKind: ''
-          };
-        });
+        var url = buildFsBlobUrl(this, item, { inline: true });
+        if (!win || !state || !item || !url) return Promise.resolve();
+        state.preview = {
+          title: item.name || item.title || '',
+          content: '',
+          mime: item.mime || 'image/*',
+          imageSrc: url,
+          mediaSrc: '',
+          mediaKind: ''
+        };
+        return Promise.resolve(url);
       },
       previewMediaFile: function (windowId, item) {
         var win = this.windows.find(function (entry) { return entry.id === windowId; });
         var state = this.ensureExplorerWindowState(win);
         var mediaKind = detectVideoLike(item) ? 'video' : 'audio';
-        if (!win || !state || !item || !this.command) return Promise.resolve();
-        state.preview = { title: item.name || item.title || '', content: '', mime: item.mime || (mediaKind + '/*'), imageSrc: '', mediaSrc: '', mediaKind: mediaKind };
-        return this.command('fs.read', { id: item.id || item.key || item.fileId }).then(function (msg) {
-          var payload = payloadRoot(msg);
-          state.preview = {
-            title: item.name || item.title || '',
-            content: '',
-            mime: item.mime || payload.mime || (mediaKind + '/*'),
-            imageSrc: '',
-            mediaSrc: textFromPayload(payload),
-            mediaKind: mediaKind
-          };
-          return msg;
-        }).catch(function (err) {
-          state.preview = {
-            title: item.name || item.title || '',
-            content: (err && err.message) || ('Unable to load ' + mediaKind + ' preview.'),
-            mime: item.mime || (mediaKind + '/*'),
-            imageSrc: '',
-            mediaSrc: '',
-            mediaKind: mediaKind
-          };
-        });
+        var url = buildFsBlobUrl(this, item, { inline: true });
+        if (!win || !state || !item || !url) return Promise.resolve();
+        state.preview = {
+          title: item.name || item.title || '',
+          content: '',
+          mime: item.mime || (mediaKind + '/*'),
+          imageSrc: '',
+          mediaSrc: url,
+          mediaKind: mediaKind
+        };
+        return Promise.resolve(url);
       },
       explorerOpenSelected: function (windowId) {
         var win = this.windows.find(function (entry) { return entry.id === windowId; });
@@ -1127,6 +1119,17 @@
           if (transferId && this.finalizeTransfer) this.finalizeTransfer(transferId, true, { progress: 100, stage: 'Saved to browser download manager' });
           return Promise.resolve();
         }
+        href = buildFsBlobUrl(this, item, { download: true });
+        if (href) {
+          anchor = document.createElement('a');
+          anchor.href = href;
+          anchor.download = name;
+          document.body.appendChild(anchor);
+          anchor.click();
+          document.body.removeChild(anchor);
+          if (transferId && this.finalizeTransfer) this.finalizeTransfer(transferId, true, { progress: 100, stage: 'Handed off to browser download manager' });
+          return Promise.resolve();
+        }
         if (!this.command) return Promise.resolve();
         if (transferId && this.updateTransfer) this.updateTransfer(transferId, { status: 'downloading', stage: 'Downloading' });
         return this.command('fs.download.begin', { id: item.id || item.key || item.fileId }).then(function (msg) {
@@ -1201,13 +1204,12 @@
         var win = this.windows.find(function (entry) { return entry.id === windowId; });
         var state = this.ensureExplorerWindowState(win);
         var item = state && state.selection;
-        var preview = (state || {}).preview || {};
         if (!item) return Promise.resolve();
-        return this.downloadFileEntry(item, preview.imageSrc || preview.mediaSrc || '');
+        return this.downloadFileEntry(item, '');
       },
       downloadViewerFile: function (win) {
         if (!win) return Promise.resolve();
-        return this.downloadFileEntry({ id: (win.meta || {}).fileId, name: (win.meta || {}).fileName || win.title }, (win.fileView || {}).content || '');
+        return this.downloadFileEntry({ id: (win.meta || {}).fileId, name: (win.meta || {}).fileName || win.title, mime: (win.meta || {}).mime || ((win.fileView || {}).mime || '') }, '');
       },
       openTextViewerWindow: function (item) {
         var id = nextWindowId(this, 'win-text');
@@ -1254,17 +1256,9 @@
         };
         this.windows.push(win);
         this.focusWindow(id);
-        if (!this.command) return;
-        this.command('fs.read', { id: item.id || item.key || item.fileId }).then(function (msg) {
-          var payload = payloadRoot(msg);
-          win.fileView.loading = false;
-          win.fileView.content = textFromPayload(payload);
-          win.fileView.mime = payload.mime || win.fileView.mime;
-        }).catch(function (err) {
-          win.fileView.loading = false;
-          win.fileView.content = '';
-          win.fileView.error = (err && err.message) || 'Unable to open image.';
-        });
+        win.fileView.loading = false;
+        win.fileView.content = buildFsBlobUrl(this, item, { inline: true });
+        if (!win.fileView.content) win.fileView.error = 'Unable to open image.';
       },
       openMediaViewerWindow: function (item) {
         var mediaKind = detectVideoLike(item) ? 'video' : 'audio';
@@ -1284,17 +1278,9 @@
         };
         this.windows.push(win);
         this.focusWindow(id);
-        if (!this.command) return;
-        this.command('fs.read', { id: item.id || item.key || item.fileId }).then(function (msg) {
-          var payload = payloadRoot(msg);
-          win.fileView.loading = false;
-          win.fileView.content = textFromPayload(payload);
-          win.fileView.mime = payload.mime || win.fileView.mime;
-        }).catch(function (err) {
-          win.fileView.loading = false;
-          win.fileView.content = '';
-          win.fileView.error = (err && err.message) || 'Unable to open media.';
-        });
+        win.fileView.loading = false;
+        win.fileView.content = buildFsBlobUrl(this, item, { inline: true });
+        if (!win.fileView.content) win.fileView.error = 'Unable to open media.';
       },
       openPdfViewerWindow: function (item) {
         var id = nextWindowId(this, 'win-pdf');
@@ -1313,17 +1299,9 @@
         };
         this.windows.push(win);
         this.focusWindow(id);
-        if (!this.command) return;
-        this.command('fs.read', { id: item.id || item.key || item.fileId }).then(function (msg) {
-          var payload = payloadRoot(msg);
-          var raw = textFromPayload(payload);
-          win.fileView.loading = false;
-          win.fileView.mime = payload.mime || win.fileView.mime;
-          win.fileView.content = makeDownloadHref(raw, win.fileView.mime);
-        }).catch(function (err) {
-          win.fileView.loading = false;
-          win.fileView.error = (err && err.message) || 'Unable to open PDF.';
-        });
+        win.fileView.loading = false;
+        win.fileView.content = buildFsBlobUrl(this, item, { inline: true });
+        if (!win.fileView.content) win.fileView.error = 'Unable to open PDF.';
       },
       openStructuredViewerWindow: function (item) {
         var id = nextWindowId(this, 'win-structured');

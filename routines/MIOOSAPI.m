@@ -354,3 +354,97 @@ FSUPABORT(DEV,CONF,REQ,CTX)
 	DO RESPJSONX^MIOHTTP(.DEV,.CONF,200,.OUT,$GET(CTX("request_id")),.CTX)
 	SET CTX("status")=200
 	QUIT
+	;
+FSBLOB(DEV,CONF,REQ,CTX)
+	NEW STATE,ERR,ID,RID,HEAD,SIZE,MIME,NAME,DL,RS,RE,RLEN,RNG,OK,ETAG,METHOD,H304,H416,H206,H200,SERR
+	IF '$$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,500,"fsblob_state_error",$GET(ERR("error")),.CTX)
+	IF '$$REQUIREAUTH(.DEV,.CONF,.CTX,.STATE) QUIT
+	SET ID=$SELECT($GET(REQ("query","id"))'="":$GET(REQ("query","id")),1:$GET(REQ("query","path")))
+	IF '$$RESOLVE^MIOOSFS(ID,.RID,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,404,"fs_blob_failed",$GET(ERR("error")),.CTX)
+	IF '$$CAN^MIOOSFS(RID,.STATE,"read") DO  QUIT
+	. DO RESPERR(.DEV,.CONF,403,"fs_blob_failed","access_denied",.CTX)
+	IF $$FIELD^MIOOSFS(RID,1)'="file" DO  QUIT
+	. DO RESPERR(.DEV,.CONF,400,"fs_blob_failed","not_file",.CTX)
+	SET SIZE=+$$FIELD^MIOOSFS(RID,5)
+	SET MIME=$$FIELD^MIOOSFS(RID,4)
+	IF MIME="" SET MIME="application/octet-stream"
+	SET NAME=$$FIELD^MIOOSFS(RID,3)
+	SET DL=$$ISTRUE($GET(REQ("query","download")))
+	SET METHOD=$$LOW^MIOHTTP($GET(REQ("method"),"GET"))
+	SET HEAD("Content-Type")=MIME
+	SET HEAD("X-Content-Type-Options")="nosniff"
+	SET HEAD("Accept-Ranges")="bytes"
+	SET HEAD("Cache-Control")="private, max-age=60"
+	SET HEAD("Content-Disposition")=$$DISPHDR(NAME,DL)
+	SET ETAG=$GET(^MIO("MIOOS","FS","HASH",RID))
+	IF ETAG'="" SET HEAD("ETag")=$CHAR(34)_ETAG_$CHAR(34)
+	IF $GET(REQ("hdr","if-none-match"))'="",$GET(HEAD("ETag"))'="",$GET(REQ("hdr","if-none-match"))[$GET(HEAD("ETag")) DO  QUIT
+	. MERGE H304=HEAD
+	. SET H304("Content-Length")=0
+	. DO RESPHEAD^MIOSTATIC(.DEV,.CONF,304,.H304,$GET(CTX("request_id")))
+	. SET CTX("status")=304
+	SET RNG=$GET(REQ("hdr","range"))
+	IF RNG'="" DO  QUIT
+	. SET OK=$$PARSERANGE^MIOSTATIC(RNG,SIZE,.RS,.RE)
+	. IF 'OK DO  QUIT
+	. . MERGE H416=HEAD
+	. . SET H416("Content-Range")="bytes */"_SIZE
+	. . SET H416("Content-Length")=0
+	. . DO RESPHEAD^MIOSTATIC(.DEV,.CONF,416,.H416,$GET(CTX("request_id")))
+	. . SET CTX("status")=416
+	. SET RLEN=(RE-RS)+1
+	. MERGE H206=HEAD
+	. SET H206("Content-Range")="bytes "_RS_"-"_RE_"/"_SIZE
+	. SET H206("Content-Length")=RLEN
+	. DO RESPHEAD^MIOSTATIC(.DEV,.CONF,206,.H206,$GET(CTX("request_id")))
+	. IF METHOD'="head" DO SENDVFS(.DEV,.CONF,RID,RS,RLEN,.SERR)
+	. SET CTX("status")=206
+	MERGE H200=HEAD
+	SET H200("Content-Length")=SIZE
+	DO RESPHEAD^MIOSTATIC(.DEV,.CONF,200,.H200,$GET(CTX("request_id")))
+	IF METHOD'="head" DO SENDVFS(.DEV,.CONF,RID,0,SIZE,.SERR)
+	SET CTX("status")=200
+	QUIT
+	;
+SENDVFS(DEV,CONF,RID,OFFSET,LEN,ERR)
+	NEW CHSZ,POS,REM,SLICE,READ,RERR
+	SET ERR("routine")="MIOOSAPI"
+	SET CHSZ=+$GET(CONF("mioos","download","httpChunkBytes"),262144)
+	IF CHSZ<4096 SET CHSZ=4096
+	IF CHSZ>(65536*10) SET CHSZ=65536*10
+	SET POS=+$GET(OFFSET),REM=+$GET(LEN)
+	FOR  QUIT:REM'>0  DO  QUIT:$DATA(ERR("error"))
+	. KILL RERR
+	. IF '$$READRANGE^MIOOSFS(RID,POS,$SELECT(REM>CHSZ:CHSZ,1:REM),.SLICE,.READ,.RERR) DO  QUIT
+	. . MERGE ERR=RERR
+	. . IF $GET(ERR("error"))="" SET ERR("error")="fs_blob_read_failed"
+	. IF READ<1 DO  QUIT
+	. . SET ERR("routine")="MIOOSAPI",ERR("error")="fs_blob_read_stalled",ERR("detail")=POS
+	. DO WOUT^MIOSTATIC(.DEV,$GET(SLICE))
+	. SET POS=POS+READ,REM=REM-READ
+	QUIT
+	;
+ISTRUE(X)
+	NEW V
+	SET V=$$LOW^MIOUTIL($GET(X))
+	QUIT $SELECT(V="1":1,V="true":1,V="yes":1,V="y":1,1:0)
+	;
+DISPHDR(NAME,DL)
+	NEW SAFE,MODE
+	SET SAFE=$$SAFENAME($GET(NAME))
+	IF SAFE="" SET SAFE="download.bin"
+	SET MODE=$SELECT(+$GET(DL)=1:"attachment",1:"inline")
+	QUIT MODE_"; filename="_$CHAR(34)_SAFE_$CHAR(34)
+	;
+SAFENAME(NAME)
+	NEW X,I,C,OUT
+	SET X=$PIECE($GET(NAME),"/",$L($GET(NAME),"/"))
+	SET X=$PIECE(X,"\\",$L(X,"\\"))
+	SET OUT=""
+	FOR I=1:1:$L(X) SET C=$E(X,I) DO
+	. IF $A(C)<32 QUIT
+	. IF C=":"!(C="*")!(C="?")!(C=$CHAR(34))!(C="<")!(C=">")!(C="|") QUIT
+	. SET OUT=OUT_C
+	QUIT OUT
