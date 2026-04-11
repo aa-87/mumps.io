@@ -138,9 +138,9 @@
         uploadAbortTimeoutMs: 15000,
         uploadSocketOpenTimeoutMs: 15000,
         maxFrameBytes: 262144,
-        maxMessageBytes: 256000
+        maxMessageBytes: 128000
       },
-      vfs: { enabled: false, rootId: 'root', homeId: 'home', chunkSize: 256000, globalsOnly: true, uploadMode: 'resumable-chunk-session', uploadStaleSeconds: 1800, downloadStaleSeconds: 900, downloadHttpChunkBytes: 256000, previewInlineTextMaxBytes: 262144, transferControls: { cancel: true, retry: true, pause: true, resume: true, restart: true } },
+      vfs: { enabled: false, rootId: 'root', homeId: 'home', chunkSize: 128000, globalsOnly: true, uploadMode: 'resumable-chunk-session', uploadWorkerEnabled: true, persistTransfers: true, uploadStaleSeconds: 1800, downloadStaleSeconds: 900, downloadHttpChunkBytes: 128000, previewInlineTextMaxBytes: 262144, transferControls: { cancel: true, retry: true, pause: true, resume: true, restart: true } },
       apps: [],
       windows: [],
       modules: []

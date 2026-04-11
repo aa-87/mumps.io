@@ -137,9 +137,11 @@
       },
       mounted: function () {
         this.bootstrapFromDom();
+        this.restoreTransferCenter();
         this.ensureDesktopLayout();
         this.applyPersistedThemeStudioProfile();
         this.applyDocumentLocale();
+        if (this.restorePersistedUploadTransfers) this.restorePersistedUploadTransfers();
         this.startClock();
         if (!this.requiresSignin) {
           this.refreshView();
@@ -360,6 +362,41 @@
           var paused = (this.transferCenter.items || []).filter(function (item) { return item.status === 'paused'; }).length;
           var done = this.completedTransfers().length;
           return active + ' active · ' + paused + ' paused · ' + done + ' finished';
+        },
+        transferPersistenceEnabled: function () {
+          return !((((this.boot || {}).vfs || {}).persistTransfers) === false || +((((this.boot || {}).vfs || {}).persistTransfers) || 0) === 0);
+        },
+        transferPersistenceKey: function () {
+          return 'mioos.transferCenter.v2';
+        },
+        persistTransferCenter: function () {
+          var payload;
+          if (!this.transferPersistenceEnabled()) return;
+          try {
+            payload = {
+              seq: +((this.transferCenter || {}).seq || 0),
+              items: window.MIOOSState.deepClone(((this.transferCenter || {}).items || []).slice(0, 80))
+            };
+            window.localStorage.setItem(this.transferPersistenceKey(), JSON.stringify(payload));
+          } catch (err) {}
+        },
+        restoreTransferCenter: function () {
+          var raw;
+          var payload;
+          var activeStatuses = { queued: 1, preparing: 1, uploading: 1, downloading: 1, finalizing: 1, verifying: 1, cancelling: 1 };
+          if (!this.transferPersistenceEnabled()) return;
+          try { raw = window.localStorage.getItem(this.transferPersistenceKey()) || ''; } catch (err) { raw = ''; }
+          if (!raw) return;
+          try { payload = JSON.parse(raw); } catch (err2) { payload = null; }
+          if (!payload || !Array.isArray(payload.items)) return;
+          this.transferCenter.seq = +(payload.seq || 0);
+          this.transferCenter.items = window.MIOOSState.deepClone(payload.items || []).map(function (item) {
+            if (item && item.kind === 'upload' && activeStatuses[item.status]) {
+              item.status = 'paused';
+              item.stage = 'Paused after refresh';
+            }
+            return item;
+          });
         },
         setSocketTelemetry: function (socketId, patch) {
           var base;
@@ -583,6 +620,7 @@
           this.transferCenter.items.unshift(next);
           if (this.transferCenter.items.length > 40) this.transferCenter.items = this.transferCenter.items.slice(0, 40);
           if (this.transferCenter.autoOpen && (next.kind === 'upload' || next.kind === 'download')) this.openTransfersWindow();
+          this.persistTransferCenter();
           return next.id;
         },
         updateTransfer: function (transferId, patch) {
@@ -591,6 +629,7 @@
           Object.assign(item, patch || {});
           item.updatedAt = Date.now();
           item.progress = this.transferPercent(item);
+          this.persistTransferCenter();
         },
         finalizeTransfer: function (transferId, ok, patch) {
           this.updateTransfer(transferId, Object.assign({
@@ -598,6 +637,7 @@
             stage: ok ? 'Completed' : 'Failed'
           }, patch || {}));
           if (ok) this.clearTransferController(transferId);
+          this.persistTransferCenter();
         },
         clearFinishedTransfers: function () {
           var keep = {};
@@ -609,6 +649,7 @@
           Object.keys(this.transferControllers || {}).forEach(function (key) {
             if (!keep[key]) delete (this.transferControllers || {})[key];
           }, this);
+          this.persistTransferCenter();
         },
         desktopGridMetrics: function () {
           var size = this.desktopUi.iconSize || 'medium';

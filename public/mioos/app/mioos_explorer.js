@@ -206,6 +206,104 @@
     });
   }
 
+  function openTransferFileDb() {
+    return new Promise(function (resolve, reject) {
+      var req;
+      if (!window.indexedDB) { reject(new Error('indexeddb_unavailable')); return; }
+      req = window.indexedDB.open('mioos-transfer-files', 1);
+      req.onupgradeneeded = function (event) {
+        var db = event.target.result;
+        if (!db.objectStoreNames.contains('files')) db.createObjectStore('files', { keyPath: 'id' });
+      };
+      req.onsuccess = function () { resolve(req.result); };
+      req.onerror = function () { reject(req.error || new Error('indexeddb_open_failed')); };
+    });
+  }
+
+  function idbPutTransferFile(id, file) {
+    return openTransferFileDb().then(function (db) {
+      return new Promise(function (resolve, reject) {
+        var tx = db.transaction('files', 'readwrite');
+        tx.objectStore('files').put({ id: id, file: file, name: file.name || '', type: file.type || 'application/octet-stream', lastModified: file.lastModified || 0, size: file.size || 0, updatedAt: Date.now() });
+        tx.oncomplete = function () { try { db.close(); } catch (err) {} resolve(); };
+        tx.onerror = function () { try { db.close(); } catch (err) {} reject(tx.error || new Error('indexeddb_put_failed')); };
+      });
+    });
+  }
+
+  function idbGetTransferFile(id) {
+    return openTransferFileDb().then(function (db) {
+      return new Promise(function (resolve, reject) {
+        var tx = db.transaction('files', 'readonly');
+        var req = tx.objectStore('files').get(id);
+        req.onsuccess = function () {
+          var rec = req.result;
+          var blob;
+          try { db.close(); } catch (err) {}
+          if (!rec || !rec.file) { resolve(null); return; }
+          if (typeof window.File === 'function' && !(rec.file instanceof window.File)) {
+            blob = rec.file;
+            try {
+              resolve(new window.File([blob], rec.name || 'upload.bin', { type: rec.type || 'application/octet-stream', lastModified: rec.lastModified || Date.now() }));
+              return;
+            } catch (err2) {}
+          }
+          resolve(rec.file);
+        };
+        req.onerror = function () { try { db.close(); } catch (err) {} reject(req.error || new Error('indexeddb_get_failed')); };
+      });
+    });
+  }
+
+  function idbDeleteTransferFile(id) {
+    return openTransferFileDb().then(function (db) {
+      return new Promise(function (resolve, reject) {
+        var tx = db.transaction('files', 'readwrite');
+        tx.objectStore('files').delete(id);
+        tx.oncomplete = function () { try { db.close(); } catch (err) {} resolve(); };
+        tx.onerror = function () { try { db.close(); } catch (err) {} reject(tx.error || new Error('indexeddb_delete_failed')); };
+      });
+    });
+  }
+
+  function createChunkUploadWorker(task) {
+    var worker = new window.Worker('/public/mioos/app/mioos_upload_worker.js');
+    var settled = false;
+    var promise = new Promise(function (resolve, reject) {
+      worker.onmessage = function (event) {
+        var msg = (event && event.data) || {};
+        if (settled) return;
+        if (msg.type === 'result') {
+          settled = true;
+          resolve(msg);
+          try { worker.terminate(); } catch (err) {}
+          return;
+        }
+        if (msg.type === 'error') {
+          settled = true;
+          reject(new Error(msg.error || 'worker_upload_failed'));
+          try { worker.terminate(); } catch (err2) {}
+        }
+      };
+      worker.onerror = function () {
+        if (settled) return;
+        settled = true;
+        reject(new Error('worker_upload_failed'));
+        try { worker.terminate(); } catch (err) {}
+      };
+      worker.postMessage(task);
+    });
+    return {
+      worker: worker,
+      promise: promise,
+      cancel: function () {
+        if (settled) return;
+        settled = true;
+        try { worker.terminate(); } catch (err) {}
+      }
+    };
+  }
+
   function uint8ToBase64(uint8) {
     var binary = '';
     var i;
@@ -388,7 +486,7 @@
         var pool = socketPoolConfig(this);
         var active = Math.max(1, Math.min(pool.maxSocketsPerSession, Math.min(pool.fsSockets, +(concurrency || pool.fsSockets || 2))));
         var batchWidth = 1;
-        var frameBudget = 256000;
+        var frameBudget = 128000;
         return new Promise(function (resolve, reject) {
           function cancelled() {
             return !!(transferControl && transferControl.cancelled);
@@ -846,6 +944,39 @@
         if (mode === 'single' || mode === 'single-request-http' || mode === 'single-request-multipart') return 'single-request';
         return mode === 'single-request' ? mode : 'resumable-chunk-session';
       },
+      explorerUploadWorkerEnabled: function () {
+        return !!+((((this.boot || {}).vfs || {}).uploadWorkerEnabled) ? 1 : 0);
+      },
+      saveTransferFileBlob: function (transferId, file) {
+        if (!transferId || !file || !this.transferPersistenceEnabled || !this.transferPersistenceEnabled()) return Promise.resolve();
+        return idbPutTransferFile(transferId, file).catch(function () { return null; });
+      },
+      loadTransferFileBlob: function (transferId) {
+        if (!transferId || !this.transferPersistenceEnabled || !this.transferPersistenceEnabled()) return Promise.resolve(null);
+        return idbGetTransferFile(transferId).catch(function () { return null; });
+      },
+      deleteTransferFileBlob: function (transferId) {
+        if (!transferId || !this.transferPersistenceEnabled || !this.transferPersistenceEnabled()) return Promise.resolve();
+        return idbDeleteTransferFile(transferId).catch(function () { return null; });
+      },
+      uploadChunkWithWorker: function (file, route, uploadId, idx, start, end) {
+        return createChunkUploadWorker({ type: 'uploadChunk', route: route, uploadId: uploadId, index: idx, bytes: Math.max(0, end - start), file: file, start: start, end: end });
+      },
+      restorePersistedUploadTransfers: function () {
+        var self = this;
+        (this.transferCenter.items || []).forEach(function (item) {
+          var meta = (item || {}).resumeMeta || {};
+          if (!item || item.kind !== 'upload' || meta.mode !== 'resumable-chunk-session') return;
+          if (self.transferController(item.id)) return;
+          if (['uploading','preparing','queued','finalizing','verifying','cancelling'].indexOf(item.status) >= 0) self.updateTransfer(item.id, { status: 'paused', stage: 'Paused after refresh' });
+          self.setTransferController(item.id, {
+            onResume: function () { return self.resumePersistedUploadTransfer(item.id); },
+            onRestart: function () { return self.restartPersistedUploadTransfer(item.id); },
+            onCancel: function () { return self.cancelPersistedUploadTransfer(item.id); },
+            onRetry: function () { return self.restartPersistedUploadTransfer(item.id); }
+          });
+        });
+      },
       explorerCopyRoute: function () { return ((this.boot.routes || {}).fsCopy) || '/api/mioos/fs/copy'; },
       explorerDownloadRoute: function () {
         return ((this.boot.routes || {}).fsDownload) || '/api/mioos/fs/download';
@@ -935,6 +1066,320 @@
           xhr.send(form);
         });
       },
+      resumePersistedUploadTransfer: function (transferId) {
+        var item = (this.transferCenter.items || []).find(function (entry) { return entry.id === transferId; });
+        var meta = (item || {}).resumeMeta || {};
+        var self = this;
+        if (!item || meta.mode !== 'resumable-chunk-session') return Promise.resolve();
+        return this.loadTransferFileBlob(transferId).then(function (file) {
+          if (!file) throw new Error('persisted_file_missing');
+          return self.startResumableUploadFlow(meta.windowId || item.sourceWindowId || '', file, transferId, item, meta, true, false);
+        });
+      },
+      restartPersistedUploadTransfer: function (transferId) {
+        var item = (this.transferCenter.items || []).find(function (entry) { return entry.id === transferId; });
+        var meta = (item || {}).resumeMeta || {};
+        var self = this;
+        if (!item || meta.mode !== 'resumable-chunk-session') return Promise.resolve();
+        return this.loadTransferFileBlob(transferId).then(function (file) {
+          if (!file) throw new Error('persisted_file_missing');
+          return self.startResumableUploadFlow(meta.windowId || item.sourceWindowId || '', file, transferId, item, meta, false, true);
+        });
+      },
+      cancelPersistedUploadTransfer: function (transferId) {
+        var item = (this.transferCenter.items || []).find(function (entry) { return entry.id === transferId; });
+        var meta = (item || {}).resumeMeta || {};
+        var self = this;
+        if (meta.uploadId) {
+          return xhrJsonRequest(self.explorerUploadAbortRoute(), { uploadId: meta.uploadId }).catch(function () { return null; }).then(function () {
+            return self.deleteTransferFileBlob(transferId);
+          }).then(function () {
+            self.updateTransfer(transferId, { status: 'cancelled', stage: 'Cancelled', resumeMeta: {} });
+          });
+        }
+        return this.deleteTransferFileBlob(transferId).then(function () {
+          self.updateTransfer(transferId, { status: 'cancelled', stage: 'Cancelled', resumeMeta: {} });
+        });
+      },
+      startResumableUploadFlow: function (windowId, file, transferId, transferItem, resumeMeta, resumeExisting, forceRestart) {
+        var self = this;
+        var win = this.windows.find(function (entry) { return entry.id === windowId; });
+        var state = this.ensureExplorerWindowState(win);
+        var mime = (file && file.type) || ((resumeMeta || {}).mime) || 'application/octet-stream';
+        var chunkBytes = +((((self.boot || {}).vfs || {}).uploadChunkBytes) || 128000);
+        var concurrency = +((((self.boot || {}).vfs || {}).uploadConcurrency) || 4);
+        var totalChunks;
+        var control;
+        var persistedCompleted = {};
+        if (!state) return Promise.resolve();
+        if (!Number.isFinite(chunkBytes) || chunkBytes < 4096) chunkBytes = 128000;
+        if (!Number.isFinite(concurrency) || concurrency < 1) concurrency = 1;
+        if (concurrency > 32) concurrency = 32;
+        totalChunks = file.size > 0 ? Math.ceil(file.size / chunkBytes) : 0;
+        ((resumeMeta || {}).completedIndexes || []).forEach(function (idx) { persistedCompleted[+idx] = 1; });
+        function chunkSpan(idx) {
+          var start = (idx - 1) * chunkBytes;
+          var end = Math.min(start + chunkBytes, file.size);
+          return { start: start, end: end, bytes: Math.max(0, end - start) };
+        }
+        function computeCompletedBytes(map) {
+          return Object.keys(map || {}).reduce(function (sum, key) {
+            var idx = +key;
+            var span = chunkSpan(idx);
+            return sum + span.bytes;
+          }, 0);
+        }
+        control = {
+          paused: false,
+          cancelled: false,
+          uploadId: forceRestart ? '' : ((resumeMeta || {}).uploadId || ''),
+          active: {},
+          completed: persistedCompleted,
+          completedBytes: computeCompletedBytes(persistedCompleted),
+          retryQueue: ((resumeMeta || {}).retryQueue || []).slice(),
+          nextIndex: +((resumeMeta || {}).nextIndex || 1),
+          totalChunks: totalChunks,
+          commitStarted: false,
+          loopResolve: null,
+          loopReject: null,
+          startedAt: Date.now(),
+          workerEnabled: self.explorerUploadWorkerEnabled()
+        };
+        function completedIndexes() {
+          return Object.keys(control.completed).map(function (key) { return +key; }).sort(function (a, b) { return a - b; });
+        }
+        function persistMeta() {
+          if (!transferId || !self.updateTransfer) return;
+          self.updateTransfer(transferId, {
+            resumeMeta: Object.assign({}, (transferItem || {}).resumeMeta || {}, {
+              mode: 'resumable-chunk-session',
+              windowId: windowId,
+              folderId: state.folderId,
+              fileName: file.name,
+              mime: mime,
+              totalBytes: file.size,
+              chunkBytes: chunkBytes,
+              concurrency: concurrency,
+              totalChunks: totalChunks,
+              uploadId: control.uploadId,
+              nextIndex: control.nextIndex,
+              retryQueue: control.retryQueue.slice(),
+              completedIndexes: completedIndexes(),
+              workerEnabled: !!control.workerEnabled,
+              persistedAt: Date.now()
+            })
+          });
+          transferItem = (self.transferCenter.items || []).find(function (entry) { return entry.id === transferId; }) || transferItem;
+        }
+        function activeCount() { return Object.keys(control.active).length; }
+        function markProgress(stageLabel) {
+          if (transferId && self.updateTransfer) {
+            self.updateTransfer(transferId, {
+              status: control.paused ? 'paused' : 'uploading',
+              stage: stageLabel || (control.paused ? 'Paused' : 'Uploading'),
+              processedBytes: control.completedBytes,
+              totalBytes: file.size,
+              progress: file.size > 0 ? Math.round((control.completedBytes / file.size) * 100) : 100,
+              activeWorkers: activeCount(),
+              parallelWorkers: concurrency
+            });
+          }
+          persistMeta();
+        }
+        function settlePausedIfIdle() {
+          if (control.paused && activeCount() === 0 && control.loopResolve) {
+            var resolver = control.loopResolve;
+            control.loopResolve = null;
+            control.loopReject = null;
+            markProgress('Paused');
+            resolver();
+          }
+        }
+        function reserveNextIndex() {
+          var idx;
+          if (control.retryQueue.length) return control.retryQueue.shift();
+          while (control.nextIndex <= control.totalChunks) {
+            idx = control.nextIndex++;
+            if (!control.completed[idx] && !control.active[idx]) return idx;
+          }
+          return 0;
+        }
+        function finishCommit() {
+          if (control.commitStarted) return;
+          control.commitStarted = true;
+          persistMeta();
+          xhrJsonRequest(self.explorerUploadCommitRoute(), { uploadId: control.uploadId }).then(function () {
+            if (transferId && self.finalizeTransfer) {
+              self.finalizeTransfer(transferId, true, { processedBytes: file.size, totalBytes: file.size, progress: 100, stage: 'Completed', resumeMeta: {} });
+            }
+            return self.deleteTransferFileBlob(transferId);
+          }).then(function () {
+            return self.refreshAllExplorerWindows();
+          }).then(function () {
+            if (control.loopResolve) {
+              var resolver = control.loopResolve;
+              control.loopResolve = null;
+              control.loopReject = null;
+              resolver();
+            }
+          }).catch(function (err) {
+            if (transferId && self.finalizeTransfer) self.finalizeTransfer(transferId, false, { error: (err && err.message) || 'fs_upload_failed', stage: 'Upload failed' });
+            if (control.loopReject) {
+              var rejecter = control.loopReject;
+              control.loopResolve = null;
+              control.loopReject = null;
+              rejecter(err);
+            }
+          });
+        }
+        function maybePump() {
+          if (control.cancelled) {
+            if (control.loopResolve) {
+              var resolver = control.loopResolve;
+              control.loopResolve = null;
+              control.loopReject = null;
+              resolver();
+            }
+            return;
+          }
+          if (control.paused) {
+            settlePausedIfIdle();
+            return;
+          }
+          while (activeCount() < concurrency) {
+            var idx = reserveNextIndex();
+            if (!idx) break;
+            launchChunk(idx);
+          }
+          if (!control.paused && !control.cancelled && !control.commitStarted && control.totalChunks === 0) { finishCommit(); return; }
+          if (!control.paused && !control.cancelled && !control.commitStarted && Object.keys(control.completed).length >= control.totalChunks && activeCount() === 0) finishCommit();
+        }
+        function launchChunk(idx) {
+          var span = chunkSpan(idx);
+          var slot = { index: idx, start: span.start, end: span.end, bytes: span.bytes, xhr: null, workerTask: null };
+          control.active[idx] = slot;
+          markProgress('Uploading');
+          function onSuccess() {
+            delete control.active[idx];
+            if (!control.completed[idx]) {
+              control.completed[idx] = 1;
+              control.completedBytes += span.bytes;
+            }
+            markProgress('Uploading');
+            maybePump();
+          }
+          function onFail(err) {
+            delete control.active[idx];
+            if (String((err && err.message) || '') === 'transfer_cancelled' || (control.paused && !control.cancelled)) {
+              if (!control.cancelled && !control.completed[idx]) control.retryQueue.push(idx);
+              persistMeta();
+              settlePausedIfIdle();
+              if (!control.paused && !control.cancelled) maybePump();
+              return;
+            }
+            if (transferId && self.finalizeTransfer) self.finalizeTransfer(transferId, false, { error: (err && err.message) || 'fs_upload_failed', stage: 'Upload failed' });
+            if (control.loopReject) {
+              var rejecter = control.loopReject;
+              control.loopResolve = null;
+              control.loopReject = null;
+              rejecter(err);
+            }
+          }
+          if (control.workerEnabled && typeof window.Worker === 'function') {
+            slot.workerTask = self.uploadChunkWithWorker(file, self.explorerUploadChunkRoute(), control.uploadId, idx, span.start, span.end);
+            slot.workerTask.promise.then(onSuccess).catch(onFail);
+            return;
+          }
+          fileChunkToBase64(file, span.start, span.end).then(function (b64) {
+            if (control.cancelled) { delete control.active[idx]; return; }
+            if (control.paused) {
+              delete control.active[idx];
+              if (!control.completed[idx]) control.retryQueue.push(idx);
+              persistMeta();
+              settlePausedIfIdle();
+              return;
+            }
+            return xhrJsonRequest(self.explorerUploadChunkRoute(), { uploadId: control.uploadId, index: idx, bytes: span.bytes, data: b64 }, function (xhr) { slot.xhr = xhr; });
+          }).then(function (result) {
+            if (typeof result !== 'undefined') onSuccess();
+            else if (!control.paused && !control.cancelled) maybePump();
+          }).catch(onFail);
+        }
+        function run() {
+          return new Promise(function (resolve, reject) {
+            control.loopResolve = resolve;
+            control.loopReject = reject;
+            markProgress(control.paused ? 'Paused' : 'Uploading');
+            maybePump();
+          });
+        }
+        function beginFresh() {
+          control.paused = false;
+          control.cancelled = false;
+          control.active = {};
+          control.completed = {};
+          control.completedBytes = 0;
+          control.retryQueue = [];
+          control.nextIndex = 1;
+          control.commitStarted = false;
+          persistMeta();
+          return xhrJsonRequest(self.explorerUploadBeginRoute(), { parent: state.folderId || ((self.boot.vfs || {}).rootId || 'root'), name: file.name, mime: mime, totalBytes: file.size, encoding: 'base64' }).then(function (body) {
+            control.uploadId = body.uploadId;
+            persistMeta();
+            return run();
+          });
+        }
+        function beginOrResume() {
+          if (resumeExisting && control.uploadId) {
+            return xhrJsonRequest(self.explorerUploadStatusRoute(), { uploadId: control.uploadId }).catch(function () {
+              control.uploadId = '';
+              return null;
+            }).then(function () {
+              if (control.uploadId) return run();
+              return beginFresh();
+            });
+          }
+          return beginFresh();
+        }
+        self.setExplorerUploadProgress(state, { active: true, name: file.name, totalBytes: file.size, sentBytes: control.completedBytes, progress: file.size > 0 ? Math.round((control.completedBytes / file.size) * 100) : 0, stage: resumeExisting ? 'Resuming' : 'Preparing', error: '', uploadId: control.uploadId || '' });
+        if (transferId && self.setTransferController) {
+          self.setTransferController(transferId, {
+            onPause: function () {
+              control.paused = true;
+              Object.keys(control.active).forEach(function (key) {
+                var slot = control.active[key];
+                if (slot && slot.xhr) { try { slot.xhr.abort(); } catch (err) {} }
+                if (slot && slot.workerTask && slot.workerTask.cancel) slot.workerTask.cancel();
+              });
+              persistMeta();
+            },
+            onResume: function () {
+              control.paused = false;
+              persistMeta();
+              return run();
+            },
+            onRestart: function () {
+              control.paused = false;
+              control.cancelled = false;
+              if (control.uploadId) return xhrJsonRequest(self.explorerUploadAbortRoute(), { uploadId: control.uploadId }).catch(function () { return null; }).then(beginFresh);
+              return beginFresh();
+            },
+            onCancel: function () {
+              control.cancelled = true;
+              Object.keys(control.active).forEach(function (key) {
+                var slot = control.active[key];
+                if (slot && slot.xhr) { try { slot.xhr.abort(); } catch (err) {} }
+                if (slot && slot.workerTask && slot.workerTask.cancel) slot.workerTask.cancel();
+              });
+              if (control.uploadId) return xhrJsonRequest(self.explorerUploadAbortRoute(), { uploadId: control.uploadId }).catch(function () { return null; }).then(function () { return self.deleteTransferFileBlob(transferId); });
+              return self.deleteTransferFileBlob(transferId);
+            },
+            onRetry: function () { return beginFresh(); }
+          });
+        }
+        persistMeta();
+        return this.ensureFreshUploadAuth().then(function () { return beginOrResume(); });
+      },
       uploadFilesToExplorer: function (windowId, filesLike) {
         var self = this;
         var win = this.windows.find(function (entry) { return entry.id === windowId; });
@@ -949,237 +1394,13 @@
           }, Promise.resolve());
         }
         if (this.explorerUploadMode() === 'resumable-chunk-session' && (this.boot.routes || {}).fsUploadBegin) {
-          var transferId2 = this.registerTransfer ? this.registerTransfer({ kind: 'upload', name: file.name, status: 'preparing', stage: 'Preparing', totalBytes: file.size, processedBytes: 0, sourceWindowId: windowId }) : '';
-          var chunkBytes = +((((self.boot || {}).vfs || {}).uploadChunkBytes) || 256000);
-          var concurrency = +((((self.boot || {}).vfs || {}).uploadConcurrency) || 4);
-          if (!Number.isFinite(chunkBytes) || chunkBytes < 4096) chunkBytes = 256000;
-          if (!Number.isFinite(concurrency) || concurrency < 1) concurrency = 1;
-          if (concurrency > 8) concurrency = 8;
-          var totalChunks = file.size > 0 ? Math.ceil(file.size / chunkBytes) : 0;
-          var control = {
-            paused: false,
-            cancelled: false,
-            uploadId: '',
-            active: {},
-            completed: {},
-            completedBytes: 0,
-            retryQueue: [],
-            nextIndex: 1,
-            totalChunks: totalChunks,
-            commitStarted: false,
-            loopResolve: null,
-            loopReject: null,
-            startedAt: Date.now()
-          };
-          function activeCount() { return Object.keys(control.active).length; }
-          function queuedIndex() {
-            if (control.retryQueue.length) return control.retryQueue.shift();
-            if (control.nextIndex <= control.totalChunks) return control.nextIndex++;
-            return 0;
-          }
-          function markProgress(stageLabel) {
-            if (transferId2 && self.updateTransfer) {
-              self.updateTransfer(transferId2, {
-                status: control.paused ? 'paused' : 'uploading',
-                stage: stageLabel || (control.paused ? 'Paused' : 'Uploading'),
-                processedBytes: control.completedBytes,
-                totalBytes: file.size,
-                progress: file.size > 0 ? Math.round((control.completedBytes / file.size) * 100) : 100,
-                activeWorkers: activeCount(),
-                parallelWorkers: concurrency
-              });
-            }
-          }
-          function settlePausedIfIdle() {
-            if (control.paused && activeCount() === 0 && control.loopResolve) {
-              var resolver = control.loopResolve;
-              control.loopResolve = null;
-              control.loopReject = null;
-              markProgress('Paused');
-              resolver();
-            }
-          }
-          function finishCommit() {
-            if (control.commitStarted) return;
-            control.commitStarted = true;
-            xhrJsonRequest(self.explorerUploadCommitRoute(), { uploadId: control.uploadId }).then(function () {
-              if (transferId2 && self.finalizeTransfer) {
-                self.finalizeTransfer(transferId2, true, { processedBytes: file.size, totalBytes: file.size, progress: 100, stage: 'Completed' });
-              }
-              return self.refreshAllExplorerWindows();
-            }).then(function () {
-              if (control.loopResolve) {
-                var resolver = control.loopResolve;
-                control.loopResolve = null;
-                control.loopReject = null;
-                resolver();
-              }
-            }).catch(function (err) {
-              if (transferId2 && self.finalizeTransfer) {
-                self.finalizeTransfer(transferId2, false, { error: (err && err.message) || 'fs_upload_failed', stage: 'Upload failed' });
-              }
-              if (control.loopReject) {
-                var rejecter = control.loopReject;
-                control.loopResolve = null;
-                control.loopReject = null;
-                rejecter(err);
-              }
-            });
-          }
-          function maybePump() {
-            if (control.cancelled) {
-              if (control.loopResolve) {
-                var resolver = control.loopResolve;
-                control.loopResolve = null;
-                control.loopReject = null;
-                resolver();
-              }
-              return;
-            }
-            if (control.paused) {
-              settlePausedIfIdle();
-              return;
-            }
-            while (activeCount() < concurrency) {
-              var idx = queuedIndex();
-              if (!idx) break;
-              launchChunk(idx);
-            }
-            if (!control.paused && !control.cancelled && !control.commitStarted && control.totalChunks === 0) {
-              finishCommit();
-              return;
-            }
-            if (!control.paused && !control.cancelled && !control.commitStarted && Object.keys(control.completed).length >= control.totalChunks && activeCount() === 0) {
-              finishCommit();
-            }
-          }
-          function launchChunk(idx) {
-            var start = (idx - 1) * chunkBytes;
-            var end = Math.min(start + chunkBytes, file.size);
-            var slot;
-            if (start >= file.size && file.size > 0) return;
-            slot = { xhr: null, start: start, end: end, preparing: true, index: idx };
-            control.active[idx] = slot;
-            markProgress('Uploading');
-            fileChunkToBase64(file, start, end).then(function (b64) {
-              if (control.cancelled) {
-                delete control.active[idx];
-                return;
-              }
-              if (control.paused) {
-                delete control.active[idx];
-                if (!control.completed[idx]) control.retryQueue.push(idx);
-                settlePausedIfIdle();
-                return;
-              }
-              return xhrJsonRequest(self.explorerUploadChunkRoute(), {
-                uploadId: control.uploadId,
-                index: idx,
-                bytes: Math.max(0, end - start),
-                data: b64
-              }, function (xhr) {
-                slot.xhr = xhr;
-                slot.preparing = false;
-                markProgress('Uploading');
-              });
-            }).then(function (result) {
-              var meta;
-              if (typeof result === 'undefined') {
-                if (!control.paused && !control.cancelled) maybePump();
-                return;
-              }
-              meta = control.active[idx] || slot;
-              delete control.active[idx];
-              if (!control.completed[idx]) {
-                control.completed[idx] = 1;
-                control.completedBytes += Math.max(0, (meta && meta.end) ? (meta.end - meta.start) : (end - start));
-              }
-              markProgress('Uploading');
-              maybePump();
-            }).catch(function (err) {
-              delete control.active[idx];
-              if (String((err && err.message) || '') === 'transfer_cancelled') {
-                if (!control.cancelled && !control.completed[idx]) control.retryQueue.push(idx);
-                settlePausedIfIdle();
-                if (!control.paused && !control.cancelled) maybePump();
-                return;
-              }
-              if (transferId2 && self.finalizeTransfer) {
-                self.finalizeTransfer(transferId2, false, { error: (err && err.message) || 'fs_upload_failed', stage: 'Upload failed' });
-              }
-              if (control.loopReject) {
-                var rejecter = control.loopReject;
-                control.loopResolve = null;
-                control.loopReject = null;
-                rejecter(err);
-              }
-            });
-          }
-          function runFresh() {
-            control.uploadId = '';
-            control.paused = false;
-            control.cancelled = false;
-            control.active = {};
-            control.completed = {};
-            control.completedBytes = 0;
-            control.retryQueue = [];
-            control.nextIndex = 1;
-            control.totalChunks = totalChunks;
-            control.commitStarted = false;
-            if (transferId2 && self.updateTransfer) {
-              self.updateTransfer(transferId2, { status: 'preparing', stage: 'Preparing', processedBytes: 0, totalBytes: file.size, progress: 0, parallelWorkers: concurrency });
-            }
-            return xhrJsonRequest(self.explorerUploadBeginRoute(), { parent: state.folderId || ((self.boot.vfs || {}).rootId || 'root'), name: file.name, mime: mime, totalBytes: file.size, encoding: 'base64' }).then(function (body) {
-              control.uploadId = body.uploadId;
-              return run();
-            });
-          }
-          function run() {
-            return new Promise(function (resolve, reject) {
-              control.loopResolve = resolve;
-              control.loopReject = reject;
-              markProgress(control.paused ? 'Paused' : 'Uploading');
-              maybePump();
-            });
-          }
-          if (transferId2 && this.setTransferController) {
-            this.setTransferController(transferId2, {
-              onPause: function () {
-                control.paused = true;
-                Object.keys(control.active).forEach(function (idx) {
-                  var slot = control.active[idx];
-                  if (slot && slot.xhr) {
-                    try { slot.xhr.abort(); } catch (err) {}
-                  }
-                });
-              },
-              onResume: function () {
-                control.paused = false;
-                return run();
-              },
-              onRestart: function () {
-                control.paused = false;
-                control.cancelled = false;
-                if (control.uploadId) {
-                  return xhrJsonRequest(self.explorerUploadAbortRoute(), { uploadId: control.uploadId }).catch(function () {}).then(runFresh);
-                }
-                return runFresh();
-              },
-              onCancel: function () {
-                control.cancelled = true;
-                Object.keys(control.active).forEach(function (idx) {
-                  var slot = control.active[idx];
-                  if (slot && slot.xhr) {
-                    try { slot.xhr.abort(); } catch (err) {}
-                  }
-                });
-                if (control.uploadId) return xhrJsonRequest(self.explorerUploadAbortRoute(), { uploadId: control.uploadId }).catch(function () {});
-                return Promise.resolve();
-              },
-              onRetry: function () { return runFresh(); }
-            });
-          }
-          return this.ensureFreshUploadAuth().then(runFresh);
+          var transferId2 = this.registerTransfer ? this.registerTransfer({ kind: 'upload', name: file.name, status: 'preparing', stage: 'Preparing', totalBytes: file.size, processedBytes: 0, sourceWindowId: windowId, resumeMeta: {} }) : '';
+          return this.saveTransferFileBlob(transferId2, file).then(function () {
+            return self.startResumableUploadFlow(windowId, file, transferId2, null, { mode: 'resumable-chunk-session', windowId: windowId, folderId: state.folderId, fileName: file.name, mime: mime, totalBytes: file.size }, false, false);
+          }).catch(function (err) {
+            if (transferId2 && self.finalizeTransfer) self.finalizeTransfer(transferId2, false, { error: (err && err.message) || 'fs_upload_failed', stage: 'Upload failed' });
+            throw err;
+          });
         }
         var transferId = self.registerTransfer ? self.registerTransfer({ kind: 'upload', name: file.name, status: 'preparing', stage: 'Preparing', totalBytes: file.size, processedBytes: 0, sourceWindowId: windowId }) : '';
         var transferControl = { cancelled: false, workers: [], uploadId: '', windowId: windowId, xhr: null };
@@ -1387,7 +1608,7 @@
           return Promise.resolve();
         }
         if (httpHref) {
-          var chunkBytes = +((((this.boot || {}).vfs || {}).downloadHttpChunkBytes) || 256000);
+          var chunkBytes = +((((this.boot || {}).vfs || {}).downloadHttpChunkBytes) || 128000);
           var totalBytes = +((item || {}).size || 0);
           var offset = 0;
           var buffers = [];

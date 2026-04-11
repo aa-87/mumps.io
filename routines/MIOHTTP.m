@@ -647,7 +647,7 @@ SENDFILE(DEV,CONF,PATH,HEAD,REQID,CTX,METHOD)
 	IF P="" DO  QUIT 0
 	. SET CTX("err","routine")="MIOHTTP",CTX("err","error")="file_not_specified"
 	NEW M SET M=$$LOW($GET(METHOD,"GET"))
-	NEW CHSZ SET CHSZ=+$GET(CONF("server","static","readChunkBytes"),256000)
+	NEW CHSZ SET CHSZ=+$GET(CONF("server","static","readChunkBytes"),128000)
 	IF CHSZ<1024 SET CHSZ=1024
 	IF CHSZ>(65536*10) SET CHSZ=65536*10
 	NEW OIO SET OIO=$IO
@@ -753,7 +753,7 @@ READLEN(DEV,CONF,REQ,CL,TOB,ERR)
 	NEW MAXB SET MAXB=$GET(CONF("server","limits","maxBodyBytes"),10485760)
 	NEW MAXS SET MAXS=$GET(CONF("server","limits","maxBodyScalarBytes"),262144)
 	NEW CHSZ SET CHSZ=+$GET(CONF("server","http","readBodyChunkBytes"))
-	IF CHSZ<1 SET CHSZ=$S(CL>MAXS:MAXS,1:256000)
+	IF CHSZ<1 SET CHSZ=$S(CL>MAXS:MAXS,1:128000)
 	IF CHSZ<1 SET CHSZ=1
 	IF CHSZ>(65536*10) SET CHSZ=65536*10
 	;

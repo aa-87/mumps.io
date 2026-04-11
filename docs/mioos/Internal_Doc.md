@@ -176,3 +176,4 @@ This ROI adds typed password policy defaults, forced password change support for
 ROI 29 — Resumable VFS transfers, Windows-style transfer dialog, and explorer drag/drop polish
 
 ROI 30 — Boot-selectable upload mode: single-request multipart or resumable chunk session
+ROI 30 — Web Worker resumable uploads and persisted transfer resume

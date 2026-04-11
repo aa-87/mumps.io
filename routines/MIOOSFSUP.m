@@ -16,7 +16,7 @@ UPMODE(CONF)
 	;
 UPCHUNK(CONF)
 	NEW N
-	SET N=+$GET(CONF("mioos","upload","chunkBytes"),256000)
+	SET N=+$GET(CONF("mioos","upload","chunkBytes"),128000)
 	IF N<4096 SET N=4096
 	IF N>(65536*10) SET N=65536*10
 	QUIT N
@@ -25,8 +25,14 @@ UPCONCUR(CONF)
 	NEW N
 	SET N=+$GET(CONF("mioos","upload","concurrency"),4)
 	IF N<1 SET N=1
-	IF N>8 SET N=8
+	IF N>32 SET N=32
 	QUIT N
+	;
+UPWORKER(CONF)
+	QUIT $SELECT(+$GET(CONF("mioos","upload","workerEnabled"),1)=0:0,1:1)
+	;
+UPPERSIST(CONF)
+	QUIT $SELECT(+$GET(CONF("mioos","upload","persistTransfers"),1)=0:0,1:1)
 	;
 UPBATCH(CONF)
 	NEW N
@@ -228,7 +234,7 @@ APPEND(ID,SEG,IDX,BUF,SIZE,CHSZ)
 	FOR  QUIT:$LENGTH(BUF)<+$GET(CHSZ)  DO
 	. SET IDX=+$GET(IDX)+1
 	. SET ^MIO("MIOOS","FS","DATA",ID,IDX)=$EXTRACT(BUF,1,CHSZ)
-	. SET BUF=$EXTRACT(BUF,CHSZ+1,256000)
+	. SET BUF=$EXTRACT(BUF,CHSZ+1,128000)
 	QUIT
 	;
 DECODECHUNK(DATA,ENC)

@@ -43,6 +43,7 @@ MIOOST ; MIOOS tests
 	DO T042
 	DO T043
 	DO T044
+	DO T045
 	QUIT
 	;
 RESET
@@ -761,7 +762,7 @@ T037
 	DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T037][decode]")
 	DO EQ^MIOTASSERT($GET(OBJ("routes","fsDownload")),"/api/mioos/fs/download","[MIOOST][T037][boot fs download]")
 	DO EQ^MIOTASSERT($GET(OBJ("routes","fsPreview")),"/api/mioos/fs/preview","[MIOOST][T037][boot fs preview]")
-	DO EQ^MIOTASSERT(+$GET(OBJ("vfs","downloadHttpChunkBytes")),256000,"[MIOOST][T037][download chunk bytes]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("vfs","downloadHttpChunkBytes")),128000,"[MIOOST][T037][download chunk bytes]")
 	DO EQ^MIOTASSERT(+$GET(OBJ("vfs","previewInlineTextMaxBytes")),262144,"[MIOOST][T037][preview text max]")
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","performance","downloadStrategy")),"http-stream-browser-native-with-websocket-fallback","[MIOOST][T037][download strategy]")
 	DO COMPILE
@@ -808,7 +809,7 @@ T039
 	DO EQ^MIOTASSERT($GET(OBJ("routes","fsUploadCommit")),"/api/mioos/fs/upload/commit","[MIOOST][T039][boot fs upload commit]")
 	DO EQ^MIOTASSERT($GET(OBJ("routes","fsUploadAbort")),"/api/mioos/fs/upload/abort","[MIOOST][T039][boot fs upload abort]")
 	DO EQ^MIOTASSERT($GET(OBJ("routes","fsCopy")),"/api/mioos/fs/copy","[MIOOST][T039][boot fs copy]")
-	DO EQ^MIOTASSERT(+$GET(OBJ("vfs","uploadChunkBytes")),256000,"[MIOOST][T039][boot upload chunk bytes]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("vfs","uploadChunkBytes")),128000,"[MIOOST][T039][boot upload chunk bytes]")
 	DO EQ^MIOTASSERT(+$GET(OBJ("vfs","uploadConcurrency")),4,"[MIOOST][T039][boot upload concurrency]")
 	DO EQ^MIOTASSERT(+$GET(OBJ("vfs","transferControls","pause")),1,"[MIOOST][T039][pause control]")
 	DO EQ^MIOTASSERT(+$GET(OBJ("vfs","transferControls","resume")),1,"[MIOOST][T039][resume control]")
@@ -902,6 +903,26 @@ T044
 	KILL EP DO AMATCH("[MIOOST][T044][route fs upload]","POST","/api/mioos/fs/upload",1,"FSUPLOAD^MIOOSAPI","/api/mioos/fs/upload",.EP)
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_state.js","uploadMode: 'resumable-chunk-session'"),"[MIOOST][T044][state upload mode]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","explorerUploadMode"),"[MIOOST][T044][explorer upload mode]")
+	QUIT
+	;
+T045
+	NEW CONF,REQ,CTX,STATE,ERR,JSON,OBJ
+	DO RESET
+	DO CONFDEF^MIOOS(.CONF)
+	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T045][load]")
+	SET JSON=$$BOOTJSON^MIOOSST(.STATE,.CONF)
+	DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T045][decode]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("vfs","uploadWorkerEnabled")),1,"[MIOOST][T045][worker enabled]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("vfs","persistTransfers")),1,"[MIOOST][T045][persist transfers]")
+	DO EQ^MIOTASSERT($GET(OBJ("desktop","performance","uploadStrategy")),"http-resumable-chunk-session-web-worker-persistent","[MIOOST][T045][upload strategy]")
+	DO OK^MIOTASSERT($$FILEOK("public/mioos/app/mioos_upload_worker.js"),"[MIOOST][T045][worker file]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","restorePersistedUploadTransfers"),"[MIOOST][T045][restore persisted uploads]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","saveTransferFileBlob"),"[MIOOST][T045][save transfer blob]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","createChunkUploadWorker"),"[MIOOST][T045][worker helper]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","persistTransferCenter"),"[MIOOST][T045][persist transfer center]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","restoreTransferCenter"),"[MIOOST][T045][restore transfer center]")
+	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 30 — Web Worker resumable uploads and persisted transfer resume"),"[MIOOST][T045][llm roi30]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","ROI 30 — Web Worker resumable uploads and persisted transfer resume"),"[MIOOST][T045][docs roi30]")
 	QUIT
 	;
 	;

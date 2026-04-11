@@ -395,7 +395,7 @@ HEALTH(STATE,CONF,OUT,ERR)
 	SET OUT("websocket","maxInflightPerChannel")=+$GET(STATE("wsMaxInflightPerChannel"),4)
 	SET OUT("websocket","requestTimeoutMs")=+$GET(STATE("wsRequestTimeoutMs"),15000)
 	SET OUT("websocket","maxFrameBytes")=+$GET(STATE("wsMaxFrameBytes"),262144)
-	SET OUT("websocket","maxMessageBytes")=+$GET(STATE("wsMaxMessageBytes"),256000)
+	SET OUT("websocket","maxMessageBytes")=+$GET(STATE("wsMaxMessageBytes"),128000)
 	SET OUT("vfs","rootId")=$GET(STATE("fsRootId"),"root")
 	SET OUT("vfs","homeId")=$GET(STATE("fsHomeId"),"root")
 	SET OUT("vfs","uploadStaleSeconds")=+$GET(STATE("uploadStaleSeconds"),1800)
@@ -444,7 +444,7 @@ RAWJSONFIELD(PAYLOAD,NAME)
 	SET PAT=""""_$GET(NAME)_""":"""
 	SET POS=$FIND($GET(PAYLOAD),PAT)
 	IF POS'>0 QUIT ""
-	SET REST=$EXTRACT($GET(PAYLOAD),POS,256000)
+	SET REST=$EXTRACT($GET(PAYLOAD),POS,128000)
 	SET ENDQ=$FIND(REST,"""")
 	IF ENDQ'>0 QUIT ""
 	SET VAL=$EXTRACT(REST,1,ENDQ-2)
