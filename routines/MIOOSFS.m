@@ -303,6 +303,45 @@ READ(STATE,ID,OUT,ERR)
 	. SET OUT("content")="data:"_$SELECT(MIME'="":MIME,1:"application/octet-stream")_";base64,"_$$B64E^MIOSJWT(TXT)
 	QUIT 1
 	;
+READWIN(STATE,ID,OFFSET,LEN,OUT,ERR)
+	NEW RID,SLICE,READ,TOTAL,MIME,NAME,CHKLEN,SAMPLE,FERR,NEXT
+	SET ERR("routine")="MIOOSFS"
+	KILL OUT
+	IF '$$RESOLVE($GET(ID),.RID,.ERR) QUIT 0
+	IF '$$CAN(RID,.STATE,"read") SET ERR("error")="access_denied" QUIT 0
+	IF $$FIELD(RID,1)'="file" SET ERR("error")="not_file" QUIT 0
+	SET NAME=$$FIELD(RID,3),MIME=$$FIELD(RID,4),TOTAL=+$$FIELD(RID,5)
+	IF '$$TEXTLIKE(MIME,NAME) DO
+	. SET CHKLEN=$SELECT(TOTAL<4096:TOTAL,1:4096)
+	. IF CHKLEN<1 QUIT
+	. KILL FERR
+	. IF '$$READRANGE(RID,0,CHKLEN,.SAMPLE,.READ,.FERR) DO  QUIT
+	. . MERGE ERR=FERR
+	. IF '$$ISTEXT(SAMPLE) SET ERR("error")="not_text_file"
+	IF $DATA(ERR("error")) QUIT 0
+	SET OFFSET=+$GET(OFFSET) IF OFFSET<0 SET OFFSET=0
+	SET LEN=+$GET(LEN) IF LEN<1 SET LEN=16384
+	KILL FERR
+	IF '$$READRANGE(RID,OFFSET,LEN,.SLICE,.READ,.FERR) DO  QUIT 0
+	. MERGE ERR=FERR
+	. IF $GET(ERR("error"))="" SET ERR("error")="read_range_failed"
+	SET NEXT=OFFSET+READ
+	SET OUT("id")=RID
+	SET OUT("kind")="file"
+	SET OUT("name")=NAME
+	SET OUT("mime")=$SELECT(MIME'="":MIME,1:"text/plain")
+	IF OUT("mime")="application/octet-stream" SET OUT("mime")="text/plain"
+	SET OUT("size")=TOTAL
+	SET OUT("path")=$$PATH(RID)
+	SET OUT("encoding")="text"
+	SET OUT("offset")=OFFSET
+	SET OUT("readBytes")=READ
+	SET OUT("nextOffset")=NEXT
+	SET OUT("eof")=$SELECT(NEXT'<TOTAL:1,1:0)
+	SET OUT("truncated")=$SELECT(OUT("eof")=1:0,1:1)
+	SET OUT("content")=$GET(SLICE)
+	QUIT 1
+	;
 STORECHUNK(ID,CONF)
 	NEW N
 	SET N=+$GET(^MIO("MIOOS","FS","INFO",$GET(ID),"chunkSize"))

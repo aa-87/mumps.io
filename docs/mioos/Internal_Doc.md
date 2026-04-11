@@ -190,3 +190,10 @@ ROI 33 — HTTP binary chunk transport for resumable uploads and hardened pause/
 - When the destination name does not already exist, commit promotes that staged file id directly instead of copying or repacking the payload again at finalize time.
 - Overwrite uploads intentionally keep the older copy-on-commit behavior so existing file ids and entry metadata stay stable.
 - Upload status and boot metadata now expose the active commit strategy so diagnostics can distinguish direct-stage promote from overwrite fallback.
+
+## ROI 38 — streamed blob delivery and windowed text preview
+
+- Reworked HTTP blob delivery so large native browser downloads and previews stream directly from stored VFS segments instead of rebuilding large intermediate range buffers first.
+- Added `fs.read.range` for bounded websocket text reads so Explorer preview, text viewer, and structured viewer can open large text-like files without loading the whole file into one websocket response.
+- Boot metadata now exposes direct-segment blob delivery and windowed text preview as explicit performance strategies.
+

@@ -44,6 +44,7 @@ MIOOST ; MIOOS tests
 	DO T043
 	DO T044
 	DO T045
+	DO T046
 	QUIT
 	;
 RESET
@@ -964,6 +965,32 @@ T045
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_state.js","uploadCommitStrategy"),"[MIOOST][T045][state commit strategy]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 37 — upload finalize direct-stage promote for new binary files"),"[MIOOST][T045][llm roi37]")
 	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","ROI 37 — upload finalize direct-stage promote for new binary files"),"[MIOOST][T045][docs roi37]")
+	QUIT
+	;
+T046
+	NEW CONF,STATE,OUT,ERR,ID,DATA,SLICE
+	DO RESET
+	DO CONFDEF^MIOOS(.CONF)
+	DO INIT^MIOOS(.CONF)
+	SET STATE("principal")=$GET(CONF("mioos","bootstrapAuth","admin","username"),"admin")
+	SET STATE("roles")=$GET(CONF("mioos","bootstrapAuth","admin","roles"),"admin")
+	SET DATA=$TRANSLATE($JUSTIFY("",12000)," ","L")_$CHAR(10)_$TRANSLATE($JUSTIFY("",12000)," ","M")
+	DO OK^MIOTASSERT($$WRITE^MIOOSFS(.STATE,$$HOMEID^MIOOSFS(),"large.log",DATA,"text/plain",.OUT,.ERR),"[MIOOST][T046][write]")
+	SET ID=$GET(OUT("id"))
+	KILL OUT,ERR
+	DO OK^MIOTASSERT($$READWIN^MIOOSFS(.STATE,ID,0,128,.OUT,.ERR),"[MIOOST][T046][read window]")
+	DO EQ^MIOTASSERT($GET(OUT("encoding")),"text","[MIOOST][T046][encoding]")
+	DO EQ^MIOTASSERT(+$GET(OUT("nextOffset")),128,"[MIOOST][T046][next offset]")
+	DO EQ^MIOTASSERT(+$GET(OUT("truncated")),1,"[MIOOST][T046][truncated]")
+	DO EQ^MIOTASSERT($GET(OUT("content")),$TRANSLATE($JUSTIFY("",128)," ","L"),"[MIOOST][T046][content]")
+	KILL OUT,ERR
+	DO OK^MIOTASSERT($$READWIN^MIOOSFS(.STATE,ID,11990,40,.OUT,.ERR),"[MIOOST][T046][cross newline]")
+	SET SLICE=$TRANSLATE($JUSTIFY("",10)," ","L")_$CHAR(10)_$TRANSLATE($JUSTIFY("",29)," ","M")
+	DO EQ^MIOTASSERT($GET(OUT("content")),SLICE,"[MIOOST][T046][cross content]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","fs.read.range"),"[MIOOST][T046][ws read range]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","fs.read.range"),"[MIOOST][T046][explorer read range]")
+	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 38 — streamed blob delivery and windowed text preview"),"[MIOOST][T046][llm roi38]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","ROI 38 — streamed blob delivery and windowed text preview"),"[MIOOST][T046][docs roi38]")
 	QUIT
 	;
 	;

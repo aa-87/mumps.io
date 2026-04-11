@@ -130,6 +130,12 @@
     return out;
   }
 
+  function appendTruncationNotice(content, payload) {
+    var text = String(content || '');
+    if (!payload || !(+payload.truncated === 1 || payload.truncated === true)) return text;
+    return text + '\n\n[Preview truncated at ' + (+payload.nextOffset || text.length) + ' bytes. Download the file to view the full contents.]';
+  }
+
   function payloadRoot(msg) {
     return (msg && (msg.vfs || msg.fs || msg.download || msg.result || msg)) || {};
   }
@@ -590,19 +596,34 @@
       previewTextFile: function (windowId, item) {
         var win = this.windows.find(function (entry) { return entry.id === windowId; });
         var state = this.ensureExplorerWindowState(win);
+        var previewBytes = +((((this.boot || {}).vfs || {}).readPreviewBytes) || 16384);
+        var self = this;
         if (!win || !state || !item || !this.command) return Promise.resolve();
         state.preview = { title: item.name || item.title || '', content: '', mime: item.mime || 'text/plain', imageSrc: '', mediaSrc: '', mediaKind: '' };
-        return this.command('fs.read', { id: item.id || item.key || item.fileId }).then(function (msg) {
+        return this.command('fs.read.range', { id: item.id || item.key || item.fileId, offset: 0, size: previewBytes }).then(function (msg) {
           var payload = payloadRoot(msg);
           state.preview = {
             title: item.name || item.title || '',
-            content: textFromPayload(payload),
+            content: appendTruncationNotice(textFromPayload(payload), payload),
             mime: item.mime || payload.mime || 'text/plain',
             imageSrc: '',
             mediaSrc: '',
             mediaKind: ''
           };
           return msg;
+        }).catch(function () {
+          return self.command('fs.read', { id: item.id || item.key || item.fileId }).then(function (msg) {
+            var payload = payloadRoot(msg);
+            state.preview = {
+              title: item.name || item.title || '',
+              content: textFromPayload(payload),
+              mime: item.mime || payload.mime || 'text/plain',
+              imageSrc: '',
+              mediaSrc: '',
+              mediaKind: ''
+            };
+            return msg;
+          });
         }).catch(function (err) {
           state.preview = {
             title: item.name || item.title || '',
@@ -1229,12 +1250,19 @@
         this.windows.push(win);
         this.focusWindow(id);
         if (!this.command) return;
-        this.command('fs.read', { id: item.id || item.key || item.fileId }).then(function (msg) {
+        this.command('fs.read.range', { id: item.id || item.key || item.fileId, offset: 0, size: +((((this.boot || {}).vfs || {}).readWindowBytes) || 131072) }).then(function (msg) {
           var payload = payloadRoot(msg);
           win.fileView.loading = false;
-          win.fileView.content = textFromPayload(payload);
+          win.fileView.content = appendTruncationNotice(textFromPayload(payload), payload);
           win.fileView.mime = payload.mime || win.fileView.mime;
-        }).catch(function (err) {
+        }).catch(function () {
+          return this.command('fs.read', { id: item.id || item.key || item.fileId }).then(function (msg) {
+            var payload = payloadRoot(msg);
+            win.fileView.loading = false;
+            win.fileView.content = textFromPayload(payload);
+            win.fileView.mime = payload.mime || win.fileView.mime;
+          });
+        }.bind(this)).catch(function (err) {
           win.fileView.loading = false;
           win.fileView.content = (err && err.message) || 'Unable to open file.';
         });
@@ -1321,13 +1349,21 @@
         this.windows.push(win);
         this.focusWindow(id);
         if (!this.command) return;
-        this.command('fs.read', { id: item.id || item.key || item.fileId }).then(function (msg) {
+        this.command('fs.read.range', { id: item.id || item.key || item.fileId, offset: 0, size: +((((this.boot || {}).vfs || {}).readWindowBytes) || 131072) }).then(function (msg) {
           var payload = payloadRoot(msg);
           var raw = textFromPayload(payload);
           win.fileView.loading = false;
           win.fileView.mime = payload.mime || win.fileView.mime;
-          win.fileView.content = normalizeStructuredContent(raw, win.fileView.mime);
-        }).catch(function (err) {
+          win.fileView.content = appendTruncationNotice(normalizeStructuredContent(raw, win.fileView.mime), payload);
+        }).catch(function () {
+          return this.command('fs.read', { id: item.id || item.key || item.fileId }).then(function (msg) {
+            var payload = payloadRoot(msg);
+            var raw = textFromPayload(payload);
+            win.fileView.loading = false;
+            win.fileView.mime = payload.mime || win.fileView.mime;
+            win.fileView.content = normalizeStructuredContent(raw, win.fileView.mime);
+          });
+        }.bind(this)).catch(function (err) {
           win.fileView.loading = false;
           win.fileView.content = (err && err.message) || 'Unable to open file.';
         });
