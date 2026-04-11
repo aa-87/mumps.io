@@ -66,7 +66,7 @@ PARSEDEP(CONF,REQ,MP,ERR,DEP) ;
 	NEW MAXH SET MAXH=+$GET(CONF("server","limits","maxMultipartHeaderBytes"),32768) IF MAXH<512 SET MAXH=32768
 	NEW MAXPH SET MAXPH=+$GET(CONF("server","limits","maxMultipartHeaders"),80) IF MAXPH<8 SET MAXPH=80
 	NEW MAXPART SET MAXPART=+$GET(CONF("server","limits","maxMultipartPartBytes"),0) ; 0 => unlimited
-	NEW MAXSC SET MAXSC=+$GET(CONF("server","limits","maxMultipartPartScalarBytes"),65536) IF MAXSC<1 SET MAXSC=65536
+	NEW MAXSC SET MAXSC=+$GET(CONF("server","limits","maxMultipartPartScalarBytes"),10485760) IF MAXSC<1 SET MAXSC=10485760
 	;
 	; Spooling options
 	NEW SPOOLMAX SET SPOOLMAX=+$GET(CONF("server","multipart","maxMultipartSpoolBytes"),0) ; 0 disabled

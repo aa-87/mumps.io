@@ -148,6 +148,64 @@
     });
   }
 
+  function fileChunkToBase64(file, start, end) {
+    return blobToArrayBuffer(file.slice(start, end)).then(function (buffer) {
+      return uint8ToBase64(new Uint8Array(buffer));
+    });
+  }
+
+  function xhrJsonRequest(url, payload, onCreate) {
+    return new Promise(function (resolve, reject) {
+      var xhr = new window.XMLHttpRequest();
+      if (onCreate) onCreate(xhr);
+      xhr.open('POST', url, true);
+      xhr.withCredentials = true;
+      xhr.responseType = 'json';
+      xhr.setRequestHeader('Accept', 'application/json');
+      xhr.setRequestHeader('Content-Type', 'application/json');
+      xhr.addEventListener('load', function () {
+        var body = xhr.response;
+        if (!body && xhr.responseText) {
+          try { body = JSON.parse(xhr.responseText); } catch (err) { body = null; }
+        }
+        if (xhr.status < 200 || xhr.status >= 300 || !body) {
+          var e = new Error(((body || {}).detail) || ((body || {}).reason) || ((body || {}).error) || 'request_failed');
+          e.status = xhr.status;
+          e.detail = (body || {}).detail || '';
+          e.reason = (body || {}).reason || '';
+          e.code = (body || {}).error || '';
+          reject(e);
+          return;
+        }
+        resolve(body);
+      });
+      xhr.addEventListener('error', function () { reject(new Error('request_failed')); });
+      xhr.addEventListener('abort', function () { reject(new Error('transfer_cancelled')); });
+      xhr.send(JSON.stringify(payload || {}));
+    });
+  }
+
+  function xhrArrayBufferRequest(url, headers, onCreate) {
+    return new Promise(function (resolve, reject) {
+      var xhr = new window.XMLHttpRequest();
+      if (onCreate) onCreate(xhr);
+      xhr.open('GET', url, true);
+      xhr.withCredentials = true;
+      xhr.responseType = 'arraybuffer';
+      xhr.setRequestHeader('Accept', '*/*');
+      Object.keys(headers || {}).forEach(function (key) { xhr.setRequestHeader(key, headers[key]); });
+      xhr.addEventListener('load', function () {
+        if (xhr.status === 401) { reject(new Error('unauthorized')); return; }
+        if (xhr.status === 416) { reject(new Error('range_not_satisfiable')); return; }
+        if (xhr.status < 200 || xhr.status >= 300) { reject(new Error('download_failed')); return; }
+        resolve({ status: xhr.status, buffer: xhr.response || new ArrayBuffer(0), headers: xhr.getAllResponseHeaders(), xhr: xhr });
+      });
+      xhr.addEventListener('error', function () { reject(new Error('download_failed')); });
+      xhr.addEventListener('abort', function () { reject(new Error('transfer_cancelled')); });
+      xhr.send();
+    });
+  }
+
   function uint8ToBase64(uint8) {
     var binary = '';
     var i;
@@ -473,7 +531,8 @@
             selection: null,
             error: '',
             preview: { title: '', content: '', mime: 'text/plain', imageSrc: '', mediaSrc: '', mediaKind: '' },
-            upload: { active: false, name: '', totalBytes: 0, sentBytes: 0, progress: 0, stage: '', error: '', uploadId: '' }
+            upload: { active: false, name: '', totalBytes: 0, sentBytes: 0, progress: 0, stage: '', error: '', uploadId: '' },
+            contextMenu: { open: false, type: 'folder', left: 0, top: 0, item: null }
           };
         }
         return win.explorerState;
@@ -693,6 +752,73 @@
         if (!state) return Promise.resolve();
         return this.loadExplorerFolder(windowId, state.folderId, { selectFirst: false });
       },
+      refreshAllExplorerWindows: function () {
+        var self = this;
+        var tasks = (this.windows || []).filter(function (win) { return ['my-computer','documents','explorer'].indexOf(win.appKey) >= 0; }).map(function (win) { return self.refreshExplorerWindow(win.id); });
+        return Promise.all(tasks);
+      },
+      closeExplorerContextMenus: function () {
+        (this.windows || []).forEach(function (win) {
+          if (win && win.explorerState && win.explorerState.contextMenu) win.explorerState.contextMenu.open = false;
+        });
+      },
+      explorerContextMenuStyle: function (state) {
+        return { left: ((state || {}).contextMenu || {}).left + 'px', top: ((state || {}).contextMenu || {}).top + 'px' };
+      },
+      openExplorerContextMenu: function (windowId, item, event) {
+        var win = this.windows.find(function (entry) { return entry.id === windowId; });
+        var state = this.ensureExplorerWindowState(win);
+        if (!state) return;
+        state.contextMenu = { open: true, type: 'item', left: event.clientX, top: event.clientY, item: clone(item || null) };
+        if (item) state.selection = clone(item);
+      },
+      explorerDragStart: function (windowId, item, event) {
+        if (!event || !event.dataTransfer || !item) return;
+        event.dataTransfer.effectAllowed = 'copyMove';
+        event.dataTransfer.setData('application/x-mioos-entry', JSON.stringify({ windowId: windowId, item: item }));
+      },
+      explorerDragOver: function (windowId, target, event) {
+        if (event && event.dataTransfer) event.dataTransfer.dropEffect = event.ctrlKey ? 'copy' : 'move';
+      },
+      explorerHandleDrop: function (windowId, target, event) {
+        var data, parsed, destId, action, self = this;
+        if (!event || !event.dataTransfer) return Promise.resolve();
+        data = event.dataTransfer.getData('application/x-mioos-entry');
+        if (!data) return Promise.resolve();
+        try { parsed = JSON.parse(data); } catch (err) { parsed = null; }
+        if (!parsed || !parsed.item) return Promise.resolve();
+        destId = (target && target.kind === 'folder') ? (target.id || target.key) : ((this.ensureExplorerWindowState(this.windows.find(function (entry) { return entry.id === windowId; })) || {}).folderId);
+        action = event.ctrlKey ? 'copy' : 'move';
+        if (action === 'copy') {
+          return this.command('fs.copy', { id: parsed.item.id || parsed.item.key || '', parent: destId }).then(function () { return self.refreshAllExplorerWindows(); });
+        }
+        return this.command('fs.move', { id: parsed.item.id || parsed.item.key || '', parent: destId }).then(function () { return self.refreshAllExplorerWindows(); });
+      },
+      explorerContextAction: function (windowId, action) {
+        var win = this.windows.find(function (entry) { return entry.id === windowId; });
+        var state = this.ensureExplorerWindowState(win);
+        var item = ((state || {}).contextMenu || {}).item || (state || {}).selection;
+        if (state && state.contextMenu) state.contextMenu.open = false;
+        if (action === 'open') return this.explorerOpenSelected(windowId);
+        if (action === 'download') return this.explorerDownloadSelected(windowId);
+        if (action === 'rename') return this.explorerRenameSelected(windowId);
+        if (action === 'copy') return this.explorerCopySelected(windowId);
+        if (action === 'move') return this.explorerMoveSelected(windowId);
+        if (action === 'delete') return this.explorerDeleteSelected(windowId);
+        if (action === 'new-folder') return this.explorerCreateFolder(windowId);
+        if (action === 'refresh') return this.refreshExplorerWindow(windowId);
+        return Promise.resolve(item);
+      },
+      explorerCopySelected: function (windowId) {
+        var self = this;
+        var win = this.windows.find(function (entry) { return entry.id === windowId; });
+        var state = this.ensureExplorerWindowState(win);
+        var item = state && state.selection;
+        var destination = '';
+        if (!item || !this.command) return Promise.resolve();
+        destination = ((this.boot.vfs || {}).homeId || (this.boot.vfs || {}).rootId || 'root');
+        return this.command('fs.copy', { id: item.id || item.key || '', parent: destination }).then(function () { return self.refreshAllExplorerWindows(); });
+      },
       ensureFreshUploadAuth: function () {
         var auth = ((this.boot || {}).auth || {});
         if (!auth.enabled || !auth.required) return Promise.resolve();
@@ -709,6 +835,12 @@
       explorerUploadRoute: function () {
         return ((this.boot.routes || {}).fsUpload) || '/api/mioos/fs/upload';
       },
+      explorerUploadBeginRoute: function () { return ((this.boot.routes || {}).fsUploadBegin) || '/api/mioos/fs/upload/begin'; },
+      explorerUploadChunkRoute: function () { return ((this.boot.routes || {}).fsUploadChunk) || '/api/mioos/fs/upload/chunk'; },
+      explorerUploadStatusRoute: function () { return ((this.boot.routes || {}).fsUploadStatus) || '/api/mioos/fs/upload/status'; },
+      explorerUploadCommitRoute: function () { return ((this.boot.routes || {}).fsUploadCommit) || '/api/mioos/fs/upload/commit'; },
+      explorerUploadAbortRoute: function () { return ((this.boot.routes || {}).fsUploadAbort) || '/api/mioos/fs/upload/abort'; },
+      explorerCopyRoute: function () { return ((this.boot.routes || {}).fsCopy) || '/api/mioos/fs/copy'; },
       explorerDownloadRoute: function () {
         return ((this.boot.routes || {}).fsDownload) || '/api/mioos/fs/download';
       },
@@ -805,6 +937,244 @@
         var mime;
         if (!state || !file) return Promise.resolve();
         mime = file.type || 'application/octet-stream';
+        if ((this.boot.routes || {}).fsUploadBegin) {
+          if ((filesLike || []).length > 1) {
+            return Array.prototype.slice.call(filesLike).reduce(function (chain, nextFile) {
+              return chain.then(function () { return self.uploadFilesToExplorer(windowId, [nextFile]); });
+            }, Promise.resolve());
+          }
+          var transferId2 = this.registerTransfer ? this.registerTransfer({ kind: 'upload', name: file.name, status: 'preparing', stage: 'Preparing', totalBytes: file.size, processedBytes: 0, sourceWindowId: windowId }) : '';
+          var chunkBytes = +((((self.boot || {}).vfs || {}).uploadChunkBytes) || 1048576);
+          var concurrency = +((((self.boot || {}).vfs || {}).uploadConcurrency) || 4);
+          if (!Number.isFinite(chunkBytes) || chunkBytes < 4096) chunkBytes = 1048576;
+          if (!Number.isFinite(concurrency) || concurrency < 1) concurrency = 1;
+          if (concurrency > 8) concurrency = 8;
+          var totalChunks = file.size > 0 ? Math.ceil(file.size / chunkBytes) : 0;
+          var control = {
+            paused: false,
+            cancelled: false,
+            uploadId: '',
+            active: {},
+            completed: {},
+            completedBytes: 0,
+            retryQueue: [],
+            nextIndex: 1,
+            totalChunks: totalChunks,
+            commitStarted: false,
+            loopResolve: null,
+            loopReject: null,
+            startedAt: Date.now()
+          };
+          function activeCount() { return Object.keys(control.active).length; }
+          function queuedIndex() {
+            if (control.retryQueue.length) return control.retryQueue.shift();
+            if (control.nextIndex <= control.totalChunks) return control.nextIndex++;
+            return 0;
+          }
+          function markProgress(stageLabel) {
+            if (transferId2 && self.updateTransfer) {
+              self.updateTransfer(transferId2, {
+                status: control.paused ? 'paused' : 'uploading',
+                stage: stageLabel || (control.paused ? 'Paused' : 'Uploading'),
+                processedBytes: control.completedBytes,
+                totalBytes: file.size,
+                progress: file.size > 0 ? Math.round((control.completedBytes / file.size) * 100) : 100,
+                activeWorkers: activeCount(),
+                parallelWorkers: concurrency
+              });
+            }
+          }
+          function settlePausedIfIdle() {
+            if (control.paused && activeCount() === 0 && control.loopResolve) {
+              var resolver = control.loopResolve;
+              control.loopResolve = null;
+              control.loopReject = null;
+              markProgress('Paused');
+              resolver();
+            }
+          }
+          function finishCommit() {
+            if (control.commitStarted) return;
+            control.commitStarted = true;
+            xhrJsonRequest(self.explorerUploadCommitRoute(), { uploadId: control.uploadId }).then(function () {
+              if (transferId2 && self.finalizeTransfer) {
+                self.finalizeTransfer(transferId2, true, { processedBytes: file.size, totalBytes: file.size, progress: 100, stage: 'Completed' });
+              }
+              return self.refreshAllExplorerWindows();
+            }).then(function () {
+              if (control.loopResolve) {
+                var resolver = control.loopResolve;
+                control.loopResolve = null;
+                control.loopReject = null;
+                resolver();
+              }
+            }).catch(function (err) {
+              if (transferId2 && self.finalizeTransfer) {
+                self.finalizeTransfer(transferId2, false, { error: (err && err.message) || 'fs_upload_failed', stage: 'Upload failed' });
+              }
+              if (control.loopReject) {
+                var rejecter = control.loopReject;
+                control.loopResolve = null;
+                control.loopReject = null;
+                rejecter(err);
+              }
+            });
+          }
+          function maybePump() {
+            if (control.cancelled) {
+              if (control.loopResolve) {
+                var resolver = control.loopResolve;
+                control.loopResolve = null;
+                control.loopReject = null;
+                resolver();
+              }
+              return;
+            }
+            if (control.paused) {
+              settlePausedIfIdle();
+              return;
+            }
+            while (activeCount() < concurrency) {
+              var idx = queuedIndex();
+              if (!idx) break;
+              launchChunk(idx);
+            }
+            if (!control.paused && !control.cancelled && !control.commitStarted && control.totalChunks === 0) {
+              finishCommit();
+              return;
+            }
+            if (!control.paused && !control.cancelled && !control.commitStarted && Object.keys(control.completed).length >= control.totalChunks && activeCount() === 0) {
+              finishCommit();
+            }
+          }
+          function launchChunk(idx) {
+            var start = (idx - 1) * chunkBytes;
+            var end = Math.min(start + chunkBytes, file.size);
+            var slot;
+            if (start >= file.size && file.size > 0) return;
+            slot = { xhr: null, start: start, end: end, preparing: true, index: idx };
+            control.active[idx] = slot;
+            markProgress('Uploading');
+            fileChunkToBase64(file, start, end).then(function (b64) {
+              if (control.cancelled) {
+                delete control.active[idx];
+                return;
+              }
+              if (control.paused) {
+                delete control.active[idx];
+                if (!control.completed[idx]) control.retryQueue.push(idx);
+                settlePausedIfIdle();
+                return;
+              }
+              return xhrJsonRequest(self.explorerUploadChunkRoute(), {
+                uploadId: control.uploadId,
+                index: idx,
+                bytes: Math.max(0, end - start),
+                data: b64
+              }, function (xhr) {
+                slot.xhr = xhr;
+                slot.preparing = false;
+                markProgress('Uploading');
+              });
+            }).then(function (result) {
+              var meta;
+              if (typeof result === 'undefined') {
+                if (!control.paused && !control.cancelled) maybePump();
+                return;
+              }
+              meta = control.active[idx] || slot;
+              delete control.active[idx];
+              if (!control.completed[idx]) {
+                control.completed[idx] = 1;
+                control.completedBytes += Math.max(0, (meta && meta.end) ? (meta.end - meta.start) : (end - start));
+              }
+              markProgress('Uploading');
+              maybePump();
+            }).catch(function (err) {
+              delete control.active[idx];
+              if (String((err && err.message) || '') === 'transfer_cancelled') {
+                if (!control.cancelled && !control.completed[idx]) control.retryQueue.push(idx);
+                settlePausedIfIdle();
+                if (!control.paused && !control.cancelled) maybePump();
+                return;
+              }
+              if (transferId2 && self.finalizeTransfer) {
+                self.finalizeTransfer(transferId2, false, { error: (err && err.message) || 'fs_upload_failed', stage: 'Upload failed' });
+              }
+              if (control.loopReject) {
+                var rejecter = control.loopReject;
+                control.loopResolve = null;
+                control.loopReject = null;
+                rejecter(err);
+              }
+            });
+          }
+          function runFresh() {
+            control.uploadId = '';
+            control.paused = false;
+            control.cancelled = false;
+            control.active = {};
+            control.completed = {};
+            control.completedBytes = 0;
+            control.retryQueue = [];
+            control.nextIndex = 1;
+            control.totalChunks = totalChunks;
+            control.commitStarted = false;
+            if (transferId2 && self.updateTransfer) {
+              self.updateTransfer(transferId2, { status: 'preparing', stage: 'Preparing', processedBytes: 0, totalBytes: file.size, progress: 0, parallelWorkers: concurrency });
+            }
+            return xhrJsonRequest(self.explorerUploadBeginRoute(), { parent: state.folderId || ((self.boot.vfs || {}).rootId || 'root'), name: file.name, mime: mime, totalBytes: file.size, encoding: 'base64' }).then(function (body) {
+              control.uploadId = body.uploadId;
+              return run();
+            });
+          }
+          function run() {
+            return new Promise(function (resolve, reject) {
+              control.loopResolve = resolve;
+              control.loopReject = reject;
+              markProgress(control.paused ? 'Paused' : 'Uploading');
+              maybePump();
+            });
+          }
+          if (transferId2 && this.setTransferController) {
+            this.setTransferController(transferId2, {
+              onPause: function () {
+                control.paused = true;
+                Object.keys(control.active).forEach(function (idx) {
+                  var slot = control.active[idx];
+                  if (slot && slot.xhr) {
+                    try { slot.xhr.abort(); } catch (err) {}
+                  }
+                });
+              },
+              onResume: function () {
+                control.paused = false;
+                return run();
+              },
+              onRestart: function () {
+                control.paused = false;
+                control.cancelled = false;
+                if (control.uploadId) {
+                  return xhrJsonRequest(self.explorerUploadAbortRoute(), { uploadId: control.uploadId }).catch(function () {}).then(runFresh);
+                }
+                return runFresh();
+              },
+              onCancel: function () {
+                control.cancelled = true;
+                Object.keys(control.active).forEach(function (idx) {
+                  var slot = control.active[idx];
+                  if (slot && slot.xhr) {
+                    try { slot.xhr.abort(); } catch (err) {}
+                  }
+                });
+                if (control.uploadId) return xhrJsonRequest(self.explorerUploadAbortRoute(), { uploadId: control.uploadId }).catch(function () {});
+                return Promise.resolve();
+              },
+              onRetry: function () { return runFresh(); }
+            });
+          }
+          return this.ensureFreshUploadAuth().then(runFresh);
+        }
         var transferId = self.registerTransfer ? self.registerTransfer({ kind: 'upload', name: file.name, status: 'preparing', stage: 'Preparing', totalBytes: file.size, processedBytes: 0, sourceWindowId: windowId }) : '';
         var transferControl = { cancelled: false, workers: [], uploadId: '', windowId: windowId, xhr: null };
         if (transferId && self.setTransferController) {
@@ -893,18 +1263,21 @@
         var self = this;
         var win = this.windows.find(function (entry) { return entry.id === windowId; });
         var state = this.ensureExplorerWindowState(win);
-        var name;
         if (!state || !this.command) return Promise.resolve();
-        name = window.prompt(this.t('explorer.promptNewFolder', 'New folder name'), this.t('explorer.defaultFolderName', 'New Folder'));
-        if (name === null) return Promise.resolve();
-        name = String(name || '').trim();
-        if (!name) return Promise.resolve();
-        return this.command('fs.mkdir', { parent: state.folderId, name: name }).then(function () {
-          return self.refreshExplorerWindow(windowId).then(function () {
-            if (self.refreshView) self.refreshView();
+        return new Promise(function (resolve) {
+          self.openNamingDialog({
+            title: self.t('explorer.promptNewFolder', 'New folder name'),
+            label: self.t('explorer.promptNewFolder', 'New folder name'),
+            submitLabel: 'Create',
+            value: self.t('explorer.defaultFolderName', 'New Folder'),
+            onSubmit: function (value) {
+              var name = String(value || '').trim();
+              if (!name) { resolve(); return; }
+              self.command('fs.mkdir', { parent: state.folderId, name: name }).then(function () {
+                return self.refreshAllExplorerWindows();
+              }).finally(resolve);
+            }
           });
-        }).catch(function (err) {
-          if (self.showAlert) self.showAlert(self.t('alerts.shellEventError.title', 'Explorer'), (err && err.message) || 'fs_mkdir_failed');
         });
       },
       explorerRenameSelected: function (windowId) {
@@ -912,18 +1285,21 @@
         var win = this.windows.find(function (entry) { return entry.id === windowId; });
         var state = this.ensureExplorerWindowState(win);
         var item = state && state.selection;
-        var name;
         if (!item || !this.command) return Promise.resolve();
-        name = window.prompt(this.t('explorer.promptRename', 'Rename item'), item.name || item.title || '');
-        if (name === null) return Promise.resolve();
-        name = String(name || '').trim();
-        if (!name || name === (item.name || item.title || '')) return Promise.resolve();
-        return this.command('fs.rename', { id: item.id || item.key || '', name: name }).then(function () {
-          return self.refreshExplorerWindow(windowId).then(function () {
-            if (self.refreshView) self.refreshView();
+        return new Promise(function (resolve) {
+          self.openNamingDialog({
+            title: self.t('explorer.promptRename', 'Rename item'),
+            label: self.t('explorer.promptRename', 'Rename item'),
+            submitLabel: 'Rename',
+            value: item.name || item.title || '',
+            onSubmit: function (value) {
+              var name = String(value || '').trim();
+              if (!name || name === (item.name || item.title || '')) { resolve(); return; }
+              self.command('fs.rename', { id: item.id || item.key || '', name: name }).then(function () {
+                return self.refreshAllExplorerWindows();
+              }).finally(resolve);
+            }
           });
-        }).catch(function (err) {
-          if (self.showAlert) self.showAlert(self.t('alerts.shellEventError.title', 'Explorer'), (err && err.message) || 'fs_rename_failed');
         });
       },
       explorerDeleteSelected: function (windowId) {
@@ -1004,8 +1380,51 @@
           return Promise.resolve();
         }
         if (httpHref) {
-          if (transferId && this.updateTransfer) this.updateTransfer(transferId, { status: 'downloading', stage: 'Handing off to browser download manager', progress: 100, processedBytes: +((item || {}).size || 0), totalBytes: +((item || {}).size || 0) });
-          return handoffToBrowser(httpHref);
+          var chunkBytes = +((((this.boot || {}).vfs || {}).downloadHttpChunkBytes) || 1048576);
+          var totalBytes = +((item || {}).size || 0);
+          var offset = 0;
+          var buffers = [];
+          var ctrl = { paused: false, cancelled: false, xhr: null };
+          if (transferId && this.setTransferController) {
+            this.setTransferController(transferId, {
+              onPause: function () { ctrl.paused = true; if (ctrl.xhr) try { ctrl.xhr.abort(); } catch (err) {} },
+              onResume: function () { ctrl.paused = false; return pump(); },
+              onRestart: function () { ctrl.paused = false; ctrl.cancelled = false; offset = 0; buffers = []; return pump(); },
+              onCancel: function () { ctrl.cancelled = true; if (ctrl.xhr) try { ctrl.xhr.abort(); } catch (err) {} return Promise.resolve(); }
+            });
+          }
+          function saveBuffers() {
+            var blob = new window.Blob(buffers, { type: (item && item.mime) || 'application/octet-stream' });
+            var url = window.URL.createObjectURL(blob);
+            anchor = document.createElement('a');
+            anchor.href = url;
+            anchor.download = name;
+            document.body.appendChild(anchor);
+            anchor.click();
+            document.body.removeChild(anchor);
+            window.setTimeout(function () { try { window.URL.revokeObjectURL(url); } catch (err) {} }, 2000);
+            if (transferId && self.finalizeTransfer) self.finalizeTransfer(transferId, true, { processedBytes: totalBytes, totalBytes: totalBytes, progress: 100, stage: 'Saved to browser download manager' });
+          }
+          function pump() {
+            if (ctrl.cancelled) return Promise.resolve();
+            if (ctrl.paused) { if (transferId && self.updateTransfer) self.updateTransfer(transferId, { status: 'paused', stage: 'Paused' }); return Promise.resolve(); }
+            if (totalBytes > 0 && offset >= totalBytes) { saveBuffers(); return Promise.resolve(); }
+            var end = totalBytes > 0 ? Math.min(offset + chunkBytes - 1, totalBytes - 1) : (offset + chunkBytes - 1);
+            return xhrArrayBufferRequest(httpHref, { Range: 'bytes=' + offset + '-' + end }, function (xhr) { ctrl.xhr = xhr; }).then(function (resp) {
+              ctrl.xhr = null;
+              buffers.push(resp.buffer);
+              offset = end + 1;
+              if (transferId && self.updateTransfer) self.updateTransfer(transferId, { status: 'downloading', stage: 'Downloading', processedBytes: Math.min(offset, totalBytes || offset), totalBytes: totalBytes || offset, progress: totalBytes > 0 ? Math.round((Math.min(offset, totalBytes) / totalBytes) * 100) : 0 });
+              return pump();
+            }).catch(function (err) {
+              ctrl.xhr = null;
+              if (String((err && err.message) || '') === 'transfer_cancelled' && ctrl.paused) return Promise.resolve();
+              if (transferId && self.finalizeTransfer) self.finalizeTransfer(transferId, false, { error: (err && err.message) || 'download_failed', stage: 'Download failed' });
+              throw err;
+            });
+          }
+          if (transferId && this.updateTransfer) this.updateTransfer(transferId, { status: 'downloading', stage: 'Downloading', progress: 0, processedBytes: 0, totalBytes: totalBytes });
+          return pump();
         }
         if (!this.command) return Promise.resolve();
         if (transferId && this.updateTransfer) this.updateTransfer(transferId, { status: 'downloading', stage: 'Downloading' });

@@ -279,3 +279,5 @@ This ROI adds typed password policy defaults, forced password change support for
 - Added protected HTTP routes for `/api/mioos/fs/download` and `/api/mioos/fs/preview` so downloads and common file previews no longer need to pull full payloads across the websocket command bus.
 - Explorer now prefers browser-native HTTP downloads and HTTP preview URLs for image, audio, video, PDF, and large text/structured files, while keeping the legacy websocket download path as a compatibility fallback.
 - Preview/download responses stream VFS content in bounded chunks, advertise byte-range support, and allow larger files to be downloaded or previewed without triggering websocket transport pressure.
+
+ROI 29 — Resumable VFS transfers, Windows-style transfer dialog, and explorer drag/drop polish

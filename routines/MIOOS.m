@@ -21,6 +21,12 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","route","fsRead"))="" SET CONF("mioos","route","fsRead")="/api/mioos/fs/read"
 	IF $GET(CONF("mioos","route","fsWrite"))="" SET CONF("mioos","route","fsWrite")="/api/mioos/fs/write"
 	IF $GET(CONF("mioos","route","fsUpload"))="" SET CONF("mioos","route","fsUpload")="/api/mioos/fs/upload"
+	IF $GET(CONF("mioos","route","fsUploadBegin"))="" SET CONF("mioos","route","fsUploadBegin")="/api/mioos/fs/upload/begin"
+	IF $GET(CONF("mioos","route","fsUploadChunk"))="" SET CONF("mioos","route","fsUploadChunk")="/api/mioos/fs/upload/chunk"
+	IF $GET(CONF("mioos","route","fsUploadStatus"))="" SET CONF("mioos","route","fsUploadStatus")="/api/mioos/fs/upload/status"
+	IF $GET(CONF("mioos","route","fsUploadCommit"))="" SET CONF("mioos","route","fsUploadCommit")="/api/mioos/fs/upload/commit"
+	IF $GET(CONF("mioos","route","fsUploadAbort"))="" SET CONF("mioos","route","fsUploadAbort")="/api/mioos/fs/upload/abort"
+	IF $GET(CONF("mioos","route","fsCopy"))="" SET CONF("mioos","route","fsCopy")="/api/mioos/fs/copy"
 	IF $GET(CONF("mioos","route","fsDownload"))="" SET CONF("mioos","route","fsDownload")="/api/mioos/fs/download"
 	IF $GET(CONF("mioos","route","fsPreview"))="" SET CONF("mioos","route","fsPreview")="/api/mioos/fs/preview"
 	IF $GET(CONF("mioos","route","fsMkdir"))="" SET CONF("mioos","route","fsMkdir")="/api/mioos/fs/mkdir"
@@ -131,8 +137,8 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","fs","enabled"))="" SET CONF("mioos","fs","enabled")=1
 	IF $GET(CONF("mioos","fs","chunkSize"))="" SET CONF("mioos","fs","chunkSize")=2048
 	IF $GET(CONF("mioos","fs","transport"))="" SET CONF("mioos","fs","transport")="http-and-websocket"
-	IF $GET(CONF("mioos","upload","chunkBytes"))="" SET CONF("mioos","upload","chunkBytes")=131072
-	IF $GET(CONF("mioos","upload","concurrency"))="" SET CONF("mioos","upload","concurrency")=5
+	IF $GET(CONF("mioos","upload","chunkBytes"))="" SET CONF("mioos","upload","chunkBytes")=65536
+	IF $GET(CONF("mioos","upload","concurrency"))="" SET CONF("mioos","upload","concurrency")=4
 	IF $GET(CONF("mioos","terminal","pipe","sessionIdleSeconds"))="" SET CONF("mioos","terminal","pipe","sessionIdleSeconds")=900
 	IF $GET(CONF("auth","protectMode"))="" SET CONF("auth","protectMode")="route"
 	IF $GET(CONF("auth","mode"))="" SET CONF("auth","mode")="jwt"
@@ -158,6 +164,7 @@ INIT(CONF)
 	QUIT
 	;
 REG(CONF)
+	S CONF("server","limits","maxBodyBytes")=10485760*1024
 	NEW META,PROT,WSMETA,AUTHREQ,SIGNIN,PSIGNIN
 	DO INIT(.CONF)
 	IF +$GET(CONF("mioos","enabled"),1)'=1 QUIT
@@ -181,6 +188,12 @@ REG(CONF)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsRead")),"FSREAD^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsWrite")),"FSWRITE^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsUpload")),"FSUPLOAD^MIOOSAPI",.PROT)
+	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsUploadBegin")),"FSUPBEGIN^MIOOSAPI",.PROT)
+	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsUploadChunk")),"FSUPCHUNK^MIOOSAPI",.PROT)
+	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsUploadStatus")),"FSUPSTATUS^MIOOSAPI",.PROT)
+	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsUploadCommit")),"FSUPCOMMIT^MIOOSAPI",.PROT)
+	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsUploadAbort")),"FSUPABORT^MIOOSAPI",.PROT)
+	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsCopy")),"FSCOPY^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("GET",$GET(CONF("mioos","route","fsDownload")),"FSDOWNLOAD^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("HEAD",$GET(CONF("mioos","route","fsDownload")),"FSDOWNLOAD^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("GET",$GET(CONF("mioos","route","fsPreview")),"FSPREVIEW^MIOOSAPI",.PROT)
@@ -210,6 +223,12 @@ REG(CONF)
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","fsRead")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","fsWrite")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","fsUpload")))
+	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","fsUploadBegin")))
+	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","fsUploadChunk")))
+	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","fsUploadStatus")))
+	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","fsUploadCommit")))
+	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","fsUploadAbort")))
+	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","fsCopy")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","fsDownload")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","fsPreview")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","fsMkdir")))
@@ -270,4 +289,5 @@ RESPERR(DEV,CONF,STATUS,CODE,DETAIL,CTX)
 	DO RESPJSONX^MIOHTTP(.DEV,.CONF,+$GET(STATUS),.OBJ,$GET(CTX("request_id")),.CTX)
 	SET CTX("status")=+$GET(STATUS)
 	QUIT
+	;
 	;

@@ -29,6 +29,12 @@
         passwordChange: '/api/mioos/auth/password/change',
         auditExport: '/api/mioos/auth/audit/export',
         fsUpload: '/api/mioos/fs/upload',
+        fsUploadBegin: '/api/mioos/fs/upload/begin',
+        fsUploadChunk: '/api/mioos/fs/upload/chunk',
+        fsUploadStatus: '/api/mioos/fs/upload/status',
+        fsUploadCommit: '/api/mioos/fs/upload/commit',
+        fsUploadAbort: '/api/mioos/fs/upload/abort',
+        fsCopy: '/api/mioos/fs/copy',
         fsDownload: '/api/mioos/fs/download',
         fsPreview: '/api/mioos/fs/preview',
         debugSnapshotCommand: 'debug.snapshot',
@@ -134,7 +140,7 @@
         maxFrameBytes: 262144,
         maxMessageBytes: 1048576
       },
-      vfs: { enabled: false, rootId: 'root', homeId: 'home', chunkSize: 32000, globalsOnly: true, uploadStaleSeconds: 1800, downloadStaleSeconds: 900, downloadHttpChunkBytes: 65536, previewInlineTextMaxBytes: 262144, transferControls: { cancel: true, retry: true } },
+      vfs: { enabled: false, rootId: 'root', homeId: 'home', chunkSize: 32000, globalsOnly: true, uploadStaleSeconds: 1800, downloadStaleSeconds: 900, downloadHttpChunkBytes: 1048576, previewInlineTextMaxBytes: 262144, transferControls: { cancel: true, retry: true, pause: true, resume: true, restart: true } },
       apps: [],
       windows: [],
       modules: []

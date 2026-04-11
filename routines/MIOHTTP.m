@@ -647,9 +647,9 @@ SENDFILE(DEV,CONF,PATH,HEAD,REQID,CTX,METHOD)
 	IF P="" DO  QUIT 0
 	. SET CTX("err","routine")="MIOHTTP",CTX("err","error")="file_not_specified"
 	NEW M SET M=$$LOW($GET(METHOD,"GET"))
-	NEW CHSZ SET CHSZ=+$GET(CONF("server","static","readChunkBytes"),65536)
+	NEW CHSZ SET CHSZ=+$GET(CONF("server","static","readChunkBytes"),10485760)
 	IF CHSZ<1024 SET CHSZ=1024
-	IF CHSZ>262144 SET CHSZ=262144
+	IF CHSZ>10485760 SET CHSZ=10485760
 	NEW OIO SET OIO=$IO
 	NEW FDEV SET FDEV=P
 	; open file (no trap); on failure return 0 with CTX(err)
@@ -750,10 +750,10 @@ READCL(DEV,CONF,REQ,CL,ERR)
 	QUIT
 	;
 READLEN(DEV,CONF,REQ,CL,TOB,ERR)
-	NEW MAXB SET MAXB=$GET(CONF("server","limits","maxBodyBytes"),10485760)
-	NEW MAXS SET MAXS=$GET(CONF("server","limits","maxBodyScalarBytes"),262144)
-	NEW CHSZ SET CHSZ=+$GET(CONF("server","http","readBodyChunkBytes"))
-	IF CHSZ<1 SET CHSZ=$S(CL>MAXS:MAXS,1:65536)
+	NEW MAXB SET MAXB=$GET(CONF("server","limits","maxBodyBytes"),10485760*10)
+	NEW MAXS SET MAXS=$GET(CONF("server","limits","maxBodyScalarBytes"),10485760*4)
+	NEW CHSZ SET CHSZ=+$GET(CONF("server","http","readBodyChunkBytes"),10485760)
+	IF CHSZ<1 SET CHSZ=$S(CL>MAXS:MAXS,1:CL)
 	IF CHSZ<1 SET CHSZ=1
 	IF CHSZ>262144 SET CHSZ=262144
 	;

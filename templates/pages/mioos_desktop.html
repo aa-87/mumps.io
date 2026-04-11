@@ -37,6 +37,12 @@
   data-mioos-bootstrap="{{bootstrapPath}}"
   data-mioos-view="{{viewPath}}"
   data-mioos-fs-upload="{{fsUploadPath}}"
+  data-mioos-fs-upload-begin="{{fsUploadBeginPath}}"
+  data-mioos-fs-upload-chunk="{{fsUploadChunkPath}}"
+  data-mioos-fs-upload-status="{{fsUploadStatusPath}}"
+  data-mioos-fs-upload-commit="{{fsUploadCommitPath}}"
+  data-mioos-fs-upload-abort="{{fsUploadAbortPath}}"
+  data-mioos-fs-copy="{{fsCopyPath}}"
   data-mioos-fs-download="{{fsDownloadPath}}"
   data-mioos-fs-preview="{{fsPreviewPath}}"
   data-mioos-signin="{{signinPath}}"
@@ -109,6 +115,23 @@
     </div>
   </section>
 
+
+  <section v-if="namingDialog.open" class="mioos-dialog-scrim" data-explorer-name-dialog="1">
+    <div class="window mioos-name-dialog win7" role="dialog" aria-modal="true">
+      <div class="title-bar"><div class="title-bar-text">[[ namingDialog.title ]]</div></div>
+      <div class="window-body">
+        <label class="mioos-name-dialog-field">
+          <span>[[ namingDialog.label ]]</span>
+          <input v-model="namingDialog.value" :placeholder="namingDialog.placeholder" @keyup.enter="submitNamingDialog">
+        </label>
+        <div class="mioos-name-dialog-actions">
+          <button type="button" @click="submitNamingDialog">[[ namingDialog.submitLabel ]]</button>
+          <button type="button" @click="closeNamingDialog">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <aside class="mioos-start-menu" :class="{ 'is-open': menuOpen }" :aria-label="boot.desktop.launcherLabel">
     <div class="mioos-start-head">
       <div class="mioos-start-avatar">M</div>
@@ -161,7 +184,7 @@
     </div>
   </aside>
 
-  <main class="mioos-desktop" @click="menuOpen=false; closeDesktopContextMenu()" @contextmenu.prevent="openDesktopContextMenu($event)">
+  <main class="mioos-desktop" @click="menuOpen=false; closeDesktopContextMenu(); closeExplorerContextMenus && closeExplorerContextMenus()" @contextmenu.prevent="openDesktopContextMenu($event)">
     <div v-if="snapPreview.active" class="mioos-snap-preview" :data-snap-zone="snapPreview.zone" :style="snapPreviewStyle()"></div>
     <section class="mioos-desktop-icons" :aria-label="t('desktop.icons')" :data-icon-size="desktopUi.iconSize">
       <button v-for="entry in desktopEntries" :key="entry.key" type="button" class="mioos-desktop-icon" :class="desktopIconClass(entry)" :style="desktopIconStyle(entry)" :data-launch-app="entry.key" @click.stop="selectDesktopEntry(entry)" @mousedown.stop="beginDesktopIconDrag(entry, $event)" @contextmenu.prevent.stop="openDesktopIconContextMenu(entry, $event)" @dblclick.stop="openApp(entry.key)" @keydown.enter.prevent="openApp(entry.key)">
@@ -346,6 +369,16 @@
                     </div>
                   </aside>
                 </div>
+                <div v-if="(win.explorerState || {}).contextMenu && (win.explorerState || {}).contextMenu.open" class="mioos-explorer-context-menu" data-explorer-context-menu="1" :style="explorerContextMenuStyle(win.explorerState)" @click.stop>
+                  <button type="button" @click="explorerContextAction(win.id, 'open')">Open</button>
+                  <button type="button" @click="explorerContextAction(win.id, 'download')">Download</button>
+                  <button type="button" @click="explorerContextAction(win.id, 'rename')">Rename</button>
+                  <button type="button" @click="explorerContextAction(win.id, 'copy')">Copy to…</button>
+                  <button type="button" @click="explorerContextAction(win.id, 'move')">Move to…</button>
+                  <button type="button" @click="explorerContextAction(win.id, 'delete')">Delete</button>
+                  <button type="button" @click="explorerContextAction(win.id, 'new-folder')">New Folder…</button>
+                  <button type="button" @click="explorerContextAction(win.id, 'refresh')">Refresh</button>
+                </div>
                 <div class="status-bar mioos-statusbar--xp">
                   <p class="status-bar-field">[[ (((win.explorerState || {}).items || []).length) ]] objects</p>
                   <p class="status-bar-field">[[ ((win.explorerState || {}).folder || {}).name || '/' ]]</p>
@@ -375,7 +408,7 @@
                 <section>
                   <fieldset>
                     <legend>Active transfers</legend>
-                    <div class="mioos-transfer-card" v-for="item in activeTransfers()" :key="item.id">
+                    <div class="mioos-transfer-card mioos-transfer-dialog-card" data-transfer-dialog="win7-copy-ui" v-for="item in activeTransfers()" :key="item.id">
                       <div class="mioos-transfer-copy">
                         <strong>[[ item.name ]]</strong>
                         <span>[[ item.kind ]] · [[ item.stage || item.status ]]</span>
@@ -384,8 +417,11 @@
                         <div class="mioos-upload-progress-bar"><span :style="{ width: (transferPercent(item) + '%') }"></span></div>
                         <em>[[ transferPercent(item) ]]%</em>
                       </div>
-                      <div class="mioos-transfer-actions" v-if="canCancelTransfer(item)">
-                        <button type="button" class="mioos-transfer-btn" @click="cancelTransfer(item)">Cancel</button>
+                      <div class="mioos-transfer-actions mioos-transfer-dialog-actions">
+                        <button type="button" class="mioos-transfer-btn" v-if="canPauseTransfer(item)" @click="pauseTransfer(item)">Pause</button>
+                        <button type="button" class="mioos-transfer-btn" v-if="canResumeTransfer(item)" @click="resumeTransfer(item)">Resume</button>
+                        <button type="button" class="mioos-transfer-btn" v-if="canRestartTransfer(item)" @click="restartTransfer(item)">Restart</button>
+                        <button type="button" class="mioos-transfer-btn" v-if="canCancelTransfer(item)" @click="cancelTransfer(item)">Cancel</button>
                       </div>
                     </div>
                     <div class="mioos-transfer-empty" v-if="!activeTransfers().length">No active transfers.</div>
@@ -401,8 +437,10 @@
                         <small v-if="item.error">[[ item.error ]]</small>
                       </div>
                       <em class="mioos-transfer-state" :class="{ 'is-failed': item.status === 'failed' }">[[ item.status ]]</em>
-                      <div class="mioos-transfer-actions" v-if="canRetryTransfer(item)">
-                        <button type="button" class="mioos-transfer-btn" @click="retryTransfer(item)">Retry</button>
+                      <div class="mioos-transfer-actions mioos-transfer-dialog-actions">
+                        <button type="button" class="mioos-transfer-btn" v-if="canResumeTransfer(item)" @click="resumeTransfer(item)">Resume</button>
+                        <button type="button" class="mioos-transfer-btn" v-if="canRestartTransfer(item)" @click="restartTransfer(item)">Restart</button>
+                        <button type="button" class="mioos-transfer-btn" v-if="canRetryTransfer(item)" @click="retryTransfer(item)">Retry</button>
                       </div>
                     </div>
                     <div class="mioos-transfer-empty" v-if="!completedTransfers().length">No completed transfers yet.</div>

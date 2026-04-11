@@ -993,3 +993,22 @@ button, input { font: inherit; }
 .mioos-debug-row { display:grid; grid-template-columns: 120px 140px 180px minmax(0,1fr); gap:10px; align-items:center; font-size:0.9rem; }
 .mioos-debug-row--head { font-weight:700; color:#334155; }
 .mioos-debug-empty, .mioos-debug-error { color:#64748b; font-size:0.92rem; }
+
+
+.mioos-dialog-scrim { position: fixed; inset: 0; background: rgba(0,0,0,.22); display: flex; align-items: center; justify-content: center; z-index: 1200; }
+.mioos-name-dialog { min-width: 360px; max-width: 520px; }
+.mioos-name-dialog-field { display: flex; flex-direction: column; gap: .35rem; }
+.mioos-name-dialog-field input { width: 100%; }
+.mioos-name-dialog-actions { margin-top: .85rem; display: flex; justify-content: flex-end; gap: .5rem; }
+.mioos-explorer-context-menu { position: absolute; min-width: 180px; z-index: 50; display: flex; flex-direction: column; gap: 2px; padding: .35rem; border: 1px solid rgba(0,0,0,.2); background: #f3f6fb; box-shadow: 0 10px 22px rgba(0,0,0,.18); }
+.mioos-explorer-context-menu button { text-align: left; }
+.mioos-explorer-list[data-explorer-drop-zone="folder"] { position: relative; }
+.mioos-transfer-dialog-window { display: flex; flex-direction: column; }
+.mioos-transfer-dialog-body { display: flex; flex-direction: column; gap: .85rem; }
+.mioos-transfer-dialog-list { display: flex; flex-direction: column; gap: .75rem; }
+.mioos-transfer-dialog-card { border: 1px solid rgba(0,0,0,.12); background: linear-gradient(180deg,#fff,#f5f8ff); }
+.mioos-transfer-dialog-card.is-paused { opacity: .86; }
+.mioos-transfer-dialog-card.is-failed { border-color: rgba(150,20,20,.35); }
+.mioos-transfer-dialog-head { display: flex; justify-content: space-between; align-items: center; gap: .75rem; }
+.mioos-transfer-dialog-progress { display: flex; align-items: center; gap: .75rem; }
+.mioos-transfer-dialog-actions { display: flex; flex-wrap: wrap; gap: .45rem; }

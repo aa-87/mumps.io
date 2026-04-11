@@ -37,6 +37,11 @@ MIOOST ; MIOOS tests
 	DO T036
 	DO T037
 	DO T038
+	DO T039
+	DO T040
+	DO T041
+	DO T042
+	DO T043
 	QUIT
 	;
 RESET
@@ -755,7 +760,7 @@ T037
 	DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T037][decode]")
 	DO EQ^MIOTASSERT($GET(OBJ("routes","fsDownload")),"/api/mioos/fs/download","[MIOOST][T037][boot fs download]")
 	DO EQ^MIOTASSERT($GET(OBJ("routes","fsPreview")),"/api/mioos/fs/preview","[MIOOST][T037][boot fs preview]")
-	DO EQ^MIOTASSERT(+$GET(OBJ("vfs","downloadHttpChunkBytes")),65536,"[MIOOST][T037][download chunk bytes]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("vfs","downloadHttpChunkBytes")),1048576,"[MIOOST][T037][download chunk bytes]")
 	DO EQ^MIOTASSERT(+$GET(OBJ("vfs","previewInlineTextMaxBytes")),262144,"[MIOOST][T037][preview text max]")
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","performance","downloadStrategy")),"http-stream-browser-native-with-websocket-fallback","[MIOOST][T037][download strategy]")
 	DO COMPILE
@@ -787,4 +792,97 @@ T038
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-textviewer-frame"),"[MIOOST][T038][text frame css]")
 	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","ROI 28 — HTTP VFS downloads and streamed preview routes"),"[MIOOST][T038][docs roi28]")
 	QUIT
+	;
+	;
+T039
+	NEW CONF,REQ,CTX,STATE,ERR,JSON,OBJ,EP
+	DO RESET
+	DO REG^MIOOS(.CONF)
+	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T039][load]")
+	SET JSON=$$BOOTJSON^MIOOSST(.STATE,.CONF)
+	DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T039][decode]")
+	DO EQ^MIOTASSERT($GET(OBJ("routes","fsUploadBegin")),"/api/mioos/fs/upload/begin","[MIOOST][T039][boot fs upload begin]")
+	DO EQ^MIOTASSERT($GET(OBJ("routes","fsUploadChunk")),"/api/mioos/fs/upload/chunk","[MIOOST][T039][boot fs upload chunk]")
+	DO EQ^MIOTASSERT($GET(OBJ("routes","fsUploadStatus")),"/api/mioos/fs/upload/status","[MIOOST][T039][boot fs upload status]")
+	DO EQ^MIOTASSERT($GET(OBJ("routes","fsUploadCommit")),"/api/mioos/fs/upload/commit","[MIOOST][T039][boot fs upload commit]")
+	DO EQ^MIOTASSERT($GET(OBJ("routes","fsUploadAbort")),"/api/mioos/fs/upload/abort","[MIOOST][T039][boot fs upload abort]")
+	DO EQ^MIOTASSERT($GET(OBJ("routes","fsCopy")),"/api/mioos/fs/copy","[MIOOST][T039][boot fs copy]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("vfs","uploadChunkBytes")),1048576,"[MIOOST][T039][boot upload chunk bytes]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("vfs","uploadConcurrency")),4,"[MIOOST][T039][boot upload concurrency]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("vfs","transferControls","pause")),1,"[MIOOST][T039][pause control]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("vfs","transferControls","resume")),1,"[MIOOST][T039][resume control]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("vfs","transferControls","restart")),1,"[MIOOST][T039][restart control]")
+	DO COMPILE
+	KILL EP DO AMATCH("[MIOOST][T039][route fs upload begin]","POST","/api/mioos/fs/upload/begin",1,"FSUPBEGIN^MIOOSAPI","/api/mioos/fs/upload/begin",.EP)
+	KILL EP DO AMATCH("[MIOOST][T039][route fs upload chunk]","POST","/api/mioos/fs/upload/chunk",1,"FSUPCHUNK^MIOOSAPI","/api/mioos/fs/upload/chunk",.EP)
+	KILL EP DO AMATCH("[MIOOST][T039][route fs upload status]","POST","/api/mioos/fs/upload/status",1,"FSUPSTATUS^MIOOSAPI","/api/mioos/fs/upload/status",.EP)
+	KILL EP DO AMATCH("[MIOOST][T039][route fs upload commit]","POST","/api/mioos/fs/upload/commit",1,"FSUPCOMMIT^MIOOSAPI","/api/mioos/fs/upload/commit",.EP)
+	KILL EP DO AMATCH("[MIOOST][T039][route fs upload abort]","POST","/api/mioos/fs/upload/abort",1,"FSUPABORT^MIOOSAPI","/api/mioos/fs/upload/abort",.EP)
+	KILL EP DO AMATCH("[MIOOST][T039][route fs copy]","POST","/api/mioos/fs/copy",1,"FSCOPY^MIOOSAPI","/api/mioos/fs/copy",.EP)
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-mioos-fs-upload-begin=""{{fsUploadBeginPath}}"""),"[MIOOST][T039][template fs upload begin]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-mioos-fs-copy=""{{fsCopyPath}}"""),"[MIOOST][T039][template fs copy]")
+	QUIT
+	;
+T040
+	NEW CONF,REQ,CTX,STATE,ERR,OUT,UP,READOUT
+	DO RESET
+	DO CONFDEF^MIOOS(.CONF)
+	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T040][load]")
+	DO OK^MIOTASSERT($$BEGIN^MIOOSFSUP(.STATE,.CONF,$GET(STATE("fsHomeId"),"root"),"resume-upload.txt","text/plain",11,"text",.UP,.ERR),"[MIOOST][T040][begin]")
+	DO OK^MIOTASSERT($$CHUNK^MIOOSFSUP(.STATE,.CONF,$GET(UP("uploadId")),1,"Hello ",6,.OUT,.ERR),"[MIOOST][T040][chunk 1]")
+	DO OK^MIOTASSERT($$CHUNK^MIOOSFSUP(.STATE,.CONF,$GET(UP("uploadId")),2,"world",5,.OUT,.ERR),"[MIOOST][T040][chunk 2]")
+	KILL OUT
+	DO OK^MIOTASSERT($$STATUS^MIOOSFSUP(.STATE,.CONF,$GET(UP("uploadId")),.OUT,.ERR),"[MIOOST][T040][status]")
+	DO EQ^MIOTASSERT(+$GET(OUT("nextIndex")),3,"[MIOOST][T040][next index]")
+	KILL OUT
+	DO OK^MIOTASSERT($$COMMIT^MIOOSFSUP(.STATE,.CONF,$GET(UP("uploadId")),.OUT,.ERR),"[MIOOST][T040][commit]")
+	DO OK^MIOTASSERT($$READ^MIOOSFS(.STATE,$GET(OUT("id")),.READOUT,.ERR),"[MIOOST][T040][read]")
+	DO EQ^MIOTASSERT($GET(READOUT("content")),"Hello world","[MIOOST][T040][content]")
+	QUIT
+	;
+T041
+	NEW CONF,REQ,CTX,STATE,ERR,OUT,COPYOUT,READOUT
+	DO RESET
+	DO CONFDEF^MIOOS(.CONF)
+	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T041][load]")
+	DO OK^MIOTASSERT($$WRITE^MIOOSFS(.STATE,$GET(STATE("fsHomeId"),"root"),"copy-source.txt","Copy me","text/plain",.OUT,.ERR),"[MIOOST][T041][write]")
+	DO OK^MIOTASSERT($$COPY^MIOOSFS(.STATE,$GET(OUT("id")),$GET(STATE("fsHomeId"),"root"),"copy-target.txt",.COPYOUT,.ERR),"[MIOOST][T041][copy]")
+	DO OK^MIOTASSERT($$READ^MIOOSFS(.STATE,$GET(COPYOUT("id")),.READOUT,.ERR),"[MIOOST][T041][read copy]")
+	DO EQ^MIOTASSERT($GET(READOUT("content")),"Copy me","[MIOOST][T041][content]")
+	QUIT
+	;
+T042
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-transfer-dialog=""win7-copy-ui"""),"[MIOOST][T042][transfer dialog token]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-explorer-name-dialog=""1"""),"[MIOOST][T042][name dialog token]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-explorer-context-menu=""1"""),"[MIOOST][T042][context menu token]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html",">Pause<"),"[MIOOST][T042][pause button]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html",">Resume<"),"[MIOOST][T042][resume button]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html",">Restart<"),"[MIOOST][T042][restart button]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","openExplorerContextMenu"),"[MIOOST][T042][open context method]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","explorerDragStart"),"[MIOOST][T042][drag start method]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","explorerHandleDrop"),"[MIOOST][T042][handle drop method]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","explorerContextAction"),"[MIOOST][T042][context action method]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","pauseTransfer"),"[MIOOST][T042][pause transfer method]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","resumeTransfer"),"[MIOOST][T042][resume transfer method]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","restartTransfer"),"[MIOOST][T042][restart transfer method]")
+	QUIT
+	;
+T043
+	NEW CONF,EP
+	DO RESET
+	DO REG^MIOOS(.CONF)
+	DO COMPILE
+	KILL EP DO AMATCH("[MIOOST][T043][route fs upload begin]","POST","/api/mioos/fs/upload/begin",1,"FSUPBEGIN^MIOOSAPI","/api/mioos/fs/upload/begin",.EP)
+	KILL EP DO AMATCH("[MIOOST][T043][route fs upload chunk]","POST","/api/mioos/fs/upload/chunk",1,"FSUPCHUNK^MIOOSAPI","/api/mioos/fs/upload/chunk",.EP)
+	KILL EP DO AMATCH("[MIOOST][T043][route fs upload status]","POST","/api/mioos/fs/upload/status",1,"FSUPSTATUS^MIOOSAPI","/api/mioos/fs/upload/status",.EP)
+	KILL EP DO AMATCH("[MIOOST][T043][route fs upload commit]","POST","/api/mioos/fs/upload/commit",1,"FSUPCOMMIT^MIOOSAPI","/api/mioos/fs/upload/commit",.EP)
+	KILL EP DO AMATCH("[MIOOST][T043][route fs upload abort]","POST","/api/mioos/fs/upload/abort",1,"FSUPABORT^MIOOSAPI","/api/mioos/fs/upload/abort",.EP)
+	KILL EP DO AMATCH("[MIOOST][T043][route fs copy]","POST","/api/mioos/fs/copy",1,"FSCOPY^MIOOSAPI","/api/mioos/fs/copy",.EP)
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","FSUPBEGIN(DEV,CONF,REQ,CTX)"),"[MIOOST][T043][api upload begin label]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","FSCOPY(DEV,CONF,REQ,CTX)"),"[MIOOST][T043][api fs copy label]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","CMD=""fs.copy"""),"[MIOOST][T043][ws fs copy token]")
+	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 29 — Resumable VFS transfers, Windows-style transfer dialog, and explorer drag/drop polish"),"[MIOOST][T043][llm roi29]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","ROI 29 — Resumable VFS transfers, Windows-style transfer dialog, and explorer drag/drop polish"),"[MIOOST][T043][docs roi29]")
+	QUIT
+	;
 	;

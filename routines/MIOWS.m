@@ -27,8 +27,8 @@ FAIL(DEV,CONF,CTX,WHY)
 	;
 LOOP(DEV,CONF,REQ,CTX)
 	NEW TO SET TO=+$GET(CONF("websocket","idleTimeoutSeconds"),3600)
-	NEW MAXFRAME SET MAXFRAME=+$GET(CONF("websocket","maxFrameBytes"),65536)
-	NEW MAXMSG SET MAXMSG=+$GET(CONF("websocket","maxMessageBytes"),262144)
+	NEW MAXFRAME SET MAXFRAME=+$GET(CONF("websocket","maxFrameBytes"),1048576)
+	NEW MAXMSG SET MAXMSG=+$GET(CONF("websocket","maxMessageBytes"),1048576*4)
 	NEW FRAG,MSGOPC,MSGBUF,MSGLEN
 	NEW OPC,FIN,PAY,ERR
 	SET FRAG=0,MSGOPC=0,MSGBUF="",MSGLEN=0
@@ -76,7 +76,7 @@ HANDLEMSG(DEV,REQ,CONF,CTX,OPC,PAY)
 READFRAME(DEV,TO,FIN,OPC,PAY,ERR,MAXFRAME)
 	KILL ERR
 	NEW HDR,CBCTX
-	DO READFRAMEHDR(.DEV,TO,.HDR,.ERR,+$GET(MAXFRAME,65536)) QUIT:$DATA(ERR)
+	DO READFRAMEHDR(.DEV,TO,.HDR,.ERR,+$GET(MAXFRAME,1048576)) QUIT:$DATA(ERR)
 	SET FIN=+$GET(HDR("fin")),OPC=+$GET(HDR("opc")),PAY=""
 	SET CBCTX("pay")=""
 	DO READPAYLOADST(.DEV,TO,.HDR,.ERR,8192,"COLLECT^MIOWS",.CBCTX) QUIT:$DATA(ERR)
@@ -103,7 +103,7 @@ READFRAMEHDR(DEV,TO,HDR,ERR,MAXFRAME)
 	. SET VAL=0 FOR I=1:1:8 SET VAL=VAL*256+$ASCII($EXTRACT(X,I))
 	. IF VAL>2147483647 SET ERR("error")="ws_frame_too_large" QUIT
 	. SET HDR("len")=VAL
-	IF $GET(HDR("len"))>+$GET(MAXFRAME,65536) SET ERR("error")="ws_frame_too_large" QUIT
+	IF $GET(HDR("len"))>+$GET(MAXFRAME,1048576) SET ERR("error")="ws_frame_too_large" QUIT
 	IF '$GET(HDR("masked")) SET ERR("error")="ws_client_unmasked" QUIT
 	NEW HMSK
 	SET HDR("mask")="" DO READN^MIOSOCK(DEV,4,TO,.HMSK) IF '$TEST SET ERR("error")="ws_timeout" QUIT
@@ -132,7 +132,7 @@ READPAYLOADST(DEV,TO,HDR,ERR,CHUNKBYTES,CALLBACK,CBCTX)
 READFRAMEST(DEV,TO,FIN,OPC,ERR,MAXFRAME,CHUNKBYTES,CALLBACK,CBCTX)
 	KILL ERR
 	NEW HDR
-	DO READFRAMEHDR(.DEV,TO,.HDR,.ERR,+$GET(MAXFRAME,65536)) QUIT:$DATA(ERR)
+	DO READFRAMEHDR(.DEV,TO,.HDR,.ERR,+$GET(MAXFRAME,1048576)) QUIT:$DATA(ERR)
 	SET FIN=+$GET(HDR("fin")),OPC=+$GET(HDR("opc"))
 	DO READPAYLOADST(.DEV,TO,.HDR,.ERR,+$GET(CHUNKBYTES,8192),$GET(CALLBACK),.CBCTX)
 	QUIT
@@ -141,7 +141,7 @@ READMSGST(DEV,S,OPC,ERR,CHUNKBYTES,CALLBACK,CBCTX)
 	NEW FIN,FOPC,HDR,CALL,META,TARR
 	KILL ERR SET OPC="",CALL=$GET(CALLBACK)
 	FOR  DO  QUIT:$GET(ERR("done"))!$GET(ERR("timeout"))!$GET(ERR("closed"))!$D(ERR("error"))
-	. DO READFRAMEHDR(.DEV,+$G(S("to"),1),.HDR,.ERR,+$G(S("maxframe"),65536))
+	. DO READFRAMEHDR(.DEV,+$G(S("to"),1),.HDR,.ERR,+$G(S("maxframe"),1048576))
 	. IF $G(ERR("error"))="ws_timeout" K ERR SET ERR("timeout")=1,ERR("done")=1 QUIT
 	. IF $D(ERR("error")) SET ERR("done")=1 QUIT
 	. SET FIN=+$GET(HDR("fin")),FOPC=+$GET(HDR("opc"))
@@ -217,8 +217,8 @@ WRITETXT(DEV,TXT) DO SENDTEXT(.DEV,TXT) QUIT
 INITSTATE(S,CONF)
 	KILL S
 	SET S("to")=+$GET(CONF("websocket","idleTimeoutSeconds"),3600)
-	SET S("maxframe")=+$GET(CONF("websocket","maxFrameBytes"),65536)
-	SET S("maxmsg")=+$GET(CONF("websocket","maxMessageBytes"),262144)
+	SET S("maxframe")=+$GET(CONF("websocket","maxFrameBytes"),1048576)
+	SET S("maxmsg")=+$GET(CONF("websocket","maxMessageBytes"),1048576*4)
 	SET S("frag")=0,S("msgopc")=0,S("buf")="",S("len")=0
 	QUIT
 	;
@@ -227,7 +227,7 @@ READMSG(DEV,S,OPC,MSG,ERR)
 	K ERR
 	S OPC="",MSG=""
 	F  D  Q:$G(ERR("done"))!$G(ERR("timeout"))!$G(ERR("closed"))!$D(ERR("error"))
-	. D READFRAME(.DEV,+$G(S("to"),1),.FIN,.OPC,.PAY,.ERR,+$G(S("maxframe"),65536))
+	. D READFRAME(.DEV,+$G(S("to"),1),.FIN,.OPC,.PAY,.ERR,+$G(S("maxframe"),1048576))
 	. I $G(ERR("error"))="ws_timeout" K ERR S ERR("timeout")=1,ERR("done")=1 Q
 	. I $D(ERR("error")) S ERR("done")=1 Q
 	. I OPC=8 S ERR("closed")=1,ERR("done")=1 Q

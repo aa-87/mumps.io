@@ -74,6 +74,15 @@
           debugCenter: { loading: false, refreshedAt: 0, error: '', snapshot: {}, events: [], seq: 0 },
           socketTelemetry: {},
           moduleCatalog: { loading: false, refreshedAt: 0, error: '' },
+          namingDialog: {
+            open: false,
+            title: '',
+            label: '',
+            submitLabel: 'OK',
+            value: '',
+            placeholder: '',
+            callback: null
+          },
           desktopUi: {
             iconSize: 'medium',
             sortMode: 'manual',
@@ -338,7 +347,7 @@
         },
         activeTransfers: function () {
           return (this.transferCenter.items || []).filter(function (item) {
-            return ['queued','preparing','uploading','downloading','finalizing','verifying','cancelling'].indexOf(item.status) >= 0;
+            return ['queued','preparing','uploading','downloading','finalizing','verifying','cancelling','paused'].indexOf(item.status) >= 0;
           });
         },
         completedTransfers: function () {
@@ -348,8 +357,9 @@
         },
         transferSummaryText: function () {
           var active = this.activeTransfers().length;
+          var paused = (this.transferCenter.items || []).filter(function (item) { return item.status === 'paused'; }).length;
           var done = this.completedTransfers().length;
-          return active + ' active · ' + done + ' finished';
+          return active + ' active · ' + paused + ' paused · ' + done + ' finished';
         },
         setSocketTelemetry: function (socketId, patch) {
           var base;
@@ -471,11 +481,23 @@
         },
         canCancelTransfer: function (item) {
           var ctrl = this.transferController(item && item.id);
-          return !!(item && ctrl && ctrl.onCancel && ['queued','preparing','uploading','downloading','finalizing','verifying'].indexOf(item.status) >= 0);
+          return !!(item && ctrl && ctrl.onCancel && ['queued','preparing','uploading','downloading','finalizing','verifying','paused'].indexOf(item.status) >= 0);
         },
         canRetryTransfer: function (item) {
           var ctrl = this.transferController(item && item.id);
           return !!(item && ctrl && ctrl.onRetry && ['failed','cancelled'].indexOf(item.status) >= 0);
+        },
+        canPauseTransfer: function (item) {
+          var ctrl = this.transferController(item && item.id);
+          return !!(item && ctrl && ctrl.onPause && ['queued','preparing','uploading','downloading','finalizing','verifying'].indexOf(item.status) >= 0);
+        },
+        canResumeTransfer: function (item) {
+          var ctrl = this.transferController(item && item.id);
+          return !!(item && ctrl && ctrl.onResume && item.status === 'paused');
+        },
+        canRestartTransfer: function (item) {
+          var ctrl = this.transferController(item && item.id);
+          return !!(item && ctrl && ctrl.onRestart && ['paused','failed','cancelled'].indexOf(item.status) >= 0);
         },
         cancelTransfer: function (item) {
           var self = this;
@@ -493,6 +515,55 @@
           var ctrl = this.transferController(item && item.id);
           if (!item || !ctrl || !ctrl.onRetry) return Promise.resolve();
           return Promise.resolve(ctrl.onRetry());
+        },
+        pauseTransfer: function (item) {
+          var self = this;
+          var ctrl = this.transferController(item && item.id);
+          if (!item || !ctrl || !ctrl.onPause) return Promise.resolve();
+          return Promise.resolve(ctrl.onPause()).then(function () {
+            self.updateTransfer(item.id, { status: 'paused', stage: 'Paused' });
+          });
+        },
+        resumeTransfer: function (item) {
+          var self = this;
+          var ctrl = this.transferController(item && item.id);
+          if (!item || !ctrl || !ctrl.onResume) return Promise.resolve();
+          self.updateTransfer(item.id, { status: item.kind === 'download' ? 'downloading' : 'uploading', stage: 'Resuming' });
+          return Promise.resolve(ctrl.onResume());
+        },
+        restartTransfer: function (item) {
+          var self = this;
+          var ctrl = this.transferController(item && item.id);
+          if (!item || !ctrl || !ctrl.onRestart) return Promise.resolve();
+          self.updateTransfer(item.id, { status: 'preparing', stage: 'Restarting', processedBytes: 0, progress: 0 });
+          return Promise.resolve(ctrl.onRestart());
+        },
+        transferBytesLabel: function (value) {
+          var bytes = +value || 0;
+          if (bytes >= 1073741824) return (bytes / 1073741824).toFixed(2) + ' GB';
+          if (bytes >= 1048576) return (bytes / 1048576).toFixed(2) + ' MB';
+          if (bytes >= 1024) return (bytes / 1024).toFixed(1) + ' KB';
+          return bytes + ' B';
+        },
+        openNamingDialog: function (options) {
+          var opts = options || {};
+          this.namingDialog.open = true;
+          this.namingDialog.title = opts.title || 'Name';
+          this.namingDialog.label = opts.label || 'Name';
+          this.namingDialog.submitLabel = opts.submitLabel || 'OK';
+          this.namingDialog.value = opts.value || '';
+          this.namingDialog.placeholder = opts.placeholder || '';
+          this.namingDialog.callback = typeof opts.onSubmit === 'function' ? opts.onSubmit : null;
+        },
+        closeNamingDialog: function () {
+          this.namingDialog.open = false;
+          this.namingDialog.callback = null;
+        },
+        submitNamingDialog: function () {
+          var cb = this.namingDialog.callback;
+          var value = this.namingDialog.value;
+          this.closeNamingDialog();
+          if (cb) cb(value);
         },
         registerTransfer: function (payload) {
           var next = Object.assign({
@@ -531,7 +602,7 @@
         clearFinishedTransfers: function () {
           var keep = {};
           this.transferCenter.items = (this.transferCenter.items || []).filter(function (item) {
-            var active = ['queued','preparing','uploading','downloading','finalizing','verifying','cancelling'].indexOf(item.status) >= 0;
+            var active = ['queued','preparing','uploading','downloading','finalizing','verifying','cancelling','paused'].indexOf(item.status) >= 0;
             if (active) keep[item.id] = 1;
             return active;
           });

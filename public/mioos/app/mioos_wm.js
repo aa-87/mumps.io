@@ -106,7 +106,10 @@
         if (win.state === 'closed' || win.state === 'minimized') win.state = 'normal';
         this.focusWindow(win.id);
         if ((appKey === 'my-computer' || appKey === 'documents' || appKey === 'explorer') && this.bootstrapExplorerWindow) {
-          this.$nextTick(this.bootstrapExplorerWindow.bind(this, win.id));
+          this.$nextTick(function () {
+            this.bootstrapExplorerWindow(win.id, true);
+            if (this.refreshExplorerWindow) this.refreshExplorerWindow(win.id).catch(function () {});
+          }.bind(this));
         }
         if (appKey === 'diagnostics' && this.refreshTransportDiagnostics) {
           this.$nextTick(function () { this.refreshTransportDiagnostics().catch(function () {}); }.bind(this));
@@ -165,7 +168,10 @@
               if (self.requestTerminalOpen) self.requestTerminalOpen(windowId);
             });
           } else if ((win.appKey === 'my-computer' || win.appKey === 'documents' || win.appKey === 'explorer') && this.bootstrapExplorerWindow) {
-            this.$nextTick(this.bootstrapExplorerWindow.bind(this, windowId));
+            this.$nextTick(function () {
+              this.bootstrapExplorerWindow(windowId, true);
+              if (this.refreshExplorerWindow) this.refreshExplorerWindow(windowId).catch(function () {});
+            }.bind(this));
           }
           return;
         }
