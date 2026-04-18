@@ -66,14 +66,14 @@ READLINE(DEV,TO,OUT,ERR)
 	. NEW $ETRAP SET $ETRAP="SET $ECODE="""" SET OUT="""" SET ERR(""routine"")=""MIOHTTP"",ERR(""error"")=""short_read"" QUIT"
 	. USE DEV
 	. READ X:TO
-	. IF '$TEST DO  QUIT
+	. IF '$TEST,$G(X)="" DO  QUIT
 	. . SET ERR("routine")="MIOHTTP",ERR("error")="read_timeout"
 	. ; Strip any CR chars (some devices can leave trailing CR)
 	. SET OUT=$TR(X,$C(13))
 	; Socket / normal device: delegate to MIOSOCK
 	NEW $ETRAP SET $ETRAP="SET $ECODE="""" SET OUT="""" SET ERR(""routine"")=""MIOHTTP"",ERR(""error"")=""short_read"" QUIT"
 	DO READLN^MIOSOCK(DEV,TO,.X)
-	IF '$TEST DO  QUIT
+	IF '$TEST,$G(X)="",$ZEOF DO  QUIT
 	. SET ERR("routine")="MIOHTTP",ERR("error")="read_timeout"
 	SET OUT=$TR(X,$C(13))
 	QUIT
@@ -88,14 +88,14 @@ READFIX(DEV,N,TO,OUT,ERR)
 	. READ X#N:TO
 	. ; Restore HTTP delimiter for subsequent READLINE usage
 	. USE DEV:(DELIM=$C(13,10))
-	. IF '$TEST DO  QUIT
+	. IF '$TEST,$G(X)="" DO  QUIT
 	. . SET ERR("routine")="MIOHTTP",ERR("error")="read_timeout"
 	. IF $L(X)'=N DO  QUIT
 	. . SET ERR("routine")="MIOHTTP",ERR("error")="short_read"
 	. SET OUT=X
 	NEW $ETRAP SET $ETRAP="SET $ECODE="""" SET OUT="""" SET ERR(""routine"")=""MIOHTTP"",ERR(""error"")=""short_read"" QUIT"
 	DO READN^MIOSOCK(DEV,N,TO,.X)
-	IF '$TEST DO  QUIT
+	IF '$TEST,$G(X)="",$ZEOF DO  QUIT
 	. SET ERR("routine")="MIOHTTP",ERR("error")="read_timeout"
 	IF $L(X)'=N DO  QUIT
 	. SET ERR("routine")="MIOHTTP",ERR("error")="short_read"

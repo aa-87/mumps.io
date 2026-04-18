@@ -63,15 +63,31 @@ SETSOCK(DEV,HANDLE)
 ; Entry point
 ; See docs/routines for details.;
 READLN(DEV,TO,OUT)
+	USE DEV:(DELIM=$C(13,10):CHSET="M")
 	USE DEV READ OUT:TO
 	QUIT
 	;
 ; Entry point
 ; See docs/routines for details.;
 READN(DEV,N,TO,OUT)
+	USE DEV:(NODELIM:CHSET="M":ZBFSIZE=N:ZIBFSIZE=N)
+	READ OUT#N:TO
+	USE DEV:(DELIM=$C(13,10):CHSET="M")
+	QUIT
+	;
+; Entry point
+; See docs/routines for details.;
+READNWSCHNK(DEV,N,TO,OUT)
+	USE DEV:(NODELIM:CHSET="M":ZBFSIZE=65536:ZIBFSIZE=65536)
+	READ OUT#N:TO
+	QUIT
+	;
+; Entry point
+; See docs/routines for details.;
+READNWS(DEV,N,TO,OUT)
+	USE DEV:(NODELIM:CHSET="M":ZBFSIZE=65536:ZIBFSIZE=65536)
 	N C,CH S C=0,OUT=$G(OUT) USE DEV FOR  READ *CH:TO S OUT=OUT_$C(CH),C=C+1 QUIT:C>=N
 	QUIT
-	;	
 ; Entry point
 ; See docs/routines for details.;
 WRITE(DEV,S)

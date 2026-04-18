@@ -112,7 +112,7 @@ T004 ; Gate enabled passes for noop (generous)
 	SET DEV=OP USE DEV
 	SET CONF("server","perf","enabled")=1
 	DO SCALE^MIOPERF("noop","PERFNOOP^MIOPERFT",2000,.R)
-	CLOSE DEV USE $PRINCIPAL
+	CLOSE DEV USE $PRINCIPAL H 0.1
 	DO OK^MIOTASSERT($$GATE^MIOPERF(.CONF,.R,.ERR)=1,"[T004][gate pass]")
 	QUIT
 	;
@@ -168,7 +168,7 @@ T009 ; Gate enabled: JWT scaling
 	SET DEV=OP USE DEV
 	SET CONF("server","perf","enabled")=1
 	DO SCALE^MIOPERF("jwt","PERFJWT^MIOPERFT",200,.R)
-	CLOSE DEV USE $PRINCIPAL
+	CLOSE DEV USE $PRINCIPAL H 0.1
 	DO OK^MIOTASSERT($$GATE^MIOPERF(.CONF,.R,.ERR)=1,"[T009][jwt gate]")
 	QUIT
 	;

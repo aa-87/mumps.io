@@ -98,8 +98,7 @@ T001 ; INIT + compile + core matches
 	NEW EP
 	KILL EP DO AMATCH("[T001][core][healthz]","GET","/healthz",1,"HEALTH^MIOROUTE","/healthz",.EP)
 	KILL EP DO AMATCH("[T001][core][ping]","GET","/api/ping",1,"PING^MIOROUTE","/api/ping",.EP)
-	KILL EP DO AMATCH("[T001][core][ws GET]","GET","/ws",1,"WS^MIOROUTE","/ws",.EP)
-	KILL EP DO AMATCH("[T001][core][ws WS]","WS","/ws",1,"ACCEPT^MIOWS","/ws",.EP)
+	KILL EP DO AMATCH("[T001][core][ws WS]","WS","/ws",1,"WSECHO^MIOWS","/ws",.EP)
 	QUIT
 	;
 T002 ; NORM default: ignoreTrailingSlash=1
