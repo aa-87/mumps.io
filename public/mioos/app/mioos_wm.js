@@ -90,10 +90,12 @@
         if (!win.minWidth) win.minWidth = (((this.boot || {}).desktop || {}).windowing || {}).minWidth || 320;
         if (!win.minHeight) win.minHeight = (((this.boot || {}).desktop || {}).windowing || {}).minHeight || 220;
         if (win.appKey === 'theme-studio') {
-          win.minWidth = Math.max(+win.minWidth || 0, 1120);
-          win.minHeight = Math.max(+win.minHeight || 0, 720);
-          if (!(+win.width) || +win.width < win.minWidth) win.width = Math.max(+win.width || 0, win.minWidth);
-          if (!(+win.height) || +win.height < win.minHeight) win.height = Math.max(+win.height || 0, win.minHeight);
+          var bounds = viewportBounds(this);
+          var compact = bounds.width <= 900 || bounds.height <= 760;
+          win.minWidth = compact ? Math.max(320, Math.min(bounds.width, 680)) : Math.max(+win.minWidth || 0, 1120);
+          win.minHeight = compact ? Math.max(420, Math.min(bounds.height, 560)) : Math.max(+win.minHeight || 0, 720);
+          if (!(+win.width) || +win.width < win.minWidth) win.width = compact ? bounds.width : Math.max(+win.width || 0, win.minWidth);
+          if (!(+win.height) || +win.height < win.minHeight) win.height = compact ? bounds.height : Math.max(+win.height || 0, win.minHeight);
         }
         clampWindow(this, win);
         return win;

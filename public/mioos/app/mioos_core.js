@@ -175,6 +175,9 @@
         if (this.terminalPollTimer) window.clearInterval(this.terminalPollTimer);
         if (this.socket) this.socket.close();
         if (this._dragRaf) window.cancelAnimationFrame(this._dragRaf);
+        if (this._themeStudioApplyRaf) window.cancelAnimationFrame(this._themeStudioApplyRaf);
+        if (this._themeStudioPersistTimer) { window.clearTimeout(this._themeStudioPersistTimer); this._themeStudioPersistTimer = null; }
+        this.themeStudioPersistCustomThemes(true);
         this.persistTransferCenter();
         window.removeEventListener('mousemove', this._dragMove);
         window.removeEventListener('mouseup', this._dragEnd);
@@ -1109,11 +1112,30 @@
           this.themeStudioPersistCustomThemes();
           return copy;
         },
-        themeStudioPersistCustomThemes: function () {
+        themeStudioPersistCustomThemes: function (immediate) {
           var store = this.initThemeStudioStore();
           var payload = (store.order || []).map(function (id) { return store.themes[id]; }).filter(function (item) { return item && !item.locked; });
-          store.customThemes = payload.map(function (item) { return item.id; });
-          try { window.localStorage.setItem(this.themeStudioProfilesKey(), JSON.stringify(payload)); } catch (err) {}
+          var commit = function () {
+            store.customThemes = payload.map(function (item) { return item.id; });
+            try { window.localStorage.setItem(this.themeStudioProfilesKey(), JSON.stringify(payload)); } catch (err) {}
+            this._themeStudioPersistTimer = null;
+          }.bind(this);
+          if (immediate === true) {
+            if (this._themeStudioPersistTimer) { window.clearTimeout(this._themeStudioPersistTimer); this._themeStudioPersistTimer = null; }
+            commit();
+            return;
+          }
+          if (this._themeStudioPersistTimer) window.clearTimeout(this._themeStudioPersistTimer);
+          this._themeStudioPersistTimer = window.setTimeout(commit, 180);
+        },
+        themeStudioApplyLive: function (config) {
+          var self = this;
+          var snapshot = this.themeStudioClone(config || this.themeStudioActiveTheme() || {});
+          if (this._themeStudioApplyRaf) window.cancelAnimationFrame(this._themeStudioApplyRaf);
+          this._themeStudioApplyRaf = window.requestAnimationFrame(function () {
+            self._themeStudioApplyRaf = null;
+            self.applyThemeStudioConfig(snapshot, { silent: true, persist: false });
+          });
         },
         themeStudioWallpaperCss: function (theme) {
           var t = this.themeStudioNormalizeConfig(theme || this.themeStudioActiveTheme() || {});
@@ -1230,7 +1252,7 @@
           previousName = target.name;
           preset = this.themeStudioNormalizeConfig(preset);
           Object.assign(target, this.themeStudioClone(preset), { id: target.id, name: previousName, locked: false, sourceId: preset.id });
-          this.applyThemeStudioConfig(target, { silent: true, persist: false });
+          this.themeStudioApplyLive(target);
           if (target.variants) target.variants[target.darkEnabled ? 'dark' : 'light'] = this.themeStudioBuildVariantSnapshot(target, !!target.darkEnabled);
           this.themeStudioPersistCustomThemes();
         },
@@ -1272,7 +1294,7 @@
           }
           ref[parts[parts.length - 1]] = value;
           if (path === 'fontStack') target.cssVars['--font-ui'] = value;
-          this.applyThemeStudioConfig(target, { silent: true, persist: false });
+          this.themeStudioApplyLive(target);
           if (target.variants) target.variants[target.darkEnabled ? 'dark' : 'light'] = this.themeStudioBuildVariantSnapshot(target, !!target.darkEnabled);
           this.themeStudioPersistCustomThemes();
         },
@@ -1282,7 +1304,7 @@
           if (!target.cssVars) target.cssVars = {};
           target.cssVars[key] = value;
           if (key === '--font-ui') target.fontStack = value;
-          this.applyThemeStudioConfig(target, { silent: true, persist: false });
+          this.themeStudioApplyLive(target);
           if (target.variants) target.variants[target.darkEnabled ? 'dark' : 'light'] = this.themeStudioBuildVariantSnapshot(target, !!target.darkEnabled);
           this.themeStudioPersistCustomThemes();
         },
@@ -1290,7 +1312,7 @@
           var target = this.themeStudioEditableTheme();
           if (!target) return;
           target.classModifiers = String(value || '').trim() ? String(value).trim().split(/\s+/) : [];
-          this.applyThemeStudioConfig(target, { silent: true, persist: false });
+          this.themeStudioApplyLive(target);
           if (target.variants) target.variants[target.darkEnabled ? 'dark' : 'light'] = this.themeStudioBuildVariantSnapshot(target, !!target.darkEnabled);
           this.themeStudioPersistCustomThemes();
         },
@@ -1643,9 +1665,9 @@
             '--menu-divider': 'rgba(148,163,184,0.18)',
             '--icon-label-bg': 'rgba(8, 14, 22, 0.62)',
             '--icon-label-text': '#ffffff',
-            '--button-tint': 'linear-gradient(180deg, rgba(88,105,132,0.98) 0%, rgba(45,58,78,0.98) 100%)',
-            '--button-tint-hover': 'linear-gradient(180deg, rgba(112,131,161,1) 0%, rgba(55,70,93,0.98) 100%)',
-            '--button-text': '#eef4ff',
+            '--button-tint': 'linear-gradient(180deg, rgba(245,247,250,0.96) 0%, rgba(206,214,224,0.94) 100%)',
+            '--button-tint-hover': 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(221,228,237,0.96) 100%)',
+            '--button-text': '#111827',
             '--theme-surface': 'rgba(17, 22, 31, 0.82)',
             '--theme-surface-strong': 'rgba(23, 29, 40, 0.92)',
             '--theme-panel-bg': 'rgba(21, 27, 37, 0.88)',
@@ -1789,7 +1811,7 @@
             if (!target.cssVars['--font-menu']) target.cssVars['--font-menu'] = value;
             if (!target.cssVars['--font-icon-label']) target.cssVars['--font-icon-label'] = value;
           }
-          this.applyThemeStudioConfig(target, { silent: true, persist: false });
+          this.themeStudioApplyLive(target);
           if (target.variants) target.variants[target.darkEnabled ? 'dark' : 'light'] = this.themeStudioBuildVariantSnapshot(target, !!target.darkEnabled);
           this.themeStudioPersistCustomThemes();
         },
@@ -1813,7 +1835,7 @@
           target = this.themeStudioEditableTheme();
           if (!target) return;
           target.name = String(name).trim() || 'Custom Theme';
-          this.applyThemeStudioConfig(target, { silent: true, persist: false });
+          this.themeStudioApplyLive(target);
           if (target.variants) target.variants[target.darkEnabled ? 'dark' : 'light'] = this.themeStudioBuildVariantSnapshot(target, !!target.darkEnabled);
           this.themeStudioPersistCustomThemes();
         },
@@ -1832,7 +1854,7 @@
           Object.keys(rebuilt).forEach(function (key) { target[key] = rebuilt[key]; });
           target.variants[currentKey] = this.themeStudioClone(currentSnapshot);
           target.variants[nextKey] = this.themeStudioBuildVariantSnapshot(target, nextEnabled);
-          this.applyThemeStudioConfig(target, { silent: true, persist: false });
+          this.themeStudioApplyLive(target);
           if (target.variants) target.variants[target.darkEnabled ? 'dark' : 'light'] = this.themeStudioBuildVariantSnapshot(target, !!target.darkEnabled);
           this.themeStudioPersistCustomThemes();
         },
@@ -1853,7 +1875,7 @@
           if (path === 'startMenuConfig.width') target.cssVars['--start-menu-width'] = (+value || 360) + 'px';
           if (path === 'startMenuConfig.accentColor') target.cssVars['--start-menu-accent'] = value;
           if (path === 'loginScreenConfig.textColor') target.cssVars['--login-box-text'] = value;
-          this.applyThemeStudioConfig(target, { silent: true, persist: false });
+          this.themeStudioApplyLive(target);
           if (target.variants) target.variants[target.darkEnabled ? 'dark' : 'light'] = this.themeStudioBuildVariantSnapshot(target, !!target.darkEnabled);
           this.themeStudioPersistCustomThemes();
         },
@@ -1870,7 +1892,7 @@
           target.cssVars['--font-size-menu'] = next + 'px';
           target.cssVars['--font-size-icon-label'] = Math.max(10, next - 1) + 'px';
           target.cssVars['--titlebar-height'] = titlebar + 'px';
-          this.applyThemeStudioConfig(target, { silent: true, persist: false });
+          this.themeStudioApplyLive(target);
           if (target.variants) target.variants[target.darkEnabled ? 'dark' : 'light'] = this.themeStudioBuildVariantSnapshot(target, !!target.darkEnabled);
           this.themeStudioPersistCustomThemes();
         },
@@ -2034,14 +2056,13 @@
         themeStudioSaveCustomTheme: function () {
           var target = this.themeStudioEditableTheme();
           if (!target) return;
-          this.themeStudioPersistCustomThemes();
+          this.themeStudioPersistCustomThemes(true);
           this.applyThemeStudioConfig(target, { silent: false, persist: true });
         },
         themeStudioPreviewRootStyle: function () {
           var active = this.themeStudioActiveTheme();
           var alpha = this.taskbarTransparencyValue();
-          var previewScale = Math.max(0.42, Math.min(0.72, ((((active || {}).previewScale) || 0.72) * 0.75)));
-          var style = { '--desktop-wallpaper': this.themeStudioWallpaperCss(active), '--login-wallpaper': this.themeStudioLoginWallpaperCss(active), transform: 'scale(' + previewScale.toFixed(3) + ')' };
+          var style = { '--desktop-wallpaper': this.themeStudioWallpaperCss(active), '--login-wallpaper': this.themeStudioLoginWallpaperCss(active), width: '480px', height: '360px' };
           var current = this.themeStudioResolvedVars(active);
           Object.keys(current).forEach(function (key) { style[key] = current[key]; });
           style['--taskbar-height'] = this.taskbarHeightValue() + 'px';
@@ -2062,8 +2083,7 @@
           var mobileHeight = (((active || {}).mobileConfig || {}).taskbarHeightMobile) || 46;
           var alpha = this.taskbarTransparencyValue();
           var current = this.themeStudioResolvedVars(active);
-          var mobileScale = Math.max(0.68, Math.min(0.9, ((((active || {}).previewScale) || 0.72) * 0.92)));
-          var style = { '--desktop-wallpaper': this.themeStudioWallpaperCss(active), '--login-wallpaper': this.themeStudioLoginWallpaperCss(active), transform: 'scale(' + mobileScale.toFixed(3) + ')' };
+          var style = { '--desktop-wallpaper': this.themeStudioWallpaperCss(active), '--login-wallpaper': this.themeStudioLoginWallpaperCss(active), width: '220px', height: '372px' };
           Object.keys(current).forEach(function (key) { style[key] = current[key]; });
           style['--taskbar-height'] = mobileHeight + 'px';
           style['--desktop-icon-size'] = ((((active || {}).mobileConfig || {}).iconSizeMobile) || 60) + 'px';

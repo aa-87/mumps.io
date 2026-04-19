@@ -286,11 +286,11 @@
                           <label><span>Base preset</span><select :value="activeTheme.sourceId || activeTheme.id || 'glow'" @change="vm.themeStudioLoadBaseTheme($event.target.value)"><option value="vintage">Vintage</option><option value="glow">Glow</option><option value="curve">Curve</option><option value="panel">Panel</option></select></label>
                         </div>
                         <div class="mioos-theme-row-vue">
-                          <div class="mioos-theme-radio-vue span-2" title="Each theme stores exactly two palettes: Light and Dark.">
+                          <div class="mioos-theme-mode-buttons-vue span-2" title="Each theme stores exactly two palettes: Light and Dark.">
                             <span class="mioos-theme-radio-label-vue">Theme mode</span>
-                            <div class="field-row mioos-theme-radio-row-vue" role="radiogroup" aria-label="Theme mode">
-                              <label class="mioos-radio-option-vue"><input type="radio" name="theme-mode" :checked="!activeTheme.darkEnabled" @change="vm.themeStudioSetDarkEnabled(false)"><span>Light</span></label>
-                              <label class="mioos-radio-option-vue"><input type="radio" name="theme-mode" :checked="!!activeTheme.darkEnabled" @change="vm.themeStudioSetDarkEnabled(true)"><span>Dark</span></label>
+                            <div class="mioos-theme-mode-actions-vue" role="group" aria-label="Theme mode">
+                              <button type="button" class="mioos-chip-btn" :class="{ 'is-active': !activeTheme.darkEnabled }" @click="vm.themeStudioSetDarkEnabled(false)">Light</button>
+                              <button type="button" class="mioos-chip-btn" :class="{ 'is-active': !!activeTheme.darkEnabled }" @click="vm.themeStudioSetDarkEnabled(true)">Dark</button>
                             </div>
                           </div>
                         </div>

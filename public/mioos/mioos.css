@@ -891,14 +891,13 @@ button:disabled { cursor: default; opacity: .55; }
 }
 .mioos-theme-preview-shell-vue {
   position: relative;
-  width: 640px;
-  height: 480px;
+  width: 480px;
+  height: 360px;
   overflow: hidden;
   border-radius: 20px;
   border: 1px solid rgba(255,255,255,0.24);
   background: var(--desktop-bg);
-  box-shadow: 0 30px 80px rgba(0,0,0,0.22);
-  transform-origin: top center;
+  box-shadow: 0 22px 56px rgba(0,0,0,0.20);
 }
 .mioos-theme-preview-wallpaper-vue,
 .mioos-theme-preview-wallpaper-vue::after {
@@ -1076,21 +1075,27 @@ button:disabled { cursor: default; opacity: .55; }
   background: rgba(255,255,255,0.18);
 }
 .mioos-theme-icon-toggle-vue { min-width: 42px; padding-inline: 0; justify-content: center; font-size: 18px; }
-.mioos-theme-previewtabs-vue { gap: 8px; }
-.mioos-theme-previewtabs-vue > menu { display: flex; gap: 8px; }
+.mioos-theme-previewtabs-vue { gap: 6px; }
+.mioos-theme-previewtabs-vue > menu { display: flex; gap: 6px; flex-wrap: wrap; margin: 0; padding: 0; }
+.mioos-theme-studio-vue .tabs > menu { display:flex; flex-wrap:wrap; gap:6px; margin:0; padding:0; }
 .mioos-theme-studio-vue .tabs > menu button {
+  min-width: 92px;
+  min-height: 30px;
+  padding: 4px 12px;
   border: 1px solid var(--theme-tab-border);
+  border-bottom-width: 0;
+  border-radius: 8px 8px 0 0;
   background: var(--theme-tab-bg);
-  color: var(--theme-field-text);
+  color: var(--button-text, #111827);
   font-weight: 600;
 }
 .mioos-theme-studio-vue .tabs > menu button[aria-selected="true"] {
   background: var(--theme-tab-active-bg);
-  color: var(--theme-field-text);
+  color: var(--button-text, #111827);
 }
-.mioos-theme-studio-vue .tabs > article[role="tabpanel"] { padding: 0; background: transparent; }
+.mioos-theme-studio-vue .tabs > article[role="tabpanel"] { margin-top: 0; padding: 0; background: transparent; }
 .theme-dark-mode .mioos-theme-studio-vue .mioos-btn,
-.theme-dark-mode .mioos-theme-studio-vue .mioos-chip-btn { color: var(--theme-field-text); border-color: var(--theme-panel-border); }
+.theme-dark-mode .mioos-theme-studio-vue .mioos-chip-btn { color: var(--button-text, #111827); border-color: var(--theme-panel-border); }
 .theme-dark-mode .mioos-theme-studio-vue input::placeholder,
 .theme-dark-mode .mioos-theme-studio-vue textarea::placeholder { color: color-mix(in srgb, var(--theme-field-text) 55%, transparent 45%); }
 .mioos-start-menu-vue.style-popup {
@@ -1310,23 +1315,27 @@ button:disabled { cursor: default; opacity: .55; }
 }
 .mioos-theme-preview-card-vue {
   display: grid;
-  gap: 10px;
-  padding: 12px;
+  gap: 8px;
+  padding: 8px;
   border: 1px solid var(--theme-preview-card-border);
-  border-radius: 16px;
+  border-radius: 14px;
   background: var(--theme-preview-card-bg);
+  overflow: hidden;
 }
 .mioos-theme-preview-card-vue.is-mobile strong::after {
   content: " · touch";
   font-weight: 400;
-  color: #64748b;
+  color: var(--theme-muted-text);
 }
 .mioos-theme-preview-stage-vue {
-  min-height: 274px;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
 }
 .mioos-theme-preview-stage-vue.is-mobile {
-  min-height: 358px;
-  align-items: flex-start;
+  min-height: 0;
+  align-items: center;
+  overflow: hidden;
 }
 .mioos-theme-preview-shell-vue.position-top .mioos-theme-preview-taskbar-vue {
   top: 0;
@@ -1351,8 +1360,8 @@ button:disabled { cursor: default; opacity: .55; }
   flex-direction: column;
 }
 .mioos-theme-preview-shell-vue.is-mobile {
-  width: 212px;
-  height: 358px;
+  width: 220px;
+  height: 372px;
   border-radius: 24px;
 }
 .mioos-theme-preview-icons-vue.is-mobile {
@@ -1497,6 +1506,9 @@ button:disabled { cursor: default; opacity: .55; }
 .mioos-theme-previewtabs-vue > menu {
   align-items: center;
 }
+.mioos-theme-mode-buttons-vue { display:grid; gap:8px; padding:12px 14px; border:1px solid var(--theme-panel-border); border-radius:12px; background: color-mix(in srgb, var(--theme-panel-bg) 82%, white 18%); }
+.mioos-theme-mode-actions-vue { display:flex; gap:8px; flex-wrap:wrap; }
+.mioos-theme-mode-actions-vue .mioos-chip-btn { min-width: 92px; justify-content:center; color: var(--button-text, #111827); }
 .mioos-theme-icon-toggle-vue {
   min-width: 38px;
   width: 38px;
@@ -1811,11 +1823,11 @@ button:disabled { cursor: default; opacity: .55; }
 .theme-dark-mode .mioos-theme-studio-vue.win7 .tabs > menu button,
 .theme-dark-mode .mioos-theme-studio-vue.win7 .mioos-btn,
 .theme-dark-mode .mioos-theme-studio-vue.win7 .mioos-chip-btn {
-  color: var(--theme-field-text);
+  color: var(--button-text, #111827);
   text-shadow: none;
 }
 .theme-dark-mode .mioos-theme-studio-vue.win7 .tabs > menu button[aria-selected="true"] {
-  color: var(--theme-field-text);
+  color: var(--button-text, #111827);
 }
 .theme-dark-mode .mioos-theme-studio-vue.win7 input:not([type="radio"]):not([type="checkbox"]):not([type="file"]):not([type="range"]),
 .theme-dark-mode .mioos-theme-studio-vue.win7 select,
@@ -1846,3 +1858,19 @@ button:disabled { cursor: default; opacity: .55; }
 
 @media (max-width: 1200px) { .mioos-theme-studio-vue .tabs.mioos-theme-tabs7 > menu { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 760px) { .mioos-theme-studio-vue .tabs.mioos-theme-tabs7 > menu { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+.win7 button:not(.title-bar-controls button),
+.win7 .button,
+.mioos-btn,
+.mioos-chip-btn { color: var(--button-text, #111827); }
+.theme-dark-mode .win7 button:not(.title-bar-controls button),
+.theme-dark-mode .win7 .button,
+.theme-dark-mode .mioos-btn,
+.theme-dark-mode .mioos-chip-btn { color: var(--button-text, #111827) !important; }
+
+@media (max-width: 800px) {
+  .mioos-taskbar-vue, .mioos-taskbar-vue.position-top { position: fixed; left: 0; right: 0; bottom: 0; top: auto; z-index: 80; }
+  .mioos-taskbar-vue.position-top { top: 0; bottom: auto; }
+  .mioos-taskbar-vue.position-left { position: fixed; left: 0; top: 0; bottom: 0; right: auto; }
+  .mioos-theme-studio-preview-vue { padding: 8px; }
+}
