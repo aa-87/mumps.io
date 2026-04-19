@@ -1231,6 +1231,7 @@
           preset = this.themeStudioNormalizeConfig(preset);
           Object.assign(target, this.themeStudioClone(preset), { id: target.id, name: previousName, locked: false, sourceId: preset.id });
           this.applyThemeStudioConfig(target, { silent: true, persist: false });
+          if (target.variants) target.variants[target.darkEnabled ? 'dark' : 'light'] = this.themeStudioBuildVariantSnapshot(target, !!target.darkEnabled);
           this.themeStudioPersistCustomThemes();
         },
         themeStudioResetToBase: function () {
@@ -1272,6 +1273,7 @@
           ref[parts[parts.length - 1]] = value;
           if (path === 'fontStack') target.cssVars['--font-ui'] = value;
           this.applyThemeStudioConfig(target, { silent: true, persist: false });
+          if (target.variants) target.variants[target.darkEnabled ? 'dark' : 'light'] = this.themeStudioBuildVariantSnapshot(target, !!target.darkEnabled);
           this.themeStudioPersistCustomThemes();
         },
         themeStudioUpdateVar: function (key, value) {
@@ -1281,6 +1283,7 @@
           target.cssVars[key] = value;
           if (key === '--font-ui') target.fontStack = value;
           this.applyThemeStudioConfig(target, { silent: true, persist: false });
+          if (target.variants) target.variants[target.darkEnabled ? 'dark' : 'light'] = this.themeStudioBuildVariantSnapshot(target, !!target.darkEnabled);
           this.themeStudioPersistCustomThemes();
         },
         themeStudioSetClassModifiers: function (value) {
@@ -1288,6 +1291,7 @@
           if (!target) return;
           target.classModifiers = String(value || '').trim() ? String(value).trim().split(/\s+/) : [];
           this.applyThemeStudioConfig(target, { silent: true, persist: false });
+          if (target.variants) target.variants[target.darkEnabled ? 'dark' : 'light'] = this.themeStudioBuildVariantSnapshot(target, !!target.darkEnabled);
           this.themeStudioPersistCustomThemes();
         },
         themeStudioClassModifiersText: function () {
@@ -1313,9 +1317,11 @@
           var common = this.themeStudioClone(target);
           delete common.darkEnabled;
           delete common.locked;
+          delete common.variants;
           common.baseTheme = this.themeStudioExportBaseId(target);
+          common.defaultVariant = target.darkEnabled ? 'dark' : 'light';
           return {
-            schema: 'mioos-theme-v3',
+            schema: 'mioos-theme-v4',
             exportedAt: new Date().toISOString(),
             theme: common,
             variants: {
@@ -1324,17 +1330,41 @@
             }
           };
         },
+        themeStudioBuildVariantSnapshot: function (theme, darkEnabled) {
+          var target = this.themeStudioNormalizeConfig(theme || {});
+          var live = this.themeStudioClone(target);
+          var stored = ((target.variants || {})[darkEnabled ? 'dark' : 'light']) || {};
+          if (!!target.darkEnabled === !!darkEnabled) {
+            return {
+              cssVars: this.themeStudioClone(live.cssVars || {}),
+              animationSpeeds: this.themeStudioClone(live.animationSpeeds || {}),
+              taskbarConfig: this.themeStudioClone(live.taskbarConfig || {}),
+              startMenuConfig: this.themeStudioClone(live.startMenuConfig || {}),
+              loginScreenConfig: this.themeStudioClone(live.loginScreenConfig || {}),
+              mobileConfig: this.themeStudioClone(live.mobileConfig || {})
+            };
+          }
+          return {
+            cssVars: this.themeStudioClone(stored.cssVars || live.cssVars || {}),
+            animationSpeeds: this.themeStudioClone(stored.animationSpeeds || live.animationSpeeds || {}),
+            taskbarConfig: this.themeStudioClone(stored.taskbarConfig || live.taskbarConfig || {}),
+            startMenuConfig: this.themeStudioClone(stored.startMenuConfig || live.startMenuConfig || {}),
+            loginScreenConfig: this.themeStudioClone(stored.loginScreenConfig || live.loginScreenConfig || {}),
+            mobileConfig: this.themeStudioClone(stored.mobileConfig || live.mobileConfig || {})
+          };
+        },
         themeStudioBuildVariantExport: function (theme, darkEnabled) {
-          var t = this.themeStudioClone(theme || {});
-          t.darkEnabled = !!darkEnabled;
+          var target = this.themeStudioNormalizeConfig(theme || {});
+          var snapshot = this.themeStudioBuildVariantSnapshot(target, !!darkEnabled);
+          var variantTheme = this.themeStudioNormalizeConfig(Object.assign({}, target, snapshot, { darkEnabled: !!darkEnabled }));
           return {
             darkEnabled: !!darkEnabled,
-            cssVars: this.themeStudioClone((t.cssVars) || {}),
-            animationSpeeds: this.themeStudioClone((t.animationSpeeds) || {}),
-            taskbarConfig: this.themeStudioClone((t.taskbarConfig) || {}),
-            startMenuConfig: this.themeStudioClone((t.startMenuConfig) || {}),
-            loginScreenConfig: this.themeStudioClone((t.loginScreenConfig) || {}),
-            mobileConfig: this.themeStudioClone((t.mobileConfig) || {})
+            cssVars: this.themeStudioClone(this.themeStudioResolvedVars(variantTheme) || variantTheme.cssVars || {}),
+            animationSpeeds: this.themeStudioClone(snapshot.animationSpeeds || variantTheme.animationSpeeds || {}),
+            taskbarConfig: this.themeStudioClone(snapshot.taskbarConfig || variantTheme.taskbarConfig || {}),
+            startMenuConfig: this.themeStudioClone(snapshot.startMenuConfig || variantTheme.startMenuConfig || {}),
+            loginScreenConfig: this.themeStudioClone(snapshot.loginScreenConfig || variantTheme.loginScreenConfig || {}),
+            mobileConfig: this.themeStudioClone(snapshot.mobileConfig || variantTheme.mobileConfig || {})
           };
         },
         themeStudioExportBaseId: function (theme) {
@@ -1350,9 +1380,10 @@
           if (parsed && parsed.theme && parsed.variants) {
             source = this.themeStudioClone(parsed.theme);
             variants = parsed.variants || {};
+            if (typeof source.darkEnabled === 'undefined') source.darkEnabled = String(source.defaultVariant || 'light') === 'dark';
             selected = source.darkEnabled ? (variants.dark || {}) : (variants.light || {});
             next = Object.assign({}, source, selected || {});
-            next.variants = this.themeStudioClone(variants);
+            next.variants = { light: this.themeStudioClone(variants.light || {}), dark: this.themeStudioClone(variants.dark || {}) };
           } else {
             next = parsed;
           }
@@ -1696,6 +1727,7 @@
             { key: 'taskbar', label: 'Taskbar' },
             { key: 'start', label: 'Start Menu' },
             { key: 'login', label: 'Login Screen' },
+            { key: 'animation', label: 'Animation' },
             { key: 'advanced', label: 'Advanced' }
           ];
         },
@@ -1736,6 +1768,7 @@
             if (!target.cssVars['--font-icon-label']) target.cssVars['--font-icon-label'] = value;
           }
           this.applyThemeStudioConfig(target, { silent: true, persist: false });
+          if (target.variants) target.variants[target.darkEnabled ? 'dark' : 'light'] = this.themeStudioBuildVariantSnapshot(target, !!target.darkEnabled);
           this.themeStudioPersistCustomThemes();
         },
         themeStudioSetTab: function (tabKey) {
@@ -1759,26 +1792,27 @@
           if (!target) return;
           target.name = String(name).trim() || 'Custom Theme';
           this.applyThemeStudioConfig(target, { silent: true, persist: false });
+          if (target.variants) target.variants[target.darkEnabled ? 'dark' : 'light'] = this.themeStudioBuildVariantSnapshot(target, !!target.darkEnabled);
           this.themeStudioPersistCustomThemes();
         },
         themeStudioSetDarkEnabled: function (enabled) {
           var target = this.themeStudioEditableTheme();
-          var key;
+          var nextEnabled = !!enabled;
+          var currentKey, nextKey, currentSnapshot, nextSnapshot, rebuilt;
           if (!target) return;
-          target.darkEnabled = !!enabled;
           if (!target.variants) target.variants = { light: {}, dark: {} };
-          key = target.darkEnabled ? 'dark' : 'light';
-          target.variants[key] = target.variants[key] || {};
-          target.variants[key].cssVars = this.themeStudioClone(target.cssVars || {});
-          target.variants[key].animationSpeeds = this.themeStudioClone(target.animationSpeeds || {});
-          target.variants[key].taskbarConfig = this.themeStudioClone(target.taskbarConfig || {});
-          target.variants[key].startMenuConfig = this.themeStudioClone(target.startMenuConfig || {});
-          target.variants[key].loginScreenConfig = this.themeStudioClone(target.loginScreenConfig || {});
+          currentKey = target.darkEnabled ? 'dark' : 'light';
+          nextKey = nextEnabled ? 'dark' : 'light';
+          currentSnapshot = this.themeStudioBuildVariantSnapshot(target, !!target.darkEnabled);
+          target.variants[currentKey] = this.themeStudioClone(currentSnapshot);
+          nextSnapshot = target.variants[nextKey] && Object.keys(target.variants[nextKey]).length ? this.themeStudioClone(target.variants[nextKey]) : this.themeStudioBuildVariantSnapshot(target, nextEnabled);
+          rebuilt = this.themeStudioNormalizeConfig(Object.assign({}, target, nextSnapshot, { darkEnabled: nextEnabled }));
+          Object.keys(rebuilt).forEach(function (key) { target[key] = rebuilt[key]; });
+          target.variants[currentKey] = this.themeStudioClone(currentSnapshot);
+          target.variants[nextKey] = this.themeStudioBuildVariantSnapshot(target, nextEnabled);
           this.applyThemeStudioConfig(target, { silent: true, persist: false });
+          if (target.variants) target.variants[target.darkEnabled ? 'dark' : 'light'] = this.themeStudioBuildVariantSnapshot(target, !!target.darkEnabled);
           this.themeStudioPersistCustomThemes();
-        },
-        themeStudioToggleDarkEnabled: function () {
-          this.themeStudioSetDarkEnabled(!((this.themeStudioActiveTheme() || {}).darkEnabled));
         },
         themeStudioUpdateField: function (path, value) {
           var target = this.themeStudioEditableTheme();
@@ -1798,6 +1832,7 @@
           if (path === 'startMenuConfig.accentColor') target.cssVars['--start-menu-accent'] = value;
           if (path === 'loginScreenConfig.textColor') target.cssVars['--login-box-text'] = value;
           this.applyThemeStudioConfig(target, { silent: true, persist: false });
+          if (target.variants) target.variants[target.darkEnabled ? 'dark' : 'light'] = this.themeStudioBuildVariantSnapshot(target, !!target.darkEnabled);
           this.themeStudioPersistCustomThemes();
         },
         themeStudioSetFontScale: function (value) {
@@ -1814,6 +1849,7 @@
           target.cssVars['--font-size-icon-label'] = Math.max(10, next - 1) + 'px';
           target.cssVars['--titlebar-height'] = titlebar + 'px';
           this.applyThemeStudioConfig(target, { silent: true, persist: false });
+          if (target.variants) target.variants[target.darkEnabled ? 'dark' : 'light'] = this.themeStudioBuildVariantSnapshot(target, !!target.darkEnabled);
           this.themeStudioPersistCustomThemes();
         },
         themeStudioFontScaleValue: function () {
@@ -1982,7 +2018,7 @@
         themeStudioPreviewRootStyle: function () {
           var active = this.themeStudioActiveTheme();
           var alpha = this.taskbarTransparencyValue();
-          var style = { '--desktop-wallpaper': this.themeStudioWallpaperCss(active), '--login-wallpaper': this.themeStudioLoginWallpaperCss(active), transform: 'scale(' + (((active || {}).previewScale) || 0.86) + ')' };
+          var style = { '--desktop-wallpaper': this.themeStudioWallpaperCss(active), '--login-wallpaper': this.themeStudioLoginWallpaperCss(active), transform: 'scale(' + (((active || {}).previewScale) || 0.72) + ')' };
           var current = this.themeStudioResolvedVars(active);
           Object.keys(current).forEach(function (key) { style[key] = current[key]; });
           style['--taskbar-height'] = this.taskbarHeightValue() + 'px';

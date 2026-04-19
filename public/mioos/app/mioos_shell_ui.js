@@ -286,7 +286,14 @@
                           <label><span>Base preset</span><select :value="activeTheme.sourceId || activeTheme.id || 'glow'" @change="vm.themeStudioLoadBaseTheme($event.target.value)"><option value="vintage">Vintage</option><option value="glow">Glow</option><option value="curve">Curve</option><option value="panel">Panel</option></select></label>
                         </div>
                         <div class="mioos-theme-row-vue">
-                          <label class="mioos-theme-checkrow-vue span-2"><input type="checkbox" :checked="!!activeTheme.darkEnabled" @change="vm.themeStudioSetDarkEnabled($event.target.checked)"><span>Dark theme</span><em>Toggle the current theme between its light and dark palettes.</em></label>
+                          <div class="mioos-theme-radio-vue span-2">
+                            <span class="mioos-theme-radio-label-vue">Theme mode</span>
+                            <div class="field-row">
+                              <label class="mioos-radio-option-vue"><input type="radio" name="theme-mode" :checked="!activeTheme.darkEnabled" @change="vm.themeStudioSetDarkEnabled(false)"><span>Light</span></label>
+                              <label class="mioos-radio-option-vue"><input type="radio" name="theme-mode" :checked="!!activeTheme.darkEnabled" @change="vm.themeStudioSetDarkEnabled(true)"><span>Dark</span></label>
+                            </div>
+                            <em>Store both palettes inside the same theme and switch between them here.</em>
+                          </div>
                         </div>
                         <div class="mioos-theme-row-vue">
                           <div class="mioos-theme-pilllist-vue span-2">
@@ -342,7 +349,7 @@
                         <div class="mioos-theme-row-vue">
                           <label><span>Taskbar position</span><select :value="((activeTheme.taskbarConfig || {}).position) || 'bottom'" @change="vm.themeStudioUpdateField('taskbarConfig.position', $event.target.value)"><option value="bottom">Bottom</option><option value="top">Top</option><option value="left">Left</option></select></label>
                           <label><span>Taskbar height</span><input type="range" min="36" max="72" step="1" :value="vm.taskbarHeightValue()" @input="vm.themeStudioUpdateField('taskbarConfig.height', +$event.target.value)"></label>
-                          <label><span>Button style</span><select :value="((activeTheme.taskbarConfig || {}).buttonStyle) || 'xp'" @change="vm.themeStudioUpdateField('taskbarConfig.buttonStyle', $event.target.value)"><option value="xp">Classic bevel</option><option value="glow">Glow glass</option><option value="curve">Rounded pill</option></select></label>
+                          <label><span>Button style</span><select :value="((activeTheme.taskbarConfig || {}).buttonStyle) || 'xp'" @change="vm.themeStudioUpdateField('taskbarConfig.buttonStyle', $event.target.value)"><option value="xp">Classic bevel</option><option value="glow">Glass capsule</option><option value="curve">Rounded pill</option></select></label>
                           <label><span>Transparency</span><input type="range" min="0" max="1" step="0.01" :value="((activeTheme.taskbarConfig || {}).transparentAmount) || 0" @input="vm.themeStudioUpdateField('taskbarConfig.transparentAmount', +$event.target.value)"></label>
                         </div>
                         <div class="mioos-theme-hint-vue">Adjust both the live shell and the preview: transparency now changes the actual taskbar surface, while button style updates Start and running-window buttons.</div>
@@ -356,8 +363,8 @@
                             <div class="mioos-theme-stylecard-mini-vue classic"><i></i><i></i><i></i></div>
                           </button>
                           <button type="button" class="mioos-theme-stylecard-vue" :class="{ 'is-active': (((activeTheme.startMenuConfig || {}).style) || 'classic') === 'popup' }" @click="vm.themeStudioUpdateField('startMenuConfig.style', 'popup')">
-                            <strong>Popup menu</strong>
-                            <span>Centered applications popup with grouped actions and quick launch.</span>
+                            <strong>Popup launcher</strong>
+                            <span>Centered application launcher with grouped actions and quick launch.</span>
                             <div class="mioos-theme-stylecard-mini-vue panel"><i></i><i></i><i></i></div>
                           </button>
                         </div>
@@ -443,12 +450,7 @@
                         </div>
                       </div>
 
-                      <div class="mioos-theme-studio-panel-vue" v-else>
-                        <div class="mioos-theme-row-vue">
-                          <label><span>Class modifiers</span><input type="text" :value="vm.themeStudioClassModifiersText()" @input="vm.themeStudioSetClassModifiers($event.target.value)"></label>
-                          <label><span>Extra CSS</span><textarea rows="6" :value="activeTheme.extraCss || ''" @input="vm.themeStudioUpdateField('extraCss', $event.target.value)"></textarea></label>
-                          <label class="span-2"><span>Theme import / export JSON</span><textarea rows="12" :value="store.importBuffer || ''" @input="store.importBuffer = $event.target.value" placeholder="Export the active theme, fine-tune the JSON, then import it as a new detailed theme."></textarea></label>
-                        </div>
+                      <div class="mioos-theme-studio-panel-vue" v-else-if="tab.key === 'animation'">
                         <div class="mioos-theme-row-vue">
                           <label><span>Open animation</span><input type="range" min="100" max="500" step="10" :value="((activeTheme.animationSpeeds || {}).open) || 180" @input="vm.themeStudioUpdateField('animationSpeeds.open', +$event.target.value)"></label>
                           <label><span>Hover animation</span><input type="range" min="80" max="320" step="10" :value="((activeTheme.animationSpeeds || {}).hover) || 120" @input="vm.themeStudioUpdateField('animationSpeeds.hover', +$event.target.value)"></label>
@@ -457,12 +459,21 @@
                           <label><span>Wallpaper transition</span><input type="range" min="120" max="700" step="20" :value="((activeTheme.animationSpeeds || {}).wallpaper) || 280" @input="vm.themeStudioUpdateField('animationSpeeds.wallpaper', +$event.target.value)"></label>
                           <label><span>Minimize animation</span><input type="range" min="120" max="500" step="10" :value="((activeTheme.animationSpeeds || {}).minimize) || 180" @input="vm.themeStudioUpdateField('animationSpeeds.minimize', +$event.target.value)"></label>
                         </div>
+                        <div class="mioos-theme-hint-vue">Animation timings update the preview live for windows, menus, wallpaper transitions, and the taskbar.</div>
+                      </div>
+
+                      <div class="mioos-theme-studio-panel-vue" v-else>
+                        <div class="mioos-theme-row-vue">
+                          <label><span>Class modifiers</span><input type="text" :value="vm.themeStudioClassModifiersText()" @input="vm.themeStudioSetClassModifiers($event.target.value)"></label>
+                          <label><span>Extra CSS</span><textarea rows="6" :value="activeTheme.extraCss || ''" @input="vm.themeStudioUpdateField('extraCss', $event.target.value)"></textarea></label>
+                          <label class="span-2"><span>Theme import / export JSON</span><textarea rows="12" :value="store.importBuffer || ''" @input="store.importBuffer = $event.target.value" placeholder="Export the active theme, fine-tune the JSON, then import it as a new detailed theme."></textarea></label>
+                        </div>
                         <div class="mioos-theme-uploadbar-vue">
                           <button type="button" class="mioos-btn" @click="vm.themeStudioExportTheme(activeTheme.id)">Export active theme</button>
                           <button type="button" class="mioos-btn" @click="vm.themeStudioCopyImportBuffer()">Copy JSON</button>
                           <button type="button" class="mioos-btn" @click="vm.themeStudioImportTheme()">Import as new theme</button>
                         </div>
-                        <div class="mioos-theme-hint-vue">The exported JSON includes wallpaper selection, fonts, window chrome, taskbar, start menu, login screen, dark variant, and mobile overrides.</div>
+                        <div class="mioos-theme-hint-vue">The exported JSON now includes one shared theme plus exactly two variants: Light and Dark.</div>
                       </div>
                     </article>
                   </section>
@@ -475,7 +486,7 @@
                       <button role="tab" :aria-selected="vm.themeStudioPreviewTab() === 'desktop' ? 'true' : 'false'" @click="vm.themeStudioSetPreviewTab('desktop')">Desktop Preview</button>
                       <button role="tab" :aria-selected="vm.themeStudioPreviewTab() === 'mobile' ? 'true' : 'false'" @click="vm.themeStudioSetPreviewTab('mobile')">Mobile Preview</button>
                     </menu>
-                  </div>
+                    <article role="tabpanel">
 
                   <div class="mioos-theme-preview-card-vue" v-if="vm.themeStudioPreviewTab() === 'desktop'">
                     <strong>Desktop preview</strong>
@@ -547,6 +558,8 @@
                         <footer class="mioos-theme-preview-taskbar-vue" :class="['button-' + vm.taskbarButtonStyleType()]"><button type="button" class="mioos-theme-preview-start-vue">●</button><div class="mioos-theme-preview-running-vue"><span></span><span></span></div><strong>9:41</strong></footer>
                       </div>
                     </div>
+                  </div>
+                    </article>
                   </div>
                 </aside>
               </div>

@@ -298,7 +298,6 @@
         this.ensureWindowFrame(win);
         if (event.button !== 0) return;
         event.stopPropagation();
-        if (event.target && event.target.setPointerCapture && typeof event.pointerId !== 'undefined') { try { event.target.setPointerCapture(event.pointerId); } catch (err) {} }
         this.focusWindow(win.id);
         this.dragState.active = true;
         this.dragState.mode = 'resize';
