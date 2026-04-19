@@ -89,6 +89,12 @@
         if (win.snappable == null) win.snappable = 1;
         if (!win.minWidth) win.minWidth = (((this.boot || {}).desktop || {}).windowing || {}).minWidth || 320;
         if (!win.minHeight) win.minHeight = (((this.boot || {}).desktop || {}).windowing || {}).minHeight || 220;
+        if (win.appKey === 'theme-studio') {
+          win.minWidth = Math.max(+win.minWidth || 0, 1120);
+          win.minHeight = Math.max(+win.minHeight || 0, 720);
+          if (!(+win.width) || +win.width < win.minWidth) win.width = Math.max(+win.width || 0, win.minWidth);
+          if (!(+win.height) || +win.height < win.minHeight) win.height = Math.max(+win.height || 0, win.minHeight);
+        }
         clampWindow(this, win);
         return win;
       },
@@ -292,6 +298,7 @@
         this.ensureWindowFrame(win);
         if (event.button !== 0) return;
         event.stopPropagation();
+        if (event.target && event.target.setPointerCapture && typeof event.pointerId !== 'undefined') { try { event.target.setPointerCapture(event.pointerId); } catch (err) {} }
         this.focusWindow(win.id);
         this.dragState.active = true;
         this.dragState.mode = 'resize';

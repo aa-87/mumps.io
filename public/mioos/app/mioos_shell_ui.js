@@ -286,7 +286,7 @@
                           <label><span>Base preset</span><select :value="activeTheme.sourceId || activeTheme.id || 'glow'" @change="vm.themeStudioLoadBaseTheme($event.target.value)"><option value="vintage">Vintage</option><option value="glow">Glow</option><option value="curve">Curve</option><option value="panel">Panel</option></select></label>
                         </div>
                         <div class="mioos-theme-row-vue">
-                          <label class="mioos-theme-variant-toggle-row span-2"><span>Theme variant</span><button type="button" class="mioos-btn mioos-theme-icon-toggle-vue" :class="{ 'is-dark': !!activeTheme.darkEnabled }" :title="activeTheme.darkEnabled ? 'Dark variant' : 'Light variant'" @click="vm.themeStudioToggleDarkEnabled()"><span class="mioos-theme-mode-indicator-vue" :class="{ 'is-dark': !!activeTheme.darkEnabled }"></span></button><em>[[ activeTheme.darkEnabled ? 'Dark variant' : 'Light variant' ]]</em></label>
+                          <label class="mioos-theme-checkrow-vue span-2"><input type="checkbox" :checked="!!activeTheme.darkEnabled" @change="vm.themeStudioSetDarkEnabled($event.target.checked)"><span>Dark theme</span><em>Toggle the current theme between its light and dark palettes.</em></label>
                         </div>
                         <div class="mioos-theme-row-vue">
                           <div class="mioos-theme-pilllist-vue span-2">
@@ -399,23 +399,43 @@
                       </div>
 
                       <div class="mioos-theme-studio-panel-vue" v-else-if="tab.key === 'login'">
-                        <div class="mioos-theme-uploadbar-vue">
-                          <label role="button" tabindex="0" class="mioos-btn mioos-file-trigger-vue">
-                            <input type="file" accept="image/*" @change="vm.themeStudioUploadField('loginScreenConfig.wallpaperUrl', $event)">
-                            Upload login image
-                          </label>
-                          <button type="button" class="mioos-btn" @click="vm.themeStudioClearUploadedField('loginScreenConfig.wallpaperUrl')">Clear login image</button>
-                          <label role="button" tabindex="0" class="mioos-btn mioos-file-trigger-vue">
-                            <input type="file" accept="image/*" @change="vm.themeStudioUploadField('loginScreenConfig.avatarUrl', $event)">
-                            Upload avatar
-                          </label>
-                          <label role="button" tabindex="0" class="mioos-btn mioos-file-trigger-vue">
-                            <input type="file" accept="image/*" @change="vm.themeStudioUploadField('loginScreenConfig.warningImageUrl', $event)">
-                            Upload warning image
-                          </label>
+                        <div class="mioos-theme-uploadcards-vue">
+                          <div class="mioos-theme-uploadcard-vue">
+                            <div class="mioos-theme-uploadcard-illustration-vue wallpaper">Background</div>
+                            <div class="mioos-theme-uploadcard-copy-vue"><strong>Login background image</strong><span>Shown full-screen behind the sign-in card.</span></div>
+                            <div class="mioos-theme-uploadcard-actions-vue">
+                              <label role="button" tabindex="0" class="mioos-btn mioos-file-trigger-vue">
+                                <input type="file" accept="image/*" @change="vm.themeStudioUploadField('loginScreenConfig.wallpaperUrl', $event)">
+                                Upload background
+                              </label>
+                              <button type="button" class="mioos-btn" @click="vm.themeStudioClearUploadedField('loginScreenConfig.wallpaperUrl')">Clear</button>
+                            </div>
+                          </div>
+                          <div class="mioos-theme-uploadcard-vue">
+                            <div class="mioos-theme-uploadcard-illustration-vue avatar">Avatar</div>
+                            <div class="mioos-theme-uploadcard-copy-vue"><strong>Account avatar</strong><span>Displayed inside the login card above the account name.</span></div>
+                            <div class="mioos-theme-uploadcard-actions-vue">
+                              <label role="button" tabindex="0" class="mioos-btn mioos-file-trigger-vue">
+                                <input type="file" accept="image/*" @change="vm.themeStudioUploadField('loginScreenConfig.avatarUrl', $event)">
+                                Upload avatar
+                              </label>
+                              <button type="button" class="mioos-btn" @click="vm.themeStudioClearUploadedField('loginScreenConfig.avatarUrl')">Clear</button>
+                            </div>
+                          </div>
+                          <div class="mioos-theme-uploadcard-vue span-2">
+                            <div class="mioos-theme-uploadcard-illustration-vue notice">Notice</div>
+                            <div class="mioos-theme-uploadcard-copy-vue"><strong>Privacy / warning banner image</strong><span>Appears in the login notice panel with your heading and message text.</span></div>
+                            <div class="mioos-theme-uploadcard-actions-vue">
+                              <label role="button" tabindex="0" class="mioos-btn mioos-file-trigger-vue">
+                                <input type="file" accept="image/*" @change="vm.themeStudioUploadField('loginScreenConfig.warningImageUrl', $event)">
+                                Upload banner image
+                              </label>
+                              <button type="button" class="mioos-btn" @click="vm.themeStudioClearUploadedField('loginScreenConfig.warningImageUrl')">Clear</button>
+                            </div>
+                          </div>
                         </div>
                         <div class="mioos-theme-row-vue">
-                          <label><span>Login box style</span><select :value="((activeTheme.loginScreenConfig || {}).loginBoxStyle) || 'xp-transparent'" @change="vm.themeStudioUpdateField('loginScreenConfig.loginBoxStyle', $event.target.value)"><option value="xp-transparent">XP transparent</option><option value="glow-vibrant">Glow vibrant</option><option value="curve-minimal">Curve minimal</option></select></label>
+                          <label><span>Login box style</span><select :value="((activeTheme.loginScreenConfig || {}).loginBoxStyle) || 'xp-transparent'" @change="vm.themeStudioUpdateField('loginScreenConfig.loginBoxStyle', $event.target.value)"><option value="xp-transparent">Transparent card</option><option value="glow-vibrant">Vibrant glass</option><option value="curve-minimal">Minimal panel</option></select></label>
                           <label><span>Avatar size</span><input type="range" min="48" max="112" step="2" :value="((activeTheme.loginScreenConfig || {}).avatarSize) || 72" @input="vm.themeStudioUpdateField('loginScreenConfig.avatarSize', +$event.target.value)"></label>
                           <label><span>Text color</span><input type="color" :value="((activeTheme.loginScreenConfig || {}).textColor) || '#ffffff'" @input="vm.themeStudioUpdateField('loginScreenConfig.textColor', $event.target.value)"></label>
                           <label><span>Warning heading</span><input type="text" :value="((activeTheme.loginScreenConfig || {}).warningTitle) || ''" @input="vm.themeStudioUpdateField('loginScreenConfig.warningTitle', $event.target.value)"></label>
@@ -447,11 +467,6 @@
                     </article>
                   </section>
 
-                  <div class="mioos-theme-studio-footer-vue">
-                    <button type="button" class="mioos-btn" @click="vm.themeStudioResetToBase()">Reset</button>
-                    <button type="button" class="mioos-btn" @click="vm.themeStudioApplyToDesktop(activeTheme.id)">Apply</button>
-                    <button type="button" class="mioos-btn is-primary" @click="vm.themeStudioSaveCustomTheme()">Save</button>
-                  </div>
                 </section>
 
                 <aside class="mioos-theme-studio-previewrail-vue">
@@ -535,6 +550,15 @@
                   </div>
                 </aside>
               </div>
+
+              <footer class="mioos-theme-studio-footer-vue">
+                <div class="mioos-theme-studio-footer-copy-vue">These actions apply to the full theme editor window and preview surface.</div>
+                <div class="mioos-theme-studio-footer-actions-vue">
+                  <button type="button" class="mioos-btn" @click="vm.themeStudioResetToBase()">Reset</button>
+                  <button type="button" class="mioos-btn" @click="vm.themeStudioApplyToDesktop(activeTheme.id)">Apply</button>
+                  <button type="button" class="mioos-btn is-primary" @click="vm.themeStudioSaveCustomTheme()">Save</button>
+                </div>
+              </footer>
             </div>
           </div>
 `

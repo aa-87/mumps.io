@@ -149,6 +149,9 @@
         this._viewportResize = this.handleViewportResize.bind(this);
         window.addEventListener('mousemove', this._dragMove);
         window.addEventListener('mouseup', this._dragEnd);
+        window.addEventListener('pointermove', this._dragMove);
+        window.addEventListener('pointerup', this._dragEnd);
+        window.addEventListener('pointercancel', this._dragEnd);
         this._shortcutHandler = this.onGlobalShortcut.bind(this);
         window.addEventListener('keydown', this._shortcutHandler);
         this._persistTransfersOnUnload = this.persistTransferCenter.bind(this);
@@ -158,6 +161,8 @@
         this._networkOnline = function () {
           if (self.persistTransferCenter) self.persistTransferCenter();
         };
+        this._windowBlurDragEnd = this.handleGlobalMouseUp.bind(this);
+        window.addEventListener('blur', this._windowBlurDragEnd);
         window.addEventListener('resize', this._viewportResize);
         window.addEventListener('beforeunload', this._persistTransfersOnUnload);
         window.addEventListener('offline', this._networkOffline);
@@ -173,7 +178,11 @@
         this.persistTransferCenter();
         window.removeEventListener('mousemove', this._dragMove);
         window.removeEventListener('mouseup', this._dragEnd);
+        window.removeEventListener('pointermove', this._dragMove);
+        window.removeEventListener('pointerup', this._dragEnd);
+        window.removeEventListener('pointercancel', this._dragEnd);
         window.removeEventListener('keydown', this._shortcutHandler);
+        window.removeEventListener('blur', this._windowBlurDragEnd);
         window.removeEventListener('resize', this._viewportResize);
         window.removeEventListener('beforeunload', this._persistTransfersOnUnload);
         window.removeEventListener('offline', this._networkOffline);
@@ -1491,6 +1500,76 @@
           if (cfg.wallpaperUrl) return 'url(' + cfg.wallpaperUrl + ')';
           return this.themeStudioWallpaperCss(t);
         },
+        themeStudioManagedVarKeys: function () {
+          return [
+            '--desktop-bg','--desktop-overlay','--window-bg','--window-border','--window-border-strong','--titlebar-bg','--titlebar-text','--titlebar-inactive','--accent','--accent-soft','--taskbar-bg','--taskbar-border','--taskbar-text','--menu-bg','--menu-border','--menu-text','--menu-hover','--menu-divider','--menu-shadow','--icon-label-bg','--icon-label-text','--icon-shadow','--shadow-window','--shadow-window-active','--font-ui','--font-titlebar','--font-taskbar','--font-menu','--font-icon-label','--font-size-ui','--font-size-titlebar','--font-size-taskbar','--font-size-menu','--font-size-icon-label','--window-radius','--taskbar-height','--taskbar-transparency','--taskbar-overlay','--taskbar-blur','--taskbar-effective-bg','--theme-surface','--theme-surface-strong','--theme-panel-bg','--theme-panel-border','--theme-field-bg','--theme-field-text','--theme-muted-text','--theme-tab-bg','--theme-tab-active-bg','--theme-tab-border','--theme-preview-card-bg','--theme-preview-card-border','--titlebar-height','--desktop-grid-cell','--desktop-icon-size','--button-radius','--button-tint','--button-tint-hover','--glass-opacity','--control-min','--control-max','--control-close','--start-menu-width','--start-menu-accent','--taskbar-position','--desktop-icon-size-mobile','--taskbar-height-mobile','--desktop-wallpaper','--login-wallpaper','--theme-minimize-speed','--theme-progress-speed','--theme-open-speed','--theme-hover-speed','--theme-menu-speed','--theme-wallpaper-speed','--theme-taskbar-speed','--login-box-bg','--login-box-border','--login-box-shadow','--login-box-text'
+          ];
+        },
+        themeStudioLightSurfaceVars: function (theme) {
+          var base = ((theme || {}).base) || 'win7';
+          if (base === 'xp') return {
+            '--theme-surface': 'rgba(244,248,255,0.78)',
+            '--theme-surface-strong': 'rgba(248,251,255,0.96)',
+            '--theme-panel-bg': 'linear-gradient(180deg, rgba(255,255,255,0.90), rgba(236,243,255,0.84))',
+            '--theme-panel-border': 'rgba(37,72,126,0.16)',
+            '--theme-field-bg': 'rgba(255,255,255,0.98)',
+            '--theme-field-text': '#10233f',
+            '--theme-muted-text': '#4d6183',
+            '--theme-tab-bg': 'linear-gradient(180deg, rgba(255,255,255,0.78), rgba(226,236,252,0.66))',
+            '--theme-tab-active-bg': 'linear-gradient(180deg, rgba(255,255,255,1), rgba(214,228,248,0.96))',
+            '--theme-tab-border': 'rgba(37,72,126,0.16)',
+            '--theme-preview-card-bg': 'rgba(252,254,255,0.68)',
+            '--theme-preview-card-border': 'rgba(37,72,126,0.14)'
+          };
+          if (base === 'mac') return {
+            '--theme-surface': 'rgba(246,247,250,0.78)',
+            '--theme-surface-strong': 'rgba(250,251,253,0.94)',
+            '--theme-panel-bg': 'linear-gradient(180deg, rgba(255,255,255,0.88), rgba(241,244,248,0.82))',
+            '--theme-panel-border': 'rgba(151,167,184,0.18)',
+            '--theme-field-bg': 'rgba(255,255,255,0.96)',
+            '--theme-field-text': '#17212c',
+            '--theme-muted-text': '#5d6b7e',
+            '--theme-tab-bg': 'linear-gradient(180deg, rgba(255,255,255,0.80), rgba(234,239,245,0.74))',
+            '--theme-tab-active-bg': 'linear-gradient(180deg, rgba(255,255,255,1), rgba(242,244,247,0.98))',
+            '--theme-tab-border': 'rgba(151,167,184,0.18)',
+            '--theme-preview-card-bg': 'rgba(252,252,253,0.72)',
+            '--theme-preview-card-border': 'rgba(151,167,184,0.16)'
+          };
+          if (base === 'ubuntu') return {
+            '--theme-surface': 'rgba(249,244,240,0.76)',
+            '--theme-surface-strong': 'rgba(254,250,246,0.94)',
+            '--theme-panel-bg': 'linear-gradient(180deg, rgba(255,247,242,0.90), rgba(247,236,229,0.84))',
+            '--theme-panel-border': 'rgba(118,78,56,0.14)',
+            '--theme-field-bg': 'rgba(255,252,248,0.98)',
+            '--theme-field-text': '#2d1f1a',
+            '--theme-muted-text': '#77554a',
+            '--theme-tab-bg': 'linear-gradient(180deg, rgba(255,249,245,0.82), rgba(245,233,225,0.74))',
+            '--theme-tab-active-bg': 'linear-gradient(180deg, rgba(255,252,249,1), rgba(249,238,229,0.98))',
+            '--theme-tab-border': 'rgba(118,78,56,0.14)',
+            '--theme-preview-card-bg': 'rgba(255,250,247,0.70)',
+            '--theme-preview-card-border': 'rgba(118,78,56,0.12)'
+          };
+          return {
+            '--theme-surface': 'rgba(244,248,255,0.76)',
+            '--theme-surface-strong': 'rgba(248,251,255,0.94)',
+            '--theme-panel-bg': 'linear-gradient(180deg, rgba(255,255,255,0.88), rgba(236,243,255,0.82))',
+            '--theme-panel-border': 'rgba(66,88,122,0.16)',
+            '--theme-field-bg': 'rgba(255,255,255,0.97)',
+            '--theme-field-text': '#10243d',
+            '--theme-muted-text': '#54657c',
+            '--theme-tab-bg': 'linear-gradient(180deg, rgba(255,255,255,0.78), rgba(226,236,252,0.68))',
+            '--theme-tab-active-bg': 'linear-gradient(180deg, rgba(255,255,255,1), rgba(216,229,248,0.96))',
+            '--theme-tab-border': 'rgba(66,88,122,0.14)',
+            '--theme-preview-card-bg': 'rgba(252,254,255,0.66)',
+            '--theme-preview-card-border': 'rgba(66,88,122,0.12)'
+          };
+        },
+        themeStudioResolvedVars: function (theme) {
+          var current = Object.assign({}, this.themeStudioLightSurfaceVars(theme), (((theme || {}).cssVars) || {}));
+          var darkVars = this.themeStudioDarkOverrides(theme);
+          Object.keys(darkVars).forEach(function (key) { current[key] = darkVars[key]; });
+          return current;
+        },
         themeStudioDarkOverrides: function (theme) {
           if (!theme || !theme.darkEnabled) return {};
           var accent = ((((theme || {}).cssVars) || {})['--accent']) || '#5aa2ff';
@@ -1536,9 +1615,9 @@
           var body = document.body;
           var current, darkVars, taskbarHeightPx, loginCfg, loginStyle;
           if (!rootNode) return theme;
-          current = Object.assign({}, theme.cssVars || {});
+          current = this.themeStudioResolvedVars(theme);
           darkVars = this.themeStudioDarkOverrides(theme);
-          Object.keys(darkVars).forEach(function (key) { current[key] = darkVars[key]; });
+          (this._themeStudioAppliedKeys || this.themeStudioManagedVarKeys()).forEach(function (key) { rootNode.style.removeProperty(key); });
           taskbarHeightPx = ((theme.taskbarConfig || {}).height || parseInt(current['--taskbar-height'] || '48', 10) || 48) + 'px';
           current['--taskbar-height'] = taskbarHeightPx;
           current['--taskbar-position'] = (theme.taskbarConfig || {}).position || 'bottom';
@@ -1582,6 +1661,7 @@
             rootNode.style.setProperty('--login-box-shadow', '0 22px 56px rgba(0,0,0,0.28)');
           }
           rootNode.style.setProperty('--login-box-text', loginCfg.textColor || current['--taskbar-text'] || '#ffffff');
+          this._themeStudioAppliedKeys = this.themeStudioManagedVarKeys().slice(0);
           rootNode.dataset.shellTheme = theme.id || 'glow';
           rootNode.dataset.shellFamily = theme.base || 'win7';
           rootNode.dataset.themeBase = theme.base || 'win7';
@@ -1903,7 +1983,7 @@
           var active = this.themeStudioActiveTheme();
           var alpha = this.taskbarTransparencyValue();
           var style = { '--desktop-wallpaper': this.themeStudioWallpaperCss(active), '--login-wallpaper': this.themeStudioLoginWallpaperCss(active), transform: 'scale(' + (((active || {}).previewScale) || 0.86) + ')' };
-          var current = Object.assign({}, ((active || {}).cssVars) || {}, this.themeStudioDarkOverrides(active));
+          var current = this.themeStudioResolvedVars(active);
           Object.keys(current).forEach(function (key) { style[key] = current[key]; });
           style['--taskbar-height'] = this.taskbarHeightValue() + 'px';
           style['--start-menu-width'] = ((((active || {}).startMenuConfig || {}).width) || 360) + 'px';
@@ -1922,7 +2002,7 @@
           var active = this.themeStudioActiveTheme();
           var mobileHeight = (((active || {}).mobileConfig || {}).taskbarHeightMobile) || 46;
           var alpha = this.taskbarTransparencyValue();
-          var current = Object.assign({}, ((active || {}).cssVars) || {}, this.themeStudioDarkOverrides(active));
+          var current = this.themeStudioResolvedVars(active);
           var style = { '--desktop-wallpaper': this.themeStudioWallpaperCss(active), '--login-wallpaper': this.themeStudioLoginWallpaperCss(active) };
           Object.keys(current).forEach(function (key) { style[key] = current[key]; });
           style['--taskbar-height'] = mobileHeight + 'px';
