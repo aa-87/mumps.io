@@ -542,3 +542,4 @@ SESSALLOW(STATE,SID)
 	SET USER=$GET(^MIO("AUTH","SESSION","mioos",$GET(SID),"principal"))
 	QUIT $SELECT(USER=$GET(STATE("principal")):1,1:0)
 	;
+	;

@@ -10,9 +10,9 @@ UPCHUNK(CONF)
 	;
 UPCONCUR(CONF)
 	NEW N
-	SET N=+$GET(CONF("mioos","upload","concurrency"),2)
+	SET N=+$GET(CONF("mioos","upload","concurrency"),3)
 	IF N<1 SET N=1
-	IF N>99 SET N=99
+	IF N>9 SET N=9
 	QUIT N
 	;
 	;
@@ -92,7 +92,9 @@ CHUNK(STATE,CONF,UPLOADID,INDEX,DATA,BYTES,OUT,ERR)
 	IF OWNER'=$GET(STATE("principal"),"guest") SET ERR("error")="access_denied" QUIT 0
 	IF +$GET(INDEX)<1 SET ERR("error")="chunk_index_invalid" QUIT 0
 	SET PREV=+$GET(^MIO("MIOOS","UPLOAD","INFO",UPLOADID,"chunkBytes",+INDEX))
-	SET NEWBYTES=+$GET(BYTES,$LENGTH($GET(DATA)))
+	SET NEWBYTES=$ZLENGTH($GET(DATA))
+	IF +$GET(BYTES)>0,+$GET(BYTES)'=NEWBYTES SET ERR("error")="chunk_size_mismatch",ERR("detail")=+INDEX QUIT 0
+	IF NEWBYTES<1 SET ERR("error")="chunk_empty",ERR("detail")=+INDEX QUIT 0
 	SET FAST=+$GET(^MIO("MIOOS","UPLOAD","INFO",UPLOADID,"fastPromote"))
 	SET TEMPID=$GET(^MIO("MIOOS","UPLOAD","INFO",UPLOADID,"tempId"))
 	IF FAST,TEMPID'="" SET ^MIO("MIOOS","FS","DATA",TEMPID,+INDEX)=$GET(DATA)
@@ -122,7 +124,9 @@ BATCH(STATE,CONF,UPLOADID,CHROOT,OUT,ERR)
 	FOR  SET I=$ORDER(@CHROOT@(I)) QUIT:I'>0  DO
 	. SET IDX=+$GET(@CHROOT@(I,"index"))
 	. SET DATA=$GET(@CHROOT@(I,"data"))
-	. SET BYTES=+$GET(@CHROOT@(I,"bytes"),$LENGTH(DATA))
+	. SET BYTES=$ZLENGTH(DATA)
+	. IF +$GET(@CHROOT@(I,"bytes"))>0,+$GET(@CHROOT@(I,"bytes"))'=BYTES SET ERR("error")="chunk_size_mismatch",ERR("detail")=IDX QUIT
+	. IF BYTES<1 SET ERR("error")="chunk_empty",ERR("detail")=IDX QUIT
 	. IF IDX<1 SET ERR("error")="chunk_index_invalid" QUIT
 	. SET PREV=+$GET(^MIO("MIOOS","UPLOAD","INFO",UPLOADID,"chunkBytes",IDX))
 	. IF FAST,TEMPID'="" SET ^MIO("MIOOS","FS","DATA",TEMPID,IDX)=DATA
@@ -281,9 +285,7 @@ DROPSTAGE(UPLOADID)
 	QUIT
 	;
 APPEND(ID,SEG,IDX,BUF,SIZE,CHSZ)
-	NEW BYTES
-	SET BYTES=$ZLENGTH($GET(SEG))
-	SET SIZE=+$GET(SIZE)+BYTES
+	SET SIZE=+$GET(SIZE)+$ZLENGTH($GET(SEG))
 	SET BUF=$GET(BUF)_$GET(SEG)
 	FOR  QUIT:$ZLENGTH(BUF)<+$GET(CHSZ)  DO
 	. SET IDX=+$GET(IDX)+1
