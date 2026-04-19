@@ -1131,7 +1131,7 @@
           }
           return blobToArrayBuffer(file).then(function (buffer) {
             var bytes = new Uint8Array(buffer);
-            var rawChunkBytes = Math.max(860000, Math.floor(chunkChars * 3 / 4));
+            var rawChunkBytes = Math.max(131072, Math.floor(chunkChars * 3 / 4));
             var segments = [];
             var offset = 0;
             while (offset < bytes.length || (bytes.length === 0 && segments.length === 0)) {
@@ -1569,7 +1569,7 @@
         this.windows.push(win);
         this.focusWindow(id);
         if (!this.command) return;
-        this.command('fs.read.range', { id: item.id || item.key || item.fileId, offset: 0, size: +((((this.boot || {}).vfs || {}).readWindowBytes) || 131072) }).then(function (msg) {
+        this.command('fs.read.range', { id: item.id || item.key || item.fileId, offset: 0, size: +((((this.boot || {}).vfs || {}).readWindowBytes) || 32768) }).then(function (msg) {
           var payload = payloadRoot(msg);
           win.fileView.loading = false;
           win.fileView.content = appendTruncationNotice(textFromPayload(payload), payload);
@@ -1668,7 +1668,7 @@
         this.windows.push(win);
         this.focusWindow(id);
         if (!this.command) return;
-        this.command('fs.read.range', { id: item.id || item.key || item.fileId, offset: 0, size: +((((this.boot || {}).vfs || {}).readWindowBytes) || 131072) }).then(function (msg) {
+        this.command('fs.read.range', { id: item.id || item.key || item.fileId, offset: 0, size: +((((this.boot || {}).vfs || {}).readWindowBytes) || 32768) }).then(function (msg) {
           var payload = payloadRoot(msg);
           var raw = textFromPayload(payload);
           win.fileView.loading = false;
