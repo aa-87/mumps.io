@@ -125,15 +125,15 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","terminal","pipe","drainPause"))="" SET CONF("mioos","terminal","pipe","drainPause")=.04
 	IF $GET(CONF("mioos","terminal","pipe","reconnectGraceSeconds"))="" SET CONF("mioos","terminal","pipe","reconnectGraceSeconds")=180
 	IF $GET(CONF("mioos","fs","enabled"))="" SET CONF("mioos","fs","enabled")=1
-	IF $GET(CONF("mioos","fs","chunkSize"))="" SET CONF("mioos","fs","chunkSize")=524288
-	IF $GET(CONF("mioos","download","httpChunkBytes"))="" SET CONF("mioos","download","httpChunkBytes")=524288
+	IF $GET(CONF("mioos","fs","chunkSize"))="" SET CONF("mioos","fs","chunkSize")=860000
+	IF $GET(CONF("mioos","download","httpChunkBytes"))="" SET CONF("mioos","download","httpChunkBytes")=860000
 	IF $GET(CONF("mioos","fs","readPreviewBytes"))="" SET CONF("mioos","fs","readPreviewBytes")=262144
 	IF $GET(CONF("mioos","fs","readWindowBytes"))="" SET CONF("mioos","fs","readWindowBytes")=262144
 	IF $GET(CONF("mioos","fs","transferPersistence"))="" SET CONF("mioos","fs","transferPersistence")="localstorage-resumable-transfer-list"
-	IF $GET(CONF("mioos","download","mediaInitialBytes"))="" SET CONF("mioos","download","mediaInitialBytes")=524288
+	IF $GET(CONF("mioos","download","mediaInitialBytes"))="" SET CONF("mioos","download","mediaInitialBytes")=128000
 	IF $GET(CONF("mioos","download","mediaWarmupBytes"))="" SET CONF("mioos","download","mediaWarmupBytes")=65536
 	IF $GET(CONF("mioos","fs","transport"))="" SET CONF("mioos","fs","transport")="http-and-websocket"
-	IF $GET(CONF("mioos","upload","chunkBytes"))="" SET CONF("mioos","upload","chunkBytes")=524288
+	IF $GET(CONF("mioos","upload","chunkBytes"))="" SET CONF("mioos","upload","chunkBytes")=860000
 	IF $GET(CONF("mioos","upload","concurrency"))="" SET CONF("mioos","upload","concurrency")=3
 	IF $GET(CONF("mioos","terminal","pipe","sessionIdleSeconds"))="" SET CONF("mioos","terminal","pipe","sessionIdleSeconds")=900
 	IF $GET(CONF("mioos","websocket","maxSocketsPerSession"))="" SET CONF("mioos","websocket","maxSocketsPerSession")=9
