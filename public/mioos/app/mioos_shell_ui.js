@@ -269,7 +269,7 @@
                   <button type="button" class="mioos-btn" @click="vm.themeStudioCreateNewTheme('New Theme')">New theme</button>
                   <button type="button" class="mioos-btn" @click="vm.themeStudioRenameActiveTheme()">Rename</button>
                   <button type="button" class="mioos-btn is-danger" :disabled="activeTheme.locked" @click="vm.themeStudioDeleteCustomTheme(activeTheme.id)">Delete</button>
-                  <button type="button" class="mioos-btn mioos-theme-icon-toggle-vue" :class="{ 'is-primary': !!activeTheme.darkEnabled }" :title="activeTheme.darkEnabled ? 'Dark theme enabled' : 'Light theme enabled'" @click="vm.themeStudioToggleDarkEnabled()">[[ activeTheme.darkEnabled ? '☾' : '☀' ]]</button>
+                  <button type="button" class="mioos-btn mioos-theme-icon-toggle-vue" :class="{ 'is-dark': !!activeTheme.darkEnabled }" :title="activeTheme.darkEnabled ? 'Dark variant enabled' : 'Light variant enabled'" @click="vm.themeStudioToggleDarkEnabled()"><span class="mioos-theme-mode-indicator-vue" :class="{ 'is-dark': !!activeTheme.darkEnabled }"></span></button>
                 </div>
               </header>
 
@@ -292,12 +292,18 @@
                           </div>
                         </div>
                         <div class="mioos-theme-row-vue">
-                          <label class="span-2"><span>Font size</span><input type="range" min="10" max="18" step="1" :value="vm.themeStudioFontScaleValue()" @input="vm.themeStudioSetFontScale($event.target.value)"></label>
+                          <label class="span-2"><span>Global font size</span><input type="range" min="10" max="18" step="1" :value="vm.themeStudioFontScaleValue()" @input="vm.themeStudioSetFontScale($event.target.value)"></label>
                           <div class="mioos-font-preview-vue span-2" :style="{ fontSize: vm.themeStudioFontScaleValue() + 'px' }">
-                            <strong>Title bar sample</strong>
-                            <span>Menus, taskbar, and window text update live.</span>
-                            <small>Small text sample · 1234567890</small>
+                            <strong :style="{ fontFamily: vm.themeStudioFontValue('titlebar') }">Title bar sample</strong>
+                            <span :style="{ fontFamily: vm.themeStudioFontValue('taskbar') }">Taskbar and Start menu text update live.</span>
+                            <small :style="{ fontFamily: vm.themeStudioFontValue('icon') }">Desktop icons · Menus · Dialogs</small>
                           </div>
+                        </div>
+                        <div class="mioos-theme-row-vue">
+                          <label><span>Desktop UI font</span><select :value="vm.themeStudioFontValue('ui')" @change="vm.themeStudioSetFontFamily('ui', $event.target.value)"><option v-for="font in vm.themeStudioFontOptions()" :key="font.value + '-ui'" :value="font.value">[[ font.label ]]</option></select></label>
+                          <label><span>Title bar font</span><select :value="vm.themeStudioFontValue('titlebar')" @change="vm.themeStudioSetFontFamily('titlebar', $event.target.value)"><option v-for="font in vm.themeStudioFontOptions()" :key="font.value + '-title'" :value="font.value">[[ font.label ]]</option></select></label>
+                          <label><span>Taskbar / Start font</span><select :value="vm.themeStudioFontValue('taskbar')" @change="vm.themeStudioSetFontFamily('taskbar', $event.target.value)"><option v-for="font in vm.themeStudioFontOptions()" :key="font.value + '-taskbar'" :value="font.value">[[ font.label ]]</option></select></label>
+                          <label><span>Icon labels font</span><select :value="vm.themeStudioFontValue('icon')" @change="vm.themeStudioSetFontFamily('icon', $event.target.value)"><option v-for="font in vm.themeStudioFontOptions()" :key="font.value + '-icon'" :value="font.value">[[ font.label ]]</option></select></label>
                         </div>
                       </div>
 
@@ -334,33 +340,57 @@
                         <div class="mioos-theme-row-vue">
                           <label><span>Taskbar position</span><select :value="((activeTheme.taskbarConfig || {}).position) || 'bottom'" @change="vm.themeStudioUpdateField('taskbarConfig.position', $event.target.value)"><option value="bottom">Bottom</option><option value="top">Top</option><option value="left">Left</option></select></label>
                           <label><span>Taskbar height</span><input type="range" min="36" max="72" step="1" :value="vm.taskbarHeightValue()" @input="vm.themeStudioUpdateField('taskbarConfig.height', +$event.target.value)"></label>
-                          <label><span>Button style</span><select :value="((activeTheme.taskbarConfig || {}).buttonStyle) || 'xp'" @change="vm.themeStudioUpdateField('taskbarConfig.buttonStyle', $event.target.value)"><option value="xp">Classic</option><option value="glow">Glow</option><option value="curve">Curve</option></select></label>
+                          <label><span>Button style</span><select :value="((activeTheme.taskbarConfig || {}).buttonStyle) || 'xp'" @change="vm.themeStudioUpdateField('taskbarConfig.buttonStyle', $event.target.value)"><option value="xp">Classic bevel</option><option value="glow">Glow glass</option><option value="curve">Rounded pill</option></select></label>
                           <label><span>Transparency</span><input type="range" min="0" max="1" step="0.01" :value="((activeTheme.taskbarConfig || {}).transparentAmount) || 0" @input="vm.themeStudioUpdateField('taskbarConfig.transparentAmount', +$event.target.value)"></label>
                         </div>
+                        <div class="mioos-theme-hint-vue">Adjust both the live shell and the preview: transparency now changes the actual taskbar surface, while button style updates Start and running-window buttons.</div>
                       </div>
 
                       <div class="mioos-theme-studio-panel-vue" v-else-if="tab.key === 'start'">
+                        <div class="mioos-theme-start-stylecards-vue">
+                          <button type="button" class="mioos-theme-stylecard-vue" :class="{ 'is-active': (((activeTheme.startMenuConfig || {}).style) || 'classic') === 'classic' }" @click="vm.themeStudioUpdateField('startMenuConfig.style', 'classic')">
+                            <strong>Classic nested</strong>
+                            <span>Windows-XP style two-column launcher with expandable groups.</span>
+                            <div class="mioos-theme-stylecard-mini-vue classic"><i></i><i></i><i></i></div>
+                          </button>
+                          <button type="button" class="mioos-theme-stylecard-vue" :class="{ 'is-active': (((activeTheme.startMenuConfig || {}).style) || 'classic') === 'panel' }" @click="vm.themeStudioUpdateField('startMenuConfig.style', 'panel')">
+                            <strong>Ubuntu popup</strong>
+                            <span>Compact applications popup with category groups and panel accents.</span>
+                            <div class="mioos-theme-stylecard-mini-vue panel"><i></i><i></i><i></i></div>
+                          </button>
+                        </div>
                         <div class="mioos-theme-row-vue">
-                          <label><span>Menu style</span><select :value="((activeTheme.startMenuConfig || {}).style) || 'classic'" @change="vm.themeStudioUpdateField('startMenuConfig.style', $event.target.value)"><option value="classic">Classic nested menu</option><option value="panel">Panel popup menu</option></select></label>
                           <label><span>Menu width</span><input type="range" min="300" max="760" step="10" :value="((activeTheme.startMenuConfig || {}).width) || 360" @input="vm.themeStudioUpdateField('startMenuConfig.width', +$event.target.value)"></label>
                           <label><span>Accent color</span><input type="color" :value="((activeTheme.startMenuConfig || {}).accentColor) || vm.themeStudioColorValue('--accent', '#0b63f6')" @input="vm.themeStudioUpdateField('startMenuConfig.accentColor', $event.target.value)"></label>
-                          <label v-if="(((activeTheme.startMenuConfig || {}).style) || 'classic') === 'classic'"><span>Nested sections</span><select :value="(((activeTheme.startMenuConfig || {}).nested) === false ? 'off' : 'on')" @change="vm.themeStudioUpdateField('startMenuConfig.nested', $event.target.value === 'on')"><option value="on">Enabled</option><option value="off">Disabled</option></select></label>
+                          <label v-if="(((activeTheme.startMenuConfig || {}).style) || 'classic') === 'classic'"><span>Nested folders</span><select :value="(((activeTheme.startMenuConfig || {}).nested) === false ? 'off' : 'on')" @change="vm.themeStudioUpdateField('startMenuConfig.nested', $event.target.value === 'on')"><option value="on">Enabled</option><option value="off">Flattened</option></select></label>
+                          <label v-else><span>Popup emphasis</span><select :value="((activeTheme.startMenuConfig || {}).pinnedTileLayout) || 'grid'" @change="vm.themeStudioUpdateField('startMenuConfig.pinnedTileLayout', $event.target.value)"><option value="grid">Grid</option><option value="stack">Stacked</option></select></label>
                         </div>
                         <div class="mioos-theme-startmenu-mini-vue" :class="['style-' + ((((activeTheme.startMenuConfig || {}).style) || 'classic'))]">
                           <template v-if="(((activeTheme.startMenuConfig || {}).style) || 'classic') === 'classic'">
-                            <details v-for="group in groups" :key="group.key + '-mini'" open>
-                              <summary>[[ group.title ]]</summary>
-                              <div class="mioos-theme-startmenu-mini-items-vue">
-                                <span v-for="item in group.items" :key="item.key + '-mini'">[[ item.title ]]</span>
-                              </div>
-                            </details>
+                            <div class="mioos-theme-classicmenu-vue">
+                              <section class="mioos-theme-classicmenu-main-vue">
+                                <details v-for="group in groups" :key="group.key + '-mini'" :open="group.open">
+                                  <summary>[[ group.title ]]</summary>
+                                  <div class="mioos-theme-startmenu-mini-items-vue">
+                                    <span v-for="item in group.items" :key="item.key + '-mini'">[[ item.title ]]</span>
+                                  </div>
+                                </details>
+                              </section>
+                              <aside class="mioos-theme-classicmenu-side-vue">
+                                <strong>Pinned</strong>
+                                <span v-for="item in groups[0].items.slice(0,3)" :key="item.key + '-pin'">[[ item.title ]]</span>
+                              </aside>
+                            </div>
                           </template>
                           <template v-else>
-                            <div class="mioos-theme-panelmenu-group-vue" v-for="group in groups" :key="group.key + '-panel-mini'">
-                              <strong>[[ group.title ]]</strong>
-                              <button type="button" class="mioos-start-entry-vue" v-for="item in group.items" :key="item.key + '-panel-item'">
-                                <span class="mioos-start-entry-icon">[[ item.icon ]]</span><span><strong>[[ item.title ]]</strong><em>[[ item.subtitle ]]</em></span>
-                              </button>
+                            <div class="mioos-theme-ubuntumenu-vue">
+                              <div class="mioos-theme-ubuntumenu-head-vue">Applications</div>
+                              <div class="mioos-theme-panelmenu-group-vue" v-for="group in groups" :key="group.key + '-panel-mini'">
+                                <strong>[[ group.title ]]</strong>
+                                <button type="button" class="mioos-start-entry-vue" v-for="item in group.items" :key="item.key + '-panel-item'">
+                                  <span class="mioos-start-entry-icon">[[ item.icon ]]</span><span><strong>[[ item.title ]]</strong><em>[[ item.subtitle ]]</em></span>
+                                </button>
+                              </div>
                             </div>
                           </template>
                         </div>
@@ -387,7 +417,14 @@
                         <div class="mioos-theme-row-vue">
                           <label><span>Class modifiers</span><input type="text" :value="vm.themeStudioClassModifiersText()" @input="vm.themeStudioSetClassModifiers($event.target.value)"></label>
                           <label><span>Extra CSS</span><textarea rows="6" :value="activeTheme.extraCss || ''" @input="vm.themeStudioUpdateField('extraCss', $event.target.value)"></textarea></label>
+                          <label class="span-2"><span>Theme import / export JSON</span><textarea rows="12" :value="store.importBuffer || ''" @input="store.importBuffer = $event.target.value" placeholder="Export the active theme, fine-tune the JSON, then import it as a new detailed theme."></textarea></label>
                         </div>
+                        <div class="mioos-theme-uploadbar-vue">
+                          <button type="button" class="mioos-btn" @click="vm.themeStudioExportTheme(activeTheme.id)">Export active theme</button>
+                          <button type="button" class="mioos-btn" @click="vm.themeStudioCopyImportBuffer()">Copy JSON</button>
+                          <button type="button" class="mioos-btn" @click="vm.themeStudioImportTheme()">Import as new theme</button>
+                        </div>
+                        <div class="mioos-theme-hint-vue">The exported JSON includes wallpaper selection, fonts, window chrome, taskbar, start menu, login screen, dark variant, and mobile overrides.</div>
                       </div>
                     </article>
                   </section>
@@ -402,8 +439,8 @@
                 <aside class="mioos-theme-studio-previewrail-vue">
                   <div class="tabs mioos-theme-tabs7 mioos-theme-previewtabs-vue">
                     <menu role="tablist" aria-label="Preview mode tabs">
-                      <button role="tab" :aria-selected="vm.themeStudioPreviewTab() === 'desktop' ? 'true' : 'false'" @click="vm.themeStudioSetPreviewTab('desktop')">Desktop Preview</button>
-                      <button role="tab" :aria-selected="vm.themeStudioPreviewTab() === 'mobile' ? 'true' : 'false'" @click="vm.themeStudioSetPreviewTab('mobile')">Mobile Preview</button>
+                      <button role="tab" :aria-selected="vm.themeStudioPreviewTab() === 'desktop' ? 'true' : 'false'" @click="vm.themeStudioSetPreviewTab('desktop')">Desktop</button>
+                      <button role="tab" :aria-selected="vm.themeStudioPreviewTab() === 'mobile' ? 'true' : 'false'" @click="vm.themeStudioSetPreviewTab('mobile')">Mobile</button>
                     </menu>
                   </div>
 
@@ -553,7 +590,7 @@
           pinnedApps: function () { return (this.vm.launcherEntries || []).slice(0, 5); }
         },
         template: '' +
-          '<footer class="mioos-taskbar-vue" :class="[\'is-\' + vm.currentShellThemeFamily(), \'position-\' + vm.taskbarPosition()]" :style="vm.taskbarShellStyle()">' +
+          '<footer class="mioos-taskbar-vue" :class="[\'is-\' + vm.currentShellThemeFamily(), \'position-\' + vm.taskbarPosition(), \'button-\' + vm.taskbarButtonStyleType()]" :style="vm.taskbarShellStyle()">' +
             '<button type="button" class="mioos-start-button-vue" @click.stop="vm.toggleMenu()"><span>◫</span><strong>[[ (vm.boot.desktop || {}).launcherLabel || \'Menu\' ]]</strong></button>' +
             '<div class="mioos-taskbar-pinned-vue">' +
               '<button v-for="app in pinnedApps" :key="app.key" type="button" class="mioos-task-icon-vue" :title="app.title" @click.stop="vm.openApp(app.key)"><span>[[ app.icon ]]</span></button>' +

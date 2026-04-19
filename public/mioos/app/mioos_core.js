@@ -1308,6 +1308,15 @@
           this.themeStudioPersistCustomThemes();
           this.applyThemeStudioConfig(parsed, { silent: true, persist: false });
         },
+        themeStudioCopyImportBuffer: function () {
+          var store = this.initThemeStudioStore();
+          var value = String(store.importBuffer || '');
+          if (!value) return;
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(value).then(function(){}, function(){});
+          }
+          this.showAlert('Theme Studio', 'Theme JSON copied to clipboard.');
+        },
         themeStudioSaveCustomTheme: function () {
           if (this.themeStudioActiveTheme() && this.themeStudioActiveTheme().locked) return;
           this.themeStudioPersistCustomThemes();
@@ -1432,37 +1441,39 @@
         },
         themeStudioDarkOverrides: function (theme) {
           if (!theme || !theme.darkEnabled) return {};
+          var accent = ((((theme || {}).cssVars) || {})['--accent']) || '#5aa2ff';
           return {
-            '--window-bg': 'rgba(20, 26, 38, 0.94)',
-            '--window-border': 'rgba(148, 163, 184, 0.28)',
-            '--window-border-strong': 'rgba(8, 12, 20, 0.88)',
-            '--titlebar-text': '#f8fbff',
-            '--titlebar-bg': 'linear-gradient(180deg, rgba(71,85,105,0.96) 0%, rgba(17,24,39,0.96) 100%)',
-            '--titlebar-inactive': 'linear-gradient(180deg, rgba(75,85,99,0.72) 0%, rgba(31,41,55,0.88) 100%)',
-            '--taskbar-bg': 'linear-gradient(180deg, rgba(36,41,48,0.96) 0%, rgba(12,15,20,0.96) 100%)',
-            '--taskbar-text': '#f8fbff',
+            '--desktop-overlay': 'rgba(255,255,255,0.02)',
+            '--window-bg': 'rgba(22, 28, 39, 0.94)',
+            '--window-border': 'rgba(124, 148, 182, 0.34)',
+            '--window-border-strong': 'rgba(6, 10, 18, 0.92)',
+            '--titlebar-text': '#eff6ff',
+            '--titlebar-bg': 'linear-gradient(180deg, rgba(72,86,113,0.96) 0%, rgba(24,32,45,0.98) 100%)',
+            '--titlebar-inactive': 'linear-gradient(180deg, rgba(68,78,95,0.78) 0%, rgba(29,35,47,0.92) 100%)',
+            '--taskbar-bg': 'linear-gradient(180deg, rgba(30,36,48,0.92) 0%, rgba(9,12,18,0.97) 100%)',
+            '--taskbar-text': '#f3f8ff',
             '--taskbar-border': 'rgba(255,255,255,0.12)',
-            '--menu-bg': 'rgba(18, 24, 34, 0.96)',
-            '--menu-border': 'rgba(148,163,184,0.28)',
-            '--menu-text': '#f8fbff',
-            '--menu-hover': 'linear-gradient(180deg, rgba(59,130,246,0.24) 0%, rgba(29,78,216,0.32) 100%)',
+            '--menu-bg': 'rgba(20, 26, 36, 0.96)',
+            '--menu-border': 'rgba(124,148,182,0.30)',
+            '--menu-text': '#f2f7ff',
+            '--menu-hover': 'linear-gradient(180deg, color-mix(in srgb, ' + accent + ' 34%, rgba(255,255,255,0.12)) 0%, rgba(26,36,52,0.96) 100%)',
             '--menu-divider': 'rgba(148,163,184,0.18)',
-            '--icon-label-bg': 'rgba(8, 15, 24, 0.54)',
+            '--icon-label-bg': 'rgba(8, 14, 22, 0.62)',
             '--icon-label-text': '#ffffff',
-            '--button-tint': 'linear-gradient(180deg, rgba(73,87,112,0.98) 0%, rgba(44,54,70,0.98) 100%)',
-            '--button-tint-hover': 'linear-gradient(180deg, rgba(102,119,146,0.98) 0%, rgba(53,67,86,0.98) 100%)',
-            '--theme-surface': 'rgba(17, 24, 39, 0.78)',
-            '--theme-surface-strong': 'rgba(15, 23, 42, 0.88)',
-            '--theme-panel-bg': 'rgba(15, 23, 42, 0.72)',
-            '--theme-panel-border': 'rgba(148, 163, 184, 0.22)',
-            '--theme-field-bg': 'rgba(15, 23, 42, 0.86)',
-            '--theme-field-text': '#f8fbff',
-            '--theme-muted-text': '#cbd5e1',
-            '--theme-tab-bg': 'rgba(15, 23, 42, 0.62)',
-            '--theme-tab-active-bg': 'linear-gradient(180deg, rgba(59,130,246,0.30) 0%, rgba(30,41,59,0.92) 100%)',
-            '--theme-tab-border': 'rgba(148, 163, 184, 0.22)',
-            '--theme-preview-card-bg': 'rgba(15, 23, 42, 0.58)',
-            '--theme-preview-card-border': 'rgba(148, 163, 184, 0.22)'
+            '--button-tint': 'linear-gradient(180deg, rgba(88,105,132,0.98) 0%, rgba(45,58,78,0.98) 100%)',
+            '--button-tint-hover': 'linear-gradient(180deg, rgba(112,131,161,1) 0%, rgba(55,70,93,0.98) 100%)',
+            '--theme-surface': 'rgba(17, 22, 31, 0.82)',
+            '--theme-surface-strong': 'rgba(23, 29, 40, 0.92)',
+            '--theme-panel-bg': 'rgba(21, 27, 37, 0.88)',
+            '--theme-panel-border': 'rgba(124, 148, 182, 0.20)',
+            '--theme-field-bg': 'rgba(14, 19, 27, 0.94)',
+            '--theme-field-text': '#f3f7fd',
+            '--theme-muted-text': '#c4d0df',
+            '--theme-tab-bg': 'rgba(20, 26, 36, 0.80)',
+            '--theme-tab-active-bg': 'linear-gradient(180deg, rgba(104,138,182,0.32) 0%, rgba(24,32,45,0.96) 100%)',
+            '--theme-tab-border': 'rgba(124, 148, 182, 0.24)',
+            '--theme-preview-card-bg': 'rgba(18, 24, 33, 0.72)',
+            '--theme-preview-card-border': 'rgba(124, 148, 182, 0.20)'
           };
         },
         applyThemeStudioConfig: function (config, options) {
@@ -1482,7 +1493,15 @@
           current['--start-menu-width'] = (((theme.startMenuConfig || {}).width) || 360) + 'px';
           current['--start-menu-accent'] = ((theme.startMenuConfig || {}).accentColor) || current['--accent'] || '#0b63f6';
           current['--font-ui'] = theme.fontStack || current['--font-ui'] || '"Segoe UI", sans-serif';
+          current['--font-titlebar'] = current['--font-titlebar'] || current['--font-ui'];
+          current['--font-taskbar'] = current['--font-taskbar'] || current['--font-ui'];
+          current['--font-menu'] = current['--font-menu'] || current['--font-ui'];
+          current['--font-icon-label'] = current['--font-icon-label'] || current['--font-ui'];
           current['--font-size-ui'] = current['--font-size-ui'] || '12px';
+          current['--font-size-titlebar'] = current['--font-size-titlebar'] || current['--font-size-ui'];
+          current['--font-size-taskbar'] = current['--font-size-taskbar'] || current['--font-size-ui'];
+          current['--font-size-menu'] = current['--font-size-menu'] || current['--font-size-ui'];
+          current['--font-size-icon-label'] = current['--font-size-icon-label'] || current['--font-size-ui'];
           current['--desktop-icon-size-mobile'] = (((theme.mobileConfig || {}).iconSizeMobile) || 60) + 'px';
           current['--taskbar-height-mobile'] = (((theme.mobileConfig || {}).taskbarHeightMobile) || 46) + 'px';
           Object.keys(current).forEach(function (key) { rootNode.style.setProperty(key, current[key]); });
@@ -1546,6 +1565,42 @@
         themeStudioActiveTab: function () {
           return (((this.themeStudioStore || {}).activeTab) || 'themes');
         },
+        themeStudioFontOptions: function () {
+          return [
+            { value: 'Tahoma, "Segoe UI", sans-serif', label: 'Tahoma / Segoe UI' },
+            { value: '"Segoe UI", Tahoma, sans-serif', label: 'Segoe UI' },
+            { value: 'Verdana, Geneva, sans-serif', label: 'Verdana' },
+            { value: 'Trebuchet MS, "Segoe UI", sans-serif', label: 'Trebuchet MS' },
+            { value: 'Ubuntu, "Segoe UI", sans-serif', label: 'Ubuntu' },
+            { value: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', label: 'System UI' },
+            { value: '"MS Sans Serif", Tahoma, sans-serif', label: 'MS Sans Serif' }
+          ];
+        },
+        themeStudioFontFieldMap: function () {
+          return { ui: '--font-ui', titlebar: '--font-titlebar', taskbar: '--font-taskbar', menu: '--font-menu', icon: '--font-icon-label' };
+        },
+        themeStudioFontValue: function (role, fallback) {
+          var map = this.themeStudioFontFieldMap();
+          var key = map[role] || '--font-ui';
+          var active = this.themeStudioActiveTheme() || {};
+          return (((active.cssVars || {})[key]) || active.fontStack || fallback || this.themeStudioFontOptions()[0].value);
+        },
+        themeStudioSetFontFamily: function (role, value) {
+          var key = (this.themeStudioFontFieldMap() || {})[role] || '--font-ui';
+          var target = this.themeStudioEditableTheme();
+          if (!target) return;
+          if (!target.cssVars) target.cssVars = {};
+          target.cssVars[key] = value;
+          if (role === 'ui') {
+            target.fontStack = value;
+            if (!target.cssVars['--font-titlebar']) target.cssVars['--font-titlebar'] = value;
+            if (!target.cssVars['--font-taskbar']) target.cssVars['--font-taskbar'] = value;
+            if (!target.cssVars['--font-menu']) target.cssVars['--font-menu'] = value;
+            if (!target.cssVars['--font-icon-label']) target.cssVars['--font-icon-label'] = value;
+          }
+          this.applyThemeStudioConfig(target, { silent: true, persist: false });
+          this.themeStudioPersistCustomThemes();
+        },
         themeStudioSetTab: function (tabKey) {
           this.initThemeStudioStore();
           this.themeStudioStore.activeTab = tabKey || 'themes';
@@ -1607,6 +1662,10 @@
           if (!target.cssVars) target.cssVars = {};
           titlebar = Math.max(30, Math.round(next * 2.9));
           target.cssVars['--font-size-ui'] = next + 'px';
+          target.cssVars['--font-size-titlebar'] = Math.max(next, next + 1) + 'px';
+          target.cssVars['--font-size-taskbar'] = next + 'px';
+          target.cssVars['--font-size-menu'] = next + 'px';
+          target.cssVars['--font-size-icon-label'] = Math.max(10, next - 1) + 'px';
           target.cssVars['--titlebar-height'] = titlebar + 'px';
           this.applyThemeStudioConfig(target, { silent: true, persist: false });
           this.themeStudioPersistCustomThemes();
@@ -1665,6 +1724,16 @@
           var theme = this.themeStudioActiveTheme() || {};
           return Math.max(0, Math.min(1, +(((theme.taskbarConfig || {}).transparentAmount) || 0)));
         },
+        taskbarEffectiveBackground: function (theme, alpha) {
+          var t = theme || this.themeStudioActiveTheme() || {};
+          var base = t.base || 'win7';
+          var a = Math.max(0, Math.min(0.72, +alpha || 0));
+          if (a <= 0.01) return (((t.cssVars || {})['--taskbar-bg']) || '');
+          if (base === 'xp') return 'linear-gradient(180deg, rgba(255,255,255,' + (0.22 - a * 0.08).toFixed(3) + ') 0%, rgba(255,255,255,' + (0.06 - a * 0.03).toFixed(3) + ') 22%, rgba(15,74,169,' + (0.94 - a * 0.34).toFixed(3) + ') 23%, rgba(10,36,106,' + (0.98 - a * 0.40).toFixed(3) + ') 100%)';
+          if (base === 'mac') return 'linear-gradient(180deg, rgba(246,247,249,' + (0.34 - a * 0.12).toFixed(3) + ') 0%, rgba(214,220,228,' + (0.26 - a * 0.10).toFixed(3) + ') 100%)';
+          if (base === 'ubuntu') return 'linear-gradient(180deg, rgba(24,24,27,' + (0.95 - a * 0.36).toFixed(3) + ') 0%, rgba(11,11,12,' + (0.96 - a * 0.38).toFixed(3) + ') 100%)';
+          return 'linear-gradient(180deg, rgba(255,255,255,' + (0.15 - a * 0.08).toFixed(3) + ') 0%, rgba(16,24,39,' + (0.34 - a * 0.12).toFixed(3) + ') 100%)';
+        },
         taskbarShellStyle: function () {
           var pos = this.taskbarPosition();
           var h = this.taskbarHeightValue();
@@ -1672,7 +1741,8 @@
           var style = {
             '--taskbar-transparency': String(alpha),
             '--taskbar-overlay': (this.themeStudioActiveTheme() || {}).darkEnabled ? ('rgba(255,255,255,' + (0.04 + alpha * 0.12).toFixed(3) + ')') : ('rgba(255,255,255,' + (0.02 + alpha * 0.24).toFixed(3) + ')'),
-            '--taskbar-blur': (6 + Math.round(alpha * 14)) + 'px'
+            '--taskbar-blur': (6 + Math.round(alpha * 14)) + 'px',
+            '--taskbar-effective-bg': this.taskbarEffectiveBackground(this.themeStudioActiveTheme(), alpha)
           };
           if (pos === 'left') style.width = h + 'px'; else style.height = h + 'px';
           return style;
@@ -1698,15 +1768,20 @@
           var groups;
           if (style === 'panel') {
             return [
-              { key: 'favorites', title: 'Favorites', subtitle: 'Quick launch', open: true, items: [
-                { key: 'my-computer', title: 'Home Folder', subtitle: 'Browse storage', icon: '🗂' },
+              { key: 'applications', title: 'Applications', subtitle: 'Launch your tools', open: true, items: [
+                { key: 'terminal', title: 'Terminal', subtitle: 'Interactive shell', icon: '⌨' },
                 { key: 'theme-studio', title: 'Appearance', subtitle: 'Customize the shell', icon: '🎨' },
-                { key: 'terminal', title: 'Terminal', subtitle: 'Interactive shell', icon: '⌨' }
+                { key: 'transfers', title: 'Transfers', subtitle: 'Uploads and activity', icon: '⇅' }
               ]},
-              { key: 'system', title: 'System', subtitle: 'Settings and diagnostics', open: true, items: [
-                { key: 'control-panel', title: 'Settings', subtitle: 'System configuration', icon: '⚙' },
+              { key: 'places', title: 'Places', subtitle: 'Folders and storage', open: true, items: [
+                { key: 'my-computer', title: 'Home Folder', subtitle: 'Browse storage', icon: '🗂' },
+                { key: 'documents', title: 'Documents', subtitle: 'Recent work', icon: '📁' },
+                { key: 'control-panel', title: 'Settings', subtitle: 'System configuration', icon: '⚙' }
+              ]},
+              { key: 'system', title: 'System', subtitle: 'Health and security', open: true, items: [
                 { key: 'security-center', title: 'Security', subtitle: 'Sessions and users', icon: '🛡' },
-                { key: 'debug-center', title: 'Diagnostics', subtitle: 'Developer tools', icon: '🧪' }
+                { key: 'diagnostics', title: 'Diagnostics', subtitle: 'Transport and boot health', icon: '📈' },
+                { key: 'debug-center', title: 'Developer Tools', subtitle: 'Inspect the shell', icon: '🧪' }
               ]}
             ];
           }
@@ -1753,6 +1828,7 @@
           style['--taskbar-transparency'] = String(alpha);
           style['--taskbar-overlay'] = (active && active.darkEnabled) ? ('rgba(255,255,255,' + (0.04 + alpha * 0.12).toFixed(3) + ')') : ('rgba(255,255,255,' + (0.02 + alpha * 0.24).toFixed(3) + ')');
           style['--taskbar-blur'] = (6 + Math.round(alpha * 14)) + 'px';
+          style['--taskbar-effective-bg'] = this.taskbarEffectiveBackground(active, alpha);
           return style;
         },
         themeStudioPreviewMobileRootStyle: function () {
@@ -1767,6 +1843,7 @@
           style['--taskbar-transparency'] = String(alpha);
           style['--taskbar-overlay'] = (active && active.darkEnabled) ? ('rgba(255,255,255,' + (0.04 + alpha * 0.12).toFixed(3) + ')') : ('rgba(255,255,255,' + (0.02 + alpha * 0.24).toFixed(3) + ')');
           style['--taskbar-blur'] = (6 + Math.round(alpha * 14)) + 'px';
+          style['--taskbar-effective-bg'] = this.taskbarEffectiveBackground(active, alpha);
           return style;
         },
         terminalStatusText: function (win) {
