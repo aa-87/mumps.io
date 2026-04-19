@@ -315,6 +315,10 @@
         var win = findWindow(this, this.dragState.windowId);
         var dx, dy, nextZone, nextBox, nextLeft, nextTop, nextWidth, nextHeight;
         if (!this.dragState.active || !win) return;
+        if (typeof event.buttons === 'number' && event.buttons === 0) {
+          this.endDrag();
+          return;
+        }
         dx = event.clientX - this.dragState.startX;
         dy = event.clientY - this.dragState.startY;
         if (this.dragState.mode === 'move') {

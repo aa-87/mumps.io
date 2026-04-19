@@ -286,18 +286,12 @@
                           <label><span>Base preset</span><select :value="activeTheme.sourceId || activeTheme.id || 'glow'" @change="vm.themeStudioLoadBaseTheme($event.target.value)"><option value="vintage">Vintage</option><option value="glow">Glow</option><option value="curve">Curve</option><option value="panel">Panel</option></select></label>
                         </div>
                         <div class="mioos-theme-row-vue">
-                          <div class="mioos-theme-radio-vue span-2">
+                          <div class="mioos-theme-radio-vue span-2" title="Each theme stores exactly two palettes: Light and Dark.">
                             <span class="mioos-theme-radio-label-vue">Theme mode</span>
-                            <div class="field-row">
+                            <div class="field-row mioos-theme-radio-row-vue" role="radiogroup" aria-label="Theme mode">
                               <label class="mioos-radio-option-vue"><input type="radio" name="theme-mode" :checked="!activeTheme.darkEnabled" @change="vm.themeStudioSetDarkEnabled(false)"><span>Light</span></label>
                               <label class="mioos-radio-option-vue"><input type="radio" name="theme-mode" :checked="!!activeTheme.darkEnabled" @change="vm.themeStudioSetDarkEnabled(true)"><span>Dark</span></label>
                             </div>
-                            <em>Store both palettes inside the same theme and switch between them here.</em>
-                          </div>
-                        </div>
-                        <div class="mioos-theme-row-vue">
-                          <div class="mioos-theme-pilllist-vue span-2">
-                            <button type="button" class="mioos-chip-btn" v-for="theme in themeList" :key="theme.id" :class="{ 'is-active': vm.themeStudioIsActive(theme.id) }" @click="vm.themeStudioActivate(theme.id, { persist: false, silent: true })">[[ theme.name ]]</button>
                           </div>
                         </div>
                         <div class="mioos-theme-row-vue">
