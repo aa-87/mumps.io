@@ -1131,7 +1131,7 @@
           }
           return blobToArrayBuffer(file).then(function (buffer) {
             var bytes = new Uint8Array(buffer);
-            var rawChunkBytes = Math.max(1048576, Math.floor(chunkChars * 3 / 4));
+            var rawChunkBytes = Math.max(524288, Math.floor(chunkChars * 3 / 4));
             var segments = [];
             var offset = 0;
             while (offset < bytes.length || (bytes.length === 0 && segments.length === 0)) {

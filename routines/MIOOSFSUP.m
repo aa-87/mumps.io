@@ -3,9 +3,9 @@ MIOOSFSUP ; MIOOS chunked upload helpers
 	;
 UPCHUNK(CONF)
 	NEW N
-	SET N=+$GET(CONF("mioos","upload","chunkBytes"),1048576)
+	SET N=+$GET(CONF("mioos","upload","chunkBytes"),524288)
 	IF N<4096 SET N=4096
-	IF N>1048576 SET N=1048576
+	IF N>524288 SET N=524288
 	QUIT N
 	;
 UPCONCUR(CONF)
