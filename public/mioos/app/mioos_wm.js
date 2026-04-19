@@ -3,7 +3,10 @@
     return vm.windows.find(function (item) { return item.id === windowId; }) || null;
   }
   function taskbarHeight(vm) {
-    return +((((vm.boot || {}).desktop || {}).windowing || {}).taskbarHeight || 40);
+    var theme = (vm && vm.appliedThemeProfile) || (vm && vm.themeStudioActiveTheme && vm.themeStudioActiveTheme()) || {};
+    var mobile = (window.innerWidth || document.documentElement.clientWidth || 1280) <= 768;
+    if (mobile && theme && theme.mobileConfig && theme.mobileConfig.taskbarHeightMobile) return +theme.mobileConfig.taskbarHeightMobile;
+    return +(((theme.taskbarConfig || {}).height) || ((((vm.boot || {}).desktop || {}).windowing || {}).taskbarHeight) || 40);
   }
   function viewportBounds(vm) {
     var padBottom = taskbarHeight(vm);

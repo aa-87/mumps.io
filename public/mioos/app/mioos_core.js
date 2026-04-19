@@ -1335,6 +1335,368 @@
         themeStudioTextValue: function (key, fallback) {
           return this.themeStudioColorValue(key, fallback || '');
         },
+        themeStudioStorageKey: function () {
+          return 'mioos.themeStudio.active.v5';
+        },
+        themeStudioProfilesKey: function () {
+          return 'mioos.themeStudio.custom.v5';
+        },
+        themeStudioNormalizeConfig: function (config) {
+          var incoming = this.themeStudioClone(config || {});
+          var presets = this.themeStudioBaseThemeConfigs();
+          var baseId = incoming.sourceId || incoming.id || 'windows-7';
+          var base = this.themeStudioClone(presets[baseId] || presets['windows-7']);
+          var out = Object.assign({}, base, incoming);
+          out.cssVars = Object.assign({}, base.cssVars || {}, incoming.cssVars || {});
+          out.animationSpeeds = Object.assign({}, base.animationSpeeds || {}, incoming.animationSpeeds || {});
+          out.taskbarConfig = Object.assign({ position: 'bottom', height: parseInt((base.cssVars || {})['--taskbar-height'] || '48', 10) || 48, transparentAmount: 0, buttonStyle: 'xp' }, base.taskbarConfig || {}, incoming.taskbarConfig || {});
+          out.startMenuConfig = Object.assign({ style: 'classic', width: 360, accentColor: (out.cssVars || {})['--accent'] || '#0b63f6', nested: true, variants: ['classic', 'modern', 'compact'] }, base.startMenuConfig || {}, incoming.startMenuConfig || {});
+          out.loginScreenConfig = Object.assign({ wallpaperUrl: '', privacyNotice: '', warningTitle: '', loginBoxStyle: 'xp-transparent', avatarSize: 72, textColor: (out.cssVars || {})['--taskbar-text'] || '#ffffff' }, base.loginScreenConfig || {}, incoming.loginScreenConfig || {});
+          out.mobileConfig = Object.assign({ taskbarHeightMobile: 46, iconSizeMobile: 60, dockCompact: true }, base.mobileConfig || {}, incoming.mobileConfig || {});
+          out.colorSchemes = (incoming.colorSchemes && incoming.colorSchemes.length) ? incoming.colorSchemes.slice() : ((base.colorSchemes && base.colorSchemes.length) ? base.colorSchemes.slice() : []);
+          out.darkEnabled = !!incoming.darkEnabled;
+          if (!out.id) out.id = 'custom-' + Date.now();
+          if (!out.name) out.name = base.name || 'Custom Theme';
+          if (!out.sourceId) out.sourceId = base.id || 'windows-7';
+          if (!out.wallpaperPreset) out.wallpaperPreset = base.wallpaperPreset || 'aurora';
+          if (out.wallpaperUrl && out.wallpaperPreset !== 'custom-upload') out.wallpaperPreset = 'custom-upload';
+          return out;
+        },
+        initThemeStudioStore: function () {
+          var store = this.themeStudioStore || {};
+          var presets, rawCustom, parsedCustom, rawApplied, parsedApplied;
+          if (store.initialized) return store;
+          store.initialized = true;
+          store.themes = {};
+          store.order = [];
+          store.customThemes = [];
+          store.activeTab = 'themes';
+          store.previewWindowState = this.themeStudioDefaultPreviewWindow();
+          store.importBuffer = '';
+          presets = this.themeStudioBaseThemeConfigs();
+          Object.keys(presets).forEach(function (id) {
+            store.themes[id] = this.themeStudioNormalizeConfig(presets[id]);
+            store.order.push(id);
+          }.bind(this));
+          try { rawCustom = window.localStorage.getItem(this.themeStudioProfilesKey()); } catch (err) { rawCustom = ''; }
+          if (rawCustom) {
+            try { parsedCustom = JSON.parse(rawCustom); } catch (err2) { parsedCustom = []; }
+            if (Array.isArray(parsedCustom)) {
+              parsedCustom.forEach(function (entry) {
+                var cfg = this.themeStudioNormalizeConfig(entry || {});
+                cfg.locked = false;
+                store.themes[cfg.id] = cfg;
+                store.order.push(cfg.id);
+                store.customThemes.push(cfg.id);
+              }.bind(this));
+            }
+          }
+          try { rawApplied = window.localStorage.getItem(this.themeStudioStorageKey()); } catch (err3) { rawApplied = ''; }
+          if (rawApplied) {
+            try { parsedApplied = this.themeStudioNormalizeConfig(JSON.parse(rawApplied)); } catch (err4) { parsedApplied = null; }
+          }
+          if (parsedApplied) {
+            store.themes[parsedApplied.id] = parsedApplied;
+            if (store.order.indexOf(parsedApplied.id) < 0) store.order.push(parsedApplied.id);
+            if (!parsedApplied.locked && store.customThemes.indexOf(parsedApplied.id) < 0) store.customThemes.push(parsedApplied.id);
+            store.activeThemeId = parsedApplied.id;
+          } else {
+            store.activeThemeId = 'windows-7';
+          }
+          this.themeStudioStore = store;
+          return store;
+        },
+        themeStudioThemeList: function () {
+          var store = this.initThemeStudioStore();
+          return (store.order || []).map(function (id) { return store.themes[id]; }).filter(Boolean).sort(function (a, b) {
+            if (!!a.locked === !!b.locked) return String(a.name || '').localeCompare(String(b.name || ''));
+            return a.locked ? -1 : 1;
+          });
+        },
+        themeStudioWallpaperCss: function (theme) {
+          var t = this.themeStudioNormalizeConfig(theme || this.themeStudioActiveTheme() || {});
+          if (t.wallpaperUrl) return 'url(' + t.wallpaperUrl + ')';
+          if (t.wallpaperPreset === 'bliss') return 'linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0) 28%), linear-gradient(180deg, #8acb59 0%, #6fb14a 42%, #3e7b35 100%)';
+          if (t.wallpaperPreset === 'aurora') return 'radial-gradient(circle at top, rgba(147,197,253,0.26), transparent 30%), linear-gradient(180deg, #16385c 0%, #23476d 36%, #3a6288 100%)';
+          if (t.wallpaperPreset === 'solid-graphite') return 'linear-gradient(180deg, #6c7a89 0%, #313b48 100%)';
+          if (t.wallpaperPreset === 'ubuntu-warm') return 'linear-gradient(180deg, #6e2d35 0%, #2d2c54 100%)';
+          return 'linear-gradient(180deg, #3d7ad6 0%, #2656a5 100%)';
+        },
+        themeStudioLoginWallpaperCss: function (theme) {
+          var t = this.themeStudioNormalizeConfig(theme || this.themeStudioActiveTheme() || {});
+          var cfg = t.loginScreenConfig || {};
+          if (cfg.wallpaperUrl) return 'url(' + cfg.wallpaperUrl + ')';
+          return this.themeStudioWallpaperCss(t);
+        },
+        themeStudioDarkOverrides: function (theme) {
+          if (!theme || !theme.darkEnabled) return {};
+          return {
+            '--window-bg': 'rgba(20, 26, 38, 0.92)',
+            '--window-border': 'rgba(148, 163, 184, 0.28)',
+            '--window-border-strong': 'rgba(8, 12, 20, 0.88)',
+            '--titlebar-text': '#f8fbff',
+            '--titlebar-bg': 'linear-gradient(180deg, rgba(55,65,81,0.96) 0%, rgba(20,25,35,0.96) 100%)',
+            '--taskbar-bg': 'linear-gradient(180deg, rgba(36,41,48,0.96) 0%, rgba(12,15,20,0.96) 100%)',
+            '--taskbar-text': '#f8fbff',
+            '--menu-bg': 'rgba(18, 24, 34, 0.96)',
+            '--menu-border': 'rgba(148,163,184,0.28)',
+            '--menu-text': '#f8fbff',
+            '--menu-hover': 'linear-gradient(180deg, rgba(59,130,246,0.24) 0%, rgba(29,78,216,0.32) 100%)',
+            '--icon-label-bg': 'rgba(8, 15, 24, 0.54)',
+            '--icon-label-text': '#ffffff',
+            '--button-tint': 'linear-gradient(180deg, rgba(73,87,112,0.98) 0%, rgba(44,54,70,0.98) 100%)',
+            '--button-tint-hover': 'linear-gradient(180deg, rgba(102,119,146,0.98) 0%, rgba(53,67,86,0.98) 100%)'
+          };
+        },
+        applyThemeStudioConfig: function (config, options) {
+          var rootNode = this.themeStudioRootNode();
+          var opts = options || {};
+          var theme = this.themeStudioNormalizeConfig(config || this.themeStudioActiveTheme() || {});
+          var styleNode = this.themeStudioEnsureStyleNode();
+          var body = document.body;
+          var current, darkVars, taskbarHeightPx, loginCfg, loginStyle;
+          if (!rootNode) return theme;
+          current = Object.assign({}, theme.cssVars || {});
+          darkVars = this.themeStudioDarkOverrides(theme);
+          Object.keys(darkVars).forEach(function (key) { current[key] = darkVars[key]; });
+          taskbarHeightPx = ((theme.taskbarConfig || {}).height || parseInt(current['--taskbar-height'] || '48', 10) || 48) + 'px';
+          current['--taskbar-height'] = taskbarHeightPx;
+          current['--taskbar-position'] = (theme.taskbarConfig || {}).position || 'bottom';
+          current['--start-menu-width'] = (((theme.startMenuConfig || {}).width) || 360) + 'px';
+          current['--start-menu-accent'] = ((theme.startMenuConfig || {}).accentColor) || current['--accent'] || '#0b63f6';
+          current['--font-ui'] = theme.fontStack || current['--font-ui'] || '"Segoe UI", sans-serif';
+          current['--font-size-ui'] = current['--font-size-ui'] || '12px';
+          current['--desktop-icon-size-mobile'] = (((theme.mobileConfig || {}).iconSizeMobile) || 60) + 'px';
+          current['--taskbar-height-mobile'] = (((theme.mobileConfig || {}).taskbarHeightMobile) || 46) + 'px';
+          Object.keys(current).forEach(function (key) { rootNode.style.setProperty(key, current[key]); });
+          rootNode.style.setProperty('--desktop-wallpaper', this.themeStudioWallpaperCss(theme));
+          rootNode.style.setProperty('--login-wallpaper', this.themeStudioLoginWallpaperCss(theme));
+          rootNode.style.setProperty('--theme-minimize-speed', Math.max(120, +(theme.animationSpeeds || {}).minimize || 180) + 'ms');
+          rootNode.style.setProperty('--theme-progress-speed', Math.max(120, +(theme.animationSpeeds || {}).progress || 220) + 'ms');
+          loginCfg = theme.loginScreenConfig || {};
+          loginStyle = loginCfg.loginBoxStyle || 'xp-transparent';
+          if (loginStyle === 'glow-vibrant') {
+            rootNode.style.setProperty('--login-box-bg', 'rgba(11, 28, 52, 0.58)');
+            rootNode.style.setProperty('--login-box-border', 'rgba(255,255,255,0.32)');
+            rootNode.style.setProperty('--login-box-shadow', '0 20px 54px rgba(2, 8, 23, 0.44)');
+          } else if (loginStyle === 'curve-minimal') {
+            rootNode.style.setProperty('--login-box-bg', 'rgba(255,255,255,0.82)');
+            rootNode.style.setProperty('--login-box-border', 'rgba(214,221,228,0.84)');
+            rootNode.style.setProperty('--login-box-shadow', '0 18px 42px rgba(15, 23, 42, 0.22)');
+          } else {
+            rootNode.style.setProperty('--login-box-bg', 'rgba(255,255,255,0.76)');
+            rootNode.style.setProperty('--login-box-border', 'rgba(255,255,255,0.28)');
+            rootNode.style.setProperty('--login-box-shadow', '0 22px 56px rgba(0,0,0,0.28)');
+          }
+          rootNode.style.setProperty('--login-box-text', loginCfg.textColor || current['--taskbar-text'] || '#ffffff');
+          rootNode.dataset.shellTheme = theme.id || 'windows-7';
+          rootNode.dataset.shellFamily = theme.base || 'win7';
+          rootNode.dataset.themeBase = theme.base || 'win7';
+          rootNode.dataset.taskbarPosition = (theme.taskbarConfig || {}).position || 'bottom';
+          rootNode.dataset.startMenuStyle = (theme.startMenuConfig || {}).style || 'classic';
+          rootNode.classList.toggle('theme-dark-mode', !!theme.darkEnabled);
+          rootNode.classList.remove('theme-base-xp', 'theme-base-win7', 'theme-base-mac', 'theme-base-ubuntu');
+          rootNode.classList.add('theme-base-' + (theme.base || 'win7'));
+          Array.prototype.slice.call(rootNode.classList).filter(function (name) { return name.indexOf('theme-mod-') === 0; }).forEach(function (name) { rootNode.classList.remove(name); });
+          (theme.classModifiers || []).forEach(function (name) {
+            if (name) rootNode.classList.add('theme-mod-' + String(name).replace(/[^a-z0-9_-]/ig, '-').toLowerCase());
+          });
+          styleNode.textContent = theme.extraCss || '';
+          if (body) body.style.background = current['--desktop-bg'] || '#3d7ad6';
+          this.activeThemeKey = theme.id;
+          this.appliedThemeProfile = this.themeStudioClone(theme);
+          this.themeStudioStore.activeThemeId = theme.id;
+          if (((this.boot || {}).desktop || {}).windowing) this.boot.desktop.windowing.taskbarHeight = parseInt(taskbarHeightPx, 10) || 48;
+          if ((this.boot || {}).desktop) this.boot.desktop.taskbarPosition = (theme.taskbarConfig || {}).position || 'bottom';
+          if (!opts.silent) this.showAlert('Theme Studio', (theme.name || 'Theme') + ' applied.');
+          if (opts.persist !== false) {
+            try { window.localStorage.setItem(this.themeStudioStorageKey(), JSON.stringify(theme)); } catch (err) {}
+          }
+          return theme;
+        },
+        themeStudioTabs: function () {
+          return [
+            { key: 'themes', label: 'Themes' },
+            { key: 'desktop', label: 'Desktop' },
+            { key: 'appearance', label: 'Appearance' },
+            { key: 'taskbar', label: 'Taskbar' },
+            { key: 'start', label: 'Start Menu' },
+            { key: 'login', label: 'Login Screen' },
+            { key: 'advanced', label: 'Advanced' }
+          ];
+        },
+        themeStudioActiveTab: function () {
+          return (((this.themeStudioStore || {}).activeTab) || 'themes');
+        },
+        themeStudioSetTab: function (tabKey) {
+          this.initThemeStudioStore();
+          this.themeStudioStore.activeTab = tabKey || 'themes';
+        },
+        themeStudioRenameActiveTheme: function (nextName) {
+          var name = nextName;
+          var target;
+          if (!name) name = window.prompt('Rename theme', ((this.themeStudioActiveTheme() || {}).name) || 'Theme');
+          if (!name) return;
+          target = this.themeStudioEditableTheme();
+          if (!target) return;
+          target.name = String(name).trim() || 'Custom Theme';
+          this.applyThemeStudioConfig(target, { silent: true, persist: false });
+          this.themeStudioPersistCustomThemes();
+        },
+        themeStudioSetDarkEnabled: function (enabled) {
+          var target = this.themeStudioEditableTheme();
+          if (!target) return;
+          target.darkEnabled = !!enabled;
+          this.applyThemeStudioConfig(target, { silent: true, persist: false });
+          this.themeStudioPersistCustomThemes();
+        },
+        themeStudioToggleDarkEnabled: function () {
+          this.themeStudioSetDarkEnabled(!((this.themeStudioActiveTheme() || {}).darkEnabled));
+        },
+        themeStudioUpdateField: function (path, value) {
+          var target = this.themeStudioEditableTheme();
+          var ref = target;
+          var parts = String(path || '').split('.');
+          var i;
+          if (!target || !parts.length) return;
+          for (i = 0; i < parts.length - 1; i += 1) {
+            if (!ref[parts[i]] || typeof ref[parts[i]] !== 'object') ref[parts[i]] = {};
+            ref = ref[parts[i]];
+          }
+          ref[parts[parts.length - 1]] = value;
+          if (path === 'fontStack') target.cssVars['--font-ui'] = value;
+          if (path === 'name') target.name = value;
+          if (path === 'taskbarConfig.height') target.cssVars['--taskbar-height'] = (+value || 48) + 'px';
+          if (path === 'startMenuConfig.width') target.cssVars['--start-menu-width'] = (+value || 360) + 'px';
+          if (path === 'startMenuConfig.accentColor') target.cssVars['--start-menu-accent'] = value;
+          if (path === 'loginScreenConfig.textColor') target.cssVars['--login-box-text'] = value;
+          this.applyThemeStudioConfig(target, { silent: true, persist: false });
+          this.themeStudioPersistCustomThemes();
+        },
+        themeStudioSetFontScale: function (value) {
+          var next = Math.max(10, Math.min(18, +value || 12));
+          this.themeStudioUpdateVar('--font-size-ui', next + 'px');
+        },
+        themeStudioFontScaleValue: function () {
+          return parseInt(this.themeStudioTextValue('--font-size-ui', '12px'), 10) || 12;
+        },
+        themeStudioUploadField: function (path, event) {
+          var self = this;
+          var file = event && event.target && event.target.files && event.target.files[0];
+          var reader;
+          if (!file) return;
+          if (file.type && file.type.indexOf('image/') !== 0) {
+            this.showAlert('Theme Studio', 'Please choose an image file.');
+            event.target.value = '';
+            return;
+          }
+          reader = new FileReader();
+          reader.onload = function () {
+            self.themeStudioUpdateField(path, reader.result);
+            if (path === 'wallpaperUrl') self.themeStudioUpdateField('wallpaperPreset', 'custom-upload');
+            event.target.value = '';
+          };
+          reader.readAsDataURL(file);
+        },
+        themeStudioClearUploadedField: function (path) {
+          this.themeStudioUpdateField(path, '');
+          if (path === 'wallpaperUrl') this.themeStudioUpdateField('wallpaperPreset', 'aurora');
+        },
+        desktopSurfaceStyle: function () {
+          var pos = this.taskbarPosition();
+          var h = this.taskbarHeightValue() + 14;
+          return {
+            paddingTop: (pos === 'top' ? h : 16) + 'px',
+            paddingRight: '16px',
+            paddingBottom: (pos === 'bottom' ? h : 16) + 'px',
+            paddingLeft: (pos === 'left' ? h : 16) + 'px',
+            boxSizing: 'border-box'
+          };
+        },
+        taskbarPosition: function () {
+          var theme = this.themeStudioActiveTheme() || {};
+          return (((theme.taskbarConfig || {}).position) || (((this.boot || {}).desktop || {}).taskbarPosition) || 'bottom');
+        },
+        taskbarHeightValue: function () {
+          var theme = this.themeStudioActiveTheme() || {};
+          var mobile = window.innerWidth <= 768;
+          if (mobile && theme.mobileConfig && theme.mobileConfig.taskbarHeightMobile) return +theme.mobileConfig.taskbarHeightMobile;
+          return +(((theme.taskbarConfig || {}).height) || parseInt((((theme.cssVars || {})['--taskbar-height']) || '48px'), 10) || ((((this.boot || {}).desktop || {}).windowing || {}).taskbarHeight) || 48);
+        },
+        taskbarShellStyle: function () {
+          var pos = this.taskbarPosition();
+          var h = this.taskbarHeightValue();
+          var style = {};
+          if (pos === 'left') style.width = h + 'px'; else style.height = h + 'px';
+          return style;
+        },
+        startMenuStyleType: function () {
+          var theme = this.themeStudioActiveTheme() || {};
+          return (((theme.startMenuConfig || {}).style) || 'classic');
+        },
+        startMenuPopupStyle: function () {
+          var pos = this.taskbarPosition();
+          var width = +((((this.themeStudioActiveTheme() || {}).startMenuConfig || {}).width) || 360);
+          var h = this.taskbarHeightValue() + 12;
+          var style = { width: Math.max(300, width) + 'px' };
+          if (pos === 'top') { style.top = h + 'px'; style.bottom = 'auto'; style.left = '14px'; }
+          else if (pos === 'left') { style.left = (h + 12) + 'px'; style.bottom = '14px'; style.top = 'auto'; }
+          else { style.left = '14px'; style.bottom = h + 'px'; }
+          return style;
+        },
+        startMenuGroups: function () {
+          var nested = (((this.themeStudioActiveTheme() || {}).startMenuConfig || {}).nested) !== false;
+          var groups = [
+            { key: 'system', title: 'System Tools', subtitle: 'Core shell utilities', open: true, items: [
+              { key: 'my-computer', title: 'My Computer', subtitle: 'Browse storage', icon: '🖥' },
+              { key: 'documents', title: 'Documents', subtitle: 'Open recent files', icon: '📁' },
+              { key: 'theme-studio', title: 'Theme Studio', subtitle: 'Customize the shell', icon: '🎨' }
+            ]},
+            { key: 'work', title: 'Workflows', subtitle: 'Everyday apps', open: nested, items: [
+              { key: 'terminal', title: 'Terminal', subtitle: 'Interactive shell', icon: '⌨' },
+              { key: 'transfers', title: 'Transfers', subtitle: 'Upload status', icon: '⇅' },
+              { key: 'control-panel', title: 'Control Panel', subtitle: 'Settings and tools', icon: '⚙' }
+            ]},
+            { key: 'support', title: 'Support', subtitle: 'Diagnostics and monitoring', open: false, items: [
+              { key: 'diagnostics', title: 'Diagnostics', subtitle: 'Transport and boot health', icon: '📈' },
+              { key: 'security-center', title: 'Security Center', subtitle: 'Sessions and users', icon: '🛡' },
+              { key: 'debug-center', title: 'Debug Center', subtitle: 'Developer tools', icon: '🧪' }
+            ]}
+          ];
+          if (!nested) groups.forEach(function (group) { group.open = true; });
+          return groups;
+        },
+        activeLoginScreenConfig: function () {
+          return (((this.themeStudioActiveTheme() || {}).loginScreenConfig) || {});
+        },
+        activeLoginPrivacyNotice: function () {
+          return (((this.activeLoginScreenConfig() || {}).privacyNotice) || '');
+        },
+        themeStudioSaveCustomTheme: function () {
+          var target = this.themeStudioEditableTheme();
+          if (!target) return;
+          this.themeStudioPersistCustomThemes();
+          this.applyThemeStudioConfig(target, { silent: false, persist: true });
+        },
+        themeStudioPreviewRootStyle: function () {
+          var active = this.themeStudioActiveTheme();
+          var style = { '--desktop-wallpaper': this.themeStudioWallpaperCss(active), '--login-wallpaper': this.themeStudioLoginWallpaperCss(active), transform: 'scale(' + (((active || {}).previewScale) || 0.86) + ')' };
+          var current = Object.assign({}, ((active || {}).cssVars) || {}, this.themeStudioDarkOverrides(active));
+          Object.keys(current).forEach(function (key) { style[key] = current[key]; });
+          style['--taskbar-height'] = this.taskbarHeightValue() + 'px';
+          style['--start-menu-width'] = ((((active || {}).startMenuConfig || {}).width) || 360) + 'px';
+          return style;
+        },
+        themeStudioPreviewMobileRootStyle: function () {
+          var active = this.themeStudioActiveTheme();
+          var mobileHeight = (((active || {}).mobileConfig || {}).taskbarHeightMobile) || 46;
+          var current = Object.assign({}, ((active || {}).cssVars) || {}, this.themeStudioDarkOverrides(active));
+          var style = { '--desktop-wallpaper': this.themeStudioWallpaperCss(active), '--login-wallpaper': this.themeStudioLoginWallpaperCss(active) };
+          Object.keys(current).forEach(function (key) { style[key] = current[key]; });
+          style['--taskbar-height'] = mobileHeight + 'px';
+          style['--desktop-icon-size'] = ((((active || {}).mobileConfig || {}).iconSizeMobile) || 60) + 'px';
+          return style;
+        },
         terminalStatusText: function (win) {
           if (Terminal && typeof Terminal.terminalStatusText === 'function') {
             return Terminal.terminalStatusText.call(this, win);
