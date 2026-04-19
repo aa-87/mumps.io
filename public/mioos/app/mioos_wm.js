@@ -215,11 +215,13 @@
       windowStyle: function (win) {
         this.ensureWindowFrame(win);
         return {
-          left: (win.left || 0) + 'px',
-          top: (win.top || 0) + 'px',
+          '--x': (win.left || 0) + 'px',
+          '--y': (win.top || 0) + 'px',
           width: (win.width || 600) + 'px',
           height: (win.height || 420) + 'px',
-          zIndex: (win.z || 1)
+          zIndex: (win.z || 1),
+          transform: 'translate3d(var(--x), var(--y), 0)',
+          willChange: (this.dragState.active && this.dragState.windowId === win.id) ? 'transform, width, height' : 'auto'
         };
       },
       snapPreviewStyle: function () {
@@ -280,6 +282,7 @@
         this.dragState.top = win.top || 0;
         this.dragState.width = win.width || 600;
         this.dragState.height = win.height || 420;
+        if (this.$el && this.$el.classList) this.$el.classList.add('is-window-dragging');
       },
       beginResize: function (win, edge, event) {
         if (!win || +win.resizable !== 1) return;
@@ -297,6 +300,7 @@
         this.dragState.top = win.top || 0;
         this.dragState.width = win.width || 600;
         this.dragState.height = win.height || 420;
+        if (this.$el && this.$el.classList) this.$el.classList.add('is-window-dragging');
       },
       onDragMove: function (event) {
         var win = findWindow(this, this.dragState.windowId);
@@ -348,12 +352,18 @@
         var zone = this.snapPreview.zone;
         if (!this.dragState.active) return;
         if (this.dragState.mode === 'move' && win && zone) this.applySnapZone(win.id, zone);
+        else if (this.dragState.mode === 'move' && win) {
+          win.left = Math.round((+(win.left || 0)) / 10) * 10;
+          win.top = Math.round((+(win.top || 0)) / 10) * 10;
+          clampWindow(this, win);
+        }
         if (win && this.dragState.mode === 'resize') scheduleTerminalSync(this, win);
         this.dragState.active = false;
         this.dragState.mode = 'move';
         this.dragState.edge = '';
         this.dragState.windowId = '';
         this.clearSnapPreview();
+        if (this.$el && this.$el.classList) this.$el.classList.remove('is-window-dragging');
       },
       onWindowTitleDblClick: function (windowId) {
         this.toggleMaximize(windowId);
