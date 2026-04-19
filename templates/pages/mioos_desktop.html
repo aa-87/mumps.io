@@ -316,13 +316,13 @@
                       <template v-else-if="((win.explorerState || {}).preview || {}).mediaSrc && (((win.explorerState || {}).preview || {}).mediaKind === 'video')">
                         <strong>[[ (win.explorerState || {}).preview.title ]]</strong>
                         <div class="mioos-media-preview-frame">
-                          <video class="mioos-media-preview-video" controls :src="(win.explorerState || {}).preview.mediaSrc"></video>
+                          <video class="mioos-media-preview-video" controls preload="metadata" playsinline :src="(win.explorerState || {}).preview.mediaSrc"></video>
                         </div>
                       </template>
                       <template v-else-if="((win.explorerState || {}).preview || {}).mediaSrc && (((win.explorerState || {}).preview || {}).mediaKind === 'audio')">
                         <strong>[[ (win.explorerState || {}).preview.title ]]</strong>
                         <div class="mioos-media-preview-frame">
-                          <audio class="mioos-media-preview-audio" controls :src="(win.explorerState || {}).preview.mediaSrc"></audio>
+                          <audio class="mioos-media-preview-audio" controls preload="metadata" :src="(win.explorerState || {}).preview.mediaSrc"></audio>
                         </div>
                       </template>
                       <template v-else-if="((win.explorerState || {}).preview || {}).title">
@@ -764,8 +764,8 @@
             </div>
             <div class="mioos-mediaviewer-body">
               <div v-if="(win.fileView || {}).loading" class="mioos-imageviewer-empty">Loading…</div>
-              <video v-else-if="((win.fileView || {}).mediaKind || (win.meta || {}).mediaKind) === 'video' && (win.fileView || {}).content" class="mioos-mediaviewer-video" controls :src="(win.fileView || {}).content"></video>
-              <audio v-else-if="(win.fileView || {}).content" class="mioos-mediaviewer-audio" controls :src="(win.fileView || {}).content"></audio>
+              <video v-else-if="((win.fileView || {}).mediaKind || (win.meta || {}).mediaKind) === 'video' && (win.fileView || {}).content" class="mioos-mediaviewer-video" controls preload="metadata" playsinline :src="(win.fileView || {}).content"></video>
+              <audio v-else-if="(win.fileView || {}).content" class="mioos-mediaviewer-audio" controls preload="metadata" :src="(win.fileView || {}).content"></audio>
               <div v-else class="mioos-imageviewer-empty">Unable to open media.</div>
             </div>
           </div>

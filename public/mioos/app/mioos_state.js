@@ -139,7 +139,7 @@
         maxFrameBytes: 262144,
         maxMessageBytes: 1048576
       },
-      vfs: { enabled: false, rootId: 'root', homeId: 'home', chunkSize: 131072, httpChunkBytes: 1048576, readPreviewBytes: 16384, readWindowBytes: 131072, mediaInitialBytes: 2097152, globalsOnly: true, uploadStaleSeconds: 1800, downloadStaleSeconds: 900, uploadChunkBytes: 262144, uploadConcurrency: 6, transferPersistence: 'localstorage-resumable-transfer-list', transferControls: { cancel: true, retry: true, pause: true, resume: true } },
+      vfs: { enabled: false, rootId: 'root', homeId: 'home', chunkSize: 1048576, httpChunkBytes: 1048576, readPreviewBytes: 1048576, readWindowBytes: 1048576, mediaInitialBytes: 1048576, mediaWarmupBytes: 1048576, globalsOnly: true, uploadStaleSeconds: 1800, downloadStaleSeconds: 900, uploadChunkBytes: 1048576, uploadConcurrency: 3, transferPersistence: 'localstorage-resumable-transfer-list', transferControls: { cancel: true, retry: true, pause: true, resume: true } },
       apps: [],
       windows: [],
       modules: []

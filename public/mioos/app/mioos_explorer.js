@@ -49,6 +49,16 @@
     return !!navigator.onLine;
   }
 
+  function isTransientUploadStatus(status) {
+    status = +status;
+    return status === 408 || status === 409 || status === 425 || status === 429 || (status >= 500 && status < 600);
+  }
+
+  function uploadRetryDelay(attempt) {
+    attempt = Math.max(1, +attempt || 1);
+    return Math.min(2500, 250 * attempt);
+  }
+
   function makeDownloadHref(data, mime) {
     var blob;
     if (!data) return '';
@@ -201,7 +211,7 @@
           return;
         }
         try { body = JSON.parse(xhr.responseText || '{}'); } catch (err2) { body = {}; }
-        reject(new Error(body.detail || body.reason || body.error || ('http_' + xhr.status)));
+        var error = new Error(body.detail || body.reason || body.error || ('http_' + xhr.status)); error.status = xhr.status; error.body = body; reject(error);
       };
       xhr.onerror = function () { reject(new Error('network_error')); };
       xhr.send(JSON.stringify(payload || {}));
@@ -781,7 +791,7 @@
                 return;
               }
               try { body = JSON.parse(xhr.responseText || '{}'); } catch (err2) { body = {}; }
-              reject(new Error(body.detail || body.reason || body.error || ('http_' + xhr.status)));
+              var error = new Error(body.detail || body.reason || body.error || ('http_' + xhr.status)); error.status = xhr.status; error.body = body; reject(error);
             };
             xhr.onerror = function () { reject(new Error('network_error')); };
             xhr.send(JSON.stringify(payload || {}));
@@ -792,7 +802,7 @@
         isText = detectTextLike({ name: file.name, mime: mime });
         chunkTransport = (((this.boot || {}).vfs || {}).uploadChunkTransport) || 'http-binary';
         var transferId = self.registerTransfer ? self.registerTransfer({ kind: 'upload', name: file.name, status: 'preparing', stage: 'Preparing', totalBytes: file.size, processedBytes: 0, sourceWindowId: windowId, persistent: true, resume: { kind: 'upload', parentId: state.folderId, sourceWindowId: windowId, fileName: file.name, mime: mime, totalBytes: file.size, chunkTransport: chunkTransport, uploadId: '' } }) : '';
-        var transferControl = { cancelled: false, paused: false, workers: [], xh: {}, uploadId: '', windowId: windowId, nextIndex: 1, completedBytes: 0, completed: {}, totalChunks: 0 };
+        var transferControl = { cancelled: false, paused: false, workers: [], xh: {}, uploadId: '', windowId: windowId, nextIndex: 1, completedBytes: 0, completed: {}, retries: {}, totalChunks: 0, finalizeRetries: 0 };
         if (transferId && self.setTransferController) {
           self.setTransferController(transferId, {
             onRetry: function () { return self.uploadFilesToExplorer(windowId, [file]); },
@@ -970,6 +980,49 @@
               if (transferId && self.updateTransfer) self.updateTransfer(transferId, { status: 'paused', stage: stageText || 'Paused (connection lost)', processedBytes: transferControl.completedBytes, totalBytes: file.size, error: '', resume: { kind: 'upload', parentId: state.folderId, sourceWindowId: windowId, fileName: file.name, mime: mime, totalBytes: file.size, chunkTransport: chunkTransport, uploadId: uploadId, contiguousBytes: transferControl.completedBytes, nextIndex: transferControl.nextIndex } });
               return Promise.resolve();
             }
+            function retryChunkLater(index, bytes, stageText) {
+              var attempt = (transferControl.retries[index] || 0) + 1;
+              transferControl.retries[index] = attempt;
+              delete transferControl.xh[index];
+              if (attempt > 4) {
+                fail(new Error('fs_upload_chunk_failed'), 'fs_upload_chunk_failed');
+                return;
+              }
+              transferControl.nextIndex = Math.min(transferControl.nextIndex || index, index);
+              self.setExplorerUploadProgress(state, { active: true, name: file.name, totalBytes: file.size, sentBytes: transferControl.completedBytes, stage: stageText || ('Retrying chunk ' + index), uploadId: uploadId, error: '' });
+              if (transferId && self.updateTransfer) self.updateTransfer(transferId, { status: 'uploading', stage: stageText || ('Retrying chunk ' + index), processedBytes: transferControl.completedBytes, totalBytes: file.size, error: '', resume: { kind: 'upload', parentId: state.folderId, sourceWindowId: windowId, fileName: file.name, mime: mime, totalBytes: file.size, chunkTransport: chunkTransport, uploadId: uploadId, contiguousBytes: transferControl.completedBytes, nextIndex: transferControl.nextIndex } });
+              window.setTimeout(function () {
+                if (!transferControl.paused && !transferControl.cancelled) pump();
+              }, uploadRetryDelay(attempt));
+            }
+            function reconcileCommitFailure(err) {
+              transferControl.finalizeRetries = (transferControl.finalizeRetries || 0) + 1;
+              if (transferControl.finalizeRetries > 3) throw err;
+              self.setExplorerUploadProgress(state, { active: true, name: file.name, totalBytes: file.size, sentBytes: transferControl.completedBytes, stage: 'Reconciling upload', uploadId: uploadId, error: '' });
+              return httpJson((((self.boot || {}).routes || {}).fsUploadStatus || '/api/mioos/fs/upload/status'), { uploadId: uploadId }).then(function (msg) {
+                var payload = payloadRoot(msg);
+                var nextIndex = +(payload.nextIndex || 1);
+                var contiguousBytes = +(payload.contiguousBytes || 0);
+                var i;
+                transferControl.completed = {};
+                transferControl.completedBytes = contiguousBytes;
+                transferControl.nextIndex = nextIndex > 0 ? nextIndex : 1;
+                for (i = 1; i < transferControl.nextIndex; i += 1) transferControl.completed[i] = 1;
+                syncProgress('Reconciling upload', true);
+                if (contiguousBytes >= file.size && transferControl.nextIndex > transferControl.totalChunks) {
+                  return commitUpload();
+                }
+                return pump();
+              });
+            }
+            function commitUpload() {
+              return httpJson((((self.boot || {}).routes || {}).fsUploadCommit || '/api/mioos/fs/upload/commit'), { uploadId: uploadId }).then(finalize).catch(function (err) {
+                if ((err && err.message) === 'network_error' || !navigatorOnline()) return pauseForDisconnect('Paused before finalize');
+                if (isTransientUploadStatus(err && err.status)) return reconcileCommitFailure(err).catch(function (innerErr) { fail(innerErr, 'fs_upload_commit_failed'); });
+                fail(err, 'fs_upload_commit_failed');
+                return null;
+              });
+            }
             function pump() {
               var activeCount;
               if (transferControl.cancelled || transferControl.paused) return Promise.resolve();
@@ -985,6 +1038,7 @@
                   xhr = new XMLHttpRequest();
                   transferControl.xh[index] = xhr;
                   xhr.open('POST', (((self.boot || {}).routes || {}).fsUploadChunk || '/api/mioos/fs/upload/chunk'), true);
+                  xhr.timeout = uploadTimeoutConfig(self).uploadChunkTimeoutMs;
                   xhr.setRequestHeader('Content-Type', 'application/octet-stream');
                   xhr.setRequestHeader('X-MIOOS-Upload-Id', uploadId);
                   xhr.setRequestHeader('X-MIOOS-Upload-Index', String(index));
@@ -994,10 +1048,11 @@
                     if (xhr.readyState !== 4) return;
                     delete transferControl.xh[index];
                     if (xhr.status >= 200 && xhr.status < 300) {
+                      transferControl.retries[index] = 0;
                       markDone(index, bytes);
                       syncProgress('Uploading chunks', false);
                       if (allDone()) {
-                        httpJson((((self.boot || {}).routes || {}).fsUploadCommit || '/api/mioos/fs/upload/commit'), { uploadId: uploadId }).then(finalize).catch(function (err) { if ((err && err.message) === 'network_error' || !navigatorOnline()) return pauseForDisconnect('Paused before finalize'); fail(err, 'fs_upload_commit_failed'); });
+                        commitUpload();
                       } else if (!transferControl.paused && !transferControl.cancelled) {
                         pump();
                       }
@@ -1006,12 +1061,22 @@
                     if (transferControl.paused || transferControl.cancelled) return;
                     if (xhr.status === 0 || !navigatorOnline()) { pauseForDisconnect('Paused (connection lost)'); return; }
                     try { body = JSON.parse(xhr.responseText || '{}'); } catch (errx) { body = {}; }
+                    if (isTransientUploadStatus(xhr.status)) {
+                      retryChunkLater(index, bytes, 'Retrying chunk ' + index);
+                      return;
+                    }
                     fail(new Error(body.detail || body.reason || body.error || ('http_' + xhr.status)), 'fs_upload_chunk_failed');
                   };
                   xhr.onerror = function () {
                     delete transferControl.xh[index];
                     if (transferControl.paused || transferControl.cancelled) return;
                     pauseForDisconnect('Paused (connection lost)');
+                  };
+                  xhr.ontimeout = function () {
+                    delete transferControl.xh[index];
+                    if (transferControl.paused || transferControl.cancelled) return;
+                    if (!navigatorOnline()) { pauseForDisconnect('Paused (connection lost)'); return; }
+                    retryChunkLater(index, bytes, 'Retrying chunk ' + index + ' after timeout');
                   };
                   xhr.send(part);
                 }(nextPending()));
@@ -1066,7 +1131,7 @@
           }
           return blobToArrayBuffer(file).then(function (buffer) {
             var bytes = new Uint8Array(buffer);
-            var rawChunkBytes = Math.max(12288, Math.floor(chunkChars * 3 / 4));
+            var rawChunkBytes = Math.max(1048576, Math.floor(chunkChars * 3 / 4));
             var segments = [];
             var offset = 0;
             while (offset < bytes.length || (bytes.length === 0 && segments.length === 0)) {
@@ -1138,11 +1203,49 @@
           active[nextIndex] = 1;
           return nextIndex++;
         }
+        function retryResumeChunk(index, bytes, stageText) {
+          resume.retries = resume.retries || {};
+          resume.retries[index] = (resume.retries[index] || 0) + 1;
+          delete active[index];
+          delete xh[index];
+          nextIndex = Math.min(nextIndex || index, index);
+          if (resume.retries[index] > 4) {
+            if (self.finalizeTransfer) self.finalizeTransfer(item.id, false, { error: 'fs_upload_chunk_failed', stage: 'Resume failed', processedBytes: completedBytes, totalBytes: file.size, resume: Object.assign({}, resume, { contiguousBytes: completedBytes }) });
+            return;
+          }
+          if (self.updateTransfer) self.updateTransfer(item.id, { status: 'uploading', stage: stageText || ('Retrying chunk ' + index), processedBytes: completedBytes, totalBytes: file.size, resume: Object.assign({}, resume, { contiguousBytes: completedBytes, nextIndex: nextIndex }) });
+          window.setTimeout(function () {
+            if (!cancelled) pump();
+          }, uploadRetryDelay(resume.retries[index]));
+        }
+        function reconcileResumeCommit(err) {
+          resume.finalizeRetries = (resume.finalizeRetries || 0) + 1;
+          if (resume.finalizeRetries > 3) throw err;
+          return httpJsonPost((((self.boot || {}).routes || {}).fsUploadStatus || '/api/mioos/fs/upload/status'), { uploadId: resume.uploadId }).then(function (msg) {
+            var payload = payloadRoot(msg);
+            nextIndex = +(payload.nextIndex || 1);
+            completedBytes = +(payload.contiguousBytes || 0);
+            resume.contiguousBytes = completedBytes;
+            resume.nextIndex = nextIndex;
+            active = {};
+            if (completedBytes >= file.size && nextIndex > totalChunks) {
+              return httpJsonPost((((self.boot || {}).routes || {}).fsUploadCommit || '/api/mioos/fs/upload/commit'), { uploadId: resume.uploadId });
+            }
+            return pump();
+          });
+        }
+        function commitResumeUpload() {
+          return httpJsonPost((((self.boot || {}).routes || {}).fsUploadCommit || '/api/mioos/fs/upload/commit'), { uploadId: resume.uploadId }).catch(function (err) {
+            if ((err && err.message) === 'network_error' || !navigatorOnline()) return pauseUpload('Paused before finalize');
+            if (isTransientUploadStatus(err && err.status)) return reconcileResumeCommit(err);
+            throw err;
+          });
+        }
         function pump() {
           var running = Object.keys(xh).length;
           if (cancelled) return Promise.resolve();
           if (completedBytes >= file.size && running === 0) {
-            return httpJsonPost((((self.boot || {}).routes || {}).fsUploadCommit || '/api/mioos/fs/upload/commit'), { uploadId: resume.uploadId }).then(function () {
+            return commitResumeUpload().then(function () {
               if (self.finalizeTransfer) self.finalizeTransfer(item.id, true, { processedBytes: file.size, totalBytes: file.size, progress: 100, resume: Object.assign({}, resume, { contiguousBytes: file.size, completed: 1 }) });
               if (self.refreshView) self.refreshView();
             }).catch(function (err) {
@@ -1160,6 +1263,7 @@
               xhr = new XMLHttpRequest();
               xh[index] = xhr;
               xhr.open('POST', (((self.boot || {}).routes || {}).fsUploadChunk || '/api/mioos/fs/upload/chunk'), true);
+              xhr.timeout = uploadTimeoutConfig(self).uploadChunkTimeoutMs;
               xhr.setRequestHeader('Content-Type', 'application/octet-stream');
               xhr.setRequestHeader('X-MIOOS-Upload-Id', resume.uploadId);
               xhr.setRequestHeader('X-MIOOS-Upload-Index', String(index));
@@ -1168,16 +1272,29 @@
                 if (xhr.readyState !== 4) return;
                 delete xh[index];
                 if (xhr.status >= 200 && xhr.status < 300) {
+                  resume.retries = resume.retries || {};
+                  resume.retries[index] = 0;
                   completedBytes += bytes;
                   if (self.updateTransfer) self.updateTransfer(item.id, { status: 'uploading', stage: 'Resuming upload', processedBytes: completedBytes, totalBytes: file.size, resume: Object.assign({}, resume, { contiguousBytes: completedBytes, nextIndex: nextIndex }) });
                   pump();
                   return;
                 }
-                if (!cancelled) { if (xhr.status === 0 || !navigatorOnline()) { pauseUpload('Paused (connection lost)'); return; } if (self.finalizeTransfer) self.finalizeTransfer(item.id, false, { error: 'fs_upload_chunk_failed', stage: 'Resume failed', processedBytes: completedBytes, totalBytes: file.size, resume: Object.assign({}, resume, { contiguousBytes: completedBytes }) }); }
+                if (!cancelled) {
+                  if (xhr.status === 0 || !navigatorOnline()) { pauseUpload('Paused (connection lost)'); return; }
+                  if (isTransientUploadStatus(xhr.status)) { retryResumeChunk(index, bytes, 'Retrying chunk ' + index); return; }
+                  if (self.finalizeTransfer) self.finalizeTransfer(item.id, false, { error: 'fs_upload_chunk_failed', stage: 'Resume failed', processedBytes: completedBytes, totalBytes: file.size, resume: Object.assign({}, resume, { contiguousBytes: completedBytes }) });
+                }
               };
               xhr.onerror = function () {
                 delete xh[index];
                 if (!cancelled) pauseUpload('Paused (connection lost)');
+              };
+              xhr.ontimeout = function () {
+                delete xh[index];
+                if (!cancelled) {
+                  if (!navigatorOnline()) { pauseUpload('Paused (connection lost)'); return; }
+                  retryResumeChunk(index, bytes, 'Retrying chunk ' + index + ' after timeout');
+                }
               };
               xhr.send(file.slice(start, end));
             }(nextPending()));
