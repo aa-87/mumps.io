@@ -30,6 +30,8 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","route","fsUploadCommit"))="" SET CONF("mioos","route","fsUploadCommit")="/api/mioos/fs/upload/commit"
 	IF $GET(CONF("mioos","route","fsUploadAbort"))="" SET CONF("mioos","route","fsUploadAbort")="/api/mioos/fs/upload/abort"
 	IF $GET(CONF("mioos","route","fsBlob"))="" SET CONF("mioos","route","fsBlob")="/api/mioos/fs/blob"
+	IF $GET(CONF("mioos","route","themeAssetUpload"))="" SET CONF("mioos","route","themeAssetUpload")="/api/mioos/theme-asset/upload"
+	IF $GET(CONF("mioos","route","themeAsset"))="" SET CONF("mioos","route","themeAsset")="/api/mioos/theme-asset"
 	IF $GET(CONF("mioos","route","ws"))="" SET CONF("mioos","route","ws")="/ws/mioos"
 	IF $GET(CONF("mioos","route","wsTerminal"))="" SET CONF("mioos","route","wsTerminal")="/ws/mioos/terminal"
 	IF $GET(CONF("mioos","brand","title"))="" SET CONF("mioos","brand","title")="MIOOS"
@@ -197,6 +199,8 @@ REG(CONF)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsUploadAbort")),"FSUPABORT^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("GET",$GET(CONF("mioos","route","fsBlob")),"FSBLOB^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("HEAD",$GET(CONF("mioos","route","fsBlob")),"FSBLOB^MIOOSAPI",.PROT)
+	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","themeAssetUpload")),"THEMEASSETUP^MIOOSAPI",.PROT)
+	DO ADDM^MIOROUTE("GET",$GET(CONF("mioos","route","themeAsset")),"THEMEASSET^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("GET","/public/mioos/*","STATIC^MIOOS",.META)
 	KILL WSMETA SET WSMETA("authRequired")=AUTHREQ,WSMETA("wsPersistent")=1
 	DO ADDWSM^MIOROUTE($GET(CONF("mioos","route","ws")),"MESSAGE^MIOOSWS",.WSMETA)
@@ -220,6 +224,8 @@ REG(CONF)
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","fsRename")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","fsMove")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","fsDelete")))
+	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","themeAssetUpload")))
+	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","themeAsset")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","ws")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","wsTerminal")))
 	QUIT

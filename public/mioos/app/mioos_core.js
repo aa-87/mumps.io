@@ -68,7 +68,7 @@
           appliedThemeProfile: null,
           activeThemeKey: '',
           themeStyleNodeId: 'mioos-theme-studio-style',
-          themeStudioStore: { initialized: false, themes: {}, order: [], customThemes: [], activeThemeId: 'windows-7', previewWindowState: {}, importBuffer: '', activeTab: 'global' },
+          themeStudioStore: { initialized: false, themes: {}, order: [], customThemes: [], activeThemeId: 'glow', previewWindowState: {}, importBuffer: '', activeTab: 'themes' },
           transferCenter: { items: [], seq: 0, autoOpen: true },
           transferControllers: {},
           transportDiagnostics: { loading: false, refreshedAt: 0, error: '', report: {} },
@@ -233,10 +233,10 @@
 
         shellThemeQuickMap: function () {
           return {
-            'xp-classic-blue': 'windows-xp',
-            'win7-aero': 'windows-7',
-            'mac-slate': 'mac-os',
-            'ubuntu-amber': 'ubuntu'
+            'xp-classic-blue': 'vintage',
+            'win7-aero': 'glow',
+            'mac-slate': 'curve',
+            'ubuntu-amber': 'panel'
           };
         },
         shellThemeOptions: function () {
@@ -249,9 +249,9 @@
         },
         resolveShellThemeProfile: function (themeKey) {
           var quickMap = this.shellThemeQuickMap();
-          var id = quickMap[String(themeKey || '')] || themeKey || (((this.themeStudioStore || {}).activeThemeId) || '') || 'windows-7';
+          var id = quickMap[String(themeKey || '')] || themeKey || (((this.themeStudioStore || {}).activeThemeId) || '') || 'glow';
           this.initThemeStudioStore();
-          return this.themeStudioThemeById(id) || this.themeStudioThemeById('windows-7');
+          return this.themeStudioThemeById(id) || this.themeStudioThemeById('glow');
         },
         applyShellTheme: function (themeKey) {
           var profile = this.resolveShellThemeProfile(themeKey);
@@ -974,26 +974,26 @@
         },
         themeStudioBaseThemeConfigs: function () {
           return {
-            'windows-xp': {
-              id: 'windows-xp', name: 'Vintage', base: 'xp', locked: true, iconSet: 'system', fontStack: 'Tahoma, "Segoe UI", sans-serif', wallpaperPreset: 'bliss', wallpaperUrl: '', wallpaperFit: 'cover', previewScale: 0.86, classModifiers: ['xp-luna'], animationSpeeds: { minimize: 180, progress: 220 }, extraCss: '',
+            vintage: {
+              id: 'vintage', name: 'Vintage', base: 'xp', locked: true, iconSet: 'system', fontStack: 'Tahoma, "Segoe UI", sans-serif', wallpaperPreset: 'meadow', wallpaperUrl: '', wallpaperFit: 'cover', previewScale: 0.86, classModifiers: ['vintage-shell'], animationSpeeds: { minimize: 180, progress: 220, open: 180, hover: 120, menu: 160, wallpaper: 280, taskbar: 160 }, extraCss: '',
               cssVars: {
                 '--desktop-bg': '#3d7ad6', '--desktop-overlay': 'rgba(255,255,255,0.06)', '--window-bg': '#f5f9ff', '--window-border': '#2456a6', '--window-border-strong': '#13326a', '--titlebar-bg': 'linear-gradient(180deg, #0f5bd7 0%, #3f8df6 52%, #a9c7ff 100%)', '--titlebar-text': '#ffffff', '--titlebar-inactive': 'linear-gradient(180deg, #6c89b0 0%, #9bb2ce 100%)', '--accent': '#0b63f6', '--accent-soft': 'rgba(11,99,246,0.18)', '--taskbar-bg': 'linear-gradient(180deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0.06) 22%, #0f4aa9 23%, #0a246a 100%)', '--taskbar-border': 'rgba(255,255,255,0.28)', '--taskbar-text': '#ffffff', '--menu-bg': 'rgba(248,251,255,0.96)', '--menu-border': '#7fa7e7', '--menu-text': '#10233f', '--menu-hover': 'linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(200,224,255,0.95) 100%)', '--menu-divider': 'rgba(36,86,166,0.18)', '--menu-shadow': '0 18px 40px rgba(8, 26, 63, 0.35)', '--icon-label-bg': 'rgba(15,32,68,0.36)', '--icon-label-text': '#f8fbff', '--icon-shadow': '0 1px 2px rgba(0,0,0,0.75)', '--shadow-window': '0 18px 40px rgba(8,24,56,0.30)', '--shadow-window-active': '0 24px 48px rgba(4,18,44,0.38)', '--font-ui': 'Tahoma, "Segoe UI", sans-serif', '--font-size-ui': '11px', '--window-radius': '10px', '--desktop-grid-cell': '88px', '--desktop-icon-size': '48px', '--titlebar-height': '32px', '--taskbar-height': '48px', '--button-radius': '7px', '--button-tint': 'linear-gradient(180deg, #ffffff 0%, #d8e8ff 100%)', '--button-tint-hover': 'linear-gradient(180deg, #ffffff 0%, #c8defd 100%)', '--glass-opacity': '0', '--control-min': '#f2d25a', '--control-max': '#7ecb61', '--control-close': '#e06d5c'
               }
             },
-            'windows-7': {
-              id: 'windows-7', name: 'Glow', base: 'win7', locked: true, iconSet: 'system', fontStack: '"Segoe UI", Tahoma, sans-serif', wallpaperPreset: 'aurora', wallpaperUrl: '', wallpaperFit: 'cover', previewScale: 0.86, classModifiers: ['glass'], animationSpeeds: { minimize: 220, progress: 240 }, extraCss: '',
+            glow: {
+              id: 'glow', name: 'Glow', base: 'win7', locked: true, iconSet: 'system', fontStack: '"Segoe UI", Tahoma, sans-serif', wallpaperPreset: 'aurora', wallpaperUrl: '', wallpaperFit: 'cover', previewScale: 0.86, classModifiers: ['glass'], animationSpeeds: { minimize: 220, progress: 240, open: 210, hover: 130, menu: 170, wallpaper: 300, taskbar: 170 }, extraCss: '',
               cssVars: {
                 '--desktop-bg': '#173a5d', '--desktop-overlay': 'rgba(255,255,255,0.08)', '--window-bg': 'rgba(248,251,255,0.78)', '--window-border': 'rgba(255,255,255,0.64)', '--window-border-strong': 'rgba(58,77,106,0.88)', '--titlebar-bg': 'linear-gradient(180deg, rgba(255,255,255,0.38) 0%, rgba(152,198,255,0.14) 100%)', '--titlebar-text': '#12304b', '--titlebar-inactive': 'linear-gradient(180deg, rgba(255,255,255,0.16) 0%, rgba(139,162,190,0.08) 100%)', '--accent': '#4ba3ff', '--accent-soft': 'rgba(75,163,255,0.18)', '--taskbar-bg': 'linear-gradient(180deg, rgba(255,255,255,0.15) 0%, rgba(16,24,39,0.34) 100%)', '--taskbar-border': 'rgba(255,255,255,0.22)', '--taskbar-text': '#f4f8ff', '--menu-bg': 'rgba(248,251,255,0.88)', '--menu-border': 'rgba(255,255,255,0.48)', '--menu-text': '#10243d', '--menu-hover': 'linear-gradient(180deg, rgba(255,255,255,0.78) 0%, rgba(214,231,255,0.85) 100%)', '--menu-divider': 'rgba(255,255,255,0.24)', '--menu-shadow': '0 24px 60px rgba(8, 18, 36, 0.40)', '--icon-label-bg': 'rgba(11,25,49,0.34)', '--icon-label-text': '#f8fbff', '--icon-shadow': '0 1px 2px rgba(0,0,0,0.78)', '--shadow-window': '0 18px 42px rgba(0,0,0,0.28)', '--shadow-window-active': '0 24px 58px rgba(0,0,0,0.36)', '--font-ui': '"Segoe UI", Tahoma, sans-serif', '--font-size-ui': '12px', '--window-radius': '14px', '--desktop-grid-cell': '92px', '--desktop-icon-size': '50px', '--titlebar-height': '36px', '--taskbar-height': '48px', '--button-radius': '8px', '--button-tint': 'linear-gradient(180deg, rgba(255,255,255,0.82) 0%, rgba(224,238,255,0.72) 100%)', '--button-tint-hover': 'linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(210,232,255,0.84) 100%)', '--glass-opacity': '0.76', '--control-min': '#f2d25a', '--control-max': '#7ecb61', '--control-close': '#e06d5c'
               }
             },
-            'mac-os': {
-              id: 'mac-os', name: 'Curve', base: 'mac', locked: true, iconSet: 'system', fontStack: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', wallpaperPreset: 'solid-graphite', wallpaperUrl: '', wallpaperFit: 'cover', previewScale: 0.84, classModifiers: ['vibrant'], animationSpeeds: { minimize: 210, progress: 200 }, extraCss: '',
+            curve: {
+              id: 'curve', name: 'Curve', base: 'mac', locked: true, iconSet: 'system', fontStack: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', wallpaperPreset: 'graphite', wallpaperUrl: '', wallpaperFit: 'cover', previewScale: 0.84, classModifiers: ['vibrant'], animationSpeeds: { minimize: 210, progress: 200, open: 190, hover: 120, menu: 150, wallpaper: 260, taskbar: 150 }, extraCss: '',
               cssVars: {
                 '--desktop-bg': '#5f6975', '--desktop-overlay': 'rgba(255,255,255,0.04)', '--window-bg': 'rgba(252,252,252,0.92)', '--window-border': '#cfd6df', '--window-border-strong': '#adb7c4', '--titlebar-bg': 'linear-gradient(180deg, #f4f5f7 0%, #d7dce2 100%)', '--titlebar-text': '#18202b', '--titlebar-inactive': 'linear-gradient(180deg, #edf1f4 0%, #cfd6dd 100%)', '--accent': '#0a84ff', '--accent-soft': 'rgba(10,132,255,0.16)', '--taskbar-bg': 'rgba(246,247,249,0.26)', '--taskbar-border': 'rgba(255,255,255,0.28)', '--taskbar-text': '#f7f9fc', '--menu-bg': 'rgba(255,255,255,0.82)', '--menu-border': 'rgba(214,221,228,0.82)', '--menu-text': '#1f2937', '--menu-hover': 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(238,242,247,0.92) 100%)', '--menu-divider': 'rgba(159,171,184,0.25)', '--menu-shadow': '0 22px 54px rgba(15, 23, 42, 0.30)', '--icon-label-bg': 'rgba(18,25,35,0.28)', '--icon-label-text': '#ffffff', '--icon-shadow': '0 1px 3px rgba(0,0,0,0.75)', '--shadow-window': '0 18px 40px rgba(0,0,0,0.18)', '--shadow-window-active': '0 22px 52px rgba(0,0,0,0.24)', '--font-ui': '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', '--font-size-ui': '12px', '--window-radius': '16px', '--desktop-grid-cell': '90px', '--desktop-icon-size': '50px', '--titlebar-height': '34px', '--taskbar-height': '64px', '--button-radius': '999px', '--button-tint': 'linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(231,235,241,0.92) 100%)', '--button-tint-hover': 'linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(244,246,249,0.96) 100%)', '--glass-opacity': '0.68', '--control-min': '#f5c84c', '--control-max': '#63c554', '--control-close': '#ff5f57'
               }
             },
-            'ubuntu': {
-              id: 'ubuntu', name: 'Panel', base: 'ubuntu', locked: true, iconSet: 'system', fontStack: 'Ubuntu, "Segoe UI", sans-serif', wallpaperPreset: 'ubuntu-warm', wallpaperUrl: '', wallpaperFit: 'cover', previewScale: 0.86, classModifiers: ['ambiance'], animationSpeeds: { minimize: 190, progress: 210 }, extraCss: '',
+            panel: {
+              id: 'panel', name: 'Panel', base: 'ubuntu', locked: true, iconSet: 'system', fontStack: 'Ubuntu, "Segoe UI", sans-serif', wallpaperPreset: 'ember', wallpaperUrl: '', wallpaperFit: 'cover', previewScale: 0.86, classModifiers: ['panel-shell'], animationSpeeds: { minimize: 190, progress: 210, open: 180, hover: 120, menu: 160, wallpaper: 260, taskbar: 150 }, extraCss: '',
               cssVars: {
                 '--desktop-bg': '#3d1937', '--desktop-overlay': 'rgba(255,255,255,0.03)', '--window-bg': '#2b2431', '--window-border': '#6b5d74', '--window-border-strong': '#16111a', '--titlebar-bg': 'linear-gradient(180deg, #4b3a52 0%, #302734 100%)', '--titlebar-text': '#f7f1ff', '--titlebar-inactive': 'linear-gradient(180deg, #5c4d61 0%, #3d3342 100%)', '--accent': '#e95420', '--accent-soft': 'rgba(233,84,32,0.16)', '--taskbar-bg': 'linear-gradient(180deg, rgba(24,24,27,0.95) 0%, rgba(11,11,12,0.96) 100%)', '--taskbar-border': 'rgba(255,255,255,0.08)', '--taskbar-text': '#f8f2ff', '--menu-bg': 'rgba(35,29,39,0.96)', '--menu-border': '#6b5d74', '--menu-text': '#f8f2ff', '--menu-hover': 'linear-gradient(180deg, rgba(233,84,32,0.24) 0%, rgba(98,54,26,0.32) 100%)', '--menu-divider': 'rgba(255,255,255,0.08)', '--menu-shadow': '0 24px 58px rgba(0,0,0,0.42)', '--icon-label-bg': 'rgba(10,8,12,0.36)', '--icon-label-text': '#ffffff', '--icon-shadow': '0 1px 3px rgba(0,0,0,0.85)', '--shadow-window': '0 20px 45px rgba(0,0,0,0.34)', '--shadow-window-active': '0 24px 58px rgba(0,0,0,0.42)', '--font-ui': 'Ubuntu, "Segoe UI", sans-serif', '--font-size-ui': '11px', '--window-radius': '12px', '--desktop-grid-cell': '90px', '--desktop-icon-size': '48px', '--titlebar-height': '34px', '--taskbar-height': '40px', '--button-radius': '6px', '--button-tint': 'linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(233,84,32,0.10) 100%)', '--button-tint-hover': 'linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(233,84,32,0.22) 100%)', '--glass-opacity': '0.18', '--control-min': '#f2d25a', '--control-max': '#7ecb61', '--control-close': '#e95420'
               }
@@ -1004,7 +1004,7 @@
           var incoming = this.themeStudioClone(config || {});
           var presets = this.themeStudioBaseThemeConfigs();
           var baseId = incoming.id && presets[incoming.id] ? incoming.id : ((incoming.base === 'xp' || incoming.family === 'Windows XP') ? 'windows-xp' : ((incoming.base === 'mac' || incoming.family === 'Mac') ? 'mac-os' : ((incoming.base === 'ubuntu' || incoming.family === 'Ubuntu') ? 'ubuntu' : 'windows-7')));
-          var base = this.themeStudioClone(presets[baseId] || presets['windows-7']);
+          var base = this.themeStudioClone(presets[baseId] || presets['glow']);
           var next = Object.assign({}, base, incoming || {});
           next.cssVars = Object.assign({}, base.cssVars || {}, (incoming || {}).cssVars || {});
           next.animationSpeeds = Object.assign({}, base.animationSpeeds || {}, (incoming || {}).animationSpeeds || {});
@@ -1028,7 +1028,7 @@
           store.themes = {};
           store.order = [];
           store.customThemes = [];
-          store.activeThemeId = 'windows-7';
+          store.activeThemeId = 'glow';
           store.previewWindowState = this.themeStudioDefaultPreviewWindow();
           store.importBuffer = '';
           store.activeTab = 'global';
@@ -1080,7 +1080,7 @@
         },
         themeStudioActiveTheme: function () {
           var store = this.initThemeStudioStore();
-          return this.themeStudioThemeById(store.activeThemeId) || this.themeStudioThemeById('windows-7');
+          return this.themeStudioThemeById(store.activeThemeId) || this.themeStudioThemeById('glow');
         },
         themeStudioEditableTheme: function () {
           var store = this.initThemeStudioStore();
@@ -1109,10 +1109,10 @@
         themeStudioWallpaperCss: function (theme) {
           var t = this.themeStudioNormalizeConfig(theme || this.themeStudioActiveTheme() || {});
           if (t.wallpaperPreset === 'custom-url' && t.wallpaperUrl) return 'url(' + t.wallpaperUrl + ')';
-          if (t.wallpaperPreset === 'bliss') return 'linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0) 28%), linear-gradient(180deg, #8acb59 0%, #6fb14a 42%, #3e7b35 100%)';
+          if (t.wallpaperPreset === 'meadow') return 'linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0) 28%), linear-gradient(180deg, #8acb59 0%, #6fb14a 42%, #3e7b35 100%)';
           if (t.wallpaperPreset === 'aurora') return 'radial-gradient(circle at top, rgba(147,197,253,0.26), transparent 30%), linear-gradient(180deg, #16385c 0%, #23476d 36%, #3a6288 100%)';
-          if (t.wallpaperPreset === 'solid-graphite') return 'linear-gradient(180deg, #6c7a89 0%, #313b48 100%)';
-          if (t.wallpaperPreset === 'ubuntu-warm') return 'linear-gradient(180deg, #6e2d35 0%, #2d2c54 100%)';
+          if (t.wallpaperPreset === 'graphite') return 'linear-gradient(180deg, #6c7a89 0%, #313b48 100%)';
+          if (t.wallpaperPreset === 'ember') return 'linear-gradient(180deg, #6e2d35 0%, #2d2c54 100%)';
           return 'linear-gradient(180deg, #3d7ad6 0%, #2656a5 100%)';
         },
         applyPersistedThemeStudioProfile: function () {
@@ -1133,7 +1133,12 @@
           rootNode.style.setProperty('--font-ui', theme.fontStack || current['--font-ui'] || '"Segoe UI", sans-serif');
           rootNode.style.setProperty('--theme-minimize-speed', Math.max(120, +(theme.animationSpeeds || {}).minimize || 180) + 'ms');
           rootNode.style.setProperty('--theme-progress-speed', Math.max(120, +(theme.animationSpeeds || {}).progress || 220) + 'ms');
-          rootNode.dataset.shellTheme = theme.id || 'windows-7';
+          rootNode.style.setProperty('--theme-open-speed', Math.max(100, +(theme.animationSpeeds || {}).open || 180) + 'ms');
+          rootNode.style.setProperty('--theme-hover-speed', Math.max(80, +(theme.animationSpeeds || {}).hover || 120) + 'ms');
+          rootNode.style.setProperty('--theme-menu-speed', Math.max(100, +(theme.animationSpeeds || {}).menu || 160) + 'ms');
+          rootNode.style.setProperty('--theme-wallpaper-speed', Math.max(120, +(theme.animationSpeeds || {}).wallpaper || 280) + 'ms');
+          rootNode.style.setProperty('--theme-taskbar-speed', Math.max(100, +(theme.animationSpeeds || {}).taskbar || 160) + 'ms');
+          rootNode.dataset.shellTheme = theme.id || 'glow';
           rootNode.dataset.shellFamily = theme.base || 'win7';
           rootNode.dataset.themeBase = theme.base || 'win7';
           rootNode.classList.remove('theme-base-xp', 'theme-base-win7', 'theme-base-mac', 'theme-base-ubuntu');
@@ -1178,7 +1183,7 @@
           this.applyThemeStudioConfig(store.themes[id], { silent: options && options.silent !== undefined ? options.silent : true, persist: options && options.persist !== undefined ? options.persist : false });
         },
         themeStudioCreateNewTheme: function (name) {
-          var theme = this.themeStudioClone(this.themeStudioActiveTheme() || this.themeStudioThemeById('windows-7'));
+          var theme = this.themeStudioClone(this.themeStudioActiveTheme() || this.themeStudioThemeById('glow'));
           var store = this.initThemeStudioStore();
           theme.id = 'custom-' + Date.now();
           theme.name = name || 'New Custom Theme';
@@ -1210,7 +1215,7 @@
         },
         themeStudioLoadBaseTheme: function (baseName) {
           var target = this.themeStudioEditableTheme();
-          var preset = this.themeStudioBaseThemeConfigs()[baseName || 'windows-7'];
+          var preset = this.themeStudioBaseThemeConfigs()[baseName || 'glow'];
           var previousName;
           if (!target || !preset) return;
           previousName = target.name;
@@ -1223,12 +1228,12 @@
           var active = this.themeStudioActiveTheme();
           var sourceId;
           if (!active) return;
-          sourceId = active.sourceId || (active.base === 'xp' ? 'windows-xp' : (active.base === 'mac' ? 'mac-os' : (active.base === 'ubuntu' ? 'ubuntu' : 'windows-7')));
+          sourceId = active.sourceId || (active.base === 'xp' ? 'vintage' : (active.base === 'mac' ? 'curve' : (active.base === 'ubuntu' ? 'panel' : 'glow')));
           if (active.locked) {
             this.themeStudioActivate(active.id, { persist: false, silent: true });
             return;
           }
-          Object.assign(active, this.themeStudioClone(this.themeStudioBaseThemeConfigs()[sourceId] || this.themeStudioBaseThemeConfigs()['windows-7']), { id: active.id, name: active.name, locked: false, sourceId: sourceId });
+          Object.assign(active, this.themeStudioClone(this.themeStudioBaseThemeConfigs()[sourceId] || this.themeStudioBaseThemeConfigs()['glow']), { id: active.id, name: active.name, locked: false, sourceId: sourceId });
           this.applyThemeStudioConfig(active, { silent: true, persist: false });
           this.themeStudioPersistCustomThemes();
         },
@@ -1240,8 +1245,8 @@
           delete store.themes[targetId];
           store.order = (store.order || []).filter(function (item) { return item !== targetId; });
           store.customThemes = (store.customThemes || []).filter(function (item) { return item !== targetId; });
-          fallback = this.themeStudioThemeById('windows-7') || this.themeStudioThemeList()[0];
-          store.activeThemeId = fallback ? fallback.id : 'windows-7';
+          fallback = this.themeStudioThemeById('glow') || this.themeStudioThemeList()[0];
+          store.activeThemeId = fallback ? fallback.id : 'glow';
           this.themeStudioPersistCustomThemes();
           this.applyThemeStudioConfig(this.themeStudioActiveTheme(), { silent: true, persist: false });
         },
@@ -1288,16 +1293,61 @@
         themeStudioExportTheme: function (id) {
           var store = this.initThemeStudioStore();
           var target = this.themeStudioThemeById(id || store.activeThemeId);
+          var exported;
           if (!target) return;
-          store.importBuffer = JSON.stringify(target, null, 2);
-          this.showAlert('Theme Studio', 'Theme JSON copied into the import/export buffer.');
+          exported = this.themeStudioBuildExport(target);
+          store.importBuffer = JSON.stringify(exported, null, 2);
+          this.showAlert('Theme Studio', 'Theme JSON refreshed with light and dark variants.');
+        },
+        themeStudioBuildExport: function (theme) {
+          var target = this.themeStudioNormalizeConfig(theme || this.themeStudioActiveTheme() || {});
+          var common = this.themeStudioClone(target);
+          delete common.darkEnabled;
+          delete common.locked;
+          common.baseTheme = this.themeStudioExportBaseId(target);
+          return {
+            schema: 'mioos-theme-v3',
+            exportedAt: new Date().toISOString(),
+            theme: common,
+            variants: {
+              light: this.themeStudioBuildVariantExport(target, false),
+              dark: this.themeStudioBuildVariantExport(target, true)
+            }
+          };
+        },
+        themeStudioBuildVariantExport: function (theme, darkEnabled) {
+          var t = this.themeStudioClone(theme || {});
+          t.darkEnabled = !!darkEnabled;
+          return {
+            darkEnabled: !!darkEnabled,
+            cssVars: this.themeStudioClone((t.cssVars) || {}),
+            animationSpeeds: this.themeStudioClone((t.animationSpeeds) || {}),
+            taskbarConfig: this.themeStudioClone((t.taskbarConfig) || {}),
+            startMenuConfig: this.themeStudioClone((t.startMenuConfig) || {}),
+            loginScreenConfig: this.themeStudioClone((t.loginScreenConfig) || {}),
+            mobileConfig: this.themeStudioClone((t.mobileConfig) || {})
+          };
+        },
+        themeStudioExportBaseId: function (theme) {
+          var id = String((theme && (theme.sourceId || theme.id)) || 'glow');
+          var map = { 'windows-xp': 'vintage', 'windows-7': 'glow', 'mac-os': 'curve', 'ubuntu': 'panel' };
+          return map[id] || id;
         },
         themeStudioImportTheme: function () {
           var store = this.initThemeStudioStore();
-          var parsed;
+          var parsed, next, source, variants, selected;
           if (!store.importBuffer) return;
           try { parsed = JSON.parse(store.importBuffer); } catch (err) { this.showAlert('Theme Studio', 'Import buffer is not valid JSON.'); return; }
-          parsed = this.themeStudioNormalizeConfig(parsed);
+          if (parsed && parsed.theme && parsed.variants) {
+            source = this.themeStudioClone(parsed.theme);
+            variants = parsed.variants || {};
+            selected = source.darkEnabled ? (variants.dark || {}) : (variants.light || {});
+            next = Object.assign({}, source, selected || {});
+            next.variants = this.themeStudioClone(variants);
+          } else {
+            next = parsed;
+          }
+          parsed = this.themeStudioNormalizeConfig(next);
           parsed.id = 'custom-' + Date.now();
           parsed.locked = false;
           if (!parsed.name) parsed.name = 'Imported Theme';
@@ -1354,21 +1404,23 @@
         themeStudioNormalizeConfig: function (config) {
           var incoming = this.themeStudioClone(config || {});
           var presets = this.themeStudioBaseThemeConfigs();
-          var baseId = incoming.sourceId || incoming.id || 'windows-7';
-          var base = this.themeStudioClone(presets[baseId] || presets['windows-7']);
+          var baseId = incoming.sourceId || incoming.id || 'glow';
+          var base = this.themeStudioClone(presets[baseId] || presets['glow']);
           var out = Object.assign({}, base, incoming);
           out.cssVars = Object.assign({}, base.cssVars || {}, incoming.cssVars || {});
           out.animationSpeeds = Object.assign({}, base.animationSpeeds || {}, incoming.animationSpeeds || {});
           out.taskbarConfig = Object.assign({ position: 'bottom', height: parseInt((base.cssVars || {})['--taskbar-height'] || '48', 10) || 48, transparentAmount: 0, buttonStyle: 'xp' }, base.taskbarConfig || {}, incoming.taskbarConfig || {});
-          out.startMenuConfig = Object.assign({ style: 'classic', width: 360, accentColor: (out.cssVars || {})['--accent'] || '#0b63f6', nested: true, variants: ['classic', 'panel'] }, base.startMenuConfig || {}, incoming.startMenuConfig || {});
+          out.startMenuConfig = Object.assign({ style: 'classic', width: 360, accentColor: (out.cssVars || {})['--accent'] || '#0b63f6', nested: true, variants: ['classic', 'popup'] }, base.startMenuConfig || {}, incoming.startMenuConfig || {});
           out.loginScreenConfig = Object.assign({ wallpaperUrl: '', privacyNotice: '', warningTitle: '', loginBoxStyle: 'xp-transparent', avatarSize: 72, textColor: (out.cssVars || {})['--taskbar-text'] || '#ffffff' }, base.loginScreenConfig || {}, incoming.loginScreenConfig || {});
           out.mobileConfig = Object.assign({ taskbarHeightMobile: 46, iconSizeMobile: 60, dockCompact: true }, base.mobileConfig || {}, incoming.mobileConfig || {});
           out.colorSchemes = (incoming.colorSchemes && incoming.colorSchemes.length) ? incoming.colorSchemes.slice() : ((base.colorSchemes && base.colorSchemes.length) ? base.colorSchemes.slice() : []);
           out.darkEnabled = !!incoming.darkEnabled;
           if (!out.id) out.id = 'custom-' + Date.now();
           if (!out.name) out.name = base.name || 'Custom Theme';
-          if (!out.sourceId) out.sourceId = base.id || 'windows-7';
+          if (!out.sourceId) out.sourceId = base.id || 'glow';
           if (!out.wallpaperPreset) out.wallpaperPreset = base.wallpaperPreset || 'aurora';
+          out.loginScreenConfig = Object.assign({ avatarUrl: '', warningImageUrl: '' }, out.loginScreenConfig || {});
+          out.variants = Object.assign({ light: {}, dark: {} }, incoming.variants || {});
           if (out.wallpaperUrl && out.wallpaperPreset !== 'custom-upload') out.wallpaperPreset = 'custom-upload';
           return out;
         },
@@ -1412,7 +1464,7 @@
             if (!parsedApplied.locked && store.customThemes.indexOf(parsedApplied.id) < 0) store.customThemes.push(parsedApplied.id);
             store.activeThemeId = parsedApplied.id;
           } else {
-            store.activeThemeId = 'windows-7';
+            store.activeThemeId = 'glow';
           }
           this.themeStudioStore = store;
           return store;
@@ -1427,10 +1479,10 @@
         themeStudioWallpaperCss: function (theme) {
           var t = this.themeStudioNormalizeConfig(theme || this.themeStudioActiveTheme() || {});
           if (t.wallpaperUrl) return 'url(' + t.wallpaperUrl + ')';
-          if (t.wallpaperPreset === 'bliss') return 'linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0) 28%), linear-gradient(180deg, #8acb59 0%, #6fb14a 42%, #3e7b35 100%)';
+          if (t.wallpaperPreset === 'meadow') return 'linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0) 28%), linear-gradient(180deg, #8acb59 0%, #6fb14a 42%, #3e7b35 100%)';
           if (t.wallpaperPreset === 'aurora') return 'radial-gradient(circle at top, rgba(147,197,253,0.26), transparent 30%), linear-gradient(180deg, #16385c 0%, #23476d 36%, #3a6288 100%)';
-          if (t.wallpaperPreset === 'solid-graphite') return 'linear-gradient(180deg, #6c7a89 0%, #313b48 100%)';
-          if (t.wallpaperPreset === 'ubuntu-warm') return 'linear-gradient(180deg, #6e2d35 0%, #2d2c54 100%)';
+          if (t.wallpaperPreset === 'graphite') return 'linear-gradient(180deg, #6c7a89 0%, #313b48 100%)';
+          if (t.wallpaperPreset === 'ember') return 'linear-gradient(180deg, #6e2d35 0%, #2d2c54 100%)';
           return 'linear-gradient(180deg, #3d7ad6 0%, #2656a5 100%)';
         },
         themeStudioLoginWallpaperCss: function (theme) {
@@ -1509,6 +1561,11 @@
           rootNode.style.setProperty('--login-wallpaper', this.themeStudioLoginWallpaperCss(theme));
           rootNode.style.setProperty('--theme-minimize-speed', Math.max(120, +(theme.animationSpeeds || {}).minimize || 180) + 'ms');
           rootNode.style.setProperty('--theme-progress-speed', Math.max(120, +(theme.animationSpeeds || {}).progress || 220) + 'ms');
+          rootNode.style.setProperty('--theme-open-speed', Math.max(100, +(theme.animationSpeeds || {}).open || 180) + 'ms');
+          rootNode.style.setProperty('--theme-hover-speed', Math.max(80, +(theme.animationSpeeds || {}).hover || 120) + 'ms');
+          rootNode.style.setProperty('--theme-menu-speed', Math.max(100, +(theme.animationSpeeds || {}).menu || 160) + 'ms');
+          rootNode.style.setProperty('--theme-wallpaper-speed', Math.max(120, +(theme.animationSpeeds || {}).wallpaper || 280) + 'ms');
+          rootNode.style.setProperty('--theme-taskbar-speed', Math.max(100, +(theme.animationSpeeds || {}).taskbar || 160) + 'ms');
           loginCfg = theme.loginScreenConfig || {};
           loginStyle = loginCfg.loginBoxStyle || 'xp-transparent';
           if (loginStyle === 'glow-vibrant') {
@@ -1525,7 +1582,7 @@
             rootNode.style.setProperty('--login-box-shadow', '0 22px 56px rgba(0,0,0,0.28)');
           }
           rootNode.style.setProperty('--login-box-text', loginCfg.textColor || current['--taskbar-text'] || '#ffffff');
-          rootNode.dataset.shellTheme = theme.id || 'windows-7';
+          rootNode.dataset.shellTheme = theme.id || 'glow';
           rootNode.dataset.shellFamily = theme.base || 'win7';
           rootNode.dataset.themeBase = theme.base || 'win7';
           rootNode.dataset.taskbarPosition = (theme.taskbarConfig || {}).position || 'bottom';
@@ -1626,8 +1683,17 @@
         },
         themeStudioSetDarkEnabled: function (enabled) {
           var target = this.themeStudioEditableTheme();
+          var key;
           if (!target) return;
           target.darkEnabled = !!enabled;
+          if (!target.variants) target.variants = { light: {}, dark: {} };
+          key = target.darkEnabled ? 'dark' : 'light';
+          target.variants[key] = target.variants[key] || {};
+          target.variants[key].cssVars = this.themeStudioClone(target.cssVars || {});
+          target.variants[key].animationSpeeds = this.themeStudioClone(target.animationSpeeds || {});
+          target.variants[key].taskbarConfig = this.themeStudioClone(target.taskbarConfig || {});
+          target.variants[key].startMenuConfig = this.themeStudioClone(target.startMenuConfig || {});
+          target.variants[key].loginScreenConfig = this.themeStudioClone(target.loginScreenConfig || {});
           this.applyThemeStudioConfig(target, { silent: true, persist: false });
           this.themeStudioPersistCustomThemes();
         },
@@ -1676,20 +1742,27 @@
         themeStudioUploadField: function (path, event) {
           var self = this;
           var file = event && event.target && event.target.files && event.target.files[0];
-          var reader;
+          var form, route, kind;
           if (!file) return;
           if (file.type && file.type.indexOf('image/') !== 0) {
             this.showAlert('Theme Studio', 'Please choose an image file.');
             event.target.value = '';
             return;
           }
-          reader = new FileReader();
-          reader.onload = function () {
-            self.themeStudioUpdateField(path, reader.result);
+          route = (((this.boot || {}).routes || {}).themeAssetUpload) || '/api/mioos/theme-asset/upload';
+          kind = path.indexOf('loginScreenConfig.avatarUrl') === 0 ? 'login-avatar' : (path.indexOf('loginScreenConfig.warningImageUrl') === 0 ? 'login-warning' : (path.indexOf('loginScreenConfig.') === 0 ? 'login-wallpaper' : 'wallpaper'));
+          form = new FormData();
+          form.append('kind', kind);
+          form.append('file', file, file.name || 'image.bin');
+          fetch(route, { method: 'POST', body: form, credentials: 'same-origin' }).then(function (res) { return res.json().then(function (obj) { return { ok: res.ok, obj: obj || {} }; }); }).then(function (payload) {
+            if (!payload.ok || !payload.obj || !payload.obj.ok) throw new Error((payload.obj && (payload.obj.detail || payload.obj.error)) || 'upload_failed');
+            self.themeStudioUpdateField(path, payload.obj.url || '');
             if (path === 'wallpaperUrl') self.themeStudioUpdateField('wallpaperPreset', 'custom-upload');
-            event.target.value = '';
-          };
-          reader.readAsDataURL(file);
+          }).catch(function (err) {
+            self.showAlert('Theme Studio', 'Image upload failed: ' + (err && err.message ? err.message : 'upload_failed'));
+          }).finally(function () {
+            if (event && event.target) event.target.value = '';
+          });
         },
         themeStudioClearUploadedField: function (path) {
           this.themeStudioUpdateField(path, '');
@@ -1755,7 +1828,16 @@
           var pos = this.taskbarPosition();
           var width = +((((this.themeStudioActiveTheme() || {}).startMenuConfig || {}).width) || 360);
           var h = this.taskbarHeightValue() + 12;
+          var startStyle = this.startMenuStyleType();
           var style = { width: Math.max(300, width) + 'px' };
+          if (startStyle === 'popup') {
+            style.left = '50%';
+            style.top = '50%';
+            style.bottom = 'auto';
+            style.transform = 'translate(-50%, -50%)';
+            style.maxWidth = 'min(680px, calc(100vw - 40px))';
+            return style;
+          }
           if (pos === 'top') { style.top = h + 'px'; style.bottom = 'auto'; style.left = '14px'; }
           else if (pos === 'left') { style.left = (h + 12) + 'px'; style.bottom = '14px'; style.top = 'auto'; }
           else { style.left = '14px'; style.bottom = h + 'px'; }
@@ -1766,7 +1848,7 @@
           var style = (((theme.startMenuConfig || {}).style) || 'classic');
           var nested = ((theme.startMenuConfig || {}).nested) !== false;
           var groups;
-          if (style === 'panel') {
+          if (style === 'popup') {
             return [
               { key: 'applications', title: 'Applications', subtitle: 'Launch your tools', open: true, items: [
                 { key: 'terminal', title: 'Terminal', subtitle: 'Interactive shell', icon: '⌨' },
@@ -1829,6 +1911,11 @@
           style['--taskbar-overlay'] = (active && active.darkEnabled) ? ('rgba(255,255,255,' + (0.04 + alpha * 0.12).toFixed(3) + ')') : ('rgba(255,255,255,' + (0.02 + alpha * 0.24).toFixed(3) + ')');
           style['--taskbar-blur'] = (6 + Math.round(alpha * 14)) + 'px';
           style['--taskbar-effective-bg'] = this.taskbarEffectiveBackground(active, alpha);
+          style['--theme-open-speed'] = Math.max(100, +(((active || {}).animationSpeeds || {}).open || 180)) + 'ms';
+          style['--theme-hover-speed'] = Math.max(80, +(((active || {}).animationSpeeds || {}).hover || 120)) + 'ms';
+          style['--theme-menu-speed'] = Math.max(100, +(((active || {}).animationSpeeds || {}).menu || 160)) + 'ms';
+          style['--theme-wallpaper-speed'] = Math.max(120, +(((active || {}).animationSpeeds || {}).wallpaper || 280)) + 'ms';
+          style['--theme-taskbar-speed'] = Math.max(100, +(((active || {}).animationSpeeds || {}).taskbar || 160)) + 'ms';
           return style;
         },
         themeStudioPreviewMobileRootStyle: function () {
@@ -1844,6 +1931,11 @@
           style['--taskbar-overlay'] = (active && active.darkEnabled) ? ('rgba(255,255,255,' + (0.04 + alpha * 0.12).toFixed(3) + ')') : ('rgba(255,255,255,' + (0.02 + alpha * 0.24).toFixed(3) + ')');
           style['--taskbar-blur'] = (6 + Math.round(alpha * 14)) + 'px';
           style['--taskbar-effective-bg'] = this.taskbarEffectiveBackground(active, alpha);
+          style['--theme-open-speed'] = Math.max(100, +(((active || {}).animationSpeeds || {}).open || 180)) + 'ms';
+          style['--theme-hover-speed'] = Math.max(80, +(((active || {}).animationSpeeds || {}).hover || 120)) + 'ms';
+          style['--theme-menu-speed'] = Math.max(100, +(((active || {}).animationSpeeds || {}).menu || 160)) + 'ms';
+          style['--theme-wallpaper-speed'] = Math.max(120, +(((active || {}).animationSpeeds || {}).wallpaper || 280)) + 'ms';
+          style['--theme-taskbar-speed'] = Math.max(100, +(((active || {}).animationSpeeds || {}).taskbar || 160)) + 'ms';
           return style;
         },
         terminalStatusText: function (win) {

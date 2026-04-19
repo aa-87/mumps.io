@@ -485,6 +485,73 @@ SENDVFS(DEV,CONF,RID,OFFSET,LEN,ISMEDIA,MEDIAWARM,ERR)
 	QUIT
 	;
 	;
+THEMEASSETUP(DEV,CONF,REQ,CTX)
+	NEW STATE,ERR,MP,OBJ,OK,IDX,FILEIDX,FN,MIME,CUR,CH,USER,ID,ROOT,SIZE,KIND,TS,ROUTE
+	IF '$$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,500,"theme_asset_state_error",$GET(ERR("error")),.CTX)
+	IF '$$REQUIREAUTH(.DEV,.CONF,.CTX,.STATE) QUIT
+	SET CONF("server","multipart","maxFieldScalarBytes")=8192
+	SET OK=$$PARSE^MIOHTTPMPU(.CONF,.REQ,.MP,.ERR)
+	IF 'OK DO  QUIT
+	. SET ERR("routine")="MIOOSAPI"
+	. DO RESPERR(.DEV,.CONF,400,"invalid_multipart",$GET(ERR("error")),.CTX)
+	SET FILEIDX=0,FN="",MIME="",KIND=$GET(MP("field","kind"),"theme")
+	SET IDX=0
+	FOR  SET IDX=$ORDER(MP("part",IDX)) QUIT:'IDX!(FILEIDX>0)  DO
+	. IF $GET(MP("part",IDX,"filename"))'="" SET FILEIDX=IDX,FN=$GET(MP("part",IDX,"filename")),MIME=$GET(MP("part",IDX,"ctype"),$GET(MP("part",IDX,"contentType"),"application/octet-stream"))
+	IF FILEIDX<1 DO  QUIT
+	. DO FREE^MIOHTTPMPU(.MP)
+	. DO RESPERR(.DEV,.CONF,400,"file_missing","file_missing",.CTX)
+	SET USER=$GET(STATE("principal"),"guest")
+	SET ID="themeasset-"_$TR($$UUID^MIOUTIL(),"-","")
+	SET ROOT=$NAME(^MIO("MIOOS","THEMEASSET",USER,ID))
+	KILL @ROOT
+	SET TS=$H,SIZE=0
+	DO PARTOPEN^MIOHTTPMPU(.MP,FILEIDX,.CUR,.CONF)
+	SET IDX=0
+	FOR  QUIT:'$$PARTNEXT^MIOHTTPMPU(.MP,FILEIDX,.CUR,.CH)  DO
+	. SET IDX=IDX+1
+	. SET @ROOT@("DATA",IDX)=CH
+	. SET SIZE=SIZE+$ZLENGTH(CH)
+	DO ITCLOSE^MIOHTTPMPU(.CUR)
+	DO FREE^MIOHTTPMPU(.MP)
+	SET @ROOT@("META")=$GET(MIME,"application/octet-stream")_"^"_$GET(FN)_"^"_+SIZE_"^"_$GET(KIND)_"^"_$PIECE(TS,",",1)_"^"_$PIECE(TS,",",2)
+	SET ROUTE=$GET(CONF("mioos","route","themeAsset"),"/api/mioos/theme-asset")
+	SET OBJ("ok")=1,OBJ("uploaded")=1,OBJ("assetId")=ID,OBJ("kind")=KIND,OBJ("mime")=$GET(MIME,"application/octet-stream"),OBJ("sizeBytes")=+SIZE
+	SET OBJ("url")=ROUTE_"?id="_ID_"&v="_$PIECE(TS,",",1)_"-"_$PIECE(TS,",",2)
+	DO RESPJSONX^MIOHTTP(.DEV,.CONF,200,.OBJ,$GET(CTX("request_id")),.CTX)
+	SET CTX("status")=200
+	QUIT
+	;
+THEMEASSET(DEV,CONF,REQ,CTX)
+	NEW STATE,ERR,USER,ID,ROOT,META,MIME,FN,SIZE,HEAD,METHOD,IDX
+	IF '$$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,500,"theme_asset_state_error",$GET(ERR("error")),.CTX)
+	IF '$$REQUIREAUTH(.DEV,.CONF,.CTX,.STATE) QUIT
+	SET USER=$GET(STATE("principal"),"guest")
+	SET ID=$GET(REQ("query","id"))
+	IF ID="" DO  QUIT
+	. DO RESPERR(.DEV,.CONF,400,"asset_missing","asset_missing",.CTX)
+	SET ROOT=$NAME(^MIO("MIOOS","THEMEASSET",USER,ID))
+	SET META=$GET(@ROOT@("META"))
+	IF META="" DO  QUIT
+	. DO RESPERR(.DEV,.CONF,404,"asset_not_found","asset_not_found",.CTX)
+	SET MIME=$PIECE(META,"^",1),FN=$PIECE(META,"^",2),SIZE=+$PIECE(META,"^",3)
+	IF MIME="" SET MIME="application/octet-stream"
+	SET HEAD("Content-Type")=MIME
+	SET HEAD("Cache-Control")="private, max-age=31536000"
+	SET HEAD("Content-Length")=SIZE
+	SET HEAD("Content-Disposition")=$$DISPHDR($SELECT(FN'="":FN,1:ID),0)
+	SET METHOD=$$LOW^MIOHTTP($GET(REQ("method"),"get"))
+	DO RESPHEAD^MIOSTATIC(.DEV,.CONF,200,.HEAD,$GET(CTX("request_id")))
+	IF METHOD'="head" DO
+	. SET IDX=0
+	. FOR  SET IDX=$ORDER(@ROOT@("DATA",IDX)) QUIT:'IDX  DO WOUT^MIOSTATIC(.DEV,$GET(@ROOT@("DATA",IDX)))
+	SET CTX("status")=200
+	QUIT
+	;
+
+	;
 ISTRUE(X)
 	NEW V
 	SET V=$$LOW^MIOUTIL($GET(X))
