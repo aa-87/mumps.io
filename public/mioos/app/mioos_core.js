@@ -241,10 +241,10 @@
         },
         shellThemeOptions: function () {
           return [
-            { key: 'xp-classic-blue', label: 'Windows XP' },
-            { key: 'win7-aero', label: 'Windows 7' },
-            { key: 'mac-slate', label: 'macOS' },
-            { key: 'ubuntu-amber', label: 'Ubuntu' }
+            { key: 'xp-classic-blue', label: 'Vintage' },
+            { key: 'win7-aero', label: 'Glow' },
+            { key: 'mac-slate', label: 'Curve' },
+            { key: 'ubuntu-amber', label: 'Panel' }
           ];
         },
         resolveShellThemeProfile: function (themeKey) {
@@ -975,25 +975,25 @@
         themeStudioBaseThemeConfigs: function () {
           return {
             'windows-xp': {
-              id: 'windows-xp', name: 'Windows XP', base: 'xp', locked: true, iconSet: 'system', fontStack: 'Tahoma, "Segoe UI", sans-serif', wallpaperPreset: 'bliss', wallpaperUrl: '', wallpaperFit: 'cover', previewScale: 0.86, classModifiers: ['xp-luna'], animationSpeeds: { minimize: 180, progress: 220 }, extraCss: '',
+              id: 'windows-xp', name: 'Vintage', base: 'xp', locked: true, iconSet: 'system', fontStack: 'Tahoma, "Segoe UI", sans-serif', wallpaperPreset: 'bliss', wallpaperUrl: '', wallpaperFit: 'cover', previewScale: 0.86, classModifiers: ['xp-luna'], animationSpeeds: { minimize: 180, progress: 220 }, extraCss: '',
               cssVars: {
                 '--desktop-bg': '#3d7ad6', '--desktop-overlay': 'rgba(255,255,255,0.06)', '--window-bg': '#f5f9ff', '--window-border': '#2456a6', '--window-border-strong': '#13326a', '--titlebar-bg': 'linear-gradient(180deg, #0f5bd7 0%, #3f8df6 52%, #a9c7ff 100%)', '--titlebar-text': '#ffffff', '--titlebar-inactive': 'linear-gradient(180deg, #6c89b0 0%, #9bb2ce 100%)', '--accent': '#0b63f6', '--accent-soft': 'rgba(11,99,246,0.18)', '--taskbar-bg': 'linear-gradient(180deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0.06) 22%, #0f4aa9 23%, #0a246a 100%)', '--taskbar-border': 'rgba(255,255,255,0.28)', '--taskbar-text': '#ffffff', '--menu-bg': 'rgba(248,251,255,0.96)', '--menu-border': '#7fa7e7', '--menu-text': '#10233f', '--menu-hover': 'linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(200,224,255,0.95) 100%)', '--menu-divider': 'rgba(36,86,166,0.18)', '--menu-shadow': '0 18px 40px rgba(8, 26, 63, 0.35)', '--icon-label-bg': 'rgba(15,32,68,0.36)', '--icon-label-text': '#f8fbff', '--icon-shadow': '0 1px 2px rgba(0,0,0,0.75)', '--shadow-window': '0 18px 40px rgba(8,24,56,0.30)', '--shadow-window-active': '0 24px 48px rgba(4,18,44,0.38)', '--font-ui': 'Tahoma, "Segoe UI", sans-serif', '--font-size-ui': '11px', '--window-radius': '10px', '--desktop-grid-cell': '88px', '--desktop-icon-size': '48px', '--titlebar-height': '32px', '--taskbar-height': '48px', '--button-radius': '7px', '--button-tint': 'linear-gradient(180deg, #ffffff 0%, #d8e8ff 100%)', '--button-tint-hover': 'linear-gradient(180deg, #ffffff 0%, #c8defd 100%)', '--glass-opacity': '0', '--control-min': '#f2d25a', '--control-max': '#7ecb61', '--control-close': '#e06d5c'
               }
             },
             'windows-7': {
-              id: 'windows-7', name: 'Windows 7', base: 'win7', locked: true, iconSet: 'system', fontStack: '"Segoe UI", Tahoma, sans-serif', wallpaperPreset: 'aurora', wallpaperUrl: '', wallpaperFit: 'cover', previewScale: 0.86, classModifiers: ['glass'], animationSpeeds: { minimize: 220, progress: 240 }, extraCss: '',
+              id: 'windows-7', name: 'Glow', base: 'win7', locked: true, iconSet: 'system', fontStack: '"Segoe UI", Tahoma, sans-serif', wallpaperPreset: 'aurora', wallpaperUrl: '', wallpaperFit: 'cover', previewScale: 0.86, classModifiers: ['glass'], animationSpeeds: { minimize: 220, progress: 240 }, extraCss: '',
               cssVars: {
                 '--desktop-bg': '#173a5d', '--desktop-overlay': 'rgba(255,255,255,0.08)', '--window-bg': 'rgba(248,251,255,0.78)', '--window-border': 'rgba(255,255,255,0.64)', '--window-border-strong': 'rgba(58,77,106,0.88)', '--titlebar-bg': 'linear-gradient(180deg, rgba(255,255,255,0.38) 0%, rgba(152,198,255,0.14) 100%)', '--titlebar-text': '#12304b', '--titlebar-inactive': 'linear-gradient(180deg, rgba(255,255,255,0.16) 0%, rgba(139,162,190,0.08) 100%)', '--accent': '#4ba3ff', '--accent-soft': 'rgba(75,163,255,0.18)', '--taskbar-bg': 'linear-gradient(180deg, rgba(255,255,255,0.15) 0%, rgba(16,24,39,0.34) 100%)', '--taskbar-border': 'rgba(255,255,255,0.22)', '--taskbar-text': '#f4f8ff', '--menu-bg': 'rgba(248,251,255,0.88)', '--menu-border': 'rgba(255,255,255,0.48)', '--menu-text': '#10243d', '--menu-hover': 'linear-gradient(180deg, rgba(255,255,255,0.78) 0%, rgba(214,231,255,0.85) 100%)', '--menu-divider': 'rgba(255,255,255,0.24)', '--menu-shadow': '0 24px 60px rgba(8, 18, 36, 0.40)', '--icon-label-bg': 'rgba(11,25,49,0.34)', '--icon-label-text': '#f8fbff', '--icon-shadow': '0 1px 2px rgba(0,0,0,0.78)', '--shadow-window': '0 18px 42px rgba(0,0,0,0.28)', '--shadow-window-active': '0 24px 58px rgba(0,0,0,0.36)', '--font-ui': '"Segoe UI", Tahoma, sans-serif', '--font-size-ui': '12px', '--window-radius': '14px', '--desktop-grid-cell': '92px', '--desktop-icon-size': '50px', '--titlebar-height': '36px', '--taskbar-height': '48px', '--button-radius': '8px', '--button-tint': 'linear-gradient(180deg, rgba(255,255,255,0.82) 0%, rgba(224,238,255,0.72) 100%)', '--button-tint-hover': 'linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(210,232,255,0.84) 100%)', '--glass-opacity': '0.76', '--control-min': '#f2d25a', '--control-max': '#7ecb61', '--control-close': '#e06d5c'
               }
             },
             'mac-os': {
-              id: 'mac-os', name: 'macOS', base: 'mac', locked: true, iconSet: 'system', fontStack: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', wallpaperPreset: 'solid-graphite', wallpaperUrl: '', wallpaperFit: 'cover', previewScale: 0.84, classModifiers: ['vibrant'], animationSpeeds: { minimize: 210, progress: 200 }, extraCss: '',
+              id: 'mac-os', name: 'Curve', base: 'mac', locked: true, iconSet: 'system', fontStack: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', wallpaperPreset: 'solid-graphite', wallpaperUrl: '', wallpaperFit: 'cover', previewScale: 0.84, classModifiers: ['vibrant'], animationSpeeds: { minimize: 210, progress: 200 }, extraCss: '',
               cssVars: {
                 '--desktop-bg': '#5f6975', '--desktop-overlay': 'rgba(255,255,255,0.04)', '--window-bg': 'rgba(252,252,252,0.92)', '--window-border': '#cfd6df', '--window-border-strong': '#adb7c4', '--titlebar-bg': 'linear-gradient(180deg, #f4f5f7 0%, #d7dce2 100%)', '--titlebar-text': '#18202b', '--titlebar-inactive': 'linear-gradient(180deg, #edf1f4 0%, #cfd6dd 100%)', '--accent': '#0a84ff', '--accent-soft': 'rgba(10,132,255,0.16)', '--taskbar-bg': 'rgba(246,247,249,0.26)', '--taskbar-border': 'rgba(255,255,255,0.28)', '--taskbar-text': '#f7f9fc', '--menu-bg': 'rgba(255,255,255,0.82)', '--menu-border': 'rgba(214,221,228,0.82)', '--menu-text': '#1f2937', '--menu-hover': 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(238,242,247,0.92) 100%)', '--menu-divider': 'rgba(159,171,184,0.25)', '--menu-shadow': '0 22px 54px rgba(15, 23, 42, 0.30)', '--icon-label-bg': 'rgba(18,25,35,0.28)', '--icon-label-text': '#ffffff', '--icon-shadow': '0 1px 3px rgba(0,0,0,0.75)', '--shadow-window': '0 18px 40px rgba(0,0,0,0.18)', '--shadow-window-active': '0 22px 52px rgba(0,0,0,0.24)', '--font-ui': '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', '--font-size-ui': '12px', '--window-radius': '16px', '--desktop-grid-cell': '90px', '--desktop-icon-size': '50px', '--titlebar-height': '34px', '--taskbar-height': '64px', '--button-radius': '999px', '--button-tint': 'linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(231,235,241,0.92) 100%)', '--button-tint-hover': 'linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(244,246,249,0.96) 100%)', '--glass-opacity': '0.68', '--control-min': '#f5c84c', '--control-max': '#63c554', '--control-close': '#ff5f57'
               }
             },
             'ubuntu': {
-              id: 'ubuntu', name: 'Ubuntu', base: 'ubuntu', locked: true, iconSet: 'system', fontStack: 'Ubuntu, "Segoe UI", sans-serif', wallpaperPreset: 'ubuntu-warm', wallpaperUrl: '', wallpaperFit: 'cover', previewScale: 0.86, classModifiers: ['ambiance'], animationSpeeds: { minimize: 190, progress: 210 }, extraCss: '',
+              id: 'ubuntu', name: 'Panel', base: 'ubuntu', locked: true, iconSet: 'system', fontStack: 'Ubuntu, "Segoe UI", sans-serif', wallpaperPreset: 'ubuntu-warm', wallpaperUrl: '', wallpaperFit: 'cover', previewScale: 0.86, classModifiers: ['ambiance'], animationSpeeds: { minimize: 190, progress: 210 }, extraCss: '',
               cssVars: {
                 '--desktop-bg': '#3d1937', '--desktop-overlay': 'rgba(255,255,255,0.03)', '--window-bg': '#2b2431', '--window-border': '#6b5d74', '--window-border-strong': '#16111a', '--titlebar-bg': 'linear-gradient(180deg, #4b3a52 0%, #302734 100%)', '--titlebar-text': '#f7f1ff', '--titlebar-inactive': 'linear-gradient(180deg, #5c4d61 0%, #3d3342 100%)', '--accent': '#e95420', '--accent-soft': 'rgba(233,84,32,0.16)', '--taskbar-bg': 'linear-gradient(180deg, rgba(24,24,27,0.95) 0%, rgba(11,11,12,0.96) 100%)', '--taskbar-border': 'rgba(255,255,255,0.08)', '--taskbar-text': '#f8f2ff', '--menu-bg': 'rgba(35,29,39,0.96)', '--menu-border': '#6b5d74', '--menu-text': '#f8f2ff', '--menu-hover': 'linear-gradient(180deg, rgba(233,84,32,0.24) 0%, rgba(98,54,26,0.32) 100%)', '--menu-divider': 'rgba(255,255,255,0.08)', '--menu-shadow': '0 24px 58px rgba(0,0,0,0.42)', '--icon-label-bg': 'rgba(10,8,12,0.36)', '--icon-label-text': '#ffffff', '--icon-shadow': '0 1px 3px rgba(0,0,0,0.85)', '--shadow-window': '0 20px 45px rgba(0,0,0,0.34)', '--shadow-window-active': '0 24px 58px rgba(0,0,0,0.42)', '--font-ui': 'Ubuntu, "Segoe UI", sans-serif', '--font-size-ui': '11px', '--window-radius': '12px', '--desktop-grid-cell': '90px', '--desktop-icon-size': '48px', '--titlebar-height': '34px', '--taskbar-height': '40px', '--button-radius': '6px', '--button-tint': 'linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(233,84,32,0.10) 100%)', '--button-tint-hover': 'linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(233,84,32,0.22) 100%)', '--glass-opacity': '0.18', '--control-min': '#f2d25a', '--control-max': '#7ecb61', '--control-close': '#e95420'
               }
@@ -1032,6 +1032,7 @@
           store.previewWindowState = this.themeStudioDefaultPreviewWindow();
           store.importBuffer = '';
           store.activeTab = 'global';
+          if (!store.previewTab) store.previewTab = 'desktop';
           presets = this.themeStudioBaseThemeConfigs();
           Object.keys(presets).forEach(function (id) {
             store.themes[id] = this.themeStudioNormalizeConfig(presets[id]);
@@ -1350,7 +1351,7 @@
           out.cssVars = Object.assign({}, base.cssVars || {}, incoming.cssVars || {});
           out.animationSpeeds = Object.assign({}, base.animationSpeeds || {}, incoming.animationSpeeds || {});
           out.taskbarConfig = Object.assign({ position: 'bottom', height: parseInt((base.cssVars || {})['--taskbar-height'] || '48', 10) || 48, transparentAmount: 0, buttonStyle: 'xp' }, base.taskbarConfig || {}, incoming.taskbarConfig || {});
-          out.startMenuConfig = Object.assign({ style: 'classic', width: 360, accentColor: (out.cssVars || {})['--accent'] || '#0b63f6', nested: true, variants: ['classic', 'modern', 'compact'] }, base.startMenuConfig || {}, incoming.startMenuConfig || {});
+          out.startMenuConfig = Object.assign({ style: 'classic', width: 360, accentColor: (out.cssVars || {})['--accent'] || '#0b63f6', nested: true, variants: ['classic', 'panel'] }, base.startMenuConfig || {}, incoming.startMenuConfig || {});
           out.loginScreenConfig = Object.assign({ wallpaperUrl: '', privacyNotice: '', warningTitle: '', loginBoxStyle: 'xp-transparent', avatarSize: 72, textColor: (out.cssVars || {})['--taskbar-text'] || '#ffffff' }, base.loginScreenConfig || {}, incoming.loginScreenConfig || {});
           out.mobileConfig = Object.assign({ taskbarHeightMobile: 46, iconSizeMobile: 60, dockCompact: true }, base.mobileConfig || {}, incoming.mobileConfig || {});
           out.colorSchemes = (incoming.colorSchemes && incoming.colorSchemes.length) ? incoming.colorSchemes.slice() : ((base.colorSchemes && base.colorSchemes.length) ? base.colorSchemes.slice() : []);
@@ -1371,6 +1372,7 @@
           store.order = [];
           store.customThemes = [];
           store.activeTab = 'themes';
+          if (!store.previewTab) store.previewTab = 'desktop';
           store.previewWindowState = this.themeStudioDefaultPreviewWindow();
           store.importBuffer = '';
           presets = this.themeStudioBaseThemeConfigs();
@@ -1431,21 +1433,36 @@
         themeStudioDarkOverrides: function (theme) {
           if (!theme || !theme.darkEnabled) return {};
           return {
-            '--window-bg': 'rgba(20, 26, 38, 0.92)',
+            '--window-bg': 'rgba(20, 26, 38, 0.94)',
             '--window-border': 'rgba(148, 163, 184, 0.28)',
             '--window-border-strong': 'rgba(8, 12, 20, 0.88)',
             '--titlebar-text': '#f8fbff',
-            '--titlebar-bg': 'linear-gradient(180deg, rgba(55,65,81,0.96) 0%, rgba(20,25,35,0.96) 100%)',
+            '--titlebar-bg': 'linear-gradient(180deg, rgba(71,85,105,0.96) 0%, rgba(17,24,39,0.96) 100%)',
+            '--titlebar-inactive': 'linear-gradient(180deg, rgba(75,85,99,0.72) 0%, rgba(31,41,55,0.88) 100%)',
             '--taskbar-bg': 'linear-gradient(180deg, rgba(36,41,48,0.96) 0%, rgba(12,15,20,0.96) 100%)',
             '--taskbar-text': '#f8fbff',
+            '--taskbar-border': 'rgba(255,255,255,0.12)',
             '--menu-bg': 'rgba(18, 24, 34, 0.96)',
             '--menu-border': 'rgba(148,163,184,0.28)',
             '--menu-text': '#f8fbff',
             '--menu-hover': 'linear-gradient(180deg, rgba(59,130,246,0.24) 0%, rgba(29,78,216,0.32) 100%)',
+            '--menu-divider': 'rgba(148,163,184,0.18)',
             '--icon-label-bg': 'rgba(8, 15, 24, 0.54)',
             '--icon-label-text': '#ffffff',
             '--button-tint': 'linear-gradient(180deg, rgba(73,87,112,0.98) 0%, rgba(44,54,70,0.98) 100%)',
-            '--button-tint-hover': 'linear-gradient(180deg, rgba(102,119,146,0.98) 0%, rgba(53,67,86,0.98) 100%)'
+            '--button-tint-hover': 'linear-gradient(180deg, rgba(102,119,146,0.98) 0%, rgba(53,67,86,0.98) 100%)',
+            '--theme-surface': 'rgba(17, 24, 39, 0.78)',
+            '--theme-surface-strong': 'rgba(15, 23, 42, 0.88)',
+            '--theme-panel-bg': 'rgba(15, 23, 42, 0.72)',
+            '--theme-panel-border': 'rgba(148, 163, 184, 0.22)',
+            '--theme-field-bg': 'rgba(15, 23, 42, 0.86)',
+            '--theme-field-text': '#f8fbff',
+            '--theme-muted-text': '#cbd5e1',
+            '--theme-tab-bg': 'rgba(15, 23, 42, 0.62)',
+            '--theme-tab-active-bg': 'linear-gradient(180deg, rgba(59,130,246,0.30) 0%, rgba(30,41,59,0.92) 100%)',
+            '--theme-tab-border': 'rgba(148, 163, 184, 0.22)',
+            '--theme-preview-card-bg': 'rgba(15, 23, 42, 0.58)',
+            '--theme-preview-card-border': 'rgba(148, 163, 184, 0.22)'
           };
         },
         applyThemeStudioConfig: function (config, options) {
@@ -1494,6 +1511,7 @@
           rootNode.dataset.themeBase = theme.base || 'win7';
           rootNode.dataset.taskbarPosition = (theme.taskbarConfig || {}).position || 'bottom';
           rootNode.dataset.startMenuStyle = (theme.startMenuConfig || {}).style || 'classic';
+          rootNode.dataset.taskbarButtonStyle = (theme.taskbarConfig || {}).buttonStyle || 'xp';
           rootNode.classList.toggle('theme-dark-mode', !!theme.darkEnabled);
           rootNode.classList.remove('theme-base-xp', 'theme-base-win7', 'theme-base-mac', 'theme-base-ubuntu');
           rootNode.classList.add('theme-base-' + (theme.base || 'win7'));
@@ -1531,6 +1549,14 @@
         themeStudioSetTab: function (tabKey) {
           this.initThemeStudioStore();
           this.themeStudioStore.activeTab = tabKey || 'themes';
+        },
+        themeStudioPreviewTab: function () {
+          this.initThemeStudioStore();
+          return (((this.themeStudioStore || {}).previewTab) || 'desktop');
+        },
+        themeStudioSetPreviewTab: function (tabKey) {
+          this.initThemeStudioStore();
+          this.themeStudioStore.previewTab = (tabKey === 'mobile') ? 'mobile' : 'desktop';
         },
         themeStudioRenameActiveTheme: function (nextName) {
           var name = nextName;
@@ -1575,7 +1601,15 @@
         },
         themeStudioSetFontScale: function (value) {
           var next = Math.max(10, Math.min(18, +value || 12));
-          this.themeStudioUpdateVar('--font-size-ui', next + 'px');
+          var target = this.themeStudioEditableTheme();
+          var titlebar;
+          if (!target) return;
+          if (!target.cssVars) target.cssVars = {};
+          titlebar = Math.max(30, Math.round(next * 2.9));
+          target.cssVars['--font-size-ui'] = next + 'px';
+          target.cssVars['--titlebar-height'] = titlebar + 'px';
+          this.applyThemeStudioConfig(target, { silent: true, persist: false });
+          this.themeStudioPersistCustomThemes();
         },
         themeStudioFontScaleValue: function () {
           return parseInt(this.themeStudioTextValue('--font-size-ui', '12px'), 10) || 12;
@@ -1623,10 +1657,23 @@
           if (mobile && theme.mobileConfig && theme.mobileConfig.taskbarHeightMobile) return +theme.mobileConfig.taskbarHeightMobile;
           return +(((theme.taskbarConfig || {}).height) || parseInt((((theme.cssVars || {})['--taskbar-height']) || '48px'), 10) || ((((this.boot || {}).desktop || {}).windowing || {}).taskbarHeight) || 48);
         },
+        taskbarButtonStyleType: function () {
+          var theme = this.themeStudioActiveTheme() || {};
+          return (((theme.taskbarConfig || {}).buttonStyle) || 'xp');
+        },
+        taskbarTransparencyValue: function () {
+          var theme = this.themeStudioActiveTheme() || {};
+          return Math.max(0, Math.min(1, +(((theme.taskbarConfig || {}).transparentAmount) || 0)));
+        },
         taskbarShellStyle: function () {
           var pos = this.taskbarPosition();
           var h = this.taskbarHeightValue();
-          var style = {};
+          var alpha = this.taskbarTransparencyValue();
+          var style = {
+            '--taskbar-transparency': String(alpha),
+            '--taskbar-overlay': (this.themeStudioActiveTheme() || {}).darkEnabled ? ('rgba(255,255,255,' + (0.04 + alpha * 0.12).toFixed(3) + ')') : ('rgba(255,255,255,' + (0.02 + alpha * 0.24).toFixed(3) + ')'),
+            '--taskbar-blur': (6 + Math.round(alpha * 14)) + 'px'
+          };
           if (pos === 'left') style.width = h + 'px'; else style.height = h + 'px';
           return style;
         },
@@ -1645,8 +1692,25 @@
           return style;
         },
         startMenuGroups: function () {
-          var nested = (((this.themeStudioActiveTheme() || {}).startMenuConfig || {}).nested) !== false;
-          var groups = [
+          var theme = this.themeStudioActiveTheme() || {};
+          var style = (((theme.startMenuConfig || {}).style) || 'classic');
+          var nested = ((theme.startMenuConfig || {}).nested) !== false;
+          var groups;
+          if (style === 'panel') {
+            return [
+              { key: 'favorites', title: 'Favorites', subtitle: 'Quick launch', open: true, items: [
+                { key: 'my-computer', title: 'Home Folder', subtitle: 'Browse storage', icon: '🗂' },
+                { key: 'theme-studio', title: 'Appearance', subtitle: 'Customize the shell', icon: '🎨' },
+                { key: 'terminal', title: 'Terminal', subtitle: 'Interactive shell', icon: '⌨' }
+              ]},
+              { key: 'system', title: 'System', subtitle: 'Settings and diagnostics', open: true, items: [
+                { key: 'control-panel', title: 'Settings', subtitle: 'System configuration', icon: '⚙' },
+                { key: 'security-center', title: 'Security', subtitle: 'Sessions and users', icon: '🛡' },
+                { key: 'debug-center', title: 'Diagnostics', subtitle: 'Developer tools', icon: '🧪' }
+              ]}
+            ];
+          }
+          groups = [
             { key: 'system', title: 'System Tools', subtitle: 'Core shell utilities', open: true, items: [
               { key: 'my-computer', title: 'My Computer', subtitle: 'Browse storage', icon: '🖥' },
               { key: 'documents', title: 'Documents', subtitle: 'Open recent files', icon: '📁' },
@@ -1680,21 +1744,29 @@
         },
         themeStudioPreviewRootStyle: function () {
           var active = this.themeStudioActiveTheme();
+          var alpha = this.taskbarTransparencyValue();
           var style = { '--desktop-wallpaper': this.themeStudioWallpaperCss(active), '--login-wallpaper': this.themeStudioLoginWallpaperCss(active), transform: 'scale(' + (((active || {}).previewScale) || 0.86) + ')' };
           var current = Object.assign({}, ((active || {}).cssVars) || {}, this.themeStudioDarkOverrides(active));
           Object.keys(current).forEach(function (key) { style[key] = current[key]; });
           style['--taskbar-height'] = this.taskbarHeightValue() + 'px';
           style['--start-menu-width'] = ((((active || {}).startMenuConfig || {}).width) || 360) + 'px';
+          style['--taskbar-transparency'] = String(alpha);
+          style['--taskbar-overlay'] = (active && active.darkEnabled) ? ('rgba(255,255,255,' + (0.04 + alpha * 0.12).toFixed(3) + ')') : ('rgba(255,255,255,' + (0.02 + alpha * 0.24).toFixed(3) + ')');
+          style['--taskbar-blur'] = (6 + Math.round(alpha * 14)) + 'px';
           return style;
         },
         themeStudioPreviewMobileRootStyle: function () {
           var active = this.themeStudioActiveTheme();
           var mobileHeight = (((active || {}).mobileConfig || {}).taskbarHeightMobile) || 46;
+          var alpha = this.taskbarTransparencyValue();
           var current = Object.assign({}, ((active || {}).cssVars) || {}, this.themeStudioDarkOverrides(active));
           var style = { '--desktop-wallpaper': this.themeStudioWallpaperCss(active), '--login-wallpaper': this.themeStudioLoginWallpaperCss(active) };
           Object.keys(current).forEach(function (key) { style[key] = current[key]; });
           style['--taskbar-height'] = mobileHeight + 'px';
           style['--desktop-icon-size'] = ((((active || {}).mobileConfig || {}).iconSizeMobile) || 60) + 'px';
+          style['--taskbar-transparency'] = String(alpha);
+          style['--taskbar-overlay'] = (active && active.darkEnabled) ? ('rgba(255,255,255,' + (0.04 + alpha * 0.12).toFixed(3) + ')') : ('rgba(255,255,255,' + (0.02 + alpha * 0.24).toFixed(3) + ')');
+          style['--taskbar-blur'] = (6 + Math.round(alpha * 14)) + 'px';
           return style;
         },
         terminalStatusText: function (win) {

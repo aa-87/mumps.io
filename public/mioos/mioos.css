@@ -29,6 +29,21 @@
   --font-size-ui: 11px;
   --window-radius: 10px;
   --taskbar-height: 48px;
+  --taskbar-transparency: 0;
+  --taskbar-overlay: rgba(255,255,255,0.02);
+  --taskbar-blur: 6px;
+  --theme-surface: rgba(255,255,255,0.42);
+  --theme-surface-strong: rgba(255,255,255,0.56);
+  --theme-panel-bg: rgba(255,255,255,0.58);
+  --theme-panel-border: rgba(15,23,42,0.08);
+  --theme-field-bg: rgba(255,255,255,0.86);
+  --theme-field-text: #0f172a;
+  --theme-muted-text: #475569;
+  --theme-tab-bg: rgba(255,255,255,0.38);
+  --theme-tab-active-bg: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(224,236,255,0.92));
+  --theme-tab-border: rgba(15,23,42,0.10);
+  --theme-preview-card-bg: rgba(255,255,255,0.32);
+  --theme-preview-card-border: rgba(15,23,42,0.08);
   --titlebar-height: 32px;
   --desktop-grid-cell: 88px;
   --desktop-icon-size: 48px;
@@ -123,7 +138,7 @@ button:disabled { cursor: default; opacity: .55; }
   border: 0;
   border-radius: 999px;
   padding: 8px 12px;
-  background: rgba(255,255,255,0.14);
+  background: color-mix(in srgb, var(--theme-surface) 78%, transparent 22%);
   color: inherit;
 }
 
@@ -212,7 +227,7 @@ button:disabled { cursor: default; opacity: .55; }
 .mioos-start-menu-vue.style-modern .mioos-start-list-vue { grid-template-columns: 1fr 1fr; align-content: start; }
 .mioos-start-menu-vue.style-compact .mioos-start-entry-vue { padding: 8px 10px; }
 .mioos-start-group-vue {
-  border: 1px solid rgba(15,23,42,0.08);
+  border: 1px solid var(--theme-panel-border);
   border-radius: 14px;
   background: rgba(255,255,255,0.38);
   overflow: hidden;
@@ -593,6 +608,7 @@ button:disabled { cursor: default; opacity: .55; }
 
 .mioos-taskbar-vue {
   position: absolute;
+  isolation: isolate;
   left: 0;
   right: 0;
   bottom: 0;
@@ -723,7 +739,8 @@ button:disabled { cursor: default; opacity: .55; }
   flex-direction: column;
   height: 100%;
   min-height: 0;
-  background: linear-gradient(180deg, rgba(255,255,255,0.46), rgba(255,255,255,0.16));
+  color: var(--menu-text);
+  background: linear-gradient(180deg, var(--theme-surface-strong), var(--theme-surface));
 }
 .mioos-theme-studio-toolbar-vue {
   display: flex;
@@ -731,11 +748,11 @@ button:disabled { cursor: default; opacity: .55; }
   justify-content: space-between;
   gap: 12px;
   padding: 12px 14px;
-  border-bottom: 1px solid rgba(15,23,42,0.08);
-  background: rgba(255,255,255,0.42);
+  border-bottom: 1px solid var(--theme-panel-border);
+  background: var(--theme-surface);
 }
 .mioos-theme-studio-toolbar-copy { display: grid; gap: 4px; }
-.mioos-theme-studio-toolbar-copy span { color: #475569; }
+.mioos-theme-studio-toolbar-copy span { color: var(--theme-muted-text); }
 .mioos-theme-studio-toolbar-actions {
   display: flex;
   align-items: center;
@@ -754,7 +771,7 @@ button:disabled { cursor: default; opacity: .55; }
   min-height: 0;
   overflow: auto;
   padding: 14px;
-  background: rgba(255,255,255,0.26);
+  background: color-mix(in srgb, var(--theme-surface) 78%, transparent 22%);
 }
 .mioos-theme-studio-sidebar-vue {
   display: grid;
@@ -937,8 +954,8 @@ button:disabled { cursor: default; opacity: .55; }
   border: 1px solid rgba(59,130,246,0.18);
   border-radius: 12px;
   padding: 9px 11px;
-  background: rgba(255,255,255,0.86);
-  color: #0f172a;
+  background: var(--theme-field-bg);
+  color: var(--theme-field-text);
   outline: none;
 }
 .mioos-theme-preview-content-vue input:focus,
@@ -960,6 +977,7 @@ button:disabled { cursor: default; opacity: .55; }
 }
 .mioos-theme-preview-taskbar-vue {
   position: absolute;
+  isolation: isolate;
   left: 0;
   right: 0;
   bottom: 0;
@@ -972,6 +990,104 @@ button:disabled { cursor: default; opacity: .55; }
   color: var(--taskbar-text);
   background: var(--taskbar-bg);
   border-top: 1px solid var(--taskbar-border);
+}
+
+.mioos-taskbar-vue::before,
+.mioos-theme-preview-taskbar-vue::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: var(--taskbar-overlay);
+  backdrop-filter: blur(var(--taskbar-blur));
+  pointer-events: none;
+}
+.mioos-taskbar-vue > *,
+.mioos-theme-preview-taskbar-vue > * { position: relative; z-index: 1; }
+.mioos-taskbar-vue.button-xp .mioos-start-button-vue,
+.mioos-taskbar-vue.button-xp .mioos-task-item-vue,
+.mioos-taskbar-vue.button-xp .mioos-task-icon-vue,
+.mioos-taskbar-vue.button-xp .mioos-task-clock-vue,
+.mioos-theme-preview-taskbar-vue.button-xp .mioos-theme-preview-start-vue,
+.mioos-theme-preview-taskbar-vue.button-xp .mioos-theme-preview-running-vue span {
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.18);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.18);
+}
+.mioos-taskbar-vue.button-glow .mioos-start-button-vue,
+.mioos-taskbar-vue.button-glow .mioos-task-item-vue,
+.mioos-taskbar-vue.button-glow .mioos-task-icon-vue,
+.mioos-taskbar-vue.button-glow .mioos-task-clock-vue,
+.mioos-theme-preview-taskbar-vue.button-glow .mioos-theme-preview-start-vue,
+.mioos-theme-preview-taskbar-vue.button-glow .mioos-theme-preview-running-vue span {
+  border-radius: 14px;
+  background: rgba(255,255,255,0.14);
+  box-shadow: 0 10px 22px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.22);
+}
+.mioos-taskbar-vue.button-curve .mioos-start-button-vue,
+.mioos-taskbar-vue.button-curve .mioos-task-item-vue,
+.mioos-taskbar-vue.button-curve .mioos-task-icon-vue,
+.mioos-taskbar-vue.button-curve .mioos-task-clock-vue,
+.mioos-theme-preview-taskbar-vue.button-curve .mioos-theme-preview-start-vue,
+.mioos-theme-preview-taskbar-vue.button-curve .mioos-theme-preview-running-vue span {
+  border-radius: 999px;
+  background: rgba(255,255,255,0.18);
+}
+.mioos-theme-icon-toggle-vue { min-width: 42px; padding-inline: 0; justify-content: center; font-size: 18px; }
+.mioos-theme-previewtabs-vue { gap: 8px; }
+.mioos-theme-previewtabs-vue > menu { display: flex; gap: 8px; }
+.mioos-theme-studio-vue .tabs > menu button {
+  border: 1px solid var(--theme-tab-border);
+  background: var(--theme-tab-bg);
+  color: var(--theme-field-text);
+}
+.mioos-theme-studio-vue .tabs > menu button[aria-selected="true"] {
+  background: var(--theme-tab-active-bg);
+  color: var(--theme-field-text);
+}
+.mioos-theme-studio-vue .tabs > article[role="tabpanel"] { padding: 0; background: transparent; }
+.theme-dark-mode .mioos-theme-studio-vue .mioos-btn,
+.theme-dark-mode .mioos-theme-studio-vue .mioos-chip-btn { color: var(--theme-field-text); border-color: var(--theme-panel-border); }
+.theme-dark-mode .mioos-theme-studio-vue input::placeholder,
+.theme-dark-mode .mioos-theme-studio-vue textarea::placeholder { color: color-mix(in srgb, var(--theme-field-text) 55%, transparent 45%); }
+.mioos-start-menu-vue.style-panel {
+  min-height: 380px;
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+}
+.mioos-start-panel-vue {
+  display: grid;
+  gap: 12px;
+  padding: 14px 18px 18px;
+  overflow: auto;
+}
+.mioos-start-panel-group-vue,
+.mioos-theme-panelmenu-group-vue {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.22);
+  border: 1px solid rgba(15,23,42,0.08);
+}
+.mioos-theme-startmenu-mini-vue.style-panel { grid-template-columns: 1fr; }
+.mioos-theme-preview-startmenu-open-vue.style-panel { gap: 10px; }
+.mioos-theme-preview-startmenu-open-vue.style-panel span {
+  display: block;
+  padding: 6px 8px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.12);
+}
+.mioos-theme-login-preview-vue.is-mobile { padding: 14px; }
+.mioos-theme-login-preview-vue.is-mobile .mioos-theme-login-card-vue {
+  width: min(190px, 92%);
+  gap: 10px;
+  padding: 14px;
+}
+.mioos-theme-login-preview-vue.is-mobile .mioos-theme-login-privacy-vue {
+  top: 10px;
+  left: 10px;
+  right: 10px;
 }
 .mioos-theme-preview-start-vue {
   border: 0;
@@ -999,7 +1115,7 @@ button:disabled { cursor: default; opacity: .55; }
   padding: 14px;
   border: 1px solid rgba(15,23,42,0.08);
   border-radius: 18px;
-  background: rgba(255,255,255,0.58);
+  background: var(--theme-panel-bg);
 }
 .mioos-field-grid {
   display: grid;
@@ -1132,7 +1248,7 @@ button:disabled { cursor: default; opacity: .55; }
   padding: 12px 14px;
   border: 1px solid rgba(15,23,42,0.08);
   border-radius: 12px;
-  background: rgba(255,255,255,0.68);
+  background: color-mix(in srgb, var(--theme-panel-bg) 82%, white 18%);
 }
 .mioos-theme-studio-previewrail-vue {
   min-height: 0;
@@ -1140,15 +1256,15 @@ button:disabled { cursor: default; opacity: .55; }
   padding: 14px;
   display: grid;
   gap: 14px;
-  background: rgba(255,255,255,0.14);
+  background: color-mix(in srgb, var(--theme-surface) 78%, transparent 22%);
 }
 .mioos-theme-preview-card-vue {
   display: grid;
   gap: 10px;
   padding: 12px;
-  border: 1px solid rgba(15,23,42,0.08);
+  border: 1px solid var(--theme-preview-card-border);
   border-radius: 16px;
-  background: rgba(255,255,255,0.32);
+  background: var(--theme-preview-card-bg);
 }
 .mioos-theme-preview-card-vue.is-mobile strong::after {
   content: " · touch";
