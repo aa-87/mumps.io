@@ -10,6 +10,7 @@
     var WM = (window.MIOOSWM || {}).methods || {};
     var Terminal = (window.MIOOSTerminal || {}).methods || {};
     var Explorer = (window.MIOOSExplorer || {}).methods || {};
+    var Theme = (window.MIOOSTheme || {}).methods || {};
     var I18N = window.MIOOSI18N || {};
 
     var app = window.Vue.createApp({
@@ -69,6 +70,7 @@
           activeThemeKey: '',
           themeStyleNodeId: 'mioos-theme-studio-style',
           themeStudioStore: { initialized: false, themes: {}, order: [], customThemes: [], activeThemeId: 'glow', previewWindowState: {}, importBuffer: '', activeTab: 'themes' },
+          themeStudioStatus: { state: 'idle', message: 'Theme ready' },
           transferCenter: { items: [], seq: 0, autoOpen: true },
           transferControllers: {},
           transportDiagnostics: { loading: false, refreshedAt: 0, error: '', report: {} },
@@ -2107,7 +2109,7 @@
           }
           return (((win || {}).terminalState || {}).status) || this.t('terminal.status.ready', 'Terminal idle');
         }
-      }, Auth, WS, WM, Terminal, Explorer)
+      }, Auth, WS, WM, Terminal, Explorer, Theme)
     });
 
     app.config.compilerOptions.delimiters = ['[[', ']]'];

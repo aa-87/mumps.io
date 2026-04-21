@@ -241,6 +241,32 @@
           '</div>'
       });
 
+      app.component('mioos-surface-viewer', {
+        props: ['window'],
+        computed: {
+          vm: function () { return root(this); },
+          view: function () { return (this.window && this.window.fileView) || {}; },
+          isText: function () { return this.window.appKey === 'text-viewer' || this.window.appKey === 'structured-viewer'; },
+          isImage: function () { return this.window.appKey === 'image-viewer'; },
+          isPdf: function () { return this.window.appKey === 'pdf-viewer'; },
+          isVideo: function () { return this.window.appKey === 'media-viewer' && (this.view.mediaKind || '') === 'video'; },
+          isAudio: function () { return this.window.appKey === 'media-viewer' && (this.view.mediaKind || '') === 'audio'; },
+          sourceUrl: function () { return (this.view && this.view.content) || ''; }
+        },
+        template: '' +
+          '<div class="mioos-surface mioos-surface-viewer">' +
+            '<div class="mioos-surface-toolbar"><strong>[[ window.title ]]</strong><span class="mioos-surface-status">[[ view.mime || (window.meta || {}).mime || "file" ]]</span></div>' +
+            '<div v-if="view.loading" class="mioos-explorer-empty">Loading viewer…</div>' +
+            '<div v-else-if="view.error" class="mioos-explorer-empty">[[ view.error ]]</div>' +
+            '<pre v-else-if="isText" class="mioos-viewer-pre">[[ view.content || "" ]]</pre>' +
+            '<img v-else-if="isImage && sourceUrl" :src="sourceUrl" :alt="window.title" class="mioos-viewer-image">' +
+            '<div v-else-if="isVideo && sourceUrl" class="mioos-viewer-media-wrap"><video :src="sourceUrl" controls playsinline preload="metadata" class="mioos-viewer-media"></video></div>' +
+            '<div v-else-if="isAudio && sourceUrl" class="mioos-viewer-media-wrap"><audio :src="sourceUrl" controls preload="metadata" class="mioos-viewer-media"></audio></div>' +
+            '<iframe v-else-if="isPdf && sourceUrl" :src="sourceUrl" class="mioos-viewer-frame" title="PDF viewer"></iframe>' +
+            '<div v-else class="mioos-explorer-empty">No preview is available for this file.</div>' +
+          '</div>'
+      });
+
       app.component('mioos-surface-theme', {
         props: ['window'],
         computed: {
@@ -559,7 +585,7 @@
               </div>
 
               <footer class="mioos-theme-studio-footer-vue">
-                <div class="mioos-theme-studio-footer-copy-vue">These actions apply to the full theme editor window and preview surface.</div>
+                <div class="mioos-theme-studio-footer-copy-vue"><strong>[[ vm.themeStudioStatusText() ]]</strong><span>These actions apply to the full theme editor window and preview surface.</span></div>
                 <div class="mioos-theme-studio-footer-actions-vue">
                   <button type="button" class="mioos-btn" @click="vm.themeStudioResetToBase()">Reset</button>
                   <button type="button" class="mioos-btn" @click="vm.themeStudioApplyToDesktop(activeTheme.id)">Apply</button>
@@ -570,6 +596,52 @@
           </div>
 `
       });
+
+      app.component('mioos-surface-transfers', {
+        props: ['window'],
+        computed: {
+          vm: function () { return root(this); },
+          active: function () { return this.vm.activeTransfers(); },
+          history: function () { return this.vm.completedTransfers(); }
+        },
+        template: '' +
+          '<div class="mioos-surface mioos-surface-transfers">' +
+            '<section class="mioos-transfers-stage-vue">' +
+              '<header class="mioos-transfers-head-vue">' +
+                '<div class="mioos-transfers-head-copy-vue"><strong>Transfer Center</strong><span>[[ vm.transferSummaryText() ]]</span></div>' +
+                '<div class="mioos-transfers-head-actions-vue"><button type="button" class="mioos-btn" @click="vm.clearFinishedTransfers()">Clear finished</button></div>' +
+              '</header>' +
+              '<div class="mioos-transfers-columns-vue">' +
+                '<section class="mioos-transfers-column-vue">' +
+                  '<h4>Active</h4>' +
+                  '<div v-if="!active.length" class="mioos-transfers-empty-vue">No active transfers.</div>' +
+                  '<article v-for="item in active" :key="item.id" class="mioos-transfer-card-vue">' +
+                    '<div class="mioos-transfer-copy-vue"><strong>[[ item.name ]]</strong><span>[[ item.stage || item.status ]]</span></div>' +
+                    '<div class="mioos-transfer-meta-vue"><span>[[ item.kind ]]</span><span>[[ vm.transferPercent(item) ]]%</span></div>' +
+                    '<div class="mioos-transfer-progress-vue"><span :style="{ width: vm.transferPercent(item) + "%" }"></span></div>' +
+                    '<div class="mioos-transfer-actions-vue">' +
+                      '<button type="button" class="mioos-btn" v-if="vm.canPauseTransfer(item)" @click="vm.pauseTransfer(item)">Pause</button>' +
+                      '<button type="button" class="mioos-btn" v-if="vm.canResumeTransfer(item)" @click="vm.resumeTransfer(item)">Resume</button>' +
+                      '<button type="button" class="mioos-btn is-danger" v-if="vm.canCancelTransfer(item)" @click="vm.cancelTransfer(item)">Cancel</button>' +
+                    '</div>' +
+                  '</article>' +
+                '</section>' +
+                '<section class="mioos-transfers-column-vue is-history">' +
+                  '<h4>History</h4>' +
+                  '<div v-if="!history.length" class="mioos-transfers-empty-vue">Completed, failed, and cancelled transfers will appear here.</div>' +
+                  '<article v-for="item in history" :key="item.id" class="mioos-transfer-card-vue is-history">' +
+                    '<div class="mioos-transfer-copy-vue"><strong>[[ item.name ]]</strong><span>[[ item.stage || item.status ]]</span></div>' +
+                    '<div class="mioos-transfer-meta-vue"><span>[[ item.kind ]]</span><span>[[ vm.transferPercent(item) ]]%</span></div>' +
+                    '<div class="mioos-transfer-actions-vue">' +
+                      '<button type="button" class="mioos-btn" v-if="vm.canRetryTransfer(item)" @click="vm.retryTransfer(item)">Retry</button>' +
+                    '</div>' +
+                  '</article>' +
+                '</section>' +
+              '</div>' +
+            '</section>' +
+          '</div>'
+      });
+
       app.component('mioos-surface-generic', {
 
         props: ['window'],
@@ -601,7 +673,7 @@
         },
         template: '' +
           '<aside class="mioos-start-menu-vue" :class="[\'is-\' + vm.currentShellThemeFamily(), \'style-\' + vm.startMenuStyleType(), \'position-\' + vm.taskbarPosition(), \'button-\' + vm.taskbarButtonStyleType()]" :style="vm.startMenuPopupStyle()" @click.stop>' +
-            '<div class="mioos-start-head-vue"><div class="mioos-start-avatar-vue">M</div><div><strong>[[ vm.boot.product.name ]]</strong><span>[[ vm.boot.product.subtitle ]]</span></div></div>' +
+            '<div class="mioos-start-head-vue"><div class="mioos-start-avatar-vue">[[ (((vm.boot.user || {}).displayName || vm.boot.product.name || "M").charAt(0) || "M").toUpperCase() ]]</div><div class="mioos-start-head-copy-vue"><strong>[[ vm.boot.product.name ]]</strong><span>[[ vm.boot.product.subtitle ]]</span></div><div class="mioos-start-head-status-vue">[[ (vm.boot.user || {}).displayName || "Local session" ]]</div></div>' +
             '<label class="mioos-start-search-vue"><span>⌕</span><input v-model="vm.menuFilter" type="text" :placeholder="vm.t(\'search.placeholder\')"></label>' +
             '<div class="mioos-start-body-vue" v-if="vm.startMenuStyleType() === \'classic\'">' +
               '<div class="mioos-start-list-vue">' +
@@ -651,6 +723,7 @@
             '</div>' +
             '<div class="mioos-taskbar-tray-vue">' +
               '<button type="button" class="mioos-task-icon-vue" title="Show Desktop" @click.stop="vm.showDesktop()">⌄</button>' +
+              '<button type="button" class="mioos-task-icon-vue mioos-task-icon-badge-vue" title="Transfers" @click.stop="vm.openTransfersWindow()"><span>⇅</span><em v-if="vm.activeTransfers().length">[[ vm.activeTransfers().length ]]</em></button>' +
               '<button type="button" class="mioos-task-icon-vue" title="Theme Studio" @click.stop="vm.openApp(\'theme-studio\')">🎨</button>' +
               '<button type="button" class="mioos-task-clock-vue" @click.stop="vm.refreshView">[[ vm.clockText ]]</button>' +
             '</div>' +

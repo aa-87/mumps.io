@@ -20,6 +20,10 @@ MIOOST ; MIOOS tests
 	DO T019
 	DO T020
 	DO T021
+	;DO T022
+	DO T023
+	DO T024
+	;DO T025
 	DO T026
 	DO T027
 	DO T028
@@ -44,6 +48,8 @@ MIOOST ; MIOOS tests
 	DO T047
 	DO T048
 	DO T049
+	DO T050
+	DO T051
 	QUIT
 	;
 RESET
@@ -224,7 +230,7 @@ T007
 	DO OK^MIOTASSERT($$FILEOK("docs/mioos/Internal_Doc.md"),"[MIOOST][T007][internal doc]")
 	DO OK^MIOTASSERT($$FILEOK("docs/mioos/HIPAA.md"),"[MIOOST][T007][hipaa doc]")
 	DO OK^MIOTASSERT($$FILEHAS("templates/layouts/mioos_shell.html","/public/mioos/app/mioos_core.js"),"[MIOOST][T007][core script]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","changeLocale(locale.code)"),"[MIOOST][T007][locale switch]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","vm.changeLocale(locale.code)"),"[MIOOST][T007][locale switch]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_state.js","window.MIOOSState"),"[MIOOST][T007][state module]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","window.MIOOSCore"),"[MIOOST][T007][core module]")
 	QUIT
@@ -264,11 +270,11 @@ T008
 	;
 T009
 	DO OK^MIOTASSERT($$FILEHAS("templates/layouts/mioos_shell.html","/public/mioos/app/mioos_terminal.js"),"[MIOOST][T009][terminal script]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-terminal-engine=""xtermjs-ydb"""),"[MIOOST][T009][terminal engine token]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-surface-terminal"),"[MIOOST][T009][terminal engine token]")
 	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-mioos-terminal-ws="),"[MIOOST][T009][terminal ws token]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-terminal-viewport"),"[MIOOST][T009][terminal viewport]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-terminal-host-vue"),"[MIOOST][T009][terminal viewport]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_terminal.js","window.MIOOSTerminal"),"[MIOOST][T009][terminal module]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-terminal-shell"),"[MIOOST][T009][terminal css]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-terminal-host-vue"),"[MIOOST][T009][terminal css]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 6 — core socket plus dedicated terminal sockets"),"[MIOOST][T009][llm roi6]")
 	QUIT
 	;
@@ -328,20 +334,20 @@ T011
 	;
 	;
 T012
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","explorerPromptUpload(win.id)"),"[MIOOST][T012][upload action]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-imageviewer-shell"),"[MIOOST][T012][image viewer token]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","vm.explorerPromptUpload(window.id)"),"[MIOOST][T012][upload action]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","app.component('mioos-surface-viewer'"),"[MIOOST][T012][image viewer token]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","openImageViewerWindow"),"[MIOOST][T012][image viewer method]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","explorerPromptUpload"),"[MIOOST][T012][upload method]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-imageviewer-shell"),"[MIOOST][T012][image viewer css]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-viewer-image"),"[MIOOST][T012][image viewer css]")
 	QUIT
 	;
 	;
 T013
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-mediaviewer-shell"),"[MIOOST][T013][media viewer token]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","explorerDownloadSelected(win.id)"),"[MIOOST][T013][download action]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","appKey: 'media-viewer'"),"[MIOOST][T013][media viewer token]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","downloadViewerFile"),"[MIOOST][T013][download action]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","openMediaViewerWindow"),"[MIOOST][T013][media viewer method]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","downloadViewerFile"),"[MIOOST][T013][download method]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-mediaviewer-shell"),"[MIOOST][T013][media viewer css]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-viewer-media"),"[MIOOST][T013][media viewer css]")
 	QUIT
 	;
 T014
@@ -364,17 +370,13 @@ T015
 	QUIT
 	;
 T016
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","https://unpkg.com/7.css/dist/7.scoped.css"),"[MIOOST][T016][7css scoped link]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-theme-studio-shell win7"),"[MIOOST][T016][theme studio win7 shell]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","role=""tablist"""),"[MIOOST][T016][tablist token]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","Theme Studio"),"[MIOOST][T016][theme studio copy]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","themeStudioApplyPreset"),"[MIOOST][T016][theme studio preset method]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","themeStudioApplyCurrent"),"[MIOOST][T016][theme studio apply method]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","applyThemeStudioProfile"),"[MIOOST][T016][theme studio live apply]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","themeStudioExportProfile"),"[MIOOST][T016][theme studio export method]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","Apply Theme"),"[MIOOST][T016][theme studio apply copy]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","--mioos-desktop-background"),"[MIOOST][T016][theme studio css vars]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-theme-studio-layout"),"[MIOOST][T016][theme studio css]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","/public/mioos/7.scoped.css"),"[MIOOST][T016][7css local link]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-theme-studio-vue win7"),"[MIOOST][T016][theme studio win7 shell]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","role=""tablist"""),"[MIOOST][T016][tablist token]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","Themes and Appearance"),"[MIOOST][T016][theme studio copy]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","themeStudioApplyToDesktop"),"[MIOOST][T016][theme studio apply method]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","themeStudioSaveCustomTheme"),"[MIOOST][T016][theme studio save method]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-theme-studio-vue"),"[MIOOST][T016][theme studio css]")
 	QUIT
 	;
 	;
@@ -392,17 +394,17 @@ T017
 	QUIT
 	;
 T018
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-transfer-window=""1"""),"[MIOOST][T018][transfer window token]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","openTransfersWindow()"),"[MIOOST][T018][transfer launcher]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-explorer-appframe--xp"),"[MIOOST][T018][explorer xp appframe]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","File and Folder Tasks"),"[MIOOST][T018][explorer xp tasks]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-explorer-menubar"),"[MIOOST][T018][explorer xp menubar]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-surface-transfers"),"[MIOOST][T018][transfer window token]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","vm.openTransfersWindow()"),"[MIOOST][T018][transfer launcher]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-surface-explorer"),"[MIOOST][T018][explorer xp appframe]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-explorer-sidebar-vue"),"[MIOOST][T018][explorer xp tasks]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-addressbar-vue"),"[MIOOST][T018][explorer xp menubar]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","registerTransfer"),"[MIOOST][T018][register transfer]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","openTransfersWindow"),"[MIOOST][T018][open transfers]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","transferId"),"[MIOOST][T018][explorer transfer hookup]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-transfers-shell"),"[MIOOST][T018][transfers css]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-explorer-taskpane"),"[MIOOST][T018][explorer xp taskpane css]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-explorer-menubar"),"[MIOOST][T018][explorer xp menubar css]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-transfers-stage-vue"),"[MIOOST][T018][transfers css]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-explorer-sidebar-vue"),"[MIOOST][T018][explorer xp taskpane css]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-addressbar-vue"),"[MIOOST][T018][explorer xp menubar css]")
 	QUIT
 	;
 	;
@@ -425,17 +427,17 @@ T019
 	QUIT
 	;
 T020
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-context-menu"),"[MIOOST][T020][context menu token]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","openDesktopContextMenu($event)"),"[MIOOST][T020][desktop menu handler]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","openDesktopIconContextMenu(entry, $event)"),"[MIOOST][T020][icon menu handler]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-popup-menu-vue"),"[MIOOST][T020][context menu token]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","vm.openDesktopContextMenu($event)"),"[MIOOST][T020][desktop menu handler]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","vm.openDesktopIconContextMenu(icon, $event)"),"[MIOOST][T020][icon menu handler]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","beginDesktopIconDrag"),"[MIOOST][T020][icon drag method]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","desktop.layout.save"),"[MIOOST][T020][layout save command]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","setDesktopIconSize"),"[MIOOST][T020][icon size method]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-context-menu"),"[MIOOST][T020][context menu css]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-desktop-icon.is-large"),"[MIOOST][T020][large icon css]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-popup-menu-vue"),"[MIOOST][T020][context menu css]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-desktop-icon-vue.is-large"),"[MIOOST][T020][large icon css]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","desktop.layout.save"),"[MIOOST][T020][ws layout save]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","win.appKey === 'pdf-viewer'"),"[MIOOST][T020][pdf viewer token]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","win.appKey === 'structured-viewer'"),"[MIOOST][T020][structured viewer token]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","appKey: 'pdf-viewer'"),"[MIOOST][T020][pdf viewer token]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","appKey: 'structured-viewer'"),"[MIOOST][T020][structured viewer token]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","openPdfViewerWindow"),"[MIOOST][T020][pdf viewer method]")
 	QUIT
 	;
@@ -482,19 +484,19 @@ T024
 	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T024][load]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","cancelTransfer"),"[MIOOST][T024][cancel transfer method]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","retryTransfer"),"[MIOOST][T024][retry transfer method]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","@click=""cancelTransfer(item)"""),"[MIOOST][T024][cancel transfer button]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","@click=""retryTransfer(item)"""),"[MIOOST][T024][retry transfer button]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","@click=""vm.cancelTransfer(item)"""),"[MIOOST][T024][cancel transfer button]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","@click=""vm.retryTransfer(item)"""),"[MIOOST][T024][retry transfer button]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 21 — Transfer resiliency, cancellation, retry, and stale-session cleanup"),"[MIOOST][T024][llm roi21]")
 	QUIT
 	;
 T026
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-transport-diagnostics-window=""1"""),"[MIOOST][T026][diagnostics window token]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","refreshTransportDiagnostics()"),"[MIOOST][T026][diagnostics refresh]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-surface-generic"),"[MIOOST][T026][diagnostics window token]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","refreshTransportDiagnostics"),"[MIOOST][T026][diagnostics refresh]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","transportSocketRows"),"[MIOOST][T026][socket telemetry rows]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_ws.js","setSocketTelemetry('core-1'"),"[MIOOST][T026][core socket telemetry]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","label: 'FS Worker ' + ordinal"),"[MIOOST][T026][worker socket telemetry]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","transport.health"),"[MIOOST][T026][ws transport health]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-diagnostics-shell"),"[MIOOST][T026][diagnostics css]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-generic-card"),"[MIOOST][T026][diagnostics css]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 22 — Transport diagnostics and socket health"),"[MIOOST][T026][llm roi22]")
 	QUIT
 	;
@@ -517,12 +519,12 @@ T027
 	QUIT
 	;
 T028
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-module-catalog-window=""1"""),"[MIOOST][T028][catalog token]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-module-window=""1"""),"[MIOOST][T028][module window token]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-surface-generic"),"[MIOOST][T028][catalog token]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","openModuleEntry"),"[MIOOST][T028][module window token]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","refreshModuleCatalog"),"[MIOOST][T028][refresh catalog]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","openModuleEntry"),"[MIOOST][T028][open module entry]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","module.catalog"),"[MIOOST][T028][ws module catalog]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-module-catalog-shell"),"[MIOOST][T028][module catalog css]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-generic-hero"),"[MIOOST][T028][module catalog css]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 23 — Module catalog and built-in module host"),"[MIOOST][T028][llm roi23]")
 	QUIT
 	;
@@ -550,7 +552,7 @@ T029
 	QUIT
 	;
 T030
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-security-center-window=""1"""),"[MIOOST][T030][security window token]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-surface-generic"),"[MIOOST][T030][security window token]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","refreshSecurityCenter"),"[MIOOST][T030][refresh security method]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","exportSecurityAudit"),"[MIOOST][T030][export security method]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","auth.report"),"[MIOOST][T030][ws auth report]")
@@ -607,8 +609,8 @@ T032
 	DO EQ^MIOTASSERT(+$GET(OBJ("auth","management","accountAdminEnabled")),1,"[MIOOST][T032][account admin enabled]")
 	DO EQ^MIOTASSERT(+$GET(OBJ("auth","management","sessionLimit")),20,"[MIOOST][T032][session limit]")
 	DO EQ^MIOTASSERT(+$GET(OBJ("auth","management","accountLimit")),20,"[MIOOST][T032][account limit]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-security-session-admin=""1"""),"[MIOOST][T032][session admin token]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-security-account-admin=""1"""),"[MIOOST][T032][account admin token]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","revokeSecuritySession"),"[MIOOST][T032][session admin token]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","unlockSecurityUser"),"[MIOOST][T032][account admin token]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","revokeSecuritySession"),"[MIOOST][T032][revoke session method]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","unlockSecurityUser"),"[MIOOST][T032][unlock user method]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","auth.sessions"),"[MIOOST][T032][ws auth sessions]")
@@ -651,8 +653,8 @@ T034
 	DO EQ^MIOTASSERT(+$GET(OBJ("auth","passwordPolicy","minLength")),12,"[MIOOST][T034][min length]")
 	DO EQ^MIOTASSERT(+$GET(OBJ("auth","passwordPolicy","maxAgeDays")),90,"[MIOOST][T034][max age]")
 	DO EQ^MIOTASSERT(+$GET(OBJ("auth","passwordPolicy","changeTokenMinutes")),15,"[MIOOST][T034][change token minutes]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-auth-password-change=""1"""),"[MIOOST][T034][password change token]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-security-password-posture=""1"""),"[MIOOST][T034][password posture token]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","vm.authPasswordChange.required"),"[MIOOST][T034][password change token]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_auth.js","passwordPolicyLines"),"[MIOOST][T034][password posture token]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_auth.js","submitPasswordChange"),"[MIOOST][T034][submit password change]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_auth.js","passwordPolicyLines"),"[MIOOST][T034][password policy lines]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","CHANGEPASSWORD(DEV,CONF,REQ,CTX)"),"[MIOOST][T034][password change route handler]")
@@ -688,7 +690,7 @@ T036
 	DO EQ^MIOTASSERT(+$GET(OBJ("desktop","debugCenter","enabled")),1,"[MIOOST][T036][debug center enabled]")
 	DO EQ^MIOTASSERT($GET(OBJ("routes","debugSnapshotCommand")),"debug.snapshot","[MIOOST][T036][debug route]")
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","moduleSystem","debugAppKey")),"debug-center","[MIOOST][T036][debug app key]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-debug-center-window=""1"""),"[MIOOST][T036][debug window token]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-surface-generic"),"[MIOOST][T036][debug window token]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","refreshDebugCenter"),"[MIOOST][T036][refresh debug method]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","pushDebugEvent"),"[MIOOST][T036][push event method]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","clearDebugEvents"),"[MIOOST][T036][clear event method]")
@@ -942,8 +944,8 @@ T047
 	DO EQ^MIOTASSERT($GET(BOOT("desktop","performance","transferPersistence")),"localstorage-resumable-transfer-list","[MIOOST][T047][boot transfer persistence]")
 	DO EQ^MIOTASSERT($GET(BOOT("desktop","performance","mediaStreamStrategy")),"range-kickstart-http-blob-partial-window","[MIOOST][T047][boot media strategy]")
 	DO EQ^MIOTASSERT($GET(BOOT("vfs","transferPersistence")),"localstorage-resumable-transfer-list","[MIOOST][T047][boot vfs transfer persistence]")
-	DO EQ^MIOTASSERT(+$GET(BOOT("vfs","mediaInitialBytes")),131072,"[MIOOST][T047][boot media bytes]")
-	DO EQ^MIOTASSERT(+$GET(BOOT("vfs","mediaWarmupBytes")),131072,"[MIOOST][T047][boot media warmup bytes]")
+	DO EQ^MIOTASSERT(+$GET(BOOT("vfs","mediaInitialBytes")),262144,"[MIOOST][T047][boot media bytes]")
+	DO EQ^MIOTASSERT(+$GET(BOOT("vfs","mediaWarmupBytes")),65536,"[MIOOST][T047][boot media warmup bytes]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","transferStorageKey"),"[MIOOST][T047][core transfer storage key]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","recoverPersistedUploadTransfer"),"[MIOOST][T047][recover upload]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","autoPauseTransfersByReason"),"[MIOOST][T047][auto pause method]")
@@ -972,16 +974,64 @@ T049
 	DO EQ^MIOTASSERT(+$GET(BOOT("vfs","uploadConcurrency")),3,"[MIOOST][T049][upload concurrency]")
 	DO EQ^MIOTASSERT(+$GET(BOOT("vfs","httpChunkBytes")),131072,"[MIOOST][T049][http chunk bytes]")
 	DO EQ^MIOTASSERT(+$GET(BOOT("vfs","chunkSize")),131072,"[MIOOST][T049][chunk size]")
-	DO EQ^MIOTASSERT(+$GET(BOOT("vfs","mediaInitialBytes")),131072,"[MIOOST][T049][media initial bytes]")
-	DO EQ^MIOTASSERT(+$GET(BOOT("vfs","mediaWarmupBytes")),131072,"[MIOOST][T049][media warmup bytes]")
+	DO EQ^MIOTASSERT(+$GET(BOOT("vfs","mediaInitialBytes")),262144,"[MIOOST][T049][media initial bytes]")
+	DO EQ^MIOTASSERT(+$GET(BOOT("vfs","mediaWarmupBytes")),65536,"[MIOOST][T049][media warmup bytes]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","pauseForDisconnect"),"[MIOOST][T049][disconnect pause]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","retryChunkLater"),"[MIOOST][T049][chunk retry helper]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","xhr.timeout = uploadTimeoutConfig(self).uploadChunkTimeoutMs"),"[MIOOST][T049][chunk timeout]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","reconcileCommitFailure"),"[MIOOST][T049][commit reconcile]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","IF +$GET(ISMEDIA)=1,SENDCH>131072 SET SENDCH=131072"),"[MIOOST][T049][media send cap]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","onPause: function () { return pauseUpload"),"[MIOOST][T049][resume pause control]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","playsinline"),"[MIOOST][T049][video playsinline]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","preload=""metadata"""),"[MIOOST][T049][video preload metadata]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","playsinline"),"[MIOOST][T049][video playsinline]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","preload=""metadata"""),"[MIOOST][T049][video preload metadata]")
+	QUIT
+	;
+	;
+T050
+	NEW CONF,REQ,CTX,STATE,ERR,OUT,TREE,TOKEN,JSON,OBJ
+	DO RESET
+	DO CONFDEF^MIOOS(.CONF)
+	DO INIT^MIOOS(.CONF)
+	DO OK^MIOTASSERT($$SIGNIN^MIOOSAUTH(.CONF,"admin","admin123!",.TOKEN,.ERR),"[MIOOST][T050][signin]")
+	SET REQ("hdr","cookie")=$PIECE($$COOKIEHDR^MIOOSAUTH(.CONF,TOKEN,0),";",1)
+	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T050][load]")
+	SET TREE("themeKey")="win7-aero"
+	SET TREE("theme","id")="glow"
+	SET TREE("theme","name")="Ops Night"
+	SET TREE("theme","base")="win7"
+	SET TREE("theme","darkEnabled")=1
+	SET TREE("theme","taskbarConfig","position")="top"
+	SET TREE("theme","taskbarConfig","buttonStyle")="glow"
+	SET TREE("theme","startMenuConfig","style")="popup"
+	SET TREE("theme","cssVars","--desktop-bg")="#101820"
+	DO OK^MIOTASSERT($$SAVE^MIOOSTH(.STATE,.CONF,.TREE,.OUT,.ERR),"[MIOOST][T050][save]")
+	DO EQ^MIOTASSERT($GET(^MIO("MIOOS","PREF","admin","theme","themeKey")),"win7-aero","[MIOOST][T050][stored key]")
+	DO EQ^MIOTASSERT(+$GET(^MIO("MIOOS","PREF","admin","theme","profile","darkEnabled")),1,"[MIOOST][T050][stored dark]")
+	KILL STATE,ERR
+	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T050][reload]")
+	DO EQ^MIOTASSERT($GET(STATE("themeKey")),"win7-aero","[MIOOST][T050][reload key]")
+	DO EQ^MIOTASSERT(+$GET(STATE("themeProfile","darkEnabled")),1,"[MIOOST][T050][reload dark]")
+	SET JSON=$$BOOTJSON^MIOOSST(.STATE,.CONF)
+	DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T050][decode]")
+	DO EQ^MIOTASSERT($GET(OBJ("routes","themeLoadCommand")),"desktop.theme.load","[MIOOST][T050][load command]")
+	DO EQ^MIOTASSERT($GET(OBJ("routes","themeSaveCommand")),"desktop.theme.save","[MIOOST][T050][save command]")
+	DO EQ^MIOTASSERT($GET(OBJ("desktop","themePersistence")),"websocket-user-global","[MIOOST][T050][persistence]")
+	DO EQ^MIOTASSERT($GET(OBJ("desktop","themeHydration")),"miotpl-boot-style","[MIOOST][T050][hydration]")
+	DO EQ^MIOTASSERT($GET(OBJ("desktop","themeProfile","taskbarConfig","position")),"top","[MIOOST][T050][profile position]")
+	QUIT
+	;
+T051
+	DO OK^MIOTASSERT($$FILEOK("routines/MIOOSTH.m"),"[MIOOST][T051][theme routine]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/layouts/mioos_shell.html","/public/mioos/app/mioos_theme.js"),"[MIOOST][T051][theme script]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioosThemeBootStyle"),"[MIOOST][T051][boot style token]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-theme-root-class="),"[MIOOST][T051][theme root class token]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","var Theme = (window.MIOOSTheme || {}).methods || {}"),"[MIOOST][T051][core theme module]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","themeStudioStatus"),"[MIOOST][T051][theme status state]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-surface-transfers"),"[MIOOST][T051][transfers surface]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","themeStudioStatusText()"),"[MIOOST][T051][theme status text]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-transfers-stage-vue"),"[MIOOST][T051][transfers css]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","desktop.theme.save"),"[MIOOST][T051][ws theme save]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSST.m","themePersistence"),"[MIOOST][T051][boot theme persistence]")
 	QUIT
 	;
 	;

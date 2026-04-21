@@ -167,6 +167,7 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	DO APPS(.STATE)
 	DO WINDOWS(.STATE)
 	DO LOADPREFS(.STATE,.CONF)
+	DO LOAD^MIOOSTH(.STATE,.CONF)
 	QUIT 1
 	;
 LOADPREFS(STATE,CONF)
@@ -262,7 +263,11 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("routes","commandErrorEvent")=$GET(STATE("commandErrorEvent"))
 	SET OBJ("routes","themeAssetUpload")=$GET(STATE("themeAssetUploadPath"))
 	SET OBJ("routes","themeAsset")=$GET(STATE("themeAssetPath"))
+	SET OBJ("routes","themeLoadCommand")="desktop.theme.load"
+	SET OBJ("routes","themeSaveCommand")="desktop.theme.save"
 	SET OBJ("desktop","themeKey")=$GET(STATE("themeKey"))
+	SET OBJ("desktop","themePersistence")="websocket-user-global"
+	SET OBJ("desktop","themeHydration")="miotpl-boot-style"
 	SET OBJ("desktop","wallpaper")=$GET(STATE("wallpaper"))
 	SET OBJ("desktop","density")=$GET(STATE("density"))
 	SET OBJ("desktop","fontFamily")=$GET(STATE("fontFamily"))
@@ -406,6 +411,7 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","contextMenu","verbs",10)="open"
 	SET OBJ("desktop","performance","uploadUiStrategy")="throttled-progress-updates-and-persistent-resume"
 	DO THEMES($NAME(OBJ("desktop","themes")),$GET(STATE("themeKey")))
+	IF $DATA(STATE("themeProfile"))>1 MERGE OBJ("desktop","themeProfile")=STATE("themeProfile")
 	MERGE OBJ("apps")=STATE("apps")
 	DO MERGELAYOUT(.STATE,$NAME(OBJ("apps")))
 	MERGE OBJ("windows")=STATE("windows")
