@@ -2,7 +2,12 @@
 
 ## What MIOOS is
 
+
 MIOOS is a production-minded desktop shell built inside the existing **MUMPS.IO / MIO** web stack.
+
+https://khang-nd.github.io/7.css/#window
+
+
 
 It is not a toy XP clone, not a Node runtime, and not a generic SPA. The project is deliberately **MUMPS-first**, **SSR-first**, **MIO-native**, and now **i18n-aware**, **accessibility-aware**, and **performance-aware** from the start.
 
@@ -207,7 +212,7 @@ Keep tests:
 
 ## Theme Studio ROI
 
-A detailed Theme Studio UI tool is available in MIOOS as a dedicated desktop app/window. It focuses on profile authoring and preview only, without changing the current native shell/taskbar/window styling baseline. The tool supports wallpaper choices, typography, sizing, color tokens, class recipes, extra CSS, import/export, local profile storage, and XP/Windows 7/Mac-inspired starter looks.
+A detailed Theme Studio UI tool is available in MIOOS as a dedicated desktop app/window. It focuses on authoring one editable system shell theme with light and dark modes, desktop and mobile live preview, wallpaper/avatar upload, typography, sizing, color tokens, class recipes, extra CSS, import/export, and optional user-created copies.
 
 
 ## ROI-F — Explorer + Transfers polish
@@ -329,3 +334,12 @@ ROI 33 — HTTP binary chunk transport for resumable uploads and hardened pause/
 - Introduced a small MIOOS UI kit layer for cards, stat grids, toolbars, section shells, tables, and form grids so future built-ins and custom apps share one visual language.
 - Hardened dark-theme legibility across menus, taskbar, shell surfaces, inputs, buttons, tables, and window content to reduce white-on-white and low-contrast regressions.
 - Product risks still requiring deliberate follow-on ROI work: signed/trusted module distribution, permission coverage beyond launcher/module surfaces into deeper actions, formal visual regression review, and versioned module migration rules.
+
+## ROI 53 — native shell, single-theme studio, task manager, and enterprise administration
+
+- Reframed the shell around one editable system theme with light/dark variants, desktop/mobile live preview, wallpaper/avatar upload, and user-created copies rather than multiple named stock themes.
+- Replaced the Debug Center surface with a Task Manager surface that emphasizes operational visibility for apps, windows, sessions, transfers, and transport health.
+- Consolidated App Catalog, Notes, and Ops placeholder workflows into **System Settings**, which now hosts module installation/removal, manifest editing, storage/reporting entry points, and shell personalization.
+- Added `MIOOSSEC` for server-owned security groups and saved administrative views, then wired those controls into Security Center and the task-manager/administration posture.
+- Kept `debug.snapshot` as a low-level diagnostic command for tests and support, but removed the user-facing Debug Center desktop app from the primary shell contract.
+- This ROI should be followed by dedicated visual hardening passes for Explorer, the transfer dialog, and settings sub-panels so each surface reaches the same native-shell quality bar.

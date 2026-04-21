@@ -115,14 +115,3 @@ This ROI adds typed password policy defaults, forced password change support for
 - When the server reports a gap, the client now rewinds to the next missing chunk, replays the missing range, and only then retries final commit.
 - This reduces false-finalize failures such as `fs_upload_commit_failed` with `missing_chunk` under concurrent or bursty upload conditions.
 
-
-## ROI 52 least-privilege additions
-
-The shell now includes a server-owned permission matrix for launcher and module targets. This improves the platform's HIPAA-aware posture by making least-privilege controls more visible and auditable from the administrative UI.
-
-Custom modules should still be governed carefully. ROI 52 adds installation and removal workflows, but production deployments should also define operational controls for:
-
-- approval of module manifests before system-scope installation
-- change review for permission edits
-- module provenance and trust validation
-- audit retention and review of administrative actions

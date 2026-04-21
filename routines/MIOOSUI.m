@@ -34,7 +34,6 @@ DESKCTX(STATE,CONF,DATA)
 	SET DATA("shellChrome")=$GET(STATE("shellChrome"),"winxp-professional")
 	SET DATA("taskbarStyle")=$GET(STATE("taskbarStyle"),"xp-professional")
 	SET DATA("startMenuStyle")=$GET(STATE("startMenuStyle"),"xp-two-column")
-	DO DESKDATA^MIOOSTH(.STATE,.DATA)
 	SET DATA("windowManager")=$GET(STATE("windowManager"),"mioos-native-vue-css")
 	SET DATA("windowSnapThreshold")=+$GET(STATE("windowSnapThreshold"),28)
 	SET DATA("windowResizeModel")="all-edges-and-corners"

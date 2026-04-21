@@ -75,9 +75,7 @@
           mediaStreamStrategy: 'range-kickstart-http-blob-partial-window',
           textPreviewStrategy: 'windowed-websocket-range-read'
         },
-        moduleSystem: { enabled: true, launcher: 'desktop-icons-and-menu', manifestVersion: 1, appCatalogEnabled: true, appCatalogKey: 'app-catalog', dynamicWindows: true, debugAppKey: 'debug-center', installEnabled: true, installScopes: ['user', 'system'], manifestFields: ['id', 'title', 'subtitle', 'description', 'icon', 'category', 'version', 'surface', 'windowTitle', 'singleton', 'launcherEnabled', 'cards[]', 'params[]'] },
-        permissions: { enabled: true, model: 'shell-target-action-matrix', editable: false, adminRole: 'admin', reportCommand: 'permissions.report', saveCommand: 'permissions.save' },
-        uiKit: { enabled: true, libraryVersion: 1, patterns: ['cards', 'stat-grid', 'toolbar', 'table', 'form-grid', 'section-shell'] },
+        moduleSystem: { enabled: true, launcher: 'desktop-icons-and-menu', manifestVersion: 1, appCatalogEnabled: true, appCatalogKey: 'app-catalog', dynamicWindows: true, debugAppKey: 'debug-center' },
         debugCenter: { enabled: true, eventLimit: 50, snapshotVersion: 1 },
         icons: {
           enabled: true,
@@ -191,8 +189,6 @@
     base.desktop.accessibility = Object.assign(base.desktop.accessibility, (boot.desktop || {}).accessibility || {});
     base.desktop.performance = Object.assign(base.desktop.performance, (boot.desktop || {}).performance || {});
     base.desktop.moduleSystem = Object.assign(base.desktop.moduleSystem, (boot.desktop || {}).moduleSystem || {});
-    base.desktop.permissions = Object.assign(base.desktop.permissions || {}, (boot.desktop || {}).permissions || {});
-    base.desktop.uiKit = Object.assign(base.desktop.uiKit || {}, (boot.desktop || {}).uiKit || {});
     base.desktop.debugCenter = Object.assign(base.desktop.debugCenter || {}, (boot.desktop || {}).debugCenter || {});
     base.desktop.windowing = Object.assign(base.desktop.windowing, (boot.desktop || {}).windowing || {});
     base.auth = Object.assign(base.auth, boot.auth || {});

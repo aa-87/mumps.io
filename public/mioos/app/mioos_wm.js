@@ -3,10 +3,7 @@
     return vm.windows.find(function (item) { return item.id === windowId; }) || null;
   }
   function taskbarHeight(vm) {
-    var theme = (vm && vm.appliedThemeProfile) || (vm && vm.themeStudioActiveTheme && vm.themeStudioActiveTheme()) || {};
-    var mobile = (window.innerWidth || document.documentElement.clientWidth || 1280) <= 768;
-    if (mobile && theme && theme.mobileConfig && theme.mobileConfig.taskbarHeightMobile) return +theme.mobileConfig.taskbarHeightMobile;
-    return +(((theme.taskbarConfig || {}).height) || ((((vm.boot || {}).desktop || {}).windowing || {}).taskbarHeight) || 40);
+    return +((((vm.boot || {}).desktop || {}).windowing || {}).taskbarHeight || 40);
   }
   function viewportBounds(vm) {
     var padBottom = taskbarHeight(vm);
@@ -89,14 +86,6 @@
         if (win.snappable == null) win.snappable = 1;
         if (!win.minWidth) win.minWidth = (((this.boot || {}).desktop || {}).windowing || {}).minWidth || 320;
         if (!win.minHeight) win.minHeight = (((this.boot || {}).desktop || {}).windowing || {}).minHeight || 220;
-        if (win.appKey === 'theme-studio') {
-          var bounds = viewportBounds(this);
-          var compact = bounds.width <= 900 || bounds.height <= 760;
-          win.minWidth = compact ? Math.max(320, Math.min(bounds.width, 680)) : Math.max(+win.minWidth || 0, 1120);
-          win.minHeight = compact ? Math.max(420, Math.min(bounds.height, 560)) : Math.max(+win.minHeight || 0, 720);
-          if (!(+win.width) || +win.width < win.minWidth) win.width = compact ? bounds.width : Math.max(+win.width || 0, win.minWidth);
-          if (!(+win.height) || +win.height < win.minHeight) win.height = compact ? bounds.height : Math.max(+win.height || 0, win.minHeight);
-        }
         clampWindow(this, win);
         return win;
       },
@@ -226,13 +215,11 @@
       windowStyle: function (win) {
         this.ensureWindowFrame(win);
         return {
-          '--x': (win.left || 0) + 'px',
-          '--y': (win.top || 0) + 'px',
+          left: (win.left || 0) + 'px',
+          top: (win.top || 0) + 'px',
           width: (win.width || 600) + 'px',
           height: (win.height || 420) + 'px',
-          zIndex: (win.z || 1),
-          transform: 'translate3d(var(--x), var(--y), 0)',
-          willChange: (this.dragState.active && this.dragState.windowId === win.id) ? 'transform, width, height' : 'auto'
+          zIndex: (win.z || 1)
         };
       },
       snapPreviewStyle: function () {
@@ -293,7 +280,6 @@
         this.dragState.top = win.top || 0;
         this.dragState.width = win.width || 600;
         this.dragState.height = win.height || 420;
-        if (this.$el && this.$el.classList) this.$el.classList.add('is-window-dragging');
       },
       beginResize: function (win, edge, event) {
         if (!win || +win.resizable !== 1) return;
@@ -311,16 +297,11 @@
         this.dragState.top = win.top || 0;
         this.dragState.width = win.width || 600;
         this.dragState.height = win.height || 420;
-        if (this.$el && this.$el.classList) this.$el.classList.add('is-window-dragging');
       },
       onDragMove: function (event) {
         var win = findWindow(this, this.dragState.windowId);
         var dx, dy, nextZone, nextBox, nextLeft, nextTop, nextWidth, nextHeight;
         if (!this.dragState.active || !win) return;
-        if (typeof event.buttons === 'number' && event.buttons === 0) {
-          this.endDrag();
-          return;
-        }
         dx = event.clientX - this.dragState.startX;
         dy = event.clientY - this.dragState.startY;
         if (this.dragState.mode === 'move') {
@@ -367,18 +348,12 @@
         var zone = this.snapPreview.zone;
         if (!this.dragState.active) return;
         if (this.dragState.mode === 'move' && win && zone) this.applySnapZone(win.id, zone);
-        else if (this.dragState.mode === 'move' && win) {
-          win.left = Math.round((+(win.left || 0)) / 10) * 10;
-          win.top = Math.round((+(win.top || 0)) / 10) * 10;
-          clampWindow(this, win);
-        }
         if (win && this.dragState.mode === 'resize') scheduleTerminalSync(this, win);
         this.dragState.active = false;
         this.dragState.mode = 'move';
         this.dragState.edge = '';
         this.dragState.windowId = '';
         this.clearSnapPreview();
-        if (this.$el && this.$el.classList) this.$el.classList.remove('is-window-dragging');
       },
       onWindowTitleDblClick: function (windowId) {
         this.toggleMaximize(windowId);

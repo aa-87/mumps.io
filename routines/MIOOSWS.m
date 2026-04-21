@@ -77,12 +77,6 @@ COMMANDJSON(CONF,REQ,CTX,STATE,PAYLOAD,OUTJSON,ERR)
 	IF CMD="auth.user.unlock" QUIT $$AUTHUNLOCK(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="view.refresh" QUIT $$CMDVIEW(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="module.catalog" QUIT $$MODCAT(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
-	IF CMD="module.install" QUIT $$MODINSTALL(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
-	IF CMD="module.remove" QUIT $$MODREMOVE(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
-	IF CMD="permissions.report" QUIT $$PERMREPORT(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
-	IF CMD="permissions.save" QUIT $$PERMSAVE(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
-	IF CMD="desktop.theme.load" QUIT $$THEMELOAD(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
-	IF CMD="desktop.theme.save" QUIT $$THEMESAVE(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="debug.snapshot" QUIT $$DEBUGSNAP(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="desktop.layout.save" QUIT $$DESKLAYOUT(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	SET ERR("error")="command_unsupported",ERR("detail")=CMD
@@ -282,34 +276,8 @@ MODCAT(STATE,CONF,TREE,OUTJSON,ERR)
 	SET OUT("launcher")=$GET(STATE("moduleLauncher"),"desktop-icons-and-menu")
 	SET OUT("appCatalogEnabled")=+$GET(STATE("moduleAppCatalogEnabled"),1)
 	SET OUT("count")=+$GET(STATE("moduleCount"),0)
-	SET OUT("installEnabled")=$SELECT(+$GET(STATE("authAdmin"),0)=1:1,+$GET(STATE("authenticated"),0)=1:1,1:0)
-	SET OUT("removeEnabled")=+$GET(STATE("authAdmin"),0)
 	MERGE OUT("modules")=STATE("modules")
 	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"module.catalog","module",.OUT)
-	QUIT 1
-	;
-MODINSTALL(STATE,CONF,TREE,OUTJSON,ERR)
-	NEW OUT
-	IF '$$INSTALL^MIOOSMOD(.STATE,.CONF,.TREE,.OUT,.ERR) QUIT 0
-	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"module.install","module",.OUT)
-	QUIT 1
-	;
-MODREMOVE(STATE,CONF,TREE,OUTJSON,ERR)
-	NEW OUT
-	IF '$$REMOVE^MIOOSMOD(.STATE,.CONF,.TREE,.OUT,.ERR) QUIT 0
-	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"module.remove","module",.OUT)
-	QUIT 1
-	;
-PERMREPORT(STATE,CONF,TREE,OUTJSON,ERR)
-	NEW OUT
-	IF '$$REPORT^MIOOSPERM(.STATE,.CONF,.OUT,.ERR) QUIT 0
-	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"permissions.report","permissions",.OUT)
-	QUIT 1
-	;
-PERMSAVE(STATE,CONF,TREE,OUTJSON,ERR)
-	NEW OUT
-	IF '$$SAVE^MIOOSPERM(.STATE,.CONF,.TREE,.OUT,.ERR) QUIT 0
-	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"permissions.save","permissions",.OUT)
 	QUIT 1
 	;
 DEBUGSNAP(STATE,CONF,TREE,OUTJSON,ERR)
@@ -318,19 +286,6 @@ DEBUGSNAP(STATE,CONF,TREE,OUTJSON,ERR)
 	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"debug.snapshot","debug",.OUT)
 	QUIT 1
 	;
-	;
-THEMELOAD(STATE,CONF,TREE,OUTJSON,ERR)
-	NEW OUT
-	IF '$$LOADCMD^MIOOSTH(.STATE,.CONF,.OUT,.ERR) QUIT 0
-	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"desktop.theme.load","desktop",.OUT)
-	QUIT 1
-	;
-THEMESAVE(STATE,CONF,TREE,OUTJSON,ERR)
-	NEW OUT
-	IF '$$SAVE^MIOOSTH(.STATE,.CONF,.TREE,.OUT,.ERR) QUIT 0
-	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"desktop.theme.save","desktop",.OUT)
-	QUIT 1
-
 SNAPSHOT(STATE,CONF,OUT,ERR)
 	NEW I
 	KILL OUT
@@ -347,10 +302,6 @@ SNAPSHOT(STATE,CONF,OUT,ERR)
 	SET OUT("routes","commandErrorEvent")=$GET(STATE("commandErrorEvent"),"desktop.error")
 	SET OUT("routes","debugSnapshotCommand")="debug.snapshot"
 	SET OUT("routes","viewCommand")="view.refresh"
-	SET OUT("routes","moduleInstallCommand")="module.install"
-	SET OUT("routes","moduleRemoveCommand")="module.remove"
-	SET OUT("routes","permissionsReportCommand")="permissions.report"
-	SET OUT("routes","permissionsSaveCommand")="permissions.save"
 	SET OUT("counts","apps")=$$COUNTARY("apps",.STATE)
 	SET OUT("counts","windows")=$$COUNTARY("windows",.STATE)
 	SET OUT("counts","modules")=+$GET(STATE("moduleCount"),0)
@@ -372,17 +323,13 @@ SNAPSHOT(STATE,CONF,OUT,ERR)
 	SET OUT("debug","commands",1)="view.refresh"
 	SET OUT("debug","commands",2)="transport.health"
 	SET OUT("debug","commands",3)="module.catalog"
-	SET OUT("debug","commands",4)="module.install"
-	SET OUT("debug","commands",5)="module.remove"
-	SET OUT("debug","commands",6)="permissions.report"
-	SET OUT("debug","commands",7)="permissions.save"
-	SET OUT("debug","commands",8)="auth.report"
-	SET OUT("debug","commands",9)="auth.audit"
+	SET OUT("debug","commands",4)="auth.report"
+	SET OUT("debug","commands",5)="auth.audit"
+	SET OUT("debug","commands",6)="auth.sessions"
+	SET OUT("debug","commands",7)="auth.session.revoke"
+	SET OUT("debug","commands",8)="auth.accounts"
+	SET OUT("debug","commands",9)="auth.user.unlock"
 	SET OUT("debug","commands",10)="debug.snapshot"
-	SET OUT("debug","commands",11)="auth.sessions"
-	SET OUT("debug","commands",12)="auth.session.revoke"
-	SET OUT("debug","commands",13)="auth.accounts"
-	SET OUT("debug","commands",14)="auth.user.unlock"
 	SET I=0 FOR  SET I=$ORDER(STATE("modules",I)) QUIT:I'>0  DO
 	. SET OUT("modules",I,"id")=$GET(STATE("modules",I,"id"))
 	. SET OUT("modules",I,"title")=$GET(STATE("modules",I,"title"))
