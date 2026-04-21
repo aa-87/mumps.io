@@ -131,3 +131,26 @@ ROI 33 — HTTP binary chunk transport for resumable uploads and hardened pause/
 - When the server reports a gap, the client now rewinds to the next missing chunk, replays the missing range, and only then retries final commit.
 - This reduces false-finalize failures such as `fs_upload_commit_failed` with `missing_chunk` under concurrent or bursty upload conditions.
 
+
+## Security Center permissions workflow
+
+Administrators can open **Security Center** and review the shell permission matrix for built-in apps and installed modules.
+
+- **Target** identifies the launcher or module contract being controlled.
+- **Roles** allows role-specific access such as `admin` or `developer`.
+- **Actions** defines which actions the surface may perform, such as `view`, `run`, `edit`, `report`, or `install`.
+- **Auth** and **Guest** let administrators grant coarse access without modifying code.
+
+Use the inline editor to save changes. The shell will refresh its boot contract so launcher visibility and module access reflect the updated rules.
+
+## Module Studio workflow
+
+Open **App Catalog** to review installed modules and manage custom manifests.
+
+1. Choose an install scope: `user` for per-user modules or `system` for admin-managed shared modules.
+2. Start from the provided starter manifest.
+3. Fill in the documented fields such as `id`, `title`, `surface`, `cards[]`, and `params[]`.
+4. Install the manifest.
+5. Open the module from the catalog or from the launcher if enabled.
+
+Built-in modules remain read-only. Custom modules can be removed from the catalog UI.

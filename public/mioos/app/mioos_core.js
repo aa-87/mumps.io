@@ -74,10 +74,10 @@
           transferCenter: { items: [], seq: 0, autoOpen: true },
           transferControllers: {},
           transportDiagnostics: { loading: false, refreshedAt: 0, error: '', report: {} },
-          securityCenter: { loading: false, refreshedAt: 0, error: '', report: {}, trail: [], sessions: [], accounts: [] },
+          securityCenter: { loading: false, refreshedAt: 0, error: '', report: {}, permissionsReport: {}, permissions: [], trail: [], sessions: [], accounts: [] },
           debugCenter: { loading: false, refreshedAt: 0, error: '', snapshot: {}, events: [], seq: 0 },
           socketTelemetry: {},
-          moduleCatalog: { loading: false, refreshedAt: 0, error: '' },
+          moduleCatalog: { loading: false, refreshedAt: 0, error: '', manifestEditor: '', installScope: 'user', installStatus: {}, selectedModuleId: '' },
           desktopUi: {
             iconSize: 'medium',
             sortMode: 'manual',
@@ -340,7 +340,8 @@
             this.command('auth.report', {}),
             this.command('auth.audit', { limit: auditLimit }),
             this.command('auth.sessions', { limit: management.sessionLimit || 20 }),
-            this.command('auth.accounts', { limit: management.accountLimit || 20 })
+            this.command('auth.accounts', { limit: management.accountLimit || 20 }),
+            this.refreshPermissionReport()
           ])
             .then(function (results) {
               var report = (((results[0] || {}).auth) || {});
@@ -361,6 +362,68 @@
             .finally(function () {
               self.securityCenter.loading = false;
             });
+        },
+        refreshPermissionReport: function () {
+          var self = this;
+          var command = ((((this.boot || {}).routes || {}).permissionsReportCommand) || ((((this.boot || {}).desktop || {}).permissions || {}).reportCommand) || 'permissions.report');
+          return this.command(command, {}).then(function (msg) {
+            var report = ((msg || {}).permissions) || {};
+            self.securityCenter.permissionsReport = report;
+            self.securityCenter.permissions = Array.isArray(report.entries) ? report.entries : [];
+            return report;
+          });
+        },
+        permissionRows: function () {
+          return Array.isArray((this.securityCenter || {}).permissions) ? this.securityCenter.permissions : [];
+        },
+        permissionActionsLabel: function (entry) {
+          return ((entry || {}).actionsCsv) || 'view';
+        },
+        permissionRolesLabel: function (entry) {
+          return ((entry || {}).roles) || 'authenticated';
+        },
+        savePermissionEntry: function (entry) {
+          var self = this;
+          var payload;
+          if (!entry || !entry.target) return Promise.resolve();
+          payload = {
+            target: entry.target,
+            title: entry.title || entry.target,
+            type: entry.type || 'system',
+            roles: entry.roles || '',
+            allowAuthenticated: entry.allowAuthenticated ? 1 : 0,
+            allowGuest: entry.allowGuest ? 1 : 0,
+            enabled: entry.enabled ? 1 : 0,
+            actionsCsv: entry.actionsCsv || 'view'
+          };
+          this.securityCenter.loading = true;
+          return this.command(((((this.boot || {}).routes || {}).permissionsSaveCommand) || ((((this.boot || {}).desktop || {}).permissions || {}).saveCommand) || 'permissions.save'), payload)
+            .then(function () {
+              self.showAlert('Permissions saved', 'The permission matrix has been updated.');
+              return Promise.all([self.refreshPermissionReport(), self.reloadBootContract()]);
+            })
+            .finally(function () {
+              self.securityCenter.loading = false;
+            });
+        },
+        reloadBootContract: function () {
+          var self = this;
+          var path = (((this.boot || {}).routes || {}).bootstrap) || '/api/mioos/bootstrap';
+          return window.fetch(path, { credentials: 'same-origin' }).then(function (resp) {
+            if (!resp.ok) throw new Error('bootstrap_reload_failed');
+            return resp.json();
+          }).then(function (boot) {
+            self.boot = window.MIOOSState.normalizeBoot(boot || {});
+            self.profile = (((self.boot || {}).product || {}).profile) || self.profile || 'dev';
+            self.launcherEntries = window.MIOOSState.deepClone((self.boot || {}).apps || []);
+            self.windows = window.MIOOSState.deepClone((self.boot || {}).windows || []);
+            self.ensureModuleWindowState();
+            self.normalizeDesktopUiState();
+            self.ensureDesktopLayout();
+            self.applyDocumentLocale();
+            if (self.moduleCatalog && !self.moduleCatalog.manifestEditor) self.moduleCatalog.manifestEditor = self.moduleStarterManifest('generic');
+            return self.boot;
+          });
         },
         securityReport: function () {
           return (this.securityCenter || {}).report || {};
@@ -549,6 +612,35 @@
             return String(a.category || '').localeCompare(String(b.category || '')) || String(a.title || a.id || '').localeCompare(String(b.title || b.id || ''));
           });
         },
+        moduleInstallScopes: function () {
+          return ((((this.boot || {}).desktop || {}).moduleSystem || {}).installScopes) || ['user', 'system'];
+        },
+        moduleManifestFields: function () {
+          return ((((this.boot || {}).desktop || {}).moduleSystem || {}).manifestFields) || [];
+        },
+        moduleStarterManifest: function (surface) {
+          return JSON.stringify({
+            id: 'custom-dashboard',
+            title: 'Custom Dashboard',
+            subtitle: 'A server-authored module manifest',
+            description: 'Use this starter manifest to install a user or system module into the MIOOS shell.',
+            icon: '🧩',
+            category: 'operations',
+            version: '1.0',
+            surface: surface || 'dashboard',
+            windowTitle: 'Custom Dashboard',
+            singleton: 1,
+            launcherEnabled: 1,
+            cards: [
+              { title: 'Purpose', detail: 'Describe the workflow or report the module should present.' },
+              { title: 'Data contract', detail: 'Add params for server endpoints, report ids, or module-specific filters.' }
+            ],
+            params: {
+              route: '/api/mioos/module/custom-dashboard',
+              report: 'ops-summary'
+            }
+          }, null, 2);
+        },
         moduleRecord: function (moduleId) {
           return (this.boot.modules || []).find(function (item) { return item.id === moduleId || item.appKey === moduleId; }) || null;
         },
@@ -574,16 +666,52 @@
           this.moduleCatalog.loading = true;
           this.moduleCatalog.error = '';
           return this.command('module.catalog', {}).then(function (msg) {
+            var payload = ((msg || {}).module) || {};
             self.moduleCatalog.loading = false;
             self.moduleCatalog.refreshedAt = Date.now();
-            self.boot.modules = window.MIOOSState.deepClone((((msg || {}).module || {}).modules) || []);
+            self.boot.modules = window.MIOOSState.deepClone(payload.modules || []);
             self.ensureModuleWindowState();
+            if (!self.moduleCatalog.manifestEditor) self.moduleCatalog.manifestEditor = self.moduleStarterManifest('dashboard');
             return self.boot.modules;
           }).catch(function (err) {
             self.moduleCatalog.loading = false;
             self.moduleCatalog.error = (err && (err.detail || err.error || err.message)) || 'module_catalog_failed';
             throw err;
           });
+        },
+        installModuleManifest: function () {
+          var self = this;
+          var payload;
+          try {
+            payload = JSON.parse((this.moduleCatalog.manifestEditor || '').trim() || '{}');
+          } catch (err) {
+            this.moduleCatalog.error = 'manifest_invalid_json';
+            return Promise.reject(err);
+          }
+          payload.scope = this.moduleCatalog.installScope || 'user';
+          this.moduleCatalog.loading = true;
+          this.moduleCatalog.error = '';
+          return this.command((((this.boot || {}).routes || {}).moduleInstallCommand) || 'module.install', payload).then(function (msg) {
+            self.moduleCatalog.installStatus = ((msg || {}).module) || {};
+            self.showAlert('Module installed', 'The module manifest was saved into the registry.');
+            return Promise.all([self.refreshModuleCatalog(), self.refreshPermissionReport(), self.reloadBootContract()]);
+          }).finally(function () {
+            self.moduleCatalog.loading = false;
+          });
+        },
+        removeCustomModule: function (module) {
+          var self = this;
+          if (!module || module.builtIn) return Promise.resolve();
+          this.moduleCatalog.loading = true;
+          return this.command((((this.boot || {}).routes || {}).moduleRemoveCommand) || 'module.remove', { id: module.id, scope: module.scope || 'user', owner: module.owner || '' }).then(function () {
+            self.showAlert('Module removed', 'The custom module manifest has been removed.');
+            return Promise.all([self.refreshModuleCatalog(), self.refreshPermissionReport(), self.reloadBootContract()]);
+          }).finally(function () {
+            self.moduleCatalog.loading = false;
+          });
+        },
+        setModuleStarterManifest: function (surface) {
+          this.moduleCatalog.manifestEditor = this.moduleStarterManifest(surface || 'generic');
         },
         openModuleCatalog: function () {
           this.openApp('app-catalog');
@@ -2009,43 +2137,22 @@
           var theme = this.themeStudioActiveTheme() || {};
           var style = (((theme.startMenuConfig || {}).style) || 'classic');
           var nested = ((theme.startMenuConfig || {}).nested) !== false;
-          var groups;
-          if (style === 'popup') {
-            return [
-              { key: 'applications', title: 'Applications', subtitle: 'Launch your tools', open: true, items: [
-                { key: 'terminal', title: 'Terminal', subtitle: 'Interactive shell', icon: '⌨' },
-                { key: 'theme-studio', title: 'Appearance', subtitle: 'Customize the shell', icon: '🎨' },
-                { key: 'transfers', title: 'Transfers', subtitle: 'Uploads and activity', icon: '⇅' }
-              ]},
-              { key: 'places', title: 'Places', subtitle: 'Folders and storage', open: true, items: [
-                { key: 'my-computer', title: 'Home Folder', subtitle: 'Browse storage', icon: '🗂' },
-                { key: 'documents', title: 'Documents', subtitle: 'Recent work', icon: '📁' },
-                { key: 'control-panel', title: 'Settings', subtitle: 'System configuration', icon: '⚙' }
-              ]},
-              { key: 'system', title: 'System', subtitle: 'Health and security', open: true, items: [
-                { key: 'security-center', title: 'Security', subtitle: 'Sessions and users', icon: '🛡' },
-                { key: 'diagnostics', title: 'Diagnostics', subtitle: 'Transport and boot health', icon: '📈' },
-                { key: 'debug-center', title: 'Developer Tools', subtitle: 'Inspect the shell', icon: '🧪' }
-              ]}
-            ];
-          }
-          groups = [
-            { key: 'system', title: 'System Tools', subtitle: 'Core shell utilities', open: true, items: [
-              { key: 'my-computer', title: 'My Computer', subtitle: 'Browse storage', icon: '🖥' },
-              { key: 'documents', title: 'Documents', subtitle: 'Open recent files', icon: '📁' },
-              { key: 'theme-studio', title: 'Theme Studio', subtitle: 'Customize the shell', icon: '🎨' }
-            ]},
-            { key: 'work', title: 'Workflows', subtitle: 'Everyday apps', open: nested, items: [
-              { key: 'terminal', title: 'Terminal', subtitle: 'Interactive shell', icon: '⌨' },
-              { key: 'transfers', title: 'Transfers', subtitle: 'Upload status', icon: '⇅' },
-              { key: 'control-panel', title: 'Control Panel', subtitle: 'Settings and tools', icon: '⚙' }
-            ]},
-            { key: 'support', title: 'Support', subtitle: 'Diagnostics and monitoring', open: false, items: [
-              { key: 'diagnostics', title: 'Diagnostics', subtitle: 'Transport and boot health', icon: '📈' },
-              { key: 'security-center', title: 'Security Center', subtitle: 'Sessions and users', icon: '🛡' },
-              { key: 'debug-center', title: 'Debug Center', subtitle: 'Developer tools', icon: '🧪' }
-            ]}
+          var entries = (this.launcherEntries || []).slice();
+          var groups = [
+            { key: 'pinned', title: 'Pinned', subtitle: 'Frequently used desktop tools', open: true, items: [] },
+            { key: 'places', title: 'Places', subtitle: 'Storage and workspace', open: true, items: [] },
+            { key: 'administration', title: 'Administration', subtitle: 'Security, diagnostics, and governance', open: style === 'popup', items: [] },
+            { key: 'modules', title: 'Modules', subtitle: 'Installed built-in and custom applications', open: nested, items: [] }
           ];
+          entries.forEach(function (entry) {
+            var key = entry.key || '';
+            var target = groups[0];
+            if (key === 'my-computer' || key === 'documents') target = groups[1];
+            else if (key === 'security-center' || key === 'diagnostics' || key === 'debug-center' || key === 'control-panel' || key === 'app-catalog') target = groups[2];
+            else if (String(entry.kind || '') === 'module') target = groups[3];
+            target.items.push({ key: key, title: entry.title || key, subtitle: entry.subtitle || entry.kind || 'app', icon: entry.icon || this.appIcon(key) });
+          }, this);
+          groups = groups.filter(function (group) { return group.items && group.items.length; });
           if (!nested) groups.forEach(function (group) { group.open = true; });
           return groups;
         },

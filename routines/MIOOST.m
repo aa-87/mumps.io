@@ -50,6 +50,10 @@ MIOOST ; MIOOS tests
 	DO T049
 	DO T050
 	DO T051
+	DO T052
+	DO T053
+	DO T054
+	DO T055
 	QUIT
 	;
 RESET
@@ -1034,4 +1038,90 @@ T051
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSST.m","themePersistence"),"[MIOOST][T051][boot theme persistence]")
 	QUIT
 	;
+	;
+T052
+	NEW CONF,REQ,CTX,STATE,ERR,JSON,OBJ
+	DO RESET
+	DO CONFDEF^MIOOS(.CONF)
+	DO INIT^MIOOS(.CONF)
+	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T052][load]")
+	SET JSON=$$BOOTJSON^MIOOSST(.STATE,.CONF)
+	DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T052][decode]")
+	DO EQ^MIOTASSERT($GET(OBJ("product","version")),"roi52-v1-shell-permissions-modules","[MIOOST][T052][version]")
+	DO EQ^MIOTASSERT($GET(OBJ("routes","permissionsReportCommand")),"permissions.report","[MIOOST][T052][permissions report route]")
+	DO EQ^MIOTASSERT($GET(OBJ("routes","permissionsSaveCommand")),"permissions.save","[MIOOST][T052][permissions save route]")
+	DO EQ^MIOTASSERT($GET(OBJ("routes","moduleInstallCommand")),"module.install","[MIOOST][T052][module install route]")
+	DO EQ^MIOTASSERT($GET(OBJ("routes","moduleRemoveCommand")),"module.remove","[MIOOST][T052][module remove route]")
+	DO EQ^MIOTASSERT($GET(OBJ("desktop","permissions","model")),"shell-target-action-matrix","[MIOOST][T052][permissions model]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("desktop","uiKit","enabled")),1,"[MIOOST][T052][ui kit enabled]")
+	DO EQ^MIOTASSERT($GET(OBJ("desktop","moduleSystem","manifestFields",1)),"id","[MIOOST][T052][manifest field id]")
+	QUIT
+	;
+T053
+	NEW CONF,REQ,CTX,STATE,ERR,TREE,OUT,PAY,JSON,OBJ,TOKEN
+	DO RESET
+	DO CONFDEF^MIOOS(.CONF)
+	DO INIT^MIOOS(.CONF)
+	DO OK^MIOTASSERT($$SIGNIN^MIOOSAUTH(.CONF,"admin","admin123!",.TOKEN,.ERR),"[MIOOST][T053][signin]")
+	SET REQ("hdr","cookie")=$PIECE($$COOKIEHDR^MIOOSAUTH(.CONF,TOKEN,0),";",1)
+	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T053][load]")
+	DO OK^MIOTASSERT($$REPORT^MIOOSPERM(.STATE,.CONF,.OUT,.ERR),"[MIOOST][T053][perm report]")
+	DO EQ^MIOTASSERT($GET(OUT("model")),"shell-target-action-matrix","[MIOOST][T053][perm model]")
+	DO OK^MIOTASSERT(+$GET(OUT("count"))>5,"[MIOOST][T053][perm count]")
+	SET TREE("requestId")="perm-1"
+	SET TREE("command")="permissions.report"
+	SET PAY="{""requestId"":""perm-1"",""command"":""permissions.report""}"
+	DO OK^MIOTASSERT($$COMMANDJSON^MIOOSWS(.CONF,.REQ,.CTX,.STATE,PAY,.JSON,.ERR),"[MIOOST][T053][ws permissions report]")
+	DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T053][decode]")
+	DO EQ^MIOTASSERT($GET(OBJ("command")),"permissions.report","[MIOOST][T053][command]")
+	DO EQ^MIOTASSERT($GET(OBJ("permissions","model")),"shell-target-action-matrix","[MIOOST][T053][payload model]")
+	QUIT
+	;
+T054
+	NEW CONF,REQ,CTX,STATE,ERR,TOKEN,TREE,OUT,PAY,JSON,OBJ,FOUND,I
+	DO RESET
+	DO CONFDEF^MIOOS(.CONF)
+	DO INIT^MIOOS(.CONF)
+	DO OK^MIOTASSERT($$SIGNIN^MIOOSAUTH(.CONF,"admin","admin123!",.TOKEN,.ERR),"[MIOOST][T054][signin]")
+	SET REQ("hdr","cookie")=$PIECE($$COOKIEHDR^MIOOSAUTH(.CONF,TOKEN,0),";",1)
+	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T054][load]")
+	SET TREE("id")="custom-dashboard"
+	SET TREE("title")="Custom Dashboard"
+	SET TREE("subtitle")="Manifest installed from tests"
+	SET TREE("description")="Regression coverage for module install and remove"
+	SET TREE("icon")="🧩"
+	SET TREE("category")="operations"
+	SET TREE("version")="1.0"
+	SET TREE("surface")="dashboard"
+	SET TREE("scope")="user"
+	SET TREE("cards",1,"title")="Contract"
+	SET TREE("cards",1,"detail")="Module registry should load custom manifests into the shell."
+	SET TREE("params","route")="/api/mioos/module/custom-dashboard"
+	DO OK^MIOTASSERT($$INSTALL^MIOOSMOD(.STATE,.CONF,.TREE,.OUT,.ERR),"[MIOOST][T054][install]")
+	DO EQ^MIOTASSERT($GET(OUT("moduleId")),"module-custom-dashboard","[MIOOST][T054][module id]")
+	KILL STATE,ERR
+	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T054][reload]")
+	SET (FOUND,I)=0 FOR  SET I=$ORDER(STATE("modules",I)) QUIT:I'>0  DO  QUIT:FOUND
+	. IF $GET(STATE("modules",I,"id"))="module-custom-dashboard" SET FOUND=1
+	DO EQ^MIOTASSERT(FOUND,1,"[MIOOST][T054][module loaded]")
+	SET PAY="{""requestId"":""mod-1"",""command"":""module.remove"",""id"":""custom-dashboard"",""scope"":""user""}"
+	DO OK^MIOTASSERT($$COMMANDJSON^MIOOSWS(.CONF,.REQ,.CTX,.STATE,PAY,.JSON,.ERR),"[MIOOST][T054][ws remove]")
+	DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T054][remove decode]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("module","removed")),1,"[MIOOST][T054][removed]")
+	QUIT
+	;
+T055
+	DO OK^MIOTASSERT($$FILEOK("routines/MIOOSPERM.m"),"[MIOOST][T055][perm routine]")
+	DO OK^MIOTASSERT($$FILEOK("routines/MIOOSMOD.m"),"[MIOOST][T055][module routine]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","permissions.report"),"[MIOOST][T055][ws permissions token]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","module.install"),"[MIOOST][T055][ws module install token]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-surface-security"),"[MIOOST][T055][security surface]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-surface-module-catalog"),"[MIOOST][T055][catalog surface]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-surface-module-host"),"[MIOOST][T055][module host surface]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","savePermissionEntry"),"[MIOOST][T055][core permission save]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","installModuleManifest"),"[MIOOST][T055][core module install]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","ROI 52 — shell chrome, UI kit, security center, module studio"),"[MIOOST][T055][css roi52]")
+	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 52 — professional shell chrome, permission matrix, UI kit, and custom module studio"),"[MIOOST][T055][llm roi52]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","ROI 52 — professional shell chrome, permission matrix, UI kit, and custom module studio"),"[MIOOST][T055][docs roi52]")
+	QUIT
 	;

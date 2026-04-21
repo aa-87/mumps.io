@@ -13,9 +13,12 @@
 
   function surfaceComponentKey(win) {
     var key = String((win || {}).appKey || 'generic');
+    if ((win || {}).moduleWindow) return 'mioos-surface-module-host';
     if (key === 'my-computer' || key === 'documents' || key === 'explorer') return 'mioos-surface-explorer';
     if (key === 'terminal') return 'mioos-surface-terminal';
     if (key === 'theme-studio') return 'mioos-surface-theme';
+    if (key === 'security-center') return 'mioos-surface-security';
+    if (key === 'app-catalog') return 'mioos-surface-module-catalog';
     if (key === 'text-viewer' || key === 'image-viewer' || key === 'media-viewer' || key === 'pdf-viewer' || key === 'structured-viewer') return 'mioos-surface-viewer';
     if (key === 'transfers') return 'mioos-surface-transfers';
     return 'mioos-surface-generic';
@@ -642,6 +645,179 @@
           '</div>'
       });
 
+
+      app.component('mioos-surface-security', {
+        props: ['window'],
+        computed: {
+          vm: function () { return root(this); },
+          report: function () { return this.vm.securityReport() || {}; },
+          trail: function () { return this.vm.securityTrail() || []; },
+          sessions: function () { return this.vm.securitySessions() || []; },
+          accounts: function () { return this.vm.securityAccounts() || []; },
+          permissions: function () { return this.vm.permissionRows() || []; }
+        },
+        mounted: function () {
+          if (!this.vm.securityCenter.refreshedAt) this.vm.refreshSecurityCenter().catch(function () {});
+        },
+        template: `
+          <div class="mioos-surface mioos-security-surface">
+            <div class="mioos-ui-toolbar">
+              <div>
+                <strong>Security Center</strong>
+                <span>Authentication posture, live sessions, credential health, and launcher permission governance.</span>
+              </div>
+              <div class="mioos-ui-toolbar-actions">
+                <button type="button" class="mioos-btn" @click="vm.refreshSecurityCenter()">Refresh</button>
+                <button type="button" class="mioos-btn" @click="vm.exportSecurityAudit()">Export audit</button>
+              </div>
+            </div>
+            <div class="mioos-ui-stat-grid">
+              <article class="mioos-ui-stat-card"><strong>[[ report.totalUsers || 0 ]]</strong><span>Accounts</span></article>
+              <article class="mioos-ui-stat-card"><strong>[[ report.activeSessions || 0 ]]</strong><span>Active sessions</span></article>
+              <article class="mioos-ui-stat-card"><strong>[[ vm.lockedSecurityAccounts().length ]]</strong><span>Locked users</span></article>
+              <article class="mioos-ui-stat-card"><strong>[[ permissions.length ]]</strong><span>Permission targets</span></article>
+            </div>
+            <section class="mioos-ui-section-shell">
+              <header class="mioos-ui-section-head"><strong>Permission matrix</strong><span>Admin can edit launcher and module access without changing application code.</span></header>
+              <div class="mioos-ui-table-wrap">
+                <table class="mioos-ui-table">
+                  <thead><tr><th>Target</th><th>Roles</th><th>Actions</th><th>Effective</th><th v-if="(((vm.boot || {}).desktop || {}).permissions || {}).editable">Editor</th></tr></thead>
+                  <tbody>
+                    <tr v-for="entry in permissions" :key="entry.target">
+                      <td><strong>[[ entry.title || entry.target ]]</strong><div class="mioos-ui-meta">[[ entry.target ]]</div></td>
+                      <td>[[ vm.permissionRolesLabel(entry) ]]</td>
+                      <td>[[ vm.permissionActionsLabel(entry) ]]</td>
+                      <td><span class="mioos-ui-badge" :class="{ 'is-good': entry.run || entry.view, 'is-warn': !(entry.run || entry.view) }">[[ (entry.run || entry.view) ? 'allowed' : 'blocked' ]]</span></td>
+                      <td v-if="(((vm.boot || {}).desktop || {}).permissions || {}).editable">
+                        <div class="mioos-ui-inline-editor">
+                          <label><span>Enabled</span><input type="checkbox" v-model="entry.enabled"></label>
+                          <label><span>Auth</span><input type="checkbox" v-model="entry.allowAuthenticated"></label>
+                          <label><span>Guest</span><input type="checkbox" v-model="entry.allowGuest"></label>
+                          <input type="text" v-model="entry.roles" placeholder="admin,developer">
+                          <input type="text" v-model="entry.actionsCsv" placeholder="view,run,edit">
+                          <button type="button" class="mioos-btn" @click="vm.savePermissionEntry(entry)">Save</button>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+            <div class="mioos-ui-split-grid">
+              <section class="mioos-ui-section-shell">
+                <header class="mioos-ui-section-head"><strong>Active sessions</strong><span>Revoke suspicious or stale access from the shell.</span></header>
+                <div class="mioos-ui-table-wrap">
+                  <table class="mioos-ui-table"><thead><tr><th>User</th><th>State</th><th>Created</th><th></th></tr></thead><tbody>
+                    <tr v-for="entry in sessions" :key="entry.sessionId || entry.id"><td>[[ entry.username || entry.user || entry.principal || 'session' ]]</td><td>[[ entry.status || 'active' ]]</td><td>[[ entry.createdAt || entry.updatedAt || '—' ]]</td><td><button type="button" class="mioos-btn is-danger" @click="vm.revokeSecuritySession(entry.sessionId || entry.id)">Revoke</button></td></tr>
+                  </tbody></table>
+                </div>
+              </section>
+              <section class="mioos-ui-section-shell">
+                <header class="mioos-ui-section-head"><strong>Credential health</strong><span>Track lockout, rotation, and expiration issues for operators.</span></header>
+                <div class="mioos-ui-table-wrap">
+                  <table class="mioos-ui-table"><thead><tr><th>User</th><th>Status</th><th>Locked</th><th></th></tr></thead><tbody>
+                    <tr v-for="entry in accounts" :key="entry.username || entry.user"><td>[[ entry.username || entry.user || 'user' ]]</td><td>[[ vm.passwordStatusLabel(entry) ]]</td><td>[[ entry.locked ? 'yes' : 'no' ]]</td><td><button type="button" class="mioos-btn" :disabled="!entry.locked" @click="vm.unlockSecurityUser(entry.username || entry.user)">Unlock</button></td></tr>
+                  </tbody></table>
+                </div>
+              </section>
+            </div>
+            <section class="mioos-ui-section-shell">
+              <header class="mioos-ui-section-head"><strong>Audit trail</strong><span>Recent auditable security events captured by the platform.</span></header>
+              <div class="mioos-ui-table-wrap">
+                <table class="mioos-ui-table"><thead><tr><th>When</th><th>Event</th><th>Principal</th><th>Detail</th></tr></thead><tbody>
+                  <tr v-for="entry in trail" :key="entry.id || entry.ts || entry.event"><td>[[ entry.at || entry.ts || entry.when || '—' ]]</td><td>[[ entry.event || entry.action || 'event' ]]</td><td>[[ entry.principal || entry.user || 'system' ]]</td><td>[[ entry.detail || entry.outcome || '' ]]</td></tr>
+                </tbody></table>
+              </div>
+            </section>
+          </div>`
+      });
+
+      app.component('mioos-surface-module-catalog', {
+        props: ['window'],
+        computed: {
+          vm: function () { return root(this); },
+          rows: function () { return this.vm.moduleCatalogRows() || []; },
+          scopes: function () { return this.vm.moduleInstallScopes() || []; },
+          fields: function () { return this.vm.moduleManifestFields() || []; }
+        },
+        mounted: function () {
+          if (!this.vm.moduleCatalog.refreshedAt) this.vm.refreshModuleCatalog().catch(function () {});
+          if (!this.vm.moduleCatalog.manifestEditor) this.vm.setModuleStarterManifest('dashboard');
+        },
+        template: `
+          <div class="mioos-surface mioos-module-catalog-surface">
+            <div class="mioos-ui-toolbar">
+              <div><strong>App Catalog and Module Studio</strong><span>Install built-in and custom module manifests using one documented registry contract.</span></div>
+              <div class="mioos-ui-toolbar-actions">
+                <button type="button" class="mioos-btn" @click="vm.refreshModuleCatalog()">Refresh</button>
+                <button type="button" class="mioos-btn" @click="vm.setModuleStarterManifest('dashboard')">Starter manifest</button>
+              </div>
+            </div>
+            <div class="mioos-ui-split-grid">
+              <section class="mioos-ui-section-shell">
+                <header class="mioos-ui-section-head"><strong>Installed modules</strong><span>Built-ins and custom manifests share the same shell contract.</span></header>
+                <div class="mioos-ui-table-wrap">
+                  <table class="mioos-ui-table"><thead><tr><th>Module</th><th>Scope</th><th>Surface</th><th>Version</th><th></th></tr></thead><tbody>
+                    <tr v-for="module in rows" :key="module.id">
+                      <td><strong>[[ module.title || module.id ]]</strong><div class="mioos-ui-meta">[[ module.id ]]</div></td>
+                      <td>[[ module.scope || (module.builtIn ? 'system' : 'user') ]]</td>
+                      <td>[[ module.surface || 'generic' ]]</td>
+                      <td>[[ module.version || '1.0' ]]</td>
+                      <td><div class="mioos-ui-row-actions"><button type="button" class="mioos-btn" @click="vm.openModuleEntry(module.id)">Open</button><button type="button" class="mioos-btn is-danger" :disabled="module.builtIn" @click="vm.removeCustomModule(module)">Remove</button></div></td>
+                    </tr>
+                  </tbody></table>
+                </div>
+              </section>
+              <section class="mioos-ui-section-shell">
+                <header class="mioos-ui-section-head"><strong>Manifest installer</strong><span>Expected fields: [[ fields.join(', ') ]]</span></header>
+                <div class="mioos-ui-form-grid">
+                  <label><span>Install scope</span><select v-model="vm.moduleCatalog.installScope"><option v-for="scope in scopes" :key="scope" :value="scope">[[ scope ]]</option></select></label>
+                  <label class="span-2"><span>Manifest JSON</span><textarea v-model="vm.moduleCatalog.manifestEditor" rows="18" class="mioos-ui-code"></textarea></label>
+                </div>
+                <div class="mioos-ui-toolbar-actions">
+                  <button type="button" class="mioos-btn" @click="vm.installModuleManifest()">Install module</button>
+                </div>
+              </section>
+            </div>
+          </div>`
+      });
+
+      app.component('mioos-surface-module-host', {
+        props: ['window'],
+        computed: {
+          vm: function () { return root(this); },
+          module: function () { return this.vm.moduleWindowMeta(this.window) || {}; },
+          cards: function () { return this.vm.moduleCards(this.module) || []; },
+          params: function () { return (this.module && this.module.params) || {}; }
+        },
+        template: `
+          <div class="mioos-surface mioos-module-host-surface">
+            <div class="mioos-ui-toolbar">
+              <div><strong>[[ module.title || window.title ]]</strong><span>[[ module.description || module.subtitle || 'Module host surface' ]]</span></div>
+              <div class="mioos-ui-toolbar-actions">
+                <span class="mioos-ui-badge" v-for="badge in vm.moduleBadges(module)" :key="badge">[[ badge ]]</span>
+              </div>
+            </div>
+            <div v-if="module.id === 'module-notes'" class="mioos-ui-section-shell">
+              <header class="mioos-ui-section-head"><strong>Scratch notes</strong><span>Local window state for quick capture inside the shell.</span></header>
+              <textarea v-model="window.moduleState.draft" rows="12" class="mioos-ui-code" placeholder="Capture operational notes, TODOs, or release breadcrumbs."></textarea>
+            </div>
+            <div v-else-if="module.id === 'module-ops-center'" class="mioos-ui-stat-grid">
+              <article class="mioos-ui-stat-card"><strong>[[ (vm.boot.user || {}).displayName || 'Guest' ]]</strong><span>Principal</span></article>
+              <article class="mioos-ui-stat-card"><strong>[[ (vm.boot.session || {}).id || 'mioos-shell' ]]</strong><span>Session</span></article>
+              <article class="mioos-ui-stat-card"><strong>[[ (vm.boot.locale || {}).code || 'en' ]]</strong><span>Locale</span></article>
+              <article class="mioos-ui-stat-card"><strong>[[ ((vm.boot.desktop || {}).shellChrome) || 'xp' ]]</strong><span>Shell chrome</span></article>
+            </div>
+            <div class="mioos-ui-stat-grid" v-if="cards.length">
+              <article class="mioos-ui-card" v-for="card in cards" :key="card.title || card.detail"><strong>[[ card.title || 'Card' ]]</strong><span>[[ card.detail || '' ]]</span></article>
+            </div>
+            <section class="mioos-ui-section-shell" v-if="Object.keys(params || {}).length">
+              <header class="mioos-ui-section-head"><strong>Manifest parameters</strong><span>Documented parameters supplied by the module manifest.</span></header>
+              <div class="mioos-ui-table-wrap"><table class="mioos-ui-table"><thead><tr><th>Key</th><th>Value</th></tr></thead><tbody><tr v-for="(value,key) in params" :key="key"><td>[[ key ]]</td><td>[[ value ]]</td></tr></tbody></table></div>
+            </section>
+          </div>`
+      });
+
       app.component('mioos-surface-generic', {
 
         props: ['window'],
@@ -671,39 +847,32 @@
           entries: function () { return this.vm.filteredEntries || []; },
           groups: function () { return this.vm.startMenuGroups(); }
         },
-        template: '' +
-          '<aside class="mioos-start-menu-vue" :class="[\'is-\' + vm.currentShellThemeFamily(), \'style-\' + vm.startMenuStyleType(), \'position-\' + vm.taskbarPosition(), \'button-\' + vm.taskbarButtonStyleType()]" :style="vm.startMenuPopupStyle()" @click.stop>' +
-            '<div class="mioos-start-head-vue"><div class="mioos-start-avatar-vue">[[ (((vm.boot.user || {}).displayName || vm.boot.product.name || "M").charAt(0) || "M").toUpperCase() ]]</div><div class="mioos-start-head-copy-vue"><strong>[[ vm.boot.product.name ]]</strong><span>[[ vm.boot.product.subtitle ]]</span></div><div class="mioos-start-head-status-vue">[[ (vm.boot.user || {}).displayName || "Local session" ]]</div></div>' +
-            '<label class="mioos-start-search-vue"><span>⌕</span><input v-model="vm.menuFilter" type="text" :placeholder="vm.t(\'search.placeholder\')"></label>' +
-            '<div class="mioos-start-body-vue" v-if="vm.startMenuStyleType() === \'classic\'">' +
-              '<div class="mioos-start-list-vue">' +
-                '<details v-for="group in groups" :key="group.key" class="mioos-start-group-vue" :open="group.open">' +
-                  '<summary><strong>[[ group.title ]]</strong><span>[[ group.subtitle ]]</span></summary>' +
-                  '<div class="mioos-start-group-items-vue">' +
-                    '<button v-for="item in group.items" :key="item.key" type="button" class="mioos-start-entry-vue" @click="vm.openApp(item.key)"><span class="mioos-start-entry-icon">[[ item.icon ]]</span><span><strong>[[ item.title ]]</strong><em>[[ item.subtitle || item.key ]]</em></span></button>' +
-                  '</div>' +
-                '</details>' +
-              '</div>' +
-              '<aside class="mioos-start-side-vue">' +
-                '<strong>Pinned</strong>' +
-                '<button v-for="entry in entries.slice(0, 6)" :key="entry.key" type="button" class="mioos-chip-btn" @click="vm.openApp(entry.key)">[[ entry.title ]]</button>' +
-                '<strong>Themes</strong>' +
-                '<button v-for="theme in vm.shellThemeOptions()" :key="theme.key" type="button" class="mioos-chip-btn" :class="{ \'is-active\': vm.activeThemeKey === theme.key }" @click="vm.applyShellTheme(theme.key)">[[ theme.label ]]</button>' +
-                '<strong>Language</strong>' +
-                '<button v-for="locale in vm.localeOptions" :key="locale.code" type="button" class="mioos-chip-btn" :class="{ \'is-active\': (vm.currentLocale || {}).code === locale.code }" @click="vm.changeLocale(locale.code)">[[ locale.label ]]</button>' +
-              '</aside>' +
-            '</div>' +
-            '<div class="mioos-start-panel-vue mioos-start-popup-vue" v-else>' +
-              '<div class="mioos-start-panel-group-vue" v-for="group in groups" :key="group.key">' +
-                '<strong>[[ group.title ]]</strong>' +
-                '<button v-for="item in group.items" :key="item.key" type="button" class="mioos-start-entry-vue" @click="vm.openApp(item.key)"><span class="mioos-start-entry-icon">[[ item.icon ]]</span><span><strong>[[ item.title ]]</strong><em>[[ item.subtitle || item.key ]]</em></span></button>' +
-              '</div>' +
-            '</div>' +
-            '<div class="mioos-start-user-vue" v-if="vm.authEnabled">' +
-              '<template v-if="vm.boot.user.authenticated"><span>[[ (vm.boot.user || {}).displayName || \'User\' ]]</span><button type="button" class="mioos-btn" @click="vm.submitSignout">[[ vm.t(\'auth.signout\') ]]</button></template>' +
-              '<template v-else><label class="mioos-auth-field compact"><span>[[ vm.t(\'auth.username\') ]]</span><input v-model="vm.authForm.username" type="text"></label><label class="mioos-auth-field compact"><span>[[ vm.t(\'auth.password\') ]]</span><input v-model="vm.authForm.password" type="password"></label><button type="button" class="mioos-btn" @click="vm.submitSignin">[[ vm.t(\'auth.signin\') ]]</button></template>' +
-            '</div>' +
-          '</aside>'
+        template: `
+          <aside class="mioos-start-menu-vue mioos-start-menu-shell" :class="['is-' + vm.currentShellThemeFamily(), 'style-' + vm.startMenuStyleType(), 'position-' + vm.taskbarPosition(), 'button-' + vm.taskbarButtonStyleType()]" :style="vm.startMenuPopupStyle()" @click.stop>
+            <div class="mioos-start-head-vue">
+              <div class="mioos-start-avatar-vue">[[ (((vm.boot.user || {}).displayName || vm.boot.product.name || 'M').charAt(0) || 'M').toUpperCase() ]]</div>
+              <div class="mioos-start-head-copy-vue"><strong>[[ vm.boot.product.name ]]</strong><span>[[ vm.boot.product.subtitle ]]</span></div>
+              <div class="mioos-start-head-status-vue">[[ (vm.boot.user || {}).displayName || 'Local session' ]]</div>
+            </div>
+            <label class="mioos-start-search-vue"><span>⌕</span><input v-model="vm.menuFilter" type="text" :placeholder="vm.t('search.placeholder')"></label>
+            <div class="mioos-start-body-vue">
+              <div class="mioos-start-list-vue">
+                <details v-for="group in groups" :key="group.key" class="mioos-start-group-vue" :open="group.open">
+                  <summary><strong>[[ group.title ]]</strong><span>[[ group.subtitle ]]</span></summary>
+                  <div class="mioos-start-group-items-vue">
+                    <button v-for="item in group.items" :key="item.key" type="button" class="mioos-start-entry-vue" @click="vm.openApp(item.key)"><span class="mioos-start-entry-icon">[[ item.icon ]]</span><span><strong>[[ item.title ]]</strong><em>[[ item.subtitle || item.key ]]</em></span></button>
+                  </div>
+                </details>
+              </div>
+              <aside class="mioos-start-side-vue">
+                <section class="mioos-start-quickpanel-vue"><strong>Pinned</strong><button v-for="entry in entries.slice(0, 6)" :key="entry.key" type="button" class="mioos-chip-btn" @click="vm.openApp(entry.key)">[[ entry.title ]]</button></section>
+                <section class="mioos-start-quickpanel-vue"><strong>Session</strong><button type="button" class="mioos-chip-btn" @click="vm.openApp('security-center')">Security Center</button><button type="button" class="mioos-chip-btn" @click="vm.openApp('terminal')">New Terminal</button><button type="button" class="mioos-chip-btn" @click="vm.openApp('app-catalog')">App Catalog</button></section>
+                <section class="mioos-start-quickpanel-vue"><strong>Appearance</strong><button v-for="theme in vm.shellThemeOptions()" :key="theme.key" type="button" class="mioos-chip-btn" :class="{ 'is-active': vm.activeThemeKey === theme.key }" @click="vm.applyShellTheme(theme.key)">[[ theme.label ]]</button></section>
+                <section class="mioos-start-quickpanel-vue"><strong>Language</strong><button v-for="locale in vm.localeOptions" :key="locale.code" type="button" class="mioos-chip-btn" :class="{ 'is-active': (vm.currentLocale || {}).code === locale.code }" @click="vm.changeLocale(locale.code)">[[ locale.label ]]</button></section>
+              </aside>
+            </div>
+            <div class="mioos-start-user-vue" v-if="vm.authEnabled"><template v-if="vm.boot.user.authenticated"><span>[[ (vm.boot.user || {}).displayName || 'User' ]]</span><button type="button" class="mioos-btn" @click="vm.submitSignout">[[ vm.t('auth.signout') ]]</button></template><template v-else><label class="mioos-auth-field compact"><span>[[ vm.t('auth.username') ]]</span><input v-model="vm.authForm.username" type="text"></label><label class="mioos-auth-field compact"><span>[[ vm.t('auth.password') ]]</span><input v-model="vm.authForm.password" type="password"></label><button type="button" class="mioos-btn" @click="vm.submitSignin">[[ vm.t('auth.signin') ]]</button></template></div>
+          </aside>`
       });
 
       app.component('taskbar-shell', {
@@ -712,22 +881,13 @@
           windows: function () { return this.vm.taskbarWindows || []; },
           pinnedApps: function () { return (this.vm.launcherEntries || []).slice(0, 5); }
         },
-        template: '' +
-          '<footer class="mioos-taskbar-vue" :class="[\'is-\' + vm.currentShellThemeFamily(), \'position-\' + vm.taskbarPosition(), \'button-\' + vm.taskbarButtonStyleType()]" :style="vm.taskbarShellStyle()">' +
-            '<button type="button" class="mioos-start-button-vue" @click.stop="vm.toggleMenu()"><span>◫</span><strong>[[ (vm.boot.desktop || {}).launcherLabel || \'Menu\' ]]</strong></button>' +
-            '<div class="mioos-taskbar-pinned-vue">' +
-              '<button v-for="app in pinnedApps" :key="app.key" type="button" class="mioos-task-icon-vue" :title="app.title" @click.stop="vm.openApp(app.key)"><span>[[ app.icon ]]</span></button>' +
-            '</div>' +
-            '<div class="mioos-taskbar-windows-vue">' +
-              '<button v-for="win in windows" :key="win.id" type="button" class="mioos-task-item-vue" :class="{ \'is-active\': vm.activeWindowId === win.id && win.state !== \'minimized\' }" @click.stop="vm.taskbarToggle(win.id)"><span class="mioos-task-item-icon">[[ vm.appIcon(win.appKey) ]]</span><span class="mioos-task-item-title">[[ win.title ]]</span></button>' +
-            '</div>' +
-            '<div class="mioos-taskbar-tray-vue">' +
-              '<button type="button" class="mioos-task-icon-vue" title="Show Desktop" @click.stop="vm.showDesktop()">⌄</button>' +
-              '<button type="button" class="mioos-task-icon-vue mioos-task-icon-badge-vue" title="Transfers" @click.stop="vm.openTransfersWindow()"><span>⇅</span><em v-if="vm.activeTransfers().length">[[ vm.activeTransfers().length ]]</em></button>' +
-              '<button type="button" class="mioos-task-icon-vue" title="Theme Studio" @click.stop="vm.openApp(\'theme-studio\')">🎨</button>' +
-              '<button type="button" class="mioos-task-clock-vue" @click.stop="vm.refreshView">[[ vm.clockText ]]</button>' +
-            '</div>' +
-          '</footer>'
+        template: `
+          <footer class="mioos-taskbar-vue mioos-taskbar-shell" :class="['is-' + vm.currentShellThemeFamily(), 'position-' + vm.taskbarPosition(), 'button-' + vm.taskbarButtonStyleType()]" :style="vm.taskbarShellStyle()">
+            <button type="button" class="mioos-start-button-vue" @click.stop="vm.toggleMenu()"><span>◫</span><strong>[[ (vm.boot.desktop || {}).launcherLabel || 'Menu' ]]</strong></button>
+            <div class="mioos-taskbar-pinned-vue"><button v-for="app in pinnedApps" :key="app.key" type="button" class="mioos-task-icon-vue" :title="app.title" @click.stop="vm.openApp(app.key)"><span>[[ app.icon ]]</span></button></div>
+            <div class="mioos-taskbar-windows-vue"><button v-for="win in windows" :key="win.id" type="button" class="mioos-task-item-vue" :class="{ 'is-active': vm.activeWindowId === win.id && win.state !== 'minimized' }" @click.stop="vm.taskbarToggle(win.id)"><span class="mioos-task-item-icon">[[ vm.appIcon(win.appKey) ]]</span><span class="mioos-task-item-title">[[ win.title ]]</span></button></div>
+            <div class="mioos-taskbar-tray-vue"><button type="button" class="mioos-task-icon-vue" title="Show Desktop" @click.stop="vm.showDesktop()">⌄</button><button type="button" class="mioos-task-icon-vue" title="Security Center" @click.stop="vm.openApp('security-center')">🛡</button><button type="button" class="mioos-task-icon-vue mioos-task-icon-badge-vue" title="Transfers" @click.stop="vm.openTransfersWindow()"><span>⇅</span><em v-if="vm.activeTransfers().length">[[ vm.activeTransfers().length ]]</em></button><button type="button" class="mioos-task-icon-vue" title="Theme Studio" @click.stop="vm.openApp('theme-studio')">🎨</button><button type="button" class="mioos-task-clock-vue" @click.stop="vm.refreshView">[[ vm.clockText ]]</button></div>
+          </footer>`
       });
 
       app.component('popup-menu', {
@@ -735,25 +895,15 @@
           vm: function () { return root(this); },
           menu: function () { return this.vm.desktopContextMenuState(); }
         },
-        template: '' +
-          '<section class="mioos-popup-menu-vue" :style="vm.contextMenuStyle()" @click.stop>' +
-            '<template v-if="menu.type === \'icon\'">' +
-              '<button type="button" class="mioos-popup-action" @click="vm.contextOpenSelected()">Open</button>' +
-              '<button type="button" class="mioos-popup-action" @click="vm.contextDeleteIcon()">Remove shortcut</button>' +
-              '<div class="mioos-popup-separator"></div>' +
-            '</template>' +
-            '<button type="button" class="mioos-popup-action" @click="vm.refreshDesktopIcons()">Refresh</button>' +
-            '<button type="button" class="mioos-popup-action" @click="vm.rearrangeDesktopIcons()">Rearrange Icons</button>' +
-            '<button type="button" class="mioos-popup-action" @click="vm.sortDesktopEntries(\'name\')">Sort by Name</button>' +
-            '<button type="button" class="mioos-popup-action" @click="vm.sortDesktopEntries(\'type\')">Sort by Type</button>' +
-            '<div class="mioos-popup-separator"></div>' +
-            '<button type="button" class="mioos-popup-action" @click="vm.setDesktopIconSize(\'small\'); vm.closeDesktopContextMenu()">Small Icons</button>' +
-            '<button type="button" class="mioos-popup-action" @click="vm.setDesktopIconSize(\'medium\'); vm.closeDesktopContextMenu()">Medium Icons</button>' +
-            '<button type="button" class="mioos-popup-action" @click="vm.setDesktopIconSize(\'large\'); vm.closeDesktopContextMenu()">Large Icons</button>' +
-            '<div class="mioos-popup-separator"></div>' +
-            '<button type="button" class="mioos-popup-action" @click="vm.contextPersonalize()">Personalize</button>' +
-            '<button type="button" class="mioos-popup-action" @click="vm.contextControlPanel()">Control Panel</button>' +
-          '</section>'
+        template: `
+          <section class="mioos-popup-menu-vue mioos-popup-menu-shell" :style="vm.contextMenuStyle()" @click.stop>
+            <div class="mioos-popup-group"><strong>Desktop</strong><button type="button" class="mioos-popup-action" @click="vm.refreshDesktopIcons()">Refresh</button><button type="button" class="mioos-popup-action" @click="vm.rearrangeDesktopIcons()">Rearrange icons</button><button type="button" class="mioos-popup-action" @click="vm.sortDesktopEntries('name')">Sort by name</button><button type="button" class="mioos-popup-action" @click="vm.sortDesktopEntries('type')">Sort by type</button></div>
+            <div class="mioos-popup-separator"></div>
+            <div class="mioos-popup-group"><strong>View</strong><button type="button" class="mioos-popup-action" @click="vm.setDesktopIconSize('small'); vm.closeDesktopContextMenu()">Small icons</button><button type="button" class="mioos-popup-action" @click="vm.setDesktopIconSize('medium'); vm.closeDesktopContextMenu()">Medium icons</button><button type="button" class="mioos-popup-action" @click="vm.setDesktopIconSize('large'); vm.closeDesktopContextMenu()">Large icons</button></div>
+            <div class="mioos-popup-separator"></div>
+            <div class="mioos-popup-group"><strong>System</strong><button type="button" class="mioos-popup-action" @click="vm.openApp('terminal')">New Terminal</button><button type="button" class="mioos-popup-action" @click="vm.openApp('security-center')">Security Center</button><button type="button" class="mioos-popup-action" @click="vm.contextPersonalize()">Personalize</button><button type="button" class="mioos-popup-action" @click="vm.contextControlPanel()">Control Panel</button></div>
+            <template v-if="menu.type === 'icon'"><div class="mioos-popup-separator"></div><div class="mioos-popup-group"><strong>Shortcut</strong><button type="button" class="mioos-popup-action" @click="vm.contextOpenSelected()">Open</button><button type="button" class="mioos-popup-action" @click="vm.contextDeleteIcon()">Remove shortcut</button></div></template>
+          </section>`
       });
     }
   };

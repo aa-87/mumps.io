@@ -319,3 +319,13 @@ ROI 33 — HTTP binary chunk transport for resumable uploads and hardened pause/
 - Upload entries store server-side resume metadata (`uploadId`, `nextIndex`, `contiguousBytes`, `parentId`) so a refreshed session can reattach to in-flight uploads and continue from the first missing chunk after the user re-selects the same file.
 - Media preview URLs now request `stream=media`, and `FSBLOB^MIOOSAPI` answers a first non-range media GET with an initial partial-content window to reduce time-to-first-frame while keeping later browser range fetches intact.
 - The next ROI should focus on worker-assisted upload scheduling, main-thread contention audits, and measurements of true end-to-end upload throughput under parallel load.
+## ROI 52 — professional shell chrome, permission matrix, UI kit, and custom module studio
+
+- Reworked the desktop chrome so the taskbar, start menu, and desktop context menu present a more production-ready Windows-style shell rather than placeholder launcher scaffolding.
+- Added `MIOOSPERM` as a server-owned shell permission matrix for app and module targets, including report and save flows exposed through websocket commands.
+- Added `MIOOSMOD` as a custom module manifest registry supporting user-scope and system-scope installation, load, and removal without introducing a package runtime outside the MIOOS contract.
+- Extended the boot contract with permission, UI kit, and module-install metadata so the browser can stay contract-driven instead of hard-coding editable fields and scopes.
+- Added dedicated Security Center and App Catalog / Module Studio surfaces plus a reusable module host surface in the Vue shell.
+- Introduced a small MIOOS UI kit layer for cards, stat grids, toolbars, section shells, tables, and form grids so future built-ins and custom apps share one visual language.
+- Hardened dark-theme legibility across menus, taskbar, shell surfaces, inputs, buttons, tables, and window content to reduce white-on-white and low-contrast regressions.
+- Product risks still requiring deliberate follow-on ROI work: signed/trusted module distribution, permission coverage beyond launcher/module surfaces into deeper actions, formal visual regression review, and versioned module migration rules.

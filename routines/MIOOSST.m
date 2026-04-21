@@ -164,6 +164,8 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("moduleDynamicWindows")=+$GET(CONF("mioos","modules","dynamicWindows"),1)
 	DO LOADTERM^MIOOSTERM(.STATE,.CONF)
 	DO MODULES(.STATE,.CONF)
+	DO LOAD^MIOOSMOD(.STATE,.CONF)
+	DO INIT^MIOOSPERM(.STATE,.CONF)
 	DO APPS(.STATE)
 	DO WINDOWS(.STATE)
 	DO LOADPREFS(.STATE,.CONF)
@@ -235,7 +237,7 @@ BOOTARY(STATE,CONF,OBJ)
 	KILL OBJ
 	SET OBJ("product","name")=$GET(STATE("brandTitle"),"MIOOS")
 	SET OBJ("product","subtitle")=$GET(STATE("brandSubtitle"),"MUMPS powered Windows XP style desktop")
-	SET OBJ("product","version")="roi6-core-plus-terminal-websockets"
+	SET OBJ("product","version")="roi52-v1-shell-permissions-modules"
 	SET OBJ("product","profile")=$GET(STATE("profile"),"dev")
 	SET OBJ("user","id")=$GET(STATE("principal"))
 	SET OBJ("user","displayName")=$GET(STATE("userName"))
@@ -265,6 +267,10 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("routes","themeAsset")=$GET(STATE("themeAssetPath"))
 	SET OBJ("routes","themeLoadCommand")="desktop.theme.load"
 	SET OBJ("routes","themeSaveCommand")="desktop.theme.save"
+	SET OBJ("routes","permissionsReportCommand")="permissions.report"
+	SET OBJ("routes","permissionsSaveCommand")="permissions.save"
+	SET OBJ("routes","moduleInstallCommand")="module.install"
+	SET OBJ("routes","moduleRemoveCommand")="module.remove"
 	SET OBJ("desktop","themeKey")=$GET(STATE("themeKey"))
 	SET OBJ("desktop","themePersistence")="websocket-user-global"
 	SET OBJ("desktop","themeHydration")="miotpl-boot-style"
@@ -322,6 +328,36 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","moduleSystem","appCatalogKey")="app-catalog"
 	SET OBJ("desktop","moduleSystem","moduleCount")=+$GET(STATE("moduleCount"),0)
 	SET OBJ("desktop","moduleSystem","debugAppKey")="debug-center"
+	SET OBJ("desktop","moduleSystem","installEnabled")=1
+	SET OBJ("desktop","moduleSystem","installScopes",1)="user"
+	SET OBJ("desktop","moduleSystem","installScopes",2)="system"
+	SET OBJ("desktop","moduleSystem","manifestFields",1)="id"
+	SET OBJ("desktop","moduleSystem","manifestFields",2)="title"
+	SET OBJ("desktop","moduleSystem","manifestFields",3)="subtitle"
+	SET OBJ("desktop","moduleSystem","manifestFields",4)="description"
+	SET OBJ("desktop","moduleSystem","manifestFields",5)="icon"
+	SET OBJ("desktop","moduleSystem","manifestFields",6)="category"
+	SET OBJ("desktop","moduleSystem","manifestFields",7)="version"
+	SET OBJ("desktop","moduleSystem","manifestFields",8)="surface"
+	SET OBJ("desktop","moduleSystem","manifestFields",9)="windowTitle"
+	SET OBJ("desktop","moduleSystem","manifestFields",10)="singleton"
+	SET OBJ("desktop","moduleSystem","manifestFields",11)="launcherEnabled"
+	SET OBJ("desktop","moduleSystem","manifestFields",12)="cards[]"
+	SET OBJ("desktop","moduleSystem","manifestFields",13)="params[]"
+	SET OBJ("desktop","permissions","enabled")=1
+	SET OBJ("desktop","permissions","model")="shell-target-action-matrix"
+	SET OBJ("desktop","permissions","editable")=+$GET(STATE("authAdmin"),0)
+	SET OBJ("desktop","permissions","adminRole")="admin"
+	SET OBJ("desktop","permissions","reportCommand")="permissions.report"
+	SET OBJ("desktop","permissions","saveCommand")="permissions.save"
+	SET OBJ("desktop","uiKit","enabled")=1
+	SET OBJ("desktop","uiKit","libraryVersion")=1
+	SET OBJ("desktop","uiKit","patterns",1)="cards"
+	SET OBJ("desktop","uiKit","patterns",2)="stat-grid"
+	SET OBJ("desktop","uiKit","patterns",3)="toolbar"
+	SET OBJ("desktop","uiKit","patterns",4)="table"
+	SET OBJ("desktop","uiKit","patterns",5)="form-grid"
+	SET OBJ("desktop","uiKit","patterns",6)="section-shell"
 	SET OBJ("desktop","debugCenter","enabled")=+$GET(STATE("debugEnabled"),1)
 	SET OBJ("desktop","debugCenter","eventLimit")=+$GET(STATE("debugEventLimit"),50)
 	SET OBJ("desktop","debugCenter","snapshotVersion")=+$GET(STATE("debugSnapshotVersion"),1)
@@ -409,6 +445,8 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","contextMenu","verbs",8)="personalize"
 	SET OBJ("desktop","contextMenu","verbs",9)="control-panel"
 	SET OBJ("desktop","contextMenu","verbs",10)="open"
+	SET OBJ("desktop","contextMenu","verbs",11)="new-terminal"
+	SET OBJ("desktop","contextMenu","verbs",12)="security-center"
 	SET OBJ("desktop","performance","uploadUiStrategy")="throttled-progress-updates-and-persistent-resume"
 	DO THEMES($NAME(OBJ("desktop","themes")),$GET(STATE("themeKey")))
 	IF $DATA(STATE("themeProfile"))>1 MERGE OBJ("desktop","themeProfile")=STATE("themeProfile")
@@ -451,53 +489,20 @@ APPS(STATE)
 	NEW CODE,N,I,KEY
 	SET CODE=$GET(STATE("localeCode"),"en")
 	KILL STATE("apps")
-	SET STATE("apps",1,"key")="my-computer"
-	SET STATE("apps",1,"title")=$$TXT^MIOOSI18N(CODE,"app.my-computer.title","My Computer")
-	SET STATE("apps",1,"subtitle")=$$TXT^MIOOSI18N(CODE,"app.my-computer.subtitle","Browse drives, folders, and shell locations")
-	SET STATE("apps",1,"icon")="💻"
-	SET STATE("apps",1,"kind")="folder"
-	SET STATE("apps",2,"key")="documents"
-	SET STATE("apps",2,"title")=$$TXT^MIOOSI18N(CODE,"app.documents.title","My Documents")
-	SET STATE("apps",2,"subtitle")=$$TXT^MIOOSI18N(CODE,"app.documents.subtitle","Personal workspace documents")
-	SET STATE("apps",2,"icon")="📁"
-	SET STATE("apps",2,"kind")="folder"
-	SET STATE("apps",3,"key")="control-panel"
-	SET STATE("apps",3,"title")=$$TXT^MIOOSI18N(CODE,"app.control-panel.title","Control Panel")
-	SET STATE("apps",3,"subtitle")=$$TXT^MIOOSI18N(CODE,"app.control-panel.subtitle","Desktop settings and shell behavior")
-	SET STATE("apps",3,"icon")="🛠"
-	SET STATE("apps",3,"kind")="system"
-	SET STATE("apps",4,"key")="terminal"
-	SET STATE("apps",4,"title")=$$TXT^MIOOSI18N(CODE,"app.terminal.title","Terminal")
-	SET STATE("apps",4,"subtitle")=$$TXT^MIOOSI18N(CODE,"app.terminal.subtitle","Websocket-backed MUMPS terminal surface")
-	SET STATE("apps",4,"icon")=">_"
-	SET STATE("apps",4,"kind")="tool"
-	SET STATE("apps",5,"key")="theme-studio"
-	SET STATE("apps",5,"title")="Theme Studio"
-	SET STATE("apps",5,"subtitle")="Customize wallpapers, colors, fonts, metrics, and shell recipes"
-	SET STATE("apps",5,"icon")="🎨"
-	SET STATE("apps",5,"kind")="tool"
-	SET STATE("apps",6,"key")="transfers"
-	SET STATE("apps",6,"title")="Transfers"
-	SET STATE("apps",6,"subtitle")="Uploads, downloads, queue activity, and progress"
-	SET STATE("apps",6,"icon")="⇅"
-	SET STATE("apps",6,"kind")="tool"
-	SET STATE("apps",7,"key")="diagnostics"
-	SET STATE("apps",7,"title")="Diagnostics"
-	SET STATE("apps",7,"subtitle")="Socket pool, transfer health, and session telemetry"
-	SET STATE("apps",7,"icon")="📈"
-	SET STATE("apps",7,"kind")="tool"
-	SET N=7
-	IF +$GET(STATE("moduleAppCatalogEnabled"),1)=1 DO
-	. SET N=N+1
-	. SET STATE("apps",N,"key")="app-catalog"
-	. SET STATE("apps",N,"title")=$$TXT^MIOOSI18N(CODE,"app.app-catalog.title","App Catalog")
-	. SET STATE("apps",N,"subtitle")=$$TXT^MIOOSI18N(CODE,"app.app-catalog.subtitle","Installed modules, launch policy, and built-in surfaces")
-	. SET STATE("apps",N,"icon")="🧩"
-	. SET STATE("apps",N,"kind")="system"
+	SET N=0
+	DO APP(.STATE,.N,"my-computer",$$TXT^MIOOSI18N(CODE,"app.my-computer.title","My Computer"),$$TXT^MIOOSI18N(CODE,"app.my-computer.subtitle","Browse drives, folders, and shell locations"),"💻","folder")
+	DO APP(.STATE,.N,"documents",$$TXT^MIOOSI18N(CODE,"app.documents.title","My Documents"),$$TXT^MIOOSI18N(CODE,"app.documents.subtitle","Personal workspace documents"),"📁","folder")
+	DO APP(.STATE,.N,"control-panel",$$TXT^MIOOSI18N(CODE,"app.control-panel.title","Control Panel"),$$TXT^MIOOSI18N(CODE,"app.control-panel.subtitle","Desktop settings, components, and shell behavior"),"🛠","system")
+	DO APP(.STATE,.N,"terminal",$$TXT^MIOOSI18N(CODE,"app.terminal.title","Terminal"),$$TXT^MIOOSI18N(CODE,"app.terminal.subtitle","Websocket-backed MUMPS terminal surface"),">_","tool")
+	DO APP(.STATE,.N,"theme-studio","Theme Studio","Customize wallpapers, colors, fonts, metrics, and shell recipes","🎨","tool")
+	DO APP(.STATE,.N,"transfers","Transfers","Uploads, downloads, queue activity, and progress","⇅","tool")
+	DO APP(.STATE,.N,"diagnostics","Diagnostics","Socket pool, transfer health, and session telemetry","📈","tool")
+	IF +$GET(STATE("moduleAppCatalogEnabled"),1)=1 DO APP(.STATE,.N,"app-catalog",$$TXT^MIOOSI18N(CODE,"app.app-catalog.title","App Catalog"),$$TXT^MIOOSI18N(CODE,"app.app-catalog.subtitle","Installed modules, launch policy, and custom module manifests"),"🧩","system")
 	SET I=0 FOR  SET I=$ORDER(STATE("modules",I)) QUIT:'I  DO
 	. QUIT:+$GET(STATE("modules",I,"enabled"))'=1
-	. SET N=N+1
 	. SET KEY=$GET(STATE("modules",I,"appKey"),$GET(STATE("modules",I,"id")))
+	. QUIT:'$$ALLOW^MIOOSPERM(.STATE,"module:"_$GET(STATE("modules",I,"id")),"run")
+	. SET N=N+1
 	. SET STATE("apps",N,"key")=KEY
 	. SET STATE("apps",N,"title")=$GET(STATE("modules",I,"title"),KEY)
 	. SET STATE("apps",N,"subtitle")=$GET(STATE("modules",I,"subtitle"),$GET(STATE("modules",I,"description")))
@@ -507,19 +512,21 @@ APPS(STATE)
 	. SET STATE("apps",N,"moduleCategory")=$GET(STATE("modules",I,"category"),"general")
 	. SET STATE("apps",N,"moduleBuiltIn")=+$GET(STATE("modules",I,"builtIn"),1)
 	. SET STATE("apps",N,"moduleVersion")=$GET(STATE("modules",I,"version"),"1.0")
+	. SET STATE("apps",N,"permissionsTarget")=$GET(STATE("modules",I,"permissionsTarget"),"module:"_$GET(STATE("modules",I,"id")))
+	DO APP(.STATE,.N,"security-center","Security Center","Authentication posture, active sessions, account risk, permission matrix, and report export","🔐","system")
+	IF +$GET(STATE("debugEnabled"),1)=1 DO APP(.STATE,.N,"debug-center",$$TXT^MIOOSI18N(CODE,"app.debug-center.title","Debug Center"),$$TXT^MIOOSI18N(CODE,"app.debug-center.subtitle","Server snapshot, command registry, and recent websocket activity"),"🧪","tool")
+	SET STATE("appCount")=N
+	QUIT
+	;
+APP(STATE,N,KEY,TITLE,SUBTITLE,ICON,KIND)
+	IF '$$ALLOW^MIOOSPERM(.STATE,"app:"_$GET(KEY),"run") QUIT
 	SET N=N+1
-	SET STATE("apps",N,"key")="security-center"
-	SET STATE("apps",N,"title")="Security Center"
-	SET STATE("apps",N,"subtitle")="Authentication posture, active sessions, account risk, and report export"
-	SET STATE("apps",N,"icon")="🔐"
-	SET STATE("apps",N,"kind")="system"
-	IF +$GET(STATE("debugEnabled"),1)=1 DO
-	. SET N=N+1
-	. SET STATE("apps",N,"key")="debug-center"
-	. SET STATE("apps",N,"title")=$$TXT^MIOOSI18N(CODE,"app.debug-center.title","Debug Center")
-	. SET STATE("apps",N,"subtitle")=$$TXT^MIOOSI18N(CODE,"app.debug-center.subtitle","Server snapshot, command registry, and recent websocket activity")
-	. SET STATE("apps",N,"icon")="🧪"
-	. SET STATE("apps",N,"kind")="tool"
+	SET STATE("apps",N,"key")=$GET(KEY)
+	SET STATE("apps",N,"title")=$GET(TITLE)
+	SET STATE("apps",N,"subtitle")=$GET(SUBTITLE)
+	SET STATE("apps",N,"icon")=$GET(ICON)
+	SET STATE("apps",N,"kind")=$GET(KIND)
+	SET STATE("apps",N,"permissionsTarget")="app:"_$GET(KEY)
 	QUIT
 	;
 MODULES(STATE,CONF)
@@ -547,6 +554,9 @@ MODULES(STATE,CONF)
 	. SET STATE("modules",N,"builtIn")=1
 	. SET STATE("modules",N,"singleton")=1
 	. SET STATE("modules",N,"launcherEnabled")=1
+	. SET STATE("modules",N,"scope")="system"
+	. SET STATE("modules",N,"owner")=""
+	. SET STATE("modules",N,"permissionsTarget")="module:module-notes"
 	. SET STATE("modules",N,"cards",1,"title")="Quick capture"
 	. SET STATE("modules",N,"cards",1,"detail")="Use this space for release notes, shell TODOs, or operator breadcrumbs that do not belong in the terminal buffer."
 	. SET STATE("modules",N,"cards",2,"title")="Server-authored"
@@ -572,6 +582,9 @@ MODULES(STATE,CONF)
 	. SET STATE("modules",N,"builtIn")=1
 	. SET STATE("modules",N,"singleton")=1
 	. SET STATE("modules",N,"launcherEnabled")=1
+	. SET STATE("modules",N,"scope")="system"
+	. SET STATE("modules",N,"owner")=""
+	. SET STATE("modules",N,"permissionsTarget")="module:module-ops-center"
 	. SET STATE("modules",N,"cards",1,"title")="Session"
 	. SET STATE("modules",N,"cards",1,"detail")="Inspect the current principal, locale, and profile without opening the raw JSON boot payload."
 	. SET STATE("modules",N,"cards",2,"title")="Transport"
@@ -582,45 +595,45 @@ MODULES(STATE,CONF)
 	QUIT
 	;
 WINDOWS(STATE)
-	NEW CODE,N,I,APPKEY,TITLE,MODW,MINW,MINH,LEFT,TOP,WIDTH,HEIGHT
+	NEW CODE,N,I,APPKEY,TITLE,MINW,MINH,LEFT,TOP,WIDTH,HEIGHT
 	SET CODE=$GET(STATE("localeCode"),"en")
 	KILL STATE("windows")
-	DO WIN(.STATE,1,"win-my-computer","my-computer",$$TXT^MIOOSI18N(CODE,"app.my-computer.title","My Computer"),88,72,760,500,4,"normal",460,320,1,1)
-	DO WIN(.STATE,2,"win-documents","documents",$$TXT^MIOOSI18N(CODE,"app.documents.title","My Documents"),180,118,620,420,2,"minimized",420,280,1,1)
-	DO WIN(.STATE,3,"win-control-panel","control-panel",$$TXT^MIOOSI18N(CODE,"app.control-panel.title","Control Panel"),240,92,540,400,1,"minimized",420,280,1,1)
-	DO WIN(.STATE,4,"win-terminal-template","terminal",$$TXT^MIOOSI18N(CODE,"app.terminal.title","Terminal"),120,88,820,430,3,"closed",560,300,1,1)
-	DO WIN(.STATE,5,"win-theme-studio","theme-studio","Theme Studio",156,76,900,610,5,"closed",700,520,1,1)
-	SET STATE("windows",5,"themeStudioEnabled")=1
-	DO WIN(.STATE,6,"win-transfers","transfers","Transfers",218,108,760,520,6,"closed",620,420,1,1)
-	SET STATE("windows",6,"transferCenterEnabled")=1
-	DO WIN(.STATE,7,"win-diagnostics","diagnostics","Diagnostics",244,126,820,520,7,"closed",640,420,1,1)
-	SET STATE("windows",7,"transportDiagnosticsEnabled")=+$GET(STATE("wsDiagnosticsEnabled"),1)
-	SET N=7
-	IF +$GET(STATE("moduleAppCatalogEnabled"),1)=1 DO
-	. SET N=N+1
-	. DO WIN(.STATE,N,"win-app-catalog","app-catalog",$$TXT^MIOOSI18N(CODE,"app.app-catalog.title","App Catalog"),268,122,860,560,N,"closed",660,420,1,1)
-	. SET STATE("windows",N,"moduleCatalogEnabled")=1
-	. SET STATE("windows",N,"moduleCatalogWindow")=1
+	SET N=0
+	DO WINADD(.STATE,.N,"win-my-computer","my-computer",$$TXT^MIOOSI18N(CODE,"app.my-computer.title","My Computer"),72,54,860,560,460,320)
+	DO WINADD(.STATE,.N,"win-documents","documents",$$TXT^MIOOSI18N(CODE,"app.documents.title","My Documents"),136,96,720,500,420,280)
+	DO WINADD(.STATE,.N,"win-control-panel","control-panel",$$TXT^MIOOSI18N(CODE,"app.control-panel.title","Control Panel"),212,96,700,500,520,340)
+	DO WINADD(.STATE,.N,"win-terminal-template","terminal",$$TXT^MIOOSI18N(CODE,"app.terminal.title","Terminal"),118,82,900,500,560,300)
+	IF $$HASAPP(.STATE,"terminal") SET STATE("windows",N,"state")="closed"
+	DO WINADD(.STATE,.N,"win-theme-studio","theme-studio","Theme Studio",144,64,980,640,720,520)
+	IF $$HASAPP(.STATE,"theme-studio") SET STATE("windows",N,"themeStudioEnabled")=1
+	DO WINADD(.STATE,.N,"win-transfers","transfers","Transfers",186,108,820,560,620,420)
+	IF $$HASAPP(.STATE,"transfers") SET STATE("windows",N,"transferCenterEnabled")=1
+	DO WINADD(.STATE,.N,"win-diagnostics","diagnostics","Diagnostics",238,126,900,580,680,440)
+	IF $$HASAPP(.STATE,"diagnostics") SET STATE("windows",N,"transportDiagnosticsEnabled")=+$GET(STATE("wsDiagnosticsEnabled"),1)
+	DO WINADD(.STATE,.N,"win-app-catalog","app-catalog",$$TXT^MIOOSI18N(CODE,"app.app-catalog.title","App Catalog"),224,96,980,620,720,500)
+	IF $$HASAPP(.STATE,"app-catalog") SET STATE("windows",N,"moduleCatalogEnabled")=1,STATE("windows",N,"moduleCatalogWindow")=1
 	SET I=0 FOR  SET I=$ORDER(STATE("modules",I)) QUIT:'I  DO
-	. QUIT:+$GET(STATE("modules",I,"enabled"))'=1
-	. SET N=N+1
 	. SET APPKEY=$GET(STATE("modules",I,"appKey"),$GET(STATE("modules",I,"id")))
+	. QUIT:'$$HASAPP(.STATE,APPKEY)
 	. SET TITLE=$GET(STATE("modules",I,"windowTitle"),$GET(STATE("modules",I,"title"),APPKEY))
-	. SET LEFT=160+(I*26),TOP=94+(I*22),WIDTH=720,HEIGHT=500,MINW=560,MINH=340
-	. DO WIN(.STATE,N,$GET(STATE("modules",I,"windowId"),"win-"_APPKEY),APPKEY,TITLE,LEFT,TOP,WIDTH,HEIGHT,N,"closed",MINW,MINH,1,1)
+	. SET LEFT=164+(I*24),TOP=92+(I*20),WIDTH=760,HEIGHT=520,MINW=560,MINH=340
+	. DO WINADD(.STATE,.N,$GET(STATE("modules",I,"windowId"),"win-"_APPKEY),APPKEY,TITLE,LEFT,TOP,WIDTH,HEIGHT,MINW,MINH)
 	. SET STATE("windows",N,"moduleWindow")=1
 	. SET STATE("windows",N,"moduleId")=$GET(STATE("modules",I,"id"))
 	. SET STATE("windows",N,"moduleCategory")=$GET(STATE("modules",I,"category"),"general")
 	. SET STATE("windows",N,"moduleSurface")=$GET(STATE("modules",I,"surface"),"generic")
 	. SET STATE("windows",N,"moduleBuiltIn")=+$GET(STATE("modules",I,"builtIn"),1)
 	. SET STATE("windows",N,"moduleSingleton")=+$GET(STATE("modules",I,"singleton"),1)
+	DO WINADD(.STATE,.N,"win-security-center","security-center","Security Center",252,124,980,620,720,500)
+	IF $$HASAPP(.STATE,"security-center") SET STATE("windows",N,"securityCenterEnabled")=1
+	DO WINADD(.STATE,.N,"win-debug-center","debug-center",$$TXT^MIOOSI18N(CODE,"app.debug-center.title","Debug Center"),278,138,940,600,720,460)
+	IF $$HASAPP(.STATE,"debug-center") SET STATE("windows",N,"debugCenterEnabled")=1
+	QUIT
+	;
+WINADD(STATE,N,ID,APPKEY,TITLE,LEFT,TOP,WIDTH,HEIGHT,MINW,MINH)
+	IF '$$HASAPP(.STATE,$GET(APPKEY)) QUIT
 	SET N=N+1
-	DO WIN(.STATE,N,"win-security-center","security-center","Security Center",284,134,860,560,N,"closed",680,420,1,1)
-	SET STATE("windows",N,"securityCenterEnabled")=1
-	IF +$GET(STATE("debugEnabled"),1)=1 DO
-	. SET N=N+1
-	. DO WIN(.STATE,N,"win-debug-center","debug-center",$$TXT^MIOOSI18N(CODE,"app.debug-center.title","Debug Center"),308,146,900,580,N,"closed",700,440,1,1)
-	. SET STATE("windows",N,"debugCenterEnabled")=1
+	DO WIN(.STATE,N,$GET(ID),$GET(APPKEY),$GET(TITLE),+$GET(LEFT),+$GET(TOP),+$GET(WIDTH),+$GET(HEIGHT),N,"closed",+$GET(MINW),+$GET(MINH),1,1)
 	QUIT
 	;
 WIN(STATE,N,ID,APPKEY,TITLE,LEFT,TOP,WIDTH,HEIGHT,Z,MODE,MINW,MINH,RESIZE,DRAG)
@@ -639,6 +652,13 @@ WIN(STATE,N,ID,APPKEY,TITLE,LEFT,TOP,WIDTH,HEIGHT,Z,MODE,MINW,MINH,RESIZE,DRAG)
 	SET STATE("windows",N,"draggable")=+$GET(DRAG,1)
 	SET STATE("windows",N,"snappable")=1
 	QUIT
+	;
+HASAPP(STATE,APPKEY)
+	NEW I,FOUND
+	SET (I,FOUND)=0
+	FOR  SET I=$ORDER(STATE("apps",I)) QUIT:I'>0  DO  QUIT:FOUND
+	. IF $GET(STATE("apps",I,"key"))=$GET(APPKEY) SET FOUND=1
+	QUIT FOUND
 	;
 THEMES(ROOT,CURRENT)
 	KILL @ROOT

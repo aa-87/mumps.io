@@ -928,6 +928,3 @@ Follow the no-`ZSYSTEM` and no-`GOTO` rules.
 
       static assets
       ```
-## Latest MIOOS ROI
-
-ROI 52 adds a more production-ready desktop shell surface, a permission matrix for launcher/module governance, a shared UI kit, and a custom module studio for installing and removing module manifests.
