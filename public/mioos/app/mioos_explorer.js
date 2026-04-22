@@ -1358,6 +1358,7 @@
           return self.command('fs.mkdir', { parent: state.folderId, name: name }).then(function () {
             return self.refreshExplorerWindow(windowId).then(function () {
               if (self.refreshView) self.refreshView();
+              if (self.notifySuccess) self.notifySuccess('Explorer', 'Folder created.', { detail: name });
             });
           });
         }).catch(function (err) {
@@ -1380,6 +1381,7 @@
           return self.command('fs.rename', { id: item.id || item.key || '', name: name }).then(function () {
             return self.refreshExplorerWindow(windowId).then(function () {
               if (self.refreshView) self.refreshView();
+              if (self.notifySuccess) self.notifySuccess('Explorer', 'Item renamed.', { detail: name });
             });
           });
         }).catch(function (err) {
@@ -1398,10 +1400,12 @@
         ).then(function (confirmed) {
           if (!confirmed) return null;
           return self.command('fs.delete', { id: item.id || item.key || '' }).then(function () {
+            var removedName = item.name || item.title || 'Item';
             state.selection = null;
             state.preview = { title: '', content: '', mime: 'text/plain', imageSrc: '', mediaSrc: '', mediaKind: '' };
             return self.refreshExplorerWindow(windowId).then(function () {
               if (self.refreshView) self.refreshView();
+              if (self.notifySuccess) self.notifySuccess('Explorer', 'Item deleted.', { detail: removedName });
             });
           });
         }).catch(function (err) {
@@ -1426,10 +1430,12 @@
             var targetId = payload.id || destination;
             return self.command('fs.move', { id: item.id || item.key || '', parent: targetId });
           }).then(function () {
+            var movedName = item.name || item.title || 'Item';
             state.selection = null;
             state.preview = { title: '', content: '', mime: 'text/plain', imageSrc: '', mediaSrc: '', mediaKind: '' };
             return self.refreshExplorerWindow(windowId).then(function () {
               if (self.refreshView) self.refreshView();
+              if (self.notifySuccess) self.notifySuccess('Explorer', 'Item moved.', { detail: movedName + ' → ' + destination });
             });
           });
         }).catch(function (err) {

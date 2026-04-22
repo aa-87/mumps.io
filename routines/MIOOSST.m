@@ -135,6 +135,11 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("themeSystemLiveApply")=+$GET(CONF("mioos","desktop","themeSystem","liveApply"),1)
 	SET STATE("themeSystemQuickSwitch")=+$GET(CONF("mioos","desktop","themeSystem","quickSwitch"),1)
 	SET STATE("themeSystemVersion")=+$GET(CONF("mioos","desktop","themeSystem","version"),2)
+	SET STATE("appSurfaceModel")=$GET(CONF("mioos","desktop","appSurfaceModel"),"shell-standard-actions")
+	SET STATE("appActionsConfirmBeforeDestructive")=+$GET(CONF("mioos","desktop","appActions","confirmBeforeDestructive"),1)
+	SET STATE("appActionsNotifyOnAdminActions")=+$GET(CONF("mioos","desktop","appActions","notifyOnAdminActions"),1)
+	SET STATE("appActionsCopyExportsToClipboard")=+$GET(CONF("mioos","desktop","appActions","copyExportsToClipboard"),1)
+	SET STATE("appActionsModuleNotesSessionLocal")=+$GET(CONF("mioos","desktop","appActions","moduleNotesSessionLocal"),1)
 	SET STATE("shellChrome")=$GET(CONF("mioos","desktop","chrome"),"shell-foundation")
 	SET STATE("taskbarStyle")=$GET(CONF("mioos","desktop","taskbarStyle"),"taskbar-foundation")
 	SET STATE("startMenuStyle")=$GET(CONF("mioos","desktop","startMenuStyle"),"launcher-foundation")
@@ -414,8 +419,14 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","shellSurfaces","securityCenter")=1
 	SET OBJ("desktop","shellSurfaces","appCatalog")=1
 	SET OBJ("desktop","shellSurfaces","debugCenter")=1
+	SET OBJ("desktop","shellSurfaces","moduleWindows")=1
 	SET OBJ("desktop","shellSurfaces","notifications")=1
 	SET OBJ("desktop","shellSurfaces","dialogs")=1
+	SET OBJ("desktop","appSurfaceModel")=$GET(STATE("appSurfaceModel"),"shell-standard-actions")
+	SET OBJ("desktop","appActions","confirmBeforeDestructive")=+$GET(STATE("appActionsConfirmBeforeDestructive"),1)
+	SET OBJ("desktop","appActions","notifyOnAdminActions")=+$GET(STATE("appActionsNotifyOnAdminActions"),1)
+	SET OBJ("desktop","appActions","copyExportsToClipboard")=+$GET(STATE("appActionsCopyExportsToClipboard"),1)
+	SET OBJ("desktop","appActions","moduleNotesSessionLocal")=+$GET(STATE("appActionsModuleNotesSessionLocal"),1)
 	SET OBJ("desktop","notifications","model")=$GET(STATE("notificationsModel"),"toast-and-tray")
 	SET OBJ("desktop","notifications","stackLimit")=+$GET(STATE("notificationsStackLimit"),6)
 	SET OBJ("desktop","notifications","tray")=1

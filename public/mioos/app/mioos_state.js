@@ -102,7 +102,9 @@
           dropUpload: 1
         },
         themeSystem: { version: 2, editor: 'theme-studio', persistence: 'localstorage-applied-profile', liveApply: true, quickSwitch: true, densityOptions: ['compact', 'comfortable', 'spacious'] },
-        shellSurfaces: { explorer: true, themeStudio: true, transfers: true, diagnostics: true, securityCenter: true, appCatalog: true, debugCenter: true, notifications: true, dialogs: true },
+        shellSurfaces: { explorer: true, themeStudio: true, transfers: true, diagnostics: true, securityCenter: true, appCatalog: true, debugCenter: true, moduleWindows: true, notifications: true, dialogs: true },
+        appSurfaceModel: 'shell-standard-actions',
+        appActions: { confirmBeforeDestructive: true, notifyOnAdminActions: true, copyExportsToClipboard: true, moduleNotesSessionLocal: true },
         notifications: { model: 'toast-and-tray', stackLimit: 6, tray: true },
         dialogs: { model: 'shell-standard', confirm: true, input: true },
         themes: [
@@ -205,6 +207,8 @@
     base.desktop.windowing = Object.assign(base.desktop.windowing, (boot.desktop || {}).windowing || {});
     base.desktop.themeSystem = Object.assign({}, (defaultBoot().desktop.themeSystem || {}), base.desktop.themeSystem || {}, (boot.desktop || {}).themeSystem || {});
     base.desktop.shellSurfaces = Object.assign({}, (defaultBoot().desktop.shellSurfaces || {}), base.desktop.shellSurfaces || {}, (boot.desktop || {}).shellSurfaces || {});
+    base.desktop.appSurfaceModel = (boot.desktop || {}).appSurfaceModel || base.desktop.appSurfaceModel || (defaultBoot().desktop.appSurfaceModel || 'shell-standard-actions');
+    base.desktop.appActions = Object.assign({}, (defaultBoot().desktop.appActions || {}), base.desktop.appActions || {}, (boot.desktop || {}).appActions || {});
     base.desktop.notifications = Object.assign({}, (defaultBoot().desktop.notifications || {}), base.desktop.notifications || {}, (boot.desktop || {}).notifications || {});
     base.desktop.dialogs = Object.assign({}, (defaultBoot().desktop.dialogs || {}), base.desktop.dialogs || {}, (boot.desktop || {}).dialogs || {});
     base.desktop.themes = Array.isArray((boot.desktop || {}).themes) && (boot.desktop || {}).themes.length ? deepClone((boot.desktop || {}).themes) : deepClone(defaultBoot().desktop.themes || []);

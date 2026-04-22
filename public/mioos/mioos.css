@@ -659,6 +659,31 @@ button, input { font: inherit; }
 .mioos-seven-body { height: 100%; background: linear-gradient(180deg, #f7fbff 0%, #eef5ff 100%); }
 .mioos-explorer-appframe { display: flex; flex-direction: column; height: 100%; }
 .mioos-seven-toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.mioos-surface-head,
+.mioos-surface-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.mioos-surface-head strong { display: block; font-size: 15px; }
+.mioos-surface-head span { display: block; color: var(--mioos-muted); font-size: 12px; margin-top: 4px; }
+.mioos-surface-summary {
+  margin-bottom: 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--mioos-border);
+  background: rgba(255,255,255,0.65);
+  border-radius: 8px;
+  font-size: 12px;
+  color: var(--mioos-muted);
+}
+.mioos-surface-toolbar[data-shell-standard-actions="1"] button {
+  min-width: 110px;
+}
+.mioos-surface-toolbar--tight button {
+  min-width: 0;
+}
 .mioos-explorer-pathfield { display: flex; gap: 8px; align-items: center; margin-left: auto; min-width: 260px; }
 .mioos-explorer-pathfield input { width: 100%; min-height: 28px; }
 .mioos-explorer-listhead { display: flex; justify-content: space-between; padding: 8px 12px; font-size: 12px; color: var(--mioos-muted); border-bottom: 1px solid #c8d7f1; }
@@ -669,7 +694,6 @@ button, input { font: inherit; }
 .mioos-explorer-sidebar menu button { text-align: left; }
 .mioos-transfers-shell { height: 100%; }
 .mioos-transfers-head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; padding: 14px; border-bottom: 1px solid #c8d7f1; }
-.mioos-transfers-head span { display: block; color: var(--mioos-muted); font-size: 12px; margin-top: 4px; }
 .mioos-transfers-summary { padding: 10px 14px; color: var(--mioos-muted); font-size: 12px; }
 .mioos-transfers-sections { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; padding: 0 14px 14px; }
 .mioos-transfer-card { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #d9e5f8; }
@@ -710,11 +734,7 @@ button, input { font: inherit; }
 .mioos-structuredviewer-body { flex:1 1 auto; min-height:0; margin:0; padding:12px; overflow:auto; white-space:pre-wrap; word-break:break-word; background:#f8fbff; border:0; font-family: var(--mioos-font-mono, Consolas, monospace); font-size:12px; line-height:1.45; }
 
 .mioos-diagnostics-shell { display: flex; flex-direction: column; height: 100%; }
-.mioos-diagnostics-head, .mioos-diagnostics-summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .mioos-diagnostics-head { margin-bottom: 12px; }
-.mioos-diagnostics-head strong { display: block; font-size: 15px; }
-.mioos-diagnostics-head span { color: var(--mioos-muted); font-size: 12px; }
-.mioos-diagnostics-summary { margin-bottom: 12px; padding: 8px 10px; border: 1px solid var(--mioos-border); background: rgba(255,255,255,0.65); border-radius: 8px; }
 .mioos-diagnostics-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
 .mioos-diagnostics-card { border: 1px solid var(--mioos-border); background: rgba(255,255,255,0.82); border-radius: 10px; padding: 12px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.6); }
 .mioos-diagnostics-card--wide { grid-column: 1 / -1; }
@@ -740,17 +760,11 @@ button, input { font: inherit; }
 }
 .mioos-module-catalog-head,
 .mioos-module-window-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
   margin-bottom: 14px;
 }
 .mioos-module-catalog-head span,
 .mioos-module-window-head span {
-  display: block;
   color: #45556f;
-  font-size: 12px;
 }
 .mioos-module-catalog-summary {
   display: flex;
@@ -878,6 +892,19 @@ button, input { font: inherit; }
   font-size: 12px;
 }
 
+.mioos-module-window-tools {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+.mioos-module-panel small {
+  display: block;
+  margin-top: 10px;
+  color: #4b5b76;
+}
+/* ROI 54 — shell-standard built-in app actions */
+
 
 .mioos-security-center-shell {
   display: flex;
@@ -886,14 +913,8 @@ button, input { font: inherit; }
 }
 .mioos-security-center-head,
 .mioos-security-center-summary {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
   margin-bottom: 14px;
 }
-.mioos-security-center-head strong { display: block; }
-.mioos-security-center-head span,
 .mioos-security-center-summary span { color: #35506f; }
 .mioos-security-center-grid {
   display: grid;
@@ -984,9 +1005,8 @@ button, input { font: inherit; }
 
 
 .mioos-debug-center-shell { display: flex; flex-direction: column; height: 100%; }
-.mioos-debug-center-head, .mioos-debug-center-summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .mioos-debug-center-head { margin-bottom: 14px; }
-.mioos-debug-center-head span { display:block; color: #475569; font-size: 0.92rem; }
+.mioos-debug-center-head span { color: #475569; font-size: 0.92rem; }
 .mioos-debug-center-summary { margin-bottom: 14px; font-size: 0.9rem; color: #475569; }
 .mioos-debug-center-grid { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 .mioos-debug-card { background: rgba(255,255,255,0.82); border: 1px solid rgba(148,163,184,0.45); border-radius: 10px; padding: 14px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.6); }

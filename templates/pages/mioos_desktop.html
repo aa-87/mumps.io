@@ -383,7 +383,7 @@
         <template v-else-if="win.appKey === 'transfers'">
           <div class="mioos-transfers-shell mioos-shell-surface mioos-shell-surface--transfers" data-transfer-window="1">
             <div class="window-body mioos-seven-body">
-              <div class="mioos-transfers-head">
+              <div class="mioos-transfers-head mioos-surface-head">
                 <div>
                   <strong>Transfer Center</strong>
                   <span>Upload and download activity for this session.</span>
@@ -396,7 +396,7 @@
                   <button type="button" @click="refreshView()">Refresh desktop</button>
                 </div>
               </div>
-              <div class="mioos-transfers-summary">
+              <div class="mioos-transfers-summary mioos-surface-summary">
                 <span>[[ transferSummaryText() ]]</span>
               </div>
               <div class="mioos-transfers-sections">
@@ -445,16 +445,18 @@
         <template v-else-if="win.appKey === 'diagnostics'">
           <div class="mioos-diagnostics-shell mioos-shell-surface mioos-shell-surface--diagnostics" data-transport-diagnostics-window="1">
             <div class="window-body mioos-seven-body">
-              <div class="mioos-diagnostics-head">
+              <div class="mioos-diagnostics-head mioos-surface-head">
                 <div>
                   <strong>Transport Diagnostics</strong>
                   <span>Socket pool, transfer health, and current session telemetry.</span>
                 </div>
-                <div class="mioos-seven-toolbar">
+                <div class="mioos-seven-toolbar mioos-surface-toolbar" data-shell-standard-actions="1">
                   <button type="button" @click="refreshTransportDiagnostics()" :disabled="transportDiagnostics.loading">[[ transportDiagnostics.loading ? 'Refreshing…' : 'Refresh diagnostics' ]]</button>
+                  <button type="button" @click="copyTransportDiagnostics()">Copy diagnostics</button>
+                  <button type="button" @click="resetTransportTelemetry()" :disabled="!transportSocketRows().length">Clear telemetry</button>
                 </div>
               </div>
-              <div class="mioos-diagnostics-summary">
+              <div class="mioos-diagnostics-summary mioos-surface-summary">
                 <span>Session [[ (transportReport().sessionId || boot.session.id || 'mioos-shell') ]]</span>
                 <span>Profile [[ transportReport().profile || boot.product.profile || 'dev' ]]</span>
                 <span>Updated [[ formatTransportTime(transportDiagnostics.refreshedAt) ]]</span>
@@ -504,17 +506,18 @@
         <template v-else-if="win.appKey === 'security-center'">
           <div class="mioos-security-center-shell mioos-shell-surface mioos-shell-surface--security" data-security-center-window="1">
             <div class="window-body mioos-seven-body">
-              <div class="mioos-security-center-head">
+              <div class="mioos-security-center-head mioos-surface-head">
                 <div>
                   <strong>Security Center</strong>
                   <span>Authentication posture, audit trail, and HIPAA-oriented export visibility.</span>
                 </div>
-                <div class="mioos-seven-toolbar">
+                <div class="mioos-seven-toolbar mioos-surface-toolbar" data-shell-standard-actions="1">
                   <button type="button" @click="refreshSecurityCenter()" :disabled="securityCenter.loading">[[ securityCenter.loading ? 'Refreshing…' : 'Refresh security' ]]</button>
+                  <button type="button" @click="copySecurityReport()">Copy summary</button>
                   <button type="button" @click="exportSecurityAudit()">Export audit</button>
                 </div>
               </div>
-              <div class="mioos-security-center-summary">
+              <div class="mioos-security-center-summary mioos-surface-summary">
                 <span>Required [[ ((boot.auth || {}).required ? 'yes' : 'no') ]]</span>
                 <span>Guest mode [[ ((boot.auth || {}).guestLoginEnabled ? 'enabled' : 'disabled') ]]</span>
                 <span>Sessions [[ securitySessions().length ]]</span>
@@ -619,18 +622,18 @@
         <template v-else-if="win.appKey === 'debug-center'">
           <div class="mioos-debug-center-shell mioos-shell-surface mioos-shell-surface--debug" data-debug-center-window="1">
             <div class="window-body mioos-seven-body">
-              <div class="mioos-debug-center-head">
+              <div class="mioos-debug-center-head mioos-surface-head">
                 <div>
                   <strong>Debug Center</strong>
                   <span>Developer tools for shell snapshot, command registry, and recent websocket activity.</span>
                 </div>
-                <div class="mioos-seven-toolbar">
+                <div class="mioos-seven-toolbar mioos-surface-toolbar" data-shell-standard-actions="1">
                   <button type="button" @click="refreshDebugCenter()" :disabled="debugCenter.loading">[[ debugCenter.loading ? 'Refreshing…' : 'Refresh snapshot' ]]</button>
                   <button type="button" @click="exportDebugSnapshot()">Copy snapshot</button>
-                  <button type="button" @click="clearDebugEvents()">Clear events</button>
+                  <button type="button" @click="clearDebugEvents()" :disabled="!debugEvents().length">Clear events</button>
                 </div>
               </div>
-              <div class="mioos-debug-center-summary">
+              <div class="mioos-debug-center-summary mioos-surface-summary">
                 <span>Snapshot [[ ((debugSnapshot() || {}).snapshotVersion) || (((boot.desktop || {}).debugCenter || {}).snapshotVersion) || 1 ]]</span>
                 <span>Events [[ debugEvents().length ]] / [[ (((boot.desktop || {}).debugCenter || {}).eventLimit) || 50 ]]</span>
                 <span>Updated [[ formatTransportTime(debugCenter.refreshedAt) ]]</span>
@@ -677,16 +680,17 @@
         <template v-else-if="win.appKey === 'app-catalog'">
           <div class="mioos-module-catalog-shell mioos-shell-surface mioos-shell-surface--catalog" data-module-catalog-window="1">
             <div class="window-body mioos-seven-body">
-              <div class="mioos-module-catalog-head">
+              <div class="mioos-module-catalog-head mioos-surface-head">
                 <div>
                   <strong>App Catalog</strong>
                   <span>Installed built-in modules, launch policy, and reusable window hosts.</span>
                 </div>
-                <div class="mioos-seven-toolbar">
+                <div class="mioos-seven-toolbar mioos-surface-toolbar" data-shell-standard-actions="1">
                   <button type="button" @click="refreshModuleCatalog()" :disabled="moduleCatalog.loading">[[ moduleCatalog.loading ? 'Refreshing…' : 'Refresh catalog' ]]</button>
+                  <button type="button" @click="copyModuleCatalog()">Copy manifest</button>
                 </div>
               </div>
-              <div class="mioos-module-catalog-summary">
+              <div class="mioos-module-catalog-summary mioos-surface-summary">
                 <span>[[ moduleCatalogRows().length ]] installed</span>
                 <span>Manifest [[ (((boot.desktop || {}).moduleSystem || {}).manifestVersion) || 1 ]]</span>
                 <span>Updated [[ formatTransportTime(moduleCatalog.refreshedAt) ]]</span>
@@ -720,13 +724,19 @@
         <template v-else-if="win.moduleWindow">
           <div class="mioos-module-window-shell mioos-shell-surface mioos-shell-surface--module" data-module-window="1" :data-module-id="win.moduleId || win.appKey">
             <div class="window-body mioos-seven-body">
-              <div class="mioos-module-window-head">
+              <div class="mioos-module-window-head mioos-surface-head">
                 <div>
                   <strong>[[ ((moduleWindowMeta(win) || {}).title) || win.title ]]</strong>
                   <span>[[ moduleWindowStatus(win) ]]</span>
                 </div>
-                <div class="mioos-module-badges">
-                  <span class="mioos-module-badge" v-for="badge in moduleBadges(moduleWindowMeta(win))" :key="badge">[[ badge ]]</span>
+                <div class="mioos-module-window-tools">
+                  <div class="mioos-module-badges">
+                    <span class="mioos-module-badge" v-for="badge in moduleBadges(moduleWindowMeta(win))" :key="badge">[[ badge ]]</span>
+                  </div>
+                  <div class="mioos-seven-toolbar mioos-surface-toolbar mioos-surface-toolbar--tight" data-shell-standard-actions="1">
+                    <button type="button" @click="copyModuleWindowState(win.id)">Copy state</button>
+                    <button v-if="(win.moduleId || '') === 'module-notes'" type="button" @click="clearModuleNotes(win.id)" :disabled="!((win.moduleState || {}).draft)">Clear note</button>
+                  </div>
                 </div>
               </div>
               <div class="mioos-module-window-grid">

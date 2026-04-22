@@ -148,3 +148,9 @@ ROI 53 — shell-standard dialogs, notifications, and built-in app cleanup
 - Added shell-standard toast/tray notifications and reusable confirm/input dialogs.
 - Explorer create/rename/move/delete flows now use shell dialogs instead of browser prompt/confirm.
 - Diagnostics, Security Center, Debug Center, Module Catalog, and module windows now mount through unified shell-surface classes instead of legacy `win7` surface markers.
+
+ROI 54 — shell-standard app actions and built-in surface cleanup
+- Added boot-advertised app-surface metadata so built-in windows declare a shared shell-standard action model and module-window surface coverage.
+- Transport Diagnostics, Security Center, Debug Center, App Catalog, Transfers, and module windows now expose consistent shell action bars for copy/export, clear, and destructive actions.
+- Administrative and destructive actions now route through shell confirmations and toast feedback, and Explorer now raises success notifications for create, rename, move, and delete flows.
+

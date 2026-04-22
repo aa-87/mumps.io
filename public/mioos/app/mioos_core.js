@@ -344,6 +344,53 @@
             return String(result.value || '').trim();
           });
         },
+        notifySuccess: function (title, message, opts) {
+          return this.pushNotification('success', title, message, Object.assign({ timeoutMs: 3200 }, opts || {}));
+        },
+        notifyFailure: function (title, message, opts) {
+          return this.pushNotification('alert', title, message, Object.assign({ timeoutMs: 5200 }, opts || {}));
+        },
+        copyTextToClipboard: function (text, title, successMessage) {
+          var value = String(text || '');
+          if (!value) return Promise.resolve(false);
+          function fallbackCopy() {
+            var node;
+            try {
+              node = document.createElement('textarea');
+              node.value = value;
+              node.setAttribute('readonly', 'readonly');
+              node.style.position = 'fixed';
+              node.style.opacity = '0';
+              document.body.appendChild(node);
+              node.focus();
+              node.select();
+              document.execCommand('copy');
+              document.body.removeChild(node);
+              return true;
+            } catch (err) {
+              try { if (node && node.parentNode) node.parentNode.removeChild(node); } catch (dropErr) {}
+              return false;
+            }
+          }
+          if (window.navigator && window.navigator.clipboard && window.navigator.clipboard.writeText) {
+            return window.navigator.clipboard.writeText(value).then(function () { return true; }).catch(function () { return fallbackCopy(); }).then(function (ok) {
+              if (ok) return true;
+              throw new Error('clipboard_unavailable');
+            });
+          }
+          if (fallbackCopy()) return Promise.resolve(true);
+          return Promise.reject(new Error('clipboard_unavailable'));
+        },
+        copyJsonToClipboard: function (payload, title, successMessage) {
+          var self = this;
+          return this.copyTextToClipboard(JSON.stringify(payload || {}, null, 2), title, successMessage).then(function () {
+            self.notifySuccess(title || 'MIOOS', successMessage || 'Copied to clipboard.');
+            return true;
+          }).catch(function () {
+            self.notifyFailure(title || 'MIOOS', 'Unable to copy to clipboard.');
+            return false;
+          });
+        },
         refreshSecurityCenter: function () {
           var self = this;
           var auditLimit = ((((this.boot || {}).auth || {}).audit || {}).reportLimit) || 20;
@@ -409,28 +456,48 @@
         },
         revokeSecuritySession: function (sessionId) {
           var self = this;
-          if (!sessionId) return Promise.resolve();
-          this.securityCenter.loading = true;
-          return this.command('auth.session.revoke', { sessionId: sessionId }).then(function () {
-            return self.refreshSecurityCenter();
-          }).finally(function () {
-            self.securityCenter.loading = false;
+          var entry = this.securitySessions().find(function (item) { return item.sessionId === sessionId; }) || {};
+          var label = entry.userName || entry.principal || sessionId || 'session';
+          if (!sessionId) return Promise.resolve(false);
+          return (this.confirmDialog ? this.confirmDialog('Revoke session', 'Revoke the selected session?', { detail: label, confirmText: 'Revoke' }) : Promise.resolve(true)).then(function (confirmed) {
+            if (!confirmed) return false;
+            self.securityCenter.loading = true;
+            return self.command('auth.session.revoke', { sessionId: sessionId }).then(function () {
+              self.notifySuccess('Security Center', 'Session revoked.', { detail: label });
+              return self.refreshSecurityCenter();
+            }).catch(function (err) {
+              self.notifyFailure('Security Center', (err && (err.detail || err.error || err.message)) || 'session_revoke_failed', { detail: label });
+              throw err;
+            }).finally(function () {
+              self.securityCenter.loading = false;
+            });
           });
         },
         unlockSecurityUser: function (username) {
           var self = this;
-          if (!username) return Promise.resolve();
-          this.securityCenter.loading = true;
-          return this.command('auth.user.unlock', { username: username }).then(function () {
-            return self.refreshSecurityCenter();
-          }).finally(function () {
-            self.securityCenter.loading = false;
+          if (!username) return Promise.resolve(false);
+          return (this.confirmDialog ? this.confirmDialog('Unlock account', 'Unlock the selected account?', { detail: username, confirmText: 'Unlock' }) : Promise.resolve(true)).then(function (confirmed) {
+            if (!confirmed) return false;
+            self.securityCenter.loading = true;
+            return self.command('auth.user.unlock', { username: username }).then(function () {
+              self.notifySuccess('Security Center', 'Account unlocked.', { detail: username });
+              return self.refreshSecurityCenter();
+            }).catch(function (err) {
+              self.notifyFailure('Security Center', (err && (err.detail || err.error || err.message)) || 'account_unlock_failed', { detail: username });
+              throw err;
+            }).finally(function () {
+              self.securityCenter.loading = false;
+            });
           });
         },
         exportSecurityAudit: function () {
           var path = ((this.boot || {}).routes || {}).auditExport || '/api/mioos/auth/audit/export';
           if (!path) return;
+          this.notifySuccess('Security Center', 'Audit export opened in a new tab.');
           window.open(path, '_blank');
+        },
+        copySecurityReport: function () {
+          return this.copyJsonToClipboard({ report: this.securityReport(), trail: this.securityTrail(), sessions: this.securitySessions(), accounts: this.securityAccounts() }, 'Security Center', 'Security summary copied to clipboard.');
         },
         pushDebugEvent: function (kind, name, detail, meta) {
           var limit = +((((this.boot || {}).desktop || {}).debugCenter || {}).eventLimit || 50) || 50;
@@ -440,7 +507,15 @@
           return entry;
         },
         clearDebugEvents: function () {
-          this.debugCenter.events.splice(0, this.debugCenter.events.length);
+          var self = this;
+          var count = this.debugEvents().length;
+          if (!count) return Promise.resolve(false);
+          return (this.confirmDialog ? this.confirmDialog('Clear debug events', 'Remove the client-side debug event history?', { detail: String(count) + ' events', confirmText: 'Clear' }) : Promise.resolve(true)).then(function (confirmed) {
+            if (!confirmed) return false;
+            self.debugCenter.events.splice(0, self.debugCenter.events.length);
+            self.notifySuccess('Debug Center', 'Debug event history cleared.');
+            return true;
+          });
         },
         debugSnapshot: function () {
           return (this.debugCenter || {}).snapshot || {};
@@ -468,12 +543,16 @@
           });
         },
         exportDebugSnapshot: function () {
+          var self = this;
           var text = JSON.stringify(this.debugSnapshot() || {}, null, 2);
           this.pushDebugEvent('debug', 'export', 'Snapshot copied to debug buffer', { source: 'client' });
-          if (window.navigator && window.navigator.clipboard && window.navigator.clipboard.writeText) {
-            window.navigator.clipboard.writeText(text).catch(function () {});
-          }
-          return text;
+          return this.copyTextToClipboard(text, 'Debug Center', 'Debug snapshot copied to clipboard.').then(function () {
+            self.notifySuccess('Debug Center', 'Debug snapshot copied to clipboard.');
+            return text;
+          }).catch(function () {
+            self.notifyFailure('Debug Center', 'Unable to copy debug snapshot to clipboard.');
+            return text;
+          });
         },
         applyDocumentLocale: function () {
           if (I18N.applyDocumentLocale) I18N.applyDocumentLocale(this);
@@ -541,7 +620,22 @@
           }).catch(function (err) {
             self.transportDiagnostics.loading = false;
             self.transportDiagnostics.error = (err && (err.detail || err.error || err.message)) || 'transport_health_failed';
+            self.notifyFailure('Transport Diagnostics', self.transportDiagnostics.error);
             throw err;
+          });
+        },
+        copyTransportDiagnostics: function () {
+          return this.copyJsonToClipboard({ report: this.transportReport(), sockets: this.transportSocketRows() }, 'Transport Diagnostics', 'Transport diagnostics copied to clipboard.');
+        },
+        resetTransportTelemetry: function () {
+          var self = this;
+          var count = this.transportSocketRows().length;
+          if (!count) return Promise.resolve(false);
+          return (this.confirmDialog ? this.confirmDialog('Clear socket telemetry', 'Clear client-side socket telemetry for this session?', { detail: String(count) + ' socket entries', confirmText: 'Clear' }) : Promise.resolve(true)).then(function (confirmed) {
+            if (!confirmed) return false;
+            self.socketTelemetry = {};
+            self.notifySuccess('Transport Diagnostics', 'Client socket telemetry cleared.');
+            return true;
           });
         },
         ensureModuleWindowState: function () {
@@ -589,20 +683,46 @@
             self.moduleCatalog.refreshedAt = Date.now();
             self.boot.modules = window.MIOOSState.deepClone((((msg || {}).module || {}).modules) || []);
             self.ensureModuleWindowState();
+            self.notifySuccess('App Catalog', 'Module catalog refreshed.', { detail: String((self.boot.modules || []).length) + ' modules available' });
             return self.boot.modules;
           }).catch(function (err) {
             self.moduleCatalog.loading = false;
             self.moduleCatalog.error = (err && (err.detail || err.error || err.message)) || 'module_catalog_failed';
+            self.notifyFailure('App Catalog', self.moduleCatalog.error);
             throw err;
           });
+        },
+        copyModuleCatalog: function () {
+          return this.copyJsonToClipboard({ modules: this.moduleCatalogRows(), summary: { manifestVersion: ((((this.boot || {}).desktop || {}).moduleSystem || {}).manifestVersion) || 1, refreshedAt: this.moduleCatalog.refreshedAt || 0 } }, 'App Catalog', 'Module catalog copied to clipboard.');
         },
         openModuleCatalog: function () {
           this.openApp('app-catalog');
         },
         openModuleEntry: function (moduleId) {
           var module = this.moduleRecord(moduleId);
-          if (!module) return;
+          if (!module) {
+            this.notifyFailure('App Catalog', 'Module is no longer available.');
+            return;
+          }
           this.openApp(module.appKey || module.id);
+          this.notifySuccess('App Catalog', 'Launching ' + (module.title || module.id) + '.');
+        },
+        clearModuleNotes: function (windowId) {
+          var self = this;
+          var win = (this.windows || []).find(function (item) { return item.id === windowId; });
+          if (!win || !win.moduleState) return Promise.resolve(false);
+          if (!String(win.moduleState.draft || '').length) return Promise.resolve(false);
+          return (this.confirmDialog ? this.confirmDialog('Clear module notes', 'Remove the scratch note content for this session?', { confirmText: 'Clear' }) : Promise.resolve(true)).then(function (confirmed) {
+            if (!confirmed) return false;
+            win.moduleState.draft = '';
+            self.notifySuccess('Module Notes', 'Scratch note cleared.');
+            return true;
+          });
+        },
+        copyModuleWindowState: function (windowId) {
+          var win = (this.windows || []).find(function (item) { return item.id === windowId; });
+          if (!win) return Promise.resolve(false);
+          return this.copyJsonToClipboard({ window: win, module: this.moduleWindowMeta(win) || null }, ((this.moduleWindowMeta(win) || {}).title) || win.title || 'Module Window', 'Module window state copied to clipboard.');
         },
         moduleWindowStatus: function (win) {
           var module = this.moduleWindowMeta(win);
@@ -777,33 +897,62 @@
         },
         pauseAllTransfers: function () {
           var self = this;
+          var paused = 0;
           return Promise.all((this.activeTransfers() || []).map(function (item) {
-            return self.canPauseTransfer(item) ? self.pauseTransfer(item) : Promise.resolve();
-          })).then(function () { self.persistTransferCenter(); });
+            if (!self.canPauseTransfer(item)) return Promise.resolve();
+            paused += 1;
+            return self.pauseTransfer(item);
+          })).then(function () {
+            self.persistTransferCenter();
+            if (paused) self.notifySuccess('Transfer Center', 'Paused ' + paused + ' transfer' + (paused === 1 ? '' : 's') + '.');
+          });
         },
         resumePausedTransfers: function () {
           var self = this;
+          var resumed = 0;
           return Promise.all(((this.transferCenter || {}).items || []).map(function (item) {
-            return self.canResumeTransfer(item) ? self.resumeTransfer(item) : Promise.resolve();
-          })).then(function () { self.persistTransferCenter(); });
+            if (!self.canResumeTransfer(item)) return Promise.resolve();
+            resumed += 1;
+            return self.resumeTransfer(item);
+          })).then(function () {
+            self.persistTransferCenter();
+            if (resumed) self.notifySuccess('Transfer Center', 'Resumed ' + resumed + ' transfer' + (resumed === 1 ? '' : 's') + '.');
+          });
         },
         cancelActiveTransfers: function () {
           var self = this;
-          return Promise.all((this.activeTransfers() || []).map(function (item) {
-            return self.canCancelTransfer(item) ? self.cancelTransfer(item).catch(function () { return null; }) : Promise.resolve();
-          })).then(function () { self.persistTransferCenter(); });
+          var count = (this.activeTransfers() || []).filter(function (item) { return self.canCancelTransfer(item); }).length;
+          if (!count) return Promise.resolve(false);
+          return (this.confirmDialog ? this.confirmDialog('Cancel active transfers', 'Cancel all active transfers for this session?', { detail: String(count) + ' active transfer' + (count === 1 ? '' : 's'), confirmText: 'Cancel transfers' }) : Promise.resolve(true)).then(function (confirmed) {
+            if (!confirmed) return false;
+            return Promise.all((self.activeTransfers() || []).map(function (item) {
+              return self.canCancelTransfer(item) ? self.cancelTransfer(item).catch(function () { return null; }) : Promise.resolve();
+            })).then(function () {
+              self.persistTransferCenter();
+              self.notifySuccess('Transfer Center', 'Cancelled active transfers.', { detail: String(count) + ' item' + (count === 1 ? '' : 's') });
+              return true;
+            });
+          });
         },
         clearFinishedTransfers: function () {
-          var keep = {};
-          this.transferCenter.items = (this.transferCenter.items || []).filter(function (item) {
-            var active = ['queued','preparing','uploading','downloading','finalizing','verifying','cancelling','paused'].indexOf(item.status) >= 0;
-            if (active) keep[item.id] = 1;
-            return active;
+          var self = this;
+          var finished = (this.completedTransfers() || []).length;
+          if (!finished) return Promise.resolve(false);
+          return (this.confirmDialog ? this.confirmDialog('Clear finished transfers', 'Remove completed, failed, and cancelled transfers from this session list?', { detail: String(finished) + ' finished transfer' + (finished === 1 ? '' : 's'), confirmText: 'Clear finished' }) : Promise.resolve(true)).then(function (confirmed) {
+            var keep = {};
+            if (!confirmed) return false;
+            self.transferCenter.items = (self.transferCenter.items || []).filter(function (item) {
+              var active = ['queued','preparing','uploading','downloading','finalizing','verifying','cancelling','paused'].indexOf(item.status) >= 0;
+              if (active) keep[item.id] = 1;
+              return active;
+            });
+            Object.keys(self.transferControllers || {}).forEach(function (key) {
+              if (!keep[key]) delete (self.transferControllers || {})[key];
+            });
+            self.persistTransferCenter();
+            self.notifySuccess('Transfer Center', 'Finished transfers cleared.', { detail: String(finished) + ' item' + (finished === 1 ? '' : 's') });
+            return true;
           });
-          Object.keys(this.transferControllers || {}).forEach(function (key) {
-            if (!keep[key]) delete (this.transferControllers || {})[key];
-          }, this);
-          this.persistTransferCenter();
         },
         centerAuthWindow: function (force) {
           var width = Math.min(460, Math.max(380, (window.innerWidth || document.documentElement.clientWidth || 1280) - 32));

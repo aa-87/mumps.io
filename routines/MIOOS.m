@@ -51,6 +51,11 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","desktop","themeSystem","liveApply"))="" SET CONF("mioos","desktop","themeSystem","liveApply")=1
 	IF $GET(CONF("mioos","desktop","themeSystem","quickSwitch"))="" SET CONF("mioos","desktop","themeSystem","quickSwitch")=1
 	IF $GET(CONF("mioos","desktop","themeSystem","version"))="" SET CONF("mioos","desktop","themeSystem","version")=2
+	IF $GET(CONF("mioos","desktop","appSurfaceModel"))="" SET CONF("mioos","desktop","appSurfaceModel")="shell-standard-actions"
+	IF $GET(CONF("mioos","desktop","appActions","confirmBeforeDestructive"))="" SET CONF("mioos","desktop","appActions","confirmBeforeDestructive")=1
+	IF $GET(CONF("mioos","desktop","appActions","notifyOnAdminActions"))="" SET CONF("mioos","desktop","appActions","notifyOnAdminActions")=1
+	IF $GET(CONF("mioos","desktop","appActions","copyExportsToClipboard"))="" SET CONF("mioos","desktop","appActions","copyExportsToClipboard")=1
+	IF $GET(CONF("mioos","desktop","appActions","moduleNotesSessionLocal"))="" SET CONF("mioos","desktop","appActions","moduleNotesSessionLocal")=1
 	IF $GET(CONF("mioos","desktop","chrome"))="" SET CONF("mioos","desktop","chrome")="shell-foundation"
 	IF $GET(CONF("mioos","desktop","taskbarStyle"))="" SET CONF("mioos","desktop","taskbarStyle")="taskbar-foundation"
 	IF $GET(CONF("mioos","desktop","startMenuStyle"))="" SET CONF("mioos","desktop","startMenuStyle")="launcher-foundation"
