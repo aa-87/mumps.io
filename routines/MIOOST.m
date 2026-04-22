@@ -45,6 +45,7 @@ MIOOST ; MIOOS tests
 	DO T048
 	DO T049
 	DO T050
+	DO T051
 	QUIT
 	;
 RESET
@@ -996,4 +997,28 @@ T050
 	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_wm.js","centerAuthWindow"),0,"[MIOOST][T050][no wm auth impl]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","centerAuthWindow"),"[MIOOST][T050][auth window centering]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","Wave 1 shell foundation reset"),"[MIOOST][T050][shell foundation css]")
+	QUIT
+
+	;
+T051
+	NEW CONF,REQ,CTX,STATE,BOOT,ERR
+	DO RESET
+	DO CONFDEF^MIOOS(.CONF)
+	DO INIT^MIOOS(.CONF)
+	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T051][load]")
+	DO BOOTARY^MIOOSST(.STATE,.CONF,.BOOT)
+	DO EQ^MIOTASSERT(+$GET(BOOT("desktop","themeSystem","version")),2,"[MIOOST][T051][theme system version]")
+	DO EQ^MIOTASSERT($GET(BOOT("desktop","themeSystem","editor")),"theme-studio","[MIOOST][T051][theme editor]")
+	DO EQ^MIOTASSERT($GET(BOOT("desktop","themeSystem","densityOptions",2)),"comfortable","[MIOOST][T051][density option]")
+	DO EQ^MIOTASSERT(+$GET(BOOT("desktop","shellSurfaces","themeStudio")),1,"[MIOOST][T051][theme studio surface]")
+	DO EQ^MIOTASSERT(+$GET(BOOT("desktop","shellSurfaces","explorer")),1,"[MIOOST][T051][explorer surface]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","setShellTheme"),"[MIOOST][T051][set shell theme]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","setDesktopDensity"),"[MIOOST][T051][set density]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","pauseAllTransfers"),"[MIOOST][T051][pause all transfers]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-shell-quickthemes"),"[MIOOST][T051][quick theme ui]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","contrast-dark"),"[MIOOST][T051][contrast preset token]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-shell-surface"),"[MIOOST][T051][shell surface css]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","contrast-dark"),"[MIOOST][T051][contrast dark css]")
+	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 52 — theme system 2.0 and unified shell surfaces"),"[MIOOST][T051][llm roi52]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","ROI 52 — theme system 2.0 and unified shell surfaces"),"[MIOOST][T051][docs roi52]")
 	QUIT

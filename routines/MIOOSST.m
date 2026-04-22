@@ -130,6 +130,11 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("commandErrorEvent")=$GET(CONF("mioos","desktop","transport","errorEvent"),"desktop.error")
 	SET STATE("transportModel")=$GET(CONF("mioos","desktop","transport","model"),"core-websocket-plus-app-websockets")
 	SET STATE("themeMode")=$GET(CONF("mioos","desktop","themeMode"),$SELECT($GET(CONF("mioos","desktop","theme"))["dark":"dark",1:"light"))
+	SET STATE("themeSystemEditor")=$GET(CONF("mioos","desktop","themeSystem","editor"),"theme-studio")
+	SET STATE("themeSystemPersistence")=$GET(CONF("mioos","desktop","themeSystem","persistence"),"localstorage-applied-profile")
+	SET STATE("themeSystemLiveApply")=+$GET(CONF("mioos","desktop","themeSystem","liveApply"),1)
+	SET STATE("themeSystemQuickSwitch")=+$GET(CONF("mioos","desktop","themeSystem","quickSwitch"),1)
+	SET STATE("themeSystemVersion")=+$GET(CONF("mioos","desktop","themeSystem","version"),2)
 	SET STATE("shellChrome")=$GET(CONF("mioos","desktop","chrome"),"shell-foundation")
 	SET STATE("taskbarStyle")=$GET(CONF("mioos","desktop","taskbarStyle"),"taskbar-foundation")
 	SET STATE("startMenuStyle")=$GET(CONF("mioos","desktop","startMenuStyle"),"launcher-foundation")
@@ -402,6 +407,21 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","contextMenu","verbs",8)="personalize"
 	SET OBJ("desktop","contextMenu","verbs",9)="control-panel"
 	SET OBJ("desktop","contextMenu","verbs",10)="open"
+	SET OBJ("desktop","shellSurfaces","explorer")=1
+	SET OBJ("desktop","shellSurfaces","themeStudio")=1
+	SET OBJ("desktop","shellSurfaces","transfers")=1
+	SET OBJ("desktop","shellSurfaces","diagnostics")=1
+	SET OBJ("desktop","shellSurfaces","securityCenter")=1
+	SET OBJ("desktop","shellSurfaces","appCatalog")=1
+	SET OBJ("desktop","shellSurfaces","debugCenter")=1
+	SET OBJ("desktop","themeSystem","version")=+$GET(STATE("themeSystemVersion"),2)
+	SET OBJ("desktop","themeSystem","editor")=$GET(STATE("themeSystemEditor"),"theme-studio")
+	SET OBJ("desktop","themeSystem","persistence")=$GET(STATE("themeSystemPersistence"),"localstorage-applied-profile")
+	SET OBJ("desktop","themeSystem","liveApply")=+$GET(STATE("themeSystemLiveApply"),1)
+	SET OBJ("desktop","themeSystem","quickSwitch")=+$GET(STATE("themeSystemQuickSwitch"),1)
+	SET OBJ("desktop","themeSystem","densityOptions",1)="compact"
+	SET OBJ("desktop","themeSystem","densityOptions",2)="comfortable"
+	SET OBJ("desktop","themeSystem","densityOptions",3)="spacious"
 	SET OBJ("desktop","performance","uploadUiStrategy")="throttled-progress-updates-and-persistent-resume"
 	DO THEMES($NAME(OBJ("desktop","themes")),$GET(STATE("themeKey")))
 	MERGE OBJ("apps")=STATE("apps")
@@ -636,6 +656,7 @@ THEMES(ROOT,CURRENT)
 	KILL @ROOT
 	SET @ROOT@(1,"key")="foundation-light"
 	SET @ROOT@(1,"title")="Foundation Light"
+	SET @ROOT@(1,"family")="Foundation"
 	SET @ROOT@(1,"mode")="light"
 	SET @ROOT@(1,"isCurrent")=$SELECT($GET(CURRENT)="foundation-light":1,1:0)
 	SET @ROOT@(1,"wallpaper")="aurora"
@@ -643,6 +664,7 @@ THEMES(ROOT,CURRENT)
 	SET @ROOT@(1,"taskbar")="#e8eef8"
 	SET @ROOT@(2,"key")="foundation-dark"
 	SET @ROOT@(2,"title")="Foundation Dark"
+	SET @ROOT@(2,"family")="Foundation"
 	SET @ROOT@(2,"mode")="dark"
 	SET @ROOT@(2,"isCurrent")=$SELECT($GET(CURRENT)="foundation-dark":1,1:0)
 	SET @ROOT@(2,"wallpaper")="aurora-night"
@@ -650,6 +672,7 @@ THEMES(ROOT,CURRENT)
 	SET @ROOT@(2,"taskbar")="#111a28"
 	SET @ROOT@(3,"key")="glass-light"
 	SET @ROOT@(3,"title")="Glass Light"
+	SET @ROOT@(3,"family")="Glass"
 	SET @ROOT@(3,"mode")="light"
 	SET @ROOT@(3,"isCurrent")=$SELECT($GET(CURRENT)="glass-light":1,1:0)
 	SET @ROOT@(3,"wallpaper")="aurora"
@@ -657,11 +680,28 @@ THEMES(ROOT,CURRENT)
 	SET @ROOT@(3,"taskbar")="#dce7f7"
 	SET @ROOT@(4,"key")="glass-dark"
 	SET @ROOT@(4,"title")="Glass Dark"
+	SET @ROOT@(4,"family")="Glass"
 	SET @ROOT@(4,"mode")="dark"
 	SET @ROOT@(4,"isCurrent")=$SELECT($GET(CURRENT)="glass-dark":1,1:0)
 	SET @ROOT@(4,"wallpaper")="aurora-night"
 	SET @ROOT@(4,"accent")="#8ac5ff"
 	SET @ROOT@(4,"taskbar")="#0f1724"
+	SET @ROOT@(5,"key")="contrast-light"
+	SET @ROOT@(5,"title")="Contrast Light"
+	SET @ROOT@(5,"family")="Contrast"
+	SET @ROOT@(5,"mode")="light"
+	SET @ROOT@(5,"isCurrent")=$SELECT($GET(CURRENT)="contrast-light":1,1:0)
+	SET @ROOT@(5,"wallpaper")="solid-graphite"
+	SET @ROOT@(5,"accent")="#1142aa"
+	SET @ROOT@(5,"taskbar")="#ffffff"
+	SET @ROOT@(6,"key")="contrast-dark"
+	SET @ROOT@(6,"title")="Contrast Dark"
+	SET @ROOT@(6,"family")="Contrast"
+	SET @ROOT@(6,"mode")="dark"
+	SET @ROOT@(6,"isCurrent")=$SELECT($GET(CURRENT)="contrast-dark":1,1:0)
+	SET @ROOT@(6,"wallpaper")="solid-graphite"
+	SET @ROOT@(6,"accent")="#ffd043"
+	SET @ROOT@(6,"taskbar")="#0b1017"
 	QUIT
 	;
 CSV2ARY(CSV,ROOT)

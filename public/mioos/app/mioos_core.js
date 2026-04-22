@@ -136,6 +136,7 @@
         this.normalizeDesktopUiState();
         this.ensureDesktopLayout();
         this.normalizeDesktopUiState();
+        this.applyBootThemeDefaults();
         this.applyPersistedThemeStudioProfile();
         this.applyDocumentLocale();
         this.startClock();
@@ -656,6 +657,24 @@
           if (ok) this.clearTransferController(transferId);
           this.persistTransferCenter();
         },
+        pauseAllTransfers: function () {
+          var self = this;
+          return Promise.all((this.activeTransfers() || []).map(function (item) {
+            return self.canPauseTransfer(item) ? self.pauseTransfer(item) : Promise.resolve();
+          })).then(function () { self.persistTransferCenter(); });
+        },
+        resumePausedTransfers: function () {
+          var self = this;
+          return Promise.all(((this.transferCenter || {}).items || []).map(function (item) {
+            return self.canResumeTransfer(item) ? self.resumeTransfer(item) : Promise.resolve();
+          })).then(function () { self.persistTransferCenter(); });
+        },
+        cancelActiveTransfers: function () {
+          var self = this;
+          return Promise.all((this.activeTransfers() || []).map(function (item) {
+            return self.canCancelTransfer(item) ? self.cancelTransfer(item).catch(function () { return null; }) : Promise.resolve();
+          })).then(function () { self.persistTransferCenter(); });
+        },
         clearFinishedTransfers: function () {
           var keep = {};
           this.transferCenter.items = (this.transferCenter.items || []).filter(function (item) {
@@ -876,16 +895,23 @@
           return window.MIOOSState.getRootNode ? window.MIOOSState.getRootNode() : null;
         },
         themeStudioSanitizeColor: function (value, fallback) {
-          return (/^#[0-9a-fA-F]{6}$/).test(String(value || '')) ? String(value) : fallback;
+          var color = String(value || '').trim();
+          if ((/^#[0-9a-fA-F]{6}$/).test(color)) return color;
+          if ((/^(rgb|rgba|hsl|hsla)\(/).test(color)) return color;
+          if (color.indexOf('color-mix(') === 0) return color;
+          return fallback;
         },
         themeStudioNormalizeProfile: function (profile) {
           var base = this.themeStudioFactoryProfile('Custom Theme', 'Custom', 'light');
           var next = Object.assign({}, base, profile || {});
+          if (next.presetKey === 'xp-classic-blue') next.presetKey = 'foundation-light';
+          if (next.presetKey === 'xp-classic-dark') next.presetKey = 'foundation-dark';
           next.targets = Object.assign({}, base.targets, (profile || {}).targets || {});
           next.colors = Object.assign({}, base.colors, (profile || {}).colors || {});
           next.fonts = Object.assign({}, base.fonts, (profile || {}).fonts || {});
           next.metrics = Object.assign({}, base.metrics, (profile || {}).metrics || {});
           next.recipes = Object.assign({}, base.recipes, (profile || {}).recipes || {});
+          if (!next.presetKey && next.family) next.presetKey = String(next.family).toLowerCase() + '-' + (next.mode || 'light');
           return next;
         },
         themeStudioPersistProfiles: function () {
@@ -913,6 +939,20 @@
           if (String(bg).indexOf('url(') === 0) return (profile.desktopColor || '#3a6ea5') + ' ' + bg + ' center / ' + ((profile.wallpaperFit === 'tile') ? '240px auto' : (profile.wallpaperFit || 'cover')) + ' ' + ((profile.wallpaperFit === 'tile') ? 'repeat' : 'no-repeat');
           return bg;
         },
+        availableShellThemes: function () {
+          return ((((this.boot || {}).desktop || {}).themes) || []).slice();
+        },
+        shellDensityOptions: function () {
+          return (((((this.boot || {}).desktop || {}).themeSystem || {}).densityOptions) || ['compact','comfortable','spacious']).slice();
+        },
+        applyBootThemeDefaults: function () {
+          var desktop = (this.boot || {}).desktop || {};
+          var preset = this.themeStudioPresetProfile(desktop.themeKey || 'foundation-light');
+          preset.mode = desktop.themeMode || preset.mode || 'light';
+          preset.density = desktop.density || preset.density || 'comfortable';
+          if (desktop.wallpaper) preset.wallpaperPreset = desktop.wallpaper;
+          this.applyThemeStudioProfile(preset, { silent: true, persist: false });
+        },
         applyPersistedThemeStudioProfile: function () {
           var raw;
           try {
@@ -921,6 +961,18 @@
             this.appliedThemeProfile = this.themeStudioNormalizeProfile(JSON.parse(raw));
             this.applyThemeStudioProfile(this.appliedThemeProfile, { silent: true, persist: false });
           } catch (err) {}
+        },
+        setShellTheme: function (themeKey) {
+          var current = this.appliedThemeProfile ? window.MIOOSState.deepClone(this.appliedThemeProfile) : this.themeStudioPresetProfile((((this.boot || {}).desktop || {}).themeKey) || 'foundation-light');
+          var next = this.themeStudioPresetProfile(themeKey || 'foundation-light');
+          next.density = current.density || next.density || 'comfortable';
+          this.applyThemeStudioProfile(next, { persist: true });
+        },
+        setDesktopDensity: function (density) {
+          var next = this.appliedThemeProfile ? window.MIOOSState.deepClone(this.appliedThemeProfile) : this.themeStudioPresetProfile((((this.boot || {}).desktop || {}).themeKey) || 'foundation-light');
+          next.density = density || 'comfortable';
+          this.applyThemeStudioProfile(next, { silent: true, persist: true });
+          this.showAlert('Shell Density', 'Density set to ' + next.density + '.');
         },
         applyThemeStudioProfile: function (profile, options) {
           var rootNode = this.themeStudioRootNode();
@@ -965,15 +1017,18 @@
             '--mioos-icon-shadow': colors.desktopGlow || '0 1px 2px rgba(0,0,0,0.55)'
           };
           Object.keys(vars).forEach(function (key) { rootNode.style.setProperty(key, vars[key]); });
+          rootNode.dataset.themeKey = p.presetKey || (((p.family || 'custom').toLowerCase()) + '-' + (p.mode || 'light'));
           rootNode.dataset.themeMode = p.mode || 'light';
-          rootNode.dataset.themeFamily = p.family || 'Custom';
+          rootNode.dataset.themeFamily = (p.family || 'Custom').toLowerCase();
           rootNode.dataset.themeDensity = p.density || 'comfortable';
+          if (this.boot && this.boot.desktop) { this.boot.desktop.themeKey = rootNode.dataset.themeKey; this.boot.desktop.themeMode = rootNode.dataset.themeMode; this.boot.desktop.density = rootNode.dataset.themeDensity; }
           rootNode.classList.remove('mioos-theme-dark', 'mioos-theme-light', 'mioos-density-compact', 'mioos-density-spacious');
           rootNode.classList.add((p.mode || 'light') === 'dark' ? 'mioos-theme-dark' : 'mioos-theme-light');
           if ((p.density || '') === 'compact') rootNode.classList.add('mioos-density-compact');
           if ((p.density || '') === 'spacious') rootNode.classList.add('mioos-density-spacious');
           if (p.desktopClass) rootNode.dataset.themeDesktopClass = p.desktopClass;
           body.style.background = p.desktopColor || '#4f91ea';
+          if (document && document.documentElement) document.documentElement.style.colorScheme = (p.mode || 'light');
           styleNode.textContent = (p.extraCss || '') + '\n' + (p.desktopCssHint ? ('#mioosRoot{' + p.desktopCssHint + '}') : '');
           if (!opts.silent) this.showAlert('Theme Studio', (p.name || 'Custom Theme') + ' applied.');
           this.appliedThemeProfile = window.MIOOSState.deepClone(p);
@@ -993,9 +1048,7 @@
         },
         themeStudioFactoryProfile: function (name, family, mode) {
           return {
-            name: name || 'Custom Theme', author: (this.boot.user && this.boot.user.displayName) || 'MIOOS User', family: family || 'Custom', mode: mode || 'light', density: 'comfortable', cornerModel: 'soft', wallpaperPreset: 'bliss', wallpaperUrl: '', wallpaperFit: 'cover', desktopColor: '#3a6ea5', desktopClass: '', desktopCssHint: '',
-            targets: { shell: true, taskbar: true, windows: true, controls: true },
-            colors: { accent: '#245edb', accentStrong: '#1f4fa5', panel: '#f7fbff', panelAlt: '#ffffff', panelText: '#132136', muted: '#44536d', titlebar: '#2b5bc7', inactiveTitlebar: '#5877a9', titleText: '#ffffff', taskbar: '#245edb', taskbarDark: '#1844a0', taskbarText: '#ffffff', startButton: '#2aa12a', iconText: '#ffffff', border: '#4e79c7', focus: '#ffd043', desktopGlow: '0 1px 2px rgba(0,0,0,0.55)' },
+            presetKey: '', name: name || 'Custom Theme', author: (this.boot.user && this.boot.user.displayName) || 'MIOOS User', family: family || 'Custom', mode: mode || 'light', density: 'comfortable', cornerModel: 'soft', wallpaperPreset: 'aurora', wallpaperUrl: '', wallpaperFit: 'cover', desktopColor: '#3a6ea5', desktopClass: '', desktopCssHint: '', shellTone: 'balanced', surfaceStyle: 'foundation', targets: { shell: true, taskbar: true, windows: true, controls: true }, colors: { accent: '#3a6ee8', accentStrong: '#1f4fbf', panel: '#f4f7fb', panelAlt: '#ffffff', panelText: '#0b1830', muted: '#44536d', titlebar: '#2b5bc7', inactiveTitlebar: '#5877a9', titleText: '#ffffff', taskbar: '#245edb', taskbarDark: '#1844a0', taskbarText: '#ffffff', startButton: '#2aa12a', iconText: '#ffffff', border: '#4e79c7', focus: '#ffd043', desktopGlow: '0 1px 2px rgba(0,0,0,0.55)' },
             fonts: { ui: 'Tahoma, "Segoe UI", sans-serif', mono: 'Consolas, monospace', baseSize: 13, titleSize: 13, menuSize: 13, weight: '500' },
             metrics: { taskbarHeight: 40, windowRadius: 8, windowBorder: 1, buttonRadius: 6, iconSize: 36, shadowDepth: 18 },
             recipes: { shell: '', window: '', taskbar: '' },
@@ -1004,9 +1057,12 @@
         },
         themeStudioPresetProfile: function (presetKey) {
           var profile;
-          if (presetKey === 'foundation-light') { profile = this.themeStudioFactoryProfile('Foundation Light', 'Foundation', 'light'); profile.wallpaperPreset = 'aurora'; profile.desktopColor = '#dce7f7'; profile.colors.accent = '#2f6fd0'; profile.colors.titlebar = '#eef3fb'; profile.colors.taskbar = '#e8eef8'; profile.colors.panelText = '#162033'; profile.fonts.ui = '"Segoe UI", Tahoma, sans-serif'; return profile; }
-          if (presetKey === 'foundation-dark') { profile = this.themeStudioFactoryProfile('Foundation Dark', 'Foundation', 'dark'); profile.wallpaperPreset = 'solid-graphite'; profile.desktopColor = '#111827'; profile.colors.accent = '#8ab6ff'; profile.colors.titlebar = '#182334'; profile.colors.taskbar = '#0f1724'; profile.colors.panel = '#182334'; profile.colors.panelText = '#e5eefc'; profile.colors.iconText = '#f8fbff'; profile.metrics.windowRadius = 14; profile.fonts.ui = '"Segoe UI", Tahoma, sans-serif'; return profile; }
-          if (presetKey === 'glass-light' || presetKey === 'mac') { profile = this.themeStudioFactoryProfile('Glass Light', 'Glass', 'light'); profile.wallpaperPreset = 'solid-graphite'; profile.desktopColor = '#6c7a89'; profile.colors.accent = '#6f8fb2'; profile.colors.titlebar = '#cfd6df'; profile.colors.taskbar = '#d5dde6'; profile.colors.panel = '#f8fafc'; profile.colors.panelText = '#1f2937'; profile.metrics.windowRadius = 14; profile.fonts.ui = '"Segoe UI", Tahoma, sans-serif'; return profile; }
+          if (presetKey === 'foundation-light') { profile = this.themeStudioFactoryProfile('Foundation Light', 'Foundation', 'light'); profile.presetKey = 'foundation-light'; profile.wallpaperPreset = 'aurora'; profile.desktopColor = '#dce7f7'; profile.colors.accent = '#2f6fd0'; profile.colors.accentStrong = '#5c86d9'; profile.colors.titlebar = '#eef3fb'; profile.colors.inactiveTitlebar = '#d6e0ef'; profile.colors.taskbar = '#e8eef8'; profile.colors.taskbarDark = '#cfd9ea'; profile.colors.panel = '#f5f8fd'; profile.colors.panelAlt = '#ffffff'; profile.colors.panelText = '#162033'; profile.colors.titleText = '#162033'; profile.colors.taskbarText = '#162033'; profile.colors.startButton = '#2f6fed'; profile.colors.iconText = '#f8fbff'; profile.colors.border = '#b9c7da'; profile.fonts.ui = '"Segoe UI", Tahoma, sans-serif'; profile.metrics.windowRadius = 14; return profile; }
+          if (presetKey === 'foundation-dark') { profile = this.themeStudioFactoryProfile('Foundation Dark', 'Foundation', 'dark'); profile.presetKey = 'foundation-dark'; profile.wallpaperPreset = 'aurora-night'; profile.desktopColor = '#111827'; profile.colors.accent = '#8ab6ff'; profile.colors.accentStrong = '#5f8cd1'; profile.colors.titlebar = '#182334'; profile.colors.inactiveTitlebar = '#243349'; profile.colors.taskbar = '#0f1724'; profile.colors.taskbarDark = '#0a111b'; profile.colors.panel = '#182334'; profile.colors.panelAlt = '#1e2938'; profile.colors.panelText = '#e5eefc'; profile.colors.taskbarText = '#e5eefc'; profile.colors.startButton = '#4d78d0'; profile.colors.iconText = '#f8fbff'; profile.colors.border = '#33445b'; profile.fonts.ui = '"Segoe UI", Tahoma, sans-serif'; profile.metrics.windowRadius = 14; return profile; }
+          if (presetKey === 'glass-light') { profile = this.themeStudioFactoryProfile('Glass Light', 'Glass', 'light'); profile.presetKey = 'glass-light'; profile.wallpaperPreset = 'aurora'; profile.desktopColor = '#cdd9e8'; profile.colors.accent = '#4f7dde'; profile.colors.accentStrong = '#3359b9'; profile.colors.titlebar = '#dce5f0'; profile.colors.inactiveTitlebar = '#c4d2e3'; profile.colors.taskbar = '#dde7f3'; profile.colors.taskbarDark = '#c1d1e4'; profile.colors.panel = 'rgba(255,255,255,0.78)'; profile.colors.panelAlt = 'rgba(250,252,255,0.92)'; profile.colors.panelText = '#1f2937'; profile.colors.taskbarText = '#1f2937'; profile.colors.titleText = '#1f2937'; profile.colors.startButton = '#4f7dde'; profile.colors.iconText = '#f8fbff'; profile.colors.border = '#9eb0c6'; profile.fonts.ui = '"Segoe UI", Tahoma, sans-serif'; profile.metrics.windowRadius = 18; profile.metrics.shadowDepth = 24; return profile; }
+          if (presetKey === 'glass-dark') { profile = this.themeStudioFactoryProfile('Glass Dark', 'Glass', 'dark'); profile.presetKey = 'glass-dark'; profile.wallpaperPreset = 'aurora-night'; profile.desktopColor = '#0f1724'; profile.colors.accent = '#7fb7ff'; profile.colors.accentStrong = '#4d89d3'; profile.colors.titlebar = 'rgba(24,35,52,0.9)'; profile.colors.inactiveTitlebar = 'rgba(32,46,69,0.85)'; profile.colors.taskbar = 'rgba(15,23,36,0.88)'; profile.colors.taskbarDark = 'rgba(9,15,25,0.94)'; profile.colors.panel = 'rgba(18,27,41,0.88)'; profile.colors.panelAlt = 'rgba(24,35,52,0.94)'; profile.colors.panelText = '#edf3fb'; profile.colors.taskbarText = '#edf3fb'; profile.colors.startButton = '#4f7dde'; profile.colors.iconText = '#f8fbff'; profile.colors.border = '#2b425d'; profile.fonts.ui = '"Segoe UI", Tahoma, sans-serif'; profile.metrics.windowRadius = 18; profile.metrics.shadowDepth = 26; return profile; }
+          if (presetKey === 'contrast-light') { profile = this.themeStudioFactoryProfile('Contrast Light', 'Contrast', 'light'); profile.presetKey = 'contrast-light'; profile.wallpaperPreset = 'solid-graphite'; profile.desktopColor = '#dfe4ec'; profile.colors.accent = '#1142aa'; profile.colors.accentStrong = '#062d7f'; profile.colors.titlebar = '#ffffff'; profile.colors.inactiveTitlebar = '#d9dee6'; profile.colors.taskbar = '#ffffff'; profile.colors.taskbarDark = '#d9dee6'; profile.colors.panel = '#ffffff'; profile.colors.panelAlt = '#ffffff'; profile.colors.panelText = '#111827'; profile.colors.taskbarText = '#111827'; profile.colors.titleText = '#111827'; profile.colors.startButton = '#1142aa'; profile.colors.iconText = '#ffffff'; profile.colors.border = '#1f2937'; profile.colors.focus = '#1142aa'; profile.fonts.ui = '"Segoe UI", Tahoma, sans-serif'; profile.metrics.windowRadius = 10; profile.metrics.windowBorder = 2; return profile; }
+          if (presetKey === 'contrast-dark') { profile = this.themeStudioFactoryProfile('Contrast Dark', 'Contrast', 'dark'); profile.presetKey = 'contrast-dark'; profile.wallpaperPreset = 'solid-graphite'; profile.desktopColor = '#080b10'; profile.colors.accent = '#ffd043'; profile.colors.accentStrong = '#bf9b22'; profile.colors.titlebar = '#0b1017'; profile.colors.inactiveTitlebar = '#1a2430'; profile.colors.taskbar = '#0b1017'; profile.colors.taskbarDark = '#05080c'; profile.colors.panel = '#10161f'; profile.colors.panelAlt = '#151d28'; profile.colors.panelText = '#f8fafc'; profile.colors.taskbarText = '#f8fafc'; profile.colors.titleText = '#f8fafc'; profile.colors.startButton = '#ffd043'; profile.colors.iconText = '#ffffff'; profile.colors.border = '#ffd043'; profile.colors.focus = '#ffd043'; profile.fonts.ui = '"Segoe UI", Tahoma, sans-serif'; profile.metrics.windowRadius = 10; profile.metrics.windowBorder = 2; return profile; }
           return this.themeStudioFactoryProfile('Custom Theme', 'Custom', 'light');
         },
         ensureThemeStudioState: function (win) {
@@ -1019,7 +1075,10 @@
               profiles: (Array.isArray(storedProfiles) && storedProfiles.length) ? storedProfiles : [
                 { key: 'foundation-light', name: 'Foundation Light', family: 'Foundation', mode: 'light', data: this.themeStudioPresetProfile('foundation-light') },
                 { key: 'foundation-dark', name: 'Foundation Dark', family: 'Foundation', mode: 'dark', data: this.themeStudioPresetProfile('foundation-dark') },
-                { key: 'glass-light', name: 'Glass Light', family: 'Glass', mode: 'light', data: this.themeStudioPresetProfile('glass-light') }
+                { key: 'glass-light', name: 'Glass Light', family: 'Glass', mode: 'light', data: this.themeStudioPresetProfile('glass-light') },
+                { key: 'glass-dark', name: 'Glass Dark', family: 'Glass', mode: 'dark', data: this.themeStudioPresetProfile('glass-dark') },
+                { key: 'contrast-light', name: 'Contrast Light', family: 'Contrast', mode: 'light', data: this.themeStudioPresetProfile('contrast-light') },
+                { key: 'contrast-dark', name: 'Contrast Dark', family: 'Contrast', mode: 'dark', data: this.themeStudioPresetProfile('contrast-dark') }
               ],
               profileKey: 'foundation-light', profile: this.appliedThemeProfile ? window.MIOOSState.deepClone(this.appliedThemeProfile) : this.themeStudioPresetProfile('foundation-light'), exportText: ''
             };
@@ -1041,8 +1100,8 @@
         themeStudioPreviewWallpaper: function (profile) { profile = profile || {}; if (profile.wallpaperPreset === 'custom-url' && profile.wallpaperUrl) return 'url(' + profile.wallpaperUrl + ')'; if (profile.wallpaperPreset === 'aurora') return 'linear-gradient(180deg, #183b66 0%, #365d93 42%, #87a6cf 100%)'; if (profile.wallpaperPreset === 'solid-blue') return '#245edb'; if (profile.wallpaperPreset === 'solid-graphite') return '#5f6773'; return 'linear-gradient(180deg, #8ac04c 0%, #74b94b 38%, #5ea140 100%)'; },
         themeStudioPreviewDesktopStyle: function (win) { var profile = this.ensureThemeStudioState(win).profile; var bg = this.themeStudioPreviewWallpaper(profile); return { background: bg.indexOf('url(') === 0 ? profile.desktopColor : bg, backgroundImage: bg.indexOf('url(') === 0 ? bg : '', backgroundSize: profile.wallpaperFit === 'tile' ? '240px auto' : (profile.wallpaperFit || 'cover'), backgroundRepeat: profile.wallpaperFit === 'tile' ? 'repeat' : 'no-repeat', color: (profile.colors || {}).iconText || '#ffffff' }; },
         themeStudioPreviewWindowStyle: function (win) { var p = this.ensureThemeStudioState(win).profile; return { background: (p.colors || {}).panel || '#ffffff', color: (p.colors || {}).panelText || '#132136', borderColor: (p.colors || {}).border || '#4e79c7', borderWidth: ((p.metrics || {}).windowBorder || 1) + 'px', borderStyle: 'solid', borderRadius: ((p.metrics || {}).windowRadius || 8) + 'px', boxShadow: '0 ' + (((p.metrics || {}).shadowDepth || 18)) + 'px ' + ((((p.metrics || {}).shadowDepth || 18) * 2)) + 'px rgba(0,0,0,0.22)', fontFamily: ((p.fonts || {}).ui || 'Tahoma, sans-serif'), fontSize: (((p.fonts || {}).baseSize || 13)) + 'px' }; },
-        themeStudioPreviewTitlebarStyle: function (win) { var p = this.ensureThemeStudioState(win).profile; return { background: (p.colors || {}).titlebar || '#2b5bc7', color: '#ffffff', fontSize: (((p.fonts || {}).titleSize || 13)) + 'px' }; },
-        themeStudioPreviewTaskbarStyle: function (win) { var p = this.ensureThemeStudioState(win).profile; return { background: (p.colors || {}).taskbar || '#245edb', height: (((p.metrics || {}).taskbarHeight || 40)) + 'px' }; },
+        themeStudioPreviewTitlebarStyle: function (win) { var p = this.ensureThemeStudioState(win).profile; return { background: (p.colors || {}).titlebar || '#2b5bc7', color: (p.colors || {}).titleText || '#ffffff', fontSize: (((p.fonts || {}).titleSize || 13)) + 'px' }; },
+        themeStudioPreviewTaskbarStyle: function (win) { var p = this.ensureThemeStudioState(win).profile; return { background: (p.colors || {}).taskbar || '#245edb', color: (p.colors || {}).taskbarText || '#ffffff', height: (((p.metrics || {}).taskbarHeight || 40)) + 'px' }; },
         terminalStatusText: function (win) {
           if (Terminal && typeof Terminal.terminalStatusText === 'function') {
             return Terminal.terminalStatusText.call(this, win);

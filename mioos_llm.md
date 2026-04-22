@@ -356,3 +356,9 @@ Current scope:
 Remaining waves stay the same:
 - Wave 2: launcher, taskbar, menus, dialogs, transfers
 - Wave 3: theme system 2.0, built-in app cleanup, persistence, accessibility polish
+
+ROI 52 — theme system 2.0 and unified shell surfaces
+- Added boot-advertised theme system metadata, density options, and shell surface declarations.
+- Added quick shell theme and density switching in the launcher plus new Glass Dark / Contrast Light / Contrast Dark presets.
+- Normalized Explorer, Transfers, and Theme Studio onto shared shell-surface styling so built-in apps follow one desktop contract.
+- Added batch transfer controls for pause, resume, and cancel-active flows, while keeping transfer persistence intact.

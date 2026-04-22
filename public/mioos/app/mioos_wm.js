@@ -254,6 +254,8 @@
         this.focusWindow(windowId);
       },
       toggleMenu: function () {
+        if (this.shellUi) this.shellUi.trayOpen = false;
+        this.closeDesktopContextMenu();
         this.menuOpen = !this.menuOpen;
       },
       windowClass: function (win) {

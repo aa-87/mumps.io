@@ -162,6 +162,11 @@ button, input { font: inherit; }
   font-weight: 700;
 }
 
+.mioos-shell-quickthemes { display: grid; gap: 6px; }
+.mioos-shell-chipset { display: flex; flex-wrap: wrap; gap: 6px; }
+.mioos-shell-chip { border: 1px solid rgba(255,255,255,0.45); background: rgba(255,255,255,0.12); color: inherit; border-radius: 999px; padding: 6px 10px; }
+.mioos-shell-chip.is-current { background: rgba(255,255,255,0.32); border-color: rgba(255,255,255,0.92); font-weight: 700; }
+
 .mioos-desktop {
   position: absolute;
   inset: 0 0 var(--mioos-taskbar-height) 0;
@@ -490,6 +495,11 @@ button, input { font: inherit; }
 .mioos-terminal-viewport { flex: 1; min-height: 260px; padding: 12px 14px 14px; }
 .mioos-terminal-viewport .xterm { height: 100%; }
 
+.mioos-shell-surface { height: 100%; display: flex; flex-direction: column; min-height: 0; color: var(--mioos-text); background: linear-gradient(180deg, color-mix(in srgb, var(--mioos-panel-2) 90%, #ffffff 10%) 0%, var(--mioos-panel) 100%); }
+.mioos-shell-surface fieldset { border: 1px solid color-mix(in srgb, var(--mioos-border) 78%, transparent 22%); border-radius: 12px; background: color-mix(in srgb, var(--mioos-panel-2) 90%, transparent 10%); }
+.mioos-shell-surface legend { padding: 0 6px; color: var(--mioos-muted); }
+.mioos-shell-surface--studio, .mioos-shell-surface--transfers, .mioos-shell-surface--explorer { color: var(--mioos-text); }
+
 .mioos-explorer-shell { display:flex; flex-direction:column; gap:0; height:100%; min-height:0; background:linear-gradient(180deg,#f7fbff 0%,#edf4ff 100%); }
 .mioos-explorer-shell--foundation { color:#12345a; }
 .mioos-explorer-appframe { display:flex; flex-direction:column; flex:1; min-height:0; border:1px solid #7f9db9; background:#ffffff; box-shadow: inset 0 1px 0 rgba(255,255,255,.85); }
@@ -613,8 +623,7 @@ button, input { font: inherit; }
 .mioos-explorer-searchtoggle{display:inline-flex;align-items:center;gap:4px;font-size:12px;color:#27405f}
 .mioos-explorer-details{display:flex;flex-direction:column;gap:6px;margin-top:12px;padding-top:10px;border-top:1px solid rgba(19,48,99,.12);font-size:12px;color:#27405f;word-break:break-word}
 
-.mioos-theme-studio-shell { height: 100%; }
-.mioos-theme-studio-shell.win7 { color: #1c2432; }
+.mioos-theme-studio-shell { height: 100%; color: var(--mioos-text); }
 .mioos-theme-studio-seven.window,
 .mioos-theme-studio-seven .window { width: 100%; max-width: none; }
 .mioos-theme-studio-body { height: 100%; padding: 10px; background: linear-gradient(180deg, #f7fafd 0%, #edf3fb 100%); }
@@ -1092,3 +1101,58 @@ button, input { font: inherit; }
 .mioos-auth-head { margin-top: 18px; }
 .mioos-auth-actions { margin-bottom: 20px; }
 .mioos-auth-field input { border-radius: 10px; min-height: 36px; background: var(--mioos-panel); color: var(--mioos-text); }
+
+.mioos-root[data-theme-key="glass-light"] {
+  --mioos-taskbar: rgba(221, 231, 243, 0.86);
+  --mioos-taskbar-dark: rgba(193, 209, 228, 0.92);
+  --mioos-border: rgba(133, 153, 181, 0.62);
+  --mioos-panel: rgba(255,255,255,0.78);
+  --mioos-panel-2: rgba(250,252,255,0.92);
+  --mioos-text: #182334;
+  --mioos-muted: #4b596f;
+  --mioos-titlebar: rgba(220,229,240,0.94);
+  --mioos-titlebar-inactive: rgba(196,210,227,0.9);
+  --mioos-titlebar-text: #182334;
+  --mioos-taskbar-text: #182334;
+  --mioos-icon-text: #f8fbff;
+  --mioos-desktop-background: radial-gradient(circle at 18% 18%, rgba(255,255,255,0.42), transparent 24%), linear-gradient(180deg, #7d91a7 0%, #62748d 44%, #3c4a5d 100%);
+  --mioos-body-background: linear-gradient(180deg, #8898aa 0%, #49596d 100%);
+}
+.mioos-root[data-theme-key="contrast-light"] {
+  --mioos-taskbar: #ffffff;
+  --mioos-taskbar-dark: #d9dee6;
+  --mioos-border: #1f2937;
+  --mioos-panel: #ffffff;
+  --mioos-panel-2: #ffffff;
+  --mioos-text: #111827;
+  --mioos-muted: #374151;
+  --mioos-focus: #1142aa;
+  --mioos-titlebar: #ffffff;
+  --mioos-titlebar-inactive: #d9dee6;
+  --mioos-titlebar-text: #111827;
+  --mioos-taskbar-text: #111827;
+  --mioos-desktop-background: linear-gradient(180deg, #b7bec8 0%, #8f98a3 100%);
+  --mioos-body-background: linear-gradient(180deg, #c8ced7 0%, #8f98a3 100%);
+}
+.mioos-root[data-theme-key="contrast-dark"] {
+  --mioos-taskbar: #0b1017;
+  --mioos-taskbar-dark: #05080c;
+  --mioos-border: #ffd043;
+  --mioos-panel: #10161f;
+  --mioos-panel-2: #151d28;
+  --mioos-text: #f8fafc;
+  --mioos-muted: #d4dae3;
+  --mioos-focus: #ffd043;
+  --mioos-titlebar: #0b1017;
+  --mioos-titlebar-inactive: #1a2430;
+  --mioos-titlebar-text: #f8fafc;
+  --mioos-taskbar-text: #f8fafc;
+  --mioos-desktop-background: linear-gradient(180deg, #182230 0%, #070a10 100%);
+  --mioos-body-background: linear-gradient(180deg, #111827 0%, #05080c 100%);
+}
+.mioos-root.mioos-density-compact { --mioos-taskbar-height: 40px; --mioos-base-size: 12px; --mioos-title-size: 12px; }
+.mioos-root.mioos-density-compact .mioos-window-body { padding: 10px; }
+.mioos-root.mioos-density-compact .mioos-desktop-icon { width: 78px; min-height: 72px; }
+.mioos-root.mioos-density-spacious { --mioos-taskbar-height: 52px; --mioos-base-size: 14px; --mioos-title-size: 14px; }
+.mioos-root.mioos-density-spacious .mioos-window-body { padding: 18px; }
+.mioos-root.mioos-density-spacious .mioos-desktop-icon { width: 96px; min-height: 92px; }

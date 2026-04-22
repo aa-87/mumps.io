@@ -219,3 +219,9 @@ Wave 1 focuses on the shell foundation only:
 - dynamic window creation fallback
 - draggable sign-in surface
 - corrected desktop icon scale and positioning
+
+ROI 52 — theme system 2.0 and unified shell surfaces
+- Added boot-advertised theme system metadata, density options, and shell surface declarations.
+- Added quick shell theme and density switching in the launcher plus new Glass Dark / Contrast Light / Contrast Dark presets.
+- Normalized Explorer, Transfers, and Theme Studio onto shared shell-surface styling so built-in apps follow one desktop contract.
+- Added batch transfer controls for pause, resume, and cancel-active flows, while keeping transfer persistence intact.

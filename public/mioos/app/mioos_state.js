@@ -42,15 +42,15 @@
         commandErrorEvent: 'desktop.error'
       },
       desktop: {
-        themeKey: 'xp-classic-blue',
-        wallpaper: 'bliss',
+        themeKey: 'foundation-light',
+        wallpaper: 'aurora',
         density: 'comfortable',
         fontFamily: 'Segoe UI',
         fontSize: 13,
         launcherLabel: 'Menu',
-        shellChrome: 'winxp-professional',
-        taskbarStyle: 'xp-professional',
-        startMenuStyle: 'xp-two-column',
+        shellChrome: 'shell-foundation',
+        taskbarStyle: 'taskbar-foundation',
+        startMenuStyle: 'launcher-foundation',
         windowManager: 'mioos-native-vue-css',
         commandTransport: 'websocket-only',
         realtimeContract: 'core-websocket-plus-app-websockets',
@@ -100,7 +100,17 @@
           snapModel: 'edges-and-corners',
           doubleClickTitlebar: 1,
           dropUpload: 1
-        }
+        },
+        themeSystem: { version: 2, editor: 'theme-studio', persistence: 'localstorage-applied-profile', liveApply: true, quickSwitch: true, densityOptions: ['compact', 'comfortable', 'spacious'] },
+        shellSurfaces: { explorer: true, themeStudio: true, transfers: true, diagnostics: true, securityCenter: true, appCatalog: true, debugCenter: true },
+        themes: [
+          { key: 'foundation-light', title: 'Foundation Light', family: 'Foundation', mode: 'light', wallpaper: 'aurora', accent: '#2f6fed', taskbar: '#e8eef8' },
+          { key: 'foundation-dark', title: 'Foundation Dark', family: 'Foundation', mode: 'dark', wallpaper: 'aurora-night', accent: '#7db4ff', taskbar: '#111a28' },
+          { key: 'glass-light', title: 'Glass Light', family: 'Glass', mode: 'light', wallpaper: 'aurora', accent: '#4687ff', taskbar: '#dce7f7' },
+          { key: 'glass-dark', title: 'Glass Dark', family: 'Glass', mode: 'dark', wallpaper: 'aurora-night', accent: '#8ac5ff', taskbar: '#0f1724' },
+          { key: 'contrast-light', title: 'Contrast Light', family: 'Contrast', mode: 'light', wallpaper: 'solid-graphite', accent: '#1142aa', taskbar: '#ffffff' },
+          { key: 'contrast-dark', title: 'Contrast Dark', family: 'Contrast', mode: 'dark', wallpaper: 'solid-graphite', accent: '#ffd043', taskbar: '#0b1017' }
+        ]
       },
       auth: { enabled: true, required: true, guestLoginEnabled: false, mode: 'local-session-required', unauthenticatedAccessAllowed: false, providers: { local: { enabled: true, loginMode: 'username-password', guestAllowed: false }, framework: { enabled: true, mode: 'mioauth-session-jwt', tokenType: 'jwt', sessionCookie: 'mioos_auth' } }, lockout: { threshold: 5, minutes: 15 }, passwordPolicy: { minLength: 12, requireUpper: true, requireLower: true, requireDigit: true, requireSymbol: true, maxAgeDays: 90, warnDays: 14, changeTokenMinutes: 15 }, audit: { enabled: true, retainDays: 365, reportLimit: 20, reportWindowDays: 30, scope: 'self' }, management: { sessionAdminEnabled: true, accountAdminEnabled: true, sessionLimit: 20, accountLimit: 20, adminRole: 'admin' } },
       explorer: { currentFolderId: 'root', quickPlaces: [], preview: { enabled: true, mime: 'text/plain' } },
@@ -149,9 +159,9 @@
   function defaultView() {
     return {
       summary: {
-        headline: 'Production shell foundation',
+        headline: 'Production shell workspace',
         subheadline: '',
-        theme: 'xp-classic-blue',
+        theme: 'foundation-light',
         launcherLabel: 'Menu',
         windowManager: 'mioos-native-vue-css',
         authMode: 'anonymous',
@@ -191,6 +201,9 @@
     base.desktop.moduleSystem = Object.assign(base.desktop.moduleSystem, (boot.desktop || {}).moduleSystem || {});
     base.desktop.debugCenter = Object.assign(base.desktop.debugCenter || {}, (boot.desktop || {}).debugCenter || {});
     base.desktop.windowing = Object.assign(base.desktop.windowing, (boot.desktop || {}).windowing || {});
+    base.desktop.themeSystem = Object.assign({}, (defaultBoot().desktop.themeSystem || {}), base.desktop.themeSystem || {}, (boot.desktop || {}).themeSystem || {});
+    base.desktop.shellSurfaces = Object.assign({}, (defaultBoot().desktop.shellSurfaces || {}), base.desktop.shellSurfaces || {}, (boot.desktop || {}).shellSurfaces || {});
+    base.desktop.themes = Array.isArray((boot.desktop || {}).themes) && (boot.desktop || {}).themes.length ? deepClone((boot.desktop || {}).themes) : deepClone(defaultBoot().desktop.themes || []);
     base.auth = Object.assign(base.auth, boot.auth || {});
     base.auth.providers = Object.assign({}, (defaultBoot().auth.providers || {}), base.auth.providers || {}, (boot.auth || {}).providers || {});
     base.auth.providers.local = Object.assign({}, (defaultBoot().auth.providers || {}).local || {}, ((base.auth || {}).providers || {}).local || {}, (((boot.auth || {}).providers || {}).local || {}));
