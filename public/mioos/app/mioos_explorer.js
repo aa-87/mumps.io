@@ -279,9 +279,9 @@
   function socketPoolConfig(vm) {
     var conf = (vm.boot || {}).websocket || {};
     return {
-      maxSocketsPerSession: Math.max(1, +(conf.maxSocketsPerSession || 6)),
+      maxSocketsPerSession: Math.max(1, +(conf.maxSocketsPerSession || conf.maxSocketsSession || 6)),
       fsSockets: Math.max(1, +(conf.fsSockets || 3)),
-      uploadBatchSize: Math.max(1, Math.min(2, +(conf.uploadBatchSize || 1)))
+      uploadBatchSize: Math.max(1, Math.min(8, +(conf.uploadBatchSize || conf.batchFlushThreshold || 1)))
     };
   }
 
@@ -338,7 +338,7 @@
             pending[requestId] = { resolve: function (msg) { window.clearTimeout(timer); if (vm.setSocketTelemetry) vm.setSocketTelemetry(socketId, { pendingCount: Math.max(0, Object.keys(pending || {}).length - 1), lastMessageAt: Date.now(), lastEvent: command }); resolve(msg); }, reject: function (err) { window.clearTimeout(timer); if (vm.setSocketTelemetry) vm.setSocketTelemetry(socketId, { pendingCount: Math.max(0, Object.keys(pending || {}).length - 1), lastMessageAt: Date.now(), lastError: (err && err.message) || 'worker_reject', lastEvent: 'reject' }); reject(err); } };
             try {
               if (vm.setSocketTelemetry) vm.setSocketTelemetry(socketId, { pendingCount: Object.keys(pending || {}).length, lastEvent: command });
-              ws.send(JSON.stringify(Object.assign({ event: 'desktop.command', command: command, requestId: requestId }, payload || {})));
+              ws.send(JSON.stringify(Object.assign({ event: 'desktop.command', command: command, requestId: requestId, socketId: socketId, socketRole: 'fs', socketOrdinal: ordinal }, payload || {})));
             } catch (err) {
               delete pending[requestId];
               window.clearTimeout(timer);
@@ -358,7 +358,7 @@
       ws.addEventListener('open', function () {
         client.ready = true;
         if (vm.setSocketTelemetry) vm.setSocketTelemetry(socketId, { state: 'open', openedAt: Date.now(), lastEvent: 'open', lastError: '' });
-        try { ws.send(JSON.stringify({ event: 'hello', role: 'fs', socketOrdinal: ordinal })); } catch (err) {}
+        try { ws.send(JSON.stringify({ event: 'hello', role: 'fs', socketRole: 'fs', socketId: socketId, socketOrdinal: ordinal })); } catch (err) {}
         window.setTimeout(function () {
           if (settled || client.helloReady) return;
           settled = true;

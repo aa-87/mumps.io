@@ -157,3 +157,8 @@ ROI 53 — shell-standard dialogs, notifications, and built-in app cleanup
 
 ## ROI 54 — app actions
 Transfer Center, Diagnostics, Security Center, Debug Center, App Catalog, and module windows now use shared shell confirmations and toast feedback for copy, clear, revoke, unlock, and history-cleanup actions.
+
+
+## ROI 55 — websocket batch uploads and socket-pool observability
+- The Diagnostics window now shows both client socket telemetry and the server-side socket registry for the current session.
+- Parallel uploads can batch websocket chunks when the server advertises batching support, while still falling back safely if a worker or batch send fails.

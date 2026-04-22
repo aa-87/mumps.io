@@ -11,6 +11,14 @@
     });
   }
 
+  function coreSocketDescriptor(vm) {
+    return {
+      socketId: 'core-1',
+      socketRole: 'core',
+      socketOrdinal: 1
+    };
+  }
+
   window.MIOOSWSClient = {
     methods: {
       initSocket: function () {
@@ -48,10 +56,10 @@
           sock.addEventListener('open', function () {
             self.socketConnected = true;
             if (self.setSocketTelemetry) self.setSocketTelemetry(socketId, { state: 'open', openedAt: Date.now(), lastEvent: 'open', lastError: '' });
-            try { sock.send(JSON.stringify({ event: 'hello' })); } catch (err) {}
+            try { sock.send(JSON.stringify(Object.assign({ event: 'hello' }, coreSocketDescriptor(self)))); } catch (err) {}
             if (self.pingTimer) window.clearInterval(self.pingTimer);
             self.pingTimer = window.setInterval(function () {
-              self.sendSocket({ event: 'ping' });
+              self.sendSocket(Object.assign({ event: 'ping' }, coreSocketDescriptor(self)));
             }, 15000);
             if (!settled) {
               settled = true;
@@ -170,7 +178,7 @@
               self.socketPending[requestId] = pending;
               if (self.setSocketTelemetry) self.setSocketTelemetry('core-1', { pendingCount: Object.keys(self.socketPending || {}).length, lastEvent: 'request:' + (opts.command || eventName || 'socket') });
               if (self.pushDebugEvent) self.pushDebugEvent('socket.request', opts.command || eventName || 'socket.request', JSON.stringify(payload || {}), { requestId: requestId, source: 'core' });
-              if (!self.sendSocket(Object.assign({}, payload || {}, {
+              if (!self.sendSocket(Object.assign({}, coreSocketDescriptor(self), payload || {}, {
                 event: eventName,
                 requestId: requestId
               }))) {
@@ -195,7 +203,7 @@
       },
       sendCommand: function (command, payload) {
         var requestId = 'cmd-' + (++this.commandSeq);
-        var body = Object.assign({}, payload || {}, {
+        var body = Object.assign({}, coreSocketDescriptor(this), payload || {}, {
           event: (this.boot.routes || {}).commandEvent || 'desktop.command',
           requestId: requestId,
           command: command

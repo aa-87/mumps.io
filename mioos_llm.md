@@ -379,3 +379,9 @@ ROI 54 — shell-standard app actions and built-in app polish
 - Added boot-advertised app action metadata for confirm-before-destructive, admin notifications, clipboard exports, and session-local module notes.
 - Standardized built-in app action bars for Transfer Center, Transport Diagnostics, Security Center, Debug Center, App Catalog, and module windows.
 - Added shell copy/export/clear actions with confirmations and toast feedback across diagnostics, security, debug, catalog, transfers, and module notes.
+
+
+## ROI 55 — websocket batch uploads and socket-pool observability
+- Added real `fs.upload.batch` websocket command handling so Explorer upload workers can batch chunks instead of always falling back to single-chunk sends.
+- Added server-side session socket registration, stale-socket purging, and transport-health reporting for active core and FS sockets.
+- Boot, hello, and diagnostics metadata now advertise socket caps, core/FS socket quotas, upload batch size, and batch flush thresholds so the browser and diagnostics window share one transport contract.

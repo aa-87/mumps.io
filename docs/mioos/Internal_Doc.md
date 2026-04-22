@@ -257,3 +257,8 @@ ROI 53 — shell-standard dialogs, notifications, and built-in app cleanup
 
 ## ROI 54 — shell-standard app action model
 Boot metadata now advertises desktop.appSurfaceModel, desktop.appActions, and desktop.shellSurfaces.moduleWindows so client actions remain aligned with server-authored shell capabilities.
+
+
+## ROI 55 — websocket batch uploads and socket-pool observability
+- `MIOOSWS` now exposes `fs.upload.batch` and records session-scoped socket activity under `^MIO("MIOOS","WS","SESSION",sessionId,...)` for diagnostics and bounded-pool introspection.
+- `transport.health` now reports socket-pool counts, stale-purge results, upload batching limits, and per-socket server registry rows for the current session.

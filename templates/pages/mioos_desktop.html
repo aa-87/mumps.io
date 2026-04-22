@@ -470,7 +470,21 @@
                     <div><dt>Heartbeat</dt><dd>[[ (((transportReport().websocket || {}).heartbeatSeconds) || ((boot.websocket || {}).heartbeatSeconds) || 0) ]]s</dd></div>
                     <div><dt>Resume window</dt><dd>[[ (((transportReport().websocket || {}).resumeWindowSeconds) || ((boot.websocket || {}).resumeWindowSeconds) || 0) ]]s</dd></div>
                     <div><dt>Inflight / channel</dt><dd>[[ (((transportReport().websocket || {}).maxInflightPerChannel) || ((boot.websocket || {}).maxInflightPerChannel) || 0) ]]</dd></div>
+                    <div><dt>Socket cap</dt><dd>[[ (((transportReport().websocket || {}).maxSocketsPerSession) || ((boot.websocket || {}).maxSocketsPerSession) || 0) ]]</dd></div>
+                    <div><dt>Core / FS sockets</dt><dd>[[ (((transportReport().websocket || {}).coreSockets) || ((boot.websocket || {}).coreSockets) || 0) ]] / [[ (((transportReport().websocket || {}).fsSockets) || ((boot.websocket || {}).fsSockets) || 0) ]]</dd></div>
+                    <div><dt>Batch size</dt><dd>[[ (((transportReport().websocket || {}).uploadBatchSize) || ((boot.websocket || {}).uploadBatchSize) || 0) ]]</dd></div>
+                    <div><dt>Batch flush</dt><dd>[[ (((transportReport().websocket || {}).batchFlushThreshold) || ((boot.websocket || {}).batchFlushThreshold) || 0) ]]</dd></div>
                     <div><dt>Timeout</dt><dd>[[ (((transportReport().websocket || {}).requestTimeoutMs) || ((boot.websocket || {}).requestTimeoutMs) || 0) ]] ms</dd></div>
+                  </dl>
+                </section>
+                <section class="mioos-diagnostics-card">
+                  <h4>Socket pool status</h4>
+                  <dl>
+                    <div><dt>Active sockets</dt><dd>[[ (transportServerPool().activeCount || 0) ]] / [[ (transportServerPool().maxSocketsPerSession || ((boot.websocket || {}).maxSocketsPerSession) || 0) ]]</dd></div>
+                    <div><dt>Capacity remaining</dt><dd>[[ (transportServerPool().capacityRemaining || 0) ]]</dd></div>
+                    <div><dt>Stale purged</dt><dd>[[ (transportServerPool().stalePurged || 0) ]]</dd></div>
+                    <div><dt>Core active</dt><dd>[[ (((transportServerPool().roleCounts || {}).core) || 0) ]]</dd></div>
+                    <div><dt>FS active</dt><dd>[[ (((transportServerPool().roleCounts || {}).fs) || 0) ]]</dd></div>
                   </dl>
                 </section>
                 <section class="mioos-diagnostics-card">
@@ -480,9 +494,26 @@
                     <div><dt>Downloads</dt><dd>[[ (((transportReport().downloads || {}).activeCount) || 0) ]] active</dd></div>
                     <div><dt>Upload bytes</dt><dd>[[ (((transportReport().uploads || {}).receivedBytes) || 0) ]]</dd></div>
                     <div><dt>Download bytes</dt><dd>[[ (((transportReport().downloads || {}).bytes) || 0) ]]</dd></div>
+                    <div><dt>Upload batching</dt><dd>[[ (((transportReport().uploads || {}).batchSize) || ((boot.vfs || {}).uploadBatchSize) || 0) ]] chunks / [[ (((transportReport().uploads || {}).maxInflightChunks) || ((boot.vfs || {}).uploadMaxInflightChunks) || 0) ]] inflight</dd></div>
                     <div><dt>Terminals</dt><dd>[[ (((transportReport().terminal || {}).openCount) || 0) ]] / [[ (((transportReport().terminal || {}).maxSessions) || ((boot.terminal || {}).maxSessionsPerUser) || 0) ]]</dd></div>
                     <div><dt>Diagnostics</dt><dd>[[ (((transportReport().diagnosticsEnabled) || ((boot.websocket || {}).diagnosticsEnabled)) ? 'enabled' : 'disabled') ]]</dd></div>
                   </dl>
+                </section>
+                <section class="mioos-diagnostics-card mioos-diagnostics-card--wide">
+                  <h4>Server socket registry</h4>
+                  <div class="mioos-diagnostics-empty" v-if="!transportServerSocketRows().length">No active server-side socket records.</div>
+                  <div class="mioos-diagnostics-table" v-else>
+                    <div class="mioos-diagnostics-row mioos-diagnostics-row--head">
+                      <strong>Socket</strong><strong>Role</strong><strong>State</strong><strong>Last event</strong><strong>Age</strong>
+                    </div>
+                    <div class="mioos-diagnostics-row" v-for="item in transportServerSocketRows()" :key="'server-' + item.id">
+                      <span>[[ item.label || item.id ]]</span>
+                      <span>[[ item.role || 'core' ]]</span>
+                      <span class="mioos-diagnostics-badge" :class="'is-' + (item.state || 'active')">[[ item.state || 'active' ]]</span>
+                      <span>[[ item.lastEvent || '—' ]]</span>
+                      <span>[[ item.ageSeconds || 0 ]]s</span>
+                    </div>
+                  </div>
                 </section>
                 <section class="mioos-diagnostics-card mioos-diagnostics-card--wide">
                   <h4>Client socket telemetry</h4>

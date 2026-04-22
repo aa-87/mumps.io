@@ -240,3 +240,8 @@ ROI 53 — shell-standard dialogs, notifications, and built-in app cleanup
 
 ## ROI 54 — shell-standard app actions and built-in app polish
 Built-in desktop applications now share one shell action model for confirmations, clipboard exports, destructive actions, and toast feedback.
+
+
+## ROI 55 — websocket batch uploads and socket-pool observability
+- Explorer worker uploads now have a first-class `fs.upload.batch` websocket path with single-chunk fallback retained for safety.
+- Transport diagnostics now include a server-side socket registry summary, socket-cap telemetry, and upload batching settings.

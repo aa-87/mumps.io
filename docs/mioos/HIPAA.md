@@ -141,3 +141,8 @@ ROI 53 — shell-standard dialogs, notifications, and built-in app cleanup
 
 ## ROI 54 — administrative action feedback
 Administrative shell actions such as session revocation, account unlock, audit summary copy, and transfer history cleanup now route through the shared shell confirmation and notification model for clearer operator feedback.
+
+
+## ROI 55 — websocket batch uploads and socket-pool observability
+- Transport diagnostics remain session-scoped and report operational metadata only; they do not expand business-data exposure beyond the authenticated shell session.
+- Session socket telemetry improves operational troubleshooting without changing file-authorization checks, upload ownership checks, or existing audit boundaries.

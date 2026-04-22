@@ -8,9 +8,11 @@ MESSAGE(DEV,CONF,REQ,CTX)
 	. DO SENDTEXT^MIOWS(.DEV,$$ERRJSON(.STATE,"session_error",$GET(ERR("error"),"session_error"),""))
 	SET EVT=$$EVENT($GET(CTX("payload")))
 	IF EVT="hello" DO  QUIT
+	. DO REGPAYL(.STATE,$GET(CTX("payload")))
 	. SET RESP=$$HELLOJSON(.STATE,.CONF)
 	. DO SENDTEXT^MIOWS(.DEV,RESP)
 	IF EVT="ping" DO  QUIT
+	. DO REGPAYL(.STATE,$GET(CTX("payload")))
 	. SET RESP=$$PONGJSON(.STATE)
 	. DO SENDTEXT^MIOWS(.DEV,RESP)
 	IF EVT="view.refresh" DO  QUIT
@@ -26,6 +28,7 @@ MESSAGE(DEV,CONF,REQ,CTX)
 	. . QUIT
 	. DO SENDTEXT^MIOWS(.DEV,$$ACKJSON(.STATE,"shell.open",$$FIELD($GET(CTX("payload")),"appKey")))
 	IF EVT="desktop.command"!(EVT="command.exec") DO  QUIT
+	. DO REGPAYL(.STATE,$GET(CTX("payload")))
 	. IF +$GET(STATE("authRequired"),0)=1,+$GET(STATE("authenticated"),0)'=1 DO  QUIT
 	. . DO SENDTEXT^MIOWS(.DEV,$$CMDERRJSON(.STATE,$$RAWJSONFIELD($GET(CTX("payload")),"requestId"),$$RAWJSONFIELD($GET(CTX("payload")),"command"),401,"login_required",$$RAWJSONFIELD($GET(CTX("payload")),"command")))
 	. IF $$COMMANDJSON(.CONF,.REQ,.CTX,.STATE,$GET(CTX("payload")),.RESP,.ERR) DO  IF 1
@@ -60,6 +63,7 @@ COMMANDJSON(CONF,REQ,CTX,STATE,PAYLOAD,OUTJSON,ERR)
 	IF CMD="fs.write" QUIT $$FSWRITE(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="fs.upload.begin" QUIT $$FSUPBEGIN(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="fs.upload.chunk" QUIT $$FSUPCHUNK(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
+	IF CMD="fs.upload.batch" QUIT $$FSUPBATCH(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="fs.upload.commit" QUIT $$FSUPCOMMIT(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="fs.upload.abort" QUIT $$FSUPABORT(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="fs.mkdir" QUIT $$FSMKDIR(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
@@ -172,6 +176,14 @@ FSUPCHUNK(STATE,CONF,TREE,OUTJSON,ERR)
 	NEW OUT
 	IF '$$CHUNK^MIOOSFSUP(.STATE,.CONF,$GET(TREE("uploadId")),+$GET(TREE("index")),$GET(TREE("data")),+$GET(TREE("bytes")),.OUT,.ERR) QUIT 0
 	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"fs.upload.chunk","vfs",.OUT)
+	QUIT 1
+	;
+FSUPBATCH(STATE,CONF,TREE,OUTJSON,ERR)
+	NEW OUT,CHROOT
+	SET CHROOT=$NAME(TREE("chunks"))
+	IF '$DATA(@CHROOT@(1)) SET ERR("error")="upload_batch_missing" QUIT 0
+	IF '$$BATCH^MIOOSFSUP(.STATE,.CONF,$GET(TREE("uploadId")),CHROOT,.OUT,.ERR) QUIT 0
+	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"fs.upload.batch","vfs",.OUT)
 	QUIT 1
 	;
 	;
@@ -342,6 +354,75 @@ COUNTARY(NAME,STATE)
 	FOR  SET I=$ORDER(STATE(NAME,I)) QUIT:I'>0  SET N=N+1
 	QUIT N
 	;
+REGPAYL(STATE,PAYLOAD)
+	NEW TREE,ERR,EVT
+	IF $EXTRACT($GET(PAYLOAD),1)'="{" QUIT
+	IF '$$DECODE^MIOJSON($GET(PAYLOAD),.TREE,.ERR) QUIT
+	SET EVT=$GET(TREE("event"))
+	IF EVT="" SET EVT="message"
+	DO TOUCHSOCK(.STATE,.TREE,EVT)
+	QUIT
+	;
+TOUCHSOCK(STATE,TREE,EVT)
+	NEW SID,ROLE,ORD,SOCKETID,NOW,ROOT,LABEL
+	SET SID=$GET(STATE("sessionId")) IF SID="" QUIT
+	SET ROLE=$SELECT($GET(TREE("socketRole"))'="":$GET(TREE("socketRole")),$GET(TREE("role"))'="":$GET(TREE("role")),1:"core")
+	SET ORD=+$GET(TREE("socketOrdinal")) IF ORD<1 SET ORD=1
+	SET SOCKETID=$GET(TREE("socketId"))
+	IF SOCKETID="" SET SOCKETID=ROLE_"-"_ORD
+	SET NOW=$$NOW^MIOOSFSUP()
+	SET LABEL=$SELECT(ROLE="fs":"FS Worker "_ORD,ROLE="core":"Core Socket",ROLE="terminal":"Terminal Socket "_ORD,1:ROLE_" Socket "_ORD)
+	SET ROOT=$NAME(^MIO("MIOOS","WS","SESSION",SID,"SOCKETS",SOCKETID))
+	SET @ROOT@("socketId")=SOCKETID
+	SET @ROOT@("role")=ROLE
+	SET @ROOT@("ordinal")=ORD
+	SET @ROOT@("label")=LABEL
+	IF $GET(@ROOT@("firstSeen"))="" SET @ROOT@("firstSeen")=NOW
+	IF $GET(EVT)="hello" SET @ROOT@("helloAt")=NOW
+	SET @ROOT@("lastSeen")=NOW
+	SET @ROOT@("lastEvent")=$SELECT($GET(TREE("command"))'="":$GET(TREE("command")),1:$GET(EVT))
+	SET @ROOT@("state")=$SELECT($GET(EVT)="hello":"ready",$GET(EVT)="ping":"open",1:"active")
+	SET @ROOT@("principal")=$GET(STATE("principal"),"guest")
+	SET @ROOT@("profile")=$GET(STATE("profile"),"dev")
+	SET ^MIO("MIOOS","WS","SESSION",SID,"updatedAt")=NOW
+	SET ^MIO("MIOOS","WS","SESSION",SID,"principal")=$GET(STATE("principal"),"guest")
+	QUIT
+	;
+SOCKPURGE(STATE)
+	NEW SID,ROOT,SOCKETID,NOW,TTL,LAST,COUNT
+	SET SID=$GET(STATE("sessionId")) IF SID="" QUIT 0
+	SET ROOT=$NAME(^MIO("MIOOS","WS","SESSION",SID,"SOCKETS"))
+	SET NOW=$$NOW^MIOOSFSUP(),TTL=+$GET(STATE("wsResumeWindowSeconds"),180)
+	IF TTL<30 SET TTL=30
+	SET TTL=TTL*2
+	SET (COUNT,SOCKETID)=0
+	FOR  SET SOCKETID=$ORDER(@ROOT@(SOCKETID)) QUIT:SOCKETID=""  DO
+	. SET LAST=$GET(@ROOT@(SOCKETID,"lastSeen"))
+	. IF LAST="" SET LAST=$GET(@ROOT@(SOCKETID,"firstSeen"))
+	. IF $$SECSDIFF^MIOOSFSUP(LAST,NOW)>TTL KILL @ROOT@(SOCKETID) SET COUNT=COUNT+1
+	QUIT COUNT
+	;
+SOCKSUM(STATE,OUT)
+	NEW SID,ROOT,SOCKETID,IDX,ROLE
+	SET SID=$GET(STATE("sessionId")) IF SID="" QUIT
+	SET ROOT=$NAME(^MIO("MIOOS","WS","SESSION",SID,"SOCKETS"))
+	SET OUT("socketPool","activeCount")=0
+	SET (SOCKETID,IDX)=""
+	SET IDX=0
+	FOR  SET SOCKETID=$ORDER(@ROOT@(SOCKETID)) QUIT:SOCKETID=""  DO
+	. SET IDX=IDX+1
+	. SET ROLE=$GET(@ROOT@(SOCKETID,"role"),"core")
+	. SET OUT("socketPool","activeCount")=+$GET(OUT("socketPool","activeCount"))+1
+	. SET OUT("socketPool","roleCounts",ROLE)=+$GET(OUT("socketPool","roleCounts",ROLE))+1
+	. SET OUT("socketPool","sockets",IDX,"id")=SOCKETID
+	. SET OUT("socketPool","sockets",IDX,"label")=$GET(@ROOT@(SOCKETID,"label"),SOCKETID)
+	. SET OUT("socketPool","sockets",IDX,"role")=ROLE
+	. SET OUT("socketPool","sockets",IDX,"ordinal")=+$GET(@ROOT@(SOCKETID,"ordinal"),1)
+	. SET OUT("socketPool","sockets",IDX,"state")=$GET(@ROOT@(SOCKETID,"state"),"active")
+	. SET OUT("socketPool","sockets",IDX,"lastEvent")=$GET(@ROOT@(SOCKETID,"lastEvent"))
+	. SET OUT("socketPool","sockets",IDX,"ageSeconds")=$$SECSDIFF^MIOOSFSUP($GET(@ROOT@(SOCKETID,"lastSeen")),$$NOW^MIOOSFSUP())
+	QUIT
+	;
 TRANHEALTH(STATE,CONF,TREE,OUTJSON,ERR)
 	NEW OUT
 	IF '$$HEALTH(.STATE,.CONF,.OUT,.ERR) QUIT 0
@@ -362,6 +443,12 @@ HEALTH(STATE,CONF,OUT,ERR)
 	SET OUT("websocket","heartbeatSeconds")=+$GET(STATE("wsHeartbeatSeconds"),15)
 	SET OUT("websocket","resumeWindowSeconds")=+$GET(STATE("wsResumeWindowSeconds"),180)
 	SET OUT("websocket","maxInflightPerChannel")=+$GET(STATE("wsMaxInflightPerChannel"),4)
+	SET OUT("websocket","maxSocketsPerSession")=+$GET(STATE("wsMaxSockets"),1)
+	SET OUT("websocket","coreSockets")=+$GET(STATE("wsCoreSockets"),1)
+	SET OUT("websocket","fsSockets")=+$GET(STATE("wsFsSockets"),1)
+	SET OUT("websocket","uploadBatchSize")=+$GET(STATE("uploadBatchSize"),1)
+	SET OUT("websocket","uploadMaxInflightChunks")=+$GET(STATE("uploadMaxInflightChunks"),+$GET(STATE("uploadBatchSize"),1))
+	SET OUT("websocket","batchFlushThreshold")=+$GET(STATE("uploadBatchFlushThreshold"),+$GET(STATE("uploadBatchSize"),1))
 	SET OUT("websocket","requestTimeoutMs")=+$GET(STATE("wsRequestTimeoutMs"),15000)
 	SET OUT("websocket","maxFrameBytes")=+$GET(STATE("wsMaxFrameBytes"),262144)
 	SET OUT("websocket","maxMessageBytes")=+$GET(STATE("wsMaxMessageBytes"),1048576)
@@ -371,7 +458,12 @@ HEALTH(STATE,CONF,OUT,ERR)
 	SET OUT("vfs","downloadStaleSeconds")=+$GET(STATE("downloadStaleSeconds"),900)
 	SET OUT("vfs","uploadConcurrency")=$$UPCONCUR^MIOOSFSUP(.CONF)
 	SET OUT("vfs","uploadChunkBytes")=$$UPCHUNK^MIOOSFSUP(.CONF)
+	SET OUT("vfs","uploadBatchSize")=+$GET(STATE("uploadBatchSize"),1)
+	SET OUT("vfs","uploadMaxInflightChunks")=+$GET(STATE("uploadMaxInflightChunks"),+$GET(STATE("uploadBatchSize"),1))
+	SET OUT("vfs","batchFlushThreshold")=+$GET(STATE("uploadBatchFlushThreshold"),+$GET(STATE("uploadBatchSize"),1))
 	SET (OUT("uploads","activeCount"),OUT("uploads","receivedBytes"),OUT("uploads","declaredBytes"))=0
+	SET OUT("uploads","batchSize")=+$GET(STATE("uploadBatchSize"),1)
+	SET OUT("uploads","maxInflightChunks")=+$GET(STATE("uploadMaxInflightChunks"),+$GET(STATE("uploadBatchSize"),1))
 	SET UPID=""
 	FOR  SET UPID=$ORDER(^MIO("MIOOS","UPLOAD","META",UPID)) QUIT:UPID=""  DO
 	. SET META=$GET(^MIO("MIOOS","UPLOAD","META",UPID))
@@ -381,10 +473,17 @@ HEALTH(STATE,CONF,OUT,ERR)
 	. SET OUT("uploads","receivedBytes")=OUT("uploads","receivedBytes")+$GET(^MIO("MIOOS","UPLOAD","INFO",UPID,"bytes"))
 	. SET OUT("uploads","declaredBytes")=OUT("uploads","declaredBytes")+$PIECE(META,"^",7)
 	SET (OUT("downloads","activeCount"),OUT("downloads","bytes"))=0
+	SET SKEY=$GET(STATE("sessionId"))
 	SET DLID=""
 	FOR  SET DLID=$ORDER(^MIO("MIOOS","DL",SKEY,DLID)) QUIT:DLID=""  DO
 	. SET OUT("downloads","activeCount")=OUT("downloads","activeCount")+1
 	. SET OUT("downloads","bytes")=OUT("downloads","bytes")+$GET(^MIO("MIOOS","DL",SKEY,DLID,"size"))
+	SET OUT("socketPool","maxSocketsPerSession")=+$GET(STATE("wsMaxSockets"),1)
+	SET OUT("socketPool","coreSockets")=+$GET(STATE("wsCoreSockets"),1)
+	SET OUT("socketPool","fsSockets")=+$GET(STATE("wsFsSockets"),1)
+	SET OUT("socketPool","stalePurged")=$$SOCKPURGE(.STATE)
+	DO SOCKSUM(.STATE,.OUT)
+	SET OUT("socketPool","capacityRemaining")=$SELECT(+$GET(OUT("socketPool","activeCount"))<+$GET(OUT("socketPool","maxSocketsPerSession")):+$GET(OUT("socketPool","maxSocketsPerSession"))-+$GET(OUT("socketPool","activeCount")),1:0)
 	KILL TERM DO LIST^MIOOSTERM(.STATE,$NAME(TERM("sessions")))
 	SET (COUNT,IDX)=0 FOR  SET IDX=$ORDER(TERM("sessions",IDX)) QUIT:IDX'>0  SET COUNT=COUNT+1
 	SET OUT("terminal","openCount")=COUNT
@@ -448,6 +547,11 @@ HELLOJSON(STATE,CONF)
 	SET OBJ("socketPool","heartbeatSeconds")=+$GET(STATE("wsHeartbeatSeconds"),15)
 	SET OBJ("socketPool","resumeWindowSeconds")=+$GET(STATE("wsResumeWindowSeconds"),180)
 	SET OBJ("socketPool","maxInflightPerChannel")=+$GET(STATE("wsMaxInflightPerChannel"),4)
+	SET OBJ("socketPool","maxSocketsPerSession")=+$GET(STATE("wsMaxSockets"),1)
+	SET OBJ("socketPool","coreSockets")=+$GET(STATE("wsCoreSockets"),1)
+	SET OBJ("socketPool","fsSockets")=+$GET(STATE("wsFsSockets"),1)
+	SET OBJ("socketPool","uploadBatchSize")=+$GET(STATE("uploadBatchSize"),1)
+	SET OBJ("socketPool","batchFlushThreshold")=+$GET(STATE("uploadBatchFlushThreshold"),+$GET(STATE("uploadBatchSize"),1))
 	SET OBJ("socketPool","diagnosticsEnabled")=+$GET(STATE("wsDiagnosticsEnabled"),1)
 	SET OBJ("terminalEngine")=$GET(STATE("terminal","engine"),"xtermjs")
 	SET OBJ("terminalTransport")=$GET(STATE("terminal","transport"),"pipe")

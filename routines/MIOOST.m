@@ -48,6 +48,7 @@ MIOOST ; MIOOS tests
 	DO T051
 	DO T052
 	DO T053
+	DO T054
 	QUIT
 	;
 RESET
@@ -1075,4 +1076,37 @@ T053
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","copyTextToClipboard"),"[MIOOST][T053][clipboard helper]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 54 — shell-standard app actions and built-in app polish"),"[MIOOST][T053][llm roi54]")
 	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","ROI 54 — shell-standard app actions and built-in app polish"),"[MIOOST][T053][docs roi54]")
+	QUIT
+
+	;
+T054
+	NEW CONF,REQ,CTX,STATE,BOOT,ERR,OUT,JSON,OBJ,PAY,UP,STATUS
+	DO RESET
+	DO CONFDEF^MIOOS(.CONF)
+	DO INIT^MIOOS(.CONF)
+	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T054][load]")
+	DO BOOTARY^MIOOSST(.STATE,.CONF,.BOOT)
+	DO EQ^MIOTASSERT(+$GET(BOOT("websocket","maxSocketsPerSession")),+$GET(CONF("mioos","websocket","maxSocketsPerSession")),"[MIOOST][T054][boot max sockets]")
+	DO EQ^MIOTASSERT(+$GET(BOOT("websocket","uploadBatchSize")),+$GET(CONF("mioos","upload","batchSize")),"[MIOOST][T054][boot batch size]")
+	DO EQ^MIOTASSERT(+$GET(BOOT("vfs","uploadMaxInflightChunks")),+$GET(CONF("mioos","upload","maxInflightChunks")),"[MIOOST][T054][boot inflight chunks]")
+	SET JSON=$$HELLOJSON^MIOOSWS(.STATE,.CONF)
+	DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T054][hello decode]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("socketPool","maxSocketsPerSession")),+$GET(CONF("mioos","websocket","maxSocketsPerSession")),"[MIOOST][T054][hello max sockets]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("socketPool","uploadBatchSize")),+$GET(CONF("mioos","upload","batchSize")),"[MIOOST][T054][hello batch size]")
+	KILL OUT DO OK^MIOTASSERT($$BEGIN^MIOOSFSUP(.STATE,.CONF,"root","batch.txt","text/plain",8,"binary",.OUT,.ERR),"[MIOOST][T054][begin]")
+	SET UP=$GET(OUT("uploadId"))
+	SET PAY="{""event"":""desktop.command"",""requestId"":""batch-1"",""command"":""fs.upload.batch"",""uploadId"":"""_UP_""",""socketId"":""core-1"",""socketRole"":""core"",""socketOrdinal"":1,""chunks"":[{""index"":1,""data"":""ABCD"",""bytes"":4},{""index"":2,""data"":""EFGH"",""bytes"":4}]}"
+	DO OK^MIOTASSERT($$COMMANDJSON^MIOOSWS(.CONF,.REQ,.CTX,.STATE,PAY,.JSON,.ERR),"[MIOOST][T054][batch command]")
+	DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T054][batch decode]")
+	DO EQ^MIOTASSERT($GET(OBJ("command")),"fs.upload.batch","[MIOOST][T054][batch command name]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("vfs","batchCount")),2,"[MIOOST][T054][batch count]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("vfs","receivedBytes")),8,"[MIOOST][T054][batch received]")
+	KILL STATUS DO OK^MIOTASSERT($$STATUS^MIOOSFSUP(.STATE,.CONF,UP,.STATUS,.ERR),"[MIOOST][T054][status]")
+	DO EQ^MIOTASSERT(+$GET(STATUS("nextIndex")),3,"[MIOOST][T054][next index]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","fs.upload.batch"),"[MIOOST][T054][explorer batch token]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","FSUPBATCH"),"[MIOOST][T054][ws batch handler]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","Server socket registry"),"[MIOOST][T054][server socket registry ui]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","transportServerSocketRows"),"[MIOOST][T054][server socket rows method]")
+	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 55 — websocket batch uploads and socket-pool observability"),"[MIOOST][T054][llm roi55]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","ROI 55 — websocket batch uploads and socket-pool observability"),"[MIOOST][T054][docs roi55]")
 	QUIT

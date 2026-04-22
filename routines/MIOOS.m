@@ -155,6 +155,9 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","fs","transport"))="" SET CONF("mioos","fs","transport")="http-and-websocket"
 	IF $GET(CONF("mioos","upload","chunkBytes"))="" SET CONF("mioos","upload","chunkBytes")=860000
 	IF $GET(CONF("mioos","upload","concurrency"))="" SET CONF("mioos","upload","concurrency")=3
+	IF $GET(CONF("mioos","upload","batchSize"))="" SET CONF("mioos","upload","batchSize")=2
+	IF $GET(CONF("mioos","upload","maxInflightChunks"))="" SET CONF("mioos","upload","maxInflightChunks")=6
+	IF $GET(CONF("mioos","upload","batchFlushThreshold"))="" SET CONF("mioos","upload","batchFlushThreshold")=2
 	IF $GET(CONF("mioos","terminal","pipe","sessionIdleSeconds"))="" SET CONF("mioos","terminal","pipe","sessionIdleSeconds")=900
 	IF $GET(CONF("mioos","websocket","maxSocketsPerSession"))="" SET CONF("mioos","websocket","maxSocketsPerSession")=9
 	IF $GET(CONF("mioos","websocket","coreSockets"))="" SET CONF("mioos","websocket","coreSockets")=1

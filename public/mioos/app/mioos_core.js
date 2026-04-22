@@ -782,6 +782,16 @@
             return ar.localeCompare(br) || (+a.ordinal || 0) - (+b.ordinal || 0) || String(a.id || '').localeCompare(String(b.id || ''));
           });
         },
+        transportServerSocketRows: function () {
+          return (((this.transportReport() || {}).socketPool || {}).sockets || []).slice().sort(function (a, b) {
+            var ar = String((a && a.role) || '');
+            var br = String((b && b.role) || '');
+            return ar.localeCompare(br) || (+((a && a.ordinal) || 0)) - (+((b && b.ordinal) || 0)) || String((a && a.id) || '').localeCompare(String((b && b.id) || ''));
+          });
+        },
+        transportServerPool: function () {
+          return ((this.transportReport() || {}).socketPool) || {};
+        },
         formatTransportTime: function (value) {
           if (!value) return '—';
           try { return new Date(value).toLocaleTimeString(); } catch (err) { return '—'; }

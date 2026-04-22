@@ -727,7 +727,7 @@ button, input { font: inherit; }
 .mioos-diagnostics-row { display: grid; grid-template-columns: 1.3fr .9fr .7fr 1.4fr .9fr; gap: 10px; align-items: center; padding: 6px 8px; border: 1px solid rgba(36,94,219,0.14); border-radius: 8px; background: rgba(255,255,255,0.72); }
 .mioos-diagnostics-row--head { background: rgba(36,94,219,0.09); font-size: 12px; }
 .mioos-diagnostics-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 72px; padding: 2px 8px; border-radius: 999px; font-size: 11px; text-transform: uppercase; background: #eef3ff; color: #1f4fbf; }
-.mioos-diagnostics-badge.is-ready, .mioos-diagnostics-badge.is-open { background: #e8f7ea; color: #1d7a31; }
+.mioos-diagnostics-badge.is-ready, .mioos-diagnostics-badge.is-open, .mioos-diagnostics-badge.is-active { background: #e8f7ea; color: #1d7a31; }
 .mioos-diagnostics-badge.is-error, .mioos-diagnostics-badge.is-closed { background: #fde9e9; color: #b42318; }
 .mioos-diagnostics-badge.is-connecting, .mioos-diagnostics-badge.is-closing { background: #fff5dd; color: #9a6700; }
 .mioos-diagnostics-empty, .mioos-diagnostics-error { padding: 10px 12px; border-radius: 8px; background: rgba(255,255,255,0.72); }

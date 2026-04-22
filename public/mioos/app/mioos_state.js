@@ -146,6 +146,11 @@
         heartbeatSeconds: 15,
         resumeWindowSeconds: 180,
         maxInflightPerChannel: 4,
+        maxSocketsPerSession: 6,
+        coreSockets: 1,
+        fsSockets: 1,
+        uploadBatchSize: 2,
+        batchFlushThreshold: 2,
         diagnosticsEnabled: true,
         requestTimeoutMs: 15000,
         uploadBeginTimeoutMs: 20000,
@@ -156,7 +161,7 @@
         maxFrameBytes: 262144,
         maxMessageBytes: 1048576
       },
-      vfs: { enabled: false, rootId: 'root', homeId: 'home', chunkSize: 131072, httpChunkBytes: 131072, readPreviewBytes: 262144, readWindowBytes: 262144, mediaInitialBytes: 262144, mediaWarmupBytes: 65536, globalsOnly: true, uploadStaleSeconds: 1800, downloadStaleSeconds: 900, uploadChunkBytes: 860000, uploadConcurrency: 3, transferPersistence: 'localstorage-resumable-transfer-list', transferControls: { cancel: true, retry: true, pause: true, resume: true } },
+      vfs: { enabled: false, rootId: 'root', homeId: 'home', chunkSize: 131072, httpChunkBytes: 131072, readPreviewBytes: 262144, readWindowBytes: 262144, mediaInitialBytes: 262144, mediaWarmupBytes: 65536, globalsOnly: true, uploadStaleSeconds: 1800, downloadStaleSeconds: 900, uploadChunkBytes: 860000, uploadConcurrency: 3, uploadBatchSize: 2, uploadMaxInflightChunks: 6, batchFlushThreshold: 2, transferPersistence: 'localstorage-resumable-transfer-list', transferControls: { cancel: true, retry: true, pause: true, resume: true } },
       apps: [],
       windows: [],
       modules: []
