@@ -1487,3 +1487,8 @@ button, input { font: inherit; }
 .mioos-window-menu-item:disabled { opacity: 0.45; }
 .mioos-window[data-window-kind="terminal"] .mioos-window-badge { color: #dbeafe; }
 .mioos-root { --mioos-titlebar-height: 40px; }
+
+.mioos-workspace-pager { display:flex; align-items:center; gap:6px; padding:0 8px; }
+.mioos-workspace-pill { border:1px solid var(--mioos-border-strong); background:var(--mioos-surface-elevated); color:inherit; border-radius:999px; padding:6px 10px; font-size:11px; display:inline-flex; align-items:center; gap:6px; }
+.mioos-workspace-pill.is-current { background: color-mix(in srgb, var(--mioos-accent) 18%, var(--mioos-surface-elevated) 82%); border-color: color-mix(in srgb, var(--mioos-accent) 48%, var(--mioos-border-strong) 52%); }
+.mioos-workspace-chipset .mioos-shell-chip { justify-content:flex-start; }

@@ -262,3 +262,10 @@ Boot metadata now advertises desktop.appSurfaceModel, desktop.appActions, and de
 ## ROI 55 — websocket batch uploads and socket-pool observability
 - `MIOOSWS` now exposes `fs.upload.batch` and records session-scoped socket activity under `^MIO("MIOOS","WS","SESSION",sessionId,...)` for diagnostics and bounded-pool introspection.
 - `transport.health` now reports socket-pool counts, stale-purge results, upload batching limits, and per-socket server registry rows for the current session.
+
+
+## ROI 56 — workspaces and pager-aware window routing
+- Added a real virtual-workspace model on top of the existing `workspaceKey` window metadata.
+- Added boot-advertised workspace metadata, current-workspace persistence, pager shortcuts, and move-window shortcuts.
+- Added a taskbar workspace pager, start-menu workspace quick switch, and window-menu move-to-workspace actions.
+- Window visibility, taskbar routing, and focus now follow the current workspace instead of treating the shell as one flat desktop.

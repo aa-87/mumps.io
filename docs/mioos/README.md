@@ -245,3 +245,10 @@ Built-in desktop applications now share one shell action model for confirmations
 ## ROI 55 — websocket batch uploads and socket-pool observability
 - Explorer worker uploads now have a first-class `fs.upload.batch` websocket path with single-chunk fallback retained for safety.
 - Transport diagnostics now include a server-side socket registry summary, socket-cap telemetry, and upload batching settings.
+
+
+## ROI 56 — workspaces and pager-aware window routing
+- Added a real virtual-workspace model on top of the existing `workspaceKey` window metadata.
+- Added boot-advertised workspace metadata, current-workspace persistence, pager shortcuts, and move-window shortcuts.
+- Added a taskbar workspace pager, start-menu workspace quick switch, and window-menu move-to-workspace actions.
+- Window visibility, taskbar routing, and focus now follow the current workspace instead of treating the shell as one flat desktop.

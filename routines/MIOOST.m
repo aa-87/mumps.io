@@ -49,6 +49,7 @@ MIOOST ; MIOOS tests
 	DO T052
 	DO T053
 	DO T054
+		DO T055
 	QUIT
 	;
 RESET
@@ -153,7 +154,7 @@ T002
 	DO EQ^MIOTASSERT(+$GET(OBJ("desktop","windowing","snapThreshold")),28,"[MIOOST][T002][snap threshold]")
 	DO EQ^MIOTASSERT(+$GET(OBJ("windows",1,"resizable")),1,"[MIOOST][T002][window resizable]")
 	DO EQ^MIOTASSERT($GET(OBJ("windows",1,"kind")),"explorer","[MIOOST][T002][window kind]")
-	DO EQ^MIOTASSERT($GET(OBJ("windows",1,"workspaceKey")),"workspace-explorer","[MIOOST][T002][workspace key]")
+	DO EQ^MIOTASSERT($GET(OBJ("windows",1,"workspaceKey")),"workspace-main","[MIOOST][T002][workspace key]")
 	QUIT
 	;
 T003
@@ -1118,3 +1119,21 @@ T054
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 55 — websocket batch uploads and socket-pool observability"),"[MIOOST][T054][llm roi55]")
 	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","ROI 55 — websocket batch uploads and socket-pool observability"),"[MIOOST][T054][docs roi55]")
 	QUIT
+
+
+		;
+T055
+		NEW CONF,REQ,CTX,STATE,BOOT,ERR
+		DO RESET
+		DO CONFDEF^MIOOS(.CONF)
+		DO INIT^MIOOS(.CONF)
+		DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T055][load]")
+		DO BOOTARY^MIOOSST(.STATE,.CONF,.BOOT)
+		DO EQ^MIOTASSERT(+$GET(BOOT("desktop","workspaces","enabled")),1,"[MIOOST][T055][workspaces enabled]")
+		DO EQ^MIOTASSERT($GET(BOOT("desktop","workspaces","currentKey")),"workspace-main","[MIOOST][T055][current workspace]")
+		DO EQ^MIOTASSERT($GET(BOOT("desktop","workspaces","items",2,"key")),"workspace-files","[MIOOST][T055][files workspace]")
+		DO EQ^MIOTASSERT(+$GET(BOOT("desktop","shellSurfaces","workspacePager")),1,"[MIOOST][T055][workspace pager surface]")
+		DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","switchWorkspace"),"[MIOOST][T055][switch workspace method]")
+		DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_wm.js","moveWindowToWorkspace"),"[MIOOST][T055][move workspace method]")
+		DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-workspace-pager"),"[MIOOST][T055][workspace pager ui]")
+		QUIT

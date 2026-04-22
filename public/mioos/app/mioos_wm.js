@@ -269,6 +269,19 @@
       currentWindowMenuWindow: function () {
         return findWindow(this, (this.windowMenu || {}).windowId);
       },
+      moveWindowToWorkspace: function (windowId, workspaceKey) {
+        var win = findWindow(this, windowId);
+        var follow = (((this.boot || {}).desktop || {}).workspaces || {}).followMovedWindow;
+        if (!win || !workspaceKey) return;
+        win.workspaceKey = workspaceKey;
+        if (follow && this.switchWorkspace) this.switchWorkspace(workspaceKey);
+        if (this.persistWindowLayout) this.persistWindowLayout();
+        if (this.windowMenu && this.windowMenu.windowId === windowId) this.closeWindowMenu();
+      },
+      workspaceMenuItems: function (win) {
+        var items = (((this.boot || {}).desktop || {}).workspaces || {}).items || [];
+        return items.filter(function (item) { return item && item.key !== ((win || {}).workspaceKey || ''); });
+      },
       windowMenuItems: function (win) {
         var items = [];
         if (!win) return items;

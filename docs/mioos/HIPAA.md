@@ -146,3 +146,10 @@ Administrative shell actions such as session revocation, account unlock, audit s
 ## ROI 55 — websocket batch uploads and socket-pool observability
 - Transport diagnostics remain session-scoped and report operational metadata only; they do not expand business-data exposure beyond the authenticated shell session.
 - Session socket telemetry improves operational troubleshooting without changing file-authorization checks, upload ownership checks, or existing audit boundaries.
+
+
+## ROI 56 — workspaces and pager-aware window routing
+- Added a real virtual-workspace model on top of the existing `workspaceKey` window metadata.
+- Added boot-advertised workspace metadata, current-workspace persistence, pager shortcuts, and move-window shortcuts.
+- Added a taskbar workspace pager, start-menu workspace quick switch, and window-menu move-to-workspace actions.
+- Window visibility, taskbar routing, and focus now follow the current workspace instead of treating the shell as one flat desktop.

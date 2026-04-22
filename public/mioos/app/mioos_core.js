@@ -30,7 +30,7 @@
           alertMessage: '',
           shellNotifications: [],
           notificationSeq: 0,
-          shellUi: { trayOpen: false, reducedMotion: false, desktopHidden: false, previousWindowId: '', windowSwitcherOpen: false, windowSwitcherIndex: 0 },
+          shellUi: { trayOpen: false, reducedMotion: false, desktopHidden: false, previousWindowId: '', windowSwitcherOpen: false, windowSwitcherIndex: 0, currentWorkspaceKey: 'workspace-main' },
           shellDialog: { open: false, type: '', title: '', message: '', detail: '', confirmText: 'OK', cancelText: 'Cancel', value: '', placeholder: '', resolve: null, reject: null },
           windowMenu: { open: false, windowId: '', source: 'titlebar', left: 0, top: 0 },
           zCounter: 10,
@@ -94,11 +94,11 @@
       computed: {
         visibleWindows: function () {
           return this.windows
-            .filter(function (win) { return win.state !== 'closed' && win.state !== 'minimized'; })
+            .filter(function (win) { return win.state !== 'closed' && win.state !== 'minimized' && this.isWindowInCurrentWorkspace(win); }.bind(this))
             .sort(function (a, b) { return (a.z || 0) - (b.z || 0); });
         },
         taskbarWindows: function () {
-          return this.windows.filter(function (win) { return win.state !== 'closed'; });
+          return this.windows.filter(function (win) { return win.state !== 'closed' && this.isWindowInTaskbarWorkspace(win); }.bind(this));
         },
         filteredEntries: function () {
           var needle = (this.menuFilter || '').trim().toLowerCase();
@@ -231,7 +231,8 @@
           this.zCounter = this.windows.reduce(function (max, win) { return Math.max(max, win.z || 0); }, 10) + 1;
           if (this.windows.length) this.activeWindowId = this.windows[0].id;
           if (!Array.isArray(this.shellNotifications)) this.shellNotifications = [];
-          if (!this.shellUi) this.shellUi = { trayOpen: false, reducedMotion: false, desktopHidden: false, previousWindowId: '', windowSwitcherOpen: false, windowSwitcherIndex: 0 };
+          if (!this.shellUi) this.shellUi = { trayOpen: false, reducedMotion: false, desktopHidden: false, previousWindowId: '', windowSwitcherOpen: false, windowSwitcherIndex: 0, currentWorkspaceKey: 'workspace-main' };
+          this.shellUi.currentWorkspaceKey = (((this.boot || {}).desktop || {}).workspaces || {}).currentKey || this.shellUi.currentWorkspaceKey || 'workspace-main';
           if (typeof this.shellUi.reducedMotion === 'undefined') this.shellUi.reducedMotion = false;
           if (this.applyReducedMotionPreference) this.applyReducedMotionPreference();
         },
@@ -256,7 +257,7 @@
           this.applyReducedMotionPreference();
         },
         persistShellPreferences: function () {
-          var payload = { reducedMotion: !!((this.shellUi || {}).reducedMotion) };
+          var payload = { reducedMotion: !!((this.shellUi || {}).reducedMotion), currentWorkspaceKey: ((this.shellUi || {}).currentWorkspaceKey || 'workspace-main') };
           try { window.localStorage.setItem(this.shellPreferencesKey(), JSON.stringify(payload)); } catch (err) {}
         },
         applyReducedMotionPreference: function () {
@@ -316,6 +317,61 @@
             }
           });
           try { window.localStorage.setItem(this.windowLayoutStorageKey(), JSON.stringify(payload)); } catch (err) {}
+        },
+        workspaceItems: function () {
+          return (((this.boot || {}).desktop || {}).workspaces || {}).items || [];
+        },
+        currentWorkspace: function () {
+          var key = ((this.shellUi || {}).currentWorkspaceKey) || ((((this.boot || {}).desktop || {}).workspaces || {}).currentKey) || 'workspace-main';
+          var rows = this.workspaceItems();
+          var i;
+          for (i = 0; i < rows.length; i += 1) if ((rows[i] || {}).key === key) return rows[i];
+          return rows[0] || { key: key, title: key, icon: '⌂' };
+        },
+        workspaceEnabled: function () {
+          return !!(((((this.boot || {}).desktop || {}).workspaces || {}).enabled));
+        },
+        isWindowInCurrentWorkspace: function (win) {
+          var key;
+          if (!this.workspaceEnabled()) return true;
+          key = ((this.shellUi || {}).currentWorkspaceKey) || ((((this.boot || {}).desktop || {}).workspaces || {}).currentKey) || 'workspace-main';
+          return String((win && win.workspaceKey) || 'workspace-main') === String(key);
+        },
+        isWindowInTaskbarWorkspace: function (win) {
+          var cfg = (((this.boot || {}).desktop || {}).workspaces || {});
+          if (!cfg.enabled) return true;
+          if (!cfg.showInTaskbar) return true;
+          return this.isWindowInCurrentWorkspace(win);
+        },
+        switchWorkspace: function (key) {
+          var items = this.workspaceItems();
+          var found = items.find(function (item) { return item && item.key === key; });
+          if (!found) return;
+          if (!this.shellUi) this.shellUi = {};
+          this.shellUi.currentWorkspaceKey = key;
+          if (this.boot && this.boot.desktop && this.boot.desktop.workspaces) this.boot.desktop.workspaces.currentKey = key;
+          this.menuOpen = false;
+          this.persistShellPreferences();
+        },
+        cycleWorkspace: function (dir) {
+          var items = this.workspaceItems();
+          var key = ((this.shellUi || {}).currentWorkspaceKey) || ((((this.boot || {}).desktop || {}).workspaces || {}).currentKey) || 'workspace-main';
+          var idx = items.findIndex(function (item) { return item && item.key === key; });
+          if (!items.length) return;
+          if (idx < 0) idx = 0;
+          idx = (idx + (dir < 0 ? -1 : 1) + items.length) % items.length;
+          this.switchWorkspace(items[idx].key);
+        },
+        moveFocusedWindowWorkspace: function (dir) {
+          var items = this.workspaceItems();
+          var win = (this.windows || []).find(function (row) { return row && row.id === this.activeWindowId; }.bind(this));
+          var idx;
+          if (!win || !items.length) return;
+          idx = items.findIndex(function (item) { return item && item.key === win.workspaceKey; });
+          if (idx < 0) idx = items.findIndex(function (item) { return item && item.key === (((this.shellUi || {}).currentWorkspaceKey) || 'workspace-main'); }.bind(this));
+          if (idx < 0) idx = 0;
+          idx = (idx + (dir < 0 ? -1 : 1) + items.length) % items.length;
+          this.moveWindowToWorkspace(win.id, items[idx].key);
         },
         switcherWindows: function () {
           return (this.taskbarWindows || []).filter(function (win) { return win && win.state !== 'closed'; }).sort(function (a, b) { return (b.z || 0) - (a.z || 0); });
@@ -378,6 +434,28 @@
             event.preventDefault();
             this.openApp('diagnostics');
             return;
+          }
+          if (event.ctrlKey && event.altKey && !event.metaKey) {
+            if (event.shiftKey && event.key === 'ArrowLeft') {
+              event.preventDefault();
+              this.moveFocusedWindowWorkspace(-1);
+              return;
+            }
+            if (event.shiftKey && event.key === 'ArrowRight') {
+              event.preventDefault();
+              this.moveFocusedWindowWorkspace(1);
+              return;
+            }
+            if (!event.shiftKey && event.key === 'ArrowLeft') {
+              event.preventDefault();
+              this.cycleWorkspace(-1);
+              return;
+            }
+            if (!event.shiftKey && event.key === 'ArrowRight') {
+              event.preventDefault();
+              this.cycleWorkspace(1);
+              return;
+            }
           }
           if (event.altKey && event.shiftKey && !event.ctrlKey && !event.metaKey && this.activeWindowId) {
             if (event.key === 'ArrowLeft') {

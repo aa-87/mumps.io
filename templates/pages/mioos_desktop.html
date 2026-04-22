@@ -181,6 +181,18 @@
             <button v-for="density in shellDensityOptions()" :key="density" type="button" class="mioos-shell-chip" :class="{ 'is-current': boot.desktop.density === density }" @click="setDesktopDensity(density)">[[ density ]]</button>
           </div>
         </div>
+        <div class="mioos-shell-quickthemes" v-if="workspaceItems().length">
+          <strong>[[ t('workspace.label', 'Workspaces') ]]</strong>
+          <div class="mioos-shell-chipset mioos-workspace-chipset">
+            <button v-for="space in workspaceItems()" :key="space.key" type="button" class="mioos-shell-chip" :class="{ 'is-current': currentWorkspace().key === space.key }" @click="switchWorkspace(space.key)">[[ space.icon ]] [[ space.title ]]</button>
+          </div>
+        </div>
+        <div class="mioos-shell-quickthemes">
+          <strong>Density</strong>
+          <div class="mioos-shell-chipset">
+            <button v-for="density in shellDensityOptions()" :key="density" type="button" class="mioos-shell-chip" :class="{ 'is-current': boot.desktop.density === density }" @click="setDesktopDensity(density)">[[ density ]]</button>
+          </div>
+        </div>
         <button type="button" @click="refreshView">[[ t('action.refreshDesktop') ]]</button>
       </aside>
     </div>
@@ -1067,6 +1079,23 @@
   </main>
 
 
+  <section class="mioos-window-menu" v-if="windowMenu.open && currentWindowMenuWindow()" :style="windowMenuStyle()" @click.stop>
+    <div class="mioos-window-menu-head">
+      <strong>[[ currentWindowMenuWindow().title ]]</strong>
+      <span>[[ windowMetaLabel(currentWindowMenuWindow()) ]]</span>
+    </div>
+    <button type="button" class="mioos-window-menu-item" @click="restoreWindowAction(currentWindowMenuWindow().id)">[[ t('action.restore') ]]</button>
+    <button type="button" class="mioos-window-menu-item" @click="minimizeWindow(currentWindowMenuWindow().id)">[[ t('action.minimize') ]]</button>
+    <button type="button" class="mioos-window-menu-item" @click="toggleMaximize(currentWindowMenuWindow().id)">[[ windowToggleLabel(currentWindowMenuWindow()) ]]</button>
+    <button type="button" class="mioos-window-menu-item" @click="applySnapZone(currentWindowMenuWindow().id, 'left')">Snap left</button>
+    <button type="button" class="mioos-window-menu-item" @click="applySnapZone(currentWindowMenuWindow().id, 'right')">Snap right</button>
+    <template v-if="workspaceMenuItems(currentWindowMenuWindow()).length">
+      <div class="mioos-window-menu-head"><strong>[[ t('workspace.moveTo', 'Move to workspace') ]]</strong></div>
+      <button type="button" v-for="space in workspaceMenuItems(currentWindowMenuWindow())" :key="space.key" class="mioos-window-menu-item" @click="moveWindowToWorkspace(currentWindowMenuWindow().id, space.key)">[[ space.icon ]] [[ space.title ]]</button>
+    </template>
+    <button type="button" class="mioos-window-menu-item is-danger" @click="closeWindow(currentWindowMenuWindow().id)">[[ t('action.close') ]]</button>
+  </section>
+
   <section class="mioos-window-switcher" v-if="shellUi.windowSwitcherOpen" aria-label="window switcher">
     <div class="mioos-window-switcher-body">
       <header><strong>Window switcher</strong><span>Release Alt to focus</span></header>
@@ -1090,6 +1119,9 @@
         <span>[[ win.title ]]</span>
       </button>
     </div>
+    <nav class="mioos-workspace-pager" v-if="workspaceItems().length" :aria-label="t('workspace.label', 'Workspaces')">
+      <button v-for="space in workspaceItems()" :key="space.key" type="button" class="mioos-workspace-pill" :class="{ 'is-current': currentWorkspace().key === space.key }" @click.stop="switchWorkspace(space.key)">[[ space.icon ]] [[ space.title ]]</button>
+    </nav>
     <button type="button" class="mioos-taskbar-desktop" @click.stop="toggleDesktopVisibility()">[[ shellUi.desktopHidden ? 'Restore' : 'Desktop' ]]</button>
     <div class="mioos-tray" aria-live="polite">
       <button type="button" class="mioos-tray-action" @click.stop="toggleTrayPanel">

@@ -162,3 +162,10 @@ Transfer Center, Diagnostics, Security Center, Debug Center, App Catalog, and mo
 ## ROI 55 — websocket batch uploads and socket-pool observability
 - The Diagnostics window now shows both client socket telemetry and the server-side socket registry for the current session.
 - Parallel uploads can batch websocket chunks when the server advertises batching support, while still falling back safely if a worker or batch send fails.
+
+
+## ROI 56 — workspaces and pager-aware window routing
+- Added a real virtual-workspace model on top of the existing `workspaceKey` window metadata.
+- Added boot-advertised workspace metadata, current-workspace persistence, pager shortcuts, and move-window shortcuts.
+- Added a taskbar workspace pager, start-menu workspace quick switch, and window-menu move-to-workspace actions.
+- Window visibility, taskbar routing, and focus now follow the current workspace instead of treating the shell as one flat desktop.

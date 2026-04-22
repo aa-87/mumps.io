@@ -110,11 +110,17 @@
         themeSystem: { version: 2, editor: 'theme-studio', persistence: 'localstorage-applied-profile', liveApply: true, quickSwitch: true, densityOptions: ['compact', 'comfortable', 'spacious'] },
         appSurfaceModel: 'shell-standard-actions',
         appActions: { confirmBeforeDestructive: true, notifyOnAdminActions: true, copyExportsToClipboard: true, moduleNotesSessionLocal: true },
-        shellSurfaces: { explorer: true, themeStudio: true, transfers: true, diagnostics: true, securityCenter: true, appCatalog: true, debugCenter: true, notifications: true, dialogs: true, windowSwitcher: true, moduleWindows: true },
+        shellSurfaces: { explorer: true, themeStudio: true, transfers: true, diagnostics: true, securityCenter: true, appCatalog: true, debugCenter: true, notifications: true, dialogs: true, windowSwitcher: true, moduleWindows: true, workspacePager: true },
         notifications: { model: 'toast-and-tray', stackLimit: 6, tray: true },
         dialogs: { model: 'shell-standard', confirm: true, input: true },
-        shortcuts: { showDesktop: 'Meta+D', windowSwitcher: 'Alt+Tab', closeFocusedWindow: 'Shift+Escape', openDiagnostics: 'Ctrl+Shift+Escape', snapLeft: 'Alt+Shift+ArrowLeft', snapRight: 'Alt+Shift+ArrowRight', maximizeFocusedWindow: 'Alt+Shift+ArrowUp', restoreFocusedWindow: 'Alt+Shift+ArrowDown' },
+        shortcuts: { showDesktop: 'Meta+D', windowSwitcher: 'Alt+Tab', closeFocusedWindow: 'Shift+Escape', openDiagnostics: 'Ctrl+Shift+Escape', snapLeft: 'Alt+Shift+ArrowLeft', snapRight: 'Alt+Shift+ArrowRight', maximizeFocusedWindow: 'Alt+Shift+ArrowUp', restoreFocusedWindow: 'Alt+Shift+ArrowDown', previousWorkspace: 'Ctrl+Alt+ArrowLeft', nextWorkspace: 'Ctrl+Alt+ArrowRight', moveFocusedWindowPreviousWorkspace: 'Ctrl+Alt+Shift+ArrowLeft', moveFocusedWindowNextWorkspace: 'Ctrl+Alt+Shift+ArrowRight' },
         persistence: { desktopLayout: 'localstorage-desktop-layout', windowLayout: 'localstorage-window-layout', authWindow: 'localstorage-auth-window-frame', themeProfile: 'localstorage-applied-profile' },
+        workspaces: { enabled: true, model: 'virtual-desktop-pager', persistence: 'localstorage-current-workspace', currentKey: 'workspace-main', showInTaskbar: true, followMovedWindow: true, switchShortcuts: { previous: 'Ctrl+Alt+ArrowLeft', next: 'Ctrl+Alt+ArrowRight' }, moveShortcuts: { previous: 'Ctrl+Alt+Shift+ArrowLeft', next: 'Ctrl+Alt+Shift+ArrowRight' }, items: [
+          { key: 'workspace-main', title: 'Desktop', icon: '⌂', description: 'Primary shell workspace for everyday apps and the desktop surface', ordinal: 1 },
+          { key: 'workspace-files', title: 'Files', icon: '📁', description: 'Explorer, transfers, and file-focused windows', ordinal: 2 },
+          { key: 'workspace-operations', title: 'Operations', icon: '📈', description: 'Security, diagnostics, and operational control surfaces', ordinal: 3 },
+          { key: 'workspace-studio', title: 'Studio', icon: '🎨', description: 'Theme work, modules, and catalog windows', ordinal: 4 }
+        ] },
         themes: [
           { key: 'foundation-light', title: 'Foundation Light', family: 'Foundation', mode: 'light', wallpaper: 'aurora', accent: '#2f6fed', taskbar: '#e8eef8' },
           { key: 'foundation-dark', title: 'Foundation Dark', family: 'Foundation', mode: 'dark', wallpaper: 'aurora-night', accent: '#7db4ff', taskbar: '#111a28' },

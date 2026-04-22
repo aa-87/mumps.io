@@ -385,3 +385,10 @@ ROI 54 — shell-standard app actions and built-in app polish
 - Added real `fs.upload.batch` websocket command handling so Explorer upload workers can batch chunks instead of always falling back to single-chunk sends.
 - Added server-side session socket registration, stale-socket purging, and transport-health reporting for active core and FS sockets.
 - Boot, hello, and diagnostics metadata now advertise socket caps, core/FS socket quotas, upload batch size, and batch flush thresholds so the browser and diagnostics window share one transport contract.
+
+
+## ROI 56 — workspaces and pager-aware window routing
+- Added a real virtual-workspace model on top of the existing `workspaceKey` window metadata.
+- Added boot-advertised workspace metadata, current-workspace persistence, pager shortcuts, and move-window shortcuts.
+- Added a taskbar workspace pager, start-menu workspace quick switch, and window-menu move-to-workspace actions.
+- Window visibility, taskbar routing, and focus now follow the current workspace instead of treating the shell as one flat desktop.
