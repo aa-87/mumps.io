@@ -154,3 +154,12 @@ ROI 54 — shell-standard app actions and built-in surface cleanup
 - Transport Diagnostics, Security Center, Debug Center, App Catalog, Transfers, and module windows now expose consistent shell action bars for copy/export, clear, and destructive actions.
 - Administrative and destructive actions now route through shell confirmations and toast feedback, and Explorer now raises success notifications for create, rename, move, and delete flows.
 
+
+
+ROI 55 — persistence, keyboard shortcuts, and accessibility polish
+
+- Added local window-layout persistence for non-terminal windows so the shell can reopen the active desktop layout after reload.
+- Added shell accessibility preference persistence for reduced-motion mode.
+- Added keyboard shortcuts for show desktop, window switching, focused-window close, and diagnostics launch.
+- Added an Alt+Tab style window switcher overlay plus a taskbar Show Desktop control.
+- Added drag/performance polish with interaction-state classes and transform-focused rendering hints.

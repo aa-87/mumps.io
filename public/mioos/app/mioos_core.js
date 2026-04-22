@@ -30,7 +30,7 @@
           alertMessage: '',
           shellNotifications: [],
           notificationSeq: 0,
-          shellUi: { trayOpen: false },
+          shellUi: { trayOpen: false, showDesktop: false, windowSwitcherOpen: false, windowSwitcherIndex: 0, reducedMotion: false },
           shellDialog: { open: false, type: '', title: '', message: '', detail: '', confirmText: 'OK', cancelText: 'Cancel', value: '', placeholder: '', resolve: null, reject: null },
           zCounter: 10,
           dragState: {
@@ -137,13 +137,16 @@
         this.bootstrapFromDom();
         this.restorePersistedTransfers();
         this.centerAuthWindow(true);
+        this.restoreAuthWindowPosition();
         this.normalizeDesktopUiState();
         this.ensureDesktopLayout();
         this.normalizeDesktopUiState();
         this.applyBootThemeDefaults();
         this.applyPersistedThemeStudioProfile();
+        this.restoreShellAccessibility();
         this.applyDocumentLocale();
         this.startClock();
+        if (!this.requiresSignin) this.restorePersistedWindows();
         if (!this.requiresSignin) {
           this.refreshView();
           this.initSocket().catch(function () {});
@@ -154,15 +157,24 @@
         this._viewportResize = this.handleViewportResize.bind(this);
         window.addEventListener('mousemove', this._dragMove);
         window.addEventListener('mouseup', this._dragEnd);
-        this._persistTransfersOnUnload = this.persistTransferCenter.bind(this);
+        this._persistShellOnUnload = function () {
+          if (self.persistTransferCenter) self.persistTransferCenter();
+          if (self.persistWindowLayout) self.persistWindowLayout();
+          if (self.persistAuthWindowPosition) self.persistAuthWindowPosition();
+          if (self.persistShellAccessibility) self.persistShellAccessibility();
+        };
         this._networkOffline = function () {
           if (self.autoPauseTransfersByReason) self.autoPauseTransfersByReason('Paused (connection lost)', 'upload');
         };
         this._networkOnline = function () {
           if (self.persistTransferCenter) self.persistTransferCenter();
         };
+        this._globalKeyDown = this.handleGlobalKeyDown.bind(this);
+        this._globalKeyUp = this.handleGlobalKeyUp.bind(this);
         window.addEventListener('resize', this._viewportResize);
-        window.addEventListener('beforeunload', this._persistTransfersOnUnload);
+        window.addEventListener('keydown', this._globalKeyDown);
+        window.addEventListener('keyup', this._globalKeyUp);
+        window.addEventListener('beforeunload', this._persistShellOnUnload);
         window.addEventListener('offline', this._networkOffline);
         window.addEventListener('online', this._networkOnline);
         if (!this.requiresSignin) window.setTimeout(function () { if (self.revivePersistedTransfers) self.revivePersistedTransfers(); }, 400);
@@ -173,10 +185,15 @@
         if (this.terminalPollTimer) window.clearInterval(this.terminalPollTimer);
         if (this.socket) this.socket.close();
         this.persistTransferCenter();
+        this.persistWindowLayout();
+        this.persistAuthWindowPosition();
+        this.persistShellAccessibility();
         window.removeEventListener('mousemove', this._dragMove);
         window.removeEventListener('mouseup', this._dragEnd);
         window.removeEventListener('resize', this._viewportResize);
-        window.removeEventListener('beforeunload', this._persistTransfersOnUnload);
+        window.removeEventListener('keydown', this._globalKeyDown);
+        window.removeEventListener('keyup', this._globalKeyUp);
+        window.removeEventListener('beforeunload', this._persistShellOnUnload);
         window.removeEventListener('offline', this._networkOffline);
         window.removeEventListener('online', this._networkOnline);
         this.windows.forEach(function (win) {
@@ -196,6 +213,284 @@
         desktopContextMenuState: function () {
           this.normalizeDesktopUiState();
           return this.desktopUi.contextMenu || { open: false, type: 'desktop', key: '', left: 0, top: 0 };
+        },
+        shellAccessibilityStorageKey: function () {
+          return 'mioos.shell.accessibility.' + (((this.boot || {}).user || {}).id || 'guest');
+        },
+        authWindowStorageKey: function () {
+          return 'mioos.auth.window.' + (((this.boot || {}).user || {}).id || 'guest');
+        },
+        windowLayoutStorageKey: function () {
+          return 'mioos.desktop.windows.' + (((this.boot || {}).user || {}).id || 'guest');
+        },
+        shortcutHints: function () {
+          return ((((((this.boot || {}).desktop || {}).accessibility || {}).keyboardShortcuts) || {}));
+        },
+        shouldIgnoreGlobalShortcut: function (event) {
+          var node = event && event.target;
+          var tag = node && node.tagName ? String(node.tagName).toUpperCase() : '';
+          if (event && event.altKey) return false;
+          return !!(node && (node.isContentEditable || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT'));
+        },
+        syncInteractionMode: function () {
+          var rootNode = window.MIOOSState.getRootNode();
+          var iconDrag = !!((((this.desktopUi || {}).drag || {}).active));
+          var windowDrag = !!((this.dragState || {}).active && (this.dragState || {}).mode === 'move');
+          var windowResize = !!((this.dragState || {}).active && (this.dragState || {}).mode === 'resize');
+          var authDrag = !!(((this.authDrag || {}).active));
+          if (!rootNode) return;
+          rootNode.classList.toggle('is-window-dragging', windowDrag);
+          rootNode.classList.toggle('is-window-resizing', windowResize);
+          rootNode.classList.toggle('is-icon-dragging', iconDrag);
+          rootNode.classList.toggle('is-auth-dragging', authDrag);
+          rootNode.classList.toggle('is-pointer-guard', windowDrag || windowResize || iconDrag || authDrag);
+        },
+        persistAuthWindowPosition: function () {
+          if (!window.localStorage) return;
+          try {
+            window.localStorage.setItem(this.authWindowStorageKey(), JSON.stringify({ left: +(this.authWindow.left || 0), top: +(this.authWindow.top || 0), width: +(this.authWindow.width || 440) }));
+          } catch (err) {}
+        },
+        restoreAuthWindowPosition: function () {
+          var saved = null;
+          if (!window.localStorage) return;
+          try { saved = JSON.parse(window.localStorage.getItem(this.authWindowStorageKey()) || 'null'); } catch (err) { saved = null; }
+          if (!saved) return;
+          if (+saved.width > 0) this.authWindow.width = +saved.width;
+          if (+saved.left >= 0) this.authWindow.left = +saved.left;
+          if (+saved.top >= 0) this.authWindow.top = +saved.top;
+        },
+        prefersReducedMotion: function () {
+          try {
+            return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+          } catch (err) {
+            return false;
+          }
+        },
+        applyShellAccessibilityState: function () {
+          var rootNode = window.MIOOSState.getRootNode();
+          var reduced = !!((this.shellUi || {}).reducedMotion);
+          if (!rootNode) return;
+          rootNode.dataset.motion = reduced ? 'reduced' : ((((this.boot || {}).desktop || {}).accessibility || {}).motionPreference || 'respect-user-preference');
+          rootNode.classList.toggle('mioos-motion-reduced', reduced);
+          if (document && document.body) document.body.classList.toggle('mioos-motion-reduced', reduced);
+        },
+        persistShellAccessibility: function () {
+          if (!window.localStorage) return;
+          try {
+            window.localStorage.setItem(this.shellAccessibilityStorageKey(), JSON.stringify({ reducedMotion: !!((this.shellUi || {}).reducedMotion) }));
+          } catch (err) {}
+        },
+        restoreShellAccessibility: function () {
+          var saved = null;
+          var desktopA11y = (((this.boot || {}).desktop || {}).accessibility) || {};
+          if (window.localStorage) {
+            try { saved = JSON.parse(window.localStorage.getItem(this.shellAccessibilityStorageKey()) || 'null'); } catch (err) { saved = null; }
+          }
+          this.shellUi.reducedMotion = saved && typeof saved.reducedMotion !== 'undefined' ? !!saved.reducedMotion : (String(desktopA11y.motionPreference || '') === 'reduce' || this.prefersReducedMotion());
+          this.applyShellAccessibilityState();
+        },
+        toggleReducedMotion: function () {
+          this.shellUi.reducedMotion = !this.shellUi.reducedMotion;
+          this.applyShellAccessibilityState();
+          this.persistShellAccessibility();
+          this.pushNotification('info', 'Accessibility', this.shellUi.reducedMotion ? 'Reduced motion enabled.' : 'Reduced motion disabled.', { timeoutMs: 2400 });
+        },
+        serializeWindowLayout: function (win) {
+          if (!win || !win.appKey || win.appKey === 'terminal') return null;
+          return window.MIOOSState.deepClone({
+            id: win.id,
+            appKey: win.appKey,
+            title: win.title,
+            left: +(win.left || 0),
+            top: +(win.top || 0),
+            width: +(win.width || 600),
+            height: +(win.height || 420),
+            z: +(win.z || 1),
+            state: win.state || 'normal',
+            minWidth: +(win.minWidth || 320),
+            minHeight: +(win.minHeight || 220),
+            resizable: win.resizable,
+            draggable: win.draggable,
+            snappable: win.snappable,
+            snapZone: win.snapZone || '',
+            moduleWindow: win.moduleWindow || 0,
+            moduleId: win.moduleId || '',
+            moduleCategory: win.moduleCategory || '',
+            moduleSurface: win.moduleSurface || '',
+            moduleBuiltIn: win.moduleBuiltIn || 0,
+            moduleSingleton: win.moduleSingleton || 0,
+            themeStudioEnabled: win.themeStudioEnabled || 0,
+            transferCenterEnabled: win.transferCenterEnabled || 0,
+            transportDiagnosticsEnabled: win.transportDiagnosticsEnabled || 0,
+            moduleCatalogEnabled: win.moduleCatalogEnabled || 0,
+            securityCenterEnabled: win.securityCenterEnabled || 0,
+            debugCenterEnabled: win.debugCenterEnabled || 0
+          });
+        },
+        persistWindowLayout: function () {
+          var payload;
+          if (!window.localStorage || this.requiresSignin) return;
+          payload = {
+            version: 1,
+            activeWindowId: this.activeWindowId || '',
+            showDesktop: !!((this.shellUi || {}).showDesktop),
+            windows: (this.windows || []).map(this.serializeWindowLayout).filter(function (item) { return !!item; })
+          };
+          try { window.localStorage.setItem(this.windowLayoutStorageKey(), JSON.stringify(payload)); } catch (err) {}
+        },
+        restorePersistedWindows: function () {
+          var payload = null;
+          var self = this;
+          if (this.requiresSignin || !window.localStorage) return;
+          try { payload = JSON.parse(window.localStorage.getItem(this.windowLayoutStorageKey()) || 'null'); } catch (err) { payload = null; }
+          if (!payload || !Array.isArray(payload.windows) || !payload.windows.length) return;
+          this.windows = [];
+          this.zCounter = 10;
+          payload.windows.forEach(function (item) {
+            var win = null;
+            if (!item || !item.appKey) return;
+            if (self.createWindowForApp) win = self.createWindowForApp(item.appKey);
+            if (!win) {
+              win = window.MIOOSState.deepClone(item);
+              self.windows.push(win);
+            }
+            Object.assign(win, window.MIOOSState.deepClone(item));
+            if (win.state === 'closed') win.state = 'normal';
+            if (self.ensureWindowFrame) self.ensureWindowFrame(win);
+            if ((win.z || 0) > self.zCounter) self.zCounter = win.z || self.zCounter;
+          });
+          this.activeWindowId = payload.activeWindowId || '';
+          this.shellUi.showDesktop = !!payload.showDesktop;
+          this.$nextTick(function () { if (self.rehydratePersistedWindows) self.rehydratePersistedWindows(); });
+        },
+        rehydratePersistedWindows: function () {
+          var self = this;
+          (this.windows || []).forEach(function (win) {
+            if (!win || win.state === 'closed') return;
+            if ((win.appKey === 'my-computer' || win.appKey === 'documents' || win.appKey === 'explorer') && self.bootstrapExplorerWindow) {
+              self.bootstrapExplorerWindow(win.id, true);
+              if (self.refreshExplorerWindow) self.refreshExplorerWindow(win.id).catch(function () {});
+            }
+            if (win.appKey === 'diagnostics' && self.refreshTransportDiagnostics) self.refreshTransportDiagnostics().catch(function () {});
+            if (win.appKey === 'security-center' && self.refreshSecurityCenter) self.refreshSecurityCenter().catch(function () {});
+            if (win.appKey === 'debug-center' && self.refreshDebugCenter) self.refreshDebugCenter().catch(function () {});
+          });
+        },
+        windowSwitcherItems: function () {
+          return (this.taskbarWindows || []).slice().sort(function (a, b) { return (b.z || 0) - (a.z || 0); });
+        },
+        activateWindowSwitcherIndex: function (index) {
+          var items = this.windowSwitcherItems();
+          if (!items.length) return;
+          this.shellUi.windowSwitcherIndex = Math.max(0, Math.min(items.length - 1, +index || 0));
+        },
+        cycleWindowSwitcher: function (step) {
+          var items = this.windowSwitcherItems();
+          var len = items.length;
+          if (!len) return;
+          if (!this.shellUi.windowSwitcherOpen) {
+            this.shellUi.windowSwitcherOpen = true;
+            this.shellUi.windowSwitcherIndex = 0;
+            return;
+          }
+          this.shellUi.windowSwitcherIndex = (this.shellUi.windowSwitcherIndex + len + (step || 1)) % len;
+        },
+        commitWindowSwitcher: function () {
+          var items = this.windowSwitcherItems();
+          var win = items[this.shellUi.windowSwitcherIndex || 0];
+          this.shellUi.windowSwitcherOpen = false;
+          this.shellUi.windowSwitcherIndex = 0;
+          if (win) this.taskbarToggle(win.id);
+        },
+        cancelWindowSwitcher: function () {
+          this.shellUi.windowSwitcherOpen = false;
+          this.shellUi.windowSwitcherIndex = 0;
+        },
+        restoreShowDesktop: function () {
+          var self = this;
+          (this.windows || []).forEach(function (win) {
+            if (win && win._showDesktopMinimized) {
+              win.state = 'normal';
+              delete win._showDesktopMinimized;
+            }
+          });
+          this.shellUi.showDesktop = false;
+          if (this.activeWindowId) this.focusWindow(this.activeWindowId);
+          else {
+            var items = this.windowSwitcherItems();
+            if (items.length) this.activeWindowId = items[0].id;
+          }
+          this.persistWindowLayout();
+        },
+        toggleShowDesktop: function () {
+          var anyVisible = false;
+          if ((this.shellUi || {}).showDesktop) {
+            this.restoreShowDesktop();
+            return;
+          }
+          (this.windows || []).forEach(function (win) {
+            if (!win || win.state === 'closed' || win.state === 'minimized') return;
+            win._showDesktopMinimized = 1;
+            win.state = 'minimized';
+            anyVisible = true;
+          });
+          if (anyVisible) {
+            this.activeWindowId = '';
+            this.shellUi.showDesktop = true;
+            this.persistWindowLayout();
+            this.pushNotification('info', 'Desktop', 'All windows were minimized to show the desktop.', { timeoutMs: 2200 });
+          }
+        },
+        focusSelectedDesktopEntry: function () {
+          var entry = (this.desktopEntries || []).find(function (item) { return item && item.key === ((this.desktopUi || {}).selectedKey || ''); }.bind(this));
+          if (entry) this.openApp(entry.key);
+        },
+        handleGlobalKeyDown: function (event) {
+          var key = String((event && event.key) || '');
+          var lower = key.toLowerCase();
+          if (!event) return;
+          if (event.altKey && key === 'Tab') {
+            event.preventDefault();
+            this.cycleWindowSwitcher(event.shiftKey ? -1 : 1);
+            return;
+          }
+          if (this.shouldIgnoreGlobalShortcut(event)) return;
+          if (event.metaKey && lower === 'd') {
+            event.preventDefault();
+            this.toggleShowDesktop();
+            return;
+          }
+          if (event.ctrlKey && event.shiftKey && key === 'Escape') {
+            event.preventDefault();
+            this.openApp('diagnostics');
+            return;
+          }
+          if (event.shiftKey && key === 'Escape' && this.activeWindowId && !this.shellDialog.open) {
+            event.preventDefault();
+            this.closeWindow(this.activeWindowId);
+            return;
+          }
+          if (key === 'Escape') {
+            if (this.shellDialog.open) { event.preventDefault(); this.cancelShellDialog(); return; }
+            if (this.shellUi.windowSwitcherOpen) { event.preventDefault(); this.cancelWindowSwitcher(); return; }
+            if (this.menuOpen || ((this.shellUi || {}).trayOpen) || this.desktopContextMenuState().open) {
+              event.preventDefault();
+              this.menuOpen = false;
+              this.shellUi.trayOpen = false;
+              this.closeDesktopContextMenu();
+              return;
+            }
+          }
+          if (key === 'Enter' && !this.menuOpen && !this.shellDialog.open) {
+            this.focusSelectedDesktopEntry();
+          }
+        },
+        handleGlobalKeyUp: function (event) {
+          if (event && event.key === 'Alt' && ((this.shellUi || {}).windowSwitcherOpen)) {
+            event.preventDefault();
+            this.commitWindowSwitcher();
+          }
         },
         bootstrapFromDom: function () {
           var node = window.MIOOSState.getBootNode();
@@ -218,7 +513,7 @@
           this.zCounter = this.windows.reduce(function (max, win) { return Math.max(max, win.z || 0); }, 10) + 1;
           if (this.windows.length) this.activeWindowId = this.windows[0].id;
           if (!Array.isArray(this.shellNotifications)) this.shellNotifications = [];
-          if (!this.shellUi) this.shellUi = { trayOpen: false };
+          if (!this.shellUi) this.shellUi = { trayOpen: false, showDesktop: false, windowSwitcherOpen: false, windowSwitcherIndex: 0, reducedMotion: false };
         },
         startClock: function () {
           var self = this;
@@ -963,11 +1258,12 @@
           this.authWindow.width = width;
         },
         authWindowStyle: function () {
-          return { width: (this.authWindow.width || 440) + 'px', '--mioos-auth-x': (this.authWindow.left || 0) + 'px', '--mioos-auth-y': (this.authWindow.top || 0) + 'px' };
+          return { width: (this.authWindow.width || 440) + 'px', '--mioos-auth-x': (this.authWindow.left || 0) + 'px', '--mioos-auth-y': (this.authWindow.top || 0) + 'px', willChange: (this.authDrag && this.authDrag.active) ? 'transform' : 'auto' };
         },
         beginAuthDrag: function (event) {
           if (!event || event.button !== 0) return;
           this.authDrag = { active: true, startX: event.clientX, startY: event.clientY, left: this.authWindow.left || 0, top: this.authWindow.top || 0 };
+          this.syncInteractionMode();
         },
         onAuthWindowMove: function (event) {
           var drag = this.authDrag || {};
@@ -981,6 +1277,8 @@
         endAuthDrag: function () {
           if (!this.authDrag || !this.authDrag.active) return;
           this.authDrag.active = false;
+          this.persistAuthWindowPosition();
+          this.syncInteractionMode();
         },
         desktopGridMetrics: function () {
           var size = this.desktopUi.iconSize || 'medium';
@@ -1032,7 +1330,8 @@
         },
         desktopIconStyle: function (entry) {
           var pos = ((this.desktopUi || {}).positions || {})[entry.key] || { left: 16, top: 16 };
-          return { '--mioos-x': (+pos.left || 16) + 'px', '--mioos-y': (+pos.top || 16) + 'px' };
+          var dragging = ((((this.desktopUi || {}).drag || {}).active) && (((this.desktopUi || {}).drag || {}).key === entry.key));
+          return { '--mioos-x': (+pos.left || 16) + 'px', '--mioos-y': (+pos.top || 16) + 'px', willChange: dragging ? 'transform' : 'auto' };
         },
         desktopIconClass: function (entry) {
           return {
@@ -1051,6 +1350,7 @@
           this.selectDesktopEntry(entry);
           pos = (this.desktopUi.positions || {})[entry.key] || { left: 16, top: 16 };
           this.desktopUi.drag = { armed: true, active: false, moved: false, key: entry.key, startX: event.clientX, startY: event.clientY, left: +pos.left || 16, top: +pos.top || 16 };
+          this.syncInteractionMode();
         },
         handleGlobalMouseMove: function (event) {
           this.onAuthWindowMove(event);
@@ -1068,7 +1368,7 @@
           if (!drag.armed || !drag.key) return;
           dx = event.clientX - (+drag.startX || 0);
           dy = event.clientY - (+drag.startY || 0);
-          if (!drag.active && ((Math.abs(dx) > 4) || (Math.abs(dy) > 4))) drag.active = true;
+          if (!drag.active && ((Math.abs(dx) > 4) || (Math.abs(dy) > 4))) { drag.active = true; this.syncInteractionMode(); }
           if (!drag.active) return;
           drag.moved = true;
           pos = this.desktopUi.positions[drag.key] || { left: drag.left || 16, top: drag.top || 16 };
@@ -1081,6 +1381,7 @@
           if (!drag.armed) return;
           if (drag.moved) this.persistDesktopLayout();
           this.desktopUi.drag = { armed: false, active: false, moved: false, key: '', startX: 0, startY: 0, left: 0, top: 0 };
+          this.syncInteractionMode();
         },
         desktopLayoutStorageKey: function () {
           return 'mioos.desktop.layout.' + (((this.boot || {}).user || {}).id || 'guest');

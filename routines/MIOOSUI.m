@@ -37,6 +37,7 @@ DESKCTX(STATE,CONF,DATA)
 	SET DATA("shellDialogModel")=$GET(STATE("shellDialogModel"),"shell-modal")
 	SET DATA("windowManager")=$GET(STATE("windowManager"),"mioos-native-vue-css")
 	SET DATA("themeMode")=$GET(STATE("themeMode"),"light")
+	SET DATA("motionPreference")=$GET(STATE("a11yMotionPreference"),"respect-user-preference")
 	SET DATA("windowSnapThreshold")=+$GET(STATE("windowSnapThreshold"),28)
 	SET DATA("windowResizeModel")="all-edges-and-corners"
 	SET DATA("authRequired")=+$GET(STATE("authRequired"),0)

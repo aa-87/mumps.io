@@ -142,6 +142,7 @@
         return win;
       },
       openApp: function (appKey) {
+        if ((this.shellUi || {}).showDesktop && this.restoreShowDesktop) this.restoreShowDesktop();
         if (this.requiresSignin) {
           this.showAlert(this.t('alerts.signinRequired.title'), this.t('alerts.signinRequired.open'));
           return;
@@ -174,14 +175,17 @@
           this.$nextTick(function () { this.refreshDebugCenter().catch(function () {}); }.bind(this));
         }
         this.sendSocket({ event: 'shell.open', appKey: appKey });
+        if (this.persistWindowLayout) this.persistWindowLayout();
       },
       focusWindow: function (windowId) {
         var win = findWindow(this, windowId);
         if (!win) return;
+        if ((this.shellUi || {}).showDesktop && this.restoreShowDesktop) this.restoreShowDesktop();
         this.ensureWindowFrame(win);
         this.zCounter += 1;
         win.z = this.zCounter;
         this.activeWindowId = windowId;
+        if (this.persistWindowLayout) this.persistWindowLayout();
       },
       minimizeWindow: function (windowId) {
         var win = findWindow(this, windowId);
@@ -190,6 +194,7 @@
         win.state = 'minimized';
         this.clearSnapPreview();
         if (this.activeWindowId === windowId) this.activeWindowId = '';
+        if (this.persistWindowLayout) this.persistWindowLayout();
       },
       closeWindow: function (windowId) {
         var win = findWindow(this, windowId);
@@ -201,6 +206,7 @@
         win.state = 'closed';
         this.clearSnapPreview();
         if (this.activeWindowId === windowId) this.activeWindowId = '';
+        if (this.persistWindowLayout) this.persistWindowLayout();
       },
       taskbarToggle: function (windowId) {
         var win = findWindow(this, windowId);
@@ -226,6 +232,7 @@
               if (this.refreshExplorerWindow) this.refreshExplorerWindow(windowId).catch(function () {});
             }.bind(this));
           }
+          if (this.persistWindowLayout) this.persistWindowLayout();
           return;
         }
         if (this.activeWindowId === windowId) this.minimizeWindow(windowId); else this.focusWindow(windowId);
@@ -246,12 +253,14 @@
         win.state = 'maximized';
         this.focusWindow(windowId);
         scheduleTerminalSync(this, win);
+        if (this.persistWindowLayout) this.persistWindowLayout();
       },
       restoreWindow: function (windowId) {
         var win = findWindow(this, windowId);
         if (!win) return;
         restoreWindow(this, win);
         this.focusWindow(windowId);
+        if (this.persistWindowLayout) this.persistWindowLayout();
       },
       toggleMenu: function () {
         if (this.shellUi) this.shellUi.trayOpen = false;
@@ -336,6 +345,7 @@
         this.dragState.top = win.top || 0;
         this.dragState.width = win.width || 600;
         this.dragState.height = win.height || 420;
+        if (this.syncInteractionMode) this.syncInteractionMode();
       },
       beginResize: function (win, edge, event) {
         if (!win || +win.resizable !== 1) return;
@@ -353,6 +363,7 @@
         this.dragState.top = win.top || 0;
         this.dragState.width = win.width || 600;
         this.dragState.height = win.height || 420;
+        if (this.syncInteractionMode) this.syncInteractionMode();
       },
       onDragMove: function (event) {
         var win = findWindow(this, this.dragState.windowId);
@@ -410,6 +421,8 @@
         this.dragState.edge = '';
         this.dragState.windowId = '';
         this.clearSnapPreview();
+        if (this.persistWindowLayout) this.persistWindowLayout();
+        if (this.syncInteractionMode) this.syncInteractionMode();
       },
       onWindowTitleDblClick: function (windowId) {
         this.toggleMaximize(windowId);
@@ -438,6 +451,7 @@
           } else clampWindow(self, win);
           scheduleTerminalSync(self, win);
         });
+        if (this.persistWindowLayout) this.persistWindowLayout();
       },
       onWindowDragOver: function (win, event) {
         if (!win || !(((this.boot || {}).desktop || {}).windowing || {}).dropUpload) return;

@@ -484,6 +484,88 @@ button, input { font: inherit; }
 }
 
 
+.mioos-root.mioos-motion-reduced *,
+.mioos-root.mioos-motion-reduced *::before,
+.mioos-root.mioos-motion-reduced *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+.mioos-window-switcher {
+  position: fixed;
+  inset: auto auto calc(var(--mioos-taskbar-height) + 18px) 50%;
+  transform: translateX(-50%);
+  z-index: 4050;
+  width: min(560px, calc(100vw - 40px));
+  border: 1px solid color-mix(in srgb, var(--mioos-border) 78%, transparent 22%);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--mioos-panel-2) 96%, transparent 4%);
+  box-shadow: 0 22px 52px rgba(0, 24, 64, 0.36);
+  backdrop-filter: blur(12px);
+}
+.mioos-window-switcher-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid color-mix(in srgb, var(--mioos-border) 72%, transparent 28%);
+  color: var(--mioos-text);
+}
+.mioos-window-switcher-head span { color: var(--mioos-muted); font-size: 12px; }
+.mioos-window-switcher-body { display: grid; gap: 8px; padding: 12px; max-height: 320px; overflow: auto; }
+.mioos-window-switcher-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--mioos-panel) 84%, transparent 16%);
+  color: var(--mioos-text);
+  text-align: left;
+}
+.mioos-window-switcher-item:hover,
+.mioos-window-switcher-item.is-current {
+  border-color: color-mix(in srgb, var(--mioos-focus) 68%, transparent 32%);
+  background: color-mix(in srgb, var(--mioos-focus) 14%, var(--mioos-panel) 86%);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--mioos-focus) 18%, transparent 82%);
+}
+.mioos-window-switcher-copy { display: flex; flex-direction: column; min-width: 0; }
+.mioos-window-switcher-copy strong,
+.mioos-window-switcher-copy em { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mioos-window-switcher-copy em { color: var(--mioos-muted); font-style: normal; font-size: 12px; }
+.mioos-show-desktop {
+  min-width: 70px;
+  min-height: 34px;
+  margin-inline-end: 10px;
+  border: 1px solid rgba(255,255,255,0.16);
+  border-radius: 10px;
+  background: rgba(255,255,255,0.08);
+  color: var(--mioos-taskbar-text);
+}
+.mioos-tray-panel-actions { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.mioos-desktop.is-desktop-suspended .mioos-desktop-icons { opacity: 0.96; }
+.mioos-root.is-pointer-guard .mioos-shell-wallpaper,
+.mioos-root.is-pointer-guard .mioos-start-menu,
+.mioos-root.is-pointer-guard .mioos-context-menu { pointer-events: none; }
+.mioos-root.is-window-dragging .mioos-window,
+.mioos-root.is-window-resizing .mioos-window,
+.mioos-root.is-icon-dragging .mioos-desktop-icon,
+.mioos-root.is-auth-dragging .mioos-auth-card { user-select: none; }
+.mioos-root.is-window-dragging .mioos-titlebar,
+.mioos-root.is-auth-dragging .mioos-auth-titlebar,
+.mioos-root.is-icon-dragging .mioos-desktop-icon { cursor: grabbing; }
+.mioos-desktop-icon:focus-visible,
+.mioos-show-desktop:focus-visible,
+.mioos-window-switcher-item:focus-visible {
+  outline: 2px solid var(--mioos-focus);
+  outline-offset: 2px;
+}
+
 .mioos-window-body.is-terminal-body { padding: 0; background: #08101a; }
 .mioos-terminal-shell { display: flex; flex-direction: column; min-height: 100%; background: linear-gradient(180deg, #0f1724 0%, #08101a 100%); color: #d3e7ff; }
 .mioos-terminal-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03); }
@@ -1351,3 +1433,6 @@ button, input { font: inherit; }
 [dir="rtl"] .mioos-notification-stack { right: auto; left: 18px; }
 [dir="rtl"] .mioos-notification-close { right: auto; left: 6px; }
 [dir="rtl"] .mioos-tray-panel { right: auto; left: 0; }
+
+
+/* ROI 55 — persistence, keyboard shortcuts, and accessibility polish */

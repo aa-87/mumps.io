@@ -48,6 +48,7 @@ MIOOST ; MIOOS tests
 	DO T051
 	DO T052
 	DO T053
+	DO T054
 	QUIT
 	;
 RESET
@@ -1077,4 +1078,29 @@ T053
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","ROI 54 — shell-standard built-in app actions"),"[MIOOST][T053][css roi54]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 54 — shell-standard app actions and built-in surface cleanup"),"[MIOOST][T053][llm roi54]")
 	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","ROI 54 — shell-standard app actions and built-in surface cleanup"),"[MIOOST][T053][docs roi54]")
+	QUIT
+
+
+	;
+T054
+	NEW CONF,REQ,CTX,STATE,BOOT,ERR
+	DO RESET
+	DO CONFDEF^MIOOS(.CONF)
+	DO INIT^MIOOS(.CONF)
+	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T054][load]")
+	DO BOOTARY^MIOOSST(.STATE,.CONF,.BOOT)
+	DO EQ^MIOTASSERT($GET(BOOT("desktop","accessibility","keyboardShortcuts","showDesktop")),"Meta+D","[MIOOST][T054][show desktop shortcut]")
+	DO EQ^MIOTASSERT($GET(BOOT("desktop","accessibility","keyboardShortcuts","windowSwitcher")),"Alt+Tab","[MIOOST][T054][window switcher shortcut]")
+	DO EQ^MIOTASSERT($GET(BOOT("desktop","performance","windowPersistence")),"localstorage-open-window-layout","[MIOOST][T054][window persistence]")
+	DO EQ^MIOTASSERT($GET(BOOT("desktop","performance","desktopLayoutPersistence")),"localstorage-icon-layout","[MIOOST][T054][desktop layout persistence]")
+	DO EQ^MIOTASSERT(+$GET(BOOT("desktop","shellSurfaces","windowSwitcher")),1,"[MIOOST][T054][window switcher surface]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-window-switcher"),"[MIOOST][T054][window switcher ui]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","toggleShowDesktop()"),"[MIOOST][T054][show desktop ui]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","restorePersistedWindows"),"[MIOOST][T054][restore windows method]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","handleGlobalKeyDown"),"[MIOOST][T054][global keydown]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","toggleReducedMotion"),"[MIOOST][T054][reduced motion method]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_wm.js","persistWindowLayout"),"[MIOOST][T054][persist windows token]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","mioos-window-switcher"),"[MIOOST][T054][window switcher css]")
+	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 55 — persistence, keyboard shortcuts, and accessibility polish"),"[MIOOST][T054][llm roi55]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","ROI 55 — persistence, keyboard shortcuts, and accessibility polish"),"[MIOOST][T054][docs roi55]")
 	QUIT

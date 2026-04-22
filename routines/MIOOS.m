@@ -51,6 +51,14 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","desktop","themeSystem","liveApply"))="" SET CONF("mioos","desktop","themeSystem","liveApply")=1
 	IF $GET(CONF("mioos","desktop","themeSystem","quickSwitch"))="" SET CONF("mioos","desktop","themeSystem","quickSwitch")=1
 	IF $GET(CONF("mioos","desktop","themeSystem","version"))="" SET CONF("mioos","desktop","themeSystem","version")=2
+	IF $GET(CONF("mioos","desktop","windowPersistence"))="" SET CONF("mioos","desktop","windowPersistence")="localstorage-open-window-layout"
+	IF $GET(CONF("mioos","desktop","desktopLayoutPersistence"))="" SET CONF("mioos","desktop","desktopLayoutPersistence")="localstorage-icon-layout"
+	IF $GET(CONF("mioos","desktop","accessibility","persistence"))="" SET CONF("mioos","desktop","accessibility","persistence")="localstorage-shell-accessibility"
+	IF $GET(CONF("mioos","desktop","accessibility","reducedMotionToggle"))="" SET CONF("mioos","desktop","accessibility","reducedMotionToggle")=1
+	IF $GET(CONF("mioos","desktop","accessibility","keyboardShortcuts","showDesktop"))="" SET CONF("mioos","desktop","accessibility","keyboardShortcuts","showDesktop")="Meta+D"
+	IF $GET(CONF("mioos","desktop","accessibility","keyboardShortcuts","windowSwitcher"))="" SET CONF("mioos","desktop","accessibility","keyboardShortcuts","windowSwitcher")="Alt+Tab"
+	IF $GET(CONF("mioos","desktop","accessibility","keyboardShortcuts","closeFocusedWindow"))="" SET CONF("mioos","desktop","accessibility","keyboardShortcuts","closeFocusedWindow")="Shift+Escape"
+	IF $GET(CONF("mioos","desktop","accessibility","keyboardShortcuts","openDiagnostics"))="" SET CONF("mioos","desktop","accessibility","keyboardShortcuts","openDiagnostics")="Ctrl+Shift+Escape"
 	IF $GET(CONF("mioos","desktop","appSurfaceModel"))="" SET CONF("mioos","desktop","appSurfaceModel")="shell-standard-actions"
 	IF $GET(CONF("mioos","desktop","appActions","confirmBeforeDestructive"))="" SET CONF("mioos","desktop","appActions","confirmBeforeDestructive")=1
 	IF $GET(CONF("mioos","desktop","appActions","notifyOnAdminActions"))="" SET CONF("mioos","desktop","appActions","notifyOnAdminActions")=1

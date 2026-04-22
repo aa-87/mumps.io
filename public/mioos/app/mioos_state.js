@@ -59,7 +59,15 @@
           rtl: false,
           keyboardModel: 'desktop-first',
           screenReaderHints: 1,
-          motionPreference: 'respect-user-preference'
+          motionPreference: 'respect-user-preference',
+          reducedMotionToggle: true,
+          persistence: 'localstorage-shell-accessibility',
+          keyboardShortcuts: {
+            showDesktop: 'Meta+D',
+            windowSwitcher: 'Alt+Tab',
+            closeFocusedWindow: 'Shift+Escape',
+            openDiagnostics: 'Ctrl+Shift+Escape'
+          }
         },
         performance: {
           clientModel: 'thin-vue-umd',
@@ -70,6 +78,8 @@
           uploadStrategy: 'http-binary-parallel-slice-xhr-with-auto-pause',
           uploadFinalizeStrategy: 'binary-direct-stage-promote-with-copy-on-overwrite',
           transferPersistence: 'localstorage-resumable-transfer-list',
+          windowPersistence: 'localstorage-open-window-layout',
+          desktopLayoutPersistence: 'localstorage-icon-layout',
           downloadStrategy: 'direct-http-range-native',
           downloadSendStrategy: 'vfs-segment-streaming-http-blob',
           mediaStreamStrategy: 'range-kickstart-http-blob-partial-window',
@@ -102,7 +112,7 @@
           dropUpload: 1
         },
         themeSystem: { version: 2, editor: 'theme-studio', persistence: 'localstorage-applied-profile', liveApply: true, quickSwitch: true, densityOptions: ['compact', 'comfortable', 'spacious'] },
-        shellSurfaces: { explorer: true, themeStudio: true, transfers: true, diagnostics: true, securityCenter: true, appCatalog: true, debugCenter: true, moduleWindows: true, notifications: true, dialogs: true },
+        shellSurfaces: { explorer: true, themeStudio: true, transfers: true, diagnostics: true, securityCenter: true, appCatalog: true, debugCenter: true, moduleWindows: true, notifications: true, dialogs: true, windowSwitcher: true },
         appSurfaceModel: 'shell-standard-actions',
         appActions: { confirmBeforeDestructive: true, notifyOnAdminActions: true, copyExportsToClipboard: true, moduleNotesSessionLocal: true },
         notifications: { model: 'toast-and-tray', stackLimit: 6, tray: true },
