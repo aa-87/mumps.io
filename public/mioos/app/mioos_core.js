@@ -28,6 +28,10 @@
           clockText: '',
           alertTitle: '',
           alertMessage: '',
+          shellNotifications: [],
+          notificationSeq: 0,
+          shellUi: { trayOpen: false },
+          shellDialog: { open: false, type: '', title: '', message: '', detail: '', confirmText: 'OK', cancelText: 'Cancel', value: '', placeholder: '', resolve: null, reject: null },
           zCounter: 10,
           dragState: {
             active: false,
@@ -213,6 +217,8 @@
           this.normalizeDesktopUiState();
           this.zCounter = this.windows.reduce(function (max, win) { return Math.max(max, win.z || 0); }, 10) + 1;
           if (this.windows.length) this.activeWindowId = this.windows[0].id;
+          if (!Array.isArray(this.shellNotifications)) this.shellNotifications = [];
+          if (!this.shellUi) this.shellUi = { trayOpen: false };
         },
         startClock: function () {
           var self = this;
@@ -225,6 +231,118 @@
         },
         t: function (key, fallback) {
           return I18N.t ? I18N.t(this, key, fallback) : (fallback || key);
+        },
+        pushNotification: function (type, title, message, opts) {
+          var entry;
+          var self = this;
+          var limit = +(((((this.boot || {}).desktop || {}).notifications || {}).stackLimit) || 6);
+          opts = opts || {};
+          entry = {
+            id: 'note-' + (++this.notificationSeq),
+            type: type || 'info',
+            title: title || this.t('alerts.shell.title', 'MIOOS'),
+            message: message || '',
+            detail: opts.detail || '',
+            ts: Date.now(),
+            read: false,
+            sticky: !!opts.sticky,
+            timeoutMs: +opts.timeoutMs || 0
+          };
+          this.shellNotifications.unshift(entry);
+          if (this.shellNotifications.length > limit) this.shellNotifications.splice(limit);
+          if (!entry.sticky && entry.timeoutMs > 0) {
+            window.setTimeout(function () {
+              self.dismissNotification(entry.id);
+            }, entry.timeoutMs);
+          }
+          return entry;
+        },
+        dismissNotification: function (id) {
+          this.shellNotifications = (this.shellNotifications || []).filter(function (item) { return item.id !== id; });
+        },
+        markNotificationRead: function (id) {
+          (this.shellNotifications || []).forEach(function (item) {
+            if (!id || item.id === id) item.read = true;
+          });
+        },
+        markAllNotificationsRead: function () {
+          this.markNotificationRead('');
+        },
+        unreadNotificationCount: function () {
+          return (this.shellNotifications || []).filter(function (item) { return !item.read; }).length;
+        },
+        toggleTrayPanel: function () {
+          this.menuOpen = false;
+          this.closeDesktopContextMenu();
+          this.shellUi.trayOpen = !((this.shellUi || {}).trayOpen);
+          if (this.shellUi.trayOpen) this.markAllNotificationsRead();
+        },
+        clearNotifications: function () {
+          this.shellNotifications.splice(0, this.shellNotifications.length);
+          if (this.dismissAlert) this.dismissAlert();
+        },
+        showDialog: function (opts) {
+          var self = this;
+          opts = opts || {};
+          if (this.shellDialog && this.shellDialog.open && this.shellDialog.resolve) {
+            this.shellDialog.resolve({ action: 'cancel', value: '' });
+          }
+          this.shellDialog = {
+            open: true,
+            type: opts.type || 'alert',
+            title: opts.title || this.t('alerts.shell.title', 'MIOOS'),
+            message: opts.message || '',
+            detail: opts.detail || '',
+            confirmText: opts.confirmText || this.t('common.ok', 'OK'),
+            cancelText: opts.cancelText || this.t('common.cancel', 'Cancel'),
+            value: typeof opts.value === 'undefined' ? '' : String(opts.value || ''),
+            placeholder: opts.placeholder || '',
+            resolve: null,
+            reject: null
+          };
+          return new Promise(function (resolve, reject) {
+            self.shellDialog.resolve = resolve;
+            self.shellDialog.reject = reject;
+          });
+        },
+        resolveShellDialog: function (action) {
+          var dialog = this.shellDialog || {};
+          var resolver = dialog.resolve;
+          var result = { action: action || 'confirm', value: dialog.value || '' };
+          this.shellDialog = { open: false, type: '', title: '', message: '', detail: '', confirmText: 'OK', cancelText: 'Cancel', value: '', placeholder: '', resolve: null, reject: null };
+          if (resolver) resolver(result);
+        },
+        cancelShellDialog: function () {
+          this.resolveShellDialog('cancel');
+        },
+        confirmDialog: function (title, message, opts) {
+          opts = opts || {};
+          return this.showDialog({
+            type: 'confirm',
+            title: title,
+            message: message,
+            detail: opts.detail || '',
+            confirmText: opts.confirmText || this.t('common.ok', 'OK'),
+            cancelText: opts.cancelText || this.t('common.cancel', 'Cancel')
+          }).then(function (result) {
+            return !!(result && result.action === 'confirm');
+          });
+        },
+        inputDialog: function (title, message, value, opts) {
+          opts = opts || {};
+          return this.showDialog({
+            type: 'input',
+            title: title,
+            message: message,
+            detail: opts.detail || '',
+            value: value || '',
+            placeholder: opts.placeholder || '',
+            confirmText: opts.confirmText || this.t('common.save', 'Save'),
+            cancelText: opts.cancelText || this.t('common.cancel', 'Cancel')
+          }).then(function (result) {
+            if (!result || result.action !== 'confirm') return null;
+            return String(result.value || '').trim();
+          });
         },
         refreshSecurityCenter: function () {
           var self = this;

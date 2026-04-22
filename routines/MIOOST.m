@@ -46,6 +46,7 @@ MIOOST ; MIOOS tests
 	DO T049
 	DO T050
 	DO T051
+	DO T052
 	QUIT
 	;
 RESET
@@ -1021,4 +1022,29 @@ T051
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","contrast-dark"),"[MIOOST][T051][contrast dark css]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 52 — theme system 2.0 and unified shell surfaces"),"[MIOOST][T051][llm roi52]")
 	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","ROI 52 — theme system 2.0 and unified shell surfaces"),"[MIOOST][T051][docs roi52]")
+	QUIT
+
+	;
+T052
+	NEW CONF,REQ,CTX,STATE,BOOT,ERR
+	DO RESET
+	DO CONFDEF^MIOOS(.CONF)
+	DO INIT^MIOOS(.CONF)
+	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T052][load]")
+	DO BOOTARY^MIOOSST(.STATE,.CONF,.BOOT)
+	DO EQ^MIOTASSERT($GET(BOOT("desktop","notifications","model")),"toast-and-tray","[MIOOST][T052][notification model]")
+	DO EQ^MIOTASSERT(+$GET(BOOT("desktop","notifications","stackLimit")),6,"[MIOOST][T052][notification stack]")
+	DO EQ^MIOTASSERT($GET(BOOT("desktop","dialogs","model")),"shell-standard","[MIOOST][T052][dialog model]")
+	DO EQ^MIOTASSERT(+$GET(BOOT("desktop","shellSurfaces","notifications")),1,"[MIOOST][T052][notifications surface]")
+	DO EQ^MIOTASSERT(+$GET(BOOT("desktop","shellSurfaces","dialogs")),1,"[MIOOST][T052][dialogs surface]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-notification-stack"),"[MIOOST][T052][notification stack ui]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-shell-dialog"),"[MIOOST][T052][shell dialog ui]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-tray-panel"),"[MIOOST][T052][tray panel ui]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","pushNotification"),"[MIOOST][T052][push notification method]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","inputDialog"),"[MIOOST][T052][input dialog method]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","this.inputDialog"),"[MIOOST][T052][explorer shell input]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","this.confirmDialog"),"[MIOOST][T052][explorer shell confirm]")
+	DO EQ^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html"," win7"),0,"[MIOOST][T052][no win7 surface token]")
+	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 53 — shell-standard dialogs, notifications, and built-in app cleanup"),"[MIOOST][T052][llm roi53]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","ROI 53 — shell-standard dialogs, notifications, and built-in app cleanup"),"[MIOOST][T052][docs roi53]")
 	QUIT

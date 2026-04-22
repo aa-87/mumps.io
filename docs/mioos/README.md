@@ -225,3 +225,9 @@ ROI 52 — theme system 2.0 and unified shell surfaces
 - Added quick shell theme and density switching in the launcher plus new Glass Dark / Contrast Light / Contrast Dark presets.
 - Normalized Explorer, Transfers, and Theme Studio onto shared shell-surface styling so built-in apps follow one desktop contract.
 - Added batch transfer controls for pause, resume, and cancel-active flows, while keeping transfer persistence intact.
+
+
+ROI 53 — shell-standard dialogs, notifications, and built-in app cleanup
+- Added shell-standard toast/tray notifications and reusable confirm/input dialogs.
+- Explorer create/rename/move/delete flows now use shell dialogs instead of browser prompt/confirm.
+- Diagnostics, Security Center, Debug Center, Module Catalog, and module windows now mount through unified shell-surface classes instead of legacy `win7` surface markers.

@@ -120,6 +120,7 @@
       showAlert: function (title, message) {
         this.alertTitle = title;
         this.alertMessage = message;
+        if (this.pushNotification) this.pushNotification('alert', title, message, { timeoutMs: 5200 });
       },
       dismissAlert: function () {
         this.alertTitle = '';

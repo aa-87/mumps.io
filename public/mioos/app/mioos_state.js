@@ -102,7 +102,9 @@
           dropUpload: 1
         },
         themeSystem: { version: 2, editor: 'theme-studio', persistence: 'localstorage-applied-profile', liveApply: true, quickSwitch: true, densityOptions: ['compact', 'comfortable', 'spacious'] },
-        shellSurfaces: { explorer: true, themeStudio: true, transfers: true, diagnostics: true, securityCenter: true, appCatalog: true, debugCenter: true },
+        shellSurfaces: { explorer: true, themeStudio: true, transfers: true, diagnostics: true, securityCenter: true, appCatalog: true, debugCenter: true, notifications: true, dialogs: true },
+        notifications: { model: 'toast-and-tray', stackLimit: 6, tray: true },
+        dialogs: { model: 'shell-standard', confirm: true, input: true },
         themes: [
           { key: 'foundation-light', title: 'Foundation Light', family: 'Foundation', mode: 'light', wallpaper: 'aurora', accent: '#2f6fed', taskbar: '#e8eef8' },
           { key: 'foundation-dark', title: 'Foundation Dark', family: 'Foundation', mode: 'dark', wallpaper: 'aurora-night', accent: '#7db4ff', taskbar: '#111a28' },
@@ -203,6 +205,8 @@
     base.desktop.windowing = Object.assign(base.desktop.windowing, (boot.desktop || {}).windowing || {});
     base.desktop.themeSystem = Object.assign({}, (defaultBoot().desktop.themeSystem || {}), base.desktop.themeSystem || {}, (boot.desktop || {}).themeSystem || {});
     base.desktop.shellSurfaces = Object.assign({}, (defaultBoot().desktop.shellSurfaces || {}), base.desktop.shellSurfaces || {}, (boot.desktop || {}).shellSurfaces || {});
+    base.desktop.notifications = Object.assign({}, (defaultBoot().desktop.notifications || {}), base.desktop.notifications || {}, (boot.desktop || {}).notifications || {});
+    base.desktop.dialogs = Object.assign({}, (defaultBoot().desktop.dialogs || {}), base.desktop.dialogs || {}, (boot.desktop || {}).dialogs || {});
     base.desktop.themes = Array.isArray((boot.desktop || {}).themes) && (boot.desktop || {}).themes.length ? deepClone((boot.desktop || {}).themes) : deepClone(defaultBoot().desktop.themes || []);
     base.auth = Object.assign(base.auth, boot.auth || {});
     base.auth.providers = Object.assign({}, (defaultBoot().auth.providers || {}), base.auth.providers || {}, (boot.auth || {}).providers || {});

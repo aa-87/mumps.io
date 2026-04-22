@@ -1156,3 +1156,178 @@ button, input { font: inherit; }
 .mioos-root.mioos-density-spacious { --mioos-taskbar-height: 52px; --mioos-base-size: 14px; --mioos-title-size: 14px; }
 .mioos-root.mioos-density-spacious .mioos-window-body { padding: 18px; }
 .mioos-root.mioos-density-spacious .mioos-desktop-icon { width: 96px; min-height: 92px; }
+
+
+/* ROI 53 — shell-standard dialogs, notifications, and built-in app cleanup */
+.mioos-notification-stack {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  z-index: 4200;
+  display: grid;
+  gap: 10px;
+  width: min(360px, calc(100vw - 28px));
+}
+.mioos-notification {
+  position: relative;
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  border-left: 4px solid var(--mioos-start);
+  border-radius: 12px;
+  background: rgba(255,255,255,0.92);
+  color: var(--mioos-text);
+  box-shadow: 0 14px 30px rgba(0, 24, 64, 0.18);
+  backdrop-filter: blur(14px);
+  padding: 12px 14px 12px 14px;
+}
+.mioos-notification.is-alert { border-left-color: #c62828; }
+.mioos-notification.is-success { border-left-color: #1f8b4c; }
+.mioos-notification.is-info { border-left-color: #2f6fed; }
+.mioos-notification-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.mioos-notification-head small,
+.mioos-notification-detail {
+  color: var(--mioos-muted);
+  font-size: 11px;
+}
+.mioos-notification p { margin: 0; line-height: 1.4; }
+.mioos-notification-close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+}
+.mioos-notification-close:hover { background: rgba(47, 111, 237, 0.10); }
+
+.mioos-tray { position: relative; }
+.mioos-tray-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.12);
+  color: var(--mioos-taskbar-text);
+  border-radius: 999px;
+  padding: 6px 10px;
+}
+.mioos-tray-action strong {
+  min-width: 18px;
+  min-height: 18px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.92);
+  color: var(--mioos-blue-3);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+}
+.mioos-tray-panel {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 10px);
+  width: min(380px, calc(100vw - 24px));
+  border-radius: 14px;
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  background: rgba(255,255,255,0.96);
+  color: var(--mioos-text);
+  box-shadow: 0 20px 40px rgba(0, 24, 64, 0.24);
+  overflow: hidden;
+}
+.mioos-tray-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.10);
+  background: rgba(244,247,251,0.94);
+}
+.mioos-tray-panel-head button {
+  border: 1px solid var(--mioos-border);
+  background: #fff;
+  border-radius: 6px;
+  padding: 6px 10px;
+}
+.mioos-tray-panel-body {
+  display: grid;
+  gap: 8px;
+  max-height: 320px;
+  overflow: auto;
+  padding: 12px;
+}
+.mioos-tray-note {
+  border: 1px solid rgba(36,94,219,0.12);
+  background: rgba(247,250,255,0.95);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.mioos-tray-note strong { display: block; margin-bottom: 4px; }
+.mioos-tray-note p { margin: 0 0 6px; line-height: 1.35; }
+.mioos-tray-note small,
+.mioos-tray-panel-empty { color: var(--mioos-muted); }
+.mioos-tray-panel-empty { padding: 18px 14px; }
+
+.mioos-shell-dialog {
+  min-width: 360px;
+  max-width: min(540px, calc(100vw - 28px));
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(15, 23, 42, 0.18);
+  background: rgba(255,255,255,0.98);
+  box-shadow: 0 24px 60px rgba(0, 24, 64, 0.34);
+}
+.mioos-shell-dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(232,239,248,0.98));
+  border-bottom: 1px solid rgba(15,23,42,0.10);
+}
+.mioos-shell-dialog-head button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+}
+.mioos-shell-dialog-body {
+  padding: 14px;
+  display: grid;
+  gap: 12px;
+}
+.mioos-shell-dialog-body p { margin: 0; line-height: 1.45; }
+.mioos-shell-dialog-detail {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(36,94,219,0.08);
+  color: var(--mioos-muted);
+  font-size: 12px;
+}
+.mioos-shell-dialog .default {
+  border: 1px solid var(--mioos-blue-2);
+  background: linear-gradient(180deg, var(--mioos-blue-1), #ffffff);
+}
+.mioos-shell-surface--diagnostics,
+.mioos-shell-surface--security,
+.mioos-shell-surface--debug,
+.mioos-shell-surface--catalog,
+.mioos-shell-surface--module {
+  padding: 12px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.64), rgba(236,242,251,0.82));
+}
+.mioos-shell-surface--security .mioos-security-center-shell { background: transparent; }
+[dir="rtl"] .mioos-notification-stack { right: auto; left: 18px; }
+[dir="rtl"] .mioos-notification-close { right: auto; left: 6px; }
+[dir="rtl"] .mioos-tray-panel { right: auto; left: 0; }

@@ -414,6 +414,14 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","shellSurfaces","securityCenter")=1
 	SET OBJ("desktop","shellSurfaces","appCatalog")=1
 	SET OBJ("desktop","shellSurfaces","debugCenter")=1
+	SET OBJ("desktop","shellSurfaces","notifications")=1
+	SET OBJ("desktop","shellSurfaces","dialogs")=1
+	SET OBJ("desktop","notifications","model")=$GET(STATE("notificationsModel"),"toast-and-tray")
+	SET OBJ("desktop","notifications","stackLimit")=+$GET(STATE("notificationsStackLimit"),6)
+	SET OBJ("desktop","notifications","tray")=1
+	SET OBJ("desktop","dialogs","model")="shell-standard"
+	SET OBJ("desktop","dialogs","confirm")=1
+	SET OBJ("desktop","dialogs","input")=1
 	SET OBJ("desktop","themeSystem","version")=+$GET(STATE("themeSystemVersion"),2)
 	SET OBJ("desktop","themeSystem","editor")=$GET(STATE("themeSystemEditor"),"theme-studio")
 	SET OBJ("desktop","themeSystem","persistence")=$GET(STATE("themeSystemPersistence"),"localstorage-applied-profile")

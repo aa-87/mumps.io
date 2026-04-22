@@ -57,6 +57,18 @@
     <button type="button" @click="dismissAlert">[[ t('alert.dismiss') ]]</button>
   </div>
 
+  <section class="mioos-notification-stack" v-if="shellNotifications.length" aria-label="shell notifications" aria-live="polite">
+    <article v-for="note in shellNotifications" :key="note.id" class="mioos-notification" :class="'is-' + (note.type || 'info')" @mouseenter="markNotificationRead(note.id)">
+      <header class="mioos-notification-head">
+        <strong>[[ note.title ]]</strong>
+        <small>[[ formatTransportTime(note.ts) ]]</small>
+      </header>
+      <p>[[ note.message ]]</p>
+      <div class="mioos-notification-detail" v-if="note.detail">[[ note.detail ]]</div>
+      <button type="button" class="mioos-notification-close" @click="dismissNotification(note.id)" :aria-label="t('action.close')">×</button>
+    </article>
+  </section>
+
   <section class="mioos-auth-overlay" v-if="requiresSignin" aria-hidden="false">
     <div class="mioos-auth-card" role="dialog" aria-modal="true" :aria-label="boot.product.name" data-auth-password-change="1" :style="authWindowStyle()">
       <div class="mioos-auth-titlebar" @mousedown.stop="beginAuthDrag($event)">
@@ -173,7 +185,7 @@
     </div>
   </aside>
 
-  <main class="mioos-desktop" @click="menuOpen=false; closeDesktopContextMenu()" @contextmenu.prevent="openDesktopContextMenu($event)">
+  <main class="mioos-desktop" @click="menuOpen=false; shellUi.trayOpen=false; closeDesktopContextMenu()" @contextmenu.prevent="openDesktopContextMenu($event)">
     <div class="mioos-shell-wallpaper" aria-hidden="true"></div>
     <div v-if="snapPreview.active" class="mioos-snap-preview" :data-snap-zone="snapPreview.zone" :style="snapPreviewStyle()"></div>
     <section class="mioos-desktop-icons" :aria-label="t('desktop.icons')" :data-icon-size="desktopUi.iconSize">
@@ -431,7 +443,7 @@
           </div>
         </template>
         <template v-else-if="win.appKey === 'diagnostics'">
-          <div class="mioos-diagnostics-shell win7" data-transport-diagnostics-window="1">
+          <div class="mioos-diagnostics-shell mioos-shell-surface mioos-shell-surface--diagnostics" data-transport-diagnostics-window="1">
             <div class="window-body mioos-seven-body">
               <div class="mioos-diagnostics-head">
                 <div>
@@ -490,7 +502,7 @@
           </div>
         </template>
         <template v-else-if="win.appKey === 'security-center'">
-          <div class="mioos-security-center-shell win7" data-security-center-window="1">
+          <div class="mioos-security-center-shell mioos-shell-surface mioos-shell-surface--security" data-security-center-window="1">
             <div class="window-body mioos-seven-body">
               <div class="mioos-security-center-head">
                 <div>
@@ -605,7 +617,7 @@
           </div>
         </template>
         <template v-else-if="win.appKey === 'debug-center'">
-          <div class="mioos-debug-center-shell win7" data-debug-center-window="1">
+          <div class="mioos-debug-center-shell mioos-shell-surface mioos-shell-surface--debug" data-debug-center-window="1">
             <div class="window-body mioos-seven-body">
               <div class="mioos-debug-center-head">
                 <div>
@@ -663,7 +675,7 @@
           </div>
         </template>
         <template v-else-if="win.appKey === 'app-catalog'">
-          <div class="mioos-module-catalog-shell win7" data-module-catalog-window="1">
+          <div class="mioos-module-catalog-shell mioos-shell-surface mioos-shell-surface--catalog" data-module-catalog-window="1">
             <div class="window-body mioos-seven-body">
               <div class="mioos-module-catalog-head">
                 <div>
@@ -706,7 +718,7 @@
           </div>
         </template>
         <template v-else-if="win.moduleWindow">
-          <div class="mioos-module-window-shell win7" data-module-window="1" :data-module-id="win.moduleId || win.appKey">
+          <div class="mioos-module-window-shell mioos-shell-surface mioos-shell-surface--module" data-module-window="1" :data-module-id="win.moduleId || win.appKey">
             <div class="window-body mioos-seven-body">
               <div class="mioos-module-window-head">
                 <div>
@@ -1010,11 +1022,50 @@
       </button>
     </div>
     <div class="mioos-tray" aria-live="polite">
+      <button type="button" class="mioos-tray-action" @click.stop="toggleTrayPanel">
+        <span>Notifications</span>
+        <strong v-if="unreadNotificationCount()">[[ unreadNotificationCount() ]]</strong>
+      </button>
       <span class="mioos-tray-pill">[[ socketConnected ? t('tray.socketLive') : t('tray.socketOffline') ]]</span>
       <span class="mioos-tray-pill">[[ boot.user.authenticated ? t('tray.signedIn') : t('tray.anonymous') ]]</span>
       <span class="mioos-tray-clock">[[ clockText ]]</span>
+      <section class="mioos-tray-panel" v-if="shellUi.trayOpen" @click.stop>
+        <header class="mioos-tray-panel-head">
+          <strong>Shell notifications</strong>
+          <button type="button" @click="clearNotifications()">Clear all</button>
+        </header>
+        <div class="mioos-tray-panel-body" v-if="shellNotifications.length">
+          <article v-for="note in shellNotifications" :key="note.id" class="mioos-tray-note" :class="'is-' + (note.type || 'info')">
+            <strong>[[ note.title ]]</strong>
+            <p>[[ note.message ]]</p>
+            <small>[[ formatTransportTime(note.ts) ]]</small>
+          </article>
+        </div>
+        <div class="mioos-tray-panel-empty" v-else>No notifications yet.</div>
+      </section>
     </div>
   </footer>
+
+  <section class="mioos-dialog-scrim" v-if="shellDialog.open" @click.self="cancelShellDialog()">
+    <div class="mioos-shell-dialog mioos-name-dialog" role="dialog" aria-modal="true" :aria-label="shellDialog.title">
+      <header class="mioos-shell-dialog-head">
+        <strong>[[ shellDialog.title ]]</strong>
+        <button type="button" @click="cancelShellDialog()" :aria-label="t('action.close')">×</button>
+      </header>
+      <div class="mioos-shell-dialog-body">
+        <p>[[ shellDialog.message ]]</p>
+        <div class="mioos-shell-dialog-detail" v-if="shellDialog.detail">[[ shellDialog.detail ]]</div>
+        <label class="mioos-name-dialog-field" v-if="shellDialog.type === 'input'">
+          <span>Value</span>
+          <input v-model="shellDialog.value" type="text" :placeholder="shellDialog.placeholder" @keydown.enter.prevent="resolveShellDialog('confirm')">
+        </label>
+        <div class="mioos-name-dialog-actions">
+          <button type="button" @click="cancelShellDialog()">[[ shellDialog.cancelText ]]</button>
+          <button type="button" class="default" @click="resolveShellDialog('confirm')">[[ shellDialog.confirmText ]]</button>
+        </div>
+      </div>
+    </div>
+  </section>
 </div>
 
 <script src="/public/mioos/mioos_desktop.js"></script>

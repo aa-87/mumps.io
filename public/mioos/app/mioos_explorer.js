@@ -1347,15 +1347,18 @@
         var self = this;
         var win = this.windows.find(function (entry) { return entry.id === windowId; });
         var state = this.ensureExplorerWindowState(win);
-        var name;
         if (!state || !this.command) return Promise.resolve();
-        name = window.prompt(this.t('explorer.promptNewFolder', 'New folder name'), this.t('explorer.defaultFolderName', 'New Folder'));
-        if (name === null) return Promise.resolve();
-        name = String(name || '').trim();
-        if (!name) return Promise.resolve();
-        return this.command('fs.mkdir', { parent: state.folderId, name: name }).then(function () {
-          return self.refreshExplorerWindow(windowId).then(function () {
-            if (self.refreshView) self.refreshView();
+        return (this.inputDialog
+          ? this.inputDialog(this.t('explorer.promptNewFolder', 'New folder'), this.t('explorer.promptNewFolder', 'New folder name'), this.t('explorer.defaultFolderName', 'New Folder'), { placeholder: this.t('explorer.defaultFolderName', 'New Folder'), confirmText: this.t('common.create', 'Create') })
+          : Promise.resolve(window.prompt(this.t('explorer.promptNewFolder', 'New folder name'), this.t('explorer.defaultFolderName', 'New Folder')))
+        ).then(function (name) {
+          if (name === null) return null;
+          name = String(name || '').trim();
+          if (!name) return null;
+          return self.command('fs.mkdir', { parent: state.folderId, name: name }).then(function () {
+            return self.refreshExplorerWindow(windowId).then(function () {
+              if (self.refreshView) self.refreshView();
+            });
           });
         }).catch(function (err) {
           if (self.showAlert) self.showAlert(self.t('alerts.shellEventError.title', 'Explorer'), (err && err.message) || 'fs_mkdir_failed');
@@ -1366,15 +1369,18 @@
         var win = this.windows.find(function (entry) { return entry.id === windowId; });
         var state = this.ensureExplorerWindowState(win);
         var item = state && state.selection;
-        var name;
         if (!item || !this.command) return Promise.resolve();
-        name = window.prompt(this.t('explorer.promptRename', 'Rename item'), item.name || item.title || '');
-        if (name === null) return Promise.resolve();
-        name = String(name || '').trim();
-        if (!name || name === (item.name || item.title || '')) return Promise.resolve();
-        return this.command('fs.rename', { id: item.id || item.key || '', name: name }).then(function () {
-          return self.refreshExplorerWindow(windowId).then(function () {
-            if (self.refreshView) self.refreshView();
+        return (this.inputDialog
+          ? this.inputDialog(this.t('explorer.promptRename', 'Rename item'), this.t('explorer.promptRename', 'Rename item'), item.name || item.title || '', { placeholder: item.name || item.title || '', confirmText: this.t('common.rename', 'Rename') })
+          : Promise.resolve(window.prompt(this.t('explorer.promptRename', 'Rename item'), item.name || item.title || ''))
+        ).then(function (name) {
+          if (name === null) return null;
+          name = String(name || '').trim();
+          if (!name || name === (item.name || item.title || '')) return null;
+          return self.command('fs.rename', { id: item.id || item.key || '', name: name }).then(function () {
+            return self.refreshExplorerWindow(windowId).then(function () {
+              if (self.refreshView) self.refreshView();
+            });
           });
         }).catch(function (err) {
           if (self.showAlert) self.showAlert(self.t('alerts.shellEventError.title', 'Explorer'), (err && err.message) || 'fs_rename_failed');
@@ -1386,12 +1392,17 @@
         var state = this.ensureExplorerWindowState(win);
         var item = state && state.selection;
         if (!item || !this.command) return Promise.resolve();
-        if (!window.confirm(this.t('explorer.confirmDelete', 'Delete the selected item?'))) return Promise.resolve();
-        return this.command('fs.delete', { id: item.id || item.key || '' }).then(function () {
-          state.selection = null;
-          state.preview = { title: '', content: '', mime: 'text/plain', imageSrc: '', mediaSrc: '', mediaKind: '' };
-          return self.refreshExplorerWindow(windowId).then(function () {
-            if (self.refreshView) self.refreshView();
+        return (this.confirmDialog
+          ? this.confirmDialog(this.t('explorer.deleteTitle', 'Delete item'), this.t('explorer.confirmDelete', 'Delete the selected item?'), { detail: item.name || item.title || '' })
+          : Promise.resolve(window.confirm(this.t('explorer.confirmDelete', 'Delete the selected item?')))
+        ).then(function (confirmed) {
+          if (!confirmed) return null;
+          return self.command('fs.delete', { id: item.id || item.key || '' }).then(function () {
+            state.selection = null;
+            state.preview = { title: '', content: '', mime: 'text/plain', imageSrc: '', mediaSrc: '', mediaKind: '' };
+            return self.refreshExplorerWindow(windowId).then(function () {
+              if (self.refreshView) self.refreshView();
+            });
           });
         }).catch(function (err) {
           if (self.showAlert) self.showAlert(self.t('alerts.shellEventError.title', 'Explorer'), (err && err.message) || 'fs_delete_failed');
@@ -1402,21 +1413,24 @@
         var win = this.windows.find(function (entry) { return entry.id === windowId; });
         var state = this.ensureExplorerWindowState(win);
         var item = state && state.selection;
-        var destination = '';
         if (!item || !this.command) return Promise.resolve();
-        destination = window.prompt(this.t('explorer.promptMove', 'Move selected item to folder path or id'), ((this.boot.vfs || {}).homeId || (this.boot.vfs || {}).rootId || 'root'));
-        if (destination === null) return Promise.resolve();
-        destination = String(destination || '').trim();
-        if (!destination) return Promise.resolve();
-        return this.command('fs.meta', { id: destination, path: destination }).then(function (msg) {
-          var payload = payloadRoot(msg);
-          var targetId = payload.id || destination;
-          return self.command('fs.move', { id: item.id || item.key || '', parent: targetId });
-        }).then(function () {
-          state.selection = null;
-          state.preview = { title: '', content: '', mime: 'text/plain', imageSrc: '', mediaSrc: '', mediaKind: '' };
-          return self.refreshExplorerWindow(windowId).then(function () {
-            if (self.refreshView) self.refreshView();
+        return (this.inputDialog
+          ? this.inputDialog(this.t('explorer.moveTitle', 'Move item'), this.t('explorer.promptMove', 'Move selected item to folder path or id'), ((this.boot.vfs || {}).homeId || (this.boot.vfs || {}).rootId || 'root'), { placeholder: ((this.boot.vfs || {}).homeId || (this.boot.vfs || {}).rootId || 'root'), confirmText: this.t('common.move', 'Move') })
+          : Promise.resolve(window.prompt(this.t('explorer.promptMove', 'Move selected item to folder path or id'), ((this.boot.vfs || {}).homeId || (this.boot.vfs || {}).rootId || 'root')))
+        ).then(function (destination) {
+          if (destination === null) return null;
+          destination = String(destination || '').trim();
+          if (!destination) return null;
+          return self.command('fs.meta', { id: destination, path: destination }).then(function (msg) {
+            var payload = payloadRoot(msg);
+            var targetId = payload.id || destination;
+            return self.command('fs.move', { id: item.id || item.key || '', parent: targetId });
+          }).then(function () {
+            state.selection = null;
+            state.preview = { title: '', content: '', mime: 'text/plain', imageSrc: '', mediaSrc: '', mediaKind: '' };
+            return self.refreshExplorerWindow(windowId).then(function () {
+              if (self.refreshView) self.refreshView();
+            });
           });
         }).catch(function (err) {
           if (self.showAlert) self.showAlert(self.t('alerts.shellEventError.title', 'Explorer'), (err && err.message) || 'fs_move_failed');
