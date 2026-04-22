@@ -115,8 +115,3 @@ This ROI adds typed password policy defaults, forced password change support for
 - When the server reports a gap, the client now rewinds to the next missing chunk, replays the missing range, and only then retries final commit.
 - This reduces false-finalize failures such as `fs_upload_commit_failed` with `missing_chunk` under concurrent or bursty upload conditions.
 
-
-## UI note
-
-The shell can adopt the sample-driven Win7 chrome without weakening the server-owned auth, session, audit, and transport model. Visual modernization should not move protected policy decisions into browser-only code.
-- Sample-shell styling is now isolated in `/public/mioos/mioos_samples.css`, loaded after the legacy shell stylesheet so the sample HTML/CSS wins cleanly without mixed chrome or accidental overrides.

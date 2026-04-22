@@ -207,8 +207,3 @@ MIOOS now keeps one supported transfer workflow in the app runtime:
 - binary download and preview use direct authenticated HTTP blob/range only
 - websocket `fs.read.range` remains only for bounded text preview and text viewers
 - redundant websocket upload/download fallback plumbing and the unused upload worker file were removed
-
-## Current shell UI direction
-
-The current desktop shell target is the Win7 sample bundle structure for both light and dark themes. New shell work should replace legacy visible markup rather than layer new styles on top of old XP-era DOM.
-- Sample-shell styling is now isolated in `/public/mioos/mioos_samples.css`, loaded after the legacy shell stylesheet so the sample HTML/CSS wins cleanly without mixed chrome or accidental overrides.

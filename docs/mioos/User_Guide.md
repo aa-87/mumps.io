@@ -131,8 +131,3 @@ ROI 33 — HTTP binary chunk transport for resumable uploads and hardened pause/
 - When the server reports a gap, the client now rewinds to the next missing chunk, replays the missing range, and only then retries final commit.
 - This reduces false-finalize failures such as `fs_upload_commit_failed` with `missing_chunk` under concurrent or bursty upload conditions.
 
-
-## Theme and shell behavior
-
-The shell currently targets a Windows 7 style light/dark desktop. Start menu, taskbar, context menu, transfers, theme studio, and the explorer surface should all share the same visual language.
-- Sample-shell styling is now isolated in `/public/mioos/mioos_samples.css`, loaded after the legacy shell stylesheet so the sample HTML/CSS wins cleanly without mixed chrome or accidental overrides.

@@ -80,8 +80,7 @@
             positions: {},
             selectedKey: '',
             drag: { armed: false, active: false, moved: false, key: '', startX: 0, startY: 0, left: 0, top: 0 },
-            contextMenu: { open: false, type: 'desktop', key: '', left: 0, top: 0 },
-            selection: { armed: false, active: false, startX: 0, startY: 0, left: 0, top: 0, width: 0, height: 0 }
+            contextMenu: { open: false, type: 'desktop', key: '', left: 0, top: 0 }
           }
         };
       },
@@ -182,80 +181,9 @@
           if (!this.desktopUi.drag) this.desktopUi.drag = { armed: false, active: false, moved: false, key: '', startX: 0, startY: 0, left: 0, top: 0 };
           if (!this.desktopUi.positions) this.desktopUi.positions = {};
           if (!this.desktopUi.contextMenu) this.desktopUi.contextMenu = { open: false, type: 'desktop', key: '', left: 0, top: 0 };
-          if (!this.desktopUi.selection) this.desktopUi.selection = { armed: false, active: false, startX: 0, startY: 0, left: 0, top: 0, width: 0, height: 0 };
           if (!this.desktopUi.iconSize) this.desktopUi.iconSize = 'medium';
           if (!this.desktopUi.sortMode) this.desktopUi.sortMode = 'manual';
           if (typeof this.desktopUi.selectedKey === 'undefined') this.desktopUi.selectedKey = '';
-        },
-        
-        shellThemeMode: function () {
-          var explicit = ((((this.boot || {}).desktop) || {}).themeMode) || '';
-          var profile = this.appliedThemeProfile || {};
-          var key = String((profile.mode || explicit || ((((this.boot || {}).desktop || {}).themeKey) || 'light'))).toLowerCase();
-          return key.indexOf('dark') >= 0 ? 'dark' : 'light';
-        },
-        shellRootClass: function () {
-          return {
-            'theme-dark': this.shellThemeMode() === 'dark',
-            'theme-light': this.shellThemeMode() !== 'dark'
-          };
-        },
-        desktopSurfaceStyle: function () {
-          return {
-            backgroundColor: 'var(--mioos-body-background, transparent)',
-            backgroundImage: 'var(--mioos-desktop-background, none)',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center center'
-          };
-        },
-        clearDesktopSelection: function () {
-          if (!this.desktopUi || !this.desktopUi.selection) return;
-          this.desktopUi.selection = { armed: false, active: false, startX: 0, startY: 0, left: 0, top: 0, width: 0, height: 0 };
-        },
-        beginDesktopSelection: function (event) {
-          if (!event || event.button !== 0 || this.requiresSignin) return;
-          this.closeDesktopContextMenu();
-          this.menuOpen = false;
-          this.desktopUi.selectedKey = '';
-          this.desktopUi.selection = { armed: true, active: false, startX: event.clientX, startY: event.clientY, left: event.clientX, top: event.clientY, width: 0, height: 0 };
-        },
-        updateDesktopSelection: function (event) {
-          var sel = (this.desktopUi || {}).selection || {};
-          var x1, y1, x2, y2;
-          if (!sel.armed) return;
-          x1 = +sel.startX || 0;
-          y1 = +sel.startY || 0;
-          x2 = event.clientX || x1;
-          y2 = event.clientY || y1;
-          sel.active = true;
-          sel.left = Math.min(x1, x2);
-          sel.top = Math.min(y1, y2);
-          sel.width = Math.abs(x2 - x1);
-          sel.height = Math.abs(y2 - y1);
-        },
-        desktopSelectionStyle: function () {
-          var sel = (this.desktopUi || {}).selection || {};
-          return { left: (sel.left || 0) + 'px', top: (sel.top || 0) + 'px', width: (sel.width || 0) + 'px', height: (sel.height || 0) + 'px' };
-        },
-        finishDesktopSelection: function () {
-          var sel = (this.desktopUi || {}).selection || {};
-          var found = '';
-          var self = this;
-          if (sel.active && sel.width > 4 && sel.height > 4) {
-            (this.desktopEntries || []).some(function (entry) {
-              var pos = ((self.desktopUi || {}).positions || {})[entry.key] || { left: 16, top: 16 };
-              var metrics = self.desktopGridMetrics();
-              var left = +pos.left || 16;
-              var top = +pos.top || 16;
-              var right = left + (metrics.width - 20);
-              var bottom = top + (metrics.height - 20);
-              var hit = !(right < sel.left || left > (sel.left + sel.width) || bottom < sel.top || top > (sel.top + sel.height));
-              if (hit) found = entry.key;
-              return hit;
-            });
-          }
-          this.desktopUi.selectedKey = found;
-          this.clearDesktopSelection();
         },
         desktopContextMenuState: function () {
           this.normalizeDesktopUiState();
@@ -728,21 +656,6 @@
           if (ok) this.clearTransferController(transferId);
           this.persistTransferCenter();
         },
-
-        pauseAllTransfers: function () {
-          var self = this;
-          return Promise.all((this.activeTransfers() || []).map(function (item) {
-            if (self.canPauseTransfer(item)) return self.pauseTransfer(item).catch(function () { return null; });
-            return Promise.resolve();
-          }));
-        },
-        resumeAllPausedTransfers: function () {
-          var self = this;
-          return Promise.all((this.activeTransfers() || []).map(function (item) {
-            if (self.canResumeTransfer(item)) return self.resumeTransfer(item).catch(function () { return null; });
-            return Promise.resolve();
-          }));
-        },
         clearFinishedTransfers: function () {
           var keep = {};
           this.transferCenter.items = (this.transferCenter.items || []).filter(function (item) {
@@ -828,12 +741,10 @@
         handleGlobalMouseMove: function (event) {
           if (this.onDragMove) this.onDragMove(event);
           this.onDesktopIconMove(event);
-          this.updateDesktopSelection(event);
         },
         handleGlobalMouseUp: function (event) {
           if (this.endDrag) this.endDrag(event);
           this.endDesktopIconDrag(event);
-          this.finishDesktopSelection(event);
         },
         onDesktopIconMove: function (event) {
           var drag = this.desktopUi.drag || {};

@@ -56,23 +56,6 @@
     clampWindow(vm, win);
     scheduleTerminalSync(vm, win);
   }
-
-  function cloneWindowInstance(vm, baseWin) {
-    var copy;
-    if (!vm || !baseWin || !window.MIOOSState) return null;
-    copy = window.MIOOSState.deepClone(baseWin);
-    copy.id = String(baseWin.id || baseWin.appKey || 'window') + '-clone-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
-    copy.left = +(baseWin.left || 40) + 28;
-    copy.top = +(baseWin.top || 40) + 28;
-    copy.state = 'normal';
-    copy.restore = null;
-    copy.z = (vm.zCounter || 10) + 1;
-    if (copy.explorerState) copy.explorerState = null;
-    if (copy.themeStudioState) copy.themeStudioState = null;
-    if (copy.moduleState) copy.moduleState = null;
-    return copy;
-  }
-
   function previewForZone(vm, zone) {
     var b = viewportBounds(vm);
     if (zone === 'maximize') return { left: b.left, top: b.top, width: b.width, height: b.height };
@@ -107,8 +90,6 @@
         return win;
       },
       openApp: function (appKey) {
-        var win;
-        var multiWindowKeys = { 'my-computer': 1, 'documents': 1, 'explorer': 1, 'theme-studio': 1, 'control-panel': 1, 'security-center': 1, 'debug-center': 1, 'app-catalog': 1, 'image-viewer': 1, 'media-viewer': 1, 'pdf-viewer': 1, 'structured-viewer': 1, 'text-viewer': 1 };
         if (this.requiresSignin) {
           this.showAlert(this.t('alerts.signinRequired.title'), this.t('alerts.signinRequired.open'));
           return;
@@ -118,15 +99,8 @@
           this.createTerminalWindow();
           return;
         }
-        win = this.windows.find(function (item) { return item.appKey === appKey; });
+        var win = this.windows.find(function (item) { return item.appKey === appKey; });
         if (!win) return;
-        if (multiWindowKeys[appKey] && win.state !== 'closed') {
-          var spawned = cloneWindowInstance(this, win);
-          if (spawned) {
-            this.windows.push(spawned);
-            win = spawned;
-          }
-        }
         this.ensureWindowFrame(win);
         this.menuOpen = false;
         if (win.state === 'closed' || win.state === 'minimized') win.state = 'normal';
