@@ -72,7 +72,7 @@ SUPPORTED(ROOT,DEFAULT)
 	;
 CATALOG(CODE,ROOT)
 	KILL @ROOT
-	SET @ROOT@("product.subtitle")=$$TXT(CODE,"product.subtitle","MUMPS powered Windows XP style desktop")
+	SET @ROOT@("product.subtitle")=$$TXT(CODE,"product.subtitle","MUMPS-powered web desktop shell")
 	SET @ROOT@("page.desktop")=$$TXT(CODE,"page.desktop","Desktop")
 	SET @ROOT@("launcher.menu")=$$TXT(CODE,"launcher.menu","Menu")
 	SET @ROOT@("alert.dismiss")=$$TXT(CODE,"alert.dismiss","Dismiss")
@@ -195,7 +195,7 @@ LOOKUP(CODE,KEY)
 	;
 TABLE
 	;;[en]
-	;;product.subtitle=MUMPS powered Windows XP style desktop
+	;;product.subtitle=MUMPS-powered web desktop shell
 	;;page.desktop=Desktop
 	;;launcher.menu=Menu
 	;;alert.dismiss=Dismiss
@@ -290,7 +290,7 @@ TABLE
 ;;app.debug-center.title=Debug Center
 ;;app.debug-center.subtitle=Server snapshot, command registry, and recent websocket activity
 	;;[ar]
-	;;product.subtitle=سطح مكتب بنمط ويندوز XP ومدعوم بواسطة MUMPS
+	;;product.subtitle=بيئة سطح مكتب ويب مدعومة بواسطة MUMPS
 	;;page.desktop=سطح المكتب
 	;;launcher.menu=القائمة
 	;;alert.dismiss=إغلاق
@@ -383,7 +383,7 @@ TABLE
 	;;app.terminal.title=الطرفية
 	;;app.terminal.subtitle=واجهة طرفية MUMPS معتمدة على WebSocket
 	;;[es]
-	;;product.subtitle=Escritorio estilo Windows XP impulsado por MUMPS
+	;;product.subtitle=Entorno de escritorio web impulsado por MUMPS
 	;;page.desktop=Escritorio
 	;;launcher.menu=Menú
 	;;alert.dismiss=Cerrar

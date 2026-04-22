@@ -85,7 +85,7 @@ MIOOS now uses a shared window manager contract for shell windows. Windows suppo
 
 ## Theme Studio ROI
 
-A detailed Theme Studio UI tool is available in MIOOS as a dedicated desktop app/window. It focuses on profile authoring and preview only, without changing the current native shell/taskbar/window styling baseline. The tool supports wallpaper choices, typography, sizing, color tokens, class recipes, extra CSS, import/export, local profile storage, and XP/Windows 7/Mac-inspired starter looks.
+A detailed Theme Studio UI tool is available in MIOOS as a dedicated desktop app/window. It focuses on profile authoring and preview only, without changing the current native shell/taskbar/window styling baseline. The tool supports wallpaper choices, typography, sizing, color tokens, class recipes, extra CSS, import/export, local profile storage, and Foundation/Glass starter looks.
 
 
 ## ROI-F — Explorer + Transfers polish
@@ -207,3 +207,15 @@ MIOOS now keeps one supported transfer workflow in the app runtime:
 - binary download and preview use direct authenticated HTTP blob/range only
 - websocket `fs.read.range` remains only for bounded text preview and text viewers
 - redundant websocket upload/download fallback plumbing and the unused upload worker file were removed
+
+
+## UI reset roadmap
+
+The current front-end work is following a three-wave shell reset.
+
+Wave 1 focuses on the shell foundation only:
+- production-oriented theme keys
+- local shell asset loading only
+- dynamic window creation fallback
+- draggable sign-in surface
+- corrected desktop icon scale and positioning

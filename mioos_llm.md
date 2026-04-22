@@ -340,3 +340,19 @@ The following surfaces are now expected to use the sample-driven structure first
 
 Behavior can still come from existing `MIOOS*` routines and browser methods, but the DOM and CSS should stay aligned with the sample bundle.
 - Sample-shell styling is now isolated in `/public/mioos/mioos_samples.css`, loaded after the legacy shell stylesheet so the sample HTML/CSS wins cleanly without mixed chrome or accidental overrides.
+
+
+## UI reset roadmap status
+
+Wave 1 is now the active implementation track.
+
+Current scope:
+- replace hard-coded retro shell defaults with production shell foundation keys
+- remove remote shell stylesheet dependency
+- stabilize the shell window manager with dynamic window fallback creation
+- make the sign-in surface draggable
+- tighten desktop icon sizing and transform-based positioning
+
+Remaining waves stay the same:
+- Wave 2: launcher, taskbar, menus, dialogs, transfers
+- Wave 3: theme system 2.0, built-in app cleanup, persistence, accessibility polish

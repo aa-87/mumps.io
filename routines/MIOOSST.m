@@ -50,7 +50,7 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("authAccountLimit")=+$GET(CONF("mioos","auth","management","accountLimit"),20)
 	IF STATE("authAccountLimit")<1 SET STATE("authAccountLimit")=20
 	SET STATE("brandTitle")=$GET(CONF("mioos","brand","title"),"MIOOS")
-	SET STATE("brandSubtitle")=$$TXT^MIOOSI18N(CODE,"product.subtitle","MUMPS powered Windows XP style desktop")
+	SET STATE("brandSubtitle")=$$TXT^MIOOSI18N(CODE,"product.subtitle","MUMPS-powered web desktop shell")
 	SET STATE("profile")=$$PROFILE(.CONF)
 	SET STATE("principal")=$SELECT(USER'="":USER,1:"guest")
 	SET STATE("userName")=$SELECT(UNAME'="":UNAME,AUTHREQ=1:$$TXT^MIOOSI18N(CODE,"auth.state.required","Sign in required"),1:$$TXT^MIOOSI18N(CODE,"common.guest","Guest"))
@@ -119,8 +119,8 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("wsMaxMessageBytes")=+$GET(CONF("websocket","maxMessageBytes"),1048576)
 	SET STATE("uploadStaleSeconds")=+$GET(CONF("mioos","upload","staleSeconds"),1800)
 	SET STATE("downloadStaleSeconds")=+$GET(CONF("mioos","download","staleSeconds"),900)
-	SET STATE("themeKey")=$GET(CONF("mioos","desktop","theme"),"xp-classic-blue")
-	SET STATE("wallpaper")=$GET(CONF("mioos","desktop","wallpaper"),"bliss")
+	SET STATE("themeKey")=$GET(CONF("mioos","desktop","theme"),"foundation-light")
+	SET STATE("wallpaper")=$GET(CONF("mioos","desktop","wallpaper"),"aurora")
 	SET STATE("density")=$GET(CONF("mioos","desktop","density"),"comfortable")
 	SET STATE("fontFamily")=$GET(CONF("mioos","desktop","fontFamily"),"Segoe UI")
 	SET STATE("fontSize")=+$GET(CONF("mioos","desktop","fontSize"),13)
@@ -129,9 +129,10 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("commandResultEvent")=$GET(CONF("mioos","desktop","transport","resultEvent"),"desktop.result")
 	SET STATE("commandErrorEvent")=$GET(CONF("mioos","desktop","transport","errorEvent"),"desktop.error")
 	SET STATE("transportModel")=$GET(CONF("mioos","desktop","transport","model"),"core-websocket-plus-app-websockets")
-	SET STATE("shellChrome")=$GET(CONF("mioos","desktop","chrome"),"winxp-professional")
-	SET STATE("taskbarStyle")=$GET(CONF("mioos","desktop","taskbarStyle"),"xp-professional")
-	SET STATE("startMenuStyle")=$GET(CONF("mioos","desktop","startMenuStyle"),"xp-two-column")
+	SET STATE("themeMode")=$GET(CONF("mioos","desktop","themeMode"),$SELECT($GET(CONF("mioos","desktop","theme"))["dark":"dark",1:"light"))
+	SET STATE("shellChrome")=$GET(CONF("mioos","desktop","chrome"),"shell-foundation")
+	SET STATE("taskbarStyle")=$GET(CONF("mioos","desktop","taskbarStyle"),"taskbar-foundation")
+	SET STATE("startMenuStyle")=$GET(CONF("mioos","desktop","startMenuStyle"),"launcher-foundation")
 	SET STATE("windowManager")=$GET(CONF("mioos","desktop","windowManager"),"mioos-native-vue-css")
 	SET STATE("windowSnapThreshold")=+$GET(CONF("mioos","desktop","windowSnapThreshold"),28)
 	IF STATE("windowSnapThreshold")<12 SET STATE("windowSnapThreshold")=12
@@ -231,7 +232,7 @@ BOOTJSON(STATE,CONF)
 BOOTARY(STATE,CONF,OBJ)
 	KILL OBJ
 	SET OBJ("product","name")=$GET(STATE("brandTitle"),"MIOOS")
-	SET OBJ("product","subtitle")=$GET(STATE("brandSubtitle"),"MUMPS powered Windows XP style desktop")
+	SET OBJ("product","subtitle")=$GET(STATE("brandSubtitle"),"MUMPS-powered web desktop shell")
 	SET OBJ("product","version")="roi6-core-plus-terminal-websockets"
 	SET OBJ("product","profile")=$GET(STATE("profile"),"dev")
 	SET OBJ("user","id")=$GET(STATE("principal"))
@@ -264,9 +265,10 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","fontFamily")=$GET(STATE("fontFamily"))
 	SET OBJ("desktop","fontSize")=+$GET(STATE("fontSize"),13)
 	SET OBJ("desktop","launcherLabel")=$GET(STATE("launcherLabel"),"Menu")
-	SET OBJ("desktop","shellChrome")=$GET(STATE("shellChrome"),"winxp-professional")
-	SET OBJ("desktop","taskbarStyle")=$GET(STATE("taskbarStyle"),"xp-professional")
-	SET OBJ("desktop","startMenuStyle")=$GET(STATE("startMenuStyle"),"xp-two-column")
+	SET OBJ("desktop","themeMode")=$GET(STATE("themeMode"),"light")
+	SET OBJ("desktop","shellChrome")=$GET(STATE("shellChrome"),"shell-foundation")
+	SET OBJ("desktop","taskbarStyle")=$GET(STATE("taskbarStyle"),"taskbar-foundation")
+	SET OBJ("desktop","startMenuStyle")=$GET(STATE("startMenuStyle"),"launcher-foundation")
 	SET OBJ("desktop","windowManager")=$GET(STATE("windowManager"),"mioos-native-vue-css")
 	SET OBJ("desktop","commandTransport")="websocket-only"
 	SET OBJ("desktop","realtimeContract")=$GET(STATE("transportModel"),"core-websocket-plus-app-websockets")
@@ -632,18 +634,34 @@ WIN(STATE,N,ID,APPKEY,TITLE,LEFT,TOP,WIDTH,HEIGHT,Z,MODE,MINW,MINH,RESIZE,DRAG)
 	;
 THEMES(ROOT,CURRENT)
 	KILL @ROOT
-	SET @ROOT@(1,"key")="xp-classic-blue"
-	SET @ROOT@(1,"title")="XP Classic Blue"
-	SET @ROOT@(1,"isCurrent")=$SELECT($GET(CURRENT)="xp-classic-blue":1,1:0)
-	SET @ROOT@(1,"wallpaper")="bliss"
-	SET @ROOT@(1,"accent")="#245edb"
-	SET @ROOT@(1,"taskbar")="#245edb"
-	SET @ROOT@(2,"key")="xp-olive"
-	SET @ROOT@(2,"title")="XP Olive"
-	SET @ROOT@(2,"isCurrent")=$SELECT($GET(CURRENT)="xp-olive":1,1:0)
-	SET @ROOT@(2,"wallpaper")="olive"
-	SET @ROOT@(2,"accent")="#6b7d2b"
-	SET @ROOT@(2,"taskbar")="#6b7d2b"
+	SET @ROOT@(1,"key")="foundation-light"
+	SET @ROOT@(1,"title")="Foundation Light"
+	SET @ROOT@(1,"mode")="light"
+	SET @ROOT@(1,"isCurrent")=$SELECT($GET(CURRENT)="foundation-light":1,1:0)
+	SET @ROOT@(1,"wallpaper")="aurora"
+	SET @ROOT@(1,"accent")="#2f6fed"
+	SET @ROOT@(1,"taskbar")="#e8eef8"
+	SET @ROOT@(2,"key")="foundation-dark"
+	SET @ROOT@(2,"title")="Foundation Dark"
+	SET @ROOT@(2,"mode")="dark"
+	SET @ROOT@(2,"isCurrent")=$SELECT($GET(CURRENT)="foundation-dark":1,1:0)
+	SET @ROOT@(2,"wallpaper")="aurora-night"
+	SET @ROOT@(2,"accent")="#7db4ff"
+	SET @ROOT@(2,"taskbar")="#111a28"
+	SET @ROOT@(3,"key")="glass-light"
+	SET @ROOT@(3,"title")="Glass Light"
+	SET @ROOT@(3,"mode")="light"
+	SET @ROOT@(3,"isCurrent")=$SELECT($GET(CURRENT)="glass-light":1,1:0)
+	SET @ROOT@(3,"wallpaper")="aurora"
+	SET @ROOT@(3,"accent")="#4687ff"
+	SET @ROOT@(3,"taskbar")="#dce7f7"
+	SET @ROOT@(4,"key")="glass-dark"
+	SET @ROOT@(4,"title")="Glass Dark"
+	SET @ROOT@(4,"mode")="dark"
+	SET @ROOT@(4,"isCurrent")=$SELECT($GET(CURRENT)="glass-dark":1,1:0)
+	SET @ROOT@(4,"wallpaper")="aurora-night"
+	SET @ROOT@(4,"accent")="#8ac5ff"
+	SET @ROOT@(4,"taskbar")="#0f1724"
 	QUIT
 	;
 CSV2ARY(CSV,ROOT)

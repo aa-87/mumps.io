@@ -115,3 +115,8 @@ This ROI adds typed password policy defaults, forced password change support for
 - When the server reports a gap, the client now rewinds to the next missing chunk, replays the missing range, and only then retries final commit.
 - This reduces false-finalize failures such as `fs_upload_commit_failed` with `missing_chunk` under concurrent or bursty upload conditions.
 
+
+
+## UI reset note
+
+The shell reset does not change the HIPAA-aware posture directly. Its main compliance benefit is reducing front-end fragility so auth state, audit surfaces, and security dialogs remain readable and usable under a single shell contract.

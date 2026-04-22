@@ -20,10 +20,10 @@
   --mioos-titlebar-text: #ffffff;
   --mioos-taskbar-text: #ffffff;
   --mioos-icon-text: #ffffff;
-  --mioos-window-radius: 8px;
+  --mioos-window-radius: 14px;
   --mioos-window-border-width: 1px;
   --mioos-button-radius: 6px;
-  --mioos-taskbar-height: var(--mioos-taskbar-height);
+  --mioos-taskbar-height: 46px;
   --mioos-base-size: 13px;
   --mioos-title-size: 13px;
   --mioos-desktop-background: radial-gradient(circle at 18% 20%, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.0) 26%), radial-gradient(circle at 78% 26%, rgba(255,255,255,0.24) 0%, rgba(255,255,255,0.0) 20%), linear-gradient(180deg, #8ed0ff 0%, #6ab1ff 36%, #4b97ef 70%, #3f86de 100%);
@@ -491,9 +491,9 @@ button, input { font: inherit; }
 .mioos-terminal-viewport .xterm { height: 100%; }
 
 .mioos-explorer-shell { display:flex; flex-direction:column; gap:0; height:100%; min-height:0; background:linear-gradient(180deg,#f7fbff 0%,#edf4ff 100%); }
-.mioos-explorer-shell--xp { color:#12345a; }
+.mioos-explorer-shell--foundation { color:#12345a; }
 .mioos-explorer-appframe { display:flex; flex-direction:column; flex:1; min-height:0; border:1px solid #7f9db9; background:#ffffff; box-shadow: inset 0 1px 0 rgba(255,255,255,.85); }
-.mioos-explorer-appframe--xp { border-radius:6px; overflow:hidden; }
+.mioos-explorer-appframe--foundation { border-radius:6px; overflow:hidden; }
 .mioos-explorer-chrome { display:flex; flex-direction:column; flex:1; min-height:0; background:linear-gradient(180deg,#ffffff 0%,#f4f8fd 100%); }
 .mioos-explorer-menubar { display:flex; align-items:center; gap:2px; padding:3px 8px; min-height:26px; border-bottom:1px solid #c1d2e8; background:linear-gradient(180deg,#fcfdff 0%,#edf3fb 100%); }
 .mioos-explorer-menubar button { border:0; background:transparent; padding:3px 8px; border-radius:3px; color:#17365d; font-size:12px; }
@@ -506,10 +506,10 @@ button, input { font: inherit; }
 .mioos-explorer-addressbar { padding:6px 8px; border-bottom:1px solid #d2dfef; background:linear-gradient(180deg,#f7faff 0%,#eef4fc 100%); }
 .mioos-explorer-addressfield { display:grid; grid-template-columns:56px 1fr; align-items:center; gap:8px; font-size:12px; color:#27496d; }
 .mioos-explorer-addressfield input { width:100%; min-width:0; height:28px; padding:0 10px; border:1px solid #7f9db9; border-radius:3px; background:#fff; box-shadow: inset 0 1px 2px rgba(25,45,80,.08); }
-.mioos-upload-progress--xp { padding:8px 12px; border-bottom:1px solid #d7e3f3; background:linear-gradient(180deg,#fffef4 0%,#fff7ce 100%); }
+.mioos-upload-progress--foundation { padding:8px 12px; border-bottom:1px solid #d7e3f3; background:linear-gradient(180deg,#fffef4 0%,#fff7ce 100%); }
 .mioos-explorer-main { display:grid; flex:1; min-height:0; }
-.mioos-explorer-main--xp { grid-template-columns:220px minmax(0,1fr) 270px; gap:0; background:#fff; }
-.mioos-explorer-sidebar--xp { padding:10px; gap:10px; background:linear-gradient(180deg,#dff0ff 0%,#cce4fb 30%,#b9d5f4 100%); border-inline-end:1px solid #8fb1d9; }
+.mioos-explorer-main--foundation { grid-template-columns:220px minmax(0,1fr) 270px; gap:0; background:#fff; }
+.mioos-explorer-sidebar--foundation { padding:10px; gap:10px; background:linear-gradient(180deg,#dff0ff 0%,#cce4fb 30%,#b9d5f4 100%); border-inline-end:1px solid #8fb1d9; }
 .mioos-explorer-taskpane { border:1px solid #7ea2d3; border-radius:7px; overflow:hidden; background:linear-gradient(180deg,#f4faff 0%,#dfefff 100%); box-shadow: inset 0 1px 0 rgba(255,255,255,.9); }
 .mioos-explorer-taskhead { padding:8px 10px; background:linear-gradient(180deg,#1f69c4 0%,#4f91e2 100%); color:#fff; font-weight:700; font-size:12px; }
 .mioos-explorer-taskbody { display:flex; flex-direction:column; gap:4px; padding:10px; }
@@ -518,18 +518,18 @@ button, input { font: inherit; }
 .mioos-explorer-tasklink:disabled { color:#6f87a3; text-decoration:none; }
 .mioos-explorer-taskbody--details { color:#29496d; font-size:12px; line-height:1.45; }
 .mioos-explorer-detailtitle { color:#153964; }
-.mioos-explorer-grid--xp { display:flex; flex-direction:column; min-width:0; background:#fff; }
+.mioos-explorer-grid--foundation { display:flex; flex-direction:column; min-width:0; background:#fff; }
 .mioos-explorer-listhead { display:grid; grid-template-columns:1fr 180px; align-items:center; gap:12px; }
-.mioos-explorer-listhead--xp { padding:7px 12px; border-bottom:1px solid #d4dfef; background:linear-gradient(180deg,#fafcff 0%,#edf4fd 100%); color:#365c87; font-size:12px; }
-.mioos-explorer-list--xp { overflow:auto; padding:4px 0; display:flex; flex-direction:column; gap:0; }
-.mioos-explorer-item--xp { display:grid; grid-template-columns:34px minmax(0,1fr); align-items:center; gap:10px; width:100%; border:1px solid transparent; border-radius:0; padding:7px 12px; text-align:left; background:transparent; }
-.mioos-explorer-item--xp:hover { background:#f2f8ff; border-color:#d4e5fb; }
-.mioos-explorer-item--xp.is-selected { background:linear-gradient(180deg,#d9ecff 0%,#c7dfff 100%); border-color:#8cb6ee; }
+.mioos-explorer-listhead--foundation { padding:7px 12px; border-bottom:1px solid #d4dfef; background:linear-gradient(180deg,#fafcff 0%,#edf4fd 100%); color:#365c87; font-size:12px; }
+.mioos-explorer-list--foundation { overflow:auto; padding:4px 0; display:flex; flex-direction:column; gap:0; }
+.mioos-explorer-item--foundation { display:grid; grid-template-columns:34px minmax(0,1fr); align-items:center; gap:10px; width:100%; border:1px solid transparent; border-radius:0; padding:7px 12px; text-align:left; background:transparent; }
+.mioos-explorer-item--foundation:hover { background:#f2f8ff; border-color:#d4e5fb; }
+.mioos-explorer-item--foundation.is-selected { background:linear-gradient(180deg,#d9ecff 0%,#c7dfff 100%); border-color:#8cb6ee; }
 .mioos-explorer-itemicon { font-size:18px; }
 .mioos-explorer-item-copy { display:flex; align-items:center; justify-content:space-between; gap:16px; min-width:0; }
 .mioos-explorer-item-copy strong { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .mioos-explorer-item-copy em { color:#617d9d; font-style:normal; white-space:nowrap; }
-.mioos-explorer-preview--xp { padding:0; background:linear-gradient(180deg,#f8fbff 0%,#edf4fd 100%); border-inline-start:1px solid #d0dded; overflow:auto; }
+.mioos-explorer-preview--foundation { padding:0; background:linear-gradient(180deg,#f8fbff 0%,#edf4fd 100%); border-inline-start:1px solid #d0dded; overflow:auto; }
 .mioos-explorer-previewhead { padding:9px 12px; border-bottom:1px solid #d0dded; background:linear-gradient(180deg,#f7fbff 0%,#e7f0fb 100%); color:#24486d; font-weight:700; }
 .mioos-explorer-previewbody { display:flex; flex-direction:column; gap:10px; padding:12px; }
 .mioos-text-preview, .mioos-textviewer-body { margin:0; padding:10px; border:1px solid #d7e3f7; border-radius:4px; background:#f9fbff; white-space:pre-wrap; word-break:break-word; overflow:auto; font-family:Tahoma, Verdana, Arial, sans-serif; font-size:12px; line-height:1.5; }
@@ -538,11 +538,11 @@ button, input { font: inherit; }
 .mioos-textviewer-body { flex:1; min-height:0; border:0; border-radius:0 0 8px 8px; }
 .mioos-textviewer-frame,
 .mioos-structuredviewer-frame { width:100%; height:100%; min-height:420px; border:0; background:#fff; flex:1 1 auto; }
-.mioos-preview-actions--xp { display:flex; gap:8px; margin-top:4px; flex-wrap:wrap; }
-.mioos-preview-actions--xp button { border:1px solid #8aa8cc; background:linear-gradient(180deg,#ffffff 0%,#e8f0fb 100%); border-radius:3px; padding:5px 10px; }
-.mioos-statusbar--xp { border-top:1px solid #cad9ea; background:linear-gradient(180deg,#f7fbff 0%,#eaf2fb 100%); }
-@media (max-width: 1200px) { .mioos-explorer-main--xp { grid-template-columns:200px minmax(0,1fr); } .mioos-explorer-preview--xp { grid-column:1 / -1; border-inline-start:0; border-top:1px solid #d0dded; } }
-@media (max-width: 860px) { .mioos-explorer-main--xp { grid-template-columns:1fr; } .mioos-explorer-sidebar--xp { border-inline-end:0; border-bottom:1px solid #8fb1d9; } }
+.mioos-preview-actions--foundation { display:flex; gap:8px; margin-top:4px; flex-wrap:wrap; }
+.mioos-preview-actions--foundation button { border:1px solid #8aa8cc; background:linear-gradient(180deg,#ffffff 0%,#e8f0fb 100%); border-radius:3px; padding:5px 10px; }
+.mioos-statusbar--foundation { border-top:1px solid #cad9ea; background:linear-gradient(180deg,#f7fbff 0%,#eaf2fb 100%); }
+@media (max-width: 1200px) { .mioos-explorer-main--foundation { grid-template-columns:200px minmax(0,1fr); } .mioos-explorer-preview--foundation { grid-column:1 / -1; border-inline-start:0; border-top:1px solid #d0dded; } }
+@media (max-width: 860px) { .mioos-explorer-main--foundation { grid-template-columns:1fr; } .mioos-explorer-sidebar--foundation { border-inline-end:0; border-bottom:1px solid #8fb1d9; } }
 
 .mioos-image-preview-frame {
   display: flex;
@@ -1012,3 +1012,83 @@ button, input { font: inherit; }
 .mioos-transfer-dialog-head { display: flex; justify-content: space-between; align-items: center; gap: .75rem; }
 .mioos-transfer-dialog-progress { display: flex; align-items: center; gap: .75rem; }
 .mioos-transfer-dialog-actions { display: flex; flex-wrap: wrap; gap: .45rem; }
+
+
+/* Wave 1 shell foundation reset */
+.mioos-root[data-theme-key="foundation-light"] {
+  --mioos-blue-1: #dfe7f4;
+  --mioos-blue-2: #9fb4d6;
+  --mioos-blue-3: #5f769a;
+  --mioos-taskbar: #e8eef8;
+  --mioos-taskbar-dark: #cfd9ea;
+  --mioos-start: #2f6fed;
+  --mioos-border: #b9c7da;
+  --mioos-panel: rgba(248, 251, 255, 0.96);
+  --mioos-panel-2: #ffffff;
+  --mioos-text: #152033;
+  --mioos-muted: #58657a;
+  --mioos-focus: #7db2ff;
+  --mioos-titlebar: #eef3fb;
+  --mioos-titlebar-inactive: #d6e0ef;
+  --mioos-titlebar-text: #152033;
+  --mioos-taskbar-text: #152033;
+  --mioos-icon-text: #f8fbff;
+  --mioos-desktop-background: radial-gradient(circle at 18% 18%, rgba(255,255,255,0.46), transparent 24%), linear-gradient(180deg, #6583ad 0%, #3e5f8c 48%, #21334d 100%);
+  --mioos-body-background: linear-gradient(180deg, #476788 0%, #1f2d42 100%);
+  --mioos-icon-shadow: 0 1px 2px rgba(0,0,0,0.72);
+}
+.mioos-root[data-theme-key="foundation-dark"],
+.mioos-root[data-theme-key="glass-dark"] {
+  --mioos-taskbar: rgba(15, 23, 36, 0.88);
+  --mioos-taskbar-dark: rgba(9, 15, 25, 0.94);
+  --mioos-border: rgba(126, 154, 198, 0.28);
+  --mioos-panel: rgba(18, 27, 41, 0.92);
+  --mioos-panel-2: rgba(24, 35, 52, 0.96);
+  --mioos-text: #e8eef8;
+  --mioos-muted: #9db0c7;
+  --mioos-focus: #8cc0ff;
+  --mioos-titlebar: rgba(24, 35, 52, 0.96);
+  --mioos-titlebar-inactive: rgba(32, 46, 69, 0.9);
+  --mioos-titlebar-text: #f4f8ff;
+  --mioos-taskbar-text: #e8eef8;
+  --mioos-icon-text: #f5f9ff;
+  --mioos-desktop-background: radial-gradient(circle at 20% 18%, rgba(95, 132, 188, 0.32), transparent 24%), linear-gradient(180deg, #22344c 0%, #162232 50%, #0d1520 100%);
+  --mioos-body-background: linear-gradient(180deg, #182536 0%, #0c121b 100%);
+  --mioos-icon-shadow: 0 1px 3px rgba(0,0,0,0.86);
+}
+.mioos-shell-wallpaper { position: absolute; inset: 0; background: var(--mioos-desktop-background); pointer-events: none; }
+.mioos-desktop { position: absolute; inset: 0 0 var(--mioos-taskbar-height) 0; overflow: hidden; }
+.mioos-desktop-icons { position: relative; width: 100%; height: 100%; min-height: 100%; padding: 18px 16px; display: block; }
+.mioos-desktop-icon {
+  position: absolute; left: 0; top: 0; transform: translate(var(--mioos-x, 16px), var(--mioos-y, 16px));
+  width: 84px; min-height: 78px; gap: 6px; padding: 4px 4px 8px; appearance: none; box-shadow: none; outline: none;
+  border: 1px solid transparent; border-radius: 10px; background: transparent; color: var(--mioos-icon-text); text-shadow: var(--mioos-icon-shadow);
+}
+.mioos-desktop-icon .mioos-entry-icon { width: auto; font-size: 30px; line-height: 1; background: transparent; box-shadow: none; }
+.mioos-desktop-icon .mioos-entry-title { display: inline-block; max-width: 74px; padding: 2px 6px; font-size: 11px; line-height: 1.25; text-align: center; border-radius: 8px; background: transparent; }
+.mioos-desktop-icon:hover { background: rgba(255,255,255,0.08); }
+.mioos-desktop-icon:hover .mioos-entry-title { background: rgba(12, 18, 28, 0.24); }
+.mioos-desktop-icon.is-selected { background: rgba(125, 178, 255, 0.18); border-color: rgba(214, 232, 255, 0.72); }
+.mioos-desktop-icon.is-small { width: 76px; min-height: 72px; }
+.mioos-desktop-icon.is-small .mioos-entry-icon { font-size: 26px; }
+.mioos-desktop-icon.is-large { width: 92px; min-height: 86px; }
+.mioos-desktop-icon.is-large .mioos-entry-icon { font-size: 36px; }
+.mioos-window { left: 0; top: 0; transform: translate(var(--mioos-window-x, 0), var(--mioos-window-y, 0)); border-radius: var(--mioos-window-radius); background: var(--mioos-panel); border-color: var(--mioos-border); }
+.mioos-window.is-maximized, .mioos-window.is-snapped { border-radius: 12px 12px 0 0; }
+.mioos-titlebar { min-height: 40px; padding: 8px 10px; color: var(--mioos-titlebar-text); background: linear-gradient(180deg, color-mix(in srgb, var(--mioos-titlebar) 86%, #ffffff 14%) 0%, var(--mioos-titlebar) 100%); border-bottom: 1px solid color-mix(in srgb, var(--mioos-border) 78%, transparent 22%); }
+.mioos-window-actions button, .mioos-start-button, .mioos-task-button, .mioos-context-menu button { appearance: none; }
+.mioos-taskbar { height: var(--mioos-taskbar-height); background: linear-gradient(180deg, color-mix(in srgb, var(--mioos-taskbar) 86%, #ffffff 14%) 0%, var(--mioos-taskbar-dark) 100%); color: var(--mioos-taskbar-text); backdrop-filter: blur(12px); }
+.mioos-start-button { min-height: 38px; border-radius: 12px; background: linear-gradient(180deg, color-mix(in srgb, var(--mioos-start) 78%, #ffffff 22%) 0%, var(--mioos-start) 100%); }
+.mioos-task-button { border-radius: 10px; background: rgba(255,255,255,0.08); color: inherit; }
+.mioos-task-button.is-active { background: rgba(255,255,255,0.16); }
+.mioos-start-menu { border-radius: 16px 16px 0 0; border-color: color-mix(in srgb, var(--mioos-border) 76%, transparent 24%); background: var(--mioos-panel-2); }
+.mioos-start-body { background: var(--mioos-panel-2); }
+.mioos-start-side { background: linear-gradient(180deg, color-mix(in srgb, var(--mioos-blue-2) 88%, #ffffff 12%) 0%, var(--mioos-blue-3) 100%); }
+.mioos-auth-overlay { align-items: stretch; justify-content: stretch; }
+.mioos-auth-card { position: absolute; left: 0; top: 0; transform: translate(var(--mioos-auth-x, 0), var(--mioos-auth-y, 0)); width: min(460px, calc(100vw - 32px)); padding: 0; overflow: hidden; border-color: color-mix(in srgb, var(--mioos-border) 70%, transparent 30%); background: var(--mioos-panel-2); color: var(--mioos-text); }
+.mioos-auth-titlebar { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 40px; padding: 8px 12px; cursor: move; user-select: none; color: var(--mioos-titlebar-text); background: linear-gradient(180deg, color-mix(in srgb, var(--mioos-titlebar) 86%, #ffffff 14%) 0%, var(--mioos-titlebar) 100%); border-bottom: 1px solid color-mix(in srgb, var(--mioos-border) 72%, transparent 28%); }
+.mioos-auth-titlebar span { font-size: 12px; opacity: .78; }
+.mioos-auth-head, .mioos-auth-copy, .mioos-auth-field, .mioos-auth-actions, .mioos-auth-policy, .mioos-auth-statusline { margin-left: 20px; margin-right: 20px; }
+.mioos-auth-head { margin-top: 18px; }
+.mioos-auth-actions { margin-bottom: 20px; }
+.mioos-auth-field input { border-radius: 10px; min-height: 36px; background: var(--mioos-panel); color: var(--mioos-text); }

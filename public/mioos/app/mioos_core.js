@@ -41,6 +41,8 @@
             width: 0,
             height: 0
           },
+          authWindow: { left: 0, top: 0, width: 440 },
+          authDrag: { active: false, startX: 0, startY: 0, left: 0, top: 0 },
           snapPreview: { active: false, zone: '', left: 0, top: 0, width: 0, height: 0 },
           clockTimer: null,
           pingTimer: null,
@@ -130,6 +132,7 @@
         var self = this;
         this.bootstrapFromDom();
         this.restorePersistedTransfers();
+        this.centerAuthWindow(true);
         this.normalizeDesktopUiState();
         this.ensureDesktopLayout();
         this.normalizeDesktopUiState();
@@ -360,10 +363,7 @@
           if (I18N.changeLocale) I18N.changeLocale(this, code);
         },
         openTransfersWindow: function () {
-          var win = this.windows.find(function (item) { return item.appKey === 'transfers'; });
-          if (!win) return;
-          if (win.state === 'closed' || win.state === 'minimized') win.state = 'normal';
-          this.focusWindow(win.id);
+          this.openApp('transfers');
         },
         transferPercent: function (item) {
           if (!item) return 0;
@@ -668,6 +668,34 @@
           }, this);
           this.persistTransferCenter();
         },
+        centerAuthWindow: function (force) {
+          var width = Math.min(460, Math.max(380, (window.innerWidth || document.documentElement.clientWidth || 1280) - 32));
+          var left = Math.max(16, Math.round((((window.innerWidth || document.documentElement.clientWidth || 1280) - width) / 2)));
+          var top = Math.max(18, Math.round((((window.innerHeight || document.documentElement.clientHeight || 720) - 380) / 2) - 12));
+          if (force || !(this.authWindow.left >= 0)) this.authWindow.left = left;
+          if (force || !(this.authWindow.top >= 0)) this.authWindow.top = top;
+          this.authWindow.width = width;
+        },
+        authWindowStyle: function () {
+          return { width: (this.authWindow.width || 440) + 'px', '--mioos-auth-x': (this.authWindow.left || 0) + 'px', '--mioos-auth-y': (this.authWindow.top || 0) + 'px' };
+        },
+        beginAuthDrag: function (event) {
+          if (!event || event.button !== 0) return;
+          this.authDrag = { active: true, startX: event.clientX, startY: event.clientY, left: this.authWindow.left || 0, top: this.authWindow.top || 0 };
+        },
+        onAuthWindowMove: function (event) {
+          var drag = this.authDrag || {};
+          var maxLeft, maxTop;
+          if (!drag.active) return;
+          maxLeft = Math.max(16, (window.innerWidth || document.documentElement.clientWidth || 1280) - (this.authWindow.width || 440) - 16);
+          maxTop = Math.max(18, (window.innerHeight || document.documentElement.clientHeight || 720) - 180);
+          this.authWindow.left = Math.max(16, Math.min(maxLeft, (drag.left || 0) + (event.clientX - (drag.startX || 0))));
+          this.authWindow.top = Math.max(18, Math.min(maxTop, (drag.top || 0) + (event.clientY - (drag.startY || 0))));
+        },
+        endAuthDrag: function () {
+          if (!this.authDrag || !this.authDrag.active) return;
+          this.authDrag.active = false;
+        },
         desktopGridMetrics: function () {
           var size = this.desktopUi.iconSize || 'medium';
           if (size === 'small') return { width: 88, height: 90, icon: 28 };
@@ -718,7 +746,7 @@
         },
         desktopIconStyle: function (entry) {
           var pos = ((this.desktopUi || {}).positions || {})[entry.key] || { left: 16, top: 16 };
-          return { left: (+pos.left || 16) + 'px', top: (+pos.top || 16) + 'px' };
+          return { '--mioos-x': (+pos.left || 16) + 'px', '--mioos-y': (+pos.top || 16) + 'px' };
         },
         desktopIconClass: function (entry) {
           return {
@@ -739,12 +767,14 @@
           this.desktopUi.drag = { armed: true, active: false, moved: false, key: entry.key, startX: event.clientX, startY: event.clientY, left: +pos.left || 16, top: +pos.top || 16 };
         },
         handleGlobalMouseMove: function (event) {
+          this.onAuthWindowMove(event);
           if (this.onDragMove) this.onDragMove(event);
           this.onDesktopIconMove(event);
         },
         handleGlobalMouseUp: function (event) {
           if (this.endDrag) this.endDrag(event);
           this.endDesktopIconDrag(event);
+          this.endAuthDrag(event);
         },
         onDesktopIconMove: function (event) {
           var drag = this.desktopUi.drag || {};
@@ -974,9 +1004,10 @@
         },
         themeStudioPresetProfile: function (presetKey) {
           var profile;
-          if (presetKey === 'xp') { profile = this.themeStudioFactoryProfile('Windows XP Inspired', 'Windows XP', 'light'); profile.wallpaperPreset = 'bliss'; profile.desktopColor = '#3e89d0'; profile.colors.accent = '#245edb'; profile.colors.titlebar = '#2d63d6'; profile.colors.taskbar = '#245edb'; profile.fonts.ui = 'Tahoma, "Segoe UI", sans-serif'; return profile; }
-          if (presetKey === 'win7') { profile = this.themeStudioFactoryProfile('Windows 7 Inspired', 'Windows 7', 'light'); profile.wallpaperPreset = 'aurora'; profile.desktopColor = '#254f7d'; profile.colors.accent = '#2f6fd0'; profile.colors.titlebar = '#5f8fd8'; profile.colors.taskbar = '#1d3d63'; profile.metrics.windowRadius = 10; profile.fonts.ui = '"Segoe UI", Tahoma, sans-serif'; return profile; }
-          profile = this.themeStudioFactoryProfile('Mac Inspired', 'Mac', 'light'); profile.wallpaperPreset = 'solid-graphite'; profile.desktopColor = '#6c7a89'; profile.colors.accent = '#6f8fb2'; profile.colors.titlebar = '#cfd6df'; profile.colors.taskbar = '#d5dde6'; profile.colors.panel = '#f8fafc'; profile.colors.panelText = '#1f2937'; profile.metrics.windowRadius = 14; profile.fonts.ui = '"Helvetica Neue", Helvetica, Arial, sans-serif'; return profile;
+          if (presetKey === 'foundation-light') { profile = this.themeStudioFactoryProfile('Foundation Light', 'Foundation', 'light'); profile.wallpaperPreset = 'aurora'; profile.desktopColor = '#dce7f7'; profile.colors.accent = '#2f6fd0'; profile.colors.titlebar = '#eef3fb'; profile.colors.taskbar = '#e8eef8'; profile.colors.panelText = '#162033'; profile.fonts.ui = '"Segoe UI", Tahoma, sans-serif'; return profile; }
+          if (presetKey === 'foundation-dark') { profile = this.themeStudioFactoryProfile('Foundation Dark', 'Foundation', 'dark'); profile.wallpaperPreset = 'solid-graphite'; profile.desktopColor = '#111827'; profile.colors.accent = '#8ab6ff'; profile.colors.titlebar = '#182334'; profile.colors.taskbar = '#0f1724'; profile.colors.panel = '#182334'; profile.colors.panelText = '#e5eefc'; profile.colors.iconText = '#f8fbff'; profile.metrics.windowRadius = 14; profile.fonts.ui = '"Segoe UI", Tahoma, sans-serif'; return profile; }
+          if (presetKey === 'glass-light' || presetKey === 'mac') { profile = this.themeStudioFactoryProfile('Glass Light', 'Glass', 'light'); profile.wallpaperPreset = 'solid-graphite'; profile.desktopColor = '#6c7a89'; profile.colors.accent = '#6f8fb2'; profile.colors.titlebar = '#cfd6df'; profile.colors.taskbar = '#d5dde6'; profile.colors.panel = '#f8fafc'; profile.colors.panelText = '#1f2937'; profile.metrics.windowRadius = 14; profile.fonts.ui = '"Segoe UI", Tahoma, sans-serif'; return profile; }
+          return this.themeStudioFactoryProfile('Custom Theme', 'Custom', 'light');
         },
         ensureThemeStudioState: function (win) {
           if (!win) return { activeTab: 'overview', profiles: [], profileKey: '', profile: {}, exportText: '' };
@@ -986,11 +1017,11 @@
             win.themeStudioState = {
               activeTab: 'overview',
               profiles: (Array.isArray(storedProfiles) && storedProfiles.length) ? storedProfiles : [
-                { key: 'xp', name: 'Windows XP Inspired', family: 'Windows XP', mode: 'light', data: this.themeStudioPresetProfile('xp') },
-                { key: 'win7', name: 'Windows 7 Inspired', family: 'Windows 7', mode: 'light', data: this.themeStudioPresetProfile('win7') },
-                { key: 'mac', name: 'Mac Inspired', family: 'Mac', mode: 'light', data: this.themeStudioPresetProfile('mac') }
+                { key: 'foundation-light', name: 'Foundation Light', family: 'Foundation', mode: 'light', data: this.themeStudioPresetProfile('foundation-light') },
+                { key: 'foundation-dark', name: 'Foundation Dark', family: 'Foundation', mode: 'dark', data: this.themeStudioPresetProfile('foundation-dark') },
+                { key: 'glass-light', name: 'Glass Light', family: 'Glass', mode: 'light', data: this.themeStudioPresetProfile('glass-light') }
               ],
-              profileKey: 'xp', profile: this.appliedThemeProfile ? window.MIOOSState.deepClone(this.appliedThemeProfile) : this.themeStudioPresetProfile('xp'), exportText: ''
+              profileKey: 'foundation-light', profile: this.appliedThemeProfile ? window.MIOOSState.deepClone(this.appliedThemeProfile) : this.themeStudioPresetProfile('foundation-light'), exportText: ''
             };
           }
           return win.themeStudioState;
@@ -999,7 +1030,7 @@
         themeStudioProfiles: function (win) { return this.ensureThemeStudioState(win).profiles || []; },
         themeStudioSetTab: function (windowId, tabKey) { var win = this.windows.find(function (item) { return item.id === windowId; }); this.ensureThemeStudioState(win).activeTab = tabKey || 'overview'; },
         themeStudioSelectProfile: function (windowId, profileKey) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); var entry = (state.profiles || []).find(function (item) { return item.key === profileKey; }); if (!entry) return; state.profileKey = entry.key; state.profile = window.MIOOSState.deepClone(entry.data); state.profile.name = entry.name; state.profile.family = entry.family; state.profile.mode = entry.mode; },
-        themeStudioApplyPreset: function (windowId, presetKey) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); state.profile = this.themeStudioPresetProfile(presetKey || 'xp'); state.profileKey = presetKey || 'xp'; },
+        themeStudioApplyPreset: function (windowId, presetKey) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); state.profile = this.themeStudioPresetProfile(presetKey || 'foundation-light'); state.profileKey = presetKey || 'foundation-light'; },
         themeStudioNewProfile: function (windowId) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); state.profileKey = 'custom-' + Date.now(); state.profile = this.themeStudioFactoryProfile('New Custom Theme', 'Custom', 'light'); state.activeTab = 'overview'; },
         themeStudioDuplicateProfile: function (windowId) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); state.profile = window.MIOOSState.deepClone(state.profile); state.profile.name = (state.profile.name || 'Custom Theme') + ' Copy'; state.profileKey = 'custom-' + Date.now(); },
         themeStudioResetProfile: function (windowId) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); state.profile = this.themeStudioFactoryProfile('Custom Theme', 'Custom', 'light'); state.exportText = ''; state.activeTab = 'overview'; },

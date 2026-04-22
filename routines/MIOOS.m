@@ -33,10 +33,10 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","route","ws"))="" SET CONF("mioos","route","ws")="/ws/mioos"
 	IF $GET(CONF("mioos","route","wsTerminal"))="" SET CONF("mioos","route","wsTerminal")="/ws/mioos/terminal"
 	IF $GET(CONF("mioos","brand","title"))="" SET CONF("mioos","brand","title")="MIOOS"
-	IF $GET(CONF("mioos","brand","subtitle"))="" SET CONF("mioos","brand","subtitle")="MUMPS powered Windows XP style desktop"
+	IF $GET(CONF("mioos","brand","subtitle"))="" SET CONF("mioos","brand","subtitle")="MUMPS-powered web desktop shell"
 	IF $GET(CONF("mioos","i18n","default"))="" SET CONF("mioos","i18n","default")="en"
-	IF $GET(CONF("mioos","desktop","theme"))="" SET CONF("mioos","desktop","theme")="xp-classic-blue"
-	IF $GET(CONF("mioos","desktop","wallpaper"))="" SET CONF("mioos","desktop","wallpaper")="bliss"
+	IF $GET(CONF("mioos","desktop","theme"))="" SET CONF("mioos","desktop","theme")="foundation-light"
+	IF $GET(CONF("mioos","desktop","wallpaper"))="" SET CONF("mioos","desktop","wallpaper")="aurora"
 	IF $GET(CONF("mioos","desktop","density"))="" SET CONF("mioos","desktop","density")="comfortable"
 	IF $GET(CONF("mioos","desktop","fontFamily"))="" SET CONF("mioos","desktop","fontFamily")="Segoe UI"
 	IF $GET(CONF("mioos","desktop","fontSize"))="" SET CONF("mioos","desktop","fontSize")=13
@@ -45,9 +45,10 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","desktop","transport","resultEvent"))="" SET CONF("mioos","desktop","transport","resultEvent")="desktop.result"
 	IF $GET(CONF("mioos","desktop","transport","errorEvent"))="" SET CONF("mioos","desktop","transport","errorEvent")="desktop.error"
 	IF $GET(CONF("mioos","desktop","transport","model"))="" SET CONF("mioos","desktop","transport","model")="core-websocket-plus-app-websockets"
-	IF $GET(CONF("mioos","desktop","chrome"))="" SET CONF("mioos","desktop","chrome")="winxp-professional"
-	IF $GET(CONF("mioos","desktop","taskbarStyle"))="" SET CONF("mioos","desktop","taskbarStyle")="xp-professional"
-	IF $GET(CONF("mioos","desktop","startMenuStyle"))="" SET CONF("mioos","desktop","startMenuStyle")="xp-two-column"
+	IF $GET(CONF("mioos","desktop","themeMode"))="" SET CONF("mioos","desktop","themeMode")="light"
+	IF $GET(CONF("mioos","desktop","chrome"))="" SET CONF("mioos","desktop","chrome")="shell-foundation"
+	IF $GET(CONF("mioos","desktop","taskbarStyle"))="" SET CONF("mioos","desktop","taskbarStyle")="taskbar-foundation"
+	IF $GET(CONF("mioos","desktop","startMenuStyle"))="" SET CONF("mioos","desktop","startMenuStyle")="launcher-foundation"
 	IF $GET(CONF("mioos","desktop","windowManager"))="" SET CONF("mioos","desktop","windowManager")="mioos-native-vue-css"
 	IF $GET(CONF("mioos","desktop","authRequired"))="" SET CONF("mioos","desktop","authRequired")=1
 	IF $GET(CONF("mioos","dev","enabled"))="" SET CONF("mioos","dev","enabled")=ISDEV

@@ -44,6 +44,7 @@ MIOOST ; MIOOS tests
 	DO T047
 	DO T048
 	DO T049
+	DO T050
 	QUIT
 	;
 RESET
@@ -140,6 +141,8 @@ T002
 	DO EQ^MIOTASSERT($GET(OBJ("routes","fsList")),"/api/mioos/fs/list","[MIOOST][T002][fs list route]")
 	DO EQ^MIOTASSERT($GET(OBJ("routes","fsBlob")),"/api/mioos/fs/blob","[MIOOST][T002][fs blob route]")
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","windowing","engine")),"mioos-native-vue-css","[MIOOST][T002][windowing engine]")
+	DO EQ^MIOTASSERT($GET(OBJ("desktop","themeKey")),"foundation-light","[MIOOST][T002][theme key]")
+	DO EQ^MIOTASSERT($GET(OBJ("desktop","themeMode")),"light","[MIOOST][T002][theme mode]")
 	DO EQ^MIOTASSERT(+$GET(OBJ("desktop","windowing","snapThreshold")),28,"[MIOOST][T002][snap threshold]")
 	DO EQ^MIOTASSERT(+$GET(OBJ("windows",1,"resizable")),1,"[MIOOST][T002][window resizable]")
 	QUIT
@@ -161,6 +164,8 @@ T003
 	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-resize-edge=""n"""),"[MIOOST][T003][resize north token]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_auth.js","submitSignin"),"[MIOOST][T003][signin method]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-auth-card"),"[MIOOST][T003][css auth]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","/public/mioos/7.scoped.css"),"[MIOOST][T003][local shell css]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","beginAuthDrag($event)"),"[MIOOST][T003][auth drag token]")
 	QUIT
 	;
 T004
@@ -364,8 +369,9 @@ T015
 	QUIT
 	;
 T016
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","https://unpkg.com/7.css/dist/7.scoped.css"),"[MIOOST][T016][7css scoped link]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-theme-studio-shell win7"),"[MIOOST][T016][theme studio win7 shell]")
+	DO EQ^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","https://unpkg.com/7.css/dist/7.scoped.css"),0,"[MIOOST][T016][remote 7css removed]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","/public/mioos/7.scoped.css"),"[MIOOST][T016][local 7css link]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","Foundation Light"),"[MIOOST][T016][foundation preset copy]")
 	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","role=""tablist"""),"[MIOOST][T016][tablist token]")
 	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","Theme Studio"),"[MIOOST][T016][theme studio copy]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","themeStudioApplyPreset"),"[MIOOST][T016][theme studio preset method]")
@@ -394,14 +400,14 @@ T017
 T018
 	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-transfer-window=""1"""),"[MIOOST][T018][transfer window token]")
 	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","openTransfersWindow()"),"[MIOOST][T018][transfer launcher]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-explorer-appframe--xp"),"[MIOOST][T018][explorer xp appframe]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-explorer-appframe--foundation"),"[MIOOST][T018][explorer foundation appframe]")
 	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","File and Folder Tasks"),"[MIOOST][T018][explorer xp tasks]")
 	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-explorer-menubar"),"[MIOOST][T018][explorer xp menubar]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","registerTransfer"),"[MIOOST][T018][register transfer]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","openTransfersWindow"),"[MIOOST][T018][open transfers]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","transferId"),"[MIOOST][T018][explorer transfer hookup]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-transfers-shell"),"[MIOOST][T018][transfers css]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-explorer-taskpane"),"[MIOOST][T018][explorer xp taskpane css]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-explorer-taskpane"),"[MIOOST][T018][explorer taskpane css]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-explorer-menubar"),"[MIOOST][T018][explorer xp menubar css]")
 	QUIT
 	;
@@ -985,3 +991,9 @@ T049
 	QUIT
 	;
 	;
+T050
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_wm.js","createWindowForApp"),"[MIOOST][T050][dynamic window factory]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_wm.js","centerAuthWindow"),0,"[MIOOST][T050][no wm auth impl]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","centerAuthWindow"),"[MIOOST][T050][auth window centering]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","Wave 1 shell foundation reset"),"[MIOOST][T050][shell foundation css]")
+	QUIT

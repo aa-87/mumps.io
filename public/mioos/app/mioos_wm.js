@@ -56,6 +56,37 @@
     clampWindow(vm, win);
     scheduleTerminalSync(vm, win);
   }
+  function appRecord(vm, appKey) {
+    var pools = [vm.launcherEntries || [], vm.desktopEntries || [], ((vm.boot || {}).apps) || []];
+    var i, found;
+    for (i = 0; i < pools.length; i += 1) {
+      found = (pools[i] || []).find(function (item) { return item && item.key === appKey; });
+      if (found) return found;
+    }
+    return null;
+  }
+  function nextWindowSeed(vm, appKey) {
+    var template = ((vm.boot || {}).windows || []).find(function (item) { return item && item.appKey === appKey; }) || (vm.windows || []).find(function (item) { return item && item.appKey === appKey; });
+    var app = appRecord(vm, appKey) || {};
+    var count = (vm.windows || []).filter(function (item) { return item && item.appKey === appKey; }).length;
+    var title = String((app && app.title) || (template && template.title) || appKey || 'Window');
+    return {
+      id: 'win-' + String(appKey || 'app') + '-' + Date.now() + '-' + (count + 1),
+      appKey: appKey,
+      title: count > 0 ? title + ' ' + (count + 1) : title,
+      left: +(template && template.left || 96) + (count * 24),
+      top: +(template && template.top || 72) + (count * 20),
+      width: +(template && template.width || ((app.kind === 'folder' || appKey === 'explorer' || appKey === 'my-computer' || appKey === 'documents') ? 920 : 760)),
+      height: +(template && template.height || ((app.kind === 'folder' || appKey === 'explorer' || appKey === 'my-computer' || appKey === 'documents') ? 620 : 520)),
+      z: ++vm.zCounter,
+      state: 'normal',
+      minWidth: +(template && template.minWidth || ((((vm.boot || {}).desktop || {}).windowing || {}).minWidth) || 320),
+      minHeight: +(template && template.minHeight || ((((vm.boot || {}).desktop || {}).windowing || {}).minHeight) || 220),
+      resizable: template && template.resizable != null ? template.resizable : 1,
+      draggable: template && template.draggable != null ? template.draggable : 1,
+      snappable: template && template.snappable != null ? template.snappable : 1
+    };
+  }
   function previewForZone(vm, zone) {
     var b = viewportBounds(vm);
     if (zone === 'maximize') return { left: b.left, top: b.top, width: b.width, height: b.height };
@@ -89,6 +120,27 @@
         clampWindow(this, win);
         return win;
       },
+      createWindowForApp: function (appKey) {
+        var win = nextWindowSeed(this, appKey);
+        var template = ((this.boot || {}).windows || []).find(function (item) { return item && item.appKey === appKey; }) || null;
+        if (template && template.moduleWindow) {
+          win.moduleWindow = 1;
+          win.moduleId = template.moduleId;
+          win.moduleCategory = template.moduleCategory;
+          win.moduleSurface = template.moduleSurface;
+          win.moduleBuiltIn = template.moduleBuiltIn;
+          win.moduleSingleton = template.moduleSingleton;
+        }
+        if (template && template.themeStudioEnabled) win.themeStudioEnabled = 1;
+        if (template && template.transferCenterEnabled) win.transferCenterEnabled = 1;
+        if (template && template.transportDiagnosticsEnabled) win.transportDiagnosticsEnabled = template.transportDiagnosticsEnabled;
+        if (template && template.moduleCatalogEnabled) win.moduleCatalogEnabled = 1;
+        if (template && template.securityCenterEnabled) win.securityCenterEnabled = 1;
+        if (template && template.debugCenterEnabled) win.debugCenterEnabled = 1;
+        this.windows.push(win);
+        this.ensureWindowFrame(win);
+        return win;
+      },
       openApp: function (appKey) {
         if (this.requiresSignin) {
           this.showAlert(this.t('alerts.signinRequired.title'), this.t('alerts.signinRequired.open'));
@@ -99,7 +151,8 @@
           this.createTerminalWindow();
           return;
         }
-        var win = this.windows.find(function (item) { return item.appKey === appKey; });
+        var win = this.windows.find(function (item) { return item.appKey === appKey && item.state !== 'closed'; }) || this.windows.find(function (item) { return item.appKey === appKey; });
+        if (!win) win = this.createWindowForApp(appKey);
         if (!win) return;
         this.ensureWindowFrame(win);
         this.menuOpen = false;
@@ -215,11 +268,12 @@
       windowStyle: function (win) {
         this.ensureWindowFrame(win);
         return {
-          left: (win.left || 0) + 'px',
-          top: (win.top || 0) + 'px',
+          '--mioos-window-x': (win.left || 0) + 'px',
+          '--mioos-window-y': (win.top || 0) + 'px',
           width: (win.width || 600) + 'px',
           height: (win.height || 420) + 'px',
-          zIndex: (win.z || 1)
+          zIndex: (win.z || 1),
+          willChange: ((this.dragState.active && this.dragState.windowId === win.id) ? 'transform' : 'auto')
         };
       },
       snapPreviewStyle: function () {
@@ -366,6 +420,7 @@
       },
       handleViewportResize: function () {
         var self = this;
+        if (this.centerAuthWindow && this.requiresSignin) this.centerAuthWindow();
         this.windows.forEach(function (win) {
           var box;
           if (!win || win.state === 'closed') return;
