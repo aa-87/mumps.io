@@ -324,3 +324,19 @@ ROI 33 — HTTP binary chunk transport for resumable uploads and hardened pause/
 - Upload entries store server-side resume metadata (`uploadId`, `nextIndex`, `contiguousBytes`, `parentId`) so a refreshed session can reattach to in-flight uploads and continue from the first missing chunk after the user re-selects the same file.
 - Media preview URLs now request `stream=media`, and `FSBLOB^MIOOSAPI` answers a first non-range media GET with an initial partial-content window to reduce time-to-first-frame while keeping later browser range fetches intact.
 - The next ROI should focus on worker-assisted upload scheduling, main-thread contention audits, and measurements of true end-to-end upload throughput under parallel load.
+## Latest shell UI direction
+
+The visible MIOOS desktop shell must follow the attached `mioos_ui_samples_bundle_v3.zip` markup and CSS structure directly for the Win7 light and dark variants. Do not mix legacy XP-era MIOOS chrome classes with the sample Win7 shell DOM. When in doubt, rebuild the visible shell surface from the sample HTML instead of skinning old markup.
+
+The following surfaces are now expected to use the sample-driven structure first:
+
+- taskbar and start menu
+- desktop icon grid and rubber-band selection
+- context menu
+- base window chrome
+- explorer shell layout
+- transfer window
+- theme studio / settings shell
+
+Behavior can still come from existing `MIOOS*` routines and browser methods, but the DOM and CSS should stay aligned with the sample bundle.
+- Sample-shell styling is now isolated in `/public/mioos/mioos_samples.css`, loaded after the legacy shell stylesheet so the sample HTML/CSS wins cleanly without mixed chrome or accidental overrides.

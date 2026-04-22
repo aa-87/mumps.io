@@ -224,3 +224,8 @@ MIOOS now keeps one supported transfer workflow in the app runtime:
 - binary download and preview use direct authenticated HTTP blob/range only
 - websocket `fs.read.range` remains only for bounded text preview and text viewers
 - redundant websocket upload/download fallback plumbing and the unused upload worker file were removed
+
+## Sample-driven shell rule
+
+The desktop shell should use the sample HTML/CSS structure as the first-class source for visible UI surfaces. Existing browser logic may be reused, but visible shell DOM should not drift back toward mixed legacy chrome.
+- Sample-shell styling is now isolated in `/public/mioos/mioos_samples.css`, loaded after the legacy shell stylesheet so the sample HTML/CSS wins cleanly without mixed chrome or accidental overrides.
