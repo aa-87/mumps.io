@@ -752,6 +752,18 @@ button, input { font: inherit; }
   color: #45556f;
   font-size: 12px;
 }
+.mioos-module-window-headside {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+.mioos-module-notes-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 10px 0 6px;
+}
 .mioos-module-catalog-summary {
   display: flex;
   gap: 12px;
@@ -1433,3 +1445,6 @@ button, input { font: inherit; }
 .mioos-window-switcher-copy small {
   opacity: 0.72;
 }
+
+/* ROI 54 — shell-standard app actions and built-in app polish */
+.mioos-shell-surface [data-shell-action-group="1"] { display: flex; gap: 8px; flex-wrap: wrap; }

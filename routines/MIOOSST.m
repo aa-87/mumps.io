@@ -417,6 +417,12 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","shellSurfaces","notifications")=1
 	SET OBJ("desktop","shellSurfaces","dialogs")=1
 	SET OBJ("desktop","shellSurfaces","windowSwitcher")=1
+	SET OBJ("desktop","shellSurfaces","moduleWindows")=+$GET(CONF("mioos","desktop","shellSurfaces","moduleWindows"),1)
+	SET OBJ("desktop","appSurfaceModel")=$GET(CONF("mioos","desktop","appSurfaceModel"),"shell-standard-actions")
+	SET OBJ("desktop","appActions","confirmBeforeDestructive")=+$GET(CONF("mioos","desktop","appActions","confirmBeforeDestructive"),1)
+	SET OBJ("desktop","appActions","notifyOnAdminActions")=+$GET(CONF("mioos","desktop","appActions","notifyOnAdminActions"),1)
+	SET OBJ("desktop","appActions","copyExportsToClipboard")=+$GET(CONF("mioos","desktop","appActions","copyExportsToClipboard"),1)
+	SET OBJ("desktop","appActions","moduleNotesSessionLocal")=+$GET(CONF("mioos","desktop","appActions","moduleNotesSessionLocal"),1)
 	SET OBJ("desktop","notifications","model")=$GET(STATE("notificationsModel"),"toast-and-tray")
 	SET OBJ("desktop","notifications","stackLimit")=+$GET(STATE("notificationsStackLimit"),6)
 	SET OBJ("desktop","notifications","tray")=1

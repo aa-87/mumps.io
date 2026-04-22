@@ -394,6 +394,7 @@
                   <button type="button" @click="resumePausedTransfers()">Resume paused</button>
                   <button type="button" @click="cancelActiveTransfers()">Cancel active</button>
                   <button type="button" @click="clearFinishedTransfers()">Clear finished</button>
+                  <button type="button" @click="copyTextToClipboard(transferSummaryText(), { title: 'Transfer Center', message: 'Transfer summary copied.' })">Copy summary</button>
                   <button type="button" @click="refreshView()">Refresh desktop</button>
                 </div>
               </div>
@@ -453,6 +454,8 @@
                 </div>
                 <div class="mioos-seven-toolbar">
                   <button type="button" @click="refreshTransportDiagnostics()" :disabled="transportDiagnostics.loading">[[ transportDiagnostics.loading ? 'Refreshing…' : 'Refresh diagnostics' ]]</button>
+                  <button type="button" @click="copyTransportDiagnostics()">Copy summary</button>
+                  <button type="button" @click="clearTransportTelemetry()">Clear telemetry</button>
                 </div>
               </div>
               <div class="mioos-diagnostics-summary">
@@ -512,6 +515,7 @@
                 </div>
                 <div class="mioos-seven-toolbar">
                   <button type="button" @click="refreshSecurityCenter()" :disabled="securityCenter.loading">[[ securityCenter.loading ? 'Refreshing…' : 'Refresh security' ]]</button>
+                  <button type="button" @click="copySecuritySummary()">Copy summary</button>
                   <button type="button" @click="exportSecurityAudit()">Export audit</button>
                 </div>
               </div>
@@ -685,6 +689,7 @@
                 </div>
                 <div class="mioos-seven-toolbar">
                   <button type="button" @click="refreshModuleCatalog()" :disabled="moduleCatalog.loading">[[ moduleCatalog.loading ? 'Refreshing…' : 'Refresh catalog' ]]</button>
+                  <button type="button" @click="copyModuleCatalogManifest()">Copy manifest</button>
                 </div>
               </div>
               <div class="mioos-module-catalog-summary">
@@ -726,14 +731,24 @@
                   <strong>[[ ((moduleWindowMeta(win) || {}).title) || win.title ]]</strong>
                   <span>[[ moduleWindowStatus(win) ]]</span>
                 </div>
-                <div class="mioos-module-badges">
-                  <span class="mioos-module-badge" v-for="badge in moduleBadges(moduleWindowMeta(win))" :key="badge">[[ badge ]]</span>
+                <div class="mioos-module-window-headside">
+                  <div class="mioos-seven-toolbar">
+                    <button type="button" @click="copyModuleWindowState(win)">Copy state</button>
+                    <button type="button" v-if="(win.moduleId || '') === 'module-notes'" @click="clearModuleWindowNotes(win)">Clear note</button>
+                  </div>
+                  <div class="mioos-module-badges">
+                    <span class="mioos-module-badge" v-for="badge in moduleBadges(moduleWindowMeta(win))" :key="badge">[[ badge ]]</span>
+                  </div>
                 </div>
               </div>
               <div class="mioos-module-window-grid">
                 <section class="mioos-module-panel mioos-module-panel--primary" v-if="(win.moduleId || '') === 'module-notes'">
                   <h4>Scratch note</h4>
                   <textarea v-model="win.moduleState.draft" class="mioos-module-notes" placeholder="Capture release notes, file transfer follow-ups, or shell TODOs here."></textarea>
+                  <div class="mioos-module-notes-actions">
+                    <button type="button" @click="copyModuleWindowState(win)">Copy note state</button>
+                    <button type="button" @click="clearModuleWindowNotes(win)">Clear note</button>
+                  </div>
                   <small>This stays in the current shell session and demonstrates module-local UI state inside the shared window host.</small>
                 </section>
                 <section class="mioos-module-panel mioos-module-panel--primary" v-else-if="(win.moduleId || '') === 'module-ops-center'">

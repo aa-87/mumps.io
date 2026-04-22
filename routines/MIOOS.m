@@ -64,6 +64,7 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","desktop","appActions","notifyOnAdminActions"))="" SET CONF("mioos","desktop","appActions","notifyOnAdminActions")=1
 	IF $GET(CONF("mioos","desktop","appActions","copyExportsToClipboard"))="" SET CONF("mioos","desktop","appActions","copyExportsToClipboard")=1
 	IF $GET(CONF("mioos","desktop","appActions","moduleNotesSessionLocal"))="" SET CONF("mioos","desktop","appActions","moduleNotesSessionLocal")=1
+	IF $GET(CONF("mioos","desktop","shellSurfaces","moduleWindows"))="" SET CONF("mioos","desktop","shellSurfaces","moduleWindows")=1
 	IF $GET(CONF("mioos","desktop","chrome"))="" SET CONF("mioos","desktop","chrome")="shell-foundation"
 	IF $GET(CONF("mioos","desktop","taskbarStyle"))="" SET CONF("mioos","desktop","taskbarStyle")="taskbar-foundation"
 	IF $GET(CONF("mioos","desktop","startMenuStyle"))="" SET CONF("mioos","desktop","startMenuStyle")="launcher-foundation"

@@ -374,3 +374,8 @@ ROI 53 — shell-standard dialogs, notifications, and built-in app cleanup
 - Added local shell persistence for non-terminal window frames plus sign-in dialog position.
 - Added shell keyboard shortcuts for show desktop, window switching, close focused window, and opening diagnostics.
 - Added reduced-motion preference handling, a taskbar Desktop control, and a shell window switcher overlay.
+
+ROI 54 — shell-standard app actions and built-in app polish
+- Added boot-advertised app action metadata for confirm-before-destructive, admin notifications, clipboard exports, and session-local module notes.
+- Standardized built-in app action bars for Transfer Center, Transport Diagnostics, Security Center, Debug Center, App Catalog, and module windows.
+- Added shell copy/export/clear actions with confirmations and toast feedback across diagnostics, security, debug, catalog, transfers, and module notes.

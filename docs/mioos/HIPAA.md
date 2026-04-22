@@ -138,3 +138,6 @@ ROI 53 — shell-standard dialogs, notifications, and built-in app cleanup
 - Added local shell persistence for non-terminal window frames plus sign-in dialog position.
 - Added shell keyboard shortcuts for show desktop, window switching, close focused window, and opening diagnostics.
 - Added reduced-motion preference handling, a taskbar Desktop control, and a shell window switcher overlay.
+
+## ROI 54 — administrative action feedback
+Administrative shell actions such as session revocation, account unlock, audit summary copy, and transfer history cleanup now route through the shared shell confirmation and notification model for clearer operator feedback.

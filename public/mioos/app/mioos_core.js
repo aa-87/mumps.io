@@ -433,6 +433,48 @@
         unreadNotificationCount: function () {
           return (this.shellNotifications || []).filter(function (item) { return !item.read; }).length;
         },
+        notifyInfo: function (title, message, opts) {
+          return this.pushNotification('info', title, message, Object.assign({ timeoutMs: 1800 }, opts || {}));
+        },
+        notifySuccess: function (title, message, opts) {
+          return this.pushNotification('success', title, message, Object.assign({ timeoutMs: 1800 }, opts || {}));
+        },
+        notifyError: function (title, message, opts) {
+          return this.pushNotification('error', title, message, Object.assign({ sticky: true }, opts || {}));
+        },
+        clipboardWriteText: function (text) {
+          text = String(text == null ? '' : text);
+          if (window.navigator && window.navigator.clipboard && window.navigator.clipboard.writeText) return window.navigator.clipboard.writeText(text);
+          return new Promise(function (resolve, reject) {
+            try {
+              var ta = document.createElement('textarea');
+              ta.value = text;
+              ta.setAttribute('readonly', 'readonly');
+              ta.style.position = 'fixed';
+              ta.style.opacity = '0';
+              ta.style.left = '-9999px';
+              document.body.appendChild(ta);
+              ta.focus();
+              ta.select();
+              if (!document.execCommand('copy')) throw new Error('copy_failed');
+              document.body.removeChild(ta);
+              resolve(true);
+            } catch (err) {
+              reject(err);
+            }
+          });
+        },
+        copyTextToClipboard: function (text, opts) {
+          var self = this;
+          opts = opts || {};
+          return this.clipboardWriteText(text).then(function () {
+            self.notifySuccess(opts.title || 'Clipboard', opts.message || 'Copied to clipboard.', { detail: opts.detail || '' });
+            return true;
+          }).catch(function (err) {
+            self.notifyError(opts.errorTitle || 'Clipboard', opts.errorMessage || 'Unable to copy to clipboard.', { detail: (err && (err.message || err.detail || err.error)) || '' });
+            return false;
+          });
+        },
         toggleTrayPanel: function () {
           this.menuOpen = false;
           this.closeWindowSwitcher();
@@ -572,28 +614,57 @@
         },
         revokeSecuritySession: function (sessionId) {
           var self = this;
+          var actions = ((((this.boot || {}).desktop || {}).appActions) || {});
           if (!sessionId) return Promise.resolve();
-          this.securityCenter.loading = true;
-          return this.command('auth.session.revoke', { sessionId: sessionId }).then(function () {
-            return self.refreshSecurityCenter();
-          }).finally(function () {
-            self.securityCenter.loading = false;
+          return ((actions.confirmBeforeDestructive && this.confirmDialog)
+            ? this.confirmDialog('Revoke session', 'Revoke the selected session now?', { detail: sessionId, confirmText: 'Revoke' })
+            : Promise.resolve(true)
+          ).then(function (confirmed) {
+            if (!confirmed) return null;
+            self.securityCenter.loading = true;
+            return self.command('auth.session.revoke', { sessionId: sessionId }).then(function () {
+              if (actions.notifyOnAdminActions && self.notifySuccess) self.notifySuccess('Security Center', 'Session revoked.', { detail: sessionId });
+              return self.refreshSecurityCenter();
+            }).finally(function () {
+              self.securityCenter.loading = false;
+            });
           });
         },
         unlockSecurityUser: function (username) {
           var self = this;
+          var actions = ((((this.boot || {}).desktop || {}).appActions) || {});
           if (!username) return Promise.resolve();
-          this.securityCenter.loading = true;
-          return this.command('auth.user.unlock', { username: username }).then(function () {
-            return self.refreshSecurityCenter();
-          }).finally(function () {
-            self.securityCenter.loading = false;
+          return ((actions.confirmBeforeDestructive && this.confirmDialog)
+            ? this.confirmDialog('Unlock account', 'Unlock the selected account now?', { detail: username, confirmText: 'Unlock' })
+            : Promise.resolve(true)
+          ).then(function (confirmed) {
+            if (!confirmed) return null;
+            self.securityCenter.loading = true;
+            return self.command('auth.user.unlock', { username: username }).then(function () {
+              if (actions.notifyOnAdminActions && self.notifySuccess) self.notifySuccess('Security Center', 'Account unlocked.', { detail: username });
+              return self.refreshSecurityCenter();
+            }).finally(function () {
+              self.securityCenter.loading = false;
+            });
           });
         },
         exportSecurityAudit: function () {
           var path = ((this.boot || {}).routes || {}).auditExport || '/api/mioos/auth/audit/export';
           if (!path) return;
           window.open(path, '_blank');
+        },
+        copySecuritySummary: function () {
+          var payload = {
+            report: this.securityReport() || {},
+            sessions: this.securitySessions() || [],
+            accounts: this.securityAccounts() || [],
+            trail: this.securityTrail() || []
+          };
+          return this.copyTextToClipboard(JSON.stringify(payload, null, 2), {
+            title: 'Security Center',
+            message: 'Security summary copied.',
+            detail: ((payload.sessions || []).length || 0) + ' sessions · ' + ((payload.accounts || []).length || 0) + ' accounts'
+          });
         },
         pushDebugEvent: function (kind, name, detail, meta) {
           var limit = +((((this.boot || {}).desktop || {}).debugCenter || {}).eventLimit || 50) || 50;
@@ -603,7 +674,15 @@
           return entry;
         },
         clearDebugEvents: function () {
-          this.debugCenter.events.splice(0, this.debugCenter.events.length);
+          var self = this;
+          var actions = ((((this.boot || {}).desktop || {}).appActions) || {});
+          var run = function () {
+            self.debugCenter.events.splice(0, self.debugCenter.events.length);
+            if (self.notifySuccess) self.notifySuccess('Debug Center', 'Debug events cleared.');
+            return true;
+          };
+          if (actions.confirmBeforeDestructive && this.confirmDialog) return this.confirmDialog('Clear debug events', 'Clear all captured debug events from this shell session?', { confirmText: 'Clear' }).then(function (confirmed) { return confirmed ? run() : false; });
+          return Promise.resolve(run());
         },
         debugSnapshot: function () {
           return (this.debugCenter || {}).snapshot || {};
@@ -633,10 +712,28 @@
         exportDebugSnapshot: function () {
           var text = JSON.stringify(this.debugSnapshot() || {}, null, 2);
           this.pushDebugEvent('debug', 'export', 'Snapshot copied to debug buffer', { source: 'client' });
-          if (window.navigator && window.navigator.clipboard && window.navigator.clipboard.writeText) {
-            window.navigator.clipboard.writeText(text).catch(function () {});
-          }
+          this.copyTextToClipboard(text, { title: 'Debug Center', message: 'Debug snapshot copied.' });
           return text;
+        },
+        copyTransportDiagnostics: function () {
+          var payload = {
+            report: this.transportReport() || {},
+            sockets: this.transportSocketRows() || [],
+            summary: { session: (((this.transportReport() || {}).sessionId) || ((this.boot.session || {}).id) || 'mioos-shell'), updatedAt: this.transportDiagnostics.refreshedAt || 0 }
+          };
+          return this.copyTextToClipboard(JSON.stringify(payload, null, 2), { title: 'Transport Diagnostics', message: 'Diagnostics summary copied.' });
+        },
+        clearTransportTelemetry: function () {
+          var self = this;
+          var actions = ((((this.boot || {}).desktop || {}).appActions) || {});
+          var run = function () {
+            self.socketTelemetry = {};
+            self.transportDiagnostics.error = '';
+            if (self.notifySuccess) self.notifySuccess('Transport Diagnostics', 'Client telemetry cleared.');
+            return true;
+          };
+          if (actions.confirmBeforeDestructive && this.confirmDialog) return this.confirmDialog('Clear telemetry', 'Clear client socket telemetry for this shell session?', { confirmText: 'Clear' }).then(function (confirmed) { return confirmed ? run() : false; });
+          return Promise.resolve(run());
         },
         applyDocumentLocale: function () {
           if (I18N.applyDocumentLocale) I18N.applyDocumentLocale(this);
@@ -759,6 +856,13 @@
             throw err;
           });
         },
+        copyModuleCatalogManifest: function () {
+          return this.copyTextToClipboard(JSON.stringify(this.moduleCatalogRows() || [], null, 2), {
+            title: 'App Catalog',
+            message: 'Module manifest copied.',
+            detail: (this.moduleCatalogRows() || []).length + ' modules'
+          });
+        },
         openModuleCatalog: function () {
           this.openApp('app-catalog');
         },
@@ -773,6 +877,26 @@
           if (module.id === 'module-ops-center') return 'Session ' + (this.boot.session.id || 'mioos-shell') + ' · ' + (this.boot.user.displayName || 'Guest');
           if (module.id === 'module-notes') return 'Scratch surface · ' + ((win.moduleState && win.moduleState.draft && win.moduleState.draft.length) || 0) + ' chars';
           return module.description || module.subtitle || 'Ready';
+        },
+        copyModuleWindowState: function (win) {
+          if (!win) return Promise.resolve(false);
+          return this.copyTextToClipboard(JSON.stringify({ id: win.id, appKey: win.appKey, moduleId: win.moduleId || '', state: win.moduleState || {} }, null, 2), {
+            title: 'Module Window',
+            message: 'Module window state copied.',
+            detail: win.title || win.id || ''
+          });
+        },
+        clearModuleWindowNotes: function (win) {
+          var self = this;
+          var actions = ((((this.boot || {}).desktop || {}).appActions) || {});
+          if (!win || !win.moduleState) return Promise.resolve(false);
+          var run = function () {
+            win.moduleState.draft = '';
+            if (self.notifySuccess) self.notifySuccess('Module Notes', 'Scratch note cleared.');
+            return true;
+          };
+          if (actions.confirmBeforeDestructive && this.confirmDialog) return this.confirmDialog('Clear module notes', 'Clear the current scratch note for this shell session?', { confirmText: 'Clear' }).then(function (confirmed) { return confirmed ? run() : false; });
+          return Promise.resolve(run());
         },
         transferStorageKey: function () {
           var sessionId = (((this.boot || {}).session || {}).id) || 'mioos-shell';
@@ -952,21 +1076,37 @@
         },
         cancelActiveTransfers: function () {
           var self = this;
-          return Promise.all((this.activeTransfers() || []).map(function (item) {
-            return self.canCancelTransfer(item) ? self.cancelTransfer(item).catch(function () { return null; }) : Promise.resolve();
-          })).then(function () { self.persistTransferCenter(); });
+          var actions = ((((this.boot || {}).desktop || {}).appActions) || {});
+          var run = function () {
+            return Promise.all((self.activeTransfers() || []).map(function (item) {
+              return self.canCancelTransfer(item) ? self.cancelTransfer(item).catch(function () { return null; }) : Promise.resolve();
+            })).then(function () {
+              self.persistTransferCenter();
+              if (self.notifySuccess) self.notifySuccess('Transfer Center', 'Active transfers cancelled.');
+            });
+          };
+          if (actions.confirmBeforeDestructive && this.confirmDialog) return this.confirmDialog('Cancel active transfers', 'Cancel all active transfers in this shell session?', { confirmText: 'Cancel transfers' }).then(function (confirmed) { return confirmed ? run() : null; });
+          return run();
         },
         clearFinishedTransfers: function () {
-          var keep = {};
-          this.transferCenter.items = (this.transferCenter.items || []).filter(function (item) {
-            var active = ['queued','preparing','uploading','downloading','finalizing','verifying','cancelling','paused'].indexOf(item.status) >= 0;
-            if (active) keep[item.id] = 1;
-            return active;
-          });
-          Object.keys(this.transferControllers || {}).forEach(function (key) {
-            if (!keep[key]) delete (this.transferControllers || {})[key];
-          }, this);
-          this.persistTransferCenter();
+          var self = this;
+          var actions = ((((this.boot || {}).desktop || {}).appActions) || {});
+          var run = function () {
+            var keep = {};
+            self.transferCenter.items = (self.transferCenter.items || []).filter(function (item) {
+              var active = ['queued','preparing','uploading','downloading','finalizing','verifying','cancelling','paused'].indexOf(item.status) >= 0;
+              if (active) keep[item.id] = 1;
+              return active;
+            });
+            Object.keys(self.transferControllers || {}).forEach(function (key) {
+              if (!keep[key]) delete (self.transferControllers || {})[key];
+            }, self);
+            self.persistTransferCenter();
+            if (self.notifySuccess) self.notifySuccess('Transfer Center', 'Finished transfers cleared.');
+            return true;
+          };
+          if (actions.confirmBeforeDestructive && this.confirmDialog) return this.confirmDialog('Clear finished transfers', 'Remove completed, failed, and cancelled transfers from the history list?', { confirmText: 'Clear history' }).then(function (confirmed) { return confirmed ? run() : false; });
+          return Promise.resolve(run());
         },
         centerAuthWindow: function (force) {
           var width = Math.min(460, Math.max(380, (window.innerWidth || document.documentElement.clientWidth || 1280) - 32));
