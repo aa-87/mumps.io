@@ -142,6 +142,11 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("taskbarStyle")=$GET(CONF("mioos","desktop","taskbarStyle"),"taskbar-foundation")
 	SET STATE("startMenuStyle")=$GET(CONF("mioos","desktop","startMenuStyle"),"launcher-foundation")
 	SET STATE("windowManager")=$GET(CONF("mioos","desktop","windowManager"),"mioos-native-vue-css")
+	SET STATE("windowChrome")=$GET(CONF("mioos","desktop","windowChrome"),"reusable-shell-chrome")
+	SET STATE("windowTitlebarHeight")=+$GET(CONF("mioos","desktop","windowTitlebarHeight"),40)
+	IF STATE("windowTitlebarHeight")<32 SET STATE("windowTitlebarHeight")=32
+	SET STATE("windowMenuEnabled")=+$GET(CONF("mioos","desktop","windowMenuEnabled"),1)
+	SET STATE("windowStatusBadges")=+$GET(CONF("mioos","desktop","windowStatusBadges"),1)
 	SET STATE("windowSnapThreshold")=+$GET(CONF("mioos","desktop","windowSnapThreshold"),28)
 	IF STATE("windowSnapThreshold")<12 SET STATE("windowSnapThreshold")=12
 	SET STATE("windowTaskbarHeight")=+$GET(CONF("mioos","desktop","taskbarHeight"),40)
@@ -306,6 +311,10 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","viewers","pdf")=1
 	SET OBJ("desktop","viewers","structured")=1
 	SET OBJ("desktop","windowing","engine")=$GET(STATE("windowManager"),"mioos-native-vue-css")
+	SET OBJ("desktop","windowing","chrome")=$GET(STATE("windowChrome"),"reusable-shell-chrome")
+	SET OBJ("desktop","windowing","titlebarHeight")=+$GET(STATE("windowTitlebarHeight"),40)
+	SET OBJ("desktop","windowing","windowMenuEnabled")=+$GET(STATE("windowMenuEnabled"),1)
+	SET OBJ("desktop","windowing","statusBadges")=+$GET(STATE("windowStatusBadges"),1)
 	SET OBJ("desktop","windowing","snapThreshold")=+$GET(STATE("windowSnapThreshold"),28)
 	SET OBJ("desktop","windowing","taskbarHeight")=+$GET(STATE("windowTaskbarHeight"),40)
 	SET OBJ("desktop","windowing","minWidth")=+$GET(STATE("windowMinWidth"),320)
@@ -315,6 +324,10 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","windowing","snapModel")="edges-and-corners"
 	SET OBJ("desktop","windowing","doubleClickTitlebar")=1
 	SET OBJ("desktop","windowing","dropUpload")=1
+	SET OBJ("desktop","windowing","snapShortcuts","left")=$GET(CONF("mioos","desktop","accessibility","keyboardShortcuts","snapLeft"),"Alt+Shift+ArrowLeft")
+	SET OBJ("desktop","windowing","snapShortcuts","right")=$GET(CONF("mioos","desktop","accessibility","keyboardShortcuts","snapRight"),"Alt+Shift+ArrowRight")
+	SET OBJ("desktop","windowing","snapShortcuts","maximize")=$GET(CONF("mioos","desktop","accessibility","keyboardShortcuts","maximizeFocusedWindow"),"Alt+Shift+ArrowUp")
+	SET OBJ("desktop","windowing","snapShortcuts","restore")=$GET(CONF("mioos","desktop","accessibility","keyboardShortcuts","restoreFocusedWindow"),"Alt+Shift+ArrowDown")
 	SET OBJ("desktop","moduleSystem","enabled")=+$GET(STATE("moduleSystemEnabled"),1)
 	SET OBJ("desktop","moduleSystem","launcher")=$GET(STATE("moduleLauncher"),"desktop-icons-and-menu")
 	SET OBJ("desktop","moduleSystem","manifestVersion")=+$GET(STATE("moduleManifestVersion"),1)
@@ -633,20 +646,20 @@ WINDOWS(STATE)
 	NEW CODE,N,I,APPKEY,TITLE,MODW,MINW,MINH,LEFT,TOP,WIDTH,HEIGHT
 	SET CODE=$GET(STATE("localeCode"),"en")
 	KILL STATE("windows")
-	DO WIN(.STATE,1,"win-my-computer","my-computer",$$TXT^MIOOSI18N(CODE,"app.my-computer.title","My Computer"),88,72,760,500,4,"normal",460,320,1,1)
-	DO WIN(.STATE,2,"win-documents","documents",$$TXT^MIOOSI18N(CODE,"app.documents.title","My Documents"),180,118,620,420,2,"minimized",420,280,1,1)
-	DO WIN(.STATE,3,"win-control-panel","control-panel",$$TXT^MIOOSI18N(CODE,"app.control-panel.title","Control Panel"),240,92,540,400,1,"minimized",420,280,1,1)
-	DO WIN(.STATE,4,"win-terminal-template","terminal",$$TXT^MIOOSI18N(CODE,"app.terminal.title","Terminal"),120,88,820,430,3,"closed",560,300,1,1)
-	DO WIN(.STATE,5,"win-theme-studio","theme-studio","Theme Studio",156,76,900,610,5,"closed",700,520,1,1)
+	DO WIN(.STATE,1,"win-my-computer","my-computer",$$TXT^MIOOSI18N(CODE,"app.my-computer.title","My Computer"),88,72,760,500,4,"normal",460,320,1,1,"explorer","🖥","workspace-explorer",1)
+	DO WIN(.STATE,2,"win-documents","documents",$$TXT^MIOOSI18N(CODE,"app.documents.title","My Documents"),180,118,620,420,2,"minimized",420,280,1,1,"explorer","📁","workspace-documents",1)
+	DO WIN(.STATE,3,"win-control-panel","control-panel",$$TXT^MIOOSI18N(CODE,"app.control-panel.title","Control Panel"),240,92,540,400,1,"minimized",420,280,1,1,"system","🛠","workspace-control-panel",1)
+	DO WIN(.STATE,4,"win-terminal-template","terminal",$$TXT^MIOOSI18N(CODE,"app.terminal.title","Terminal"),120,88,820,430,3,"closed",560,300,1,1,"terminal","⌨","workspace-terminal",0)
+	DO WIN(.STATE,5,"win-theme-studio","theme-studio","Theme Studio",156,76,900,610,5,"closed",700,520,1,1,"studio","🎨","workspace-theme-studio",1)
 	SET STATE("windows",5,"themeStudioEnabled")=1
-	DO WIN(.STATE,6,"win-transfers","transfers","Transfers",218,108,760,520,6,"closed",620,420,1,1)
+	DO WIN(.STATE,6,"win-transfers","transfers","Transfers",218,108,760,520,6,"closed",620,420,1,1,"transfers","📦","workspace-transfers",1)
 	SET STATE("windows",6,"transferCenterEnabled")=1
-	DO WIN(.STATE,7,"win-diagnostics","diagnostics","Diagnostics",244,126,820,520,7,"closed",640,420,1,1)
+	DO WIN(.STATE,7,"win-diagnostics","diagnostics","Diagnostics",244,126,820,520,7,"closed",640,420,1,1,"diagnostics","📈","workspace-diagnostics",1)
 	SET STATE("windows",7,"transportDiagnosticsEnabled")=+$GET(STATE("wsDiagnosticsEnabled"),1)
 	SET N=7
 	IF +$GET(STATE("moduleAppCatalogEnabled"),1)=1 DO
 	. SET N=N+1
-	. DO WIN(.STATE,N,"win-app-catalog","app-catalog",$$TXT^MIOOSI18N(CODE,"app.app-catalog.title","App Catalog"),268,122,860,560,N,"closed",660,420,1,1)
+	. DO WIN(.STATE,N,"win-app-catalog","app-catalog",$$TXT^MIOOSI18N(CODE,"app.app-catalog.title","App Catalog"),268,122,860,560,N,"closed",660,420,1,1,"catalog","🧩","workspace-app-catalog",1)
 	. SET STATE("windows",N,"moduleCatalogEnabled")=1
 	. SET STATE("windows",N,"moduleCatalogWindow")=1
 	SET I=0 FOR  SET I=$ORDER(STATE("modules",I)) QUIT:'I  DO
@@ -655,7 +668,7 @@ WINDOWS(STATE)
 	. SET APPKEY=$GET(STATE("modules",I,"appKey"),$GET(STATE("modules",I,"id")))
 	. SET TITLE=$GET(STATE("modules",I,"windowTitle"),$GET(STATE("modules",I,"title"),APPKEY))
 	. SET LEFT=160+(I*26),TOP=94+(I*22),WIDTH=720,HEIGHT=500,MINW=560,MINH=340
-	. DO WIN(.STATE,N,$GET(STATE("modules",I,"windowId"),"win-"_APPKEY),APPKEY,TITLE,LEFT,TOP,WIDTH,HEIGHT,N,"closed",MINW,MINH,1,1)
+	. DO WIN(.STATE,N,$GET(STATE("modules",I,"windowId"),"win-"_APPKEY),APPKEY,TITLE,LEFT,TOP,WIDTH,HEIGHT,N,"closed",MINW,MINH,1,1,"module",$GET(STATE("modules",I,"icon"),"🧩"),"workspace-module-"_APPKEY,1)
 	. SET STATE("windows",N,"moduleWindow")=1
 	. SET STATE("windows",N,"moduleId")=$GET(STATE("modules",I,"id"))
 	. SET STATE("windows",N,"moduleCategory")=$GET(STATE("modules",I,"category"),"general")
@@ -663,18 +676,25 @@ WINDOWS(STATE)
 	. SET STATE("windows",N,"moduleBuiltIn")=+$GET(STATE("modules",I,"builtIn"),1)
 	. SET STATE("windows",N,"moduleSingleton")=+$GET(STATE("modules",I,"singleton"),1)
 	SET N=N+1
-	DO WIN(.STATE,N,"win-security-center","security-center","Security Center",284,134,860,560,N,"closed",680,420,1,1)
+	DO WIN(.STATE,N,"win-security-center","security-center","Security Center",284,134,860,560,N,"closed",680,420,1,1,"security","🔒","workspace-security-center",1)
 	SET STATE("windows",N,"securityCenterEnabled")=1
 	IF +$GET(STATE("debugEnabled"),1)=1 DO
 	. SET N=N+1
-	. DO WIN(.STATE,N,"win-debug-center","debug-center",$$TXT^MIOOSI18N(CODE,"app.debug-center.title","Debug Center"),308,146,900,580,N,"closed",700,440,1,1)
+	. DO WIN(.STATE,N,"win-debug-center","debug-center",$$TXT^MIOOSI18N(CODE,"app.debug-center.title","Debug Center"),308,146,900,580,N,"closed",700,440,1,1,"debug","🧪","workspace-debug-center",1)
 	. SET STATE("windows",N,"debugCenterEnabled")=1
 	QUIT
 	;
-WIN(STATE,N,ID,APPKEY,TITLE,LEFT,TOP,WIDTH,HEIGHT,Z,MODE,MINW,MINH,RESIZE,DRAG)
+WIN(STATE,N,ID,APPKEY,TITLE,LEFT,TOP,WIDTH,HEIGHT,Z,MODE,MINW,MINH,RESIZE,DRAG,KIND,ICON,WORKSPACE,PERSIST)
 	SET STATE("windows",N,"id")=ID
 	SET STATE("windows",N,"appKey")=APPKEY
 	SET STATE("windows",N,"title")=TITLE
+	SET STATE("windows",N,"kind")=$SELECT($GET(KIND)'="":$GET(KIND),1:"app")
+	SET STATE("windows",N,"icon")=$SELECT($GET(ICON)'="":$GET(ICON),1:"□")
+	SET STATE("windows",N,"workspaceKey")=$SELECT($GET(WORKSPACE)'="":$GET(WORKSPACE),1:"workspace-"_APPKEY)
+	SET STATE("windows",N,"persistLayout")=+$SELECT($DATA(PERSIST)#2:PERSIST,1:1)
+	SET STATE("windows",N,"focusable")=1
+	SET STATE("windows",N,"focused")=0
+	SET STATE("windows",N,"chrome")=$GET(STATE("windowChrome"),"reusable-shell-chrome")
 	SET STATE("windows",N,"left")=LEFT
 	SET STATE("windows",N,"top")=TOP
 	SET STATE("windows",N,"width")=WIDTH

@@ -186,7 +186,7 @@
     </div>
   </aside>
 
-  <main class="mioos-desktop" @click="menuOpen=false; shellUi.trayOpen=false; closeDesktopContextMenu()" @contextmenu.prevent="openDesktopContextMenu($event)">
+  <main class="mioos-desktop" @click="menuOpen=false; shellUi.trayOpen=false; closeDesktopContextMenu(); closeWindowMenu()" @contextmenu.prevent="openDesktopContextMenu($event)">
     <div class="mioos-shell-wallpaper" aria-hidden="true"></div>
     <div v-if="snapPreview.active" class="mioos-snap-preview" :data-snap-zone="snapPreview.zone" :style="snapPreviewStyle()"></div>
     <section class="mioos-desktop-icons" :aria-label="t('desktop.icons')" :data-icon-size="desktopUi.iconSize">
@@ -213,16 +213,22 @@
       <button type="button" @click="contextControlPanel()">Control Panel</button>
     </section>
 
-    <section v-for="win in visibleWindows" :key="win.id" class="mioos-window" :class="windowClass(win)" :style="windowStyle(win)" @mousedown="focusWindow(win.id)" @dragover="onWindowDragOver(win, $event)" @drop="onWindowDrop(win, $event)" role="dialog" :aria-label="win.title" :data-window-state="win.state" :data-window-app="win.appKey">
-      <header class="mioos-titlebar" @mousedown.stop="beginDrag(win, $event)" @dblclick.stop="onWindowTitleDblClick(win.id)">
+    <section v-for="win in visibleWindows" :key="win.id" class="mioos-window" :class="windowClass(win)" :style="windowStyle(win)" @mousedown="focusWindow(win.id)" @dragover="onWindowDragOver(win, $event)" @drop="onWindowDrop(win, $event)" role="dialog" :aria-label="win.title" :data-window-state="win.state" :data-window-app="win.appKey" :data-window-kind="windowKind(win)" :data-window-workspace="win.workspaceKey || ''" :data-window-chrome="win.chrome || ''">
+      <header class="mioos-titlebar" @mousedown.stop="beginDrag(win, $event)" @dblclick.stop="onWindowTitleDblClick(win.id)" @contextmenu.prevent.stop="openWindowMenu(win, $event, 'titlebar')">
         <div class="mioos-titlebar-copy">
-          <span class="mioos-entry-icon">[[ appIcon(win.appKey) ]]</span>
-          <strong>[[ win.title ]]</strong>
+          <button type="button" class="mioos-titlebar-system" :title="win.title" :aria-label="win.title + ' menu'" @click.stop="openWindowMenu(win, $event, 'system-button')">[[ appIcon(win.appKey, win) ]]</button>
+          <div class="mioos-titlebar-text">
+            <strong>[[ win.title ]]</strong>
+            <small>[[ windowMetaLabel(win) ]]</small>
+          </div>
+          <div class="mioos-window-badges" v-if="windowBadgeRows(win).length">
+            <span v-for="badge in windowBadgeRows(win)" :key="badge" class="mioos-window-badge">[[ badge ]]</span>
+          </div>
         </div>
         <div class="mioos-window-actions">
-          <button type="button" :title="t('action.minimize')" :aria-label="t('action.minimize')" @click.stop="minimizeWindow(win.id)">_</button>
-          <button type="button" :title="windowToggleLabel(win)" :aria-label="windowToggleLabel(win)" @click.stop="toggleMaximize(win.id)">▢</button>
-          <button type="button" :title="t('action.close')" :aria-label="t('action.close')" @click.stop="closeWindow(win.id)">×</button>
+          <button type="button" class="is-minimize" :title="t('action.minimize')" :aria-label="t('action.minimize')" @click.stop="minimizeWindow(win.id)">_</button>
+          <button type="button" class="is-maximize" :title="windowToggleLabel(win)" :aria-label="windowToggleLabel(win)" @click.stop="toggleMaximize(win.id)">▢</button>
+          <button type="button" class="is-close" :title="t('action.close')" :aria-label="t('action.close')" @click.stop="closeWindow(win.id)">×</button>
         </div>
       </header>
       <div class="mioos-window-body" :class="{ 'is-terminal-body': win.appKey === 'terminal' }">

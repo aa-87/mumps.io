@@ -59,6 +59,10 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","desktop","accessibility","keyboardShortcuts","windowSwitcher"))="" SET CONF("mioos","desktop","accessibility","keyboardShortcuts","windowSwitcher")="Alt+Tab"
 	IF $GET(CONF("mioos","desktop","accessibility","keyboardShortcuts","closeFocusedWindow"))="" SET CONF("mioos","desktop","accessibility","keyboardShortcuts","closeFocusedWindow")="Shift+Escape"
 	IF $GET(CONF("mioos","desktop","accessibility","keyboardShortcuts","openDiagnostics"))="" SET CONF("mioos","desktop","accessibility","keyboardShortcuts","openDiagnostics")="Ctrl+Shift+Escape"
+	IF $GET(CONF("mioos","desktop","accessibility","keyboardShortcuts","snapLeft"))="" SET CONF("mioos","desktop","accessibility","keyboardShortcuts","snapLeft")="Alt+Shift+ArrowLeft"
+	IF $GET(CONF("mioos","desktop","accessibility","keyboardShortcuts","snapRight"))="" SET CONF("mioos","desktop","accessibility","keyboardShortcuts","snapRight")="Alt+Shift+ArrowRight"
+	IF $GET(CONF("mioos","desktop","accessibility","keyboardShortcuts","maximizeFocusedWindow"))="" SET CONF("mioos","desktop","accessibility","keyboardShortcuts","maximizeFocusedWindow")="Alt+Shift+ArrowUp"
+	IF $GET(CONF("mioos","desktop","accessibility","keyboardShortcuts","restoreFocusedWindow"))="" SET CONF("mioos","desktop","accessibility","keyboardShortcuts","restoreFocusedWindow")="Alt+Shift+ArrowDown"
 	IF $GET(CONF("mioos","desktop","appSurfaceModel"))="" SET CONF("mioos","desktop","appSurfaceModel")="shell-standard-actions"
 	IF $GET(CONF("mioos","desktop","appActions","confirmBeforeDestructive"))="" SET CONF("mioos","desktop","appActions","confirmBeforeDestructive")=1
 	IF $GET(CONF("mioos","desktop","appActions","notifyOnAdminActions"))="" SET CONF("mioos","desktop","appActions","notifyOnAdminActions")=1
@@ -69,6 +73,10 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","desktop","taskbarStyle"))="" SET CONF("mioos","desktop","taskbarStyle")="taskbar-foundation"
 	IF $GET(CONF("mioos","desktop","startMenuStyle"))="" SET CONF("mioos","desktop","startMenuStyle")="launcher-foundation"
 	IF $GET(CONF("mioos","desktop","windowManager"))="" SET CONF("mioos","desktop","windowManager")="mioos-native-vue-css"
+	IF $GET(CONF("mioos","desktop","windowChrome"))="" SET CONF("mioos","desktop","windowChrome")="reusable-shell-chrome"
+	IF $GET(CONF("mioos","desktop","windowTitlebarHeight"))="" SET CONF("mioos","desktop","windowTitlebarHeight")=40
+	IF $GET(CONF("mioos","desktop","windowMenuEnabled"))="" SET CONF("mioos","desktop","windowMenuEnabled")=1
+	IF $GET(CONF("mioos","desktop","windowStatusBadges"))="" SET CONF("mioos","desktop","windowStatusBadges")=1
 	IF $GET(CONF("mioos","desktop","authRequired"))="" SET CONF("mioos","desktop","authRequired")=1
 	IF $GET(CONF("mioos","dev","enabled"))="" SET CONF("mioos","dev","enabled")=ISDEV
 	IF $GET(CONF("mioos","dev","authDisabled"))="" SET CONF("mioos","dev","authDisabled")=0

@@ -100,7 +100,12 @@
           resizeHandles: 'all-edges-and-corners',
           snapModel: 'edges-and-corners',
           doubleClickTitlebar: 1,
-          dropUpload: 1
+          dropUpload: 1,
+          chrome: 'reusable-shell-chrome',
+          titlebarHeight: 40,
+          windowMenuEnabled: 1,
+          statusBadges: 1,
+          snapShortcuts: { left: 'Alt+Shift+ArrowLeft', right: 'Alt+Shift+ArrowRight', maximize: 'Alt+Shift+ArrowUp', restore: 'Alt+Shift+ArrowDown' }
         },
         themeSystem: { version: 2, editor: 'theme-studio', persistence: 'localstorage-applied-profile', liveApply: true, quickSwitch: true, densityOptions: ['compact', 'comfortable', 'spacious'] },
         appSurfaceModel: 'shell-standard-actions',
@@ -108,7 +113,7 @@
         shellSurfaces: { explorer: true, themeStudio: true, transfers: true, diagnostics: true, securityCenter: true, appCatalog: true, debugCenter: true, notifications: true, dialogs: true, windowSwitcher: true, moduleWindows: true },
         notifications: { model: 'toast-and-tray', stackLimit: 6, tray: true },
         dialogs: { model: 'shell-standard', confirm: true, input: true },
-        shortcuts: { showDesktop: 'Meta+D', windowSwitcher: 'Alt+Tab', closeFocusedWindow: 'Shift+Escape', openDiagnostics: 'Ctrl+Shift+Escape' },
+        shortcuts: { showDesktop: 'Meta+D', windowSwitcher: 'Alt+Tab', closeFocusedWindow: 'Shift+Escape', openDiagnostics: 'Ctrl+Shift+Escape', snapLeft: 'Alt+Shift+ArrowLeft', snapRight: 'Alt+Shift+ArrowRight', maximizeFocusedWindow: 'Alt+Shift+ArrowUp', restoreFocusedWindow: 'Alt+Shift+ArrowDown' },
         persistence: { desktopLayout: 'localstorage-desktop-layout', windowLayout: 'localstorage-window-layout', authWindow: 'localstorage-auth-window-frame', themeProfile: 'localstorage-applied-profile' },
         themes: [
           { key: 'foundation-light', title: 'Foundation Light', family: 'Foundation', mode: 'light', wallpaper: 'aurora', accent: '#2f6fed', taskbar: '#e8eef8' },

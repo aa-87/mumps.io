@@ -147,8 +147,13 @@ T002
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","windowing","engine")),"mioos-native-vue-css","[MIOOST][T002][windowing engine]")
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","themeKey")),"foundation-light","[MIOOST][T002][theme key]")
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","themeMode")),"light","[MIOOST][T002][theme mode]")
+	DO EQ^MIOTASSERT($GET(OBJ("desktop","windowing","chrome")),"reusable-shell-chrome","[MIOOST][T002][window chrome]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("desktop","windowing","titlebarHeight")),40,"[MIOOST][T002][titlebar height]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("desktop","windowing","windowMenuEnabled")),1,"[MIOOST][T002][window menu enabled]")
 	DO EQ^MIOTASSERT(+$GET(OBJ("desktop","windowing","snapThreshold")),28,"[MIOOST][T002][snap threshold]")
 	DO EQ^MIOTASSERT(+$GET(OBJ("windows",1,"resizable")),1,"[MIOOST][T002][window resizable]")
+	DO EQ^MIOTASSERT($GET(OBJ("windows",1,"kind")),"explorer","[MIOOST][T002][window kind]")
+	DO EQ^MIOTASSERT($GET(OBJ("windows",1,"workspaceKey")),"workspace-explorer","[MIOOST][T002][workspace key]")
 	QUIT
 	;
 T003
@@ -165,6 +170,9 @@ T003
 	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-mioos-signin="),"[MIOOST][T003][signin token]")
 	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-auth-overlay"),"[MIOOST][T003][auth overlay]")
 	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-snap-preview"),"[MIOOST][T003][snap preview token]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-window-menu"),"[MIOOST][T003][window menu token]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","openWindowMenu(win, $event, 'titlebar')"),"[MIOOST][T003][window menu handler]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-window-kind"),"[MIOOST][T003][window kind token]")
 	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-resize-edge=""n"""),"[MIOOST][T003][resize north token]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_auth.js","submitSignin"),"[MIOOST][T003][signin method]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-auth-card"),"[MIOOST][T003][css auth]")

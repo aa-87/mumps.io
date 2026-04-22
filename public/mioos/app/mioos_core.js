@@ -32,6 +32,7 @@
           notificationSeq: 0,
           shellUi: { trayOpen: false, reducedMotion: false, desktopHidden: false, previousWindowId: '', windowSwitcherOpen: false, windowSwitcherIndex: 0 },
           shellDialog: { open: false, type: '', title: '', message: '', detail: '', confirmText: 'OK', cancelText: 'Cancel', value: '', placeholder: '', resolve: null, reject: null },
+          windowMenu: { open: false, windowId: '', source: 'titlebar', left: 0, top: 0 },
           zCounter: 10,
           dragState: {
             active: false,
@@ -218,6 +219,9 @@
           this.profile = this.boot.product.profile || 'dev';
           this.launcherEntries = window.MIOOSState.deepClone(this.boot.apps || []);
           this.desktopEntries = window.MIOOSState.deepClone((this.view && this.view.desktopEntries) || this.boot.desktopEntries || this.boot.apps || []);
+          if (this.$el && this.$el.style && (((this.boot || {}).desktop || {}).windowing || {}).titlebarHeight) {
+            this.$el.style.setProperty('--mioos-titlebar-height', ((((this.boot || {}).desktop || {}).windowing || {}).titlebarHeight) + 'px');
+          }
           this.windows = window.MIOOSState.deepClone(this.boot.windows || []);
           this.ensureModuleWindowState();
           this.normalizeDesktopUiState();
@@ -373,6 +377,29 @@
           if ((event.ctrlKey || event.metaKey) && event.shiftKey && String(event.key || '').toLowerCase() === 'escape') {
             event.preventDefault();
             this.openApp('diagnostics');
+            return;
+          }
+          if (event.altKey && event.shiftKey && !event.ctrlKey && !event.metaKey && this.activeWindowId) {
+            if (event.key === 'ArrowLeft') {
+              event.preventDefault();
+              this.applySnapZone(this.activeWindowId, 'left');
+              return;
+            }
+            if (event.key === 'ArrowRight') {
+              event.preventDefault();
+              this.applySnapZone(this.activeWindowId, 'right');
+              return;
+            }
+            if (event.key === 'ArrowUp') {
+              event.preventDefault();
+              this.applySnapZone(this.activeWindowId, 'maximize');
+              return;
+            }
+            if (event.key === 'ArrowDown') {
+              event.preventDefault();
+              this.restoreWindowAction(this.activeWindowId);
+              return;
+            }
           }
         },
         handleGlobalKeyUp: function (event) {
