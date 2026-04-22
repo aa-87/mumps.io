@@ -133,17 +133,8 @@ ROI 53 — shell-standard dialogs, notifications, and built-in app cleanup
 - Explorer create/rename/move/delete flows now use shell dialogs instead of browser prompt/confirm.
 - Diagnostics, Security Center, Debug Center, Module Catalog, and module windows now mount through unified shell-surface classes instead of legacy `win7` surface markers.
 
-ROI 54 — shell-standard app actions and built-in surface cleanup
-- Added boot-advertised app-surface metadata so built-in windows declare a shared shell-standard action model and module-window surface coverage.
-- Transport Diagnostics, Security Center, Debug Center, App Catalog, Transfers, and module windows now expose consistent shell action bars for copy/export, clear, and destructive actions.
-- Administrative and destructive actions now route through shell confirmations and toast feedback, and Explorer now raises success notifications for create, rename, move, and delete flows.
 
-
-
-ROI 55 — persistence, keyboard shortcuts, and accessibility polish
-
-- Added local window-layout persistence for non-terminal windows so the shell can reopen the active desktop layout after reload.
-- Added shell accessibility preference persistence for reduced-motion mode.
-- Added keyboard shortcuts for show desktop, window switching, focused-window close, and diagnostics launch.
-- Added an Alt+Tab style window switcher overlay plus a taskbar Show Desktop control.
-- Added drag/performance polish with interaction-state classes and transform-focused rendering hints.
+## ROI 54 — shell persistence, keyboard shortcuts, and accessibility polish
+- Added local shell persistence for non-terminal window frames plus sign-in dialog position.
+- Added shell keyboard shortcuts for show desktop, window switching, close focused window, and opening diagnostics.
+- Added reduced-motion preference handling, a taskbar Desktop control, and a shell window switcher overlay.

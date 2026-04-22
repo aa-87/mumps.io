@@ -48,7 +48,6 @@ MIOOST ; MIOOS tests
 	DO T051
 	DO T052
 	DO T053
-	DO T054
 	QUIT
 	;
 RESET
@@ -1049,58 +1048,4 @@ T052
 	DO EQ^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html"," win7"),0,"[MIOOST][T052][no win7 surface token]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 53 — shell-standard dialogs, notifications, and built-in app cleanup"),"[MIOOST][T052][llm roi53]")
 	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","ROI 53 — shell-standard dialogs, notifications, and built-in app cleanup"),"[MIOOST][T052][docs roi53]")
-	QUIT
-
-
-	;
-T053
-	NEW CONF,REQ,CTX,STATE,BOOT,ERR
-	DO RESET
-	DO CONFDEF^MIOOS(.CONF)
-	DO INIT^MIOOS(.CONF)
-	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T053][load]")
-	DO BOOTARY^MIOOSST(.STATE,.CONF,.BOOT)
-	DO EQ^MIOTASSERT($GET(BOOT("desktop","appSurfaceModel")),"shell-standard-actions","[MIOOST][T053][app surface model]")
-	DO EQ^MIOTASSERT(+$GET(BOOT("desktop","appActions","confirmBeforeDestructive")),1,"[MIOOST][T053][confirm destructive]")
-	DO EQ^MIOTASSERT(+$GET(BOOT("desktop","appActions","notifyOnAdminActions")),1,"[MIOOST][T053][notify admin actions]")
-	DO EQ^MIOTASSERT(+$GET(BOOT("desktop","appActions","copyExportsToClipboard")),1,"[MIOOST][T053][copy exports]")
-	DO EQ^MIOTASSERT(+$GET(BOOT("desktop","shellSurfaces","moduleWindows")),1,"[MIOOST][T053][module windows surface]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-shell-standard-actions=""1"""),"[MIOOST][T053][shell standard actions token]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","copyTransportDiagnostics()"),"[MIOOST][T053][diagnostics copy action]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","copySecurityReport()"),"[MIOOST][T053][security copy action]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","copyModuleCatalog()"),"[MIOOST][T053][catalog copy action]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","clearModuleNotes(win.id)"),"[MIOOST][T053][module notes clear action]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","copyTransportDiagnostics"),"[MIOOST][T053][copy transport method]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","copySecurityReport"),"[MIOOST][T053][copy security method]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","copyModuleCatalog"),"[MIOOST][T053][copy catalog method]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","clearModuleNotes"),"[MIOOST][T053][clear notes method]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","self.notifySuccess"),"[MIOOST][T053][explorer success notification]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","ROI 54 — shell-standard built-in app actions"),"[MIOOST][T053][css roi54]")
-	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 54 — shell-standard app actions and built-in surface cleanup"),"[MIOOST][T053][llm roi54]")
-	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","ROI 54 — shell-standard app actions and built-in surface cleanup"),"[MIOOST][T053][docs roi54]")
-	QUIT
-
-
-	;
-T054
-	NEW CONF,REQ,CTX,STATE,BOOT,ERR
-	DO RESET
-	DO CONFDEF^MIOOS(.CONF)
-	DO INIT^MIOOS(.CONF)
-	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T054][load]")
-	DO BOOTARY^MIOOSST(.STATE,.CONF,.BOOT)
-	DO EQ^MIOTASSERT($GET(BOOT("desktop","accessibility","keyboardShortcuts","showDesktop")),"Meta+D","[MIOOST][T054][show desktop shortcut]")
-	DO EQ^MIOTASSERT($GET(BOOT("desktop","accessibility","keyboardShortcuts","windowSwitcher")),"Alt+Tab","[MIOOST][T054][window switcher shortcut]")
-	DO EQ^MIOTASSERT($GET(BOOT("desktop","performance","windowPersistence")),"localstorage-open-window-layout","[MIOOST][T054][window persistence]")
-	DO EQ^MIOTASSERT($GET(BOOT("desktop","performance","desktopLayoutPersistence")),"localstorage-icon-layout","[MIOOST][T054][desktop layout persistence]")
-	DO EQ^MIOTASSERT(+$GET(BOOT("desktop","shellSurfaces","windowSwitcher")),1,"[MIOOST][T054][window switcher surface]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-window-switcher"),"[MIOOST][T054][window switcher ui]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","toggleShowDesktop()"),"[MIOOST][T054][show desktop ui]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","restorePersistedWindows"),"[MIOOST][T054][restore windows method]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","handleGlobalKeyDown"),"[MIOOST][T054][global keydown]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","toggleReducedMotion"),"[MIOOST][T054][reduced motion method]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_wm.js","persistWindowLayout"),"[MIOOST][T054][persist windows token]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","mioos-window-switcher"),"[MIOOST][T054][window switcher css]")
-	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 55 — persistence, keyboard shortcuts, and accessibility polish"),"[MIOOST][T054][llm roi55]")
-	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","ROI 55 — persistence, keyboard shortcuts, and accessibility polish"),"[MIOOST][T054][docs roi55]")
 	QUIT

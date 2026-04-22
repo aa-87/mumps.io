@@ -142,11 +142,11 @@
         return win;
       },
       openApp: function (appKey) {
-        if ((this.shellUi || {}).showDesktop && this.restoreShowDesktop) this.restoreShowDesktop();
         if (this.requiresSignin) {
           this.showAlert(this.t('alerts.signinRequired.title'), this.t('alerts.signinRequired.open'));
           return;
         }
+        if (this.shellUi) { this.shellUi.desktopHidden = false; this.shellUi.windowSwitcherOpen = false; }
         if (appKey === 'terminal' && this.createTerminalWindow) {
           this.menuOpen = false;
           this.createTerminalWindow();
@@ -174,17 +174,17 @@
         if (appKey === 'debug-center' && this.refreshDebugCenter) {
           this.$nextTick(function () { this.refreshDebugCenter().catch(function () {}); }.bind(this));
         }
-        this.sendSocket({ event: 'shell.open', appKey: appKey });
         if (this.persistWindowLayout) this.persistWindowLayout();
+        this.sendSocket({ event: 'shell.open', appKey: appKey });
       },
       focusWindow: function (windowId) {
         var win = findWindow(this, windowId);
         if (!win) return;
-        if ((this.shellUi || {}).showDesktop && this.restoreShowDesktop) this.restoreShowDesktop();
         this.ensureWindowFrame(win);
         this.zCounter += 1;
         win.z = this.zCounter;
         this.activeWindowId = windowId;
+        if (this.shellUi) this.shellUi.desktopHidden = false;
         if (this.persistWindowLayout) this.persistWindowLayout();
       },
       minimizeWindow: function (windowId) {
@@ -216,6 +216,7 @@
           this.showAlert(this.t('alerts.signinRequired.title'), this.t('alerts.signinRequired.use'));
           return;
         }
+        if (this.shellUi) this.shellUi.desktopHidden = false;
         if (win.state === 'minimized' || win.state === 'closed') {
           var wasTerminal = win.appKey === 'terminal';
           win.state = 'normal';
@@ -232,7 +233,6 @@
               if (this.refreshExplorerWindow) this.refreshExplorerWindow(windowId).catch(function () {});
             }.bind(this));
           }
-          if (this.persistWindowLayout) this.persistWindowLayout();
           return;
         }
         if (this.activeWindowId === windowId) this.minimizeWindow(windowId); else this.focusWindow(windowId);
@@ -253,19 +253,18 @@
         win.state = 'maximized';
         this.focusWindow(windowId);
         scheduleTerminalSync(this, win);
-        if (this.persistWindowLayout) this.persistWindowLayout();
       },
       restoreWindow: function (windowId) {
         var win = findWindow(this, windowId);
         if (!win) return;
         restoreWindow(this, win);
         this.focusWindow(windowId);
-        if (this.persistWindowLayout) this.persistWindowLayout();
       },
       toggleMenu: function () {
         if (this.shellUi) this.shellUi.trayOpen = false;
         this.closeDesktopContextMenu();
         this.menuOpen = !this.menuOpen;
+        if (this.menuOpen && this.closeWindowSwitcher) this.closeWindowSwitcher();
       },
       windowClass: function (win) {
         return {
@@ -345,7 +344,6 @@
         this.dragState.top = win.top || 0;
         this.dragState.width = win.width || 600;
         this.dragState.height = win.height || 420;
-        if (this.syncInteractionMode) this.syncInteractionMode();
       },
       beginResize: function (win, edge, event) {
         if (!win || +win.resizable !== 1) return;
@@ -363,7 +361,6 @@
         this.dragState.top = win.top || 0;
         this.dragState.width = win.width || 600;
         this.dragState.height = win.height || 420;
-        if (this.syncInteractionMode) this.syncInteractionMode();
       },
       onDragMove: function (event) {
         var win = findWindow(this, this.dragState.windowId);
@@ -416,13 +413,12 @@
         if (!this.dragState.active) return;
         if (this.dragState.mode === 'move' && win && zone) this.applySnapZone(win.id, zone);
         if (win && this.dragState.mode === 'resize') scheduleTerminalSync(this, win);
+        if (win && this.persistWindowLayout) this.persistWindowLayout();
         this.dragState.active = false;
         this.dragState.mode = 'move';
         this.dragState.edge = '';
         this.dragState.windowId = '';
         this.clearSnapPreview();
-        if (this.persistWindowLayout) this.persistWindowLayout();
-        if (this.syncInteractionMode) this.syncInteractionMode();
       },
       onWindowTitleDblClick: function (windowId) {
         this.toggleMaximize(windowId);

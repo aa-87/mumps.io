@@ -60,14 +60,7 @@
           keyboardModel: 'desktop-first',
           screenReaderHints: 1,
           motionPreference: 'respect-user-preference',
-          reducedMotionToggle: true,
-          persistence: 'localstorage-shell-accessibility',
-          keyboardShortcuts: {
-            showDesktop: 'Meta+D',
-            windowSwitcher: 'Alt+Tab',
-            closeFocusedWindow: 'Shift+Escape',
-            openDiagnostics: 'Ctrl+Shift+Escape'
-          }
+          reducedMotionToggle: 1
         },
         performance: {
           clientModel: 'thin-vue-umd',
@@ -78,8 +71,6 @@
           uploadStrategy: 'http-binary-parallel-slice-xhr-with-auto-pause',
           uploadFinalizeStrategy: 'binary-direct-stage-promote-with-copy-on-overwrite',
           transferPersistence: 'localstorage-resumable-transfer-list',
-          windowPersistence: 'localstorage-open-window-layout',
-          desktopLayoutPersistence: 'localstorage-icon-layout',
           downloadStrategy: 'direct-http-range-native',
           downloadSendStrategy: 'vfs-segment-streaming-http-blob',
           mediaStreamStrategy: 'range-kickstart-http-blob-partial-window',
@@ -112,11 +103,11 @@
           dropUpload: 1
         },
         themeSystem: { version: 2, editor: 'theme-studio', persistence: 'localstorage-applied-profile', liveApply: true, quickSwitch: true, densityOptions: ['compact', 'comfortable', 'spacious'] },
-        shellSurfaces: { explorer: true, themeStudio: true, transfers: true, diagnostics: true, securityCenter: true, appCatalog: true, debugCenter: true, moduleWindows: true, notifications: true, dialogs: true, windowSwitcher: true },
-        appSurfaceModel: 'shell-standard-actions',
-        appActions: { confirmBeforeDestructive: true, notifyOnAdminActions: true, copyExportsToClipboard: true, moduleNotesSessionLocal: true },
+        shellSurfaces: { explorer: true, themeStudio: true, transfers: true, diagnostics: true, securityCenter: true, appCatalog: true, debugCenter: true, notifications: true, dialogs: true, windowSwitcher: true },
         notifications: { model: 'toast-and-tray', stackLimit: 6, tray: true },
         dialogs: { model: 'shell-standard', confirm: true, input: true },
+        shortcuts: { showDesktop: 'Meta+D', windowSwitcher: 'Alt+Tab', closeFocusedWindow: 'Shift+Escape', openDiagnostics: 'Ctrl+Shift+Escape' },
+        persistence: { desktopLayout: 'localstorage-desktop-layout', windowLayout: 'localstorage-window-layout', authWindow: 'localstorage-auth-window-frame', themeProfile: 'localstorage-applied-profile' },
         themes: [
           { key: 'foundation-light', title: 'Foundation Light', family: 'Foundation', mode: 'light', wallpaper: 'aurora', accent: '#2f6fed', taskbar: '#e8eef8' },
           { key: 'foundation-dark', title: 'Foundation Dark', family: 'Foundation', mode: 'dark', wallpaper: 'aurora-night', accent: '#7db4ff', taskbar: '#111a28' },
@@ -217,8 +208,6 @@
     base.desktop.windowing = Object.assign(base.desktop.windowing, (boot.desktop || {}).windowing || {});
     base.desktop.themeSystem = Object.assign({}, (defaultBoot().desktop.themeSystem || {}), base.desktop.themeSystem || {}, (boot.desktop || {}).themeSystem || {});
     base.desktop.shellSurfaces = Object.assign({}, (defaultBoot().desktop.shellSurfaces || {}), base.desktop.shellSurfaces || {}, (boot.desktop || {}).shellSurfaces || {});
-    base.desktop.appSurfaceModel = (boot.desktop || {}).appSurfaceModel || base.desktop.appSurfaceModel || (defaultBoot().desktop.appSurfaceModel || 'shell-standard-actions');
-    base.desktop.appActions = Object.assign({}, (defaultBoot().desktop.appActions || {}), base.desktop.appActions || {}, (boot.desktop || {}).appActions || {});
     base.desktop.notifications = Object.assign({}, (defaultBoot().desktop.notifications || {}), base.desktop.notifications || {}, (boot.desktop || {}).notifications || {});
     base.desktop.dialogs = Object.assign({}, (defaultBoot().desktop.dialogs || {}), base.desktop.dialogs || {}, (boot.desktop || {}).dialogs || {});
     base.desktop.themes = Array.isArray((boot.desktop || {}).themes) && (boot.desktop || {}).themes.length ? deepClone((boot.desktop || {}).themes) : deepClone(defaultBoot().desktop.themes || []);

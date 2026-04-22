@@ -30,7 +30,7 @@
           alertMessage: '',
           shellNotifications: [],
           notificationSeq: 0,
-          shellUi: { trayOpen: false, showDesktop: false, windowSwitcherOpen: false, windowSwitcherIndex: 0, reducedMotion: false },
+          shellUi: { trayOpen: false, reducedMotion: false, desktopHidden: false, previousWindowId: '', windowSwitcherOpen: false, windowSwitcherIndex: 0 },
           shellDialog: { open: false, type: '', title: '', message: '', detail: '', confirmText: 'OK', cancelText: 'Cancel', value: '', placeholder: '', resolve: null, reject: null },
           zCounter: 10,
           dragState: {
@@ -137,16 +137,13 @@
         this.bootstrapFromDom();
         this.restorePersistedTransfers();
         this.centerAuthWindow(true);
-        this.restoreAuthWindowPosition();
         this.normalizeDesktopUiState();
         this.ensureDesktopLayout();
         this.normalizeDesktopUiState();
         this.applyBootThemeDefaults();
         this.applyPersistedThemeStudioProfile();
-        this.restoreShellAccessibility();
         this.applyDocumentLocale();
         this.startClock();
-        if (!this.requiresSignin) this.restorePersistedWindows();
         if (!this.requiresSignin) {
           this.refreshView();
           this.initSocket().catch(function () {});
@@ -155,28 +152,26 @@
         this._dragMove = this.handleGlobalMouseMove.bind(this);
         this._dragEnd = this.handleGlobalMouseUp.bind(this);
         this._viewportResize = this.handleViewportResize.bind(this);
+        this._keyDownHandler = this.handleGlobalKeyDown.bind(this);
+        this._keyUpHandler = this.handleGlobalKeyUp.bind(this);
         window.addEventListener('mousemove', this._dragMove);
         window.addEventListener('mouseup', this._dragEnd);
-        this._persistShellOnUnload = function () {
-          if (self.persistTransferCenter) self.persistTransferCenter();
-          if (self.persistWindowLayout) self.persistWindowLayout();
-          if (self.persistAuthWindowPosition) self.persistAuthWindowPosition();
-          if (self.persistShellAccessibility) self.persistShellAccessibility();
-        };
+        this._persistTransfersOnUnload = this.persistTransferCenter.bind(this);
         this._networkOffline = function () {
           if (self.autoPauseTransfersByReason) self.autoPauseTransfersByReason('Paused (connection lost)', 'upload');
         };
         this._networkOnline = function () {
           if (self.persistTransferCenter) self.persistTransferCenter();
         };
-        this._globalKeyDown = this.handleGlobalKeyDown.bind(this);
-        this._globalKeyUp = this.handleGlobalKeyUp.bind(this);
         window.addEventListener('resize', this._viewportResize);
-        window.addEventListener('keydown', this._globalKeyDown);
-        window.addEventListener('keyup', this._globalKeyUp);
-        window.addEventListener('beforeunload', this._persistShellOnUnload);
+        window.addEventListener('keydown', this._keyDownHandler);
+        window.addEventListener('keyup', this._keyUpHandler);
+        window.addEventListener('beforeunload', this._persistTransfersOnUnload);
         window.addEventListener('offline', this._networkOffline);
         window.addEventListener('online', this._networkOnline);
+        if (this.restoreAuthWindowPosition) this.restoreAuthWindowPosition();
+        if (this.restoreShellPreferences) this.restoreShellPreferences();
+        if (this.restoreWindowLayout) this.restoreWindowLayout();
         if (!this.requiresSignin) window.setTimeout(function () { if (self.revivePersistedTransfers) self.revivePersistedTransfers(); }, 400);
       },
       beforeUnmount: function () {
@@ -185,15 +180,12 @@
         if (this.terminalPollTimer) window.clearInterval(this.terminalPollTimer);
         if (this.socket) this.socket.close();
         this.persistTransferCenter();
-        this.persistWindowLayout();
-        this.persistAuthWindowPosition();
-        this.persistShellAccessibility();
         window.removeEventListener('mousemove', this._dragMove);
         window.removeEventListener('mouseup', this._dragEnd);
         window.removeEventListener('resize', this._viewportResize);
-        window.removeEventListener('keydown', this._globalKeyDown);
-        window.removeEventListener('keyup', this._globalKeyUp);
-        window.removeEventListener('beforeunload', this._persistShellOnUnload);
+        window.removeEventListener('keydown', this._keyDownHandler);
+        window.removeEventListener('keyup', this._keyUpHandler);
+        window.removeEventListener('beforeunload', this._persistTransfersOnUnload);
         window.removeEventListener('offline', this._networkOffline);
         window.removeEventListener('online', this._networkOnline);
         this.windows.forEach(function (win) {
@@ -213,284 +205,6 @@
         desktopContextMenuState: function () {
           this.normalizeDesktopUiState();
           return this.desktopUi.contextMenu || { open: false, type: 'desktop', key: '', left: 0, top: 0 };
-        },
-        shellAccessibilityStorageKey: function () {
-          return 'mioos.shell.accessibility.' + (((this.boot || {}).user || {}).id || 'guest');
-        },
-        authWindowStorageKey: function () {
-          return 'mioos.auth.window.' + (((this.boot || {}).user || {}).id || 'guest');
-        },
-        windowLayoutStorageKey: function () {
-          return 'mioos.desktop.windows.' + (((this.boot || {}).user || {}).id || 'guest');
-        },
-        shortcutHints: function () {
-          return ((((((this.boot || {}).desktop || {}).accessibility || {}).keyboardShortcuts) || {}));
-        },
-        shouldIgnoreGlobalShortcut: function (event) {
-          var node = event && event.target;
-          var tag = node && node.tagName ? String(node.tagName).toUpperCase() : '';
-          if (event && event.altKey) return false;
-          return !!(node && (node.isContentEditable || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT'));
-        },
-        syncInteractionMode: function () {
-          var rootNode = window.MIOOSState.getRootNode();
-          var iconDrag = !!((((this.desktopUi || {}).drag || {}).active));
-          var windowDrag = !!((this.dragState || {}).active && (this.dragState || {}).mode === 'move');
-          var windowResize = !!((this.dragState || {}).active && (this.dragState || {}).mode === 'resize');
-          var authDrag = !!(((this.authDrag || {}).active));
-          if (!rootNode) return;
-          rootNode.classList.toggle('is-window-dragging', windowDrag);
-          rootNode.classList.toggle('is-window-resizing', windowResize);
-          rootNode.classList.toggle('is-icon-dragging', iconDrag);
-          rootNode.classList.toggle('is-auth-dragging', authDrag);
-          rootNode.classList.toggle('is-pointer-guard', windowDrag || windowResize || iconDrag || authDrag);
-        },
-        persistAuthWindowPosition: function () {
-          if (!window.localStorage) return;
-          try {
-            window.localStorage.setItem(this.authWindowStorageKey(), JSON.stringify({ left: +(this.authWindow.left || 0), top: +(this.authWindow.top || 0), width: +(this.authWindow.width || 440) }));
-          } catch (err) {}
-        },
-        restoreAuthWindowPosition: function () {
-          var saved = null;
-          if (!window.localStorage) return;
-          try { saved = JSON.parse(window.localStorage.getItem(this.authWindowStorageKey()) || 'null'); } catch (err) { saved = null; }
-          if (!saved) return;
-          if (+saved.width > 0) this.authWindow.width = +saved.width;
-          if (+saved.left >= 0) this.authWindow.left = +saved.left;
-          if (+saved.top >= 0) this.authWindow.top = +saved.top;
-        },
-        prefersReducedMotion: function () {
-          try {
-            return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-          } catch (err) {
-            return false;
-          }
-        },
-        applyShellAccessibilityState: function () {
-          var rootNode = window.MIOOSState.getRootNode();
-          var reduced = !!((this.shellUi || {}).reducedMotion);
-          if (!rootNode) return;
-          rootNode.dataset.motion = reduced ? 'reduced' : ((((this.boot || {}).desktop || {}).accessibility || {}).motionPreference || 'respect-user-preference');
-          rootNode.classList.toggle('mioos-motion-reduced', reduced);
-          if (document && document.body) document.body.classList.toggle('mioos-motion-reduced', reduced);
-        },
-        persistShellAccessibility: function () {
-          if (!window.localStorage) return;
-          try {
-            window.localStorage.setItem(this.shellAccessibilityStorageKey(), JSON.stringify({ reducedMotion: !!((this.shellUi || {}).reducedMotion) }));
-          } catch (err) {}
-        },
-        restoreShellAccessibility: function () {
-          var saved = null;
-          var desktopA11y = (((this.boot || {}).desktop || {}).accessibility) || {};
-          if (window.localStorage) {
-            try { saved = JSON.parse(window.localStorage.getItem(this.shellAccessibilityStorageKey()) || 'null'); } catch (err) { saved = null; }
-          }
-          this.shellUi.reducedMotion = saved && typeof saved.reducedMotion !== 'undefined' ? !!saved.reducedMotion : (String(desktopA11y.motionPreference || '') === 'reduce' || this.prefersReducedMotion());
-          this.applyShellAccessibilityState();
-        },
-        toggleReducedMotion: function () {
-          this.shellUi.reducedMotion = !this.shellUi.reducedMotion;
-          this.applyShellAccessibilityState();
-          this.persistShellAccessibility();
-          this.pushNotification('info', 'Accessibility', this.shellUi.reducedMotion ? 'Reduced motion enabled.' : 'Reduced motion disabled.', { timeoutMs: 2400 });
-        },
-        serializeWindowLayout: function (win) {
-          if (!win || !win.appKey || win.appKey === 'terminal') return null;
-          return window.MIOOSState.deepClone({
-            id: win.id,
-            appKey: win.appKey,
-            title: win.title,
-            left: +(win.left || 0),
-            top: +(win.top || 0),
-            width: +(win.width || 600),
-            height: +(win.height || 420),
-            z: +(win.z || 1),
-            state: win.state || 'normal',
-            minWidth: +(win.minWidth || 320),
-            minHeight: +(win.minHeight || 220),
-            resizable: win.resizable,
-            draggable: win.draggable,
-            snappable: win.snappable,
-            snapZone: win.snapZone || '',
-            moduleWindow: win.moduleWindow || 0,
-            moduleId: win.moduleId || '',
-            moduleCategory: win.moduleCategory || '',
-            moduleSurface: win.moduleSurface || '',
-            moduleBuiltIn: win.moduleBuiltIn || 0,
-            moduleSingleton: win.moduleSingleton || 0,
-            themeStudioEnabled: win.themeStudioEnabled || 0,
-            transferCenterEnabled: win.transferCenterEnabled || 0,
-            transportDiagnosticsEnabled: win.transportDiagnosticsEnabled || 0,
-            moduleCatalogEnabled: win.moduleCatalogEnabled || 0,
-            securityCenterEnabled: win.securityCenterEnabled || 0,
-            debugCenterEnabled: win.debugCenterEnabled || 0
-          });
-        },
-        persistWindowLayout: function () {
-          var payload;
-          if (!window.localStorage || this.requiresSignin) return;
-          payload = {
-            version: 1,
-            activeWindowId: this.activeWindowId || '',
-            showDesktop: !!((this.shellUi || {}).showDesktop),
-            windows: (this.windows || []).map(this.serializeWindowLayout).filter(function (item) { return !!item; })
-          };
-          try { window.localStorage.setItem(this.windowLayoutStorageKey(), JSON.stringify(payload)); } catch (err) {}
-        },
-        restorePersistedWindows: function () {
-          var payload = null;
-          var self = this;
-          if (this.requiresSignin || !window.localStorage) return;
-          try { payload = JSON.parse(window.localStorage.getItem(this.windowLayoutStorageKey()) || 'null'); } catch (err) { payload = null; }
-          if (!payload || !Array.isArray(payload.windows) || !payload.windows.length) return;
-          this.windows = [];
-          this.zCounter = 10;
-          payload.windows.forEach(function (item) {
-            var win = null;
-            if (!item || !item.appKey) return;
-            if (self.createWindowForApp) win = self.createWindowForApp(item.appKey);
-            if (!win) {
-              win = window.MIOOSState.deepClone(item);
-              self.windows.push(win);
-            }
-            Object.assign(win, window.MIOOSState.deepClone(item));
-            if (win.state === 'closed') win.state = 'normal';
-            if (self.ensureWindowFrame) self.ensureWindowFrame(win);
-            if ((win.z || 0) > self.zCounter) self.zCounter = win.z || self.zCounter;
-          });
-          this.activeWindowId = payload.activeWindowId || '';
-          this.shellUi.showDesktop = !!payload.showDesktop;
-          this.$nextTick(function () { if (self.rehydratePersistedWindows) self.rehydratePersistedWindows(); });
-        },
-        rehydratePersistedWindows: function () {
-          var self = this;
-          (this.windows || []).forEach(function (win) {
-            if (!win || win.state === 'closed') return;
-            if ((win.appKey === 'my-computer' || win.appKey === 'documents' || win.appKey === 'explorer') && self.bootstrapExplorerWindow) {
-              self.bootstrapExplorerWindow(win.id, true);
-              if (self.refreshExplorerWindow) self.refreshExplorerWindow(win.id).catch(function () {});
-            }
-            if (win.appKey === 'diagnostics' && self.refreshTransportDiagnostics) self.refreshTransportDiagnostics().catch(function () {});
-            if (win.appKey === 'security-center' && self.refreshSecurityCenter) self.refreshSecurityCenter().catch(function () {});
-            if (win.appKey === 'debug-center' && self.refreshDebugCenter) self.refreshDebugCenter().catch(function () {});
-          });
-        },
-        windowSwitcherItems: function () {
-          return (this.taskbarWindows || []).slice().sort(function (a, b) { return (b.z || 0) - (a.z || 0); });
-        },
-        activateWindowSwitcherIndex: function (index) {
-          var items = this.windowSwitcherItems();
-          if (!items.length) return;
-          this.shellUi.windowSwitcherIndex = Math.max(0, Math.min(items.length - 1, +index || 0));
-        },
-        cycleWindowSwitcher: function (step) {
-          var items = this.windowSwitcherItems();
-          var len = items.length;
-          if (!len) return;
-          if (!this.shellUi.windowSwitcherOpen) {
-            this.shellUi.windowSwitcherOpen = true;
-            this.shellUi.windowSwitcherIndex = 0;
-            return;
-          }
-          this.shellUi.windowSwitcherIndex = (this.shellUi.windowSwitcherIndex + len + (step || 1)) % len;
-        },
-        commitWindowSwitcher: function () {
-          var items = this.windowSwitcherItems();
-          var win = items[this.shellUi.windowSwitcherIndex || 0];
-          this.shellUi.windowSwitcherOpen = false;
-          this.shellUi.windowSwitcherIndex = 0;
-          if (win) this.taskbarToggle(win.id);
-        },
-        cancelWindowSwitcher: function () {
-          this.shellUi.windowSwitcherOpen = false;
-          this.shellUi.windowSwitcherIndex = 0;
-        },
-        restoreShowDesktop: function () {
-          var self = this;
-          (this.windows || []).forEach(function (win) {
-            if (win && win._showDesktopMinimized) {
-              win.state = 'normal';
-              delete win._showDesktopMinimized;
-            }
-          });
-          this.shellUi.showDesktop = false;
-          if (this.activeWindowId) this.focusWindow(this.activeWindowId);
-          else {
-            var items = this.windowSwitcherItems();
-            if (items.length) this.activeWindowId = items[0].id;
-          }
-          this.persistWindowLayout();
-        },
-        toggleShowDesktop: function () {
-          var anyVisible = false;
-          if ((this.shellUi || {}).showDesktop) {
-            this.restoreShowDesktop();
-            return;
-          }
-          (this.windows || []).forEach(function (win) {
-            if (!win || win.state === 'closed' || win.state === 'minimized') return;
-            win._showDesktopMinimized = 1;
-            win.state = 'minimized';
-            anyVisible = true;
-          });
-          if (anyVisible) {
-            this.activeWindowId = '';
-            this.shellUi.showDesktop = true;
-            this.persistWindowLayout();
-            this.pushNotification('info', 'Desktop', 'All windows were minimized to show the desktop.', { timeoutMs: 2200 });
-          }
-        },
-        focusSelectedDesktopEntry: function () {
-          var entry = (this.desktopEntries || []).find(function (item) { return item && item.key === ((this.desktopUi || {}).selectedKey || ''); }.bind(this));
-          if (entry) this.openApp(entry.key);
-        },
-        handleGlobalKeyDown: function (event) {
-          var key = String((event && event.key) || '');
-          var lower = key.toLowerCase();
-          if (!event) return;
-          if (event.altKey && key === 'Tab') {
-            event.preventDefault();
-            this.cycleWindowSwitcher(event.shiftKey ? -1 : 1);
-            return;
-          }
-          if (this.shouldIgnoreGlobalShortcut(event)) return;
-          if (event.metaKey && lower === 'd') {
-            event.preventDefault();
-            this.toggleShowDesktop();
-            return;
-          }
-          if (event.ctrlKey && event.shiftKey && key === 'Escape') {
-            event.preventDefault();
-            this.openApp('diagnostics');
-            return;
-          }
-          if (event.shiftKey && key === 'Escape' && this.activeWindowId && !this.shellDialog.open) {
-            event.preventDefault();
-            this.closeWindow(this.activeWindowId);
-            return;
-          }
-          if (key === 'Escape') {
-            if (this.shellDialog.open) { event.preventDefault(); this.cancelShellDialog(); return; }
-            if (this.shellUi.windowSwitcherOpen) { event.preventDefault(); this.cancelWindowSwitcher(); return; }
-            if (this.menuOpen || ((this.shellUi || {}).trayOpen) || this.desktopContextMenuState().open) {
-              event.preventDefault();
-              this.menuOpen = false;
-              this.shellUi.trayOpen = false;
-              this.closeDesktopContextMenu();
-              return;
-            }
-          }
-          if (key === 'Enter' && !this.menuOpen && !this.shellDialog.open) {
-            this.focusSelectedDesktopEntry();
-          }
-        },
-        handleGlobalKeyUp: function (event) {
-          if (event && event.key === 'Alt' && ((this.shellUi || {}).windowSwitcherOpen)) {
-            event.preventDefault();
-            this.commitWindowSwitcher();
-          }
         },
         bootstrapFromDom: function () {
           var node = window.MIOOSState.getBootNode();
@@ -513,8 +227,161 @@
           this.zCounter = this.windows.reduce(function (max, win) { return Math.max(max, win.z || 0); }, 10) + 1;
           if (this.windows.length) this.activeWindowId = this.windows[0].id;
           if (!Array.isArray(this.shellNotifications)) this.shellNotifications = [];
-          if (!this.shellUi) this.shellUi = { trayOpen: false, showDesktop: false, windowSwitcherOpen: false, windowSwitcherIndex: 0, reducedMotion: false };
+          if (!this.shellUi) this.shellUi = { trayOpen: false, reducedMotion: false, desktopHidden: false, previousWindowId: '', windowSwitcherOpen: false, windowSwitcherIndex: 0 };
+          if (typeof this.shellUi.reducedMotion === 'undefined') this.shellUi.reducedMotion = false;
+          if (this.applyReducedMotionPreference) this.applyReducedMotionPreference();
         },
+
+        shellPreferencesKey: function () {
+          return 'mioos.shell.prefs.' + ((((this.boot || {}).user || {}).id) || 'guest');
+        },
+        authWindowStorageKey: function () {
+          return 'mioos.auth.window.' + ((((this.boot || {}).user || {}).id) || 'guest');
+        },
+        windowLayoutStorageKey: function () {
+          return 'mioos.window.layout.' + ((((this.boot || {}).user || {}).id) || 'guest');
+        },
+        restoreShellPreferences: function () {
+          var raw = null;
+          var prefs = {};
+          try { raw = window.localStorage.getItem(this.shellPreferencesKey()); } catch (err) { raw = null; }
+          if (raw) {
+            try { prefs = JSON.parse(raw) || {}; } catch (err2) { prefs = {}; }
+          }
+          if (prefs && typeof prefs.reducedMotion !== 'undefined') this.shellUi.reducedMotion = !!prefs.reducedMotion;
+          this.applyReducedMotionPreference();
+        },
+        persistShellPreferences: function () {
+          var payload = { reducedMotion: !!((this.shellUi || {}).reducedMotion) };
+          try { window.localStorage.setItem(this.shellPreferencesKey(), JSON.stringify(payload)); } catch (err) {}
+        },
+        applyReducedMotionPreference: function () {
+          var root = window.MIOOSState.getRootNode();
+          if (!root) return;
+          if ((this.shellUi || {}).reducedMotion) root.setAttribute('data-reduced-motion', '1'); else root.removeAttribute('data-reduced-motion');
+        },
+        toggleReducedMotion: function () {
+          this.shellUi.reducedMotion = !((this.shellUi || {}).reducedMotion);
+          this.applyReducedMotionPreference();
+          this.persistShellPreferences();
+          this.pushNotification('info', 'Accessibility', this.shellUi.reducedMotion ? 'Reduced motion enabled.' : 'Reduced motion disabled.', { timeoutMs: 1800 });
+        },
+        restoreAuthWindowPosition: function () {
+          var raw = null, cached = null;
+          try { raw = window.localStorage.getItem(this.authWindowStorageKey()); } catch (err) { raw = null; }
+          if (!raw) return;
+          try { cached = JSON.parse(raw) || null; } catch (err2) { cached = null; }
+          if (!cached) return;
+          if (+cached.left >= 0) this.authWindow.left = +cached.left;
+          if (+cached.top >= 0) this.authWindow.top = +cached.top;
+        },
+        persistAuthWindowPosition: function () {
+          var payload = { left: +(this.authWindow.left || 0), top: +(this.authWindow.top || 0), width: +(this.authWindow.width || 440) };
+          try { window.localStorage.setItem(this.authWindowStorageKey(), JSON.stringify(payload)); } catch (err) {}
+        },
+        restoreWindowLayout: function () {
+          var raw = null, cached = null, self = this;
+          try { raw = window.localStorage.getItem(this.windowLayoutStorageKey()); } catch (err) { raw = null; }
+          if (!raw) return;
+          try { cached = JSON.parse(raw) || null; } catch (err2) { cached = null; }
+          if (!cached || !cached.windows) return;
+          (this.windows || []).forEach(function (win) {
+            var key = String(win.appKey || '') + ':' + String(win.id || '');
+            var rec = cached.windows[key] || cached.windows[String(win.appKey || '')] || null;
+            if (!rec) return;
+            if (+rec.left >= 0) win.left = +rec.left;
+            if (+rec.top >= 0) win.top = +rec.top;
+            if (+rec.width > 0) win.width = +rec.width;
+            if (+rec.height > 0) win.height = +rec.height;
+            if (rec.state && rec.state !== 'closed') win.state = rec.state;
+            if (self.ensureWindowFrame) self.ensureWindowFrame(win);
+          });
+          if (cached.activeWindowId) this.activeWindowId = cached.activeWindowId;
+        },
+        persistWindowLayout: function () {
+          var payload = { activeWindowId: this.activeWindowId || '', windows: {} };
+          (this.windows || []).forEach(function (win) {
+            if (!win || win.appKey === 'terminal' || win.state === 'closed') return;
+            payload.windows[String(win.appKey || '') + ':' + String(win.id || '')] = {
+              left: +(win.left || 0), top: +(win.top || 0), width: +(win.width || 0), height: +(win.height || 0), state: win.state || 'normal'
+            };
+            if (!payload.windows[String(win.appKey || '')]) {
+              payload.windows[String(win.appKey || '')] = {
+                left: +(win.left || 0), top: +(win.top || 0), width: +(win.width || 0), height: +(win.height || 0), state: win.state || 'normal'
+              };
+            }
+          });
+          try { window.localStorage.setItem(this.windowLayoutStorageKey(), JSON.stringify(payload)); } catch (err) {}
+        },
+        switcherWindows: function () {
+          return (this.taskbarWindows || []).filter(function (win) { return win && win.state !== 'closed'; }).sort(function (a, b) { return (b.z || 0) - (a.z || 0); });
+        },
+        openWindowSwitcher: function () {
+          var rows = this.switcherWindows();
+          if (!rows.length) return;
+          this.shellUi.windowSwitcherOpen = true;
+          this.shellUi.windowSwitcherIndex = rows.findIndex(function (item) { return item.id === this.activeWindowId; }.bind(this));
+          if (this.shellUi.windowSwitcherIndex < 0) this.shellUi.windowSwitcherIndex = 0;
+        },
+        cycleWindowSwitcher: function () {
+          var rows = this.switcherWindows();
+          if (!rows.length) return;
+          if (!this.shellUi.windowSwitcherOpen) this.openWindowSwitcher();
+          this.shellUi.windowSwitcherIndex = (this.shellUi.windowSwitcherIndex + 1) % rows.length;
+        },
+        commitWindowSwitcher: function () {
+          var rows = this.switcherWindows();
+          var target = rows[this.shellUi.windowSwitcherIndex] || null;
+          this.shellUi.windowSwitcherOpen = false;
+          if (target) this.taskbarToggle(target.id);
+        },
+        closeWindowSwitcher: function () {
+          this.shellUi.windowSwitcherOpen = false;
+        },
+        toggleDesktopVisibility: function () {
+          var hiding = !((this.shellUi || {}).desktopHidden);
+          var wins;
+          this.shellUi.desktopHidden = hiding;
+          if (hiding) {
+            wins = (this.taskbarWindows || []).filter(function (win) { return win && win.state !== 'closed' && win.state !== 'minimized'; });
+            this.shellUi.previousWindowId = this.activeWindowId || ((wins[0] || {}).id || '');
+          } else if (this.shellUi.previousWindowId) {
+            this.taskbarToggle(this.shellUi.previousWindowId);
+          }
+        },
+        handleGlobalKeyDown: function (event) {
+          var tag = String(((event.target || {}).tagName) || '').toLowerCase();
+          if (!event) return;
+          if ((tag === 'input' || tag === 'textarea' || tag === 'select') && !(event.altKey && event.key === 'Tab')) return;
+          if ((event.metaKey || event.ctrlKey) && !event.shiftKey && String(event.key || '').toLowerCase() === 'd') {
+            event.preventDefault();
+            this.toggleDesktopVisibility();
+            return;
+          }
+          if (event.altKey && event.key === 'Tab') {
+            event.preventDefault();
+            this.cycleWindowSwitcher();
+            return;
+          }
+          if (event.shiftKey && !event.ctrlKey && !event.metaKey && event.key === 'Escape') {
+            if (this.activeWindowId) {
+              event.preventDefault();
+              this.closeWindow(this.activeWindowId);
+            }
+            return;
+          }
+          if ((event.ctrlKey || event.metaKey) && event.shiftKey && String(event.key || '').toLowerCase() === 'escape') {
+            event.preventDefault();
+            this.openApp('diagnostics');
+          }
+        },
+        handleGlobalKeyUp: function (event) {
+          if (event && event.key === 'Alt' && ((this.shellUi || {}).windowSwitcherOpen)) {
+            event.preventDefault();
+            this.commitWindowSwitcher();
+          }
+        },
+
         startClock: function () {
           var self = this;
           function tick() {
@@ -568,6 +435,7 @@
         },
         toggleTrayPanel: function () {
           this.menuOpen = false;
+          this.closeWindowSwitcher();
           this.closeDesktopContextMenu();
           this.shellUi.trayOpen = !((this.shellUi || {}).trayOpen);
           if (this.shellUi.trayOpen) this.markAllNotificationsRead();
@@ -639,53 +507,6 @@
             return String(result.value || '').trim();
           });
         },
-        notifySuccess: function (title, message, opts) {
-          return this.pushNotification('success', title, message, Object.assign({ timeoutMs: 3200 }, opts || {}));
-        },
-        notifyFailure: function (title, message, opts) {
-          return this.pushNotification('alert', title, message, Object.assign({ timeoutMs: 5200 }, opts || {}));
-        },
-        copyTextToClipboard: function (text, title, successMessage) {
-          var value = String(text || '');
-          if (!value) return Promise.resolve(false);
-          function fallbackCopy() {
-            var node;
-            try {
-              node = document.createElement('textarea');
-              node.value = value;
-              node.setAttribute('readonly', 'readonly');
-              node.style.position = 'fixed';
-              node.style.opacity = '0';
-              document.body.appendChild(node);
-              node.focus();
-              node.select();
-              document.execCommand('copy');
-              document.body.removeChild(node);
-              return true;
-            } catch (err) {
-              try { if (node && node.parentNode) node.parentNode.removeChild(node); } catch (dropErr) {}
-              return false;
-            }
-          }
-          if (window.navigator && window.navigator.clipboard && window.navigator.clipboard.writeText) {
-            return window.navigator.clipboard.writeText(value).then(function () { return true; }).catch(function () { return fallbackCopy(); }).then(function (ok) {
-              if (ok) return true;
-              throw new Error('clipboard_unavailable');
-            });
-          }
-          if (fallbackCopy()) return Promise.resolve(true);
-          return Promise.reject(new Error('clipboard_unavailable'));
-        },
-        copyJsonToClipboard: function (payload, title, successMessage) {
-          var self = this;
-          return this.copyTextToClipboard(JSON.stringify(payload || {}, null, 2), title, successMessage).then(function () {
-            self.notifySuccess(title || 'MIOOS', successMessage || 'Copied to clipboard.');
-            return true;
-          }).catch(function () {
-            self.notifyFailure(title || 'MIOOS', 'Unable to copy to clipboard.');
-            return false;
-          });
-        },
         refreshSecurityCenter: function () {
           var self = this;
           var auditLimit = ((((this.boot || {}).auth || {}).audit || {}).reportLimit) || 20;
@@ -751,48 +572,28 @@
         },
         revokeSecuritySession: function (sessionId) {
           var self = this;
-          var entry = this.securitySessions().find(function (item) { return item.sessionId === sessionId; }) || {};
-          var label = entry.userName || entry.principal || sessionId || 'session';
-          if (!sessionId) return Promise.resolve(false);
-          return (this.confirmDialog ? this.confirmDialog('Revoke session', 'Revoke the selected session?', { detail: label, confirmText: 'Revoke' }) : Promise.resolve(true)).then(function (confirmed) {
-            if (!confirmed) return false;
-            self.securityCenter.loading = true;
-            return self.command('auth.session.revoke', { sessionId: sessionId }).then(function () {
-              self.notifySuccess('Security Center', 'Session revoked.', { detail: label });
-              return self.refreshSecurityCenter();
-            }).catch(function (err) {
-              self.notifyFailure('Security Center', (err && (err.detail || err.error || err.message)) || 'session_revoke_failed', { detail: label });
-              throw err;
-            }).finally(function () {
-              self.securityCenter.loading = false;
-            });
+          if (!sessionId) return Promise.resolve();
+          this.securityCenter.loading = true;
+          return this.command('auth.session.revoke', { sessionId: sessionId }).then(function () {
+            return self.refreshSecurityCenter();
+          }).finally(function () {
+            self.securityCenter.loading = false;
           });
         },
         unlockSecurityUser: function (username) {
           var self = this;
-          if (!username) return Promise.resolve(false);
-          return (this.confirmDialog ? this.confirmDialog('Unlock account', 'Unlock the selected account?', { detail: username, confirmText: 'Unlock' }) : Promise.resolve(true)).then(function (confirmed) {
-            if (!confirmed) return false;
-            self.securityCenter.loading = true;
-            return self.command('auth.user.unlock', { username: username }).then(function () {
-              self.notifySuccess('Security Center', 'Account unlocked.', { detail: username });
-              return self.refreshSecurityCenter();
-            }).catch(function (err) {
-              self.notifyFailure('Security Center', (err && (err.detail || err.error || err.message)) || 'account_unlock_failed', { detail: username });
-              throw err;
-            }).finally(function () {
-              self.securityCenter.loading = false;
-            });
+          if (!username) return Promise.resolve();
+          this.securityCenter.loading = true;
+          return this.command('auth.user.unlock', { username: username }).then(function () {
+            return self.refreshSecurityCenter();
+          }).finally(function () {
+            self.securityCenter.loading = false;
           });
         },
         exportSecurityAudit: function () {
           var path = ((this.boot || {}).routes || {}).auditExport || '/api/mioos/auth/audit/export';
           if (!path) return;
-          this.notifySuccess('Security Center', 'Audit export opened in a new tab.');
           window.open(path, '_blank');
-        },
-        copySecurityReport: function () {
-          return this.copyJsonToClipboard({ report: this.securityReport(), trail: this.securityTrail(), sessions: this.securitySessions(), accounts: this.securityAccounts() }, 'Security Center', 'Security summary copied to clipboard.');
         },
         pushDebugEvent: function (kind, name, detail, meta) {
           var limit = +((((this.boot || {}).desktop || {}).debugCenter || {}).eventLimit || 50) || 50;
@@ -802,15 +603,7 @@
           return entry;
         },
         clearDebugEvents: function () {
-          var self = this;
-          var count = this.debugEvents().length;
-          if (!count) return Promise.resolve(false);
-          return (this.confirmDialog ? this.confirmDialog('Clear debug events', 'Remove the client-side debug event history?', { detail: String(count) + ' events', confirmText: 'Clear' }) : Promise.resolve(true)).then(function (confirmed) {
-            if (!confirmed) return false;
-            self.debugCenter.events.splice(0, self.debugCenter.events.length);
-            self.notifySuccess('Debug Center', 'Debug event history cleared.');
-            return true;
-          });
+          this.debugCenter.events.splice(0, this.debugCenter.events.length);
         },
         debugSnapshot: function () {
           return (this.debugCenter || {}).snapshot || {};
@@ -838,16 +631,12 @@
           });
         },
         exportDebugSnapshot: function () {
-          var self = this;
           var text = JSON.stringify(this.debugSnapshot() || {}, null, 2);
           this.pushDebugEvent('debug', 'export', 'Snapshot copied to debug buffer', { source: 'client' });
-          return this.copyTextToClipboard(text, 'Debug Center', 'Debug snapshot copied to clipboard.').then(function () {
-            self.notifySuccess('Debug Center', 'Debug snapshot copied to clipboard.');
-            return text;
-          }).catch(function () {
-            self.notifyFailure('Debug Center', 'Unable to copy debug snapshot to clipboard.');
-            return text;
-          });
+          if (window.navigator && window.navigator.clipboard && window.navigator.clipboard.writeText) {
+            window.navigator.clipboard.writeText(text).catch(function () {});
+          }
+          return text;
         },
         applyDocumentLocale: function () {
           if (I18N.applyDocumentLocale) I18N.applyDocumentLocale(this);
@@ -915,22 +704,7 @@
           }).catch(function (err) {
             self.transportDiagnostics.loading = false;
             self.transportDiagnostics.error = (err && (err.detail || err.error || err.message)) || 'transport_health_failed';
-            self.notifyFailure('Transport Diagnostics', self.transportDiagnostics.error);
             throw err;
-          });
-        },
-        copyTransportDiagnostics: function () {
-          return this.copyJsonToClipboard({ report: this.transportReport(), sockets: this.transportSocketRows() }, 'Transport Diagnostics', 'Transport diagnostics copied to clipboard.');
-        },
-        resetTransportTelemetry: function () {
-          var self = this;
-          var count = this.transportSocketRows().length;
-          if (!count) return Promise.resolve(false);
-          return (this.confirmDialog ? this.confirmDialog('Clear socket telemetry', 'Clear client-side socket telemetry for this session?', { detail: String(count) + ' socket entries', confirmText: 'Clear' }) : Promise.resolve(true)).then(function (confirmed) {
-            if (!confirmed) return false;
-            self.socketTelemetry = {};
-            self.notifySuccess('Transport Diagnostics', 'Client socket telemetry cleared.');
-            return true;
           });
         },
         ensureModuleWindowState: function () {
@@ -978,46 +752,20 @@
             self.moduleCatalog.refreshedAt = Date.now();
             self.boot.modules = window.MIOOSState.deepClone((((msg || {}).module || {}).modules) || []);
             self.ensureModuleWindowState();
-            self.notifySuccess('App Catalog', 'Module catalog refreshed.', { detail: String((self.boot.modules || []).length) + ' modules available' });
             return self.boot.modules;
           }).catch(function (err) {
             self.moduleCatalog.loading = false;
             self.moduleCatalog.error = (err && (err.detail || err.error || err.message)) || 'module_catalog_failed';
-            self.notifyFailure('App Catalog', self.moduleCatalog.error);
             throw err;
           });
-        },
-        copyModuleCatalog: function () {
-          return this.copyJsonToClipboard({ modules: this.moduleCatalogRows(), summary: { manifestVersion: ((((this.boot || {}).desktop || {}).moduleSystem || {}).manifestVersion) || 1, refreshedAt: this.moduleCatalog.refreshedAt || 0 } }, 'App Catalog', 'Module catalog copied to clipboard.');
         },
         openModuleCatalog: function () {
           this.openApp('app-catalog');
         },
         openModuleEntry: function (moduleId) {
           var module = this.moduleRecord(moduleId);
-          if (!module) {
-            this.notifyFailure('App Catalog', 'Module is no longer available.');
-            return;
-          }
+          if (!module) return;
           this.openApp(module.appKey || module.id);
-          this.notifySuccess('App Catalog', 'Launching ' + (module.title || module.id) + '.');
-        },
-        clearModuleNotes: function (windowId) {
-          var self = this;
-          var win = (this.windows || []).find(function (item) { return item.id === windowId; });
-          if (!win || !win.moduleState) return Promise.resolve(false);
-          if (!String(win.moduleState.draft || '').length) return Promise.resolve(false);
-          return (this.confirmDialog ? this.confirmDialog('Clear module notes', 'Remove the scratch note content for this session?', { confirmText: 'Clear' }) : Promise.resolve(true)).then(function (confirmed) {
-            if (!confirmed) return false;
-            win.moduleState.draft = '';
-            self.notifySuccess('Module Notes', 'Scratch note cleared.');
-            return true;
-          });
-        },
-        copyModuleWindowState: function (windowId) {
-          var win = (this.windows || []).find(function (item) { return item.id === windowId; });
-          if (!win) return Promise.resolve(false);
-          return this.copyJsonToClipboard({ window: win, module: this.moduleWindowMeta(win) || null }, ((this.moduleWindowMeta(win) || {}).title) || win.title || 'Module Window', 'Module window state copied to clipboard.');
         },
         moduleWindowStatus: function (win) {
           var module = this.moduleWindowMeta(win);
@@ -1192,62 +940,33 @@
         },
         pauseAllTransfers: function () {
           var self = this;
-          var paused = 0;
           return Promise.all((this.activeTransfers() || []).map(function (item) {
-            if (!self.canPauseTransfer(item)) return Promise.resolve();
-            paused += 1;
-            return self.pauseTransfer(item);
-          })).then(function () {
-            self.persistTransferCenter();
-            if (paused) self.notifySuccess('Transfer Center', 'Paused ' + paused + ' transfer' + (paused === 1 ? '' : 's') + '.');
-          });
+            return self.canPauseTransfer(item) ? self.pauseTransfer(item) : Promise.resolve();
+          })).then(function () { self.persistTransferCenter(); });
         },
         resumePausedTransfers: function () {
           var self = this;
-          var resumed = 0;
           return Promise.all(((this.transferCenter || {}).items || []).map(function (item) {
-            if (!self.canResumeTransfer(item)) return Promise.resolve();
-            resumed += 1;
-            return self.resumeTransfer(item);
-          })).then(function () {
-            self.persistTransferCenter();
-            if (resumed) self.notifySuccess('Transfer Center', 'Resumed ' + resumed + ' transfer' + (resumed === 1 ? '' : 's') + '.');
-          });
+            return self.canResumeTransfer(item) ? self.resumeTransfer(item) : Promise.resolve();
+          })).then(function () { self.persistTransferCenter(); });
         },
         cancelActiveTransfers: function () {
           var self = this;
-          var count = (this.activeTransfers() || []).filter(function (item) { return self.canCancelTransfer(item); }).length;
-          if (!count) return Promise.resolve(false);
-          return (this.confirmDialog ? this.confirmDialog('Cancel active transfers', 'Cancel all active transfers for this session?', { detail: String(count) + ' active transfer' + (count === 1 ? '' : 's'), confirmText: 'Cancel transfers' }) : Promise.resolve(true)).then(function (confirmed) {
-            if (!confirmed) return false;
-            return Promise.all((self.activeTransfers() || []).map(function (item) {
-              return self.canCancelTransfer(item) ? self.cancelTransfer(item).catch(function () { return null; }) : Promise.resolve();
-            })).then(function () {
-              self.persistTransferCenter();
-              self.notifySuccess('Transfer Center', 'Cancelled active transfers.', { detail: String(count) + ' item' + (count === 1 ? '' : 's') });
-              return true;
-            });
-          });
+          return Promise.all((this.activeTransfers() || []).map(function (item) {
+            return self.canCancelTransfer(item) ? self.cancelTransfer(item).catch(function () { return null; }) : Promise.resolve();
+          })).then(function () { self.persistTransferCenter(); });
         },
         clearFinishedTransfers: function () {
-          var self = this;
-          var finished = (this.completedTransfers() || []).length;
-          if (!finished) return Promise.resolve(false);
-          return (this.confirmDialog ? this.confirmDialog('Clear finished transfers', 'Remove completed, failed, and cancelled transfers from this session list?', { detail: String(finished) + ' finished transfer' + (finished === 1 ? '' : 's'), confirmText: 'Clear finished' }) : Promise.resolve(true)).then(function (confirmed) {
-            var keep = {};
-            if (!confirmed) return false;
-            self.transferCenter.items = (self.transferCenter.items || []).filter(function (item) {
-              var active = ['queued','preparing','uploading','downloading','finalizing','verifying','cancelling','paused'].indexOf(item.status) >= 0;
-              if (active) keep[item.id] = 1;
-              return active;
-            });
-            Object.keys(self.transferControllers || {}).forEach(function (key) {
-              if (!keep[key]) delete (self.transferControllers || {})[key];
-            });
-            self.persistTransferCenter();
-            self.notifySuccess('Transfer Center', 'Finished transfers cleared.', { detail: String(finished) + ' item' + (finished === 1 ? '' : 's') });
-            return true;
+          var keep = {};
+          this.transferCenter.items = (this.transferCenter.items || []).filter(function (item) {
+            var active = ['queued','preparing','uploading','downloading','finalizing','verifying','cancelling','paused'].indexOf(item.status) >= 0;
+            if (active) keep[item.id] = 1;
+            return active;
           });
+          Object.keys(this.transferControllers || {}).forEach(function (key) {
+            if (!keep[key]) delete (this.transferControllers || {})[key];
+          }, this);
+          this.persistTransferCenter();
         },
         centerAuthWindow: function (force) {
           var width = Math.min(460, Math.max(380, (window.innerWidth || document.documentElement.clientWidth || 1280) - 32));
@@ -1258,12 +977,11 @@
           this.authWindow.width = width;
         },
         authWindowStyle: function () {
-          return { width: (this.authWindow.width || 440) + 'px', '--mioos-auth-x': (this.authWindow.left || 0) + 'px', '--mioos-auth-y': (this.authWindow.top || 0) + 'px', willChange: (this.authDrag && this.authDrag.active) ? 'transform' : 'auto' };
+          return { width: (this.authWindow.width || 440) + 'px', '--mioos-auth-x': (this.authWindow.left || 0) + 'px', '--mioos-auth-y': (this.authWindow.top || 0) + 'px' };
         },
         beginAuthDrag: function (event) {
           if (!event || event.button !== 0) return;
           this.authDrag = { active: true, startX: event.clientX, startY: event.clientY, left: this.authWindow.left || 0, top: this.authWindow.top || 0 };
-          this.syncInteractionMode();
         },
         onAuthWindowMove: function (event) {
           var drag = this.authDrag || {};
@@ -1278,7 +996,6 @@
           if (!this.authDrag || !this.authDrag.active) return;
           this.authDrag.active = false;
           this.persistAuthWindowPosition();
-          this.syncInteractionMode();
         },
         desktopGridMetrics: function () {
           var size = this.desktopUi.iconSize || 'medium';
@@ -1330,8 +1047,7 @@
         },
         desktopIconStyle: function (entry) {
           var pos = ((this.desktopUi || {}).positions || {})[entry.key] || { left: 16, top: 16 };
-          var dragging = ((((this.desktopUi || {}).drag || {}).active) && (((this.desktopUi || {}).drag || {}).key === entry.key));
-          return { '--mioos-x': (+pos.left || 16) + 'px', '--mioos-y': (+pos.top || 16) + 'px', willChange: dragging ? 'transform' : 'auto' };
+          return { '--mioos-x': (+pos.left || 16) + 'px', '--mioos-y': (+pos.top || 16) + 'px' };
         },
         desktopIconClass: function (entry) {
           return {
@@ -1350,7 +1066,6 @@
           this.selectDesktopEntry(entry);
           pos = (this.desktopUi.positions || {})[entry.key] || { left: 16, top: 16 };
           this.desktopUi.drag = { armed: true, active: false, moved: false, key: entry.key, startX: event.clientX, startY: event.clientY, left: +pos.left || 16, top: +pos.top || 16 };
-          this.syncInteractionMode();
         },
         handleGlobalMouseMove: function (event) {
           this.onAuthWindowMove(event);
@@ -1368,7 +1083,7 @@
           if (!drag.armed || !drag.key) return;
           dx = event.clientX - (+drag.startX || 0);
           dy = event.clientY - (+drag.startY || 0);
-          if (!drag.active && ((Math.abs(dx) > 4) || (Math.abs(dy) > 4))) { drag.active = true; this.syncInteractionMode(); }
+          if (!drag.active && ((Math.abs(dx) > 4) || (Math.abs(dy) > 4))) drag.active = true;
           if (!drag.active) return;
           drag.moved = true;
           pos = this.desktopUi.positions[drag.key] || { left: drag.left || 16, top: drag.top || 16 };
@@ -1381,7 +1096,6 @@
           if (!drag.armed) return;
           if (drag.moved) this.persistDesktopLayout();
           this.desktopUi.drag = { armed: false, active: false, moved: false, key: '', startX: 0, startY: 0, left: 0, top: 0 };
-          this.syncInteractionMode();
         },
         desktopLayoutStorageKey: function () {
           return 'mioos.desktop.layout.' + (((this.boot || {}).user || {}).id || 'guest');
