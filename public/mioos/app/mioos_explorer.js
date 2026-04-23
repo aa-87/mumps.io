@@ -576,12 +576,19 @@
             initialized: false,
             loading: false,
             folderId: (win.meta || {}).folderId || ((this.boot.vfs || {}).homeId || (this.boot.vfs || {}).rootId || 'root'),
-            folder: { id: '', name: '', path: '' },
+            folder: { id: '', name: '', path: '', sortBy: 'name', sortDirection: 'ascending', viewMode: 'details' },
             items: [],
             selection: null,
             error: '',
-            preview: { title: '', content: '', mime: 'text/plain', imageSrc: '', mediaSrc: '', mediaKind: '' },
-            upload: { active: false, name: '', totalBytes: 0, sentBytes: 0, progress: 0, stage: '', error: '', uploadId: '' }
+            addressInput: '',
+            history: [],
+            historyIndex: -1,
+            viewMode: 'details',
+            sortBy: 'name',
+            sortDirection: 'ascending',
+            contextMenu: { open: false, left: 0, top: 0 },
+            upload: { active: false, name: '', totalBytes: 0, sentBytes: 0, progress: 0, stage: '', error: '', uploadId: '' },
+            preview: { title: '', content: '', mime: 'text/plain', imageSrc: '', mediaSrc: '', mediaKind: '' }
           };
         }
         return win.explorerState;
@@ -589,11 +596,11 @@
       bootstrapExplorerWindow: function (windowId, force) {
         var win = this.windows.find(function (item) { return item.id === windowId; });
         var state;
-        if (!win || (win.appKey !== 'my-computer' && win.appKey !== 'documents' && win.appKey !== 'explorer')) return;
+        if (!win || (win.appKey !== 'home' && win.appKey !== 'explorer')) return;
         state = this.ensureExplorerWindowState(win);
         if (state.initialized && !force) return;
         state.initialized = true;
-        if (win.appKey === 'documents' && (this.boot.vfs || {}).homeId) {
+        if (win.appKey === 'home' && (this.boot.vfs || {}).homeId) {
           state.folderId = (win.meta && win.meta.folderId) || this.boot.vfs.homeId;
         }
         this.loadExplorerFolder(win.id, state.folderId, { selectFirst: true });
@@ -609,24 +616,23 @@
           var payload = payloadRoot(msg);
           var folder = extractFolder(payload, folderId);
           var items = extractItems(payload);
-          items.sort(function (a, b) {
-            var ak = (a.kind || a.type || '').toLowerCase();
-            var bk = (b.kind || b.type || '').toLowerCase();
-            if (ak !== bk) {
-              if (ak === 'folder') return -1;
-              if (bk === 'folder') return 1;
-            }
-            var an = (a.name || a.title || '').toLowerCase();
-            var bn = (b.name || b.title || '').toLowerCase();
-            return an < bn ? -1 : (an > bn ? 1 : 0);
-          });
+          items = self.decorateExplorerItems(folder, items);
           state.folderId = folder.id || folderId;
           state.folder = folder;
-          state.items = items;
+          state.viewMode = folder.viewMode || state.viewMode || 'details';
+          state.sortBy = folder.sortBy || state.sortBy || 'name';
+          state.sortDirection = folder.sortDirection || state.sortDirection || 'ascending';
+          state.addressInput = folder.path || folder.name || '/';
+          state.items = self.sortExplorerItems(items, state.sortBy, state.sortDirection);
           state.loading = false;
           state.selection = null;
           state.preview = { title: '', content: '', mime: 'text/plain', imageSrc: '', mediaSrc: '', mediaKind: '' };
-          if ((options || {}).selectFirst && items.length) self.selectExplorerItem(win.id, items[0]);
+          if (!(options || {}).skipHistory) {
+            if ((state.historyIndex + 1) < state.history.length) state.history = state.history.slice(0, state.historyIndex + 1);
+            state.history.push({ id: state.folderId, path: state.addressInput });
+            state.historyIndex = state.history.length - 1;
+          }
+          if ((options || {}).selectFirst && state.items.length) self.selectExplorerItem(win.id, state.items[0]);
           win.title = folder.name || win.title;
           return msg;
         }).catch(function (err) {
@@ -732,6 +738,10 @@
         var kind = ((item || {}).kind || (item || {}).type || '').toLowerCase();
         if (kind === 'folder') {
           this.loadExplorerFolder(windowId, item.id || item.key || item.folderId, { selectFirst: true });
+          return;
+        }
+        if (kind === 'app') {
+          this.openApp((item || {}).appKey || (item || {}).key || '');
           return;
         }
         if (detectImageLike(item)) {
@@ -1706,6 +1716,155 @@
           win.fileView.loading = false;
           win.fileView.content = (err && err.message) || 'Unable to open file.';
         });
+      },
+      sortExplorerItems: function (items, sortBy, sortDirection) {
+        var rows = (items || []).slice();
+        var dir = (sortDirection || 'ascending') === 'descending' ? -1 : 1;
+        rows.sort(function (a, b) {
+          var av, bv, ak, bk;
+          ak = (a.kind || a.type || '').toLowerCase();
+          bk = (b.kind || b.type || '').toLowerCase();
+          if (ak !== bk) {
+            if (ak === 'folder') return -1;
+            if (bk === 'folder') return 1;
+          }
+          if (sortBy === 'date-modified') { av = +(a.modifiedAt || 0); bv = +(b.modifiedAt || 0); }
+          else if (sortBy === 'size') { av = +(a.size || 0); bv = +(b.size || 0); }
+          else if (sortBy === 'type') { av = (a.mime || a.kind || a.type || '').toLowerCase(); bv = (b.mime || b.kind || b.type || '').toLowerCase(); }
+          else { av = (a.name || a.title || '').toLowerCase(); bv = (b.name || b.title || '').toLowerCase(); }
+          if (av < bv) return -1 * dir;
+          if (av > bv) return 1 * dir;
+          return 0;
+        });
+        return rows;
+      },
+      decorateExplorerItems: function (folder, items) {
+        var rows = (items || []).slice();
+        var homeId = (((this.boot || {}).vfs || {}).homeId) || '';
+        if (((folder || {}).id || '') === homeId) {
+          (this.launcherEntries || []).forEach(function (entry) {
+            if (!entry || entry.key === 'home') return;
+            rows.push({ id: 'launcher-' + entry.key, key: entry.key, name: entry.title, title: entry.title, kind: 'app', type: 'app', mime: 'application/x-mioos-app', appKey: entry.key, icon: entry.icon, size: 0, modifiedAt: 0, path: ((folder || {}).path || '/Home') + '/' + entry.title });
+          });
+        }
+        return rows;
+      },
+      explorerNavigateBack: function (windowId) {
+        var win = this.windows.find(function (entry) { return entry.id === windowId; });
+        var state = this.ensureExplorerWindowState(win);
+        var target;
+        if (!state || state.historyIndex <= 0) return;
+        state.historyIndex -= 1;
+        target = state.history[state.historyIndex];
+        if (target) this.loadExplorerFolder(windowId, target.id, { selectFirst: false, skipHistory: true });
+      },
+      explorerNavigateForward: function (windowId) {
+        var win = this.windows.find(function (entry) { return entry.id === windowId; });
+        var state = this.ensureExplorerWindowState(win);
+        var target;
+        if (!state || state.historyIndex >= (state.history.length - 1)) return;
+        state.historyIndex += 1;
+        target = state.history[state.historyIndex];
+        if (target) this.loadExplorerFolder(windowId, target.id, { selectFirst: false, skipHistory: true });
+      },
+      explorerCanGoBack: function (win) { var state = this.ensureExplorerWindowState(win); return !!(state && state.historyIndex > 0); },
+      explorerCanGoForward: function (win) { var state = this.ensureExplorerWindowState(win); return !!(state && state.historyIndex < ((state.history || []).length - 1)); },
+      explorerViewModeLabel: function (win) { var state = this.ensureExplorerWindowState(win); return (state && state.viewMode) || 'details'; },
+      setExplorerViewMode: function (windowId, mode) {
+        var win = this.windows.find(function (entry) { return entry.id === windowId; });
+        var state = this.ensureExplorerWindowState(win);
+        if (!state) return;
+        state.viewMode = mode || 'details';
+        this.saveFolderPresentation(windowId);
+      },
+      setExplorerSort: function (windowId, sortBy, sortDirection) {
+        var win = this.windows.find(function (entry) { return entry.id === windowId; });
+        var state = this.ensureExplorerWindowState(win);
+        if (!state) return;
+        state.sortBy = sortBy || 'name';
+        if (sortDirection) state.sortDirection = sortDirection;
+        state.items = this.sortExplorerItems(state.items, state.sortBy, state.sortDirection);
+        this.saveFolderPresentation(windowId);
+      },
+      saveFolderPresentation: function (windowId) {
+        var win = this.windows.find(function (entry) { return entry.id === windowId; });
+        var state = this.ensureExplorerWindowState(win);
+        if (!state || !this.command) return Promise.resolve();
+        return this.command('fs.setmeta', { id: state.folderId, viewMode: state.viewMode, sortBy: state.sortBy, sortDirection: state.sortDirection }).catch(function () {});
+      },
+      explorerGoToAddress: function (windowId) {
+        var win = this.windows.find(function (entry) { return entry.id === windowId; });
+        var state = this.ensureExplorerWindowState(win);
+        var value = state && String(state.addressInput || '').trim();
+        if (!value || !this.command) return Promise.resolve();
+        return this.command('fs.meta', { id: value, path: value }).then(function (msg) {
+          var payload = payloadRoot(msg);
+          return this.loadExplorerFolder(windowId, payload.id || value, { selectFirst: true });
+        }.bind(this)).catch(function (err) {
+          if (this.showAlert) this.showAlert('Explorer', (err && err.message) || 'Path not found.');
+        }.bind(this));
+      },
+      explorerQuickPlaces: function () { return (((this.view || {}).explorer || {}).quickPlaces) || []; },
+      openFolderPropertiesWindow: function (windowId, item, tabKey) {
+        var sourceWin = this.windows.find(function (entry) { return entry.id === windowId; });
+        var state = this.ensureExplorerWindowState(sourceWin);
+        var target = item || ((state || {}).selection) || ((state || {}).folder) || null;
+        var win;
+        if (!target) return;
+        win = this.windows.find(function (entry) { return entry.appKey === 'folder-properties'; }) || this.createWindowForApp('folder-properties');
+        if (!win) return;
+        win.state = 'normal';
+        win.meta = Object.assign({}, win.meta || {}, { targetId: target.id || state.folderId, targetKind: target.kind || 'folder', targetPath: target.path || state.addressInput || '/', sourceWindowId: windowId });
+        win.propertyState = { loading: true, tab: tabKey || 'general', meta: null, form: { background: '', icon: '', readOnly: 0, hidden: 0, shared: 0, shareScope: 'private', shareUsers: '' } };
+        this.focusWindow(win.id);
+        this.command('fs.meta', { id: win.meta.targetId }).then(function (msg) {
+          var payload = payloadRoot(msg);
+          win.propertyState.loading = false;
+          win.propertyState.meta = payload;
+          win.propertyState.form.background = (((payload.customize || {}).background) || '');
+          win.propertyState.form.icon = (((payload.customize || {}).icon) || '');
+          win.propertyState.form.readOnly = +((((payload.attributes || {}).readOnly) || 0));
+          win.propertyState.form.hidden = +((((payload.attributes || {}).hidden) || 0));
+          win.propertyState.form.shared = +((((payload.attributes || {}).shared) || 0));
+          win.propertyState.form.shareScope = (((payload.sharing || {}).scope) || 'private');
+          win.propertyState.form.shareUsers = (((payload.sharing || {}).users) || '');
+        }).catch(function (err) {
+          win.propertyState.loading = false;
+          win.propertyState.error = (err && err.message) || 'properties_load_failed';
+        });
+      },
+      saveFolderPropertiesWindow: function (win) {
+        var self = this;
+        var state = (win || {}).propertyState || {};
+        var form = state.form || {};
+        if (!win || !this.command) return Promise.resolve();
+        return this.command('fs.setmeta', { id: ((win.meta || {}).targetId || ''), attributes: { readOnly: +!!form.readOnly, hidden: +!!form.hidden, shared: +!!form.shared }, sharing: { scope: form.shareScope || 'private', users: form.shareUsers || '' }, customize: { background: form.background || '', icon: form.icon || '' } }).then(function () {
+          if (self.notifySuccess) self.notifySuccess('Folder Properties', 'Folder settings saved.');
+          if ((win.meta || {}).sourceWindowId) self.refreshExplorerWindow((win.meta || {}).sourceWindowId);
+        }).catch(function (err) {
+          if (self.showAlert) self.showAlert('Folder Properties', (err && err.message) || 'save_failed');
+        });
+      },
+      setFolderPropertiesTab: function (win, tabKey) { if (win && win.propertyState) win.propertyState.tab = tabKey || 'general'; },
+      beginExplorerItemDrag: function (windowId, item, event) {
+        var payload;
+        if (!event || !event.dataTransfer || !item) return;
+        payload = JSON.stringify({ windowId: windowId, item: item });
+        event.dataTransfer.effectAllowed = 'copyMove';
+        event.dataTransfer.setData('application/x-mioos-item', payload);
+        event.dataTransfer.setData('text/plain', item.name || item.title || 'item');
+      },
+      openFolderContextMenu: function (windowId, event, item) {
+        var win = this.windows.find(function (entry) { return entry.id === windowId; });
+        var state = this.ensureExplorerWindowState(win);
+        if (!state) return;
+        if (item) this.selectExplorerItem(windowId, item);
+        state.contextMenu = { open: true, left: (event && event.clientX) || 0, top: (event && event.clientY) || 0 };
+      },
+      closeFolderContextMenu: function (windowId) {
+        var win = this.windows.find(function (entry) { return entry.id === windowId; });
+        var state = this.ensureExplorerWindowState(win);
+        if (state) state.contextMenu.open = false;
       }
     }
   };

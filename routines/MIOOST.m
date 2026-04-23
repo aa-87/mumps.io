@@ -110,6 +110,7 @@ T001
 	KILL EP DO AMATCH("[MIOOST][T001][fs read]","POST","/api/mioos/fs/read",1,"FSREAD^MIOOSAPI","/api/mioos/fs/read",.EP)
 	KILL EP DO AMATCH("[MIOOST][T001][fs write]","POST","/api/mioos/fs/write",1,"FSWRITE^MIOOSAPI","/api/mioos/fs/write",.EP)
 	KILL EP DO AMATCH("[MIOOST][T001][fs mkdir]","POST","/api/mioos/fs/mkdir",1,"FSMKDIR^MIOOSAPI","/api/mioos/fs/mkdir",.EP)
+		KILL EP DO AMATCH("[MIOOST][T001][fs setmeta]","POST","/api/mioos/fs/setmeta",1,"FSSETMETA^MIOOSAPI","/api/mioos/fs/setmeta",.EP)
 	KILL EP DO AMATCH("[MIOOST][T001][fs blob get]","GET","/api/mioos/fs/blob",1,"FSBLOB^MIOOSAPI","/api/mioos/fs/blob",.EP)
 	KILL EP DO AMATCH("[MIOOST][T001][fs blob head]","HEAD","/api/mioos/fs/blob",1,"FSBLOB^MIOOSAPI","/api/mioos/fs/blob",.EP)
 	KILL EP DO AMATCH("[MIOOST][T001][ws]","WS","/ws/mioos",1,"MESSAGE^MIOOSWS","/ws/mioos",.EP)
@@ -133,8 +134,8 @@ T002
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","launcherLabel")),"Menu","[MIOOST][T002][launcher]")
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","commandTransport")),"websocket-only","[MIOOST][T002][transport]")
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","realtimeContract")),"core-websocket-plus-app-websockets","[MIOOST][T002][realtime]")
-	DO EQ^MIOTASSERT($GET(OBJ("apps",4,"key")),"terminal","[MIOOST][T002][terminal app]")
-	DO EQ^MIOTASSERT($GET(OBJ("windows",1,"appKey")),"my-computer","[MIOOST][T002][explorer window]")
+	DO EQ^MIOTASSERT($GET(OBJ("apps",1,"key")),"home","[MIOOST][T002][home app]")
+	DO EQ^MIOTASSERT($GET(OBJ("windows",1,"appKey")),"home","[MIOOST][T002][home window]")
 	DO EQ^MIOTASSERT(+$GET(OBJ("auth","enabled")),1,"[MIOOST][T002][auth enabled]")
 	DO EQ^MIOTASSERT(+$GET(OBJ("desktop","noMarkupData")),1,"[MIOOST][T002][no markup data]")
 	DO EQ^MIOTASSERT($GET(OBJ("terminal","engine")),"xtermjs","[MIOOST][T002][terminal engine]")
@@ -146,7 +147,7 @@ T002
 	DO EQ^MIOTASSERT($GET(OBJ("routes","fsList")),"/api/mioos/fs/list","[MIOOST][T002][fs list route]")
 	DO EQ^MIOTASSERT($GET(OBJ("routes","fsBlob")),"/api/mioos/fs/blob","[MIOOST][T002][fs blob route]")
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","windowing","engine")),"mioos-native-vue-css","[MIOOST][T002][windowing engine]")
-	DO EQ^MIOTASSERT($GET(OBJ("desktop","themeKey")),"foundation-light","[MIOOST][T002][theme key]")
+	DO EQ^MIOTASSERT($GET(OBJ("desktop","themeKey")),"classic-horizon-light","[MIOOST][T002][theme key]")
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","themeMode")),"light","[MIOOST][T002][theme mode]")
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","windowing","chrome")),"reusable-shell-chrome","[MIOOST][T002][window chrome]")
 	DO EQ^MIOTASSERT(+$GET(OBJ("desktop","windowing","titlebarHeight")),40,"[MIOOST][T002][titlebar height]")
@@ -154,33 +155,28 @@ T002
 	DO EQ^MIOTASSERT(+$GET(OBJ("desktop","windowing","snapThreshold")),28,"[MIOOST][T002][snap threshold]")
 	DO EQ^MIOTASSERT(+$GET(OBJ("windows",1,"resizable")),1,"[MIOOST][T002][window resizable]")
 	DO EQ^MIOTASSERT($GET(OBJ("windows",1,"kind")),"explorer","[MIOOST][T002][window kind]")
-	DO EQ^MIOTASSERT($GET(OBJ("windows",1,"workspaceKey")),"workspace-main","[MIOOST][T002][workspace key]")
+	DO EQ^MIOTASSERT($GET(OBJ("windows",1,"workspaceKey")),"workspace-files","[MIOOST][T002][workspace key]")
 	QUIT
 	;
 T003
-	NEW CONF,REQ,CTX,STATE,ERR,DATA
-	DO RESET
-	DO CONFDEF^MIOOS(.CONF)
-	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T003][load]")
-	DO DESKCTX^MIOOSUI(.STATE,.CONF,.DATA)
-	DO EQ^MIOTASSERT($GET(DATA("page","title")),"MIOOS Desktop","[MIOOST][T003][page title]")
-	DO EQ^MIOTASSERT($GET(DATA("commandEvent")),"desktop.command","[MIOOST][T003][command event]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-mioos-core-socket=""1"""),"[MIOOST][T003][core socket token]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-mioos-app-sockets=""1"""),"[MIOOST][T003][app sockets token]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-mioos-max-sockets="),"[MIOOST][T003][max sockets token]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-mioos-signin="),"[MIOOST][T003][signin token]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-auth-overlay"),"[MIOOST][T003][auth overlay]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-snap-preview"),"[MIOOST][T003][snap preview token]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-window-menu"),"[MIOOST][T003][window menu token]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","openWindowMenu(win, $event, 'titlebar')"),"[MIOOST][T003][window menu handler]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-window-kind"),"[MIOOST][T003][window kind token]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-resize-edge=""n"""),"[MIOOST][T003][resize north token]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_auth.js","submitSignin"),"[MIOOST][T003][signin method]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-auth-card"),"[MIOOST][T003][css auth]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","/public/mioos/7.scoped.css"),"[MIOOST][T003][local shell css]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","beginAuthDrag($event)"),"[MIOOST][T003][auth drag token]")
-	QUIT
-	;
+		NEW CONF,REQ,CTX,STATE,ERR,DATA
+		DO RESET
+		DO CONFDEF^MIOOS(.CONF)
+		DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T003][load]")
+		DO DESKCTX^MIOOSUI(.STATE,.CONF,.DATA)
+		DO EQ^MIOTASSERT($GET(DATA("page","title")),"MIOOS Desktop","[MIOOST][T003][page title]")
+		DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-folder-context-menu"),"[MIOOST][T003][folder context menu]")
+		DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","openFolderPropertiesWindow(win.id"),"[MIOOST][T003][folder properties launch]")
+		DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","taskbarPrimaryGroups()"),"[MIOOST][T003][grouped taskbar ui]")
+		DO EQ^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","win.appKey === 'diagnostics'"),0,"[MIOOST][T003][diagnostics surface removed]")
+		DO EQ^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","win.appKey === 'security-center'"),0,"[MIOOST][T003][security surface removed]")
+		DO EQ^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","win.appKey === 'debug-center'"),0,"[MIOOST][T003][debug surface removed]")
+		DO EQ^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","win.appKey === 'app-catalog'"),0,"[MIOOST][T003][catalog surface removed]")
+		DO EQ^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","win.appKey === 'control-panel'"),0,"[MIOOST][T003][control panel removed]")
+		DO EQ^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","/public/mioos/7.scoped.css"),0,"[MIOOST][T003][7css removed]")
+		DO OK^MIOTASSERT($$FILEHAS("templates/layouts/mioos_shell.html","/public/mioos/mioos_reset.css"),"[MIOOST][T003][reset css linked]")
+		QUIT
+		;
 T004
 	NEW CONF,REQ,CTX,STATE,ERR,JSON,OBJ,VIEW
 	DO RESET
@@ -231,7 +227,7 @@ T006
 	DO EQ^MIOTASSERT($GET(OBJ("locale","dir")),"rtl","[MIOOST][T006][locale dir]")
 	DO EQ^MIOTASSERT(+$GET(OBJ("desktop","accessibility","rtl")),1,"[MIOOST][T006][rtl flag]")
 	DO EQ^MIOTASSERT($GET(OBJ("i18n","strings","auth.signin")),"تسجيل الدخول","[MIOOST][T006][signin copy]")
-	DO EQ^MIOTASSERT($GET(OBJ("apps",1,"title")),"جهاز الكمبيوتر","[MIOOST][T006][localized app]")
+	DO EQ^MIOTASSERT($GET(OBJ("apps",1,"key")),"home","[MIOOST][T006][localized app key]")
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","performance","clientModel")),"thin-vue-umd","[MIOOST][T006][perf model]")
 	QUIT
 	;
@@ -241,6 +237,12 @@ T007
 	DO OK^MIOTASSERT($$FILEOK("docs/mioos/User_Guide.md"),"[MIOOST][T007][user guide]")
 	DO OK^MIOTASSERT($$FILEOK("docs/mioos/Internal_Doc.md"),"[MIOOST][T007][internal doc]")
 	DO OK^MIOTASSERT($$FILEOK("docs/mioos/HIPAA.md"),"[MIOOST][T007][hipaa doc]")
+	DO OK^MIOTASSERT($$FILEOK("docs/mioos/Architecture_Overview.md"),"[MIOOST][T007][architecture doc]")
+	DO OK^MIOTASSERT($$FILEOK("docs/mioos/Theme_System.md"),"[MIOOST][T007][theme system doc]")
+	DO OK^MIOTASSERT($$FILEOK("docs/mioos/VFS_Metadata_Model.md"),"[MIOOST][T007][vfs metadata doc]")
+	DO OK^MIOTASSERT($$FILEOK("docs/mioos/Drag_Drop_Rules.md"),"[MIOOST][T007][drag drop doc]")
+	DO OK^MIOTASSERT($$FILEOK("docs/mioos/Transfer_Manager.md"),"[MIOOST][T007][transfer doc]")
+	DO OK^MIOTASSERT($$FILEOK("docs/mioos/Migration_Notes.md"),"[MIOOST][T007][migration doc]")
 	DO OK^MIOTASSERT($$FILEHAS("templates/layouts/mioos_shell.html","/public/mioos/app/mioos_core.js"),"[MIOOST][T007][core script]")
 	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","changeLocale(locale.code)"),"[MIOOST][T007][locale switch]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_state.js","window.MIOOSState"),"[MIOOST][T007][state module]")
@@ -333,11 +335,11 @@ T011
 	DO EQ^MIOTASSERT($GET(OUT("content")),"alpha beta gamma","[MIOOST][T011][read content]")
 	KILL OUT DO OK^MIOTASSERT($$RENAME^MIOOSFS(.STATE,ID,"renamed.txt",.OUT,.ERR),"[MIOOST][T011][rename]")
 	DO EQ^MIOTASSERT($GET(OUT("name")),"renamed.txt","[MIOOST][T011][rename name]")
-	KILL OUT DO OK^MIOTASSERT($$MOVE^MIOOSFS(.STATE,ID,"/Documents",.OUT,.ERR),"[MIOOST][T011][move]")
+	KILL OUT DO OK^MIOTASSERT($$MOVE^MIOOSFS(.STATE,ID,"/Home",.OUT,.ERR),"[MIOOST][T011][move]")
 	DO EQ^MIOTASSERT($GET(OUT("parentId"))=$$HOMEID^MIOOSFS(),1,"[MIOOST][T011][move parent]")
 	KILL OUT DO OK^MIOTASSERT($$DELETE^MIOOSFS(.STATE,ID,.OUT,.ERR),"[MIOOST][T011][delete file]")
 	DO EQ^MIOTASSERT(+$GET(OUT("deleted")),1,"[MIOOST][T011][delete flag]")
-	SET PAY="{""event"":""desktop.command"",""requestId"":""fs-1"",""command"":""fs.list"",""parent"":""/Documents""}"
+	SET PAY="{""event"":""desktop.command"",""requestId"":""fs-1"",""command"":""fs.list"",""parent"":""/Home""}"
 	DO OK^MIOTASSERT($$COMMANDJSON^MIOOSWS(.CONF,.REQ,.CTX,.STATE,PAY,.JSON,.ERR),"[MIOOST][T011][ws fs list]")
 	DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T011][ws fs decode]")
 	DO EQ^MIOTASSERT($GET(OBJ("event")),"desktop.result","[MIOOST][T011][ws event]")
@@ -370,34 +372,25 @@ T014
 	;
 	;
 T015
-	NEW CONF,REQ,CTX,STATE,ERR,JSON,OBJ
-	DO RESET
-	DO CONFDEF^MIOOS(.CONF)
-	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T015][load]")
-	SET JSON=$$BOOTJSON^MIOOSST(.STATE,.CONF)
-	DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T015][decode]")
-	DO EQ^MIOTASSERT($GET(OBJ("apps",5,"key")),"theme-studio","[MIOOST][T015][theme studio app]")
-	DO EQ^MIOTASSERT($GET(OBJ("windows",5,"appKey")),"theme-studio","[MIOOST][T015][theme studio window]")
-	DO EQ^MIOTASSERT(+$GET(OBJ("windows",5,"themeStudioEnabled")),1,"[MIOOST][T015][theme studio enabled]")
-	QUIT
-	;
+		NEW CONF,REQ,CTX,STATE,ERR,JSON,OBJ
+		DO RESET
+		DO CONFDEF^MIOOS(.CONF)
+		DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T015][load]")
+		SET JSON=$$BOOTJSON^MIOOSST(.STATE,.CONF)
+		DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T015][decode]")
+		DO EQ^MIOTASSERT($GET(OBJ("apps",4,"key")),"customize","[MIOOST][T015][customize app]")
+		DO EQ^MIOTASSERT($GET(OBJ("windows",4,"appKey")),"customize","[MIOOST][T015][customize window]")
+		DO EQ^MIOTASSERT($GET(OBJ("windows",5,"appKey")),"folder-properties","[MIOOST][T015][folder properties window]")
+		QUIT
+		;
 T016
-	DO EQ^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","https://unpkg.com/7.css/dist/7.scoped.css"),0,"[MIOOST][T016][remote 7css removed]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","/public/mioos/7.scoped.css"),"[MIOOST][T016][local 7css link]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","Foundation Light"),"[MIOOST][T016][foundation preset copy]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","role=""tablist"""),"[MIOOST][T016][tablist token]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","Theme Studio"),"[MIOOST][T016][theme studio copy]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","themeStudioApplyPreset"),"[MIOOST][T016][theme studio preset method]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","themeStudioApplyCurrent"),"[MIOOST][T016][theme studio apply method]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","applyThemeStudioProfile"),"[MIOOST][T016][theme studio live apply]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","themeStudioExportProfile"),"[MIOOST][T016][theme studio export method]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","Apply Theme"),"[MIOOST][T016][theme studio apply copy]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","--mioos-desktop-background"),"[MIOOST][T016][theme studio css vars]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-theme-studio-layout"),"[MIOOST][T016][theme studio css]")
-	QUIT
-	;
-	;
-	;
+		DO EQ^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","https://unpkg.com/7.css/dist/7.scoped.css"),0,"[MIOOST][T016][remote 7css removed]")
+		DO EQ^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","/public/mioos/7.scoped.css"),0,"[MIOOST][T016][local 7css removed]")
+		DO OK^MIOTASSERT($$FILEHAS("templates/layouts/mioos_shell.html","/public/mioos/mioos_reset.css"),"[MIOOST][T016][reset css link]")
+		DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos_reset.css","mioos-taskbar--workspace"),"[MIOOST][T016][taskbar reset css]")
+		DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos_reset.css","mioos-folder-context-menu"),"[MIOOST][T016][folder menu css]")
+		QUIT
+		;
 T017
 	NEW CONF,REQ,CTX,STATE,ERR,JSON,OBJ
 	DO RESET
@@ -507,34 +500,24 @@ T024
 	QUIT
 	;
 T026
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-transport-diagnostics-window=""1"""),"[MIOOST][T026][diagnostics window token]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","refreshTransportDiagnostics()"),"[MIOOST][T026][diagnostics refresh]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","transportSocketRows"),"[MIOOST][T026][socket telemetry rows]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_ws.js","setSocketTelemetry('core-1'"),"[MIOOST][T026][core socket telemetry]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","label: 'FS Worker ' + ordinal"),"[MIOOST][T026][worker socket telemetry]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","transport.health"),"[MIOOST][T026][ws transport health]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-diagnostics-shell"),"[MIOOST][T026][diagnostics css]")
-	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 22 — Transport diagnostics and socket health"),"[MIOOST][T026][llm roi22]")
-	QUIT
-	;
+		DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-transfer-summary"),"[MIOOST][T026][transfer summary]")
+		DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-transfer-progress"),"[MIOOST][T026][transfer progress]")
+		DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","Retry"),"[MIOOST][T026][transfer retry ui]")
+		DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos_reset.css","mioos-transfer-card"),"[MIOOST][T026][transfer css]")
+		QUIT
+		;
 T027
-	NEW CONF,REQ,CTX,STATE,ERR,JSON,OBJ,PAY
-	DO RESET
-	DO CONFDEF^MIOOS(.CONF)
-	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T027][load]")
-	SET JSON=$$BOOTJSON^MIOOSST(.STATE,.CONF)
-	DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T027][decode]")
-	DO EQ^MIOTASSERT(+$GET(OBJ("desktop","moduleSystem","enabled")),1,"[MIOOST][T027][module enabled]")
-	DO EQ^MIOTASSERT($GET(OBJ("apps",8,"key")),"app-catalog","[MIOOST][T027][catalog app]")
-	DO EQ^MIOTASSERT($GET(OBJ("modules",1,"id")),"module-notes","[MIOOST][T027][module notes]")
-	DO EQ^MIOTASSERT($GET(OBJ("windows",9,"moduleId")),"module-notes","[MIOOST][T027][module window]")
-	SET PAY="{""event"":""desktop.command"",""requestId"":""module-1"",""command"":""module.catalog""}"
-	DO OK^MIOTASSERT($$COMMANDJSON^MIOOSWS(.CONF,.REQ,.CTX,.STATE,PAY,.JSON,.ERR),"[MIOOST][T027][module catalog]")
-	DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T027][module decode]")
-	DO EQ^MIOTASSERT($GET(OBJ("command")),"module.catalog","[MIOOST][T027][module command]")
-	DO EQ^MIOTASSERT($GET(OBJ("module","count"))>1,1,"[MIOOST][T027][module count]")
-	QUIT
-	;
+		NEW CONF,REQ,CTX,STATE,ERR,JSON,OBJ
+		DO RESET
+		DO CONFDEF^MIOOS(.CONF)
+		DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T027][load]")
+		SET JSON=$$BOOTJSON^MIOOSST(.STATE,.CONF)
+		DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T027][decode]")
+		DO EQ^MIOTASSERT(+$GET(OBJ("desktop","moduleSystem","enabled")),0,"[MIOOST][T027][module system disabled]")
+		DO EQ^MIOTASSERT(+$GET(OBJ("desktop","moduleSystem","moduleCount")),0,"[MIOOST][T027][module count zero]")
+		DO EQ^MIOTASSERT($GET(OBJ("apps",1,"key")),"home","[MIOOST][T027][home retained]")
+		QUIT
+		;
 T028
 	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-module-catalog-window=""1"""),"[MIOOST][T028][catalog token]")
 	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-module-window=""1"""),"[MIOOST][T028][module window token]")
@@ -546,38 +529,29 @@ T028
 	QUIT
 	;
 T029
-	NEW CONF,REQ,CTX,STATE,ERR,JSON,OBJ,TOKEN
-	DO RESET
-	DO CONFDEF^MIOOS(.CONF)
-	DO INIT^MIOOS(.CONF)
-	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T029][load]")
-	SET JSON=$$BOOTJSON^MIOOSST(.STATE,.CONF)
-	DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T029][decode]")
-	DO EQ^MIOTASSERT($GET(OBJ("auth","required")),1,"[MIOOST][T029][auth required]")
-	DO EQ^MIOTASSERT($GET(OBJ("auth","guestLoginEnabled")),0,"[MIOOST][T029][guest disabled]")
-	DO EQ^MIOTASSERT($GET(OBJ("auth","unauthenticatedAccessAllowed")),0,"[MIOOST][T029][unauth blocked]")
-	DO EQ^MIOTASSERT($GET(OBJ("auth","providers","local","enabled")),1,"[MIOOST][T029][local provider]")
-	DO EQ^MIOTASSERT($GET(OBJ("auth","providers","framework","enabled")),1,"[MIOOST][T029][framework provider]")
-	DO EQ^MIOTASSERT($GET(OBJ("routes","auditExport")),"/api/mioos/auth/audit/export","[MIOOST][T029][audit export route]")
-	DO EQ^MIOTASSERT($GET(OBJ("apps",11,"key")),"security-center","[MIOOST][T029][security app]")
-	DO EQ^MIOTASSERT($GET(OBJ("windows",11,"appKey")),"security-center","[MIOOST][T029][security window]")
-	KILL ERR
-	DO EQ^MIOTASSERT($$GUESTSIGNIN^MIOOSAUTH(.CONF,.TOKEN,.ERR),0,"[MIOOST][T029][guest disabled auth]")
-	DO EQ^MIOTASSERT($GET(ERR("error")),"guest_login_disabled","[MIOOST][T029][guest disabled reason]")
-	DO OK^MIOTASSERT($$SIGNIN^MIOOSAUTH(.CONF,"admin","admin123!",.TOKEN,.ERR),"[MIOOST][T029][signin admin]")
-	DO OK^MIOTASSERT($$COUNT^MIOOSAUD()>0,"[MIOOST][T029][audit count]")
-	QUIT
-	;
+		NEW CONF,STATE,REQ,CTX,ERR,IN,OUT,HOME
+		DO RESET
+		DO CONFDEF^MIOOS(.CONF)
+		DO INIT^MIOOS(.CONF)
+		DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T029][load]")
+		SET HOME=$$HOMEID^MIOOSFS()
+		KILL IN,OUT,ERR
+		SET IN("attributes","shared")=1
+		SET IN("sharing","scope")="everyone"
+		SET IN("attributes","readOnly")=1
+		DO OK^MIOTASSERT($$SETMETA^MIOOSFS(.STATE,HOME,.IN,.OUT,.ERR),"[MIOOST][T029][setmeta]")
+		DO EQ^MIOTASSERT(+$GET(^MIO("MIOOS","FS","META",HOME,"shared")),1,"[MIOOST][T029][shared flag]")
+		DO EQ^MIOTASSERT($GET(^MIO("MIOOS","FS","META",HOME,"shareScope")),"everyone","[MIOOST][T029][share scope]")
+		DO EQ^MIOTASSERT(+$GET(^MIO("MIOOS","FS","META",HOME,"readOnly")),1,"[MIOOST][T029][read only flag]")
+		QUIT
+		;
 T030
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-security-center-window=""1"""),"[MIOOST][T030][security window token]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","refreshSecurityCenter"),"[MIOOST][T030][refresh security method]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","exportSecurityAudit"),"[MIOOST][T030][export security method]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","auth.report"),"[MIOOST][T030][ws auth report]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","auth.audit"),"[MIOOST][T030][ws auth audit]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","AUDITX(DEV,CONF,REQ,CTX)"),"[MIOOST][T030][audit export handler]")
-	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 24 — Typed authentication, local/framework auditability, and HIPAA reportability"),"[MIOOST][T030][llm roi24]")
-	QUIT
-	;
+		DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","win.appKey === 'folder-properties'"),"[MIOOST][T030][folder properties surface]")
+		DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","Customize this folder"),"[MIOOST][T030][customize folder ui]")
+		DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","saveFolderPropertiesWindow"),"[MIOOST][T030][save properties method]")
+		DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","fs.setmeta"),"[MIOOST][T030][setmeta client command]")
+		QUIT
+		;
 T031
 	NEW CONF,REQ,CTX,STATE,ERR,JSON,OBJ,PAY,TOKEN,TOKEN2,SID,FOUND,I
 	DO RESET
@@ -682,43 +656,24 @@ T034
 	;
 	;
 T035
-	NEW CONF,REQ,CTX,STATE,ERR,JSON,OBJ,PAY
-	DO RESET
-	DO CONFDEF^MIOOS(.CONF)
-	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T035][load]")
-	SET PAY="{""event"":""desktop.command"",""requestId"":""dbg-1"",""command"":""debug.snapshot""}"
-	DO OK^MIOTASSERT($$COMMANDJSON^MIOOSWS(.CONF,.REQ,.CTX,.STATE,PAY,.JSON,.ERR),"[MIOOST][T035][debug snapshot]")
-	DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T035][decode]")
-	DO EQ^MIOTASSERT($GET(OBJ("event")),"desktop.result","[MIOOST][T035][event]")
-	DO EQ^MIOTASSERT($GET(OBJ("command")),"debug.snapshot","[MIOOST][T035][command]")
-	DO EQ^MIOTASSERT($GET(OBJ("debug","routes","viewCommand")),"view.refresh","[MIOOST][T035][view command]")
-	DO EQ^MIOTASSERT(+$GET(OBJ("debug","transport","diagnosticsEnabled")),1,"[MIOOST][T035][diagnostics enabled]")
-	DO EQ^MIOTASSERT(+$GET(OBJ("debug","counts","apps"))>0,1,"[MIOOST][T035][apps count]")
-	DO EQ^MIOTASSERT($GET(OBJ("debug","debug","commands",10)),"debug.snapshot","[MIOOST][T035][command registry]")
-	QUIT
-	;
+		NEW CONF,REQ,CTX,STATE,BOOT,ERR
+		DO RESET
+		DO CONFDEF^MIOOS(.CONF)
+		DO INIT^MIOOS(.CONF)
+		DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T035][load]")
+		DO BOOTARY^MIOOSST(.STATE,.CONF,.BOOT)
+		DO EQ^MIOTASSERT(+$GET(BOOT("desktop","moduleSystem","enabled")),0,"[MIOOST][T035][modules disabled]")
+		DO EQ^MIOTASSERT(+$GET(BOOT("desktop","debugCenter","enabled")),0,"[MIOOST][T035][debug disabled]")
+		DO EQ^MIOTASSERT(+$GET(BOOT("desktop","moduleSystem","appCatalogEnabled")),0,"[MIOOST][T035][catalog disabled]")
+		QUIT
+		;
 T036
-	NEW CONF,REQ,CTX,STATE,ERR,JSON,OBJ
-	DO RESET
-	DO CONFDEF^MIOOS(.CONF)
-	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T036][load]")
-	SET JSON=$$BOOTJSON^MIOOSST(.STATE,.CONF)
-	DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T036][decode]")
-	DO EQ^MIOTASSERT(+$GET(OBJ("desktop","debugCenter","enabled")),1,"[MIOOST][T036][debug center enabled]")
-	DO EQ^MIOTASSERT($GET(OBJ("routes","debugSnapshotCommand")),"debug.snapshot","[MIOOST][T036][debug route]")
-	DO EQ^MIOTASSERT($GET(OBJ("desktop","moduleSystem","debugAppKey")),"debug-center","[MIOOST][T036][debug app key]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-debug-center-window=""1"""),"[MIOOST][T036][debug window token]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","refreshDebugCenter"),"[MIOOST][T036][refresh debug method]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","pushDebugEvent"),"[MIOOST][T036][push event method]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","clearDebugEvents"),"[MIOOST][T036][clear event method]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","debugCommandRows"),"[MIOOST][T036][command rows method]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_ws.js","pushDebugEvent('socket.message'"),"[MIOOST][T036][socket message debug]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","debug.snapshot"),"[MIOOST][T036][ws debug snapshot]")
-	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 27 — Debug Center and developer tools"),"[MIOOST][T036][llm roi27]")
-	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","ROI 27 — Debug Center and developer tools"),"[MIOOST][T036][docs roi27]")
-	QUIT
-	;
-	;
+		DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","taskbarGroups"),"[MIOOST][T036][taskbar groups]")
+		DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","taskbarOverflowGroups"),"[MIOOST][T036][taskbar overflow]")
+		DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_wm.js","application/x-mioos-item"),"[MIOOST][T036][drag payload]")
+		DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_wm.js","fs.copy"),"[MIOOST][T036][copy on ctrl drag]")
+		QUIT
+		;
 T037
 	NEW CONF,EP
 	DO RESET
@@ -1013,29 +968,21 @@ T050
 
 	;
 T051
-	NEW CONF,REQ,CTX,STATE,BOOT,ERR
-	DO RESET
-	DO CONFDEF^MIOOS(.CONF)
-	DO INIT^MIOOS(.CONF)
-	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T051][load]")
-	DO BOOTARY^MIOOSST(.STATE,.CONF,.BOOT)
-	DO EQ^MIOTASSERT(+$GET(BOOT("desktop","themeSystem","version")),2,"[MIOOST][T051][theme system version]")
-	DO EQ^MIOTASSERT($GET(BOOT("desktop","themeSystem","editor")),"theme-studio","[MIOOST][T051][theme editor]")
-	DO EQ^MIOTASSERT($GET(BOOT("desktop","themeSystem","densityOptions",2)),"comfortable","[MIOOST][T051][density option]")
-	DO EQ^MIOTASSERT(+$GET(BOOT("desktop","shellSurfaces","themeStudio")),1,"[MIOOST][T051][theme studio surface]")
-	DO EQ^MIOTASSERT(+$GET(BOOT("desktop","shellSurfaces","explorer")),1,"[MIOOST][T051][explorer surface]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","setShellTheme"),"[MIOOST][T051][set shell theme]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","setDesktopDensity"),"[MIOOST][T051][set density]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","pauseAllTransfers"),"[MIOOST][T051][pause all transfers]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-shell-quickthemes"),"[MIOOST][T051][quick theme ui]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","contrast-dark"),"[MIOOST][T051][contrast preset token]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-shell-surface"),"[MIOOST][T051][shell surface css]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","contrast-dark"),"[MIOOST][T051][contrast dark css]")
-	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 52 — theme system 2.0 and unified shell surfaces"),"[MIOOST][T051][llm roi52]")
-	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","ROI 52 — theme system 2.0 and unified shell surfaces"),"[MIOOST][T051][docs roi52]")
-	QUIT
-
-	;
+		NEW CONF,REQ,CTX,STATE,BOOT,ERR
+		DO RESET
+		DO CONFDEF^MIOOS(.CONF)
+		DO INIT^MIOOS(.CONF)
+		DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T051][load]")
+		DO BOOTARY^MIOOSST(.STATE,.CONF,.BOOT)
+		DO EQ^MIOTASSERT(+$GET(BOOT("desktop","themeSystem","version")),3,"[MIOOST][T051][theme system version]")
+		DO EQ^MIOTASSERT($GET(BOOT("desktop","themeSystem","editor")),"customize","[MIOOST][T051][theme editor]")
+		DO EQ^MIOTASSERT(+$GET(BOOT("desktop","shellSurfaces","customize")),1,"[MIOOST][T051][customize surface]")
+		DO EQ^MIOTASSERT(+$GET(BOOT("desktop","shellSurfaces","folderProperties")),1,"[MIOOST][T051][folder properties surface]")
+		DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","Device previews"),"[MIOOST][T051][device previews ui]")
+		DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","classic-horizon-light"),"[MIOOST][T051][horizon preset token]")
+		DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","setShellTheme"),"[MIOOST][T051][set shell theme]")
+		QUIT
+		;
 T052
 	NEW CONF,REQ,CTX,STATE,BOOT,ERR
 	DO RESET
@@ -1062,32 +1009,18 @@ T052
 
 	;
 T053
-	NEW CONF,REQ,CTX,STATE,BOOT,ERR
-	DO RESET
-	DO CONFDEF^MIOOS(.CONF)
-	DO INIT^MIOOS(.CONF)
-	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T053][load]")
-	DO BOOTARY^MIOOSST(.STATE,.CONF,.BOOT)
-	DO EQ^MIOTASSERT($GET(BOOT("desktop","appSurfaceModel")),"shell-standard-actions","[MIOOST][T053][app surface model]")
-	DO EQ^MIOTASSERT(+$GET(BOOT("desktop","appActions","confirmBeforeDestructive")),1,"[MIOOST][T053][confirm destructive]")
-	DO EQ^MIOTASSERT(+$GET(BOOT("desktop","appActions","notifyOnAdminActions")),1,"[MIOOST][T053][notify admin actions]")
-	DO EQ^MIOTASSERT(+$GET(BOOT("desktop","appActions","copyExportsToClipboard")),1,"[MIOOST][T053][copy exports]")
-	DO EQ^MIOTASSERT(+$GET(BOOT("desktop","appActions","moduleNotesSessionLocal")),1,"[MIOOST][T053][module notes session local]")
-	DO EQ^MIOTASSERT(+$GET(BOOT("desktop","shellSurfaces","moduleWindows")),1,"[MIOOST][T053][module windows surface]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","Copy summary"),"[MIOOST][T053][copy summary ui]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","Copy manifest"),"[MIOOST][T053][copy manifest ui]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","Clear telemetry"),"[MIOOST][T053][clear telemetry ui]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","Clear note"),"[MIOOST][T053][clear note ui]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","copyTransportDiagnostics"),"[MIOOST][T053][copy diagnostics method]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","copySecuritySummary"),"[MIOOST][T053][copy security method]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","copyModuleCatalogManifest"),"[MIOOST][T053][copy catalog method]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","clearModuleWindowNotes"),"[MIOOST][T053][clear notes method]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","copyTextToClipboard"),"[MIOOST][T053][clipboard helper]")
-	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 54 — shell-standard app actions and built-in app polish"),"[MIOOST][T053][llm roi54]")
-	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","ROI 54 — shell-standard app actions and built-in app polish"),"[MIOOST][T053][docs roi54]")
-	QUIT
-
-	;
+		NEW CONF,REQ,CTX,STATE,BOOT,ERR
+		DO RESET
+		DO CONFDEF^MIOOS(.CONF)
+		DO INIT^MIOOS(.CONF)
+		DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T053][load]")
+		DO BOOTARY^MIOOSST(.STATE,.CONF,.BOOT)
+		DO EQ^MIOTASSERT(+$GET(BOOT("desktop","shellSurfaces","moduleWindows")),0,"[MIOOST][T053][module windows removed]")
+		DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","openFolderPropertiesWindow"),"[MIOOST][T053][folder properties method]")
+		DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","activateTaskGroup"),"[MIOOST][T053][activate task group]")
+		DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","copyTextToClipboard"),"[MIOOST][T053][clipboard helper]")
+		QUIT
+		;
 T054
 	NEW CONF,REQ,CTX,STATE,BOOT,ERR,OUT,JSON,OBJ,PAY,UP,STATUS
 	DO RESET

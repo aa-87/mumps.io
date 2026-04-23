@@ -21,6 +21,7 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","route","fsWrite"))="" SET CONF("mioos","route","fsWrite")="/api/mioos/fs/write"
 	IF $GET(CONF("mioos","route","fsMkdir"))="" SET CONF("mioos","route","fsMkdir")="/api/mioos/fs/mkdir"
 	IF $GET(CONF("mioos","route","fsMeta"))="" SET CONF("mioos","route","fsMeta")="/api/mioos/fs/meta"
+	IF $GET(CONF("mioos","route","fsSetMeta"))="" SET CONF("mioos","route","fsSetMeta")="/api/mioos/fs/setmeta"
 	IF $GET(CONF("mioos","route","fsRename"))="" SET CONF("mioos","route","fsRename")="/api/mioos/fs/rename"
 	IF $GET(CONF("mioos","route","fsMove"))="" SET CONF("mioos","route","fsMove")="/api/mioos/fs/move"
 	IF $GET(CONF("mioos","route","fsDelete"))="" SET CONF("mioos","route","fsDelete")="/api/mioos/fs/delete"
@@ -35,7 +36,7 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","brand","title"))="" SET CONF("mioos","brand","title")="MIOOS"
 	IF $GET(CONF("mioos","brand","subtitle"))="" SET CONF("mioos","brand","subtitle")="MUMPS-powered web desktop shell"
 	IF $GET(CONF("mioos","i18n","default"))="" SET CONF("mioos","i18n","default")="en"
-	IF $GET(CONF("mioos","desktop","theme"))="" SET CONF("mioos","desktop","theme")="foundation-light"
+	IF $GET(CONF("mioos","desktop","theme"))="" SET CONF("mioos","desktop","theme")="classic-horizon-light"
 	IF $GET(CONF("mioos","desktop","wallpaper"))="" SET CONF("mioos","desktop","wallpaper")="aurora"
 	IF $GET(CONF("mioos","desktop","density"))="" SET CONF("mioos","desktop","density")="comfortable"
 	IF $GET(CONF("mioos","desktop","fontFamily"))="" SET CONF("mioos","desktop","fontFamily")="Segoe UI"
@@ -46,11 +47,11 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","desktop","transport","errorEvent"))="" SET CONF("mioos","desktop","transport","errorEvent")="desktop.error"
 	IF $GET(CONF("mioos","desktop","transport","model"))="" SET CONF("mioos","desktop","transport","model")="core-websocket-plus-app-websockets"
 	IF $GET(CONF("mioos","desktop","themeMode"))="" SET CONF("mioos","desktop","themeMode")="light"
-	IF $GET(CONF("mioos","desktop","themeSystem","editor"))="" SET CONF("mioos","desktop","themeSystem","editor")="theme-studio"
+	IF $GET(CONF("mioos","desktop","themeSystem","editor"))="" SET CONF("mioos","desktop","themeSystem","editor")="customize"
 	IF $GET(CONF("mioos","desktop","themeSystem","persistence"))="" SET CONF("mioos","desktop","themeSystem","persistence")="localstorage-applied-profile"
 	IF $GET(CONF("mioos","desktop","themeSystem","liveApply"))="" SET CONF("mioos","desktop","themeSystem","liveApply")=1
 	IF $GET(CONF("mioos","desktop","themeSystem","quickSwitch"))="" SET CONF("mioos","desktop","themeSystem","quickSwitch")=1
-	IF $GET(CONF("mioos","desktop","themeSystem","version"))="" SET CONF("mioos","desktop","themeSystem","version")=2
+	IF $GET(CONF("mioos","desktop","themeSystem","version"))="" SET CONF("mioos","desktop","themeSystem","version")=3
 	IF $GET(CONF("mioos","desktop","windowPersistence"))="" SET CONF("mioos","desktop","windowPersistence")="localstorage-open-window-layout"
 	IF $GET(CONF("mioos","desktop","desktopLayoutPersistence"))="" SET CONF("mioos","desktop","desktopLayoutPersistence")="localstorage-icon-layout"
 	IF $GET(CONF("mioos","desktop","accessibility","persistence"))="" SET CONF("mioos","desktop","accessibility","persistence")="localstorage-shell-accessibility"
@@ -68,7 +69,7 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","desktop","appActions","notifyOnAdminActions"))="" SET CONF("mioos","desktop","appActions","notifyOnAdminActions")=1
 	IF $GET(CONF("mioos","desktop","appActions","copyExportsToClipboard"))="" SET CONF("mioos","desktop","appActions","copyExportsToClipboard")=1
 	IF $GET(CONF("mioos","desktop","appActions","moduleNotesSessionLocal"))="" SET CONF("mioos","desktop","appActions","moduleNotesSessionLocal")=1
-	IF $GET(CONF("mioos","desktop","shellSurfaces","moduleWindows"))="" SET CONF("mioos","desktop","shellSurfaces","moduleWindows")=1
+	IF $GET(CONF("mioos","desktop","shellSurfaces","moduleWindows"))="" SET CONF("mioos","desktop","shellSurfaces","moduleWindows")=0
 	IF $GET(CONF("mioos","desktop","chrome"))="" SET CONF("mioos","desktop","chrome")="shell-foundation"
 	IF $GET(CONF("mioos","desktop","taskbarStyle"))="" SET CONF("mioos","desktop","taskbarStyle")="taskbar-foundation"
 	IF $GET(CONF("mioos","desktop","startMenuStyle"))="" SET CONF("mioos","desktop","startMenuStyle")="launcher-foundation"
@@ -79,7 +80,7 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","desktop","windowStatusBadges"))="" SET CONF("mioos","desktop","windowStatusBadges")=1
 		IF $GET(CONF("mioos","desktop","workspaces","enabled"))="" SET CONF("mioos","desktop","workspaces","enabled")=1
 		IF $GET(CONF("mioos","desktop","workspaces","persistence"))="" SET CONF("mioos","desktop","workspaces","persistence")="localstorage-current-workspace"
-		IF $GET(CONF("mioos","desktop","workspaces","defaultKey"))="" SET CONF("mioos","desktop","workspaces","defaultKey")="workspace-main"
+		IF $GET(CONF("mioos","desktop","workspaces","defaultKey"))="" SET CONF("mioos","desktop","workspaces","defaultKey")="workspace-files"
 		IF $GET(CONF("mioos","desktop","workspaces","showInTaskbar"))="" SET CONF("mioos","desktop","workspaces","showInTaskbar")=1
 		IF $GET(CONF("mioos","desktop","workspaces","followMovedWindow"))="" SET CONF("mioos","desktop","workspaces","followMovedWindow")=1
 		IF $GET(CONF("mioos","desktop","accessibility","keyboardShortcuts","previousWorkspace"))="" SET CONF("mioos","desktop","accessibility","keyboardShortcuts","previousWorkspace")="Ctrl+Alt+ArrowLeft"
@@ -111,7 +112,7 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","auth","management","accountAdminEnabled"))="" SET CONF("mioos","auth","management","accountAdminEnabled")=1
 	IF $GET(CONF("mioos","auth","management","sessionLimit"))="" SET CONF("mioos","auth","management","sessionLimit")=20
 	IF $GET(CONF("mioos","auth","management","accountLimit"))="" SET CONF("mioos","auth","management","accountLimit")=20
-	IF $GET(CONF("mioos","debug","enabled"))="" SET CONF("mioos","debug","enabled")=1
+	IF $GET(CONF("mioos","debug","enabled"))="" SET CONF("mioos","debug","enabled")=0
 	IF $GET(CONF("mioos","debug","eventLimit"))="" SET CONF("mioos","debug","eventLimit")=50
 	IF $GET(CONF("mioos","debug","snapshotVersion"))="" SET CONF("mioos","debug","snapshotVersion")=1
 	IF $GET(CONF("mioos","audit","enabled"))="" SET CONF("mioos","audit","enabled")=1
@@ -227,6 +228,7 @@ REG(CONF)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsWrite")),"FSWRITE^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsMkdir")),"FSMKDIR^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsMeta")),"FSMETA^MIOOSAPI",.PROT)
+	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsSetMeta")),"FSSETMETA^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsRename")),"FSRENAME^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsMove")),"FSMOVE^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsDelete")),"FSDELETE^MIOOSAPI",.PROT)
@@ -257,6 +259,7 @@ REG(CONF)
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","fsWrite")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","fsMkdir")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","fsMeta")))
+	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","fsSetMeta")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","fsRename")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","fsMove")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","fsDelete")))

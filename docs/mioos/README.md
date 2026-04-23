@@ -1,3 +1,54 @@
+# MIOOS
+
+## 2026 Product Reset
+
+MIOOS is a **secure application workspace and operating shell for MUMPS modernization**. It is designed to host modernized legacy workflows, internal tools, terminal access, file operations, and controlled administrative experiences in enterprise deployments.
+
+### What MIOOS is
+- A runtime shell for serious MUMPS applications.
+- A file and transfer workspace rooted in **Home**.
+- A token-driven customization platform that can emulate multiple OS-style paradigms with original assets.
+- A platform designed for secure, auditable, least-privilege deployments.
+
+### What MIOOS is not
+- Not a generic browser toy desktop.
+- Not a bundle of unrelated demo utilities.
+- Not automatically HIPAA compliant. It is a HIPAA-ready platform architecture when implemented and operated correctly.
+
+### First-class surfaces
+- Home
+- Terminal
+- Transfers
+- Customize
+- Folder Properties
+
+### Product changes in this reset
+- Home replaces My Computer/My Documents as the main user root.
+- Folder windows now support back, forward, up, address navigation, view modes, sorting, properties, and per-folder customization.
+- The taskbar groups windows and provides overflow handling.
+- The start menu is now a focused workspace launcher instead of a crowded demo panel.
+- Theme Studio is replaced in-product by Customize.
+- Notes, Ops Center, App Catalog, Control Panel, Security Center, Debug Center, and Diagnostics are removed from the active shell experience.
+
+### Architecture highlights
+- Server-authored boot contract preserved.
+- Websocket-first command transport preserved.
+- VFS metadata extended for attributes, sharing, folder icon/background, and view/sort persistence.
+- `7.scoped.css` removed from active runtime loading.
+- `mioos_reset.css` introduced as the focused visual layer for rewritten shell surfaces.
+
+### New architecture docs
+- `Architecture_Overview.md`
+- `Theme_System.md`
+- `VFS_Metadata_Model.md`
+- `Drag_Drop_Rules.md`
+- `Transfer_Manager.md`
+- `Migration_Notes.md`
+
+Legacy ROI notes remain below for implementation history.
+
+---
+
 # MIOOS README
 
 MIOOS is a MUMPS-powered desktop shell for the MIO web stack.

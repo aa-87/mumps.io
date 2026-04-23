@@ -34,6 +34,7 @@
         fsUploadCommit: '/api/mioos/fs/upload/commit',
         fsUploadAbort: '/api/mioos/fs/upload/abort',
         fsBlob: '/api/mioos/fs/blob',
+        fsSetMeta: '/api/mioos/fs/setmeta',
         debugSnapshotCommand: 'debug.snapshot',
         websocket: '/ws/mioos',
         terminalWebsocket: '/ws/mioos/terminal',
@@ -42,7 +43,7 @@
         commandErrorEvent: 'desktop.error'
       },
       desktop: {
-        themeKey: 'foundation-light',
+        themeKey: 'classic-horizon-light',
         wallpaper: 'aurora',
         density: 'comfortable',
         fontFamily: 'Segoe UI',
@@ -76,8 +77,8 @@
           mediaStreamStrategy: 'range-kickstart-http-blob-partial-window',
           textPreviewStrategy: 'windowed-websocket-range-read'
         },
-        moduleSystem: { enabled: true, launcher: 'desktop-icons-and-menu', manifestVersion: 1, appCatalogEnabled: true, appCatalogKey: 'app-catalog', dynamicWindows: true, debugAppKey: 'debug-center' },
-        debugCenter: { enabled: true, eventLimit: 50, snapshotVersion: 1 },
+        moduleSystem: { enabled: false, launcher: 'desktop-icons-and-menu', manifestVersion: 1, appCatalogEnabled: false, appCatalogKey: '', dynamicWindows: false, debugAppKey: '' },
+        debugCenter: { enabled: false, eventLimit: 50, snapshotVersion: 1 },
         icons: {
           enabled: true,
           draggable: true,
@@ -88,7 +89,7 @@
         contextMenu: {
           desktop: true,
           icon: true,
-          verbs: ['refresh', 'rearrange', 'sort-name', 'sort-type', 'size-small', 'size-medium', 'size-large', 'personalize', 'control-panel', 'open']
+          verbs: ['refresh', 'rearrange', 'sort-name', 'sort-type', 'size-small', 'size-medium', 'size-large', 'customize', 'open']
         },
         windowing: {
           engine: 'mioos-native-vue-css',
@@ -107,27 +108,26 @@
           statusBadges: 1,
           snapShortcuts: { left: 'Alt+Shift+ArrowLeft', right: 'Alt+Shift+ArrowRight', maximize: 'Alt+Shift+ArrowUp', restore: 'Alt+Shift+ArrowDown' }
         },
-        themeSystem: { version: 2, editor: 'theme-studio', persistence: 'localstorage-applied-profile', liveApply: true, quickSwitch: true, densityOptions: ['compact', 'comfortable', 'spacious'] },
+        themeSystem: { version: 3, editor: 'customize', persistence: 'localstorage-applied-profile', liveApply: true, quickSwitch: true, densityOptions: ['compact', 'comfortable', 'spacious'] },
         appSurfaceModel: 'shell-standard-actions',
         appActions: { confirmBeforeDestructive: true, notifyOnAdminActions: true, copyExportsToClipboard: true, moduleNotesSessionLocal: true },
-        shellSurfaces: { explorer: true, themeStudio: true, transfers: true, diagnostics: true, securityCenter: true, appCatalog: true, debugCenter: true, notifications: true, dialogs: true, windowSwitcher: true, moduleWindows: true, workspacePager: true },
+        shellSurfaces: { explorer: true, customize: true, folderProperties: true, transfers: true, notifications: true, dialogs: true, windowSwitcher: true, moduleWindows: false, workspacePager: true },
         notifications: { model: 'toast-and-tray', stackLimit: 6, tray: true },
         dialogs: { model: 'shell-standard', confirm: true, input: true },
-        shortcuts: { showDesktop: 'Meta+D', windowSwitcher: 'Alt+Tab', closeFocusedWindow: 'Shift+Escape', openDiagnostics: 'Ctrl+Shift+Escape', snapLeft: 'Alt+Shift+ArrowLeft', snapRight: 'Alt+Shift+ArrowRight', maximizeFocusedWindow: 'Alt+Shift+ArrowUp', restoreFocusedWindow: 'Alt+Shift+ArrowDown', previousWorkspace: 'Ctrl+Alt+ArrowLeft', nextWorkspace: 'Ctrl+Alt+ArrowRight', moveFocusedWindowPreviousWorkspace: 'Ctrl+Alt+Shift+ArrowLeft', moveFocusedWindowNextWorkspace: 'Ctrl+Alt+Shift+ArrowRight' },
+        shortcuts: { showDesktop: 'Meta+D', windowSwitcher: 'Alt+Tab', closeFocusedWindow: 'Shift+Escape', snapLeft: 'Alt+Shift+ArrowLeft', snapRight: 'Alt+Shift+ArrowRight', maximizeFocusedWindow: 'Alt+Shift+ArrowUp', restoreFocusedWindow: 'Alt+Shift+ArrowDown', previousWorkspace: 'Ctrl+Alt+ArrowLeft', nextWorkspace: 'Ctrl+Alt+ArrowRight', moveFocusedWindowPreviousWorkspace: 'Ctrl+Alt+Shift+ArrowLeft', moveFocusedWindowNextWorkspace: 'Ctrl+Alt+Shift+ArrowRight' },
         persistence: { desktopLayout: 'localstorage-desktop-layout', windowLayout: 'localstorage-window-layout', authWindow: 'localstorage-auth-window-frame', themeProfile: 'localstorage-applied-profile' },
-        workspaces: { enabled: true, model: 'virtual-desktop-pager', persistence: 'localstorage-current-workspace', currentKey: 'workspace-main', showInTaskbar: true, followMovedWindow: true, switchShortcuts: { previous: 'Ctrl+Alt+ArrowLeft', next: 'Ctrl+Alt+ArrowRight' }, moveShortcuts: { previous: 'Ctrl+Alt+Shift+ArrowLeft', next: 'Ctrl+Alt+Shift+ArrowRight' }, items: [
-          { key: 'workspace-main', title: 'Desktop', icon: '⌂', description: 'Primary shell workspace for everyday apps and the desktop surface', ordinal: 1 },
-          { key: 'workspace-files', title: 'Files', icon: '📁', description: 'Explorer, transfers, and file-focused windows', ordinal: 2 },
-          { key: 'workspace-operations', title: 'Operations', icon: '📈', description: 'Security, diagnostics, and operational control surfaces', ordinal: 3 },
-          { key: 'workspace-studio', title: 'Studio', icon: '🎨', description: 'Theme work, modules, and catalog windows', ordinal: 4 }
+        workspaces: { enabled: true, model: 'virtual-desktop-pager', persistence: 'localstorage-current-workspace', currentKey: 'workspace-files', showInTaskbar: true, followMovedWindow: true, switchShortcuts: { previous: 'Ctrl+Alt+ArrowLeft', next: 'Ctrl+Alt+ArrowRight' }, moveShortcuts: { previous: 'Ctrl+Alt+Shift+ArrowLeft', next: 'Ctrl+Alt+Shift+ArrowRight' }, items: [
+          { key: 'workspace-main', title: 'Workspace', icon: '⌂', description: 'Primary runtime workspace', ordinal: 1 },
+          { key: 'workspace-files', title: 'Files', icon: '📁', description: 'Folders, transfers, and file operations', ordinal: 2 },
+          { key: 'workspace-customize', title: 'Customize', icon: '🎛', description: 'Shell design and theming workbench', ordinal: 3 }
         ] },
         themes: [
-          { key: 'foundation-light', title: 'Foundation Light', family: 'Foundation', mode: 'light', wallpaper: 'aurora', accent: '#2f6fed', taskbar: '#e8eef8' },
-          { key: 'foundation-dark', title: 'Foundation Dark', family: 'Foundation', mode: 'dark', wallpaper: 'aurora-night', accent: '#7db4ff', taskbar: '#111a28' },
-          { key: 'glass-light', title: 'Glass Light', family: 'Glass', mode: 'light', wallpaper: 'aurora', accent: '#4687ff', taskbar: '#dce7f7' },
-          { key: 'glass-dark', title: 'Glass Dark', family: 'Glass', mode: 'dark', wallpaper: 'aurora-night', accent: '#8ac5ff', taskbar: '#0f1724' },
-          { key: 'contrast-light', title: 'Contrast Light', family: 'Contrast', mode: 'light', wallpaper: 'solid-graphite', accent: '#1142aa', taskbar: '#ffffff' },
-          { key: 'contrast-dark', title: 'Contrast Dark', family: 'Contrast', mode: 'dark', wallpaper: 'solid-graphite', accent: '#ffd043', taskbar: '#0b1017' }
+          { key: 'classic-horizon-light', title: 'Classic Horizon Light', family: 'Horizon', mode: 'light', wallpaper: 'aurora', accent: '#2f6fed', taskbar: '#d9e5f7' },
+          { key: 'classic-horizon-dark', title: 'Classic Horizon Dark', family: 'Horizon', mode: 'dark', wallpaper: 'aurora-night', accent: '#78aefc', taskbar: '#152235' },
+          { key: 'orchard-light', title: 'Orchard Light', family: 'Orchard', mode: 'light', wallpaper: 'paper-dawn', accent: '#4d7cff', taskbar: '#eef1f6' },
+          { key: 'orchard-dark', title: 'Orchard Dark', family: 'Orchard', mode: 'dark', wallpaper: 'paper-night', accent: '#93b0ff', taskbar: '#151923' },
+          { key: 'terra-light', title: 'Terra Light', family: 'Terra', mode: 'light', wallpaper: 'sunrise-grid', accent: '#d86337', taskbar: '#f2e7df' },
+          { key: 'terra-dark', title: 'Terra Dark', family: 'Terra', mode: 'dark', wallpaper: 'midnight-grid', accent: '#ffb087', taskbar: '#20161a' }
         ]
       },
       auth: { enabled: true, required: true, guestLoginEnabled: false, mode: 'local-session-required', unauthenticatedAccessAllowed: false, providers: { local: { enabled: true, loginMode: 'username-password', guestAllowed: false }, framework: { enabled: true, mode: 'mioauth-session-jwt', tokenType: 'jwt', sessionCookie: 'mioos_auth' } }, lockout: { threshold: 5, minutes: 15 }, passwordPolicy: { minLength: 12, requireUpper: true, requireLower: true, requireDigit: true, requireSymbol: true, maxAgeDays: 90, warnDays: 14, changeTokenMinutes: 15 }, audit: { enabled: true, retainDays: 365, reportLimit: 20, reportWindowDays: 30, scope: 'self' }, management: { sessionAdminEnabled: true, accountAdminEnabled: true, sessionLimit: 20, accountLimit: 20, adminRole: 'admin' } },
@@ -184,7 +184,7 @@
       summary: {
         headline: 'Production shell workspace',
         subheadline: '',
-        theme: 'foundation-light',
+        theme: 'classic-horizon-light',
         launcherLabel: 'Menu',
         windowManager: 'mioos-native-vue-css',
         authMode: 'anonymous',

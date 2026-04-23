@@ -1,3 +1,30 @@
+# MIOOS and HIPAA-Ready Architecture
+
+## 2026 Product Reset
+
+MIOOS is designed to support **HIPAA-regulated deployments when implemented and operated correctly**. It must not be described as automatically HIPAA compliant.
+
+### Platform capabilities that support regulated deployments
+- Server-authored runtime contract
+- Least-privilege VFS access checks
+- Auditable session and auth flows
+- Folder-level sharing metadata with explicit scope
+- Durable audit hooks for sensitive operations
+- Upload and transfer lifecycle controls
+- Tokenized theming and shell controls without exposing protected data in styling state
+
+### Required deployment controls outside the product
+- Encryption at rest and in transit
+- Identity provider, MFA, and password policy decisions
+- Retention policy and log export strategy
+- Backup, restore, disaster recovery, and environment segregation
+- Administrative procedures, workforce training, and risk analysis
+
+### Product guidance
+Treat MIOOS as a secure, configurable platform component. Use deployer-controlled policy to finish the compliance posture.
+
+---
+
 # MIOOS HIPAA-Aware Technical Posture
 
 ## Important limitation

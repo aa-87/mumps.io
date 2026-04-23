@@ -1,0 +1,9 @@
+2026-04-23 00:10:04 watcher_start pid=521428 pattern=*.html
+{"ts":"2026-04-23 00:10:04","event":"add","file":"/home/aa/work/mumps.io/templates/layouts/mioos_shell.html"}
+{"ts":"2026-04-23 00:10:04","event":"add","file":"/home/aa/work/mumps.io/templates/layouts/plgd_layout.html"}
+{"ts":"2026-04-23 00:10:04","event":"add","file":"/home/aa/work/mumps.io/templates/pages/mioos_desktop.html"}
+{"ts":"2026-04-23 00:10:04","event":"add","file":"/home/aa/work/mumps.io/templates/pages/plgd_about.html"}
+{"ts":"2026-04-23 00:10:04","event":"add","file":"/home/aa/work/mumps.io/templates/pages/plgd_home.html"}
+{"ts":"2026-04-23 00:10:04","event":"add","file":"/home/aa/work/mumps.io/templates/pages/plgd_playground.html"}
+{"ts":"2026-04-23 00:10:04","event":"add","file":"/home/aa/work/mumps.io/templates/partials/ui_tpl_card_grid.html"}
+{"ts":"2026-04-23 00:10:04","event":"add","file":"/home/aa/work/mumps.io/templates/partials/ui_tpl_card_list.html"}

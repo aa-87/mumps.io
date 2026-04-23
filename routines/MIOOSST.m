@@ -72,6 +72,7 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("fsWritePath")=$GET(CONF("mioos","route","fsWrite"),"/api/mioos/fs/write")
 	SET STATE("fsMkdirPath")=$GET(CONF("mioos","route","fsMkdir"),"/api/mioos/fs/mkdir")
 	SET STATE("fsMetaPath")=$GET(CONF("mioos","route","fsMeta"),"/api/mioos/fs/meta")
+	SET STATE("fsSetMetaPath")=$GET(CONF("mioos","route","fsSetMeta"),"/api/mioos/fs/setmeta")
 	SET STATE("fsUploadBeginPath")=$GET(CONF("mioos","route","fsUploadBegin"),"/api/mioos/fs/upload/begin")
 	SET STATE("fsUploadChunkPath")=$GET(CONF("mioos","route","fsUploadChunk"),"/api/mioos/fs/upload/chunk")
 	SET STATE("fsUploadStatusPath")=$GET(CONF("mioos","route","fsUploadStatus"),"/api/mioos/fs/upload/status")
@@ -133,7 +134,7 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("commandErrorEvent")=$GET(CONF("mioos","desktop","transport","errorEvent"),"desktop.error")
 	SET STATE("transportModel")=$GET(CONF("mioos","desktop","transport","model"),"core-websocket-plus-app-websockets")
 	SET STATE("themeMode")=$GET(CONF("mioos","desktop","themeMode"),$SELECT($GET(CONF("mioos","desktop","theme"))["dark":"dark",1:"light"))
-	SET STATE("themeSystemEditor")=$GET(CONF("mioos","desktop","themeSystem","editor"),"theme-studio")
+	SET STATE("themeSystemEditor")=$GET(CONF("mioos","desktop","themeSystem","editor"),"customize")
 	SET STATE("themeSystemPersistence")=$GET(CONF("mioos","desktop","themeSystem","persistence"),"localstorage-applied-profile")
 	SET STATE("themeSystemLiveApply")=+$GET(CONF("mioos","desktop","themeSystem","liveApply"),1)
 	SET STATE("themeSystemQuickSwitch")=+$GET(CONF("mioos","desktop","themeSystem","quickSwitch"),1)
@@ -149,7 +150,7 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("windowStatusBadges")=+$GET(CONF("mioos","desktop","windowStatusBadges"),1)
 		SET STATE("workspacesEnabled")=+$GET(CONF("mioos","desktop","workspaces","enabled"),1)
 		SET STATE("workspacesPersistence")=$GET(CONF("mioos","desktop","workspaces","persistence"),"localstorage-current-workspace")
-		SET STATE("workspacesDefaultKey")=$GET(CONF("mioos","desktop","workspaces","defaultKey"),"workspace-main")
+		SET STATE("workspacesDefaultKey")=$GET(CONF("mioos","desktop","workspaces","defaultKey"),"workspace-files")
 		SET STATE("workspacesShowInTaskbar")=+$GET(CONF("mioos","desktop","workspaces","showInTaskbar"),1)
 		SET STATE("workspacesFollowMovedWindow")=+$GET(CONF("mioos","desktop","workspaces","followMovedWindow"),1)
 	SET STATE("windowSnapThreshold")=+$GET(CONF("mioos","desktop","windowSnapThreshold"),28)
@@ -169,15 +170,15 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("perfRenderBudgetMs")=16
 	SET STATE("perfPayloadMode")="tmp-global-safe"
 	SET STATE("perfTransport")="websocket-first-http-refresh"
-	SET STATE("moduleSystemEnabled")=+$GET(CONF("mioos","modules","enabled"),1)
-	SET STATE("debugEnabled")=+$GET(CONF("mioos","debug","enabled"),1)
+	SET STATE("moduleSystemEnabled")=0
+	SET STATE("debugEnabled")=0
 	SET STATE("debugEventLimit")=+$GET(CONF("mioos","debug","eventLimit"),50)
 	IF STATE("debugEventLimit")<10 SET STATE("debugEventLimit")=10
 	SET STATE("debugSnapshotVersion")=+$GET(CONF("mioos","debug","snapshotVersion"),1)
 	SET STATE("moduleManifestVersion")=+$GET(CONF("mioos","modules","manifestVersion"),1)
 	IF STATE("moduleManifestVersion")<1 SET STATE("moduleManifestVersion")=1
 	SET STATE("moduleLauncher")=$GET(CONF("mioos","modules","launcher"),"desktop-icons-and-menu")
-	SET STATE("moduleAppCatalogEnabled")=+$GET(CONF("mioos","modules","appCatalogEnabled"),1)
+	SET STATE("moduleAppCatalogEnabled")=0
 	SET STATE("moduleDynamicWindows")=+$GET(CONF("mioos","modules","dynamicWindows"),1)
 	DO LOADTERM^MIOOSTERM(.STATE,.CONF)
 		DO WORKSPACES(.STATE)
@@ -339,9 +340,9 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","moduleSystem","manifestVersion")=+$GET(STATE("moduleManifestVersion"),1)
 	SET OBJ("desktop","moduleSystem","appCatalogEnabled")=+$GET(STATE("moduleAppCatalogEnabled"),1)
 	SET OBJ("desktop","moduleSystem","dynamicWindows")=+$GET(STATE("moduleDynamicWindows"),1)
-	SET OBJ("desktop","moduleSystem","appCatalogKey")="app-catalog"
+	SET OBJ("desktop","moduleSystem","appCatalogKey")=""
 	SET OBJ("desktop","moduleSystem","moduleCount")=+$GET(STATE("moduleCount"),0)
-	SET OBJ("desktop","moduleSystem","debugAppKey")="debug-center"
+	SET OBJ("desktop","moduleSystem","debugAppKey")=""
 	SET OBJ("desktop","debugCenter","enabled")=+$GET(STATE("debugEnabled"),1)
 	SET OBJ("desktop","debugCenter","eventLimit")=+$GET(STATE("debugEventLimit"),50)
 	SET OBJ("desktop","debugCenter","snapshotVersion")=+$GET(STATE("debugSnapshotVersion"),1)
@@ -385,6 +386,7 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("routes","fsWrite")=$GET(STATE("fsWritePath"))
 	SET OBJ("routes","fsMkdir")=$GET(STATE("fsMkdirPath"))
 	SET OBJ("routes","fsMeta")=$GET(STATE("fsMetaPath"))
+	SET OBJ("routes","fsSetMeta")=$GET(STATE("fsSetMetaPath"))
 	SET OBJ("routes","fsUploadBegin")=$GET(STATE("fsUploadBeginPath"))
 	SET OBJ("routes","fsUploadChunk")=$GET(STATE("fsUploadChunkPath"))
 	SET OBJ("routes","fsUploadStatus")=$GET(STATE("fsUploadStatusPath"))
@@ -429,20 +431,17 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","contextMenu","verbs",5)="size-small"
 	SET OBJ("desktop","contextMenu","verbs",6)="size-medium"
 	SET OBJ("desktop","contextMenu","verbs",7)="size-large"
-	SET OBJ("desktop","contextMenu","verbs",8)="personalize"
-	SET OBJ("desktop","contextMenu","verbs",9)="control-panel"
-	SET OBJ("desktop","contextMenu","verbs",10)="open"
+	SET OBJ("desktop","contextMenu","verbs",8)="customize"
+	SET OBJ("desktop","contextMenu","verbs",9)="open"
+	SET OBJ("desktop","contextMenu","verbs",10)=""
 	SET OBJ("desktop","shellSurfaces","explorer")=1
-	SET OBJ("desktop","shellSurfaces","themeStudio")=1
+	SET OBJ("desktop","shellSurfaces","customize")=1
 	SET OBJ("desktop","shellSurfaces","transfers")=1
-	SET OBJ("desktop","shellSurfaces","diagnostics")=1
-	SET OBJ("desktop","shellSurfaces","securityCenter")=1
-	SET OBJ("desktop","shellSurfaces","appCatalog")=1
-	SET OBJ("desktop","shellSurfaces","debugCenter")=1
+	SET OBJ("desktop","shellSurfaces","folderProperties")=1
 	SET OBJ("desktop","shellSurfaces","notifications")=1
 	SET OBJ("desktop","shellSurfaces","dialogs")=1
 	SET OBJ("desktop","shellSurfaces","windowSwitcher")=1
-	SET OBJ("desktop","shellSurfaces","moduleWindows")=+$GET(CONF("mioos","desktop","shellSurfaces","moduleWindows"),1)
+	SET OBJ("desktop","shellSurfaces","moduleWindows")=0
 	SET OBJ("desktop","appSurfaceModel")=$GET(CONF("mioos","desktop","appSurfaceModel"),"shell-standard-actions")
 	SET OBJ("desktop","appActions","confirmBeforeDestructive")=+$GET(CONF("mioos","desktop","appActions","confirmBeforeDestructive"),1)
 	SET OBJ("desktop","appActions","notifyOnAdminActions")=+$GET(CONF("mioos","desktop","appActions","notifyOnAdminActions"),1)
@@ -457,7 +456,7 @@ BOOTARY(STATE,CONF,OBJ)
 		SET OBJ("desktop","workspaces","enabled")=+$GET(STATE("workspacesEnabled"),1)
 		SET OBJ("desktop","workspaces","model")="virtual-desktop-pager"
 		SET OBJ("desktop","workspaces","persistence")=$GET(STATE("workspacesPersistence"),"localstorage-current-workspace")
-		SET OBJ("desktop","workspaces","currentKey")=$GET(STATE("workspacesDefaultKey"),"workspace-main")
+		SET OBJ("desktop","workspaces","currentKey")=$GET(STATE("workspacesDefaultKey"),"workspace-files")
 		SET OBJ("desktop","workspaces","showInTaskbar")=+$GET(STATE("workspacesShowInTaskbar"),1)
 		SET OBJ("desktop","workspaces","followMovedWindow")=+$GET(STATE("workspacesFollowMovedWindow"),1)
 		SET OBJ("desktop","workspaces","switchShortcuts","previous")=$GET(CONF("mioos","desktop","accessibility","keyboardShortcuts","previousWorkspace"),"Ctrl+Alt+ArrowLeft")
@@ -475,7 +474,7 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","persistence","authWindow")="localstorage-auth-window-frame"
 	SET OBJ("desktop","accessibility","reducedMotionToggle")=1
 	SET OBJ("desktop","themeSystem","version")=+$GET(STATE("themeSystemVersion"),2)
-	SET OBJ("desktop","themeSystem","editor")=$GET(STATE("themeSystemEditor"),"theme-studio")
+	SET OBJ("desktop","themeSystem","editor")=$GET(STATE("themeSystemEditor"),"customize")
 	SET OBJ("desktop","themeSystem","persistence")=$GET(STATE("themeSystemPersistence"),"localstorage-applied-profile")
 	SET OBJ("desktop","themeSystem","liveApply")=+$GET(STATE("themeSystemLiveApply"),1)
 	SET OBJ("desktop","themeSystem","quickSwitch")=+$GET(STATE("themeSystemQuickSwitch"),1)
@@ -527,78 +526,29 @@ BOOTARY(STATE,CONF,OBJ)
 	QUIT
 	;
 APPS(STATE)
-	NEW CODE,N,I,KEY
+	NEW CODE
 	SET CODE=$GET(STATE("localeCode"),"en")
 	KILL STATE("apps")
-	SET STATE("apps",1,"key")="my-computer"
-	SET STATE("apps",1,"title")=$$TXT^MIOOSI18N(CODE,"app.my-computer.title","My Computer")
-	SET STATE("apps",1,"subtitle")=$$TXT^MIOOSI18N(CODE,"app.my-computer.subtitle","Browse drives, folders, and shell locations")
-	SET STATE("apps",1,"icon")="💻"
-	SET STATE("apps",1,"kind")="folder"
-	SET STATE("apps",2,"key")="documents"
-	SET STATE("apps",2,"title")=$$TXT^MIOOSI18N(CODE,"app.documents.title","My Documents")
-	SET STATE("apps",2,"subtitle")=$$TXT^MIOOSI18N(CODE,"app.documents.subtitle","Personal workspace documents")
-	SET STATE("apps",2,"icon")="📁"
-	SET STATE("apps",2,"kind")="folder"
-	SET STATE("apps",3,"key")="control-panel"
-	SET STATE("apps",3,"title")=$$TXT^MIOOSI18N(CODE,"app.control-panel.title","Control Panel")
-	SET STATE("apps",3,"subtitle")=$$TXT^MIOOSI18N(CODE,"app.control-panel.subtitle","Desktop settings and shell behavior")
-	SET STATE("apps",3,"icon")="🛠"
-	SET STATE("apps",3,"kind")="system"
-	SET STATE("apps",4,"key")="terminal"
-	SET STATE("apps",4,"title")=$$TXT^MIOOSI18N(CODE,"app.terminal.title","Terminal")
-	SET STATE("apps",4,"subtitle")=$$TXT^MIOOSI18N(CODE,"app.terminal.subtitle","Websocket-backed MUMPS terminal surface")
-	SET STATE("apps",4,"icon")=">_"
+	SET STATE("apps",1,"key")="home"
+	SET STATE("apps",1,"title")=$$TXT^MIOOSI18N(CODE,"app.home.title","Home")
+	SET STATE("apps",1,"subtitle")="Secure workspace for files, launchers, and application folders"
+	SET STATE("apps",1,"icon")="🏠"
+	SET STATE("apps",1,"kind")="explorer"
+	SET STATE("apps",2,"key")="terminal"
+	SET STATE("apps",2,"title")=$$TXT^MIOOSI18N(CODE,"app.terminal.title","Terminal")
+	SET STATE("apps",2,"subtitle")="Websocket-backed MUMPS terminal session"
+	SET STATE("apps",2,"icon")=">_"
+	SET STATE("apps",2,"kind")="tool"
+	SET STATE("apps",3,"key")="transfers"
+	SET STATE("apps",3,"title")="Transfers"
+	SET STATE("apps",3,"subtitle")="Operational transfer manager for uploads, downloads, and recovery"
+	SET STATE("apps",3,"icon")="⇅"
+	SET STATE("apps",3,"kind")="tool"
+	SET STATE("apps",4,"key")="customize"
+	SET STATE("apps",4,"title")="Customize"
+	SET STATE("apps",4,"subtitle")="Design tokens, shell presets, and device previews"
+	SET STATE("apps",4,"icon")="🎛"
 	SET STATE("apps",4,"kind")="tool"
-	SET STATE("apps",5,"key")="theme-studio"
-	SET STATE("apps",5,"title")="Theme Studio"
-	SET STATE("apps",5,"subtitle")="Customize wallpapers, colors, fonts, metrics, and shell recipes"
-	SET STATE("apps",5,"icon")="🎨"
-	SET STATE("apps",5,"kind")="tool"
-	SET STATE("apps",6,"key")="transfers"
-	SET STATE("apps",6,"title")="Transfers"
-	SET STATE("apps",6,"subtitle")="Uploads, downloads, queue activity, and progress"
-	SET STATE("apps",6,"icon")="⇅"
-	SET STATE("apps",6,"kind")="tool"
-	SET STATE("apps",7,"key")="diagnostics"
-	SET STATE("apps",7,"title")="Diagnostics"
-	SET STATE("apps",7,"subtitle")="Socket pool, transfer health, and session telemetry"
-	SET STATE("apps",7,"icon")="📈"
-	SET STATE("apps",7,"kind")="tool"
-	SET N=7
-	IF +$GET(STATE("moduleAppCatalogEnabled"),1)=1 DO
-	. SET N=N+1
-	. SET STATE("apps",N,"key")="app-catalog"
-	. SET STATE("apps",N,"title")=$$TXT^MIOOSI18N(CODE,"app.app-catalog.title","App Catalog")
-	. SET STATE("apps",N,"subtitle")=$$TXT^MIOOSI18N(CODE,"app.app-catalog.subtitle","Installed modules, launch policy, and built-in surfaces")
-	. SET STATE("apps",N,"icon")="🧩"
-	. SET STATE("apps",N,"kind")="system"
-	SET I=0 FOR  SET I=$ORDER(STATE("modules",I)) QUIT:'I  DO
-	. QUIT:+$GET(STATE("modules",I,"enabled"))'=1
-	. SET N=N+1
-	. SET KEY=$GET(STATE("modules",I,"appKey"),$GET(STATE("modules",I,"id")))
-	. SET STATE("apps",N,"key")=KEY
-	. SET STATE("apps",N,"title")=$GET(STATE("modules",I,"title"),KEY)
-	. SET STATE("apps",N,"subtitle")=$GET(STATE("modules",I,"subtitle"),$GET(STATE("modules",I,"description")))
-	. SET STATE("apps",N,"icon")=$GET(STATE("modules",I,"icon"),"🧩")
-	. SET STATE("apps",N,"kind")="module"
-	. SET STATE("apps",N,"moduleId")=$GET(STATE("modules",I,"id"))
-	. SET STATE("apps",N,"moduleCategory")=$GET(STATE("modules",I,"category"),"general")
-	. SET STATE("apps",N,"moduleBuiltIn")=+$GET(STATE("modules",I,"builtIn"),1)
-	. SET STATE("apps",N,"moduleVersion")=$GET(STATE("modules",I,"version"),"1.0")
-	SET N=N+1
-	SET STATE("apps",N,"key")="security-center"
-	SET STATE("apps",N,"title")="Security Center"
-	SET STATE("apps",N,"subtitle")="Authentication posture, active sessions, account risk, and report export"
-	SET STATE("apps",N,"icon")="🔐"
-	SET STATE("apps",N,"kind")="system"
-	IF +$GET(STATE("debugEnabled"),1)=1 DO
-	. SET N=N+1
-	. SET STATE("apps",N,"key")="debug-center"
-	. SET STATE("apps",N,"title")=$$TXT^MIOOSI18N(CODE,"app.debug-center.title","Debug Center")
-	. SET STATE("apps",N,"subtitle")=$$TXT^MIOOSI18N(CODE,"app.debug-center.subtitle","Server snapshot, command registry, and recent websocket activity")
-	. SET STATE("apps",N,"icon")="🧪"
-	. SET STATE("apps",N,"kind")="tool"
 	QUIT
 	;
 WORKSPACES(STATE)
@@ -606,25 +556,20 @@ WORKSPACES(STATE)
 		SET CODE=$GET(STATE("localeCode"),"en")
 		KILL STATE("workspaces")
 		SET STATE("workspaces",1,"key")="workspace-main"
-		SET STATE("workspaces",1,"title")=$$TXT^MIOOSI18N(CODE,"workspace.main","Desktop")
+		SET STATE("workspaces",1,"title")=$$TXT^MIOOSI18N(CODE,"workspace.main","Workspace")
 		SET STATE("workspaces",1,"icon")="⌂"
-		SET STATE("workspaces",1,"description")=$$TXT^MIOOSI18N(CODE,"workspace.main.description","Primary shell workspace for everyday apps and the desktop surface")
+		SET STATE("workspaces",1,"description")=$$TXT^MIOOSI18N(CODE,"workspace.main.description","Primary workspace for active application windows")
 		SET STATE("workspaces",1,"ordinal")=1
 		SET STATE("workspaces",2,"key")="workspace-files"
 		SET STATE("workspaces",2,"title")=$$TXT^MIOOSI18N(CODE,"workspace.files","Files")
 		SET STATE("workspaces",2,"icon")="📁"
-		SET STATE("workspaces",2,"description")=$$TXT^MIOOSI18N(CODE,"workspace.files.description","Explorer, transfers, and file-focused windows")
+		SET STATE("workspaces",2,"description")=$$TXT^MIOOSI18N(CODE,"workspace.files.description","Home folders, transfers, and file-centered work")
 		SET STATE("workspaces",2,"ordinal")=2
-		SET STATE("workspaces",3,"key")="workspace-operations"
-		SET STATE("workspaces",3,"title")=$$TXT^MIOOSI18N(CODE,"workspace.operations","Operations")
-		SET STATE("workspaces",3,"icon")="📈"
-		SET STATE("workspaces",3,"description")=$$TXT^MIOOSI18N(CODE,"workspace.operations.description","Security, diagnostics, and operational control surfaces")
+		SET STATE("workspaces",3,"key")="workspace-customize"
+		SET STATE("workspaces",3,"title")="Customize"
+		SET STATE("workspaces",3,"icon")="🎛"
+		SET STATE("workspaces",3,"description")="Theme authoring, shell previews, and design tokens"
 		SET STATE("workspaces",3,"ordinal")=3
-		SET STATE("workspaces",4,"key")="workspace-studio"
-		SET STATE("workspaces",4,"title")=$$TXT^MIOOSI18N(CODE,"workspace.studio","Studio")
-		SET STATE("workspaces",4,"icon")="🎨"
-		SET STATE("workspaces",4,"description")=$$TXT^MIOOSI18N(CODE,"workspace.studio.description","Theme work, modules, and catalog windows")
-		SET STATE("workspaces",4,"ordinal")=4
 		QUIT
 		;
 MERGEWK(STATE,ROOT)
@@ -641,104 +586,22 @@ MERGEWK(STATE,ROOT)
 		QUIT
 		;
 MODULES(STATE,CONF)
-	NEW CODE,N
-	SET CODE=$GET(STATE("localeCode"),"en")
 	KILL STATE("modules")
-	SET N=0
-	IF +$GET(STATE("moduleSystemEnabled"),1)'=1 SET STATE("moduleCount")=0 QUIT
-	IF +$GET(CONF("mioos","modules","notes","enabled"),1)=1 DO
-	. SET N=N+1
-	. SET STATE("modules",N,"id")="module-notes"
-	. SET STATE("modules",N,"appKey")="module-notes"
-	. SET STATE("modules",N,"windowId")="win-module-notes"
-	. SET STATE("modules",N,"title")=$$TXT^MIOOSI18N(CODE,"module.notes.title","Notes")
-	. SET STATE("modules",N,"subtitle")=$$TXT^MIOOSI18N(CODE,"module.notes.subtitle","A lightweight notes surface for quick capture inside MIOOS")
-	. SET STATE("modules",N,"description")=$$TXT^MIOOSI18N(CODE,"module.notes.description","Capture a short scratch note, track a few pinned cards, and keep module state inside the shell contract.")
-	. SET STATE("modules",N,"icon")="📝"
-	. SET STATE("modules",N,"category")="productivity"
-	. SET STATE("modules",N,"version")="1.0"
-	. SET STATE("modules",N,"kind")="module"
-	. SET STATE("modules",N,"surface")="notes-board"
-	. SET STATE("modules",N,"windowTitle")=$GET(STATE("modules",N,"title"))
-	. SET STATE("modules",N,"installed")=1
-	. SET STATE("modules",N,"enabled")=1
-	. SET STATE("modules",N,"builtIn")=1
-	. SET STATE("modules",N,"singleton")=1
-	. SET STATE("modules",N,"launcherEnabled")=1
-	. SET STATE("modules",N,"cards",1,"title")="Quick capture"
-	. SET STATE("modules",N,"cards",1,"detail")="Use this space for release notes, shell TODOs, or operator breadcrumbs that do not belong in the terminal buffer."
-	. SET STATE("modules",N,"cards",2,"title")="Server-authored"
-	. SET STATE("modules",N,"cards",2,"detail")="The module manifest, window contract, and launcher metadata are emitted by MUMPS in the desktop boot payload."
-	. SET STATE("modules",N,"cards",3,"title")="No extra runtime"
-	. SET STATE("modules",N,"cards",3,"detail")="Modules stay inside the existing SSR plus Vue UMD shell model without introducing a separate package manager."
-	IF +$GET(CONF("mioos","modules","opsCenter","enabled"),1)=1 DO
-	. SET N=N+1
-	. SET STATE("modules",N,"id")="module-ops-center"
-	. SET STATE("modules",N,"appKey")="module-ops-center"
-	. SET STATE("modules",N,"windowId")="win-module-ops-center"
-	. SET STATE("modules",N,"title")=$$TXT^MIOOSI18N(CODE,"module.ops.title","Ops Center")
-	. SET STATE("modules",N,"subtitle")=$$TXT^MIOOSI18N(CODE,"module.ops.subtitle","A built-in operational summary surface for the current shell session")
-	. SET STATE("modules",N,"description")=$$TXT^MIOOSI18N(CODE,"module.ops.description","Review session identity, transport posture, and desktop contract metadata from one reusable module host.")
-	. SET STATE("modules",N,"icon")="🧭"
-	. SET STATE("modules",N,"category")="operations"
-	. SET STATE("modules",N,"version")="1.0"
-	. SET STATE("modules",N,"kind")="module"
-	. SET STATE("modules",N,"surface")="ops-overview"
-	. SET STATE("modules",N,"windowTitle")=$GET(STATE("modules",N,"title"))
-	. SET STATE("modules",N,"installed")=1
-	. SET STATE("modules",N,"enabled")=1
-	. SET STATE("modules",N,"builtIn")=1
-	. SET STATE("modules",N,"singleton")=1
-	. SET STATE("modules",N,"launcherEnabled")=1
-	. SET STATE("modules",N,"cards",1,"title")="Session"
-	. SET STATE("modules",N,"cards",1,"detail")="Inspect the current principal, locale, and profile without opening the raw JSON boot payload."
-	. SET STATE("modules",N,"cards",2,"title")="Transport"
-	. SET STATE("modules",N,"cards",2,"detail")="Pairs well with Diagnostics: module hosts can consume existing shell state instead of building bespoke websocket channels."
-	. SET STATE("modules",N,"cards",3,"title")="Extensibility"
-	. SET STATE("modules",N,"cards",3,"detail")="This module demonstrates how built-ins can share one host template and one window contract while keeping their own manifest metadata."
-	SET STATE("moduleCount")=N
+	SET STATE("moduleCount")=0
 	QUIT
 	;
 WINDOWS(STATE)
-	NEW CODE,N,I,APPKEY,TITLE,MODW,MINW,MINH,LEFT,TOP,WIDTH,HEIGHT
+	NEW CODE
 	SET CODE=$GET(STATE("localeCode"),"en")
 	KILL STATE("windows")
-	DO WIN(.STATE,1,"win-my-computer","my-computer",$$TXT^MIOOSI18N(CODE,"app.my-computer.title","My Computer"),88,72,760,500,4,"normal",460,320,1,1,"explorer","🖥","workspace-main",1)
-	DO WIN(.STATE,2,"win-documents","documents",$$TXT^MIOOSI18N(CODE,"app.documents.title","My Documents"),180,118,620,420,2,"minimized",420,280,1,1,"explorer","📁","workspace-files",1)
-	DO WIN(.STATE,3,"win-control-panel","control-panel",$$TXT^MIOOSI18N(CODE,"app.control-panel.title","Control Panel"),240,92,540,400,1,"minimized",420,280,1,1,"system","🛠","workspace-main",1)
-	DO WIN(.STATE,4,"win-terminal-template","terminal",$$TXT^MIOOSI18N(CODE,"app.terminal.title","Terminal"),120,88,820,430,3,"closed",560,300,1,1,"terminal","⌨","workspace-operations",0)
-	DO WIN(.STATE,5,"win-theme-studio","theme-studio","Theme Studio",156,76,900,610,5,"closed",700,520,1,1,"studio","🎨","workspace-studio",1)
-	SET STATE("windows",5,"themeStudioEnabled")=1
-	DO WIN(.STATE,6,"win-transfers","transfers","Transfers",218,108,760,520,6,"closed",620,420,1,1,"transfers","📦","workspace-files",1)
-	SET STATE("windows",6,"transferCenterEnabled")=1
-	DO WIN(.STATE,7,"win-diagnostics","diagnostics","Diagnostics",244,126,820,520,7,"closed",640,420,1,1,"diagnostics","📈","workspace-operations",1)
-	SET STATE("windows",7,"transportDiagnosticsEnabled")=+$GET(STATE("wsDiagnosticsEnabled"),1)
-	SET N=7
-	IF +$GET(STATE("moduleAppCatalogEnabled"),1)=1 DO
-	. SET N=N+1
-	. DO WIN(.STATE,N,"win-app-catalog","app-catalog",$$TXT^MIOOSI18N(CODE,"app.app-catalog.title","App Catalog"),268,122,860,560,N,"closed",660,420,1,1,"catalog","🧩","workspace-studio",1)
-	. SET STATE("windows",N,"moduleCatalogEnabled")=1
-	. SET STATE("windows",N,"moduleCatalogWindow")=1
-	SET I=0 FOR  SET I=$ORDER(STATE("modules",I)) QUIT:'I  DO
-	. QUIT:+$GET(STATE("modules",I,"enabled"))'=1
-	. SET N=N+1
-	. SET APPKEY=$GET(STATE("modules",I,"appKey"),$GET(STATE("modules",I,"id")))
-	. SET TITLE=$GET(STATE("modules",I,"windowTitle"),$GET(STATE("modules",I,"title"),APPKEY))
-	. SET LEFT=160+(I*26),TOP=94+(I*22),WIDTH=720,HEIGHT=500,MINW=560,MINH=340
-	. DO WIN(.STATE,N,$GET(STATE("modules",I,"windowId"),"win-"_APPKEY),APPKEY,TITLE,LEFT,TOP,WIDTH,HEIGHT,N,"closed",MINW,MINH,1,1,"module",$GET(STATE("modules",I,"icon"),"🧩"),$SELECT($GET(STATE("modules",I,"category"))="operations":"workspace-operations",1:"workspace-studio"),1)
-	. SET STATE("windows",N,"moduleWindow")=1
-	. SET STATE("windows",N,"moduleId")=$GET(STATE("modules",I,"id"))
-	. SET STATE("windows",N,"moduleCategory")=$GET(STATE("modules",I,"category"),"general")
-	. SET STATE("windows",N,"moduleSurface")=$GET(STATE("modules",I,"surface"),"generic")
-	. SET STATE("windows",N,"moduleBuiltIn")=+$GET(STATE("modules",I,"builtIn"),1)
-	. SET STATE("windows",N,"moduleSingleton")=+$GET(STATE("modules",I,"singleton"),1)
-	SET N=N+1
-	DO WIN(.STATE,N,"win-security-center","security-center","Security Center",284,134,860,560,N,"closed",680,420,1,1,"security","🔒","workspace-operations",1)
-	SET STATE("windows",N,"securityCenterEnabled")=1
-	IF +$GET(STATE("debugEnabled"),1)=1 DO
-	. SET N=N+1
-	. DO WIN(.STATE,N,"win-debug-center","debug-center",$$TXT^MIOOSI18N(CODE,"app.debug-center.title","Debug Center"),308,146,900,580,N,"closed",700,440,1,1,"debug","🧪","workspace-operations",1)
-	. SET STATE("windows",N,"debugCenterEnabled")=1
+	DO WIN(.STATE,1,"win-home","home",$$TXT^MIOOSI18N(CODE,"app.home.title","Home"),96,72,980,620,4,"normal",520,340,1,1,"explorer","🏠","workspace-files",1)
+	DO WIN(.STATE,2,"win-terminal-template","terminal",$$TXT^MIOOSI18N(CODE,"app.terminal.title","Terminal"),160,92,900,520,3,"closed",620,320,1,1,"terminal","⌨","workspace-main",0)
+	DO WIN(.STATE,3,"win-transfers","transfers","Transfers",220,116,860,560,5,"closed",680,420,1,1,"transfers","⇅","workspace-files",1)
+	SET STATE("windows",3,"transferCenterEnabled")=1
+	DO WIN(.STATE,4,"win-customize","customize","Customize",180,86,1040,680,6,"closed",780,560,1,1,"studio","🎛","workspace-customize",1)
+	SET STATE("windows",4,"themeStudioEnabled")=1
+	DO WIN(.STATE,5,"win-folder-properties","folder-properties","Folder Properties",260,140,640,520,7,"closed",560,420,0,1,"properties","📂","workspace-files",0)
+	SET STATE("windows",5,"propertySheetEnabled")=1
 	QUIT
 	;
 WIN(STATE,N,ID,APPKEY,TITLE,LEFT,TOP,WIDTH,HEIGHT,Z,MODE,MINW,MINH,RESIZE,DRAG,KIND,ICON,WORKSPACE,PERSIST)
@@ -766,57 +629,57 @@ WIN(STATE,N,ID,APPKEY,TITLE,LEFT,TOP,WIDTH,HEIGHT,Z,MODE,MINW,MINH,RESIZE,DRAG,K
 	QUIT
 	;
 THEMES(ROOT,CURRENT)
-	KILL @ROOT
-	SET @ROOT@(1,"key")="foundation-light"
-	SET @ROOT@(1,"title")="Foundation Light"
-	SET @ROOT@(1,"family")="Foundation"
-	SET @ROOT@(1,"mode")="light"
-	SET @ROOT@(1,"isCurrent")=$SELECT($GET(CURRENT)="foundation-light":1,1:0)
-	SET @ROOT@(1,"wallpaper")="aurora"
-	SET @ROOT@(1,"accent")="#2f6fed"
-	SET @ROOT@(1,"taskbar")="#e8eef8"
-	SET @ROOT@(2,"key")="foundation-dark"
-	SET @ROOT@(2,"title")="Foundation Dark"
-	SET @ROOT@(2,"family")="Foundation"
-	SET @ROOT@(2,"mode")="dark"
-	SET @ROOT@(2,"isCurrent")=$SELECT($GET(CURRENT)="foundation-dark":1,1:0)
-	SET @ROOT@(2,"wallpaper")="aurora-night"
-	SET @ROOT@(2,"accent")="#7db4ff"
-	SET @ROOT@(2,"taskbar")="#111a28"
-	SET @ROOT@(3,"key")="glass-light"
-	SET @ROOT@(3,"title")="Glass Light"
-	SET @ROOT@(3,"family")="Glass"
-	SET @ROOT@(3,"mode")="light"
-	SET @ROOT@(3,"isCurrent")=$SELECT($GET(CURRENT)="glass-light":1,1:0)
-	SET @ROOT@(3,"wallpaper")="aurora"
-	SET @ROOT@(3,"accent")="#4687ff"
-	SET @ROOT@(3,"taskbar")="#dce7f7"
-	SET @ROOT@(4,"key")="glass-dark"
-	SET @ROOT@(4,"title")="Glass Dark"
-	SET @ROOT@(4,"family")="Glass"
-	SET @ROOT@(4,"mode")="dark"
-	SET @ROOT@(4,"isCurrent")=$SELECT($GET(CURRENT)="glass-dark":1,1:0)
-	SET @ROOT@(4,"wallpaper")="aurora-night"
-	SET @ROOT@(4,"accent")="#8ac5ff"
-	SET @ROOT@(4,"taskbar")="#0f1724"
-	SET @ROOT@(5,"key")="contrast-light"
-	SET @ROOT@(5,"title")="Contrast Light"
-	SET @ROOT@(5,"family")="Contrast"
-	SET @ROOT@(5,"mode")="light"
-	SET @ROOT@(5,"isCurrent")=$SELECT($GET(CURRENT)="contrast-light":1,1:0)
-	SET @ROOT@(5,"wallpaper")="solid-graphite"
-	SET @ROOT@(5,"accent")="#1142aa"
-	SET @ROOT@(5,"taskbar")="#ffffff"
-	SET @ROOT@(6,"key")="contrast-dark"
-	SET @ROOT@(6,"title")="Contrast Dark"
-	SET @ROOT@(6,"family")="Contrast"
-	SET @ROOT@(6,"mode")="dark"
-	SET @ROOT@(6,"isCurrent")=$SELECT($GET(CURRENT)="contrast-dark":1,1:0)
-	SET @ROOT@(6,"wallpaper")="solid-graphite"
-	SET @ROOT@(6,"accent")="#ffd043"
-	SET @ROOT@(6,"taskbar")="#0b1017"
-	QUIT
-	;
+		KILL @ROOT
+		SET @ROOT@(1,"key")="classic-horizon-light"
+		SET @ROOT@(1,"title")="Classic Horizon Light"
+		SET @ROOT@(1,"family")="Horizon"
+		SET @ROOT@(1,"mode")="light"
+		SET @ROOT@(1,"isCurrent")=$SELECT($GET(CURRENT)="classic-horizon-light":1,1:0)
+		SET @ROOT@(1,"wallpaper")="aurora"
+		SET @ROOT@(1,"accent")="#2f6fed"
+		SET @ROOT@(1,"taskbar")="#d9e5f7"
+		SET @ROOT@(2,"key")="classic-horizon-dark"
+		SET @ROOT@(2,"title")="Classic Horizon Dark"
+		SET @ROOT@(2,"family")="Horizon"
+		SET @ROOT@(2,"mode")="dark"
+		SET @ROOT@(2,"isCurrent")=$SELECT($GET(CURRENT)="classic-horizon-dark":1,1:0)
+		SET @ROOT@(2,"wallpaper")="aurora-night"
+		SET @ROOT@(2,"accent")="#78aefc"
+		SET @ROOT@(2,"taskbar")="#152235"
+		SET @ROOT@(3,"key")="orchard-light"
+		SET @ROOT@(3,"title")="Orchard Light"
+		SET @ROOT@(3,"family")="Orchard"
+		SET @ROOT@(3,"mode")="light"
+		SET @ROOT@(3,"isCurrent")=$SELECT($GET(CURRENT)="orchard-light":1,1:0)
+		SET @ROOT@(3,"wallpaper")="paper-dawn"
+		SET @ROOT@(3,"accent")="#4d7cff"
+		SET @ROOT@(3,"taskbar")="#eef1f6"
+		SET @ROOT@(4,"key")="orchard-dark"
+		SET @ROOT@(4,"title")="Orchard Dark"
+		SET @ROOT@(4,"family")="Orchard"
+		SET @ROOT@(4,"mode")="dark"
+		SET @ROOT@(4,"isCurrent")=$SELECT($GET(CURRENT)="orchard-dark":1,1:0)
+		SET @ROOT@(4,"wallpaper")="paper-night"
+		SET @ROOT@(4,"accent")="#93b0ff"
+		SET @ROOT@(4,"taskbar")="#151923"
+		SET @ROOT@(5,"key")="terra-light"
+		SET @ROOT@(5,"title")="Terra Light"
+		SET @ROOT@(5,"family")="Terra"
+		SET @ROOT@(5,"mode")="light"
+		SET @ROOT@(5,"isCurrent")=$SELECT($GET(CURRENT)="terra-light":1,1:0)
+		SET @ROOT@(5,"wallpaper")="sunrise-grid"
+		SET @ROOT@(5,"accent")="#d86337"
+		SET @ROOT@(5,"taskbar")="#f2e7df"
+		SET @ROOT@(6,"key")="terra-dark"
+		SET @ROOT@(6,"title")="Terra Dark"
+		SET @ROOT@(6,"family")="Terra"
+		SET @ROOT@(6,"mode")="dark"
+		SET @ROOT@(6,"isCurrent")=$SELECT($GET(CURRENT)="terra-dark":1,1:0)
+		SET @ROOT@(6,"wallpaper")="midnight-grid"
+		SET @ROOT@(6,"accent")="#ffb087"
+		SET @ROOT@(6,"taskbar")="#20161a"
+		QUIT
+		;
 CSV2ARY(CSV,ROOT)
 	NEW I,ITEM,N
 	KILL @ROOT

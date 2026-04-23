@@ -1,3 +1,48 @@
+# MIOOS LLM Context
+
+## 2026 Product Reset
+
+MIOOS is now defined as a **secure application workspace and runtime shell for MUMPS modernization**.
+
+### Current product definition
+- Primary purpose: host modernized legacy MUMPS applications, internal tools, and controlled operational workflows.
+- Primary strengths preserved: server-authored shell contract, websocket-first transport, terminal integration, VFS, SSR-first rendering, auth/session/audit foundations.
+- Primary experience: Home, Terminal, Transfers, Customize, and folder properties.
+- Removed from the active product experience: Notes, Ops Center, App Catalog, Control Panel, Security Center, Debug Center, Diagnostics, and Theme Studio.
+- Compliance positioning: **HIPAA-ready architecture**, not automatic HIPAA compliance. Deployers must still configure policy, retention, encryption, access controls, and operating procedures correctly.
+
+### Shell philosophy
+- MIOOS is not a novelty desktop or utility bundle.
+- MIOOS is a focused workspace for enterprise runtime, file operations, themed application hosting, and auditable administration.
+- Home is the visible VFS root for users.
+- Folder windows behave like first-class shell surfaces with back/forward/up navigation, address bars, metadata, drag/drop, and folder-specific customization.
+- The taskbar groups windows so the shell remains usable at high window counts.
+
+### Architecture notes
+- Folder metadata now supports per-folder presentation, sharing scope, and attribute flags.
+- The runtime uses a token-driven customization system with desktop and mobile previews.
+- The active runtime no longer depends on `7.scoped.css`; `mioos_reset.css` is the focused override layer for the rewritten shell surfaces.
+- Migration remains incremental: the shell contract and VFS/auth foundations stay intact while product sprawl is removed.
+
+### Important behavioral rules
+- “Home” is the main user-facing root.
+- Folder properties expose General and Customize tabs.
+- Sharing is explicit and auditable through persisted folder metadata.
+- Customize replaces Theme Studio as the supported appearance editor and uses original theme families inspired by classic enterprise OS paradigms without copying proprietary assets.
+
+### Supporting docs
+See also:
+- `docs/mioos/Architecture_Overview.md`
+- `docs/mioos/Theme_System.md`
+- `docs/mioos/VFS_Metadata_Model.md`
+- `docs/mioos/Drag_Drop_Rules.md`
+- `docs/mioos/Transfer_Manager.md`
+- `docs/mioos/Migration_Notes.md`
+
+Legacy ROI notes are preserved below for historical continuity and regression references.
+
+---
+
 # MIOOS LLM Development Handoff
 
 ## What MIOOS is

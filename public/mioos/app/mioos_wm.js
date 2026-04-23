@@ -76,8 +76,8 @@
       title: count > 0 ? title + ' ' + (count + 1) : title,
       left: +(template && template.left || 96) + (count * 24),
       top: +(template && template.top || 72) + (count * 20),
-      width: +(template && template.width || ((app.kind === 'folder' || appKey === 'explorer' || appKey === 'my-computer' || appKey === 'documents') ? 920 : 760)),
-      height: +(template && template.height || ((app.kind === 'folder' || appKey === 'explorer' || appKey === 'my-computer' || appKey === 'documents') ? 620 : 520)),
+      width: +(template && template.width || ((app.kind === 'folder' || appKey === 'explorer' || appKey === 'home') ? 960 : 760)),
+      height: +(template && template.height || ((app.kind === 'folder' || appKey === 'explorer' || appKey === 'home') ? 640 : 520)),
       z: ++vm.zCounter,
       state: 'normal',
       minWidth: +(template && template.minWidth || ((((vm.boot || {}).desktop || {}).windowing || {}).minWidth) || 320),
@@ -194,20 +194,11 @@
         this.menuOpen = false;
         if (win.state === 'closed' || win.state === 'minimized') win.state = 'normal';
         this.focusWindow(win.id);
-        if ((appKey === 'my-computer' || appKey === 'documents' || appKey === 'explorer') && this.bootstrapExplorerWindow) {
+        if ((appKey === 'home' || appKey === 'explorer') && this.bootstrapExplorerWindow) {
           this.$nextTick(function () {
             this.bootstrapExplorerWindow(win.id, true);
             if (this.refreshExplorerWindow) this.refreshExplorerWindow(win.id).catch(function () {});
           }.bind(this));
-        }
-        if (appKey === 'diagnostics' && this.refreshTransportDiagnostics) {
-          this.$nextTick(function () { this.refreshTransportDiagnostics().catch(function () {}); }.bind(this));
-        }
-        if (appKey === 'security-center' && this.refreshSecurityCenter) {
-          this.$nextTick(function () { this.refreshSecurityCenter().catch(function () {}); }.bind(this));
-        }
-        if (appKey === 'debug-center' && this.refreshDebugCenter) {
-          this.$nextTick(function () { this.refreshDebugCenter().catch(function () {}); }.bind(this));
         }
         if (this.persistWindowLayout) this.persistWindowLayout();
         this.sendSocket({ event: 'shell.open', appKey: appKey });
@@ -343,7 +334,7 @@
               if (self.mountTerminalWindow) self.mountTerminalWindow(windowId);
               if (self.requestTerminalOpen) self.requestTerminalOpen(windowId);
             });
-          } else if ((win.appKey === 'my-computer' || win.appKey === 'documents' || win.appKey === 'explorer') && this.bootstrapExplorerWindow) {
+          } else if ((win.appKey === 'home' || win.appKey === 'explorer') && this.bootstrapExplorerWindow) {
             this.$nextTick(function () {
               this.bootstrapExplorerWindow(windowId, true);
               if (this.refreshExplorerWindow) this.refreshExplorerWindow(windowId).catch(function () {});
@@ -568,17 +559,48 @@
         if (this.persistWindowLayout) this.persistWindowLayout();
       },
       onWindowDragOver: function (win, event) {
+        var allowed;
         if (!win || !(((this.boot || {}).desktop || {}).windowing || {}).dropUpload) return;
-        if (win.appKey !== 'my-computer' && win.appKey !== 'documents' && win.appKey !== 'explorer') return;
+        allowed = (win.appKey === 'home' || win.appKey === 'explorer');
+        if (!allowed) return;
         event.preventDefault();
       },
       onWindowDrop: function (win, event) {
-        var files;
+        var files, raw, payload, item, destination;
         if (!win || !event) return;
+        if (win.appKey !== 'home' && win.appKey !== 'explorer') return;
+        raw = event.dataTransfer && event.dataTransfer.getData && event.dataTransfer.getData('application/x-mioos-item');
+        if (raw) {
+          event.preventDefault();
+          try { payload = JSON.parse(raw); } catch (err) { payload = null; }
+          item = payload && payload.item;
+          destination = ((win.explorerState || {}).folderId) || ((win.meta || {}).folderId) || '';
+          if (item && item.kind === 'folder' && item.id === destination) return;
+          if (item && item.kind === 'app') {
+            if (this.notifyInfo) this.notifyInfo('Explorer', 'Application launchers can be opened from folders but are not moved between folders yet.');
+            return;
+          }
+          if (item && destination && this.command) {
+            if ((event.altKey || event.metaKey) && this.notifyInfo) {
+              this.notifyInfo('Explorer', 'Shortcut creation is reserved for a later migration step.');
+              return;
+            }
+            if (event.ctrlKey) {
+              this.command('fs.copy', { id: item.id || item.key || '', parent: destination }).then(function () {
+                if (this.refreshExplorerWindow) this.refreshExplorerWindow(win.id);
+              }.bind(this)).catch(function () {});
+              return;
+            }
+            this.command('fs.move', { id: item.id || item.key || '', parent: destination }).then(function () {
+              if (this.refreshExplorerWindow) this.refreshExplorerWindow(win.id);
+            }.bind(this)).catch(function () {});
+            return;
+          }
+        }
         files = (event.dataTransfer && event.dataTransfer.files) || [];
         if (!files.length) return;
         event.preventDefault();
-        if ((win.appKey === 'my-computer' || win.appKey === 'documents' || win.appKey === 'explorer') && this.uploadFilesToExplorer) {
+        if ((win.appKey === 'home' || win.appKey === 'explorer') && this.uploadFilesToExplorer) {
           this.uploadFilesToExplorer(win.id, files);
         }
       }

@@ -1,5 +1,34 @@
 # MIOOS Internal Documentation
 
+## 2026 Product Reset
+
+### Strategic reset
+The product has been repositioned from a broad browser desktop demo toward a focused modernization workspace. Active value is concentrated in runtime hosting, VFS interaction, terminal access, transfers, theming, and secure enterprise governance foundations.
+
+### Implementation choices
+- Preserve the server-owned shell contract.
+- Preserve websocket-first behavior and dedicated terminal transport.
+- Extend the VFS metadata model instead of bolting folder customization into the client only.
+- Remove non-core active app surfaces while keeping reusable backend capabilities where appropriate.
+- Replace the active `7.scoped.css` dependency with a narrower reset layer so the shell language is more governable.
+
+### Module boundaries
+- Shell framework
+- Window manager
+- Explorer and folder properties
+- Transfer manager
+- Customization engine
+- Auth/session/audit foundations
+- Terminal integration
+- Shared UI primitives
+
+### Current risk posture
+The migration is intentionally incremental. Some underlying admin and diagnostics capabilities still exist in code paths, but they are removed from the active product experience and should continue to be trimmed in subsequent cleanup iterations.
+
+---
+
+# MIOOS Internal Documentation
+
 ## Architecture summary
 
 MIOOS is a server-authored shell.

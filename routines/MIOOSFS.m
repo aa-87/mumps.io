@@ -16,8 +16,13 @@ INIT(CONF)
 	SET NOW=$HOROLOG
 	DO SAVEENTRY("root","folder","","/","inode/directory",0,NOW,NOW,OWNER,ROLES,1,1,1)
 	DO ENSUREFOLDER("root","Desktop",OWNER,ROLES,.DESK)
-	DO ENSUREFOLDER("root","Documents",OWNER,ROLES,.DOCS)
-	DO ENSUREFILE("root","README.txt","Welcome to MIOOS VFS","text/plain",OWNER,ROLES,.README,.CONF)
+	DO ENSUREFOLDER("root","Home",OWNER,ROLES,.DOCS)
+	DO SETMETAFLD(DOCS,"folderBackground","wallpaper:home")
+	DO SETMETAFLD(DOCS,"folderIcon","🏠")
+	DO SETMETAFLD(DOCS,"viewMode","details")
+	DO SETMETAFLD(DOCS,"sortBy","name")
+	DO SETMETAFLD(DOCS,"sortDirection","ascending")
+	DO ENSUREFILE(DOCS,"Welcome.txt","Welcome to the MIOOS Home workspace","text/plain",OWNER,ROLES,.README,.CONF)
 	QUIT
 	;
 ENSUREFOLDER(PARENT,NAME,OWNER,ROLES,OUTID)
@@ -95,7 +100,8 @@ ISTEXT(DATA)
 	;
 HOMEID()
 	NEW ID
-	SET ID=$GET(^MIO("MIOOS","FS","CHILD","root","Documents"))
+	SET ID=$GET(^MIO("MIOOS","FS","CHILD","root","Home"))
+	IF ID="" SET ID=$GET(^MIO("MIOOS","FS","CHILD","root","Documents"))
 	IF ID="" SET ID="root"
 	QUIT ID
 	;
@@ -149,16 +155,21 @@ ROLEOK(ROLECSV,STATE)
 	QUIT $SELECT(R'="":1,1:0)
 	;
 CAN(ID,STATE,MODE)
-	NEW OWNER,ROLES,FLAG,USER
-	SET USER=$GET(STATE("principal"))
-	IF USER="" SET USER="guest"
-	IF '$$EXISTS(ID) QUIT 0
-	SET OWNER=$$FIELD(ID,8),ROLES=$$FIELD(ID,9)
-	IF USER=OWNER QUIT 1
-	IF '$$ROLEOK(ROLES,.STATE) QUIT 0
-	SET FLAG=$SELECT($GET(MODE)="write":$$FIELD(ID,11),$GET(MODE)="delete":$$FIELD(ID,12),1:$$FIELD(ID,10))
-	QUIT +FLAG
-	;
+		NEW OWNER,ROLES,FLAG,USER,SHARED,SCOPE,USERS
+		SET USER=$GET(STATE("principal"))
+		IF USER="" SET USER="guest"
+		IF '$$EXISTS(ID) QUIT 0
+		SET OWNER=$$FIELD(ID,8),ROLES=$$FIELD(ID,9),FLAG=0
+		IF USER=OWNER QUIT 1
+		IF $GET(MODE)="read" DO
+		. SET SHARED=+$$METAFIELD(ID,"shared"),SCOPE=$$METAFIELD(ID,"shareScope"),USERS=$$METAFIELD(ID,"shareUsers")
+		. IF SHARED=1,SCOPE="everyone" SET FLAG=1 QUIT
+		. IF SHARED=1,$$CSVHAS(USERS,USER) SET FLAG=1
+		IF FLAG=1 QUIT 1
+		IF '$$ROLEOK(ROLES,.STATE) QUIT 0
+		SET FLAG=$SELECT($GET(MODE)="write":$$FIELD(ID,11),$GET(MODE)="delete":$$FIELD(ID,12),1:$$FIELD(ID,10))
+		QUIT +FLAG
+		;
 MKDIRID(PARENT,NAME,OWNER,ROLES,OUTID)
 	NEW ID,NOW
 	SET OUTID=""
@@ -466,6 +477,19 @@ META(STATE,ID,OUT,ERR)
 	SET OUT("permWrite")=+$$FIELD(RID,11)
 	SET OUT("permDelete")=+$$FIELD(RID,12)
 	SET OUT("path")=$$PATH(RID)
+	SET OUT("attributes","readOnly")=+$$METAFIELD(RID,"readOnly")
+	SET OUT("attributes","hidden")=+$$METAFIELD(RID,"hidden")
+	SET OUT("attributes","shared")=+$$METAFIELD(RID,"shared")
+	SET OUT("sharing","scope")=$SELECT($$METAFIELD(RID,"shareScope")'="":$$METAFIELD(RID,"shareScope"),1:"private")
+	SET OUT("sharing","users")=$$METAFIELD(RID,"shareUsers")
+	SET OUT("customize","background")=$$METAFIELD(RID,"folderBackground")
+	SET OUT("customize","icon")=$$METAFIELD(RID,"folderIcon")
+	SET OUT("viewMode")=$SELECT($$METAFIELD(RID,"viewMode")'="":$$METAFIELD(RID,"viewMode"),1:"details")
+	SET OUT("sortBy")=$SELECT($$METAFIELD(RID,"sortBy")'="":$$METAFIELD(RID,"sortBy"),1:"name")
+	SET OUT("sortDirection")=$SELECT($$METAFIELD(RID,"sortDirection")'="":$$METAFIELD(RID,"sortDirection"),1:"ascending")
+	IF $$FIELD(RID,1)="folder" DO
+	. DO FOLDERSTAT(RID,.OUT)
+	SET OUT("sizeLabel")=$$SIZELBL(+$$FIELD(RID,5))
 	QUIT:$Q 1 QUIT
 	;
 LIST(STATE,PARENT,OUT,ERR)
@@ -560,6 +584,7 @@ COPYREC(STATE,SRC,PARENT,NAME,OUTID,ERR)
 	SET NEWID=$$NEXTID(),OUTID=NEWID
 	IF KIND="folder" DO  QUIT 1
 	. DO SAVEENTRY(NEWID,"folder",PARENT,NAME,"inode/directory",0,NOW,NOW,OWNER,ROLES,CANR,CANW,CAND)
+	. MERGE ^MIO("MIOOS","FS","META",NEWID)=^MIO("MIOOS","FS","META",SRC)
 	. SET ^MIO("MIOOS","FS","CHILD",PARENT,NAME)=NEWID
 	. SET CHILD="",OK=1
 	. FOR  SET CHILD=$ORDER(^MIO("MIOOS","FS","CHILD",SRC,CHILD)) QUIT:CHILD=""!(OK=0)  DO
@@ -567,6 +592,7 @@ COPYREC(STATE,SRC,PARENT,NAME,OUTID,ERR)
 	. . IF '$$COPYREC(.STATE,CHILDID,NEWID,CHILD,.TMP,.ERR) SET OK=0
 	. IF 'OK SET ERR("error")=$SELECT($GET(ERR("error"))'="":$GET(ERR("error")),1:"copy_failed") QUIT 0
 	DO SAVEENTRY(NEWID,"file",PARENT,NAME,$SELECT(MIME'="":MIME,1:"application/octet-stream"),SIZE,NOW,NOW,OWNER,ROLES,CANR,CANW,CAND)
+	MERGE ^MIO("MIOOS","FS","META",NEWID)=^MIO("MIOOS","FS","META",SRC)
 	SET ^MIO("MIOOS","FS","CHILD",PARENT,NAME)=NEWID
 	KILL ^MIO("MIOOS","FS","DATA",NEWID)
 	DO SETCHUNK(NEWID,$$STORECHUNK(SRC))
@@ -589,9 +615,80 @@ DELETE(STATE,ID,OUT,ERR)
 	KILL ^MIO("MIOOS","FS","CHILD",RID)
 	KILL ^MIO("MIOOS","FS","HASH",RID)
 	KILL ^MIO("MIOOS","FS","INFO",RID)
+	KILL ^MIO("MIOOS","FS","META",RID)
 	KILL ^MIO("MIOOS","FS","ENTRY",RID)
 	IF PID'="" KILL ^MIO("MIOOS","FS","CHILD",PID,NAME)
 	SET OUT("id")=RID,OUT("deleted")=1
+	QUIT 1
+	;
+	;
+	;
+CSVHAS(CSV,VALUE)
+	NEW HAY,NEEDLE
+	SET HAY=","_$$LOW^MIOUTIL($GET(CSV))_","
+	SET NEEDLE=","_$$LOW^MIOUTIL($GET(VALUE))_","
+	QUIT $SELECT(HAY[NEEDLE:1,1:0)
+	;
+METAFIELD(ID,KEY)
+	QUIT $GET(^MIO("MIOOS","FS","META",$GET(ID),$GET(KEY)))
+	;
+SETMETAFLD(ID,KEY,VALUE)
+	SET ^MIO("MIOOS","FS","META",$GET(ID),$GET(KEY))=$GET(VALUE)
+	QUIT
+	;
+INVAL(IN,KEY,SUB)
+	IF $GET(SUB)'="" QUIT $SELECT($DATA(IN(KEY,SUB)):$GET(IN(KEY,SUB)),1:$GET(IN(KEY_"_"_SUB)))
+	QUIT $GET(IN(KEY))
+	;
+SIZELBL(BYTES)
+	NEW N
+	SET N=+$GET(BYTES)
+	IF N<1024 QUIT N_" B"
+	IF N<1048576 QUIT $JUSTIFY(N/1024,0,1)_" KB"
+	IF N<1073741824 QUIT $JUSTIFY(N/1048576,0,1)_" MB"
+	QUIT $JUSTIFY(N/1073741824,0,1)_" GB"
+	;
+FOLDERSTAT(ID,OUT)
+	NEW NAME,CHILD,KIND,FCNT,DCNT
+	SET (FCNT,DCNT)=0,NAME=""
+	FOR  SET NAME=$ORDER(^MIO("MIOOS","FS","CHILD",$GET(ID),NAME)) QUIT:NAME=""  DO
+	. SET CHILD=$GET(^MIO("MIOOS","FS","CHILD",$GET(ID),NAME))
+	. SET KIND=$$FIELD(CHILD,1)
+	. IF KIND="folder" SET DCNT=DCNT+1 QUIT
+	. SET FCNT=FCNT+1
+	SET OUT("contains","files")=FCNT
+	SET OUT("contains","folders")=DCNT
+	SET OUT("containsLabel")=FCNT_" File"_$SELECT(FCNT=1:"",1:"s")_", "_DCNT_" Folder"_$SELECT(DCNT=1:"",1:"s")
+	QUIT
+	;
+SETMETA(STATE,ID,IN,OUT,ERR)
+	NEW RID,U,RO,SH,HID,SCOPE,USERS
+	SET U="^",ERR("routine")="MIOOSFS"
+	KILL OUT
+	IF '$$RESOLVE($GET(ID),.RID,.ERR) QUIT 0
+	IF '$$CAN(RID,.STATE,"write") SET ERR("error")="access_denied" QUIT 0
+	SET RO=+$$INVAL(.IN,"attributes","readOnly")
+	SET HID=+$$INVAL(.IN,"attributes","hidden")
+	SET SH=+$$INVAL(.IN,"attributes","shared")
+	SET SCOPE=$$LOW^MIOUTIL($$TRIM^MIOUTIL($$INVAL(.IN,"sharing","scope")))
+	SET USERS=$$TRIM^MIOUTIL($$INVAL(.IN,"sharing","users"))
+	DO SETMETAFLD(RID,"readOnly",RO)
+	DO SETMETAFLD(RID,"hidden",HID)
+	DO SETMETAFLD(RID,"shared",SH)
+	IF SH'=1 SET SCOPE="private",USERS=""
+	IF SCOPE="" SET SCOPE=$SELECT(SH=1:"users",1:"private")
+	DO SETMETAFLD(RID,"shareScope",SCOPE)
+	DO SETMETAFLD(RID,"shareUsers",USERS)
+	IF $$FIELD(RID,1)="folder" DO
+	. DO SETMETAFLD(RID,"folderBackground",$$INVAL(.IN,"customize","background"))
+	. DO SETMETAFLD(RID,"folderIcon",$$INVAL(.IN,"customize","icon"))
+	. DO SETMETAFLD(RID,"viewMode",$$LOW^MIOUTIL($$TRIM^MIOUTIL($GET(IN("viewMode")))))
+	. DO SETMETAFLD(RID,"sortBy",$$LOW^MIOUTIL($$TRIM^MIOUTIL($GET(IN("sortBy")))))
+	. DO SETMETAFLD(RID,"sortDirection",$$LOW^MIOUTIL($$TRIM^MIOUTIL($GET(IN("sortDirection")))))
+	SET $PIECE(^MIO("MIOOS","FS","ENTRY",RID),U,11)=$SELECT(RO=1:0,1:1)
+	SET $PIECE(^MIO("MIOOS","FS","ENTRY",RID),U,12)=$SELECT(RO=1:0,1:1)
+	SET $PIECE(^MIO("MIOOS","FS","ENTRY",RID),U,7)=$HOROLOG
+	DO META(.STATE,RID,.OUT,.ERR)
 	QUIT 1
 	;
 	;

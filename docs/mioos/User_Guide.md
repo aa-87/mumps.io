@@ -1,5 +1,30 @@
 # MIOOS User Guide
 
+## 2026 Product Reset
+
+### Daily workflow
+1. Open **Home** to browse folders, files, app launchers, and terminal launchers.
+2. Use folder windows for Back, Forward, Up, and direct address navigation.
+3. Open **Properties** on a folder to review attributes, sharing, and customization.
+4. Use **Transfers** for active, queued, completed, and failed transfer visibility.
+5. Use **Customize** to edit appearance tokens, previews, and profile presets.
+
+### Folder properties
+- **General**: type, location, size, contains, created date, and attributes.
+- **Sharing**: share with specific users or everyone, based on policy.
+- **Customize**: per-folder background and icon overrides.
+
+### Start menu and taskbar
+- The Start menu is now a focused launcher for runtime apps, recent work, workspace actions, and search.
+- The taskbar groups windows by surface type and uses overflow instead of shrinking into an unreadable strip.
+
+### Security posture
+MIOOS supports auditable sharing, folder metadata, session governance, and controlled runtime access. Compliance still depends on deployment policy and operations.
+
+---
+
+# MIOOS User Guide
+
 ## Signing in
 
 Use the shell sign-in form to authenticate with a local MIOOS account.
