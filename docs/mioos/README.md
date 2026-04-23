@@ -332,3 +332,13 @@ Built-in desktop applications now share one shell action model for confirmations
 - Customize persists theme profiles through globals-backed routes and supports uploaded wallpaper assets stored in the VFS.
 - Folder Properties now supports uploaded background and icon assets stored in the VFS and persisted through folder metadata.
 - Transfers now show an overall progress bar plus per-file progress rows and support multi-file upload selection.
+
+## ROI — Transfer robustness and shell wiring hardening
+
+This pass keeps the single-desktop shell direction and hardens the remaining UI/runtime gaps after the unified shell overhaul:
+
+- HTTP binary uploads now guard against duplicate/finalize races and reconcile `missing_chunk` commit failures by querying upload status and resending the missing tail.
+- The transfer window exposes per-file Pause, Resume, Retry, and Cancel controls, with status-colored rows and compact native-dialog proportions.
+- Explorer and Start Menu overflow behavior is tightened for large file lists and long names.
+- Customize/theme controls now expose more runtime CSS variables directly so non-preset options visibly apply during live preview.
+- Read-only file/folder attributes are enforced in the VFS permission gate for write/delete operations, including owner operations.

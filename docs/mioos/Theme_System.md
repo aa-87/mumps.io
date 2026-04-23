@@ -48,3 +48,7 @@ Profiles are editable and exportable. Active theme selection is preserved throug
 - Boot state now advertises `windowGrammar=7css-primary` and `controlAugment=basecoat-augment`.
 - The active profile resolves one shared token set for desktop, panel/taskbar, launcher, window chrome, explorer, transfer surfaces, typography, effects, validation, and export behavior.
 - Customize persists globals-backed design profiles with local fallback while the live shell applies the resolved runtime variables immediately.
+
+## Runtime token application update
+
+The Customize window now applies more user-editable profile fields directly as runtime CSS variables instead of relying on preset-family changes only. The active profile drives taskbar height/color, start button sizing/colors, launcher width/height/header colors, titlebar sizing/colors, sidebar width, icon size/spacing, control height, density, and wallpaper URL/fit. Saving persists the normalized profile through the globals-backed theme route, and boot-time load can reapply the saved active profile with minimal startup work.

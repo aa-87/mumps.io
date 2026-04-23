@@ -381,6 +381,9 @@ T014
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSFSUP.m","BATCH(STATE,CONF,UPLOADID,CHROOT,OUT,ERR)"),"[MIOOST][T014][fsup batch]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_wm.js","beginResize"),"[MIOOST][T014][wm resize method]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","uploadFilesToExplorer"),"[MIOOST][T014][explorer drop upload helper]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","normalizeUploadEntries"),"[MIOOST][T014][multi upload normalizer]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","commitStarted"),"[MIOOST][T014][upload commit guard]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","missing_chunk"),"[MIOOST][T014][upload missing chunk reconcile]")
 	QUIT
 	;
 	;
@@ -516,7 +519,11 @@ T026
 		DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-classic-transferfacts"),"[MIOOST][T026][transfer summary]")
 		DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-classic-progress"),"[MIOOST][T026][transfer progress]")
 		DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","Retry"),"[MIOOST][T026][transfer retry ui]")
+		DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","canPauseTransfer(item)"),"[MIOOST][T026][transfer pause ui]")
+		DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","canResumeTransfer(item)"),"[MIOOST][T026][transfer resume ui]")
+		DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","canCancelTransfer(item)"),"[MIOOST][T026][transfer cancel ui]")
 		DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","mioos-classic-transfercard"),"[MIOOST][T026][transfer css]")
+		DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","mioos-classic-transferrow.is-success"),"[MIOOST][T026][transfer status colors]")
 		QUIT
 		;
 T027
@@ -566,6 +573,7 @@ T030
 		DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","saveFolderPropertiesWindow"),"[MIOOST][T030][save properties method]")
 		DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","uploadFolderCustomizeAsset"),"[MIOOST][T030][folder customize asset upload]")
 		DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","fs.setmeta"),"[MIOOST][T030][setmeta client command]")
+		DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSFS.m","METAFIELD(ID,""readOnly"")"),"[MIOOST][T030][readonly backend gate]")
 		QUIT
 		;
 T031

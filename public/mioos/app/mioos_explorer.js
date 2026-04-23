@@ -260,7 +260,7 @@
           return;
         }
         try { body = JSON.parse(xhr.responseText || '{}'); } catch (err2) { body = {}; }
-        var error = new Error(body.detail || body.reason || body.error || ('http_' + xhr.status)); error.status = xhr.status; error.body = body; reject(error);
+        var error = new Error(body.error || body.reason || body.detail || ('http_' + xhr.status)); error.status = xhr.status; error.body = body; reject(error);
       };
       xhr.onerror = function () { reject(new Error('network_error')); };
       xhr.send(JSON.stringify(payload || {}));
@@ -873,7 +873,7 @@
                 return;
               }
               try { body = JSON.parse(xhr.responseText || '{}'); } catch (err2) { body = {}; }
-              var error = new Error(body.detail || body.reason || body.error || ('http_' + xhr.status)); error.status = xhr.status; error.body = body; reject(error);
+              var error = new Error(body.error || body.reason || body.detail || ('http_' + xhr.status)); error.status = xhr.status; error.body = body; reject(error);
             };
             xhr.onerror = function () { reject(new Error('network_error')); };
             xhr.send(JSON.stringify(payload || {}));
@@ -1043,7 +1043,13 @@
             self.setExplorerUploadProgress(state, { stage: 'Uploading chunks', uploadId: uploadId });
             if (transferId && self.updateTransfer) self.updateTransfer(transferId, { status: 'uploading', stage: 'Uploading chunks', processedBytes: 0, totalBytes: file.size, resume: { kind: 'upload', parentId: state.folderId, sourceWindowId: windowId, fileName: file.name, mime: mime, totalBytes: file.size, chunkTransport: chunkTransport, uploadId: uploadId, contiguousBytes: 0, nextIndex: 1 } });
             function allDone() {
-              return transferControl.completedBytes >= file.size && Object.keys(transferControl.xh || {}).length === 0;
+              var i;
+              if (Object.keys(transferControl.xh || {}).length !== 0) return false;
+              if (transferControl.totalChunks < 1) return true;
+              for (i = 1; i <= transferControl.totalChunks; i += 1) {
+                if (!transferControl.completed[i]) return false;
+              }
+              return transferControl.completedBytes >= file.size;
             }
             function nextPending() {
               while (transferControl.nextIndex <= transferControl.totalChunks && (transferControl.completed[transferControl.nextIndex] || transferControl.xh[transferControl.nextIndex])) transferControl.nextIndex += 1;
@@ -1108,13 +1114,17 @@
                 if (contiguousBytes >= file.size && transferControl.nextIndex > transferControl.totalChunks) {
                   return commitUpload();
                 }
+                transferControl.commitStarted = false;
                 return pump();
               });
             }
             function commitUpload() {
+              if (transferControl.commitStarted) return Promise.resolve();
+              transferControl.commitStarted = true;
               return httpJson((((self.boot || {}).routes || {}).fsUploadCommit || '/api/mioos/fs/upload/commit'), { uploadId: uploadId }).then(finalize).catch(function (err) {
+                transferControl.commitStarted = false;
                 if ((err && err.message) === 'network_error' || !navigatorOnline()) return pauseForDisconnect('Paused before finalize');
-                if (isTransientUploadStatus(err && err.status)) return reconcileCommitFailure(err).catch(function (innerErr) { fail(innerErr, 'fs_upload_commit_failed'); });
+                if ((err && err.message) === 'missing_chunk' || ((err && err.body || {}).error === 'missing_chunk') || isTransientUploadStatus(err && err.status)) return reconcileCommitFailure(err).catch(function (innerErr) { fail(innerErr, 'fs_upload_commit_failed'); });
                 fail(err, 'fs_upload_commit_failed');
                 return null;
               });

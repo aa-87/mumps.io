@@ -385,15 +385,21 @@
               </section>
               <div class="mioos-classic-queue" v-if="transferQueueRows(12).length">
                 <div class="mioos-classic-queuerow is-head"><div>Name</div><div>Path</div><div>Progress</div><div>Status</div><div>Size</div></div>
-                <div class="mioos-classic-transferrow" v-for="item in transferQueueRows(12)" :key="item.id" :class="{ 'is-warning': item.status === 'paused' || item.status === 'queued', 'is-error': item.status === 'failed' }">
-                  <div class="mioos-classic-transfercopy"><strong>[[ item.name ]]</strong></div>
-                  <div class="mioos-classic-queuepath">[[ transferDirectionLabel(item) ]]</div>
-                  <div>
+                <div class="mioos-classic-transferrow" v-for="item in transferQueueRows(12)" :key="item.id" :data-status="item.status" :class="{ 'is-active': item.status === 'uploading' || item.status === 'downloading' || item.status === 'preparing' || item.status === 'finalizing' || item.status === 'verifying', 'is-success': item.status === 'completed', 'is-warning': item.status === 'paused' || item.status === 'queued', 'is-error': item.status === 'failed' || item.status === 'cancelled' }">
+                  <div class="mioos-classic-transfercopy"><strong :title="item.name">[[ item.name ]]</strong><small>[[ transferTimestampLabel(item) ]]</small></div>
+                  <div class="mioos-classic-queuepath" :title="transferDirectionLabel(item)">[[ transferDirectionLabel(item) ]]</div>
+                  <div class="mioos-classic-transferprogresscell">
                     <div class="mioos-classic-progress"><span :style="{ width: (transferPercent(item) + '%') }"></span></div>
                     <small class="mioos-classic-transferstatus">[[ transferProgressLabel(item) ]]</small>
                   </div>
-                  <div>[[ transferStatusCaption(item) ]]</div>
-                  <div>[[ formatBytesCompact(item.totalBytes || 0) ]]</div>
+                  <div class="mioos-classic-transferstatuscell">[[ transferStatusCaption(item) ]]</div>
+                  <div class="mioos-classic-transfersize">[[ formatBytesCompact(item.totalBytes || 0) ]]</div>
+                  <div class="mioos-classic-transferactions">
+                    <button type="button" class="mioos-classic-tool" v-if="canPauseTransfer(item)" @click="pauseTransfer(item)">Pause</button>
+                    <button type="button" class="mioos-classic-tool" v-if="canResumeTransfer(item)" @click="resumeTransfer(item)">Resume</button>
+                    <button type="button" class="mioos-classic-tool" v-if="canRetryTransfer(item)" @click="retryTransfer(item)">Retry</button>
+                    <button type="button" class="mioos-classic-tool danger" v-if="canCancelTransfer(item)" @click="cancelTransfer(item)">Cancel</button>
+                  </div>
                 </div>
               </div>
               <div class="mioos-classic-empty" v-else>No transfer activity yet.</div>

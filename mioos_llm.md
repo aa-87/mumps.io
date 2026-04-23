@@ -467,3 +467,7 @@ ROI 54 — shell-standard app actions and built-in app polish
 - Folder Properties now supports uploaded background and icon assets stored in folder metadata through `fs.setmeta`.
 - Explorer now promotes Desktop instead of Shared Root, removes the automatic Welcome.txt seed, and uses the global shell context menu for folder actions so menus are not clipped by window bounds.
 - Transfers now support multi-file upload selection and render overall plus per-file progress hierarchy.
+
+## ROI note — transfer robustness, attributes, and live theme wiring
+
+All tests were passing at the start of this ROI. The next hardening pass addressed a real multi-file upload race where commit could happen after the UI reached 100% but before the server had a contiguous chunk set. `mioos_explorer.js` now uses a strict all-chunks-complete check, a commit guard, and `missing_chunk` reconciliation through upload status. The transfer UI now has per-file pause/resume/retry/cancel actions and compact status-colored rows. The VFS read-only attribute is enforced in `CAN^MIOOSFS` for write/delete, including owner access. Customize live preview now maps more profile fields into CSS variables so non-preset tab changes visibly affect the shell.
