@@ -313,3 +313,11 @@ Built-in desktop applications now share one shell action model for confirmations
 - The active shell now uses one desktop instead of multiple workspaces.
 - Window visibility, taskbar grouping, and terminal launch now operate on one desktop surface.
 - Workspace compatibility fields remain in the boot contract only where they simplify migration.
+
+
+## ROI 58 — unified shell overhaul
+- Added a new shell-overhaul stylesheet loaded after the legacy shell layers so the taskbar, launcher, explorer, transfers, and customize surfaces can be modernized without abandoning the native desktop window grammar.
+- The shell now follows a 7.css-primary plus Basecoat-augment model: 7.css anchors the OS window posture while Basecoat-style polish is reserved for title controls, grouped actions, fields, and emphasis buttons.
+- Explorer now renders with a Windows-like address path, navigation rail, detail table, and preview pane while keeping the existing MIOOS file operations and websocket flow.
+- Transfers now render as a more serious transfer center with a hero progress surface, stat cards, queue rows, and direct recovery actions.
+- Customize now exposes a richer multi-section theme editor with unified profile tokens for desktop, panel, launcher, window chrome, typography, effects, and export/runtime preview.

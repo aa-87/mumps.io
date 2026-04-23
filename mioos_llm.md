@@ -450,3 +450,11 @@ ROI 54 — shell-standard app actions and built-in app polish
 - The active shell keeps tray-panel notifications only; stale explorer menubar/taskpane CSS and the old top-right notification-stack CSS were removed from the runtime stylesheet.
 - The current shell contract remains one desktop rooted at **Home**, with Terminal, Transfers, Customize, and Folder Properties as the first-class built-in windows.
 
+
+
+## ROI 58 — unified shell overhaul
+- The active shell now uses a unified overhaul layer for Start, Taskbar, Explorer, Transfers, Customize, and Folder Properties while preserving the existing single-desktop MIOOS architecture.
+- `templates/layouts/mioos_shell.html` now loads local `7.scoped.css` plus `mioos_shell_overhaul.css`; the page template keeps the real window/app structure while the new stylesheet sharpens the OS-native presentation.
+- `public/mioos/app/mioos_core.js` now normalizes theme profiles around generic families (`meadow-classic`, `glass-horizon`, `graphite-dock`, `ember-panel`) and resolves shell tokens for launcher width, task sizing, sidebar width, preview width, title metrics, blur, transparency, and desktop wallpaper layers.
+- `public/mioos/app/mioos_explorer.js` now exposes filtered explorer rows, breadcrumb paths, preview facts, and direct path navigation helpers used by the redesigned explorer surface.
+- `routines/MIOOSST.m` now advertises the upgraded theme-system contract, including 7.css-first window grammar, Basecoat control augmentation, and boot-time preset family metadata.

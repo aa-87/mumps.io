@@ -138,7 +138,7 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("themeSystemPersistence")=$GET(CONF("mioos","desktop","themeSystem","persistence"),"localstorage-applied-profile")
 	SET STATE("themeSystemLiveApply")=+$GET(CONF("mioos","desktop","themeSystem","liveApply"),1)
 	SET STATE("themeSystemQuickSwitch")=+$GET(CONF("mioos","desktop","themeSystem","quickSwitch"),1)
-	SET STATE("themeSystemVersion")=+$GET(CONF("mioos","desktop","themeSystem","version"),2)
+	SET STATE("themeSystemVersion")=+$GET(CONF("mioos","desktop","themeSystem","version"),4)
 	SET STATE("shellChrome")=$GET(CONF("mioos","desktop","chrome"),"shell-foundation")
 	SET STATE("taskbarStyle")=$GET(CONF("mioos","desktop","taskbarStyle"),"taskbar-foundation")
 	SET STATE("startMenuStyle")=$GET(CONF("mioos","desktop","startMenuStyle"),"launcher-foundation")
@@ -473,7 +473,7 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","persistence","windowLayout")="localstorage-window-layout"
 	SET OBJ("desktop","persistence","authWindow")="localstorage-auth-window-frame"
 	SET OBJ("desktop","accessibility","reducedMotionToggle")=1
-	SET OBJ("desktop","themeSystem","version")=+$GET(STATE("themeSystemVersion"),2)
+	SET OBJ("desktop","themeSystem","version")=+$GET(STATE("themeSystemVersion"),4)
 	SET OBJ("desktop","themeSystem","editor")=$GET(STATE("themeSystemEditor"),"customize")
 	SET OBJ("desktop","themeSystem","persistence")=$GET(STATE("themeSystemPersistence"),"localstorage-applied-profile")
 	SET OBJ("desktop","themeSystem","liveApply")=+$GET(STATE("themeSystemLiveApply"),1)
@@ -481,6 +481,16 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","themeSystem","densityOptions",1)="compact"
 	SET OBJ("desktop","themeSystem","densityOptions",2)="comfortable"
 	SET OBJ("desktop","themeSystem","densityOptions",3)="spacious"
+	SET OBJ("desktop","themeSystem","windowGrammar")="7css-primary"
+	SET OBJ("desktop","themeSystem","controlAugment")="basecoat-augment"
+	SET OBJ("desktop","themeSystem","presetFamilies",1,"key")="meadow-classic"
+	SET OBJ("desktop","themeSystem","presetFamilies",1,"title")="Meadow Classic"
+	SET OBJ("desktop","themeSystem","presetFamilies",2,"key")="glass-horizon"
+	SET OBJ("desktop","themeSystem","presetFamilies",2,"title")="Glass Horizon"
+	SET OBJ("desktop","themeSystem","presetFamilies",3,"key")="graphite-dock"
+	SET OBJ("desktop","themeSystem","presetFamilies",3,"title")="Graphite Dock"
+	SET OBJ("desktop","themeSystem","presetFamilies",4,"key")="ember-panel"
+	SET OBJ("desktop","themeSystem","presetFamilies",4,"title")="Ember Panel"
 	SET OBJ("desktop","performance","uploadUiStrategy")="throttled-progress-updates-and-persistent-resume"
 	SET OBJ("desktop","performance","uploadBatching")="websocket-batch-with-single-chunk-fallback"
 	DO THEMES($NAME(OBJ("desktop","themes")),$GET(STATE("themeKey")))
@@ -620,54 +630,78 @@ WIN(STATE,N,ID,APPKEY,TITLE,LEFT,TOP,WIDTH,HEIGHT,Z,MODE,MINW,MINH,RESIZE,DRAG,K
 	;
 THEMES(ROOT,CURRENT)
 		KILL @ROOT
-		SET @ROOT@(1,"key")="luna-blue"
-		SET @ROOT@(1,"title")="Luna Blue"
-		SET @ROOT@(1,"family")="Windows XP"
+		SET @ROOT@(1,"key")="meadow-classic-light"
+		SET @ROOT@(1,"title")="Meadow Classic"
+		SET @ROOT@(1,"family")="Meadow Classic"
+		SET @ROOT@(1,"familyKey")="meadow-classic"
 		SET @ROOT@(1,"mode")="light"
-		SET @ROOT@(1,"isCurrent")=$SELECT($GET(CURRENT)="luna-blue":1,1:0)
-		SET @ROOT@(1,"wallpaper")="aurora"
-		SET @ROOT@(1,"accent")="#2f67d8"
-		SET @ROOT@(1,"taskbar")="#245dd8"
-		SET @ROOT@(2,"key")="royale-noir"
-		SET @ROOT@(2,"title")="Royale Noir"
-		SET @ROOT@(2,"family")="Windows XP"
+		SET @ROOT@(1,"isCurrent")=$SELECT($GET(CURRENT)="luna-blue":1,$GET(CURRENT)="meadow-classic-light":1,1:0)
+		SET @ROOT@(1,"wallpaper")="gradient-gloss"
+		SET @ROOT@(1,"accent")="#3a78d8"
+		SET @ROOT@(1,"taskbar")="#4b82d8"
+		SET @ROOT@(2,"key")="meadow-classic-dark"
+		SET @ROOT@(2,"title")="Meadow Classic Night"
+		SET @ROOT@(2,"family")="Meadow Classic"
+		SET @ROOT@(2,"familyKey")="meadow-classic"
 		SET @ROOT@(2,"mode")="dark"
-		SET @ROOT@(2,"isCurrent")=$SELECT($GET(CURRENT)="royale-noir":1,1:0)
-		SET @ROOT@(2,"wallpaper")="aurora-night"
-		SET @ROOT@(2,"accent")="#6fa8ff"
-		SET @ROOT@(2,"taskbar")="#1b2e48"
-		SET @ROOT@(3,"key")="aero-glass"
-		SET @ROOT@(3,"title")="Aero Glass"
-		SET @ROOT@(3,"family")="Windows 7"
+		SET @ROOT@(2,"isCurrent")=$SELECT($GET(CURRENT)="royale-noir":1,$GET(CURRENT)="meadow-classic-dark":1,1:0)
+		SET @ROOT@(2,"wallpaper")="gradient-gloss"
+		SET @ROOT@(2,"accent")="#8eb6ff"
+		SET @ROOT@(2,"taskbar")="#223951"
+		SET @ROOT@(3,"key")="glass-horizon-light"
+		SET @ROOT@(3,"title")="Glass Horizon"
+		SET @ROOT@(3,"family")="Glass Horizon"
+		SET @ROOT@(3,"familyKey")="glass-horizon"
 		SET @ROOT@(3,"mode")="light"
-		SET @ROOT@(3,"isCurrent")=$SELECT($GET(CURRENT)="aero-glass":1,1:0)
-		SET @ROOT@(3,"wallpaper")="paper-dawn"
-		SET @ROOT@(3,"accent")="#4b86e8"
-		SET @ROOT@(3,"taskbar")="#dce7f5"
-		SET @ROOT@(4,"key")="aero-midnight"
-		SET @ROOT@(4,"title")="Aero Midnight"
-		SET @ROOT@(4,"family")="Windows 7"
+		SET @ROOT@(3,"isCurrent")=$SELECT($GET(CURRENT)="aero-glass":1,$GET(CURRENT)="glass-horizon-light":1,1:0)
+		SET @ROOT@(3,"wallpaper")="gradient-gloss"
+		SET @ROOT@(3,"accent")="#72a8ff"
+		SET @ROOT@(3,"taskbar")="#6385bd"
+		SET @ROOT@(4,"key")="glass-horizon-dark"
+		SET @ROOT@(4,"title")="Glass Horizon Midnight"
+		SET @ROOT@(4,"family")="Glass Horizon"
+		SET @ROOT@(4,"familyKey")="glass-horizon"
 		SET @ROOT@(4,"mode")="dark"
-		SET @ROOT@(4,"isCurrent")=$SELECT($GET(CURRENT)="aero-midnight":1,1:0)
-		SET @ROOT@(4,"wallpaper")="paper-night"
-		SET @ROOT@(4,"accent")="#7eb6ff"
-		SET @ROOT@(4,"taskbar")="#192638"
-		SET @ROOT@(5,"key")="ubuntu-human"
-		SET @ROOT@(5,"title")="Ubuntu Human"
-		SET @ROOT@(5,"family")="Ubuntu"
+		SET @ROOT@(4,"isCurrent")=$SELECT($GET(CURRENT)="aero-midnight":1,$GET(CURRENT)="glass-horizon-dark":1,1:0)
+		SET @ROOT@(4,"wallpaper")="gradient-gloss"
+		SET @ROOT@(4,"accent")="#93b0ff"
+		SET @ROOT@(4,"taskbar")="#1d2a3d"
+		SET @ROOT@(5,"key")="graphite-dock-light"
+		SET @ROOT@(5,"title")="Graphite Dock"
+		SET @ROOT@(5,"family")="Graphite Dock"
+		SET @ROOT@(5,"familyKey")="graphite-dock"
 		SET @ROOT@(5,"mode")="light"
-		SET @ROOT@(5,"isCurrent")=$SELECT($GET(CURRENT)="ubuntu-human":1,1:0)
-		SET @ROOT@(5,"wallpaper")="sunrise-grid"
-		SET @ROOT@(5,"accent")="#dd6a36"
-		SET @ROOT@(5,"taskbar")="#f2e7df"
-		SET @ROOT@(6,"key")="ubuntu-graphite"
-		SET @ROOT@(6,"title")="Ubuntu Graphite"
-		SET @ROOT@(6,"family")="Ubuntu"
+		SET @ROOT@(5,"isCurrent")=$SELECT($GET(CURRENT)="graphite-dock-light":1,1:0)
+		SET @ROOT@(5,"wallpaper")="gradient-gloss"
+		SET @ROOT@(5,"accent")="#7da8ff"
+		SET @ROOT@(5,"taskbar")="#d9dce4"
+		SET @ROOT@(6,"key")="graphite-dock-dark"
+		SET @ROOT@(6,"title")="Graphite Dock Night"
+		SET @ROOT@(6,"family")="Graphite Dock"
+		SET @ROOT@(6,"familyKey")="graphite-dock"
 		SET @ROOT@(6,"mode")="dark"
-		SET @ROOT@(6,"isCurrent")=$SELECT($GET(CURRENT)="ubuntu-graphite":1,1:0)
-		SET @ROOT@(6,"wallpaper")="midnight-grid"
-		SET @ROOT@(6,"accent")="#ffb087"
-		SET @ROOT@(6,"taskbar")="#20161a"
+		SET @ROOT@(6,"isCurrent")=$SELECT($GET(CURRENT)="graphite-dock-dark":1,1:0)
+		SET @ROOT@(6,"wallpaper")="gradient-gloss"
+		SET @ROOT@(6,"accent")="#a9beff"
+		SET @ROOT@(6,"taskbar")="#2e343f"
+		SET @ROOT@(7,"key")="ember-panel-light"
+		SET @ROOT@(7,"title")="Ember Panel"
+		SET @ROOT@(7,"family")="Ember Panel"
+		SET @ROOT@(7,"familyKey")="ember-panel"
+		SET @ROOT@(7,"mode")="light"
+		SET @ROOT@(7,"isCurrent")=$SELECT($GET(CURRENT)="ubuntu-human":1,$GET(CURRENT)="ember-panel-light":1,1:0)
+		SET @ROOT@(7,"wallpaper")="gradient-gloss"
+		SET @ROOT@(7,"accent")="#ffb26d"
+		SET @ROOT@(7,"taskbar")="#f0a05d"
+		SET @ROOT@(8,"key")="ember-panel-dark"
+		SET @ROOT@(8,"title")="Ember Panel Night"
+		SET @ROOT@(8,"family")="Ember Panel"
+		SET @ROOT@(8,"familyKey")="ember-panel"
+		SET @ROOT@(8,"mode")="dark"
+		SET @ROOT@(8,"isCurrent")=$SELECT($GET(CURRENT)="ubuntu-graphite":1,$GET(CURRENT)="ember-panel-dark":1,1:0)
+		SET @ROOT@(8,"wallpaper")="gradient-gloss"
+		SET @ROOT@(8,"accent")="#ffb087"
+		SET @ROOT@(8,"taskbar")="#3c241f"
 		QUIT
 		;
 CSV2ARY(CSV,ROOT)

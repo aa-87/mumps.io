@@ -609,6 +609,7 @@
             selection: null,
             error: '',
             addressInput: '',
+            searchQuery: '',
             history: [],
             historyIndex: -1,
             viewMode: 'details',
@@ -1799,6 +1800,47 @@
         state.historyIndex += 1;
         target = state.history[state.historyIndex];
         if (target) this.loadExplorerFolder(windowId, target.id, { selectFirst: false, skipHistory: true });
+      },
+      explorerVisibleItems: function (win) {
+        var state = this.ensureExplorerWindowState(win);
+        var query = String(((state || {}).searchQuery) || '').trim().toLowerCase();
+        var items = ((state || {}).items || []).slice();
+        if (!query) return items;
+        return items.filter(function (item) {
+          var hay = [item && item.name, item && item.title, item && item.path, item && item.mime, item && item.kind].join(' ').toLowerCase();
+          return hay.indexOf(query) >= 0;
+        });
+      },
+      explorerFolderTiles: function (win) {
+        return this.explorerVisibleItems(win).filter(function (item) { return String((item && (item.kind || item.mime || '')) || '').toLowerCase() === 'folder'; }).slice(0, 4);
+      },
+      explorerBreadcrumbs: function (win) {
+        var state = this.ensureExplorerWindowState(win);
+        var path = String((((state || {}).folder || {}).path) || '/Home');
+        var parts = path.split('/').filter(Boolean);
+        var acc = '';
+        if (!parts.length) return [{ label: 'Home', path: '/Home', isCurrent: true }];
+        return parts.map(function (part, idx) {
+          acc = acc + '/' + part;
+          return { label: part, path: acc, isCurrent: idx === (parts.length - 1) };
+        });
+      },
+      explorerNavigateToPath: function (windowId, path) {
+        var win = this.windows.find(function (entry) { return entry.id === windowId; });
+        var state = this.ensureExplorerWindowState(win);
+        if (!state) return;
+        state.addressInput = path || '/Home';
+        return this.explorerGoToAddress(windowId);
+      },
+      explorerPreviewFacts: function (win) {
+        var state = this.ensureExplorerWindowState(win) || {};
+        var target = state.selection || state.folder || {};
+        return [
+          { label: 'Type', value: this.explorerItemTypeLabel(target) },
+          { label: 'Location', value: target.path || state.addressInput || '/Home' },
+          { label: 'Modified', value: this.explorerItemModifiedLabel(target) },
+          { label: 'Size', value: this.explorerItemSizeLabel(target) }
+        ];
       },
       explorerCanGoBack: function (win) { var state = this.ensureExplorerWindowState(win); return !!(state && state.historyIndex > 0); },
       explorerCanGoForward: function (win) { var state = this.ensureExplorerWindowState(win); return !!(state && state.historyIndex < ((state.history || []).length - 1)); },

@@ -512,6 +512,33 @@
           if (!item) return '';
           return (item.stage || item.status || 'Queued') + (item.error ? ' — ' + item.error : '');
         },
+        transferActiveCount: function () {
+          return this.activeTransfers().filter(function (item) { return item.status !== 'paused'; }).length;
+        },
+        transferPausedCount: function () {
+          return this.activeTransfers().filter(function (item) { return item.status === 'paused'; }).length;
+        },
+        transferCompletedCount: function () {
+          return this.completedTransfers().filter(function (item) { return item.status === 'completed'; }).length;
+        },
+        transferFailedCount: function () {
+          return this.completedTransfers().filter(function (item) { return item.status === 'failed'; }).length;
+        },
+        transferPrimaryItem: function () {
+          return (this.activeTransfers() || [])[0] || (this.completedTransfers() || [])[0] || null;
+        },
+        transferQueueRows: function (limit) {
+          var rows = (this.transferCenter.items || []).slice();
+          rows.sort(function (a, b) { return +((b && (b.updatedAt || b.startedAt || 0)) || 0) - +((a && (a.updatedAt || a.startedAt || 0)) || 0); });
+          return rows.slice(0, Math.max(1, +(limit || 8)));
+        },
+        trayStatusIndicators: function () {
+          return [
+            { key: 'socket', label: this.socketConnected ? 'Live' : 'Offline', state: this.socketConnected ? 'live' : 'alert' },
+            { key: 'transfer', label: this.transferActiveCount() ? 'Transfers active' : 'Transfers idle', state: this.transferActiveCount() ? 'busy' : 'live' },
+            { key: 'notify', label: this.unreadNotificationCount() ? 'Unread alerts' : 'No alerts', state: this.unreadNotificationCount() ? 'alert' : 'live' }
+          ];
+        },
         t: function (key, fallback) {
           return I18N.t ? I18N.t(this, key, fallback) : (fallback || key);
         },
@@ -1537,17 +1564,96 @@
           if (color.indexOf('color-mix(') === 0) return color;
           return fallback;
         },
+        themeStudioCanonicalPresetKey: function (presetKey) {
+          var key = String(presetKey || '').toLowerCase();
+          var map = {
+            'xp-classic-blue': 'luna-blue',
+            'xp-classic-dark': 'royale-noir',
+            'meadow-classic': 'meadow-classic-light',
+            'glass-horizon': 'glass-horizon-light',
+            'graphite-dock': 'graphite-dock-light',
+            'ember-panel': 'ember-panel-light'
+          };
+          return map[key] || key || 'glass-horizon-light';
+        },
+        themeStudioFamilyKey: function (presetKey) {
+          var key = this.themeStudioCanonicalPresetKey(presetKey);
+          if (['luna-blue', 'royale-noir', 'meadow-classic-light', 'meadow-classic-dark'].indexOf(key) >= 0) return 'meadow-classic';
+          if (['aero-glass', 'aero-midnight', 'glass-horizon-light', 'glass-horizon-dark'].indexOf(key) >= 0) return 'glass-horizon';
+          if (['graphite-dock-light', 'graphite-dock-dark'].indexOf(key) >= 0) return 'graphite-dock';
+          if (['ubuntu-human', 'ubuntu-graphite', 'ember-panel-light', 'ember-panel-dark'].indexOf(key) >= 0) return 'ember-panel';
+          return 'custom';
+        },
+        themeStudioFamilyLabel: function (familyKey) {
+          var key = String(familyKey || '').toLowerCase();
+          if (key === 'meadow-classic') return 'Meadow Classic';
+          if (key === 'glass-horizon') return 'Glass Horizon';
+          if (key === 'graphite-dock') return 'Graphite Dock';
+          if (key === 'ember-panel') return 'Ember Panel';
+          return 'Custom';
+        },
         themeStudioNormalizeProfile: function (profile) {
-          var base = this.themeStudioFactoryProfile('Custom Theme', 'Custom', 'light');
-          var next = Object.assign({}, base, profile || {});
-          if (next.presetKey === 'xp-classic-blue') next.presetKey = 'luna-blue';
-          if (next.presetKey === 'xp-classic-dark') next.presetKey = 'royale-noir';
-          next.targets = Object.assign({}, base.targets, (profile || {}).targets || {});
-          next.colors = Object.assign({}, base.colors, (profile || {}).colors || {});
-          next.fonts = Object.assign({}, base.fonts, (profile || {}).fonts || {});
-          next.metrics = Object.assign({}, base.metrics, (profile || {}).metrics || {});
-          next.recipes = Object.assign({}, base.recipes, (profile || {}).recipes || {});
-          if (!next.presetKey && next.family) next.presetKey = String(next.family).toLowerCase() + '-' + (next.mode || 'light');
+          var incoming = profile || {};
+          var base = this.themeStudioFactoryProfile('Custom Theme', 'Custom', incoming.activeMode || incoming.mode || 'light');
+          var next = Object.assign({}, base, incoming || {});
+          var desktopIn = incoming.desktop || {};
+          var appearanceIn = incoming.appearance || {};
+          var panelIn = incoming.panel || {};
+          var launcherIn = incoming.launcher || {};
+          var windowChromeIn = incoming.windowChrome || {};
+          var colorsIn = incoming.colors || {};
+          next.presetKey = this.themeStudioCanonicalPresetKey(next.presetKey || 'glass-horizon-light');
+          next.familyKey = incoming.familyKey || next.familyKey || this.themeStudioFamilyKey(next.presetKey);
+          next.family = incoming.family || next.family || this.themeStudioFamilyLabel(next.familyKey);
+          next.mode = ((incoming.activeMode || next.mode || 'light') === 'dark') ? 'dark' : 'light';
+          next.activeMode = next.mode;
+          next.coverage = Object.assign({}, base.coverage, incoming.coverage || {});
+          next.appearance = Object.assign({}, base.appearance, appearanceIn || {});
+          next.desktop = Object.assign({}, base.desktop, desktopIn || {});
+          next.panel = Object.assign({}, base.panel, panelIn || {});
+          next.launcher = Object.assign({}, base.launcher, launcherIn || {});
+          next.windowChrome = Object.assign({}, base.windowChrome, windowChromeIn || {});
+          next.fonts = Object.assign({}, base.fonts, incoming.fonts || {});
+          next.metrics = Object.assign({}, base.metrics, incoming.metrics || {});
+          next.effects = Object.assign({}, base.effects, incoming.effects || {});
+          next.validation = Object.assign({}, base.validation, incoming.validation || {});
+          next.exports = Object.assign({}, base.exports, incoming.exports || {});
+          next.mobile = Object.assign({}, base.mobile, incoming.mobile || {});
+          next.targets = Object.assign({}, base.targets, incoming.targets || {});
+          next.colors = Object.assign({}, base.colors, colorsIn || {});
+          next.recipes = Object.assign({}, base.recipes, incoming.recipes || {});
+          if (incoming.wallpaperPreset && !desktopIn.wallpaperPreset) next.desktop.wallpaperPreset = incoming.wallpaperPreset;
+          if (incoming.wallpaperUrl && !desktopIn.wallpaperUrl) next.desktop.wallpaperUrl = incoming.wallpaperUrl;
+          if (incoming.wallpaperFit && !desktopIn.wallpaperFit) next.desktop.wallpaperFit = incoming.wallpaperFit;
+          if (incoming.desktopColor && !desktopIn.color) next.desktop.color = incoming.desktopColor;
+          if (incoming.colors && incoming.colors.accent) next.appearance.accent = incoming.colors.accent;
+          if (incoming.colors && incoming.colors.titlebar) next.windowChrome.titleTop = incoming.colors.titlebar;
+          if (incoming.colors && incoming.colors.startButton) next.panel.startTop = incoming.colors.startButton;
+          if (incoming.colors && incoming.colors.taskbar) next.panel.taskbarTop = incoming.colors.taskbar;
+          if (incoming.metrics && incoming.metrics.taskbarHeight) next.panel.height = +(incoming.metrics.taskbarHeight || next.panel.height);
+          if (incoming.metrics && incoming.metrics.iconSize) next.desktop.iconSize = +(incoming.metrics.iconSize || next.desktop.iconSize);
+          next.colors.accent = next.appearance.accent || next.colors.accent;
+          next.colors.accentStrong = next.colors.accentStrong || next.colors.accent;
+          next.colors.titlebar = next.windowChrome.titleTop;
+          next.colors.inactiveTitlebar = next.windowChrome.titleBottom;
+          next.colors.taskbar = next.panel.taskbarTop;
+          next.colors.taskbarDark = next.panel.taskbarBottom;
+          next.colors.startButton = next.panel.startTop;
+          next.colors.taskbarText = next.colors.taskbarText || '#ffffff';
+          next.colors.titleText = next.colors.titleText || '#173a68';
+          next.colors.panel = next.colors.panel || '#f8fbff';
+          next.colors.panelAlt = next.colors.panelAlt || '#ffffff';
+          next.colors.panelText = next.colors.panelText || '#1a314d';
+          next.colors.iconText = next.colors.iconText || '#f6fbff';
+          next.colors.border = next.colors.border || '#86a2c5';
+          next.colors.focus = next.colors.focus || '#ffd86c';
+          next.desktopColor = next.desktop.color || next.desktopColor || '#183b66';
+          next.wallpaperPreset = next.desktop.wallpaperPreset;
+          next.wallpaperUrl = next.desktop.wallpaperUrl;
+          next.wallpaperFit = next.desktop.wallpaperFit;
+          next.customVariablesJson = String(next.customVariablesJson || base.customVariablesJson || '{\n}');
+          next.extraCss = String(next.extraCss || '');
+          next.notes = String(next.notes || '');
           return next;
         },
         themeStudioPersistProfiles: function () {
@@ -1571,9 +1677,29 @@
           return node;
         },
         themeStudioWallpaperCss: function (profile) {
-          var bg = this.themeStudioPreviewWallpaper(profile || {});
-          if (String(bg).indexOf('url(') === 0) return (profile.desktopColor || '#3a6ea5') + ' ' + bg + ' center / ' + ((profile.wallpaperFit === 'tile') ? '240px auto' : (profile.wallpaperFit || 'cover')) + ' ' + ((profile.wallpaperFit === 'tile') ? 'repeat' : 'no-repeat');
-          return bg;
+          var p = this.themeStudioNormalizeProfile(profile || {});
+          var desktop = p.desktop || {};
+          var overlay = String(desktop.overlay || 'gloss');
+          var wallpaperTop = desktop.wallpaperTop || '#2d66c2';
+          var wallpaperMiddle = desktop.wallpaperMiddle || '#153a79';
+          var wallpaperBottom = desktop.wallpaperBottom || '#0d244b';
+          var fit = desktop.wallpaperFit || 'cover';
+          var mode = desktop.wallpaperPreset || 'gradient-gloss';
+          var base = 'linear-gradient(180deg, ' + wallpaperTop + ' 0%, ' + wallpaperMiddle + ' 52%, ' + wallpaperBottom + ' 100%)';
+          if (mode === 'custom-url' && desktop.wallpaperUrl) {
+            return 'linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.02)), url(' + desktop.wallpaperUrl + ') center / ' + (fit === 'tile' ? '240px auto' : fit) + ' ' + (fit === 'tile' ? 'repeat' : 'no-repeat');
+          }
+          if (mode === 'aurora') return 'linear-gradient(180deg, #183b66 0%, #365d93 42%, #87a6cf 100%)';
+          if (mode === 'aurora-night' || mode === 'paper-night') return 'linear-gradient(180deg, #0f1726 0%, #1d2a41 100%)';
+          if (mode === 'paper-dawn') return 'linear-gradient(180deg, #f5f7fb 0%, #d9e2f4 100%)';
+          if (mode === 'sunrise-grid') return 'linear-gradient(180deg, #c84f2c 0%, #ea8a5a 48%, #f3d7c6 100%)';
+          if (mode === 'midnight-grid') return 'linear-gradient(180deg, #3c1f2a 0%, #1c1320 55%, #0f0a10 100%)';
+          if (mode === 'solid-blue') return '#245edb';
+          if (mode === 'solid-graphite') return '#5f6773';
+          if (overlay === 'gloss' || mode === 'gradient-gloss') {
+            return 'radial-gradient(circle at 18% 18%, rgba(255,255,255,0.18), transparent 24%), radial-gradient(circle at 82% 10%, rgba(255,255,255,0.12), transparent 20%), ' + base;
+          }
+          return base;
         },
         availableShellThemes: function () {
           return ((((this.boot || {}).desktop || {}).themes) || []).slice();
@@ -1581,12 +1707,21 @@
         shellDensityOptions: function () {
           return (((((this.boot || {}).desktop || {}).themeSystem || {}).densityOptions) || ['compact','comfortable','spacious']).slice();
         },
+        themeStudioPresetFamilies: function () {
+          return [
+            { key: 'meadow-classic', name: 'Meadow Classic', description: 'Brighter classic shell with stronger bevels and a calm enterprise desktop.' },
+            { key: 'glass-horizon', name: 'Glass Horizon', description: 'Glossy blue shell with glassy titlebars and refined aero-like contrast.' },
+            { key: 'graphite-dock', name: 'Graphite Dock', description: 'Graphite metallic shell with dock-ready surfaces and restrained chrome.' },
+            { key: 'ember-panel', name: 'Ember Panel', description: 'Warm panel desktop with balanced contrast and Ubuntu-inspired utility surfaces.' }
+          ];
+        },
         applyBootThemeDefaults: function () {
           var desktop = (this.boot || {}).desktop || {};
           var preset = this.themeStudioPresetProfile(desktop.themeKey || 'luna-blue');
           preset.mode = desktop.themeMode || preset.mode || 'light';
+          preset.activeMode = preset.mode;
           preset.density = desktop.density || preset.density || 'comfortable';
-          if (desktop.wallpaper) preset.wallpaperPreset = desktop.wallpaper;
+          if (desktop.wallpaper) preset.desktop.wallpaperPreset = desktop.wallpaper;
           this.applyThemeStudioProfile(preset, { silent: true, persist: false });
         },
         applyPersistedThemeStudioProfile: function () {
@@ -1600,12 +1735,12 @@
         },
         setShellTheme: function (themeKey) {
           var current = this.appliedThemeProfile ? window.MIOOSState.deepClone(this.appliedThemeProfile) : this.themeStudioPresetProfile((((this.boot || {}).desktop || {}).themeKey) || 'luna-blue');
-          var next = this.themeStudioPresetProfile(themeKey || 'luna-blue');
+          var next = this.themeStudioPresetProfile(themeKey || 'glass-horizon-light');
           next.density = current.density || next.density || 'comfortable';
           this.applyThemeStudioProfile(next, { persist: true });
         },
         setDesktopDensity: function (density) {
-          var next = this.appliedThemeProfile ? window.MIOOSState.deepClone(this.appliedThemeProfile) : this.themeStudioPresetProfile((((this.boot || {}).desktop || {}).themeKey) || 'luna-blue');
+          var next = this.appliedThemeProfile ? window.MIOOSState.deepClone(this.appliedThemeProfile) : this.themeStudioPresetProfile((((this.boot || {}).desktop || {}).themeKey) || 'glass-horizon-light');
           next.density = density || 'comfortable';
           this.applyThemeStudioProfile(next, { silent: true, persist: true });
           this.showAlert('Shell Density', 'Density set to ' + next.density + '.');
@@ -1614,58 +1749,78 @@
           var rootNode = this.themeStudioRootNode();
           var opts = options || {};
           var p = this.themeStudioNormalizeProfile(profile || {});
-          var colors = p.colors || {};
+          var desktop = p.desktop || {};
+          var appearance = p.appearance || {};
+          var panel = p.panel || {};
+          var launcher = p.launcher || {};
+          var windowChrome = p.windowChrome || {};
           var fonts = p.fonts || {};
           var metrics = p.metrics || {};
+          var effects = p.effects || {};
+          var colors = p.colors || {};
           var body = document.body;
           var styleNode = this.themeStudioEnsureStyleNode();
           var vars;
           if (!rootNode) return;
           vars = {
-            '--mioos-font': fonts.ui || 'Tahoma, "Segoe UI", sans-serif',
+            '--mioos-font': fonts.ui || '"Segoe UI", Tahoma, sans-serif',
             '--mioos-font-mono': fonts.mono || 'Consolas, monospace',
-            '--mioos-blue-1': this.themeStudioSanitizeColor(colors.accent, '#3a6ee8'),
-            '--mioos-blue-2': this.themeStudioSanitizeColor(colors.accentStrong, '#1f4fbf'),
-            '--mioos-blue-3': this.themeStudioSanitizeColor(colors.accentStrong, '#173a8f'),
-            '--mioos-taskbar': this.themeStudioSanitizeColor(colors.taskbar, '#245edb'),
-            '--mioos-taskbar-dark': this.themeStudioSanitizeColor(colors.taskbarDark || colors.taskbar, '#1844a0'),
-            '--mioos-start': this.themeStudioSanitizeColor(colors.startButton || '#2aa12a', '#2aa12a'),
-            '--mioos-border': this.themeStudioSanitizeColor(colors.border, '#7f9db9'),
-            '--mioos-panel': this.themeStudioSanitizeColor(colors.panel, '#f4f7fb'),
-            '--mioos-panel-2': this.themeStudioSanitizeColor(colors.panelAlt || '#ffffff', '#ffffff'),
-            '--mioos-text': this.themeStudioSanitizeColor(colors.panelText, '#0b1830'),
-            '--mioos-muted': this.themeStudioSanitizeColor(colors.muted || '#44536d', '#44536d'),
-            '--mioos-focus': this.themeStudioSanitizeColor(colors.focus || '#ffd043', '#ffd043'),
-            '--mioos-titlebar': this.themeStudioSanitizeColor(colors.titlebar, '#2b5bc7'),
-            '--mioos-titlebar-inactive': this.themeStudioSanitizeColor(colors.inactiveTitlebar || '#5877a9', '#5877a9'),
-            '--mioos-titlebar-text': this.themeStudioSanitizeColor(colors.titleText || '#ffffff', '#ffffff'),
-            '--mioos-taskbar-text': this.themeStudioSanitizeColor(colors.taskbarText || '#ffffff', '#ffffff'),
-            '--mioos-icon-text': this.themeStudioSanitizeColor(colors.iconText || '#ffffff', '#ffffff'),
-            '--mioos-window-radius': Math.max(0, +(metrics.windowRadius || 8)) + 'px',
-            '--mioos-window-border-width': Math.max(1, +(metrics.windowBorder || 1)) + 'px',
-            '--mioos-button-radius': Math.max(0, +(metrics.buttonRadius || 6)) + 'px',
-            '--mioos-taskbar-height': Math.max(32, +(metrics.taskbarHeight || 40)) + 'px',
-            '--mioos-base-size': Math.max(11, +(fonts.baseSize || 13)) + 'px',
-            '--mioos-title-size': Math.max(11, +(fonts.titleSize || 13)) + 'px',
-            '--mioos-shadow': '0 ' + (Math.max(6, +(metrics.shadowDepth || 18))) + 'px ' + (Math.max(18, +(metrics.shadowDepth || 18) * 2)) + 'px rgba(0, 24, 64, 0.34)',
-            '--mioos-desktop-background': this.themeStudioWallpaperCss(p),
-            '--mioos-body-background': this.themeStudioSanitizeColor(p.desktopColor || '#4f91ea', '#4f91ea'),
-            '--mioos-icon-shadow': colors.desktopGlow || '0 1px 2px rgba(0,0,0,0.55)'
+            '--mioos-blue-1': this.themeStudioSanitizeColor(colors.accent || appearance.accent, '#72a8ff'),
+            '--mioos-blue-2': this.themeStudioSanitizeColor(colors.accentStrong || colors.accent || appearance.accent, '#4d7cff'),
+            '--mioos-taskbar': this.themeStudioSanitizeColor(panel.taskbarTop || colors.taskbar, '#6385bd'),
+            '--mioos-taskbar-dark': this.themeStudioSanitizeColor(panel.taskbarBottom || colors.taskbarDark || colors.taskbar, '#24406f'),
+            '--mioos-start': this.themeStudioSanitizeColor(panel.startTop || colors.startButton, '#7fd25f'),
+            '--mioos-text': this.themeStudioSanitizeColor(colors.panelText, '#173455'),
+            '--mioos-muted': this.themeStudioSanitizeColor(colors.muted, '#5a7087'),
+            '--mioos-titlebar': this.themeStudioSanitizeColor(windowChrome.titleTop || colors.titlebar, '#6f93c7'),
+            '--mioos-taskbar-text': this.themeStudioSanitizeColor(colors.taskbarText, '#ffffff'),
+            '--mioos-window-radius': Math.max(0, +(metrics.windowRadius || appearance.cornerRadius || 10)) + 'px',
+            '--mioos-taskbar-height': Math.max(36, +(panel.height || 46)) + 'px',
+            '--mioos-titlebar-height': Math.max(28, +(windowChrome.titleHeight || 34)) + 'px',
+            '--mioos-caption-size': Math.max(20, +(windowChrome.captionButtonSize || 24)) + 'px',
+            '--mioos-title-size': Math.max(12, +(fonts.titleSize || 12)) + 'px',
+            '--mioos-base-size': Math.max(11, +(fonts.baseSize || 12)) + 'px',
+            '--mioos-launcher-width': Math.max(320, +(launcher.width || 376)) + 'px',
+            '--mioos-launcher-height': Math.max(260, +(launcher.height || 314)) + 'px',
+            '--mioos-start-min-width': Math.max(72, +(panel.startMinWidth || 92)) + 'px',
+            '--mioos-task-min-width': Math.max(88, +(panel.taskMinWidth || 122)) + 'px',
+            '--mioos-sidebar-width': Math.max(180, +(windowChrome.sidebarWidth || 220)) + 'px',
+            '--mioos-preview-width': Math.max(220, +(windowChrome.previewWidth || 272)) + 'px',
+            '--mioos-blur-strength': Math.max(0, +(effects.blurStrength || 14)) + 'px',
+            '--mioos-transparency': Math.max(0, +(effects.transparency || 38)) + '%',
+            '--mioos-selection-opacity': Math.max(8, +(desktop.selectionOpacity || 25)) + '%',
+            '--mioos-icon-grid-gap': Math.max(8, +(desktop.iconSpacing || 16)) + 'px',
+            '--mioos-shadow': '0 ' + Math.max(10, +(metrics.shadowDepth || 18)) + 'px ' + Math.max(22, +(metrics.shadowDepth || 18) * 2) + 'px rgba(17, 31, 52, 0.24)',
+            '--mioos-shell-glass-top': 'rgba(255,255,255,' + (0.70 + (Math.min(60, +(effects.transparency || 38)) / 1000)).toFixed(2) + ')',
+            '--mioos-shell-glass-bottom': 'rgba(225,235,248,' + (0.82 + (Math.min(60, +(effects.transparency || 38)) / 1200)).toFixed(2) + ')',
+            '--mioos-shell-launcher-width': Math.max(320, +(launcher.width || 376)) + 'px',
+            '--mioos-shell-launcher-height': Math.max(260, +(launcher.height || 314)) + 'px',
+            '--mioos-shell-menu-width': 'min(' + Math.max(320, +(launcher.width || 376)) + 'px, calc(100vw - 20px))',
+            '--mioos-shell-start-min-width': Math.max(72, +(panel.startMinWidth || 92)) + 'px',
+            '--mioos-shell-task-min-width': Math.max(88, +(panel.taskMinWidth || 122)) + 'px',
+            '--mioos-shell-sidebar-width': Math.max(180, +(windowChrome.sidebarWidth || 220)) + 'px',
+            '--mioos-shell-preview-width': Math.max(220, +(windowChrome.previewWidth || 272)) + 'px',
+            '--mioos-shell-title-height': Math.max(28, +(windowChrome.titleHeight || 34)) + 'px',
+            '--mioos-shell-caption-size': Math.max(20, +(windowChrome.captionButtonSize || 24)) + 'px'
           };
           Object.keys(vars).forEach(function (key) { rootNode.style.setProperty(key, vars[key]); });
-          rootNode.dataset.themeKey = p.presetKey || (((p.family || 'custom').toLowerCase()) + '-' + (p.mode || 'light'));
+          rootNode.style.setProperty('--mioos-desktop-background', this.themeStudioWallpaperCss(p));
+          rootNode.dataset.themeKey = p.presetKey || 'glass-horizon-light';
           rootNode.dataset.themeMode = p.mode || 'light';
-          rootNode.dataset.themeFamily = (p.family || 'Custom').toLowerCase();
+          rootNode.dataset.themeFamily = p.familyKey || this.themeStudioFamilyKey(p.presetKey);
           rootNode.dataset.themeDensity = p.density || 'comfortable';
-          if (this.boot && this.boot.desktop) { this.boot.desktop.themeKey = rootNode.dataset.themeKey; this.boot.desktop.themeMode = rootNode.dataset.themeMode; this.boot.desktop.density = rootNode.dataset.themeDensity; }
+          if (this.boot && this.boot.desktop) {
+            this.boot.desktop.themeKey = rootNode.dataset.themeKey;
+            this.boot.desktop.themeMode = rootNode.dataset.themeMode;
+            this.boot.desktop.density = rootNode.dataset.themeDensity;
+          }
           rootNode.classList.remove('mioos-theme-dark', 'mioos-theme-light', 'mioos-density-compact', 'mioos-density-spacious');
           rootNode.classList.add((p.mode || 'light') === 'dark' ? 'mioos-theme-dark' : 'mioos-theme-light');
           if ((p.density || '') === 'compact') rootNode.classList.add('mioos-density-compact');
           if ((p.density || '') === 'spacious') rootNode.classList.add('mioos-density-spacious');
-          if (p.desktopClass) rootNode.dataset.themeDesktopClass = p.desktopClass;
-          body.style.background = p.desktopColor || '#4f91ea';
+          body.style.background = desktop.color || '#153a79';
           if (document && document.documentElement) document.documentElement.style.colorScheme = (p.mode || 'light');
-          styleNode.textContent = (p.extraCss || '') + '\n' + (p.desktopCssHint ? ('#mioosRoot{' + p.desktopCssHint + '}') : '');
+          styleNode.textContent = (p.extraCss || '') + '\n' + '#mioosRoot{--mioos-desktop-background:' + this.themeStudioWallpaperCss(p) + ';}\n' + ((p.desktopCssHint || '') ? ('#mioosRoot{' + p.desktopCssHint + '}') : '');
           if (!opts.silent) this.showAlert('Customize', (p.name || 'Custom Theme') + ' applied.');
           this.appliedThemeProfile = window.MIOOSState.deepClone(p);
           if (opts.persist !== false) {
@@ -1674,70 +1829,184 @@
         },
         themeStudioTabList: function () {
           return [
-            { key: 'overview', label: 'Themes' },
-            { key: 'wallpaper', label: 'Desktop' },
-            { key: 'colors', label: 'Appearance' },
-            { key: 'type', label: 'Fonts' },
-            { key: 'metrics', label: 'Metrics' },
-            { key: 'advanced', label: 'Advanced' }
+            { key: 'general', label: 'General' },
+            { key: 'modes', label: 'Modes & Presets' },
+            { key: 'shell', label: 'Desktop & Shell' },
+            { key: 'launcher', label: 'Panel / Start / Dock' },
+            { key: 'window', label: 'Windows & Controls' },
+            { key: 'typography', label: 'Typography & Metrics' },
+            { key: 'effects', label: 'Effects & Export' }
           ];
         },
         themeStudioFactoryProfile: function (name, family, mode) {
           return {
-            presetKey: '', name: name || 'Custom Theme', author: (this.boot.user && this.boot.user.displayName) || 'MIOOS User', family: family || 'Custom', mode: mode || 'light', density: 'comfortable', cornerModel: 'soft', wallpaperPreset: 'aurora', wallpaperUrl: '', wallpaperFit: 'cover', desktopColor: '#3a6ea5', desktopClass: '', desktopCssHint: '', shellTone: 'balanced', surfaceStyle: 'foundation', targets: { shell: true, taskbar: true, windows: true, controls: true }, colors: { accent: '#3a6ee8', accentStrong: '#1f4fbf', panel: '#f4f7fb', panelAlt: '#ffffff', panelText: '#0b1830', muted: '#44536d', titlebar: '#2b5bc7', inactiveTitlebar: '#5877a9', titleText: '#ffffff', taskbar: '#245edb', taskbarDark: '#1844a0', taskbarText: '#ffffff', startButton: '#2aa12a', iconText: '#ffffff', border: '#4e79c7', focus: '#ffd043', desktopGlow: '0 1px 2px rgba(0,0,0,0.55)' },
-            fonts: { ui: 'Tahoma, "Segoe UI", sans-serif', mono: 'Consolas, monospace', baseSize: 13, titleSize: 13, menuSize: 13, weight: '500' },
-            metrics: { taskbarHeight: 40, windowRadius: 8, windowBorder: 1, buttonRadius: 6, iconSize: 36, shadowDepth: 18 },
+            presetKey: '',
+            name: name || 'Aurora Shell',
+            author: (this.boot.user && this.boot.user.displayName) || 'MIOOS User',
+            familyKey: family && family !== 'Custom' ? String(family || '').toLowerCase().replace(/\s+/g, '-') : 'custom',
+            family: family || 'Custom',
+            mode: mode || 'light',
+            activeMode: mode || 'light',
+            density: 'comfortable',
+            coverage: { meadowClassic: 1, glassHorizon: 1, graphiteDock: 1, emberPanel: 1 },
+            appearance: { target: 'mouse-keyboard-desktop', accent: '#72a8ff', cornerRadius: 10, panelPosition: 'bottom', launcherLayout: 'two-column', wallpaperMode: 'gradient-gloss' },
+            desktop: { wallpaperPreset: 'gradient-gloss', wallpaperUrl: '', wallpaperFit: 'cover', wallpaperTop: '#2d66c2', wallpaperMiddle: '#153a79', wallpaperBottom: '#0d244b', overlay: 'gloss', color: '#153a79', iconSize: 54, iconSpacing: 16, labelSize: 11, labelOverflow: 'two-line', labelGlow: 1, selectionOpacity: 25, contextMenuDensity: 'balanced', contextMenuIcons: 1, contextMenuShortcuts: 1 },
+            panel: { style: 'glass-bar', height: 46, taskMinWidth: 122, grouping: 'when-full', startStyle: 'orb-capsule', startMinWidth: 92, startTop: '#7fd25f', startBottom: '#2f7e22', taskbarTop: '#6385bd', taskbarBottom: '#24406f', trayStyle: 'glass', dateVisible: 1, clockLayout: 'stacked' },
+            launcher: { layout: 'two-column', width: 376, height: 314, avatarVisible: 1, searchEnabled: 1, leftRatio: 1.1, rightRatio: 0.9, headerTop: '#3769ab', headerBottom: '#173c6f', bodyBackground: '#f9fbff', rightBackground: '#dfe8f6', footerText: '#476076' },
+            windowChrome: { style: 'glass-gradient', titleHeight: 34, captionButtonSize: 24, titleTop: '#6f93c7', titleBottom: '#4e6e9f', menubarVisible: 0, toolbarVisible: 1, statusbarVisible: 1, sidebarWidth: 220, previewWidth: 272, explorerListMode: 'details', breadcrumbStyle: 'segmented', transferProgressStyle: 'gloss-pill' },
+            fonts: { ui: '"Segoe UI", Tahoma, sans-serif', mono: 'Consolas, monospace', baseSize: 12, titleSize: 13, titleWeight: '700', panelSize: 11, launcherSize: 12, desktopLabelSize: 11, scale: 100, tabularDigits: 1, underlineShortcuts: 1 },
+            metrics: { paddingScale: 100, controlHeight: 24, touchScale: 100, windowRadius: 10, windowBorder: 1, buttonRadius: 8, shadowDepth: 18, iconSize: 54 },
+            effects: { blurStrength: 14, transparency: 38, animationMs: 120, backdropBlur: 1 },
+            validation: { contrast: 1, touchTargets: 1, fallbacks: 1 },
+            exports: { cssVariables: 1, jsonManifest: 1, runtimePatch: 1, mobileOverrides: 1 },
+            mobile: { panelHeight: 52, launcherLayout: 'single-column' },
+            targets: { shell: true, taskbar: true, windows: true, controls: true },
+            colors: { accent: '#72a8ff', accentStrong: '#4d7cff', panel: '#f8fbff', panelAlt: '#ffffff', panelText: '#173455', muted: '#5a7087', titlebar: '#6f93c7', inactiveTitlebar: '#4e6e9f', titleText: '#173a68', taskbar: '#6385bd', taskbarDark: '#24406f', taskbarText: '#ffffff', startButton: '#7fd25f', iconText: '#f6fbff', border: '#86a2c5', focus: '#ffd86c' },
             recipes: { shell: '', window: '', taskbar: '' },
-            customVariablesJson: '{\n  "--mioos-accent": "#245edb"\n}', extraCss: '', notes: ''
+            desktopCssHint: '',
+            customVariablesJson: '{\n  "panel.height": 46,\n  "launcher.layout": "two-column"\n}',
+            extraCss: '',
+            notes: ''
           };
         },
         themeStudioPresetProfile: function (presetKey) {
+          var key = this.themeStudioCanonicalPresetKey(presetKey);
           var profile;
-          if (presetKey === 'luna-blue') { profile = this.themeStudioFactoryProfile('Luna Blue', 'Windows XP', 'light'); profile.presetKey = 'luna-blue'; profile.wallpaperPreset = 'aurora'; profile.desktopColor = '#dce7f7'; profile.colors.accent = '#2f6fd0'; profile.colors.accentStrong = '#5c86d9'; profile.colors.titlebar = '#eaf1fb'; profile.colors.inactiveTitlebar = '#d0dbef'; profile.colors.taskbar = '#d9e5f7'; profile.colors.taskbarDark = '#c3d4ec'; profile.colors.panel = '#f5f8fd'; profile.colors.panelAlt = '#ffffff'; profile.colors.panelText = '#162033'; profile.colors.titleText = '#162033'; profile.colors.taskbarText = '#162033'; profile.colors.startButton = '#2f6fed'; profile.colors.iconText = '#f8fbff'; profile.colors.border = '#b9c7da'; profile.fonts.ui = 'Tahoma, "Segoe UI", sans-serif'; profile.metrics.windowRadius = 8; profile.metrics.windowBorder = 1; return profile; }
-          if (presetKey === 'royale-noir') { profile = this.themeStudioFactoryProfile('Royale Noir', 'Windows XP', 'dark'); profile.presetKey = 'royale-noir'; profile.wallpaperPreset = 'aurora-night'; profile.desktopColor = '#11233a'; profile.colors.accent = '#78aefc'; profile.colors.accentStrong = '#467fd2'; profile.colors.titlebar = '#1d3b61'; profile.colors.inactiveTitlebar = '#29425f'; profile.colors.taskbar = '#152235'; profile.colors.taskbarDark = '#0c1624'; profile.colors.panel = '#152235'; profile.colors.panelAlt = '#1d2d45'; profile.colors.panelText = '#edf4ff'; profile.colors.taskbarText = '#edf4ff'; profile.colors.titleText = '#edf4ff'; profile.colors.startButton = '#2f6fed'; profile.colors.iconText = '#ffffff'; profile.colors.border = '#4c6d93'; profile.fonts.ui = 'Tahoma, "Segoe UI", sans-serif'; profile.metrics.windowRadius = 8; profile.metrics.windowBorder = 1; return profile; }
-          if (presetKey === 'aero-glass') { profile = this.themeStudioFactoryProfile('Aero Glass', 'Windows 7', 'light'); profile.presetKey = 'aero-glass'; profile.wallpaperPreset = 'paper-dawn'; profile.desktopColor = '#e9edf5'; profile.colors.accent = '#4d7cff'; profile.colors.accentStrong = '#3358d4'; profile.colors.titlebar = '#f4f6fb'; profile.colors.inactiveTitlebar = '#dbe2f0'; profile.colors.taskbar = '#eef1f6'; profile.colors.taskbarDark = '#dfe6ef'; profile.colors.panel = '#ffffff'; profile.colors.panelAlt = '#f8fafc'; profile.colors.panelText = '#111827'; profile.colors.taskbarText = '#111827'; profile.colors.titleText = '#111827'; profile.colors.startButton = '#f6f7fb'; profile.colors.iconText = '#ffffff'; profile.colors.border = '#d0d6e2'; profile.fonts.ui = 'Inter, "Segoe UI", sans-serif'; profile.metrics.windowRadius = 16; profile.metrics.buttonRadius = 12; profile.metrics.shadowDepth = 20; return profile; }
-          if (presetKey === 'aero-midnight') { profile = this.themeStudioFactoryProfile('Aero Midnight', 'Windows 7', 'dark'); profile.presetKey = 'aero-midnight'; profile.wallpaperPreset = 'paper-night'; profile.desktopColor = '#11151d'; profile.colors.accent = '#93b0ff'; profile.colors.accentStrong = '#6f8ad9'; profile.colors.titlebar = '#1b2230'; profile.colors.inactiveTitlebar = '#252d3b'; profile.colors.taskbar = '#151923'; profile.colors.taskbarDark = '#0f131b'; profile.colors.panel = '#1a202d'; profile.colors.panelAlt = '#202938'; profile.colors.panelText = '#f6f7fb'; profile.colors.taskbarText = '#f6f7fb'; profile.colors.titleText = '#f6f7fb'; profile.colors.startButton = '#202938'; profile.colors.iconText = '#ffffff'; profile.colors.border = '#313d52'; profile.fonts.ui = 'Inter, "Segoe UI", sans-serif'; profile.metrics.windowRadius = 16; profile.metrics.buttonRadius = 12; profile.metrics.shadowDepth = 20; return profile; }
-          if (presetKey === 'ubuntu-human') { profile = this.themeStudioFactoryProfile('Ubuntu Human', 'Ubuntu', 'light'); profile.presetKey = 'ubuntu-human'; profile.wallpaperPreset = 'sunrise-grid'; profile.desktopColor = '#f1e4dc'; profile.colors.accent = '#d86337'; profile.colors.accentStrong = '#ac4d2a'; profile.colors.titlebar = '#efe3dc'; profile.colors.inactiveTitlebar = '#e1cfc5'; profile.colors.taskbar = '#f2e7df'; profile.colors.taskbarDark = '#e2d1c4'; profile.colors.panel = '#fff7f2'; profile.colors.panelAlt = '#fffdfb'; profile.colors.panelText = '#2b1e1a'; profile.colors.taskbarText = '#2b1e1a'; profile.colors.titleText = '#2b1e1a'; profile.colors.startButton = '#d86337'; profile.colors.iconText = '#fffdfb'; profile.colors.border = '#caa893'; profile.fonts.ui = 'Ubuntu, "Segoe UI", sans-serif'; profile.metrics.windowRadius = 10; profile.metrics.windowBorder = 1; return profile; }
-          if (presetKey === 'ubuntu-graphite') { profile = this.themeStudioFactoryProfile('Ubuntu Graphite', 'Ubuntu', 'dark'); profile.presetKey = 'ubuntu-graphite'; profile.wallpaperPreset = 'midnight-grid'; profile.desktopColor = '#1c1316'; profile.colors.accent = '#ffb087'; profile.colors.accentStrong = '#d57c52'; profile.colors.titlebar = '#2c1d21'; profile.colors.inactiveTitlebar = '#432d33'; profile.colors.taskbar = '#20161a'; profile.colors.taskbarDark = '#140d10'; profile.colors.panel = '#24181d'; profile.colors.panelAlt = '#2d2026'; profile.colors.panelText = '#fff4ef'; profile.colors.taskbarText = '#fff4ef'; profile.colors.titleText = '#fff4ef'; profile.colors.startButton = '#d86337'; profile.colors.iconText = '#fff4ef'; profile.colors.border = '#6e484c'; profile.fonts.ui = 'Ubuntu, "Segoe UI", sans-serif'; profile.metrics.windowRadius = 10; profile.metrics.windowBorder = 1; return profile; }
+          if (key === 'luna-blue' || key === 'meadow-classic-light') {
+            profile = this.themeStudioFactoryProfile('Meadow Classic', 'Meadow Classic', 'light');
+            profile.presetKey = 'meadow-classic-light';
+            profile.familyKey = 'meadow-classic';
+            profile.desktop.wallpaperTop = '#85c95c'; profile.desktop.wallpaperMiddle = '#66aa45'; profile.desktop.wallpaperBottom = '#3d7a28'; profile.desktop.color = '#4d8d37';
+            profile.appearance.accent = '#3a78d8';
+            profile.windowChrome.titleTop = '#cddbf2'; profile.windowChrome.titleBottom = '#9db6de';
+            profile.panel.taskbarTop = '#4b82d8'; profile.panel.taskbarBottom = '#1b4d9e'; profile.panel.startTop = '#7fcd5d'; profile.panel.startBottom = '#2e7d22';
+            profile.colors.panel = '#f5f8fd'; profile.colors.panelText = '#162033'; profile.colors.titleText = '#162033'; profile.colors.taskbarText = '#ffffff'; profile.colors.border = '#98b0cf';
+            return this.themeStudioNormalizeProfile(profile);
+          }
+          if (key === 'royale-noir' || key === 'meadow-classic-dark') {
+            profile = this.themeStudioFactoryProfile('Meadow Classic Night', 'Meadow Classic', 'dark');
+            profile.presetKey = 'meadow-classic-dark';
+            profile.familyKey = 'meadow-classic';
+            profile.desktop.wallpaperTop = '#243a3f'; profile.desktop.wallpaperMiddle = '#1d2f39'; profile.desktop.wallpaperBottom = '#101921'; profile.desktop.color = '#16212d';
+            profile.appearance.accent = '#8eb6ff';
+            profile.windowChrome.titleTop = '#42607f'; profile.windowChrome.titleBottom = '#203246';
+            profile.panel.taskbarTop = '#223951'; profile.panel.taskbarBottom = '#111e2d'; profile.panel.startTop = '#4a8f35'; profile.panel.startBottom = '#21551a';
+            profile.colors.panel = '#182330'; profile.colors.panelAlt = '#223142'; profile.colors.panelText = '#edf4ff'; profile.colors.titleText = '#edf4ff'; profile.colors.taskbarText = '#edf4ff'; profile.colors.border = '#4f6680';
+            return this.themeStudioNormalizeProfile(profile);
+          }
+          if (key === 'aero-glass' || key === 'glass-horizon-light') {
+            profile = this.themeStudioFactoryProfile('Glass Horizon', 'Glass Horizon', 'light');
+            profile.presetKey = 'glass-horizon-light';
+            profile.familyKey = 'glass-horizon';
+            profile.desktop.wallpaperTop = '#2d66c2'; profile.desktop.wallpaperMiddle = '#153a79'; profile.desktop.wallpaperBottom = '#0d244b'; profile.desktop.color = '#153a79';
+            profile.appearance.accent = '#72a8ff';
+            profile.windowChrome.titleTop = '#6f93c7'; profile.windowChrome.titleBottom = '#4e6e9f';
+            profile.panel.taskbarTop = '#6385bd'; profile.panel.taskbarBottom = '#24406f'; profile.panel.startTop = '#7fd25f'; profile.panel.startBottom = '#2f7e22';
+            profile.colors.panel = '#f8fbff'; profile.colors.panelAlt = '#ffffff'; profile.colors.panelText = '#173455'; profile.colors.titleText = '#173a68'; profile.colors.taskbarText = '#ffffff'; profile.colors.border = '#90a9c6';
+            profile.metrics.windowRadius = 10; profile.metrics.buttonRadius = 8; profile.windowChrome.previewWidth = 272;
+            return this.themeStudioNormalizeProfile(profile);
+          }
+          if (key === 'aero-midnight' || key === 'glass-horizon-dark') {
+            profile = this.themeStudioFactoryProfile('Glass Horizon Midnight', 'Glass Horizon', 'dark');
+            profile.presetKey = 'glass-horizon-dark';
+            profile.familyKey = 'glass-horizon';
+            profile.desktop.wallpaperTop = '#1f2d40'; profile.desktop.wallpaperMiddle = '#172232'; profile.desktop.wallpaperBottom = '#0f1621'; profile.desktop.color = '#121a25';
+            profile.appearance.accent = '#93b0ff';
+            profile.windowChrome.titleTop = '#44556f'; profile.windowChrome.titleBottom = '#263243';
+            profile.panel.taskbarTop = '#1d2a3d'; profile.panel.taskbarBottom = '#111b29'; profile.panel.startTop = '#425e8e'; profile.panel.startBottom = '#24385a';
+            profile.colors.panel = '#1a2331'; profile.colors.panelAlt = '#232f40'; profile.colors.panelText = '#eef4fb'; profile.colors.titleText = '#eef4fb'; profile.colors.taskbarText = '#eef4fb'; profile.colors.border = '#46576e';
+            return this.themeStudioNormalizeProfile(profile);
+          }
+          if (key === 'graphite-dock-light') {
+            profile = this.themeStudioFactoryProfile('Graphite Dock', 'Graphite Dock', 'light');
+            profile.presetKey = 'graphite-dock-light';
+            profile.familyKey = 'graphite-dock';
+            profile.desktop.wallpaperTop = '#cfd6df'; profile.desktop.wallpaperMiddle = '#8d97a5'; profile.desktop.wallpaperBottom = '#515868'; profile.desktop.color = '#6c7381';
+            profile.appearance.accent = '#7da8ff';
+            profile.windowChrome.titleTop = '#d7dbe4'; profile.windowChrome.titleBottom = '#8e96a5';
+            profile.panel.taskbarTop = '#d9dce4'; profile.panel.taskbarBottom = '#8d93a0'; profile.panel.startTop = '#f7f8fb'; profile.panel.startBottom = '#c8ccd7';
+            profile.colors.panel = '#f7f9fc'; profile.colors.panelAlt = '#ffffff'; profile.colors.panelText = '#2e3440'; profile.colors.titleText = '#2f3846'; profile.colors.taskbarText = '#213246'; profile.colors.border = '#a4abba';
+            profile.launcher.headerTop = '#858c9a'; profile.launcher.headerBottom = '#565e6d'; profile.launcher.rightBackground = '#e5e9f0';
+            return this.themeStudioNormalizeProfile(profile);
+          }
+          if (key === 'graphite-dock-dark') {
+            profile = this.themeStudioFactoryProfile('Graphite Dock Night', 'Graphite Dock', 'dark');
+            profile.presetKey = 'graphite-dock-dark';
+            profile.familyKey = 'graphite-dock';
+            profile.desktop.wallpaperTop = '#48505b'; profile.desktop.wallpaperMiddle = '#262b33'; profile.desktop.wallpaperBottom = '#12161d'; profile.desktop.color = '#1a1f26';
+            profile.appearance.accent = '#a9beff';
+            profile.windowChrome.titleTop = '#6b7280'; profile.windowChrome.titleBottom = '#39414d';
+            profile.panel.taskbarTop = '#2e343f'; profile.panel.taskbarBottom = '#171c23'; profile.panel.startTop = '#505867'; profile.panel.startBottom = '#29303b';
+            profile.colors.panel = '#1f252e'; profile.colors.panelAlt = '#293240'; profile.colors.panelText = '#eef2f7'; profile.colors.titleText = '#eef2f7'; profile.colors.taskbarText = '#f7faff'; profile.colors.border = '#515a68';
+            return this.themeStudioNormalizeProfile(profile);
+          }
+          if (key === 'ubuntu-human' || key === 'ember-panel-light') {
+            profile = this.themeStudioFactoryProfile('Ember Panel', 'Ember Panel', 'light');
+            profile.presetKey = 'ember-panel-light';
+            profile.familyKey = 'ember-panel';
+            profile.desktop.wallpaperTop = '#e58c46'; profile.desktop.wallpaperMiddle = '#9a4d29'; profile.desktop.wallpaperBottom = '#4e1e18'; profile.desktop.color = '#7d3b2b';
+            profile.appearance.accent = '#ffb26d';
+            profile.windowChrome.titleTop = '#ef9a4f'; profile.windowChrome.titleBottom = '#6d221a';
+            profile.panel.taskbarTop = '#f0a05d'; profile.panel.taskbarBottom = '#7b2f1d'; profile.panel.startTop = '#f3b36c'; profile.panel.startBottom = '#b94f2a';
+            profile.colors.panel = '#fff7f2'; profile.colors.panelAlt = '#fffdfb'; profile.colors.panelText = '#2b1e1a'; profile.colors.titleText = '#fff6f1'; profile.colors.taskbarText = '#fff6f1'; profile.colors.border = '#c89374';
+            profile.launcher.headerTop = '#e58c46'; profile.launcher.headerBottom = '#6f1e18'; profile.launcher.rightBackground = '#f0dfd4';
+            return this.themeStudioNormalizeProfile(profile);
+          }
+          if (key === 'ubuntu-graphite' || key === 'ember-panel-dark') {
+            profile = this.themeStudioFactoryProfile('Ember Panel Night', 'Ember Panel', 'dark');
+            profile.presetKey = 'ember-panel-dark';
+            profile.familyKey = 'ember-panel';
+            profile.desktop.wallpaperTop = '#5e2b22'; profile.desktop.wallpaperMiddle = '#2b1714'; profile.desktop.wallpaperBottom = '#120d0f'; profile.desktop.color = '#1c1316';
+            profile.appearance.accent = '#ffb087';
+            profile.windowChrome.titleTop = '#7f4333'; profile.windowChrome.titleBottom = '#43201c';
+            profile.panel.taskbarTop = '#3c241f'; profile.panel.taskbarBottom = '#1b1110'; profile.panel.startTop = '#8a4a2d'; profile.panel.startBottom = '#532618';
+            profile.colors.panel = '#24181d'; profile.colors.panelAlt = '#2d2026'; profile.colors.panelText = '#fff4ef'; profile.colors.titleText = '#fff4ef'; profile.colors.taskbarText = '#fff4ef'; profile.colors.border = '#6e484c';
+            return this.themeStudioNormalizeProfile(profile);
+          }
           return this.themeStudioFactoryProfile('Custom Theme', 'Custom', 'light');
         },
         ensureThemeStudioState: function (win) {
-          if (!win) return { activeTab: 'overview', profiles: [], profileKey: '', profile: {}, exportText: '' };
+          if (!win) return { activeTab: 'general', profiles: [], profileKey: '', profile: {}, exportText: '' };
           if (!win.themeStudioState) {
             var storedProfiles = [];
             try { storedProfiles = JSON.parse(window.localStorage.getItem(this.themeStudioProfilesKey()) || '[]'); } catch (err) { storedProfiles = []; }
             win.themeStudioState = {
-              activeTab: 'overview',
+              activeTab: 'general',
               profiles: (Array.isArray(storedProfiles) && storedProfiles.length) ? storedProfiles : [
-                { key: 'luna-blue', name: 'Luna Blue', family: 'Windows XP', mode: 'light', data: this.themeStudioPresetProfile('luna-blue') },
-                { key: 'royale-noir', name: 'Royale Noir', family: 'Windows XP', mode: 'dark', data: this.themeStudioPresetProfile('royale-noir') },
-                { key: 'aero-glass', name: 'Aero Glass', family: 'Windows 7', mode: 'light', data: this.themeStudioPresetProfile('aero-glass') },
-                { key: 'aero-midnight', name: 'Aero Midnight', family: 'Windows 7', mode: 'dark', data: this.themeStudioPresetProfile('aero-midnight') },
-                { key: 'ubuntu-human', name: 'Ubuntu Human', family: 'Ubuntu', mode: 'light', data: this.themeStudioPresetProfile('ubuntu-human') },
-                { key: 'ubuntu-graphite', name: 'Ubuntu Graphite', family: 'Ubuntu', mode: 'dark', data: this.themeStudioPresetProfile('ubuntu-graphite') }
+                { key: 'meadow-classic-light', name: 'Meadow Classic', family: 'Meadow Classic', mode: 'light', data: this.themeStudioPresetProfile('meadow-classic-light') },
+                { key: 'meadow-classic-dark', name: 'Meadow Classic Night', family: 'Meadow Classic', mode: 'dark', data: this.themeStudioPresetProfile('meadow-classic-dark') },
+                { key: 'glass-horizon-light', name: 'Glass Horizon', family: 'Glass Horizon', mode: 'light', data: this.themeStudioPresetProfile('glass-horizon-light') },
+                { key: 'glass-horizon-dark', name: 'Glass Horizon Midnight', family: 'Glass Horizon', mode: 'dark', data: this.themeStudioPresetProfile('glass-horizon-dark') },
+                { key: 'graphite-dock-light', name: 'Graphite Dock', family: 'Graphite Dock', mode: 'light', data: this.themeStudioPresetProfile('graphite-dock-light') },
+                { key: 'graphite-dock-dark', name: 'Graphite Dock Night', family: 'Graphite Dock', mode: 'dark', data: this.themeStudioPresetProfile('graphite-dock-dark') },
+                { key: 'ember-panel-light', name: 'Ember Panel', family: 'Ember Panel', mode: 'light', data: this.themeStudioPresetProfile('ember-panel-light') },
+                { key: 'ember-panel-dark', name: 'Ember Panel Night', family: 'Ember Panel', mode: 'dark', data: this.themeStudioPresetProfile('ember-panel-dark') }
               ],
-              profileKey: 'luna-blue', profile: this.appliedThemeProfile ? window.MIOOSState.deepClone(this.appliedThemeProfile) : this.themeStudioPresetProfile('luna-blue'), exportText: ''
+              profileKey: 'glass-horizon-light',
+              profile: this.appliedThemeProfile ? window.MIOOSState.deepClone(this.appliedThemeProfile) : this.themeStudioPresetProfile('glass-horizon-light'),
+              exportText: ''
             };
           }
           return win.themeStudioState;
         },
         themeStudioState: function (win) { return this.ensureThemeStudioState(win); },
         themeStudioProfiles: function (win) { return this.ensureThemeStudioState(win).profiles || []; },
-        themeStudioSetTab: function (windowId, tabKey) { var win = this.windows.find(function (item) { return item.id === windowId; }); this.ensureThemeStudioState(win).activeTab = tabKey || 'overview'; },
-        themeStudioSelectProfile: function (windowId, profileKey) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); var entry = (state.profiles || []).find(function (item) { return item.key === profileKey; }); if (!entry) return; state.profileKey = entry.key; state.profile = window.MIOOSState.deepClone(entry.data); state.profile.name = entry.name; state.profile.family = entry.family; state.profile.mode = entry.mode; },
-        themeStudioApplyPreset: function (windowId, presetKey) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); state.profile = this.themeStudioPresetProfile(presetKey || 'luna-blue'); state.profileKey = presetKey || 'luna-blue'; },
-        themeStudioNewProfile: function (windowId) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); state.profileKey = 'custom-' + Date.now(); state.profile = this.themeStudioFactoryProfile('New Custom Theme', 'Custom', 'light'); state.activeTab = 'overview'; },
+        themeStudioSetTab: function (windowId, tabKey) { var win = this.windows.find(function (item) { return item.id === windowId; }); this.ensureThemeStudioState(win).activeTab = tabKey || 'general'; },
+        themeStudioSelectProfile: function (windowId, profileKey) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); var entry = (state.profiles || []).find(function (item) { return item.key === profileKey; }); if (!entry) return; state.profileKey = entry.key; state.profile = this.themeStudioNormalizeProfile(window.MIOOSState.deepClone(entry.data)); state.profile.name = entry.name; state.profile.family = entry.family; state.profile.mode = entry.mode; state.profile.activeMode = entry.mode; },
+        themeStudioApplyPresetFamily: function (windowId, familyKey) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); var mode = ((state.profile || {}).mode || 'light') === 'dark' ? 'dark' : 'light'; var presetKey = String(familyKey || 'glass-horizon') + '-' + mode; state.profile = this.themeStudioPresetProfile(presetKey); state.profileKey = presetKey; },
+        themeStudioApplyPreset: function (windowId, presetKey) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); state.profile = this.themeStudioPresetProfile(presetKey || 'glass-horizon-light'); state.profileKey = this.themeStudioCanonicalPresetKey(presetKey || 'glass-horizon-light'); },
+        themeStudioNewProfile: function (windowId) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); state.profileKey = 'custom-' + Date.now(); state.profile = this.themeStudioFactoryProfile('New Custom Theme', 'Custom', 'light'); state.activeTab = 'general'; },
         themeStudioDuplicateProfile: function (windowId) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); state.profile = window.MIOOSState.deepClone(state.profile); state.profile.name = (state.profile.name || 'Custom Theme') + ' Copy'; state.profileKey = 'custom-' + Date.now(); },
-        themeStudioResetProfile: function (windowId) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); state.profile = this.themeStudioFactoryProfile('Custom Theme', 'Custom', 'light'); state.exportText = ''; state.activeTab = 'overview'; },
-        themeStudioSaveProfile: function (windowId) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); var entry = { key: state.profileKey || ('custom-' + Date.now()), name: state.profile.name || 'Custom Theme', family: state.profile.family || 'Custom', mode: state.profile.mode || 'light', data: window.MIOOSState.deepClone(this.themeStudioNormalizeProfile(state.profile)) }; var idx = (state.profiles || []).findIndex(function (item) { return item.key === entry.key; }); state.profileKey = entry.key; if (idx >= 0) state.profiles.splice(idx, 1, entry); else state.profiles.push(entry); state.exportText = JSON.stringify(entry.data, null, 2); this.themeStudioPersistProfiles(); this.showAlert('Customize', 'Theme draft saved to your local design profiles.'); },
+        themeStudioResetProfile: function (windowId) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); state.profile = this.themeStudioPresetProfile('glass-horizon-light'); state.profileKey = 'glass-horizon-light'; state.exportText = ''; state.activeTab = 'general'; },
+        themeStudioSaveProfile: function (windowId) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); var normalized = this.themeStudioNormalizeProfile(state.profile); var entry = { key: state.profileKey || ('custom-' + Date.now()), name: normalized.name || 'Custom Theme', family: normalized.family || 'Custom', mode: normalized.mode || 'light', data: window.MIOOSState.deepClone(normalized) }; var idx = (state.profiles || []).findIndex(function (item) { return item.key === entry.key; }); state.profileKey = entry.key; if (idx >= 0) state.profiles.splice(idx, 1, entry); else state.profiles.push(entry); state.exportText = JSON.stringify(entry.data, null, 2); this.themeStudioPersistProfiles(); this.showAlert('Customize', 'Theme draft saved to your local design profiles.'); },
         themeStudioApplyCurrent: function (windowId) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); this.applyThemeStudioProfile(state.profile, { persist: true }); },
         themeStudioExportProfile: function (windowId) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); state.exportText = JSON.stringify(this.themeStudioNormalizeProfile(state.profile), null, 2); this.showAlert('Customize', 'Theme JSON is ready in the export buffer.'); },
         themeStudioImportProfile: function (windowId) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); try { if (!state.exportText) return; state.profile = this.themeStudioNormalizeProfile(Object.assign(this.themeStudioFactoryProfile('Imported Theme', 'Custom', 'light'), JSON.parse(state.exportText))); this.showAlert('Customize', 'Import buffer applied to the current draft.'); } catch (err) { this.showAlert('Customize', 'Import buffer is not valid JSON yet.'); } },
-        themeStudioPreviewWallpaper: function (profile) { profile = profile || {}; if (profile.wallpaperPreset === 'custom-url' && profile.wallpaperUrl) return 'url(' + profile.wallpaperUrl + ')'; if (profile.wallpaperPreset === 'aurora') return 'linear-gradient(180deg, #183b66 0%, #365d93 42%, #87a6cf 100%)'; if (profile.wallpaperPreset === 'paper-dawn') return 'linear-gradient(180deg, #f5f7fb 0%, #d9e2f4 100%)'; if (profile.wallpaperPreset === 'paper-night') return 'linear-gradient(180deg, #0f1726 0%, #1d2a41 100%)'; if (profile.wallpaperPreset === 'sunrise-grid') return 'linear-gradient(180deg, #c84f2c 0%, #ea8a5a 48%, #f3d7c6 100%)'; if (profile.wallpaperPreset === 'midnight-grid') return 'linear-gradient(180deg, #3c1f2a 0%, #1c1320 55%, #0f0a10 100%)'; if (profile.wallpaperPreset === 'solid-blue') return '#245edb'; if (profile.wallpaperPreset === 'solid-graphite') return '#5f6773'; return 'linear-gradient(180deg, #8ac04c 0%, #74b94b 38%, #5ea140 100%)'; },
-        themeStudioPreviewDesktopStyle: function (win) { var profile = this.ensureThemeStudioState(win).profile; var bg = this.themeStudioPreviewWallpaper(profile); return { background: bg.indexOf('url(') === 0 ? profile.desktopColor : bg, backgroundImage: bg.indexOf('url(') === 0 ? bg : '', backgroundSize: profile.wallpaperFit === 'tile' ? '240px auto' : (profile.wallpaperFit || 'cover'), backgroundRepeat: profile.wallpaperFit === 'tile' ? 'repeat' : 'no-repeat', color: (profile.colors || {}).iconText || '#ffffff' }; },
-        themeStudioPreviewWindowStyle: function (win) { var p = this.ensureThemeStudioState(win).profile; return { background: (p.colors || {}).panel || '#ffffff', color: (p.colors || {}).panelText || '#132136', borderColor: (p.colors || {}).border || '#4e79c7', borderWidth: ((p.metrics || {}).windowBorder || 1) + 'px', borderStyle: 'solid', borderRadius: ((p.metrics || {}).windowRadius || 8) + 'px', boxShadow: '0 ' + (((p.metrics || {}).shadowDepth || 18)) + 'px ' + ((((p.metrics || {}).shadowDepth || 18) * 2)) + 'px rgba(0,0,0,0.22)', fontFamily: ((p.fonts || {}).ui || 'Tahoma, sans-serif'), fontSize: (((p.fonts || {}).baseSize || 13)) + 'px' }; },
-        themeStudioPreviewTitlebarStyle: function (win) { var p = this.ensureThemeStudioState(win).profile; return { background: (p.colors || {}).titlebar || '#2b5bc7', color: (p.colors || {}).titleText || '#ffffff', fontSize: (((p.fonts || {}).titleSize || 13)) + 'px' }; },
-        themeStudioPreviewTaskbarStyle: function (win) { var p = this.ensureThemeStudioState(win).profile; return { background: (p.colors || {}).taskbar || '#245edb', color: (p.colors || {}).taskbarText || '#ffffff', height: (((p.metrics || {}).taskbarHeight || 40)) + 'px' }; },
+        themeStudioPreviewWallpaper: function (profile) { return this.themeStudioWallpaperCss(profile || {}); },
+        themeStudioPreviewDesktopStyle: function (win) { var profile = this.ensureThemeStudioState(win).profile; var bg = this.themeStudioWallpaperCss(profile); return { background: bg, color: ((profile.colors || {}).iconText || '#ffffff'), gap: (((profile.desktop || {}).iconSpacing || 16)) + 'px', fontSize: (((profile.fonts || {}).desktopLabelSize || 11)) + 'px' }; },
+        themeStudioPreviewWindowStyle: function (win) { var p = this.ensureThemeStudioState(win).profile; return { background: (p.colors || {}).panel || '#ffffff', color: (p.colors || {}).panelText || '#132136', borderColor: (p.colors || {}).border || '#4e79c7', borderWidth: (((p.metrics || {}).windowBorder || 1)) + 'px', borderStyle: 'solid', borderRadius: (((p.metrics || {}).windowRadius || 8)) + 'px', boxShadow: '0 ' + ((((p.metrics || {}).shadowDepth || 18))) + 'px ' + (((((p.metrics || {}).shadowDepth || 18) * 2))) + 'px rgba(0,0,0,0.22)', fontFamily: ((p.fonts || {}).ui || 'Tahoma, sans-serif'), fontSize: (((p.fonts || {}).baseSize || 13)) + 'px' }; },
+        themeStudioPreviewTitlebarStyle: function (win) { var p = this.ensureThemeStudioState(win).profile; return { background: 'linear-gradient(180deg, ' + (((p.windowChrome || {}).titleTop) || '#6f93c7') + ' 0%, ' + (((p.windowChrome || {}).titleBottom) || '#4e6e9f') + ' 100%)', color: (p.colors || {}).titleText || '#ffffff', fontSize: (((p.fonts || {}).titleSize || 13)) + 'px' }; },
+        themeStudioPreviewTaskbarStyle: function (win) { var p = this.ensureThemeStudioState(win).profile; return { background: 'linear-gradient(180deg, ' + (((p.panel || {}).taskbarTop) || '#6385bd') + ' 0%, ' + (((p.panel || {}).taskbarBottom) || '#24406f') + ' 100%)', color: (p.colors || {}).taskbarText || '#ffffff', height: ((((p.panel || {}).height) || 46)) + 'px' }; },
         terminalStatusText: function (win) {
           if (Terminal && typeof Terminal.terminalStatusText === 'function') {
             return Terminal.terminalStatusText.call(this, win);

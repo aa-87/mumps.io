@@ -1,8 +1,8 @@
 # MIOOS Theme System
 
 ## 2026 desktop simplification update
-- Customize now uses a classic display-properties-style shell.
-- The active presets are tuned toward Windows XP / Windows 7 / Ubuntu-inspired families while remaining original MIOOS themes.
+- Customize now uses a richer classic display-properties-style shell with unified shell token sections.
+- The active preset families are Meadow Classic, Glass Horizon, Graphite Dock, and Ember Panel. These remain original MIOOS families while spanning XP-like, Windows 7-like, dock-oriented, and Ubuntu-inspired desktop moods.
 
 ## Purpose
 Customize replaces Theme Studio as the supported appearance editor.
@@ -15,12 +15,13 @@ Customize replaces Theme Studio as the supported appearance editor.
 - Maintainable semantic naming
 
 ## Theme families
-- Classic Horizon
-- Orchard
-- Terra
+- Meadow Classic
+- Glass Horizon
+- Graphite Dock
+- Ember Panel
 - Custom profiles
 
-These are original families inspired by classic enterprise OS paradigms such as Windows XP, macOS, and Ubuntu without copying proprietary assets.
+These are original families inspired by classic enterprise OS paradigms such as Windows XP, Windows 7, macOS, and Ubuntu without copying proprietary assets.
 
 ## Covered targets
 - Wallpaper
@@ -42,3 +43,8 @@ Profiles are editable and exportable. Active theme selection is preserved throug
 - Semantic tokens
 - Profile-specific override values
 - Optional custom CSS field for advanced deployments
+
+## Runtime contract
+- Boot state now advertises `windowGrammar=7css-primary` and `controlAugment=basecoat-augment`.
+- The active profile resolves one shared token set for desktop, panel/taskbar, launcher, window chrome, explorer, transfer surfaces, typography, effects, validation, and export behavior.
+- Customize persists local design profiles while the live shell applies the resolved runtime variables immediately.
