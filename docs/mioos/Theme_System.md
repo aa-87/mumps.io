@@ -1,5 +1,9 @@
 # MIOOS Theme System
 
+## 2026 desktop simplification update
+- Customize now uses a classic display-properties-style shell.
+- The active presets are tuned toward Windows XP / Windows 7 / Ubuntu-inspired families while remaining original MIOOS themes.
+
 ## Purpose
 Customize replaces Theme Studio as the supported appearance editor.
 

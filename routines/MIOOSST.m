@@ -123,7 +123,7 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("uploadBatchSize")=$$UPBATCH^MIOOSFSUP(.CONF)
 	SET STATE("uploadMaxInflightChunks")=$$UPINFLGT^MIOOSFSUP(.CONF)
 	SET STATE("uploadBatchFlushThreshold")=$$UPFLUSH^MIOOSFSUP(.CONF)
-	SET STATE("themeKey")=$GET(CONF("mioos","desktop","theme"),"foundation-light")
+	SET STATE("themeKey")=$GET(CONF("mioos","desktop","theme"),"luna-blue")
 	SET STATE("wallpaper")=$GET(CONF("mioos","desktop","wallpaper"),"aurora")
 	SET STATE("density")=$GET(CONF("mioos","desktop","density"),"comfortable")
 	SET STATE("fontFamily")=$GET(CONF("mioos","desktop","fontFamily"),"Segoe UI")
@@ -148,10 +148,10 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	IF STATE("windowTitlebarHeight")<32 SET STATE("windowTitlebarHeight")=32
 	SET STATE("windowMenuEnabled")=+$GET(CONF("mioos","desktop","windowMenuEnabled"),1)
 	SET STATE("windowStatusBadges")=+$GET(CONF("mioos","desktop","windowStatusBadges"),1)
-		SET STATE("workspacesEnabled")=+$GET(CONF("mioos","desktop","workspaces","enabled"),1)
-		SET STATE("workspacesPersistence")=$GET(CONF("mioos","desktop","workspaces","persistence"),"localstorage-current-workspace")
-		SET STATE("workspacesDefaultKey")=$GET(CONF("mioos","desktop","workspaces","defaultKey"),"workspace-files")
-		SET STATE("workspacesShowInTaskbar")=+$GET(CONF("mioos","desktop","workspaces","showInTaskbar"),1)
+		SET STATE("workspacesEnabled")=+$GET(CONF("mioos","desktop","workspaces","enabled"),0)
+		SET STATE("workspacesPersistence")=$GET(CONF("mioos","desktop","workspaces","persistence"),"none")
+		SET STATE("workspacesDefaultKey")=$GET(CONF("mioos","desktop","workspaces","defaultKey"),"workspace-main")
+		SET STATE("workspacesShowInTaskbar")=+$GET(CONF("mioos","desktop","workspaces","showInTaskbar"),0)
 		SET STATE("workspacesFollowMovedWindow")=+$GET(CONF("mioos","desktop","workspaces","followMovedWindow"),1)
 	SET STATE("windowSnapThreshold")=+$GET(CONF("mioos","desktop","windowSnapThreshold"),28)
 	IF STATE("windowSnapThreshold")<12 SET STATE("windowSnapThreshold")=12
@@ -454,17 +454,17 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","dialogs","confirm")=1
 	SET OBJ("desktop","dialogs","input")=1
 		SET OBJ("desktop","workspaces","enabled")=+$GET(STATE("workspacesEnabled"),1)
-		SET OBJ("desktop","workspaces","model")="virtual-desktop-pager"
-		SET OBJ("desktop","workspaces","persistence")=$GET(STATE("workspacesPersistence"),"localstorage-current-workspace")
-		SET OBJ("desktop","workspaces","currentKey")=$GET(STATE("workspacesDefaultKey"),"workspace-files")
+		SET OBJ("desktop","workspaces","model")="single-desktop"
+		SET OBJ("desktop","workspaces","persistence")=$GET(STATE("workspacesPersistence"),"none")
+		SET OBJ("desktop","workspaces","currentKey")=$GET(STATE("workspacesDefaultKey"),"workspace-main")
 		SET OBJ("desktop","workspaces","showInTaskbar")=+$GET(STATE("workspacesShowInTaskbar"),1)
 		SET OBJ("desktop","workspaces","followMovedWindow")=+$GET(STATE("workspacesFollowMovedWindow"),1)
-		SET OBJ("desktop","workspaces","switchShortcuts","previous")=$GET(CONF("mioos","desktop","accessibility","keyboardShortcuts","previousWorkspace"),"Ctrl+Alt+ArrowLeft")
-		SET OBJ("desktop","workspaces","switchShortcuts","next")=$GET(CONF("mioos","desktop","accessibility","keyboardShortcuts","nextWorkspace"),"Ctrl+Alt+ArrowRight")
-		SET OBJ("desktop","workspaces","moveShortcuts","previous")=$GET(CONF("mioos","desktop","accessibility","keyboardShortcuts","moveFocusedWindowPreviousWorkspace"),"Ctrl+Alt+Shift+ArrowLeft")
-		SET OBJ("desktop","workspaces","moveShortcuts","next")=$GET(CONF("mioos","desktop","accessibility","keyboardShortcuts","moveFocusedWindowNextWorkspace"),"Ctrl+Alt+Shift+ArrowRight")
+		SET OBJ("desktop","workspaces","switchShortcuts","previous")=""
+		SET OBJ("desktop","workspaces","switchShortcuts","next")=""
+		SET OBJ("desktop","workspaces","moveShortcuts","previous")=""
+		SET OBJ("desktop","workspaces","moveShortcuts","next")=""
 		DO MERGEWK(.STATE,$NAME(OBJ("desktop","workspaces","items")))
-		SET OBJ("desktop","shellSurfaces","workspacePager")=+$GET(STATE("workspacesEnabled"),1)
+		SET OBJ("desktop","shellSurfaces","workspacePager")=0
 	SET OBJ("desktop","shortcuts","showDesktop")="Meta+D"
 	SET OBJ("desktop","shortcuts","windowSwitcher")="Alt+Tab"
 	SET OBJ("desktop","shortcuts","closeFocusedWindow")="Shift+Escape"
@@ -531,7 +531,7 @@ APPS(STATE)
 	KILL STATE("apps")
 	SET STATE("apps",1,"key")="home"
 	SET STATE("apps",1,"title")=$$TXT^MIOOSI18N(CODE,"app.home.title","Home")
-	SET STATE("apps",1,"subtitle")="Secure workspace for files, launchers, and application folders"
+	SET STATE("apps",1,"subtitle")="Secure desktop for files, launchers, and application folders"
 	SET STATE("apps",1,"icon")="🏠"
 	SET STATE("apps",1,"kind")="explorer"
 	SET STATE("apps",2,"key")="terminal"
@@ -556,20 +556,10 @@ WORKSPACES(STATE)
 		SET CODE=$GET(STATE("localeCode"),"en")
 		KILL STATE("workspaces")
 		SET STATE("workspaces",1,"key")="workspace-main"
-		SET STATE("workspaces",1,"title")=$$TXT^MIOOSI18N(CODE,"workspace.main","Workspace")
+		SET STATE("workspaces",1,"title")=$$TXT^MIOOSI18N(CODE,"workspace.main","Desktop")
 		SET STATE("workspaces",1,"icon")="⌂"
-		SET STATE("workspaces",1,"description")=$$TXT^MIOOSI18N(CODE,"workspace.main.description","Primary workspace for active application windows")
+		SET STATE("workspaces",1,"description")=$$TXT^MIOOSI18N(CODE,"workspace.main.description","Single desktop surface for all application windows")
 		SET STATE("workspaces",1,"ordinal")=1
-		SET STATE("workspaces",2,"key")="workspace-files"
-		SET STATE("workspaces",2,"title")=$$TXT^MIOOSI18N(CODE,"workspace.files","Files")
-		SET STATE("workspaces",2,"icon")="📁"
-		SET STATE("workspaces",2,"description")=$$TXT^MIOOSI18N(CODE,"workspace.files.description","Home folders, transfers, and file-centered work")
-		SET STATE("workspaces",2,"ordinal")=2
-		SET STATE("workspaces",3,"key")="workspace-customize"
-		SET STATE("workspaces",3,"title")="Customize"
-		SET STATE("workspaces",3,"icon")="🎛"
-		SET STATE("workspaces",3,"description")="Theme authoring, shell previews, and design tokens"
-		SET STATE("workspaces",3,"ordinal")=3
 		QUIT
 		;
 MERGEWK(STATE,ROOT)
@@ -594,13 +584,13 @@ WINDOWS(STATE)
 	NEW CODE
 	SET CODE=$GET(STATE("localeCode"),"en")
 	KILL STATE("windows")
-	DO WIN(.STATE,1,"win-home","home",$$TXT^MIOOSI18N(CODE,"app.home.title","Home"),96,72,980,620,4,"normal",520,340,1,1,"explorer","🏠","workspace-files",1)
+	DO WIN(.STATE,1,"win-home","home",$$TXT^MIOOSI18N(CODE,"app.home.title","Home"),96,72,980,620,4,"normal",520,340,1,1,"explorer","🏠","workspace-main",1)
 	DO WIN(.STATE,2,"win-terminal-template","terminal",$$TXT^MIOOSI18N(CODE,"app.terminal.title","Terminal"),160,92,900,520,3,"closed",620,320,1,1,"terminal","⌨","workspace-main",0)
-	DO WIN(.STATE,3,"win-transfers","transfers","Transfers",220,116,860,560,5,"closed",680,420,1,1,"transfers","⇅","workspace-files",1)
+	DO WIN(.STATE,3,"win-transfers","transfers","Transfers",220,116,860,560,5,"closed",680,420,1,1,"transfers","⇅","workspace-main",1)
 	SET STATE("windows",3,"transferCenterEnabled")=1
-	DO WIN(.STATE,4,"win-customize","customize","Customize",180,86,1040,680,6,"closed",780,560,1,1,"studio","🎛","workspace-customize",1)
+	DO WIN(.STATE,4,"win-customize","customize","Customize",180,86,1040,680,6,"closed",780,560,1,1,"studio","🎛","workspace-main",1)
 	SET STATE("windows",4,"themeStudioEnabled")=1
-	DO WIN(.STATE,5,"win-folder-properties","folder-properties","Folder Properties",260,140,640,520,7,"closed",560,420,0,1,"properties","📂","workspace-files",0)
+	DO WIN(.STATE,5,"win-folder-properties","folder-properties","Folder Properties",260,140,640,520,7,"closed",560,420,0,1,"properties","📂","workspace-main",0)
 	SET STATE("windows",5,"propertySheetEnabled")=1
 	QUIT
 	;
@@ -630,51 +620,51 @@ WIN(STATE,N,ID,APPKEY,TITLE,LEFT,TOP,WIDTH,HEIGHT,Z,MODE,MINW,MINH,RESIZE,DRAG,K
 	;
 THEMES(ROOT,CURRENT)
 		KILL @ROOT
-		SET @ROOT@(1,"key")="classic-horizon-light"
-		SET @ROOT@(1,"title")="Classic Horizon Light"
-		SET @ROOT@(1,"family")="Horizon"
+		SET @ROOT@(1,"key")="luna-blue"
+		SET @ROOT@(1,"title")="Luna Blue"
+		SET @ROOT@(1,"family")="Windows XP"
 		SET @ROOT@(1,"mode")="light"
-		SET @ROOT@(1,"isCurrent")=$SELECT($GET(CURRENT)="classic-horizon-light":1,1:0)
+		SET @ROOT@(1,"isCurrent")=$SELECT($GET(CURRENT)="luna-blue":1,1:0)
 		SET @ROOT@(1,"wallpaper")="aurora"
-		SET @ROOT@(1,"accent")="#2f6fed"
-		SET @ROOT@(1,"taskbar")="#d9e5f7"
-		SET @ROOT@(2,"key")="classic-horizon-dark"
-		SET @ROOT@(2,"title")="Classic Horizon Dark"
-		SET @ROOT@(2,"family")="Horizon"
+		SET @ROOT@(1,"accent")="#2f67d8"
+		SET @ROOT@(1,"taskbar")="#245dd8"
+		SET @ROOT@(2,"key")="royale-noir"
+		SET @ROOT@(2,"title")="Royale Noir"
+		SET @ROOT@(2,"family")="Windows XP"
 		SET @ROOT@(2,"mode")="dark"
-		SET @ROOT@(2,"isCurrent")=$SELECT($GET(CURRENT)="classic-horizon-dark":1,1:0)
+		SET @ROOT@(2,"isCurrent")=$SELECT($GET(CURRENT)="royale-noir":1,1:0)
 		SET @ROOT@(2,"wallpaper")="aurora-night"
-		SET @ROOT@(2,"accent")="#78aefc"
-		SET @ROOT@(2,"taskbar")="#152235"
-		SET @ROOT@(3,"key")="orchard-light"
-		SET @ROOT@(3,"title")="Orchard Light"
-		SET @ROOT@(3,"family")="Orchard"
+		SET @ROOT@(2,"accent")="#6fa8ff"
+		SET @ROOT@(2,"taskbar")="#1b2e48"
+		SET @ROOT@(3,"key")="aero-glass"
+		SET @ROOT@(3,"title")="Aero Glass"
+		SET @ROOT@(3,"family")="Windows 7"
 		SET @ROOT@(3,"mode")="light"
-		SET @ROOT@(3,"isCurrent")=$SELECT($GET(CURRENT)="orchard-light":1,1:0)
+		SET @ROOT@(3,"isCurrent")=$SELECT($GET(CURRENT)="aero-glass":1,1:0)
 		SET @ROOT@(3,"wallpaper")="paper-dawn"
-		SET @ROOT@(3,"accent")="#4d7cff"
-		SET @ROOT@(3,"taskbar")="#eef1f6"
-		SET @ROOT@(4,"key")="orchard-dark"
-		SET @ROOT@(4,"title")="Orchard Dark"
-		SET @ROOT@(4,"family")="Orchard"
+		SET @ROOT@(3,"accent")="#4b86e8"
+		SET @ROOT@(3,"taskbar")="#dce7f5"
+		SET @ROOT@(4,"key")="aero-midnight"
+		SET @ROOT@(4,"title")="Aero Midnight"
+		SET @ROOT@(4,"family")="Windows 7"
 		SET @ROOT@(4,"mode")="dark"
-		SET @ROOT@(4,"isCurrent")=$SELECT($GET(CURRENT)="orchard-dark":1,1:0)
+		SET @ROOT@(4,"isCurrent")=$SELECT($GET(CURRENT)="aero-midnight":1,1:0)
 		SET @ROOT@(4,"wallpaper")="paper-night"
-		SET @ROOT@(4,"accent")="#93b0ff"
-		SET @ROOT@(4,"taskbar")="#151923"
-		SET @ROOT@(5,"key")="terra-light"
-		SET @ROOT@(5,"title")="Terra Light"
-		SET @ROOT@(5,"family")="Terra"
+		SET @ROOT@(4,"accent")="#7eb6ff"
+		SET @ROOT@(4,"taskbar")="#192638"
+		SET @ROOT@(5,"key")="ubuntu-human"
+		SET @ROOT@(5,"title")="Ubuntu Human"
+		SET @ROOT@(5,"family")="Ubuntu"
 		SET @ROOT@(5,"mode")="light"
-		SET @ROOT@(5,"isCurrent")=$SELECT($GET(CURRENT)="terra-light":1,1:0)
+		SET @ROOT@(5,"isCurrent")=$SELECT($GET(CURRENT)="ubuntu-human":1,1:0)
 		SET @ROOT@(5,"wallpaper")="sunrise-grid"
-		SET @ROOT@(5,"accent")="#d86337"
+		SET @ROOT@(5,"accent")="#dd6a36"
 		SET @ROOT@(5,"taskbar")="#f2e7df"
-		SET @ROOT@(6,"key")="terra-dark"
-		SET @ROOT@(6,"title")="Terra Dark"
-		SET @ROOT@(6,"family")="Terra"
+		SET @ROOT@(6,"key")="ubuntu-graphite"
+		SET @ROOT@(6,"title")="Ubuntu Graphite"
+		SET @ROOT@(6,"family")="Ubuntu"
 		SET @ROOT@(6,"mode")="dark"
-		SET @ROOT@(6,"isCurrent")=$SELECT($GET(CURRENT)="terra-dark":1,1:0)
+		SET @ROOT@(6,"isCurrent")=$SELECT($GET(CURRENT)="ubuntu-graphite":1,1:0)
 		SET @ROOT@(6,"wallpaper")="midnight-grid"
 		SET @ROOT@(6,"accent")="#ffb087"
 		SET @ROOT@(6,"taskbar")="#20161a"

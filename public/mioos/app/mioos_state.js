@@ -43,7 +43,7 @@
         commandErrorEvent: 'desktop.error'
       },
       desktop: {
-        themeKey: 'classic-horizon-light',
+        themeKey: 'luna-blue',
         wallpaper: 'aurora',
         density: 'comfortable',
         fontFamily: 'Segoe UI',
@@ -111,23 +111,21 @@
         themeSystem: { version: 3, editor: 'customize', persistence: 'localstorage-applied-profile', liveApply: true, quickSwitch: true, densityOptions: ['compact', 'comfortable', 'spacious'] },
         appSurfaceModel: 'shell-standard-actions',
         appActions: { confirmBeforeDestructive: true, notifyOnAdminActions: true, copyExportsToClipboard: true, moduleNotesSessionLocal: true },
-        shellSurfaces: { explorer: true, customize: true, folderProperties: true, transfers: true, notifications: true, dialogs: true, windowSwitcher: true, moduleWindows: false, workspacePager: true },
+        shellSurfaces: { explorer: true, customize: true, folderProperties: true, transfers: true, notifications: true, dialogs: true, windowSwitcher: true, moduleWindows: false, workspacePager: false },
         notifications: { model: 'toast-and-tray', stackLimit: 6, tray: true },
         dialogs: { model: 'shell-standard', confirm: true, input: true },
         shortcuts: { showDesktop: 'Meta+D', windowSwitcher: 'Alt+Tab', closeFocusedWindow: 'Shift+Escape', snapLeft: 'Alt+Shift+ArrowLeft', snapRight: 'Alt+Shift+ArrowRight', maximizeFocusedWindow: 'Alt+Shift+ArrowUp', restoreFocusedWindow: 'Alt+Shift+ArrowDown', previousWorkspace: 'Ctrl+Alt+ArrowLeft', nextWorkspace: 'Ctrl+Alt+ArrowRight', moveFocusedWindowPreviousWorkspace: 'Ctrl+Alt+Shift+ArrowLeft', moveFocusedWindowNextWorkspace: 'Ctrl+Alt+Shift+ArrowRight' },
         persistence: { desktopLayout: 'localstorage-desktop-layout', windowLayout: 'localstorage-window-layout', authWindow: 'localstorage-auth-window-frame', themeProfile: 'localstorage-applied-profile' },
-        workspaces: { enabled: true, model: 'virtual-desktop-pager', persistence: 'localstorage-current-workspace', currentKey: 'workspace-files', showInTaskbar: true, followMovedWindow: true, switchShortcuts: { previous: 'Ctrl+Alt+ArrowLeft', next: 'Ctrl+Alt+ArrowRight' }, moveShortcuts: { previous: 'Ctrl+Alt+Shift+ArrowLeft', next: 'Ctrl+Alt+Shift+ArrowRight' }, items: [
-          { key: 'workspace-main', title: 'Workspace', icon: '⌂', description: 'Primary runtime workspace', ordinal: 1 },
-          { key: 'workspace-files', title: 'Files', icon: '📁', description: 'Folders, transfers, and file operations', ordinal: 2 },
-          { key: 'workspace-customize', title: 'Customize', icon: '🎛', description: 'Shell design and theming workbench', ordinal: 3 }
+        workspaces: { enabled: false, model: 'single-desktop', persistence: 'none', currentKey: 'workspace-main', showInTaskbar: false, followMovedWindow: false, switchShortcuts: { previous: '', next: '' }, moveShortcuts: { previous: '', next: '' }, items: [
+          { key: 'workspace-main', title: 'Desktop', icon: '⌂', description: 'Single desktop surface for all application windows', ordinal: 1 }
         ] },
         themes: [
-          { key: 'classic-horizon-light', title: 'Classic Horizon Light', family: 'Horizon', mode: 'light', wallpaper: 'aurora', accent: '#2f6fed', taskbar: '#d9e5f7' },
-          { key: 'classic-horizon-dark', title: 'Classic Horizon Dark', family: 'Horizon', mode: 'dark', wallpaper: 'aurora-night', accent: '#78aefc', taskbar: '#152235' },
-          { key: 'orchard-light', title: 'Orchard Light', family: 'Orchard', mode: 'light', wallpaper: 'paper-dawn', accent: '#4d7cff', taskbar: '#eef1f6' },
-          { key: 'orchard-dark', title: 'Orchard Dark', family: 'Orchard', mode: 'dark', wallpaper: 'paper-night', accent: '#93b0ff', taskbar: '#151923' },
-          { key: 'terra-light', title: 'Terra Light', family: 'Terra', mode: 'light', wallpaper: 'sunrise-grid', accent: '#d86337', taskbar: '#f2e7df' },
-          { key: 'terra-dark', title: 'Terra Dark', family: 'Terra', mode: 'dark', wallpaper: 'midnight-grid', accent: '#ffb087', taskbar: '#20161a' }
+          { key: 'luna-blue', title: 'Luna Blue', family: 'Windows XP', mode: 'light', wallpaper: 'aurora', accent: '#2f67d8', taskbar: '#245dd8' },
+          { key: 'royale-noir', title: 'Royale Noir', family: 'Windows XP', mode: 'dark', wallpaper: 'aurora-night', accent: '#6fa8ff', taskbar: '#1b2e48' },
+          { key: 'aero-glass', title: 'Aero Glass', family: 'Windows 7', mode: 'light', wallpaper: 'paper-dawn', accent: '#4b86e8', taskbar: '#dce7f5' },
+          { key: 'aero-midnight', title: 'Aero Midnight', family: 'Windows 7', mode: 'dark', wallpaper: 'paper-night', accent: '#7eb6ff', taskbar: '#192638' },
+          { key: 'ubuntu-human', title: 'Ubuntu Human', family: 'Ubuntu', mode: 'light', wallpaper: 'sunrise-grid', accent: '#dd6a36', taskbar: '#f2e7df' },
+          { key: 'ubuntu-graphite', title: 'Ubuntu Graphite', family: 'Ubuntu', mode: 'dark', wallpaper: 'midnight-grid', accent: '#ffb087', taskbar: '#20161a' }
         ]
       },
       auth: { enabled: true, required: true, guestLoginEnabled: false, mode: 'local-session-required', unauthenticatedAccessAllowed: false, providers: { local: { enabled: true, loginMode: 'username-password', guestAllowed: false }, framework: { enabled: true, mode: 'mioauth-session-jwt', tokenType: 'jwt', sessionCookie: 'mioos_auth' } }, lockout: { threshold: 5, minutes: 15 }, passwordPolicy: { minLength: 12, requireUpper: true, requireLower: true, requireDigit: true, requireSymbol: true, maxAgeDays: 90, warnDays: 14, changeTokenMinutes: 15 }, audit: { enabled: true, retainDays: 365, reportLimit: 20, reportWindowDays: 30, scope: 'self' }, management: { sessionAdminEnabled: true, accountAdminEnabled: true, sessionLimit: 20, accountLimit: 20, adminRole: 'admin' } },
@@ -182,9 +180,9 @@
   function defaultView() {
     return {
       summary: {
-        headline: 'Production shell workspace',
+        headline: 'Production shell desktop',
         subheadline: '',
-        theme: 'classic-horizon-light',
+        theme: 'luna-blue',
         launcherLabel: 'Menu',
         windowManager: 'mioos-native-vue-css',
         authMode: 'anonymous',

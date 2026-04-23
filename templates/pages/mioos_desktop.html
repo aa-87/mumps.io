@@ -167,13 +167,10 @@
           </div>
         </div>
         <div>
-          <header><strong>Session</strong><span>Identity and workspace</span></header>
+          <header><strong>Session</strong><span>User and connection</span></header>
           <div class="mioos-start-facts">
             <span>[[ boot.user.authenticated ? boot.user.displayName : t('auth.notSignedIn') ]]</span>
             <span>[[ socketConnected ? t('socket.live') : t('socket.offline') ]]</span>
-          </div>
-          <div class="mioos-shell-chipset mioos-workspace-chipset" v-if="workspaceItems().length">
-            <button v-for="space in workspaceItems()" :key="space.key" type="button" class="mioos-shell-chip" :class="{ 'is-current': currentWorkspace().key === space.key }" @click="switchWorkspace(space.key)">[[ space.icon ]] [[ space.title ]]</button>
           </div>
           <div class="mioos-start-actions">
             <button type="button" @click="openApp('customize')">Customize</button>
@@ -231,244 +228,253 @@
       </header>
       <div class="mioos-window-body" :class="{ 'is-terminal-body': win.appKey === 'terminal' }">
         <template v-if="win.appKey === 'home' || win.appKey === 'explorer'">
-          <div class="mioos-explorer-shell mioos-shell-surface mioos-shell-surface--explorer" :data-explorer-window="win.id" @click="closeFolderContextMenu(win.id)">
-            <div class="mioos-explorer-chrome mioos-explorer-chrome--modern">
-              <div class="mioos-explorer-toolbar">
-                <div class="mioos-explorer-navgroup">
-                  <button type="button" class="mioos-toolbar-button" @click="explorerNavigateBack(win.id)" :disabled="!explorerCanGoBack(win)">←</button>
-                  <button type="button" class="mioos-toolbar-button" @click="explorerNavigateForward(win.id)" :disabled="!explorerCanGoForward(win)">→</button>
-                  <button type="button" class="mioos-toolbar-button" @click="explorerGoUp(win.id)">↑</button>
-                </div>
-                <label class="mioos-explorer-addressfield mioos-explorer-addressfield--editable">
-                  <span>Address</span>
-                  <input type="text" v-model="(win.explorerState || {}).addressInput" @keydown.enter.prevent="explorerGoToAddress(win.id)">
-                </label>
-                <div class="mioos-explorer-commandbar mioos-explorer-commandbar--modern">
-                  <button type="button" class="mioos-toolbar-button" @click="refreshExplorerWindow(win.id)">Refresh</button>
-                  <button type="button" class="mioos-toolbar-button" @click="explorerCreateFolder(win.id)">New folder</button>
-                  <button type="button" class="mioos-toolbar-button" @click="explorerPromptUpload(win.id)">Upload</button>
-                  <button type="button" class="mioos-toolbar-button" @click="openFolderPropertiesWindow(win.id, (win.explorerState || {}).selection || (win.explorerState || {}).folder, 'general')">Properties</button>
-                </div>
+          <div class="mioos-classic-shell mioos-classic-explorer" :data-explorer-window="win.id" @click="closeFolderContextMenu(win.id)">
+            <div class="mioos-classic-menubar">
+              <button type="button">File</button>
+              <button type="button">Edit</button>
+              <button type="button">View</button>
+              <button type="button">Favorites</button>
+              <button type="button">Tools</button>
+              <button type="button">Help</button>
+            </div>
+            <div class="mioos-classic-toolbar">
+              <div class="mioos-classic-toolbar-group">
+                <button type="button" class="mioos-classic-tool" @click="explorerNavigateBack(win.id)" :disabled="!explorerCanGoBack(win)">Back</button>
+                <button type="button" class="mioos-classic-tool" @click="explorerNavigateForward(win.id)" :disabled="!explorerCanGoForward(win)">Forward</button>
+                <button type="button" class="mioos-classic-tool" @click="explorerGoUp(win.id)">Up</button>
               </div>
-              <div class="mioos-explorer-main mioos-explorer-main--modern">
-                <aside class="mioos-explorer-sidebar mioos-explorer-sidebar--modern">
-                  <section class="mioos-explorer-panel">
-                    <header>Places</header>
-                    <button type="button" class="mioos-explorer-tasklink" v-for="place in explorerQuickPlaces()" :key="place.id" @click="loadExplorerFolder(win.id, place.id, { selectFirst: true })">[[ place.title ]]</button>
-                    <button type="button" class="mioos-explorer-tasklink" @click="openApp('transfers')">Transfers</button>
-                    <button type="button" class="mioos-explorer-tasklink" @click="openApp('terminal')">Terminal</button>
-                  </section>
-                  <section class="mioos-explorer-panel">
-                    <header>Selected item</header>
+              <div class="mioos-classic-toolbar-group mioos-classic-toolbar-group--tasks">
+                <button type="button" class="mioos-classic-tool" @click="refreshExplorerWindow(win.id)">Refresh</button>
+                <button type="button" class="mioos-classic-tool" @click="explorerCreateFolder(win.id)">New Folder</button>
+                <button type="button" class="mioos-classic-tool" @click="explorerPromptUpload(win.id)">Upload</button>
+                <button type="button" class="mioos-classic-tool" @click="openFolderPropertiesWindow(win.id, (win.explorerState || {}).selection || (win.explorerState || {}).folder, 'general')">Properties</button>
+              </div>
+            </div>
+            <div class="mioos-classic-addressbar">
+              <span>Address</span>
+              <input type="text" v-model="(win.explorerState || {}).addressInput" @keydown.enter.prevent="explorerGoToAddress(win.id)">
+              <button type="button" class="mioos-classic-tool" @click="explorerGoToAddress(win.id)">Go</button>
+            </div>
+            <div class="mioos-classic-workarea">
+              <aside class="mioos-classic-sidebar">
+                <section class="mioos-classic-pane">
+                  <header>File and Folder Tasks</header>
+                  <div class="mioos-classic-pane-body">
+                    <button type="button" @click="explorerOpenSelected(win.id)" :disabled="!((win.explorerState || {}).selection)">Open selected item</button>
+                    <button type="button" @click="explorerCreateFolder(win.id)">Make a new folder</button>
+                    <button type="button" @click="explorerPromptUpload(win.id)">Upload files</button>
+                    <button type="button" @click="openFolderPropertiesWindow(win.id, (win.explorerState || {}).folder, 'customize')">Customize this folder</button>
+                  </div>
+                </section>
+                <section class="mioos-classic-pane">
+                  <header>Other Places</header>
+                  <div class="mioos-classic-pane-body">
+                    <button type="button" v-for="place in explorerQuickPlaces()" :key="place.id" @click="loadExplorerFolder(win.id, place.id, { selectFirst: true })">[[ place.title ]]</button>
+                    <button type="button" @click="openApp('transfers')">Transfers</button>
+                    <button type="button" @click="openApp('terminal')">Terminal</button>
+                  </div>
+                </section>
+                <section class="mioos-classic-pane">
+                  <header>Details</header>
+                  <div class="mioos-classic-pane-body mioos-classic-pane-body--details">
                     <template v-if="(win.explorerState || {}).selection">
                       <strong>[[ ((win.explorerState || {}).selection || {}).name || ((win.explorerState || {}).selection || {}).title ]]</strong>
                       <span>[[ ((win.explorerState || {}).selection || {}).kind || ((win.explorerState || {}).selection || {}).mime || 'Item' ]]</span>
-                      <span v-if="((win.explorerState || {}).selection || {}).path">[[ ((win.explorerState || {}).selection || {}).path ]]</span>
+                      <span>[[ ((win.explorerState || {}).selection || {}).path || (((win.explorerState || {}).folder || {}).path || '/') ]]</span>
                       <span v-if="((win.explorerState || {}).selection || {}).sizeLabel">[[ ((win.explorerState || {}).selection || {}).sizeLabel ]]</span>
                     </template>
                     <template v-else>
-                      <strong>Folder overview</strong>
+                      <strong>[[ (((win.explorerState || {}).folder || {}).name) || 'Home' ]]</strong>
                       <span>[[ (((win.explorerState || {}).folder || {}).containsLabel) || ((((win.explorerState || {}).items || []).length) + ' items') ]]</span>
+                      <span>[[ (((win.explorerState || {}).folder || {}).path) || '/Home' ]]</span>
                     </template>
-                  </section>
-                </aside>
-                <section class="mioos-explorer-workarea" @contextmenu.prevent="openFolderContextMenu(win.id, $event)">
-                  <div class="mioos-explorer-listhead mioos-explorer-listhead--modern" :data-view-mode="(win.explorerState || {}).viewMode || 'details'">
-                    <strong>Name</strong>
-                    <span>Type</span>
-                    <span>Modified</span>
-                    <span>Size</span>
                   </div>
-                  <section class="mioos-explorer-list mioos-explorer-list--modern" :data-view-mode="(win.explorerState || {}).viewMode || 'details'">
-                    <button
-                      v-for="item in ((win.explorerState || {}).items || [])"
-                      :key="item.id || item.name"
-                      type="button"
-                      draggable="true"
-                      class="mioos-explorer-item mioos-explorer-item--modern"
-                      :class="{ 'is-selected': (((win.explorerState || {}).selection || {}).id || '') === (item.id || '') }"
-                      @dragstart="beginExplorerItemDrag(win.id, item, $event)"
-                      @click="selectExplorerItem(win.id, item)"
-                      @contextmenu.prevent.stop="openFolderContextMenu(win.id, $event, item)"
-                      @dblclick="explorerOpenItem(win.id, item)">
-                      <span class="mioos-entry-icon mioos-explorer-itemicon">[[ item.icon || explorerItemGlyph(item) ]]</span>
-                      <span class="mioos-explorer-item-name"><strong>[[ item.name || item.title ]]</strong></span>
-                      <span class="mioos-explorer-item-type">[[ item.kind || item.type || item.mime || '' ]]</span>
-                      <span class="mioos-explorer-item-date">[[ formatTransportTime(item.modifiedAt) ]]</span>
-                      <span class="mioos-explorer-item-size">[[ item.sizeLabel || (item.size ? (item.size + ' B') : '—') ]]</span>
-                    </button>
-                  </section>
-                  <section v-if="((win.explorerState || {}).contextMenu || {}).open" class="mioos-context-menu mioos-context-menu--folder" :style="{ left: (((win.explorerState || {}).contextMenu || {}).left || 0) + 'px', top: (((win.explorerState || {}).contextMenu || {}).top || 0) + 'px' }" @click.stop>
-                    <div class="mioos-menu-group">
-                      <strong>View</strong>
-                      <button type="button" @click="setExplorerViewMode(win.id, 'xlarge'); closeFolderContextMenu(win.id)">Extra large Icons</button>
-                      <button type="button" @click="setExplorerViewMode(win.id, 'large'); closeFolderContextMenu(win.id)">Large Icons</button>
-                      <button type="button" @click="setExplorerViewMode(win.id, 'medium'); closeFolderContextMenu(win.id)">Medium Icons</button>
-                      <button type="button" @click="setExplorerViewMode(win.id, 'small'); closeFolderContextMenu(win.id)">Small Icons</button>
-                      <button type="button" @click="setExplorerViewMode(win.id, 'list'); closeFolderContextMenu(win.id)">List</button>
-                      <button type="button" @click="setExplorerViewMode(win.id, 'details'); closeFolderContextMenu(win.id)">Details</button>
-                    </div>
-                    <hr>
-                    <div class="mioos-menu-group">
-                      <strong>Sort by</strong>
-                      <button type="button" @click="setExplorerSort(win.id, 'name'); closeFolderContextMenu(win.id)">Name</button>
-                      <button type="button" @click="setExplorerSort(win.id, 'date-modified'); closeFolderContextMenu(win.id)">Date modified</button>
-                      <button type="button" @click="setExplorerSort(win.id, 'type'); closeFolderContextMenu(win.id)">Type</button>
-                      <button type="button" @click="setExplorerSort(win.id, 'size'); closeFolderContextMenu(win.id)">Size</button>
-                      <button type="button" @click="setExplorerSort(win.id, (win.explorerState || {}).sortBy || 'name', 'ascending'); closeFolderContextMenu(win.id)">Ascending</button>
-                      <button type="button" @click="setExplorerSort(win.id, (win.explorerState || {}).sortBy || 'name', 'descending'); closeFolderContextMenu(win.id)">Descending</button>
-                    </div>
-                    <hr>
-                    <button type="button" @click="openFolderPropertiesWindow(win.id, (win.explorerState || {}).folder, 'customize'); closeFolderContextMenu(win.id)">Customize this folder</button>
-                    <button type="button" @click="explorerCreateFolder(win.id); closeFolderContextMenu(win.id)">New</button>
-                    <button type="button" @click="openFolderPropertiesWindow(win.id, (win.explorerState || {}).folder, 'general'); closeFolderContextMenu(win.id)">Properties</button>
-                  </section>
                 </section>
-                <aside class="mioos-explorer-preview mioos-explorer-preview--modern">
-                  <div class="mioos-explorer-previewhead">Preview</div>
-                  <div class="mioos-explorer-previewbody">
-                    <template v-if="((win.explorerState || {}).preview || {}).imageSrc">
-                      <strong>[[ (win.explorerState || {}).preview.title ]]</strong>
-                      <div class="mioos-image-preview-frame"><img class="mioos-image-preview" :src="(win.explorerState || {}).preview.imageSrc" :alt="(win.explorerState || {}).preview.title"></div>
-                    </template>
-                    <template v-else-if="((win.explorerState || {}).preview || {}).mediaSrc && (((win.explorerState || {}).preview || {}).mediaKind === 'video')">
-                      <strong>[[ (win.explorerState || {}).preview.title ]]</strong>
-                      <video class="mioos-media-preview-video" controls preload="metadata" playsinline :src="(win.explorerState || {}).preview.mediaSrc"></video>
-                    </template>
-                    <template v-else-if="((win.explorerState || {}).preview || {}).mediaSrc && (((win.explorerState || {}).preview || {}).mediaKind === 'audio')">
-                      <strong>[[ (win.explorerState || {}).preview.title ]]</strong>
-                      <audio class="mioos-media-preview-audio" controls preload="metadata" :src="(win.explorerState || {}).preview.mediaSrc"></audio>
-                    </template>
-                    <template v-else-if="((win.explorerState || {}).preview || {}).title">
-                      <strong>[[ (win.explorerState || {}).preview.title ]]</strong>
-                      <pre class="mioos-text-preview">[[ (win.explorerState || {}).preview.content ]]</pre>
-                    </template>
-                    <template v-else>
-                      <strong>Preview</strong>
-                      <span>Select a file, folder, or launcher.</span>
-                    </template>
+              </aside>
+              <section class="mioos-classic-browser" @contextmenu.prevent="openFolderContextMenu(win.id, $event)">
+                <div class="mioos-classic-browser-head">
+                  <div>
+                    <strong>[[ (((win.explorerState || {}).folder || {}).name) || 'Home' ]]</strong>
+                    <small>[[ (((win.explorerState || {}).folder || {}).path) || '/Home' ]]</small>
                   </div>
-                </aside>
-              </div>
-              <div class="mioos-statusbar mioos-statusbar--modern">
-                <span>[[ (((win.explorerState || {}).items || []).length) ]] items</span>
-                <span>[[ ((win.explorerState || {}).folder || {}).path || '/' ]]</span>
-                <span>[[ transferSummaryText() ]]</span>
-              </div>
+                  <div class="mioos-classic-viewbar">
+                    <button type="button" class="mioos-classic-tool" :class="{ 'is-current': ((win.explorerState || {}).viewMode || 'details') === 'details' }" @click="setExplorerViewMode(win.id, 'details')">Details</button>
+                    <button type="button" class="mioos-classic-tool" :class="{ 'is-current': ((win.explorerState || {}).viewMode || 'details') === 'list' }" @click="setExplorerViewMode(win.id, 'list')">List</button>
+                    <button type="button" class="mioos-classic-tool" :class="{ 'is-current': ['small','medium','large','xlarge'].indexOf((win.explorerState || {}).viewMode || '') >= 0 }" @click="setExplorerViewMode(win.id, 'medium')">Icons</button>
+                  </div>
+                </div>
+                <div class="mioos-classic-browser-body" v-if="((win.explorerState || {}).viewMode || 'details') === 'details'">
+                  <div class="mioos-classic-listhead">
+                    <span>Name</span><span>Type</span><span>Date Modified</span><span>Size</span>
+                  </div>
+                  <div class="mioos-classic-listbody">
+                    <button v-for="item in ((win.explorerState || {}).items || [])" :key="item.id || item.name" type="button" draggable="true" class="mioos-classic-row" :class="{ 'is-selected': (((win.explorerState || {}).selection || {}).id || '') === (item.id || '') }" @dragstart="beginExplorerItemDrag(win.id, item, $event)" @click="selectExplorerItem(win.id, item)" @contextmenu.prevent.stop="openFolderContextMenu(win.id, $event, item)" @dblclick="explorerOpenItem(win.id, item)">
+                      <span class="mioos-classic-row-name"><i>[[ item.icon || explorerItemGlyph(item) ]]</i><strong>[[ item.name || item.title ]]</strong></span>
+                      <span>[[ item.kind || item.type || item.mime || '' ]]</span>
+                      <span>[[ formatTransportTime(item.modifiedAt) ]]</span>
+                      <span>[[ item.sizeLabel || (item.size ? (item.size + ' B') : '—') ]]</span>
+                    </button>
+                  </div>
+                </div>
+                <div class="mioos-classic-iconview" v-else :data-view-mode="(win.explorerState || {}).viewMode || 'medium'">
+                  <button v-for="item in ((win.explorerState || {}).items || [])" :key="item.id || item.name" type="button" draggable="true" class="mioos-classic-iconitem" :class="{ 'is-selected': (((win.explorerState || {}).selection || {}).id || '') === (item.id || '') }" @dragstart="beginExplorerItemDrag(win.id, item, $event)" @click="selectExplorerItem(win.id, item)" @contextmenu.prevent.stop="openFolderContextMenu(win.id, $event, item)" @dblclick="explorerOpenItem(win.id, item)">
+                    <span class="mioos-classic-iconglyph">[[ item.icon || explorerItemGlyph(item) ]]</span>
+                    <strong>[[ item.name || item.title ]]</strong>
+                    <small>[[ item.kind || item.type || 'Item' ]]</small>
+                  </button>
+                </div>
+                <div class="mioos-classic-statusbar">
+                  <span>[[ (((win.explorerState || {}).items || []).length) ]] item[[ (((win.explorerState || {}).items || []).length) === 1 ? '' : 's' ]]</span>
+                  <span>View: [[ explorerViewModeLabel(win) ]]</span>
+                  <span>Sort: [[ (win.explorerState || {}).sortBy || 'name' ]] ([[ (win.explorerState || {}).sortDirection || 'ascending' ]])</span>
+                </div>
+                <section v-if="((win.explorerState || {}).contextMenu || {}).open" class="mioos-classic-contextmenu" :style="{ left: (((win.explorerState || {}).contextMenu || {}).left || 0) + 'px', top: (((win.explorerState || {}).contextMenu || {}).top || 0) + 'px' }" @click.stop>
+                  <div class="mioos-classic-contextgroup"><strong>View</strong>
+                    <button type="button" @click="setExplorerViewMode(win.id, 'xlarge'); closeFolderContextMenu(win.id)">[[ ((win.explorerState || {}).viewMode || '') === 'xlarge' ? '✓ ' : '' ]]Extra large Icons</button>
+                    <button type="button" @click="setExplorerViewMode(win.id, 'large'); closeFolderContextMenu(win.id)">[[ ((win.explorerState || {}).viewMode || '') === 'large' ? '✓ ' : '' ]]Large Icons</button>
+                    <button type="button" @click="setExplorerViewMode(win.id, 'medium'); closeFolderContextMenu(win.id)">[[ ((win.explorerState || {}).viewMode || '') === 'medium' ? '✓ ' : '' ]]Medium Icons</button>
+                    <button type="button" @click="setExplorerViewMode(win.id, 'small'); closeFolderContextMenu(win.id)">[[ ((win.explorerState || {}).viewMode || '') === 'small' ? '✓ ' : '' ]]Small Icons</button>
+                    <button type="button" @click="setExplorerViewMode(win.id, 'list'); closeFolderContextMenu(win.id)">[[ ((win.explorerState || {}).viewMode || '') === 'list' ? '✓ ' : '' ]]List</button>
+                    <button type="button" @click="setExplorerViewMode(win.id, 'details'); closeFolderContextMenu(win.id)">[[ ((win.explorerState || {}).viewMode || '') === 'details' ? '✓ ' : '' ]]Details</button>
+                  </div>
+                  <hr>
+                  <div class="mioos-classic-contextgroup"><strong>Sort by</strong>
+                    <button type="button" @click="setExplorerSort(win.id, 'name'); closeFolderContextMenu(win.id)">[[ ((win.explorerState || {}).sortBy || '') === 'name' ? '✓ ' : '' ]]Name</button>
+                    <button type="button" @click="setExplorerSort(win.id, 'date-modified'); closeFolderContextMenu(win.id)">[[ ((win.explorerState || {}).sortBy || '') === 'date-modified' ? '✓ ' : '' ]]Date modified</button>
+                    <button type="button" @click="setExplorerSort(win.id, 'type'); closeFolderContextMenu(win.id)">[[ ((win.explorerState || {}).sortBy || '') === 'type' ? '✓ ' : '' ]]Type</button>
+                    <button type="button" @click="setExplorerSort(win.id, 'size'); closeFolderContextMenu(win.id)">[[ ((win.explorerState || {}).sortBy || '') === 'size' ? '✓ ' : '' ]]Size</button>
+                    <button type="button" @click="setExplorerSort(win.id, (win.explorerState || {}).sortBy || 'name', 'ascending'); closeFolderContextMenu(win.id)">[[ ((win.explorerState || {}).sortDirection || 'ascending') === 'ascending' ? '✓ ' : '' ]]Ascending</button>
+                    <button type="button" @click="setExplorerSort(win.id, (win.explorerState || {}).sortBy || 'name', 'descending'); closeFolderContextMenu(win.id)">[[ ((win.explorerState || {}).sortDirection || 'ascending') === 'descending' ? '✓ ' : '' ]]Descending</button>
+                  </div>
+                  <hr>
+                  <button type="button" @click="openFolderPropertiesWindow(win.id, (win.explorerState || {}).folder, 'customize'); closeFolderContextMenu(win.id)">Customize this folder</button>
+                  <button type="button" @click="explorerCreateFolder(win.id); closeFolderContextMenu(win.id)">New</button>
+                  <button type="button" @click="openFolderPropertiesWindow(win.id, (win.explorerState || {}).folder, 'general'); closeFolderContextMenu(win.id)">Properties</button>
+                </section>
+              </section>
             </div>
           </div>
         </template>
         <template v-else-if="win.appKey === 'transfers'">
-          <div class="mioos-transfers-shell mioos-shell-surface mioos-shell-surface--transfers" data-transfer-window="1">
-            <div class="mioos-transfers-head mioos-transfers-head--modern">
+          <div class="mioos-classic-shell mioos-classic-transfers">
+            <div class="mioos-classic-panelhead">
               <div>
                 <strong>Transfer Manager</strong>
-                <span>Operational view of queued, active, completed, and failed transfers.</span>
+                <span>Monitor active, queued, completed, and failed transfers.</span>
               </div>
-              <div class="mioos-seven-toolbar mioos-seven-toolbar--modern">
-                <button type="button" @click="pauseAllTransfers()">Pause all</button>
-                <button type="button" @click="resumePausedTransfers()">Resume paused</button>
-                <button type="button" @click="cancelActiveTransfers()">Cancel active</button>
-                <button type="button" @click="clearFinishedTransfers()">Clear finished</button>
+              <div class="mioos-classic-toolbar-group">
+                <button type="button" class="mioos-classic-tool" @click="pauseAllTransfers()">Pause All</button>
+                <button type="button" class="mioos-classic-tool" @click="resumePausedTransfers()">Resume Paused</button>
+                <button type="button" class="mioos-classic-tool" @click="cancelActiveTransfers()">Cancel Active</button>
+                <button type="button" class="mioos-classic-tool" @click="clearFinishedTransfers()">Clear Finished</button>
               </div>
             </div>
-            <div class="mioos-transfer-summary-grid">
-              <article class="mioos-transfer-summary-card"><strong>[[ activeTransfers().filter(function (item) { return item.status !== 'paused'; }).length ]]</strong><span>Active</span></article>
-              <article class="mioos-transfer-summary-card"><strong>[[ activeTransfers().filter(function (item) { return item.status === 'paused'; }).length ]]</strong><span>Paused</span></article>
-              <article class="mioos-transfer-summary-card"><strong>[[ completedTransfers().filter(function (item) { return item.status === 'completed'; }).length ]]</strong><span>Completed</span></article>
-              <article class="mioos-transfer-summary-card"><strong>[[ completedTransfers().filter(function (item) { return item.status === 'failed'; }).length ]]</strong><span>Failed</span></article>
-            </div>
-            <div class="mioos-transfers-sections mioos-transfers-sections--modern">
-              <section>
-                <header><strong>In progress</strong><span>[[ transferSummaryText() ]]</span></header>
-                <div class="mioos-transfer-card mioos-transfer-card--modern" v-for="item in activeTransfers()" :key="item.id">
-                  <div class="mioos-transfer-copy">
-                    <strong>[[ item.name ]]</strong>
-                    <span>[[ item.kind ]] · [[ item.stage || item.status ]]</span>
-                    <small>[[ (item.sourcePath || 'local device') + ' → ' + (item.destinationPath || ((item.resume || {}).parentPath) || '/Home') ]]</small>
+            <div class="mioos-classic-transferlayout">
+              <aside class="mioos-classic-transferrail">
+                <section class="mioos-classic-pane">
+                  <header>Transfer Summary</header>
+                  <div class="mioos-classic-pane-body mioos-classic-transferfacts">
+                    <span><strong>[[ activeTransfers().filter(function (item) { return item.status !== 'paused'; }).length ]]</strong> Active</span>
+                    <span><strong>[[ activeTransfers().filter(function (item) { return item.status === 'paused'; }).length ]]</strong> Paused</span>
+                    <span><strong>[[ completedTransfers().filter(function (item) { return item.status === 'completed'; }).length ]]</strong> Completed</span>
+                    <span><strong>[[ completedTransfers().filter(function (item) { return item.status === 'failed'; }).length ]]</strong> Failed</span>
+                    <small>[[ transferSummaryText() ]]</small>
                   </div>
-                  <div class="mioos-transfer-progressmeta">
-                    <div class="mioos-upload-progress-bar"><span :style="{ width: (transferPercent(item) + '%') }"></span></div>
-                    <div class="mioos-transfer-metrics">
-                      <em>[[ transferPercent(item) ]]%</em>
-                      <small>[[ item.processedBytes || 0 ]] / [[ item.totalBytes || 0 ]] bytes</small>
+                </section>
+                <section class="mioos-classic-pane">
+                  <header>Selected Experience</header>
+                  <div class="mioos-classic-pane-body mioos-classic-pane-body--details">
+                    <strong>Windows-style transfer center</strong>
+                    <span>Large progress indicators, source and destination paths, and clear recovery controls.</span>
+                  </div>
+                </section>
+              </aside>
+              <section class="mioos-classic-transfermain">
+                <div class="mioos-classic-subhead">Current Transfers</div>
+                <div class="mioos-classic-transferlist" v-if="activeTransfers().length">
+                  <article class="mioos-classic-transfercard" v-for="item in activeTransfers()" :key="item.id">
+                    <div class="mioos-classic-transfertitle"><strong>[[ item.name ]]</strong><span>[[ item.kind ]]</span></div>
+                    <div class="mioos-classic-transferpath">[[ transferDirectionLabel(item) ]]</div>
+                    <div class="mioos-classic-progress"><span :style="{ width: (transferPercent(item) + '%') }"></span></div>
+                    <div class="mioos-classic-transfermeta">
+                      <span>[[ transferProgressLabel(item) ]]</span>
+                      <span>[[ transferStatusCaption(item) ]]</span>
+                      <span>Updated: [[ transferTimestampLabel(item) ]]</span>
                     </div>
-                  </div>
-                  <div class="mioos-transfer-actions">
-                    <button type="button" class="mioos-transfer-btn" v-if="canPauseTransfer(item)" @click="pauseTransfer(item)">Pause</button>
-                    <button type="button" class="mioos-transfer-btn" v-if="canResumeTransfer(item)" @click="resumeTransfer(item)">Resume</button>
-                    <button type="button" class="mioos-transfer-btn" v-if="canCancelTransfer(item)" @click="cancelTransfer(item)">Cancel</button>
-                  </div>
+                    <div class="mioos-classic-toolbar-group">
+                      <button type="button" class="mioos-classic-tool" v-if="canPauseTransfer(item)" @click="pauseTransfer(item)">Pause</button>
+                      <button type="button" class="mioos-classic-tool" v-if="canResumeTransfer(item)" @click="resumeTransfer(item)">Resume</button>
+                      <button type="button" class="mioos-classic-tool" v-if="canCancelTransfer(item)" @click="cancelTransfer(item)">Cancel</button>
+                    </div>
+                  </article>
                 </div>
-                <div class="mioos-transfer-empty" v-if="!activeTransfers().length">No active transfers.</div>
-              </section>
-              <section>
-                <header><strong>History</strong><span>Completed and recoverable transfers</span></header>
-                <div class="mioos-transfer-card mioos-transfer-card--modern is-history" v-for="item in completedTransfers()" :key="item.id">
-                  <div class="mioos-transfer-copy">
-                    <strong>[[ item.name ]]</strong>
-                    <span>[[ item.kind ]] · [[ item.stage || item.status ]]</span>
-                    <small v-if="item.error">[[ item.error ]]</small>
-                  </div>
-                  <em class="mioos-transfer-state" :class="{ 'is-failed': item.status === 'failed' }">[[ item.status ]]</em>
-                  <div class="mioos-transfer-actions" v-if="canRetryTransfer(item)"><button type="button" class="mioos-transfer-btn" @click="retryTransfer(item)">Retry</button></div>
+                <div class="mioos-classic-empty" v-else>No active transfers.</div>
+                <div class="mioos-classic-subhead">History</div>
+                <div class="mioos-classic-historylist" v-if="completedTransfers().length">
+                  <article class="mioos-classic-historyrow" v-for="item in completedTransfers()" :key="item.id">
+                    <div>
+                      <strong>[[ item.name ]]</strong>
+                      <small>[[ transferDirectionLabel(item) ]]</small>
+                    </div>
+                    <span class="mioos-classic-historystatus" :class="{ 'is-failed': item.status === 'failed' }">[[ item.status ]]</span>
+                    <small>[[ transferTimestampLabel(item) ]]</small>
+                    <button type="button" class="mioos-classic-tool" v-if="canRetryTransfer(item)" @click="retryTransfer(item)">Retry</button>
+                  </article>
                 </div>
-                <div class="mioos-transfer-empty" v-if="!completedTransfers().length">No completed transfers yet.</div>
+                <div class="mioos-classic-empty" v-else>No completed transfers yet.</div>
               </section>
             </div>
           </div>
         </template>
-        <!-- Removed inactive diagnostics, security, debug, catalog, module-host, and control-panel surfaces from the active shell rewrite. -->
         <template v-else-if="win.appKey === 'folder-properties'">
-          <div class="mioos-properties-shell mioos-shell-surface mioos-shell-surface--properties" v-if="win.propertyState">
-            <div class="mioos-properties-head">
-              <div>
-                <strong>[[ (((win.propertyState || {}).meta) || {}).name || 'Folder Properties' ]]</strong>
-                <span>[[ (((win.propertyState || {}).meta) || {}).path || '' ]]</span>
-              </div>
-              <div class="mioos-preview-actions">
-                <button type="button" @click="saveFolderPropertiesWindow(win)">Save</button>
+          <div class="mioos-classic-shell mioos-classic-properties" v-if="win.propertyState">
+            <div class="mioos-classic-panelhead mioos-classic-panelhead--properties">
+              <div class="mioos-classic-objecthead">
+                <span class="mioos-classic-objecticon">📁</span>
+                <div>
+                  <strong>[[ (((win.propertyState || {}).meta) || {}).name || 'Folder Properties' ]]</strong>
+                  <span>[[ (((win.propertyState || {}).meta) || {}).path || '/Home' ]]</span>
+                </div>
               </div>
             </div>
-            <div class="mioos-properties-tabs">
+            <div class="mioos-classic-tabs">
               <button type="button" :class="{ 'is-current': ((win.propertyState || {}).tab || 'general') === 'general' }" @click="setFolderPropertiesTab(win, 'general')">General</button>
               <button type="button" :class="{ 'is-current': ((win.propertyState || {}).tab || 'general') === 'customize' }" @click="setFolderPropertiesTab(win, 'customize')">Customize</button>
             </div>
-            <div class="mioos-properties-body" v-if="!((win.propertyState || {}).loading)">
-              <section v-if="((win.propertyState || {}).tab || 'general') === 'general'" class="mioos-properties-grid">
-                <div><dt>Type</dt><dd>[[ ((((win.propertyState || {}).meta) || {}).kind) || 'folder' ]]</dd></div>
-                <div><dt>Location</dt><dd>[[ ((((win.propertyState || {}).meta) || {}).path) || '/' ]]</dd></div>
-                <div><dt>Size</dt><dd>[[ ((((win.propertyState || {}).meta) || {}).sizeLabel) || '—' ]]</dd></div>
-                <div><dt>Contains</dt><dd>[[ ((((win.propertyState || {}).meta) || {}).containsLabel) || '0 Files, 0 Folders' ]]</dd></div>
-                <div><dt>Created Date</dt><dd>[[ formatTransportTime(((((win.propertyState || {}).meta) || {}).createdAt) || '') ]]</dd></div>
-                <div class="mioos-properties-flags">
-                  <label><input type="checkbox" v-model="(win.propertyState || {}).form.readOnly"> Read-only</label>
-                  <label><input type="checkbox" v-model="(win.propertyState || {}).form.hidden"> Hidden</label>
-                  <label><input type="checkbox" v-model="(win.propertyState || {}).form.shared"> Shared</label>
-                </div>
-                <div class="mioos-properties-sharing" v-if="(win.propertyState || {}).form.shared">
-                  <label>Share scope
-                    <select v-model="(win.propertyState || {}).form.shareScope">
-                      <option value="users">Share with specific users</option>
-                      <option value="everyone">Share with everyone</option>
-                    </select>
-                  </label>
-                  <label v-if="(win.propertyState || {}).form.shareScope === 'users'">Users
-                    <input type="text" v-model="(win.propertyState || {}).form.shareUsers" placeholder="alice,bob,team-clinical">
-                  </label>
-                </div>
+            <div class="mioos-classic-propertiesbody" v-if="!((win.propertyState || {}).loading)">
+              <section v-if="((win.propertyState || {}).tab || 'general') === 'general'" class="mioos-classic-formgrid">
+                <label><span>Type</span><input type="text" :value="((((win.propertyState || {}).meta) || {}).kind) || 'folder'" readonly></label>
+                <label><span>Location</span><input type="text" :value="((((win.propertyState || {}).meta) || {}).path) || '/Home'" readonly></label>
+                <label><span>Size</span><input type="text" :value="((((win.propertyState || {}).meta) || {}).sizeLabel) || '—'" readonly></label>
+                <label><span>Contains</span><input type="text" :value="((((win.propertyState || {}).meta) || {}).containsLabel) || '0 Files, 0 Folders'" readonly></label>
+                <label><span>Created Date</span><input type="text" :value="formatTransportTime(((((win.propertyState || {}).meta) || {}).createdAt) || '')" readonly></label>
+                <fieldset class="mioos-classic-fieldset mioos-classic-fieldset--full"><legend>Attributes</legend>
+                  <div class="mioos-classic-checkrow">
+                    <label><input type="checkbox" v-model="(win.propertyState || {}).form.readOnly"> Read-only</label>
+                    <label><input type="checkbox" v-model="(win.propertyState || {}).form.hidden"> Hidden</label>
+                    <label><input type="checkbox" v-model="(win.propertyState || {}).form.shared"> Shared</label>
+                  </div>
+                </fieldset>
+                <fieldset class="mioos-classic-fieldset mioos-classic-fieldset--full" v-if="(win.propertyState || {}).form.shared"><legend>Sharing</legend>
+                  <div class="mioos-classic-formgrid mioos-classic-formgrid--single">
+                    <label><span>Share scope</span><select v-model="(win.propertyState || {}).form.shareScope"><option value="users">Share with specific users</option><option value="everyone">Share with everyone</option></select></label>
+                    <label v-if="(win.propertyState || {}).form.shareScope === 'users'"><span>Users</span><input type="text" v-model="(win.propertyState || {}).form.shareUsers" placeholder="alice,bob,team-clinical"></label>
+                  </div>
+                </fieldset>
               </section>
-              <section v-else class="mioos-properties-grid">
-                <label>Folder background
-                  <input type="text" v-model="(win.propertyState || {}).form.background" placeholder="url(...) or token">
-                </label>
-                <label>Folder icon image or glyph
-                  <input type="text" v-model="(win.propertyState || {}).form.icon" placeholder="data URL, path, or glyph">
-                </label>
-                <p class="mioos-properties-note">Folder customization is stored per folder so Home, project folders, and shared folders can each carry their own presentation.</p>
+              <section v-else class="mioos-classic-formgrid mioos-classic-formgrid--single">
+                <fieldset class="mioos-classic-fieldset"><legend>Folder Picture</legend>
+                  <label><span>Background</span><input type="text" v-model="(win.propertyState || {}).form.background" placeholder="url(...) or theme token"></label>
+                  <label><span>Folder icon image or glyph</span><input type="text" v-model="(win.propertyState || {}).form.icon" placeholder="data URL, path, or glyph"></label>
+                  <p class="mioos-classic-help">Customize is stored per folder so Home, project folders, and shared folders can each carry their own appearance.</p>
+                </fieldset>
               </section>
             </div>
-            <div class="mioos-imageviewer-empty" v-else>Loading…</div>
+            <div class="mioos-classic-empty" v-else>Loading…</div>
+            <div class="mioos-classic-dialogactions">
+              <button type="button" class="mioos-classic-tool" @click="closeWindow(win.id)">Cancel</button>
+              <button type="button" class="mioos-classic-tool default" @click="saveFolderPropertiesWindow(win)">Apply</button>
+            </div>
           </div>
         </template>
         <template v-else-if="win.appKey === 'text-viewer'">
@@ -536,166 +542,112 @@
           </div>
         </template>
         <template v-else-if="win.appKey === 'customize'">
-          <div class="mioos-theme-studio-shell mioos-shell-surface mioos-shell-surface--studio" :data-theme-studio-window="win.id">
-            <div class="mioos-theme-studio-frame"><div class="mioos-theme-studio-scroll">
-                <div class="mioos-theme-studio-layout">
-                  <aside class="mioos-theme-studio-sidebar">
-                    <section class="mioos-theme-studio-profilebox">
-                      <strong>Customize profiles</strong>
-                      <div class="mioos-theme-studio-profile-actions">
-                        <button type="button" class="default" @click="themeStudioNewProfile(win.id)">New</button>
-                        <button type="button" @click="themeStudioDuplicateProfile(win.id)">Duplicate</button>
-                      </div>
-                      <div class="mioos-theme-studio-profile-list">
-                        <button v-for="profile in themeStudioProfiles(win)" :key="profile.key" type="button" class="mioos-theme-studio-profile" :class="{ 'is-current': themeStudioState(win).profileKey === profile.key }" @click="themeStudioSelectProfile(win.id, profile.key)">
-                          <strong>[[ profile.name ]]</strong>
-                          <span>[[ profile.family ]] · [[ profile.mode ]]</span>
-                        </button>
-                      </div>
-                    </section>
-                    <fieldset>
-                      <legend>Platform presets</legend>
-                      <div class="mioos-theme-studio-preset-grid">
-                        <button type="button" @click="themeStudioApplyPreset(win.id, 'classic-horizon-light')">Classic Horizon Light</button>
-                        <button type="button" @click="themeStudioApplyPreset(win.id, 'classic-horizon-dark')">Classic Horizon Dark</button>
-                        <button type="button" @click="themeStudioApplyPreset(win.id, 'orchard-light')">Orchard Light</button>
-                        <button type="button" @click="themeStudioApplyPreset(win.id, 'orchard-dark')">Orchard Dark</button>
-                        <button type="button" @click="themeStudioApplyPreset(win.id, 'terra-light')">Terra Light</button>
-                        <button type="button" @click="themeStudioApplyPreset(win.id, 'terra-dark')">Terra Dark</button>
-                      </div>
-                      <p class="mioos-theme-studio-note">Presets seed the token editor with originalized paradigms inspired by classic enterprise desktops, modern workstation shells, and calm Linux-style surfaces.</p>
-                    </fieldset>
-                    <fieldset>
-                      <legend>Device previews</legend>
-                      <div class="mioos-theme-preview-stack">
-                        <div class="mioos-theme-preview-desktop" :style="themeStudioPreviewDesktopStyle(win)">
-                          <div class="mioos-theme-preview-window" :style="themeStudioPreviewWindowStyle(win)">
-                            <div class="mioos-theme-preview-titlebar" :style="themeStudioPreviewTitlebarStyle(win)">
-                              <span>Desktop preview</span>
-                              <div class="mioos-theme-preview-controls"><i></i><i></i><i></i></div>
-                            </div>
-                            <div class="mioos-theme-preview-content">
-                              <button type="button">Primary action</button>
-                              <input type="text" value="Address field" aria-label="Preview textbox">
-                            </div>
-                          </div>
-                          <div class="mioos-theme-preview-taskbar" :style="themeStudioPreviewTaskbarStyle(win)">
-                            <span>Start</span><span>Tasks</span><span>4:00 PM</span>
-                          </div>
-                        </div>
-                        <div class="mioos-theme-preview-mobile" :style="themeStudioPreviewWindowStyle(win)">
-                          <div class="mioos-theme-preview-mobile-bar" :style="themeStudioPreviewTitlebarStyle(win)">
-                            <span>Mobile preview</span><span>● ● ●</span>
-                          </div>
-                          <div class="mioos-theme-preview-mobile-body">
-                            <button type="button">Open Home</button>
-                            <button type="button">Start</button>
-                            <small>Compact taskbar and shell controls</small>
-                          </div>
-                        </div>
-                      </div>
-                    </fieldset>
-                  </aside>
-                  <section class="mioos-theme-studio-main">
-                    <section class="tabs mioos-theme-studio-tabs">
-                      <menu role="tablist" aria-label="Customize Sections" class="justified">
-                        <button v-for="tab in themeStudioTabList()" :key="tab.key" role="tab" :aria-controls="'theme-tab-' + tab.key" :aria-selected="themeStudioState(win).activeTab === tab.key ? 'true' : 'false'" @click="themeStudioSetTab(win.id, tab.key)">[[ tab.label ]]</button>
-                      </menu>
-                      <article role="tabpanel" id="theme-tab-overview" v-if="themeStudioState(win).activeTab === 'overview'">
-                        <fieldset><legend>Profile identity</legend><div class="mioos-theme-studio-form two-col">
-                          <label><span>Name</span><input type="text" v-model="themeStudioState(win).profile.name"></label>
-                          <label><span>Author</span><input type="text" v-model="themeStudioState(win).profile.author"></label>
-                          <label><span>Family</span><select v-model="themeStudioState(win).profile.family"><option>Horizon</option><option>Orchard</option><option>Terra</option><option>Custom</option></select></label>
-                          <label><span>Mode</span><select v-model="themeStudioState(win).profile.mode"><option>light</option><option>dark</option></select></label>
-                          <label><span>Density</span><select v-model="themeStudioState(win).profile.density"><option>comfortable</option><option>compact</option><option>spacious</option></select></label>
-                          <label><span>Corner style</span><select v-model="themeStudioState(win).profile.cornerModel"><option>classic</option><option>soft</option><option>square</option></select></label>
-                        </div></fieldset>
-                        <fieldset><legend>Targets</legend><div class="mioos-theme-studio-checks">
-                          <div><input :id="'theme-shell-' + win.id" type="checkbox" v-model="themeStudioState(win).profile.targets.shell"><label :for="'theme-shell-' + win.id">Shell chrome</label></div>
-                          <div><input :id="'theme-taskbar-' + win.id" type="checkbox" v-model="themeStudioState(win).profile.targets.taskbar"><label :for="'theme-taskbar-' + win.id">Taskbar</label></div>
-                          <div><input :id="'theme-window-' + win.id" type="checkbox" v-model="themeStudioState(win).profile.targets.windows"><label :for="'theme-window-' + win.id">Windows</label></div>
-                          <div><input :id="'theme-controls-' + win.id" type="checkbox" v-model="themeStudioState(win).profile.targets.controls"><label :for="'theme-controls-' + win.id">Controls</label></div>
-                        </div></fieldset>
-                      </article>
-                      <article role="tabpanel" id="theme-tab-wallpaper" v-else-if="themeStudioState(win).activeTab === 'wallpaper'">
-                        <fieldset><legend>Desktop background</legend><div class="mioos-theme-studio-form two-col">
-                          <label><span>Wallpaper preset</span><select v-model="themeStudioState(win).profile.wallpaperPreset"><option>aurora</option><option>paper-dawn</option><option>paper-night</option><option>sunrise-grid</option><option>midnight-grid</option><option>solid-blue</option><option>solid-graphite</option><option>custom-url</option></select></label>
-                          <label><span>Image URL</span><input type="text" v-model="themeStudioState(win).profile.wallpaperUrl"></label>
-                          <label><span>Desktop color</span><input type="color" v-model="themeStudioState(win).profile.desktopColor"></label>
-                          <label><span>Image fit</span><select v-model="themeStudioState(win).profile.wallpaperFit"><option>cover</option><option>contain</option><option>center</option><option>tile</option><option>stretch</option></select></label>
-                          <label><span>Desktop class recipe</span><input type="text" v-model="themeStudioState(win).profile.desktopClass"></label>
-                          <label><span>Desktop extra CSS</span><input type="text" v-model="themeStudioState(win).profile.desktopCssHint"></label>
-                          <label><span>Icon shadow</span><input type="text" v-model="themeStudioState(win).profile.colors.desktopGlow"></label>
-                        </div></fieldset>
-                      </article>
-                      <article role="tabpanel" id="theme-tab-colors" v-else-if="themeStudioState(win).activeTab === 'colors'">
-                        <fieldset><legend>Core colors</legend><div class="mioos-theme-studio-form color-grid">
-                          <label><span>Accent</span><input type="color" v-model="themeStudioState(win).profile.colors.accent"></label>
-                          <label><span>Accent strong</span><input type="color" v-model="themeStudioState(win).profile.colors.accentStrong"></label>
-                          <label><span>Panel</span><input type="color" v-model="themeStudioState(win).profile.colors.panel"></label>
-                          <label><span>Panel text</span><input type="color" v-model="themeStudioState(win).profile.colors.panelText"></label>
-                          <label><span>Title bar</span><input type="color" v-model="themeStudioState(win).profile.colors.titlebar"></label>
-                          <label><span>Inactive title</span><input type="color" v-model="themeStudioState(win).profile.colors.inactiveTitlebar"></label>
-                          <label><span>Title text</span><input type="color" v-model="themeStudioState(win).profile.colors.titleText"></label>
-                          <label><span>Taskbar</span><input type="color" v-model="themeStudioState(win).profile.colors.taskbar"></label>
-                          <label><span>Taskbar dark</span><input type="color" v-model="themeStudioState(win).profile.colors.taskbarDark"></label>
-                          <label><span>Taskbar text</span><input type="color" v-model="themeStudioState(win).profile.colors.taskbarText"></label>
-                          <label><span>Start button</span><input type="color" v-model="themeStudioState(win).profile.colors.startButton"></label>
-                          <label><span>Desktop icon text</span><input type="color" v-model="themeStudioState(win).profile.colors.iconText"></label>
-                          <label><span>Muted text</span><input type="color" v-model="themeStudioState(win).profile.colors.muted"></label>
-                          <label><span>Focus ring</span><input type="color" v-model="themeStudioState(win).profile.colors.focus"></label>
-                          <label><span>Panel alt</span><input type="color" v-model="themeStudioState(win).profile.colors.panelAlt"></label>
-                          <label><span>Border</span><input type="color" v-model="themeStudioState(win).profile.colors.border"></label>
-                        </div></fieldset>
-                      </article>
-                      <article role="tabpanel" id="theme-tab-type" v-else-if="themeStudioState(win).activeTab === 'type'">
-                        <fieldset><legend>Fonts</legend><div class="mioos-theme-studio-form two-col">
-                          <label><span>UI font</span><input type="text" v-model="themeStudioState(win).profile.fonts.ui"></label>
-                          <label><span>Mono font</span><input type="text" v-model="themeStudioState(win).profile.fonts.mono"></label>
-                          <label><span>Base size</span><input type="number" min="11" max="24" v-model="themeStudioState(win).profile.fonts.baseSize"></label>
-                          <label><span>Title size</span><input type="number" min="11" max="28" v-model="themeStudioState(win).profile.fonts.titleSize"></label>
-                          <label><span>Menu size</span><input type="number" min="11" max="24" v-model="themeStudioState(win).profile.fonts.menuSize"></label>
-                          <label><span>Weight</span><select v-model="themeStudioState(win).profile.fonts.weight"><option>400</option><option>500</option><option>600</option><option>700</option></select></label>
-                        </div></fieldset>
-                      </article>
-                      <article role="tabpanel" id="theme-tab-metrics" v-else-if="themeStudioState(win).activeTab === 'metrics'">
-                        <fieldset><legend>Metrics</legend><div class="mioos-theme-studio-form two-col">
-                          <label><span>Taskbar height</span><input type="number" min="32" max="72" v-model="themeStudioState(win).profile.metrics.taskbarHeight"></label>
-                          <label><span>Window radius</span><input type="number" min="0" max="24" v-model="themeStudioState(win).profile.metrics.windowRadius"></label>
-                          <label><span>Window border</span><input type="number" min="1" max="6" v-model="themeStudioState(win).profile.metrics.windowBorder"></label>
-                          <label><span>Button radius</span><input type="number" min="0" max="16" v-model="themeStudioState(win).profile.metrics.buttonRadius"></label>
-                          <label><span>Icon size</span><input type="number" min="24" max="64" v-model="themeStudioState(win).profile.metrics.iconSize"></label>
-                          <label><span>Shadow strength</span><input type="number" min="0" max="64" v-model="themeStudioState(win).profile.metrics.shadowDepth"></label>
-                        </div></fieldset>
-                      </article>
-                      <article role="tabpanel" id="theme-tab-advanced" v-else>
-                        <fieldset><legend>Recipes, classes, and custom CSS</legend><div class="mioos-theme-studio-form one-col">
-                          <label><span>Shell classes</span><input type="text" v-model="themeStudioState(win).profile.recipes.shell"></label>
-                          <label><span>Window classes</span><input type="text" v-model="themeStudioState(win).profile.recipes.window"></label>
-                          <label><span>Taskbar classes</span><input type="text" v-model="themeStudioState(win).profile.recipes.taskbar"></label>
-                          <label><span>Custom variables JSON</span><textarea v-model="themeStudioState(win).profile.customVariablesJson" rows="5"></textarea></label>
-                          <label><span>Extra CSS</span><textarea v-model="themeStudioState(win).profile.extraCss" rows="7"></textarea></label>
-                          <label><span>Notes</span><textarea v-model="themeStudioState(win).profile.notes" rows="4"></textarea></label>
-                        </div></fieldset>
-                      </article>
-                    </section>
-                    <div class="mioos-theme-studio-footer">
-                      <div class="mioos-theme-studio-footnote"></div>
-                      <div class="mioos-theme-studio-actions">
-                        <button type="button" @click="themeStudioResetProfile(win.id)">Reset</button>
-                        <button type="button" @click="themeStudioImportProfile(win.id)">Import JSON</button>
-                        <button type="button" @click="themeStudioExportProfile(win.id)">Export JSON</button>
-                        <button type="button" @click="themeStudioApplyCurrent(win.id)">Apply Customize Profile</button>
-                        <button type="button" class="default" @click="themeStudioSaveProfile(win.id)">Save Draft</button>
+          <div class="mioos-classic-shell mioos-classic-customize" :data-theme-studio-window="win.id">
+            <div class="mioos-classic-panelhead">
+              <div>
+                <strong>Display Properties</strong>
+                <span>Choose a classic shell style, adjust desktop appearance, and preview desktop and mobile layouts.</span>
+              </div>
+              <div class="mioos-classic-toolbar-group">
+                <button type="button" class="mioos-classic-tool" @click="themeStudioResetProfile(win.id)">Reset</button>
+                <button type="button" class="mioos-classic-tool" @click="themeStudioImportProfile(win.id)">Import</button>
+                <button type="button" class="mioos-classic-tool" @click="themeStudioExportProfile(win.id)">Export</button>
+              </div>
+            </div>
+            <div class="mioos-classic-customize-layout">
+              <aside class="mioos-classic-customize-sidebar">
+                <section class="mioos-classic-pane">
+                  <header>Saved Themes</header>
+                  <div class="mioos-classic-pane-body mioos-classic-profilelist">
+                    <button v-for="profile in themeStudioProfiles(win)" :key="profile.key" type="button" class="mioos-classic-profile" :class="{ 'is-current': themeStudioState(win).profileKey === profile.key }" @click="themeStudioSelectProfile(win.id, profile.key)">
+                      <strong>[[ profile.name ]]</strong><small>[[ profile.family ]] · [[ profile.mode ]]</small>
+                    </button>
+                  </div>
+                </section>
+                <section class="mioos-classic-pane">
+                  <header>Preset Themes</header>
+                  <div class="mioos-classic-pane-body mioos-classic-presetgrid">
+                    <button type="button" @click="themeStudioApplyPreset(win.id, 'luna-blue')">Luna Blue</button>
+                    <button type="button" @click="themeStudioApplyPreset(win.id, 'royale-noir')">Royale Noir</button>
+                    <button type="button" @click="themeStudioApplyPreset(win.id, 'aero-glass')">Aero Glass</button>
+                    <button type="button" @click="themeStudioApplyPreset(win.id, 'aero-midnight')">Aero Midnight</button>
+                    <button type="button" @click="themeStudioApplyPreset(win.id, 'ubuntu-human')">Ubuntu Human</button>
+                    <button type="button" @click="themeStudioApplyPreset(win.id, 'ubuntu-graphite')">Ubuntu Graphite</button>
+                  </div>
+                </section>
+              </aside>
+              <section class="mioos-classic-customize-main">
+                <div class="mioos-classic-previewband">
+                  <div class="mioos-classic-desktoppreview" :style="themeStudioPreviewDesktopStyle(win)">
+                    <div class="mioos-classic-previewwindow" :style="themeStudioPreviewWindowStyle(win)">
+                      <div class="mioos-classic-previewtitle" :style="themeStudioPreviewTitlebarStyle(win)"><span>My Computer</span><span>_ □ ×</span></div>
+                      <div class="mioos-classic-previewbody">
+                        <button type="button">Open</button>
+                        <input type="text" value="Address" aria-label="Desktop preview address">
                       </div>
                     </div>
-                    <div class="mioos-theme-studio-export" v-if="themeStudioState(win).exportText">
-                      <strong>Export / import theme JSON</strong>
-                      <textarea v-model="themeStudioState(win).exportText" rows="8"></textarea>
-                    </div>
+                    <div class="mioos-classic-previewtaskbar" :style="themeStudioPreviewTaskbarStyle(win)"><span>Start</span><span>Running Tasks</span><span>4:00 PM</span></div>
+                  </div>
+                  <div class="mioos-classic-mobilepreview" :style="themeStudioPreviewWindowStyle(win)">
+                    <div class="mioos-classic-previewtitle" :style="themeStudioPreviewTitlebarStyle(win)"><span>Mobile preview</span><span>•••</span></div>
+                    <div class="mioos-classic-previewbody"><button type="button">Home</button><button type="button">Menu</button><small>Compact shell preview</small></div>
+                  </div>
+                </div>
+                <div class="mioos-classic-tabs">
+                  <button v-for="tab in themeStudioTabList()" :key="tab.key" type="button" :class="{ 'is-current': themeStudioState(win).activeTab === tab.key }" @click="themeStudioSetTab(win.id, tab.key)">[[ tab.label ]]</button>
+                </div>
+                <div class="mioos-classic-propertiesbody">
+                  <section v-if="themeStudioState(win).activeTab === 'overview'" class="mioos-classic-formgrid">
+                    <label><span>Theme name</span><input type="text" v-model="themeStudioState(win).profile.name"></label>
+                    <label><span>Author</span><input type="text" v-model="themeStudioState(win).profile.author"></label>
+                    <label><span>Family</span><select v-model="themeStudioState(win).profile.family"><option>Windows XP</option><option>Windows 7</option><option>Ubuntu</option><option>Custom</option></select></label>
+                    <label><span>Mode</span><select v-model="themeStudioState(win).profile.mode"><option>light</option><option>dark</option></select></label>
+                    <label><span>Density</span><select v-model="themeStudioState(win).profile.density"><option>comfortable</option><option>compact</option><option>spacious</option></select></label>
+                    <label><span>Corner style</span><select v-model="themeStudioState(win).profile.cornerModel"><option>classic</option><option>soft</option><option>square</option></select></label>
+                  </section>
+                  <section v-else-if="themeStudioState(win).activeTab === 'wallpaper'" class="mioos-classic-formgrid">
+                    <label><span>Wallpaper preset</span><select v-model="themeStudioState(win).profile.wallpaperPreset"><option>aurora</option><option>paper-dawn</option><option>paper-night</option><option>sunrise-grid</option><option>midnight-grid</option><option>solid-blue</option><option>solid-graphite</option><option>custom-url</option></select></label>
+                    <label><span>Image URL</span><input type="text" v-model="themeStudioState(win).profile.wallpaperUrl"></label>
+                    <label><span>Desktop color</span><input type="color" v-model="themeStudioState(win).profile.desktopColor"></label>
+                    <label><span>Image fit</span><select v-model="themeStudioState(win).profile.wallpaperFit"><option>cover</option><option>contain</option><option>center</option><option>tile</option><option>stretch</option></select></label>
+                  </section>
+                  <section v-else-if="themeStudioState(win).activeTab === 'colors'" class="mioos-classic-formgrid">
+                    <label><span>Accent</span><input type="color" v-model="themeStudioState(win).profile.colors.accent"></label>
+                    <label><span>Title bar</span><input type="color" v-model="themeStudioState(win).profile.colors.titlebar"></label>
+                    <label><span>Window surface</span><input type="color" v-model="themeStudioState(win).profile.colors.panel"></label>
+                    <label><span>Taskbar</span><input type="color" v-model="themeStudioState(win).profile.colors.taskbar"></label>
+                    <label><span>Taskbar text</span><input type="color" v-model="themeStudioState(win).profile.colors.taskbarText"></label>
+                    <label><span>Border</span><input type="color" v-model="themeStudioState(win).profile.colors.border"></label>
+                  </section>
+                  <section v-else-if="themeStudioState(win).activeTab === 'type'" class="mioos-classic-formgrid">
+                    <label><span>UI font</span><input type="text" v-model="themeStudioState(win).profile.fonts.ui"></label>
+                    <label><span>Mono font</span><input type="text" v-model="themeStudioState(win).profile.fonts.mono"></label>
+                    <label><span>Base size</span><input type="number" min="11" max="24" v-model="themeStudioState(win).profile.fonts.baseSize"></label>
+                    <label><span>Title size</span><input type="number" min="11" max="28" v-model="themeStudioState(win).profile.fonts.titleSize"></label>
+                  </section>
+                  <section v-else-if="themeStudioState(win).activeTab === 'metrics'" class="mioos-classic-formgrid">
+                    <label><span>Taskbar height</span><input type="number" min="32" max="72" v-model="themeStudioState(win).profile.metrics.taskbarHeight"></label>
+                    <label><span>Window radius</span><input type="number" min="0" max="24" v-model="themeStudioState(win).profile.metrics.windowRadius"></label>
+                    <label><span>Window border</span><input type="number" min="1" max="6" v-model="themeStudioState(win).profile.metrics.windowBorder"></label>
+                    <label><span>Button radius</span><input type="number" min="0" max="16" v-model="themeStudioState(win).profile.metrics.buttonRadius"></label>
+                  </section>
+                  <section v-else class="mioos-classic-formgrid mioos-classic-formgrid--single">
+                    <label><span>Custom variables JSON</span><textarea v-model="themeStudioState(win).profile.customVariablesJson" rows="5"></textarea></label>
+                    <label><span>Extra CSS</span><textarea v-model="themeStudioState(win).profile.extraCss" rows="5"></textarea></label>
+                    <label><span>Notes</span><textarea v-model="themeStudioState(win).profile.notes" rows="4"></textarea></label>
                   </section>
                 </div>
-              </div>
+                <div class="mioos-classic-dialogactions">
+                  <button type="button" class="mioos-classic-tool" @click="themeStudioNewProfile(win.id)">New</button>
+                  <button type="button" class="mioos-classic-tool" @click="themeStudioDuplicateProfile(win.id)">Duplicate</button>
+                  <button type="button" class="mioos-classic-tool" @click="themeStudioSaveProfile(win.id)">Save</button>
+                  <button type="button" class="mioos-classic-tool default" @click="themeStudioApplyCurrent(win.id)">Apply</button>
+                </div>
+                <div class="mioos-classic-exportbox" v-if="themeStudioState(win).exportText">
+                  <strong>Theme JSON</strong>
+                  <textarea v-model="themeStudioState(win).exportText" rows="8"></textarea>
+                </div>
+              </section>
             </div>
           </div>
         </template>
@@ -742,10 +694,6 @@
     <button type="button" class="mioos-window-menu-item" @click="toggleMaximize(currentWindowMenuWindow().id)">[[ windowToggleLabel(currentWindowMenuWindow()) ]]</button>
     <button type="button" class="mioos-window-menu-item" @click="applySnapZone(currentWindowMenuWindow().id, 'left')">Snap left</button>
     <button type="button" class="mioos-window-menu-item" @click="applySnapZone(currentWindowMenuWindow().id, 'right')">Snap right</button>
-    <template v-if="workspaceMenuItems(currentWindowMenuWindow()).length">
-      <div class="mioos-window-menu-head"><strong>[[ t('workspace.moveTo', 'Move to workspace') ]]</strong></div>
-      <button type="button" v-for="space in workspaceMenuItems(currentWindowMenuWindow())" :key="space.key" class="mioos-window-menu-item" @click="moveWindowToWorkspace(currentWindowMenuWindow().id, space.key)">[[ space.icon ]] [[ space.title ]]</button>
-    </template>
     <button type="button" class="mioos-window-menu-item is-danger" @click="closeWindow(currentWindowMenuWindow().id)">[[ t('action.close') ]]</button>
   </section>
 
@@ -776,9 +724,6 @@
         <button type="button" class="mioos-task-button mioos-task-button--overflow" @click.stop="shellUi.trayOpen = !shellUi.trayOpen">+[[ taskbarOverflowGroups().length ]] more</button>
       </div>
     </div>
-    <nav class="mioos-workspace-pager" v-if="workspaceItems().length" :aria-label="t('workspace.label', 'Workspaces')">
-      <button v-for="space in workspaceItems()" :key="space.key" type="button" class="mioos-workspace-pill" :class="{ 'is-current': currentWorkspace().key === space.key }" @click.stop="switchWorkspace(space.key)">[[ space.icon ]] [[ space.title ]]</button>
-    </nav>
     <button type="button" class="mioos-taskbar-desktop" @click.stop="toggleDesktopVisibility()">[[ shellUi.desktopHidden ? 'Restore' : 'Desktop' ]]</button>
     <div class="mioos-tray" aria-live="polite">
       <button type="button" class="mioos-tray-action" @click.stop="toggleTrayPanel">
@@ -786,7 +731,7 @@
         <strong v-if="unreadNotificationCount()">[[ unreadNotificationCount() ]]</strong>
       </button>
       <span class="mioos-tray-pill">[[ socketConnected ? t('tray.socketLive') : t('tray.socketOffline') ]]</span>
-      <span class="mioos-tray-clock">[[ clockText ]]</span>
+      <div class="mioos-tray-clock"><strong>[[ clockText ]]</strong><small>[[ clockDateText ]]</small></div>
       <section class="mioos-tray-panel" v-if="shellUi.trayOpen" @click.stop>
         <header class="mioos-tray-panel-head">
           <strong>Session tray</strong>

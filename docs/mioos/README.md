@@ -1,5 +1,10 @@
 # MIOOS
 
+## 2026 desktop simplification update
+- The active shell now uses **one desktop** instead of multiple workspaces.
+- Explorer, Transfers, Customize, and Folder Properties use a cleaner classic Windows-style desktop UX.
+- The taskbar clock shows both time and date.
+
 ## 2026 Product Reset
 
 MIOOS is a **secure application workspace and operating shell for MUMPS modernization**. It is designed to host modernized legacy workflows, internal tools, terminal access, file operations, and controlled administrative experiences in enterprise deployments.
@@ -26,7 +31,7 @@ MIOOS is a **secure application workspace and operating shell for MUMPS moderniz
 - Home replaces My Computer/My Documents as the main user root.
 - Folder windows now support back, forward, up, address navigation, view modes, sorting, properties, and per-folder customization.
 - The taskbar groups windows and provides overflow handling.
-- The start menu is now a focused workspace launcher instead of a crowded demo panel.
+- The start menu is now a focused launcher instead of a crowded demo panel.
 - Theme Studio is replaced in-product by Customize.
 - Notes, Ops Center, App Catalog, Control Panel, Security Center, Debug Center, and Diagnostics are removed from the active shell experience.
 
@@ -134,9 +139,9 @@ MIOOS now includes a global-backed virtual file system foundation. The current R
 MIOOS now uses a shared window manager contract for shell windows. Windows support drag, resize, maximize, minimize, restore, edge/corner snapping, and explorer drop-upload on supported windows. Terminal windows now inherit the same shell frame behavior rather than using a one-off interaction model.
 
 
-## Theme Studio ROI
+## Customize ROI
 
-A detailed Theme Studio UI tool is available in MIOOS as a dedicated desktop app/window. It focuses on profile authoring and preview only, without changing the current native shell/taskbar/window styling baseline. The tool supports wallpaper choices, typography, sizing, color tokens, class recipes, extra CSS, import/export, local profile storage, and Foundation/Glass starter looks.
+Customize is the supported appearance editor in MIOOS. It now uses a classic display-properties-style window with desktop and mobile previews, editable theme profiles, original Windows XP / Windows 7 / Ubuntu-inspired preset families, and token controls for wallpaper, color, typography, metrics, and advanced overrides.
 
 
 ## ROI-F — Explorer + Transfers polish
@@ -274,7 +279,7 @@ Wave 1 focuses on the shell foundation only:
 ROI 52 — theme system 2.0 and unified shell surfaces
 - Added boot-advertised theme system metadata, density options, and shell surface declarations.
 - Added quick shell theme and density switching in the launcher plus new Glass Dark / Contrast Light / Contrast Dark presets.
-- Normalized Explorer, Transfers, and Theme Studio onto shared shell-surface styling so built-in apps follow one desktop contract.
+- Normalized Explorer, Transfers, Customize, and Folder Properties onto shared classic shell-surface styling so the built-in runtime surfaces follow one desktop contract.
 - Added batch transfer controls for pause, resume, and cancel-active flows, while keeping transfer persistence intact.
 
 
@@ -298,8 +303,7 @@ Built-in desktop applications now share one shell action model for confirmations
 - Transport diagnostics now include a server-side socket registry summary, socket-cap telemetry, and upload batching settings.
 
 
-## ROI 56 — workspaces and pager-aware window routing
-- Added a real virtual-workspace model on top of the existing `workspaceKey` window metadata.
-- Added boot-advertised workspace metadata, current-workspace persistence, pager shortcuts, and move-window shortcuts.
-- Added a taskbar workspace pager, start-menu workspace quick switch, and window-menu move-to-workspace actions.
-- Window visibility, taskbar routing, and focus now follow the current workspace instead of treating the shell as one flat desktop.
+## ROI 56 — single-desktop simplification
+- The active shell now uses one desktop instead of multiple workspaces.
+- Window visibility, taskbar grouping, and terminal launch now operate on one desktop surface.
+- Workspace compatibility fields remain in the boot contract only where they simplify migration.

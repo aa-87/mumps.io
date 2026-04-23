@@ -1,5 +1,9 @@
 # MIOOS and HIPAA-Ready Architecture
 
+## 2026 desktop simplification update
+- The active shell now uses a single desktop model to reduce operator confusion.
+- Explorer and properties surfaces were simplified to classic enterprise-style forms and property sheets.
+
 ## 2026 Product Reset
 
 MIOOS is designed to support **HIPAA-regulated deployments when implemented and operated correctly**. It must not be described as automatically HIPAA compliant.
@@ -151,7 +155,7 @@ The shell reset does not change the HIPAA-aware posture directly. Its main compl
 ROI 52 — theme system 2.0 and unified shell surfaces
 - Added boot-advertised theme system metadata, density options, and shell surface declarations.
 - Added quick shell theme and density switching in the launcher plus new Glass Dark / Contrast Light / Contrast Dark presets.
-- Normalized Explorer, Transfers, and Theme Studio onto shared shell-surface styling so built-in apps follow one desktop contract.
+- Normalized Explorer, Transfers, Customize, and Folder Properties onto shared classic shell-surface styling so the built-in runtime surfaces follow one desktop contract.
 - Added batch transfer controls for pause, resume, and cancel-active flows, while keeping transfer persistence intact.
 
 
@@ -175,8 +179,7 @@ Administrative shell actions such as session revocation, account unlock, audit s
 - Session socket telemetry improves operational troubleshooting without changing file-authorization checks, upload ownership checks, or existing audit boundaries.
 
 
-## ROI 56 — workspaces and pager-aware window routing
-- Added a real virtual-workspace model on top of the existing `workspaceKey` window metadata.
-- Added boot-advertised workspace metadata, current-workspace persistence, pager shortcuts, and move-window shortcuts.
-- Added a taskbar workspace pager, start-menu workspace quick switch, and window-menu move-to-workspace actions.
-- Window visibility, taskbar routing, and focus now follow the current workspace instead of treating the shell as one flat desktop.
+## ROI 56 — single-desktop simplification
+- The active shell now uses one desktop instead of multiple workspaces.
+- This reduces operator confusion in secure and regulated environments and keeps file, terminal, and transfer flows on one predictable surface.
+- Workspace metadata remains compatible where needed for migration, but the active user experience is single-desktop.

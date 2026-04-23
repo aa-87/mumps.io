@@ -1,5 +1,10 @@
 # MIOOS User Guide
 
+## 2026 desktop simplification update
+- MIOOS now presents one primary desktop surface.
+- Home, Terminal, Transfers, Customize, and Folder Properties all open on the same desktop.
+- Explorer and file-management windows use a simpler classic Windows-style layout.
+
 ## 2026 Product Reset
 
 ### Daily workflow
@@ -15,7 +20,7 @@
 - **Customize**: per-folder background and icon overrides.
 
 ### Start menu and taskbar
-- The Start menu is now a focused launcher for runtime apps, recent work, workspace actions, and search.
+- The Start menu is now a focused launcher for runtime apps, recent work, shell controls, and search.
 - The taskbar groups windows by surface type and uses overflow instead of shrinking into an unreadable strip.
 
 ### Security posture
@@ -88,9 +93,9 @@ Each terminal window now opens its own websocket-backed terminal channel. The te
 MIOOS now uses a shared window manager contract for shell windows. Windows support drag, resize, maximize, minimize, restore, edge/corner snapping, and explorer drop-upload on supported windows. Terminal windows now inherit the same shell frame behavior rather than using a one-off interaction model.
 
 
-## Theme Studio ROI
+## Customize ROI
 
-A detailed Theme Studio UI tool is available in MIOOS as a dedicated desktop app/window. It focuses on profile authoring and preview only, without changing the current native shell/taskbar/window styling baseline. The tool supports wallpaper choices, typography, sizing, color tokens, class recipes, extra CSS, import/export, local profile storage, and Foundation/Glass starter looks.
+Customize is the supported appearance editor in MIOOS. It now uses a classic display-properties-style window with desktop and mobile previews, editable theme profiles, original Windows XP / Windows 7 / Ubuntu-inspired preset families, and token controls for wallpaper, color, typography, metrics, and advanced overrides.
 
 
 ## ROI-F — Explorer + Transfers polish
@@ -165,7 +170,7 @@ The current UI is being rebuilt in waves. During Wave 1, the focus is on stable 
 ROI 52 — theme system 2.0 and unified shell surfaces
 - Added boot-advertised theme system metadata, density options, and shell surface declarations.
 - Added quick shell theme and density switching in the launcher plus new Glass Dark / Contrast Light / Contrast Dark presets.
-- Normalized Explorer, Transfers, and Theme Studio onto shared shell-surface styling so built-in apps follow one desktop contract.
+- Normalized Explorer, Transfers, Customize, and Folder Properties onto shared classic shell-surface styling so the built-in runtime surfaces follow one desktop contract.
 - Added batch transfer controls for pause, resume, and cancel-active flows, while keeping transfer persistence intact.
 
 
@@ -189,8 +194,7 @@ Transfer Center, Diagnostics, Security Center, Debug Center, App Catalog, and mo
 - Parallel uploads can batch websocket chunks when the server advertises batching support, while still falling back safely if a worker or batch send fails.
 
 
-## ROI 56 — workspaces and pager-aware window routing
-- Added a real virtual-workspace model on top of the existing `workspaceKey` window metadata.
-- Added boot-advertised workspace metadata, current-workspace persistence, pager shortcuts, and move-window shortcuts.
-- Added a taskbar workspace pager, start-menu workspace quick switch, and window-menu move-to-workspace actions.
-- Window visibility, taskbar routing, and focus now follow the current workspace instead of treating the shell as one flat desktop.
+## ROI 56 — single-desktop simplification
+- The active shell now uses one desktop instead of multiple workspaces.
+- Window visibility, taskbar grouping, and terminal launch now operate on one desktop surface.
+- Workspace compatibility fields remain in the boot contract only where they simplify migration.

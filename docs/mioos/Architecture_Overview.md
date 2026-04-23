@@ -1,5 +1,9 @@
 # MIOOS Architecture Overview
 
+## 2026 desktop simplification update
+- The runtime now operates as a **single-desktop shell**. Workspace metadata remains structurally available for compatibility, but the active client contract treats all windows as part of one desktop.
+- Explorer, Transfers, Customize, and Folder Properties were redesigned as classic shell surfaces with simpler IA and clearer controls.
+
 ## Product shape
 MIOOS is a secure application workspace and runtime shell for MUMPS modernization.
 
@@ -21,7 +25,7 @@ MIOOS is a secure application workspace and runtime shell for MUMPS modernizatio
 - Shared shell primitives
 
 ## Server contract
-The server remains the authority for boot state, routes, auth/session data, VFS roots, theme catalog, workspaces, and launcher entries.
+The server remains the authority for boot state, routes, auth/session data, VFS roots, theme catalog, launcher entries, and compatibility workspace metadata.
 
 ## Styling architecture
 - Base shell styles: `public/mioos/mioos.css`

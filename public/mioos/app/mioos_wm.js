@@ -120,7 +120,7 @@
         if (win.state === 'snapped' && win.snapZone) labels.push('Snapped ' + win.snapZone.replace('-', ' '));
         else if (win.state === 'maximized') labels.push('Maximized');
         else labels.push(this.windowKind(win));
-        if (win.workspaceKey) labels.push(win.workspaceKey);
+        if (win.workspaceKey && win.workspaceKey !== 'workspace-main' && this.workspaceEnabled && this.workspaceEnabled()) labels.push(win.workspaceKey);
         return labels.join(' · ');
       },
       windowBadgeRows: function (win) {
@@ -142,7 +142,7 @@
         if (win.persistLayout == null) win.persistLayout = 1;
         if (!win.kind) win.kind = ((win.moduleWindow) ? 'module' : 'app');
         if (!win.icon) win.icon = this.appIcon(win.appKey, win);
-        if (!win.workspaceKey) win.workspaceKey = 'workspace-' + String(win.appKey || 'app');
+        if (!win.workspaceKey) win.workspaceKey = 'workspace-main';
         if (!win.chrome) win.chrome = ((((this.boot || {}).desktop || {}).windowing || {}).chrome) || 'reusable-shell-chrome';
         if (!win.minWidth) win.minWidth = (((this.boot || {}).desktop || {}).windowing || {}).minWidth || 320;
         if (!win.minHeight) win.minHeight = (((this.boot || {}).desktop || {}).windowing || {}).minHeight || 220;
@@ -262,16 +262,13 @@
       },
       moveWindowToWorkspace: function (windowId, workspaceKey) {
         var win = findWindow(this, windowId);
-        var follow = (((this.boot || {}).desktop || {}).workspaces || {}).followMovedWindow;
-        if (!win || !workspaceKey) return;
-        win.workspaceKey = workspaceKey;
-        if (follow && this.switchWorkspace) this.switchWorkspace(workspaceKey);
+        if (!win) return;
+        win.workspaceKey = 'workspace-main';
         if (this.persistWindowLayout) this.persistWindowLayout();
         if (this.windowMenu && this.windowMenu.windowId === windowId) this.closeWindowMenu();
       },
       workspaceMenuItems: function (win) {
-        var items = (((this.boot || {}).desktop || {}).workspaces || {}).items || [];
-        return items.filter(function (item) { return item && item.key !== ((win || {}).workspaceKey || ''); });
+        return []; // single desktop model
       },
       windowMenuItems: function (win) {
         var items = [];

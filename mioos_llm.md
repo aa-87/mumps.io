@@ -1,5 +1,11 @@
 # MIOOS LLM Context
 
+## 2026 desktop simplification update
+- MIOOS now uses a **single desktop model** instead of virtual workspaces.
+- The terminal is expected to launch on the same desktop as Home, Transfers, and Customize.
+- Explorer, Transfers, Customize, and Folder Properties use a cleaner classic enterprise shell inspired by Windows XP / Windows 7 interaction patterns.
+- The taskbar clock now shows both time and date again.
+
 ## 2026 Product Reset
 
 MIOOS is now defined as a **secure application workspace and runtime shell for MUMPS modernization**.
@@ -255,9 +261,9 @@ Keep tests:
 - Added boot contract metadata for windowing: snap threshold, taskbar height, min size, animation mode, resize handle model, and drop-upload capability.
 
 
-## Theme Studio ROI
+## Customize ROI
 
-A detailed Theme Studio UI tool is available in MIOOS as a dedicated desktop app/window. It focuses on authoring one editable system shell theme with light and dark modes, desktop and mobile live preview, wallpaper/avatar upload, typography, sizing, color tokens, class recipes, extra CSS, import/export, and optional user-created copies.
+Customize is the supported appearance editor in MIOOS. It now uses a classic display-properties-style window with desktop and mobile previews, editable theme profiles, original Windows XP / Windows 7 / Ubuntu-inspired preset families, and token controls for wallpaper, color, typography, metrics, and advanced overrides.
 
 
 ## ROI-F — Explorer + Transfers polish
@@ -405,7 +411,7 @@ Remaining waves stay the same:
 ROI 52 — theme system 2.0 and unified shell surfaces
 - Added boot-advertised theme system metadata, density options, and shell surface declarations.
 - Added quick shell theme and density switching in the launcher plus new Glass Dark / Contrast Light / Contrast Dark presets.
-- Normalized Explorer, Transfers, and Theme Studio onto shared shell-surface styling so built-in apps follow one desktop contract.
+- Normalized Explorer, Transfers, Customize, and Folder Properties onto shared classic shell-surface styling so the built-in runtime surfaces follow one desktop contract.
 - Added batch transfer controls for pause, resume, and cancel-active flows, while keeping transfer persistence intact.
 
 
@@ -432,8 +438,7 @@ ROI 54 — shell-standard app actions and built-in app polish
 - Boot, hello, and diagnostics metadata now advertise socket caps, core/FS socket quotas, upload batch size, and batch flush thresholds so the browser and diagnostics window share one transport contract.
 
 
-## ROI 56 — workspaces and pager-aware window routing
-- Added a real virtual-workspace model on top of the existing `workspaceKey` window metadata.
-- Added boot-advertised workspace metadata, current-workspace persistence, pager shortcuts, and move-window shortcuts.
-- Added a taskbar workspace pager, start-menu workspace quick switch, and window-menu move-to-workspace actions.
-- Window visibility, taskbar routing, and focus now follow the current workspace instead of treating the shell as one flat desktop.
+## ROI 56 — single-desktop simplification
+- The active shell now uses one desktop instead of multiple workspaces.
+- Window visibility, taskbar grouping, and terminal launch now operate on one desktop surface.
+- Workspace compatibility fields remain in the boot contract only where they simplify migration.

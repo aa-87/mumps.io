@@ -78,10 +78,10 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","desktop","windowTitlebarHeight"))="" SET CONF("mioos","desktop","windowTitlebarHeight")=40
 	IF $GET(CONF("mioos","desktop","windowMenuEnabled"))="" SET CONF("mioos","desktop","windowMenuEnabled")=1
 	IF $GET(CONF("mioos","desktop","windowStatusBadges"))="" SET CONF("mioos","desktop","windowStatusBadges")=1
-		IF $GET(CONF("mioos","desktop","workspaces","enabled"))="" SET CONF("mioos","desktop","workspaces","enabled")=1
-		IF $GET(CONF("mioos","desktop","workspaces","persistence"))="" SET CONF("mioos","desktop","workspaces","persistence")="localstorage-current-workspace"
-		IF $GET(CONF("mioos","desktop","workspaces","defaultKey"))="" SET CONF("mioos","desktop","workspaces","defaultKey")="workspace-files"
-		IF $GET(CONF("mioos","desktop","workspaces","showInTaskbar"))="" SET CONF("mioos","desktop","workspaces","showInTaskbar")=1
+		IF $GET(CONF("mioos","desktop","workspaces","enabled"))="" SET CONF("mioos","desktop","workspaces","enabled")=0
+		IF $GET(CONF("mioos","desktop","workspaces","persistence"))="" SET CONF("mioos","desktop","workspaces","persistence")="none"
+		IF $GET(CONF("mioos","desktop","workspaces","defaultKey"))="" SET CONF("mioos","desktop","workspaces","defaultKey")="workspace-main"
+		IF $GET(CONF("mioos","desktop","workspaces","showInTaskbar"))="" SET CONF("mioos","desktop","workspaces","showInTaskbar")=0
 		IF $GET(CONF("mioos","desktop","workspaces","followMovedWindow"))="" SET CONF("mioos","desktop","workspaces","followMovedWindow")=1
 		IF $GET(CONF("mioos","desktop","accessibility","keyboardShortcuts","previousWorkspace"))="" SET CONF("mioos","desktop","accessibility","keyboardShortcuts","previousWorkspace")="Ctrl+Alt+ArrowLeft"
 		IF $GET(CONF("mioos","desktop","accessibility","keyboardShortcuts","nextWorkspace"))="" SET CONF("mioos","desktop","accessibility","keyboardShortcuts","nextWorkspace")="Ctrl+Alt+ArrowRight"
