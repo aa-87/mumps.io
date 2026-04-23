@@ -147,7 +147,9 @@ MIOOS now uses a shared window manager contract for shell windows. Windows suppo
 
 ## Customize ROI
 
-Customize is the supported appearance editor in MIOOS. It now uses a classic display-properties-style window with desktop and mobile previews, editable theme profiles, original Windows XP / Windows 7 / Ubuntu-inspired preset families, and token controls for wallpaper, color, typography, metrics, and advanced overrides.
+Customize is the supported appearance editor in MIOOS. It now uses a classic display-properties-style window with desktop and mobile previews, editable theme profiles, original Meadow Classic / Glass Horizon / Graphite Dock / Ember Panel preset families, and token controls for wallpaper, color, typography, metrics, and advanced overrides.
+
+Theme profiles are now loaded and saved through globals-backed theme routes with local fallback. Wallpaper, per-folder background images, and per-folder icon images can be uploaded into the virtual filesystem and referenced through blob URLs instead of base64 payloads.
 
 
 ## ROI-F — Explorer + Transfers polish
@@ -321,3 +323,12 @@ Built-in desktop applications now share one shell action model for confirmations
 - Explorer now renders with a Windows-like address path, navigation rail, detail table, and preview pane while keeping the existing MIOOS file operations and websocket flow.
 - Transfers now render as a more serious transfer center with a hero progress surface, stat cards, queue rows, and direct recovery actions.
 - Customize now exposes a richer multi-section theme editor with unified profile tokens for desktop, panel, launcher, window chrome, typography, effects, and export/runtime preview.
+
+
+## ROI 59 — shell persistence and explorer assets
+- Notifications now open the tray automatically and the tray surface is presented as **Notifications** with Clear all and Close actions.
+- Home explorer now promotes **Desktop** instead of Shared Root, and the default Welcome.txt seed file is no longer created automatically.
+- Explorer folder context actions now flow through the global shell context-menu surface so menus are not clipped by window bounds.
+- Customize persists theme profiles through globals-backed routes and supports uploaded wallpaper assets stored in the VFS.
+- Folder Properties now supports uploaded background and icon assets stored in the VFS and persisted through folder metadata.
+- Transfers now show an overall progress bar plus per-file progress rows and support multi-file upload selection.

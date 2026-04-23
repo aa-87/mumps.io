@@ -263,7 +263,7 @@ Keep tests:
 
 ## Customize ROI
 
-Customize is the supported appearance editor in MIOOS. It now uses a classic display-properties-style window with desktop and mobile previews, editable theme profiles, original Windows XP / Windows 7 / Ubuntu-inspired preset families, and token controls for wallpaper, color, typography, metrics, and advanced overrides.
+Customize is the supported appearance editor in MIOOS. It now uses a classic display-properties-style window with desktop and mobile previews, editable theme profiles, original Meadow Classic / Glass Horizon / Graphite Dock / Ember Panel preset families, and token controls for wallpaper, color, typography, metrics, and advanced overrides.
 
 
 ## ROI-F — Explorer + Transfers polish
@@ -458,3 +458,12 @@ ROI 54 — shell-standard app actions and built-in app polish
 - `public/mioos/app/mioos_core.js` now normalizes theme profiles around generic families (`meadow-classic`, `glass-horizon`, `graphite-dock`, `ember-panel`) and resolves shell tokens for launcher width, task sizing, sidebar width, preview width, title metrics, blur, transparency, and desktop wallpaper layers.
 - `public/mioos/app/mioos_explorer.js` now exposes filtered explorer rows, breadcrumb paths, preview facts, and direct path navigation helpers used by the redesigned explorer surface.
 - `routines/MIOOSST.m` now advertises the upgraded theme-system contract, including 7.css-first window grammar, Basecoat control augmentation, and boot-time preset family metadata.
+
+
+## ROI 59 — shell persistence and explorer assets
+- Notifications now open the tray automatically, the tray is labeled **Notifications**, and the panel includes Clear all plus Close instead of the earlier utility shortcuts.
+- The shell now exposes globals-backed theme load/save routes and boot metadata for theme persistence version 4.
+- Customize loads and saves profiles through globals with local fallback, and uploaded wallpaper assets are stored in the VFS and referenced through blob URLs.
+- Folder Properties now supports uploaded background and icon assets stored in folder metadata through `fs.setmeta`.
+- Explorer now promotes Desktop instead of Shared Root, removes the automatic Welcome.txt seed, and uses the global shell context menu for folder actions so menus are not clipped by window bounds.
+- Transfers now support multi-file upload selection and render overall plus per-file progress hierarchy.

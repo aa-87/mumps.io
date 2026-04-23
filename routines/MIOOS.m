@@ -31,6 +31,8 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","route","fsUploadCommit"))="" SET CONF("mioos","route","fsUploadCommit")="/api/mioos/fs/upload/commit"
 	IF $GET(CONF("mioos","route","fsUploadAbort"))="" SET CONF("mioos","route","fsUploadAbort")="/api/mioos/fs/upload/abort"
 	IF $GET(CONF("mioos","route","fsBlob"))="" SET CONF("mioos","route","fsBlob")="/api/mioos/fs/blob"
+	IF $GET(CONF("mioos","route","themeLoad"))="" SET CONF("mioos","route","themeLoad")="/api/mioos/theme/load"
+	IF $GET(CONF("mioos","route","themeSave"))="" SET CONF("mioos","route","themeSave")="/api/mioos/theme/save"
 	IF $GET(CONF("mioos","route","ws"))="" SET CONF("mioos","route","ws")="/ws/mioos"
 	IF $GET(CONF("mioos","route","wsTerminal"))="" SET CONF("mioos","route","wsTerminal")="/ws/mioos/terminal"
 	IF $GET(CONF("mioos","brand","title"))="" SET CONF("mioos","brand","title")="MIOOS"
@@ -48,10 +50,10 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","desktop","transport","model"))="" SET CONF("mioos","desktop","transport","model")="core-websocket-plus-app-websockets"
 	IF $GET(CONF("mioos","desktop","themeMode"))="" SET CONF("mioos","desktop","themeMode")="light"
 	IF $GET(CONF("mioos","desktop","themeSystem","editor"))="" SET CONF("mioos","desktop","themeSystem","editor")="customize"
-	IF $GET(CONF("mioos","desktop","themeSystem","persistence"))="" SET CONF("mioos","desktop","themeSystem","persistence")="localstorage-applied-profile"
+	IF $GET(CONF("mioos","desktop","themeSystem","persistence"))="" SET CONF("mioos","desktop","themeSystem","persistence")="globals-profile-service-with-localstorage-fallback"
 	IF $GET(CONF("mioos","desktop","themeSystem","liveApply"))="" SET CONF("mioos","desktop","themeSystem","liveApply")=1
 	IF $GET(CONF("mioos","desktop","themeSystem","quickSwitch"))="" SET CONF("mioos","desktop","themeSystem","quickSwitch")=1
-	IF $GET(CONF("mioos","desktop","themeSystem","version"))="" SET CONF("mioos","desktop","themeSystem","version")=3
+	IF $GET(CONF("mioos","desktop","themeSystem","version"))="" SET CONF("mioos","desktop","themeSystem","version")=4
 	IF $GET(CONF("mioos","desktop","windowPersistence"))="" SET CONF("mioos","desktop","windowPersistence")="localstorage-open-window-layout"
 	IF $GET(CONF("mioos","desktop","desktopLayoutPersistence"))="" SET CONF("mioos","desktop","desktopLayoutPersistence")="localstorage-icon-layout"
 	IF $GET(CONF("mioos","desktop","accessibility","persistence"))="" SET CONF("mioos","desktop","accessibility","persistence")="localstorage-shell-accessibility"
@@ -239,6 +241,8 @@ REG(CONF)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsUploadAbort")),"FSUPABORT^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("GET",$GET(CONF("mioos","route","fsBlob")),"FSBLOB^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("HEAD",$GET(CONF("mioos","route","fsBlob")),"FSBLOB^MIOOSAPI",.PROT)
+	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","themeLoad")),"THEMELOAD^MIOOSAPI",.PROT)
+	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","themeSave")),"THEMESAVE^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("GET","/public/mioos/*","STATIC^MIOOS",.META)
 	KILL WSMETA SET WSMETA("authRequired")=AUTHREQ,WSMETA("wsPersistent")=1
 	DO ADDWSM^MIOROUTE($GET(CONF("mioos","route","ws")),"MESSAGE^MIOOSWS",.WSMETA)
@@ -263,6 +267,8 @@ REG(CONF)
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","fsRename")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","fsMove")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","fsDelete")))
+	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","themeLoad")))
+	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","themeSave")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","ws")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","wsTerminal")))
 	QUIT

@@ -2,7 +2,7 @@
 
 ## 2026 desktop simplification update
 - Customize now uses a richer classic display-properties-style shell with unified shell token sections.
-- The active preset families are Meadow Classic, Glass Horizon, Graphite Dock, and Ember Panel. These remain original MIOOS families while spanning XP-like, Windows 7-like, dock-oriented, and Ubuntu-inspired desktop moods.
+- The active preset families are Meadow Classic, Glass Horizon, Graphite Dock, and Ember Panel. These remain original MIOOS families while spanning classic-shell, glass-shell, dock-oriented, and warm-panel desktop moods.
 
 ## Purpose
 Customize replaces Theme Studio as the supported appearance editor.
@@ -21,7 +21,7 @@ Customize replaces Theme Studio as the supported appearance editor.
 - Ember Panel
 - Custom profiles
 
-These are original families inspired by classic enterprise OS paradigms such as Windows XP, Windows 7, macOS, and Ubuntu without copying proprietary assets.
+These are original families inspired by classic enterprise OS paradigms such as classic Windows-like, glass Windows-like, dock-oriented desktop, and warm Linux-like without copying proprietary assets.
 
 ## Covered targets
 - Wallpaper
@@ -36,7 +36,7 @@ These are original families inspired by classic enterprise OS paradigms such as 
 - Density, radius, borders, and shadows
 
 ## Persistence
-Profiles are editable and exportable. Active theme selection is preserved through the shell boot contract and client state.
+Profiles are editable and exportable. Active theme selection is preserved through globals-backed profile routes, the shell boot contract, and client-side fallback state.
 
 ## Runtime layers
 - Structural shell CSS
@@ -47,4 +47,4 @@ Profiles are editable and exportable. Active theme selection is preserved throug
 ## Runtime contract
 - Boot state now advertises `windowGrammar=7css-primary` and `controlAugment=basecoat-augment`.
 - The active profile resolves one shared token set for desktop, panel/taskbar, launcher, window chrome, explorer, transfer surfaces, typography, effects, validation, and export behavior.
-- Customize persists local design profiles while the live shell applies the resolved runtime variables immediately.
+- Customize persists globals-backed design profiles with local fallback while the live shell applies the resolved runtime variables immediately.

@@ -36,8 +36,8 @@ BUILD(STATE,CONF,VIEW)
 	SET VIEW("explorer","currentFolderId")=$GET(STATE("vfs","homeId"),$GET(STATE("vfs","rootId"),"root"))
 	SET VIEW("explorer","quickPlaces",1,"id")=$GET(STATE("vfs","homeId"),$GET(STATE("vfs","rootId"),"root"))
 	SET VIEW("explorer","quickPlaces",1,"title")="Home"
-	SET VIEW("explorer","quickPlaces",2,"id")=$GET(STATE("vfs","rootId"),"root")
-	SET VIEW("explorer","quickPlaces",2,"title")="Shared Root"
+	SET VIEW("explorer","quickPlaces",2,"id")=$GET(STATE("vfs","desktopId"),$GET(STATE("vfs","rootId"),"root"))
+	SET VIEW("explorer","quickPlaces",2,"title")="Desktop"
 	SET VIEW("terminal","status")="ready"
 	SET VIEW("terminal","transport")=$GET(STATE("terminal","transport"),"pipe")
 	SET VIEW("terminal","engine")=$GET(STATE("terminal","engine"),"xtermjs")

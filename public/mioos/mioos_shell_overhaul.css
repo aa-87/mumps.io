@@ -922,3 +922,159 @@ body {
   .mioos-classic-formrow,
   .mioos-classic-formrow.is-compact { grid-template-columns: 1fr; }
 }
+
+/* ROI 58 — unified shell cleanup and wiring */
+.mioos-start-menu--workspace {
+  z-index: 1400;
+  width: min(var(--mioos-launcher-width), calc(100vw - 18px));
+}
+
+.mioos-root[data-density="compact"] .mioos-start-tile,
+.mioos-root[data-density="compact"] .mioos-start-row,
+.mioos-root[data-density="compact"] .mioos-start-destination {
+  padding: 6px 8px;
+  gap: 8px;
+}
+
+.mioos-root[data-density="spacious"] .mioos-start-tile,
+.mioos-root[data-density="spacious"] .mioos-start-row,
+.mioos-root[data-density="spacious"] .mioos-start-destination {
+  padding: 10px 12px;
+}
+
+.mioos-start-tile,
+.mioos-start-row,
+.mioos-start-destination {
+  min-height: 0;
+}
+
+.mioos-start-tile small,
+.mioos-start-row small,
+.mioos-start-destination small,
+.mioos-entry-copy strong,
+.mioos-entry-copy em,
+.mioos-entry-copy span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mioos-entry-copy {
+  min-width: 0;
+}
+
+#mioosRoot[data-theme-family="meadow-classic"] .mioos-start-head--workspace,
+#mioosRoot[data-theme-family="meadow classic"] .mioos-start-head--workspace {
+  background: linear-gradient(180deg, #5fa647 0%, #2f6f21 100%);
+}
+
+#mioosRoot[data-theme-family="glass-horizon"] .mioos-start-head--workspace,
+#mioosRoot[data-theme-family="glass horizon"] .mioos-start-head--workspace {
+  background: linear-gradient(180deg, #3f72bf 0%, #21416f 100%);
+}
+
+#mioosRoot[data-theme-family="graphite-dock"] .mioos-start-menu--workspace,
+#mioosRoot[data-theme-family="graphite dock"] .mioos-start-menu--workspace {
+  background: linear-gradient(180deg, rgba(248,250,253,0.96) 0%, rgba(220,225,233,0.98) 100%);
+}
+
+#mioosRoot[data-theme-family="ember-panel"] .mioos-start-head--workspace,
+#mioosRoot[data-theme-family="ember panel"] .mioos-start-head--workspace {
+  background: linear-gradient(180deg, #d98949 0%, #6a251d 100%);
+}
+
+.mioos-tray-action,
+.mioos-tray-panel button {
+  white-space: nowrap;
+}
+
+.mioos-tray-panel {
+  min-width: 320px;
+}
+
+.mioos-tray-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.mioos-tray-headactions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mioos-classic-addressbar {
+  grid-template-columns: auto minmax(0, 1fr) auto minmax(180px, 240px);
+  padding: 6px 10px;
+  gap: 8px;
+}
+
+.mioos-classic-breadcrumbs {
+  min-height: 28px;
+}
+
+.mioos-context-menu.mioos-classic-contextmenu {
+  position: fixed;
+  z-index: 2200;
+  min-width: 220px;
+}
+
+.mioos-classic-transferstack {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+}
+
+.mioos-classic-transferoverview {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid rgba(25, 46, 75, 0.12);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.9), rgba(238,243,250,0.94));
+}
+
+.mioos-classic-progress--overall {
+  height: 18px;
+}
+
+.mioos-classic-transferrow {
+  display: grid;
+  grid-template-columns: minmax(160px, 1.2fr) minmax(180px, 1.6fr) minmax(160px, 1.2fr) minmax(100px, .9fr) minmax(72px, .7fr);
+  gap: 10px;
+  align-items: center;
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.mioos-classic-transfercopy,
+.mioos-classic-queuepath,
+.mioos-classic-transferstatus,
+.mioos-classic-historyrow > div {
+  min-width: 0;
+}
+
+.mioos-classic-transfercopy strong,
+.mioos-classic-transfercopy small,
+.mioos-classic-queuepath,
+.mioos-classic-historyrow strong,
+.mioos-classic-historyrow small {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mioos-classic-inlineactions {
+  display: flex;
+  justify-content: flex-start;
+  margin: -2px 0 6px;
+}
+
+.mioos-classic-navmeta {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

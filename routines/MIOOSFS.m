@@ -1,6 +1,12 @@
 MIOOSFS ; MIOOS global-backed virtual file system
 	QUIT
 	;
+DESKTOPID()
+	NEW ID
+	SET ID=$GET(^MIO("MIOOS","FS","CHILD","root","Desktop"))
+	IF ID'="",$$EXISTS(ID),$$FIELD(ID,1)="folder" QUIT ID
+	QUIT "root"
+	;
 CHUNK(CONF)
 	NEW N
 	SET N=+$GET(CONF("mioos","fs","chunkSize"),131072)
@@ -9,7 +15,7 @@ CHUNK(CONF)
 	QUIT N
 	;
 INIT(CONF)
-	NEW OWNER,ROLES,ROOT,DOCS,DESK,README,NOW
+	NEW OWNER,ROLES,ROOT,DOCS,DESK,NOW
 	SET OWNER=$GET(CONF("mioos","bootstrapAuth","admin","username"),"admin")
 	SET ROLES="admin,operator,guest"
 	IF '$DATA(^MIO("MIOOS","FS","SEQ")) SET ^MIO("MIOOS","FS","SEQ")=0
@@ -22,7 +28,6 @@ INIT(CONF)
 	DO SETMETAFLD(DOCS,"viewMode","details")
 	DO SETMETAFLD(DOCS,"sortBy","name")
 	DO SETMETAFLD(DOCS,"sortDirection","ascending")
-	DO ENSUREFILE(DOCS,"Welcome.txt","Welcome to the MIOOS Home workspace","text/plain",OWNER,ROLES,.README,.CONF)
 	QUIT
 	;
 ENSUREFOLDER(PARENT,NAME,OWNER,ROLES,OUTID)

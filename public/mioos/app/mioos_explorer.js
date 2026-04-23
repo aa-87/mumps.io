@@ -214,9 +214,12 @@
     return String(payload.text || payload.content || payload.data || '');
   }
 
-  function createUploadInput(onchange) {
+  function createUploadInput(onchange, options) {
     var input = document.createElement('input');
+    options = options || {};
     input.type = 'file';
+    if (options.multiple) input.multiple = true;
+    if (options.accept) input.accept = options.accept;
     input.style.position = 'fixed';
     input.style.left = '-9999px';
     input.style.top = '-9999px';
@@ -248,7 +251,7 @@
 
   function pickUploadEntries(vm) {
     if (window.showOpenFilePicker) {
-      return window.showOpenFilePicker({ multiple: false }).then(function (handles) {
+      return window.showOpenFilePicker({ multiple: true }).then(function (handles) {
         handles = Array.isArray(handles) ? handles : [];
         return Promise.all(handles.map(function (handle) {
           return Promise.resolve(handle.getFile()).then(function (file) {
@@ -259,10 +262,10 @@
     }
     return new Promise(function (resolve) {
       createUploadInput(function (event) {
-        var file = event.target.files && event.target.files[0];
+        var files = Array.prototype.slice.call((event.target && event.target.files) || []);
         if (event.target && event.target.parentNode) event.target.parentNode.removeChild(event.target);
-        resolve(file ? [{ file: file, handle: null }] : []);
-      });
+        resolve(files.map(function (file) { return { file: file, handle: null }; }));
+      }, { multiple: true });
     });
   }
 
@@ -814,6 +817,18 @@
       },
       uploadFilesToExplorer: function (windowId, filesLike) {
         var self = this;
+        var entries = normalizeUploadEntries(filesLike);
+        var chain = Promise.resolve([]);
+        if (!entries.length) return Promise.resolve([]);
+        entries.forEach(function (entry) {
+          chain = chain.then(function (rows) {
+            return self.uploadSingleFileToExplorer(windowId, [entry]).then(function (out) { rows.push(out); return rows; });
+          });
+        });
+        return chain;
+      },
+      uploadSingleFileToExplorer: function (windowId, filesLike) {
+        var self = this;
         var win = this.windows.find(function (entry) { return entry.id === windowId; });
         var state = this.ensureExplorerWindowState(win);
         var uploadEntry = filesLike && filesLike[0];
@@ -849,7 +864,7 @@
         var transferControl = { cancelled: false, paused: false, workers: [], xh: {}, uploadId: '', windowId: windowId, nextIndex: 1, completedBytes: 0, completed: {}, retries: {}, totalChunks: 0, finalizeRetries: 0 };
         if (transferId && self.setTransferController) {
           self.setTransferController(transferId, {
-            onRetry: function () { return self.uploadFilesToExplorer(windowId, [file]); },
+            onRetry: function () { return self.uploadSingleFileToExplorer(windowId, [file]); },
             onPause: function () {
               transferControl.paused = true;
               transferControl.disconnectPaused = false;
@@ -915,7 +930,20 @@
           transferControl.cancelled = false;
           transferControl.paused = false;
           return self.refreshExplorerWindow(windowId).then(function () {
+            var uploadedId = '';
+            var uploadedItem = null;
             if (self.refreshView) self.refreshView();
+            if (state && Array.isArray(state.items)) {
+              uploadedItem = (state.items || []).find(function (entry) {
+                return entry && ((entry.name === file.name) || (entry.title === file.name));
+              }) || null;
+            }
+            if (uploadedItem && uploadedItem.id) {
+              uploadedId = uploadedItem.id;
+              state.selection = clone(uploadedItem);
+            } else if (((state || {}).selection || {}).id) {
+              uploadedId = state.selection.id;
+            }
             self.setExplorerUploadProgress(state, {
               active: false,
               name: file.name,
@@ -928,6 +956,7 @@
             });
             if (transferId && self.finalizeTransfer) self.finalizeTransfer(transferId, true, { processedBytes: file.size, totalBytes: file.size, progress: 100, resume: { kind: 'upload', parentId: state.folderId, sourceWindowId: windowId, fileName: file.name, mime: mime, totalBytes: file.size, chunkTransport: chunkTransport, uploadId: transferControl.uploadId || ((state.upload || {}).uploadId) || '', contiguousBytes: file.size, completed: 1 } });
             window.setTimeout(function () { self.resetExplorerUpload(state); }, 1200);
+            return { id: uploadedId, name: file.name, mime: mime };
           });
         }
         function fail(err, fallback) {
@@ -1409,6 +1438,28 @@
           if (self.showAlert) self.showAlert(self.t('alerts.shellEventError.title', 'Explorer'), (err && err.message) || 'fs_mkdir_failed');
         });
       },
+      explorerCreateFile: function (windowId) {
+        var self = this;
+        var win = this.windows.find(function (entry) { return entry.id === windowId; });
+        var state = this.ensureExplorerWindowState(win);
+        if (!state || !this.command) return Promise.resolve();
+        return (this.inputDialog
+          ? this.inputDialog('New File', 'Name the file to create.', 'New File.txt', { placeholder: 'New File.txt', confirmText: 'Create' })
+          : Promise.resolve(window.prompt('Name the file to create.', 'New File.txt'))
+        ).then(function (name) {
+          if (name === null) return null;
+          name = String(name || '').trim();
+          if (!name) return null;
+          return self.command('fs.write', { parent: state.folderId, name: name, content: '', mime: 'text/plain' }).then(function () {
+            return self.refreshExplorerWindow(windowId).then(function () {
+              if (self.refreshView) self.refreshView();
+              if (self.notifySuccess) self.notifySuccess('Explorer', 'File created.', { detail: name });
+            });
+          });
+        }).catch(function (err) {
+          if (self.showAlert) self.showAlert(self.t('alerts.shellEventError.title', 'Explorer'), (err && err.message) || 'fs_write_failed');
+        });
+      },
       explorerRenameSelected: function (windowId) {
         var self = this;
         var win = this.windows.find(function (entry) { return entry.id === windowId; });
@@ -1773,15 +1824,7 @@
         return rows;
       },
       decorateExplorerItems: function (folder, items) {
-        var rows = (items || []).slice();
-        var homeId = (((this.boot || {}).vfs || {}).homeId) || '';
-        if (((folder || {}).id || '') === homeId) {
-          (this.launcherEntries || []).forEach(function (entry) {
-            if (!entry || entry.key === 'home') return;
-            rows.push({ id: 'launcher-' + entry.key, key: entry.key, name: entry.title, title: entry.title, kind: 'app', type: 'app', mime: 'application/x-mioos-app', appKey: entry.key, icon: entry.icon, size: 0, modifiedAt: 0, path: ((folder || {}).path || '/Home') + '/' + entry.title });
-          });
-        }
-        return rows;
+        return (items || []).slice();
       },
       explorerNavigateBack: function (windowId) {
         var win = this.windows.find(function (entry) { return entry.id === windowId; });
@@ -1979,20 +2022,66 @@
         browser = resolveExplorerBrowser(event);
         rect = browser && browser.getBoundingClientRect ? browser.getBoundingClientRect() : null;
         if (rect) {
-          left = (event && event.clientX ? event.clientX : rect.left) - rect.left;
-          top = (event && event.clientY ? event.clientY : rect.top) - rect.top;
-          left = Math.max(8, Math.min(left, Math.max(8, rect.width - 228)));
-          top = Math.max(8, Math.min(top, Math.max(8, rect.height - 240)));
+          left = (event && event.clientX ? event.clientX : rect.left);
+          top = (event && event.clientY ? event.clientY : rect.top);
         } else {
           left = (event && event.clientX) || 0;
           top = (event && event.clientY) || 0;
         }
-        state.contextMenu = { open: true, left: left, top: top };
+        if (this.desktopUi && this.desktopUi.contextMenu) {
+          this.desktopUi.contextMenu = { open: true, type: 'explorer-folder', key: '', left: left, top: top, windowId: windowId, folder: clone(state.folder || {}), item: item ? clone(item) : clone(state.selection || null) };
+        }
       },
       closeFolderContextMenu: function (windowId) {
+        var menu = this.desktopContextMenuState ? this.desktopContextMenuState() : null;
+        if (menu && menu.type === 'explorer-folder' && (!windowId || menu.windowId === windowId)) menu.open = false;
+      },
+      uploadFolderCustomizeAsset: function (win, field, accept) {
+        var self = this;
+        var fileRoute = ((((this.boot || {}).routes || {}).fsBlob) || '/api/mioos/fs/blob');
+        if (!win) return Promise.resolve(null);
+        return new Promise(function (resolve) {
+          createUploadInput(function (event) {
+            var file = ((event.target || {}).files || [])[0];
+            var sourceWindowId = (win.meta || {}).sourceWindowId || (((self.windows || []).find(function (entry) { return entry.appKey === 'home'; }) || {}).id) || '';
+            if (event.target && event.target.parentNode) event.target.parentNode.removeChild(event.target);
+            if (!file || !sourceWindowId || !self.uploadSingleFileToExplorer) { resolve(null); return; }
+            self.uploadSingleFileToExplorer(sourceWindowId, [file]).then(function (payload) {
+              var id = (payload || {}).id || '';
+              var url = id ? (fileRoute + '?id=' + encodeURIComponent(id) + '&inline=1') : '';
+              if (!url) { resolve(null); return; }
+              if (!win.propertyState) win.propertyState = { form: {} };
+              if (!win.propertyState.form) win.propertyState.form = {};
+              win.propertyState.form[field || 'background'] = url;
+              resolve(url);
+            }).catch(function () { resolve(null); });
+          }, { accept: accept || 'image/*' });
+        });
+      },
+      themeStudioUploadWallpaper: function (windowId) {
+        var self = this;
+        var fileRoute = ((((this.boot || {}).routes || {}).fsBlob) || '/api/mioos/fs/blob');
         var win = this.windows.find(function (entry) { return entry.id === windowId; });
-        var state = this.ensureExplorerWindowState(win);
-        if (state && state.contextMenu) state.contextMenu.open = false;
+        var sourceWindowId = (((self.windows || []).find(function (entry) { return entry.appKey === 'home'; }) || {}).id) || '';
+        if (!win || !sourceWindowId || !self.uploadSingleFileToExplorer) return Promise.resolve(null);
+        return new Promise(function (resolve) {
+          createUploadInput(function (event) {
+            var file = ((event.target || {}).files || [])[0];
+            if (event.target && event.target.parentNode) event.target.parentNode.removeChild(event.target);
+            if (!file) { resolve(null); return; }
+            self.uploadSingleFileToExplorer(sourceWindowId, [file]).then(function (payload) {
+              var id = (payload || {}).id || '';
+              var url = id ? (fileRoute + '?id=' + encodeURIComponent(id) + '&inline=1') : '';
+              var state = self.ensureThemeStudioState ? self.ensureThemeStudioState(win) : null;
+              if (!url) { resolve(null); return; }
+              if (state && state.profile && state.profile.desktop) {
+                state.profile.desktop.wallpaperUrl = url;
+                state.profile.appearance.wallpaperMode = 'custom-url';
+              }
+              resolve(url);
+            }).catch(function () { resolve(null); });
+          }, { accept: 'image/*' });
+        });
       }
     }
   };

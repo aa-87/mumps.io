@@ -74,6 +74,8 @@
           terminalWindowSeq: 0,
           terminalPollTimer: null,
           appliedThemeProfile: null,
+          themeStudioProfilesCache: [],
+          themeStudioActiveKey: '',
           themeStyleNodeId: 'mioos-theme-studio-style',
           transferCenter: { items: [], seq: 0, autoOpen: true },
           transferControllers: {},
@@ -165,6 +167,7 @@
         this.normalizeDesktopUiState();
         this.applyBootThemeDefaults();
         this.applyPersistedThemeStudioProfile();
+        this.themeStudioLoadRemote();
         this.applyDocumentLocale();
         this.startClock();
         if (!this.requiresSignin) {
@@ -560,6 +563,7 @@
           };
           this.shellNotifications.unshift(entry);
           if (this.shellNotifications.length > limit) this.shellNotifications.splice(limit);
+          if (this.shellUi) this.shellUi.trayOpen = true;
           if (!entry.sticky && entry.timeoutMs > 0) {
             window.setTimeout(function () {
               self.dismissNotification(entry.id);
@@ -630,9 +634,24 @@
           this.shellUi.trayOpen = !((this.shellUi || {}).trayOpen);
           if (this.shellUi.trayOpen) this.markAllNotificationsRead();
         },
+        closeTrayPanel: function () {
+          if (this.shellUi) this.shellUi.trayOpen = false;
+        },
         clearNotifications: function () {
           this.shellNotifications.splice(0, this.shellNotifications.length);
           if (this.dismissAlert) this.dismissAlert();
+        },
+        overallTransferPercent: function () {
+          var rows = this.activeTransfers();
+          var total = 0;
+          var processed = 0;
+          if (!rows.length) return 0;
+          rows.forEach(function (item) {
+            total += +(item.totalBytes || 0);
+            processed += +(item.processedBytes || 0);
+          });
+          if (total > 0) return Math.max(0, Math.min(100, Math.round((processed / total) * 100)));
+          return Math.max(0, Math.min(100, Math.round(rows.reduce(function (sum, item) { return sum + (+(item.progress || 0)); }, 0) / rows.length)));
         },
         showDialog: function (opts) {
           var self = this;
@@ -1492,6 +1511,36 @@
           var menu = this.desktopContextMenuState();
           return { left: (menu.left || 0) + 'px', top: (menu.top || 0) + 'px' };
         },
+        contextMenuExplorerTargetWindow: function () {
+          var menu = this.desktopContextMenuState();
+          return (menu && menu.type === 'explorer-folder') ? (menu.windowId || '') : '';
+        },
+        contextMenuExplorerTargetFolder: function () {
+          var menu = this.desktopContextMenuState();
+          return (menu && menu.type === 'explorer-folder') ? (menu.folder || null) : null;
+        },
+        contextMenuExplorerTargetItem: function () {
+          var menu = this.desktopContextMenuState();
+          return (menu && menu.type === 'explorer-folder') ? (menu.item || null) : null;
+        },
+        contextMenuOpenSelected: function () {
+          var windowId = this.contextMenuExplorerTargetWindow();
+          var item = this.contextMenuExplorerTargetItem();
+          if (!windowId) return;
+          if (item && this.explorerOpenItem) this.explorerOpenItem(windowId, item);
+          else if (this.explorerOpenSelected) this.explorerOpenSelected(windowId);
+          this.closeDesktopContextMenu();
+        },
+        contextMenuDownloadSelected: function () {
+          var windowId = this.contextMenuExplorerTargetWindow();
+          if (windowId && this.explorerDownloadSelected) this.explorerDownloadSelected(windowId);
+          this.closeDesktopContextMenu();
+        },
+        contextMenuDeleteSelected: function () {
+          var windowId = this.contextMenuExplorerTargetWindow();
+          if (windowId && this.explorerDeleteSelected) this.explorerDeleteSelected(windowId);
+          this.closeDesktopContextMenu();
+        },
         desktopContextEntry: function () {
           var menu = this.desktopContextMenuState();
           var key = (menu || {}).key || (this.desktopUi.selectedKey || '');
@@ -1664,6 +1713,7 @@
               if (!state || !Array.isArray(state.profiles)) return;
               payload = state.profiles;
             });
+            this.themeStudioProfilesCache = payload || [];
             window.localStorage.setItem(this.themeStudioProfilesKey(), JSON.stringify(payload || []));
           } catch (err) {}
         },
@@ -1732,6 +1782,60 @@
             this.appliedThemeProfile = this.themeStudioNormalizeProfile(JSON.parse(raw));
             this.applyThemeStudioProfile(this.appliedThemeProfile, { silent: true, persist: false });
           } catch (err) {}
+        },
+        themeStudioRemotePayload: function () {
+          return { key: this.themeStudioActiveKey || '' };
+        },
+        themeStudioRequest: function (routeKey, payload) {
+          var route = ((((this.boot || {}).routes || {})[routeKey]) || '');
+          return new Promise(function (resolve, reject) {
+            var xhr;
+            var body;
+            if (!route) { reject(new Error('route_missing')); return; }
+            xhr = new XMLHttpRequest();
+            xhr.open('POST', route, true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.onreadystatechange = function () {
+              if (xhr.readyState !== 4) return;
+              try { body = JSON.parse(xhr.responseText || '{}'); } catch (err) { body = {}; }
+              if (xhr.status >= 200 && xhr.status < 300) { resolve(body); return; }
+              reject(new Error(body.detail || body.error || ('http_' + xhr.status)));
+            };
+            xhr.onerror = function () { reject(new Error('network_error')); };
+            xhr.send(JSON.stringify(payload || {}));
+          });
+        },
+        themeStudioLoadRemote: function () {
+          var self = this;
+          return this.themeStudioRequest('themeLoad', this.themeStudioRemotePayload()).then(function (msg) {
+            var profiles = [];
+            var i = 0;
+            var item;
+            self.themeStudioProfilesCache = [];
+            self.themeStudioActiveKey = (msg && msg.activeKey) || '';
+            for (i = 1; msg && msg.profiles && msg.profiles[i]; i += 1) {
+              item = msg.profiles[i];
+              profiles.push({ key: item.key, name: item.name || item.key, family: item.family || 'Custom', mode: item.mode || 'light', data: item.data || null });
+            }
+            self.themeStudioProfilesCache = profiles;
+            (self.windows || []).forEach(function (win) {
+              if (!win || !win.themeStudioState) return;
+              win.themeStudioState.profiles = profiles.slice();
+              if (self.themeStudioActiveKey) win.themeStudioState.profileKey = self.themeStudioActiveKey;
+            });
+            if (msg && msg.profile && Object.keys(msg.profile).length) {
+              self.appliedThemeProfile = self.themeStudioNormalizeProfile(msg.profile);
+              self.applyThemeStudioProfile(self.appliedThemeProfile, { silent: true, persist: true });
+            }
+            return msg;
+          }).catch(function () { return null; });
+        },
+        themeStudioSaveRemote: function (entry, activate) {
+          var self = this;
+          return this.themeStudioRequest('themeSave', { key: (entry || {}).key || '', activate: activate ? 1 : 0, profile: (entry || {}).data || entry || {} }).then(function (msg) {
+            self.themeStudioActiveKey = (msg && msg.activeKey) || ((entry || {}).key || '');
+            return self.themeStudioLoadRemote().then(function () { return msg; });
+          });
         },
         setShellTheme: function (themeKey) {
           var current = this.appliedThemeProfile ? window.MIOOSState.deepClone(this.appliedThemeProfile) : this.themeStudioPresetProfile((((this.boot || {}).desktop || {}).themeKey) || 'luna-blue');
@@ -1809,6 +1913,7 @@
           rootNode.dataset.themeMode = p.mode || 'light';
           rootNode.dataset.themeFamily = p.familyKey || this.themeStudioFamilyKey(p.presetKey);
           rootNode.dataset.themeDensity = p.density || 'comfortable';
+          rootNode.dataset.density = p.density || 'comfortable';
           if (this.boot && this.boot.desktop) {
             this.boot.desktop.themeKey = rootNode.dataset.themeKey;
             this.boot.desktop.themeMode = rootNode.dataset.themeMode;
@@ -1972,7 +2077,7 @@
             try { storedProfiles = JSON.parse(window.localStorage.getItem(this.themeStudioProfilesKey()) || '[]'); } catch (err) { storedProfiles = []; }
             win.themeStudioState = {
               activeTab: 'general',
-              profiles: (Array.isArray(storedProfiles) && storedProfiles.length) ? storedProfiles : [
+              profiles: (Array.isArray(this.themeStudioProfilesCache) && this.themeStudioProfilesCache.length) ? this.themeStudioProfilesCache.slice() : ((Array.isArray(storedProfiles) && storedProfiles.length) ? storedProfiles : [
                 { key: 'meadow-classic-light', name: 'Meadow Classic', family: 'Meadow Classic', mode: 'light', data: this.themeStudioPresetProfile('meadow-classic-light') },
                 { key: 'meadow-classic-dark', name: 'Meadow Classic Night', family: 'Meadow Classic', mode: 'dark', data: this.themeStudioPresetProfile('meadow-classic-dark') },
                 { key: 'glass-horizon-light', name: 'Glass Horizon', family: 'Glass Horizon', mode: 'light', data: this.themeStudioPresetProfile('glass-horizon-light') },
@@ -1981,8 +2086,8 @@
                 { key: 'graphite-dock-dark', name: 'Graphite Dock Night', family: 'Graphite Dock', mode: 'dark', data: this.themeStudioPresetProfile('graphite-dock-dark') },
                 { key: 'ember-panel-light', name: 'Ember Panel', family: 'Ember Panel', mode: 'light', data: this.themeStudioPresetProfile('ember-panel-light') },
                 { key: 'ember-panel-dark', name: 'Ember Panel Night', family: 'Ember Panel', mode: 'dark', data: this.themeStudioPresetProfile('ember-panel-dark') }
-              ],
-              profileKey: 'glass-horizon-light',
+              ]),
+              profileKey: this.themeStudioActiveKey || 'glass-horizon-light',
               profile: this.appliedThemeProfile ? window.MIOOSState.deepClone(this.appliedThemeProfile) : this.themeStudioPresetProfile('glass-horizon-light'),
               exportText: ''
             };
@@ -1992,14 +2097,14 @@
         themeStudioState: function (win) { return this.ensureThemeStudioState(win); },
         themeStudioProfiles: function (win) { return this.ensureThemeStudioState(win).profiles || []; },
         themeStudioSetTab: function (windowId, tabKey) { var win = this.windows.find(function (item) { return item.id === windowId; }); this.ensureThemeStudioState(win).activeTab = tabKey || 'general'; },
-        themeStudioSelectProfile: function (windowId, profileKey) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); var entry = (state.profiles || []).find(function (item) { return item.key === profileKey; }); if (!entry) return; state.profileKey = entry.key; state.profile = this.themeStudioNormalizeProfile(window.MIOOSState.deepClone(entry.data)); state.profile.name = entry.name; state.profile.family = entry.family; state.profile.mode = entry.mode; state.profile.activeMode = entry.mode; },
+        themeStudioSelectProfile: function (windowId, profileKey) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); var entry = (state.profiles || []).find(function (item) { return item.key === profileKey; }); var source; if (!entry) return; source = entry.data ? window.MIOOSState.deepClone(entry.data) : this.themeStudioPresetProfile(entry.key || 'glass-horizon-light'); state.profileKey = entry.key; state.profile = this.themeStudioNormalizeProfile(source); state.profile.name = entry.name || state.profile.name; state.profile.family = entry.family || state.profile.family; state.profile.mode = entry.mode || state.profile.mode; state.profile.activeMode = entry.mode || state.profile.activeMode; },
         themeStudioApplyPresetFamily: function (windowId, familyKey) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); var mode = ((state.profile || {}).mode || 'light') === 'dark' ? 'dark' : 'light'; var presetKey = String(familyKey || 'glass-horizon') + '-' + mode; state.profile = this.themeStudioPresetProfile(presetKey); state.profileKey = presetKey; },
         themeStudioApplyPreset: function (windowId, presetKey) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); state.profile = this.themeStudioPresetProfile(presetKey || 'glass-horizon-light'); state.profileKey = this.themeStudioCanonicalPresetKey(presetKey || 'glass-horizon-light'); },
-        themeStudioNewProfile: function (windowId) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); state.profileKey = 'custom-' + Date.now(); state.profile = this.themeStudioFactoryProfile('New Custom Theme', 'Custom', 'light'); state.activeTab = 'general'; },
+        themeStudioNewProfile: function (windowId) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); state.profileKey = 'custom-' + Date.now(); state.profile = this.themeStudioFactoryProfile('New Custom Theme', 'Custom', 'light'); state.profile.familyKey = 'glass-horizon'; state.activeTab = 'general'; },
         themeStudioDuplicateProfile: function (windowId) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); state.profile = window.MIOOSState.deepClone(state.profile); state.profile.name = (state.profile.name || 'Custom Theme') + ' Copy'; state.profileKey = 'custom-' + Date.now(); },
         themeStudioResetProfile: function (windowId) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); state.profile = this.themeStudioPresetProfile('glass-horizon-light'); state.profileKey = 'glass-horizon-light'; state.exportText = ''; state.activeTab = 'general'; },
-        themeStudioSaveProfile: function (windowId) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); var normalized = this.themeStudioNormalizeProfile(state.profile); var entry = { key: state.profileKey || ('custom-' + Date.now()), name: normalized.name || 'Custom Theme', family: normalized.family || 'Custom', mode: normalized.mode || 'light', data: window.MIOOSState.deepClone(normalized) }; var idx = (state.profiles || []).findIndex(function (item) { return item.key === entry.key; }); state.profileKey = entry.key; if (idx >= 0) state.profiles.splice(idx, 1, entry); else state.profiles.push(entry); state.exportText = JSON.stringify(entry.data, null, 2); this.themeStudioPersistProfiles(); this.showAlert('Customize', 'Theme draft saved to your local design profiles.'); },
-        themeStudioApplyCurrent: function (windowId) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); this.applyThemeStudioProfile(state.profile, { persist: true }); },
+        themeStudioSaveProfile: function (windowId) { var self = this; var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); var normalized = this.themeStudioNormalizeProfile(state.profile); var entry = { key: state.profileKey || ('custom-' + Date.now()), name: normalized.name || 'Custom Theme', family: normalized.family || 'Custom', mode: normalized.mode || 'light', data: window.MIOOSState.deepClone(normalized) }; var idx = (state.profiles || []).findIndex(function (item) { return item.key === entry.key; }); state.profileKey = entry.key; if (idx >= 0) state.profiles.splice(idx, 1, entry); else state.profiles.push(entry); state.exportText = JSON.stringify(entry.data, null, 2); this.themeStudioPersistProfiles(); return this.themeStudioSaveRemote(entry, 0).then(function () { self.showAlert('Customize', 'Theme draft saved to globals-backed profiles.'); }).catch(function () { self.showAlert('Customize', 'Theme draft saved locally.'); }); },
+        themeStudioApplyCurrent: function (windowId) { var self = this; var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); var normalized = this.themeStudioNormalizeProfile(state.profile); var entry = { key: state.profileKey || ('custom-' + Date.now()), name: normalized.name || 'Custom Theme', family: normalized.family || 'Custom', mode: normalized.mode || 'light', data: window.MIOOSState.deepClone(normalized) }; this.applyThemeStudioProfile(state.profile, { persist: true }); return this.themeStudioSaveRemote(entry, 1).catch(function () { self.showAlert('Customize', 'Applied locally. Global save unavailable.'); }); },
         themeStudioExportProfile: function (windowId) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); state.exportText = JSON.stringify(this.themeStudioNormalizeProfile(state.profile), null, 2); this.showAlert('Customize', 'Theme JSON is ready in the export buffer.'); },
         themeStudioImportProfile: function (windowId) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); try { if (!state.exportText) return; state.profile = this.themeStudioNormalizeProfile(Object.assign(this.themeStudioFactoryProfile('Imported Theme', 'Custom', 'light'), JSON.parse(state.exportText))); this.showAlert('Customize', 'Import buffer applied to the current draft.'); } catch (err) { this.showAlert('Customize', 'Import buffer is not valid JSON yet.'); } },
         themeStudioPreviewWallpaper: function (profile) { return this.themeStudioWallpaperCss(profile || {}); },

@@ -138,7 +138,7 @@
             <button type="button" class="mioos-start-row" v-for="group in taskbarGroups.slice(0,5)" :key="'start-'+group.key" @click="activateTaskGroup(group)">
               <span class="mioos-entry-icon">[[ group.icon ]]</span>
               <span class="mioos-entry-copy"><strong>[[ group.title ]]</strong><em>[[ group.count ]] window[[ group.count === 1 ? '' : 's' ]]</em></span>
-              <small>[[ group.allMinimized ? 'Restore' : 'Open' ]]</small>
+              <small>Open</small>
             </button>
           </div>
           <div class="mioos-start-empty" v-else>No active windows yet.</div>
@@ -199,21 +199,33 @@
         <span class="mioos-entry-title">[[ entry.title ]]</span>
       </button>
     </section>
-    <section v-if="desktopContextMenuState().open" class="mioos-context-menu" :class="{ 'is-icon-menu': desktopContextMenuState().type === 'icon' }" :style="contextMenuStyle()" @click.stop>
-      <button v-if="desktopContextMenuState().type === 'icon'" type="button" @click="contextOpenSelected()">Open</button>
-      <button v-if="desktopContextMenuState().type === 'icon'" type="button" @click="contextDeleteIcon()">Remove shortcut</button>
-      <hr v-if="desktopContextMenuState().type === 'icon'">
-      <button type="button" @click="refreshDesktopIcons()">Refresh</button>
-      <button type="button" @click="rearrangeDesktopIcons()">Rearrange icons</button>
-      <button type="button" @click="sortDesktopEntries('name')">Sort by name</button>
-      <button type="button" @click="sortDesktopEntries('type')">Sort by type</button>
-      <button type="button" @click="sortDesktopEntries('manual')">Manual layout</button>
-      <hr>
-      <button type="button" @click="setDesktopIconSize('small'); closeDesktopContextMenu()">Small icons</button>
-      <button type="button" @click="setDesktopIconSize('medium'); closeDesktopContextMenu()">Medium icons</button>
-      <button type="button" @click="setDesktopIconSize('large'); closeDesktopContextMenu()">Large icons</button>
-      <hr>
-      <button type="button" @click="contextPersonalize()">Customize</button>
+    <section v-if="desktopContextMenuState().open" class="mioos-context-menu mioos-classic-contextmenu" :class="{ 'is-icon-menu': desktopContextMenuState().type === 'icon', 'is-explorer-menu': desktopContextMenuState().type === 'explorer-folder' }" :style="contextMenuStyle()" @click.stop>
+      <template v-if="desktopContextMenuState().type === 'explorer-folder'">
+        <button type="button" @click="contextMenuOpenSelected()">Open</button>
+        <button type="button" @click="explorerCreateFolder(contextMenuExplorerTargetWindow())">New Folder</button>
+        <button type="button" @click="explorerCreateFile(contextMenuExplorerTargetWindow())">New File</button>
+        <button type="button" @click="explorerPromptUpload(contextMenuExplorerTargetWindow())">Upload…</button>
+        <button type="button" @click="contextMenuDownloadSelected()" :disabled="!contextMenuExplorerTargetItem()">Download</button>
+        <button type="button" @click="contextMenuDeleteSelected()" :disabled="!contextMenuExplorerTargetItem()">Delete</button>
+        <hr>
+        <button type="button" @click="openFolderPropertiesWindow(contextMenuExplorerTargetWindow(), contextMenuExplorerTargetItem() || contextMenuExplorerTargetFolder(), 'general'); closeDesktopContextMenu()">Properties</button>
+      </template>
+      <template v-else>
+        <button v-if="desktopContextMenuState().type === 'icon'" type="button" @click="contextOpenSelected()">Open</button>
+        <button v-if="desktopContextMenuState().type === 'icon'" type="button" @click="contextDeleteIcon()">Remove shortcut</button>
+        <hr v-if="desktopContextMenuState().type === 'icon'">
+        <button type="button" @click="refreshDesktopIcons()">Refresh</button>
+        <button type="button" @click="rearrangeDesktopIcons()">Rearrange icons</button>
+        <button type="button" @click="sortDesktopEntries('name')">Sort by name</button>
+        <button type="button" @click="sortDesktopEntries('type')">Sort by type</button>
+        <button type="button" @click="sortDesktopEntries('manual')">Manual layout</button>
+        <hr>
+        <button type="button" @click="setDesktopIconSize('small'); closeDesktopContextMenu()">Small icons</button>
+        <button type="button" @click="setDesktopIconSize('medium'); closeDesktopContextMenu()">Medium icons</button>
+        <button type="button" @click="setDesktopIconSize('large'); closeDesktopContextMenu()">Large icons</button>
+        <hr>
+        <button type="button" @click="contextPersonalize()">Customize</button>
+      </template>
     </section>
 
     <section v-for="win in visibleWindows" :key="win.id" class="mioos-window" :class="windowClass(win)" :style="windowStyle(win)" @mousedown="focusWindow(win.id)" @dragover="onWindowDragOver(win, $event)" @drop="onWindowDrop(win, $event)" role="dialog" :aria-label="win.title" :data-window-state="win.state" :data-window-app="win.appKey" :data-window-kind="windowKind(win)" :data-window-workspace="win.workspaceKey || ''" :data-window-chrome="win.chrome || ''">
@@ -240,11 +252,12 @@
             <div class="mioos-classic-panelhead">
               <div>
                 <strong>[[ (((win.explorerState || {}).folder || {}).name) || 'Home' ]]</strong>
-                <span>Browse Home, shared folders, previews, and shell-integrated file operations.</span>
+                <span>Browse Home and Desktop, upload files, create folders, and manage shell content.</span>
               </div>
               <div class="mioos-classic-toolbar-group">
                 <button type="button" class="mioos-classic-tool" @click="explorerCreateFolder(win.id)">New Folder</button>
-                <button type="button" class="mioos-classic-tool" @click="explorerPromptUpload(win.id)">Upload</button>
+                <button type="button" class="mioos-classic-tool" @click="explorerCreateFile(win.id)">New File</button>
+                <button type="button" class="mioos-classic-tool" @click="explorerPromptUpload(win.id)">Upload…</button>
                 <button type="button" class="mioos-classic-tool" @click="explorerDownloadSelected(win.id)" :disabled="!((win.explorerState || {}).selection)">Download</button>
                 <button type="button" class="mioos-classic-tool" @click="openFolderPropertiesWindow(win.id, (win.explorerState || {}).selection || (win.explorerState || {}).folder, 'general')">Properties</button>
               </div>
@@ -262,7 +275,7 @@
               </div>
             </div>
             <div class="mioos-classic-addressbar">
-              <span>Address</span>
+              <span>Location</span>
               <div class="mioos-classic-breadcrumbs">
                 <template v-for="crumb in explorerBreadcrumbs(win)" :key="crumb.path">
                   <button type="button" v-if="!crumb.isCurrent" @click="explorerNavigateToPath(win.id, crumb.path)">[[ crumb.label ]]</button>
@@ -271,12 +284,12 @@
                 </template>
               </div>
               <button type="button" class="mioos-classic-tool" @click="explorerGoToAddress(win.id)">Go</button>
-              <label class="mioos-classic-searchfield"><input type="search" v-model="(win.explorerState || {}).searchQuery" placeholder="Search this folder"></label>
+              <label class="mioos-classic-searchfield"><input type="search" v-model="(win.explorerState || {}).searchQuery" placeholder="Search files and folders"></label>
             </div>
             <section class="mioos-classic-explorer-layout" @contextmenu.prevent.stop="openFolderContextMenu(win.id, $event)">
               <aside class="mioos-classic-explorer-nav">
                 <section class="mioos-classic-navgroup">
-                  <div class="mioos-classic-navhead">Quick access</div>
+                  <div class="mioos-classic-navhead">Locations</div>
                   <div class="mioos-classic-navlist">
                     <button type="button" class="mioos-classic-navitem" v-for="place in explorerQuickPlaces()" :key="place.id || place.key || place.title" :class="{ 'is-current': ((win.explorerState || {}).folderId || '') === (place.id || place.key) }" @click="loadExplorerFolder(win.id, place.id || place.key || 'root', { selectFirst: true })">
                       <span class="mioos-classic-navglyph">[[ place.icon || '📁' ]]</span>
@@ -342,12 +355,6 @@
                 </div>
               </aside>
             </section>
-            <section class="mioos-context-menu" v-if="((win.explorerState || {}).contextMenu || {}).open" :style="{ left: (((win.explorerState || {}).contextMenu || {}).left || 0) + 'px', top: (((win.explorerState || {}).contextMenu || {}).top || 0) + 'px' }" @click.stop>
-              <button type="button" @click="explorerOpenSelected(win.id); closeFolderContextMenu(win.id)">Open</button>
-              <button type="button" @click="explorerCreateFolder(win.id); closeFolderContextMenu(win.id)">New Folder</button>
-              <button type="button" @click="explorerPromptUpload(win.id); closeFolderContextMenu(win.id)">Upload</button>
-              <button type="button" @click="openFolderPropertiesWindow(win.id, (win.explorerState || {}).selection || (win.explorerState || {}).folder, 'general'); closeFolderContextMenu(win.id)">Properties</button>
-            </section>
           </div>
         </template>
         <template v-else-if="win.appKey === 'transfers'">
@@ -355,88 +362,49 @@
             <div class="mioos-classic-panelhead">
               <div>
                 <strong>File Transfer</strong>
-                <span>Serious transfer monitoring with queue detail, recovery actions, and clear progress hierarchy.</span>
+                <span>Queue progress, per-file activity, drag and drop uploads, and recovery actions.</span>
               </div>
               <div class="mioos-classic-toolbar-group">
                 <button type="button" class="mioos-classic-tool" @click="pauseAllTransfers()">Pause All</button>
-                <button type="button" class="mioos-classic-tool" @click="resumePausedTransfers()">Resume Paused</button>
+                <button type="button" class="mioos-classic-tool" @click="resumePausedTransfers()">Resume</button>
                 <button type="button" class="mioos-classic-tool" @click="cancelActiveTransfers()">Cancel Active</button>
                 <button type="button" class="mioos-classic-tool" @click="clearFinishedTransfers()">Clear Finished</button>
               </div>
             </div>
-            <div class="mioos-classic-transferlayout">
-              <aside class="mioos-classic-transferrail">
-                <section class="mioos-classic-pane">
-                  <header>Transfer Summary</header>
-                  <div class="mioos-classic-pane-body mioos-classic-transferfacts">
-                    <span><strong>[[ transferActiveCount() ]]</strong> Active</span>
-                    <span><strong>[[ transferPausedCount() ]]</strong> Paused</span>
-                    <span><strong>[[ transferCompletedCount() ]]</strong> Completed</span>
-                    <span><strong>[[ transferFailedCount() ]]</strong> Failed</span>
-                    <small>[[ transferSummaryText() ]]</small>
-                  </div>
-                </section>
-                <section class="mioos-classic-pane">
-                  <header>Current focus</header>
-                  <div class="mioos-classic-pane-body mioos-classic-pane-body--details" v-if="transferPrimaryItem()">
-                    <strong>[[ transferPrimaryItem().name ]]</strong>
-                    <span>[[ transferDirectionLabel(transferPrimaryItem()) ]]</span>
-                    <span>[[ transferStatusCaption(transferPrimaryItem()) ]]</span>
-                  </div>
-                  <div class="mioos-classic-pane-body mioos-classic-pane-body--details" v-else>
-                    <strong>No transfer selected</strong>
-                    <span>The transfer center will show active uploads, moves, copies, and retries here.</span>
-                  </div>
-                </section>
-              </aside>
-              <section class="mioos-classic-transfermain">
-                <div class="mioos-classic-hero" v-if="transferPrimaryItem()">
-                  <div class="mioos-classic-herohead">
-                    <div>
-                      <strong>[[ transferPrimaryItem().name ]]</strong>
-                      <div class="mioos-classic-note">[[ transferDirectionLabel(transferPrimaryItem()) ]]</div>
-                    </div>
-                    <span class="mioos-classic-badge">[[ transferStatusCaption(transferPrimaryItem()) ]]</span>
-                  </div>
-                  <div class="mioos-classic-progress"><span :style="{ width: (transferPercent(transferPrimaryItem()) + '%') }"></span></div>
-                  <div class="mioos-classic-statgrid">
-                    <div class="mioos-classic-statcard"><strong>[[ transferPercent(transferPrimaryItem()) ]]%</strong><small>Overall progress</small></div>
-                    <div class="mioos-classic-statcard"><strong>[[ transferProgressLabel(transferPrimaryItem()) ]]</strong><small>Throughput and bytes</small></div>
-                    <div class="mioos-classic-statcard"><strong>[[ transferTimestampLabel(transferPrimaryItem()) ]]</strong><small>Last update</small></div>
-                  </div>
-                  <div class="mioos-classic-toolbar-group">
-                    <button type="button" class="mioos-classic-tool" v-if="canPauseTransfer(transferPrimaryItem())" @click="pauseTransfer(transferPrimaryItem())">Pause</button>
-                    <button type="button" class="mioos-classic-tool" v-if="canResumeTransfer(transferPrimaryItem())" @click="resumeTransfer(transferPrimaryItem())">Resume</button>
-                    <button type="button" class="mioos-classic-tool" v-if="canCancelTransfer(transferPrimaryItem())" @click="cancelTransfer(transferPrimaryItem())">Cancel</button>
-                    <button type="button" class="mioos-classic-tool" v-if="canRetryTransfer(transferPrimaryItem())" @click="retryTransfer(transferPrimaryItem())">Retry</button>
-                  </div>
+            <div class="mioos-classic-transferstack">
+              <section class="mioos-classic-transferoverview">
+                <div class="mioos-classic-transferoverview-copy">
+                  <strong>[[ transferSummaryText() ]]</strong>
+                  <span>[[ transferActiveCount() ]] active • [[ transferPausedCount() ]] paused • [[ transferCompletedCount() ]] completed • [[ transferFailedCount() ]] failed</span>
                 </div>
-                <div class="mioos-classic-subhead">Recent queue</div>
-                <div class="mioos-classic-queue" v-if="transferQueueRows(12).length">
-                  <div class="mioos-classic-queuerow is-head"><div>Name</div><div>From → To</div><div>Status</div><div>Size</div></div>
-                  <div class="mioos-classic-queuerow" v-for="item in transferQueueRows(12)" :key="item.id" :class="{ 'is-warning': item.status === 'paused' || item.status === 'queued', 'is-error': item.status === 'failed' }">
-                    <div><strong>[[ item.name ]]</strong></div>
-                    <div class="mioos-classic-queuepath">[[ transferDirectionLabel(item) ]]</div>
-                    <div>[[ transferStatusCaption(item) ]]</div>
-                    <div>[[ formatBytesCompact(item.totalBytes || 0) ]]</div>
-                  </div>
-                </div>
-                <div class="mioos-classic-empty" v-else>No transfer activity yet.</div>
-                <div class="mioos-classic-subhead">History</div>
-                <div class="mioos-classic-historylist" v-if="completedTransfers().length">
-                  <article class="mioos-classic-historyrow" v-for="item in completedTransfers()" :key="item.id">
-                    <div>
-                      <strong>[[ item.name ]]</strong>
-                      <small>[[ transferDirectionLabel(item) ]]</small>
-                    </div>
-                    <span class="mioos-classic-historystatus" :class="{ 'is-failed': item.status === 'failed' }">[[ item.status ]]</span>
-                    <small>[[ transferTimestampLabel(item) ]]</small>
-                    <button type="button" class="mioos-classic-tool" v-if="canRetryTransfer(item)" @click="retryTransfer(item)">Retry</button>
-                    <button type="button" class="mioos-classic-tool" v-if="canCancelTransfer(item)" @click="cancelTransfer(item)">Cancel</button>
-                  </article>
-                </div>
-                <div class="mioos-classic-empty" v-else>No completed transfers yet.</div>
+                <div class="mioos-classic-progress mioos-classic-progress--overall"><span :style="{ width: (overallTransferPercent() + '%') }"></span></div>
               </section>
+              <div class="mioos-classic-queue" v-if="transferQueueRows(12).length">
+                <div class="mioos-classic-queuerow is-head"><div>Name</div><div>Path</div><div>Progress</div><div>Status</div><div>Size</div></div>
+                <div class="mioos-classic-transferrow" v-for="item in transferQueueRows(12)" :key="item.id" :class="{ 'is-warning': item.status === 'paused' || item.status === 'queued', 'is-error': item.status === 'failed' }">
+                  <div class="mioos-classic-transfercopy"><strong>[[ item.name ]]</strong></div>
+                  <div class="mioos-classic-queuepath">[[ transferDirectionLabel(item) ]]</div>
+                  <div>
+                    <div class="mioos-classic-progress"><span :style="{ width: (transferPercent(item) + '%') }"></span></div>
+                    <small class="mioos-classic-transferstatus">[[ transferProgressLabel(item) ]]</small>
+                  </div>
+                  <div>[[ transferStatusCaption(item) ]]</div>
+                  <div>[[ formatBytesCompact(item.totalBytes || 0) ]]</div>
+                </div>
+              </div>
+              <div class="mioos-classic-empty" v-else>No transfer activity yet.</div>
+              <div class="mioos-classic-historylist" v-if="completedTransfers().length">
+                <article class="mioos-classic-historyrow" v-for="item in completedTransfers()" :key="item.id">
+                  <div class="mioos-classic-transfercopy">
+                    <strong>[[ item.name ]]</strong>
+                    <small>[[ transferDirectionLabel(item) ]]</small>
+                  </div>
+                  <span class="mioos-classic-historystatus" :class="{ 'is-failed': item.status === 'failed' }">[[ item.status ]]</span>
+                  <small>[[ transferTimestampLabel(item) ]]</small>
+                  <button type="button" class="mioos-classic-tool" v-if="canRetryTransfer(item)" @click="retryTransfer(item)">Retry</button>
+                  <button type="button" class="mioos-classic-tool" v-if="canCancelTransfer(item)" @click="cancelTransfer(item)">Cancel</button>
+                </article>
+              </div>
             </div>
           </div>
         </template>
@@ -483,9 +451,11 @@
               </section>
               <section v-else class="mioos-classic-formgrid mioos-classic-formgrid--single">
                 <fieldset class="mioos-classic-fieldset"><legend>Folder Picture</legend>
-                  <label><span>Background</span><input type="text" v-model="(win.propertyState || {}).form.background" placeholder="url(...) or theme token"></label>
-                  <label><span>Folder icon image or glyph</span><input type="text" v-model="(win.propertyState || {}).form.icon" placeholder="data URL, path, or glyph"></label>
-                  <p class="mioos-classic-help">Customize is stored per folder so Home, project folders, and shared folders can each carry their own appearance.</p>
+                  <label><span>Background image</span><input type="text" v-model="(win.propertyState || {}).form.background" placeholder="VFS blob URL or uploaded image path"></label>
+                  <div class="mioos-classic-inlineactions"><button type="button" class="mioos-classic-tool" @click="uploadFolderCustomizeAsset(win, 'background', 'image/*')">Upload background image…</button></div>
+                  <label><span>Folder icon image or glyph</span><input type="text" v-model="(win.propertyState || {}).form.icon" placeholder="VFS blob URL, uploaded image path, or glyph"></label>
+                  <div class="mioos-classic-inlineactions"><button type="button" class="mioos-classic-tool" @click="uploadFolderCustomizeAsset(win, 'icon', 'image/*')">Upload folder icon…</button></div>
+                  <p class="mioos-classic-help">Customize this folder with uploaded assets stored in the virtual filesystem.</p>
                 </fieldset>
               </section>
             </div>
@@ -565,12 +535,13 @@
             <div class="mioos-classic-panelhead">
               <div>
                 <strong>Theme Editor</strong>
-                <span>Unified shell customization for taskbar, launcher, explorer, windows, typography, and export-ready runtime tokens.</span>
+                <span>Unified shell customization for classic, glass, dock, and warm panel desktop families.</span>
               </div>
               <div class="mioos-classic-toolbar-group">
                 <button type="button" class="mioos-classic-tool" @click="themeStudioResetProfile(win.id)">Reset</button>
                 <button type="button" class="mioos-classic-tool" @click="themeStudioImportProfile(win.id)">Import</button>
                 <button type="button" class="mioos-classic-tool" @click="themeStudioExportProfile(win.id)">Export</button>
+                <button type="button" class="mioos-classic-tool" @click="themeStudioLoadRemote()">Reload Saved</button>
               </div>
             </div>
             <div class="mioos-classic-customize-layout">
@@ -587,14 +558,6 @@
                   <header>Preset Families</header>
                   <div class="mioos-classic-pane-body mioos-classic-presetgrid">
                     <button v-for="family in themeStudioPresetFamilies()" :key="family.key" type="button" class="mioos-shell-chip" :class="{ 'is-current': (themeStudioState(win).profile.familyKey || 'custom') === family.key }" @click="themeStudioApplyPresetFamily(win.id, family.key)">[[ family.name ]]</button>
-                  </div>
-                </section>
-                <section class="mioos-classic-pane">
-                  <header>Runtime</header>
-                  <div class="mioos-classic-pane-body mioos-classic-pane-body--details">
-                    <strong>[[ (themeStudioState(win).profile.name || 'Custom Theme') ]]</strong>
-                    <span>[[ (themeStudioState(win).profile.family || 'Custom') ]] • [[ (themeStudioState(win).profile.mode || 'light') ]]</span>
-                    <span>7.css shell grammar with Basecoat-augmented controls.</span>
                   </div>
                 </section>
               </aside>
@@ -631,7 +594,7 @@
                   <section v-if="themeStudioState(win).activeTab === 'general'" class="mioos-classic-formsection">
                     <div class="mioos-classic-formgrid">
                       <label><span>Theme name</span><input type="text" v-model="themeStudioState(win).profile.name"></label>
-                      <label><span>Theme family</span><input type="text" v-model="themeStudioState(win).profile.family"></label>
+                      <label><span>Theme family</span><select v-model="themeStudioState(win).profile.familyKey"><option value="meadow-classic">Meadow Classic</option><option value="glass-horizon">Glass Horizon</option><option value="graphite-dock">Graphite Dock</option><option value="ember-panel">Ember Panel</option></select></label>
                       <label><span>Appearance mode</span><select v-model="themeStudioState(win).profile.mode"><option value="light">light</option><option value="dark">dark</option></select></label>
                       <label><span>Desktop target</span><select v-model="themeStudioState(win).profile.appearance.target"><option value="mouse-keyboard-desktop">Mouse / keyboard desktop</option><option value="hybrid-desktop">Hybrid desktop</option></select></label>
                     </div>
@@ -655,8 +618,9 @@
                     <div class="mioos-classic-formgrid">
                       <label><span>Wallpaper mode</span><select v-model="themeStudioState(win).profile.appearance.wallpaperMode"><option value="gradient-gloss">gradient-gloss</option><option value="custom-url">custom-url</option></select></label>
                       <label><span>Wallpaper fit</span><select v-model="themeStudioState(win).profile.desktop.wallpaperFit"><option value="cover">cover</option><option value="contain">contain</option><option value="center">center</option><option value="tile">tile</option></select></label>
-                      <label><span>Image URL</span><input type="text" v-model="themeStudioState(win).profile.desktop.wallpaperUrl"></label>
+                      <label><span>Wallpaper image</span><input type="text" v-model="themeStudioState(win).profile.desktop.wallpaperUrl" placeholder="Blob URL from uploaded wallpaper"></label>
                       <label><span>Desktop color</span><input type="color" v-model="themeStudioState(win).profile.desktop.color"></label>
+                      <div class="mioos-classic-inlineactions"><button type="button" class="mioos-classic-tool" @click="themeStudioUploadWallpaper(win.id)">Upload wallpaper…</button></div>
                     </div>
                   </section>
                   <section v-else-if="themeStudioState(win).activeTab === 'shell'" class="mioos-classic-formsection">
@@ -729,14 +693,14 @@
                       <label><input type="checkbox" v-model="themeStudioState(win).profile.exports.cssVariables"> Export CSS variables</label>
                       <label><input type="checkbox" v-model="themeStudioState(win).profile.exports.runtimePatch"> Export runtime patch</label>
                     </div>
-                    <label><span>Runtime preview JSON</span><textarea v-model="themeStudioState(win).profile.customVariablesJson" rows="6"></textarea></label>
+                    <label><span>Custom variables JSON</span><textarea v-model="themeStudioState(win).profile.customVariablesJson" rows="6"></textarea></label>
                     <label><span>Extra CSS</span><textarea v-model="themeStudioState(win).profile.extraCss" rows="5"></textarea></label>
                   </section>
                 </div>
                 <div class="mioos-classic-dialogactions">
                   <button type="button" class="mioos-classic-tool" @click="themeStudioNewProfile(win.id)">New</button>
                   <button type="button" class="mioos-classic-tool" @click="themeStudioDuplicateProfile(win.id)">Duplicate</button>
-                  <button type="button" class="mioos-classic-tool" @click="themeStudioSaveProfile(win.id)">Save</button>
+                  <button type="button" class="mioos-classic-tool" @click="themeStudioSaveProfile(win.id)">Save Theme</button>
                   <button type="button" class="mioos-classic-tool default" @click="themeStudioApplyCurrent(win.id)">Apply</button>
                 </div>
                 <div class="mioos-classic-exportbox" v-if="themeStudioState(win).exportText">
@@ -827,19 +791,15 @@
         <span v-for="indicator in trayStatusIndicators()" :key="indicator.key" class="mioos-tray-led" :class="'is-' + indicator.state" :title="indicator.label"></span>
       </div>
       <button type="button" class="mioos-tray-action" @click.stop="toggleTrayPanel">
-        <span>Tray</span>
+        <span>Notifications</span>
         <strong v-if="unreadNotificationCount()">[[ unreadNotificationCount() ]]</strong>
       </button>
       <div class="mioos-tray-clock"><strong>[[ clockText ]]</strong><small>[[ clockDateText ]]</small></div>
       <section class="mioos-tray-panel" v-if="shellUi.trayOpen" @click.stop>
         <header class="mioos-tray-panel-head">
-          <strong>Tray</strong>
-          <button type="button" @click="clearNotifications()">Clear all</button>
+          <strong>Notifications</strong>
+          <div class="mioos-tray-headactions"><button type="button" @click="clearNotifications()">Clear all</button><button type="button" @click="closeTrayPanel()">Close</button></div>
         </header>
-        <div class="mioos-tray-panel-actions">
-          <button type="button" @click="toggleReducedMotion()">[[ shellUi.reducedMotion ? 'Reduced motion on' : 'Reduced motion off' ]]</button>
-          <button type="button" @click="openTransfersWindow()">Open Transfers</button>
-        </div>
         <div class="mioos-tray-panel-body" v-if="shellNotifications.length">
           <article v-for="note in shellNotifications" :key="note.id" class="mioos-tray-note" :class="'is-' + (note.type || 'info')">
             <strong>[[ note.title ]]</strong>
