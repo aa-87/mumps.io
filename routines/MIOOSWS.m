@@ -138,9 +138,9 @@ FSLIST(STATE,CONF,TREE,OUTJSON,ERR)
 	QUIT 1
 	;
 FSTARGET(TREE)
-	IF $GET(TREE("parent"))'="" QUIT $GET(TREE("parent"))
-	IF $GET(TREE("path"))'="" QUIT $GET(TREE("path"))
 	IF $GET(TREE("id"))'="" QUIT $GET(TREE("id"))
+	IF $GET(TREE("path"))'="" QUIT $GET(TREE("path"))
+	IF $GET(TREE("parent"))'="" QUIT $GET(TREE("parent"))
 	QUIT "root"
 	;
 FSREAD(STATE,CONF,TREE,OUTJSON,ERR)

@@ -329,6 +329,7 @@ T011
 	DO CONFDEF^MIOOS(.CONF)
 	DO INIT^MIOOS(.CONF)
 	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T011][load]")
+	DO EQ^MIOTASSERT($$HOMEID^MIOOSFS()'="root",1,"[MIOOST][T011][home id]")
 	SET ROOT="/Home"
 	DO OK^MIOTASSERT($$LIST^MIOOSFS(.STATE,ROOT,.OUT,.ERR),"[MIOOST][T011][list root]")
 	DO EQ^MIOTASSERT(+$GET(OUT("count"))>0,1,"[MIOOST][T011][root entries]")
@@ -973,7 +974,7 @@ T050
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","centerAuthWindow"),"[MIOOST][T050][auth window centering]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","Wave 1 shell foundation reset"),"[MIOOST][T050][shell foundation css]")
 	QUIT
-
+	;
 	;
 T051
 		NEW CONF,REQ,CTX,STATE,BOOT,ERR
@@ -1015,7 +1016,7 @@ T052
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 53 — shell-standard dialogs, notifications, and built-in app cleanup"),"[MIOOST][T052][llm roi53]")
 	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","ROI 53 — shell-standard dialogs, notifications, and built-in app cleanup"),"[MIOOST][T052][docs roi53]")
 	QUIT
-
+	;
 	;
 T053
 		NEW CONF,REQ,CTX,STATE,BOOT,ERR
@@ -1061,8 +1062,8 @@ T054
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 55 — websocket batch uploads and socket-pool observability"),"[MIOOST][T054][llm roi55]")
 	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","ROI 55 — websocket batch uploads and socket-pool observability"),"[MIOOST][T054][docs roi55]")
 	QUIT
-
-
+	;
+	;
 		;
 T055
 		NEW CONF,REQ,CTX,STATE,BOOT,ERR
@@ -1079,3 +1080,4 @@ T055
 		DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_wm.js","moveWindowToWorkspace"),"[MIOOST][T055][move workspace method retained]")
 		DO EQ^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-workspace-pager"),0,"[MIOOST][T055][workspace pager ui]")
 		QUIT
+	;
