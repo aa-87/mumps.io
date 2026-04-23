@@ -18,6 +18,8 @@
           boot: window.MIOOSState.defaultBoot(),
           view: window.MIOOSState.defaultView(),
           desktopEntries: [],
+          desktopAppEntries: [],
+          desktopFolderEntries: [],
           launcherEntries: [],
           windows: [],
           activeWindowId: '',
@@ -126,10 +128,11 @@
         },
         filteredEntries: function () {
           var needle = (this.menuFilter || '').trim().toLowerCase();
-          var source = this.launcherEntries && this.launcherEntries.length ? this.launcherEntries : this.desktopEntries;
+          var source = (this.launcherEntries || []).concat(this.desktopFolderEntries || []);
+          if (!source.length) source = this.desktopEntries || [];
           if (!needle) return source;
           return source.filter(function (entry) {
-            var hay = ((entry.title || '') + ' ' + (entry.subtitle || '')).toLowerCase();
+            var hay = ((entry.title || '') + ' ' + (entry.subtitle || '') + ' ' + (entry.path || '')).toLowerCase();
             return hay.indexOf(needle) !== -1;
           });
         },
@@ -151,7 +154,8 @@
           deep: true,
           handler: function (entries) {
             if (Array.isArray(entries) && entries.length) {
-              this.desktopEntries = window.MIOOSState.deepClone(entries);
+              this.desktopAppEntries = window.MIOOSState.deepClone(entries);
+              this.rebuildDesktopEntries();
               this.ensureDesktopLayout();
             }
           }
@@ -171,7 +175,7 @@
         this.applyDocumentLocale();
         this.startClock();
         if (!this.requiresSignin) {
-          this.refreshView();
+          this.refreshView().then(function () { if (self.syncDesktopFolderEntries) return self.syncDesktopFolderEntries(); }).catch(function () {});
           this.initSocket().catch(function () {});
           if (this.startTerminalPolling) this.startTerminalPolling();
         }
@@ -226,6 +230,7 @@
           if (!this.desktopUi.contextMenu) this.desktopUi.contextMenu = { open: false, type: 'desktop', key: '', left: 0, top: 0 };
           if (!this.desktopUi.iconSize) this.desktopUi.iconSize = 'medium';
           if (!this.desktopUi.sortMode) this.desktopUi.sortMode = 'manual';
+          if (!this.desktopUi.viewMode) this.desktopUi.viewMode = 'details';
           if (typeof this.desktopUi.selectedKey === 'undefined') this.desktopUi.selectedKey = '';
         },
         desktopContextMenuState: function () {
@@ -243,7 +248,8 @@
           }
           this.profile = this.boot.product.profile || 'dev';
           this.launcherEntries = window.MIOOSState.deepClone(this.boot.apps || []);
-          this.desktopEntries = window.MIOOSState.deepClone((this.view && this.view.desktopEntries) || this.boot.desktopEntries || this.boot.apps || []);
+          this.desktopAppEntries = window.MIOOSState.deepClone((this.view && this.view.desktopEntries) || this.boot.desktopEntries || this.boot.apps || []);
+          this.desktopEntries = window.MIOOSState.deepClone(this.desktopAppEntries || []);
           if (this.$el && this.$el.style && (((this.boot || {}).desktop || {}).windowing || {}).titlebarHeight) {
             this.$el.style.setProperty('--mioos-titlebar-height', ((((this.boot || {}).desktop || {}).windowing || {}).titlebarHeight) + 'px');
           }
@@ -1404,8 +1410,81 @@
           return {
             'is-selected': ((this.desktopUi || {}).selectedKey || '') === entry.key,
             'is-small': (this.desktopUi.iconSize || 'medium') === 'small',
-            'is-large': (this.desktopUi.iconSize || 'medium') === 'large'
+            'is-large': (this.desktopUi.iconSize || 'medium') === 'large',
+            'is-list': (this.desktopUi.viewMode || 'details') === 'list'
           };
+        },
+        fsDesktopIconFor: function (item) {
+          var kind = String(((item || {}).kind || '')).toLowerCase();
+          var mime = String(((item || {}).mime || '')).toLowerCase();
+          if (kind === 'folder') return ((item || {}).customize || {}).icon || '📁';
+          if (mime.indexOf('image/') === 0) return '🖼';
+          if (mime.indexOf('video/') === 0) return '🎞';
+          if (mime.indexOf('audio/') === 0) return '🎵';
+          if (mime.indexOf('application/pdf') === 0) return '📄';
+          return '📄';
+        },
+        fsDesktopEntryFromItem: function (item) {
+          if (!item || !item.id) return null;
+          return {
+            key: 'vfs:' + item.id,
+            id: item.id,
+            source: 'vfs',
+            title: item.name || item.title || 'Item',
+            subtitle: item.path || this.explorerItemTypeLabel(item),
+            icon: this.fsDesktopIconFor(item),
+            kind: item.kind || 'file',
+            mime: item.mime || '',
+            path: item.path || '',
+            size: item.size || item.sizeBytes || 0,
+            sizeLabel: item.sizeLabel || '',
+            modifiedAt: item.modifiedAt || item.updatedAt || item.createdAt || ''
+          };
+        },
+        rebuildDesktopEntries: function () {
+          this.desktopEntries = window.MIOOSState.deepClone((this.desktopAppEntries || []).concat(this.desktopFolderEntries || []));
+        },
+        syncDesktopFolderEntries: function () {
+          var self = this;
+          var desktopId = ((((this.boot || {}).vfs || {}).desktopId) || '');
+          if (!desktopId || !this.command) { this.desktopFolderEntries = []; this.rebuildDesktopEntries(); return Promise.resolve([]); }
+          return this.command('fs.list', { id: desktopId, parent: '/Desktop' }).then(function (payload) {
+            var rows = (((payload || {}).vfs || {}).entries) || [];
+            var list = [];
+            var i;
+            for (i = 1; rows[i]; i += 1) {
+              if (rows[i].attributes && +rows[i].attributes.hidden) continue;
+              if (rows[i].name === 'Welcome.txt') continue;
+              list.push(self.fsDesktopEntryFromItem(rows[i]));
+            }
+            self.desktopFolderEntries = list.filter(Boolean);
+            self.rebuildDesktopEntries();
+            self.ensureDesktopLayout();
+            return self.desktopFolderEntries;
+          }).catch(function () {
+            self.desktopFolderEntries = [];
+            self.rebuildDesktopEntries();
+            return [];
+          });
+        },
+        openDesktopEntry: function (entry) {
+          var self = this;
+          var win;
+          if (!entry) return;
+          if (entry.source === 'vfs') {
+            if (String(entry.kind || '').toLowerCase() === 'folder') {
+              win = this.windows.find(function (item) { return item.appKey === 'home'; }) || this.createWindowForApp('home') || this.createWindowForApp('explorer');
+              if (win && this.loadExplorerFolder) this.loadExplorerFolder(win.id, entry.id, { selectFirst: true });
+              return;
+            }
+            if (this.openImageViewerWindow && /image\//i.test(entry.mime || '')) return this.openImageViewerWindow(entry);
+            if (this.openMediaViewerWindow && /(audio|video)\//i.test(entry.mime || '')) return this.openMediaViewerWindow(entry);
+            if (this.openPdfViewerWindow && /application\/pdf/i.test(entry.mime || '')) return this.openPdfViewerWindow(entry);
+            if (this.openStructuredViewerWindow && /(json|xml|yaml|csv|markdown)/i.test(entry.mime || '') ) return this.openStructuredViewerWindow(entry);
+            if (this.openTextViewerWindow) return this.openTextViewerWindow(entry);
+            return;
+          }
+          this.openApp(entry.key);
         },
         selectDesktopEntry: function (entry) {
           this.desktopUi.selectedKey = entry && entry.key ? entry.key : '';
@@ -1549,11 +1628,11 @@
         contextOpenSelected: function () {
           var entry = this.desktopContextEntry();
           this.closeDesktopContextMenu();
-          if (entry) this.openApp(entry.key);
+          if (entry) this.openDesktopEntry(entry);
         },
         contextControlPanel: function () { this.closeDesktopContextMenu(); this.openApp('customize'); },
         contextPersonalize: function () { this.closeDesktopContextMenu(); this.openApp('customize'); },
-                contextDeleteIcon: function () { this.closeDesktopContextMenu(); this.showAlert('Desktop', 'Desktop shortcuts are managed by installed modules.'); },
+        contextDeleteIcon: function () { var self = this; var entry = this.desktopContextEntry(); this.closeDesktopContextMenu(); if (entry && entry.source === 'vfs' && this.command) { return this.command('fs.delete', { id: entry.id }).then(function () { if (self.syncDesktopFolderEntries) return self.syncDesktopFolderEntries(); }).then(function () { self.notifySuccess('Desktop', 'Item removed from Desktop.'); }).catch(function (err) { self.showAlert('Desktop', (err && err.message) || 'delete_failed'); }); } this.showAlert('Desktop', 'Desktop shortcuts are managed by installed modules.'); },
         taskbarMaxVisibleGroups: function () {
           var width = window.innerWidth || document.documentElement.clientWidth || 1280;
           if (width < 700) return 3;
@@ -1654,8 +1733,9 @@
           next.presetKey = this.themeStudioCanonicalPresetKey(next.presetKey || 'glass-horizon-light');
           next.familyKey = incoming.familyKey || next.familyKey || this.themeStudioFamilyKey(next.presetKey);
           next.family = incoming.family || next.family || this.themeStudioFamilyLabel(next.familyKey);
-          next.mode = ((incoming.activeMode || next.mode || 'light') === 'dark') ? 'dark' : 'light';
+          next.mode = ((incoming.activeMode || incoming.mode || next.mode || 'light') === 'dark') ? 'dark' : 'light';
           next.activeMode = next.mode;
+          next.density = incoming.density || appearanceIn.density || next.density || base.density || 'comfortable';
           next.coverage = Object.assign({}, base.coverage, incoming.coverage || {});
           next.appearance = Object.assign({}, base.appearance, appearanceIn || {});
           next.desktop = Object.assign({}, base.desktop, desktopIn || {});
@@ -1734,7 +1814,7 @@
           var wallpaperMiddle = desktop.wallpaperMiddle || '#153a79';
           var wallpaperBottom = desktop.wallpaperBottom || '#0d244b';
           var fit = desktop.wallpaperFit || 'cover';
-          var mode = desktop.wallpaperPreset || 'gradient-gloss';
+          var mode = desktop.wallpaperPreset || p.appearance.wallpaperMode || 'gradient-gloss';
           var base = 'linear-gradient(180deg, ' + wallpaperTop + ' 0%, ' + wallpaperMiddle + ' 52%, ' + wallpaperBottom + ' 100%)';
           if (mode === 'custom-url' && desktop.wallpaperUrl) {
             return 'linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.02)), url(' + desktop.wallpaperUrl + ') center / ' + (fit === 'tile' ? '240px auto' : fit) + ' ' + (fit === 'tile' ? 'repeat' : 'no-repeat');
@@ -1905,20 +1985,24 @@
             '--mioos-shell-sidebar-width': Math.max(180, +(windowChrome.sidebarWidth || 220)) + 'px',
             '--mioos-shell-preview-width': Math.max(220, +(windowChrome.previewWidth || 272)) + 'px',
             '--mioos-shell-title-height': Math.max(28, +(windowChrome.titleHeight || 34)) + 'px',
-            '--mioos-shell-caption-size': Math.max(20, +(windowChrome.captionButtonSize || 24)) + 'px'
+            '--mioos-shell-caption-size': Math.max(20, +(windowChrome.captionButtonSize || 24)) + 'px',
+            '--mioos-titlebar-bottom': this.themeStudioSanitizeColor(windowChrome.titleBottom || windowChrome.titleTop || colors.titlebar, '#4e6e9f'),
+            '--mioos-launcher-header-top': this.themeStudioSanitizeColor(launcher.headerTop || panel.startTop || '#3769ab', '#3769ab'),
+            '--mioos-launcher-header-bottom': this.themeStudioSanitizeColor(launcher.headerBottom || panel.startBottom || '#173c6f', '#173c6f')
           };
           Object.keys(vars).forEach(function (key) { rootNode.style.setProperty(key, vars[key]); });
           rootNode.style.setProperty('--mioos-desktop-background', this.themeStudioWallpaperCss(p));
           rootNode.dataset.themeKey = p.presetKey || 'glass-horizon-light';
           rootNode.dataset.themeMode = p.mode || 'light';
           rootNode.dataset.themeFamily = p.familyKey || this.themeStudioFamilyKey(p.presetKey);
-          rootNode.dataset.themeDensity = p.density || 'comfortable';
-          rootNode.dataset.density = p.density || 'comfortable';
+          rootNode.dataset.themeDensity = p.density || appearance.density || 'comfortable';
+          rootNode.dataset.density = p.density || appearance.density || 'comfortable';
           if (this.boot && this.boot.desktop) {
             this.boot.desktop.themeKey = rootNode.dataset.themeKey;
             this.boot.desktop.themeMode = rootNode.dataset.themeMode;
             this.boot.desktop.density = rootNode.dataset.themeDensity;
           }
+          this.desktopUi.iconSize = +(desktop.iconSize || 0) >= 44 ? 'large' : (+(desktop.iconSize || 0) <= 34 ? 'small' : (this.desktopUi.iconSize || 'medium'));
           rootNode.classList.remove('mioos-theme-dark', 'mioos-theme-light', 'mioos-density-compact', 'mioos-density-spacious');
           rootNode.classList.add((p.mode || 'light') === 'dark' ? 'mioos-theme-dark' : 'mioos-theme-light');
           if ((p.density || '') === 'compact') rootNode.classList.add('mioos-density-compact');
@@ -1940,7 +2024,7 @@
             { key: 'launcher', label: 'Panel / Start / Dock' },
             { key: 'window', label: 'Windows & Controls' },
             { key: 'typography', label: 'Typography & Metrics' },
-            { key: 'effects', label: 'Effects & Export' }
+            { key: 'effects', label: 'Effects' }
           ];
         },
         themeStudioFactoryProfile: function (name, family, mode) {
@@ -2097,14 +2181,16 @@
         themeStudioState: function (win) { return this.ensureThemeStudioState(win); },
         themeStudioProfiles: function (win) { return this.ensureThemeStudioState(win).profiles || []; },
         themeStudioSetTab: function (windowId, tabKey) { var win = this.windows.find(function (item) { return item.id === windowId; }); this.ensureThemeStudioState(win).activeTab = tabKey || 'general'; },
-        themeStudioSelectProfile: function (windowId, profileKey) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); var entry = (state.profiles || []).find(function (item) { return item.key === profileKey; }); var source; if (!entry) return; source = entry.data ? window.MIOOSState.deepClone(entry.data) : this.themeStudioPresetProfile(entry.key || 'glass-horizon-light'); state.profileKey = entry.key; state.profile = this.themeStudioNormalizeProfile(source); state.profile.name = entry.name || state.profile.name; state.profile.family = entry.family || state.profile.family; state.profile.mode = entry.mode || state.profile.mode; state.profile.activeMode = entry.mode || state.profile.activeMode; },
-        themeStudioApplyPresetFamily: function (windowId, familyKey) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); var mode = ((state.profile || {}).mode || 'light') === 'dark' ? 'dark' : 'light'; var presetKey = String(familyKey || 'glass-horizon') + '-' + mode; state.profile = this.themeStudioPresetProfile(presetKey); state.profileKey = presetKey; },
-        themeStudioApplyPreset: function (windowId, presetKey) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); state.profile = this.themeStudioPresetProfile(presetKey || 'glass-horizon-light'); state.profileKey = this.themeStudioCanonicalPresetKey(presetKey || 'glass-horizon-light'); },
+        themeStudioSelectProfile: function (windowId, profileKey) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); var entry = (state.profiles || []).find(function (item) { return item.key === profileKey; }); var source; if (!entry) return; source = entry.data ? window.MIOOSState.deepClone(entry.data) : this.themeStudioPresetProfile(entry.key || 'glass-horizon-light'); state.profileKey = entry.key; state.profile = this.themeStudioNormalizeProfile(source); state.profile.name = entry.name || state.profile.name; state.profile.family = entry.family || state.profile.family; state.profile.mode = entry.mode || state.profile.mode; state.profile.activeMode = entry.mode || state.profile.activeMode; this.themeStudioPreviewCurrent(windowId); },
+        themeStudioApplyPresetFamily: function (windowId, familyKey) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); var mode = ((state.profile || {}).mode || 'light') === 'dark' ? 'dark' : 'light'; var presetKey = String(familyKey || 'glass-horizon') + '-' + mode; state.profile = this.themeStudioPresetProfile(presetKey); state.profileKey = presetKey; this.themeStudioPreviewCurrent(windowId); },
+        themeStudioApplyPreset: function (windowId, presetKey) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); state.profile = this.themeStudioPresetProfile(presetKey || 'glass-horizon-light'); state.profileKey = this.themeStudioCanonicalPresetKey(presetKey || 'glass-horizon-light'); this.themeStudioPreviewCurrent(windowId); },
         themeStudioNewProfile: function (windowId) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); state.profileKey = 'custom-' + Date.now(); state.profile = this.themeStudioFactoryProfile('New Custom Theme', 'Custom', 'light'); state.profile.familyKey = 'glass-horizon'; state.activeTab = 'general'; },
-        themeStudioDuplicateProfile: function (windowId) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); state.profile = window.MIOOSState.deepClone(state.profile); state.profile.name = (state.profile.name || 'Custom Theme') + ' Copy'; state.profileKey = 'custom-' + Date.now(); },
-        themeStudioResetProfile: function (windowId) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); state.profile = this.themeStudioPresetProfile('glass-horizon-light'); state.profileKey = 'glass-horizon-light'; state.exportText = ''; state.activeTab = 'general'; },
+        themeStudioDuplicateProfile: function (windowId) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); state.profile = window.MIOOSState.deepClone(state.profile); state.profile.name = (state.profile.name || 'Custom Theme') + ' Copy'; state.profileKey = 'custom-' + Date.now(); this.themeStudioPreviewCurrent(windowId); },
+        themeStudioResetProfile: function (windowId) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); state.profile = this.themeStudioPresetProfile('glass-horizon-light'); state.profileKey = 'glass-horizon-light'; state.exportText = ''; state.activeTab = 'general'; this.themeStudioPreviewCurrent(windowId); },
         themeStudioSaveProfile: function (windowId) { var self = this; var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); var normalized = this.themeStudioNormalizeProfile(state.profile); var entry = { key: state.profileKey || ('custom-' + Date.now()), name: normalized.name || 'Custom Theme', family: normalized.family || 'Custom', mode: normalized.mode || 'light', data: window.MIOOSState.deepClone(normalized) }; var idx = (state.profiles || []).findIndex(function (item) { return item.key === entry.key; }); state.profileKey = entry.key; if (idx >= 0) state.profiles.splice(idx, 1, entry); else state.profiles.push(entry); state.exportText = JSON.stringify(entry.data, null, 2); this.themeStudioPersistProfiles(); return this.themeStudioSaveRemote(entry, 0).then(function () { self.showAlert('Customize', 'Theme draft saved to globals-backed profiles.'); }).catch(function () { self.showAlert('Customize', 'Theme draft saved locally.'); }); },
         themeStudioApplyCurrent: function (windowId) { var self = this; var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); var normalized = this.themeStudioNormalizeProfile(state.profile); var entry = { key: state.profileKey || ('custom-' + Date.now()), name: normalized.name || 'Custom Theme', family: normalized.family || 'Custom', mode: normalized.mode || 'light', data: window.MIOOSState.deepClone(normalized) }; this.applyThemeStudioProfile(state.profile, { persist: true }); return this.themeStudioSaveRemote(entry, 1).catch(function () { self.showAlert('Customize', 'Applied locally. Global save unavailable.'); }); },
+        themeStudioPreviewCurrent: function (windowId) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); if (!state || !state.profile) return; this.applyThemeStudioProfile(state.profile, { persist: false, silent: true }); },
+        themeStudioClearWallpaper: function (windowId) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); if (!state || !state.profile || !state.profile.desktop) return; state.profile.desktop.wallpaperUrl = ''; state.profile.desktop.wallpaperPreset = 'gradient-gloss'; state.profile.appearance.wallpaperMode = 'gradient-gloss'; this.themeStudioPreviewCurrent(windowId); },
         themeStudioExportProfile: function (windowId) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); state.exportText = JSON.stringify(this.themeStudioNormalizeProfile(state.profile), null, 2); this.showAlert('Customize', 'Theme JSON is ready in the export buffer.'); },
         themeStudioImportProfile: function (windowId) { var win = this.windows.find(function (item) { return item.id === windowId; }); var state = this.ensureThemeStudioState(win); try { if (!state.exportText) return; state.profile = this.themeStudioNormalizeProfile(Object.assign(this.themeStudioFactoryProfile('Imported Theme', 'Custom', 'light'), JSON.parse(state.exportText))); this.showAlert('Customize', 'Import buffer applied to the current draft.'); } catch (err) { this.showAlert('Customize', 'Import buffer is not valid JSON yet.'); } },
         themeStudioPreviewWallpaper: function (profile) { return this.themeStudioWallpaperCss(profile || {}); },

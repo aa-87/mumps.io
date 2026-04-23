@@ -185,7 +185,7 @@ T003
 		DO EQ^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","win.appKey === 'app-catalog'"),0,"[MIOOST][T003][catalog surface removed]")
 		DO EQ^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","win.appKey === 'control-panel'"),0,"[MIOOST][T003][control panel removed]")
 		DO EQ^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","/public/mioos/7.scoped.css"),0,"[MIOOST][T003][7css removed]")
-		DO OK^MIOTASSERT($$FILEHAS("templates/layouts/mioos_shell.html","/public/mioos/mioos_reset.css"),"[MIOOST][T003][reset css linked]")
+		DO EQ^MIOTASSERT($$FILEHAS("templates/layouts/mioos_shell.html","/public/mioos/mioos_reset.css"),0,"[MIOOST][T003][reset css consolidated]")
 		QUIT
 		;
 T004
@@ -399,9 +399,9 @@ T015
 T016
 		DO EQ^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","https://unpkg.com/7.css/dist/7.scoped.css"),0,"[MIOOST][T016][remote 7css removed]")
 		DO EQ^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","/public/mioos/7.scoped.css"),0,"[MIOOST][T016][local 7css removed]")
-		DO OK^MIOTASSERT($$FILEHAS("templates/layouts/mioos_shell.html","/public/mioos/mioos_reset.css"),"[MIOOST][T016][reset css link]")
-		DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos_reset.css","mioos-taskbar--workspace"),"[MIOOST][T016][taskbar reset css]")
-		DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos_reset.css","mioos-folder-context-menu"),"[MIOOST][T016][folder menu css]")
+		DO EQ^MIOTASSERT($$FILEHAS("templates/layouts/mioos_shell.html","/public/mioos/mioos_reset.css"),0,"[MIOOST][T016][reset css consolidated]")
+		DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","mioos-taskbar--workspace"),"[MIOOST][T016][taskbar css]")
+		DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","mioos-folder-context-menu"),"[MIOOST][T016][folder menu css]")
 		QUIT
 		;
 T017
@@ -425,7 +425,7 @@ T018
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","registerTransfer"),"[MIOOST][T018][register transfer]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","openTransfersWindow"),"[MIOOST][T018][open transfers]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","transferId"),"[MIOOST][T018][explorer transfer hookup]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos_reset.css",".mioos-classic-transfercard"),"[MIOOST][T018][transfers css]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-classic-transfercard"),"[MIOOST][T018][transfers css]")
 	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-explorer-taskpane"),0,"[MIOOST][T018][explorer taskpane removed]")
 	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-explorer-menubar"),0,"[MIOOST][T018][explorer menubar css removed]")
 	QUIT
@@ -516,7 +516,7 @@ T026
 		DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-classic-transferfacts"),"[MIOOST][T026][transfer summary]")
 		DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-classic-progress"),"[MIOOST][T026][transfer progress]")
 		DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","Retry"),"[MIOOST][T026][transfer retry ui]")
-		DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos_reset.css","mioos-classic-transfercard"),"[MIOOST][T026][transfer css]")
+		DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","mioos-classic-transfercard"),"[MIOOST][T026][transfer css]")
 		QUIT
 		;
 T027
@@ -1002,7 +1002,7 @@ T051
 		DO EQ^MIOTASSERT($GET(BOOT("desktop","themeSystem","controlAugment")),"basecoat-augment","[MIOOST][T051][theme control augment]")
 		DO EQ^MIOTASSERT(+$DATA(BOOT("desktop","themeSystem","presetFamilies",4,"key"))>0,1,"[MIOOST][T051][preset families boot]")
 		DO OK^MIOTASSERT($$FILEHAS("templates/layouts/mioos_shell.html","/public/mioos/7.scoped.css"),"[MIOOST][T051][local 7css layout]")
-		DO OK^MIOTASSERT($$FILEHAS("templates/layouts/mioos_shell.html","/public/mioos/mioos_shell_overhaul.css"),"[MIOOST][T051][overhaul css layout]")
+		DO EQ^MIOTASSERT($$FILEHAS("templates/layouts/mioos_shell.html","/public/mioos/mioos_shell_overhaul.css"),0,"[MIOOST][T051][overhaul css consolidated]")
 		DO OK^MIOTASSERT($$FILEHAS("templates/layouts/mioos_shell.html","basecoat-css@0.3.2"),"[MIOOST][T051][basecoat augment layout]")
 		DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","themeStudioPresetFamilies"),"[MIOOST][T051][preset family method]")
 		DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","themeStudioLoadRemote"),"[MIOOST][T051][theme load method]")

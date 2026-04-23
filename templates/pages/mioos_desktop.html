@@ -123,9 +123,9 @@
     <div class="mioos-start-columns">
       <div class="mioos-start-maincol">
         <section class="mioos-start-section">
-          <header><strong>Programs</strong><span>Launch core runtime surfaces</span></header>
+          <header><strong>Programs</strong><span>Launch apps and open Desktop items</span></header>
           <div class="mioos-start-grid">
-            <button v-for="entry in filteredEntries.slice(0,8)" :key="entry.key" type="button" class="mioos-start-tile" :data-launch-app="entry.key" @click="openApp(entry.key)">
+            <button v-for="entry in filteredEntries" :key="entry.key" type="button" class="mioos-start-tile" :data-launch-app="entry.key" @click="openDesktopEntry(entry)">
               <span class="mioos-entry-icon">[[ entry.icon ]]</span>
               <span class="mioos-entry-copy"><strong>[[ entry.title ]]</strong><em>[[ entry.subtitle ]]</em></span>
               <small>Open</small>
@@ -193,8 +193,8 @@
   <main class="mioos-desktop" @click="menuOpen=false; shellUi.trayOpen=false; closeDesktopContextMenu(); closeWindowMenu(); closeAllFolderContextMenus()" @contextmenu.prevent="openDesktopContextMenu($event)">
     <div class="mioos-shell-wallpaper" aria-hidden="true"></div>
     <div v-if="snapPreview.active" class="mioos-snap-preview" :data-snap-zone="snapPreview.zone" :style="snapPreviewStyle()"></div>
-    <section class="mioos-desktop-icons" :aria-label="t('desktop.icons')" :data-icon-size="desktopUi.iconSize">
-      <button v-for="entry in desktopEntries" :key="entry.key" type="button" class="mioos-desktop-icon" :class="desktopIconClass(entry)" :style="desktopIconStyle(entry)" :data-launch-app="entry.key" @click.stop="selectDesktopEntry(entry)" @mousedown.stop="beginDesktopIconDrag(entry, $event)" @contextmenu.prevent.stop="openDesktopIconContextMenu(entry, $event)" @dblclick.stop="openApp(entry.key)" @keydown.enter.prevent="openApp(entry.key)">
+    <section class="mioos-desktop-icons" :aria-label="t('desktop.icons')" :data-icon-size="desktopUi.iconSize" :data-view-mode="desktopUi.viewMode || 'details'">
+      <button v-for="entry in desktopEntries" :key="entry.key" type="button" class="mioos-desktop-icon" :class="desktopIconClass(entry)" :style="desktopIconStyle(entry)" :data-launch-app="entry.key" @click.stop="selectDesktopEntry(entry)" @mousedown.stop="beginDesktopIconDrag(entry, $event)" @contextmenu.prevent.stop="openDesktopIconContextMenu(entry, $event)" @dblclick.stop="openDesktopEntry(entry)" @keydown.enter.prevent="openDesktopEntry(entry)">
         <span class="mioos-entry-icon">[[ entry.icon ]]</span>
         <span class="mioos-entry-title">[[ entry.title ]]</span>
       </button>
@@ -207,6 +207,12 @@
         <button type="button" @click="explorerPromptUpload(contextMenuExplorerTargetWindow())">Upload…</button>
         <button type="button" @click="contextMenuDownloadSelected()" :disabled="!contextMenuExplorerTargetItem()">Download</button>
         <button type="button" @click="contextMenuDeleteSelected()" :disabled="!contextMenuExplorerTargetItem()">Delete</button>
+        <hr>
+        <button type="button" @click="setExplorerViewMode(contextMenuExplorerTargetWindow(), 'details'); closeDesktopContextMenu()">View Details</button>
+        <button type="button" @click="setExplorerViewMode(contextMenuExplorerTargetWindow(), 'list'); closeDesktopContextMenu()">View List</button>
+        <button type="button" @click="setExplorerSort(contextMenuExplorerTargetWindow(), 'name', 'ascending'); closeDesktopContextMenu()">Arrange by Name</button>
+        <button type="button" @click="setExplorerSort(contextMenuExplorerTargetWindow(), 'date-modified', 'descending'); closeDesktopContextMenu()">Arrange by Date Modified</button>
+        <button type="button" @click="setExplorerSort(contextMenuExplorerTargetWindow(), 'size', 'descending'); closeDesktopContextMenu()">Arrange by Size</button>
         <hr>
         <button type="button" @click="openFolderPropertiesWindow(contextMenuExplorerTargetWindow(), contextMenuExplorerTargetItem() || contextMenuExplorerTargetFolder(), 'general'); closeDesktopContextMenu()">Properties</button>
       </template>
@@ -252,7 +258,7 @@
             <div class="mioos-classic-panelhead">
               <div>
                 <strong>[[ (((win.explorerState || {}).folder || {}).name) || 'Home' ]]</strong>
-                <span>Browse Home and Desktop, upload files, create folders, and manage shell content.</span>
+                
               </div>
               <div class="mioos-classic-toolbar-group">
                 <button type="button" class="mioos-classic-tool" @click="explorerCreateFolder(win.id)">New Folder</button>
@@ -275,7 +281,6 @@
               </div>
             </div>
             <div class="mioos-classic-addressbar">
-              <span>Location</span>
               <div class="mioos-classic-breadcrumbs">
                 <template v-for="crumb in explorerBreadcrumbs(win)" :key="crumb.path">
                   <button type="button" v-if="!crumb.isCurrent" @click="explorerNavigateToPath(win.id, crumb.path)">[[ crumb.label ]]</button>
@@ -283,8 +288,7 @@
                   <span v-if="!crumb.isCurrent">›</span>
                 </template>
               </div>
-              <button type="button" class="mioos-classic-tool" @click="explorerGoToAddress(win.id)">Go</button>
-              <label class="mioos-classic-searchfield"><input type="search" v-model="(win.explorerState || {}).searchQuery" placeholder="Search files and folders"></label>
+              <label class="mioos-classic-searchfield"><input type="search" v-model="(win.explorerState || {}).searchQuery" placeholder="Search current folder"></label>
             </div>
             <section class="mioos-classic-explorer-layout" @contextmenu.prevent.stop="openFolderContextMenu(win.id, $event)">
               <aside class="mioos-classic-explorer-nav">
@@ -373,7 +377,7 @@
             </div>
             <div class="mioos-classic-transferstack">
               <section class="mioos-classic-transferoverview">
-                <div class="mioos-classic-transferoverview-copy">
+                <div class="mioos-classic-transferoverview-copy mioos-classic-transferfacts">
                   <strong>[[ transferSummaryText() ]]</strong>
                   <span>[[ transferActiveCount() ]] active • [[ transferPausedCount() ]] paused • [[ transferCompletedCount() ]] completed • [[ transferFailedCount() ]] failed</span>
                 </div>
@@ -534,13 +538,10 @@
           <div class="mioos-classic-shell mioos-classic-customize" :data-theme-studio-window="win.id">
             <div class="mioos-classic-panelhead">
               <div>
-                <strong>Theme Editor</strong>
-                <span>Unified shell customization for classic, glass, dock, and warm panel desktop families.</span>
+                <strong>Customize</strong>
+                <span>Server-backed shell appearance, launcher, explorer, and desktop tuning.</span>
               </div>
               <div class="mioos-classic-toolbar-group">
-                <button type="button" class="mioos-classic-tool" @click="themeStudioResetProfile(win.id)">Reset</button>
-                <button type="button" class="mioos-classic-tool" @click="themeStudioImportProfile(win.id)">Import</button>
-                <button type="button" class="mioos-classic-tool" @click="themeStudioExportProfile(win.id)">Export</button>
                 <button type="button" class="mioos-classic-tool" @click="themeStudioLoadRemote()">Reload Saved</button>
               </div>
             </div>
@@ -561,7 +562,7 @@
                   </div>
                 </section>
               </aside>
-              <section class="mioos-classic-customize-main">
+              <section class="mioos-classic-customize-main" @input="themeStudioPreviewCurrent(win.id)" @change="themeStudioPreviewCurrent(win.id)">
                 <div class="mioos-classic-previewband">
                   <div>
                     <span class="mioos-classic-previewlabel">Desktop Preview</span>
@@ -594,33 +595,21 @@
                   <section v-if="themeStudioState(win).activeTab === 'general'" class="mioos-classic-formsection">
                     <div class="mioos-classic-formgrid">
                       <label><span>Theme name</span><input type="text" v-model="themeStudioState(win).profile.name"></label>
-                      <label><span>Theme family</span><select v-model="themeStudioState(win).profile.familyKey"><option value="meadow-classic">Meadow Classic</option><option value="glass-horizon">Glass Horizon</option><option value="graphite-dock">Graphite Dock</option><option value="ember-panel">Ember Panel</option></select></label>
                       <label><span>Appearance mode</span><select v-model="themeStudioState(win).profile.mode"><option value="light">light</option><option value="dark">dark</option></select></label>
-                      <label><span>Desktop target</span><select v-model="themeStudioState(win).profile.appearance.target"><option value="mouse-keyboard-desktop">Mouse / keyboard desktop</option><option value="hybrid-desktop">Hybrid desktop</option></select></label>
+                      <label><span>Shell density</span><select v-model="themeStudioState(win).profile.appearance.density"><option value="compact">compact</option><option value="comfortable">comfortable</option><option value="spacious">spacious</option></select></label>
+                      <label><span>Wallpaper fit</span><select v-model="themeStudioState(win).profile.desktop.wallpaperFit"><option value="cover">cover</option><option value="contain">contain</option><option value="center">center</option><option value="tile">tile</option></select></label>
                     </div>
-                    <fieldset class="mioos-classic-fieldset">
-                      <legend>Family coverage</legend>
-                      <div class="mioos-classic-checkgrid">
-                        <label><input type="checkbox" v-model="themeStudioState(win).profile.coverage.meadowClassic"> Meadow Classic</label>
-                        <label><input type="checkbox" v-model="themeStudioState(win).profile.coverage.glassHorizon"> Glass Horizon</label>
-                        <label><input type="checkbox" v-model="themeStudioState(win).profile.coverage.graphiteDock"> Graphite Dock</label>
-                        <label><input type="checkbox" v-model="themeStudioState(win).profile.coverage.emberPanel"> Ember Panel</label>
-                      </div>
-                    </fieldset>
+                    <div class="mioos-classic-inlineactions">
+                      <button type="button" class="mioos-classic-tool" @click="themeStudioUploadWallpaper(win.id).then(function(){ themeStudioPreviewCurrent(win.id); })">Upload wallpaper…</button>
+                      <button type="button" class="mioos-classic-tool" @click="themeStudioClearWallpaper(win.id)">Clear wallpaper</button>
+                    </div>
                   </section>
                   <section v-else-if="themeStudioState(win).activeTab === 'modes'" class="mioos-classic-formsection">
                     <div class="mioos-classic-inlinegrid">
-                      <label><span>Wallpaper top</span><input type="color" v-model="themeStudioState(win).profile.desktop.wallpaperTop"></label>
-                      <label><span>Wallpaper middle</span><input type="color" v-model="themeStudioState(win).profile.desktop.wallpaperMiddle"></label>
-                      <label><span>Wallpaper bottom</span><input type="color" v-model="themeStudioState(win).profile.desktop.wallpaperBottom"></label>
-                      <label><span>Accent</span><input type="color" v-model="themeStudioState(win).profile.appearance.accent"></label>
-                    </div>
-                    <div class="mioos-classic-formgrid">
-                      <label><span>Wallpaper mode</span><select v-model="themeStudioState(win).profile.appearance.wallpaperMode"><option value="gradient-gloss">gradient-gloss</option><option value="custom-url">custom-url</option></select></label>
-                      <label><span>Wallpaper fit</span><select v-model="themeStudioState(win).profile.desktop.wallpaperFit"><option value="cover">cover</option><option value="contain">contain</option><option value="center">center</option><option value="tile">tile</option></select></label>
-                      <label><span>Wallpaper image</span><input type="text" v-model="themeStudioState(win).profile.desktop.wallpaperUrl" placeholder="Blob URL from uploaded wallpaper"></label>
                       <label><span>Desktop color</span><input type="color" v-model="themeStudioState(win).profile.desktop.color"></label>
-                      <div class="mioos-classic-inlineactions"><button type="button" class="mioos-classic-tool" @click="themeStudioUploadWallpaper(win.id)">Upload wallpaper…</button></div>
+                      <label><span>Accent</span><input type="color" v-model="themeStudioState(win).profile.appearance.accent"></label>
+                      <label><span>Panel text</span><input type="color" v-model="themeStudioState(win).profile.colors.panelText"></label>
+                      <label><span>Border</span><input type="color" v-model="themeStudioState(win).profile.colors.border"></label>
                     </div>
                   </section>
                   <section v-else-if="themeStudioState(win).activeTab === 'shell'" class="mioos-classic-formsection">
@@ -690,11 +679,8 @@
                     <div class="mioos-classic-checkgrid">
                       <label><input type="checkbox" v-model="themeStudioState(win).profile.validation.contrast"> Warn on low contrast</label>
                       <label><input type="checkbox" v-model="themeStudioState(win).profile.validation.touchTargets"> Warn on small targets</label>
-                      <label><input type="checkbox" v-model="themeStudioState(win).profile.exports.cssVariables"> Export CSS variables</label>
-                      <label><input type="checkbox" v-model="themeStudioState(win).profile.exports.runtimePatch"> Export runtime patch</label>
+                      <label><input type="checkbox" v-model="themeStudioState(win).profile.effects.blurEnabled"> Enable blur effects</label>
                     </div>
-                    <label><span>Custom variables JSON</span><textarea v-model="themeStudioState(win).profile.customVariablesJson" rows="6"></textarea></label>
-                    <label><span>Extra CSS</span><textarea v-model="themeStudioState(win).profile.extraCss" rows="5"></textarea></label>
                   </section>
                 </div>
                 <div class="mioos-classic-dialogactions">
@@ -703,10 +689,7 @@
                   <button type="button" class="mioos-classic-tool" @click="themeStudioSaveProfile(win.id)">Save Theme</button>
                   <button type="button" class="mioos-classic-tool default" @click="themeStudioApplyCurrent(win.id)">Apply</button>
                 </div>
-                <div class="mioos-classic-exportbox" v-if="themeStudioState(win).exportText">
-                  <strong>Theme JSON</strong>
-                  <textarea v-model="themeStudioState(win).exportText" rows="8"></textarea>
-                </div>
+
               </section>
             </div>
           </div>

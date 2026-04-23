@@ -224,6 +224,9 @@
           .then(function (msg) {
             var view = (msg && msg.view) ? msg.view : {};
             self.view = window.MIOOSState.normalizeView(view || {});
+            if (self.syncDesktopFolderEntries) {
+              return self.syncDesktopFolderEntries().then(function () { return self.view; });
+            }
             return self.view;
           })
           .catch(function (err) {

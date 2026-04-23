@@ -2,7 +2,12 @@ MIOOSFS ; MIOOS global-backed virtual file system
 	QUIT
 	;
 DESKTOPID()
-	NEW ID
+	NEW HID,ID
+	SET HID=$$HOMEID()
+	IF HID'="" DO
+	. SET ID=$GET(^MIO("MIOOS","FS","CHILD",HID,"Desktop"))
+	. IF ID'="",$$EXISTS(ID),$$FIELD(ID,1)="folder" QUIT
+	IF $GET(ID)'="",$$EXISTS(ID),$$FIELD(ID,1)="folder" QUIT ID
 	SET ID=$GET(^MIO("MIOOS","FS","CHILD","root","Desktop"))
 	IF ID'="",$$EXISTS(ID),$$FIELD(ID,1)="folder" QUIT ID
 	QUIT "root"
@@ -15,19 +20,31 @@ CHUNK(CONF)
 	QUIT N
 	;
 INIT(CONF)
-	NEW OWNER,ROLES,ROOT,DOCS,DESK,NOW
+	NEW OWNER,ROLES,ROOT,DOCS,DESK,NOW,LEGACY
 	SET OWNER=$GET(CONF("mioos","bootstrapAuth","admin","username"),"admin")
 	SET ROLES="admin,operator,guest"
 	IF '$DATA(^MIO("MIOOS","FS","SEQ")) SET ^MIO("MIOOS","FS","SEQ")=0
 	SET NOW=$HOROLOG
 	DO SAVEENTRY("root","folder","","/","inode/directory",0,NOW,NOW,OWNER,ROLES,1,1,1)
-	DO ENSUREFOLDER("root","Desktop",OWNER,ROLES,.DESK)
 	DO ENSUREFOLDER("root","Home",OWNER,ROLES,.DOCS)
+	SET LEGACY=$GET(^MIO("MIOOS","FS","CHILD","root","Desktop"))
+	DO ENSUREFOLDER(DOCS,"Desktop",OWNER,ROLES,.DESK)
+	IF LEGACY'="",LEGACY'=DESK,$$EXISTS(LEGACY),$$FIELD(LEGACY,1)="folder" DO
+	. KILL ^MIO("MIOOS","FS","CHILD","root","Desktop")
+	. KILL ^MIO("MIOOS","FS","CHILD",DOCS,"Desktop")
+	. SET ^MIO("MIOOS","FS","CHILD",DOCS,"Desktop")=LEGACY
+	. SET $PIECE(^MIO("MIOOS","FS","ENTRY",LEGACY),"^",2)=DOCS
+	. SET DESK=LEGACY
 	DO SETMETAFLD(DOCS,"folderBackground","wallpaper:home")
 	DO SETMETAFLD(DOCS,"folderIcon","🏠")
 	DO SETMETAFLD(DOCS,"viewMode","details")
 	DO SETMETAFLD(DOCS,"sortBy","name")
 	DO SETMETAFLD(DOCS,"sortDirection","ascending")
+	DO SETMETAFLD(DESK,"folderBackground",$$METAFIELD(DESK,"folderBackground"))
+	DO SETMETAFLD(DESK,"folderIcon",$SELECT($$METAFIELD(DESK,"folderIcon")'="":$$METAFIELD(DESK,"folderIcon"),1:"🖥"))
+	DO SETMETAFLD(DESK,"viewMode",$SELECT($$METAFIELD(DESK,"viewMode")'="":$$METAFIELD(DESK,"viewMode"),1:"details"))
+	DO SETMETAFLD(DESK,"sortBy",$SELECT($$METAFIELD(DESK,"sortBy")'="":$$METAFIELD(DESK,"sortBy"),1:"name"))
+	DO SETMETAFLD(DESK,"sortDirection",$SELECT($$METAFIELD(DESK,"sortDirection")'="":$$METAFIELD(DESK,"sortDirection"),1:"ascending"))
 	QUIT
 	;
 ENSUREFOLDER(PARENT,NAME,OWNER,ROLES,OUTID)
@@ -133,6 +150,7 @@ RESOLVE(PATH,OUTID,ERR)
 	IF PATH="root" SET OUTID="root" QUIT 1
 	IF PATH="Home"!(PATH="/Home") SET OUTID=$$HOMEID() QUIT $SELECT(OUTID'="":1,1:0)
 	IF PATH="Documents"!(PATH="/Documents") SET OUTID=$$HOMEID() QUIT $SELECT(OUTID'="":1,1:0)
+	IF PATH="Desktop"!(PATH="/Desktop") SET OUTID=$$DESKTOPID() QUIT $SELECT(OUTID'="":1,1:0)
 	IF $EXTRACT(PATH,1)'="/" SET PATH="/"_PATH
 	SET NODE="root"
 	IF PATH="/" SET OUTID=NODE QUIT 1
@@ -478,6 +496,7 @@ SEARCH1(STATE,PID,TERM,RECURSE,LIMIT,COUNT,ROOT,ERR)
 	FOR  SET NAME=$ORDER(^MIO("MIOOS","FS","CHILD",PID,NAME)) QUIT:NAME=""!(COUNT'<LIMIT)  DO
 	. SET ID=$GET(^MIO("MIOOS","FS","CHILD",PID,NAME))
 	. IF '$$CAN(ID,.STATE,"read") QUIT
+	. IF +$$METAFIELD(ID,"hidden") QUIT
 	. SET LOW=$$LOW^MIOUTIL($GET(NAME))
 	. IF TERM=""!(LOW[TERM) DO
 	. . KILL META
@@ -538,6 +557,7 @@ LIST(STATE,PARENT,OUT,ERR)
 	FOR  SET NAME=$ORDER(^MIO("MIOOS","FS","CHILD",PID,NAME)) QUIT:NAME=""  DO
 	. SET ID=$GET(^MIO("MIOOS","FS","CHILD",PID,NAME))
 	. IF '$$CAN(ID,.STATE,"read") QUIT
+	. IF +$$METAFIELD(ID,"hidden") QUIT
 	. KILL META
 	. SET OK=$$META(.STATE,ID,.META,.ERR)
 	. IF 'OK QUIT
@@ -688,6 +708,7 @@ FOLDERSTAT(ID,OUT)
 	SET (FCNT,DCNT)=0,NAME=""
 	FOR  SET NAME=$ORDER(^MIO("MIOOS","FS","CHILD",$GET(ID),NAME)) QUIT:NAME=""  DO
 	. SET CHILD=$GET(^MIO("MIOOS","FS","CHILD",$GET(ID),NAME))
+	. IF +$$METAFIELD(CHILD,"hidden") QUIT
 	. SET KIND=$$FIELD(CHILD,1)
 	. IF KIND="folder" SET DCNT=DCNT+1 QUIT
 	. SET FCNT=FCNT+1

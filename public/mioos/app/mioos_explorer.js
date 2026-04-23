@@ -112,6 +112,24 @@
     return out;
   }
 
+  function normalizeUploadEntries(filesLike) {
+    var rows = [];
+    var list = [];
+    var i;
+    if (!filesLike) return rows;
+    if (typeof filesLike.length === 'number' && typeof filesLike !== 'string') {
+      for (i = 0; i < filesLike.length; i += 1) list.push(filesLike[i]);
+    } else {
+      list = [filesLike];
+    }
+    list.forEach(function (entry) {
+      if (!entry) return;
+      if (entry.file) { rows.push(entry); return; }
+      if (typeof File !== 'undefined' && entry instanceof File) { rows.push({ file: entry, name: entry.name, size: entry.size, type: entry.type }); }
+    });
+    return rows;
+  }
+
   function sha256HexBytes(bytes) {
     if (!window.crypto || !window.crypto.subtle) return Promise.resolve('');
     return window.crypto.subtle.digest('SHA-256', bytes instanceof Uint8Array ? bytes : stringToBytes(bytes)).then(function (hash) {
@@ -661,6 +679,7 @@
           state.sortDirection = folder.sortDirection || state.sortDirection || 'ascending';
           state.addressInput = folder.path || folder.name || '/';
           state.items = self.sortExplorerItems(items, state.sortBy, state.sortDirection);
+          if (state.folderId === ((((self.boot || {}).vfs || {}).desktopId) || '')) self.desktopUi.viewMode = state.viewMode || 'details';
           state.loading = false;
           state.selection = null;
           state.preview = { title: '', content: '', mime: 'text/plain', imageSrc: '', mediaSrc: '', mediaKind: '' };
@@ -810,10 +829,14 @@
         this.loadExplorerFolder(windowId, parentId, { selectFirst: true });
       },
       refreshExplorerWindow: function (windowId) {
+        var self = this;
         var win = this.windows.find(function (entry) { return entry.id === windowId; });
         var state = this.ensureExplorerWindowState(win);
         if (!state) return Promise.resolve();
-        return this.loadExplorerFolder(windowId, state.folderId, { selectFirst: false });
+        return this.loadExplorerFolder(windowId, state.folderId, { selectFirst: false }).then(function (msg) {
+          if (self.syncDesktopFolderEntries) return self.syncDesktopFolderEntries().then(function () { return msg; });
+          return msg;
+        });
       },
       uploadFilesToExplorer: function (windowId, filesLike) {
         var self = this;
@@ -1893,6 +1916,7 @@
         var state = this.ensureExplorerWindowState(win);
         if (!state) return;
         state.viewMode = mode || 'details';
+        if (state.folderId === ((((this.boot || {}).vfs || {}).desktopId) || '')) this.desktopUi.viewMode = state.viewMode;
         this.saveFolderPresentation(windowId);
       },
       setExplorerSort: function (windowId, sortBy, sortDirection) {
@@ -1959,6 +1983,7 @@
         return this.command('fs.setmeta', { id: ((win.meta || {}).targetId || ''), attributes: { readOnly: +!!form.readOnly, hidden: +!!form.hidden, shared: +!!form.shared }, sharing: { scope: form.shareScope || 'private', users: form.shareUsers || '' }, customize: { background: form.background || '', icon: form.icon || '' } }).then(function () {
           if (self.notifySuccess) self.notifySuccess('Folder Properties', 'Folder settings saved.');
           if ((win.meta || {}).sourceWindowId) self.refreshExplorerWindow((win.meta || {}).sourceWindowId);
+          if (self.syncDesktopFolderEntries) self.syncDesktopFolderEntries();
         }).catch(function (err) {
           if (self.showAlert) self.showAlert('Folder Properties', (err && err.message) || 'save_failed');
         });
@@ -2077,6 +2102,8 @@
               if (state && state.profile && state.profile.desktop) {
                 state.profile.desktop.wallpaperUrl = url;
                 state.profile.appearance.wallpaperMode = 'custom-url';
+                state.profile.desktop.wallpaperPreset = 'custom-url';
+                if (self.themeStudioPreviewCurrent) self.themeStudioPreviewCurrent(windowId);
               }
               resolve(url);
             }).catch(function () { resolve(null); });
