@@ -3087,3 +3087,41 @@ body {
 #mioosRoot{font-family:var(--mioos-font,"Segoe UI",Tahoma,sans-serif);font-size:var(--mioos-base-size,12px)}.mioos-desktop-icon{gap:calc(var(--mioos-icon-grid-gap,16px) / 2)}.mioos-window{border-radius:var(--mioos-window-radius,10px)}.mioos-window-titlebar{min-height:var(--mioos-titlebar-height,34px);font-size:var(--mioos-title-size,12px);background:linear-gradient(180deg,var(--mioos-titlebar,#6f93c7),var(--mioos-titlebar-bottom,#4e6e9f))}.mioos-taskbar{height:var(--mioos-taskbar-height,46px);background:linear-gradient(180deg,var(--mioos-taskbar,#6385bd),var(--mioos-taskbar-dark,#24406f));color:var(--mioos-taskbar-text,#fff)}.mioos-taskbar .mioos-task-button{min-width:var(--mioos-task-min-width,122px)}.mioos-start-button{min-width:var(--mioos-start-min-width,92px);background:linear-gradient(180deg,var(--mioos-start,#7fd25f),var(--mioos-start-bottom,#2f7e22))}.mioos-start-head{background:linear-gradient(180deg,var(--mioos-launcher-header-top,#3769ab),var(--mioos-launcher-header-bottom,#173c6f))}.mioos-classic-sidebar,.mioos-classic-navpane{width:var(--mioos-sidebar-width,220px)}
 .mioos-desktop-icon .mioos-icon-glyph,.mioos-desktop-icon img{width:var(--mioos-icon-size,54px);height:var(--mioos-icon-size,54px)}
 .mioos-classic-customize input,.mioos-classic-customize select,.mioos-classic-customize button{min-height:var(--mioos-control-height,24px)}
+
+/* ROI follow-up: professional shell sizing, live theme tokens, and overflow hardening. */
+#mioosRoot {
+  --mioos-launcher-body: var(--mioos-panel);
+  --mioos-launcher-rail: var(--mioos-panel-2);
+  --mioos-desktop-label-size: 11px;
+}
+.mioos-start-menu { z-index: 32000; max-height: min(var(--mioos-launcher-height, 420px), calc(100vh - var(--mioos-taskbar-height, 46px) - 18px)); overflow: hidden; }
+.mioos-start-menu .mioos-start-body { background: var(--mioos-launcher-body); }
+.mioos-start-menu .mioos-start-right { background: var(--mioos-launcher-rail); }
+.mioos-start-left, .mioos-start-right { min-height: 0; overflow-y: auto; overflow-x: hidden; }
+.mioos-start-item, .mioos-start-link { min-height: 28px; padding-block: 4px; line-height: 1.2; }
+.mioos-start-item span, .mioos-start-link span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mioos-classic-toolbar--explorer,
+.mioos-classic-addressbar { min-height: 0; padding-block: 4px; align-items: center; }
+.mioos-classic-addressbar { display: grid; grid-template-columns: minmax(0, 1fr) minmax(180px, 260px); gap: 8px; }
+.mioos-classic-breadcrumbs { min-height: 24px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.mioos-classic-searchfield { min-height: 24px; height: 26px; }
+.mioos-classic-searchfield input { height: 24px; min-height: 24px; }
+.mioos-classic-explorer-nav { overflow-x: hidden; }
+.mioos-classic-navitem span, .mioos-classic-navitem small { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mioos-classic-detailtable { overflow-x: hidden; }
+.mioos-classic-listhead,
+.mioos-classic-row { grid-template-columns: minmax(160px, 2fr) minmax(116px, .95fr) minmax(96px, .8fr) minmax(70px, .55fr); }
+.mioos-classic-row > *, .mioos-classic-listhead > * { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mioos-classic-listhead > strong:not(:last-child) { border-right: 1px solid rgba(46, 67, 92, .20); resize: horizontal; }
+.mioos-desktop-icons[data-view-mode="list"] { grid-template-columns: minmax(240px, 420px); align-content: start; }
+.mioos-desktop-icons[data-view-mode="details"] { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); align-content: start; }
+.mioos-desktop-icon { font-size: var(--mioos-desktop-label-size, 11px); }
+.mioos-classic-transferrow { min-height: 34px; padding-block: 5px; grid-template-columns: minmax(180px, 2fr) minmax(92px, .75fr) minmax(130px, 1.1fr) minmax(76px, .55fr) auto; }
+.mioos-classic-transfercopy, .mioos-classic-transferstatuscell, .mioos-classic-transfersize { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mioos-classic-transfercopy strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mioos-classic-transfercopy small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mioos-classic-transferrow[data-status="completed"] { background: linear-gradient(180deg, rgba(226, 247, 228, .94), rgba(207, 236, 211, .88)); }
+.mioos-classic-transferrow[data-status="failed"],
+.mioos-classic-transferrow[data-status="cancelled"] { background: linear-gradient(180deg, rgba(255, 232, 232, .96), rgba(248, 210, 210, .9)); }
+.mioos-classic-transferrow[data-status="paused"] { background: linear-gradient(180deg, rgba(255, 245, 218, .96), rgba(246, 228, 178, .9)); }
+.mioos-classic-customize { --mioos-live-preview-border: var(--mioos-border); }

@@ -471,3 +471,10 @@ ROI 54 — shell-standard app actions and built-in app polish
 ## ROI note — transfer robustness, attributes, and live theme wiring
 
 All tests were passing at the start of this ROI. The next hardening pass addressed a real multi-file upload race where commit could happen after the UI reached 100% but before the server had a contiguous chunk set. `mioos_explorer.js` now uses a strict all-chunks-complete check, a commit guard, and `missing_chunk` reconciliation through upload status. The transfer UI now has per-file pause/resume/retry/cancel actions and compact status-colored rows. The VFS read-only attribute is enforced in `CAN^MIOOSFS` for write/delete, including owner access. Customize live preview now maps more profile fields into CSS variables so non-preset tab changes visibly affect the shell.
+
+## ROI follow-up — MIOTPL theme first paint and transfer reconciliation
+
+- Initial MIOOS theme paint is now server-rendered through MIOTPL via `themeInlineStyle` from `MIOOSUI`, avoiding unauthenticated `/api/mioos/theme/load` calls and visible theme lag before sign-in.
+- Authenticated sessions still use the globals-backed Customize theme service for load/save after access is established.
+- Multi-file uploads now wait for upload-status reconciliation before commit, and `MIOOSFSUP` recounts chunk byte totals during commit to avoid false `missing_chunk` failures after 100% client progress.
+- Explorer, Start menu, and transfer surfaces received additional compact sizing and overflow hardening for native-shell behavior with long names and larger item counts.

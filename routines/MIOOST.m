@@ -382,6 +382,7 @@ T014
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_wm.js","beginResize"),"[MIOOST][T014][wm resize method]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","uploadFilesToExplorer"),"[MIOOST][T014][explorer drop upload helper]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","normalizeUploadEntries"),"[MIOOST][T014][multi upload normalizer]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","serverReadyForCommit"),"[MIOOST][T014][commit reconcile status]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","commitStarted"),"[MIOOST][T014][upload commit guard]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","missing_chunk"),"[MIOOST][T014][upload missing chunk reconcile]")
 	QUIT
@@ -1013,6 +1014,9 @@ T051
 		DO EQ^MIOTASSERT($$FILEHAS("templates/layouts/mioos_shell.html","/public/mioos/mioos_shell_overhaul.css"),0,"[MIOOST][T051][overhaul css consolidated]")
 		DO OK^MIOTASSERT($$FILEHAS("templates/layouts/mioos_shell.html","basecoat-css@0.3.2"),"[MIOOST][T051][basecoat augment layout]")
 		DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","themeStudioPresetFamilies"),"[MIOOST][T051][preset family method]")
+		DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","if (!this.requiresSignin) this.themeStudioLoadRemote"),"[MIOOST][T051][theme load after signin]")
+		DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","themeInlineStyle"),"[MIOOST][T051][miotpl theme inline]")
+		DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSUI.m","THEMEINL"),"[MIOOST][T051][server theme inline]")
 		DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","themeStudioLoadRemote"),"[MIOOST][T051][theme load method]")
 		DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","themeStudioSaveRemote"),"[MIOOST][T051][theme save method]")
 		DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","Desktop Preview"),"[MIOOST][T051][desktop preview ui]")

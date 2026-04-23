@@ -342,3 +342,7 @@ This pass keeps the single-desktop shell direction and hardens the remaining UI/
 - Explorer and Start Menu overflow behavior is tightened for large file lists and long names.
 - Customize/theme controls now expose more runtime CSS variables directly so non-preset options visibly apply during live preview.
 - Read-only file/folder attributes are enforced in the VFS permission gate for write/delete operations, including owner operations.
+
+### ROI follow-up: server-rendered theme boot, upload reconciliation, and shell polish
+
+This pass removes the unauthenticated boot-time `/api/mioos/theme/load` request. The initial shell theme is rendered through MIOTPL using inline shell CSS variables from `MIOOSUI`, while the Customize window can still load/save profiles after authenticated shell access. Multi-file upload commit is hardened by reconciling server upload status before finalize and by recounting received chunk bytes during commit. Explorer and transfer surfaces also receive additional compact sizing and overflow hardening for long filenames and large lists.

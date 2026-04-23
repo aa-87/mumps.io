@@ -37,6 +37,7 @@ DESKCTX(STATE,CONF,DATA)
 	SET DATA("shellDialogModel")=$GET(STATE("shellDialogModel"),"shell-modal")
 	SET DATA("windowManager")=$GET(STATE("windowManager"),"mioos-native-vue-css")
 	SET DATA("themeMode")=$GET(STATE("themeMode"),"light")
+	SET DATA("themeInlineStyle")=$$THEMEINL(.STATE)
 	SET DATA("motionPreference")=$GET(STATE("a11yMotionPreference"),"respect-user-preference")
 	SET DATA("windowSnapThreshold")=+$GET(STATE("windowSnapThreshold"),28)
 	SET DATA("windowResizeModel")="all-edges-and-corners"
@@ -47,4 +48,20 @@ DESKCTX(STATE,CONF,DATA)
 	SET DATA("localeDir")=$GET(STATE("localeDir"),"ltr")
 	SET DATA("bootJson")=$$BOOTJSON^MIOOSST(.STATE,.CONF)
 	QUIT
-	;
+THEMEINL(STATE)
+	NEW KEY,MODE,TOP,MID,BOT,TASK1,TASK2,START1,START2,TITLE1,TITLE2,PANEL,TEXT
+	SET KEY=$GET(STATE("themeKey"),"glass-horizon-light"),MODE=$GET(STATE("themeMode"),"light")
+	SET TOP="#2d66c2",MID="#153a79",BOT="#0d244b",TASK1="#6385bd",TASK2="#24406f",START1="#7fd25f",START2="#2f7e22",TITLE1="#6f93c7",TITLE2="#4e6e9f",PANEL="#f8fbff",TEXT="#173455"
+	IF KEY["meadow-classic" DO
+	. SET TOP="#7ec85a",MID="#4e9b35",BOT="#1d5f20",TASK1="#4f972c",TASK2="#1f5f1f",START1="#7fd25f",START2="#2f7e22",TITLE1="#8fcf67",TITLE2="#4f972c"
+	IF KEY["graphite-dock" DO
+	. SET TOP="#cfd6df",MID="#8d97a5",BOT="#515868",TASK1="#d9dce4",TASK2="#8d93a0",START1="#f7f8fb",START2="#c8ccd7",TITLE1="#d7dbe4",TITLE2="#8e96a5",TEXT="#2e3440"
+	IF KEY["ember-panel" DO
+	. SET TOP="#e58c46",MID="#9a4d29",BOT="#4e1e18",TASK1="#f0a05d",TASK2="#7b2f1d",START1="#f3b36c",START2="#b94f2a",TITLE1="#ef9a4f",TITLE2="#6d221a",TEXT="#2b1e1a"
+	IF MODE="dark" DO
+	. SET PANEL="#1a2331",TEXT="#eef4fb"
+	. IF KEY["glass-horizon" SET TOP="#1f2d40",MID="#172232",BOT="#0f1621",TASK1="#1d2a3d",TASK2="#111b29",TITLE1="#44556f",TITLE2="#263243"
+	. IF KEY["meadow-classic" SET TOP="#244a2a",MID="#1d2f39",BOT="#101921",TASK1="#223951",TASK2="#111e2d",TITLE1="#42607f",TITLE2="#203246"
+	. IF KEY["graphite-dock" SET TOP="#48505b",MID="#262b33",BOT="#12161d",TASK1="#2e343f",TASK2="#171c23",TITLE1="#6b7280",TITLE2="#39414d"
+	. IF KEY["ember-panel" SET TOP="#5e2b22",MID="#2b1714",BOT="#120d0f",TASK1="#3c241f",TASK2="#1b1110",TITLE1="#7f4333",TITLE2="#43201c"
+	QUIT "--mioos-desktop-background:radial-gradient(circle at 18% 20%,rgba(255,255,255,.20),transparent 26%),linear-gradient(180deg,"_TOP_" 0%,"_MID_" 52%,"_BOT_" 100%);--mioos-body-background:linear-gradient(180deg,"_TOP_" 0%,"_MID_" 55%,"_BOT_" 100%);--mioos-taskbar:"_TASK1_";--mioos-taskbar-dark:"_TASK2_";--mioos-start:"_START1_";--mioos-start-bottom:"_START2_";--mioos-titlebar:"_TITLE1_";--mioos-titlebar-bottom:"_TITLE2_";--mioos-panel:"_PANEL_";--mioos-text:"_TEXT_";"

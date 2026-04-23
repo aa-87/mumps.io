@@ -52,3 +52,7 @@ Profiles are editable and exportable. Active theme selection is preserved throug
 ## Runtime token application update
 
 The Customize window now applies more user-editable profile fields directly as runtime CSS variables instead of relying on preset-family changes only. The active profile drives taskbar height/color, start button sizing/colors, launcher width/height/header colors, titlebar sizing/colors, sidebar width, icon size/spacing, control height, density, and wallpaper URL/fit. Saving persists the normalized profile through the globals-backed theme route, and boot-time load can reapply the saved active profile with minimal startup work.
+
+### Server-rendered first paint
+
+The shell no longer depends on an authenticated theme-load XHR before sign-in. `MIOOSUI` emits a small MIOTPL-rendered inline theme variable block on `#mioosRoot`, giving the login and first desktop paint a stable themed appearance. After sign-in, the Customize window and authenticated shell session may call the globals-backed theme service to load and save detailed profiles.

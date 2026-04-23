@@ -171,7 +171,7 @@
         this.normalizeDesktopUiState();
         this.applyBootThemeDefaults();
         this.applyPersistedThemeStudioProfile();
-        this.themeStudioLoadRemote();
+        if (!this.requiresSignin) this.themeStudioLoadRemote();
         this.applyDocumentLocale();
         this.startClock();
         if (!this.requiresSignin) {
@@ -537,7 +537,15 @@
           return (this.activeTransfers() || [])[0] || (this.completedTransfers() || [])[0] || null;
         },
         transferQueueRows: function (limit) {
-          var rows = (this.transferCenter.items || []).slice();
+          var seen = {};
+          var rows = (this.transferCenter.items || []).filter(function (item) {
+            var key;
+            if (!item) return false;
+            key = item.id || [item.kind || "", item.name || "", item.totalBytes || 0, item.status || "", item.resume && item.resume.uploadId || ""].join("|");
+            if (seen[key]) return false;
+            seen[key] = 1;
+            return true;
+          });
           rows.sort(function (a, b) { return +((b && (b.updatedAt || b.startedAt || 0)) || 0) - +((a && (a.updatedAt || a.startedAt || 0)) || 0); });
           return rows.slice(0, Math.max(1, +(limit || 8)));
         },
@@ -1887,6 +1895,7 @@
         },
         themeStudioLoadRemote: function () {
           var self = this;
+          if (this.requiresSignin) return Promise.resolve(null);
           return this.themeStudioRequest('themeLoad', this.themeStudioRemotePayload()).then(function (msg) {
             var profiles = [];
             var i = 0;
@@ -1976,6 +1985,9 @@
             '--mioos-selection-opacity': Math.max(8, +(desktop.selectionOpacity || 25)) + '%',
             '--mioos-icon-grid-gap': Math.max(8, +(desktop.iconSpacing || 16)) + 'px',
             '--mioos-icon-size': Math.max(32, +(desktop.iconSize || 54)) + 'px',
+            '--mioos-desktop-label-size': Math.max(10, +(desktop.labelSize || 11)) + 'px',
+            '--mioos-launcher-body': this.themeStudioSanitizeColor(launcher.bodyBackground || colors.panel || '#f9fbff', '#f9fbff'),
+            '--mioos-launcher-rail': this.themeStudioSanitizeColor(launcher.rightBackground || colors.panelAlt || '#dfe8f6', '#dfe8f6'),
             '--mioos-control-height': Math.max(20, +(metrics.controlHeight || 24)) + 'px',
             '--mioos-shadow': '0 ' + Math.max(10, +(metrics.shadowDepth || 18)) + 'px ' + Math.max(22, +(metrics.shadowDepth || 18) * 2) + 'px rgba(17, 31, 52, 0.24)',
             '--mioos-shell-glass-top': 'rgba(255,255,255,' + (0.70 + (Math.min(60, +(effects.transparency || 38)) / 1000)).toFixed(2) + ')',

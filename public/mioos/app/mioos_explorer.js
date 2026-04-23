@@ -1097,6 +1097,23 @@
                 if (!transferControl.paused && !transferControl.cancelled) pump();
               }, uploadRetryDelay(attempt));
             }
+            function serverReadyForCommit(attempt) {
+              attempt = +(attempt || 0);
+              return httpJson(((((self.boot || {}).routes || {}).fsUploadStatus) || '/api/mioos/fs/upload/status'), { uploadId: uploadId }).then(function (msg) {
+                var payload = payloadRoot(msg);
+                var nextIndex = +(payload.nextIndex || 1);
+                var contiguousBytes = +(payload.contiguousBytes || 0);
+                if ((contiguousBytes >= file.size || file.size === 0) && nextIndex > transferControl.totalChunks) return true;
+                transferControl.completedBytes = Math.max(transferControl.completedBytes || 0, contiguousBytes || 0);
+                transferControl.nextIndex = nextIndex > 0 ? nextIndex : transferControl.nextIndex;
+                syncProgress('Waiting for upload reconciliation', true);
+                if (attempt >= 8) return true;
+                return new Promise(function (resolve) { window.setTimeout(resolve, 120 + (attempt * 80)); }).then(function () { return serverReadyForCommit(attempt + 1); });
+              }).catch(function () {
+                if (attempt >= 2) return true;
+                return new Promise(function (resolve) { window.setTimeout(resolve, 160); }).then(function () { return serverReadyForCommit(attempt + 1); });
+              });
+            }
             function reconcileCommitFailure(err) {
               transferControl.finalizeRetries = (transferControl.finalizeRetries || 0) + 1;
               if (transferControl.finalizeRetries > 3) throw err;
@@ -1121,7 +1138,7 @@
             function commitUpload() {
               if (transferControl.commitStarted) return Promise.resolve();
               transferControl.commitStarted = true;
-              return httpJson((((self.boot || {}).routes || {}).fsUploadCommit || '/api/mioos/fs/upload/commit'), { uploadId: uploadId }).then(finalize).catch(function (err) {
+              return serverReadyForCommit(0).then(function () { return httpJson(((((self.boot || {}).routes || {}).fsUploadCommit) || '/api/mioos/fs/upload/commit'), { uploadId: uploadId }); }).then(finalize).catch(function (err) {
                 transferControl.commitStarted = false;
                 if ((err && err.message) === 'network_error' || !navigatorOnline()) return pauseForDisconnect('Paused before finalize');
                 if ((err && err.message) === 'missing_chunk' || ((err && err.body || {}).error === 'missing_chunk') || isTransientUploadStatus(err && err.status)) return reconcileCommitFailure(err).catch(function (innerErr) { fail(innerErr, 'fs_upload_commit_failed'); });
