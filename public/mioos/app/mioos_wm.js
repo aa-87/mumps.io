@@ -368,6 +368,7 @@
         if (this.shellUi) this.shellUi.trayOpen = false;
         this.closeDesktopContextMenu();
         this.closeWindowMenu();
+        if (this.closeAllFolderContextMenus) this.closeAllFolderContextMenus();
         this.menuOpen = !this.menuOpen;
         if (this.menuOpen && this.closeWindowSwitcher) this.closeWindowSwitcher();
       },

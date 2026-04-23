@@ -329,7 +329,7 @@ T011
 	DO CONFDEF^MIOOS(.CONF)
 	DO INIT^MIOOS(.CONF)
 	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T011][load]")
-	SET ROOT=$$HOMEID^MIOOSFS()
+	SET ROOT="/Home"
 	DO OK^MIOTASSERT($$LIST^MIOOSFS(.STATE,ROOT,.OUT,.ERR),"[MIOOST][T011][list root]")
 	DO EQ^MIOTASSERT(+$GET(OUT("count"))>0,1,"[MIOOST][T011][root entries]")
 	KILL OUT DO OK^MIOTASSERT($$MKDIR^MIOOSFS(.STATE,ROOT,"Tests",.OUT,.ERR),"[MIOOST][T011][mkdir]")
@@ -351,6 +351,7 @@ T011
 	DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T011][ws fs decode]")
 	DO EQ^MIOTASSERT($GET(OBJ("event")),"desktop.result","[MIOOST][T011][ws event]")
 	DO EQ^MIOTASSERT($GET(OBJ("command")),"fs.list","[MIOOST][T011][ws command]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("vfs","count"))>0,1,"[MIOOST][T011][ws parent target]")
 	QUIT
 	;
 	;
@@ -1003,6 +1004,7 @@ T052
 	DO EQ^MIOTASSERT(+$GET(BOOT("desktop","shellSurfaces","notifications")),1,"[MIOOST][T052][notifications surface]")
 	DO EQ^MIOTASSERT(+$GET(BOOT("desktop","shellSurfaces","dialogs")),1,"[MIOOST][T052][dialogs surface]")
 	DO EQ^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-notification-stack"),0,"[MIOOST][T052][legacy notification stack removed]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-notification-stack"),0,"[MIOOST][T052][legacy notification css removed]")
 	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-shell-dialog"),"[MIOOST][T052][shell dialog ui]")
 	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-tray-panel"),"[MIOOST][T052][tray panel ui]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","pushNotification"),"[MIOOST][T052][push notification method]")

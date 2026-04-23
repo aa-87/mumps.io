@@ -1447,10 +1447,16 @@
         },
         openDesktopContextMenu: function (event) {
           if (!event) return;
+          if (this.closeAllFolderContextMenus) this.closeAllFolderContextMenus();
+          if (this.closeWindowMenu) this.closeWindowMenu();
+          if (this.shellUi) this.shellUi.trayOpen = false;
           this.desktopUi.contextMenu = { open: true, type: 'desktop', key: '', left: event.clientX, top: event.clientY };
         },
         openDesktopIconContextMenu: function (entry, event) {
           if (!entry || !event) return;
+          if (this.closeAllFolderContextMenus) this.closeAllFolderContextMenus();
+          if (this.closeWindowMenu) this.closeWindowMenu();
+          if (this.shellUi) this.shellUi.trayOpen = false;
           this.selectDesktopEntry(entry);
           this.desktopUi.contextMenu = { open: true, type: 'icon', key: entry.key, left: event.clientX, top: event.clientY };
         },

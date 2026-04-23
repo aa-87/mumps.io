@@ -154,10 +154,10 @@
             <span>[[ boot.user.authenticated ? boot.user.displayName : t('auth.notSignedIn') ]]</span>
             <span>[[ socketConnected ? t('socket.live') : t('socket.offline') ]]</span>
           </div>
-          <label class="mioos-start-locale" v-if="localeOptions().length">
+          <label class="mioos-start-locale" v-if="localeOptions.length">
             <span>Language</span>
             <select :value="currentLocale.code" @change="changeLocale($event.target.value)">
-              <option v-for="locale in localeOptions()" :key="locale.code" :value="locale.code">[[ locale.label ]]</option>
+              <option v-for="locale in localeOptions" :key="locale.code" :value="locale.code">[[ locale.label ]]</option>
             </select>
           </label>
           <div class="mioos-start-actions">

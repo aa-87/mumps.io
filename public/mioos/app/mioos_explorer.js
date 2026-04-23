@@ -156,6 +156,34 @@
     return (msg && (msg.vfs || msg.fs || msg.download || msg.result || msg)) || {};
   }
 
+  function resolveExplorerBrowser(event) {
+    var node = event && (event.target || event.currentTarget);
+    if (node && node.closest) return node.closest('.mioos-classic-browser');
+    return null;
+  }
+
+  function transportSortValue(value) {
+    var date;
+    var parts;
+    var days;
+    var seconds;
+    if (value == null || value === '') return 0;
+    if (typeof value === 'number') return value;
+    if (typeof value === 'string') {
+      parts = value.split(',');
+      if (parts.length === 2 && /^-?\d+$/.test(parts[0]) && /^-?\d+$/.test(parts[1])) {
+        days = Number(parts[0]);
+        seconds = Number(parts[1]);
+        return (days * 86400) + seconds;
+      }
+      date = Date.parse(value);
+      if (!isNaN(date)) return date;
+      value = Number(value);
+      if (!isNaN(value)) return value;
+    }
+    return 0;
+  }
+
   function extractItems(payload) {
     var raw = clone((payload && (payload.entries || payload.items || payload.children || (payload.folder || {}).entries)) || []);
     var out = [];
@@ -609,10 +637,15 @@
         var self = this;
         var win = this.windows.find(function (item) { return item.id === windowId; });
         var state = this.ensureExplorerWindowState(win);
+        var target = { id: folderId };
+        var knownPath = '';
         if (!win || !state || !folderId || !this.command) return Promise.resolve();
+        if (state.folder && state.folder.id === folderId && state.folder.path) knownPath = state.folder.path;
+        if (!knownPath && folderId === (((this.boot || {}).vfs || {}).homeId)) knownPath = '/Home';
+        target.parent = knownPath || folderId;
         state.loading = true;
         state.error = '';
-        return this.command('fs.list', { id: folderId, parent: folderId }).then(function (msg) {
+        return this.command('fs.list', target).then(function (msg) {
           var payload = payloadRoot(msg);
           var folder = extractFolder(payload, folderId);
           var items = extractItems(payload);
@@ -1728,7 +1761,7 @@
             if (ak === 'folder') return -1;
             if (bk === 'folder') return 1;
           }
-          if (sortBy === 'date-modified') { av = +(a.modifiedAt || 0); bv = +(b.modifiedAt || 0); }
+          if (sortBy === 'date-modified') { av = transportSortValue(a.modifiedAt || a.updatedAt || a.createdAt || 0); bv = transportSortValue(b.modifiedAt || b.updatedAt || b.createdAt || 0); }
           else if (sortBy === 'size') { av = +(a.size || 0); bv = +(b.size || 0); }
           else if (sortBy === 'type') { av = (a.mime || a.kind || a.type || '').toLowerCase(); bv = (b.mime || b.kind || b.type || '').toLowerCase(); }
           else { av = (a.name || a.title || '').toLowerCase(); bv = (b.name || b.title || '').toLowerCase(); }
@@ -1884,6 +1917,11 @@
         if (!size) return kind === 'file' ? '0 B' : '—';
         return this.formatBytesCompact ? this.formatBytesCompact(size) : (size + ' B');
       },
+      closeAllFolderContextMenus: function () {
+        (this.windows || []).forEach(function (entry) {
+          if (entry && entry.explorerState && entry.explorerState.contextMenu) entry.explorerState.contextMenu.open = false;
+        });
+      },
       openFolderContextMenu: function (windowId, event, item) {
         var browser;
         var rect;
@@ -1894,8 +1932,9 @@
         if (!state) return;
         if (this.closeDesktopContextMenu) this.closeDesktopContextMenu();
         if (this.closeWindowMenu) this.closeWindowMenu();
+        if (this.closeAllFolderContextMenus) this.closeAllFolderContextMenus();
         if (item) this.selectExplorerItem(windowId, item);
-        browser = event && event.currentTarget && event.currentTarget.closest ? event.currentTarget.closest('.mioos-classic-browser') : null;
+        browser = resolveExplorerBrowser(event);
         rect = browser && browser.getBoundingClientRect ? browser.getBoundingClientRect() : null;
         if (rect) {
           left = (event && event.clientX ? event.clientX : rect.left) - rect.left;
@@ -1911,7 +1950,7 @@
       closeFolderContextMenu: function (windowId) {
         var win = this.windows.find(function (entry) { return entry.id === windowId; });
         var state = this.ensureExplorerWindowState(win);
-        if (state) state.contextMenu.open = false;
+        if (state && state.contextMenu) state.contextMenu.open = false;
       }
     }
   };

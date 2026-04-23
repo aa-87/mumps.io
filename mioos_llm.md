@@ -442,3 +442,11 @@ ROI 54 — shell-standard app actions and built-in app polish
 - The active shell now uses one desktop instead of multiple workspaces.
 - Window visibility, taskbar grouping, and terminal launch now operate on one desktop surface.
 - Workspace compatibility fields remain in the boot contract only where they simplify migration.
+
+
+## ROI 57 — classic shell cleanup and VFS routing hardening
+- `fs.list` now resolves explorer targets by `id`, `path`, or `parent` so Home navigation, websocket commands, and folder refreshes all use the same contract.
+- Explorer now closes any open folder context menu before opening another context menu surface, which prevents the desktop menu and folder menu from stacking on top of each other.
+- The active shell keeps tray-panel notifications only; stale explorer menubar/taskpane CSS and the old top-right notification-stack CSS were removed from the runtime stylesheet.
+- The current shell contract remains one desktop rooted at **Home**, with Terminal, Transfers, Customize, and Folder Properties as the first-class built-in windows.
+

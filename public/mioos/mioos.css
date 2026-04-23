@@ -493,7 +493,6 @@ button, input { font: inherit; }
   .mioos-window { inset: 12px 12px 52px 12px !important; width: auto !important; height: auto !important; }
 }
 
-
 .mioos-window-body.is-terminal-body { padding: 0; background: #08101a; }
 .mioos-terminal-shell { display: flex; flex-direction: column; min-height: 100%; background: linear-gradient(180deg, #0f1724 0%, #08101a 100%); color: #d3e7ff; }
 .mioos-terminal-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03); }
@@ -515,9 +514,6 @@ button, input { font: inherit; }
 .mioos-explorer-appframe { display:flex; flex-direction:column; flex:1; min-height:0; border:1px solid #7f9db9; background:#ffffff; box-shadow: inset 0 1px 0 rgba(255,255,255,.85); }
 .mioos-explorer-appframe--foundation { border-radius:6px; overflow:hidden; }
 .mioos-explorer-chrome { display:flex; flex-direction:column; flex:1; min-height:0; background:linear-gradient(180deg,#ffffff 0%,#f4f8fd 100%); }
-.mioos-explorer-menubar { display:flex; align-items:center; gap:2px; padding:3px 8px; min-height:26px; border-bottom:1px solid #c1d2e8; background:linear-gradient(180deg,#fcfdff 0%,#edf3fb 100%); }
-.mioos-explorer-menubar button { border:0; background:transparent; padding:3px 8px; border-radius:3px; color:#17365d; font-size:12px; }
-.mioos-explorer-menubar button:hover { background:rgba(73,132,212,.12); }
 .mioos-explorer-commandbar { display:flex; align-items:center; gap:6px; flex-wrap:wrap; padding:6px 8px; border-bottom:1px solid #c9d8ea; background:linear-gradient(180deg,#f9fbff 0%,#eaf1fb 100%); }
 .mioos-explorer-command { display:inline-flex; align-items:center; gap:8px; min-width:86px; padding:6px 10px; border:1px solid transparent; border-radius:5px; background:transparent; color:#12345a; font-weight:600; }
 .mioos-explorer-command:hover:not(:disabled) { border-color:#9bbce1; background:linear-gradient(180deg,#ffffff 0%,#e6f1ff 100%); }
@@ -530,14 +526,6 @@ button, input { font: inherit; }
 .mioos-explorer-main { display:grid; flex:1; min-height:0; }
 .mioos-explorer-main--foundation { grid-template-columns:220px minmax(0,1fr) 270px; gap:0; background:#fff; }
 .mioos-explorer-sidebar--foundation { padding:10px; gap:10px; background:linear-gradient(180deg,#dff0ff 0%,#cce4fb 30%,#b9d5f4 100%); border-inline-end:1px solid #8fb1d9; }
-.mioos-explorer-taskpane { border:1px solid #7ea2d3; border-radius:7px; overflow:hidden; background:linear-gradient(180deg,#f4faff 0%,#dfefff 100%); box-shadow: inset 0 1px 0 rgba(255,255,255,.9); }
-.mioos-explorer-taskhead { padding:8px 10px; background:linear-gradient(180deg,#1f69c4 0%,#4f91e2 100%); color:#fff; font-weight:700; font-size:12px; }
-.mioos-explorer-taskbody { display:flex; flex-direction:column; gap:4px; padding:10px; }
-.mioos-explorer-tasklink { text-align:left; border:0; background:transparent; color:#0b57a5; padding:4px 0; font-size:12px; }
-.mioos-explorer-tasklink:hover:not(:disabled) { text-decoration:underline; }
-.mioos-explorer-tasklink:disabled { color:#6f87a3; text-decoration:none; }
-.mioos-explorer-taskbody--details { color:#29496d; font-size:12px; line-height:1.45; }
-.mioos-explorer-detailtitle { color:#153964; }
 .mioos-explorer-grid--foundation { display:flex; flex-direction:column; min-width:0; background:#fff; }
 .mioos-explorer-listhead { display:grid; grid-template-columns:1fr 180px; align-items:center; gap:12px; }
 .mioos-explorer-listhead--foundation { padding:7px 12px; border-bottom:1px solid #d4dfef; background:linear-gradient(180deg,#fafcff 0%,#edf4fd 100%); color:#365c87; font-size:12px; }
@@ -612,7 +600,6 @@ button, input { font: inherit; }
   font-weight: 600;
 }
 
-
 .mioos-upload-progress { padding: 8px 12px; }
 .mioos-upload-progress-head { display:flex; gap:10px; align-items:center; font-size:12px; }
 .mioos-upload-progress-head strong { flex:1 1 auto; }
@@ -626,7 +613,6 @@ button, input { font: inherit; }
 .mioos-mediaviewer-body { flex:1 1 auto; display:flex; align-items:center; justify-content:center; padding:12px; background:#111; }
 .mioos-mediaviewer-video { width:100%; height:100%; max-height:100%; background:#000; }
 .mioos-mediaviewer-audio { width:min(100%, 520px); }
-
 
 .mioos-explorer-searchbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .mioos-explorer-searchbar input[type="search"]{min-width:220px;flex:1 1 240px;padding:6px 8px;border:1px solid rgba(19,48,99,.22);border-radius:6px;background:#fff}
@@ -665,7 +651,6 @@ button, input { font: inherit; }
 .mioos-theme-studio-export textarea { width: 100%; margin-top: 8px; }
 @media (max-width: 1100px) { .mioos-theme-studio-layout { grid-template-columns: 1fr; } .mioos-theme-studio-form.two-col, .mioos-theme-studio-form.color-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
-
 .mioos-seven-body { height: 100%; background: linear-gradient(180deg, #f7fbff 0%, #eef5ff 100%); }
 .mioos-explorer-appframe { display: flex; flex-direction: column; height: 100%; }
 .mioos-seven-toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
@@ -695,7 +680,6 @@ button, input { font: inherit; }
 .mioos-transfer-btn { min-width: 72px; }
 .mioos-transfer-copy small { color: #9d1d20; font-size: 11px; }
 
-
 .mioos-desktop-icons { position: relative; min-height: calc(100vh - var(--mioos-taskbar-height, 40px) - 16px); }
 .mioos-desktop-icon { position: absolute; width: 96px; min-height: 92px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 6px; padding: 8px 6px; background: transparent; border: 1px solid transparent; border-radius: 6px; color: var(--mioos-icon-text, #fff); text-shadow: var(--mioos-icon-shadow, 0 1px 2px rgba(0,0,0,.6)); }
 .mioos-desktop-icon .mioos-entry-icon { font-size: 34px; line-height: 1; }
@@ -709,7 +693,6 @@ button, input { font: inherit; }
 .mioos-context-menu button { text-align: left; border: 0; background: transparent; color: #0b1830; padding: 7px 10px; border-radius: 3px; font: inherit; }
 .mioos-context-menu button:hover { background: linear-gradient(180deg, #f7fbff 0%, #dbeafc 100%); }
 .mioos-context-menu hr { width: 100%; border: 0; border-top: 1px solid #d6deea; margin: 4px 0; }
-
 
 .mioos-pdfviewer-shell { display:flex; flex-direction:column; height:100%; }
 .mioos-pdfviewer-head,
@@ -742,7 +725,6 @@ button, input { font: inherit; }
 .mioos-diagnostics-badge.is-connecting, .mioos-diagnostics-badge.is-closing { background: #fff5dd; color: #9a6700; }
 .mioos-diagnostics-empty, .mioos-diagnostics-error { padding: 10px 12px; border-radius: 8px; background: rgba(255,255,255,0.72); }
 .mioos-diagnostics-error { color: #b42318; margin-top: 8px; }
-
 
 .mioos-module-catalog-shell,
 .mioos-module-window-shell {
@@ -900,7 +882,6 @@ button, input { font: inherit; }
   font-size: 12px;
 }
 
-
 .mioos-security-center-shell {
   display: flex;
   height: 100%;
@@ -1004,7 +985,6 @@ button, input { font: inherit; }
   margin: 4px 0;
 }
 
-
 .mioos-debug-center-shell { display: flex; flex-direction: column; height: 100%; }
 .mioos-debug-center-head, .mioos-debug-center-summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .mioos-debug-center-head { margin-bottom: 14px; }
@@ -1025,7 +1005,6 @@ button, input { font: inherit; }
 .mioos-debug-row--head { font-weight:700; color:#334155; }
 .mioos-debug-empty, .mioos-debug-error { color:#64748b; font-size:0.92rem; }
 
-
 .mioos-dialog-scrim { position: fixed; inset: 0; background: rgba(0,0,0,.22); display: flex; align-items: center; justify-content: center; z-index: 1200; }
 .mioos-name-dialog { min-width: 360px; max-width: 520px; }
 .mioos-name-dialog-field { display: flex; flex-direction: column; gap: .35rem; }
@@ -1043,7 +1022,6 @@ button, input { font: inherit; }
 .mioos-transfer-dialog-head { display: flex; justify-content: space-between; align-items: center; gap: .75rem; }
 .mioos-transfer-dialog-progress { display: flex; align-items: center; gap: .75rem; }
 .mioos-transfer-dialog-actions { display: flex; flex-wrap: wrap; gap: .45rem; }
-
 
 /* Wave 1 shell foundation reset */
 .mioos-root[data-theme-key="foundation-light"] {
@@ -1179,57 +1157,6 @@ button, input { font: inherit; }
 .mioos-root.mioos-density-spacious .mioos-window-body { padding: 18px; }
 .mioos-root.mioos-density-spacious .mioos-desktop-icon { width: 96px; min-height: 92px; }
 
-
-/* ROI 53 — shell-standard dialogs, notifications, and built-in app cleanup */
-.mioos-notification-stack {
-  position: fixed;
-  top: 18px;
-  right: 18px;
-  z-index: 4200;
-  display: grid;
-  gap: 10px;
-  width: min(360px, calc(100vw - 28px));
-}
-.mioos-notification {
-  position: relative;
-  border: 1px solid rgba(15, 23, 42, 0.14);
-  border-left: 4px solid var(--mioos-start);
-  border-radius: 12px;
-  background: rgba(255,255,255,0.92);
-  color: var(--mioos-text);
-  box-shadow: 0 14px 30px rgba(0, 24, 64, 0.18);
-  backdrop-filter: blur(14px);
-  padding: 12px 14px 12px 14px;
-}
-.mioos-notification.is-alert { border-left-color: #c62828; }
-.mioos-notification.is-success { border-left-color: #1f8b4c; }
-.mioos-notification.is-info { border-left-color: #2f6fed; }
-.mioos-notification-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 6px;
-}
-.mioos-notification-head small,
-.mioos-notification-detail {
-  color: var(--mioos-muted);
-  font-size: 11px;
-}
-.mioos-notification p { margin: 0; line-height: 1.4; }
-.mioos-notification-close {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-}
-.mioos-notification-close:hover { background: rgba(47, 111, 237, 0.10); }
-
 .mioos-tray { position: relative; }
 .mioos-tray-action {
   display: inline-flex;
@@ -1350,10 +1277,7 @@ button, input { font: inherit; }
   background: linear-gradient(180deg, rgba(255,255,255,0.64), rgba(236,242,251,0.82));
 }
 .mioos-shell-surface--security .mioos-security-center-shell { background: transparent; }
-[dir="rtl"] .mioos-notification-stack { right: auto; left: 18px; }
-[dir="rtl"] .mioos-notification-close { right: auto; left: 6px; }
 [dir="rtl"] .mioos-tray-panel { right: auto; left: 0; }
-
 
 /* ROI 54 — shell persistence, keyboard shortcuts, and accessibility polish */
 .mioos-root[data-reduced-motion="1"],
