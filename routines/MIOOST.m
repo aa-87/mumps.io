@@ -251,7 +251,7 @@ T007
 	DO OK^MIOTASSERT($$FILEOK("docs/mioos/Transfer_Manager.md"),"[MIOOST][T007][transfer doc]")
 	DO OK^MIOTASSERT($$FILEOK("docs/mioos/Migration_Notes.md"),"[MIOOST][T007][migration doc]")
 	DO OK^MIOTASSERT($$FILEHAS("templates/layouts/mioos_shell.html","/public/mioos/app/mioos_core.js"),"[MIOOST][T007][core script]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","changeLocale(locale.code)"),"[MIOOST][T007][locale switch]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","changeLocale($event.target.value)"),"[MIOOST][T007][locale switch]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_state.js","window.MIOOSState"),"[MIOOST][T007][state module]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","window.MIOOSCore"),"[MIOOST][T007][core module]")
 	QUIT
@@ -329,9 +329,9 @@ T011
 	DO CONFDEF^MIOOS(.CONF)
 	DO INIT^MIOOS(.CONF)
 	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T011][load]")
-	SET ROOT=$$ROOTID^MIOOSFS()
+	SET ROOT=$$HOMEID^MIOOSFS()
 	DO OK^MIOTASSERT($$LIST^MIOOSFS(.STATE,ROOT,.OUT,.ERR),"[MIOOST][T011][list root]")
-	DO EQ^MIOTASSERT(+$GET(OUT("count"))>1,1,"[MIOOST][T011][root entries]")
+	DO EQ^MIOTASSERT(+$GET(OUT("count"))>0,1,"[MIOOST][T011][root entries]")
 	KILL OUT DO OK^MIOTASSERT($$MKDIR^MIOOSFS(.STATE,ROOT,"Tests",.OUT,.ERR),"[MIOOST][T011][mkdir]")
 	SET ID=$GET(OUT("id"))
 	DO EQ^MIOTASSERT(ID'="",1,"[MIOOST][T011][mkdir id]")
@@ -405,23 +405,23 @@ T017
 	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T017][load]")
 	SET JSON=$$BOOTJSON^MIOOSST(.STATE,.CONF)
 	DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T017][decode]")
-	DO EQ^MIOTASSERT($GET(OBJ("apps",6,"key")),"transfers","[MIOOST][T017][transfers app]")
-	DO EQ^MIOTASSERT($GET(OBJ("windows",6,"appKey")),"transfers","[MIOOST][T017][transfers window]")
-	DO EQ^MIOTASSERT(+$GET(OBJ("windows",6,"transferCenterEnabled")),1,"[MIOOST][T017][transfer enabled]")
+	DO EQ^MIOTASSERT($GET(OBJ("apps",3,"key")),"transfers","[MIOOST][T017][transfers app]")
+	DO EQ^MIOTASSERT($GET(OBJ("windows",3,"appKey")),"transfers","[MIOOST][T017][transfers window]")
+	DO EQ^MIOTASSERT(+$GET(OBJ("windows",3,"transferCenterEnabled")),1,"[MIOOST][T017][transfer enabled]")
 	QUIT
 	;
 T018
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-transfer-window=""1"""),"[MIOOST][T018][transfer window token]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-classic-transfers"),"[MIOOST][T018][transfer window token]")
 	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","openTransfersWindow()"),"[MIOOST][T018][transfer launcher]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-explorer-appframe--foundation"),"[MIOOST][T018][explorer foundation appframe]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","File and Folder Tasks"),"[MIOOST][T018][explorer xp tasks]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-explorer-menubar"),"[MIOOST][T018][explorer xp menubar]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-classic-explorer"),"[MIOOST][T018][classic explorer shell]")
+	DO EQ^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","File and Folder Tasks"),0,"[MIOOST][T018][explorer tasks removed]")
+	DO EQ^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-explorer-menubar"),0,"[MIOOST][T018][explorer menubar removed]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","registerTransfer"),"[MIOOST][T018][register transfer]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","openTransfersWindow"),"[MIOOST][T018][open transfers]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","transferId"),"[MIOOST][T018][explorer transfer hookup]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-transfers-shell"),"[MIOOST][T018][transfers css]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-explorer-taskpane"),"[MIOOST][T018][explorer taskpane css]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-explorer-menubar"),"[MIOOST][T018][explorer xp menubar css]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos_reset.css",".mioos-classic-transfercard"),"[MIOOST][T018][transfers css]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-explorer-taskpane"),0,"[MIOOST][T018][explorer taskpane removed]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-explorer-menubar"),0,"[MIOOST][T018][explorer menubar css removed]")
 	QUIT
 	;
 	;
@@ -440,7 +440,7 @@ T019
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","icons","draggable")),1,"[MIOOST][T019][icons draggable]")
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","icons","size")),"large","[MIOOST][T019][icon size]")
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","contextMenu","desktop")),1,"[MIOOST][T019][desktop menu]")
-	DO EQ^MIOTASSERT($GET(OBJ("apps",4,"iconLeft")),144,"[MIOOST][T019][terminal icon left]")
+	DO EQ^MIOTASSERT($GET(OBJ("apps",2,"iconLeft")),144,"[MIOOST][T019][terminal icon left]")
 	QUIT
 	;
 T020
@@ -507,10 +507,10 @@ T024
 	QUIT
 	;
 T026
-		DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-transfer-summary"),"[MIOOST][T026][transfer summary]")
-		DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-transfer-progress"),"[MIOOST][T026][transfer progress]")
+		DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-classic-transferfacts"),"[MIOOST][T026][transfer summary]")
+		DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-classic-progress"),"[MIOOST][T026][transfer progress]")
 		DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","Retry"),"[MIOOST][T026][transfer retry ui]")
-		DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos_reset.css","mioos-transfer-card"),"[MIOOST][T026][transfer css]")
+		DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos_reset.css","mioos-classic-transfercard"),"[MIOOST][T026][transfer css]")
 		QUIT
 		;
 T027
@@ -526,8 +526,8 @@ T027
 		QUIT
 		;
 T028
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-module-catalog-window=""1"""),"[MIOOST][T028][catalog token]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-module-window=""1"""),"[MIOOST][T028][module window token]")
+	DO EQ^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-module-catalog-window=""1"""),0,"[MIOOST][T028][catalog token removed]")
+	DO EQ^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-module-window=""1"""),0,"[MIOOST][T028][module window token removed]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","refreshModuleCatalog"),"[MIOOST][T028][refresh catalog]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","openModuleEntry"),"[MIOOST][T028][open module entry]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","module.catalog"),"[MIOOST][T028][ws module catalog]")
@@ -607,8 +607,8 @@ T032
 	DO EQ^MIOTASSERT(+$GET(OBJ("auth","management","accountAdminEnabled")),1,"[MIOOST][T032][account admin enabled]")
 	DO EQ^MIOTASSERT(+$GET(OBJ("auth","management","sessionLimit")),20,"[MIOOST][T032][session limit]")
 	DO EQ^MIOTASSERT(+$GET(OBJ("auth","management","accountLimit")),20,"[MIOOST][T032][account limit]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-security-session-admin=""1"""),"[MIOOST][T032][session admin token]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-security-account-admin=""1"""),"[MIOOST][T032][account admin token]")
+	DO EQ^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-security-session-admin=""1"""),0,"[MIOOST][T032][session admin token removed]")
+	DO EQ^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-security-account-admin=""1"""),0,"[MIOOST][T032][account admin token removed]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","revokeSecuritySession"),"[MIOOST][T032][revoke session method]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","unlockSecurityUser"),"[MIOOST][T032][unlock user method]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","auth.sessions"),"[MIOOST][T032][ws auth sessions]")
@@ -652,7 +652,7 @@ T034
 	DO EQ^MIOTASSERT(+$GET(OBJ("auth","passwordPolicy","maxAgeDays")),90,"[MIOOST][T034][max age]")
 	DO EQ^MIOTASSERT(+$GET(OBJ("auth","passwordPolicy","changeTokenMinutes")),15,"[MIOOST][T034][change token minutes]")
 	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-auth-password-change=""1"""),"[MIOOST][T034][password change token]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-security-password-posture=""1"""),"[MIOOST][T034][password posture token]")
+	DO EQ^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-security-password-posture=""1"""),0,"[MIOOST][T034][password posture token removed]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_auth.js","submitPasswordChange"),"[MIOOST][T034][submit password change]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_auth.js","passwordPolicyLines"),"[MIOOST][T034][password policy lines]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","CHANGEPASSWORD(DEV,CONF,REQ,CTX)"),"[MIOOST][T034][password change route handler]")
@@ -968,7 +968,7 @@ T049
 	;
 T050
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_wm.js","createWindowForApp"),"[MIOOST][T050][dynamic window factory]")
-	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_wm.js","centerAuthWindow"),0,"[MIOOST][T050][no wm auth impl]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_wm.js","centerAuthWindow"),"[MIOOST][T050][wm auth bridge]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","centerAuthWindow"),"[MIOOST][T050][auth window centering]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","Wave 1 shell foundation reset"),"[MIOOST][T050][shell foundation css]")
 	QUIT
@@ -986,7 +986,7 @@ T051
 		DO EQ^MIOTASSERT(+$GET(BOOT("desktop","shellSurfaces","customize")),1,"[MIOOST][T051][customize surface]")
 		DO EQ^MIOTASSERT(+$GET(BOOT("desktop","shellSurfaces","folderProperties")),1,"[MIOOST][T051][folder properties surface]")
 		DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","Device previews"),"[MIOOST][T051][device previews ui]")
-		DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","classic-horizon-light"),"[MIOOST][T051][horizon preset token]")
+		DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","luna-blue"),"[MIOOST][T051][xp preset token]")
 		DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","setShellTheme"),"[MIOOST][T051][set shell theme]")
 		QUIT
 		;
@@ -997,12 +997,12 @@ T052
 	DO INIT^MIOOS(.CONF)
 	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T052][load]")
 	DO BOOTARY^MIOOSST(.STATE,.CONF,.BOOT)
-	DO EQ^MIOTASSERT($GET(BOOT("desktop","notifications","model")),"toast-and-tray","[MIOOST][T052][notification model]")
+	DO EQ^MIOTASSERT($GET(BOOT("desktop","notifications","model")),"tray-panel","[MIOOST][T052][notification model]")
 	DO EQ^MIOTASSERT(+$GET(BOOT("desktop","notifications","stackLimit")),6,"[MIOOST][T052][notification stack]")
 	DO EQ^MIOTASSERT($GET(BOOT("desktop","dialogs","model")),"shell-standard","[MIOOST][T052][dialog model]")
 	DO EQ^MIOTASSERT(+$GET(BOOT("desktop","shellSurfaces","notifications")),1,"[MIOOST][T052][notifications surface]")
 	DO EQ^MIOTASSERT(+$GET(BOOT("desktop","shellSurfaces","dialogs")),1,"[MIOOST][T052][dialogs surface]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-notification-stack"),"[MIOOST][T052][notification stack ui]")
+	DO EQ^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-notification-stack"),0,"[MIOOST][T052][legacy notification stack removed]")
 	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-shell-dialog"),"[MIOOST][T052][shell dialog ui]")
 	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-tray-panel"),"[MIOOST][T052][tray panel ui]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","pushNotification"),"[MIOOST][T052][push notification method]")
@@ -1054,7 +1054,7 @@ T054
 	DO EQ^MIOTASSERT(+$GET(STATUS("nextIndex")),3,"[MIOOST][T054][next index]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","fs.upload.batch"),"[MIOOST][T054][explorer batch token]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","FSUPBATCH"),"[MIOOST][T054][ws batch handler]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","Server socket registry"),"[MIOOST][T054][server socket registry ui]")
+	DO EQ^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","Server socket registry"),0,"[MIOOST][T054][server socket registry ui removed]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","transportServerSocketRows"),"[MIOOST][T054][server socket rows method]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 55 — websocket batch uploads and socket-pool observability"),"[MIOOST][T054][llm roi55]")
 	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","ROI 55 — websocket batch uploads and socket-pool observability"),"[MIOOST][T054][docs roi55]")
@@ -1069,11 +1069,11 @@ T055
 		DO INIT^MIOOS(.CONF)
 		DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T055][load]")
 		DO BOOTARY^MIOOSST(.STATE,.CONF,.BOOT)
-		DO EQ^MIOTASSERT(+$GET(BOOT("desktop","workspaces","enabled")),1,"[MIOOST][T055][workspaces enabled]")
+		DO EQ^MIOTASSERT(+$GET(BOOT("desktop","workspaces","enabled")),0,"[MIOOST][T055][workspaces enabled]")
 		DO EQ^MIOTASSERT($GET(BOOT("desktop","workspaces","currentKey")),"workspace-main","[MIOOST][T055][current workspace]")
-		DO EQ^MIOTASSERT($GET(BOOT("desktop","workspaces","items",2,"key")),"workspace-files","[MIOOST][T055][files workspace]")
-		DO EQ^MIOTASSERT(+$GET(BOOT("desktop","shellSurfaces","workspacePager")),1,"[MIOOST][T055][workspace pager surface]")
-		DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","switchWorkspace"),"[MIOOST][T055][switch workspace method]")
-		DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_wm.js","moveWindowToWorkspace"),"[MIOOST][T055][move workspace method]")
-		DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-workspace-pager"),"[MIOOST][T055][workspace pager ui]")
+		DO EQ^MIOTASSERT($GET(BOOT("desktop","workspaces","items",1,"key")),"workspace-main","[MIOOST][T055][single workspace]")
+		DO EQ^MIOTASSERT(+$GET(BOOT("desktop","shellSurfaces","workspacePager")),0,"[MIOOST][T055][workspace pager surface]")
+		DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","workspaceEnabled"),"[MIOOST][T055][workspace gate method]")
+		DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_wm.js","moveWindowToWorkspace"),"[MIOOST][T055][move workspace method retained]")
+		DO EQ^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-workspace-pager"),0,"[MIOOST][T055][workspace pager ui]")
 		QUIT

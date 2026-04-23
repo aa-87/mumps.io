@@ -502,7 +502,7 @@
         transferTimestampLabel: function (item) {
           var value = (item && (item.updatedAt || item.startedAt)) || 0;
           if (!value) return 'Waiting';
-          try { return new Date(value).toLocaleString(this.currentLocale.code || undefined, { month: 'numeric', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }); } catch (err) { return 'Waiting'; }
+          return this.formatTransportTime(value, { month: 'numeric', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
         },
         transferProgressLabel: function (item) {
           if (!item) return '0%';
@@ -913,9 +913,43 @@
         transportServerPool: function () {
           return ((this.transportReport() || {}).socketPool) || {};
         },
-        formatTransportTime: function (value) {
-          if (!value) return '—';
-          try { return new Date(value).toLocaleTimeString(); } catch (err) { return '—'; }
+        parseDateValue: function (value) {
+          var parts;
+          var days;
+          var seconds;
+          var base;
+          if (value == null || value === '') return null;
+          if (value instanceof Date) return isNaN(value.getTime()) ? null : value;
+          if (typeof value === 'number') {
+            if (!isFinite(value)) return null;
+            base = new Date(value);
+            return isNaN(base.getTime()) ? null : base;
+          }
+          if (typeof value === 'string') {
+            parts = value.split(',');
+            if (parts.length === 2 && /^-?\d+$/.test(parts[0]) && /^-?\d+$/.test(parts[1])) {
+              days = Number(parts[0]);
+              seconds = Number(parts[1]);
+              base = new Date(Date.UTC(1840, 11, 31));
+              base.setUTCDate(base.getUTCDate() + days);
+              base.setUTCSeconds(base.getUTCSeconds() + seconds);
+              return isNaN(base.getTime()) ? null : base;
+            }
+            base = new Date(value);
+            return isNaN(base.getTime()) ? null : base;
+          }
+          return null;
+        },
+        formatTransportTime: function (value, opts) {
+          var date = this.parseDateValue(value);
+          opts = opts || { month: 'numeric', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' };
+          if (!date) return '—';
+          try { return date.toLocaleString((this.currentLocale || {}).code || undefined, opts); } catch (err) { return '—'; }
+        },
+        notificationTimeLabel: function (value) {
+          var date = this.parseDateValue(value);
+          if (!date) return '—';
+          try { return date.toLocaleTimeString((this.currentLocale || {}).code || undefined, { hour: 'numeric', minute: '2-digit' }); } catch (err) { return '—'; }
         },
         transportReport: function () {
           return (this.transportDiagnostics && this.transportDiagnostics.report) || {};

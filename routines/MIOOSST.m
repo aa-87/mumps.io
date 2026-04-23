@@ -447,7 +447,7 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","appActions","notifyOnAdminActions")=+$GET(CONF("mioos","desktop","appActions","notifyOnAdminActions"),1)
 	SET OBJ("desktop","appActions","copyExportsToClipboard")=+$GET(CONF("mioos","desktop","appActions","copyExportsToClipboard"),1)
 	SET OBJ("desktop","appActions","moduleNotesSessionLocal")=+$GET(CONF("mioos","desktop","appActions","moduleNotesSessionLocal"),1)
-	SET OBJ("desktop","notifications","model")=$GET(STATE("notificationsModel"),"toast-and-tray")
+	SET OBJ("desktop","notifications","model")=$GET(STATE("notificationsModel"),"tray-panel")
 	SET OBJ("desktop","notifications","stackLimit")=+$GET(STATE("notificationsStackLimit"),6)
 	SET OBJ("desktop","notifications","tray")=1
 	SET OBJ("desktop","dialogs","model")="shell-standard"

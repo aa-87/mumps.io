@@ -51,24 +51,6 @@
   data-theme-mode="{{themeMode}}"
   :class="{ 'is-reduced-motion': shellUi.reducedMotion, 'is-desktop-hidden': shellUi.desktopHidden, 'is-window-switcher-open': shellUi.windowSwitcherOpen }">
 
-  <div class="mioos-alert" v-if="alertMessage" aria-live="polite" role="status">
-    <strong>[[ alertTitle ]]</strong>
-    <span>[[ alertMessage ]]</span>
-    <button type="button" @click="dismissAlert">[[ t('alert.dismiss') ]]</button>
-  </div>
-
-  <section class="mioos-notification-stack" v-if="shellNotifications.length" aria-label="shell notifications" aria-live="polite">
-    <article v-for="note in shellNotifications" :key="note.id" class="mioos-notification" :class="'is-' + (note.type || 'info')" @mouseenter="markNotificationRead(note.id)">
-      <header class="mioos-notification-head">
-        <strong>[[ note.title ]]</strong>
-        <small>[[ formatTransportTime(note.ts) ]]</small>
-      </header>
-      <p>[[ note.message ]]</p>
-      <div class="mioos-notification-detail" v-if="note.detail">[[ note.detail ]]</div>
-      <button type="button" class="mioos-notification-close" @click="dismissNotification(note.id)" :aria-label="t('action.close')">×</button>
-    </article>
-  </section>
-
   <section class="mioos-auth-overlay" v-if="requiresSignin" aria-hidden="false">
     <div class="mioos-auth-card" role="dialog" aria-modal="true" :aria-label="boot.product.name" data-auth-password-change="1" :style="authWindowStyle()">
       <div class="mioos-auth-titlebar" @mousedown.stop="beginAuthDrag($event)">
@@ -167,11 +149,17 @@
           </div>
         </div>
         <div>
-          <header><strong>Session</strong><span>User and connection</span></header>
+          <header><strong>Session</strong><span>User, language, and connection</span></header>
           <div class="mioos-start-facts">
             <span>[[ boot.user.authenticated ? boot.user.displayName : t('auth.notSignedIn') ]]</span>
             <span>[[ socketConnected ? t('socket.live') : t('socket.offline') ]]</span>
           </div>
+          <label class="mioos-start-locale" v-if="localeOptions().length">
+            <span>Language</span>
+            <select :value="currentLocale.code" @change="changeLocale($event.target.value)">
+              <option v-for="locale in localeOptions()" :key="locale.code" :value="locale.code">[[ locale.label ]]</option>
+            </select>
+          </label>
           <div class="mioos-start-actions">
             <button type="button" @click="openApp('customize')">Customize</button>
             <button type="button" @click="refreshView">Refresh desktop</button>
@@ -229,24 +217,17 @@
       <div class="mioos-window-body" :class="{ 'is-terminal-body': win.appKey === 'terminal' }">
         <template v-if="win.appKey === 'home' || win.appKey === 'explorer'">
           <div class="mioos-classic-shell mioos-classic-explorer" :data-explorer-window="win.id" @click="closeFolderContextMenu(win.id)">
-            <div class="mioos-classic-menubar">
-              <button type="button">File</button>
-              <button type="button">Edit</button>
-              <button type="button">View</button>
-              <button type="button">Favorites</button>
-              <button type="button">Tools</button>
-              <button type="button">Help</button>
-            </div>
-            <div class="mioos-classic-toolbar">
-              <div class="mioos-classic-toolbar-group">
-                <button type="button" class="mioos-classic-tool" @click="explorerNavigateBack(win.id)" :disabled="!explorerCanGoBack(win)">Back</button>
-                <button type="button" class="mioos-classic-tool" @click="explorerNavigateForward(win.id)" :disabled="!explorerCanGoForward(win)">Forward</button>
-                <button type="button" class="mioos-classic-tool" @click="explorerGoUp(win.id)">Up</button>
+            <div class="mioos-classic-toolbar mioos-classic-toolbar--explorer">
+              <div class="mioos-classic-toolbar-group mioos-classic-toolbar-group--nav">
+                <button type="button" class="mioos-classic-tool mioos-classic-tool--icon" @click="explorerNavigateBack(win.id)" :disabled="!explorerCanGoBack(win)" title="Back">←</button>
+                <button type="button" class="mioos-classic-tool mioos-classic-tool--icon" @click="explorerNavigateForward(win.id)" :disabled="!explorerCanGoForward(win)" title="Forward">→</button>
+                <button type="button" class="mioos-classic-tool mioos-classic-tool--icon" @click="explorerGoUp(win.id)" title="Up">↑</button>
+                <button type="button" class="mioos-classic-tool mioos-classic-tool--icon" @click="refreshExplorerWindow(win.id)" title="Refresh">↻</button>
               </div>
-              <div class="mioos-classic-toolbar-group mioos-classic-toolbar-group--tasks">
-                <button type="button" class="mioos-classic-tool" @click="refreshExplorerWindow(win.id)">Refresh</button>
+              <div class="mioos-classic-toolbar-group mioos-classic-toolbar-group--actions">
                 <button type="button" class="mioos-classic-tool" @click="explorerCreateFolder(win.id)">New Folder</button>
                 <button type="button" class="mioos-classic-tool" @click="explorerPromptUpload(win.id)">Upload</button>
+                <button type="button" class="mioos-classic-tool" @click="explorerDownloadSelected(win.id)" :disabled="!((win.explorerState || {}).selection)">Download</button>
                 <button type="button" class="mioos-classic-tool" @click="openFolderPropertiesWindow(win.id, (win.explorerState || {}).selection || (win.explorerState || {}).folder, 'general')">Properties</button>
               </div>
             </div>
@@ -255,104 +236,67 @@
               <input type="text" v-model="(win.explorerState || {}).addressInput" @keydown.enter.prevent="explorerGoToAddress(win.id)">
               <button type="button" class="mioos-classic-tool" @click="explorerGoToAddress(win.id)">Go</button>
             </div>
-            <div class="mioos-classic-workarea">
-              <aside class="mioos-classic-sidebar">
-                <section class="mioos-classic-pane">
-                  <header>File and Folder Tasks</header>
-                  <div class="mioos-classic-pane-body">
-                    <button type="button" @click="explorerOpenSelected(win.id)" :disabled="!((win.explorerState || {}).selection)">Open selected item</button>
-                    <button type="button" @click="explorerCreateFolder(win.id)">Make a new folder</button>
-                    <button type="button" @click="explorerPromptUpload(win.id)">Upload files</button>
-                    <button type="button" @click="openFolderPropertiesWindow(win.id, (win.explorerState || {}).folder, 'customize')">Customize this folder</button>
-                  </div>
-                </section>
-                <section class="mioos-classic-pane">
-                  <header>Other Places</header>
-                  <div class="mioos-classic-pane-body">
-                    <button type="button" v-for="place in explorerQuickPlaces()" :key="place.id" @click="loadExplorerFolder(win.id, place.id, { selectFirst: true })">[[ place.title ]]</button>
-                    <button type="button" @click="openApp('transfers')">Transfers</button>
-                    <button type="button" @click="openApp('terminal')">Terminal</button>
-                  </div>
-                </section>
-                <section class="mioos-classic-pane">
-                  <header>Details</header>
-                  <div class="mioos-classic-pane-body mioos-classic-pane-body--details">
-                    <template v-if="(win.explorerState || {}).selection">
-                      <strong>[[ ((win.explorerState || {}).selection || {}).name || ((win.explorerState || {}).selection || {}).title ]]</strong>
-                      <span>[[ ((win.explorerState || {}).selection || {}).kind || ((win.explorerState || {}).selection || {}).mime || 'Item' ]]</span>
-                      <span>[[ ((win.explorerState || {}).selection || {}).path || (((win.explorerState || {}).folder || {}).path || '/') ]]</span>
-                      <span v-if="((win.explorerState || {}).selection || {}).sizeLabel">[[ ((win.explorerState || {}).selection || {}).sizeLabel ]]</span>
-                    </template>
-                    <template v-else>
-                      <strong>[[ (((win.explorerState || {}).folder || {}).name) || 'Home' ]]</strong>
-                      <span>[[ (((win.explorerState || {}).folder || {}).containsLabel) || ((((win.explorerState || {}).items || []).length) + ' items') ]]</span>
-                      <span>[[ (((win.explorerState || {}).folder || {}).path) || '/Home' ]]</span>
-                    </template>
-                  </div>
-                </section>
-              </aside>
-              <section class="mioos-classic-browser" @contextmenu.prevent="openFolderContextMenu(win.id, $event)">
-                <div class="mioos-classic-browser-head">
-                  <div>
-                    <strong>[[ (((win.explorerState || {}).folder || {}).name) || 'Home' ]]</strong>
-                    <small>[[ (((win.explorerState || {}).folder || {}).path) || '/Home' ]]</small>
-                  </div>
-                  <div class="mioos-classic-viewbar">
-                    <button type="button" class="mioos-classic-tool" :class="{ 'is-current': ((win.explorerState || {}).viewMode || 'details') === 'details' }" @click="setExplorerViewMode(win.id, 'details')">Details</button>
-                    <button type="button" class="mioos-classic-tool" :class="{ 'is-current': ((win.explorerState || {}).viewMode || 'details') === 'list' }" @click="setExplorerViewMode(win.id, 'list')">List</button>
-                    <button type="button" class="mioos-classic-tool" :class="{ 'is-current': ['small','medium','large','xlarge'].indexOf((win.explorerState || {}).viewMode || '') >= 0 }" @click="setExplorerViewMode(win.id, 'medium')">Icons</button>
-                  </div>
+            <section class="mioos-classic-browser mioos-classic-browser--solo" @contextmenu.prevent.stop="openFolderContextMenu(win.id, $event)">
+              <div class="mioos-classic-browser-head">
+                <div>
+                  <strong>[[ (((win.explorerState || {}).folder || {}).name) || 'Home' ]]</strong>
+                  <small>[[ (((win.explorerState || {}).folder || {}).containsLabel) || ((((win.explorerState || {}).items || []).length) + ' items') ]]</small>
                 </div>
-                <div class="mioos-classic-browser-body" v-if="((win.explorerState || {}).viewMode || 'details') === 'details'">
-                  <div class="mioos-classic-listhead">
-                    <span>Name</span><span>Type</span><span>Date Modified</span><span>Size</span>
-                  </div>
-                  <div class="mioos-classic-listbody">
-                    <button v-for="item in ((win.explorerState || {}).items || [])" :key="item.id || item.name" type="button" draggable="true" class="mioos-classic-row" :class="{ 'is-selected': (((win.explorerState || {}).selection || {}).id || '') === (item.id || '') }" @dragstart="beginExplorerItemDrag(win.id, item, $event)" @click="selectExplorerItem(win.id, item)" @contextmenu.prevent.stop="openFolderContextMenu(win.id, $event, item)" @dblclick="explorerOpenItem(win.id, item)">
-                      <span class="mioos-classic-row-name"><i>[[ item.icon || explorerItemGlyph(item) ]]</i><strong>[[ item.name || item.title ]]</strong></span>
-                      <span>[[ item.kind || item.type || item.mime || '' ]]</span>
-                      <span>[[ formatTransportTime(item.modifiedAt) ]]</span>
-                      <span>[[ item.sizeLabel || (item.size ? (item.size + ' B') : '—') ]]</span>
-                    </button>
-                  </div>
+                <div class="mioos-classic-viewbar">
+                  <button type="button" class="mioos-classic-tool" :class="{ 'is-current': ((win.explorerState || {}).viewMode || 'details') === 'details' }" @click="setExplorerViewMode(win.id, 'details')">Details</button>
+                  <button type="button" class="mioos-classic-tool" :class="{ 'is-current': ((win.explorerState || {}).viewMode || 'details') === 'list' }" @click="setExplorerViewMode(win.id, 'list')">List</button>
+                  <button type="button" class="mioos-classic-tool" :class="{ 'is-current': ['small','medium','large','xlarge'].indexOf((win.explorerState || {}).viewMode || '') >= 0 }" @click="setExplorerViewMode(win.id, 'medium')">Icons</button>
                 </div>
-                <div class="mioos-classic-iconview" v-else :data-view-mode="(win.explorerState || {}).viewMode || 'medium'">
-                  <button v-for="item in ((win.explorerState || {}).items || [])" :key="item.id || item.name" type="button" draggable="true" class="mioos-classic-iconitem" :class="{ 'is-selected': (((win.explorerState || {}).selection || {}).id || '') === (item.id || '') }" @dragstart="beginExplorerItemDrag(win.id, item, $event)" @click="selectExplorerItem(win.id, item)" @contextmenu.prevent.stop="openFolderContextMenu(win.id, $event, item)" @dblclick="explorerOpenItem(win.id, item)">
-                    <span class="mioos-classic-iconglyph">[[ item.icon || explorerItemGlyph(item) ]]</span>
-                    <strong>[[ item.name || item.title ]]</strong>
-                    <small>[[ item.kind || item.type || 'Item' ]]</small>
+              </div>
+              <div class="mioos-classic-browser-body" v-if="((win.explorerState || {}).viewMode || 'details') === 'details'">
+                <div class="mioos-classic-listhead">
+                  <span>Name</span><span>Type</span><span>Date Modified</span><span>Size</span>
+                </div>
+                <div class="mioos-classic-listbody">
+                  <button v-for="item in ((win.explorerState || {}).items || [])" :key="item.id || item.name" type="button" draggable="true" class="mioos-classic-row" :class="{ 'is-selected': (((win.explorerState || {}).selection || {}).id || '') === (item.id || '') }" @dragstart="beginExplorerItemDrag(win.id, item, $event)" @click="selectExplorerItem(win.id, item)" @contextmenu.prevent.stop="openFolderContextMenu(win.id, $event, item)" @dblclick="explorerOpenItem(win.id, item)">
+                    <span class="mioos-classic-row-name"><i>[[ item.icon || explorerItemGlyph(item) ]]</i><strong>[[ item.name || item.title ]]</strong></span>
+                    <span>[[ explorerItemTypeLabel(item) ]]</span>
+                    <span>[[ explorerItemModifiedLabel(item) ]]</span>
+                    <span>[[ explorerItemSizeLabel(item) ]]</span>
                   </button>
                 </div>
-                <div class="mioos-classic-statusbar">
-                  <span>[[ (((win.explorerState || {}).items || []).length) ]] item[[ (((win.explorerState || {}).items || []).length) === 1 ? '' : 's' ]]</span>
-                  <span>View: [[ explorerViewModeLabel(win) ]]</span>
-                  <span>Sort: [[ (win.explorerState || {}).sortBy || 'name' ]] ([[ (win.explorerState || {}).sortDirection || 'ascending' ]])</span>
+              </div>
+              <div class="mioos-classic-iconview" v-else :data-view-mode="(win.explorerState || {}).viewMode || 'medium'">
+                <button v-for="item in ((win.explorerState || {}).items || [])" :key="item.id || item.name" type="button" draggable="true" class="mioos-classic-iconitem" :class="{ 'is-selected': (((win.explorerState || {}).selection || {}).id || '') === (item.id || '') }" @dragstart="beginExplorerItemDrag(win.id, item, $event)" @click="selectExplorerItem(win.id, item)" @contextmenu.prevent.stop="openFolderContextMenu(win.id, $event, item)" @dblclick="explorerOpenItem(win.id, item)">
+                  <span class="mioos-classic-iconglyph">[[ item.icon || explorerItemGlyph(item) ]]</span>
+                  <strong>[[ item.name || item.title ]]</strong>
+                  <small>[[ explorerItemTypeLabel(item) ]]</small>
+                </button>
+              </div>
+              <div class="mioos-classic-statusbar">
+                <span>[[ (((win.explorerState || {}).items || []).length) ]] item[[ (((win.explorerState || {}).items || []).length) === 1 ? '' : 's' ]]</span>
+                <span>Location: [[ (((win.explorerState || {}).folder || {}).path) || '/Home' ]]</span>
+                <span>View: [[ explorerViewModeLabel(win) ]]</span>
+              </div>
+              <section v-if="((win.explorerState || {}).contextMenu || {}).open" class="mioos-classic-contextmenu" :style="{ left: (((win.explorerState || {}).contextMenu || {}).left || 0) + 'px', top: (((win.explorerState || {}).contextMenu || {}).top || 0) + 'px' }" @click.stop>
+                <div class="mioos-classic-contextgroup"><strong>View</strong>
+                  <button type="button" @click="setExplorerViewMode(win.id, 'xlarge'); closeFolderContextMenu(win.id)">[[ ((win.explorerState || {}).viewMode || '') === 'xlarge' ? '✓ ' : '' ]]Extra large Icons</button>
+                  <button type="button" @click="setExplorerViewMode(win.id, 'large'); closeFolderContextMenu(win.id)">[[ ((win.explorerState || {}).viewMode || '') === 'large' ? '✓ ' : '' ]]Large Icons</button>
+                  <button type="button" @click="setExplorerViewMode(win.id, 'medium'); closeFolderContextMenu(win.id)">[[ ((win.explorerState || {}).viewMode || '') === 'medium' ? '✓ ' : '' ]]Medium Icons</button>
+                  <button type="button" @click="setExplorerViewMode(win.id, 'small'); closeFolderContextMenu(win.id)">[[ ((win.explorerState || {}).viewMode || '') === 'small' ? '✓ ' : '' ]]Small Icons</button>
+                  <button type="button" @click="setExplorerViewMode(win.id, 'list'); closeFolderContextMenu(win.id)">[[ ((win.explorerState || {}).viewMode || '') === 'list' ? '✓ ' : '' ]]List</button>
+                  <button type="button" @click="setExplorerViewMode(win.id, 'details'); closeFolderContextMenu(win.id)">[[ ((win.explorerState || {}).viewMode || '') === 'details' ? '✓ ' : '' ]]Details</button>
                 </div>
-                <section v-if="((win.explorerState || {}).contextMenu || {}).open" class="mioos-classic-contextmenu" :style="{ left: (((win.explorerState || {}).contextMenu || {}).left || 0) + 'px', top: (((win.explorerState || {}).contextMenu || {}).top || 0) + 'px' }" @click.stop>
-                  <div class="mioos-classic-contextgroup"><strong>View</strong>
-                    <button type="button" @click="setExplorerViewMode(win.id, 'xlarge'); closeFolderContextMenu(win.id)">[[ ((win.explorerState || {}).viewMode || '') === 'xlarge' ? '✓ ' : '' ]]Extra large Icons</button>
-                    <button type="button" @click="setExplorerViewMode(win.id, 'large'); closeFolderContextMenu(win.id)">[[ ((win.explorerState || {}).viewMode || '') === 'large' ? '✓ ' : '' ]]Large Icons</button>
-                    <button type="button" @click="setExplorerViewMode(win.id, 'medium'); closeFolderContextMenu(win.id)">[[ ((win.explorerState || {}).viewMode || '') === 'medium' ? '✓ ' : '' ]]Medium Icons</button>
-                    <button type="button" @click="setExplorerViewMode(win.id, 'small'); closeFolderContextMenu(win.id)">[[ ((win.explorerState || {}).viewMode || '') === 'small' ? '✓ ' : '' ]]Small Icons</button>
-                    <button type="button" @click="setExplorerViewMode(win.id, 'list'); closeFolderContextMenu(win.id)">[[ ((win.explorerState || {}).viewMode || '') === 'list' ? '✓ ' : '' ]]List</button>
-                    <button type="button" @click="setExplorerViewMode(win.id, 'details'); closeFolderContextMenu(win.id)">[[ ((win.explorerState || {}).viewMode || '') === 'details' ? '✓ ' : '' ]]Details</button>
-                  </div>
-                  <hr>
-                  <div class="mioos-classic-contextgroup"><strong>Sort by</strong>
-                    <button type="button" @click="setExplorerSort(win.id, 'name'); closeFolderContextMenu(win.id)">[[ ((win.explorerState || {}).sortBy || '') === 'name' ? '✓ ' : '' ]]Name</button>
-                    <button type="button" @click="setExplorerSort(win.id, 'date-modified'); closeFolderContextMenu(win.id)">[[ ((win.explorerState || {}).sortBy || '') === 'date-modified' ? '✓ ' : '' ]]Date modified</button>
-                    <button type="button" @click="setExplorerSort(win.id, 'type'); closeFolderContextMenu(win.id)">[[ ((win.explorerState || {}).sortBy || '') === 'type' ? '✓ ' : '' ]]Type</button>
-                    <button type="button" @click="setExplorerSort(win.id, 'size'); closeFolderContextMenu(win.id)">[[ ((win.explorerState || {}).sortBy || '') === 'size' ? '✓ ' : '' ]]Size</button>
-                    <button type="button" @click="setExplorerSort(win.id, (win.explorerState || {}).sortBy || 'name', 'ascending'); closeFolderContextMenu(win.id)">[[ ((win.explorerState || {}).sortDirection || 'ascending') === 'ascending' ? '✓ ' : '' ]]Ascending</button>
-                    <button type="button" @click="setExplorerSort(win.id, (win.explorerState || {}).sortBy || 'name', 'descending'); closeFolderContextMenu(win.id)">[[ ((win.explorerState || {}).sortDirection || 'ascending') === 'descending' ? '✓ ' : '' ]]Descending</button>
-                  </div>
-                  <hr>
-                  <button type="button" @click="openFolderPropertiesWindow(win.id, (win.explorerState || {}).folder, 'customize'); closeFolderContextMenu(win.id)">Customize this folder</button>
-                  <button type="button" @click="explorerCreateFolder(win.id); closeFolderContextMenu(win.id)">New</button>
-                  <button type="button" @click="openFolderPropertiesWindow(win.id, (win.explorerState || {}).folder, 'general'); closeFolderContextMenu(win.id)">Properties</button>
-                </section>
+                <hr>
+                <div class="mioos-classic-contextgroup"><strong>Sort by</strong>
+                  <button type="button" @click="setExplorerSort(win.id, 'name'); closeFolderContextMenu(win.id)">[[ ((win.explorerState || {}).sortBy || '') === 'name' ? '✓ ' : '' ]]Name</button>
+                  <button type="button" @click="setExplorerSort(win.id, 'date-modified'); closeFolderContextMenu(win.id)">[[ ((win.explorerState || {}).sortBy || '') === 'date-modified' ? '✓ ' : '' ]]Date modified</button>
+                  <button type="button" @click="setExplorerSort(win.id, 'type'); closeFolderContextMenu(win.id)">[[ ((win.explorerState || {}).sortBy || '') === 'type' ? '✓ ' : '' ]]Type</button>
+                  <button type="button" @click="setExplorerSort(win.id, 'size'); closeFolderContextMenu(win.id)">[[ ((win.explorerState || {}).sortBy || '') === 'size' ? '✓ ' : '' ]]Size</button>
+                  <button type="button" @click="setExplorerSort(win.id, (win.explorerState || {}).sortBy || 'name', 'ascending'); closeFolderContextMenu(win.id)">[[ ((win.explorerState || {}).sortDirection || 'ascending') === 'ascending' ? '✓ ' : '' ]]Ascending</button>
+                  <button type="button" @click="setExplorerSort(win.id, (win.explorerState || {}).sortBy || 'name', 'descending'); closeFolderContextMenu(win.id)">[[ ((win.explorerState || {}).sortDirection || 'ascending') === 'descending' ? '✓ ' : '' ]]Descending</button>
+                </div>
+                <hr>
+                <button type="button" @click="openFolderPropertiesWindow(win.id, (win.explorerState || {}).folder, 'customize'); closeFolderContextMenu(win.id)">Customize this folder</button>
+                <button type="button" @click="explorerCreateFolder(win.id); closeFolderContextMenu(win.id)">New</button>
+                <button type="button" @click="openFolderPropertiesWindow(win.id, (win.explorerState || {}).folder, 'general'); closeFolderContextMenu(win.id)">Properties</button>
               </section>
-            </div>
+            </section>
           </div>
         </template>
         <template v-else-if="win.appKey === 'transfers'">
@@ -577,10 +521,10 @@
                 </section>
               </aside>
               <section class="mioos-classic-customize-main">
-                <div class="mioos-classic-previewband">
+                <div class="mioos-classic-previewband"><strong class="mioos-classic-previewlabel">Device previews</strong>
                   <div class="mioos-classic-desktoppreview" :style="themeStudioPreviewDesktopStyle(win)">
                     <div class="mioos-classic-previewwindow" :style="themeStudioPreviewWindowStyle(win)">
-                      <div class="mioos-classic-previewtitle" :style="themeStudioPreviewTitlebarStyle(win)"><span>My Computer</span><span>_ □ ×</span></div>
+                      <div class="mioos-classic-previewtitle" :style="themeStudioPreviewTitlebarStyle(win)"><span>Home</span><span>_ □ ×</span></div>
                       <div class="mioos-classic-previewbody">
                         <button type="button">Open</button>
                         <input type="text" value="Address" aria-label="Desktop preview address">
@@ -713,7 +657,7 @@
   </section>
 
   <footer class="mioos-taskbar mioos-taskbar--workspace" aria-label="taskbar">
-    <button type="button" class="mioos-start-button" @click.stop="toggleMenu">[[ boot.desktop.launcherLabel ]]</button>
+    <button type="button" class="mioos-start-button" @click.stop="toggleMenu"><span class="mioos-start-button-glow"></span><span>Start</span></button>
     <div class="mioos-task-strip mioos-task-strip--grouped">
       <button v-for="group in taskbarPrimaryGroups()" :key="group.key" type="button" class="mioos-task-button mioos-task-button--group" :class="{ 'is-active': !!group.activeWindowId, 'is-minimized': group.allMinimized }" @click.stop="toggleTaskGroup(group)">
         <span class="mioos-entry-icon">[[ group.icon ]]</span>
@@ -721,10 +665,9 @@
         <strong class="mioos-task-count" v-if="group.count > 1">[[ group.count ]]</strong>
       </button>
       <div class="mioos-taskbar-overflow" v-if="taskbarOverflowGroups().length">
-        <button type="button" class="mioos-task-button mioos-task-button--overflow" @click.stop="shellUi.trayOpen = !shellUi.trayOpen">+[[ taskbarOverflowGroups().length ]] more</button>
+        <button type="button" class="mioos-task-button mioos-task-button--overflow" @click.stop="toggleTrayPanel">+[[ taskbarOverflowGroups().length ]]</button>
       </div>
     </div>
-    <button type="button" class="mioos-taskbar-desktop" @click.stop="toggleDesktopVisibility()">[[ shellUi.desktopHidden ? 'Restore' : 'Desktop' ]]</button>
     <div class="mioos-tray" aria-live="polite">
       <button type="button" class="mioos-tray-action" @click.stop="toggleTrayPanel">
         <span>Tray</span>
@@ -734,18 +677,18 @@
       <div class="mioos-tray-clock"><strong>[[ clockText ]]</strong><small>[[ clockDateText ]]</small></div>
       <section class="mioos-tray-panel" v-if="shellUi.trayOpen" @click.stop>
         <header class="mioos-tray-panel-head">
-          <strong>Session tray</strong>
+          <strong>Tray</strong>
           <button type="button" @click="clearNotifications()">Clear all</button>
         </header>
         <div class="mioos-tray-panel-actions">
           <button type="button" @click="toggleReducedMotion()">[[ shellUi.reducedMotion ? 'Reduced motion on' : 'Reduced motion off' ]]</button>
-          <button type="button" @click="toggleDesktopVisibility()">[[ shellUi.desktopHidden ? 'Restore desktop' : 'Show desktop' ]]</button>
+          <button type="button" @click="openTransfersWindow()">Open Transfers</button>
         </div>
         <div class="mioos-tray-panel-body" v-if="shellNotifications.length">
           <article v-for="note in shellNotifications" :key="note.id" class="mioos-tray-note" :class="'is-' + (note.type || 'info')">
             <strong>[[ note.title ]]</strong>
             <p>[[ note.message ]]</p>
-            <small>[[ formatTransportTime(note.ts) ]]</small>
+            <small>[[ notificationTimeLabel(note.ts) ]]</small>
           </article>
         </div>
         <div class="mioos-tray-panel-body" v-else-if="taskbarOverflowGroups().length">

@@ -114,38 +114,40 @@
 .mioos-start-facts { display:grid; gap:4px; margin-bottom:10px; font-size:12px; color:var(--mioos-classic-muted); }
 
 .mioos-taskbar--workspace {
+  display:flex; align-items:center; flex-wrap:nowrap !important;
   background: var(--mioos-classic-taskbar) !important;
   border-top: 1px solid rgba(255,255,255,0.45);
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.28);
-  gap: 8px;
+  gap: 6px;
   padding: 4px 8px;
+  min-height: 42px;
 }
 .mioos-start-button {
-  min-height: 34px; padding: 0 18px; border-radius: 18px !important; border: 1px solid rgba(255,255,255,0.55) !important;
+  flex:0 0 auto; width:auto; max-width:92px; min-width:72px; min-height: 32px; padding: 0 14px; border-radius: 16px !important; border: 1px solid rgba(255,255,255,0.55) !important;
   background: var(--mioos-classic-start) !important; color:#fff !important; font-weight:700; font-style:italic;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.4);
 }
-.mioos-task-strip--grouped { display:flex; align-items:center; gap:6px; min-width:0; flex:1; overflow:hidden; }
+.mioos-task-strip--grouped { display:flex; align-items:center; gap:6px; min-width:0; flex:1 1 auto; overflow:hidden; }
 .mioos-task-button--group, .mioos-task-button--overflow, .mioos-taskbar-desktop, .mioos-tray-action {
-  min-height: 30px; display:flex; align-items:center; gap:8px; border-radius:4px !important; border:1px solid rgba(10,40,94,0.75) !important;
+  flex:0 0 auto; min-height: 28px; display:flex; align-items:center; gap:8px; border-radius:4px !important; border:1px solid rgba(10,40,94,0.75) !important;
   background: linear-gradient(180deg, rgba(255,255,255,0.72) 0%, rgba(213,229,249,0.9) 100%) !important;
   color: #14396b !important; box-shadow: inset 0 1px 0 rgba(255,255,255,0.75);
 }
-.mioos-task-button--group { min-width: 0; max-width: 200px; padding: 6px 10px; }
+.mioos-task-button--group { min-width: 0; max-width: 180px; padding: 5px 9px; }
 .mioos-task-button--group > span:nth-child(2) { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .mioos-task-button--group.is-active { background: linear-gradient(180deg, #fff4be 0%, #ffd96e 100%) !important; }
 .mioos-task-button--group.is-minimized { opacity: .78; }
 .mioos-task-count { min-width:18px; height:18px; display:grid; place-items:center; border-radius:999px; background:#fff; color:#1d4780; font-size:11px; }
 .mioos-taskbar-desktop { padding: 0 10px; }
-.mioos-tray { display:flex; align-items:center; gap:6px; }
+.mioos-tray { flex:0 0 auto; display:flex; align-items:center; gap:6px; margin-left:auto; }
 .mioos-tray-pill {
   padding: 6px 10px; border-radius: 4px; background: rgba(255,255,255,0.16); color: #fff; border: 1px solid rgba(255,255,255,0.22);
 }
 .mioos-tray-clock {
-  display:grid; justify-items:end; min-width:120px; padding: 2px 8px; color:#fff; text-shadow: 0 1px 0 rgba(0,0,0,0.25);
+  display:grid; justify-items:end; min-width:106px; padding: 0 6px; color:#fff; text-shadow: 0 1px 0 rgba(0,0,0,0.25);
 }
-.mioos-tray-clock strong { font-size: 13px; line-height: 1.1; }
-.mioos-tray-clock small { font-size: 11px; line-height: 1.1; opacity: .95; }
+.mioos-tray-clock strong { font-size: 12px; line-height: 1.05; }
+.mioos-tray-clock small { font-size: 10px; line-height: 1.05; opacity: .95; }
 .mioos-tray-panel {
   width: min(340px, calc(100vw - 16px)); border-radius: 6px; border:1px solid #6a8db1; background: #f8fbff; box-shadow: 0 12px 24px rgba(0,0,0,0.24);
 }
@@ -171,18 +173,22 @@
 }
 .mioos-classic-menubar button:hover { border-color:#7f9db9; background:#fff; }
 .mioos-classic-toolbar, .mioos-classic-panelhead {
-  display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 10px;
+  display:flex; align-items:center; justify-content:space-between; gap:10px; padding:6px 8px;
   background: linear-gradient(180deg, #faf8ef 0%, #e7e1cf 100%); border-bottom:1px solid #c4baa0;
 }
-.mioos-classic-toolbar-group { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.mioos-classic-toolbar-group { display:flex; align-items:center; gap:4px; flex-wrap:nowrap; }
 .mioos-classic-tool {
-  border:1px solid var(--mioos-classic-border); border-radius:3px; background:linear-gradient(180deg, #ffffff 0%, #e7edf8 100%); color:var(--mioos-classic-text); padding:5px 10px;
+  border:1px solid var(--mioos-classic-border); border-radius:3px; background:linear-gradient(180deg, #ffffff 0%, #e7edf8 100%); color:var(--mioos-classic-text); padding:3px 8px; font-size:12px;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
 }
 .mioos-classic-tool.default { background: linear-gradient(180deg, #fff5c8 0%, #f3d86d 100%); }
 .mioos-classic-tool:disabled { opacity: .55; }
+.mioos-classic-tool--icon { min-width:26px; padding:3px 0; justify-content:center; }
+.mioos-classic-toolbar--explorer { flex-wrap:nowrap; }
+.mioos-classic-toolbar-group--nav { flex:0 0 auto; }
+.mioos-classic-toolbar-group--actions { min-width:0; overflow:auto; }
 .mioos-classic-addressbar {
-  display:grid; grid-template-columns:auto 1fr auto; gap:8px; align-items:center; padding:8px 10px; background:#f7f4ea; border-bottom:1px solid #cbc4b2;
+  display:grid; grid-template-columns:auto 1fr auto; gap:6px; align-items:center; padding:6px 8px; background:#f7f4ea; border-bottom:1px solid #cbc4b2;
 }
 .mioos-classic-addressbar span { font-size:12px; color:var(--mioos-classic-muted); }
 .mioos-classic-addressbar input,
@@ -194,7 +200,7 @@
 .mioos-classic-fieldset textarea {
   width:100%; min-width:0; border:1px solid #7f9db9; border-radius:2px; background:#fff; padding:6px 8px; color:var(--mioos-classic-text);
 }
-.mioos-classic-workarea { min-height:0; display:grid; grid-template-columns: 220px minmax(0,1fr); }
+.mioos-classic-workarea { min-height:0; display:grid; grid-template-columns: minmax(0,1fr); }
 .mioos-classic-sidebar {
   background: linear-gradient(180deg, #f6fbff 0%, #eaf3fd 22%, #f4f1e6 22.01%, #ece8da 100%);
   border-right:1px solid #c3bba8; padding:10px 8px; display:grid; gap:10px; align-content:start;
@@ -213,21 +219,21 @@
   min-width:0; display:grid; grid-template-rows:auto 1fr auto; background:#fff; position:relative;
 }
 .mioos-classic-browser-head {
-  display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 12px; background:linear-gradient(180deg, #ffffff 0%, #f0ede3 100%); border-bottom:1px solid #dbd2bf;
+  display:flex; align-items:center; justify-content:space-between; gap:10px; padding:7px 10px; background:linear-gradient(180deg, #ffffff 0%, #f0ede3 100%); border-bottom:1px solid #dbd2bf;
 }
 .mioos-classic-browser-head small { display:block; color:var(--mioos-classic-muted); margin-top:2px; }
 .mioos-classic-viewbar { display:flex; gap:6px; }
 .mioos-classic-viewbar .mioos-classic-tool.is-current { background: linear-gradient(180deg, #fff5c8 0%, #f3d86d 100%); }
 .mioos-classic-browser-body { min-height:0; overflow:auto; }
 .mioos-classic-listhead, .mioos-classic-row {
-  display:grid; grid-template-columns:minmax(0,2.2fr) 140px 160px 100px; gap:10px; align-items:center;
+  display:grid; grid-template-columns:minmax(0,2.4fr) 130px 150px 90px; gap:8px; align-items:center;
 }
 .mioos-classic-listhead {
-  position: sticky; top: 0; z-index: 1; padding:6px 12px; background: linear-gradient(180deg, #f8f8f8 0%, #e1e1e1 100%); border-bottom:1px solid #c7c7c7; font-size:11px; font-weight:700; text-transform:uppercase; color:#4c617d;
+  position: sticky; top: 0; z-index: 1; padding:5px 10px; background: linear-gradient(180deg, #f8f8f8 0%, #e1e1e1 100%); border-bottom:1px solid #c7c7c7; font-size:11px; font-weight:700; color:#4c617d;
 }
 .mioos-classic-listbody { min-height:0; }
 .mioos-classic-row {
-  width:100%; padding:6px 12px; border:0; border-bottom:1px solid #eef2f6; background:transparent; text-align:left; color:var(--mioos-classic-text);
+  width:100%; padding:5px 10px; border:0; border-bottom:1px solid #eef2f6; background:transparent; text-align:left; color:var(--mioos-classic-text);
 }
 .mioos-classic-row:hover { background:#edf4ff; }
 .mioos-classic-row.is-selected, .mioos-classic-iconitem.is-selected { background: linear-gradient(180deg, #dce9fb 0%, #c6dcfa 100%); outline:1px solid #7da2ce; }
@@ -248,7 +254,7 @@
 .mioos-classic-iconitem strong { font-size:12px; }
 .mioos-classic-iconitem small { color:var(--mioos-classic-muted); font-size:11px; }
 .mioos-classic-statusbar {
-  display:flex; justify-content:space-between; gap:12px; padding:6px 10px; background:linear-gradient(180deg, #f7f6f3 0%, #e5e0d1 100%); border-top:1px solid #cabfa5; font-size:11px; color:var(--mioos-classic-muted);
+  display:flex; justify-content:space-between; gap:10px; padding:4px 8px; background:linear-gradient(180deg, #f7f6f3 0%, #e5e0d1 100%); border-top:1px solid #cabfa5; font-size:11px; color:var(--mioos-classic-muted);
 }
 .mioos-classic-contextmenu {
   position:absolute; z-index:30; width:220px; border:1px solid #7f9db9; background:#fff; box-shadow: 3px 3px 10px rgba(0,0,0,0.2); padding:4px;
@@ -359,8 +365,17 @@
 }
 
 @media (max-width: 760px) {
-  .mioos-taskbar--workspace { flex-wrap:wrap; }
-  .mioos-tray { width:100%; justify-content:flex-end; }
+  .mioos-taskbar--workspace { flex-wrap:nowrap !important; }
+  .mioos-tray { justify-content:flex-end; }
+  .mioos-tray-pill { display:none; }
   .mioos-classic-formgrid { grid-template-columns: 1fr; }
-  .mioos-classic-listhead, .mioos-classic-row { grid-template-columns:minmax(0,1.5fr) 100px 120px 80px; }
+  .mioos-classic-listhead, .mioos-classic-row { grid-template-columns:minmax(0,1.5fr) 92px 108px 70px; }
 }
+
+.mioos-classic-browser--solo { grid-template-rows:auto 1fr auto; }
+
+.mioos-start-locale { display:grid; gap:6px; margin-top:10px; }
+.mioos-start-locale label { font-size:12px; color:var(--mioos-classic-muted); }
+.mioos-start-locale select { border:1px solid #7f9db9; border-radius:2px; background:#fff; padding:5px 8px; }
+
+.mioos-folder-context-menu { position:absolute; }

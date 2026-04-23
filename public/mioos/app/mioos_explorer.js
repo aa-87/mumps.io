@@ -1854,12 +1854,59 @@
         event.dataTransfer.setData('application/x-mioos-item', payload);
         event.dataTransfer.setData('text/plain', item.name || item.title || 'item');
       },
+      explorerItemTypeLabel: function (item) {
+        var kind = String((item && (item.kind || item.type || '')) || '').toLowerCase();
+        if (!kind && item && item.mime) kind = String(item.mime).toLowerCase();
+        if (kind === 'folder' || kind === 'inode/directory') return 'File folder';
+        if (kind === 'terminal' || kind === 'terminal-launcher') return 'Terminal';
+        if (kind === 'app' || kind === 'application' || kind.indexOf('launcher') >= 0) return 'Application';
+        if (kind === 'image') return 'Image';
+        if (kind === 'media' || kind === 'video' || kind === 'audio') return 'Media';
+        if (kind === 'pdf') return 'PDF document';
+        if (kind === 'file') return 'File';
+        if (item && item.mime) return String(item.mime);
+        return 'Item';
+      },
+      explorerItemModifiedLabel: function (item) {
+        var value = item && (item.modifiedAt || item.updatedAt || item.createdAt || item.modified || '');
+        if (!value || !this.formatTransportTime) return '—';
+        return this.formatTransportTime(value, { month: 'numeric', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+      },
+      explorerItemSizeLabel: function (item) {
+        var size;
+        var kind = String((item && (item.kind || item.mime || '')) || '').toLowerCase();
+        if (!item) return '—';
+        if (kind === 'folder' || kind === 'inode/directory') return '—';
+        if (kind === 'app' || kind === 'application' || kind === 'terminal' || kind === 'terminal-launcher' || kind.indexOf('launcher') >= 0) return '';
+        if (item.sizeLabel) return item.sizeLabel;
+        if (item.sizeText) return item.sizeText;
+        size = +(item.size || item.bytes || item.sizeBytes || 0);
+        if (!size) return kind === 'file' ? '0 B' : '—';
+        return this.formatBytesCompact ? this.formatBytesCompact(size) : (size + ' B');
+      },
       openFolderContextMenu: function (windowId, event, item) {
+        var browser;
+        var rect;
         var win = this.windows.find(function (entry) { return entry.id === windowId; });
         var state = this.ensureExplorerWindowState(win);
+        var left = 0;
+        var top = 0;
         if (!state) return;
+        if (this.closeDesktopContextMenu) this.closeDesktopContextMenu();
+        if (this.closeWindowMenu) this.closeWindowMenu();
         if (item) this.selectExplorerItem(windowId, item);
-        state.contextMenu = { open: true, left: (event && event.clientX) || 0, top: (event && event.clientY) || 0 };
+        browser = event && event.currentTarget && event.currentTarget.closest ? event.currentTarget.closest('.mioos-classic-browser') : null;
+        rect = browser && browser.getBoundingClientRect ? browser.getBoundingClientRect() : null;
+        if (rect) {
+          left = (event && event.clientX ? event.clientX : rect.left) - rect.left;
+          top = (event && event.clientY ? event.clientY : rect.top) - rect.top;
+          left = Math.max(8, Math.min(left, Math.max(8, rect.width - 228)));
+          top = Math.max(8, Math.min(top, Math.max(8, rect.height - 240)));
+        } else {
+          left = (event && event.clientX) || 0;
+          top = (event && event.clientY) || 0;
+        }
+        state.contextMenu = { open: true, left: left, top: top };
       },
       closeFolderContextMenu: function (windowId) {
         var win = this.windows.find(function (entry) { return entry.id === windowId; });

@@ -112,7 +112,7 @@
         appSurfaceModel: 'shell-standard-actions',
         appActions: { confirmBeforeDestructive: true, notifyOnAdminActions: true, copyExportsToClipboard: true, moduleNotesSessionLocal: true },
         shellSurfaces: { explorer: true, customize: true, folderProperties: true, transfers: true, notifications: true, dialogs: true, windowSwitcher: true, moduleWindows: false, workspacePager: false },
-        notifications: { model: 'toast-and-tray', stackLimit: 6, tray: true },
+        notifications: { model: 'tray-panel', stackLimit: 6, tray: true },
         dialogs: { model: 'shell-standard', confirm: true, input: true },
         shortcuts: { showDesktop: 'Meta+D', windowSwitcher: 'Alt+Tab', closeFocusedWindow: 'Shift+Escape', snapLeft: 'Alt+Shift+ArrowLeft', snapRight: 'Alt+Shift+ArrowRight', maximizeFocusedWindow: 'Alt+Shift+ArrowUp', restoreFocusedWindow: 'Alt+Shift+ArrowDown', previousWorkspace: 'Ctrl+Alt+ArrowLeft', nextWorkspace: 'Ctrl+Alt+ArrowRight', moveFocusedWindowPreviousWorkspace: 'Ctrl+Alt+Shift+ArrowLeft', moveFocusedWindowNextWorkspace: 'Ctrl+Alt+Shift+ArrowRight' },
         persistence: { desktopLayout: 'localstorage-desktop-layout', windowLayout: 'localstorage-window-layout', authWindow: 'localstorage-auth-window-frame', themeProfile: 'localstorage-applied-profile' },

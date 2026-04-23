@@ -36,7 +36,7 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","brand","title"))="" SET CONF("mioos","brand","title")="MIOOS"
 	IF $GET(CONF("mioos","brand","subtitle"))="" SET CONF("mioos","brand","subtitle")="MUMPS-powered web desktop shell"
 	IF $GET(CONF("mioos","i18n","default"))="" SET CONF("mioos","i18n","default")="en"
-	IF $GET(CONF("mioos","desktop","theme"))="" SET CONF("mioos","desktop","theme")="classic-horizon-light"
+	IF $GET(CONF("mioos","desktop","theme"))="" SET CONF("mioos","desktop","theme")="luna-blue"
 	IF $GET(CONF("mioos","desktop","wallpaper"))="" SET CONF("mioos","desktop","wallpaper")="aurora"
 	IF $GET(CONF("mioos","desktop","density"))="" SET CONF("mioos","desktop","density")="comfortable"
 	IF $GET(CONF("mioos","desktop","fontFamily"))="" SET CONF("mioos","desktop","fontFamily")="Segoe UI"
@@ -168,8 +168,8 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","fs","readPreviewBytes"))="" SET CONF("mioos","fs","readPreviewBytes")=262144
 	IF $GET(CONF("mioos","fs","readWindowBytes"))="" SET CONF("mioos","fs","readWindowBytes")=262144
 	IF $GET(CONF("mioos","fs","transferPersistence"))="" SET CONF("mioos","fs","transferPersistence")="localstorage-resumable-transfer-list"
-	IF $GET(CONF("mioos","download","mediaInitialBytes"))="" SET CONF("mioos","download","mediaInitialBytes")=262144
-	IF $GET(CONF("mioos","download","mediaWarmupBytes"))="" SET CONF("mioos","download","mediaWarmupBytes")=65536
+	IF $GET(CONF("mioos","download","mediaInitialBytes"))="" SET CONF("mioos","download","mediaInitialBytes")=131072
+	IF $GET(CONF("mioos","download","mediaWarmupBytes"))="" SET CONF("mioos","download","mediaWarmupBytes")=131072
 	IF $GET(CONF("mioos","fs","transport"))="" SET CONF("mioos","fs","transport")="http-and-websocket"
 	IF $GET(CONF("mioos","upload","chunkBytes"))="" SET CONF("mioos","upload","chunkBytes")=860000
 	IF $GET(CONF("mioos","upload","concurrency"))="" SET CONF("mioos","upload","concurrency")=3

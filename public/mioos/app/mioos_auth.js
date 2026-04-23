@@ -118,9 +118,9 @@
           });
       },
       showAlert: function (title, message) {
-        this.alertTitle = title;
-        this.alertMessage = message;
-        if (this.pushNotification) this.pushNotification('alert', title, message, { timeoutMs: 5200 });
+        this.alertTitle = '';
+        this.alertMessage = '';
+        if (this.pushNotification) this.pushNotification('alert', title, message, { sticky: true });
       },
       dismissAlert: function () {
         this.alertTitle = '';
