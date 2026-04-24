@@ -56,3 +56,9 @@ The Customize window now applies more user-editable profile fields directly as r
 ### Server-rendered first paint
 
 The shell no longer depends on an authenticated theme-load XHR before sign-in. `MIOOSUI` emits a small MIOTPL-rendered inline theme variable block on `#mioosRoot`, giving the login and first desktop paint a stable themed appearance. After sign-in, the Customize window and authenticated shell session may call the globals-backed theme service to load and save detailed profiles.
+
+## ROI 60 first-paint theme flow
+
+Active profiles saved through `MIOOSTHEME` are now resolved during `LOAD^MIOOSST` and rendered through `THEMEINL^MIOOSUI`. This keeps boot fast and avoids the visible flash/lag caused by client-side theme loading before authentication. The browser still supports `themeStudioLoadRemote()` from Customize, but automatic startup theme loading now prefers the server-rendered `desktop.activeThemeProfile` boot contract.
+
+Uploaded wallpapers are stored as VFS files and referenced by blob URLs in the saved profile (`desktop.wallpaperPreset="custom-url"`, `desktop.wallpaperUrl=<blob-url>`). The initial renderer maps those values into `--mioos-desktop-background` so custom wallpapers can appear on first paint after sign-in.

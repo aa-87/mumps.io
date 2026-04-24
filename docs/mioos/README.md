@@ -346,3 +346,7 @@ This pass keeps the single-desktop shell direction and hardens the remaining UI/
 ### ROI follow-up: server-rendered theme boot, upload reconciliation, and shell polish
 
 This pass removes the unauthenticated boot-time `/api/mioos/theme/load` request. The initial shell theme is rendered through MIOTPL using inline shell CSS variables from `MIOOSUI`, while the Customize window can still load/save profiles after authenticated shell access. Multi-file upload commit is hardened by reconciling server upload status before finalize and by recounting received chunk bytes during commit. Explorer and transfer surfaces also receive additional compact sizing and overflow hardening for long filenames and large lists.
+
+### ROI 60 — server-rendered theme first paint and focused shell polish
+
+This ROI moves active theme application back into the initial MIOTPL render path so the shell no longer performs an unauthorized `/api/mioos/theme/load` request before sign-in. `MIOOSST` now exposes the active globals-backed profile in boot state, `MIOOSUI` resolves matching CSS variables for first paint, and the client only reloads saved themes from the Customize window after authentication. The pass also hardens wallpaper upload ID detection, removes completed-transfer duplication from the active queue, and adds native-shell sizing overrides for Explorer, Transfers, Start Menu, and Customize previews.

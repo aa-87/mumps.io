@@ -949,11 +949,12 @@
           error: '',
           uploadId: ''
         });
-        function finalize() {
+        function finalize(response) {
+          var responsePayload = payloadRoot(response || {});
           transferControl.cancelled = false;
           transferControl.paused = false;
           return self.refreshExplorerWindow(windowId).then(function () {
-            var uploadedId = '';
+            var uploadedId = responsePayload.id || responsePayload.key || responsePayload.fileId || '';
             var uploadedItem = null;
             if (self.refreshView) self.refreshView();
             if (state && Array.isArray(state.items)) {
@@ -961,7 +962,7 @@
                 return entry && ((entry.name === file.name) || (entry.title === file.name));
               }) || null;
             }
-            if (uploadedItem && uploadedItem.id) {
+            if (!uploadedId && uploadedItem && uploadedItem.id) {
               uploadedId = uploadedItem.id;
               state.selection = clone(uploadedItem);
             } else if (((state || {}).selection || {}).id) {
@@ -2114,7 +2115,7 @@
         var self = this;
         var fileRoute = ((((this.boot || {}).routes || {}).fsBlob) || '/api/mioos/fs/blob');
         var win = this.windows.find(function (entry) { return entry.id === windowId; });
-        var sourceWindowId = (((self.windows || []).find(function (entry) { return entry.appKey === 'home'; }) || {}).id) || '';
+        var sourceWindowId = (((self.windows || []).find(function (entry) { return entry.appKey === 'home'; }) || {}).id) || 'win-home';
         if (!win || !sourceWindowId || !self.uploadSingleFileToExplorer) return Promise.resolve(null);
         return new Promise(function (resolve) {
           createUploadInput(function (event) {

@@ -137,6 +137,7 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("commandErrorEvent")=$GET(CONF("mioos","desktop","transport","errorEvent"),"desktop.error")
 	SET STATE("transportModel")=$GET(CONF("mioos","desktop","transport","model"),"core-websocket-plus-app-websockets")
 	SET STATE("themeMode")=$GET(CONF("mioos","desktop","themeMode"),$SELECT($GET(CONF("mioos","desktop","theme"))["dark":"dark",1:"light"))
+	DO ACTIVETHM(.STATE,.CONF)
 	SET STATE("themeSystemEditor")=$GET(CONF("mioos","desktop","themeSystem","editor"),"customize")
 	SET STATE("themeSystemPersistence")=$GET(CONF("mioos","desktop","themeSystem","persistence"),"globals-profile-service-with-localstorage-fallback")
 	SET STATE("themeSystemLiveApply")=+$GET(CONF("mioos","desktop","themeSystem","liveApply"),1)
@@ -190,6 +191,25 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	DO WINDOWS(.STATE)
 	DO LOADPREFS(.STATE,.CONF)
 	QUIT 1
+	;
+ACTIVETHM(STATE,CONF)
+	NEW OUT,ERR,KEY,MODE,DENSITY
+	KILL OUT,ERR,STATE("activeThemeProfile"),STATE("activeThemeKey")
+	IF '+$GET(STATE("authenticated")) QUIT
+	IF '+$$LOAD^MIOOSTHEME(.STATE,.CONF,.OUT,.ERR) QUIT
+	IF '+$DATA(OUT("profile")) QUIT
+	MERGE STATE("activeThemeProfile")=OUT("profile")
+	SET STATE("activeThemeKey")=$GET(OUT("profileKey"),$GET(OUT("activeKey")))
+	SET KEY=$GET(STATE("activeThemeProfile","presetKey"))
+	IF KEY="" SET KEY=$GET(STATE("activeThemeProfile","key"))
+	IF KEY'="" SET STATE("themeKey")=KEY
+	SET MODE=$GET(STATE("activeThemeProfile","mode"))
+	IF MODE="" SET MODE=$GET(STATE("activeThemeProfile","activeMode"))
+	IF MODE'="" SET STATE("themeMode")=MODE
+	SET DENSITY=$GET(STATE("activeThemeProfile","density"))
+	IF DENSITY="" SET DENSITY=$GET(STATE("activeThemeProfile","appearance","density"))
+	IF DENSITY'="" SET STATE("density")=DENSITY
+	QUIT
 	;
 LOADPREFS(STATE,CONF)
 	NEW USER,ROOT,KEY
@@ -500,6 +520,8 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","performance","uploadUiStrategy")="throttled-progress-updates-and-persistent-resume"
 	SET OBJ("desktop","performance","uploadBatching")="websocket-batch-with-single-chunk-fallback"
 	DO THEMES($NAME(OBJ("desktop","themes")),$GET(STATE("themeKey")))
+	IF $DATA(STATE("activeThemeProfile")) MERGE OBJ("desktop","activeThemeProfile")=STATE("activeThemeProfile")
+	IF $GET(STATE("activeThemeKey"))'="" SET OBJ("desktop","activeThemeKey")=$GET(STATE("activeThemeKey"))
 	MERGE OBJ("apps")=STATE("apps")
 	DO MERGELAYOUT(.STATE,$NAME(OBJ("apps")))
 	MERGE OBJ("windows")=STATE("windows")

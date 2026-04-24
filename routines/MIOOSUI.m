@@ -38,6 +38,9 @@ DESKCTX(STATE,CONF,DATA)
 	SET DATA("windowManager")=$GET(STATE("windowManager"),"mioos-native-vue-css")
 	SET DATA("themeMode")=$GET(STATE("themeMode"),"light")
 	SET DATA("themeInlineStyle")=$$THEMEINL(.STATE)
+	SET DATA("themeKey")=$GET(STATE("themeKey"),$GET(DATA("themeKey"),"foundation-light"))
+	SET DATA("themeMode")=$GET(STATE("themeMode"),$GET(DATA("themeMode"),"light"))
+	SET DATA("density")=$GET(STATE("density"),$GET(DATA("density"),"comfortable"))
 	SET DATA("motionPreference")=$GET(STATE("a11yMotionPreference"),"respect-user-preference")
 	SET DATA("windowSnapThreshold")=+$GET(STATE("windowSnapThreshold"),28)
 	SET DATA("windowResizeModel")="all-edges-and-corners"
@@ -49,7 +52,7 @@ DESKCTX(STATE,CONF,DATA)
 	SET DATA("bootJson")=$$BOOTJSON^MIOOSST(.STATE,.CONF)
 	QUIT
 THEMEINL(STATE)
-	NEW KEY,MODE,TOP,MID,BOT,TASK1,TASK2,START1,START2,TITLE1,TITLE2,PANEL,TEXT
+	NEW KEY,MODE,TOP,MID,BOT,TASK1,TASK2,START1,START2,TITLE1,TITLE2,PANEL,TEXT,PROFILE,URL,FIT,BG,DEN,ACCENT,TASKH,STARTW,TASKW,ICON,SPACE,BASE,TITLE,SIDE
 	SET KEY=$GET(STATE("themeKey"),"glass-horizon-light"),MODE=$GET(STATE("themeMode"),"light")
 	SET TOP="#2d66c2",MID="#153a79",BOT="#0d244b",TASK1="#6385bd",TASK2="#24406f",START1="#7fd25f",START2="#2f7e22",TITLE1="#6f93c7",TITLE2="#4e6e9f",PANEL="#f8fbff",TEXT="#173455"
 	IF KEY["meadow-classic" DO
@@ -64,4 +67,16 @@ THEMEINL(STATE)
 	. IF KEY["meadow-classic" SET TOP="#244a2a",MID="#1d2f39",BOT="#101921",TASK1="#223951",TASK2="#111e2d",TITLE1="#42607f",TITLE2="#203246"
 	. IF KEY["graphite-dock" SET TOP="#48505b",MID="#262b33",BOT="#12161d",TASK1="#2e343f",TASK2="#171c23",TITLE1="#6b7280",TITLE2="#39414d"
 	. IF KEY["ember-panel" SET TOP="#5e2b22",MID="#2b1714",BOT="#120d0f",TASK1="#3c241f",TASK2="#1b1110",TITLE1="#7f4333",TITLE2="#43201c"
-	QUIT "--mioos-desktop-background:radial-gradient(circle at 18% 20%,rgba(255,255,255,.20),transparent 26%),linear-gradient(180deg,"_TOP_" 0%,"_MID_" 52%,"_BOT_" 100%);--mioos-body-background:linear-gradient(180deg,"_TOP_" 0%,"_MID_" 55%,"_BOT_" 100%);--mioos-taskbar:"_TASK1_";--mioos-taskbar-dark:"_TASK2_";--mioos-start:"_START1_";--mioos-start-bottom:"_START2_";--mioos-titlebar:"_TITLE1_";--mioos-titlebar-bottom:"_TITLE2_";--mioos-panel:"_PANEL_";--mioos-text:"_TEXT_";"
+	IF $DATA(STATE("activeThemeProfile")) DO
+	. MERGE PROFILE=STATE("activeThemeProfile")
+	. SET KEY=$GET(PROFILE("presetKey"),$GET(PROFILE("key"),KEY)),MODE=$GET(PROFILE("mode"),$GET(PROFILE("activeMode"),MODE))
+	. SET TOP=$GET(PROFILE("desktop","wallpaperTop"),TOP),MID=$GET(PROFILE("desktop","wallpaperMiddle"),MID),BOT=$GET(PROFILE("desktop","wallpaperBottom"),BOT)
+	. SET TASK1=$GET(PROFILE("panel","taskbarTop"),TASK1),TASK2=$GET(PROFILE("panel","taskbarBottom"),TASK2),START1=$GET(PROFILE("panel","startTop"),START1),START2=$GET(PROFILE("panel","startBottom"),START2)
+	. SET TITLE1=$GET(PROFILE("windowChrome","titleTop"),TITLE1),TITLE2=$GET(PROFILE("windowChrome","titleBottom"),TITLE2),PANEL=$GET(PROFILE("colors","panel"),PANEL),TEXT=$GET(PROFILE("colors","panelText"),TEXT)
+	SET BG="radial-gradient(circle at 18% 20%,rgba(255,255,255,.20),transparent 26%),linear-gradient(180deg,"_TOP_" 0%,"_MID_" 52%,"_BOT_" 100%)"
+	SET URL=$GET(PROFILE("desktop","wallpaperUrl")),FIT=$GET(PROFILE("desktop","wallpaperFit"),"cover")
+	IF URL'="",$GET(PROFILE("desktop","wallpaperPreset"))="custom-url" SET BG="linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.02)),url('"_URL_"') center/"_$SELECT(FIT="tile":"240px auto repeat",FIT="contain":"contain no-repeat",FIT="center":"auto no-repeat",1:"cover no-repeat")
+	SET DEN=$GET(PROFILE("density"),$GET(PROFILE("appearance","density"),$GET(STATE("density"),"comfortable")))
+	SET ACCENT=$GET(PROFILE("appearance","accent"),"#72a8ff"),TASKH=+$GET(PROFILE("panel","height"),46),STARTW=+$GET(PROFILE("panel","startMinWidth"),92),TASKW=+$GET(PROFILE("panel","taskMinWidth"),122)
+	SET ICON=+$GET(PROFILE("desktop","iconSize"),54),SPACE=+$GET(PROFILE("desktop","iconSpacing"),16),BASE=+$GET(PROFILE("fonts","baseSize"),12),TITLE=+$GET(PROFILE("fonts","titleSize"),12),SIDE=+$GET(PROFILE("windowChrome","sidebarWidth"),220)
+	QUIT "--mioos-desktop-background:"_BG_";--mioos-body-background:linear-gradient(180deg,"_TOP_" 0%,"_MID_" 55%,"_BOT_" 100%);--mioos-taskbar:"_TASK1_";--mioos-taskbar-dark:"_TASK2_";--mioos-start:"_START1_";--mioos-start-bottom:"_START2_";--mioos-titlebar:"_TITLE1_";--mioos-titlebar-bottom:"_TITLE2_";--mioos-panel:"_PANEL_";--mioos-text:"_TEXT_";--mioos-blue-1:"_ACCENT_";--mioos-taskbar-height:"_TASKH_"px;--mioos-start-min-width:"_STARTW_"px;--mioos-task-min-width:"_TASKW_"px;--mioos-icon-size:"_ICON_"px;--mioos-icon-grid-gap:"_SPACE_"px;--mioos-base-size:"_BASE_"px;--mioos-title-size:"_TITLE_"px;--mioos-sidebar-width:"_SIDE_"px;"

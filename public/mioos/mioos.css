@@ -3125,3 +3125,35 @@ body {
 .mioos-classic-transferrow[data-status="cancelled"] { background: linear-gradient(180deg, rgba(255, 232, 232, .96), rgba(248, 210, 210, .9)); }
 .mioos-classic-transferrow[data-status="paused"] { background: linear-gradient(180deg, rgba(255, 245, 218, .96), rgba(246, 228, 178, .9)); }
 .mioos-classic-customize { --mioos-live-preview-border: var(--mioos-border); }
+
+/* ROI 60: native-shell polish for Home Explorer, transfers, start menu, and Customize live theme controls. */
+#mioosRoot .mioos-classic-explorer .mioos-classic-panelhead{min-height:34px;padding:6px 8px;align-items:center;background:linear-gradient(180deg,#f9fbff 0%,#e6eef8 100%)}
+#mioosRoot .mioos-classic-explorer .mioos-classic-panelhead span{display:none}
+#mioosRoot .mioos-classic-toolbar--explorer{min-height:32px;padding:4px 7px;gap:6px;background:linear-gradient(180deg,#fbfdff 0%,#e9f0f9 100%)}
+#mioosRoot .mioos-classic-addressbar{min-height:30px;padding:3px 7px;display:grid;grid-template-columns:minmax(0,1fr) minmax(180px,260px);gap:8px;align-items:center;background:#f7faff;border-bottom:1px solid #cbd7e7}
+#mioosRoot .mioos-classic-breadcrumbs{min-height:24px;display:flex;align-items:center;gap:4px;overflow:hidden;white-space:nowrap}
+#mioosRoot .mioos-classic-searchfield input{height:24px;min-height:24px;padding:2px 8px;font-size:12px}
+#mioosRoot .mioos-classic-explorer-layout{grid-template-columns:minmax(176px,var(--mioos-sidebar-width,220px)) minmax(0,1fr) minmax(220px,var(--mioos-preview-width,270px));min-height:0;overflow:hidden}
+#mioosRoot .mioos-classic-explorer-nav{overflow-x:hidden;overflow-y:auto;min-width:0}
+#mioosRoot .mioos-classic-navitem{grid-template-columns:22px minmax(0,1fr);min-width:0;padding:5px 6px;align-items:center}
+#mioosRoot .mioos-classic-navitem span:not(.mioos-classic-navglyph),#mioosRoot .mioos-classic-navitem small{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#mioosRoot .mioos-classic-detailtable{min-width:0;overflow:hidden}
+#mioosRoot .mioos-classic-listhead,#mioosRoot .mioos-classic-row{grid-template-columns:minmax(180px,1.8fr) minmax(130px,.9fr) minmax(110px,.7fr) minmax(70px,.45fr);min-width:0}
+#mioosRoot .mioos-classic-row>*{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#mioosRoot .mioos-classic-row em{font-style:normal;word-break:break-word;white-space:normal;line-height:1.25}
+#mioosRoot .mioos-classic-previewpane{min-width:0;overflow:hidden}
+#mioosRoot .mioos-classic-queue{border:1px solid #aebcd0;background:#fff;overflow:hidden}
+#mioosRoot .mioos-classic-queuerow,#mioosRoot .mioos-classic-transferrow{grid-template-columns:minmax(190px,1.7fr) minmax(150px,1.1fr) minmax(160px,.9fr) minmax(110px,.65fr) minmax(72px,.45fr) auto;min-height:34px;padding:5px 8px;align-items:center}
+#mioosRoot .mioos-classic-transferrow{border-left:4px solid #88a7ce}
+#mioosRoot .mioos-classic-transferrow.is-active{border-left-color:#4b86e8;background:#f2f7ff}
+#mioosRoot .mioos-classic-transferrow.is-success{border-left-color:#3f9b36;background:#f3fbf1}
+#mioosRoot .mioos-classic-transferrow.is-warning{border-left-color:#d8922f;background:#fff8e8}
+#mioosRoot .mioos-classic-transferrow.is-error{border-left-color:#c74444;background:#fff1f1}
+#mioosRoot .mioos-classic-transfercopy strong,#mioosRoot .mioos-classic-queuepath{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#mioosRoot .mioos-classic-transfercopy small{display:block;white-space:nowrap;color:#66788f;font-size:11px}
+#mioosRoot .mioos-classic-transferactions{display:flex;gap:4px;justify-content:flex-end;white-space:nowrap}
+#mioosRoot .mioos-classic-start-list{max-height:min(52vh,520px);overflow:auto;overscroll-behavior:contain}
+#mioosRoot .mioos-start-app{min-height:32px;display:grid;grid-template-columns:26px minmax(0,1fr);align-items:center;gap:7px;padding:5px 8px}
+#mioosRoot .mioos-start-app strong,#mioosRoot .mioos-start-app span,#mioosRoot .mioos-start-app em{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#mioosRoot .mioos-classic-customize-main input,#mioosRoot .mioos-classic-customize-main select{min-height:24px}
+#mioosRoot .mioos-classic-desktoppreview{background:var(--mioos-desktop-background)!important}

@@ -171,7 +171,6 @@
         this.normalizeDesktopUiState();
         this.applyBootThemeDefaults();
         this.applyPersistedThemeStudioProfile();
-        if (!this.requiresSignin) this.themeStudioLoadRemote();
         this.applyDocumentLocale();
         this.startClock();
         if (!this.requiresSignin) {
@@ -541,6 +540,7 @@
           var rows = (this.transferCenter.items || []).filter(function (item) {
             var key;
             if (!item) return false;
+            if (['completed','failed','cancelled'].indexOf(item.status) >= 0) return false;
             key = item.id || [item.kind || "", item.name || "", item.totalBytes || 0, item.status || "", item.resume && item.resume.uploadId || ""].join("|");
             if (seen[key]) return false;
             seen[key] = 1;
@@ -1855,16 +1855,19 @@
         },
         applyBootThemeDefaults: function () {
           var desktop = (this.boot || {}).desktop || {};
-          var preset = this.themeStudioPresetProfile(desktop.themeKey || 'luna-blue');
+          var bootProfile = desktop.activeThemeProfile || desktop.themeProfile || null;
+          var preset = bootProfile ? this.themeStudioNormalizeProfile(bootProfile) : this.themeStudioPresetProfile(desktop.themeKey || 'luna-blue');
           preset.mode = desktop.themeMode || preset.mode || 'light';
           preset.activeMode = preset.mode;
           preset.density = desktop.density || preset.density || 'comfortable';
-          if (desktop.wallpaper) preset.desktop.wallpaperPreset = desktop.wallpaper;
+          if (!bootProfile && desktop.wallpaper) preset.desktop.wallpaperPreset = desktop.wallpaper;
+          this.themeStudioActiveKey = (bootProfile && (bootProfile.key || bootProfile.presetKey)) || this.themeStudioActiveKey || preset.presetKey || '';
           this.applyThemeStudioProfile(preset, { silent: true, persist: false });
         },
         applyPersistedThemeStudioProfile: function () {
           var raw;
           try {
+            if (((this.boot || {}).desktop || {}).activeThemeProfile) return;
             raw = window.localStorage.getItem(this.themeStudioStorageKey());
             if (!raw) return;
             this.appliedThemeProfile = this.themeStudioNormalizeProfile(JSON.parse(raw));

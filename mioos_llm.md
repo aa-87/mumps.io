@@ -478,3 +478,12 @@ All tests were passing at the start of this ROI. The next hardening pass address
 - Authenticated sessions still use the globals-backed Customize theme service for load/save after access is established.
 - Multi-file uploads now wait for upload-status reconciliation before commit, and `MIOOSFSUP` recounts chunk byte totals during commit to avoid false `missing_chunk` failures after 100% client progress.
 - Explorer, Start menu, and transfer surfaces received additional compact sizing and overflow hardening for native-shell behavior with long names and larger item counts.
+
+## ROI 60 — MIOTPL theme first paint and native shell polish
+
+- Removed automatic pre-sign-in theme fetch from the client startup path.
+- Added active globals-backed theme profile to boot state and MIOTPL inline CSS variables.
+- Preserved manual Reload Saved behavior inside Customize for authenticated sessions.
+- Fixed wallpaper upload result handling so VFS IDs returned by write/upload responses can become blob-backed wallpaper URLs.
+- Deduped Transfer Center active queue by showing completed/failed/cancelled transfers only in history.
+- Added compact native-shell CSS overrides for Home Explorer, Transfer rows, Start Menu item capacity, and Customize previews.
