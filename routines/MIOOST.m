@@ -52,6 +52,7 @@ MIOOST ; MIOOS tests
 	DO T055
 	DO T056
 	DO T057
+	DO T058
 	QUIT
 	;
 RESET
@@ -1201,4 +1202,26 @@ T057
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","vm.openDesktopEntry(icon)"),"[MIOOST][T057][desktop icon opener]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSVM.m","DESKTOPVM"),"[MIOOST][T057][vfs desktop vm]")
 	QUIT
+	;
+T058
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-explorer-native"),"[MIOOST][T058][native explorer shell]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","role=""menubar"""),"[MIOOST][T058][explorer menubar]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-explorer-nav-pane"),"[MIOOST][T058][navigation pane]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-explorer-listview"),"[MIOOST][T058][details listview]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-explorer-statusbar"),"[MIOOST][T058][status bar]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-explorer-context-menu"),"[MIOOST][T058][explorer context menu]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","vm.explorerPromptUpload(window.id)"),"[MIOOST][T058][upload action retained]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","vm.explorerDownloadSelected(window.id)"),"[MIOOST][T058][download action retained]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","explorerQuickPlaces"),"[MIOOST][T058][quick places method]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","explorerVisibleItems"),"[MIOOST][T058][filtered sorted items]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","explorerSortBy"),"[MIOOST][T058][sortable columns]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","explorerGoBack"),"[MIOOST][T058][history back]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","explorerGoForward"),"[MIOOST][T058][history forward]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","openExplorerContextMenu"),"[MIOOST][T058][context handler]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","explorerPasteIntoWindow"),"[MIOOST][T058][vfs copy paste]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-explorer-native"),"[MIOOST][T058][native explorer css]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-explorer-listview"),"[MIOOST][T058][listview css]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-explorer-context-menu"),"[MIOOST][T058][context css]")
+	QUIT
+	;
 	;

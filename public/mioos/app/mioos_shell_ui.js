@@ -155,56 +155,129 @@
         computed: {
           vm: function () { return root(this); },
           state: function () { return this.vm.ensureExplorerWindowState(this.window) || {}; },
-          items: function () { return (this.state && this.state.items) || []; },
-          preview: function () { return (this.state && this.state.preview) || {}; }
+          items: function () { return this.vm.explorerVisibleItems(this.state); },
+          folders: function () { return this.items.filter(function (item) { return String(item.kind || item.type || '').toLowerCase() === 'folder'; }); },
+          preview: function () { return (this.state && this.state.preview) || {}; },
+          quickPlaces: function () { return this.vm.explorerQuickPlaces(); },
+          selectedKey: function () { return this.vm.explorerSelectedKey(this.state); }
         },
         mounted: function () { this.vm.bootstrapExplorerWindow(this.window.id, false); },
         methods: {
+          itemKey: function (item) { return (item && (item.id || item.key || item.path || item.name)) || ''; },
           select: function (item) { this.vm.selectExplorerItem(this.window.id, item); },
-          open: function (item) { this.vm.explorerOpenItem(this.window.id, item); }
+          open: function (item) { this.vm.explorerOpenItem(this.window.id, item); },
+          navigate: function (place) { this.vm.explorerNavigateToPlace(this.window.id, place.id); },
+          sort: function (key) { this.vm.explorerSortBy(this.window.id, key); },
+          setView: function (mode) { this.vm.explorerSetViewMode(this.window.id, mode); },
+          rowMenu: function (item, event) { this.vm.openExplorerContextMenu(this.window.id, item, event); },
+          blankMenu: function (event) { this.vm.openExplorerContextMenu(this.window.id, null, event); },
+          sortMark: function (key) { return this.state.sortKey === key ? (this.state.sortDir === 'desc' ? '▼' : '▲') : ''; }
         },
-        template: '' +
-          '<div class="mioos-surface mioos-surface-explorer">' +
-            '<div class="mioos-surface-toolbar">' +
-              '<button type="button" class="mioos-btn" @click="vm.explorerGoUp(window.id)">Up</button>' +
-              '<button type="button" class="mioos-btn" @click="vm.refreshExplorerWindow(window.id)">Refresh</button>' +
-              '<button type="button" class="mioos-btn" @click="vm.explorerPromptUpload(window.id)">Upload</button>' +
-              '<button type="button" class="mioos-btn" @click="vm.explorerCreateFolder(window.id)">New Folder</button>' +
-              '<button type="button" class="mioos-btn" :disabled="!state.selection" @click="vm.explorerRenameSelected(window.id)">Rename</button>' +
-              '<button type="button" class="mioos-btn is-danger" :disabled="!state.selection" @click="vm.explorerDeleteSelected(window.id)">Delete</button>' +
-            '</div>' +
-            '<div class="mioos-addressbar-vue"><span>[[ (state.folder || {}).path || \'/\' ]]</span></div>' +
-            '<div class="mioos-explorer-grid-vue">' +
-              '<aside class="mioos-explorer-sidebar-vue">' +
-                '<strong>Details</strong>' +
-                '<template v-if="state.selection">' +
-                  '<span>[[ state.selection.name || state.selection.title ]]</span>' +
-                  '<span>[[ state.selection.kind || state.selection.type || \'file\' ]]</span>' +
-                  '<span>[[ state.selection.mime || \'application/octet-stream\' ]]</span>' +
-                  '<span>[[ state.selection.sizeLabel || state.selection.sizeBytes || \'—\' ]]</span>' +
-                '</template>' +
-                '<span v-else>Select a file to preview it.</span>' +
-              '</aside>' +
-              '<section class="mioos-explorer-list-vue">' +
-                '<div class="mioos-explorer-empty" v-if="state.loading">Loading folder…</div>' +
-                '<div class="mioos-explorer-empty" v-else-if="state.error">[[ state.error ]]</div>' +
-                '<div class="mioos-explorer-empty" v-else-if="!items.length">This folder is empty.</div>' +
-                '<button v-for="item in items" :key="item.id || item.key" type="button" class="mioos-explorer-row-vue" :class="{ \'is-selected\': state.selection && (state.selection.id || state.selection.key) === (item.id || item.key) }" @click="select(item)" @dblclick="open(item)">' +
-                  '<span class="mioos-explorer-row-icon">[[ vm.explorerItemGlyph(item) ]]</span>' +
-                  '<span class="mioos-explorer-row-main"><strong>[[ item.name || item.title ]]</strong><em>[[ item.mime || item.kind || item.type || \'file\' ]]</em></span>' +
-                  '<span class="mioos-explorer-row-size">[[ item.sizeLabel || item.sizeBytes || \'\' ]]</span>' +
-                '</button>' +
-              '</section>' +
-              '<aside class="mioos-explorer-preview-vue">' +
-                '<strong>[[ preview.title || \'Preview\' ]]</strong>' +
-                '<pre v-if="preview.content" class="mioos-preview-pre">[[ preview.content ]]</pre>' +
-                '<img v-else-if="preview.imageSrc" :src="preview.imageSrc" alt="Preview" class="mioos-preview-image">' +
-                '<video v-else-if="preview.mediaSrc && preview.mediaKind === \'video\'" :src="preview.mediaSrc" controls class="mioos-preview-media"></video>' +
-                '<audio v-else-if="preview.mediaSrc && preview.mediaKind === \'audio\'" :src="preview.mediaSrc" controls class="mioos-preview-media"></audio>' +
-                '<div v-else class="mioos-explorer-empty">Pick a supported file to preview it here.</div>' +
-              '</aside>' +
-            '</div>' +
-          '</div>'
+        template: `
+          <div class="mioos-surface mioos-surface-explorer mioos-explorer-native" @contextmenu.prevent="blankMenu($event)" @click="vm.closeExplorerContextMenu(window.id)">
+            <nav class="mioos-explorer-menu-strip" role="menubar" aria-label="Explorer menu" @click.stop>
+              <button role="menuitem" type="button">File</button>
+              <button role="menuitem" type="button">Edit</button>
+              <button role="menuitem" type="button">View</button>
+              <button role="menuitem" type="button">Tools</button>
+            </nav>
+            <div class="mioos-explorer-toolbar" @click.stop>
+              <button type="button" class="mioos-explorer-command" :disabled="!((state.history || []).length)" @click="vm.explorerGoBack(window.id)">‹ Back</button>
+              <button type="button" class="mioos-explorer-command" :disabled="!((state.future || []).length)" @click="vm.explorerGoForward(window.id)">Forward ›</button>
+              <button type="button" class="mioos-explorer-command" @click="vm.explorerGoUp(window.id)">Up</button>
+              <button type="button" class="mioos-explorer-command" @click="vm.refreshExplorerWindow(window.id)">Refresh</button>
+              <span class="mioos-explorer-toolbar-divider"></span>
+              <button type="button" class="mioos-explorer-command" @click="vm.explorerPromptUpload(window.id)">Upload</button>
+              <button type="button" class="mioos-explorer-command" :disabled="!state.selection" @click="vm.explorerDownloadSelected(window.id)">Download</button>
+              <button type="button" class="mioos-explorer-command" @click="vm.explorerCreateFolder(window.id)">New Folder</button>
+              <button type="button" class="mioos-explorer-command" :disabled="!state.selection" @click="vm.explorerRenameSelected(window.id)">Rename</button>
+              <button type="button" class="mioos-explorer-command is-danger" :disabled="!state.selection" @click="vm.explorerDeleteSelected(window.id)">Delete</button>
+            </div>
+            <div class="mioos-explorer-address-row" @click.stop>
+              <label>Address</label>
+              <div class="mioos-explorer-addressbar" role="textbox" aria-label="Current folder">[[ (state.folder || {}).path || '/' ]]</div>
+              <input class="mioos-explorer-search" type="search" v-model="state.searchTerm" placeholder="Search this folder" aria-label="Search this folder">
+            </div>
+            <div class="mioos-explorer-layout">
+              <aside class="mioos-explorer-nav-pane" aria-label="Folders" @click.stop>
+                <strong class="mioos-explorer-pane-title">Folders</strong>
+                <ul class="mioos-explorer-tree-view" role="tree">
+                  <li v-for="place in quickPlaces" :key="place.id" role="treeitem">
+                    <button type="button" :class="{ 'is-active': state.folderId === place.id }" @click="navigate(place)"><span>[[ place.icon ]]</span><span>[[ place.label ]]</span></button>
+                  </li>
+                </ul>
+                <strong class="mioos-explorer-pane-title" v-if="folders.length">This folder</strong>
+                <ul class="mioos-explorer-tree-view mioos-explorer-tree-view-current" role="tree" v-if="folders.length">
+                  <li v-for="folder in folders" :key="itemKey(folder)" role="treeitem">
+                    <button type="button" @click="open(folder)"><span>📁</span><span>[[ folder.name || folder.title ]]</span></button>
+                  </li>
+                </ul>
+                <div class="mioos-explorer-details-card" v-if="state.selection">
+                  <strong>Details</strong>
+                  <span>[[ state.selection.name || state.selection.title ]]</span>
+                  <span>[[ vm.explorerItemTypeLabel(state.selection) ]]</span>
+                  <span>[[ vm.explorerFormatSize(state.selection) || '—' ]]</span>
+                </div>
+              </aside>
+              <section class="mioos-explorer-main" :class="'view-' + (state.viewMode || 'details')" @click.stop="vm.closeExplorerContextMenu(window.id)" @contextmenu.prevent="blankMenu($event)">
+                <div class="mioos-explorer-viewbar" @click.stop>
+                  <span>View:</span>
+                  <button type="button" :class="{ 'is-active': state.viewMode === 'details' }" @click="setView('details')">Details</button>
+                  <button type="button" :class="{ 'is-active': state.viewMode === 'icons' }" @click="setView('icons')">Icons</button>
+                </div>
+                <div class="mioos-explorer-empty" v-if="state.loading">Loading folder…</div>
+                <div class="mioos-explorer-empty" v-else-if="state.error">[[ state.error ]]</div>
+                <div class="mioos-explorer-empty" v-else-if="!items.length">This folder is empty.</div>
+                <table v-else-if="(state.viewMode || 'details') === 'details'" class="mioos-explorer-listview" role="grid" aria-label="Folder contents">
+                  <thead><tr>
+                    <th><button type="button" @click="sort('name')">Name [[ sortMark('name') ]]</button></th>
+                    <th><button type="button" @click="sort('type')">Type [[ sortMark('type') ]]</button></th>
+                    <th><button type="button" @click="sort('size')">Size [[ sortMark('size') ]]</button></th>
+                    <th><button type="button" @click="sort('modified')">Modified [[ sortMark('modified') ]]</button></th>
+                  </tr></thead>
+                  <tbody>
+                    <tr v-for="item in items" :key="itemKey(item)" :class="{ 'is-selected': selectedKey === itemKey(item) }" @click.stop="select(item)" @dblclick.stop="open(item)" @contextmenu.prevent.stop="rowMenu(item, $event)">
+                      <td><span class="mioos-explorer-row-icon">[[ vm.explorerItemGlyph(item) ]]</span><span class="mioos-explorer-row-name">[[ item.name || item.title ]]</span></td>
+                      <td>[[ vm.explorerItemTypeLabel(item) ]]</td>
+                      <td>[[ vm.explorerFormatSize(item) ]]</td>
+                      <td>[[ item.modifiedLabel || item.modifiedAt || item.mtime || '' ]]</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div v-else class="mioos-explorer-icon-grid" role="list" aria-label="Folder contents">
+                  <button v-for="item in items" :key="itemKey(item)" type="button" class="mioos-explorer-icon-tile" :class="{ 'is-selected': selectedKey === itemKey(item) }" @click.stop="select(item)" @dblclick.stop="open(item)" @contextmenu.prevent.stop="rowMenu(item, $event)">
+                    <span class="mioos-explorer-icon-tile-glyph">[[ vm.explorerItemGlyph(item) ]]</span>
+                    <span>[[ item.name || item.title ]]</span>
+                  </button>
+                </div>
+              </section>
+              <aside class="mioos-explorer-preview-pane" aria-label="Preview">
+                <strong>[[ preview.title || 'Preview' ]]</strong>
+                <pre v-if="preview.content" class="mioos-preview-pre">[[ preview.content ]]</pre>
+                <img v-else-if="preview.imageSrc" :src="preview.imageSrc" alt="Preview" class="mioos-preview-image">
+                <video v-else-if="preview.mediaSrc && preview.mediaKind === 'video'" :src="preview.mediaSrc" controls playsinline preload="metadata" class="mioos-preview-media"></video>
+                <audio v-else-if="preview.mediaSrc && preview.mediaKind === 'audio'" :src="preview.mediaSrc" controls preload="metadata" class="mioos-preview-media"></audio>
+                <div v-else class="mioos-explorer-empty">Pick a supported file to preview it here.</div>
+              </aside>
+            </div>
+            <div class="mioos-explorer-statusbar" role="status">
+              <span>[[ items.length ]] item<span v-if="items.length !== 1">s</span></span>
+              <span v-if="state.selection">Selected: [[ state.selection.name || state.selection.title ]]</span>
+              <span v-else>[[ (state.folder || {}).path || '/' ]]</span>
+            </div>
+            <ul v-if="(state.contextMenu || {}).open" class="mioos-explorer-context-menu can-hover" role="menu" :style="vm.explorerContextMenuStyle(state)" @click.stop>
+              <li v-if="state.selection && ((state.contextMenu || {}).targetType === 'item')"><button type="button" role="menuitem" @click="vm.explorerContextOpen(window.id)">Open</button></li>
+              <li v-if="state.selection && ((state.contextMenu || {}).targetType === 'item')"><button type="button" role="menuitem" @click="vm.explorerCopySelected(window.id)">Copy</button></li>
+              <li v-if="state.selection && ((state.contextMenu || {}).targetType === 'item')"><button type="button" role="menuitem" @click="vm.explorerRenameSelected(window.id); vm.closeExplorerContextMenu(window.id)">Rename</button></li>
+              <li v-if="state.selection && ((state.contextMenu || {}).targetType === 'item')"><button type="button" role="menuitem" @click="vm.explorerDeleteSelected(window.id); vm.closeExplorerContextMenu(window.id)">Delete</button></li>
+              <li class="has-divider"><button type="button" role="menuitem" @click="vm.explorerCreateFolder(window.id); vm.closeExplorerContextMenu(window.id)">New Folder</button></li>
+              <li><button type="button" role="menuitem" @click="vm.explorerPromptUpload(window.id); vm.closeExplorerContextMenu(window.id)">Upload</button></li>
+              <li v-if="state.selection && ((state.contextMenu || {}).targetType === 'item')"><button type="button" role="menuitem" @click="vm.explorerDownloadSelected(window.id); vm.closeExplorerContextMenu(window.id)">Download</button></li>
+              <li><button type="button" role="menuitem" @click="vm.explorerPasteIntoWindow(window.id)">Paste</button></li>
+              <li class="has-divider"><button type="button" role="menuitem" @click="vm.explorerContextProperties(window.id)">Properties</button></li>
+            </ul>
+          </div>
+        `
       });
 
       app.component('mioos-surface-terminal', {
