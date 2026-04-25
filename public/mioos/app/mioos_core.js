@@ -492,6 +492,17 @@
           var done = this.completedTransfers().length;
           return active + ' active · ' + paused + ' paused · ' + done + ' finished';
         },
+        transferBatchLabel: function () {
+          var active = this.transferActiveCount ? this.transferActiveCount() : this.activeTransfers().length;
+          var total = ((this.transferCenter || {}).items || []).length;
+          if (active > 1) return 'Copying ' + active + ' items…';
+          if (active === 1) {
+            var item = (this.activeTransfers() || [])[0] || {};
+            var verb = item.kind === 'download' ? 'Downloading' : item.kind === 'move' ? 'Moving' : item.kind === 'copy' ? 'Copying' : item.kind === 'upload' ? 'Uploading' : 'Transferring';
+            return verb + ' ' + (item.name || 'item') + '…';
+          }
+          return total ? 'Transfer activity' : 'Transfers';
+        },
 
         transferQueueRows: function (limit) {
           var seen = {};
@@ -819,6 +830,17 @@
           });
         },
         registerTransfer: function (payload) {
+          var dedupeKey = (payload && payload.dedupeKey) || '';
+          var existing;
+          if (dedupeKey) {
+            existing = (this.transferCenter.items || []).find(function (item) {
+              return item && item.dedupeKey === dedupeKey && ['queued','preparing','uploading','downloading','finalizing','verifying','paused'].indexOf(item.status) >= 0;
+            });
+            if (existing) {
+              this.updateTransfer(existing.id, Object.assign({}, payload || {}, { dedupeKey: dedupeKey }));
+              return existing.id;
+            }
+          }
           var next = Object.assign({
             id: 'transfer-' + Date.now() + '-' + (++this.transferCenter.seq),
             kind: 'upload',
@@ -831,7 +853,8 @@
             startedAt: Date.now(),
             updatedAt: Date.now(),
             error: '',
-            sourceWindowId: ''
+            sourceWindowId: '',
+            dedupeKey: dedupeKey
           }, payload || {});
           this.transferCenter.items.unshift(next);
           if (this.transferCenter.items.length > 40) this.transferCenter.items = this.transferCenter.items.slice(0, 40);

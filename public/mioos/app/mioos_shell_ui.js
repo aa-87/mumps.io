@@ -653,9 +653,9 @@
         },
         template: '' +
           '<div class="mioos-surface mioos-surface-transfers">' +
-            '<div class="mioos-classic-shell mioos-classic-transfers">' +
+            '<div class="mioos-classic-shell mioos-classic-transfers mioos-transfer-dialog-native">' +
               '<div class="mioos-classic-panelhead">' +
-                '<div><strong>File Transfer</strong><span>Queue progress, per-file activity, drag and drop uploads, and recovery actions.</span></div>' +
+                '<div><strong>[[ vm.transferBatchLabel ? vm.transferBatchLabel() : &quot;File Transfer&quot; ]]</strong><span>Queue progress, per-file activity, drag and drop uploads, and recovery actions.</span></div>' +
                 '<div class="mioos-classic-toolbar-group">' +
                   '<button type="button" class="mioos-classic-tool" @click="vm.pauseAllTransfers && vm.pauseAllTransfers()">Pause All</button>' +
                   '<button type="button" class="mioos-classic-tool" @click="vm.resumePausedTransfers && vm.resumePausedTransfers()">Resume</button>' +

@@ -2279,3 +2279,21 @@ button:disabled { cursor: default; opacity: .55; }
   .mioos-explorer-address-row { grid-template-columns: auto 1fr; }
   .mioos-explorer-search { grid-column: 1 / -1; }
 }
+
+/* ROI 4 Transfers: native file operation dialog shell while retaining transfer UX/actions. */
+.mioos-transfer-dialog-native{
+  border:1px solid rgba(43,91,145,.45);
+  background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(235,244,255,.94));
+  box-shadow:0 16px 38px rgba(17,45,80,.22),inset 0 1px rgba(255,255,255,.9);
+}
+.mioos-transfer-dialog-native .mioos-classic-panelhead{
+  background:linear-gradient(180deg,#f7fbff 0%,#dbeeff 100%);
+  border-bottom:1px solid #a7c3df;
+}
+.mioos-transfer-dialog-native .mioos-classic-progress span{
+  transition:width 300ms ease;
+}
+.mioos-transfer-dialog-native .mioos-classic-transferrow{
+  animation:mioos-transfer-row-slide 180ms ease-out both;
+}
+@keyframes mioos-transfer-row-slide{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}

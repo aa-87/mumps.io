@@ -380,6 +380,11 @@ FSUPCOMMIT(DEV,CONF,REQ,CTX)
 	. DO RESPERR(.DEV,.CONF,500,"fsup_state_error",$GET(ERR("error")),.CTX)
 	IF '$$REQUIREAUTH(.DEV,.CONF,.CTX,.STATE) QUIT
 	IF '$$COMMIT^MIOOSFSUP(.STATE,.CONF,$GET(TREE("uploadId")),.OUT,.ERR) DO  QUIT
+	. IF $GET(ERR("error"))="missing_chunk" DO  QUIT
+	. . KILL OUT
+	. . SET OUT("ok")=0,OUT("error")="fs_upload_commit_failed",OUT("detail")="missing_chunk",OUT("missingChunk")=+$GET(ERR("detail")),OUT("nextIndex")=+$GET(ERR("nextIndex")),OUT("contiguousBytes")=+$GET(ERR("contiguousBytes"))
+	. . DO RESPJSONX^MIOHTTP(.DEV,.CONF,409,.OUT,$GET(CTX("request_id")),.CTX)
+	. . SET CTX("status")=409
 	. DO RESPERR(.DEV,.CONF,403,"fs_upload_commit_failed",$GET(ERR("error")),.CTX)
 	DO RESPJSONX^MIOHTTP(.DEV,.CONF,200,.OUT,$GET(CTX("request_id")),.CTX)
 	SET CTX("status")=200

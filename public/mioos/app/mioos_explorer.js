@@ -940,10 +940,20 @@
       },
       /* MIOOST restored explorer helpers for classic folder surfaces and resilient uploads. */
       normalizeUploadEntries: function (filesLike) {
-        var out = [], i, entry;
+        var out = [], i, entry, list;
         if (!filesLike) return out;
-        for (i = 0; i < filesLike.length; i += 1) {
-          entry = filesLike[i];
+        if (filesLike instanceof window.File || (filesLike.name && typeof filesLike.size !== 'undefined' && !filesLike.length)) list = [filesLike];
+        else if (filesLike.files) list = filesLike.files;
+        else if (filesLike.items && filesLike.items.length) {
+          list = [];
+          for (i = 0; i < filesLike.items.length; i += 1) {
+            entry = filesLike.items[i];
+            if (entry && entry.kind === 'file' && entry.getAsFile) list.push(entry.getAsFile());
+          }
+        } else list = filesLike;
+        for (i = 0; i < (list.length || 0); i += 1) {
+          entry = list[i];
+          if (!entry) continue;
           out.push(entry && entry.file ? entry : { file: entry, name: entry && entry.name, size: entry && entry.size, type: entry && entry.type });
         }
         return out;
@@ -1011,7 +1021,7 @@
         mime = file.type || 'application/octet-stream';
         isText = detectTextLike({ name: file.name, mime: mime });
         chunkTransport = (((this.boot || {}).vfs || {}).uploadChunkTransport) || 'http-binary';
-        var transferId = self.registerTransfer ? self.registerTransfer({ kind: 'upload', name: file.name, status: 'preparing', stage: 'Preparing', totalBytes: file.size, processedBytes: 0, sourceWindowId: windowId, persistent: true, resume: { kind: 'upload', parentId: state.folderId, sourceWindowId: windowId, fileName: file.name, mime: mime, totalBytes: file.size, chunkTransport: chunkTransport, uploadId: '' } }) : '';
+        var transferId = self.registerTransfer ? self.registerTransfer({ kind: 'upload', name: file.name, status: 'preparing', stage: 'Preparing', totalBytes: file.size, processedBytes: 0, sourceWindowId: windowId, persistent: true, dedupeKey: ['upload', state.folderId || '', file.name || '', file.size || 0, file.lastModified || 0].join('|'), resume: { kind: 'upload', parentId: state.folderId, sourceWindowId: windowId, fileName: file.name, mime: mime, totalBytes: file.size, chunkTransport: chunkTransport, uploadId: '' } }) : '';
         var transferControl = { cancelled: false, paused: false, workers: [], xh: {}, uploadId: '', windowId: windowId, nextIndex: 1, completedBytes: 0, completed: {}, retries: {}, totalChunks: 0, finalizeRetries: 0, serverReadyForCommit: false, commitStarted: false, missing_chunk: false };
         if (transferId && self.setTransferController) {
           self.setTransferController(transferId, {
@@ -1205,14 +1215,20 @@
                 if (!transferControl.paused && !transferControl.cancelled) pump();
               }, uploadRetryDelay(attempt));
             }
+            function reconcileMissingChunk(err) {
+              transferControl.missing_chunk = true;
+              transferControl.commitStarted = false;
+              return reconcileCommitFailure(err);
+            }
             function reconcileCommitFailure(err) {
+              transferControl.commitStarted = false;
               transferControl.finalizeRetries = (transferControl.finalizeRetries || 0) + 1;
               if (transferControl.finalizeRetries > 3) throw err;
               self.setExplorerUploadProgress(state, { active: true, name: file.name, totalBytes: file.size, sentBytes: transferControl.completedBytes, stage: 'Reconciling upload', uploadId: uploadId, error: '' });
               return httpJson((((self.boot || {}).routes || {}).fsUploadStatus || '/api/mioos/fs/upload/status'), { uploadId: uploadId }).then(function (msg) {
                 var payload = payloadRoot(msg);
-                var nextIndex = +(payload.nextIndex || 1);
-                var contiguousBytes = +(payload.contiguousBytes || 0);
+                var nextIndex = +(payload.nextIndex || payload.missingChunk || (((err && err.body) || {}).nextIndex) || (((err && err.body) || {}).missingChunk) || 1);
+                var contiguousBytes = +(payload.contiguousBytes || (((err && err.body) || {}).contiguousBytes) || 0);
                 var i;
                 transferControl.completed = {};
                 transferControl.completedBytes = contiguousBytes;
@@ -1230,7 +1246,10 @@
               transferControl.commitStarted = true;
               transferControl.serverReadyForCommit = true;
               return httpJson((((self.boot || {}).routes || {}).fsUploadCommit || '/api/mioos/fs/upload/commit'), { uploadId: uploadId }).then(finalize).catch(function (err) {
+                var body = (err && err.body) || {};
+                transferControl.commitStarted = false;
                 if ((err && err.message) === 'network_error' || !navigatorOnline()) return pauseForDisconnect('Paused before finalize');
+                if (body.detail === 'missing_chunk' || body.error === 'missing_chunk' || body.detail === 'fs_upload_commit_failed' || (err && err.status) === 409) return reconcileMissingChunk(err).catch(function (innerErr) { fail(innerErr, 'fs_upload_commit_failed'); });
                 if (isTransientUploadStatus(err && err.status)) return reconcileCommitFailure(err).catch(function (innerErr) { fail(innerErr, 'fs_upload_commit_failed'); });
                 fail(err, 'fs_upload_commit_failed');
                 return null;
@@ -1436,8 +1455,8 @@
           if (resume.finalizeRetries > 3) throw err;
           return httpJsonPost((((self.boot || {}).routes || {}).fsUploadStatus || '/api/mioos/fs/upload/status'), { uploadId: resume.uploadId }).then(function (msg) {
             var payload = payloadRoot(msg);
-            nextIndex = +(payload.nextIndex || 1);
-            completedBytes = +(payload.contiguousBytes || 0);
+            nextIndex = +(payload.nextIndex || payload.missingChunk || (((err && err.body) || {}).nextIndex) || (((err && err.body) || {}).missingChunk) || 1);
+            completedBytes = +(payload.contiguousBytes || (((err && err.body) || {}).contiguousBytes) || 0);
             resume.contiguousBytes = completedBytes;
             resume.nextIndex = nextIndex;
             active = {};
@@ -1449,7 +1468,9 @@
         }
         function commitResumeUpload() {
           return httpJsonPost((((self.boot || {}).routes || {}).fsUploadCommit || '/api/mioos/fs/upload/commit'), { uploadId: resume.uploadId }).catch(function (err) {
+            var body = (err && err.body) || {};
             if ((err && err.message) === 'network_error' || !navigatorOnline()) return pauseUpload('Paused before finalize');
+            if (body.detail === 'missing_chunk' || body.error === 'missing_chunk' || body.detail === 'fs_upload_commit_failed' || (err && err.status) === 409) return reconcileResumeCommit(err);
             if (isTransientUploadStatus(err && err.status)) return reconcileResumeCommit(err);
             throw err;
           });
