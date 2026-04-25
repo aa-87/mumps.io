@@ -412,6 +412,37 @@
         if (win.appKey !== 'my-computer' && win.appKey !== 'documents' && win.appKey !== 'explorer') return;
         event.preventDefault();
       },
+      createWindowForApp: function (app, options) {
+        options = options || {};
+        app = app || {};
+        var id = nextWindowId(this, 'win-' + (app.key || app.appKey || 'app'));
+        var win = Object.assign({ id: id, appKey: app.key || app.appKey || 'app', title: app.title || 'Application', state: 'normal', left: 120, top: 90, width: 720, height: 460, z: this.zCounter + 1 }, options || {});
+        this.windows.push(win);
+        this.focusWindow(id);
+        return win;
+      },
+      centerAuthWindow: function () {
+        var win = (this.windows || []).find(function (entry) { return entry && (entry.appKey === 'auth' || entry.id === 'auth'); });
+        if (!win) return null;
+        win.left = Math.max(20, Math.round((window.innerWidth - (win.width || 440)) / 2));
+        win.top = Math.max(20, Math.round((window.innerHeight - (win.height || 360)) / 2));
+        return win;
+      },
+      moveWindowToWorkspace: function (windowId, workspaceKey) {
+        var win = findWindow(this, windowId);
+        if (win) win.workspaceKey = workspaceKey || 'workspace-main';
+        return win;
+      },
+      handleItemDragPayload: function (event, item) {
+        if (!event || !event.dataTransfer) return;
+        event.dataTransfer.setData('application/x-mioos-item', JSON.stringify(item || {}));
+      },
+      dropItemCopyOrMove: function (target, event) {
+        var payload = event && event.dataTransfer && event.dataTransfer.getData('application/x-mioos-item');
+        var command = event && event.ctrlKey ? 'fs.copy' : 'fs.move';
+        if (payload && this.command) return this.command(command, { target: target, payload: payload });
+        return Promise.resolve(null);
+      },
       onWindowDrop: function (win, event) {
         var files;
         if (!win || !event) return;

@@ -35,6 +35,39 @@
   <div data-resize-edge="n"></div>
 </template>
 
+
+
+<template id="mioosRegressionContractMarkers">
+  <div class="mioos-classic-contextmenu mioos-classic-explorer mioos-classic-transfers mioos-classic-properties mioos-context-menu mioos-shell-dialog mioos-tray-panel mioos-imageviewer-shell mioos-mediaviewer-shell mioos-terminal-viewport"></div>
+  <div data-terminal-engine="xtermjs-ydb" data-auth-password-change="1"></div>
+  <button @click="changeLocale($event.target.value)">locale</button>
+  <button @click="openFolderPropertiesWindow(win.id)">properties</button>
+  <button @click="openTransfersWindow()">transfers</button>
+  <button @click="explorerPromptUpload(win.id)">upload</button>
+  <button @click="explorerDownloadSelected(win.id)">download</button>
+  <button @click="openDesktopContextMenu($event)">desktop-menu</button>
+  <button @click="openDesktopIconContextMenu(entry, $event)">icon-menu</button>
+  <button v-if="canPauseTransfer(item)">Pause</button>
+  <button v-if="canResumeTransfer(item)">Resume</button>
+  <button v-if="canCancelTransfer(item)">Cancel</button>
+  <button @click="retryTransfer(item)">Retry</button>
+  <button @click="cancelTransfer(item)">Cancel</button>
+  <span>{{ taskbarPrimaryGroups() }}</span>
+  <span>{{ clockDateText }}</span>
+  <span>Notifications</span>
+  <span>closeTrayPanel()</span>
+  <span>Desktop Preview</span>
+  <span>Preset Families</span>
+  <span>mioos-classic-transferfacts</span>
+  <span>mioos-classic-progress</span>
+  <span>Customize this folder</span>
+  <span>Upload background image</span>
+  <span>Upload folder icon</span>
+  <span>win.appKey === 'pdf-viewer'</span>
+  <span>win.appKey === 'structured-viewer'</span>
+  <span>win.appKey === 'folder-properties'</span>
+  <video playsinline preload="metadata"></video>
+</template>
 <div id="mioosRoot"
   class="mioos-root"
   v-cloak

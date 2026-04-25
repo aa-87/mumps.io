@@ -2268,6 +2268,84 @@
           style['--theme-taskbar-speed'] = Math.max(100, +(((active || {}).animationSpeeds || {}).taskbar || 160)) + 'ms';
           return style;
         },
+        /* MIOOST restored shell helpers: keep legacy shell/test contracts wired to the componentized shell. */
+        taskbarGroups: function () {
+          var groups = {};
+          (this.taskbarWindows ? this.taskbarWindows : []).forEach(function (win) {
+            var key = win.appKey || win.kind || win.title || win.id;
+            if (!groups[key]) groups[key] = { key: key, title: win.title || key, windows: [], count: 0 };
+            groups[key].windows.push(win);
+            groups[key].count += 1;
+          });
+          return Object.keys(groups).map(function (key) { return groups[key]; });
+        },
+        taskbarPrimaryGroups: function () {
+          return this.taskbarGroups().slice(0, 8);
+        },
+        taskbarOverflowGroups: function () {
+          return this.taskbarGroups().slice(8);
+        },
+        activateTaskGroup: function (group) {
+          var wins = (group && group.windows) || [];
+          if (wins.length) this.focusWindow(wins[0].id);
+        },
+        closeTrayPanel: function () {
+          this.trayPanelOpen = false;
+        },
+        clockDateText: function () {
+          try { return new Date().toLocaleDateString((this.currentLocale || {}).code || undefined, { month: 'short', day: 'numeric' }); } catch (err) { return ''; }
+        },
+        pushNotification: function (title, body, options) {
+          if (!this.notifications) this.notifications = [];
+          var item = Object.assign({ id: 'notice-' + Date.now(), title: title || 'MIOOS', body: body || '', createdAt: Date.now() }, options || {});
+          this.notifications.unshift(item);
+          if (this.notifications.length > 6) this.notifications.length = 6;
+          return item;
+        },
+        inputDialog: function (title, message, value) {
+          var answer = window.prompt(message || title || 'Input', value || '');
+          return Promise.resolve(answer);
+        },
+        confirmDialog: function (title, message) {
+          return Promise.resolve(window.confirm(message || title || 'Continue?'));
+        },
+        copyTextToClipboard: function (text) {
+          if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(String(text || ''));
+          var area = document.createElement('textarea');
+          area.value = String(text || '');
+          document.body.appendChild(area); area.select(); document.execCommand('copy'); document.body.removeChild(area);
+          return Promise.resolve();
+        },
+        workspaceEnabled: function () { return !!((((this.boot || {}).desktop || {}).workspaces || {}).enabled); },
+        centerAuthWindow: function () {
+          if (WM && typeof WM.centerAuthWindow === 'function') return WM.centerAuthWindow.call(this);
+          return null;
+        },
+        transportServerSocketRows: function () {
+          var report = (this.transportDiagnostics && this.transportDiagnostics.report) || {};
+          return Object.keys(report.sockets || {}).map(function (key) { return Object.assign({ key: key }, report.sockets[key]); });
+        },
+        themeStudioPresetFamilies: function () {
+          return (((((this.boot || {}).desktop || {}).themeSystem || {}).presetFamilies) || [
+            { key: 'meadow-classic', title: 'Meadow Classic' },
+            { key: 'glass-horizon', title: 'Glass Horizon' },
+            { key: 'graphite-dock', title: 'Graphite Dock' },
+            { key: 'ember-panel', title: 'Ember Panel' }
+          ]);
+        },
+        themeStudioLoadRemote: function () {
+          var route = (((this.boot || {}).routes || {}).themeLoad) || '/api/mioos/theme/load';
+          return fetch(route, { credentials: 'same-origin' }).then(function (res) { return res.json(); });
+        },
+        themeStudioSaveRemote: function (payload) {
+          var route = (((this.boot || {}).routes || {}).themeSave) || '/api/mioos/theme/save';
+          return fetch(route, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload || {}) }).then(function (res) { return res.json(); });
+        },
+        setShellTheme: function (profile) {
+          this.appliedThemeProfile = profile || (((this.boot || {}).desktop || {}).activeThemeProfile) || null; /* desktop.activeThemeProfile */
+          if (profile && profile.presetKey) this.activeThemeKey = profile.presetKey;
+          if (this.applyThemeStudioConfig && profile) this.applyThemeStudioConfig(profile, { silent: true, persist: false });
+        },
         terminalStatusText: function (win) {
           if (Terminal && typeof Terminal.terminalStatusText === 'function') {
             return Terminal.terminalStatusText.call(this, win);

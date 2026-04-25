@@ -416,6 +416,9 @@
   window.MIOOSExplorer = {
     methods: {
 
+      explorerShellInput: function (message, value) { return this.inputDialog ? this.inputDialog('Explorer', message, value) : Promise.resolve(window.prompt(message || 'Input', value || '')); },
+      explorerShellConfirm: function (message) { return this.confirmDialog ? this.confirmDialog('Explorer', message) : Promise.resolve(window.confirm(message || 'Continue?')); },
+
       resetExplorerUpload: function (state) {
         if (!state) return;
         state.upload = { active: false, name: '', totalBytes: 0, sentBytes: 0, progress: 0, stage: '', error: '', uploadId: '' };
@@ -770,11 +773,51 @@
         if (!state) return Promise.resolve();
         return this.loadExplorerFolder(windowId, state.folderId, { selectFirst: false });
       },
+      /* MIOOST restored explorer helpers for classic folder surfaces and resilient uploads. */
+      normalizeUploadEntries: function (filesLike) {
+        var out = [], i, entry;
+        if (!filesLike) return out;
+        for (i = 0; i < filesLike.length; i += 1) {
+          entry = filesLike[i];
+          out.push(entry && entry.file ? entry : { file: entry, name: entry && entry.name, size: entry && entry.size, type: entry && entry.type });
+        }
+        return out;
+      },
+      openFolderPropertiesWindow: function (windowId, folder) {
+        var source = this.windows.find(function (entry) { return entry.id === windowId; }) || {};
+        var state = this.ensureExplorerWindowState ? this.ensureExplorerWindowState(source) : {};
+        var target = folder || state.folder || source.meta || {};
+        var id = nextWindowId(this, 'win-folder-properties');
+        this.windows.push({ id: id, appKey: 'folder-properties', title: 'Properties - ' + (target.name || source.title || 'Folder'), state: 'normal', left: 220, top: 120, width: 520, height: 430, z: this.zCounter + 1, meta: { sourceWindowId: windowId, folderId: target.id || state.folderId || source.folderId || '', folder: target }, folderProperties: { background: (target.customize || {}).background || '', icon: (target.customize || {}).icon || '', viewMode: target.viewMode || 'details' } });
+        this.focusWindow(id);
+      },
+      saveFolderPropertiesWindow: function (win) {
+        var payload = { command: 'fs.setmeta', id: (((win || {}).meta || {}).folderId) || '', meta: (win || {}).folderProperties || {} };
+        if (!payload.id || !this.command) return Promise.resolve(false);
+        return this.command('fs.setmeta', payload).then(function () { return true; });
+      },
+      uploadFolderCustomizeAsset: function (win, input, field) {
+        var self = this;
+        var file = input && input.files && input.files[0];
+        var parentId = (((win || {}).meta || {}).folderId) || (((this.boot || {}).vfs || {}).desktopId) || 'root';
+        if (!file) return Promise.resolve(null);
+        return this.uploadFilesToExplorer((((win || {}).meta || {}).sourceWindowId) || '', [file]).then(function (responsePayload) {
+          var id = responsePayload && responsePayload.id; /* responsePayload.id */
+          if (id && self.command) return self.command('fs.setmeta', { id: parentId, meta: { field: field || 'folderBackground', assetId: id } });
+          return responsePayload;
+        });
+      },
       uploadFilesToExplorer: function (windowId, filesLike) {
         var self = this;
+        var normalizedEntries = this.normalizeUploadEntries ? this.normalizeUploadEntries(filesLike) : (filesLike || []);
+        if (normalizedEntries.length > 1) {
+          return normalizedEntries.reduce(function (chain, entry) {
+            return chain.then(function () { return self.uploadFilesToExplorer(windowId, [entry]); });
+          }, Promise.resolve());
+        }
         var win = this.windows.find(function (entry) { return entry.id === windowId; });
         var state = this.ensureExplorerWindowState(win);
-        var uploadEntry = filesLike && filesLike[0];
+        var uploadEntry = normalizedEntries && normalizedEntries[0];
         var file = uploadEntry && uploadEntry.file ? uploadEntry.file : uploadEntry;
         var mime;
         var isText;
@@ -804,7 +847,7 @@
         isText = detectTextLike({ name: file.name, mime: mime });
         chunkTransport = (((this.boot || {}).vfs || {}).uploadChunkTransport) || 'http-binary';
         var transferId = self.registerTransfer ? self.registerTransfer({ kind: 'upload', name: file.name, status: 'preparing', stage: 'Preparing', totalBytes: file.size, processedBytes: 0, sourceWindowId: windowId, persistent: true, resume: { kind: 'upload', parentId: state.folderId, sourceWindowId: windowId, fileName: file.name, mime: mime, totalBytes: file.size, chunkTransport: chunkTransport, uploadId: '' } }) : '';
-        var transferControl = { cancelled: false, paused: false, workers: [], xh: {}, uploadId: '', windowId: windowId, nextIndex: 1, completedBytes: 0, completed: {}, retries: {}, totalChunks: 0, finalizeRetries: 0 };
+        var transferControl = { cancelled: false, paused: false, workers: [], xh: {}, uploadId: '', windowId: windowId, nextIndex: 1, completedBytes: 0, completed: {}, retries: {}, totalChunks: 0, finalizeRetries: 0, serverReadyForCommit: false, commitStarted: false, missing_chunk: false };
         if (transferId && self.setTransferController) {
           self.setTransferController(transferId, {
             onRetry: function () { return self.uploadFilesToExplorer(windowId, [file]); },
@@ -1018,6 +1061,9 @@
               });
             }
             function commitUpload() {
+              if (transferControl.commitStarted) return Promise.resolve();
+              transferControl.commitStarted = true;
+              transferControl.serverReadyForCommit = true;
               return httpJson((((self.boot || {}).routes || {}).fsUploadCommit || '/api/mioos/fs/upload/commit'), { uploadId: uploadId }).then(finalize).catch(function (err) {
                 if ((err && err.message) === 'network_error' || !navigatorOnline()) return pauseForDisconnect('Paused before finalize');
                 if (isTransientUploadStatus(err && err.status)) return reconcileCommitFailure(err).catch(function (innerErr) { fail(innerErr, 'fs_upload_commit_failed'); });

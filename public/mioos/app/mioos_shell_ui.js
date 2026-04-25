@@ -101,7 +101,7 @@
         methods: {
           labelOf: labelOf,
           iconGlyph: iconGlyph,
-          onOpen: function () { this.vm.openDesktopEntry(this.icon); }
+          onOpen: function () { var icon = this.icon; this.vm.openDesktopEntry(icon); }
         }
       });
 

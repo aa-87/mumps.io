@@ -2046,3 +2046,18 @@ button:disabled { cursor: default; opacity: .55; }
   .mioos-classic-transferrow { grid-template-columns:1fr; }
   .mioos-classic-transferactions { justify-content:flex-start; }
 }
+
+/* MIOOST regression contracts restored for shell UI surfaces. */
+/* Wave 1 shell foundation reset */
+.mioos-taskbar--workspace{display:flex;align-items:center;gap:6px;min-width:0}
+.mioos-folder-context-menu,.mioos-context-menu{position:absolute;z-index:5000;min-width:180px;background:var(--mioos-panel,#fff);color:var(--mioos-text,#10233c);border:1px solid rgba(0,0,0,.25);box-shadow:0 18px 40px rgba(0,0,0,.28);border-radius:8px;padding:6px}
+.mioos-desktop-icon.is-large{width:96px;min-height:96px;font-size:14px}
+.mioos-terminal-shell{display:flex;flex-direction:column;height:100%;background:#05070d;color:#d7f7ff;font-family:Consolas,monospace}
+.mioos-imageviewer-shell,.mioos-mediaviewer-shell{display:grid;place-items:center;height:100%;background:#111;color:#fff;overflow:hidden}
+.mioos-imageviewer-shell img{max-width:100%;max-height:100%;object-fit:contain}
+.mioos-mediaviewer-shell video,.mioos-mediaviewer-shell audio{max-width:100%;max-height:100%}
+.mioos-classic-transfercard{border:1px solid rgba(0,0,0,.18);background:rgba(255,255,255,.88);border-radius:10px;padding:10px;box-shadow:inset 0 1px rgba(255,255,255,.8)}
+.mioos-classic-transferrow.is-success{border-color:rgba(46,125,50,.45);background:rgba(220,245,225,.9)}
+.mioos-classic-transferrow.is-error{border-color:rgba(185,28,28,.45);background:rgba(255,230,230,.95)}
+.mioos-classic-transferrow.is-warning{border-color:rgba(180,110,0,.4);background:rgba(255,246,220,.95)}
+.mioos-module-catalog-shell{display:flex;flex-direction:column;gap:10px;min-height:100%;padding:12px;background:var(--mioos-panel,#fff)}
