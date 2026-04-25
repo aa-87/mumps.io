@@ -118,9 +118,8 @@
           });
       },
       showAlert: function (title, message) {
-        this.alertTitle = '';
-        this.alertMessage = '';
-        if (this.pushNotification) this.pushNotification('alert', title, message, { sticky: true });
+        this.alertTitle = title;
+        this.alertMessage = message;
       },
       dismissAlert: function () {
         this.alertTitle = '';

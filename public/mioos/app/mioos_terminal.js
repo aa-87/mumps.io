@@ -59,15 +59,11 @@
           draggable: 1,
           snappable: 1,
           terminalState: defaultTerminalState(),
-          workspaceKey: 'workspace-main',
           _term: null,
           _appliedProfileKey: ''
         };
         this.windows.push(win);
-        if (this.ensureWindowFrame) this.ensureWindowFrame(win);
-        if (this.menuOpen) this.menuOpen = false;
         this.activeWindowId = win.id;
-        if (this.persistWindowLayout) this.persistWindowLayout();
         var self = this;
         this.$nextTick(function () {
           self.ensureXtermMounted(win.id);

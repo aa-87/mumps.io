@@ -3,14 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="mioos-style-architecture" content="7css-shell-plus-basecoat-augment">
+  <meta name="mioos-style-architecture" content="tailwind-shell-native">
   <meta name="color-scheme" content="{{themeMode}}{{^themeMode}}light{{/themeMode}}">
   <meta name="mioos-accessibility" content="keyboard-screenreader-reduced-motion-aware">
   <meta name="mioos-performance" content="thin-vue-umd-websocket-first">
   <title>{{page.title}}{{^page.title}}MIOOS Desktop{{/page.title}}</title>
   <style id="mioosFirstPaintTheme">:root{ {{{themeInlineStyle}}} }</style>
   <link rel="stylesheet" href="/public/mioos/7.scoped.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/basecoat-css@0.3.2/dist/basecoat.cdn.min.css">
   <link rel="stylesheet" href="/public/mioos/xterm.css">
   <link rel="stylesheet" href="/public/mioos/mioos.css">
   <script src="/public/mioos/vue.global.prod.js"></script>
@@ -22,6 +21,7 @@
   <script src="/public/mioos/app/mioos_wm.js"></script>
   <script src="/public/mioos/app/mioos_explorer.js"></script>
   <script src="/public/mioos/app/mioos_terminal.js"></script>
+  <script src="/public/mioos/app/mioos_shell_ui.js"></script>
   <script src="/public/mioos/app/mioos_core.js"></script>
 </head>
 <body>

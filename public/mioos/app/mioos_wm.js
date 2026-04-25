@@ -3,7 +3,10 @@
     return vm.windows.find(function (item) { return item.id === windowId; }) || null;
   }
   function taskbarHeight(vm) {
-    return +((((vm.boot || {}).desktop || {}).windowing || {}).taskbarHeight || 40);
+    var theme = (vm && vm.appliedThemeProfile) || (vm && vm.themeStudioActiveTheme && vm.themeStudioActiveTheme()) || {};
+    var mobile = (window.innerWidth || document.documentElement.clientWidth || 1280) <= 768;
+    if (mobile && theme && theme.mobileConfig && theme.mobileConfig.taskbarHeightMobile) return +theme.mobileConfig.taskbarHeightMobile;
+    return +(((theme.taskbarConfig || {}).height) || ((((vm.boot || {}).desktop || {}).windowing || {}).taskbarHeight) || 40);
   }
   function viewportBounds(vm) {
     var padBottom = taskbarHeight(vm);
@@ -56,37 +59,6 @@
     clampWindow(vm, win);
     scheduleTerminalSync(vm, win);
   }
-  function appRecord(vm, appKey) {
-    var pools = [vm.launcherEntries || [], vm.desktopEntries || [], ((vm.boot || {}).apps) || []];
-    var i, found;
-    for (i = 0; i < pools.length; i += 1) {
-      found = (pools[i] || []).find(function (item) { return item && item.key === appKey; });
-      if (found) return found;
-    }
-    return null;
-  }
-  function nextWindowSeed(vm, appKey) {
-    var template = ((vm.boot || {}).windows || []).find(function (item) { return item && item.appKey === appKey; }) || (vm.windows || []).find(function (item) { return item && item.appKey === appKey; });
-    var app = appRecord(vm, appKey) || {};
-    var count = (vm.windows || []).filter(function (item) { return item && item.appKey === appKey; }).length;
-    var title = String((app && app.title) || (template && template.title) || appKey || 'Window');
-    return {
-      id: 'win-' + String(appKey || 'app') + '-' + Date.now() + '-' + (count + 1),
-      appKey: appKey,
-      title: count > 0 ? title + ' ' + (count + 1) : title,
-      left: +(template && template.left || 96) + (count * 24),
-      top: +(template && template.top || 72) + (count * 20),
-      width: +(template && template.width || ((app.kind === 'folder' || appKey === 'explorer' || appKey === 'home') ? 960 : 760)),
-      height: +(template && template.height || ((app.kind === 'folder' || appKey === 'explorer' || appKey === 'home') ? 640 : 520)),
-      z: ++vm.zCounter,
-      state: 'normal',
-      minWidth: +(template && template.minWidth || ((((vm.boot || {}).desktop || {}).windowing || {}).minWidth) || 320),
-      minHeight: +(template && template.minHeight || ((((vm.boot || {}).desktop || {}).windowing || {}).minHeight) || 220),
-      resizable: template && template.resizable != null ? template.resizable : 1,
-      draggable: template && template.draggable != null ? template.draggable : 1,
-      snappable: template && template.snappable != null ? template.snappable : 1
-    };
-  }
   function previewForZone(vm, zone) {
     var b = viewportBounds(vm);
     if (zone === 'maximize') return { left: b.left, top: b.top, width: b.width, height: b.height };
@@ -101,36 +73,13 @@
 
   window.MIOOSWM = {
     methods: {
-      appIcon: function (appKey, win) {
+      appIcon: function (appKey) {
         var entry = this.desktopEntries.find(function (item) { return item.key === appKey; });
-        if (win && win.icon) return win.icon;
-        if (entry && entry.icon) return entry.icon;
+        if (entry) return entry.icon;
         if (appKey === 'text-viewer') return '📄';
         if (appKey === 'image-viewer') return '🖼';
         if (appKey === 'media-viewer') return '🎞';
-        if (appKey === 'terminal') return '⌨';
         return '□';
-      },
-      windowKind: function (win) {
-        return String((win && win.kind) || ((win && win.moduleWindow) ? 'module' : 'app'));
-      },
-      windowMetaLabel: function (win) {
-        var labels = [];
-        if (!win) return '';
-        if (win.state === 'snapped' && win.snapZone) labels.push('Snapped ' + win.snapZone.replace('-', ' '));
-        else if (win.state === 'maximized') labels.push('Maximized');
-        else labels.push(this.windowKind(win));
-        if (win.workspaceKey && win.workspaceKey !== 'workspace-main' && this.workspaceEnabled && this.workspaceEnabled()) labels.push(win.workspaceKey);
-        return labels.join(' · ');
-      },
-      windowBadgeRows: function (win) {
-        var rows = [];
-        if (!win || !((((this.boot || {}).desktop || {}).windowing || {}).statusBadges)) return rows;
-        if (win.moduleWindow) rows.push('module');
-        if (win.appKey === 'terminal') rows.push('terminal');
-        if (win.state === 'snapped' && win.snapZone) rows.push(win.snapZone);
-        if (win.state === 'maximized') rows.push('maximized');
-        return rows;
       },
       ensureWindowFrame: function (win) {
         if (!win) return null;
@@ -138,84 +87,59 @@
         if (win.resizable == null) win.resizable = 1;
         if (win.draggable == null) win.draggable = 1;
         if (win.snappable == null) win.snappable = 1;
-        if (win.focusable == null) win.focusable = 1;
-        if (win.persistLayout == null) win.persistLayout = 1;
-        if (!win.kind) win.kind = ((win.moduleWindow) ? 'module' : 'app');
-        if (!win.icon) win.icon = this.appIcon(win.appKey, win);
-        if (!win.workspaceKey) win.workspaceKey = 'workspace-main';
-        if (!win.chrome) win.chrome = ((((this.boot || {}).desktop || {}).windowing || {}).chrome) || 'reusable-shell-chrome';
         if (!win.minWidth) win.minWidth = (((this.boot || {}).desktop || {}).windowing || {}).minWidth || 320;
         if (!win.minHeight) win.minHeight = (((this.boot || {}).desktop || {}).windowing || {}).minHeight || 220;
+        if (win.appKey === 'theme-studio') {
+          var bounds = viewportBounds(this);
+          var compact = bounds.width <= 900 || bounds.height <= 760;
+          win.minWidth = compact ? Math.max(320, Math.min(bounds.width, 680)) : Math.max(+win.minWidth || 0, 1120);
+          win.minHeight = compact ? Math.max(420, Math.min(bounds.height, 560)) : Math.max(+win.minHeight || 0, 720);
+          if (!(+win.width) || +win.width < win.minWidth) win.width = compact ? bounds.width : Math.max(+win.width || 0, win.minWidth);
+          if (!(+win.height) || +win.height < win.minHeight) win.height = compact ? bounds.height : Math.max(+win.height || 0, win.minHeight);
+        }
         clampWindow(this, win);
         return win;
       },
-      createWindowForApp: function (appKey) {
-        var win = nextWindowSeed(this, appKey);
-        var template = ((this.boot || {}).windows || []).find(function (item) { return item && item.appKey === appKey; }) || null;
-        if (template && template.kind) win.kind = template.kind;
-        if (template && template.icon) win.icon = template.icon;
-        if (template && template.workspaceKey) win.workspaceKey = template.workspaceKey;
-        if (template && template.persistLayout != null) win.persistLayout = template.persistLayout;
-        if (template && template.chrome) win.chrome = template.chrome;
-        if (template && template.moduleWindow) {
-          win.moduleWindow = 1;
-          win.moduleId = template.moduleId;
-          win.moduleCategory = template.moduleCategory;
-          win.moduleSurface = template.moduleSurface;
-          win.moduleBuiltIn = template.moduleBuiltIn;
-          win.moduleSingleton = template.moduleSingleton;
-        }
-        if (template && template.themeStudioEnabled) win.themeStudioEnabled = 1;
-        if (template && template.transferCenterEnabled) win.transferCenterEnabled = 1;
-        if (template && template.transportDiagnosticsEnabled) win.transportDiagnosticsEnabled = template.transportDiagnosticsEnabled;
-        if (template && template.moduleCatalogEnabled) win.moduleCatalogEnabled = 1;
-        if (template && template.securityCenterEnabled) win.securityCenterEnabled = 1;
-        if (template && template.debugCenterEnabled) win.debugCenterEnabled = 1;
-        this.windows.push(win);
-        this.ensureWindowFrame(win);
-        return win;
-      },
       openApp: function (appKey) {
-        if (this.windowMenu && this.windowMenu.open) this.closeWindowMenu();
         if (this.requiresSignin) {
           this.showAlert(this.t('alerts.signinRequired.title'), this.t('alerts.signinRequired.open'));
           return;
         }
-        if (this.shellUi) { this.shellUi.desktopHidden = false; this.shellUi.windowSwitcherOpen = false; }
         if (appKey === 'terminal' && this.createTerminalWindow) {
           this.menuOpen = false;
           this.createTerminalWindow();
           return;
         }
-        var win = this.windows.find(function (item) { return item.appKey === appKey && item.state !== 'closed'; }) || this.windows.find(function (item) { return item.appKey === appKey; });
-        if (!win) win = this.createWindowForApp(appKey);
+        var win = this.windows.find(function (item) { return item.appKey === appKey; });
         if (!win) return;
         this.ensureWindowFrame(win);
         this.menuOpen = false;
         if (win.state === 'closed' || win.state === 'minimized') win.state = 'normal';
         this.focusWindow(win.id);
-        if ((appKey === 'home' || appKey === 'explorer') && this.bootstrapExplorerWindow) {
+        if ((appKey === 'my-computer' || appKey === 'documents' || appKey === 'explorer') && this.bootstrapExplorerWindow) {
           this.$nextTick(function () {
             this.bootstrapExplorerWindow(win.id, true);
             if (this.refreshExplorerWindow) this.refreshExplorerWindow(win.id).catch(function () {});
           }.bind(this));
         }
-        if (this.persistWindowLayout) this.persistWindowLayout();
+        if (appKey === 'diagnostics' && this.refreshTransportDiagnostics) {
+          this.$nextTick(function () { this.refreshTransportDiagnostics().catch(function () {}); }.bind(this));
+        }
+        if (appKey === 'security-center' && this.refreshSecurityCenter) {
+          this.$nextTick(function () { this.refreshSecurityCenter().catch(function () {}); }.bind(this));
+        }
+        if (appKey === 'debug-center' && this.refreshDebugCenter) {
+          this.$nextTick(function () { this.refreshDebugCenter().catch(function () {}); }.bind(this));
+        }
         this.sendSocket({ event: 'shell.open', appKey: appKey });
       },
       focusWindow: function (windowId) {
         var win = findWindow(this, windowId);
         if (!win) return;
         this.ensureWindowFrame(win);
-        this.windows.forEach(function (item) { if (item) item.focused = 0; });
         this.zCounter += 1;
         win.z = this.zCounter;
-        win.focused = 1;
-        win.lastFocusedAt = Date.now();
         this.activeWindowId = windowId;
-        if (this.shellUi) this.shellUi.desktopHidden = false;
-        if (this.windowMenu && this.windowMenu.windowId && this.windowMenu.windowId !== windowId) this.closeWindowMenu();
-        if (this.persistWindowLayout) this.persistWindowLayout();
       },
       minimizeWindow: function (windowId) {
         var win = findWindow(this, windowId);
@@ -224,80 +148,6 @@
         win.state = 'minimized';
         this.clearSnapPreview();
         if (this.activeWindowId === windowId) this.activeWindowId = '';
-        if (this.windowMenu && this.windowMenu.windowId === windowId) this.closeWindowMenu();
-        if (this.persistWindowLayout) this.persistWindowLayout();
-      },
-      restoreWindowAction: function (windowId) {
-        var win = findWindow(this, windowId);
-        if (!win) return;
-        restoreWindow(this, win);
-        this.focusWindow(windowId);
-        if (this.persistWindowLayout) this.persistWindowLayout();
-      },
-      windowMenuStyle: function () {
-        return { left: (this.windowMenu.left || 0) + 'px', top: (this.windowMenu.top || 0) + 'px' };
-      },
-      closeWindowMenu: function () {
-        if (!this.windowMenu) return;
-        this.windowMenu.open = false;
-        this.windowMenu.windowId = '';
-        this.windowMenu.source = 'titlebar';
-      },
-      openWindowMenu: function (win, event, source) {
-        var viewportW = window.innerWidth || document.documentElement.clientWidth || 1280;
-        var viewportH = window.innerHeight || document.documentElement.clientHeight || 720;
-        var left, top;
-        if (!win || !((((this.boot || {}).desktop || {}).windowing || {}).windowMenuEnabled)) return;
-        this.focusWindow(win.id);
-        left = Math.max(8, Math.min((event && event.clientX || 0), viewportW - 228));
-        top = Math.max(8, Math.min((event && event.clientY || 0), viewportH - 320));
-        this.windowMenu.open = true;
-        this.windowMenu.windowId = win.id;
-        this.windowMenu.source = source || 'titlebar';
-        this.windowMenu.left = left;
-        this.windowMenu.top = top;
-      },
-      currentWindowMenuWindow: function () {
-        return findWindow(this, (this.windowMenu || {}).windowId);
-      },
-      moveWindowToWorkspace: function (windowId, workspaceKey) {
-        var win = findWindow(this, windowId);
-        if (!win) return;
-        win.workspaceKey = 'workspace-main';
-        if (this.persistWindowLayout) this.persistWindowLayout();
-        if (this.windowMenu && this.windowMenu.windowId === windowId) this.closeWindowMenu();
-      },
-      workspaceMenuItems: function (win) {
-        return []; // single desktop model
-      },
-      windowMenuItems: function (win) {
-        var items = [];
-        if (!win) return items;
-        items.push({ key: 'restore', label: this.t('action.restore'), disabled: !(win.state === 'maximized' || win.state === 'snapped' || win.state === 'minimized') });
-        items.push({ key: 'minimize', label: this.t('action.minimize'), disabled: win.state === 'minimized' });
-        items.push({ key: 'maximize', label: this.t('action.maximize'), disabled: win.state === 'maximized' });
-        if (+win.snappable === 1) {
-          items.push({ key: 'snap-left', label: 'Snap left', disabled: false });
-          items.push({ key: 'snap-right', label: 'Snap right', disabled: false });
-          items.push({ key: 'snap-top-left', label: 'Snap top left', disabled: false });
-          items.push({ key: 'snap-top-right', label: 'Snap top right', disabled: false });
-        }
-        items.push({ key: 'close', label: this.t('action.close'), disabled: false, danger: true });
-        return items;
-      },
-      performWindowMenuAction: function (action, windowId) {
-        var key = String(action || '');
-        var targetId = windowId || ((this.windowMenu || {}).windowId || '');
-        this.closeWindowMenu();
-        if (!targetId) return;
-        if (key === 'restore') { this.restoreWindowAction(targetId); return; }
-        if (key === 'minimize') { this.minimizeWindow(targetId); return; }
-        if (key === 'maximize') { this.applySnapZone(targetId, 'maximize'); return; }
-        if (key === 'snap-left') { this.applySnapZone(targetId, 'left'); return; }
-        if (key === 'snap-right') { this.applySnapZone(targetId, 'right'); return; }
-        if (key === 'snap-top-left') { this.applySnapZone(targetId, 'top-left'); return; }
-        if (key === 'snap-top-right') { this.applySnapZone(targetId, 'top-right'); return; }
-        if (key === 'close') this.closeWindow(targetId);
       },
       closeWindow: function (windowId) {
         var win = findWindow(this, windowId);
@@ -309,8 +159,6 @@
         win.state = 'closed';
         this.clearSnapPreview();
         if (this.activeWindowId === windowId) this.activeWindowId = '';
-        if (this.windowMenu && this.windowMenu.windowId === windowId) this.closeWindowMenu();
-        if (this.persistWindowLayout) this.persistWindowLayout();
       },
       taskbarToggle: function (windowId) {
         var win = findWindow(this, windowId);
@@ -320,7 +168,6 @@
           this.showAlert(this.t('alerts.signinRequired.title'), this.t('alerts.signinRequired.use'));
           return;
         }
-        if (this.shellUi) this.shellUi.desktopHidden = false;
         if (win.state === 'minimized' || win.state === 'closed') {
           var wasTerminal = win.appKey === 'terminal';
           win.state = 'normal';
@@ -331,7 +178,7 @@
               if (self.mountTerminalWindow) self.mountTerminalWindow(windowId);
               if (self.requestTerminalOpen) self.requestTerminalOpen(windowId);
             });
-          } else if ((win.appKey === 'home' || win.appKey === 'explorer') && this.bootstrapExplorerWindow) {
+          } else if ((win.appKey === 'my-computer' || win.appKey === 'documents' || win.appKey === 'explorer') && this.bootstrapExplorerWindow) {
             this.$nextTick(function () {
               this.bootstrapExplorerWindow(windowId, true);
               if (this.refreshExplorerWindow) this.refreshExplorerWindow(windowId).catch(function () {});
@@ -365,12 +212,7 @@
         this.focusWindow(windowId);
       },
       toggleMenu: function () {
-        if (this.shellUi) this.shellUi.trayOpen = false;
-        this.closeDesktopContextMenu();
-        this.closeWindowMenu();
-        if (this.closeAllFolderContextMenus) this.closeAllFolderContextMenus();
         this.menuOpen = !this.menuOpen;
-        if (this.menuOpen && this.closeWindowSwitcher) this.closeWindowSwitcher();
       },
       windowClass: function (win) {
         return {
@@ -384,12 +226,13 @@
       windowStyle: function (win) {
         this.ensureWindowFrame(win);
         return {
-          '--mioos-window-x': (win.left || 0) + 'px',
-          '--mioos-window-y': (win.top || 0) + 'px',
+          '--x': (win.left || 0) + 'px',
+          '--y': (win.top || 0) + 'px',
           width: (win.width || 600) + 'px',
           height: (win.height || 420) + 'px',
           zIndex: (win.z || 1),
-          willChange: ((this.dragState.active && this.dragState.windowId === win.id) ? 'transform' : 'auto')
+          transform: 'translate3d(var(--x), var(--y), 0)',
+          willChange: (this.dragState.active && this.dragState.windowId === win.id) ? 'transform, width, height' : 'auto'
         };
       },
       snapPreviewStyle: function () {
@@ -450,6 +293,7 @@
         this.dragState.top = win.top || 0;
         this.dragState.width = win.width || 600;
         this.dragState.height = win.height || 420;
+        if (this.$el && this.$el.classList) this.$el.classList.add('is-window-dragging');
       },
       beginResize: function (win, edge, event) {
         if (!win || +win.resizable !== 1) return;
@@ -467,11 +311,16 @@
         this.dragState.top = win.top || 0;
         this.dragState.width = win.width || 600;
         this.dragState.height = win.height || 420;
+        if (this.$el && this.$el.classList) this.$el.classList.add('is-window-dragging');
       },
       onDragMove: function (event) {
         var win = findWindow(this, this.dragState.windowId);
         var dx, dy, nextZone, nextBox, nextLeft, nextTop, nextWidth, nextHeight;
         if (!this.dragState.active || !win) return;
+        if (typeof event.buttons === 'number' && event.buttons === 0) {
+          this.endDrag();
+          return;
+        }
         dx = event.clientX - this.dragState.startX;
         dy = event.clientY - this.dragState.startY;
         if (this.dragState.mode === 'move') {
@@ -518,13 +367,18 @@
         var zone = this.snapPreview.zone;
         if (!this.dragState.active) return;
         if (this.dragState.mode === 'move' && win && zone) this.applySnapZone(win.id, zone);
+        else if (this.dragState.mode === 'move' && win) {
+          win.left = Math.round((+(win.left || 0)) / 10) * 10;
+          win.top = Math.round((+(win.top || 0)) / 10) * 10;
+          clampWindow(this, win);
+        }
         if (win && this.dragState.mode === 'resize') scheduleTerminalSync(this, win);
-        if (win && this.persistWindowLayout) this.persistWindowLayout();
         this.dragState.active = false;
         this.dragState.mode = 'move';
         this.dragState.edge = '';
         this.dragState.windowId = '';
         this.clearSnapPreview();
+        if (this.$el && this.$el.classList) this.$el.classList.remove('is-window-dragging');
       },
       onWindowTitleDblClick: function (windowId) {
         this.toggleMaximize(windowId);
@@ -537,8 +391,6 @@
       },
       handleViewportResize: function () {
         var self = this;
-        if (this.centerAuthWindow && this.requiresSignin) this.centerAuthWindow();
-        if (this.windowMenu && this.windowMenu.open) this.closeWindowMenu();
         this.windows.forEach(function (win) {
           var box;
           if (!win || win.state === 'closed') return;
@@ -554,51 +406,19 @@
           } else clampWindow(self, win);
           scheduleTerminalSync(self, win);
         });
-        if (this.persistWindowLayout) this.persistWindowLayout();
       },
       onWindowDragOver: function (win, event) {
-        var allowed;
         if (!win || !(((this.boot || {}).desktop || {}).windowing || {}).dropUpload) return;
-        allowed = (win.appKey === 'home' || win.appKey === 'explorer');
-        if (!allowed) return;
+        if (win.appKey !== 'my-computer' && win.appKey !== 'documents' && win.appKey !== 'explorer') return;
         event.preventDefault();
       },
       onWindowDrop: function (win, event) {
-        var files, raw, payload, item, destination;
+        var files;
         if (!win || !event) return;
-        if (win.appKey !== 'home' && win.appKey !== 'explorer') return;
-        raw = event.dataTransfer && event.dataTransfer.getData && event.dataTransfer.getData('application/x-mioos-item');
-        if (raw) {
-          event.preventDefault();
-          try { payload = JSON.parse(raw); } catch (err) { payload = null; }
-          item = payload && payload.item;
-          destination = ((win.explorerState || {}).folderId) || ((win.meta || {}).folderId) || '';
-          if (item && item.kind === 'folder' && item.id === destination) return;
-          if (item && item.kind === 'app') {
-            if (this.notifyInfo) this.notifyInfo('Explorer', 'Application launchers can be opened from folders but are not moved between folders yet.');
-            return;
-          }
-          if (item && destination && this.command) {
-            if ((event.altKey || event.metaKey) && this.notifyInfo) {
-              this.notifyInfo('Explorer', 'Shortcut creation is reserved for a later migration step.');
-              return;
-            }
-            if (event.ctrlKey) {
-              this.command('fs.copy', { id: item.id || item.key || '', parent: destination }).then(function () {
-                if (this.refreshExplorerWindow) this.refreshExplorerWindow(win.id);
-              }.bind(this)).catch(function () {});
-              return;
-            }
-            this.command('fs.move', { id: item.id || item.key || '', parent: destination }).then(function () {
-              if (this.refreshExplorerWindow) this.refreshExplorerWindow(win.id);
-            }.bind(this)).catch(function () {});
-            return;
-          }
-        }
         files = (event.dataTransfer && event.dataTransfer.files) || [];
         if (!files.length) return;
         event.preventDefault();
-        if ((win.appKey === 'home' || win.appKey === 'explorer') && this.uploadFilesToExplorer) {
+        if ((win.appKey === 'my-computer' || win.appKey === 'documents' || win.appKey === 'explorer') && this.uploadFilesToExplorer) {
           this.uploadFilesToExplorer(win.id, files);
         }
       }

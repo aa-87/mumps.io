@@ -34,9 +34,6 @@
         fsUploadCommit: '/api/mioos/fs/upload/commit',
         fsUploadAbort: '/api/mioos/fs/upload/abort',
         fsBlob: '/api/mioos/fs/blob',
-        themeLoad: '/api/mioos/theme/load',
-        themeSave: '/api/mioos/theme/save',
-        fsSetMeta: '/api/mioos/fs/setmeta',
         debugSnapshotCommand: 'debug.snapshot',
         websocket: '/ws/mioos',
         terminalWebsocket: '/ws/mioos/terminal',
@@ -45,28 +42,65 @@
         commandErrorEvent: 'desktop.error'
       },
       desktop: {
-        themeKey: 'luna-blue',
-        wallpaper: 'aurora',
+        themeKey: 'xp-classic-blue',
+        wallpaper: 'bliss',
         density: 'comfortable',
         fontFamily: 'Segoe UI',
         fontSize: 13,
         launcherLabel: 'Menu',
-        shellChrome: 'shell-foundation',
-        taskbarStyle: 'taskbar-foundation',
-        startMenuStyle: 'launcher-foundation',
+        shellChrome: 'winxp-professional',
+        taskbarStyle: 'xp-professional',
+        startMenuStyle: 'xp-two-column',
         windowManager: 'mioos-native-vue-css',
         commandTransport: 'websocket-only',
         realtimeContract: 'core-websocket-plus-app-websockets',
-        themes: [
-          { key: 'meadow-classic-light', title: 'Meadow Classic', family: 'Meadow Classic', mode: 'light', wallpaper: 'aurora', accent: '#2f67d8', taskbar: '#245dd8' },
-          { key: 'meadow-classic-dark', title: 'Meadow Classic Night', family: 'Meadow Classic', mode: 'dark', wallpaper: 'aurora-night', accent: '#6fa8ff', taskbar: '#1b2e48' },
-          { key: 'glass-horizon-light', title: 'Glass Horizon', family: 'Glass Horizon', mode: 'light', wallpaper: 'paper-dawn', accent: '#4b86e8', taskbar: '#dce7f5' },
-          { key: 'glass-horizon-dark', title: 'Glass Horizon Midnight', family: 'Glass Horizon', mode: 'dark', wallpaper: 'paper-night', accent: '#7eb6ff', taskbar: '#192638' },
-          { key: 'graphite-dock-light', title: 'Graphite Dock', family: 'Graphite Dock', mode: 'light', wallpaper: 'solid-graphite', accent: '#7da8ff', taskbar: '#d9dce4' },
-          { key: 'graphite-dock-dark', title: 'Graphite Dock Night', family: 'Graphite Dock', mode: 'dark', wallpaper: 'midnight-grid', accent: '#a9beff', taskbar: '#2e343f' },
-          { key: 'ember-panel-light', title: 'Ember Panel', family: 'Ember Panel', mode: 'light', wallpaper: 'sunrise-grid', accent: '#dd6a36', taskbar: '#f2e7df' },
-          { key: 'ember-panel-dark', title: 'Ember Panel Night', family: 'Ember Panel', mode: 'dark', wallpaper: 'midnight-grid', accent: '#ffb087', taskbar: '#20161a' }
-        ]
+        themes: [],
+        accessibility: {
+          rtl: false,
+          keyboardModel: 'desktop-first',
+          screenReaderHints: 1,
+          motionPreference: 'respect-user-preference'
+        },
+        performance: {
+          clientModel: 'thin-vue-umd',
+          renderBudgetMs: 16,
+          payloadMode: 'tmp-global-safe',
+          transport: 'websocket-first-http-refresh',
+          uploadPreparation: 'blob-slice-no-base64',
+          uploadStrategy: 'http-binary-parallel-slice-xhr-with-auto-pause',
+          uploadFinalizeStrategy: 'binary-direct-stage-promote-with-copy-on-overwrite',
+          transferPersistence: 'localstorage-resumable-transfer-list',
+          downloadStrategy: 'direct-http-range-native',
+          downloadSendStrategy: 'vfs-segment-streaming-http-blob',
+          mediaStreamStrategy: 'range-kickstart-http-blob-partial-window',
+          textPreviewStrategy: 'windowed-websocket-range-read'
+        },
+        moduleSystem: { enabled: true, launcher: 'desktop-icons-and-menu', manifestVersion: 1, appCatalogEnabled: true, appCatalogKey: 'app-catalog', dynamicWindows: true, debugAppKey: 'debug-center' },
+        debugCenter: { enabled: true, eventLimit: 50, snapshotVersion: 1 },
+        icons: {
+          enabled: true,
+          draggable: true,
+          size: 'medium',
+          sizeOptions: ['small', 'medium', 'large'],
+          sortMode: 'manual'
+        },
+        contextMenu: {
+          desktop: true,
+          icon: true,
+          verbs: ['refresh', 'rearrange', 'sort-name', 'sort-type', 'size-small', 'size-medium', 'size-large', 'personalize', 'control-panel', 'open']
+        },
+        windowing: {
+          engine: 'mioos-native-vue-css',
+          snapThreshold: 28,
+          taskbarHeight: 40,
+          minWidth: 320,
+          minHeight: 220,
+          animations: 'subtle',
+          resizeHandles: 'all-edges-and-corners',
+          snapModel: 'edges-and-corners',
+          doubleClickTitlebar: 1,
+          dropUpload: 1
+        }
       },
       auth: { enabled: true, required: true, guestLoginEnabled: false, mode: 'local-session-required', unauthenticatedAccessAllowed: false, providers: { local: { enabled: true, loginMode: 'username-password', guestAllowed: false }, framework: { enabled: true, mode: 'mioauth-session-jwt', tokenType: 'jwt', sessionCookie: 'mioos_auth' } }, lockout: { threshold: 5, minutes: 15 }, passwordPolicy: { minLength: 12, requireUpper: true, requireLower: true, requireDigit: true, requireSymbol: true, maxAgeDays: 90, warnDays: 14, changeTokenMinutes: 15 }, audit: { enabled: true, retainDays: 365, reportLimit: 20, reportWindowDays: 30, scope: 'self' }, management: { sessionAdminEnabled: true, accountAdminEnabled: true, sessionLimit: 20, accountLimit: 20, adminRole: 'admin' } },
       explorer: { currentFolderId: 'root', quickPlaces: [], preview: { enabled: true, mime: 'text/plain' } },
@@ -95,11 +129,6 @@
         heartbeatSeconds: 15,
         resumeWindowSeconds: 180,
         maxInflightPerChannel: 4,
-        maxSocketsPerSession: 6,
-        coreSockets: 1,
-        fsSockets: 1,
-        uploadBatchSize: 2,
-        batchFlushThreshold: 2,
         diagnosticsEnabled: true,
         requestTimeoutMs: 15000,
         uploadBeginTimeoutMs: 20000,
@@ -110,7 +139,7 @@
         maxFrameBytes: 262144,
         maxMessageBytes: 1048576
       },
-      vfs: { enabled: false, rootId: 'root', homeId: 'home', chunkSize: 131072, httpChunkBytes: 131072, readPreviewBytes: 262144, readWindowBytes: 262144, mediaInitialBytes: 262144, mediaWarmupBytes: 65536, globalsOnly: true, uploadStaleSeconds: 1800, downloadStaleSeconds: 900, uploadChunkBytes: 860000, uploadConcurrency: 3, uploadBatchSize: 2, uploadMaxInflightChunks: 6, batchFlushThreshold: 2, transferPersistence: 'localstorage-resumable-transfer-list', transferControls: { cancel: true, retry: true, pause: true, resume: true } },
+      vfs: { enabled: false, rootId: 'root', homeId: 'home', chunkSize: 131072, httpChunkBytes: 131072, readPreviewBytes: 262144, readWindowBytes: 262144, mediaInitialBytes: 262144, mediaWarmupBytes: 65536, globalsOnly: true, uploadStaleSeconds: 1800, downloadStaleSeconds: 900, uploadChunkBytes: 860000, uploadConcurrency: 3, transferPersistence: 'localstorage-resumable-transfer-list', transferControls: { cancel: true, retry: true, pause: true, resume: true } },
       apps: [],
       windows: [],
       modules: []
@@ -120,9 +149,9 @@
   function defaultView() {
     return {
       summary: {
-        headline: 'Production shell desktop',
+        headline: 'Production shell foundation',
         subheadline: '',
-        theme: 'luna-blue',
+        theme: 'xp-classic-blue',
         launcherLabel: 'Menu',
         windowManager: 'mioos-native-vue-css',
         authMode: 'anonymous',
@@ -162,12 +191,6 @@
     base.desktop.moduleSystem = Object.assign(base.desktop.moduleSystem, (boot.desktop || {}).moduleSystem || {});
     base.desktop.debugCenter = Object.assign(base.desktop.debugCenter || {}, (boot.desktop || {}).debugCenter || {});
     base.desktop.windowing = Object.assign(base.desktop.windowing, (boot.desktop || {}).windowing || {});
-    base.desktop.appActions = Object.assign({}, (defaultBoot().desktop.appActions || {}), base.desktop.appActions || {}, (boot.desktop || {}).appActions || {});
-    base.desktop.themeSystem = Object.assign({}, (defaultBoot().desktop.themeSystem || {}), base.desktop.themeSystem || {}, (boot.desktop || {}).themeSystem || {});
-    base.desktop.shellSurfaces = Object.assign({}, (defaultBoot().desktop.shellSurfaces || {}), base.desktop.shellSurfaces || {}, (boot.desktop || {}).shellSurfaces || {});
-    base.desktop.notifications = Object.assign({}, (defaultBoot().desktop.notifications || {}), base.desktop.notifications || {}, (boot.desktop || {}).notifications || {});
-    base.desktop.dialogs = Object.assign({}, (defaultBoot().desktop.dialogs || {}), base.desktop.dialogs || {}, (boot.desktop || {}).dialogs || {});
-    base.desktop.themes = Array.isArray((boot.desktop || {}).themes) && (boot.desktop || {}).themes.length ? deepClone((boot.desktop || {}).themes) : deepClone(defaultBoot().desktop.themes || []);
     base.auth = Object.assign(base.auth, boot.auth || {});
     base.auth.providers = Object.assign({}, (defaultBoot().auth.providers || {}), base.auth.providers || {}, (boot.auth || {}).providers || {});
     base.auth.providers.local = Object.assign({}, (defaultBoot().auth.providers || {}).local || {}, ((base.auth || {}).providers || {}).local || {}, (((boot.auth || {}).providers || {}).local || {}));
