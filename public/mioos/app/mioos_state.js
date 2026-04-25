@@ -103,6 +103,8 @@
         }
       },
       auth: { enabled: true, required: true, guestLoginEnabled: false, mode: 'local-session-required', unauthenticatedAccessAllowed: false, providers: { local: { enabled: true, loginMode: 'username-password', guestAllowed: false }, framework: { enabled: true, mode: 'mioauth-session-jwt', tokenType: 'jwt', sessionCookie: 'mioos_auth' } }, lockout: { threshold: 5, minutes: 15 }, passwordPolicy: { minLength: 12, requireUpper: true, requireLower: true, requireDigit: true, requireSymbol: true, maxAgeDays: 90, warnDays: 14, changeTokenMinutes: 15 }, audit: { enabled: true, retainDays: 365, reportLimit: 20, reportWindowDays: 30, scope: 'self' }, management: { sessionAdminEnabled: true, accountAdminEnabled: true, sessionLimit: 20, accountLimit: 20, adminRole: 'admin' } },
+      desktopEntries: [],
+      desktopFolder: { id: '', path: '/Home/Desktop', canonicalPath: '/Home/Desktop', count: 0 },
       explorer: { currentFolderId: 'root', quickPlaces: [], preview: { enabled: true, mime: 'text/plain' } },
       terminal: {
         enabled: true,
@@ -139,7 +141,9 @@
         maxFrameBytes: 262144,
         maxMessageBytes: 1048576
       },
-      vfs: { enabled: false, rootId: 'root', homeId: 'home', chunkSize: 131072, httpChunkBytes: 131072, readPreviewBytes: 262144, readWindowBytes: 262144, mediaInitialBytes: 262144, mediaWarmupBytes: 65536, globalsOnly: true, uploadStaleSeconds: 1800, downloadStaleSeconds: 900, uploadChunkBytes: 860000, uploadConcurrency: 3, transferPersistence: 'localstorage-resumable-transfer-list', transferControls: { cancel: true, retry: true, pause: true, resume: true } },
+      vfs: { enabled: false, rootId: 'root', homeId: 'home', desktopId: 'desktop', chunkSize: 131072, httpChunkBytes: 131072, readPreviewBytes: 262144, readWindowBytes: 262144, mediaInitialBytes: 262144, mediaWarmupBytes: 65536, globalsOnly: true, uploadStaleSeconds: 1800, downloadStaleSeconds: 900, uploadChunkBytes: 860000, uploadConcurrency: 3, transferPersistence: 'localstorage-resumable-transfer-list', transferControls: { cancel: true, retry: true, pause: true, resume: true } },
+      desktopEntries: [],
+      desktopFolder: { id: '', path: '/Home/Desktop', canonicalPath: '/Home/Desktop', count: 0 },
       apps: [],
       windows: [],
       modules: []
@@ -203,6 +207,8 @@
     base.vfs = Object.assign(base.vfs, boot.vfs || {});
     base.terminal = Object.assign(base.terminal, boot.terminal || {});
     base.terminal.profile = Object.assign(base.terminal.profile, (boot.terminal || {}).profile || {});
+    base.desktopEntries = Array.isArray(boot.desktopEntries) ? deepClone(boot.desktopEntries) : [];
+    base.desktopFolder = Object.assign(base.desktopFolder || {}, boot.desktopFolder || {});
     base.apps = Array.isArray(boot.apps) ? deepClone(boot.apps) : [];
     base.windows = Array.isArray(boot.windows) ? deepClone(boot.windows) : [];
     base.modules = Array.isArray(boot.modules) ? deepClone(boot.modules) : [];
@@ -214,6 +220,8 @@
     var base = defaultView();
     var view = source || {};
     base.summary = Object.assign(base.summary, view.summary || {});
+    base.desktopEntries = Array.isArray(view.desktopEntries) ? deepClone(view.desktopEntries) : [];
+    base.desktopFolder = Object.assign(base.desktopFolder || {}, view.desktopFolder || {});
     base.documents = Array.isArray(view.documents) ? deepClone(view.documents) : [];
     base.controlPanel = Array.isArray(view.controlPanel) ? deepClone(view.controlPanel) : [];
     base.explorer = Object.assign(base.explorer, view.explorer || {});

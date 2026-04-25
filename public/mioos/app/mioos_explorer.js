@@ -575,7 +575,7 @@
           win.explorerState = {
             initialized: false,
             loading: false,
-            folderId: (win.meta || {}).folderId || ((this.boot.vfs || {}).homeId || (this.boot.vfs || {}).rootId || 'root'),
+            folderId: (win.meta || {}).folderId || (win.appKey === 'home' ? ((this.boot.vfs || {}).desktopId || (this.boot.vfs || {}).homeId) : ((this.boot.vfs || {}).homeId || (this.boot.vfs || {}).rootId)) || 'root',
             folder: { id: '', name: '', path: '' },
             items: [],
             selection: null,
@@ -589,11 +589,13 @@
       bootstrapExplorerWindow: function (windowId, force) {
         var win = this.windows.find(function (item) { return item.id === windowId; });
         var state;
-        if (!win || (win.appKey !== 'my-computer' && win.appKey !== 'documents' && win.appKey !== 'explorer')) return;
+        if (!win || (win.appKey !== 'home' && win.appKey !== 'my-computer' && win.appKey !== 'documents' && win.appKey !== 'explorer')) return;
         state = this.ensureExplorerWindowState(win);
         if (state.initialized && !force) return;
         state.initialized = true;
-        if (win.appKey === 'documents' && (this.boot.vfs || {}).homeId) {
+        if (win.appKey === 'home' && (this.boot.vfs || {}).desktopId) {
+          state.folderId = (win.meta && win.meta.folderId) || this.boot.vfs.desktopId;
+        } else if (win.appKey === 'documents' && (this.boot.vfs || {}).homeId) {
           state.folderId = (win.meta && win.meta.folderId) || this.boot.vfs.homeId;
         }
         this.loadExplorerFolder(win.id, state.folderId, { selectFirst: true });

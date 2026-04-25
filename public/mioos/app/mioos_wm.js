@@ -74,7 +74,7 @@
   window.MIOOSWM = {
     methods: {
       appIcon: function (appKey) {
-        var entry = this.desktopEntries.find(function (item) { return item.key === appKey; });
+        var entry = (this.launcherEntries || []).find(function (item) { return item.key === appKey; }) || (this.desktopEntries || []).find(function (item) { return item.key === appKey; });
         if (entry) return entry.icon;
         if (appKey === 'text-viewer') return '📄';
         if (appKey === 'image-viewer') return '🖼';
@@ -116,7 +116,7 @@
         this.menuOpen = false;
         if (win.state === 'closed' || win.state === 'minimized') win.state = 'normal';
         this.focusWindow(win.id);
-        if ((appKey === 'my-computer' || appKey === 'documents' || appKey === 'explorer') && this.bootstrapExplorerWindow) {
+        if ((appKey === 'home' || appKey === 'my-computer' || appKey === 'documents' || appKey === 'explorer') && this.bootstrapExplorerWindow) {
           this.$nextTick(function () {
             this.bootstrapExplorerWindow(win.id, true);
             if (this.refreshExplorerWindow) this.refreshExplorerWindow(win.id).catch(function () {});
@@ -178,7 +178,7 @@
               if (self.mountTerminalWindow) self.mountTerminalWindow(windowId);
               if (self.requestTerminalOpen) self.requestTerminalOpen(windowId);
             });
-          } else if ((win.appKey === 'my-computer' || win.appKey === 'documents' || win.appKey === 'explorer') && this.bootstrapExplorerWindow) {
+          } else if ((win.appKey === 'home' || win.appKey === 'my-computer' || win.appKey === 'documents' || win.appKey === 'explorer') && this.bootstrapExplorerWindow) {
             this.$nextTick(function () {
               this.bootstrapExplorerWindow(windowId, true);
               if (this.refreshExplorerWindow) this.refreshExplorerWindow(windowId).catch(function () {});

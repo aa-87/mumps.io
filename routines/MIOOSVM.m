@@ -5,7 +5,7 @@ BUILD(STATE,CONF,VIEW)
 	NEW CODE,AUTHTXT
 	SET CODE=$GET(STATE("localeCode"),"en")
 	KILL VIEW
-	MERGE VIEW("desktopEntries")=STATE("apps")
+	DO DESKTOPVM(.STATE,.CONF,$NAME(VIEW("desktopEntries")),$NAME(VIEW("desktopFolder")))
 	SET VIEW("summary","headline")=$$TXT^MIOOSI18N(CODE,"view.summary.headline","Production shell foundation")
 	SET VIEW("summary","subheadline")=$$TXT^MIOOSI18N(CODE,"view.summary.subheadline","Server-authored boot contract, thin Vue 3 shell, websocket-first transport, and local auth sessions.")
 	SET VIEW("summary","theme")=$GET(STATE("themeKey"))
@@ -33,10 +33,10 @@ BUILD(STATE,CONF,VIEW)
 	ELSE  DO
 	. SET AUTHTXT=$$TXT^MIOOSI18N(CODE,"auth.state.guest","Desktop available without sign-in")
 	SET VIEW("controlPanel",4,"detail")=AUTHTXT
-	SET VIEW("explorer","currentFolderId")=$GET(STATE("vfs","homeId"),$GET(STATE("vfs","rootId"),"root"))
-	SET VIEW("explorer","quickPlaces",1,"id")=$GET(STATE("vfs","homeId"),$GET(STATE("vfs","rootId"),"root"))
+	SET VIEW("explorer","currentFolderId")=$GET(STATE("fsDesktopId"),$GET(STATE("fsHomeId"),$GET(STATE("fsRootId"),"root")))
+	SET VIEW("explorer","quickPlaces",1,"id")=$GET(STATE("fsHomeId"),$GET(STATE("fsRootId"),"root"))
 	SET VIEW("explorer","quickPlaces",1,"title")="Home"
-	SET VIEW("explorer","quickPlaces",2,"id")=$GET(STATE("vfs","desktopId"),$GET(STATE("vfs","rootId"),"root"))
+	SET VIEW("explorer","quickPlaces",2,"id")=$GET(STATE("fsDesktopId"),$GET(STATE("fsRootId"),"root"))
 	SET VIEW("explorer","quickPlaces",2,"title")="Desktop"
 	SET VIEW("terminal","status")="ready"
 	SET VIEW("terminal","transport")=$GET(STATE("terminal","transport"),"pipe")
@@ -51,3 +51,45 @@ BUILD(STATE,CONF,VIEW)
 	SET VIEW("terminal","profile","cols")=+$GET(STATE("terminal","cols"),112)
 	DO LIST^MIOOSTERM(.STATE,$NAME(VIEW("terminal","sessions")))
 	QUIT
+	;
+DESKTOPVM(STATE,CONF,ROOT,FROOT)
+	NEW TARGET,OUT,ERR,I,N,ID,KIND,NAME,MIME,ICON
+	KILL @ROOT,@FROOT
+	SET TARGET=$GET(STATE("fsDesktopId")) IF TARGET="" SET TARGET=$$DESKTOPID^MIOOSFS()
+	IF TARGET="" SET TARGET="root"
+	IF '$$LIST^MIOOSFS(.STATE,TARGET,.OUT,.ERR) DO  QUIT
+	. SET @FROOT@("id")=TARGET
+	. SET @FROOT@("path")="/Home/Desktop"
+	. SET @FROOT@("canonicalPath")="/Home/Desktop"
+	. SET @FROOT@("error")=$GET(ERR("error"))
+	MERGE @FROOT=OUT("folder")
+	SET @FROOT@("canonicalPath")="/Home/Desktop"
+	SET N=0,I=0
+	FOR  SET I=$ORDER(OUT("entries",I)) QUIT:I'>0  DO
+	. SET ID=$GET(OUT("entries",I,"id")) QUIT:ID=""
+	. SET N=N+1
+	. MERGE @ROOT@(N)=OUT("entries",I)
+	. SET KIND=$GET(OUT("entries",I,"kind")),NAME=$GET(OUT("entries",I,"name")),MIME=$GET(OUT("entries",I,"mime"))
+	. SET @ROOT@(N,"key")=ID
+	. SET @ROOT@(N,"title")=NAME
+	. SET @ROOT@(N,"label")=NAME
+	. SET @ROOT@(N,"source")="vfs"
+	. SET @ROOT@(N,"targetPath")=$GET(OUT("entries",I,"path"))
+	. SET ICON=$GET(OUT("entries",I,"customize","icon"))
+	. IF ICON="" SET ICON=$$ICON(KIND,MIME,NAME)
+	. SET @ROOT@(N,"icon")=ICON
+	. SET @ROOT@(N,"subtitle")=$SELECT(KIND="folder":"Folder",$GET(OUT("entries",I,"sizeLabel"))'="":$GET(OUT("entries",I,"sizeLabel")),1:"File")
+	SET @FROOT@("count")=N
+	QUIT
+	;
+ICON(KIND,MIME,NAME)
+	NEW LNAME,LMIME
+	SET LNAME=$$LOW^MIOUTIL($GET(NAME)),LMIME=$$LOW^MIOUTIL($GET(MIME))
+	IF $GET(KIND)="folder" QUIT "📁"
+	IF LMIME["image/" QUIT "🖼"
+	IF LMIME["audio/" QUIT "🎵"
+	IF LMIME["video/" QUIT "🎬"
+	IF LMIME["pdf" QUIT "📕"
+	IF LNAME[".txt"!(LNAME[".md")!(LNAME[".m") QUIT "📄"
+	QUIT "📄"
+	;

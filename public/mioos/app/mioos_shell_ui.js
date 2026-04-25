@@ -101,7 +101,7 @@
         methods: {
           labelOf: labelOf,
           iconGlyph: iconGlyph,
-          onOpen: function () { this.vm.openApp(this.icon.key); }
+          onOpen: function () { this.vm.openDesktopEntry(this.icon); }
         }
       });
 
@@ -711,9 +711,10 @@
           '<section class="mioos-popup-menu-vue" :style="vm.contextMenuStyle()" @click.stop>' +
             '<template v-if="menu.type === \'icon\'">' +
               '<button type="button" class="mioos-popup-action" @click="vm.contextOpenSelected()">Open</button>' +
-              '<button type="button" class="mioos-popup-action" @click="vm.contextDeleteIcon()">Remove shortcut</button>' +
+              '<button type="button" class="mioos-popup-action" @click="vm.desktopRenameSelected()">Rename</button><button type="button" class="mioos-popup-action" @click="vm.contextDeleteIcon()">Delete</button>' +
               '<div class="mioos-popup-separator"></div>' +
             '</template>' +
+            '<button type="button" class="mioos-popup-action" @click="vm.desktopCreateFolder()">New Folder</button><button type="button" class="mioos-popup-action" @click="vm.desktopCreateTextFile()">New Text File</button><div class="mioos-popup-separator"></div>' +
             '<button type="button" class="mioos-popup-action" @click="vm.refreshDesktopIcons()">Refresh</button>' +
             '<button type="button" class="mioos-popup-action" @click="vm.rearrangeDesktopIcons()">Rearrange Icons</button>' +
             '<button type="button" class="mioos-popup-action" @click="vm.sortDesktopEntries(\'name\')">Sort by Name</button>' +

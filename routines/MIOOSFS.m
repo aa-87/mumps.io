@@ -49,7 +49,10 @@ INIT(CONF)
 	SET SVG=SVG_"<defs><linearGradient id=""g"" x1=""0"" x2=""0"" y1=""0"" y2=""1""><stop offset=""0"" stop-color=""#2d66c2""/><stop offset="".55"" stop-color=""#153a79""/><stop offset=""1"" stop-color=""#0d244b""/></linearGradient></defs>"
 	SET SVG=SVG_"<rect width=""1600"" height=""900"" fill=""url(#g)""/><circle cx=""240"" cy=""170"" r=""210"" fill=""#ffffff"" fill-opacity="".16""/><circle cx=""1270"" cy=""120"" r=""180"" fill=""#ffffff"" fill-opacity="".10""/></svg>"
 	DO ENSUREFILE(DESK,"mioos-wallpaper.svg",SVG,"image/svg+xml",OWNER,ROLES,.WALL,.CONF)
-	IF WALL'="" DO SETMETAFLD(DESK,"wallpaperId",WALL)
+	IF WALL'="" DO
+	. DO SETMETAFLD(DESK,"wallpaperId",WALL)
+	. DO SETMETAFLD(WALL,"hidden",1)
+	. DO SETMETAFLD(WALL,"system",1)
 	QUIT
 	;
 ENSUREFOLDER(PARENT,NAME,OWNER,ROLES,OUTID)

@@ -121,7 +121,7 @@
         'view.desktopEntries': {
           deep: true,
           handler: function (entries) {
-            if (Array.isArray(entries) && entries.length) {
+            if (Array.isArray(entries)) {
               this.desktopEntries = window.MIOOSState.deepClone(entries);
               this.ensureDesktopLayout();
             }
@@ -219,7 +219,7 @@
           }
           this.profile = this.boot.product.profile || 'dev';
           this.launcherEntries = window.MIOOSState.deepClone(this.boot.apps || []);
-          this.desktopEntries = window.MIOOSState.deepClone((this.view && this.view.desktopEntries) || this.boot.desktopEntries || this.boot.apps || []);
+          this.desktopEntries = window.MIOOSState.deepClone(Array.isArray(this.boot.desktopEntries) ? this.boot.desktopEntries : []);
           this.windows = window.MIOOSState.deepClone(this.boot.windows || []);
           this.ensureModuleWindowState();
           this.normalizeDesktopUiState();
@@ -1047,11 +1047,88 @@
         contextOpenSelected: function () {
           var entry = this.desktopContextEntry();
           this.closeDesktopContextMenu();
-          if (entry) this.openApp(entry.key);
+          if (entry) this.openDesktopEntry(entry);
         },
         contextControlPanel: function () { this.closeDesktopContextMenu(); this.openApp('control-panel'); },
         contextPersonalize: function () { this.closeDesktopContextMenu(); this.openApp('customize'); },
-        contextDeleteIcon: function () { this.closeDesktopContextMenu(); this.showAlert('Desktop', 'Desktop shortcuts are managed by installed modules.'); },
+        contextDeleteIcon: function () { this.desktopDeleteSelected(); },
+        desktopFolderId: function () {
+          return (((this.boot || {}).vfs || {}).desktopId) || (((this.view || {}).desktopFolder || {}).id) || 'Desktop';
+        },
+        desktopEntryIsVfs: function (entry) {
+          return !!(entry && (entry.source === 'vfs' || entry.id || entry.parentId || entry.targetPath));
+        },
+        refreshDesktopVfsViews: function () {
+          var self = this;
+          var desktopId = this.desktopFolderId();
+          return this.refreshView().then(function () {
+            (self.windows || []).forEach(function (win) {
+              var st = win && win.explorerState;
+              if (st && st.folderId === desktopId && self.refreshExplorerWindow) self.refreshExplorerWindow(win.id).catch(function () {});
+            });
+          });
+        },
+        openExplorerFolder: function (folderId, title) {
+          var win = (this.windows || []).find(function (item) { return item.appKey === 'home'; }) || (this.windows || []).find(function (item) { return item.appKey === 'explorer' || item.appKey === 'documents'; });
+          if (!win) { this.openApp('home'); return; }
+          if (!win.meta) win.meta = {};
+          win.meta.folderId = folderId || this.desktopFolderId();
+          if (title) win.title = title;
+          this.ensureWindowFrame(win);
+          if (win.state === 'closed' || win.state === 'minimized') win.state = 'normal';
+          this.focusWindow(win.id);
+          if (this.bootstrapExplorerWindow) {
+            this.$nextTick(function () {
+              this.bootstrapExplorerWindow(win.id, true);
+              if (this.loadExplorerFolder) this.loadExplorerFolder(win.id, win.meta.folderId, { selectFirst: false }).catch(function () {});
+            }.bind(this));
+          }
+        },
+        openDesktopEntry: function (entry) {
+          if (!entry) return;
+          if (!this.desktopEntryIsVfs(entry)) { this.openApp(entry.key); return; }
+          if ((entry.kind || entry.type) === 'folder') { this.openExplorerFolder(entry.id || entry.key, entry.title || entry.name || 'Folder'); return; }
+          if (this.openFileViewerWindow) { this.openFileViewerWindow(entry); return; }
+          this.openExplorerFolder(this.desktopFolderId(), 'Desktop');
+        },
+        desktopCreateFolder: function () {
+          var self = this;
+          var name = window.prompt(this.t('explorer.promptNewFolder', 'New folder name'), this.t('explorer.defaultFolderName', 'New Folder'));
+          this.closeDesktopContextMenu();
+          if (name === null) return Promise.resolve();
+          name = String(name || '').trim();
+          if (!name || !this.command) return Promise.resolve();
+          return this.command('fs.mkdir', { parent: this.desktopFolderId(), name: name }).then(function () { return self.refreshDesktopVfsViews(); }).catch(function (err) { self.showAlert('Desktop', (err && err.message) || 'fs_mkdir_failed'); });
+        },
+        desktopCreateTextFile: function () {
+          var self = this;
+          var name = window.prompt('New text file name', 'New Text Document.txt');
+          this.closeDesktopContextMenu();
+          if (name === null) return Promise.resolve();
+          name = String(name || '').trim();
+          if (!name || !this.command) return Promise.resolve();
+          return this.command('fs.write', { parent: this.desktopFolderId(), name: name, content: '', mime: 'text/plain' }).then(function () { return self.refreshDesktopVfsViews(); }).catch(function (err) { self.showAlert('Desktop', (err && err.message) || 'fs_write_failed'); });
+        },
+        desktopRenameSelected: function () {
+          var self = this;
+          var entry = this.desktopContextEntry();
+          var name;
+          this.closeDesktopContextMenu();
+          if (!entry || !this.desktopEntryIsVfs(entry) || !this.command) return Promise.resolve();
+          name = window.prompt(this.t('explorer.promptRename', 'Rename item'), entry.name || entry.title || '');
+          if (name === null) return Promise.resolve();
+          name = String(name || '').trim();
+          if (!name || name === (entry.name || entry.title || '')) return Promise.resolve();
+          return this.command('fs.rename', { id: entry.id || entry.key, name: name }).then(function () { return self.refreshDesktopVfsViews(); }).catch(function (err) { self.showAlert('Desktop', (err && err.message) || 'fs_rename_failed'); });
+        },
+        desktopDeleteSelected: function () {
+          var self = this;
+          var entry = this.desktopContextEntry();
+          this.closeDesktopContextMenu();
+          if (!entry || !this.desktopEntryIsVfs(entry) || !this.command) return Promise.resolve();
+          if (!window.confirm(this.t('explorer.confirmDelete', 'Delete the selected item?'))) return Promise.resolve();
+          return this.command('fs.delete', { id: entry.id || entry.key }).then(function () { return self.refreshDesktopVfsViews(); }).catch(function (err) { self.showAlert('Desktop', (err && err.message) || 'fs_delete_failed'); });
+        },
         themeStudioStorageKey: function () {
           return 'mioos.themeStudio.active.v2';
         },

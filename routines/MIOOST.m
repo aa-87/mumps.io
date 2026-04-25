@@ -51,6 +51,7 @@ MIOOST ; MIOOS tests
 	DO T054
 	DO T055
 	DO T056
+	DO T057
 	QUIT
 	;
 RESET
@@ -1165,4 +1166,39 @@ T056
 	DO OK^MIOTASSERT(STYLE2["#ffb087","[MIOOST][T056][persisted style]")
 	QUIT
 	;
+	;	;
+T057
+	NEW CONF,REQ,CTX,STATE,BOOT,VIEW,ERR,OUT,DESK,FOUND,I,ID
+	DO RESET
+	DO CONFDEF^MIOOS(.CONF)
+	SET CONF("mioos","localAuth","enabled")=0
+	SET CONF("mioos","dev","authDisabled")=1
+	DO INIT^MIOOS(.CONF)
+	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T057][load]")
+	SET DESK=$$DESKTOPID^MIOOSFS()
+	DO EQ^MIOTASSERT($$PATH^MIOOSFS(DESK),"/Home/Desktop","[MIOOST][T057][canonical desktop path]")
+	DO BOOTARY^MIOOSST(.STATE,.CONF,.BOOT)
+	DO EQ^MIOTASSERT($GET(BOOT("vfs","desktopId")),DESK,"[MIOOST][T057][boot desktop id]")
+	DO EQ^MIOTASSERT($GET(BOOT("desktop","canonicalDesktopPath")),"/Home/Desktop","[MIOOST][T057][boot canonical path]")
+	DO EQ^MIOTASSERT($GET(BOOT("desktopFolder","id")),DESK,"[MIOOST][T057][boot desktop folder]")
+	KILL OUT,ERR DO OK^MIOTASSERT($$WRITE^MIOOSFS(.STATE,DESK,"roi2-note.txt","desktop vfs","text/plain",.OUT,.ERR),"[MIOOST][T057][write desktop]")
+	SET ID=$GET(OUT("id"))
+	KILL VIEW DO BUILD^MIOOSVM(.STATE,.CONF,.VIEW)
+	DO EQ^MIOTASSERT($GET(VIEW("explorer","currentFolderId")),DESK,"[MIOOST][T057][explorer opens desktop]")
+	DO EQ^MIOTASSERT($GET(VIEW("desktopFolder","id")),DESK,"[MIOOST][T057][view desktop folder]")
+	DO EQ^MIOTASSERT($GET(VIEW("desktopFolder","canonicalPath")),"/Home/Desktop","[MIOOST][T057][view canonical path]")
+	SET FOUND=0,I=0 FOR  SET I=$ORDER(VIEW("desktopEntries",I)) QUIT:I'>0  DO
+	. IF $GET(VIEW("desktopEntries",I,"name"))="roi2-note.txt" DO
+	. . SET FOUND=1
+	. . DO EQ^MIOTASSERT($GET(VIEW("desktopEntries",I,"key")),ID,"[MIOOST][T057][desktop key is vfs id]")
+	. . DO EQ^MIOTASSERT($GET(VIEW("desktopEntries",I,"source")),"vfs","[MIOOST][T057][desktop source]")
+	DO EQ^MIOTASSERT(FOUND,1,"[MIOOST][T057][write appears on desktop]")
+	KILL OUT,ERR DO OK^MIOTASSERT($$MKDIR^MIOOSFS(.STATE,DESK,"ROI2Folder",.OUT,.ERR),"[MIOOST][T057][mkdir desktop]")
+	KILL VIEW DO BUILD^MIOOSVM(.STATE,.CONF,.VIEW)
+	SET FOUND=0,I=0 FOR  SET I=$ORDER(VIEW("desktopEntries",I)) QUIT:I'>0  IF $GET(VIEW("desktopEntries",I,"name"))="ROI2Folder",$GET(VIEW("desktopEntries",I,"kind"))="folder" SET FOUND=1
+	DO EQ^MIOTASSERT(FOUND,1,"[MIOOST][T057][folder appears on desktop]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","openDesktopEntry"),"[MIOOST][T057][desktop entry opener]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","vm.openDesktopEntry(icon)"),"[MIOOST][T057][desktop icon opener]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSVM.m","DESKTOPVM"),"[MIOOST][T057][vfs desktop vm]")
+	QUIT
 	;
