@@ -137,7 +137,10 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("commandErrorEvent")=$GET(CONF("mioos","desktop","transport","errorEvent"),"desktop.error")
 	SET STATE("transportModel")=$GET(CONF("mioos","desktop","transport","model"),"core-websocket-plus-app-websockets")
 	SET STATE("themeMode")=$GET(CONF("mioos","desktop","themeMode"),$SELECT($GET(CONF("mioos","desktop","theme"))["dark":"dark",1:"light"))
+	SET STATE("theme")=STATE("themeKey")
 	DO ACTIVETHM(.STATE,.CONF)
+	SET STATE("theme")=STATE("themeKey")
+	DO WALLPAPER(.STATE,.CONF)
 	SET STATE("themeSystemEditor")=$GET(CONF("mioos","desktop","themeSystem","editor"),"customize")
 	SET STATE("themeSystemPersistence")=$GET(CONF("mioos","desktop","themeSystem","persistence"),"globals-profile-service-with-localstorage-fallback")
 	SET STATE("themeSystemLiveApply")=+$GET(CONF("mioos","desktop","themeSystem","liveApply"),1)
@@ -209,6 +212,19 @@ ACTIVETHM(STATE,CONF)
 	SET DENSITY=$GET(STATE("activeThemeProfile","density"))
 	IF DENSITY="" SET DENSITY=$GET(STATE("activeThemeProfile","appearance","density"))
 	IF DENSITY'="" SET STATE("density")=DENSITY
+	QUIT
+	;
+WALLPAPER(STATE,CONF)
+	NEW URL,FIT,ID
+	SET URL=$GET(STATE("activeThemeProfile","desktop","wallpaperUrl"))
+	IF URL="" SET URL=$GET(STATE("activeThemeProfile","wallpaperUrl"))
+	SET FIT=$GET(STATE("activeThemeProfile","desktop","wallpaperFit"),$GET(STATE("activeThemeProfile","wallpaperFit"),"cover"))
+	IF URL="" DO
+	. SET ID=$GET(^MIO("MIOOS","FS","CHILD",$GET(STATE("fsDesktopId")),"mioos-wallpaper.svg"))
+	. IF ID="" SET ID=$GET(^MIO("MIOOS","FS","CHILD",$$DESKTOPID^MIOOSFS(),"mioos-wallpaper.svg"))
+	. IF ID'="" SET URL=$GET(STATE("fsBlobPath"),$GET(CONF("mioos","route","fsBlob"),"/api/mioos/fs/blob"))_"?id="_ID
+	SET STATE("wallpaperUrl")=URL
+	SET STATE("wallpaperFit")=FIT
 	QUIT
 	;
 LOADPREFS(STATE,CONF)
@@ -302,8 +318,11 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("routes","commandEvent")=$GET(STATE("commandEvent"))
 	SET OBJ("routes","commandResultEvent")=$GET(STATE("commandResultEvent"))
 	SET OBJ("routes","commandErrorEvent")=$GET(STATE("commandErrorEvent"))
+	SET OBJ("desktop","theme")=$GET(STATE("theme"),$GET(STATE("themeKey")))
 	SET OBJ("desktop","themeKey")=$GET(STATE("themeKey"))
 	SET OBJ("desktop","wallpaper")=$GET(STATE("wallpaper"))
+	SET OBJ("desktop","wallpaperUrl")=$GET(STATE("wallpaperUrl"))
+	SET OBJ("desktop","wallpaperFit")=$GET(STATE("wallpaperFit"),"cover")
 	SET OBJ("desktop","density")=$GET(STATE("density"))
 	SET OBJ("desktop","fontFamily")=$GET(STATE("fontFamily"))
 	SET OBJ("desktop","fontSize")=+$GET(STATE("fontSize"),13)

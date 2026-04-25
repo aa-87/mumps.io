@@ -49,7 +49,8 @@ MIOOST ; MIOOS tests
 	DO T052
 	DO T053
 	DO T054
-		DO T055
+	DO T055
+	DO T056
 	QUIT
 	;
 RESET
@@ -1116,4 +1117,52 @@ T055
 		DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_wm.js","moveWindowToWorkspace"),"[MIOOST][T055][move workspace method retained]")
 		DO EQ^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","mioos-workspace-pager"),0,"[MIOOST][T055][workspace pager ui]")
 		QUIT
+	;
+	;
+T056
+	NEW CONF,REQ,CTX,STATE,ERR,DATA,BOOT,IN,OUT,STATE2,DATA2,STYLE,STYLE2
+	DO RESET
+	DO CONFDEF^MIOOS(.CONF)
+	SET CONF("mioos","localAuth","enabled")=0
+	SET CONF("mioos","dev","authDisabled")=1
+	DO INIT^MIOOS(.CONF)
+	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T056][load]")
+	DO DESKCTX^MIOOSUI(.STATE,.CONF,.DATA)
+	SET STYLE=$GET(DATA("themeInlineStyle"))
+	DO OK^MIOTASSERT(STYLE["--mioos-accent:","[MIOOST][T056][css accent first paint]")
+	DO OK^MIOTASSERT(STYLE["--mioos-bg:","[MIOOST][T056][css bg first paint]")
+	DO OK^MIOTASSERT(STYLE["--mioos-window-radius:","[MIOOST][T056][css radius first paint]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/layouts/mioos_shell.html","mioosFirstPaintTheme"),"[MIOOST][T056][layout first paint style]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/layouts/mioos_shell.html",":root{ {{{themeInlineStyle}}} }"),"[MIOOST][T056][layout root css variables]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","data-wallpaper-url=""{{wallpaperUrl}}"""),"[MIOOST][T056][page wallpaper data]")
+	DO OK^MIOTASSERT(STYLE["url('/api/mioos/fs/blob?id=","[MIOOST][T056][wallpaper blob first paint]")
+	DO OK^MIOTASSERT($GET(DATA("wallpaperUrl"))["/api/mioos/fs/blob?id=","[MIOOST][T056][wallpaper url data]")
+	DO BOOTARY^MIOOSST(.STATE,.CONF,.BOOT)
+	DO EQ^MIOTASSERT($GET(STATE("theme")),$GET(STATE("themeKey")),"[MIOOST][T056][state theme alias]")
+	DO EQ^MIOTASSERT($GET(BOOT("desktop","theme")),$GET(STATE("themeKey")),"[MIOOST][T056][boot theme alias]")
+	DO OK^MIOTASSERT($GET(BOOT("desktop","wallpaperUrl"))["/api/mioos/fs/blob?id=","[MIOOST][T056][boot wallpaper url]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","applyPersistedThemeStudioProfile();"),0,"[MIOOST][T056][no localstorage theme first paint]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","applyBootThemeDefaults();"),0,"[MIOOST][T056][no js theme first paint]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","if (!this.requiresSignin) this.themeStudioLoadRemote"),0,"[MIOOST][T056][no preauth theme load]")
+	KILL IN,OUT,ERR
+	SET IN("key")="roi1-saved-theme",IN("activate")=1
+	SET IN("profile","presetKey")="ember-panel-dark"
+	SET IN("profile","mode")="dark"
+	SET IN("profile","density")="compact"
+	SET IN("profile","appearance","accent")="#ffb087"
+	SET IN("profile","colors","panel")="#20161a"
+	SET IN("profile","desktop","wallpaperPreset")="custom-url"
+	SET IN("profile","desktop","wallpaperUrl")=$GET(STATE("wallpaperUrl"))
+	SET IN("profile","desktop","wallpaperFit")="cover"
+	DO OK^MIOTASSERT($$SAVE^MIOOSTHEME(.STATE,.CONF,.IN,.OUT,.ERR),"[MIOOST][T056][save active theme]")
+	KILL STATE2,DATA2,BOOT,ERR
+	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE2,.ERR),"[MIOOST][T056][reload]")
+	DO DESKCTX^MIOOSUI(.STATE2,.CONF,.DATA2)
+	SET STYLE2=$GET(DATA2("themeInlineStyle"))
+	DO EQ^MIOTASSERT($GET(STATE2("theme")),"ember-panel-dark","[MIOOST][T056][persisted theme]")
+	DO EQ^MIOTASSERT($GET(STATE2("themeMode")),"dark","[MIOOST][T056][persisted mode]")
+	DO EQ^MIOTASSERT($GET(STATE2("density")),"compact","[MIOOST][T056][persisted density]")
+	DO OK^MIOTASSERT(STYLE2["#ffb087","[MIOOST][T056][persisted style]")
+	QUIT
+	;
 	;

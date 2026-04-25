@@ -169,8 +169,7 @@
         this.normalizeDesktopUiState();
         this.ensureDesktopLayout();
         this.normalizeDesktopUiState();
-        this.applyBootThemeDefaults();
-        this.applyPersistedThemeStudioProfile();
+        this.hydrateBootThemeState();
         this.applyDocumentLocale();
         this.startClock();
         if (!this.requiresSignin) {
@@ -1853,16 +1852,25 @@
             { key: 'ember-panel', name: 'Ember Panel', description: 'Warm panel desktop with balanced contrast and Ubuntu-inspired utility surfaces.' }
           ];
         },
-        applyBootThemeDefaults: function () {
+        hydrateBootThemeState: function () {
           var desktop = (this.boot || {}).desktop || {};
           var bootProfile = desktop.activeThemeProfile || desktop.themeProfile || null;
-          var preset = bootProfile ? this.themeStudioNormalizeProfile(bootProfile) : this.themeStudioPresetProfile(desktop.themeKey || 'luna-blue');
+          var preset = bootProfile ? this.themeStudioNormalizeProfile(bootProfile) : this.themeStudioPresetProfile(desktop.theme || desktop.themeKey || 'luna-blue');
           preset.mode = desktop.themeMode || preset.mode || 'light';
           preset.activeMode = preset.mode;
           preset.density = desktop.density || preset.density || 'comfortable';
           if (!bootProfile && desktop.wallpaper) preset.desktop.wallpaperPreset = desktop.wallpaper;
-          this.themeStudioActiveKey = (bootProfile && (bootProfile.key || bootProfile.presetKey)) || this.themeStudioActiveKey || preset.presetKey || '';
-          this.applyThemeStudioProfile(preset, { silent: true, persist: false });
+          if (!bootProfile && desktop.wallpaperUrl) {
+            preset.desktop.wallpaperPreset = 'custom-url';
+            preset.desktop.wallpaperUrl = desktop.wallpaperUrl;
+            preset.desktop.wallpaperFit = desktop.wallpaperFit || preset.desktop.wallpaperFit || 'cover';
+          }
+          this.themeStudioActiveKey = (desktop.activeThemeKey || (bootProfile && (bootProfile.key || bootProfile.presetKey)) || this.themeStudioActiveKey || preset.presetKey || '');
+          this.appliedThemeProfile = window.MIOOSState.deepClone(preset);
+        },
+        applyBootThemeDefaults: function () {
+          this.hydrateBootThemeState();
+          if (this.appliedThemeProfile) this.applyThemeStudioProfile(this.appliedThemeProfile, { silent: true, persist: false });
         },
         applyPersistedThemeStudioProfile: function () {
           var raw;
@@ -1961,6 +1969,7 @@
           vars = {
             '--mioos-font': fonts.ui || '"Segoe UI", Tahoma, sans-serif',
             '--mioos-font-mono': fonts.mono || 'Consolas, monospace',
+            '--mioos-accent': this.themeStudioSanitizeColor(colors.accent || appearance.accent, '#72a8ff'),
             '--mioos-blue-1': this.themeStudioSanitizeColor(colors.accent || appearance.accent, '#72a8ff'),
             '--mioos-blue-2': this.themeStudioSanitizeColor(colors.accentStrong || colors.accent || appearance.accent, '#4d7cff'),
             '--mioos-taskbar': this.themeStudioSanitizeColor(panel.taskbarTop || colors.taskbar, '#6385bd'),
@@ -1992,6 +2001,7 @@
             '--mioos-launcher-body': this.themeStudioSanitizeColor(launcher.bodyBackground || colors.panel || '#f9fbff', '#f9fbff'),
             '--mioos-launcher-rail': this.themeStudioSanitizeColor(launcher.rightBackground || colors.panelAlt || '#dfe8f6', '#dfe8f6'),
             '--mioos-control-height': Math.max(20, +(metrics.controlHeight || 24)) + 'px',
+            '--mioos-bg': this.themeStudioWallpaperCss(p),
             '--mioos-shadow': '0 ' + Math.max(10, +(metrics.shadowDepth || 18)) + 'px ' + Math.max(22, +(metrics.shadowDepth || 18) * 2) + 'px rgba(17, 31, 52, 0.24)',
             '--mioos-shell-glass-top': 'rgba(255,255,255,' + (0.70 + (Math.min(60, +(effects.transparency || 38)) / 1000)).toFixed(2) + ')',
             '--mioos-shell-glass-bottom': 'rgba(225,235,248,' + (0.82 + (Math.min(60, +(effects.transparency || 38)) / 1200)).toFixed(2) + ')',

@@ -21,7 +21,7 @@
 </div>
 
 <div id="mioosRoot"
-  class="mioos-root"
+  class="mioos-root mioos-theme-{{themeMode}} mioos-density-{{density}}"
   v-cloak
   dir="{{localeDir}}"
   lang="{{localeCode}}"
@@ -44,6 +44,9 @@
   data-start-menu-style="{{startMenuStyle}}"
   data-density="{{density}}"
   data-wallpaper="{{wallpaper}}"
+  data-wallpaper-url="{{wallpaperUrl}}"
+  data-wallpaper-fit="{{wallpaperFit}}"
+  data-theme="{{theme}}"
   data-theme-key="{{themeKey}}"
   data-window-manager="{{windowManager}}"
   data-window-snap-threshold="{{windowSnapThreshold}}"

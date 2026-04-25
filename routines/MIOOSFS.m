@@ -20,7 +20,7 @@ CHUNK(CONF)
 	QUIT N
 	;
 INIT(CONF)
-	NEW OWNER,ROLES,ROOT,DOCS,DESK,NOW,LEGACY
+	NEW OWNER,ROLES,ROOT,DOCS,DESK,NOW,LEGACY,WALL,SVG
 	SET OWNER=$GET(CONF("mioos","bootstrapAuth","admin","username"),"admin")
 	SET ROLES="admin,operator,guest"
 	IF '$DATA(^MIO("MIOOS","FS","SEQ")) SET ^MIO("MIOOS","FS","SEQ")=0
@@ -45,6 +45,11 @@ INIT(CONF)
 	DO SETMETAFLD(DESK,"viewMode",$SELECT($$METAFIELD(DESK,"viewMode")'="":$$METAFIELD(DESK,"viewMode"),1:"details"))
 	DO SETMETAFLD(DESK,"sortBy",$SELECT($$METAFIELD(DESK,"sortBy")'="":$$METAFIELD(DESK,"sortBy"),1:"name"))
 	DO SETMETAFLD(DESK,"sortDirection",$SELECT($$METAFIELD(DESK,"sortDirection")'="":$$METAFIELD(DESK,"sortDirection"),1:"ascending"))
+	SET SVG="<svg xmlns=""http://www.w3.org/2000/svg"" width=""1600"" height=""900"" viewBox=""0 0 1600 900"">"
+	SET SVG=SVG_"<defs><linearGradient id=""g"" x1=""0"" x2=""0"" y1=""0"" y2=""1""><stop offset=""0"" stop-color=""#2d66c2""/><stop offset="".55"" stop-color=""#153a79""/><stop offset=""1"" stop-color=""#0d244b""/></linearGradient></defs>"
+	SET SVG=SVG_"<rect width=""1600"" height=""900"" fill=""url(#g)""/><circle cx=""240"" cy=""170"" r=""210"" fill=""#ffffff"" fill-opacity="".16""/><circle cx=""1270"" cy=""120"" r=""180"" fill=""#ffffff"" fill-opacity="".10""/></svg>"
+	DO ENSUREFILE(DESK,"mioos-wallpaper.svg",SVG,"image/svg+xml",OWNER,ROLES,.WALL,.CONF)
+	IF WALL'="" DO SETMETAFLD(DESK,"wallpaperId",WALL)
 	QUIT
 	;
 ENSUREFOLDER(PARENT,NAME,OWNER,ROLES,OUTID)
