@@ -132,6 +132,7 @@
         var self = this;
         this.bootstrapFromDom();
         this.initThemeStudioStore();
+        /* First-paint theme is server-rendered; Theme Studio applies only after user action. */
         this.restorePersistedTransfers();
         this.normalizeDesktopUiState();
         this.ensureDesktopLayout();
@@ -490,6 +491,99 @@
           var paused = this.activeTransfers().filter(function (item) { return item.status === 'paused'; }).length;
           var done = this.completedTransfers().length;
           return active + ' active · ' + paused + ' paused · ' + done + ' finished';
+        },
+
+        transferQueueRows: function (limit) {
+          var seen = {};
+          var rows = (this.transferCenter.items || []).filter(function (item) {
+            var key;
+            if (!item) return false;
+            if (['completed','failed','cancelled'].indexOf(item.status) >= 0) return false;
+            key = item.id || [item.kind || '', item.name || '', item.totalBytes || 0, item.status || '', item.resume && item.resume.uploadId || ''].join('|');
+            if (seen[key]) return false;
+            seen[key] = 1;
+            return true;
+          });
+          rows.sort(function (a, b) { return +((b && (b.updatedAt || b.startedAt || 0)) || 0) - +((a && (a.updatedAt || a.startedAt || 0)) || 0); });
+          return rows.slice(0, Math.max(1, +(limit || 8)));
+        },
+        transferActiveCount: function () {
+          return this.activeTransfers().filter(function (item) { return item.status !== 'paused'; }).length;
+        },
+        transferPausedCount: function () {
+          return this.activeTransfers().filter(function (item) { return item.status === 'paused'; }).length;
+        },
+        transferCompletedCount: function () {
+          return this.completedTransfers().filter(function (item) { return item.status === 'completed'; }).length;
+        },
+        transferFailedCount: function () {
+          return this.completedTransfers().filter(function (item) { return item.status === 'failed' || item.status === 'cancelled'; }).length;
+        },
+        overallTransferPercent: function () {
+          var rows = this.activeTransfers();
+          var total = 0;
+          var processed = 0;
+          if (!rows.length) return 0;
+          rows.forEach(function (item) {
+            total += +(item.totalBytes || 0);
+            processed += +(item.processedBytes || 0);
+          });
+          if (total > 0) return Math.max(0, Math.min(100, Math.round((processed / total) * 100)));
+          return Math.max(0, Math.min(100, Math.round(rows.reduce(function (sum, item) { return sum + (+(item.progress || 0)); }, 0) / rows.length)));
+        },
+        pauseAllTransfers: function () {
+          var self = this;
+          return Promise.all((this.activeTransfers() || []).map(function (item) {
+            return self.canPauseTransfer(item) ? self.pauseTransfer(item) : Promise.resolve();
+          })).then(function () { self.persistTransferCenter(); });
+        },
+        resumePausedTransfers: function () {
+          var self = this;
+          return Promise.all(((this.transferCenter || {}).items || []).map(function (item) {
+            return self.canResumeTransfer(item) ? self.resumeTransfer(item) : Promise.resolve();
+          })).then(function () { self.persistTransferCenter(); });
+        },
+        cancelActiveTransfers: function () {
+          var self = this;
+          return Promise.all((this.activeTransfers() || []).map(function (item) {
+            return self.canCancelTransfer(item) ? self.cancelTransfer(item).catch(function () { return null; }) : Promise.resolve();
+          })).then(function () { self.persistTransferCenter(); });
+        },
+        transferTimestampLabel: function (item) {
+          var t = +(item && (item.updatedAt || item.startedAt) || 0);
+          if (!t) return '';
+          try { return new Date(t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); } catch (err) { return ''; }
+        },
+        transferDirectionLabel: function (item) {
+          if (!item) return '';
+          var kind = String(item.kind || 'transfer');
+          var target = item.targetPath || item.path || item.sourcePath || '';
+          if (kind === 'upload') return 'Upload' + (target ? ' → ' + target : '');
+          if (kind === 'download') return 'Download' + (target ? ' ← ' + target : '');
+          if (kind === 'copy') return 'Copy' + (target ? ' → ' + target : '');
+          if (kind === 'move') return 'Move' + (target ? ' → ' + target : '');
+          return kind;
+        },
+        transferProgressLabel: function (item) {
+          var pct = this.transferPercent(item);
+          var done = +(item && item.processedBytes || 0);
+          var total = +(item && item.totalBytes || 0);
+          if (total > 0) return pct + '% · ' + this.formatBytesCompact(done) + ' of ' + this.formatBytesCompact(total);
+          return pct + '%';
+        },
+        transferStatusCaption: function (item) {
+          if (!item) return 'Queued';
+          if (item.stage) return item.stage;
+          var s = String(item.status || 'queued');
+          return s.charAt(0).toUpperCase() + s.slice(1).replace(/-/g, ' ');
+        },
+        formatBytesCompact: function (bytes) {
+          var size = +bytes || 0;
+          var units = ['B','KB','MB','GB','TB'];
+          var idx = 0;
+          while (size >= 1024 && idx < units.length - 1) { size = size / 1024; idx++; }
+          if (idx === 0) return Math.round(size) + ' ' + units[idx];
+          return (size >= 10 ? size.toFixed(1) : size.toFixed(2)).replace(/\.0+$/, '') + ' ' + units[idx];
         },
         setSocketTelemetry: function (socketId, patch) {
           var base;
@@ -956,17 +1050,8 @@
           if (entry) this.openApp(entry.key);
         },
         contextControlPanel: function () { this.closeDesktopContextMenu(); this.openApp('control-panel'); },
-        contextPersonalize: function () { this.closeDesktopContextMenu(); this.openApp('theme-studio'); },
+        contextPersonalize: function () { this.closeDesktopContextMenu(); this.openApp('customize'); },
         contextDeleteIcon: function () { this.closeDesktopContextMenu(); this.showAlert('Desktop', 'Desktop shortcuts are managed by installed modules.'); },
-        themeStudioPresetFamilies: function () {
-          var configs = this.themeStudioBaseThemeConfigs ? this.themeStudioBaseThemeConfigs() : {};
-          return [
-            { key: 'vintage', name: 'Vintage', family: 'Vintage', data: configs.vintage },
-            { key: 'glow', name: 'Glow', family: 'Glow', data: configs.glow },
-            { key: 'curve', name: 'Curve', family: 'Curve', data: configs.curve },
-            { key: 'panel', name: 'Panel', family: 'Panel', data: configs.panel }
-          ];
-        },
         themeStudioStorageKey: function () {
           return 'mioos.themeStudio.active.v2';
         },

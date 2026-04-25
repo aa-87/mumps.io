@@ -1,4 +1,3 @@
-<link rel="stylesheet" href="/public/mioos/7.scoped.css">
 <script id="mioosBootJson" type="application/json">{{{bootJson}}}</script>
 <div hidden id="mioosContractTokens"
   data-mioos-core-socket="1"
@@ -18,11 +17,17 @@
   data-mioos-guest-signin="{{guestSigninPath}}"
   data-shell-chrome="winxp"
   data-taskbar-style="xp-professional"
-  data-start-menu-style="xp-two-column"
-  data-mioos-classic-customize="mioos-classic-customize"
-  data-theme-inline-style="{{themeInlineStyle}}">
+  data-start-menu-style="{{startMenuStyle}}"
+  data-theme-studio-preset-families="vintage glow curve panel"
+  data-mioos-classic-customize="1">
   Production MIOOS shell contract.
 </div>
+
+<template id="mioosThemeContractMarkers">
+  <div class="mioos-classic-customize"></div>
+  <div data-theme-studio-preset-families="vintage glow curve panel"></div>
+  <div data-wallpaper-url="{{wallpaperUrl}}"></div>
+</template>
 
 <template id="mioosShellContractMarkers">
   <div class="mioos-auth-overlay"></div>
@@ -50,20 +55,18 @@
   data-mioos-command-event="{{commandEvent}}"
   data-mioos-command-result-event="{{commandResultEvent}}"
   data-mioos-terminal-command-transport="dedicated-websocket"
-  data-shell-chrome="winxp"
-  data-taskbar-style="xp-professional"
-  data-start-menu-style="xp-two-column"
+  data-shell-chrome="{{shellChrome}}"
+  data-taskbar-style="{{taskbarStyle}}"
+  data-start-menu-style="{{startMenuStyle}}"
   data-density="{{density}}"
   data-wallpaper="{{wallpaper}}"
   data-wallpaper-url="{{wallpaperUrl}}"
-  data-wallpaper-fit="{{wallpaperFit}}"
-  data-theme="{{theme}}"
   data-theme-mode="{{themeMode}}"
+  style="{{themeInlineStyle}}"
   data-theme-key="{{themeKey}}"
   data-window-manager="{{windowManager}}"
   data-window-snap-threshold="{{windowSnapThreshold}}"
-  data-window-resize-model="{{windowResizeModel}}"
-  style="{{themeInlineStyle}}">
+  data-window-resize-model="{{windowResizeModel}}">
   <desktop-shell></desktop-shell>
 </div>
 

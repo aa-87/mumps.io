@@ -79,10 +79,10 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("fsUploadCommitPath")=$GET(CONF("mioos","route","fsUploadCommit"),"/api/mioos/fs/upload/commit")
 	SET STATE("fsUploadAbortPath")=$GET(CONF("mioos","route","fsUploadAbort"),"/api/mioos/fs/upload/abort")
 	SET STATE("fsBlobPath")=$GET(CONF("mioos","route","fsBlob"),"/api/mioos/fs/blob")
-	SET STATE("themeLoadPath")=$GET(CONF("mioos","route","themeLoad"),"/api/mioos/theme/load")
-	SET STATE("themeSavePath")=$GET(CONF("mioos","route","themeSave"),"/api/mioos/theme/save")
 	SET STATE("themeAssetUploadPath")=$GET(CONF("mioos","route","themeAssetUpload"),"/api/mioos/theme-asset/upload")
 	SET STATE("themeAssetPath")=$GET(CONF("mioos","route","themeAsset"),"/api/mioos/theme-asset")
+	SET STATE("themeLoadPath")=$GET(CONF("mioos","route","themeLoad"),"/api/mioos/theme/load")
+	SET STATE("themeSavePath")=$GET(CONF("mioos","route","themeSave"),"/api/mioos/theme/save")
 	SET STATE("wsPath")=$GET(CONF("mioos","route","ws"),"/ws/mioos")
 	SET STATE("fsEnabled")=+$GET(CONF("mioos","fs","enabled"),1)
 	SET STATE("fsChunkSize")=+$GET(CONF("mioos","fs","chunkSize"),1048576)
@@ -139,10 +139,7 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("commandErrorEvent")=$GET(CONF("mioos","desktop","transport","errorEvent"),"desktop.error")
 	SET STATE("transportModel")=$GET(CONF("mioos","desktop","transport","model"),"core-websocket-plus-app-websockets")
 	SET STATE("themeMode")=$GET(CONF("mioos","desktop","themeMode"),$SELECT($GET(CONF("mioos","desktop","theme"))["dark":"dark",1:"light"))
-	SET STATE("theme")=STATE("themeKey")
 	DO ACTIVETHM(.STATE,.CONF)
-	SET STATE("theme")=STATE("themeKey")
-	DO WALLPAPER(.STATE,.CONF)
 	SET STATE("themeSystemEditor")=$GET(CONF("mioos","desktop","themeSystem","editor"),"customize")
 	SET STATE("themeSystemPersistence")=$GET(CONF("mioos","desktop","themeSystem","persistence"),"globals-profile-service-with-localstorage-fallback")
 	SET STATE("themeSystemLiveApply")=+$GET(CONF("mioos","desktop","themeSystem","liveApply"),1)
@@ -214,19 +211,6 @@ ACTIVETHM(STATE,CONF)
 	SET DENSITY=$GET(STATE("activeThemeProfile","density"))
 	IF DENSITY="" SET DENSITY=$GET(STATE("activeThemeProfile","appearance","density"))
 	IF DENSITY'="" SET STATE("density")=DENSITY
-	QUIT
-	;
-WALLPAPER(STATE,CONF)
-	NEW URL,FIT,ID
-	SET URL=$GET(STATE("activeThemeProfile","desktop","wallpaperUrl"))
-	IF URL="" SET URL=$GET(STATE("activeThemeProfile","wallpaperUrl"))
-	SET FIT=$GET(STATE("activeThemeProfile","desktop","wallpaperFit"),$GET(STATE("activeThemeProfile","wallpaperFit"),"cover"))
-	IF URL="" DO
-	. SET ID=$GET(^MIO("MIOOS","FS","CHILD",$GET(STATE("fsDesktopId")),"mioos-wallpaper.svg"))
-	. IF ID="" SET ID=$GET(^MIO("MIOOS","FS","CHILD",$$DESKTOPID^MIOOSFS(),"mioos-wallpaper.svg"))
-	. IF ID'="" SET URL=$GET(STATE("fsBlobPath"),$GET(CONF("mioos","route","fsBlob"),"/api/mioos/fs/blob"))_"?id="_ID
-	SET STATE("wallpaperUrl")=URL
-	SET STATE("wallpaperFit")=FIT
 	QUIT
 	;
 LOADPREFS(STATE,CONF)
@@ -320,11 +304,8 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("routes","commandEvent")=$GET(STATE("commandEvent"))
 	SET OBJ("routes","commandResultEvent")=$GET(STATE("commandResultEvent"))
 	SET OBJ("routes","commandErrorEvent")=$GET(STATE("commandErrorEvent"))
-	SET OBJ("desktop","theme")=$GET(STATE("theme"),$GET(STATE("themeKey")))
 	SET OBJ("desktop","themeKey")=$GET(STATE("themeKey"))
 	SET OBJ("desktop","wallpaper")=$GET(STATE("wallpaper"))
-	SET OBJ("desktop","wallpaperUrl")=$GET(STATE("wallpaperUrl"))
-	SET OBJ("desktop","wallpaperFit")=$GET(STATE("wallpaperFit"),"cover")
 	SET OBJ("desktop","density")=$GET(STATE("density"))
 	SET OBJ("desktop","fontFamily")=$GET(STATE("fontFamily"))
 	SET OBJ("desktop","fontSize")=+$GET(STATE("fontSize"),13)
@@ -437,10 +418,10 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("routes","fsUploadCommit")=$GET(STATE("fsUploadCommitPath"))
 	SET OBJ("routes","fsUploadAbort")=$GET(STATE("fsUploadAbortPath"))
 	SET OBJ("routes","fsBlob")=$GET(STATE("fsBlobPath"))
-	SET OBJ("routes","themeLoad")=$GET(STATE("themeLoadPath"))
-	SET OBJ("routes","themeSave")=$GET(STATE("themeSavePath"))
 	SET OBJ("routes","themeAssetUpload")=$GET(STATE("themeAssetUploadPath"))
 	SET OBJ("routes","themeAsset")=$GET(STATE("themeAssetPath"))
+	SET OBJ("routes","themeLoad")=$GET(STATE("themeLoadPath"))
+	SET OBJ("routes","themeSave")=$GET(STATE("themeSavePath"))
 	SET OBJ("vfs","enabled")=+$GET(STATE("fsEnabled"),1)
 	SET OBJ("vfs","transport")=$GET(STATE("fsTransport"),"http-and-websocket")
 	SET OBJ("vfs","rootId")=$GET(STATE("fsRootId"),"root")
@@ -606,9 +587,9 @@ APPS(STATE)
 	SET STATE("apps",3,"icon")="⇅"
 	SET STATE("apps",3,"kind")="tool"
 	SET STATE("apps",4,"key")="customize"
-	SET STATE("apps",4,"title")="Customize"
-	SET STATE("apps",4,"subtitle")="Design tokens, shell presets, and device previews"
-	SET STATE("apps",4,"icon")="🎛"
+	SET STATE("apps",4,"title")="Theme Studio"
+	SET STATE("apps",4,"subtitle")="Themes, Appearance, Desktop, Taskbar, Start Menu, and Login Screen"
+	SET STATE("apps",4,"icon")="🎨"
 	SET STATE("apps",4,"kind")="tool"
 	QUIT
 	;
@@ -649,7 +630,7 @@ WINDOWS(STATE)
 	DO WIN(.STATE,2,"win-terminal-template","terminal",$$TXT^MIOOSI18N(CODE,"app.terminal.title","Terminal"),160,92,900,520,3,"closed",620,320,1,1,"terminal","⌨","workspace-main",0)
 	DO WIN(.STATE,3,"win-transfers","transfers","Transfers",220,116,860,560,5,"closed",680,420,1,1,"transfers","⇅","workspace-main",1)
 	SET STATE("windows",3,"transferCenterEnabled")=1
-	DO WIN(.STATE,4,"win-customize","customize","Customize",180,86,1040,680,6,"closed",780,560,1,1,"studio","🎛","workspace-main",1)
+	DO WIN(.STATE,4,"win-customize","customize","Themes and Appearance",180,86,1040,680,6,"closed",780,560,1,1,"studio","🎨","workspace-main",1)
 	SET STATE("windows",4,"themeStudioEnabled")=1
 	DO WIN(.STATE,5,"win-folder-properties","folder-properties","Folder Properties",260,140,640,520,7,"closed",560,420,0,1,"properties","📂","workspace-main",0)
 	SET STATE("windows",5,"propertySheetEnabled")=1

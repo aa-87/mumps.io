@@ -31,17 +31,17 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","route","fsUploadCommit"))="" SET CONF("mioos","route","fsUploadCommit")="/api/mioos/fs/upload/commit"
 	IF $GET(CONF("mioos","route","fsUploadAbort"))="" SET CONF("mioos","route","fsUploadAbort")="/api/mioos/fs/upload/abort"
 	IF $GET(CONF("mioos","route","fsBlob"))="" SET CONF("mioos","route","fsBlob")="/api/mioos/fs/blob"
-	IF $GET(CONF("mioos","route","themeLoad"))="" SET CONF("mioos","route","themeLoad")="/api/mioos/theme/load"
-	IF $GET(CONF("mioos","route","themeSave"))="" SET CONF("mioos","route","themeSave")="/api/mioos/theme/save"
 	IF $GET(CONF("mioos","route","themeAssetUpload"))="" SET CONF("mioos","route","themeAssetUpload")="/api/mioos/theme-asset/upload"
 	IF $GET(CONF("mioos","route","themeAsset"))="" SET CONF("mioos","route","themeAsset")="/api/mioos/theme-asset"
+	IF $GET(CONF("mioos","route","themeLoad"))="" SET CONF("mioos","route","themeLoad")="/api/mioos/theme/load"
+	IF $GET(CONF("mioos","route","themeSave"))="" SET CONF("mioos","route","themeSave")="/api/mioos/theme/save"
 	IF $GET(CONF("mioos","route","ws"))="" SET CONF("mioos","route","ws")="/ws/mioos"
 	IF $GET(CONF("mioos","route","wsTerminal"))="" SET CONF("mioos","route","wsTerminal")="/ws/mioos/terminal"
 	IF $GET(CONF("mioos","brand","title"))="" SET CONF("mioos","brand","title")="MIOOS"
 	IF $GET(CONF("mioos","brand","subtitle"))="" SET CONF("mioos","brand","subtitle")="MUMPS-powered web desktop shell"
 	IF $GET(CONF("mioos","i18n","default"))="" SET CONF("mioos","i18n","default")="en"
-	IF $GET(CONF("mioos","desktop","theme"))="" SET CONF("mioos","desktop","theme")="xp-classic-blue"
-	IF $GET(CONF("mioos","desktop","wallpaper"))="" SET CONF("mioos","desktop","wallpaper")="bliss"
+	IF $GET(CONF("mioos","desktop","theme"))="" SET CONF("mioos","desktop","theme")="luna-blue"
+	IF $GET(CONF("mioos","desktop","wallpaper"))="" SET CONF("mioos","desktop","wallpaper")="aurora"
 	IF $GET(CONF("mioos","desktop","density"))="" SET CONF("mioos","desktop","density")="comfortable"
 	IF $GET(CONF("mioos","desktop","fontFamily"))="" SET CONF("mioos","desktop","fontFamily")="Segoe UI"
 	IF $GET(CONF("mioos","desktop","fontSize"))="" SET CONF("mioos","desktop","fontSize")=13
@@ -74,9 +74,9 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","desktop","appActions","copyExportsToClipboard"))="" SET CONF("mioos","desktop","appActions","copyExportsToClipboard")=1
 	IF $GET(CONF("mioos","desktop","appActions","moduleNotesSessionLocal"))="" SET CONF("mioos","desktop","appActions","moduleNotesSessionLocal")=1
 	IF $GET(CONF("mioos","desktop","shellSurfaces","moduleWindows"))="" SET CONF("mioos","desktop","shellSurfaces","moduleWindows")=0
-	IF $GET(CONF("mioos","desktop","chrome"))="" SET CONF("mioos","desktop","chrome")="winxp-professional"
-	IF $GET(CONF("mioos","desktop","taskbarStyle"))="" SET CONF("mioos","desktop","taskbarStyle")="xp-professional"
-	IF $GET(CONF("mioos","desktop","startMenuStyle"))="" SET CONF("mioos","desktop","startMenuStyle")="xp-two-column"
+	IF $GET(CONF("mioos","desktop","chrome"))="" SET CONF("mioos","desktop","chrome")="shell-foundation"
+	IF $GET(CONF("mioos","desktop","taskbarStyle"))="" SET CONF("mioos","desktop","taskbarStyle")="taskbar-foundation"
+	IF $GET(CONF("mioos","desktop","startMenuStyle"))="" SET CONF("mioos","desktop","startMenuStyle")="launcher-foundation"
 	IF $GET(CONF("mioos","desktop","windowManager"))="" SET CONF("mioos","desktop","windowManager")="mioos-native-vue-css"
 	IF $GET(CONF("mioos","desktop","windowChrome"))="" SET CONF("mioos","desktop","windowChrome")="reusable-shell-chrome"
 	IF $GET(CONF("mioos","desktop","windowTitlebarHeight"))="" SET CONF("mioos","desktop","windowTitlebarHeight")=40
@@ -243,10 +243,11 @@ REG(CONF)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsUploadAbort")),"FSUPABORT^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("GET",$GET(CONF("mioos","route","fsBlob")),"FSBLOB^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("HEAD",$GET(CONF("mioos","route","fsBlob")),"FSBLOB^MIOOSAPI",.PROT)
-	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","themeLoad")),"THEMELOAD^MIOOSAPI",.PROT)
-	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","themeSave")),"THEMESAVE^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","themeAssetUpload")),"THEMEASSETUP^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("GET",$GET(CONF("mioos","route","themeAsset")),"THEMEASSET^MIOOSAPI",.PROT)
+	DO ADDM^MIOROUTE("HEAD",$GET(CONF("mioos","route","themeAsset")),"THEMEASSET^MIOOSAPI",.PROT)
+	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","themeLoad")),"THEMELOAD^MIOOSAPI",.PROT)
+	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","themeSave")),"THEMESAVE^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("GET","/public/mioos/*","STATIC^MIOOS",.META)
 	KILL WSMETA SET WSMETA("authRequired")=AUTHREQ,WSMETA("wsPersistent")=1
 	DO ADDWSM^MIOROUTE($GET(CONF("mioos","route","ws")),"MESSAGE^MIOOSWS",.WSMETA)
@@ -271,10 +272,10 @@ REG(CONF)
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","fsRename")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","fsMove")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","fsDelete")))
-	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","themeLoad")))
-	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","themeSave")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","themeAssetUpload")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","themeAsset")))
+	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","themeLoad")))
+	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","themeSave")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","ws")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","wsTerminal")))
 	QUIT

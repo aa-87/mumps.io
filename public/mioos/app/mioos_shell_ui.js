@@ -13,9 +13,9 @@
 
   function surfaceComponentKey(win) {
     var key = String((win || {}).appKey || 'generic');
-    if (key === 'my-computer' || key === 'documents' || key === 'explorer') return 'mioos-surface-explorer';
+    if (key === 'my-computer' || key === 'documents' || key === 'explorer' || key === 'home') return 'mioos-surface-explorer';
     if (key === 'terminal') return 'mioos-surface-terminal';
-    if (key === 'theme-studio') return 'mioos-surface-theme';
+    if (key === 'theme-studio' || key === 'customize') return 'mioos-surface-theme';
     if (key === 'text-viewer' || key === 'image-viewer' || key === 'media-viewer' || key === 'pdf-viewer' || key === 'structured-viewer') return 'mioos-surface-viewer';
     if (key === 'transfers') return 'mioos-surface-transfers';
     return 'mioos-surface-generic';
@@ -122,7 +122,7 @@
             var vm = this.vm;
             var win = this.window;
             if (!win) return;
-            if ((win.appKey === 'my-computer' || win.appKey === 'documents' || win.appKey === 'explorer') && vm.bootstrapExplorerWindow) {
+            if ((win.appKey === 'my-computer' || win.appKey === 'documents' || win.appKey === 'explorer' || win.appKey === 'home') && vm.bootstrapExplorerWindow) {
               vm.bootstrapExplorerWindow(win.id, false);
             }
             if (win.appKey === 'terminal' && vm.mountTerminalWindow) {
@@ -570,6 +570,51 @@
           </div>
 `
       });
+
+      app.component('mioos-surface-transfers', {
+        props: ['window'],
+        computed: {
+          vm: function () { return root(this); },
+          rows: function () { return this.vm.transferQueueRows ? this.vm.transferQueueRows(12) : (this.vm.activeTransfers ? this.vm.activeTransfers() : []); },
+          completed: function () { return this.vm.completedTransfers ? this.vm.completedTransfers() : []; }
+        },
+        template: '' +
+          '<div class="mioos-surface mioos-surface-transfers">' +
+            '<div class="mioos-classic-shell mioos-classic-transfers">' +
+              '<div class="mioos-classic-panelhead">' +
+                '<div><strong>File Transfer</strong><span>Queue progress, per-file activity, drag and drop uploads, and recovery actions.</span></div>' +
+                '<div class="mioos-classic-toolbar-group">' +
+                  '<button type="button" class="mioos-classic-tool" @click="vm.pauseAllTransfers && vm.pauseAllTransfers()">Pause All</button>' +
+                  '<button type="button" class="mioos-classic-tool" @click="vm.resumePausedTransfers && vm.resumePausedTransfers()">Resume</button>' +
+                  '<button type="button" class="mioos-classic-tool" @click="vm.cancelActiveTransfers && vm.cancelActiveTransfers()">Cancel Active</button>' +
+                  '<button type="button" class="mioos-classic-tool" @click="vm.clearFinishedTransfers && vm.clearFinishedTransfers()">Clear Finished</button>' +
+                '</div>' +
+              '</div>' +
+              '<div class="mioos-classic-transferstack">' +
+                '<section class="mioos-classic-transferoverview">' +
+                  '<div class="mioos-classic-transferoverview-copy mioos-classic-transferfacts"><strong>[[ vm.transferSummaryText ? vm.transferSummaryText() : \'No transfers\' ]]</strong><span>[[ vm.transferActiveCount ? vm.transferActiveCount() : rows.length ]] active • [[ vm.transferPausedCount ? vm.transferPausedCount() : 0 ]] paused • [[ vm.transferCompletedCount ? vm.transferCompletedCount() : completed.length ]] completed • [[ vm.transferFailedCount ? vm.transferFailedCount() : 0 ]] failed</span></div>' +
+                  '<div class="mioos-classic-progress mioos-classic-progress--overall"><span :style="{ width: ((vm.overallTransferPercent ? vm.overallTransferPercent() : 0) + \'%\') }"></span></div>' +
+                '</section>' +
+                '<div class="mioos-classic-queue" v-if="rows.length">' +
+                  '<div class="mioos-classic-queuerow is-head"><div>Name</div><div>Path</div><div>Progress</div><div>Status</div><div>Size</div></div>' +
+                  '<div class="mioos-classic-transferrow" v-for="item in rows" :key="item.id" :data-status="item.status" :class="{ \'is-active\': [\'uploading\',\'downloading\',\'preparing\',\'finalizing\',\'verifying\'].indexOf(item.status) >= 0, \'is-success\': item.status === \'completed\', \'is-warning\': item.status === \'paused\' || item.status === \'queued\', \'is-error\': item.status === \'failed\' || item.status === \'cancelled\' }">' +
+                    '<div class="mioos-classic-transfercopy"><strong :title="item.name">[[ item.name ]]</strong><small>[[ vm.transferTimestampLabel ? vm.transferTimestampLabel(item) : \'\' ]]</small></div>' +
+                    '<div class="mioos-classic-queuepath" :title="vm.transferDirectionLabel ? vm.transferDirectionLabel(item) : item.kind">[[ vm.transferDirectionLabel ? vm.transferDirectionLabel(item) : item.kind ]]</div>' +
+                    '<div class="mioos-classic-transferprogresscell"><div class="mioos-classic-progress"><span :style="{ width: ((vm.transferPercent ? vm.transferPercent(item) : (item.progress || 0)) + \'%\') }"></span></div><small class="mioos-classic-transferstatus">[[ vm.transferProgressLabel ? vm.transferProgressLabel(item) : ((item.progress || 0) + \'%\') ]]</small></div>' +
+                    '<div class="mioos-classic-transferstatuscell">[[ vm.transferStatusCaption ? vm.transferStatusCaption(item) : (item.stage || item.status) ]]</div>' +
+                    '<div class="mioos-classic-transfersize">[[ vm.formatBytesCompact ? vm.formatBytesCompact(item.totalBytes || 0) : (item.totalBytes || 0) ]]</div>' +
+                    '<div class="mioos-classic-transferactions"><button type="button" class="mioos-classic-tool" v-if="vm.canPauseTransfer && vm.canPauseTransfer(item)" @click="vm.pauseTransfer(item)">Pause</button><button type="button" class="mioos-classic-tool" v-if="vm.canResumeTransfer && vm.canResumeTransfer(item)" @click="vm.resumeTransfer(item)">Resume</button><button type="button" class="mioos-classic-tool" v-if="vm.canRetryTransfer && vm.canRetryTransfer(item)" @click="vm.retryTransfer(item)">Retry</button><button type="button" class="mioos-classic-tool danger" v-if="vm.canCancelTransfer && vm.canCancelTransfer(item)" @click="vm.cancelTransfer(item)">Cancel</button></div>' +
+                  '</div>' +
+                '</div>' +
+                '<div class="mioos-classic-empty" v-else>No transfer activity yet.</div>' +
+                '<div class="mioos-classic-historylist" v-if="completed.length">' +
+                  '<article class="mioos-classic-historyrow" v-for="item in completed" :key="item.id"><div class="mioos-classic-transfercopy"><strong>[[ item.name ]]</strong><small>[[ vm.transferDirectionLabel ? vm.transferDirectionLabel(item) : item.kind ]]</small></div><span class="mioos-classic-historystatus" :class="{ \'is-failed\': item.status === \'failed\' }">[[ item.status ]]</span><small>[[ vm.transferTimestampLabel ? vm.transferTimestampLabel(item) : \'\' ]]</small><button type="button" class="mioos-classic-tool" v-if="vm.canRetryTransfer && vm.canRetryTransfer(item)" @click="vm.retryTransfer(item)">Retry</button><button type="button" class="mioos-classic-tool" v-if="vm.canCancelTransfer && vm.canCancelTransfer(item)" @click="vm.cancelTransfer(item)">Cancel</button></article>' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+          '</div>'
+      });
+
       app.component('mioos-surface-generic', {
 
         props: ['window'],
