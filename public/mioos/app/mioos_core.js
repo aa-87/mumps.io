@@ -127,7 +127,8 @@
         var self = this;
         this.bootstrapFromDom();
         this.initThemeStudioStore();
-        /* First-paint theme is server-rendered; Theme Studio applies only after user action. */
+        if (this.themeStudioBootProfile && this.themeStudioBootProfile() && this.setShellTheme) this.setShellTheme(this.themeStudioBootProfile());
+        /* First-paint theme is server-rendered; this only hydrates the client model to the same server profile. */
         this.restorePersistedTransfers();
         this.normalizeDesktopUiState();
         this.ensureDesktopLayout();
@@ -202,6 +203,47 @@
         desktopContextMenuState: function () {
           this.normalizeDesktopUiState();
           return this.desktopUi.contextMenu || { open: false, type: 'desktop', key: '', left: 0, top: 0 };
+        },
+        desktopSystemShortcuts: function () {
+          var self = this;
+          var preferred = [
+            { key: 'home', title: 'Home', icon: '🏠' },
+            { key: 'my-computer', title: 'Computer', icon: '🖥️' },
+            { key: 'documents', title: 'Documents', icon: '📁' },
+            { key: 'terminal', title: 'Terminal', icon: '▣' },
+            { key: 'transfers', title: 'Transfers', icon: '⇄' },
+            { key: 'customize', title: 'Customize', icon: '🎨' }
+          ];
+          return preferred.map(function (fallback) {
+            var app = (self.launcherEntries || []).find(function (entry) { return entry && (entry.key === fallback.key || entry.appKey === fallback.key); }) || fallback;
+            return {
+              key: 'shortcut:' + (app.key || app.appKey || fallback.key),
+              appKey: app.key || app.appKey || fallback.key,
+              launchKey: app.key || app.appKey || fallback.key,
+              title: app.title || app.label || fallback.title,
+              label: app.title || app.label || fallback.title,
+              icon: app.icon || fallback.icon,
+              kind: 'shortcut',
+              source: 'shortcut',
+              protected: true
+            };
+          });
+        },
+        desktopEntryIsSystemArtifact: function (entry) {
+          var text = String(((entry || {}).title || '') + ' ' + ((entry || {}).label || '') + ' ' + ((entry || {}).name || '') + ' ' + ((entry || {}).path || '')).toLowerCase();
+          return !!(text && /(^|[\s_./-])roi([\s_./-]|$)/.test(text));
+        },
+        desktopRenderEntries: function () {
+          var out = [];
+          var seen = {};
+          function add(entry) {
+            if (!entry || !entry.key || seen[entry.key]) return;
+            seen[entry.key] = 1;
+            out.push(entry);
+          }
+          this.desktopSystemShortcuts().forEach(add);
+          (this.desktopEntries || []).filter(function (entry) { return entry && !this.desktopEntryIsSystemArtifact(entry); }, this).forEach(add);
+          return out;
         },
         bootstrapFromDom: function () {
           var node = window.MIOOSState.getBootNode();
@@ -890,7 +932,7 @@
               if (cached.sortMode) this.desktopUi.sortMode = cached.sortMode;
             }
           }
-          (this.desktopEntries || []).forEach(function (entry) {
+          (this.desktopRenderEntries ? this.desktopRenderEntries() : (this.desktopEntries || [])).forEach(function (entry) {
             if (!entry || !entry.key) return;
             if (!self.desktopUi.positions[entry.key]) {
               var left = +(entry.iconLeft || 0);
@@ -905,7 +947,7 @@
             }
           });
           Object.keys(this.desktopUi.positions).forEach(function (key) {
-            var exists = (self.desktopEntries || []).some(function (entry) { return entry.key === key; });
+            var exists = (self.desktopRenderEntries ? self.desktopRenderEntries() : (self.desktopEntries || [])).some(function (entry) { return entry.key === key; });
             if (!exists) delete self.desktopUi.positions[key];
           });
           this.sortDesktopEntries(this.desktopUi.sortMode || 'manual', true);
@@ -1037,7 +1079,7 @@
         desktopContextEntry: function () {
           var menu = this.desktopContextMenuState();
           var key = (menu || {}).key || (this.desktopUi.selectedKey || '');
-          return (this.desktopEntries || []).find(function (entry) { return entry.key === key; }) || null;
+          return (this.desktopRenderEntries ? this.desktopRenderEntries() : (this.desktopEntries || [])).find(function (entry) { return entry.key === key; }) || null;
         },
         contextOpenSelected: function () {
           var entry = this.desktopContextEntry();
@@ -1081,7 +1123,8 @@
         },
         openDesktopEntry: function (entry) {
           if (!entry) return;
-          if (!this.desktopEntryIsVfs(entry)) { this.openApp(entry.key); return; }
+          if (entry.source === 'shortcut') { this.openApp(entry.launchKey || entry.appKey || String(entry.key || '').replace(/^shortcut:/, '')); return; }
+          if (!this.desktopEntryIsVfs(entry)) { this.openApp(entry.appKey || entry.launchKey || entry.key); return; }
           if ((entry.kind || entry.type) === 'folder') { this.openExplorerFolder(entry.id || entry.key, entry.title || entry.name || 'Folder'); return; }
           if (this.openFileViewerWindow) { this.openFileViewerWindow(entry); return; }
           this.openExplorerFolder(this.desktopFolderId(), 'Desktop');
@@ -1672,7 +1715,7 @@
         },
         initThemeStudioStore: function () {
           var store = this.themeStudioStore || {};
-          var presets, rawCustom, parsedCustom, rawApplied, parsedApplied;
+          var presets, rawCustom, parsedCustom, rawApplied, parsedApplied, bootProfile, bootTheme, hasBootProfile;
           if (store.initialized) return store;
           store.initialized = true;
           store.themes = {};
@@ -1687,6 +1730,20 @@
             store.themes[id] = this.themeStudioNormalizeConfig(presets[id]);
             store.order.push(id);
           }.bind(this));
+
+          bootProfile = this.themeStudioBootProfile ? this.themeStudioBootProfile() : null;
+          hasBootProfile = !!(bootProfile && Object.keys(bootProfile || {}).length);
+          if (hasBootProfile) {
+            bootTheme = this.themeStudioConfigFromServerProfile(bootProfile);
+            if (bootTheme && bootTheme.id) {
+              bootTheme.locked = false;
+              store.themes[bootTheme.id] = bootTheme;
+              if (store.order.indexOf(bootTheme.id) < 0) store.order.push(bootTheme.id);
+              if (store.customThemes.indexOf(bootTheme.id) < 0) store.customThemes.push(bootTheme.id);
+              store.activeThemeId = bootTheme.id;
+            }
+          }
+
           try { rawCustom = window.localStorage.getItem(this.themeStudioProfilesKey()); } catch (err) { rawCustom = ''; }
           if (rawCustom) {
             try { parsedCustom = JSON.parse(rawCustom); } catch (err2) { parsedCustom = []; }
@@ -1694,24 +1751,32 @@
               parsedCustom.forEach(function (entry) {
                 var cfg = this.themeStudioNormalizeConfig(entry || {});
                 cfg.locked = false;
-                store.themes[cfg.id] = cfg;
-                store.order.push(cfg.id);
-                store.customThemes.push(cfg.id);
+                if (!cfg.id) return;
+                if (!store.themes[cfg.id]) {
+                  store.order.push(cfg.id);
+                  store.customThemes.push(cfg.id);
+                } else if (store.customThemes.indexOf(cfg.id) < 0 && !cfg.locked) {
+                  store.customThemes.push(cfg.id);
+                }
+                /* Server boot profile is the source of truth for the active theme; local custom themes remain available but cannot override it. */
+                if (!(hasBootProfile && cfg.id === store.activeThemeId)) store.themes[cfg.id] = cfg;
               }.bind(this));
             }
           }
-          try { rawApplied = window.localStorage.getItem(this.themeStudioStorageKey()); } catch (err3) { rawApplied = ''; }
-          if (rawApplied) {
-            try { parsedApplied = this.themeStudioNormalizeConfig(JSON.parse(rawApplied)); } catch (err4) { parsedApplied = null; }
+
+          if (!hasBootProfile) {
+            try { rawApplied = window.localStorage.getItem(this.themeStudioStorageKey()); } catch (err3) { rawApplied = ''; }
+            if (rawApplied) {
+              try { parsedApplied = this.themeStudioNormalizeConfig(JSON.parse(rawApplied)); } catch (err4) { parsedApplied = null; }
+            }
+            if (parsedApplied) {
+              store.themes[parsedApplied.id] = parsedApplied;
+              if (store.order.indexOf(parsedApplied.id) < 0) store.order.push(parsedApplied.id);
+              if (!parsedApplied.locked && store.customThemes.indexOf(parsedApplied.id) < 0) store.customThemes.push(parsedApplied.id);
+              store.activeThemeId = parsedApplied.id;
+            }
           }
-          if (parsedApplied) {
-            store.themes[parsedApplied.id] = parsedApplied;
-            if (store.order.indexOf(parsedApplied.id) < 0) store.order.push(parsedApplied.id);
-            if (!parsedApplied.locked && store.customThemes.indexOf(parsedApplied.id) < 0) store.customThemes.push(parsedApplied.id);
-            store.activeThemeId = parsedApplied.id;
-          } else if (!store.activeThemeId) {
-            store.activeThemeId = 'glow';
-          }
+          if (!store.activeThemeId) store.activeThemeId = 'glow';
           this.themeStudioStore = store;
           return store;
         },
@@ -2330,22 +2395,32 @@
         themeStudioConfigFromServerProfile: function (profile) {
           var src = profile || {};
           var cfg = src.themeConfig || src.config || src;
-          var id = src.presetKey || src.id || src.key || src.family || 'glow';
+          var desktop = Object.assign({}, cfg.desktop || {}, src.desktop || {});
+          var wallpaper = Object.assign({}, cfg.wallpaper || {}, src.wallpaper || {});
+          var loginCfg = Object.assign({}, cfg.loginScreenConfig || {}, src.loginScreenConfig || {});
+          var id = cfg.id || src.id || src.key || src.presetKey || src.family || 'glow';
+          var wallpaperUrl = cfg.wallpaperUrl || src.wallpaperUrl || desktop.wallpaperUrl || wallpaper.url || wallpaper.href || '';
+          var wallpaperFit = cfg.wallpaperFit || src.wallpaperFit || desktop.wallpaperFit || wallpaper.fit || 'cover';
+          var wallpaperPreset = cfg.wallpaperPreset || src.wallpaperPreset || desktop.wallpaperPreset || wallpaper.preset || (wallpaperUrl ? 'custom-upload' : 'aurora');
           var mapped = this.themeStudioNormalizeConfig(Object.assign({}, cfg, {
-            id: cfg.id || id,
+            id: id,
             name: cfg.name || src.name || id,
-            sourceId: cfg.sourceId || src.family || src.sourceId || id,
+            sourceId: cfg.sourceId || src.sourceId || src.family || src.baseTheme || cfg.baseTheme || id,
             darkEnabled: (src.mode || cfg.mode || '') === 'dark' || !!cfg.darkEnabled,
             cssVars: Object.assign({}, cfg.cssVars || {}, src.cssVars || {}, src.colors || {}),
-            wallpaperUrl: cfg.wallpaperUrl || (((src.desktop || {}).wallpaperUrl) || ''),
-            wallpaperFit: cfg.wallpaperFit || (((src.desktop || {}).wallpaperFit) || 'cover'),
-            wallpaperPreset: cfg.wallpaperPreset || (((src.desktop || {}).wallpaperPreset) || 'custom-upload'),
+            wallpaperUrl: wallpaperUrl,
+            wallpaperFit: wallpaperFit,
+            wallpaperPreset: wallpaperPreset,
+            wallpaperAssetId: cfg.wallpaperAssetId || src.wallpaperAssetId || desktop.wallpaperAssetId || wallpaper.assetId || '',
             taskbarConfig: Object.assign({}, cfg.taskbarConfig || {}, src.taskbarConfig || {}),
             startMenuConfig: Object.assign({}, cfg.startMenuConfig || {}, src.startMenuConfig || {}),
-            loginScreenConfig: Object.assign({}, cfg.loginScreenConfig || {}, src.loginScreenConfig || {}),
+            loginScreenConfig: Object.assign({}, loginCfg, {
+              wallpaperUrl: loginCfg.wallpaperUrl || ((desktop.login || {}).wallpaperUrl) || ''
+            }),
             mobileConfig: Object.assign({}, cfg.mobileConfig || {}, src.mobileConfig || {})
           }));
           if (((src.appearance || {}).accent) && mapped.cssVars) mapped.cssVars['--accent'] = src.appearance.accent;
+          if (mapped.wallpaperUrl) mapped.wallpaperPreset = mapped.wallpaperPreset || 'custom-upload';
           mapped.locked = false;
           return mapped;
         },
@@ -2555,9 +2630,12 @@
           });
         },
         setShellTheme: function (profile) {
-          this.appliedThemeProfile = profile || (((this.boot || {}).desktop || {}).activeThemeProfile) || null; /* desktop.activeThemeProfile */
-          if (profile && profile.presetKey) this.activeThemeKey = profile.presetKey;
-          if (this.applyThemeStudioConfig && profile) this.applyThemeStudioConfig(profile, { silent: true, persist: false });
+          var source = profile || (((this.boot || {}).desktop || {}).activeThemeProfile) || null; /* desktop.activeThemeProfile */
+          var normalized = source && (source.themeConfig || source.desktop || source.presetKey || source.colors) ? this.themeStudioConfigFromServerProfile(source) : source;
+          this.appliedThemeProfile = normalized || source || null;
+          if (normalized && normalized.id) this.activeThemeKey = normalized.id;
+          else if (source && source.presetKey) this.activeThemeKey = source.presetKey;
+          if (this.applyThemeStudioConfig && normalized) this.applyThemeStudioConfig(normalized, { silent: true, persist: false });
         },
         terminalStatusText: function (win) {
           if (Terminal && typeof Terminal.terminalStatusText === 'function') {
