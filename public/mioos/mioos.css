@@ -2280,20 +2280,16 @@ button:disabled { cursor: default; opacity: .55; }
   .mioos-explorer-search { grid-column: 1 / -1; }
 }
 
-/* ROI 4 Transfers: native file operation dialog shell while retaining transfer UX/actions. */
-.mioos-transfer-dialog-native{
-  border:1px solid rgba(43,91,145,.45);
-  background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(235,244,255,.94));
-  box-shadow:0 16px 38px rgba(17,45,80,.22),inset 0 1px rgba(255,255,255,.9);
+/* ROI 5 Start Menu: filesystem/app catalog source, long-list scrolling, keyboard focus */
+.mioos-start-menu-vue { --start-menu-max-height: min(76vh, 620px); max-height: var(--start-menu-max-height); }
+.mioos-start-list-vue { max-height: calc(var(--start-menu-max-height) - 150px); overflow: auto; scrollbar-width: thin; }
+.mioos-start-group-items-vue { max-height: 240px; overflow: auto; }
+.mioos-start-entry-vue.is-selected, .mioos-start-entry-vue:focus-visible { outline: 2px solid color-mix(in srgb, var(--accent, #2563eb) 72%, white 28%); outline-offset: 1px; background: var(--menu-hover); }
+.mioos-start-entry-vue.is-disabled { opacity: .58; cursor: default; pointer-events: none; }
+.mioos-start-menu-vue .mioos-start-search-vue input { min-width: 0; }
+.mioos-start-menu-vue.style-popup .mioos-start-panel-vue { max-height: calc(var(--start-menu-max-height) - 116px); overflow: auto; }
+@media (max-width: 768px) {
+  .mioos-start-menu-vue { left: 8px !important; right: 8px; width: auto !important; max-width: none !important; max-height: calc(100vh - var(--taskbar-height, 48px) - 22px); }
+  .mioos-start-body-vue { grid-template-columns: 1fr; }
+  .mioos-start-list-vue, .mioos-start-side-vue { max-height: 46vh; }
 }
-.mioos-transfer-dialog-native .mioos-classic-panelhead{
-  background:linear-gradient(180deg,#f7fbff 0%,#dbeeff 100%);
-  border-bottom:1px solid #a7c3df;
-}
-.mioos-transfer-dialog-native .mioos-classic-progress span{
-  transition:width 300ms ease;
-}
-.mioos-transfer-dialog-native .mioos-classic-transferrow{
-  animation:mioos-transfer-row-slide 180ms ease-out both;
-}
-@keyframes mioos-transfer-row-slide{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}

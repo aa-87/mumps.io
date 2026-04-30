@@ -111,6 +111,10 @@
           return;
         }
         var win = this.windows.find(function (item) { return item.appKey === appKey; });
+        if (!win) {
+          var app = (this.launcherEntries || []).find(function (item) { return item.key === appKey || item.appKey === appKey; }) || this.moduleRecord && this.moduleRecord(appKey) || { key: appKey, title: String(appKey || 'Application') };
+          if (this.createWindowForApp) win = this.createWindowForApp(app, { state: 'normal', kind: (app.kind || 'app'), moduleWindow: !!(app.id && app.id !== appKey), moduleId: app.id || '' });
+        }
         if (!win) return;
         this.ensureWindowFrame(win);
         this.menuOpen = false;
@@ -213,6 +217,7 @@
       },
       toggleMenu: function () {
         this.menuOpen = !this.menuOpen;
+        if (this.menuOpen && this.startMenuEnsureSelection) this.startMenuEnsureSelection();
       },
       windowClass: function (win) {
         return {

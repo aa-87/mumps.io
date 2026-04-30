@@ -325,7 +325,10 @@
           previewWindow: function () { return (this.store && this.store.previewWindowState) || {}; },
           tabs: function () { return this.vm.themeStudioTabs(); },
           activeTab: function () { return this.vm.themeStudioActiveTab(); },
-          groups: function () { return this.vm.startMenuGroups(); }
+          groups: function () { return this.vm.startMenuGroups(); },
+          selectedKey: function () { this.vm.startMenuEnsureSelection(); return ((this.vm.startMenuUi || {}).selectedKey) || ''; },
+          selectedKey: function () { this.vm.startMenuEnsureSelection(); return ((this.vm.startMenuUi || {}).selectedKey) || ''; },
+          selectedKey: function () { this.vm.startMenuEnsureSelection(); return ((this.vm.startMenuUi || {}).selectedKey) || ''; }
         },
         template: `
           <div class="mioos-surface mioos-surface-theme">
@@ -653,9 +656,9 @@
         },
         template: '' +
           '<div class="mioos-surface mioos-surface-transfers">' +
-            '<div class="mioos-classic-shell mioos-classic-transfers mioos-transfer-dialog-native">' +
+            '<div class="mioos-classic-shell mioos-classic-transfers">' +
               '<div class="mioos-classic-panelhead">' +
-                '<div><strong>[[ vm.transferBatchLabel ? vm.transferBatchLabel() : &quot;File Transfer&quot; ]]</strong><span>Queue progress, per-file activity, drag and drop uploads, and recovery actions.</span></div>' +
+                '<div><strong>File Transfer</strong><span>Queue progress, per-file activity, drag and drop uploads, and recovery actions.</span></div>' +
                 '<div class="mioos-classic-toolbar-group">' +
                   '<button type="button" class="mioos-classic-tool" @click="vm.pauseAllTransfers && vm.pauseAllTransfers()">Pause All</button>' +
                   '<button type="button" class="mioos-classic-tool" @click="vm.resumePausedTransfers && vm.resumePausedTransfers()">Resume</button>' +
@@ -715,24 +718,25 @@
         computed: {
           vm: function () { return root(this); },
           entries: function () { return this.vm.filteredEntries || []; },
-          groups: function () { return this.vm.startMenuGroups(); }
+          groups: function () { return this.vm.startMenuGroups(); },
+          selectedKey: function () { this.vm.startMenuEnsureSelection(); return ((this.vm.startMenuUi || {}).selectedKey) || ""; }
         },
         template: '' +
-          '<aside class="mioos-start-menu-vue" :class="[\'is-\' + vm.currentShellThemeFamily(), \'style-\' + vm.startMenuStyleType(), \'position-\' + vm.taskbarPosition(), \'button-\' + vm.taskbarButtonStyleType()]" :style="vm.startMenuPopupStyle()" @click.stop>' +
+          '<aside class="mioos-start-menu-vue" :class="[\'is-\' + vm.currentShellThemeFamily(), \'style-\' + vm.startMenuStyleType(), \'position-\' + vm.taskbarPosition(), \'button-\' + vm.taskbarButtonStyleType()]" :style="vm.startMenuPopupStyle()" tabindex="-1" @keydown="vm.startMenuHandleKeydown($event)" @click.stop>' +
             '<div class="mioos-start-head-vue"><div class="mioos-start-avatar-vue">M</div><div><strong>[[ vm.boot.product.name ]]</strong><span>[[ vm.boot.product.subtitle ]]</span></div></div>' +
-            '<label class="mioos-start-search-vue"><span>⌕</span><input v-model="vm.menuFilter" type="text" :placeholder="vm.t(\'search.placeholder\')"></label>' +
+            '<label class="mioos-start-search-vue"><span>⌕</span><input v-model="vm.menuFilter" type="text" :placeholder="vm.t(\'search.placeholder\')" @keydown="vm.startMenuHandleKeydown($event)"></label>' +
             '<div class="mioos-start-body-vue" v-if="vm.startMenuStyleType() === \'classic\'">' +
               '<div class="mioos-start-list-vue">' +
                 '<details v-for="group in groups" :key="group.key" class="mioos-start-group-vue" :open="group.open">' +
                   '<summary><strong>[[ group.title ]]</strong><span>[[ group.subtitle ]]</span></summary>' +
                   '<div class="mioos-start-group-items-vue">' +
-                    '<button v-for="item in group.items" :key="item.key" type="button" class="mioos-start-entry-vue" @click="vm.openApp(item.key)"><span class="mioos-start-entry-icon">[[ item.icon ]]</span><span><strong>[[ item.title ]]</strong><em>[[ item.subtitle || item.key ]]</em></span></button>' +
+                    '<button v-for="item in group.items" :key="item.key" type="button" class="mioos-start-entry-vue" @click="vm.startMenuOpenItem(item)" :class="{ \'is-selected\': selectedKey === item.key, \'is-disabled\': item.disabled }" :disabled="item.disabled"><span class="mioos-start-entry-icon">[[ item.icon ]]</span><span><strong>[[ item.title ]]</strong><em>[[ item.subtitle || item.key ]]</em></span></button>' +
                   '</div>' +
                 '</details>' +
               '</div>' +
               '<aside class="mioos-start-side-vue">' +
                 '<strong>Pinned</strong>' +
-                '<button v-for="entry in entries.slice(0, 6)" :key="entry.key" type="button" class="mioos-chip-btn" @click="vm.openApp(entry.key)">[[ entry.title ]]</button>' +
+                '<button v-for="entry in entries.slice(0, 6)" :key="entry.key" type="button" class="mioos-chip-btn" @click="vm.startMenuOpenItem(entry)">[[ entry.title ]]</button>' +
                 '<strong>Themes</strong>' +
                 '<button v-for="theme in vm.shellThemeOptions()" :key="theme.key" type="button" class="mioos-chip-btn" :class="{ \'is-active\': vm.activeThemeKey === theme.key }" @click="vm.applyShellTheme(theme.key)">[[ theme.label ]]</button>' +
                 '<strong>Language</strong>' +
@@ -742,7 +746,7 @@
             '<div class="mioos-start-panel-vue mioos-start-popup-vue" v-else>' +
               '<div class="mioos-start-panel-group-vue" v-for="group in groups" :key="group.key">' +
                 '<strong>[[ group.title ]]</strong>' +
-                '<button v-for="item in group.items" :key="item.key" type="button" class="mioos-start-entry-vue" @click="vm.openApp(item.key)"><span class="mioos-start-entry-icon">[[ item.icon ]]</span><span><strong>[[ item.title ]]</strong><em>[[ item.subtitle || item.key ]]</em></span></button>' +
+                '<button v-for="item in group.items" :key="item.key" type="button" class="mioos-start-entry-vue" @click="vm.startMenuOpenItem(item)" :class="{ \'is-selected\': selectedKey === item.key, \'is-disabled\': item.disabled }" :disabled="item.disabled"><span class="mioos-start-entry-icon">[[ item.icon ]]</span><span><strong>[[ item.title ]]</strong><em>[[ item.subtitle || item.key ]]</em></span></button>' +
               '</div>' +
             '</div>' +
             '<div class="mioos-start-user-vue" v-if="vm.authEnabled">' +

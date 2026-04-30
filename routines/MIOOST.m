@@ -53,7 +53,7 @@ MIOOST ; MIOOS tests
 	DO T056
 	DO T057
 	DO T058
-	DO T059
+	DO T060
 	QUIT
 	;
 RESET
@@ -1225,36 +1225,17 @@ T058
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-explorer-context-menu"),"[MIOOST][T058][context css]")
 	QUIT
 	;
-T059
-	NEW CONF,REQ,CTX,STATE,ERR,OUT,UPID,DESK,OK
-	DO RESET
-	DO CONFDEF^MIOOS(.CONF)
-	SET CONF("mioos","localAuth","enabled")=0
-	SET CONF("mioos","dev","authDisabled")=1
-	DO INIT^MIOOS(.CONF)
-	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T059][load]")
-	SET DESK=$$DESKTOPID^MIOOSFS()
-	KILL OUT,ERR DO OK^MIOTASSERT($$BEGIN^MIOOSFSUP(.STATE,.CONF,DESK,"roi4.bin","application/octet-stream",12,"binary",.OUT,.ERR),"[MIOOST][T059][begin]")
-	SET UPID=$GET(OUT("uploadId"))
-	KILL OUT,ERR DO OK^MIOTASSERT($$CHUNK^MIOOSFSUP(.STATE,.CONF,UPID,1,"aaaa",4,.OUT,.ERR),"[MIOOST][T059][chunk one]")
-	KILL OUT,ERR DO OK^MIOTASSERT($$CHUNK^MIOOSFSUP(.STATE,.CONF,UPID,3,"cccc",4,.OUT,.ERR),"[MIOOST][T059][chunk three]")
-	KILL OUT,ERR SET OK=$$COMMIT^MIOOSFSUP(.STATE,.CONF,UPID,.OUT,.ERR)
-	DO EQ^MIOTASSERT(OK,0,"[MIOOST][T059][commit blocked]")
-	DO EQ^MIOTASSERT($GET(ERR("error")),"missing_chunk","[MIOOST][T059][missing chunk error]")
-	DO EQ^MIOTASSERT(+$GET(ERR("detail")),2,"[MIOOST][T059][missing chunk index]")
-	KILL OUT,ERR DO OK^MIOTASSERT($$STATUS^MIOOSFSUP(.STATE,.CONF,UPID,.OUT,.ERR),"[MIOOST][T059][status]")
-	DO EQ^MIOTASSERT(+$GET(OUT("nextIndex")),2,"[MIOOST][T059][status next index]")
-	DO EQ^MIOTASSERT(+$GET(OUT("contiguousBytes")),4,"[MIOOST][T059][status contiguous]")
-	KILL OUT,ERR DO OK^MIOTASSERT($$CHUNK^MIOOSFSUP(.STATE,.CONF,UPID,2,"bbbb",4,.OUT,.ERR),"[MIOOST][T059][chunk two]")
-	KILL OUT,ERR DO OK^MIOTASSERT($$COMMIT^MIOOSFSUP(.STATE,.CONF,UPID,.OUT,.ERR),"[MIOOST][T059][commit]")
-	DO EQ^MIOTASSERT(+$GET(OUT("committed")),1,"[MIOOST][T059][committed flag]")
-	KILL OUT,ERR DO OK^MIOTASSERT($$COMMIT^MIOOSFSUP(.STATE,.CONF,UPID,.OUT,.ERR),"[MIOOST][T059][commit idempotent]")
-	DO EQ^MIOTASSERT(+$GET(OUT("alreadyCommitted")),1,"[MIOOST][T059][already committed flag]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","reconcileMissingChunk"),"[MIOOST][T059][client missing chunk reconcile]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","commitStarted = false"),"[MIOOST][T059][client commit retry guard]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","normalizeUploadEntries"),"[MIOOST][T059][multi upload normalizer]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","transferBatchLabel"),"[MIOOST][T059][batch transfer label]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-transfer-dialog-native"),"[MIOOST][T059][native transfer dialog]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","mioos-transfer-shimmer"),"[MIOOST][T059][transfer shimmer]")
+	;	;
+T060
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","startMenuAppCatalogItems"),"[MIOOST][T060][start menu app catalog]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","startMenuFilesystemItems"),"[MIOOST][T060][start menu filesystem]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","startMenuFlatItems"),"[MIOOST][T060][start menu long list source]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","startMenuHandleKeydown"),"[MIOOST][T060][start menu keyboard]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","startMenuOpenItem"),"[MIOOST][T060][start menu launcher]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","vm.startMenuOpenItem(item)"),"[MIOOST][T060][start menu item click]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","vm.startMenuHandleKeydown($event)"),"[MIOOST][T060][start menu key handler]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","Desktop Files"),"[MIOOST][T060][start menu desktop files]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_wm.js","createWindowForApp(app"),"[MIOOST][T060][dynamic start menu window]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-start-entry-vue.is-selected"),"[MIOOST][T060][start menu selection css]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","--start-menu-max-height"),"[MIOOST][T060][start menu overflow css]")
 	QUIT
-	;

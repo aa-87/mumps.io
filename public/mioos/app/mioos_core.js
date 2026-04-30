@@ -23,6 +23,7 @@
           activeWindowId: '',
           menuOpen: false,
           menuFilter: '',
+          startMenuUi: { selectedKey: '', lastOpenedAt: 0 },
           socket: null,
           socketConnected: false,
           clockText: '',
@@ -96,13 +97,7 @@
           return this.windows.filter(function (win) { return win.state !== 'closed'; });
         },
         filteredEntries: function () {
-          var needle = (this.menuFilter || '').trim().toLowerCase();
-          var source = this.launcherEntries && this.launcherEntries.length ? this.launcherEntries : this.desktopEntries;
-          if (!needle) return source;
-          return source.filter(function (entry) {
-            var hay = ((entry.title || '') + ' ' + (entry.subtitle || '')).toLowerCase();
-            return hay.indexOf(needle) !== -1;
-          });
+          return this.startMenuFlatItems ? this.startMenuFlatItems() : (this.launcherEntries || []);
         },
         requiresSignin: function () {
           return !!(this.boot.auth && this.boot.auth.required && !(this.boot.user && this.boot.user.authenticated));
@@ -492,17 +487,6 @@
           var done = this.completedTransfers().length;
           return active + ' active · ' + paused + ' paused · ' + done + ' finished';
         },
-        transferBatchLabel: function () {
-          var active = this.transferActiveCount ? this.transferActiveCount() : this.activeTransfers().length;
-          var total = ((this.transferCenter || {}).items || []).length;
-          if (active > 1) return 'Copying ' + active + ' items…';
-          if (active === 1) {
-            var item = (this.activeTransfers() || [])[0] || {};
-            var verb = item.kind === 'download' ? 'Downloading' : item.kind === 'move' ? 'Moving' : item.kind === 'copy' ? 'Copying' : item.kind === 'upload' ? 'Uploading' : 'Transferring';
-            return verb + ' ' + (item.name || 'item') + '…';
-          }
-          return total ? 'Transfer activity' : 'Transfers';
-        },
 
         transferQueueRows: function (limit) {
           var seen = {};
@@ -830,17 +814,6 @@
           });
         },
         registerTransfer: function (payload) {
-          var dedupeKey = (payload && payload.dedupeKey) || '';
-          var existing;
-          if (dedupeKey) {
-            existing = (this.transferCenter.items || []).find(function (item) {
-              return item && item.dedupeKey === dedupeKey && ['queued','preparing','uploading','downloading','finalizing','verifying','paused'].indexOf(item.status) >= 0;
-            });
-            if (existing) {
-              this.updateTransfer(existing.id, Object.assign({}, payload || {}, { dedupeKey: dedupeKey }));
-              return existing.id;
-            }
-          }
           var next = Object.assign({
             id: 'transfer-' + Date.now() + '-' + (++this.transferCenter.seq),
             kind: 'upload',
@@ -853,8 +826,7 @@
             startedAt: Date.now(),
             updatedAt: Date.now(),
             error: '',
-            sourceWindowId: '',
-            dedupeKey: dedupeKey
+            sourceWindowId: ''
           }, payload || {});
           this.transferCenter.items.unshift(next);
           if (this.transferCenter.items.length > 40) this.transferCenter.items = this.transferCenter.items.slice(0, 40);
@@ -2196,49 +2168,118 @@
           else { style.left = '14px'; style.bottom = h + 'px'; }
           return style;
         },
+        startMenuNormalizeItem: function (entry, source, groupKey) {
+          entry = entry || {};
+          var key = String(entry.key || entry.appKey || entry.id || entry.fileId || entry.folderId || entry.name || '').trim();
+          if (!key) return null;
+          var kind = String(entry.kind || entry.type || '').toLowerCase();
+          var isFolder = kind === 'folder' || entry.isFolder || entry.folderId;
+          var sourceName = source || entry.source || (entry.id ? 'vfs' : 'app');
+          var title = entry.title || entry.label || entry.name || key;
+          var subtitle = entry.subtitle || entry.description || entry.detail || '';
+          if (!subtitle && sourceName === 'vfs') subtitle = isFolder ? 'Desktop folder' : 'Desktop file';
+          if (!subtitle && sourceName === 'module') subtitle = entry.category || 'Module';
+          if (!subtitle && sourceName === 'app') subtitle = kind || 'Application';
+          return { key: key, appKey: entry.appKey || entry.key || key, launchKey: entry.launchKey || entry.appKey || entry.key || key, title: title, subtitle: subtitle, icon: entry.icon || (isFolder ? '📁' : (sourceName === 'vfs' ? '📄' : '▣')), kind: kind || (isFolder ? 'folder' : 'app'), source: sourceName, groupKey: groupKey || entry.groupKey || sourceName, id: entry.id || '', fileId: entry.fileId || (sourceName === 'vfs' ? (entry.id || key) : ''), folderId: entry.folderId || (isFolder ? (entry.id || key) : ''), path: entry.path || entry.canonicalPath || '', raw: entry, disabled: !!entry.disabled };
+        },
+        startMenuAppCatalogItems: function () {
+          var self = this;
+          var seen = {};
+          var rows = [];
+          function add(entry, source, groupKey) {
+            var item = self.startMenuNormalizeItem(entry, source, groupKey);
+            if (!item || seen[item.key]) return;
+            seen[item.key] = 1;
+            rows.push(item);
+          }
+          (this.launcherEntries || []).forEach(function (entry) { add(entry, 'app', 'applications'); });
+          (this.boot.modules || []).forEach(function (module) {
+            add({ key: module.appKey || module.id, appKey: module.appKey || module.id, title: module.title || module.name || module.id, subtitle: module.description || module.subtitle || module.category || 'Module', icon: module.icon || '▣', kind: 'module', id: module.id }, 'module', 'modules');
+          });
+          [{ key: 'app-catalog', title: 'Application Catalog', subtitle: 'Browse installed modules', icon: '▦', kind: 'tool' }, { key: 'control-panel', title: 'Control Panel', subtitle: 'System settings', icon: '⚙', kind: 'tool' }, { key: 'diagnostics', title: 'Diagnostics', subtitle: 'Transport and boot health', icon: '📈', kind: 'tool' }, { key: 'security-center', title: 'Security Center', subtitle: 'Sessions and users', icon: '🛡', kind: 'tool' }, { key: 'debug-center', title: 'Debug Center', subtitle: 'Developer tools', icon: '🧪', kind: 'tool' }].forEach(function (entry) { add(entry, 'app', 'system'); });
+          return rows;
+        },
+        startMenuFilesystemItems: function () {
+          var self = this;
+          return (this.desktopEntries || []).filter(function (entry) { return entry && (entry.source === 'vfs' || entry.id || entry.path); }).map(function (entry) {
+            var copy = Object.assign({}, entry || {});
+            copy.key = 'vfs:' + (entry.id || entry.key || entry.path || entry.name);
+            return self.startMenuNormalizeItem(copy, 'vfs', 'filesystem');
+          }).filter(Boolean);
+        },
+        startMenuAllItems: function () { return this.startMenuAppCatalogItems().concat(this.startMenuFilesystemItems()); },
+        startMenuMatchesItem: function (item, needle) {
+          if (!needle) return true;
+          var hay = ((item.title || '') + ' ' + (item.subtitle || '') + ' ' + (item.key || '') + ' ' + (item.path || '')).toLowerCase();
+          return hay.indexOf(needle) !== -1;
+        },
+        startMenuFilterItems: function (items) {
+          var needle = (this.menuFilter || '').trim().toLowerCase();
+          var self = this;
+          return (items || []).filter(function (item) { return self.startMenuMatchesItem(item, needle); });
+        },
+        startMenuFlatItems: function () {
+          var out = [];
+          (this.startMenuGroups() || []).forEach(function (group) { (group.items || []).forEach(function (item) { if (!item.disabled) out.push(item); }); });
+          return out;
+        },
         startMenuGroups: function () {
           var theme = this.themeStudioActiveTheme() || {};
           var style = (((theme.startMenuConfig || {}).style) || 'classic');
           var nested = ((theme.startMenuConfig || {}).nested) !== false;
-          var groups;
-          if (style === 'popup') {
-            return [
-              { key: 'applications', title: 'Applications', subtitle: 'Launch your tools', open: true, items: [
-                { key: 'terminal', title: 'Terminal', subtitle: 'Interactive shell', icon: '⌨' },
-                { key: 'theme-studio', title: 'Appearance', subtitle: 'Customize the shell', icon: '🎨' },
-                { key: 'transfers', title: 'Transfers', subtitle: 'Uploads and activity', icon: '⇅' }
-              ]},
-              { key: 'places', title: 'Places', subtitle: 'Folders and storage', open: true, items: [
-                { key: 'my-computer', title: 'Home Folder', subtitle: 'Browse storage', icon: '🗂' },
-                { key: 'documents', title: 'Documents', subtitle: 'Recent work', icon: '📁' },
-                { key: 'control-panel', title: 'Settings', subtitle: 'System configuration', icon: '⚙' }
-              ]},
-              { key: 'system', title: 'System', subtitle: 'Health and security', open: true, items: [
-                { key: 'security-center', title: 'Security', subtitle: 'Sessions and users', icon: '🛡' },
-                { key: 'diagnostics', title: 'Diagnostics', subtitle: 'Transport and boot health', icon: '📈' },
-                { key: 'debug-center', title: 'Developer Tools', subtitle: 'Inspect the shell', icon: '🧪' }
-              ]}
-            ];
-          }
-          groups = [
-            { key: 'system', title: 'System Tools', subtitle: 'Core shell utilities', open: true, items: [
-              { key: 'my-computer', title: 'My Computer', subtitle: 'Browse storage', icon: '🖥' },
-              { key: 'documents', title: 'Documents', subtitle: 'Open recent files', icon: '📁' },
-              { key: 'theme-studio', title: 'Theme Studio', subtitle: 'Customize the shell', icon: '🎨' }
-            ]},
-            { key: 'work', title: 'Workflows', subtitle: 'Everyday apps', open: nested, items: [
-              { key: 'terminal', title: 'Terminal', subtitle: 'Interactive shell', icon: '⌨' },
-              { key: 'transfers', title: 'Transfers', subtitle: 'Upload status', icon: '⇅' },
-              { key: 'control-panel', title: 'Control Panel', subtitle: 'Settings and tools', icon: '⚙' }
-            ]},
-            { key: 'support', title: 'Support', subtitle: 'Diagnostics and monitoring', open: false, items: [
-              { key: 'diagnostics', title: 'Diagnostics', subtitle: 'Transport and boot health', icon: '📈' },
-              { key: 'security-center', title: 'Security Center', subtitle: 'Sessions and users', icon: '🛡' },
-              { key: 'debug-center', title: 'Debug Center', subtitle: 'Developer tools', icon: '🧪' }
-            ]}
-          ];
-          if (!nested) groups.forEach(function (group) { group.open = true; });
+          var catalog = this.startMenuAppCatalogItems();
+          var files = this.startMenuFilesystemItems();
+          var apps = catalog.filter(function (item) { return item.groupKey === 'applications'; });
+          var modules = catalog.filter(function (item) { return item.source === 'module'; });
+          var system = catalog.filter(function (item) { return item.groupKey === 'system'; });
+          var pinned = [];
+          ['home', 'terminal', 'transfers', 'customize'].forEach(function (key) { var found = catalog.find(function (item) { return item.key === key || item.appKey === key; }); if (found) pinned.push(found); });
+          var groups = [{ key: 'pinned', title: 'Pinned', subtitle: 'Common places and tools', open: true, items: pinned }, { key: 'applications', title: 'All Programs', subtitle: 'Application catalog', open: true, items: apps.concat(modules) }, { key: 'filesystem', title: 'Desktop Files', subtitle: 'Files and folders from /Home/Desktop', open: nested, items: files }, { key: 'system', title: 'System', subtitle: 'Settings, security, and diagnostics', open: style === 'popup' ? true : false, items: system }];
+          var self = this;
+          groups = groups.map(function (group) { var copy = Object.assign({}, group); copy.items = self.startMenuFilterItems(copy.items); if (!nested || style === 'popup') copy.open = true; return copy; }).filter(function (group) { return (group.items || []).length > 0; });
+          if (!groups.length) groups.push({ key: 'empty', title: 'No results', subtitle: 'Try another search', open: true, items: [{ key: 'empty-result', title: 'No matching apps or files', subtitle: 'Search /Home/Desktop and applications', icon: '⌕', disabled: true }] });
           return groups;
+        },
+        startMenuItemByKey: function (key) {
+          var match = null;
+          (this.startMenuGroups() || []).some(function (group) { return (group.items || []).some(function (item) { if (String(item.key) === String(key)) { match = item; return true; } return false; }); });
+          return match;
+        },
+        startMenuEnsureSelection: function () {
+          if (!this.startMenuUi) this.startMenuUi = { selectedKey: '', lastOpenedAt: 0 };
+          var items = this.startMenuFlatItems();
+          if (!items.length) { this.startMenuUi.selectedKey = ''; return null; }
+          if (!this.startMenuUi.selectedKey || !items.some(function (item) { return item.key === this.startMenuUi.selectedKey; }, this)) this.startMenuUi.selectedKey = items[0].key;
+          return this.startMenuItemByKey(this.startMenuUi.selectedKey) || items[0];
+        },
+        startMenuMoveSelection: function (delta) {
+          if (!this.startMenuUi) this.startMenuUi = { selectedKey: '', lastOpenedAt: 0 };
+          var items = this.startMenuFlatItems();
+          if (!items.length) return;
+          var idx = items.findIndex(function (item) { return item.key === this.startMenuUi.selectedKey; }, this);
+          if (idx < 0) idx = 0;
+          idx = (idx + delta + items.length) % items.length;
+          this.startMenuUi.selectedKey = items[idx].key;
+        },
+        startMenuHandleKeydown: function (event) {
+          if (!event) return;
+          if (event.key === 'Escape') { event.preventDefault(); this.menuOpen = false; return; }
+          if (event.key === 'ArrowDown') { event.preventDefault(); this.startMenuMoveSelection(1); return; }
+          if (event.key === 'ArrowUp') { event.preventDefault(); this.startMenuMoveSelection(-1); return; }
+          if (event.key === 'Home') { event.preventDefault(); var first = this.startMenuFlatItems()[0]; if (first) this.startMenuUi.selectedKey = first.key; return; }
+          if (event.key === 'End') { event.preventDefault(); var rows = this.startMenuFlatItems(); var last = rows[rows.length - 1]; if (last) this.startMenuUi.selectedKey = last.key; return; }
+          if (event.key === 'Enter') { event.preventDefault(); this.startMenuOpenItem(this.startMenuEnsureSelection()); }
+        },
+        startMenuOpenItem: function (itemOrKey) {
+          var item = typeof itemOrKey === 'string' ? this.startMenuItemByKey(itemOrKey) : itemOrKey;
+          if (!item || item.disabled) return;
+          this.menuOpen = false;
+          if (this.startMenuUi) this.startMenuUi.lastOpenedAt = Date.now();
+          if (item.source === 'vfs') { if (this.openDesktopEntry) this.openDesktopEntry(item.raw || { key: item.fileId || item.folderId || item.id || item.key, id: item.fileId || item.folderId || item.id || item.key, name: item.title, kind: item.kind, source: 'vfs' }); return; }
+          if (item.source === 'module' && this.openModuleEntry) { this.openModuleEntry(item.raw && (item.raw.id || item.raw.appKey) || item.appKey || item.key); return; }
+          var key = item.launchKey || item.appKey || item.key;
+          if (key === 'theme-studio') key = 'customize';
+          this.openApp(key);
         },
         activeLoginScreenConfig: function () {
           return (((this.themeStudioActiveTheme() || {}).loginScreenConfig) || {});
