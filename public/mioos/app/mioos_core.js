@@ -127,8 +127,8 @@
         var self = this;
         this.bootstrapFromDom();
         this.initThemeStudioStore();
-        if (this.themeStudioBootProfile && this.themeStudioBootProfile() && this.setShellTheme) this.setShellTheme(this.themeStudioBootProfile());
-        /* First-paint theme is server-rendered; this only hydrates the client model to the same server profile. */
+        if (this.hydrateServerRenderedTheme) this.hydrateServerRenderedTheme();
+        /* First-paint theme is server-rendered; client hydration must not rewrite CSS variables on mount. */
         this.restorePersistedTransfers();
         this.normalizeDesktopUiState();
         this.ensureDesktopLayout();
@@ -2391,6 +2391,14 @@
         },
         themeStudioBootProfile: function () {
           return ((((this.boot || {}).desktop || {}).activeThemeProfile) || null);
+        },
+        hydrateServerRenderedTheme: function () {
+          var source = this.themeStudioBootProfile ? this.themeStudioBootProfile() : null;
+          var normalized = source && this.themeStudioConfigFromServerProfile ? this.themeStudioConfigFromServerProfile(source) : source;
+          this.appliedThemeProfile = normalized || source || null;
+          if (normalized && normalized.id) this.activeThemeKey = normalized.id;
+          else if (source && source.presetKey) this.activeThemeKey = source.presetKey;
+          return this.appliedThemeProfile;
         },
         themeStudioConfigFromServerProfile: function (profile) {
           var src = profile || {};

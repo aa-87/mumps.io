@@ -1144,7 +1144,10 @@ T056
 	DO BOOTARY^MIOOSST(.STATE,.CONF,.BOOT)
 	DO EQ^MIOTASSERT($GET(STATE("theme")),$GET(STATE("themeKey")),"[MIOOST][T056][state theme alias]")
 	DO EQ^MIOTASSERT($GET(BOOT("desktop","theme")),$GET(STATE("themeKey")),"[MIOOST][T056][boot theme alias]")
+	DO EQ^MIOTASSERT($GET(BOOT("desktop","themeMode")),$GET(STATE("themeMode")),"[MIOOST][T056][boot theme mode]")
+	DO EQ^MIOTASSERT($GET(BOOT("desktop","density")),$GET(STATE("density")),"[MIOOST][T056][boot density]")
 	DO OK^MIOTASSERT($GET(BOOT("desktop","wallpaperUrl"))["/api/mioos/fs/blob?id=","[MIOOST][T056][boot wallpaper url]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","this.setShellTheme(this.themeStudioBootProfile())"),0,"[MIOOST][T056][no mount theme rewrite]")
 	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","applyPersistedThemeStudioProfile();"),0,"[MIOOST][T056][no localstorage theme first paint]")
 	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","applyBootThemeDefaults();"),0,"[MIOOST][T056][no js theme first paint]")
 	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","if (!this.requiresSignin) this.themeStudioLoadRemote"),0,"[MIOOST][T056][no preauth theme load]")
@@ -1167,6 +1170,7 @@ T056
 	DO EQ^MIOTASSERT($GET(STATE2("themeMode")),"dark","[MIOOST][T056][persisted mode]")
 	DO EQ^MIOTASSERT($GET(STATE2("density")),"compact","[MIOOST][T056][persisted density]")
 	DO OK^MIOTASSERT(STYLE2["#ffb087","[MIOOST][T056][persisted style]")
+	DO OK^MIOTASSERT(STYLE2["url('/api/mioos/fs/blob?id=","[MIOOST][T056][persisted wallpaper first paint]")
 	QUIT
 	;
 	;	;
