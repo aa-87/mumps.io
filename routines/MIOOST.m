@@ -54,6 +54,7 @@ MIOOST ; MIOOS tests
 	DO T057
 	DO T058
 	DO T060
+	DO T061
 	QUIT
 	;
 RESET
@@ -1238,4 +1239,21 @@ T060
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_wm.js","createWindowForApp(app"),"[MIOOST][T060][dynamic start menu window]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-start-entry-vue.is-selected"),"[MIOOST][T060][start menu selection css]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","--start-menu-max-height"),"[MIOOST][T060][start menu overflow css]")
+	QUIT
+	;
+T061
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","themeStudioOpenSession"),"[MIOOST][T061][customize open session]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","themeStudioCancel"),"[MIOOST][T061][customize cancel method]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","themeStudioPersistActiveRemote"),"[MIOOST][T061][customize remote persistence]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","themeStudioServerProfile"),"[MIOOST][T061][customize server profile]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","themeStudioConfigFromServerProfile"),"[MIOOST][T061][customize boot profile mapping]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","themeStudioSetUploadedAsset"),"[MIOOST][T061][customize uploaded asset apply]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","themeStudioUploadFallbackDataUrl"),"[MIOOST][T061][customize upload fallback]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","themeStudioLoadRemote: function (key)"),"[MIOOST][T061][theme load post method]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","method: 'POST'"),"[MIOOST][T061][theme api post]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","vm.themeStudioOpenSession"),"[MIOOST][T061][theme studio session ui]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","vm.themeStudioCancel()"),"[MIOOST][T061][theme studio cancel ui]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","Upload wallpaper"),"[MIOOST][T061][theme studio wallpaper upload ui]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","themeStudioCreateNewTheme"),0,"[MIOOST][T061][no dead theme create button]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","themeStudioDeleteCustomTheme"),0,"[MIOOST][T061][no dead theme delete button]")
 	QUIT

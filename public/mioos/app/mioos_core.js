@@ -1215,6 +1215,16 @@
             store.themes[id] = this.themeStudioNormalizeConfig(presets[id]);
             store.order.push(id);
           }.bind(this));
+          var bootProfile = this.themeStudioBootProfile ? this.themeStudioBootProfile() : null;
+          if (bootProfile) {
+            var bootTheme = this.themeStudioConfigFromServerProfile(bootProfile);
+            if (bootTheme && bootTheme.id) {
+              store.themes[bootTheme.id] = bootTheme;
+              if (store.order.indexOf(bootTheme.id) < 0) store.order.push(bootTheme.id);
+              if (!bootTheme.locked && store.customThemes.indexOf(bootTheme.id) < 0) store.customThemes.push(bootTheme.id);
+              store.activeThemeId = bootTheme.id;
+            }
+          }
           try { rawCustom = window.localStorage.getItem(this.themeStudioProfilesKey()); } catch (err) { rawCustom = ''; }
           try { parsedCustom = JSON.parse(rawCustom || '[]'); } catch (err2) { parsedCustom = []; }
           if (Array.isArray(parsedCustom)) {
@@ -1699,7 +1709,7 @@
             if (store.order.indexOf(parsedApplied.id) < 0) store.order.push(parsedApplied.id);
             if (!parsedApplied.locked && store.customThemes.indexOf(parsedApplied.id) < 0) store.customThemes.push(parsedApplied.id);
             store.activeThemeId = parsedApplied.id;
-          } else {
+          } else if (!store.activeThemeId) {
             store.activeThemeId = 'glow';
           }
           this.themeStudioStore = store;
@@ -2064,27 +2074,54 @@
         themeStudioFontScaleValue: function () {
           return parseInt(this.themeStudioTextValue('--font-size-ui', '12px'), 10) || 12;
         },
+        themeStudioSetUploadedAsset: function (path, url, meta) {
+          var store = this.initThemeStudioStore();
+          if (!url) return;
+          store.uploadStatus = 'uploaded';
+          this.themeStudioUpdateField(path, url);
+          if (path === 'wallpaperUrl') this.themeStudioUpdateField('wallpaperPreset', 'custom-upload');
+          if (meta && meta.assetId) this.themeStudioUpdateField((path === 'wallpaperUrl' ? 'wallpaperAssetId' : path.replace(/Url$/, 'AssetId')), meta.assetId);
+        },
+        themeStudioUploadFallbackDataUrl: function (path, file) {
+          var self = this;
+          return new Promise(function (resolve, reject) {
+            var reader = new FileReader();
+            reader.onload = function () {
+              self.themeStudioSetUploadedAsset(path, reader.result || '', { local: true });
+              resolve(reader.result || '');
+            };
+            reader.onerror = function () { reject(reader.error || new Error('file_read_failed')); };
+            reader.readAsDataURL(file);
+          });
+        },
         themeStudioUploadField: function (path, event) {
           var self = this;
           var file = event && event.target && event.target.files && event.target.files[0];
-          var form, route, kind;
-          if (!file) return;
+          var form, route, kind, store;
+          if (!file) return Promise.resolve();
+          store = this.initThemeStudioStore();
           if (file.type && file.type.indexOf('image/') !== 0) {
             this.showAlert('Theme Studio', 'Please choose an image file.');
-            event.target.value = '';
-            return;
+            if (event && event.target) event.target.value = '';
+            return Promise.resolve();
           }
           route = (((this.boot || {}).routes || {}).themeAssetUpload) || '/api/mioos/theme-asset/upload';
           kind = path.indexOf('loginScreenConfig.avatarUrl') === 0 ? 'login-avatar' : (path.indexOf('loginScreenConfig.warningImageUrl') === 0 ? 'login-warning' : (path.indexOf('loginScreenConfig.') === 0 ? 'login-wallpaper' : 'wallpaper'));
+          store.uploadStatus = 'uploading';
           form = new FormData();
           form.append('kind', kind);
           form.append('file', file, file.name || 'image.bin');
-          fetch(route, { method: 'POST', body: form, credentials: 'same-origin' }).then(function (res) { return res.json().then(function (obj) { return { ok: res.ok, obj: obj || {} }; }); }).then(function (payload) {
+          return fetch(route, { method: 'POST', body: form, credentials: 'same-origin' }).then(function (res) { return res.json().then(function (obj) { return { ok: res.ok, obj: obj || {} }; }); }).then(function (payload) {
             if (!payload.ok || !payload.obj || !payload.obj.ok) throw new Error((payload.obj && (payload.obj.detail || payload.obj.error)) || 'upload_failed');
-            self.themeStudioUpdateField(path, payload.obj.url || '');
-            if (path === 'wallpaperUrl') self.themeStudioUpdateField('wallpaperPreset', 'custom-upload');
+            self.themeStudioSetUploadedAsset(path, payload.obj.url || '', { assetId: payload.obj.assetId || payload.obj.id || '', kind: payload.obj.kind || kind });
+            self.pushNotification('Theme Studio', 'Image uploaded.');
           }).catch(function (err) {
-            self.showAlert('Theme Studio', 'Image upload failed: ' + (err && err.message ? err.message : 'upload_failed'));
+            store.uploadStatus = 'local-preview';
+            return self.themeStudioUploadFallbackDataUrl(path, file).then(function () {
+              self.pushNotification('Theme Studio', 'Image preview applied locally. Save after signing in to persist it on the server.');
+            }).catch(function () {
+              self.showAlert('Theme Studio', 'Image upload failed: ' + (err && err.message ? err.message : 'upload_failed'));
+            });
           }).finally(function () {
             if (event && event.target) event.target.value = '';
           });
@@ -2287,11 +2324,118 @@
         activeLoginPrivacyNotice: function () {
           return (((this.activeLoginScreenConfig() || {}).privacyNotice) || '');
         },
+        themeStudioBootProfile: function () {
+          return ((((this.boot || {}).desktop || {}).activeThemeProfile) || null);
+        },
+        themeStudioConfigFromServerProfile: function (profile) {
+          var src = profile || {};
+          var cfg = src.themeConfig || src.config || src;
+          var id = src.presetKey || src.id || src.key || src.family || 'glow';
+          var mapped = this.themeStudioNormalizeConfig(Object.assign({}, cfg, {
+            id: cfg.id || id,
+            name: cfg.name || src.name || id,
+            sourceId: cfg.sourceId || src.family || src.sourceId || id,
+            darkEnabled: (src.mode || cfg.mode || '') === 'dark' || !!cfg.darkEnabled,
+            cssVars: Object.assign({}, cfg.cssVars || {}, src.cssVars || {}, src.colors || {}),
+            wallpaperUrl: cfg.wallpaperUrl || (((src.desktop || {}).wallpaperUrl) || ''),
+            wallpaperFit: cfg.wallpaperFit || (((src.desktop || {}).wallpaperFit) || 'cover'),
+            wallpaperPreset: cfg.wallpaperPreset || (((src.desktop || {}).wallpaperPreset) || 'custom-upload'),
+            taskbarConfig: Object.assign({}, cfg.taskbarConfig || {}, src.taskbarConfig || {}),
+            startMenuConfig: Object.assign({}, cfg.startMenuConfig || {}, src.startMenuConfig || {}),
+            loginScreenConfig: Object.assign({}, cfg.loginScreenConfig || {}, src.loginScreenConfig || {}),
+            mobileConfig: Object.assign({}, cfg.mobileConfig || {}, src.mobileConfig || {})
+          }));
+          if (((src.appearance || {}).accent) && mapped.cssVars) mapped.cssVars['--accent'] = src.appearance.accent;
+          mapped.locked = false;
+          return mapped;
+        },
+        themeStudioServerProfile: function (theme) {
+          var target = this.themeStudioNormalizeConfig(theme || this.themeStudioActiveTheme() || {});
+          var mode = target.darkEnabled ? 'dark' : 'light';
+          return {
+            key: target.id,
+            id: target.id,
+            name: target.name || target.id,
+            presetKey: target.id,
+            family: target.sourceId || target.id,
+            mode: mode,
+            density: ((((this.boot || {}).desktop || {}).density) || 'comfortable'),
+            appearance: { accent: ((target.cssVars || {})['--accent']) || '', density: ((((this.boot || {}).desktop || {}).density) || 'comfortable') },
+            colors: this.themeStudioClone(target.cssVars || {}),
+            cssVars: this.themeStudioClone(target.cssVars || {}),
+            desktop: { wallpaperPreset: target.wallpaperPreset || 'aurora', wallpaperUrl: target.wallpaperUrl || '', wallpaperFit: target.wallpaperFit || 'cover' },
+            taskbarConfig: this.themeStudioClone(target.taskbarConfig || {}),
+            startMenuConfig: this.themeStudioClone(target.startMenuConfig || {}),
+            loginScreenConfig: this.themeStudioClone(target.loginScreenConfig || {}),
+            mobileConfig: this.themeStudioClone(target.mobileConfig || {}),
+            themeConfig: this.themeStudioClone(target)
+          };
+        },
+        themeStudioOpenSession: function () {
+          var store = this.initThemeStudioStore();
+          store.sessionSnapshot = this.themeStudioClone(this.themeStudioActiveTheme() || {});
+          store.sessionThemes = this.themeStudioClone(store.themes || {});
+          store.sessionOrder = (store.order || []).slice(0);
+          store.sessionCustomThemes = (store.customThemes || []).slice(0);
+          store.sessionActiveThemeId = store.activeThemeId || '';
+          store.saveStatus = '';
+          store.uploadStatus = '';
+          return store.sessionSnapshot;
+        },
+        themeStudioCloseWindow: function () {
+          var target = (this.windows || []).find(function (win) { return win && (win.appKey === 'customize' || win.appKey === 'theme-studio' || win.kind === 'customize'); });
+          if (target && this.closeWindow) this.closeWindow(target.id);
+        },
+        themeStudioCancel: function () {
+          var store = this.initThemeStudioStore();
+          var snap = store.sessionSnapshot;
+          if (store.sessionThemes) {
+            store.themes = this.themeStudioClone(store.sessionThemes || {});
+            store.order = (store.sessionOrder || []).slice(0);
+            store.customThemes = (store.sessionCustomThemes || []).slice(0);
+            store.activeThemeId = store.sessionActiveThemeId || ((snap && snap.id) || 'glow');
+          } else if (snap && snap.id) {
+            store.themes[snap.id] = this.themeStudioNormalizeConfig(snap);
+            if ((store.order || []).indexOf(snap.id) < 0) store.order.push(snap.id);
+            store.activeThemeId = snap.id;
+          }
+          if (store.activeThemeId && store.themes[store.activeThemeId]) this.applyThemeStudioConfig(store.themes[store.activeThemeId], { silent: true, persist: false });
+          this.themeStudioPersistCustomThemes(true);
+          this.themeStudioCloseWindow();
+        },
+        themeStudioPersistActiveRemote: function (theme, activate) {
+          var target = this.themeStudioNormalizeConfig(theme || this.themeStudioActiveTheme() || {});
+          var payload = { key: target.id, activate: activate === false ? 0 : 1, profile: this.themeStudioServerProfile(target) };
+          if (this.requiresSignin) return Promise.resolve({ ok: 1, skipped: 'signin_required' });
+          if (!this.themeStudioSaveRemote) return Promise.resolve({ ok: 0, error: 'theme_save_missing' });
+          return this.themeStudioSaveRemote(payload);
+        },
+        themeStudioApplyToDesktop: function (id) {
+          var target = this.themeStudioThemeById(id || ((this.themeStudioStore || {}).activeThemeId));
+          var self = this;
+          if (!target) return Promise.resolve();
+          this.applyThemeStudioConfig(target, { silent: true, persist: true });
+          this.themeStudioPersistCustomThemes(true);
+          return this.themeStudioPersistActiveRemote(target, true).then(function () {
+            self.themeStudioOpenSession();
+            self.pushNotification('Theme Studio', (target.name || 'Theme') + ' applied.');
+          }).catch(function (err) {
+            self.showAlert('Theme Studio', 'Theme applied locally, but server save failed: ' + ((err && err.message) || 'theme_save_failed'));
+          });
+        },
         themeStudioSaveCustomTheme: function () {
           var target = this.themeStudioEditableTheme();
-          if (!target) return;
+          var self = this;
+          if (!target) return Promise.resolve();
           this.themeStudioPersistCustomThemes(true);
-          this.applyThemeStudioConfig(target, { silent: false, persist: true });
+          this.applyThemeStudioConfig(target, { silent: true, persist: true });
+          return this.themeStudioPersistActiveRemote(target, true).then(function () {
+            self.themeStudioOpenSession();
+            self.pushNotification('Theme Studio', (target.name || 'Theme') + ' saved.');
+            self.themeStudioCloseWindow();
+          }).catch(function (err) {
+            self.showAlert('Theme Studio', 'Theme saved locally, but server save failed: ' + ((err && err.message) || 'theme_save_failed'));
+          });
         },
         themeStudioPreviewRootStyle: function () {
           var active = this.themeStudioActiveTheme();
@@ -2397,13 +2541,18 @@
             { key: 'ember-panel', title: 'Ember Panel' }
           ]);
         },
-        themeStudioLoadRemote: function () {
+        themeStudioLoadRemote: function (key) {
           var route = (((this.boot || {}).routes || {}).themeLoad) || '/api/mioos/theme/load';
-          return fetch(route, { credentials: 'same-origin' }).then(function (res) { return res.json(); });
+          var body = key ? { key: key } : {};
+          return fetch(route, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(function (res) {
+            return res.json().then(function (obj) { if (!res.ok) throw new Error((obj && (obj.detail || obj.error)) || 'theme_load_failed'); return obj || {}; });
+          });
         },
         themeStudioSaveRemote: function (payload) {
           var route = (((this.boot || {}).routes || {}).themeSave) || '/api/mioos/theme/save';
-          return fetch(route, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload || {}) }).then(function (res) { return res.json(); });
+          return fetch(route, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload || {}) }).then(function (res) {
+            return res.json().then(function (obj) { if (!res.ok || (obj && obj.ok === 0)) throw new Error((obj && (obj.detail || obj.error)) || 'theme_save_failed'); return obj || {}; });
+          });
         },
         setShellTheme: function (profile) {
           this.appliedThemeProfile = profile || (((this.boot || {}).desktop || {}).activeThemeProfile) || null; /* desktop.activeThemeProfile */

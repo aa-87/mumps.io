@@ -316,6 +316,9 @@
 
       app.component('mioos-surface-theme', {
         props: ['window'],
+        mounted: function () {
+          if (this.vm.themeStudioOpenSession) this.vm.themeStudioOpenSession();
+        },
         computed: {
           vm: function () { return root(this); },
           store: function () { return this.vm.initThemeStudioStore(); },
@@ -339,12 +342,9 @@
                   <span>Refine shell chrome, wallpapers, taskbar, start menu, and login visuals with live desktop and mobile previews.</span>
                 </div>
                 <div class="mioos-theme-studio-toolbar-actions">
-                  <select :value="(activeTheme && activeTheme.id) || ''" @change="vm.themeStudioActivate($event.target.value, { persist: false, silent: true })">
+                  <label class="mioos-theme-current-select-vue"><span>Theme</span><select :value="(activeTheme && activeTheme.id) || ''" @change="vm.themeStudioActivate($event.target.value, { persist: false, silent: true })">
                     <option v-for="theme in themeList" :key="theme.id" :value="theme.id">[[ theme.name ]]</option>
-                  </select>
-                  <button type="button" class="mioos-btn" @click="vm.themeStudioCreateNewTheme('New Theme')">New theme</button>
-                  <button type="button" class="mioos-btn" @click="vm.themeStudioRenameActiveTheme()">Rename</button>
-                  <button type="button" class="mioos-btn is-danger" :disabled="activeTheme.locked" @click="vm.themeStudioDeleteCustomTheme(activeTheme.id)">Delete</button>
+                  </select></label>
                 </div>
               </header>
 
@@ -635,9 +635,9 @@
               </div>
 
               <footer class="mioos-theme-studio-footer-vue">
-                <div class="mioos-theme-studio-footer-copy-vue">These actions apply to the full theme editor window and preview surface.</div>
+                <div class="mioos-theme-studio-footer-copy-vue">Live preview updates immediately. Apply writes the current theme to the desktop; Save persists and closes.</div>
                 <div class="mioos-theme-studio-footer-actions-vue">
-                  <button type="button" class="mioos-btn" @click="vm.themeStudioResetToBase()">Reset</button>
+                  <button type="button" class="mioos-btn" @click="vm.themeStudioCancel()">Cancel</button>
                   <button type="button" class="mioos-btn" @click="vm.themeStudioApplyToDesktop(activeTheme.id)">Apply</button>
                   <button type="button" class="mioos-btn is-primary" @click="vm.themeStudioSaveCustomTheme()">Save</button>
                 </div>

@@ -2293,3 +2293,29 @@ button:disabled { cursor: default; opacity: .55; }
   .mioos-start-body-vue { grid-template-columns: 1fr; }
   .mioos-start-list-vue, .mioos-start-side-vue { max-height: 46vh; }
 }
+
+/* ROI 6 — Customize wiring refinements */
+.mioos-theme-current-select-vue {
+  display: grid;
+  grid-template-columns: auto minmax(180px, 260px);
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--theme-field-text, #10243d);
+  font-size: 12px;
+}
+.mioos-theme-current-select-vue span {
+  font-weight: 600;
+}
+.mioos-theme-current-select-vue select {
+  width: 100%;
+}
+.mioos-theme-studio-footer-actions-vue .mioos-btn {
+  min-width: 84px;
+}
+@media (max-width: 768px) {
+  .mioos-theme-current-select-vue {
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+}
