@@ -572,6 +572,74 @@
       explorerCanPreviewInline: function (item) {
         return detectTextLike(item) || detectImageLike(item) || detectAudioLike(item) || detectVideoLike(item);
       },
+      explorerDefaultColumns: function () {
+        return [
+          { key: 'name', label: 'Name', width: 280, minWidth: 160 },
+          { key: 'type', label: 'Type', width: 140, minWidth: 96 },
+          { key: 'size', label: 'Size', width: 96, minWidth: 76 },
+          { key: 'modified', label: 'Modified', width: 158, minWidth: 118 }
+        ];
+      },
+      explorerDetailsColumns: function (state) {
+        var existing = Array.isArray((state || {}).detailsColumns) ? state.detailsColumns : [];
+        var map = {};
+        var defaults = this.explorerDefaultColumns();
+        existing.forEach(function (column) {
+          if (column && column.key) map[column.key] = column;
+        });
+        defaults.forEach(function (column, index) {
+          var current = map[column.key] || {};
+          defaults[index] = Object.assign({}, column, {
+            label: current.label || column.label,
+            width: Math.max(+(current.minWidth || column.minWidth || 72), +(current.width || column.width || 120)),
+            minWidth: +(current.minWidth || column.minWidth || 72)
+          });
+        });
+        if (state) state.detailsColumns = defaults;
+        return defaults;
+      },
+      explorerColumnStyle: function (column) {
+        var width = Math.max(+((column || {}).minWidth || 72), +((column || {}).width || 120));
+        return { width: width + 'px' };
+      },
+      explorerColumnHeaderStyle: function (column) {
+        var width = Math.max(+((column || {}).minWidth || 72), +((column || {}).width || 120));
+        return { width: width + 'px', minWidth: width + 'px', maxWidth: width + 'px' };
+      },
+      explorerColumnValue: function (item, key) {
+        if (key === 'type') return this.explorerItemTypeLabel(item);
+        if (key === 'size') return this.explorerFormatSize(item);
+        if (key === 'modified') return (item && (item.modifiedLabel || item.modifiedAt || item.mtime || item.updated)) || '';
+        return item && (item.name || item.title || '');
+      },
+      explorerColumnResizeClass: function (state, column) {
+        return { 'is-resizing': !!((state || {}).resizingColumn && (column || {}).key === (state || {}).resizingColumn) };
+      },
+      explorerBeginColumnResize: function (windowId, column, event) {
+        var self = this;
+        var win = this.windows.find(function (entry) { return entry.id === windowId; });
+        var state = this.ensureExplorerWindowState(win);
+        var columns = this.explorerDetailsColumns(state);
+        var target = columns.find(function (entry) { return entry.key === ((column || {}).key || ''); });
+        var startX = event && event.clientX;
+        var startWidth = +(target && target.width);
+        var minWidth = +(target && target.minWidth) || 72;
+        if (!state || !target || !event) return;
+        state.resizingColumn = target.key;
+        function onMove(moveEvent) {
+          var nextWidth = Math.max(minWidth, startWidth + ((moveEvent.clientX || startX) - startX));
+          target.width = nextWidth;
+          state.detailsColumns = columns.slice();
+        }
+        function onUp() {
+          state.resizingColumn = null;
+          document.removeEventListener('mousemove', onMove, true);
+          document.removeEventListener('mouseup', onUp, true);
+        }
+        document.addEventListener('mousemove', onMove, true);
+        document.addEventListener('mouseup', onUp, true);
+        if (event.preventDefault) event.preventDefault();
+      },
       ensureExplorerWindowState: function (win) {
         if (!win) return null;
         if (!win.explorerState) {
@@ -588,6 +656,8 @@
             viewMode: 'details',
             sortKey: 'name',
             sortDir: 'asc',
+            detailsColumns: this.explorerDefaultColumns ? this.explorerDefaultColumns() : [],
+            resizingColumn: null,
             searchTerm: '',
             history: [],
             future: [],
@@ -616,6 +686,7 @@
         var win = this.windows.find(function (item) { return item.id === windowId; });
         var state = this.ensureExplorerWindowState(win);
         if (!win || !state || !folderId || !this.command) return Promise.resolve();
+        this.explorerDetailsColumns(state);
         state.loading = true;
         state.error = '';
         return this.command('fs.list', { id: folderId, parent: folderId }).then(function (msg) {
@@ -893,9 +964,17 @@
       openExplorerContextMenu: function (windowId, item, event) {
         var win = this.windows.find(function (entry) { return entry.id === windowId; });
         var state = this.ensureExplorerWindowState(win);
+        var targetType = item ? 'item' : 'blank';
         if (!state || !event) return;
         if (item) this.selectExplorerItem(windowId, item);
-        state.contextMenu = { open: true, left: event.clientX || 0, top: event.clientY || 0, targetKey: item ? (item.id || item.key || '') : '', targetType: item ? 'item' : 'blank' };
+        state.contextMenu = {
+          open: true,
+          left: event.clientX || 0,
+          top: event.clientY || 0,
+          targetKey: item ? (item.id || item.key || '') : '',
+          targetType: targetType,
+          targetKind: item ? String(item.kind || item.type || '').toLowerCase() : 'folder'
+        };
       },
       closeExplorerContextMenu: function (windowId) {
         var win = this.windows.find(function (entry) { return entry.id === windowId; });
@@ -904,7 +983,24 @@
       },
       explorerContextMenuStyle: function (state) {
         var menu = ((state || {}).contextMenu || {});
-        return { left: (menu.left || 0) + 'px', top: (menu.top || 0) + 'px' };
+        var width = 230;
+        var height = menu.targetType === 'item' ? 280 : 190;
+        var left = Math.max(4, Math.min(menu.left || 0, (window.innerWidth || 1024) - width - 8));
+        var top = Math.max(4, Math.min(menu.top || 0, (window.innerHeight || 768) - height - 8));
+        return { left: left + 'px', top: top + 'px' };
+      },
+      explorerContextIsItem: function (state) {
+        return !!((state || {}).selection && (((state || {}).contextMenu || {}).targetType === 'item'));
+      },
+      explorerContextIsFolder: function (state) {
+        var item = (state || {}).selection || {};
+        return this.explorerContextIsItem(state) && String(item.kind || item.type || '').toLowerCase() === 'folder';
+      },
+      explorerCanPaste: function (windowId) {
+        var win = this.windows.find(function (entry) { return entry.id === windowId; });
+        var state = this.ensureExplorerWindowState(win);
+        var clip = (state && state.clipboard) || this._mioosExplorerClipboard;
+        return !!(state && clip && clip.item && (clip.item.id || clip.item.key));
       },
       explorerContextOpen: function (windowId) {
         var win = this.windows.find(function (entry) { return entry.id === windowId; });
@@ -912,8 +1008,26 @@
         this.closeExplorerContextMenu(windowId);
         if (state && state.selection) this.explorerOpenItem(windowId, state.selection);
       },
-      explorerContextProperties: function (windowId) {
+      explorerOpenItemInNewWindow: function (windowId) {
+        var win = this.windows.find(function (entry) { return entry.id === windowId; });
+        var state = this.ensureExplorerWindowState(win);
+        var item = state && state.selection;
         this.closeExplorerContextMenu(windowId);
+        if (!item) return;
+        if (String(item.kind || item.type || '').toLowerCase() === 'folder' && this.openExplorerFolder) {
+          this.openExplorerFolder(item.id || item.key || item.folderId, item.name || item.title || 'Folder');
+          return;
+        }
+        this.explorerOpenItem(windowId, item);
+      },
+      explorerContextProperties: function (windowId) {
+        var win = this.windows.find(function (entry) { return entry.id === windowId; });
+        var state = this.ensureExplorerWindowState(win);
+        this.closeExplorerContextMenu(windowId);
+        if (state && state.selection && this.openFilePropertiesWindow) {
+          this.openFilePropertiesWindow(state.selection);
+          return;
+        }
         this.openFolderPropertiesWindow(windowId);
       },
       explorerCopySelected: function (windowId) {
@@ -924,18 +1038,31 @@
         this._mioosExplorerClipboard = state.clipboard;
         this.closeExplorerContextMenu(windowId);
       },
+      explorerCutSelected: function (windowId) {
+        var win = this.windows.find(function (entry) { return entry.id === windowId; });
+        var state = this.ensureExplorerWindowState(win);
+        if (!state || !state.selection) return;
+        state.clipboard = { op: 'move', item: clone(state.selection) };
+        this._mioosExplorerClipboard = state.clipboard;
+        this.closeExplorerContextMenu(windowId);
+      },
       explorerPasteIntoWindow: function (windowId) {
         var self = this;
         var win = this.windows.find(function (entry) { return entry.id === windowId; });
         var state = this.ensureExplorerWindowState(win);
         var clip = (state && state.clipboard) || this._mioosExplorerClipboard;
         var item = clip && clip.item;
+        var op = (clip && clip.op) === 'move' ? 'fs.move' : 'fs.copy';
         if (!state || !item || !this.command) return Promise.resolve();
         this.closeExplorerContextMenu(windowId);
-        return this.command('fs.copy', { id: item.id || item.key || '', parent: state.folderId }).then(function () {
+        return this.command(op, { id: item.id || item.key || '', parent: state.folderId }).then(function () {
+          if (op === 'fs.move') {
+            state.clipboard = null;
+            self._mioosExplorerClipboard = null;
+          }
           return self.refreshExplorerWindow(windowId).then(function () { if (self.refreshView) self.refreshView(); });
         }).catch(function (err) {
-          if (self.showAlert) self.showAlert(self.t('alerts.shellEventError.title', 'Explorer'), (err && err.message) || 'fs_copy_failed');
+          if (self.showAlert) self.showAlert(self.t('alerts.shellEventError.title', 'Explorer'), (err && err.message) || (op === 'fs.move' ? 'fs_move_failed' : 'fs_copy_failed'));
         });
       },
       /* MIOOST restored explorer helpers for classic folder surfaces and resilient uploads. */
@@ -957,6 +1084,23 @@
           out.push(entry && entry.file ? entry : { file: entry, name: entry && entry.name, size: entry && entry.size, type: entry && entry.type });
         }
         return out;
+      },
+      openFilePropertiesWindow: function (item) {
+        var target = clone(item || {});
+        var id = nextWindowId(this, 'win-file-properties');
+        this.windows.push({
+          id: id,
+          appKey: 'file-properties',
+          title: 'Properties - ' + (target.name || target.title || 'File'),
+          state: 'normal',
+          left: 240,
+          top: 140,
+          width: 420,
+          height: 340,
+          z: this.zCounter + 1,
+          meta: { file: target }
+        });
+        this.focusWindow(id);
       },
       openFolderPropertiesWindow: function (windowId, folder) {
         var source = this.windows.find(function (entry) { return entry.id === windowId; }) || {};
@@ -1610,13 +1754,14 @@
         var item = state && state.selection;
         var name;
         if (!item || !this.command) return Promise.resolve();
-        name = window.prompt(this.t('explorer.promptRename', 'Rename item'), item.name || item.title || '');
-        if (name === null) return Promise.resolve();
-        name = String(name || '').trim();
-        if (!name || name === (item.name || item.title || '')) return Promise.resolve();
-        return this.command('fs.rename', { id: item.id || item.key || '', name: name }).then(function () {
-          return self.refreshExplorerWindow(windowId).then(function () {
-            if (self.refreshView) self.refreshView();
+        return this.explorerShellInput(this.t('explorer.promptRename', 'Rename item'), item.name || item.title || '').then(function (nextName) {
+          if (nextName === null) return null;
+          name = String(nextName || '').trim();
+          if (!name || name === (item.name || item.title || '')) return null;
+          return self.command('fs.rename', { id: item.id || item.key || '', name: name }).then(function () {
+            return self.refreshExplorerWindow(windowId).then(function () {
+              if (self.refreshView) self.refreshView();
+            });
           });
         }).catch(function (err) {
           if (self.showAlert) self.showAlert(self.t('alerts.shellEventError.title', 'Explorer'), (err && err.message) || 'fs_rename_failed');
@@ -1628,12 +1773,14 @@
         var state = this.ensureExplorerWindowState(win);
         var item = state && state.selection;
         if (!item || !this.command) return Promise.resolve();
-        if (!window.confirm(this.t('explorer.confirmDelete', 'Delete the selected item?'))) return Promise.resolve();
-        return this.command('fs.delete', { id: item.id || item.key || '' }).then(function () {
-          state.selection = null;
-          state.preview = { title: '', content: '', mime: 'text/plain', imageSrc: '', mediaSrc: '', mediaKind: '' };
-          return self.refreshExplorerWindow(windowId).then(function () {
-            if (self.refreshView) self.refreshView();
+        return this.explorerShellConfirm(this.t('explorer.confirmDelete', 'Delete the selected item?')).then(function (confirmed) {
+          if (!confirmed) return null;
+          return self.command('fs.delete', { id: item.id || item.key || '' }).then(function () {
+            state.selection = null;
+            state.preview = { title: '', content: '', mime: 'text/plain', imageSrc: '', mediaSrc: '', mediaKind: '' };
+            return self.refreshExplorerWindow(windowId).then(function () {
+              if (self.refreshView) self.refreshView();
+            });
           });
         }).catch(function (err) {
           if (self.showAlert) self.showAlert(self.t('alerts.shellEventError.title', 'Explorer'), (err && err.message) || 'fs_delete_failed');
@@ -1646,15 +1793,18 @@
         var item = state && state.selection;
         var destination = '';
         if (!item || !this.command) return Promise.resolve();
-        destination = window.prompt(this.t('explorer.promptMove', 'Move selected item to folder path or id'), ((this.boot.vfs || {}).homeId || (this.boot.vfs || {}).rootId || 'root'));
-        if (destination === null) return Promise.resolve();
-        destination = String(destination || '').trim();
-        if (!destination) return Promise.resolve();
-        return this.command('fs.meta', { id: destination, path: destination }).then(function (msg) {
+        return this.explorerShellInput(this.t('explorer.promptMove', 'Move selected item to folder path or id'), ((this.boot.vfs || {}).homeId || (this.boot.vfs || {}).rootId || 'root')).then(function (nextDestination) {
+          if (nextDestination === null) return null;
+          destination = String(nextDestination || '').trim();
+          if (!destination) return null;
+          return self.command('fs.meta', { id: destination, path: destination });
+        }).then(function (msg) {
+          if (!msg) return null;
           var payload = payloadRoot(msg);
           var targetId = payload.id || destination;
           return self.command('fs.move', { id: item.id || item.key || '', parent: targetId });
-        }).then(function () {
+        }).then(function (moved) {
+          if (!moved) return null;
           state.selection = null;
           state.preview = { title: '', content: '', mime: 'text/plain', imageSrc: '', mediaSrc: '', mediaKind: '' };
           return self.refreshExplorerWindow(windowId).then(function () {

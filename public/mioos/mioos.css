@@ -2206,6 +2206,26 @@ button:disabled { cursor: default; opacity: .55; }
   background: linear-gradient(180deg, #fff, #dce8f7);
 }
 .mioos-explorer-listview th button { width: 100%; text-align: left; padding: 5px 8px; border: 0; background: transparent; color: inherit; }
+.mioos-explorer-listview.is-column-resizing { cursor: col-resize; user-select: none; }
+.mioos-explorer-listview th { position: sticky; }
+.mioos-explorer-column-button { display: block; padding-right: 16px !important; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mioos-explorer-column-resizer {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  width: 7px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 4;
+}
+.mioos-explorer-column-resizer:hover,
+.mioos-explorer-listview th.is-resizing .mioos-explorer-column-resizer {
+  background: color-mix(in srgb, var(--accent) 28%, transparent 72%);
+}
+.mioos-explorer-cell-name,
+.mioos-explorer-cell-type,
+.mioos-explorer-cell-size,
+.mioos-explorer-cell-modified { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mioos-explorer-listview td {
   padding: 4px 8px;
   border-bottom: 1px solid rgba(15,23,42,.06);
@@ -2274,6 +2294,7 @@ button:disabled { cursor: default; opacity: .55; }
   border-radius: 2px;
 }
 .mioos-explorer-context-menu button:hover { background: var(--menu-hover); }
+.mioos-explorer-context-menu button:disabled { opacity: .48; background: transparent; cursor: default; }
 @media (max-width: 900px) {
   .mioos-explorer-layout { grid-template-columns: 148px minmax(0, 1fr); }
   .mioos-explorer-preview-pane { display: none; }
