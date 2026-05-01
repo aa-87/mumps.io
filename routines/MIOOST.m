@@ -53,6 +53,7 @@ MIOOST ; MIOOS tests
 	DO T056
 	DO T057
 	DO T058
+	DO T059
 	DO T060
 	DO T061
 	QUIT
@@ -1258,6 +1259,18 @@ T058
 	QUIT
 	;
 	;	;
+T059
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","color-mix(in srgb, var(--titlebar-bg)"),0,"[MIOOST][T059][titlebar background valid]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-modal-backdrop"),"[MIOOST][T059][custom modal css]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-modal-dialog"),"[MIOOST][T059][custom modal ui]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","openModalDialog: function"),"[MIOOST][T059][custom modal method]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","return this.explorerShellInput"),"[MIOOST][T059][folder dialog custom]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","findOpenDesktopGridSlot"),"[MIOOST][T059][new icon open slot]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","app.component('mioos-surface-viewer'"),"[MIOOST][T059][viewer component]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-viewer-pre"),"[MIOOST][T059][text viewer]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-viewer-media"),"[MIOOST][T059][media viewer]")
+	QUIT
+	;
 T060
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","startMenuAppCatalogItems"),"[MIOOST][T060][start menu app catalog]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","startMenuFilesystemItems"),"[MIOOST][T060][start menu filesystem]")

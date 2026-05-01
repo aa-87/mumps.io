@@ -64,6 +64,13 @@
               '<span>[[ vm.alertMessage ]]</span>' +
               '<button type="button" @click="vm.dismissAlert">[[ vm.t(\'alert.dismiss\') ]]</button>' +
             '</div>' +
+            '<section v-if="vm.dialogState && vm.dialogState.open" class="mioos-modal-backdrop" role="presentation" @mousedown.self="vm.cancelDialog()">' +
+              '<form class="mioos-modal-dialog" role="dialog" aria-modal="true" aria-label="MIOOS dialog" @submit.prevent="vm.submitDialog()" @keydown.esc.prevent="vm.cancelDialog()">' +
+                '<header class="mioos-modal-head"><strong>[[ vm.dialogState.title || \'MIOOS\' ]]</strong></header>' +
+                '<div class="mioos-modal-body"><p>[[ vm.dialogState.message ]]</p><input v-if="vm.dialogState.type !== \'confirm\'" class="mioos-modal-input" v-model="vm.dialogState.value" type="text" autocomplete="off"></div>' +
+                '<footer class="mioos-modal-actions"><button type="button" class="mioos-btn" @click="vm.cancelDialog()">[[ vm.dialogState.cancelText || vm.t(\'dialog.cancel\') ]]</button><button type="submit" class="mioos-btn is-primary">[[ vm.dialogState.okText || vm.t(\'dialog.confirm\') ]]</button></footer>' +
+              '</form>' +
+            '</section>' +
             '<section v-if="vm.requiresSignin" class="mioos-auth-overlay" aria-hidden="false">' +
               '<div class="mioos-auth-card" role="dialog" aria-modal="true" :aria-label="vm.boot.product.name">' +
                 '<div class="mioos-auth-head"><strong>[[ vm.boot.product.name ]]</strong><span>[[ vm.boot.product.subtitle ]]</span></div>' +
@@ -661,6 +668,43 @@
             </div>
           </div>
 `
+      });
+
+      app.component('mioos-surface-viewer', {
+        props: ['window'],
+        computed: {
+          vm: function () { return root(this); },
+          view: function () { return (this.window && this.window.fileView) || {}; },
+          meta: function () { return (this.window && this.window.meta) || {}; },
+          viewerKind: function () {
+            var app = String((this.window || {}).appKey || '').toLowerCase();
+            var mime = String((this.view || {}).mime || (this.meta || {}).mime || '').toLowerCase();
+            if (app === 'image-viewer' || mime.indexOf('image/') === 0) return 'image';
+            if (app === 'media-viewer' || mime.indexOf('audio/') === 0 || mime.indexOf('video/') === 0) return 'media';
+            if (app === 'pdf-viewer' || mime === 'application/pdf') return 'pdf';
+            if (app === 'structured-viewer') return 'structured';
+            return 'text';
+          },
+          mediaKind: function () {
+            var mime = String((this.view || {}).mime || (this.meta || {}).mime || '').toLowerCase();
+            return (this.view && this.view.mediaKind) || (mime.indexOf('video/') === 0 ? 'video' : 'audio');
+          },
+          fileTitle: function () { return (this.meta && this.meta.fileName) || (this.window && this.window.title) || 'File'; },
+          mimeLabel: function () { return (this.view && this.view.mime) || (this.meta && this.meta.mime) || 'application/octet-stream'; }
+        },
+        template: `
+          <div class="mioos-surface mioos-surface-viewer" :class="'is-' + viewerKind">
+            <div class="mioos-viewer-toolbar"><div><strong>[[ fileTitle ]]</strong><span>[[ mimeLabel ]]</span></div><button type="button" class="mioos-btn" @click="vm.downloadViewerFile(window)">Download</button></div>
+            <div class="mioos-viewer-body">
+              <div v-if="view.loading" class="mioos-viewer-empty">Loading file…</div>
+              <div v-else-if="view.error" class="mioos-viewer-empty is-error">[[ view.error ]]</div>
+              <pre v-else-if="viewerKind === 'text' || viewerKind === 'structured'" class="mioos-viewer-pre">[[ view.content ]]</pre>
+              <img v-else-if="viewerKind === 'image' && view.content" class="mioos-viewer-image" :src="view.content" :alt="fileTitle">
+              <div v-else-if="viewerKind === 'media' && view.content" class="mioos-viewer-media-wrap"><video v-if="mediaKind === 'video'" class="mioos-viewer-media" :src="view.content" controls playsinline preload="metadata"></video><audio v-else class="mioos-viewer-media" :src="view.content" controls preload="metadata"></audio></div>
+              <iframe v-else-if="viewerKind === 'pdf' && view.content" class="mioos-viewer-frame" :src="view.content" title="PDF preview"></iframe>
+              <div v-else class="mioos-viewer-empty">No preview is available for this file.</div>
+            </div>
+          </div>`
       });
 
       app.component('mioos-surface-transfers', {

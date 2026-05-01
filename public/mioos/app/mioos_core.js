@@ -85,7 +85,8 @@
             selectedKey: '',
             drag: { armed: false, active: false, moved: false, key: '', startX: 0, startY: 0, left: 0, top: 0 },
             contextMenu: { open: false, type: 'desktop', key: '', left: 0, top: 0 }
-          }
+          },
+          dialogState: { open: false, type: 'input', title: '', message: '', value: '', okText: '', cancelText: '', resolver: null }
         };
       },
       computed: {
@@ -208,6 +209,39 @@
           if (!this.desktopUi.iconSize) this.desktopUi.iconSize = 'medium';
           if (!this.desktopUi.sortMode) this.desktopUi.sortMode = 'manual';
           if (typeof this.desktopUi.selectedKey === 'undefined') this.desktopUi.selectedKey = '';
+        },
+        openModalDialog: function (options) {
+          var self = this;
+          options = options || {};
+          return new Promise(function (resolve) {
+            self.dialogState = {
+              open: true,
+              type: options.type || 'input',
+              title: options.title || 'MIOOS',
+              message: options.message || '',
+              value: options.value || '',
+              okText: options.okText || self.t('dialog.confirm', 'OK'),
+              cancelText: options.cancelText || self.t('dialog.cancel', 'Cancel'),
+              resolver: resolve
+            };
+            self.$nextTick(function () {
+              var node = document.querySelector('.mioos-modal-input');
+              if (node) { node.focus(); node.select(); }
+            });
+          });
+        },
+        submitDialog: function () {
+          var state = this.dialogState || {};
+          var resolve = state.resolver;
+          var value = state.type === 'confirm' ? true : state.value;
+          this.dialogState = { open: false, type: 'input', title: '', message: '', value: '', okText: '', cancelText: '', resolver: null };
+          if (resolve) resolve(value);
+        },
+        cancelDialog: function () {
+          var state = this.dialogState || {};
+          var resolve = state.resolver;
+          this.dialogState = { open: false, type: 'input', title: '', message: '', value: '', okText: '', cancelText: '', resolver: null };
+          if (resolve) resolve(state.type === 'confirm' ? false : null);
         },
         desktopContextMenuState: function () {
           this.normalizeDesktopUiState();
@@ -902,34 +936,84 @@
         desktopLayoutPayload: function () {
           return { iconSize: this.desktopUi.iconSize || 'medium', sortMode: this.desktopUi.sortMode || 'manual', positions: window.MIOOSState.deepClone(this.desktopUi.positions || {}) };
         },
+        desktopGridSlotKey: function (pos, metrics) {
+          metrics = metrics || this.desktopGridMetrics();
+          var left = isFinite(+((pos || {}).left)) ? +pos.left : 16;
+          var top = isFinite(+((pos || {}).top)) ? +pos.top : 16;
+          var col = Math.max(0, Math.round((left - 16) / Math.max(1, metrics.width || 96)));
+          var row = Math.max(0, Math.round((top - 16) / Math.max(1, metrics.height || 104)));
+          return col + ':' + row;
+        },
+        occupiedDesktopGridSlots: function (skipKey, metrics) {
+          var occupied = {};
+          var positions = ((this.desktopUi || {}).positions || {});
+          var entries = this.desktopRenderEntries ? this.desktopRenderEntries() : (this.desktopEntries || []);
+          var byKey = {};
+          metrics = metrics || this.desktopGridMetrics();
+          entries.forEach(function (entry) { if (entry && entry.key) byKey[entry.key] = 1; });
+          Object.keys(positions).forEach(function (key) {
+            var pos = positions[key];
+            if (key === skipKey || !byKey[key] || !pos || !isFinite(+pos.left) || !isFinite(+pos.top)) return;
+            occupied[this.desktopGridSlotKey(pos, metrics)] = 1;
+          }, this);
+          return occupied;
+        },
+        findOpenDesktopGridSlot: function (occupied, metrics, viewportHeight) {
+          var col = 0;
+          var row = 0;
+          var maxRows;
+          metrics = metrics || this.desktopGridMetrics();
+          viewportHeight = viewportHeight || this.desktopViewportHeight();
+          maxRows = Math.max(1, Math.floor(Math.max(1, viewportHeight - 16) / Math.max(1, metrics.height || 104)));
+          occupied = occupied || {};
+          while (occupied[col + ':' + row]) {
+            row += 1;
+            if (row >= maxRows) { row = 0; col += 1; }
+          }
+          occupied[col + ':' + row] = 1;
+          return { left: 16 + (col * metrics.width), top: 16 + (row * metrics.height) };
+        },
         ensureDesktopLayout: function () {
           var self = this;
           var metrics = this.desktopGridMetrics();
-          var col = 0;
-          var row = 0;
           var viewportHeight = this.desktopViewportHeight();
+          var entries = this.desktopRenderEntries ? this.desktopRenderEntries() : (this.desktopEntries || []);
+          var occupied = {};
+          var changed = false;
           if (!this.desktopUi.positions) this.desktopUi.positions = {};
-          (this.desktopRenderEntries ? this.desktopRenderEntries() : (this.desktopEntries || [])).forEach(function (entry) {
+          entries.forEach(function (entry) {
+            var pos, hasExplicitLeft, hasExplicitTop, left, top;
             if (!entry || !entry.key) return;
-            if (!self.desktopUi.positions[entry.key]) {
-              var hasExplicitLeft = entry.iconLeft !== undefined && entry.iconLeft !== null && entry.iconLeft !== '';
-              var hasExplicitTop = entry.iconTop !== undefined && entry.iconTop !== null && entry.iconTop !== '';
-              var left = hasExplicitLeft ? +entry.iconLeft : NaN;
-              var top = hasExplicitTop ? +entry.iconTop : NaN;
-              if (!(hasExplicitLeft && hasExplicitTop && isFinite(left) && isFinite(top) && left >= 0 && top >= 0)) {
-                left = 16 + (col * metrics.width);
-                top = 16 + (row * metrics.height);
-                row += 1;
-                if ((16 + ((row + 1) * metrics.height)) > viewportHeight) { row = 0; col += 1; }
-              }
-              self.desktopUi.positions[entry.key] = { left: left, top: top };
+            pos = self.desktopUi.positions[entry.key];
+            hasExplicitLeft = entry.iconLeft !== undefined && entry.iconLeft !== null && entry.iconLeft !== '';
+            hasExplicitTop = entry.iconTop !== undefined && entry.iconTop !== null && entry.iconTop !== '';
+            left = hasExplicitLeft ? +entry.iconLeft : NaN;
+            top = hasExplicitTop ? +entry.iconTop : NaN;
+            if ((!pos || !isFinite(+pos.left) || !isFinite(+pos.top)) && hasExplicitLeft && hasExplicitTop && isFinite(left) && isFinite(top) && left >= 0 && top >= 0) {
+              pos = { left: left, top: top };
+              self.desktopUi.positions[entry.key] = pos;
+              changed = true;
+            }
+            if (pos && isFinite(+pos.left) && isFinite(+pos.top)) occupied[self.desktopGridSlotKey(pos, metrics)] = 1;
+          });
+          entries.forEach(function (entry) {
+            var pos;
+            if (!entry || !entry.key) return;
+            pos = self.desktopUi.positions[entry.key];
+            if (!pos || !isFinite(+pos.left) || !isFinite(+pos.top)) {
+              self.desktopUi.positions[entry.key] = self.findOpenDesktopGridSlot(occupied, metrics, viewportHeight);
+              changed = true;
             }
           });
           Object.keys(this.desktopUi.positions).forEach(function (key) {
-            var exists = (self.desktopRenderEntries ? self.desktopRenderEntries() : (self.desktopEntries || [])).some(function (entry) { return entry.key === key; });
-            if (!exists) delete self.desktopUi.positions[key];
+            var exists = entries.some(function (entry) { return entry.key === key; });
+            if (!exists) { delete self.desktopUi.positions[key]; changed = true; }
           });
           this.sortDesktopEntries(this.desktopUi.sortMode || 'manual', true);
+          if (changed && this.socketConnected && this.persistDesktopLayout) {
+            window.clearTimeout(this._desktopLayoutPersistTimer);
+            this._desktopLayoutPersistTimer = window.setTimeout(this.persistDesktopLayout.bind(this), 120);
+          }
         },
         desktopIconStyle: function (entry) {
           var pos = ((this.desktopUi || {}).positions || {})[entry.key] || { left: 16, top: 16 };
@@ -1109,41 +1193,54 @@
         },
         desktopCreateFolder: function () {
           var self = this;
-          var name = window.prompt(this.t('explorer.promptNewFolder', 'New folder name'), this.t('explorer.defaultFolderName', 'New Folder'));
           this.closeDesktopContextMenu();
-          if (name === null) return Promise.resolve();
-          name = String(name || '').trim();
-          if (!name || !this.command) return Promise.resolve();
-          return this.command('fs.mkdir', { parent: this.desktopFolderId(), name: name }).then(function () { return self.refreshDesktopVfsViews(); }).catch(function (err) { self.showAlert('Desktop', (err && err.message) || 'fs_mkdir_failed'); });
+          if (!this.command) return Promise.resolve();
+          return this.inputDialog('Desktop', this.t('explorer.promptNewFolder', 'New folder name'), this.t('explorer.defaultFolderName', 'New Folder')).then(function (name) {
+            if (name === null) return null;
+            name = String(name || '').trim();
+            if (!name) return null;
+            return self.command('fs.mkdir', { parent: self.desktopFolderId(), name: name }).then(function () {
+              return self.refreshDesktopVfsViews().then(function () {
+                self.ensureDesktopLayout();
+                if (self.persistDesktopLayout) self.persistDesktopLayout();
+              });
+            });
+          }).catch(function (err) { self.showAlert('Desktop', (err && err.message) || 'fs_mkdir_failed'); });
         },
         desktopCreateTextFile: function () {
           var self = this;
-          var name = window.prompt('New text file name', 'New Text Document.txt');
           this.closeDesktopContextMenu();
-          if (name === null) return Promise.resolve();
-          name = String(name || '').trim();
-          if (!name || !this.command) return Promise.resolve();
-          return this.command('fs.write', { parent: this.desktopFolderId(), name: name, content: '', mime: 'text/plain' }).then(function () { return self.refreshDesktopVfsViews(); }).catch(function (err) { self.showAlert('Desktop', (err && err.message) || 'fs_write_failed'); });
+          if (!this.command) return Promise.resolve();
+          return this.inputDialog('Desktop', 'New text file name', 'New Text Document.txt').then(function (name) {
+            if (name === null) return null;
+            name = String(name || '').trim();
+            if (!name) return null;
+            return self.command('fs.write', { parent: self.desktopFolderId(), name: name, content: '', mime: 'text/plain' }).then(function () {
+              return self.refreshDesktopVfsViews().then(function () { self.ensureDesktopLayout(); if (self.persistDesktopLayout) self.persistDesktopLayout(); });
+            });
+          }).catch(function (err) { self.showAlert('Desktop', (err && err.message) || 'fs_write_failed'); });
         },
         desktopRenameSelected: function () {
           var self = this;
           var entry = this.desktopContextEntry();
-          var name;
           this.closeDesktopContextMenu();
           if (!entry || !this.desktopEntryIsVfs(entry) || !this.command) return Promise.resolve();
-          name = window.prompt(this.t('explorer.promptRename', 'Rename item'), entry.name || entry.title || '');
-          if (name === null) return Promise.resolve();
-          name = String(name || '').trim();
-          if (!name || name === (entry.name || entry.title || '')) return Promise.resolve();
-          return this.command('fs.rename', { id: entry.id || entry.key, name: name }).then(function () { return self.refreshDesktopVfsViews(); }).catch(function (err) { self.showAlert('Desktop', (err && err.message) || 'fs_rename_failed'); });
+          return this.inputDialog('Desktop', this.t('explorer.promptRename', 'Rename item'), entry.name || entry.title || '').then(function (name) {
+            if (name === null) return null;
+            name = String(name || '').trim();
+            if (!name || name === (entry.name || entry.title || '')) return null;
+            return self.command('fs.rename', { id: entry.id || entry.key, name: name }).then(function () { return self.refreshDesktopVfsViews(); });
+          }).catch(function (err) { self.showAlert('Desktop', (err && err.message) || 'fs_rename_failed'); });
         },
         desktopDeleteSelected: function () {
           var self = this;
           var entry = this.desktopContextEntry();
           this.closeDesktopContextMenu();
           if (!entry || !this.desktopEntryIsVfs(entry) || !this.command) return Promise.resolve();
-          if (!window.confirm(this.t('explorer.confirmDelete', 'Delete the selected item?'))) return Promise.resolve();
-          return this.command('fs.delete', { id: entry.id || entry.key }).then(function () { return self.refreshDesktopVfsViews(); }).catch(function (err) { self.showAlert('Desktop', (err && err.message) || 'fs_delete_failed'); });
+          return this.confirmDialog('Desktop', this.t('explorer.confirmDelete', 'Delete the selected item?')).then(function (ok) {
+            if (!ok) return null;
+            return self.command('fs.delete', { id: entry.id || entry.key }).then(function () { return self.refreshDesktopVfsViews(); });
+          }).catch(function (err) { self.showAlert('Desktop', (err && err.message) || 'fs_delete_failed'); });
         },
         themeStudioStorageKey: function () {
           return 'mioos.themeStudio.active.v2';
@@ -2567,11 +2664,10 @@
           return item;
         },
         inputDialog: function (title, message, value) {
-          var answer = window.prompt(message || title || 'Input', value || '');
-          return Promise.resolve(answer);
+          return this.openModalDialog({ type: 'input', title: title || 'MIOOS', message: message || title || 'Input', value: value || '', okText: this.t('dialog.confirm', 'OK'), cancelText: this.t('dialog.cancel', 'Cancel') });
         },
         confirmDialog: function (title, message) {
-          return Promise.resolve(window.confirm(message || title || 'Continue?'));
+          return this.openModalDialog({ type: 'confirm', title: title || 'MIOOS', message: message || title || 'Continue?', okText: this.t('dialog.confirm', 'Confirm'), cancelText: this.t('dialog.cancel', 'Cancel') });
         },
         copyTextToClipboard: function (text) {
           if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(String(text || ''));

@@ -1581,15 +1581,23 @@
         var self = this;
         var win = this.windows.find(function (entry) { return entry.id === windowId; });
         var state = this.ensureExplorerWindowState(win);
-        var name;
         if (!state || !this.command) return Promise.resolve();
-        name = window.prompt(this.t('explorer.promptNewFolder', 'New folder name'), this.t('explorer.defaultFolderName', 'New Folder'));
-        if (name === null) return Promise.resolve();
-        name = String(name || '').trim();
-        if (!name) return Promise.resolve();
-        return this.command('fs.mkdir', { parent: state.folderId, name: name }).then(function () {
-          return self.refreshExplorerWindow(windowId).then(function () {
-            if (self.refreshView) self.refreshView();
+        return this.explorerShellInput(this.t('explorer.promptNewFolder', 'New folder name'), this.t('explorer.defaultFolderName', 'New Folder')).then(function (name) {
+          if (name === null) return null;
+          name = String(name || '').trim();
+          if (!name) return null;
+          return self.command('fs.mkdir', { parent: state.folderId, name: name }).then(function () {
+            return self.refreshExplorerWindow(windowId).then(function () {
+              if (self.refreshView) {
+                return self.refreshView().then(function () {
+                  if (state.folderId === self.desktopFolderId() && self.ensureDesktopLayout) {
+                    self.ensureDesktopLayout();
+                    if (self.persistDesktopLayout) self.persistDesktopLayout();
+                  }
+                });
+              }
+              return null;
+            });
           });
         }).catch(function (err) {
           if (self.showAlert) self.showAlert(self.t('alerts.shellEventError.title', 'Explorer'), (err && err.message) || 'fs_mkdir_failed');
