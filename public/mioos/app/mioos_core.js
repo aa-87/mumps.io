@@ -127,8 +127,8 @@
         var self = this;
         this.bootstrapFromDom();
         this.initThemeStudioStore();
-        if (this.hydrateServerRenderedTheme) this.hydrateServerRenderedTheme();
-        /* First-paint theme is server-rendered; client hydration must not rewrite CSS variables on mount. */
+        if (this.themeStudioBootProfile && this.themeStudioBootProfile() && this.hydrateShellTheme) this.hydrateShellTheme(this.themeStudioBootProfile());
+        /* First-paint theme is server-rendered; this only hydrates the client model to the same server profile. */
         this.restorePersistedTransfers();
         this.normalizeDesktopUiState();
         this.ensureDesktopLayout();
@@ -935,9 +935,11 @@
           (this.desktopRenderEntries ? this.desktopRenderEntries() : (this.desktopEntries || [])).forEach(function (entry) {
             if (!entry || !entry.key) return;
             if (!self.desktopUi.positions[entry.key]) {
-              var left = +(entry.iconLeft || 0);
-              var top = +(entry.iconTop || 0);
-              if (!(left >= 0 && top >= 0)) {
+              var hasExplicitLeft = entry.iconLeft !== undefined && entry.iconLeft !== null && entry.iconLeft !== '';
+              var hasExplicitTop = entry.iconTop !== undefined && entry.iconTop !== null && entry.iconTop !== '';
+              var left = hasExplicitLeft ? +entry.iconLeft : NaN;
+              var top = hasExplicitTop ? +entry.iconTop : NaN;
+              if (!(hasExplicitLeft && hasExplicitTop && isFinite(left) && isFinite(top) && left >= 0 && top >= 0)) {
                 left = 16 + (col * metrics.width);
                 top = 16 + (row * metrics.height);
                 row += 1;
@@ -954,7 +956,9 @@
         },
         desktopIconStyle: function (entry) {
           var pos = ((this.desktopUi || {}).positions || {})[entry.key] || { left: 16, top: 16 };
-          return { '--x': ((+pos.left || 16) + 'px'), '--y': ((+pos.top || 16) + 'px'), transform: 'translate(var(--x), var(--y))' };
+          var left = isFinite(+pos.left) ? +pos.left : 16;
+          var top = isFinite(+pos.top) ? +pos.top : 16;
+          return { '--x': (left + 'px'), '--y': (top + 'px'), transform: 'translate(var(--x), var(--y))' };
         },
         desktopIconClass: function (entry) {
           return {
@@ -1243,7 +1247,7 @@
         },
         initThemeStudioStore: function () {
           var store = this.themeStudioStore || {};
-          var presets, rawCustom, parsedCustom, rawApplied, parsedApplied, bootTheme, quickMap;
+          var presets, rawCustom, parsedCustom, rawApplied, parsedApplied, bootTheme, quickMap, hasBootProfile;
           if (store.initialized) return store;
           store.themes = {};
           store.order = [];
@@ -1252,6 +1256,7 @@
           store.previewWindowState = this.themeStudioDefaultPreviewWindow();
           store.importBuffer = '';
           store.activeTab = 'global';
+          hasBootProfile = false;
           if (!store.previewTab) store.previewTab = 'desktop';
           presets = this.themeStudioBaseThemeConfigs();
           Object.keys(presets).forEach(function (id) {
@@ -1266,6 +1271,7 @@
               if (store.order.indexOf(bootTheme.id) < 0) store.order.push(bootTheme.id);
               if (!bootTheme.locked && store.customThemes.indexOf(bootTheme.id) < 0) store.customThemes.push(bootTheme.id);
               store.activeThemeId = bootTheme.id;
+              hasBootProfile = true;
             }
           }
           try { rawCustom = window.localStorage.getItem(this.themeStudioProfilesKey()); } catch (err) { rawCustom = ''; }
@@ -1280,9 +1286,9 @@
               store.customThemes.push(cfg.id);
             }.bind(this));
           }
-          try { rawApplied = window.localStorage.getItem(this.themeStudioStorageKey()); } catch (err3) { rawApplied = ''; }
+          try { rawApplied = hasBootProfile ? '' : window.localStorage.getItem(this.themeStudioStorageKey()); } catch (err3) { rawApplied = ''; }
           try { parsedApplied = rawApplied ? JSON.parse(rawApplied) : null; } catch (err4) { parsedApplied = null; }
-          if (parsedApplied) {
+          if (parsedApplied && !hasBootProfile) {
             parsedApplied = this.themeStudioNormalizeConfig(parsedApplied);
             if (!store.themes[parsedApplied.id]) {
               parsedApplied.locked = false;
@@ -1291,8 +1297,8 @@
               store.customThemes.push(parsedApplied.id);
             }
             store.activeThemeId = parsedApplied.id;
-          } else {
-            bootTheme = String((((this.boot || {}).desktop || {}).themeKey) || '');
+          } else if (!hasBootProfile) {
+            bootTheme = String(((((this.boot || {}).desktop || {}).themeKey) || ''));
             quickMap = this.shellThemeQuickMap();
             if (quickMap[bootTheme]) store.activeThemeId = quickMap[bootTheme];
           }
@@ -2392,14 +2398,6 @@
         themeStudioBootProfile: function () {
           return ((((this.boot || {}).desktop || {}).activeThemeProfile) || null);
         },
-        hydrateServerRenderedTheme: function () {
-          var source = this.themeStudioBootProfile ? this.themeStudioBootProfile() : null;
-          var normalized = source && this.themeStudioConfigFromServerProfile ? this.themeStudioConfigFromServerProfile(source) : source;
-          this.appliedThemeProfile = normalized || source || null;
-          if (normalized && normalized.id) this.activeThemeKey = normalized.id;
-          else if (source && source.presetKey) this.activeThemeKey = source.presetKey;
-          return this.appliedThemeProfile;
-        },
         themeStudioConfigFromServerProfile: function (profile) {
           var src = profile || {};
           var cfg = src.themeConfig || src.config || src;
@@ -2637,13 +2635,23 @@
             return res.json().then(function (obj) { if (!res.ok || (obj && obj.ok === 0)) throw new Error((obj && (obj.detail || obj.error)) || 'theme_save_failed'); return obj || {}; });
           });
         },
-        setShellTheme: function (profile) {
+        hydrateShellTheme: function (profile) {
           var source = profile || (((this.boot || {}).desktop || {}).activeThemeProfile) || null; /* desktop.activeThemeProfile */
           var normalized = source && (source.themeConfig || source.desktop || source.presetKey || source.colors) ? this.themeStudioConfigFromServerProfile(source) : source;
           this.appliedThemeProfile = normalized || source || null;
           if (normalized && normalized.id) this.activeThemeKey = normalized.id;
           else if (source && source.presetKey) this.activeThemeKey = source.presetKey;
-          if (this.applyThemeStudioConfig && normalized) this.applyThemeStudioConfig(normalized, { silent: true, persist: false });
+          if (normalized && normalized.id && this.themeStudioStore) {
+            this.themeStudioStore.activeThemeId = normalized.id;
+            if (this.themeStudioStore.themes && !this.themeStudioStore.themes[normalized.id]) {
+              this.themeStudioStore.themes[normalized.id] = normalized;
+              if (this.themeStudioStore.order && this.themeStudioStore.order.indexOf(normalized.id) < 0) this.themeStudioStore.order.push(normalized.id);
+            }
+          }
+          return this.appliedThemeProfile;
+        },
+        setShellTheme: function (profile) {
+          return this.hydrateShellTheme ? this.hydrateShellTheme(profile) : null;
         },
         terminalStatusText: function (win) {
           if (Terminal && typeof Terminal.terminalStatusText === 'function') {

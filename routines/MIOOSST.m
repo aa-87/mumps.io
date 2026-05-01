@@ -218,6 +218,8 @@ THEMEBOOT(STATE,CONF)
 	NEW DESK,WID,URL,FIT
 	SET STATE("theme")=$GET(STATE("themeKey"),"luna-blue")
 	SET URL=$GET(STATE("activeThemeProfile","desktop","wallpaperUrl"))
+	SET WID=$GET(STATE("activeThemeProfile","desktop","wallpaperId"))
+	IF URL="",WID'="" SET URL=$GET(STATE("fsBlobPath"),"/api/mioos/fs/blob")_"?id="_WID
 	SET FIT=$GET(STATE("activeThemeProfile","desktop","wallpaperFit"))
 	IF FIT="" SET FIT=$GET(CONF("mioos","desktop","wallpaperFit"),"cover")
 	IF URL="" DO
@@ -227,6 +229,7 @@ THEMEBOOT(STATE,CONF)
 	. IF WID'="" SET URL=$GET(STATE("fsBlobPath"),"/api/mioos/fs/blob")_"?id="_WID
 	. IF URL="" SET URL=$GET(CONF("mioos","desktop","wallpaperUrl"))
 	SET STATE("wallpaperUrl")=URL
+	SET STATE("wallpaperId")=WID
 	SET STATE("wallpaperFit")=FIT
 	QUIT
 	;
@@ -326,6 +329,7 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","theme")=$GET(STATE("theme"),$GET(STATE("themeKey")))
 	SET OBJ("desktop","wallpaper")=$GET(STATE("wallpaper"))
 	SET OBJ("desktop","wallpaperUrl")=$GET(STATE("wallpaperUrl"))
+	SET OBJ("desktop","wallpaperId")=$GET(STATE("wallpaperId"))
 	SET OBJ("desktop","wallpaperFit")=$GET(STATE("wallpaperFit"),"cover")
 	SET OBJ("desktop","density")=$GET(STATE("density"))
 	SET OBJ("desktop","fontFamily")=$GET(STATE("fontFamily"))
