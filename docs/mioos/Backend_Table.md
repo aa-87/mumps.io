@@ -116,3 +116,15 @@ Response shape:
 - CSS,
 - documentation,
 - and LLM handoff notes.
+
+## UI Module integration
+
+The backend table is also the first MIOOS UI Module component.
+
+- Component key: `table`
+- Vue component: `mioos-full-table`
+- Surface: `mioos-surface-table`
+- Registry: `MIOOSMOD` and `mioos_modules.js`
+- Example: `examples/mioos_modules/table`
+
+New internal or user-created modules should reference `componentKey: "table"` and `surface: "mioos-surface-table"` when they want to reuse this table without copying Explorer or table code.

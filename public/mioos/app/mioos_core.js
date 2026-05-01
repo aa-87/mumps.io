@@ -11,6 +11,7 @@
     var Terminal = (window.MIOOSTerminal || {}).methods || {};
     var Explorer = (window.MIOOSExplorer || {}).methods || {};
     var Table = (window.MIOOSTable || {}).methods || {};
+    var Modules = (window.MIOOSModules || {}).methods || {};
     var I18N = window.MIOOSI18N || {};
 
     var app = window.Vue.createApp({
@@ -693,6 +694,7 @@
             self.moduleCatalog.loading = false;
             self.moduleCatalog.refreshedAt = Date.now();
             self.boot.modules = window.MIOOSState.deepClone((((msg || {}).module || {}).modules) || []);
+            self.boot.uiModules = window.MIOOSState.deepClone(((msg || {}).module) || {});
             self.ensureModuleWindowState();
             return self.boot.modules;
           }).catch(function (err) {
@@ -2639,10 +2641,13 @@
           }
           return (((win || {}).terminalState || {}).status) || this.t('terminal.status.ready', 'Terminal idle');
         }
-      }, Auth, WS, WM, Terminal, Explorer, Table)
+      }, Auth, WS, WM, Terminal, Explorer, Modules, Table)
     });
 
     app.config.compilerOptions.delimiters = ['[[', ']]'];
+    if (window.MIOOSModules && typeof window.MIOOSModules.register === 'function') {
+      window.MIOOSModules.register(app);
+    }
     if (window.MIOOSTable && typeof window.MIOOSTable.register === 'function') {
       window.MIOOSTable.register(app);
     }

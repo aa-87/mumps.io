@@ -1,0 +1,17 @@
+{
+  "id": "user.table.example",
+  "key": "user.table.example",
+  "appKey": "user.table.example",
+  "title": "Table Example",
+  "description": "Example user module using the backend table component.",
+  "source": "user",
+  "category": "Examples",
+  "icon": "▤",
+  "componentKey": "table",
+  "surface": "mioos-surface-table",
+  "config": {
+    "dataset": "demo",
+    "pageSize": 25,
+    "sort": { "column": "name", "direction": "ascending" }
+  }
+}

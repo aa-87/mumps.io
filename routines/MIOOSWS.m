@@ -297,13 +297,9 @@ AUTHUNLOCK(STATE,CONF,TREE,OUTJSON,ERR)
 	;
 MODCAT(STATE,CONF,TREE,OUTJSON,ERR)
 	NEW OUT
-	KILL OUT
+	IF '$$CATALOG^MIOOSMOD(.STATE,.CONF,.OUT,.ERR) QUIT 0
 	SET OUT("enabled")=+$GET(STATE("moduleSystemEnabled"),1)
-	SET OUT("manifestVersion")=+$GET(STATE("moduleManifestVersion"),1)
-	SET OUT("launcher")=$GET(STATE("moduleLauncher"),"desktop-icons-and-menu")
-	SET OUT("appCatalogEnabled")=+$GET(STATE("moduleAppCatalogEnabled"),1)
-	SET OUT("count")=+$GET(STATE("moduleCount"),0)
-	MERGE OUT("modules")=STATE("modules")
+	SET OUT("count")=+$GET(OUT("moduleCount"),0)
 	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"module.catalog","module",.OUT)
 	QUIT 1
 	;

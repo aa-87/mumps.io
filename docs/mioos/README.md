@@ -356,3 +356,9 @@ This ROI moves active theme application back into the initial MIOTPL render path
 MIOOS includes a reusable backend table component for application screens that need Explorer-like resizable details tables without copying Explorer code. The component is served by `MIOOSTBL` through `/api/mioos/table/query` and rendered by `mioos_table.js`.
 
 See `docs/mioos/Backend_Table.md` for the query contract, feature matrix, extension rules, and regression coverage.
+
+## UI Modules
+
+MIOOS includes a UI Module foundation for internal and user-created modules. It is opt-in at launch time: set `CONF("mioos","modules","enabled")=1` and `CONF("mioos","modules","appCatalogEnabled")=1` to expose the catalog app. The module registry is built by `MIOOSMOD`, injected into boot as `uiModules`, exposed over `/api/mioos/modules/catalog`, and rendered by `mioos_modules.js` through the UI Modules app.
+
+The first registered component is the backend table component (`table` / `mioos-full-table`). See `docs/mioos/UI_Modules.md` and `examples/mioos_modules/table` for the module contract and first example.

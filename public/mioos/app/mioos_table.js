@@ -362,4 +362,8 @@
   }
 
   window.MIOOSTable = { methods: methods, register: register };
+  if (window.MIOOSModules && typeof window.MIOOSModules.registerComponent === "function") {
+    window.MIOOSModules.registerComponent({ key: "table", name: "mioos-full-table", title: "Backend Table", surface: "mioos-surface-table", source: "internal", owner: "MIOOS", backend: "MIOOSTBL", queryRoute: "/api/mioos/table/query", description: "Backend-paginated, sortable, hideable, groupable, expandable table component." });
+    window.MIOOSModules.registerModule({ id: "mioos.ui.table", key: "mioos.ui.table", appKey: "mioos.ui.table", title: "Backend Table", source: "internal", category: "Components", icon: "▤", componentKey: "table", surface: "mioos-surface-table", tableState: { id: "mioos-ui-module-table-example", title: "Backend Table Example", dataset: "demo" } });
+  }
 })();

@@ -39,7 +39,9 @@
         terminalWebsocket: '/ws/mioos/terminal',
         commandEvent: 'desktop.command',
         commandResultEvent: 'desktop.result',
-        commandErrorEvent: 'desktop.error'
+        commandErrorEvent: 'desktop.error',
+        tableQuery: '/api/mioos/table/query',
+        moduleCatalog: '/api/mioos/modules/catalog'
       },
       desktop: {
         themeKey: 'xp-classic-blue',
@@ -146,7 +148,8 @@
       desktopFolder: { id: '', path: '/Home/Desktop', canonicalPath: '/Home/Desktop', count: 0 },
       apps: [],
       windows: [],
-      modules: []
+      modules: [],
+      uiModules: { contract: 'mioos-ui-module-v1', manifestVersion: 1, modules: [], components: [], examples: [] }
     };
   }
 
@@ -212,6 +215,7 @@
     base.apps = Array.isArray(boot.apps) ? deepClone(boot.apps) : [];
     base.windows = Array.isArray(boot.windows) ? deepClone(boot.windows) : [];
     base.modules = Array.isArray(boot.modules) ? deepClone(boot.modules) : [];
+    base.uiModules = boot.uiModules ? deepClone(boot.uiModules) : base.uiModules;
     base.locale.supported = Array.isArray((boot.locale || {}).supported) ? deepClone(boot.locale.supported) : defaultLocales();
     return base;
   }

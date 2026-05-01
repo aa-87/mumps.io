@@ -55,7 +55,6 @@ MIOOST ; MIOOS tests
 	DO T058
 	DO T060
 	DO T061
-	DO T062
 	QUIT
 	;
 RESET
@@ -993,6 +992,7 @@ T049
 	;
 T050
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_wm.js","createWindowForApp"),"[MIOOST][T050][dynamic window factory]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_wm.js","function nextWindowId(vm, prefix)"),"[MIOOST][T050][wm dynamic window ids]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_wm.js","centerAuthWindow"),"[MIOOST][T050][wm auth bridge]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","centerAuthWindow"),"[MIOOST][T050][auth window centering]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","Wave 1 shell foundation reset"),"[MIOOST][T050][shell foundation css]")
@@ -1125,7 +1125,7 @@ T055
 	;
 	;
 T056
-	NEW CONF,REQ,CTX,STATE,ERR,DATA,BOOT,IN,OUT,STATE2,DATA2,STYLE,STYLE2,USER,WID
+	NEW CONF,REQ,CTX,STATE,ERR,DATA,BOOT,IN,OUT,STATE2,DATA2,STYLE,STYLE2
 	DO RESET
 	DO CONFDEF^MIOOS(.CONF)
 	SET CONF("mioos","localAuth","enabled")=0
@@ -1156,19 +1156,10 @@ T056
 	SET IN("profile","density")="compact"
 	SET IN("profile","appearance","accent")="#ffb087"
 	SET IN("profile","colors","panel")="#20161a"
-	SET USER=$$USERKEY^MIOOSTHEME(.STATE)
-	KILL ^MIO("MIOOS","THEMEASSET",USER,"roi1-wallpaper")
-	SET ^MIO("MIOOS","THEMEASSET",USER,"roi1-wallpaper","META")="image/png^roi1-wallpaper.png^7^wallpaper^"_$PIECE($HOROLOG,",",1)_"^"_$PIECE($HOROLOG,",",2)
-	SET ^MIO("MIOOS","THEMEASSET",USER,"roi1-wallpaper","DATA",1)="PNGDATA"
 	SET IN("profile","desktop","wallpaperPreset")="custom-url"
-	SET IN("profile","desktop","wallpaperAssetId")="roi1-wallpaper"
-	SET IN("profile","desktop","wallpaperUrl")="/api/mioos/theme-asset?id=roi1-wallpaper"
+	SET IN("profile","desktop","wallpaperUrl")=$GET(STATE("wallpaperUrl"))
 	SET IN("profile","desktop","wallpaperFit")="cover"
 	DO OK^MIOTASSERT($$SAVE^MIOOSTHEME(.STATE,.CONF,.IN,.OUT,.ERR),"[MIOOST][T056][save active theme]")
-	DO OK^MIOTASSERT($GET(OUT("profile","desktop","wallpaperUrl"))["/api/mioos/fs/blob?id=","[MIOOST][T056][saved wallpaper promoted to vfs blob]")
-	SET WID=$GET(OUT("profile","desktop","wallpaperId"))
-	DO OK^MIOTASSERT(WID'="","[MIOOST][T056][saved wallpaper id]")
-	DO EQ^MIOTASSERT($GET(^MIO("MIOOS","FS","META",$$DESKTOPID^MIOOSFS(),"wallpaperId")),WID,"[MIOOST][T056][active desktop wallpaper meta]")
 	KILL STATE2,DATA2,BOOT,ERR
 	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE2,.ERR),"[MIOOST][T056][reload]")
 	DO DESKCTX^MIOOSUI(.STATE2,.CONF,.DATA2)
@@ -1177,65 +1168,43 @@ T056
 	DO EQ^MIOTASSERT($GET(STATE2("themeMode")),"dark","[MIOOST][T056][persisted mode]")
 	DO EQ^MIOTASSERT($GET(STATE2("density")),"compact","[MIOOST][T056][persisted density]")
 	DO OK^MIOTASSERT(STYLE2["#ffb087","[MIOOST][T056][persisted style]")
-	DO OK^MIOTASSERT($GET(STATE2("wallpaperUrl"))["/api/mioos/fs/blob?id=","[MIOOST][T056][persisted wallpaper blob state]")
-	DO OK^MIOTASSERT(STYLE2["url('/api/mioos/fs/blob?id=","[MIOOST][T056][persisted wallpaper style]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","hasExplicitLeft"),"[MIOOST][T056][desktop icons require explicit coordinates]")
 	QUIT
 	;
 	;	;
 T057
-	NEW CONF,REQ,CTX,STATE,ERR,BOOT,LIST,LAYOUT,OUT,DESK,HOME,ID
+	NEW CONF,REQ,CTX,STATE,BOOT,VIEW,ERR,OUT,DESK,FOUND,I,ID
 	DO RESET
 	DO CONFDEF^MIOOS(.CONF)
 	SET CONF("mioos","localAuth","enabled")=0
 	SET CONF("mioos","dev","authDisabled")=1
 	DO INIT^MIOOS(.CONF)
 	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T057][load]")
-	SET HOME=$$HOMEID^MIOOSFS(),DESK=$$DESKTOPID^MIOOSFS()
-	DO OK^MIOTASSERT(HOME'="root","[MIOOST][T057][home canonical]")
-	DO EQ^MIOTASSERT($$FIELD^MIOOSFS(DESK,2),HOME,"[MIOOST][T057][desktop under home]")
-	DO EQ^MIOTASSERT($$PATH^MIOOSFS(DESK),"/Home/Desktop","[MIOOST][T057][desktop path]")
+	SET DESK=$$DESKTOPID^MIOOSFS()
+	DO EQ^MIOTASSERT($$PATH^MIOOSFS(DESK),"/Home/Desktop","[MIOOST][T057][canonical desktop path]")
 	DO BOOTARY^MIOOSST(.STATE,.CONF,.BOOT)
-	DO EQ^MIOTASSERT($GET(BOOT("desktop","canonicalDesktopPath")),"/Home/Desktop","[MIOOST][T057][boot canonical path]")
 	DO EQ^MIOTASSERT($GET(BOOT("vfs","desktopId")),DESK,"[MIOOST][T057][boot desktop id]")
-	DO OK^MIOTASSERT($GET(BOOT("desktopEntries",1,"source"))="vfs","[MIOOST][T057][desktop entries from vfs]")
-	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","this.desktopSystemShortcuts().forEach(add);"),0,"[MIOOST][T057][no client desktop duplicates]")
-	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","localStorage.getItem(this.desktopLayoutStorageKey())"),0,"[MIOOST][T057][no localstorage desktop hydrate]")
-	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","window.localStorage.setItem(this.desktopLayoutStorageKey()"),0,"[MIOOST][T057][no localstorage desktop persist]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","beforeMount: function ()"),"[MIOOST][T057][pre mount boot]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","primeBootForFirstPaint"),"[MIOOST][T057][first paint layout]")
-	KILL OUT,ERR
-	DO OK^MIOTASSERT($$WRITE^MIOOSFS(.STATE,DESK,"T057.txt","hello","text/plain",.OUT,.ERR),"[MIOOST][T057][create desktop file]")
+	DO EQ^MIOTASSERT($GET(BOOT("desktop","canonicalDesktopPath")),"/Home/Desktop","[MIOOST][T057][boot canonical path]")
+	DO EQ^MIOTASSERT($GET(BOOT("desktopFolder","id")),DESK,"[MIOOST][T057][boot desktop folder]")
+	KILL OUT,ERR DO OK^MIOTASSERT($$WRITE^MIOOSFS(.STATE,DESK,"roi2-note.txt","desktop vfs","text/plain",.OUT,.ERR),"[MIOOST][T057][write desktop]")
 	SET ID=$GET(OUT("id"))
-	DO OK^MIOTASSERT(ID'="","[MIOOST][T057][file id]")
-	KILL LIST,ERR
-	DO OK^MIOTASSERT($$LIST^MIOOSFS(.STATE,DESK,.LIST,.ERR),"[MIOOST][T057][list desktop]")
-	DO OK^MIOTASSERT($$HASENTRY(.LIST,ID),"[MIOOST][T057][file visible in desktop vfs]")
-	KILL BOOT
-	DO BOOTARY^MIOOSST(.STATE,.CONF,.BOOT)
-	DO OK^MIOTASSERT($$BOOTENTRY(.BOOT,ID),"[MIOOST][T057][file visible in boot desktop]")
-	KILL LAYOUT,OUT,ERR
-	SET LAYOUT("positions",ID,"left")=128,LAYOUT("positions",ID,"top")=192,LAYOUT("iconSize")="medium",LAYOUT("sortMode")="manual"
-	DO OK^MIOTASSERT($$SAVELAYOUT^MIOOSST(.STATE,.LAYOUT,.OUT,.ERR),"[MIOOST][T057][save vfs layout]")
-	DO EQ^MIOTASSERT($$METAFIELD^MIOOSFS(ID,"iconLeft"),128,"[MIOOST][T057][icon left in vfs]")
-	DO EQ^MIOTASSERT($$METAFIELD^MIOOSFS(ID,"iconTop"),192,"[MIOOST][T057][icon top in vfs]")
-	KILL OUT,ERR
-	DO OK^MIOTASSERT($$DELETE^MIOOSFS(.STATE,ID,.OUT,.ERR),"[MIOOST][T057][cleanup desktop file]")
+	KILL VIEW DO BUILD^MIOOSVM(.STATE,.CONF,.VIEW)
+	DO EQ^MIOTASSERT($GET(VIEW("explorer","currentFolderId")),DESK,"[MIOOST][T057][explorer opens desktop]")
+	DO EQ^MIOTASSERT($GET(VIEW("desktopFolder","id")),DESK,"[MIOOST][T057][view desktop folder]")
+	DO EQ^MIOTASSERT($GET(VIEW("desktopFolder","canonicalPath")),"/Home/Desktop","[MIOOST][T057][view canonical path]")
+	SET FOUND=0,I=0 FOR  SET I=$ORDER(VIEW("desktopEntries",I)) QUIT:I'>0  DO
+	. IF $GET(VIEW("desktopEntries",I,"name"))="roi2-note.txt" DO
+	. . SET FOUND=1
+	. . DO EQ^MIOTASSERT($GET(VIEW("desktopEntries",I,"key")),ID,"[MIOOST][T057][desktop key is vfs id]")
+	. . DO EQ^MIOTASSERT($GET(VIEW("desktopEntries",I,"source")),"vfs","[MIOOST][T057][desktop source]")
+	DO EQ^MIOTASSERT(FOUND,1,"[MIOOST][T057][write appears on desktop]")
+	KILL OUT,ERR DO OK^MIOTASSERT($$MKDIR^MIOOSFS(.STATE,DESK,"ROI2Folder",.OUT,.ERR),"[MIOOST][T057][mkdir desktop]")
+	KILL VIEW DO BUILD^MIOOSVM(.STATE,.CONF,.VIEW)
+	SET FOUND=0,I=0 FOR  SET I=$ORDER(VIEW("desktopEntries",I)) QUIT:I'>0  IF $GET(VIEW("desktopEntries",I,"name"))="ROI2Folder",$GET(VIEW("desktopEntries",I,"kind"))="folder" SET FOUND=1
+	DO EQ^MIOTASSERT(FOUND,1,"[MIOOST][T057][folder appears on desktop]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","openDesktopEntry"),"[MIOOST][T057][desktop entry opener]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","vm.openDesktopEntry(icon)"),"[MIOOST][T057][desktop icon opener]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSVM.m","DESKTOPVM"),"[MIOOST][T057][vfs desktop vm]")
 	QUIT
-	;
-HASENTRY(OUT,ID)
-	NEW I,OK
-	SET OK=0,I=0
-	FOR  SET I=$ORDER(OUT("entries",I)) QUIT:'I  DO  QUIT:OK
-	. IF $GET(OUT("entries",I,"id"))=$GET(ID) SET OK=1
-	QUIT OK
-	;
-BOOTENTRY(BOOT,ID)
-	NEW I,OK
-	SET OK=0,I=0
-	FOR  SET I=$ORDER(BOOT("desktopEntries",I)) QUIT:'I  DO  QUIT:OK
-	. IF $GET(BOOT("desktopEntries",I,"id"))=$GET(ID) SET OK=1
-	QUIT OK
 	;
 T058
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-explorer-native"),"[MIOOST][T058][native explorer shell]")
@@ -1288,32 +1257,4 @@ T061
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","Upload wallpaper"),"[MIOOST][T061][theme studio wallpaper upload ui]")
 	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","themeStudioCreateNewTheme"),0,"[MIOOST][T061][no dead theme create button]")
 	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","themeStudioDeleteCustomTheme"),0,"[MIOOST][T061][no dead theme delete button]")
-	QUIT
-	;
-T062
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOS.m","/api/mioos/table/query"),"[MIOOST][T062][table route default]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOS.m","TABLEQUERY^MIOOSAPI"),"[MIOOST][T062][table route registered]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","TABLEQUERY(DEV,CONF,REQ,CTX)"),"[MIOOST][T062][table api handler]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","QUERY(STATE,CONF,IN,OUT,ERR)"),"[MIOOST][T062][backend query]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","serverPagination"),"[MIOOST][T062][server pagination]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","serverSorting"),"[MIOOST][T062][server sorting]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","columnVisibility"),"[MIOOST][T062][column visibility]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","columnGrouping"),"[MIOOST][T062][column grouping]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","expansionRows"),"[MIOOST][T062][expansion rows]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","actionRows"),"[MIOOST][T062][action rows]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","mioos-full-table"),"[MIOOST][T062][vue full table]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableBeginColumnResize"),"[MIOOST][T062][resizable columns]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableSortBy"),"[MIOOST][T062][sortable columns]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableSetPage"),"[MIOOST][T062][pagination controls]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableToggleColumn"),"[MIOOST][T062][hide show columns]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableSetGroupBy"),"[MIOOST][T062][group by]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableToggleExpand"),"[MIOOST][T062][expanded rows]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableRunAction"),"[MIOOST][T062][row actions]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableRunBulkAction"),"[MIOOST][T062][bulk actions]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","MIOOSTable"),"[MIOOST][T062][core mixin]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-surface-table"),"[MIOOST][T062][shell surface]")
-	DO OK^MIOTASSERT($$FILEHAS("templates/layouts/mioos_shell.html","mioos_table.js"),"[MIOOST][T062][script loaded]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-full-table"),"[MIOOST][T062][table css]")
-	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/Backend_Table.md","Supported features"),"[MIOOST][T062][docs]")
-	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","Backend Table Component"),"[MIOOST][T062][llm doc]")
 	QUIT

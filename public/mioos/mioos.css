@@ -2487,3 +2487,111 @@ button:disabled { cursor: default; opacity: .55; }
   .mioos-table-pager { justify-content: flex-start; }
   .mioos-table-actions { flex-direction: column; align-items: stretch; }
 }
+
+/* MIOOS UI module foundation */
+.mioos-ui-module-shell,
+.mioos-ui-module-host {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  color: var(--window-text, #10243d);
+  background: var(--window-bg, rgba(246, 249, 255, .96));
+  box-sizing: border-box;
+}
+.mioos-ui-module-head,
+.mioos-ui-module-host > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--theme-panel-border, rgba(0,0,0,.12));
+  border-radius: 10px;
+  background: var(--theme-surface-strong, rgba(255,255,255,.78));
+}
+.mioos-ui-module-head div,
+.mioos-ui-module-host > header {
+  min-width: 0;
+}
+.mioos-ui-module-head strong,
+.mioos-ui-module-host > header strong {
+  display: block;
+  font-size: 14px;
+}
+.mioos-ui-module-head span,
+.mioos-ui-module-host > header span {
+  display: block;
+  font-size: 11px;
+  opacity: .72;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mioos-ui-module-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  overflow: auto;
+}
+.mioos-ui-module-card {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--theme-panel-border, rgba(0,0,0,.12));
+  border-radius: 12px;
+  background: var(--theme-panel-bg, rgba(255,255,255,.68));
+  overflow: auto;
+}
+.mioos-ui-module-card > strong {
+  font-size: 13px;
+}
+.mioos-ui-module-card > span {
+  font-size: 11px;
+  opacity: .75;
+}
+.mioos-ui-module-card button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  min-height: 48px;
+  padding: 8px 9px;
+  border: 1px solid rgba(70, 100, 140, .22);
+  border-radius: 9px;
+  background: var(--button-tint, linear-gradient(#fff,#e7f0ff));
+  color: var(--button-text, #111827);
+  text-align: left;
+  cursor: pointer;
+}
+.mioos-ui-module-card button:hover {
+  border-color: color-mix(in srgb, var(--accent, #4ba3ff) 45%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent, #4ba3ff) 16%, transparent);
+}
+.mioos-ui-module-card small {
+  opacity: .72;
+  font-size: 11px;
+}
+.mioos-ui-module-host dl {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 8px 12px;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--theme-panel-border, rgba(0,0,0,.12));
+  border-radius: 10px;
+  background: var(--theme-panel-bg, rgba(255,255,255,.62));
+}
+.mioos-ui-module-host dt { font-weight: 700; }
+.mioos-ui-module-host dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 900px) {
+  .mioos-ui-module-grid { grid-template-columns: 1fr; }
+  .mioos-ui-module-head { align-items: flex-start; flex-direction: column; }
+}

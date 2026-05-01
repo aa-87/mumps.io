@@ -496,3 +496,17 @@ All tests were passing at the start of this ROI. The next hardening pass address
 - `public/mioos/app/mioos_table.js` provides the reusable Vue 3 Options API UMD table component and `mioos-surface-table` shell surface.
 - The component supports backend pagination, per-column sorting, global filtering, column visibility, resizable columns, column grouping headers, row expansion, selection, row actions, and bulk action rows.
 - Keep Explorer independent. The table component borrows the details-table interaction model but must not mutate Explorer state or replace Explorer-specific VFS behavior.
+
+## UI Module Foundation
+
+MIOOS now has a first-class UI Module foundation for internal and user-created modules. The foundation is installed but launch-disabled by default; keep `CONF("mioos","modules","enabled")` and `CONF("mioos","modules","appCatalogEnabled")` off unless the shell should expose the UI Modules catalog app.
+
+- `MIOOSMOD` owns the backend module catalog and emits the `mioos-ui-module-v1` contract.
+- `MIOOSST` injects the full catalog as `boot.uiModules` and keeps launchable module rows in `boot.modules` for Start menu compatibility.
+- `/api/mioos/modules/catalog` is handled by `MODULECATALOG^MIOOSAPI`.
+- `module.catalog` in `MIOOSWS` returns the same registry for websocket clients.
+- `mioos_modules.js` owns the browser-side registry, component/module registration APIs, UI Modules catalog surface, and generic module host.
+- `mioos_table.js` registers the first reusable component: `table` / `mioos-full-table` / `mioos-surface-table`.
+- Examples live under `examples/mioos_modules`, with `examples/mioos_modules/table` as the first example.
+
+Do not build new internal or user-created module screens by copying Explorer. Add a catalog entry and either reuse an existing registered component or register a new component through `window.MIOOSModules.registerComponent(...)` before `MIOOSCore.mount()`.

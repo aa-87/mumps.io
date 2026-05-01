@@ -80,6 +80,7 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("fsUploadAbortPath")=$GET(CONF("mioos","route","fsUploadAbort"),"/api/mioos/fs/upload/abort")
 	SET STATE("fsBlobPath")=$GET(CONF("mioos","route","fsBlob"),"/api/mioos/fs/blob")
 	SET STATE("tableQueryPath")=$GET(CONF("mioos","route","tableQuery"),"/api/mioos/table/query")
+	SET STATE("moduleCatalogPath")=$GET(CONF("mioos","route","moduleCatalog"),"/api/mioos/modules/catalog")
 	SET STATE("themeAssetUploadPath")=$GET(CONF("mioos","route","themeAssetUpload"),"/api/mioos/theme-asset/upload")
 	SET STATE("themeAssetPath")=$GET(CONF("mioos","route","themeAsset"),"/api/mioos/theme-asset")
 	SET STATE("themeLoadPath")=$GET(CONF("mioos","route","themeLoad"),"/api/mioos/theme/load")
@@ -178,7 +179,7 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("perfRenderBudgetMs")=16
 	SET STATE("perfPayloadMode")="tmp-global-safe"
 	SET STATE("perfTransport")="websocket-first-http-refresh"
-	SET STATE("moduleSystemEnabled")=0
+	SET STATE("moduleSystemEnabled")=+$GET(CONF("mioos","modules","enabled"),0)
 	SET STATE("debugEnabled")=0
 	SET STATE("debugEventLimit")=+$GET(CONF("mioos","debug","eventLimit"),50)
 	IF STATE("debugEventLimit")<10 SET STATE("debugEventLimit")=10
@@ -186,7 +187,7 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("moduleManifestVersion")=+$GET(CONF("mioos","modules","manifestVersion"),1)
 	IF STATE("moduleManifestVersion")<1 SET STATE("moduleManifestVersion")=1
 	SET STATE("moduleLauncher")=$GET(CONF("mioos","modules","launcher"),"desktop-icons-and-menu")
-	SET STATE("moduleAppCatalogEnabled")=0
+	SET STATE("moduleAppCatalogEnabled")=+$GET(CONF("mioos","modules","appCatalogEnabled"),0)
 	SET STATE("moduleDynamicWindows")=+$GET(CONF("mioos","modules","dynamicWindows"),1)
 	DO LOADTERM^MIOOSTERM(.STATE,.CONF)
 		DO WORKSPACES(.STATE)
@@ -395,12 +396,12 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","windowing","snapShortcuts","right")=$GET(CONF("mioos","desktop","accessibility","keyboardShortcuts","snapRight"),"Alt+Shift+ArrowRight")
 	SET OBJ("desktop","windowing","snapShortcuts","maximize")=$GET(CONF("mioos","desktop","accessibility","keyboardShortcuts","maximizeFocusedWindow"),"Alt+Shift+ArrowUp")
 	SET OBJ("desktop","windowing","snapShortcuts","restore")=$GET(CONF("mioos","desktop","accessibility","keyboardShortcuts","restoreFocusedWindow"),"Alt+Shift+ArrowDown")
-	SET OBJ("desktop","moduleSystem","enabled")=+$GET(STATE("moduleSystemEnabled"),1)
+	SET OBJ("desktop","moduleSystem","enabled")=+$GET(STATE("moduleSystemEnabled"),0)
 	SET OBJ("desktop","moduleSystem","launcher")=$GET(STATE("moduleLauncher"),"desktop-icons-and-menu")
 	SET OBJ("desktop","moduleSystem","manifestVersion")=+$GET(STATE("moduleManifestVersion"),1)
-	SET OBJ("desktop","moduleSystem","appCatalogEnabled")=+$GET(STATE("moduleAppCatalogEnabled"),1)
+	SET OBJ("desktop","moduleSystem","appCatalogEnabled")=+$GET(STATE("moduleAppCatalogEnabled"),0)
 	SET OBJ("desktop","moduleSystem","dynamicWindows")=+$GET(STATE("moduleDynamicWindows"),1)
-	SET OBJ("desktop","moduleSystem","appCatalogKey")=""
+	SET OBJ("desktop","moduleSystem","appCatalogKey")="ui-modules"
 	SET OBJ("desktop","moduleSystem","moduleCount")=+$GET(STATE("moduleCount"),0)
 	SET OBJ("desktop","moduleSystem","debugAppKey")=""
 	SET OBJ("desktop","debugCenter","enabled")=+$GET(STATE("debugEnabled"),1)
@@ -454,6 +455,7 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("routes","fsUploadAbort")=$GET(STATE("fsUploadAbortPath"))
 	SET OBJ("routes","fsBlob")=$GET(STATE("fsBlobPath"))
 	SET OBJ("routes","tableQuery")=$GET(STATE("tableQueryPath"))
+	SET OBJ("routes","moduleCatalog")=$GET(STATE("moduleCatalogPath"))
 	SET OBJ("routes","themeAssetUpload")=$GET(STATE("themeAssetUploadPath"))
 	SET OBJ("routes","themeAsset")=$GET(STATE("themeAssetPath"))
 	SET OBJ("routes","themeLoad")=$GET(STATE("themeLoadPath"))
@@ -570,6 +572,7 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","desktopFolderId")=$GET(STATE("fsDesktopId"))
 	MERGE OBJ("windows")=STATE("windows")
 	MERGE OBJ("modules")=STATE("modules")
+	MERGE OBJ("uiModules")=STATE("uiModules")
 	SET OBJ("websocket","heartbeatSeconds")=+$GET(STATE("wsHeartbeatSeconds"),15)
 	SET OBJ("websocket","resumeWindowSeconds")=+$GET(STATE("wsResumeWindowSeconds"),180)
 	SET OBJ("websocket","maxInflightPerChannel")=+$GET(STATE("wsMaxInflightPerChannel"),4)
@@ -631,6 +634,12 @@ APPS(STATE)
 	SET STATE("apps",4,"subtitle")="Themes, Appearance, Desktop, Taskbar, Start Menu, and Login Screen"
 	SET STATE("apps",4,"icon")="🎨"
 	SET STATE("apps",4,"kind")="tool"
+	IF +$GET(STATE("moduleSystemEnabled"),0),+$GET(STATE("moduleAppCatalogEnabled"),0) DO
+	. SET STATE("apps",5,"key")="ui-modules"
+	. SET STATE("apps",5,"title")="UI Modules"
+	. SET STATE("apps",5,"subtitle")="Create and launch internal or user-created UI modules"
+	. SET STATE("apps",5,"icon")="▦"
+	. SET STATE("apps",5,"kind")="tool"
 	QUIT
 	;
 WORKSPACES(STATE)
@@ -658,8 +667,7 @@ MERGEWK(STATE,ROOT)
 		QUIT
 		;
 MODULES(STATE,CONF)
-	KILL STATE("modules")
-	SET STATE("moduleCount")=0
+	DO LOAD^MIOOSMOD(.STATE,.CONF)
 	QUIT
 	;
 WINDOWS(STATE)
@@ -672,8 +680,13 @@ WINDOWS(STATE)
 	SET STATE("windows",3,"transferCenterEnabled")=1
 	DO WIN(.STATE,4,"win-customize","customize","Themes and Appearance",180,86,1040,680,6,"closed",780,560,1,1,"studio","🎨","workspace-main",1)
 	SET STATE("windows",4,"themeStudioEnabled")=1
-	DO WIN(.STATE,5,"win-folder-properties","folder-properties","Folder Properties",260,140,640,520,7,"closed",560,420,0,1,"properties","📂","workspace-main",0)
+	DO WIN(.STATE,5,"win-folder-properties","folder-properties","Folder Properties",260,140,640,520,8,"closed",560,420,0,1,"properties","📂","workspace-main",0)
 	SET STATE("windows",5,"propertySheetEnabled")=1
+	IF +$GET(STATE("moduleSystemEnabled"),0),+$GET(STATE("moduleAppCatalogEnabled"),0) DO
+	. DO WIN(.STATE,6,"win-ui-modules","ui-modules","UI Modules",156,86,1040,640,7,"closed",780,520,1,1,"module-catalog","▦","workspace-main",1)
+	. SET STATE("windows",6,"moduleWindow")=1
+	. SET STATE("windows",6,"moduleId")="mioos.ui.modules"
+	. SET STATE("windows",6,"moduleComponent")="module-catalog"
 	QUIT
 	;
 WIN(STATE,N,ID,APPKEY,TITLE,LEFT,TOP,WIDTH,HEIGHT,Z,MODE,MINW,MINH,RESIZE,DRAG,KIND,ICON,WORKSPACE,PERSIST)

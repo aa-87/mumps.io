@@ -30,6 +30,8 @@
 
   function surfaceComponentKey(win) {
     var key = String((win || {}).appKey || 'generic');
+    var modular = (window.MIOOSModules && typeof window.MIOOSModules.resolveSurface === 'function') ? window.MIOOSModules.resolveSurface(win, null) : '';
+    if (modular) return modular;
     if (key === 'my-computer' || key === 'documents' || key === 'explorer' || key === 'home') return 'mioos-surface-explorer';
     if (key === 'terminal') return 'mioos-surface-terminal';
     if (key === 'theme-studio' || key === 'customize') return 'mioos-surface-theme';
