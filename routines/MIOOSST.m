@@ -79,6 +79,7 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("fsUploadCommitPath")=$GET(CONF("mioos","route","fsUploadCommit"),"/api/mioos/fs/upload/commit")
 	SET STATE("fsUploadAbortPath")=$GET(CONF("mioos","route","fsUploadAbort"),"/api/mioos/fs/upload/abort")
 	SET STATE("fsBlobPath")=$GET(CONF("mioos","route","fsBlob"),"/api/mioos/fs/blob")
+	SET STATE("tableQueryPath")=$GET(CONF("mioos","route","tableQuery"),"/api/mioos/table/query")
 	SET STATE("themeAssetUploadPath")=$GET(CONF("mioos","route","themeAssetUpload"),"/api/mioos/theme-asset/upload")
 	SET STATE("themeAssetPath")=$GET(CONF("mioos","route","themeAsset"),"/api/mioos/theme-asset")
 	SET STATE("themeLoadPath")=$GET(CONF("mioos","route","themeLoad"),"/api/mioos/theme/load")
@@ -374,6 +375,8 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","viewers","media")=1
 	SET OBJ("desktop","viewers","pdf")=1
 	SET OBJ("desktop","viewers","structured")=1
+	SET OBJ("desktop","components","table")=1
+	SET OBJ("desktop","components","tableBackend")="MIOOSTBL"
 	SET OBJ("desktop","windowing","engine")=$GET(STATE("windowManager"),"mioos-native-vue-css")
 	SET OBJ("desktop","windowing","chrome")=$GET(STATE("windowChrome"),"reusable-shell-chrome")
 	SET OBJ("desktop","windowing","titlebarHeight")=+$GET(STATE("windowTitlebarHeight"),40)
@@ -450,6 +453,7 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("routes","fsUploadCommit")=$GET(STATE("fsUploadCommitPath"))
 	SET OBJ("routes","fsUploadAbort")=$GET(STATE("fsUploadAbortPath"))
 	SET OBJ("routes","fsBlob")=$GET(STATE("fsBlobPath"))
+	SET OBJ("routes","tableQuery")=$GET(STATE("tableQueryPath"))
 	SET OBJ("routes","themeAssetUpload")=$GET(STATE("themeAssetUploadPath"))
 	SET OBJ("routes","themeAsset")=$GET(STATE("themeAssetPath"))
 	SET OBJ("routes","themeLoad")=$GET(STATE("themeLoadPath"))

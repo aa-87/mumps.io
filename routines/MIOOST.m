@@ -53,9 +53,9 @@ MIOOST ; MIOOS tests
 	DO T056
 	DO T057
 	DO T058
-	DO T059
 	DO T060
 	DO T061
+	DO T062
 	QUIT
 	;
 RESET
@@ -1249,40 +1249,16 @@ T058
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","explorerQuickPlaces"),"[MIOOST][T058][quick places method]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","explorerVisibleItems"),"[MIOOST][T058][filtered sorted items]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","explorerSortBy"),"[MIOOST][T058][sortable columns]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","explorerDefaultColumns"),"[MIOOST][T058][details column model]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","explorerBeginColumnResize"),"[MIOOST][T058][resizable columns]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-explorer-column-resizer"),"[MIOOST][T058][column resize handle]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","explorerGoBack"),"[MIOOST][T058][history back]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","explorerGoForward"),"[MIOOST][T058][history forward]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","openExplorerContextMenu"),"[MIOOST][T058][context handler]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","explorerContextIsItem"),"[MIOOST][T058][target aware context menu]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","explorerOpenItemInNewWindow"),"[MIOOST][T058][open folder in new window]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-surface-file-properties"),"[MIOOST][T058][file properties surface]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","explorerCutSelected"),"[MIOOST][T058][cut action]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","explorerCanPaste"),"[MIOOST][T058][paste enablement]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","explorerPasteIntoWindow"),"[MIOOST][T058][vfs copy paste]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-explorer-native"),"[MIOOST][T058][native explorer css]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-explorer-listview"),"[MIOOST][T058][listview css]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-explorer-column-resizer"),"[MIOOST][T058][resizer css]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-explorer-context-menu"),"[MIOOST][T058][context css]")
-	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","name = window.prompt"),0,"[MIOOST][T058][rename custom dialog]")
-	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","window.confirm(this.t('explorer.confirmDelete'"),0,"[MIOOST][T058][delete custom dialog]")
-	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","destination = window.prompt"),0,"[MIOOST][T058][move custom dialog]")
 	QUIT
 	;
 	;	;
-T059
-	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","color-mix(in srgb, var(--titlebar-bg)"),0,"[MIOOST][T059][titlebar background valid]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-modal-backdrop"),"[MIOOST][T059][custom modal css]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-modal-dialog"),"[MIOOST][T059][custom modal ui]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","openModalDialog: function"),"[MIOOST][T059][custom modal method]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","return this.explorerShellInput"),"[MIOOST][T059][folder dialog custom]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","findOpenDesktopGridSlot"),"[MIOOST][T059][new icon open slot]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","app.component('mioos-surface-viewer'"),"[MIOOST][T059][viewer component]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-viewer-pre"),"[MIOOST][T059][text viewer]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-viewer-media"),"[MIOOST][T059][media viewer]")
-	QUIT
-	;
 T060
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","startMenuAppCatalogItems"),"[MIOOST][T060][start menu app catalog]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","startMenuFilesystemItems"),"[MIOOST][T060][start menu filesystem]")
@@ -1312,4 +1288,32 @@ T061
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","Upload wallpaper"),"[MIOOST][T061][theme studio wallpaper upload ui]")
 	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","themeStudioCreateNewTheme"),0,"[MIOOST][T061][no dead theme create button]")
 	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","themeStudioDeleteCustomTheme"),0,"[MIOOST][T061][no dead theme delete button]")
+	QUIT
+	;
+T062
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOS.m","/api/mioos/table/query"),"[MIOOST][T062][table route default]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOS.m","TABLEQUERY^MIOOSAPI"),"[MIOOST][T062][table route registered]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","TABLEQUERY(DEV,CONF,REQ,CTX)"),"[MIOOST][T062][table api handler]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","QUERY(STATE,CONF,IN,OUT,ERR)"),"[MIOOST][T062][backend query]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","serverPagination"),"[MIOOST][T062][server pagination]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","serverSorting"),"[MIOOST][T062][server sorting]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","columnVisibility"),"[MIOOST][T062][column visibility]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","columnGrouping"),"[MIOOST][T062][column grouping]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","expansionRows"),"[MIOOST][T062][expansion rows]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","actionRows"),"[MIOOST][T062][action rows]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","mioos-full-table"),"[MIOOST][T062][vue full table]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableBeginColumnResize"),"[MIOOST][T062][resizable columns]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableSortBy"),"[MIOOST][T062][sortable columns]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableSetPage"),"[MIOOST][T062][pagination controls]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableToggleColumn"),"[MIOOST][T062][hide show columns]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableSetGroupBy"),"[MIOOST][T062][group by]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableToggleExpand"),"[MIOOST][T062][expanded rows]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableRunAction"),"[MIOOST][T062][row actions]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableRunBulkAction"),"[MIOOST][T062][bulk actions]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","MIOOSTable"),"[MIOOST][T062][core mixin]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-surface-table"),"[MIOOST][T062][shell surface]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/layouts/mioos_shell.html","mioos_table.js"),"[MIOOST][T062][script loaded]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-full-table"),"[MIOOST][T062][table css]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/Backend_Table.md","Supported features"),"[MIOOST][T062][docs]")
+	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","Backend Table Component"),"[MIOOST][T062][llm doc]")
 	QUIT

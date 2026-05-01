@@ -487,3 +487,12 @@ All tests were passing at the start of this ROI. The next hardening pass address
 - Fixed wallpaper upload result handling so VFS IDs returned by write/upload responses can become blob-backed wallpaper URLs.
 - Deduped Transfer Center active queue by showing completed/failed/cancelled transfers only in history.
 - Added compact native-shell CSS overrides for Home Explorer, Transfer rows, Start Menu item capacity, and Customize previews.
+
+## Backend Table Component — implementation notes
+
+- `MIOOSTBL` owns server-side table querying and returns schema, rows, pagination metadata, grouping summaries, row actions, bulk actions, and feature flags.
+- `/api/mioos/table/query` is registered through `MIOOS.m` and handled by `TABLEQUERY^MIOOSAPI`.
+- `MIOOSST` exposes `boot.routes.tableQuery` and advertises the table component in `boot.desktop.components.table`.
+- `public/mioos/app/mioos_table.js` provides the reusable Vue 3 Options API UMD table component and `mioos-surface-table` shell surface.
+- The component supports backend pagination, per-column sorting, global filtering, column visibility, resizable columns, column grouping headers, row expansion, selection, row actions, and bulk action rows.
+- Keep Explorer independent. The table component borrows the details-table interaction model but must not mutate Explorer state or replace Explorer-specific VFS behavior.

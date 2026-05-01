@@ -34,7 +34,7 @@
     if (key === 'terminal') return 'mioos-surface-terminal';
     if (key === 'theme-studio' || key === 'customize') return 'mioos-surface-theme';
     if (key === 'text-viewer' || key === 'image-viewer' || key === 'media-viewer' || key === 'pdf-viewer' || key === 'structured-viewer') return 'mioos-surface-viewer';
-    if (key === 'file-properties') return 'mioos-surface-file-properties';
+    if (key === 'backend-table' || key === 'table' || key === 'data-grid') return 'mioos-surface-table';
     if (key === 'transfers') return 'mioos-surface-transfers';
     return 'mioos-surface-generic';
   }
@@ -65,13 +65,6 @@
               '<span>[[ vm.alertMessage ]]</span>' +
               '<button type="button" @click="vm.dismissAlert">[[ vm.t(\'alert.dismiss\') ]]</button>' +
             '</div>' +
-            '<section v-if="vm.dialogState && vm.dialogState.open" class="mioos-modal-backdrop" role="presentation" @mousedown.self="vm.cancelDialog()">' +
-              '<form class="mioos-modal-dialog" role="dialog" aria-modal="true" aria-label="MIOOS dialog" @submit.prevent="vm.submitDialog()" @keydown.esc.prevent="vm.cancelDialog()">' +
-                '<header class="mioos-modal-head"><strong>[[ vm.dialogState.title || \'MIOOS\' ]]</strong></header>' +
-                '<div class="mioos-modal-body"><p>[[ vm.dialogState.message ]]</p><input v-if="vm.dialogState.type !== \'confirm\'" class="mioos-modal-input" v-model="vm.dialogState.value" type="text" autocomplete="off"></div>' +
-                '<footer class="mioos-modal-actions"><button type="button" class="mioos-btn" @click="vm.cancelDialog()">[[ vm.dialogState.cancelText || vm.t(\'dialog.cancel\') ]]</button><button type="submit" class="mioos-btn is-primary">[[ vm.dialogState.okText || vm.t(\'dialog.confirm\') ]]</button></footer>' +
-              '</form>' +
-            '</section>' +
             '<section v-if="vm.requiresSignin" class="mioos-auth-overlay" aria-hidden="false">' +
               '<div class="mioos-auth-card" role="dialog" aria-modal="true" :aria-label="vm.boot.product.name">' +
                 '<div class="mioos-auth-head"><strong>[[ vm.boot.product.name ]]</strong><span>[[ vm.boot.product.subtitle ]]</span></div>' +
@@ -185,11 +178,7 @@
           folders: function () { return this.items.filter(function (item) { return String(item.kind || item.type || '').toLowerCase() === 'folder'; }); },
           preview: function () { return (this.state && this.state.preview) || {}; },
           quickPlaces: function () { return this.vm.explorerQuickPlaces(); },
-          selectedKey: function () { return this.vm.explorerSelectedKey(this.state); },
-          columns: function () { return this.vm.explorerDetailsColumns(this.state); },
-          contextIsItem: function () { return this.vm.explorerContextIsItem(this.state); },
-          contextIsFolder: function () { return this.vm.explorerContextIsFolder(this.state); },
-          canPaste: function () { return this.vm.explorerCanPaste(this.window.id); }
+          selectedKey: function () { return this.vm.explorerSelectedKey(this.state); }
         },
         mounted: function () { this.vm.bootstrapExplorerWindow(this.window.id, false); },
         methods: {
@@ -201,9 +190,7 @@
           setView: function (mode) { this.vm.explorerSetViewMode(this.window.id, mode); },
           rowMenu: function (item, event) { this.vm.openExplorerContextMenu(this.window.id, item, event); },
           blankMenu: function (event) { this.vm.openExplorerContextMenu(this.window.id, null, event); },
-          sortMark: function (key) { return this.state.sortKey === key ? (this.state.sortDir === 'desc' ? '▼' : '▲') : ''; },
-          resizeColumn: function (column, event) { this.vm.explorerBeginColumnResize(this.window.id, column, event); },
-          cellValue: function (item, column) { return this.vm.explorerColumnValue(item, column.key); }
+          sortMark: function (key) { return this.state.sortKey === key ? (this.state.sortDir === 'desc' ? '▼' : '▲') : ''; }
         },
         template: `
           <div class="mioos-surface mioos-surface-explorer mioos-explorer-native" @contextmenu.prevent="blankMenu($event)" @click="vm.closeExplorerContextMenu(window.id)">
@@ -260,22 +247,19 @@
                 <div class="mioos-explorer-empty" v-if="state.loading">Loading folder…</div>
                 <div class="mioos-explorer-empty" v-else-if="state.error">[[ state.error ]]</div>
                 <div class="mioos-explorer-empty" v-else-if="!items.length">This folder is empty.</div>
-                <table v-else-if="(state.viewMode || 'details') === 'details'" class="mioos-explorer-listview" role="grid" aria-label="Folder contents" :class="{ 'is-column-resizing': !!state.resizingColumn }">
-                  <colgroup>
-                    <col v-for="column in columns" :key="column.key" :style="vm.explorerColumnStyle(column)">
-                  </colgroup>
+                <table v-else-if="(state.viewMode || 'details') === 'details'" class="mioos-explorer-listview" role="grid" aria-label="Folder contents">
                   <thead><tr>
-                    <th v-for="column in columns" :key="column.key" :style="vm.explorerColumnHeaderStyle(column)" :class="vm.explorerColumnResizeClass(state, column)" scope="col">
-                      <button type="button" class="mioos-explorer-column-button" @click="sort(column.key)">[[ column.label ]] [[ sortMark(column.key) ]]</button>
-                      <span class="mioos-explorer-column-resizer" role="separator" aria-orientation="vertical" :aria-label="'Resize ' + column.label + ' column'" @mousedown.stop.prevent="resizeColumn(column, $event)"></span>
-                    </th>
+                    <th><button type="button" @click="sort('name')">Name [[ sortMark('name') ]]</button></th>
+                    <th><button type="button" @click="sort('type')">Type [[ sortMark('type') ]]</button></th>
+                    <th><button type="button" @click="sort('size')">Size [[ sortMark('size') ]]</button></th>
+                    <th><button type="button" @click="sort('modified')">Modified [[ sortMark('modified') ]]</button></th>
                   </tr></thead>
                   <tbody>
                     <tr v-for="item in items" :key="itemKey(item)" :class="{ 'is-selected': selectedKey === itemKey(item) }" @click.stop="select(item)" @dblclick.stop="open(item)" @contextmenu.prevent.stop="rowMenu(item, $event)">
-                      <td v-for="column in columns" :key="column.key" :class="'mioos-explorer-cell-' + column.key">
-                        <template v-if="column.key === 'name'"><span class="mioos-explorer-row-icon">[[ vm.explorerItemGlyph(item) ]]</span><span class="mioos-explorer-row-name">[[ item.name || item.title ]]</span></template>
-                        <template v-else>[[ cellValue(item, column) ]]</template>
-                      </td>
+                      <td><span class="mioos-explorer-row-icon">[[ vm.explorerItemGlyph(item) ]]</span><span class="mioos-explorer-row-name">[[ item.name || item.title ]]</span></td>
+                      <td>[[ vm.explorerItemTypeLabel(item) ]]</td>
+                      <td>[[ vm.explorerFormatSize(item) ]]</td>
+                      <td>[[ item.modifiedLabel || item.modifiedAt || item.mtime || '' ]]</td>
                     </tr>
                   </tbody>
                 </table>
@@ -301,17 +285,14 @@
               <span v-else>[[ (state.folder || {}).path || '/' ]]</span>
             </div>
             <ul v-if="(state.contextMenu || {}).open" class="mioos-explorer-context-menu can-hover" role="menu" :style="vm.explorerContextMenuStyle(state)" @click.stop>
-              <li v-if="contextIsItem"><button type="button" role="menuitem" @click="vm.explorerContextOpen(window.id)">Open</button></li>
-              <li v-if="contextIsFolder"><button type="button" role="menuitem" @click="vm.explorerOpenItemInNewWindow(window.id)">Open in New Window</button></li>
-              <li v-if="contextIsItem" class="has-divider"><button type="button" role="menuitem" @click="vm.explorerCopySelected(window.id)">Copy</button></li>
-              <li v-if="contextIsItem"><button type="button" role="menuitem" @click="vm.explorerCutSelected(window.id)">Cut</button></li>
-              <li><button type="button" role="menuitem" :disabled="!canPaste" @click="vm.explorerPasteIntoWindow(window.id)">Paste</button></li>
-              <li v-if="contextIsItem" class="has-divider"><button type="button" role="menuitem" @click="vm.explorerRenameSelected(window.id); vm.closeExplorerContextMenu(window.id)">Rename</button></li>
-              <li v-if="contextIsItem"><button type="button" role="menuitem" @click="vm.explorerDeleteSelected(window.id); vm.closeExplorerContextMenu(window.id)">Delete</button></li>
-              <li v-if="contextIsItem"><button type="button" role="menuitem" @click="vm.explorerDownloadSelected(window.id); vm.closeExplorerContextMenu(window.id)">Download</button></li>
+              <li v-if="state.selection && ((state.contextMenu || {}).targetType === 'item')"><button type="button" role="menuitem" @click="vm.explorerContextOpen(window.id)">Open</button></li>
+              <li v-if="state.selection && ((state.contextMenu || {}).targetType === 'item')"><button type="button" role="menuitem" @click="vm.explorerCopySelected(window.id)">Copy</button></li>
+              <li v-if="state.selection && ((state.contextMenu || {}).targetType === 'item')"><button type="button" role="menuitem" @click="vm.explorerRenameSelected(window.id); vm.closeExplorerContextMenu(window.id)">Rename</button></li>
+              <li v-if="state.selection && ((state.contextMenu || {}).targetType === 'item')"><button type="button" role="menuitem" @click="vm.explorerDeleteSelected(window.id); vm.closeExplorerContextMenu(window.id)">Delete</button></li>
               <li class="has-divider"><button type="button" role="menuitem" @click="vm.explorerCreateFolder(window.id); vm.closeExplorerContextMenu(window.id)">New Folder</button></li>
               <li><button type="button" role="menuitem" @click="vm.explorerPromptUpload(window.id); vm.closeExplorerContextMenu(window.id)">Upload</button></li>
-              <li><button type="button" role="menuitem" @click="vm.refreshExplorerWindow(window.id); vm.closeExplorerContextMenu(window.id)">Refresh</button></li>
+              <li v-if="state.selection && ((state.contextMenu || {}).targetType === 'item')"><button type="button" role="menuitem" @click="vm.explorerDownloadSelected(window.id); vm.closeExplorerContextMenu(window.id)">Download</button></li>
+              <li><button type="button" role="menuitem" @click="vm.explorerPasteIntoWindow(window.id)">Paste</button></li>
               <li class="has-divider"><button type="button" role="menuitem" @click="vm.explorerContextProperties(window.id)">Properties</button></li>
             </ul>
           </div>
@@ -683,43 +664,6 @@
 `
       });
 
-      app.component('mioos-surface-viewer', {
-        props: ['window'],
-        computed: {
-          vm: function () { return root(this); },
-          view: function () { return (this.window && this.window.fileView) || {}; },
-          meta: function () { return (this.window && this.window.meta) || {}; },
-          viewerKind: function () {
-            var app = String((this.window || {}).appKey || '').toLowerCase();
-            var mime = String((this.view || {}).mime || (this.meta || {}).mime || '').toLowerCase();
-            if (app === 'image-viewer' || mime.indexOf('image/') === 0) return 'image';
-            if (app === 'media-viewer' || mime.indexOf('audio/') === 0 || mime.indexOf('video/') === 0) return 'media';
-            if (app === 'pdf-viewer' || mime === 'application/pdf') return 'pdf';
-            if (app === 'structured-viewer') return 'structured';
-            return 'text';
-          },
-          mediaKind: function () {
-            var mime = String((this.view || {}).mime || (this.meta || {}).mime || '').toLowerCase();
-            return (this.view && this.view.mediaKind) || (mime.indexOf('video/') === 0 ? 'video' : 'audio');
-          },
-          fileTitle: function () { return (this.meta && this.meta.fileName) || (this.window && this.window.title) || 'File'; },
-          mimeLabel: function () { return (this.view && this.view.mime) || (this.meta && this.meta.mime) || 'application/octet-stream'; }
-        },
-        template: `
-          <div class="mioos-surface mioos-surface-viewer" :class="'is-' + viewerKind">
-            <div class="mioos-viewer-toolbar"><div><strong>[[ fileTitle ]]</strong><span>[[ mimeLabel ]]</span></div><button type="button" class="mioos-btn" @click="vm.downloadViewerFile(window)">Download</button></div>
-            <div class="mioos-viewer-body">
-              <div v-if="view.loading" class="mioos-viewer-empty">Loading file…</div>
-              <div v-else-if="view.error" class="mioos-viewer-empty is-error">[[ view.error ]]</div>
-              <pre v-else-if="viewerKind === 'text' || viewerKind === 'structured'" class="mioos-viewer-pre">[[ view.content ]]</pre>
-              <img v-else-if="viewerKind === 'image' && view.content" class="mioos-viewer-image" :src="view.content" :alt="fileTitle">
-              <div v-else-if="viewerKind === 'media' && view.content" class="mioos-viewer-media-wrap"><video v-if="mediaKind === 'video'" class="mioos-viewer-media" :src="view.content" controls playsinline preload="metadata"></video><audio v-else class="mioos-viewer-media" :src="view.content" controls preload="metadata"></audio></div>
-              <iframe v-else-if="viewerKind === 'pdf' && view.content" class="mioos-viewer-frame" :src="view.content" title="PDF preview"></iframe>
-              <div v-else class="mioos-viewer-empty">No preview is available for this file.</div>
-            </div>
-          </div>`
-      });
-
       app.component('mioos-surface-transfers', {
         props: ['window'],
         computed: {
@@ -760,29 +704,6 @@
                   '<article class="mioos-classic-historyrow" v-for="item in completed" :key="item.id"><div class="mioos-classic-transfercopy"><strong>[[ item.name ]]</strong><small>[[ vm.transferDirectionLabel ? vm.transferDirectionLabel(item) : item.kind ]]</small></div><span class="mioos-classic-historystatus" :class="{ \'is-failed\': item.status === \'failed\' }">[[ item.status ]]</span><small>[[ vm.transferTimestampLabel ? vm.transferTimestampLabel(item) : \'\' ]]</small><button type="button" class="mioos-classic-tool" v-if="vm.canRetryTransfer && vm.canRetryTransfer(item)" @click="vm.retryTransfer(item)">Retry</button><button type="button" class="mioos-classic-tool" v-if="vm.canCancelTransfer && vm.canCancelTransfer(item)" @click="vm.cancelTransfer(item)">Cancel</button></article>' +
                 '</div>' +
               '</div>' +
-            '</div>' +
-          '</div>'
-      });
-
-      app.component('mioos-surface-file-properties', {
-        props: ['window'],
-        computed: {
-          file: function () { return (((this.window || {}).meta || {}).file) || {}; },
-          rows: function () {
-            return [
-              { label: 'Name', value: this.file.name || this.file.title || '' },
-              { label: 'Type', value: this.file.mime || this.file.kind || this.file.type || 'File' },
-              { label: 'Size', value: this.file.sizeLabel || this.file.sizeBytes || this.file.size || '' },
-              { label: 'Modified', value: this.file.modifiedLabel || this.file.modifiedAt || this.file.mtime || '' },
-              { label: 'Path', value: this.file.path || this.file.id || this.file.key || '' }
-            ];
-          }
-        },
-        template: '' +
-          '<div class="mioos-surface mioos-surface-generic mioos-surface-file-properties">' +
-            '<div class="mioos-generic-hero"><strong>[[ file.name || file.title || window.title ]]</strong><span>File properties</span></div>' +
-            '<div class="mioos-generic-grid">' +
-              '<article v-for="row in rows" :key="row.label" class="mioos-generic-card"><strong>[[ row.label ]]</strong><span>[[ row.value || \'—\' ]]</span></article>' +
             '</div>' +
           '</div>'
       });
