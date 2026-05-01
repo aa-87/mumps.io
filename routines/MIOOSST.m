@@ -235,12 +235,15 @@ THEMEBOOT(STATE,CONF)
 	;
 
 LOADPREFS(STATE,CONF)
-	NEW USER,ROOT
+	NEW USER,ROOT,KEY
 	SET USER=$SELECT($GET(STATE("principal"))'="":$GET(STATE("principal")),1:"guest")
 	SET ROOT=$NAME(^MIO("MIOOS","PREF",USER,"desktop"))
 	SET STATE("desktopIconSize")=$SELECT($GET(@ROOT@("iconSize"))'="":$GET(@ROOT@("iconSize")),1:"medium")
 	SET STATE("desktopSortMode")=$SELECT($GET(@ROOT@("sortMode"))'="":$GET(@ROOT@("sortMode")),1:"manual")
 	KILL STATE("desktopLayout")
+	SET KEY="" FOR  SET KEY=$ORDER(@ROOT@("positions",KEY)) QUIT:KEY=""  DO
+	. SET STATE("desktopLayout","positions",KEY,"left")=$GET(@ROOT@("positions",KEY,"left"))
+	. SET STATE("desktopLayout","positions",KEY,"top")=$GET(@ROOT@("positions",KEY,"top"))
 	QUIT
 	;
 MERGELAYOUT(STATE,ROOT)

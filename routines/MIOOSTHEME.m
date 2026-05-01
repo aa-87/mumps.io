@@ -69,8 +69,12 @@ SAVE(STATE,CONF,IN,OUT,ERR)
 ASSETID(ROOT)
 	NEW A,URL
 	SET A=$GET(@ROOT@("desktop","wallpaperAssetId"))
+	IF A="" SET A=$GET(@ROOT@("wallpaperAssetId"))
+	IF A="" SET A=$GET(@ROOT@("themeConfig","wallpaperAssetId"))
 	IF A'="" QUIT A
 	SET URL=$GET(@ROOT@("desktop","wallpaperUrl"))
+	IF URL="" SET URL=$GET(@ROOT@("wallpaperUrl"))
+	IF URL="" SET URL=$GET(@ROOT@("themeConfig","wallpaperUrl"))
 	IF URL'["/api/mioos/theme-asset" QUIT ""
 	SET A=$PIECE($PIECE(URL,"id=",2),"&",1)
 	SET A=$PIECE(A,"#",1)
@@ -110,6 +114,9 @@ PROMOTEW(STATE,CONF,USER,KEY,ROOT,ACTIVE)
 	IF ASSET="" QUIT ""
 	SET AROOT=$NAME(^MIO("MIOOS","THEMEASSET",USER,ASSET))
 	SET META=$GET(@AROOT@("META"))
+	IF META="",$GET(STATE("principal"))'="",$GET(STATE("principal"))'=USER DO
+	. SET AROOT=$NAME(^MIO("MIOOS","THEMEASSET",$GET(STATE("principal")),ASSET))
+	. SET META=$GET(@AROOT@("META"))
 	IF META="" QUIT ""
 	SET DESK=$$DESKTOPID^MIOOSFS()
 	IF DESK="" QUIT ""

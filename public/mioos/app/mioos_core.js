@@ -2379,7 +2379,7 @@
           var wallpaper = Object.assign({}, cfg.wallpaper || {}, src.wallpaper || {});
           var loginCfg = Object.assign({}, cfg.loginScreenConfig || {}, src.loginScreenConfig || {});
           var id = cfg.id || src.id || src.key || src.presetKey || src.family || 'glow';
-          var wallpaperUrl = cfg.wallpaperUrl || src.wallpaperUrl || desktop.wallpaperUrl || wallpaper.url || wallpaper.href || '';
+          var wallpaperUrl = desktop.wallpaperUrl || src.wallpaperUrl || cfg.wallpaperUrl || wallpaper.url || wallpaper.href || '';
           var wallpaperFit = cfg.wallpaperFit || src.wallpaperFit || desktop.wallpaperFit || wallpaper.fit || 'cover';
           var wallpaperPreset = cfg.wallpaperPreset || src.wallpaperPreset || desktop.wallpaperPreset || wallpaper.preset || (wallpaperUrl ? 'custom-upload' : 'aurora');
           var mapped = this.themeStudioNormalizeConfig(Object.assign({}, cfg, {
@@ -2391,7 +2391,7 @@
             wallpaperUrl: wallpaperUrl,
             wallpaperFit: wallpaperFit,
             wallpaperPreset: wallpaperPreset,
-            wallpaperAssetId: cfg.wallpaperAssetId || src.wallpaperAssetId || desktop.wallpaperAssetId || wallpaper.assetId || '',
+            wallpaperAssetId: desktop.wallpaperAssetId || src.wallpaperAssetId || cfg.wallpaperAssetId || wallpaper.assetId || '',
             taskbarConfig: Object.assign({}, cfg.taskbarConfig || {}, src.taskbarConfig || {}),
             startMenuConfig: Object.assign({}, cfg.startMenuConfig || {}, src.startMenuConfig || {}),
             loginScreenConfig: Object.assign({}, loginCfg, {
@@ -2418,7 +2418,8 @@
             appearance: { accent: ((target.cssVars || {})['--accent']) || '', density: ((((this.boot || {}).desktop || {}).density) || 'comfortable') },
             colors: this.themeStudioClone(target.cssVars || {}),
             cssVars: this.themeStudioClone(target.cssVars || {}),
-            desktop: { wallpaperPreset: target.wallpaperPreset || 'aurora', wallpaperUrl: target.wallpaperUrl || '', wallpaperFit: target.wallpaperFit || 'cover' },
+            wallpaperAssetId: target.wallpaperAssetId || '',
+            desktop: { wallpaperPreset: target.wallpaperPreset || 'aurora', wallpaperUrl: target.wallpaperUrl || '', wallpaperAssetId: target.wallpaperAssetId || '', wallpaperFit: target.wallpaperFit || 'cover' },
             taskbarConfig: this.themeStudioClone(target.taskbarConfig || {}),
             startMenuConfig: this.themeStudioClone(target.startMenuConfig || {}),
             loginScreenConfig: this.themeStudioClone(target.loginScreenConfig || {}),
