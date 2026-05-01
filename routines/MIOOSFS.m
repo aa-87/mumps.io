@@ -53,6 +53,15 @@ INIT(CONF)
 	. DO SETMETAFLD(DESK,"wallpaperId",WALL)
 	. DO SETMETAFLD(WALL,"hidden",1)
 	. DO SETMETAFLD(WALL,"system",1)
+	DO SEEDDESKTOP(DESK,OWNER,ROLES)
+	QUIT
+	;
+SEEDDESKTOP(DESK,OWNER,ROLES)
+	NEW ID
+	DO ENSURESHORTCUT(DESK,"Home","home","","🏠",OWNER,ROLES,.ID)
+	DO ENSURESHORTCUT(DESK,"Terminal","terminal","",">_",OWNER,ROLES,.ID)
+	DO ENSURESHORTCUT(DESK,"Transfers","transfers","","⇅",OWNER,ROLES,.ID)
+	DO ENSURESHORTCUT(DESK,"Customize","customize","","🎨",OWNER,ROLES,.ID)
 	QUIT
 	;
 ENSUREFOLDER(PARENT,NAME,OWNER,ROLES,OUTID)
@@ -69,6 +78,31 @@ ENSUREFILE(PARENT,NAME,DATA,MIME,OWNER,ROLES,OUTID,CONF)
 	. KILL ^MIO("MIOOS","FS","CHILD",PARENT,NAME)
 	. SET OUTID=""
 	DO WRITEFILE($GET(PARENT),$GET(NAME),$GET(DATA),$GET(MIME),$GET(OWNER),$GET(ROLES),.OUTID,.CONF)
+	QUIT
+	;
+ENSURESHORTCUT(PARENT,NAME,APPKEY,TARGETPATH,ICON,OWNER,ROLES,OUTID)
+	NEW NOW,U
+	SET U="^",OUTID=$GET(^MIO("MIOOS","FS","CHILD",$GET(PARENT),$GET(NAME)))
+	IF OUTID'="",$$EXISTS(OUTID),$$FIELD(OUTID,1)="shortcut" DO  QUIT
+	. DO SETMETAFLD(OUTID,"desktopIcon",1)
+	. DO SETMETAFLD(OUTID,"targetAppKey",$GET(APPKEY))
+	. DO SETMETAFLD(OUTID,"launchKey",$GET(APPKEY))
+	. DO SETMETAFLD(OUTID,"targetPath",$GET(TARGETPATH))
+	. DO SETMETAFLD(OUTID,"folderIcon",$GET(ICON))
+	. DO SETMETAFLD(OUTID,"protected",1)
+	IF OUTID'="" DO
+	. KILL ^MIO("MIOOS","FS","CHILD",$GET(PARENT),$GET(NAME))
+	. SET OUTID=""
+	IF '$$VALIDNAME($GET(NAME)) QUIT
+	SET OUTID=$$NEXTID(),NOW=$HOROLOG
+	DO SAVEENTRY(OUTID,"shortcut",$GET(PARENT),$GET(NAME),"application/x-mioos-shortcut",0,NOW,NOW,$GET(OWNER),$GET(ROLES),1,1,1)
+	SET ^MIO("MIOOS","FS","CHILD",$GET(PARENT),$GET(NAME))=OUTID
+	DO SETMETAFLD(OUTID,"desktopIcon",1)
+	DO SETMETAFLD(OUTID,"targetAppKey",$GET(APPKEY))
+	DO SETMETAFLD(OUTID,"launchKey",$GET(APPKEY))
+	DO SETMETAFLD(OUTID,"targetPath",$GET(TARGETPATH))
+	DO SETMETAFLD(OUTID,"folderIcon",$GET(ICON))
+	DO SETMETAFLD(OUTID,"protected",1)
 	QUIT
 	;
 NEXTID()
@@ -543,6 +577,17 @@ META(STATE,ID,OUT,ERR)
 	SET OUT("sharing","users")=$$METAFIELD(RID,"shareUsers")
 	SET OUT("customize","background")=$$METAFIELD(RID,"folderBackground")
 	SET OUT("customize","icon")=$$METAFIELD(RID,"folderIcon")
+	SET OUT("desktopIcon")=+$$METAFIELD(RID,"desktopIcon")
+	SET OUT("iconLeft")=$$METAFIELD(RID,"iconLeft")
+	SET OUT("iconTop")=$$METAFIELD(RID,"iconTop")
+	SET OUT("protected")=+$$METAFIELD(RID,"protected")
+	SET OUT("shortcut","targetAppKey")=$$METAFIELD(RID,"targetAppKey")
+	SET OUT("shortcut","launchKey")=$$METAFIELD(RID,"launchKey")
+	SET OUT("shortcut","targetPath")=$$METAFIELD(RID,"targetPath")
+	IF OUT("shortcut","targetAppKey")'="" DO
+	. SET OUT("appKey")=OUT("shortcut","targetAppKey")
+	. SET OUT("launchKey")=$SELECT(OUT("shortcut","launchKey")'="":OUT("shortcut","launchKey"),1:OUT("shortcut","targetAppKey"))
+	IF OUT("shortcut","targetPath")'="" SET OUT("targetPath")=OUT("shortcut","targetPath")
 	SET OUT("viewMode")=$SELECT($$METAFIELD(RID,"viewMode")'="":$$METAFIELD(RID,"viewMode"),1:"details")
 	SET OUT("sortBy")=$SELECT($$METAFIELD(RID,"sortBy")'="":$$METAFIELD(RID,"sortBy"),1:"name")
 	SET OUT("sortDirection")=$SELECT($$METAFIELD(RID,"sortDirection")'="":$$METAFIELD(RID,"sortDirection"),1:"ascending")
@@ -727,7 +772,7 @@ FOLDERSTAT(ID,OUT)
 	QUIT
 	;
 SETMETA(STATE,ID,IN,OUT,ERR)
-	NEW RID,U,RO,SH,HID,SCOPE,USERS
+	NEW RID,U,RO,SH,HID,SCOPE,USERS,LEFT,TOP
 	SET U="^",ERR("routine")="MIOOSFS"
 	KILL OUT
 	IF '$$RESOLVE($GET(ID),.RID,.ERR) QUIT 0
@@ -750,6 +795,11 @@ SETMETA(STATE,ID,IN,OUT,ERR)
 	. DO SETMETAFLD(RID,"viewMode",$$LOW^MIOUTIL($$TRIM^MIOUTIL($GET(IN("viewMode")))))
 	. DO SETMETAFLD(RID,"sortBy",$$LOW^MIOUTIL($$TRIM^MIOUTIL($GET(IN("sortBy")))))
 	. DO SETMETAFLD(RID,"sortDirection",$$LOW^MIOUTIL($$TRIM^MIOUTIL($GET(IN("sortDirection")))))
+	IF $DATA(IN("desktopIcon")) DO SETMETAFLD(RID,"desktopIcon",+IN("desktopIcon"))
+	SET LEFT=$SELECT($DATA(IN("iconLeft")):$GET(IN("iconLeft")),1:$GET(IN("desktop","left")))
+	SET TOP=$SELECT($DATA(IN("iconTop")):$GET(IN("iconTop")),1:$GET(IN("desktop","top")))
+	IF LEFT'="" DO SETMETAFLD(RID,"iconLeft",+LEFT)
+	IF TOP'="" DO SETMETAFLD(RID,"iconTop",+TOP)
 	SET $PIECE(^MIO("MIOOS","FS","ENTRY",RID),U,11)=$SELECT(RO=1:0,1:1)
 	SET $PIECE(^MIO("MIOOS","FS","ENTRY",RID),U,12)=$SELECT(RO=1:0,1:1)
 	SET $PIECE(^MIO("MIOOS","FS","ENTRY",RID),U,7)=$HOROLOG

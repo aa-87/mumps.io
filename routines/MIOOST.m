@@ -51,7 +51,7 @@ MIOOST ; MIOOS tests
 	DO T054
 	DO T055
 	DO T056
-	; ROI 2 desktop/VFS creation tests are intentionally deferred.
+	DO T057
 	DO T058
 	DO T060
 	DO T061
@@ -1183,8 +1183,56 @@ T056
 	;
 	;	;
 T057
-	; Desktop/VFS creation tests are intentionally deferred outside ROI 1.
+	NEW CONF,REQ,CTX,STATE,ERR,BOOT,LIST,LAYOUT,OUT,DESK,HOME,ID
+	DO RESET
+	DO CONFDEF^MIOOS(.CONF)
+	SET CONF("mioos","localAuth","enabled")=0
+	SET CONF("mioos","dev","authDisabled")=1
+	DO INIT^MIOOS(.CONF)
+	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T057][load]")
+	SET HOME=$$HOMEID^MIOOSFS(),DESK=$$DESKTOPID^MIOOSFS()
+	DO OK^MIOTASSERT(HOME'="root","[MIOOST][T057][home canonical]")
+	DO EQ^MIOTASSERT($$FIELD^MIOOSFS(DESK,2),HOME,"[MIOOST][T057][desktop under home]")
+	DO EQ^MIOTASSERT($$PATH^MIOOSFS(DESK),"/Home/Desktop","[MIOOST][T057][desktop path]")
+	DO BOOTARY^MIOOSST(.STATE,.CONF,.BOOT)
+	DO EQ^MIOTASSERT($GET(BOOT("desktop","canonicalDesktopPath")),"/Home/Desktop","[MIOOST][T057][boot canonical path]")
+	DO EQ^MIOTASSERT($GET(BOOT("vfs","desktopId")),DESK,"[MIOOST][T057][boot desktop id]")
+	DO OK^MIOTASSERT($GET(BOOT("desktopEntries",1,"source"))="vfs","[MIOOST][T057][desktop entries from vfs]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","this.desktopSystemShortcuts().forEach(add);"),0,"[MIOOST][T057][no client desktop duplicates]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","localStorage.getItem(this.desktopLayoutStorageKey())"),0,"[MIOOST][T057][no localstorage desktop hydrate]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","window.localStorage.setItem(this.desktopLayoutStorageKey()"),0,"[MIOOST][T057][no localstorage desktop persist]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","beforeMount: function ()"),"[MIOOST][T057][pre mount boot]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","primeBootForFirstPaint"),"[MIOOST][T057][first paint layout]")
+	KILL OUT,ERR
+	DO OK^MIOTASSERT($$WRITE^MIOOSFS(.STATE,DESK,"T057.txt","hello","text/plain",.OUT,.ERR),"[MIOOST][T057][create desktop file]")
+	SET ID=$GET(OUT("id"))
+	DO OK^MIOTASSERT(ID'="","[MIOOST][T057][file id]")
+	KILL LIST,ERR
+	DO OK^MIOTASSERT($$LIST^MIOOSFS(.STATE,DESK,.LIST,.ERR),"[MIOOST][T057][list desktop]")
+	DO OK^MIOTASSERT($$HASENTRY(.LIST,ID),"[MIOOST][T057][file visible in desktop vfs]")
+	KILL BOOT
+	DO BOOTARY^MIOOSST(.STATE,.CONF,.BOOT)
+	DO OK^MIOTASSERT($$BOOTENTRY(.BOOT,ID),"[MIOOST][T057][file visible in boot desktop]")
+	KILL LAYOUT,OUT,ERR
+	SET LAYOUT("positions",ID,"left")=128,LAYOUT("positions",ID,"top")=192,LAYOUT("iconSize")="medium",LAYOUT("sortMode")="manual"
+	DO OK^MIOTASSERT($$SAVELAYOUT^MIOOSST(.STATE,.LAYOUT,.OUT,.ERR),"[MIOOST][T057][save vfs layout]")
+	DO EQ^MIOTASSERT($$METAFIELD^MIOOSFS(ID,"iconLeft"),128,"[MIOOST][T057][icon left in vfs]")
+	DO EQ^MIOTASSERT($$METAFIELD^MIOOSFS(ID,"iconTop"),192,"[MIOOST][T057][icon top in vfs]")
 	QUIT
+	;
+HASENTRY(OUT,ID)
+	NEW I,OK
+	SET OK=0,I=0
+	FOR  SET I=$ORDER(OUT("entries",I)) QUIT:'I  DO  QUIT:OK
+	. IF $GET(OUT("entries",I,"id"))=$GET(ID) SET OK=1
+	QUIT OK
+	;
+BOOTENTRY(BOOT,ID)
+	NEW I,OK
+	SET OK=0,I=0
+	FOR  SET I=$ORDER(BOOT("desktopEntries",I)) QUIT:'I  DO  QUIT:OK
+	. IF $GET(BOOT("desktopEntries",I,"id"))=$GET(ID) SET OK=1
+	QUIT OK
 	;
 T058
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-explorer-native"),"[MIOOST][T058][native explorer shell]")

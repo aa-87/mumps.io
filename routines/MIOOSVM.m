@@ -75,10 +75,15 @@ DESKTOPVM(STATE,CONF,ROOT,FROOT)
 	. SET @ROOT@(N,"label")=NAME
 	. SET @ROOT@(N,"source")="vfs"
 	. SET @ROOT@(N,"targetPath")=$GET(OUT("entries",I,"path"))
+	. IF $GET(OUT("entries",I,"iconLeft"))'="" SET @ROOT@(N,"iconLeft")=$GET(OUT("entries",I,"iconLeft"))
+	. IF $GET(OUT("entries",I,"iconTop"))'="" SET @ROOT@(N,"iconTop")=$GET(OUT("entries",I,"iconTop"))
+	. IF $GET(OUT("entries",I,"launchKey"))'="" SET @ROOT@(N,"launchKey")=$GET(OUT("entries",I,"launchKey"))
+	. IF $GET(OUT("entries",I,"appKey"))'="" SET @ROOT@(N,"appKey")=$GET(OUT("entries",I,"appKey"))
+	. IF $GET(OUT("entries",I,"shortcut","targetAppKey"))'="" SET @ROOT@(N,"targetAppKey")=$GET(OUT("entries",I,"shortcut","targetAppKey"))
 	. SET ICON=$GET(OUT("entries",I,"customize","icon"))
 	. IF ICON="" SET ICON=$$ICON(KIND,MIME,NAME)
 	. SET @ROOT@(N,"icon")=ICON
-	. SET @ROOT@(N,"subtitle")=$SELECT(KIND="folder":"Folder",$GET(OUT("entries",I,"sizeLabel"))'="":$GET(OUT("entries",I,"sizeLabel")),1:"File")
+	. SET @ROOT@(N,"subtitle")=$SELECT(KIND="shortcut":"Shortcut",KIND="folder":"Folder",$GET(OUT("entries",I,"sizeLabel"))'="":$GET(OUT("entries",I,"sizeLabel")),1:"File")
 	SET @FROOT@("count")=N
 	QUIT
 	;

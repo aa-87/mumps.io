@@ -235,15 +235,12 @@ THEMEBOOT(STATE,CONF)
 	;
 
 LOADPREFS(STATE,CONF)
-	NEW USER,ROOT,KEY
+	NEW USER,ROOT
 	SET USER=$SELECT($GET(STATE("principal"))'="":$GET(STATE("principal")),1:"guest")
 	SET ROOT=$NAME(^MIO("MIOOS","PREF",USER,"desktop"))
 	SET STATE("desktopIconSize")=$SELECT($GET(@ROOT@("iconSize"))'="":$GET(@ROOT@("iconSize")),1:"medium")
 	SET STATE("desktopSortMode")=$SELECT($GET(@ROOT@("sortMode"))'="":$GET(@ROOT@("sortMode")),1:"manual")
 	KILL STATE("desktopLayout")
-	SET KEY="" FOR  SET KEY=$ORDER(@ROOT@("positions",KEY)) QUIT:KEY=""  DO
-	. SET STATE("desktopLayout","positions",KEY,"left")=+$GET(@ROOT@("positions",KEY,"left"))
-	. SET STATE("desktopLayout","positions",KEY,"top")=+$GET(@ROOT@("positions",KEY,"top"))
 	QUIT
 	;
 MERGELAYOUT(STATE,ROOT)
@@ -257,16 +254,23 @@ MERGELAYOUT(STATE,ROOT)
 	QUIT
 	;
 SAVELAYOUT(STATE,TREE,OUT,ERR)
-	NEW USER,ROOT,KEY
+	NEW USER,ROOT,KEY,RID,DESK,SAVED
 	SET USER=$SELECT($GET(STATE("principal"))'="":$GET(STATE("principal")),1:"guest")
 	SET ROOT=$NAME(^MIO("MIOOS","PREF",USER,"desktop"))
-	KILL @ROOT
+	KILL @ROOT@("positions")
 	SET @ROOT@("iconSize")=$SELECT($GET(TREE("iconSize"))'="":$GET(TREE("iconSize")),1:"medium")
 	SET @ROOT@("sortMode")=$SELECT($GET(TREE("sortMode"))'="":$GET(TREE("sortMode")),1:"manual")
-	SET KEY="" FOR  SET KEY=$ORDER(TREE("positions",KEY)) QUIT:KEY=""  DO
-	. SET @ROOT@("positions",KEY,"left")=+$GET(TREE("positions",KEY,"left"))
-	. SET @ROOT@("positions",KEY,"top")=+$GET(TREE("positions",KEY,"top"))
+	SET DESK=$GET(STATE("fsDesktopId")) IF DESK="" SET DESK=$$DESKTOPID^MIOOSFS()
+	SET SAVED=0,KEY="" FOR  SET KEY=$ORDER(TREE("positions",KEY)) QUIT:KEY=""  DO
+	. SET RID=KEY
+	. IF '$$EXISTS^MIOOSFS(RID) QUIT
+	. IF $$FIELD^MIOOSFS(RID,2)'=DESK QUIT
+	. DO SETMETAFLD^MIOOSFS(RID,"iconLeft",+$GET(TREE("positions",KEY,"left")))
+	. DO SETMETAFLD^MIOOSFS(RID,"iconTop",+$GET(TREE("positions",KEY,"top")))
+	. SET SAVED=SAVED+1
 	SET OUT("saved")=1
+	SET OUT("savedPositions")=SAVED
+	SET OUT("storage")="vfs-entry-meta"
 	SET OUT("user")=USER
 	SET OUT("iconSize")=@ROOT@("iconSize")
 	SET OUT("sortMode")=@ROOT@("sortMode")
@@ -524,7 +528,7 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","shortcuts","windowSwitcher")="Alt+Tab"
 	SET OBJ("desktop","shortcuts","closeFocusedWindow")="Shift+Escape"
 	SET OBJ("desktop","shortcuts","openDiagnostics")="Ctrl+Shift+Escape"
-	SET OBJ("desktop","persistence","desktopLayout")="localstorage-desktop-layout"
+	SET OBJ("desktop","persistence","desktopLayout")="vfs-entry-meta"
 	SET OBJ("desktop","persistence","windowLayout")="localstorage-window-layout"
 	SET OBJ("desktop","persistence","authWindow")="localstorage-auth-window-frame"
 	SET OBJ("desktop","accessibility","reducedMotionToggle")=1

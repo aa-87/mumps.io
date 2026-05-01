@@ -77,6 +77,7 @@
           debugCenter: { loading: false, refreshedAt: 0, error: '', snapshot: {}, events: [], seq: 0 },
           socketTelemetry: {},
           moduleCatalog: { loading: false, refreshedAt: 0, error: '' },
+          _bootPrimed: false,
           desktopUi: {
             iconSize: 'medium',
             sortMode: 'manual',
@@ -123,16 +124,14 @@
           }
         }
       },
+      beforeMount: function () {
+        this.primeBootForFirstPaint();
+      },
       mounted: function () {
         var self = this;
-        this.bootstrapFromDom();
-        this.initThemeStudioStore();
-        if (this.themeStudioBootProfile && this.themeStudioBootProfile() && this.hydrateShellTheme) this.hydrateShellTheme(this.themeStudioBootProfile());
-        /* First-paint theme is server-rendered; this only hydrates the client model to the same server profile. */
+        this.primeBootForFirstPaint();
+        /* First-paint theme and desktop layout are server-authored before the initial Vue render. */
         this.restorePersistedTransfers();
-        this.normalizeDesktopUiState();
-        this.ensureDesktopLayout();
-        this.normalizeDesktopUiState();
         this.applyDocumentLocale();
         this.startClock();
         if (!this.requiresSignin) {
@@ -191,6 +190,16 @@
         });
       },
       methods: Object.assign({
+        primeBootForFirstPaint: function () {
+          if (this._bootPrimed) return;
+          this.bootstrapFromDom();
+          this.initThemeStudioStore();
+          if (this.themeStudioBootProfile && this.themeStudioBootProfile() && this.hydrateShellTheme) this.hydrateShellTheme(this.themeStudioBootProfile());
+          this.normalizeDesktopUiState();
+          this.ensureDesktopLayout();
+          this.normalizeDesktopUiState();
+          this._bootPrimed = true;
+        },
         normalizeDesktopUiState: function () {
           if (!this.desktopUi) this.desktopUi = {};
           if (!this.desktopUi.drag) this.desktopUi.drag = { armed: false, active: false, moved: false, key: '', startX: 0, startY: 0, left: 0, top: 0 };
@@ -205,29 +214,7 @@
           return this.desktopUi.contextMenu || { open: false, type: 'desktop', key: '', left: 0, top: 0 };
         },
         desktopSystemShortcuts: function () {
-          var self = this;
-          var preferred = [
-            { key: 'home', title: 'Home', icon: '🏠' },
-            { key: 'my-computer', title: 'Computer', icon: '🖥️' },
-            { key: 'documents', title: 'Documents', icon: '📁' },
-            { key: 'terminal', title: 'Terminal', icon: '▣' },
-            { key: 'transfers', title: 'Transfers', icon: '⇄' },
-            { key: 'customize', title: 'Customize', icon: '🎨' }
-          ];
-          return preferred.map(function (fallback) {
-            var app = (self.launcherEntries || []).find(function (entry) { return entry && (entry.key === fallback.key || entry.appKey === fallback.key); }) || fallback;
-            return {
-              key: 'shortcut:' + (app.key || app.appKey || fallback.key),
-              appKey: app.key || app.appKey || fallback.key,
-              launchKey: app.key || app.appKey || fallback.key,
-              title: app.title || app.label || fallback.title,
-              label: app.title || app.label || fallback.title,
-              icon: app.icon || fallback.icon,
-              kind: 'shortcut',
-              source: 'shortcut',
-              protected: true
-            };
-          });
+          return []; /* ROI 2: desktop icons are VFS entries under /Home/Desktop, not client-side duplicates. */
         },
         desktopEntryIsSystemArtifact: function (entry) {
           var text = String(((entry || {}).title || '') + ' ' + ((entry || {}).label || '') + ' ' + ((entry || {}).name || '') + ' ' + ((entry || {}).path || '')).toLowerCase();
@@ -241,7 +228,6 @@
             seen[entry.key] = 1;
             out.push(entry);
           }
-          this.desktopSystemShortcuts().forEach(add);
           (this.desktopEntries || []).filter(function (entry) { return entry && !this.desktopEntryIsSystemArtifact(entry); }, this).forEach(add);
           return out;
         },
@@ -922,16 +908,7 @@
           var col = 0;
           var row = 0;
           var viewportHeight = this.desktopViewportHeight();
-          var cached = null;
           if (!this.desktopUi.positions) this.desktopUi.positions = {};
-          if (!Object.keys(this.desktopUi.positions).length) {
-            try { cached = JSON.parse(window.localStorage.getItem(this.desktopLayoutStorageKey()) || 'null'); } catch (err) { cached = null; }
-            if (cached && cached.positions) {
-              this.desktopUi.positions = window.MIOOSState.deepClone(cached.positions || {});
-              if (cached.iconSize) this.desktopUi.iconSize = cached.iconSize;
-              if (cached.sortMode) this.desktopUi.sortMode = cached.sortMode;
-            }
-          }
           (this.desktopRenderEntries ? this.desktopRenderEntries() : (this.desktopEntries || [])).forEach(function (entry) {
             if (!entry || !entry.key) return;
             if (!self.desktopUi.positions[entry.key]) {
@@ -1023,12 +1000,8 @@
           if (drag.moved) this.persistDesktopLayout();
           this.desktopUi.drag = { armed: false, active: false, moved: false, key: '', startX: 0, startY: 0, left: 0, top: 0 };
         },
-        desktopLayoutStorageKey: function () {
-          return 'mioos.desktop.layout.' + (((this.boot || {}).user || {}).id || 'guest');
-        },
         persistDesktopLayout: function () {
           var payload = this.desktopLayoutPayload();
-          try { window.localStorage.setItem(this.desktopLayoutStorageKey(), JSON.stringify(payload)); } catch (err) {}
           if (this.socketRequest) {
             this.socketRequest((this.boot.routes || {}).commandEvent || 'desktop.command', { command: 'desktop.layout.save', iconSize: payload.iconSize, sortMode: payload.sortMode, positions: payload.positions }, { command: 'desktop.layout.save', dedupeKey: 'desktop.layout.save', timeoutMs: 3000 }).catch(function () {});
           }
@@ -1043,7 +1016,7 @@
           var viewportHeight = this.desktopViewportHeight();
           var col = 0;
           var row = 0;
-          (this.desktopEntries || []).forEach(function (entry) {
+          (this.desktopRenderEntries ? this.desktopRenderEntries() : (this.desktopEntries || [])).forEach(function (entry) {
             self.desktopUi.positions[entry.key] = { left: 16 + (col * metrics.width), top: 16 + (row * metrics.height) };
             row += 1;
             if ((16 + ((row + 1) * metrics.height)) > viewportHeight) { row = 0; col += 1; }
@@ -1128,6 +1101,7 @@
         openDesktopEntry: function (entry) {
           if (!entry) return;
           if (entry.source === 'shortcut') { this.openApp(entry.launchKey || entry.appKey || String(entry.key || '').replace(/^shortcut:/, '')); return; }
+          if ((entry.kind || entry.type) === 'shortcut' || entry.targetAppKey) { this.openApp(entry.launchKey || entry.appKey || entry.targetAppKey); return; }
           if (!this.desktopEntryIsVfs(entry)) { this.openApp(entry.appKey || entry.launchKey || entry.key); return; }
           if ((entry.kind || entry.type) === 'folder') { this.openExplorerFolder(entry.id || entry.key, entry.title || entry.name || 'Folder'); return; }
           if (this.openFileViewerWindow) { this.openFileViewerWindow(entry); return; }
