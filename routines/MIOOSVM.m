@@ -24,15 +24,19 @@ BUILD(STATE,CONF,VIEW)
 	SET VIEW("controlPanel",2,"title")=$$TXT^MIOOSI18N(CODE,"view.controlPanel.2.title","Font")
 	SET VIEW("controlPanel",2,"detail")=$GET(STATE("fontFamily"))_" "_+$GET(STATE("fontSize"),13)
 	SET VIEW("controlPanel",3,"title")=$$TXT^MIOOSI18N(CODE,"view.controlPanel.3.title","Transport")
-	SET VIEW("controlPanel",3,"detail")="mixed-http-websocket"
-	SET VIEW("controlPanel",4,"title")=$$TXT^MIOOSI18N(CODE,"view.controlPanel.4.title","Authentication")
+	SET VIEW("controlPanel",3,"detail")=$GET(STATE("transportMode"),"websocket")_" / "_$GET(STATE("transportModel"),"mixed-http-websocket")
+	SET VIEW("controlPanel",4,"title")="App Catalogue"
+	SET VIEW("controlPanel",4,"detail")=$SELECT(+$GET(STATE("moduleSystemEnabled"),1):"Available",1:"Disabled")
+	SET VIEW("controlPanel",5,"title")="Sample Table"
+	SET VIEW("controlPanel",5,"detail")=$GET(STATE("tableQueryPath"),"/api/mioos/table/query")
+	SET VIEW("controlPanel",6,"title")=$$TXT^MIOOSI18N(CODE,"view.controlPanel.4.title","Authentication")
 	IF +$GET(STATE("authenticated"),0)=1 DO
 	. SET AUTHTXT=$$TXT^MIOOSI18N(CODE,"auth.state.signedInAs","Signed in as")_" "_$GET(STATE("userName"))
 	ELSE  IF +$GET(STATE("authRequired"),0)=1 DO
 	. SET AUTHTXT=$$TXT^MIOOSI18N(CODE,"auth.state.required","Sign in required")
 	ELSE  DO
 	. SET AUTHTXT=$$TXT^MIOOSI18N(CODE,"auth.state.guest","Desktop available without sign-in")
-	SET VIEW("controlPanel",4,"detail")=AUTHTXT
+	SET VIEW("controlPanel",6,"detail")=AUTHTXT
 	SET VIEW("explorer","currentFolderId")=$GET(STATE("fsDesktopId"),$GET(STATE("fsHomeId"),$GET(STATE("fsRootId"),"root")))
 	SET VIEW("explorer","quickPlaces",1,"id")=$GET(STATE("fsHomeId"),$GET(STATE("fsRootId"),"root"))
 	SET VIEW("explorer","quickPlaces",1,"title")="Home"

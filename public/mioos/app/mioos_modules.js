@@ -59,7 +59,7 @@
     var moduleKey = (win || {}).moduleComponent || (win || {}).componentKey || '';
     var module = moduleByKey(vm, (win || {}).moduleId || (win || {}).appKey || '');
     if (!moduleKey && module) moduleKey = module.componentKey || module.component || '';
-    if ((win || {}).appKey === 'ui-modules' || moduleKey === 'module-catalog') return 'mioos-surface-ui-modules';
+    if ((win || {}).appKey === 'app-catalog' || (win || {}).appKey === 'ui-modules' || moduleKey === 'module-catalog') return 'mioos-surface-ui-modules';
     if (module && module.surface) return module.surface;
     var component = componentByKey(vm, moduleKey);
     if (component && component.surface) return component.surface;
@@ -78,28 +78,16 @@
     uiModuleCatalogCommand: function () { return ((((this.boot || {}).routes || {}).moduleCatalogCommand) || 'module.catalog'); },
     uiModuleRefreshCatalog: function () {
       var self = this;
-      function apply(payload) {
-        payload = payload || {};
+      return fetch(this.uiModuleRoute(), { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: '{}' }).then(function (response) {
+        if (!response.ok) throw new Error('Module catalog failed: HTTP ' + response.status);
+        return response.json();
+      }).then(function (payload) {
         self.boot.uiModules = clone(payload || {});
         self.boot.modules = toList((payload || {}).modules);
         return self.boot.uiModules;
-      }
-      function wsFallback() {
-        if (!self.command) return Promise.reject(new Error('module_catalog_transport_unavailable'));
-        return self.command(self.uiModuleCatalogCommand(), {}).then(function (msg) { return apply((msg || {}).module || msg || {}); });
-      }
-      var route = this.uiModuleRoute();
-      if (!route) return wsFallback();
-      return fetch(route, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: '{}' }).then(function (resp) {
-        return resp.json().catch(function () { return {}; }).then(function (body) {
-          if (!resp.ok || (body && body.ok === 0)) throw body || { error: 'module_catalog_http_failed', detail: resp.status };
-          return apply(body || {});
-        });
       }).catch(function (err) {
-        return wsFallback().catch(function () {
-          if (self.showAlert) self.showAlert('UI Modules', (err && (err.detail || err.error || err.message)) || 'Module catalog failed');
-          throw err;
-        });
+        if (self.showAlert) self.showAlert('App Catalogue', (err && (err.detail || err.error || err.message)) || 'Module catalog failed');
+        throw err;
       });
     },
     uiModuleOpen: function (key) {

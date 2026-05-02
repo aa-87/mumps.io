@@ -15,7 +15,7 @@
     return {
       product: { name: 'MIOOS', subtitle: '', profile: 'dev', version: '' },
       user: { id: '', displayName: '', authenticated: false, roles: [] },
-      session: { id: 'mioos-shell', transportModel: 'core-websocket-plus-app-websockets' },
+      session: { id: 'mioos-shell', transportModel: 'mixed-http-websocket' },
       locale: { code: 'en', dir: 'ltr', label: 'English', rtl: false, supported: defaultLocales() },
       i18n: { strings: {} },
       routes: {
@@ -34,10 +34,8 @@
         fsUploadCommit: '/api/mioos/fs/upload/commit',
         fsUploadAbort: '/api/mioos/fs/upload/abort',
         fsBlob: '/api/mioos/fs/blob',
+        tableQuery: '/api/mioos/table/query',
         moduleCatalog: '/api/mioos/modules/catalog',
-        moduleTableQuery: '/api/mioos/table/query',
-        moduleCatalogCommand: 'module.catalog',
-        moduleTableQueryCommand: 'module.table.query',
         debugSnapshotCommand: 'debug.snapshot',
         websocket: '/ws/mioos',
         terminalWebsocket: '/ws/mioos/terminal',
@@ -56,8 +54,8 @@
         taskbarStyle: 'xp-professional',
         startMenuStyle: 'xp-two-column',
         windowManager: 'mioos-native-vue-css',
-        commandTransport: 'websocket-only',
-        realtimeContract: 'core-websocket-plus-app-websockets',
+        commandTransport: 'mixed-http-websocket',
+        realtimeContract: 'mixed-http-websocket',
         themes: [],
         accessibility: {
           rtl: false,
@@ -69,15 +67,15 @@
           clientModel: 'thin-vue-umd',
           renderBudgetMs: 16,
           payloadMode: 'tmp-global-safe',
-          transport: 'websocket-first-http-refresh',
+          transport: 'websocket-first-http-fallback',
           uploadPreparation: 'blob-slice-no-base64',
-          uploadStrategy: 'http-binary-parallel-slice-xhr-with-auto-pause',
+          uploadStrategy: 'http-primary-websocket-control',
           uploadFinalizeStrategy: 'binary-direct-stage-promote-with-copy-on-overwrite',
           transferPersistence: 'localstorage-resumable-transfer-list',
           downloadStrategy: 'direct-http-range-native',
-          downloadSendStrategy: 'vfs-segment-streaming-http-blob',
-          mediaStreamStrategy: 'range-kickstart-http-blob-partial-window',
-          textPreviewStrategy: 'windowed-websocket-range-read'
+          downloadSendStrategy: 'vfs-http-blob',
+          mediaStreamStrategy: 'http-blob-preview',
+          textPreviewStrategy: 'mixed-http-primary-websocket-control'
         },
         moduleSystem: { enabled: true, launcher: 'desktop-icons-and-menu', manifestVersion: 1, appCatalogEnabled: true, appCatalogKey: 'app-catalog', dynamicWindows: true, debugAppKey: 'debug-center' },
         debugCenter: { enabled: true, eventLimit: 50, snapshotVersion: 1 },
@@ -145,13 +143,13 @@
         maxFrameBytes: 262144,
         maxMessageBytes: 1048576
       },
-      vfs: { enabled: false, rootId: 'root', homeId: 'home', desktopId: 'desktop', chunkSize: 131072, httpChunkBytes: 131072, readPreviewBytes: 262144, readWindowBytes: 262144, mediaInitialBytes: 262144, mediaWarmupBytes: 65536, globalsOnly: true, uploadStaleSeconds: 1800, downloadStaleSeconds: 900, uploadChunkBytes: 860000, uploadConcurrency: 3, transferPersistence: 'localstorage-resumable-transfer-list', transferControls: { cancel: true, retry: true, pause: true, resume: true } },
+      transport: { mode: 'websocket', httpFallback: true, policy: 'websocket-first' },
+      vfs: { enabled: false, transport: 'websocket', uploadChunkTransport: 'websocket', rootId: 'root', homeId: 'home', desktopId: 'desktop', chunkSize: 131072, httpChunkBytes: 131072, readPreviewBytes: 262144, readWindowBytes: 262144, mediaInitialBytes: 262144, mediaWarmupBytes: 65536, globalsOnly: true, uploadStaleSeconds: 1800, downloadStaleSeconds: 900, uploadChunkBytes: 860000, uploadConcurrency: 3, transferPersistence: 'localstorage-resumable-transfer-list', transferControls: { cancel: true, retry: true, pause: true, resume: true } },
       desktopEntries: [],
       desktopFolder: { id: '', path: '/Home/Desktop', canonicalPath: '/Home/Desktop', count: 0 },
       apps: [],
       windows: [],
-      modules: [],
-      uiModules: { ok: 0, modules: [], components: [], examples: [] }
+      modules: []
     };
   }
 
@@ -209,6 +207,7 @@
     base.auth.audit = Object.assign({}, (defaultBoot().auth.audit || {}), base.auth.audit || {}, (boot.auth || {}).audit || {});
     base.auth.management = Object.assign({}, (defaultBoot().auth.management || {}), base.auth.management || {}, (boot.auth || {}).management || {});
     base.websocket = Object.assign(base.websocket || {}, boot.websocket || {});
+    base.transport = Object.assign(base.transport || {}, boot.transport || {});
     base.vfs = Object.assign(base.vfs, boot.vfs || {});
     base.terminal = Object.assign(base.terminal, boot.terminal || {});
     base.terminal.profile = Object.assign(base.terminal.profile, (boot.terminal || {}).profile || {});
@@ -217,7 +216,6 @@
     base.apps = Array.isArray(boot.apps) ? deepClone(boot.apps) : [];
     base.windows = Array.isArray(boot.windows) ? deepClone(boot.windows) : [];
     base.modules = Array.isArray(boot.modules) ? deepClone(boot.modules) : [];
-    base.uiModules = deepClone(boot.uiModules || base.uiModules || { ok: 0, modules: [], components: [], examples: [] });
     base.locale.supported = Array.isArray((boot.locale || {}).supported) ? deepClone(boot.locale.supported) : defaultLocales();
     return base;
   }

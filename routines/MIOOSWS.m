@@ -29,8 +29,9 @@ MESSAGE(DEV,CONF,REQ,CTX)
 	. DO SENDTEXT^MIOWS(.DEV,$$ACKJSON(.STATE,"shell.open",$$FIELD($GET(CTX("payload")),"appKey")))
 	IF EVT="desktop.command"!(EVT="command.exec") DO  QUIT
 	. DO REGPAYL(.STATE,$GET(CTX("payload")))
-	. IF +$GET(STATE("authRequired"),0)=1,+$GET(STATE("authenticated"),0)'=1 DO  QUIT
-	. . DO SENDTEXT^MIOWS(.DEV,$$CMDERRJSON(.STATE,$$RAWJSONFIELD($GET(CTX("payload")),"requestId"),$$RAWJSONFIELD($GET(CTX("payload")),"command"),401,"login_required",$$RAWJSONFIELD($GET(CTX("payload")),"command")))
+	. NEW WSCMD SET WSCMD=$$RAWJSONFIELD($GET(CTX("payload")),"command")
+	. IF +$GET(STATE("authRequired"),0)=1,+$GET(STATE("authenticated"),0)'=1,WSCMD'="auth.signin",WSCMD'="auth.guest",WSCMD'="auth.password.change" DO  QUIT
+	. . DO SENDTEXT^MIOWS(.DEV,$$CMDERRJSON(.STATE,$$RAWJSONFIELD($GET(CTX("payload")),"requestId"),WSCMD,401,"login_required",WSCMD))
 	. IF $$COMMANDJSON(.CONF,.REQ,.CTX,.STATE,$GET(CTX("payload")),.RESP,.ERR) DO  IF 1
 	. . DO SENDTEXT^MIOWS(.DEV,RESP)
 	. ELSE  DO
@@ -51,6 +52,10 @@ COMMANDJSON(CONF,REQ,CTX,STATE,PAYLOAD,OUTJSON,ERR)
 	SET REQID=$SELECT($GET(TREE("requestId"))'="":$GET(TREE("requestId")),1:REQID)
 	SET ERR("requestId")=REQID,ERR("command")=CMD
 	IF CMD="" SET ERR("error")="command_missing" QUIT 0
+	IF CMD="auth.signin" QUIT $$AUTHSIGNIN(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
+	IF CMD="auth.guest" QUIT $$AUTHGUEST(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
+	IF CMD="auth.password.change" QUIT $$AUTHPWCHG(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
+	IF CMD="auth.signout" QUIT $$AUTHSIGNOUT(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="terminal.open"!(CMD="terminal.attach") QUIT $$CMDOPEN(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="terminal.input" QUIT $$CMDINPUT(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="terminal.poll" QUIT $$CMDPOLL(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
@@ -81,13 +86,58 @@ COMMANDJSON(CONF,REQ,CTX,STATE,PAYLOAD,OUTJSON,ERR)
 	IF CMD="auth.accounts" QUIT $$AUTHACCTS(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="auth.user.unlock" QUIT $$AUTHUNLOCK(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="view.refresh" QUIT $$CMDVIEW(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
+	IF CMD="theme.load" QUIT $$THEMELOAD(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
+	IF CMD="theme.save" QUIT $$THEMESAVE(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
+	IF CMD="theme.asset.upload" QUIT $$THEMEASUP(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="module.catalog" QUIT $$MODCAT(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="module.table.query" QUIT $$MODTABLE(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
+	IF CMD="table.query" QUIT $$MODTABLE(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
+	IF CMD="permission.upsert" QUIT $$PERMUP(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
+	IF CMD="permission.delete" QUIT $$PERMDEL(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
+	IF CMD="permission.assign" QUIT $$PERMASSIGN(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
+	IF CMD="permission.effective" QUIT $$PERMEFF(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="debug.snapshot" QUIT $$DEBUGSNAP(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="desktop.layout.save" QUIT $$DESKLAYOUT(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	SET ERR("error")="command_unsupported",ERR("detail")=CMD
 	QUIT 0
 	;
+AUTHSIGNIN(STATE,CONF,TREE,OUTJSON,ERR)
+	NEW OUT,TOKEN,USER,POLICY,AERR
+	IF '$$SIGNIN^MIOOSAUTH(.CONF,$GET(TREE("username")),$GET(TREE("password")),.TOKEN,.AERR) DO  QUIT $SELECT($GET(AERR("error"))="password_change_required":1,1:0)
+	. IF $GET(AERR("error"))'="password_change_required" SET ERR("error")="signin_failed",ERR("detail")=$GET(AERR("error")) QUIT
+	. SET USER=$GET(AERR("username"),$$CANON^MIOOSAUTH($GET(TREE("username"))))
+	. DO PWPOLICY^MIOOSAUTH(.CONF,.POLICY)
+	. SET OUT("ok")=1,OUT("requiresPasswordChange")=1,OUT("username")=USER,OUT("changeToken")=$GET(AERR("changeToken"))
+	. MERGE OUT("passwordStatus")=AERR("passwordStatus")
+	. MERGE OUT("passwordPolicy")=POLICY
+	. SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"auth.signin","auth",.OUT)
+	SET USER=$$CANON^MIOOSAUTH($GET(TREE("username")))
+	SET OUT("ok")=1,OUT("tokenIssued")=1,OUT("username")=USER,OUT("cookieName")=$GET(CONF("mioos","localAuth","tokenCookie"),"mioos_auth"),OUT("token")=TOKEN,OUT("maxAgeSeconds")=+$GET(CONF("mioos","localAuth","tokenMaxAgeSeconds"),604800)
+	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"auth.signin","auth",.OUT)
+	QUIT 1
+	;
+AUTHGUEST(STATE,CONF,TREE,OUTJSON,ERR)
+	NEW OUT,TOKEN,AERR
+	IF '$$GUESTSIGNIN^MIOOSAUTH(.CONF,.TOKEN,.AERR) SET ERR("error")="guest_signin_failed",ERR("detail")=$GET(AERR("error")) QUIT 0
+	SET OUT("ok")=1,OUT("tokenIssued")=1,OUT("cookieName")=$GET(CONF("mioos","localAuth","tokenCookie"),"mioos_auth"),OUT("token")=TOKEN,OUT("maxAgeSeconds")=+$GET(CONF("mioos","localAuth","tokenMaxAgeSeconds"),604800)
+	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"auth.guest","auth",.OUT)
+	QUIT 1
+	;
+AUTHPWCHG(STATE,CONF,TREE,OUTJSON,ERR)
+	NEW OUT,TOKEN,AERR
+	IF $GET(TREE("newPassword"))'=$GET(TREE("confirmPassword")) SET ERR("error")="password_confirmation_mismatch" QUIT 0
+	IF '$$CHANGEPASSWORD^MIOOSAUTH(.CONF,$GET(TREE("changeToken")),$GET(TREE("newPassword")),.TOKEN,.OUT,.AERR) SET ERR("error")="password_change_failed",ERR("detail")=$GET(AERR("error")) QUIT 0
+	SET OUT("ok")=1,OUT("tokenIssued")=1,OUT("cookieName")=$GET(CONF("mioos","localAuth","tokenCookie"),"mioos_auth"),OUT("token")=TOKEN,OUT("maxAgeSeconds")=+$GET(CONF("mioos","localAuth","tokenMaxAgeSeconds"),604800)
+	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"auth.password.change","auth",.OUT)
+	QUIT 1
+	;
+AUTHSIGNOUT(STATE,CONF,TREE,OUTJSON,ERR)
+	NEW OUT
+	SET OUT("ok")=1,OUT("signedOut")=1,OUT("cookieName")=$GET(CONF("mioos","localAuth","tokenCookie"),"mioos_auth"),OUT("clearCookie")=1
+	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"auth.signout","auth",.OUT)
+	QUIT 1
+	;
+
 CMDOPEN(STATE,CONF,TREE,OUTJSON,ERR)
 	NEW OUT,SZ
 	IF '$$OPEN^MIOOSTERM(.STATE,.CONF,$GET(TREE("terminalId")),.OUT,.ERR) QUIT 0
@@ -296,6 +346,35 @@ AUTHUNLOCK(STATE,CONF,TREE,OUTJSON,ERR)
 	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"auth.user.unlock","auth",.OUT)
 	QUIT 1
 	;
+THEMELOAD(STATE,CONF,TREE,OUTJSON,ERR)
+	NEW OUT
+	IF $GET(TREE("key"))'="" SET STATE("themeRequest","key")=$GET(TREE("key"))
+	IF '$$LOAD^MIOOSTHEME(.STATE,.CONF,.OUT,.ERR) QUIT 0
+	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"theme.load","theme",.OUT)
+	QUIT 1
+	;
+THEMESAVE(STATE,CONF,TREE,OUTJSON,ERR)
+	NEW OUT
+	IF '$$SAVE^MIOOSTHEME(.STATE,.CONF,.TREE,.OUT,.ERR) QUIT 0
+	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"theme.save","theme",.OUT)
+	QUIT 1
+	;
+THEMEASUP(STATE,CONF,TREE,OUTJSON,ERR)
+	NEW OUT,ID,USER,ROOT,DATA,MIME,B64,RAW,TS,KIND,FN,SIZE,ROUTE,ENC
+	SET USER=$GET(STATE("principal"),"guest"),ID="themeasset-"_$TR($$UUID^MIOUTIL(),"-",""),ROOT=$NAME(^MIO("MIOOS","THEMEASSET",USER,ID))
+	SET MIME=$GET(TREE("mime"),"application/octet-stream"),KIND=$GET(TREE("kind"),"theme"),FN=$GET(TREE("name"),"image.bin"),ENC=$$LOW^MIOUTIL($GET(TREE("encoding")))
+	SET DATA=$GET(TREE("content"))
+	IF DATA="" SET DATA=$GET(TREE("data"))
+	IF ENC="base64" SET RAW=$$B64D^MIOSJWT(DATA)
+	ELSE  SET RAW=DATA
+	KILL @ROOT SET @ROOT@("DATA",1)=RAW,SIZE=$ZLENGTH(RAW),TS=$H
+	SET @ROOT@("META")=$GET(MIME,"application/octet-stream")_"^"_FN_"^"_+SIZE_"^"_KIND_"^"_$PIECE(TS,",",1)_"^"_$PIECE(TS,",",2)
+	SET ROUTE=$GET(CONF("mioos","route","themeAsset"),"/api/mioos/theme-asset")
+	SET OUT("ok")=1,OUT("uploaded")=1,OUT("assetId")=ID,OUT("id")=ID,OUT("kind")=KIND,OUT("mime")=MIME,OUT("sizeBytes")=+SIZE,OUT("url")=ROUTE_"?id="_ID_"&v="_$PIECE(TS,",",1)_"-"_$PIECE(TS,",",2)
+	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"theme.asset.upload","theme",.OUT)
+	QUIT 1
+	;
+
 MODCAT(STATE,CONF,TREE,OUTJSON,ERR)
 	NEW OUT
 	IF '+$GET(STATE("moduleSystemEnabled"),0) DO  G MODCATDONE
@@ -304,10 +383,10 @@ MODCAT(STATE,CONF,TREE,OUTJSON,ERR)
 MODCATDONE
 	SET OUT("enabled")=+$GET(STATE("moduleSystemEnabled"),0)
 	IF +$GET(STATE("moduleSystemEnabled"),0) SET OUT("count")=+$GET(OUT("moduleCount"),0)
-	SET OUT("transport")="websocket"
 	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"module.catalog","module",.OUT)
 	QUIT 1
 	;
+
 MODTABLE(STATE,CONF,TREE,OUTJSON,ERR)
 	NEW OUT,DATASET
 	DO INIT^MIOOSPERM(.CONF)
@@ -318,8 +397,33 @@ MODTABLE(STATE,CONF,TREE,OUTJSON,ERR)
 	. IF '$$HAS^MIOOSPERM(.STATE,"mioos.permissions.audit"),'$$ISADMIN^MIOOSPERM(.STATE) SET ERR("error")="permission_denied",ERR("detail")="mioos.permissions.audit"
 	IF '$$HAS^MIOOSPERM(.STATE,"mioos.table.query"),'$$ISADMIN^MIOOSPERM(.STATE) SET ERR("error")="permission_denied",ERR("detail")="mioos.table.query" QUIT 0
 	IF '$$QUERY^MIOOSTBL(.STATE,.CONF,.TREE,.OUT,.ERR) QUIT 0
-	SET OUT("transport")="websocket"
-	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"module.table.query","table",.OUT)
+	SET OUT("transport")="mixed-http-websocket"
+	SET OUT("hipaa","minimumNecessary")=1
+	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),$SELECT($GET(TREE("command"))="table.query":"table.query",1:"module.table.query"),"table",.OUT)
+	QUIT 1
+	;
+PERMUP(STATE,CONF,TREE,OUTJSON,ERR)
+	NEW OUT
+	IF '$$UPSERT^MIOOSPERM(.STATE,.CONF,.TREE,.OUT,.ERR) QUIT 0
+	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"permission.upsert","permission",.OUT)
+	QUIT 1
+	;
+PERMDEL(STATE,CONF,TREE,OUTJSON,ERR)
+	NEW OUT
+	IF '$$DELETE^MIOOSPERM(.STATE,.CONF,.TREE,.OUT,.ERR) QUIT 0
+	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"permission.delete","permission",.OUT)
+	QUIT 1
+	;
+PERMASSIGN(STATE,CONF,TREE,OUTJSON,ERR)
+	NEW OUT
+	IF '$$ASSIGNCMD^MIOOSPERM(.STATE,.CONF,.TREE,.OUT,.ERR) QUIT 0
+	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"permission.assign","permission",.OUT)
+	QUIT 1
+	;
+PERMEFF(STATE,CONF,TREE,OUTJSON,ERR)
+	NEW OUT
+	IF '$$EFFECTIVE^MIOOSPERM(.STATE,.OUT,.ERR) QUIT 0
+	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"permission.effective","permission",.OUT)
 	QUIT 1
 	;
 DEBUGSNAP(STATE,CONF,TREE,OUTJSON,ERR)
@@ -347,7 +451,7 @@ SNAPSHOT(STATE,CONF,OUT,ERR)
 	SET OUT("counts","apps")=$$COUNTARY("apps",.STATE)
 	SET OUT("counts","windows")=$$COUNTARY("windows",.STATE)
 	SET OUT("counts","modules")=+$GET(STATE("moduleCount"),0)
-	SET OUT("transport","model")=$GET(STATE("transportModel"),"core-websocket-plus-app-websockets")
+	SET OUT("transport","model")=$GET(STATE("transportModel"),"mixed-http-websocket")
 	SET OUT("transport","heartbeatSeconds")=+$GET(STATE("wsHeartbeatSeconds"),15)
 	SET OUT("transport","resumeWindowSeconds")=+$GET(STATE("wsResumeWindowSeconds"),180)
 	SET OUT("transport","maxInflightPerChannel")=+$GET(STATE("wsMaxInflightPerChannel"),4)
@@ -365,7 +469,6 @@ SNAPSHOT(STATE,CONF,OUT,ERR)
 	SET OUT("debug","commands",1)="view.refresh"
 	SET OUT("debug","commands",2)="transport.health"
 	SET OUT("debug","commands",3)="module.catalog"
-	SET OUT("debug","commands",4)="module.table.query"
 	SET OUT("debug","commands",4)="auth.report"
 	SET OUT("debug","commands",5)="auth.audit"
 	SET OUT("debug","commands",6)="auth.sessions"
@@ -469,7 +572,7 @@ HEALTH(STATE,CONF,OUT,ERR)
 	SET OUT("authenticated")=+$GET(STATE("authenticated"),0)
 	SET OUT("profile")=$GET(STATE("profile"),"dev")
 	SET OUT("localeCode")=$GET(STATE("localeCode"),"en")
-	SET OUT("transportModel")=$GET(STATE("transportModel"),"core-websocket-plus-app-websockets")
+	SET OUT("transportModel")=$GET(STATE("transportModel"),"mixed-http-websocket")
 	SET OUT("diagnosticsEnabled")=+$GET(STATE("wsDiagnosticsEnabled"),1)
 	SET OUT("websocket","heartbeatSeconds")=+$GET(STATE("wsHeartbeatSeconds"),15)
 	SET OUT("websocket","resumeWindowSeconds")=+$GET(STATE("wsResumeWindowSeconds"),180)
@@ -574,7 +677,7 @@ HELLOJSON(STATE,CONF)
 	SET OBJ("localeDir")=$GET(STATE("localeDir"),"ltr")
 	SET OBJ("commandEvent")=$GET(STATE("commandEvent"),"desktop.command")
 	SET OBJ("commandResultEvent")=$GET(STATE("commandResultEvent"),"desktop.result")
-	SET OBJ("realtimeContract")=$GET(STATE("transportModel"),"core-websocket-plus-app-websockets")
+	SET OBJ("realtimeContract")=$GET(STATE("transportModel"),"mixed-http-websocket")
 	SET OBJ("socketPool","heartbeatSeconds")=+$GET(STATE("wsHeartbeatSeconds"),15)
 	SET OBJ("socketPool","resumeWindowSeconds")=+$GET(STATE("wsResumeWindowSeconds"),180)
 	SET OBJ("socketPool","maxInflightPerChannel")=+$GET(STATE("wsMaxInflightPerChannel"),4)

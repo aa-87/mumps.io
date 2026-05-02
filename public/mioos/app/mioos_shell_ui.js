@@ -35,8 +35,9 @@
     if (key === 'theme-studio' || key === 'customize') return 'mioos-surface-theme';
     if (key === 'text-viewer' || key === 'image-viewer' || key === 'media-viewer' || key === 'pdf-viewer' || key === 'structured-viewer') return 'mioos-surface-viewer';
     if (key === 'file-properties') return 'mioos-surface-file-properties';
-    if (key === 'ui-modules') return 'mioos-surface-ui-modules';
-    if (key === 'mioos.ui.table' || key === 'table' || key === 'backend-table') return 'mioos-surface-table';
+    if (key === 'app-catalog' || key === 'ui-modules') return 'mioos-surface-ui-modules';
+    if (key === 'control-panel' || key === 'system-settings') return 'mioos-surface-control-panel';
+    if (key === 'mioos.ui.table' || key === 'table' || key === 'backend-table' || key === 'sample-table') return 'mioos-surface-table';
     if (key === 'mioos.permissions.admin' || key === 'permissions') return 'mioos-surface-permissions';
     if (win && win.surface) return win.surface;
     if (key === 'transfers') return 'mioos-surface-transfers';
@@ -190,10 +191,7 @@
           preview: function () { return (this.state && this.state.preview) || {}; },
           quickPlaces: function () { return this.vm.explorerQuickPlaces(); },
           selectedKey: function () { return this.vm.explorerSelectedKey(this.state); },
-          columns: function () { return this.vm.explorerDetailsColumns(this.state); },
-          contextIsItem: function () { return this.vm.explorerContextIsItem(this.state); },
-          contextIsFolder: function () { return this.vm.explorerContextIsFolder(this.state); },
-          canPaste: function () { return this.vm.explorerCanPaste(this.window.id); }
+          columns: function () { return this.vm.explorerColumns(this.state); }
         },
         mounted: function () { this.vm.bootstrapExplorerWindow(this.window.id, false); },
         methods: {
@@ -207,7 +205,7 @@
           blankMenu: function (event) { this.vm.openExplorerContextMenu(this.window.id, null, event); },
           sortMark: function (key) { return this.state.sortKey === key ? (this.state.sortDir === 'desc' ? '▼' : '▲') : ''; },
           resizeColumn: function (column, event) { this.vm.explorerBeginColumnResize(this.window.id, column, event); },
-          cellValue: function (item, column) { return this.vm.explorerColumnValue(item, column.key); }
+          cellValue: function (item, column) { return this.vm.explorerColumnValue(item, (column || {}).key); }
         },
         template: `
           <div class="mioos-surface mioos-surface-explorer mioos-explorer-native" @contextmenu.prevent="blankMenu($event)" @click="vm.closeExplorerContextMenu(window.id)">
@@ -305,17 +303,14 @@
               <span v-else>[[ (state.folder || {}).path || '/' ]]</span>
             </div>
             <ul v-if="(state.contextMenu || {}).open" class="mioos-explorer-context-menu can-hover" role="menu" :style="vm.explorerContextMenuStyle(state)" @click.stop>
-              <li v-if="contextIsItem"><button type="button" role="menuitem" @click="vm.explorerContextOpen(window.id)">Open</button></li>
-              <li v-if="contextIsFolder"><button type="button" role="menuitem" @click="vm.explorerOpenItemInNewWindow(window.id)">Open in New Window</button></li>
-              <li v-if="contextIsItem" class="has-divider"><button type="button" role="menuitem" @click="vm.explorerCopySelected(window.id)">Copy</button></li>
-              <li v-if="contextIsItem"><button type="button" role="menuitem" @click="vm.explorerCutSelected(window.id)">Cut</button></li>
-              <li><button type="button" role="menuitem" :disabled="!canPaste" @click="vm.explorerPasteIntoWindow(window.id)">Paste</button></li>
-              <li v-if="contextIsItem" class="has-divider"><button type="button" role="menuitem" @click="vm.explorerRenameSelected(window.id); vm.closeExplorerContextMenu(window.id)">Rename</button></li>
-              <li v-if="contextIsItem"><button type="button" role="menuitem" @click="vm.explorerDeleteSelected(window.id); vm.closeExplorerContextMenu(window.id)">Delete</button></li>
-              <li v-if="contextIsItem"><button type="button" role="menuitem" @click="vm.explorerDownloadSelected(window.id); vm.closeExplorerContextMenu(window.id)">Download</button></li>
+              <li v-if="state.selection && ((state.contextMenu || {}).targetType === 'item')"><button type="button" role="menuitem" @click="vm.explorerContextOpen(window.id)">Open</button></li>
+              <li v-if="state.selection && ((state.contextMenu || {}).targetType === 'item')"><button type="button" role="menuitem" @click="vm.explorerCopySelected(window.id)">Copy</button></li>
+              <li v-if="state.selection && ((state.contextMenu || {}).targetType === 'item')"><button type="button" role="menuitem" @click="vm.explorerRenameSelected(window.id); vm.closeExplorerContextMenu(window.id)">Rename</button></li>
+              <li v-if="state.selection && ((state.contextMenu || {}).targetType === 'item')"><button type="button" role="menuitem" @click="vm.explorerDeleteSelected(window.id); vm.closeExplorerContextMenu(window.id)">Delete</button></li>
               <li class="has-divider"><button type="button" role="menuitem" @click="vm.explorerCreateFolder(window.id); vm.closeExplorerContextMenu(window.id)">New Folder</button></li>
               <li><button type="button" role="menuitem" @click="vm.explorerPromptUpload(window.id); vm.closeExplorerContextMenu(window.id)">Upload</button></li>
-              <li><button type="button" role="menuitem" @click="vm.refreshExplorerWindow(window.id); vm.closeExplorerContextMenu(window.id)">Refresh</button></li>
+              <li v-if="state.selection && ((state.contextMenu || {}).targetType === 'item')"><button type="button" role="menuitem" @click="vm.explorerDownloadSelected(window.id); vm.closeExplorerContextMenu(window.id)">Download</button></li>
+              <li><button type="button" role="menuitem" @click="vm.explorerPasteIntoWindow(window.id)">Paste</button></li>
               <li class="has-divider"><button type="button" role="menuitem" @click="vm.explorerContextProperties(window.id)">Properties</button></li>
             </ul>
           </div>
@@ -354,6 +349,37 @@
             '</div>' +
             '<div class="mioos-terminal-stage-vue"><div :id="terminalId" class="mioos-terminal-host-vue"></div></div>' +
           '</div>'
+      });
+
+      app.component('mioos-surface-control-panel', {
+        props: ['window'],
+        computed: {
+          vm: function () { return root(this); },
+          rows: function () { return (((this.vm.view || {}).controlPanel) || []); },
+          transportMode: function () { return ((((this.vm.boot || {}).transport || {}).mode) || 'websocket'); }
+        },
+        methods: {
+          open: function (key) { this.vm.openApp(key); }
+        },
+        template: `
+          <div class="mioos-surface mioos-surface-control-panel">
+            <header class="mioos-control-hero">
+              <div><strong>Control Panel</strong><span>System tools, app catalogue, and transport settings</span></div>
+              <button type="button" class="mioos-btn" @click="open('app-catalog')">Open App Catalogue</button>
+            </header>
+            <section class="mioos-control-grid">
+              <button type="button" class="mioos-control-card" @click="open('app-catalog')"><strong>▦ App Catalogue</strong><span>Browse installed modules and UI examples.</span></button>
+              <button type="button" class="mioos-control-card" @click="open('backend-table')"><strong>▤ Sample Table</strong><span>Open the server-side advanced table component.</span></button>
+              <button type="button" class="mioos-control-card" @click="open('customize')"><strong>🎨 Customize</strong><span>Themes, wallpaper, desktop, taskbar, and login screen.</span></button>
+              <button type="button" class="mioos-control-card" @click="open('permissions')"><strong>🔐 Permissions</strong><span>Users, roles, sessions, groups, and audit permissions.</span></button>
+              <button type="button" class="mioos-control-card" @click="open('diagnostics')"><strong>📈 Diagnostics</strong><span>Transport health and boot contract diagnostics.</span></button>
+              <button type="button" class="mioos-control-card" @click="open('transfers')"><strong>⇅ Transfers</strong><span>Uploads, downloads, chunking, and resumable transfer status.</span></button>
+            </section>
+            <section class="mioos-control-status">
+              <article v-for="row in rows" :key="row.title || row.label"><strong>[[ row.title || row.label ]]</strong><span>[[ row.detail || row.value ]]</span></article>
+              <article><strong>Default data path</strong><span>[[ transportMode ]]</span></article>
+            </section>
+          </div>`
       });
 
       app.component('mioos-surface-theme', {
