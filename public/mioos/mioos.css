@@ -2653,3 +2653,198 @@ button:disabled { cursor: default; opacity: .55; }
 .mioos-permissions-audit { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
 .mioos-permissions-audit li { padding: 9px 10px; border: 1px solid rgba(75,104,143,.18); border-radius: 8px; background: rgba(244,248,255,.72); }
 .mioos-permissions-audit span { display: block; font-size: 11px; opacity: .72; }
+
+/* ROI 63A System Settings: server-backed GUI configuration with safeguards */
+.mioos-surface-system-settings {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--theme-surface, rgba(245,249,255,.94));
+  color: var(--menu-text, #10243d);
+}
+.mioos-settings-head {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border-bottom: 1px solid var(--theme-panel-border, rgba(0,0,0,.12));
+  background: var(--theme-surface-strong, rgba(255,255,255,.82));
+}
+.mioos-settings-head > div:first-child,
+.mioos-settings-panel-title,
+.mioos-settings-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.mioos-settings-head strong,
+.mioos-settings-panel-title strong {
+  font-size: 15px;
+}
+.mioos-settings-head span,
+.mioos-settings-panel-title span,
+.mioos-settings-copy p,
+.mioos-settings-copy small,
+.mioos-settings-current {
+  opacity: .76;
+  line-height: 1.35;
+}
+.mioos-settings-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.mioos-settings-status,
+.mioos-settings-notice,
+.mioos-settings-loading {
+  margin: 10px 12px 0;
+  padding: 9px 11px;
+  border: 1px solid rgba(60, 120, 190, .28);
+  border-radius: 10px;
+  background: rgba(255,255,255,.66);
+}
+.mioos-settings-status.is-error {
+  border-color: rgba(180, 40, 40, .38);
+  background: rgba(255, 240, 240, .72);
+}
+.mioos-settings-layout {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(210px, 27%) minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px;
+  overflow: hidden;
+}
+.mioos-settings-tabs,
+.mioos-settings-panel {
+  min-height: 0;
+  overflow: auto;
+}
+.mioos-settings-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.mioos-settings-tabs button {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid rgba(70, 100, 140, .22);
+  border-radius: 12px;
+  background: rgba(255,255,255,.58);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.mioos-settings-tabs button.is-active,
+.mioos-settings-tabs button:focus-visible {
+  outline: 2px solid var(--accent, #4ba3ff);
+  background: rgba(255,255,255,.9);
+}
+.mioos-settings-tabs span {
+  font-size: 11px;
+  opacity: .72;
+}
+.mioos-settings-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-right: 4px;
+}
+.mioos-settings-panel-title,
+.mioos-settings-row,
+.mioos-settings-empty {
+  border: 1px solid rgba(70, 100, 140, .18);
+  border-radius: 14px;
+  background: rgba(255,255,255,.7);
+  box-shadow: 0 12px 24px rgba(15,23,42,.06);
+}
+.mioos-settings-panel-title {
+  padding: 12px;
+}
+.mioos-settings-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(210px, 32%);
+  gap: 14px;
+  padding: 12px;
+}
+.mioos-settings-copy label {
+  font-weight: 700;
+}
+.mioos-settings-copy p {
+  margin: 0;
+}
+.mioos-settings-copy code {
+  display: inline-block;
+  align-self: flex-start;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgba(15, 23, 42, .07);
+  font-size: 11px;
+}
+.mioos-settings-control {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  justify-content: center;
+}
+.mioos-settings-control input[type="number"],
+.mioos-settings-control input[type="text"],
+.mioos-settings-control select {
+  min-height: 34px;
+  width: 100%;
+  border: 1px solid rgba(80,100,130,.42);
+  border-radius: 9px;
+  padding: 5px 8px;
+  background: var(--theme-field-bg, #fff);
+  color: var(--theme-field-text, #111827);
+}
+.mioos-settings-switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 34px;
+  padding: 6px 8px;
+  border: 1px solid rgba(80,100,130,.22);
+  border-radius: 999px;
+  background: rgba(255,255,255,.58);
+  font-weight: 700;
+}
+.mioos-settings-switch input {
+  width: 18px;
+  height: 18px;
+}
+.mioos-settings-empty {
+  padding: 18px;
+  text-align: center;
+  opacity: .72;
+}
+@media (max-width: 900px) {
+  .mioos-settings-head,
+  .mioos-settings-row {
+    grid-template-columns: 1fr;
+  }
+  .mioos-settings-layout {
+    grid-template-columns: 1fr;
+  }
+  .mioos-settings-tabs {
+    flex-direction: row;
+    overflow-x: auto;
+  }
+  .mioos-settings-tabs button {
+    min-width: 220px;
+  }
+}

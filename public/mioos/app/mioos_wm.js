@@ -130,6 +130,9 @@
             if (this.refreshExplorerWindow) this.refreshExplorerWindow(win.id).catch(function () {});
           }.bind(this));
         }
+        if (appKey === 'control-panel' && this.systemSettingsLoad) {
+          this.$nextTick(function () { this.systemSettingsLoad().catch(function () {}); }.bind(this));
+        }
         if (appKey === 'diagnostics' && this.refreshTransportDiagnostics) {
           this.$nextTick(function () { this.refreshTransportDiagnostics().catch(function () {}); }.bind(this));
         }

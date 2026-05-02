@@ -36,6 +36,8 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","route","themeLoad"))="" SET CONF("mioos","route","themeLoad")="/api/mioos/theme/load"
 	IF $GET(CONF("mioos","route","themeSave"))="" SET CONF("mioos","route","themeSave")="/api/mioos/theme/save"
 	IF $GET(CONF("mioos","route","moduleCatalog"))="" SET CONF("mioos","route","moduleCatalog")="/api/mioos/modules/catalog"
+	IF $GET(CONF("mioos","route","settingsLoad"))="" SET CONF("mioos","route","settingsLoad")="/api/mioos/settings/load"
+	IF $GET(CONF("mioos","route","settingsSave"))="" SET CONF("mioos","route","settingsSave")="/api/mioos/settings/save"
 	IF $GET(CONF("mioos","route","ws"))="" SET CONF("mioos","route","ws")="/ws/mioos"
 	IF $GET(CONF("mioos","route","wsTerminal"))="" SET CONF("mioos","route","wsTerminal")="/ws/mioos/terminal"
 	IF $GET(CONF("mioos","brand","title"))="" SET CONF("mioos","brand","title")="MIOOS"
@@ -179,6 +181,12 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","route","tableQuery"))="" SET CONF("mioos","route","tableQuery")="/api/mioos/table/query"
 	IF $GET(CONF("mioos","route","tableMutate"))="" SET CONF("mioos","route","tableMutate")="/api/mioos/table/mutate"
 	IF $GET(CONF("mioos","route","moduleCatalog"))="" SET CONF("mioos","route","moduleCatalog")="/api/mioos/modules/catalog"
+	IF $GET(CONF("mioos","route","settingsLoad"))="" SET CONF("mioos","route","settingsLoad")="/api/mioos/settings/load"
+	IF $GET(CONF("mioos","route","settingsSave"))="" SET CONF("mioos","route","settingsSave")="/api/mioos/settings/save"
+	IF $GET(CONF("mioos","modules","enabled"))="" SET CONF("mioos","modules","enabled")=1
+	IF $GET(CONF("mioos","modules","appCatalogEnabled"))="" SET CONF("mioos","modules","appCatalogEnabled")=1
+	IF $GET(CONF("mioos","modules","dynamicWindows"))="" SET CONF("mioos","modules","dynamicWindows")=1
+	IF $GET(CONF("mioos","modules","launcher"))="" SET CONF("mioos","modules","launcher")="desktop-icons-and-menu"
 	IF $GET(CONF("mioos","table","maxPageSize"))="" SET CONF("mioos","table","maxPageSize")=250
 	IF $GET(CONF("mioos","upload","chunkBytes"))="" SET CONF("mioos","upload","chunkBytes")=860000
 	IF $GET(CONF("mioos","upload","concurrency"))="" SET CONF("mioos","upload","concurrency")=3
@@ -204,6 +212,7 @@ CONFDEF(CONF)
 	IF $GET(CONF("server","templateDir"))="" SET CONF("server","templateDir")="templates"
 	IF $GET(CONF("templates","root"))="" SET CONF("templates","root")=$GET(CONF("server","templateDir"))_"/"
 	IF $GET(CONF("templates","ext"))="" SET CONF("templates","ext")=""
+	DO APPLY^MIOOSCFG(.CONF)
 	QUIT
 	;
 INIT(CONF)
@@ -244,6 +253,8 @@ REG(CONF)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","tableQuery")),"TABLEQUERY^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","tableMutate")),"TABLEMUTATE^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","moduleCatalog")),"MODULECATALOG^MIOOSAPI",.PROT)
+	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","settingsLoad")),"SETTINGSLOAD^MIOOSAPI",.PROT)
+	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","settingsSave")),"SETTINGSSAVE^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsUploadBegin")),"FSUPBEGIN^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsUploadChunk")),"FSUPCHUNK^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsUploadStatus")),"FSUPSTATUS^MIOOSAPI",.PROT)
@@ -281,6 +292,8 @@ REG(CONF)
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","fsMove")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","fsDelete")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","moduleCatalog")))
+	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","settingsLoad")))
+	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","settingsSave")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","themeAssetUpload")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","themeAsset")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","themeLoad")))

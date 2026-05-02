@@ -183,3 +183,7 @@ Administrative shell actions such as session revocation, account unlock, audit s
 - The active shell now uses one desktop instead of multiple workspaces.
 - This reduces operator confusion in secure and regulated environments and keeps file, terminal, and transfer flows on one predictable surface.
 - Workspace metadata remains compatible where needed for migration, but the active user experience is single-desktop.
+
+## ROI 63A settings safeguard note
+
+System Settings uses a curated server-side registry and administrator-only save route. It is not a raw global editor. This is important for HIPAA-oriented deployments because operational settings must be bounded, documented, auditable, and deployer-controlled. MIOOS remains HIPAA-ready in architecture only; deployment controls, policies, monitoring, BAAs, backups, and environment hardening are still required.

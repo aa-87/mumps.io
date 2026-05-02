@@ -7,6 +7,7 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	SET ERR("routine")="MIOOSST"
 	DO BOOTSTRAP^MIOOSAUTH(.CONF)
 	DO INIT^MIOOSFS(.CONF)
+	DO APPLY^MIOOSCFG(.CONF)
 	NEW PURGEUP
 	SET PURGEUP=$$PURGE^MIOOSFSUP(.CONF)
 	DO RESOLVE^MIOOSI18N(.CONF,.REQ,.CTX,.LOC)
@@ -82,6 +83,8 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("tableQueryPath")=$GET(CONF("mioos","route","tableQuery"),"/api/mioos/table/query")
 	SET STATE("tableMutatePath")=$GET(CONF("mioos","route","tableMutate"),"/api/mioos/table/mutate")
 	SET STATE("moduleCatalogPath")=$GET(CONF("mioos","route","moduleCatalog"),"/api/mioos/modules/catalog")
+	SET STATE("settingsLoadPath")=$GET(CONF("mioos","route","settingsLoad"),"/api/mioos/settings/load")
+	SET STATE("settingsSavePath")=$GET(CONF("mioos","route","settingsSave"),"/api/mioos/settings/save")
 	SET STATE("themeAssetUploadPath")=$GET(CONF("mioos","route","themeAssetUpload"),"/api/mioos/theme-asset/upload")
 	SET STATE("themeAssetPath")=$GET(CONF("mioos","route","themeAsset"),"/api/mioos/theme-asset")
 	SET STATE("themeLoadPath")=$GET(CONF("mioos","route","themeLoad"),"/api/mioos/theme/load")
@@ -180,7 +183,7 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("perfRenderBudgetMs")=16
 	SET STATE("perfPayloadMode")="tmp-global-safe"
 	SET STATE("perfTransport")="websocket-first-http-refresh"
-	SET STATE("moduleSystemEnabled")=+$GET(CONF("mioos","modules","enabled"),0)
+	SET STATE("moduleSystemEnabled")=+$GET(CONF("mioos","modules","enabled"),1)
 	SET STATE("debugEnabled")=0
 	SET STATE("debugEventLimit")=+$GET(CONF("mioos","debug","eventLimit"),50)
 	IF STATE("debugEventLimit")<10 SET STATE("debugEventLimit")=10
@@ -188,7 +191,7 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("moduleManifestVersion")=+$GET(CONF("mioos","modules","manifestVersion"),1)
 	IF STATE("moduleManifestVersion")<1 SET STATE("moduleManifestVersion")=1
 	SET STATE("moduleLauncher")=$GET(CONF("mioos","modules","launcher"),"desktop-icons-and-menu")
-	SET STATE("moduleAppCatalogEnabled")=+$GET(CONF("mioos","modules","appCatalogEnabled"),0)
+	SET STATE("moduleAppCatalogEnabled")=+$GET(CONF("mioos","modules","appCatalogEnabled"),1)
 	SET STATE("moduleDynamicWindows")=+$GET(CONF("mioos","modules","dynamicWindows"),1)
 	DO LOADTERM^MIOOSTERM(.STATE,.CONF)
 		DO WORKSPACES(.STATE)
@@ -481,6 +484,8 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("routes","tableQuery")=$GET(STATE("tableQueryPath"))
 	SET OBJ("routes","tableMutate")=$GET(STATE("tableMutatePath"))
 	SET OBJ("routes","moduleCatalog")=$GET(STATE("moduleCatalogPath"))
+	SET OBJ("routes","settingsLoad")=$GET(STATE("settingsLoadPath"))
+	SET OBJ("routes","settingsSave")=$GET(STATE("settingsSavePath"))
 	SET OBJ("routes","themeAssetUpload")=$GET(STATE("themeAssetUploadPath"))
 	SET OBJ("routes","themeAsset")=$GET(STATE("themeAssetPath"))
 	SET OBJ("routes","themeLoad")=$GET(STATE("themeLoadPath"))
@@ -661,12 +666,17 @@ APPS(STATE)
 	SET STATE("apps",4,"subtitle")="Themes, Appearance, Desktop, Taskbar, Start Menu, and Login Screen"
 	SET STATE("apps",4,"icon")="🎨"
 	SET STATE("apps",4,"kind")="tool"
-	IF +$GET(STATE("moduleSystemEnabled"),0),+$GET(STATE("moduleAppCatalogEnabled"),0) DO
-	. SET STATE("apps",5,"key")="ui-modules"
-	. SET STATE("apps",5,"title")="UI Modules"
-	. SET STATE("apps",5,"subtitle")="Create and launch internal or user-created UI modules"
-	. SET STATE("apps",5,"icon")="▦"
-	. SET STATE("apps",5,"kind")="tool"
+	SET STATE("apps",5,"key")="control-panel"
+	SET STATE("apps",5,"title")="System Settings"
+	SET STATE("apps",5,"subtitle")="Server-backed MIOOS configuration with validation and safeguards"
+	SET STATE("apps",5,"icon")="⚙"
+	SET STATE("apps",5,"kind")="tool"
+	IF +$GET(STATE("moduleSystemEnabled"),0),+$GET(STATE("moduleAppCatalogEnabled"),0),$GET(STATE("moduleLauncher"),"desktop-icons-and-menu")'="hidden" DO
+	. SET STATE("apps",6,"key")="ui-modules"
+	. SET STATE("apps",6,"title")="UI Modules"
+	. SET STATE("apps",6,"subtitle")="Create and launch internal or user-created UI modules"
+	. SET STATE("apps",6,"icon")="▦"
+	. SET STATE("apps",6,"kind")="tool"
 	QUIT
 	;
 WORKSPACES(STATE)
@@ -709,11 +719,13 @@ WINDOWS(STATE)
 	SET STATE("windows",4,"themeStudioEnabled")=1
 	DO WIN(.STATE,5,"win-folder-properties","folder-properties","Folder Properties",260,140,640,520,8,"closed",560,420,0,1,"properties","📂","workspace-main",0)
 	SET STATE("windows",5,"propertySheetEnabled")=1
-	IF +$GET(STATE("moduleSystemEnabled"),0),+$GET(STATE("moduleAppCatalogEnabled"),0) DO
-	. DO WIN(.STATE,6,"win-ui-modules","ui-modules","UI Modules",156,86,1040,640,7,"closed",780,520,1,1,"module-catalog","▦","workspace-main",1)
-	. SET STATE("windows",6,"moduleWindow")=1
-	. SET STATE("windows",6,"moduleId")="mioos.ui.modules"
-	. SET STATE("windows",6,"moduleComponent")="module-catalog"
+	DO WIN(.STATE,6,"win-control-panel","control-panel","System Settings",150,72,1080,680,7,"closed",820,520,1,1,"settings","⚙","workspace-main",1)
+	SET STATE("windows",6,"systemSettingsEnabled")=1
+	IF +$GET(STATE("moduleSystemEnabled"),0),+$GET(STATE("moduleAppCatalogEnabled"),0),$GET(STATE("moduleLauncher"),"desktop-icons-and-menu")'="hidden" DO
+	. DO WIN(.STATE,7,"win-ui-modules","ui-modules","UI Modules",156,86,1040,640,9,"closed",780,520,1,1,"module-catalog","▦","workspace-main",1)
+	. SET STATE("windows",7,"moduleWindow")=1
+	. SET STATE("windows",7,"moduleId")="mioos.ui.modules"
+	. SET STATE("windows",7,"moduleComponent")="module-catalog"
 	QUIT
 	;
 WIN(STATE,N,ID,APPKEY,TITLE,LEFT,TOP,WIDTH,HEIGHT,Z,MODE,MINW,MINH,RESIZE,DRAG,KIND,ICON,WORKSPACE,PERSIST)

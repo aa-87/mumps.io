@@ -311,3 +311,9 @@ Boot metadata now advertises desktop.appSurfaceModel, desktop.appActions, and de
 - Customize persists theme profiles through globals-backed routes and supports uploaded wallpaper assets stored in the VFS.
 - Folder Properties now supports uploaded background and icon assets stored in the VFS and persisted through folder metadata.
 - Transfers now show an overall progress bar plus per-file progress rows and support multi-file upload selection.
+
+## ROI 63A — MIOOSCFG system settings registry
+
+`MIOOSCFG` owns the curated GUI-editable settings registry. `CONFDEF^MIOOS` defines safe defaults, then `APPLY^MIOOSCFG` overlays persisted settings from `^MIO("MIOOS","SETTING","VALUE",key)`. `LOAD^MIOOSST` also applies persisted settings before boot state is derived. This keeps first paint, boot JSON, API handlers, and WebSocket-derived view state aligned.
+
+Routes `SETTINGSLOAD^MIOOSAPI` and `SETTINGSSAVE^MIOOSAPI` expose `mioos-system-settings-v1`. The save path requires admin role, rejects unknown keys, normalizes booleans, clamps integers, and validates enums.

@@ -56,6 +56,7 @@ MIOOST ; MIOOS tests
 	DO T060
 	DO T061
 	DO T062
+	DO T063
 	QUIT
 	;
 RESET
@@ -119,6 +120,8 @@ T001
 		KILL EP DO AMATCH("[MIOOST][T001][fs setmeta]","POST","/api/mioos/fs/setmeta",1,"FSSETMETA^MIOOSAPI","/api/mioos/fs/setmeta",.EP)
 	KILL EP DO AMATCH("[MIOOST][T001][theme load]","POST","/api/mioos/theme/load",1,"THEMELOAD^MIOOSAPI","/api/mioos/theme/load",.EP)
 	KILL EP DO AMATCH("[MIOOST][T001][theme save]","POST","/api/mioos/theme/save",1,"THEMESAVE^MIOOSAPI","/api/mioos/theme/save",.EP)
+	KILL EP DO AMATCH("[MIOOST][T001][settings load]","POST","/api/mioos/settings/load",1,"SETTINGSLOAD^MIOOSAPI","/api/mioos/settings/load",.EP)
+	KILL EP DO AMATCH("[MIOOST][T001][settings save]","POST","/api/mioos/settings/save",1,"SETTINGSSAVE^MIOOSAPI","/api/mioos/settings/save",.EP)
 	KILL EP DO AMATCH("[MIOOST][T001][fs blob get]","GET","/api/mioos/fs/blob",1,"FSBLOB^MIOOSAPI","/api/mioos/fs/blob",.EP)
 	KILL EP DO AMATCH("[MIOOST][T001][fs blob head]","HEAD","/api/mioos/fs/blob",1,"FSBLOB^MIOOSAPI","/api/mioos/fs/blob",.EP)
 	KILL EP DO AMATCH("[MIOOST][T001][ws]","WS","/ws/mioos",1,"MESSAGE^MIOOSWS","/ws/mioos",.EP)
@@ -540,9 +543,11 @@ T027
 		DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T027][load]")
 		SET JSON=$$BOOTJSON^MIOOSST(.STATE,.CONF)
 		DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T027][decode]")
-		DO EQ^MIOTASSERT(+$GET(OBJ("desktop","moduleSystem","enabled")),0,"[MIOOST][T027][module system disabled]")
-		DO EQ^MIOTASSERT(+$GET(OBJ("desktop","moduleSystem","moduleCount")),0,"[MIOOST][T027][module count zero]")
+		DO EQ^MIOTASSERT(+$GET(OBJ("desktop","moduleSystem","enabled")),1,"[MIOOST][T027][module system enabled by default]")
+		DO EQ^MIOTASSERT(+$GET(OBJ("desktop","moduleSystem","appCatalogEnabled")),1,"[MIOOST][T027][catalog enabled by default]")
+		DO OK^MIOTASSERT(+$GET(OBJ("desktop","moduleSystem","moduleCount"))>0,"[MIOOST][T027][module count populated]")
 		DO EQ^MIOTASSERT($GET(OBJ("apps",1,"key")),"home","[MIOOST][T027][home retained]")
+		DO EQ^MIOTASSERT($GET(OBJ("apps",5,"key")),"control-panel","[MIOOST][T027][settings app]")
 		QUIT
 		;
 T028
@@ -1283,5 +1288,36 @@ T062
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSMOD.m","UI + Form Elements"),"[MIOOST][T062][ui elements catalogue]")
 	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/Backend_Table.md","/api/mioos/table/mutate"),"[MIOOST][T062][table docs]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 62"),"[MIOOST][T062][llm notes]")
+	QUIT
+	;
+
+T063
+	NEW CONF,REQ,CTX,STATE,ERR,BOOT,OUT,IN,DEF
+	DO RESET
+	DO CONFDEF^MIOOS(.CONF)
+	DO INIT^MIOOS(.CONF)
+	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T063][load]")
+	DO BOOTARY^MIOOSST(.STATE,.CONF,.BOOT)
+	DO EQ^MIOTASSERT($GET(BOOT("routes","settingsLoad")),"/api/mioos/settings/load","[MIOOST][T063][settings load route]")
+	DO EQ^MIOTASSERT($GET(BOOT("routes","settingsSave")),"/api/mioos/settings/save","[MIOOST][T063][settings save route]")
+	DO EQ^MIOTASSERT(+$GET(BOOT("desktop","moduleSystem","enabled")),1,"[MIOOST][T063][modules default enabled]")
+	DO EQ^MIOTASSERT(+$GET(BOOT("desktop","moduleSystem","appCatalogEnabled")),1,"[MIOOST][T063][catalog default enabled]")
+	DO EXPORT^MIOOSCFG(.CONF,.STATE,.OUT)
+	DO EQ^MIOTASSERT($GET(OUT("contract")),"mioos-system-settings-v1","[MIOOST][T063][settings contract]")
+	DO OK^MIOTASSERT($DATA(OUT("values","mioos.modules.enabled"))#2,"[MIOOST][T063][module setting value]")
+	DO OK^MIOTASSERT($$DEFKEY^MIOOSCFG("mioos.upload.chunkBytes",.DEF),"[MIOOST][T063][chunk def]")
+	KILL IN,OUT,ERR
+	SET STATE("authAdmin")=1,STATE("principal")="admin"
+	SET IN("values","mioos.modules.enabled")=0
+	SET IN("values","mioos.upload.chunkBytes")=999999999
+	DO OK^MIOTASSERT($$SAVE^MIOOSCFG(.CONF,.STATE,.IN,.OUT,.ERR),"[MIOOST][T063][settings save]")
+	DO EQ^MIOTASSERT(+$GET(^MIO("MIOOS","SETTING","VALUE","mioos.modules.enabled","value")),0,"[MIOOST][T063][module persisted]")
+	DO EQ^MIOTASSERT(+$GET(^MIO("MIOOS","SETTING","VALUE","mioos.upload.chunkBytes","value")),4194304,"[MIOOST][T063][chunk clamped]")
+	DO EQ^MIOTASSERT(+$GET(CONF("mioos","modules","enabled")),0,"[MIOOST][T063][conf applied]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-surface-system-settings"),"[MIOOST][T063][settings surface]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","systemSettingsSave"),"[MIOOST][T063][settings save client]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","ROI 63A System Settings"),"[MIOOST][T063][settings css]")
+	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 63A"),"[MIOOST][T063][llm]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/System_Settings.md","mioos-system-settings-v1"),"[MIOOST][T063][settings docs]")
 	QUIT
 	;

@@ -4,8 +4,8 @@ MIOOSMOD ; MIOOS UI module registry
 LOAD(STATE,CONF)
 	NEW OUT,ERR
 	KILL OUT,ERR,STATE("modules"),STATE("uiModules")
-	IF '+$GET(CONF("mioos","modules","enabled"),0) DO DISABLED(.STATE) QUIT
-	IF '+$GET(CONF("mioos","modules","appCatalogEnabled"),0) DO DISABLED(.STATE) QUIT
+	IF '+$GET(CONF("mioos","modules","enabled"),1) DO DISABLED(.STATE) QUIT
+	IF '+$GET(CONF("mioos","modules","appCatalogEnabled"),1) DO DISABLED(.STATE) QUIT
 	IF '$$CATALOG(.STATE,.CONF,.OUT,.ERR) DO  QUIT
 	. SET STATE("moduleCount")=0
 	. SET STATE("uiModules","ok")=0

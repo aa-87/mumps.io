@@ -42,7 +42,9 @@
         commandErrorEvent: 'desktop.error',
         tableQuery: '/api/mioos/table/query',
         tableMutate: '/api/mioos/table/mutate',
-        moduleCatalog: '/api/mioos/modules/catalog'
+        moduleCatalog: '/api/mioos/modules/catalog',
+        settingsLoad: '/api/mioos/settings/load',
+        settingsSave: '/api/mioos/settings/save'
       },
       desktop: {
         themeKey: 'xp-classic-blue',
@@ -78,7 +80,7 @@
           mediaStreamStrategy: 'range-kickstart-http-blob-partial-window',
           textPreviewStrategy: 'windowed-websocket-range-read'
         },
-        moduleSystem: { enabled: false, launcher: 'desktop-icons-and-menu', manifestVersion: 1, appCatalogEnabled: false, appCatalogKey: 'app-catalog', dynamicWindows: true, debugAppKey: 'debug-center' },
+        moduleSystem: { enabled: true, launcher: 'desktop-icons-and-menu', manifestVersion: 1, appCatalogEnabled: true, appCatalogKey: 'app-catalog', dynamicWindows: true, debugAppKey: 'debug-center' },
         debugCenter: { enabled: true, eventLimit: 50, snapshotVersion: 1 },
         icons: {
           enabled: true,

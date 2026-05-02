@@ -217,3 +217,9 @@ Application windows can use the MIOOS backend table surface for large lists. Tab
 Open **UI Modules** from the Start menu to browse reusable MIOOS UI components, installed internal modules, user-created modules, and examples. The first component is **Backend Table**, which opens a backend-driven table window with pagination, sorting, grouping, hide/show columns, expansion rows, and actions.
 
 User-created modules should follow the manifest format documented in `docs/mioos/UI_Modules.md` and can start from `examples/mioos_modules/table`.
+
+## System Settings / Control Panel
+
+Open **System Settings** from the Start menu to review and update MIOOS configuration. The settings screen explains each value, shows allowed ranges or enum choices, and saves through the server so invalid values cannot become authoritative browser state.
+
+Only administrators can save changes. Non-admin users may inspect the current settings contract. Module System and App Catalogue settings are enabled by default and can be changed from the **Modules and App Catalogue** tab.

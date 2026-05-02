@@ -81,6 +81,7 @@
           debugCenter: { loading: false, refreshedAt: 0, error: '', snapshot: {}, events: [], seq: 0 },
           socketTelemetry: {},
           moduleCatalog: { loading: false, refreshedAt: 0, error: '' },
+          systemSettings: { loading: false, saving: false, refreshedAt: 0, error: '', status: '', activeGroup: 'modules', payload: { groups: [], settings: [] }, draft: {} },
           _bootPrimed: false,
           desktopUi: {
             iconSize: 'medium',
@@ -304,6 +305,148 @@
           return I18N.t ? I18N.t(this, key, fallback) : (fallback || key);
         },
 
+        systemSettingsRoutes: function () {
+          return {
+            load: ((((this.boot || {}).routes || {}).settingsLoad) || '/api/mioos/settings/load'),
+            save: ((((this.boot || {}).routes || {}).settingsSave) || '/api/mioos/settings/save')
+          };
+        },
+        systemSettingsToList: function (value) {
+          if (!value) return [];
+          if (Array.isArray(value)) return value.filter(function (item) { return item !== null && typeof item !== 'undefined'; });
+          if (typeof value === 'object') {
+            return Object.keys(value).filter(function (key) { return key !== 'byValue'; }).sort(function (a, b) { return (+a || 999999) - (+b || 999999) || String(a).localeCompare(String(b)); }).map(function (key) { return value[key]; }).filter(function (item) { return item !== null && typeof item !== 'undefined'; });
+          }
+          return [];
+        },
+        systemSettingsNormalizePayload: function (payload) {
+          payload = payload || {};
+          payload.groups = this.systemSettingsToList(payload.groups);
+          payload.settings = this.systemSettingsToList(payload.settings);
+          payload.settings.forEach(function (setting) {
+            if (setting && setting.enum) setting.enum = this.systemSettingsToList(setting.enum).map(function (item) { return String(item); });
+          }, this);
+          return payload;
+        },
+        systemSettingsLoad: function () {
+          var self = this;
+          var route = this.systemSettingsRoutes().load;
+          this.systemSettings.loading = true;
+          this.systemSettings.error = '';
+          return fetch(route, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+            .then(function (response) {
+              if (!response.ok) throw new Error('Settings load failed: HTTP ' + response.status);
+              return response.json();
+            })
+            .then(function (payload) {
+              payload = self.systemSettingsNormalizePayload(payload || {});
+              self.systemSettings.payload = payload;
+              self.systemSettings.draft = Object.assign({}, payload.values || {});
+              if (!self.systemSettings.activeGroup && payload.groups[0]) self.systemSettings.activeGroup = payload.groups[0].key;
+              if (!payload.groups.some(function (group) { return group.key === self.systemSettings.activeGroup; }) && payload.groups[0]) self.systemSettings.activeGroup = payload.groups[0].key;
+              self.systemSettings.refreshedAt = Date.now();
+              self.systemSettings.loading = false;
+              return payload;
+            })
+            .catch(function (err) {
+              self.systemSettings.loading = false;
+              self.systemSettings.error = (err && err.message) || 'Settings load failed';
+              throw err;
+            });
+        },
+        systemSettingsSave: function () {
+          var self = this;
+          var route = this.systemSettingsRoutes().save;
+          var payload = { values: Object.assign({}, (this.systemSettings || {}).draft || {}) };
+          this.systemSettings.saving = true;
+          this.systemSettings.error = '';
+          this.systemSettings.status = '';
+          return fetch(route, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+            .then(function (response) {
+              if (!response.ok) throw new Error('Settings save failed: HTTP ' + response.status);
+              return response.json();
+            })
+            .then(function (saved) {
+              saved = self.systemSettingsNormalizePayload(saved || {});
+              self.systemSettings.payload = saved;
+              self.systemSettings.draft = Object.assign({}, saved.values || payload.values || {});
+              self.systemSettings.saving = false;
+              self.systemSettings.status = 'Saved. Server validation and clamping have been applied.';
+              self.systemSettingsApplyLocal(saved.values || payload.values || {});
+              return saved;
+            })
+            .catch(function (err) {
+              self.systemSettings.saving = false;
+              self.systemSettings.error = (err && err.message) || 'Settings save failed';
+              throw err;
+            });
+        },
+        systemSettingsApplyLocal: function (values) {
+          values = values || {};
+          var boot = this.boot || {};
+          boot.desktop = boot.desktop || {};
+          boot.desktop.moduleSystem = boot.desktop.moduleSystem || {};
+          if (Object.prototype.hasOwnProperty.call(values, 'mioos.modules.enabled')) boot.desktop.moduleSystem.enabled = !!(+values['mioos.modules.enabled']);
+          if (Object.prototype.hasOwnProperty.call(values, 'mioos.modules.appCatalogEnabled')) boot.desktop.moduleSystem.appCatalogEnabled = !!(+values['mioos.modules.appCatalogEnabled']);
+          if (Object.prototype.hasOwnProperty.call(values, 'mioos.modules.dynamicWindows')) boot.desktop.moduleSystem.dynamicWindows = !!(+values['mioos.modules.dynamicWindows']);
+          if (Object.prototype.hasOwnProperty.call(values, 'mioos.modules.launcher')) boot.desktop.moduleSystem.launcher = String(values['mioos.modules.launcher'] || 'desktop-icons-and-menu');
+          if (Object.prototype.hasOwnProperty.call(values, 'mioos.desktop.density')) boot.desktop.density = String(values['mioos.desktop.density'] || 'comfortable');
+          if (Object.prototype.hasOwnProperty.call(values, 'mioos.desktop.startMenuStyle')) boot.desktop.startMenuStyle = String(values['mioos.desktop.startMenuStyle'] || 'launcher-foundation');
+          boot.vfs = boot.vfs || {};
+          if (Object.prototype.hasOwnProperty.call(values, 'mioos.fs.transport')) boot.vfs.transport = String(values['mioos.fs.transport'] || 'http-and-websocket');
+          if (Object.prototype.hasOwnProperty.call(values, 'mioos.upload.chunkBytes')) boot.vfs.uploadChunkBytes = +values['mioos.upload.chunkBytes'] || boot.vfs.uploadChunkBytes;
+          if (Object.prototype.hasOwnProperty.call(values, 'mioos.upload.concurrency')) boot.vfs.uploadConcurrency = +values['mioos.upload.concurrency'] || boot.vfs.uploadConcurrency;
+          if (Object.prototype.hasOwnProperty.call(values, 'mioos.upload.batchSize')) boot.vfs.uploadBatchSize = +values['mioos.upload.batchSize'] || boot.vfs.uploadBatchSize;
+          if (Object.prototype.hasOwnProperty.call(values, 'mioos.upload.maxInflightChunks')) boot.vfs.uploadMaxInflightChunks = +values['mioos.upload.maxInflightChunks'] || boot.vfs.uploadMaxInflightChunks;
+          boot.websocket = boot.websocket || {};
+          if (Object.prototype.hasOwnProperty.call(values, 'mioos.websocket.maxSocketsPerSession')) boot.websocket.maxSocketsPerSession = +values['mioos.websocket.maxSocketsPerSession'] || boot.websocket.maxSocketsPerSession;
+          if (Object.prototype.hasOwnProperty.call(values, 'mioos.websocket.coreSockets')) boot.websocket.coreSockets = +values['mioos.websocket.coreSockets'] || boot.websocket.coreSockets;
+          if (Object.prototype.hasOwnProperty.call(values, 'mioos.websocket.fsSockets')) boot.websocket.fsSockets = +values['mioos.websocket.fsSockets'] || boot.websocket.fsSockets;
+          if (Object.prototype.hasOwnProperty.call(values, 'mioos.websocket.heartbeatSeconds')) boot.websocket.heartbeatSeconds = +values['mioos.websocket.heartbeatSeconds'] || boot.websocket.heartbeatSeconds;
+          if (Object.prototype.hasOwnProperty.call(values, 'mioos.websocket.diagnosticsEnabled')) boot.websocket.diagnosticsEnabled = !!(+values['mioos.websocket.diagnosticsEnabled']);
+          if (boot.desktop.moduleSystem.enabled && boot.desktop.moduleSystem.appCatalogEnabled && this.uiModuleRefreshCatalog) this.uiModuleRefreshCatalog().catch(function () {});
+        },
+        systemSettingsResetDraft: function () {
+          this.systemSettings.draft = Object.assign({}, ((this.systemSettings.payload || {}).values) || {});
+          this.systemSettings.status = 'Draft reset to the last server-loaded values.';
+        },
+        systemSettingsGroupRows: function () {
+          return this.systemSettingsToList(((this.systemSettings || {}).payload || {}).groups);
+        },
+        systemSettingsRowsForGroup: function (groupKey) {
+          var rows = this.systemSettingsToList(((this.systemSettings || {}).payload || {}).settings);
+          return rows.filter(function (row) { return String(row.group || '') === String(groupKey || ''); });
+        },
+        systemSettingsActiveGroup: function () {
+          var rows = this.systemSettingsGroupRows();
+          return rows.find(function (row) { return row.key === this.systemSettings.activeGroup; }, this) || rows[0] || { key: 'modules', title: 'Settings', description: '' };
+        },
+        systemSettingsInputId: function (setting) {
+          return 'mioos-setting-' + String((setting || {}).key || '').replace(/[^a-z0-9_-]+/gi, '-');
+        },
+        systemSettingsDraftValue: function (setting) {
+          var key = (setting || {}).key;
+          if (!key) return '';
+          if (Object.prototype.hasOwnProperty.call((this.systemSettings || {}).draft || {}, key)) return this.systemSettings.draft[key];
+          return (setting || {}).value;
+        },
+        systemSettingsSetDraft: function (setting, value) {
+          var key = (setting || {}).key;
+          if (!key) return;
+          var type = String((setting || {}).type || 'text');
+          if (type === 'boolean') value = value ? 1 : 0;
+          if (type === 'integer') value = Math.round(Number(value || 0));
+          this.systemSettings.draft[key] = value;
+          this.systemSettings.status = '';
+        },
+        systemSettingsSettingSummary: function (setting) {
+          var bits = [];
+          if ((setting || {}).type) bits.push('Type: ' + setting.type);
+          if (setting && setting.min !== undefined && setting.max !== undefined) bits.push('Allowed range: ' + setting.min + '–' + setting.max);
+          if (setting && setting.enum && setting.enum.length) bits.push('Allowed values: ' + setting.enum.join(', '));
+          if ((setting || {}).applies) bits.push(String(setting.applies));
+          return bits.join(' • ');
+        },
         shellThemeQuickMap: function () {
           return {
             'xp-classic-blue': 'vintage',

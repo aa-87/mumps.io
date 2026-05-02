@@ -38,6 +38,7 @@
     if (key === 'my-computer' || key === 'documents' || key === 'explorer' || key === 'home') return 'mioos-surface-explorer';
     if (key === 'terminal') return 'mioos-surface-terminal';
     if (key === 'theme-studio' || key === 'customize') return 'mioos-surface-theme';
+    if (key === 'control-panel' || key === 'system-settings') return 'mioos-surface-system-settings';
     if (key === 'text-viewer' || key === 'image-viewer' || key === 'media-viewer' || key === 'pdf-viewer' || key === 'structured-viewer') return 'mioos-surface-viewer';
     if (key === 'backend-table' || key === 'table' || key === 'data-grid') return 'mioos-surface-table';
     if (key === 'transfers') return 'mioos-surface-transfers';
@@ -667,6 +668,72 @@
             </div>
           </div>
 `
+      });
+
+      app.component('mioos-surface-system-settings', {
+        props: ['window'],
+        computed: {
+          vm: function () { return root(this); },
+          groups: function () { return this.vm.systemSettingsGroupRows ? this.vm.systemSettingsGroupRows() : []; },
+          activeGroup: function () { return this.vm.systemSettingsActiveGroup ? this.vm.systemSettingsActiveGroup() : { key: 'modules', title: 'Settings', description: '' }; },
+          settings: function () { return this.vm.systemSettingsRowsForGroup ? this.vm.systemSettingsRowsForGroup(this.activeGroup.key) : []; },
+          state: function () { return this.vm.systemSettings || {}; },
+          canSave: function () { return !!((((this.state || {}).payload || {}).canSave)); }
+        },
+        mounted: function () {
+          if (this.vm.systemSettingsLoad && !((this.state.payload || {}).settings || []).length) this.vm.systemSettingsLoad().catch(function () {});
+        },
+        methods: {
+          setGroup: function (group) { this.vm.systemSettings.activeGroup = group.key; },
+          inputId: function (setting) { return this.vm.systemSettingsInputId ? this.vm.systemSettingsInputId(setting) : setting.key; },
+          summary: function (setting) { return this.vm.systemSettingsSettingSummary ? this.vm.systemSettingsSettingSummary(setting) : ''; },
+          valueOf: function (setting) { return this.vm.systemSettingsDraftValue ? this.vm.systemSettingsDraftValue(setting) : setting.value; },
+          setValue: function (setting, value) { if (this.vm.systemSettingsSetDraft) this.vm.systemSettingsSetDraft(setting, value); }
+        },
+        template: `
+          <div class="mioos-surface mioos-surface-system-settings" role="region" aria-label="MIOOS System Settings">
+            <header class="mioos-settings-head">
+              <div><strong>System Settings</strong><span>Server-backed MIOOS configuration with explanations, validation, and admin safeguards.</span></div>
+              <div class="mioos-settings-actions">
+                <button type="button" class="mioos-btn" :disabled="state.loading || state.saving" @click="vm.systemSettingsLoad && vm.systemSettingsLoad()">Refresh</button>
+                <button type="button" class="mioos-btn" :disabled="state.loading || state.saving" @click="vm.systemSettingsResetDraft && vm.systemSettingsResetDraft()">Reset draft</button>
+                <button type="button" class="mioos-btn is-primary" :disabled="!canSave || state.loading || state.saving" @click="vm.systemSettingsSave && vm.systemSettingsSave()">[[ state.saving ? 'Saving…' : 'Save settings' ]]</button>
+              </div>
+            </header>
+            <div class="mioos-settings-notice" v-if="!canSave">Only administrators can save settings. Values are still shown so operators can inspect the active contract.</div>
+            <div class="mioos-settings-status is-error" v-if="state.error">[[ state.error ]]</div>
+            <div class="mioos-settings-status" v-if="state.status">[[ state.status ]]</div>
+            <div class="mioos-settings-loading" v-if="state.loading">Loading settings from the server…</div>
+            <div class="mioos-settings-layout" v-else>
+              <nav class="mioos-settings-tabs" aria-label="MIOOS setting groups">
+                <button v-for="group in groups" :key="group.key" type="button" :class="{ 'is-active': activeGroup.key === group.key }" @click="setGroup(group)"><strong>[[ group.title ]]</strong><span>[[ group.description ]]</span></button>
+              </nav>
+              <section class="mioos-settings-panel" :aria-labelledby="'settings-group-' + activeGroup.key">
+                <div class="mioos-settings-panel-title"><strong :id="'settings-group-' + activeGroup.key">[[ activeGroup.title ]]</strong><span>[[ activeGroup.description ]]</span></div>
+                <article class="mioos-settings-row" v-for="setting in settings" :key="setting.key">
+                  <div class="mioos-settings-copy">
+                    <label :for="inputId(setting)">[[ setting.title ]]</label>
+                    <p>[[ setting.description ]]</p>
+                    <small>[[ summary(setting) ]]</small>
+                    <code>[[ setting.path ]]</code>
+                  </div>
+                  <div class="mioos-settings-control">
+                    <label v-if="setting.type === 'boolean'" class="mioos-settings-switch">
+                      <input :id="inputId(setting)" type="checkbox" :checked="!!(+valueOf(setting))" :disabled="!canSave || state.saving" @change="setValue(setting, $event.target.checked)">
+                      <span>[[ !!(+valueOf(setting)) ? 'Enabled' : 'Disabled' ]]</span>
+                    </label>
+                    <select v-else-if="setting.type === 'enum'" :id="inputId(setting)" :value="valueOf(setting)" :disabled="!canSave || state.saving" @change="setValue(setting, $event.target.value)">
+                      <option v-for="option in setting.enum" :key="option" :value="option">[[ option ]]</option>
+                    </select>
+                    <input v-else-if="setting.type === 'integer'" :id="inputId(setting)" type="number" :min="setting.min" :max="setting.max" step="1" :value="valueOf(setting)" :disabled="!canSave || state.saving" @input="setValue(setting, $event.target.value)">
+                    <input v-else :id="inputId(setting)" type="text" :value="valueOf(setting)" :disabled="true">
+                    <span class="mioos-settings-current">Current: [[ setting.value ]]</span>
+                  </div>
+                </article>
+                <div class="mioos-settings-empty" v-if="!settings.length">No settings are registered for this group.</div>
+              </section>
+            </div>
+          </div>`
       });
 
       app.component('mioos-surface-transfers', {

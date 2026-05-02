@@ -499,7 +499,7 @@ All tests were passing at the start of this ROI. The next hardening pass address
 
 ## UI Module Foundation
 
-MIOOS now has a first-class UI Module foundation for internal and user-created modules. The foundation is installed but launch-disabled by default; keep `CONF("mioos","modules","enabled")` and `CONF("mioos","modules","appCatalogEnabled")` off unless the shell should expose the UI Modules catalog app.
+MIOOS now has a first-class UI Module foundation for internal and user-created modules. As of ROI 63A the foundation is enabled by default; use the GUI-backed System Settings controls for `CONF("mioos","modules","enabled")` and `CONF("mioos","modules","appCatalogEnabled")` when a deployment needs to disable catalogue exposure.
 
 - `MIOOSMOD` owns the backend module catalog and emits the `mioos-ui-module-v1` contract.
 - `MIOOSST` injects the full catalog as `boot.uiModules` and keeps launchable module rows in `boot.modules` for Start menu compatibility.
@@ -512,9 +512,9 @@ MIOOS now has a first-class UI Module foundation for internal and user-created m
 Do not build new internal or user-created module screens by copying Explorer. Add a catalog entry and either reuse an existing registered component or register a new component through `window.MIOOSModules.registerComponent(...)` before `MIOOSCore.mount()`.
 
 
-## ROI 57 — Safe first paint and opt-in UI Modules
+## ROI 57 — Safe first paint and UI Modules foundation
 
-Current source state: backend UI module registry, catalog API/WS support, boot manifest injection, client module/component registry, UI Modules catalog window, generic module host, and the backend table component are present. The module system is launch-disabled by default. Do not treat the presence of `MIOOSMOD`, `mioos_modules.js`, or `mioos_table.js` as permission to expose modules during default boot; `CONF("mioos","modules","enabled")` and `CONF("mioos","modules","appCatalogEnabled")` must both be enabled.
+Current source state: backend UI module registry, catalog API/WS support, boot manifest injection, client module/component registry, UI Modules catalog window, generic module host, and the backend table component are present. As of ROI 63A the module system and App Catalogue default to enabled, and administrator changes must flow through the server-backed System Settings registry.
 
 First paint must not require authenticated internal asset requests. Before sign-in, MIOTPL may render theme variables and gradients, but it must not render `/api/mioos/theme-asset` or `/api/mioos/fs/blob` URLs into CSS, data attributes, or boot JSON.
 
@@ -526,4 +526,19 @@ First paint must not require authenticated internal asset requests. Before sign-
   - `/api/mioos/table/mutate`
 - The reusable table supports sorting, grouping, select all visible, selected-row bulk actions, row CRUD, column CRUD, and column resizing.
 - Built-in sample datasets live in `MIOOSTBL`: `demo`, `massive`, `ui-elements`, `patient-registration`, and read-only `vfs`.
-- The module registry remains opt-in at boot, but the App Catalogue can fetch internal module entries after sign-in.
+- The module registry is enabled by default at boot, and the App Catalogue can fetch internal module entries after sign-in. Administrators can disable it from System Settings when required.
+
+## ROI 63A — GUI-backed System Settings before further catalogue rewrites
+
+Immediate product decision: the UI Modules/App Catalogue system must not be disabled by default. `CONF("mioos","modules","enabled")` and `CONF("mioos","modules","appCatalogEnabled")` now default to `1`.
+
+A new `MIOOSCFG` routine owns the curated GUI-editable settings registry. Settings are exposed through protected HTTP routes:
+
+- `POST /api/mioos/settings/load`
+- `POST /api/mioos/settings/save`
+
+The contract is `mioos-system-settings-v1`. Save is administrator-only. The browser edits draft values only; the server validates setting keys, normalizes booleans, clamps integer ranges, validates enum values, persists accepted values to MIOOS globals, and reapplies them to `CONF`. Unknown keys are rejected.
+
+The Control Panel/System Settings surface is implemented in the existing Vue 3 Options API shell without a new framework or build step. It groups settings for Modules/App Catalogue, transport/uploads/VFS, WebSocket pool, desktop shell, security/audit, and developer diagnostics. Each setting includes explanatory copy, current value, allowed range/enum information, and apply notes.
+
+Next ROI sequence should continue with the App Catalogue redesign using the now-enabled-by-default catalogue contract and the new GUI settings as the administrative control plane.
