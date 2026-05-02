@@ -109,3 +109,15 @@ The rewritten table must provide reliable sorting, pagination, search/filtering,
 Use `mioos-full-table` inside module surfaces and set `tableState.dataset` to your dataset name. Add a backend dataset handler in `MIOOSTBL` or delegate to a project routine with the same `QUERY` / `MUTATE` shape. Keep Explorer independent: the backend table may share interaction patterns with Explorer details views, but it must not mutate Explorer state or replace VFS-specific Explorer behavior.
 
 See `docs/mioos/ROI_63_Redesign_Contracts.md` for the complete redesign sequence.
+
+## ROI 64A advanced standalone table contract
+
+The production table track now uses the client-visible contract `mioos-advanced-table-v2`. The component is intended to be standalone and embeddable in internal shell surfaces or user-created modules:
+
+```html
+<mioos-full-table table-id="patients" title="Patients" dataset="patient-registration" :config="tableConfig"></mioos-full-table>
+```
+
+`window.MIOOSTable.createConfig()` returns a safe default configuration that can enable or disable toolbar features such as dataset switching, search, grouping, column picker, row CRUD, column CRUD, selection, bulk actions, pagination, and row details. Backend query and mutation routes remain authoritative.
+
+`column.visibility` is now a supported mutation action. Column visibility changes should be persisted through `/api/mioos/table/mutate`, not treated as browser-only state.

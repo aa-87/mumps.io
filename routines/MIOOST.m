@@ -57,6 +57,7 @@ MIOOST ; MIOOS tests
 	DO T061
 	DO T062
 	DO T063
+	DO T064
 	QUIT
 	;
 RESET
@@ -1321,3 +1322,16 @@ T063
 	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/System_Settings.md","mioos-system-settings-v1"),"[MIOOST][T063][settings docs]")
 	QUIT
 	;
+
+T064
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_modules.js","mioos-ui-module-catalog-v2"),"[MIOOST][T064][catalog v2 surface]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_modules.js","visibleRows"),"[MIOOST][T064][catalog filters]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","mioos-advanced-table-v2"),"[MIOOST][T064][table contract]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","createConfig"),"[MIOOST][T064][table standalone config]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableFeature"),"[MIOOST][T064][table feature gates]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","column.visibility"),"[MIOOST][T064][column visibility mutation]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","table_action_invalid"),"[MIOOST][T064][invalid action guard]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/ROI_64_UI_Modules_Table_Rewrite.md","mioos-advanced-table-v2"),"[MIOOST][T064][roi64 docs]")
+	DO OK^MIOTASSERT($$FILEHAS("examples/mioos_modules/table/README.md","standalone"),"[MIOOST][T064][standalone example]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","ROI 64A UI Modules"),"[MIOOST][T064][roi64 css]")
+	QUIT

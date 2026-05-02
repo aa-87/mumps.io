@@ -542,3 +542,17 @@ The contract is `mioos-system-settings-v1`. Save is administrator-only. The brow
 The Control Panel/System Settings surface is implemented in the existing Vue 3 Options API shell without a new framework or build step. It groups settings for Modules/App Catalogue, transport/uploads/VFS, WebSocket pool, desktop shell, security/audit, and developer diagnostics. Each setting includes explanatory copy, current value, allowed range/enum information, and apply notes.
 
 Next ROI sequence should continue with the App Catalogue redesign using the now-enabled-by-default catalogue contract and the new GUI settings as the administrative control plane.
+
+## ROI 64A — UI Modules and Advanced Table foundation
+
+The user changed priority before the remaining planned ROIs: dedicate the next few ROIs to rewriting UI Modules, examples, and the table component. ROI 64A establishes the new direction.
+
+Implemented foundation:
+
+- Rewrote `public/mioos/app/mioos_modules.js` into a searchable App Catalogue / UI Modules hub with Modules, Components, Examples, search, category/source filters, card/list layout, empty/loading/error states, and keyboard-friendly launch cards.
+- Added the standalone table contract `mioos-advanced-table-v2` in `public/mioos/app/mioos_table.js`.
+- Added `window.MIOOSTable.createConfig()` and feature toggles so internal modules and user-created modules can configure the table without forking it.
+- Persist column visibility through `column.visibility` mutations instead of browser-only state.
+- Added server-side action/key safeguards in `routines/MIOOSTBL.m` for column visibility and invalid table action names.
+
+Next UI-module ROIs should continue in this order: table hardening, UI/form examples rewrite, module author workflow, patient registration module.

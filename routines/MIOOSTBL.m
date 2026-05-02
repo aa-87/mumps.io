@@ -48,6 +48,7 @@ MUTATE(STATE,CONF,IN,OUT,ERR)
 	IF DATASET="massive" SET ERR("error")="massive_table_read_only" QUIT 0
 	SET ACTION=$$LOW^MIOUTIL($GET(IN("action"),$GET(IN("op"),"")))
 	IF ACTION="" SET ERR("error")="table_action_missing" QUIT 0
+	IF ACTION'["." SET ERR("error")="table_action_invalid" QUIT 0
 	SET ROOT=$$ROOT(.STATE,DATASET)
 	DO ENSURE(.STATE,DATASET)
 	IF ACTION="row.save"!(ACTION="row.add")!(ACTION="row.update") DO
@@ -69,7 +70,7 @@ MUTATE(STATE,CONF,IN,OUT,ERR)
 	. . SET ROW=0 FOR  SET ROW=$ORDER(@ROOT@("rows",ROW)) QUIT:ROW'>0  IF $GET(@ROOT@("rows",ROW,"id"))=ID KILL @ROOT@("rows",ROW) SET N=N+1 QUIT
 	. SET OUT("mutated","deletedCount")=N
 	IF ACTION="column.save"!(ACTION="column.add")!(ACTION="column.update") DO
-	. SET KEY=$GET(IN("column","key"))
+	. SET KEY=$$KEY($GET(IN("column","key")))
 	. IF KEY="" SET KEY="col"_($ORDER(@ROOT@("schema","columns",""),-1)+1)
 	. SET FOUND=0,I=0 FOR  SET I=$ORDER(@ROOT@("schema","columns",I)) QUIT:I'>0  IF $GET(@ROOT@("schema","columns",I,"key"))=KEY SET FOUND=I
 	. IF FOUND'>0 SET FOUND=$ORDER(@ROOT@("schema","columns",""),-1)+1
@@ -88,13 +89,27 @@ MUTATE(STATE,CONF,IN,OUT,ERR)
 	. SET I=0 FOR  SET I=$ORDER(@ROOT@("rows",I)) QUIT:I'>0  KILL @ROOT@("rows",I,KEY)
 	. SET OUT("mutated","columnDeleted")=KEY
 	IF ACTION="column.resize" DO
-	. SET KEY=$GET(IN("columnKey"),$GET(IN("key")))
+	. SET KEY=$$KEY($GET(IN("columnKey"),$GET(IN("key"))))
 	. SET I=0 FOR  SET I=$ORDER(@ROOT@("schema","columns",I)) QUIT:I'>0  IF $GET(@ROOT@("schema","columns",I,"key"))=KEY SET @ROOT@("schema","columns",I,"width")=$SELECT(+$GET(IN("width"))>40:+$GET(IN("width")),1:80)
 	. SET OUT("mutated","columnResized")=KEY
+	IF ACTION="column.visibility" DO
+	. SET KEY=$$KEY($GET(IN("columnKey"),$GET(IN("key"))))
+	. IF KEY="" QUIT
+	. SET I=0 FOR  SET I=$ORDER(@ROOT@("schema","columns",I)) QUIT:I'>0  IF $GET(@ROOT@("schema","columns",I,"key"))=KEY SET @ROOT@("schema","columns",I,"hidden")=$SELECT(+$GET(IN("hidden")):1,1:0)
+	. SET OUT("mutated","columnVisibility")=KEY
 	IF '$DATA(OUT("mutated")) SET ERR("error")="unsupported_table_action" QUIT 0
 	SET OUT("ok")=1,OUT("action")=ACTION
 	DO QUERY(.STATE,.CONF,.IN,.OUT,.ERR)
 	QUIT 1
+	;
+KEY(X)
+	NEW Y,I,C,Q S Q=0
+	SET Y=$GET(X)
+	IF Y="" QUIT ""
+	IF $EXTRACT(Y)?1N QUIT ""
+	FOR I=1:1:$LENGTH(Y) SET C=$EXTRACT(Y,I) IF C'?1AN,C'="_" S Q=1 QUIT
+	IF Q QUIT ""
+	QUIT $EXTRACT(Y,1,64)
 	;
 DATASET(X)
 	NEW Y
@@ -353,4 +368,5 @@ ACTIONS(OUT)
 	SET OUT("bulkActions",1,"key")="export",OUT("bulkActions",1,"label")="Export selected"
 	SET OUT("bulkActions",2,"key")="bulk.delete",OUT("bulkActions",2,"label")="Delete selected"
 	QUIT
+	;
 	;

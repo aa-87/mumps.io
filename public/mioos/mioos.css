@@ -2848,3 +2848,59 @@ button:disabled { cursor: default; opacity: .55; }
     min-width: 220px;
   }
 }
+
+/* ROI 64A UI Modules catalogue and advanced table foundation */
+.mioos-ui-module-catalog-v2 .mioos-ui-module-actions,
+.mioos-ui-module-tabs,
+.mioos-ui-module-filters,
+.mioos-ui-module-card-top,
+.mioos-ui-module-card footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mioos-ui-module-actions { flex-wrap: wrap; justify-content: flex-end; }
+.mioos-ui-module-tabs { padding: 10px 14px 0; border-top: 1px solid rgba(74,106,154,.14); }
+.mioos-ui-module-tabs button {
+  border: 1px solid rgba(74,106,154,.22);
+  background: rgba(255,255,255,.78);
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.mioos-ui-module-tabs button.active { background: rgba(48,112,210,.12); border-color: rgba(48,112,210,.42); }
+.mioos-ui-module-tabs span { opacity: .65; font-size: 11px; }
+.mioos-ui-module-filters { padding: 12px 14px; flex-wrap: wrap; }
+.mioos-ui-module-filters label { display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 700; }
+.mioos-ui-module-filters input,
+.mioos-ui-module-filters select { min-height: 30px; min-width: 180px; border: 1px solid rgba(74,106,154,.28); border-radius: 8px; padding: 5px 8px; background: #fff; }
+.mioos-ui-module-list { display: grid; gap: 8px; padding: 0 14px 14px; }
+.mioos-ui-module-list .mioos-ui-module-card { grid-template-columns: auto 1fr auto; display: grid; align-items: center; }
+.mioos-ui-module-card:focus { outline: 2px solid rgba(48,112,210,.55); outline-offset: 2px; }
+.mioos-ui-module-card-top { justify-content: space-between; }
+.mioos-ui-module-icon { font-size: 18px; }
+.mioos-ui-module-badge { border-radius: 999px; padding: 3px 8px; background: rgba(48,112,210,.10); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
+.mioos-ui-module-card footer { justify-content: space-between; margin-top: auto; }
+.mioos-ui-module-empty,
+.mioos-ui-module-loading,
+.mioos-table-status,
+.mioos-table-validation,
+.mioos-table-empty-row td {
+  margin: 10px 14px;
+  border: 1px solid rgba(74,106,154,.18);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: rgba(255,255,255,.76);
+  color: #24364f;
+}
+.mioos-table-status { font-weight: 700; }
+.mioos-table-validation { color: #8a2f20; background: rgba(255,239,232,.9); }
+.mioos-table-validation span { display: block; }
+.mioos-table-empty-row td { text-align: center; font-weight: 700; }
+@media (max-width: 760px) {
+  .mioos-ui-module-filters,
+  .mioos-ui-module-tabs { align-items: stretch; flex-direction: column; }
+  .mioos-ui-module-filters input,
+  .mioos-ui-module-filters select { min-width: 0; width: 100%; }
+}

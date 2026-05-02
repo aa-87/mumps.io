@@ -30,7 +30,8 @@ EXPORT(CONF,STATE,OUT)
 	. SET OUT("values",KEY)=CUR
 	. SET OUT("settings",I,"stored")=+$DATA(^MIO("MIOOS","SETTING","VALUE",KEY,"value"))
 	. SET OUT("settings",I,"updatedAt")=$GET(^MIO("MIOOS","SETTING","VALUE",KEY,"updatedAt"))
-	QUIT 1
+	QUIT:$QUIT 1
+	QUIT
 	;
 SAVE(CONF,STATE,IN,OUT,ERR)
 	NEW KEY,RAW,DEF,VAL,CHANGED,ROOT,WHEN,WHO,CLEAN
@@ -137,9 +138,10 @@ DEFKEY(KEY,DEF)
 	KILL DEF,DEFS
 	DO DEFS(.DEFS)
 	SET I=+$GET(DEFS("byKey",$GET(KEY)))
-	IF I<1 QUIT 0
+	IF I<1 QUIT:$Q 0 QUIT 
 	MERGE DEF=DEFS("settings",I)
-	QUIT 1
+	QUIT:$Q 1
+	QUIT
 	;
 CUR(CONF,DEFS,I)
 	NEW P1,P2,P3,P4,P5,DEF
@@ -180,4 +182,5 @@ SAN(DEF,RAW,VAL,ERR)
 	. IF 'OK SET ERR("error")="invalid_setting_value",ERR("allowed")="enum"
 	SET ERR("error")="invalid_setting_type"
 	QUIT 0
+	;
 	;
