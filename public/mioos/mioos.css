@@ -2357,3 +2357,124 @@ button:disabled { cursor: default; opacity: .55; }
 .mioos-viewer-media-wrap { width: 100%; display: grid; place-items: center; padding: 16px; }
 .mioos-viewer-media { max-width: 100%; max-height: 100%; }
 .mioos-viewer-frame { width: 100%; height: 100%; border: 0; background: #fff; }
+
+/* System Configuration surface and clickable explorer names. */
+.mioos-explorer-row-link {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  padding: 0;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  vertical-align: middle;
+  max-width: calc(100% - 30px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mioos-explorer-row-link:hover,
+.mioos-explorer-row-link:focus-visible {
+  text-decoration: underline;
+  color: var(--accent, #0b63f6);
+  outline: none;
+}
+.mioos-system-config-shell {
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+}
+.mioos-system-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 6px 8px 0;
+  border-bottom: 1px solid rgba(15,23,42,.16);
+  background: linear-gradient(180deg, rgba(255,255,255,.82), rgba(230,238,250,.72));
+}
+.mioos-system-tabs button {
+  min-height: 28px;
+  padding: 4px 12px;
+  border: 1px solid rgba(60,90,130,.35);
+  border-bottom: 0;
+  border-radius: 6px 6px 0 0;
+  background: linear-gradient(180deg, #fff, #dfeaf9);
+  color: var(--menu-text, #10243d);
+  font: inherit;
+  cursor: pointer;
+}
+.mioos-system-tabs button.is-active {
+  background: #fff;
+  box-shadow: 0 -1px 0 #fff inset;
+  font-weight: 700;
+}
+.mioos-system-config-body {
+  min-height: 0;
+  overflow: auto;
+  padding: 12px;
+  background: #fff;
+}
+.mioos-system-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+.mioos-system-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid rgba(15,23,42,.12);
+  border-radius: 8px;
+  background: linear-gradient(180deg, #fff, #f3f7fc);
+}
+.mioos-system-grid label span {
+  font-weight: 700;
+}
+.mioos-system-grid label input,
+.mioos-system-grid label select {
+  min-height: 30px;
+  border: 1px solid rgba(60,90,130,.38);
+  border-radius: 5px;
+  padding: 3px 7px;
+  font: inherit;
+  background: #fff;
+  color: var(--menu-text, #10243d);
+}
+.mioos-system-grid label em {
+  font-style: normal;
+  color: color-mix(in srgb, var(--menu-text, #10243d) 62%, transparent 38%);
+}
+.mioos-system-grid .mioos-system-check {
+  flex-direction: row;
+  align-items: center;
+}
+.mioos-system-grid .mioos-system-check input {
+  min-height: 0;
+}
+.mioos-system-note {
+  grid-column: 1 / -1;
+  padding: 10px 12px;
+  border: 1px solid rgba(15,23,42,.12);
+  border-radius: 8px;
+  background: rgba(196,221,255,.28);
+  color: color-mix(in srgb, var(--menu-text, #10243d) 78%, transparent 22%);
+}
+.mioos-system-diagnostics {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.mioos-system-sockets {
+  border: 1px solid rgba(15,23,42,.12);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.mioos-system-config-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 6px 10px;
+  border-top: 1px solid rgba(15,23,42,.14);
+  background: linear-gradient(180deg, #f8fbff, #dbe8f8);
+  color: color-mix(in srgb, var(--menu-text, #10243d) 72%, transparent 28%);
+}

@@ -133,7 +133,7 @@
   },
   "websocket": {
     "idleTimeoutSeconds": 3600,
-    "maxFrameBytes": 262144,
+    "maxFrameBytes": 1048576,
     "maxMessageBytes": 1048576
   }
 }

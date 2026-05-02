@@ -83,6 +83,8 @@
         if (appKey === 'text-viewer') return '📄';
         if (appKey === 'image-viewer') return '🖼';
         if (appKey === 'media-viewer') return '🎞';
+        if (appKey === 'system-config' || appKey === 'control-panel') return '🛠';
+        if (appKey === 'mioos.ui.table' || appKey === 'backend-table' || appKey === 'table') return '▦';
         return '□';
       },
       ensureWindowFrame: function (win) {
@@ -129,6 +131,9 @@
             this.bootstrapExplorerWindow(win.id, true);
             if (this.refreshExplorerWindow) this.refreshExplorerWindow(win.id).catch(function () {});
           }.bind(this));
+        }
+        if ((appKey === 'system-config' || appKey === 'control-panel') && this.initSystemConfig) {
+          this.$nextTick(function () { this.initSystemConfig(); }.bind(this));
         }
         if (appKey === 'diagnostics' && this.refreshTransportDiagnostics) {
           this.$nextTick(function () { this.refreshTransportDiagnostics().catch(function () {}); }.bind(this));
