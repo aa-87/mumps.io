@@ -187,11 +187,12 @@
         this.pendingCommands[key] = req;
         return req;
       },
-      command: function (command, payload) {
+      command: function (command, payload, options) {
         var eventName = (this.boot.routes || {}).commandEvent || 'desktop.command';
         var body = Object.assign({ command: command }, payload || {});
         var key = command + '|' + JSON.stringify(body);
-        return this.socketRequest(eventName, body, { command: command, dedupeKey: key });
+        var opts = Object.assign({}, options || {}, { command: command, dedupeKey: key });
+        return this.socketRequest(eventName, body, opts);
       },
       sendCommand: function (command, payload) {
         var requestId = 'cmd-' + (++this.commandSeq);

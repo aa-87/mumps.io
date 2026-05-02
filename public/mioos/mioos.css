@@ -2892,3 +2892,48 @@ button:disabled { cursor: default; opacity: .55; }
 .theme-dark-mode .mioos-table-detail-toggle { background: #312e81; color: #e0e7ff; border-color: rgba(199,210,254,.35); }
 .theme-dark-mode .mioos-table-column-list button { background: #111827; color: #f8fafc; border-color: rgba(191,219,254,.24); }
 .theme-dark-mode .mioos-table-column-list button small { color: #cbd5e1; }
+
+/* ROI 64F: multi-column grouping and direct page jump controls. */
+.mioos-table-grouping {
+  position: relative;
+  border: 1px solid rgba(148,163,184,.26);
+  border-radius: 12px;
+  padding: 7px 10px;
+  background: rgba(2,6,23,.42);
+  min-width: 180px;
+}
+.mioos-table-grouping[open] { flex-basis: 260px; }
+.mioos-table-grouping label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 7px;
+  margin-top: 8px;
+  font-size: 12px;
+}
+.mioos-table-grouping input[type="checkbox"] { min-height: 0; width: auto; padding: 0; }
+.mioos-table-group-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+.mioos-table-group-chips span {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 11px;
+  border: 1px solid rgba(96,165,250,.28);
+  background: rgba(59,130,246,.18);
+}
+.mioos-table-page-jump {
+  display: inline-flex;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 6px;
+}
+.mioos-table-page-jump input {
+  width: 72px;
+  min-height: 28px;
+  border-radius: 9px;
+  border: 1px solid rgba(148,163,184,.35);
+  background: rgba(2,6,23,.52);
+  color: inherit;
+  padding: 4px 7px;
+}

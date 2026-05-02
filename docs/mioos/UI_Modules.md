@@ -41,11 +41,11 @@ The example intentionally avoids backend table coupling. Production modules shou
 
 ## ROI 64C table modules
 
-Table-backed modules should use `mioos-surface-table` with the `mioos-advanced-table-v7` contract. Provide a dataset and optional `config` object instead of writing custom table state logic. The table owns WebSocket-first query/mutation state with HTTP fallback, server filtering, selection, grouping, column visibility, resizing, and row/column CRUD.
+Table-backed modules should use `mioos-surface-table` with the `mioos-advanced-table-v8` contract. Provide a dataset and optional `config` object instead of writing custom table state logic. The table owns WebSocket-first query/mutation state with HTTP fallback, server filtering, selection, grouping, column visibility, resizing, and row/column CRUD.
 
 ## ROI 64C redo table module guidance
 
-Table modules should now target `mioos-advanced-table-v7`. The contract is DataTables-inspired but remains a MIOOS-native Vue Options API component. Module authors should configure datasets, columns, and feature gates; they should not fork table rendering or implement custom client-side pagination for large datasets.
+Table modules should now target `mioos-advanced-table-v8`. The contract is DataTables-inspired but remains a MIOOS-native Vue Options API component. Module authors should configure datasets, columns, and feature gates; they should not fork table rendering or implement custom client-side pagination for large datasets.
 
 ## Table Samples showcase
 
@@ -58,3 +58,9 @@ The table component itself remains `mioos-full-table`; the showcase is a develop
 For table modules, prefer backend `MOD(...)` and dataset globals over frontend snippets. `mioos-surface-table` reads `MOD("tableState",...)`, so a MUMPS developer should define the dataset under `^MIO("MIOOS","TABLE",user,dataset,...)` and then set `MOD("componentKey")="table"`, `MOD("surface")="mioos-surface-table"`, and `MOD("tableState","dataset")=<dataset>`.
 
 The table UI now separates row details from actions. Details are an expand arrow in the control column. Row actions remain in the Actions column and only render when row CRUD/action features are enabled. Column selection is modal-only, and column editing is exposed only when column CRUD is enabled.
+
+## ROI 64F table-backed module notes
+
+Table-backed modules should declare `contract="mioos-advanced-table-v8"` and use the MUMPS-first `tableState` metadata shape. `groupByColumns` may contain more than one column key, for example `status` and `priority`. Mutation UI should expect fast acknowledgement payloads with `mutationOnly: true` and then refetch the table separately.
+
+A MUMPS-only module entry point needs `appKey`, `title`, `icon`, `componentKey="table"`, `surface="mioos-surface-table"`, and `tableState("dataset")`. The Table Samples documentation includes the full dataset global, module metadata, desktop/app entry shape, and routine reload commands.

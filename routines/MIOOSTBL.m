@@ -2,9 +2,9 @@ MIOOSTBL ; MIOOS backend table query and mutation engine
 	QUIT
 	;
 QUERY(STATE,CONF,IN,OUT,ERR)
-	NEW DATASET,ROWS,SCHEMA,WORK,TOTAL,FILTERED,PAGE,PSIZE,SORTBY,SORTDIR,GROUPBY,DRAW,START,LENGTH
+	NEW DATASET,ROWS,SCHEMA,WORK,TOTAL,FILTERED,PAGE,PSIZE,SORTBY,SORTDIR,DRAW,START,LENGTH,GROUPN,GROUPKEYS
 	NEW $ETRAP,$ESTACK SET $ETRAP="GOTO ERRQ^MIOOSTBL"
-	KILL OUT,ERR,ROWS,SCHEMA,WORK
+	KILL OUT,ERR,ROWS,SCHEMA,WORK,GROUPKEYS
 	SET ERR("routine")="MIOOSTBL"
 	SET DATASET=$$DATASET($GET(IN("dataset"),"demo"))
 	IF DATASET="massive" DO MASSIVEQ(.IN,.OUT,.CONF) QUIT 1
@@ -32,10 +32,12 @@ QUERY(STATE,CONF,IN,OUT,ERR)
 	MERGE OUT("schema","columns")=SCHEMA("columns")
 	DO ACTIONS(.OUT,$SELECT(DATASET="vfs":1,1:0))
 	DO PAGE(.WORK,.OUT,PAGE,PSIZE,TOTAL,FILTERED)
-	SET GROUPBY=$GET(IN("groupBy"))
-	IF GROUPBY'="" DO GROUPS(.WORK,GROUPBY,.OUT)
+	SET GROUPN=$$GROUPREQ(.IN,.GROUPKEYS)
+	IF GROUPN>0 DO GROUPS(.WORK,.GROUPKEYS,.OUT)
 	SET OUT("ok")=1
+	SET OUT("contract")="mioos-advanced-table-v8"
 	SET OUT("dataset")=DATASET
+	IF GROUPN>0 MERGE OUT("groupByColumns")=GROUPKEYS
 	SET OUT("features","serverPagination")=1
 	SET OUT("features","serverSorting")=1
 	SET OUT("features","columnVisibility")=1
@@ -51,7 +53,7 @@ QUERY(STATE,CONF,IN,OUT,ERR)
 	SET OUT("draw")=DRAW
 	SET OUT("recordsTotal")=TOTAL
 	SET OUT("recordsFiltered")=FILTERED
-	MERGE OUT("data")=OUT("rows")
+	DO DATAALIAS(.IN,.OUT)
 	QUIT 1
 ERRQ
 	SET $ECODE=""
@@ -119,8 +121,12 @@ MUTATE(STATE,CONF,IN,OUT,ERR)
 	. SET I=0 FOR  SET I=$ORDER(@ROOT@("schema","columns",I)) QUIT:I'>0  IF $GET(@ROOT@("schema","columns",I,"key"))=KEY SET @ROOT@("schema","columns",I,"hidden")=$SELECT(+$GET(IN("hidden")):1,1:0)
 	. SET OUT("mutated","columnVisibility")=KEY
 	IF '$DATA(OUT("mutated")) SET ERR("error")="unsupported_table_action" QUIT 0
-	SET OUT("ok")=1,OUT("action")=ACTION
-	DO QUERY(.STATE,.CONF,.IN,.OUT,.ERR)
+	SET OUT("ok")=1
+	SET OUT("dataset")=DATASET
+	SET OUT("action")=ACTION
+	SET OUT("mutationOnly")=1
+	SET OUT("refetch")=1
+	SET OUT("message")=$$MSG(ACTION)
 	QUIT 1
 ERRM
 	SET $ECODE=""
@@ -142,9 +148,9 @@ VALROW(CONF,IN,ERR)
 	IF '$DATA(IN("row")) SET ERR("error")="row_missing" QUIT 0
 	SET KEY="" FOR  SET KEY=$ORDER(IN("row",KEY)) QUIT:KEY=""!($GET(ERR("error"))'="")  DO
 	. IF $EXTRACT(KEY,1)="_" KILL IN("row",KEY) QUIT
-	. IF $$KEY(KEY)'=KEY SET ERR("error")="invalid_row_field",ERR("field")=KEY QUIT
+	. IF $$KEY(KEY)'=KEY SET ERR("error")="validation_failed",ERR("message")="Invalid row field",ERR("field")=KEY,ERR("fieldErrors",KEY)="Invalid field key" QUIT
 	. SET VAL=$GET(IN("row",KEY))
-	. IF $LENGTH(VAL)>MAX SET ERR("error")="field_too_long",ERR("field")=KEY QUIT
+	. IF $LENGTH(VAL)>MAX SET ERR("error")="validation_failed",ERR("message")="Field is too long",ERR("field")=KEY,ERR("fieldErrors",KEY)="Maximum length exceeded",ERR("code")="field_too_long" QUIT
 	IF $GET(ERR("error"))'="" QUIT 0
 	QUIT 1
 	;
@@ -264,8 +270,8 @@ SEEDUI(STATE,ROOT)
 	QUIT
 	;
 MASSIVEQ(IN,OUT,CONF)
-	NEW SCHEMA,TOTAL,FILTERED,PAGE,PSIZE,DRAW,START,LENGTH,SORTBY,SORTDIR,SEARCH,I,VAL,IDX,SEQ,N,SKIP
-	KILL OUT,SCHEMA,IDX
+	NEW SCHEMA,TOTAL,FILTERED,PAGE,PSIZE,DRAW,START,LENGTH,SORTBY,SORTDIR,SEARCH,I,VAL,IDX,SEQ,N,SKIP,GROUPN,GROUPKEYS,ROWVIEW
+	KILL OUT,SCHEMA,IDX,GROUPKEYS
 	SET TOTAL=10000,FILTERED=0
 	DO MASSIVESC(.SCHEMA)
 	MERGE OUT("schema","columns")=SCHEMA("columns")
@@ -282,7 +288,7 @@ MASSIVEQ(IN,OUT,CONF)
 	SET SORTDIR=$$LOW^MIOUTIL($GET(IN("sort","direction"),$GET(IN("sortDir"),"ascending")))
 	IF SORTDIR'="descending" SET SORTDIR="ascending"
 	SET SEARCH=$$LOW^MIOUTIL($GET(IN("search")))
-	IF $$MASSFAST(.IN,SEARCH,SORTBY) DO MASSFASTQ(.OUT,TOTAL,PAGE,PSIZE,DRAW,SORTDIR) QUIT
+	IF $$MASSFAST(.IN,SEARCH,SORTBY) DO MASSFASTQ(.IN,.OUT,TOTAL,PAGE,PSIZE,DRAW,SORTDIR) QUIT
 	FOR I=1:1:TOTAL IF $$MASSOK(I,.IN,SEARCH) DO
 	. SET FILTERED=FILTERED+1
 	. SET VAL=$$MASSKEY(I,SORTBY)
@@ -301,8 +307,15 @@ MASSIVEQ(IN,OUT,CONF)
 	. . . SET SEQ=SEQ+1 IF SEQ'>SKIP QUIT
 	. . . SET N=N+1 DO MASSROW(.OUT,N,I)
 	DO ACTIONS(.OUT,1)
+	SET GROUPN=$$GROUPREQ(.IN,.GROUPKEYS)
+	IF GROUPN>0 DO
+	. KILL ROWVIEW
+	. MERGE ROWVIEW=OUT("rows")
+	. DO GROUPS(.ROWVIEW,.GROUPKEYS,.OUT)
 	SET OUT("ok")=1
+	SET OUT("contract")="mioos-advanced-table-v8"
 	SET OUT("dataset")="massive"
+	IF GROUPN>0 MERGE OUT("groupByColumns")=GROUPKEYS
 	SET OUT("features","serverPagination")=1
 	SET OUT("features","serverSorting")=1
 	SET OUT("features","columnVisibility")=1
@@ -319,7 +332,7 @@ MASSIVEQ(IN,OUT,CONF)
 	SET OUT("draw")=DRAW
 	SET OUT("recordsTotal")=TOTAL
 	SET OUT("recordsFiltered")=FILTERED
-	MERGE OUT("data")=OUT("rows")
+	DO DATAALIAS(.IN,.OUT)
 	SET OUT("pagination","page")=PAGE
 	SET OUT("pagination","pageSize")=PSIZE
 	SET OUT("pagination","totalRows")=TOTAL
@@ -359,8 +372,8 @@ MASSFAST(IN,SEARCH,SORTBY)
 	IF KEY="name" QUIT 1
 	QUIT 0
 	;
-MASSFASTQ(OUT,TOTAL,PAGE,PSIZE,DRAW,SORTDIR)
-	NEW PAGECOUNT,SKIP,N,I,STEP
+MASSFASTQ(IN,OUT,TOTAL,PAGE,PSIZE,DRAW,SORTDIR)
+	NEW PAGECOUNT,SKIP,N,I,STEP,GROUPN,GROUPKEYS,ROWVIEW
 	SET PAGECOUNT=$SELECT(TOTAL=0:1,1:((TOTAL+PSIZE-1)\PSIZE))
 	IF PAGE<1 SET PAGE=1
 	IF PAGE>PAGECOUNT SET PAGE=PAGECOUNT
@@ -370,9 +383,15 @@ MASSFASTQ(OUT,TOTAL,PAGE,PSIZE,DRAW,SORTDIR)
 	IF SORTDIR'="descending" DO
 	. SET I=SKIP FOR  SET I=I+1 QUIT:I>TOTAL!(N'<PSIZE)  SET N=N+1 DO MASSROW(.OUT,N,I)
 	DO ACTIONS(.OUT,1)
-	KILL OUT("bulkActions")
+	SET GROUPN=$$GROUPREQ(.IN,.GROUPKEYS)
+	IF GROUPN>0 DO
+	. KILL ROWVIEW
+	. MERGE ROWVIEW=OUT("rows")
+	. DO GROUPS(.ROWVIEW,.GROUPKEYS,.OUT)
 	SET OUT("ok")=1
+	SET OUT("contract")="mioos-advanced-table-v8"
 	SET OUT("dataset")="massive"
+	IF GROUPN>0 MERGE OUT("groupByColumns")=GROUPKEYS
 	SET OUT("features","serverPagination")=1
 	SET OUT("features","serverSorting")=1
 	SET OUT("features","columnVisibility")=1
@@ -389,7 +408,7 @@ MASSFASTQ(OUT,TOTAL,PAGE,PSIZE,DRAW,SORTDIR)
 	SET OUT("draw")=DRAW
 	SET OUT("recordsTotal")=TOTAL
 	SET OUT("recordsFiltered")=TOTAL
-	MERGE OUT("data")=OUT("rows")
+	DO DATAALIAS(.IN,.OUT)
 	SET OUT("pagination","page")=PAGE
 	SET OUT("pagination","pageSize")=PSIZE
 	SET OUT("pagination","totalRows")=TOTAL
@@ -621,25 +640,54 @@ PAGE(WORK,OUT,PAGE,PSIZE,TOTAL,FILTERED)
 	SET OUT("pagination","pageCount")=$SELECT(FILTERED=0:1,1:((FILTERED+PSIZE-1)\PSIZE))
 	QUIT
 	;
-GROUPS(WORK,KEY,OUT)
-	NEW I,G,N,VAL
+GROUPREQ(IN,KEYS)
+	NEW I,N,KEY
+	KILL KEYS SET N=0
+	SET I=0 FOR  SET I=$ORDER(IN("groupByColumns",I)) QUIT:I'>0  DO
+	. SET KEY=$$KEY($GET(IN("groupByColumns",I)))
+	. IF KEY'="" SET N=N+1,KEYS(N)=KEY
+	IF N'>0 DO
+	. SET KEY=$$KEY($GET(IN("groupBy")))
+	. IF KEY'="" SET N=1,KEYS(1)=KEY
+	QUIT N
+	;
+GROUPS(WORK,KEYS,OUT)
+	NEW I,J,G,N,VAL,GKEY,GLABEL,KEY,SEP
 	KILL OUT("groups")
 	SET I=0 FOR  SET I=$ORDER(WORK(I)) QUIT:I'>0  DO
-	. SET VAL=$GET(WORK(I,KEY)) IF VAL="" SET VAL="(blank)"
-	. SET G=$ORDER(OUT("groups","byValue",VAL,0))
+	. SET (GKEY,GLABEL)="",SEP=""
+	. SET J=0 FOR  SET J=$ORDER(KEYS(J)) QUIT:J'>0  DO
+	. . SET KEY=$GET(KEYS(J)),VAL=$GET(WORK(I,KEY)) IF VAL="" SET VAL="(blank)"
+	. . SET GKEY=GKEY_SEP_KEY_"="_VAL,GLABEL=GLABEL_SEP_VAL,SEP=" / "
+	. IF GKEY="" SET GKEY="(all)",GLABEL="(all)"
+	. SET G=$ORDER(OUT("groups","byValue",GKEY,0))
 	. IF G'>0 DO
 	. . SET N=$ORDER(OUT("groups",""),-1)+1
-	. . SET OUT("groups",N,"key")=VAL,OUT("groups",N,"label")=VAL,OUT("groups",N,"count")=0
-	. . SET OUT("groups","byValue",VAL,N)=""
+	. . SET OUT("groups",N,"key")=GKEY,OUT("groups",N,"label")=GLABEL,OUT("groups",N,"count")=0
+	. . SET J=0 FOR  SET J=$ORDER(KEYS(J)) QUIT:J'>0  SET OUT("groups",N,"columns",J)=$GET(KEYS(J))
+	. . SET OUT("groups","byValue",GKEY,N)=""
 	. . SET G=N
 	. SET OUT("groups",G,"count")=+$GET(OUT("groups",G,"count"))+1
 	KILL OUT("groups","byValue")
 	QUIT
 	;
+DATAALIAS(IN,OUT)
+	IF +$GET(IN("includeDataAlias")) MERGE OUT("data")=OUT("rows")
+	QUIT
+	;
+MSG(ACTION)
+	IF ACTION="column.visibility" QUIT "Column visibility updated"
+	IF ACTION="column.resize" QUIT "Column width updated"
+	IF ACTION="column.save"!(ACTION="column.add")!(ACTION="column.update") QUIT "Column saved"
+	IF ACTION="column.delete" QUIT "Column deleted"
+	IF ACTION="row.delete" QUIT "Row deleted"
+	IF ACTION="rows.delete"!(ACTION="bulk.delete") QUIT "Rows deleted"
+	IF ACTION="row.save"!(ACTION="row.add")!(ACTION="row.update") QUIT "Row saved"
+	QUIT "Table mutation applied"
+	;
 ACTIONS(OUT,READONLY)
 	KILL OUT("rowActions"),OUT("bulkActions")
-	IF +$GET(READONLY) DO  QUIT
-	. SET OUT("bulkActions",1,"key")="export",OUT("bulkActions",1,"label")="Export selected"
+	IF +$GET(READONLY) QUIT
 	SET OUT("rowActions",1,"key")="edit",OUT("rowActions",1,"label")="Edit"
 	SET OUT("rowActions",2,"key")="duplicate",OUT("rowActions",2,"label")="Duplicate"
 	SET OUT("rowActions",3,"key")="delete",OUT("rowActions",3,"label")="Delete"
