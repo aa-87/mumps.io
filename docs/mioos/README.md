@@ -350,10 +350,3 @@ This pass removes the unauthenticated boot-time `/api/mioos/theme/load` request.
 ### ROI 60 — server-rendered theme first paint and focused shell polish
 
 This ROI moves active theme application back into the initial MIOTPL render path so the shell no longer performs an unauthorized `/api/mioos/theme/load` request before sign-in. `MIOOSST` now exposes the active globals-backed profile in boot state, `MIOOSUI` resolves matching CSS variables for first paint, and the client only reloads saved themes from the Customize window after authentication. The pass also hardens wallpaper upload ID detection, removes completed-transfer duplication from the active queue, and adds native-shell sizing overrides for Explorer, Transfers, Start Menu, and Customize previews.
-
-
-## WebSocket-first transport update
-
-MIOOS defaults to WebSocket-first runtime communication. HTTP API routes remain available as a configurable fallback, but modules, backend table queries, theme load/save, theme asset upload, VFS file operations, and boot-safe media previews should use the `desktop.command` WebSocket path. In WebSocket mode, boot wallpaper is rendered as a data URL rather than `/api/mioos/fs/blob` to prevent unauthorized pre-login HTTP blob requests.
-
-See `docs/mioos/WebSocket_Transport.md` for the transport contract and performance notes.

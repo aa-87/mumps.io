@@ -3,8 +3,14 @@
     return vm.windows.find(function (item) { return item.id === windowId; }) || null;
   }
   function nextWindowId(vm, prefix) {
-    vm._mioosWindowSeq = (vm._mioosWindowSeq || 0) + 1;
-    return (prefix || 'win') + '-' + vm._mioosWindowSeq;
+    prefix = String(prefix || 'win-app').replace(/[^A-Za-z0-9_-]+/g, '-');
+    vm.windowSeq = +(vm.windowSeq || 0) + 1;
+    var id = prefix + '-' + vm.windowSeq;
+    while ((vm.windows || []).some(function (item) { return item && item.id === id; })) {
+      vm.windowSeq += 1;
+      id = prefix + '-' + vm.windowSeq;
+    }
+    return id;
   }
   function taskbarHeight(vm) {
     var theme = (vm && vm.appliedThemeProfile) || (vm && vm.themeStudioActiveTheme && vm.themeStudioActiveTheme()) || {};
@@ -83,8 +89,6 @@
         if (appKey === 'text-viewer') return '📄';
         if (appKey === 'image-viewer') return '🖼';
         if (appKey === 'media-viewer') return '🎞';
-        if (appKey === 'system-config' || appKey === 'control-panel') return '🛠';
-        if (appKey === 'mioos.ui.table' || appKey === 'backend-table' || appKey === 'table') return '▦';
         return '□';
       },
       ensureWindowFrame: function (win) {
@@ -131,9 +135,6 @@
             this.bootstrapExplorerWindow(win.id, true);
             if (this.refreshExplorerWindow) this.refreshExplorerWindow(win.id).catch(function () {});
           }.bind(this));
-        }
-        if ((appKey === 'system-config' || appKey === 'control-panel') && this.initSystemConfig) {
-          this.$nextTick(function () { this.initSystemConfig(); }.bind(this));
         }
         if (appKey === 'diagnostics' && this.refreshTransportDiagnostics) {
           this.$nextTick(function () { this.refreshTransportDiagnostics().catch(function () {}); }.bind(this));
@@ -429,18 +430,8 @@
       createWindowForApp: function (app, options) {
         options = options || {};
         app = app || {};
-        var appKey = app.appKey || app.key || 'app';
-        var id = nextWindowId(this, 'win-' + appKey);
-        var moduleMeta = {
-          kind: app.kind || options.kind || 'app',
-          moduleWindow: !!(app.moduleWindow || app.surface || app.componentKey || (app.id && app.id !== appKey) || options.moduleWindow),
-          moduleId: app.id || app.moduleId || options.moduleId || '',
-          moduleComponent: app.componentKey || app.component || options.moduleComponent || '',
-          surface: app.surface || options.surface || '',
-          tableState: app.tableState || options.tableState || null,
-          icon: app.icon || options.icon || ''
-        };
-        var win = Object.assign({ id: id, appKey: appKey, title: app.title || app.name || 'Application', state: 'normal', left: 120, top: 90, width: +(app.width || 0) || 720, height: +(app.height || 0) || 460, z: this.zCounter + 1 }, moduleMeta, options || {});
+        var id = nextWindowId(this, 'win-' + (app.key || app.appKey || 'app'));
+        var win = Object.assign({ id: id, appKey: app.key || app.appKey || 'app', title: app.title || 'Application', state: 'normal', left: 120, top: 90, width: 720, height: 460, z: this.zCounter + 1 }, options || {});
         this.windows.push(win);
         this.focusWindow(id);
         return win;

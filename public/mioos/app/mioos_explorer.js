@@ -67,22 +67,7 @@
     return window.URL.createObjectURL(blob);
   }
 
-  function fsPayloadToObjectUrl(content, mime, encoding) {
-    var value = String(content || '');
-    var enc = String(encoding || '').toLowerCase();
-    if (!value) return '';
-    if (value.indexOf('data:') === 0) return value;
-    if (enc === 'base64-dataurl' || enc === 'base64') return 'data:' + (mime || 'application/octet-stream') + ';base64,' + value;
-    if (/^data:[^,]+;base64,/.test(value)) return value;
-    return makeDownloadHref(value, mime || 'application/octet-stream');
-  }
-
-  function wsTransportMode(vm) {
-    return String(((((vm || {}).boot || {}).transport || {}).mode) || ((((vm || {}).boot || {}).vfs || {}).transport) || 'websocket').toLowerCase();
-  }
-
   function buildFsBlobUrl(vm, item, options) {
-    if (wsTransportMode(vm) !== 'http' && !(((((vm || {}).boot || {}).transport || {}).httpFallback) === true && options && options.forceHttp)) return '';
     var route = ((((vm || {}).boot || {}).routes || {}).fsBlob) || '/api/mioos/fs/blob';
     var id = ((item || {}).id || (item || {}).key || (item || {}).fileId || '');
     var path = ((item || {}).path || '');
@@ -279,7 +264,7 @@
   }
 
   function useChunkedUpload(file, isText) {
-    var limit = 262144;
+    var limit = 32768;
     if (!file) return false;
     if (file.size > limit) return true;
     return !isText;
@@ -296,7 +281,7 @@
     return {
       maxSocketsPerSession: Math.max(1, +(conf.maxSocketsPerSession || 6)),
       fsSockets: Math.max(1, +(conf.fsSockets || 3)),
-      uploadBatchSize: Math.max(1, Math.min(8, +(conf.uploadBatchSize || (((vm.boot || {}).vfs || {}).uploadBatchSize) || 2)))
+      uploadBatchSize: Math.max(1, Math.min(2, +(conf.uploadBatchSize || 1)))
     };
   }
 
@@ -433,9 +418,6 @@
 
       explorerShellInput: function (message, value) { return this.inputDialog ? this.inputDialog('Explorer', message, value) : Promise.resolve(window.prompt(message || 'Input', value || '')); },
       explorerShellConfirm: function (message) { return this.confirmDialog ? this.confirmDialog('Explorer', message) : Promise.resolve(window.confirm(message || 'Continue?')); },
-      fsReadPayloadObjectUrl: function (content, mime, encoding) {
-        return fsPayloadToObjectUrl(content, mime, encoding);
-      },
 
       resetExplorerUpload: function (state) {
         if (!state) return;
@@ -458,9 +440,8 @@
         var sentBytes = 0;
         var pool = socketPoolConfig(this);
         var active = Math.max(1, Math.min(pool.maxSocketsPerSession, Math.min(pool.fsSockets, +(concurrency || pool.fsSockets || 2))));
-        var batchWidth = Math.max(1, Math.min(pool.uploadBatchSize || 1, +(batchSize || pool.uploadBatchSize || 1)));
-        var maxMessageBytes = +((((this.boot || {}).websocket || {}).maxMessageBytes) || 1048576);
-        var frameBudget = Math.max(131072, Math.min(1048576, maxMessageBytes - 32768));
+        var batchWidth = 1;
+        var frameBudget = 65536;
         return new Promise(function (resolve, reject) {
           function cancelled() {
             return !!(transferControl && transferControl.cancelled);
@@ -491,7 +472,7 @@
             while (nextIndex < segments.length && batch.length < batchWidth) {
               localIndex = nextIndex;
               if (batch.length && (chars + ((segments[localIndex] && segments[localIndex].data && segments[localIndex].data.length) || 0)) > frameBudget) break;
-              batch.push({ index: localIndex + 1, data: segments[localIndex].data, bytes: segments[localIndex].bytes, rawBytes: segments[localIndex].rawBytes });
+              batch.push({ index: localIndex + 1, data: segments[localIndex].data, bytes: segments[localIndex].bytes });
               chars += ((segments[localIndex] && segments[localIndex].data && segments[localIndex].data.length) || 0);
               nextIndex += 1;
             }
@@ -545,7 +526,7 @@
                 return;
               }
               if (!batch.length) return;
-              batch.forEach(function (item) { batchBytes += (item.rawBytes || item.bytes || 0); });
+              batch.forEach(function (item) { batchBytes += (item.bytes || 0); });
               sendBatch(worker, batch).then(function () {
                 completed += batch.length;
                 sentBytes += batchBytes;
@@ -598,9 +579,6 @@
           { key: 'size', label: 'Size', width: 96, minWidth: 76 },
           { key: 'modified', label: 'Modified', width: 158, minWidth: 118 }
         ];
-      },
-      explorerColumns: function (state) {
-        return this.explorerDetailsColumns(state);
       },
       explorerDetailsColumns: function (state) {
         var existing = Array.isArray((state || {}).detailsColumns) ? state.detailsColumns : [];
@@ -804,33 +782,33 @@
       previewImageFile: function (windowId, item) {
         var win = this.windows.find(function (entry) { return entry.id === windowId; });
         var state = this.ensureExplorerWindowState(win);
-        var self = this;
-        if (!win || !state || !item || !this.command) return Promise.resolve();
-        return this.command('fs.read', { id: item.id || item.key || item.fileId }).then(function (msg) {
-          var payload = payloadRoot(msg);
-          state.preview = { title: item.name || item.title || '', content: '', mime: item.mime || payload.mime || 'image/*', imageSrc: (self.fsReadPayloadObjectUrl ? self.fsReadPayloadObjectUrl(payload.content || '', payload.mime || item.mime || 'image/*', payload.encoding || '') : (payload.content || '')), mediaSrc: '', mediaKind: '' };
-          return state.preview.imageSrc;
-        }).catch(function () {
-          var url = buildFsBlobUrl(self, item, { inline: true, forceHttp: true });
-          if (url) state.preview = { title: item.name || item.title || '', content: '', mime: item.mime || 'image/*', imageSrc: url, mediaSrc: '', mediaKind: '' };
-          return url;
-        });
+        var url = buildFsBlobUrl(this, item, { inline: true });
+        if (!win || !state || !item || !url) return Promise.resolve();
+        state.preview = {
+          title: item.name || item.title || '',
+          content: '',
+          mime: item.mime || 'image/*',
+          imageSrc: url,
+          mediaSrc: '',
+          mediaKind: ''
+        };
+        return Promise.resolve(url);
       },
       previewMediaFile: function (windowId, item) {
         var win = this.windows.find(function (entry) { return entry.id === windowId; });
         var state = this.ensureExplorerWindowState(win);
         var mediaKind = detectVideoLike(item) ? 'video' : 'audio';
-        var self = this;
-        if (!win || !state || !item || !this.command) return Promise.resolve();
-        return this.command('fs.read', { id: item.id || item.key || item.fileId }).then(function (msg) {
-          var payload = payloadRoot(msg);
-          state.preview = { title: item.name || item.title || '', content: '', mime: item.mime || payload.mime || (mediaKind + '/*'), imageSrc: '', mediaSrc: (self.fsReadPayloadObjectUrl ? self.fsReadPayloadObjectUrl(payload.content || '', payload.mime || item.mime || (mediaKind + '/*'), payload.encoding || '') : (payload.content || '')), mediaKind: mediaKind };
-          return state.preview.mediaSrc;
-        }).catch(function () {
-          var url = buildFsBlobUrl(self, item, { inline: true, stream: 'media', forceHttp: true });
-          if (url) state.preview = { title: item.name || item.title || '', content: '', mime: item.mime || (mediaKind + '/*'), imageSrc: '', mediaSrc: url, mediaKind: mediaKind };
-          return url;
-        });
+        var url = buildFsBlobUrl(this, item, { inline: true, stream: 'media' });
+        if (!win || !state || !item || !url) return Promise.resolve();
+        state.preview = {
+          title: item.name || item.title || '',
+          content: '',
+          mime: item.mime || (mediaKind + '/*'),
+          imageSrc: '',
+          mediaSrc: url,
+          mediaKind: mediaKind
+        };
+        return Promise.resolve(url);
       },
       explorerOpenSelected: function (windowId) {
         var win = this.windows.find(function (entry) { return entry.id === windowId; });
@@ -1186,7 +1164,7 @@
         if (!state || !this.command || !file) return Promise.resolve();
         mime = file.type || 'application/octet-stream';
         isText = detectTextLike({ name: file.name, mime: mime });
-        chunkTransport = (((this.boot || {}).vfs || {}).uploadChunkTransport) || 'websocket';
+        chunkTransport = (((this.boot || {}).vfs || {}).uploadChunkTransport) || 'http-binary';
         var transferId = self.registerTransfer ? self.registerTransfer({ kind: 'upload', name: file.name, status: 'preparing', stage: 'Preparing', totalBytes: file.size, processedBytes: 0, sourceWindowId: windowId, persistent: true, dedupeKey: ['upload', state.folderId || '', file.name || '', file.size || 0, file.lastModified || 0].join('|'), resume: { kind: 'upload', parentId: state.folderId, sourceWindowId: windowId, fileName: file.name, mime: mime, totalBytes: file.size, chunkTransport: chunkTransport, uploadId: '' } }) : '';
         var transferControl = { cancelled: false, paused: false, workers: [], xh: {}, uploadId: '', windowId: windowId, nextIndex: 1, completedBytes: 0, completed: {}, retries: {}, totalChunks: 0, finalizeRetries: 0, serverReadyForCommit: false, commitStarted: false, missing_chunk: false };
         if (transferId && self.setTransferController) {
@@ -1319,7 +1297,7 @@
             encoding: 'binary'
           }).then(function (msg) {
             var uploadId = (msg && (msg.uploadId || ((msg.vfs || {}).uploadId))) || '';
-            var chunkBytes = +((msg && (msg.chunkBytes || ((msg.vfs || {}).chunkBytes))) || ((self.boot && self.boot.vfs && (self.boot.vfs.httpChunkBytes || self.boot.vfs.uploadChunkBytes)) || 1048576));
+            var chunkBytes = +((msg && (msg.chunkBytes || ((msg.vfs || {}).chunkBytes))) || ((self.boot && self.boot.vfs && self.boot.vfs.uploadChunkBytes) || 256000));
             var concurrency = +((msg && (msg.concurrencyDefault || ((msg.vfs || {}).concurrencyDefault))) || ((self.boot && self.boot.vfs && self.boot.vfs.uploadConcurrency) || 4));
             var totalChunks = file.size > 0 ? Math.ceil(file.size / chunkBytes) : 0;
             if (!uploadId) throw new Error('upload_begin_failed');
@@ -1505,11 +1483,9 @@
         }, { command: 'fs.upload.begin', dedupeKey: 'fs.upload.begin|' + windowId + '|' + file.name + '|' + file.size, timeoutMs: uploadTimeoutConfig(self).uploadBeginTimeoutMs }).then(function (msg) {
           var payload = payloadRoot(msg);
           var uploadId = payload.uploadId;
-          var maxUploadFrame = +((self.boot && self.boot.websocket && self.boot.websocket.maxMessageBytes) || 1048576);
-          var chunkChars = (payload && payload.chunkBytes) || ((self.boot && self.boot.vfs && self.boot.vfs.uploadChunkBytes) || 1048576);
-          chunkChars = Math.max(262144, Math.min(+chunkChars || 1048576, Math.max(262144, maxUploadFrame - 32768)));
-          var uploadConcurrency = (payload && payload.concurrencyDefault) || ((self.boot && self.boot.vfs && self.boot.vfs.uploadConcurrency) || 3);
-          var uploadBatchSize = (payload && payload.batchSize) || ((self.boot && self.boot.vfs && self.boot.vfs.uploadBatchSize) || ((self.boot && self.boot.websocket && self.boot.websocket.uploadBatchSize) || 2));
+          var chunkChars = (payload && payload.chunkBytes) || ((self.boot && self.boot.vfs && self.boot.vfs.uploadChunkBytes) || 32768);
+          var uploadConcurrency = (payload && payload.concurrencyDefault) || ((self.boot && self.boot.vfs && self.boot.vfs.uploadConcurrency) || 7);
+          var uploadBatchSize = (payload && payload.batchSize) || ((self.boot && self.boot.vfs && self.boot.vfs.uploadBatchSize) || ((self.boot && self.boot.websocket && self.boot.websocket.uploadBatchSize) || 1));
           if (!uploadId) throw new Error('upload_begin_failed');
           state.upload.uploadId = uploadId;
           state.upload.transferId = transferId || '';
@@ -1531,14 +1507,13 @@
           }
           return blobToArrayBuffer(file).then(function (buffer) {
             var bytes = new Uint8Array(buffer);
-            var rawChunkBytes = Math.max(196608, Math.floor(chunkChars * 3 / 4));
+            var rawChunkBytes = Math.max(131072, Math.floor(chunkChars * 3 / 4));
             var segments = [];
             var offset = 0;
             while (offset < bytes.length || (bytes.length === 0 && segments.length === 0)) {
               var end = Math.min(offset + rawChunkBytes, bytes.length);
               var slice = bytes.slice(offset, end);
-              var encoded = uint8ToBase64(slice);
-              segments.push({ data: encoded, bytes: encoded.length, rawBytes: Math.max(0, end - offset) });
+              segments.push({ data: uint8ToBase64(slice), bytes: Math.max(0, end - offset) });
               offset = end;
               if (bytes.length === 0) break;
             }
@@ -1560,7 +1535,7 @@
         var self = this;
         var resume = (item && item.resume) || {};
         var file = entry && entry.file ? entry.file : entry;
-        var chunkBytes = +resume.chunkBytes || +((((this.boot || {}).vfs || {}).uploadChunkBytes) || 1048576);
+        var chunkBytes = +resume.chunkBytes || +((((this.boot || {}).vfs || {}).uploadChunkBytes) || 131072);
         var concurrency = +((((this.boot || {}).vfs || {}).uploadConcurrency) || 4);
         var nextIndex = +resume.nextIndex || 1;
         var totalChunks = file.size > 0 ? Math.ceil(file.size / chunkBytes) : 0;
@@ -1717,7 +1692,7 @@
           var payload = payloadRoot(msg);
           resume.contiguousBytes = +payload.contiguousBytes || 0;
           resume.nextIndex = +payload.nextIndex || 1;
-          resume.chunkBytes = +payload.chunkBytes || +resume.chunkBytes || +((((self.boot || {}).vfs || {}).uploadChunkBytes) || 1048576);
+          resume.chunkBytes = +payload.chunkBytes || +resume.chunkBytes || +((((self.boot || {}).vfs || {}).uploadChunkBytes) || 131072);
           resume.totalBytes = +payload.totalBytes || +resume.totalBytes || 0;
           if (self.updateTransfer) self.updateTransfer(item.id, { status: interactive ? 'preparing' : 'paused', stage: interactive ? 'Preparing resume' : 'Ready to resume', processedBytes: resume.contiguousBytes, totalBytes: resume.totalBytes, resume: Object.assign({}, resume) });
           if (!interactive) return null;
@@ -2020,8 +1995,9 @@
         };
         this.windows.push(win);
         this.focusWindow(id);
-        var self = this;
-        this.command('fs.read', { id: item.id || item.key || item.fileId }).then(function (msg) { var payload = payloadRoot(msg); win.fileView.loading = false; win.fileView.mime = payload.mime || win.fileView.mime; win.fileView.content = self.fsReadPayloadObjectUrl ? self.fsReadPayloadObjectUrl(payload.content || '', win.fileView.mime, payload.encoding || '') : (payload.content || ''); }).catch(function () { win.fileView.loading = false; win.fileView.content = buildFsBlobUrl(this, item, { inline: true, forceHttp: true }); if (!win.fileView.content) win.fileView.error = 'Unable to open image.'; }.bind(this));
+        win.fileView.loading = false;
+        win.fileView.content = buildFsBlobUrl(this, item, { inline: true });
+        if (!win.fileView.content) win.fileView.error = 'Unable to open image.';
       },
       openMediaViewerWindow: function (item) {
         var mediaKind = detectVideoLike(item) ? 'video' : 'audio';
@@ -2041,8 +2017,9 @@
         };
         this.windows.push(win);
         this.focusWindow(id);
-        var self = this;
-        this.command('fs.read', { id: item.id || item.key || item.fileId }).then(function (msg) { var payload = payloadRoot(msg); win.fileView.loading = false; win.fileView.mime = payload.mime || win.fileView.mime; win.fileView.content = self.fsReadPayloadObjectUrl ? self.fsReadPayloadObjectUrl(payload.content || '', win.fileView.mime, payload.encoding || '') : (payload.content || ''); }).catch(function () { win.fileView.loading = false; win.fileView.content = buildFsBlobUrl(this, item, { inline: true, stream: 'media', forceHttp: true }); if (!win.fileView.content) win.fileView.error = 'Unable to open media.'; }.bind(this));
+        win.fileView.loading = false;
+        win.fileView.content = buildFsBlobUrl(this, item, { inline: true, stream: 'media' });
+        if (!win.fileView.content) win.fileView.error = 'Unable to open media.';
       },
       openPdfViewerWindow: function (item) {
         var id = nextWindowId(this, 'win-pdf');
@@ -2061,8 +2038,9 @@
         };
         this.windows.push(win);
         this.focusWindow(id);
-        var self = this;
-        this.command('fs.read', { id: item.id || item.key || item.fileId }).then(function (msg) { var payload = payloadRoot(msg); win.fileView.loading = false; win.fileView.mime = payload.mime || win.fileView.mime; win.fileView.content = self.fsReadPayloadObjectUrl ? self.fsReadPayloadObjectUrl(payload.content || '', win.fileView.mime, payload.encoding || '') : (payload.content || ''); }).catch(function () { win.fileView.loading = false; win.fileView.content = buildFsBlobUrl(this, item, { inline: true, forceHttp: true }); if (!win.fileView.content) win.fileView.error = 'Unable to open PDF.'; }.bind(this));
+        win.fileView.loading = false;
+        win.fileView.content = buildFsBlobUrl(this, item, { inline: true });
+        if (!win.fileView.content) win.fileView.error = 'Unable to open PDF.';
       },
       openStructuredViewerWindow: function (item) {
         var id = nextWindowId(this, 'win-structured');

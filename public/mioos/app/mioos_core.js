@@ -12,7 +12,6 @@
     var Explorer = (window.MIOOSExplorer || {}).methods || {};
     var Modules = (window.MIOOSModules || {}).methods || {};
     var Table = (window.MIOOSTable || {}).methods || {};
-    var Permissions = (window.MIOOSPermissions || {}).methods || {};
     var I18N = window.MIOOSI18N || {};
 
     var app = window.Vue.createApp({
@@ -76,12 +75,11 @@
           transferCenter: { items: [], seq: 0, autoOpen: true },
           transferControllers: {},
           transportDiagnostics: { loading: false, refreshedAt: 0, error: '', report: {} },
-          systemConfig: { initialized: false, activeTab: 'transport', savedAt: 0, error: '', form: {} },
           securityCenter: { loading: false, refreshedAt: 0, error: '', report: {}, trail: [], sessions: [], accounts: [] },
           debugCenter: { loading: false, refreshedAt: 0, error: '', snapshot: {}, events: [], seq: 0 },
           socketTelemetry: {},
           moduleCatalog: { loading: false, refreshedAt: 0, error: '' },
-          _wallpaperObjectUrl: '',
+          backendTables: {},
           _bootPrimed: false,
           desktopUi: {
             iconSize: 'medium',
@@ -142,7 +140,7 @@
         this.startClock();
         if (!this.requiresSignin) {
           this.refreshView();
-          this.initSocket().then(function () { if (self.loadBootWallpaperOverWebSocket) self.loadBootWallpaperOverWebSocket(); }).catch(function () {});
+          this.initSocket().catch(function () {});
           if (this.startTerminalPolling) this.startTerminalPolling();
         }
         this._dragMove = this.handleGlobalMouseMove.bind(this);
@@ -205,52 +203,6 @@
           this.ensureDesktopLayout();
           this.normalizeDesktopUiState();
           this._bootPrimed = true;
-        },
-        loadBootWallpaperOverWebSocket: function () {
-          var self = this;
-          var desktop = ((this.boot || {}).desktop) || {};
-          var id = desktop.wallpaperId || this.wallpaperId || '';
-          var mode = String((((this.boot || {}).transport || {}).mode) || 'websocket').toLowerCase();
-          if (!id || mode === 'http' || !this.command) return Promise.resolve(null);
-          return this.command('fs.read', { id: id }).then(function (msg) {
-            var payload = (msg && (msg.vfs || msg.fs || msg.file)) || msg || {};
-            var mime = payload.mime || 'application/octet-stream';
-            var content = payload.content || '';
-            var url = self.fsReadPayloadObjectUrl(content, mime, payload.encoding || '');
-            var fit = desktop.wallpaperFit || 'cover';
-            var size = fit === 'tile' ? '240px auto' : (fit === 'contain' ? 'contain' : (fit === 'center' ? 'auto' : 'cover'));
-            var repeat = fit === 'tile' ? 'repeat' : 'no-repeat';
-            var root = self.themeStudioRootNode ? self.themeStudioRootNode() : document.documentElement;
-            if (!url || !root) return null;
-            if (self._wallpaperObjectUrl) { try { URL.revokeObjectURL(self._wallpaperObjectUrl); } catch (err) {} }
-            self._wallpaperObjectUrl = url;
-            root.style.setProperty('--desktop-wallpaper', 'linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.02)),url("' + url + '")');
-            return url;
-          }).catch(function () { return null; });
-        },
-        fsReadPayloadObjectUrl: function (content, mime, encoding) {
-          var blob, header, body, byteString, bytes, i;
-          if (!content) return '';
-          mime = mime || 'application/octet-stream';
-          try {
-            if (String(content).indexOf('data:') === 0) {
-              header = String(content).split(',', 1)[0];
-              body = String(content).slice(header.length + 1);
-              if (header.indexOf(';base64') >= 0) {
-                byteString = window.atob(body);
-                bytes = new Uint8Array(byteString.length);
-                for (i = 0; i < byteString.length; i += 1) bytes[i] = byteString.charCodeAt(i);
-                blob = new Blob([bytes], { type: mime });
-              } else {
-                blob = new Blob([decodeURIComponent(body)], { type: mime });
-              }
-            } else {
-              blob = new Blob([String(content)], { type: mime });
-            }
-            return URL.createObjectURL(blob);
-          } catch (err) {
-            return '';
-          }
         },
         normalizeDesktopUiState: function () {
           if (!this.desktopUi) this.desktopUi = {};
@@ -381,13 +333,10 @@
         },
         desktopWallpaperStyle: function () {
           var profile = this.themeStudioActiveTheme();
-          var desktop = ((this.boot || {}).desktop) || {};
-          var fit = (profile && profile.wallpaperFit) || desktop.wallpaperFit || 'cover';
-          var image = this.themeStudioWallpaperCss(profile);
-          if (this._wallpaperObjectUrl || desktop.wallpaperPending || desktop.wallpaperTransport === 'websocket') image = 'var(--desktop-wallpaper)';
+          var fit = (profile && profile.wallpaperFit) || 'cover';
           return {
             backgroundColor: (((profile || {}).cssVars || {})['--desktop-bg']) || '#3d7ad6',
-            backgroundImage: image,
+            backgroundImage: this.themeStudioWallpaperCss(profile),
             backgroundSize: fit === 'tile' ? '240px auto' : fit,
             backgroundPosition: 'center center',
             backgroundRepeat: fit === 'tile' ? 'repeat' : 'no-repeat'
@@ -734,127 +683,6 @@
             self.transportDiagnostics.error = (err && (err.detail || err.error || err.message)) || 'transport_health_failed';
             throw err;
           });
-        },
-        systemConfigNumber: function (value, fallback, min, max) {
-          var n = Math.floor(+value || +fallback || 0);
-          if (min != null && n < min) n = min;
-          if (max != null && n > max) n = max;
-          return n;
-        },
-        systemConfigSnapshot: function () {
-          var boot = this.boot || {};
-          var transport = boot.transport || {};
-          var vfs = boot.vfs || {};
-          var ws = boot.websocket || {};
-          return {
-            transportMode: String(transport.mode || vfs.transport || 'websocket').toLowerCase() === 'http' ? 'http' : 'websocket',
-            httpFallback: transport.httpFallback !== false && transport.httpFallback !== 0,
-            uploadChunkTransport: String(vfs.uploadChunkTransport || 'websocket').toLowerCase(),
-            uploadChunkBytes: this.systemConfigNumber(vfs.uploadChunkBytes, 1048576, 65536, 8388608),
-            httpChunkBytes: this.systemConfigNumber(vfs.httpChunkBytes || vfs.chunkSize, 1048576, 65536, 8388608),
-            uploadConcurrency: this.systemConfigNumber(vfs.uploadConcurrency || ws.fsSockets, 3, 1, 9),
-            uploadBatchSize: this.systemConfigNumber(vfs.uploadBatchSize || ws.uploadBatchSize, 2, 1, 8),
-            wsCoreSockets: this.systemConfigNumber(ws.coreSockets, 1, 1, 4),
-            wsFsSockets: this.systemConfigNumber(ws.fsSockets || vfs.uploadConcurrency, 3, 1, 9),
-            wsMaxSockets: this.systemConfigNumber(ws.maxSocketsPerSession, 6, 1, 12),
-            maxFrameBytes: this.systemConfigNumber(ws.maxFrameBytes, 1048576, 65536, 8388608),
-            maxMessageBytes: this.systemConfigNumber(ws.maxMessageBytes, 1048576, 131072, 8388608),
-            requestTimeoutMs: this.systemConfigNumber(ws.requestTimeoutMs, 15000, 3000, 120000),
-            uploadBeginTimeoutMs: this.systemConfigNumber(ws.uploadBeginTimeoutMs, 20000, 5000, 180000),
-            uploadChunkTimeoutMs: this.systemConfigNumber(ws.uploadChunkTimeoutMs, 30000, 5000, 180000),
-            uploadCommitTimeoutMs: this.systemConfigNumber(ws.uploadCommitTimeoutMs, 120000, 10000, 300000),
-            uploadSocketOpenTimeoutMs: this.systemConfigNumber(ws.uploadSocketOpenTimeoutMs, 15000, 3000, 120000),
-            uploadMaxInflightChunks: this.systemConfigNumber(ws.uploadMaxInflightChunks || vfs.uploadMaxInflightChunks, 6, 1, 32),
-            batchFlushThreshold: this.systemConfigNumber(ws.batchFlushThreshold || vfs.batchFlushThreshold, 2, 1, 8)
-          };
-        },
-        initSystemConfig: function () {
-          if (!this.systemConfig) this.systemConfig = { initialized: false, activeTab: 'transport', savedAt: 0, error: '', form: {} };
-          if (!this.systemConfig.initialized) {
-            this.systemConfig.form = this.systemConfigSnapshot();
-            this.systemConfig.initialized = true;
-          }
-          return this.systemConfig;
-        },
-        resetSystemConfig: function () {
-          this.initSystemConfig();
-          this.systemConfig.form = this.systemConfigSnapshot();
-          this.systemConfig.error = '';
-        },
-        systemConfigSetTab: function (tab) {
-          this.initSystemConfig();
-          this.systemConfig.activeTab = tab || 'transport';
-        },
-        applySystemConfig: function () {
-          var form, boot, transport, vfs, ws, mode, uploadTransport;
-          this.initSystemConfig();
-          form = this.systemConfig.form || {};
-          boot = this.boot || (this.boot = {});
-          transport = boot.transport || (boot.transport = {});
-          vfs = boot.vfs || (boot.vfs = {});
-          ws = boot.websocket || (boot.websocket = {});
-          mode = String(form.transportMode || 'websocket').toLowerCase() === 'http' ? 'http' : 'websocket';
-          uploadTransport = String(form.uploadChunkTransport || (mode === 'http' ? 'http-binary' : 'websocket')).toLowerCase();
-          if (['websocket', 'http-binary', 'http-json'].indexOf(uploadTransport) < 0) uploadTransport = mode === 'http' ? 'http-binary' : 'websocket';
-          form.transportMode = mode;
-          form.uploadChunkTransport = uploadTransport;
-          form.uploadChunkBytes = this.systemConfigNumber(form.uploadChunkBytes, 1048576, 65536, 8388608);
-          form.httpChunkBytes = this.systemConfigNumber(form.httpChunkBytes, form.uploadChunkBytes, 65536, 8388608);
-          form.uploadConcurrency = this.systemConfigNumber(form.uploadConcurrency, 3, 1, 9);
-          form.uploadBatchSize = this.systemConfigNumber(form.uploadBatchSize, 2, 1, 8);
-          form.wsCoreSockets = this.systemConfigNumber(form.wsCoreSockets, 1, 1, 4);
-          form.wsFsSockets = this.systemConfigNumber(form.wsFsSockets, form.uploadConcurrency, 1, 9);
-          form.wsMaxSockets = this.systemConfigNumber(form.wsMaxSockets, form.wsCoreSockets + form.wsFsSockets, 1, 12);
-          if (form.wsFsSockets > form.wsMaxSockets) form.wsFsSockets = form.wsMaxSockets;
-          form.maxFrameBytes = this.systemConfigNumber(form.maxFrameBytes, 1048576, 65536, 8388608);
-          form.maxMessageBytes = this.systemConfigNumber(form.maxMessageBytes, Math.max(form.maxFrameBytes, 1048576), 131072, 8388608);
-          if (form.maxFrameBytes > form.maxMessageBytes) form.maxFrameBytes = form.maxMessageBytes;
-          form.requestTimeoutMs = this.systemConfigNumber(form.requestTimeoutMs, 15000, 3000, 120000);
-          form.uploadBeginTimeoutMs = this.systemConfigNumber(form.uploadBeginTimeoutMs, 20000, 5000, 180000);
-          form.uploadChunkTimeoutMs = this.systemConfigNumber(form.uploadChunkTimeoutMs, 30000, 5000, 180000);
-          form.uploadCommitTimeoutMs = this.systemConfigNumber(form.uploadCommitTimeoutMs, 120000, 10000, 300000);
-          form.uploadSocketOpenTimeoutMs = this.systemConfigNumber(form.uploadSocketOpenTimeoutMs, 15000, 3000, 120000);
-          form.uploadMaxInflightChunks = this.systemConfigNumber(form.uploadMaxInflightChunks, form.uploadConcurrency * form.uploadBatchSize, 1, 32);
-          form.batchFlushThreshold = this.systemConfigNumber(form.batchFlushThreshold, form.uploadBatchSize, 1, 8);
-          transport.mode = mode;
-          transport.httpFallback = !!form.httpFallback;
-          transport.policy = mode === 'http' ? 'http' : 'websocket-first';
-          vfs.transport = mode;
-          vfs.uploadChunkTransport = uploadTransport;
-          vfs.uploadChunkBytes = form.uploadChunkBytes;
-          vfs.httpChunkBytes = form.httpChunkBytes;
-          vfs.chunkSize = form.httpChunkBytes;
-          vfs.uploadConcurrency = form.uploadConcurrency;
-          vfs.uploadBatchSize = form.uploadBatchSize;
-          vfs.uploadMaxInflightChunks = form.uploadMaxInflightChunks;
-          vfs.batchFlushThreshold = form.batchFlushThreshold;
-          ws.coreSockets = form.wsCoreSockets;
-          ws.fsSockets = form.wsFsSockets;
-          ws.maxSocketsPerSession = form.wsMaxSockets;
-          ws.uploadBatchSize = form.uploadBatchSize;
-          ws.uploadMaxInflightChunks = form.uploadMaxInflightChunks;
-          ws.batchFlushThreshold = form.batchFlushThreshold;
-          ws.maxFrameBytes = form.maxFrameBytes;
-          ws.maxMessageBytes = form.maxMessageBytes;
-          ws.requestTimeoutMs = form.requestTimeoutMs;
-          ws.uploadBeginTimeoutMs = form.uploadBeginTimeoutMs;
-          ws.uploadChunkTimeoutMs = form.uploadChunkTimeoutMs;
-          ws.uploadCommitTimeoutMs = form.uploadCommitTimeoutMs;
-          ws.uploadSocketOpenTimeoutMs = form.uploadSocketOpenTimeoutMs;
-          this.systemConfig.savedAt = Date.now();
-          this.systemConfig.error = '';
-          if (this.pushNotification) this.pushNotification('System Configuration', 'Runtime transport settings applied.');
-          return form;
-        },
-        systemConfigSummaryRows: function () {
-          var form = (this.initSystemConfig().form || {});
-          return [
-            { label: 'Transport', value: form.transportMode === 'http' ? 'HTTP fallback' : 'WebSocket first' },
-            { label: 'Upload path', value: form.uploadChunkTransport || 'websocket' },
-            { label: 'WS chunk', value: this.formatBytesCompact ? this.formatBytesCompact(form.uploadChunkBytes) : String(form.uploadChunkBytes) + ' B' },
-            { label: 'Workers', value: String(form.uploadConcurrency || form.wsFsSockets || 1) },
-            { label: 'Batch size', value: String(form.uploadBatchSize || 1) }
-          ];
         },
         ensureModuleWindowState: function () {
           var modules = this.boot.modules || [];
@@ -1607,16 +1435,9 @@
             self.applyThemeStudioConfig(snapshot, { silent: true, persist: false });
           });
         },
-        themeStudioAllowCssWallpaperUrl: function (url) {
-          var value = String(url || '').trim();
-          var mode = String(((((this.boot || {}).transport || {}).mode) || 'websocket')).toLowerCase();
-          if (!value || value.indexOf('data:') === 0 || value.charAt(0) === '<') return false;
-          if (mode !== 'http' && value.indexOf('blob:') !== 0) return false;
-          return true;
-        },
         themeStudioWallpaperCss: function (theme) {
           var t = this.themeStudioNormalizeConfig(theme || this.themeStudioActiveTheme() || {});
-          if (t.wallpaperPreset === 'custom-url' && t.wallpaperUrl && this.themeStudioAllowCssWallpaperUrl(t.wallpaperUrl)) return 'url(' + t.wallpaperUrl + ')';
+          if (t.wallpaperPreset === 'custom-url' && t.wallpaperUrl) return 'url(' + t.wallpaperUrl + ')';
           if (t.wallpaperPreset === 'meadow') return 'linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0) 28%), linear-gradient(180deg, #8acb59 0%, #6fb14a 42%, #3e7b35 100%)';
           if (t.wallpaperPreset === 'aurora') return 'radial-gradient(circle at top, rgba(147,197,253,0.26), transparent 30%), linear-gradient(180deg, #16385c 0%, #23476d 36%, #3a6288 100%)';
           if (t.wallpaperPreset === 'graphite') return 'linear-gradient(180deg, #6c7a89 0%, #313b48 100%)';
@@ -2048,7 +1869,7 @@
         },
         themeStudioWallpaperCss: function (theme) {
           var t = this.themeStudioNormalizeConfig(theme || this.themeStudioActiveTheme() || {});
-          if (t.wallpaperUrl && this.themeStudioAllowCssWallpaperUrl(t.wallpaperUrl)) return 'url(' + t.wallpaperUrl + ')';
+          if (t.wallpaperUrl) return 'url(' + t.wallpaperUrl + ')';
           if (t.wallpaperPreset === 'meadow') return 'linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0) 28%), linear-gradient(180deg, #8acb59 0%, #6fb14a 42%, #3e7b35 100%)';
           if (t.wallpaperPreset === 'aurora') return 'radial-gradient(circle at top, rgba(147,197,253,0.26), transparent 30%), linear-gradient(180deg, #16385c 0%, #23476d 36%, #3a6288 100%)';
           if (t.wallpaperPreset === 'graphite') return 'linear-gradient(180deg, #6c7a89 0%, #313b48 100%)';
@@ -2058,7 +1879,7 @@
         themeStudioLoginWallpaperCss: function (theme) {
           var t = this.themeStudioNormalizeConfig(theme || this.themeStudioActiveTheme() || {});
           var cfg = t.loginScreenConfig || {};
-          if (cfg.wallpaperUrl && this.themeStudioAllowCssWallpaperUrl(cfg.wallpaperUrl)) return 'url(' + cfg.wallpaperUrl + ')';
+          if (cfg.wallpaperUrl) return 'url(' + cfg.wallpaperUrl + ')';
           return this.themeStudioWallpaperCss(t);
         },
         themeStudioManagedVarKeys: function () {
@@ -2406,16 +2227,6 @@
           if (path === 'wallpaperUrl') this.themeStudioUpdateField('wallpaperPreset', 'custom-upload');
           if (meta && meta.assetId) this.themeStudioUpdateField((path === 'wallpaperUrl' ? 'wallpaperAssetId' : path.replace(/Url$/, 'AssetId')), meta.assetId);
         },
-        themeStudioReadFileDataUrl: function (file) {
-          return new Promise(function (resolve, reject) {
-            var reader;
-            if (!file || !window.FileReader) { reject(new Error('file_reader_unavailable')); return; }
-            reader = new FileReader();
-            reader.onload = function (evt) { resolve(String((evt.target && evt.target.result) || reader.result || '')); };
-            reader.onerror = function () { reject((reader && reader.error) || new Error('file_read_failed')); };
-            reader.readAsDataURL(file);
-          });
-        },
         themeStudioUploadFallbackDataUrl: function (path, file) {
           var self = this;
           return new Promise(function (resolve, reject) {
@@ -2442,24 +2253,13 @@
           route = (((this.boot || {}).routes || {}).themeAssetUpload) || '/api/mioos/theme-asset/upload';
           kind = path.indexOf('loginScreenConfig.avatarUrl') === 0 ? 'login-avatar' : (path.indexOf('loginScreenConfig.warningImageUrl') === 0 ? 'login-warning' : (path.indexOf('loginScreenConfig.') === 0 ? 'login-wallpaper' : 'wallpaper'));
           store.uploadStatus = 'uploading';
-          return this.themeStudioReadFileDataUrl(file).then(function (dataUrl) {
-            if (self.command && String(((((self.boot || {}).transport || {}).mode) || 'websocket')).toLowerCase() !== 'http') {
-              return self.command('theme.asset.upload', { kind: kind, name: file.name || 'image.bin', mime: file.type || 'application/octet-stream', dataUrl: dataUrl }).then(function (msg) {
-                var obj = (msg && msg.theme) || {};
-                if (!obj.ok) throw new Error(obj.detail || obj.error || 'upload_failed');
-                self.themeStudioSetUploadedAsset(path, obj.url || '', { assetId: obj.assetId || obj.id || '', kind: obj.kind || kind });
-                self.pushNotification('Theme Studio', 'Image uploaded.');
-              });
-            }
-            if (!((((self.boot || {}).transport || {}).httpFallback) !== false)) throw new Error('http_fallback_disabled');
-            form = new FormData();
-            form.append('kind', kind);
-            form.append('file', file, file.name || 'image.bin');
-            return fetch(route, { method: 'POST', body: form, credentials: 'same-origin' }).then(function (res) { return res.json().then(function (obj) { return { ok: res.ok, obj: obj || {} }; }); }).then(function (payload) {
-              if (!payload.ok || !payload.obj || !payload.obj.ok) throw new Error((payload.obj && (payload.obj.detail || payload.obj.error)) || 'upload_failed');
-              self.themeStudioSetUploadedAsset(path, payload.obj.url || '', { assetId: payload.obj.assetId || payload.obj.id || '', kind: payload.obj.kind || kind });
-              self.pushNotification('Theme Studio', 'Image uploaded.');
-            });
+          form = new FormData();
+          form.append('kind', kind);
+          form.append('file', file, file.name || 'image.bin');
+          return fetch(route, { method: 'POST', body: form, credentials: 'same-origin' }).then(function (res) { return res.json().then(function (obj) { return { ok: res.ok, obj: obj || {} }; }); }).then(function (payload) {
+            if (!payload.ok || !payload.obj || !payload.obj.ok) throw new Error((payload.obj && (payload.obj.detail || payload.obj.error)) || 'upload_failed');
+            self.themeStudioSetUploadedAsset(path, payload.obj.url || '', { assetId: payload.obj.assetId || payload.obj.id || '', kind: payload.obj.kind || kind });
+            self.pushNotification('Theme Studio', 'Image uploaded.');
           }).catch(function (err) {
             store.uploadStatus = 'local-preview';
             return self.themeStudioUploadFallbackDataUrl(path, file).then(function () {
@@ -2578,7 +2378,7 @@
           (this.boot.modules || []).forEach(function (module) {
             add({ key: module.appKey || module.id, appKey: module.appKey || module.id, title: module.title || module.name || module.id, subtitle: module.description || module.subtitle || module.category || 'Module', icon: module.icon || '▣', kind: 'module', id: module.id }, 'module', 'modules');
           });
-          [{ key: 'app-catalog', title: 'Application Catalog', subtitle: 'Browse installed modules', icon: '▦', kind: 'tool' }, { key: 'control-panel', title: 'Control Panel', subtitle: 'System settings', icon: '⚙', kind: 'tool' }, { key: 'system-config', title: 'System Configuration', subtitle: 'Transport, WebSocket, workers, chunk sizes', icon: '🛠', kind: 'tool' }, { key: 'mioos.ui.table', title: 'Sample Table', subtitle: 'Backend table UI sample', icon: '▦', kind: 'tool' }, { key: 'diagnostics', title: 'Diagnostics', subtitle: 'Transport and boot health', icon: '📈', kind: 'tool' }, { key: 'security-center', title: 'Security Center', subtitle: 'Sessions and users', icon: '🛡', kind: 'tool' }, { key: 'debug-center', title: 'Debug Center', subtitle: 'Developer tools', icon: '🧪', kind: 'tool' }].forEach(function (entry) { add(entry, 'app', 'system'); });
+          [{ key: 'app-catalog', title: 'Application Catalog', subtitle: 'Browse installed modules', icon: '▦', kind: 'tool' }, { key: 'control-panel', title: 'Control Panel', subtitle: 'System settings', icon: '⚙', kind: 'tool' }, { key: 'diagnostics', title: 'Diagnostics', subtitle: 'Transport and boot health', icon: '📈', kind: 'tool' }, { key: 'security-center', title: 'Security Center', subtitle: 'Sessions and users', icon: '🛡', kind: 'tool' }, { key: 'debug-center', title: 'Debug Center', subtitle: 'Developer tools', icon: '🧪', kind: 'tool' }].forEach(function (entry) { add(entry, 'app', 'system'); });
           return rows;
         },
         startMenuFilesystemItems: function () {
@@ -2899,14 +2699,12 @@
         themeStudioLoadRemote: function (key) {
           var route = (((this.boot || {}).routes || {}).themeLoad) || '/api/mioos/theme/load';
           var body = key ? { key: key } : {};
-          if (this.command && String(((((this.boot || {}).transport || {}).mode) || 'websocket')).toLowerCase() !== 'http') return this.command('theme.load', body).then(function (msg) { return (msg && msg.theme) || {}; });
           return fetch(route, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(function (res) {
             return res.json().then(function (obj) { if (!res.ok) throw new Error((obj && (obj.detail || obj.error)) || 'theme_load_failed'); return obj || {}; });
           });
         },
         themeStudioSaveRemote: function (payload) {
           var route = (((this.boot || {}).routes || {}).themeSave) || '/api/mioos/theme/save';
-          if (this.command && String(((((this.boot || {}).transport || {}).mode) || 'websocket')).toLowerCase() !== 'http') return this.command('theme.save', payload || {}).then(function (msg) { var obj = (msg && msg.theme) || {}; if (obj && obj.ok === 0) throw new Error(obj.detail || obj.error || 'theme_save_failed'); return obj || {}; });
           return fetch(route, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload || {}) }).then(function (res) {
             return res.json().then(function (obj) { if (!res.ok || (obj && obj.ok === 0)) throw new Error((obj && (obj.detail || obj.error)) || 'theme_save_failed'); return obj || {}; });
           });
@@ -2938,10 +2736,16 @@
           }
           return (((win || {}).terminalState || {}).status) || this.t('terminal.status.ready', 'Terminal idle');
         }
-      }, Auth, WS, WM, Terminal, Explorer, Modules, Table, Permissions)
+      }, Auth, WS, WM, Terminal, Explorer, Modules, Table)
     });
 
     app.config.compilerOptions.delimiters = ['[[', ']]'];
+    if (window.MIOOSModules && typeof window.MIOOSModules.register === 'function') {
+      window.MIOOSModules.register(app);
+    }
+    if (window.MIOOSTable && typeof window.MIOOSTable.register === 'function') {
+      window.MIOOSTable.register(app);
+    }
     if (window.MIOOSShellUI && typeof window.MIOOSShellUI.register === 'function') {
       window.MIOOSShellUI.register(app);
     }

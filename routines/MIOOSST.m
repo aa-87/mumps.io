@@ -79,6 +79,8 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("fsUploadCommitPath")=$GET(CONF("mioos","route","fsUploadCommit"),"/api/mioos/fs/upload/commit")
 	SET STATE("fsUploadAbortPath")=$GET(CONF("mioos","route","fsUploadAbort"),"/api/mioos/fs/upload/abort")
 	SET STATE("fsBlobPath")=$GET(CONF("mioos","route","fsBlob"),"/api/mioos/fs/blob")
+	SET STATE("moduleCatalogPath")=$GET(CONF("mioos","route","moduleCatalog"),"/api/mioos/modules/catalog")
+	SET STATE("moduleTableQueryPath")=$GET(CONF("mioos","route","moduleTableQuery"),"/api/mioos/table/query")
 	SET STATE("themeAssetUploadPath")=$GET(CONF("mioos","route","themeAssetUpload"),"/api/mioos/theme-asset/upload")
 	SET STATE("themeAssetPath")=$GET(CONF("mioos","route","themeAsset"),"/api/mioos/theme-asset")
 	SET STATE("themeLoadPath")=$GET(CONF("mioos","route","themeLoad"),"/api/mioos/theme/load")
@@ -92,10 +94,7 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("fsTransferPersistence")=$GET(CONF("mioos","fs","transferPersistence"),"localstorage-resumable-transfer-list")
 	SET STATE("fsMediaInitialBytes")=+$GET(CONF("mioos","download","mediaInitialBytes"),860000)
 	SET STATE("fsMediaWarmupBytes")=+$GET(CONF("mioos","download","mediaWarmupBytes"),131072)
-	SET STATE("transportMode")=$GET(CONF("mioos","transport","mode"),"websocket")
-	SET STATE("httpFallbackEnabled")=+$GET(CONF("mioos","transport","httpFallback"),1)
-	SET STATE("fsTransport")=$GET(CONF("mioos","fs","transport"),"websocket")
-	SET STATE("uploadChunkTransport")=$GET(CONF("mioos","upload","chunkTransport"),"websocket")
+	SET STATE("fsTransport")=$GET(CONF("mioos","fs","transport"),"http-and-websocket")
 	SET STATE("fsRootId")=$$ROOTID^MIOOSFS()
 	SET STATE("fsHomeId")=$$HOMEID^MIOOSFS()
 	SET STATE("fsDesktopId")=$$DESKTOPID^MIOOSFS()
@@ -124,7 +123,7 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	IF STATE("wsUploadAbortTimeoutMs")<1000 SET STATE("wsUploadAbortTimeoutMs")=15000
 	SET STATE("wsUploadSocketOpenTimeoutMs")=+$GET(CONF("mioos","websocket","uploadSocketOpenTimeoutMs"),15000)
 	IF STATE("wsUploadSocketOpenTimeoutMs")<1000 SET STATE("wsUploadSocketOpenTimeoutMs")=15000
-	SET STATE("wsMaxFrameBytes")=+$GET(CONF("websocket","maxFrameBytes"),1048576)
+	SET STATE("wsMaxFrameBytes")=+$GET(CONF("websocket","maxFrameBytes"),131072)
 	SET STATE("wsMaxMessageBytes")=+$GET(CONF("websocket","maxMessageBytes"),1048576)
 	SET STATE("uploadStaleSeconds")=+$GET(CONF("mioos","upload","staleSeconds"),1800)
 	SET STATE("downloadStaleSeconds")=+$GET(CONF("mioos","download","staleSeconds"),900)
@@ -218,24 +217,18 @@ ACTIVETHM(STATE,CONF)
 	QUIT
 	;
 THEMEBOOT(STATE,CONF)
-	NEW DESK,WID,URL,FIT,MODE
+	NEW DESK,WID,URL,FIT
 	SET STATE("theme")=$GET(STATE("themeKey"),"luna-blue")
-	SET MODE=$GET(STATE("transportMode"),"websocket")
 	SET URL=$GET(STATE("activeThemeProfile","desktop","wallpaperUrl"))
 	SET WID=$GET(STATE("activeThemeProfile","desktop","wallpaperId"))
+	IF URL="",WID'="" SET URL=$GET(STATE("fsBlobPath"),"/api/mioos/fs/blob")_"?id="_WID
 	SET FIT=$GET(STATE("activeThemeProfile","desktop","wallpaperFit"))
 	IF FIT="" SET FIT=$GET(CONF("mioos","desktop","wallpaperFit"),"cover")
-	IF WID="" DO
+	IF URL="" DO
 	. SET DESK=$GET(STATE("fsDesktopId"))
 	. IF DESK="" SET DESK=$$DESKTOPID^MIOOSFS()
 	. SET WID=$$METAFIELD^MIOOSFS(DESK,"wallpaperId")
-	IF MODE="websocket" DO
-	. IF URL["/api/mioos/fs/blob" SET URL=""
-	. IF URL["data:" SET URL=""
-	. IF $EXTRACT($$TRIM^MIOUTIL(URL),1,1)="<" SET URL=""
-	. IF WID'="" SET STATE("wallpaperTransport")="websocket",STATE("wallpaperPending")=1
-	ELSE  DO
-	. IF URL="",WID'="" SET URL=$GET(STATE("fsBlobPath"),"/api/mioos/fs/blob")_"?id="_WID
+	. IF WID'="" SET URL=$GET(STATE("fsBlobPath"),"/api/mioos/fs/blob")_"?id="_WID
 	. IF URL="" SET URL=$GET(CONF("mioos","desktop","wallpaperUrl"))
 	SET STATE("wallpaperUrl")=URL
 	SET STATE("wallpaperId")=WID
@@ -347,8 +340,6 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","wallpaperUrl")=$GET(STATE("wallpaperUrl"))
 	SET OBJ("desktop","wallpaperId")=$GET(STATE("wallpaperId"))
 	SET OBJ("desktop","wallpaperFit")=$GET(STATE("wallpaperFit"),"cover")
-	SET OBJ("desktop","wallpaperTransport")=$GET(STATE("wallpaperTransport"),$GET(STATE("transportMode"),"websocket"))
-	SET OBJ("desktop","wallpaperPending")=+$GET(STATE("wallpaperPending"),0)
 	SET OBJ("desktop","density")=$GET(STATE("density"))
 	SET OBJ("desktop","fontFamily")=$GET(STATE("fontFamily"))
 	SET OBJ("desktop","fontSize")=+$GET(STATE("fontSize"),13)
@@ -403,12 +394,12 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","windowing","snapShortcuts","right")=$GET(CONF("mioos","desktop","accessibility","keyboardShortcuts","snapRight"),"Alt+Shift+ArrowRight")
 	SET OBJ("desktop","windowing","snapShortcuts","maximize")=$GET(CONF("mioos","desktop","accessibility","keyboardShortcuts","maximizeFocusedWindow"),"Alt+Shift+ArrowUp")
 	SET OBJ("desktop","windowing","snapShortcuts","restore")=$GET(CONF("mioos","desktop","accessibility","keyboardShortcuts","restoreFocusedWindow"),"Alt+Shift+ArrowDown")
-	SET OBJ("desktop","moduleSystem","enabled")=+$GET(STATE("moduleSystemEnabled"),0)
+	SET OBJ("desktop","moduleSystem","enabled")=+$GET(STATE("moduleSystemEnabled"),1)
 	SET OBJ("desktop","moduleSystem","launcher")=$GET(STATE("moduleLauncher"),"desktop-icons-and-menu")
 	SET OBJ("desktop","moduleSystem","manifestVersion")=+$GET(STATE("moduleManifestVersion"),1)
-	SET OBJ("desktop","moduleSystem","appCatalogEnabled")=+$GET(STATE("moduleAppCatalogEnabled"),0)
+	SET OBJ("desktop","moduleSystem","appCatalogEnabled")=+$GET(STATE("moduleAppCatalogEnabled"),1)
 	SET OBJ("desktop","moduleSystem","dynamicWindows")=+$GET(STATE("moduleDynamicWindows"),1)
-	SET OBJ("desktop","moduleSystem","appCatalogKey")=""
+	SET OBJ("desktop","moduleSystem","appCatalogKey")="ui-modules"
 	SET OBJ("desktop","moduleSystem","moduleCount")=+$GET(STATE("moduleCount"),0)
 	SET OBJ("desktop","moduleSystem","debugAppKey")=""
 	SET OBJ("desktop","debugCenter","enabled")=+$GET(STATE("debugEnabled"),1)
@@ -461,26 +452,26 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("routes","fsUploadCommit")=$GET(STATE("fsUploadCommitPath"))
 	SET OBJ("routes","fsUploadAbort")=$GET(STATE("fsUploadAbortPath"))
 	SET OBJ("routes","fsBlob")=$GET(STATE("fsBlobPath"))
+	SET OBJ("routes","moduleCatalog")=$GET(STATE("moduleCatalogPath"))
+	SET OBJ("routes","moduleTableQuery")=$GET(STATE("moduleTableQueryPath"))
+	SET OBJ("routes","moduleCatalogCommand")="module.catalog"
+	SET OBJ("routes","moduleTableQueryCommand")="module.table.query"
 	SET OBJ("routes","themeAssetUpload")=$GET(STATE("themeAssetUploadPath"))
 	SET OBJ("routes","themeAsset")=$GET(STATE("themeAssetPath"))
 	SET OBJ("routes","themeLoad")=$GET(STATE("themeLoadPath"))
 	SET OBJ("routes","themeSave")=$GET(STATE("themeSavePath"))
 	SET OBJ("vfs","enabled")=+$GET(STATE("fsEnabled"),1)
-	SET OBJ("transport","mode")=$GET(STATE("transportMode"),"websocket")
-	SET OBJ("transport","httpFallback")=+$GET(STATE("httpFallbackEnabled"),1)
-	SET OBJ("transport","policy")=$SELECT($GET(STATE("transportMode"))="http":"http",1:"websocket-first")
-	SET OBJ("vfs","transport")=$GET(STATE("fsTransport"),"websocket")
+	SET OBJ("vfs","transport")=$GET(STATE("fsTransport"),"http-and-websocket")
 	SET OBJ("vfs","rootId")=$GET(STATE("fsRootId"),"root")
 	SET OBJ("vfs","homeId")=$GET(STATE("fsHomeId"),"root")
 	SET OBJ("vfs","desktopId")=$GET(STATE("fsDesktopId"),$GET(STATE("fsRootId"),"root"))
-	SET OBJ("vfs","chunkSize")=+$GET(STATE("fsChunkSize"),1048576)
+	SET OBJ("vfs","chunkSize")=+$GET(STATE("fsChunkSize"),860000)
 	SET OBJ("vfs","uploadChunkBytes")=$$UPCHUNK^MIOOSFSUP(.CONF)
 	SET OBJ("vfs","uploadConcurrency")=$$UPCONCUR^MIOOSFSUP(.CONF)
-	SET OBJ("vfs","uploadChunkTransport")=$GET(STATE("uploadChunkTransport"),"websocket")
 	SET OBJ("vfs","uploadBatchSize")=+$GET(STATE("uploadBatchSize"),1)
 	SET OBJ("vfs","uploadMaxInflightChunks")=+$GET(STATE("uploadMaxInflightChunks"),+$GET(STATE("uploadBatchSize"),1))
 	SET OBJ("vfs","batchFlushThreshold")=+$GET(STATE("uploadBatchFlushThreshold"),+$GET(STATE("uploadBatchSize"),1))
-	SET OBJ("vfs","httpChunkBytes")=+$GET(STATE("fsHttpChunkBytes"),1048576)
+	SET OBJ("vfs","httpChunkBytes")=+$GET(STATE("fsHttpChunkBytes"),860000)
 	SET OBJ("vfs","readPreviewBytes")=+$GET(STATE("fsReadPreviewBytes"),16384)
 	SET OBJ("vfs","readWindowBytes")=+$GET(STATE("fsReadWindowBytes"),131072)
 	SET OBJ("vfs","mediaInitialBytes")=+$GET(STATE("fsMediaInitialBytes"),860000)
@@ -580,6 +571,7 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","canonicalDesktopPath")="/Home/Desktop"
 	SET OBJ("desktop","desktopFolderId")=$GET(STATE("fsDesktopId"))
 	MERGE OBJ("windows")=STATE("windows")
+	MERGE OBJ("uiModules")=STATE("uiModules")
 	MERGE OBJ("modules")=STATE("modules")
 	SET OBJ("websocket","heartbeatSeconds")=+$GET(STATE("wsHeartbeatSeconds"),15)
 	SET OBJ("websocket","resumeWindowSeconds")=+$GET(STATE("wsResumeWindowSeconds"),180)
@@ -597,7 +589,7 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("websocket","uploadCommitTimeoutMs")=+$GET(STATE("wsUploadCommitTimeoutMs"),120000)
 	SET OBJ("websocket","uploadAbortTimeoutMs")=+$GET(STATE("wsUploadAbortTimeoutMs"),15000)
 	SET OBJ("websocket","uploadSocketOpenTimeoutMs")=+$GET(STATE("wsUploadSocketOpenTimeoutMs"),15000)
-	SET OBJ("websocket","maxFrameBytes")=+$GET(STATE("wsMaxFrameBytes"),1048576)
+	SET OBJ("websocket","maxFrameBytes")=+$GET(STATE("wsMaxFrameBytes"),131072)
 	SET OBJ("websocket","maxMessageBytes")=+$GET(STATE("wsMaxMessageBytes"),1048576)
 	SET OBJ("terminal","enabled")=1
 	SET OBJ("terminal","commandTransport")=$GET(CONF("mioos","terminal","commandTransport"),"dedicated-websocket")
@@ -642,22 +634,12 @@ APPS(STATE)
 	SET STATE("apps",4,"subtitle")="Themes, Appearance, Desktop, Taskbar, Start Menu, and Login Screen"
 	SET STATE("apps",4,"icon")="🎨"
 	SET STATE("apps",4,"kind")="tool"
-	SET STATE("apps",5,"key")="system-config"
-	SET STATE("apps",5,"title")="System Configuration"
-	SET STATE("apps",5,"subtitle")="Configure transport, WebSocket workers, chunk sizes, and HTTP fallback"
-	SET STATE("apps",5,"icon")="🛠"
-	SET STATE("apps",5,"kind")="tool"
-	SET STATE("apps",6,"key")="mioos.ui.table"
-	SET STATE("apps",6,"title")="Sample Table"
-	SET STATE("apps",6,"subtitle")="Backend table UI sample"
-	SET STATE("apps",6,"icon")="▦"
-	SET STATE("apps",6,"kind")="tool"
 	IF +$GET(STATE("moduleSystemEnabled"),0),+$GET(STATE("moduleAppCatalogEnabled"),0) DO
-	. SET STATE("apps",7,"key")="ui-modules"
-	. SET STATE("apps",7,"title")="UI Modules"
-	. SET STATE("apps",7,"subtitle")="Browse internal and user-created modules"
-	. SET STATE("apps",7,"icon")="▦"
-	. SET STATE("apps",7,"kind")="module"
+	. SET STATE("apps",5,"key")="ui-modules"
+	. SET STATE("apps",5,"title")="UI Modules"
+	. SET STATE("apps",5,"subtitle")="Browse internal and user-created modules"
+	. SET STATE("apps",5,"icon")="▦"
+	. SET STATE("apps",5,"kind")="module"
 	QUIT
 	;
 WORKSPACES(STATE)
@@ -703,13 +685,6 @@ WINDOWS(STATE)
 	SET STATE("windows",4,"themeStudioEnabled")=1
 	DO WIN(.STATE,5,"win-folder-properties","folder-properties","Folder Properties",260,140,640,520,7,"closed",560,420,0,1,"properties","📂","workspace-main",0)
 	SET STATE("windows",5,"propertySheetEnabled")=1
-	DO WIN(.STATE,6,"win-system-config","system-config","System Configuration",156,86,1040,640,8,"closed",760,520,1,1,"system-config","🛠","workspace-main",1)
-	DO WIN(.STATE,7,"win-sample-table","mioos.ui.table","Sample Table",190,110,980,620,9,"closed",760,500,1,1,"table","▦","workspace-main",1)
-	IF +$GET(STATE("moduleSystemEnabled"),0),+$GET(STATE("moduleAppCatalogEnabled"),0) DO
-	. DO WIN(.STATE,8,"win-ui-modules","ui-modules","UI Modules",156,86,1040,640,10,"closed",780,520,1,1,"module-catalog","▦","workspace-main",1)
-	. SET STATE("windows",8,"moduleWindow")=1
-	. SET STATE("windows",8,"moduleId")="mioos.ui.modules"
-	. SET STATE("windows",8,"moduleComponent")="module-catalog"
 	QUIT
 	;
 WIN(STATE,N,ID,APPKEY,TITLE,LEFT,TOP,WIDTH,HEIGHT,Z,MODE,MINW,MINH,RESIZE,DRAG,KIND,ICON,WORKSPACE,PERSIST)

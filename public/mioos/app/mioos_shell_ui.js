@@ -36,7 +36,6 @@
     if (key === 'text-viewer' || key === 'image-viewer' || key === 'media-viewer' || key === 'pdf-viewer' || key === 'structured-viewer') return 'mioos-surface-viewer';
     if (key === 'file-properties') return 'mioos-surface-file-properties';
     if (key === 'ui-modules') return 'mioos-surface-ui-modules';
-    if (key === 'system-config' || key === 'control-panel') return 'mioos-surface-system-config';
     if (key === 'mioos.ui.table' || key === 'table' || key === 'backend-table') return 'mioos-surface-table';
     if (key === 'mioos.permissions.admin' || key === 'permissions') return 'mioos-surface-permissions';
     if (win && win.surface) return win.surface;
@@ -164,9 +163,6 @@
                 }
               });
             }
-            if ((win.appKey === 'system-config' || win.appKey === 'control-panel') && vm.initSystemConfig) {
-              vm.initSystemConfig();
-            }
           }
         },
         template: '' +
@@ -194,7 +190,10 @@
           preview: function () { return (this.state && this.state.preview) || {}; },
           quickPlaces: function () { return this.vm.explorerQuickPlaces(); },
           selectedKey: function () { return this.vm.explorerSelectedKey(this.state); },
-          columns: function () { return this.vm.explorerColumns(this.state); }
+          columns: function () { return this.vm.explorerDetailsColumns(this.state); },
+          contextIsItem: function () { return this.vm.explorerContextIsItem(this.state); },
+          contextIsFolder: function () { return this.vm.explorerContextIsFolder(this.state); },
+          canPaste: function () { return this.vm.explorerCanPaste(this.window.id); }
         },
         mounted: function () { this.vm.bootstrapExplorerWindow(this.window.id, false); },
         methods: {
@@ -208,7 +207,7 @@
           blankMenu: function (event) { this.vm.openExplorerContextMenu(this.window.id, null, event); },
           sortMark: function (key) { return this.state.sortKey === key ? (this.state.sortDir === 'desc' ? '▼' : '▲') : ''; },
           resizeColumn: function (column, event) { this.vm.explorerBeginColumnResize(this.window.id, column, event); },
-          cellValue: function (item, column) { return this.vm.explorerColumnValue(item, (column || {}).key); }
+          cellValue: function (item, column) { return this.vm.explorerColumnValue(item, column.key); }
         },
         template: `
           <div class="mioos-surface mioos-surface-explorer mioos-explorer-native" @contextmenu.prevent="blankMenu($event)" @click="vm.closeExplorerContextMenu(window.id)">
@@ -278,7 +277,7 @@
                   <tbody>
                     <tr v-for="item in items" :key="itemKey(item)" :class="{ 'is-selected': selectedKey === itemKey(item) }" @click.stop="select(item)" @dblclick.stop="open(item)" @contextmenu.prevent.stop="rowMenu(item, $event)">
                       <td v-for="column in columns" :key="column.key" :class="'mioos-explorer-cell-' + column.key">
-                        <template v-if="column.key === 'name'"><span class="mioos-explorer-row-icon">[[ vm.explorerItemGlyph(item) ]]</span><button type="button" class="mioos-explorer-row-link" @click.stop="open(item)">[[ item.name || item.title ]]</button></template>
+                        <template v-if="column.key === 'name'"><span class="mioos-explorer-row-icon">[[ vm.explorerItemGlyph(item) ]]</span><span class="mioos-explorer-row-name">[[ item.name || item.title ]]</span></template>
                         <template v-else>[[ cellValue(item, column) ]]</template>
                       </td>
                     </tr>
@@ -306,14 +305,17 @@
               <span v-else>[[ (state.folder || {}).path || '/' ]]</span>
             </div>
             <ul v-if="(state.contextMenu || {}).open" class="mioos-explorer-context-menu can-hover" role="menu" :style="vm.explorerContextMenuStyle(state)" @click.stop>
-              <li v-if="state.selection && ((state.contextMenu || {}).targetType === 'item')"><button type="button" role="menuitem" @click="vm.explorerContextOpen(window.id)">Open</button></li>
-              <li v-if="state.selection && ((state.contextMenu || {}).targetType === 'item')"><button type="button" role="menuitem" @click="vm.explorerCopySelected(window.id)">Copy</button></li>
-              <li v-if="state.selection && ((state.contextMenu || {}).targetType === 'item')"><button type="button" role="menuitem" @click="vm.explorerRenameSelected(window.id); vm.closeExplorerContextMenu(window.id)">Rename</button></li>
-              <li v-if="state.selection && ((state.contextMenu || {}).targetType === 'item')"><button type="button" role="menuitem" @click="vm.explorerDeleteSelected(window.id); vm.closeExplorerContextMenu(window.id)">Delete</button></li>
+              <li v-if="contextIsItem"><button type="button" role="menuitem" @click="vm.explorerContextOpen(window.id)">Open</button></li>
+              <li v-if="contextIsFolder"><button type="button" role="menuitem" @click="vm.explorerOpenItemInNewWindow(window.id)">Open in New Window</button></li>
+              <li v-if="contextIsItem" class="has-divider"><button type="button" role="menuitem" @click="vm.explorerCopySelected(window.id)">Copy</button></li>
+              <li v-if="contextIsItem"><button type="button" role="menuitem" @click="vm.explorerCutSelected(window.id)">Cut</button></li>
+              <li><button type="button" role="menuitem" :disabled="!canPaste" @click="vm.explorerPasteIntoWindow(window.id)">Paste</button></li>
+              <li v-if="contextIsItem" class="has-divider"><button type="button" role="menuitem" @click="vm.explorerRenameSelected(window.id); vm.closeExplorerContextMenu(window.id)">Rename</button></li>
+              <li v-if="contextIsItem"><button type="button" role="menuitem" @click="vm.explorerDeleteSelected(window.id); vm.closeExplorerContextMenu(window.id)">Delete</button></li>
+              <li v-if="contextIsItem"><button type="button" role="menuitem" @click="vm.explorerDownloadSelected(window.id); vm.closeExplorerContextMenu(window.id)">Download</button></li>
               <li class="has-divider"><button type="button" role="menuitem" @click="vm.explorerCreateFolder(window.id); vm.closeExplorerContextMenu(window.id)">New Folder</button></li>
               <li><button type="button" role="menuitem" @click="vm.explorerPromptUpload(window.id); vm.closeExplorerContextMenu(window.id)">Upload</button></li>
-              <li v-if="state.selection && ((state.contextMenu || {}).targetType === 'item')"><button type="button" role="menuitem" @click="vm.explorerDownloadSelected(window.id); vm.closeExplorerContextMenu(window.id)">Download</button></li>
-              <li><button type="button" role="menuitem" @click="vm.explorerPasteIntoWindow(window.id)">Paste</button></li>
+              <li><button type="button" role="menuitem" @click="vm.refreshExplorerWindow(window.id); vm.closeExplorerContextMenu(window.id)">Refresh</button></li>
               <li class="has-divider"><button type="button" role="menuitem" @click="vm.explorerContextProperties(window.id)">Properties</button></li>
             </ul>
           </div>
@@ -764,73 +766,6 @@
               '</div>' +
             '</div>' +
           '</div>'
-      });
-
-      app.component('mioos-surface-system-config', {
-        props: ['window'],
-        computed: {
-          vm: function () { return root(this); },
-          config: function () { return this.vm.initSystemConfig ? this.vm.initSystemConfig() : { activeTab: 'transport', form: {} }; },
-          form: function () { return this.config.form || {}; },
-          activeTab: function () { return this.config.activeTab || 'transport'; },
-          summaryRows: function () { return this.vm.systemConfigSummaryRows ? this.vm.systemConfigSummaryRows() : []; },
-          socketRows: function () { return this.vm.transportSocketRows ? this.vm.transportSocketRows() : []; },
-          savedAt: function () { return this.config.savedAt ? new Date(this.config.savedAt).toLocaleTimeString() : ''; }
-        },
-        methods: {
-          setTab: function (tab) { if (this.vm.systemConfigSetTab) this.vm.systemConfigSetTab(tab); },
-          apply: function () { if (this.vm.applySystemConfig) this.vm.applySystemConfig(); },
-          reset: function () { if (this.vm.resetSystemConfig) this.vm.resetSystemConfig(); },
-          refresh: function () { if (this.vm.refreshTransportDiagnostics) this.vm.refreshTransportDiagnostics().catch(function () {}); },
-          fmt: function (bytes) { return this.vm.formatBytesCompact ? this.vm.formatBytesCompact(bytes) : String(bytes || 0) + ' B'; }
-        },
-        template: `
-          <div class="mioos-surface mioos-surface-system-config">
-            <div class="mioos-classic-shell mioos-system-config-shell">
-              <div class="mioos-classic-panelhead">
-                <div><strong>System Configuration</strong><span>Session transport, WebSocket, worker, and transfer controls.</span></div>
-                <div class="mioos-classic-toolbar-group"><button type="button" class="mioos-classic-tool" @click="refresh">Refresh Diagnostics</button><button type="button" class="mioos-classic-tool" @click="reset">Reset</button><button type="button" class="mioos-classic-tool primary" @click="apply">Apply</button></div>
-              </div>
-              <nav class="mioos-system-tabs" role="tablist">
-                <button type="button" :class="{ 'is-active': activeTab === 'transport' }" @click="setTab('transport')">Transport</button>
-                <button type="button" :class="{ 'is-active': activeTab === 'websocket' }" @click="setTab('websocket')">WebSocket</button>
-                <button type="button" :class="{ 'is-active': activeTab === 'uploads' }" @click="setTab('uploads')">Transfers</button>
-                <button type="button" :class="{ 'is-active': activeTab === 'diagnostics' }" @click="setTab('diagnostics')">Diagnostics</button>
-              </nav>
-              <div class="mioos-system-config-body">
-                <section v-if="activeTab === 'transport'" class="mioos-system-grid">
-                  <label><span>Shell transport</span><select v-model="form.transportMode"><option value="websocket">WebSocket first</option><option value="http">HTTP fallback</option></select></label>
-                  <label><span>Upload transport</span><select v-model="form.uploadChunkTransport"><option value="websocket">WebSocket chunked</option><option value="http-binary">HTTP binary chunks</option><option value="http-json">HTTP JSON chunks</option></select></label>
-                  <label class="mioos-system-check"><input type="checkbox" v-model="form.httpFallback"><span>Allow HTTP fallback routes</span></label>
-                  <div class="mioos-system-note">Core shell commands remain WebSocket-compatible; the HTTP switch steers VFS/theme transfer paths that already have HTTP routes.</div>
-                </section>
-                <section v-else-if="activeTab === 'websocket'" class="mioos-system-grid">
-                  <label><span>Core sockets</span><input type="number" min="1" max="4" v-model.number="form.wsCoreSockets"></label>
-                  <label><span>File worker sockets</span><input type="number" min="1" max="9" v-model.number="form.wsFsSockets"></label>
-                  <label><span>Max sockets per session</span><input type="number" min="1" max="12" v-model.number="form.wsMaxSockets"></label>
-                  <label><span>Max frame bytes</span><input type="number" min="65536" step="65536" v-model.number="form.maxFrameBytes"><em>[[ fmt(form.maxFrameBytes) ]]</em></label>
-                  <label><span>Max message bytes</span><input type="number" min="131072" step="65536" v-model.number="form.maxMessageBytes"><em>[[ fmt(form.maxMessageBytes) ]]</em></label>
-                  <label><span>Request timeout ms</span><input type="number" min="3000" step="1000" v-model.number="form.requestTimeoutMs"></label>
-                </section>
-                <section v-else-if="activeTab === 'uploads'" class="mioos-system-grid">
-                  <label><span>WS upload chunk bytes</span><input type="number" min="65536" step="65536" v-model.number="form.uploadChunkBytes"><em>[[ fmt(form.uploadChunkBytes) ]]</em></label>
-                  <label><span>HTTP chunk bytes</span><input type="number" min="65536" step="65536" v-model.number="form.httpChunkBytes"><em>[[ fmt(form.httpChunkBytes) ]]</em></label>
-                  <label><span>Upload workers</span><input type="number" min="1" max="9" v-model.number="form.uploadConcurrency"></label>
-                  <label><span>Batch size</span><input type="number" min="1" max="8" v-model.number="form.uploadBatchSize"></label>
-                  <label><span>Max inflight chunks</span><input type="number" min="1" max="32" v-model.number="form.uploadMaxInflightChunks"></label>
-                  <label><span>Batch flush threshold</span><input type="number" min="1" max="8" v-model.number="form.batchFlushThreshold"></label>
-                  <label><span>Chunk timeout ms</span><input type="number" min="5000" step="1000" v-model.number="form.uploadChunkTimeoutMs"></label>
-                  <label><span>Commit timeout ms</span><input type="number" min="10000" step="1000" v-model.number="form.uploadCommitTimeoutMs"></label>
-                </section>
-                <section v-else class="mioos-system-diagnostics">
-                  <div class="mioos-generic-grid"><article v-for="row in summaryRows" :key="row.label" class="mioos-generic-card"><strong>[[ row.label ]]</strong><span>[[ row.value ]]</span></article></div>
-                  <div class="mioos-system-sockets" v-if="socketRows.length"><div class="mioos-classic-queuerow is-head"><div>Socket</div><div>Role</div><div>State</div><div>Last event</div><div>Pending</div></div><div class="mioos-classic-queuerow" v-for="sock in socketRows" :key="sock.id"><div>[[ sock.label || sock.id ]]</div><div>[[ sock.role ]]</div><div>[[ sock.state ]]</div><div>[[ sock.lastEvent || '—' ]]</div><div>[[ sock.pendingCount || 0 ]]</div></div></div>
-                  <div class="mioos-classic-empty" v-else>No active socket telemetry yet.</div>
-                </section>
-              </div>
-              <footer class="mioos-system-config-footer"><span v-if="savedAt">Applied at [[ savedAt ]]</span><span v-else>Using boot configuration.</span></footer>
-            </div>
-          </div>`
       });
 
       app.component('mioos-surface-file-properties', {

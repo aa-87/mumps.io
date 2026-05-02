@@ -74,19 +74,32 @@
     uiModuleExampleRows: function () { return toList(bootRegistry(this).examples); },
     uiModuleComponent: function (key) { return componentByKey(this, key); },
     uiModuleRecord: function (key) { return moduleByKey(this, key); },
-    uiModuleRoute: function () { return ''; /* module catalog is WebSocket-only */ },
+    uiModuleRoute: function () { return ((((this.boot || {}).routes || {}).moduleCatalog) || '/api/mioos/modules/catalog'); },
     uiModuleCatalogCommand: function () { return ((((this.boot || {}).routes || {}).moduleCatalogCommand) || 'module.catalog'); },
     uiModuleRefreshCatalog: function () {
       var self = this;
-      if (!this.command) return Promise.reject(new Error('module_catalog_requires_websocket'));
-      return this.command(this.uiModuleCatalogCommand(), {}).then(function (msg) {
-        var payload = (msg || {}).module || msg || {};
+      function apply(payload) {
+        payload = payload || {};
         self.boot.uiModules = clone(payload || {});
         self.boot.modules = toList((payload || {}).modules);
         return self.boot.uiModules;
+      }
+      function wsFallback() {
+        if (!self.command) return Promise.reject(new Error('module_catalog_transport_unavailable'));
+        return self.command(self.uiModuleCatalogCommand(), {}).then(function (msg) { return apply((msg || {}).module || msg || {}); });
+      }
+      var route = this.uiModuleRoute();
+      if (!route) return wsFallback();
+      return fetch(route, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: '{}' }).then(function (resp) {
+        return resp.json().catch(function () { return {}; }).then(function (body) {
+          if (!resp.ok || (body && body.ok === 0)) throw body || { error: 'module_catalog_http_failed', detail: resp.status };
+          return apply(body || {});
+        });
       }).catch(function (err) {
-        if (self.showAlert) self.showAlert('UI Modules', (err && (err.detail || err.error || err.message)) || 'Module catalog failed');
-        throw err;
+        return wsFallback().catch(function () {
+          if (self.showAlert) self.showAlert('UI Modules', (err && (err.detail || err.error || err.message)) || 'Module catalog failed');
+          throw err;
+        });
       });
     },
     uiModuleOpen: function (key) {

@@ -132,9 +132,9 @@ SET ^MIO("MIOOS","MODULE","USER","admin","user.reports.example","surface")="mioo
 - shell surface resolution,
 - docs and examples.
 
-## WebSocket-only module communication
+## mixed transport module communication
 
-Module communication is now WebSocket-only from the browser. User and internal modules must use the core shell command bus instead of `fetch()` or module-specific HTTP endpoints.
+Module communication is now mixed transport from the browser. User and internal modules must use the core shell command bus instead of `fetch()` or module-specific HTTP endpoints.
 
 Required command pattern:
 
@@ -147,8 +147,7 @@ this.command('permission.upsert', { kind: 'permission', key: 'example.view', nam
 Rules for module authors:
 
 - Do not call `/api/mioos/modules/catalog` from module UI code.
-- Do not call `/api/mioos/table/query` from module UI code.
-- Use `module.table.query` for the reusable table component.
+- Prefer `/api/mioos/table/query` for bulk table reads. Use `module.table.query` when a WebSocket control path is more appropriate or HTTP is unavailable.
 - Use explicit permission commands for administrative mutations.
 - Keep all privileged operations in MUMPS routines and expose them through `MIOOSWS` commands.
 - Include a `requiredPermission` field in module manifests when a module performs privileged work.
@@ -161,7 +160,7 @@ The internal `permissions` component is the reference module for security admini
 - Vue component: `mioos-permissions-admin`
 - Surface: `mioos-surface-permissions`
 - Backend routine: `MIOOSPERM`
-- Transport: `websocket-only`
+- Transport: `mixed-http-first`
 - Example folder: `examples/mioos_modules/permissions`
 
 The module reuses `mioos-full-table` for every administrative grid:

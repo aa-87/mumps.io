@@ -83,7 +83,7 @@
         ],
         groups: [],
         columnResize: null,
-        transport: 'websocket-only',
+        transport: 'mixed-http-first',
         initialSnapshot: null
       };
     },
@@ -91,7 +91,7 @@
       return tableState(this, tableId || 'mioos-table');
     },
     backendTableRoute: function () {
-      return ''; // module tables are WebSocket-only; HTTP table route is legacy backend compatibility only.
+      return ((((this.boot || {}).routes || {}).moduleTableQuery) || '/api/mioos/table/query');
     },
     backendTableCommandName: function () {
       return ((((this.boot || {}).routes || {}).moduleTableQueryCommand) || 'module.table.query');
@@ -114,20 +114,39 @@
       Object.assign(state, patch || {});
       state.loading = true;
       state.error = '';
-      state.transport = 'websocket-only';
+      state.transport = 'http-first';
       if (!state.initialSnapshot) state.initialSnapshot = clone({ columns: state.columns, sort: state.sort, pagination: state.pagination, dataset: state.dataset, folderId: state.folderId, title: state.title });
-      if (!this.command) {
-        state.error = 'Table query requires WebSocket command transport';
-        vm.backendTableApplyClientFallback(state);
-        state.loading = false;
-        return Promise.resolve(state);
+      var payload = this.backendTableQueryPayload(state);
+      var route = this.backendTableRoute();
+      function wsFallback(reason) {
+        if (!vm.command) {
+          state.error = reason || 'Table query transport unavailable';
+          vm.backendTableApplyClientFallback(state);
+          return Promise.resolve(state);
+        }
+        return vm.command(vm.backendTableCommandName(), payload).then(function (msg) {
+          vm.backendTableApplyPayload(state, (msg || {}).table || msg || {});
+          state.transport = 'websocket-fallback';
+          return state;
+        });
       }
-      return this.command(this.backendTableCommandName(), this.backendTableQueryPayload(state)).then(function (msg) {
-        vm.backendTableApplyPayload(state, (msg || {}).table || msg || {});
-        state.transport = 'websocket-only';
-        return state;
+      var query = route ? fetch(route, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }).then(function (resp) {
+        return resp.json().catch(function () { return {}; }).then(function (body) {
+          if (!resp.ok || (body && body.ok === 0)) throw body || { error: 'table_http_failed', detail: resp.status };
+          vm.backendTableApplyPayload(state, body || {});
+          state.transport = 'http';
+          return state;
+        });
       }).catch(function (err) {
-        state.error = (err && (err.detail || err.error || err.message)) || 'Table WebSocket query failed';
+        return wsFallback((err && (err.detail || err.error || err.message)) || 'Table HTTP query failed');
+      }) : wsFallback('Table HTTP route unavailable');
+      return query.catch(function (err) {
+        state.error = (err && (err.detail || err.error || err.message)) || 'Table query failed';
         vm.backendTableApplyClientFallback(state);
         return state;
       }).finally(function () {
@@ -387,7 +406,7 @@
 
   window.MIOOSTable = { methods: methods, register: register };
   if (window.MIOOSModules && typeof window.MIOOSModules.registerComponent === "function") {
-    window.MIOOSModules.registerComponent({ key: "table", name: "mioos-full-table", title: "Backend Table", surface: "mioos-surface-table", source: "internal", owner: "MIOOS", backend: "MIOOSTBL", queryCommand: "module.table.query", transport: "websocket-only", description: "WebSocket backend-paginated, sortable, hideable, groupable, expandable, resettable table component." });
+    window.MIOOSModules.registerComponent({ key: "table", name: "mioos-full-table", title: "Backend Table", surface: "mioos-surface-table", source: "internal", owner: "MIOOS", backend: "MIOOSTBL", queryCommand: "module.table.query", transport: "mixed-http-first", queryRoute: "/api/mioos/table/query", description: "Mixed-transport backend-paginated, sortable, hideable, groupable, expandable, resettable table component." });
     window.MIOOSModules.registerModule({ id: "mioos.ui.table", key: "mioos.ui.table", appKey: "mioos.ui.table", title: "Backend Table", source: "internal", category: "Components", icon: "▤", componentKey: "table", surface: "mioos-surface-table", tableState: { id: "mioos-ui-module-table-example", title: "Backend Table Example", dataset: "demo" } });
   }
 })();

@@ -24,7 +24,7 @@ BUILD(STATE,CONF,VIEW)
 	SET VIEW("controlPanel",2,"title")=$$TXT^MIOOSI18N(CODE,"view.controlPanel.2.title","Font")
 	SET VIEW("controlPanel",2,"detail")=$GET(STATE("fontFamily"))_" "_+$GET(STATE("fontSize"),13)
 	SET VIEW("controlPanel",3,"title")=$$TXT^MIOOSI18N(CODE,"view.controlPanel.3.title","Transport")
-	SET VIEW("controlPanel",3,"detail")="websocket-only"
+	SET VIEW("controlPanel",3,"detail")="mixed-http-websocket"
 	SET VIEW("controlPanel",4,"title")=$$TXT^MIOOSI18N(CODE,"view.controlPanel.4.title","Authentication")
 	IF +$GET(STATE("authenticated"),0)=1 DO
 	. SET AUTHTXT=$$TXT^MIOOSI18N(CODE,"auth.state.signedInAs","Signed in as")_" "_$GET(STATE("userName"))
