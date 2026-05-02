@@ -535,3 +535,8 @@ The immediate UI Modules track now has a standalone interactive UI/form gallery.
 Backend and compliance rule: the UI-elements example uses local sample state and simulated saving. Production modules must submit to authenticated backend routes for persistence, validation, audit, and authorization, and must never persist uploaded files or images as DataURLs.
 
 Next planned ROI: ROI 64C should rewrite the advanced table component as a standalone configurable production table for internal and user-created modules.
+
+
+## ROI 64C — Standalone Advanced Table Component Rewrite
+
+The advanced table contract is `mioos-advanced-table-v3`. Table modules should use `mioos-full-table` / `mioos-surface-table` with `window.MIOOSTable.createConfig()` or equivalent manifest JSON. The backend remains HTTP-first and server-authoritative for query, filters, sort, pagination, row CRUD, column CRUD, column visibility, column resize, grouping, and bulk deletes. Do not fork custom table implementations for module samples unless a new contract is intentionally defined with tests and docs.

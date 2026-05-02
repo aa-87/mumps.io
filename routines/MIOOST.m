@@ -57,6 +57,7 @@ MIOOST ; MIOOS tests
 	DO T061
 	DO T062
 	DO T065
+	DO T066
 	QUIT
 	;
 RESET
@@ -1303,4 +1304,16 @@ T065
 	DO OK^MIOTASSERT($$FILEHAS("examples/mioos_modules/ui_elements/module.json","mioos-surface-ui-elements"),"[MIOOST][T065][example manifest]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 64B"),"[MIOOST][T065][llm roi64b]")
 	QUIT
-
+T066
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","mioos-advanced-table-v3"),"[MIOOST][T066][table v3 contract]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableSetFilter"),"[MIOOST][T066][client filters]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableFilterValue"),"[MIOOST][T066][filter state value]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","resizeColumns"),"[MIOOST][T066][resize feature gate]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","defaultPageSize"),"[MIOOST][T066][config default page size]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","FILTEROK"),"[MIOOST][T066][server filters]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","C'=""_"""),"[MIOOST][T066][safe underscore key check]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/ROI_64C_Advanced_Table_Rewrite.md","mioos-advanced-table-v3"),"[MIOOST][T066][roi64c docs]")
+	DO OK^MIOTASSERT($$FILEHAS("examples/mioos_modules/table/module.json","mioos-advanced-table-v3"),"[MIOOST][T066][table manifest contract]")
+	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 64C"),"[MIOOST][T066][llm roi64c]")
+	QUIT
+	;

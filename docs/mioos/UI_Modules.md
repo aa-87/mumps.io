@@ -37,3 +37,8 @@ Permissions UI uses `mioos-surface-permissions` and demonstrates tabbed permissi
 The gallery is interactive and stateful. It demonstrates text inputs, textareas, selects, radio groups, checkbox groups, switches, date and number inputs, file-picker metadata capture, validation, required/optional indicators, disabled/read-only states, saving/loading states, inline help, tabbed form sections, modal forms, confirmation dialogs, toasts, empty states, and error states.
 
 The example intentionally avoids backend table coupling. Production modules should copy the interaction and accessibility patterns, then submit sanitized payloads through authenticated backend routes for persistence and audit.
+
+
+## ROI 64C table modules
+
+Table-backed modules should use `mioos-surface-table` with the `mioos-advanced-table-v3` contract. Provide a dataset and optional `config` object instead of writing custom table state logic. The table owns HTTP query/mutation state, server filtering, selection, grouping, column visibility, resizing, and row/column CRUD.

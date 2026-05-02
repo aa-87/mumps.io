@@ -372,3 +372,8 @@ The UI Module registry, module catalog API route, WebSocket catalog command, cli
 ## ROI 64B — UI Modules examples gallery
 
 The `UI + Form Elements` module now uses `mioos-surface-ui-elements`, a standalone interactive component gallery for module authors. It replaces the previous static table-backed UI-elements sample and avoids backend table errors during example launches. The gallery documents inputs, selection controls, validation, saving/loading states, modal and confirmation dialogs, toasts, file-picker metadata, and module-safe HTTP persistence patterns.
+
+
+## ROI 64C advanced table
+
+The standalone advanced table now uses `mioos-advanced-table-v3` and can be embedded by internal or user-created modules through `mioos-surface-table`. See `Backend_Table.md` and `ROI_64C_Advanced_Table_Rewrite.md`.

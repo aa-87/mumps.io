@@ -11,7 +11,21 @@
   "surface": "mioos-surface-table",
   "config": {
     "dataset": "demo",
-    "pageSize": 25,
-    "sort": { "column": "name", "direction": "ascending" }
+    "contract": "mioos-advanced-table-v3",
+    "defaultPageSize": 25,
+    "defaultSort": { "column": "name", "direction": "ascending" },
+    "features": {
+      "search": true,
+      "filters": true,
+      "grouping": true,
+      "columnPicker": true,
+      "rowCrud": true,
+      "columnCrud": true,
+      "selection": true,
+      "bulkActions": true,
+      "pagination": true,
+      "rowDetails": true,
+      "resizeColumns": true
+    }
   }
 }

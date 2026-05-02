@@ -112,7 +112,7 @@ See `docs/mioos/ROI_63_Redesign_Contracts.md` for the complete redesign sequence
 
 ## ROI 64A advanced standalone table contract
 
-The production table track now uses the client-visible contract `mioos-advanced-table-v2`. The component is intended to be standalone and embeddable in internal shell surfaces or user-created modules:
+The production table track now uses the client-visible contract `mioos-advanced-table-v3`. The component is intended to be standalone and embeddable in internal shell surfaces or user-created modules:
 
 ```html
 <mioos-full-table table-id="patients" title="Patients" dataset="patient-registration" :config="tableConfig"></mioos-full-table>
@@ -120,4 +120,8 @@ The production table track now uses the client-visible contract `mioos-advanced-
 
 `window.MIOOSTable.createConfig()` returns a safe default configuration that can enable or disable toolbar features such as dataset switching, search, grouping, column picker, row CRUD, column CRUD, selection, bulk actions, pagination, and row details. Backend query and mutation routes remain authoritative.
 
-`column.visibility` is now a supported mutation action. Column visibility changes should be persisted through `/api/mioos/table/mutate`, not treated as browser-only state.
+`column.visibility` is a supported mutation action. Column visibility changes are persisted through `/api/mioos/table/mutate`, not treated as browser-only state.
+
+## ROI 64C rewrite
+
+ROI 64C upgrades the table to `mioos-advanced-table-v3`. The standalone component now accepts `defaultPageSize`, `defaultSort`, `columns`, and feature gates for `filters`, `resizeColumns`, row details, CRUD, grouping, selection, pagination, and bulk actions. Query payloads include `filters`, and the backend applies exact-match filter arrays before sorting and pagination. Mutations still return a refreshed query-shaped payload so the browser does not have to infer post-mutation state. See `docs/mioos/ROI_64C_Advanced_Table_Rewrite.md`.

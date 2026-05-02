@@ -30,3 +30,8 @@ The shell resolves the surface and renders `mioos-full-table`. Data remains back
 ## Relationship to ROI 64B UI examples
 
 The `UI + Form Elements` example is no longer implemented as a table dataset. Table modules should still use `mioos-surface-table`, but UI/form examples now use `mioos-surface-ui-elements` so form reference behavior remains stable while the advanced table component is rewritten in ROI 64C.
+
+
+## ROI 64C standalone configuration
+
+The table example now targets `mioos-advanced-table-v3`. Use `window.MIOOSTable.createConfig()` from internal UI code, or place equivalent safe JSON in a module manifest. Prefer feature gates over custom table forks so internal and user-created modules share the same query/mutation behavior.
