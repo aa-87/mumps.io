@@ -518,13 +518,12 @@ Current source state: backend UI module registry, catalog API/WS support, boot m
 
 First paint must not require authenticated internal asset requests. Before sign-in, MIOTPL may render theme variables and gradients, but it must not render `/api/mioos/theme-asset` or `/api/mioos/fs/blob` URLs into CSS, data attributes, or boot JSON.
 
+## ROI 62 — Safe theme boot, advanced table samples, permissions, and patient registration
 
-## ROI 58 — safe theme asset first paint and catalogue built-ins
-
-All tests were passing at the start of this ROI. The change is intentionally narrow:
-
-- Pre-login MIOTPL first paint now filters protected `/api/mioos/theme-asset` and `/api/mioos/fs/blob` URLs not only from `wallpaperUrl`, but also from persisted theme CSS variables such as `--desktop-bg` and `--desktop-wallpaper`.
-- The UI Module foundation remains opt-in: default boot keeps `moduleSystem.enabled=0`, `appCatalogEnabled=0`, and `moduleCount=0`.
-- When the App Catalogue is explicitly enabled, the backend registry and browser registry now include **Sample Table** and **Permissions UI** alongside the existing Backend Table component.
-- Permissions UI reuses `MIOOSFS` metadata contracts over existing HTTP routes. Do not add a parallel permissions backend for this surface.
-- `templates/layouts/mioos_shell.html` loads `mioos_permissions.js` before shell mount so the component is available to the catalogue host.
+- Do not render protected `/api/mioos/theme-asset` or `/api/mioos/fs/blob` URLs before authentication.
+- Table bulk data and CRUD mutations are HTTP-first:
+  - `/api/mioos/table/query`
+  - `/api/mioos/table/mutate`
+- The reusable table supports sorting, grouping, select all visible, selected-row bulk actions, row CRUD, column CRUD, and column resizing.
+- Built-in sample datasets live in `MIOOSTBL`: `demo`, `massive`, `ui-elements`, `patient-registration`, and read-only `vfs`.
+- The module registry remains opt-in at boot, but the App Catalogue can fetch internal module entries after sign-in.

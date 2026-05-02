@@ -1,158 +1,44 @@
 (function () {
   function root(vm) { return vm.$root || vm; }
-
-  function clone(value) {
-    try { return JSON.parse(JSON.stringify(value || {})); } catch (ignore) { return {}; }
-  }
-
-  function route(vm, key, fallback) {
-    return (((root(vm).boot || {}).routes || {})[key]) || fallback;
-  }
-
-  function postJson(url, body) {
-    return fetch(url, {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body || {})
-    }).then(function (res) {
-      return res.json().then(function (obj) {
-        if (!res.ok || (obj && obj.ok === 0)) throw new Error((obj && (obj.detail || obj.error)) || ('HTTP ' + res.status));
-        return obj || {};
-      });
-    });
-  }
-
-  function formFromMeta(meta) {
-    meta = meta || {};
-    return {
-      id: meta.id || '',
-      readOnly: +(((meta.attributes || {}).readOnly) || 0),
-      hidden: +(((meta.attributes || {}).hidden) || 0),
-      shared: +(((meta.attributes || {}).shared) || 0),
-      scope: ((meta.sharing || {}).scope) || 'private',
-      users: ((meta.sharing || {}).users) || '',
-      viewMode: meta.viewMode || 'details',
-      sortBy: meta.sortBy || 'name',
-      sortDirection: meta.sortDirection || 'ascending'
-    };
-  }
-
-  var methods = {};
-
+  var methods = {
+    permissionsState: function () {
+      if (!this.permissionsUi) {
+        this.permissionsUi = {
+          tab: 'overview',
+          principals: [
+            { id: 'owner', label: 'Owner', read: true, write: true, delete: true, admin: true },
+            { id: 'admin', label: 'Administrators', read: true, write: true, delete: true, admin: true },
+            { id: 'user', label: 'Users', read: true, write: false, delete: false, admin: false },
+            { id: 'guest', label: 'Guests', read: false, write: false, delete: false, admin: false }
+          ],
+          audit: [
+            { at: 'boot', actor: 'system', action: 'Loaded permission model', target: 'owner-role-flags' },
+            { at: 'sample', actor: 'admin', action: 'Reviewed access policy', target: '/Home/Desktop' }
+          ]
+        };
+      }
+      return this.permissionsUi;
+    },
+    permissionsSetTab: function (tab) { this.permissionsState().tab = tab || 'overview'; },
+    permissionsToggle: function (principal, key) { if (principal && key) principal[key] = !principal[key]; }
+  };
   function register(app) {
     if (!app || !app.component) return;
-    app.component('mioos-permissions-panel', {
-      props: ['window'],
-      data: function () {
-        var boot = (root(this).boot || {});
-        var vfs = boot.vfs || {};
-        return {
-          targetId: ((this.window || {}).permissionsState || {}).id || vfs.homeId || vfs.rootId || 'root',
-          activeTab: 'summary',
-          loading: false,
-          saving: false,
-          error: '',
-          status: '',
-          meta: null,
-          form: formFromMeta(null)
-        };
-      },
-      computed: {
-        vm: function () { return root(this); },
-        tabs: function () {
-          return [
-            { key: 'summary', label: 'Summary' },
-            { key: 'attributes', label: 'Attributes' },
-            { key: 'sharing', label: 'Sharing' },
-            { key: 'folder', label: 'Folder defaults' }
-          ];
-        },
-        isFolder: function () { return (this.meta || {}).kind === 'folder'; },
-        identityLine: function () {
-          var meta = this.meta || {};
-          return (meta.name || meta.path || this.targetId || 'Item') + ' • owner ' + (meta.owner || 'unknown') + ' • roles ' + (meta.roles || 'none');
-        }
-      },
-      mounted: function () { this.load(); },
-      methods: {
-        setTab: function (key) { this.activeTab = key || 'summary'; },
-        load: function () {
-          var self = this;
-          this.loading = true;
-          this.error = '';
-          this.status = '';
-          return postJson(route(this, 'fsMeta', '/api/mioos/fs/meta'), { id: this.targetId, path: this.targetId })
-            .then(function (meta) {
-              self.meta = meta;
-              self.targetId = meta.id || self.targetId;
-              self.form = formFromMeta(meta);
-              self.status = 'Loaded metadata for ' + (meta.path || meta.name || meta.id);
-              return meta;
-            })
-            .catch(function (err) {
-              self.error = (err && err.message) || 'Unable to load permissions metadata';
-            })
-            .finally(function () { self.loading = false; });
-        },
-        save: function () {
-          var self = this;
-          var payload = {
-            id: this.targetId,
-            attributes: {
-              readOnly: this.form.readOnly ? 1 : 0,
-              hidden: this.form.hidden ? 1 : 0,
-              shared: this.form.shared ? 1 : 0
-            },
-            sharing: {
-              scope: this.form.shared ? (this.form.scope || 'users') : 'private',
-              users: this.form.shared ? (this.form.users || '') : ''
-            },
-            viewMode: this.form.viewMode,
-            sortBy: this.form.sortBy,
-            sortDirection: this.form.sortDirection
-          };
-          this.saving = true;
-          this.error = '';
-          this.status = '';
-          return postJson(route(this, 'fsSetMeta', '/api/mioos/fs/setmeta'), payload)
-            .then(function (meta) {
-              self.meta = meta;
-              self.form = formFromMeta(meta);
-              self.status = 'Saved permissions for ' + (meta.path || meta.name || meta.id);
-              return meta;
-            })
-            .catch(function (err) {
-              self.error = (err && err.message) || 'Unable to save permissions metadata';
-            })
-            .finally(function () { self.saving = false; });
-        },
-        resetForm: function () { this.form = formFromMeta(this.meta); }
-      },
-      template: '' +
-        '<section class="mioos-permissions-panel mioos-surface">' +
-          '<header class="mioos-permissions-head"><div><strong>Permissions UI</strong><span>VFS owner, sharing, attributes, and folder defaults</span></div><button type="button" class="mioos-btn" @click="load" :disabled="loading">Refresh</button></header>' +
-          '<div class="mioos-permissions-target"><label><span>Target ID or path</span><input v-model="targetId" @keydown.enter="load" placeholder="root, home, fs-... or /Home"></label><button type="button" class="mioos-btn" @click="load" :disabled="loading">Load</button></div>' +
-          '<nav class="mioos-permissions-tabs" role="tablist"><button v-for="tab in tabs" :key="tab.key" type="button" role="tab" :aria-selected="activeTab === tab.key" :class="{ active: activeTab === tab.key }" @click="setTab(tab.key)">[[ tab.label ]]</button></nav>' +
-          '<p class="mioos-permissions-error" v-if="error">[[ error ]]</p><p class="mioos-permissions-status" v-if="status">[[ status ]]</p>' +
-          '<article class="mioos-permissions-body" v-if="meta">' +
-            '<section v-if="activeTab === \'summary\'" class="mioos-permissions-card"><strong>[[ identityLine ]]</strong><dl><dt>Path</dt><dd>[[ meta.path ]]</dd><dt>Kind</dt><dd>[[ meta.kind ]]</dd><dt>Read / write / delete</dt><dd>[[ meta.permRead ]] / [[ meta.permWrite ]] / [[ meta.permDelete ]]</dd><dt>Sharing</dt><dd>[[ (meta.sharing || {}).scope || \'private\' ]]</dd></dl></section>' +
-            '<section v-if="activeTab === \'attributes\'" class="mioos-permissions-card"><label><input type="checkbox" v-model="form.readOnly"> Read-only</label><label><input type="checkbox" v-model="form.hidden"> Hidden</label><label><input type="checkbox" v-model="form.shared"> Shared</label></section>' +
-            '<section v-if="activeTab === \'sharing\'" class="mioos-permissions-card"><label><span>Scope</span><select v-model="form.scope" :disabled="!form.shared"><option value="private">Private</option><option value="users">Named users</option><option value="everyone">Everyone</option></select></label><label><span>Named users</span><input v-model="form.users" :disabled="!form.shared" placeholder="comma separated users"></label></section>' +
-            '<section v-if="activeTab === \'folder\'" class="mioos-permissions-card"><p v-if="!isFolder">Folder defaults apply only to folders.</p><label><span>View mode</span><select v-model="form.viewMode" :disabled="!isFolder"><option value="details">Details</option><option value="icons">Icons</option><option value="list">List</option></select></label><label><span>Sort by</span><select v-model="form.sortBy" :disabled="!isFolder"><option value="name">Name</option><option value="modified">Modified</option><option value="size">Size</option><option value="kind">Kind</option></select></label><label><span>Direction</span><select v-model="form.sortDirection" :disabled="!isFolder"><option value="ascending">Ascending</option><option value="descending">Descending</option></select></label></section>' +
-          '</article>' +
-          '<footer class="mioos-permissions-actions"><button type="button" class="mioos-btn" @click="resetForm" :disabled="!meta || saving">Reset</button><button type="button" class="mioos-btn primary" @click="save" :disabled="!meta || saving">[[ saving ? \'Saving…\' : \'Save changes\' ]]</button></footer>' +
-        '</section>'
-    });
     app.component('mioos-surface-permissions', {
       props: ['window'],
-      template: '<mioos-permissions-panel :window="window"></mioos-permissions-panel>'
+      computed: { vm: function () { return root(this); }, state: function () { return this.vm.permissionsState(); } },
+      template: '' +
+        '<section class="mioos-surface mioos-permissions-ui">' +
+          '<header class="mioos-permissions-head"><div><strong>Permissions</strong><span>Owner, role, and file capability flags for MIOOS modules.</span></div></header>' +
+          '<nav class="mioos-permissions-tabs" role="tablist"><button type="button" :class="{active: state.tab === \'overview\'}" @click="vm.permissionsSetTab(\'overview\')">Overview</button><button type="button" :class="{active: state.tab === \'matrix\'}" @click="vm.permissionsSetTab(\'matrix\')">Matrix</button><button type="button" :class="{active: state.tab === \'audit\'}" @click="vm.permissionsSetTab(\'audit\')">Audit</button></nav>' +
+          '<article v-if="state.tab === \'overview\'" class="mioos-permissions-panel"><h3>Permission model</h3><p>MIOOS uses owner-role-flags permissions on VFS-backed resources. Modules should request the narrowest capability and let the backend enforce access.</p><div class="mioos-permissions-cards"><section><strong>Read</strong><span>View metadata and content.</span></section><section><strong>Write</strong><span>Create and modify records.</span></section><section><strong>Delete</strong><span>Remove records or files.</span></section><section><strong>Admin</strong><span>Change ownership or grants.</span></section></div></article>' +
+          '<article v-if="state.tab === \'matrix\'" class="mioos-permissions-panel"><table class="mioos-permissions-table"><thead><tr><th>Principal</th><th>Read</th><th>Write</th><th>Delete</th><th>Admin</th></tr></thead><tbody><tr v-for="principal in state.principals" :key="principal.id"><td><strong>[[ principal.label ]]</strong><small>[[ principal.id ]]</small></td><td><input type="checkbox" :checked="principal.read" @change="vm.permissionsToggle(principal, \'read\')"></td><td><input type="checkbox" :checked="principal.write" @change="vm.permissionsToggle(principal, \'write\')"></td><td><input type="checkbox" :checked="principal.delete" @change="vm.permissionsToggle(principal, \'delete\')"></td><td><input type="checkbox" :checked="principal.admin" @change="vm.permissionsToggle(principal, \'admin\')"></td></tr></tbody></table></article>' +
+          '<article v-if="state.tab === \'audit\'" class="mioos-permissions-panel"><ul class="mioos-permissions-audit"><li v-for="entry in state.audit" :key="entry.at + entry.action"><strong>[[ entry.action ]]</strong><span>[[ entry.actor ]] • [[ entry.target ]] • [[ entry.at ]]</span></li></ul></article>' +
+        '</section>'
     });
   }
-
   window.MIOOSPermissions = { methods: methods, register: register };
   if (window.MIOOSModules && typeof window.MIOOSModules.registerComponent === 'function') {
-    window.MIOOSModules.registerComponent({ key: 'permissions', name: 'mioos-permissions-panel', title: 'Permissions UI', surface: 'mioos-surface-permissions', source: 'internal', owner: 'MIOOS', backend: 'MIOOSFS', description: 'Inspect and update VFS owner, sharing, and read-only metadata.' });
-    window.MIOOSModules.registerModule({ id: 'mioos.permissions', key: 'permissions', appKey: 'permissions', title: 'Permissions UI', source: 'internal', category: 'Security', icon: '🛡', componentKey: 'permissions', surface: 'mioos-surface-permissions' });
+    window.MIOOSModules.registerComponent({ key: 'permissions', name: 'mioos-surface-permissions', title: 'Permissions UI', surface: 'mioos-surface-permissions', description: 'Permission matrix, access policy, and audit sample for modules.' });
   }
 })();

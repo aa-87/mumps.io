@@ -80,6 +80,7 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("fsUploadAbortPath")=$GET(CONF("mioos","route","fsUploadAbort"),"/api/mioos/fs/upload/abort")
 	SET STATE("fsBlobPath")=$GET(CONF("mioos","route","fsBlob"),"/api/mioos/fs/blob")
 	SET STATE("tableQueryPath")=$GET(CONF("mioos","route","tableQuery"),"/api/mioos/table/query")
+	SET STATE("tableMutatePath")=$GET(CONF("mioos","route","tableMutate"),"/api/mioos/table/mutate")
 	SET STATE("moduleCatalogPath")=$GET(CONF("mioos","route","moduleCatalog"),"/api/mioos/modules/catalog")
 	SET STATE("themeAssetUploadPath")=$GET(CONF("mioos","route","themeAssetUpload"),"/api/mioos/theme-asset/upload")
 	SET STATE("themeAssetPath")=$GET(CONF("mioos","route","themeAsset"),"/api/mioos/theme-asset")
@@ -246,6 +247,17 @@ PROTURL(URL,STATE)
 	IF U["/api/mioos/fs/blob" QUIT 1
 	IF U["/api/mioos/theme-asset" QUIT 1
 	QUIT 0
+	;
+SANPROF(ROOT,STATE)
+	NEW K,V
+	IF $GET(@ROOT@("desktop","wallpaperUrl"))'="",$$PROTURL($GET(@ROOT@("desktop","wallpaperUrl")),.STATE) SET @ROOT@("desktop","wallpaperUrl")=""
+	IF $GET(@ROOT@("wallpaperUrl"))'="",$$PROTURL($GET(@ROOT@("wallpaperUrl")),.STATE) SET @ROOT@("wallpaperUrl")=""
+	IF $GET(@ROOT@("loginScreenConfig","wallpaperUrl"))'="",$$PROTURL($GET(@ROOT@("loginScreenConfig","wallpaperUrl")),.STATE) SET @ROOT@("loginScreenConfig","wallpaperUrl")=""
+	SET K="" FOR  SET K=$ORDER(@ROOT@("cssVars",K)) QUIT:K=""  DO
+	. SET V=$GET(@ROOT@("cssVars",K)) IF V'="",$$PROTURL(V,.STATE) KILL @ROOT@("cssVars",K)
+	SET K="" FOR  SET K=$ORDER(@ROOT@("colors",K)) QUIT:K=""  DO
+	. SET V=$GET(@ROOT@("colors",K)) IF V'="",$$PROTURL(V,.STATE) KILL @ROOT@("colors",K)
+	QUIT
 	;
 
 LOADPREFS(STATE,CONF)
@@ -467,6 +479,7 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("routes","fsUploadAbort")=$GET(STATE("fsUploadAbortPath"))
 	SET OBJ("routes","fsBlob")=$GET(STATE("fsBlobPath"))
 	SET OBJ("routes","tableQuery")=$GET(STATE("tableQueryPath"))
+	SET OBJ("routes","tableMutate")=$GET(STATE("tableMutatePath"))
 	SET OBJ("routes","moduleCatalog")=$GET(STATE("moduleCatalogPath"))
 	SET OBJ("routes","themeAssetUpload")=$GET(STATE("themeAssetUploadPath"))
 	SET OBJ("routes","themeAsset")=$GET(STATE("themeAssetPath"))
@@ -574,7 +587,9 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","performance","uploadUiStrategy")="throttled-progress-updates-and-persistent-resume"
 	SET OBJ("desktop","performance","uploadBatching")="websocket-batch-with-single-chunk-fallback"
 	DO THEMES($NAME(OBJ("desktop","themes")),$GET(STATE("themeKey")))
-	IF $DATA(STATE("activeThemeProfile")) MERGE OBJ("desktop","activeThemeProfile")=STATE("activeThemeProfile")
+	IF $DATA(STATE("activeThemeProfile")) DO
+	. MERGE OBJ("desktop","activeThemeProfile")=STATE("activeThemeProfile")
+	. IF '+$GET(STATE("authenticated"),0) DO SANPROF($NAME(OBJ("desktop","activeThemeProfile")),.STATE)
 	IF $GET(STATE("activeThemeKey"))'="" SET OBJ("desktop","activeThemeKey")=$GET(STATE("activeThemeKey"))
 	MERGE OBJ("apps")=STATE("apps")
 	DO MERGELAYOUT(.STATE,$NAME(OBJ("apps")))

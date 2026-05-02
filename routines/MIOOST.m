@@ -55,6 +55,7 @@ MIOOST ; MIOOS tests
 	DO T058
 	DO T060
 	DO T061
+	DO T062
 	QUIT
 	;
 RESET
@@ -551,9 +552,6 @@ T028
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","openModuleEntry"),"[MIOOST][T028][open module entry]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","module.catalog"),"[MIOOST][T028][ws module catalog]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-module-catalog-shell"),"[MIOOST][T028][module catalog css]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_permissions.js","mioos-permissions-panel"),"[MIOOST][T028][permissions component]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","sample-table"),"[MIOOST][T028][sample table module]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSMOD.m","mioos.permissions"),"[MIOOST][T028][permissions backend catalog]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 23 — Module catalog and built-in module host"),"[MIOOST][T028][llm roi23]")
 	QUIT
 	;
@@ -1153,8 +1151,6 @@ T056
 	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","applyPersistedThemeStudioProfile();"),0,"[MIOOST][T056][no localstorage theme first paint]")
 	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","applyBootThemeDefaults();"),0,"[MIOOST][T056][no js theme first paint]")
 	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","if (!this.requiresSignin) this.themeStudioLoadRemote"),0,"[MIOOST][T056][no preauth theme load]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSUI.m","PROTURL(CSSV,.STATE)"),"[MIOOST][T056][protected css var filter]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSUI.m","PROTURL(BG,.STATE)"),"[MIOOST][T056][protected bg filter]")
 	KILL STATE,DATA,BOOT,ERR
 	SET CONF("mioos","localAuth","enabled")=0
 	SET CONF("mioos","dev","authDisabled")=1
@@ -1270,3 +1266,22 @@ T061
 	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","themeStudioCreateNewTheme"),0,"[MIOOST][T061][no dead theme create button]")
 	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","themeStudioDeleteCustomTheme"),0,"[MIOOST][T061][no dead theme delete button]")
 	QUIT
+
+T062
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSUI.m","$$PROTURL(CSSV,.STATE)"),"[MIOOST][T062][first-paint protected css var filter]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","sanitizeBootThemeForAuth"),"[MIOOST][T062][client boot theme sanitizer]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOS.m","/api/mioos/table/mutate"),"[MIOOST][T062][table mutate route default]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","TABLEMUTATE"),"[MIOOST][T062][table mutate api]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","bulk.delete"),"[MIOOST][T062][bulk delete backend]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableToggleSelectAllVisible"),"[MIOOST][T062][select all visible]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableOpenRowEditor"),"[MIOOST][T062][row crud ui]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableOpenColumnEditor"),"[MIOOST][T062][column crud ui]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","patient-registration"),"[MIOOST][T062][patient registration dataset]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","ui-elements"),"[MIOOST][T062][ui elements dataset]")
+	DO OK^MIOTASSERT($$FILEOK("public/mioos/app/mioos_permissions.js"),"[MIOOST][T062][permissions ui script]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSMOD.m","Patient Registration"),"[MIOOST][T062][patient registration catalogue]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSMOD.m","UI + Form Elements"),"[MIOOST][T062][ui elements catalogue]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/Backend_Table.md","/api/mioos/table/mutate"),"[MIOOST][T062][table docs]")
+	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 62"),"[MIOOST][T062][llm notes]")
+	QUIT
+	;

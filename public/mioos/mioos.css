@@ -2596,119 +2596,60 @@ button:disabled { cursor: default; opacity: .55; }
   .mioos-ui-module-head { align-items: flex-start; flex-direction: column; }
 }
 
-/* MIOOS Permissions module */
-.mioos-permissions-panel {
-  min-height: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 12px;
-  color: var(--window-text, #10243d);
-  background: var(--window-bg, rgba(246, 249, 255, .96));
-  box-sizing: border-box;
+/* ROI 62: advanced table, catalogue, permissions, and sample modules */
+.mioos-table-editor {
+  margin: 8px 10px;
+  border: 1px solid rgba(74, 106, 154, .28);
+  border-radius: 10px;
+  background: rgba(255,255,255,.82);
+  box-shadow: 0 12px 28px rgba(15,34,62,.16);
+  overflow: hidden;
 }
-.mioos-permissions-head,
-.mioos-permissions-target,
-.mioos-permissions-actions {
+.mioos-table-editor > header,
+.mioos-table-editor > footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  padding: 10px 12px;
-  border: 1px solid var(--theme-panel-border, rgba(0,0,0,.12));
-  border-radius: 10px;
-  background: var(--theme-surface-strong, rgba(255,255,255,.78));
-}
-.mioos-permissions-head div { min-width: 0; }
-.mioos-permissions-head strong { display: block; font-size: 14px; }
-.mioos-permissions-head span { display: block; font-size: 11px; opacity: .72; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.mioos-permissions-target label,
-.mioos-permissions-card label {
-  display: flex;
-  align-items: center;
   gap: 8px;
-  min-width: 0;
-}
-.mioos-permissions-target label { flex: 1 1 auto; }
-.mioos-permissions-target span,
-.mioos-permissions-card label > span {
-  font-size: 11px;
-  font-weight: 700;
-  opacity: .76;
-}
-.mioos-permissions-target input,
-.mioos-permissions-card input[type="text"],
-.mioos-permissions-card input:not([type]),
-.mioos-permissions-card select {
-  min-width: 0;
-  flex: 1 1 auto;
-  height: 30px;
-  padding: 4px 8px;
-  border: 1px solid rgba(70, 100, 140, .28);
-  border-radius: 7px;
-  background: var(--theme-field-bg, #fff);
-  color: var(--theme-field-text, #111827);
-  font: inherit;
-}
-.mioos-permissions-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  border-bottom: 1px solid var(--theme-panel-border, rgba(0,0,0,.12));
-}
-.mioos-permissions-tabs button {
-  min-height: 30px;
-  padding: 5px 10px;
-  border: 1px solid var(--theme-tab-border, rgba(0,0,0,.16));
-  border-bottom: 0;
-  border-radius: 8px 8px 0 0;
-  background: var(--theme-tab-bg, #eaf2ff);
-  color: inherit;
-  cursor: pointer;
-}
-.mioos-permissions-tabs button.active,
-.mioos-permissions-tabs button[aria-selected="true"] {
-  background: var(--theme-tab-active-bg, #fff);
-  font-weight: 700;
-}
-.mioos-permissions-body {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow: auto;
-}
-.mioos-permissions-card {
-  display: grid;
-  gap: 12px;
-  padding: 12px;
-  border: 1px solid var(--theme-panel-border, rgba(0,0,0,.12));
-  border-radius: 12px;
-  background: var(--theme-panel-bg, rgba(255,255,255,.68));
-}
-.mioos-permissions-card dl {
-  display: grid;
-  grid-template-columns: max-content minmax(0, 1fr);
-  gap: 8px 12px;
-  margin: 0;
-}
-.mioos-permissions-card dt { font-weight: 700; }
-.mioos-permissions-card dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
-.mioos-permissions-error,
-.mioos-permissions-status {
-  margin: 0;
   padding: 8px 10px;
-  border-radius: 8px;
-  border: 1px solid rgba(70,100,140,.18);
-  background: rgba(255,255,255,.58);
+  background: linear-gradient(180deg,rgba(255,255,255,.95),rgba(230,238,249,.92));
+  border-bottom: 1px solid rgba(74, 106, 154, .18);
 }
-.mioos-permissions-error { border-color: rgba(190, 60, 60, .35); background: rgba(255, 230, 230, .75); }
-.mioos-permissions-status { border-color: rgba(40, 125, 72, .28); background: rgba(226, 248, 235, .75); }
-.mioos-permissions-actions { justify-content: flex-end; }
-.mioos-btn.primary { font-weight: 700; }
-@media (max-width: 760px) {
-  .mioos-permissions-head,
-  .mioos-permissions-target,
-  .mioos-permissions-actions { align-items: stretch; flex-direction: column; }
-  .mioos-permissions-target label,
-  .mioos-permissions-card label { align-items: stretch; flex-direction: column; }
-  .mioos-permissions-card dl { grid-template-columns: 1fr; }
+.mioos-table-editor > footer { border-top: 1px solid rgba(74, 106, 154, .18); border-bottom: 0; justify-content: flex-end; }
+.mioos-table-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(180px,1fr));
+  gap: 10px;
+  padding: 10px;
 }
+.mioos-table-form-grid label { display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 600; }
+.mioos-table-form-grid input,
+.mioos-table-form-grid select { min-height: 28px; border: 1px solid rgba(74,106,154,.34); border-radius: 6px; padding: 4px 7px; background: #fff; }
+.mioos-table-select-all { display: flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 700; }
+.mioos-table-group-row td { background: linear-gradient(180deg,rgba(229,239,255,.92),rgba(206,224,248,.90)); font-weight: 700; }
+.mioos-table-group-row button { margin-right: 8px; min-width: 26px; }
+.mioos-table-group-row span { margin-left: 8px; font-size: 11px; opacity: .7; }
+.mioos-table-col-edit,
+.mioos-table-col-delete { margin-left: 4px; min-width: 22px; opacity: .72; }
+.mioos-table-col-delete { color: #8a1c1c; }
+.mioos-table-grid th { position: relative; }
+.mioos-table-grid th .mioos-table-resizer { position: absolute; top: 0; right: -3px; bottom: 0; width: 7px; cursor: col-resize; }
+.mioos-table-grid th .mioos-table-resizer:hover { background: rgba(52,117,210,.24); }
+.mioos-table-cell.type-badge { display: inline-flex; align-items: center; min-height: 20px; padding: 1px 7px; border-radius: 999px; background: rgba(58,117,196,.14); border: 1px solid rgba(58,117,196,.24); font-weight: 700; }
+.mioos-permissions-ui { display: flex; flex-direction: column; gap: 10px; padding: 12px; overflow: auto; }
+.mioos-permissions-head { display: flex; justify-content: space-between; gap: 12px; padding: 10px 12px; border: 1px solid rgba(75,104,143,.22); border-radius: 10px; background: rgba(255,255,255,.76); }
+.mioos-permissions-head strong { display: block; font-size: 16px; }
+.mioos-permissions-head span { display: block; font-size: 12px; opacity: .72; }
+.mioos-permissions-tabs { display: flex; gap: 4px; border-bottom: 1px solid rgba(75,104,143,.22); }
+.mioos-permissions-tabs button { min-height: 30px; padding: 5px 12px; border: 1px solid rgba(75,104,143,.24); border-bottom: 0; border-radius: 8px 8px 0 0; background: linear-gradient(180deg,#f7fbff,#dce8f8); }
+.mioos-permissions-tabs button.active { background: #fff; font-weight: 700; }
+.mioos-permissions-panel { padding: 12px; border: 1px solid rgba(75,104,143,.22); border-radius: 0 10px 10px 10px; background: rgba(255,255,255,.82); }
+.mioos-permissions-cards { display: grid; grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); gap: 10px; }
+.mioos-permissions-cards section { padding: 10px; border: 1px solid rgba(75,104,143,.20); border-radius: 10px; background: rgba(244,248,255,.8); }
+.mioos-permissions-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.mioos-permissions-table th,
+.mioos-permissions-table td { padding: 8px; border-bottom: 1px solid rgba(75,104,143,.16); text-align: left; }
+.mioos-permissions-table small { display: block; opacity: .65; }
+.mioos-permissions-audit { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.mioos-permissions-audit li { padding: 9px 10px; border: 1px solid rgba(75,104,143,.18); border-radius: 8px; background: rgba(244,248,255,.72); }
+.mioos-permissions-audit span { display: block; font-size: 11px; opacity: .72; }

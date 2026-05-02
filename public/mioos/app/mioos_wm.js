@@ -425,7 +425,12 @@
         options = options || {};
         app = app || {};
         var id = nextWindowId(this, 'win-' + (app.key || app.appKey || 'app'));
-        var win = Object.assign({ id: id, appKey: app.key || app.appKey || 'app', title: app.title || 'Application', state: 'normal', left: 120, top: 90, width: 720, height: 460, z: this.zCounter + 1 }, options || {});
+        var win = Object.assign({ id: id, appKey: app.key || app.appKey || 'app', title: app.title || 'Application', state: 'normal', left: 120, top: 90, width: 720, height: 460, z: this.zCounter + 1, moduleWindow: !!app.moduleWindow || !!app.componentKey || !!app.surface, moduleId: app.id || app.moduleId || '', moduleComponent: app.componentKey || app.component || '', tableState: app.tableState ? window.MIOOSState.deepClone(app.tableState) : null, surface: app.surface || '' }, options || {});
+        if (win.appKey === 'table-samples' || win.appKey === 'sample-table' || win.appKey === 'patient-registration' || win.appKey === 'ui-elements') {
+          win.tableState = win.tableState || { id: id + '-table', title: win.title, dataset: win.appKey === 'patient-registration' ? 'patient-registration' : (win.appKey === 'ui-elements' ? 'ui-elements' : 'demo') };
+          win.width = Math.max(+win.width || 0, 1040);
+          win.height = Math.max(+win.height || 0, 680);
+        }
         this.windows.push(win);
         this.focusWindow(id);
         return win;

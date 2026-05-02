@@ -11,8 +11,8 @@
     var Terminal = (window.MIOOSTerminal || {}).methods || {};
     var Explorer = (window.MIOOSExplorer || {}).methods || {};
     var Table = (window.MIOOSTable || {}).methods || {};
-    var Permissions = (window.MIOOSPermissions || {}).methods || {};
     var Modules = (window.MIOOSModules || {}).methods || {};
+    var Permissions = (window.MIOOSPermissions || {}).methods || {};
     var I18N = window.MIOOSI18N || {};
 
     var app = window.Vue.createApp({
@@ -235,14 +235,48 @@
           (this.desktopEntries || []).filter(function (entry) { return entry && !this.desktopEntryIsSystemArtifact(entry); }, this).forEach(add);
           return out;
         },
+        isProtectedThemeUrl: function (value) {
+          var text = String(value || '');
+          return !!(text && (text.indexOf('/api/mioos/theme-asset') >= 0 || text.indexOf('/api/mioos/fs/blob') >= 0));
+        },
+        sanitizeProtectedThemeProfile: function (profile) {
+          var copy = this.themeStudioClone ? this.themeStudioClone(profile || {}) : JSON.parse(JSON.stringify(profile || {}));
+          var self = this;
+          function walk(obj) {
+            if (!obj || typeof obj !== 'object') return obj;
+            Object.keys(obj).forEach(function (key) {
+              var value = obj[key];
+              if (typeof value === 'string') {
+                if (self.isProtectedThemeUrl(value)) obj[key] = '';
+              } else if (value && typeof value === 'object') {
+                walk(value);
+              }
+            });
+            return obj;
+          }
+          return walk(copy);
+        },
+        sanitizeBootThemeForAuth: function () {
+          var boot = this.boot || {};
+          var auth = boot.auth || {};
+          var signedIn = !!((boot.user || {}).authenticated);
+          var protectedPreAuth = !!(auth.required && !signedIn);
+          if (!protectedPreAuth) return;
+          boot.desktop = boot.desktop || {};
+          if (this.isProtectedThemeUrl(boot.desktop.wallpaperUrl)) boot.desktop.wallpaperUrl = '';
+          if (this.isProtectedThemeUrl(boot.wallpaperUrl)) boot.wallpaperUrl = '';
+          if (boot.desktop.activeThemeProfile) boot.desktop.activeThemeProfile = this.sanitizeProtectedThemeProfile(boot.desktop.activeThemeProfile);
+        },
         bootstrapFromDom: function () {
           var node = window.MIOOSState.getBootNode();
           if (!node) return;
           try {
             this.boot = window.MIOOSState.normalizeBoot(JSON.parse(node.textContent || '{}'));
+            this.sanitizeBootThemeForAuth();
           } catch (err) {
             this.showAlert(this.t('alerts.bootError.title'), this.t('alerts.bootError.message'));
             this.boot = window.MIOOSState.defaultBoot();
+            this.sanitizeBootThemeForAuth();
           }
           this.profile = this.boot.product.profile || 'dev';
           this.launcherEntries = window.MIOOSState.deepClone(this.boot.apps || []);
@@ -1342,7 +1376,7 @@
         },
         themeStudioWallpaperCss: function (theme) {
           var t = this.themeStudioNormalizeConfig(theme || this.themeStudioActiveTheme() || {});
-          if (t.wallpaperPreset === 'custom-url' && t.wallpaperUrl) return 'url(' + t.wallpaperUrl + ')';
+          if (t.wallpaperPreset === 'custom-url' && t.wallpaperUrl && !this.isProtectedThemeUrl(t.wallpaperUrl)) return 'url(' + t.wallpaperUrl + ')';
           if (t.wallpaperPreset === 'meadow') return 'linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0) 28%), linear-gradient(180deg, #8acb59 0%, #6fb14a 42%, #3e7b35 100%)';
           if (t.wallpaperPreset === 'aurora') return 'radial-gradient(circle at top, rgba(147,197,253,0.26), transparent 30%), linear-gradient(180deg, #16385c 0%, #23476d 36%, #3a6288 100%)';
           if (t.wallpaperPreset === 'graphite') return 'linear-gradient(180deg, #6c7a89 0%, #313b48 100%)';
@@ -1774,7 +1808,7 @@
         },
         themeStudioWallpaperCss: function (theme) {
           var t = this.themeStudioNormalizeConfig(theme || this.themeStudioActiveTheme() || {});
-          if (t.wallpaperUrl) return 'url(' + t.wallpaperUrl + ')';
+          if (t.wallpaperUrl && !this.isProtectedThemeUrl(t.wallpaperUrl)) return 'url(' + t.wallpaperUrl + ')';
           if (t.wallpaperPreset === 'meadow') return 'linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0) 28%), linear-gradient(180deg, #8acb59 0%, #6fb14a 42%, #3e7b35 100%)';
           if (t.wallpaperPreset === 'aurora') return 'radial-gradient(circle at top, rgba(147,197,253,0.26), transparent 30%), linear-gradient(180deg, #16385c 0%, #23476d 36%, #3a6288 100%)';
           if (t.wallpaperPreset === 'graphite') return 'linear-gradient(180deg, #6c7a89 0%, #313b48 100%)';
@@ -1784,7 +1818,7 @@
         themeStudioLoginWallpaperCss: function (theme) {
           var t = this.themeStudioNormalizeConfig(theme || this.themeStudioActiveTheme() || {});
           var cfg = t.loginScreenConfig || {};
-          if (cfg.wallpaperUrl) return 'url(' + cfg.wallpaperUrl + ')';
+          if (cfg.wallpaperUrl && !this.isProtectedThemeUrl(cfg.wallpaperUrl)) return 'url(' + cfg.wallpaperUrl + ')';
           return this.themeStudioWallpaperCss(t);
         },
         themeStudioManagedVarKeys: function () {
@@ -2362,6 +2396,7 @@
           return ((((this.boot || {}).desktop || {}).activeThemeProfile) || null);
         },
         themeStudioConfigFromServerProfile: function (profile) {
+          profile = (this.requiresSignin && this.sanitizeProtectedThemeProfile) ? this.sanitizeProtectedThemeProfile(profile || {}) : profile;
           var src = profile || {};
           var cfg = src.themeConfig || src.config || src;
           var desktop = Object.assign({}, cfg.desktop || {}, src.desktop || {});

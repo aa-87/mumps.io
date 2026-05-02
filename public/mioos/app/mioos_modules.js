@@ -59,7 +59,9 @@
     var moduleKey = (win || {}).moduleComponent || (win || {}).componentKey || '';
     var module = moduleByKey(vm, (win || {}).moduleId || (win || {}).appKey || '');
     if (!moduleKey && module) moduleKey = module.componentKey || module.component || '';
-    if ((win || {}).appKey === 'ui-modules' || (win || {}).appKey === 'app-catalog' || moduleKey === 'module-catalog') return 'mioos-surface-ui-modules';
+    if ((win || {}).appKey === 'app-catalog' || (win || {}).appKey === 'ui-modules' || moduleKey === 'module-catalog') return 'mioos-surface-ui-modules';
+    if ((win || {}).appKey === 'permissions' || moduleKey === 'permissions') return 'mioos-surface-permissions';
+    if ((win || {}).appKey === 'table-samples' || (win || {}).appKey === 'sample-table' || (win || {}).appKey === 'patient-registration' || (win || {}).appKey === 'ui-elements' || moduleKey === 'table') return 'mioos-surface-table';
     if (module && module.surface) return module.surface;
     var component = componentByKey(vm, moduleKey);
     if (component && component.surface) return component.surface;
@@ -107,7 +109,7 @@
       }
       this.openApp(module.appKey);
       var win = (this.windows || []).find(function (item) { return item.appKey === module.appKey; });
-      if (win) Object.assign(win, { title: module.title || win.title, icon: module.icon || win.icon, kind: 'module', moduleWindow: true, moduleId: module.moduleId, moduleComponent: module.moduleComponent, componentKey: module.componentKey || module.component || '', surface: module.surface || win.surface || '', tableState: module.tableState || win.tableState || null, permissionsState: module.permissionsState || win.permissionsState || null });
+      if (win) Object.assign(win, { moduleWindow: true, moduleId: module.moduleId, moduleComponent: module.moduleComponent, tableState: module.tableState || win.tableState || null });
       return win || null;
     },
     uiModuleOpenComponent: function (componentKey, options) {
@@ -130,6 +132,9 @@
         components: function () { return this.vm.uiModuleComponentRows(); },
         examples: function () { return this.vm.uiModuleExampleRows(); },
         contract: function () { return (this.vm.uiModuleRegistry() || {}).contract || 'mioos-ui-module-v1'; }
+      },
+      mounted: function () {
+        if (!this.modules.length && this.vm.uiModuleRefreshCatalog) this.vm.uiModuleRefreshCatalog().catch(function () {});
       },
       template: '' +
         '<div class="mioos-surface mioos-ui-module-shell">' +
