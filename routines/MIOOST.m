@@ -551,6 +551,9 @@ T028
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","openModuleEntry"),"[MIOOST][T028][open module entry]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","module.catalog"),"[MIOOST][T028][ws module catalog]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-module-catalog-shell"),"[MIOOST][T028][module catalog css]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_permissions.js","mioos-permissions-panel"),"[MIOOST][T028][permissions component]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","sample-table"),"[MIOOST][T028][sample table module]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSMOD.m","mioos.permissions"),"[MIOOST][T028][permissions backend catalog]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 23 — Module catalog and built-in module host"),"[MIOOST][T028][llm roi23]")
 	QUIT
 	;
@@ -1150,6 +1153,8 @@ T056
 	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","applyPersistedThemeStudioProfile();"),0,"[MIOOST][T056][no localstorage theme first paint]")
 	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","applyBootThemeDefaults();"),0,"[MIOOST][T056][no js theme first paint]")
 	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","if (!this.requiresSignin) this.themeStudioLoadRemote"),0,"[MIOOST][T056][no preauth theme load]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSUI.m","PROTURL(CSSV,.STATE)"),"[MIOOST][T056][protected css var filter]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSUI.m","PROTURL(BG,.STATE)"),"[MIOOST][T056][protected bg filter]")
 	KILL STATE,DATA,BOOT,ERR
 	SET CONF("mioos","localAuth","enabled")=0
 	SET CONF("mioos","dev","authDisabled")=1

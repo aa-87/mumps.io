@@ -2595,3 +2595,120 @@ button:disabled { cursor: default; opacity: .55; }
   .mioos-ui-module-grid { grid-template-columns: 1fr; }
   .mioos-ui-module-head { align-items: flex-start; flex-direction: column; }
 }
+
+/* MIOOS Permissions module */
+.mioos-permissions-panel {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  color: var(--window-text, #10243d);
+  background: var(--window-bg, rgba(246, 249, 255, .96));
+  box-sizing: border-box;
+}
+.mioos-permissions-head,
+.mioos-permissions-target,
+.mioos-permissions-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--theme-panel-border, rgba(0,0,0,.12));
+  border-radius: 10px;
+  background: var(--theme-surface-strong, rgba(255,255,255,.78));
+}
+.mioos-permissions-head div { min-width: 0; }
+.mioos-permissions-head strong { display: block; font-size: 14px; }
+.mioos-permissions-head span { display: block; font-size: 11px; opacity: .72; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mioos-permissions-target label,
+.mioos-permissions-card label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.mioos-permissions-target label { flex: 1 1 auto; }
+.mioos-permissions-target span,
+.mioos-permissions-card label > span {
+  font-size: 11px;
+  font-weight: 700;
+  opacity: .76;
+}
+.mioos-permissions-target input,
+.mioos-permissions-card input[type="text"],
+.mioos-permissions-card input:not([type]),
+.mioos-permissions-card select {
+  min-width: 0;
+  flex: 1 1 auto;
+  height: 30px;
+  padding: 4px 8px;
+  border: 1px solid rgba(70, 100, 140, .28);
+  border-radius: 7px;
+  background: var(--theme-field-bg, #fff);
+  color: var(--theme-field-text, #111827);
+  font: inherit;
+}
+.mioos-permissions-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  border-bottom: 1px solid var(--theme-panel-border, rgba(0,0,0,.12));
+}
+.mioos-permissions-tabs button {
+  min-height: 30px;
+  padding: 5px 10px;
+  border: 1px solid var(--theme-tab-border, rgba(0,0,0,.16));
+  border-bottom: 0;
+  border-radius: 8px 8px 0 0;
+  background: var(--theme-tab-bg, #eaf2ff);
+  color: inherit;
+  cursor: pointer;
+}
+.mioos-permissions-tabs button.active,
+.mioos-permissions-tabs button[aria-selected="true"] {
+  background: var(--theme-tab-active-bg, #fff);
+  font-weight: 700;
+}
+.mioos-permissions-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+.mioos-permissions-card {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--theme-panel-border, rgba(0,0,0,.12));
+  border-radius: 12px;
+  background: var(--theme-panel-bg, rgba(255,255,255,.68));
+}
+.mioos-permissions-card dl {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 8px 12px;
+  margin: 0;
+}
+.mioos-permissions-card dt { font-weight: 700; }
+.mioos-permissions-card dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.mioos-permissions-error,
+.mioos-permissions-status {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(70,100,140,.18);
+  background: rgba(255,255,255,.58);
+}
+.mioos-permissions-error { border-color: rgba(190, 60, 60, .35); background: rgba(255, 230, 230, .75); }
+.mioos-permissions-status { border-color: rgba(40, 125, 72, .28); background: rgba(226, 248, 235, .75); }
+.mioos-permissions-actions { justify-content: flex-end; }
+.mioos-btn.primary { font-weight: 700; }
+@media (max-width: 760px) {
+  .mioos-permissions-head,
+  .mioos-permissions-target,
+  .mioos-permissions-actions { align-items: stretch; flex-direction: column; }
+  .mioos-permissions-target label,
+  .mioos-permissions-card label { align-items: stretch; flex-direction: column; }
+  .mioos-permissions-card dl { grid-template-columns: 1fr; }
+}

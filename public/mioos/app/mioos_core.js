@@ -11,6 +11,7 @@
     var Terminal = (window.MIOOSTerminal || {}).methods || {};
     var Explorer = (window.MIOOSExplorer || {}).methods || {};
     var Table = (window.MIOOSTable || {}).methods || {};
+    var Permissions = (window.MIOOSPermissions || {}).methods || {};
     var Modules = (window.MIOOSModules || {}).methods || {};
     var I18N = window.MIOOSI18N || {};
 
@@ -2625,7 +2626,7 @@
           }
           return (((win || {}).terminalState || {}).status) || this.t('terminal.status.ready', 'Terminal idle');
         }
-      }, Auth, WS, WM, Terminal, Explorer, Modules, Table)
+      }, Auth, WS, WM, Terminal, Explorer, Modules, Table, Permissions)
     });
 
     app.config.compilerOptions.delimiters = ['[[', ']]'];
@@ -2634,6 +2635,9 @@
     }
     if (window.MIOOSTable && typeof window.MIOOSTable.register === 'function') {
       window.MIOOSTable.register(app);
+    }
+    if (window.MIOOSPermissions && typeof window.MIOOSPermissions.register === 'function') {
+      window.MIOOSPermissions.register(app);
     }
     if (window.MIOOSShellUI && typeof window.MIOOSShellUI.register === 'function') {
       window.MIOOSShellUI.register(app);

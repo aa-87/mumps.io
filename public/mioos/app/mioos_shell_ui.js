@@ -36,7 +36,8 @@
     if (key === 'terminal') return 'mioos-surface-terminal';
     if (key === 'theme-studio' || key === 'customize') return 'mioos-surface-theme';
     if (key === 'text-viewer' || key === 'image-viewer' || key === 'media-viewer' || key === 'pdf-viewer' || key === 'structured-viewer') return 'mioos-surface-viewer';
-    if (key === 'backend-table' || key === 'table' || key === 'data-grid') return 'mioos-surface-table';
+    if (key === 'backend-table' || key === 'sample-table' || key === 'table' || key === 'data-grid') return 'mioos-surface-table';
+    if (key === 'permissions') return 'mioos-surface-permissions';
     if (key === 'transfers') return 'mioos-surface-transfers';
     return 'mioos-surface-generic';
   }

@@ -63,15 +63,28 @@ When either flag is off, `boot.desktop.moduleSystem.enabled` or `boot.desktop.mo
 
 ## First component: Backend Table
 
-The first registered component is `table`.
+The first registered component is `table`; this ROI also registers the built-in `permissions` component so the App Catalogue can launch VFS permission metadata editing without enabling a separate architecture.
 
 - Vue component: `mioos-full-table`
 - Surface: `mioos-surface-table`
 - Backend: `MIOOSTBL`
 - Route: `/api/mioos/table/query`
 - Example folder: `examples/mioos_modules/table`
+- Launchable sample: `sample-table` / **Sample Table**
 
 The table supports backend pagination, sorting, filtering, column visibility, column grouping, expansion rows, row actions, bulk actions, selection, and resizable columns.
+
+## Built-in component: Permissions UI
+
+The built-in `permissions` component is registered by `public/mioos/app/mioos_permissions.js`. It appears in the App Catalogue when the module catalogue is enabled and uses the existing VFS HTTP metadata routes instead of a new backend subsystem.
+
+- Vue component: `mioos-permissions-panel`
+- Surface: `mioos-surface-permissions`
+- Backend: `MIOOSFS`
+- Routes: `/api/mioos/fs/meta` and `/api/mioos/fs/setmeta`
+- Example folder: `examples/mioos_modules/permissions`
+
+The UI supports tabs for Summary, Attributes, Sharing, and Folder defaults. It updates read-only, hidden, shared, share scope, named users, view mode, sort field, and sort direction through the same metadata contract used by Folder Properties.
 
 ## Creating a user module
 

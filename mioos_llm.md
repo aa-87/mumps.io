@@ -517,3 +517,14 @@ Do not build new internal or user-created module screens by copying Explorer. Ad
 Current source state: backend UI module registry, catalog API/WS support, boot manifest injection, client module/component registry, UI Modules catalog window, generic module host, and the backend table component are present. The module system is launch-disabled by default. Do not treat the presence of `MIOOSMOD`, `mioos_modules.js`, or `mioos_table.js` as permission to expose modules during default boot; `CONF("mioos","modules","enabled")` and `CONF("mioos","modules","appCatalogEnabled")` must both be enabled.
 
 First paint must not require authenticated internal asset requests. Before sign-in, MIOTPL may render theme variables and gradients, but it must not render `/api/mioos/theme-asset` or `/api/mioos/fs/blob` URLs into CSS, data attributes, or boot JSON.
+
+
+## ROI 58 — safe theme asset first paint and catalogue built-ins
+
+All tests were passing at the start of this ROI. The change is intentionally narrow:
+
+- Pre-login MIOTPL first paint now filters protected `/api/mioos/theme-asset` and `/api/mioos/fs/blob` URLs not only from `wallpaperUrl`, but also from persisted theme CSS variables such as `--desktop-bg` and `--desktop-wallpaper`.
+- The UI Module foundation remains opt-in: default boot keeps `moduleSystem.enabled=0`, `appCatalogEnabled=0`, and `moduleCount=0`.
+- When the App Catalogue is explicitly enabled, the backend registry and browser registry now include **Sample Table** and **Permissions UI** alongside the existing Backend Table component.
+- Permissions UI reuses `MIOOSFS` metadata contracts over existing HTTP routes. Do not add a parallel permissions backend for this surface.
+- `templates/layouts/mioos_shell.html` loads `mioos_permissions.js` before shell mount so the component is available to the catalogue host.

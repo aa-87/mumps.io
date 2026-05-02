@@ -1,0 +1,16 @@
+{
+  "id": "mioos.permissions",
+  "key": "permissions",
+  "appKey": "permissions",
+  "title": "Permissions UI",
+  "description": "Inspect and update VFS owner, sharing, read-only, hidden, and folder-default metadata.",
+  "source": "internal",
+  "category": "Security",
+  "icon": "🛡",
+  "componentKey": "permissions",
+  "surface": "mioos-surface-permissions",
+  "routes": {
+    "meta": "/api/mioos/fs/meta",
+    "save": "/api/mioos/fs/setmeta"
+  }
+}

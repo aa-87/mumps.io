@@ -87,6 +87,7 @@ THEMEINL(STATE)
 	. SET TITLE2=$GET(@CV@("--titlebar-inactive"),$GET(@COL@("--titlebar-inactive"),TITLE2))
 	. SET RADIUS=$GET(@CV@("--window-radius"),$GET(@COL@("--window-radius"),RADIUS))
 	SET BG=$GET(PROFILE("cssVars","--desktop-bg"),$GET(PROFILE("colors","--desktop-bg"),""))
+	IF '+$GET(STATE("authenticated"),0),$$PROTURL(BG,.STATE) SET BG=""
 	IF BG="" SET BG="radial-gradient(circle at 18% 20%,rgba(255,255,255,.20),transparent 26%),linear-gradient(180deg,"_TOP_" 0%,"_MID_" 52%,"_BOT_" 100%)"
 	SET URL=$GET(PROFILE("desktop","wallpaperUrl")),FIT=$GET(PROFILE("desktop","wallpaperFit"),"cover")
 	IF URL="" SET URL=$GET(STATE("wallpaperUrl"))
@@ -103,6 +104,7 @@ THEMEINL(STATE)
 	. SET CSSK="" FOR  SET CSSK=$ORDER(PROFILE("cssVars",CSSK)) QUIT:CSSK=""  DO
 	. . IF $EXTRACT(CSSK,1,2)'="--" QUIT
 	. . SET CSSV=$GET(PROFILE("cssVars",CSSK)) IF CSSV="" QUIT
+	. . IF '+$GET(STATE("authenticated"),0),$$PROTURL(CSSV,.STATE) QUIT
 	. . SET OUT=OUT_CSSK_":"_CSSV_";"
 	QUIT OUT
 

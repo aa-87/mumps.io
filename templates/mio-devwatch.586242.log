@@ -39,3 +39,4 @@
 {"ts":"2026-05-02 04:52:24","event":"add","file":"/home/aa/work/mumps.io/templates/pages/plgd_playground.html"}
 {"ts":"2026-05-02 04:52:24","event":"add","file":"/home/aa/work/mumps.io/templates/partials/ui_tpl_card_grid.html"}
 {"ts":"2026-05-02 04:52:24","event":"add","file":"/home/aa/work/mumps.io/templates/partials/ui_tpl_card_list.html"}
+{"ts":"2026-05-02 05:38:24","event":"mod","file":"/home/aa/work/mumps.io/templates/layouts/mioos_shell.html"}
