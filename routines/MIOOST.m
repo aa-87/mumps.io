@@ -1305,15 +1305,22 @@ T065
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 64B"),"[MIOOST][T065][llm roi64b]")
 	QUIT
 T066
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","mioos-advanced-table-v3"),"[MIOOST][T066][table v3 contract]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","mioos-advanced-table-v4"),"[MIOOST][T066][table v4 contract]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableSetFilter"),"[MIOOST][T066][client filters]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableFilterValue"),"[MIOOST][T066][filter state value]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","resizeColumns"),"[MIOOST][T066][resize feature gate]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","defaultPageSize"),"[MIOOST][T066][config default page size]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","draw"),"[MIOOST][T066][draw counter]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","start:"),"[MIOOST][T066][datatable start]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","length:"),"[MIOOST][T066][datatable length]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","mioos-table-processing"),"[MIOOST][T066][processing indicator]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","FILTEROK"),"[MIOOST][T066][server filters]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","SORTKEY"),"[MIOOST][T066][indexed sort]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","recordsTotal"),"[MIOOST][T066][datatable response total]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","C'=""_"""),"[MIOOST][T066][safe underscore key check]")
-	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/ROI_64C_Advanced_Table_Rewrite.md","mioos-advanced-table-v3"),"[MIOOST][T066][roi64c docs]")
-	DO OK^MIOTASSERT($$FILEHAS("examples/mioos_modules/table/module.json","mioos-advanced-table-v3"),"[MIOOST][T066][table manifest contract]")
-	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 64C"),"[MIOOST][T066][llm roi64c]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/ROI_64C_Advanced_Table_Rewrite.md","DataTables-style"),"[MIOOST][T066][datatable docs]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/ROI_64C_Advanced_Table_Rewrite.md","mioos-advanced-table-v4"),"[MIOOST][T066][roi64c docs]")
+	DO OK^MIOTASSERT($$FILEHAS("examples/mioos_modules/table/module.json","mioos-advanced-table-v4"),"[MIOOST][T066][table manifest contract]")
+	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 64C redo"),"[MIOOST][T066][llm roi64c redo]")
 	QUIT
 	;

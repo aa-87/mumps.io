@@ -13,20 +13,21 @@
     ];
   }
 
-  var TABLE_CONTRACT = 'mioos-advanced-table-v3';
+  var TABLE_CONTRACT = 'mioos-advanced-table-v4';
 
   function defaultTableConfig() {
     return {
       contract: TABLE_CONTRACT,
-      features: { toolbar: true, datasetSwitcher: true, search: true, filters: true, grouping: true, columnPicker: true, rowCrud: true, columnCrud: true, selection: true, bulkActions: true, pagination: true, rowDetails: true, resizeColumns: true },
+      features: { toolbar: true, datasetSwitcher: true, search: true, filters: true, grouping: true, columnPicker: true, rowCrud: true, columnCrud: true, selection: true, bulkActions: true, pagination: true, rowDetails: true, resizeColumns: true, serverSide: true, processingIndicator: true },
       columns: [],
       defaultSort: { column: 'name', direction: 'ascending' },
       defaultPageSize: 25,
       readonly: false,
       density: 'comfortable',
-      emptyMessage: 'No rows match the current table query.',
-      loadingMessage: 'Loading table data…',
-      saveMessage: 'Saving table changes…'
+      emptyMessage: 'No rows match the current server-side table query.',
+      loadingMessage: 'Contacting server for table data…',
+      saveMessage: 'Sending table mutation to server…',
+      processingMessage: 'Server-side processing is active'
     };
   }
 
@@ -67,7 +68,7 @@
   }
 
   function normalizeRows(rows) {
-    return (Array.isArray(rows) && rows.length ? rows : defaultRows()).map(function (row, index) {
+    return (Array.isArray(rows) ? rows : defaultRows()).map(function (row, index) {
       var out = clone(row);
       out.id = out.id || out.key || ('row-' + index);
       return out;
@@ -81,6 +82,20 @@
       return Object.keys(value).filter(function (key) { return key !== 'byValue'; }).sort(function (a, b) { return (+a || 999999) - (+b || 999999) || String(a).localeCompare(String(b)); }).map(function (key) { return value[key]; }).filter(Boolean);
     }
     return [];
+  }
+
+  function parseJsonResponse(response, label) {
+    return response.text().then(function (text) {
+      if (!response.ok) throw new Error(label + ' failed: HTTP ' + response.status + (text ? ' — ' + text.slice(0, 180) : ''));
+      if (!text) throw new Error(label + ' returned an empty response from the server');
+      try { return JSON.parse(text); } catch (err) { throw new Error(label + ' returned invalid JSON'); }
+    });
+  }
+
+  function serverErrorMessage(label, err) {
+    var base = (err && err.message) || 'Failed to fetch';
+    if (base === 'Failed to fetch') return label + ' could not reach the server. The backend closed the connection or returned no response.';
+    return base;
   }
 
   function root(vm) { return vm.$root || vm; }
@@ -101,6 +116,7 @@
         dataset: 'demo',
         loading: false,
         saving: false,
+        processing: false,
         error: '',
         rows: defaultRows(),
         columns: defaultColumns(),
@@ -108,6 +124,10 @@
         expanded: {},
         search: '',
         groupBy: '',
+        draw: 0,
+        lastDraw: 0,
+        requestLabel: '',
+        lastServerAt: '',
         sort: { column: 'name', direction: 'ascending' },
         pagination: { page: 1, pageSize: 25, totalRows: 3, filteredRows: 3, pageRows: 3, pageCount: 1 },
         rowActions: [{ key: 'edit', label: 'Edit' }, { key: 'duplicate', label: 'Duplicate' }, { key: 'delete', label: 'Delete' }],
@@ -132,17 +152,28 @@
     backendTableMutateRoute: function () {
       return ((((this.boot || {}).routes || {}).tableMutate) || '/api/mioos/table/mutate');
     },
-    backendTableQueryPayload: function (state) {
+    backendTableQueryPayload: function (state, draw) {
+      var page = +(state.pagination || {}).page || 1;
+      var pageSize = +(state.pagination || {}).pageSize || 25;
+      var columns = normalizeColumns(state.columns);
+      var sort = clone(state.sort || { column: 'name', direction: 'ascending' });
+      var orderIndex = Math.max(0, columns.findIndex(function (col) { return col.key === sort.column; }));
       return {
         dataset: state.dataset || 'demo',
         folderId: state.folderId || '',
-        page: +(state.pagination || {}).page || 1,
-        pageSize: +(state.pagination || {}).pageSize || 25,
+        page: page,
+        pageSize: pageSize,
+        draw: draw || +(state.draw || 0),
+        start: Math.max(0, (page - 1) * pageSize),
+        length: pageSize,
+        serverSide: true,
+        processing: true,
         search: state.search || '',
         groupBy: state.groupBy || '',
-        sort: clone(state.sort || { column: 'name', direction: 'ascending' }),
+        sort: sort,
+        order: [{ column: orderIndex, dir: sort.direction === 'descending' ? 'desc' : 'asc', name: sort.column || '' }],
         filters: clone(state.filters || {}),
-        columns: normalizeColumns(state.columns).map(function (col) { return { key: col.key, hidden: !!col.hidden, width: col.width }; })
+        columns: columns.map(function (col) { return { key: col.key, data: col.key, name: col.key, label: col.label, searchable: col.searchable !== false, orderable: col.sortable !== false, hidden: !!col.hidden, width: col.width }; })
       };
     },
     backendTableFetch: function (tableId, patch) {
@@ -150,32 +181,38 @@
       var route = this.backendTableRoute();
       var vm = this;
       Object.assign(state, patch || {});
+      state.draw = +(state.draw || 0) + 1;
       state.loading = true;
+      state.processing = true;
+      state.requestLabel = 'Server query draw #' + state.draw;
       state.error = '';
       return fetch(route, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
-        body: JSON.stringify(this.backendTableQueryPayload(state))
+        body: JSON.stringify(this.backendTableQueryPayload(state, state.draw))
       }).then(function (response) {
-        if (!response.ok) throw new Error('Table query failed: HTTP ' + response.status);
-        return response.json();
+        return parseJsonResponse(response, 'Table query');
       }).then(function (payload) {
         vm.backendTableApplyPayload(state, payload || {});
         return state;
       }).catch(function (err) {
-        state.error = (err && err.message) || 'Table query failed';
-        vm.backendTableApplyClientFallback(state);
+        state.error = serverErrorMessage('Table query', err);
         return state;
       }).finally(function () {
         state.loading = false;
+        state.processing = false;
+        state.requestLabel = '';
       });
     },
     backendTableMutate: function (tableId, action, payload) {
       var state = this.backendTableState(tableId);
       var vm = this;
-      var body = Object.assign(this.backendTableQueryPayload(state), payload || {}, { action: action, dataset: state.dataset || 'demo' });
+      state.draw = +(state.draw || 0) + 1;
+      var body = Object.assign(this.backendTableQueryPayload(state, state.draw), payload || {}, { action: action, dataset: state.dataset || 'demo' });
       state.saving = true;
+      state.processing = true;
+      state.requestLabel = 'Server mutation draw #' + state.draw + ' (' + action + ')';
       state.error = '';
       return fetch(this.backendTableMutateRoute(), {
         method: 'POST',
@@ -183,29 +220,41 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       }).then(function (response) {
-        if (!response.ok) throw new Error('Table mutation failed: HTTP ' + response.status);
-        return response.json();
+        return parseJsonResponse(response, 'Table mutation');
       }).then(function (payload) {
+        if (payload && payload.ok === false) {
+          state.error = payload.error || payload.detail || 'Table mutation failed';
+          return payload;
+        }
         vm.backendTableApplyPayload(state, payload || {});
         state.selected = {};
         state.editor.open = false;
         return payload;
       }).catch(function (err) {
-        state.error = (err && err.message) || 'Table mutation failed';
-        throw err;
+        state.error = serverErrorMessage('Table mutation', err);
+        return { ok: false, error: state.error };
       }).finally(function () {
         state.saving = false;
+        state.processing = false;
+        state.requestLabel = '';
       });
     },
     backendTableApplyPayload: function (state, payload) {
-      var schemaColumns = ((((payload || {}).schema || {}).columns) || []);
+      payload = payload || {};
+      if (payload.draw && payload.draw < +(state.lastDraw || 0)) return;
+      if (payload.draw) state.lastDraw = +payload.draw;
+      state.lastServerAt = new Date().toLocaleTimeString();
+      var schemaColumns = (((payload.schema || {}).columns) || []);
+      var payloadRows = Array.isArray(payload.rows) ? payload.rows : (Array.isArray(payload.data) ? payload.data : []);
       state.columns = normalizeColumns(schemaColumns.length ? schemaColumns : state.columns);
-      state.rows = normalizeRows((payload || {}).rows || []);
-      state.pagination = Object.assign({}, state.pagination || {}, (payload || {}).pagination || {});
+      state.rows = normalizeRows(payloadRows);
+      state.pagination = Object.assign({}, state.pagination || {}, payload.pagination || {});
+      if (typeof payload.recordsTotal !== 'undefined') state.pagination.totalRows = +payload.recordsTotal || 0;
+      if (typeof payload.recordsFiltered !== 'undefined') state.pagination.filteredRows = +payload.recordsFiltered || 0;
       state.rowActions = (payload || {}).rowActions || state.rowActions || [];
       state.bulkActions = (payload || {}).bulkActions || state.bulkActions || [];
       state.groups = toList((payload || {}).groups);
-      state.error = payload && payload.ok === false ? (payload.error || 'Table request failed') : state.error;
+      state.error = payload && payload.ok === false ? (payload.error || payload.detail || 'Table request failed') : state.error;
       if (!state.groupBy) state.groupExpanded = {};
       if (state.groupBy && !Object.keys(state.groupExpanded || {}).length) {
         state.groups.forEach(function (g) { state.groupExpanded[g.key || g.label] = true; });
@@ -389,7 +438,7 @@
       var state = this.backendTableState(tableId);
       if (key === 'edit') return this.backendTableOpenRowEditor(tableId, row);
       if (key === 'duplicate') return this.backendTableOpenRowEditor(tableId, Object.assign({}, clone(row), { id: '' }));
-      if (key === 'delete') { if (typeof confirm === 'function' && !confirm('Delete this row?')) return null; return this.backendTableMutate(tableId, 'row.delete', { rowId: (row || {}).id }).then(function(){ state.toast = 'Row deleted'; }); }
+      if (key === 'delete') { if (typeof confirm === 'function' && !confirm('Delete this row?')) return null; return this.backendTableMutate(tableId, 'row.delete', { rowId: (row || {}).id }).then(function(payload){ if (payload && payload.ok !== false) state.toast = 'Row deleted'; }); }
       if (this.showAlert) this.showAlert('Table action', ((action || {}).label || key || 'Action') + ' queued for ' + ((row || {}).name || (row || {}).id || 'row'));
     },
     backendTableRunBulkAction: function (tableId, action) {
@@ -397,7 +446,7 @@
       var key = (action || {}).key || action || '';
       var ids = this.backendTableSelectedIds(state);
       if (!ids.length) return;
-      if (key === 'bulk.delete' || key === 'delete') { if (typeof confirm === 'function' && !confirm('Delete ' + ids.length + ' selected row(s)?')) return null; return this.backendTableMutate(tableId, 'rows.delete', { ids: ids }).then(function(){ state.toast = ids.length + ' row(s) deleted'; }); }
+      if (key === 'bulk.delete' || key === 'delete') { if (typeof confirm === 'function' && !confirm('Delete ' + ids.length + ' selected row(s)?')) return null; return this.backendTableMutate(tableId, 'rows.delete', { ids: ids }).then(function(payload){ if (payload && payload.ok !== false) state.toast = ids.length + ' row(s) deleted'; }); }
       if (this.showAlert) this.showAlert('Bulk table action', ((action || {}).label || key || 'Action') + ' applied to ' + ids.length + ' row(s)');
     },
     backendTableCellText: function (row, column) {
@@ -432,8 +481,8 @@
     backendTableSaveEditor: function (tableId) {
       var state = this.backendTableState(tableId);
       if (!this.backendTableValidateEditor(state)) return Promise.reject(new Error('Table editor validation failed'));
-      if ((state.editor || {}).mode === 'column') return this.backendTableMutate(tableId, 'column.save', { column: clone(state.editor.column || {}) }).then(function(){ state.toast = 'Column saved'; });
-      return this.backendTableMutate(tableId, 'row.save', { row: clone(state.editor.row || {}) }).then(function(){ state.toast = 'Row saved'; });
+      if ((state.editor || {}).mode === 'column') return this.backendTableMutate(tableId, 'column.save', { column: clone(state.editor.column || {}) }).then(function(payload){ if (payload && payload.ok !== false) state.toast = 'Column saved'; });
+      return this.backendTableMutate(tableId, 'row.save', { row: clone(state.editor.row || {}) }).then(function(payload){ if (payload && payload.ok !== false) state.toast = 'Row saved'; });
     },
     backendTableDeleteColumn: function (tableId, column) {
       if (!column || !column.key) return;
@@ -515,24 +564,24 @@
         keyOf: function (row) { return (row && (row.id || row.key)) || ''; }
       },
       template: '' +
-        '<section class="mioos-full-table" :aria-busy="state.loading ? \'true\' : \'false\'">' +
+        '<section class="mioos-full-table" :class="{ \'is-processing\': state.loading || state.saving }" :aria-busy="(state.loading || state.saving) ? \'true\' : \'false\'">' +
           '<header class="mioos-table-toolbar">' +
-            '<div><strong>[[ state.title || title || \'Backend Table\' ]]</strong><span>HTTP server pagination, sorting, grouping, bulk actions, and CRUD</span></div>' +
+            '<div><strong>[[ state.title || title || \'Backend Table\' ]]</strong><span>DataTables-style server-side paging, ordering, filtering, and CRUD</span></div>' +
             '<label v-if="vm.backendTableFeature(state, &quot;datasetSwitcher&quot;)"><span>Dataset</span><select :value="state.dataset" @change="vm.backendTableSetDataset(tableId || state.id, $event.target.value)"><option value="demo">Sample table</option><option value="patient-registration">Patient registration</option><option value="ui-elements">UI + form elements</option><option value="massive">Massive dataset</option><option value="vfs">VFS folder</option></select></label>' +
-            '<label v-if="vm.backendTableFeature(state, &quot;search&quot;)" class="mioos-table-search"><span>Search</span><input v-model="searchInput" @keydown.enter="commitSearch" @blur="commitSearch" placeholder="Filter rows" aria-label="Search table rows"></label>' +
+            '<label v-if="vm.backendTableFeature(state, &quot;search&quot;)" class="mioos-table-search"><span>Search</span><input v-model="searchInput" :disabled="state.loading || state.saving" @keydown.enter="commitSearch" @blur="commitSearch" placeholder="Filter rows" aria-label="Search table rows"></label>' +
             '<details v-if="vm.backendTableFeature(state, &quot;filters&quot;)" class="mioos-table-filters"><summary>Filters</summary><label v-for="col in filterableColumns" :key="col.key"><span>[[ col.label ]]</span><input :value="vm.backendTableFilterValue(state, col.key)" @change="vm.backendTableSetFilter(tableId || state.id, col.key, $event.target.value)" placeholder="Exact value"></label><button type="button" @click="vm.backendTableClearFilters(tableId || state.id)">Clear filters</button></details>' +
             '<label v-if="vm.backendTableFeature(state, &quot;grouping&quot;)"><span>Group</span><select :value="state.groupBy" @change="vm.backendTableSetGroupBy(tableId || state.id, $event.target.value)"><option value="">None</option><option v-for="col in allColumns" :key="col.key" :value="col.key">[[ col.label ]]</option></select></label>' +
             '<details v-if="vm.backendTableFeature(state, &quot;columnPicker&quot;)" class="mioos-table-column-picker"><summary>Columns</summary><button v-for="col in allColumns" :key="col.key" type="button" @click="vm.backendTableToggleColumn(tableId || state.id, col.key)"><span>[[ col.hidden ? \'☐\' : \'☑\' ]]</span> [[ col.label ]]</button></details>' +
             '<button v-if="vm.backendTableFeature(state, &quot;rowCrud&quot;)" type="button" class="mioos-btn" @click="vm.backendTableOpenRowEditor(tableId || state.id)">Add row</button>' +
             '<button v-if="vm.backendTableFeature(state, &quot;columnCrud&quot;)" type="button" class="mioos-btn" @click="vm.backendTableOpenColumnEditor(tableId || state.id)">Add column</button>' +
           '</header>' +
-          '<div class="mioos-table-status" role="status" v-if="state.loading || state.saving">[[ state.saving ? state.config.saveMessage : state.config.loadingMessage ]]</div><div class="mioos-table-toast" role="status" v-if="state.toast">[[ state.toast ]]</div><div class="mioos-table-bulkbar" v-if="selectedCount && vm.backendTableFeature(state, &quot;bulkActions&quot;)"><span>[[ selectedCount ]] selected</span><button v-for="action in state.bulkActions" :key="action.key" type="button" @click="vm.backendTableRunBulkAction(tableId || state.id, action)">[[ action.label ]]</button><button type="button" @click="vm.backendTableClearSelection(tableId || state.id)">Clear</button></div>' +
+          '<div class="mioos-table-processing" role="status" aria-live="polite" v-if="state.loading || state.saving"><span class="mioos-table-spinner"></span><strong>[[ state.saving ? state.config.saveMessage : state.config.loadingMessage ]]</strong><em>[[ state.requestLabel || state.config.processingMessage ]]</em></div><div class="mioos-table-toast" role="status" v-if="state.toast">[[ state.toast ]]</div><div class="mioos-table-bulkbar" v-if="selectedCount && vm.backendTableFeature(state, &quot;bulkActions&quot;)"><span>[[ selectedCount ]] selected</span><button v-for="action in state.bulkActions" :key="action.key" type="button" @click="vm.backendTableRunBulkAction(tableId || state.id, action)">[[ action.label ]]</button><button type="button" @click="vm.backendTableClearSelection(tableId || state.id)">Clear</button></div>' +
           '<div class="mioos-table-error" v-if="state.error">[[ state.error ]]</div>' +
           '<div class="mioos-table-editor" v-if="state.editor && state.editor.open">' +
             '<header><strong>[[ state.editor.title ]]</strong><button type="button" @click="vm.backendTableCloseEditor(tableId || state.id)">×</button></header>' +
             '<section v-if="state.editor.mode === \'row\'" class="mioos-table-form-grid"><label v-for="col in allColumns" :key="col.key"><span>[[ col.label ]]</span><input v-model="state.editor.row[col.key]" :placeholder="col.key"></label></section>' +
             '<section v-else class="mioos-table-form-grid"><label><span>Key</span><input v-model="state.editor.column.key" placeholder="fieldName"></label><label><span>Label</span><input v-model="state.editor.column.label" placeholder="Column label"></label><label><span>Type</span><select v-model="state.editor.column.type"><option>text</option><option>badge</option><option>date</option><option>number</option><option>boolean</option></select></label><label><span>Width</span><input type="number" v-model="state.editor.column.width"></label><label><span>Group</span><input v-model="state.editor.column.group" placeholder="Optional header group"></label><label><span>Hidden</span><input type="checkbox" v-model="state.editor.column.hidden"></label></section>' +
-            '<p class="mioos-table-error" v-for="err in Object.values(state.validation || {})" :key="err">[[ err ]]</p><footer><button type="button" class="mioos-btn is-primary" @click="vm.backendTableSaveEditor(tableId || state.id)">Save</button><button type="button" class="mioos-btn" @click="vm.backendTableCloseEditor(tableId || state.id)">Cancel</button></footer>' +
+            '<p class="mioos-table-error" v-for="err in Object.values(state.validation || {})" :key="err">[[ err ]]</p><footer><button type="button" class="mioos-btn is-primary" :disabled="state.saving || state.loading" @click="vm.backendTableSaveEditor(tableId || state.id)">[[ state.saving ? &quot;Saving…&quot; : &quot;Save&quot; ]]</button><button type="button" class="mioos-btn" @click="vm.backendTableCloseEditor(tableId || state.id)">Cancel</button></footer>' +
           '</div>' +
           '<div class="mioos-table-wrap">' +
             '<table class="mioos-table-grid" role="grid">' +
@@ -555,14 +604,14 @@
               '</tbody>' +
             '</table>' +
           '</div>' +
-          '<footer v-if="vm.backendTableFeature(state, &quot;pagination&quot;)" class="mioos-table-pager"><span>[[ state.pagination.filteredRows ]] of [[ state.pagination.totalRows ]] rows</span><button type="button" @click="vm.backendTableSetPage(tableId || state.id, 1)">First</button><button type="button" @click="vm.backendTableSetPage(tableId || state.id, state.pagination.page - 1)">Prev</button><span>Page [[ state.pagination.page ]] / [[ state.pagination.pageCount ]]</span><button type="button" @click="vm.backendTableSetPage(tableId || state.id, state.pagination.page + 1)">Next</button><button type="button" @click="vm.backendTableSetPage(tableId || state.id, state.pagination.pageCount)">Last</button><label>Rows <select :value="state.pagination.pageSize" @change="vm.backendTableSetPageSize(tableId || state.id, $event.target.value)"><option>10</option><option>25</option><option>50</option><option>100</option><option>250</option></select></label></footer>' +
+          '<footer v-if="vm.backendTableFeature(state, &quot;pagination&quot;)" class="mioos-table-pager"><span>[[ state.pagination.filteredRows ]] of [[ state.pagination.totalRows ]] rows · server draw #[[ state.lastDraw || state.draw || 0 ]]<small v-if="state.lastServerAt"> · last response [[ state.lastServerAt ]]</small></span><button type="button" :disabled="state.loading || state.saving" @click="vm.backendTableSetPage(tableId || state.id, 1)">First</button><button type="button" :disabled="state.loading || state.saving" @click="vm.backendTableSetPage(tableId || state.id, state.pagination.page - 1)">Prev</button><span>Page [[ state.pagination.page ]] / [[ state.pagination.pageCount ]]</span><button type="button" :disabled="state.loading || state.saving" @click="vm.backendTableSetPage(tableId || state.id, state.pagination.page + 1)">Next</button><button type="button" :disabled="state.loading || state.saving" @click="vm.backendTableSetPage(tableId || state.id, state.pagination.pageCount)">Last</button><label>Rows <select :value="state.pagination.pageSize" @change="vm.backendTableSetPageSize(tableId || state.id, $event.target.value)"><option>10</option><option>25</option><option>50</option><option>100</option><option>250</option></select></label></footer>' +
         '</section>'
     });
 
     app.component('mioos-surface-table', {
       props: ['window'],
       computed: { state: function () { return (this.window || {}).tableState || {}; } },
-      template: '<mioos-full-table :table-id="state.id || window.id" :title="state.title || window.title" :dataset="state.dataset || \'demo\'" :folder-id="state.folderId || \'\'"></mioos-full-table>'
+      template: '<mioos-full-table :table-id="state.id || window.id" :title="state.title || window.title" :dataset="state.dataset || \'demo\'" :folder-id="state.folderId || \'\'" :config="state.config || {}"></mioos-full-table>'
     });
   }
 

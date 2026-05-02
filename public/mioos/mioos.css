@@ -2700,3 +2700,134 @@ button:disabled { cursor: default; opacity: .55; }
 .mioos-table-form-grid input, .mioos-table-form-grid select { border-radius:10px; border:1px solid rgba(148,163,184,.35); background:rgba(2,6,23,.52); color:inherit; padding:8px 10px; }
 .mioos-table-pager { padding:10px 2px; font-size:12px; }
 @media (max-width:760px){ .mioos-table-toolbar { align-items:stretch; } .mioos-table-toolbar label, .mioos-table-search { flex:1 1 100%; } .mioos-table-actions-col { width:150px; } }
+
+/* ROI 64C redo: high-contrast, server-processing table surface. */
+.mioos-full-table {
+  position: relative;
+  color: var(--theme-field-text, #111827);
+}
+.mioos-table-toolbar,
+.mioos-table-bulkbar,
+.mioos-table-pager,
+.mioos-table-processing,
+.mioos-table-toast,
+.mioos-table-error {
+  color: var(--theme-field-text, #111827);
+  background: color-mix(in srgb, var(--theme-panel-bg, #ffffff) 92%, #ffffff 8%);
+  border-color: color-mix(in srgb, var(--theme-panel-border, #94a3b8) 78%, #ffffff 22%);
+}
+.mioos-table-toolbar strong,
+.mioos-table-toolbar span,
+.mioos-table-pager,
+.mioos-table-pager small,
+.mioos-table-filters summary,
+.mioos-table-column-picker summary {
+  color: var(--theme-field-text, #111827);
+}
+.mioos-table-toolbar input,
+.mioos-table-toolbar select,
+.mioos-table-pager select,
+.mioos-table-filters input,
+.mioos-table-form-grid input,
+.mioos-table-form-grid select {
+  color: var(--theme-field-text, #111827);
+  background: var(--theme-field-bg, #ffffff);
+  border-color: var(--theme-panel-border, #94a3b8);
+}
+.mioos-table-filters,
+.mioos-table-column-picker,
+.mioos-table-editor {
+  color: var(--theme-field-text, #111827);
+  background: color-mix(in srgb, var(--theme-panel-bg, #ffffff) 94%, #ffffff 6%);
+}
+.mioos-table-filters button,
+.mioos-table-column-picker button,
+.mioos-table-bulkbar button,
+.mioos-table-actions button,
+.mioos-table-grid th button,
+.mioos-table-pager button {
+  color: var(--theme-field-text, #111827);
+  background: color-mix(in srgb, var(--theme-panel-bg, #ffffff) 86%, #f8fafc 14%);
+  border-color: var(--theme-panel-border, #94a3b8);
+}
+.mioos-table-grid {
+  color: var(--theme-field-text, #111827);
+  background: var(--theme-panel-bg, #ffffff);
+}
+.mioos-table-grid th {
+  color: #102a43;
+  background: linear-gradient(180deg, #eef6ff 0%, #dcecff 100%);
+  border-bottom-color: #b9d2f2;
+}
+.mioos-table-groups th {
+  color: #26415f;
+  background: linear-gradient(180deg, #f8fbff 0%, #e8f2ff 100%);
+}
+.mioos-table-grid td {
+  color: var(--theme-field-text, #111827);
+  background: color-mix(in srgb, var(--theme-panel-bg, #ffffff) 96%, #ffffff 4%);
+}
+.mioos-table-grid tbody tr:hover td { background: #eef6ff; }
+.mioos-table-grid tr.is-selected td { background: #dbeafe; color: #0f172a; }
+.mioos-table-group-row td { background: #eaf2ff; color: #102a43; }
+.mioos-table-expanded-row td { background: #f8fbff; color: #102a43; }
+.mioos-table-processing {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, .10);
+}
+.mioos-table-processing strong { font-size: 13px; }
+.mioos-table-processing em { font-style: normal; font-size: 12px; color: var(--theme-muted-text, #475569); }
+.mioos-table-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #b9d2f2;
+  border-top-color: #2563eb;
+  border-radius: 999px;
+  animation: mioos-table-spin .8s linear infinite;
+}
+.mioos-full-table.is-processing .mioos-table-wrap {
+  opacity: .72;
+  transition: opacity .16s ease;
+}
+@keyframes mioos-table-spin { to { transform: rotate(360deg); } }
+.theme-dark-mode .mioos-table-grid th,
+.theme-dark-mode .mioos-table-groups th {
+  color: #eaf2ff;
+  background: linear-gradient(180deg, #1e3a5f 0%, #162a44 100%);
+  border-bottom-color: rgba(191, 219, 254, .28);
+}
+.theme-dark-mode .mioos-table-grid td,
+.theme-dark-mode .mioos-table-toolbar,
+.theme-dark-mode .mioos-table-bulkbar,
+.theme-dark-mode .mioos-table-pager,
+.theme-dark-mode .mioos-table-processing,
+.theme-dark-mode .mioos-table-toast,
+.theme-dark-mode .mioos-table-error,
+.theme-dark-mode .mioos-table-filters,
+.theme-dark-mode .mioos-table-column-picker,
+.theme-dark-mode .mioos-table-editor {
+  color: #f8fafc;
+  background: #0f172a;
+}
+.theme-dark-mode .mioos-table-toolbar input,
+.theme-dark-mode .mioos-table-toolbar select,
+.theme-dark-mode .mioos-table-pager select,
+.theme-dark-mode .mioos-table-filters input,
+.theme-dark-mode .mioos-table-form-grid input,
+.theme-dark-mode .mioos-table-form-grid select,
+.theme-dark-mode .mioos-table-filters button,
+.theme-dark-mode .mioos-table-column-picker button,
+.theme-dark-mode .mioos-table-bulkbar button,
+.theme-dark-mode .mioos-table-actions button,
+.theme-dark-mode .mioos-table-grid th button,
+.theme-dark-mode .mioos-table-pager button {
+  color: #f8fafc;
+  background: #1e293b;
+  border-color: rgba(191, 219, 254, .28);
+}
+.theme-dark-mode .mioos-table-grid tbody tr:hover td { background: #1e293b; }
+.theme-dark-mode .mioos-table-grid tr.is-selected td { background: #1d4ed8; color: #ffffff; }
+.theme-dark-mode .mioos-table-group-row td,
+.theme-dark-mode .mioos-table-expanded-row td { background: #172554; color: #eff6ff; }

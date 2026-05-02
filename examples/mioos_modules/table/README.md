@@ -34,4 +34,10 @@ The `UI + Form Elements` example is no longer implemented as a table dataset. Ta
 
 ## ROI 64C standalone configuration
 
-The table example now targets `mioos-advanced-table-v3`. Use `window.MIOOSTable.createConfig()` from internal UI code, or place equivalent safe JSON in a module manifest. Prefer feature gates over custom table forks so internal and user-created modules share the same query/mutation behavior.
+The table example now targets `mioos-advanced-table-v4`. Use `window.MIOOSTable.createConfig()` from internal UI code, or place equivalent safe JSON in a module manifest. Prefer feature gates over custom table forks so internal and user-created modules share the same query/mutation behavior.
+
+## DataTables-style server-side integration
+
+The example now targets `mioos-advanced-table-v4`. The native MIOOS table request includes `draw`, `start`, `length`, `order`, and `columns` fields so developers familiar with DataTables can reason about server-side paging and ordering without adopting jQuery/DataTables as a dependency.
+
+Do not load DataTables in MIOOS modules. Use the built-in `mioos-full-table` / `mioos-surface-table` component and configure it with safe JSON or `window.MIOOSTable.createConfig()`.

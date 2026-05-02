@@ -112,7 +112,7 @@ See `docs/mioos/ROI_63_Redesign_Contracts.md` for the complete redesign sequence
 
 ## ROI 64A advanced standalone table contract
 
-The production table track now uses the client-visible contract `mioos-advanced-table-v3`. The component is intended to be standalone and embeddable in internal shell surfaces or user-created modules:
+The production table track now uses the client-visible contract `mioos-advanced-table-v4`. The component is intended to be standalone and embeddable in internal shell surfaces or user-created modules:
 
 ```html
 <mioos-full-table table-id="patients" title="Patients" dataset="patient-registration" :config="tableConfig"></mioos-full-table>
@@ -124,4 +124,28 @@ The production table track now uses the client-visible contract `mioos-advanced-
 
 ## ROI 64C rewrite
 
-ROI 64C upgrades the table to `mioos-advanced-table-v3`. The standalone component now accepts `defaultPageSize`, `defaultSort`, `columns`, and feature gates for `filters`, `resizeColumns`, row details, CRUD, grouping, selection, pagination, and bulk actions. Query payloads include `filters`, and the backend applies exact-match filter arrays before sorting and pagination. Mutations still return a refreshed query-shaped payload so the browser does not have to infer post-mutation state. See `docs/mioos/ROI_64C_Advanced_Table_Rewrite.md`.
+ROI 64C upgrades the table to `mioos-advanced-table-v4`. The standalone component now accepts `defaultPageSize`, `defaultSort`, `columns`, and feature gates for `filters`, `resizeColumns`, row details, CRUD, grouping, selection, pagination, and bulk actions. Query payloads include `filters`, and the backend applies exact-match filter arrays before sorting and pagination. Mutations still return a refreshed query-shaped payload so the browser does not have to infer post-mutation state. See `docs/mioos/ROI_64C_Advanced_Table_Rewrite.md`.
+
+## ROI 64C redo — DataTables-style server-side processing
+
+The advanced table contract is now `mioos-advanced-table-v4`. It remains a native MIOOS component, but its request/response envelope is intentionally modeled after DataTables server-side processing so module authors have a familiar mental model.
+
+Each server interaction sends:
+
+- `draw`: monotonically increasing client draw counter.
+- `start`: zero-based first record requested.
+- `length`: requested page length.
+- `order`: ordered column metadata with `column`, `dir`, and `name`.
+- `columns`: column descriptors with `data`, `name`, `searchable`, `orderable`, `hidden`, and `width`.
+
+The backend responds with:
+
+- `draw`
+- `recordsTotal`
+- `recordsFiltered`
+- `data`
+- native MIOOS `rows`, `schema`, `pagination`, `rowActions`, `bulkActions`, and `features`.
+
+The browser always shows a processing indicator during query and mutation requests. Empty or invalid server responses are surfaced as table errors instead of unhandled Vue/fetch exceptions.
+
+Large dataset performance was hardened by replacing the old O(n²) bubble sort in `MIOOSTBL` with an indexed server-side sort pass before paging. Server-side paging is still authoritative; the browser receives only the current page of `rows`/`data`.

@@ -11,7 +11,7 @@
   "surface": "mioos-surface-table",
   "config": {
     "dataset": "demo",
-    "contract": "mioos-advanced-table-v3",
+    "contract": "mioos-advanced-table-v4",
     "defaultPageSize": 25,
     "defaultSort": { "column": "name", "direction": "ascending" },
     "features": {

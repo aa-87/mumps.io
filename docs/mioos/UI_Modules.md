@@ -41,4 +41,8 @@ The example intentionally avoids backend table coupling. Production modules shou
 
 ## ROI 64C table modules
 
-Table-backed modules should use `mioos-surface-table` with the `mioos-advanced-table-v3` contract. Provide a dataset and optional `config` object instead of writing custom table state logic. The table owns HTTP query/mutation state, server filtering, selection, grouping, column visibility, resizing, and row/column CRUD.
+Table-backed modules should use `mioos-surface-table` with the `mioos-advanced-table-v4` contract. Provide a dataset and optional `config` object instead of writing custom table state logic. The table owns HTTP query/mutation state, server filtering, selection, grouping, column visibility, resizing, and row/column CRUD.
+
+## ROI 64C redo table module guidance
+
+Table modules should now target `mioos-advanced-table-v4`. The contract is DataTables-inspired but remains a MIOOS-native Vue Options API component. Module authors should configure datasets, columns, and feature gates; they should not fork table rendering or implement custom client-side pagination for large datasets.

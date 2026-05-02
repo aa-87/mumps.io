@@ -539,4 +539,8 @@ Next planned ROI: ROI 64C should rewrite the advanced table component as a stand
 
 ## ROI 64C — Standalone Advanced Table Component Rewrite
 
-The advanced table contract is `mioos-advanced-table-v3`. Table modules should use `mioos-full-table` / `mioos-surface-table` with `window.MIOOSTable.createConfig()` or equivalent manifest JSON. The backend remains HTTP-first and server-authoritative for query, filters, sort, pagination, row CRUD, column CRUD, column visibility, column resize, grouping, and bulk deletes. Do not fork custom table implementations for module samples unless a new contract is intentionally defined with tests and docs.
+The advanced table contract is `mioos-advanced-table-v4`. Table modules should use `mioos-full-table` / `mioos-surface-table` with `window.MIOOSTable.createConfig()` or equivalent manifest JSON. The backend remains HTTP-first and server-authoritative for query, filters, sort, pagination, row CRUD, column CRUD, column visibility, column resize, grouping, and bulk deletes. Do not fork custom table implementations for module samples unless a new contract is intentionally defined with tests and docs.
+
+### ROI 64C redo — table hardening follow-up
+
+The advanced table contract is now `mioos-advanced-table-v4`. The redo addressed reported contrast issues, slow large-dataset sorting, mutation `ERR_EMPTY_RESPONSE`/`Failed to fetch` handling, DataTables-style API expectations, and missing server-communication indicators. The client sends `draw`, `start`, `length`, `order`, and `columns` metadata alongside native MIOOS query fields. `MIOOSTBL` responds with `draw`, `recordsTotal`, `recordsFiltered`, and `data` in addition to native `rows`. Backend sorting uses an indexed map instead of O(n²) bubble sorting. The browser shows a processing indicator and surfaces empty/invalid mutation responses as table errors without closing the editor.
