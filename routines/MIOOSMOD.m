@@ -4,8 +4,8 @@ MIOOSMOD ; MIOOS UI module registry
 LOAD(STATE,CONF)
 	NEW OUT,ERR
 	KILL OUT,ERR,STATE("modules"),STATE("uiModules")
-	IF '+$GET(CONF("mioos","modules","enabled"),1) DO DISABLED(.STATE) QUIT
-	IF '+$GET(CONF("mioos","modules","appCatalogEnabled"),1) DO DISABLED(.STATE) QUIT
+	IF '+$GET(CONF("mioos","modules","enabled"),0) DO DISABLED(.STATE) QUIT
+	IF '+$GET(CONF("mioos","modules","appCatalogEnabled"),0) DO DISABLED(.STATE) QUIT
 	IF '$$CATALOG(.STATE,.CONF,.OUT,.ERR) DO  QUIT
 	. SET STATE("moduleCount")=0
 	. SET STATE("uiModules","ok")=0
@@ -74,6 +74,19 @@ INTERNAL(OUT)
 	SET OUT("components",C,"owner")="MIOOS"
 	SET OUT("components",C,"description")="Permission tabs, role matrix, and audit sample for module developers."
 	SET OUT("components",C,"script")="/public/mioos/app/mioos_permissions.js"
+	SET C=+$GET(OUT("componentCount"))+1,OUT("componentCount")=C
+	SET OUT("components",C,"key")="ui-elements"
+	SET OUT("components",C,"name")="mioos-surface-ui-elements"
+	SET OUT("components",C,"title")="UI + Form Elements"
+	SET OUT("components",C,"surface")="mioos-surface-ui-elements"
+	SET OUT("components",C,"source")="internal"
+	SET OUT("components",C,"owner")="MIOOS"
+	SET OUT("components",C,"description")="Interactive component gallery covering inputs, choices, validation, upload metadata, toasts, dialogs, sections, and module-safe form composition."
+	SET OUT("components",C,"script")="/public/mioos/app/mioos_modules.js"
+	SET OUT("components",C,"features",1)="interactive-forms"
+	SET OUT("components",C,"features",2)="validation-states"
+	SET OUT("components",C,"features",3)="modal-confirmation"
+	SET OUT("components",C,"features",4)="http-upload-pattern"
 	SET M=+$GET(OUT("moduleCount"))+1,OUT("moduleCount")=M
 	SET OUT("modules",M,"id")="mioos.ui.modules"
 	SET OUT("modules",M,"key")="app-catalog"
@@ -89,7 +102,18 @@ INTERNAL(OUT)
 	DO ADDTABLE(.OUT,"mioos.ui.table.samples","table-samples","Table Samples","All table variations including sample, patient registration, UI elements, VFS, and massive datasets.","Samples","▤","demo")
 	DO ADDTABLE(.OUT,"mioos.ui.table.massive","table-massive","Massive Dataset Table","Large synthetic dataset for pagination and sorting validation.","Samples","▥","massive")
 	DO ADDTABLE(.OUT,"mioos.ui.patient.registration","patient-registration","Patient Registration","Detailed patient registration sample backed by MIOOSTBL persistence.","Healthcare","🏥","patient-registration")
-	DO ADDTABLE(.OUT,"mioos.ui.elements","ui-elements","UI + Form Elements","Form controls and UI elements sample for module developers.","Samples","🧩","ui-elements")
+	SET M=+$GET(OUT("moduleCount"))+1,OUT("moduleCount")=M
+	SET OUT("modules",M,"id")="mioos.ui.elements"
+	SET OUT("modules",M,"key")="ui-elements"
+	SET OUT("modules",M,"appKey")="ui-elements"
+	SET OUT("modules",M,"title")="UI + Form Elements"
+	SET OUT("modules",M,"description")="Interactive, stateful component gallery for module developers."
+	SET OUT("modules",M,"category")="Samples"
+	SET OUT("modules",M,"icon")="🧩"
+	SET OUT("modules",M,"source")="internal"
+	SET OUT("modules",M,"builtIn")=1
+	SET OUT("modules",M,"componentKey")="ui-elements"
+	SET OUT("modules",M,"surface")="mioos-surface-ui-elements"
 	SET M=+$GET(OUT("moduleCount"))+1,OUT("moduleCount")=M
 	SET OUT("modules",M,"id")="mioos.ui.permissions"
 	SET OUT("modules",M,"key")="permissions"
@@ -109,7 +133,8 @@ INTERNAL(OUT)
 	SET OUT("examples",2,"key")="ui-elements"
 	SET OUT("examples",2,"title")="UI + Form Elements"
 	SET OUT("examples",2,"path")="examples/mioos_modules/ui_elements"
-	SET OUT("examples",2,"componentKey")="table"
+	SET OUT("examples",2,"componentKey")="ui-elements"
+	SET OUT("examples",2,"surface")="mioos-surface-ui-elements"
 	SET OUT("examples",3,"key")="patient-registration"
 	SET OUT("examples",3,"title")="Patient Registration"
 	SET OUT("examples",3,"path")="examples/mioos_modules/patient_registration"

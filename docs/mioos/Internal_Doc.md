@@ -312,8 +312,6 @@ Boot metadata now advertises desktop.appSurfaceModel, desktop.appActions, and de
 - Folder Properties now supports uploaded background and icon assets stored in the VFS and persisted through folder metadata.
 - Transfers now show an overall progress bar plus per-file progress rows and support multi-file upload selection.
 
-## ROI 63A — MIOOSCFG system settings registry
+## ROI 64B internal module guidance
 
-`MIOOSCFG` owns the curated GUI-editable settings registry. `CONFDEF^MIOOS` defines safe defaults, then `APPLY^MIOOSCFG` overlays persisted settings from `^MIO("MIOOS","SETTING","VALUE",key)`. `LOAD^MIOOSST` also applies persisted settings before boot state is derived. This keeps first paint, boot JSON, API handlers, and WebSocket-derived view state aligned.
-
-Routes `SETTINGSLOAD^MIOOSAPI` and `SETTINGSSAVE^MIOOSAPI` expose `mioos-system-settings-v1`. The save path requires admin role, rejects unknown keys, normalizes booleans, clamps integers, and validates enums.
+`ui-elements` is registered as `mioos-surface-ui-elements` instead of a table surface. This keeps the component gallery independent from backend table query/mutation development. Internal modules should use this gallery as the source for accessible form layout, draft state, validation messages, loading states, confirmation flows, and toast/status behavior. Real persistence must still be routed through backend-owned, authenticated HTTP APIs.

@@ -56,8 +56,7 @@ MIOOST ; MIOOS tests
 	DO T060
 	DO T061
 	DO T062
-	DO T063
-	DO T064
+	DO T065
 	QUIT
 	;
 RESET
@@ -121,8 +120,6 @@ T001
 		KILL EP DO AMATCH("[MIOOST][T001][fs setmeta]","POST","/api/mioos/fs/setmeta",1,"FSSETMETA^MIOOSAPI","/api/mioos/fs/setmeta",.EP)
 	KILL EP DO AMATCH("[MIOOST][T001][theme load]","POST","/api/mioos/theme/load",1,"THEMELOAD^MIOOSAPI","/api/mioos/theme/load",.EP)
 	KILL EP DO AMATCH("[MIOOST][T001][theme save]","POST","/api/mioos/theme/save",1,"THEMESAVE^MIOOSAPI","/api/mioos/theme/save",.EP)
-	KILL EP DO AMATCH("[MIOOST][T001][settings load]","POST","/api/mioos/settings/load",1,"SETTINGSLOAD^MIOOSAPI","/api/mioos/settings/load",.EP)
-	KILL EP DO AMATCH("[MIOOST][T001][settings save]","POST","/api/mioos/settings/save",1,"SETTINGSSAVE^MIOOSAPI","/api/mioos/settings/save",.EP)
 	KILL EP DO AMATCH("[MIOOST][T001][fs blob get]","GET","/api/mioos/fs/blob",1,"FSBLOB^MIOOSAPI","/api/mioos/fs/blob",.EP)
 	KILL EP DO AMATCH("[MIOOST][T001][fs blob head]","HEAD","/api/mioos/fs/blob",1,"FSBLOB^MIOOSAPI","/api/mioos/fs/blob",.EP)
 	KILL EP DO AMATCH("[MIOOST][T001][ws]","WS","/ws/mioos",1,"MESSAGE^MIOOSWS","/ws/mioos",.EP)
@@ -544,11 +541,9 @@ T027
 		DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T027][load]")
 		SET JSON=$$BOOTJSON^MIOOSST(.STATE,.CONF)
 		DO OK^MIOTASSERT($$DECODE^MIOJSON($G(JSON),.OBJ,.ERR),"[MIOOST][T027][decode]")
-		DO EQ^MIOTASSERT(+$GET(OBJ("desktop","moduleSystem","enabled")),1,"[MIOOST][T027][module system enabled by default]")
-		DO EQ^MIOTASSERT(+$GET(OBJ("desktop","moduleSystem","appCatalogEnabled")),1,"[MIOOST][T027][catalog enabled by default]")
-		DO OK^MIOTASSERT(+$GET(OBJ("desktop","moduleSystem","moduleCount"))>0,"[MIOOST][T027][module count populated]")
+		DO EQ^MIOTASSERT(+$GET(OBJ("desktop","moduleSystem","enabled")),0,"[MIOOST][T027][module system disabled]")
+		DO EQ^MIOTASSERT(+$GET(OBJ("desktop","moduleSystem","moduleCount")),0,"[MIOOST][T027][module count zero]")
 		DO EQ^MIOTASSERT($GET(OBJ("apps",1,"key")),"home","[MIOOST][T027][home retained]")
-		DO EQ^MIOTASSERT($GET(OBJ("apps",5,"key")),"control-panel","[MIOOST][T027][settings app]")
 		QUIT
 		;
 T028
@@ -1291,47 +1286,21 @@ T062
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 62"),"[MIOOST][T062][llm notes]")
 	QUIT
 	;
-
-T063
-	NEW CONF,REQ,CTX,STATE,ERR,BOOT,OUT,IN,DEF
-	DO RESET
-	DO CONFDEF^MIOOS(.CONF)
-	DO INIT^MIOOS(.CONF)
-	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T063][load]")
-	DO BOOTARY^MIOOSST(.STATE,.CONF,.BOOT)
-	DO EQ^MIOTASSERT($GET(BOOT("routes","settingsLoad")),"/api/mioos/settings/load","[MIOOST][T063][settings load route]")
-	DO EQ^MIOTASSERT($GET(BOOT("routes","settingsSave")),"/api/mioos/settings/save","[MIOOST][T063][settings save route]")
-	DO EQ^MIOTASSERT(+$GET(BOOT("desktop","moduleSystem","enabled")),1,"[MIOOST][T063][modules default enabled]")
-	DO EQ^MIOTASSERT(+$GET(BOOT("desktop","moduleSystem","appCatalogEnabled")),1,"[MIOOST][T063][catalog default enabled]")
-	DO EXPORT^MIOOSCFG(.CONF,.STATE,.OUT)
-	DO EQ^MIOTASSERT($GET(OUT("contract")),"mioos-system-settings-v1","[MIOOST][T063][settings contract]")
-	DO OK^MIOTASSERT($DATA(OUT("values","mioos.modules.enabled"))#2,"[MIOOST][T063][module setting value]")
-	DO OK^MIOTASSERT($$DEFKEY^MIOOSCFG("mioos.upload.chunkBytes",.DEF),"[MIOOST][T063][chunk def]")
-	KILL IN,OUT,ERR
-	SET STATE("authAdmin")=1,STATE("principal")="admin"
-	SET IN("values","mioos.modules.enabled")=0
-	SET IN("values","mioos.upload.chunkBytes")=999999999
-	DO OK^MIOTASSERT($$SAVE^MIOOSCFG(.CONF,.STATE,.IN,.OUT,.ERR),"[MIOOST][T063][settings save]")
-	DO EQ^MIOTASSERT(+$GET(^MIO("MIOOS","SETTING","VALUE","mioos.modules.enabled","value")),0,"[MIOOST][T063][module persisted]")
-	DO EQ^MIOTASSERT(+$GET(^MIO("MIOOS","SETTING","VALUE","mioos.upload.chunkBytes","value")),4194304,"[MIOOST][T063][chunk clamped]")
-	DO EQ^MIOTASSERT(+$GET(CONF("mioos","modules","enabled")),0,"[MIOOST][T063][conf applied]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-surface-system-settings"),"[MIOOST][T063][settings surface]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","systemSettingsSave"),"[MIOOST][T063][settings save client]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","ROI 63A System Settings"),"[MIOOST][T063][settings css]")
-	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 63A"),"[MIOOST][T063][llm]")
-	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/System_Settings.md","mioos-system-settings-v1"),"[MIOOST][T063][settings docs]")
-	QUIT
 	;
-
-T064
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_modules.js","mioos-ui-module-catalog-v2"),"[MIOOST][T064][catalog v2 surface]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_modules.js","visibleRows"),"[MIOOST][T064][catalog filters]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","mioos-advanced-table-v2"),"[MIOOST][T064][table contract]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","createConfig"),"[MIOOST][T064][table standalone config]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableFeature"),"[MIOOST][T064][table feature gates]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","column.visibility"),"[MIOOST][T064][column visibility mutation]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","table_action_invalid"),"[MIOOST][T064][invalid action guard]")
-	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/ROI_64_UI_Modules_Table_Rewrite.md","mioos-advanced-table-v2"),"[MIOOST][T064][roi64 docs]")
-	DO OK^MIOTASSERT($$FILEHAS("examples/mioos_modules/table/README.md","standalone"),"[MIOOST][T064][standalone example]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","ROI 64A UI Modules"),"[MIOOST][T064][roi64 css]")
+T065
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_modules.js","mioos-surface-ui-elements"),"[MIOOST][T065][ui elements standalone surface]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_modules.js","mioos-ui-elements-v1"),"[MIOOST][T065][ui elements gallery version]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_modules.js","saveSample"),"[MIOOST][T065][stateful save pattern]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_modules.js","onFilePick"),"[MIOOST][T065][file picker metadata]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_modules.js","alertdialog"),"[MIOOST][T065][confirmation dialog]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_modules.js","role=""dialog"""),"[MIOOST][T065][modal dialog]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSMOD.m","mioos-surface-ui-elements"),"[MIOOST][T065][registry ui elements surface]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSMOD.m","interactive-forms"),"[MIOOST][T065][registry ui feature]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-surface-ui-elements"),"[MIOOST][T065][shell fallback]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_wm.js","mioos-surface-ui-elements"),"[MIOOST][T065][window sizing]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","ROI 64B UI Modules examples gallery"),"[MIOOST][T065][gallery css]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/ROI_64B_UI_Elements_Gallery.md","mioos-surface-ui-elements"),"[MIOOST][T065][roi64b docs]")
+	DO OK^MIOTASSERT($$FILEHAS("examples/mioos_modules/ui_elements/module.json","mioos-surface-ui-elements"),"[MIOOST][T065][example manifest]")
+	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 64B"),"[MIOOST][T065][llm roi64b]")
 	QUIT
+

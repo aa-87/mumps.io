@@ -27,23 +27,6 @@ The shell resolves the surface and renders `mioos-full-table`. Data remains back
 3. Point `config.dataset` at a backend dataset supported by your query routine.
 4. Register the manifest in the user module global or add it as an internal module in `MIOOSMOD`.
 
-## ROI 63 table rewrite target
+## Relationship to ROI 64B UI examples
 
-ROI 66 will rewrite the table component around a deterministic HTTP-first state model. Table examples should target `POST /api/mioos/table/query` and `POST /api/mioos/table/mutate`, including row CRUD, column CRUD, `column.visibility`, select-all-visible, grouping, search, pagination, sorting, loading/error/empty states, and keyboard-accessible controls.
-
-Do not copy Explorer internals into table modules. The table component may follow Explorer-like details interactions, but table state remains owned by the table dataset and backend contract.
-
-## ROI 64A standalone configuration example
-
-Use the table as a standalone module component:
-
-```html
-<mioos-full-table
-  table-id="module-orders"
-  title="Orders"
-  dataset="orders"
-  :config="window.MIOOSTable.createConfig({ features: { datasetSwitcher: false, columnCrud: false } })">
-</mioos-full-table>
-```
-
-The table remains HTTP-first. Module authors configure client affordances, while `/api/mioos/table/query` and `/api/mioos/table/mutate` remain the source of truth for rows, schema, pagination, actions, and persisted column visibility.
+The `UI + Form Elements` example is no longer implemented as a table dataset. Table modules should still use `mioos-surface-table`, but UI/form examples now use `mioos-surface-ui-elements` so form reference behavior remains stable while the advanced table component is rewritten in ROI 64C.

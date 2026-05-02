@@ -1,11 +1,36 @@
-# UI and Form Elements Sample
+# UI + Form Elements Example
 
-This sample exposes a module-developer-friendly catalogue of common MIOOS form controls.
+This example is a standalone, interactive component gallery for MIOOS module developers.
 
-Dataset: `ui-elements`
+```text
+componentKey = ui-elements
+surface      = mioos-surface-ui-elements
+script       = /public/mioos/app/mioos_modules.js
+```
 
-The dataset is served by `MIOOSTBL` and rendered by the reusable `mioos-full-table` component. It documents text inputs, textareas, selects, checkboxes, and date inputs as table rows so developers can validate layout, sorting, bulk selection, and CRUD affordances using the same sample surface.
+It intentionally does **not** depend on the backend table dataset. This keeps the UI examples available even when table datasets are being rewritten, and avoids example launches producing table mutation/query errors.
 
-## ROI 63 form gallery target
+## What the gallery demonstrates
 
-ROI 67 will replace the rough UI/form sample with a polished component gallery. The gallery must cover text inputs, textareas, selects, radio groups, checkbox groups, toggles, date and number inputs, HTTP file-picker/upload patterns, validation messages, required/optional indicators, disabled/read-only states, loading/saving states, inline help, form sections, tabbed forms, modal forms, confirmation dialogs, toast/status feedback, accessible labels, and ARIA hints.
+- text input, textarea, select, date, and number controls
+- radio groups and checkbox groups
+- switch/toggle controls
+- required, optional, disabled, and read-only states
+- validation messages and validation summary
+- loading/saving state
+- file-picker metadata capture with an HTTP-upload-only pattern
+- inline help text
+- form sections and tabbed form organization
+- modal form and destructive-action confirmation dialog
+- toast/status feedback
+- empty and error state messaging
+- accessible labels, `role="status"`, `role="dialog"`, and `role="alertdialog"`
+
+## Copy/adapt pattern
+
+1. Register a component with `window.MIOOSModules.registerComponent` or server-side through `MIOOSMOD`.
+2. Give the module a stable `componentKey` and `surface`.
+3. Keep draft form state local until the user saves.
+4. Submit through authenticated HTTP routes for persistence.
+5. Let the backend sanitize, authorize, validate, audit, and return user-facing status.
+6. Never use DataURLs for persisted files or images.

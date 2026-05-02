@@ -3,11 +3,7 @@
   "key": "ui-elements",
   "appKey": "ui-elements",
   "title": "UI + Form Elements",
-  "componentKey": "table",
-  "surface": "mioos-surface-table",
-  "tableState": {
-    "id": "ui-elements-table",
-    "title": "UI + Form Elements",
-    "dataset": "ui-elements"
-  }
+  "description": "Interactive component gallery for form controls, validation, dialogs, toasts, and module-safe UI patterns.",
+  "componentKey": "ui-elements",
+  "surface": "mioos-surface-ui-elements"
 }

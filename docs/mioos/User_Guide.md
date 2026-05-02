@@ -218,8 +218,6 @@ Open **UI Modules** from the Start menu to browse reusable MIOOS UI components, 
 
 User-created modules should follow the manifest format documented in `docs/mioos/UI_Modules.md` and can start from `examples/mioos_modules/table`.
 
-## System Settings / Control Panel
+## UI + Form Elements gallery
 
-Open **System Settings** from the Start menu to review and update MIOOS configuration. The settings screen explains each value, shows allowed ranges or enum choices, and saves through the server so invalid values cannot become authoritative browser state.
-
-Only administrators can save changes. Non-admin users may inspect the current settings contract. Module System and App Catalogue settings are enabled by default and can be changed from the **Modules and App Catalogue** tab.
+Open **App Catalogue → UI + Form Elements** to view interactive examples of common module UI patterns. The gallery shows how required fields, validation messages, switches, checkbox groups, radio groups, file pickers, modal forms, confirmations, and status toasts should behave. It is a safe reference surface and does not submit sample records to the backend.

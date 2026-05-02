@@ -6,10 +6,6 @@ The first example is `table`, which uses the reusable backend table component an
 
 Use these examples as copy-and-edit starting points. Keep module manifests data-driven and let the shell provide window chrome, theme variables, authentication, and transport.
 
-## ROI 63A System Settings visibility
+## ROI 64B UI examples
 
-The App Catalogue is enabled by default for authenticated MIOOS sessions. Administrators can hide or disable it from the GUI through **System Settings** instead of editing source routines. Example modules should continue to declare metadata safely and rely on the catalogue/settings contract rather than assuming hard-coded launcher behavior.
-
-## ROI 64A UI modules rewrite track
-
-The examples track is being rewritten around production-ready reusable components. The first foundation is the searchable App Catalogue / UI Modules hub and `mioos-advanced-table-v2`, a standalone table component intended for both internal shell modules and user-created modules.
+`ui_elements/` now demonstrates a standalone component gallery (`componentKey=ui-elements`, `surface=mioos-surface-ui-elements`) rather than a table dataset. Use it for form controls, validation, modal/confirmation/toast feedback, file-picker metadata, and safe module composition patterns.

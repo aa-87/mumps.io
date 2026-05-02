@@ -17,48 +17,25 @@
   function sourceOf(row) { return row.source || row.kind || (row.userCreated ? 'user' : 'built-in'); }
   function categoryOf(row) { return row.category || row.group || 'General'; }
   function rowKey(row) { return (row && (row.id || row.key || row.appKey || row.name)) || ''; }
-
-  function uniqueRows(rows, keyFn) {
-    var seen = {};
-    return rows.filter(function (row) {
-      var key = keyFn(row);
-      if (!key || seen[key]) return false;
-      seen[key] = 1;
-      return true;
-    });
-  }
+  function uniqueRows(rows, keyFn) { var seen = {}; return rows.filter(function (row) { var key = keyFn(row); if (!key || seen[key]) return false; seen[key] = 1; return true; }); }
   function componentRows(vm) { return uniqueRows(toList(bootRegistry(vm).components).concat(Object.keys(registeredComponents).map(function (key) { return registeredComponents[key]; })), function (row) { return row && (row.key || row.name); }); }
   function moduleRows(vm) { return uniqueRows(toList(bootRegistry(vm).modules).concat(toList(((vm || {}).boot || {}).modules)).concat(Object.keys(registeredModules).map(function (key) { return registeredModules[key]; })), rowKey); }
   function exampleRows(vm) { return uniqueRows(toList(bootRegistry(vm).examples), function (row) { return row && (row.key || row.path || row.title); }); }
   function componentByKey(vm, key) { key = String(key || ''); return componentRows(vm).find(function (row) { return row.key === key || row.name === key || row.component === key; }) || registeredComponents[key] || null; }
   function moduleByKey(vm, key) { key = String(key || ''); return moduleRows(vm).find(function (row) { return row.id === key || row.key === key || row.appKey === key; }) || registeredModules[key] || null; }
-
-  function filterRows(rows, filters) {
-    filters = filters || {};
-    var q = lower(filters.query);
-    var category = filters.category || 'all';
-    var source = filters.source || 'all';
-    return rows.filter(function (row) {
-      var haystack = [rowKey(row), row.title, row.name, row.description, categoryOf(row), sourceOf(row), row.componentKey, row.path].map(lower).join(' ');
-      if (q && haystack.indexOf(q) < 0) return false;
-      if (category !== 'all' && categoryOf(row) !== category) return false;
-      if (source !== 'all' && sourceOf(row) !== source) return false;
-      return true;
-    });
-  }
-  function distinct(values) {
-    var seen = {}, out = [];
-    values.forEach(function (value) { value = value || ''; if (value && !seen[value]) { seen[value] = 1; out.push(value); } });
-    return out.sort(function (a, b) { return String(a).localeCompare(String(b)); });
-  }
+  function filterRows(rows, filters) { filters = filters || {}; var q = lower(filters.query), category = filters.category || 'all', source = filters.source || 'all'; return rows.filter(function (row) { var haystack = [rowKey(row), row.title, row.name, row.description, categoryOf(row), sourceOf(row), row.componentKey, row.path].map(lower).join(' '); if (q && haystack.indexOf(q) < 0) return false; if (category !== 'all' && categoryOf(row) !== category) return false; if (source !== 'all' && sourceOf(row) !== source) return false; return true; }); }
+  function distinct(values) { var seen = {}, out = []; values.forEach(function (value) { value = value || ''; if (value && !seen[value]) { seen[value] = 1; out.push(value); } }); return out.sort(function (a, b) { return String(a).localeCompare(String(b)); }); }
 
   function resolveSurface(win, vm) {
+    if ((win || {}).surface) return win.surface;
     var moduleKey = (win || {}).moduleComponent || (win || {}).componentKey || '';
-    var module = moduleByKey(vm, (win || {}).moduleId || (win || {}).appKey || '');
+    var appKey = (win || {}).appKey || '';
+    var module = moduleByKey(vm, (win || {}).moduleId || appKey || '');
     if (!moduleKey && module) moduleKey = module.componentKey || module.component || '';
-    if ((win || {}).appKey === 'app-catalog' || (win || {}).appKey === 'ui-modules' || moduleKey === 'module-catalog') return 'mioos-surface-ui-modules';
-    if ((win || {}).appKey === 'permissions' || moduleKey === 'permissions') return 'mioos-surface-permissions';
-    if ((win || {}).appKey === 'table-samples' || (win || {}).appKey === 'sample-table' || (win || {}).appKey === 'patient-registration' || (win || {}).appKey === 'ui-elements' || moduleKey === 'table') return 'mioos-surface-table';
+    if (appKey === 'app-catalog' || appKey === 'ui-modules' || moduleKey === 'module-catalog') return 'mioos-surface-ui-modules';
+    if (appKey === 'ui-elements' || moduleKey === 'ui-elements') return 'mioos-surface-ui-elements';
+    if (appKey === 'permissions' || moduleKey === 'permissions') return 'mioos-surface-permissions';
+    if (appKey === 'table-samples' || appKey === 'sample-table' || appKey === 'patient-registration' || moduleKey === 'table') return 'mioos-surface-table';
     if (module && module.surface) return module.surface;
     var component = componentByKey(vm, moduleKey);
     if (component && component.surface) return component.surface;
@@ -74,89 +51,76 @@
     uiModuleComponent: function (key) { return componentByKey(this, key); },
     uiModuleRecord: function (key) { return moduleByKey(this, key); },
     uiModuleRoute: function () { return ((((this.boot || {}).routes || {}).moduleCatalog) || '/api/mioos/modules/catalog'); },
-    uiModuleRefreshCatalog: function () {
-      var self = this;
-      return fetch(this.uiModuleRoute(), { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: '{}' }).then(function (response) {
-        if (!response.ok) throw new Error('Module catalog failed: HTTP ' + response.status);
-        return response.json();
-      }).then(function (payload) {
-        self.boot.uiModules = clone(payload || {});
-        self.boot.modules = toList((payload || {}).modules);
-        return self.boot.uiModules;
-      }).catch(function (err) {
-        if (self.showAlert) self.showAlert('UI Modules', (err && err.message) || 'Module catalog failed');
-        throw err;
-      });
-    },
+    uiModuleRefreshCatalog: function () { var self = this; return fetch(this.uiModuleRoute(), { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: '{}' }).then(function (response) { if (!response.ok) throw new Error('Module catalog failed: HTTP ' + response.status); return response.json(); }).then(function (payload) { self.boot.uiModules = clone(payload || {}); self.boot.modules = toList((payload || {}).modules); return self.boot.uiModules; }).catch(function (err) { if (self.showAlert) self.showAlert('UI Modules', (err && err.message) || 'Module catalog failed'); throw err; }); },
     uiModuleOpen: function (key) { var module = this.uiModuleRecord(key); return module ? this.uiModuleOpenModule(module) : null; },
-    uiModuleOpenModule: function (module) {
-      module = clone(module || {});
-      if (!module.appKey) module.appKey = module.key || module.id;
-      module.key = module.appKey;
-      module.kind = module.kind || 'module';
-      module.moduleWindow = true;
-      module.moduleId = module.id || module.key;
-      module.moduleComponent = module.componentKey || module.component || '';
-      if (module.componentKey === 'table' || module.surface === 'mioos-surface-table') {
-        module.tableState = module.tableState || { id: 'table-' + (module.id || module.key || Date.now()), title: module.title || 'Backend Table', dataset: module.dataset || 'demo', config: module.tableConfig || null };
-      }
-      this.openApp(module.appKey);
-      var win = (this.windows || []).find(function (item) { return item.appKey === module.appKey; });
-      if (win) Object.assign(win, { moduleWindow: true, moduleId: module.moduleId, moduleComponent: module.moduleComponent, tableState: module.tableState || win.tableState || null });
-      return win || null;
-    },
-    uiModuleOpenComponent: function (componentKey, options) {
-      var component = this.uiModuleComponent(componentKey) || { key: componentKey, title: componentKey };
-      if (component.key === 'table' && this.openBackendTableWindow) return this.openBackendTableWindow(Object.assign({ title: component.title || 'Advanced Table', dataset: 'demo' }, options || {}));
-      return this.createWindowForApp({ key: 'component-' + component.key, appKey: 'component-' + component.key, title: component.title || component.key, icon: component.icon || '▣', kind: 'module', moduleWindow: true, moduleComponent: component.key, componentKey: component.key, surface: component.surface }, { state: 'normal', moduleWindow: true, moduleComponent: component.key });
-    },
+    uiModuleOpenModule: function (module) { module = clone(module || {}); if (!module.appKey) module.appKey = module.key || module.id; module.key = module.appKey; module.kind = module.kind || 'module'; module.moduleWindow = true; module.moduleId = module.id || module.key; module.moduleComponent = module.componentKey || module.component || ''; if (module.componentKey === 'table' || module.surface === 'mioos-surface-table') module.tableState = module.tableState || { id: 'table-' + (module.id || module.key || Date.now()), title: module.title || 'Backend Table', dataset: module.dataset || 'demo', config: module.tableConfig || null }; this.openApp(module.appKey); var win = (this.windows || []).find(function (item) { return item.appKey === module.appKey; }); if (win) Object.assign(win, { moduleWindow: true, moduleId: module.moduleId, moduleComponent: module.moduleComponent, tableState: module.tableState || win.tableState || null, surface: module.surface || win.surface || '' }); return win || null; },
+    uiModuleOpenComponent: function (componentKey, options) { var component = this.uiModuleComponent(componentKey) || { key: componentKey, title: componentKey }; if (component.key === 'table' && this.openBackendTableWindow) return this.openBackendTableWindow(Object.assign({ title: component.title || 'Advanced Table', dataset: 'demo' }, options || {})); return this.createWindowForApp({ key: 'component-' + component.key, appKey: 'component-' + component.key, title: component.title || component.key, icon: component.icon || '▣', kind: 'module', moduleWindow: true, moduleComponent: component.key, componentKey: component.key, surface: component.surface }, { state: 'normal', moduleWindow: true, moduleComponent: component.key, surface: component.surface || '' }); },
     uiModuleSurfaceComponent: function (win) { return resolveSurface(win, this); }
   };
 
-  function register(app) {
-    if (!app || !app.component) return;
+  function registerCatalog(app) {
     app.component('mioos-surface-ui-modules', {
       props: ['window'],
       data: function () { return { query: '', category: 'all', source: 'all', mode: 'modules', layout: 'cards', error: '', loading: false }; },
-      computed: {
-        vm: function () { return root(this); },
-        modules: function () { return this.vm.uiModuleCatalogRows(); },
-        components: function () { return this.vm.uiModuleComponentRows(); },
-        examples: function () { return this.vm.uiModuleExampleRows(); },
-        rows: function () { return this.mode === 'components' ? this.components : (this.mode === 'examples' ? this.examples : this.modules); },
-        visibleRows: function () { return filterRows(this.rows, { query: this.query, category: this.category, source: this.source }); },
-        categories: function () { return distinct(this.rows.map(categoryOf)); },
-        sources: function () { return distinct(this.rows.map(sourceOf)); },
-        contract: function () { return (this.vm.uiModuleRegistry() || {}).contract || 'mioos-ui-module-v2'; }
-      },
+      computed: { vm: function () { return root(this); }, modules: function () { return this.vm.uiModuleCatalogRows(); }, components: function () { return this.vm.uiModuleComponentRows(); }, examples: function () { return this.vm.uiModuleExampleRows(); }, rows: function () { return this.mode === 'components' ? this.components : (this.mode === 'examples' ? this.examples : this.modules); }, visibleRows: function () { return filterRows(this.rows, { query: this.query, category: this.category, source: this.source }); }, categories: function () { return distinct(this.rows.map(categoryOf)); }, sources: function () { return distinct(this.rows.map(sourceOf)); }, contract: function () { return (this.vm.uiModuleRegistry() || {}).contract || 'mioos-ui-module-v2'; } },
       mounted: function () { if (!this.modules.length && this.vm.uiModuleRefreshCatalog) this.refresh(); },
-      methods: {
-        refresh: function () { var self = this; self.loading = true; self.error = ''; return self.vm.uiModuleRefreshCatalog().catch(function (err) { self.error = (err && err.message) || 'Catalog refresh failed'; }).finally(function () { self.loading = false; }); },
-        launch: function (row) { if (this.mode === 'components') return this.vm.uiModuleOpenComponent(row.key || row.name); if (this.mode === 'examples') return this.vm.uiModuleOpenComponent(row.componentKey || row.key); return this.vm.uiModuleOpenModule(row); },
-        badge: function (row) { return sourceOf(row); },
-        keyOf: rowKey,
-        categoryOf: categoryOf
-      },
+      methods: { refresh: function () { var self = this; self.loading = true; self.error = ''; return self.vm.uiModuleRefreshCatalog().catch(function (err) { self.error = (err && err.message) || 'Catalog refresh failed'; }).finally(function () { self.loading = false; }); }, launch: function (row) { if (this.mode === 'components') return this.vm.uiModuleOpenComponent(row.key || row.name); if (this.mode === 'examples') return this.vm.uiModuleOpenComponent(row.componentKey || row.key); return this.vm.uiModuleOpenModule(row); }, badge: function (row) { return sourceOf(row); }, keyOf: rowKey, categoryOf: categoryOf },
       template: '' +
         '<div class="mioos-surface mioos-ui-module-shell mioos-ui-module-catalog-v2">' +
           '<header class="mioos-ui-module-head"><div><strong>App Catalogue + UI Modules</strong><span>[[ contract ]] • searchable launcher, components, and examples</span></div><div class="mioos-ui-module-actions"><button type="button" class="mioos-btn" @click="layout = layout === \'cards\' ? \'list\' : \'cards\'">[[ layout === \'cards\' ? \'List\' : \'Cards\' ]]</button><button type="button" class="mioos-btn" :disabled="loading" @click="refresh">Refresh</button></div></header>' +
           '<nav class="mioos-ui-module-tabs" aria-label="Module catalog sections"><button type="button" :class="{ active: mode === \'modules\' }" @click="mode = \'modules\'; category = \'all\'; source = \'all\'">Modules <span>[[ modules.length ]]</span></button><button type="button" :class="{ active: mode === \'components\' }" @click="mode = \'components\'; category = \'all\'; source = \'all\'">Components <span>[[ components.length ]]</span></button><button type="button" :class="{ active: mode === \'examples\' }" @click="mode = \'examples\'; category = \'all\'; source = \'all\'">Examples <span>[[ examples.length ]]</span></button></nav>' +
-          '<section class="mioos-ui-module-filters"><label><span>Search</span><input v-model="query" placeholder="Find modules, tables, forms, examples"></label><label><span>Category</span><select v-model="category"><option value="all">All categories</option><option v-for="item in categories" :key="item" :value="item">[[ item ]]</option></select></label><label><span>Source</span><select v-model="source"><option value="all">All sources</option><option v-for="item in sources" :key="item" :value="item">[[ item ]]</option></select></label></section>' +
-          '<div class="mioos-table-error" v-if="error">[[ error ]]</div><div class="mioos-ui-module-empty" v-if="!loading && !visibleRows.length">No modules match the current filters.</div><div class="mioos-ui-module-loading" v-if="loading">Loading catalogue…</div>' +
-          '<section :class="layout === \'cards\' ? \'mioos-ui-module-grid\' : \'mioos-ui-module-list\'">' +
-            '<article v-for="row in visibleRows" :key="keyOf(row)" class="mioos-ui-module-card" tabindex="0" @keydown.enter.prevent="launch(row)"><div class="mioos-ui-module-card-top"><span class="mioos-ui-module-icon">[[ row.icon || \'▣\' ]]</span><span class="mioos-ui-module-badge">[[ badge(row) ]]</span></div><strong>[[ row.title || row.name || row.key || row.id ]]</strong><span>[[ row.description || row.path || row.surface || \'Reusable MIOOS module asset\' ]]</span><footer><small>[[ categoryOf(row) ]]</small><button type="button" class="mioos-btn is-primary" @click="launch(row)">Launch</button></footer></article>' +
-          '</section>' +
+          '<section class="mioos-ui-module-filterbar"><label><span>Search</span><input v-model="query" type="search" placeholder="Find modules, examples, components"></label><label><span>Category</span><select v-model="category"><option value="all">All categories</option><option v-for="item in categories" :key="item" :value="item">[[ item ]]</option></select></label><label><span>Source</span><select v-model="source"><option value="all">All sources</option><option v-for="item in sources" :key="item" :value="item">[[ item ]]</option></select></label></section>' +
+          '<p v-if="error" class="mioos-ui-module-error" role="alert">[[ error ]]</p><p v-else-if="loading" class="mioos-ui-module-empty">Loading catalogue…</p><p v-else-if="!visibleRows.length" class="mioos-ui-module-empty">No [[ mode ]] match the current filters.</p>' +
+          '<section v-else class="mioos-ui-module-grid" :class="{ \'is-list\': layout === \'list\' }"><article v-for="row in visibleRows" :key="keyOf(row)" class="mioos-ui-module-card" tabindex="0" role="button" @keyup.enter="launch(row)" @keyup.space.prevent="launch(row)" @click="launch(row)"><div class="mioos-ui-module-icon">[[ row.icon || \'▣\' ]]</div><div><strong>[[ row.title || row.name || keyOf(row) ]]</strong><span>[[ row.description || row.path || \'MIOOS module surface\' ]]</span><footer><em>[[ categoryOf(row) ]]</em><b>[[ badge(row) ]]</b></footer></div></article></section>' +
         '</div>'
-    });
-
-    app.component('mioos-surface-ui-module', {
-      props: ['window'],
-      computed: { vm: function () { return root(this); }, module: function () { return this.vm.uiModuleRecord((this.window || {}).moduleId || (this.window || {}).appKey) || {}; }, component: function () { return this.vm.uiModuleComponent((this.window || {}).moduleComponent || this.module.componentKey) || {}; } },
-      template: '<div class="mioos-surface mioos-ui-module-host"><header><strong>[[ module.title || window.title ]]</strong><span>[[ module.description || component.description || "MIOOS UI module" ]]</span></header><section><dl><dt>Module</dt><dd>[[ module.id || window.appKey ]]</dd><dt>Component</dt><dd>[[ component.key || window.moduleComponent || "custom" ]]</dd><dt>Source</dt><dd>[[ module.source || component.source || "user" ]]</dd></dl></section></div>'
     });
   }
 
-  function registerComponent(definition) { if (!definition || !definition.key) return null; registeredComponents[definition.key] = Object.assign({}, definition); return registeredComponents[definition.key]; }
-  function registerModule(definition) { var key = definition && (definition.id || definition.key || definition.appKey); if (!key) return null; registeredModules[key] = Object.assign({}, definition); return registeredModules[key]; }
-  window.MIOOSModules = { methods: methods, register: register, registerComponent: registerComponent, registerModule: registerModule, resolveSurface: resolveSurface, listComponents: function () { return Object.keys(registeredComponents).map(function (key) { return registeredComponents[key]; }); } };
+  function registerUiElements(app) {
+    app.component('mioos-surface-ui-elements', {
+      props: ['window'],
+      data: function () { return { activeTab: 'inputs', saving: false, savedAt: '', modalOpen: false, confirmOpen: false, toast: { visible: false, kind: 'info', message: '' }, upload: { name: '', size: 0, type: '' }, form: { firstName: 'Ada', lastName: 'Lovelace', email: 'ada@example.test', notes: 'Reusable form state lives inside the component and is submitted through explicit HTTP actions.', status: 'Active', role: 'Clinician', contactMethod: 'email', flags: ['portal', 'sms'], notifications: true, appointmentDate: '2026-05-04', visitCount: 3, readonlyId: 'AUTO-1024', disabledReason: 'Managed by policy', consent: false } }; },
+      computed: {
+        vm: function () { return root(this); },
+        tabs: function () { return [{ key: 'inputs', title: 'Inputs', note: 'Text, textarea, select, date, number, and file metadata patterns' }, { key: 'choices', title: 'Choices', note: 'Radio groups, checkbox groups, toggles, required flags, disabled/read-only states' }, { key: 'feedback', title: 'Feedback', note: 'Validation, saving, toasts, dialogs, confirmation, empty and error states' }, { key: 'layout', title: 'Composition', note: 'Sections, tabbed forms, module host rules, and integration contracts' }]; },
+        errors: function () { var e = {}; if (!String(this.form.firstName || '').trim()) e.firstName = 'First name is required.'; if (!String(this.form.lastName || '').trim()) e.lastName = 'Last name is required.'; if (String(this.form.email || '').indexOf('@') < 1) e.email = 'Use a valid email-like contact value.'; if (!this.form.appointmentDate) e.appointmentDate = 'Choose a date before saving.'; if (+this.form.visitCount < 0) e.visitCount = 'Visit count cannot be negative.'; if (!this.form.consent) e.consent = 'Consent must be acknowledged in this sample before save.'; return e; },
+        isValid: function () { return Object.keys(this.errors).length === 0; },
+        controlCount: function () { return 18; },
+        moduleSummary: function () { return ((this.window || {}).title || 'UI + Form Elements') + ' • standalone component gallery'; },
+        selectedFlags: function () { return (this.form.flags || []).join(', ') || 'none'; },
+        fileSummary: function () { return this.upload.name ? (this.upload.name + ' • ' + Math.ceil((+this.upload.size || 0) / 1024) + ' KB') : 'No file selected'; }
+      },
+      methods: {
+        setTab: function (key) { this.activeTab = key; },
+        hasError: function (key) { return !!this.errors[key]; },
+        errorText: function (key) { return this.errors[key] || ''; },
+        onFilePick: function (event) { var file = event && event.target && event.target.files && event.target.files[0]; this.upload = file ? { name: file.name, size: file.size, type: file.type || 'application/octet-stream' } : { name: '', size: 0, type: '' }; if (file) this.showToast('info', 'File metadata captured. Production modules should upload over HTTP, not DataURLs.'); },
+        resetSample: function () { this.form.firstName = 'Ada'; this.form.lastName = 'Lovelace'; this.form.email = 'ada@example.test'; this.form.status = 'Active'; this.form.role = 'Clinician'; this.form.contactMethod = 'email'; this.form.flags = ['portal', 'sms']; this.form.notifications = true; this.form.appointmentDate = '2026-05-04'; this.form.visitCount = 3; this.form.consent = false; this.upload = { name: '', size: 0, type: '' }; this.savedAt = ''; this.showToast('info', 'Sample form state reset.'); },
+        saveSample: function () { var self = this; if (!this.isValid) { this.showToast('error', 'Resolve validation messages before saving.'); return; } this.saving = true; window.setTimeout(function () { self.saving = false; self.savedAt = new Date().toLocaleTimeString(); self.showToast('success', 'Sample save completed using the HTTP-first module pattern.'); }, 450); },
+        showToast: function (kind, message) { this.toast = { visible: true, kind: kind || 'info', message: message || '' }; },
+        hideToast: function () { this.toast.visible = false; },
+        openModal: function () { this.modalOpen = true; }, closeModal: function () { this.modalOpen = false; }, openConfirm: function () { this.confirmOpen = true; }, closeConfirm: function () { this.confirmOpen = false; }, confirmDanger: function () { this.confirmOpen = false; this.showToast('success', 'Confirmed destructive-action pattern without mutating backend data.'); }, announcePattern: function (label) { this.showToast('info', label + ' pattern is intentionally local and backend-safe.'); }
+      },
+      template: '' +
+        '<div class="mioos-surface mioos-ui-elements-gallery mioos-ui-elements-v1" role="region" aria-label="UI and form elements component gallery">' +
+          '<header class="mioos-ui-elements-hero"><div><strong>UI + Form Elements</strong><span>[[ moduleSummary ]]</span></div><div class="mioos-ui-elements-stats"><b>[[ controlCount ]] controls</b><b :class="{ ok: isValid, warn: !isValid }">[[ isValid ? \'valid\' : \'needs input\' ]]</b><b v-if="savedAt">Saved [[ savedAt ]]</b></div></header>' +
+          '<nav class="mioos-ui-elements-tabs" aria-label="UI examples"><button v-for="tab in tabs" :key="tab.key" type="button" :aria-selected="activeTab === tab.key" :class="{ active: activeTab === tab.key }" @click="setTab(tab.key)"><strong>[[ tab.title ]]</strong><span>[[ tab.note ]]</span></button></nav>' +
+          '<section class="mioos-ui-elements-status" :class="{ \'has-errors\': !isValid }" role="status"><span>State model: local draft → validated payload → HTTP save action.</span><span>Selected flags: [[ selectedFlags ]]</span><span>File: [[ fileSummary ]]</span></section>' +
+          '<main class="mioos-ui-elements-body">' +
+            '<section v-show="activeTab === \'inputs\'" class="mioos-ui-elements-panel" aria-label="Input examples"><article class="mioos-ui-elements-card"><h3>Core fields</h3><div class="mioos-form-grid"><label :class="{ invalid: hasError(\'firstName\') }"><span>First name <em>required</em></span><input v-model.trim="form.firstName" type="text" aria-describedby="uie-first-name-help"><small id="uie-first-name-help">Use trimmed text input for identifiers and names.</small><b v-if="hasError(\'firstName\')">[[ errorText(\'firstName\') ]]</b></label><label :class="{ invalid: hasError(\'lastName\') }"><span>Last name <em>required</em></span><input v-model.trim="form.lastName" type="text"><b v-if="hasError(\'lastName\')">[[ errorText(\'lastName\') ]]</b></label><label :class="{ invalid: hasError(\'email\') }"><span>Email/contact <em>required</em></span><input v-model.trim="form.email" type="email"><b v-if="hasError(\'email\')">[[ errorText(\'email\') ]]</b></label><label><span>Status</span><select v-model="form.status"><option>Active</option><option>Pending</option><option>Inactive</option><option>Review</option></select><small>Use selects for coded values returned by the backend.</small></label><label :class="{ invalid: hasError(\'appointmentDate\') }"><span>Appointment date</span><input v-model="form.appointmentDate" type="date"><b v-if="hasError(\'appointmentDate\')">[[ errorText(\'appointmentDate\') ]]</b></label><label :class="{ invalid: hasError(\'visitCount\') }"><span>Visit count</span><input v-model.number="form.visitCount" type="number" min="0"><b v-if="hasError(\'visitCount\')">[[ errorText(\'visitCount\') ]]</b></label></div></article><article class="mioos-ui-elements-card"><h3>Textarea and file pattern</h3><label class="span-full"><span>Notes <em>optional</em></span><textarea v-model="form.notes" rows="4"></textarea><small>Textarea content should be validated and submitted as form payload, not stored in DOM-only state.</small></label><label class="mioos-file-control"><span>HTTP file picker pattern</span><input type="file" @change="onFilePick"><small>Capture metadata locally; upload the file using authenticated HTTP routes. Do not convert files to DataURLs.</small></label></article></section>' +
+            '<section v-show="activeTab === \'choices\'" class="mioos-ui-elements-panel" aria-label="Choice examples"><article class="mioos-ui-elements-card"><h3>Radio group</h3><fieldset><legend>Preferred contact method</legend><label><input v-model="form.contactMethod" type="radio" value="email"> Email</label><label><input v-model="form.contactMethod" type="radio" value="phone"> Phone</label><label><input v-model="form.contactMethod" type="radio" value="portal"> Portal</label></fieldset></article><article class="mioos-ui-elements-card"><h3>Checkbox group</h3><fieldset><legend>Notification channels</legend><label><input v-model="form.flags" type="checkbox" value="portal"> Portal</label><label><input v-model="form.flags" type="checkbox" value="sms"> SMS</label><label><input v-model="form.flags" type="checkbox" value="email"> Email</label></fieldset></article><article class="mioos-ui-elements-card"><h3>Toggle, disabled, read-only</h3><label class="mioos-switch-row"><span><strong>Notifications</strong><small>Boolean switch pattern</small></span><input v-model="form.notifications" type="checkbox" role="switch"></label><label><span>System ID <em>read-only</em></span><input v-model="form.readonlyId" type="text" readonly></label><label><span>Policy field <em>disabled</em></span><input v-model="form.disabledReason" type="text" disabled></label><label :class="{ invalid: hasError(\'consent\') }"><input v-model="form.consent" type="checkbox"> I acknowledge this sample validation gate.<b v-if="hasError(\'consent\')">[[ errorText(\'consent\') ]]</b></label></article></section>' +
+            '<section v-show="activeTab === \'feedback\'" class="mioos-ui-elements-panel" aria-label="Feedback examples"><article class="mioos-ui-elements-card"><h3>Actions and states</h3><div class="mioos-ui-elements-actions"><button type="button" class="mioos-btn is-primary" :disabled="saving" @click="saveSample">[[ saving ? \'Saving…\' : \'Validate and save\' ]]</button><button type="button" class="mioos-btn" @click="resetSample">Reset</button><button type="button" class="mioos-btn" @click="showToast(\'info\', \'This is a toast/status message pattern.\')">Show toast</button><button type="button" class="mioos-btn" @click="openModal">Open modal</button><button type="button" class="mioos-btn danger" @click="openConfirm">Confirm delete</button></div><p class="mioos-ui-elements-empty">Empty state: no records match the current filter. Provide a next action instead of a blank panel.</p><p class="mioos-ui-elements-error">Error state: backend validation failed. Preserve the user draft and explain the next step.</p></article><article class="mioos-ui-elements-card"><h3>Validation summary</h3><ul class="mioos-validation-list"><li v-if="isValid">All validation checks pass.</li><li v-for="(message, key) in errors" :key="key">[[ message ]]</li></ul></article></section>' +
+            '<section v-show="activeTab === \'layout\'" class="mioos-ui-elements-panel" aria-label="Layout and integration examples"><article class="mioos-ui-elements-card"><h3>Form sections</h3><div class="mioos-section-stack"><section><strong>Identity</strong><span>Group required demographic or operational fields together.</span></section><section><strong>Preferences</strong><span>Keep optional settings and toggles close to their explanations.</span></section><section><strong>Audit posture</strong><span>Do not expose sensitive records before authentication; submit through backend-owned routes.</span></section></div></article><article class="mioos-ui-elements-card"><h3>Standalone integration</h3><pre><code>window.MIOOSModules.registerComponent({ key: \'ui-elements\', surface: \'mioos-surface-ui-elements\' })</code></pre><button type="button" class="mioos-btn" @click="announcePattern(\'Standalone module\')">Explain pattern</button></article></section>' +
+          '</main><aside v-if="toast.visible" class="mioos-ui-toast" :class="toast.kind" role="status"><span>[[ toast.message ]]</span><button type="button" @click="hideToast" aria-label="Dismiss status">×</button></aside>' +
+          '<section v-if="modalOpen" class="mioos-ui-dialog-backdrop" role="presentation"><div class="mioos-ui-dialog" role="dialog" aria-modal="true" aria-labelledby="uie-modal-title"><h3 id="uie-modal-title">Modal form pattern</h3><p>Use modals for focused create/edit tasks. Keep validation visible and preserve drafts on backend errors.</p><label><span>Role</span><select v-model="form.role"><option>Clinician</option><option>Scheduler</option><option>Administrator</option></select></label><footer><button type="button" class="mioos-btn" @click="closeModal">Cancel</button><button type="button" class="mioos-btn is-primary" @click="closeModal(); showToast(\'success\', \'Modal form accepted.\')">Apply</button></footer></div></section>' +
+          '<section v-if="confirmOpen" class="mioos-ui-dialog-backdrop" role="presentation"><div class="mioos-ui-dialog is-danger" role="alertdialog" aria-modal="true" aria-labelledby="uie-confirm-title"><h3 id="uie-confirm-title">Confirm destructive action</h3><p>Destructive module actions require an explicit confirmation step and should return server-authored audit/status messages.</p><footer><button type="button" class="mioos-btn" @click="closeConfirm">Cancel</button><button type="button" class="mioos-btn danger" @click="confirmDanger">Confirm</button></footer></div></section>' +
+        '</div>'
+    });
+  }
+
+  function register(app) { if (!app || !app.component) return; registerCatalog(app); registerUiElements(app); app.component('mioos-surface-ui-module', { props: ['window'], computed: { vm: function () { return root(this); }, module: function () { return this.vm.uiModuleRecord((this.window || {}).moduleId || (this.window || {}).appKey) || {}; }, component: function () { return this.vm.uiModuleComponent((this.window || {}).moduleComponent) || {}; } }, template: '<div class="mioos-surface mioos-ui-module-host"><header><strong>[[ module.title || window.title ]]</strong><span>[[ module.description || component.description || "MIOOS UI module" ]]</span></header><section><dl><dt>Module</dt><dd>[[ module.id || window.appKey ]]</dd><dt>Component</dt><dd>[[ component.key || window.moduleComponent || "custom" ]]</dd><dt>Source</dt><dd>[[ module.source || component.source || "user" ]]</dd></dl></section></div>' }); }
+
+  window.MIOOSModules = window.MIOOSModules || {};
+  Object.assign(window.MIOOSModules, { register: register, methods: methods, resolveSurface: resolveSurface, registerComponent: function (component) { if (component && (component.key || component.name)) registeredComponents[component.key || component.name] = clone(component); }, registerModule: function (module) { if (module && (module.id || module.key || module.appKey)) registeredModules[module.id || module.key || module.appKey] = clone(module); } });
+  window.MIOOSModules.registerComponent({ key: 'ui-elements', name: 'mioos-surface-ui-elements', title: 'UI + Form Elements', surface: 'mioos-surface-ui-elements', source: 'internal', owner: 'MIOOS', description: 'Interactive component gallery for inputs, choices, validation, modals, toasts, upload metadata, and module-safe form composition.' });
 })();
