@@ -60,7 +60,7 @@ var tableConfig = window.MIOOSTable.createConfig({
 });
 ```
 
-The browser may choose UI affordances, but the backend remains authoritative for query/mutation results. Bulk data remains HTTP-first through `/api/mioos/table/query` and `/api/mioos/table/mutate`.
+The browser may choose UI affordances, but the backend remains authoritative for query/mutation results. Table data is WebSocket-first through `table.query` / `table.mutate`, with `/api/mioos/table/query` and `/api/mioos/table/mutate` as protected fallback routes.
 
 ## Mutation safeguards introduced in ROI 64A
 

@@ -41,8 +41,14 @@ The example intentionally avoids backend table coupling. Production modules shou
 
 ## ROI 64C table modules
 
-Table-backed modules should use `mioos-surface-table` with the `mioos-advanced-table-v4` contract. Provide a dataset and optional `config` object instead of writing custom table state logic. The table owns HTTP query/mutation state, server filtering, selection, grouping, column visibility, resizing, and row/column CRUD.
+Table-backed modules should use `mioos-surface-table` with the `mioos-advanced-table-v5` contract. Provide a dataset and optional `config` object instead of writing custom table state logic. The table owns WebSocket-first query/mutation state with HTTP fallback, server filtering, selection, grouping, column visibility, resizing, and row/column CRUD.
 
 ## ROI 64C redo table module guidance
 
-Table modules should now target `mioos-advanced-table-v4`. The contract is DataTables-inspired but remains a MIOOS-native Vue Options API component. Module authors should configure datasets, columns, and feature gates; they should not fork table rendering or implement custom client-side pagination for large datasets.
+Table modules should now target `mioos-advanced-table-v5`. The contract is DataTables-inspired but remains a MIOOS-native Vue Options API component. Module authors should configure datasets, columns, and feature gates; they should not fork table rendering or implement custom client-side pagination for large datasets.
+
+## Table Samples showcase
+
+`table-samples` now opens `mioos-surface-table-showcase` instead of a single static table. The showcase demonstrates simple, dense, editable, patient-registration, and massive read-only table variations. Each card includes the `MIOOSTable.createConfig(...)` code needed to open that table from a simple MIOOS window or user-created module.
+
+The table component itself remains `mioos-full-table`; the showcase is a developer reference surface for choosing the right configuration.

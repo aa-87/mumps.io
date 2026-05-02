@@ -521,9 +521,7 @@ First paint must not require authenticated internal asset requests. Before sign-
 ## ROI 62 — Safe theme boot, advanced table samples, permissions, and patient registration
 
 - Do not render protected `/api/mioos/theme-asset` or `/api/mioos/fs/blob` URLs before authentication.
-- Table bulk data and CRUD mutations are HTTP-first:
-  - `/api/mioos/table/query`
-  - `/api/mioos/table/mutate`
+- Table data and CRUD mutations are WebSocket-first (`table.query`, `table.mutate`) with authenticated HTTP fallback routes (`/api/mioos/table/query`, `/api/mioos/table/mutate`).
 - The reusable table supports sorting, grouping, select all visible, selected-row bulk actions, row CRUD, column CRUD, and column resizing.
 - Built-in sample datasets live in `MIOOSTBL`: `demo`, `massive`, `ui-elements`, `patient-registration`, and read-only `vfs`.
 - The module registry remains opt-in at boot, but the App Catalogue can fetch internal module entries after sign-in.
@@ -539,8 +537,24 @@ Next planned ROI: ROI 64C should rewrite the advanced table component as a stand
 
 ## ROI 64C — Standalone Advanced Table Component Rewrite
 
-The advanced table contract is `mioos-advanced-table-v4`. Table modules should use `mioos-full-table` / `mioos-surface-table` with `window.MIOOSTable.createConfig()` or equivalent manifest JSON. The backend remains HTTP-first and server-authoritative for query, filters, sort, pagination, row CRUD, column CRUD, column visibility, column resize, grouping, and bulk deletes. Do not fork custom table implementations for module samples unless a new contract is intentionally defined with tests and docs.
+The advanced table contract is `mioos-advanced-table-v5`. Table modules should use `mioos-full-table` / `mioos-surface-table` with `window.MIOOSTable.createConfig()` or equivalent manifest JSON. The backend remains server-authoritative and WebSocket-first with HTTP fallback for query, filters, sort, pagination, row CRUD, column CRUD, column visibility, column resize, grouping, and bulk deletes. Do not fork custom table implementations for module samples unless a new contract is intentionally defined with tests and docs.
 
 ### ROI 64C redo — table hardening follow-up
 
-The advanced table contract is now `mioos-advanced-table-v4`. The redo addressed reported contrast issues, slow large-dataset sorting, mutation `ERR_EMPTY_RESPONSE`/`Failed to fetch` handling, DataTables-style API expectations, and missing server-communication indicators. The client sends `draw`, `start`, `length`, `order`, and `columns` metadata alongside native MIOOS query fields. `MIOOSTBL` responds with `draw`, `recordsTotal`, `recordsFiltered`, and `data` in addition to native `rows`. Backend sorting uses an indexed map instead of O(n²) bubble sorting. The browser shows a processing indicator and surfaces empty/invalid mutation responses as table errors without closing the editor.
+The advanced table contract is now `mioos-advanced-table-v5`. The redo addressed reported contrast issues, slow large-dataset sorting, mutation `ERR_EMPTY_RESPONSE`/`Failed to fetch` handling, DataTables-style API expectations, and missing server-communication indicators. The client sends `draw`, `start`, `length`, `order`, and `columns` metadata alongside native MIOOS query fields. `MIOOSTBL` responds with `draw`, `recordsTotal`, `recordsFiltered`, and `data` in addition to native `rows`. Backend sorting uses an indexed map instead of O(n²) bubble sorting. The browser shows a processing indicator and surfaces empty/invalid mutation responses as table errors without closing the editor.
+
+## ROI 64C redo 2 — immediate table corrections
+
+The last table ROI was redone again from the user-provided ZIP. Important current behavior:
+
+- Contract: `mioos-advanced-table-v5`.
+- Table query/mutation are WebSocket-first with HTTP fallback.
+- WebSocket commands added: `table.query`, `table.mutate`.
+- Massive dataset is read-only and page-materialized server-side; it must not expose mutation controls.
+- The editor is a viewport-safe modal dialog and should not be inline inside the table scroll area.
+- Table density defaults to compact.
+- Actions column has `actionsWidth` and a resize handle.
+- Column group headers are disabled by default through `features.columnGroups=false`; do not show unexplained group labels such as Timeline unless explicitly enabled.
+- Visible footer must not show internal draw number or last-response timestamp.
+- `table-samples` opens `mioos-surface-table-showcase`, which documents simple-to-advanced copyable `MIOOSTable.createConfig(...)` usage.
+- VFS upload WebSocket commands already exist and should be tuned in a dedicated transport ROI, not mixed into table UI rewrites.

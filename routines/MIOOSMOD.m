@@ -53,7 +53,7 @@ INTERNAL(OUT)
 	SET OUT("components",C,"surface")="mioos-surface-table"
 	SET OUT("components",C,"source")="internal"
 	SET OUT("components",C,"owner")="MIOOS"
-	SET OUT("components",C,"description")="HTTP-first table with server pagination, sorting, grouping, select-all, bulk actions, row CRUD, column CRUD, resizing, and massive datasets."
+	SET OUT("components",C,"description")="WebSocket-first table with HTTP fallback, dense layouts, server pagination, sorting, select-all, bulk actions, CRUD, resizing, and massive datasets."
 	SET OUT("components",C,"script")="/public/mioos/app/mioos_table.js"
 	SET OUT("components",C,"backend")="MIOOSTBL"
 	SET OUT("components",C,"queryRoute")="/api/mioos/table/query"
@@ -65,6 +65,18 @@ INTERNAL(OUT)
 	SET OUT("components",C,"features",5)="row-crud"
 	SET OUT("components",C,"features",6)="column-crud"
 	SET OUT("components",C,"features",7)="resizable-columns"
+	SET OUT("components",C,"features",8)="websocket-first"
+	SET C=+$GET(OUT("componentCount"))+1,OUT("componentCount")=C
+	SET OUT("components",C,"key")="table-showcase"
+	SET OUT("components",C,"name")="mioos-surface-table-showcase"
+	SET OUT("components",C,"title")="Table Variations"
+	SET OUT("components",C,"surface")="mioos-surface-table-showcase"
+	SET OUT("components",C,"source")="internal"
+	SET OUT("components",C,"owner")="MIOOS"
+	SET OUT("components",C,"description")="Simple-to-advanced table UI API examples with copyable code snippets."
+	SET OUT("components",C,"script")="/public/mioos/app/mioos_table.js"
+	SET OUT("components",C,"features",1)="table-variants"
+	SET OUT("components",C,"features",2)="copyable-code"
 	SET C=+$GET(OUT("componentCount"))+1,OUT("componentCount")=C
 	SET OUT("components",C,"key")="permissions"
 	SET OUT("components",C,"name")="mioos-surface-permissions"
@@ -99,7 +111,18 @@ INTERNAL(OUT)
 	SET OUT("modules",M,"builtIn")=1
 	SET OUT("modules",M,"componentKey")="module-catalog"
 	SET OUT("modules",M,"surface")="mioos-surface-ui-modules"
-	DO ADDTABLE(.OUT,"mioos.ui.table.samples","table-samples","Table Samples","All table variations including sample, patient registration, UI elements, VFS, and massive datasets.","Samples","▤","demo")
+	SET M=+$GET(OUT("moduleCount"))+1,OUT("moduleCount")=M
+	SET OUT("modules",M,"id")="mioos.ui.table.samples"
+	SET OUT("modules",M,"key")="table-samples"
+	SET OUT("modules",M,"appKey")="table-samples"
+	SET OUT("modules",M,"title")="Table Samples"
+	SET OUT("modules",M,"description")="Simple-to-advanced table variations with copyable MIOOSTable.createConfig examples."
+	SET OUT("modules",M,"category")="Samples"
+	SET OUT("modules",M,"icon")="▤"
+	SET OUT("modules",M,"source")="internal"
+	SET OUT("modules",M,"builtIn")=1
+	SET OUT("modules",M,"componentKey")="table-showcase"
+	SET OUT("modules",M,"surface")="mioos-surface-table-showcase"
 	DO ADDTABLE(.OUT,"mioos.ui.table.massive","table-massive","Massive Dataset Table","Large synthetic dataset for pagination and sorting validation.","Samples","▥","massive")
 	DO ADDTABLE(.OUT,"mioos.ui.patient.registration","patient-registration","Patient Registration","Detailed patient registration sample backed by MIOOSTBL persistence.","Healthcare","🏥","patient-registration")
 	SET M=+$GET(OUT("moduleCount"))+1,OUT("moduleCount")=M
@@ -129,7 +152,8 @@ INTERNAL(OUT)
 	SET OUT("examples",1,"key")="table"
 	SET OUT("examples",1,"title")="Advanced Table Samples"
 	SET OUT("examples",1,"path")="examples/mioos_modules/table"
-	SET OUT("examples",1,"componentKey")="table"
+	SET OUT("examples",1,"componentKey")="table-showcase"
+	SET OUT("examples",1,"surface")="mioos-surface-table-showcase"
 	SET OUT("examples",2,"key")="ui-elements"
 	SET OUT("examples",2,"title")="UI + Form Elements"
 	SET OUT("examples",2,"path")="examples/mioos_modules/ui_elements"

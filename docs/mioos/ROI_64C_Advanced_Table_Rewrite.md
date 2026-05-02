@@ -1,149 +1,94 @@
-# ROI 64C — Standalone Advanced Table Component Rewrite
+# ROI 64C redo 2 — Advanced table hardening and WebSocket-first table transport
 
-ROI 64C rewrites the advanced table as a standalone, configurable component for internal MIOOS UI and user-created modules.
+This ROI redoes the previous advanced table work from the attached source and addresses the reported production blockers directly.
 
-## Contract
+## Fixes delivered
 
-The client-visible table contract is now `mioos-advanced-table-v4`.
+1. **Mutation no longer leaves the editor hanging on HTTP 403.**
+   - Table mutations are WebSocket-first through `table.mutate`.
+   - HTTP remains a fallback route for environments where WebSocket commands are unavailable.
+   - Domain-level table mutation failures now return a JSON payload that the table can render as an inline error instead of leaving the UI in a permanent saving state.
+   - Read-only datasets such as `massive` and `vfs` publish server feature flags that disable row/column mutation controls.
 
-Use the table through the Vue Options API component:
+2. **The edit-row panel no longer gets cut off.**
+   - The row/column editor is now a modal dialog with a fixed viewport backdrop.
+   - The editor uses `max-height: calc(100vh - 54px)` and internal scrolling so it remains usable in short windows.
 
-```html
-<mioos-full-table
-  table-id="patients"
-  title="Patients"
-  dataset="patient-registration"
-  :config="tableConfig">
-</mioos-full-table>
+3. **Massive dataset performance is server-side and page-materialized.**
+   - `massive` no longer builds and copies all 10,000 rows before paging.
+   - `MIOOSTBL` now generates schema, totals, sort keys, and only the requested page rows for the current query.
+   - The dataset remains read-only so mutations cannot accidentally force a synthetic large dataset into per-user persistent globals.
+
+4. **The table is denser for data-intensive screens.**
+   - Default table density is now `compact`.
+   - Toolbar, cells, pager, and actions use smaller spacing while retaining readable contrast.
+
+5. **The Actions column is resizable.**
+   - The table now has an `actionsWidth` config value.
+   - The Actions header includes its own resize grip.
+
+6. **The unexplained Timeline group row is removed by default.**
+   - Column group headers are now behind `features.columnGroups` and default to disabled.
+   - The normal header row only shows actual fields plus Actions.
+
+7. **Debug noise is removed from the visible UI.**
+   - The footer no longer shows draw numbers or last-response timestamps.
+   - Draw/start/length remain internal protocol fields only.
+
+8. **Table API variations are now visible and documented.**
+   - `mioos-surface-table-showcase` provides simple, dense, editable, patient-registration, and massive read-only table examples.
+   - Each variation includes copyable `MIOOSTable.createConfig(...)` code.
+
+## Current contract
+
+The client-visible contract is now:
+
+```text
+mioos-advanced-table-v5
 ```
 
-Or create configuration through the browser helper:
+The preferred transport is WebSocket command mode:
 
-```js
-const tableConfig = window.MIOOSTable.createConfig({
-  defaultPageSize: 25,
-  defaultSort: { column: 'lastName', direction: 'ascending' },
-  features: {
-    datasetSwitcher: false,
-    search: true,
-    filters: true,
-    grouping: true,
-    columnPicker: true,
-    rowCrud: true,
-    columnCrud: true,
-    selection: true,
-    bulkActions: true,
-    pagination: true,
-    rowDetails: true,
-    resizeColumns: true
-  }
+```text
+table.query
+table.mutate
+```
+
+HTTP remains available as fallback:
+
+```text
+POST /api/mioos/table/query
+POST /api/mioos/table/mutate
+```
+
+## Example
+
+```javascript
+this.openBackendTableWindow({
+  title: 'Dense Operations',
+  dataset: 'demo',
+  config: MIOOSTable.createConfig({
+    density: 'compact',
+    transport: 'websocket',
+    defaultPageSize: 50,
+    actionsWidth: 132,
+    features: {
+      search: true,
+      filters: true,
+      rowCrud: true,
+      columnCrud: true,
+      selection: true,
+      bulkActions: true,
+      resizeColumns: true,
+      columnGroups: false
+    }
+  })
 });
 ```
 
-## Query shape
+## Guardrails
 
-The table sends HTTP-first query requests to `/api/mioos/table/query`:
-
-```json
-{
-  "dataset": "patient-registration",
-  "page": 1,
-  "pageSize": 25,
-  "search": "smith",
-  "filters": { "status": ["Active"] },
-  "sort": { "column": "lastName", "direction": "ascending" },
-  "groupBy": "status",
-  "columns": [
-    { "key": "lastName", "hidden": false, "width": 180 }
-  ]
-}
-```
-
-## Mutation shape
-
-The table sends HTTP-first mutation requests to `/api/mioos/table/mutate` and expects a refreshed query-shaped payload after mutation.
-
-Supported actions:
-
-- `row.save`
-- `row.delete`
-- `rows.delete`
-- `column.save`
-- `column.delete`
-- `column.resize`
-- `column.visibility`
-
-All column keys are validated server-side and must start with a letter and contain only letters, numbers, and underscores. Invalid non-namespaced actions are rejected.
-
-## Production behavior added in ROI 64C
-
-- Standalone `mioos-advanced-table-v4` configuration surface.
-- Configurable feature gates for search, filters, grouping, column picker, row CRUD, column CRUD, selection, bulk actions, pagination, row details, and column resizing.
-- Backend filtering through `filters` in the query payload.
-- Page clamping after search/filter operations so out-of-range pages do not show false-empty results.
-- Mutation status feedback for row and column saves/deletes.
-- Defensive column-key sanitization that avoids invalid M syntax and rejects bad column metadata before persistence.
-- Confirmation for destructive row, bulk row, and column operations.
-- Column visibility, resize, and CRUD remain server-authoritative.
-
-## Accessibility and integration notes
-
-The table exposes status regions for loading/saving/toast feedback and keeps selection, grouping, and row details keyboard-accessible through native buttons, inputs, and details controls. User-created modules should avoid directly mutating table internals; they should set `dataset`, `folderId`, and `config`, then let the table query/mutation contract own state synchronization.
-
-## ROI 64C redo — DataTables-style server-side contract
-
-This redo addresses the post-ROI findings:
-
-1. Table controls and headers must remain legible in light and dark themes. The table CSS now explicitly sets readable foreground/background combinations for the toolbar, filters, headers, rows, group rows, editor, pager, and processing indicators.
-2. Large datasets must use server-side paging/order/filter semantics. The client now sends DataTables-style `draw`, `start`, `length`, `order`, and `columns` metadata on each query/mutation request while keeping the existing MIOOS `page`, `pageSize`, `sort`, `filters`, and `columns` compatibility shape.
-3. Mutations must not leave the browser with an unhandled `Failed to fetch` error. The client now parses response text defensively, reports empty/invalid responses as table errors, keeps the editor open on failed saves, and displays the server-communication state while the request is in flight.
-4. The API is modeled around the DataTables server-side processing pattern: every draw has a counter, a zero-based record start, a page length, order metadata, column metadata, and a response containing `draw`, `recordsTotal`, `recordsFiltered`, and page `data` in addition to the native MIOOS `rows` payload.
-5. The backend sort path no longer uses an O(n²) bubble sort. `MIOOSTBL` now builds an indexed sort map and then pages the sorted working set, which is materially faster for the 10,000-row sample.
-
-### DataTables-style query overlay
-
-The table still posts to `/api/mioos/table/query`, but each request includes both the native MIOOS shape and a DataTables-compatible overlay:
-
-```json
-{
-  "dataset": "massive",
-  "page": 1,
-  "pageSize": 25,
-  "draw": 7,
-  "start": 0,
-  "length": 25,
-  "serverSide": true,
-  "processing": true,
-  "search": "worker 4",
-  "sort": { "column": "name", "direction": "ascending" },
-  "order": [{ "column": 1, "dir": "asc", "name": "name" }],
-  "columns": [
-    { "data": "name", "name": "name", "searchable": true, "orderable": true, "hidden": false, "width": 210 }
-  ]
-}
-```
-
-### DataTables-style response overlay
-
-Responses include the native MIOOS table payload and these DataTables-compatible fields:
-
-```json
-{
-  "ok": true,
-  "draw": 7,
-  "recordsTotal": 10000,
-  "recordsFiltered": 10000,
-  "rows": [],
-  "data": [],
-  "pagination": {
-    "page": 1,
-    "pageSize": 25,
-    "totalRows": 10000,
-    "filteredRows": 10000,
-    "pageRows": 25,
-    "pageCount": 400
-  }
-}
-```
-
-`rows` remains the canonical MIOOS field; `data` is provided for developers familiar with DataTables conventions.
+- WebSocket is preferred for table query/mutation because the user requested high-performance table communication over the existing socket architecture.
+- VFS uploads already have WebSocket upload commands (`fs.upload.begin`, `fs.upload.chunk`, `fs.upload.batch`, `fs.upload.commit`) and are not rewritten in this ROI.
+- HTTP routes remain for compatibility, diagnostics, and fallback.
+- Synthetic massive rows are read-only and generated page-by-page.

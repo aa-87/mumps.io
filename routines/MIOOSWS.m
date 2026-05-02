@@ -82,6 +82,8 @@ COMMANDJSON(CONF,REQ,CTX,STATE,PAYLOAD,OUTJSON,ERR)
 	IF CMD="auth.user.unlock" QUIT $$AUTHUNLOCK(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="view.refresh" QUIT $$CMDVIEW(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="module.catalog" QUIT $$MODCAT(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
+	IF CMD="table.query" QUIT $$TABLEQUERY(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
+	IF CMD="table.mutate" QUIT $$TABLEMUTATE(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="debug.snapshot" QUIT $$DEBUGSNAP(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="desktop.layout.save" QUIT $$DESKLAYOUT(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	SET ERR("error")="command_unsupported",ERR("detail")=CMD
@@ -301,6 +303,20 @@ MODCAT(STATE,CONF,TREE,OUTJSON,ERR)
 	SET OUT("enabled")=+$GET(STATE("moduleSystemEnabled"),0)
 	SET OUT("count")=+$GET(OUT("moduleCount"),0)
 	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"module.catalog","module",.OUT)
+	QUIT 1
+	;
+TABLEQUERY(STATE,CONF,TREE,OUTJSON,ERR)
+	NEW OUT
+	IF +$GET(STATE("authRequired"),0)=1,+$GET(STATE("authenticated"),0)'=1 SET ERR("error")="login_required",ERR("detail")="table.query" QUIT 0
+	IF '$$QUERY^MIOOSTBL(.STATE,.CONF,.TREE,.OUT,.ERR) QUIT 0
+	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"table.query","table",.OUT)
+	QUIT 1
+	;
+TABLEMUTATE(STATE,CONF,TREE,OUTJSON,ERR)
+	NEW OUT
+	IF +$GET(STATE("authRequired"),0)=1,+$GET(STATE("authenticated"),0)'=1 SET ERR("error")="login_required",ERR("detail")="table.mutate" QUIT 0
+	IF '$$MUTATE^MIOOSTBL(.STATE,.CONF,.TREE,.OUT,.ERR) QUIT 0
+	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"table.mutate","table",.OUT)
 	QUIT 1
 	;
 DEBUGSNAP(STATE,CONF,TREE,OUTJSON,ERR)

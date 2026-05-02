@@ -1,6 +1,6 @@
 # MIOOS Backend Table
 
-The advanced table component is HTTP-first for bulk data and server mutations. WebSockets remain available for shell control and real-time commands, but table rows, sort requests, and CRUD mutations use HTTP routes for predictable performance and MAXSTRING-safe behavior.
+The advanced table component is WebSocket-first for table queries and server mutations, with authenticated HTTP fallback. WebSockets remain available for shell control and real-time commands, but table rows, sort requests, and CRUD mutations prefer WebSocket commands and fall back to the protected HTTP routes when the socket is unavailable.
 
 ## Current routes
 
@@ -112,23 +112,23 @@ See `docs/mioos/ROI_63_Redesign_Contracts.md` for the complete redesign sequence
 
 ## ROI 64A advanced standalone table contract
 
-The production table track now uses the client-visible contract `mioos-advanced-table-v4`. The component is intended to be standalone and embeddable in internal shell surfaces or user-created modules:
+The production table track now uses the client-visible contract `mioos-advanced-table-v5`. The component is intended to be standalone and embeddable in internal shell surfaces or user-created modules:
 
 ```html
 <mioos-full-table table-id="patients" title="Patients" dataset="patient-registration" :config="tableConfig"></mioos-full-table>
 ```
 
-`window.MIOOSTable.createConfig()` returns a safe default configuration that can enable or disable toolbar features such as dataset switching, search, grouping, column picker, row CRUD, column CRUD, selection, bulk actions, pagination, and row details. Backend query and mutation routes remain authoritative.
+`window.MIOOSTable.createConfig()` returns a safe default configuration that can enable or disable toolbar features such as dataset switching, search, grouping, column picker, row CRUD, column CRUD, selection, bulk actions, pagination, and row details. Backend WebSocket commands and HTTP fallback routes remain authoritative.
 
 `column.visibility` is a supported mutation action. Column visibility changes are persisted through `/api/mioos/table/mutate`, not treated as browser-only state.
 
 ## ROI 64C rewrite
 
-ROI 64C upgrades the table to `mioos-advanced-table-v4`. The standalone component now accepts `defaultPageSize`, `defaultSort`, `columns`, and feature gates for `filters`, `resizeColumns`, row details, CRUD, grouping, selection, pagination, and bulk actions. Query payloads include `filters`, and the backend applies exact-match filter arrays before sorting and pagination. Mutations still return a refreshed query-shaped payload so the browser does not have to infer post-mutation state. See `docs/mioos/ROI_64C_Advanced_Table_Rewrite.md`.
+ROI 64C upgrades the table to `mioos-advanced-table-v5`. The standalone component now accepts `defaultPageSize`, `defaultSort`, `columns`, and feature gates for `filters`, `resizeColumns`, row details, CRUD, grouping, selection, pagination, and bulk actions. Query payloads include `filters`, and the backend applies exact-match filter arrays before sorting and pagination. Mutations still return a refreshed query-shaped payload so the browser does not have to infer post-mutation state. See `docs/mioos/ROI_64C_Advanced_Table_Rewrite.md`.
 
 ## ROI 64C redo — DataTables-style server-side processing
 
-The advanced table contract is now `mioos-advanced-table-v4`. It remains a native MIOOS component, but its request/response envelope is intentionally modeled after DataTables server-side processing so module authors have a familiar mental model.
+The advanced table contract is now `mioos-advanced-table-v5`. It remains a native MIOOS component, but its request/response envelope is intentionally modeled after DataTables server-side processing so module authors have a familiar mental model.
 
 Each server interaction sends:
 
@@ -149,3 +149,76 @@ The backend responds with:
 The browser always shows a processing indicator during query and mutation requests. Empty or invalid server responses are surfaced as table errors instead of unhandled Vue/fetch exceptions.
 
 Large dataset performance was hardened by replacing the old O(n²) bubble sort in `MIOOSTBL` with an indexed server-side sort pass before paging. Server-side paging is still authoritative; the browser receives only the current page of `rows`/`data`.
+
+## ROI 64C redo 2 update — `mioos-advanced-table-v5`
+
+The advanced table now uses the `mioos-advanced-table-v5` contract. Table query and mutation are WebSocket-first through `table.query` and `table.mutate`, with HTTP fallback to `/api/mioos/table/query` and `/api/mioos/table/mutate` when the socket path is unavailable.
+
+The visible UI no longer exposes internal draw counters or response timestamps. Draw/start/length remain protocol fields for server-side paging compatibility, but the user-facing footer only shows row counts and page navigation.
+
+The default table density is `compact` for data-intensive MIOOS screens. Module authors can still opt into a larger layout by passing `density: 'comfortable'` through `MIOOSTable.createConfig`.
+
+The `massive` dataset is read-only and page-materialized on the server. It generates only the requested page rows after filtering/sorting metadata, instead of building a full row array for every request.
+
+### Copyable API variations
+
+Simple table:
+
+```javascript
+this.openBackendTableWindow({
+  title: 'Simple Table',
+  dataset: 'demo',
+  config: MIOOSTable.createConfig({
+    features: {
+      filters: false,
+      grouping: false,
+      columnPicker: false,
+      rowCrud: false,
+      columnCrud: false,
+      selection: false,
+      bulkActions: false,
+      rowDetails: false
+    }
+  })
+});
+```
+
+Dense editable table:
+
+```javascript
+this.openBackendTableWindow({
+  title: 'Dense Operations',
+  dataset: 'demo',
+  config: MIOOSTable.createConfig({
+    density: 'compact',
+    transport: 'websocket',
+    defaultPageSize: 50,
+    actionsWidth: 132,
+    features: {
+      rowCrud: true,
+      columnCrud: true,
+      selection: true,
+      bulkActions: true,
+      resizeColumns: true,
+      columnGroups: false
+    }
+  })
+});
+```
+
+Massive read-only table:
+
+```javascript
+this.openBackendTableWindow({
+  title: 'Massive Dataset',
+  dataset: 'massive',
+  config: MIOOSTable.createConfig({
+    defaultPageSize: 100,
+    features: {
+      rowCrud: false,
+      columnCrud: false,
+      rowDetails: false
+    }
+  })
+});
+```

@@ -2831,3 +2831,47 @@ button:disabled { cursor: default; opacity: .55; }
 .theme-dark-mode .mioos-table-grid tr.is-selected td { background: #1d4ed8; color: #ffffff; }
 .theme-dark-mode .mioos-table-group-row td,
 .theme-dark-mode .mioos-table-expanded-row td { background: #172554; color: #eff6ff; }
+
+/* ROI 64C redo 2: dense WebSocket-first table hardening. */
+.mioos-full-table.density-compact { gap: 6px; font-size: 11px; }
+.mioos-full-table.density-compact .mioos-table-toolbar { gap: 6px; padding: 6px 8px; border-radius: 10px; }
+.mioos-full-table.density-compact .mioos-table-toolbar strong { font-size: 13px; }
+.mioos-full-table.density-compact .mioos-table-toolbar span { font-size: 10.5px; }
+.mioos-full-table.density-compact .mioos-table-toolbar input,
+.mioos-full-table.density-compact .mioos-table-toolbar select,
+.mioos-full-table.density-compact .mioos-table-pager select { min-height: 24px; padding: 2px 6px; border-radius: 6px; }
+.mioos-full-table.density-compact .mioos-table-grid th,
+.mioos-full-table.density-compact .mioos-table-grid td { padding: 4px 6px; line-height: 1.25; }
+.mioos-full-table.density-compact .mioos-table-actions button,
+.mioos-full-table.density-compact .mioos-table-grid th button,
+.mioos-full-table.density-compact .mioos-table-pager button { min-height: 22px; padding: 2px 6px; border-radius: 6px; font-size: 11px; }
+.mioos-full-table.density-compact .mioos-table-cell.type-badge { min-height: 17px; padding: 1px 6px; }
+.mioos-table-readonly { align-self: center; padding: 3px 8px; border-radius: 999px; background: #fff7ed; color: #9a3412; border: 1px solid #fed7aa; font-size: 11px; font-weight: 700; }
+.mioos-table-processing { min-height: 34px; padding: 6px 9px; }
+.mioos-table-processing em { display: none; }
+.mioos-table-editor-backdrop { position: fixed; inset: 0; z-index: 10000; display: grid; place-items: center; padding: 18px; background: rgba(15, 23, 42, .42); backdrop-filter: blur(2px); }
+.mioos-table-editor { width: min(860px, calc(100vw - 36px)); max-height: calc(100vh - 54px); overflow: auto; color: var(--theme-field-text, #111827); background: var(--theme-panel-bg, #ffffff); }
+.mioos-table-editor .mioos-table-error { margin: 6px 0; }
+.mioos-table-check { display: grid !important; grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+.mioos-table-actions-head { position: relative; }
+.mioos-table-actions-head > span:first-child { display: inline-block; padding-right: 12px; }
+.mioos-table-actions { display: flex; gap: 3px; flex-wrap: wrap; align-items: center; }
+.mioos-table-actions-col { width: 156px; }
+.mioos-table-pager { gap: 6px; padding: 6px 2px; }
+.mioos-table-pager > span:first-child { font-weight: 700; color: var(--theme-field-text, #111827); }
+.mioos-table-showcase { display: flex; flex-direction: column; gap: 12px; min-height: 100%; padding: 14px; color: var(--theme-field-text, #111827); background: var(--theme-panel-bg, #ffffff); }
+.mioos-table-showcase > header { display: flex; justify-content: space-between; gap: 10px; padding: 12px; border: 1px solid rgba(148,163,184,.28); border-radius: 14px; background: #f8fbff; }
+.mioos-table-showcase > header strong { display: block; font-size: 17px; }
+.mioos-table-showcase > header span { display: block; font-size: 12px; opacity: .74; }
+.mioos-table-showcase-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; overflow: auto; }
+.mioos-table-showcase-card { display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px solid rgba(148,163,184,.28); border-radius: 14px; background: #ffffff; box-shadow: 0 8px 24px rgba(15,23,42,.08); }
+.mioos-table-showcase-card h3 { margin: 0; font-size: 14px; }
+.mioos-table-showcase-card p { margin: 0; font-size: 12px; line-height: 1.35; }
+.mioos-table-showcase-card pre { flex: 1 1 auto; max-height: 180px; overflow: auto; margin: 0; padding: 9px; border-radius: 10px; background: #0f172a; color: #e2e8f0; font-size: 11px; white-space: pre-wrap; }
+.theme-dark-mode .mioos-table-readonly { background: #431407; color: #fed7aa; border-color: #9a3412; }
+.theme-dark-mode .mioos-table-editor-backdrop { background: rgba(2,6,23,.68); }
+.theme-dark-mode .mioos-table-editor,
+.theme-dark-mode .mioos-table-showcase,
+.theme-dark-mode .mioos-table-showcase-card { color: #f8fafc; background: #0f172a; }
+.theme-dark-mode .mioos-table-showcase > header { color: #f8fafc; background: #111827; border-color: rgba(191,219,254,.28); }
+.theme-dark-mode .mioos-table-showcase-card pre { background: #020617; color: #e2e8f0; }

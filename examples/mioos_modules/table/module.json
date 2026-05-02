@@ -11,8 +11,11 @@
   "surface": "mioos-surface-table",
   "config": {
     "dataset": "demo",
-    "contract": "mioos-advanced-table-v4",
+    "contract": "mioos-advanced-table-v5",
     "defaultPageSize": 25,
+    "density": "compact",
+    "transport": "websocket",
+    "actionsWidth": 156,
     "defaultSort": { "column": "name", "direction": "ascending" },
     "features": {
       "search": true,

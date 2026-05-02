@@ -35,7 +35,8 @@
     if (key === 'app-catalog' || key === 'ui-modules') return 'mioos-surface-ui-modules';
     if (key === 'permissions' || key === 'permissions-ui') return 'mioos-surface-permissions';
     if (key === 'ui-elements') return 'mioos-surface-ui-elements';
-    if (key === 'sample-table' || key === 'table-samples' || key === 'patient-registration') return 'mioos-surface-table';
+    if (key === 'table-samples') return 'mioos-surface-table-showcase';
+    if (key === 'sample-table' || key === 'patient-registration') return 'mioos-surface-table';
     if (key === 'my-computer' || key === 'documents' || key === 'explorer' || key === 'home') return 'mioos-surface-explorer';
     if (key === 'terminal') return 'mioos-surface-terminal';
     if (key === 'theme-studio' || key === 'customize') return 'mioos-surface-theme';

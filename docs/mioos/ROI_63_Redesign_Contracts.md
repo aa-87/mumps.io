@@ -20,7 +20,7 @@ Do not confuse the installed registry/API with an enabled launcher. The default 
 
 1. Preserve the MUMPS-first architecture. Do not introduce a frontend framework, TypeScript, a build step, Node/Express, or a SPA-owned application model.
 2. Keep browser code in Vue 3 Options API UMD files under `public/mioos/app/`.
-3. Keep bulk data HTTP-first. Table queries, table mutations, file uploads, downloads, and large payloads use HTTP routes. WebSockets remain for control, realtime status, terminal, and lightweight command events.
+3. Use WebSocket-first communication for table query/mutation and shell/module control, with protected HTTP fallback routes where needed. Performance-critical VFS uploads/downloads may continue using the configured HTTP/WS transfer path.
 4. Do not use DataURLs for persisted uploads or images. Assets must be stored server-side and referenced through authenticated internal URLs after login.
 5. Do not emit protected asset URLs into pre-login first paint.
 6. Tests stay quiet on success and explicit on failure.
@@ -74,7 +74,7 @@ Validation requirements:
 
 ## Advanced table contract — target for ROI 66
 
-The table component must be rewritten around a stable internal state model and a deterministic HTTP-first backend contract.
+The table component must be rewritten around a stable internal state model and a deterministic WebSocket-first backend contract with authenticated HTTP fallback.
 
 ### Query route
 

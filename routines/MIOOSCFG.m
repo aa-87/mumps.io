@@ -71,7 +71,7 @@ GROUPS(OUT)
 	SET OUT("groups",1,"description")="Enable the App Catalogue, module launcher, and dynamic module windows."
 	SET OUT("groups",2,"key")="transport"
 	SET OUT("groups",2,"title")="Transport, uploads, and VFS"
-	SET OUT("groups",2,"description")="HTTP-first bulk transfer settings with WebSocket controls. Numeric values are clamped server-side."
+	SET OUT("groups",2,"description")="WebSocket-first runtime controls with configurable bulk transfer settings. Numeric values are clamped server-side."
 	SET OUT("groups",3,"key")="websocket"
 	SET OUT("groups",3,"title")="WebSocket pool"
 	SET OUT("groups",3,"description")="Session socket pool, heartbeat, diagnostics, and inflight behavior."
@@ -92,7 +92,7 @@ DEFS(OUT)
 	DO ADD(.OUT,"mioos.modules.appCatalogEnabled","modules","App Catalogue visible","boolean",1,"","","","mioos|modules|appCatalogEnabled","Shows the App Catalogue launcher and the catalogue window when the module system is enabled.","Immediate after refresh.")
 	DO ADD(.OUT,"mioos.modules.dynamicWindows","modules","Dynamic module windows","boolean",1,"","","","mioos|modules|dynamicWindows","Allows registered modules to open in reusable shell windows instead of static placeholders.","Immediate for newly opened windows.")
 	DO ADD(.OUT,"mioos.modules.launcher","modules","Module launcher mode","enum","desktop-icons-and-menu","","","desktop-icons-and-menu,start-menu-only,hidden","mioos|modules|launcher","Controls where module launchers appear. Hidden keeps APIs enabled but removes launcher surfaces.","Next bootstrap refreshes launcher surfaces.")
-	DO ADD(.OUT,"mioos.fs.transport","transport","File transfer transport","enum","http-and-websocket","","","http-and-websocket,http-only","mioos|fs|transport","Bulk file data stays HTTP-first. WebSockets are reserved for control and realtime state.","Applies to new transfer operations.")
+	DO ADD(.OUT,"mioos.fs.transport","transport","File transfer transport","enum","http-and-websocket","","","http-and-websocket,http-only","mioos|fs|transport","File transfer uses the configured transport while table/module communication is WebSocket-first where supported.","Applies to new transfer operations.")
 	DO ADD(.OUT,"mioos.upload.chunkBytes","transport","HTTP upload chunk bytes","integer",860000,131072,4194304,"","mioos|upload|chunkBytes","Chunk size for HTTP upload slices. The server clamps values to avoid MAXSTRING and memory pressure.","Applies to new uploads.")
 	DO ADD(.OUT,"mioos.upload.concurrency","transport","HTTP upload concurrency","integer",3,1,8,"","mioos|upload|concurrency","Number of parallel HTTP chunk uploads per transfer.","Applies to new uploads.")
 	DO ADD(.OUT,"mioos.upload.batchSize","transport","Upload batch size","integer",2,1,16,"","mioos|upload|batchSize","Controls how many chunks are grouped for transfer center bookkeeping.","Applies to new uploads.")

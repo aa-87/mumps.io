@@ -376,4 +376,8 @@ The `UI + Form Elements` module now uses `mioos-surface-ui-elements`, a standalo
 
 ## ROI 64C advanced table
 
-The standalone advanced table now uses `mioos-advanced-table-v4` and can be embedded by internal or user-created modules through `mioos-surface-table`. See `Backend_Table.md` and `ROI_64C_Advanced_Table_Rewrite.md`.
+The standalone advanced table now uses `mioos-advanced-table-v5` and can be embedded by internal or user-created modules through `mioos-surface-table`. See `Backend_Table.md` and `ROI_64C_Advanced_Table_Rewrite.md`.
+
+## ROI 64C redo 2 note
+
+The advanced backend table now uses `mioos-advanced-table-v5`, WebSocket-first query/mutation commands, compact default density, a viewport-safe editor dialog, read-only massive dataset safeguards, and a visible Table Samples showcase with copyable API variations.

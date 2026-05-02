@@ -7,6 +7,7 @@ QUERY(STATE,CONF,IN,OUT,ERR)
 	KILL OUT,ERR,ROWS,SCHEMA,WORK
 	SET ERR("routine")="MIOOSTBL"
 	SET DATASET=$$DATASET($GET(IN("dataset"),"demo"))
+	IF DATASET="massive" DO MASSIVEQ(.IN,.OUT,.CONF) QUIT 1
 	IF DATASET="vfs" DO
 	. IF '$$VFS(.STATE,.IN,.ROWS,.SCHEMA,.ERR) SET DATASET=""
 	IF DATASET'="vfs",DATASET'="" DO LOADDATA(.STATE,DATASET,.ROWS,.SCHEMA)
@@ -29,7 +30,7 @@ QUERY(STATE,CONF,IN,OUT,ERR)
 	IF FILTERED=0 SET PAGE=1
 	IF FILTERED>0,PAGE>((FILTERED+PSIZE-1)\PSIZE) SET PAGE=((FILTERED+PSIZE-1)\PSIZE)
 	MERGE OUT("schema","columns")=SCHEMA("columns")
-	DO ACTIONS(.OUT)
+	DO ACTIONS(.OUT,$SELECT(DATASET="vfs":1,1:0))
 	DO PAGE(.WORK,.OUT,PAGE,PSIZE,TOTAL,FILTERED)
 	SET GROUPBY=$GET(IN("groupBy"))
 	IF GROUPBY'="" DO GROUPS(.WORK,GROUPBY,.OUT)
@@ -44,8 +45,8 @@ QUERY(STATE,CONF,IN,OUT,ERR)
 	SET OUT("features","bulkActions")=1
 	SET OUT("features","selection")=1
 	SET OUT("features","filtering")=1
-	SET OUT("features","crudRows")=1
-	SET OUT("features","crudColumns")=1
+	SET OUT("features","crudRows")=$SELECT(DATASET="vfs":0,1:1)
+	SET OUT("features","crudColumns")=$SELECT(DATASET="vfs":0,1:1)
 	SET OUT("features","resizableColumns")=1
 	SET OUT("draw")=DRAW
 	SET OUT("recordsTotal")=TOTAL
@@ -176,7 +177,7 @@ SEEDDEMO(STATE,ROOT)
 	DO COLR(ROOT,2,"status","Status","badge",120,0,1,"State")
 	DO COLR(ROOT,3,"owner","Owner","text",150,0,1,"Ownership")
 	DO COLR(ROOT,4,"priority","Priority","text",110,0,1,"State")
-	DO COLR(ROOT,5,"updated","Updated","date",150,0,1,"Timeline")
+	DO COLR(ROOT,5,"updated","Updated","date",150,0,1,"")
 	DO ROWR(ROOT,1,"demo-1","Audit backlog","Open","MIOOS","High","2026-05-01","Security and audit work items")
 	DO ROWR(ROOT,2,"demo-2","Explorer grid","Done","Shell","Medium","2026-04-30","Resizable table source inspiration")
 	DO ROWR(ROOT,3,"demo-3","Transfer manager","Open","VFS","High","2026-04-28","Upload and download transfer controls")
@@ -208,6 +209,134 @@ SEEDUI(STATE,ROOT)
 	DO UIR(ROOT,5,"Date","date","DOB, appointment date, review date","2026-05-02")
 	QUIT
 	;
+MASSIVEQ(IN,OUT,CONF)
+	NEW SCHEMA,TOTAL,FILTERED,PAGE,PSIZE,DRAW,START,LENGTH,SORTBY,SORTDIR,SEARCH,I,VAL,IDX,SEQ,N,SKIP
+	KILL OUT,SCHEMA,IDX
+	SET TOTAL=10000,FILTERED=0
+	DO MASSIVESC(.SCHEMA)
+	MERGE OUT("schema","columns")=SCHEMA("columns")
+	SET DRAW=+$GET(IN("draw"),$GET(IN("dt","draw"),0))
+	SET LENGTH=+$GET(IN("length"),+$GET(IN("dt","length"),0))
+	SET START=+$GET(IN("start"),+$GET(IN("dt","start"),0))
+	SET PAGE=+$GET(IN("page"),0),PSIZE=+$GET(IN("pageSize"),0)
+	IF PSIZE<1,LENGTH>0 SET PSIZE=LENGTH
+	IF PSIZE<1 SET PSIZE=25
+	IF PAGE<1,START>0 SET PAGE=(START\PSIZE)+1
+	IF PAGE<1 SET PAGE=1
+	IF PSIZE>+$GET(CONF("mioos","table","maxPageSize"),250) SET PSIZE=+$GET(CONF("mioos","table","maxPageSize"),250)
+	SET SORTBY=$GET(IN("sort","column"),$GET(IN("sortBy"),"id"))
+	SET SORTDIR=$$LOW^MIOUTIL($GET(IN("sort","direction"),$GET(IN("sortDir"),"ascending")))
+	IF SORTDIR'="descending" SET SORTDIR="ascending"
+	SET SEARCH=$$LOW^MIOUTIL($GET(IN("search")))
+	FOR I=1:1:TOTAL IF $$MASSOK(I,.IN,SEARCH) DO
+	. SET FILTERED=FILTERED+1
+	. SET VAL=$$MASSKEY(I,SORTBY)
+	. SET IDX(VAL,I)=""
+	IF FILTERED=0 SET PAGE=1
+	IF FILTERED>0,PAGE>((FILTERED+PSIZE-1)\PSIZE) SET PAGE=((FILTERED+PSIZE-1)\PSIZE)
+	SET SKIP=(PAGE-1)*PSIZE,(SEQ,N)=0
+	IF SORTDIR="descending" DO
+	. SET VAL="" FOR  SET VAL=$ORDER(IDX(VAL),-1) QUIT:VAL=""  DO  QUIT:N'<PSIZE
+	. . SET I="" FOR  SET I=$ORDER(IDX(VAL,I),-1) QUIT:I=""  DO  QUIT:N'<PSIZE
+	. . . SET SEQ=SEQ+1 IF SEQ'>SKIP QUIT
+	. . . SET N=N+1 DO MASSROW(.OUT,N,I)
+	IF SORTDIR'="descending" DO
+	. SET VAL="" FOR  SET VAL=$ORDER(IDX(VAL)) QUIT:VAL=""  DO  QUIT:N'<PSIZE
+	. . SET I="" FOR  SET I=$ORDER(IDX(VAL,I)) QUIT:I=""  DO  QUIT:N'<PSIZE
+	. . . SET SEQ=SEQ+1 IF SEQ'>SKIP QUIT
+	. . . SET N=N+1 DO MASSROW(.OUT,N,I)
+	DO ACTIONS(.OUT,1)
+	SET OUT("ok")=1
+	SET OUT("dataset")="massive"
+	SET OUT("features","serverPagination")=1
+	SET OUT("features","serverSorting")=1
+	SET OUT("features","columnVisibility")=1
+	SET OUT("features","columnGrouping")=1
+	SET OUT("features","expansionRows")=1
+	SET OUT("features","actionRows")=0
+	SET OUT("features","bulkActions")=1
+	SET OUT("features","selection")=1
+	SET OUT("features","filtering")=1
+	SET OUT("features","crudRows")=0
+	SET OUT("features","crudColumns")=0
+	SET OUT("features","resizableColumns")=1
+	SET OUT("features","readOnly")=1
+	SET OUT("draw")=DRAW
+	SET OUT("recordsTotal")=TOTAL
+	SET OUT("recordsFiltered")=FILTERED
+	MERGE OUT("data")=OUT("rows")
+	SET OUT("pagination","page")=PAGE
+	SET OUT("pagination","pageSize")=PSIZE
+	SET OUT("pagination","totalRows")=TOTAL
+	SET OUT("pagination","filteredRows")=FILTERED
+	SET OUT("pagination","pageRows")=N
+	SET OUT("pagination","pageCount")=$SELECT(FILTERED=0:1,1:((FILTERED+PSIZE-1)\PSIZE))
+	QUIT
+	;
+MASSIVESC(SCHEMA)
+	KILL SCHEMA
+	DO COL(.SCHEMA,1,"id","ID","text",96,0,1,"Identity")
+	DO COL(.SCHEMA,2,"name","Name","text",220,0,1,"Identity")
+	DO COL(.SCHEMA,3,"status","Status","badge",110,0,1,"State")
+	DO COL(.SCHEMA,4,"owner","Owner","text",130,0,1,"Ownership")
+	DO COL(.SCHEMA,5,"score","Score","number",82,0,1,"Metrics")
+	DO COL(.SCHEMA,6,"updated","Updated","date",126,0,1,"")
+	QUIT
+	;
+MASSROW(OUT,N,I)
+	SET OUT("rows",N,"id")=$$MASSVAL(I,"id")
+	SET OUT("rows",N,"name")=$$MASSVAL(I,"name")
+	SET OUT("rows",N,"status")=$$MASSVAL(I,"status")
+	SET OUT("rows",N,"owner")=$$MASSVAL(I,"owner")
+	SET OUT("rows",N,"score")=$$MASSVAL(I,"score")
+	SET OUT("rows",N,"updated")=$$MASSVAL(I,"updated")
+	SET OUT("rows",N,"_expand","title")="Generated row"
+	SET OUT("rows",N,"_expand","body")="Synthetic read-only row for server-side pagination testing."
+	QUIT
+	;
+MASSOK(I,IN,SEARCH)
+	NEW KEY,VAL,NEED,OK,J,SEEN,KEYS
+	IF $GET(SEARCH)'="" DO  IF SEARCH'="" QUIT 0
+	. SET KEYS(1)="id",KEYS(2)="name",KEYS(3)="status",KEYS(4)="owner",KEYS(5)="score",KEYS(6)="updated"
+	. SET J=0 FOR  SET J=$ORDER(KEYS(J)) QUIT:J'>0  DO  QUIT:SEARCH=""
+	. . SET KEY=KEYS(J)
+	. . IF $$LOW^MIOUTIL($$MASSVAL(I,KEY))[SEARCH SET SEARCH=""
+	SET SEEN=0,OK=1
+	SET KEY="" FOR  SET KEY=$ORDER(IN("filters",KEY)) QUIT:KEY=""  DO  QUIT:'OK
+	. SET SEEN=1,OK=0,VAL=$$LOW^MIOUTIL($$MASSVAL(I,KEY))
+	. IF $DATA(IN("filters",KEY))=1 DO  QUIT
+	. . SET NEED=$$LOW^MIOUTIL($GET(IN("filters",KEY)))
+	. . IF NEED="" SET OK=1 QUIT
+	. . IF VAL=NEED SET OK=1
+	. SET J=0 FOR  SET J=$ORDER(IN("filters",KEY,J)) QUIT:J'>0  DO
+	. . SET NEED=$$LOW^MIOUTIL($GET(IN("filters",KEY,J)))
+	. . IF NEED="" SET OK=1
+	. . IF VAL=NEED SET OK=1
+	QUIT $SELECT('SEEN:1,OK:1,1:0)
+	;
+MASSKEY(I,KEY)
+	SET KEY=$$LOW^MIOUTIL($GET(KEY))
+	IF KEY="score" QUIT $$PAD(+$GET(I)#100,6)
+	IF KEY="id" QUIT $$PAD(+I,8)
+	IF KEY="name" QUIT "massive dataset row "_$$PAD(+I,8)
+	IF KEY="owner" QUIT "worker "_$$PAD((+I#17),4)_":"_$$PAD(+I,8)
+	IF KEY="updated" QUIT $$MASSVAL(I,"updated")_":"_$$PAD(+I,8)
+	IF KEY="status" QUIT $$LOW^MIOUTIL($$MASSVAL(I,"status"))_":"_$$PAD(+I,8)
+	QUIT $$PAD(+I,8)
+	;
+MASSVAL(I,KEY)
+	SET KEY=$$LOW^MIOUTIL($GET(KEY))
+	IF KEY="id" QUIT "mass-"_I
+	IF KEY="name" QUIT "Massive dataset row "_I
+	IF KEY="status" QUIT $SELECT(I#5=0:"Review",I#3=0:"Pending",1:"Active")
+	IF KEY="owner" QUIT "Worker "_(I#17)
+	IF KEY="score" QUIT I#100
+	IF KEY="updated" QUIT "2026-05-"_$$PAD(((I#28)+1),2)
+	QUIT ""
+	;
+PAD(N,W)
+	QUIT $TRANSLATE($JUSTIFY(+N,+$GET(W,8))," ","0")
+	;
 MASSIVE(ROWS,SCHEMA)
 	NEW I
 	KILL ROWS,SCHEMA
@@ -216,14 +345,14 @@ MASSIVE(ROWS,SCHEMA)
 	DO COL(.SCHEMA,3,"status","Status","badge",120,0,1,"State")
 	DO COL(.SCHEMA,4,"owner","Owner","text",150,0,1,"Ownership")
 	DO COL(.SCHEMA,5,"score","Score","number",90,0,1,"Metrics")
-	DO COL(.SCHEMA,6,"updated","Updated","date",150,0,1,"Timeline")
+	DO COL(.SCHEMA,6,"updated","Updated","date",150,0,1,"")
 	FOR I=1:1:10000 DO
 	. SET ROWS(I,"id")="mass-"_I
 	. SET ROWS(I,"name")="Massive dataset row "_I
 	. SET ROWS(I,"status")=$SELECT(I#5=0:"Review",I#3=0:"Pending",1:"Active")
 	. SET ROWS(I,"owner")="Worker "_(I#17)
 	. SET ROWS(I,"score")=I#100
-	. SET ROWS(I,"updated")="2026-05-"_$JUSTIFY(((I#28)+1),2)
+	. SET ROWS(I,"updated")="2026-05-"_$$PAD(((I#28)+1),2)
 	. SET ROWS(I,"_expand","title")="Generated row"
 	. SET ROWS(I,"_expand","body")="Synthetic row for performance and pagination testing."
 	QUIT
@@ -403,12 +532,14 @@ GROUPS(WORK,KEY,OUT)
 	KILL OUT("groups","byValue")
 	QUIT
 	;
-ACTIONS(OUT)
+ACTIONS(OUT,READONLY)
+	KILL OUT("rowActions"),OUT("bulkActions")
+	IF +$GET(READONLY) DO  QUIT
+	. SET OUT("bulkActions",1,"key")="export",OUT("bulkActions",1,"label")="Export selected"
 	SET OUT("rowActions",1,"key")="edit",OUT("rowActions",1,"label")="Edit"
 	SET OUT("rowActions",2,"key")="duplicate",OUT("rowActions",2,"label")="Duplicate"
 	SET OUT("rowActions",3,"key")="delete",OUT("rowActions",3,"label")="Delete"
 	SET OUT("bulkActions",1,"key")="export",OUT("bulkActions",1,"label")="Export selected"
 	SET OUT("bulkActions",2,"key")="bulk.delete",OUT("bulkActions",2,"label")="Delete selected"
 	QUIT
-	;
-	;
+	;	;

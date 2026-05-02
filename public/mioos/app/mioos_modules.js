@@ -35,7 +35,8 @@
     if (appKey === 'app-catalog' || appKey === 'ui-modules' || moduleKey === 'module-catalog') return 'mioos-surface-ui-modules';
     if (appKey === 'ui-elements' || moduleKey === 'ui-elements') return 'mioos-surface-ui-elements';
     if (appKey === 'permissions' || moduleKey === 'permissions') return 'mioos-surface-permissions';
-    if (appKey === 'table-samples' || appKey === 'sample-table' || appKey === 'patient-registration' || moduleKey === 'table') return 'mioos-surface-table';
+    if (appKey === 'table-samples' || moduleKey === 'table-showcase') return 'mioos-surface-table-showcase';
+    if (appKey === 'sample-table' || appKey === 'patient-registration' || moduleKey === 'table') return 'mioos-surface-table';
     if (module && module.surface) return module.surface;
     var component = componentByKey(vm, moduleKey);
     if (component && component.surface) return component.surface;
@@ -96,7 +97,7 @@
         errorText: function (key) { return this.errors[key] || ''; },
         onFilePick: function (event) { var file = event && event.target && event.target.files && event.target.files[0]; this.upload = file ? { name: file.name, size: file.size, type: file.type || 'application/octet-stream' } : { name: '', size: 0, type: '' }; if (file) this.showToast('info', 'File metadata captured. Production modules should upload over HTTP, not DataURLs.'); },
         resetSample: function () { this.form.firstName = 'Ada'; this.form.lastName = 'Lovelace'; this.form.email = 'ada@example.test'; this.form.status = 'Active'; this.form.role = 'Clinician'; this.form.contactMethod = 'email'; this.form.flags = ['portal', 'sms']; this.form.notifications = true; this.form.appointmentDate = '2026-05-04'; this.form.visitCount = 3; this.form.consent = false; this.upload = { name: '', size: 0, type: '' }; this.savedAt = ''; this.showToast('info', 'Sample form state reset.'); },
-        saveSample: function () { var self = this; if (!this.isValid) { this.showToast('error', 'Resolve validation messages before saving.'); return; } this.saving = true; window.setTimeout(function () { self.saving = false; self.savedAt = new Date().toLocaleTimeString(); self.showToast('success', 'Sample save completed using the HTTP-first module pattern.'); }, 450); },
+        saveSample: function () { var self = this; if (!this.isValid) { this.showToast('error', 'Resolve validation messages before saving.'); return; } this.saving = true; window.setTimeout(function () { self.saving = false; self.savedAt = new Date().toLocaleTimeString(); self.showToast('success', 'Sample save completed using the authenticated backend module pattern.'); }, 450); },
         showToast: function (kind, message) { this.toast = { visible: true, kind: kind || 'info', message: message || '' }; },
         hideToast: function () { this.toast.visible = false; },
         openModal: function () { this.modalOpen = true; }, closeModal: function () { this.modalOpen = false; }, openConfirm: function () { this.confirmOpen = true; }, closeConfirm: function () { this.confirmOpen = false; }, confirmDanger: function () { this.confirmOpen = false; this.showToast('success', 'Confirmed destructive-action pattern without mutating backend data.'); }, announcePattern: function (label) { this.showToast('info', label + ' pattern is intentionally local and backend-safe.'); }

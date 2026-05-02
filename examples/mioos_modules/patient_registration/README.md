@@ -1,6 +1,6 @@
 # Patient Registration Module Sample
 
-This sample demonstrates a MIOOS module backed by `MIOOSTBL` with HTTP-first table data and mutation routes.
+This sample demonstrates a MIOOS module backed by `MIOOSTBL` with WebSocket-first table data and mutation commands with authenticated HTTP fallback routes.
 
 Dataset: `patient-registration`
 

@@ -324,7 +324,7 @@ TABLEMUTATE(DEV,CONF,REQ,CTX)
 	. DO RESPERR(.DEV,.CONF,500,"table_state_error",$GET(ERR("error")),.CTX)
 	IF '$$REQUIREAUTH(.DEV,.CONF,.CTX,.STATE) QUIT
 	IF '$$MUTATE^MIOOSTBL(.STATE,.CONF,.TREE,.OUT,.ERR) DO  QUIT
-	. DO RESPERR(.DEV,.CONF,403,"table_mutate_failed",$GET(ERR("error")),.CTX)
+	. DO RESPERR(.DEV,.CONF,200,"table_mutate_failed",$GET(ERR("error")),.CTX)
 	DO RESPJSONX^MIOHTTP(.DEV,.CONF,200,.OUT,$GET(CTX("request_id")),.CTX)
 	SET CTX("status")=200
 	QUIT
