@@ -96,17 +96,17 @@ READFRAMEHDR(DEV,TO,HDR,ERR,MAXFRAME)
 	. IF HDR("len")>125 SET ERR("error")="ws_control_too_large" QUIT
 	IF $DATA(ERR) QUIT
 	IF HDR("len")=126 DO
-	. SET X="" DO READNWS^MIOSOCK(DEV,2,TO,.X) IF '$TEST SET ERR("error")="ws_timeout" QUIT
+	. SET X="" DO READNWSCHNK^MIOSOCK(DEV,2,TO,.X) IF '$TEST SET ERR("error")="ws_timeout" QUIT
 	. SET HDR("len")=($ASCII($EXTRACT(X,1))*256)+$ASCII($EXTRACT(X,2))
 	IF HDR("len")=127 DO
-	. SET X="" DO READNWS^MIOSOCK(DEV,8,TO,.X) IF '$TEST SET ERR("error")="ws_timeout" QUIT
+	. SET X="" DO READNWSCHNK^MIOSOCK(DEV,8,TO,.X) IF '$TEST SET ERR("error")="ws_timeout" QUIT
 	. SET VAL=0 FOR I=1:1:8 SET VAL=VAL*256+$ASCII($EXTRACT(X,I))
 	. IF VAL>2147483647 SET ERR("error")="ws_frame_too_large" QUIT
 	. SET HDR("len")=VAL
 	IF $GET(HDR("len"))>+$GET(MAXFRAME,2147483647) SET ERR("error")="ws_frame_too_large" QUIT
 	IF '$GET(HDR("masked")) SET ERR("error")="ws_client_unmasked" QUIT
 	NEW HMSK
-	SET HDR("mask")="" DO READNWS^MIOSOCK(DEV,4,TO,.HMSK) IF '$TEST SET ERR("error")="ws_timeout" QUIT
+	SET HDR("mask")="" DO READNWSCHNK^MIOSOCK(DEV,4,TO,.HMSK) IF '$TEST SET ERR("error")="ws_timeout" QUIT
 	MERGE HDR("mask")=HMSK
 	SET HDR("offset")=0
 	QUIT

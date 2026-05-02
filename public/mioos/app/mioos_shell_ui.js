@@ -202,7 +202,9 @@
           setView: function (mode) { this.vm.explorerSetViewMode(this.window.id, mode); },
           rowMenu: function (item, event) { this.vm.openExplorerContextMenu(this.window.id, item, event); },
           blankMenu: function (event) { this.vm.openExplorerContextMenu(this.window.id, null, event); },
-          sortMark: function (key) { return this.state.sortKey === key ? (this.state.sortDir === 'desc' ? '▼' : '▲') : ''; }
+          sortMark: function (key) { return this.state.sortKey === key ? (this.state.sortDir === 'desc' ? '▼' : '▲') : ''; },
+          resizeColumn: function (column, event) { this.vm.explorerBeginColumnResize(this.window.id, column, event); },
+          cellValue: function (item, column) { return this.vm.explorerColumnValue(item, (column || {}).key); }
         },
         template: `
           <div class="mioos-surface mioos-surface-explorer mioos-explorer-native" @contextmenu.prevent="blankMenu($event)" @click="vm.closeExplorerContextMenu(window.id)">

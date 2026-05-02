@@ -585,6 +585,9 @@
           { key: 'modified', label: 'Modified', width: 158, minWidth: 118 }
         ];
       },
+      explorerColumns: function (state) {
+        return this.explorerDetailsColumns(state);
+      },
       explorerDetailsColumns: function (state) {
         var existing = Array.isArray((state || {}).detailsColumns) ? state.detailsColumns : [];
         var map = {};

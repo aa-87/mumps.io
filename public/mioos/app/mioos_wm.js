@@ -2,6 +2,10 @@
   function findWindow(vm, windowId) {
     return vm.windows.find(function (item) { return item.id === windowId; }) || null;
   }
+  function nextWindowId(vm, prefix) {
+    vm._mioosWindowSeq = (vm._mioosWindowSeq || 0) + 1;
+    return (prefix || 'win') + '-' + vm._mioosWindowSeq;
+  }
   function taskbarHeight(vm) {
     var theme = (vm && vm.appliedThemeProfile) || (vm && vm.themeStudioActiveTheme && vm.themeStudioActiveTheme()) || {};
     var mobile = (window.innerWidth || document.documentElement.clientWidth || 1280) <= 768;
