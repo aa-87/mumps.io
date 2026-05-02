@@ -13,7 +13,7 @@
     ];
   }
 
-  var TABLE_CONTRACT = 'mioos-advanced-table-v5';
+  var TABLE_CONTRACT = 'mioos-advanced-table-v7';
 
   function defaultTableConfig() {
     return {
@@ -25,6 +25,7 @@
       readonly: false,
       density: 'compact',
       transport: 'websocket',
+      mutateTransport: 'http',
       actionsWidth: 156,
       emptyMessage: 'No rows match the current server-side table query.',
       loadingMessage: 'Loading rows from server…',
@@ -49,6 +50,55 @@
       { id: 'demo-2', name: 'Explorer grid', status: 'Done', owner: 'Shell', priority: 'Medium', updated: '2026-04-30', _expand: { title: 'Notes', body: 'Resizable Explorer grid source inspiration.' } },
       { id: 'demo-3', name: 'Transfer manager', status: 'Open', owner: 'VFS', priority: 'High', updated: '2026-04-28', _expand: { title: 'Notes', body: 'Upload and download transfer controls.' } }
     ];
+  }
+
+
+  function mumpsTableSnippet(dataset, extraLines) {
+    extraLines = Array.isArray(extraLines) ? extraLines : [];
+    var lines = [
+      '; 1) Define/seed the dataset in MUMPS',
+      'NEW USER,ROOT,MOD',
+      'SET USER=$GET(STATE("principal"),"admin")',
+      'SET ROOT=$NAME(^MIO("MIOOS","TABLE",USER,"' + dataset + '"))',
+      'KILL @ROOT',
+      'SET @ROOT@("schema","columns",1,"key")="id"',
+      'SET @ROOT@("schema","columns",1,"label")="ID"',
+      'SET @ROOT@("schema","columns",1,"type")="text"',
+      'SET @ROOT@("schema","columns",1,"width")=120',
+      'SET @ROOT@("schema","columns",2,"key")="name"',
+      'SET @ROOT@("schema","columns",2,"label")="Name"',
+      'SET @ROOT@("schema","columns",2,"type")="text"',
+      'SET @ROOT@("schema","columns",2,"width")=220',
+      'SET @ROOT@("schema","columns",3,"key")="status"',
+      'SET @ROOT@("schema","columns",3,"label")="Status"',
+      'SET @ROOT@("schema","columns",3,"type")="badge"',
+      'SET @ROOT@("schema","columns",3,"width")=120',
+      'SET @ROOT@("rows",1,"id")="' + dataset + '-1"',
+      'SET @ROOT@("rows",1,"name")="First row"',
+      'SET @ROOT@("rows",1,"status")="Open"',
+      'SET @ROOT@("rows",1,"_expand","title")="Details"',
+      'SET @ROOT@("rows",1,"_expand","body")="Optional row details shown from the ID/control column."',
+      '',
+      '; 2) Register/open the table module with MUMPS metadata',
+      'KILL MOD',
+      'SET MOD("componentKey")="table"',
+      'SET MOD("surface")="mioos-surface-table"',
+      'SET MOD("tableState","dataset")="' + dataset + '"',
+      'SET MOD("tableState","config","contract")="' + TABLE_CONTRACT + '"'
+    ];
+    extraLines.forEach(function (line) { lines.push(line); });
+    lines = lines.concat([
+      '',
+      '; 3) Routines to reload/test after changing the table contract',
+      'ZLINK "MIOOSTBL"',
+      'ZLINK "MIOOSAPI"',
+      'ZLINK "MIOOSWS"',
+      'ZLINK "MIOOSMOD"',
+      'ZLINK "MIOOST"',
+      'DO INIT^MIOOS(.CONF)',
+      'DO ^MIOOST'
+    ]);
+    return lines.join('\n');
   }
 
   function normalizeColumns(columns) {
@@ -114,7 +164,7 @@
 
   function shouldFallbackSocket(err) {
     var text = String((err && (err.error || err.detail || err.message)) || '');
-    return text === 'command_unsupported' || text === 'socket_unavailable' || text === 'socket_closed' || text === 'socket_error' || text === 'socket_send_failed';
+    return text === 'command_unsupported' || text === 'socket_unavailable' || text === 'socket_closed' || text === 'socket_error' || text === 'socket_send_failed' || text === 'socket_timeout' || text === 'socket_request_timeout' || text === 'worker_command_timeout' || text.indexOf('timeout') >= 0;
   }
 
   function root(vm) { return vm.$root || vm; }
@@ -160,6 +210,7 @@
         toast: '',
         validation: {},
         columnResize: null,
+        columnPickerOpen: false,
         groupExpanded: {},
         editor: { open: false, mode: 'row', title: '', row: {}, column: {} }
       };
@@ -197,9 +248,10 @@
         columns: columns.map(function (col) { return { key: col.key, data: col.key, name: col.key, label: col.label, searchable: col.searchable !== false, orderable: col.sortable !== false, hidden: !!col.hidden, width: col.width }; })
       };
     },
-    backendTableUseWebSocket: function (state) {
+    backendTableUseWebSocket: function (state, operation) {
       var cfg = mergeConfig(defaultTableConfig(), (state || {}).config || {});
-      if (cfg.transport === 'http') return false;
+      var transport = operation === 'mutate' ? (cfg.mutateTransport || 'http') : (cfg.transport || 'websocket');
+      if (transport === 'http') return false;
       return typeof this.command === 'function';
     },
     backendTableHttpPost: function (route, payload, label) {
@@ -221,7 +273,7 @@
       state.requestLabel = 'Loading rows from server';
       state.error = '';
       var body = this.backendTableQueryPayload(state, state.draw);
-      var request = this.backendTableUseWebSocket(state)
+      var request = this.backendTableUseWebSocket(state, 'query')
         ? this.command('table.query', body).then(extractTablePayload).catch(function (err) { if (shouldFallbackSocket(err)) return vm.backendTableHttpPost(route, body, 'Table query'); throw err; })
         : this.backendTableHttpPost(route, body, 'Table query');
       return request.then(function (payload) {
@@ -246,7 +298,7 @@
       state.requestLabel = 'Saving table changes';
       state.error = '';
       var route = this.backendTableMutateRoute();
-      var request = this.backendTableUseWebSocket(state)
+      var request = this.backendTableUseWebSocket(state, 'mutate')
         ? this.command('table.mutate', body).then(extractTablePayload).catch(function (err) { if (shouldFallbackSocket(err)) return vm.backendTableHttpPost(route, body, 'Table mutation'); throw err; })
         : this.backendTableHttpPost(route, body, 'Table mutation');
       return request.then(function (payload) {
@@ -272,8 +324,8 @@
       if (payload.draw && payload.draw < +(state.lastDraw || 0)) return;
       if (payload.draw) state.lastDraw = +payload.draw;
       state.lastServerAt = new Date().toLocaleTimeString();
-      state.features = Object.assign({}, state.features || {}, payload.features || {});
-      if (Object.prototype.hasOwnProperty.call(state.features, 'readOnly')) state.readOnly = !!(+state.features.readOnly);
+      state.features = Object.assign({}, payload.features || {});
+      state.readOnly = !!(+((state.features || {}).readOnly || 0)) || !!((state.config || {}).readonly);
       var schemaColumns = (((payload.schema || {}).columns) || []);
       var payloadRows = Array.isArray(payload.rows) ? payload.rows : (Array.isArray(payload.data) ? payload.data : []);
       state.columns = normalizeColumns(schemaColumns.length ? schemaColumns : state.columns);
@@ -317,6 +369,25 @@
     },
     backendTableVisibleColumns: function (state) {
       return normalizeColumns((state || {}).columns || []).filter(function (col) { return !col.hidden; });
+    },
+    backendTableVisibleRowActions: function (state) {
+      if (!this.backendTableFeature(state, 'rowCrud')) return [];
+      return ((state || {}).rowActions || []).filter(function (action) {
+        var key = (action || {}).key || '';
+        return key === 'edit' || key === 'duplicate' || key === 'delete';
+      });
+    },
+    backendTableShowSelection: function (state) {
+      return this.backendTableFeature(state, 'selection');
+    },
+    backendTableShowActions: function (state) {
+      return this.backendTableVisibleRowActions(state).length > 0;
+    },
+    backendTableShowControl: function (state) {
+      return this.backendTableShowSelection(state) || this.backendTableFeature(state, 'rowDetails');
+    },
+    backendTableColspan: function (state) {
+      return this.backendTableVisibleColumns(state).length + (this.backendTableShowControl(state) ? 1 : 0) + (this.backendTableShowActions(state) ? 1 : 0);
     },
     backendTableAllColumns: function (state) { return normalizeColumns((state || {}).columns || []); },
     backendTableColumnStyle: function (column) { return { width: Math.max(48, +(column || {}).width || 120) + 'px' }; },
@@ -376,6 +447,8 @@
       var val = ((state || {}).filters || {})[key];
       return Array.isArray(val) ? (val[0] || '') : (val || '');
     },
+    backendTableOpenColumnPicker: function (tableId) { this.backendTableState(tableId).columnPickerOpen = true; },
+    backendTableCloseColumnPicker: function (tableId) { this.backendTableState(tableId).columnPickerOpen = false; },
     backendTableSetFilter: function (tableId, key, value) {
       var state = this.backendTableState(tableId);
       state.filters = clone(state.filters || {});
@@ -495,8 +568,10 @@
     },
     backendTableOpenColumnEditor: function (tableId, column) {
       var state = this.backendTableState(tableId);
+      if (!this.backendTableFeature(state, 'columnCrud')) return null;
       state.validation = {};
-      state.editor = { open: true, mode: 'column', title: column && column.key ? 'Edit column' : 'Add column', row: {}, column: clone(column || { key: '', label: '', type: 'text', width: 140, sortable: true, resizable: true, hidden: false }) };
+      state.columnPickerOpen = false;
+      state.editor = { open: true, mode: 'column', title: column && column.key ? 'Column designer: edit column' : 'Column designer: add column', row: {}, column: clone(column || { key: '', label: '', type: 'text', width: 140, sortable: true, resizable: true, hidden: false }) };
     },
     backendTableCloseEditor: function (tableId) { this.backendTableState(tableId).editor.open = false; },
     backendTableValidateEditor: function (state) {
@@ -630,12 +705,12 @@
       template: '' +
         '<section class="mioos-full-table" :class="[\'density-\' + ((state.config || {}).density || \'compact\'), { \'is-processing\': state.loading || state.saving, \'is-readonly\': state.readOnly }]" :aria-busy="(state.loading || state.saving) ? \'true\' : \'false\'">' +
           '<header class="mioos-table-toolbar">' +
-            '<div><strong>[[ state.title || title || \'Backend Table\' ]]</strong><span>WebSocket-first server table · HTTP fallback · dense module API</span></div>' +
+            '<div><strong>[[ state.title || title || \'Backend Table\' ]]</strong><span>Server-side table · dense MUMPS module API</span></div>' +
             '<label v-if="vm.backendTableFeature(state, &quot;datasetSwitcher&quot;)"><span>Dataset</span><select :value="state.dataset" @change="vm.backendTableSetDataset(tableId || state.id, $event.target.value)"><option value="demo">Sample table</option><option value="patient-registration">Patient registration</option><option value="ui-elements">UI + form elements</option><option value="massive">Massive dataset</option><option value="vfs">VFS folder</option></select></label>' +
             '<label v-if="vm.backendTableFeature(state, &quot;search&quot;)" class="mioos-table-search"><span>Search</span><input v-model="searchInput" :disabled="state.loading || state.saving" @keydown.enter="commitSearch" @blur="commitSearch" placeholder="Filter rows" aria-label="Search table rows"></label>' +
             '<details v-if="vm.backendTableFeature(state, &quot;filters&quot;)" class="mioos-table-filters"><summary>Filters</summary><label v-for="col in filterableColumns" :key="col.key"><span>[[ col.label ]]</span><input :value="vm.backendTableFilterValue(state, col.key)" @change="vm.backendTableSetFilter(tableId || state.id, col.key, $event.target.value)" placeholder="Exact value"></label><button type="button" @click="vm.backendTableClearFilters(tableId || state.id)">Clear filters</button></details>' +
             '<label v-if="vm.backendTableFeature(state, &quot;grouping&quot;)"><span>Group</span><select :value="state.groupBy" @change="vm.backendTableSetGroupBy(tableId || state.id, $event.target.value)"><option value="">None</option><option v-for="col in allColumns" :key="col.key" :value="col.key">[[ col.label ]]</option></select></label>' +
-            '<details v-if="vm.backendTableFeature(state, &quot;columnPicker&quot;)" class="mioos-table-column-picker"><summary>Columns</summary><button v-for="col in allColumns" :key="col.key" type="button" @click="vm.backendTableToggleColumn(tableId || state.id, col.key)"><span>[[ col.hidden ? \'☐\' : \'☑\' ]]</span> [[ col.label ]]</button></details>' +
+            '<button v-if="vm.backendTableFeature(state, &quot;columnPicker&quot;)" class="mioos-btn" type="button" @click="vm.backendTableOpenColumnPicker(tableId || state.id)">Columns</button>' +
             '<button v-if="vm.backendTableFeature(state, &quot;rowCrud&quot;)" type="button" class="mioos-btn" @click="vm.backendTableOpenRowEditor(tableId || state.id)">Add row</button>' +
             '<button v-if="vm.backendTableFeature(state, &quot;columnCrud&quot;)" type="button" class="mioos-btn" @click="vm.backendTableOpenColumnEditor(tableId || state.id)">Add column</button>' +
             '<span v-if="state.readOnly" class="mioos-table-readonly">Read-only</span>' +
@@ -644,6 +719,16 @@
           '<div class="mioos-table-toast" role="status" v-if="state.toast">[[ state.toast ]]</div>' +
           '<div class="mioos-table-bulkbar" v-if="selectedCount && vm.backendTableFeature(state, &quot;bulkActions&quot;)"><span>[[ selectedCount ]] selected</span><button v-for="action in state.bulkActions" :key="action.key" type="button" @click="vm.backendTableRunBulkAction(tableId || state.id, action)">[[ action.label ]]</button><button type="button" @click="vm.backendTableClearSelection(tableId || state.id)">Clear</button></div>' +
           '<div class="mioos-table-error" v-if="state.error">[[ state.error ]]</div>' +
+          '<div class="mioos-table-editor-backdrop" v-if="state.columnPickerOpen" @click.self="vm.backendTableCloseColumnPicker(tableId || state.id)">' +
+            '<div class="mioos-table-editor is-column-picker" role="dialog" aria-modal="true">' +
+              '<header><strong>Visible columns</strong><button type="button" @click="vm.backendTableCloseColumnPicker(tableId || state.id)">×</button></header>' +
+              '<section class="mioos-table-column-list">' +
+                '<button v-for="col in allColumns" :key="col.key" type="button" @click="vm.backendTableToggleColumn(tableId || state.id, col.key)">' +
+                  '<span>[[ col.hidden ? \'☐\' : \'☑\' ]]</span><b>[[ col.label ]]</b><small>[[ col.key ]]</small>' +
+                '</button>' +
+              '</section>' +
+            '</div>' +
+          '</div>' +
           '<div class="mioos-table-editor-backdrop" v-if="state.editor && state.editor.open" @click.self="vm.backendTableCloseEditor(tableId || state.id)">' +
             '<div class="mioos-table-editor" role="dialog" aria-modal="true">' +
               '<header><strong>[[ state.editor.title ]]</strong><button type="button" aria-label="Close editor" @click="vm.backendTableCloseEditor(tableId || state.id)">×</button></header>' +
@@ -654,19 +739,19 @@
           '</div>' +
           '<div class="mioos-table-wrap">' +
             '<table class="mioos-table-grid" role="grid">' +
-              '<colgroup><col class="mioos-table-select-col"><col v-for="col in columns" :key="col.key" :style="vm.backendTableColumnStyle(col)"><col class="mioos-table-actions-col" :style="vm.backendTableActionsStyle(state)"></colgroup>' +
+              '<colgroup><col v-if="vm.backendTableShowControl(state)" class="mioos-table-select-col"><col v-for="col in columns" :key="col.key" :style="vm.backendTableColumnStyle(col)"><col v-if="vm.backendTableShowActions(state)" class="mioos-table-actions-col" :style="vm.backendTableActionsStyle(state)"></colgroup>' +
               '<thead>' +
-                '<tr v-if="vm.backendTableFeature(state, &quot;columnGroups&quot;)" class="mioos-table-groups"><th></th><th v-for="group in columnGroups" :key="group.label + group.span" :colspan="group.span">[[ group.label ]]</th><th></th></tr>' +
-                '<tr><th><label class="mioos-table-select-all"><input type="checkbox" :checked="vm.backendTableAllVisibleSelected(state)" @change="vm.backendTableToggleSelectAllVisible(tableId || state.id)"><span>All</span></label></th><th v-for="col in columns" :key="col.key"><button type="button" @click="vm.backendTableSortBy(tableId || state.id, col)">[[ col.label ]] [[ vm.backendTableSortMark(state, col) ]]</button><button v-if="vm.backendTableFeature(state, &quot;columnCrud&quot;)" type="button" class="mioos-table-col-edit" title="Edit column" @click.stop="vm.backendTableOpenColumnEditor(tableId || state.id, col)">⚙</button><button v-if="vm.backendTableFeature(state, &quot;columnCrud&quot;)" type="button" class="mioos-table-col-delete" title="Delete column" @click.stop="vm.backendTableDeleteColumn(tableId || state.id, col)">×</button><span v-if="vm.backendTableFeature(state, &quot;resizeColumns&quot;)" class="mioos-table-resizer" @pointerdown.prevent="vm.backendTableBeginColumnResize(tableId || state.id, col, $event)"></span></th><th class="mioos-table-actions-head"><span>Actions</span><span class="mioos-table-resizer" @pointerdown.prevent="vm.backendTableBeginActionsResize(tableId || state.id, $event)"></span></th></tr>' +
+                '<tr v-if="vm.backendTableFeature(state, &quot;columnGroups&quot;)" class="mioos-table-groups"><th v-if="vm.backendTableShowControl(state)"></th><th v-for="group in columnGroups" :key="group.label + group.span" :colspan="group.span">[[ group.label ]]</th><th v-if="vm.backendTableShowActions(state)"></th></tr>' +
+                '<tr><th v-if="vm.backendTableShowControl(state)" class="mioos-table-control-head"><label v-if="vm.backendTableShowSelection(state)" class="mioos-table-select-all"><input type="checkbox" :checked="vm.backendTableAllVisibleSelected(state)" @change="vm.backendTableToggleSelectAllVisible(tableId || state.id)"><span>All</span></label><span v-else class="sr-only">Details</span></th><th v-for="col in columns" :key="col.key"><button type="button" @click="vm.backendTableSortBy(tableId || state.id, col)">[[ col.label ]] [[ vm.backendTableSortMark(state, col) ]]</button><button v-if="vm.backendTableFeature(state, &quot;columnCrud&quot;)" type="button" class="mioos-table-col-edit" title="Edit column" @click.stop="vm.backendTableOpenColumnEditor(tableId || state.id, col)">⚙</button><button v-if="vm.backendTableFeature(state, &quot;columnCrud&quot;)" type="button" class="mioos-table-col-delete" title="Delete column" @click.stop="vm.backendTableDeleteColumn(tableId || state.id, col)">×</button><span v-if="vm.backendTableFeature(state, &quot;resizeColumns&quot;)" class="mioos-table-resizer" @pointerdown.prevent="vm.backendTableBeginColumnResize(tableId || state.id, col, $event)"></span></th><th v-if="vm.backendTableShowActions(state)" class="mioos-table-actions-head"><span>Actions</span><span class="mioos-table-resizer" @pointerdown.prevent="vm.backendTableBeginActionsResize(tableId || state.id, $event)"></span></th></tr>' +
               '</thead>' +
               '<tbody>' +
-                '<tr v-if="!state.loading && !state.rows.length" class="mioos-table-empty-row"><td :colspan="columns.length + 2">[[ state.config.emptyMessage ]]</td></tr>' +
+                '<tr v-if="!state.loading && !state.rows.length" class="mioos-table-empty-row"><td :colspan="vm.backendTableColspan(state)">[[ state.config.emptyMessage ]]</td></tr>' +
                 '<template v-for="group in rowGroups" :key="group.key || \'all\'">' +
-                  '<tr v-if="state.groupBy" class="mioos-table-group-row"><td :colspan="columns.length + 2"><button type="button" @click="vm.backendTableToggleGroup(tableId || state.id, group.key)">[[ vm.backendTableIsGroupExpanded(state, group.key) ? \'▾\' : \'▸\' ]]</button><strong>[[ group.label ]]</strong><span>[[ group.count ]] rows</span></td></tr>' +
+                  '<tr v-if="state.groupBy" class="mioos-table-group-row"><td :colspan="vm.backendTableColspan(state)"><button type="button" @click="vm.backendTableToggleGroup(tableId || state.id, group.key)">[[ vm.backendTableIsGroupExpanded(state, group.key) ? \'▾\' : \'▸\' ]]</button><strong>[[ group.label ]]</strong><span>[[ group.count ]] rows</span></td></tr>' +
                   '<template v-if="!state.groupBy || vm.backendTableIsGroupExpanded(state, group.key)">' +
                     '<template v-for="row in group.rows" :key="keyOf(row)">' +
-                      '<tr :class="{ \'is-selected\': vm.backendTableIsSelected(state, row) }"><td><input type="checkbox" :checked="vm.backendTableIsSelected(state, row)" @change="vm.backendTableToggleRow(tableId || state.id, row)"></td><td v-for="col in columns" :key="col.key"><span :class="\'mioos-table-cell type-\' + col.type">[[ vm.backendTableCellText(row, col) ]]</span></td><td class="mioos-table-actions"><button v-if="row._expand && vm.backendTableFeature(state, &quot;rowDetails&quot;)" type="button" @click="vm.backendTableToggleExpand(tableId || state.id, row)">[[ vm.backendTableIsExpanded(state, row) ? \'Hide\' : \'Details\' ]]</button><button v-for="action in state.rowActions" :key="action.key" type="button" @click="vm.backendTableRunAction(tableId || state.id, action, row)">[[ action.label ]]</button></td></tr>' +
-                      '<tr v-if="vm.backendTableIsExpanded(state, row)" class="mioos-table-expanded-row"><td></td><td :colspan="columns.length + 1"><strong>[[ (row._expand || {}).title || \'Details\' ]]</strong><p>[[ (row._expand || {}).body || JSON.stringify(row) ]]</p></td></tr>' +
+                      '<tr :class="{ \'is-selected\': vm.backendTableIsSelected(state, row) }"><td v-if="vm.backendTableShowControl(state)" class="mioos-table-control-cell"><button v-if="row._expand && vm.backendTableFeature(state, &quot;rowDetails&quot;)" class="mioos-table-detail-toggle" type="button" :aria-expanded="vm.backendTableIsExpanded(state, row) ? \'true\' : \'false\'" @click="vm.backendTableToggleExpand(tableId || state.id, row)">[[ vm.backendTableIsExpanded(state, row) ? \'▾\' : \'▸\' ]]</button><input v-if="vm.backendTableShowSelection(state)" type="checkbox" :checked="vm.backendTableIsSelected(state, row)" @change="vm.backendTableToggleRow(tableId || state.id, row)"></td><td v-for="col in columns" :key="col.key"><span :class="\'mioos-table-cell type-\' + col.type">[[ vm.backendTableCellText(row, col) ]]</span></td><td v-if="vm.backendTableShowActions(state)" class="mioos-table-actions"><button v-for="action in vm.backendTableVisibleRowActions(state)" :key="action.key" type="button" @click="vm.backendTableRunAction(tableId || state.id, action, row)">[[ action.label ]]</button></td></tr>' +
+                      '<tr v-if="vm.backendTableIsExpanded(state, row)" class="mioos-table-expanded-row"><td v-if="vm.backendTableShowControl(state)"></td><td :colspan="columns.length + (vm.backendTableShowActions(state) ? 1 : 0)"><strong>[[ (row._expand || {}).title || \'Details\' ]]</strong><p>[[ (row._expand || {}).body || JSON.stringify(row) ]]</p></td></tr>' +
                     '</template>' +
                   '</template>' +
                 '</template>' +
@@ -684,11 +769,11 @@
         vm: function () { return root(this); },
         variants: function () {
           return [
-            { key: 'simple', title: 'Simple read-mostly table', dataset: 'demo', summary: 'Search, sort, and pagination only.', code: "this.openBackendTableWindow({ title: 'Simple Table', dataset: 'demo', config: MIOOSTable.createConfig({ features: { filters: false, grouping: false, columnPicker: false, rowCrud: false, columnCrud: false, selection: false, bulkActions: false, rowDetails: false } }) });", config: { features: { filters: false, grouping: false, columnPicker: false, rowCrud: false, columnCrud: false, selection: false, bulkActions: false, rowDetails: false } } },
-            { key: 'dense', title: 'Dense operational table', dataset: 'demo', summary: 'Compact spacing for data-intensive internal tools.', code: "this.openBackendTableWindow({ title: 'Dense Operations', dataset: 'demo', config: MIOOSTable.createConfig({ density: 'compact', defaultPageSize: 50, actionsWidth: 132 }) });", config: { density: 'compact', defaultPageSize: 50, actionsWidth: 132 } },
-            { key: 'editable', title: 'Editable CRUD table', dataset: 'demo', summary: 'Row create/edit/delete, column management, selection, and bulk delete.', code: "this.openBackendTableWindow({ title: 'Editable Table', dataset: 'demo', config: MIOOSTable.createConfig({ features: { rowCrud: true, columnCrud: true, selection: true, bulkActions: true, resizeColumns: true } }) });", config: { features: { rowCrud: true, columnCrud: true, selection: true, bulkActions: true, resizeColumns: true } } },
-            { key: 'patient', title: 'Patient registration table', dataset: 'patient-registration', summary: 'Healthcare sample dataset with search, filters, details, and CRUD.', code: "this.openBackendTableWindow({ title: 'Patient Registration', dataset: 'patient-registration', config: MIOOSTable.createConfig({ defaultSort: { column: 'lastName', direction: 'ascending' } }) });", config: { defaultSort: { column: 'lastName', direction: 'ascending' } } },
-            { key: 'massive', title: 'Massive read-only table', dataset: 'massive', summary: 'Server-side generated 10,000-row dataset with page-only row materialization.', code: "this.openBackendTableWindow({ title: 'Massive Dataset', dataset: 'massive', config: MIOOSTable.createConfig({ defaultPageSize: 100, features: { rowCrud: false, columnCrud: false, rowDetails: false } }) });", config: { defaultPageSize: 100, features: { rowCrud: false, columnCrud: false, rowDetails: false } } }
+            { key: 'simple', title: 'Simple read-only table', dataset: 'demo', summary: 'Search, sort, and pagination only; no selection or actions column.', code: mumpsTableSnippet('demo', ['SET MOD("tableState","config","features","rowCrud")=0', 'SET MOD("tableState","config","features","selection")=0', 'SET MOD("tableState","config","features","bulkActions")=0', 'SET MOD("tableState","config","features","rowDetails")=0', 'SET MOD("tableState","config","features","columnCrud")=0']), config: { features: { filters: false, grouping: false, columnPicker: false, rowCrud: false, columnCrud: false, selection: false, bulkActions: false, rowDetails: false } } },
+            { key: 'dense', title: 'Dense operational table', dataset: 'demo', summary: 'Compact spacing for data-intensive MUMPS internal tools.', code: mumpsTableSnippet('demo', ['SET MOD("tableState","config","density")="compact"', 'SET MOD("tableState","config","defaultPageSize")=50', 'SET MOD("tableState","config","actionsWidth")=132']), config: { density: 'compact', defaultPageSize: 50, actionsWidth: 132 } },
+            { key: 'editable', title: 'Editable CRUD table', dataset: 'demo', summary: 'Row create/edit/delete, column management, selection, and bulk delete.', code: mumpsTableSnippet('demo', ['SET MOD("tableState","config","features","rowCrud")=1', 'SET MOD("tableState","config","features","columnCrud")=1', 'SET MOD("tableState","config","features","selection")=1', 'SET MOD("tableState","config","features","bulkActions")=1']), config: { features: { rowCrud: true, columnCrud: true, selection: true, bulkActions: true, resizeColumns: true } } },
+            { key: 'patient', title: 'Patient registration table', dataset: 'patient-registration', summary: 'Healthcare sample dataset with search, filters, details, and CRUD.', code: mumpsTableSnippet('patient-registration', ['SET MOD("tableState","config","defaultSort","column")="lastName"', 'SET MOD("tableState","config","defaultSort","direction")="ascending"']), config: { defaultSort: { column: 'lastName', direction: 'ascending' } } },
+            { key: 'massive', title: 'Massive read-only table', dataset: 'massive', summary: 'Fast server-side generated 10,000-row dataset with page-only row materialization and no actions column.', code: mumpsTableSnippet('massive', ['SET MOD("tableState","config","defaultSort","column")="id"', 'SET MOD("tableState","config","defaultPageSize")=100', 'SET MOD("tableState","config","features","rowCrud")=0', 'SET MOD("tableState","config","features","selection")=0', 'SET MOD("tableState","config","features","bulkActions")=0', 'SET MOD("tableState","config","features","rowDetails")=0']), config: { defaultPageSize: 100, defaultSort: { column: 'id', direction: 'ascending' }, features: { rowCrud: false, columnCrud: false, rowDetails: false, selection: false, bulkActions: false } } }
           ];
         }
       },
@@ -700,7 +785,7 @@
       },
       template: '' +
         '<section class="mioos-table-showcase">' +
-          '<header><div><strong>Advanced Table UI API</strong><span>Copyable table variations for internal and user-created modules</span></div></header>' +
+          '<header><div><strong>Advanced Table MUMPS API</strong><span>Copyable MUMPS contracts for internal and user-created modules</span></div></header>' +
           '<div class="mioos-table-showcase-grid">' +
             '<article v-for="variant in variants" :key="variant.key" class="mioos-table-showcase-card">' +
               '<h3>[[ variant.title ]]</h3><p>[[ variant.summary ]]</p>' +
@@ -720,7 +805,7 @@
 
   window.MIOOSTable = { contract: TABLE_CONTRACT, defaultConfig: defaultTableConfig, createConfig: function (patch) { return mergeConfig(defaultTableConfig(), patch || {}); }, methods: methods, register: register };
   if (window.MIOOSModules && typeof window.MIOOSModules.registerComponent === 'function') {
-    window.MIOOSModules.registerComponent({ key: 'table', name: 'mioos-full-table', title: 'Advanced Backend Table', surface: 'mioos-surface-table', description: 'WebSocket-first server-side table with HTTP fallback, dense layouts, sorting, selection, bulk actions, row and column CRUD, resizable columns, grouping, and massive datasets.' });
-    window.MIOOSModules.registerComponent({ key: 'table-showcase', name: 'mioos-surface-table-showcase', title: 'Table Variations', surface: 'mioos-surface-table-showcase', description: 'Copyable simple-to-advanced table API examples.' });
+    window.MIOOSModules.registerComponent({ key: 'table', name: 'mioos-full-table', title: 'Advanced Backend Table', surface: 'mioos-surface-table', description: 'Server-side table with WebSocket query, HTTP-safe mutations, dense layouts, sorting, selection, bulk actions, row and column CRUD, resizable columns, grouping, and massive datasets.' });
+    window.MIOOSModules.registerComponent({ key: 'table-showcase', name: 'mioos-surface-table-showcase', title: 'Table Variations', surface: 'mioos-surface-table-showcase', description: 'Copyable simple-to-advanced MUMPS table contracts for backend developers.' });
   }
 })();

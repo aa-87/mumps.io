@@ -314,8 +314,12 @@ TABLEQUERY(STATE,CONF,TREE,OUTJSON,ERR)
 	;
 TABLEMUTATE(STATE,CONF,TREE,OUTJSON,ERR)
 	NEW OUT
-	IF +$GET(STATE("authRequired"),0)=1,+$GET(STATE("authenticated"),0)'=1 SET ERR("error")="login_required",ERR("detail")="table.mutate" QUIT 0
-	IF '$$MUTATE^MIOOSTBL(.STATE,.CONF,.TREE,.OUT,.ERR) QUIT 0
+	IF +$GET(STATE("authRequired"),0)=1,+$GET(STATE("authenticated"),0)'=1 DO  QUIT 1
+	. SET OUT("ok")=0,OUT("error")="login_required",OUT("detail")="table.mutate"
+	. SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"table.mutate","table",.OUT)
+	IF '$$MUTATE^MIOOSTBL(.STATE,.CONF,.TREE,.OUT,.ERR) DO  QUIT 1
+	. SET OUT("ok")=0,OUT("error")="table_mutate_failed",OUT("detail")=$GET(ERR("error")),OUT("routine")=$GET(ERR("routine"),"MIOOSTBL"),OUT("field")=$GET(ERR("field"))
+	. SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"table.mutate","table",.OUT)
 	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"table.mutate","table",.OUT)
 	QUIT 1
 	;

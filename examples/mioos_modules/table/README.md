@@ -34,19 +34,19 @@ The `UI + Form Elements` example is no longer implemented as a table dataset. Ta
 
 ## ROI 64C standalone configuration
 
-The table example now targets `mioos-advanced-table-v5`. Use `window.MIOOSTable.createConfig()` from internal UI code, or place equivalent safe JSON in a module manifest. Prefer feature gates over custom table forks so internal and user-created modules share the same query/mutation behavior.
+The table example now targets `mioos-advanced-table-v7`. Use MUMPS module/tableState nodes first. `window.MIOOSTable.createConfig()` exists for internal shell code, but the examples are intentionally written as MUMPS contracts for developers with no frontend experience.
 
 ## DataTables-style server-side integration
 
-The example now targets `mioos-advanced-table-v5`. The native MIOOS table request includes `draw`, `start`, `length`, `order`, and `columns` fields so developers familiar with DataTables can reason about server-side paging and ordering without adopting jQuery/DataTables as a dependency.
+The example now targets `mioos-advanced-table-v7`. The native MIOOS table request includes `draw`, `start`, `length`, `order`, and `columns` fields so developers familiar with DataTables can reason about server-side paging and ordering without adopting jQuery/DataTables as a dependency.
 
 Do not load DataTables in MIOOS modules. Use the built-in `mioos-full-table` / `mioos-surface-table` component and configure it with safe JSON or `window.MIOOSTable.createConfig()`.
 
 ## ROI 64C redo 2 table variations
 
-The example manifest now targets `mioos-advanced-table-v5` and uses WebSocket-first table communication with HTTP fallback.
+The example manifest now targets `mioos-advanced-table-v7`. Queries may use WebSocket; mutations default to HTTP-safe JSON to avoid socket timeout on saves.
 
-Open the built-in **Table Samples** module to view copyable UI API variations:
+Open the built-in **Table Samples** module to view copyable MUMPS contract variations:
 
 - Simple read-mostly table
 - Dense operational table
@@ -54,19 +54,76 @@ Open the built-in **Table Samples** module to view copyable UI API variations:
 - Patient registration table
 - Massive read-only table
 
-Minimal user-created module configuration:
+Minimal MUMPS user-created module configuration:
 
-```json
-{
-  "componentKey": "table",
-  "surface": "mioos-surface-table",
-  "config": {
-    "dataset": "demo",
-    "contract": "mioos-advanced-table-v5",
-    "transport": "websocket",
-    "density": "compact",
-    "defaultPageSize": 25,
-    "actionsWidth": 156
-  }
-}
+```mumps
+SET MOD("componentKey")="table"
+SET MOD("surface")="mioos-surface-table"
+SET MOD("tableState","dataset")="demo"
+SET MOD("tableState","config","contract")="mioos-advanced-table-v7"
+SET MOD("tableState","config","transport")="websocket"
+SET MOD("tableState","config","mutateTransport")="http"
+SET MOD("tableState","config","density")="compact"
+SET MOD("tableState","config","defaultPageSize")=25
 ```
+
+
+## ROI 64D MUMPS-only examples
+
+The visible Table Samples cards now show MUMPS snippets rather than JavaScript snippets. A simple read-only table should explicitly disable mutation and selection features so the rendered table has no Actions column:
+
+```mumps
+SET MOD("tableState","config","features","rowCrud")=0
+SET MOD("tableState","config","features","columnCrud")=0
+SET MOD("tableState","config","features","selection")=0
+SET MOD("tableState","config","features","bulkActions")=0
+SET MOD("tableState","config","features","rowDetails")=0
+```
+
+Editable tables enable the same feature nodes and rely on `MIOOSTBL` mutation actions such as `row.save`, `row.delete`, `rows.delete`, `column.save`, `column.resize`, and `column.visibility`.
+
+## Complete MUMPS-first dataset and render contract
+
+The Table Samples surface now includes complete copyable MUMPS examples. Each example shows three things:
+
+1. How to define the dataset schema and rows under `^MIO("MIOOS","TABLE",user,dataset,...)`.
+2. How to register the module/window with `MOD("componentKey")="table"` and `MOD("tableState",...)`.
+3. Which routines to reload and test:
+
+```mumps
+ZLINK "MIOOSTBL"
+ZLINK "MIOOSAPI"
+ZLINK "MIOOSWS"
+ZLINK "MIOOSMOD"
+ZLINK "MIOOST"
+DO INIT^MIOOS(.CONF)
+DO ^MIOOST
+```
+
+Example dataset seed:
+
+```mumps
+NEW USER,ROOT,MOD
+SET USER=$GET(STATE("principal"),"admin")
+SET ROOT=$NAME(^MIO("MIOOS","TABLE",USER,"orders"))
+KILL @ROOT
+SET @ROOT@("schema","columns",1,"key")="id"
+SET @ROOT@("schema","columns",1,"label")="ID"
+SET @ROOT@("schema","columns",1,"type")="text"
+SET @ROOT@("schema","columns",1,"width")=120
+SET @ROOT@("schema","columns",2,"key")="name"
+SET @ROOT@("schema","columns",2,"label")="Name"
+SET @ROOT@("schema","columns",2,"type")="text"
+SET @ROOT@("schema","columns",2,"width")=220
+SET @ROOT@("rows",1,"id")="orders-1"
+SET @ROOT@("rows",1,"name")="First order"
+KILL MOD
+SET MOD("componentKey")="table"
+SET MOD("surface")="mioos-surface-table"
+SET MOD("tableState","dataset")="orders"
+SET MOD("tableState","config","contract")="mioos-advanced-table-v7"
+SET MOD("tableState","config","features","rowCrud")=1
+SET MOD("tableState","config","features","columnCrud")=1
+```
+
+Mutation path is validated by `VALIDATE^MIOOSTBL` before row/column updates. Both HTTP and WebSocket mutation paths return deterministic JSON errors instead of timing out.

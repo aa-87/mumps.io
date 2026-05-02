@@ -2875,3 +2875,20 @@ button:disabled { cursor: default; opacity: .55; }
 .theme-dark-mode .mioos-table-showcase-card { color: #f8fafc; background: #0f172a; }
 .theme-dark-mode .mioos-table-showcase > header { color: #f8fafc; background: #111827; border-color: rgba(191,219,254,.28); }
 .theme-dark-mode .mioos-table-showcase-card pre { background: #020617; color: #e2e8f0; }
+
+/* ROI 64E: table mutation correctness and modal-only table controls. */
+.mioos-table-control-head,
+.mioos-table-control-cell { text-align: center; white-space: nowrap; }
+.mioos-table-control-cell { display: flex; align-items: center; justify-content: center; gap: 4px; min-height: 26px; }
+.mioos-table-detail-toggle { display: inline-grid; place-items: center; width: 22px; min-width: 22px; height: 22px; border-radius: 7px; border: 1px solid rgba(99, 102, 241, .34); background: #eef2ff; color: #3730a3; font-weight: 800; cursor: pointer; }
+.mioos-table-detail-toggle:hover { background: #e0e7ff; }
+.mioos-table-editor.is-column-picker { width: min(420px, calc(100vw - 36px)); }
+.mioos-table-column-list { display: grid; gap: 6px; padding: 10px 0; max-height: min(62vh, 520px); overflow: auto; }
+.mioos-table-column-list button { display: grid; grid-template-columns: 24px minmax(0, 1fr); grid-template-areas: "flag label" "flag key"; align-items: center; gap: 0 8px; width: 100%; padding: 8px 10px; border-radius: 10px; border: 1px solid rgba(148,163,184,.28); background: #f8fafc; color: #111827; text-align: left; cursor: pointer; }
+.mioos-table-column-list button span { grid-area: flag; font-weight: 800; color: #4338ca; }
+.mioos-table-column-list button b { grid-area: label; font-size: 12px; overflow: hidden; text-overflow: ellipsis; }
+.mioos-table-column-list button small { grid-area: key; color: #64748b; font-size: 10.5px; }
+.mioos-table-editor:not(.is-column-picker) .mioos-table-form-grid { padding-top: 6px; }
+.theme-dark-mode .mioos-table-detail-toggle { background: #312e81; color: #e0e7ff; border-color: rgba(199,210,254,.35); }
+.theme-dark-mode .mioos-table-column-list button { background: #111827; color: #f8fafc; border-color: rgba(191,219,254,.24); }
+.theme-dark-mode .mioos-table-column-list button small { color: #cbd5e1; }

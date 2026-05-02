@@ -376,8 +376,12 @@ The `UI + Form Elements` module now uses `mioos-surface-ui-elements`, a standalo
 
 ## ROI 64C advanced table
 
-The standalone advanced table now uses `mioos-advanced-table-v5` and can be embedded by internal or user-created modules through `mioos-surface-table`. See `Backend_Table.md` and `ROI_64C_Advanced_Table_Rewrite.md`.
+The standalone advanced table now uses `mioos-advanced-table-v7` and can be embedded by internal or user-created modules through `mioos-surface-table`. See `Backend_Table.md` and `ROI_64C_Advanced_Table_Rewrite.md`.
 
 ## ROI 64C redo 2 note
 
-The advanced backend table now uses `mioos-advanced-table-v5`, WebSocket-first query/mutation commands, compact default density, a viewport-safe editor dialog, read-only massive dataset safeguards, and a visible Table Samples showcase with copyable API variations.
+The advanced backend table now uses `mioos-advanced-table-v7`, WebSocket-first query/mutation commands, compact default density, a viewport-safe editor dialog, read-only massive dataset safeguards, and a visible Table Samples showcase with copyable API variations.
+
+### ROI 64E table correction
+
+The advanced table contract is now `mioos-advanced-table-v7`. This update focuses on mutation correctness and MUMPS-first authoring: table samples show dataset globals, module `MOD(...)` registration, and required routine reload/test commands. Row details moved into the control column, the column selector is modal-only, and column editing appears only when column CRUD is enabled.

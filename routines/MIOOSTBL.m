@@ -69,6 +69,7 @@ MUTATE(STATE,CONF,IN,OUT,ERR)
 	SET ACTION=$$LOW^MIOUTIL($GET(IN("action"),$GET(IN("op"),"")))
 	IF ACTION="" SET ERR("error")="table_action_missing" QUIT 0
 	IF ACTION'["." SET ERR("error")="table_action_invalid" QUIT 0
+	IF '$$VALIDATE(.STATE,.CONF,DATASET,ACTION,.IN,.ERR) QUIT 0
 	SET ROOT=$$ROOT(.STATE,DATASET)
 	DO ENSURE(.STATE,DATASET)
 	IF ACTION="row.save"!(ACTION="row.add")!(ACTION="row.update") DO
@@ -126,6 +127,59 @@ ERRM
 	SET ERR("routine")="MIOOSTBL",ERR("error")="table_mutation_runtime_error",ERR("detail")=$ZSTATUS
 	QUIT 0
 	;
+VALIDATE(STATE,CONF,DATASET,ACTION,IN,ERR)
+	KILL ERR("field")
+	IF ACTION="row.save"!(ACTION="row.add")!(ACTION="row.update") QUIT $$VALROW(.CONF,.IN,.ERR)
+	IF ACTION="row.delete" QUIT $$VALID($GET(IN("rowId"),$GET(IN("id"),$GET(IN("row","id")))),.ERR)
+	IF ACTION="rows.delete"!(ACTION="bulk.delete") QUIT $$VALIDS(.IN,.ERR)
+	IF ACTION="column.save"!(ACTION="column.add")!(ACTION="column.update") QUIT $$VALCOL(.CONF,.IN,.ERR)
+	IF ACTION="column.delete"!(ACTION="column.resize")!(ACTION="column.visibility") QUIT $$VALKEY($GET(IN("columnKey"),$GET(IN("key"),$GET(IN("column","key")))),.ERR)
+	SET ERR("error")="unsupported_table_action" QUIT 0
+	;
+VALROW(CONF,IN,ERR)
+	NEW KEY,VAL,MAX
+	SET MAX=+$GET(CONF("mioos","table","maxFieldChars"),2048) IF MAX<128 SET MAX=128
+	IF '$DATA(IN("row")) SET ERR("error")="row_missing" QUIT 0
+	SET KEY="" FOR  SET KEY=$ORDER(IN("row",KEY)) QUIT:KEY=""!($GET(ERR("error"))'="")  DO
+	. IF $EXTRACT(KEY,1)="_" KILL IN("row",KEY) QUIT
+	. IF $$KEY(KEY)'=KEY SET ERR("error")="invalid_row_field",ERR("field")=KEY QUIT
+	. SET VAL=$GET(IN("row",KEY))
+	. IF $LENGTH(VAL)>MAX SET ERR("error")="field_too_long",ERR("field")=KEY QUIT
+	IF $GET(ERR("error"))'="" QUIT 0
+	QUIT 1
+	;
+VALID(ID,ERR)
+	IF $GET(ID)="" SET ERR("error")="row_id_missing" QUIT 0
+	IF $LENGTH(ID)>128 SET ERR("error")="row_id_too_long" QUIT 0
+	QUIT 1
+	;
+VALIDS(IN,ERR)
+	NEW I,SEEN
+	SET SEEN=0,I=0 FOR  SET I=$ORDER(IN("ids",I)) QUIT:I'>0!($GET(ERR("error"))'="")  DO
+	. SET SEEN=1 IF '$$VALID($GET(IN("ids",I)),.ERR) QUIT
+	IF $GET(ERR("error"))'="" QUIT 0
+	IF 'SEEN SET ERR("error")="row_ids_missing" QUIT 0
+	QUIT 1
+	;
+VALCOL(CONF,IN,ERR)
+	NEW KEY,LABEL,WIDTH
+	SET KEY=$$KEY($GET(IN("column","key")))
+	IF KEY="" SET ERR("error")="invalid_column_key" QUIT 0
+	SET IN("column","key")=KEY
+	SET LABEL=$GET(IN("column","label")) IF LABEL="" SET IN("column","label")=KEY
+	IF $LENGTH($GET(IN("column","label")))>80 SET IN("column","label")=$EXTRACT(IN("column","label"),1,80)
+	SET WIDTH=+$GET(IN("column","width")) IF WIDTH<48 SET WIDTH=120
+	IF WIDTH>800 SET WIDTH=800
+	SET IN("column","width")=WIDTH
+	IF $GET(IN("column","type"))="" SET IN("column","type")="text"
+	QUIT 1
+	;
+VALKEY(KEY,ERR)
+	SET KEY=$$KEY($GET(KEY))
+	IF KEY="" SET ERR("error")="invalid_column_key" QUIT 0
+	QUIT 1
+	;
+
 KEY(X)
 	NEW Y,I,C,Q S Q=0
 	SET Y=$GET(X)
@@ -228,6 +282,7 @@ MASSIVEQ(IN,OUT,CONF)
 	SET SORTDIR=$$LOW^MIOUTIL($GET(IN("sort","direction"),$GET(IN("sortDir"),"ascending")))
 	IF SORTDIR'="descending" SET SORTDIR="ascending"
 	SET SEARCH=$$LOW^MIOUTIL($GET(IN("search")))
+	IF $$MASSFAST(.IN,SEARCH,SORTBY) DO MASSFASTQ(.OUT,TOTAL,PAGE,PSIZE,DRAW,SORTDIR) QUIT
 	FOR I=1:1:TOTAL IF $$MASSOK(I,.IN,SEARCH) DO
 	. SET FILTERED=FILTERED+1
 	. SET VAL=$$MASSKEY(I,SORTBY)
@@ -252,10 +307,10 @@ MASSIVEQ(IN,OUT,CONF)
 	SET OUT("features","serverSorting")=1
 	SET OUT("features","columnVisibility")=1
 	SET OUT("features","columnGrouping")=1
-	SET OUT("features","expansionRows")=1
+	SET OUT("features","expansionRows")=0
 	SET OUT("features","actionRows")=0
-	SET OUT("features","bulkActions")=1
-	SET OUT("features","selection")=1
+	SET OUT("features","bulkActions")=0
+	SET OUT("features","selection")=0
 	SET OUT("features","filtering")=1
 	SET OUT("features","crudRows")=0
 	SET OUT("features","crudColumns")=0
@@ -292,6 +347,55 @@ MASSROW(OUT,N,I)
 	SET OUT("rows",N,"updated")=$$MASSVAL(I,"updated")
 	SET OUT("rows",N,"_expand","title")="Generated row"
 	SET OUT("rows",N,"_expand","body")="Synthetic read-only row for server-side pagination testing."
+	QUIT
+	;
+MASSFAST(IN,SEARCH,SORTBY)
+	NEW KEY
+	IF $GET(SEARCH)'="" QUIT 0
+	IF $DATA(IN("filters")) QUIT 0
+	SET KEY=$$LOW^MIOUTIL($GET(SORTBY))
+	IF KEY="" QUIT 1
+	IF KEY="id" QUIT 1
+	IF KEY="name" QUIT 1
+	QUIT 0
+	;
+MASSFASTQ(OUT,TOTAL,PAGE,PSIZE,DRAW,SORTDIR)
+	NEW PAGECOUNT,SKIP,N,I,STEP
+	SET PAGECOUNT=$SELECT(TOTAL=0:1,1:((TOTAL+PSIZE-1)\PSIZE))
+	IF PAGE<1 SET PAGE=1
+	IF PAGE>PAGECOUNT SET PAGE=PAGECOUNT
+	SET SKIP=(PAGE-1)*PSIZE,N=0
+	IF SORTDIR="descending" DO
+	. SET I=TOTAL-SKIP+1 FOR  SET I=I-1 QUIT:I<1!(N'<PSIZE)  SET N=N+1 DO MASSROW(.OUT,N,I)
+	IF SORTDIR'="descending" DO
+	. SET I=SKIP FOR  SET I=I+1 QUIT:I>TOTAL!(N'<PSIZE)  SET N=N+1 DO MASSROW(.OUT,N,I)
+	DO ACTIONS(.OUT,1)
+	KILL OUT("bulkActions")
+	SET OUT("ok")=1
+	SET OUT("dataset")="massive"
+	SET OUT("features","serverPagination")=1
+	SET OUT("features","serverSorting")=1
+	SET OUT("features","columnVisibility")=1
+	SET OUT("features","columnGrouping")=1
+	SET OUT("features","expansionRows")=0
+	SET OUT("features","actionRows")=0
+	SET OUT("features","bulkActions")=0
+	SET OUT("features","selection")=0
+	SET OUT("features","filtering")=1
+	SET OUT("features","crudRows")=0
+	SET OUT("features","crudColumns")=0
+	SET OUT("features","resizableColumns")=1
+	SET OUT("features","readOnly")=1
+	SET OUT("draw")=DRAW
+	SET OUT("recordsTotal")=TOTAL
+	SET OUT("recordsFiltered")=TOTAL
+	MERGE OUT("data")=OUT("rows")
+	SET OUT("pagination","page")=PAGE
+	SET OUT("pagination","pageSize")=PSIZE
+	SET OUT("pagination","totalRows")=TOTAL
+	SET OUT("pagination","filteredRows")=TOTAL
+	SET OUT("pagination","pageRows")=N
+	SET OUT("pagination","pageCount")=PAGECOUNT
 	QUIT
 	;
 MASSOK(I,IN,SEARCH)

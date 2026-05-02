@@ -58,6 +58,7 @@ MIOOST ; MIOOS tests
 	DO T062
 	DO T065
 	DO T066
+	DO T067
 	QUIT
 	;
 RESET
@@ -1305,9 +1306,9 @@ T065
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 64B"),"[MIOOST][T065][llm roi64b]")
 	QUIT
 T066
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","mioos-advanced-table-v5"),"[MIOOST][T066][table v5 contract]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","mioos-advanced-table-v7"),"[MIOOST][T066][table v7 contract]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","table.query"),"[MIOOST][T066][websocket table query]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","table.mutate"),"[MIOOST][T066][websocket table mutate]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","mutateTransport: 'http'"),"[MIOOST][T066][http-safe table mutate]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableBeginActionsResize"),"[MIOOST][T066][actions column resize]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","mioos-table-editor-backdrop"),"[MIOOST][T066][viewport editor]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","mioos-surface-table-showcase"),"[MIOOST][T066][table showcase surface]")
@@ -1316,12 +1317,29 @@ T066
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_modules.js","mioos-surface-table-showcase"),"[MIOOST][T066][catalog table showcase routing]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-surface-table-showcase"),"[MIOOST][T066][shell table showcase fallback]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","table.query"),"[MIOOST][T066][ws table query command]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","table.mutate"),"[MIOOST][T066][ws table mutate command]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","MASSIVEQ"),"[MIOOST][T066][massive page materialization]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableShowActions"),"[MIOOST][T066][conditional actions column]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","MASSFASTQ"),"[MIOOST][T066][massive fast page materialization]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","readOnly"),"[MIOOST][T066][readonly feature flag]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","table_mutate_failed"),"[MIOOST][T066][mutation json error]")
-	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/ROI_64C_Advanced_Table_Rewrite.md","WebSocket-first"),"[MIOOST][T066][roi64c websocket docs]")
-	DO OK^MIOTASSERT($$FILEHAS("examples/mioos_modules/table/module.json","mioos-advanced-table-v5"),"[MIOOST][T066][table manifest contract]")
-	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 64C redo 2"),"[MIOOST][T066][llm roi64c redo2]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/ROI_64D_Table_Performance_Mutations.md","MUMPS developer contracts"),"[MIOOST][T066][roi64d docs]")
+	DO OK^MIOTASSERT($$FILEHAS("examples/mioos_modules/table/module.json","mioos-advanced-table-v7"),"[MIOOST][T066][table manifest contract]")
+	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 64D"),"[MIOOST][T066][llm roi64d]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","SET MOD(""tableState"",""dataset"")"),"[MIOOST][T066][mumps table examples]")
+	QUIT
+	;
+
+T067
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","mioos-advanced-table-v7"),"[MIOOST][T067][table v7 contract]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","mumpsTableSnippet"),"[MIOOST][T067][mumps dataset snippets]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","mioos-table-detail-toggle"),"[MIOOST][T067][details control column]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","columnPickerOpen"),"[MIOOST][T067][modal column picker state]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableOpenColumnPicker"),"[MIOOST][T067][modal column picker api]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","VALIDATE(STATE,CONF,DATASET,ACTION,IN,ERR)"),"[MIOOST][T067][mumps mutation validation]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","field_too_long"),"[MIOOST][T067][row field max validation]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","OUT(""error"")=""table_mutate_failed"""),"[MIOOST][T067][http mutation deterministic json]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","OUT(""error"")=""table_mutate_failed"""),"[MIOOST][T067][ws mutation deterministic json]")
+	DO OK^MIOTASSERT($$FILEHAS("examples/mioos_modules/table/README.md","Complete MUMPS-first dataset"),"[MIOOST][T067][examples dataset definition]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/ROI_64E_Table_Mutations_MUMPS_API.md","Mutation execution path"),"[MIOOST][T067][roi64e docs]")
+	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 64E table follow-up"),"[MIOOST][T067][llm roi64e]")
 	QUIT
 	;

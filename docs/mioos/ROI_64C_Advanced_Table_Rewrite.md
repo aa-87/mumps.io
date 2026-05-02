@@ -5,7 +5,7 @@ This ROI redoes the previous advanced table work from the attached source and ad
 ## Fixes delivered
 
 1. **Mutation no longer leaves the editor hanging on HTTP 403.**
-   - Table mutations are WebSocket-first through `table.mutate`.
+   - Table mutations now default to authenticated HTTP through `/api/mioos/table/mutate` to avoid the reported WebSocket mutation timeout.
    - HTTP remains a fallback route for environments where WebSocket commands are unavailable.
    - Domain-level table mutation failures now return a JSON payload that the table can render as an inline error instead of leaving the UI in a permanent saving state.
    - Read-only datasets such as `massive` and `vfs` publish server feature flags that disable row/column mutation controls.
@@ -37,21 +37,26 @@ This ROI redoes the previous advanced table work from the attached source and ad
 
 8. **Table API variations are now visible and documented.**
    - `mioos-surface-table-showcase` provides simple, dense, editable, patient-registration, and massive read-only table examples.
-   - Each variation includes copyable `MIOOSTable.createConfig(...)` code.
+   - Each variation includes copyable MUMPS `SET MOD(...)` contract code.
 
 ## Current contract
 
 The client-visible contract is now:
 
 ```text
-mioos-advanced-table-v5
+mioos-advanced-table-v7
 ```
 
-The preferred transport is WebSocket command mode:
+The preferred query transport is WebSocket command mode:
 
 ```text
 table.query
-table.mutate
+```
+
+The preferred mutation transport is authenticated HTTP JSON:
+
+```text
+POST /api/mioos/table/mutate
 ```
 
 HTTP remains available as fallback:
@@ -88,7 +93,12 @@ this.openBackendTableWindow({
 
 ## Guardrails
 
-- WebSocket is preferred for table query/mutation because the user requested high-performance table communication over the existing socket architecture.
+- WebSocket remains preferred for table query where it improves responsiveness. Mutations default to HTTP-safe JSON because the reported `socket_timeout` occurred on `table.mutate`.
 - VFS uploads already have WebSocket upload commands (`fs.upload.begin`, `fs.upload.chunk`, `fs.upload.batch`, `fs.upload.commit`) and are not rewritten in this ROI.
 - HTTP routes remain for compatibility, diagnostics, and fallback.
 - Synthetic massive rows are read-only and generated page-by-page.
+
+
+## ROI 64D correction
+
+The follow-up table contract is `mioos-advanced-table-v7`. Mutation is HTTP-safe by default (`mutateTransport="http"`) while query can remain WebSocket-backed. Massive no-search/no-filter paging now uses a direct page materialization path. Read-only/simple variants disable selection and row actions so the Actions column is omitted. Table Samples now show MUMPS contract snippets instead of JavaScript.

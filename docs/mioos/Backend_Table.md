@@ -112,23 +112,23 @@ See `docs/mioos/ROI_63_Redesign_Contracts.md` for the complete redesign sequence
 
 ## ROI 64A advanced standalone table contract
 
-The production table track now uses the client-visible contract `mioos-advanced-table-v5`. The component is intended to be standalone and embeddable in internal shell surfaces or user-created modules:
+The production table track now uses the client-visible contract `mioos-advanced-table-v7`. The component is intended to be standalone and embeddable in internal shell surfaces or user-created modules:
 
 ```html
 <mioos-full-table table-id="patients" title="Patients" dataset="patient-registration" :config="tableConfig"></mioos-full-table>
 ```
 
-`window.MIOOSTable.createConfig()` returns a safe default configuration that can enable or disable toolbar features such as dataset switching, search, grouping, column picker, row CRUD, column CRUD, selection, bulk actions, pagination, and row details. Backend WebSocket commands and HTTP fallback routes remain authoritative.
+`window.MIOOSTable.createConfig()` returns a safe default configuration that can enable or disable toolbar features such as dataset switching, search, grouping, column picker, row CRUD, column CRUD, selection, bulk actions, pagination, and row details. Backend query and mutation routes remain authoritative. Queries may use WebSocket command mode, while mutations default to HTTP-safe JSON to avoid `socket_timeout` on correctness-critical saves.
 
 `column.visibility` is a supported mutation action. Column visibility changes are persisted through `/api/mioos/table/mutate`, not treated as browser-only state.
 
 ## ROI 64C rewrite
 
-ROI 64C upgrades the table to `mioos-advanced-table-v5`. The standalone component now accepts `defaultPageSize`, `defaultSort`, `columns`, and feature gates for `filters`, `resizeColumns`, row details, CRUD, grouping, selection, pagination, and bulk actions. Query payloads include `filters`, and the backend applies exact-match filter arrays before sorting and pagination. Mutations still return a refreshed query-shaped payload so the browser does not have to infer post-mutation state. See `docs/mioos/ROI_64C_Advanced_Table_Rewrite.md`.
+ROI 64C upgrades the table to `mioos-advanced-table-v7`. The standalone component now accepts `defaultPageSize`, `defaultSort`, `columns`, and feature gates for `filters`, `resizeColumns`, row details, CRUD, grouping, selection, pagination, and bulk actions. Query payloads include `filters`, and the backend applies exact-match filter arrays before sorting and pagination. Mutations still return a refreshed query-shaped payload so the browser does not have to infer post-mutation state. See `docs/mioos/ROI_64C_Advanced_Table_Rewrite.md`.
 
 ## ROI 64C redo — DataTables-style server-side processing
 
-The advanced table contract is now `mioos-advanced-table-v5`. It remains a native MIOOS component, but its request/response envelope is intentionally modeled after DataTables server-side processing so module authors have a familiar mental model.
+The advanced table contract is now `mioos-advanced-table-v7`. It remains a native MIOOS component, but its request/response envelope is intentionally modeled after DataTables server-side processing so module authors have a familiar mental model.
 
 Each server interaction sends:
 
@@ -150,15 +150,15 @@ The browser always shows a processing indicator during query and mutation reques
 
 Large dataset performance was hardened by replacing the old O(n²) bubble sort in `MIOOSTBL` with an indexed server-side sort pass before paging. Server-side paging is still authoritative; the browser receives only the current page of `rows`/`data`.
 
-## ROI 64C redo 2 update — `mioos-advanced-table-v5`
+## ROI 64C redo 2 update — `mioos-advanced-table-v7`
 
-The advanced table now uses the `mioos-advanced-table-v5` contract. Table query and mutation are WebSocket-first through `table.query` and `table.mutate`, with HTTP fallback to `/api/mioos/table/query` and `/api/mioos/table/mutate` when the socket path is unavailable.
+The advanced table now uses the `mioos-advanced-table-v7` contract. Table query may use `table.query` over WebSocket. Table mutation now defaults to `/api/mioos/table/mutate` over authenticated HTTP, with WebSocket mutation reserved for future transport hardening.
 
 The visible UI no longer exposes internal draw counters or response timestamps. Draw/start/length remain protocol fields for server-side paging compatibility, but the user-facing footer only shows row counts and page navigation.
 
 The default table density is `compact` for data-intensive MIOOS screens. Module authors can still opt into a larger layout by passing `density: 'comfortable'` through `MIOOSTable.createConfig`.
 
-The `massive` dataset is read-only and page-materialized on the server. It generates only the requested page rows after filtering/sorting metadata, instead of building a full row array for every request.
+The `massive` dataset is read-only and page-materialized on the server. For the common no-search/no-filter path, `MIOOSTBL` calculates the requested page directly and generates only those rows instead of building a full 10,000-row work array.
 
 ### Copyable API variations
 
@@ -222,3 +222,20 @@ this.openBackendTableWindow({
   })
 });
 ```
+
+
+## ROI 64D — MUMPS-first table contract
+
+The table contract is now `mioos-advanced-table-v7`. Table examples are written for MUMPS developers first: register a module with `componentKey="table"`, `surface="mioos-surface-table"`, and `tableState` nodes. Normal table modules should not require Vue or JavaScript authoring.
+
+Mutations default to authenticated HTTP (`/api/mioos/table/mutate`) to avoid the reported `socket_timeout` on `table.mutate`. Queries may still use WebSocket for responsive server-side paging.
+
+Read-only/simple variants disable `selection`, `bulkActions`, `rowCrud`, `columnCrud`, and `rowDetails`, which removes the selection and Actions columns from the rendered table.
+
+## ROI 64E update — mutation validation and MUMPS-first examples
+
+The advanced table now uses `mioos-advanced-table-v7`. Mutation reliability is handled through a shared MUMPS path: HTTP `/api/mioos/table/mutate` and WebSocket `table.mutate` both call `MUTATE^MIOOSTBL`, which now validates row fields, row IDs, column keys, column width, and field length before updating table globals. Validation/runtime failures return a deterministic `{ok:false,error:"table_mutate_failed",detail:...}` JSON payload instead of leaving the browser waiting for a socket timeout.
+
+Table Samples now show complete MUMPS snippets: dataset global definition, module `MOD(...)` metadata, and the routines to `ZLINK`/run so a MUMPS developer can render a table without writing frontend code.
+
+Row details are no longer mixed into row actions. Details render as an expand arrow in the ID/control column. Simple/read-only tables continue to omit Actions entirely.
