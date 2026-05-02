@@ -2,10 +2,6 @@
   function findWindow(vm, windowId) {
     return vm.windows.find(function (item) { return item.id === windowId; }) || null;
   }
-  function nextWindowId(vm, prefix) {
-    vm._mioosWindowSeq = (vm._mioosWindowSeq || 0) + 1;
-    return (prefix || 'win') + '-' + vm._mioosWindowSeq;
-  }
   function taskbarHeight(vm) {
     var theme = (vm && vm.appliedThemeProfile) || (vm && vm.themeStudioActiveTheme && vm.themeStudioActiveTheme()) || {};
     var mobile = (window.innerWidth || document.documentElement.clientWidth || 1280) <= 768;
@@ -424,8 +420,18 @@
       createWindowForApp: function (app, options) {
         options = options || {};
         app = app || {};
-        var id = nextWindowId(this, 'win-' + (app.key || app.appKey || 'app'));
-        var win = Object.assign({ id: id, appKey: app.key || app.appKey || 'app', title: app.title || 'Application', state: 'normal', left: 120, top: 90, width: 720, height: 460, z: this.zCounter + 1 }, options || {});
+        var appKey = app.appKey || app.key || 'app';
+        var id = nextWindowId(this, 'win-' + appKey);
+        var moduleMeta = {
+          kind: app.kind || options.kind || 'app',
+          moduleWindow: !!(app.moduleWindow || app.surface || app.componentKey || (app.id && app.id !== appKey) || options.moduleWindow),
+          moduleId: app.id || app.moduleId || options.moduleId || '',
+          moduleComponent: app.componentKey || app.component || options.moduleComponent || '',
+          surface: app.surface || options.surface || '',
+          tableState: app.tableState || options.tableState || null,
+          icon: app.icon || options.icon || ''
+        };
+        var win = Object.assign({ id: id, appKey: appKey, title: app.title || app.name || 'Application', state: 'normal', left: 120, top: 90, width: +(app.width || 0) || 720, height: +(app.height || 0) || 460, z: this.zCounter + 1 }, moduleMeta, options || {});
         this.windows.push(win);
         this.focusWindow(id);
         return win;

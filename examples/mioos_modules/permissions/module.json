@@ -1,0 +1,24 @@
+{
+  "contract": "mioos-ui-module-v1",
+  "id": "mioos.permissions.admin",
+  "key": "mioos.permissions.admin",
+  "title": "Permissions",
+  "componentKey": "permissions",
+  "surface": "mioos-surface-permissions",
+  "transport": "websocket-only",
+  "requiredPermission": "mioos.permissions.admin",
+  "tables": [
+    "permissions",
+    "permission-groups",
+    "permission-profiles",
+    "permission-assignments",
+    "permission-audit"
+  ],
+  "commands": [
+    "module.table.query",
+    "permission.upsert",
+    "permission.delete",
+    "permission.assign",
+    "permission.effective"
+  ]
+}

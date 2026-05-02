@@ -75,6 +75,7 @@ ASSETID(ROOT)
 	SET URL=$GET(@ROOT@("desktop","wallpaperUrl"))
 	IF URL="" SET URL=$GET(@ROOT@("wallpaperUrl"))
 	IF URL="" SET URL=$GET(@ROOT@("themeConfig","wallpaperUrl"))
+	IF URL["mioos-asset:" SET A=$PIECE(URL,"mioos-asset:",2) QUIT A
 	IF URL'["/api/mioos/theme-asset" QUIT ""
 	SET A=$PIECE($PIECE(URL,"id=",2),"&",1)
 	SET A=$PIECE(A,"#",1)

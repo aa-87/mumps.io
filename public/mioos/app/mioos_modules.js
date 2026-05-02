@@ -74,18 +74,18 @@
     uiModuleExampleRows: function () { return toList(bootRegistry(this).examples); },
     uiModuleComponent: function (key) { return componentByKey(this, key); },
     uiModuleRecord: function (key) { return moduleByKey(this, key); },
-    uiModuleRoute: function () { return ((((this.boot || {}).routes || {}).moduleCatalog) || '/api/mioos/modules/catalog'); },
+    uiModuleRoute: function () { return ''; /* module catalog is WebSocket-only */ },
+    uiModuleCatalogCommand: function () { return ((((this.boot || {}).routes || {}).moduleCatalogCommand) || 'module.catalog'); },
     uiModuleRefreshCatalog: function () {
       var self = this;
-      return fetch(this.uiModuleRoute(), { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: '{}' }).then(function (response) {
-        if (!response.ok) throw new Error('Module catalog failed: HTTP ' + response.status);
-        return response.json();
-      }).then(function (payload) {
+      if (!this.command) return Promise.reject(new Error('module_catalog_requires_websocket'));
+      return this.command(this.uiModuleCatalogCommand(), {}).then(function (msg) {
+        var payload = (msg || {}).module || msg || {};
         self.boot.uiModules = clone(payload || {});
         self.boot.modules = toList((payload || {}).modules);
         return self.boot.uiModules;
       }).catch(function (err) {
-        if (self.showAlert) self.showAlert('UI Modules', (err && err.message) || 'Module catalog failed');
+        if (self.showAlert) self.showAlert('UI Modules', (err && (err.detail || err.error || err.message)) || 'Module catalog failed');
         throw err;
       });
     },
@@ -114,6 +114,9 @@
       var component = this.uiModuleComponent(componentKey) || { key: componentKey, title: componentKey };
       if (component.key === 'table' && this.openBackendTableWindow) {
         return this.openBackendTableWindow(Object.assign({ title: component.title || 'Backend Table', dataset: 'demo' }, options || {}));
+      }
+      if (component.key === 'permissions' && this.openPermissionsWindow) {
+        return this.openPermissionsWindow(options || {});
       }
       return this.createWindowForApp({ key: 'component-' + component.key, appKey: 'component-' + component.key, title: component.title || component.key, icon: component.icon || '▣', kind: 'module', moduleWindow: true, moduleComponent: component.key, componentKey: component.key, surface: component.surface }, { state: 'normal', moduleWindow: true, moduleComponent: component.key });
     },

@@ -351,14 +351,9 @@ This pass removes the unauthenticated boot-time `/api/mioos/theme/load` request.
 
 This ROI moves active theme application back into the initial MIOTPL render path so the shell no longer performs an unauthorized `/api/mioos/theme/load` request before sign-in. `MIOOSST` now exposes the active globals-backed profile in boot state, `MIOOSUI` resolves matching CSS variables for first paint, and the client only reloads saved themes from the Customize window after authentication. The pass also hardens wallpaper upload ID detection, removes completed-transfer duplication from the active queue, and adds native-shell sizing overrides for Explorer, Transfers, Start Menu, and Customize previews.
 
-## Backend Table Component
 
-MIOOS includes a reusable backend table component for application screens that need Explorer-like resizable details tables without copying Explorer code. The component is served by `MIOOSTBL` through `/api/mioos/table/query` and rendered by `mioos_table.js`.
+## WebSocket-first transport update
 
-See `docs/mioos/Backend_Table.md` for the query contract, feature matrix, extension rules, and regression coverage.
+MIOOS defaults to WebSocket-first runtime communication. HTTP API routes remain available as a configurable fallback, but modules, backend table queries, theme load/save, theme asset upload, VFS file operations, and boot-safe media previews should use the `desktop.command` WebSocket path. In WebSocket mode, boot wallpaper is rendered as a data URL rather than `/api/mioos/fs/blob` to prevent unauthorized pre-login HTTP blob requests.
 
-## UI Modules
-
-MIOOS includes a UI Module foundation for internal and user-created modules. It is opt-in at launch time: set `CONF("mioos","modules","enabled")=1` and `CONF("mioos","modules","appCatalogEnabled")=1` to expose the catalog app. The module registry is built by `MIOOSMOD`, injected into boot as `uiModules`, exposed over `/api/mioos/modules/catalog`, and rendered by `mioos_modules.js` through the UI Modules app.
-
-The first registered component is the backend table component (`table` / `mioos-full-table`). See `docs/mioos/UI_Modules.md` and `examples/mioos_modules/table` for the module contract and first example.
+See `docs/mioos/WebSocket_Transport.md` for the transport contract and performance notes.

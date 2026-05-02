@@ -10,8 +10,9 @@
     var WM = (window.MIOOSWM || {}).methods || {};
     var Terminal = (window.MIOOSTerminal || {}).methods || {};
     var Explorer = (window.MIOOSExplorer || {}).methods || {};
-    var Table = (window.MIOOSTable || {}).methods || {};
     var Modules = (window.MIOOSModules || {}).methods || {};
+    var Table = (window.MIOOSTable || {}).methods || {};
+    var Permissions = (window.MIOOSPermissions || {}).methods || {};
     var I18N = window.MIOOSI18N || {};
 
     var app = window.Vue.createApp({
@@ -19,7 +20,6 @@
         return {
           boot: window.MIOOSState.defaultBoot(),
           view: window.MIOOSState.defaultView(),
-          backendTables: {},
           desktopEntries: [],
           launcherEntries: [],
           windows: [],
@@ -80,6 +80,7 @@
           debugCenter: { loading: false, refreshedAt: 0, error: '', snapshot: {}, events: [], seq: 0 },
           socketTelemetry: {},
           moduleCatalog: { loading: false, refreshedAt: 0, error: '' },
+          _wallpaperObjectUrl: '',
           _bootPrimed: false,
           desktopUi: {
             iconSize: 'medium',
@@ -88,7 +89,8 @@
             selectedKey: '',
             drag: { armed: false, active: false, moved: false, key: '', startX: 0, startY: 0, left: 0, top: 0 },
             contextMenu: { open: false, type: 'desktop', key: '', left: 0, top: 0 }
-          }
+          },
+          dialogState: { open: false, type: 'input', title: '', message: '', value: '', okText: '', cancelText: '', resolver: null }
         };
       },
       computed: {
@@ -139,7 +141,7 @@
         this.startClock();
         if (!this.requiresSignin) {
           this.refreshView();
-          this.initSocket().catch(function () {});
+          this.initSocket().then(function () { if (self.loadBootWallpaperOverWebSocket) self.loadBootWallpaperOverWebSocket(); }).catch(function () {});
           if (this.startTerminalPolling) this.startTerminalPolling();
         }
         this._dragMove = this.handleGlobalMouseMove.bind(this);
@@ -203,6 +205,52 @@
           this.normalizeDesktopUiState();
           this._bootPrimed = true;
         },
+        loadBootWallpaperOverWebSocket: function () {
+          var self = this;
+          var desktop = ((this.boot || {}).desktop) || {};
+          var id = desktop.wallpaperId || this.wallpaperId || '';
+          var mode = String((((this.boot || {}).transport || {}).mode) || 'websocket').toLowerCase();
+          if (!id || mode === 'http' || !this.command) return Promise.resolve(null);
+          return this.command('fs.read', { id: id }).then(function (msg) {
+            var payload = (msg && (msg.vfs || msg.fs || msg.file)) || msg || {};
+            var mime = payload.mime || 'application/octet-stream';
+            var content = payload.content || '';
+            var url = self.fsReadPayloadObjectUrl(content, mime, payload.encoding || '');
+            var fit = desktop.wallpaperFit || 'cover';
+            var size = fit === 'tile' ? '240px auto' : (fit === 'contain' ? 'contain' : (fit === 'center' ? 'auto' : 'cover'));
+            var repeat = fit === 'tile' ? 'repeat' : 'no-repeat';
+            var root = self.themeStudioRootNode ? self.themeStudioRootNode() : document.documentElement;
+            if (!url || !root) return null;
+            if (self._wallpaperObjectUrl) { try { URL.revokeObjectURL(self._wallpaperObjectUrl); } catch (err) {} }
+            self._wallpaperObjectUrl = url;
+            root.style.setProperty('--desktop-wallpaper', 'linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.02)),url("' + url + '")');
+            return url;
+          }).catch(function () { return null; });
+        },
+        fsReadPayloadObjectUrl: function (content, mime, encoding) {
+          var blob, header, body, byteString, bytes, i;
+          if (!content) return '';
+          mime = mime || 'application/octet-stream';
+          try {
+            if (String(content).indexOf('data:') === 0) {
+              header = String(content).split(',', 1)[0];
+              body = String(content).slice(header.length + 1);
+              if (header.indexOf(';base64') >= 0) {
+                byteString = window.atob(body);
+                bytes = new Uint8Array(byteString.length);
+                for (i = 0; i < byteString.length; i += 1) bytes[i] = byteString.charCodeAt(i);
+                blob = new Blob([bytes], { type: mime });
+              } else {
+                blob = new Blob([decodeURIComponent(body)], { type: mime });
+              }
+            } else {
+              blob = new Blob([String(content)], { type: mime });
+            }
+            return URL.createObjectURL(blob);
+          } catch (err) {
+            return '';
+          }
+        },
         normalizeDesktopUiState: function () {
           if (!this.desktopUi) this.desktopUi = {};
           if (!this.desktopUi.drag) this.desktopUi.drag = { armed: false, active: false, moved: false, key: '', startX: 0, startY: 0, left: 0, top: 0 };
@@ -211,6 +259,39 @@
           if (!this.desktopUi.iconSize) this.desktopUi.iconSize = 'medium';
           if (!this.desktopUi.sortMode) this.desktopUi.sortMode = 'manual';
           if (typeof this.desktopUi.selectedKey === 'undefined') this.desktopUi.selectedKey = '';
+        },
+        openModalDialog: function (options) {
+          var self = this;
+          options = options || {};
+          return new Promise(function (resolve) {
+            self.dialogState = {
+              open: true,
+              type: options.type || 'input',
+              title: options.title || 'MIOOS',
+              message: options.message || '',
+              value: options.value || '',
+              okText: options.okText || self.t('dialog.confirm', 'OK'),
+              cancelText: options.cancelText || self.t('dialog.cancel', 'Cancel'),
+              resolver: resolve
+            };
+            self.$nextTick(function () {
+              var node = document.querySelector('.mioos-modal-input');
+              if (node) { node.focus(); node.select(); }
+            });
+          });
+        },
+        submitDialog: function () {
+          var state = this.dialogState || {};
+          var resolve = state.resolver;
+          var value = state.type === 'confirm' ? true : state.value;
+          this.dialogState = { open: false, type: 'input', title: '', message: '', value: '', okText: '', cancelText: '', resolver: null };
+          if (resolve) resolve(value);
+        },
+        cancelDialog: function () {
+          var state = this.dialogState || {};
+          var resolve = state.resolver;
+          this.dialogState = { open: false, type: 'input', title: '', message: '', value: '', okText: '', cancelText: '', resolver: null };
+          if (resolve) resolve(state.type === 'confirm' ? false : null);
         },
         desktopContextMenuState: function () {
           this.normalizeDesktopUiState();
@@ -299,10 +380,13 @@
         },
         desktopWallpaperStyle: function () {
           var profile = this.themeStudioActiveTheme();
-          var fit = (profile && profile.wallpaperFit) || 'cover';
+          var desktop = ((this.boot || {}).desktop) || {};
+          var fit = (profile && profile.wallpaperFit) || desktop.wallpaperFit || 'cover';
+          var image = this.themeStudioWallpaperCss(profile);
+          if (this._wallpaperObjectUrl || desktop.wallpaperPending || desktop.wallpaperTransport === 'websocket') image = 'var(--desktop-wallpaper)';
           return {
             backgroundColor: (((profile || {}).cssVars || {})['--desktop-bg']) || '#3d7ad6',
-            backgroundImage: this.themeStudioWallpaperCss(profile),
+            backgroundImage: image,
             backgroundSize: fit === 'tile' ? '240px auto' : fit,
             backgroundPosition: 'center center',
             backgroundRepeat: fit === 'tile' ? 'repeat' : 'no-repeat'
@@ -694,7 +778,6 @@
             self.moduleCatalog.loading = false;
             self.moduleCatalog.refreshedAt = Date.now();
             self.boot.modules = window.MIOOSState.deepClone((((msg || {}).module || {}).modules) || []);
-            self.boot.uiModules = window.MIOOSState.deepClone(((msg || {}).module) || {});
             self.ensureModuleWindowState();
             return self.boot.modules;
           }).catch(function (err) {
@@ -906,34 +989,84 @@
         desktopLayoutPayload: function () {
           return { iconSize: this.desktopUi.iconSize || 'medium', sortMode: this.desktopUi.sortMode || 'manual', positions: window.MIOOSState.deepClone(this.desktopUi.positions || {}) };
         },
+        desktopGridSlotKey: function (pos, metrics) {
+          metrics = metrics || this.desktopGridMetrics();
+          var left = isFinite(+((pos || {}).left)) ? +pos.left : 16;
+          var top = isFinite(+((pos || {}).top)) ? +pos.top : 16;
+          var col = Math.max(0, Math.round((left - 16) / Math.max(1, metrics.width || 96)));
+          var row = Math.max(0, Math.round((top - 16) / Math.max(1, metrics.height || 104)));
+          return col + ':' + row;
+        },
+        occupiedDesktopGridSlots: function (skipKey, metrics) {
+          var occupied = {};
+          var positions = ((this.desktopUi || {}).positions || {});
+          var entries = this.desktopRenderEntries ? this.desktopRenderEntries() : (this.desktopEntries || []);
+          var byKey = {};
+          metrics = metrics || this.desktopGridMetrics();
+          entries.forEach(function (entry) { if (entry && entry.key) byKey[entry.key] = 1; });
+          Object.keys(positions).forEach(function (key) {
+            var pos = positions[key];
+            if (key === skipKey || !byKey[key] || !pos || !isFinite(+pos.left) || !isFinite(+pos.top)) return;
+            occupied[this.desktopGridSlotKey(pos, metrics)] = 1;
+          }, this);
+          return occupied;
+        },
+        findOpenDesktopGridSlot: function (occupied, metrics, viewportHeight) {
+          var col = 0;
+          var row = 0;
+          var maxRows;
+          metrics = metrics || this.desktopGridMetrics();
+          viewportHeight = viewportHeight || this.desktopViewportHeight();
+          maxRows = Math.max(1, Math.floor(Math.max(1, viewportHeight - 16) / Math.max(1, metrics.height || 104)));
+          occupied = occupied || {};
+          while (occupied[col + ':' + row]) {
+            row += 1;
+            if (row >= maxRows) { row = 0; col += 1; }
+          }
+          occupied[col + ':' + row] = 1;
+          return { left: 16 + (col * metrics.width), top: 16 + (row * metrics.height) };
+        },
         ensureDesktopLayout: function () {
           var self = this;
           var metrics = this.desktopGridMetrics();
-          var col = 0;
-          var row = 0;
           var viewportHeight = this.desktopViewportHeight();
+          var entries = this.desktopRenderEntries ? this.desktopRenderEntries() : (this.desktopEntries || []);
+          var occupied = {};
+          var changed = false;
           if (!this.desktopUi.positions) this.desktopUi.positions = {};
-          (this.desktopRenderEntries ? this.desktopRenderEntries() : (this.desktopEntries || [])).forEach(function (entry) {
+          entries.forEach(function (entry) {
+            var pos, hasExplicitLeft, hasExplicitTop, left, top;
             if (!entry || !entry.key) return;
-            if (!self.desktopUi.positions[entry.key]) {
-              var hasExplicitLeft = entry.iconLeft !== undefined && entry.iconLeft !== null && entry.iconLeft !== '';
-              var hasExplicitTop = entry.iconTop !== undefined && entry.iconTop !== null && entry.iconTop !== '';
-              var left = hasExplicitLeft ? +entry.iconLeft : NaN;
-              var top = hasExplicitTop ? +entry.iconTop : NaN;
-              if (!(hasExplicitLeft && hasExplicitTop && isFinite(left) && isFinite(top) && left >= 0 && top >= 0)) {
-                left = 16 + (col * metrics.width);
-                top = 16 + (row * metrics.height);
-                row += 1;
-                if ((16 + ((row + 1) * metrics.height)) > viewportHeight) { row = 0; col += 1; }
-              }
-              self.desktopUi.positions[entry.key] = { left: left, top: top };
+            pos = self.desktopUi.positions[entry.key];
+            hasExplicitLeft = entry.iconLeft !== undefined && entry.iconLeft !== null && entry.iconLeft !== '';
+            hasExplicitTop = entry.iconTop !== undefined && entry.iconTop !== null && entry.iconTop !== '';
+            left = hasExplicitLeft ? +entry.iconLeft : NaN;
+            top = hasExplicitTop ? +entry.iconTop : NaN;
+            if ((!pos || !isFinite(+pos.left) || !isFinite(+pos.top)) && hasExplicitLeft && hasExplicitTop && isFinite(left) && isFinite(top) && left >= 0 && top >= 0) {
+              pos = { left: left, top: top };
+              self.desktopUi.positions[entry.key] = pos;
+              changed = true;
+            }
+            if (pos && isFinite(+pos.left) && isFinite(+pos.top)) occupied[self.desktopGridSlotKey(pos, metrics)] = 1;
+          });
+          entries.forEach(function (entry) {
+            var pos;
+            if (!entry || !entry.key) return;
+            pos = self.desktopUi.positions[entry.key];
+            if (!pos || !isFinite(+pos.left) || !isFinite(+pos.top)) {
+              self.desktopUi.positions[entry.key] = self.findOpenDesktopGridSlot(occupied, metrics, viewportHeight);
+              changed = true;
             }
           });
           Object.keys(this.desktopUi.positions).forEach(function (key) {
-            var exists = (self.desktopRenderEntries ? self.desktopRenderEntries() : (self.desktopEntries || [])).some(function (entry) { return entry.key === key; });
-            if (!exists) delete self.desktopUi.positions[key];
+            var exists = entries.some(function (entry) { return entry.key === key; });
+            if (!exists) { delete self.desktopUi.positions[key]; changed = true; }
           });
           this.sortDesktopEntries(this.desktopUi.sortMode || 'manual', true);
+          if (changed && this.socketConnected && this.persistDesktopLayout) {
+            window.clearTimeout(this._desktopLayoutPersistTimer);
+            this._desktopLayoutPersistTimer = window.setTimeout(this.persistDesktopLayout.bind(this), 120);
+          }
         },
         desktopIconStyle: function (entry) {
           var pos = ((this.desktopUi || {}).positions || {})[entry.key] || { left: 16, top: 16 };
@@ -1113,41 +1246,54 @@
         },
         desktopCreateFolder: function () {
           var self = this;
-          var name = window.prompt(this.t('explorer.promptNewFolder', 'New folder name'), this.t('explorer.defaultFolderName', 'New Folder'));
           this.closeDesktopContextMenu();
-          if (name === null) return Promise.resolve();
-          name = String(name || '').trim();
-          if (!name || !this.command) return Promise.resolve();
-          return this.command('fs.mkdir', { parent: this.desktopFolderId(), name: name }).then(function () { return self.refreshDesktopVfsViews(); }).catch(function (err) { self.showAlert('Desktop', (err && err.message) || 'fs_mkdir_failed'); });
+          if (!this.command) return Promise.resolve();
+          return this.inputDialog('Desktop', this.t('explorer.promptNewFolder', 'New folder name'), this.t('explorer.defaultFolderName', 'New Folder')).then(function (name) {
+            if (name === null) return null;
+            name = String(name || '').trim();
+            if (!name) return null;
+            return self.command('fs.mkdir', { parent: self.desktopFolderId(), name: name }).then(function () {
+              return self.refreshDesktopVfsViews().then(function () {
+                self.ensureDesktopLayout();
+                if (self.persistDesktopLayout) self.persistDesktopLayout();
+              });
+            });
+          }).catch(function (err) { self.showAlert('Desktop', (err && err.message) || 'fs_mkdir_failed'); });
         },
         desktopCreateTextFile: function () {
           var self = this;
-          var name = window.prompt('New text file name', 'New Text Document.txt');
           this.closeDesktopContextMenu();
-          if (name === null) return Promise.resolve();
-          name = String(name || '').trim();
-          if (!name || !this.command) return Promise.resolve();
-          return this.command('fs.write', { parent: this.desktopFolderId(), name: name, content: '', mime: 'text/plain' }).then(function () { return self.refreshDesktopVfsViews(); }).catch(function (err) { self.showAlert('Desktop', (err && err.message) || 'fs_write_failed'); });
+          if (!this.command) return Promise.resolve();
+          return this.inputDialog('Desktop', 'New text file name', 'New Text Document.txt').then(function (name) {
+            if (name === null) return null;
+            name = String(name || '').trim();
+            if (!name) return null;
+            return self.command('fs.write', { parent: self.desktopFolderId(), name: name, content: '', mime: 'text/plain' }).then(function () {
+              return self.refreshDesktopVfsViews().then(function () { self.ensureDesktopLayout(); if (self.persistDesktopLayout) self.persistDesktopLayout(); });
+            });
+          }).catch(function (err) { self.showAlert('Desktop', (err && err.message) || 'fs_write_failed'); });
         },
         desktopRenameSelected: function () {
           var self = this;
           var entry = this.desktopContextEntry();
-          var name;
           this.closeDesktopContextMenu();
           if (!entry || !this.desktopEntryIsVfs(entry) || !this.command) return Promise.resolve();
-          name = window.prompt(this.t('explorer.promptRename', 'Rename item'), entry.name || entry.title || '');
-          if (name === null) return Promise.resolve();
-          name = String(name || '').trim();
-          if (!name || name === (entry.name || entry.title || '')) return Promise.resolve();
-          return this.command('fs.rename', { id: entry.id || entry.key, name: name }).then(function () { return self.refreshDesktopVfsViews(); }).catch(function (err) { self.showAlert('Desktop', (err && err.message) || 'fs_rename_failed'); });
+          return this.inputDialog('Desktop', this.t('explorer.promptRename', 'Rename item'), entry.name || entry.title || '').then(function (name) {
+            if (name === null) return null;
+            name = String(name || '').trim();
+            if (!name || name === (entry.name || entry.title || '')) return null;
+            return self.command('fs.rename', { id: entry.id || entry.key, name: name }).then(function () { return self.refreshDesktopVfsViews(); });
+          }).catch(function (err) { self.showAlert('Desktop', (err && err.message) || 'fs_rename_failed'); });
         },
         desktopDeleteSelected: function () {
           var self = this;
           var entry = this.desktopContextEntry();
           this.closeDesktopContextMenu();
           if (!entry || !this.desktopEntryIsVfs(entry) || !this.command) return Promise.resolve();
-          if (!window.confirm(this.t('explorer.confirmDelete', 'Delete the selected item?'))) return Promise.resolve();
-          return this.command('fs.delete', { id: entry.id || entry.key }).then(function () { return self.refreshDesktopVfsViews(); }).catch(function (err) { self.showAlert('Desktop', (err && err.message) || 'fs_delete_failed'); });
+          return this.confirmDialog('Desktop', this.t('explorer.confirmDelete', 'Delete the selected item?')).then(function (ok) {
+            if (!ok) return null;
+            return self.command('fs.delete', { id: entry.id || entry.key }).then(function () { return self.refreshDesktopVfsViews(); });
+          }).catch(function (err) { self.showAlert('Desktop', (err && err.message) || 'fs_delete_failed'); });
         },
         themeStudioStorageKey: function () {
           return 'mioos.themeStudio.active.v2';
@@ -1339,9 +1485,16 @@
             self.applyThemeStudioConfig(snapshot, { silent: true, persist: false });
           });
         },
+        themeStudioAllowCssWallpaperUrl: function (url) {
+          var value = String(url || '').trim();
+          var mode = String(((((this.boot || {}).transport || {}).mode) || 'websocket')).toLowerCase();
+          if (!value || value.indexOf('data:') === 0 || value.charAt(0) === '<') return false;
+          if (mode !== 'http' && value.indexOf('blob:') !== 0) return false;
+          return true;
+        },
         themeStudioWallpaperCss: function (theme) {
           var t = this.themeStudioNormalizeConfig(theme || this.themeStudioActiveTheme() || {});
-          if (t.wallpaperPreset === 'custom-url' && t.wallpaperUrl) return 'url(' + t.wallpaperUrl + ')';
+          if (t.wallpaperPreset === 'custom-url' && t.wallpaperUrl && this.themeStudioAllowCssWallpaperUrl(t.wallpaperUrl)) return 'url(' + t.wallpaperUrl + ')';
           if (t.wallpaperPreset === 'meadow') return 'linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0) 28%), linear-gradient(180deg, #8acb59 0%, #6fb14a 42%, #3e7b35 100%)';
           if (t.wallpaperPreset === 'aurora') return 'radial-gradient(circle at top, rgba(147,197,253,0.26), transparent 30%), linear-gradient(180deg, #16385c 0%, #23476d 36%, #3a6288 100%)';
           if (t.wallpaperPreset === 'graphite') return 'linear-gradient(180deg, #6c7a89 0%, #313b48 100%)';
@@ -1773,7 +1926,7 @@
         },
         themeStudioWallpaperCss: function (theme) {
           var t = this.themeStudioNormalizeConfig(theme || this.themeStudioActiveTheme() || {});
-          if (t.wallpaperUrl) return 'url(' + t.wallpaperUrl + ')';
+          if (t.wallpaperUrl && this.themeStudioAllowCssWallpaperUrl(t.wallpaperUrl)) return 'url(' + t.wallpaperUrl + ')';
           if (t.wallpaperPreset === 'meadow') return 'linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0) 28%), linear-gradient(180deg, #8acb59 0%, #6fb14a 42%, #3e7b35 100%)';
           if (t.wallpaperPreset === 'aurora') return 'radial-gradient(circle at top, rgba(147,197,253,0.26), transparent 30%), linear-gradient(180deg, #16385c 0%, #23476d 36%, #3a6288 100%)';
           if (t.wallpaperPreset === 'graphite') return 'linear-gradient(180deg, #6c7a89 0%, #313b48 100%)';
@@ -1783,7 +1936,7 @@
         themeStudioLoginWallpaperCss: function (theme) {
           var t = this.themeStudioNormalizeConfig(theme || this.themeStudioActiveTheme() || {});
           var cfg = t.loginScreenConfig || {};
-          if (cfg.wallpaperUrl) return 'url(' + cfg.wallpaperUrl + ')';
+          if (cfg.wallpaperUrl && this.themeStudioAllowCssWallpaperUrl(cfg.wallpaperUrl)) return 'url(' + cfg.wallpaperUrl + ')';
           return this.themeStudioWallpaperCss(t);
         },
         themeStudioManagedVarKeys: function () {
@@ -2157,13 +2310,24 @@
           route = (((this.boot || {}).routes || {}).themeAssetUpload) || '/api/mioos/theme-asset/upload';
           kind = path.indexOf('loginScreenConfig.avatarUrl') === 0 ? 'login-avatar' : (path.indexOf('loginScreenConfig.warningImageUrl') === 0 ? 'login-warning' : (path.indexOf('loginScreenConfig.') === 0 ? 'login-wallpaper' : 'wallpaper'));
           store.uploadStatus = 'uploading';
-          form = new FormData();
-          form.append('kind', kind);
-          form.append('file', file, file.name || 'image.bin');
-          return fetch(route, { method: 'POST', body: form, credentials: 'same-origin' }).then(function (res) { return res.json().then(function (obj) { return { ok: res.ok, obj: obj || {} }; }); }).then(function (payload) {
-            if (!payload.ok || !payload.obj || !payload.obj.ok) throw new Error((payload.obj && (payload.obj.detail || payload.obj.error)) || 'upload_failed');
-            self.themeStudioSetUploadedAsset(path, payload.obj.url || '', { assetId: payload.obj.assetId || payload.obj.id || '', kind: payload.obj.kind || kind });
-            self.pushNotification('Theme Studio', 'Image uploaded.');
+          return this.themeStudioReadFileDataUrl(file).then(function (dataUrl) {
+            if (self.command && String(((((self.boot || {}).transport || {}).mode) || 'websocket')).toLowerCase() !== 'http') {
+              return self.command('theme.asset.upload', { kind: kind, name: file.name || 'image.bin', mime: file.type || 'application/octet-stream', dataUrl: dataUrl }).then(function (msg) {
+                var obj = (msg && msg.theme) || {};
+                if (!obj.ok) throw new Error(obj.detail || obj.error || 'upload_failed');
+                self.themeStudioSetUploadedAsset(path, obj.url || '', { assetId: obj.assetId || obj.id || '', kind: obj.kind || kind });
+                self.pushNotification('Theme Studio', 'Image uploaded.');
+              });
+            }
+            if (!((((self.boot || {}).transport || {}).httpFallback) !== false)) throw new Error('http_fallback_disabled');
+            form = new FormData();
+            form.append('kind', kind);
+            form.append('file', file, file.name || 'image.bin');
+            return fetch(route, { method: 'POST', body: form, credentials: 'same-origin' }).then(function (res) { return res.json().then(function (obj) { return { ok: res.ok, obj: obj || {} }; }); }).then(function (payload) {
+              if (!payload.ok || !payload.obj || !payload.obj.ok) throw new Error((payload.obj && (payload.obj.detail || payload.obj.error)) || 'upload_failed');
+              self.themeStudioSetUploadedAsset(path, payload.obj.url || '', { assetId: payload.obj.assetId || payload.obj.id || '', kind: payload.obj.kind || kind });
+              self.pushNotification('Theme Studio', 'Image uploaded.');
+            });
           }).catch(function (err) {
             store.uploadStatus = 'local-preview';
             return self.themeStudioUploadFallbackDataUrl(path, file).then(function () {
@@ -2571,11 +2735,10 @@
           return item;
         },
         inputDialog: function (title, message, value) {
-          var answer = window.prompt(message || title || 'Input', value || '');
-          return Promise.resolve(answer);
+          return this.openModalDialog({ type: 'input', title: title || 'MIOOS', message: message || title || 'Input', value: value || '', okText: this.t('dialog.confirm', 'OK'), cancelText: this.t('dialog.cancel', 'Cancel') });
         },
         confirmDialog: function (title, message) {
-          return Promise.resolve(window.confirm(message || title || 'Continue?'));
+          return this.openModalDialog({ type: 'confirm', title: title || 'MIOOS', message: message || title || 'Continue?', okText: this.t('dialog.confirm', 'Confirm'), cancelText: this.t('dialog.cancel', 'Cancel') });
         },
         copyTextToClipboard: function (text) {
           if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(String(text || ''));
@@ -2604,12 +2767,14 @@
         themeStudioLoadRemote: function (key) {
           var route = (((this.boot || {}).routes || {}).themeLoad) || '/api/mioos/theme/load';
           var body = key ? { key: key } : {};
+          if (this.command && String(((((this.boot || {}).transport || {}).mode) || 'websocket')).toLowerCase() !== 'http') return this.command('theme.load', body).then(function (msg) { return (msg && msg.theme) || {}; });
           return fetch(route, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(function (res) {
             return res.json().then(function (obj) { if (!res.ok) throw new Error((obj && (obj.detail || obj.error)) || 'theme_load_failed'); return obj || {}; });
           });
         },
         themeStudioSaveRemote: function (payload) {
           var route = (((this.boot || {}).routes || {}).themeSave) || '/api/mioos/theme/save';
+          if (this.command && String(((((this.boot || {}).transport || {}).mode) || 'websocket')).toLowerCase() !== 'http') return this.command('theme.save', payload || {}).then(function (msg) { var obj = (msg && msg.theme) || {}; if (obj && obj.ok === 0) throw new Error(obj.detail || obj.error || 'theme_save_failed'); return obj || {}; });
           return fetch(route, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload || {}) }).then(function (res) {
             return res.json().then(function (obj) { if (!res.ok || (obj && obj.ok === 0)) throw new Error((obj && (obj.detail || obj.error)) || 'theme_save_failed'); return obj || {}; });
           });
@@ -2641,16 +2806,10 @@
           }
           return (((win || {}).terminalState || {}).status) || this.t('terminal.status.ready', 'Terminal idle');
         }
-      }, Auth, WS, WM, Terminal, Explorer, Modules, Table)
+      }, Auth, WS, WM, Terminal, Explorer, Modules, Table, Permissions)
     });
 
     app.config.compilerOptions.delimiters = ['[[', ']]'];
-    if (window.MIOOSModules && typeof window.MIOOSModules.register === 'function') {
-      window.MIOOSModules.register(app);
-    }
-    if (window.MIOOSTable && typeof window.MIOOSTable.register === 'function') {
-      window.MIOOSTable.register(app);
-    }
     if (window.MIOOSShellUI && typeof window.MIOOSShellUI.register === 'function') {
       window.MIOOSShellUI.register(app);
     }

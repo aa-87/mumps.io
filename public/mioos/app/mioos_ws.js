@@ -16,7 +16,6 @@
       initSocket: function () {
         var self = this;
         var root = window.MIOOSState.getRootNode();
-        if (this.requiresSignin) return Promise.reject(new Error('login_required'));
         var path = (this.boot.routes || {}).websocket || (root ? root.dataset.mioosWs : '');
         var protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
         var waitMs = Number((((this.boot || {}).websocket || {}).requestTimeoutMs) || 15000) || 15000;
@@ -52,7 +51,7 @@
             if (self.pingTimer) window.clearInterval(self.pingTimer);
             self.pingTimer = window.setInterval(function () {
               self.sendSocket({ event: 'ping' });
-            }, 15000);
+            }, Math.max(5000, Number((((self.boot || {}).websocket || {}).heartbeatSeconds || 15)) * 1000));
             if (!settled) {
               settled = true;
               window.clearTimeout(timer);
@@ -90,7 +89,6 @@
       ensureSocketReady: function (timeoutMs) {
         var self = this;
         var waitMs = Number(timeoutMs || ((((this.boot || {}).websocket || {}).requestTimeoutMs) || 15000)) || 15000;
-        if (this.requiresSignin) return Promise.reject(new Error('login_required'));
         if (this.socket && this.socket.readyState === 1) return Promise.resolve(true);
         return self.initSocket().then(function () { return true; });
       },
@@ -142,7 +140,6 @@
         }
       },
       sendSocket: function (payload) {
-        if (this.requiresSignin) return false;
         if (!this.socket || this.socket.readyState !== 1) return false;
         this.socket.send(JSON.stringify(payload));
         return true;

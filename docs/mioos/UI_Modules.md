@@ -131,3 +131,56 @@ SET ^MIO("MIOOS","MODULE","USER","admin","user.reports.example","surface")="mioo
 - UI Modules surface,
 - shell surface resolution,
 - docs and examples.
+
+## WebSocket-only module communication
+
+Module communication is now WebSocket-only from the browser. User and internal modules must use the core shell command bus instead of `fetch()` or module-specific HTTP endpoints.
+
+Required command pattern:
+
+```javascript
+this.command('module.catalog', {})
+this.command('module.table.query', { dataset: 'demo', page: 1, pageSize: 25 })
+this.command('permission.upsert', { kind: 'permission', key: 'example.view', name: 'View Example' })
+```
+
+Rules for module authors:
+
+- Do not call `/api/mioos/modules/catalog` from module UI code.
+- Do not call `/api/mioos/table/query` from module UI code.
+- Use `module.table.query` for the reusable table component.
+- Use explicit permission commands for administrative mutations.
+- Keep all privileged operations in MUMPS routines and expose them through `MIOOSWS` commands.
+- Include a `requiredPermission` field in module manifests when a module performs privileged work.
+
+## Permissions module
+
+The internal `permissions` component is the reference module for security administration.
+
+- Component key: `permissions`
+- Vue component: `mioos-permissions-admin`
+- Surface: `mioos-surface-permissions`
+- Backend routine: `MIOOSPERM`
+- Transport: `websocket-only`
+- Example folder: `examples/mioos_modules/permissions`
+
+The module reuses `mioos-full-table` for every administrative grid:
+
+| Dataset | Purpose |
+| --- | --- |
+| `permissions` | Individual permission definitions, including PHI and sensitive flags. |
+| `permission-groups` | Named collections of permissions. |
+| `permission-profiles` | Assignable profiles composed from permission groups. |
+| `permission-assignments` | User/role to profile assignments. |
+| `permission-audit` | Non-PHI administrative audit events. |
+
+Administration commands:
+
+| Command | Purpose |
+| --- | --- |
+| `permission.upsert` | Add or edit permissions, groups, and profiles. |
+| `permission.delete` | Delete permissions, groups, profiles, or assignments. |
+| `permission.assign` | Assign a profile to a user or role. |
+| `permission.effective` | Inspect effective access for the current principal. |
+
+The permissions module is HIPAA-aligned: it models minimum necessary access, PHI-related permission flags, sensitive/break-glass permissions, and an administrative audit trail. It does not by itself certify a deployment as HIPAA compliant; deployment policy, hosting, encryption, retention, BAAs, and operating procedures are still required.

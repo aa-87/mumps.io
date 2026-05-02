@@ -217,3 +217,11 @@ Application windows can use the MIOOS backend table surface for large lists. Tab
 Open **UI Modules** from the Start menu to browse reusable MIOOS UI components, installed internal modules, user-created modules, and examples. The first component is **Backend Table**, which opens a backend-driven table window with pagination, sorting, grouping, hide/show columns, expansion rows, and actions.
 
 User-created modules should follow the manifest format documented in `docs/mioos/UI_Modules.md` and can start from `examples/mioos_modules/table`.
+
+## Permissions Admin module
+
+When UI Modules are enabled by an administrator, MIOOS includes a Permissions module. It lets authorized admins review and maintain permissions, permission groups, permission profiles, assignments, and audit events.
+
+Every grid in the Permissions module uses the standard backend table component. Use **Reset table** to clear filters, sorting, grouping, selection, expansion, and column visibility/width changes.
+
+All module data is loaded through the MIOOS WebSocket command channel. Permission changes are audited and should include a meaningful reason.
