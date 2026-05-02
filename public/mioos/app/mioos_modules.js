@@ -59,7 +59,7 @@
     var moduleKey = (win || {}).moduleComponent || (win || {}).componentKey || '';
     var module = moduleByKey(vm, (win || {}).moduleId || (win || {}).appKey || '');
     if (!moduleKey && module) moduleKey = module.componentKey || module.component || '';
-    if ((win || {}).appKey === 'app-catalog' || (win || {}).appKey === 'ui-modules' || moduleKey === 'module-catalog') return 'mioos-surface-ui-modules';
+    if ((win || {}).appKey === 'ui-modules' || moduleKey === 'module-catalog') return 'mioos-surface-ui-modules';
     if (module && module.surface) return module.surface;
     var component = componentByKey(vm, moduleKey);
     if (component && component.surface) return component.surface;
@@ -75,7 +75,6 @@
     uiModuleComponent: function (key) { return componentByKey(this, key); },
     uiModuleRecord: function (key) { return moduleByKey(this, key); },
     uiModuleRoute: function () { return ((((this.boot || {}).routes || {}).moduleCatalog) || '/api/mioos/modules/catalog'); },
-    uiModuleCatalogCommand: function () { return ((((this.boot || {}).routes || {}).moduleCatalogCommand) || 'module.catalog'); },
     uiModuleRefreshCatalog: function () {
       var self = this;
       return fetch(this.uiModuleRoute(), { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: '{}' }).then(function (response) {
@@ -86,7 +85,7 @@
         self.boot.modules = toList((payload || {}).modules);
         return self.boot.uiModules;
       }).catch(function (err) {
-        if (self.showAlert) self.showAlert('App Catalogue', (err && (err.detail || err.error || err.message)) || 'Module catalog failed');
+        if (self.showAlert) self.showAlert('UI Modules', (err && err.message) || 'Module catalog failed');
         throw err;
       });
     },
@@ -115,9 +114,6 @@
       var component = this.uiModuleComponent(componentKey) || { key: componentKey, title: componentKey };
       if (component.key === 'table' && this.openBackendTableWindow) {
         return this.openBackendTableWindow(Object.assign({ title: component.title || 'Backend Table', dataset: 'demo' }, options || {}));
-      }
-      if (component.key === 'permissions' && this.openPermissionsWindow) {
-        return this.openPermissionsWindow(options || {});
       }
       return this.createWindowForApp({ key: 'component-' + component.key, appKey: 'component-' + component.key, title: component.title || component.key, icon: component.icon || '▣', kind: 'module', moduleWindow: true, moduleComponent: component.key, componentKey: component.key, surface: component.surface }, { state: 'normal', moduleWindow: true, moduleComponent: component.key });
     },

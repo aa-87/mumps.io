@@ -487,3 +487,33 @@ All tests were passing at the start of this ROI. The next hardening pass address
 - Fixed wallpaper upload result handling so VFS IDs returned by write/upload responses can become blob-backed wallpaper URLs.
 - Deduped Transfer Center active queue by showing completed/failed/cancelled transfers only in history.
 - Added compact native-shell CSS overrides for Home Explorer, Transfer rows, Start Menu item capacity, and Customize previews.
+
+## Backend Table Component — implementation notes
+
+- `MIOOSTBL` owns server-side table querying and returns schema, rows, pagination metadata, grouping summaries, row actions, bulk actions, and feature flags.
+- `/api/mioos/table/query` is registered through `MIOOS.m` and handled by `TABLEQUERY^MIOOSAPI`.
+- `MIOOSST` exposes `boot.routes.tableQuery` and advertises the table component in `boot.desktop.components.table`.
+- `public/mioos/app/mioos_table.js` provides the reusable Vue 3 Options API UMD table component and `mioos-surface-table` shell surface.
+- The component supports backend pagination, per-column sorting, global filtering, column visibility, resizable columns, column grouping headers, row expansion, selection, row actions, and bulk action rows.
+- Keep Explorer independent. The table component borrows the details-table interaction model but must not mutate Explorer state or replace Explorer-specific VFS behavior.
+
+## UI Module Foundation
+
+MIOOS now has a first-class UI Module foundation for internal and user-created modules. The foundation is installed but launch-disabled by default; keep `CONF("mioos","modules","enabled")` and `CONF("mioos","modules","appCatalogEnabled")` off unless the shell should expose the UI Modules catalog app.
+
+- `MIOOSMOD` owns the backend module catalog and emits the `mioos-ui-module-v1` contract.
+- `MIOOSST` injects the full catalog as `boot.uiModules` and keeps launchable module rows in `boot.modules` for Start menu compatibility.
+- `/api/mioos/modules/catalog` is handled by `MODULECATALOG^MIOOSAPI`.
+- `module.catalog` in `MIOOSWS` returns the same registry for websocket clients.
+- `mioos_modules.js` owns the browser-side registry, component/module registration APIs, UI Modules catalog surface, and generic module host.
+- `mioos_table.js` registers the first reusable component: `table` / `mioos-full-table` / `mioos-surface-table`.
+- Examples live under `examples/mioos_modules`, with `examples/mioos_modules/table` as the first example.
+
+Do not build new internal or user-created module screens by copying Explorer. Add a catalog entry and either reuse an existing registered component or register a new component through `window.MIOOSModules.registerComponent(...)` before `MIOOSCore.mount()`.
+
+
+## ROI 57 — Safe first paint and opt-in UI Modules
+
+Current source state: backend UI module registry, catalog API/WS support, boot manifest injection, client module/component registry, UI Modules catalog window, generic module host, and the backend table component are present. The module system is launch-disabled by default. Do not treat the presence of `MIOOSMOD`, `mioos_modules.js`, or `mioos_table.js` as permission to expose modules during default boot; `CONF("mioos","modules","enabled")` and `CONF("mioos","modules","appCatalogEnabled")` must both be enabled.
+
+First paint must not require authenticated internal asset requests. Before sign-in, MIOTPL may render theme variables and gradients, but it must not render `/api/mioos/theme-asset` or `/api/mioos/fs/blob` URLs into CSS, data attributes, or boot JSON.

@@ -350,3 +350,21 @@ This pass removes the unauthenticated boot-time `/api/mioos/theme/load` request.
 ### ROI 60 — server-rendered theme first paint and focused shell polish
 
 This ROI moves active theme application back into the initial MIOTPL render path so the shell no longer performs an unauthorized `/api/mioos/theme/load` request before sign-in. `MIOOSST` now exposes the active globals-backed profile in boot state, `MIOOSUI` resolves matching CSS variables for first paint, and the client only reloads saved themes from the Customize window after authentication. The pass also hardens wallpaper upload ID detection, removes completed-transfer duplication from the active queue, and adds native-shell sizing overrides for Explorer, Transfers, Start Menu, and Customize previews.
+
+## Backend Table Component
+
+MIOOS includes a reusable backend table component for application screens that need Explorer-like resizable details tables without copying Explorer code. The component is served by `MIOOSTBL` through `/api/mioos/table/query` and rendered by `mioos_table.js`.
+
+See `docs/mioos/Backend_Table.md` for the query contract, feature matrix, extension rules, and regression coverage.
+
+## UI Modules
+
+MIOOS includes a UI Module foundation for internal and user-created modules. It is opt-in at launch time: set `CONF("mioos","modules","enabled")=1` and `CONF("mioos","modules","appCatalogEnabled")=1` to expose the catalog app. The module registry is built by `MIOOSMOD`, injected into boot as `uiModules`, exposed over `/api/mioos/modules/catalog`, and rendered by `mioos_modules.js` through the UI Modules app.
+
+The first registered component is the backend table component (`table` / `mioos-full-table`). See `docs/mioos/UI_Modules.md` and `examples/mioos_modules/table` for the module contract and first example.
+
+### ROI 57 — Safe first paint and opt-in UI Modules
+
+MIOOS renders theme CSS variables through MIOTPL at boot, but authenticated internal asset URLs such as `/api/mioos/theme-asset` and `/api/mioos/fs/blob` are intentionally suppressed before sign-in. This prevents pre-login 401s while preserving backend-loaded theme tokens for first paint.
+
+The UI Module registry, module catalog API route, WebSocket catalog command, client module registry, and table component remain installed in the source tree. They are launch-disabled by default: both `CONF("mioos","modules","enabled")=1` and `CONF("mioos","modules","appCatalogEnabled")=1` are required to inject module manifests and expose the catalog window.

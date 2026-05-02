@@ -3,14 +3,8 @@
     return vm.windows.find(function (item) { return item.id === windowId; }) || null;
   }
   function nextWindowId(vm, prefix) {
-    prefix = String(prefix || 'win-app').replace(/[^A-Za-z0-9_-]+/g, '-');
-    vm.windowSeq = +(vm.windowSeq || 0) + 1;
-    var id = prefix + '-' + vm.windowSeq;
-    while ((vm.windows || []).some(function (item) { return item && item.id === id; })) {
-      vm.windowSeq += 1;
-      id = prefix + '-' + vm.windowSeq;
-    }
-    return id;
+    vm._mioosWindowSeq = (vm._mioosWindowSeq || 0) + 1;
+    return (prefix || 'win') + '-' + vm._mioosWindowSeq;
   }
   function taskbarHeight(vm) {
     var theme = (vm && vm.appliedThemeProfile) || (vm && vm.themeStudioActiveTheme && vm.themeStudioActiveTheme()) || {};

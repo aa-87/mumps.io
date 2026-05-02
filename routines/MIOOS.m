@@ -31,12 +31,11 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","route","fsUploadCommit"))="" SET CONF("mioos","route","fsUploadCommit")="/api/mioos/fs/upload/commit"
 	IF $GET(CONF("mioos","route","fsUploadAbort"))="" SET CONF("mioos","route","fsUploadAbort")="/api/mioos/fs/upload/abort"
 	IF $GET(CONF("mioos","route","fsBlob"))="" SET CONF("mioos","route","fsBlob")="/api/mioos/fs/blob"
-	IF $GET(CONF("mioos","route","tableQuery"))="" SET CONF("mioos","route","tableQuery")="/api/mioos/table/query"
-	IF $GET(CONF("mioos","route","moduleCatalog"))="" SET CONF("mioos","route","moduleCatalog")="/api/mioos/modules/catalog"
 	IF $GET(CONF("mioos","route","themeAssetUpload"))="" SET CONF("mioos","route","themeAssetUpload")="/api/mioos/theme-asset/upload"
 	IF $GET(CONF("mioos","route","themeAsset"))="" SET CONF("mioos","route","themeAsset")="/api/mioos/theme-asset"
 	IF $GET(CONF("mioos","route","themeLoad"))="" SET CONF("mioos","route","themeLoad")="/api/mioos/theme/load"
 	IF $GET(CONF("mioos","route","themeSave"))="" SET CONF("mioos","route","themeSave")="/api/mioos/theme/save"
+	IF $GET(CONF("mioos","route","moduleCatalog"))="" SET CONF("mioos","route","moduleCatalog")="/api/mioos/modules/catalog"
 	IF $GET(CONF("mioos","route","ws"))="" SET CONF("mioos","route","ws")="/ws/mioos"
 	IF $GET(CONF("mioos","route","wsTerminal"))="" SET CONF("mioos","route","wsTerminal")="/ws/mioos/terminal"
 	IF $GET(CONF("mioos","brand","title"))="" SET CONF("mioos","brand","title")="MIOOS"
@@ -51,7 +50,7 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","desktop","transport","eventName"))="" SET CONF("mioos","desktop","transport","eventName")="desktop.command"
 	IF $GET(CONF("mioos","desktop","transport","resultEvent"))="" SET CONF("mioos","desktop","transport","resultEvent")="desktop.result"
 	IF $GET(CONF("mioos","desktop","transport","errorEvent"))="" SET CONF("mioos","desktop","transport","errorEvent")="desktop.error"
-	IF $GET(CONF("mioos","desktop","transport","model"))="" SET CONF("mioos","desktop","transport","model")="mixed-http-websocket"
+	IF $GET(CONF("mioos","desktop","transport","model"))="" SET CONF("mioos","desktop","transport","model")="core-websocket-plus-app-websockets"
 	IF $GET(CONF("mioos","desktop","themeMode"))="" SET CONF("mioos","desktop","themeMode")="light"
 	IF $GET(CONF("mioos","desktop","themeSystem","editor"))="" SET CONF("mioos","desktop","themeSystem","editor")="customize"
 	IF $GET(CONF("mioos","desktop","themeSystem","persistence"))="" SET CONF("mioos","desktop","themeSystem","persistence")="globals-profile-service-with-localstorage-fallback"
@@ -76,10 +75,6 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","desktop","appActions","copyExportsToClipboard"))="" SET CONF("mioos","desktop","appActions","copyExportsToClipboard")=1
 	IF $GET(CONF("mioos","desktop","appActions","moduleNotesSessionLocal"))="" SET CONF("mioos","desktop","appActions","moduleNotesSessionLocal")=1
 	IF $GET(CONF("mioos","desktop","shellSurfaces","moduleWindows"))="" SET CONF("mioos","desktop","shellSurfaces","moduleWindows")=0
-	IF $GET(CONF("mioos","modules","enabled"))="" SET CONF("mioos","modules","enabled")=1
-	IF $GET(CONF("mioos","modules","appCatalogEnabled"))="" SET CONF("mioos","modules","appCatalogEnabled")=1
-	IF $GET(CONF("mioos","modules","appCatalogKey"))="" SET CONF("mioos","modules","appCatalogKey")="app-catalog"
-	IF $GET(CONF("mioos","modules","manifestVersion"))="" SET CONF("mioos","modules","manifestVersion")=1
 	IF $GET(CONF("mioos","desktop","chrome"))="" SET CONF("mioos","desktop","chrome")="shell-foundation"
 	IF $GET(CONF("mioos","desktop","taskbarStyle"))="" SET CONF("mioos","desktop","taskbarStyle")="taskbar-foundation"
 	IF $GET(CONF("mioos","desktop","startMenuStyle"))="" SET CONF("mioos","desktop","startMenuStyle")="launcher-foundation"
@@ -180,10 +175,10 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","fs","transferPersistence"))="" SET CONF("mioos","fs","transferPersistence")="localstorage-resumable-transfer-list"
 	IF $GET(CONF("mioos","download","mediaInitialBytes"))="" SET CONF("mioos","download","mediaInitialBytes")=131072
 	IF $GET(CONF("mioos","download","mediaWarmupBytes"))="" SET CONF("mioos","download","mediaWarmupBytes")=131072
-	IF $GET(CONF("mioos","transport","mode"))="" SET CONF("mioos","transport","mode")="websocket"
-	IF $GET(CONF("mioos","transport","httpFallback"))="" SET CONF("mioos","transport","httpFallback")=1
 	IF $GET(CONF("mioos","fs","transport"))="" SET CONF("mioos","fs","transport")="http-and-websocket"
-	IF $GET(CONF("mioos","upload","chunkTransport"))="" SET CONF("mioos","upload","chunkTransport")="websocket"
+	IF $GET(CONF("mioos","route","tableQuery"))="" SET CONF("mioos","route","tableQuery")="/api/mioos/table/query"
+	IF $GET(CONF("mioos","route","moduleCatalog"))="" SET CONF("mioos","route","moduleCatalog")="/api/mioos/modules/catalog"
+	IF $GET(CONF("mioos","table","maxPageSize"))="" SET CONF("mioos","table","maxPageSize")=250
 	IF $GET(CONF("mioos","upload","chunkBytes"))="" SET CONF("mioos","upload","chunkBytes")=860000
 	IF $GET(CONF("mioos","upload","concurrency"))="" SET CONF("mioos","upload","concurrency")=3
 	IF $GET(CONF("mioos","upload","batchSize"))="" SET CONF("mioos","upload","batchSize")=2
@@ -192,7 +187,7 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","terminal","pipe","sessionIdleSeconds"))="" SET CONF("mioos","terminal","pipe","sessionIdleSeconds")=900
 	IF $GET(CONF("mioos","websocket","maxSocketsPerSession"))="" SET CONF("mioos","websocket","maxSocketsPerSession")=9
 	IF $GET(CONF("mioos","websocket","coreSockets"))="" SET CONF("mioos","websocket","coreSockets")=1
-	IF $GET(CONF("mioos","websocket","fsSockets"))="" SET CONF("mioos","websocket","fsSockets")=3
+	IF $GET(CONF("mioos","websocket","fsSockets"))="" SET CONF("mioos","websocket","fsSockets")=1
 	IF $GET(CONF("auth","protectMode"))="" SET CONF("auth","protectMode")="route"
 	IF $GET(CONF("auth","mode"))="" SET CONF("auth","mode")="jwt"
 	IF +$GET(CONF("mioos","desktop","authRequired"),1)=1 DO
@@ -245,6 +240,8 @@ REG(CONF)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsRename")),"FSRENAME^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsMove")),"FSMOVE^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsDelete")),"FSDELETE^MIOOSAPI",.PROT)
+	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","tableQuery")),"TABLEQUERY^MIOOSAPI",.PROT)
+	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","moduleCatalog")),"MODULECATALOG^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsUploadBegin")),"FSUPBEGIN^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsUploadChunk")),"FSUPCHUNK^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsUploadStatus")),"FSUPSTATUS^MIOOSAPI",.PROT)
@@ -257,8 +254,6 @@ REG(CONF)
 	DO ADDM^MIOROUTE("HEAD",$GET(CONF("mioos","route","themeAsset")),"THEMEASSET^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","themeLoad")),"THEMELOAD^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","themeSave")),"THEMESAVE^MIOOSAPI",.PROT)
-	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","tableQuery")),"TABLEQUERY^MIOOSAPI",.PROT)
-	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","moduleCatalog")),"MODULECATALOG^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("GET","/public/mioos/*","STATIC^MIOOS",.META)
 	KILL WSMETA SET WSMETA("authRequired")=AUTHREQ,WSMETA("wsPersistent")=1
 	DO ADDWSM^MIOROUTE($GET(CONF("mioos","route","ws")),"MESSAGE^MIOOSWS",.WSMETA)
@@ -283,12 +278,11 @@ REG(CONF)
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","fsRename")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","fsMove")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","fsDelete")))
+	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","moduleCatalog")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","themeAssetUpload")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","themeAsset")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","themeLoad")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","themeSave")))
-	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","tableQuery")))
-	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","moduleCatalog")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","ws")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","wsTerminal")))
 	QUIT

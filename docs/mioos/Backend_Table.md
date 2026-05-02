@@ -128,29 +128,3 @@ The backend table is also the first MIOOS UI Module component.
 - Example: `examples/mioos_modules/table`
 
 New internal or user-created modules should reference `componentKey: "table"` and `surface: "mioos-surface-table"` when they want to reuse this table without copying Explorer or table code.
-
-## WebSocket transport and reset behavior
-
-The table component is now a module component and uses WebSocket command transport from the browser.
-
-Browser call path:
-
-```text
-mioos-full-table -> backendTableFetch() -> command('module.table.query') -> MIOOSWS -> QUERY^MIOOSTBL
-```
-
-The legacy HTTP handler can remain registered for server compatibility and tests, but module UI code must not use it. New modules should always call `module.table.query` or use `mioos-full-table`.
-
-Reset behavior is first-class. The `Reset table` control calls `backendTableReset(tableId)`, which clears search, grouping, selection, expansion, page, column visibility/width changes, and sort state back to the table's initial snapshot before re-querying the backend over WebSocket.
-
-## Permission datasets
-
-`MIOOSTBL` now delegates the following datasets to `MIOOSPERM`:
-
-- `permissions`
-- `permission-groups`
-- `permission-profiles`
-- `permission-assignments`
-- `permission-audit`
-
-These datasets are used by the Permissions Admin module and must stay schema-driven so every administrative grid reuses the same table component.

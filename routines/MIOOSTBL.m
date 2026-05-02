@@ -9,9 +9,7 @@ QUERY(STATE,CONF,IN,OUT,ERR)
 	IF DATASET="" SET DATASET="demo"
 	IF DATASET="vfs" DO
 	. IF '$$VFS(.STATE,.IN,.ROWS,.SCHEMA,.ERR) SET DATASET=""
-	IF DATASET="permissions"!(DATASET="permission-groups")!(DATASET="permission-profiles")!(DATASET="permission-assignments")!(DATASET="permission-audit") DO
-	. IF '$$TABLE^MIOOSPERM(.STATE,.CONF,DATASET,.ROWS,.SCHEMA,.ERR) SET DATASET=""
-	IF DATASET'="vfs",DATASET'="permissions",DATASET'="permission-groups",DATASET'="permission-profiles",DATASET'="permission-assignments",DATASET'="permission-audit",DATASET'="" DO DEMO(.ROWS,.SCHEMA)
+	IF DATASET'="vfs",DATASET'="" DO DEMO(.ROWS,.SCHEMA)
 	IF DATASET="" QUIT 0
 	SET PAGE=+$GET(IN("page"),1) IF PAGE<1 SET PAGE=1
 	SET PSIZE=+$GET(IN("pageSize"),25) IF PSIZE<1 SET PSIZE=25

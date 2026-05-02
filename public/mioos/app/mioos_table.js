@@ -82,9 +82,7 @@
           { key: 'export', label: 'Export selected' }
         ],
         groups: [],
-        columnResize: null,
-        transport: 'http-primary',
-        initialSnapshot: null
+        columnResize: null
       };
     },
     backendTableState: function (tableId) {
@@ -92,9 +90,6 @@
     },
     backendTableRoute: function () {
       return ((((this.boot || {}).routes || {}).tableQuery) || '/api/mioos/table/query');
-    },
-    backendTableCommandName: function () {
-      return ((((this.boot || {}).routes || {}).tableQueryCommand) || 'table.query');
     },
     backendTableQueryPayload: function (state) {
       return {
@@ -110,34 +105,23 @@
     },
     backendTableFetch: function (tableId, patch) {
       var state = this.backendTableState(tableId);
+      var route = this.backendTableRoute();
       var vm = this;
-      var payload, route;
       Object.assign(state, patch || {});
       state.loading = true;
       state.error = '';
-      state.transport = 'http-primary';
-      if (!state.initialSnapshot) state.initialSnapshot = clone({ columns: state.columns, sort: state.sort, pagination: state.pagination, dataset: state.dataset, folderId: state.folderId, title: state.title });
-      payload = this.backendTableQueryPayload(state);
-      route = this.backendTableRoute();
-      return fetch(route, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).then(function (response) {
+      return fetch(route, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify(this.backendTableQueryPayload(state))
+      }).then(function (response) {
         if (!response.ok) throw new Error('Table query failed: HTTP ' + response.status);
         return response.json();
-      }).then(function (msg) {
-        vm.backendTableApplyPayload(state, (msg || {}).table || msg || {});
-        state.transport = 'http-primary';
+      }).then(function (payload) {
+        vm.backendTableApplyPayload(state, payload || {});
         return state;
       }).catch(function (err) {
-        if (vm.command) {
-          return vm.command(vm.backendTableCommandName(), payload).then(function (msg) {
-            vm.backendTableApplyPayload(state, (msg || {}).table || msg || {});
-            state.transport = 'websocket-control-fallback';
-            return state;
-          }).catch(function (fallbackErr) {
-            state.error = (fallbackErr && (fallbackErr.detail || fallbackErr.error || fallbackErr.message)) || (err && err.message) || 'Table query failed';
-            vm.backendTableApplyClientFallback(state);
-            return state;
-          });
-        }
         state.error = (err && err.message) || 'Table query failed';
         vm.backendTableApplyClientFallback(state);
         return state;
@@ -234,24 +218,6 @@
       state.pagination.pageSize = Math.max(1, +pageSize || 25);
       state.pagination.page = 1;
       return this.backendTableFetch(tableId);
-    },
-    backendTableReset: function (tableId) {
-      var state = this.backendTableState(tableId);
-      var snapshot = clone(state.initialSnapshot || {});
-      state.search = '';
-      state.groupBy = '';
-      state.selected = {};
-      state.expanded = {};
-      state.columns = normalizeColumns(snapshot.columns || defaultColumns());
-      state.sort = clone(snapshot.sort || { column: 'name', direction: 'ascending' });
-      state.pagination = Object.assign({}, state.pagination || {}, snapshot.pagination || {}, { page: 1 });
-      if (snapshot.dataset) state.dataset = snapshot.dataset;
-      if (snapshot.folderId) state.folderId = snapshot.folderId;
-      if (snapshot.title) state.title = snapshot.title;
-      return this.backendTableFetch(tableId);
-    },
-    backendTableSelectedKeys: function (state) {
-      return Object.keys((state || {}).selected || {}).filter(function (key) { return !!state.selected[key]; });
     },
     backendTableToggleColumn: function (tableId, key) {
       var state = this.backendTableState(tableId);
@@ -362,11 +328,10 @@
       template: '' +
         '<section class="mioos-full-table" :aria-busy="state.loading ? \'true\' : \'false\'">' +
           '<header class="mioos-table-toolbar">' +
-            '<div><strong>[[ state.title || title || \'Backend Table\' ]]</strong><span>WebSocket backend pagination, sorting, grouping, expansion, actions</span></div>' +
+            '<div><strong>[[ state.title || title || \'Backend Table\' ]]</strong><span>Backend pagination, sorting, grouping, expansion, actions</span></div>' +
             '<label class="mioos-table-search"><span>Search</span><input v-model="searchInput" @keydown.enter="commitSearch" @blur="commitSearch" placeholder="Filter rows"></label>' +
             '<label><span>Group</span><select :value="state.groupBy" @change="vm.backendTableSetGroupBy(tableId || state.id, $event.target.value)"><option value="">None</option><option v-for="col in allColumns" :key="col.key" :value="col.key">[[ col.label ]]</option></select></label>' +
             '<details class="mioos-table-column-picker"><summary>Columns</summary><button v-for="col in allColumns" :key="col.key" type="button" @click="vm.backendTableToggleColumn(tableId || state.id, col.key)"><span>[[ col.hidden ? \'☐\' : \'☑\' ]]</span> [[ col.label ]]</button></details>' +
-            '<button type="button" class="mioos-btn" @click="vm.backendTableReset(tableId || state.id)">Reset table</button>' +
           '</header>' +
           '<div class="mioos-table-bulkbar" v-if="selectedCount"><span>[[ selectedCount ]] selected</span><button v-for="action in state.bulkActions" :key="action.key" type="button" @click="vm.backendTableRunBulkAction(tableId || state.id, action)">[[ action.label ]]</button></div>' +
           '<div class="mioos-table-error" v-if="state.error">[[ state.error ]]</div>' +
@@ -398,7 +363,7 @@
 
   window.MIOOSTable = { methods: methods, register: register };
   if (window.MIOOSModules && typeof window.MIOOSModules.registerComponent === "function") {
-    window.MIOOSModules.registerComponent({ key: "table", name: "mioos-full-table", title: "Backend Table", surface: "mioos-surface-table", source: "internal", owner: "MIOOS", backend: "MIOOSTBL", queryCommand: "table.query", queryRoute: "/api/mioos/table/query", transport: "mixed-http-websocket", description: "HTTP-first backend-paginated, sortable, hideable, groupable, expandable, resettable table component." });
-    window.MIOOSModules.registerModule({ id: "mioos.ui.table", key: "mioos.ui.table", appKey: "mioos.ui.table", title: "Backend Table", source: "internal", category: "Components", icon: "▤", componentKey: "table", surface: "mioos-surface-table", tableState: { id: "mioos-ui-module-table-example", title: "Sample Table", dataset: "demo" } });
+    window.MIOOSModules.registerComponent({ key: "table", name: "mioos-full-table", title: "Backend Table", surface: "mioos-surface-table", source: "internal", owner: "MIOOS", backend: "MIOOSTBL", queryRoute: "/api/mioos/table/query", description: "Backend-paginated, sortable, hideable, groupable, expandable table component." });
+    window.MIOOSModules.registerModule({ id: "mioos.ui.table", key: "mioos.ui.table", appKey: "mioos.ui.table", title: "Backend Table", source: "internal", category: "Components", icon: "▤", componentKey: "table", surface: "mioos-surface-table", tableState: { id: "mioos-ui-module-table-example", title: "Backend Table Example", dataset: "demo" } });
   }
 })();

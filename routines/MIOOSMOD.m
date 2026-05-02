@@ -4,6 +4,8 @@ MIOOSMOD ; MIOOS UI module registry
 LOAD(STATE,CONF)
 	NEW OUT,ERR
 	KILL OUT,ERR,STATE("modules"),STATE("uiModules")
+	IF '+$GET(CONF("mioos","modules","enabled"),0) DO DISABLED(.STATE) QUIT
+	IF '+$GET(CONF("mioos","modules","appCatalogEnabled"),0) DO DISABLED(.STATE) QUIT
 	IF '$$CATALOG(.STATE,.CONF,.OUT,.ERR) DO  QUIT
 	. SET STATE("moduleCount")=0
 	. SET STATE("uiModules","ok")=0
@@ -12,8 +14,21 @@ LOAD(STATE,CONF)
 	MERGE STATE("modules")=OUT("modules")
 	SET STATE("moduleCount")=+$GET(OUT("moduleCount"),0)
 	SET STATE("moduleManifestVersion")=+$GET(OUT("manifestVersion"),1)
-	SET STATE("moduleAppCatalogEnabled")=+$GET(CONF("mioos","modules","appCatalogEnabled"),1)
-	SET STATE("moduleSystemEnabled")=+$GET(CONF("mioos","modules","enabled"),1)
+	SET STATE("moduleAppCatalogEnabled")=1
+	SET STATE("moduleSystemEnabled")=1
+	QUIT
+	;
+DISABLED(STATE)
+	KILL STATE("modules"),STATE("uiModules")
+	SET STATE("moduleCount")=0
+	SET STATE("uiModules","ok")=1
+	SET STATE("uiModules","contract")="mioos-ui-module-v1"
+	SET STATE("uiModules","manifestVersion")=+$GET(STATE("moduleManifestVersion"),1)
+	SET STATE("uiModules","moduleCount")=0
+	SET STATE("uiModules","componentCount")=0
+	SET STATE("uiModules","disabled")=1
+	SET STATE("moduleSystemEnabled")=0
+	SET STATE("moduleAppCatalogEnabled")=0
 	QUIT
 	;
 CATALOG(STATE,CONF,OUT,ERR)
@@ -25,13 +40,12 @@ CATALOG(STATE,CONF,OUT,ERR)
 	SET OUT("sources",2)="user"
 	SET OUT("componentCount")=0
 	SET OUT("moduleCount")=0
-	DO INTERNAL(.OUT,.CONF)
+	DO INTERNAL(.OUT)
 	DO USER(.STATE,.OUT)
 	QUIT 1
 	;
-INTERNAL(OUT,CONF)
-	NEW C,M,TROUTE
-	SET TROUTE=$GET(CONF("mioos","route","tableQuery"),"/api/mioos/table/query")
+INTERNAL(OUT)
+	NEW C,M
 	SET C=+$GET(OUT("componentCount"))+1,OUT("componentCount")=C
 	SET OUT("components",C,"key")="table"
 	SET OUT("components",C,"name")="mioos-full-table"
@@ -42,9 +56,7 @@ INTERNAL(OUT,CONF)
 	SET OUT("components",C,"description")="Backend-paginated, sortable, hideable, groupable, expandable, action-capable table."
 	SET OUT("components",C,"script")="/public/mioos/app/mioos_table.js"
 	SET OUT("components",C,"backend")="MIOOSTBL"
-	SET OUT("components",C,"queryCommand")="table.query"
-	SET OUT("components",C,"queryRoute")=TROUTE
-	SET OUT("components",C,"transport")="mixed-http-websocket"
+	SET OUT("components",C,"queryRoute")="/api/mioos/table/query"
 	SET OUT("components",C,"features",1)="backend-query"
 	SET OUT("components",C,"features",2)="pagination"
 	SET OUT("components",C,"features",3)="column-sort"
@@ -54,13 +66,12 @@ INTERNAL(OUT,CONF)
 	SET OUT("components",C,"features",7)="row-actions"
 	SET OUT("components",C,"features",8)="bulk-actions"
 	SET OUT("components",C,"features",9)="resizable-columns"
-	SET OUT("components",C,"features",10)="resettable-state"
 	SET M=+$GET(OUT("moduleCount"))+1,OUT("moduleCount")=M
 	SET OUT("modules",M,"id")="mioos.ui.modules"
-	SET OUT("modules",M,"key")="app-catalog"
-	SET OUT("modules",M,"appKey")="app-catalog"
-	SET OUT("modules",M,"title")="App Catalogue"
-	SET OUT("modules",M,"description")="Catalogue and launcher for internal and user-created MIOOS UI modules."
+	SET OUT("modules",M,"key")="ui-modules"
+	SET OUT("modules",M,"appKey")="ui-modules"
+	SET OUT("modules",M,"title")="UI Modules"
+	SET OUT("modules",M,"description")="Catalog and launcher for internal and user-created MIOOS UI modules."
 	SET OUT("modules",M,"category")="Development"
 	SET OUT("modules",M,"icon")="▦"
 	SET OUT("modules",M,"source")="internal"
@@ -80,42 +91,12 @@ INTERNAL(OUT,CONF)
 	SET OUT("modules",M,"componentKey")="table"
 	SET OUT("modules",M,"surface")="mioos-surface-table"
 	SET OUT("modules",M,"tableState","id")="mioos-ui-module-table-example"
-	SET OUT("modules",M,"tableState","title")="Sample Table"
+	SET OUT("modules",M,"tableState","title")="Backend Table Example"
 	SET OUT("modules",M,"tableState","dataset")="demo"
 	SET OUT("examples",1,"key")="table"
-	SET OUT("examples",1,"title")="Sample Table"
+	SET OUT("examples",1,"title")="Backend Table Example"
 	SET OUT("examples",1,"path")="examples/mioos_modules/table"
-	SET C=+$GET(OUT("componentCount"))+1,OUT("componentCount")=C
-	SET OUT("components",C,"key")="permissions"
-	SET OUT("components",C,"name")="mioos-permissions-admin"
-	SET OUT("components",C,"title")="Permissions Admin"
-	SET OUT("components",C,"surface")="mioos-surface-permissions"
-	SET OUT("components",C,"source")="internal"
-	SET OUT("components",C,"owner")="MIOOS"
-	SET OUT("components",C,"description")="HIPAA-aligned permission, group, profile, assignment, and audit administration backed by reusable tables."
-	SET OUT("components",C,"script")="/public/mioos/app/mioos_permissions.js"
-	SET OUT("components",C,"transport")="mixed-http-websocket"
-	SET OUT("components",C,"commands",1)="permission.upsert"
-	SET OUT("components",C,"commands",2)="permission.delete"
-	SET OUT("components",C,"commands",3)="permission.assign"
-	SET OUT("components",C,"commands",4)="permission.effective"
-	SET M=+$GET(OUT("moduleCount"))+1,OUT("moduleCount")=M
-	SET OUT("modules",M,"id")="mioos.permissions.admin"
-	SET OUT("modules",M,"key")="mioos.permissions.admin"
-	SET OUT("modules",M,"appKey")="mioos.permissions.admin"
-	SET OUT("modules",M,"title")="Permissions"
-	SET OUT("modules",M,"description")="Administer HIPAA-aligned permissions, permission groups, profiles, assignments, and audit trail."
-	SET OUT("modules",M,"category")="Security"
-	SET OUT("modules",M,"icon")="🛡"
-	SET OUT("modules",M,"source")="internal"
-	SET OUT("modules",M,"builtIn")=1
-	SET OUT("modules",M,"componentKey")="permissions"
-	SET OUT("modules",M,"surface")="mioos-surface-permissions"
-	SET OUT("modules",M,"requiredPermission")="mioos.permissions.admin"
-	SET OUT("examples",2,"key")="permissions"
-	SET OUT("examples",2,"title")="Permissions Admin Example"
-	SET OUT("examples",2,"path")="examples/mioos_modules/permissions"
-	SET OUT("examples",2,"componentKey")="permissions"
+	SET OUT("examples",1,"componentKey")="table"
 	QUIT
 	;
 USER(STATE,OUT)

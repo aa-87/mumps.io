@@ -207,3 +207,13 @@ Transfer Center, Diagnostics, Security Center, Debug Center, App Catalog, and mo
 - Customize persists theme profiles through globals-backed routes and supports uploaded wallpaper assets stored in the VFS.
 - Folder Properties now supports uploaded background and icon assets stored in the VFS and persisted through folder metadata.
 - Transfers now show an overall progress bar plus per-file progress rows and support multi-file upload selection.
+
+## Backend table surfaces
+
+Application windows can use the MIOOS backend table surface for large lists. Tables support paging, sortable and resizable columns, column show/hide controls, grouping, expandable detail rows, row actions, and bulk actions. Data is queried from the MUMPS backend instead of being invented by the browser.
+
+## UI Modules app
+
+Open **UI Modules** from the Start menu to browse reusable MIOOS UI components, installed internal modules, user-created modules, and examples. The first component is **Backend Table**, which opens a backend-driven table window with pagination, sorting, grouping, hide/show columns, expansion rows, and actions.
+
+User-created modules should follow the manifest format documented in `docs/mioos/UI_Modules.md` and can start from `examples/mioos_modules/table`.
