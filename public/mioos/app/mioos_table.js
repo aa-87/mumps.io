@@ -76,6 +76,16 @@
       'SET @ROOT@("schema","columns",3,"label")="Status"',
       'SET @ROOT@("schema","columns",3,"type")="badge"',
       'SET @ROOT@("schema","columns",3,"width")=120',
+      'SET @ROOT@("validation","fields","name","label")="Name"',
+      'SET @ROOT@("validation","fields","name","required")=1',
+      'SET @ROOT@("validation","fields","name","maxLength")=120',
+      'SET @ROOT@("validation","fields","status","label")="Status"',
+      'SET @ROOT@("validation","fields","status","required")=1',
+      'SET @ROOT@("validation","fields","status","enum",1)="Open"',
+      'SET @ROOT@("validation","fields","status","enum",2)="Done"',
+      'SET @ROOT@("validation","fields","status","enum",3)="Review"',
+      'SET @ROOT@("validation","routine")="VALTABLE^MYTABVAL"  ; optional custom hook',
+      '',
       'SET @ROOT@("rows",1,"id")="' + dataset + '-1"',
       'SET @ROOT@("rows",1,"name")="First row"',
       'SET @ROOT@("rows",1,"status")="Open"',
@@ -643,6 +653,7 @@
       state.editor = { open: true, mode: 'column', title: column && column.key ? 'Column designer: edit column' : 'Column designer: add column', row: {}, column: clone(column || { key: '', label: '', type: 'text', width: 140, sortable: true, resizable: true, hidden: false }) };
     },
     backendTableCloseEditor: function (tableId) { this.backendTableState(tableId).editor.open = false; },
+    backendTableFieldError: function (state, key) { return String(((state || {}).validation || {})[key] || ''); },
     backendTableValidateEditor: function (state) {
       var editor = (state || {}).editor || {};
       var errors = {};
@@ -804,8 +815,8 @@
           '<div class="mioos-table-editor-backdrop" v-if="state.editor && state.editor.open" @click.self="vm.backendTableCloseEditor(tableId || state.id)">' +
             '<div class="mioos-table-editor" role="dialog" aria-modal="true">' +
               '<header><strong>[[ state.editor.title ]]</strong><button type="button" aria-label="Close editor" @click="vm.backendTableCloseEditor(tableId || state.id)">×</button></header>' +
-              '<section v-if="state.editor.mode === \'row\'" class="mioos-table-form-grid"><label v-for="col in allColumns" :key="col.key"><span>[[ col.label ]]</span><input v-model="state.editor.row[col.key]" :placeholder="col.key"></label></section>' +
-              '<section v-else class="mioos-table-form-grid"><label><span>Key</span><input v-model="state.editor.column.key" placeholder="fieldName"></label><label><span>Label</span><input v-model="state.editor.column.label" placeholder="Column label"></label><label><span>Type</span><select v-model="state.editor.column.type"><option>text</option><option>badge</option><option>date</option><option>number</option><option>boolean</option></select></label><label><span>Width</span><input type="number" v-model="state.editor.column.width"></label><label><span>Group</span><input v-model="state.editor.column.group" placeholder="Optional header group"></label><label class="mioos-table-check"><span>Hidden</span><input type="checkbox" v-model="state.editor.column.hidden"></label></section>' +
+              '<section v-if="state.editor.mode === \'row\'" class="mioos-table-form-grid"><label v-for="col in allColumns" :key="col.key" :class="{ \'has-error\': vm.backendTableFieldError(state, col.key) }"><span>[[ col.label ]]</span><input v-model="state.editor.row[col.key]" :placeholder="col.key" :aria-invalid="vm.backendTableFieldError(state, col.key) ? \'true\' : \'false\'"><em v-if="vm.backendTableFieldError(state, col.key)">[[ vm.backendTableFieldError(state, col.key) ]]</em></label></section>' +
+              '<section v-else class="mioos-table-form-grid"><label :class="{ \'has-error\': vm.backendTableFieldError(state, \'key\') }"><span>Key</span><input v-model="state.editor.column.key" placeholder="fieldName" :aria-invalid="vm.backendTableFieldError(state, \'key\') ? \'true\' : \'false\'"><em v-if="vm.backendTableFieldError(state, \'key\')">[[ vm.backendTableFieldError(state, \'key\') ]]</em></label><label><span>Label</span><input v-model="state.editor.column.label" placeholder="Column label"></label><label><span>Type</span><select v-model="state.editor.column.type"><option>text</option><option>badge</option><option>date</option><option>number</option><option>boolean</option></select></label><label><span>Width</span><input type="number" v-model="state.editor.column.width"></label><label><span>Group</span><input v-model="state.editor.column.group" placeholder="Optional header group"></label><label class="mioos-table-check"><span>Hidden</span><input type="checkbox" v-model="state.editor.column.hidden"></label></section>' +
               '<p class="mioos-table-error" v-for="err in Object.values(state.validation || {})" :key="err">[[ err ]]</p><footer><button type="button" class="mioos-btn is-primary" :disabled="state.saving || state.loading" @click="vm.backendTableSaveEditor(tableId || state.id)">[[ state.saving ? &quot;Saving…&quot; : &quot;Save&quot; ]]</button><button type="button" class="mioos-btn" @click="vm.backendTableCloseEditor(tableId || state.id)">Cancel</button></footer>' +
             '</div>' +
           '</div>' +

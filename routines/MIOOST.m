@@ -60,6 +60,7 @@ MIOOST ; MIOOS tests
 	DO T066
 	DO T067
 	DO T068
+	DO T069
 	QUIT
 	;
 RESET
@@ -1363,5 +1364,24 @@ T068
 	DO OK^MIOTASSERT($$FILEHAS("examples/mioos_modules/table/README.md","groupByColumns"),"[MIOOST][T068][examples groupByColumns docs]")
 	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/ROI_64F_Table_Performance_Mutations.md","Mutation acknowledgement"),"[MIOOST][T068][roi64f docs]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 64F"),"[MIOOST][T068][llm roi64f]")
+	QUIT
+	;
+
+T069
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","VALRULES"),"[MIOOST][T069][validation rule engine]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","VALHOOK"),"[MIOOST][T069][custom validation hook]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","required"),"[MIOOST][T069][required helper]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","maxLength"),"[MIOOST][T069][max length helper]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","VALENUM"),"[MIOOST][T069][enum helper]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","VREQ(ROOT,FIELD,LABEL)"),"[MIOOST][T069][validation helper entry points]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","DATEOK"),"[MIOOST][T069][date helper]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","ISNUM"),"[MIOOST][T069][numeric helper]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","AUDIT"),"[MIOOST][T069][mutation audit]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","fieldErrors"),"[MIOOST][T069][field errors]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableFieldError"),"[MIOOST][T069][field error ui]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","has-error"),"[MIOOST][T069][highlight invalid fields]")
+	DO OK^MIOTASSERT($$FILEHAS("examples/mioos_modules/table/README.md","ROI 64G validation"),"[MIOOST][T069][example validation docs]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/ROI_64G_Table_Mutation_Validation.md","Custom hook example"),"[MIOOST][T069][roi64g docs]")
+	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 64G table validation follow-up"),"[MIOOST][T069][llm roi64g]")
 	QUIT
 	;

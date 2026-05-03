@@ -2937,3 +2937,16 @@ button:disabled { cursor: default; opacity: .55; }
   color: inherit;
   padding: 4px 7px;
 }
+
+/* ROI 64G table validation feedback */
+.mioos-table-form-grid label.has-error input,
+.mioos-table-form-grid label.has-error select {
+  border-color: rgba(239, 68, 68, .78);
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, .16);
+}
+.mioos-table-form-grid label.has-error em {
+  color: #fca5a5;
+  font-style: normal;
+  font-size: 11px;
+  line-height: 1.25;
+}

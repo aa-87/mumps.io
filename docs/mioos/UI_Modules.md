@@ -64,3 +64,10 @@ The table UI now separates row details from actions. Details are an expand arrow
 Table-backed modules should declare `contract="mioos-advanced-table-v8"` and use the MUMPS-first `tableState` metadata shape. `groupByColumns` may contain more than one column key, for example `status` and `priority`. Mutation UI should expect fast acknowledgement payloads with `mutationOnly: true` and then refetch the table separately.
 
 A MUMPS-only module entry point needs `appKey`, `title`, `icon`, `componentKey="table"`, `surface="mioos-surface-table"`, and `tableState("dataset")`. The Table Samples documentation includes the full dataset global, module metadata, desktop/app entry shape, and routine reload commands.
+
+
+## ROI 64G table validation notes
+
+Table-backed modules should prefer backend validation over custom JavaScript. Add rules under `^MIO("MIOOS","TABLE",user,dataset,"validation","fields",field,...)` or set `validation","routine")` to a MUMPS entry point. The table surface already understands the standard mutation error envelope and keeps row editors open when the backend returns `fieldErrors`.
+
+This lets a MUMPS developer add required fields, enum/select validation, date format checks, numeric range checks, and custom row-level checks without writing frontend code.

@@ -389,3 +389,8 @@ The advanced table contract is now `mioos-advanced-table-v8`. This update focuse
 ### ROI 64F Advanced Table v8
 
 The backend table component now uses `mioos-advanced-table-v8`. Mutations return acknowledgement-only JSON (`mutationOnly: true`, `refetch: true`) and no longer block on a full refreshed table payload. Queries support `groupByColumns` for multi-column grouping and omit the duplicate `data` alias unless `includeDataAlias: true` is requested. The table footer includes direct page jump, and mutation timeouts are short and command-specific.
+
+
+### ROI 64G — table mutation validation
+
+The backend table now supports MUMPS-first row validation rules and optional custom validation hooks. Rule failures return deterministic `validation_failed` acknowledgements with `fieldErrors`, and the editor preserves user input while showing field-level messages. Mutation attempts are also written to dataset audit nodes.

@@ -591,4 +591,7 @@ Implemented behavior:
 - `mioos_ws.js` accepts command-specific timeout options.
 - Table Samples are MUMPS-first and document dataset globals, module metadata, desktop/app entry point, `groupByColumns`, and reload/test commands.
 
-Future ROIs should not assume ROI 64G+ validation/custom hooks are complete; only the ROI 64F acknowledgement/performance/grouping/page-jump foundation is present.
+
+## ROI 64G table validation follow-up
+
+Current table contract remains `mioos-advanced-table-v8`. Row mutation validation is now backend-first in `MIOOSTBL`. Datasets can define validation rules under `^MIO("MIOOS","TABLE",user,dataset,"validation","fields",field,...)` using `required`, `maxLength`, `enum`, date, number, min, and max helpers. Datasets may also set `validation","routine")="TAG^ROUTINE"` for custom MUMPS validation hooks. Mutation failures should return `validation_failed` with `fieldErrors`, `mutationOnly:true`, and `refetch:false`. The table editor must keep user input and render field errors. Mutation attempts are audited under the dataset `audit` node.

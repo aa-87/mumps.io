@@ -71,9 +71,9 @@ MUTATE(STATE,CONF,IN,OUT,ERR)
 	SET ACTION=$$LOW^MIOUTIL($GET(IN("action"),$GET(IN("op"),"")))
 	IF ACTION="" SET ERR("error")="table_action_missing" QUIT 0
 	IF ACTION'["." SET ERR("error")="table_action_invalid" QUIT 0
-	IF '$$VALIDATE(.STATE,.CONF,DATASET,ACTION,.IN,.ERR) QUIT 0
 	SET ROOT=$$ROOT(.STATE,DATASET)
 	DO ENSURE(.STATE,DATASET)
+	IF '$$VALIDATE(.STATE,.CONF,DATASET,ACTION,.IN,.ERR) DO AUDIT(.STATE,DATASET,ACTION,.IN,0,.ERR,"validation") QUIT 0
 	IF ACTION="row.save"!(ACTION="row.add")!(ACTION="row.update") DO
 	. SET ID=$GET(IN("row","id"))
 	. IF ID="" SET ID=DATASET_"-"_$TR($$UUID^MIOUTIL(),"-","")
@@ -120,13 +120,14 @@ MUTATE(STATE,CONF,IN,OUT,ERR)
 	. IF KEY="" QUIT
 	. SET I=0 FOR  SET I=$ORDER(@ROOT@("schema","columns",I)) QUIT:I'>0  IF $GET(@ROOT@("schema","columns",I,"key"))=KEY SET @ROOT@("schema","columns",I,"hidden")=$SELECT(+$GET(IN("hidden")):1,1:0)
 	. SET OUT("mutated","columnVisibility")=KEY
-	IF '$DATA(OUT("mutated")) SET ERR("error")="unsupported_table_action" QUIT 0
+	IF '$DATA(OUT("mutated")) SET ERR("error")="unsupported_table_action" DO AUDIT(.STATE,DATASET,ACTION,.IN,0,.ERR,"unsupported") QUIT 0
 	SET OUT("ok")=1
 	SET OUT("dataset")=DATASET
 	SET OUT("action")=ACTION
 	SET OUT("mutationOnly")=1
 	SET OUT("refetch")=1
 	SET OUT("message")=$$MSG(ACTION)
+	DO AUDIT(.STATE,DATASET,ACTION,.IN,1,.ERR,"mutation")
 	QUIT 1
 ERRM
 	SET $ECODE=""
@@ -134,24 +135,26 @@ ERRM
 	QUIT 0
 	;
 VALIDATE(STATE,CONF,DATASET,ACTION,IN,ERR)
-	KILL ERR("field")
-	IF ACTION="row.save"!(ACTION="row.add")!(ACTION="row.update") QUIT $$VALROW(.CONF,.IN,.ERR)
+	KILL ERR("field"),ERR("fieldErrors")
+	IF ACTION="row.save"!(ACTION="row.add")!(ACTION="row.update") QUIT $$VALROW(.STATE,.CONF,DATASET,ACTION,.IN,.ERR)
 	IF ACTION="row.delete" QUIT $$VALID($GET(IN("rowId"),$GET(IN("id"),$GET(IN("row","id")))),.ERR)
 	IF ACTION="rows.delete"!(ACTION="bulk.delete") QUIT $$VALIDS(.IN,.ERR)
 	IF ACTION="column.save"!(ACTION="column.add")!(ACTION="column.update") QUIT $$VALCOL(.CONF,.IN,.ERR)
 	IF ACTION="column.delete"!(ACTION="column.resize")!(ACTION="column.visibility") QUIT $$VALKEY($GET(IN("columnKey"),$GET(IN("key"),$GET(IN("column","key")))),.ERR)
 	SET ERR("error")="unsupported_table_action" QUIT 0
 	;
-VALROW(CONF,IN,ERR)
+VALROW(STATE,CONF,DATASET,ACTION,IN,ERR)
 	NEW KEY,VAL,MAX
 	SET MAX=+$GET(CONF("mioos","table","maxFieldChars"),2048) IF MAX<128 SET MAX=128
 	IF '$DATA(IN("row")) SET ERR("error")="row_missing" QUIT 0
 	SET KEY="" FOR  SET KEY=$ORDER(IN("row",KEY)) QUIT:KEY=""!($GET(ERR("error"))'="")  DO
 	. IF $EXTRACT(KEY,1)="_" KILL IN("row",KEY) QUIT
-	. IF $$KEY(KEY)'=KEY SET ERR("error")="validation_failed",ERR("message")="Invalid row field",ERR("field")=KEY,ERR("fieldErrors",KEY)="Invalid field key" QUIT
+	. IF $$KEY(KEY)'=KEY DO ADDERR(.ERR,KEY,"Invalid field key") SET ERR("code")="invalid_field_key" QUIT
 	. SET VAL=$GET(IN("row",KEY))
-	. IF $LENGTH(VAL)>MAX SET ERR("error")="validation_failed",ERR("message")="Field is too long",ERR("field")=KEY,ERR("fieldErrors",KEY)="Maximum length exceeded",ERR("code")="field_too_long" QUIT
+	. IF $LENGTH(VAL)>MAX DO ADDERR(.ERR,KEY,"Maximum length exceeded") SET ERR("code")="field_too_long" QUIT
 	IF $GET(ERR("error"))'="" QUIT 0
+	IF '$$VALRULES(.STATE,DATASET,.IN,.ERR) QUIT 0
+	IF '$$VALHOOK(.STATE,.CONF,DATASET,ACTION,.IN,.ERR) QUIT 0
 	QUIT 1
 	;
 VALID(ID,ERR)
@@ -185,7 +188,120 @@ VALKEY(KEY,ERR)
 	IF KEY="" SET ERR("error")="invalid_column_key" QUIT 0
 	QUIT 1
 	;
-
+	;
+VALRULES(STATE,DATASET,IN,ERR)
+	NEW ROOT,FIELD,VAL,REQ,MAX,TYPE,MIN,MAXV,LABEL
+	SET ROOT=$$ROOT(.STATE,DATASET)
+	SET FIELD="" FOR  SET FIELD=$ORDER(@ROOT@("validation","fields",FIELD)) QUIT:FIELD=""!($GET(ERR("error"))'="")  DO
+	. SET VAL=$GET(IN("row",FIELD)),LABEL=$GET(@ROOT@("validation","fields",FIELD,"label"),FIELD)
+	. SET REQ=+$GET(@ROOT@("validation","fields",FIELD,"required"))
+	. IF REQ,$$TRIM^MIOUTIL(VAL)="" DO ADDERR(.ERR,FIELD,LABEL_" is required") QUIT
+	. IF VAL="" QUIT
+	. SET MAX=+$GET(@ROOT@("validation","fields",FIELD,"maxLength"))
+	. IF MAX>0,$LENGTH(VAL)>MAX DO ADDERR(.ERR,FIELD,LABEL_" must be "_MAX_" characters or fewer") QUIT
+	. IF $DATA(@ROOT@("validation","fields",FIELD,"enum")),'$$VALENUM(ROOT,FIELD,VAL) DO ADDERR(.ERR,FIELD,LABEL_" is not an allowed value") QUIT
+	. SET TYPE=$$LOW^MIOUTIL($GET(@ROOT@("validation","fields",FIELD,"type")))
+	. IF TYPE="date",'$$DATEOK(VAL) DO ADDERR(.ERR,FIELD,LABEL_" must use YYYY-MM-DD") QUIT
+	. IF TYPE="number",'$$ISNUM(VAL) DO ADDERR(.ERR,FIELD,LABEL_" must be numeric") QUIT
+	. IF TYPE="number" DO
+	. . SET MIN=$GET(@ROOT@("validation","fields",FIELD,"min")),MAXV=$GET(@ROOT@("validation","fields",FIELD,"max"))
+	. . IF MIN'="",+VAL<+MIN DO ADDERR(.ERR,FIELD,LABEL_" must be at least "_MIN) QUIT
+	. . IF MAXV'="",+VAL>+MAXV DO ADDERR(.ERR,FIELD,LABEL_" must be no more than "_MAXV) QUIT
+	IF $GET(ERR("error"))'="" QUIT 0
+	QUIT 1
+	;
+VALHOOK(STATE,CONF,DATASET,ACTION,IN,ERR)
+	NEW ROOT,HOOK,OK
+	SET ROOT=$$ROOT(.STATE,DATASET),HOOK=$GET(@ROOT@("validation","routine"))
+	IF HOOK="" SET HOOK=$GET(@ROOT@("validation","rowRoutine"))
+	IF HOOK="" QUIT 1
+	SET OK=1
+	NEW $ETRAP,$ESTACK SET $ETRAP="SET $ECODE="""" SET OK=0 SET ERR(""error"")=""validation_hook_failed"" SET ERR(""message"")=$ZSTATUS QUIT"
+	DO @HOOK@(.STATE,.CONF,DATASET,ACTION,.IN,.ERR)
+	IF 'OK QUIT 0
+	IF $GET(ERR("error"))'="" QUIT 0
+	QUIT 1
+	;
+ADDERR(ERR,FIELD,MSG)
+	SET ERR("error")="validation_failed"
+	IF $GET(ERR("message"))="" SET ERR("message")=$GET(MSG,"Validation failed")
+	SET ERR("field")=$GET(FIELD)
+	IF $GET(FIELD)'="" SET ERR("fieldErrors",FIELD)=$GET(MSG,"Invalid value")
+	QUIT
+	;
+VALENUM(ROOT,FIELD,VAL)
+	NEW I,OK
+	SET OK=0,I=0 FOR  SET I=$ORDER(@ROOT@("validation","fields",FIELD,"enum",I)) QUIT:I'>0  IF $GET(@ROOT@("validation","fields",FIELD,"enum",I))=VAL SET OK=1
+	QUIT OK
+	;
+DATEOK(X)
+	NEW M,D
+	IF $GET(X)'?4N1"-"2N1"-"2N QUIT 0
+	SET M=+$EXTRACT(X,6,7),D=+$EXTRACT(X,9,10)
+	IF (M<1)!(M>12) QUIT 0
+	IF (D<1)!(D>31) QUIT 0
+	QUIT 1
+	;
+ISNUM(X)
+	NEW Y
+	SET Y=$GET(X)
+	IF Y?1.N QUIT 1
+	IF Y?1.N1"."1.N QUIT 1
+	IF Y?1"-"1.N QUIT 1
+	IF Y?1"-"1.N1"."1.N QUIT 1
+	QUIT 0
+	;
+VREQ(ROOT,FIELD,LABEL)
+	SET @ROOT@("validation","fields",FIELD,"required")=1
+	IF $GET(LABEL)'="" SET @ROOT@("validation","fields",FIELD,"label")=$GET(LABEL)
+	QUIT
+	;
+VMAX(ROOT,FIELD,MAX)
+	SET @ROOT@("validation","fields",FIELD,"maxLength")=+MAX
+	QUIT
+	;
+VENUM(ROOT,FIELD,N,VAL)
+	SET @ROOT@("validation","fields",FIELD,"enum",+N)=$GET(VAL)
+	QUIT
+	;
+VDATE(ROOT,FIELD,LABEL)
+	SET @ROOT@("validation","fields",FIELD,"type")="date"
+	IF $GET(LABEL)'="" SET @ROOT@("validation","fields",FIELD,"label")=$GET(LABEL)
+	QUIT
+	;
+VNUM(ROOT,FIELD,LABEL)
+	SET @ROOT@("validation","fields",FIELD,"type")="number"
+	IF $GET(LABEL)'="" SET @ROOT@("validation","fields",FIELD,"label")=$GET(LABEL)
+	QUIT
+	;
+VRANGE(ROOT,FIELD,MIN,MAX)
+	SET @ROOT@("validation","fields",FIELD,"min")=$GET(MIN)
+	SET @ROOT@("validation","fields",FIELD,"max")=$GET(MAX)
+	QUIT
+	;
+VHOOK(ROOT,ENTRY)
+	SET @ROOT@("validation","routine")=$GET(ENTRY)
+	QUIT
+	;
+AUDIT(STATE,DATASET,ACTION,IN,OK,ERR,STAGE)
+	NEW ROOT,N,FIELD
+	SET ROOT=$$ROOT(.STATE,DATASET)
+	SET N=$ORDER(@ROOT@("audit",""),-1)+1
+	SET @ROOT@("audit",N,"at")=$$NOWISO^MIOUTIL()
+	SET @ROOT@("audit",N,"user")=$GET(STATE("principal"),"guest")
+	SET @ROOT@("audit",N,"dataset")=DATASET
+	SET @ROOT@("audit",N,"action")=$GET(ACTION)
+	SET @ROOT@("audit",N,"ok")=+OK
+	SET @ROOT@("audit",N,"stage")=$GET(STAGE)
+	SET @ROOT@("audit",N,"error")=$GET(ERR("error"))
+	SET @ROOT@("audit",N,"message")=$GET(ERR("message"))
+	IF $GET(IN("row","id"))'="" SET @ROOT@("audit",N,"rowId")=$GET(IN("row","id"))
+	IF $GET(IN("rowId"))'="" SET @ROOT@("audit",N,"rowId")=$GET(IN("rowId"))
+	IF $GET(IN("columnKey"))'="" SET @ROOT@("audit",N,"columnKey")=$GET(IN("columnKey"))
+	SET FIELD="" FOR  SET FIELD=$ORDER(ERR("fieldErrors",FIELD)) QUIT:FIELD=""  SET @ROOT@("audit",N,"fieldErrors",FIELD)=$GET(ERR("fieldErrors",FIELD))
+	QUIT
+	;
+	;
 KEY(X)
 	NEW Y,I,C,Q S Q=0
 	SET Y=$GET(X)
@@ -242,6 +358,7 @@ SEEDDEMO(STATE,ROOT)
 	DO ROWR(ROOT,2,"demo-2","Explorer grid","Done","Shell","Medium","2026-04-30","Resizable table source inspiration")
 	DO ROWR(ROOT,3,"demo-3","Transfer manager","Open","VFS","High","2026-04-28","Upload and download transfer controls")
 	DO ROWR(ROOT,4,"demo-4","Theme studio","Review","UI","Medium","2026-04-27","Customization and wallpaper persistence")
+	DO SEEDVALD(ROOT)
 	QUIT
 	;
 SEEDPAT(STATE,ROOT)
@@ -255,6 +372,47 @@ SEEDPAT(STATE,ROOT)
 	DO PATROW(ROOT,1,"PAT-1001","Garcia","Elena","1984-04-12","555-0101","Active","Dr. Shaw")
 	DO PATROW(ROOT,2,"PAT-1002","Brown","Marcus","1972-09-03","555-0102","Pending","Dr. Singh")
 	DO PATROW(ROOT,3,"PAT-1003","Chen","Avery","1991-12-21","555-0103","Active","Dr. Ortiz")
+	DO SEEDVALP(ROOT)
+	QUIT
+	;
+	;
+SEEDVALD(ROOT)
+	SET @ROOT@("validation","fields","name","label")="Name"
+	SET @ROOT@("validation","fields","name","required")=1
+	SET @ROOT@("validation","fields","name","maxLength")=120
+	SET @ROOT@("validation","fields","status","label")="Status"
+	SET @ROOT@("validation","fields","status","required")=1
+	SET @ROOT@("validation","fields","status","enum",1)="Open"
+	SET @ROOT@("validation","fields","status","enum",2)="Done"
+	SET @ROOT@("validation","fields","status","enum",3)="Review"
+	SET @ROOT@("validation","fields","status","enum",4)="Active"
+	SET @ROOT@("validation","fields","status","enum",5)="Pending"
+	SET @ROOT@("validation","fields","priority","label")="Priority"
+	SET @ROOT@("validation","fields","priority","enum",1)="High"
+	SET @ROOT@("validation","fields","priority","enum",2)="Medium"
+	SET @ROOT@("validation","fields","priority","enum",3)="Low"
+	SET @ROOT@("validation","fields","updated","label")="Updated"
+	SET @ROOT@("validation","fields","updated","type")="date"
+	QUIT
+	;
+SEEDVALP(ROOT)
+	SET @ROOT@("validation","fields","mrn","label")="MRN"
+	SET @ROOT@("validation","fields","mrn","required")=1
+	SET @ROOT@("validation","fields","mrn","maxLength")=32
+	SET @ROOT@("validation","fields","lastName","label")="Last name"
+	SET @ROOT@("validation","fields","lastName","required")=1
+	SET @ROOT@("validation","fields","lastName","maxLength")=80
+	SET @ROOT@("validation","fields","firstName","label")="First name"
+	SET @ROOT@("validation","fields","firstName","required")=1
+	SET @ROOT@("validation","fields","firstName","maxLength")=80
+	SET @ROOT@("validation","fields","dob","label")="DOB"
+	SET @ROOT@("validation","fields","dob","required")=1
+	SET @ROOT@("validation","fields","dob","type")="date"
+	SET @ROOT@("validation","fields","status","label")="Status"
+	SET @ROOT@("validation","fields","status","required")=1
+	SET @ROOT@("validation","fields","status","enum",1)="Active"
+	SET @ROOT@("validation","fields","status","enum",2)="Pending"
+	SET @ROOT@("validation","fields","status","enum",3)="Inactive"
 	QUIT
 	;
 SEEDUI(STATE,ROOT)

@@ -64,6 +64,20 @@ SET @ROOT@("rows",1,"status")="Active"
 SET @ROOT@("rows",1,"priority")="High"
 SET @ROOT@("rows",1,"_expand","title")="Details"
 SET @ROOT@("rows",1,"_expand","body")="Optional row detail text."
+
+; ROI 64G validation rules run before row.save persists data
+SET @ROOT@("validation","fields","name","label")="Name"
+SET @ROOT@("validation","fields","name","required")=1
+SET @ROOT@("validation","fields","name","maxLength")=120
+SET @ROOT@("validation","fields","status","label")="Status"
+SET @ROOT@("validation","fields","status","required")=1
+SET @ROOT@("validation","fields","status","enum",1)="Active"
+SET @ROOT@("validation","fields","status","enum",2)="Pending"
+SET @ROOT@("validation","fields","status","enum",3)="Inactive"
+SET @ROOT@("validation","fields","priority","enum",1)="High"
+SET @ROOT@("validation","fields","priority","enum",2)="Medium"
+SET @ROOT@("validation","fields","priority","enum",3)="Low"
+SET @ROOT@("validation","routine")="VALTABLE^MYTABVAL"  ; optional custom hook
 ```
 
 ## Module registration
@@ -193,6 +207,37 @@ Validation/error acknowledgement:
 }
 ```
 
+
+## ROI 64G validation hooks and helper rules
+
+Validation is configured in MUMPS under the same dataset root as the schema and rows. The built-in helper rules are:
+
+- `required=1`
+- `maxLength=n`
+- `enum`, numbered from 1 upward
+- `type="date"` for `YYYY-MM-DD`
+- `type="number"` with optional `min` / `max`
+
+A custom routine can be attached with:
+
+```mumps
+SET @ROOT@("validation","routine")="VALTABLE^MYTABVAL"
+```
+
+The routine signature is:
+
+```mumps
+VALTABLE(STATE,CONF,DATASET,ACTION,IN,ERR)
+    IF ACTION'="row.save" QUIT
+    IF $GET(IN("row","status"))="Active",$GET(IN("row","name"))="" DO
+    . SET ERR("error")="validation_failed"
+    . SET ERR("message")="Name is required for active rows"
+    . SET ERR("fieldErrors","name")="Required for active rows"
+    QUIT
+```
+
+When validation fails, `MIOOSTBL` does not mutate the row. The HTTP and WebSocket mutation paths return `fieldErrors`; the table editor keeps the user input and highlights those fields. Every mutation attempt writes audit metadata to `@ROOT@("audit",n,...)`.
+
 ## Required routine reload/run commands
 
 After changing table, API, WebSocket, module, or tests routines:
@@ -213,4 +258,18 @@ If you modify the browser files, also run:
 node --check public/mioos/app/mioos_table.js
 node --check public/mioos/app/mioos_ws.js
 python3 -m json.tool examples/mioos_modules/table/module.json
+```
+
+
+Developer helper entry points are also available for setup routines:
+
+```mumps
+DO VREQ^MIOOSTBL(ROOT,"name","Name")
+DO VMAX^MIOOSTBL(ROOT,"name",120)
+DO VENUM^MIOOSTBL(ROOT,"status",1,"Open")
+DO VENUM^MIOOSTBL(ROOT,"status",2,"Done")
+DO VDATE^MIOOSTBL(ROOT,"updated","Updated")
+DO VNUM^MIOOSTBL(ROOT,"score","Score")
+DO VRANGE^MIOOSTBL(ROOT,"score",0,100)
+DO VHOOK^MIOOSTBL(ROOT,"VALTABLE^MYTABVAL")
 ```

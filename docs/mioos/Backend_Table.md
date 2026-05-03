@@ -259,3 +259,47 @@ The massive dataset fast path materializes only the requested page and does not 
 ### Pagination and timeout behavior
 
 The table UI includes a direct page jump input. Table mutations use short command-specific timeouts (`tableMutationTimeoutMs`, default 4500ms) and show a deterministic timeout message rather than leaving the mutation spinner active indefinitely.
+
+
+## ROI 64G update — table mutation validation and developer utilities
+
+ROI 64G keeps the `mioos-advanced-table-v8` transport contract and makes row mutation validation a MUMPS-first backend concern. Dataset owners can define validation rules directly under the table dataset global:
+
+```mumps
+SET @ROOT@("validation","fields","name","label")="Name"
+SET @ROOT@("validation","fields","name","required")=1
+SET @ROOT@("validation","fields","name","maxLength")=120
+SET @ROOT@("validation","fields","status","enum",1)="Open"
+SET @ROOT@("validation","fields","status","enum",2)="Done"
+SET @ROOT@("validation","fields","dob","type")="date"
+SET @ROOT@("validation","fields","score","type")="number"
+SET @ROOT@("validation","fields","score","min")=0
+SET @ROOT@("validation","fields","score","max")=100
+```
+
+Supported built-in rule helpers are `required`, `maxLength`, `enum`, `type="date"`, `type="number"`, `min`, and `max`. `MUTATE^MIOOSTBL` runs these rules before row persistence and returns field-level JSON such as `fieldErrors.name="Name is required"` without mutating data.
+
+Datasets may also provide a custom MUMPS hook:
+
+```mumps
+SET @ROOT@("validation","routine")="VALTABLE^MYTABVAL"
+```
+
+The hook is called as `DO VALTABLE^MYTABVAL(.STATE,.CONF,DATASET,ACTION,.IN,.ERR)`. To reject a mutation, set `ERR("error")="validation_failed"`, `ERR("message")`, and optional `ERR("fieldErrors",field)`. The browser keeps the editor open and highlights the matching fields.
+
+
+
+Developer helper entry points are also available for setup routines:
+
+```mumps
+DO VREQ^MIOOSTBL(ROOT,"name","Name")
+DO VMAX^MIOOSTBL(ROOT,"name",120)
+DO VENUM^MIOOSTBL(ROOT,"status",1,"Open")
+DO VENUM^MIOOSTBL(ROOT,"status",2,"Done")
+DO VDATE^MIOOSTBL(ROOT,"updated","Updated")
+DO VNUM^MIOOSTBL(ROOT,"score","Score")
+DO VRANGE^MIOOSTBL(ROOT,"score",0,100)
+DO VHOOK^MIOOSTBL(ROOT,"VALTABLE^MYTABVAL")
+```
+
+Mutation attempts are recorded under `@ROOT@("audit",n,...)` with timestamp, user, dataset, action, success flag, stage, message, row/column identity where available, and field errors for failed validation attempts.
