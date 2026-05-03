@@ -537,17 +537,17 @@ Next planned ROI: ROI 64C should rewrite the advanced table component as a stand
 
 ## ROI 64C — Standalone Advanced Table Component Rewrite
 
-The advanced table contract is `mioos-advanced-table-v7`. Table modules should use `mioos-full-table` / `mioos-surface-table` through backend `tableState` module nodes or equivalent manifest JSON. The backend remains server-authoritative. Query may use WebSocket; mutation defaults to HTTP-safe JSON for row CRUD, column CRUD, column visibility, column resize, grouping, and bulk deletes. Do not fork custom table implementations for module samples unless a new contract is intentionally defined with tests and docs.
+The advanced table contract is `mioos-advanced-table-v8`. Table modules should use `mioos-full-table` / `mioos-surface-table` through backend `tableState` module nodes or equivalent manifest JSON. The backend remains server-authoritative. Query may use WebSocket; mutation defaults to WebSocket acknowledgement JSON with HTTP fallback for row CRUD, column CRUD, column visibility, column resize, grouping, and bulk deletes. Do not fork custom table implementations for module samples unless a new contract is intentionally defined with tests and docs.
 
 ### ROI 64C redo — table hardening follow-up
 
-The advanced table contract is now `mioos-advanced-table-v7`. The redo addressed reported contrast issues, slow large-dataset sorting, mutation `ERR_EMPTY_RESPONSE`/`Failed to fetch` handling, DataTables-style API expectations, and missing server-communication indicators. The client sends `draw`, `start`, `length`, `order`, and `columns` metadata alongside native MIOOS query fields. `MIOOSTBL` responds with `draw`, `recordsTotal`, `recordsFiltered`, and `data` in addition to native `rows`. Backend sorting uses an indexed map instead of O(n²) bubble sorting. The browser shows a processing indicator and surfaces empty/invalid mutation responses as table errors without closing the editor.
+The advanced table contract is now `mioos-advanced-table-v8`. The redo addressed reported contrast issues, slow large-dataset sorting, mutation `ERR_EMPTY_RESPONSE`/`Failed to fetch` handling, DataTables-style API expectations, and missing server-communication indicators. The client sends `draw`, `start`, `length`, `order`, and `columns` metadata alongside native MIOOS query fields. `MIOOSTBL` responds with `draw`, `recordsTotal`, `recordsFiltered`, and `data` in addition to native `rows`. Backend sorting uses an indexed map instead of O(n²) bubble sorting. The browser shows a processing indicator and surfaces empty/invalid mutation responses as table errors without closing the editor.
 
 ## ROI 64C redo 2 — immediate table corrections
 
 The last table ROI was redone again from the user-provided ZIP. Important current behavior:
 
-- Contract: `mioos-advanced-table-v7`.
+- Contract: `mioos-advanced-table-v8`.
 - Table query/mutation are WebSocket-first with HTTP fallback.
 - WebSocket commands added: `table.query`, `table.mutate`.
 - Massive dataset is read-only and page-materialized server-side; it must not expose mutation controls.
@@ -562,7 +562,7 @@ The last table ROI was redone again from the user-provided ZIP. Important curren
 
 ## ROI 64D — table performance, mutation correctness, and MUMPS-first examples
 
-Current table contract: `mioos-advanced-table-v7`. Query may use `table.query` over WebSocket, but mutation defaults to authenticated HTTP through `/api/mioos/table/mutate` using `mutateTransport="http"` to avoid the reported `socket_timeout` on saves. Do not re-enable WebSocket-first mutation without a dedicated transport regression test.
+Current table contract: `mioos-advanced-table-v8`. Query may use `table.query` over WebSocket, but mutation defaults to authenticated HTTP through `/api/mioos/table/mutate` using `mutateTransport="websocket"` to avoid the reported `socket_timeout` on saves. Do not re-enable WebSocket-first mutation without a dedicated transport regression test.
 
 The `massive` dataset has a fast server path for no-search/no-filter paging and generates only the requested page. It is read-only and disables `selection`, `bulkActions`, `rowCrud`, `columnCrud`, `rowDetails`, and `actionRows`, so it must not render an Actions column.
 
@@ -570,39 +570,20 @@ Table Samples are now MUMPS-first. Examples should show `SET MOD(...)` / `tableS
 
 ### ROI 64E table follow-up
 
-Current table contract: `mioos-advanced-table-v7`. Table query can use WebSocket, but mutation remains HTTP-first by default and both HTTP `/api/mioos/table/mutate` and WebSocket `table.mutate` call the same `MUTATE^MIOOSTBL` routine. `MIOOSTBL` now validates row fields, row IDs, column keys, column widths, and field lengths before update. Both transports must return deterministic JSON `{ok:false,error:"table_mutate_failed",detail:...}` on domain errors; do not allow table mutation failures to surface as socket timeouts or empty HTTP responses.
+Current table contract: `mioos-advanced-table-v8`. Table query can use WebSocket, but mutation is WebSocket-first by default with HTTP fallback and both HTTP `/api/mioos/table/mutate` and WebSocket `table.mutate` call the same `MUTATE^MIOOSTBL` routine. `MIOOSTBL` now validates row fields, row IDs, column keys, column widths, and field lengths before update. Both transports must return deterministic JSON `{ok:false,error:"table_mutate_failed",detail:...}` on domain errors; do not allow table mutation failures to surface as socket timeouts or empty HTTP responses.
 
 Table Samples are MUMPS-first. Samples must show dataset global definition, `MOD(...)` table registration, and the routines to `ZLINK`/run. Avoid JavaScript snippets for user-facing table examples because the target audience is MUMPS developers with no frontend experience.
 
 UI rules: simple/read-only tables omit Actions. Row details are an expand arrow in the control/id-selection column, not a row action. Column picker is modal-only. Column editing/designer controls render only when `columnCrud` is enabled.
 
-## ROI 64G stabilization follow-up
+## Table stabilization before ROI 64I
 
-Before moving to ROI 64H, preserve these ROI 64G stabilization fixes:
+The current advanced table contract is `mioos-advanced-table-v8`. The table stabilization pass addressed bounded draggable modals, typed filter controls, advanced include/exclude/range filters, server-side selected-row CSV export, immutable column keys during edit, select-option dictionary updates via `column.option.add`, and a low-shift loading bar. Mutations default to WebSocket acknowledgements with HTTP fallback, and both transports must continue to call `MUTATE^MIOOSTBL`.
 
-- `column.visibility` must use `TRUTH^MIOOSTBL` or equivalent JSON boolean normalization. JSON `true` must persist as hidden=1; JSON `false` must persist as hidden=0.
-- `ENSURE^MIOOSTBL` must upgrade existing demo/patient table globals with validation metadata instead of only seeding new globals.
-- The demo table has a real editable `notes` column in the `Notes` group. Do not hide Notes solely inside `_expand` row details.
-- Group columns and table filters are modal flows, not inline `<details>` panels.
-- Mutations should show a non-blocking success toast and then refetch.
-- The pager should show a current page range such as `Showing 1–25 of 10000 rows`.
+The next planned sequence is:
 
-## ROI 64G stabilization follow-up
+- ROI 64I: editable cells with schema-driven controls and optional MUMPS cell callbacks.
+- ROI 64J: column reorder, configured on boot or saved as a user option.
+- ROI 64K: fixed columns, configured on boot or saved as a user option.
 
-Do not start ROI 64H until the ROI 64G stabilization fixes are verified. The stabilization patch fixes column visibility boolean handling, server validation execution, `fieldErrors` transport, mutation success toasts, the editable Notes column, modal grouping/filtering controls, visible row-range totals, and grouped-column visibility in the column picker.
-
-## Table stabilization before ROI 64H
-
-Use the current source as the source of truth. Before starting ROI 64H, the table module includes these stabilization fixes:
-
-- strict date validation in `DATEOK^MIOOSTBL`; invalid calendar dates must return `fieldErrors` and must not save;
-- selected-row CSV export via backend action `rows.export` and `EXPORT^MIOOSTBL`;
-- existing schema column keys are identity values and are locked by `originalKey` during edits;
-- schema/validation metadata drives row editor controls for select, multiselect, boolean, date, number, text, and textarea values;
-- filter, grouping, column, and editor dialogs use system-style draggable modal windows.
-
-Next ROI design reference: the next ROI should finalize the module authoring/server-side module library. The current repo includes server-side library patterns such as save/update, search/filter, import/export, versioned revisions, rollback, and audit-style metadata. ROI 64H should apply those patterns to table-backed module definitions rather than adding another frontend-only wizard.
-
-## ROI 64H — table module finalization
-
-The current source includes ROI 64H. `MIOOSMTBL` is the server-side table module definition library. It supports `list`, `preview`, `save`, `export`, `import`, `revisions`, and `rollback` actions through `POST /api/mioos/modules/table` and WebSocket commands named `module.table.*`. Successful saves validate the definition, snapshot any previous definition, persist `^MIO("MIOOS","TABLEMOD","USER",user,key)`, install `^MIO("MIOOS","TABLE",user,dataset)`, and register `^MIO("MIOOS","MODULE","USER",user,key)`. The App Catalogue has a thin Table Modules tab; do not move this behavior into a frontend-only wizard.
+See `docs/mioos/ROI_64I_64K_Table_DataTables_Parity.md` before implementing the next ROI.

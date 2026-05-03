@@ -44,7 +44,7 @@ This ROI redoes the previous advanced table work from the attached source and ad
 The client-visible contract is now:
 
 ```text
-mioos-advanced-table-v7
+mioos-advanced-table-v8
 ```
 
 The preferred query transport is WebSocket command mode:
@@ -101,4 +101,4 @@ this.openBackendTableWindow({
 
 ## ROI 64D correction
 
-The follow-up table contract is `mioos-advanced-table-v7`. Mutation is HTTP-safe by default (`mutateTransport="http"`) while query can remain WebSocket-backed. Massive no-search/no-filter paging now uses a direct page materialization path. Read-only/simple variants disable selection and row actions so the Actions column is omitted. Table Samples now show MUMPS contract snippets instead of JavaScript.
+The follow-up table contract is `mioos-advanced-table-v8`. Mutation is HTTP-safe by default (`mutateTransport="websocket"`) while query can remain WebSocket-backed. Massive no-search/no-filter paging now uses a direct page materialization path. Read-only/simple variants disable selection and row actions so the Actions column is omitted. Table Samples now show MUMPS contract snippets instead of JavaScript.

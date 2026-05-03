@@ -82,7 +82,6 @@ COMMANDJSON(CONF,REQ,CTX,STATE,PAYLOAD,OUTJSON,ERR)
 	IF CMD="auth.user.unlock" QUIT $$AUTHUNLOCK(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="view.refresh" QUIT $$CMDVIEW(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="module.catalog" QUIT $$MODCAT(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
-	IF $EXTRACT(CMD,1,13)="module.table." QUIT $$MODTABLE(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="table.query" QUIT $$TABLEQUERY(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="table.mutate" QUIT $$TABLEMUTATE(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="debug.snapshot" QUIT $$DEBUGSNAP(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
@@ -306,19 +305,6 @@ MODCAT(STATE,CONF,TREE,OUTJSON,ERR)
 	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"module.catalog","module",.OUT)
 	QUIT 1
 	;
-MODTABLE(STATE,CONF,TREE,OUTJSON,ERR)
-	NEW OUT,CMD
-	SET CMD=$GET(TREE("command"))
-	SET TREE("action")=$PIECE(CMD,".",3)
-	IF TREE("action")="" SET TREE("action")="list"
-	IF '$$HANDLE^MIOOSMTBL(.STATE,.CONF,.TREE,.OUT,.ERR) DO  QUIT 1
-	. KILL OUT
-	. SET OUT("ok")=0,OUT("error")=$GET(ERR("error"),"module_table_failed"),OUT("message")=$GET(ERR("message"),$GET(ERR("error"))),OUT("routine")=$GET(ERR("routine"),"MIOOSMTBL"),OUT("action")=$GET(TREE("action"))
-	. IF $DATA(ERR("fieldErrors")) MERGE OUT("fieldErrors")=ERR("fieldErrors")
-	. SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),CMD,"moduleTable",.OUT)
-	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),CMD,"moduleTable",.OUT)
-	QUIT 1
-	;
 TABLEQUERY(STATE,CONF,TREE,OUTJSON,ERR)
 	NEW OUT
 	IF +$GET(STATE("authRequired"),0)=1,+$GET(STATE("authenticated"),0)'=1 SET ERR("error")="login_required",ERR("detail")="table.query" QUIT 0
@@ -332,7 +318,8 @@ TABLEMUTATE(STATE,CONF,TREE,OUTJSON,ERR)
 	. SET OUT("ok")=0,OUT("error")="login_required",OUT("detail")="table.mutate"
 	. SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"table.mutate","table",.OUT)
 	IF '$$MUTATE^MIOOSTBL(.STATE,.CONF,.TREE,.OUT,.ERR) DO  QUIT 1
-	. SET OUT("ok")=0,OUT("error")="table_mutate_failed",OUT("detail")=$GET(ERR("error")),OUT("routine")=$GET(ERR("routine"),"MIOOSTBL"),OUT("field")=$GET(ERR("field")),OUT("message")=$GET(ERR("message"),$GET(ERR("error"))),OUT("mutationOnly")=1,OUT("refetch")=0
+	. SET OUT("ok")=0,OUT("error")="table_mutate_failed",OUT("detail")=$GET(ERR("error")),OUT("routine")=$GET(ERR("routine"),"MIOOSTBL"),OUT("field")=$GET(ERR("field"))
+	. SET OUT("dataset")=$GET(TREE("dataset")),OUT("action")=$GET(TREE("action")),OUT("message")=$GET(ERR("message"),$GET(ERR("error"))),OUT("mutationOnly")=1,OUT("refetch")=0
 	. IF $DATA(ERR("fieldErrors")) MERGE OUT("fieldErrors")=ERR("fieldErrors")
 	. SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"table.mutate","table",.OUT)
 	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"table.mutate","table",.OUT)

@@ -376,30 +376,18 @@ The `UI + Form Elements` module now uses `mioos-surface-ui-elements`, a standalo
 
 ## ROI 64C advanced table
 
-The standalone advanced table now uses `mioos-advanced-table-v7` and can be embedded by internal or user-created modules through `mioos-surface-table`. See `Backend_Table.md` and `ROI_64C_Advanced_Table_Rewrite.md`.
+The standalone advanced table now uses `mioos-advanced-table-v8` and can be embedded by internal or user-created modules through `mioos-surface-table`. See `Backend_Table.md` and `ROI_64C_Advanced_Table_Rewrite.md`.
 
 ## ROI 64C redo 2 note
 
-The advanced backend table now uses `mioos-advanced-table-v7`, WebSocket-first query/mutation commands, compact default density, a viewport-safe editor dialog, read-only massive dataset safeguards, and a visible Table Samples showcase with copyable API variations.
+The advanced backend table now uses `mioos-advanced-table-v8`, WebSocket-first query/mutation commands, compact default density, a viewport-safe editor dialog, read-only massive dataset safeguards, and a visible Table Samples showcase with copyable API variations.
 
 ### ROI 64E table correction
 
-The advanced table contract is now `mioos-advanced-table-v7`. This update focuses on mutation correctness and MUMPS-first authoring: table samples show dataset globals, module `MOD(...)` registration, and required routine reload/test commands. Row details moved into the control column, the column selector is modal-only, and column editing appears only when column CRUD is enabled.
+The advanced table contract is now `mioos-advanced-table-v8`. This update focuses on mutation correctness and MUMPS-first authoring: table samples show dataset globals, module `MOD(...)` registration, and required routine reload/test commands. Row details moved into the control column, the column selector is modal-only, and column editing appears only when column CRUD is enabled.
 
-### ROI 64G stabilization
+### Table stabilization and next ROI sequence
 
-The table validation follow-up now includes fixes for real-use regressions: column visibility handles JSON booleans correctly, existing demo tables are upgraded with validation metadata, Notes is an editable grouped column, grouping/filtering use modal dialogs, successful mutations show a non-blocking toast, and pagination displays the current row range.
+The advanced table stabilization pass keeps the contract at `mioos-advanced-table-v8` and adds typed filter modals, advanced include/exclude/range filtering, bounded draggable table dialogs, server-side selected-row CSV export, select-option dictionary updates through `column.option.add`, immutable column keys on edit, and a low-shift loading bar.
 
-### ROI 64G stabilization follow-up
-
-The table UI now fixes column visibility persistence, backend validation feedback, mutation success toasts, editable Notes data, modal grouping/filtering, and clearer row-range totals. This is a stabilization pass before ROI 64H, not the next ROI.
-
-### Table stabilization before ROI 64H
-
-The table module stabilization pass adds strict invalid-date feedback, server-side selected-row CSV export, locked column keys during schema edits, typed row editor controls, and system-style draggable table dialogs. These changes are corrective table work before ROI 64H and do not start the next ROI.
-
-Selected-row export is handled server-side through `rows.export`; the browser only downloads the returned CSV. Existing table dialogs now use `.mioos-system-modal` and a draggable title bar so they follow the same interaction model as other shell windows.
-
-### ROI 64H table module library
-
-The App Catalogue now includes a server-side table module library. `MIOOSMTBL` owns table-backed module definition validation, preview, save/register, export/import, revision snapshots, rollback, and audit metadata. The route is `POST /api/mioos/modules/table`, and WebSocket command names are `module.table.*`. Successful saves install both the launchable module metadata and the backing table dataset without requiring frontend code.
+The next table ROI sequence is documented in `ROI_64I_64K_Table_DataTables_Parity.md` and covers editable cells, column reorder, and fixed columns as MUMPS-first/server-authoritative features.

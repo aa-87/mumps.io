@@ -13,7 +13,7 @@ ROI 64E is a corrective table ROI focused on five production blockers:
 The table contract is now:
 
 ```text
-mioos-advanced-table-v7
+mioos-advanced-table-v8
 ```
 
 Query remains server-side and may use WebSocket for lower-latency reads. Mutation defaults to authenticated HTTP, and the WebSocket `table.mutate` command now returns a structured table error payload instead of allowing command-level failures to appear as socket timeouts.
@@ -85,7 +85,7 @@ KILL MOD
 SET MOD("componentKey")="table"
 SET MOD("surface")="mioos-surface-table"
 SET MOD("tableState","dataset")="orders"
-SET MOD("tableState","config","contract")="mioos-advanced-table-v7"
+SET MOD("tableState","config","contract")="mioos-advanced-table-v8"
 SET MOD("tableState","config","features","rowCrud")=1
 SET MOD("tableState","config","features","columnCrud")=1
 ```

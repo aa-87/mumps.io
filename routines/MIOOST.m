@@ -60,8 +60,6 @@ MIOOST ; MIOOS tests
 	DO T066
 	DO T067
 	DO T068
-	DO T069
-	DO T070
 	QUIT
 	;
 RESET
@@ -1309,9 +1307,9 @@ T065
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 64B"),"[MIOOST][T065][llm roi64b]")
 	QUIT
 T066
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","mioos-advanced-table-v7"),"[MIOOST][T066][table v7 contract]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","mioos-advanced-table-v8"),"[MIOOST][T066][table v7 contract]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","table.query"),"[MIOOST][T066][websocket table query]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","mutateTransport: 'http'"),"[MIOOST][T066][http-safe table mutate]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","mutateTransport: 'websocket'"),"[MIOOST][T066][http-safe table mutate]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableBeginActionsResize"),"[MIOOST][T066][actions column resize]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","mioos-table-editor-backdrop"),"[MIOOST][T066][viewport editor]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","mioos-surface-table-showcase"),"[MIOOST][T066][table showcase surface]")
@@ -1325,14 +1323,14 @@ T066
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","readOnly"),"[MIOOST][T066][readonly feature flag]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","table_mutate_failed"),"[MIOOST][T066][mutation json error]")
 	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/ROI_64D_Table_Performance_Mutations.md","MUMPS developer contracts"),"[MIOOST][T066][roi64d docs]")
-	DO OK^MIOTASSERT($$FILEHAS("examples/mioos_modules/table/module.json","mioos-advanced-table-v7"),"[MIOOST][T066][table manifest contract]")
+	DO OK^MIOTASSERT($$FILEHAS("examples/mioos_modules/table/module.json","mioos-advanced-table-v8"),"[MIOOST][T066][table manifest contract]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 64D"),"[MIOOST][T066][llm roi64d]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","SET MOD(""tableState"",""dataset"")"),"[MIOOST][T066][mumps table examples]")
 	QUIT
 	;
 
 T067
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","mioos-advanced-table-v7"),"[MIOOST][T067][table v7 contract]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","mioos-advanced-table-v8"),"[MIOOST][T067][table v7 contract]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","mumpsTableSnippet"),"[MIOOST][T067][mumps dataset snippets]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","mioos-table-detail-toggle"),"[MIOOST][T067][details control column]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","columnPickerOpen"),"[MIOOST][T067][modal column picker state]")
@@ -1346,59 +1344,17 @@ T067
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 64E table follow-up"),"[MIOOST][T067][llm roi64e]")
 	QUIT
 	;
-
 T068
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","function boolish"),"[MIOOST][T068][json boolean column visibility client]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","TRUTH(X)"),"[MIOOST][T068][json boolean column visibility backend]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableOpenGroupModal"),"[MIOOST][T068][grouping modal api]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableOpenFilterModal"),"[MIOOST][T068][filter modal api]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableRowRangeLabel"),"[MIOOST][T068][page range row totals]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableShowToast"),"[MIOOST][T068][mutation confirmation toast]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","mioos-field-error"),"[MIOOST][T068][field validation ui]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","VALRULES"),"[MIOOST][T068][dataset validation rules]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","SEEDVALD"),"[MIOOST][T068][demo validation backfill]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","fieldErrors"),"[MIOOST][T068][http validation field errors]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","fieldErrors"),"[MIOOST][T068][ws validation field errors]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","is-group-modal"),"[MIOOST][T068][group modal styling]")
-	QUIT
-	;
-
-T069
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","DATEOK(X)"),"[MIOOST][T069][strict date validation entry]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","D>MAX"),"[MIOOST][T069][strict calendar day validation]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","rows.export"),"[MIOOST][T069][server side selected row csv export]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","CSVESC"),"[MIOOST][T069][csv escaping]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","originalKey"),"[MIOOST][T069][column key lock backend]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","METASC"),"[MIOOST][T069][schema typing from validation metadata]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableDownloadCsv"),"[MIOOST][T069][client csv download]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableEditorControl"),"[MIOOST][T069][typed editor controls]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableJumpToPage"),"[MIOOST][T069][page jump control]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","originalKey"),"[MIOOST][T069][column key lock ui]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","mioos-system-modal"),"[MIOOST][T069][system draggable modal class]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableBeginDialogDrag"),"[MIOOST][T069][modal drag handler]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","mioos-table-window-titlebar"),"[MIOOST][T069][table modal titlebar styling]")
-	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/ROI_64H_Table_Module_Finalization_Design.md","server-side module library"),"[MIOOST][T069][next roi design]")
-	QUIT
-	;
-
-T070
-	DO OK^MIOTASSERT($$FILEOK("routines/MIOOSMTBL.m"),"[MIOOST][T070][table module routine]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSMTBL.m","mioos-table-module-library-v1"),"[MIOOST][T070][library contract]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSMTBL.m","VALIDDEF"),"[MIOOST][T070][server validation]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSMTBL.m","SNAP"),"[MIOOST][T070][revision snapshot]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSMTBL.m","ROLLBACK"),"[MIOOST][T070][rollback]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSMTBL.m","EXPORT"),"[MIOOST][T070][export]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSMTBL.m","IMPORT"),"[MIOOST][T070][import]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSMTBL.m","TABLEMOD"),"[MIOOST][T070][tablemod storage]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","MODULETABLE"),"[MIOOST][T070][http module table api]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","module.table."),"[MIOOST][T070][ws module table commands]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOS.m","/api/mioos/modules/table"),"[MIOOST][T070][module table route]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSST.m","moduleTable"),"[MIOOST][T070][boot route]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSMOD.m","tableDefinitions"),"[MIOOST][T070][catalog table definitions]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_modules.js","Table Modules"),"[MIOOST][T070][catalog table modules tab]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_modules.js","uiModuleTableRequest"),"[MIOOST][T070][thin browser api]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","ROI 64H table module library"),"[MIOOST][T070][module library css]")
-	DO OK^MIOTASSERT($$FILEOK("docs/mioos/ROI_64H_Table_Module_Finalization.md"),"[MIOOST][T070][roi64h docs]")
-	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 64H"),"[MIOOST][T070][llm roi64h]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableBeginDialogDrag"),"[MIOOST][T068][bounded draggable table dialogs]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableFilterControl"),"[MIOOST][T068][typed filter controls]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","Advanced filters"),"[MIOOST][T068][advanced filter modal]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","column.option.add"),"[MIOOST][T068][add select option mutation]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","rows.export"),"[MIOOST][T068][server side selected csv export]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","mioos-table-loading-line"),"[MIOOST][T068][loading bar indicator]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","FILTERVAL"),"[MIOOST][T068][advanced filter backend]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","column.option.add"),"[MIOOST][T068][option add backend]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","EXPORT(STATE,DATASET,ROOT,IN,OUT)"),"[MIOOST][T068][csv export backend]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/ROI_64I_64K_Table_DataTables_Parity.md","ROI 64J"),"[MIOOST][T068][next roi column reorder design]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/ROI_64I_64K_Table_DataTables_Parity.md","ROI 64K"),"[MIOOST][T068][next roi fixed columns design]")
 	QUIT
 	;

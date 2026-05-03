@@ -59,23 +59,14 @@ For table modules, prefer backend `MOD(...)` and dataset globals over frontend s
 
 The table UI now separates row details from actions. Details are an expand arrow in the control column. Row actions remain in the Actions column and only render when row CRUD/action features are enabled. Column selection is modal-only, and column editing is exposed only when column CRUD is enabled.
 
-## ROI 64F table-backed module notes
+## Advanced table stabilization notes
 
-Table-backed modules should declare `contract="mioos-advanced-table-v8"` and use the MUMPS-first `tableState` metadata shape. `groupByColumns` may contain more than one column key, for example `status` and `priority`. Mutation UI should expect fast acknowledgement payloads with `mutationOnly: true` and then refetch the table separately.
+Table modules now target `mioos-advanced-table-v8`. Use schema `type` and validation enum metadata to drive typed row editors and typed filter controls. Table modals should use the bounded table-window dialog helpers, not fixed viewport overlays.
 
-A MUMPS-only module entry point needs `appKey`, `title`, `icon`, `componentKey="table"`, `surface="mioos-surface-table"`, and `tableState("dataset")`. The Table Samples documentation includes the full dataset global, module metadata, desktop/app entry shape, and routine reload commands.
+The next planned table module sequence is ROI 64I through ROI 64K:
 
+- ROI 64I: editable cells with typed controls and optional MUMPS cell callbacks.
+- ROI 64J: column reorder on boot and as a user option.
+- ROI 64K: fixed columns on boot and as a user option.
 
-## ROI 64G table validation notes
-
-Table-backed modules should prefer backend validation over custom JavaScript. Add rules under `^MIO("MIOOS","TABLE",user,dataset,"validation","fields",field,...)` or set `validation","routine")` to a MUMPS entry point. The table surface already understands the standard mutation error envelope and keeps row editors open when the backend returns `fieldErrors`.
-
-This lets a MUMPS developer add required fields, enum/select validation, date format checks, numeric range checks, and custom row-level checks without writing frontend code.
-
-## Table module stabilization before ROI 64H
-
-The table module has been stabilized before the next ROI. Table modals now use system-style draggable windows, selected-row CSV export is generated server-side through `rows.export`, existing column keys are locked during column edits, and row editors render typed controls from schema/validation metadata. These fixes keep table modules MUMPS-first and prepare the App Catalogue/module authoring work planned for ROI 64H.
-
-## ROI 64H table module authoring and library
-
-Table-backed modules can now be created and managed through the server-side `MIOOSMTBL` library. The App Catalogue exposes a thin Table Modules tab for creating, previewing, saving/registering, exporting, importing, listing revisions, and rolling back table definitions. The browser submits definitions to `POST /api/mioos/modules/table`; MUMPS validates and persists the definition, installs the table dataset, and registers the launchable module.
+See `ROI_64I_64K_Table_DataTables_Parity.md` for the MUMPS contracts.

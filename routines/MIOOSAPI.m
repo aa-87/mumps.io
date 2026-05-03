@@ -326,7 +326,8 @@ TABLEMUTATE(DEV,CONF,REQ,CTX)
 	IF '$$MUTATE^MIOOSTBL(.STATE,.CONF,.TREE,.OUT,.ERR) DO  QUIT
 	. KILL OUT
 	. SET OUT("ok")=0,OUT("error")="table_mutate_failed",OUT("detail")=$GET(ERR("error")),OUT("routine")=$GET(ERR("routine"),"MIOOSTBL")
-	. SET OUT("dataset")=$GET(TREE("dataset")),OUT("action")=$GET(TREE("action")),OUT("field")=$GET(ERR("field")),OUT("message")=$GET(ERR("message"),$GET(ERR("error"))),OUT("mutationOnly")=1,OUT("refetch")=0
+	. SET OUT("dataset")=$GET(TREE("dataset")),OUT("action")=$GET(TREE("action")),OUT("field")=$GET(ERR("field")),OUT("message")=$GET(ERR("message"),$GET(ERR("error")))
+	. SET OUT("mutationOnly")=1,OUT("refetch")=0
 	. IF $DATA(ERR("fieldErrors")) MERGE OUT("fieldErrors")=ERR("fieldErrors")
 	. DO RESPJSONX^MIOHTTP(.DEV,.CONF,200,.OUT,$GET(CTX("request_id")),.CTX)
 	. SET CTX("status")=200
@@ -342,23 +343,6 @@ MODULECATALOG(DEV,CONF,REQ,CTX)
 	IF '$$REQUIREAUTH(.DEV,.CONF,.CTX,.STATE) QUIT
 	DO LOAD^MIOOSMOD(.STATE,.CONF)
 	MERGE OUT=STATE("uiModules")
-	DO RESPJSONX^MIOHTTP(.DEV,.CONF,200,.OUT,$GET(CTX("request_id")),.CTX)
-	SET CTX("status")=200
-	QUIT
-	;
-MODULETABLE(DEV,CONF,REQ,CTX)
-	NEW TREE,ERR,STATE,OUT
-	IF '$$PARSEBODY(.REQ,.TREE,.ERR) DO  QUIT
-	. DO RESPERR(.DEV,.CONF,400,"invalid_json",$GET(ERR("error")),.CTX)
-	IF '$$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR) DO  QUIT
-	. DO RESPERR(.DEV,.CONF,500,"module_table_state_error",$GET(ERR("error")),.CTX)
-	IF '$$REQUIREAUTH(.DEV,.CONF,.CTX,.STATE) QUIT
-	IF '$$HANDLE^MIOOSMTBL(.STATE,.CONF,.TREE,.OUT,.ERR) DO  QUIT
-	. KILL OUT
-	. SET OUT("ok")=0,OUT("error")=$GET(ERR("error"),"module_table_failed"),OUT("message")=$GET(ERR("message"),$GET(ERR("error"))),OUT("routine")=$GET(ERR("routine"),"MIOOSMTBL"),OUT("action")=$GET(TREE("action"))
-	. IF $DATA(ERR("fieldErrors")) MERGE OUT("fieldErrors")=ERR("fieldErrors")
-	. DO RESPJSONX^MIOHTTP(.DEV,.CONF,200,.OUT,$GET(CTX("request_id")),.CTX)
-	. SET CTX("status")=200
 	DO RESPJSONX^MIOHTTP(.DEV,.CONF,200,.OUT,$GET(CTX("request_id")),.CTX)
 	SET CTX("status")=200
 	QUIT

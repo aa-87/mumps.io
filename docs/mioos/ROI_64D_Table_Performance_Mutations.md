@@ -15,7 +15,7 @@ This ROI follows the table rewrite and addresses the latest production feedback 
 The table contract is now:
 
 ```text
-mioos-advanced-table-v7
+mioos-advanced-table-v8
 ```
 
 Query remains server-side and may use WebSocket command mode:
@@ -73,7 +73,7 @@ SET MOD("surface")="mioos-surface-table"
 SET MOD("tableState","id")="orders-table"
 SET MOD("tableState","title")="Orders"
 SET MOD("tableState","dataset")="orders"
-SET MOD("tableState","config","contract")="mioos-advanced-table-v7"
+SET MOD("tableState","config","contract")="mioos-advanced-table-v8"
 SET MOD("tableState","config","density")="compact"
 SET MOD("tableState","config","defaultPageSize")=25
 ```
