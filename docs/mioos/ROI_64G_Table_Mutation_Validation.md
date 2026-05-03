@@ -56,3 +56,14 @@ Mutation error shape:
   }
 }
 ```
+
+## Stabilization addendum before ROI 64H
+
+The follow-up stabilization work fixes validation and editor behavior that must be complete before moving to the next ROI:
+
+- invalid dates are rejected with `fieldErrors` instead of blanking the table after a failed save;
+- `rows.export` generates selected-row CSV server-side;
+- existing column keys are locked with `originalKey` to prevent accidental duplicate columns;
+- row editor controls are typed from schema/validation metadata;
+- Notes is an editable textarea column;
+- table dialogs use system-style draggable modal windows.

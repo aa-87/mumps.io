@@ -257,3 +257,57 @@ This follow-up fixes the post-ROI 64G table behavior without starting ROI 64H.
 - Row validation is enforced by `VALRULES^MIOOSTBL` before persistence. HTTP and WebSocket mutation errors include `fieldErrors` so the browser can keep the editor open and highlight the affected fields.
 - The browser uses modal controls for filtering, grouping, and column visibility. Grouping sends `groupByColumns` and may include more than one grouping key.
 - The pagination footer now reports the visible page range, for example `Showing 51–100 of 237 rows`, instead of always showing only total rows.
+
+## Table stabilization before ROI 64H — typed editing and selected-row CSV export
+
+This stabilization pass keeps the project on the ROI 64G table track and fixes runtime behavior before the next ROI begins.
+
+### Strict date validation
+
+Date-typed columns are validated both in the browser and in `DATEOK^MIOOSTBL`. The accepted format is `YYYY-MM-DD`, and impossible calendar dates such as `2026-02-31` are rejected before persistence. Mutation failures keep the editor open and return `fieldErrors`, for example:
+
+```json
+{
+  "ok": false,
+  "error": "table_mutate_failed",
+  "detail": "validation_failed",
+  "fieldErrors": {
+    "updated": "Use YYYY-MM-DD"
+  },
+  "mutationOnly": true,
+  "refetch": false
+}
+```
+
+### Server-side CSV export
+
+Selected-row export is a backend mutation-style command named `rows.export`. The browser sends the selected row IDs, and `EXPORT^MIOOSTBL` builds RFC-style CSV server-side with escaped commas, quotes, and line breaks. The response includes `exportOnly=1`, a file name, `contentType="text/csv"`, row count, and the CSV text.
+
+```json
+{
+  "dataset": "demo",
+  "action": "rows.export",
+  "ids": ["demo-1", "demo-2"]
+}
+```
+
+### Column key safety
+
+Column keys are identity values. When an existing column is edited, the UI carries `originalKey` and disables key editing. The backend honors `originalKey` and updates the existing schema entry instead of creating a new column with the changed key.
+
+### Cell typing
+
+Schema and validation metadata are reflected into browser editor controls:
+
+- `type="date"` renders a date input and server date validation.
+- `type="number"` renders a numeric input and numeric validation.
+- `type="textarea"` renders a multi-line editor.
+- enum validation metadata renders a select control.
+- `type="multiselect"` renders a multiple select control when options exist.
+- `type="boolean"` renders a checkbox.
+
+The `notes` demo column is now a textarea-backed editable grouped column rather than only an expansion body.
+
+### System-style draggable dialogs
+
+Table dialogs use the same system-window visual language as other shell components. Filter, grouping, column picker, and editor dialogs are emitted as `.mioos-system-modal` windows with a `.mioos-table-window-titlebar` drag handle.

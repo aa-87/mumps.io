@@ -176,3 +176,48 @@ Validation rules are backend data, not frontend code:
 SET @ROOT@("validation","fields","name","required")=1
 SET @ROOT@("validation","fields","name","message")="Name is required"
 ```
+
+## Stabilization notes before ROI 64H
+
+### Date validation
+
+To make a date column validate correctly, set the column type and validation flag in MUMPS:
+
+```mumps
+SET @ROOT@("schema","columns",5,"key")="updated"
+SET @ROOT@("schema","columns",5,"label")="Updated"
+SET @ROOT@("schema","columns",5,"type")="date"
+SET @ROOT@("validation","fields","updated","date")=1
+```
+
+Invalid values such as `2026-02-31` should fail before row persistence and should be returned as `fieldErrors("updated")`.
+
+### Select and typed controls
+
+Enum validation metadata drives select controls in the table editor:
+
+```mumps
+SET @ROOT@("validation","fields","status","enum",1)="Open"
+SET @ROOT@("validation","fields","status","enum",2)="Done"
+SET @ROOT@("validation","fields","status","enum",3)="Review"
+```
+
+Use schema `type="textarea"` for long notes, `type="boolean"` for checkboxes, `type="number"` for numeric input, and `type="multiselect"` when a column should accept multiple option values.
+
+### Selected-row CSV export
+
+The table bulk export command sends selected IDs to the server:
+
+```json
+{
+  "dataset": "demo",
+  "action": "rows.export",
+  "ids": ["demo-1", "demo-2"]
+}
+```
+
+`EXPORT^MIOOSTBL` builds the CSV on the server and returns the CSV payload to the browser for download.
+
+### Column key edits
+
+Do not change an existing column key to rename a column. Column keys are persistent identity values. The editor locks the key for existing columns and sends `originalKey` so the backend updates the existing schema entry instead of creating a new column.

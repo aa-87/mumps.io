@@ -590,3 +590,15 @@ Before moving to ROI 64H, preserve these ROI 64G stabilization fixes:
 ## ROI 64G stabilization follow-up
 
 Do not start ROI 64H until the ROI 64G stabilization fixes are verified. The stabilization patch fixes column visibility boolean handling, server validation execution, `fieldErrors` transport, mutation success toasts, the editable Notes column, modal grouping/filtering controls, visible row-range totals, and grouped-column visibility in the column picker.
+
+## Table stabilization before ROI 64H
+
+Use the current source as the source of truth. Before starting ROI 64H, the table module includes these stabilization fixes:
+
+- strict date validation in `DATEOK^MIOOSTBL`; invalid calendar dates must return `fieldErrors` and must not save;
+- selected-row CSV export via backend action `rows.export` and `EXPORT^MIOOSTBL`;
+- existing schema column keys are identity values and are locked by `originalKey` during edits;
+- schema/validation metadata drives row editor controls for select, multiselect, boolean, date, number, text, and textarea values;
+- filter, grouping, column, and editor dialogs use system-style draggable modal windows.
+
+Next ROI design reference: the next ROI should finalize the module authoring/server-side module library. The current repo includes server-side library patterns such as save/update, search/filter, import/export, versioned revisions, rollback, and audit-style metadata. ROI 64H should apply those patterns to table-backed module definitions rather than adding another frontend-only wizard.

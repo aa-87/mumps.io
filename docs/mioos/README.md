@@ -393,3 +393,9 @@ The table validation follow-up now includes fixes for real-use regressions: colu
 ### ROI 64G stabilization follow-up
 
 The table UI now fixes column visibility persistence, backend validation feedback, mutation success toasts, editable Notes data, modal grouping/filtering, and clearer row-range totals. This is a stabilization pass before ROI 64H, not the next ROI.
+
+### Table stabilization before ROI 64H
+
+The table module stabilization pass adds strict invalid-date feedback, server-side selected-row CSV export, locked column keys during schema edits, typed row editor controls, and system-style draggable table dialogs. These changes are corrective table work before ROI 64H and do not start the next ROI.
+
+Selected-row export is handled server-side through `rows.export`; the browser only downloads the returned CSV. Existing table dialogs now use `.mioos-system-modal` and a draggable title bar so they follow the same interaction model as other shell windows.

@@ -71,3 +71,7 @@ A MUMPS-only module entry point needs `appKey`, `title`, `icon`, `componentKey="
 Table-backed modules should prefer backend validation over custom JavaScript. Add rules under `^MIO("MIOOS","TABLE",user,dataset,"validation","fields",field,...)` or set `validation","routine")` to a MUMPS entry point. The table surface already understands the standard mutation error envelope and keeps row editors open when the backend returns `fieldErrors`.
 
 This lets a MUMPS developer add required fields, enum/select validation, date format checks, numeric range checks, and custom row-level checks without writing frontend code.
+
+## Table module stabilization before ROI 64H
+
+The table module has been stabilized before the next ROI. Table modals now use system-style draggable windows, selected-row CSV export is generated server-side through `rows.export`, existing column keys are locked during column edits, and row editors render typed controls from schema/validation metadata. These fixes keep table modules MUMPS-first and prepare the App Catalogue/module authoring work planned for ROI 64H.

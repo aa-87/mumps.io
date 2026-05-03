@@ -326,7 +326,7 @@ TABLEMUTATE(DEV,CONF,REQ,CTX)
 	IF '$$MUTATE^MIOOSTBL(.STATE,.CONF,.TREE,.OUT,.ERR) DO  QUIT
 	. KILL OUT
 	. SET OUT("ok")=0,OUT("error")="table_mutate_failed",OUT("detail")=$GET(ERR("error")),OUT("routine")=$GET(ERR("routine"),"MIOOSTBL")
-	. SET OUT("dataset")=$GET(TREE("dataset")),OUT("action")=$GET(TREE("action")),OUT("field")=$GET(ERR("field")),OUT("message")=$GET(ERR("message"),$GET(ERR("error")))
+	. SET OUT("dataset")=$GET(TREE("dataset")),OUT("action")=$GET(TREE("action")),OUT("field")=$GET(ERR("field")),OUT("message")=$GET(ERR("message"),$GET(ERR("error"))),OUT("mutationOnly")=1,OUT("refetch")=0
 	. IF $DATA(ERR("fieldErrors")) MERGE OUT("fieldErrors")=ERR("fieldErrors")
 	. DO RESPJSONX^MIOHTTP(.DEV,.CONF,200,.OUT,$GET(CTX("request_id")),.CTX)
 	. SET CTX("status")=200

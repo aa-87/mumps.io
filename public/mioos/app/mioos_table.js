@@ -114,6 +114,18 @@
     return lines.join('\n');
   }
 
+  function normalizeOptions(value) {
+    if (!value) return [];
+    if (Array.isArray(value)) return value.map(function (item) { return typeof item === 'object' ? { value: String(item.value || item.key || item.label || ''), label: String(item.label || item.value || item.key || '') } : { value: String(item), label: String(item) }; }).filter(function (item) { return item.value !== ''; });
+    if (typeof value === 'object') {
+      return Object.keys(value).filter(function (key) { return key !== 'byValue'; }).sort(function (a, b) { return (+a || 999999) - (+b || 999999) || String(a).localeCompare(String(b)); }).map(function (key) {
+        var item = value[key];
+        return typeof item === 'object' ? { value: String(item.value || item.key || item.label || ''), label: String(item.label || item.value || item.key || '') } : { value: String(item), label: String(item) };
+      }).filter(function (item) { return item.value !== ''; });
+    }
+    return [];
+  }
+
   function normalizeColumns(columns) {
     var source = Array.isArray(columns) && columns.length ? columns : defaultColumns();
     return source.map(function (col, index) {
@@ -127,7 +139,10 @@
         sortable: col.sortable !== false,
         resizable: col.resizable !== false,
         hidden: boolish(col.hidden),
-        group: col.group || col.groupLabel || ''
+        group: col.group || col.groupLabel || '',
+        required: boolish(col.required),
+        inputType: col.inputType || '',
+        options: normalizeOptions(col.options)
       };
     });
   }
@@ -234,6 +249,8 @@
         filterModalOpen: false,
         groupModalOpen: false,
         groupDraftColumns: [],
+        dialogPositions: {},
+        pageJump: '1',
         config: defaultTableConfig(),
         toast: '',
         validation: {},
@@ -340,6 +357,12 @@
           return payload;
         }
         state.validation = {};
+        if (payload && payload.export && payload.export.csv) {
+          vm.backendTableDownloadCsv(payload.export);
+          state.selected = {};
+          vm.backendTableShowToast(state, payload.message || 'CSV export generated');
+          return payload;
+        }
         if (payload && payload.mutationOnly) {
           state.selected = {};
           state.editor.open = false;
@@ -578,6 +601,14 @@
       state.pagination.page = 1;
       return this.backendTableFetch(tableId);
     },
+    backendTableJumpToPage: function (tableId) {
+      var state = this.backendTableState(tableId);
+      var max = +((state.pagination || {}).pageCount) || 1;
+      var page = Math.min(Math.max(1, +(state.pageJump || 1) || 1), max);
+      state.pageJump = String(page);
+      state.pagination.page = page;
+      return this.backendTableFetch(tableId);
+    },
     backendTableToggleColumn: function (tableId, key) {
       var state = this.backendTableState(tableId);
       var nextHidden = false;
@@ -685,6 +716,7 @@
       var key = (action || {}).key || action || '';
       var ids = this.backendTableSelectedIds(state);
       if (!ids.length) return;
+      if (key === 'export') return this.backendTableMutate(tableId, 'rows.export', { ids: ids }).then(function(payload){ if (payload && payload.ok === false) state.error = payload.message || payload.error || 'CSV export failed'; });
       if ((key === 'bulk.delete' || key === 'delete') && !this.backendTableFeature(state, 'rowCrud')) return null;
       if (key === 'bulk.delete' || key === 'delete') { if (typeof confirm === 'function' && !confirm('Delete ' + ids.length + ' selected row(s)?')) return null; return this.backendTableMutate(tableId, 'rows.delete', { ids: ids }).then(function(payload){ if (payload && payload.ok !== false) vm.backendTableShowToast(state, ids.length + ' row(s) deleted'); }); }
       if (this.showAlert) this.showAlert('Bulk table action', ((action || {}).label || key || 'Action') + ' applied to ' + ids.length + ' row(s)');
@@ -692,7 +724,70 @@
     backendTableCellText: function (row, column) {
       var value = row ? row[column.key] : '';
       if (value === null || typeof value === 'undefined') return '';
+      if (Array.isArray(value)) return value.join(', ');
       return String(value);
+    },
+    backendTableEditableColumns: function (state) {
+      return normalizeColumns((state || {}).columns || []).filter(function (col) { return col.key !== 'id'; });
+    },
+    backendTableEditorControl: function (column) {
+      column = column || {};
+      var type = String(column.inputType || column.type || 'text').toLowerCase();
+      if (column.key === 'notes' || type === 'textarea') return 'textarea';
+      if (type === 'multiselect') return 'multiselect';
+      if ((column.options || []).length || type === 'select' || type === 'badge') return 'select';
+      if (type === 'boolean' || type === 'checkbox' || type === 'toggle') return 'boolean';
+      if (type === 'date') return 'date';
+      if (type === 'number' || type === 'numeric') return 'number';
+      return 'text';
+    },
+    backendTableInputType: function (column) {
+      var control = this.backendTableEditorControl(column);
+      if (control === 'date') return 'date';
+      if (control === 'number') return 'number';
+      return 'text';
+    },
+    backendTableColumnOptions: function (column) { return normalizeOptions((column || {}).options); },
+    backendTableSetBooleanValue: function (tableId, key, checked) {
+      var state = this.backendTableState(tableId);
+      state.editor.row[key] = checked ? 'true' : 'false';
+    },
+    backendTableSetMultiValue: function (tableId, key, options) {
+      var state = this.backendTableState(tableId);
+      state.editor.row[key] = Array.prototype.slice.call(options || []).filter(function (opt) { return opt.selected; }).map(function (opt) { return opt.value; }).join(', ');
+    },
+    backendTableDownloadCsv: function (exportPayload) {
+      exportPayload = exportPayload || {};
+      if (!exportPayload.csv || typeof Blob === 'undefined') return;
+      var blob = new Blob([exportPayload.csv], { type: exportPayload.contentType || 'text/csv' });
+      var url = URL.createObjectURL(blob);
+      var link = document.createElement('a');
+      link.href = url;
+      link.download = exportPayload.fileName || 'selected_rows.csv';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    },
+    backendTableDialogStyle: function (state, key) {
+      var pos = (((state || {}).dialogPositions || {})[key]) || {};
+      return { left: Math.max(12, +(pos.left || 80)) + 'px', top: Math.max(12, +(pos.top || 72)) + 'px' };
+    },
+    backendTableBeginDialogDrag: function (tableId, key, event) {
+      if (!event || (event.target && event.target.closest && event.target.closest('button,input,select,textarea'))) return;
+      var state = this.backendTableState(tableId);
+      var box = event.currentTarget && event.currentTarget.parentElement ? event.currentTarget.parentElement.getBoundingClientRect() : { left: 80, top: 72 };
+      var startX = event.clientX, startY = event.clientY, startLeft = box.left, startTop = box.top;
+      var vm = this;
+      state.dialogPositions = Object.assign({}, state.dialogPositions || {});
+      function move(e) {
+        var left = Math.max(8, Math.min(window.innerWidth - 80, startLeft + e.clientX - startX));
+        var top = Math.max(8, Math.min(window.innerHeight - 40, startTop + e.clientY - startY));
+        state.dialogPositions[key] = { left: left, top: top };
+      }
+      function up() { document.removeEventListener('pointermove', move); document.removeEventListener('pointerup', up); }
+      document.addEventListener('pointermove', move);
+      document.addEventListener('pointerup', up, { once: true });
     },
     backendTableOpenRowEditor: function (tableId, row) {
       var state = this.backendTableState(tableId);
@@ -704,7 +799,9 @@
       if (!this.backendTableFeature(state, 'columnCrud')) return null;
       state.validation = {};
       state.columnPickerOpen = false;
-      state.editor = { open: true, mode: 'column', title: column && column.key ? 'Column designer: edit column' : 'Column designer: add column', row: {}, column: clone(column || { key: '', label: '', type: 'text', width: 140, sortable: true, resizable: true, hidden: false }) };
+      var nextColumn = clone(column || { key: '', label: '', type: 'text', width: 140, sortable: true, resizable: true, hidden: false });
+      nextColumn.originalKey = (column && column.key) ? column.key : '';
+      state.editor = { open: true, mode: 'column', title: column && column.key ? 'Column designer: edit column' : 'Column designer: add column', row: {}, column: nextColumn };
     },
     backendTableCloseEditor: function (tableId) { this.backendTableState(tableId).editor.open = false; },
     backendTableValidateEditor: function (state) {
@@ -712,10 +809,26 @@
       var errors = {};
       if (editor.mode === 'column') {
         var key = String((editor.column || {}).key || '').trim();
+        if ((editor.column || {}).originalKey) key = editor.column.originalKey;
         if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(key)) errors.key = 'Column key must start with a letter and contain only letters, numbers, and underscores.';
       } else {
+        var row = editor.row || {};
         var visible = normalizeColumns((state || {}).columns || []).filter(function (col) { return !col.hidden && col.key !== 'id'; });
-        if (visible.length && !visible.some(function (col) { return String((editor.row || {})[col.key] || '').trim(); })) errors.row = 'At least one visible field must be provided.';
+        if (visible.length && !visible.some(function (col) { return String(row[col.key] == null ? '' : row[col.key]).trim(); })) errors.row = 'At least one visible field must be provided.';
+        visible.forEach(function (col) {
+          var value = row[col.key];
+          var text = String(value == null ? '' : value).trim();
+          var control = (window.MIOOSTable && window.MIOOSTable.methods && window.MIOOSTable.methods.backendTableEditorControl) ? window.MIOOSTable.methods.backendTableEditorControl(col) : (col.type || 'text');
+          if (col.required && !text) errors[col.key] = (col.label || col.key) + ' is required.';
+          if (text && control === 'date' && !/^\d{4}-\d{2}-\d{2}$/.test(text)) errors[col.key] = 'Use YYYY-MM-DD.';
+          if (text && control === 'date') {
+            var d = new Date(text + 'T00:00:00Z');
+            if (!d || isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== text) errors[col.key] = 'Use a valid calendar date.';
+          }
+          if (text && control === 'number' && isNaN(+text)) errors[col.key] = 'Enter a number.';
+          var opts = normalizeOptions(col.options);
+          if (text && opts.length && control === 'select' && !opts.some(function (opt) { return opt.value === text; })) errors[col.key] = 'Choose one of the allowed values.';
+        });
       }
       state.validation = errors;
       return !Object.keys(errors).length;
@@ -723,7 +836,12 @@
     backendTableSaveEditor: function (tableId) {
       var state = this.backendTableState(tableId);
       if (!this.backendTableValidateEditor(state)) { state.error = 'Please fix the highlighted table editor fields.'; return Promise.resolve({ ok: false, error: 'validation_failed' }); }
-      if ((state.editor || {}).mode === 'column') return this.backendTableMutate(tableId, 'column.save', { column: clone(state.editor.column || {}) });
+      if ((state.editor || {}).mode === 'column') {
+        var column = clone(state.editor.column || {});
+        var originalKey = column.originalKey || '';
+        if (originalKey) column.key = originalKey;
+        return this.backendTableMutate(tableId, 'column.save', { column: column, originalKey: originalKey });
+      }
       return this.backendTableMutate(tableId, 'row.save', { row: clone(state.editor.row || {}) });
     },
     backendTableDeleteColumn: function (tableId, column) {
@@ -820,7 +938,8 @@
         columnGroups: function () { return this.vm.backendTableColumnGroupRows(this.state); },
         rowGroups: function () { return this.vm.backendTableGroupedRows(this.state); },
         selectedCount: function () { return this.vm.backendTableSelectedCount(this.state); },
-        filterableColumns: function () { return this.vm.backendTableFilterableColumns(this.state); }
+        filterableColumns: function () { return this.vm.backendTableFilterableColumns(this.state); },
+        editableColumns: function () { return this.vm.backendTableEditableColumns(this.state); }
       },
       mounted: function () {
         var state = this.state;
@@ -853,23 +972,23 @@
           '<div class="mioos-table-bulkbar" v-if="selectedCount && vm.backendTableFeature(state, &quot;bulkActions&quot;)"><span>[[ selectedCount ]] selected</span><button v-for="action in state.bulkActions" :key="action.key" type="button" @click="vm.backendTableRunBulkAction(tableId || state.id, action)">[[ action.label ]]</button><button type="button" @click="vm.backendTableClearSelection(tableId || state.id)">Clear</button></div>' +
           '<div class="mioos-table-error" v-if="state.error">[[ state.error ]]</div>' +
           '<div class="mioos-table-editor-backdrop" v-if="state.filterModalOpen" @click.self="vm.backendTableCloseFilterModal(tableId || state.id)">' +
-            '<div class="mioos-table-editor is-filter-modal" role="dialog" aria-modal="true">' +
-              '<header><div><strong>Filter table</strong><span>Exact-match server filters</span></div><button type="button" @click="vm.backendTableCloseFilterModal(tableId || state.id)">×</button></header>' +
+            '<div class="mioos-table-editor mioos-system-modal is-filter-modal" role="dialog" aria-modal="true" :style="vm.backendTableDialogStyle(state, &quot;filter&quot;)">' +
+              '<header class="mioos-table-window-titlebar" @pointerdown="vm.backendTableBeginDialogDrag(tableId || state.id, &quot;filter&quot;, $event)"><div><strong>Filter table</strong><span>Exact-match server filters</span></div><button type="button" @click="vm.backendTableCloseFilterModal(tableId || state.id)">×</button></header>' +
               '<section class="mioos-table-modal-list"><label v-for="col in filterableColumns" :key="col.key"><span>[[ col.label ]]</span><input :value="vm.backendTableFilterDraftValue(state, col.key)" @input="vm.backendTableSetFilterDraft(tableId || state.id, col.key, $event.target.value)" placeholder="Exact value"></label></section>' +
               '<footer><button type="button" class="mioos-btn is-primary" @click="vm.backendTableApplyFilters(tableId || state.id)">Apply filters</button><button type="button" class="mioos-btn" @click="vm.backendTableClearFilters(tableId || state.id)">Clear</button><button type="button" class="mioos-btn" @click="vm.backendTableCloseFilterModal(tableId || state.id)">Cancel</button></footer>' +
             '</div>' +
           '</div>' +
           '<div class="mioos-table-editor-backdrop" v-if="state.groupModalOpen" @click.self="vm.backendTableCloseGroupModal(tableId || state.id)">' +
-            '<div class="mioos-table-editor is-group-modal" role="dialog" aria-modal="true">' +
-              '<header><div><strong>Group columns</strong><span>Select one or more grouping levels</span></div><button type="button" @click="vm.backendTableCloseGroupModal(tableId || state.id)">×</button></header>' +
+            '<div class="mioos-table-editor mioos-system-modal is-group-modal" role="dialog" aria-modal="true" :style="vm.backendTableDialogStyle(state, &quot;group&quot;)">' +
+              '<header class="mioos-table-window-titlebar" @pointerdown="vm.backendTableBeginDialogDrag(tableId || state.id, &quot;group&quot;, $event)"><div><strong>Group columns</strong><span>Select one or more grouping levels</span></div><button type="button" @click="vm.backendTableCloseGroupModal(tableId || state.id)">×</button></header>' +
               '<section class="mioos-table-modal-list is-checklist"><button v-for="col in allColumns" :key="col.key" type="button" @click="vm.backendTableToggleGroupDraftColumn(tableId || state.id, col.key)"><span>[[ vm.backendTableGroupDraftColumnActive(state, col.key) ? "☑" : "☐" ]]</span><b>[[ col.label ]]</b><small>[[ col.group || col.key ]]</small></button></section>' +
               '<div class="mioos-table-group-chips" v-if="(state.groupDraftColumns || []).length"><span v-for="key in state.groupDraftColumns" :key="key">[[ key ]]</span></div>' +
               '<footer><button type="button" class="mioos-btn is-primary" @click="vm.backendTableApplyGroupColumns(tableId || state.id)">Apply grouping</button><button type="button" class="mioos-btn" @click="vm.backendTableClearGroupColumns(tableId || state.id)">Clear</button><button type="button" class="mioos-btn" @click="vm.backendTableCloseGroupModal(tableId || state.id)">Cancel</button></footer>' +
             '</div>' +
           '</div>' +
           '<div class="mioos-table-editor-backdrop" v-if="state.columnPickerOpen" @click.self="vm.backendTableCloseColumnPicker(tableId || state.id)">' +
-            '<div class="mioos-table-editor is-column-picker" role="dialog" aria-modal="true">' +
-              '<header><strong>Visible columns</strong><button type="button" @click="vm.backendTableCloseColumnPicker(tableId || state.id)">×</button></header>' +
+            '<div class="mioos-table-editor mioos-system-modal is-column-picker" role="dialog" aria-modal="true" :style="vm.backendTableDialogStyle(state, &quot;columns&quot;)">' +
+              '<header class="mioos-table-window-titlebar" @pointerdown="vm.backendTableBeginDialogDrag(tableId || state.id, &quot;columns&quot;, $event)"><strong>Visible columns</strong><button type="button" @click="vm.backendTableCloseColumnPicker(tableId || state.id)">×</button></header>' +
               '<section class="mioos-table-column-list">' +
                 '<button v-for="col in allColumns" :key="col.key" type="button" @click="vm.backendTableToggleColumn(tableId || state.id, col.key)">' +
                   '<span>[[ col.hidden ? \'☐\' : \'☑\' ]]</span><b>[[ col.label ]]</b><small>[[ col.group ? col.group + " · " + col.key : col.key ]]</small>' +
@@ -878,10 +997,10 @@
             '</div>' +
           '</div>' +
           '<div class="mioos-table-editor-backdrop" v-if="state.editor && state.editor.open" @click.self="vm.backendTableCloseEditor(tableId || state.id)">' +
-            '<div class="mioos-table-editor" role="dialog" aria-modal="true">' +
-              '<header><strong>[[ state.editor.title ]]</strong><button type="button" aria-label="Close editor" @click="vm.backendTableCloseEditor(tableId || state.id)">×</button></header>' +
-              '<section v-if="state.editor.mode === \'row\'" class="mioos-table-form-grid"><label v-for="col in allColumns" :key="col.key" :class="{ \'is-invalid\': vm.backendTableFieldError(state, col.key) }"><span>[[ col.label ]]</span><input v-model="state.editor.row[col.key]" :placeholder="col.key" :aria-invalid="vm.backendTableFieldError(state, col.key) ? \'true\' : \'false\'"><small v-if="vm.backendTableFieldError(state, col.key)" class="mioos-field-error">[[ vm.backendTableFieldError(state, col.key) ]]</small></label></section>' +
-              '<section v-else class="mioos-table-form-grid"><label><span>Key</span><input v-model="state.editor.column.key" placeholder="fieldName"></label><label><span>Label</span><input v-model="state.editor.column.label" placeholder="Column label"></label><label><span>Type</span><select v-model="state.editor.column.type"><option>text</option><option>badge</option><option>date</option><option>number</option><option>boolean</option></select></label><label><span>Width</span><input type="number" v-model="state.editor.column.width"></label><label><span>Group</span><input v-model="state.editor.column.group" placeholder="Optional header group"></label><label class="mioos-table-check"><span>Hidden</span><input type="checkbox" v-model="state.editor.column.hidden"></label></section>' +
+            '<div class="mioos-table-editor mioos-system-modal" role="dialog" aria-modal="true" :style="vm.backendTableDialogStyle(state, &quot;editor&quot;)">' +
+              '<header class="mioos-table-window-titlebar" @pointerdown="vm.backendTableBeginDialogDrag(tableId || state.id, &quot;editor&quot;, $event)"><strong>[[ state.editor.title ]]</strong><button type="button" aria-label="Close editor" @click="vm.backendTableCloseEditor(tableId || state.id)">×</button></header>' +
+              '<section v-if="state.editor.mode === \'row\'" class="mioos-table-form-grid"><label v-for="col in editableColumns" :key="col.key" :class="{ \'is-invalid\': vm.backendTableFieldError(state, col.key) }"><span>[[ col.label ]] <em v-if="col.required" title="Required">*</em></span><textarea v-if="vm.backendTableEditorControl(col) === \'textarea\'" v-model="state.editor.row[col.key]" :placeholder="col.key" :aria-invalid="vm.backendTableFieldError(state, col.key) ? \'true\' : \'false\'"></textarea><select v-else-if="vm.backendTableEditorControl(col) === \'select\'" v-model="state.editor.row[col.key]" :aria-invalid="vm.backendTableFieldError(state, col.key) ? \'true\' : \'false\'"><option value="">Choose…</option><option v-for="opt in vm.backendTableColumnOptions(col)" :key="opt.value" :value="opt.value">[[ opt.label ]]</option></select><select v-else-if="vm.backendTableEditorControl(col) === \'multiselect\'" multiple @change="vm.backendTableSetMultiValue(tableId || state.id, col.key, $event.target.options)" :aria-invalid="vm.backendTableFieldError(state, col.key) ? \'true\' : \'false\'"><option v-for="opt in vm.backendTableColumnOptions(col)" :key="opt.value" :value="opt.value">[[ opt.label ]]</option></select><input v-else-if="vm.backendTableEditorControl(col) === \'boolean\'" type="checkbox" :checked="!!state.editor.row[col.key] && state.editor.row[col.key] !== \'false\'" @change="vm.backendTableSetBooleanValue(tableId || state.id, col.key, $event.target.checked)" :aria-invalid="vm.backendTableFieldError(state, col.key) ? \'true\' : \'false\'"><input v-else v-model="state.editor.row[col.key]" :type="vm.backendTableInputType(col)" :placeholder="col.key" :aria-invalid="vm.backendTableFieldError(state, col.key) ? \'true\' : \'false\'"><small v-if="vm.backendTableFieldError(state, col.key)" class="mioos-field-error">[[ vm.backendTableFieldError(state, col.key) ]]</small></label></section>' +
+              '<section v-else class="mioos-table-form-grid"><label :class="state.editor.column.originalKey ? &quot;is-locked&quot; : &quot;&quot;"><span>Key</span><input v-model="state.editor.column.key" placeholder="fieldName" :disabled="!!state.editor.column.originalKey"><small v-if="state.editor.column.originalKey">Column keys are locked after creation. Create a new column to use another key.</small></label><label><span>Label</span><input v-model="state.editor.column.label" placeholder="Column label"></label><label><span>Type</span><select v-model="state.editor.column.type"><option>text</option><option>textarea</option><option>select</option><option>badge</option><option>date</option><option>number</option><option>boolean</option><option>multiselect</option></select></label><label><span>Width</span><input type="number" v-model="state.editor.column.width"></label><label><span>Group</span><input v-model="state.editor.column.group" placeholder="Optional header group"></label><label class="mioos-table-check"><span>Hidden</span><input type="checkbox" v-model="state.editor.column.hidden"></label></section>' +
               '<p class="mioos-table-error" v-for="err in Object.values(state.validation || {})" :key="err">[[ err ]]</p><footer><button type="button" class="mioos-btn is-primary" :disabled="state.saving || state.loading" @click="vm.backendTableSaveEditor(tableId || state.id)">[[ state.saving ? &quot;Saving…&quot; : &quot;Save&quot; ]]</button><button type="button" class="mioos-btn" @click="vm.backendTableCloseEditor(tableId || state.id)">Cancel</button></footer>' +
             '</div>' +
           '</div>' +
@@ -906,7 +1025,7 @@
               '</tbody>' +
             '</table>' +
           '</div>' +
-          '<footer v-if="vm.backendTableFeature(state, &quot;pagination&quot;)" class="mioos-table-pager"><span>[[ vm.backendTableRowRangeLabel(state) ]]</span><button type="button" :disabled="state.loading || state.saving" @click="vm.backendTableSetPage(tableId || state.id, 1)">First</button><button type="button" :disabled="state.loading || state.saving" @click="vm.backendTableSetPage(tableId || state.id, state.pagination.page - 1)">Prev</button><span>Page [[ state.pagination.page ]] / [[ state.pagination.pageCount ]]</span><button type="button" :disabled="state.loading || state.saving" @click="vm.backendTableSetPage(tableId || state.id, state.pagination.page + 1)">Next</button><button type="button" :disabled="state.loading || state.saving" @click="vm.backendTableSetPage(tableId || state.id, state.pagination.pageCount)">Last</button><label>Rows <select :value="state.pagination.pageSize" @change="vm.backendTableSetPageSize(tableId || state.id, $event.target.value)"><option>10</option><option>25</option><option>50</option><option>100</option><option>250</option></select></label></footer>' +
+          '<footer v-if="vm.backendTableFeature(state, &quot;pagination&quot;)" class="mioos-table-pager"><span>[[ vm.backendTableRowRangeLabel(state) ]]</span><button type="button" :disabled="state.loading || state.saving" @click="vm.backendTableSetPage(tableId || state.id, 1)">First</button><button type="button" :disabled="state.loading || state.saving" @click="vm.backendTableSetPage(tableId || state.id, state.pagination.page - 1)">Prev</button><span>Page [[ state.pagination.page ]] / [[ state.pagination.pageCount ]]</span><label class="mioos-table-page-jump">Jump <input v-model="state.pageJump" inputmode="numeric" @keydown.enter="vm.backendTableJumpToPage(tableId || state.id)"></label><button type="button" :disabled="state.loading || state.saving" @click="vm.backendTableJumpToPage(tableId || state.id)">Go</button><button type="button" :disabled="state.loading || state.saving" @click="vm.backendTableSetPage(tableId || state.id, state.pagination.page + 1)">Next</button><button type="button" :disabled="state.loading || state.saving" @click="vm.backendTableSetPage(tableId || state.id, state.pagination.pageCount)">Last</button><label>Rows <select :value="state.pagination.pageSize" @change="vm.backendTableSetPageSize(tableId || state.id, $event.target.value)"><option>10</option><option>25</option><option>50</option><option>100</option><option>250</option></select></label></footer>' +
         '</section>'
     });
 

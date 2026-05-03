@@ -2,7 +2,7 @@ MIOOSTBL ; MIOOS backend table query and mutation engine
 	QUIT
 	;
 QUERY(STATE,CONF,IN,OUT,ERR)
-	NEW DATASET,ROWS,SCHEMA,WORK,TOTAL,FILTERED,PAGE,PSIZE,SORTBY,SORTDIR,GROUPBY,DRAW,START,LENGTH,GROUPKEYS,GROUPN
+	NEW DATASET,ROWS,SCHEMA,WORK,TOTAL,FILTERED,PAGE,PSIZE,SORTBY,SORTDIR,GROUPBY,DRAW,START,LENGTH,GROUPKEYS,GROUPN,ROOT
 	NEW $ETRAP,$ESTACK SET $ETRAP="GOTO ERRQ^MIOOSTBL"
 	KILL OUT,ERR,ROWS,SCHEMA,WORK
 	SET ERR("routine")="MIOOSTBL"
@@ -29,6 +29,7 @@ QUERY(STATE,CONF,IN,OUT,ERR)
 	IF SORTBY'="" DO SORT(.WORK,SORTBY,SORTDIR)
 	IF FILTERED=0 SET PAGE=1
 	IF FILTERED>0,PAGE>((FILTERED+PSIZE-1)\PSIZE) SET PAGE=((FILTERED+PSIZE-1)\PSIZE)
+	IF DATASET'="vfs" SET ROOT=$$ROOT(.STATE,DATASET) DO METASC(ROOT,.SCHEMA)
 	MERGE OUT("schema","columns")=SCHEMA("columns")
 	DO ACTIONS(.OUT,$SELECT(DATASET="vfs":1,1:0))
 	DO PAGE(.WORK,.OUT,PAGE,PSIZE,TOTAL,FILTERED)
@@ -51,7 +52,7 @@ QUERY(STATE,CONF,IN,OUT,ERR)
 	SET OUT("draw")=DRAW
 	SET OUT("recordsTotal")=TOTAL
 	SET OUT("recordsFiltered")=FILTERED
-	MERGE OUT("data")=OUT("rows")
+	IF $$TRUTH($GET(IN("includeDataAlias"))) MERGE OUT("data")=OUT("rows")
 	QUIT 1
 ERRQ
 	SET $ECODE=""
@@ -59,7 +60,7 @@ ERRQ
 	QUIT 0
 	;
 MUTATE(STATE,CONF,IN,OUT,ERR)
-	NEW DATASET,ACTION,ROOT,ID,KEY,I,N,FOUND,ROW,COL
+	NEW DATASET,ACTION,ROOT,ID,KEY,ORIG,I,N,FOUND,ROW,COL
 	NEW $ETRAP,$ESTACK SET $ETRAP="GOTO ERRM^MIOOSTBL"
 	KILL OUT,ERR
 	SET ERR("routine")="MIOOSTBL"
@@ -68,7 +69,7 @@ MUTATE(STATE,CONF,IN,OUT,ERR)
 	IF DATASET="massive" SET ERR("error")="massive_table_read_only" QUIT 0
 	SET ACTION=$$LOW^MIOUTIL($GET(IN("action"),$GET(IN("op"),"")))
 	IF ACTION="" SET ERR("error")="table_action_missing" QUIT 0
-	IF ACTION'["." SET ERR("error")="table_action_invalid" QUIT 0
+	IF ACTION'[".",ACTION'="export" SET ERR("error")="table_action_invalid" QUIT 0
 	SET ROOT=$$ROOT(.STATE,DATASET)
 	DO ENSURE(.STATE,DATASET)
 	IF '$$VALIDATE(.STATE,.CONF,DATASET,ACTION,.IN,.ERR) QUIT 0
@@ -80,6 +81,7 @@ MUTATE(STATE,CONF,IN,OUT,ERR)
 	. KILL @ROOT@("rows",FOUND)
 	. MERGE @ROOT@("rows",FOUND)=IN("row")
 	. SET @ROOT@("rows",FOUND,"id")=ID
+	. IF $GET(@ROOT@("rows",FOUND,"notes"))'="" SET @ROOT@("rows",FOUND,"_expand","title")="Notes",@ROOT@("rows",FOUND,"_expand","body")=$GET(@ROOT@("rows",FOUND,"notes"))
 	. SET OUT("mutated","rowId")=ID
 	IF ACTION="row.delete" DO
 	. SET ID=$GET(IN("rowId"),$GET(IN("id"),$GET(IN("row","id"))))
@@ -91,12 +93,15 @@ MUTATE(STATE,CONF,IN,OUT,ERR)
 	. . SET ROW=0 FOR  SET ROW=$ORDER(@ROOT@("rows",ROW)) QUIT:ROW'>0  IF $GET(@ROOT@("rows",ROW,"id"))=ID KILL @ROOT@("rows",ROW) SET N=N+1 QUIT
 	. SET OUT("mutated","deletedCount")=N
 	IF ACTION="column.save"!(ACTION="column.add")!(ACTION="column.update") DO
+	. SET ORIG=$$KEY($GET(IN("originalKey"),$GET(IN("column","originalKey"))))
 	. SET KEY=$$KEY($GET(IN("column","key")))
+	. IF ORIG'="" SET KEY=ORIG,IN("column","key")=ORIG
 	. IF KEY="" SET KEY="col"_($ORDER(@ROOT@("schema","columns",""),-1)+1)
 	. SET FOUND=0,I=0 FOR  SET I=$ORDER(@ROOT@("schema","columns",I)) QUIT:I'>0  IF $GET(@ROOT@("schema","columns",I,"key"))=KEY SET FOUND=I
 	. IF FOUND'>0 SET FOUND=$ORDER(@ROOT@("schema","columns",""),-1)+1
 	. KILL @ROOT@("schema","columns",FOUND)
 	. MERGE @ROOT@("schema","columns",FOUND)=IN("column")
+	. KILL @ROOT@("schema","columns",FOUND,"originalKey")
 	. SET @ROOT@("schema","columns",FOUND,"key")=KEY
 	. IF $GET(@ROOT@("schema","columns",FOUND,"label"))="" SET @ROOT@("schema","columns",FOUND,"label")=KEY
 	. IF +$GET(@ROOT@("schema","columns",FOUND,"width"))<1 SET @ROOT@("schema","columns",FOUND,"width")=140
@@ -118,9 +123,11 @@ MUTATE(STATE,CONF,IN,OUT,ERR)
 	. IF KEY="" QUIT
 	. SET I=0 FOR  SET I=$ORDER(@ROOT@("schema","columns",I)) QUIT:I'>0  IF $GET(@ROOT@("schema","columns",I,"key"))=KEY SET @ROOT@("schema","columns",I,"hidden")=$SELECT($$TRUTH($GET(IN("hidden"))):1,1:0)
 	. SET OUT("mutated","columnVisibility")=KEY
-	IF '$DATA(OUT("mutated")) SET ERR("error")="unsupported_table_action" QUIT 0
-	IF '$$QUERY(.STATE,.CONF,.IN,.OUT,.ERR) QUIT 0
-	SET OUT("ok")=1,OUT("action")=ACTION,OUT("message")=$$MMSG(ACTION)
+	IF ACTION="rows.export"!(ACTION="export") DO EXPORT(.STATE,DATASET,ROOT,.IN,.OUT)
+	IF '$DATA(OUT("mutated")),'$DATA(OUT("export")) SET ERR("error")="unsupported_table_action" QUIT 0
+	IF $DATA(OUT("export")) SET OUT("ok")=1,OUT("dataset")=DATASET,OUT("action")=ACTION,OUT("exportOnly")=1,OUT("message")=$GET(OUT("message"),"CSV export generated") QUIT 1
+	KILL OUT("rows"),OUT("schema"),OUT("data"),OUT("pagination"),OUT("groups")
+	SET OUT("ok")=1,OUT("dataset")=DATASET,OUT("action")=ACTION,OUT("mutationOnly")=1,OUT("refetch")=1,OUT("message")=$$MMSG(ACTION)
 	QUIT 1
 ERRM
 	SET $ECODE=""
@@ -132,6 +139,7 @@ VALIDATE(STATE,CONF,DATASET,ACTION,IN,ERR)
 	IF ACTION="row.save"!(ACTION="row.add")!(ACTION="row.update") QUIT $$VALROW(.STATE,DATASET,.CONF,.IN,.ERR)
 	IF ACTION="row.delete" QUIT $$VALID($GET(IN("rowId"),$GET(IN("id"),$GET(IN("row","id")))),.ERR)
 	IF ACTION="rows.delete"!(ACTION="bulk.delete") QUIT $$VALIDS(.IN,.ERR)
+	IF ACTION="rows.export"!(ACTION="export") QUIT $$VALIDS(.IN,.ERR)
 	IF ACTION="column.save"!(ACTION="column.add")!(ACTION="column.update") QUIT $$VALCOL(.CONF,.IN,.ERR)
 	IF ACTION="column.delete"!(ACTION="column.resize")!(ACTION="column.visibility") QUIT $$VALKEY($GET(IN("columnKey"),$GET(IN("key"),$GET(IN("column","key")))),.ERR)
 	SET ERR("error")="unsupported_table_action" QUIT 0
@@ -173,11 +181,14 @@ VALENUM(ROOT,KEY,VAL)
 	QUIT OK
 	;
 DATEOK(X)
-	NEW M,D
+	NEW Y,M,D,MAX,LEAP
 	IF $GET(X)'?4N1"-"2N1"-"2N QUIT 0
-	SET M=+$EXTRACT(X,6,7),D=+$EXTRACT(X,9,10)
+	SET Y=+$EXTRACT(X,1,4),M=+$EXTRACT(X,6,7),D=+$EXTRACT(X,9,10)
+	IF Y<1800!(Y>2999) QUIT 0
 	IF M<1!(M>12) QUIT 0
-	IF D<1!(D>31) QUIT 0
+	SET LEAP=$SELECT(Y#400=0:1,Y#100=0:0,Y#4=0:1,1:0)
+	SET MAX=$SELECT(M=2:28+LEAP,M=4:30,M=6:30,M=9:30,M=11:30,1:31)
+	IF D<1!(D>MAX) QUIT 0
 	QUIT 1
 	;
 ISNUM(X)
@@ -313,14 +324,17 @@ UPGDEMO(ROOT)
 	NEW I,N
 	IF '$$HASC(ROOT,"notes") DO
 	. SET N=$ORDER(@ROOT@("schema","columns",""),-1)+1
-	. DO COLR(ROOT,N,"notes","Notes","text",280,0,1,"Notes")
+	. DO COLR(ROOT,N,"notes","Notes","textarea",280,0,1,"Notes")
+	DO SETCTYPE(ROOT,"notes","textarea")
+	DO SETCTYPE(ROOT,"updated","date")
 	SET I=0 FOR  SET I=$ORDER(@ROOT@("rows",I)) QUIT:I'>0  DO
 	. IF $GET(@ROOT@("rows",I,"notes"))="",$GET(@ROOT@("rows",I,"_expand","body"))'="" SET @ROOT@("rows",I,"notes")=$GET(@ROOT@("rows",I,"_expand","body"))
-	IF '$DATA(@ROOT@("validation","fields","name")) DO SEEDVALD(ROOT)
+	DO SEEDVALD(ROOT)
 	QUIT
 	;
 UPGPAT(ROOT)
-	IF '$DATA(@ROOT@("validation","fields","mrn")) DO SEEDVALP(ROOT)
+	DO SETCTYPE(ROOT,"dob","date")
+	DO SEEDVALP(ROOT)
 	QUIT
 	;
 SEEDVALD(ROOT)
@@ -353,6 +367,67 @@ SEEDVALP(ROOT)
 	QUIT
 	;
 
+METASC(ROOT,SCHEMA)
+	NEW I,J,KEY,N
+	SET I=0 FOR  SET I=$ORDER(SCHEMA("columns",I)) QUIT:I'>0  DO
+	. SET KEY=$GET(SCHEMA("columns",I,"key")) QUIT:KEY=""
+	. IF +$GET(@ROOT@("validation","fields",KEY,"required")) SET SCHEMA("columns",I,"required")=1
+	. IF +$GET(@ROOT@("validation","fields",KEY,"date")) SET SCHEMA("columns",I,"type")="date"
+	. IF +$GET(@ROOT@("validation","fields",KEY,"numeric")) SET SCHEMA("columns",I,"type")="number"
+	. IF KEY="notes" SET SCHEMA("columns",I,"type")="textarea"
+	. IF $DATA(@ROOT@("validation","fields",KEY,"enum")) DO
+	. . KILL SCHEMA("columns",I,"options")
+	. . SET J=0,N=0 FOR  SET J=$ORDER(@ROOT@("validation","fields",KEY,"enum",J)) QUIT:J'>0  DO
+	. . . SET N=N+1,SCHEMA("columns",I,"options",N)=$GET(@ROOT@("validation","fields",KEY,"enum",J))
+	QUIT
+	;
+SETCTYPE(ROOT,KEY,TYPE)
+	NEW I
+	SET I=0 FOR  SET I=$ORDER(@ROOT@("schema","columns",I)) QUIT:I'>0  IF $GET(@ROOT@("schema","columns",I,"key"))=$GET(KEY) SET @ROOT@("schema","columns",I,"type")=$GET(TYPE)
+	QUIT
+	;
+EXPORT(STATE,DATASET,ROOT,IN,OUT)
+	NEW I,J,KEY,LINE,CSV,COUNT,ID,R
+	KILL OUT
+	SET CSV="",COUNT=0
+	SET I=0,J=0 FOR  SET I=$ORDER(@ROOT@("schema","columns",I)) QUIT:I'>0  DO
+	. SET KEY=$GET(@ROOT@("schema","columns",I,"key")) QUIT:KEY=""
+	. IF $$TRUTH($GET(@ROOT@("schema","columns",I,"hidden"))) QUIT
+	. SET J=J+1,OUT("export","columns",J,"key")=KEY,OUT("export","columns",J,"label")=$GET(@ROOT@("schema","columns",I,"label"),KEY)
+	SET LINE="",I=0 FOR  SET I=$ORDER(OUT("export","columns",I)) QUIT:I'>0  DO
+	. SET LINE=LINE_$SELECT(LINE'="":",",1:"")_$$CSVESC($GET(OUT("export","columns",I,"label")))
+	SET CSV=LINE_$CHAR(13,10)
+	SET R=0 FOR  SET R=$ORDER(@ROOT@("rows",R)) QUIT:R'>0  DO
+	. SET ID=$GET(@ROOT@("rows",R,"id")) QUIT:ID=""
+	. IF '$$IDSEL(.IN,ID) QUIT
+	. SET LINE="",I=0 FOR  SET I=$ORDER(OUT("export","columns",I)) QUIT:I'>0  DO
+	. . SET KEY=$GET(OUT("export","columns",I,"key"))
+	. . SET LINE=LINE_$SELECT(LINE'="":",",1:"")_$$CSVESC($GET(@ROOT@("rows",R,KEY)))
+	. SET CSV=CSV_LINE_$CHAR(13,10),COUNT=COUNT+1
+	SET OUT("export","fileName")=DATASET_"_selected_rows.csv"
+	SET OUT("export","contentType")="text/csv"
+	SET OUT("export","csv")=CSV
+	SET OUT("export","rowCount")=COUNT
+	SET OUT("message")=COUNT_" row(s) exported"
+	QUIT
+	;
+IDSEL(IN,ID)
+	NEW I,OK
+	SET OK=0,I=0 FOR  SET I=$ORDER(IN("ids",I)) QUIT:I'>0!(OK)  IF $GET(IN("ids",I))=$GET(ID) SET OK=1
+	QUIT OK
+	;
+CSVESC(X)
+	NEW Y,I,C,O,NEED
+	SET Y=$GET(X),NEED=0
+	IF Y["," SET NEED=1
+	IF Y[$CHAR(34) SET NEED=1
+	IF Y[$CHAR(10) SET NEED=1
+	IF Y[$CHAR(13) SET NEED=1
+	SET O="" FOR I=1:1:$LENGTH(Y) SET C=$EXTRACT(Y,I),O=O_$SELECT(C=$CHAR(34):$CHAR(34)_$CHAR(34),1:C)
+	SET Y=O
+	IF NEED SET Y=$CHAR(34)_Y_$CHAR(34)
+	QUIT Y
+	;
 HASC(ROOT,KEY)
 	NEW I,OK
 	SET OK=0,I=0 FOR  SET I=$ORDER(@ROOT@("schema","columns",I)) QUIT:I'>0!(OK)  DO
@@ -365,7 +440,7 @@ SEEDDEMO(STATE,ROOT)
 	DO COLR(ROOT,3,"owner","Owner","text",150,0,1,"Ownership")
 	DO COLR(ROOT,4,"priority","Priority","text",110,0,1,"State")
 	DO COLR(ROOT,5,"updated","Updated","date",150,0,1,"")
-	DO COLR(ROOT,6,"notes","Notes","text",280,0,1,"Notes")
+	DO COLR(ROOT,6,"notes","Notes","textarea",280,0,1,"Notes")
 	DO ROWR(ROOT,1,"demo-1","Audit backlog","Open","MIOOS","High","2026-05-01","Security and audit work items")
 	DO ROWR(ROOT,2,"demo-2","Explorer grid","Done","Shell","Medium","2026-04-30","Resizable table source inspiration")
 	DO ROWR(ROOT,3,"demo-3","Transfer manager","Open","VFS","High","2026-04-28","Upload and download transfer controls")
@@ -416,7 +491,7 @@ MASSIVEQ(IN,OUT,CONF)
 	SET SORTDIR=$$LOW^MIOUTIL($GET(IN("sort","direction"),$GET(IN("sortDir"),"ascending")))
 	IF SORTDIR'="descending" SET SORTDIR="ascending"
 	SET SEARCH=$$LOW^MIOUTIL($GET(IN("search")))
-	IF $$MASSFAST(.IN,SEARCH,SORTBY) DO MASSFASTQ(.OUT,TOTAL,PAGE,PSIZE,DRAW,SORTDIR) QUIT
+	IF $$MASSFAST(.IN,SEARCH,SORTBY) DO MASSFASTQ(.IN,.OUT,TOTAL,PAGE,PSIZE,DRAW,SORTDIR) QUIT
 	FOR I=1:1:TOTAL IF $$MASSOK(I,.IN,SEARCH) DO
 	. SET FILTERED=FILTERED+1
 	. SET VAL=$$MASSKEY(I,SORTBY)
@@ -453,7 +528,7 @@ MASSIVEQ(IN,OUT,CONF)
 	SET OUT("draw")=DRAW
 	SET OUT("recordsTotal")=TOTAL
 	SET OUT("recordsFiltered")=FILTERED
-	MERGE OUT("data")=OUT("rows")
+	IF $$TRUTH($GET(IN("includeDataAlias"))) MERGE OUT("data")=OUT("rows")
 	SET OUT("pagination","page")=PAGE
 	SET OUT("pagination","pageSize")=PSIZE
 	SET OUT("pagination","totalRows")=TOTAL
@@ -493,7 +568,7 @@ MASSFAST(IN,SEARCH,SORTBY)
 	IF KEY="name" QUIT 1
 	QUIT 0
 	;
-MASSFASTQ(OUT,TOTAL,PAGE,PSIZE,DRAW,SORTDIR)
+MASSFASTQ(IN,OUT,TOTAL,PAGE,PSIZE,DRAW,SORTDIR)
 	NEW PAGECOUNT,SKIP,N,I,STEP
 	SET PAGECOUNT=$SELECT(TOTAL=0:1,1:((TOTAL+PSIZE-1)\PSIZE))
 	IF PAGE<1 SET PAGE=1
@@ -523,7 +598,7 @@ MASSFASTQ(OUT,TOTAL,PAGE,PSIZE,DRAW,SORTDIR)
 	SET OUT("draw")=DRAW
 	SET OUT("recordsTotal")=TOTAL
 	SET OUT("recordsFiltered")=TOTAL
-	MERGE OUT("data")=OUT("rows")
+	IF $$TRUTH($GET(IN("includeDataAlias"))) MERGE OUT("data")=OUT("rows")
 	SET OUT("pagination","page")=PAGE
 	SET OUT("pagination","pageSize")=PSIZE
 	SET OUT("pagination","totalRows")=TOTAL

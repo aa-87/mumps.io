@@ -2967,3 +2967,78 @@ button:disabled { cursor: default; opacity: .55; }
   font-weight: 700;
 }
 .theme-dark-mode .mioos-field-error { color: #fecaca; }
+
+/* Table stabilization: system-style draggable dialogs and typed editor controls. */
+.mioos-table-editor-backdrop {
+  display: block;
+  pointer-events: auto;
+}
+.mioos-table-editor.mioos-system-modal {
+  position: fixed;
+  margin: 0;
+  max-width: calc(100vw - 24px);
+  border-radius: 12px;
+  border: 1px solid var(--theme-window-border, rgba(59, 130, 246, .32));
+  box-shadow: 0 22px 52px rgba(15, 23, 42, .35), 0 0 0 1px rgba(255,255,255,.25) inset;
+  overflow: hidden;
+}
+.mioos-table-window-titlebar {
+  cursor: move;
+  user-select: none;
+  background: linear-gradient(180deg, var(--theme-titlebar-bg, #f8fbff), var(--theme-panel-bg, #e6eef9)) !important;
+}
+.mioos-table-window-titlebar button {
+  cursor: pointer;
+}
+.mioos-table-form-grid textarea,
+.mioos-table-form-grid select,
+.mioos-table-form-grid input {
+  color: var(--theme-field-text, #111827);
+  background: var(--theme-field-bg, #ffffff);
+}
+.mioos-table-form-grid textarea {
+  min-height: 86px;
+  resize: vertical;
+  border: 1px solid rgba(74,106,154,.34);
+  border-radius: 6px;
+  padding: 6px 7px;
+  font: inherit;
+}
+.mioos-table-form-grid label em {
+  color: #dc2626;
+  font-style: normal;
+  font-weight: 900;
+}
+.mioos-table-form-grid label.is-locked input:disabled {
+  background: color-mix(in srgb, var(--theme-field-bg, #ffffff) 70%, #e5e7eb 30%);
+  color: var(--theme-muted-text, #64748b);
+  cursor: not-allowed;
+}
+.mioos-table-form-grid label.is-locked small {
+  color: var(--theme-muted-text, #64748b);
+  font-weight: 500;
+}
+.mioos-table-page-jump input {
+  width: 64px;
+  min-height: 24px;
+  border: 1px solid rgba(75, 95, 120, .45);
+  border-radius: 6px;
+  padding: 2px 6px;
+  background: var(--theme-field-bg, #ffffff);
+  color: var(--theme-field-text, #111827);
+}
+.theme-dark-mode .mioos-table-editor.mioos-system-modal {
+  border-color: rgba(191,219,254,.28);
+  box-shadow: 0 22px 52px rgba(0, 0, 0, .55), 0 0 0 1px rgba(255,255,255,.06) inset;
+}
+.theme-dark-mode .mioos-table-window-titlebar {
+  background: linear-gradient(180deg, #1f2937, #0f172a) !important;
+}
+.theme-dark-mode .mioos-table-form-grid textarea,
+.theme-dark-mode .mioos-table-form-grid select,
+.theme-dark-mode .mioos-table-form-grid input,
+.theme-dark-mode .mioos-table-page-jump input {
+  background: #020617;
+  color: #f8fafc;
+  border-color: rgba(191,219,254,.24);
+}

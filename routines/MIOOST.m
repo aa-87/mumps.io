@@ -60,6 +60,7 @@ MIOOST ; MIOOS tests
 	DO T066
 	DO T067
 	DO T068
+	DO T069
 	QUIT
 	;
 RESET
@@ -1358,5 +1359,23 @@ T068
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","fieldErrors"),"[MIOOST][T068][http validation field errors]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","fieldErrors"),"[MIOOST][T068][ws validation field errors]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","is-group-modal"),"[MIOOST][T068][group modal styling]")
+	QUIT
+	;
+
+T069
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","DATEOK(X)"),"[MIOOST][T069][strict date validation entry]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","D>MAX"),"[MIOOST][T069][strict calendar day validation]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","rows.export"),"[MIOOST][T069][server side selected row csv export]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","CSVESC"),"[MIOOST][T069][csv escaping]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","originalKey"),"[MIOOST][T069][column key lock backend]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","METASC"),"[MIOOST][T069][schema typing from validation metadata]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableDownloadCsv"),"[MIOOST][T069][client csv download]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableEditorControl"),"[MIOOST][T069][typed editor controls]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableJumpToPage"),"[MIOOST][T069][page jump control]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","originalKey"),"[MIOOST][T069][column key lock ui]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","mioos-system-modal"),"[MIOOST][T069][system draggable modal class]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableBeginDialogDrag"),"[MIOOST][T069][modal drag handler]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","mioos-table-window-titlebar"),"[MIOOST][T069][table modal titlebar styling]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/ROI_64H_Table_Module_Finalization_Design.md","server-side module library"),"[MIOOST][T069][next roi design]")
 	QUIT
 	;
