@@ -1,0 +1,21 @@
+HTTP/1.1 200 OK
+Cache-Control: no-store
+Connection: keep-alive
+Content-Type: text/html; charset=utf-8
+Transfer-Encoding: chunked
+X-Content-Type-Options: nosniff
+X-Request-Id: st010
+
+7C
+<!doctype html><html><head><meta charset="utf-8"><title>Index of /static/</title></head><body><h1>Index of /static/</h1><ul>
+13
+</ul></body></html>
+0
+
+HTTP/1.1 404 Not Found
+Connection: keep-alive
+Content-Length: 64
+Content-Type: application/json
+X-Request-Id: 676936343915274714400
+
+{"error":"not_found","request_id":"st010","routine":"MIOSTATIC"}

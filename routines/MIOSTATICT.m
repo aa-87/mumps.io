@@ -235,9 +235,10 @@ T006 ; Invalid range -> 416
 	;
 	; (T001-T006 unchanged in your tree)
 	;
-T007 ; If-Modified-Since -> 304 (server-known mtime)
+T007 ; If-Modified-Since -> 304 fast path, older validator -> 200
 	KILL ^MIO("STATIC","META")
-	NEW CONF,REQ,CTX,DEV,OUT,ROOT,FP,OP,NORM,LM,P1,HD,HS
+	KILL ^MIO("STATIC","ETAG")
+	NEW CONF,REQ,CTX,DEV,OUT,ROOT,FP,OP,NORM,LM,OLDLM,P1,HD,HS,OHD,OHS
 	SET ROOT="tmp"
 	SET FP=ROOT_"/hello.txt"
 	OPEN FP:(newversion:stream:nowrap)
@@ -248,7 +249,7 @@ T007 ; If-Modified-Since -> 304 (server-known mtime)
 	SET HD=+$P($H,",",1),HS=+$P($H,",",2)
 	DO SETMTIME^MIOSTATIC(FP,HD,HS)
 	;
-	; First request: capture Last-Modified
+	; First request: capture this machine's Last-Modified header.
 	SET OP=ROOT_"/mio_static_t007a.out"
 	KILL REQ,CTX,OUT
 	SET REQ("method")="GET"
@@ -263,9 +264,10 @@ T007 ; If-Modified-Since -> 304 (server-known mtime)
 	SET NORM=$TR(OUT,$C(13),$C(10))
 	SET P1=$P(NORM,"Last-Modified: ",2)
 	SET LM=$P(P1,$C(10),1)
+	DO EQ^MIOTASSERT($SELECT(OUT["HTTP/1.1 200 OK":1,1:0),1,"[MIOSTATICT][T007][first status]")
 	DO EQ^MIOTASSERT($SELECT(LM'="":1,1:0),1,"[MIOSTATICT][T007][last-modified present]")
 	;
-	; Second request: If-Modified-Since -> 304 and no body
+	; Same validator: resource time <= IMS, so return 304 and no body.
 	SET OP=ROOT_"/mio_static_t007b.out"
 	KILL REQ,CTX,OUT
 	SET REQ("method")="GET"
@@ -278,8 +280,26 @@ T007 ; If-Modified-Since -> 304 (server-known mtime)
 	DO STATIC^MIOSTATIC(.DEV,.CONF,.REQ,.CTX)
 	CLOSE DEV USE $PRINCIPAL
 	DO READALL(OP,.OUT)
-	DO EQ^MIOTASSERT($SELECT(OUT["304":1,1:0),1,"[MIOSTATICT][T007][status]")
+	DO EQ^MIOTASSERT($SELECT(OUT["HTTP/1.1 304 Not Modified":1,1:0),1,"[MIOSTATICT][T007][status]")
 	DO EQ^MIOTASSERT($SELECT(OUT["hi":1,1:0),0,"[MIOSTATICT][T007][no body]")
+	;
+	; Older validator: resource is newer than IMS, so return 200 with body.
+	SET OHD=HD,OHS=HS-1 IF OHS<0 SET OHD=HD-1,OHS=86399
+	SET OLDLM=$$HTTPDATE^MIOSTATIC(OHD,OHS)
+	SET OP=ROOT_"/mio_static_t007c.out"
+	KILL REQ,CTX,OUT
+	SET REQ("method")="GET"
+	SET REQ("path")="/static/hello.txt"
+	SET REQ("params","path")="hello.txt"
+	SET REQ("hdr","if-modified-since")=OLDLM
+	SET CTX("request_id")="st007c"
+	OPEN OP:(newversion:stream:nowrap)
+	SET DEV=OP USE DEV
+	DO STATIC^MIOSTATIC(.DEV,.CONF,.REQ,.CTX)
+	CLOSE DEV USE $PRINCIPAL
+	DO READALL(OP,.OUT)
+	DO EQ^MIOTASSERT($SELECT(OUT["HTTP/1.1 200 OK":1,1:0),1,"[MIOSTATICT][T007][older status]")
+	DO EQ^MIOTASSERT($SELECT(OUT["hi":1,1:0),1,"[MIOSTATICT][T007][older body]")
 	QUIT
 	;
 T008 ; /static (no slash) redirects to /static/

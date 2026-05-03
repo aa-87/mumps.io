@@ -76,12 +76,14 @@ STATIC(DEV,CONF,REQ,CTX)
 	. ; Directory request: try index (RPATH may be empty)
 	. NEW XPATH SET XPATH=$SELECT(RPATH="":INDEX,1:RPATH_INDEX)
 	. IF $$SAFEJOINP(ROOT,XPATH,.FSIDX),$$EXISTS(FSIDX) SET ORFS=FSIDX QUIT
-	. ; Optional directory listing
+	. ; Optional directory listing. For an explicit directory request, render
+	. ; the listing directly once the joined directory path is safe. Do not gate
+	. ; this on DIRHAS: some $ZSEARCH implementations keep process-local state
+	. ; that can make existence probes fragile across tests/requests.
 	. IF DLEN DO
 	. . NEW DP SET DP=RPATH IF DP'="",$E(DP,$L(DP))'="/" SET DP=DP_"/"
-	. . NEW DIRFS,ANY SET ANY=0
-	. . IF $$SAFEJOINP(ROOT,DP,.DIRFS) SET ANY=$$DIRHAS(DIRFS,DLDOT)
-	. . IF ANY DO  QUIT
+	. . NEW DIRFS
+	. . IF $$SAFEJOINP(ROOT,DP,.DIRFS) DO  QUIT
 	. . . DO DIRLIST(.DEV,.CONF,DIRFS,$$CLEANURL(MOUNT_"/"_DP),METHOD,$GET(CTX("request_id")),.CTX,DLDOT)
 	. . . QUIT
 	;
@@ -106,41 +108,45 @@ STATIC(DEV,CONF,REQ,CTX)
 	; Optional caching policy layer (ROI #10)
 	DO APPLYCACHE(.CONF,ORFS,.HEAD)
 	;
-	; --- ETag / If-None-Match (first) -------------------------------------
-	NEW META,ETAG
-	DO GETMETA(.CONF,FS,.META)
-	SET ETAG=$GET(META("etag"))
-	IF ETAG'="" SET HEAD("ETag")=ETAG
-	NEW INM SET INM=$GET(REQ("hdr","if-none-match"))
-	IF ETAG'="",INM'="",$$ETAGMATCH(INM,ETAG) DO  QUIT
-	. NEW H2 MERGE H2=HEAD
-	. SET H2("Content-Length")=0
-	. DO RESPHEAD(.DEV,.CONF,304,.H2,$GET(CTX("request_id")))
-	. SET CTX("status")=304
-	;
-	;
-	; --- Last-Modified / If-Modified-Since (second) -----------------------
-	NEW MHD,MHS,LM,MGOT SET MHD="",MHS="",LM="",MGOT=0
+	; --- Conditional validators --------------------------------------------
+	; Evaluate If-Modified-Since before ETag hashing only when If-None-Match
+	; is absent. This keeps HTTP validator precedence correct and lets common
+	; browser revalidation return 304 without reading/hashing the static body.
+	NEW MHD,MHS,LM,MGOT,INM,IMS,IHD,IHS
+	SET MHD="",MHS="",LM="",MGOT=0
+	SET INM=$GET(REQ("hdr","if-none-match"))
+	SET IMS=$GET(REQ("hdr","if-modified-since"))
 	SET MGOT=$$GETMTIME(.CONF,FS,.MHD,.MHS,.LM)
-	; Pragmatic fallback: if no mtime is known for this file, seed it once.;
+	; Pragmatic fallback: if no mtime is known for this file, seed it once.
 	IF 'MGOT DO
 	. SET MHD=+$P($H,",",1),MHS=+$P($H,",",2)
 	. DO SETMTIME(FS,MHD,MHS)
 	. SET LM=$$HTTPDATE(MHD,MHS)
 	. SET MGOT=1
 	IF MGOT DO
-	. IF LM="",$GET(MHD)'="" SET LM=$$HTTPDATE(MHD,MHS)
+	. IF LM="" SET LM=$$HTTPDATE(MHD,MHS),^MIO("STATIC","META",FS,"lm")=LM
 	. IF LM'="" SET HEAD("Last-Modified")=LM
-	. NEW IMS SET IMS=$GET(REQ("hdr","if-modified-since")) 
-	. NEW IHD,IHS
-	. IF IMS'="",$$PARSEHTTPDATE(IMS,.IHD,.IHS) DO
-	. . ; If resource time <= IMS then not modified
-	. . IF $$CMPH(MHD,MHS,IHD,IHS) DO
-	. . . NEW HLM MERGE HLM=HEAD
-	. . . SET HLM("Content-Length")=0
-	. . . DO RESPHEAD(.DEV,.CONF,304,.HLM,$GET(CTX("request_id")))
-	. . . SET CTX("status")=304
-	IF $GET(CTX("status"))=304 QUIT
+	; IMS-only fast path: resource time <= validator means not modified.
+	; Prefer exact comparison against the emitted Last-Modified value so
+	; revalidation is stable across platforms even if filesystem/date parsing
+	; semantics differ. Fall back to parsed HTTP-date comparison for clients
+	; that send a different but valid validator.
+	IF INM="" IF IMS'="" IF MGOT IF $$IMSNOTMOD(IMS,LM,MHD,MHS) DO  QUIT
+	. NEW HLM MERGE HLM=HEAD
+	. SET HLM("Content-Length")=0
+	. DO RESPHEAD(.DEV,.CONF,304,.HLM,$GET(CTX("request_id")))
+	. SET CTX("status")=304
+	;
+	; --- ETag / If-None-Match ---------------------------------------------
+	NEW META,ETAG
+	DO GETMETA(.CONF,FS,.META)
+	SET ETAG=$GET(META("etag"))
+	IF ETAG'="" SET HEAD("ETag")=ETAG
+	IF ETAG'="",INM'="",$$ETAGMATCH(INM,ETAG) DO  QUIT
+	. NEW H2 MERGE H2=HEAD
+	. SET H2("Content-Length")=0
+	. DO RESPHEAD(.DEV,.CONF,304,.H2,$GET(CTX("request_id")))
+	. SET CTX("status")=304
 	; --- Range (single) ---------------------------------------------------
 	NEW RNG SET RNG=$GET(REQ("hdr","range"))
 	IF RNG'="" DO  QUIT:$GET(CTX("status"))>0
@@ -290,13 +296,15 @@ DIRHAS(DIRFS,SHOWDOT)
 	IF PAT="" QUIT 0
 	IF $E(PAT,$L(PAT))'="/" SET PAT=PAT_"/"
 	SET PAT=PAT_"*"
-	NEW F SET F=$ZSEARCH(PAT)
+	NEW F SET F=$ZSEARCH("")
+	SET F=$ZSEARCH(PAT)
 	FOR  QUIT:F=""  DO  QUIT:OK
 	. NEW NM SET NM=$PIECE(F,"/",$L(F,"/"))
 	. IF NM="" SET F=$ZSEARCH("") QUIT
 	. IF '$GET(SHOWDOT),$E(NM,1)="." SET F=$ZSEARCH("") QUIT
 	. SET OK=1
 	. SET F=$ZSEARCH("")
+	SET F=$ZSEARCH("")
 	QUIT OK
 	;
 DIRLIST(DEV,CONF,DIRFS,URLBASE,METHOD,REQID,CTX,SHOWDOT)
@@ -324,13 +332,15 @@ DIRLIST(DEV,CONF,DIRFS,URLBASE,METHOD,REQID,CTX,SHOWDOT)
 	IF PAT="" SET PAT="/"
 	IF $E(PAT,$L(PAT))'="/" SET PAT=PAT_"/"
 	SET PAT=PAT_"*"
-	NEW F SET F=$ZSEARCH(PAT)
+	NEW F SET F=$ZSEARCH("")
+	SET F=$ZSEARCH(PAT)
 	FOR  QUIT:F=""  QUIT:COUNT'<MAXE  DO
 	. NEW NM SET NM=$PIECE(F,"/",$L(F,"/"))
 	. IF NM="" SET F=$ZSEARCH("") QUIT
 	. IF '$GET(SHOWDOT),$E(NM,1)="." SET F=$ZSEARCH("") QUIT
 	. IF '$DATA(NAMES(NM)) SET NAMES(NM)=1,COUNT=COUNT+1
-	. SET F=$ZSEARCH(PAT)
+	. SET F=$ZSEARCH("")
+	SET F=$ZSEARCH("")
 	;
 	NEW NM SET NM=""
 	FOR  SET NM=$ORDER(NAMES(NM)) QUIT:NM=""  DO
@@ -614,7 +624,27 @@ TOUCH(FS)
 	DO SETMTIME(FS,HD,HS)
 	QUIT
 	;
+IMSNOTMOD(IMS,LM,RD,RS)
+	; True when an If-Modified-Since validator means the resource can be
+	; answered with 304. Exact header equality is checked first because this
+	; server emits the Last-Modified value and then often receives it back
+	; verbatim from browser/static tests.
+	NEW X SET X=$$TRIM^MIOHTTP($GET(IMS))
+	NEW L SET L=$$TRIM^MIOHTTP($GET(LM))
+	IF X'="",L'="",X=L QUIT 1
+	NEW VD,VS
+	IF '$$PARSEHTTPDATE(X,.VD,.VS) QUIT 0
+	QUIT $$NOTMOD(+$GET(RD),+$GET(RS),VD,VS)
+	;
+NOTMOD(RD,RS,VD,VS)
+	; True when resource time is less than or equal to validator time.
+	IF +$GET(RD)<+$GET(VD) QUIT 1
+	IF +$GET(RD)>+$GET(VD) QUIT 0
+	IF +$GET(RS)'>+$GET(VS) QUIT 1
+	QUIT 0
+	;
 CMPH(D1,S1,D2,S2)
+	; Legacy helper: true only when first timestamp is newer than second.
 	IF D1<D2 QUIT 0
 	IF D1>D2 QUIT 1
 	IF S1<S2 QUIT 0
