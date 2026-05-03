@@ -66,3 +66,30 @@ Audit samples are stored under:
 ```mumps
 ^MIO("MIOOS","PATIENT","AUDIT",USER,N,...)
 ```
+
+## ROI 69 intake workflow
+
+ROI 69 upgrades this sample to the `mioos-patient-registration-v2` contract.
+
+### What changed
+
+- The row editor groups fields into intake sections using column `group` metadata from MUMPS.
+- Server-side validation rejects future DOB values, invalid email/phone/ZIP/state values, invalid status transitions, and activation without consent.
+- Duplicate MRN changes are blocking validation errors.
+- Same name + DOB, same email, and same phone return non-blocking duplicate warnings for review.
+- Successful patient row/cell mutations stamp `createdAt`, `createdBy`, `updatedAt`, and `updatedBy` where applicable.
+
+### Try it from MUMPS
+
+```mumps
+ZLINK "MIOOSPAT"
+ZLINK "MIOOSTBL"
+ZLINK "MIOOSMOD"
+ZLINK "MIOOSTBLC"
+ZLINK "MIOOST"
+DO ^MIOOST
+```
+
+### Important safety note
+
+This sample uses synthetic data and demonstrates a HIPAA-ready architecture pattern only. Do not use it with real PHI until operational, security, deployment, and compliance controls have been implemented and validated.

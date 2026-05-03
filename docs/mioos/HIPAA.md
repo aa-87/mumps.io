@@ -191,3 +191,7 @@ The ROI 64B UI + Form Elements gallery is a developer reference and must not be 
 ## ROI 68 patient-registration sample
 
 ROI 68 adds a synthetic Patient Registration module foundation using `MIOOSPAT` for patient-specific schema, validation, and audit/status markers. This remains a HIPAA-ready architecture example only. It must not be used with real PHI until deployment-specific administrative, physical, and technical safeguards are implemented and validated.
+
+## ROI 69 patient-registration intake workflow
+
+ROI 69 adds stronger Patient Registration validation, duplicate warnings, status transitions, and audit/status markers. This improves the architecture pattern for regulated workflows, but it still does not make the project HIPAA compliant by itself. Before handling real PHI, a deployment must implement and validate access controls, encryption, backups, retention, incident response, operational policies, workforce training, BAAs where applicable, monitoring, and risk-management procedures.

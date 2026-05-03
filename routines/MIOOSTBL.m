@@ -56,7 +56,7 @@ QUERY(STATE,CONF,IN,OUT,ERR)
 	SET OUT("features","cellEditing")=$SELECT(DATASET="vfs":0,1:1)
 	SET OUT("features","columnReorder")=$SELECT(DATASET="vfs":0,1:1)
 	SET OUT("features","fixedColumns")=$SELECT(DATASET="vfs":0,1:1)
-	IF DATASET="patient-registration" DO PATMETA^MIOOSPAT(.OUT)
+	IF DATASET="patient-registration" DO PATMETA^MIOOSPAT(.OUT,ROOT)
 	SET OUT("draw")=DRAW
 	SET OUT("recordsTotal")=TOTAL
 	SET OUT("recordsFiltered")=FILTERED
@@ -102,6 +102,7 @@ MUTATE(STATE,CONF,IN,OUT,ERR)
 	. SET FOUND=0,I=0 FOR  SET I=$ORDER(@ROOT@("rows",I)) QUIT:I'>0  IF $GET(@ROOT@("rows",I,"id"))=ID SET FOUND=I
 	. IF FOUND'>0 SET ERR("error")="row_id_missing",ERR("message")="Row not found" QUIT
 	. SET @ROOT@("rows",FOUND,KEY)=VAL
+	. IF DATASET="patient-registration",KEY="status" SET @ROOT@("rows",FOUND,"status")=$$STATUS^MIOOSPAT(VAL)
 	. IF KEY="notes" SET @ROOT@("rows",FOUND,"_expand","title")="Notes",@ROOT@("rows",FOUND,"_expand","body")=VAL
 	. SET OUT("mutated","rowId")=ID,OUT("mutated","columnKey")=KEY
 	IF ACTION="row.delete" DO
@@ -158,6 +159,7 @@ MUTATE(STATE,CONF,IN,OUT,ERR)
 	. SET OUT("mutated","columnOption")=KEY,OUT("mutated","value")=OPTVAL
 	IF ACTION="rows.export"!(ACTION="export") DO EXPORT(.STATE,DATASET,ROOT,.IN,.OUT)
 	IF $GET(ERR("error"))'="" QUIT 0
+	IF DATASET="patient-registration" DO POSTPAT^MIOOSPAT(ROOT,ACTION,.IN,.OUT,.STATE)
 	IF '$DATA(OUT("mutated")),'$DATA(OUT("export")) SET ERR("error")="unsupported_table_action" QUIT 0
 	IF $DATA(OUT("export")) DO  QUIT 1
 	. SET OUT("ok")=1,OUT("dataset")=DATASET,OUT("action")=ACTION,OUT("exportOnly")=1,OUT("message")=$GET(OUT("message"),"CSV export generated")
@@ -309,6 +311,7 @@ VALCELL(STATE,DATASET,CONF,IN,ERR)
 	SET VAL=$GET(IN("value"))
 	IF $LENGTH(VAL)>MAX DO ADDERR(.ERR,KEY,"Value is too long") QUIT 0
 	IF '$$VALCELLR(ROOT,KEY,VAL,.ERR) QUIT 0
+	IF DATASET="patient-registration",KEY="status",'$$VALSTATCELL^MIOOSPAT(ID,VAL,.ERR,ROOT) QUIT 0
 	QUIT 1
 	;
 VALCELLR(ROOT,KEY,VAL,ERR)
@@ -662,7 +665,7 @@ SEEDPAT(STATE,ROOT)
 	DO COLR(ROOT,6,"status","Status","badge",110,0,1,"Care")
 	DO COLR(ROOT,7,"primaryProvider","Provider","text",170,0,1,"Care")
 	DO PATROW(ROOT,1,"PAT-1001","Garcia","Elena","1984-04-12","555-0101","Active","Dr. Shaw")
-	DO PATROW(ROOT,2,"PAT-1002","Brown","Marcus","1972-09-03","555-0102","Pending","Dr. Singh")
+	DO PATROW(ROOT,2,"PAT-1002","Brown","Marcus","1972-09-03","555-0102","Pending Review","Dr. Singh")
 	DO PATROW(ROOT,3,"PAT-1003","Chen","Avery","1991-12-21","555-0103","Active","Dr. Ortiz")
 	DO INIT^MIOOSPAT(ROOT)
 	QUIT

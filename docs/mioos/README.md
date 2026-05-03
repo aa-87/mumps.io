@@ -417,3 +417,7 @@ ROI 64L is implemented as a stabilization pass for ROI 64F–64K. It completes t
 ROI 68A locks the Advanced Table backend contract before patient workflow expansion. `D ^MIOOST` now includes `RUN^MIOOSTBLC`, which directly tests `QUERY^MIOOSTBL` and `MUTATE^MIOOSTBL` for response shape, small mutation acknowledgements, validation, filtering, grouping, sorting, read-only feature composition, and known table UI regressions.
 
 The table contract remains `mioos-advanced-table-v8`. Expanded MUMPS-first examples live under `examples/mioos_modules/table/samples/` and document how to seed table globals, register a shell module/icon, open the module, and validate the behavior.
+
+## ROI 69 patient registration
+
+ROI 69 adds a guided Patient Registration intake workflow on top of the Advanced Table contract. The workflow is still MUMPS-authored and table-backed: validation, duplicate detection, status transitions, and audit/status metadata live in `MIOOSPAT`, while the browser renders grouped intake sections and field-level errors.

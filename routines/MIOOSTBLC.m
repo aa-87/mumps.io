@@ -9,6 +9,7 @@ RUN
 	DO TFEAT
 	DO TREG
 	DO TMTBL
+	DO TPAT
 	QUIT
 	;
 SETUP(STATE,CONF,ROOT)
@@ -259,6 +260,65 @@ TMTBL
 	DO EQ^MIOTASSERT($GET(OUT("ok")),1,"[MIOSTBLC][TMTBL][revisions deterministic]")
 	QUIT
 	;
+TPAT
+	NEW STATE,CONF,ROOT,IN,OUT,ERR
+	KILL STATE,CONF
+	DO CONFDEF^MIOOS(.CONF)
+	SET CONF("mioos","table","maxPageSize")=250
+	SET CONF("mioos","table","maxFieldChars")=256
+	SET STATE("principal")="roi69"
+	SET STATE("authenticated")=1
+	SET ROOT=$$ROOT^MIOOSTBL(.STATE,"patient-registration")
+	KILL @ROOT
+	DO ENSURE^MIOOSTBL(.STATE,"patient-registration")
+	KILL IN,OUT,ERR SET IN("dataset")="patient-registration",IN("page")=1,IN("pageSize")=10
+	DO OK^MIOTASSERT($$QUERY^MIOOSTBL(.STATE,.CONF,.IN,.OUT,.ERR),"[MIOSTBLC][TPAT][query ok]")
+	DO EQ^MIOTASSERT($GET(OUT("patientRegistration","contract")),"mioos-patient-registration-v2","[MIOSTBLC][TPAT][patient contract]")
+	DO EQ^MIOTASSERT($GET(OUT("features","duplicateDetection")),1,"[MIOSTBLC][TPAT][duplicate feature]")
+	KILL IN,OUT,ERR SET IN("dataset")="patient-registration",IN("action")="row.save"
+	DO PATIN(.IN,"PAT-2000","PAT-2000","Future","DOB","2999-01-01","555-2000","future@example.invalid","NY","10001","Draft","Unknown")
+	DO EQ^MIOTASSERT($$MUTATE^MIOOSTBL(.STATE,.CONF,.IN,.OUT,.ERR),0,"[MIOSTBLC][TPAT][future dob fails]")
+	DO OK^MIOTASSERT($DATA(ERR("fieldErrors","dob")),"[MIOSTBLC][TPAT][future dob field]")
+	KILL IN,OUT,ERR SET IN("dataset")="patient-registration",IN("action")="row.save"
+	DO PATIN(.IN,"PAT-2001","PAT-1001","Duplicate","MRN","1980-01-01","555-2001","dup@example.invalid","NY","10001","Draft","Unknown")
+	DO EQ^MIOTASSERT($$MUTATE^MIOOSTBL(.STATE,.CONF,.IN,.OUT,.ERR),0,"[MIOSTBLC][TPAT][duplicate mrn fails]")
+	DO OK^MIOTASSERT($DATA(ERR("fieldErrors","mrn")),"[MIOSTBLC][TPAT][duplicate mrn field]")
+	KILL IN,OUT,ERR SET IN("dataset")="patient-registration",IN("action")="row.save"
+	DO PATIN(.IN,"PAT-2002","PAT-2002","No","Consent","1980-01-01","555-2002","active@example.invalid","NY","10001","Active","Unknown")
+	DO EQ^MIOTASSERT($$MUTATE^MIOOSTBL(.STATE,.CONF,.IN,.OUT,.ERR),0,"[MIOSTBLC][TPAT][active consent fails]")
+	DO OK^MIOTASSERT($DATA(ERR("fieldErrors","consent")),"[MIOSTBLC][TPAT][consent field]")
+	KILL IN,OUT,ERR SET IN("dataset")="patient-registration",IN("action")="row.save"
+	DO PATIN(.IN,"PAT-1001","PAT-1001","Garcia","Elena","1984-04-12","555-0101","elena.garcia@example.invalid","NY","10001","Draft","Yes")
+	SET IN("row","consentDate")="2026-05-03"
+	DO EQ^MIOTASSERT($$MUTATE^MIOOSTBL(.STATE,.CONF,.IN,.OUT,.ERR),0,"[MIOSTBLC][TPAT][bad transition fails]")
+	DO OK^MIOTASSERT($DATA(ERR("fieldErrors","status")),"[MIOSTBLC][TPAT][status transition field]")
+	KILL IN,OUT,ERR SET IN("dataset")="patient-registration",IN("action")="row.save"
+	DO PATIN(.IN,"PAT-3000","PAT-3000","Garcia","Elena","1984-04-12","555-3000","dupewarn@example.invalid","NY","10001","Draft","Unknown")
+	DO OK^MIOTASSERT($$MUTATE^MIOOSTBL(.STATE,.CONF,.IN,.OUT,.ERR),"[MIOSTBLC][TPAT][duplicate warning save ok]")
+	DO EQ^MIOTASSERT($GET(OUT("warnings","duplicateCandidates",1,"reason")),"same_name_dob","[MIOSTBLC][TPAT][duplicate warning]")
+	KILL IN,OUT,ERR SET IN("dataset")="patient-registration",IN("action")="cell.save",IN("rowId")="PAT-1001",IN("columnKey")="status",IN("value")="Draft"
+	DO EQ^MIOTASSERT($$MUTATE^MIOOSTBL(.STATE,.CONF,.IN,.OUT,.ERR),0,"[MIOSTBLC][TPAT][cell bad transition fails]")
+	DO OK^MIOTASSERT($DATA(ERR("fieldErrors","status")),"[MIOSTBLC][TPAT][cell transition field]")
+	QUIT
+	;
+PATIN(IN,ID,MRN,LAST,FIRST,DOB,PHONE,EMAIL,STATE,ZIP,STATUS,CONSENT)
+	SET IN("row","id")=$GET(ID)
+	SET IN("row","mrn")=$GET(MRN)
+	SET IN("row","lastName")=$GET(LAST)
+	SET IN("row","firstName")=$GET(FIRST)
+	SET IN("row","dob")=$GET(DOB)
+	SET IN("row","phone")=$GET(PHONE)
+	SET IN("row","email")=$GET(EMAIL)
+	SET IN("row","state")=$GET(STATE)
+	SET IN("row","zip")=$GET(ZIP)
+	SET IN("row","status")=$GET(STATUS)
+	SET IN("row","consent")=$GET(CONSENT)
+	SET IN("row","primaryProvider")="Dr. Test"
+	SET IN("row","emergencyContact")="Test Contact"
+	SET IN("row","emergencyPhone")="555-9999"
+	QUIT
+	;
+
 FINDDEF(OUT,KEY)
 	NEW I,OK SET (I,OK)=0 FOR  SET I=$ORDER(OUT("definitions",I)) QUIT:I'>0!(OK)  IF $GET(OUT("definitions",I,"key"))=KEY SET OK=1
 	QUIT OK

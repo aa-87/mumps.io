@@ -637,3 +637,7 @@ The Advanced Table browser layer now keeps mutation feedback out of normal layou
 Column visibility, reorder, resize, and fixed-column changes capture `state.columnPrefs` and reapply those preferences to the next query-shaped payload before repainting. The backend still persists schema changes through `MUTATE^MIOOSTBL`, but the client overlay prevents immediate post-mutation repaints from losing the user-visible column order/visibility/fixed state.
 
 The App Catalogue List/Cards button depends on `.mioos-ui-module-grid.is-list`. Keep both card and list CSS modes when changing catalogue markup.
+
+## ROI 69 patient registration intake workflow
+
+ROI 69 promotes Patient Registration to `mioos-patient-registration-v2`. `MIOOSPAT` now owns server-side DOB, MRN, contact, consent, duplicate-warning, status-transition, and audit/status metadata behavior. The frontend remains Vue 3 Options API UMD and renders a grouped intake modal using server-authored column `group` metadata. Toast and modal surfaces are opaque/high-contrast to avoid unreadable overlay text. Continue to avoid claiming HIPAA compliance; describe this only as a HIPAA-ready architecture pattern with synthetic data.

@@ -117,3 +117,9 @@ MUMPS developers can still bypass the modal by writing directly to the same back
 ## Catalogue List/Cards rendering
 
 The App Catalogue layout toggle now changes actual layout classes. `layout="cards"` renders grid cards, while `layout="list"` applies `.mioos-ui-module-grid.is-list` for a single-column list with compact icons and row-style metadata. The toggle is visual-only and does not change the server-authored module registry.
+
+## ROI 69 patient-registration UI module behavior
+
+The Patient Registration module remains a table-backed module. Its row editor now groups fields by server-authored column `group` metadata, allowing MUMPS developers to shape intake sections without writing frontend code. The module advertises `intake-workflow`, `duplicate-detection`, and `status-transitions` capabilities through `MIOOSMOD` and the example manifest.
+
+Modal and toast surfaces are intentionally opaque/high-contrast after ROI 69 so validation messages remain readable over dense table content.

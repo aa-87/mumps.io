@@ -201,9 +201,14 @@ ADDTABLE(OUT,ID,KEY,TITLE,DESC,CAT,ICON,DATASET)
 	. SET OUT("modules",M,"tableState","config","features","columnReorder")=1
 	. SET OUT("modules",M,"tableState","config","features","fixedColumns")=1
 	. SET OUT("modules",M,"tableState","config","features","rowDetails")=1
+	. SET OUT("modules",M,"tableState","config","features","filters")=1
+	. SET OUT("modules",M,"tableState","config","features","grouping")=1
 	. SET OUT("modules",M,"tableState","config","fixedColumns","start")=1
 	. SET OUT("modules",M,"tableState","config","fixedColumns","end")=0
 	. SET OUT("modules",M,"capabilities","patient-registration")=1
+	. SET OUT("modules",M,"capabilities","intake-workflow")=1
+	. SET OUT("modules",M,"capabilities","duplicate-detection")=1
+	. SET OUT("modules",M,"capabilities","status-transitions")=1
 	IF DATASET="massive" DO
 	. SET OUT("modules",M,"tableState","config","contract")="mioos-advanced-table-v8"
 	. SET OUT("modules",M,"tableState","config","defaultPageSize")=100

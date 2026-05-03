@@ -395,3 +395,16 @@ Small table mutations such as `cell.save`, `column.visibility`, `column.reorder`
 The browser maintains a transient `columnPrefs` overlay for the current table state. When a user hides, reorders, resizes, or fixes columns, the local preference overlay is captured and reapplied to the next query payload before repainting. The backend remains authoritative and still persists column metadata in `schema("columns")` / `schema("fixedColumns")`, but this overlay prevents an immediate repaint from reverting column controls if transports return at slightly different times.
 
 Feedback messages are rendered in an absolute-position `mioos-table-feedback-rail`, so success/error toasts no longer insert or remove layout blocks above the table body.
+
+## ROI 69 patient-registration backend contract
+
+The `patient-registration` dataset uses the normal Advanced Table query and mutation contract plus patient metadata from `MIOOSPAT`.
+
+Patient-specific mutation validation is server-side:
+
+- `VALPAT^MIOOSPAT` validates row saves.
+- `VALFIELD^MIOOSPAT` validates patient cell saves for contact/date fields.
+- `VALSTATCELL^MIOOSPAT` rejects invalid single-cell status transitions.
+- `POSTPAT^MIOOSPAT` stamps audit/status metadata and returns duplicate warnings after successful patient row/cell mutations.
+
+The browser must treat `warnings.duplicateCandidates` as non-blocking review information and `fieldErrors` as blocking field-level validation errors.

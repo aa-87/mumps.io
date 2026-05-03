@@ -6,7 +6,7 @@
   "componentKey": "table",
   "surface": "mioos-surface-table",
   "category": "Healthcare",
-  "description": "Synthetic patient registration sample backed by MIOOSTBL and MIOOSPAT validation/audit helpers.",
+  "description": "Synthetic patient registration intake workflow backed by MIOOSTBL and MIOOSPAT server-side validation, duplicate warnings, status transitions, and audit helpers.",
   "tableState": {
     "id": "patient-registration-table",
     "title": "Patient Registration",
@@ -38,6 +38,10 @@
   "capabilities": {
     "patientRegistration": true,
     "auditStatus": true,
-    "hipaaReadyArchitectureOnly": true
+    "hipaaReadyArchitectureOnly": true,
+    "intakeWorkflow": true,
+    "duplicateDetection": true,
+    "statusTransitions": true,
+    "validationSummary": true
   }
 }
