@@ -311,3 +311,7 @@ The `notes` demo column is now a textarea-backed editable grouped column rather 
 ### System-style draggable dialogs
 
 Table dialogs use the same system-window visual language as other shell components. Filter, grouping, column picker, and editor dialogs are emitted as `.mioos-system-modal` windows with a `.mioos-table-window-titlebar` drag handle.
+
+## ROI 64H table-backed module definitions
+
+`MIOOSMTBL` finalizes table-backed modules as server-owned definitions. Definitions are saved under `^MIO("MIOOS","TABLEMOD","USER",user,key)`, revisions are stored under `^MIO("MIOOS","TABLEMOD","REV",user,key,revisionId)`, and successful saves install `^MIO("MIOOS","MODULE","USER",user,key)` plus `^MIO("MIOOS","TABLE",user,dataset)`. This makes table module creation, export/import, preview, versioning, rollback, and App Catalogue listing available without JavaScript-first module code.

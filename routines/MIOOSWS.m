@@ -82,6 +82,7 @@ COMMANDJSON(CONF,REQ,CTX,STATE,PAYLOAD,OUTJSON,ERR)
 	IF CMD="auth.user.unlock" QUIT $$AUTHUNLOCK(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="view.refresh" QUIT $$CMDVIEW(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="module.catalog" QUIT $$MODCAT(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
+	IF $EXTRACT(CMD,1,13)="module.table." QUIT $$MODTABLE(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="table.query" QUIT $$TABLEQUERY(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="table.mutate" QUIT $$TABLEMUTATE(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
 	IF CMD="debug.snapshot" QUIT $$DEBUGSNAP(.STATE,.CONF,.TREE,.OUTJSON,.ERR)
@@ -303,6 +304,19 @@ MODCAT(STATE,CONF,TREE,OUTJSON,ERR)
 	SET OUT("enabled")=+$GET(STATE("moduleSystemEnabled"),0)
 	SET OUT("count")=+$GET(OUT("moduleCount"),0)
 	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"module.catalog","module",.OUT)
+	QUIT 1
+	;
+MODTABLE(STATE,CONF,TREE,OUTJSON,ERR)
+	NEW OUT,CMD
+	SET CMD=$GET(TREE("command"))
+	SET TREE("action")=$PIECE(CMD,".",3)
+	IF TREE("action")="" SET TREE("action")="list"
+	IF '$$HANDLE^MIOOSMTBL(.STATE,.CONF,.TREE,.OUT,.ERR) DO  QUIT 1
+	. KILL OUT
+	. SET OUT("ok")=0,OUT("error")=$GET(ERR("error"),"module_table_failed"),OUT("message")=$GET(ERR("message"),$GET(ERR("error"))),OUT("routine")=$GET(ERR("routine"),"MIOOSMTBL"),OUT("action")=$GET(TREE("action"))
+	. IF $DATA(ERR("fieldErrors")) MERGE OUT("fieldErrors")=ERR("fieldErrors")
+	. SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),CMD,"moduleTable",.OUT)
+	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),CMD,"moduleTable",.OUT)
 	QUIT 1
 	;
 TABLEQUERY(STATE,CONF,TREE,OUTJSON,ERR)

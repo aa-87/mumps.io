@@ -22,7 +22,7 @@ DISABLED(STATE)
 	KILL STATE("modules"),STATE("uiModules")
 	SET STATE("moduleCount")=0
 	SET STATE("uiModules","ok")=1
-	SET STATE("uiModules","contract")="mioos-ui-module-v1"
+	SET STATE("uiModules","contract")="mioos-ui-module-v2"
 	SET STATE("uiModules","manifestVersion")=+$GET(STATE("moduleManifestVersion"),1)
 	SET STATE("uiModules","moduleCount")=0
 	SET STATE("uiModules","componentCount")=0
@@ -34,14 +34,15 @@ DISABLED(STATE)
 CATALOG(STATE,CONF,OUT,ERR)
 	KILL OUT,ERR
 	SET OUT("ok")=1
-	SET OUT("contract")="mioos-ui-module-v1"
-	SET OUT("manifestVersion")=1
+	SET OUT("contract")="mioos-ui-module-v2"
+	SET OUT("manifestVersion")=2
 	SET OUT("sources",1)="internal"
 	SET OUT("sources",2)="user"
 	SET OUT("componentCount")=0
 	SET OUT("moduleCount")=0
 	DO INTERNAL(.OUT)
 	DO USER(.STATE,.OUT)
+	DO TABLEDEFS(.STATE,.CONF,.OUT)
 	QUIT 1
 	;
 INTERNAL(OUT)
@@ -67,6 +68,7 @@ INTERNAL(OUT)
 	SET OUT("components",C,"features",7)="resizable-columns"
 	SET OUT("components",C,"features",8)="server-query"
 	SET OUT("components",C,"features",9)="http-safe-mutations"
+	SET OUT("components",C,"features",10)="table-module-library"
 	SET C=+$GET(OUT("componentCount"))+1,OUT("componentCount")=C
 	SET OUT("components",C,"key")="table-showcase"
 	SET OUT("components",C,"name")="mioos-surface-table-showcase"
@@ -105,7 +107,7 @@ INTERNAL(OUT)
 	SET OUT("modules",M,"key")="app-catalog"
 	SET OUT("modules",M,"appKey")="app-catalog"
 	SET OUT("modules",M,"title")="App Catalogue"
-	SET OUT("modules",M,"description")="Catalog and launcher for internal and user-created MIOOS UI modules."
+	SET OUT("modules",M,"description")="Catalog, launcher, and server-side editor for internal and user-created MIOOS UI modules."
 	SET OUT("modules",M,"category")="Development"
 	SET OUT("modules",M,"icon")="▦"
 	SET OUT("modules",M,"source")="internal"
@@ -184,7 +186,7 @@ ADDTABLE(OUT,ID,KEY,TITLE,DESC,CAT,ICON,DATASET)
 	SET OUT("modules",M,"tableState","title")=TITLE
 	SET OUT("modules",M,"tableState","dataset")=DATASET
 	IF DATASET="massive" DO
-	. SET OUT("modules",M,"tableState","config","contract")="mioos-advanced-table-v7"
+	. SET OUT("modules",M,"tableState","config","contract")="mioos-advanced-table-v8"
 	. SET OUT("modules",M,"tableState","config","defaultPageSize")=100
 	. SET OUT("modules",M,"tableState","config","defaultSort","column")="id"
 	. SET OUT("modules",M,"tableState","config","defaultSort","direction")="ascending"
@@ -212,6 +214,20 @@ USER(STATE,OUT)
 	. SET OUT("modules",M,"source")="user"
 	. SET OUT("modules",M,"componentKey")=$GET(@ROOT@(KEY,"componentKey"),"module-card")
 	. SET OUT("modules",M,"surface")=$GET(@ROOT@(KEY,"surface"),"mioos-surface-ui-module")
+	. SET OUT("modules",M,"dataset")=$GET(@ROOT@(KEY,"dataset"))
+	. SET OUT("modules",M,"userCreated")=+$GET(@ROOT@(KEY,"userCreated"),1)
+	. IF $DATA(@ROOT@(KEY,"tableState")) MERGE OUT("modules",M,"tableState")=@ROOT@(KEY,"tableState")
+	. IF $DATA(@ROOT@(KEY,"tableConfig")) MERGE OUT("modules",M,"tableConfig")=@ROOT@(KEY,"tableConfig")
 	. IF $DATA(@ROOT@(KEY,"config")) MERGE OUT("modules",M,"config")=@ROOT@(KEY,"config")
+	QUIT
+	;
+TABLEDEFS(STATE,CONF,OUT)
+	NEW IN,LIB,ERR,I
+	KILL IN,LIB,ERR
+	SET IN("action")="list"
+	IF '$$LIST^MIOOSMTBL(.STATE,.CONF,.IN,.LIB,.ERR) QUIT
+	SET OUT("tableModuleLibrary","contract")=$GET(LIB("contract"))
+	SET OUT("tableModuleLibrary","count")=+$GET(LIB("count"))
+	SET I=0 FOR  SET I=$ORDER(LIB("definitions",I)) QUIT:I'>0  MERGE OUT("tableDefinitions",I)=LIB("definitions",I)
 	QUIT
 	;

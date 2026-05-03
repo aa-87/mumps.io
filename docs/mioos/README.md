@@ -399,3 +399,7 @@ The table UI now fixes column visibility persistence, backend validation feedbac
 The table module stabilization pass adds strict invalid-date feedback, server-side selected-row CSV export, locked column keys during schema edits, typed row editor controls, and system-style draggable table dialogs. These changes are corrective table work before ROI 64H and do not start the next ROI.
 
 Selected-row export is handled server-side through `rows.export`; the browser only downloads the returned CSV. Existing table dialogs now use `.mioos-system-modal` and a draggable title bar so they follow the same interaction model as other shell windows.
+
+### ROI 64H table module library
+
+The App Catalogue now includes a server-side table module library. `MIOOSMTBL` owns table-backed module definition validation, preview, save/register, export/import, revision snapshots, rollback, and audit metadata. The route is `POST /api/mioos/modules/table`, and WebSocket command names are `module.table.*`. Successful saves install both the launchable module metadata and the backing table dataset without requiring frontend code.

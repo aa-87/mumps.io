@@ -36,6 +36,7 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","route","themeLoad"))="" SET CONF("mioos","route","themeLoad")="/api/mioos/theme/load"
 	IF $GET(CONF("mioos","route","themeSave"))="" SET CONF("mioos","route","themeSave")="/api/mioos/theme/save"
 	IF $GET(CONF("mioos","route","moduleCatalog"))="" SET CONF("mioos","route","moduleCatalog")="/api/mioos/modules/catalog"
+	IF $GET(CONF("mioos","route","moduleTable"))="" SET CONF("mioos","route","moduleTable")="/api/mioos/modules/table"
 	IF $GET(CONF("mioos","route","settingsLoad"))="" SET CONF("mioos","route","settingsLoad")="/api/mioos/settings/load"
 	IF $GET(CONF("mioos","route","settingsSave"))="" SET CONF("mioos","route","settingsSave")="/api/mioos/settings/save"
 	IF $GET(CONF("mioos","route","ws"))="" SET CONF("mioos","route","ws")="/ws/mioos"
@@ -85,15 +86,15 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","desktop","windowTitlebarHeight"))="" SET CONF("mioos","desktop","windowTitlebarHeight")=40
 	IF $GET(CONF("mioos","desktop","windowMenuEnabled"))="" SET CONF("mioos","desktop","windowMenuEnabled")=1
 	IF $GET(CONF("mioos","desktop","windowStatusBadges"))="" SET CONF("mioos","desktop","windowStatusBadges")=1
-		IF $GET(CONF("mioos","desktop","workspaces","enabled"))="" SET CONF("mioos","desktop","workspaces","enabled")=0
-		IF $GET(CONF("mioos","desktop","workspaces","persistence"))="" SET CONF("mioos","desktop","workspaces","persistence")="none"
-		IF $GET(CONF("mioos","desktop","workspaces","defaultKey"))="" SET CONF("mioos","desktop","workspaces","defaultKey")="workspace-main"
-		IF $GET(CONF("mioos","desktop","workspaces","showInTaskbar"))="" SET CONF("mioos","desktop","workspaces","showInTaskbar")=0
-		IF $GET(CONF("mioos","desktop","workspaces","followMovedWindow"))="" SET CONF("mioos","desktop","workspaces","followMovedWindow")=1
-		IF $GET(CONF("mioos","desktop","accessibility","keyboardShortcuts","previousWorkspace"))="" SET CONF("mioos","desktop","accessibility","keyboardShortcuts","previousWorkspace")="Ctrl+Alt+ArrowLeft"
-		IF $GET(CONF("mioos","desktop","accessibility","keyboardShortcuts","nextWorkspace"))="" SET CONF("mioos","desktop","accessibility","keyboardShortcuts","nextWorkspace")="Ctrl+Alt+ArrowRight"
-		IF $GET(CONF("mioos","desktop","accessibility","keyboardShortcuts","moveFocusedWindowPreviousWorkspace"))="" SET CONF("mioos","desktop","accessibility","keyboardShortcuts","moveFocusedWindowPreviousWorkspace")="Ctrl+Alt+Shift+ArrowLeft"
-		IF $GET(CONF("mioos","desktop","accessibility","keyboardShortcuts","moveFocusedWindowNextWorkspace"))="" SET CONF("mioos","desktop","accessibility","keyboardShortcuts","moveFocusedWindowNextWorkspace")="Ctrl+Alt+Shift+ArrowRight"
+	IF $GET(CONF("mioos","desktop","workspaces","enabled"))="" SET CONF("mioos","desktop","workspaces","enabled")=0
+	IF $GET(CONF("mioos","desktop","workspaces","persistence"))="" SET CONF("mioos","desktop","workspaces","persistence")="none"
+	IF $GET(CONF("mioos","desktop","workspaces","defaultKey"))="" SET CONF("mioos","desktop","workspaces","defaultKey")="workspace-main"
+	IF $GET(CONF("mioos","desktop","workspaces","showInTaskbar"))="" SET CONF("mioos","desktop","workspaces","showInTaskbar")=0
+	IF $GET(CONF("mioos","desktop","workspaces","followMovedWindow"))="" SET CONF("mioos","desktop","workspaces","followMovedWindow")=1
+	IF $GET(CONF("mioos","desktop","accessibility","keyboardShortcuts","previousWorkspace"))="" SET CONF("mioos","desktop","accessibility","keyboardShortcuts","previousWorkspace")="Ctrl+Alt+ArrowLeft"
+	IF $GET(CONF("mioos","desktop","accessibility","keyboardShortcuts","nextWorkspace"))="" SET CONF("mioos","desktop","accessibility","keyboardShortcuts","nextWorkspace")="Ctrl+Alt+ArrowRight"
+	IF $GET(CONF("mioos","desktop","accessibility","keyboardShortcuts","moveFocusedWindowPreviousWorkspace"))="" SET CONF("mioos","desktop","accessibility","keyboardShortcuts","moveFocusedWindowPreviousWorkspace")="Ctrl+Alt+Shift+ArrowLeft"
+	IF $GET(CONF("mioos","desktop","accessibility","keyboardShortcuts","moveFocusedWindowNextWorkspace"))="" SET CONF("mioos","desktop","accessibility","keyboardShortcuts","moveFocusedWindowNextWorkspace")="Ctrl+Alt+Shift+ArrowRight"
 	IF $GET(CONF("mioos","desktop","authRequired"))="" SET CONF("mioos","desktop","authRequired")=1
 	IF $GET(CONF("mioos","dev","enabled"))="" SET CONF("mioos","dev","enabled")=ISDEV
 	IF $GET(CONF("mioos","dev","authDisabled"))="" SET CONF("mioos","dev","authDisabled")=0
@@ -181,6 +182,7 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","route","tableQuery"))="" SET CONF("mioos","route","tableQuery")="/api/mioos/table/query"
 	IF $GET(CONF("mioos","route","tableMutate"))="" SET CONF("mioos","route","tableMutate")="/api/mioos/table/mutate"
 	IF $GET(CONF("mioos","route","moduleCatalog"))="" SET CONF("mioos","route","moduleCatalog")="/api/mioos/modules/catalog"
+	IF $GET(CONF("mioos","route","moduleTable"))="" SET CONF("mioos","route","moduleTable")="/api/mioos/modules/table"
 	IF $GET(CONF("mioos","route","settingsLoad"))="" SET CONF("mioos","route","settingsLoad")="/api/mioos/settings/load"
 	IF $GET(CONF("mioos","route","settingsSave"))="" SET CONF("mioos","route","settingsSave")="/api/mioos/settings/save"
 	IF $GET(CONF("mioos","modules","enabled"))="" SET CONF("mioos","modules","enabled")=1
@@ -253,6 +255,7 @@ REG(CONF)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","tableQuery")),"TABLEQUERY^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","tableMutate")),"TABLEMUTATE^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","moduleCatalog")),"MODULECATALOG^MIOOSAPI",.PROT)
+	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","moduleTable")),"MODULETABLE^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","settingsLoad")),"SETTINGSLOAD^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","settingsSave")),"SETTINGSSAVE^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsUploadBegin")),"FSUPBEGIN^MIOOSAPI",.PROT)
@@ -292,6 +295,7 @@ REG(CONF)
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","fsMove")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","fsDelete")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","moduleCatalog")))
+	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","moduleTable")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","settingsLoad")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","settingsSave")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","themeAssetUpload")))
@@ -351,5 +355,6 @@ RESPERR(DEV,CONF,STATUS,CODE,DETAIL,CTX)
 	DO RESPJSONX^MIOHTTP(.DEV,.CONF,+$GET(STATUS),.OBJ,$GET(CTX("request_id")),.CTX)
 	SET CTX("status")=+$GET(STATUS)
 	QUIT
+	;
 	;
 	;

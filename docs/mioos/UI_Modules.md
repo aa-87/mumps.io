@@ -75,3 +75,7 @@ This lets a MUMPS developer add required fields, enum/select validation, date fo
 ## Table module stabilization before ROI 64H
 
 The table module has been stabilized before the next ROI. Table modals now use system-style draggable windows, selected-row CSV export is generated server-side through `rows.export`, existing column keys are locked during column edits, and row editors render typed controls from schema/validation metadata. These fixes keep table modules MUMPS-first and prepare the App Catalogue/module authoring work planned for ROI 64H.
+
+## ROI 64H table module authoring and library
+
+Table-backed modules can now be created and managed through the server-side `MIOOSMTBL` library. The App Catalogue exposes a thin Table Modules tab for creating, previewing, saving/registering, exporting, importing, listing revisions, and rolling back table definitions. The browser submits definitions to `POST /api/mioos/modules/table`; MUMPS validates and persists the definition, installs the table dataset, and registers the launchable module.

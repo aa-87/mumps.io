@@ -61,6 +61,7 @@ MIOOST ; MIOOS tests
 	DO T067
 	DO T068
 	DO T069
+	DO T070
 	QUIT
 	;
 RESET
@@ -1377,5 +1378,27 @@ T069
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableBeginDialogDrag"),"[MIOOST][T069][modal drag handler]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","mioos-table-window-titlebar"),"[MIOOST][T069][table modal titlebar styling]")
 	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/ROI_64H_Table_Module_Finalization_Design.md","server-side module library"),"[MIOOST][T069][next roi design]")
+	QUIT
+	;
+
+T070
+	DO OK^MIOTASSERT($$FILEOK("routines/MIOOSMTBL.m"),"[MIOOST][T070][table module routine]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSMTBL.m","mioos-table-module-library-v1"),"[MIOOST][T070][library contract]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSMTBL.m","VALIDDEF"),"[MIOOST][T070][server validation]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSMTBL.m","SNAP"),"[MIOOST][T070][revision snapshot]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSMTBL.m","ROLLBACK"),"[MIOOST][T070][rollback]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSMTBL.m","EXPORT"),"[MIOOST][T070][export]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSMTBL.m","IMPORT"),"[MIOOST][T070][import]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSMTBL.m","TABLEMOD"),"[MIOOST][T070][tablemod storage]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","MODULETABLE"),"[MIOOST][T070][http module table api]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","module.table."),"[MIOOST][T070][ws module table commands]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOS.m","/api/mioos/modules/table"),"[MIOOST][T070][module table route]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSST.m","moduleTable"),"[MIOOST][T070][boot route]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSMOD.m","tableDefinitions"),"[MIOOST][T070][catalog table definitions]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_modules.js","Table Modules"),"[MIOOST][T070][catalog table modules tab]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_modules.js","uiModuleTableRequest"),"[MIOOST][T070][thin browser api]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","ROI 64H table module library"),"[MIOOST][T070][module library css]")
+	DO OK^MIOTASSERT($$FILEOK("docs/mioos/ROI_64H_Table_Module_Finalization.md"),"[MIOOST][T070][roi64h docs]")
+	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 64H"),"[MIOOST][T070][llm roi64h]")
 	QUIT
 	;

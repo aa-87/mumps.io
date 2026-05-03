@@ -221,3 +221,44 @@ The table bulk export command sends selected IDs to the server:
 ### Column key edits
 
 Do not change an existing column key to rename a column. Column keys are persistent identity values. The editor locks the key for existing columns and sends `originalKey` so the backend updates the existing schema entry instead of creating a new column.
+
+## ROI 64H server-side table module library
+
+A MUMPS developer can now register a complete table-backed module through `HANDLE^MIOOSMTBL` instead of hand-editing frontend files. The service validates the definition, writes the table dataset, installs a launchable module entry, and keeps revision snapshots before overwrite.
+
+```mumps
+NEW STATE,CONF,IN,OUT,ERR
+SET STATE("principal")="developer"
+SET IN("action")="save"
+SET IN("definition","key")="example_table"
+SET IN("definition","title")="Example Table"
+SET IN("definition","dataset")="example_table"
+SET IN("definition","category")="Operations"
+SET IN("definition","icon")="▤"
+SET IN("definition","schema","columns",1,"key")="name"
+SET IN("definition","schema","columns",1,"label")="Name"
+SET IN("definition","schema","columns",1,"type")="text"
+SET IN("definition","schema","columns",2,"key")="status"
+SET IN("definition","schema","columns",2,"label")="Status"
+SET IN("definition","schema","columns",2,"type")="select"
+SET IN("definition","validation","fields","name","required")=1
+SET IN("definition","validation","fields","status","enum",1)="Active"
+SET IN("definition","validation","fields","status","enum",2)="Pending"
+SET IN("definition","rows",1,"id")="example-1"
+SET IN("definition","rows",1,"name")="Demo row"
+SET IN("definition","rows",1,"status")="Active"
+DO HANDLE^MIOOSMTBL(.STATE,.CONF,.IN,.OUT,.ERR)
+```
+
+Reload after applying this ROI:
+
+```mumps
+ZLINK "MIOOSMTBL"
+ZLINK "MIOOSMOD"
+ZLINK "MIOOSAPI"
+ZLINK "MIOOSWS"
+ZLINK "MIOOS"
+ZLINK "MIOOSST"
+ZLINK "MIOOST"
+DO ^MIOOST
+```

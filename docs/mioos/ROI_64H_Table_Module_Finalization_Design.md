@@ -1,6 +1,6 @@
 # ROI 64H — Table Module Finalization and Server-Side Module Library
 
-This is a design document only. Do not implement ROI 64H until the table stabilization fixes are confirmed by `ZLINK` and `D ^MIOOST`.
+ROI 64H has been implemented. This file remains as the design reference; the implementation details live in `docs/mioos/ROI_64H_Table_Module_Finalization.md`.
 
 ## Reference
 
@@ -14,13 +14,13 @@ Use the existing server-side patterns in `MIOPLGD` as the reference for module c
 - compact JSON transport with deterministic error payloads;
 - server-side metadata rather than frontend-only state.
 
-ROI 64H should apply those patterns to table-backed module definitions and the App Catalogue/module registry. It should not introduce a SPA build step, TypeScript, or a frontend-only authoring model.
+ROI 64H applies those patterns to table-backed module definitions and the App Catalogue/module registry. It should not introduce a SPA build step, TypeScript, or a frontend-only authoring model.
 
 ## Goal
 
 Finalize table-backed modules so a MUMPS developer can define, validate, preview, export, import, version, roll back, and register a table module without writing frontend code.
 
-## Proposed backend scope
+## Implemented backend scope
 
 1. Add a table-module definition service, likely in `MIOOSMOD` or a dedicated routine such as `MIOOSMTBL`.
 2. Persist table-backed module definitions server-side with deterministic IDs.
@@ -32,7 +32,7 @@ Finalize table-backed modules so a MUMPS developer can define, validate, preview
 8. Add audit metadata for module definition changes.
 9. Keep frontend work thin: the browser should call server APIs and render server-authored state.
 
-## Proposed UI scope
+## Implemented UI scope
 
 1. App Catalogue view for table-backed modules.
 2. Module definition editor using existing system draggable windows.

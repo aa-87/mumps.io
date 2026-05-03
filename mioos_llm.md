@@ -602,3 +602,7 @@ Use the current source as the source of truth. Before starting ROI 64H, the tabl
 - filter, grouping, column, and editor dialogs use system-style draggable modal windows.
 
 Next ROI design reference: the next ROI should finalize the module authoring/server-side module library. The current repo includes server-side library patterns such as save/update, search/filter, import/export, versioned revisions, rollback, and audit-style metadata. ROI 64H should apply those patterns to table-backed module definitions rather than adding another frontend-only wizard.
+
+## ROI 64H — table module finalization
+
+The current source includes ROI 64H. `MIOOSMTBL` is the server-side table module definition library. It supports `list`, `preview`, `save`, `export`, `import`, `revisions`, and `rollback` actions through `POST /api/mioos/modules/table` and WebSocket commands named `module.table.*`. Successful saves validate the definition, snapshot any previous definition, persist `^MIO("MIOOS","TABLEMOD","USER",user,key)`, install `^MIO("MIOOS","TABLE",user,dataset)`, and register `^MIO("MIOOS","MODULE","USER",user,key)`. The App Catalogue has a thin Table Modules tab; do not move this behavior into a frontend-only wizard.
