@@ -108,3 +108,9 @@ ZLINK "MIOOSMTBL"
 ZLINK "MIOOST"
 DO ^MIOOST
 ```
+
+### Regression fix: table payload application scope
+
+A post-ROI 68 regression showed `vm is not defined` above the Advanced Table and prevented successful editable-cell saves from completing the refetch path. The cause was a stale implementation detail in `backendTableApplyPayload`: it referenced `vm.backendTableNormalizeFixedColumns(...)` even though that method has no local `vm` variable. The method now calls `this.backendTableNormalizeFixedColumns(...)`, keeping fixed-column normalization bound to the Vue root/method context.
+
+Regression checks should verify that applying a table payload after a cell-save refetch does not throw, and that `cell.save` keeps using the shared WebSocket-first / HTTP-fallback mutation path.

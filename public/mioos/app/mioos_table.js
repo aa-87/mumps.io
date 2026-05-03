@@ -390,7 +390,7 @@
       state.lastServerAt = new Date().toLocaleTimeString();
       state.features = Object.assign({}, payload.features || {});
       state.patientRegistration = payload.patientRegistration || null;
-      state.fixedColumns = vm.backendTableNormalizeFixedColumns(state, ((payload.schema || {}).fixedColumns) || payload.fixedColumns || state.fixedColumns || ((state.config || {}).fixedColumns));
+      state.fixedColumns = this.backendTableNormalizeFixedColumns(state, ((payload.schema || {}).fixedColumns) || payload.fixedColumns || state.fixedColumns || ((state.config || {}).fixedColumns));
       if (Array.isArray(payload.groupByColumns)) state.groupByColumns = payload.groupByColumns.slice();
       state.readOnly = !!(+((state.features || {}).readOnly || 0)) || !!((state.config || {}).readonly);
       var schemaColumns = (((payload.schema || {}).columns) || []);

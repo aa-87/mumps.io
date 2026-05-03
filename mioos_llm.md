@@ -607,3 +607,8 @@ ROI 64L is the stabilization pass after fixed columns. It hardens Advanced Table
 ## ROI 68 patient registration foundation
 
 Patient Registration is now a MUMPS-driven module foundation using synthetic sample data. `MIOOSPAT` owns patient-specific schema backfill (`INIT`), field validation (`VALPAT`/`VALFIELD`), query metadata (`PATMETA`), and audit/status markers (`AUDPAT`). `MIOOSTBL` remains the shared table engine and calls `MIOOSPAT` only when dataset is `patient-registration`. Do not claim HIPAA compliance; docs must say HIPAA-ready architecture only and require deployment/operations controls before real PHI.
+
+
+### Table regression fix after ROI 68
+
+The Advanced Table must not reference a free `vm` variable inside root methods. `backendTableApplyPayload` must call `this.backendTableNormalizeFixedColumns(...)` when applying fixed-column metadata. A previous free-variable reference produced `vm is not defined` above the table and broke editable-cell save refetches. Keep cell saves on the shared `cell.save` mutation path and verify payload application before proceeding to ROI 69.

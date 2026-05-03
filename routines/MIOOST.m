@@ -1410,6 +1410,8 @@ T072
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","ROI 64L hardening"),"[MIOOST][T072][roi64l css marker]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableCloseTopDialog"),"[MIOOST][T072][escape close top dialog]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","mioos-table-loading-line"),"[MIOOST][T072][bar loading retained]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","vm.backendTableNormalizeFixedColumns"),0,"[MIOOST][T072][no undefined vm apply payload regression]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","this.backendTableNormalizeFixedColumns"),"[MIOOST][T072][apply payload fixed columns method scope]")
 	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","prompt("),0,"[MIOOST][T072][no native prompt]")
 	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","confirm("),0,"[MIOOST][T072][no native confirm]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 64L advanced table hardening"),"[MIOOST][T072][llm roi64l]")
