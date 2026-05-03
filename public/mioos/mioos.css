@@ -3201,3 +3201,92 @@ button:disabled { cursor: default; opacity: .55; }
 .theme-dark-mode .mioos-table-cell-action { background: rgba(15, 23, 42, .98); color: #e5e7eb; border-color: rgba(148, 163, 184, .35); }
 .theme-dark-mode .mioos-table-cell-action.is-save { background: rgba(22, 101, 52, .95); color: #dcfce7; }
 .theme-dark-mode .mioos-table-cell-action.is-cancel { background: rgba(127, 29, 29, .95); color: #fee2e2; }
+
+/* Regression fix: App Catalogue list/cards layout and table-module editor polish. */
+.mioos-ui-module-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: flex-end; }
+.mioos-ui-module-actions .mioos-btn.active { box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent, #4ba3ff) 24%, transparent); font-weight: 800; }
+.mioos-ui-module-tabs { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 2px; border-bottom: 1px solid rgba(75, 104, 143, .20); }
+.mioos-ui-module-tabs button { min-height: 32px; padding: 6px 10px; border: 1px solid rgba(75, 104, 143, .22); border-bottom: 0; border-radius: 9px 9px 0 0; background: rgba(255,255,255,.72); color: inherit; cursor: pointer; }
+.mioos-ui-module-tabs button.active { background: var(--theme-panel-bg, #fff); font-weight: 800; }
+.mioos-ui-module-tabs span { margin-left: 4px; opacity: .7; font-size: 11px; }
+.mioos-ui-module-filterbar { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(130px, .45fr) minmax(130px, .45fr) auto; gap: 8px; align-items: end; padding: 10px; border: 1px solid rgba(75, 104, 143, .18); border-radius: 12px; background: rgba(255,255,255,.68); }
+.mioos-ui-module-filterbar label { display: flex; flex-direction: column; gap: 4px; min-width: 0; font-size: 11px; font-weight: 700; }
+.mioos-ui-module-filterbar input,
+.mioos-ui-module-filterbar select { min-height: 31px; min-width: 0; border: 1px solid rgba(75,104,143,.30); border-radius: 8px; padding: 5px 8px; background: var(--theme-field-bg, #fff); color: var(--theme-field-text, #10243d); }
+.mioos-ui-module-error,
+.mioos-ui-module-status,
+.mioos-ui-module-empty { margin: 0; padding: 9px 11px; border-radius: 11px; border: 1px solid rgba(75,104,143,.22); background: rgba(255,255,255,.76); font-size: 12px; }
+.mioos-ui-module-error { border-color: rgba(190,45,45,.38); background: #fff1f1; color: #7a1010; }
+.mioos-ui-module-status { border-color: rgba(34,120,70,.32); background: #eefaf3; color: #14532d; }
+.mioos-ui-module-grid.is-list { display: flex; flex-direction: column; gap: 8px; }
+.mioos-ui-module-grid.is-list .mioos-ui-module-card { min-height: 72px; flex-direction: row; align-items: center; overflow: visible; }
+.mioos-ui-module-grid.is-list .mioos-ui-module-icon { width: 42px; height: 42px; flex: 0 0 42px; }
+.mioos-ui-module-card { cursor: pointer; }
+.mioos-ui-module-card > div:not(.mioos-ui-module-icon) { min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+.mioos-ui-module-icon { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 14px; background: rgba(59,130,246,.13); border: 1px solid rgba(59,130,246,.20); font-size: 24px; }
+.mioos-ui-module-card strong { font-size: 13px; }
+.mioos-ui-module-card span { font-size: 11px; opacity: .75; line-height: 1.35; }
+.mioos-ui-module-card footer { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 10.5px; }
+.mioos-ui-module-card footer em,
+.mioos-ui-module-card footer b { font-style: normal; padding: 2px 6px; border-radius: 999px; background: rgba(71,85,105,.10); }
+.mioos-ui-module-card-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.mioos-ui-module-card-actions .mioos-btn { width: auto; min-height: 28px; display: inline-flex; flex-direction: row; align-items: center; padding: 4px 8px; }
+.mioos-table-module-editor { width: min(1040px, calc(100vw - 48px)); max-height: calc(100vh - 56px); overflow: hidden; padding: 0; }
+.mioos-table-module-editor > header,
+.mioos-table-module-editor > footer { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 11px 13px; border-bottom: 1px solid rgba(75,104,143,.20); background: rgba(248,251,255,.98); }
+.mioos-table-module-editor > header strong { display: block; font-size: 15px; }
+.mioos-table-module-editor > header span { display: block; font-size: 11px; opacity: .72; }
+.mioos-table-module-editor > header > button { width: 28px; height: 28px; border: 0; border-radius: 999px; background: rgba(15,23,42,.08); font-size: 20px; line-height: 1; cursor: pointer; }
+.mioos-table-module-editor > main { flex: 1 1 auto; min-height: 0; overflow: auto; display: grid; gap: 14px; padding: 14px; }
+.mioos-table-module-editor > footer { justify-content: flex-end; border-top: 1px solid rgba(75,104,143,.20); border-bottom: 0; flex-wrap: wrap; }
+.mioos-table-module-editor label { display: flex; flex-direction: column; gap: 4px; min-width: 0; font-size: 11px; font-weight: 700; }
+.mioos-table-module-editor input,
+.mioos-table-module-editor select,
+.mioos-table-module-editor textarea { min-width: 0; min-height: 31px; border: 1px solid rgba(75,104,143,.30); border-radius: 8px; padding: 5px 8px; background: var(--theme-field-bg, #fff); color: var(--theme-field-text, #10243d); font: inherit; }
+.mioos-table-module-editor textarea { resize: vertical; }
+.mioos-table-module-editor label.invalid input,
+.mioos-table-module-editor label.invalid textarea,
+.mioos-table-module-editor label.invalid select { border-color: #c14343; box-shadow: 0 0 0 2px rgba(193,67,67,.12); }
+.mioos-table-module-editor label b { color: #9f1d1d; font-size: 10.5px; }
+.mioos-table-module-editor .span-full { grid-column: 1 / -1; }
+.mioos-table-module-section-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.mioos-table-module-section-head h3 { margin: 0; font-size: 14px; }
+.mioos-table-module-section-head small { display: block; opacity: .68; font-size: 11px; }
+.mioos-table-module-columns,
+.mioos-table-module-rows,
+.mioos-table-module-json,
+.mioos-table-module-preview,
+.mioos-table-module-revisions { padding: 12px; border: 1px solid rgba(75,104,143,.18); border-radius: 14px; background: rgba(248,251,255,.82); }
+.mioos-table-module-column-row { display: grid; grid-template-columns: minmax(120px,1fr) minmax(140px,1fr) minmax(120px,.7fr) 100px auto; gap: 8px; align-items: end; margin-top: 8px; }
+.mioos-table-module-row-editor { display: grid; grid-template-columns: minmax(100px,.7fr) repeat(auto-fit,minmax(150px,1fr)); gap: 8px; align-items: end; margin-top: 8px; padding: 10px; border: 1px solid rgba(75,104,143,.16); border-radius: 12px; background: #fff; }
+.mioos-table-module-row-actions { display: flex; justify-content: flex-end; align-items: end; }
+.mioos-table-module-json textarea { width: 100%; box-sizing: border-box; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11px; }
+.mioos-table-module-preview dl { display: grid; grid-template-columns: max-content minmax(0,1fr); gap: 6px 10px; margin: 0 0 10px; }
+.mioos-table-module-preview table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.mioos-table-module-preview th,
+.mioos-table-module-preview td { text-align: left; padding: 7px 8px; border-bottom: 1px solid rgba(75,104,143,.16); }
+.mioos-table-module-revisions ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 7px; }
+.mioos-table-module-revisions li { display: flex; justify-content: space-between; gap: 10px; align-items: center; padding: 8px 9px; border-radius: 10px; border: 1px solid rgba(75,104,143,.16); background: #fff; }
+.mioos-table-form-grid label.is-required > span em { margin-left: 4px; padding: 1px 5px; border-radius: 999px; background: #fff7db; color: #7a5600; font-style: normal; font-size: 10px; font-weight: 800; }
+.mioos-table-form-grid label.has-error input,
+.mioos-table-form-grid label.has-error select,
+.mioos-table-form-grid label.has-error textarea { border-color: #ef4444; box-shadow: 0 0 0 2px rgba(239,68,68,.12); }
+@media (max-width: 900px) {
+  .mioos-ui-module-filterbar { grid-template-columns: 1fr; }
+  .mioos-table-module-column-row,
+  .mioos-table-module-row-editor { grid-template-columns: 1fr; }
+  .mioos-table-module-editor { width: calc(100vw - 24px); }
+}
+.theme-dark-mode .mioos-ui-module-filterbar,
+.theme-dark-mode .mioos-ui-module-tabs button,
+.theme-dark-mode .mioos-table-module-columns,
+.theme-dark-mode .mioos-table-module-rows,
+.theme-dark-mode .mioos-table-module-json,
+.theme-dark-mode .mioos-table-module-preview,
+.theme-dark-mode .mioos-table-module-revisions,
+.theme-dark-mode .mioos-table-module-editor > header,
+.theme-dark-mode .mioos-table-module-editor > footer { background: #0f172a; color: #f8fafc; border-color: rgba(147,197,253,.20); }
+.theme-dark-mode .mioos-table-module-row-editor,
+.theme-dark-mode .mioos-table-module-revisions li { background: #111827; }
+.theme-dark-mode .mioos-ui-module-card footer em,
+.theme-dark-mode .mioos-ui-module-card footer b { background: rgba(226,232,240,.12); }

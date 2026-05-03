@@ -388,22 +388,30 @@
       if (payload.draw && payload.draw < +(state.lastDraw || 0)) return;
       if (payload.draw) state.lastDraw = +payload.draw;
       state.lastServerAt = new Date().toLocaleTimeString();
-      state.features = Object.assign({}, payload.features || {});
-      state.patientRegistration = payload.patientRegistration || null;
+      var hasSchema = !!(payload.schema && Array.isArray(payload.schema.columns));
+      var hasRows = Array.isArray(payload.rows) || Array.isArray(payload.data);
+      var ackOnly = !!payload.mutationOnly && !hasSchema && !hasRows && !payload.pagination;
+      if (ackOnly) {
+        state.error = payload.ok === false ? (payload.message || payload.error || payload.detail || 'Table mutation failed') : state.error;
+        return;
+      }
+      if (payload.features) state.features = Object.assign({}, payload.features || {});
+      if (Object.prototype.hasOwnProperty.call(payload, 'patientRegistration')) state.patientRegistration = payload.patientRegistration || null;
+      state.validationRules = clone((payload.validation || {}).fields || payload.validationFields || state.validationRules || {});
       state.fixedColumns = this.backendTableNormalizeFixedColumns(state, ((payload.schema || {}).fixedColumns) || payload.fixedColumns || state.fixedColumns || ((state.config || {}).fixedColumns));
       if (Array.isArray(payload.groupByColumns)) state.groupByColumns = payload.groupByColumns.slice();
       state.readOnly = !!(+((state.features || {}).readOnly || 0)) || !!((state.config || {}).readonly);
       var schemaColumns = (((payload.schema || {}).columns) || []);
-      var payloadRows = Array.isArray(payload.rows) ? payload.rows : (Array.isArray(payload.data) ? payload.data : []);
+      var payloadRows = Array.isArray(payload.rows) ? payload.rows : (Array.isArray(payload.data) ? payload.data : null);
       state.columns = normalizeColumns(schemaColumns.length ? schemaColumns : state.columns);
-      state.rows = normalizeRows(payloadRows);
+      if (payloadRows !== null) state.rows = normalizeRows(payloadRows);
       state.pagination = Object.assign({}, state.pagination || {}, payload.pagination || {});
       if (typeof payload.recordsTotal !== 'undefined') state.pagination.totalRows = +payload.recordsTotal || 0;
       if (typeof payload.recordsFiltered !== 'undefined') state.pagination.filteredRows = +payload.recordsFiltered || 0;
       state.rowActions = (payload || {}).rowActions || state.rowActions || [];
       state.bulkActions = (payload || {}).bulkActions || state.bulkActions || [];
-      state.groups = toList((payload || {}).groups);
-      state.error = payload && payload.ok === false ? (payload.error || payload.detail || 'Table request failed') : state.error;
+      if (Object.prototype.hasOwnProperty.call(payload, 'groups')) state.groups = toList((payload || {}).groups);
+      state.error = payload && payload.ok === false ? (payload.message || payload.error || payload.detail || 'Table request failed') : state.error;
       if (!(state.groupByColumns && state.groupByColumns.length) && !state.groupBy) state.groupExpanded = {};
       if (((state.groupByColumns && state.groupByColumns.length) || state.groupBy) && !Object.keys(state.groupExpanded || {}).length) {
         state.groups.forEach(function (g) { state.groupExpanded[g.key || g.label] = true; });
@@ -938,6 +946,25 @@
     backendTableFieldError: function (state, key) {
       return ((state || {}).validation || {})[key] || '';
     },
+    backendTableValidationRule: function (state, key) {
+      return (((state || {}).validationRules || {})[key]) || {};
+    },
+    backendTableColumnRequired: function (state, column) {
+      var key = (column || {}).key || '';
+      if (!key || key === 'id') return false;
+      var rule = this.backendTableValidationRule(state, key);
+      return !!(+((column || {}).required || 0) || +((column || {}).isRequired || 0) || +(rule.required || 0));
+    },
+    backendTableEditorColumns: function (state) {
+      var vm = this;
+      return normalizeColumns((state || {}).columns || []).filter(function (col) {
+        if (!col || !col.key) return false;
+        if (col.key === 'id') return false;
+        if (col.editable === false || col.editable === 0 || col.editable === '0') return false;
+        if (col.hidden && !vm.backendTableColumnRequired(state, col)) return false;
+        return true;
+      });
+    },
     backendTableOpenRowEditor: function (tableId, row) {
       var state = this.backendTableState(tableId);
       state.validation = {};
@@ -983,8 +1010,13 @@
         var key = String((editor.column || {}).key || '').trim();
         if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(key)) errors.key = 'Column key must start with a letter and contain only letters, numbers, and underscores.';
       } else {
-        var visible = normalizeColumns((state || {}).columns || []).filter(function (col) { return !col.hidden && col.key !== 'id'; });
-        if (visible.length && !visible.some(function (col) { return String((editor.row || {})[col.key] || '').trim(); })) errors.row = 'At least one visible field must be provided.';
+        var editable = this.backendTableEditorColumns(state);
+        editable.forEach(function (col) {
+          var rule = (((state || {}).validationRules || {})[col.key]) || {};
+          var required = !!(+((col || {}).required || 0) || +((col || {}).isRequired || 0) || +(rule.required || 0));
+          if (required && !String((editor.row || {})[col.key] || '').trim()) errors[col.key] = (rule.message || (col.label || col.key) + ' is required');
+        });
+        if (!Object.keys(errors).length && editable.length && !editable.some(function (col) { return String((editor.row || {})[col.key] || '').trim(); })) errors.row = 'At least one editable field must be provided.';
       }
       state.validation = errors;
       return !Object.keys(errors).length;
@@ -995,7 +1027,7 @@
       if ((state.editor || {}).mode === 'column') return this.backendTableMutate(tableId, 'column.save', { column: clone(state.editor.column || {}), originalKey: (state.editor.column || {}).originalKey || '' }).then(function(payload){ if (payload && payload.ok !== false) state.toast = 'Column saved'; });
       var body = { row: clone(state.editor.row || {}) };
       if (state.dataset === 'patient-registration') body.reviewQueue = String((((state.filters || {}).reviewQueue || {}).value) || (body.row || {}).reviewQueue || '');
-      return this.backendTableMutate(tableId, 'row.save', body).then(function(payload){ if (payload && payload.ok !== false) state.toast = 'Row saved'; });
+      return this.backendTableMutate(tableId, 'row.save', body).then(function(payload){ if (payload && payload.ok !== false) { state.toast = 'Row saved'; state.error = ''; } return payload; });
     },
     backendTableDeleteColumn: function (tableId, column) {
       if (!column || !column.key) return null;
@@ -1241,7 +1273,7 @@
           '<div class="mioos-table-editor-backdrop" v-if="state.editor && state.editor.open" @click.self="vm.backendTableCloseEditor(tableId || state.id)">' +
             '<div class="mioos-table-editor mioos-system-modal" role="dialog" aria-modal="true" :style="vm.backendTableDialogStyle(state, &quot;editor&quot;)">' +
               '<header class="mioos-system-modal-titlebar" @pointerdown.prevent="vm.backendTableBeginDialogDrag(tableId || state.id, &quot;editor&quot;, $event)"><strong>[[ state.editor.title ]]</strong><button type="button" aria-label="Close editor" @pointerdown.stop @click.stop="vm.backendTableCloseEditor(tableId || state.id)">×</button></header>' +
-              '<section v-if="state.editor.mode === \'row\'" class="mioos-table-form-grid"><label v-for="col in allColumns" :key="col.key" :class="{ \'has-error\': vm.backendTableFieldError(state, col.key) }"><span>[[ col.label ]]</span><textarea v-if="vm.backendTableFilterControl(col) === &quot;textarea&quot;" v-model="state.editor.row[col.key]" :placeholder="col.key"></textarea><select v-else-if="vm.backendTableFilterControl(col) === &quot;select&quot;" v-model="state.editor.row[col.key]"><option value="">Choose…</option><option v-for="opt in vm.backendTableColumnOptions(state, col)" :key="opt" :value="opt">[[ opt ]]</option></select><select v-else-if="vm.backendTableFilterControl(col) === &quot;boolean&quot;" v-model="state.editor.row[col.key]"><option value="">Choose…</option><option value="true">True</option><option value="false">False</option></select><input v-else-if="vm.backendTableFilterControl(col) === &quot;date&quot;" type="date" v-model="state.editor.row[col.key]" :placeholder="col.key"><input v-else-if="vm.backendTableFilterControl(col) === &quot;number&quot;" type="number" v-model="state.editor.row[col.key]" :placeholder="col.key"><input v-else v-model="state.editor.row[col.key]" :placeholder="col.key"><button v-if="vm.backendTableCanAddColumnOption(state, col)" type="button" class="mioos-table-inline-link" @click="vm.backendTableAddEditorOption(tableId || state.id, col)">Add option</button><small v-if="vm.backendTableFieldError(state, col.key)" class="mioos-field-error">[[ vm.backendTableFieldError(state, col.key) ]]</small></label></section>' +
+              '<section v-if="state.editor.mode === \'row\'" class="mioos-table-form-grid"><label v-for="col in vm.backendTableEditorColumns(state)" :key="col.key" :class="{ \'has-error\': vm.backendTableFieldError(state, col.key), \'is-required\': vm.backendTableColumnRequired(state, col) }"><span>[[ col.label ]] <em v-if="vm.backendTableColumnRequired(state, col)">required</em></span><textarea v-if="vm.backendTableFilterControl(col) === &quot;textarea&quot;" v-model="state.editor.row[col.key]" :placeholder="col.key"></textarea><select v-else-if="vm.backendTableFilterControl(col) === &quot;select&quot;" v-model="state.editor.row[col.key]"><option value="">Choose…</option><option v-for="opt in vm.backendTableColumnOptions(state, col)" :key="opt" :value="opt">[[ opt ]]</option></select><select v-else-if="vm.backendTableFilterControl(col) === &quot;boolean&quot;" v-model="state.editor.row[col.key]"><option value="">Choose…</option><option value="true">True</option><option value="false">False</option></select><input v-else-if="vm.backendTableFilterControl(col) === &quot;date&quot;" type="date" v-model="state.editor.row[col.key]" :placeholder="col.key"><input v-else-if="vm.backendTableFilterControl(col) === &quot;number&quot;" type="number" v-model="state.editor.row[col.key]" :placeholder="col.key"><input v-else v-model="state.editor.row[col.key]" :placeholder="col.key"><button v-if="vm.backendTableCanAddColumnOption(state, col)" type="button" class="mioos-table-inline-link" @click="vm.backendTableAddEditorOption(tableId || state.id, col)">Add option</button><small v-if="vm.backendTableFieldError(state, col.key)" class="mioos-field-error">[[ vm.backendTableFieldError(state, col.key) ]]</small></label></section>' +
               '<section v-else class="mioos-table-form-grid"><label><span>Key</span><input v-model="state.editor.column.key" :disabled="!!state.editor.column.originalKey" placeholder="fieldName"><small v-if="state.editor.column.originalKey">Column keys are immutable; create a new column to change the key.</small></label><label><span>Label</span><input v-model="state.editor.column.label" placeholder="Column label"></label><label><span>Type</span><select v-model="state.editor.column.type"><option>text</option><option>textarea</option><option>select</option><option>multiselect</option><option>badge</option><option>date</option><option>number</option><option>boolean</option></select></label><label><span>Width</span><input type="number" v-model="state.editor.column.width"></label><label><span>Group</span><input v-model="state.editor.column.group" placeholder="Optional header group"></label><label class="mioos-table-check"><span>Hidden</span><input type="checkbox" v-model="state.editor.column.hidden"></label></section>' +
               '<p class="mioos-table-error" v-for="err in Object.values(state.validation || {})" :key="err">[[ err ]]</p><footer><button type="button" class="mioos-btn is-primary" :disabled="state.saving || state.loading" @click="vm.backendTableSaveEditor(tableId || state.id)">[[ state.saving ? &quot;Saving…&quot; : &quot;Save&quot; ]]</button><button type="button" class="mioos-btn" @click="vm.backendTableCloseEditor(tableId || state.id)">Cancel</button></footer>' +
             '</div>' +

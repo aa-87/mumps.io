@@ -393,3 +393,9 @@ All patient mutations remain server-side MUMPS actions. Successful mutations ret
 The `patient-registration` dataset is permission-gated before patient rows are loaded or mutated. `QUERY^MIOOSTBL` calls `ALLOW^MIOOSPAT(.STATE,"query",.ERR)` before `LOADDATA`, and `MUTATE^MIOOSTBL` calls `ALLOW^MIOOSPAT(.STATE,ACTION,.ERR)` before validation or mutation. Failed access returns deterministic `patient_access_denied` metadata instead of a partial patient payload.
 
 Read-only patient roles receive masked rows through `MASKOUT^MIOOSPAT(.OUT,.STATE)`. The response advertises `features.phiMasked=1` and `patientRegistration.phiMasked=1` so the browser and tests can distinguish a masked list from a full PHI list.
+
+## Regression note — mutation acknowledgements and validation metadata
+
+Successful table mutations may return acknowledgement-only payloads with `mutationOnly: true`. Browser code must not apply those acknowledgements as full query payloads because they do not contain `rows`, `schema.columns`, feature flags, or pagination metadata. Row and cell saves should refetch when the backend asks for it, while preserving the existing table state until the refetch completes.
+
+Query responses now expose `validation.fields` so row editor UIs can mark required fields and provide immediate client-side feedback before the authoritative server-side validation runs. Server-side MUMPS validation remains the source of truth.

@@ -35,6 +35,8 @@ QUERY(STATE,CONF,IN,OUT,ERR)
 	. DO METASC(ROOT,.SCHEMA)
 	. DO FIXSC(ROOT,.SCHEMA,.OUT)
 	MERGE OUT("schema","columns")=SCHEMA("columns")
+	IF DATASET'="vfs" DO
+	. IF $DATA(@ROOT@("validation","fields")) MERGE OUT("validation","fields")=@ROOT@("validation","fields")
 	DO ACTIONS(.OUT,$SELECT(DATASET="vfs":1,1:0))
 	DO PAGE(.WORK,.OUT,PAGE,PSIZE,TOTAL,FILTERED)
 	DO GROUPIN(.IN,.GROUPKEYS,.GROUPN)

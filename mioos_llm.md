@@ -628,3 +628,9 @@ ROI 70 patient registration adds direct Patient Registration shell entry (`patie
 ## ROI 71 patient registration permission and PHI hardening
 
 Patient Registration is now server-gated through `CANLAUNCH^MIOOSPAT`, `CAN^MIOOSPAT`, `ALLOW^MIOOSPAT`, and `PERMACT^MIOOSPAT`. `MIOOSTBL` checks patient permissions before loading rows or mutating data. Limited read-only roles receive masked rows through `MASKOUT^MIOOSPAT`; unauthorized users get deterministic `patient_access_denied` errors and no patient row payload. The browser also uses compact `✓`/`×` cell edit buttons and queue-aware Patient Registration add-row defaults.
+
+### Regression fix note — App Catalogue, Table Module Definition, Patient table editing
+
+When modifying the App Catalogue, keep the List/Cards toggle backed by visible CSS for `.mioos-ui-module-grid.is-list`. Do not remove the Table Module Definition editor styles under `.mioos-table-module-editor`; otherwise the modal falls back to bare HTML. Table module actions should set inline `tableError` and return `{ok:false}` on failure instead of throwing into Vue click handlers.
+
+For Advanced Table mutations, do not apply acknowledgement-only `mutationOnly:true` payloads as full table query payloads. They intentionally omit rows/schema. Patient Registration add/edit uses validation metadata from `validation.fields` to display required fields, but the MUMPS backend remains authoritative for validation and persistence.

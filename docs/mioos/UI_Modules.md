@@ -113,3 +113,9 @@ The Patient Registration module is available both through the App Catalogue and 
 ## ROI 71 Patient Registration entry-point gating
 
 The Patient Registration shell entry and App Catalogue module are only emitted when `CANLAUNCH^MIOOSPAT(.STATE)` allows patient read access. The general UI Modules catalogue remains available when the module system is enabled. Limited read-only roles may open Patient Registration, but the backend returns masked PHI rows.
+
+## Regression note — App Catalogue and Table Module Definition
+
+The App Catalogue layout switch is a visual state, not a separate route. The catalogue grid uses `mioos-ui-module-grid` for card layout and `mioos-ui-module-grid is-list` for list layout. CSS for both states must stay in `public/mioos/mioos.css`; otherwise the List/Cards button will still update Vue state but appear to do nothing.
+
+The Table Module Definition editor is intentionally styled as a system modal with the `mioos-table-module-editor` class. Preview, revisions, import/export, save, and rollback actions call `/api/mioos/modules/table` through `uiModuleTableRequest()`. Failed requests should render deterministic inline error text in the modal and must not surface as unhandled Vue click errors.
