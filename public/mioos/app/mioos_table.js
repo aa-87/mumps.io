@@ -19,7 +19,7 @@
   function defaultTableConfig() {
     return {
       contract: TABLE_CONTRACT,
-      features: { toolbar: true, datasetSwitcher: true, search: true, filters: true, grouping: true, columnPicker: true, columnGroups: false, rowCrud: true, columnCrud: true, selection: true, bulkActions: true, pagination: true, rowDetails: true, resizeColumns: true, cellEditing: true, columnReorder: true, serverSide: true, processingIndicator: true },
+      features: { toolbar: true, datasetSwitcher: true, search: true, filters: true, grouping: true, columnPicker: true, columnGroups: false, rowCrud: true, columnCrud: true, selection: true, bulkActions: true, pagination: true, rowDetails: true, resizeColumns: true, cellEditing: true, columnReorder: true, fixedColumns: true, serverSide: true, processingIndicator: true },
       columns: [],
       defaultSort: { column: 'name', direction: 'ascending' },
       defaultPageSize: 25,
@@ -28,6 +28,7 @@
       transport: 'websocket',
       mutateTransport: 'websocket',
       actionsWidth: 156,
+      fixedColumns: { start: 0, end: 0 },
       emptyMessage: 'No rows match the current server-side table query.',
       loadingMessage: 'Loading rows from server…',
       saveMessage: 'Saving table changes…',
@@ -225,6 +226,7 @@
         groupDraftColumns: [],
         filterModalOpen: false,
         dialogPositions: {},
+        fixedColumns: { start: 0, end: 0 },
         draw: 0,
         lastDraw: 0,
         requestLabel: '',
@@ -241,11 +243,14 @@
         config: defaultTableConfig(),
         toast: '',
         validation: {},
+        patientRegistration: null,
         columnResize: null,
         columnPickerOpen: false,
         groupExpanded: {},
         editor: { open: false, mode: 'row', title: '', row: {}, column: {} },
-        cellEditor: { open: false, rowId: '', columnKey: '', value: '', originalValue: '' }
+        cellEditor: { open: false, rowId: '', columnKey: '', value: '', originalValue: '' },
+        optionDialog: { open: false, context: '', columnKey: '', columnLabel: '', value: '' },
+        confirmDialog: { open: false, kind: '', title: '', message: '', confirmText: 'Confirm', danger: false, payload: {} }
       };
     },
     backendTableState: function (tableId) {
@@ -384,6 +389,8 @@
       if (payload.draw) state.lastDraw = +payload.draw;
       state.lastServerAt = new Date().toLocaleTimeString();
       state.features = Object.assign({}, payload.features || {});
+      state.patientRegistration = payload.patientRegistration || null;
+      state.fixedColumns = vm.backendTableNormalizeFixedColumns(state, ((payload.schema || {}).fixedColumns) || payload.fixedColumns || state.fixedColumns || ((state.config || {}).fixedColumns));
       if (Array.isArray(payload.groupByColumns)) state.groupByColumns = payload.groupByColumns.slice();
       state.readOnly = !!(+((state.features || {}).readOnly || 0)) || !!((state.config || {}).readonly);
       var schemaColumns = (((payload.schema || {}).columns) || []);
@@ -450,7 +457,72 @@
       return this.backendTableVisibleColumns(state).length + (this.backendTableShowControl(state) ? 1 : 0) + (this.backendTableShowActions(state) ? 1 : 0);
     },
     backendTableAllColumns: function (state) { return normalizeColumns((state || {}).columns || []); },
-    backendTableColumnStyle: function (column) { return { width: Math.max(48, +(column || {}).width || 120) + 'px' }; },
+    backendTableNormalizeFixedColumns: function (state, source) {
+      source = source || {};
+      var visible = this.backendTableVisibleColumns(state || {});
+      var max = visible.length;
+      var start = Math.max(0, +(source.start || source.fixedStart || 0) || 0);
+      var end = Math.max(0, +(source.end || source.fixedEnd || 0) || 0);
+      if (!this.backendTableFeature(state || {}, 'fixedColumns')) return { start: 0, end: 0 };
+      if (start > max) start = max;
+      if (end > Math.max(0, max - start)) end = Math.max(0, max - start);
+      return { start: start, end: end };
+    },
+    backendTableColumnWidth: function (column) { return Math.max(48, +(column || {}).width || 120); },
+    backendTableControlWidth: function () { return 48; },
+    backendTableFixedColumns: function (state) { return this.backendTableNormalizeFixedColumns(state, (state || {}).fixedColumns || (((state || {}).config || {}).fixedColumns)); },
+    backendTableFixedOffset: function (state, index, side, role) {
+      var columns = this.backendTableVisibleColumns(state || {});
+      var offset = 0;
+      if (side === 'start') {
+        if (this.backendTableShowControl(state)) offset += this.backendTableControlWidth();
+        for (var i = 0; i < index; i += 1) offset += this.backendTableColumnWidth(columns[i]);
+        if (role === 'control') offset = 0;
+      } else if (side === 'end') {
+        if (this.backendTableShowActions(state)) offset += Math.max(96, +((state || {}).actionsWidth || (((state || {}).config || {}).actionsWidth) || 156));
+        for (var j = columns.length - 1; j > index; j -= 1) offset += this.backendTableColumnWidth(columns[j]);
+        if (role === 'actions') offset = 0;
+      }
+      return offset;
+    },
+    backendTableStickySide: function (state, column, index, role) {
+      var fixed = this.backendTableFixedColumns(state);
+      var columns = this.backendTableVisibleColumns(state || {});
+      if (!this.backendTableFeature(state || {}, 'fixedColumns')) return '';
+      if (role === 'control') return fixed.start > 0 ? 'start' : '';
+      if (role === 'actions') return fixed.end > 0 ? 'end' : '';
+      if (!column || index < 0) return '';
+      if (fixed.start > 0 && index < fixed.start) return 'start';
+      if (fixed.end > 0 && index >= Math.max(0, columns.length - fixed.end)) return 'end';
+      return '';
+    },
+    backendTableStickyClass: function (state, column, index, role) {
+      var side = this.backendTableStickySide(state, column, index, role);
+      if (!side) return '';
+      return 'mioos-table-sticky is-fixed-' + side + (role ? ' is-fixed-' + role : '');
+    },
+    backendTableStickyStyle: function (state, column, index, role) {
+      var side = this.backendTableStickySide(state, column, index, role);
+      if (!side) return {};
+      var style = { zIndex: role === 'head' ? 6 : 5 };
+      if (side === 'start') style.left = this.backendTableFixedOffset(state, index, 'start', role) + 'px';
+      if (side === 'end') style.right = this.backendTableFixedOffset(state, index, 'end', role) + 'px';
+      return style;
+    },
+    backendTableSetFixedColumns: function (tableId, side, value) {
+      var state = this.backendTableState(tableId);
+      if (!this.backendTableFeature(state, 'fixedColumns')) return Promise.resolve(state);
+      var next = this.backendTableNormalizeFixedColumns(state, state.fixedColumns || {});
+      next[side === 'end' ? 'end' : 'start'] = Math.max(0, +value || 0);
+      next = this.backendTableNormalizeFixedColumns(state, next);
+      state.fixedColumns = next;
+      var vm = this;
+      return this.backendTableMutate(tableId, 'column.fixed', { fixedColumns: next, keepEditor: true }).then(function (payload) {
+        if (payload && payload.ok !== false) vm.backendTableSetToast(tableId, 'Fixed columns updated');
+        return payload;
+      });
+    },
+    backendTableColumnStyle: function (column) { return { width: this.backendTableColumnWidth(column) + 'px' }; },
     backendTableActionsStyle: function (state) { return { width: Math.max(96, +((state || {}).actionsWidth || (((state || {}).config || {}).actionsWidth) || 156)) + 'px' }; },
     backendTableColumnGroupRows: function (state) {
       var columns = this.backendTableVisibleColumns(state);
@@ -555,6 +627,7 @@
       state.filters = {};
       state.filterDraft = {};
       state.pagination.page = 1;
+      state.filterModalOpen = false;
       return this.backendTableFetch(tableId);
     },
     backendTableOpenColumnPicker: function (tableId) { this.backendTableState(tableId).columnPickerOpen = true; },
@@ -1011,12 +1084,13 @@
       if (state.config.defaultSort) state.sort = clone(state.config.defaultSort);
       if (state.config.columns && state.config.columns.length) state.columns = normalizeColumns(state.config.columns);
       state.actionsWidth = Math.max(96, +(state.config.actionsWidth || state.actionsWidth || 156));
+      state.fixedColumns = this.backendTableNormalizeFixedColumns(state, state.config.fixedColumns || state.fixedColumns);
       return state.config;
     },
     backendTableFeature: function (state, key) {
       var cfg = mergeConfig(defaultTableConfig(), (state || {}).config || {});
       var enabled = !!((cfg.features || {})[key]);
-      var map = { rowCrud: 'crudRows', columnCrud: 'crudColumns', rowDetails: 'expansionRows', resizeColumns: 'resizableColumns', filters: 'filtering', grouping: 'columnGrouping', bulkActions: 'bulkActions', selection: 'selection', pagination: 'serverPagination', cellEditing: 'cellEditing', columnReorder: 'columnReorder' };
+      var map = { rowCrud: 'crudRows', columnCrud: 'crudColumns', rowDetails: 'expansionRows', resizeColumns: 'resizableColumns', filters: 'filtering', grouping: 'columnGrouping', bulkActions: 'bulkActions', selection: 'selection', pagination: 'serverPagination', cellEditing: 'cellEditing', columnReorder: 'columnReorder', fixedColumns: 'fixedColumns' };
       var serverKey = map[key] || key;
       var features = (state || {}).features || {};
       if (Object.prototype.hasOwnProperty.call(features, serverKey) && (+features[serverKey] === 0 || features[serverKey] === false)) return false;
@@ -1076,6 +1150,7 @@
           '</header>' +
           '<div class="mioos-table-processing" role="status" aria-label="Table loading" v-if="state.loading || state.saving"><span class="mioos-table-loading-line"></span></div>' +
           '<div class="mioos-table-toast" role="status" v-if="state.toast">[[ state.toast ]]</div>' +
+          '<aside class="mioos-table-patient-banner" v-if="state.patientRegistration"><strong>[[ state.patientRegistration.title || &quot;Patient Registration&quot; ]]</strong><span>[[ state.patientRegistration.statusMessage || state.patientRegistration.notice ]]</span></aside>' +
           '<div class="mioos-table-bulkbar" v-if="selectedCount && vm.backendTableFeature(state, &quot;bulkActions&quot;)"><span>[[ selectedCount ]] selected</span><button v-for="action in state.bulkActions" :key="action.key" type="button" @click="vm.backendTableRunBulkAction(tableId || state.id, action)">[[ action.label ]]</button><button type="button" @click="vm.backendTableClearSelection(tableId || state.id)">Clear</button></div>' +
           '<div class="mioos-table-error" v-if="state.error">[[ state.error ]]</div>' +
           '<div class="mioos-table-editor-backdrop" v-if="state.filterModalOpen" @click.self="vm.backendTableCloseFilters(tableId || state.id)">' +
@@ -1095,6 +1170,7 @@
           '<div class="mioos-table-editor-backdrop" v-if="state.columnPickerOpen" @click.self="vm.backendTableCloseColumnPicker(tableId || state.id)">' +
             '<div class="mioos-table-editor is-column-picker mioos-system-modal" role="dialog" aria-modal="true" :style="vm.backendTableDialogStyle(state, &quot;columns&quot;)">' +
               '<header class="mioos-system-modal-titlebar" @pointerdown.prevent="vm.backendTableBeginDialogDrag(tableId || state.id, &quot;columns&quot;, $event)"><strong>Visible columns</strong><button type="button" aria-label="Close columns" @pointerdown.stop @click.stop="vm.backendTableCloseColumnPicker(tableId || state.id)">×</button></header>' +
+              '<section v-if="vm.backendTableFeature(state, &quot;fixedColumns&quot;)" class="mioos-table-fixed-controls"><label><span>Fixed start columns</span><input type="number" min="0" :max="columns.length" :value="(state.fixedColumns || {}).start || 0" @change="vm.backendTableSetFixedColumns(tableId || state.id, &quot;start&quot;, $event.target.value)"></label><label><span>Fixed end columns</span><input type="number" min="0" :max="columns.length" :value="(state.fixedColumns || {}).end || 0" @change="vm.backendTableSetFixedColumns(tableId || state.id, &quot;end&quot;, $event.target.value)"></label></section>' +
               '<section class="mioos-table-column-list">' +
                 '<article v-for="(col, index) in allColumns" :key="col.key" class="mioos-table-column-item">' +
                   '<button type="button" :class="{ active: !col.hidden }" @click="vm.backendTableToggleColumn(tableId || state.id, col.key)"><span>[[ col.hidden ? &quot;☐&quot; : &quot;☑&quot; ]]</span><b>[[ col.label ]]</b><small>[[ col.key ]]</small></button>' +
@@ -1138,7 +1214,7 @@
                   '<tr v-if="state.groupByColumns && state.groupByColumns.length" class="mioos-table-group-row"><td :colspan="vm.backendTableColspan(state)"><button type="button" @click="vm.backendTableToggleGroup(tableId || state.id, group.key)">[[ vm.backendTableIsGroupExpanded(state, group.key) ? \'▾\' : \'▸\' ]]</button><strong>[[ group.label ]]</strong><span>[[ group.count ]] rows</span></td></tr>' +
                   '<template v-if="!(state.groupByColumns && state.groupByColumns.length) || vm.backendTableIsGroupExpanded(state, group.key)">' +
                     '<template v-for="row in group.rows" :key="keyOf(row)">' +
-                      '<tr :class="{ \'is-selected\': vm.backendTableIsSelected(state, row) }"><td v-if="vm.backendTableShowControl(state)" class="mioos-table-control-cell" :class="vm.backendTableStickyClass(state, null, -1, &quot;control&quot;)" :style="vm.backendTableStickyStyle(state, null, -1, &quot;control&quot;)"><button v-if="row._expand && vm.backendTableFeature(state, &quot;rowDetails&quot;)" class="mioos-table-detail-toggle" type="button" :aria-expanded="vm.backendTableIsExpanded(state, row) ? \'true\' : \'false\'" @click="vm.backendTableToggleExpand(tableId || state.id, row)">[[ vm.backendTableIsExpanded(state, row) ? \'▾\' : \'▸\' ]]</button><input v-if="vm.backendTableShowSelection(state)" type="checkbox" :checked="vm.backendTableIsSelected(state, row)" @change="vm.backendTableToggleRow(tableId || state.id, row)"></td><td v-for="col in columns" :key="col.key" :class="{ \'is-cell-editing\': vm.backendTableIsCellEditing(state, row, col), \'is-cell-editable\': vm.backendTableCanEditCell(state, row, col) }"><div v-if="vm.backendTableIsCellEditing(state, row, col)" class="mioos-table-cell-editor"><textarea v-if="vm.backendTableFilterControl(col) === &quot;textarea&quot;" :value="vm.backendTableCellDraftValue(state, row, col)" @input="vm.backendTableSetCellDraft(tableId || state.id, $event.target.value)"></textarea><select v-else-if="col.type === &quot;multiselect&quot;" multiple :value="vm.backendTableCellMultiValue(state, row, col)" @change="vm.backendTableSetCellMultiDraft(tableId || state.id, $event)"><option v-for="opt in vm.backendTableColumnOptions(state, col)" :key="opt" :value="opt">[[ opt ]]</option></select><select v-else-if="vm.backendTableFilterControl(col) === &quot;select&quot;" :value="vm.backendTableCellDraftValue(state, row, col)" @change="vm.backendTableSetCellDraft(tableId || state.id, $event.target.value)"><option value="">Choose…</option><option v-for="opt in vm.backendTableColumnOptions(state, col)" :key="opt" :value="opt">[[ opt ]]</option></select><select v-else-if="vm.backendTableFilterControl(col) === &quot;boolean&quot;" :value="vm.backendTableCellDraftValue(state, row, col)" @change="vm.backendTableSetCellDraft(tableId || state.id, $event.target.value)"><option value="">Choose…</option><option value="true">True</option><option value="false">False</option></select><input v-else-if="vm.backendTableFilterControl(col) === &quot;date&quot;" type="date" :value="vm.backendTableCellDraftValue(state, row, col)" @input="vm.backendTableSetCellDraft(tableId || state.id, $event.target.value)"><input v-else-if="vm.backendTableFilterControl(col) === &quot;number&quot;" type="number" :value="vm.backendTableCellDraftValue(state, row, col)" @input="vm.backendTableSetCellDraft(tableId || state.id, $event.target.value)"><input v-else :value="vm.backendTableCellDraftValue(state, row, col)" @input="vm.backendTableSetCellDraft(tableId || state.id, $event.target.value)"><small v-if="vm.backendTableFieldError(state, col.key)" class="mioos-field-error">[[ vm.backendTableFieldError(state, col.key) ]]</small><span class="mioos-table-cell-actions"><button type="button" class="mioos-btn is-primary" :disabled="state.saving" @click="vm.backendTableSaveCell(tableId || state.id, row, col)">Save</button><button type="button" class="mioos-btn" @click="vm.backendTableCancelCellEditor(tableId || state.id)">Cancel</button></span></div><button v-else-if="vm.backendTableCanEditCell(state, row, col)" type="button" class="mioos-table-cell-edit-button" @click="vm.backendTableOpenCellEditor(tableId || state.id, row, col)"><span :class="\'mioos-table-cell type-\' + col.type">[[ vm.backendTableCellText(row, col) ]]</span><small>Edit</small></button><span v-else :class="\'mioos-table-cell type-\' + col.type">[[ vm.backendTableCellText(row, col) ]]</span></td><td v-if="vm.backendTableShowActions(state)" class="mioos-table-actions" :class="vm.backendTableStickyClass(state, null, -1, &quot;actions&quot;)" :style="vm.backendTableStickyStyle(state, null, -1, &quot;actions&quot;)"><button v-for="action in vm.backendTableVisibleRowActions(state)" :key="action.key" type="button" @click="vm.backendTableRunAction(tableId || state.id, action, row)">[[ action.label ]]</button></td></tr>' +
+                      '<tr :class="{ \'is-selected\': vm.backendTableIsSelected(state, row) }"><td v-if="vm.backendTableShowControl(state)" class="mioos-table-control-cell" :class="vm.backendTableStickyClass(state, null, -1, &quot;control&quot;)" :style="vm.backendTableStickyStyle(state, null, -1, &quot;control&quot;)"><button v-if="row._expand && vm.backendTableFeature(state, &quot;rowDetails&quot;)" class="mioos-table-detail-toggle" type="button" :aria-expanded="vm.backendTableIsExpanded(state, row) ? \'true\' : \'false\'" @click="vm.backendTableToggleExpand(tableId || state.id, row)">[[ vm.backendTableIsExpanded(state, row) ? \'▾\' : \'▸\' ]]</button><input v-if="vm.backendTableShowSelection(state)" type="checkbox" :checked="vm.backendTableIsSelected(state, row)" @change="vm.backendTableToggleRow(tableId || state.id, row)"></td><td v-for="(col, index) in columns" :key="col.key" :class="[vm.backendTableStickyClass(state, col, index, &quot;body&quot;), { \'is-cell-editing\': vm.backendTableIsCellEditing(state, row, col), \'is-cell-editable\': vm.backendTableCanEditCell(state, row, col) }]" :style="vm.backendTableStickyStyle(state, col, index, &quot;body&quot;)"><div v-if="vm.backendTableIsCellEditing(state, row, col)" class="mioos-table-cell-editor"><textarea v-if="vm.backendTableFilterControl(col) === &quot;textarea&quot;" :value="vm.backendTableCellDraftValue(state, row, col)" @input="vm.backendTableSetCellDraft(tableId || state.id, $event.target.value)"></textarea><select v-else-if="col.type === &quot;multiselect&quot;" multiple :value="vm.backendTableCellMultiValue(state, row, col)" @change="vm.backendTableSetCellMultiDraft(tableId || state.id, $event)"><option v-for="opt in vm.backendTableColumnOptions(state, col)" :key="opt" :value="opt">[[ opt ]]</option></select><select v-else-if="vm.backendTableFilterControl(col) === &quot;select&quot;" :value="vm.backendTableCellDraftValue(state, row, col)" @change="vm.backendTableSetCellDraft(tableId || state.id, $event.target.value)"><option value="">Choose…</option><option v-for="opt in vm.backendTableColumnOptions(state, col)" :key="opt" :value="opt">[[ opt ]]</option></select><select v-else-if="vm.backendTableFilterControl(col) === &quot;boolean&quot;" :value="vm.backendTableCellDraftValue(state, row, col)" @change="vm.backendTableSetCellDraft(tableId || state.id, $event.target.value)"><option value="">Choose…</option><option value="true">True</option><option value="false">False</option></select><input v-else-if="vm.backendTableFilterControl(col) === &quot;date&quot;" type="date" :value="vm.backendTableCellDraftValue(state, row, col)" @input="vm.backendTableSetCellDraft(tableId || state.id, $event.target.value)"><input v-else-if="vm.backendTableFilterControl(col) === &quot;number&quot;" type="number" :value="vm.backendTableCellDraftValue(state, row, col)" @input="vm.backendTableSetCellDraft(tableId || state.id, $event.target.value)"><input v-else :value="vm.backendTableCellDraftValue(state, row, col)" @input="vm.backendTableSetCellDraft(tableId || state.id, $event.target.value)"><small v-if="vm.backendTableFieldError(state, col.key)" class="mioos-field-error">[[ vm.backendTableFieldError(state, col.key) ]]</small><span class="mioos-table-cell-actions"><button type="button" class="mioos-btn is-primary" :disabled="state.saving" @click="vm.backendTableSaveCell(tableId || state.id, row, col)">Save</button><button type="button" class="mioos-btn" @click="vm.backendTableCancelCellEditor(tableId || state.id)">Cancel</button></span></div><button v-else-if="vm.backendTableCanEditCell(state, row, col)" type="button" class="mioos-table-cell-edit-button" @click="vm.backendTableOpenCellEditor(tableId || state.id, row, col)"><span :class="\'mioos-table-cell type-\' + col.type">[[ vm.backendTableCellText(row, col) ]]</span><small>Edit</small></button><span v-else :class="\'mioos-table-cell type-\' + col.type">[[ vm.backendTableCellText(row, col) ]]</span></td><td v-if="vm.backendTableShowActions(state)" class="mioos-table-actions" :class="vm.backendTableStickyClass(state, null, -1, &quot;actions&quot;)" :style="vm.backendTableStickyStyle(state, null, -1, &quot;actions&quot;)"><button v-for="action in vm.backendTableVisibleRowActions(state)" :key="action.key" type="button" @click="vm.backendTableRunAction(tableId || state.id, action, row)">[[ action.label ]]</button></td></tr>' +
                       '<tr v-if="vm.backendTableIsExpanded(state, row)" class="mioos-table-expanded-row"><td v-if="vm.backendTableShowControl(state)"></td><td :colspan="columns.length + (vm.backendTableShowActions(state) ? 1 : 0)"><strong>[[ (row._expand || {}).title || \'Details\' ]]</strong><p>[[ (row._expand || {}).body || JSON.stringify(row) ]]</p></td></tr>' +
                     '</template>' +
                   '</template>' +
@@ -1193,7 +1269,7 @@
 
   window.MIOOSTable = { contract: TABLE_CONTRACT, defaultConfig: defaultTableConfig, createConfig: function (patch) { return mergeConfig(defaultTableConfig(), patch || {}); }, methods: methods, register: register };
   if (window.MIOOSModules && typeof window.MIOOSModules.registerComponent === 'function') {
-    window.MIOOSModules.registerComponent({ key: 'table', name: 'mioos-full-table', title: 'Advanced Backend Table', surface: 'mioos-surface-table', description: 'Server-side table with WebSocket query, HTTP-safe mutations, dense layouts, sorting, selection, bulk actions, row and column CRUD, resizable columns, column reorder, grouping, and massive datasets.' });
+    window.MIOOSModules.registerComponent({ key: 'table', name: 'mioos-full-table', title: 'Advanced Backend Table', surface: 'mioos-surface-table', description: 'Server-side table with WebSocket query, HTTP-safe mutations, dense layouts, sorting, selection, bulk actions, row and column CRUD, resizable columns, column reorder, fixed columns, grouping, and massive datasets.' });
     window.MIOOSModules.registerComponent({ key: 'table-showcase', name: 'mioos-surface-table-showcase', title: 'Table Variations', surface: 'mioos-surface-table-showcase', description: 'Copyable simple-to-advanced MUMPS table contracts for backend developers.' });
   }
 })();

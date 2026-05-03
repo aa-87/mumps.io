@@ -187,3 +187,7 @@ Administrative shell actions such as session revocation, account unlock, audit s
 ## UI example safety note
 
 The ROI 64B UI + Form Elements gallery is a developer reference and must not be treated as a PHI collection form. It uses local sample state and simulated save behavior. Production healthcare modules must implement backend authorization, validation, audit logging, retention policy, encryption controls, and operational procedures before handling PHI.
+
+## ROI 68 patient-registration sample
+
+ROI 68 adds a synthetic Patient Registration module foundation using `MIOOSPAT` for patient-specific schema, validation, and audit/status markers. This remains a HIPAA-ready architecture example only. It must not be used with real PHI until deployment-specific administrative, physical, and technical safeguards are implemented and validated.

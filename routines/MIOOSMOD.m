@@ -53,7 +53,7 @@ INTERNAL(OUT)
 	SET OUT("components",C,"surface")="mioos-surface-table"
 	SET OUT("components",C,"source")="internal"
 	SET OUT("components",C,"owner")="MIOOS"
-	SET OUT("components",C,"description")="Server-side MUMPS table with WebSocket query, HTTP-safe mutations, dense layouts, server pagination, sorting, select-all, bulk actions, CRUD, resizing, column reorder, and massive datasets."
+	SET OUT("components",C,"description")="Server-side MUMPS table with WebSocket query, HTTP-safe mutations, dense layouts, server pagination, sorting, select-all, bulk actions, CRUD, resizing, column reorder, fixed columns, and massive datasets."
 	SET OUT("components",C,"script")="/public/mioos/app/mioos_table.js"
 	SET OUT("components",C,"backend")="MIOOSTBL"
 	SET OUT("components",C,"queryRoute")="/api/mioos/table/query"
@@ -68,6 +68,7 @@ INTERNAL(OUT)
 	SET OUT("components",C,"features",8)="server-query"
 	SET OUT("components",C,"features",9)="http-safe-mutations"
 	SET OUT("components",C,"features",10)="column-reorder"
+	SET OUT("components",C,"features",11)="fixed-columns"
 	SET C=+$GET(OUT("componentCount"))+1,OUT("componentCount")=C
 	SET OUT("components",C,"key")="table-showcase"
 	SET OUT("components",C,"name")="mioos-surface-table-showcase"
@@ -184,6 +185,18 @@ ADDTABLE(OUT,ID,KEY,TITLE,DESC,CAT,ICON,DATASET)
 	SET OUT("modules",M,"tableState","id")=KEY_"-table"
 	SET OUT("modules",M,"tableState","title")=TITLE
 	SET OUT("modules",M,"tableState","dataset")=DATASET
+	IF DATASET="patient-registration" DO
+	. SET OUT("modules",M,"tableState","config","contract")="mioos-advanced-table-v8"
+	. SET OUT("modules",M,"tableState","config","defaultPageSize")=25
+	. SET OUT("modules",M,"tableState","config","defaultSort","column")="lastName"
+	. SET OUT("modules",M,"tableState","config","defaultSort","direction")="ascending"
+	. SET OUT("modules",M,"tableState","config","features","cellEditing")=1
+	. SET OUT("modules",M,"tableState","config","features","columnReorder")=1
+	. SET OUT("modules",M,"tableState","config","features","fixedColumns")=1
+	. SET OUT("modules",M,"tableState","config","features","rowDetails")=1
+	. SET OUT("modules",M,"tableState","config","fixedColumns","start")=1
+	. SET OUT("modules",M,"tableState","config","fixedColumns","end")=0
+	. SET OUT("modules",M,"capabilities","patient-registration")=1
 	IF DATASET="massive" DO
 	. SET OUT("modules",M,"tableState","config","contract")="mioos-advanced-table-v8"
 	. SET OUT("modules",M,"tableState","config","defaultPageSize")=100

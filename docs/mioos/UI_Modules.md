@@ -86,3 +86,14 @@ The module author controls each cell from MUMPS schema metadata. Non-ID columns 
 ## ROI 64J column reorder UI
 
 The Advanced Table Columns modal now supports column reorder when `features.columnReorder` is enabled. Users move a column up or down; each move saves through `column.reorder`, returns an acknowledgement, and refetches the server-authored schema. Native browser prompts/confirms are avoided in favor of MIOOS table dialogs.
+
+
+
+## ROI 68 patient registration module
+
+The Patient Registration catalogue entry launches `mioos-surface-table` with dataset `patient-registration`. The browser displays the standard Advanced Table with a compact patient-status banner supplied by the backend. MUMPS developers should extend patient fields and validation in `MIOOSPAT` rather than adding frontend code.
+
+## ROI 64L table module polish
+
+The Advanced Table module now treats editable cells, validation, column visibility, column reorder, fixed columns, grouping, filtering, and selected-row CSV export as one composed server-side surface. User-created table modules should enable table features through `MOD("tableState","config","features",...)` and persist fixed-column defaults through `MOD("tableState","config","fixedColumns",...)`.
+

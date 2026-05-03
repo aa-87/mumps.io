@@ -3038,3 +3038,55 @@ button:disabled { cursor: default; opacity: .55; }
 .mioos-system-modal-titlebar button[aria-label^="Close"] { cursor: pointer; }
 .theme-dark-mode .mioos-table-column-reorder button,
 .theme-dark-mode .mioos-table-column-actions button { background: #111827; color: #f8fafc; border-color: rgba(191,219,254,.24); }
+
+/* ROI 64L hardening: fixed-column runtime polish and modal consistency. */
+.mioos-table-fixed-controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(148,163,184,.24);
+}
+.mioos-table-fixed-controls label { display: grid; gap: 4px; font-size: 12px; }
+.mioos-table-fixed-controls input {
+  min-height: 30px;
+  border-radius: 9px;
+  border: 1px solid var(--theme-panel-border, rgba(148,163,184,.45));
+  background: var(--theme-field-bg, #fff);
+  color: var(--theme-field-text, #111827);
+  padding: 6px 8px;
+}
+.mioos-table-grid th.mioos-table-sticky,
+.mioos-table-grid td.mioos-table-sticky {
+  position: sticky;
+  background-clip: padding-box;
+  box-shadow: 1px 0 0 rgba(148,163,184,.24), -1px 0 0 rgba(148,163,184,.16);
+}
+.mioos-table-grid th.mioos-table-sticky { z-index: 6; }
+.mioos-table-grid td.mioos-table-sticky { z-index: 5; }
+.mioos-table-grid .mioos-table-sticky.is-fixed-start { border-right: 1px solid rgba(37,99,235,.22); }
+.mioos-table-grid .mioos-table-sticky.is-fixed-end { border-left: 1px solid rgba(37,99,235,.22); }
+.mioos-table-grid tbody tr:hover td.mioos-table-sticky { background: #eef6ff; }
+.mioos-table-grid tr.is-selected td.mioos-table-sticky { background: #dbeafe; }
+.theme-dark-mode .mioos-table-fixed-controls input { color: #f8fafc; background: #1e293b; border-color: rgba(191,219,254,.28); }
+.theme-dark-mode .mioos-table-grid tbody tr:hover td.mioos-table-sticky { background: #1e293b; }
+.theme-dark-mode .mioos-table-grid tr.is-selected td.mioos-table-sticky { background: #1d4ed8; }
+
+/* ROI 68 patient registration foundation: compact in-table status notice. */
+.mioos-table-patient-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 12px 8px;
+  padding: 8px 10px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.06);
+  font-size: 12px;
+}
+.mioos-table-patient-banner strong { font-size: 12px; }
+.mioos-table-patient-banner span { color: var(--mioos-muted, #64748b); }
+@media (max-width: 720px) {
+  .mioos-table-patient-banner { align-items: flex-start; flex-direction: column; }
+}

@@ -344,3 +344,14 @@ The mutation payload must include every existing column exactly once:
   ]
 }
 ```
+
+
+
+## ROI 68 patient-registration foundation
+
+The `patient-registration` dataset now advertises `patientRegistration` metadata in table query responses and is backfilled by `INIT^MIOOSPAT`. Patient-specific validation is layered on top of generic table validation through `VALPAT^MIOOSPAT` / `VALFIELD^MIOOSPAT`, and patient mutations call `AUDPAT^MIOOSPAT` to write sample audit/status markers. Rows still use the same `MUTATE^MIOOSTBL` and `QUERY^MIOOSTBL` paths as other table modules.
+
+## ROI 64L hardening notes
+
+ROI 64L stabilizes the ROI 64F–64K table feature set. The fixed-column contract is now returned from `QUERY^MIOOSTBL` as `schema.fixedColumns` and `fixedColumns`, and fixed-column changes are persisted through `column.fixed` in `MUTATE^MIOOSTBL`. Massive/read-only datasets explicitly return `features.fixedColumns=0`, so sticky user controls are not exposed for the large generated read-only sample.
+

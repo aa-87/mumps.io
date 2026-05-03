@@ -62,6 +62,8 @@ MIOOST ; MIOOS tests
 	DO T068
 	DO T069
 	DO T070
+	DO T071
+	DO T072
 	QUIT
 	;
 RESET
@@ -1388,5 +1390,28 @@ T070
 	DO OK^MIOTASSERT($$FILEHAS("examples/mioos_modules/table/module.json","columnReorder"),"[MIOOST][T070][manifest column reorder]")
 	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/ROI_64J_Column_Reorder.md","column.reorder"),"[MIOOST][T070][roi64j docs]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 64J column reorder"),"[MIOOST][T070][llm roi64j]")
+	QUIT
+	;
+
+T071
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","fixedColumns: true"),"[MIOOST][T071][fixed columns feature flag]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableSetFixedColumns"),"[MIOOST][T071][fixed columns ui mutation]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableStickyClass"),"[MIOOST][T071][fixed columns sticky class]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","column.fixed"),"[MIOOST][T071][fixed columns mutation]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","VALFIXED"),"[MIOOST][T071][fixed columns backend validation]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","FIXED(ROOT,IN,OUT)"),"[MIOOST][T071][fixed columns persistence]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSMOD.m","fixed-columns"),"[MIOOST][T071][module advertises fixed columns]")
+	DO OK^MIOTASSERT($$FILEHAS("examples/mioos_modules/table/module.json","fixedColumns"),"[MIOOST][T071][manifest fixed columns]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/ROI_64K_Fixed_Columns.md","column.fixed"),"[MIOOST][T071][roi64k docs]")
+	QUIT
+	;
+T072
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/ROI_64L_Hardening_Polish.md","ROI 64L"),"[MIOOST][T072][roi64l docs]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","ROI 64L hardening"),"[MIOOST][T072][roi64l css marker]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableCloseTopDialog"),"[MIOOST][T072][escape close top dialog]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","mioos-table-loading-line"),"[MIOOST][T072][bar loading retained]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","prompt("),0,"[MIOOST][T072][no native prompt]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","confirm("),0,"[MIOOST][T072][no native confirm]")
+	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 64L advanced table hardening"),"[MIOOST][T072][llm roi64l]")
 	QUIT
 	;

@@ -593,8 +593,17 @@ See `docs/mioos/ROI_64I_64K_Table_DataTables_Parity.md` before implementing the 
 
 Current advanced table contract remains `mioos-advanced-table-v8`. Cell editing is now implemented with a `cell.save` mutation. The browser renders typed inline cell controls from schema metadata and saves over WebSocket `table.mutate` with HTTP fallback. Both transports call `MUTATE^MIOOSTBL`. The backend validates row id, column key, editable flag, field rules, and optional per-column `cellCallback` before writing. ID cells are read-only. The loading indicator is bar-only; do not reintroduce loading text that shifts table layout. Advanced Filters `Add value` now prompts/uses the drafted value and sends `column.option.add`.
 
-Next planned table ROI is ROI 64J — column reorder. ROI 64K fixed columns follows after ROI 64J.
+ROI 64J column reorder and ROI 64K fixed columns are complete in the Advanced Table track. ROI 64L hardening stabilizes the combined table feature set before any new table module scope.
 
 ## ROI 64J column reorder
 
 Current Advanced Table contract remains `mioos-advanced-table-v8`. ROI 64J adds server-persisted column reorder. Enable it from MUMPS with `MOD("tableState","config","features","columnReorder")=1`. The Columns modal provides up/down controls and saves through `column.reorder` over WebSocket-first mutation with HTTP fallback. `MUTATE^MIOOSTBL` validates the reorder payload with `VALORDER`, rewrites `schema("columns")`, returns an acknowledgement-only response, and the UI refetches the table. Avoid native browser `prompt()`/`confirm()` for table flows; use MIOOS table dialogs.
+
+## ROI 64L advanced table hardening
+
+ROI 64L is the stabilization pass after fixed columns. It hardens Advanced Table composition across editable cells, validation, column visibility, column reorder, fixed columns, grouping, filtering, selected-row CSV export, and MIOOS-owned dialogs. Fixed-column metadata is returned as `schema.fixedColumns` and `fixedColumns`, persisted through `column.fixed`, and disabled for massive/read-only datasets.
+
+
+## ROI 68 patient registration foundation
+
+Patient Registration is now a MUMPS-driven module foundation using synthetic sample data. `MIOOSPAT` owns patient-specific schema backfill (`INIT`), field validation (`VALPAT`/`VALFIELD`), query metadata (`PATMETA`), and audit/status markers (`AUDPAT`). `MIOOSTBL` remains the shared table engine and calls `MIOOSPAT` only when dataset is `patient-registration`. Do not claim HIPAA compliance; docs must say HIPAA-ready architecture only and require deployment/operations controls before real PHI.

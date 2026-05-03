@@ -5,9 +5,39 @@
   "title": "Patient Registration",
   "componentKey": "table",
   "surface": "mioos-surface-table",
+  "category": "Healthcare",
+  "description": "Synthetic patient registration sample backed by MIOOSTBL and MIOOSPAT validation/audit helpers.",
   "tableState": {
     "id": "patient-registration-table",
     "title": "Patient Registration",
-    "dataset": "patient-registration"
+    "dataset": "patient-registration",
+    "config": {
+      "contract": "mioos-advanced-table-v8",
+      "defaultPageSize": 25,
+      "defaultSort": {
+        "column": "lastName",
+        "direction": "ascending"
+      },
+      "features": {
+        "rowCrud": true,
+        "cellEditing": true,
+        "filters": true,
+        "grouping": true,
+        "selection": true,
+        "bulkActions": true,
+        "columnReorder": true,
+        "fixedColumns": true,
+        "rowDetails": true
+      },
+      "fixedColumns": {
+        "start": 1,
+        "end": 0
+      }
+    }
+  },
+  "capabilities": {
+    "patientRegistration": true,
+    "auditStatus": true,
+    "hipaaReadyArchitectureOnly": true
   }
 }

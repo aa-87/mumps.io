@@ -29,7 +29,10 @@ QUERY(STATE,CONF,IN,OUT,ERR)
 	IF SORTBY'="" DO SORT(.WORK,SORTBY,SORTDIR)
 	IF FILTERED=0 SET PAGE=1
 	IF FILTERED>0,PAGE>((FILTERED+PSIZE-1)\PSIZE) SET PAGE=((FILTERED+PSIZE-1)\PSIZE)
-	IF DATASET'="vfs" SET ROOT=$$ROOT(.STATE,DATASET) DO METASC(ROOT,.SCHEMA)
+	IF DATASET'="vfs" DO
+	. SET ROOT=$$ROOT(.STATE,DATASET)
+	. DO METASC(ROOT,.SCHEMA)
+	. DO FIXSC(ROOT,.SCHEMA,.OUT)
 	MERGE OUT("schema","columns")=SCHEMA("columns")
 	DO ACTIONS(.OUT,$SELECT(DATASET="vfs":1,1:0))
 	DO PAGE(.WORK,.OUT,PAGE,PSIZE,TOTAL,FILTERED)
@@ -51,6 +54,8 @@ QUERY(STATE,CONF,IN,OUT,ERR)
 	SET OUT("features","resizableColumns")=1
 	SET OUT("features","cellEditing")=$SELECT(DATASET="vfs":0,1:1)
 	SET OUT("features","columnReorder")=$SELECT(DATASET="vfs":0,1:1)
+	SET OUT("features","fixedColumns")=$SELECT(DATASET="vfs":0,1:1)
+	IF DATASET="patient-registration" DO PATMETA^MIOOSPAT(.OUT)
 	SET OUT("draw")=DRAW
 	SET OUT("recordsTotal")=TOTAL
 	SET OUT("recordsFiltered")=FILTERED
@@ -74,9 +79,11 @@ MUTATE(STATE,CONF,IN,OUT,ERR)
 	IF ACTION'["." SET ERR("error")="table_action_invalid" QUIT 0
 	SET ROOT=$$ROOT(.STATE,DATASET)
 	DO ENSURE(.STATE,DATASET)
-	IF '$$VALIDATE(.STATE,.CONF,DATASET,ACTION,.IN,.ERR) QUIT 0
+	IF '$$VALIDATE(.STATE,.CONF,DATASET,ACTION,.IN,.ERR) DO  QUIT 0
+	. IF DATASET="patient-registration" DO AUDPAT^MIOOSPAT(.STATE,.CONF,ACTION,.IN,.OUT,0,.ERR)
 	IF ACTION="row.save"!(ACTION="row.add")!(ACTION="row.update") DO
 	. SET ID=$GET(IN("row","id"))
+	. IF DATASET="patient-registration",$GET(IN("row","mrn"))'="" SET ID=$GET(IN("row","mrn")),IN("row","id")=ID
 	. IF ID="" SET ID=DATASET_"-"_$TR($$UUID^MIOUTIL(),"-","")
 	. SET FOUND=0,I=0 FOR  SET I=$ORDER(@ROOT@("rows",I)) QUIT:I'>0  IF $GET(@ROOT@("rows",I,"id"))=ID SET FOUND=I
 	. IF FOUND'>0 SET FOUND=$ORDER(@ROOT@("rows",""),-1)+1
@@ -138,6 +145,7 @@ MUTATE(STATE,CONF,IN,OUT,ERR)
 	. SET I=0 FOR  SET I=$ORDER(@ROOT@("schema","columns",I)) QUIT:I'>0  IF $GET(@ROOT@("schema","columns",I,"key"))=KEY SET @ROOT@("schema","columns",I,"hidden")=$SELECT($$TRUTH($GET(IN("hidden"))):1,1:0)
 	. SET OUT("mutated","columnVisibility")=KEY
 	IF ACTION="column.reorder" DO REORDER(ROOT,.IN,.OUT)
+	IF ACTION="column.fixed" DO FIXED(ROOT,.IN,.OUT)
 	IF ACTION="column.option.add" DO
 	. SET KEY=$$KEY($GET(IN("columnKey"),$GET(IN("key"))))
 	. SET OPTVAL=$GET(IN("value"),$GET(IN("option","value")))
@@ -150,8 +158,11 @@ MUTATE(STATE,CONF,IN,OUT,ERR)
 	IF ACTION="rows.export"!(ACTION="export") DO EXPORT(.STATE,DATASET,ROOT,.IN,.OUT)
 	IF $GET(ERR("error"))'="" QUIT 0
 	IF '$DATA(OUT("mutated")),'$DATA(OUT("export")) SET ERR("error")="unsupported_table_action" QUIT 0
-	IF $DATA(OUT("export")) SET OUT("ok")=1,OUT("dataset")=DATASET,OUT("action")=ACTION,OUT("exportOnly")=1,OUT("message")=$GET(OUT("message"),"CSV export generated") QUIT 1
+	IF $DATA(OUT("export")) DO  QUIT 1
+	. SET OUT("ok")=1,OUT("dataset")=DATASET,OUT("action")=ACTION,OUT("exportOnly")=1,OUT("message")=$GET(OUT("message"),"CSV export generated")
+	. IF DATASET="patient-registration" DO AUDPAT^MIOOSPAT(.STATE,.CONF,ACTION,.IN,.OUT,1,.ERR)
 	SET OUT("ok")=1,OUT("dataset")=DATASET,OUT("action")=ACTION,OUT("mutationOnly")=1,OUT("refetch")=1,OUT("message")=$$MMSG(ACTION)
+	IF DATASET="patient-registration" DO AUDPAT^MIOOSPAT(.STATE,.CONF,ACTION,.IN,.OUT,1,.ERR)
 	QUIT 1
 ERRM
 	SET $ECODE=""
@@ -169,6 +180,7 @@ VALIDATE(STATE,CONF,DATASET,ACTION,IN,ERR)
 	IF ACTION="column.delete"!(ACTION="column.resize")!(ACTION="column.visibility") QUIT $$VALKEY($GET(IN("columnKey"),$GET(IN("key"),$GET(IN("column","key")))),.ERR)
 	IF ACTION="column.option.add" QUIT $$VALOPT(.IN,.ERR)
 	IF ACTION="column.reorder" QUIT $$VALORDER($$ROOT(.STATE,DATASET),.IN,.ERR)
+	IF ACTION="column.fixed" QUIT $$VALFIXED($$ROOT(.STATE,DATASET),.IN,.ERR)
 	SET ERR("error")="unsupported_table_action" QUIT 0
 	;
 VALROW(STATE,DATASET,CONF,IN,ERR)
@@ -195,6 +207,7 @@ VALRULES(ROOT,IN,ERR)
 	. IF $DATA(@ROOT@("validation","fields",KEY,"enum")),VAL'="",'$$VALENUM(ROOT,KEY,VAL) DO ADDERR(.ERR,KEY,"Value is not allowed") SET OK=0 QUIT
 	. IF +$GET(@ROOT@("validation","fields",KEY,"date")),VAL'="",'$$DATEOK(VAL) DO ADDERR(.ERR,KEY,"Use a valid YYYY-MM-DD date") SET OK=0 QUIT
 	. IF +$GET(@ROOT@("validation","fields",KEY,"numeric")),VAL'="",'$$ISNUM(VAL) DO ADDERR(.ERR,KEY,"Enter a number") SET OK=0 QUIT
+	IF OK,$GET(@ROOT@("validation","routine"))="VALPAT^MIOOSPAT",'$$VALPAT^MIOOSPAT(.IN,.ERR,ROOT) SET OK=0
 	IF 'OK,$GET(ERR("message"))="" SET ERR("message")="Please fix the highlighted fields"
 	QUIT OK
 	;
@@ -264,6 +277,7 @@ VALCELLR(ROOT,KEY,VAL,ERR)
 	IF $DATA(@ROOT@("validation","fields",KEY,"enum")),VAL'="",'$$VALENUM(ROOT,KEY,VAL) DO ADDERR(.ERR,KEY,"Value is not allowed") QUIT 0
 	IF +$GET(@ROOT@("validation","fields",KEY,"date")),VAL'="",'$$DATEOK(VAL) DO ADDERR(.ERR,KEY,"Use a valid YYYY-MM-DD date") QUIT 0
 	IF +$GET(@ROOT@("validation","fields",KEY,"numeric")),VAL'="",'$$ISNUM(VAL) DO ADDERR(.ERR,KEY,"Enter a number") QUIT 0
+	IF $GET(@ROOT@("validation","routine"))="VALPAT^MIOOSPAT",'$$VALFIELD^MIOOSPAT(KEY,VAL,.ERR,ROOT) QUIT 0
 	QUIT OK
 	;
 COLIDX(ROOT,KEY)
@@ -339,6 +353,45 @@ VALORDER(ROOT,IN,ERR)
 	IF EXIST>0,COUNT'=EXIST SET ERR("error")="column_order_incomplete",ERR("message")="Column reorder must include every column" QUIT 0
 	QUIT 1
 	;
+FIXSC(ROOT,SCHEMA,OUT)
+	NEW I,COUNT,START,END
+	SET COUNT=0,I=0 FOR  SET I=$ORDER(SCHEMA("columns",I)) QUIT:I'>0  SET COUNT=COUNT+1
+	SET START=+$GET(@ROOT@("schema","fixedColumns","start"),+$GET(@ROOT@("features","fixedStart"),0))
+	SET END=+$GET(@ROOT@("schema","fixedColumns","end"),+$GET(@ROOT@("features","fixedEnd"),0))
+	IF START<0 SET START=0
+	IF END<0 SET END=0
+	IF START>COUNT SET START=COUNT
+	IF END>(COUNT-START) SET END=COUNT-START
+	SET SCHEMA("fixedColumns","start")=START,SCHEMA("fixedColumns","end")=END
+	SET OUT("schema","fixedColumns","start")=START,OUT("schema","fixedColumns","end")=END
+	SET OUT("fixedColumns","start")=START,OUT("fixedColumns","end")=END
+	QUIT
+	;
+VALFIXED(ROOT,IN,ERR)
+	NEW START,END,COUNT,I
+	SET COUNT=0,I=0 FOR  SET I=$ORDER(@ROOT@("schema","columns",I)) QUIT:I'>0  SET COUNT=COUNT+1
+	SET START=+$GET(IN("fixedColumns","start"),+$GET(IN("start"),0))
+	SET END=+$GET(IN("fixedColumns","end"),+$GET(IN("end"),0))
+	IF START<0 SET ERR("error")="fixed_columns_invalid",ERR("message")="Fixed start columns cannot be negative" QUIT 0
+	IF END<0 SET ERR("error")="fixed_columns_invalid",ERR("message")="Fixed end columns cannot be negative" QUIT 0
+	IF COUNT>0,START+END>COUNT SET ERR("error")="fixed_columns_invalid",ERR("message")="Fixed start and end columns cannot exceed visible schema columns" QUIT 0
+	QUIT 1
+	;
+FIXED(ROOT,IN,OUT)
+	NEW START,END,COUNT,I
+	SET COUNT=0,I=0 FOR  SET I=$ORDER(@ROOT@("schema","columns",I)) QUIT:I'>0  SET COUNT=COUNT+1
+	SET START=+$GET(IN("fixedColumns","start"),+$GET(IN("start"),0))
+	SET END=+$GET(IN("fixedColumns","end"),+$GET(IN("end"),0))
+	IF START<0 SET START=0
+	IF END<0 SET END=0
+	IF START>COUNT SET START=COUNT
+	IF END>(COUNT-START) SET END=COUNT-START
+	SET @ROOT@("schema","fixedColumns","start")=START
+	SET @ROOT@("schema","fixedColumns","end")=END
+	SET OUT("mutated","fixedColumns","start")=START
+	SET OUT("mutated","fixedColumns","end")=END
+	QUIT
+	;
 OPTEXISTS(ROOT,KEY,VAL)
 	NEW I,OK
 	SET OK=0,I=0 FOR  SET I=$ORDER(@ROOT@("validation","fields",KEY,"enum",I)) QUIT:I'>0!(OK)  DO
@@ -366,6 +419,7 @@ MMSG(ACTION)
 	IF ACTION="column.delete" QUIT "Column deleted"
 	IF ACTION="column.option.add" QUIT "Column option added"
 	IF ACTION="column.reorder" QUIT "Column order saved"
+	IF ACTION="column.fixed" QUIT "Fixed columns updated"
 	QUIT "Table updated"
 	;
 
@@ -425,6 +479,7 @@ BACKFILL(ROOT,DATASET)
 	IF DATASET="patient-registration" DO
 	. IF '$DATA(@ROOT@("validation")) DO SEEDVALP(ROOT)
 	. DO SETCTYPE(ROOT,"dob","date"),SETCTYPE(ROOT,"status","select"),SETEDIT(ROOT)
+	. DO INIT^MIOOSPAT(ROOT)
 	QUIT
 	;
 SEEDVALD(ROOT)
@@ -562,6 +617,7 @@ SEEDPAT(STATE,ROOT)
 	DO PATROW(ROOT,1,"PAT-1001","Garcia","Elena","1984-04-12","555-0101","Active","Dr. Shaw")
 	DO PATROW(ROOT,2,"PAT-1002","Brown","Marcus","1972-09-03","555-0102","Pending","Dr. Singh")
 	DO PATROW(ROOT,3,"PAT-1003","Chen","Avery","1991-12-21","555-0103","Active","Dr. Ortiz")
+	DO INIT^MIOOSPAT(ROOT)
 	QUIT
 	;
 SEEDUI(STATE,ROOT)
@@ -629,6 +685,7 @@ MASSIVEQ(IN,OUT,CONF)
 	SET OUT("features","crudColumns")=0
 	SET OUT("features","resizableColumns")=1
 	SET OUT("features","cellEditing")=0
+	SET OUT("features","fixedColumns")=0
 	SET OUT("features","readOnly")=1
 	SET OUT("draw")=DRAW
 	SET OUT("recordsTotal")=TOTAL
@@ -700,6 +757,7 @@ MASSFASTQ(OUT,TOTAL,PAGE,PSIZE,DRAW,SORTDIR)
 	SET OUT("features","crudColumns")=0
 	SET OUT("features","resizableColumns")=1
 	SET OUT("features","cellEditing")=0
+	SET OUT("features","fixedColumns")=0
 	SET OUT("features","readOnly")=1
 	SET OUT("draw")=DRAW
 	SET OUT("recordsTotal")=TOTAL

@@ -217,3 +217,26 @@ ZLINK "MIOOSMTBL"
 ZLINK "MIOOST"
 DO ^MIOOST
 ```
+
+## ROI 64L hardening example additions
+
+To enable the final polished Advanced Table behavior from MUMPS, add fixed-column defaults and keep the rest of the table contract server-owned:
+
+```mumps
+SET @ROOT@("schema","fixedColumns","start")=1
+SET @ROOT@("schema","fixedColumns","end")=0
+SET MOD("tableState","config","features","columnReorder")=1
+SET MOD("tableState","config","features","fixedColumns")=1
+SET MOD("tableState","config","fixedColumns","start")=1
+SET MOD("tableState","config","fixedColumns","end")=0
+```
+
+Reload and validate:
+
+```mumps
+ZLINK "MIOOSTBL"
+ZLINK "MIOOSMOD"
+ZLINK "MIOOSMTBL"
+ZLINK "MIOOST"
+DO ^MIOOST
+```

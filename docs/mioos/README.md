@@ -390,7 +390,7 @@ The advanced table contract is now `mioos-advanced-table-v8`. This update focuse
 
 The advanced table stabilization pass keeps the contract at `mioos-advanced-table-v8` and adds typed filter modals, advanced include/exclude/range filtering, bounded draggable table dialogs, server-side selected-row CSV export, select-option dictionary updates through `column.option.add`, immutable column keys on edit, and a low-shift loading bar.
 
-ROI 64I is implemented: editable cells now render typed inline controls and save through server-side `cell.save` with optional MUMPS callbacks. The next table ROI sequence continues with ROI 64J column reorder and ROI 64K fixed columns, documented in `ROI_64I_64K_Table_DataTables_Parity.md`.
+ROI 64I through ROI 64K are implemented: editable cells, column reorder, and fixed columns are now part of the Advanced Table contract. ROI 64L hardening is documented in `ROI_64L_Hardening_Polish.md`.
 
 
 ### ROI 64I editable cells
@@ -400,3 +400,14 @@ Editable cells are now server-authoritative. Schema columns may set `editable` a
 ### ROI 64J column reorder
 
 ROI 64J is implemented for Advanced Table modules. MUMPS modules enable it with `tableState.config.features.columnReorder=1`; users then reorder columns from the Columns modal. The UI sends `column.reorder` via WebSocket with HTTP fallback, and `MIOOSTBL` validates and persists the schema order server-side.
+
+
+
+### ROI 68 — Patient Registration foundation
+
+ROI 68 is implemented as a patient-registration module foundation. `MIOOSPAT` owns patient-specific schema backfill, field validation, query metadata, and audit/status markers while `MIOOSTBL` remains the shared table query/mutation engine. The module remains synthetic sample data and documents HIPAA-ready architecture only, not HIPAA compliance. See `ROI_68_Patient_Registration_Foundation.md`.
+
+### ROI 64L — Advanced Table hardening and polish
+
+ROI 64L is implemented as a stabilization pass for ROI 64F–64K. It completes the fixed-column runtime path, removes layout-shifting loading UI, keeps dialogs MIOOS-owned and draggable, and documents the final MUMPS-first table hardening contract in `ROI_64L_Hardening_Polish.md`.
+
