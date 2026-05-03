@@ -1,109 +1,16 @@
-# ROI 64G — Table Mutation Validation and Developer Utilities
 
-## Goal
+## ROI 64G stabilization
 
-Make table mutation validation first-class and customizable for MUMPS developers without requiring frontend code.
+This stabilization pass fixes the first validation/table UX regressions found after ROI 64G was applied:
 
-## Implemented behavior
+- JSON boolean values from table mutation requests are normalized with `TRUTH^MIOOSTBL`, so `column.visibility` correctly persists `hidden=true` and `hidden=false` instead of treating JSON `true` as numeric zero.
+- Existing per-user demo datasets are upgraded in-place with validation rules when missing. This prevents older seeded table globals from bypassing ROI 64G validation.
+- The demo table now exposes Notes as a real `notes` schema column in the `Notes` column group. Existing rows are backfilled from `_expand("body")`, so Notes can be edited and managed through the column picker.
+- Successful mutations show a non-blocking confirmation toast.
+- Grouping and filtering controls open modal dialogs instead of inline `<details>` panels.
+- The pager now shows the current visible range, for example `Showing 51–75 of 120 rows`, instead of only repeating filtered/total counts.
 
-- Row mutations run backend validation before persistence.
-- Built-in rule helpers support `required`, `maxLength`, `enum`, `type="date"`, `type="number"`, `min`, and `max`.
-- Datasets may define an optional custom MUMPS validation hook with `@ROOT@("validation","routine")="TAG^ROUTINE"`.
-- Validation failures return deterministic mutation acknowledgements with `ok:false`, `error:"validation_failed"`, `mutationOnly:true`, `refetch:false`, and `fieldErrors`.
-- The Vue Options API table editor keeps the row editor open and renders field-level messages returned by the backend.
-- 
-
-Developer helper entry points are also available for setup routines:
-
-```mumps
-DO VREQ^MIOOSTBL(ROOT,"name","Name")
-DO VMAX^MIOOSTBL(ROOT,"name",120)
-DO VENUM^MIOOSTBL(ROOT,"status",1,"Open")
-DO VENUM^MIOOSTBL(ROOT,"status",2,"Done")
-DO VDATE^MIOOSTBL(ROOT,"updated","Updated")
-DO VNUM^MIOOSTBL(ROOT,"score","Score")
-DO VRANGE^MIOOSTBL(ROOT,"score",0,100)
-DO VHOOK^MIOOSTBL(ROOT,"VALTABLE^MYTABVAL")
-```
-
-Mutation attempts are audited under `@ROOT@("audit",n,...)` with user, timestamp, dataset, action, status, error/message, and field errors.
-
-## Dataset rule example
-
-```mumps
-NEW USER,ROOT
-SET USER=$GET(STATE("principal"),"admin")
-SET ROOT=$NAME(^MIO("MIOOS","TABLE",USER,"example"))
-
-SET @ROOT@("validation","fields","name","label")="Name"
-SET @ROOT@("validation","fields","name","required")=1
-SET @ROOT@("validation","fields","name","maxLength")=120
-
-SET @ROOT@("validation","fields","status","label")="Status"
-SET @ROOT@("validation","fields","status","required")=1
-SET @ROOT@("validation","fields","status","enum",1)="Open"
-SET @ROOT@("validation","fields","status","enum",2)="Done"
-SET @ROOT@("validation","fields","status","enum",3)="Review"
-
-SET @ROOT@("validation","fields","score","label")="Score"
-SET @ROOT@("validation","fields","score","type")="number"
-SET @ROOT@("validation","fields","score","min")=0
-SET @ROOT@("validation","fields","score","max")=100
-
-SET @ROOT@("validation","fields","updated","label")="Updated"
-SET @ROOT@("validation","fields","updated","type")="date"
-```
-
-## Custom hook example
-
-```mumps
-SET @ROOT@("validation","routine")="VALTABLE^MYTABVAL"
-```
-
-Expected hook signature:
-
-```mumps
-VALTABLE(STATE,CONF,DATASET,ACTION,IN,ERR)
-    IF ACTION'="row.save" QUIT
-    IF $GET(IN("row","status"))="Done",$GET(IN("row","updated"))="" DO
-    . SET ERR("error")="validation_failed"
-    . SET ERR("message")="Updated date is required when status is Done"
-    . SET ERR("fieldErrors","updated")="Required when status is Done"
-    QUIT
-```
-
-## Error response target
-
-```json
-{
-  "ok": false,
-  "dataset": "example",
-  "action": "row.save",
-  "error": "validation_failed",
-  "message": "Name is required",
-  "fieldErrors": {
-    "name": "Name is required"
-  },
-  "mutationOnly": true,
-  "refetch": false
-}
-```
-
-## Audit nodes
-
-Each mutation attempt appends an audit node:
-
-```mumps
-SET @ROOT@("audit",N,"at")="2026-05-02T...Z"
-SET @ROOT@("audit",N,"user")="admin"
-SET @ROOT@("audit",N,"dataset")="example"
-SET @ROOT@("audit",N,"action")="row.save"
-SET @ROOT@("audit",N,"ok")=0
-SET @ROOT@("audit",N,"stage")="validation"
-SET @ROOT@("audit",N,"fieldErrors","name")="Name is required"
-```
-
-## Validation checklist
+Regression commands remain:
 
 ```mumps
 ZLINK "MIOOSTBL"
@@ -113,9 +20,39 @@ ZLINK "MIOOST"
 DO ^MIOOST
 ```
 
-Browser syntax checks:
+## ROI 64G stabilization follow-up
 
-```text
-node --check public/mioos/app/mioos_table.js
-python3 -m json.tool examples/mioos_modules/table/module.json
+The stabilization patch addresses runtime issues found after ROI 64G:
+
+1. `column.visibility` now accepts JSON boolean values with `TRUTH^MIOOSTBL`; hidden columns no longer reselect themselves after refresh.
+2. Existing demo and patient datasets are upgraded with validation rules if they predate ROI 64G.
+3. Validation failures return `fieldErrors` from both HTTP and WebSocket mutation paths.
+4. The row editor keeps user input, shows field-level errors, and does not close on validation failure.
+5. Successful mutations show a non-blocking table toast.
+6. The demo table exposes an editable `notes` column and backfills it from older `_expand("body")` values.
+7. Filter and group controls are modal dialogs. Grouping supports `groupByColumns`.
+8. Pagination displays the visible row range for the current page.
+
+Validation examples:
+
+```mumps
+SET @ROOT@("validation","fields","name","required")=1
+SET @ROOT@("validation","fields","name","message")="Name is required"
+SET @ROOT@("validation","fields","status","enum",1)="Open"
+SET @ROOT@("validation","fields","status","enum",2)="Done"
+SET @ROOT@("validation","fields","updated","date")=1
+```
+
+Mutation error shape:
+
+```json
+{
+  "ok": false,
+  "error": "table_mutate_failed",
+  "detail": "validation_failed",
+  "message": "Name is required",
+  "fieldErrors": {
+    "name": "Name is required"
+  }
+}
 ```

@@ -2,9 +2,9 @@ MIOOSTBL ; MIOOS backend table query and mutation engine
 	QUIT
 	;
 QUERY(STATE,CONF,IN,OUT,ERR)
-	NEW DATASET,ROWS,SCHEMA,WORK,TOTAL,FILTERED,PAGE,PSIZE,SORTBY,SORTDIR,DRAW,START,LENGTH,GROUPN,GROUPKEYS
+	NEW DATASET,ROWS,SCHEMA,WORK,TOTAL,FILTERED,PAGE,PSIZE,SORTBY,SORTDIR,GROUPBY,DRAW,START,LENGTH,GROUPKEYS,GROUPN
 	NEW $ETRAP,$ESTACK SET $ETRAP="GOTO ERRQ^MIOOSTBL"
-	KILL OUT,ERR,ROWS,SCHEMA,WORK,GROUPKEYS
+	KILL OUT,ERR,ROWS,SCHEMA,WORK
 	SET ERR("routine")="MIOOSTBL"
 	SET DATASET=$$DATASET($GET(IN("dataset"),"demo"))
 	IF DATASET="massive" DO MASSIVEQ(.IN,.OUT,.CONF) QUIT 1
@@ -32,12 +32,10 @@ QUERY(STATE,CONF,IN,OUT,ERR)
 	MERGE OUT("schema","columns")=SCHEMA("columns")
 	DO ACTIONS(.OUT,$SELECT(DATASET="vfs":1,1:0))
 	DO PAGE(.WORK,.OUT,PAGE,PSIZE,TOTAL,FILTERED)
-	SET GROUPN=$$GROUPREQ(.IN,.GROUPKEYS)
-	IF GROUPN>0 DO GROUPS(.WORK,.GROUPKEYS,.OUT)
+	DO GROUPIN(.IN,.GROUPKEYS,.GROUPN)
+	IF GROUPN>0 DO GROUPSM(.WORK,.GROUPKEYS,.OUT)
 	SET OUT("ok")=1
-	SET OUT("contract")="mioos-advanced-table-v8"
 	SET OUT("dataset")=DATASET
-	IF GROUPN>0 MERGE OUT("groupByColumns")=GROUPKEYS
 	SET OUT("features","serverPagination")=1
 	SET OUT("features","serverSorting")=1
 	SET OUT("features","columnVisibility")=1
@@ -53,7 +51,7 @@ QUERY(STATE,CONF,IN,OUT,ERR)
 	SET OUT("draw")=DRAW
 	SET OUT("recordsTotal")=TOTAL
 	SET OUT("recordsFiltered")=FILTERED
-	DO DATAALIAS(.IN,.OUT)
+	MERGE OUT("data")=OUT("rows")
 	QUIT 1
 ERRQ
 	SET $ECODE=""
@@ -73,7 +71,7 @@ MUTATE(STATE,CONF,IN,OUT,ERR)
 	IF ACTION'["." SET ERR("error")="table_action_invalid" QUIT 0
 	SET ROOT=$$ROOT(.STATE,DATASET)
 	DO ENSURE(.STATE,DATASET)
-	IF '$$VALIDATE(.STATE,.CONF,DATASET,ACTION,.IN,.ERR) DO AUDIT(.STATE,DATASET,ACTION,.IN,0,.ERR,"validation") QUIT 0
+	IF '$$VALIDATE(.STATE,.CONF,DATASET,ACTION,.IN,.ERR) QUIT 0
 	IF ACTION="row.save"!(ACTION="row.add")!(ACTION="row.update") DO
 	. SET ID=$GET(IN("row","id"))
 	. IF ID="" SET ID=DATASET_"-"_$TR($$UUID^MIOUTIL(),"-","")
@@ -118,16 +116,11 @@ MUTATE(STATE,CONF,IN,OUT,ERR)
 	IF ACTION="column.visibility" DO
 	. SET KEY=$$KEY($GET(IN("columnKey"),$GET(IN("key"))))
 	. IF KEY="" QUIT
-	. SET I=0 FOR  SET I=$ORDER(@ROOT@("schema","columns",I)) QUIT:I'>0  IF $GET(@ROOT@("schema","columns",I,"key"))=KEY SET @ROOT@("schema","columns",I,"hidden")=$SELECT(+$GET(IN("hidden")):1,1:0)
+	. SET I=0 FOR  SET I=$ORDER(@ROOT@("schema","columns",I)) QUIT:I'>0  IF $GET(@ROOT@("schema","columns",I,"key"))=KEY SET @ROOT@("schema","columns",I,"hidden")=$SELECT($$TRUTH($GET(IN("hidden"))):1,1:0)
 	. SET OUT("mutated","columnVisibility")=KEY
-	IF '$DATA(OUT("mutated")) SET ERR("error")="unsupported_table_action" DO AUDIT(.STATE,DATASET,ACTION,.IN,0,.ERR,"unsupported") QUIT 0
-	SET OUT("ok")=1
-	SET OUT("dataset")=DATASET
-	SET OUT("action")=ACTION
-	SET OUT("mutationOnly")=1
-	SET OUT("refetch")=1
-	SET OUT("message")=$$MSG(ACTION)
-	DO AUDIT(.STATE,DATASET,ACTION,.IN,1,.ERR,"mutation")
+	IF '$DATA(OUT("mutated")) SET ERR("error")="unsupported_table_action" QUIT 0
+	IF '$$QUERY(.STATE,.CONF,.IN,.OUT,.ERR) QUIT 0
+	SET OUT("ok")=1,OUT("action")=ACTION,OUT("message")=$$MMSG(ACTION)
 	QUIT 1
 ERRM
 	SET $ECODE=""
@@ -136,25 +129,74 @@ ERRM
 	;
 VALIDATE(STATE,CONF,DATASET,ACTION,IN,ERR)
 	KILL ERR("field"),ERR("fieldErrors")
-	IF ACTION="row.save"!(ACTION="row.add")!(ACTION="row.update") QUIT $$VALROW(.STATE,.CONF,DATASET,ACTION,.IN,.ERR)
+	IF ACTION="row.save"!(ACTION="row.add")!(ACTION="row.update") QUIT $$VALROW(.STATE,DATASET,.CONF,.IN,.ERR)
 	IF ACTION="row.delete" QUIT $$VALID($GET(IN("rowId"),$GET(IN("id"),$GET(IN("row","id")))),.ERR)
 	IF ACTION="rows.delete"!(ACTION="bulk.delete") QUIT $$VALIDS(.IN,.ERR)
 	IF ACTION="column.save"!(ACTION="column.add")!(ACTION="column.update") QUIT $$VALCOL(.CONF,.IN,.ERR)
 	IF ACTION="column.delete"!(ACTION="column.resize")!(ACTION="column.visibility") QUIT $$VALKEY($GET(IN("columnKey"),$GET(IN("key"),$GET(IN("column","key")))),.ERR)
 	SET ERR("error")="unsupported_table_action" QUIT 0
 	;
-VALROW(STATE,CONF,DATASET,ACTION,IN,ERR)
-	NEW KEY,VAL,MAX
+VALROW(STATE,DATASET,CONF,IN,ERR)
+	NEW KEY,VAL,MAX,ROOT
 	SET MAX=+$GET(CONF("mioos","table","maxFieldChars"),2048) IF MAX<128 SET MAX=128
-	IF '$DATA(IN("row")) SET ERR("error")="row_missing" QUIT 0
+	IF '$DATA(IN("row")) SET ERR("error")="row_missing",ERR("message")="Row payload is required" QUIT 0
 	SET KEY="" FOR  SET KEY=$ORDER(IN("row",KEY)) QUIT:KEY=""!($GET(ERR("error"))'="")  DO
 	. IF $EXTRACT(KEY,1)="_" KILL IN("row",KEY) QUIT
-	. IF $$KEY(KEY)'=KEY DO ADDERR(.ERR,KEY,"Invalid field key") SET ERR("code")="invalid_field_key" QUIT
+	. IF $$KEY(KEY)'=KEY SET ERR("error")="invalid_row_field",ERR("field")=KEY,ERR("message")="Invalid row field" QUIT
 	. SET VAL=$GET(IN("row",KEY))
-	. IF $LENGTH(VAL)>MAX DO ADDERR(.ERR,KEY,"Maximum length exceeded") SET ERR("code")="field_too_long" QUIT
+	. IF $LENGTH(VAL)>MAX DO ADDERR(.ERR,KEY,"Value is too long") SET ERR("error")="field_too_long" QUIT
 	IF $GET(ERR("error"))'="" QUIT 0
-	IF '$$VALRULES(.STATE,DATASET,.IN,.ERR) QUIT 0
-	IF '$$VALHOOK(.STATE,.CONF,DATASET,ACTION,.IN,.ERR) QUIT 0
+	SET ROOT=$$ROOT(.STATE,DATASET)
+	IF '$$VALRULES(ROOT,.IN,.ERR) QUIT 0
+	IF '$$VALHOOK(.STATE,ROOT,.IN,.ERR) QUIT 0
+	QUIT 1
+	;
+VALRULES(ROOT,IN,ERR)
+	NEW KEY,VAL,MAX,MIN,OK
+	SET OK=1
+	SET KEY="" FOR  SET KEY=$ORDER(@ROOT@("validation","fields",KEY)) QUIT:KEY=""  DO
+	. SET VAL=$GET(IN("row",KEY))
+	. IF +$GET(@ROOT@("validation","fields",KEY,"required")),VAL="" DO ADDERR(.ERR,KEY,$GET(@ROOT@("validation","fields",KEY,"message"),"Required")) SET OK=0 QUIT
+	. SET MAX=+$GET(@ROOT@("validation","fields",KEY,"maxLength")) IF MAX>0,$LENGTH(VAL)>MAX DO ADDERR(.ERR,KEY,"Maximum length is "_MAX) SET OK=0 QUIT
+	. IF $DATA(@ROOT@("validation","fields",KEY,"enum")),VAL'="",'$$VALENUM(ROOT,KEY,VAL) DO ADDERR(.ERR,KEY,"Value is not allowed") SET OK=0 QUIT
+	. IF +$GET(@ROOT@("validation","fields",KEY,"date")),VAL'="",'$$DATEOK(VAL) DO ADDERR(.ERR,KEY,"Use YYYY-MM-DD") SET OK=0 QUIT
+	. IF +$GET(@ROOT@("validation","fields",KEY,"numeric")),VAL'="",'$$ISNUM(VAL) DO ADDERR(.ERR,KEY,"Enter a number") SET OK=0 QUIT
+	. SET MIN=$GET(@ROOT@("validation","fields",KEY,"min")) IF MIN'="",VAL'="",$$ISNUM(VAL),+VAL<+MIN DO ADDERR(.ERR,KEY,"Minimum is "_MIN) SET OK=0 QUIT
+	. SET MAX=$GET(@ROOT@("validation","fields",KEY,"max")) IF MAX'="",VAL'="",$$ISNUM(VAL),+VAL>+MAX DO ADDERR(.ERR,KEY,"Maximum is "_MAX) SET OK=0 QUIT
+	IF 'OK,$GET(ERR("message"))="" SET ERR("message")="Please fix the highlighted fields"
+	QUIT OK
+	;
+VALENUM(ROOT,KEY,VAL)
+	NEW I,OK
+	SET OK=0,I=0 FOR  SET I=$ORDER(@ROOT@("validation","fields",KEY,"enum",I)) QUIT:I'>0!(OK)  DO
+	. IF $$LOW^MIOUTIL($GET(@ROOT@("validation","fields",KEY,"enum",I)))=$$LOW^MIOUTIL($GET(VAL)) SET OK=1
+	QUIT OK
+	;
+DATEOK(X)
+	NEW M,D
+	IF $GET(X)'?4N1"-"2N1"-"2N QUIT 0
+	SET M=+$EXTRACT(X,6,7),D=+$EXTRACT(X,9,10)
+	IF M<1!(M>12) QUIT 0
+	IF D<1!(D>31) QUIT 0
+	QUIT 1
+	;
+ISNUM(X)
+	IF $GET(X)="" QUIT 0
+	IF $GET(X)=+$GET(X) QUIT 1
+	QUIT 0
+	;
+ADDERR(ERR,KEY,MSG)
+	SET ERR("error")="validation_failed",ERR("field")=$GET(KEY)
+	SET ERR("fieldErrors",KEY)=$GET(MSG,"Invalid value")
+	IF $GET(ERR("message"))="" SET ERR("message")=$GET(MSG,"Invalid value")
+	QUIT
+	;
+VALHOOK(STATE,ROOT,IN,ERR)
+	NEW TAG
+	SET TAG=$GET(@ROOT@("validation","hook"))
+	IF TAG="" QUIT 1
+	DO @TAG
+	IF $GET(ERR("error"))'="" QUIT 0
 	QUIT 1
 	;
 VALID(ID,ERR)
@@ -181,6 +223,7 @@ VALCOL(CONF,IN,ERR)
 	IF WIDTH>800 SET WIDTH=800
 	SET IN("column","width")=WIDTH
 	IF $GET(IN("column","type"))="" SET IN("column","type")="text"
+	SET IN("column","hidden")=$SELECT($$TRUTH($GET(IN("column","hidden"))):1,1:0)
 	QUIT 1
 	;
 VALKEY(KEY,ERR)
@@ -188,120 +231,7 @@ VALKEY(KEY,ERR)
 	IF KEY="" SET ERR("error")="invalid_column_key" QUIT 0
 	QUIT 1
 	;
-	;
-VALRULES(STATE,DATASET,IN,ERR)
-	NEW ROOT,FIELD,VAL,REQ,MAX,TYPE,MIN,MAXV,LABEL
-	SET ROOT=$$ROOT(.STATE,DATASET)
-	SET FIELD="" FOR  SET FIELD=$ORDER(@ROOT@("validation","fields",FIELD)) QUIT:FIELD=""!($GET(ERR("error"))'="")  DO
-	. SET VAL=$GET(IN("row",FIELD)),LABEL=$GET(@ROOT@("validation","fields",FIELD,"label"),FIELD)
-	. SET REQ=+$GET(@ROOT@("validation","fields",FIELD,"required"))
-	. IF REQ,$$TRIM^MIOUTIL(VAL)="" DO ADDERR(.ERR,FIELD,LABEL_" is required") QUIT
-	. IF VAL="" QUIT
-	. SET MAX=+$GET(@ROOT@("validation","fields",FIELD,"maxLength"))
-	. IF MAX>0,$LENGTH(VAL)>MAX DO ADDERR(.ERR,FIELD,LABEL_" must be "_MAX_" characters or fewer") QUIT
-	. IF $DATA(@ROOT@("validation","fields",FIELD,"enum")),'$$VALENUM(ROOT,FIELD,VAL) DO ADDERR(.ERR,FIELD,LABEL_" is not an allowed value") QUIT
-	. SET TYPE=$$LOW^MIOUTIL($GET(@ROOT@("validation","fields",FIELD,"type")))
-	. IF TYPE="date",'$$DATEOK(VAL) DO ADDERR(.ERR,FIELD,LABEL_" must use YYYY-MM-DD") QUIT
-	. IF TYPE="number",'$$ISNUM(VAL) DO ADDERR(.ERR,FIELD,LABEL_" must be numeric") QUIT
-	. IF TYPE="number" DO
-	. . SET MIN=$GET(@ROOT@("validation","fields",FIELD,"min")),MAXV=$GET(@ROOT@("validation","fields",FIELD,"max"))
-	. . IF MIN'="",+VAL<+MIN DO ADDERR(.ERR,FIELD,LABEL_" must be at least "_MIN) QUIT
-	. . IF MAXV'="",+VAL>+MAXV DO ADDERR(.ERR,FIELD,LABEL_" must be no more than "_MAXV) QUIT
-	IF $GET(ERR("error"))'="" QUIT 0
-	QUIT 1
-	;
-VALHOOK(STATE,CONF,DATASET,ACTION,IN,ERR)
-	NEW ROOT,HOOK,OK
-	SET ROOT=$$ROOT(.STATE,DATASET),HOOK=$GET(@ROOT@("validation","routine"))
-	IF HOOK="" SET HOOK=$GET(@ROOT@("validation","rowRoutine"))
-	IF HOOK="" QUIT 1
-	SET OK=1
-	NEW $ETRAP,$ESTACK SET $ETRAP="SET $ECODE="""" SET OK=0 SET ERR(""error"")=""validation_hook_failed"" SET ERR(""message"")=$ZSTATUS QUIT"
-	DO @HOOK@(.STATE,.CONF,DATASET,ACTION,.IN,.ERR)
-	IF 'OK QUIT 0
-	IF $GET(ERR("error"))'="" QUIT 0
-	QUIT 1
-	;
-ADDERR(ERR,FIELD,MSG)
-	SET ERR("error")="validation_failed"
-	IF $GET(ERR("message"))="" SET ERR("message")=$GET(MSG,"Validation failed")
-	SET ERR("field")=$GET(FIELD)
-	IF $GET(FIELD)'="" SET ERR("fieldErrors",FIELD)=$GET(MSG,"Invalid value")
-	QUIT
-	;
-VALENUM(ROOT,FIELD,VAL)
-	NEW I,OK
-	SET OK=0,I=0 FOR  SET I=$ORDER(@ROOT@("validation","fields",FIELD,"enum",I)) QUIT:I'>0  IF $GET(@ROOT@("validation","fields",FIELD,"enum",I))=VAL SET OK=1
-	QUIT OK
-	;
-DATEOK(X)
-	NEW M,D
-	IF $GET(X)'?4N1"-"2N1"-"2N QUIT 0
-	SET M=+$EXTRACT(X,6,7),D=+$EXTRACT(X,9,10)
-	IF (M<1)!(M>12) QUIT 0
-	IF (D<1)!(D>31) QUIT 0
-	QUIT 1
-	;
-ISNUM(X)
-	NEW Y
-	SET Y=$GET(X)
-	IF Y?1.N QUIT 1
-	IF Y?1.N1"."1.N QUIT 1
-	IF Y?1"-"1.N QUIT 1
-	IF Y?1"-"1.N1"."1.N QUIT 1
-	QUIT 0
-	;
-VREQ(ROOT,FIELD,LABEL)
-	SET @ROOT@("validation","fields",FIELD,"required")=1
-	IF $GET(LABEL)'="" SET @ROOT@("validation","fields",FIELD,"label")=$GET(LABEL)
-	QUIT
-	;
-VMAX(ROOT,FIELD,MAX)
-	SET @ROOT@("validation","fields",FIELD,"maxLength")=+MAX
-	QUIT
-	;
-VENUM(ROOT,FIELD,N,VAL)
-	SET @ROOT@("validation","fields",FIELD,"enum",+N)=$GET(VAL)
-	QUIT
-	;
-VDATE(ROOT,FIELD,LABEL)
-	SET @ROOT@("validation","fields",FIELD,"type")="date"
-	IF $GET(LABEL)'="" SET @ROOT@("validation","fields",FIELD,"label")=$GET(LABEL)
-	QUIT
-	;
-VNUM(ROOT,FIELD,LABEL)
-	SET @ROOT@("validation","fields",FIELD,"type")="number"
-	IF $GET(LABEL)'="" SET @ROOT@("validation","fields",FIELD,"label")=$GET(LABEL)
-	QUIT
-	;
-VRANGE(ROOT,FIELD,MIN,MAX)
-	SET @ROOT@("validation","fields",FIELD,"min")=$GET(MIN)
-	SET @ROOT@("validation","fields",FIELD,"max")=$GET(MAX)
-	QUIT
-	;
-VHOOK(ROOT,ENTRY)
-	SET @ROOT@("validation","routine")=$GET(ENTRY)
-	QUIT
-	;
-AUDIT(STATE,DATASET,ACTION,IN,OK,ERR,STAGE)
-	NEW ROOT,N,FIELD
-	SET ROOT=$$ROOT(.STATE,DATASET)
-	SET N=$ORDER(@ROOT@("audit",""),-1)+1
-	SET @ROOT@("audit",N,"at")=$$NOWISO^MIOUTIL()
-	SET @ROOT@("audit",N,"user")=$GET(STATE("principal"),"guest")
-	SET @ROOT@("audit",N,"dataset")=DATASET
-	SET @ROOT@("audit",N,"action")=$GET(ACTION)
-	SET @ROOT@("audit",N,"ok")=+OK
-	SET @ROOT@("audit",N,"stage")=$GET(STAGE)
-	SET @ROOT@("audit",N,"error")=$GET(ERR("error"))
-	SET @ROOT@("audit",N,"message")=$GET(ERR("message"))
-	IF $GET(IN("row","id"))'="" SET @ROOT@("audit",N,"rowId")=$GET(IN("row","id"))
-	IF $GET(IN("rowId"))'="" SET @ROOT@("audit",N,"rowId")=$GET(IN("rowId"))
-	IF $GET(IN("columnKey"))'="" SET @ROOT@("audit",N,"columnKey")=$GET(IN("columnKey"))
-	SET FIELD="" FOR  SET FIELD=$ORDER(ERR("fieldErrors",FIELD)) QUIT:FIELD=""  SET @ROOT@("audit",N,"fieldErrors",FIELD)=$GET(ERR("fieldErrors",FIELD))
-	QUIT
-	;
-	;
+
 KEY(X)
 	NEW Y,I,C,Q S Q=0
 	SET Y=$GET(X)
@@ -311,6 +241,26 @@ KEY(X)
 	IF Q QUIT ""
 	QUIT $EXTRACT(Y,1,64)
 	;
+TRUTH(X)
+	NEW Y
+	SET Y=$$LOW^MIOUTIL($GET(X))
+	IF Y="true" QUIT 1
+	IF Y="yes" QUIT 1
+	IF Y="on" QUIT 1
+	IF Y="1" QUIT 1
+	QUIT 0
+	;
+MMSG(ACTION)
+	IF ACTION="row.save"!(ACTION="row.add")!(ACTION="row.update") QUIT "Row saved"
+	IF ACTION="row.delete" QUIT "Row deleted"
+	IF ACTION="rows.delete"!(ACTION="bulk.delete") QUIT "Rows deleted"
+	IF ACTION="column.visibility" QUIT "Column visibility updated"
+	IF ACTION="column.resize" QUIT "Column resized"
+	IF ACTION="column.save"!(ACTION="column.add")!(ACTION="column.update") QUIT "Column saved"
+	IF ACTION="column.delete" QUIT "Column deleted"
+	QUIT "Table updated"
+	;
+
 DATASET(X)
 	NEW Y
 	SET Y=$$LOW^MIOUTIL($GET(X))
@@ -341,12 +291,73 @@ LOADDATA(STATE,DATASET,ROWS,SCHEMA)
 ENSURE(STATE,DATASET)
 	NEW ROOT
 	SET ROOT=$$ROOT(.STATE,DATASET)
-	IF $DATA(@ROOT@("schema","columns")),$DATA(@ROOT@("rows")) QUIT
+	IF $DATA(@ROOT@("schema","columns")),$DATA(@ROOT@("rows")) DO UPGRADE(.STATE,DATASET,ROOT) QUIT
 	KILL @ROOT
-	IF DATASET="patient-registration" DO SEEDPAT(.STATE,ROOT) QUIT
-	IF DATASET="ui-elements" DO SEEDUI(.STATE,ROOT) QUIT
+	IF DATASET="patient-registration" DO  QUIT
+	. DO SEEDPAT(.STATE,ROOT)
+	. DO UPGRADE(.STATE,DATASET,ROOT)
+	IF DATASET="ui-elements" DO  QUIT
+	. DO SEEDUI(.STATE,ROOT)
+	. DO UPGRADE(.STATE,DATASET,ROOT)
 	DO SEEDDEMO(.STATE,ROOT)
+	DO UPGRADE(.STATE,DATASET,ROOT)
 	QUIT
+	;
+UPGRADE(STATE,DATASET,ROOT)
+	IF DATASET="demo" DO UPGDEMO(ROOT)
+	IF DATASET="sample" DO UPGDEMO(ROOT)
+	IF DATASET="patient-registration" DO UPGPAT(ROOT)
+	QUIT
+	;
+UPGDEMO(ROOT)
+	NEW I,N
+	IF '$$HASC(ROOT,"notes") DO
+	. SET N=$ORDER(@ROOT@("schema","columns",""),-1)+1
+	. DO COLR(ROOT,N,"notes","Notes","text",280,0,1,"Notes")
+	SET I=0 FOR  SET I=$ORDER(@ROOT@("rows",I)) QUIT:I'>0  DO
+	. IF $GET(@ROOT@("rows",I,"notes"))="",$GET(@ROOT@("rows",I,"_expand","body"))'="" SET @ROOT@("rows",I,"notes")=$GET(@ROOT@("rows",I,"_expand","body"))
+	IF '$DATA(@ROOT@("validation","fields","name")) DO SEEDVALD(ROOT)
+	QUIT
+	;
+UPGPAT(ROOT)
+	IF '$DATA(@ROOT@("validation","fields","mrn")) DO SEEDVALP(ROOT)
+	QUIT
+	;
+SEEDVALD(ROOT)
+	SET @ROOT@("validation","fields","name","required")=1
+	SET @ROOT@("validation","fields","name","message")="Name is required"
+	SET @ROOT@("validation","fields","name","maxLength")=120
+	SET @ROOT@("validation","fields","status","required")=1
+	SET @ROOT@("validation","fields","status","enum",1)="Open"
+	SET @ROOT@("validation","fields","status","enum",2)="Done"
+	SET @ROOT@("validation","fields","status","enum",3)="Review"
+	SET @ROOT@("validation","fields","status","enum",4)="Active"
+	SET @ROOT@("validation","fields","status","enum",5)="Pending"
+	SET @ROOT@("validation","fields","updated","date")=1
+	SET @ROOT@("validation","fields","notes","maxLength")=2048
+	QUIT
+	;
+SEEDVALP(ROOT)
+	SET @ROOT@("validation","fields","mrn","required")=1
+	SET @ROOT@("validation","fields","mrn","message")="MRN is required"
+	SET @ROOT@("validation","fields","lastName","required")=1
+	SET @ROOT@("validation","fields","lastName","message")="Last name is required"
+	SET @ROOT@("validation","fields","firstName","required")=1
+	SET @ROOT@("validation","fields","firstName","message")="First name is required"
+	SET @ROOT@("validation","fields","dob","required")=1
+	SET @ROOT@("validation","fields","dob","date")=1
+	SET @ROOT@("validation","fields","status","enum",1)="Active"
+	SET @ROOT@("validation","fields","status","enum",2)="Pending"
+	SET @ROOT@("validation","fields","status","enum",3)="Inactive"
+	SET @ROOT@("validation","fields","phone","maxLength")=32
+	QUIT
+	;
+
+HASC(ROOT,KEY)
+	NEW I,OK
+	SET OK=0,I=0 FOR  SET I=$ORDER(@ROOT@("schema","columns",I)) QUIT:I'>0!(OK)  DO
+	. IF $GET(@ROOT@("schema","columns",I,"key"))=KEY SET OK=1
+	QUIT OK
 	;
 SEEDDEMO(STATE,ROOT)
 	DO COLR(ROOT,1,"name","Name","text",220,0,1,"Identity")
@@ -354,11 +365,11 @@ SEEDDEMO(STATE,ROOT)
 	DO COLR(ROOT,3,"owner","Owner","text",150,0,1,"Ownership")
 	DO COLR(ROOT,4,"priority","Priority","text",110,0,1,"State")
 	DO COLR(ROOT,5,"updated","Updated","date",150,0,1,"")
+	DO COLR(ROOT,6,"notes","Notes","text",280,0,1,"Notes")
 	DO ROWR(ROOT,1,"demo-1","Audit backlog","Open","MIOOS","High","2026-05-01","Security and audit work items")
 	DO ROWR(ROOT,2,"demo-2","Explorer grid","Done","Shell","Medium","2026-04-30","Resizable table source inspiration")
 	DO ROWR(ROOT,3,"demo-3","Transfer manager","Open","VFS","High","2026-04-28","Upload and download transfer controls")
 	DO ROWR(ROOT,4,"demo-4","Theme studio","Review","UI","Medium","2026-04-27","Customization and wallpaper persistence")
-	DO SEEDVALD(ROOT)
 	QUIT
 	;
 SEEDPAT(STATE,ROOT)
@@ -372,47 +383,6 @@ SEEDPAT(STATE,ROOT)
 	DO PATROW(ROOT,1,"PAT-1001","Garcia","Elena","1984-04-12","555-0101","Active","Dr. Shaw")
 	DO PATROW(ROOT,2,"PAT-1002","Brown","Marcus","1972-09-03","555-0102","Pending","Dr. Singh")
 	DO PATROW(ROOT,3,"PAT-1003","Chen","Avery","1991-12-21","555-0103","Active","Dr. Ortiz")
-	DO SEEDVALP(ROOT)
-	QUIT
-	;
-	;
-SEEDVALD(ROOT)
-	SET @ROOT@("validation","fields","name","label")="Name"
-	SET @ROOT@("validation","fields","name","required")=1
-	SET @ROOT@("validation","fields","name","maxLength")=120
-	SET @ROOT@("validation","fields","status","label")="Status"
-	SET @ROOT@("validation","fields","status","required")=1
-	SET @ROOT@("validation","fields","status","enum",1)="Open"
-	SET @ROOT@("validation","fields","status","enum",2)="Done"
-	SET @ROOT@("validation","fields","status","enum",3)="Review"
-	SET @ROOT@("validation","fields","status","enum",4)="Active"
-	SET @ROOT@("validation","fields","status","enum",5)="Pending"
-	SET @ROOT@("validation","fields","priority","label")="Priority"
-	SET @ROOT@("validation","fields","priority","enum",1)="High"
-	SET @ROOT@("validation","fields","priority","enum",2)="Medium"
-	SET @ROOT@("validation","fields","priority","enum",3)="Low"
-	SET @ROOT@("validation","fields","updated","label")="Updated"
-	SET @ROOT@("validation","fields","updated","type")="date"
-	QUIT
-	;
-SEEDVALP(ROOT)
-	SET @ROOT@("validation","fields","mrn","label")="MRN"
-	SET @ROOT@("validation","fields","mrn","required")=1
-	SET @ROOT@("validation","fields","mrn","maxLength")=32
-	SET @ROOT@("validation","fields","lastName","label")="Last name"
-	SET @ROOT@("validation","fields","lastName","required")=1
-	SET @ROOT@("validation","fields","lastName","maxLength")=80
-	SET @ROOT@("validation","fields","firstName","label")="First name"
-	SET @ROOT@("validation","fields","firstName","required")=1
-	SET @ROOT@("validation","fields","firstName","maxLength")=80
-	SET @ROOT@("validation","fields","dob","label")="DOB"
-	SET @ROOT@("validation","fields","dob","required")=1
-	SET @ROOT@("validation","fields","dob","type")="date"
-	SET @ROOT@("validation","fields","status","label")="Status"
-	SET @ROOT@("validation","fields","status","required")=1
-	SET @ROOT@("validation","fields","status","enum",1)="Active"
-	SET @ROOT@("validation","fields","status","enum",2)="Pending"
-	SET @ROOT@("validation","fields","status","enum",3)="Inactive"
 	QUIT
 	;
 SEEDUI(STATE,ROOT)
@@ -428,8 +398,8 @@ SEEDUI(STATE,ROOT)
 	QUIT
 	;
 MASSIVEQ(IN,OUT,CONF)
-	NEW SCHEMA,TOTAL,FILTERED,PAGE,PSIZE,DRAW,START,LENGTH,SORTBY,SORTDIR,SEARCH,I,VAL,IDX,SEQ,N,SKIP,GROUPN,GROUPKEYS,ROWVIEW
-	KILL OUT,SCHEMA,IDX,GROUPKEYS
+	NEW SCHEMA,TOTAL,FILTERED,PAGE,PSIZE,DRAW,START,LENGTH,SORTBY,SORTDIR,SEARCH,I,VAL,IDX,SEQ,N,SKIP,GROUPKEYS,GROUPN
+	KILL OUT,SCHEMA,IDX
 	SET TOTAL=10000,FILTERED=0
 	DO MASSIVESC(.SCHEMA)
 	MERGE OUT("schema","columns")=SCHEMA("columns")
@@ -446,7 +416,7 @@ MASSIVEQ(IN,OUT,CONF)
 	SET SORTDIR=$$LOW^MIOUTIL($GET(IN("sort","direction"),$GET(IN("sortDir"),"ascending")))
 	IF SORTDIR'="descending" SET SORTDIR="ascending"
 	SET SEARCH=$$LOW^MIOUTIL($GET(IN("search")))
-	IF $$MASSFAST(.IN,SEARCH,SORTBY) DO MASSFASTQ(.IN,.OUT,TOTAL,PAGE,PSIZE,DRAW,SORTDIR) QUIT
+	IF $$MASSFAST(.IN,SEARCH,SORTBY) DO MASSFASTQ(.OUT,TOTAL,PAGE,PSIZE,DRAW,SORTDIR) QUIT
 	FOR I=1:1:TOTAL IF $$MASSOK(I,.IN,SEARCH) DO
 	. SET FILTERED=FILTERED+1
 	. SET VAL=$$MASSKEY(I,SORTBY)
@@ -465,15 +435,8 @@ MASSIVEQ(IN,OUT,CONF)
 	. . . SET SEQ=SEQ+1 IF SEQ'>SKIP QUIT
 	. . . SET N=N+1 DO MASSROW(.OUT,N,I)
 	DO ACTIONS(.OUT,1)
-	SET GROUPN=$$GROUPREQ(.IN,.GROUPKEYS)
-	IF GROUPN>0 DO
-	. KILL ROWVIEW
-	. MERGE ROWVIEW=OUT("rows")
-	. DO GROUPS(.ROWVIEW,.GROUPKEYS,.OUT)
 	SET OUT("ok")=1
-	SET OUT("contract")="mioos-advanced-table-v8"
 	SET OUT("dataset")="massive"
-	IF GROUPN>0 MERGE OUT("groupByColumns")=GROUPKEYS
 	SET OUT("features","serverPagination")=1
 	SET OUT("features","serverSorting")=1
 	SET OUT("features","columnVisibility")=1
@@ -490,7 +453,7 @@ MASSIVEQ(IN,OUT,CONF)
 	SET OUT("draw")=DRAW
 	SET OUT("recordsTotal")=TOTAL
 	SET OUT("recordsFiltered")=FILTERED
-	DO DATAALIAS(.IN,.OUT)
+	MERGE OUT("data")=OUT("rows")
 	SET OUT("pagination","page")=PAGE
 	SET OUT("pagination","pageSize")=PSIZE
 	SET OUT("pagination","totalRows")=TOTAL
@@ -530,8 +493,8 @@ MASSFAST(IN,SEARCH,SORTBY)
 	IF KEY="name" QUIT 1
 	QUIT 0
 	;
-MASSFASTQ(IN,OUT,TOTAL,PAGE,PSIZE,DRAW,SORTDIR)
-	NEW PAGECOUNT,SKIP,N,I,STEP,GROUPN,GROUPKEYS,ROWVIEW
+MASSFASTQ(OUT,TOTAL,PAGE,PSIZE,DRAW,SORTDIR)
+	NEW PAGECOUNT,SKIP,N,I,STEP
 	SET PAGECOUNT=$SELECT(TOTAL=0:1,1:((TOTAL+PSIZE-1)\PSIZE))
 	IF PAGE<1 SET PAGE=1
 	IF PAGE>PAGECOUNT SET PAGE=PAGECOUNT
@@ -541,15 +504,9 @@ MASSFASTQ(IN,OUT,TOTAL,PAGE,PSIZE,DRAW,SORTDIR)
 	IF SORTDIR'="descending" DO
 	. SET I=SKIP FOR  SET I=I+1 QUIT:I>TOTAL!(N'<PSIZE)  SET N=N+1 DO MASSROW(.OUT,N,I)
 	DO ACTIONS(.OUT,1)
-	SET GROUPN=$$GROUPREQ(.IN,.GROUPKEYS)
-	IF GROUPN>0 DO
-	. KILL ROWVIEW
-	. MERGE ROWVIEW=OUT("rows")
-	. DO GROUPS(.ROWVIEW,.GROUPKEYS,.OUT)
+	KILL OUT("bulkActions")
 	SET OUT("ok")=1
-	SET OUT("contract")="mioos-advanced-table-v8"
 	SET OUT("dataset")="massive"
-	IF GROUPN>0 MERGE OUT("groupByColumns")=GROUPKEYS
 	SET OUT("features","serverPagination")=1
 	SET OUT("features","serverSorting")=1
 	SET OUT("features","columnVisibility")=1
@@ -566,7 +523,7 @@ MASSFASTQ(IN,OUT,TOTAL,PAGE,PSIZE,DRAW,SORTDIR)
 	SET OUT("draw")=DRAW
 	SET OUT("recordsTotal")=TOTAL
 	SET OUT("recordsFiltered")=TOTAL
-	DO DATAALIAS(.IN,.OUT)
+	MERGE OUT("data")=OUT("rows")
 	SET OUT("pagination","page")=PAGE
 	SET OUT("pagination","pageSize")=PSIZE
 	SET OUT("pagination","totalRows")=TOTAL
@@ -656,6 +613,7 @@ ROWR(ROOT,N,ID,NAME,STATUS,OWNER,PRIORITY,UPDATED,BODY)
 	SET @ROOT@("rows",N,"owner")=OWNER
 	SET @ROOT@("rows",N,"priority")=PRIORITY
 	SET @ROOT@("rows",N,"updated")=UPDATED
+	SET @ROOT@("rows",N,"notes")=BODY
 	SET @ROOT@("rows",N,"_expand","title")="Notes"
 	SET @ROOT@("rows",N,"_expand","body")=BODY
 	QUIT
@@ -798,54 +756,52 @@ PAGE(WORK,OUT,PAGE,PSIZE,TOTAL,FILTERED)
 	SET OUT("pagination","pageCount")=$SELECT(FILTERED=0:1,1:((FILTERED+PSIZE-1)\PSIZE))
 	QUIT
 	;
-GROUPREQ(IN,KEYS)
-	NEW I,N,KEY
+GROUPIN(IN,KEYS,N)
+	NEW I,K
 	KILL KEYS SET N=0
 	SET I=0 FOR  SET I=$ORDER(IN("groupByColumns",I)) QUIT:I'>0  DO
-	. SET KEY=$$KEY($GET(IN("groupByColumns",I)))
-	. IF KEY'="" SET N=N+1,KEYS(N)=KEY
-	IF N'>0 DO
-	. SET KEY=$$KEY($GET(IN("groupBy")))
-	. IF KEY'="" SET N=1,KEYS(1)=KEY
-	QUIT N
+	. SET K=$$KEY($GET(IN("groupByColumns",I))) IF K'="" SET N=N+1,KEYS(N)=K
+	IF N=0,$GET(IN("groupBy"))'="" SET K=$$KEY($GET(IN("groupBy"))) IF K'="" SET N=1,KEYS(1)=K
+	QUIT
 	;
-GROUPS(WORK,KEYS,OUT)
-	NEW I,J,G,N,VAL,GKEY,GLABEL,KEY,SEP
+GROUPSM(WORK,KEYS,OUT)
+	NEW I,J,G,N,VAL,PART,KEY
 	KILL OUT("groups")
 	SET I=0 FOR  SET I=$ORDER(WORK(I)) QUIT:I'>0  DO
-	. SET (GKEY,GLABEL)="",SEP=""
+	. SET VAL=""
 	. SET J=0 FOR  SET J=$ORDER(KEYS(J)) QUIT:J'>0  DO
-	. . SET KEY=$GET(KEYS(J)),VAL=$GET(WORK(I,KEY)) IF VAL="" SET VAL="(blank)"
-	. . SET GKEY=GKEY_SEP_KEY_"="_VAL,GLABEL=GLABEL_SEP_VAL,SEP=" / "
-	. IF GKEY="" SET GKEY="(all)",GLABEL="(all)"
-	. SET G=$ORDER(OUT("groups","byValue",GKEY,0))
+	. . SET KEY=$GET(KEYS(J)),PART=$GET(WORK(I,KEY)) IF PART="" SET PART="(blank)"
+	. . SET VAL=$SELECT(VAL="":PART,1:VAL_" / "_PART)
+	. SET G=$ORDER(OUT("groups","byValue",VAL,0))
 	. IF G'>0 DO
 	. . SET N=$ORDER(OUT("groups",""),-1)+1
-	. . SET OUT("groups",N,"key")=GKEY,OUT("groups",N,"label")=GLABEL,OUT("groups",N,"count")=0
-	. . SET J=0 FOR  SET J=$ORDER(KEYS(J)) QUIT:J'>0  SET OUT("groups",N,"columns",J)=$GET(KEYS(J))
-	. . SET OUT("groups","byValue",GKEY,N)=""
+	. . SET OUT("groups",N,"key")=VAL,OUT("groups",N,"label")=VAL,OUT("groups",N,"count")=0
+	. . SET OUT("groups","byValue",VAL,N)=""
+	. . SET G=N
+	. SET OUT("groups",G,"count")=+$GET(OUT("groups",G,"count"))+1
+	KILL OUT("groups","byValue")
+	SET J=0 FOR  SET J=$ORDER(KEYS(J)) QUIT:J'>0  SET OUT("groupByColumns",J)=KEYS(J)
+	QUIT
+	;
+GROUPS(WORK,KEY,OUT)
+	NEW I,G,N,VAL
+	KILL OUT("groups")
+	SET I=0 FOR  SET I=$ORDER(WORK(I)) QUIT:I'>0  DO
+	. SET VAL=$GET(WORK(I,KEY)) IF VAL="" SET VAL="(blank)"
+	. SET G=$ORDER(OUT("groups","byValue",VAL,0))
+	. IF G'>0 DO
+	. . SET N=$ORDER(OUT("groups",""),-1)+1
+	. . SET OUT("groups",N,"key")=VAL,OUT("groups",N,"label")=VAL,OUT("groups",N,"count")=0
+	. . SET OUT("groups","byValue",VAL,N)=""
 	. . SET G=N
 	. SET OUT("groups",G,"count")=+$GET(OUT("groups",G,"count"))+1
 	KILL OUT("groups","byValue")
 	QUIT
 	;
-DATAALIAS(IN,OUT)
-	IF +$GET(IN("includeDataAlias")) MERGE OUT("data")=OUT("rows")
-	QUIT
-	;
-MSG(ACTION)
-	IF ACTION="column.visibility" QUIT "Column visibility updated"
-	IF ACTION="column.resize" QUIT "Column width updated"
-	IF ACTION="column.save"!(ACTION="column.add")!(ACTION="column.update") QUIT "Column saved"
-	IF ACTION="column.delete" QUIT "Column deleted"
-	IF ACTION="row.delete" QUIT "Row deleted"
-	IF ACTION="rows.delete"!(ACTION="bulk.delete") QUIT "Rows deleted"
-	IF ACTION="row.save"!(ACTION="row.add")!(ACTION="row.update") QUIT "Row saved"
-	QUIT "Table mutation applied"
-	;
 ACTIONS(OUT,READONLY)
 	KILL OUT("rowActions"),OUT("bulkActions")
-	IF +$GET(READONLY) QUIT
+	IF +$GET(READONLY) DO  QUIT
+	. SET OUT("bulkActions",1,"key")="export",OUT("bulkActions",1,"label")="Export selected"
 	SET OUT("rowActions",1,"key")="edit",OUT("rowActions",1,"label")="Edit"
 	SET OUT("rowActions",2,"key")="duplicate",OUT("rowActions",2,"label")="Duplicate"
 	SET OUT("rowActions",3,"key")="delete",OUT("rowActions",3,"label")="Delete"

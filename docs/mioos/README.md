@@ -376,21 +376,20 @@ The `UI + Form Elements` module now uses `mioos-surface-ui-elements`, a standalo
 
 ## ROI 64C advanced table
 
-The standalone advanced table now uses `mioos-advanced-table-v8` and can be embedded by internal or user-created modules through `mioos-surface-table`. See `Backend_Table.md` and `ROI_64C_Advanced_Table_Rewrite.md`.
+The standalone advanced table now uses `mioos-advanced-table-v7` and can be embedded by internal or user-created modules through `mioos-surface-table`. See `Backend_Table.md` and `ROI_64C_Advanced_Table_Rewrite.md`.
 
 ## ROI 64C redo 2 note
 
-The advanced backend table now uses `mioos-advanced-table-v8`, WebSocket-first query/mutation commands, compact default density, a viewport-safe editor dialog, read-only massive dataset safeguards, and a visible Table Samples showcase with copyable API variations.
+The advanced backend table now uses `mioos-advanced-table-v7`, WebSocket-first query/mutation commands, compact default density, a viewport-safe editor dialog, read-only massive dataset safeguards, and a visible Table Samples showcase with copyable API variations.
 
 ### ROI 64E table correction
 
-The advanced table contract is now `mioos-advanced-table-v8`. This update focuses on mutation correctness and MUMPS-first authoring: table samples show dataset globals, module `MOD(...)` registration, and required routine reload/test commands. Row details moved into the control column, the column selector is modal-only, and column editing appears only when column CRUD is enabled.
+The advanced table contract is now `mioos-advanced-table-v7`. This update focuses on mutation correctness and MUMPS-first authoring: table samples show dataset globals, module `MOD(...)` registration, and required routine reload/test commands. Row details moved into the control column, the column selector is modal-only, and column editing appears only when column CRUD is enabled.
 
-### ROI 64F Advanced Table v8
+### ROI 64G stabilization
 
-The backend table component now uses `mioos-advanced-table-v8`. Mutations return acknowledgement-only JSON (`mutationOnly: true`, `refetch: true`) and no longer block on a full refreshed table payload. Queries support `groupByColumns` for multi-column grouping and omit the duplicate `data` alias unless `includeDataAlias: true` is requested. The table footer includes direct page jump, and mutation timeouts are short and command-specific.
+The table validation follow-up now includes fixes for real-use regressions: column visibility handles JSON booleans correctly, existing demo tables are upgraded with validation metadata, Notes is an editable grouped column, grouping/filtering use modal dialogs, successful mutations show a non-blocking toast, and pagination displays the current row range.
 
+### ROI 64G stabilization follow-up
 
-### ROI 64G — table mutation validation
-
-The backend table now supports MUMPS-first row validation rules and optional custom validation hooks. Rule failures return deterministic `validation_failed` acknowledgements with `fieldErrors`, and the editor preserves user input while showing field-level messages. Mutation attempts are also written to dataset audit nodes.
+The table UI now fixes column visibility persistence, backend validation feedback, mutation success toasts, editable Notes data, modal grouping/filtering, and clearer row-range totals. This is a stabilization pass before ROI 64H, not the next ROI.

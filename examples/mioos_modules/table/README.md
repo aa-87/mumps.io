@@ -1,246 +1,94 @@
 # Table UI Module Example
 
-This example demonstrates the built-in MIOOS backend table module for MUMPS developers. The table remains server-authored: MUMPS owns the schema, rows, module metadata, mutation validation, and desktop/app entry point. Browser code only renders the `mioos-surface-table` surface.
-
-## Contract
-
-- Table contract: `mioos-advanced-table-v8`
-- Query route: `POST /api/mioos/table/query`
-- Mutation route: `POST /api/mioos/table/mutate`
-- WebSocket commands: `table.query` and `table.mutate`
-- Backend routine: `MIOOSTBL`
-- Module registry routine: `MIOOSMOD`
-
-ROI 64F changes mutations to fast acknowledgements. A mutation validates and writes, then returns a small JSON acknowledgement with `mutationOnly: true` and `refetch: true`; the browser performs a separate query after the acknowledgement. The mutation response no longer includes a full refreshed table payload.
+This example demonstrates the first reusable MIOOS UI module component: the backend table.
 
 ## Files
 
-- `module.json` — user-module manifest targeting `mioos-advanced-table-v8`.
+- `module.json` — user-module manifest.
 - `table_module.mjs` — optional browser-side registration shim for custom bundles.
+
+## How it works
+
+The manifest launches a window with:
+
+```text
+componentKey = table
+surface      = mioos-surface-table
+backend      = MIOOSTBL
+route        = /api/mioos/table/query
+```
+
+The shell resolves the surface and renders `mioos-full-table`. Data remains backend-owned.
+
+## Next steps for a real module
+
+1. Copy `module.json`.
+2. Change `id`, `key`, `appKey`, `title`, and `description`.
+3. Point `config.dataset` at a backend dataset supported by your query routine.
+4. Register the manifest in the user module global or add it as an internal module in `MIOOSMOD`.
+
+## Relationship to ROI 64B UI examples
+
+The `UI + Form Elements` example is no longer implemented as a table dataset. Table modules should still use `mioos-surface-table`, but UI/form examples now use `mioos-surface-ui-elements` so form reference behavior remains stable while the advanced table component is rewritten in ROI 64C.
+
+
+## ROI 64C standalone configuration
+
+The table example now targets `mioos-advanced-table-v7`. Use MUMPS module/tableState nodes first. `window.MIOOSTable.createConfig()` exists for internal shell code, but the examples are intentionally written as MUMPS contracts for developers with no frontend experience.
+
+## DataTables-style server-side integration
+
+The example now targets `mioos-advanced-table-v7`. The native MIOOS table request includes `draw`, `start`, `length`, `order`, and `columns` fields so developers familiar with DataTables can reason about server-side paging and ordering without adopting jQuery/DataTables as a dependency.
+
+Do not load DataTables in MIOOS modules. Use the built-in `mioos-full-table` / `mioos-surface-table` component and configure it with safe JSON or `window.MIOOSTable.createConfig()`.
+
+## ROI 64C redo 2 table variations
+
+The example manifest now targets `mioos-advanced-table-v7`. Queries may use WebSocket; mutations default to HTTP-safe JSON to avoid socket timeout on saves.
+
+Open the built-in **Table Samples** module to view copyable MUMPS contract variations:
+
+- Simple read-mostly table
+- Dense operational table
+- Editable CRUD table
+- Patient registration table
+- Massive read-only table
+
+Minimal MUMPS user-created module configuration:
+
+```mumps
+SET MOD("componentKey")="table"
+SET MOD("surface")="mioos-surface-table"
+SET MOD("tableState","dataset")="demo"
+SET MOD("tableState","config","contract")="mioos-advanced-table-v7"
+SET MOD("tableState","config","transport")="websocket"
+SET MOD("tableState","config","mutateTransport")="http"
+SET MOD("tableState","config","density")="compact"
+SET MOD("tableState","config","defaultPageSize")=25
+```
+
+
+## ROI 64D MUMPS-only examples
+
+The visible Table Samples cards now show MUMPS snippets rather than JavaScript snippets. A simple read-only table should explicitly disable mutation and selection features so the rendered table has no Actions column:
+
+```mumps
+SET MOD("tableState","config","features","rowCrud")=0
+SET MOD("tableState","config","features","columnCrud")=0
+SET MOD("tableState","config","features","selection")=0
+SET MOD("tableState","config","features","bulkActions")=0
+SET MOD("tableState","config","features","rowDetails")=0
+```
+
+Editable tables enable the same feature nodes and rely on `MIOOSTBL` mutation actions such as `row.save`, `row.delete`, `rows.delete`, `column.save`, `column.resize`, and `column.visibility`.
 
 ## Complete MUMPS-first dataset and render contract
 
-## Dataset definition in MUMPS
+The Table Samples surface now includes complete copyable MUMPS examples. Each example shows three things:
 
-Use the current table global contract under `^MIO("MIOOS","TABLE",user,dataset,...)`.
-
-```mumps
-NEW USER,ROOT
-SET USER=$GET(STATE("principal"),"admin")
-SET ROOT=$NAME(^MIO("MIOOS","TABLE",USER,"example"))
-KILL @ROOT
-
-SET @ROOT@("schema","columns",1,"key")="id"
-SET @ROOT@("schema","columns",1,"label")="ID"
-SET @ROOT@("schema","columns",1,"type")="text"
-SET @ROOT@("schema","columns",1,"width")=120
-SET @ROOT@("schema","columns",1,"sortable")=1
-SET @ROOT@("schema","columns",1,"resizable")=1
-
-SET @ROOT@("schema","columns",2,"key")="name"
-SET @ROOT@("schema","columns",2,"label")="Name"
-SET @ROOT@("schema","columns",2,"type")="text"
-SET @ROOT@("schema","columns",2,"width")=220
-SET @ROOT@("schema","columns",2,"sortable")=1
-SET @ROOT@("schema","columns",2,"resizable")=1
-
-SET @ROOT@("schema","columns",3,"key")="status"
-SET @ROOT@("schema","columns",3,"label")="Status"
-SET @ROOT@("schema","columns",3,"type")="badge"
-SET @ROOT@("schema","columns",3,"width")=120
-SET @ROOT@("schema","columns",3,"sortable")=1
-SET @ROOT@("schema","columns",3,"resizable")=1
-
-SET @ROOT@("schema","columns",4,"key")="priority"
-SET @ROOT@("schema","columns",4,"label")="Priority"
-SET @ROOT@("schema","columns",4,"type")="text"
-SET @ROOT@("schema","columns",4,"width")=110
-SET @ROOT@("schema","columns",4,"sortable")=1
-SET @ROOT@("schema","columns",4,"resizable")=1
-
-SET @ROOT@("rows",1,"id")="example-1"
-SET @ROOT@("rows",1,"name")="Demo row"
-SET @ROOT@("rows",1,"status")="Active"
-SET @ROOT@("rows",1,"priority")="High"
-SET @ROOT@("rows",1,"_expand","title")="Details"
-SET @ROOT@("rows",1,"_expand","body")="Optional row detail text."
-
-; ROI 64G validation rules run before row.save persists data
-SET @ROOT@("validation","fields","name","label")="Name"
-SET @ROOT@("validation","fields","name","required")=1
-SET @ROOT@("validation","fields","name","maxLength")=120
-SET @ROOT@("validation","fields","status","label")="Status"
-SET @ROOT@("validation","fields","status","required")=1
-SET @ROOT@("validation","fields","status","enum",1)="Active"
-SET @ROOT@("validation","fields","status","enum",2)="Pending"
-SET @ROOT@("validation","fields","status","enum",3)="Inactive"
-SET @ROOT@("validation","fields","priority","enum",1)="High"
-SET @ROOT@("validation","fields","priority","enum",2)="Medium"
-SET @ROOT@("validation","fields","priority","enum",3)="Low"
-SET @ROOT@("validation","routine")="VALTABLE^MYTABVAL"  ; optional custom hook
-```
-
-## Module registration
-
-Register a table-backed module from MUMPS metadata. The current registry API loads internal modules from `MIOOSMOD` and user modules from the module globals it reads. For a MUMPS routine, build the `MOD` array in the same shape:
-
-```mumps
-NEW MOD
-KILL MOD
-SET MOD("id")="user.example.table"
-SET MOD("key")="example-table"
-SET MOD("appKey")="example-table"
-SET MOD("title")="Example Table"
-SET MOD("description")="Example table created from MUMPS"
-SET MOD("category")="Operations"
-SET MOD("icon")="▤"
-SET MOD("source")="user"
-SET MOD("componentKey")="table"
-SET MOD("surface")="mioos-surface-table"
-SET MOD("tableState","dataset")="example"
-SET MOD("tableState","config","contract")="mioos-advanced-table-v8"
-SET MOD("tableState","config","transport")="websocket"
-SET MOD("tableState","config","mutateTransport")="http"
-SET MOD("tableState","config","tableMutationTimeoutMs")=4500
-SET MOD("tableState","config","includeDataAlias")=0
-SET MOD("tableState","config","defaultPageSize")=50
-SET MOD("tableState","config","groupByColumns",1)="status"
-SET MOD("tableState","config","groupByColumns",2)="priority"
-```
-
-`groupByColumns` is the ROI 64F multi-column grouping contract. The browser sends the same array in table queries, and `MIOOSTBL` returns compound groups in stable order.
-
-## Desktop icon / app entry point
-
-Use the module metadata above to make the table appear in the App Catalogue. The App Catalogue and start menu launch by `appKey` / `surface`; no frontend code is required.
-
-To add a desktop-facing table entry in MUMPS, create the module metadata and then expose an app entry with the same key, title, icon, component, surface, and table dataset. Internal examples are registered in `INTERNAL^MIOOSMOD` with `ADDTABLE^MIOOSMOD`; user-created entries should mirror that shape:
-
-```mumps
-; App Catalogue / desktop launcher identity
-SET MOD("key")="example-table"
-SET MOD("appKey")="example-table"
-SET MOD("title")="Example Table"
-SET MOD("icon")="▤"
-SET MOD("componentKey")="table"
-SET MOD("surface")="mioos-surface-table"
-SET MOD("tableState","dataset")="example"
-
-; Opening from the shell uses the app entry point. The frontend window manager
-; creates a mioos-surface-table window from MOD("surface") and MOD("tableState").
-```
-
-What to edit:
-
-- Dataset and rows: your setup routine that writes `^MIO("MIOOS","TABLE",user,dataset,...)`.
-- Internal built-in catalogue entries: `INTERNAL^MIOOSMOD`.
-- User-created catalogue entries: the user module registry globals consumed by `USER^MIOOSMOD`.
-- Table behavior: `MIOOSTBL`.
-
-How to open it:
-
-1. Sign in to MIOOS.
-2. Open **App Catalogue** or **Table Samples**.
-3. Launch the module whose `appKey` is `example-table`.
-4. The shell opens `mioos-surface-table` and queries dataset `example`.
-
-## Query example
-
-```json
-{
-  "dataset": "example",
-  "page": 1,
-  "pageSize": 50,
-  "draw": 4,
-  "start": 0,
-  "length": 50,
-  "serverSide": true,
-  "processing": true,
-  "search": "alpha",
-  "filters": { "status": ["Active"] },
-  "sort": { "column": "name", "direction": "ascending" },
-  "groupBy": "status",
-  "groupByColumns": ["status", "priority"],
-  "includeDataAlias": false
-}
-```
-
-By default, responses include `rows` only. Legacy `data` is returned only when `includeDataAlias: true` is requested.
-
-## Mutation acknowledgement
-
-```json
-{
-  "dataset": "example",
-  "action": "column.visibility",
-  "columnKey": "priority",
-  "hidden": false,
-  "mutationOnly": true
-}
-```
-
-Successful acknowledgement:
-
-```json
-{
-  "ok": true,
-  "dataset": "example",
-  "action": "column.visibility",
-  "mutationOnly": true,
-  "refetch": true,
-  "message": "Column visibility updated"
-}
-```
-
-Validation/error acknowledgement:
-
-```json
-{
-  "ok": false,
-  "dataset": "example",
-  "action": "row.save",
-  "error": "validation_failed",
-  "message": "Name is required",
-  "fieldErrors": { "name": "Required" },
-  "mutationOnly": true,
-  "refetch": false
-}
-```
-
-
-## ROI 64G validation hooks and helper rules
-
-Validation is configured in MUMPS under the same dataset root as the schema and rows. The built-in helper rules are:
-
-- `required=1`
-- `maxLength=n`
-- `enum`, numbered from 1 upward
-- `type="date"` for `YYYY-MM-DD`
-- `type="number"` with optional `min` / `max`
-
-A custom routine can be attached with:
-
-```mumps
-SET @ROOT@("validation","routine")="VALTABLE^MYTABVAL"
-```
-
-The routine signature is:
-
-```mumps
-VALTABLE(STATE,CONF,DATASET,ACTION,IN,ERR)
-    IF ACTION'="row.save" QUIT
-    IF $GET(IN("row","status"))="Active",$GET(IN("row","name"))="" DO
-    . SET ERR("error")="validation_failed"
-    . SET ERR("message")="Name is required for active rows"
-    . SET ERR("fieldErrors","name")="Required for active rows"
-    QUIT
-```
-
-When validation fails, `MIOOSTBL` does not mutate the row. The HTTP and WebSocket mutation paths return `fieldErrors`; the table editor keeps the user input and highlights those fields. Every mutation attempt writes audit metadata to `@ROOT@("audit",n,...)`.
-
-## Required routine reload/run commands
-
-After changing table, API, WebSocket, module, or tests routines:
+1. How to define the dataset schema and rows under `^MIO("MIOOS","TABLE",user,dataset,...)`.
+2. How to register the module/window with `MOD("componentKey")="table"` and `MOD("tableState",...)`.
+3. Which routines to reload and test:
 
 ```mumps
 ZLINK "MIOOSTBL"
@@ -252,24 +100,79 @@ DO INIT^MIOOS(.CONF)
 DO ^MIOOST
 ```
 
-If you modify the browser files, also run:
-
-```text
-node --check public/mioos/app/mioos_table.js
-node --check public/mioos/app/mioos_ws.js
-python3 -m json.tool examples/mioos_modules/table/module.json
-```
-
-
-Developer helper entry points are also available for setup routines:
+Example dataset seed:
 
 ```mumps
-DO VREQ^MIOOSTBL(ROOT,"name","Name")
-DO VMAX^MIOOSTBL(ROOT,"name",120)
-DO VENUM^MIOOSTBL(ROOT,"status",1,"Open")
-DO VENUM^MIOOSTBL(ROOT,"status",2,"Done")
-DO VDATE^MIOOSTBL(ROOT,"updated","Updated")
-DO VNUM^MIOOSTBL(ROOT,"score","Score")
-DO VRANGE^MIOOSTBL(ROOT,"score",0,100)
-DO VHOOK^MIOOSTBL(ROOT,"VALTABLE^MYTABVAL")
+NEW USER,ROOT,MOD
+SET USER=$GET(STATE("principal"),"admin")
+SET ROOT=$NAME(^MIO("MIOOS","TABLE",USER,"orders"))
+KILL @ROOT
+SET @ROOT@("schema","columns",1,"key")="id"
+SET @ROOT@("schema","columns",1,"label")="ID"
+SET @ROOT@("schema","columns",1,"type")="text"
+SET @ROOT@("schema","columns",1,"width")=120
+SET @ROOT@("schema","columns",2,"key")="name"
+SET @ROOT@("schema","columns",2,"label")="Name"
+SET @ROOT@("schema","columns",2,"type")="text"
+SET @ROOT@("schema","columns",2,"width")=220
+SET @ROOT@("rows",1,"id")="orders-1"
+SET @ROOT@("rows",1,"name")="First order"
+KILL MOD
+SET MOD("componentKey")="table"
+SET MOD("surface")="mioos-surface-table"
+SET MOD("tableState","dataset")="orders"
+SET MOD("tableState","config","contract")="mioos-advanced-table-v7"
+SET MOD("tableState","config","features","rowCrud")=1
+SET MOD("tableState","config","features","columnCrud")=1
+```
+
+Mutation path is validated by `VALIDATE^MIOOSTBL` before row/column updates. Both HTTP and WebSocket mutation paths return deterministic JSON errors instead of timing out.
+
+## ROI 64G stabilization notes
+
+The demo/sample table now treats Notes as a normal editable column:
+
+```mumps
+SET @ROOT@("schema","columns",4,"key")="notes"
+SET @ROOT@("schema","columns",4,"label")="Notes"
+SET @ROOT@("schema","columns",4,"group")="Notes"
+SET @ROOT@("rows",1,"notes")="Editable notes column"
+```
+
+Column visibility requests should send JSON booleans, and the backend normalizes them before storing `hidden=1` or `hidden=0`:
+
+```json
+{ "dataset": "demo", "action": "column.visibility", "columnKey": "notes", "hidden": true, "mutationOnly": true }
+```
+
+The UI exposes grouping and filters in modals so MUMPS-authored tables remain usable without frontend code.
+
+## ROI 64G stabilization follow-up
+
+The demo dataset should include an editable `notes` column rather than keeping notes only in `_expand("body")`:
+
+```mumps
+SET @ROOT@("schema","columns",6,"key")="notes"
+SET @ROOT@("schema","columns",6,"label")="Notes"
+SET @ROOT@("schema","columns",6,"type")="text"
+SET @ROOT@("schema","columns",6,"group")="Notes"
+SET @ROOT@("rows",1,"notes")="Editable notes column"
+```
+
+Column visibility mutations may be sent with JSON booleans:
+
+```json
+{
+  "dataset": "demo",
+  "action": "column.visibility",
+  "columnKey": "notes",
+  "hidden": true
+}
+```
+
+Validation rules are backend data, not frontend code:
+
+```mumps
+SET @ROOT@("validation","fields","name","required")=1
+SET @ROOT@("validation","fields","name","message")="Name is required"
 ```

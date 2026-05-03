@@ -112,7 +112,7 @@ See `docs/mioos/ROI_63_Redesign_Contracts.md` for the complete redesign sequence
 
 ## ROI 64A advanced standalone table contract
 
-The production table track now uses the client-visible contract `mioos-advanced-table-v8`. The component is intended to be standalone and embeddable in internal shell surfaces or user-created modules:
+The production table track now uses the client-visible contract `mioos-advanced-table-v7`. The component is intended to be standalone and embeddable in internal shell surfaces or user-created modules:
 
 ```html
 <mioos-full-table table-id="patients" title="Patients" dataset="patient-registration" :config="tableConfig"></mioos-full-table>
@@ -124,11 +124,11 @@ The production table track now uses the client-visible contract `mioos-advanced-
 
 ## ROI 64C rewrite
 
-ROI 64C upgrades the table to `mioos-advanced-table-v8`. The standalone component now accepts `defaultPageSize`, `defaultSort`, `columns`, and feature gates for `filters`, `resizeColumns`, row details, CRUD, grouping, selection, pagination, and bulk actions. Query payloads include `filters`, and the backend applies exact-match filter arrays before sorting and pagination. Mutations still return a refreshed query-shaped payload so the browser does not have to infer post-mutation state. See `docs/mioos/ROI_64C_Advanced_Table_Rewrite.md`.
+ROI 64C upgrades the table to `mioos-advanced-table-v7`. The standalone component now accepts `defaultPageSize`, `defaultSort`, `columns`, and feature gates for `filters`, `resizeColumns`, row details, CRUD, grouping, selection, pagination, and bulk actions. Query payloads include `filters`, and the backend applies exact-match filter arrays before sorting and pagination. Mutations still return a refreshed query-shaped payload so the browser does not have to infer post-mutation state. See `docs/mioos/ROI_64C_Advanced_Table_Rewrite.md`.
 
 ## ROI 64C redo — DataTables-style server-side processing
 
-The advanced table contract is now `mioos-advanced-table-v8`. It remains a native MIOOS component, but its request/response envelope is intentionally modeled after DataTables server-side processing so module authors have a familiar mental model.
+The advanced table contract is now `mioos-advanced-table-v7`. It remains a native MIOOS component, but its request/response envelope is intentionally modeled after DataTables server-side processing so module authors have a familiar mental model.
 
 Each server interaction sends:
 
@@ -150,9 +150,9 @@ The browser always shows a processing indicator during query and mutation reques
 
 Large dataset performance was hardened by replacing the old O(n²) bubble sort in `MIOOSTBL` with an indexed server-side sort pass before paging. Server-side paging is still authoritative; the browser receives only the current page of `rows`/`data`.
 
-## ROI 64C redo 2 update — `mioos-advanced-table-v8`
+## ROI 64C redo 2 update — `mioos-advanced-table-v7`
 
-The advanced table now uses the `mioos-advanced-table-v8` contract. Table query may use `table.query` over WebSocket. Table mutation now defaults to `/api/mioos/table/mutate` over authenticated HTTP, with WebSocket mutation reserved for future transport hardening.
+The advanced table now uses the `mioos-advanced-table-v7` contract. Table query may use `table.query` over WebSocket. Table mutation now defaults to `/api/mioos/table/mutate` over authenticated HTTP, with WebSocket mutation reserved for future transport hardening.
 
 The visible UI no longer exposes internal draw counters or response timestamps. Draw/start/length remain protocol fields for server-side paging compatibility, but the user-facing footer only shows row counts and page navigation.
 
@@ -226,7 +226,7 @@ this.openBackendTableWindow({
 
 ## ROI 64D — MUMPS-first table contract
 
-The table contract is now `mioos-advanced-table-v8`. Table examples are written for MUMPS developers first: register a module with `componentKey="table"`, `surface="mioos-surface-table"`, and `tableState` nodes. Normal table modules should not require Vue or JavaScript authoring.
+The table contract is now `mioos-advanced-table-v7`. Table examples are written for MUMPS developers first: register a module with `componentKey="table"`, `surface="mioos-surface-table"`, and `tableState` nodes. Normal table modules should not require Vue or JavaScript authoring.
 
 Mutations default to authenticated HTTP (`/api/mioos/table/mutate`) to avoid the reported `socket_timeout` on `table.mutate`. Queries may still use WebSocket for responsive server-side paging.
 
@@ -234,72 +234,26 @@ Read-only/simple variants disable `selection`, `bulkActions`, `rowCrud`, `column
 
 ## ROI 64E update — mutation validation and MUMPS-first examples
 
-The advanced table now uses `mioos-advanced-table-v8`. Mutation reliability is handled through a shared MUMPS path: HTTP `/api/mioos/table/mutate` and WebSocket `table.mutate` both call `MUTATE^MIOOSTBL`, which now validates row fields, row IDs, column keys, column width, and field length before updating table globals. Validation/runtime failures return a deterministic `{ok:false,error:"table_mutate_failed",detail:...}` JSON payload instead of leaving the browser waiting for a socket timeout.
+The advanced table now uses `mioos-advanced-table-v7`. Mutation reliability is handled through a shared MUMPS path: HTTP `/api/mioos/table/mutate` and WebSocket `table.mutate` both call `MUTATE^MIOOSTBL`, which now validates row fields, row IDs, column keys, column width, and field length before updating table globals. Validation/runtime failures return a deterministic `{ok:false,error:"table_mutate_failed",detail:...}` JSON payload instead of leaving the browser waiting for a socket timeout.
 
 Table Samples now show complete MUMPS snippets: dataset global definition, module `MOD(...)` metadata, and the routines to `ZLINK`/run so a MUMPS developer can render a table without writing frontend code.
 
 Row details are no longer mixed into row actions. Details render as an expand arrow in the ID/control column. Simple/read-only tables continue to omit Actions entirely.
 
-## ROI 64F table v8 mutation and query contract
+## ROI 64G stabilization — visibility, validation, Notes, and modal controls
 
-The advanced table now targets `mioos-advanced-table-v8`.
+Table mutation booleans are normalized server-side before persistence. This is important because the JSON parser represents JSON booleans as `"true"` / `"false"` literals; `column.visibility` now uses `TRUTH^MIOOSTBL` so hiding and showing columns survives the acknowledgement/refetch cycle.
 
-### Mutation acknowledgement behavior
+Existing demo table globals are upgraded in place. If a user already had a seeded demo table without ROI 64G validation nodes, `ENSURE^MIOOSTBL` now backfills validation rules and the editable `notes` column without wiping rows. The Notes value is copied from `_expand("body")` when needed.
 
-`MUTATE^MIOOSTBL` validates and writes the requested mutation, then returns a small acknowledgement instead of running a full `QUERY^MIOOSTBL` refresh inline. Both HTTP `/api/mioos/table/mutate` and WebSocket `table.mutate` use the same backend mutation path.
+The browser table surface now uses modal dialogs for filter and grouping setup, shows non-blocking success toasts after mutations, and renders pagination as a visible page range instead of a static filtered/total-only count.
 
-Successful mutation acknowledgements contain `ok`, `dataset`, `action`, `mutationOnly: true`, `refetch: true`, and a human-readable `message`. Failed mutations contain deterministic JSON with `ok: false`, `mutationOnly: true`, `refetch: false`, `error`, `message`, and optional `fieldErrors`.
+## ROI 64G stabilization follow-up — table controls and validation
 
-### Query behavior
+This follow-up fixes the post-ROI 64G table behavior without starting ROI 64H.
 
-Queries accept `groupByColumns` for compound grouping and `includeDataAlias` for legacy consumers. `rows` is the authoritative row payload. The duplicate `data` alias is omitted unless `includeDataAlias: true` is explicitly requested.
-
-The massive dataset fast path materializes only the requested page and does not expose row actions, bulk actions, selection, or row details.
-
-### Pagination and timeout behavior
-
-The table UI includes a direct page jump input. Table mutations use short command-specific timeouts (`tableMutationTimeoutMs`, default 4500ms) and show a deterministic timeout message rather than leaving the mutation spinner active indefinitely.
-
-
-## ROI 64G update — table mutation validation and developer utilities
-
-ROI 64G keeps the `mioos-advanced-table-v8` transport contract and makes row mutation validation a MUMPS-first backend concern. Dataset owners can define validation rules directly under the table dataset global:
-
-```mumps
-SET @ROOT@("validation","fields","name","label")="Name"
-SET @ROOT@("validation","fields","name","required")=1
-SET @ROOT@("validation","fields","name","maxLength")=120
-SET @ROOT@("validation","fields","status","enum",1)="Open"
-SET @ROOT@("validation","fields","status","enum",2)="Done"
-SET @ROOT@("validation","fields","dob","type")="date"
-SET @ROOT@("validation","fields","score","type")="number"
-SET @ROOT@("validation","fields","score","min")=0
-SET @ROOT@("validation","fields","score","max")=100
-```
-
-Supported built-in rule helpers are `required`, `maxLength`, `enum`, `type="date"`, `type="number"`, `min`, and `max`. `MUTATE^MIOOSTBL` runs these rules before row persistence and returns field-level JSON such as `fieldErrors.name="Name is required"` without mutating data.
-
-Datasets may also provide a custom MUMPS hook:
-
-```mumps
-SET @ROOT@("validation","routine")="VALTABLE^MYTABVAL"
-```
-
-The hook is called as `DO VALTABLE^MYTABVAL(.STATE,.CONF,DATASET,ACTION,.IN,.ERR)`. To reject a mutation, set `ERR("error")="validation_failed"`, `ERR("message")`, and optional `ERR("fieldErrors",field)`. The browser keeps the editor open and highlights the matching fields.
-
-
-
-Developer helper entry points are also available for setup routines:
-
-```mumps
-DO VREQ^MIOOSTBL(ROOT,"name","Name")
-DO VMAX^MIOOSTBL(ROOT,"name",120)
-DO VENUM^MIOOSTBL(ROOT,"status",1,"Open")
-DO VENUM^MIOOSTBL(ROOT,"status",2,"Done")
-DO VDATE^MIOOSTBL(ROOT,"updated","Updated")
-DO VNUM^MIOOSTBL(ROOT,"score","Score")
-DO VRANGE^MIOOSTBL(ROOT,"score",0,100)
-DO VHOOK^MIOOSTBL(ROOT,"VALTABLE^MYTABVAL")
-```
-
-Mutation attempts are recorded under `@ROOT@("audit",n,...)` with timestamp, user, dataset, action, success flag, stage, message, row/column identity where available, and field errors for failed validation attempts.
+- Column visibility now normalizes JSON booleans through `TRUTH^MIOOSTBL`, so `true`, `false`, `1`, `0`, `yes`, and `on` are handled deterministically when `/api/mioos/table/mutate` receives `column.visibility`.
+- Existing seeded datasets are upgraded in place by `UPGRADE^MIOOSTBL`; the demo table receives the editable `notes` schema column and validation rules even when the user already had table globals from an earlier ROI.
+- Row validation is enforced by `VALRULES^MIOOSTBL` before persistence. HTTP and WebSocket mutation errors include `fieldErrors` so the browser can keep the editor open and highlight the affected fields.
+- The browser uses modal controls for filtering, grouping, and column visibility. Grouping sends `groupByColumns` and may include more than one grouping key.
+- The pagination footer now reports the visible page range, for example `Showing 51–100 of 237 rows`, instead of always showing only total rows.

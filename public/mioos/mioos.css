@@ -2893,60 +2893,77 @@ button:disabled { cursor: default; opacity: .55; }
 .theme-dark-mode .mioos-table-column-list button { background: #111827; color: #f8fafc; border-color: rgba(191,219,254,.24); }
 .theme-dark-mode .mioos-table-column-list button small { color: #cbd5e1; }
 
-/* ROI 64F: multi-column grouping and direct page jump controls. */
-.mioos-table-grouping {
-  position: relative;
-  border: 1px solid rgba(148,163,184,.26);
-  border-radius: 12px;
-  padding: 7px 10px;
-  background: rgba(2,6,23,.42);
-  min-width: 180px;
-}
-.mioos-table-grouping[open] { flex-basis: 260px; }
-.mioos-table-grouping label {
+/* ROI 64G stabilization: modal table filters/grouping and clearer mutation feedback. */
+.mioos-table-toast {
+  position: sticky;
+  top: 0;
+  z-index: 6;
   display: flex;
-  flex-direction: row;
   align-items: center;
-  gap: 7px;
-  margin-top: 8px;
+  gap: 8px;
+  border-color: rgba(34, 197, 94, .45) !important;
+  background: color-mix(in srgb, #dcfce7 82%, var(--theme-panel-bg, #ffffff) 18%) !important;
+  color: #14532d !important;
+  font-weight: 700;
+}
+.mioos-table-toast::before { content: "✓"; }
+.mioos-table-editor.is-filter-modal,
+.mioos-table-editor.is-group-modal { width: min(560px, calc(100vw - 36px)); }
+.mioos-table-editor header div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.mioos-table-editor header span { font-size: 11px; opacity: .72; }
+.mioos-table-modal-list {
+  display: grid;
+  gap: 8px;
+  padding: 12px 0;
+  max-height: min(62vh, 520px);
+  overflow: auto;
+}
+.mioos-table-modal-list label {
+  display: grid;
+  grid-template-columns: minmax(120px, 180px) minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
   font-size: 12px;
 }
-.mioos-table-grouping input[type="checkbox"] { min-height: 0; width: auto; padding: 0; }
-.mioos-table-group-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
-.mioos-table-group-chips span {
-  display: inline-flex;
+.mioos-table-modal-list input {
+  min-height: 32px;
+  border-radius: 10px;
+  border: 1px solid var(--theme-panel-border, #94a3b8);
+  background: var(--theme-field-bg, #ffffff);
+  color: var(--theme-field-text, #111827);
+  padding: 6px 9px;
+}
+.mioos-table-modal-list.is-checklist button {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) auto;
   align-items: center;
-  border-radius: 999px;
-  padding: 3px 8px;
+  gap: 8px;
+  width: 100%;
+  min-height: 38px;
+  border-radius: 10px;
+  border: 1px solid rgba(148,163,184,.28);
+  background: color-mix(in srgb, var(--theme-panel-bg, #ffffff) 88%, #f8fafc 12%);
+  color: var(--theme-field-text, #111827);
+  text-align: left;
+  cursor: pointer;
+  padding: 8px 10px;
+}
+.mioos-table-modal-list.is-checklist b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mioos-table-modal-list.is-checklist small { color: var(--theme-muted-text, #64748b); }
+.theme-dark-mode .mioos-table-toast { background: #052e16 !important; color: #bbf7d0 !important; }
+.theme-dark-mode .mioos-table-modal-list.is-checklist button { background: #111827; color: #f8fafc; border-color: rgba(191,219,254,.24); }
+.theme-dark-mode .mioos-table-modal-list input { background: #020617; color: #f8fafc; }
+.mioos-table-form-grid label.is-invalid input,
+.mioos-table-form-grid label.is-invalid select,
+.mioos-table-form-grid label.is-invalid textarea {
+  border-color: #dc2626 !important;
+  box-shadow: 0 0 0 2px rgba(220, 38, 38, .12);
+}
+.mioos-field-error {
+  display: block;
+  margin-top: 3px;
+  color: #b91c1c;
   font-size: 11px;
-  border: 1px solid rgba(96,165,250,.28);
-  background: rgba(59,130,246,.18);
+  font-weight: 700;
 }
-.mioos-table-page-jump {
-  display: inline-flex;
-  flex-direction: row !important;
-  align-items: center;
-  gap: 6px;
-}
-.mioos-table-page-jump input {
-  width: 72px;
-  min-height: 28px;
-  border-radius: 9px;
-  border: 1px solid rgba(148,163,184,.35);
-  background: rgba(2,6,23,.52);
-  color: inherit;
-  padding: 4px 7px;
-}
-
-/* ROI 64G table validation feedback */
-.mioos-table-form-grid label.has-error input,
-.mioos-table-form-grid label.has-error select {
-  border-color: rgba(239, 68, 68, .78);
-  box-shadow: 0 0 0 2px rgba(239, 68, 68, .16);
-}
-.mioos-table-form-grid label.has-error em {
-  color: #fca5a5;
-  font-style: normal;
-  font-size: 11px;
-  line-height: 1.25;
-}
+.theme-dark-mode .mioos-field-error { color: #fecaca; }
