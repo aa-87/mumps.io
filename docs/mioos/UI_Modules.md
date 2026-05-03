@@ -109,3 +109,7 @@ The table transport posture remains WebSocket-first with authenticated HTTP fall
 ## ROI 70 direct Patient Registration entry
 
 The Patient Registration module is available both through the App Catalogue and as a direct shell module entry. The direct entry uses app key `patient-registration`, module id `mioos.ui.patient.registration`, component `table`, and dataset `patient-registration`. The table renders review queue buttons from server metadata instead of hardcoding patient workflow state in JavaScript.
+
+## ROI 71 Patient Registration entry-point gating
+
+The Patient Registration shell entry and App Catalogue module are only emitted when `CANLAUNCH^MIOOSPAT(.STATE)` allows patient read access. The general UI Modules catalogue remains available when the module system is enabled. Limited read-only roles may open Patient Registration, but the backend returns masked PHI rows.

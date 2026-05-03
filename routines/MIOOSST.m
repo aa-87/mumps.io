@@ -674,11 +674,12 @@ APPS(STATE)
 	SET STATE("apps",5,"icon")="⚙"
 	SET STATE("apps",5,"kind")="tool"
 	IF +$GET(STATE("moduleSystemEnabled"),0),+$GET(STATE("moduleAppCatalogEnabled"),0),$GET(STATE("moduleLauncher"),"desktop-icons-and-menu")'="hidden" DO
-	. SET STATE("apps",6,"key")="patient-registration"
-	. SET STATE("apps",6,"title")="Patient Registration"
-	. SET STATE("apps",6,"subtitle")="Search, review queues, and duplicate resolution"
-	. SET STATE("apps",6,"icon")="🏥"
-	. SET STATE("apps",6,"kind")="module"
+	. IF $$CANLAUNCH^MIOOSPAT(.STATE) DO
+	. . SET STATE("apps",6,"key")="patient-registration"
+	. . SET STATE("apps",6,"title")="Patient Registration"
+	. . SET STATE("apps",6,"subtitle")="Search, review queues, and duplicate resolution"
+	. . SET STATE("apps",6,"icon")="🏥"
+	. . SET STATE("apps",6,"kind")="module"
 	. SET STATE("apps",7,"key")="ui-modules"
 	. SET STATE("apps",7,"title")="UI Modules"
 	. SET STATE("apps",7,"subtitle")="Create and launch internal or user-created UI modules"
@@ -729,16 +730,17 @@ WINDOWS(STATE)
 	DO WIN(.STATE,6,"win-control-panel","control-panel","System Settings",150,72,1080,680,7,"closed",820,520,1,1,"settings","⚙","workspace-main",1)
 	SET STATE("windows",6,"systemSettingsEnabled")=1
 	IF +$GET(STATE("moduleSystemEnabled"),0),+$GET(STATE("moduleAppCatalogEnabled"),0),$GET(STATE("moduleLauncher"),"desktop-icons-and-menu")'="hidden" DO
-	. DO WIN(.STATE,7,"win-patient-registration","patient-registration","Patient Registration",132,76,1120,680,9,"closed",820,540,1,1,"module","🏥","workspace-main",1)
-	. SET STATE("windows",7,"moduleWindow")=1
-	. SET STATE("windows",7,"moduleId")="mioos.ui.patient.registration"
-	. SET STATE("windows",7,"moduleComponent")="table"
-	. SET STATE("windows",7,"surface")="mioos-surface-table"
-	. SET STATE("windows",7,"tableState","id")="patient-registration-table"
-	. SET STATE("windows",7,"tableState","title")="Patient Registration"
-	. SET STATE("windows",7,"tableState","dataset")="patient-registration"
-	. SET STATE("windows",7,"tableState","config","defaultSort","column")="lastName"
-	. SET STATE("windows",7,"tableState","config","defaultSort","direction")="ascending"
+	. IF $$CANLAUNCH^MIOOSPAT(.STATE) DO
+	. . DO WIN(.STATE,7,"win-patient-registration","patient-registration","Patient Registration",132,76,1120,680,9,"closed",820,540,1,1,"module","🏥","workspace-main",1)
+	. . SET STATE("windows",7,"moduleWindow")=1
+	. . SET STATE("windows",7,"moduleId")="mioos.ui.patient.registration"
+	. . SET STATE("windows",7,"moduleComponent")="table"
+	. . SET STATE("windows",7,"surface")="mioos-surface-table"
+	. . SET STATE("windows",7,"tableState","id")="patient-registration-table"
+	. . SET STATE("windows",7,"tableState","title")="Patient Registration"
+	. . SET STATE("windows",7,"tableState","dataset")="patient-registration"
+	. . SET STATE("windows",7,"tableState","config","defaultSort","column")="lastName"
+	. . SET STATE("windows",7,"tableState","config","defaultSort","direction")="ascending"
 	. DO WIN(.STATE,8,"win-ui-modules","ui-modules","UI Modules",156,86,1040,640,10,"closed",780,520,1,1,"module-catalog","▦","workspace-main",1)
 	. SET STATE("windows",8,"moduleWindow")=1
 	. SET STATE("windows",8,"moduleId")="mioos.ui.modules"

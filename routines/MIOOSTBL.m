@@ -10,6 +10,7 @@ QUERY(STATE,CONF,IN,OUT,ERR)
 	IF DATASET="massive" DO MASSIVEQ(.IN,.OUT,.CONF) QUIT 1
 	IF DATASET="vfs" DO
 	. IF '$$VFS(.STATE,.IN,.ROWS,.SCHEMA,.ERR) SET DATASET=""
+	IF DATASET="patient-registration",'$$ALLOW^MIOOSPAT(.STATE,"query",.ERR) QUIT 0
 	IF DATASET'="vfs",DATASET'="" DO LOADDATA(.STATE,DATASET,.ROWS,.SCHEMA)
 	IF DATASET="" QUIT 0
 	SET DRAW=+$GET(IN("draw"),$GET(IN("dt","draw"),0))
@@ -61,6 +62,7 @@ QUERY(STATE,CONF,IN,OUT,ERR)
 	SET OUT("recordsTotal")=TOTAL
 	SET OUT("recordsFiltered")=FILTERED
 	IF $$TRUTH($GET(IN("includeDataAlias"))) MERGE OUT("data")=OUT("rows")
+	IF DATASET="patient-registration" DO MASKOUT^MIOOSPAT(.OUT,.STATE)
 	QUIT 1
 ERRQ
 	SET $ECODE=""
@@ -78,8 +80,10 @@ MUTATE(STATE,CONF,IN,OUT,ERR)
 	SET ACTION=$$LOW^MIOUTIL($GET(IN("action"),$GET(IN("op"),"")))
 	IF ACTION="" SET ERR("error")="table_action_missing" QUIT 0
 	IF ACTION'["." SET ERR("error")="table_action_invalid" QUIT 0
+	IF DATASET="patient-registration",'$$ALLOW^MIOOSPAT(.STATE,ACTION,.ERR) QUIT 0
 	SET ROOT=$$ROOT(.STATE,DATASET)
 	DO ENSURE(.STATE,DATASET)
+	IF DATASET="patient-registration" DO ADDDEF^MIOOSPAT(ROOT,ACTION,.IN,.STATE)
 	IF '$$VALIDATE(.STATE,.CONF,DATASET,ACTION,.IN,.ERR) DO  QUIT 0
 	. IF DATASET="patient-registration" DO AUDPAT^MIOOSPAT(.STATE,.CONF,ACTION,.IN,.OUT,0,.ERR)
 	IF ACTION="row.save"!(ACTION="row.add")!(ACTION="row.update") DO

@@ -195,3 +195,7 @@ ROI 68 adds a synthetic Patient Registration module foundation using `MIOOSPAT` 
 ## ROI 70 patient workflow boundary
 
 ROI 70 adds patient review queues, duplicate-resolution actions, and audit markers for the synthetic Patient Registration module. These are HIPAA-ready architecture patterns only. Production HIPAA compliance still depends on deployment configuration, access control, encryption, logging policy, data retention, BAA/vendor controls, and operational procedures outside this sample module.
+
+## ROI 71 PHI visibility hardening
+
+ROI 71 adds sample server-side permission gates before Patient Registration query, mutation, export, delete, and review actions. Limited read roles receive masked PHI payloads. Denied access is audited in the sample patient audit global. This is a design pattern for building HIPAA-ready controls, not a compliance guarantee.

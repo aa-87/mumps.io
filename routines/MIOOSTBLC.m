@@ -9,6 +9,7 @@ RUN
 	DO TFEAT
 	DO TREG
 	DO TPAT70
+	DO TPAT71
 	QUIT
 	;
 SETUP(STATE,CONF,ROOT)
@@ -224,6 +225,7 @@ TPAT70
 	DO CONFDEF^MIOOS(.CONF)
 	SET STATE("principal")="roi70"
 	SET STATE("authenticated")=1
+	SET STATE("roles")="admin"
 	SET ROOT=$$ROOT^MIOOSTBL(.STATE,"patient-registration")
 	KILL @ROOT,^MIO("MIOOS","PATIENT","AUDIT","roi70")
 	DO ENSURE^MIOOSTBL(.STATE,"patient-registration")
@@ -251,6 +253,62 @@ TPAT70
 	DO OK^MIOTASSERT($$FILEHAS^MIOOST("public/mioos/app/mioos_table.js","backendTableApplyPatientQueue"),"[MIOSTBLC][TPAT70][queue ui hook]")
 	DO OK^MIOTASSERT($$FILEHAS^MIOOST("public/mioos/mioos.css","restore original modal backdrops"),"[MIOSTBLC][TPAT70][modal body opaque marker]")
 	QUIT
+	;
+TPAT71
+	NEW STATE,CONF,ROOT,IN,OUT,ERR,CAT
+	KILL STATE,CONF,IN,OUT,ERR
+	DO CONFDEF^MIOOS(.CONF)
+	SET STATE("principal")="guest",STATE("authenticated")=0,STATE("roles")="guest"
+	KILL IN,OUT,ERR SET IN("dataset")="patient-registration",IN("page")=1,IN("pageSize")=10
+	DO EQ^MIOTASSERT($$QUERY^MIOOSTBL(.STATE,.CONF,.IN,.OUT,.ERR),0,"[MIOSTBLC][TPAT71][unauth query denied]")
+	DO EQ^MIOTASSERT($GET(ERR("error")),"patient_access_denied","[MIOSTBLC][TPAT71][deny code]")
+	DO EQ^MIOTASSERT($DATA(OUT("rows")),0,"[MIOSTBLC][TPAT71][deny before rows]")
+	SET STATE("principal")="reader",STATE("authenticated")=1,STATE("roles")="patient-read"
+	SET ROOT=$$ROOT^MIOOSTBL(.STATE,"patient-registration")
+	KILL @ROOT
+	DO ENSURE^MIOOSTBL(.STATE,"patient-registration")
+	KILL IN,OUT,ERR SET IN("dataset")="patient-registration",IN("page")=1,IN("pageSize")=10
+	DO OK^MIOTASSERT($$QUERY^MIOOSTBL(.STATE,.CONF,.IN,.OUT,.ERR),"[MIOSTBLC][TPAT71][masked query ok]")
+	DO EQ^MIOTASSERT($GET(OUT("features","phiMasked")),1,"[MIOSTBLC][TPAT71][masked flag]")
+	DO EQ^MIOTASSERT($EXTRACT($GET(OUT("rows",1,"mrn")),1,3),"***","[MIOSTBLC][TPAT71][mrn masked]")
+	KILL IN,OUT,ERR SET IN("dataset")="patient-registration",IN("action")="cell.save",IN("rowId")="PAT-1001",IN("columnKey")="phone",IN("value")="555-9999"
+	DO EQ^MIOTASSERT($$MUTATE^MIOOSTBL(.STATE,.CONF,.IN,.OUT,.ERR),0,"[MIOSTBLC][TPAT71][readonly mutate denied]")
+	DO EQ^MIOTASSERT($GET(ERR("permission")),"write","[MIOSTBLC][TPAT71][write permission]")
+	SET STATE("principal")="registrar",STATE("authenticated")=1,STATE("roles")="registrar"
+	SET ROOT=$$ROOT^MIOOSTBL(.STATE,"patient-registration")
+	KILL @ROOT
+	DO ENSURE^MIOOSTBL(.STATE,"patient-registration")
+	KILL IN,OUT,ERR SET IN("dataset")="patient-registration",IN("action")="row.save",IN("reviewQueue")="Pending Review"
+	DO PATROW(.IN,"PAT-7100","Queue","Add","1985-01-01","555-7100","queue.add@example.invalid","NY","10001")
+	DO OK^MIOTASSERT($$MUTATE^MIOOSTBL(.STATE,.CONF,.IN,.OUT,.ERR),"[MIOSTBLC][TPAT71][queue add defaults save]")
+	DO EQ^MIOTASSERT($GET(@ROOT@("rows",4,"status")),"Pending Review","[MIOSTBLC][TPAT71][queue default status]")
+	DO EQ^MIOTASSERT($GET(@ROOT@("rows",4,"consent")),"No","[MIOSTBLC][TPAT71][queue default consent]")
+	KILL IN,OUT,ERR SET IN("dataset")="patient-registration",IN("action")="rows.export",IN("ids",1)="PAT-1001"
+	DO EQ^MIOTASSERT($$MUTATE^MIOOSTBL(.STATE,.CONF,.IN,.OUT,.ERR),0,"[MIOSTBLC][TPAT71][registrar export denied]")
+	SET STATE("principal")="admin",STATE("authenticated")=1,STATE("roles")="admin"
+	KILL CAT
+	DO LOAD^MIOOSMOD(.STATE,.CONF)
+	MERGE CAT=STATE("uiModules")
+	DO OK^MIOTASSERT($$FINDMOD(.CAT,"patient-registration"),"[MIOSTBLC][TPAT71][catalog launch allowed]")
+	QUIT
+	;
+PATROW(IN,MRN,LAST,FIRST,DOB,PHONE,EMAIL,STATE,ZIP)
+	SET IN("row","mrn")=$GET(MRN)
+	SET IN("row","lastName")=$GET(LAST)
+	SET IN("row","firstName")=$GET(FIRST)
+	SET IN("row","dob")=$GET(DOB)
+	SET IN("row","phone")=$GET(PHONE)
+	SET IN("row","email")=$GET(EMAIL)
+	SET IN("row","state")=$GET(STATE)
+	SET IN("row","zip")=$GET(ZIP)
+	SET IN("row","primaryProvider")="Dr. ROI71"
+	SET IN("row","emergencyContact")="ROI71 Contact"
+	SET IN("row","emergencyPhone")="555-7101"
+	QUIT
+	;
+FINDMOD(CAT,KEY)
+	NEW I,OK SET (I,OK)=0 FOR  SET I=$ORDER(CAT("modules",I)) QUIT:I'>0!(OK)  IF $GET(CAT("modules",I,"key"))=$GET(KEY) SET OK=1
+	QUIT OK
 	;
 ACK(OUT,ACTION)
 	IF $GET(OUT("ok"))'=1 QUIT 0

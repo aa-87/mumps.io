@@ -66,6 +66,7 @@ MIOOST ; MIOOS tests
 	DO T072
 	DO T073
 	DO T074
+	DO T075
 	QUIT
 	;
 RESET
@@ -1434,5 +1435,19 @@ T074
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","restore original modal backdrops"),"[MIOOST][T074][opaque modal bodies only]")
 	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/ROI_70_Patient_Registration_Search_Review_Queues.md","ROI 70"),"[MIOOST][T074][roi70 docs]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 70 patient registration"),"[MIOOST][T074][llm roi70]")
+	QUIT
+	;
+
+T075
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSPAT.m","CANLAUNCH"),"[MIOOST][T075][patient launch permission helper]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSPAT.m","MASKOUT"),"[MIOOST][T075][patient phi masking]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","ALLOW^MIOOSPAT"),"[MIOOST][T075][patient table denial]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSMOD.m","CANLAUNCH^MIOOSPAT"),"[MIOOST][T075][catalog patient gate]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSST.m","CANLAUNCH^MIOOSPAT"),"[MIOOST][T075][desktop patient gate]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTablePatientAddDefaults"),"[MIOOST][T075][queue aware add row]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","mioos-table-cell-action"),"[MIOOST][T075][compact cell edit actions]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","ROI 71: compact cell edit controls"),"[MIOOST][T075][roi71 css]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/ROI_71_Patient_Registration_Permissions_PHI_Hardening.md","ROI 71"),"[MIOOST][T075][roi71 docs]")
+	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 71 patient registration"),"[MIOOST][T075][llm roi71]")
 	QUIT
 	;

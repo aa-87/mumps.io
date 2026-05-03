@@ -130,7 +130,7 @@ ROWDEFAULTS(ROOT)
 	. IF $GET(@ROOT@("rows",I,"city"))="" SET @ROOT@("rows",I,"city")="Demo City"
 	. IF $GET(@ROOT@("rows",I,"state"))="" SET @ROOT@("rows",I,"state")="NY"
 	. IF $GET(@ROOT@("rows",I,"zip"))="" SET @ROOT@("rows",I,"zip")="10001"
-	. IF $GET(@ROOT@("rows",I,"consent"))="" SET @ROOT@("rows",I,"consent")=$SELECT($GET(@ROOT@("rows",I,"status"))="Active":"Yes",1:"Unknown")
+	. IF $GET(@ROOT@("rows",I,"consent"))="" SET @ROOT@("rows",I,"consent")=$SELECT($GET(@ROOT@("rows",I,"status"))="Active":"Yes",$GET(@ROOT@("rows",I,"status"))="Pending Review":"No",1:"Unknown")
 	. IF $GET(@ROOT@("rows",I,"consent"))="Yes",$GET(@ROOT@("rows",I,"consentDate"))="" SET @ROOT@("rows",I,"consentDate")=TODAY
 	. IF $GET(@ROOT@("rows",I,"emergencyContact"))="" SET @ROOT@("rows",I,"emergencyContact")="Sample contact"
 	. IF $GET(@ROOT@("rows",I,"emergencyPhone"))="" SET @ROOT@("rows",I,"emergencyPhone")="555-0199"
@@ -233,6 +233,129 @@ QDEF(Q,N,LABEL,FIELD,VALUE)
 	SET Q("reviewQueues",N,"key")=$SELECT(VALUE'="":VALUE,1:"all")
 	SET Q("reviewQueues",N,"label")=LABEL
 	IF FIELD'="" SET Q("reviewQueues",N,"filter",FIELD,"mode")="include",Q("reviewQueues",N,"filter",FIELD,"value")=VALUE,Q("reviewQueues",N,"filter",FIELD,"values",1)=VALUE
+	QUIT
+	;
+ADDDEF(ROOT,ACTION,IN,STATE)
+	NEW A,Q,MRN
+	SET A=$$LOW^MIOUTIL($GET(ACTION))
+	IF A'="row.save",A'="row.add",A'="row.update" QUIT
+	SET Q=$GET(IN("reviewQueue"),$GET(IN("row","reviewQueue")))
+	IF Q="" SET Q=$GET(IN("queue"))
+	IF Q="" QUIT
+	IF $GET(IN("row","status"))="" DO
+	. IF Q="Pending Review" SET IN("row","status")="Pending Review"
+	. IF Q="Active" SET IN("row","status")="Active"
+	. IF Q="Drafts" SET IN("row","status")="Draft"
+	. IF Q="Needs Correction" SET IN("row","status")="Draft"
+	IF $GET(IN("row","consent"))="" DO
+	. IF Q="Pending Review" SET IN("row","consent")="No"
+	. IF Q="Active" SET IN("row","consent")="Yes"
+	. IF Q="Needs Correction" SET IN("row","consent")="Unknown"
+	IF $GET(IN("row","duplicateStatus"))="" SET IN("row","duplicateStatus")="None"
+	SET MRN=$GET(IN("row","mrn")) IF MRN'="",$GET(IN("row","id"))="" SET IN("row","id")=MRN
+	QUIT
+	;
+CANLAUNCH(STATE)
+	QUIT $$CAN(.STATE,"read")
+	;
+CAN(STATE,ACTION)
+	NEW A
+	SET A=$$PERMACT($GET(ACTION))
+	IF '+$GET(STATE("authenticated"),0) QUIT 0
+	IF $$ROLE(.STATE,"admin") QUIT 1
+	IF $$ROLE(.STATE,"developer") QUIT 1
+	IF $$ROLE(.STATE,"patient-admin") QUIT 1
+	IF A="read",$$ROLE(.STATE,"patient-read") QUIT 1
+	IF A="read",$$ROLE(.STATE,"patient-reader") QUIT 1
+	IF A="read",$$ROLE(.STATE,"patient-readonly") QUIT 1
+	IF A="read",$$ROLE(.STATE,"auditor") QUIT 1
+	IF A="audit",$$ROLE(.STATE,"auditor") QUIT 1
+	IF A="read",$$ROLE(.STATE,"clinician") QUIT 1
+	IF A="write",$$ROLE(.STATE,"clinician") QUIT 1
+	IF A="create",$$ROLE(.STATE,"registrar") QUIT 1
+	IF A="write",$$ROLE(.STATE,"registrar") QUIT 1
+	IF A="review",$$ROLE(.STATE,"registrar") QUIT 1
+	IF A="export",$$ROLE(.STATE,"registrar") QUIT 0
+	IF A="delete",$$ROLE(.STATE,"registrar") QUIT 0
+	IF A="export",$$ROLE(.STATE,"clinician") QUIT 0
+	IF A="delete",$$ROLE(.STATE,"clinician") QUIT 0
+	QUIT 0
+	;
+ALLOW(STATE,ACTION,ERR)
+	NEW PERM
+	SET PERM=$$PERMACT($GET(ACTION))
+	IF $$CAN(.STATE,PERM) QUIT 1
+	SET ERR("error")="patient_access_denied"
+	SET ERR("message")="Patient Registration access denied for "_PERM
+	SET ERR("dataset")="patient-registration"
+	SET ERR("permission")=PERM
+	DO DENYAUD(.STATE,PERM,.ERR)
+	QUIT 0
+	;
+PERMACT(ACTION)
+	NEW A
+	SET A=$$LOW^MIOUTIL($GET(ACTION))
+	IF A="" QUIT "read"
+	IF A="query" QUIT "read"
+	IF A="read" QUIT "read"
+	IF A="rows.export"!(A="export") QUIT "export"
+	IF A="row.delete"!(A="rows.delete")!(A="bulk.delete") QUIT "delete"
+	IF A="row.add" QUIT "create"
+	IF A="row.save"!(A="row.update")!(A="cell.save") QUIT "write"
+	IF A="patient.duplicate.mark"!(A="patient.duplicate.clear") QUIT "review"
+	IF A="patient.review.needs-correction"!(A="patient.review.pending")!(A="patient.review.draft") QUIT "review"
+	IF A="patient.bulk.pending"!(A="patient.bulk.needs-correction") QUIT "review"
+	QUIT "write"
+	;
+MASKED(STATE)
+	IF $$CAN(.STATE,"write") QUIT 0
+	IF $$CAN(.STATE,"read") QUIT 1
+	QUIT 0
+	;
+MASKOUT(OUT,STATE)
+	NEW I
+	IF '$$MASKED(.STATE) QUIT
+	SET OUT("features","phiMasked")=1
+	SET OUT("patientRegistration","phiMasked")=1
+	SET I=0 FOR  SET I=$ORDER(OUT("rows",I)) QUIT:I'>0  DO MASKROW($NAME(OUT("rows",I)))
+	IF $DATA(OUT("data")) SET I=0 FOR  SET I=$ORDER(OUT("data",I)) QUIT:I'>0  DO MASKROW($NAME(OUT("data",I)))
+	QUIT
+	;
+MASKROW(ROOT)
+	IF $GET(ROOT)="" QUIT
+	IF $GET(@ROOT@("mrn"))'="" SET @ROOT@("mrn")=$$MASKMRN($GET(@ROOT@("mrn")))
+	IF $GET(@ROOT@("firstName"))'="" SET @ROOT@("firstName")=$EXTRACT($GET(@ROOT@("firstName")),1)_"."
+	IF $GET(@ROOT@("lastName"))'="" SET @ROOT@("lastName")=$EXTRACT($GET(@ROOT@("lastName")),1)_"."
+	IF $GET(@ROOT@("dob"))'="" SET @ROOT@("dob")="masked"
+	IF $GET(@ROOT@("phone"))'="" SET @ROOT@("phone")="masked"
+	IF $GET(@ROOT@("email"))'="" SET @ROOT@("email")="masked@example.invalid"
+	IF $GET(@ROOT@("address1"))'="" SET @ROOT@("address1")="masked"
+	IF $GET(@ROOT@("emergencyContact"))'="" SET @ROOT@("emergencyContact")="masked"
+	IF $GET(@ROOT@("emergencyPhone"))'="" SET @ROOT@("emergencyPhone")="masked"
+	QUIT
+	;
+MASKMRN(X)
+	NEW L
+	SET L=$LENGTH($GET(X))
+	IF L<3 QUIT "***"
+	QUIT "***"_$EXTRACT($GET(X),L-1,L)
+	;
+ROLE(STATE,ROLE)
+	NEW I,X,WANT
+	SET WANT=$$LOW^MIOUTIL($GET(ROLE))
+	FOR I=1:1:$LENGTH($GET(STATE("roles")),",") DO  QUIT:$GET(X)=WANT
+	. SET X=$$LOW^MIOUTIL($$TRIM^MIOUTIL($PIECE($GET(STATE("roles")),",",I)))
+	QUIT $SELECT($GET(X)=WANT:1,1:0)
+	;
+DENYAUD(STATE,ACTION,ERR)
+	NEW USER,NOW,N
+	SET USER=$GET(STATE("principal"),"guest") IF USER="" SET USER="guest"
+	SET NOW=$$NOWISO^MIOUTIL()
+	SET N=$ORDER(^MIO("MIOOS","PATIENT","AUDIT",USER,""),-1)+1
+	SET ^MIO("MIOOS","PATIENT","AUDIT",USER,N,"action")="denied:"_$GET(ACTION)
+	SET ^MIO("MIOOS","PATIENT","AUDIT",USER,N,"ok")=0
+	SET ^MIO("MIOOS","PATIENT","AUDIT",USER,N,"when")=NOW
+	SET ^MIO("MIOOS","PATIENT","AUDIT",USER,N,"error")=$GET(ERR("error"),"patient_access_denied")
 	QUIT
 	;
 VALPAT(IN,ERR,ROOT)
@@ -503,4 +626,5 @@ AUDPAT(STATE,CONF,ACTION,IN,OUT,OK,ERR)
 	KILL CTX SET CTX("route")="patient-registration-table"
 	DO EVENT^MIOOSAUD("patient.registration.table",.CTX,.STATE,DETAIL,OUTCOME,ID,"mioos")
 	QUIT
+	;
 	;

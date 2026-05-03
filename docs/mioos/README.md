@@ -421,3 +421,7 @@ The table contract remains `mioos-advanced-table-v8`. Expanded MUMPS-first examp
 ## ROI 70 patient registration review queues
 
 Patient Registration now has a direct shell entry point (`patient-registration` / `win-patient-registration`) in addition to the App Catalogue entry. The module exposes server-authored review queues, duplicate-resolution row actions, patient-specific filtering/search, and audit-backed patient table mutations. See `ROI_70_Patient_Registration_Search_Review_Queues.md`.
+
+### ROI 71 Patient Registration permissions and PHI hardening
+
+ROI 71 gates Patient Registration launch, query, mutation, export, delete, and review actions on the server through `MIOOSPAT`. Unauthorized requests are denied before patient rows load; limited read roles receive masked PHI rows; Add Row is now queue-aware; inline cell edit buttons use compact checkmark/cancel controls.

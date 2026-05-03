@@ -40,11 +40,11 @@ CATALOG(STATE,CONF,OUT,ERR)
 	SET OUT("sources",2)="user"
 	SET OUT("componentCount")=0
 	SET OUT("moduleCount")=0
-	DO INTERNAL(.OUT)
+	DO INTERNAL(.STATE,.OUT)
 	DO USER(.STATE,.OUT)
 	QUIT 1
 	;
-INTERNAL(OUT)
+INTERNAL(STATE,OUT)
 	NEW C,M
 	SET C=+$GET(OUT("componentCount"))+1,OUT("componentCount")=C
 	SET OUT("components",C,"key")="table"
@@ -127,7 +127,7 @@ INTERNAL(OUT)
 	SET OUT("modules",M,"componentKey")="table-showcase"
 	SET OUT("modules",M,"surface")="mioos-surface-table-showcase"
 	DO ADDTABLE(.OUT,"mioos.ui.table.massive","table-massive","Massive Dataset Table","Large synthetic dataset for pagination and sorting validation.","Samples","▥","massive")
-	DO ADDTABLE(.OUT,"mioos.ui.patient.registration","patient-registration","Patient Registration","Direct Patient Registration module with search, review queues, and duplicate resolution.","Healthcare","🏥","patient-registration")
+	IF $$CANLAUNCH^MIOOSPAT(.STATE) DO ADDTABLE(.OUT,"mioos.ui.patient.registration","patient-registration","Patient Registration","Direct Patient Registration module with search, review queues, and duplicate resolution with PHI visibility gates.","Healthcare","🏥","patient-registration")
 	SET M=+$GET(OUT("moduleCount"))+1,OUT("moduleCount")=M
 	SET OUT("modules",M,"id")="mioos.ui.elements"
 	SET OUT("modules",M,"key")="ui-elements"

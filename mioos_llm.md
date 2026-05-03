@@ -624,3 +624,7 @@ Expanded MUMPS-first table samples are in `examples/mioos_modules/table/samples/
 ## ROI 70 patient registration search/review queues
 
 ROI 70 patient registration adds direct Patient Registration shell entry (`patient-registration` / `win-patient-registration`), patient review queues, search/filter metadata, duplicate-resolution row actions, bulk review queue actions, and patient audit markers. The modal backdrop should remain the original overlay; only modal/dialog bodies are forced opaque for readability. Continue to preserve server-authored MUMPS table contracts and do not implement frontend-only patient state.
+
+## ROI 71 patient registration permission and PHI hardening
+
+Patient Registration is now server-gated through `CANLAUNCH^MIOOSPAT`, `CAN^MIOOSPAT`, `ALLOW^MIOOSPAT`, and `PERMACT^MIOOSPAT`. `MIOOSTBL` checks patient permissions before loading rows or mutating data. Limited read-only roles receive masked rows through `MASKOUT^MIOOSPAT`; unauthorized users get deterministic `patient_access_denied` errors and no patient row payload. The browser also uses compact `✓`/`×` cell edit buttons and queue-aware Patient Registration add-row defaults.

@@ -387,3 +387,9 @@ The optional row validation hook signature is `HOOK(IN,ERR,ROOT)`. Return `1` to
 The `patient-registration` dataset extends the Advanced Table v8 contract with `patientRegistration` metadata from `PATMETA^MIOOSPAT`. The metadata includes review queues, duplicate candidate counts, workflow labels, and direct entry-point guidance. Patient row actions use the normal `MUTATE^MIOOSTBL` path with action keys such as `patient.duplicate.mark`, `patient.duplicate.clear`, `patient.review.pending`, and `patient.review.needs-correction`. Bulk actions include `patient.bulk.pending` and `patient.bulk.needs-correction`.
 
 All patient mutations remain server-side MUMPS actions. Successful mutations return small acknowledgement-only payloads and failed mutations return deterministic validation JSON.
+
+## ROI 71 patient permission and PHI masking contract
+
+The `patient-registration` dataset is permission-gated before patient rows are loaded or mutated. `QUERY^MIOOSTBL` calls `ALLOW^MIOOSPAT(.STATE,"query",.ERR)` before `LOADDATA`, and `MUTATE^MIOOSTBL` calls `ALLOW^MIOOSPAT(.STATE,ACTION,.ERR)` before validation or mutation. Failed access returns deterministic `patient_access_denied` metadata instead of a partial patient payload.
+
+Read-only patient roles receive masked rows through `MASKOUT^MIOOSPAT(.OUT,.STATE)`. The response advertises `features.phiMasked=1` and `patientRegistration.phiMasked=1` so the browser and tests can distinguish a masked list from a full PHI list.
