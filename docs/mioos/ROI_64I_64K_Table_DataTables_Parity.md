@@ -101,6 +101,8 @@ STATUS(STATE,DATASET,ROWID,COLUMN,VALUE,OUT,ERR)
 
 ## ROI 64J — Column Reorder
 
+Status: implemented in this pass. See `ROI_64J_Column_Reorder.md` for final contract details.
+
 ### Goal
 
 Allow column order to be configured on boot and optionally changed by a user.
@@ -119,8 +121,8 @@ Mutation request:
 ```json
 {
   "dataset": "demo",
-  "action": "columns.reorder",
-  "columnOrder": ["name", "status", "updated"],
+  "action": "column.reorder",
+  "columns": [{ "key": "name", "order": 1 }, { "key": "status", "order": 2 }, { "key": "updated", "order": 3 }],
   "mutationOnly": true
 }
 ```

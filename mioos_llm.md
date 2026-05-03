@@ -594,3 +594,8 @@ See `docs/mioos/ROI_64I_64K_Table_DataTables_Parity.md` before implementing the 
 Current advanced table contract remains `mioos-advanced-table-v8`. Cell editing is now implemented with a `cell.save` mutation. The browser renders typed inline cell controls from schema metadata and saves over WebSocket `table.mutate` with HTTP fallback. Both transports call `MUTATE^MIOOSTBL`. The backend validates row id, column key, editable flag, field rules, and optional per-column `cellCallback` before writing. ID cells are read-only. The loading indicator is bar-only; do not reintroduce loading text that shifts table layout. Advanced Filters `Add value` now prompts/uses the drafted value and sends `column.option.add`.
 
 Next planned table ROI is ROI 64J — column reorder. ROI 64K fixed columns follows after ROI 64J.
+
+
+## ROI 64J column reorder
+
+The current table track includes ROI 64J column reorder. `MIOOSTBL` supports `column.reorder`, the browser exposes reorder controls in the Columns modal, and the feature flag is `columnReorder`. Add Value and Delete Column use MIOOS table dialogs, not native `prompt()`/`confirm()`.

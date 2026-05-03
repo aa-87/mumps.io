@@ -3007,3 +3007,46 @@ button:disabled { cursor: default; opacity: .55; }
 .theme-dark-mode .mioos-table-form-grid textarea,
 .theme-dark-mode .mioos-table-pager input { color: #f8fafc; background: #1e293b; border-color: rgba(191,219,254,.28); }
 .theme-dark-mode .mioos-table-column-list button.active { background: #1d4ed8; color: #fff; }
+
+
+/* ROI 64J stabilization: table-owned dialogs and column reorder controls. */
+.mioos-table-column-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: stretch;
+}
+.mioos-table-column-item .mioos-table-column-toggle { min-width: 0; }
+.mioos-table-column-reorder {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+.mioos-table-column-reorder button {
+  min-width: 30px;
+  justify-content: center;
+  text-align: center;
+  font-weight: 800;
+}
+.mioos-table-column-reorder button:disabled { opacity: .38; cursor: not-allowed; }
+.mioos-table-editor.is-option-dialog,
+.mioos-table-editor.is-confirm-dialog { width: min(460px, calc(100% - 24px)); }
+.mioos-table-dialog-body {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+.mioos-table-dialog-body p { margin: 0; line-height: 1.35; }
+.mioos-table-dialog-body label { display: grid; gap: 5px; font-size: 12px; font-weight: 700; }
+.mioos-table-dialog-body input {
+  min-height: 32px;
+  border-radius: 9px;
+  border: 1px solid var(--theme-panel-border, rgba(148,163,184,.45));
+  background: var(--theme-field-bg, #fff);
+  color: var(--theme-field-text, #111827);
+  padding: 6px 8px;
+}
+.mioos-table-editor.is-confirm-dialog.danger { border-color: rgba(220,38,38,.45); }
+.mioos-btn.danger { border-color: #b91c1c; color: #7f1d1d; background: #fee2e2; }
+.theme-dark-mode .mioos-table-dialog-body input { color: #f8fafc; background: #1e293b; border-color: rgba(191,219,254,.28); }
+.theme-dark-mode .mioos-btn.danger { color: #fecaca; background: #7f1d1d; border-color: #ef4444; }

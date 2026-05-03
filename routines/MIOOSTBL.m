@@ -49,6 +49,7 @@ QUERY(STATE,CONF,IN,OUT,ERR)
 	SET OUT("features","crudRows")=$SELECT(DATASET="vfs":0,1:1)
 	SET OUT("features","crudColumns")=$SELECT(DATASET="vfs":0,1:1)
 	SET OUT("features","resizableColumns")=1
+	SET OUT("features","columnReorder")=$SELECT(DATASET="vfs":0,1:1)
 	SET OUT("features","cellEditing")=$SELECT(DATASET="vfs":0,1:1)
 	SET OUT("draw")=DRAW
 	SET OUT("recordsTotal")=TOTAL
@@ -61,7 +62,7 @@ ERRQ
 	QUIT 0
 	;
 MUTATE(STATE,CONF,IN,OUT,ERR)
-	NEW DATASET,ACTION,ROOT,ID,KEY,ORIG,I,N,FOUND,ROW,COL,OPTVAL,VAL,CBOUT
+	NEW DATASET,ACTION,ROOT,ID,KEY,ORIG,I,J,N,FOUND,ROW,COL,OPTVAL,VAL,CBOUT,ORDER,OLD
 	NEW $ETRAP,$ESTACK SET $ETRAP="GOTO ERRM^MIOOSTBL"
 	KILL OUT,ERR
 	SET ERR("routine")="MIOOSTBL"
@@ -136,6 +137,25 @@ MUTATE(STATE,CONF,IN,OUT,ERR)
 	. IF KEY="" QUIT
 	. SET I=0 FOR  SET I=$ORDER(@ROOT@("schema","columns",I)) QUIT:I'>0  IF $GET(@ROOT@("schema","columns",I,"key"))=KEY SET @ROOT@("schema","columns",I,"hidden")=$SELECT($$TRUTH($GET(IN("hidden"))):1,1:0)
 	. SET OUT("mutated","columnVisibility")=KEY
+	IF ACTION="column.reorder" DO
+	. KILL ORDER,OLD
+	. SET I=0 FOR  SET I=$ORDER(IN("columns",I)) QUIT:I'>0  DO
+	. . SET KEY=$$KEY($GET(IN("columns",I,"key"),$GET(IN("columns",I))))
+	. . IF KEY'="" SET ORDER(I)=KEY
+	. IF '$DATA(ORDER) DO
+	. . SET I=0 FOR  SET I=$ORDER(IN("order",I)) QUIT:I'>0  DO
+	. . . SET KEY=$$KEY($GET(IN("order",I,"key"),$GET(IN("order",I))))
+	. . . IF KEY'="" SET ORDER(I)=KEY
+	. MERGE OLD=@ROOT@("schema","columns")
+	. KILL @ROOT@("schema","columns")
+	. SET N=0,I=0 FOR  SET I=$ORDER(ORDER(I)) QUIT:I'>0  DO
+	. . SET KEY=ORDER(I),FOUND=0,J=0 FOR  SET J=$ORDER(OLD(J)) QUIT:J'>0!(FOUND>0)  IF $GET(OLD(J,"key"))=KEY SET FOUND=J
+	. . IF FOUND>0 SET N=N+1 MERGE @ROOT@("schema","columns",N)=OLD(FOUND) SET @ROOT@("schema","columns",N,"order")=N
+	. SET J=0 FOR  SET J=$ORDER(OLD(J)) QUIT:J'>0  DO
+	. . SET KEY=$GET(OLD(J,"key")) QUIT:KEY=""
+	. . SET FOUND=0,I=0 FOR  SET I=$ORDER(@ROOT@("schema","columns",I)) QUIT:I'>0  IF $GET(@ROOT@("schema","columns",I,"key"))=KEY SET FOUND=1
+	. . IF 'FOUND SET N=N+1 MERGE @ROOT@("schema","columns",N)=OLD(J) SET @ROOT@("schema","columns",N,"order")=N
+	. SET OUT("mutated","columnOrder")=N
 	IF ACTION="column.option.add" DO
 	. SET KEY=$$KEY($GET(IN("columnKey"),$GET(IN("key"))))
 	. SET OPTVAL=$GET(IN("value"),$GET(IN("option","value")))
@@ -165,6 +185,7 @@ VALIDATE(STATE,CONF,DATASET,ACTION,IN,ERR)
 	IF ACTION="rows.export"!(ACTION="export") QUIT $$VALIDS(.IN,.ERR)
 	IF ACTION="column.save"!(ACTION="column.add")!(ACTION="column.update") QUIT $$VALCOL(.CONF,.IN,.ERR)
 	IF ACTION="column.delete"!(ACTION="column.resize")!(ACTION="column.visibility") QUIT $$VALKEY($GET(IN("columnKey"),$GET(IN("key"),$GET(IN("column","key")))),.ERR)
+	IF ACTION="column.reorder" QUIT $$VALORDER(.IN,.ERR)
 	IF ACTION="column.option.add" QUIT $$VALOPT(.IN,.ERR)
 	SET ERR("error")="unsupported_table_action" QUIT 0
 	;
@@ -311,6 +332,20 @@ VALKEY(KEY,ERR)
 	IF KEY="" SET ERR("error")="invalid_column_key" QUIT 0
 	QUIT 1
 	;
+VALORDER(IN,ERR)
+	NEW I,KEY,SEEN
+	SET SEEN=0,I=0 FOR  SET I=$ORDER(IN("columns",I)) QUIT:I'>0!($GET(ERR("error"))'="")  DO
+	. SET KEY=$$KEY($GET(IN("columns",I,"key"),$GET(IN("columns",I))))
+	. IF KEY="" SET ERR("error")="invalid_column_key" QUIT
+	. SET SEEN=1
+	IF 'SEEN SET I=0 FOR  SET I=$ORDER(IN("order",I)) QUIT:I'>0!($GET(ERR("error"))'="")  DO
+	. SET KEY=$$KEY($GET(IN("order",I,"key"),$GET(IN("order",I))))
+	. IF KEY="" SET ERR("error")="invalid_column_key" QUIT
+	. SET SEEN=1
+	IF $GET(ERR("error"))'="" QUIT 0
+	IF 'SEEN SET ERR("error")="column_order_missing",ERR("message")="Column order is required" QUIT 0
+	QUIT 1
+	;
 VALOPT(IN,ERR)
 	NEW KEY,VAL
 	SET KEY=$$KEY($GET(IN("columnKey"),$GET(IN("key"))))
@@ -343,6 +378,7 @@ MMSG(ACTION)
 	IF ACTION="rows.export"!(ACTION="export") QUIT "CSV export generated"
 	IF ACTION="column.visibility" QUIT "Column visibility updated"
 	IF ACTION="column.resize" QUIT "Column resized"
+	IF ACTION="column.reorder" QUIT "Column order saved"
 	IF ACTION="column.save"!(ACTION="column.add")!(ACTION="column.update") QUIT "Column saved"
 	IF ACTION="column.delete" QUIT "Column deleted"
 	IF ACTION="column.option.add" QUIT "Column option added"
@@ -594,6 +630,7 @@ MASSIVEQ(IN,OUT,CONF)
 	SET OUT("features","crudRows")=0
 	SET OUT("features","crudColumns")=0
 	SET OUT("features","resizableColumns")=1
+	SET OUT("features","columnReorder")=0
 	SET OUT("features","cellEditing")=0
 	SET OUT("features","readOnly")=1
 	SET OUT("draw")=DRAW
@@ -665,6 +702,7 @@ MASSFASTQ(OUT,TOTAL,PAGE,PSIZE,DRAW,SORTDIR)
 	SET OUT("features","crudRows")=0
 	SET OUT("features","crudColumns")=0
 	SET OUT("features","resizableColumns")=1
+	SET OUT("features","columnReorder")=0
 	SET OUT("features","cellEditing")=0
 	SET OUT("features","readOnly")=1
 	SET OUT("draw")=DRAW

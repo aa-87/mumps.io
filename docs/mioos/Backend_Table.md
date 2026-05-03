@@ -321,3 +321,30 @@ Mutation request:
 ```
 
 See `docs/mioos/ROI_64I_Editable_Cells.md` for the full callback contract and MUMPS-only example.
+
+
+## ROI 64J column reorder
+
+Advanced table datasets can now opt into server-persisted column reorder with the `columnReorder` feature. The frontend sends a small mutation acknowledgement request through the normal table mutation transport:
+
+```json
+{
+  "dataset": "demo",
+  "action": "column.reorder",
+  "columns": [
+    { "key": "name", "order": 1 },
+    { "key": "status", "order": 2 }
+  ],
+  "mutationOnly": true
+}
+```
+
+`MUTATE^MIOOSTBL` validates the requested keys, rewrites `@ROOT@("schema","columns",n)` in the requested order, appends any omitted existing columns, and returns `Column order saved`. MUMPS-authored boot order is still defined by the order of the schema column nodes.
+
+```mumps
+SET @ROOT@("features","columnReorder")=1
+SET @ROOT@("schema","columns",1,"key")="name"
+SET @ROOT@("schema","columns",1,"order")=1
+SET @ROOT@("schema","columns",2,"key")="status"
+SET @ROOT@("schema","columns",2,"order")=2
+```

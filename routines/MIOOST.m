@@ -61,6 +61,7 @@ MIOOST ; MIOOS tests
 	DO T067
 	DO T068
 	DO T069
+	DO T070
 	QUIT
 	;
 RESET
@@ -1371,5 +1372,18 @@ T069
 	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/ROI_64I_Editable_Cells.md","cellCallback"),"[MIOOST][T069][roi64i docs]")
 	DO OK^MIOTASSERT($$FILEHAS("examples/mioos_modules/table/module.json","cellEditing"),"[MIOOST][T069][manifest cell editing]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 64I editable cells"),"[MIOOST][T069][llm roi64i]")
+	QUIT
+	;
+
+T070
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableCloseOptionDialog"),"[MIOOST][T070][mioos add value dialog close]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableOpenConfirmDialog"),"[MIOOST][T070][mioos confirm dialog]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableMoveColumn"),"[MIOOST][T070][column reorder ui]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","column.reorder"),"[MIOOST][T070][column reorder mutation]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","VALORDER"),"[MIOOST][T070][column reorder validation]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","columnReorder"),"[MIOOST][T070][column reorder server feature]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/ROI_64J_Column_Reorder.md","Column order saved"),"[MIOOST][T070][roi64j docs]")
+	DO OK^MIOTASSERT($$FILEHAS("examples/mioos_modules/table/module.json","columnReorder"),"[MIOOST][T070][manifest column reorder]")
+	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 64J column reorder"),"[MIOOST][T070][llm roi64j]")
 	QUIT
 	;

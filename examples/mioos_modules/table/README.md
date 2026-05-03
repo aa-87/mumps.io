@@ -197,3 +197,36 @@ STATUS(STATE,DATASET,ROWID,COLUMN,VALUE,OUT,ERR)
  SET OUT("value")=VALUE
  QUIT 1
 ```
+
+
+## Column reorder from MUMPS
+
+Enable reorder for a dataset by exposing the feature and ordering the schema columns in the desired boot order:
+
+```mumps
+SET @ROOT@("features","columnReorder")=1
+SET @ROOT@("schema","columns",1,"key")="name"
+SET @ROOT@("schema","columns",1,"label")="Name"
+SET @ROOT@("schema","columns",1,"order")=1
+SET @ROOT@("schema","columns",2,"key")="status"
+SET @ROOT@("schema","columns",2,"label")="Status"
+SET @ROOT@("schema","columns",2,"order")=2
+SET @ROOT@("schema","columns",3,"key")="updated"
+SET @ROOT@("schema","columns",3,"label")="Updated"
+SET @ROOT@("schema","columns",3,"order")=3
+```
+
+The browser Columns modal can then move columns and persists the result with:
+
+```json
+{
+  "dataset": "demo",
+  "action": "column.reorder",
+  "columns": [
+    { "key": "name", "order": 1 },
+    { "key": "status", "order": 2 },
+    { "key": "updated", "order": 3 }
+  ],
+  "mutationOnly": true
+}
+```

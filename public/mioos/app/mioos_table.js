@@ -19,7 +19,7 @@
   function defaultTableConfig() {
     return {
       contract: TABLE_CONTRACT,
-      features: { toolbar: true, datasetSwitcher: true, search: true, filters: true, grouping: true, columnPicker: true, columnGroups: false, rowCrud: true, columnCrud: true, selection: true, bulkActions: true, pagination: true, rowDetails: true, resizeColumns: true, cellEditing: true, serverSide: true, processingIndicator: true },
+      features: { toolbar: true, datasetSwitcher: true, search: true, filters: true, grouping: true, columnPicker: true, columnGroups: false, rowCrud: true, columnCrud: true, selection: true, bulkActions: true, pagination: true, rowDetails: true, resizeColumns: true, cellEditing: true, columnReorder: true, serverSide: true, processingIndicator: true },
       columns: [],
       defaultSort: { column: 'name', direction: 'ascending' },
       defaultPageSize: 25,
@@ -245,7 +245,9 @@
         columnPickerOpen: false,
         groupExpanded: {},
         editor: { open: false, mode: 'row', title: '', row: {}, column: {} },
-        cellEditor: { open: false, rowId: '', columnKey: '', value: '', originalValue: '' }
+        cellEditor: { open: false, rowId: '', columnKey: '', value: '', originalValue: '' },
+        optionDialog: { open: false, context: '', columnKey: '', columnLabel: '', value: '' },
+        confirmDialog: { open: false, kind: '', title: '', message: '', confirmText: 'Confirm', danger: false, payload: {} }
       };
     },
     backendTableState: function (tableId) {
@@ -655,7 +657,7 @@
       if (!this.backendTableFeature(state, 'rowCrud') && (key === 'edit' || key === 'duplicate' || key === 'delete')) return null;
       if (key === 'edit') return this.backendTableOpenRowEditor(tableId, row);
       if (key === 'duplicate') return this.backendTableOpenRowEditor(tableId, Object.assign({}, clone(row), { id: '' }));
-      if (key === 'delete') { if (typeof confirm === 'function' && !confirm('Delete this row?')) return null; return this.backendTableMutate(tableId, 'row.delete', { rowId: (row || {}).id }).then(function(payload){ if (payload && payload.ok !== false) state.toast = 'Row deleted'; }); }
+      if (key === 'delete') return this.backendTableOpenConfirmDialog(tableId, { kind: 'row.delete', title: 'Delete row', message: 'Delete this row?', confirmText: 'Delete', danger: true, payload: { rowId: (row || {}).id } });
       if (this.showAlert) this.showAlert('Table action', ((action || {}).label || key || 'Action') + ' queued for ' + ((row || {}).name || (row || {}).id || 'row'));
     },
     backendTableRunBulkAction: function (tableId, action) {
@@ -681,7 +683,7 @@
         return payload;
       }); }
       if ((key === 'bulk.delete' || key === 'delete') && !this.backendTableFeature(state, 'rowCrud')) return null;
-      if (key === 'bulk.delete' || key === 'delete') { if (typeof confirm === 'function' && !confirm('Delete ' + ids.length + ' selected row(s)?')) return null; return this.backendTableMutate(tableId, 'rows.delete', { ids: ids }).then(function(payload){ if (payload && payload.ok !== false) state.toast = ids.length + ' row(s) deleted'; }); }
+      if (key === 'bulk.delete' || key === 'delete') return this.backendTableOpenConfirmDialog(tableId, { kind: 'rows.delete', title: 'Delete selected rows', message: 'Delete ' + ids.length + ' selected row(s)?', confirmText: 'Delete rows', danger: true, payload: { ids: ids } });
       if (this.showAlert) this.showAlert('Bulk table action', ((action || {}).label || key || 'Action') + ' applied to ' + ids.length + ' row(s)');
     },
     backendTableCellText: function (row, column) {
@@ -769,24 +771,48 @@
       });
     },
     backendTableAddFilterOption: function (tableId, column) {
+      return this.backendTableOpenOptionDialog(tableId, column, 'filter');
+    },
+    backendTableAddEditorOption: function (tableId, column) {
+      return this.backendTableOpenOptionDialog(tableId, column, 'editor');
+    },
+    backendTableOpenOptionDialog: function (tableId, column, context) {
       var state = this.backendTableState(tableId);
-      var entry = this.backendTableFilterDraftEntry(state, (column || {}).key);
-      var value = String((entry && entry.value) || '').trim();
-      if (!value && typeof prompt === 'function') value = String(prompt('Add option for ' + ((column || {}).label || (column || {}).key), '') || '').trim();
+      if (!column || !column.key) return null;
+      var value = '';
+      if (context === 'filter') value = String((this.backendTableFilterDraftEntry(state, column.key) || {}).value || '');
+      if (context === 'editor' && state.editor && state.editor.row) value = String(state.editor.row[column.key] || '');
+      state.optionDialog = { open: true, context: context || 'filter', columnKey: column.key, columnLabel: column.label || column.key, value: value };
+      state.error = '';
+      return null;
+    },
+    backendTableCloseOptionDialog: function (tableId) {
+      this.backendTableState(tableId).optionDialog = { open: false, context: '', columnKey: '', columnLabel: '', value: '' };
+    },
+    backendTableOptionDialogColumn: function (state) {
+      var key = ((state || {}).optionDialog || {}).columnKey || '';
+      return normalizeColumns((state || {}).columns || []).filter(function (col) { return col.key === key; })[0] || null;
+    },
+    backendTableSetOptionDialogValue: function (tableId, value) {
+      var state = this.backendTableState(tableId);
+      state.optionDialog = Object.assign({}, state.optionDialog || {}, { value: value || '' });
+    },
+    backendTableConfirmOptionDialog: function (tableId) {
+      var state = this.backendTableState(tableId);
+      var dialog = state.optionDialog || {};
+      var column = this.backendTableOptionDialogColumn(state);
+      var value = String(dialog.value || '').trim();
+      if (!column || !column.key) { state.error = 'Choose a column before adding an option.'; return Promise.resolve({ ok: false, error: 'invalid_column_key' }); }
       if (!value) { state.error = 'Enter a value before adding it to the column options.'; return Promise.resolve({ ok: false, error: 'option_value_missing' }); }
       var vm = this;
       return this.backendTableAddColumnOption(tableId, column, value).then(function (payload) {
-        if (payload && payload.ok !== false) vm.backendTableSetFilterDraft(tableId, column.key, 'value', value);
+        if (payload && payload.ok !== false) {
+          if (dialog.context === 'filter') vm.backendTableSetFilterDraft(tableId, column.key, 'value', value);
+          if (dialog.context === 'editor' && state.editor && state.editor.row) state.editor.row[column.key] = value;
+          vm.backendTableCloseOptionDialog(tableId);
+        }
         return payload;
       });
-    },
-    backendTableAddEditorOption: function (tableId, column) {
-      var state = this.backendTableState(tableId);
-      var current = state.editor && state.editor.row ? state.editor.row[column.key] : '';
-      var value = current || (typeof prompt === 'function' ? prompt('Add option for ' + column.label) : '');
-      if (!value) return null;
-      if (state.editor && state.editor.row) state.editor.row[column.key] = value;
-      return this.backendTableAddColumnOption(tableId, column, value);
     },
     backendTableFieldError: function (state, key) {
       return ((state || {}).validation || {})[key] || '';
@@ -826,10 +852,50 @@
       return this.backendTableMutate(tableId, 'row.save', { row: clone(state.editor.row || {}) }).then(function(payload){ if (payload && payload.ok !== false) state.toast = 'Row saved'; });
     },
     backendTableDeleteColumn: function (tableId, column) {
-      if (!column || !column.key) return;
+      if (!column || !column.key) return null;
       if (!this.backendTableFeature(this.backendTableState(tableId), 'columnCrud')) return null;
-      if (typeof confirm === 'function' && !confirm('Delete column ' + column.label + '?')) return null;
-      return this.backendTableMutate(tableId, 'column.delete', { columnKey: column.key });
+      return this.backendTableOpenConfirmDialog(tableId, { kind: 'column.delete', title: 'Delete column', message: 'Delete column "' + (column.label || column.key) + '"? This removes the column and values from the dataset.', confirmText: 'Delete column', danger: true, payload: { columnKey: column.key } });
+    },
+    backendTableOpenConfirmDialog: function (tableId, options) {
+      var state = this.backendTableState(tableId);
+      options = options || {};
+      state.confirmDialog = { open: true, kind: options.kind || '', title: options.title || 'Confirm action', message: options.message || 'Continue?', confirmText: options.confirmText || 'Confirm', danger: !!options.danger, payload: clone(options.payload || {}) };
+      return null;
+    },
+    backendTableCloseConfirmDialog: function (tableId) {
+      this.backendTableState(tableId).confirmDialog = { open: false, kind: '', title: '', message: '', confirmText: 'Confirm', danger: false, payload: {} };
+    },
+    backendTableConfirmDialog: function (tableId) {
+      var state = this.backendTableState(tableId);
+      var dialog = state.confirmDialog || {};
+      var payload = clone(dialog.payload || {});
+      var action = dialog.kind || '';
+      if (!action) { this.backendTableCloseConfirmDialog(tableId); return Promise.resolve({ ok: false, error: 'confirm_action_missing' }); }
+      this.backendTableCloseConfirmDialog(tableId);
+      return this.backendTableMutate(tableId, action, payload).then(function (result) {
+        if (result && result.ok !== false) state.toast = result.message || 'Table updated';
+        return result;
+      }).catch(function (err) {
+        state.error = (err && err.message) || 'Table action failed';
+        return { ok: false, error: state.error };
+      });
+    },
+    backendTableMoveColumn: function (tableId, key, direction) {
+      var state = this.backendTableState(tableId);
+      if (!this.backendTableFeature(state, 'columnReorder')) return null;
+      var columns = normalizeColumns(state.columns);
+      var index = columns.findIndex(function (col) { return col.key === key; });
+      var next = index + (+direction || 0);
+      if (index < 0 || next < 0 || next >= columns.length) return null;
+      var moved = columns.splice(index, 1)[0];
+      columns.splice(next, 0, moved);
+      state.columns = columns;
+      return this.backendTableSaveColumnOrder(tableId);
+    },
+    backendTableSaveColumnOrder: function (tableId) {
+      var state = this.backendTableState(tableId);
+      var columns = normalizeColumns(state.columns).map(function (col, index) { return { key: col.key, order: index + 1 }; });
+      return this.backendTableMutate(tableId, 'column.reorder', { columns: columns }).then(function (payload) { if (payload && payload.ok !== false) state.toast = 'Column order saved'; return payload; });
     },
     backendTableBeginColumnResize: function (tableId, column, event) {
       var state = this.backendTableState(tableId);
@@ -920,7 +986,7 @@
     backendTableFeature: function (state, key) {
       var cfg = mergeConfig(defaultTableConfig(), (state || {}).config || {});
       var enabled = !!((cfg.features || {})[key]);
-      var map = { rowCrud: 'crudRows', columnCrud: 'crudColumns', rowDetails: 'expansionRows', resizeColumns: 'resizableColumns', filters: 'filtering', grouping: 'columnGrouping', bulkActions: 'bulkActions', selection: 'selection', pagination: 'serverPagination', cellEditing: 'cellEditing' };
+      var map = { rowCrud: 'crudRows', columnCrud: 'crudColumns', rowDetails: 'expansionRows', resizeColumns: 'resizableColumns', filters: 'filtering', grouping: 'columnGrouping', bulkActions: 'bulkActions', selection: 'selection', pagination: 'serverPagination', cellEditing: 'cellEditing', columnReorder: 'columnReorder' };
       var serverKey = map[key] || key;
       var features = (state || {}).features || {};
       if (Object.prototype.hasOwnProperty.call(features, serverKey) && (+features[serverKey] === 0 || features[serverKey] === false)) return false;
@@ -984,34 +1050,49 @@
           '<div class="mioos-table-error" v-if="state.error">[[ state.error ]]</div>' +
           '<div class="mioos-table-editor-backdrop" v-if="state.filterModalOpen" @click.self="vm.backendTableCloseFilters(tableId || state.id)">' +
             '<div class="mioos-table-editor is-filter-editor mioos-system-modal" role="dialog" aria-modal="true" :style="vm.backendTableDialogStyle(state, &quot;filters&quot;)">' +
-              '<header class="mioos-system-modal-titlebar" @pointerdown.prevent="vm.backendTableBeginDialogDrag(tableId || state.id, &quot;filters&quot;, $event)"><strong>Advanced filters</strong><button type="button" @click="vm.backendTableCloseFilters(tableId || state.id)">×</button></header>' +
+              '<header class="mioos-system-modal-titlebar" @pointerdown.prevent="vm.backendTableBeginDialogDrag(tableId || state.id, &quot;filters&quot;, $event)"><strong>Advanced filters</strong><button type="button" aria-label="Close filters" @pointerdown.stop @click.stop="vm.backendTableCloseFilters(tableId || state.id)">×</button></header>' +
               '<section class="mioos-table-modal-list is-advanced-filter"><article v-for="col in filterableColumns" :key="col.key" class="mioos-table-filter-row"><div><strong>[[ col.label ]]</strong><small>[[ col.key ]] · [[ col.type ]]</small></div><select :value="vm.backendTableFilterDraftEntry(state, col.key).mode" @change="vm.backendTableSetFilterDraft(tableId || state.id, col.key, &quot;mode&quot;, $event.target.value)"><option value="include">Include</option><option value="exclude">Exclude</option><option value="contains">Contains</option><option value="starts">Starts with</option><option value="ends">Ends with</option><option value="range">Range</option><option value="blank">Blank</option><option value="notblank">Not blank</option></select><template v-if="vm.backendTableFilterDraftEntry(state, col.key).mode === &quot;range&quot;"><input :type="vm.backendTableFilterControl(col) === &quot;date&quot; ? &quot;date&quot; : (vm.backendTableFilterControl(col) === &quot;number&quot; ? &quot;number&quot; : &quot;text&quot;)" :value="vm.backendTableFilterDraftEntry(state, col.key).from" @input="vm.backendTableSetFilterDraft(tableId || state.id, col.key, &quot;from&quot;, $event.target.value)" placeholder="From"><input :type="vm.backendTableFilterControl(col) === &quot;date&quot; ? &quot;date&quot; : (vm.backendTableFilterControl(col) === &quot;number&quot; ? &quot;number&quot; : &quot;text&quot;)" :value="vm.backendTableFilterDraftEntry(state, col.key).to" @input="vm.backendTableSetFilterDraft(tableId || state.id, col.key, &quot;to&quot;, $event.target.value)" placeholder="To"></template><template v-else-if="vm.backendTableFilterControl(col) === &quot;select&quot;"><select :value="vm.backendTableFilterDraftEntry(state, col.key).value" @change="vm.backendTableSetFilterDraft(tableId || state.id, col.key, &quot;value&quot;, $event.target.value)"><option value="">Any</option><option v-for="opt in vm.backendTableColumnOptions(state, col)" :key="opt" :value="opt">[[ opt ]]</option></select><button v-if="vm.backendTableCanAddColumnOption(state, col)" type="button" class="mioos-table-inline-link" @click="vm.backendTableAddFilterOption(tableId || state.id, col)">Add value</button></template><template v-else-if="vm.backendTableFilterControl(col) === &quot;boolean&quot;"><select :value="vm.backendTableFilterDraftEntry(state, col.key).value" @change="vm.backendTableSetFilterDraft(tableId || state.id, col.key, &quot;value&quot;, $event.target.value)"><option value="">Any</option><option value="true">True</option><option value="false">False</option></select></template><input v-else :type="vm.backendTableFilterControl(col) === &quot;date&quot; ? &quot;date&quot; : (vm.backendTableFilterControl(col) === &quot;number&quot; ? &quot;number&quot; : &quot;text&quot;)" :value="vm.backendTableFilterDraftEntry(state, col.key).value" @input="vm.backendTableSetFilterDraft(tableId || state.id, col.key, &quot;value&quot;, $event.target.value)" placeholder="Filter value"></article></section>' +
               '<footer><button type="button" class="mioos-btn is-primary" @click="vm.backendTableApplyFilters(tableId || state.id)">Apply filters</button><button type="button" class="mioos-btn" @click="vm.backendTableClearFilters(tableId || state.id)">Clear filters</button><button type="button" class="mioos-btn" @click="vm.backendTableCloseFilters(tableId || state.id)">Cancel</button></footer>' +
             '</div>' +
           '</div>' +
           '<div class="mioos-table-editor-backdrop" v-if="state.groupModalOpen" @click.self="vm.backendTableCloseGrouping(tableId || state.id)">' +
             '<div class="mioos-table-editor is-group-editor mioos-system-modal" role="dialog" aria-modal="true" :style="vm.backendTableDialogStyle(state, &quot;grouping&quot;)">' +
-              '<header class="mioos-system-modal-titlebar" @pointerdown.prevent="vm.backendTableBeginDialogDrag(tableId || state.id, &quot;grouping&quot;, $event)"><strong>Group columns</strong><button type="button" @click="vm.backendTableCloseGrouping(tableId || state.id)">×</button></header>' +
+              '<header class="mioos-system-modal-titlebar" @pointerdown.prevent="vm.backendTableBeginDialogDrag(tableId || state.id, &quot;grouping&quot;, $event)"><strong>Group columns</strong><button type="button" aria-label="Close grouping" @pointerdown.stop @click.stop="vm.backendTableCloseGrouping(tableId || state.id)">×</button></header>' +
               '<section class="mioos-table-column-list"><button v-for="col in allColumns" :key="col.key" type="button" :class="{ active: state.groupDraftColumns.indexOf(col.key) >= 0 }" @click="vm.backendTableToggleGroupDraft(tableId || state.id, col.key)"><span>[[ state.groupDraftColumns.indexOf(col.key) >= 0 ? &quot;☑&quot; : &quot;☐&quot; ]]</span><b>[[ col.label ]]</b><small>[[ col.key ]]</small></button></section>' +
               '<footer><button type="button" class="mioos-btn is-primary" @click="vm.backendTableApplyGrouping(tableId || state.id)">Apply grouping</button><button type="button" class="mioos-btn" @click="vm.backendTableSetGroupBy(tableId || state.id, &quot;&quot;); vm.backendTableCloseGrouping(tableId || state.id)">Clear grouping</button></footer>' +
             '</div>' +
           '</div>' +
           '<div class="mioos-table-editor-backdrop" v-if="state.columnPickerOpen" @click.self="vm.backendTableCloseColumnPicker(tableId || state.id)">' +
             '<div class="mioos-table-editor is-column-picker mioos-system-modal" role="dialog" aria-modal="true" :style="vm.backendTableDialogStyle(state, &quot;columns&quot;)">' +
-              '<header class="mioos-system-modal-titlebar" @pointerdown.prevent="vm.backendTableBeginDialogDrag(tableId || state.id, &quot;columns&quot;, $event)"><strong>Visible columns</strong><button type="button" @click="vm.backendTableCloseColumnPicker(tableId || state.id)">×</button></header>' +
+              '<header class="mioos-system-modal-titlebar" @pointerdown.prevent="vm.backendTableBeginDialogDrag(tableId || state.id, &quot;columns&quot;, $event)"><strong>Visible columns</strong><button type="button" aria-label="Close columns" @pointerdown.stop @click.stop="vm.backendTableCloseColumnPicker(tableId || state.id)">×</button></header>' +
               '<section class="mioos-table-column-list">' +
-                '<button v-for="col in allColumns" :key="col.key" type="button" @click="vm.backendTableToggleColumn(tableId || state.id, col.key)">' +
-                  '<span>[[ col.hidden ? \'☐\' : \'☑\' ]]</span><b>[[ col.label ]]</b><small>[[ col.key ]]</small>' +
-                '</button>' +
+                '<article v-for="(col, index) in allColumns" :key="col.key" class="mioos-table-column-item">' +
+                  '<button type="button" class="mioos-table-column-toggle" @click="vm.backendTableToggleColumn(tableId || state.id, col.key)"><span>[[ col.hidden ? "☐" : "☑" ]]</span><b>[[ col.label ]]</b><small>[[ col.key ]]</small></button>' +
+                  '<span v-if="vm.backendTableFeature(state, &quot;columnReorder&quot;)" class="mioos-table-column-reorder"><button type="button" :disabled="index === 0 || state.saving" title="Move column left" @click="vm.backendTableMoveColumn(tableId || state.id, col.key, -1)">↑</button><button type="button" :disabled="index === allColumns.length - 1 || state.saving" title="Move column right" @click="vm.backendTableMoveColumn(tableId || state.id, col.key, 1)">↓</button></span>' +
+                '</article>' +
               '</section>' +
             '</div>' +
           '</div>' +
           '<div class="mioos-table-editor-backdrop" v-if="state.editor && state.editor.open" @click.self="vm.backendTableCloseEditor(tableId || state.id)">' +
             '<div class="mioos-table-editor mioos-system-modal" role="dialog" aria-modal="true" :style="vm.backendTableDialogStyle(state, &quot;editor&quot;)">' +
-              '<header class="mioos-system-modal-titlebar" @pointerdown.prevent="vm.backendTableBeginDialogDrag(tableId || state.id, &quot;editor&quot;, $event)"><strong>[[ state.editor.title ]]</strong><button type="button" aria-label="Close editor" @click="vm.backendTableCloseEditor(tableId || state.id)">×</button></header>' +
+              '<header class="mioos-system-modal-titlebar" @pointerdown.prevent="vm.backendTableBeginDialogDrag(tableId || state.id, &quot;editor&quot;, $event)"><strong>[[ state.editor.title ]]</strong><button type="button" aria-label="Close editor" @pointerdown.stop @click.stop="vm.backendTableCloseEditor(tableId || state.id)">×</button></header>' +
               '<section v-if="state.editor.mode === \'row\'" class="mioos-table-form-grid"><label v-for="col in allColumns" :key="col.key" :class="{ \'has-error\': vm.backendTableFieldError(state, col.key) }"><span>[[ col.label ]]</span><textarea v-if="vm.backendTableFilterControl(col) === &quot;textarea&quot;" v-model="state.editor.row[col.key]" :placeholder="col.key"></textarea><select v-else-if="vm.backendTableFilterControl(col) === &quot;select&quot;" v-model="state.editor.row[col.key]"><option value="">Choose…</option><option v-for="opt in vm.backendTableColumnOptions(state, col)" :key="opt" :value="opt">[[ opt ]]</option></select><select v-else-if="vm.backendTableFilterControl(col) === &quot;boolean&quot;" v-model="state.editor.row[col.key]"><option value="">Choose…</option><option value="true">True</option><option value="false">False</option></select><input v-else-if="vm.backendTableFilterControl(col) === &quot;date&quot;" type="date" v-model="state.editor.row[col.key]" :placeholder="col.key"><input v-else-if="vm.backendTableFilterControl(col) === &quot;number&quot;" type="number" v-model="state.editor.row[col.key]" :placeholder="col.key"><input v-else v-model="state.editor.row[col.key]" :placeholder="col.key"><button v-if="vm.backendTableCanAddColumnOption(state, col)" type="button" class="mioos-table-inline-link" @click="vm.backendTableAddEditorOption(tableId || state.id, col)">Add option</button><small v-if="vm.backendTableFieldError(state, col.key)" class="mioos-field-error">[[ vm.backendTableFieldError(state, col.key) ]]</small></label></section>' +
               '<section v-else class="mioos-table-form-grid"><label><span>Key</span><input v-model="state.editor.column.key" :disabled="!!state.editor.column.originalKey" placeholder="fieldName"><small v-if="state.editor.column.originalKey">Column keys are immutable; create a new column to change the key.</small></label><label><span>Label</span><input v-model="state.editor.column.label" placeholder="Column label"></label><label><span>Type</span><select v-model="state.editor.column.type"><option>text</option><option>textarea</option><option>select</option><option>multiselect</option><option>badge</option><option>date</option><option>number</option><option>boolean</option></select></label><label><span>Width</span><input type="number" v-model="state.editor.column.width"></label><label><span>Group</span><input v-model="state.editor.column.group" placeholder="Optional header group"></label><label class="mioos-table-check"><span>Hidden</span><input type="checkbox" v-model="state.editor.column.hidden"></label></section>' +
               '<p class="mioos-table-error" v-for="err in Object.values(state.validation || {})" :key="err">[[ err ]]</p><footer><button type="button" class="mioos-btn is-primary" :disabled="state.saving || state.loading" @click="vm.backendTableSaveEditor(tableId || state.id)">[[ state.saving ? &quot;Saving…&quot; : &quot;Save&quot; ]]</button><button type="button" class="mioos-btn" @click="vm.backendTableCloseEditor(tableId || state.id)">Cancel</button></footer>' +
+            '</div>' +
+          '</div>' +
+          '<div class="mioos-table-editor-backdrop" v-if="state.optionDialog && state.optionDialog.open" @click.self="vm.backendTableCloseOptionDialog(tableId || state.id)">' +
+            '<div class="mioos-table-editor is-option-dialog mioos-system-modal" role="dialog" aria-modal="true" :style="vm.backendTableDialogStyle(state, &quot;optionDialog&quot;)">' +
+              '<header class="mioos-system-modal-titlebar" @pointerdown.prevent="vm.backendTableBeginDialogDrag(tableId || state.id, &quot;optionDialog&quot;, $event)"><strong>Add column value</strong><button type="button" aria-label="Close add value dialog" @pointerdown.stop @click.stop="vm.backendTableCloseOptionDialog(tableId || state.id)">×</button></header>' +
+              '<section class="mioos-table-dialog-body"><p>Add a new allowed value for <strong>[[ state.optionDialog.columnLabel ]]</strong>.</p><label><span>Value</span><input :value="state.optionDialog.value" @input="vm.backendTableSetOptionDialogValue(tableId || state.id, $event.target.value)" @keydown.enter="vm.backendTableConfirmOptionDialog(tableId || state.id)" placeholder="New option value"></label></section>' +
+              '<footer><button type="button" class="mioos-btn is-primary" :disabled="state.saving" @click="vm.backendTableConfirmOptionDialog(tableId || state.id)">Add value</button><button type="button" class="mioos-btn" @click="vm.backendTableCloseOptionDialog(tableId || state.id)">Cancel</button></footer>' +
+            '</div>' +
+          '</div>' +
+          '<div class="mioos-table-editor-backdrop" v-if="state.confirmDialog && state.confirmDialog.open" @click.self="vm.backendTableCloseConfirmDialog(tableId || state.id)">' +
+            '<div class="mioos-table-editor is-confirm-dialog mioos-system-modal" :class="{ danger: state.confirmDialog.danger }" role="dialog" aria-modal="true" :style="vm.backendTableDialogStyle(state, &quot;confirmDialog&quot;)">' +
+              '<header class="mioos-system-modal-titlebar" @pointerdown.prevent="vm.backendTableBeginDialogDrag(tableId || state.id, &quot;confirmDialog&quot;, $event)"><strong>[[ state.confirmDialog.title ]]</strong><button type="button" aria-label="Close confirmation dialog" @pointerdown.stop @click.stop="vm.backendTableCloseConfirmDialog(tableId || state.id)">×</button></header>' +
+              '<section class="mioos-table-dialog-body"><p>[[ state.confirmDialog.message ]]</p></section>' +
+              '<footer><button type="button" class="mioos-btn danger" :class="{ danger: state.confirmDialog.danger }" :disabled="state.saving" @click="vm.backendTableConfirmDialog(tableId || state.id)">[[ state.confirmDialog.confirmText ]]</button><button type="button" class="mioos-btn" @click="vm.backendTableCloseConfirmDialog(tableId || state.id)">Cancel</button></footer>' +
             '</div>' +
           '</div>' +
           '<div class="mioos-table-wrap">' +
