@@ -347,6 +347,24 @@ MODULECATALOG(DEV,CONF,REQ,CTX)
 	SET CTX("status")=200
 	QUIT
 	;
+MODULETABLE(DEV,CONF,REQ,CTX)
+	NEW TREE,ERR,STATE,OUT
+	IF '$$PARSEBODY(.REQ,.TREE,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,400,"invalid_json",$GET(ERR("error")),.CTX)
+	IF '$$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,500,"module_table_state_error",$GET(ERR("error")),.CTX)
+	IF '$$REQUIREAUTH(.DEV,.CONF,.CTX,.STATE) QUIT
+	IF '$$HANDLE^MIOOSMTBL(.STATE,.CONF,.TREE,.OUT,.ERR) DO
+	. KILL OUT
+	. SET OUT("ok")=0,OUT("contract")="mioos-table-module-library-v1"
+	. SET OUT("action")=$GET(TREE("action"),"list"),OUT("error")=$GET(ERR("error"),"module_table_failed")
+	. SET OUT("message")=$GET(ERR("message"),$GET(ERR("error"),"Table module action failed")),OUT("routine")=$GET(ERR("routine"),"MIOOSMTBL")
+	. IF $GET(ERR("field"))'="" SET OUT("field")=$GET(ERR("field"))
+	. IF $DATA(ERR("fieldErrors")) MERGE OUT("fieldErrors")=ERR("fieldErrors")
+	DO RESPJSONX^MIOHTTP(.DEV,.CONF,200,.OUT,$GET(CTX("request_id")),.CTX)
+	SET CTX("status")=200
+	QUIT
+	;
 SETTINGSLOAD(DEV,CONF,REQ,CTX)
 	NEW TREE,ERR,STATE,OUT
 	IF '$$PARSEBODY(.REQ,.TREE,.ERR) KILL TREE

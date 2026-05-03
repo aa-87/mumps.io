@@ -8,6 +8,7 @@ RUN
 	DO TFILT
 	DO TFEAT
 	DO TREG
+	DO TMTBL
 	QUIT
 	;
 SETUP(STATE,CONF,ROOT)
@@ -214,7 +215,61 @@ TREG
 	DO OK^MIOTASSERT($$FILEHAS^MIOOST("routines/MIOOSWS.m","mutationOnly")&$$FILEHAS^MIOOST("routines/MIOOSWS.m","refetch")&$$FILEHAS^MIOOST("routines/MIOOSWS.m","fieldErrors"),"[MIOSTBLC][TREG][ws deterministic failure json]")
 	DO OK^MIOTASSERT($$FILEHAS^MIOOST("docs/mioos/ROI_68A_Table_Backend_Contract_Tests_and_Samples.md","ROI 68A"),"[MIOSTBLC][TREG][roi docs]")
 	DO OK^MIOTASSERT($$FILEHAS^MIOOST("examples/mioos_modules/table/README.md","Sample matrix"),"[MIOSTBLC][TREG][sample matrix docs]")
+	DO OK^MIOTASSERT($$FILEHAS^MIOOST("routines/MIOOSAPI.m","MODULETABLE(DEV,CONF,REQ,CTX)"),"[MIOSTBLC][TREG][module table api route]")
+	DO OK^MIOTASSERT($$FILEHAS^MIOOST("public/mioos/app/mioos_table.js","hasQueryShape"),"[MIOSTBLC][TREG][mutation ack does not clear rows]")
+	DO OK^MIOTASSERT($$FILEHAS^MIOOST("public/mioos/mioos.css","mioos-table-processing.active"),"[MIOSTBLC][TREG][persistent loading bar]")
+	DO OK^MIOTASSERT($$FILEHAS^MIOOST("public/mioos/app/mioos_table.js","mioos-table-feedback-rail"),"[MIOSTBLC][TREG][stable feedback rail]")
+	DO OK^MIOTASSERT($$FILEHAS^MIOOST("public/mioos/app/mioos_table.js","backendTableCaptureColumnPrefs"),"[MIOSTBLC][TREG][client column preferences retained]")
+	DO OK^MIOTASSERT($$FILEHAS^MIOOST("public/mioos/mioos.css","mioos-table-column-item > button"),"[MIOSTBLC][TREG][reorder button css isolated]")
+	DO OK^MIOTASSERT($$FILEHAS^MIOOST("public/mioos/mioos.css","mioos-ui-module-grid.is-list"),"[MIOSTBLC][TREG][catalog list layout]")
+	DO OK^MIOTASSERT($$FILEHAS^MIOOST("public/mioos/app/mioos_modules.js","addTableColumn"),"[MIOSTBLC][TREG][table module editor finished]")
 	QUIT
+	;
+TMTBL
+	NEW STATE,CONF,ROOT,IN,OUT,ERR,DEF,CAT
+	DO SETUP(.STATE,.CONF,.ROOT)
+	KILL DEF,IN,OUT,ERR
+	SET DEF("key")="contract_table_module",DEF("title")="Contract Table Module",DEF("dataset")="contract_table_module",DEF("category")="Tests",DEF("icon")="▤",DEF("description")="Contract test table module"
+	SET DEF("schema","columns",1,"key")="name",DEF("schema","columns",1,"label")="Name",DEF("schema","columns",1,"type")="text",DEF("schema","columns",1,"width")=180
+	SET DEF("schema","columns",2,"key")="status",DEF("schema","columns",2,"label")="Status",DEF("schema","columns",2,"type")="select",DEF("schema","columns",2,"width")=120
+	SET DEF("rows",1,"id")="ctm-1",DEF("rows",1,"name")="Preview row",DEF("rows",1,"status")="Active"
+	MERGE IN("definition")=DEF
+	SET IN("action")="preview"
+	DO OK^MIOTASSERT($$HANDLE^MIOOSMTBL(.STATE,.CONF,.IN,.OUT,.ERR),"[MIOSTBLC][TMTBL][preview ok]")
+	DO EQ^MIOTASSERT($GET(OUT("query","recordsTotal")),1,"[MIOSTBLC][TMTBL][preview rows]")
+	KILL IN,OUT,ERR
+	MERGE IN("definition")=DEF
+	SET IN("action")="save"
+	DO OK^MIOTASSERT($$HANDLE^MIOOSMTBL(.STATE,.CONF,.IN,.OUT,.ERR),"[MIOSTBLC][TMTBL][save ok]")
+	DO EQ^MIOTASSERT($GET(OUT("registered")),1,"[MIOSTBLC][TMTBL][registered]")
+	DO EQ^MIOTASSERT($GET(^MIO("MIOOS","MODULE","USER","roi68a","contract_table_module","tableState","dataset")),"contract_table_module","[MIOSTBLC][TMTBL][module table state]")
+	KILL IN,OUT,ERR SET IN("action")="list"
+	DO OK^MIOTASSERT($$HANDLE^MIOOSMTBL(.STATE,.CONF,.IN,.OUT,.ERR),"[MIOSTBLC][TMTBL][list ok]")
+	DO OK^MIOTASSERT($$FINDDEF(.OUT,"contract_table_module"),"[MIOSTBLC][TMTBL][definition listed]")
+	KILL CAT
+	DO LOAD^MIOOSMOD(.STATE,.CONF)
+	MERGE CAT=STATE("uiModules")
+	DO OK^MIOTASSERT($$FINDCAT(.CAT,"contract_table_module"),"[MIOSTBLC][TMTBL][catalog table definition]")
+	DO OK^MIOTASSERT($$FINDMOD(.CAT,"contract_table_module"),"[MIOSTBLC][TMTBL][catalog module registered]")
+	KILL IN,OUT,ERR SET IN("action")="export",IN("key")="contract_table_module"
+	DO OK^MIOTASSERT($$HANDLE^MIOOSMTBL(.STATE,.CONF,.IN,.OUT,.ERR),"[MIOSTBLC][TMTBL][export ok]")
+	DO EQ^MIOTASSERT($GET(OUT("definition","key")),"contract_table_module","[MIOSTBLC][TMTBL][export definition]")
+	KILL IN,OUT,ERR SET IN("action")="revisions",IN("key")="contract_table_module"
+	DO OK^MIOTASSERT($$HANDLE^MIOOSMTBL(.STATE,.CONF,.IN,.OUT,.ERR),"[MIOSTBLC][TMTBL][revisions ok]")
+	DO EQ^MIOTASSERT($GET(OUT("ok")),1,"[MIOSTBLC][TMTBL][revisions deterministic]")
+	QUIT
+	;
+FINDDEF(OUT,KEY)
+	NEW I,OK SET (I,OK)=0 FOR  SET I=$ORDER(OUT("definitions",I)) QUIT:I'>0!(OK)  IF $GET(OUT("definitions",I,"key"))=KEY SET OK=1
+	QUIT OK
+	;
+FINDCAT(CAT,KEY)
+	NEW I,OK SET (I,OK)=0 FOR  SET I=$ORDER(CAT("tableDefinitions",I)) QUIT:I'>0!(OK)  IF $GET(CAT("tableDefinitions",I,"key"))=KEY SET OK=1
+	QUIT OK
+	;
+FINDMOD(CAT,KEY)
+	NEW I,OK SET (I,OK)=0 FOR  SET I=$ORDER(CAT("modules",I)) QUIT:I'>0!(OK)  IF $GET(CAT("modules",I,"key"))=KEY,$GET(CAT("modules",I,"tableState","dataset"))=KEY SET OK=1
+	QUIT OK
 	;
 ACK(OUT,ACTION)
 	IF $GET(OUT("ok"))'=1 QUIT 0

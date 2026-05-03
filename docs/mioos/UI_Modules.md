@@ -105,3 +105,15 @@ Table-backed modules should remain MUMPS-first. A developer should be able to cr
 The expanded sample matrix under `examples/mioos_modules/table/samples/` covers read-only tables, editable cells, validation rules, typed controls, advanced filters, multi-column grouping, column visibility, column reorder, fixed columns, selected-row CSV export, desktop icon/App Catalogue entry points, and table-backed module registration without frontend code. These samples are intentionally MUMPS snippets rather than JavaScript because the target module author is a MUMPS developer.
 
 The table transport posture remains WebSocket-first with authenticated HTTP fallback. Do not fork the Vue table component or introduce a build step for table modules.
+
+## Table Module Definition regression hardening
+
+The App Catalogue Table Modules tab uses the authenticated `POST /api/mioos/modules/table` route. That route is handled by `MODULETABLE^MIOOSAPI`, which delegates every action to `HANDLE^MIOOSMTBL` and always returns JSON. This prevents browser `ERR_EMPTY_RESPONSE` failures when users click Preview, Save, Export, Import, Revisions, or Rollback from the Table Module Definition modal.
+
+The Table Module Definition modal is a production-style editor rather than bare HTML. It includes styled metadata fields, column add/remove controls, sample-row editing, local draft JSON export, backend import/export, preview, revision listing, rollback, and Save/Register. Saving a definition stores the table module in the server-side table module library, installs a user module manifest with `componentKey="table"`, `surface="mioos-surface-table"`, and a complete `tableState`, and exposes the definition in the App Catalogue after refresh.
+
+MUMPS developers can still bypass the modal by writing directly to the same backend contract through `MIOOSMTBL` and the `^MIO("MIOOS","TABLE",user,dataset,...)` table globals. The modal is only a safer authoring surface for that MUMPS-first contract.
+
+## Catalogue List/Cards rendering
+
+The App Catalogue layout toggle now changes actual layout classes. `layout="cards"` renders grid cards, while `layout="list"` applies `.mioos-ui-module-grid.is-list` for a single-column list with compact icons and row-style metadata. The toggle is visual-only and does not change the server-authored module registry.

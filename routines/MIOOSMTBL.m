@@ -175,7 +175,10 @@ MANIFEST(DEF,DEST)
 	;
 DEFROW(ROOT,KEY,DEST)
 	KILL @DEST
-	SET @DEST@("key")=KEY,@DEST@("id")=KEY,@DEST@("title")=$GET(@ROOT@(KEY,"title")),@DEST@("dataset")=$GET(@ROOT@(KEY,"dataset")),@DEST@("description")=$GET(@ROOT@(KEY,"description")),@DEST@("category")=$GET(@ROOT@(KEY,"category")),@DEST@("icon")=$GET(@ROOT@(KEY,"icon")),@DEST@("updatedH")=$GET(@ROOT@(KEY,"updatedH")),@DEST@("source")="user",@DEST@("userCreated")=1
+	SET @DEST@("key")=KEY,@DEST@("id")=KEY,@DEST@("appKey")=KEY,@DEST@("title")=$GET(@ROOT@(KEY,"title")),@DEST@("dataset")=$GET(@ROOT@(KEY,"dataset")),@DEST@("description")=$GET(@ROOT@(KEY,"description")),@DEST@("category")=$GET(@ROOT@(KEY,"category")),@DEST@("icon")=$GET(@ROOT@(KEY,"icon")),@DEST@("updatedH")=$GET(@ROOT@(KEY,"updatedH")),@DEST@("source")="user",@DEST@("userCreated")=1
+	SET @DEST@("componentKey")="table",@DEST@("surface")="mioos-surface-table"
+	SET @DEST@("tableState","id")=KEY_"-table",@DEST@("tableState","title")=$GET(@ROOT@(KEY,"title")),@DEST@("tableState","dataset")=$GET(@ROOT@(KEY,"dataset"))
+	SET @DEST@("tableState","config","contract")="mioos-advanced-table-v8"
 	QUIT
 	;
 SNAP(STATE,KEY,WHY)

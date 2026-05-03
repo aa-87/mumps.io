@@ -345,11 +345,12 @@
       var vm = this;
       state.draw = +(state.draw || 0) + 1;
       var body = Object.assign({ dataset: state.dataset || 'demo', action: action, mutationOnly: true }, payload || {});
+      var passiveMutation = /^(cell\.save|column\.visibility|column\.reorder|column\.fixed|column\.option\.add|column\.resize)$/.test(action || '');
       state.saving = true;
-      state.processing = true;
+      state.processing = !passiveMutation;
       var requestId = 'm' + state.draw + '-' + Date.now();
       state.mutationRequestId = requestId;
-      state.requestLabel = 'Saving table changes';
+      state.requestLabel = passiveMutation ? '' : 'Saving table changes';
       state.error = '';
       var route = this.backendTableMutateRoute();
       var request = this.backendTableUseWebSocket(state, 'mutate')
@@ -388,26 +389,63 @@
       if (payload.draw && payload.draw < +(state.lastDraw || 0)) return;
       if (payload.draw) state.lastDraw = +payload.draw;
       state.lastServerAt = new Date().toLocaleTimeString();
-      state.features = Object.assign({}, payload.features || {});
-      state.patientRegistration = payload.patientRegistration || null;
-      state.fixedColumns = this.backendTableNormalizeFixedColumns(state, ((payload.schema || {}).fixedColumns) || payload.fixedColumns || state.fixedColumns || ((state.config || {}).fixedColumns));
+      var hasSchema = !!(payload.schema && typeof payload.schema === 'object');
+      var hasSchemaColumns = !!(hasSchema && Array.isArray(payload.schema.columns));
+      var hasRows = Object.prototype.hasOwnProperty.call(payload, 'rows') || Object.prototype.hasOwnProperty.call(payload, 'data');
+      var hasQueryShape = hasRows || hasSchema || Object.prototype.hasOwnProperty.call(payload, 'pagination') || Object.prototype.hasOwnProperty.call(payload, 'recordsTotal') || Object.prototype.hasOwnProperty.call(payload, 'recordsFiltered');
+      if (payload.features) state.features = Object.assign({}, payload.features || {});
+      if (Object.prototype.hasOwnProperty.call(payload, 'patientRegistration')) state.patientRegistration = payload.patientRegistration || null;
+      var preferredFixed = state.columnPrefs && state.columnPrefs.fixedColumns ? state.columnPrefs.fixedColumns : null;
+      state.fixedColumns = this.backendTableNormalizeFixedColumns(state, preferredFixed || (hasSchema ? payload.schema.fixedColumns : null) || payload.fixedColumns || state.fixedColumns || ((state.config || {}).fixedColumns));
       if (Array.isArray(payload.groupByColumns)) state.groupByColumns = payload.groupByColumns.slice();
       state.readOnly = !!(+((state.features || {}).readOnly || 0)) || !!((state.config || {}).readonly);
-      var schemaColumns = (((payload.schema || {}).columns) || []);
-      var payloadRows = Array.isArray(payload.rows) ? payload.rows : (Array.isArray(payload.data) ? payload.data : []);
-      state.columns = normalizeColumns(schemaColumns.length ? schemaColumns : state.columns);
-      state.rows = normalizeRows(payloadRows);
-      state.pagination = Object.assign({}, state.pagination || {}, payload.pagination || {});
+      if (hasSchemaColumns) state.columns = this.backendTableApplyColumnPrefs(state, payload.schema.columns);
+      if (hasRows) {
+        var payloadRows = Array.isArray(payload.rows) ? payload.rows : (Array.isArray(payload.data) ? payload.data : []);
+        state.rows = normalizeRows(payloadRows);
+      }
+      if (payload.pagination) state.pagination = Object.assign({}, state.pagination || {}, payload.pagination || {});
       if (typeof payload.recordsTotal !== 'undefined') state.pagination.totalRows = +payload.recordsTotal || 0;
       if (typeof payload.recordsFiltered !== 'undefined') state.pagination.filteredRows = +payload.recordsFiltered || 0;
-      state.rowActions = (payload || {}).rowActions || state.rowActions || [];
-      state.bulkActions = (payload || {}).bulkActions || state.bulkActions || [];
-      state.groups = toList((payload || {}).groups);
+      if (Object.prototype.hasOwnProperty.call(payload, 'rowActions')) state.rowActions = payload.rowActions || [];
+      if (Object.prototype.hasOwnProperty.call(payload, 'bulkActions')) state.bulkActions = payload.bulkActions || [];
+      if (Object.prototype.hasOwnProperty.call(payload, 'groups')) state.groups = toList(payload.groups);
       state.error = payload && payload.ok === false ? (payload.error || payload.detail || 'Table request failed') : state.error;
+      if (!hasQueryShape) return;
       if (!(state.groupByColumns && state.groupByColumns.length) && !state.groupBy) state.groupExpanded = {};
       if (((state.groupByColumns && state.groupByColumns.length) || state.groupBy) && !Object.keys(state.groupExpanded || {}).length) {
         state.groups.forEach(function (g) { state.groupExpanded[g.key || g.label] = true; });
       }
+    },
+    backendTableCaptureColumnPrefs: function (state) {
+      state = state || {};
+      var prefs = { order: [], hidden: {}, width: {}, fixedColumns: clone(state.fixedColumns || {}) };
+      normalizeColumns(state.columns || []).forEach(function (col) {
+        if (!col || !col.key) return;
+        prefs.order.push(col.key);
+        prefs.hidden[col.key] = !!col.hidden;
+        if (+col.width > 0) prefs.width[col.key] = +col.width;
+      });
+      state.columnPrefs = prefs;
+      return prefs;
+    },
+    backendTableApplyColumnPrefs: function (state, columns) {
+      var normalized = normalizeColumns(columns || []);
+      var prefs = (state || {}).columnPrefs || {};
+      var hasPrefs = (prefs.order && prefs.order.length) || prefs.hidden || prefs.width;
+      if (!hasPrefs) return normalized;
+      var byKey = {}, used = {}, ordered = [];
+      normalized.forEach(function (col) {
+        if (!col || !col.key) return;
+        if (prefs.hidden && Object.prototype.hasOwnProperty.call(prefs.hidden, col.key)) col.hidden = !!prefs.hidden[col.key];
+        if (prefs.width && +prefs.width[col.key] > 0) col.width = +prefs.width[col.key];
+        byKey[col.key] = col;
+      });
+      (prefs.order || []).forEach(function (key) {
+        if (byKey[key] && !used[key]) { ordered.push(byKey[key]); used[key] = true; }
+      });
+      normalized.forEach(function (col) { if (col && col.key && !used[col.key]) ordered.push(col); });
+      return ordered.length ? ordered : normalized;
     },
     backendTableApplyClientFallback: function (state) {
       var rows = normalizeRows(state.rows);
@@ -516,6 +554,7 @@
       next[side === 'end' ? 'end' : 'start'] = Math.max(0, +value || 0);
       next = this.backendTableNormalizeFixedColumns(state, next);
       state.fixedColumns = next;
+      this.backendTableCaptureColumnPrefs(state);
       var vm = this;
       return this.backendTableMutate(tableId, 'column.fixed', { fixedColumns: next, keepEditor: true }).then(function (payload) {
         if (payload && payload.ok !== false) vm.backendTableSetToast(tableId, 'Fixed columns updated');
@@ -639,6 +678,7 @@
       state.selected = {};
       state.expanded = {};
       state.groupExpanded = {};
+      state.columnPrefs = {};
       return this.backendTableFetch(tableId);
     },
     backendTableSetPage: function (tableId, page) {
@@ -666,6 +706,7 @@
       var state = this.backendTableState(tableId);
       var nextHidden = false;
       state.columns = normalizeColumns(state.columns).map(function (col) { if (col.key === key) { col.hidden = !col.hidden; nextHidden = col.hidden; } return col; });
+      this.backendTableCaptureColumnPrefs(state);
       if (!this.backendTableFeature(state, 'columnCrud')) return Promise.resolve(state);
       return this.backendTableMutate(tableId, 'column.visibility', { columnKey: key, hidden: nextHidden }).catch(function () {});
     },
@@ -978,11 +1019,13 @@
       var moved = columns.splice(index, 1)[0];
       columns.splice(next, 0, moved);
       state.columns = columns;
+      this.backendTableCaptureColumnPrefs(state);
       return this.backendTableSaveColumnOrder(tableId);
     },
     backendTableSaveColumnOrder: function (tableId) {
       var state = this.backendTableState(tableId);
       var vm = this;
+      this.backendTableCaptureColumnPrefs(state);
       var columns = normalizeColumns(state.columns).map(function (col, index) { return { key: col.key, order: index + 1 }; });
       return this.backendTableMutate(tableId, 'column.reorder', { columns: columns }).then(function (payload) { if (payload && payload.ok !== false) vm.backendTableSetToast(tableId, 'Column order saved'); return payload; });
     },
@@ -1136,7 +1179,7 @@
         keyOf: function (row) { return (row && (row.id || row.key)) || ''; }
       },
       template: '' +
-        '<section class="mioos-full-table" tabindex="0" @keydown.esc.stop="vm.backendTableHandleKeydown(tableId || state.id, $event)" :class="[\'density-\' + ((state.config || {}).density || \'compact\'), { \'is-processing\': state.loading || state.saving, \'is-readonly\': state.readOnly }]" :aria-busy="(state.loading || state.saving) ? \'true\' : \'false\'">' +
+        '<section class="mioos-full-table" tabindex="0" @keydown.esc.stop="vm.backendTableHandleKeydown(tableId || state.id, $event)" :class="[\'density-\' + ((state.config || {}).density || \'compact\'), { \'is-processing\': state.loading, \'is-readonly\': state.readOnly }]" :aria-busy="(state.loading || state.saving) ? \'true\' : \'false\'">' +
           '<header class="mioos-table-toolbar">' +
             '<div><strong>[[ state.title || title || \'Backend Table\' ]]</strong><span>Server-side table · dense MUMPS module API</span></div>' +
             '<label v-if="vm.backendTableFeature(state, &quot;datasetSwitcher&quot;)"><span>Dataset</span><select :value="state.dataset" @change="vm.backendTableSetDataset(tableId || state.id, $event.target.value)"><option value="demo">Sample table</option><option value="patient-registration">Patient registration</option><option value="ui-elements">UI + form elements</option><option value="massive">Massive dataset</option><option value="vfs">VFS folder</option></select></label>' +
@@ -1148,11 +1191,10 @@
             '<button v-if="vm.backendTableFeature(state, &quot;columnCrud&quot;)" type="button" class="mioos-btn" @click="vm.backendTableOpenColumnEditor(tableId || state.id)">Add column</button>' +
             '<span v-if="state.readOnly" class="mioos-table-readonly">Read-only</span>' +
           '</header>' +
-          '<div class="mioos-table-processing" role="status" aria-label="Table loading" v-if="state.loading || state.saving"><span class="mioos-table-loading-line"></span></div>' +
-          '<div class="mioos-table-toast" role="status" v-if="state.toast">[[ state.toast ]]</div>' +
+          '<div class="mioos-table-processing" :class="{ active: state.loading }" role="status" aria-label="Table loading" :aria-hidden="state.loading ? \'false\' : \'true\'"><span class="mioos-table-loading-line"></span></div>' +
+          '<div class="mioos-table-feedback-rail" aria-live="polite"><div class="mioos-table-toast" role="status" :class="{ active: !!state.toast }" :aria-hidden="state.toast ? \'false\' : \'true\'">[[ state.toast ]]</div><div class="mioos-table-error" role="alert" :class="{ active: !!state.error }" :aria-hidden="state.error ? \'false\' : \'true\'">[[ state.error ]]</div></div>' +
           '<aside class="mioos-table-patient-banner" v-if="state.patientRegistration"><strong>[[ state.patientRegistration.title || &quot;Patient Registration&quot; ]]</strong><span>[[ state.patientRegistration.statusMessage || state.patientRegistration.notice ]]</span></aside>' +
           '<div class="mioos-table-bulkbar" v-if="selectedCount && vm.backendTableFeature(state, &quot;bulkActions&quot;)"><span>[[ selectedCount ]] selected</span><button v-for="action in state.bulkActions" :key="action.key" type="button" @click="vm.backendTableRunBulkAction(tableId || state.id, action)">[[ action.label ]]</button><button type="button" @click="vm.backendTableClearSelection(tableId || state.id)">Clear</button></div>' +
-          '<div class="mioos-table-error" v-if="state.error">[[ state.error ]]</div>' +
           '<div class="mioos-table-editor-backdrop" v-if="state.filterModalOpen" @click.self="vm.backendTableCloseFilters(tableId || state.id)">' +
             '<div class="mioos-table-editor is-filter-editor mioos-system-modal" role="dialog" aria-modal="true" :style="vm.backendTableDialogStyle(state, &quot;filters&quot;)">' +
               '<header class="mioos-system-modal-titlebar" @pointerdown.prevent="vm.backendTableBeginDialogDrag(tableId || state.id, &quot;filters&quot;, $event)"><strong>Advanced filters</strong><button type="button" aria-label="Close filters" @pointerdown.stop @click.stop="vm.backendTableCloseFilters(tableId || state.id)">×</button></header>' +

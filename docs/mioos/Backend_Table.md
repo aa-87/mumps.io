@@ -381,3 +381,17 @@ SET @ROOT@("validation","routine")="VALMYROW^MYTABVAL"
 The optional row validation hook signature is `HOOK(IN,ERR,ROOT)`. Return `1` to accept the row and `0` to reject it. Set `ERR("fieldErrors",field)` for browser field highlighting. Optional per-column cell callbacks still use `CALLBACK(STATE,DATASET,ROWID,COLUMN,VALUE,OUT,ERR)` and may set `OUT("value")` to normalize a saved value.
 
 `RUN^MIOOSTBLC` is now part of `D ^MIOOST` and covers query shape, mutation acknowledgements, validation, filtering, grouping, sorting, feature composition, and known table browser regressions.
+
+## Mutation acknowledgement display stability
+
+Successful table mutations remain acknowledgement-only and must not return page rows or schema unless an explicit refetch/full query is requested. The browser now treats acknowledgement payloads as status updates only: it preserves existing rows, columns, feature flags, row actions, bulk actions, and grouping state when a mutation response has no query-shaped payload. This avoids the previous blink/layout shift where a cell save or table update briefly cleared the table body before the next query.
+
+The loading indicator is a persistent absolute-position loading bar. It changes opacity instead of mounting/unmounting a layout-bearing block, and table content is no longer dimmed during short save/query cycles.
+
+## Pre-ROI 69 table interaction stability follow-up
+
+Small table mutations such as `cell.save`, `column.visibility`, `column.reorder`, `column.fixed`, `column.option.add`, and `column.resize` are treated as passive UI operations on the browser side. They still use the same backend mutation contract and server acknowledgement, but they do not activate a layout-bearing processing block. Existing rows and columns remain mounted while the server acknowledgement and optional refetch complete.
+
+The browser maintains a transient `columnPrefs` overlay for the current table state. When a user hides, reorders, resizes, or fixes columns, the local preference overlay is captured and reapplied to the next query payload before repainting. The backend remains authoritative and still persists column metadata in `schema("columns")` / `schema("fixedColumns")`, but this overlay prevents an immediate repaint from reverting column controls if transports return at slightly different times.
+
+Feedback messages are rendered in an absolute-position `mioos-table-feedback-rail`, so success/error toasts no longer insert or remove layout blocks above the table body.

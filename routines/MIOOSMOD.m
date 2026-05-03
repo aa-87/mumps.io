@@ -32,6 +32,7 @@ DISABLED(STATE)
 	QUIT
 	;
 CATALOG(STATE,CONF,OUT,ERR)
+	NEW TIN,TOUT,TERR
 	KILL OUT,ERR
 	SET OUT("ok")=1
 	SET OUT("contract")="mioos-ui-module-v1"
@@ -42,6 +43,12 @@ CATALOG(STATE,CONF,OUT,ERR)
 	SET OUT("moduleCount")=0
 	DO INTERNAL(.OUT)
 	DO USER(.STATE,.OUT)
+	KILL TIN,TOUT,TERR
+	SET TIN("action")="list"
+	IF $$LIST^MIOOSMTBL(.STATE,.CONF,.TIN,.TOUT,.TERR) DO
+	. SET OUT("tableModuleLibrary","contract")=$GET(TOUT("contract"),"mioos-table-module-library-v1")
+	. SET OUT("tableModuleLibrary","count")=+$GET(TOUT("count"),0)
+	. IF $DATA(TOUT("definitions")) MERGE OUT("tableDefinitions")=TOUT("definitions")
 	QUIT 1
 	;
 INTERNAL(OUT)
@@ -227,6 +234,9 @@ USER(STATE,OUT)
 	. SET OUT("modules",M,"source")="user"
 	. SET OUT("modules",M,"componentKey")=$GET(@ROOT@(KEY,"componentKey"),"module-card")
 	. SET OUT("modules",M,"surface")=$GET(@ROOT@(KEY,"surface"),"mioos-surface-ui-module")
+	. IF $GET(@ROOT@(KEY,"dataset"))'="" SET OUT("modules",M,"dataset")=$GET(@ROOT@(KEY,"dataset"))
+	. IF $DATA(@ROOT@(KEY,"tableState")) MERGE OUT("modules",M,"tableState")=@ROOT@(KEY,"tableState")
 	. IF $DATA(@ROOT@(KEY,"config")) MERGE OUT("modules",M,"config")=@ROOT@(KEY,"config")
+	. IF $DATA(@ROOT@(KEY,"capabilities")) MERGE OUT("modules",M,"capabilities")=@ROOT@(KEY,"capabilities")
 	QUIT
 	;
