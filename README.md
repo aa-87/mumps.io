@@ -946,8 +946,9 @@ Follow the no-`ZSYSTEM` and no-`GOTO` rules.
 
   source $(pkg-config --variable=prefix yottadb)/ydb_env_set
   export ydb_routines=`$ydb_dist/yottadb -run %XCMD 'W $P($P($ZRO,"(",1,2),")")_" "_"/home/aa/work/mumps.io/routines"_")"_$P($ZRO,")",2,$L($ZRO,")"))'`   
-      
-sudo iptables -A INPUT -p tcp --dport 9080 -j ACCEPT
+      sudo ufw status (if installed).
+      sudo ufw allow 9080
+      sudo iptables -A INPUT -p tcp --dport 9080 -j ACCEPT
 
        ```
 
