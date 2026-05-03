@@ -169,7 +169,8 @@ MANIFEST(DEF,DEST)
 	SET @DEST@("dataset")=$GET(DEF("dataset"))
 	SET @DEST@("tableState","id")=$GET(DEF("key"))_"-table",@DEST@("tableState","title")=$GET(DEF("title")),@DEST@("tableState","dataset")=$GET(DEF("dataset"))
 	SET @DEST@("tableState","config","contract")="mioos-advanced-table-v8"
-	SET @DEST@("tableState","config","features","rowCrud")=1,@DEST@("tableState","config","features","columnCrud")=1,@DEST@("tableState","config","features","selection")=1,@DEST@("tableState","config","features","bulkActions")=1
+	IF $DATA(DEF("schema","fixedColumns")) MERGE @DEST@("tableState","config","fixedColumns")=DEF("schema","fixedColumns")
+	SET @DEST@("tableState","config","features","rowCrud")=1,@DEST@("tableState","config","features","columnCrud")=1,@DEST@("tableState","config","features","selection")=1,@DEST@("tableState","config","features","bulkActions")=1,@DEST@("tableState","config","features","fixedColumns")=1
 	QUIT
 	;
 DEFROW(ROOT,KEY,DEST)

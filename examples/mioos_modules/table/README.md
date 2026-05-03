@@ -230,3 +230,35 @@ The browser Columns modal can then move columns and persists the result with:
   "mutationOnly": true
 }
 ```
+
+## Fixed columns example
+
+To pin the first visible data column while the middle columns scroll, add the fixed-column contract to the dataset root:
+
+```mumps
+NEW USER,ROOT,MOD
+SET USER=$GET(STATE("principal"),"admin")
+SET ROOT=$NAME(^MIO("MIOOS","TABLE",USER,"demo"))
+SET @ROOT@("features","fixedColumns")=1
+SET @ROOT@("schema","fixedColumns","start")=1
+SET @ROOT@("schema","fixedColumns","end")=0
+
+KILL MOD
+SET MOD("key")="demo-fixed-table"
+SET MOD("title")="Demo Fixed Table"
+SET MOD("componentKey")="table"
+SET MOD("surface")="mioos-surface-table"
+SET MOD("tableState","dataset")="demo"
+SET MOD("tableState","config","features","fixedColumns")=1
+SET MOD("tableState","config","fixedColumns","start")=1
+SET MOD("tableState","config","fixedColumns","end")=0
+DO REGISTER^MIOOSMOD(.MOD)
+```
+
+Reload and validate:
+
+```mumps
+ZLINK "MIOOSTBL"
+ZLINK "MIOOST"
+DO ^MIOOST
+```

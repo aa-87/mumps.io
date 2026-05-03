@@ -348,3 +348,15 @@ SET @ROOT@("schema","columns",1,"order")=1
 SET @ROOT@("schema","columns",2,"key")="status"
 SET @ROOT@("schema","columns",2,"order")=2
 ```
+
+## ROI 64K fixed columns
+
+Advanced table datasets can now expose fixed start/end columns. The MUMPS-owned dataset contract is:
+
+```mumps
+SET @ROOT@("features","fixedColumns")=1
+SET @ROOT@("schema","fixedColumns","start")=1
+SET @ROOT@("schema","fixedColumns","end")=0
+```
+
+The query response includes `schema.fixedColumns`, `features.fixedColumns`, `features.fixedStart`, and `features.fixedEnd`. The browser applies sticky offsets after column visibility and column reorder. Users can change the counts from the Columns modal; this sends `column.fixed` through the normal WebSocket-first / HTTP-fallback mutation path and `MUTATE^MIOOSTBL` persists the counts under `schema("fixedColumns")`.

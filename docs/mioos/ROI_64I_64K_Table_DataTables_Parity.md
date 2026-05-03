@@ -136,6 +136,8 @@ Backend acceptance criteria:
 
 ## ROI 64K — Fixed Columns
 
+Status: implemented. See `docs/mioos/ROI_64K_Fixed_Columns.md` for the final mutation contract and MUMPS example.
+
 ### Goal
 
 Allow fixed left/right columns at boot and optionally as a user preference.

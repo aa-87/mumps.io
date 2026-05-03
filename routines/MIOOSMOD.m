@@ -65,8 +65,9 @@ INTERNAL(OUT)
 	SET OUT("components",C,"features",5)="row-crud"
 	SET OUT("components",C,"features",6)="column-crud"
 	SET OUT("components",C,"features",7)="resizable-columns"
-	SET OUT("components",C,"features",8)="server-query"
-	SET OUT("components",C,"features",9)="http-safe-mutations"
+	SET OUT("components",C,"features",8)="fixed-columns"
+	SET OUT("components",C,"features",9)="server-query"
+	SET OUT("components",C,"features",10)="http-safe-mutations"
 	SET C=+$GET(OUT("componentCount"))+1,OUT("componentCount")=C
 	SET OUT("components",C,"key")="table-showcase"
 	SET OUT("components",C,"name")="mioos-surface-table-showcase"

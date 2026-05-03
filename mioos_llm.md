@@ -593,9 +593,13 @@ See `docs/mioos/ROI_64I_64K_Table_DataTables_Parity.md` before implementing the 
 
 Current advanced table contract remains `mioos-advanced-table-v8`. Cell editing is now implemented with a `cell.save` mutation. The browser renders typed inline cell controls from schema metadata and saves over WebSocket `table.mutate` with HTTP fallback. Both transports call `MUTATE^MIOOSTBL`. The backend validates row id, column key, editable flag, field rules, and optional per-column `cellCallback` before writing. ID cells are read-only. The loading indicator is bar-only; do not reintroduce loading text that shifts table layout. Advanced Filters `Add value` now prompts/uses the drafted value and sends `column.option.add`.
 
-Next planned table ROI is ROI 64J — column reorder. ROI 64K fixed columns follows after ROI 64J.
+ROI 64J column reorder and ROI 64K fixed columns are implemented in the current advanced table track.
 
 
 ## ROI 64J column reorder
 
 The current table track includes ROI 64J column reorder. `MIOOSTBL` supports `column.reorder`, the browser exposes reorder controls in the Columns modal, and the feature flag is `columnReorder`. Add Value and Delete Column use MIOOS table dialogs, not native `prompt()`/`confirm()`.
+
+## ROI 64K fixed columns
+
+The Advanced Table now supports ROI 64K fixed columns. Backend datasets can set `^MIO("MIOOS","TABLE",user,dataset,"features","fixedColumns")=1` plus `schema("fixedColumns","start")` and `schema("fixedColumns","end")`. The browser exposes fixed start/end controls in the Columns modal and saves them with `column.fixed` over the existing WebSocket-first/HTTP-fallback mutation path. Fixed cells use sticky offsets and are compatible with column visibility, column reorder, editable cells, selection/detail controls, and Actions. Massive/read-only datasets disable `fixedColumns`.

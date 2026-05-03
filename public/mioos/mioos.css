@@ -3050,3 +3050,38 @@ button:disabled { cursor: default; opacity: .55; }
 .mioos-btn.danger { border-color: #b91c1c; color: #7f1d1d; background: #fee2e2; }
 .theme-dark-mode .mioos-table-dialog-body input { color: #f8fafc; background: #1e293b; border-color: rgba(191,219,254,.28); }
 .theme-dark-mode .mioos-btn.danger { color: #fecaca; background: #7f1d1d; border-color: #ef4444; }
+
+/* ROI 64K: fixed table columns. */
+.mioos-table-grid th.is-fixed,
+.mioos-table-grid td.is-fixed {
+  position: sticky;
+  background: var(--theme-card, #fff);
+  box-shadow: 1px 0 0 rgba(70, 94, 130, .18), -1px 0 0 rgba(70, 94, 130, .12);
+}
+.mioos-table-grid thead th.is-fixed { z-index: 8; }
+.mioos-table-grid tbody td.is-fixed { z-index: 5; }
+.mioos-table-grid .is-fixed-start { left: 0; }
+.mioos-table-grid .is-fixed-end { right: 0; }
+.mioos-table-grid .is-fixed-control { min-width: 58px; }
+.mioos-table-grid .is-fixed-actions { min-width: 96px; }
+.mioos-table-grid tr.is-selected td.is-fixed { background: #e6f0ff; }
+.mioos-table-grid tbody tr:hover td.is-fixed { background: #eef5ff; }
+.mioos-table-fixed-controls {
+  display: grid;
+  grid-template-columns: auto minmax(90px, 120px) minmax(90px, 120px) auto;
+  gap: 8px;
+  align-items: end;
+  padding: 10px 0 12px;
+  border-bottom: 1px solid rgba(148,163,184,.22);
+}
+.mioos-table-fixed-controls label { display: grid; gap: 4px; font-size: 11px; font-weight: 700; }
+.mioos-table-fixed-controls input { min-height: 30px; border-radius: 9px; border: 1px solid var(--theme-panel-border, rgba(148,163,184,.45)); padding: 5px 8px; }
+.mioos-table-fixed-controls small { grid-column: 1 / -1; color: #64748b; }
+.theme-dark-mode .mioos-table-grid th.is-fixed,
+.theme-dark-mode .mioos-table-grid td.is-fixed { background: #111827; }
+.theme-dark-mode .mioos-table-grid tr.is-selected td.is-fixed { background: #1e3a8a; }
+.theme-dark-mode .mioos-table-grid tbody tr:hover td.is-fixed { background: #1e293b; }
+.theme-dark-mode .mioos-table-fixed-controls small { color: #cbd5e1; }
+@media (max-width: 760px) {
+  .mioos-table-fixed-controls { grid-template-columns: 1fr; }
+}

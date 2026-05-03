@@ -34,7 +34,12 @@
       "rowDetails": true,
       "resizeColumns": true,
       "cellEditing": true,
-      "columnReorder": true
+      "columnReorder": true,
+      "fixedColumns": true
+    },
+    "fixedColumns": {
+      "start": 1,
+      "end": 0
     }
   }
 }
