@@ -928,3 +928,12 @@ Follow the no-`ZSYSTEM` and no-`GOTO` rules.
 
       static assets
       ```
+
+    ```
+    installation notes for a fresh ubuntu install
+     sudo apt-get install --no-install-recommends file cmake make gawk gcc git curl tcsh libjansson4 {libconfig,libelf,libicu,libncurses,libreadline,libjansson,libssl}-dev binutils ca-certificates
+ 
+ 
+    source $(pkg-config --variable=prefix yottadb)/ydb_env_set
+    export ydb_routines=`$ydb_dist/yottadb -run %XCMD 'W $P($P($ZRO,"(",1,2),")")_" "_"/home/aa/work/mumps.io/routines"_")"_$P($ZRO,")",2,$L($ZRO,"'` 
+ ```
