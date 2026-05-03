@@ -160,16 +160,26 @@ T008 ; Smoke perf: JWT verify runs (if present)
 	DO EQ^MIOTASSERT($GET(R("trap"),0),0,"[T008][no trap]")
 	QUIT
 	;
-T009 ; Gate enabled: JWT scaling
+T009 ; Gate enabled: JWT scaling (portable across slower machines)
 	IF $TEXT(VERIFY^MIOAUTHJWT)="" QUIT
-	NEW CONF,R,ERR,OP
+	NEW CONF,R,ERR,OP,OK,LABEL
 	SET OP="tmp/mio_perf_t009.out"
 	OPEN OP:(newversion:stream:nowrap)
 	SET DEV=OP USE DEV
 	SET CONF("server","perf","enabled")=1
+	; JWT verification is CPU-heavy and its first measured run can vary widely
+	; across low-power machines and coarse timer implementations. Keep this as
+	; a catastrophic-regression gate, not a machine benchmark.
+	SET CONF("server","perf","maxRatio")=10
+	SET CONF("server","perf","maxTotalUs")=30000000
+	SET CONF("server","perf","maxUsPerIter")=100000
+	SET CONF("server","perf","minRatioDenominatorUs")=50000
 	DO SCALE^MIOPERF("jwt","PERFJWT^MIOPERFT",200,.R)
-	CLOSE DEV USE $PRINCIPAL H 1
-	DO OK^MIOTASSERT($$GATE^MIOPERF(.CONF,.R,.ERR)=1,"[T009][jwt gate]")
+	CLOSE DEV USE $PRINCIPAL H 0.1
+	SET OK=$$GATE^MIOPERF(.CONF,.R,.ERR)
+	SET LABEL="[T009][jwt gate]"
+	IF 'OK,$GET(ERR("metric"))'="" SET LABEL=LABEL_"["_$GET(ERR("metric"))_"="_$GET(ERR("value"))_" limit="_$GET(ERR("limit"))_"]"
+	DO OK^MIOTASSERT(OK,LABEL)
 	QUIT
 	;
 T010 ; Smoke perf: router dispatch runs

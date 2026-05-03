@@ -78,19 +78,23 @@ SCALE(NAME,CALL,N,R)
 GATE(CONF,R,ERR)
 	KILL ERR
 	IF +$GET(CONF("server","perf","enabled"),0)'=1 QUIT 1
-	NEW MAXR,MAXT,MAXI
+	NEW MAXR,MAXT,MAXI,MINDEN
 	SET MAXR=+$GET(CONF("server","perf","maxRatio"),3.5)
 	IF MAXR<1 SET MAXR=3.5
 	SET MAXT=+$GET(CONF("server","perf","maxTotalUs"),2000000)
 	IF MAXT<10000 SET MAXT=2000000
 	SET MAXI=+$GET(CONF("server","perf","maxUsPerIter"),5000)
 	IF MAXI<100 SET MAXI=5000
+	SET MINDEN=+$GET(CONF("server","perf","minRatioDenominatorUs"),0)
+	IF MINDEN<0 SET MINDEN=0
 	;
 	NEW OK SET OK=1 D
 	. IF $DATA(R("scale","ratio")) DO
-	. . IF R("scale","ratio")>MAXR SET OK=0 DO ESET(.ERR,"MIOPERF","perf_ratio_regression",500) QUIT
-	. IF OK,$GET(R("us_total"))>MAXT SET OK=0 DO ESET(.ERR,"MIOPERF","perf_total_regression",500) QUIT
-	. IF OK,$GET(R("us_per_iter"))>MAXI SET OK=0 DO ESET(.ERR,"MIOPERF","perf_iter_regression",500) QUIT
+	. . IF MINDEN>0,$GET(R("scale","us_n"))<MINDEN QUIT
+	. . IF R("scale","ratio")>MAXR SET OK=0 DO ESET(.ERR,"MIOPERF","perf_ratio_regression",500) SET ERR("metric")="ratio",ERR("value")=R("scale","ratio"),ERR("limit")=MAXR QUIT
+	. IF OK,$GET(R("us_total"))>MAXT SET OK=0 DO ESET(.ERR,"MIOPERF","perf_total_regression",500) SET ERR("metric")="total",ERR("value")=$GET(R("us_total")),ERR("limit")=MAXT QUIT
+	. IF OK,$GET(R("us_per_iter"))>MAXI SET OK=0 DO ESET(.ERR,"MIOPERF","perf_iter_regression",500) SET ERR("metric")="iter",ERR("value")=$GET(R("us_per_iter")),ERR("limit")=MAXI QUIT
+	IF 'OK,$GET(R("name"))'="" SET ERR("case")=$GET(R("name"))
 	QUIT OK
 	;
 TRAP(R)
