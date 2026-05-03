@@ -410,3 +410,10 @@ Patient Registration now exposes import and reconciliation through the same tabl
 - `patient.export.selected`
 
 The browser should call these as mutation-only operations. Backend validation and permissions remain authoritative. `rows.export` remains the CSV-byte export action for selected rows.
+
+## ROI 72A stabilization notes
+
+- Patient Registration status transitions now expose `patient.review.active` and `patient.review.inactive` as MUMPS-owned table actions. `patient.bulk.active` marks selected patients active through the same backend mutation channel.
+- Table action feedback should be rendered as a floating modal toast. Do not reintroduce inline success text that shifts the table body.
+- Cell editors must keep compact save/cancel controls visible in narrow cells. Enter saves the active cell edit and Escape cancels it.
+- Select/multiselect Add Value remains a `column.option.add` mutation, not a browser-only option injection.

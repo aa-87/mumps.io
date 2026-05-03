@@ -428,9 +428,23 @@
         });
       },
       onWindowDragOver: function (win, event) {
-        if (!win || !(((this.boot || {}).desktop || {}).windowing || {}).dropUpload) return;
-        if (win.appKey !== 'my-computer' && win.appKey !== 'documents' && win.appKey !== 'explorer') return;
+        if (!win || !event || !(((this.boot || {}).desktop || {}).windowing || {}).dropUpload) return;
+        if (win.appKey !== 'my-computer' && win.appKey !== 'documents' && win.appKey !== 'explorer' && win.appKey !== 'home') return;
+        if (event.dataTransfer && event.dataTransfer.types && Array.prototype.indexOf.call(event.dataTransfer.types, 'Files') < 0) return;
         event.preventDefault();
+      },
+      onDesktopDragOver: function (event) {
+        if (!event || !(((this.boot || {}).desktop || {}).windowing || {}).dropUpload) return;
+        if (event.dataTransfer && event.dataTransfer.types && Array.prototype.indexOf.call(event.dataTransfer.types, 'Files') < 0) return;
+        event.preventDefault();
+      },
+      onDesktopDrop: function (event) {
+        var files;
+        if (!event) return;
+        files = (event.dataTransfer && event.dataTransfer.files) || [];
+        if (!files.length) return;
+        event.preventDefault();
+        if (this.uploadFilesToDesktop) this.uploadFilesToDesktop(files);
       },
       createWindowForApp: function (app, options) {
         options = options || {};
@@ -478,7 +492,7 @@
         files = (event.dataTransfer && event.dataTransfer.files) || [];
         if (!files.length) return;
         event.preventDefault();
-        if ((win.appKey === 'my-computer' || win.appKey === 'documents' || win.appKey === 'explorer') && this.uploadFilesToExplorer) {
+        if ((win.appKey === 'my-computer' || win.appKey === 'documents' || win.appKey === 'explorer' || win.appKey === 'home') && this.uploadFilesToExplorer) {
           this.uploadFilesToExplorer(win.id, files);
         }
       }

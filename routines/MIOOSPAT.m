@@ -214,9 +214,12 @@ PATMETA(OUT,ROOT)
 	SET OUT("rowActions",5,"key")="patient.duplicate.clear",OUT("rowActions",5,"label")="Not duplicate"
 	SET OUT("rowActions",6,"key")="patient.review.needs-correction",OUT("rowActions",6,"label")="Needs correction"
 	SET OUT("rowActions",7,"key")="patient.review.pending",OUT("rowActions",7,"label")="Send to review"
+	SET OUT("rowActions",8,"key")="patient.review.active",OUT("rowActions",8,"label")="Mark active"
+	SET OUT("rowActions",9,"key")="patient.review.inactive",OUT("rowActions",9,"label")="Mark inactive"
 	SET OUT("bulkActions",3,"key")="patient.bulk.pending",OUT("bulkActions",3,"label")="Send selected to review"
 	SET OUT("bulkActions",4,"key")="patient.bulk.needs-correction",OUT("bulkActions",4,"label")="Flag selected"
-	SET OUT("bulkActions",5,"key")="patient.export.selected",OUT("bulkActions",5,"label")="Export selected patients"
+	SET OUT("bulkActions",5,"key")="patient.bulk.active",OUT("bulkActions",5,"label")="Mark selected active"
+	SET OUT("bulkActions",6,"key")="patient.export.selected",OUT("bulkActions",6,"label")="Export selected patients"
 	QUIT
 	;
 QUEUEMETA(ROOT,Q)
@@ -310,8 +313,8 @@ PERMACT(ACTION)
 	IF A="row.add" QUIT "create"
 	IF A="row.save"!(A="row.update")!(A="cell.save") QUIT "write"
 	IF A="patient.duplicate.mark"!(A="patient.duplicate.clear") QUIT "review"
-	IF A="patient.review.needs-correction"!(A="patient.review.pending")!(A="patient.review.draft") QUIT "review"
-	IF A="patient.bulk.pending"!(A="patient.bulk.needs-correction") QUIT "review"
+	IF A="patient.review.needs-correction"!(A="patient.review.pending")!(A="patient.review.draft")!(A="patient.review.active")!(A="patient.review.inactive") QUIT "review"
+	IF A="patient.bulk.pending"!(A="patient.bulk.needs-correction")!(A="patient.bulk.active") QUIT "review"
 	IF A="patient.import.preview" QUIT "read"
 	IF A="patient.import.commit" QUIT "create"
 	IF A="patient.reconcile.report" QUIT "review"
@@ -468,13 +471,18 @@ PATACTION(ROOT,ACTION,IN,OUT,STATE)
 	. SET ID=$GET(IN("rowId"),$GET(IN("id"))) DO SETQUEUE(ROOT,ID,"Needs Correction",.OUT,.STATE)
 	IF A="patient.review.pending" DO  QUIT
 	. SET ID=$GET(IN("rowId"),$GET(IN("id"))) DO SETSTATUS(ROOT,ID,"Pending Review",.OUT,.STATE)
+	IF A="patient.review.active" DO  QUIT
+	. SET ID=$GET(IN("rowId"),$GET(IN("id"))) DO SETACTIVE(ROOT,ID,.OUT,.STATE)
+	IF A="patient.review.inactive" DO  QUIT
+	. SET ID=$GET(IN("rowId"),$GET(IN("id"))) DO SETSTATUS(ROOT,ID,"Inactive",.OUT,.STATE)
 	IF A="patient.review.draft" DO  QUIT
 	. SET ID=$GET(IN("rowId"),$GET(IN("id"))) DO SETSTATUS(ROOT,ID,"Draft",.OUT,.STATE)
-	IF A="patient.bulk.pending"!(A="patient.bulk.needs-correction") DO  QUIT
+	IF A="patient.bulk.pending"!(A="patient.bulk.needs-correction")!(A="patient.bulk.active") DO  QUIT
 	. SET COUNT=0,I=0 FOR  SET I=$ORDER(IN("ids",I)) QUIT:I'>0  DO
 	. . SET ID=$GET(IN("ids",I)) QUIT:ID=""
 	. . IF A="patient.bulk.pending" DO SETSTATUS(ROOT,ID,"Pending Review",.OUT,.STATE)
 	. . IF A="patient.bulk.needs-correction" DO SETQUEUE(ROOT,ID,"Needs Correction",.OUT,.STATE)
+	. . IF A="patient.bulk.active" DO SETACTIVE(ROOT,ID,.OUT,.STATE)
 	. . SET COUNT=COUNT+1
 	. SET OUT("mutated","count")=COUNT
 	QUIT
@@ -569,6 +577,16 @@ SETQUEUE(ROOT,ID,QUEUE,OUT,STATE)
 	SET @ROOT@("rows",I,"reviewNote")=$GET(@ROOT@("rows",I,"reviewNote"))_$SELECT($GET(@ROOT@("rows",I,"reviewNote"))'="":" ",1:"")_"Needs correction review flag set."
 	DO STAMP(ROOT,I,.STATE)
 	SET OUT("mutated","rowId")=ID,OUT("mutated","patientAction")="reviewQueue",OUT("message")="Patient review queue updated"
+	QUIT
+	;
+SETACTIVE(ROOT,ID,OUT,STATE)
+	NEW I
+	SET I=$$ROWIDX(ROOT,ID) IF I'>0 QUIT
+	SET @ROOT@("rows",I,"consent")="Yes"
+	SET @ROOT@("rows",I,"status")="Active"
+	SET @ROOT@("rows",I,"reviewNote")=$GET(@ROOT@("rows",I,"reviewNote"))_$SELECT($GET(@ROOT@("rows",I,"reviewNote"))'="":" ",1:"")_"Marked active through reviewed patient action."
+	DO STAMP(ROOT,I,.STATE),REVIEWROW(ROOT,I)
+	SET OUT("mutated","rowId")=ID,OUT("mutated","patientAction")="active",OUT("message")="Patient marked active"
 	QUIT
 	;
 SETSTATUS(ROOT,ID,STATUS,OUT,STATE)

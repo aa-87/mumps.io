@@ -646,3 +646,11 @@ Follow-up table type ROIs should expand the cell editor matrix and patient-speci
 - Restored desktop VM helper methods that Vue shell components call during first paint (`desktopIconClass`, `desktopIconStyle`, icon drag handlers, desktop layout persistence, and safe global pointer/resize handlers).
 - Hardened shell icon rendering so a missing helper cannot freeze Explorer during mount.
 - Regression coverage now checks the first-paint desktop helper contract in `MIOOST` T020.
+
+## ROI 72A shell/table stabilization before terminal rewrite
+
+The current shell/table stabilization fixes several regression-prone areas after ROI 72. The media/text viewer template must not use quoted object-literal keys inside a double-quoted Vue binding; use safe computed class bindings such as `viewerBodyClass`. Window control buttons should stop pointer events before the titlebar drag handler. Desktop and Explorer folder drag/drop should pass all dropped files through the upload pipeline, and the file picker should allow multiple files.
+
+Advanced Table cell editing keeps compact `✓` and `×` controls visible in narrow cells, binds Enter to save and Escape to cancel, and emits table action feedback through a floating modal toast rather than inline layout-shifting text. Patient Registration now has server-side `patient.review.active` / `patient.review.inactive` actions and a bulk active action before terminal rewrite work continues.
+
+Terminal rewrite work is planned as separate follow-up ROIs: T1 transport foundation, T2 profiles/customization, T3 startup automation sequences, and T4 hardening. Do not mix the full terminal backend rewrite into unrelated patient/table stabilization packages.

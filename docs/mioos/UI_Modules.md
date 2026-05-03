@@ -125,3 +125,10 @@ The Table Module Definition editor is intentionally styled as a system modal wit
 The Table Module Definition modal now validates imported JSON before calling the backend, downloads exported JSON locally, and closes on Escape. It should remain usable even when the window cannot be resized enough to expose the close button.
 
 Table module column type choices include patient-centric and basic table editor types such as `mrn`, `state`, `gender`, `phone`, `email`, `zip`, `dob`, `multiselect`, `currency`, `percent`, `time`, and `datetime`.
+
+## ROI 72A shell/UI stabilization notes
+
+- The Start Menu uses a compact Windows 98-style list treatment for high-density catalog data.
+- Media/text/PDF viewer templates must use safe Vue bindings and must not place quoted object-literal keys directly inside double-quoted template attributes.
+- Explorer upload entry points accept multiple files from the picker and from drag/drop onto Explorer windows or the desktop.
+- Window controls stop pointer events before titlebar dragging to avoid maximize/close render conflicts.

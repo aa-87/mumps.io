@@ -3342,3 +3342,117 @@ button:disabled { cursor: default; opacity: .55; }
   .mioos-classic-transferrow { display: grid; grid-template-columns: 1fr; gap: 6px; }
   .mioos-classic-transferactions { justify-content: flex-start; }
 }
+
+/* ROI 72A stabilization: Windows 98 dense start menu, fixed cell-editor controls, and modal toast feedback. */
+.mioos-start-menu-vue,
+.mioos-start-menu-vue.style-classic,
+.mioos-start-menu-vue.style-modern,
+.mioos-start-menu-vue.style-compact {
+  width: min(290px, calc(100vw - 14px));
+  max-height: calc(100vh - var(--taskbar-height, 48px) - 10px);
+  border-radius: 0;
+  border: 2px outset #f0f0f0;
+  background: #c0c0c0;
+  color: #000;
+  box-shadow: 3px 3px 0 rgba(0,0,0,.45);
+  backdrop-filter: none;
+  font-family: Tahoma, "MS Sans Serif", var(--font-menu, sans-serif);
+  font-size: 11px;
+}
+.mioos-start-head-vue {
+  min-height: 24px;
+  padding: 3px 5px;
+  gap: 5px;
+  border-bottom: 1px solid #808080;
+  background: linear-gradient(90deg, #000080, #1084d0);
+  color: #fff;
+}
+.mioos-start-avatar-vue { width: 20px; height: 20px; border-radius: 0; background: #c0c0c0; color: #000; border: 1px outset #fff; font-size: 11px; }
+.mioos-start-head-vue strong { font-size: 11px; line-height: 1.1; }
+.mioos-start-head-vue span { display: none; }
+.mioos-start-search-vue { grid-template-columns: 14px 1fr; gap: 2px; margin: 3px 4px; }
+.mioos-start-search-vue input { height: 20px; border-radius: 0; border: 2px inset #fff; padding: 0 4px; font-size: 11px; background: #fff; color: #000; }
+.mioos-start-body-vue { grid-template-columns: minmax(0,1fr); gap: 0; padding: 1px 2px 3px; }
+.mioos-start-side-vue { display: none !important; }
+.mioos-start-list-vue { max-height: calc(100vh - var(--taskbar-height, 48px) - 72px); overflow: auto; padding: 0; }
+.mioos-start-group-vue { border: 0; padding: 0; }
+.mioos-start-group-vue summary { min-height: 20px; padding: 1px 3px; border-radius: 0; font-weight: 700; color: #000; }
+.mioos-start-group-vue summary:hover { background: #000080; color: #fff; }
+.mioos-start-group-vue summary::before { content: '▸'; display: inline-block; width: 12px; margin: 0 2px 0 0; }
+.mioos-start-group-vue[open] summary::before { content: '▾'; }
+.mioos-start-group-vue summary span { display: none !important; }
+.mioos-start-group-items-vue { gap: 0; }
+.mioos-start-entry-vue { grid-template-columns: 20px minmax(0,1fr); min-height: 22px; padding: 1px 4px 1px 14px; gap: 3px; border: 0; border-radius: 0; background: transparent; color: #000; box-shadow: none; }
+.mioos-start-entry-vue:hover,
+.mioos-start-entry-vue.is-selected { background: #000080; color: #fff; border-color: transparent; }
+.mioos-start-entry-icon { width: 18px; height: 18px; font-size: 15px; }
+.mioos-start-entry-vue strong { font-size: 11px; font-weight: 400; }
+.mioos-start-entry-vue em { display: none !important; }
+.mioos-start-user-vue { padding: 3px 5px; border-top: 1px solid #808080; background: #c0c0c0; }
+
+.mioos-full-table { position: relative; }
+.mioos-table-toast-modal {
+  position: fixed;
+  right: 18px;
+  bottom: calc(var(--taskbar-height, 48px) + 18px);
+  z-index: 12000;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: min(420px, calc(100vw - 28px));
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(34,197,94,.45);
+  background: rgba(15, 23, 42, .96);
+  color: #f8fafc;
+  box-shadow: 0 18px 45px rgba(0,0,0,.32);
+  pointer-events: auto;
+}
+.mioos-table-toast-modal button { width: 22px; height: 22px; min-width: 22px; padding: 0; border-radius: 999px; border: 1px solid rgba(255,255,255,.28); background: rgba(255,255,255,.12); color: inherit; font-weight: 800; }
+
+.mioos-table-grid td.is-cell-editing,
+.mioos-table-grid td.is-cell-editable.is-cell-editing { overflow: visible; z-index: 18; }
+.mioos-table-cell-editor {
+  grid-template-columns: minmax(52px, 1fr) auto;
+  align-items: start;
+  gap: 4px;
+  min-width: max(98px, 100%);
+  width: max-content;
+  max-width: min(360px, calc(100vw - 34px));
+  overflow: visible;
+}
+.mioos-table-cell-editor input,
+.mioos-table-cell-editor select,
+.mioos-table-cell-editor textarea {
+  grid-column: 1;
+  min-width: 52px !important;
+  max-width: 240px;
+  box-sizing: border-box;
+}
+.mioos-table-cell-editor textarea { min-height: 52px; }
+.mioos-table-cell-editor .mioos-table-inline-link,
+.mioos-table-cell-editor .mioos-field-error { grid-column: 1 / -1; }
+.mioos-table-cell-actions {
+  grid-column: 2;
+  grid-row: 1;
+  position: sticky;
+  right: 2px;
+  display: inline-flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  gap: 2px;
+  padding: 1px;
+  border-radius: 999px;
+  background: rgba(248,250,252,.96);
+  box-shadow: 0 2px 8px rgba(15,23,42,.16);
+  z-index: 20;
+}
+.mioos-table-cell-action { width: 20px; height: 20px; min-width: 20px; font-size: 12px; touch-action: manipulation; }
+@media (pointer: coarse) {
+  .mioos-table-cell-actions { flex-direction: row; gap: 4px; }
+  .mioos-table-cell-action { width: 28px; height: 28px; min-width: 28px; font-size: 15px; }
+  .mioos-table-cell-editor { grid-template-columns: minmax(84px,1fr) auto; }
+}
+
+.mioos-desktop-surface.is-drop-target,
+.mioos-window-vue.is-drop-target { outline: 2px dashed var(--accent, #2563eb); outline-offset: -6px; }

@@ -65,6 +65,7 @@ MIOOST ; MIOOS tests
 	DO T073
 	DO T074
 	DO T075
+	DO T076
 	QUIT
 	;
 RESET
@@ -1449,6 +1450,21 @@ T075
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","ROI 71: compact cell edit controls"),"[MIOOST][T075][roi71 css]")
 	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/ROI_71_Patient_Registration_Permissions_PHI_Hardening.md","ROI 71"),"[MIOOST][T075][roi71 docs]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 71 patient registration"),"[MIOOST][T075][llm roi71]")
+	QUIT
+	;
+	;
+
+T076
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","viewerBodyClass"),"[MIOOST][T076][viewer safe class binding]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","onDesktopDrop"),"[MIOOST][T076][desktop drop upload hook]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_wm.js","onDesktopDrop"),"[MIOOST][T076][desktop drop upload method]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","multiple = true"),"[MIOOST][T076][multi file picker]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","uploadFilesToFolderId"),"[MIOOST][T076][folder id upload target]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableDismissToast"),"[MIOOST][T076][toast modal dismiss]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","patient.review.active"),"[MIOOST][T076][patient mark active action]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSPAT.m","SETACTIVE"),"[MIOOST][T076][patient mark active backend]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","Windows 98 dense start menu"),"[MIOOST][T076][win98 dense start menu]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","mioos-table-toast-modal"),"[MIOOST][T076][modal toast css]")
 	QUIT
 	;
 	;

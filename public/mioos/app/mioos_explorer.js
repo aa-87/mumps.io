@@ -189,6 +189,7 @@
   function createUploadInput(onchange) {
     var input = document.createElement('input');
     input.type = 'file';
+    input.multiple = true;
     input.style.position = 'fixed';
     input.style.left = '-9999px';
     input.style.top = '-9999px';
@@ -220,7 +221,7 @@
 
   function pickUploadEntries(vm) {
     if (window.showOpenFilePicker) {
-      return window.showOpenFilePicker({ multiple: false }).then(function (handles) {
+      return window.showOpenFilePicker({ multiple: true }).then(function (handles) {
         handles = Array.isArray(handles) ? handles : [];
         return Promise.all(handles.map(function (handle) {
           return Promise.resolve(handle.getFile()).then(function (file) {
@@ -231,9 +232,10 @@
     }
     return new Promise(function (resolve) {
       createUploadInput(function (event) {
-        var file = event.target.files && event.target.files[0];
+        var files = event.target.files || [];
+        var picked = Array.prototype.slice.call(files).map(function (file) { return { file: file, handle: null }; });
         if (event.target && event.target.parentNode) event.target.parentNode.removeChild(event.target);
-        resolve(file ? [{ file: file, handle: null }] : []);
+        resolve(picked);
       });
     });
   }
@@ -1085,6 +1087,29 @@
           out.push(entry && entry.file ? entry : { file: entry, name: entry && entry.name, size: entry && entry.size, type: entry && entry.type });
         }
         return out;
+      },
+      uploadFilesToFolderId: function (folderId, filesLike, sourceWindowId) {
+        var id, win, result;
+        if (!folderId || !this.uploadFilesToExplorer) return Promise.resolve(null);
+        id = 'win-upload-target-' + Date.now() + '-' + Math.floor(Math.random() * 10000);
+        win = { id: id, appKey: 'explorer', title: 'Upload target', state: 'closed', left: 0, top: 0, width: 1, height: 1, z: 0, meta: { folderId: folderId, sourceWindowId: sourceWindowId || '' } };
+        this.windows.push(win);
+        this.ensureExplorerWindowState(win);
+        win.explorerState.folderId = folderId;
+        win.explorerState.folder = { id: folderId, name: 'Upload target', path: '' };
+        result = this.uploadFilesToExplorer(id, filesLike);
+        return Promise.resolve(result).finally(function () {
+          var idx = this.windows.indexOf(win);
+          if (idx >= 0) this.windows.splice(idx, 1);
+        }.bind(this));
+      },
+      uploadFilesToDesktop: function (filesLike) {
+        var folderId = this.desktopFolderId ? this.desktopFolderId() : ((((this.boot || {}).vfs || {}).desktopId) || 'desktop');
+        var self = this;
+        return this.uploadFilesToFolderId(folderId, filesLike, '').then(function (value) {
+          if (self.refreshDesktopVfsViews) self.refreshDesktopVfsViews();
+          return value;
+        });
       },
       openFilePropertiesWindow: function (item) {
         var target = clone(item || {});

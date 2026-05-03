@@ -99,6 +99,10 @@ MIOOS is a MUMPS-powered desktop shell for the MIO web stack.
 - `docs/mioos/Internal_Doc.md` — architecture and subsystem notes
 - `docs/mioos/HIPAA.md` — HIPAA-aware technical posture and limits
 
+## ROI 72A stabilization note
+
+Shell/table stabilization before the terminal rewrite added dense Windows 98-style Start Menu treatment, safe media viewer bindings, multi-file upload from picker/folder/desktop drag-drop, compact cell editor controls with Enter/Escape shortcuts, floating table toast feedback, and Patient Registration Mark active/Mark inactive actions. See `ROI_72A_Shell_Table_Terminal_Stabilization.md`.
+
 ## Current terminal posture
 
 ROI 4 lands an xterm.js terminal foundation with websocket command handling and multi-window session creation.

@@ -95,7 +95,7 @@
             '<start-menu-popup v-if="vm.menuOpen"></start-menu-popup>' +
             '<popup-menu v-if="vm.desktopContextMenuState().open"></popup-menu>' +
             '<div v-if="vm.snapPreview.active" class="mioos-snap-preview" :data-snap-zone="vm.snapPreview.zone" :style="vm.snapPreviewStyle()"></div>' +
-            '<div class="mioos-desktop-surface" :class="{ \'pointer-events-none\': vm.dragState.active }">' +
+            '<div class="mioos-desktop-surface" :class="{ \'pointer-events-none\': vm.dragState.active }" @dragover.prevent="vm.onDesktopDragOver($event)" @drop.prevent="vm.onDesktopDrop($event)">' +
               '<desktop-icon v-for="entry in vm.desktopRenderEntries()" :key="entry.key" :icon="entry"></desktop-icon>' +
             '</div>' +
             '<window-frame v-for="win in vm.visibleWindows" :key="win.id" :window="win"></window-frame>' +
@@ -172,9 +172,9 @@
             '<header class="mioos-titlebar-vue" :class="[\'is-\' + family]" @mousedown.stop="vm.beginDrag(window, $event)" @dblclick.stop="vm.onWindowTitleDblClick(window.id)">' +
               '<div class="mioos-titlebar-copy-vue"><span class="mioos-titlebar-icon">[[ vm.appIcon(window.appKey) ]]</span><strong>[[ window.title ]]</strong></div>' +
               '<div class="mioos-window-actions-vue">' +
-                '<button type="button" class="mioos-window-control is-minimize" :title="vm.t(\'action.minimize\')" @click.stop="vm.minimizeWindow(window.id)"><span>—</span></button>' +
-                '<button type="button" class="mioos-window-control is-maximize" :title="vm.windowToggleLabel(window)" @click.stop="vm.toggleMaximize(window.id)"><span>□</span></button>' +
-                '<button type="button" class="mioos-window-control is-close" :title="vm.t(\'action.close\')" @click.stop="vm.closeWindow(window.id)"><span>×</span></button>' +
+                '<button type="button" class="mioos-window-control is-minimize" :title="vm.t(\'action.minimize\')" @mousedown.stop @pointerdown.stop @click.stop="vm.minimizeWindow(window.id)"><span>—</span></button>' +
+                '<button type="button" class="mioos-window-control is-maximize" :title="vm.windowToggleLabel(window)" @mousedown.stop @pointerdown.stop @click.stop="vm.toggleMaximize(window.id)"><span>□</span></button>' +
+                '<button type="button" class="mioos-window-control is-close" :title="vm.t(\'action.close\')" @mousedown.stop @pointerdown.stop @click.stop="vm.closeWindow(window.id)"><span>×</span></button>' +
               '</div>' +
             '</header>' +
             '<div class="mioos-window-content-vue"><component :is="contentComponent" :window="window"></component></div>' +
@@ -733,12 +733,13 @@
           isVideo: function () { return this.mime.indexOf('video/') === 0; },
           isAudio: function () { return this.mime.indexOf('audio/') === 0; },
           isPdf: function () { return this.window.appKey === 'pdf-viewer' || this.mime === 'application/pdf'; },
+          viewerBodyClass: function () { return (this.isImage || this.isVideo || this.isAudio || this.isPdf) ? 'is-media' : ''; },
           content: function () { return this.view.content || this.view.text || this.view.data || this.view.url || this.view.imageSrc || this.view.mediaSrc || ''; }
         },
         template: '' +
           '<div class="mioos-surface mioos-surface-viewer">' +
-            '<div class="mioos-surface-toolbar"><strong>[[ title ]]</strong><span class="mioos-surface-status">[[ mime || "file" ]]</span><button type="button" class="mioos-btn" v-if="view.downloadUrl" @click="window.open(view.downloadUrl, \"_blank\")">Download</button></div>' +
-            '<div class="mioos-viewer-body" :class="{ \"is-media\": isImage || isVideo || isAudio || isPdf }">' +
+            '<div class="mioos-surface-toolbar"><strong>[[ title ]]</strong><span class="mioos-surface-status">[[ mime || "file" ]]</span><button type="button" class="mioos-btn" v-if="view.downloadUrl || ((window || {}).meta || {}).fileId" @click="vm.downloadViewerFile(window)">Download</button></div>' +
+            '<div class="mioos-viewer-body" :class="viewerBodyClass">' +
               '<p v-if="view.loading" class="mioos-classic-empty">Loading file…</p>' +
               '<p v-else-if="view.error" class="mioos-ui-module-error">[[ view.error ]]</p>' +
               '<img v-else-if="isImage && content" class="mioos-viewer-image" :src="content" :alt="title">' +
