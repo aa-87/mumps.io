@@ -425,3 +425,7 @@ Patient Registration now has a direct shell entry point (`patient-registration` 
 ### ROI 71 Patient Registration permissions and PHI hardening
 
 ROI 71 gates Patient Registration launch, query, mutation, export, delete, and review actions on the server through `MIOOSPAT`. Unauthorized requests are denied before patient rows load; limited read roles receive masked PHI rows; Add Row is now queue-aware; inline cell edit buttons use compact checkmark/cancel controls.
+
+## ROI 72 update
+
+Patient Registration includes import preview/commit and reconciliation report actions. The shell also received regression fixes for table modals, the Start Menu, context menus, double-click maximize/restore, media/text viewers, desktop icon placement, and transfer list responsiveness.

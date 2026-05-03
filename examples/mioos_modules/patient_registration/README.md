@@ -93,3 +93,22 @@ DO ^MIOOST
 ### Important safety note
 
 This sample uses synthetic data and demonstrates a HIPAA-ready architecture pattern only. Do not use it with real PHI until operational, security, deployment, and compliance controls have been implemented and validated.
+
+## ROI 72 CSV import and reconciliation
+
+Use the Patient Registration table toolbar:
+
+1. Open **Patient Registration** from the Start Menu or App Catalogue.
+2. Choose **Patient import**.
+3. Paste CSV with headers such as:
+
+```csv
+mrn,lastName,firstName,dob,phone,email,state,zip,status,consent
+P100,Doe,Jane,1980-01-01,555-0100,jane@example.invalid,NY,10001,Draft,No
+```
+
+4. Click **Preview** to validate rows without committing.
+5. Click **Commit valid rows** to add valid rows.
+6. Use **Reconcile** to generate duplicate-candidate reports.
+
+All import and reconciliation operations go through MUMPS table mutations and server-side validation.

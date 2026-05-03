@@ -144,9 +144,9 @@
           this.initSocket().catch(function () {});
           if (this.startTerminalPolling) this.startTerminalPolling();
         }
-        this._dragMove = this.handleGlobalMouseMove.bind(this);
-        this._dragEnd = this.handleGlobalMouseUp.bind(this);
-        this._viewportResize = this.handleViewportResize.bind(this);
+        this._dragMove = (this.handleGlobalMouseMove || function () {}).bind(this);
+        this._dragEnd = (this.handleGlobalMouseUp || function () {}).bind(this);
+        this._viewportResize = (this.handleViewportResize || function () { if (this.ensureDesktopLayout) this.ensureDesktopLayout(); }).bind(this);
         window.addEventListener('mousemove', this._dragMove);
         window.addEventListener('mouseup', this._dragEnd);
         window.addEventListener('pointermove', this._dragMove);
@@ -154,6 +154,8 @@
         window.addEventListener('pointercancel', this._dragEnd);
         this._shortcutHandler = this.onGlobalShortcut.bind(this);
         window.addEventListener('keydown', this._shortcutHandler);
+        this._globalClickCloser = this.handleGlobalClickClose.bind(this);
+        window.addEventListener('mousedown', this._globalClickCloser, true);
         this._persistTransfersOnUnload = this.persistTransferCenter.bind(this);
         this._networkOffline = function () {
           if (self.autoPauseTransfersByReason) self.autoPauseTransfersByReason('Paused (connection lost)', 'upload');
@@ -161,7 +163,7 @@
         this._networkOnline = function () {
           if (self.persistTransferCenter) self.persistTransferCenter();
         };
-        this._windowBlurDragEnd = this.handleGlobalMouseUp.bind(this);
+        this._windowBlurDragEnd = (this.handleGlobalMouseUp || function () {}).bind(this);
         window.addEventListener('blur', this._windowBlurDragEnd);
         window.addEventListener('resize', this._viewportResize);
         window.addEventListener('beforeunload', this._persistTransfersOnUnload);
@@ -185,6 +187,7 @@
         window.removeEventListener('pointerup', this._dragEnd);
         window.removeEventListener('pointercancel', this._dragEnd);
         window.removeEventListener('keydown', this._shortcutHandler);
+        window.removeEventListener('mousedown', this._globalClickCloser, true);
         window.removeEventListener('blur', this._windowBlurDragEnd);
         window.removeEventListener('resize', this._viewportResize);
         window.removeEventListener('beforeunload', this._persistTransfersOnUnload);
@@ -514,9 +517,27 @@
           if ((this.windows || []).some(function (win) { return win.appKey === 'diagnostics'; })) this.openApp('diagnostics');
           else if ((this.windows || []).some(function (win) { return win.appKey === 'debug-center'; })) this.openApp('debug-center');
         },
+        handleGlobalClickClose: function (event) {
+          var target = event && event.target;
+          if (!target) return;
+          if (target.closest && (target.closest('.mioos-context-menu') || target.closest('.mioos-popup-menu-vue') || target.closest('.mioos-explorer-context-menu') || target.closest('.mioos-start-menu-vue') || target.closest('.mioos-start-button-vue'))) return;
+          this.closeAllContextMenus();
+        },
+        closeAllContextMenus: function () {
+          var closed = false;
+          if (this.menuOpen) { this.menuOpen = false; closed = true; }
+          if (this.desktopUi && this.desktopUi.contextMenu && this.desktopUi.contextMenu.open) { this.desktopUi.contextMenu.open = false; closed = true; }
+          if (this.explorerUi && this.explorerUi.contextMenu && this.explorerUi.contextMenu.open) { this.explorerUi.contextMenu.open = false; closed = true; }
+          return closed;
+        },
         onGlobalShortcut: function (event) {
           var key = String((event && event.key) || '').toLowerCase();
           if (!event) return;
+          if (key === 'escape') {
+            if (this.backendTableCloseAllTopDialogs && this.backendTableCloseAllTopDialogs()) { event.preventDefault(); event.stopPropagation(); return; }
+            if (this.closeAllContextMenus && this.closeAllContextMenus()) { event.preventDefault(); event.stopPropagation(); return; }
+            if (this.menuOpen) { this.menuOpen = false; event.preventDefault(); event.stopPropagation(); return; }
+          }
           if ((event.metaKey || event.ctrlKey) && !event.shiftKey && key === 'd') {
             event.preventDefault();
             this.showDesktop();
@@ -1087,58 +1108,73 @@
         ensureDesktopLayout: function () {
           var self = this;
           var metrics = this.desktopGridMetrics();
-          var col = 0;
-          var row = 0;
           var viewportHeight = this.desktopViewportHeight();
+          var maxRows = Math.max(1, Math.floor((viewportHeight - 16) / Math.max(1, metrics.height)));
+          var occupied = {};
           if (!this.desktopUi.positions) this.desktopUi.positions = {};
-          (this.desktopRenderEntries ? this.desktopRenderEntries() : (this.desktopEntries || [])).forEach(function (entry) {
+          var entries = this.desktopRenderEntries ? this.desktopRenderEntries() : (this.desktopEntries || []);
+          entries.forEach(function (entry) {
+            var pos = entry && entry.key && self.desktopUi.positions[entry.key];
+            if (!pos) return;
+            var c = Math.max(0, Math.round(((+pos.left || 16) - 16) / Math.max(1, metrics.width)));
+            var r = Math.max(0, Math.round(((+pos.top || 16) - 16) / Math.max(1, metrics.height)));
+            occupied[c + ':' + r] = 1;
+          });
+          function nextSlot() {
+            var c = 0, r = 0;
+            while (occupied[c + ':' + r]) { r += 1; if (r >= maxRows) { r = 0; c += 1; } }
+            occupied[c + ':' + r] = 1;
+            return { left: 16 + (c * metrics.width), top: 16 + (r * metrics.height) };
+          }
+          entries.forEach(function (entry) {
             if (!entry || !entry.key) return;
             if (!self.desktopUi.positions[entry.key]) {
               var hasExplicitLeft = entry.iconLeft !== undefined && entry.iconLeft !== null && entry.iconLeft !== '';
               var hasExplicitTop = entry.iconTop !== undefined && entry.iconTop !== null && entry.iconTop !== '';
               var left = hasExplicitLeft ? +entry.iconLeft : NaN;
               var top = hasExplicitTop ? +entry.iconTop : NaN;
-              if (!(hasExplicitLeft && hasExplicitTop && isFinite(left) && isFinite(top) && left >= 0 && top >= 0)) {
-                left = 16 + (col * metrics.width);
-                top = 16 + (row * metrics.height);
-                row += 1;
-                if ((16 + ((row + 1) * metrics.height)) > viewportHeight) { row = 0; col += 1; }
-              }
-              self.desktopUi.positions[entry.key] = { left: left, top: top };
+              self.desktopUi.positions[entry.key] = (hasExplicitLeft && hasExplicitTop && isFinite(left) && isFinite(top) && left >= 0 && top >= 0) ? { left: left, top: top } : nextSlot();
             }
           });
           Object.keys(this.desktopUi.positions).forEach(function (key) {
-            var exists = (self.desktopRenderEntries ? self.desktopRenderEntries() : (self.desktopEntries || [])).some(function (entry) { return entry.key === key; });
+            var exists = entries.some(function (entry) { return entry.key === key; });
             if (!exists) delete self.desktopUi.positions[key];
           });
           this.sortDesktopEntries(this.desktopUi.sortMode || 'manual', true);
         },
+
         desktopIconStyle: function (entry) {
-          var pos = ((this.desktopUi || {}).positions || {})[entry.key] || { left: 16, top: 16 };
+          var key = entry && entry.key;
+          var pos = key ? (((this.desktopUi || {}).positions || {})[key] || { left: 16, top: 16 }) : { left: 16, top: 16 };
           var left = isFinite(+pos.left) ? +pos.left : 16;
           var top = isFinite(+pos.top) ? +pos.top : 16;
           return { '--x': (left + 'px'), '--y': (top + 'px'), transform: 'translate(var(--x), var(--y))' };
         },
         desktopIconClass: function (entry) {
+          var key = entry && entry.key;
+          var ui = this.desktopUi || {};
           return {
-            'is-selected': ((this.desktopUi || {}).selectedKey || '') === entry.key,
-            'is-small': (this.desktopUi.iconSize || 'medium') === 'small',
-            'is-large': (this.desktopUi.iconSize || 'medium') === 'large'
+            'is-selected': (ui.selectedKey || '') === key,
+            'is-small': (ui.iconSize || 'medium') === 'small',
+            'is-large': (ui.iconSize || 'medium') === 'large'
           };
         },
         selectDesktopEntry: function (entry) {
+          if (!this.desktopUi) this.normalizeDesktopUiState();
           this.desktopUi.selectedKey = entry && entry.key ? entry.key : '';
         },
         beginDesktopIconDrag: function (entry, event) {
           var pos;
           if (!entry || !entry.key || !event || event.button !== 0) return;
-          this.closeDesktopContextMenu();
+          if (this.closeDesktopContextMenu) this.closeDesktopContextMenu();
           this.selectDesktopEntry(entry);
-          pos = (this.desktopUi.positions || {})[entry.key] || { left: 16, top: 16 };
+          if (!this.desktopUi.positions) this.desktopUi.positions = {};
+          pos = this.desktopUi.positions[entry.key] || { left: 16, top: 16 };
           this.desktopUi.drag = { armed: true, active: false, moved: false, key: entry.key, startX: event.clientX, startY: event.clientY, left: +pos.left || 16, top: +pos.top || 16 };
         },
         handleGlobalMouseMove: function (event) {
           var self = this;
+          if (!event) return;
           if (!((this.dragState && this.dragState.active) || (((this.desktopUi || {}).drag || {}).armed))) return;
           this._queuedPointer = { clientX: event.clientX, clientY: event.clientY };
           if (this._dragRaf) return;
@@ -1146,7 +1182,7 @@
             var next = self._queuedPointer || { clientX: event.clientX, clientY: event.clientY };
             self._dragRaf = 0;
             if (self.onDragMove) self.onDragMove(next);
-            self.onDesktopIconMove(next);
+            if (self.onDesktopIconMove) self.onDesktopIconMove(next);
           });
         },
         handleGlobalMouseUp: function (event) {
@@ -1155,42 +1191,46 @@
             this._dragRaf = 0;
             if (this._queuedPointer) {
               if (this.onDragMove) this.onDragMove(this._queuedPointer);
-              this.onDesktopIconMove(this._queuedPointer);
+              if (this.onDesktopIconMove) this.onDesktopIconMove(this._queuedPointer);
             }
           }
           this._queuedPointer = null;
           if (this.endDrag) this.endDrag(event);
-          this.endDesktopIconDrag(event);
+          if (this.endDesktopIconDrag) this.endDesktopIconDrag(event);
+        },
+        handleViewportResize: function () {
+          if (this.ensureDesktopLayout) this.ensureDesktopLayout();
         },
         onDesktopIconMove: function (event) {
-          var drag = this.desktopUi.drag || {};
+          var drag = ((this.desktopUi || {}).drag) || {};
           var dx, dy, pos;
-          if (!drag.armed || !drag.key) return;
+          if (!drag.armed || !drag.key || !event) return;
           dx = event.clientX - (+drag.startX || 0);
           dy = event.clientY - (+drag.startY || 0);
           if (!drag.active && ((Math.abs(dx) > 4) || (Math.abs(dy) > 4))) drag.active = true;
           if (!drag.active) return;
           drag.moved = true;
+          if (!this.desktopUi.positions) this.desktopUi.positions = {};
           pos = this.desktopUi.positions[drag.key] || { left: drag.left || 16, top: drag.top || 16 };
           pos.left = Math.max(8, (drag.left || 16) + dx);
           pos.top = Math.max(8, Math.min(this.desktopViewportHeight() - this.desktopGridMetrics().height, (drag.top || 16) + dy));
           this.desktopUi.positions[drag.key] = pos;
         },
         endDesktopIconDrag: function () {
-          var drag = this.desktopUi.drag || {};
+          var drag = ((this.desktopUi || {}).drag) || {};
           if (!drag.armed) return;
-          if (drag.moved) this.persistDesktopLayout();
+          if (drag.moved && this.persistDesktopLayout) this.persistDesktopLayout();
           this.desktopUi.drag = { armed: false, active: false, moved: false, key: '', startX: 0, startY: 0, left: 0, top: 0 };
         },
         persistDesktopLayout: function () {
-          var payload = this.desktopLayoutPayload();
+          var payload = this.desktopLayoutPayload ? this.desktopLayoutPayload() : { iconSize: 'medium', sortMode: 'manual', positions: {} };
           if (this.socketRequest) {
             this.socketRequest((this.boot.routes || {}).commandEvent || 'desktop.command', { command: 'desktop.layout.save', iconSize: payload.iconSize, sortMode: payload.sortMode, positions: payload.positions }, { command: 'desktop.layout.save', dedupeKey: 'desktop.layout.save', timeoutMs: 3000 }).catch(function () {});
           }
         },
         refreshDesktopIcons: function () {
-          this.refreshView();
-          this.showAlert('Desktop', 'Desktop refreshed.');
+          if (this.refreshView) this.refreshView();
+          if (this.showAlert) this.showAlert('Desktop', 'Desktop refreshed.');
         },
         rearrangeDesktopIcons: function () {
           var self = this;
@@ -1198,7 +1238,9 @@
           var viewportHeight = this.desktopViewportHeight();
           var col = 0;
           var row = 0;
+          if (!this.desktopUi.positions) this.desktopUi.positions = {};
           (this.desktopRenderEntries ? this.desktopRenderEntries() : (this.desktopEntries || [])).forEach(function (entry) {
+            if (!entry || !entry.key) return;
             self.desktopUi.positions[entry.key] = { left: 16 + (col * metrics.width), top: 16 + (row * metrics.height) };
             row += 1;
             if ((16 + ((row + 1) * metrics.height)) > viewportHeight) { row = 0; col += 1; }
@@ -1223,10 +1265,12 @@
         },
         openDesktopContextMenu: function (event) {
           if (!event) return;
+          if (this.closeAllContextMenus) this.closeAllContextMenus();
           this.desktopUi.contextMenu = { open: true, type: 'desktop', key: '', left: event.clientX, top: event.clientY };
         },
         openDesktopIconContextMenu: function (entry, event) {
           if (!entry || !event) return;
+          if (this.closeAllContextMenus) this.closeAllContextMenus();
           this.selectDesktopEntry(entry);
           this.desktopUi.contextMenu = { open: true, type: 'icon', key: entry.key, left: event.clientX, top: event.clientY };
         },

@@ -43,5 +43,23 @@
     "duplicateDetection": true,
     "statusTransitions": true,
     "validationSummary": true
-  }
+  },
+  "features": {
+    "importExport": true,
+    "reconciliation": true
+  },
+  "actions": [
+    {
+      "key": "patient.import.preview",
+      "label": "Preview patient CSV import"
+    },
+    {
+      "key": "patient.import.commit",
+      "label": "Commit valid patient CSV rows"
+    },
+    {
+      "key": "patient.reconcile.report",
+      "label": "Run patient reconciliation report"
+    }
+  ]
 }

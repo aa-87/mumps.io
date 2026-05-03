@@ -399,3 +399,14 @@ Read-only patient roles receive masked rows through `MASKOUT^MIOOSPAT(.OUT,.STAT
 Successful table mutations may return acknowledgement-only payloads with `mutationOnly: true`. Browser code must not apply those acknowledgements as full query payloads because they do not contain `rows`, `schema.columns`, feature flags, or pagination metadata. Row and cell saves should refetch when the backend asks for it, while preserving the existing table state until the refetch completes.
 
 Query responses now expose `validation.fields` so row editor UIs can mark required fields and provide immediate client-side feedback before the authoritative server-side validation runs. Server-side MUMPS validation remains the source of truth.
+
+## ROI 72 Patient Registration import/reconciliation actions
+
+Patient Registration now exposes import and reconciliation through the same table mutation contract used by row/cell/table actions:
+
+- `patient.import.preview`
+- `patient.import.commit`
+- `patient.reconcile.report`
+- `patient.export.selected`
+
+The browser should call these as mutation-only operations. Backend validation and permissions remain authoritative. `rows.export` remains the CSV-byte export action for selected rows.

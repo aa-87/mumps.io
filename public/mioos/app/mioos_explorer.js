@@ -966,6 +966,7 @@
         var state = this.ensureExplorerWindowState(win);
         var targetType = item ? 'item' : 'blank';
         if (!state || !event) return;
+        if (this.closeAllContextMenus) this.closeAllContextMenus();
         if (item) this.selectExplorerItem(windowId, item);
         state.contextMenu = {
           open: true,

@@ -25,7 +25,7 @@ INIT(ROOT)
 	DO ADDCOL(ROOT,"createdBy","Created by","text",130,"Audit",0,0)
 	DO ADDCOL(ROOT,"updatedAt","Updated","date",130,"Audit",0,0)
 	DO ADDCOL(ROOT,"updatedBy","Updated by","text",130,"Audit",0,0)
-	SET @ROOT@("meta","contract")="mioos-patient-registration-v3"
+	SET @ROOT@("meta","contract")="mioos-patient-registration-v4"
 	SET @ROOT@("meta","description")="Patient registration review queues, search, and duplicate-resolution workflow backed by MIOOSTBL persistence"
 	SET @ROOT@("meta","hipaaNote")="HIPAA-ready architecture pattern only; deployment controls are still required."
 	SET @ROOT@("features","patientRegistration")=1
@@ -36,6 +36,8 @@ INIT(ROOT)
 	SET @ROOT@("features","reviewQueues")=1
 	SET @ROOT@("features","duplicateResolution")=1
 	SET @ROOT@("features","patientSearch")=1
+	SET @ROOT@("features","importExport")=1
+	SET @ROOT@("features","reconciliation")=1
 	SET @ROOT@("validation","routine")="VALPAT^MIOOSPAT"
 	DO VR(ROOT,"mrn",1,32,"MRN is required")
 	DO VR(ROOT,"lastName",1,80,"Last name is required")
@@ -192,8 +194,10 @@ PATMETA(OUT,ROOT)
 	SET OUT("features","duplicateResolution")=1
 	SET OUT("features","patientSearch")=1
 	SET OUT("features","intakeWorkflow")=1
+	SET OUT("features","importExport")=1
+	SET OUT("features","reconciliation")=1
 	SET OUT("features","statusTransitions")=1
-	SET OUT("patientRegistration","contract")="mioos-patient-registration-v3"
+	SET OUT("patientRegistration","contract")="mioos-patient-registration-v4"
 	SET OUT("patientRegistration","title")="Patient Registration"
 	SET OUT("patientRegistration","entryPoint")="Start Menu > Patient Registration or App Catalogue > Healthcare > Patient Registration"
 	SET OUT("patientRegistration","notice")="Synthetic sample data only. HIPAA-ready architecture still requires deployment controls."
@@ -212,6 +216,7 @@ PATMETA(OUT,ROOT)
 	SET OUT("rowActions",7,"key")="patient.review.pending",OUT("rowActions",7,"label")="Send to review"
 	SET OUT("bulkActions",3,"key")="patient.bulk.pending",OUT("bulkActions",3,"label")="Send selected to review"
 	SET OUT("bulkActions",4,"key")="patient.bulk.needs-correction",OUT("bulkActions",4,"label")="Flag selected"
+	SET OUT("bulkActions",5,"key")="patient.export.selected",OUT("bulkActions",5,"label")="Export selected patients"
 	QUIT
 	;
 QUEUEMETA(ROOT,Q)
@@ -247,9 +252,10 @@ ADDDEF(ROOT,ACTION,IN,STATE)
 	. IF Q="Active" SET IN("row","status")="Active"
 	. IF Q="Drafts" SET IN("row","status")="Draft"
 	. IF Q="Needs Correction" SET IN("row","status")="Draft"
-	IF $GET(IN("row","consent"))="" DO
+	IF ($GET(IN("row","consent"))="")!((Q="Drafts")&($GET(IN("row","consent"))="Unknown")) DO
 	. IF Q="Pending Review" SET IN("row","consent")="No"
 	. IF Q="Active" SET IN("row","consent")="Yes"
+	. IF Q="Drafts" SET IN("row","consent")="No"
 	. IF Q="Needs Correction" SET IN("row","consent")="Unknown"
 	IF $GET(IN("row","duplicateStatus"))="" SET IN("row","duplicateStatus")="None"
 	SET MRN=$GET(IN("row","mrn")) IF MRN'="",$GET(IN("row","id"))="" SET IN("row","id")=MRN
@@ -271,6 +277,7 @@ CAN(STATE,ACTION)
 	IF A="read",$$ROLE(.STATE,"auditor") QUIT 1
 	IF A="audit",$$ROLE(.STATE,"auditor") QUIT 1
 	IF A="read",$$ROLE(.STATE,"clinician") QUIT 1
+	IF A="read",$$ROLE(.STATE,"registrar") QUIT 1
 	IF A="write",$$ROLE(.STATE,"clinician") QUIT 1
 	IF A="create",$$ROLE(.STATE,"registrar") QUIT 1
 	IF A="write",$$ROLE(.STATE,"registrar") QUIT 1
@@ -298,13 +305,16 @@ PERMACT(ACTION)
 	IF A="" QUIT "read"
 	IF A="query" QUIT "read"
 	IF A="read" QUIT "read"
-	IF A="rows.export"!(A="export") QUIT "export"
+	IF A="rows.export"!(A="export")!(A="patient.export.selected") QUIT "export"
 	IF A="row.delete"!(A="rows.delete")!(A="bulk.delete") QUIT "delete"
 	IF A="row.add" QUIT "create"
 	IF A="row.save"!(A="row.update")!(A="cell.save") QUIT "write"
 	IF A="patient.duplicate.mark"!(A="patient.duplicate.clear") QUIT "review"
 	IF A="patient.review.needs-correction"!(A="patient.review.pending")!(A="patient.review.draft") QUIT "review"
 	IF A="patient.bulk.pending"!(A="patient.bulk.needs-correction") QUIT "review"
+	IF A="patient.import.preview" QUIT "read"
+	IF A="patient.import.commit" QUIT "create"
+	IF A="patient.reconcile.report" QUIT "review"
 	QUIT "write"
 	;
 MASKED(STATE)
@@ -433,7 +443,10 @@ OLDSTAT(ROOT,ID)
 VALPACT(ACTION,IN,ERR)
 	NEW A,I,SEEN
 	SET A=$$LOW^MIOUTIL($GET(ACTION))
-	IF A="patient.bulk.pending"!(A="patient.bulk.needs-correction") DO  QUIT $SELECT($GET(ERR("error"))="":1,1:0)
+	IF A="patient.import.preview"!(A="patient.import.commit") DO  QUIT $SELECT($GET(ERR("error"))="":1,1:0)
+	. IF $GET(IN("csv"))="" SET ERR("error")="csv_missing",ERR("message")="Paste patient CSV before preview or import."
+	IF A="patient.reconcile.report" QUIT 1
+	IF A="patient.bulk.pending"!(A="patient.bulk.needs-correction")!(A="patient.export.selected") DO  QUIT $SELECT($GET(ERR("error"))="":1,1:0)
 	. SET SEEN=0,I=0 FOR  SET I=$ORDER(IN("ids",I)) QUIT:I'>0!($GET(ERR("error"))'="")  DO
 	. . SET SEEN=1 IF $GET(IN("ids",I))="" SET ERR("error")="row_id_missing"
 	. IF 'SEEN SET ERR("error")="row_ids_missing"
@@ -443,6 +456,10 @@ VALPACT(ACTION,IN,ERR)
 PATACTION(ROOT,ACTION,IN,OUT,STATE)
 	NEW A,ID,I,COUNT
 	SET A=$$LOW^MIOUTIL($GET(ACTION))
+	IF A="patient.import.preview" DO IMPPARSE(ROOT,$GET(IN("csv")),.OUT,0,.STATE) QUIT
+	IF A="patient.import.commit" DO IMPPARSE(ROOT,$GET(IN("csv")),.OUT,1,.STATE) QUIT
+	IF A="patient.reconcile.report" DO RECON(ROOT,.OUT,.STATE) QUIT
+	IF A="patient.export.selected" DO PATEXP(ROOT,.IN,.OUT,.STATE) QUIT
 	IF A="patient.duplicate.mark" DO  QUIT
 	. SET ID=$GET(IN("rowId"),$GET(IN("id"))) DO MARKDUP(ROOT,ID,"Duplicate",.OUT,.STATE)
 	IF A="patient.duplicate.clear" DO  QUIT
@@ -460,6 +477,74 @@ PATACTION(ROOT,ACTION,IN,OUT,STATE)
 	. . IF A="patient.bulk.needs-correction" DO SETQUEUE(ROOT,ID,"Needs Correction",.OUT,.STATE)
 	. . SET COUNT=COUNT+1
 	. SET OUT("mutated","count")=COUNT
+	QUIT
+	;
+
+IMPPARSE(ROOT,CSV,OUT,COMMIT,STATE)
+	NEW TEXT,HDR,I,LINE,ROW,VIN,VERR,VALID,INVALID,IMPORTED,ID,POS
+	SET TEXT=$TRANSLATE($GET(CSV),$CHAR(13),"")
+	SET HDR=$PIECE(TEXT,$CHAR(10),1)
+	SET VALID=0,INVALID=0,IMPORTED=0
+	IF HDR="" SET OUT("error")="csv_header_missing",OUT("message")="CSV header row is required" QUIT
+	FOR I=2:1:$LENGTH(TEXT,$CHAR(10)) DO
+	. SET LINE=$PIECE(TEXT,$CHAR(10),I) QUIT:$$TRIM^MIOUTIL(LINE)=""
+	. KILL ROW,VIN,VERR DO CSVROW(HDR,LINE,.ROW)
+	. MERGE VIN("row")=ROW
+	. IF $GET(VIN("row","id"))="" SET VIN("row","id")=$GET(VIN("row","mrn"))
+	. DO ADDDEF(ROOT,"row.save",.VIN,.STATE)
+	. IF $$VALPAT(.VIN,.VERR,ROOT) DO
+	. . SET VALID=VALID+1 MERGE OUT("importPreview","valid",VALID)=VIN("row")
+	. . IF +$GET(COMMIT) DO
+	. . . SET ID=$GET(VIN("row","id"),$GET(VIN("row","mrn"))) IF ID="" SET ID="PAT-"_($ORDER(@ROOT@("rows",""),-1)+1)
+	. . . SET POS=$$ROWIDX(ROOT,ID) IF POS'>0 SET POS=$ORDER(@ROOT@("rows",""),-1)+1
+	. . . KILL @ROOT@("rows",POS) MERGE @ROOT@("rows",POS)=VIN("row") SET @ROOT@("rows",POS,"id")=ID
+	. . . DO STAMP(ROOT,POS,.STATE),REVIEWROW(ROOT,POS) SET IMPORTED=IMPORTED+1
+	. ELSE  DO
+	. . SET INVALID=INVALID+1,OUT("importPreview","invalid",INVALID,"line")=I MERGE OUT("importPreview","invalid",INVALID,"fieldErrors")=VERR("fieldErrors") SET OUT("importPreview","invalid",INVALID,"message")=$GET(VERR("message"),"Validation failed")
+	SET OUT("importPreview","validCount")=VALID
+	SET OUT("importPreview","invalidCount")=INVALID
+	SET OUT("importPreview","committedCount")=IMPORTED
+	SET OUT("mutated","patientImport")=$SELECT(+COMMIT:IMPORTED,1:0)
+	SET OUT("message")=$SELECT(+COMMIT:"Patient import committed",1:"Patient import preview ready")
+	QUIT
+	;
+CSVROW(HDR,LINE,ROW)
+	NEW I,KEY,VAL
+	KILL ROW
+	FOR I=1:1:$LENGTH(HDR,",") DO
+	. SET KEY=$$TRIM^MIOUTIL($PIECE(HDR,",",I)),VAL=$$TRIM^MIOUTIL($PIECE(LINE,",",I))
+	. SET KEY=$$KEY^MIOOSTBL(KEY) IF KEY'="" SET ROW(KEY)=VAL
+	QUIT
+	;
+RECON(ROOT,OUT,STATE)
+	NEW I,J,COUNT,ID1,ID2,REASON
+	SET COUNT=0
+	SET I=0 FOR  SET I=$ORDER(@ROOT@("rows",I)) QUIT:I'>0  DO
+	. SET J=I FOR  SET J=$ORDER(@ROOT@("rows",J)) QUIT:J'>0  DO
+	. . SET REASON=$$RECREASON(ROOT,I,J) QUIT:REASON=""
+	. . SET COUNT=COUNT+1,ID1=$GET(@ROOT@("rows",I,"id"),$GET(@ROOT@("rows",I,"mrn"))),ID2=$GET(@ROOT@("rows",J,"id"),$GET(@ROOT@("rows",J,"mrn")))
+	. . SET OUT("reconciliation","candidates",COUNT,"leftId")=ID1,OUT("reconciliation","candidates",COUNT,"rightId")=ID2,OUT("reconciliation","candidates",COUNT,"reason")=REASON
+	SET OUT("reconciliation","candidateCount")=COUNT
+	SET OUT("mutated","reconciliation")=COUNT
+	SET OUT("message")="Patient reconciliation report ready"
+	QUIT
+	;
+RECREASON(ROOT,I,J)
+	IF $GET(@ROOT@("rows",I,"mrn"))'="",$$CANON($GET(@ROOT@("rows",I,"mrn")))=$$CANON($GET(@ROOT@("rows",J,"mrn"))) QUIT "duplicate_mrn"
+	IF $GET(@ROOT@("rows",I,"firstName"))'="",$GET(@ROOT@("rows",I,"lastName"))'="",$GET(@ROOT@("rows",I,"dob"))'="",($$CANON($GET(@ROOT@("rows",I,"firstName")))_"|"_$$CANON($GET(@ROOT@("rows",I,"lastName")))_"|"_$GET(@ROOT@("rows",I,"dob")))=($$CANON($GET(@ROOT@("rows",J,"firstName")))_"|"_$$CANON($GET(@ROOT@("rows",J,"lastName")))_"|"_$GET(@ROOT@("rows",J,"dob"))) QUIT "same_name_dob"
+	IF $GET(@ROOT@("rows",I,"email"))'="",$$CANON($GET(@ROOT@("rows",I,"email")))=$$CANON($GET(@ROOT@("rows",J,"email"))) QUIT "same_email"
+	IF $GET(@ROOT@("rows",I,"phone"))'="",$$CANON($GET(@ROOT@("rows",I,"phone")))=$$CANON($GET(@ROOT@("rows",J,"phone"))) QUIT "same_phone"
+	QUIT ""
+	;
+PATEXP(ROOT,IN,OUT,STATE)
+	NEW I,ID,COUNT
+	SET COUNT=0,I=0 FOR  SET I=$ORDER(IN("ids",I)) QUIT:I'>0  DO
+	. SET ID=$GET(IN("ids",I)) QUIT:ID=""
+	. SET COUNT=COUNT+1,OUT("patientExport","ids",COUNT)=ID
+	SET OUT("patientExport","count")=COUNT
+	SET OUT("patientExport","message")="Use rows.export for CSV bytes; this action records patient export intent and permission checks."
+	SET OUT("mutated","patientExport")=COUNT
+	SET OUT("message")="Patient export authorized"
 	QUIT
 	;
 MARKDUP(ROOT,ID,STATUS,OUT,STATE)

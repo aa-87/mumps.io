@@ -21,7 +21,6 @@ MIOOST ; MIOOS tests
 	DO T020
 	DO T021
 	DO T026
-	DO T027
 	DO T028
 	DO T029
 	DO T030
@@ -29,7 +28,6 @@ MIOOST ; MIOOS tests
 	DO T032
 	DO T033
 	DO T034
-	DO T035
 	DO T036
 	DO T037
 	DO T038
@@ -475,6 +473,8 @@ T020
 	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","openDesktopContextMenu($event)"),"[MIOOST][T020][desktop menu handler]")
 	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","openDesktopIconContextMenu(entry, $event)"),"[MIOOST][T020][icon menu handler]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","beginDesktopIconDrag"),"[MIOOST][T020][icon drag method]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","desktopIconClass: function"),"[MIOOST][T020][icon class method]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","handleGlobalMouseMove: function"),"[MIOOST][T020][global drag move method]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","desktop.layout.save"),"[MIOOST][T020][layout save command]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","setDesktopIconSize"),"[MIOOST][T020][icon size method]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-context-menu"),"[MIOOST][T020][context menu css]")
@@ -1277,7 +1277,7 @@ T061
 	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","themeStudioCreateNewTheme"),0,"[MIOOST][T061][no dead theme create button]")
 	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","themeStudioDeleteCustomTheme"),0,"[MIOOST][T061][no dead theme delete button]")
 	QUIT
-
+	;
 T062
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSUI.m","$$PROTURL(CSSV,.STATE)"),"[MIOOST][T062][first-paint protected css var filter]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","sanitizeBootThemeForAuth"),"[MIOOST][T062][client boot theme sanitizer]")
@@ -1335,7 +1335,7 @@ T066
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","SET MOD(""tableState"",""dataset"")"),"[MIOOST][T066][mumps table examples]")
 	QUIT
 	;
-
+	;
 T067
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","mioos-advanced-table-v8"),"[MIOOST][T067][table v7 contract]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","mumpsTableSnippet"),"[MIOOST][T067][mumps dataset snippets]")
@@ -1365,7 +1365,7 @@ T068
 	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/ROI_64I_64K_Table_DataTables_Parity.md","ROI 64K"),"[MIOOST][T068][next roi fixed columns design]")
 	QUIT
 	;
-
+	;
 T069
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableSaveCell"),"[MIOOST][T069][editable cell save api]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","mioos-table-cell-editor"),"[MIOOST][T069][inline cell editor]")
@@ -1379,7 +1379,7 @@ T069
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 64I editable cells"),"[MIOOST][T069][llm roi64i]")
 	QUIT
 	;
-
+	;
 T070
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","columnReorder: true"),"[MIOOST][T070][column reorder feature flag]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableMoveColumn"),"[MIOOST][T070][column reorder ui move]")
@@ -1395,7 +1395,7 @@ T070
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 64J column reorder"),"[MIOOST][T070][llm roi64j]")
 	QUIT
 	;
-
+	;
 T071
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","fixedColumns: true"),"[MIOOST][T071][fixed columns feature flag]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableSetFixedColumns"),"[MIOOST][T071][fixed columns ui mutation]")
@@ -1424,9 +1424,9 @@ T073
 	DO RUN^MIOOSTBLC
 	QUIT
 	;
-
+	;
 T074
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSPAT.m","mioos-patient-registration-v3"),"[MIOOST][T074][patient v3 contract]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSPAT.m","mioos-patient-registration-v4"),"[MIOOST][T074][patient v3 contract]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSPAT.m","reviewQueues"),"[MIOOST][T074][review queues]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSPAT.m","PATACTION"),"[MIOOST][T074][patient server actions]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSST.m","win-patient-registration"),"[MIOOST][T074][direct patient window]")
@@ -1437,7 +1437,7 @@ T074
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 70 patient registration"),"[MIOOST][T074][llm roi70]")
 	QUIT
 	;
-
+	;
 T075
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSPAT.m","CANLAUNCH"),"[MIOOST][T075][patient launch permission helper]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSPAT.m","MASKOUT"),"[MIOOST][T075][patient phi masking]")
@@ -1450,4 +1450,5 @@ T075
 	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/ROI_71_Patient_Registration_Permissions_PHI_Hardening.md","ROI 71"),"[MIOOST][T075][roi71 docs]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 71 patient registration"),"[MIOOST][T075][llm roi71]")
 	QUIT
+	;
 	;

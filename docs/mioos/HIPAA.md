@@ -199,3 +199,7 @@ ROI 70 adds patient review queues, duplicate-resolution actions, and audit marke
 ## ROI 71 PHI visibility hardening
 
 ROI 71 adds sample server-side permission gates before Patient Registration query, mutation, export, delete, and review actions. Limited read roles receive masked PHI payloads. Denied access is audited in the sample patient audit global. This is a design pattern for building HIPAA-ready controls, not a compliance guarantee.
+
+## ROI 72 import/export note
+
+Patient Registration import/export remains a HIPAA-ready architecture pattern, not a compliance guarantee. Deployments must still enforce transport security, authorization, audit retention, minimum necessary access, and operational policies. Import preview/commit and reconciliation actions are server-side and permission-gated.

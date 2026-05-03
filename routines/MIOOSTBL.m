@@ -171,7 +171,7 @@ MUTATE(STATE,CONF,IN,OUT,ERR)
 	IF $DATA(OUT("export")) DO  QUIT 1
 	. SET OUT("ok")=1,OUT("dataset")=DATASET,OUT("action")=ACTION,OUT("exportOnly")=1,OUT("message")=$GET(OUT("message"),"CSV export generated")
 	. IF DATASET="patient-registration" DO AUDPAT^MIOOSPAT(.STATE,.CONF,ACTION,.IN,.OUT,1,.ERR)
-	SET OUT("ok")=1,OUT("dataset")=DATASET,OUT("action")=ACTION,OUT("mutationOnly")=1,OUT("refetch")=1,OUT("message")=$$MMSG(ACTION)
+	SET OUT("ok")=1,OUT("dataset")=DATASET,OUT("action")=ACTION,OUT("mutationOnly")=1,OUT("refetch")=1,OUT("message")=$GET(OUT("message"),$$MMSG(ACTION))
 	IF DATASET="patient-registration" DO AUDPAT^MIOOSPAT(.STATE,.CONF,ACTION,.IN,.OUT,1,.ERR)
 	QUIT 1
 ERRM

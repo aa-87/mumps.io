@@ -119,3 +119,9 @@ The Patient Registration shell entry and App Catalogue module are only emitted w
 The App Catalogue layout switch is a visual state, not a separate route. The catalogue grid uses `mioos-ui-module-grid` for card layout and `mioos-ui-module-grid is-list` for list layout. CSS for both states must stay in `public/mioos/mioos.css`; otherwise the List/Cards button will still update Vue state but appear to do nothing.
 
 The Table Module Definition editor is intentionally styled as a system modal with the `mioos-table-module-editor` class. Preview, revisions, import/export, save, and rollback actions call `/api/mioos/modules/table` through `uiModuleTableRequest()`. Failed requests should render deterministic inline error text in the modal and must not surface as unhandled Vue click errors.
+
+## ROI 72 Table Module Definition authoring hardening
+
+The Table Module Definition modal now validates imported JSON before calling the backend, downloads exported JSON locally, and closes on Escape. It should remain usable even when the window cannot be resized enough to expose the close button.
+
+Table module column type choices include patient-centric and basic table editor types such as `mrn`, `state`, `gender`, `phone`, `email`, `zip`, `dob`, `multiselect`, `currency`, `percent`, `time`, and `datetime`.

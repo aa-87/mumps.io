@@ -120,7 +120,7 @@
         required: !!col.required,
         editable: col.editable === false || col.editable === 0 || col.editable === '0' ? false : true,
         cellCallback: col.cellCallback || '',
-        options: toList(col.options || col.values || col.enum)
+        options: toList(col.options || col.values || col.enum || defaultOptionsForType(col.type))
       };
     });
   }
@@ -147,12 +147,27 @@
 
   function filterControlForColumn(column) {
     var type = String((column || {}).type || 'text').toLowerCase();
-    if (type === 'badge' || type === 'select' || type === 'multiselect') return 'select';
-    if (type === 'boolean' || type === 'checkbox') return 'boolean';
-    if (type === 'date') return 'date';
-    if (type === 'number' || type === 'numeric') return 'number';
-    if (type === 'textarea') return 'textarea';
+    if (type === 'badge' || type === 'select' || type === 'enum' || type === 'state' || type === 'gender' || type === 'status') return 'select';
+    if (type === 'multiselect' || type === 'multi-select' || type === 'tags') return 'multiselect';
+    if (type === 'boolean' || type === 'checkbox' || type === 'toggle') return 'boolean';
+    if (type === 'date' || type === 'dob') return 'date';
+    if (type === 'datetime' || type === 'timestamp') return 'datetime';
+    if (type === 'time') return 'time';
+    if (type === 'number' || type === 'numeric' || type === 'integer' || type === 'decimal' || type === 'currency' || type === 'percent') return 'number';
+    if (type === 'textarea' || type === 'longtext' || type === 'notes') return 'textarea';
+    if (type === 'email') return 'email';
+    if (type === 'phone' || type === 'tel') return 'tel';
+    if (type === 'url') return 'url';
+    if (type === 'mrn' || type === 'zip' || type === 'postal' || type === 'ssn' || type === 'text') return 'text';
     return 'text';
+  }
+
+  function defaultOptionsForType(type) {
+    type = String(type || '').toLowerCase();
+    if (type === 'gender') return ['Female', 'Male', 'Nonbinary', 'Unknown', 'Prefer not to say'];
+    if (type === 'state') return 'AL,AK,AZ,AR,CA,CO,CT,DE,DC,FL,GA,HI,IA,ID,IL,IN,KS,KY,LA,MA,MD,ME,MI,MN,MO,MS,MT,NC,ND,NE,NH,NJ,NM,NV,NY,OH,OK,OR,PA,RI,SC,SD,TN,TX,UT,VA,VT,WA,WI,WV,WY'.split(',');
+    if (type === 'boolean' || type === 'checkbox' || type === 'toggle') return ['true', 'false'];
+    return [];
   }
 
   function toList(value) {
@@ -250,7 +265,8 @@
         editor: { open: false, mode: 'row', title: '', row: {}, column: {} },
         cellEditor: { open: false, rowId: '', columnKey: '', value: '', originalValue: '' },
         optionDialog: { open: false, context: '', columnKey: '', columnLabel: '', value: '' },
-        confirmDialog: { open: false, kind: '', title: '', message: '', confirmText: 'Confirm', danger: false, payload: {} }
+        confirmDialog: { open: false, kind: '', title: '', message: '', confirmText: 'Confirm', danger: false, payload: {} },
+        patientImport: { open: false, csv: '', preview: null, error: '', loading: false }
       };
     },
     backendTableState: function (tableId) {
@@ -888,7 +904,7 @@
     backendTableCanAddColumnOption: function (state, column) {
       if (!column) return false;
       var control = filterControlForColumn(column);
-      return this.backendTableFeature(state, 'columnCrud') && (control === 'select');
+      return this.backendTableFeature(state, 'columnCrud') && (control === 'select' || control === 'multiselect');
     },
     backendTableAddColumnOption: function (tableId, column, value) {
       var state = this.backendTableState(tableId);
@@ -905,12 +921,16 @@
     backendTableAddEditorOption: function (tableId, column) {
       return this.backendTableOpenOptionDialog(tableId, column, 'editor');
     },
+    backendTableAddCellOption: function (tableId, column) {
+      return this.backendTableOpenOptionDialog(tableId, column, 'cell');
+    },
     backendTableOpenOptionDialog: function (tableId, column, context) {
       var state = this.backendTableState(tableId);
       if (!column || !column.key) return null;
       var value = '';
       if (context === 'filter') value = String((this.backendTableFilterDraftEntry(state, column.key) || {}).value || '');
       if (context === 'editor' && state.editor && state.editor.row) value = String(state.editor.row[column.key] || '');
+      if (context === 'cell' && state.cellEditor) value = String(state.cellEditor.value || '');
       state.optionDialog = { open: true, context: context || 'filter', columnKey: column.key, columnLabel: column.label || column.key, value: value };
       state.error = '';
       return null;
@@ -938,6 +958,7 @@
         if (payload && payload.ok !== false) {
           if (dialog.context === 'filter') vm.backendTableSetFilterDraft(tableId, column.key, 'value', value);
           if (dialog.context === 'editor' && state.editor && state.editor.row) state.editor.row[column.key] = value;
+          if (dialog.context === 'cell' && state.cellEditor) state.cellEditor.value = value;
           vm.backendTableCloseOptionDialog(tableId);
         }
         return payload;
@@ -977,16 +998,18 @@
       if ((state || {}).dataset !== 'patient-registration') return row;
       var filters = (state || {}).filters || {};
       var active = String(((filters.reviewQueue || {}).value) || '');
-      row.reviewQueue = row.reviewQueue || active || 'Drafts';
+      var queue = active || row.reviewQueue || 'Drafts';
+      row.reviewQueue = row.reviewQueue || queue;
       if (!row.status) {
-        if (active === 'Pending Review') row.status = 'Pending Review';
-        else if (active === 'Active') row.status = 'Active';
-        else if (active === 'Inactive') row.status = 'Inactive';
+        if (queue === 'Pending Review') row.status = 'Pending Review';
+        else if (queue === 'Active') row.status = 'Active';
+        else if (queue === 'Inactive') row.status = 'Inactive';
         else row.status = 'Draft';
       }
       if (!row.consent) {
-        if (active === 'Pending Review') row.consent = 'No';
-        else if (active === 'Active') row.consent = 'Yes';
+        if (queue === 'Pending Review') row.consent = 'No';
+        else if (queue === 'Active') row.consent = 'Yes';
+        else if (queue === 'Drafts') row.consent = 'No';
         else row.consent = 'Unknown';
       }
       if (!row.duplicateStatus) row.duplicateStatus = 'None';
@@ -1156,6 +1179,7 @@
     },
     backendTableCloseTopDialog: function (tableId) {
       var state = this.backendTableState(tableId);
+      if ((state.patientImport || {}).open) return this.backendTableClosePatientImport(tableId);
       if ((state.confirmDialog || {}).open) return this.backendTableCloseConfirmDialog(tableId);
       if ((state.optionDialog || {}).open) return this.backendTableCloseOptionDialog(tableId);
       if ((state.editor || {}).open) return this.backendTableCloseEditor(tableId);
@@ -1167,6 +1191,51 @@
     backendTableHandleKeydown: function (tableId, event) {
       if (!event || event.key !== 'Escape') return;
       this.backendTableCloseTopDialog(tableId);
+    },
+    backendTableCloseAllTopDialogs: function () {
+      var closed = false;
+      var tables = this.backendTables || {};
+      Object.keys(tables).forEach(function (id) {
+        var state = tables[id] || {};
+        if ((state.patientImport || {}).open || (state.confirmDialog || {}).open || (state.optionDialog || {}).open || (state.editor || {}).open || state.columnPickerOpen || state.groupModalOpen || state.filterModalOpen || ((state.cellEditor || {}).open)) {
+          this.backendTableCloseTopDialog(id);
+          closed = true;
+        }
+      }, this);
+      return closed;
+    },
+    backendTableOpenPatientImport: function (tableId) {
+      var state = this.backendTableState(tableId);
+      state.patientImport = { open: true, csv: '', preview: null, error: '', loading: false };
+    },
+    backendTableClosePatientImport: function (tableId) {
+      this.backendTableState(tableId).patientImport = { open: false, csv: '', preview: null, error: '', loading: false };
+    },
+    backendTableSetPatientImportCsv: function (tableId, value) {
+      var state = this.backendTableState(tableId);
+      state.patientImport = Object.assign({}, state.patientImport || {}, { csv: value || '', error: '' });
+    },
+    backendTablePreviewPatientImport: function (tableId) {
+      var state = this.backendTableState(tableId);
+      state.patientImport = Object.assign({}, state.patientImport || {}, { loading: true, error: '' });
+      return this.backendTableMutate(tableId, 'patient.import.preview', { csv: (state.patientImport || {}).csv || '', keepEditor: true }).then(function (payload) {
+        if (payload && payload.ok === false) state.patientImport.error = payload.message || payload.error || 'Import preview failed';
+        else state.patientImport.preview = payload && (payload.importPreview || payload.importResult || payload);
+        return payload;
+      }).finally(function () { state.patientImport.loading = false; });
+    },
+    backendTableCommitPatientImport: function (tableId) {
+      var state = this.backendTableState(tableId);
+      state.patientImport = Object.assign({}, state.patientImport || {}, { loading: true, error: '' });
+      return this.backendTableMutate(tableId, 'patient.import.commit', { csv: (state.patientImport || {}).csv || '', keepEditor: true }).then(function (payload) {
+        if (payload && payload.ok === false) state.patientImport.error = payload.message || payload.error || 'Import commit failed';
+        else { state.patientImport.preview = payload && (payload.importResult || payload.importPreview || payload); state.toast = (payload && payload.message) || 'Patient import committed'; return this.backendTableFetch(tableId); }
+        return payload;
+      }.bind(this)).finally(function () { state.patientImport.loading = false; });
+    },
+    backendTableRunPatientReconcile: function (tableId) {
+      var state = this.backendTableState(tableId);
+      return this.backendTableMutate(tableId, 'patient.reconcile.report', { keepEditor: true }).then(function (payload) { state.patientReconcile = payload && (payload.reconciliation || payload); state.toast = (payload && payload.message) || 'Reconciliation report generated'; return payload; });
     },
     backendTableApplyConfig: function (tableId, config) {
       var state = this.backendTableState(tableId);
@@ -1235,7 +1304,7 @@
             '<button v-if="vm.backendTableFeature(state, &quot;filters&quot;)" class="mioos-btn" type="button" @click="vm.backendTableOpenFilters(tableId || state.id)">Filters</button>' +
             '<button v-if="vm.backendTableFeature(state, &quot;grouping&quot;)" class="mioos-btn" type="button" @click="vm.backendTableOpenGrouping(tableId || state.id)">Group<span v-if="state.groupByColumns && state.groupByColumns.length"> ([[ state.groupByColumns.length ]])</span></button>' +
             '<button v-if="vm.backendTableFeature(state, &quot;columnPicker&quot;)" class="mioos-btn" type="button" @click="vm.backendTableOpenColumnPicker(tableId || state.id)">Columns</button>' +
-            '<button v-if="vm.backendTableFeature(state, &quot;rowCrud&quot;)" type="button" class="mioos-btn" @click="vm.backendTableOpenRowEditor(tableId || state.id)">Add row</button>' +
+            '<button v-if="vm.backendTableFeature(state, &quot;rowCrud&quot;)" type="button" class="mioos-btn" @click="vm.backendTableOpenRowEditor(tableId || state.id)">Add row</button><button v-if="state.patientRegistration" type="button" class="mioos-btn" @click="vm.backendTableOpenPatientImport(tableId || state.id)">Import CSV</button><button v-if="state.patientRegistration" type="button" class="mioos-btn" @click="vm.backendTableRunPatientReconcile(tableId || state.id)">Reconcile</button>' +
             '<button v-if="vm.backendTableFeature(state, &quot;columnCrud&quot;)" type="button" class="mioos-btn" @click="vm.backendTableOpenColumnEditor(tableId || state.id)">Add column</button>' +
             '<span v-if="state.readOnly" class="mioos-table-readonly">Read-only</span>' +
           '</header>' +
@@ -1273,9 +1342,16 @@
           '<div class="mioos-table-editor-backdrop" v-if="state.editor && state.editor.open" @click.self="vm.backendTableCloseEditor(tableId || state.id)">' +
             '<div class="mioos-table-editor mioos-system-modal" role="dialog" aria-modal="true" :style="vm.backendTableDialogStyle(state, &quot;editor&quot;)">' +
               '<header class="mioos-system-modal-titlebar" @pointerdown.prevent="vm.backendTableBeginDialogDrag(tableId || state.id, &quot;editor&quot;, $event)"><strong>[[ state.editor.title ]]</strong><button type="button" aria-label="Close editor" @pointerdown.stop @click.stop="vm.backendTableCloseEditor(tableId || state.id)">×</button></header>' +
-              '<section v-if="state.editor.mode === \'row\'" class="mioos-table-form-grid"><label v-for="col in vm.backendTableEditorColumns(state)" :key="col.key" :class="{ \'has-error\': vm.backendTableFieldError(state, col.key), \'is-required\': vm.backendTableColumnRequired(state, col) }"><span>[[ col.label ]] <em v-if="vm.backendTableColumnRequired(state, col)">required</em></span><textarea v-if="vm.backendTableFilterControl(col) === &quot;textarea&quot;" v-model="state.editor.row[col.key]" :placeholder="col.key"></textarea><select v-else-if="vm.backendTableFilterControl(col) === &quot;select&quot;" v-model="state.editor.row[col.key]"><option value="">Choose…</option><option v-for="opt in vm.backendTableColumnOptions(state, col)" :key="opt" :value="opt">[[ opt ]]</option></select><select v-else-if="vm.backendTableFilterControl(col) === &quot;boolean&quot;" v-model="state.editor.row[col.key]"><option value="">Choose…</option><option value="true">True</option><option value="false">False</option></select><input v-else-if="vm.backendTableFilterControl(col) === &quot;date&quot;" type="date" v-model="state.editor.row[col.key]" :placeholder="col.key"><input v-else-if="vm.backendTableFilterControl(col) === &quot;number&quot;" type="number" v-model="state.editor.row[col.key]" :placeholder="col.key"><input v-else v-model="state.editor.row[col.key]" :placeholder="col.key"><button v-if="vm.backendTableCanAddColumnOption(state, col)" type="button" class="mioos-table-inline-link" @click="vm.backendTableAddEditorOption(tableId || state.id, col)">Add option</button><small v-if="vm.backendTableFieldError(state, col.key)" class="mioos-field-error">[[ vm.backendTableFieldError(state, col.key) ]]</small></label></section>' +
+              '<section v-if="state.editor.mode === \'row\'" class="mioos-table-form-grid"><label v-for="col in vm.backendTableEditorColumns(state)" :key="col.key" :class="{ \'has-error\': vm.backendTableFieldError(state, col.key), \'is-required\': vm.backendTableColumnRequired(state, col) }"><span>[[ col.label ]] <em v-if="vm.backendTableColumnRequired(state, col)">required</em></span><textarea v-if="vm.backendTableFilterControl(col) === &quot;textarea&quot;" v-model="state.editor.row[col.key]" :placeholder="col.key"></textarea><select v-else-if="vm.backendTableFilterControl(col) === &quot;multiselect&quot;" v-model="state.editor.row[col.key]" multiple><option v-for="opt in vm.backendTableColumnOptions(state, col)" :key="opt" :value="opt">[[ opt ]]</option></select><select v-else-if="vm.backendTableFilterControl(col) === &quot;select&quot;" v-model="state.editor.row[col.key]"><option value="">Choose…</option><option v-for="opt in vm.backendTableColumnOptions(state, col)" :key="opt" :value="opt">[[ opt ]]</option></select><select v-else-if="vm.backendTableFilterControl(col) === &quot;boolean&quot;" v-model="state.editor.row[col.key]"><option value="">Choose…</option><option value="true">True</option><option value="false">False</option></select><input v-else-if="vm.backendTableFilterControl(col) === &quot;date&quot;" type="date" v-model="state.editor.row[col.key]" :placeholder="col.key"><input v-else-if="vm.backendTableFilterControl(col) === &quot;number&quot;" type="number" v-model="state.editor.row[col.key]" :placeholder="col.key"><input v-else :type="vm.backendTableFilterControl(col) === &quot;email&quot; ? &quot;email&quot; : (vm.backendTableFilterControl(col) === &quot;tel&quot; ? &quot;tel&quot; : (vm.backendTableFilterControl(col) === &quot;url&quot; ? &quot;url&quot; : (vm.backendTableFilterControl(col) === &quot;time&quot; ? &quot;time&quot; : (vm.backendTableFilterControl(col) === &quot;datetime&quot; ? &quot;datetime-local&quot; : &quot;text&quot;))))" v-model="state.editor.row[col.key]" :placeholder="col.key"><button v-if="vm.backendTableCanAddColumnOption(state, col) && (vm.backendTableFilterControl(col) === &quot;select&quot; || vm.backendTableFilterControl(col) === &quot;multiselect&quot;)" type="button" class="mioos-table-inline-link" @click="vm.backendTableAddEditorOption(tableId || state.id, col)">Add option</button><small v-if="vm.backendTableFieldError(state, col.key)" class="mioos-field-error">[[ vm.backendTableFieldError(state, col.key) ]]</small></label></section>' +
               '<section v-else class="mioos-table-form-grid"><label><span>Key</span><input v-model="state.editor.column.key" :disabled="!!state.editor.column.originalKey" placeholder="fieldName"><small v-if="state.editor.column.originalKey">Column keys are immutable; create a new column to change the key.</small></label><label><span>Label</span><input v-model="state.editor.column.label" placeholder="Column label"></label><label><span>Type</span><select v-model="state.editor.column.type"><option>text</option><option>textarea</option><option>select</option><option>multiselect</option><option>badge</option><option>date</option><option>number</option><option>boolean</option></select></label><label><span>Width</span><input type="number" v-model="state.editor.column.width"></label><label><span>Group</span><input v-model="state.editor.column.group" placeholder="Optional header group"></label><label class="mioos-table-check"><span>Hidden</span><input type="checkbox" v-model="state.editor.column.hidden"></label></section>' +
               '<p class="mioos-table-error" v-for="err in Object.values(state.validation || {})" :key="err">[[ err ]]</p><footer><button type="button" class="mioos-btn is-primary" :disabled="state.saving || state.loading" @click="vm.backendTableSaveEditor(tableId || state.id)">[[ state.saving ? &quot;Saving…&quot; : &quot;Save&quot; ]]</button><button type="button" class="mioos-btn" @click="vm.backendTableCloseEditor(tableId || state.id)">Cancel</button></footer>' +
+            '</div>' +
+          '</div>' +
+          '<div class="mioos-table-editor-backdrop" v-if="state.patientImport && state.patientImport.open" @click.self="vm.backendTableClosePatientImport(tableId || state.id)">' +
+            '<div class="mioos-table-editor mioos-system-modal mioos-table-patient-import" role="dialog" aria-modal="true" aria-label="Patient CSV import" :style="vm.backendTableDialogStyle(state, &quot;patientImport&quot;)">' +
+              '<header class="mioos-system-modal-titlebar" @pointerdown.prevent="vm.backendTableBeginDialogDrag(tableId || state.id, &quot;patientImport&quot;, $event)"><strong>Patient CSV import</strong><button type="button" aria-label="Close patient import" @pointerdown.stop @click.stop="vm.backendTableClosePatientImport(tableId || state.id)">×</button></header>' +
+              '<section class="mioos-table-patient-import-body"><p>Paste CSV with headers: mrn,lastName,firstName,dob,phone,email,state,zip,status,consent.</p><textarea :value="(state.patientImport || {}).csv" @input="vm.backendTableSetPatientImportCsv(tableId || state.id, $event.target.value)" rows="8" spellcheck="false"></textarea><p v-if="(state.patientImport || {}).error" class="mioos-field-error">[[ state.patientImport.error ]]</p><pre v-if="(state.patientImport || {}).preview">[[ JSON.stringify(state.patientImport.preview, null, 2) ]]</pre></section>' +
+              '<footer><button type="button" class="mioos-btn" :disabled="(state.patientImport || {}).loading" @click="vm.backendTablePreviewPatientImport(tableId || state.id)">Preview</button><button type="button" class="mioos-btn is-primary" :disabled="(state.patientImport || {}).loading" @click="vm.backendTableCommitPatientImport(tableId || state.id)">Commit valid rows</button><button type="button" class="mioos-btn" @click="vm.backendTableClosePatientImport(tableId || state.id)">Cancel</button></footer>' +
             '</div>' +
           '</div>' +
           '<div class="mioos-table-editor-backdrop" v-if="state.optionDialog && state.optionDialog.open" @click.self="vm.backendTableCloseOptionDialog(tableId || state.id)">' +
@@ -1305,7 +1381,7 @@
                   '<tr v-if="state.groupByColumns && state.groupByColumns.length" class="mioos-table-group-row"><td :colspan="vm.backendTableColspan(state)"><button type="button" @click="vm.backendTableToggleGroup(tableId || state.id, group.key)">[[ vm.backendTableIsGroupExpanded(state, group.key) ? \'▾\' : \'▸\' ]]</button><strong>[[ group.label ]]</strong><span>[[ group.count ]] rows</span></td></tr>' +
                   '<template v-if="!(state.groupByColumns && state.groupByColumns.length) || vm.backendTableIsGroupExpanded(state, group.key)">' +
                     '<template v-for="row in group.rows" :key="keyOf(row)">' +
-                      '<tr :class="{ \'is-selected\': vm.backendTableIsSelected(state, row) }"><td v-if="vm.backendTableShowControl(state)" class="mioos-table-control-cell" :class="vm.backendTableStickyClass(state, null, -1, &quot;control&quot;)" :style="vm.backendTableStickyStyle(state, null, -1, &quot;control&quot;)"><button v-if="row._expand && vm.backendTableFeature(state, &quot;rowDetails&quot;)" class="mioos-table-detail-toggle" type="button" :aria-expanded="vm.backendTableIsExpanded(state, row) ? \'true\' : \'false\'" @click="vm.backendTableToggleExpand(tableId || state.id, row)">[[ vm.backendTableIsExpanded(state, row) ? \'▾\' : \'▸\' ]]</button><input v-if="vm.backendTableShowSelection(state)" type="checkbox" :checked="vm.backendTableIsSelected(state, row)" @change="vm.backendTableToggleRow(tableId || state.id, row)"></td><td v-for="(col, index) in columns" :key="col.key" :class="[vm.backendTableStickyClass(state, col, index, &quot;body&quot;), { \'is-cell-editing\': vm.backendTableIsCellEditing(state, row, col), \'is-cell-editable\': vm.backendTableCanEditCell(state, row, col) }]" :style="vm.backendTableStickyStyle(state, col, index, &quot;body&quot;)"><div v-if="vm.backendTableIsCellEditing(state, row, col)" class="mioos-table-cell-editor"><textarea v-if="vm.backendTableFilterControl(col) === &quot;textarea&quot;" :value="vm.backendTableCellDraftValue(state, row, col)" @input="vm.backendTableSetCellDraft(tableId || state.id, $event.target.value)"></textarea><select v-else-if="col.type === &quot;multiselect&quot;" multiple :value="vm.backendTableCellMultiValue(state, row, col)" @change="vm.backendTableSetCellMultiDraft(tableId || state.id, $event)"><option v-for="opt in vm.backendTableColumnOptions(state, col)" :key="opt" :value="opt">[[ opt ]]</option></select><select v-else-if="vm.backendTableFilterControl(col) === &quot;select&quot;" :value="vm.backendTableCellDraftValue(state, row, col)" @change="vm.backendTableSetCellDraft(tableId || state.id, $event.target.value)"><option value="">Choose…</option><option v-for="opt in vm.backendTableColumnOptions(state, col)" :key="opt" :value="opt">[[ opt ]]</option></select><select v-else-if="vm.backendTableFilterControl(col) === &quot;boolean&quot;" :value="vm.backendTableCellDraftValue(state, row, col)" @change="vm.backendTableSetCellDraft(tableId || state.id, $event.target.value)"><option value="">Choose…</option><option value="true">True</option><option value="false">False</option></select><input v-else-if="vm.backendTableFilterControl(col) === &quot;date&quot;" type="date" :value="vm.backendTableCellDraftValue(state, row, col)" @input="vm.backendTableSetCellDraft(tableId || state.id, $event.target.value)"><input v-else-if="vm.backendTableFilterControl(col) === &quot;number&quot;" type="number" :value="vm.backendTableCellDraftValue(state, row, col)" @input="vm.backendTableSetCellDraft(tableId || state.id, $event.target.value)"><input v-else :value="vm.backendTableCellDraftValue(state, row, col)" @input="vm.backendTableSetCellDraft(tableId || state.id, $event.target.value)"><small v-if="vm.backendTableFieldError(state, col.key)" class="mioos-field-error">[[ vm.backendTableFieldError(state, col.key) ]]</small><span class="mioos-table-cell-actions"><button type="button" class="mioos-table-cell-action is-save" title="Save cell" aria-label="Save cell" :disabled="state.saving" @click="vm.backendTableSaveCell(tableId || state.id, row, col)">✓</button><button type="button" class="mioos-table-cell-action is-cancel" title="Cancel cell edit" aria-label="Cancel cell edit" @click="vm.backendTableCancelCellEditor(tableId || state.id)">×</button></span></div><button v-else-if="vm.backendTableCanEditCell(state, row, col)" type="button" class="mioos-table-cell-edit-button" @click="vm.backendTableOpenCellEditor(tableId || state.id, row, col)"><span :class="\'mioos-table-cell type-\' + col.type">[[ vm.backendTableCellText(row, col) ]]</span><small>Edit</small></button><span v-else :class="\'mioos-table-cell type-\' + col.type">[[ vm.backendTableCellText(row, col) ]]</span></td><td v-if="vm.backendTableShowActions(state)" class="mioos-table-actions" :class="vm.backendTableStickyClass(state, null, -1, &quot;actions&quot;)" :style="vm.backendTableStickyStyle(state, null, -1, &quot;actions&quot;)"><button v-for="action in vm.backendTableVisibleRowActions(state)" :key="action.key" type="button" @click="vm.backendTableRunAction(tableId || state.id, action, row)">[[ action.label ]]</button></td></tr>' +
+                      '<tr :class="{ \'is-selected\': vm.backendTableIsSelected(state, row) }"><td v-if="vm.backendTableShowControl(state)" class="mioos-table-control-cell" :class="vm.backendTableStickyClass(state, null, -1, &quot;control&quot;)" :style="vm.backendTableStickyStyle(state, null, -1, &quot;control&quot;)"><button v-if="row._expand && vm.backendTableFeature(state, &quot;rowDetails&quot;)" class="mioos-table-detail-toggle" type="button" :aria-expanded="vm.backendTableIsExpanded(state, row) ? \'true\' : \'false\'" @click="vm.backendTableToggleExpand(tableId || state.id, row)">[[ vm.backendTableIsExpanded(state, row) ? \'▾\' : \'▸\' ]]</button><input v-if="vm.backendTableShowSelection(state)" type="checkbox" :checked="vm.backendTableIsSelected(state, row)" @change="vm.backendTableToggleRow(tableId || state.id, row)"></td><td v-for="(col, index) in columns" :key="col.key" :class="[vm.backendTableStickyClass(state, col, index, &quot;body&quot;), { \'is-cell-editing\': vm.backendTableIsCellEditing(state, row, col), \'is-cell-editable\': vm.backendTableCanEditCell(state, row, col) }]" :style="vm.backendTableStickyStyle(state, col, index, &quot;body&quot;)"><div v-if="vm.backendTableIsCellEditing(state, row, col)" class="mioos-table-cell-editor"><textarea v-if="vm.backendTableFilterControl(col) === &quot;textarea&quot;" :value="vm.backendTableCellDraftValue(state, row, col)" @input="vm.backendTableSetCellDraft(tableId || state.id, $event.target.value)"></textarea><select v-else-if="vm.backendTableFilterControl(col) === &quot;multiselect&quot;" multiple :value="vm.backendTableCellMultiValue(state, row, col)" @change="vm.backendTableSetCellMultiDraft(tableId || state.id, $event)"><option v-for="opt in vm.backendTableColumnOptions(state, col)" :key="opt" :value="opt">[[ opt ]]</option></select><select v-else-if="vm.backendTableFilterControl(col) === &quot;select&quot;" :value="vm.backendTableCellDraftValue(state, row, col)" @change="vm.backendTableSetCellDraft(tableId || state.id, $event.target.value)"><option value="">Choose…</option><option v-for="opt in vm.backendTableColumnOptions(state, col)" :key="opt" :value="opt">[[ opt ]]</option></select><button v-if="vm.backendTableCanAddColumnOption(state, col) && (vm.backendTableFilterControl(col) === &quot;select&quot; || vm.backendTableFilterControl(col) === &quot;multiselect&quot;)" type="button" class="mioos-table-inline-link" @click="vm.backendTableAddCellOption(tableId || state.id, col)">Add value</button><select v-else-if="vm.backendTableFilterControl(col) === &quot;boolean&quot;" :value="vm.backendTableCellDraftValue(state, row, col)" @change="vm.backendTableSetCellDraft(tableId || state.id, $event.target.value)"><option value="">Choose…</option><option value="true">True</option><option value="false">False</option></select><input v-else-if="vm.backendTableFilterControl(col) === &quot;date&quot;" type="date" :value="vm.backendTableCellDraftValue(state, row, col)" @input="vm.backendTableSetCellDraft(tableId || state.id, $event.target.value)"><input v-else-if="vm.backendTableFilterControl(col) === &quot;number&quot;" type="number" :value="vm.backendTableCellDraftValue(state, row, col)" @input="vm.backendTableSetCellDraft(tableId || state.id, $event.target.value)"><input v-else :type="vm.backendTableFilterControl(col) === &quot;email&quot; ? &quot;email&quot; : (vm.backendTableFilterControl(col) === &quot;tel&quot; ? &quot;tel&quot; : (vm.backendTableFilterControl(col) === &quot;url&quot; ? &quot;url&quot; : (vm.backendTableFilterControl(col) === &quot;time&quot; ? &quot;time&quot; : (vm.backendTableFilterControl(col) === &quot;datetime&quot; ? &quot;datetime-local&quot; : &quot;text&quot;))))" :value="vm.backendTableCellDraftValue(state, row, col)" @input="vm.backendTableSetCellDraft(tableId || state.id, $event.target.value)"><small v-if="vm.backendTableFieldError(state, col.key)" class="mioos-field-error">[[ vm.backendTableFieldError(state, col.key) ]]</small><span class="mioos-table-cell-actions"><button type="button" class="mioos-table-cell-action is-save" title="Save cell" aria-label="Save cell" :disabled="state.saving" @click="vm.backendTableSaveCell(tableId || state.id, row, col)">✓</button><button type="button" class="mioos-table-cell-action is-cancel" title="Cancel cell edit" aria-label="Cancel cell edit" @click="vm.backendTableCancelCellEditor(tableId || state.id)">×</button></span></div><button v-else-if="vm.backendTableCanEditCell(state, row, col)" type="button" class="mioos-table-cell-edit-button" @click="vm.backendTableOpenCellEditor(tableId || state.id, row, col)"><span :class="\'mioos-table-cell type-\' + col.type">[[ vm.backendTableCellText(row, col) ]]</span><small>Edit</small></button><span v-else :class="\'mioos-table-cell type-\' + col.type">[[ vm.backendTableCellText(row, col) ]]</span></td><td v-if="vm.backendTableShowActions(state)" class="mioos-table-actions" :class="vm.backendTableStickyClass(state, null, -1, &quot;actions&quot;)" :style="vm.backendTableStickyStyle(state, null, -1, &quot;actions&quot;)"><button v-for="action in vm.backendTableVisibleRowActions(state)" :key="action.key" type="button" @click="vm.backendTableRunAction(tableId || state.id, action, row)">[[ action.label ]]</button></td></tr>' +
                       '<tr v-if="vm.backendTableIsExpanded(state, row)" class="mioos-table-expanded-row"><td v-if="vm.backendTableShowControl(state)"></td><td :colspan="columns.length + (vm.backendTableShowActions(state) ? 1 : 0)"><strong>[[ (row._expand || {}).title || \'Details\' ]]</strong><p>[[ (row._expand || {}).body || JSON.stringify(row) ]]</p></td></tr>' +
                     '</template>' +
                   '</template>' +
@@ -1328,7 +1404,17 @@
             { key: 'dense', title: 'Dense operational table', dataset: 'demo', summary: 'Compact spacing for data-intensive MUMPS internal tools.', code: mumpsTableSnippet('demo', ['SET MOD("tableState","config","density")="compact"', 'SET MOD("tableState","config","defaultPageSize")=50', 'SET MOD("tableState","config","actionsWidth")=132']), config: { density: 'compact', defaultPageSize: 50, actionsWidth: 132 } },
             { key: 'editable', title: 'Editable CRUD table', dataset: 'demo', summary: 'Row create/edit/delete, column management, selection, and bulk delete.', code: mumpsTableSnippet('demo', ['SET MOD("tableState","config","features","rowCrud")=1', 'SET MOD("tableState","config","features","columnCrud")=1', 'SET MOD("tableState","config","features","selection")=1', 'SET MOD("tableState","config","features","bulkActions")=1']), config: { features: { rowCrud: true, columnCrud: true, selection: true, bulkActions: true, resizeColumns: true } } },
             { key: 'patient', title: 'Patient registration table', dataset: 'patient-registration', summary: 'Healthcare sample dataset with search, filters, details, and CRUD.', code: mumpsTableSnippet('patient-registration', ['SET MOD("tableState","config","defaultSort","column")="lastName"', 'SET MOD("tableState","config","defaultSort","direction")="ascending"']), config: { defaultSort: { column: 'lastName', direction: 'ascending' } } },
-            { key: 'massive', title: 'Massive read-only table', dataset: 'massive', summary: 'Fast server-side generated 10,000-row dataset with page-only row materialization and no actions column.', code: mumpsTableSnippet('massive', ['SET MOD("tableState","config","defaultSort","column")="id"', 'SET MOD("tableState","config","defaultPageSize")=100', 'SET MOD("tableState","config","features","rowCrud")=0', 'SET MOD("tableState","config","features","selection")=0', 'SET MOD("tableState","config","features","bulkActions")=0', 'SET MOD("tableState","config","features","rowDetails")=0']), config: { defaultPageSize: 100, defaultSort: { column: 'id', direction: 'ascending' }, features: { rowCrud: false, columnCrud: false, rowDetails: false, selection: false, bulkActions: false } } }
+            { key: 'massive', title: 'Massive read-only table', dataset: 'massive', summary: 'Fast server-side generated 10,000-row dataset with page-only row materialization and no actions column.', code: mumpsTableSnippet('massive', ['SET MOD("tableState","config","defaultSort","column")="id"', 'SET MOD("tableState","config","defaultPageSize")=100', 'SET MOD("tableState","config","features","rowCrud")=0', 'SET MOD("tableState","config","features","selection")=0', 'SET MOD("tableState","config","features","bulkActions")=0', 'SET MOD("tableState","config","features","rowDetails")=0']), config: { defaultPageSize: 100, defaultSort: { column: 'id', direction: 'ascending' }, features: { rowCrud: false, columnCrud: false, rowDetails: false, selection: false, bulkActions: false } } },
+            { key: 'filters', title: 'Advanced filters table', dataset: 'demo', summary: 'Include, exclude, contains, range, blank, and not-blank filters.', code: mumpsTableSnippet('demo', ['SET MOD("tableState","config","features","filters")=1']), config: { features: { filters: true } } },
+            { key: 'grouping', title: 'Multi-column grouping table', dataset: 'demo', summary: 'Grouping by status and owner with stable pagination.', code: mumpsTableSnippet('demo', ['SET MOD("tableState","groupByColumns",1)="status"', 'SET MOD("tableState","groupByColumns",2)="owner"']), config: { features: { grouping: true, columnGroups: true } } },
+            { key: 'fixed', title: 'Fixed columns table', dataset: 'demo', summary: 'Pinned leading and trailing columns for wide operational tables.', code: mumpsTableSnippet('demo', ['SET MOD("tableState","config","fixedColumns","start")=1', 'SET MOD("tableState","config","fixedColumns","end")=1']), config: { fixedColumns: { start: 1, end: 1 }, features: { fixedColumns: true } } },
+            { key: 'hidden', title: 'Hidden-column workflow table', dataset: 'demo', summary: 'Column visibility controls with hidden operational metadata.', code: mumpsTableSnippet('demo', ['SET @ROOT@("schema","columns",4,"hidden")=1']), config: { features: { columnPicker: true } } },
+            { key: 'selects', title: 'Select and multiselect table', dataset: 'demo', summary: 'Select editors with Add Value and multiselect-style coded fields.', code: mumpsTableSnippet('demo', ['SET @ROOT@("schema","columns",3,"type")="select"', 'SET @ROOT@("validation","fields","status","enum",1)="Open"', 'SET @ROOT@("validation","fields","status","enum",2)="Done"']), config: { features: { cellEditing: true, columnCrud: true } } },
+            { key: 'validation', title: 'Validation rules table', dataset: 'demo', summary: 'Required, enum, max length, date, and numeric validation contract.', code: mumpsTableSnippet('demo', ['SET @ROOT@("validation","fields","name","required")=1', 'SET @ROOT@("validation","fields","updated","date")=1']), config: { features: { rowCrud: true, cellEditing: true } } },
+            { key: 'export', title: 'Selected CSV export table', dataset: 'demo', summary: 'Server-generated CSV export of selected rows only.', code: mumpsTableSnippet('demo', ['SET MOD("tableState","config","features","selection")=1', 'SET MOD("tableState","config","features","bulkActions")=1']), config: { features: { selection: true, bulkActions: true } } },
+            { key: 'readonly-audit', title: 'Read-only audit table', dataset: 'demo', summary: 'Audit-style table with no row or column mutations exposed.', code: mumpsTableSnippet('demo', ['SET MOD("tableState","config","readonly")=1', 'SET MOD("tableState","config","features","cellEditing")=0']), config: { readonly: true, features: { rowCrud: false, columnCrud: false, cellEditing: false } } },
+            { key: 'patient-queues', title: 'Patient review queues table', dataset: 'patient-registration', summary: 'Draft, Pending Review, Needs Correction, Active, and Inactive queues.', code: mumpsTableSnippet('patient-registration', ['SET MOD("tableState","config","defaultSort","column")="reviewQueue"']), config: { defaultSort: { column: 'reviewQueue', direction: 'ascending' } } },
+            { key: 'patient-import', title: 'Patient CSV import table', dataset: 'patient-registration', summary: 'ROI 72 import preview, commit, export, and reconciliation workflow.', code: mumpsTableSnippet('patient-registration', ['DO PREVIEW^MIOOSPATIMPORT ; see ROI 72 docs for CSV preview/commit pattern']), config: { features: { rowCrud: true, selection: true, bulkActions: true } } }
           ];
         }
       },

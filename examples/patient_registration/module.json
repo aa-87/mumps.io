@@ -38,7 +38,7 @@
         "start": 1,
         "end": 0
       },
-      "patientContract": "mioos-patient-registration-v3"
+      "patientContract": "mioos-patient-registration-v4"
     }
   },
   "capabilities": {

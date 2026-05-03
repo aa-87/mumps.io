@@ -634,3 +634,15 @@ Patient Registration is now server-gated through `CANLAUNCH^MIOOSPAT`, `CAN^MIOO
 When modifying the App Catalogue, keep the List/Cards toggle backed by visible CSS for `.mioos-ui-module-grid.is-list`. Do not remove the Table Module Definition editor styles under `.mioos-table-module-editor`; otherwise the modal falls back to bare HTML. Table module actions should set inline `tableError` and return `{ok:false}` on failure instead of throwing into Vue click handlers.
 
 For Advanced Table mutations, do not apply acknowledgement-only `mutationOnly:true` payloads as full table query payloads. They intentionally omit rows/schema. Patient Registration add/edit uses validation metadata from `validation.fields` to display required fields, but the MUMPS backend remains authoritative for validation and persistence.
+
+## ROI 72 — Patient Registration import/export and reconciliation
+
+Current source includes ROI 72 regression fixes and Patient Registration import/reconciliation actions. Preserve the backend-authored table contract. Do not bypass MUMPS validation/permissions for patient CSV import, selected-row export, or duplicate reconciliation. Table UI modals must remain Escape-closeable. Table Module Definition JSON import must validate before backend submission and export must produce a local JSON file plus copyable JSON text.
+
+Follow-up table type ROIs should expand the cell editor matrix and patient-specific widgets. Follow-up terminal ROIs should rewrite terminal transport/profile/automation in separate focused increments.
+
+## Launch hotfix after ROI 72
+
+- Restored desktop VM helper methods that Vue shell components call during first paint (`desktopIconClass`, `desktopIconStyle`, icon drag handlers, desktop layout persistence, and safe global pointer/resize handlers).
+- Hardened shell icon rendering so a missing helper cannot freeze Explorer during mount.
+- Regression coverage now checks the first-paint desktop helper contract in `MIOOST` T020.

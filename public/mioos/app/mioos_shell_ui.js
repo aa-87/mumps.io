@@ -116,7 +116,13 @@
             };
           },
           iconClasses: function () {
-            return this.vm.desktopIconClass(this.icon);
+            if (this.vm && typeof this.vm.desktopIconClass === 'function') return this.vm.desktopIconClass(this.icon);
+            var ui = (this.vm && this.vm.desktopUi) || {};
+            return {
+              'is-selected': (ui.selectedKey || '') === (this.icon && this.icon.key),
+              'is-small': (ui.iconSize || 'medium') === 'small',
+              'is-large': (ui.iconSize || 'medium') === 'large'
+            };
           }
         },
         template: '' +
@@ -711,6 +717,35 @@
                   '<article class="mioos-classic-historyrow" v-for="item in completed" :key="item.id"><div class="mioos-classic-transfercopy"><strong>[[ item.name ]]</strong><small>[[ vm.transferDirectionLabel ? vm.transferDirectionLabel(item) : item.kind ]]</small></div><span class="mioos-classic-historystatus" :class="{ \'is-failed\': item.status === \'failed\' }">[[ item.status ]]</span><small>[[ vm.transferTimestampLabel ? vm.transferTimestampLabel(item) : \'\' ]]</small><button type="button" class="mioos-classic-tool" v-if="vm.canRetryTransfer && vm.canRetryTransfer(item)" @click="vm.retryTransfer(item)">Retry</button><button type="button" class="mioos-classic-tool" v-if="vm.canCancelTransfer && vm.canCancelTransfer(item)" @click="vm.cancelTransfer(item)">Cancel</button></article>' +
                 '</div>' +
               '</div>' +
+            '</div>' +
+          '</div>'
+      });
+
+
+      app.component('mioos-surface-viewer', {
+        props: ['window'],
+        computed: {
+          vm: function () { return root(this); },
+          view: function () { return (this.window && this.window.fileView) || {}; },
+          mime: function () { return String(this.view.mime || this.view.type || '').toLowerCase(); },
+          title: function () { return this.view.name || this.view.title || this.window.title || 'Viewer'; },
+          isImage: function () { return this.window.appKey === 'image-viewer' || this.mime.indexOf('image/') === 0; },
+          isVideo: function () { return this.mime.indexOf('video/') === 0; },
+          isAudio: function () { return this.mime.indexOf('audio/') === 0; },
+          isPdf: function () { return this.window.appKey === 'pdf-viewer' || this.mime === 'application/pdf'; },
+          content: function () { return this.view.content || this.view.text || this.view.data || this.view.url || this.view.imageSrc || this.view.mediaSrc || ''; }
+        },
+        template: '' +
+          '<div class="mioos-surface mioos-surface-viewer">' +
+            '<div class="mioos-surface-toolbar"><strong>[[ title ]]</strong><span class="mioos-surface-status">[[ mime || "file" ]]</span><button type="button" class="mioos-btn" v-if="view.downloadUrl" @click="window.open(view.downloadUrl, \"_blank\")">Download</button></div>' +
+            '<div class="mioos-viewer-body" :class="{ \"is-media\": isImage || isVideo || isAudio || isPdf }">' +
+              '<p v-if="view.loading" class="mioos-classic-empty">Loading file…</p>' +
+              '<p v-else-if="view.error" class="mioos-ui-module-error">[[ view.error ]]</p>' +
+              '<img v-else-if="isImage && content" class="mioos-viewer-image" :src="content" :alt="title">' +
+              '<video v-else-if="isVideo && content" class="mioos-viewer-video" :src="content" controls></video>' +
+              '<audio v-else-if="isAudio && content" class="mioos-viewer-audio" :src="content" controls></audio>' +
+              '<iframe v-else-if="isPdf && content" class="mioos-viewer-frame" :src="content" :title="title"></iframe>' +
+              '<pre v-else class="mioos-viewer-text">[[ content || "No preview content was returned by the backend." ]]</pre>' +
             '</div>' +
           '</div>'
       });

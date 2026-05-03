@@ -290,7 +290,6 @@
         if (!win || +win.draggable !== 1) return;
         this.ensureWindowFrame(win);
         if (event.button !== 0) return;
-        if (win.state === 'maximized' || win.state === 'snapped') restoreWindow(this, win);
         this.focusWindow(win.id);
         this.dragState.active = true;
         this.dragState.mode = 'move';
@@ -302,6 +301,7 @@
         this.dragState.top = win.top || 0;
         this.dragState.width = win.width || 600;
         this.dragState.height = win.height || 420;
+        this.dragState.restoreOnMove = (win.state === 'maximized' || win.state === 'snapped') ? 1 : 0;
         if (this.$el && this.$el.classList) this.$el.classList.add('is-window-dragging');
       },
       beginResize: function (win, edge, event) {
@@ -320,6 +320,7 @@
         this.dragState.top = win.top || 0;
         this.dragState.width = win.width || 600;
         this.dragState.height = win.height || 420;
+        this.dragState.restoreOnMove = (win.state === 'maximized' || win.state === 'snapped') ? 1 : 0;
         if (this.$el && this.$el.classList) this.$el.classList.add('is-window-dragging');
       },
       onDragMove: function (event) {
@@ -333,6 +334,15 @@
         dx = event.clientX - this.dragState.startX;
         dy = event.clientY - this.dragState.startY;
         if (this.dragState.mode === 'move') {
+          if (this.dragState.restoreOnMove && (Math.abs(dx) > 3 || Math.abs(dy) > 3)) {
+            restoreWindow(this, win);
+            this.dragState.restoreOnMove = 0;
+            this.dragState.startX = event.clientX;
+            this.dragState.startY = event.clientY;
+            this.dragState.left = win.left || 0;
+            this.dragState.top = win.top || 0;
+            dx = 0; dy = 0;
+          }
           win.left = this.dragState.left + dx;
           win.top = this.dragState.top + dy;
           clampWindow(this, win);
@@ -386,6 +396,7 @@
         this.dragState.mode = 'move';
         this.dragState.edge = '';
         this.dragState.windowId = '';
+        this.dragState.restoreOnMove = 0;
         this.clearSnapPreview();
         if (this.$el && this.$el.classList) this.$el.classList.remove('is-window-dragging');
       },

@@ -10,6 +10,7 @@ RUN
 	DO TREG
 	DO TPAT70
 	DO TPAT71
+	DO TPAT72
 	QUIT
 	;
 SETUP(STATE,CONF,ROOT)
@@ -231,7 +232,7 @@ TPAT70
 	DO ENSURE^MIOOSTBL(.STATE,"patient-registration")
 	KILL IN,OUT,ERR SET IN("dataset")="patient-registration",IN("page")=1,IN("pageSize")=25
 	DO OK^MIOTASSERT($$QUERY^MIOOSTBL(.STATE,.CONF,.IN,.OUT,.ERR),"[MIOSTBLC][TPAT70][query ok]")
-	DO EQ^MIOTASSERT($GET(OUT("patientRegistration","contract")),"mioos-patient-registration-v3","[MIOSTBLC][TPAT70][contract]")
+	DO EQ^MIOTASSERT($GET(OUT("patientRegistration","contract")),"mioos-patient-registration-v4","[MIOSTBLC][TPAT70][contract]")
 	DO OK^MIOTASSERT($DATA(OUT("patientRegistration","reviewQueues",4,"filter","reviewQueue","value")),"[MIOSTBLC][TPAT70][review queue metadata]")
 	DO OK^MIOTASSERT($$ACTIONHAS(.OUT,"patient.duplicate.mark"),"[MIOSTBLC][TPAT70][duplicate action exposed]")
 	DO OK^MIOTASSERT($$BULKHAS(.OUT,"patient.bulk.pending"),"[MIOSTBLC][TPAT70][bulk queue action exposed]")
@@ -292,6 +293,31 @@ TPAT71
 	DO OK^MIOTASSERT($$FINDMOD(.CAT,"patient-registration"),"[MIOSTBLC][TPAT71][catalog launch allowed]")
 	QUIT
 	;
+
+TPAT72
+	NEW STATE,CONF,ROOT,IN,OUT,ERR,CSV
+	KILL STATE,CONF,IN,OUT,ERR
+	DO CONFDEF^MIOOS(.CONF)
+	SET STATE("principal")="roi72",STATE("authenticated")=1,STATE("roles")="admin"
+	SET ROOT=$$ROOT^MIOOSTBL(.STATE,"patient-registration")
+	KILL @ROOT
+	DO ENSURE^MIOOSTBL(.STATE,"patient-registration")
+	SET CSV="mrn,lastName,firstName,dob,phone,email,state,zip,status,consent"_$CHAR(10)_"PAT-7200,Import,Valid,1984-02-02,555-7200,valid.import@example.invalid,NY,10001,Draft,No"_$CHAR(10)_"BAD,Import,Invalid,2035-02-02,abc,bad,ZZ,12,Active,No"
+	KILL IN,OUT,ERR SET IN("dataset")="patient-registration",IN("action")="patient.import.preview",IN("csv")=CSV
+	DO OK^MIOTASSERT($$MUTATE^MIOOSTBL(.STATE,.CONF,.IN,.OUT,.ERR),"[MIOSTBLC][TPAT72][import preview ok]")
+	DO EQ^MIOTASSERT($GET(OUT("importPreview","validCount")),1,"[MIOSTBLC][TPAT72][preview valid count]")
+	DO EQ^MIOTASSERT($GET(OUT("importPreview","invalidCount")),1,"[MIOSTBLC][TPAT72][preview invalid count]")
+	KILL IN,OUT,ERR SET IN("dataset")="patient-registration",IN("action")="patient.import.commit",IN("csv")=CSV
+	DO OK^MIOTASSERT($$MUTATE^MIOOSTBL(.STATE,.CONF,.IN,.OUT,.ERR),"[MIOSTBLC][TPAT72][import commit ok]")
+	DO OK^MIOTASSERT($$ROWEXISTS(ROOT,"PAT-7200"),"[MIOSTBLC][TPAT72][import row committed]")
+	KILL IN,OUT,ERR SET IN("dataset")="patient-registration",IN("action")="patient.reconcile.report"
+	DO OK^MIOTASSERT($$MUTATE^MIOOSTBL(.STATE,.CONF,.IN,.OUT,.ERR),"[MIOSTBLC][TPAT72][reconcile ok]")
+	DO OK^MIOTASSERT($DATA(OUT("reconciliation","candidateCount")),"[MIOSTBLC][TPAT72][reconcile contract]")
+	DO OK^MIOTASSERT($$FILEHAS^MIOOST("public/mioos/app/mioos_table.js","backendTableCloseAllTopDialogs"),"[MIOSTBLC][TPAT72][escape table dialogs]")
+	DO OK^MIOTASSERT($$FILEHAS^MIOOST("public/mioos/app/mioos_modules.js","validateTableDefinition"),"[MIOSTBLC][TPAT72][import json validation]")
+	DO OK^MIOTASSERT($$FILEHAS^MIOOST("public/mioos/app/mioos_shell_ui.js","mioos-surface-viewer"),"[MIOSTBLC][TPAT72][viewer surface]")
+	QUIT
+	;
 PATROW(IN,MRN,LAST,FIRST,DOB,PHONE,EMAIL,STATE,ZIP)
 	SET IN("row","mrn")=$GET(MRN)
 	SET IN("row","lastName")=$GET(LAST)
@@ -324,6 +350,10 @@ COUNTROWS(OUT)
 	;
 COLVISIBLE(OUT,KEY)
 	NEW I,OK SET (I,OK)=0 FOR  SET I=$ORDER(OUT("schema","columns",I)) QUIT:I'>0!(OK)  IF $GET(OUT("schema","columns",I,"key"))=KEY SET OK=1
+	QUIT OK
+	;
+ROWEXISTS(ROOT,ID)
+	NEW I,OK SET (I,OK)=0 FOR  SET I=$ORDER(@ROOT@("rows",I)) QUIT:I'>0!(OK)  IF $GET(@ROOT@("rows",I,"id"))=$GET(ID)!($GET(@ROOT@("rows",I,"mrn"))=$GET(ID)) SET OK=1
 	QUIT OK
 	;
 ACTIONHAS(OUT,KEY)
