@@ -8,8 +8,7 @@ RUN
 	DO TFILT
 	DO TFEAT
 	DO TREG
-	DO TMTBL
-	DO TPAT
+	DO TPAT70
 	QUIT
 	;
 SETUP(STATE,CONF,ROOT)
@@ -216,120 +215,42 @@ TREG
 	DO OK^MIOTASSERT($$FILEHAS^MIOOST("routines/MIOOSWS.m","mutationOnly")&$$FILEHAS^MIOOST("routines/MIOOSWS.m","refetch")&$$FILEHAS^MIOOST("routines/MIOOSWS.m","fieldErrors"),"[MIOSTBLC][TREG][ws deterministic failure json]")
 	DO OK^MIOTASSERT($$FILEHAS^MIOOST("docs/mioos/ROI_68A_Table_Backend_Contract_Tests_and_Samples.md","ROI 68A"),"[MIOSTBLC][TREG][roi docs]")
 	DO OK^MIOTASSERT($$FILEHAS^MIOOST("examples/mioos_modules/table/README.md","Sample matrix"),"[MIOSTBLC][TREG][sample matrix docs]")
-	DO OK^MIOTASSERT($$FILEHAS^MIOOST("routines/MIOOSAPI.m","MODULETABLE(DEV,CONF,REQ,CTX)"),"[MIOSTBLC][TREG][module table api route]")
-	DO OK^MIOTASSERT($$FILEHAS^MIOOST("public/mioos/app/mioos_table.js","hasQueryShape"),"[MIOSTBLC][TREG][mutation ack does not clear rows]")
-	DO OK^MIOTASSERT($$FILEHAS^MIOOST("public/mioos/mioos.css","mioos-table-processing.active"),"[MIOSTBLC][TREG][persistent loading bar]")
-	DO OK^MIOTASSERT($$FILEHAS^MIOOST("public/mioos/app/mioos_table.js","mioos-table-feedback-rail"),"[MIOSTBLC][TREG][stable feedback rail]")
-	DO OK^MIOTASSERT($$FILEHAS^MIOOST("public/mioos/app/mioos_table.js","backendTableCaptureColumnPrefs"),"[MIOSTBLC][TREG][client column preferences retained]")
-	DO OK^MIOTASSERT($$FILEHAS^MIOOST("public/mioos/mioos.css","mioos-table-column-item > button"),"[MIOSTBLC][TREG][reorder button css isolated]")
-	DO OK^MIOTASSERT($$FILEHAS^MIOOST("public/mioos/mioos.css","mioos-ui-module-grid.is-list"),"[MIOSTBLC][TREG][catalog list layout]")
-	DO OK^MIOTASSERT($$FILEHAS^MIOOST("public/mioos/app/mioos_modules.js","addTableColumn"),"[MIOSTBLC][TREG][table module editor finished]")
-	QUIT
-	;
-TMTBL
-	NEW STATE,CONF,ROOT,IN,OUT,ERR,DEF,CAT
-	DO SETUP(.STATE,.CONF,.ROOT)
-	KILL DEF,IN,OUT,ERR
-	SET DEF("key")="contract_table_module",DEF("title")="Contract Table Module",DEF("dataset")="contract_table_module",DEF("category")="Tests",DEF("icon")="▤",DEF("description")="Contract test table module"
-	SET DEF("schema","columns",1,"key")="name",DEF("schema","columns",1,"label")="Name",DEF("schema","columns",1,"type")="text",DEF("schema","columns",1,"width")=180
-	SET DEF("schema","columns",2,"key")="status",DEF("schema","columns",2,"label")="Status",DEF("schema","columns",2,"type")="select",DEF("schema","columns",2,"width")=120
-	SET DEF("rows",1,"id")="ctm-1",DEF("rows",1,"name")="Preview row",DEF("rows",1,"status")="Active"
-	MERGE IN("definition")=DEF
-	SET IN("action")="preview"
-	DO OK^MIOTASSERT($$HANDLE^MIOOSMTBL(.STATE,.CONF,.IN,.OUT,.ERR),"[MIOSTBLC][TMTBL][preview ok]")
-	DO EQ^MIOTASSERT($GET(OUT("query","recordsTotal")),1,"[MIOSTBLC][TMTBL][preview rows]")
-	KILL IN,OUT,ERR
-	MERGE IN("definition")=DEF
-	SET IN("action")="save"
-	DO OK^MIOTASSERT($$HANDLE^MIOOSMTBL(.STATE,.CONF,.IN,.OUT,.ERR),"[MIOSTBLC][TMTBL][save ok]")
-	DO EQ^MIOTASSERT($GET(OUT("registered")),1,"[MIOSTBLC][TMTBL][registered]")
-	DO EQ^MIOTASSERT($GET(^MIO("MIOOS","MODULE","USER","roi68a","contract_table_module","tableState","dataset")),"contract_table_module","[MIOSTBLC][TMTBL][module table state]")
-	KILL IN,OUT,ERR SET IN("action")="list"
-	DO OK^MIOTASSERT($$HANDLE^MIOOSMTBL(.STATE,.CONF,.IN,.OUT,.ERR),"[MIOSTBLC][TMTBL][list ok]")
-	DO OK^MIOTASSERT($$FINDDEF(.OUT,"contract_table_module"),"[MIOSTBLC][TMTBL][definition listed]")
-	KILL CAT
-	DO LOAD^MIOOSMOD(.STATE,.CONF)
-	MERGE CAT=STATE("uiModules")
-	DO OK^MIOTASSERT($$FINDCAT(.CAT,"contract_table_module"),"[MIOSTBLC][TMTBL][catalog table definition]")
-	DO OK^MIOTASSERT($$FINDMOD(.CAT,"contract_table_module"),"[MIOSTBLC][TMTBL][catalog module registered]")
-	KILL IN,OUT,ERR SET IN("action")="export",IN("key")="contract_table_module"
-	DO OK^MIOTASSERT($$HANDLE^MIOOSMTBL(.STATE,.CONF,.IN,.OUT,.ERR),"[MIOSTBLC][TMTBL][export ok]")
-	DO EQ^MIOTASSERT($GET(OUT("definition","key")),"contract_table_module","[MIOSTBLC][TMTBL][export definition]")
-	KILL IN,OUT,ERR SET IN("action")="revisions",IN("key")="contract_table_module"
-	DO OK^MIOTASSERT($$HANDLE^MIOOSMTBL(.STATE,.CONF,.IN,.OUT,.ERR),"[MIOSTBLC][TMTBL][revisions ok]")
-	DO EQ^MIOTASSERT($GET(OUT("ok")),1,"[MIOSTBLC][TMTBL][revisions deterministic]")
-	QUIT
-	;
-TPAT
-	NEW STATE,CONF,ROOT,IN,OUT,ERR
-	KILL STATE,CONF
-	DO CONFDEF^MIOOS(.CONF)
-	SET CONF("mioos","table","maxPageSize")=250
-	SET CONF("mioos","table","maxFieldChars")=256
-	SET STATE("principal")="roi69"
-	SET STATE("authenticated")=1
-	SET ROOT=$$ROOT^MIOOSTBL(.STATE,"patient-registration")
-	KILL @ROOT
-	DO ENSURE^MIOOSTBL(.STATE,"patient-registration")
-	KILL IN,OUT,ERR SET IN("dataset")="patient-registration",IN("page")=1,IN("pageSize")=10
-	DO OK^MIOTASSERT($$QUERY^MIOOSTBL(.STATE,.CONF,.IN,.OUT,.ERR),"[MIOSTBLC][TPAT][query ok]")
-	DO EQ^MIOTASSERT($GET(OUT("patientRegistration","contract")),"mioos-patient-registration-v2","[MIOSTBLC][TPAT][patient contract]")
-	DO EQ^MIOTASSERT($GET(OUT("features","duplicateDetection")),1,"[MIOSTBLC][TPAT][duplicate feature]")
-	KILL IN,OUT,ERR SET IN("dataset")="patient-registration",IN("action")="row.save"
-	DO PATIN(.IN,"PAT-2000","PAT-2000","Future","DOB","2999-01-01","555-2000","future@example.invalid","NY","10001","Draft","Unknown")
-	DO EQ^MIOTASSERT($$MUTATE^MIOOSTBL(.STATE,.CONF,.IN,.OUT,.ERR),0,"[MIOSTBLC][TPAT][future dob fails]")
-	DO OK^MIOTASSERT($DATA(ERR("fieldErrors","dob")),"[MIOSTBLC][TPAT][future dob field]")
-	KILL IN,OUT,ERR SET IN("dataset")="patient-registration",IN("action")="row.save"
-	DO PATIN(.IN,"PAT-2001","PAT-1001","Duplicate","MRN","1980-01-01","555-2001","dup@example.invalid","NY","10001","Draft","Unknown")
-	DO EQ^MIOTASSERT($$MUTATE^MIOOSTBL(.STATE,.CONF,.IN,.OUT,.ERR),0,"[MIOSTBLC][TPAT][duplicate mrn fails]")
-	DO OK^MIOTASSERT($DATA(ERR("fieldErrors","mrn")),"[MIOSTBLC][TPAT][duplicate mrn field]")
-	KILL IN,OUT,ERR SET IN("dataset")="patient-registration",IN("action")="row.save"
-	DO PATIN(.IN,"PAT-2002","PAT-2002","No","Consent","1980-01-01","555-2002","active@example.invalid","NY","10001","Active","Unknown")
-	DO EQ^MIOTASSERT($$MUTATE^MIOOSTBL(.STATE,.CONF,.IN,.OUT,.ERR),0,"[MIOSTBLC][TPAT][active consent fails]")
-	DO OK^MIOTASSERT($DATA(ERR("fieldErrors","consent")),"[MIOSTBLC][TPAT][consent field]")
-	KILL IN,OUT,ERR SET IN("dataset")="patient-registration",IN("action")="row.save"
-	DO PATIN(.IN,"PAT-1001","PAT-1001","Garcia","Elena","1984-04-12","555-0101","elena.garcia@example.invalid","NY","10001","Draft","Yes")
-	SET IN("row","consentDate")="2026-05-03"
-	DO EQ^MIOTASSERT($$MUTATE^MIOOSTBL(.STATE,.CONF,.IN,.OUT,.ERR),0,"[MIOSTBLC][TPAT][bad transition fails]")
-	DO OK^MIOTASSERT($DATA(ERR("fieldErrors","status")),"[MIOSTBLC][TPAT][status transition field]")
-	KILL IN,OUT,ERR SET IN("dataset")="patient-registration",IN("action")="row.save"
-	DO PATIN(.IN,"PAT-3000","PAT-3000","Garcia","Elena","1984-04-12","555-3000","dupewarn@example.invalid","NY","10001","Draft","Unknown")
-	DO OK^MIOTASSERT($$MUTATE^MIOOSTBL(.STATE,.CONF,.IN,.OUT,.ERR),"[MIOSTBLC][TPAT][duplicate warning save ok]")
-	DO EQ^MIOTASSERT($GET(OUT("warnings","duplicateCandidates",1,"reason")),"same_name_dob","[MIOSTBLC][TPAT][duplicate warning]")
-	KILL IN,OUT,ERR SET IN("dataset")="patient-registration",IN("action")="cell.save",IN("rowId")="PAT-1001",IN("columnKey")="status",IN("value")="Draft"
-	DO EQ^MIOTASSERT($$MUTATE^MIOOSTBL(.STATE,.CONF,.IN,.OUT,.ERR),0,"[MIOSTBLC][TPAT][cell bad transition fails]")
-	DO OK^MIOTASSERT($DATA(ERR("fieldErrors","status")),"[MIOSTBLC][TPAT][cell transition field]")
-	QUIT
-	;
-PATIN(IN,ID,MRN,LAST,FIRST,DOB,PHONE,EMAIL,STATE,ZIP,STATUS,CONSENT)
-	SET IN("row","id")=$GET(ID)
-	SET IN("row","mrn")=$GET(MRN)
-	SET IN("row","lastName")=$GET(LAST)
-	SET IN("row","firstName")=$GET(FIRST)
-	SET IN("row","dob")=$GET(DOB)
-	SET IN("row","phone")=$GET(PHONE)
-	SET IN("row","email")=$GET(EMAIL)
-	SET IN("row","state")=$GET(STATE)
-	SET IN("row","zip")=$GET(ZIP)
-	SET IN("row","status")=$GET(STATUS)
-	SET IN("row","consent")=$GET(CONSENT)
-	SET IN("row","primaryProvider")="Dr. Test"
-	SET IN("row","emergencyContact")="Test Contact"
-	SET IN("row","emergencyPhone")="555-9999"
 	QUIT
 	;
 
-FINDDEF(OUT,KEY)
-	NEW I,OK SET (I,OK)=0 FOR  SET I=$ORDER(OUT("definitions",I)) QUIT:I'>0!(OK)  IF $GET(OUT("definitions",I,"key"))=KEY SET OK=1
-	QUIT OK
-	;
-FINDCAT(CAT,KEY)
-	NEW I,OK SET (I,OK)=0 FOR  SET I=$ORDER(CAT("tableDefinitions",I)) QUIT:I'>0!(OK)  IF $GET(CAT("tableDefinitions",I,"key"))=KEY SET OK=1
-	QUIT OK
-	;
-FINDMOD(CAT,KEY)
-	NEW I,OK SET (I,OK)=0 FOR  SET I=$ORDER(CAT("modules",I)) QUIT:I'>0!(OK)  IF $GET(CAT("modules",I,"key"))=KEY,$GET(CAT("modules",I,"tableState","dataset"))=KEY SET OK=1
-	QUIT OK
+TPAT70
+	NEW STATE,CONF,ROOT,IN,OUT,ERR
+	KILL STATE,CONF,IN,OUT,ERR
+	DO CONFDEF^MIOOS(.CONF)
+	SET STATE("principal")="roi70"
+	SET STATE("authenticated")=1
+	SET ROOT=$$ROOT^MIOOSTBL(.STATE,"patient-registration")
+	KILL @ROOT,^MIO("MIOOS","PATIENT","AUDIT","roi70")
+	DO ENSURE^MIOOSTBL(.STATE,"patient-registration")
+	KILL IN,OUT,ERR SET IN("dataset")="patient-registration",IN("page")=1,IN("pageSize")=25
+	DO OK^MIOTASSERT($$QUERY^MIOOSTBL(.STATE,.CONF,.IN,.OUT,.ERR),"[MIOSTBLC][TPAT70][query ok]")
+	DO EQ^MIOTASSERT($GET(OUT("patientRegistration","contract")),"mioos-patient-registration-v3","[MIOSTBLC][TPAT70][contract]")
+	DO OK^MIOTASSERT($DATA(OUT("patientRegistration","reviewQueues",4,"filter","reviewQueue","value")),"[MIOSTBLC][TPAT70][review queue metadata]")
+	DO OK^MIOTASSERT($$ACTIONHAS(.OUT,"patient.duplicate.mark"),"[MIOSTBLC][TPAT70][duplicate action exposed]")
+	DO OK^MIOTASSERT($$BULKHAS(.OUT,"patient.bulk.pending"),"[MIOSTBLC][TPAT70][bulk queue action exposed]")
+	KILL IN,OUT,ERR SET IN("dataset")="patient-registration",IN("filters","reviewQueue","mode")="include",IN("filters","reviewQueue","value")="Pending Review"
+	DO QCOUNT(.STATE,.CONF,.IN,1,"[MIOSTBLC][TPAT70][pending queue filter]")
+	KILL IN,OUT,ERR SET IN("dataset")="patient-registration",IN("action")="patient.duplicate.mark",IN("rowId")="PAT-1001"
+	DO OK^MIOTASSERT($$MUTATE^MIOOSTBL(.STATE,.CONF,.IN,.OUT,.ERR),"[MIOSTBLC][TPAT70][mark duplicate ok]")
+	DO OK^MIOTASSERT($$ACK(.OUT,"patient.duplicate.mark"),"[MIOSTBLC][TPAT70][mark duplicate ack]")
+	KILL IN,OUT,ERR SET IN("dataset")="patient-registration",IN("filters","duplicateStatus","mode")="include",IN("filters","duplicateStatus","value")="Duplicate"
+	DO QCOUNT(.STATE,.CONF,.IN,1,"[MIOSTBLC][TPAT70][duplicate filter]")
+	KILL IN,OUT,ERR SET IN("dataset")="patient-registration",IN("action")="patient.duplicate.clear",IN("rowId")="PAT-1001"
+	DO OK^MIOTASSERT($$MUTATE^MIOOSTBL(.STATE,.CONF,.IN,.OUT,.ERR),"[MIOSTBLC][TPAT70][clear duplicate ok]")
+	KILL IN,OUT,ERR SET IN("dataset")="patient-registration",IN("filters","duplicateStatus","mode")="include",IN("filters","duplicateStatus","value")="Not duplicate"
+	DO QCOUNT(.STATE,.CONF,.IN,1,"[MIOSTBLC][TPAT70][not duplicate filter]")
+	KILL IN,OUT,ERR SET IN("dataset")="patient-registration",IN("action")="patient.bulk.pending",IN("ids",1)="PAT-1001",IN("ids",2)="PAT-1003"
+	DO OK^MIOTASSERT($$MUTATE^MIOOSTBL(.STATE,.CONF,.IN,.OUT,.ERR),"[MIOSTBLC][TPAT70][bulk pending ok]")
+	DO OK^MIOTASSERT($DATA(^MIO("MIOOS","PATIENT","AUDIT","roi70",1,"action")),"[MIOSTBLC][TPAT70][audit written]")
+	DO OK^MIOTASSERT($$FILEHAS^MIOOST("routines/MIOOSST.m","win-patient-registration"),"[MIOSTBLC][TPAT70][direct patient window]")
+	DO OK^MIOTASSERT($$FILEHAS^MIOOST("public/mioos/app/mioos_table.js","backendTableApplyPatientQueue"),"[MIOSTBLC][TPAT70][queue ui hook]")
+	DO OK^MIOTASSERT($$FILEHAS^MIOOST("public/mioos/mioos.css","restore original modal backdrops"),"[MIOSTBLC][TPAT70][modal body opaque marker]")
+	QUIT
 	;
 ACK(OUT,ACTION)
 	IF $GET(OUT("ok"))'=1 QUIT 0
@@ -345,6 +266,14 @@ COUNTROWS(OUT)
 	;
 COLVISIBLE(OUT,KEY)
 	NEW I,OK SET (I,OK)=0 FOR  SET I=$ORDER(OUT("schema","columns",I)) QUIT:I'>0!(OK)  IF $GET(OUT("schema","columns",I,"key"))=KEY SET OK=1
+	QUIT OK
+	;
+ACTIONHAS(OUT,KEY)
+	NEW I,OK SET (I,OK)=0 FOR  SET I=$ORDER(OUT("rowActions",I)) QUIT:I'>0!(OK)  IF $GET(OUT("rowActions",I,"key"))=$GET(KEY) SET OK=1
+	QUIT OK
+	;
+BULKHAS(OUT,KEY)
+	NEW I,OK SET (I,OK)=0 FOR  SET I=$ORDER(OUT("bulkActions",I)) QUIT:I'>0!(OK)  IF $GET(OUT("bulkActions",I,"key"))=$GET(KEY) SET OK=1
 	QUIT OK
 	;
 VALTEST(IN,ERR,ROOT)

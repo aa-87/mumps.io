@@ -13,18 +13,29 @@ INIT(ROOT)
 	DO ADDCOL(ROOT,"emergencyPhone","Emergency phone","text",150,"Emergency",0,1)
 	DO ADDCOL(ROOT,"consent","Consent","select",110,"Consent",1,1)
 	DO ADDCOL(ROOT,"consentDate","Consent date","date",130,"Consent",0,1)
+	DO ADDCOL(ROOT,"reviewQueue","Review queue","select",150,"Review",0,0)
+	DO ADDCOL(ROOT,"duplicateStatus","Duplicate status","select",150,"Review",0,1)
+	DO ADDCOL(ROOT,"duplicateOf","Duplicate of","text",130,"Review",0,1)
+	DO ADDCOL(ROOT,"missingConsent","Missing consent","boolean",120,"Review",0,0)
+	DO ADDCOL(ROOT,"reviewNote","Review note","textarea",260,"Review",0,1)
+	DO ADDCOL(ROOT,"lastReviewAt","Last review","date",130,"Review",0,0)
+	DO ADDCOL(ROOT,"reviewedBy","Reviewed by","text",130,"Review",0,0)
 	DO ADDCOL(ROOT,"notes","Notes","textarea",280,"Notes",0,1)
 	DO ADDCOL(ROOT,"createdAt","Created","date",130,"Audit",0,0)
+	DO ADDCOL(ROOT,"createdBy","Created by","text",130,"Audit",0,0)
 	DO ADDCOL(ROOT,"updatedAt","Updated","date",130,"Audit",0,0)
 	DO ADDCOL(ROOT,"updatedBy","Updated by","text",130,"Audit",0,0)
-	SET @ROOT@("meta","contract")="mioos-patient-registration-v2"
-	SET @ROOT@("meta","description")="Patient registration intake workflow backed by MIOOSTBL persistence"
+	SET @ROOT@("meta","contract")="mioos-patient-registration-v3"
+	SET @ROOT@("meta","description")="Patient registration review queues, search, and duplicate-resolution workflow backed by MIOOSTBL persistence"
 	SET @ROOT@("meta","hipaaNote")="HIPAA-ready architecture pattern only; deployment controls are still required."
 	SET @ROOT@("features","patientRegistration")=1
 	SET @ROOT@("features","auditStatus")=1
 	SET @ROOT@("features","intakeWorkflow")=1
 	SET @ROOT@("features","duplicateDetection")=1
 	SET @ROOT@("features","statusTransitions")=1
+	SET @ROOT@("features","reviewQueues")=1
+	SET @ROOT@("features","duplicateResolution")=1
+	SET @ROOT@("features","patientSearch")=1
 	SET @ROOT@("validation","routine")="VALPAT^MIOOSPAT"
 	DO VR(ROOT,"mrn",1,32,"MRN is required")
 	DO VR(ROOT,"lastName",1,80,"Last name is required")
@@ -42,18 +53,27 @@ INIT(ROOT)
 	DO VR(ROOT,"status",1,32,"Status is required")
 	DO VR(ROOT,"consent",1,16,"Consent is required")
 	DO VR(ROOT,"consentDate",0,10,"") SET @ROOT@("validation","fields","consentDate","date")=1
+	DO VR(ROOT,"reviewNote",0,2048,"")
 	DO VR(ROOT,"notes",0,2048,"")
 	DO ENUM(ROOT,"status","Draft","Pending Review","Active","Inactive")
 	DO ENUM(ROOT,"consent","Yes","No","Unknown","")
+	DO ENUM(ROOT,"duplicateStatus","None","Candidate","Duplicate","Not duplicate")
 	DO STATES(ROOT,"state")
 	SET I=0 FOR  SET I=$ORDER(@ROOT@("schema","columns",I)) QUIT:I'>0  DO
 	. IF $GET(@ROOT@("schema","columns",I,"key"))="status" SET @ROOT@("schema","columns",I,"type")="select"
 	. IF $GET(@ROOT@("schema","columns",I,"key"))="consent" SET @ROOT@("schema","columns",I,"type")="select"
 	. IF $GET(@ROOT@("schema","columns",I,"key"))="state" SET @ROOT@("schema","columns",I,"type")="select"
+	. IF $GET(@ROOT@("schema","columns",I,"key"))="duplicateStatus" SET @ROOT@("schema","columns",I,"type")="select"
 	. IF $GET(@ROOT@("schema","columns",I,"key"))="notes" SET @ROOT@("schema","columns",I,"type")="textarea"
+	. IF $GET(@ROOT@("schema","columns",I,"key"))="reviewNote" SET @ROOT@("schema","columns",I,"type")="textarea"
+	. IF $GET(@ROOT@("schema","columns",I,"key"))="reviewQueue" SET @ROOT@("schema","columns",I,"editable")=0
+	. IF $GET(@ROOT@("schema","columns",I,"key"))="missingConsent" SET @ROOT@("schema","columns",I,"editable")=0
 	. IF $GET(@ROOT@("schema","columns",I,"key"))="createdAt" SET @ROOT@("schema","columns",I,"editable")=0
+	. IF $GET(@ROOT@("schema","columns",I,"key"))="createdBy" SET @ROOT@("schema","columns",I,"editable")=0
 	. IF $GET(@ROOT@("schema","columns",I,"key"))="updatedAt" SET @ROOT@("schema","columns",I,"editable")=0
 	. IF $GET(@ROOT@("schema","columns",I,"key"))="updatedBy" SET @ROOT@("schema","columns",I,"editable")=0
+	. IF $GET(@ROOT@("schema","columns",I,"key"))="lastReviewAt" SET @ROOT@("schema","columns",I,"editable")=0
+	. IF $GET(@ROOT@("schema","columns",I,"key"))="reviewedBy" SET @ROOT@("schema","columns",I,"editable")=0
 	DO ROWDEFAULTS(ROOT)
 	QUIT
 	;
@@ -117,15 +137,43 @@ ROWDEFAULTS(ROOT)
 	. IF $GET(@ROOT@("rows",I,"notes"))="" SET @ROOT@("rows",I,"notes")="Synthetic patient registration sample row."
 	. IF $GET(@ROOT@("rows",I,"createdAt"))="" SET @ROOT@("rows",I,"createdAt")=TODAY
 	. IF $GET(@ROOT@("rows",I,"updatedAt"))="" SET @ROOT@("rows",I,"updatedAt")=TODAY
-	. DO ROWEXP(ROOT,I)
+	. DO REVIEWROW(ROOT,I)
 	QUIT
 	;
+REVIEWROW(ROOT,I)
+	NEW MRN,FIRST,LAST,DOB,DUP,STATUS,CONSENT,MISS
+	SET MRN=$GET(@ROOT@("rows",I,"mrn"),$GET(@ROOT@("rows",I,"id")))
+	SET FIRST=$GET(@ROOT@("rows",I,"firstName")),LAST=$GET(@ROOT@("rows",I,"lastName")),DOB=$GET(@ROOT@("rows",I,"dob"))
+	SET STATUS=$$STATUS($GET(@ROOT@("rows",I,"status"))) SET @ROOT@("rows",I,"status")=STATUS
+	SET CONSENT=$GET(@ROOT@("rows",I,"consent"))
+	SET MISS=$SELECT(STATUS="Active"&(CONSENT'="Yes"):"true",CONSENT="Unknown":"true",1:"false")
+	SET @ROOT@("rows",I,"missingConsent")=MISS
+	SET DUP=$$DUPDEM(ROOT,FIRST,LAST,DOB,MRN)
+	IF $GET(@ROOT@("rows",I,"duplicateStatus"))="" SET @ROOT@("rows",I,"duplicateStatus")=$SELECT(DUP'="":"Candidate",1:"None")
+	IF DUP'="",$GET(@ROOT@("rows",I,"duplicateOf"))="" SET @ROOT@("rows",I,"duplicateOf")=DUP
+	SET @ROOT@("rows",I,"reviewQueue")=$$QUEUE(ROOT,I)
+	DO ROWEXP(ROOT,I)
+	QUIT
+	;
+QUEUE(ROOT,I)
+	NEW STATUS,DUP,MISS
+	SET STATUS=$$STATUS($GET(@ROOT@("rows",I,"status")))
+	SET DUP=$GET(@ROOT@("rows",I,"duplicateStatus")),MISS=$$LOW^MIOUTIL($GET(@ROOT@("rows",I,"missingConsent")))
+	IF DUP="Duplicate" QUIT "Needs Correction"
+	IF DUP="Candidate" QUIT "Needs Correction"
+	IF MISS="true" QUIT "Needs Correction"
+	IF STATUS="Draft" QUIT "Drafts"
+	IF STATUS="Pending Review" QUIT "Pending Review"
+	IF STATUS="Active" QUIT "Active"
+	IF STATUS="Inactive" QUIT "Inactive"
+	QUIT "Needs Correction"
+	;
 ROWEXP(ROOT,I)
-	NEW MRN,FIRST,LAST,STATUS,DUP
-	SET MRN=$GET(@ROOT@("rows",I,"mrn")),FIRST=$GET(@ROOT@("rows",I,"firstName")),LAST=$GET(@ROOT@("rows",I,"lastName")),STATUS=$GET(@ROOT@("rows",I,"status"))
-	SET DUP=$$DUPDEM(ROOT,FIRST,LAST,$GET(@ROOT@("rows",I,"dob")),MRN)
-	SET @ROOT@("rows",I,"_expand","title")="Patient intake summary"
-	SET @ROOT@("rows",I,"_expand","body")="MRN "_MRN_" — "_FIRST_" "_LAST_". Status: "_STATUS_$SELECT(DUP'="":". Duplicate candidate: "_DUP,1:".")
+	NEW MRN,FIRST,LAST,STATUS,DUP,QUEUE
+	SET MRN=$GET(@ROOT@("rows",I,"mrn")),FIRST=$GET(@ROOT@("rows",I,"firstName")),LAST=$GET(@ROOT@("rows",I,"lastName"))
+	SET STATUS=$GET(@ROOT@("rows",I,"status")),DUP=$GET(@ROOT@("rows",I,"duplicateOf")),QUEUE=$GET(@ROOT@("rows",I,"reviewQueue"))
+	SET @ROOT@("rows",I,"_expand","title")="Patient review summary"
+	SET @ROOT@("rows",I,"_expand","body")="MRN "_MRN_" — "_FIRST_" "_LAST_". Status: "_STATUS_". Queue: "_QUEUE_$SELECT(DUP'="":". Duplicate candidate: "_DUP,1:".")
 	QUIT
 	;
 EMAIL(FIRST,LAST)
@@ -135,23 +183,56 @@ EMAIL(FIRST,LAST)
 	QUIT X_"@example.invalid"
 	;
 PATMETA(OUT,ROOT)
-	NEW DUPS
+	NEW Q
 	SET OUT("features","patientRegistration")=1
 	SET OUT("features","auditStatus")=1
 	SET OUT("features","validationSummary")=1
 	SET OUT("features","duplicateDetection")=1
-	SET OUT("patientRegistration","contract")="mioos-patient-registration-v2"
+	SET OUT("features","reviewQueues")=1
+	SET OUT("features","duplicateResolution")=1
+	SET OUT("features","patientSearch")=1
+	SET OUT("features","intakeWorkflow")=1
+	SET OUT("features","statusTransitions")=1
+	SET OUT("patientRegistration","contract")="mioos-patient-registration-v3"
 	SET OUT("patientRegistration","title")="Patient Registration"
+	SET OUT("patientRegistration","entryPoint")="Start Menu > Patient Registration or App Catalogue > Healthcare > Patient Registration"
 	SET OUT("patientRegistration","notice")="Synthetic sample data only. HIPAA-ready architecture still requires deployment controls."
-	SET OUT("patientRegistration","statusMessage")="Guided intake uses server-side MUMPS validation, duplicate warnings, status transitions, and audit markers."
+	SET OUT("patientRegistration","statusMessage")="Search patients, triage review queues, and resolve duplicate candidates through server-side MUMPS actions."
 	SET OUT("patientRegistration","workflow",1)="Draft"
 	SET OUT("patientRegistration","workflow",2)="Pending Review"
-	SET OUT("patientRegistration","workflow",3)="Active"
-	SET OUT("patientRegistration","workflow",4)="Inactive"
-	SET OUT("patientRegistration","required",1)="Demographics"
-	SET OUT("patientRegistration","required",2)="Contact information"
-	SET OUT("patientRegistration","required",3)="Consent/status"
-	IF $GET(ROOT)'="" SET DUPS=$$DUPCOUNT(ROOT),OUT("patientRegistration","duplicateCandidateCount")=DUPS
+	SET OUT("patientRegistration","workflow",3)="Needs Correction"
+	SET OUT("patientRegistration","workflow",4)="Active"
+	KILL Q DO QUEUEMETA(ROOT,.Q)
+	MERGE OUT("patientRegistration","reviewQueues")=Q("reviewQueues")
+	MERGE OUT("patientRegistration","queueCounts")=Q("queueCounts")
+	SET OUT("patientRegistration","duplicateCandidateCount")=+$GET(Q("queueCounts","duplicateCandidates"))
+	SET OUT("rowActions",4,"key")="patient.duplicate.mark",OUT("rowActions",4,"label")="Mark duplicate"
+	SET OUT("rowActions",5,"key")="patient.duplicate.clear",OUT("rowActions",5,"label")="Not duplicate"
+	SET OUT("rowActions",6,"key")="patient.review.needs-correction",OUT("rowActions",6,"label")="Needs correction"
+	SET OUT("rowActions",7,"key")="patient.review.pending",OUT("rowActions",7,"label")="Send to review"
+	SET OUT("bulkActions",3,"key")="patient.bulk.pending",OUT("bulkActions",3,"label")="Send selected to review"
+	SET OUT("bulkActions",4,"key")="patient.bulk.needs-correction",OUT("bulkActions",4,"label")="Flag selected"
+	QUIT
+	;
+QUEUEMETA(ROOT,Q)
+	NEW I,KEY,COUNT,DUP
+	KILL Q
+	DO QDEF(.Q,1,"All","","")
+	DO QDEF(.Q,2,"Drafts","reviewQueue","Drafts")
+	DO QDEF(.Q,3,"Pending Review","reviewQueue","Pending Review")
+	DO QDEF(.Q,4,"Needs Correction","reviewQueue","Needs Correction")
+	DO QDEF(.Q,5,"Active","reviewQueue","Active")
+	SET I=0 FOR  SET I=$ORDER(@ROOT@("rows",I)) QUIT:I'>0  DO
+	. DO REVIEWROW(ROOT,I)
+	. SET KEY=$GET(@ROOT@("rows",I,"reviewQueue")) IF KEY="" SET KEY="Needs Correction"
+	. SET Q("queueCounts",KEY)=+$GET(Q("queueCounts",KEY))+1
+	. IF $GET(@ROOT@("rows",I,"duplicateStatus"))="Candidate" SET Q("queueCounts","duplicateCandidates")=+$GET(Q("queueCounts","duplicateCandidates"))+1
+	QUIT
+	;
+QDEF(Q,N,LABEL,FIELD,VALUE)
+	SET Q("reviewQueues",N,"key")=$SELECT(VALUE'="":VALUE,1:"all")
+	SET Q("reviewQueues",N,"label")=LABEL
+	IF FIELD'="" SET Q("reviewQueues",N,"filter",FIELD,"mode")="include",Q("reviewQueues",N,"filter",FIELD,"value")=VALUE,Q("reviewQueues",N,"filter",FIELD,"values",1)=VALUE
 	QUIT
 	;
 VALPAT(IN,ERR,ROOT)
@@ -159,9 +240,8 @@ VALPAT(IN,ERR,ROOT)
 	SET OK=1
 	IF '$DATA(IN("row")) QUIT 1
 	SET ID=$GET(IN("row","id"),$GET(IN("row","mrn")))
-	IF ID="" SET ID=$GET(IN("row","mrn"))
 	SET OLD=$$OLDSTAT(ROOT,ID)
-	SET STATUS=$GET(IN("row","status")),CONSENT=$GET(IN("row","consent"))
+	SET STATUS=$$STATUS($GET(IN("row","status"))),CONSENT=$GET(IN("row","consent"))
 	IF '$$VALFIELD("mrn",$GET(IN("row","mrn")),.ERR,ROOT) SET OK=0
 	IF '$$VALFIELD("firstName",$GET(IN("row","firstName")),.ERR,ROOT) SET OK=0
 	IF '$$VALFIELD("lastName",$GET(IN("row","lastName")),.ERR,ROOT) SET OK=0
@@ -172,7 +252,6 @@ VALPAT(IN,ERR,ROOT)
 	IF '$$VALFIELD("zip",$GET(IN("row","zip")),.ERR,ROOT) SET OK=0
 	IF '$$VALFIELD("emergencyPhone",$GET(IN("row","emergencyPhone")),.ERR,ROOT) SET OK=0
 	IF '$$VALFIELD("consentDate",$GET(IN("row","consentDate")),.ERR,ROOT) SET OK=0
-	IF $GET(IN("row","dob"))'="",$GET(IN("row","dob"))]$$TODAY() DO ADDERR(.ERR,"dob","DOB cannot be in the future") SET OK=0
 	IF $GET(IN("row","mrn"))'="",$$DUPMRN(ROOT,$GET(IN("row","mrn")),ID) DO ADDERR(.ERR,"mrn","MRN already exists") SET OK=0
 	IF '$$STATUSOK(OLD,STATUS,.ERR) SET OK=0
 	IF STATUS="Active",CONSENT'="Yes" DO ADDERR(.ERR,"consent","Consent must be Yes before activation") SET OK=0
@@ -219,6 +298,7 @@ STATUS(X)
 	NEW Y
 	SET Y=$GET(X)
 	IF Y="Pending" SET Y="Pending Review"
+	IF Y="Archived" SET Y="Inactive"
 	QUIT Y
 	;
 OLDSTAT(ROOT,ID)
@@ -227,8 +307,90 @@ OLDSTAT(ROOT,ID)
 	. IF $GET(@ROOT@("rows",I,"id"))=$GET(ID)!($GET(@ROOT@("rows",I,"mrn"))=$GET(ID)) SET OLD=$GET(@ROOT@("rows",I,"status"))
 	QUIT $$STATUS(OLD)
 	;
+VALPACT(ACTION,IN,ERR)
+	NEW A,I,SEEN
+	SET A=$$LOW^MIOUTIL($GET(ACTION))
+	IF A="patient.bulk.pending"!(A="patient.bulk.needs-correction") DO  QUIT $SELECT($GET(ERR("error"))="":1,1:0)
+	. SET SEEN=0,I=0 FOR  SET I=$ORDER(IN("ids",I)) QUIT:I'>0!($GET(ERR("error"))'="")  DO
+	. . SET SEEN=1 IF $GET(IN("ids",I))="" SET ERR("error")="row_id_missing"
+	. IF 'SEEN SET ERR("error")="row_ids_missing"
+	IF $GET(IN("rowId"),$GET(IN("id")))="" SET ERR("error")="row_id_missing" QUIT 0
+	QUIT 1
+	;
+PATACTION(ROOT,ACTION,IN,OUT,STATE)
+	NEW A,ID,I,COUNT
+	SET A=$$LOW^MIOUTIL($GET(ACTION))
+	IF A="patient.duplicate.mark" DO  QUIT
+	. SET ID=$GET(IN("rowId"),$GET(IN("id"))) DO MARKDUP(ROOT,ID,"Duplicate",.OUT,.STATE)
+	IF A="patient.duplicate.clear" DO  QUIT
+	. SET ID=$GET(IN("rowId"),$GET(IN("id"))) DO MARKDUP(ROOT,ID,"Not duplicate",.OUT,.STATE)
+	IF A="patient.review.needs-correction" DO  QUIT
+	. SET ID=$GET(IN("rowId"),$GET(IN("id"))) DO SETQUEUE(ROOT,ID,"Needs Correction",.OUT,.STATE)
+	IF A="patient.review.pending" DO  QUIT
+	. SET ID=$GET(IN("rowId"),$GET(IN("id"))) DO SETSTATUS(ROOT,ID,"Pending Review",.OUT,.STATE)
+	IF A="patient.review.draft" DO  QUIT
+	. SET ID=$GET(IN("rowId"),$GET(IN("id"))) DO SETSTATUS(ROOT,ID,"Draft",.OUT,.STATE)
+	IF A="patient.bulk.pending"!(A="patient.bulk.needs-correction") DO  QUIT
+	. SET COUNT=0,I=0 FOR  SET I=$ORDER(IN("ids",I)) QUIT:I'>0  DO
+	. . SET ID=$GET(IN("ids",I)) QUIT:ID=""
+	. . IF A="patient.bulk.pending" DO SETSTATUS(ROOT,ID,"Pending Review",.OUT,.STATE)
+	. . IF A="patient.bulk.needs-correction" DO SETQUEUE(ROOT,ID,"Needs Correction",.OUT,.STATE)
+	. . SET COUNT=COUNT+1
+	. SET OUT("mutated","count")=COUNT
+	QUIT
+	;
+MARKDUP(ROOT,ID,STATUS,OUT,STATE)
+	NEW I,DUP
+	SET I=$$ROWIDX(ROOT,ID) IF I'>0 QUIT
+	SET @ROOT@("rows",I,"duplicateStatus")=STATUS
+	IF STATUS="Duplicate" DO
+	. SET DUP=$GET(@ROOT@("rows",I,"duplicateOf")) IF DUP="" SET DUP=$$DUPDEM(ROOT,$GET(@ROOT@("rows",I,"firstName")),$GET(@ROOT@("rows",I,"lastName")),$GET(@ROOT@("rows",I,"dob")),ID)
+	. IF DUP'="" SET @ROOT@("rows",I,"duplicateOf")=DUP
+	. SET @ROOT@("rows",I,"reviewNote")="Marked as duplicate candidate."
+	IF STATUS="Not duplicate" DO
+	. SET @ROOT@("rows",I,"duplicateOf")=""
+	. SET @ROOT@("rows",I,"reviewNote")="Marked as not duplicate."
+	DO STAMP(ROOT,I,.STATE),REVIEWROW(ROOT,I)
+	SET OUT("mutated","rowId")=ID,OUT("mutated","patientAction")="duplicate",OUT("message")="Duplicate status updated"
+	QUIT
+	;
+SETQUEUE(ROOT,ID,QUEUE,OUT,STATE)
+	NEW I
+	SET I=$$ROWIDX(ROOT,ID) IF I'>0 QUIT
+	SET @ROOT@("rows",I,"reviewQueue")=QUEUE
+	SET @ROOT@("rows",I,"reviewNote")=$GET(@ROOT@("rows",I,"reviewNote"))_$SELECT($GET(@ROOT@("rows",I,"reviewNote"))'="":" ",1:"")_"Needs correction review flag set."
+	DO STAMP(ROOT,I,.STATE)
+	SET OUT("mutated","rowId")=ID,OUT("mutated","patientAction")="reviewQueue",OUT("message")="Patient review queue updated"
+	QUIT
+	;
+SETSTATUS(ROOT,ID,STATUS,OUT,STATE)
+	NEW I
+	SET I=$$ROWIDX(ROOT,ID) IF I'>0 QUIT
+	SET @ROOT@("rows",I,"status")=STATUS
+	DO STAMP(ROOT,I,.STATE),REVIEWROW(ROOT,I)
+	SET OUT("mutated","rowId")=ID,OUT("mutated","patientAction")="status",OUT("message")="Patient status updated"
+	QUIT
+	;
+STAMP(ROOT,I,STATE)
+	NEW USER,TODAY
+	SET USER=$GET(STATE("principal"),"guest") IF USER="" SET USER="guest"
+	SET TODAY=$$TODAY()
+	IF $GET(@ROOT@("rows",I,"createdAt"))="" SET @ROOT@("rows",I,"createdAt")=TODAY
+	IF $GET(@ROOT@("rows",I,"createdBy"))="" SET @ROOT@("rows",I,"createdBy")=USER
+	SET @ROOT@("rows",I,"updatedAt")=TODAY
+	SET @ROOT@("rows",I,"updatedBy")=USER
+	SET @ROOT@("rows",I,"lastReviewAt")=TODAY
+	SET @ROOT@("rows",I,"reviewedBy")=USER
+	QUIT
+	;
+ROWIDX(ROOT,ID)
+	NEW I,FOUND
+	SET FOUND=0,I=0 FOR  SET I=$ORDER(@ROOT@("rows",I)) QUIT:I'>0!(FOUND)  DO
+	. IF $GET(@ROOT@("rows",I,"id"))=$GET(ID)!($GET(@ROOT@("rows",I,"mrn"))=$GET(ID)) SET FOUND=I
+	QUIT FOUND
+	;
 POSTPAT(ROOT,ACTION,IN,OUT,STATE)
-	NEW ID,I,KEY,USER,TODAY,DUP
+	NEW ID,I,USER,TODAY
 	IF $GET(ACTION)'="row.save",$GET(ACTION)'="row.add",$GET(ACTION)'="row.update",$GET(ACTION)'="cell.save" QUIT
 	SET USER=$GET(STATE("principal"),"guest") IF USER="" SET USER="guest"
 	SET ID=$GET(IN("row","id"),$GET(IN("row","mrn"),$GET(IN("rowId"),$GET(IN("id")))))
@@ -236,33 +398,25 @@ POSTPAT(ROOT,ACTION,IN,OUT,STATE)
 	SET TODAY=$$TODAY()
 	SET I=0 FOR  SET I=$ORDER(@ROOT@("rows",I)) QUIT:I'>0  DO
 	. IF $GET(@ROOT@("rows",I,"id"))'=ID,$GET(@ROOT@("rows",I,"mrn"))'=ID QUIT
-	. IF $GET(@ROOT@("rows",I,"status"))="" SET @ROOT@("rows",I,"status")="Draft"
 	. IF $GET(@ROOT@("rows",I,"createdAt"))="" SET @ROOT@("rows",I,"createdAt")=TODAY
 	. IF $GET(@ROOT@("rows",I,"createdBy"))="" SET @ROOT@("rows",I,"createdBy")=USER
 	. SET @ROOT@("rows",I,"updatedAt")=TODAY
 	. SET @ROOT@("rows",I,"updatedBy")=USER
 	. IF $GET(@ROOT@("rows",I,"consent"))="Yes",$GET(@ROOT@("rows",I,"consentDate"))="" SET @ROOT@("rows",I,"consentDate")=TODAY
-	. DO ROWEXP(ROOT,I)
+	. DO REVIEWROW(ROOT,I)
 	DO DUPWARN(ROOT,.IN,.OUT)
 	QUIT
 	;
 DUPWARN(ROOT,IN,OUT)
-	NEW ID,MRN,FIRST,LAST,DOB,EMAIL,PHONE,DUP,N
+	NEW ID,FIRST,LAST,DOB,EMAIL,PHONE,DUP,N
 	SET ID=$GET(IN("row","id"),$GET(IN("row","mrn"),$GET(IN("rowId"),$GET(IN("id")))))
-	SET MRN=$GET(IN("row","mrn")),FIRST=$GET(IN("row","firstName")),LAST=$GET(IN("row","lastName")),DOB=$GET(IN("row","dob")),EMAIL=$GET(IN("row","email")),PHONE=$GET(IN("row","phone"))
+	SET FIRST=$GET(IN("row","firstName")),LAST=$GET(IN("row","lastName")),DOB=$GET(IN("row","dob")),EMAIL=$GET(IN("row","email")),PHONE=$GET(IN("row","phone"))
 	SET N=0
 	SET DUP=$$DUPDEM(ROOT,FIRST,LAST,DOB,ID) IF DUP'="" SET N=N+1,OUT("warnings","duplicateCandidates",N,"reason")="same_name_dob",OUT("warnings","duplicateCandidates",N,"patientId")=DUP
 	SET DUP=$$DUPCONTACT(ROOT,"email",EMAIL,ID) IF DUP'="" SET N=N+1,OUT("warnings","duplicateCandidates",N,"reason")="same_email",OUT("warnings","duplicateCandidates",N,"patientId")=DUP
 	SET DUP=$$DUPCONTACT(ROOT,"phone",PHONE,ID) IF DUP'="" SET N=N+1,OUT("warnings","duplicateCandidates",N,"reason")="same_phone",OUT("warnings","duplicateCandidates",N,"patientId")=DUP
 	IF N>0 SET OUT("warnings","duplicateCount")=N
 	QUIT
-	;
-DUPCOUNT(ROOT)
-	NEW I,COUNT,DUP
-	SET COUNT=0,I=0 FOR  SET I=$ORDER(@ROOT@("rows",I)) QUIT:I'>0  DO
-	. SET DUP=$$DUPDEM(ROOT,$GET(@ROOT@("rows",I,"firstName")),$GET(@ROOT@("rows",I,"lastName")),$GET(@ROOT@("rows",I,"dob")),$GET(@ROOT@("rows",I,"id")))
-	. IF DUP'="" SET COUNT=COUNT+1
-	QUIT COUNT
 	;
 DUPMRN(ROOT,MRN,ID)
 	NEW I,FOUND,CAN
@@ -299,9 +453,9 @@ TODAY()
 	QUIT $PIECE($$NOWISO^MIOUTIL(),"T",1)
 	;
 MRNOK(X)
-	NEW I,C,Q S Q=1
+	NEW I,C,Q SET Q=1
 	IF $LENGTH($GET(X))<3 QUIT 0
-	FOR I=1:1:$LENGTH(X) SET C=$EXTRACT(X,I) IF (C'?1AN)&(C'="-") S Q=0 Q
+	FOR I=1:1:$LENGTH(X) SET C=$EXTRACT(X,I) IF (C'?1AN)&(C'="-") SET Q=0 QUIT
 	QUIT Q
 	;
 EMAILOK(X)

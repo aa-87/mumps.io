@@ -621,23 +621,6 @@ Treat the current attached source as authoritative. ROI 68A adds `MIOOSTBLC` and
 
 Expanded MUMPS-first table samples are in `examples/mioos_modules/table/samples/`. Keep future table docs and examples backend-first; avoid frontend snippets except when documenting internal shell code.
 
-## Post-ROI 68A table/module regression fix
+## ROI 70 patient registration search/review queues
 
-Before starting ROI 69, the source was hardened for two regressions:
-
-1. Table mutation acknowledgements must not be applied as full query payloads. `backendTableApplyPayload()` now checks for query-shaped payload members before replacing rows/schema/features/actions. Small mutation acknowledgements preserve the current table display and avoid blink/layout shift during cell saves and table updates.
-2. `/api/mioos/modules/table` is a required route. `MODULETABLE^MIOOSAPI` delegates to `HANDLE^MIOOSMTBL` and returns deterministic JSON for preview/save/export/import/revisions/rollback failures instead of letting the HTTP connection close with an empty response.
-
-The Table Module Definition modal is now a styled module authoring surface with metadata, columns, sample rows, preview, import/export JSON, revisions, rollback, and save/register. `MIOOSMOD` includes server-side table definitions in the App Catalogue registry and preserves user-created table module `dataset`/`tableState` metadata when loading the catalogue.
-
-## Pre-ROI 69 follow-up: table feedback, column persistence, catalogue layout
-
-The Advanced Table browser layer now keeps mutation feedback out of normal layout flow. `mioos-table-feedback-rail` is absolutely positioned, and passive table mutations no longer toggle the full table processing state. Do not reintroduce `v-if` success/error blocks above the table body for normal save feedback, because that causes the table to jump.
-
-Column visibility, reorder, resize, and fixed-column changes capture `state.columnPrefs` and reapply those preferences to the next query-shaped payload before repainting. The backend still persists schema changes through `MUTATE^MIOOSTBL`, but the client overlay prevents immediate post-mutation repaints from losing the user-visible column order/visibility/fixed state.
-
-The App Catalogue List/Cards button depends on `.mioos-ui-module-grid.is-list`. Keep both card and list CSS modes when changing catalogue markup.
-
-## ROI 69 patient registration intake workflow
-
-ROI 69 promotes Patient Registration to `mioos-patient-registration-v2`. `MIOOSPAT` now owns server-side DOB, MRN, contact, consent, duplicate-warning, status-transition, and audit/status metadata behavior. The frontend remains Vue 3 Options API UMD and renders a grouped intake modal using server-authored column `group` metadata. Toast and modal surfaces are opaque/high-contrast to avoid unreadable overlay text. Continue to avoid claiming HIPAA compliance; describe this only as a HIPAA-ready architecture pattern with synthetic data.
+ROI 70 patient registration adds direct Patient Registration shell entry (`patient-registration` / `win-patient-registration`), patient review queues, search/filter metadata, duplicate-resolution row actions, bulk review queue actions, and patient audit markers. The modal backdrop should remain the original overlay; only modal/dialog bodies are forced opaque for readability. Continue to preserve server-authored MUMPS table contracts and do not implement frontend-only patient state.

@@ -157,9 +157,10 @@ MUTATE(STATE,CONF,IN,OUT,ERR)
 	. . SET @ROOT@("validation","fields",KEY,"enum",N)=OPTVAL
 	. . SET I=0 FOR  SET I=$ORDER(@ROOT@("schema","columns",I)) QUIT:I'>0  IF $GET(@ROOT@("schema","columns",I,"key"))=KEY SET @ROOT@("schema","columns",I,"options",N)=OPTVAL
 	. SET OUT("mutated","columnOption")=KEY,OUT("mutated","value")=OPTVAL
+	IF DATASET="patient-registration",$EXTRACT(ACTION,1,8)="patient." DO PATACTION^MIOOSPAT(ROOT,ACTION,.IN,.OUT,.STATE)
+	IF DATASET="patient-registration" DO POSTPAT^MIOOSPAT(ROOT,ACTION,.IN,.OUT,.STATE)
 	IF ACTION="rows.export"!(ACTION="export") DO EXPORT(.STATE,DATASET,ROOT,.IN,.OUT)
 	IF $GET(ERR("error"))'="" QUIT 0
-	IF DATASET="patient-registration" DO POSTPAT^MIOOSPAT(ROOT,ACTION,.IN,.OUT,.STATE)
 	IF '$DATA(OUT("mutated")),'$DATA(OUT("export")) SET ERR("error")="unsupported_table_action" QUIT 0
 	IF $DATA(OUT("export")) DO  QUIT 1
 	. SET OUT("ok")=1,OUT("dataset")=DATASET,OUT("action")=ACTION,OUT("exportOnly")=1,OUT("message")=$GET(OUT("message"),"CSV export generated")
@@ -184,6 +185,7 @@ VALIDATE(STATE,CONF,DATASET,ACTION,IN,ERR)
 	IF ACTION="column.option.add" QUIT $$VALOPT(.IN,.ERR)
 	IF ACTION="column.reorder" QUIT $$VALORDER($$ROOT(.STATE,DATASET),.IN,.ERR)
 	IF ACTION="column.fixed" QUIT $$VALFIXED($$ROOT(.STATE,DATASET),.IN,.ERR)
+	IF DATASET="patient-registration",$EXTRACT(ACTION,1,8)="patient." QUIT $$VALPACT^MIOOSPAT(ACTION,.IN,.ERR)
 	SET ERR("error")="unsupported_table_action" QUIT 0
 	;
 VALROW(STATE,DATASET,CONF,IN,ERR)
@@ -310,11 +312,10 @@ VALCELL(STATE,DATASET,CONF,IN,ERR)
 	SET MAX=+$GET(CONF("mioos","table","maxFieldChars"),2048) IF MAX<128 SET MAX=128
 	SET VAL=$GET(IN("value"))
 	IF $LENGTH(VAL)>MAX DO ADDERR(.ERR,KEY,"Value is too long") QUIT 0
-	IF '$$VALCELLR(ROOT,KEY,VAL,.ERR) QUIT 0
-	IF DATASET="patient-registration",KEY="status",'$$VALSTATCELL^MIOOSPAT(ID,VAL,.ERR,ROOT) QUIT 0
+	IF '$$VALCELLR(ROOT,DATASET,ID,KEY,VAL,.ERR) QUIT 0
 	QUIT 1
 	;
-VALCELLR(ROOT,KEY,VAL,ERR)
+VALCELLR(ROOT,DATASET,ID,KEY,VAL,ERR)
 	NEW MAX,OK
 	SET OK=1
 	IF +$GET(@ROOT@("validation","fields",KEY,"required")),VAL="" DO ADDERR(.ERR,KEY,$GET(@ROOT@("validation","fields",KEY,"message"),"Required")) QUIT 0
@@ -325,6 +326,7 @@ VALCELLR(ROOT,KEY,VAL,ERR)
 	IF +$GET(@ROOT@("validation","fields",KEY,"date")),VAL'="",'$$DATEOK(VAL) DO ADDERR(.ERR,KEY,"Use a valid YYYY-MM-DD date") QUIT 0
 	IF +$GET(@ROOT@("validation","fields",KEY,"numeric")),VAL'="",'$$ISNUM(VAL) DO ADDERR(.ERR,KEY,"Enter a number") QUIT 0
 	IF +$GET(@ROOT@("validation","fields",KEY,"numeric")),VAL'="",'$$VALRANGE(ROOT,KEY,VAL,.ERR) QUIT 0
+	IF DATASET="patient-registration",KEY="status",'$$VALSTATCELL^MIOOSPAT(ID,VAL,.ERR,ROOT) QUIT 0
 	IF $GET(@ROOT@("validation","routine"))="VALPAT^MIOOSPAT",'$$VALFIELD^MIOOSPAT(KEY,VAL,.ERR,ROOT) QUIT 0
 	QUIT OK
 	;
@@ -665,7 +667,7 @@ SEEDPAT(STATE,ROOT)
 	DO COLR(ROOT,6,"status","Status","badge",110,0,1,"Care")
 	DO COLR(ROOT,7,"primaryProvider","Provider","text",170,0,1,"Care")
 	DO PATROW(ROOT,1,"PAT-1001","Garcia","Elena","1984-04-12","555-0101","Active","Dr. Shaw")
-	DO PATROW(ROOT,2,"PAT-1002","Brown","Marcus","1972-09-03","555-0102","Pending Review","Dr. Singh")
+	DO PATROW(ROOT,2,"PAT-1002","Brown","Marcus","1972-09-03","555-0102","Pending","Dr. Singh")
 	DO PATROW(ROOT,3,"PAT-1003","Chen","Avery","1991-12-21","555-0103","Active","Dr. Ortiz")
 	DO INIT^MIOOSPAT(ROOT)
 	QUIT

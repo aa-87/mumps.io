@@ -1425,15 +1425,14 @@ T073
 	;
 
 T074
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSPAT.m","mioos-patient-registration-v2"),"[MIOOST][T074][roi69 patient contract]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSPAT.m","DOB cannot be in the future"),"[MIOOST][T074][future dob validation]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSPAT.m","MRN already exists"),"[MIOOST][T074][mrn uniqueness]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSPAT.m","duplicateCandidates"),"[MIOOST][T074][duplicate warnings]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSPAT.m","STATUSOK"),"[MIOOST][T074][status transitions]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","mioos-table-intake-form"),"[MIOOST][T074][intake editor]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","ROI 69: patient intake workflow"),"[MIOOST][T074][roi69 css]")
-	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/ROI_69_Patient_Registration_Intake_Workflow.md","ROI 69"),"[MIOOST][T074][roi69 docs]")
-	DO OK^MIOTASSERT($$FILEHAS("examples/mioos_modules/patient_registration/module.json","intakeWorkflow"),"[MIOOST][T074][manifest intake capability]")
-	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 69 patient registration"),"[MIOOST][T074][llm roi69]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSPAT.m","mioos-patient-registration-v3"),"[MIOOST][T074][patient v3 contract]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSPAT.m","reviewQueues"),"[MIOOST][T074][review queues]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSPAT.m","PATACTION"),"[MIOOST][T074][patient server actions]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSST.m","win-patient-registration"),"[MIOOST][T074][direct patient window]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSMOD.m","duplicate-resolution"),"[MIOOST][T074][module advertises duplicate resolution]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableApplyPatientQueue"),"[MIOOST][T074][patient queue UI]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","restore original modal backdrops"),"[MIOOST][T074][opaque modal bodies only]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/ROI_70_Patient_Registration_Search_Review_Queues.md","ROI 70"),"[MIOOST][T074][roi70 docs]")
+	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 70 patient registration"),"[MIOOST][T074][llm roi70]")
 	QUIT
 	;

@@ -106,20 +106,6 @@ The expanded sample matrix under `examples/mioos_modules/table/samples/` covers 
 
 The table transport posture remains WebSocket-first with authenticated HTTP fallback. Do not fork the Vue table component or introduce a build step for table modules.
 
-## Table Module Definition regression hardening
+## ROI 70 direct Patient Registration entry
 
-The App Catalogue Table Modules tab uses the authenticated `POST /api/mioos/modules/table` route. That route is handled by `MODULETABLE^MIOOSAPI`, which delegates every action to `HANDLE^MIOOSMTBL` and always returns JSON. This prevents browser `ERR_EMPTY_RESPONSE` failures when users click Preview, Save, Export, Import, Revisions, or Rollback from the Table Module Definition modal.
-
-The Table Module Definition modal is a production-style editor rather than bare HTML. It includes styled metadata fields, column add/remove controls, sample-row editing, local draft JSON export, backend import/export, preview, revision listing, rollback, and Save/Register. Saving a definition stores the table module in the server-side table module library, installs a user module manifest with `componentKey="table"`, `surface="mioos-surface-table"`, and a complete `tableState`, and exposes the definition in the App Catalogue after refresh.
-
-MUMPS developers can still bypass the modal by writing directly to the same backend contract through `MIOOSMTBL` and the `^MIO("MIOOS","TABLE",user,dataset,...)` table globals. The modal is only a safer authoring surface for that MUMPS-first contract.
-
-## Catalogue List/Cards rendering
-
-The App Catalogue layout toggle now changes actual layout classes. `layout="cards"` renders grid cards, while `layout="list"` applies `.mioos-ui-module-grid.is-list` for a single-column list with compact icons and row-style metadata. The toggle is visual-only and does not change the server-authored module registry.
-
-## ROI 69 patient-registration UI module behavior
-
-The Patient Registration module remains a table-backed module. Its row editor now groups fields by server-authored column `group` metadata, allowing MUMPS developers to shape intake sections without writing frontend code. The module advertises `intake-workflow`, `duplicate-detection`, and `status-transitions` capabilities through `MIOOSMOD` and the example manifest.
-
-Modal and toast surfaces are intentionally opaque/high-contrast after ROI 69 so validation messages remain readable over dense table content.
+The Patient Registration module is available both through the App Catalogue and as a direct shell module entry. The direct entry uses app key `patient-registration`, module id `mioos.ui.patient.registration`, component `table`, and dataset `patient-registration`. The table renders review queue buttons from server metadata instead of hardcoding patient workflow state in JavaScript.

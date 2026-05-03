@@ -418,6 +418,6 @@ ROI 68A locks the Advanced Table backend contract before patient workflow expans
 
 The table contract remains `mioos-advanced-table-v8`. Expanded MUMPS-first examples live under `examples/mioos_modules/table/samples/` and document how to seed table globals, register a shell module/icon, open the module, and validate the behavior.
 
-## ROI 69 patient registration
+## ROI 70 patient registration review queues
 
-ROI 69 adds a guided Patient Registration intake workflow on top of the Advanced Table contract. The workflow is still MUMPS-authored and table-backed: validation, duplicate detection, status transitions, and audit/status metadata live in `MIOOSPAT`, while the browser renders grouped intake sections and field-level errors.
+Patient Registration now has a direct shell entry point (`patient-registration` / `win-patient-registration`) in addition to the App Catalogue entry. The module exposes server-authored review queues, duplicate-resolution row actions, patient-specific filtering/search, and audit-backed patient table mutations. See `ROI_70_Patient_Registration_Search_Review_Queues.md`.

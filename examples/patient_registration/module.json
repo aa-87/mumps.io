@@ -1,0 +1,53 @@
+{
+  "id": "mioos.ui.patient.registration",
+  "key": "patient-registration",
+  "appKey": "patient-registration",
+  "title": "Patient Registration",
+  "componentKey": "table",
+  "surface": "mioos-surface-table",
+  "category": "Healthcare",
+  "description": "Synthetic Patient Registration module with server-side validation, review queues, search, duplicate resolution, and audit markers.",
+  "tableState": {
+    "id": "patient-registration-table",
+    "title": "Patient Registration",
+    "dataset": "patient-registration",
+    "config": {
+      "contract": "mioos-advanced-table-v8",
+      "defaultPageSize": 25,
+      "defaultSort": {
+        "column": "lastName",
+        "direction": "ascending"
+      },
+      "features": {
+        "rowCrud": true,
+        "cellEditing": true,
+        "filters": true,
+        "grouping": true,
+        "selection": true,
+        "bulkActions": true,
+        "columnReorder": true,
+        "fixedColumns": true,
+        "rowDetails": true,
+        "patientSearch": true,
+        "reviewQueues": true,
+        "duplicateResolution": true,
+        "statusTransitions": true,
+        "validationSummary": true
+      },
+      "fixedColumns": {
+        "start": 1,
+        "end": 0
+      },
+      "patientContract": "mioos-patient-registration-v3"
+    }
+  },
+  "capabilities": {
+    "patientRegistration": true,
+    "auditStatus": true,
+    "hipaaReadyArchitectureOnly": true,
+    "patientSearch": true,
+    "reviewQueues": true,
+    "duplicateResolution": true,
+    "directEntryPoint": true
+  }
+}

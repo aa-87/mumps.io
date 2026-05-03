@@ -382,29 +382,8 @@ The optional row validation hook signature is `HOOK(IN,ERR,ROOT)`. Return `1` to
 
 `RUN^MIOOSTBLC` is now part of `D ^MIOOST` and covers query shape, mutation acknowledgements, validation, filtering, grouping, sorting, feature composition, and known table browser regressions.
 
-## Mutation acknowledgement display stability
+## ROI 70 patient registration table contract
 
-Successful table mutations remain acknowledgement-only and must not return page rows or schema unless an explicit refetch/full query is requested. The browser now treats acknowledgement payloads as status updates only: it preserves existing rows, columns, feature flags, row actions, bulk actions, and grouping state when a mutation response has no query-shaped payload. This avoids the previous blink/layout shift where a cell save or table update briefly cleared the table body before the next query.
+The `patient-registration` dataset extends the Advanced Table v8 contract with `patientRegistration` metadata from `PATMETA^MIOOSPAT`. The metadata includes review queues, duplicate candidate counts, workflow labels, and direct entry-point guidance. Patient row actions use the normal `MUTATE^MIOOSTBL` path with action keys such as `patient.duplicate.mark`, `patient.duplicate.clear`, `patient.review.pending`, and `patient.review.needs-correction`. Bulk actions include `patient.bulk.pending` and `patient.bulk.needs-correction`.
 
-The loading indicator is a persistent absolute-position loading bar. It changes opacity instead of mounting/unmounting a layout-bearing block, and table content is no longer dimmed during short save/query cycles.
-
-## Pre-ROI 69 table interaction stability follow-up
-
-Small table mutations such as `cell.save`, `column.visibility`, `column.reorder`, `column.fixed`, `column.option.add`, and `column.resize` are treated as passive UI operations on the browser side. They still use the same backend mutation contract and server acknowledgement, but they do not activate a layout-bearing processing block. Existing rows and columns remain mounted while the server acknowledgement and optional refetch complete.
-
-The browser maintains a transient `columnPrefs` overlay for the current table state. When a user hides, reorders, resizes, or fixes columns, the local preference overlay is captured and reapplied to the next query payload before repainting. The backend remains authoritative and still persists column metadata in `schema("columns")` / `schema("fixedColumns")`, but this overlay prevents an immediate repaint from reverting column controls if transports return at slightly different times.
-
-Feedback messages are rendered in an absolute-position `mioos-table-feedback-rail`, so success/error toasts no longer insert or remove layout blocks above the table body.
-
-## ROI 69 patient-registration backend contract
-
-The `patient-registration` dataset uses the normal Advanced Table query and mutation contract plus patient metadata from `MIOOSPAT`.
-
-Patient-specific mutation validation is server-side:
-
-- `VALPAT^MIOOSPAT` validates row saves.
-- `VALFIELD^MIOOSPAT` validates patient cell saves for contact/date fields.
-- `VALSTATCELL^MIOOSPAT` rejects invalid single-cell status transitions.
-- `POSTPAT^MIOOSPAT` stamps audit/status metadata and returns duplicate warnings after successful patient row/cell mutations.
-
-The browser must treat `warnings.duplicateCandidates` as non-blocking review information and `fieldErrors` as blocking field-level validation errors.
+All patient mutations remain server-side MUMPS actions. Successful mutations return small acknowledgement-only payloads and failed mutations return deterministic validation JSON.

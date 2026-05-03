@@ -2884,20 +2884,14 @@ button:disabled { cursor: default; opacity: .55; }
 .mioos-table-detail-toggle:hover { background: #e0e7ff; }
 .mioos-table-editor.is-column-picker { width: min(420px, calc(100vw - 36px)); }
 .mioos-table-column-list { display: grid; gap: 6px; padding: 10px 0; max-height: min(62vh, 520px); overflow: auto; }
-.mioos-table-column-list > button,
-.mioos-table-column-item > button { display: grid; grid-template-columns: 24px minmax(0, 1fr); grid-template-areas: "flag label" "flag key"; align-items: center; gap: 0 8px; width: 100%; padding: 8px 10px; border-radius: 10px; border: 1px solid rgba(148,163,184,.28); background: #f8fafc; color: #111827; text-align: left; cursor: pointer; }
-.mioos-table-column-list > button span,
-.mioos-table-column-item > button span { grid-area: flag; font-weight: 800; color: #4338ca; }
-.mioos-table-column-list > button b,
-.mioos-table-column-item > button b { grid-area: label; font-size: 12px; overflow: hidden; text-overflow: ellipsis; }
-.mioos-table-column-list > button small,
-.mioos-table-column-item > button small { grid-area: key; color: #64748b; font-size: 10.5px; }
+.mioos-table-column-list button { display: grid; grid-template-columns: 24px minmax(0, 1fr); grid-template-areas: "flag label" "flag key"; align-items: center; gap: 0 8px; width: 100%; padding: 8px 10px; border-radius: 10px; border: 1px solid rgba(148,163,184,.28); background: #f8fafc; color: #111827; text-align: left; cursor: pointer; }
+.mioos-table-column-list button span { grid-area: flag; font-weight: 800; color: #4338ca; }
+.mioos-table-column-list button b { grid-area: label; font-size: 12px; overflow: hidden; text-overflow: ellipsis; }
+.mioos-table-column-list button small { grid-area: key; color: #64748b; font-size: 10.5px; }
 .mioos-table-editor:not(.is-column-picker) .mioos-table-form-grid { padding-top: 6px; }
 .theme-dark-mode .mioos-table-detail-toggle { background: #312e81; color: #e0e7ff; border-color: rgba(199,210,254,.35); }
-.theme-dark-mode .mioos-table-column-list > button,
-.theme-dark-mode .mioos-table-column-item > button { background: #111827; color: #f8fafc; border-color: rgba(191,219,254,.24); }
-.theme-dark-mode .mioos-table-column-list > button small,
-.theme-dark-mode .mioos-table-column-item > button small { color: #cbd5e1; }
+.theme-dark-mode .mioos-table-column-list button { background: #111827; color: #f8fafc; border-color: rgba(191,219,254,.24); }
+.theme-dark-mode .mioos-table-column-list button small { color: #cbd5e1; }
 
 /* Table stabilization: bounded draggable dialogs, typed filters, and low-shift loading bar. */
 .mioos-full-table { position: relative; overflow: hidden; }
@@ -2962,13 +2956,14 @@ button:disabled { cursor: default; opacity: .55; }
 
 @keyframes mioos-table-loading-bar { 0% { left: -35%; } 55% { left: 50%; } 100% { left: 110%; } }
 .mioos-table-editor-backdrop {
-  position: absolute;
+  position: fixed;
   inset: 0;
-  z-index: 20;
-  display: block;
-  padding: 0;
-  background: rgba(15, 23, 42, .20);
-  backdrop-filter: none;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(15, 23, 42, .42);
+  backdrop-filter: blur(2px);
 }
 .mioos-table-editor.mioos-system-modal {
   position: absolute;
@@ -3001,8 +2996,7 @@ button:disabled { cursor: default; opacity: .55; }
 .mioos-table-form-grid label.has-error select,
 .mioos-table-form-grid label.has-error textarea { border-color: #dc2626; box-shadow: 0 0 0 2px rgba(220,38,38,.14); }
 .mioos-field-error { color: #b91c1c; font-weight: 700; }
-.mioos-table-column-list > button.active,
-.mioos-table-column-item > button.active { outline: 2px solid #2563eb; background: #dbeafe; }
+.mioos-table-column-list button.active { outline: 2px solid #2563eb; background: #dbeafe; }
 @media (max-width: 760px) {
   .mioos-table-filter-row { grid-template-columns: 1fr; }
   .mioos-table-editor.mioos-system-modal { top: 12px; max-height: calc(100% - 24px); }
@@ -3013,8 +3007,7 @@ button:disabled { cursor: default; opacity: .55; }
 .theme-dark-mode .mioos-table-filter-row textarea,
 .theme-dark-mode .mioos-table-form-grid textarea,
 .theme-dark-mode .mioos-table-pager input { color: #f8fafc; background: #1e293b; border-color: rgba(191,219,254,.28); }
-.theme-dark-mode .mioos-table-column-list > button.active,
-.theme-dark-mode .mioos-table-column-item > button.active { background: #1d4ed8; color: #fff; }
+.theme-dark-mode .mioos-table-column-list button.active { background: #1d4ed8; color: #fff; }
 
 /* ROI 64J: column reorder and table modal hardening. */
 .mioos-table-column-list .mioos-table-column-item {
@@ -3099,366 +3092,17 @@ button:disabled { cursor: default; opacity: .55; }
   .mioos-table-patient-banner { align-items: flex-start; flex-direction: column; }
 }
 
-/* Table/module regression stabilization after ROI 68A: persistent loader and finished table module editor. */
-.mioos-table-processing {
-  opacity: 0;
-  visibility: hidden;
-  transform: translateZ(0);
-  transition: opacity .12s ease, visibility .12s ease;
-}
-.mioos-table-processing.active {
-  opacity: 1;
-  visibility: visible;
-}
-.mioos-full-table.is-processing .mioos-table-wrap {
-  opacity: 1;
-  transition: none;
-}
-.mioos-ui-module-catalog-v3 {
-  height: 100%;
-  min-height: 0;
-  overflow: hidden;
-}
-.mioos-ui-module-catalog-v3 .mioos-ui-module-filterbar,
-.mioos-ui-module-catalog-v3 .mioos-ui-module-actions,
-.mioos-ui-module-catalog-v3 .mioos-ui-module-tabs,
-.mioos-ui-module-card-actions {
-  display: flex;
-  align-items: end;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.mioos-ui-module-catalog-v3 .mioos-ui-module-filterbar {
-  flex: 0 0 auto;
-  padding: 10px 12px;
-  border: 1px solid var(--theme-panel-border, rgba(148,163,184,.28));
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--theme-panel-bg, #fff) 90%, #eff6ff 10%);
-}
-.mioos-ui-module-catalog-v3 .mioos-ui-module-filterbar label,
-.mioos-table-module-editor label,
-.mioos-table-module-row-editor label {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 12px;
-  font-weight: 700;
-}
-.mioos-ui-module-catalog-v3 input,
-.mioos-ui-module-catalog-v3 select,
-.mioos-ui-module-catalog-v3 textarea {
-  min-width: 0;
-  min-height: 32px;
-  border: 1px solid var(--theme-panel-border, rgba(148,163,184,.42));
-  border-radius: 9px;
-  background: var(--theme-field-bg, #fff);
-  color: var(--theme-field-text, #111827);
-  padding: 6px 8px;
-  font: inherit;
-}
-.mioos-ui-module-catalog-v3 textarea { resize: vertical; }
-.mioos-ui-module-catalog-v3 label.invalid input,
-.mioos-ui-module-catalog-v3 label.invalid textarea,
-.mioos-ui-module-catalog-v3 label.invalid select {
-  border-color: #dc2626;
-  box-shadow: 0 0 0 2px rgba(220, 38, 38, .12);
-}
-.mioos-ui-module-catalog-v3 label b,
-.mioos-table-module-field-error {
-  color: #b91c1c;
-  font-size: 11px;
-}
-.mioos-ui-module-catalog-v3 .mioos-ui-module-card {
-  flex-direction: row;
-  align-items: flex-start;
-  gap: 12px;
-  cursor: pointer;
-}
-.mioos-ui-module-icon {
-  display: grid;
-  place-items: center;
-  flex: 0 0 42px;
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--accent, #4ba3ff) 18%, var(--theme-panel-bg, #fff) 82%);
-  font-size: 20px;
-}
-.mioos-ui-module-card > div:last-child {
-  flex: 1 1 auto;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-.mioos-ui-module-card footer {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  align-items: center;
-}
-.mioos-ui-module-card footer em,
-.mioos-ui-module-card footer b {
-  padding: 2px 7px;
-  border-radius: 999px;
-  background: rgba(99,102,241,.10);
-  font-size: 11px;
-  font-style: normal;
-}
-.mioos-table-module-editor {
-  width: min(1080px, calc(100% - 32px));
-  max-height: calc(100% - 32px);
-  overflow: hidden;
-  padding: 0;
-  color: var(--theme-field-text, #111827);
-  background: var(--theme-panel-bg, #ffffff);
-}
-.mioos-table-module-editor > header,
-.mioos-table-module-editor > footer {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--theme-panel-border, rgba(148,163,184,.25));
-}
-.mioos-table-module-editor > footer {
-  justify-content: flex-end;
-  border-top: 1px solid var(--theme-panel-border, rgba(148,163,184,.25));
-  border-bottom: 0;
-  flex-wrap: wrap;
-}
-.mioos-table-module-editor > header button {
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
-  border: 1px solid var(--theme-panel-border, rgba(148,163,184,.35));
-  background: var(--theme-field-bg, #fff);
-  color: var(--theme-field-text, #111827);
-}
-.mioos-table-module-editor > main {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow: auto;
-  display: grid;
-  gap: 14px;
-  padding: 14px;
-}
-.mioos-table-module-columns,
-.mioos-table-module-rows,
-.mioos-table-module-preview,
-.mioos-table-module-revisions,
-.mioos-table-module-json {
-  display: grid;
-  gap: 9px;
-  padding: 12px;
-  border: 1px solid var(--theme-panel-border, rgba(148,163,184,.25));
-  border-radius: 13px;
-  background: color-mix(in srgb, var(--theme-panel-bg, #fff) 94%, #eff6ff 6%);
-}
-.mioos-table-module-section-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.mioos-table-module-section-head h3,
-.mioos-table-module-columns h3,
-.mioos-table-module-preview h3,
-.mioos-table-module-revisions h3 {
-  margin: 0;
-  font-size: 14px;
-}
-.mioos-table-module-column-row,
-.mioos-table-module-row-editor {
-  display: grid;
-  grid-template-columns: minmax(120px, 1fr) minmax(150px, 1.2fr) 132px 92px auto;
-  gap: 8px;
-  align-items: end;
-}
-.mioos-table-module-row-editor {
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  align-items: start;
-}
-.mioos-table-module-row-editor .mioos-table-module-row-actions {
-  display: flex;
-  align-items: end;
-  justify-content: flex-end;
-}
-.mioos-table-module-preview dl {
-  display: grid;
-  grid-template-columns: max-content minmax(0, 1fr);
-  gap: 6px 10px;
-  margin: 0;
-}
-.mioos-table-module-preview dt { font-weight: 800; }
-.mioos-table-module-preview dd { margin: 0; overflow-wrap: anywhere; }
-.mioos-table-module-preview table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 12px;
-}
-.mioos-table-module-preview th,
-.mioos-table-module-preview td {
-  padding: 6px 8px;
-  border-bottom: 1px solid rgba(148,163,184,.22);
-  text-align: left;
-}
-.mioos-table-module-revisions ul {
-  list-style: none;
-  display: grid;
-  gap: 7px;
-  padding: 0;
-  margin: 0;
-}
-.mioos-table-module-revisions li {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 8px 10px;
-  border: 1px solid rgba(148,163,184,.22);
-  border-radius: 10px;
-  background: var(--theme-panel-bg, #fff);
-}
-@media (max-width: 760px) {
-  .mioos-table-module-column-row { grid-template-columns: 1fr; }
-  .mioos-table-module-editor { width: calc(100% - 16px); max-height: calc(100% - 16px); }
-}
-.theme-dark-mode .mioos-ui-module-catalog-v3 input,
-.theme-dark-mode .mioos-ui-module-catalog-v3 select,
-.theme-dark-mode .mioos-ui-module-catalog-v3 textarea,
-.theme-dark-mode .mioos-table-module-editor > header button {
-  color: #f8fafc;
-  background: #1e293b;
-  border-color: rgba(191,219,254,.28);
-}
-.theme-dark-mode .mioos-table-module-editor,
-.theme-dark-mode .mioos-table-module-columns,
-.theme-dark-mode .mioos-table-module-rows,
-.theme-dark-mode .mioos-table-module-preview,
-.theme-dark-mode .mioos-table-module-revisions,
-.theme-dark-mode .mioos-table-module-json,
-.theme-dark-mode .mioos-table-module-revisions li {
-  color: #f8fafc;
-  background: #0f172a;
-  border-color: rgba(191,219,254,.22);
-}
-
-
-/* Pre-ROI 69 follow-up: stable table feedback and catalogue layout modes. */
-.mioos-table-feedback-rail {
-  position: absolute;
-  z-index: 34;
-  top: 58px;
-  right: 12px;
-  width: min(420px, calc(100% - 24px));
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  pointer-events: none;
-}
-.mioos-table-feedback-rail .mioos-table-toast,
-.mioos-table-feedback-rail .mioos-table-error {
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(-4px);
-  max-height: 0;
-  overflow: hidden;
-  margin: 0;
-  padding-top: 0;
-  padding-bottom: 0;
-  transition: opacity .12s ease, transform .12s ease, visibility .12s ease, max-height .12s ease;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, .16);
-}
-.mioos-table-feedback-rail .mioos-table-toast.active,
-.mioos-table-feedback-rail .mioos-table-error.active {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
-  max-height: 92px;
-  padding-top: 9px;
-  padding-bottom: 9px;
-}
-.mioos-ui-module-grid.is-list {
-  grid-template-columns: 1fr;
-  align-content: start;
-}
-.mioos-ui-module-grid.is-list .mioos-ui-module-card {
-  min-height: 72px;
-  flex-direction: row;
-  align-items: center;
-  overflow: visible;
-}
-.mioos-ui-module-grid.is-list .mioos-ui-module-icon {
-  flex-basis: 34px;
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  font-size: 17px;
-}
-.mioos-ui-module-grid.is-list .mioos-ui-module-card > div:last-child {
-  display: grid;
-  grid-template-columns: minmax(160px, 1.2fr) minmax(220px, 2fr) auto;
-  gap: 8px 12px;
-  align-items: center;
-}
-.mioos-ui-module-grid.is-list .mioos-ui-module-card > div:last-child strong,
-.mioos-ui-module-grid.is-list .mioos-ui-module-card > div:last-child span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.mioos-ui-module-grid:not(.is-list) .mioos-ui-module-card {
-  min-height: 148px;
-  flex-direction: column;
-}
-.mioos-ui-module-grid:not(.is-list) .mioos-ui-module-icon {
-  width: 46px;
-  height: 46px;
-}
-.mioos-ui-module-grid:not(.is-list) .mioos-ui-module-card > div:last-child {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-@media (max-width: 840px) {
-  .mioos-ui-module-grid.is-list .mioos-ui-module-card > div:last-child { grid-template-columns: 1fr; }
-}
-
-/* ROI 69: patient intake workflow and high-contrast overlays. */
-.mioos-table-editor-backdrop,
-.mioos-ui-dialog-backdrop {
-  background: rgba(10, 24, 44, .72);
-  backdrop-filter: blur(3px);
-}
+/* ROI 70: restore original modal backdrops; keep modal bodies opaque and readable. */
 .mioos-table-editor.mioos-system-modal,
 .mioos-ui-dialog,
 .mioos-table-module-editor {
   opacity: 1;
-  background: color-mix(in srgb, var(--theme-panel-bg, #ffffff) 98%, #ffffff 2%);
+  background: var(--theme-panel-bg, #ffffff);
   color: var(--theme-panel-text, #0f172a);
-  box-shadow: 0 28px 72px rgba(0,0,0,.42);
-}
-.mioos-table-feedback-rail .mioos-table-toast,
-.mioos-ui-toast.success {
-  background: rgba(240, 253, 244, .98);
-  color: #052e16;
-  border-color: rgba(22, 101, 52, .42);
-}
-.mioos-table-feedback-rail .mioos-table-error,
-.mioos-ui-toast.error {
-  background: rgba(255, 247, 247, .98);
-  color: #7f1d1d;
-  border-color: rgba(185, 28, 28, .42);
 }
 .mioos-table-patient-banner {
   display: grid;
   grid-template-columns: minmax(220px, 1fr) auto;
-  gap: 8px 14px;
   align-items: center;
 }
 .mioos-table-patient-banner > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
@@ -3478,41 +3122,46 @@ button:disabled { cursor: default; opacity: .55; }
   font-size: 11px;
   font-weight: 700;
 }
-.mioos-table-patient-banner small {
+.mioos-table-patient-queues {
   grid-column: 1 / -1;
-  color: #92400e;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.mioos-table-patient-queues button {
+  border: 1px solid rgba(59, 130, 246, .32);
+  border-radius: 999px;
+  background: var(--theme-field-bg, #ffffff);
+  color: var(--theme-field-text, #0f172a);
+  padding: 4px 9px;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.mioos-table-patient-queues button:hover { background: rgba(219, 234, 254, .95); }
+.mioos-table-patient-queues button.is-active { background: #dbeafe; border-color: #2563eb; color: #1e3a8a; }
+.mioos-table-patient-queues span { font-size: 11px; font-weight: 700; opacity: .78; }
+.mioos-table-patient-entry-note {
+  grid-column: 1 / -1;
+  padding: 6px 9px;
+  border-radius: 10px;
+  border: 1px solid rgba(22, 163, 74, .22);
+  background: rgba(240, 253, 244, .96);
+  color: #14532d;
+  font-size: 12px;
+  font-style: normal;
   font-weight: 700;
-}
-.mioos-table-intake-form {
-  display: grid;
-  gap: 12px;
-  padding: 12px;
-  overflow: auto;
-}
-.mioos-table-intake-section {
-  display: grid;
-  gap: 9px;
-  padding: 11px;
-  border: 1px solid rgba(99, 102, 241, .16);
-  border-radius: 12px;
-  background: rgba(248, 250, 252, .94);
-}
-.mioos-table-intake-section h3 {
-  margin: 0;
-  font-size: 13px;
-  color: var(--theme-panel-text, #0f172a);
 }
 .theme-dark-mode .mioos-table-editor.mioos-system-modal,
 .theme-dark-mode .mioos-ui-dialog,
 .theme-dark-mode .mioos-table-module-editor {
-  background: rgba(15, 23, 42, .98);
+  background: #0f172a;
   color: #f8fafc;
 }
-.theme-dark-mode .mioos-table-intake-section {
-  background: rgba(15, 23, 42, .96);
-  border-color: rgba(191, 219, 254, .22);
-}
-.theme-dark-mode .mioos-table-patient-banner li {
-  background: rgba(30, 41, 59, .96);
+.theme-dark-mode .mioos-table-patient-banner li,
+.theme-dark-mode .mioos-table-patient-queues button {
+  background: #1e293b;
+  color: #f8fafc;
   border-color: rgba(147, 197, 253, .28);
 }
