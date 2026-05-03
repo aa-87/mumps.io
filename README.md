@@ -930,10 +930,11 @@ Follow the no-`ZSYSTEM` and no-`GOTO` rules.
       ```
 
     ```
-    installation notes for a fresh ubuntu install
-     sudo apt-get install --no-install-recommends file cmake make gawk gcc git curl tcsh libjansson4 {libconfig,libelf,libicu,libncurses,libreadline,libjansson,libssl}-dev binutils ca-certificates
+  installation notes for a fresh ubuntu install
+  sudo apt-get update && sudo apt-get upgrade
+  sudo apt-get install --no-install-recommends file cmake make gawk gcc git curl tcsh libjansson4 {libconfig,libelf,libicu,libncurses,libreadline,libjansson,libssl}-dev binutils ca-certificates
 
-      mkdir /tmp/tmp && cd /tmp/tmp && wget https://download.yottadb.com/ydbinstall.sh && chmod +x ydbinstall.sh
+  mkdir /tmp/tmp && cd /tmp/tmp && wget https://download.yottadb.com/ydbinstall.sh && chmod +x ydbinstall.sh
 
 
       sudo ./ydbinstall.sh                             # Quiet basic installation
@@ -943,8 +944,11 @@ Follow the no-`ZSYSTEM` and no-`GOTO` rules.
       ./ydbinstall.sh --help                           # Output a complete list of ydbinstall options
       sudo ./ydbinstall.sh --utf8 --allplugins         # YottaDB installation with UTF-8 support and all plugins
 
-    source $(pkg-config --variable=prefix yottadb)/ydb_env_set
-    export ydb_routines=`$ydb_dist/yottadb -run %XCMD 'W $P($P($ZRO,"(",1,2),")")_" "_"/home/aa/work/mumps.io/routines"_")"_$P($ZRO,")",2,$L($ZRO,"'` 
-    ```
+  source $(pkg-config --variable=prefix yottadb)/ydb_env_set
+  export ydb_routines=`$ydb_dist/yottadb -run %XCMD 'W $P($P($ZRO,"(",1,2),")")_" "_"/home/aa/work/mumps.io/routines"_")"_$P($ZRO,")",2,$L($ZRO,")"))'`   
+      
+
+
+       ```
 
     
