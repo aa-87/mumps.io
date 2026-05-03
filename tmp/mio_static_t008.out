@@ -1,7 +1,0 @@
-HTTP/1.1 301 Moved Permanently
-Connection: keep-alive
-Content-Length: 0
-Location: /static/
-X-Request-Id: st008
-
-
