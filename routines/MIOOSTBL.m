@@ -49,6 +49,7 @@ QUERY(STATE,CONF,IN,OUT,ERR)
 	SET OUT("features","crudRows")=$SELECT(DATASET="vfs":0,1:1)
 	SET OUT("features","crudColumns")=$SELECT(DATASET="vfs":0,1:1)
 	SET OUT("features","resizableColumns")=1
+	SET OUT("features","cellEditing")=$SELECT(DATASET="vfs":0,1:1)
 	SET OUT("draw")=DRAW
 	SET OUT("recordsTotal")=TOTAL
 	SET OUT("recordsFiltered")=FILTERED
@@ -60,7 +61,7 @@ ERRQ
 	QUIT 0
 	;
 MUTATE(STATE,CONF,IN,OUT,ERR)
-	NEW DATASET,ACTION,ROOT,ID,KEY,ORIG,I,N,FOUND,ROW,COL,OPTVAL
+	NEW DATASET,ACTION,ROOT,ID,KEY,ORIG,I,N,FOUND,ROW,COL,OPTVAL,VAL,CBOUT
 	NEW $ETRAP,$ESTACK SET $ETRAP="GOTO ERRM^MIOOSTBL"
 	KILL OUT,ERR
 	SET ERR("routine")="MIOOSTBL"
@@ -83,6 +84,17 @@ MUTATE(STATE,CONF,IN,OUT,ERR)
 	. SET @ROOT@("rows",FOUND,"id")=ID
 	. IF $GET(@ROOT@("rows",FOUND,"notes"))'="" SET @ROOT@("rows",FOUND,"_expand","title")="Notes",@ROOT@("rows",FOUND,"_expand","body")=$GET(@ROOT@("rows",FOUND,"notes"))
 	. SET OUT("mutated","rowId")=ID
+	IF ACTION="cell.save" DO
+	. SET ID=$GET(IN("rowId"),$GET(IN("id")))
+	. SET KEY=$$KEY($GET(IN("columnKey"),$GET(IN("key"))))
+	. SET VAL=$GET(IN("value"))
+	. KILL CBOUT
+	. IF '$$CELLCB(.STATE,ROOT,DATASET,ID,KEY,.VAL,.CBOUT,.ERR) QUIT
+	. SET FOUND=0,I=0 FOR  SET I=$ORDER(@ROOT@("rows",I)) QUIT:I'>0  IF $GET(@ROOT@("rows",I,"id"))=ID SET FOUND=I
+	. IF FOUND'>0 SET ERR("error")="row_id_missing",ERR("message")="Row not found" QUIT
+	. SET @ROOT@("rows",FOUND,KEY)=VAL
+	. IF KEY="notes" SET @ROOT@("rows",FOUND,"_expand","title")="Notes",@ROOT@("rows",FOUND,"_expand","body")=VAL
+	. SET OUT("mutated","rowId")=ID,OUT("mutated","columnKey")=KEY
 	IF ACTION="row.delete" DO
 	. SET ID=$GET(IN("rowId"),$GET(IN("id"),$GET(IN("row","id"))))
 	. IF ID="" QUIT
@@ -107,6 +119,7 @@ MUTATE(STATE,CONF,IN,OUT,ERR)
 	. IF +$GET(@ROOT@("schema","columns",FOUND,"width"))<1 SET @ROOT@("schema","columns",FOUND,"width")=140
 	. IF $GET(@ROOT@("schema","columns",FOUND,"type"))="" SET @ROOT@("schema","columns",FOUND,"type")="text"
 	. SET @ROOT@("schema","columns",FOUND,"resizable")=1
+	. IF '$DATA(@ROOT@("schema","columns",FOUND,"editable")) SET @ROOT@("schema","columns",FOUND,"editable")=$SELECT(KEY="id":0,1:1)
 	. SET OUT("mutated","columnKey")=KEY
 	IF ACTION="column.delete" DO
 	. SET KEY=$GET(IN("columnKey"),$GET(IN("key"),$GET(IN("column","key"))))
@@ -133,6 +146,7 @@ MUTATE(STATE,CONF,IN,OUT,ERR)
 	. . SET I=0 FOR  SET I=$ORDER(@ROOT@("schema","columns",I)) QUIT:I'>0  IF $GET(@ROOT@("schema","columns",I,"key"))=KEY SET @ROOT@("schema","columns",I,"options",N)=OPTVAL
 	. SET OUT("mutated","columnOption")=KEY,OUT("mutated","value")=OPTVAL
 	IF ACTION="rows.export"!(ACTION="export") DO EXPORT(.STATE,DATASET,ROOT,.IN,.OUT)
+	IF $GET(ERR("error"))'="" QUIT 0
 	IF '$DATA(OUT("mutated")),'$DATA(OUT("export")) SET ERR("error")="unsupported_table_action" QUIT 0
 	IF $DATA(OUT("export")) SET OUT("ok")=1,OUT("dataset")=DATASET,OUT("action")=ACTION,OUT("exportOnly")=1,OUT("message")=$GET(OUT("message"),"CSV export generated") QUIT 1
 	SET OUT("ok")=1,OUT("dataset")=DATASET,OUT("action")=ACTION,OUT("mutationOnly")=1,OUT("refetch")=1,OUT("message")=$$MMSG(ACTION)
@@ -145,6 +159,7 @@ ERRM
 VALIDATE(STATE,CONF,DATASET,ACTION,IN,ERR)
 	KILL ERR("field"),ERR("fieldErrors")
 	IF ACTION="row.save"!(ACTION="row.add")!(ACTION="row.update") QUIT $$VALROW(.STATE,DATASET,.CONF,.IN,.ERR)
+	IF ACTION="cell.save" QUIT $$VALCELL(.STATE,DATASET,.CONF,.IN,.ERR)
 	IF ACTION="row.delete" QUIT $$VALID($GET(IN("rowId"),$GET(IN("id"),$GET(IN("row","id")))),.ERR)
 	IF ACTION="rows.delete"!(ACTION="bulk.delete") QUIT $$VALIDS(.IN,.ERR)
 	IF ACTION="rows.export"!(ACTION="export") QUIT $$VALIDS(.IN,.ERR)
@@ -221,6 +236,63 @@ VALIDS(IN,ERR)
 	IF 'SEEN SET ERR("error")="row_ids_missing" QUIT 0
 	QUIT 1
 	;
+VALCELL(STATE,DATASET,CONF,IN,ERR)
+	NEW ROOT,KEY,ID,VAL,MAX,CI,CTYPE
+	SET ROOT=$$ROOT(.STATE,DATASET)
+	SET ID=$GET(IN("rowId"),$GET(IN("id")))
+	IF ID="" SET ERR("error")="row_id_missing",ERR("message")="Choose a row to edit" QUIT 0
+	SET KEY=$$KEY($GET(IN("columnKey"),$GET(IN("key"))))
+	IF KEY="" SET ERR("error")="invalid_column_key",ERR("message")="Choose a valid column" QUIT 0
+	SET CI=$$COLIDX(ROOT,KEY)
+	IF CI'>0 SET ERR("error")="invalid_column_key",ERR("field")=KEY,ERR("message")="Column not found" QUIT 0
+	IF KEY="id" SET ERR("error")="cell_read_only",ERR("field")=KEY,ERR("message")="ID cells are read-only" QUIT 0
+	IF $DATA(@ROOT@("schema","columns",CI,"editable")),+$GET(@ROOT@("schema","columns",CI,"editable"))=0 SET ERR("error")="cell_read_only",ERR("field")=KEY,ERR("message")="This cell is read-only" QUIT 0
+	SET MAX=+$GET(CONF("mioos","table","maxFieldChars"),2048) IF MAX<128 SET MAX=128
+	SET VAL=$GET(IN("value"))
+	IF $LENGTH(VAL)>MAX DO ADDERR(.ERR,KEY,"Value is too long") QUIT 0
+	IF '$$VALCELLR(ROOT,KEY,VAL,.ERR) QUIT 0
+	QUIT 1
+	;
+VALCELLR(ROOT,KEY,VAL,ERR)
+	NEW MAX,OK
+	SET OK=1
+	IF +$GET(@ROOT@("validation","fields",KEY,"required")),VAL="" DO ADDERR(.ERR,KEY,$GET(@ROOT@("validation","fields",KEY,"message"),"Required")) QUIT 0
+	SET MAX=+$GET(@ROOT@("validation","fields",KEY,"maxLength")) IF MAX>0,$LENGTH(VAL)>MAX DO ADDERR(.ERR,KEY,"Maximum length is "_MAX) QUIT 0
+	IF $DATA(@ROOT@("validation","fields",KEY,"enum")),VAL'="",'$$VALENUM(ROOT,KEY,VAL) DO ADDERR(.ERR,KEY,"Value is not allowed") QUIT 0
+	IF +$GET(@ROOT@("validation","fields",KEY,"date")),VAL'="",'$$DATEOK(VAL) DO ADDERR(.ERR,KEY,"Use a valid YYYY-MM-DD date") QUIT 0
+	IF +$GET(@ROOT@("validation","fields",KEY,"numeric")),VAL'="",'$$ISNUM(VAL) DO ADDERR(.ERR,KEY,"Enter a number") QUIT 0
+	QUIT OK
+	;
+COLIDX(ROOT,KEY)
+	NEW I,FOUND
+	SET FOUND=0,I=0 FOR  SET I=$ORDER(@ROOT@("schema","columns",I)) QUIT:I'>0!(FOUND)  IF $GET(@ROOT@("schema","columns",I,"key"))=KEY SET FOUND=I
+	QUIT FOUND
+	;
+CELLCB(STATE,ROOT,DATASET,ID,KEY,VAL,OUT,ERR)
+	NEW CI,CB,X,OK
+	SET CI=$$COLIDX(ROOT,KEY),CB=$GET(@ROOT@("schema","columns",CI,"cellCallback"))
+	IF CB="" QUIT 1
+	IF '$$CBACK(CB) SET ERR("error")="invalid_cell_callback",ERR("field")=KEY,ERR("message")="Invalid cell callback" QUIT 0
+	KILL OUT SET OK=0
+	SET X="SET OK=$$"_CB_"(.STATE,DATASET,ID,KEY,.VAL,.OUT,.ERR)"
+	XECUTE X
+	IF 'OK DO  QUIT 0
+	. IF $GET(ERR("error"))="" SET ERR("error")="validation_failed"
+	. IF $GET(ERR("field"))="" SET ERR("field")=KEY
+	. IF $GET(ERR("message"))="" SET ERR("message")="Cell callback rejected the value"
+	. IF '$DATA(ERR("fieldErrors",KEY)) SET ERR("fieldErrors",KEY)=$GET(ERR("message"))
+	IF $DATA(OUT("value")) SET VAL=$GET(OUT("value"))
+	QUIT 1
+	;
+CBACK(X)
+	NEW L,R,I,C,OK
+	SET L=$PIECE($GET(X),"^",1),R=$PIECE($GET(X),"^",2),OK=1
+	IF (L="")!(R="") QUIT 0
+	FOR I=1:1:$LENGTH(L) SET C=$EXTRACT(L,I) IF (C'?1AN)&(C'="%") SET OK=0
+	IF 'OK QUIT 0
+	FOR I=1:1:$LENGTH(R) SET C=$EXTRACT(R,I) IF (C'?1AN)&(C'="%") SET OK=0
+	QUIT OK
+	;
 VALCOL(CONF,IN,ERR)
 	NEW KEY,LABEL,WIDTH
 	SET KEY=$$KEY($GET(IN("column","key")))
@@ -265,6 +337,7 @@ TRUTH(X)
 	;
 MMSG(ACTION)
 	IF ACTION="row.save"!(ACTION="row.add")!(ACTION="row.update") QUIT "Row saved"
+	IF ACTION="cell.save" QUIT "Cell saved"
 	IF ACTION="row.delete" QUIT "Row deleted"
 	IF ACTION="rows.delete"!(ACTION="bulk.delete") QUIT "Rows deleted"
 	IF ACTION="rows.export"!(ACTION="export") QUIT "CSV export generated"
@@ -328,10 +401,10 @@ BACKFILL(ROOT,DATASET)
 	. IF '$$HASC(ROOT,"notes") SET N=$ORDER(@ROOT@("schema","columns",""),-1)+1 DO COLR(ROOT,N,"notes","Notes","textarea",260,0,1,"Details")
 	. SET I=0 FOR  SET I=$ORDER(@ROOT@("rows",I)) QUIT:I'>0  IF $GET(@ROOT@("rows",I,"notes"))="",$GET(@ROOT@("rows",I,"_expand","body"))'="" SET @ROOT@("rows",I,"notes")=$GET(@ROOT@("rows",I,"_expand","body"))
 	. IF '$DATA(@ROOT@("validation")) DO SEEDVALD(ROOT)
-	. DO SETCTYPE(ROOT,"status","select"),SETCTYPE(ROOT,"updated","date"),SETCTYPE(ROOT,"notes","textarea")
+	. DO SETCTYPE(ROOT,"status","select"),SETCTYPE(ROOT,"updated","date"),SETCTYPE(ROOT,"notes","textarea"),SETEDIT(ROOT)
 	IF DATASET="patient-registration" DO
 	. IF '$DATA(@ROOT@("validation")) DO SEEDVALP(ROOT)
-	. DO SETCTYPE(ROOT,"dob","date"),SETCTYPE(ROOT,"status","select")
+	. DO SETCTYPE(ROOT,"dob","date"),SETCTYPE(ROOT,"status","select"),SETEDIT(ROOT)
 	QUIT
 	;
 SEEDVALD(ROOT)
@@ -375,6 +448,13 @@ METASC(ROOT,SCHEMA)
 SETCTYPE(ROOT,KEY,TYPE)
 	NEW I
 	SET I=0 FOR  SET I=$ORDER(@ROOT@("schema","columns",I)) QUIT:I'>0  IF $GET(@ROOT@("schema","columns",I,"key"))=$GET(KEY) SET @ROOT@("schema","columns",I,"type")=$GET(TYPE)
+	QUIT
+	;
+SETEDIT(ROOT)
+	NEW I,KEY
+	SET I=0 FOR  SET I=$ORDER(@ROOT@("schema","columns",I)) QUIT:I'>0  DO
+	. SET KEY=$GET(@ROOT@("schema","columns",I,"key"))
+	. SET @ROOT@("schema","columns",I,"editable")=$SELECT(KEY="id":0,1:1)
 	QUIT
 	;
 HASC(ROOT,KEY)
@@ -514,6 +594,7 @@ MASSIVEQ(IN,OUT,CONF)
 	SET OUT("features","crudRows")=0
 	SET OUT("features","crudColumns")=0
 	SET OUT("features","resizableColumns")=1
+	SET OUT("features","cellEditing")=0
 	SET OUT("features","readOnly")=1
 	SET OUT("draw")=DRAW
 	SET OUT("recordsTotal")=TOTAL
@@ -584,6 +665,7 @@ MASSFASTQ(OUT,TOTAL,PAGE,PSIZE,DRAW,SORTDIR)
 	SET OUT("features","crudRows")=0
 	SET OUT("features","crudColumns")=0
 	SET OUT("features","resizableColumns")=1
+	SET OUT("features","cellEditing")=0
 	SET OUT("features","readOnly")=1
 	SET OUT("draw")=DRAW
 	SET OUT("recordsTotal")=TOTAL
@@ -660,6 +742,7 @@ COLR(ROOT,N,KEY,LABEL,TYPE,WIDTH,HIDDEN,SORTABLE,GROUP)
 	SET @ROOT@("schema","columns",N,"sortable")=+SORTABLE
 	SET @ROOT@("schema","columns",N,"resizable")=1
 	SET @ROOT@("schema","columns",N,"group")=$GET(GROUP)
+	SET @ROOT@("schema","columns",N,"editable")=$SELECT(KEY="id":0,1:1)
 	QUIT
 	;
 ROWR(ROOT,N,ID,NAME,STATUS,OWNER,PRIORITY,UPDATED,BODY)
@@ -737,6 +820,7 @@ COL(SCHEMA,N,KEY,LABEL,TYPE,WIDTH,HIDDEN,SORTABLE,GROUP)
 	SET SCHEMA("columns",N,"sortable")=+SORTABLE
 	SET SCHEMA("columns",N,"resizable")=1
 	SET SCHEMA("columns",N,"group")=$GET(GROUP)
+	SET SCHEMA("columns",N,"editable")=$SELECT(KEY="id":0,1:1)
 	QUIT
 	;
 FILTER(ROWS,IN,WORK,TOTAL,FILTERED)

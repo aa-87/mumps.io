@@ -19,7 +19,7 @@
   function defaultTableConfig() {
     return {
       contract: TABLE_CONTRACT,
-      features: { toolbar: true, datasetSwitcher: true, search: true, filters: true, grouping: true, columnPicker: true, columnGroups: false, rowCrud: true, columnCrud: true, selection: true, bulkActions: true, pagination: true, rowDetails: true, resizeColumns: true, serverSide: true, processingIndicator: true },
+      features: { toolbar: true, datasetSwitcher: true, search: true, filters: true, grouping: true, columnPicker: true, columnGroups: false, rowCrud: true, columnCrud: true, selection: true, bulkActions: true, pagination: true, rowDetails: true, resizeColumns: true, cellEditing: true, serverSide: true, processingIndicator: true },
       columns: [],
       defaultSort: { column: 'name', direction: 'ascending' },
       defaultPageSize: 25,
@@ -117,6 +117,8 @@
         hidden: !!col.hidden,
         group: col.group || col.groupLabel || '',
         required: !!col.required,
+        editable: col.editable === false || col.editable === 0 || col.editable === '0' ? false : true,
+        cellCallback: col.cellCallback || '',
         options: toList(col.options || col.values || col.enum)
       };
     });
@@ -242,7 +244,8 @@
         columnResize: null,
         columnPickerOpen: false,
         groupExpanded: {},
-        editor: { open: false, mode: 'row', title: '', row: {}, column: {} }
+        editor: { open: false, mode: 'row', title: '', row: {}, column: {} },
+        cellEditor: { open: false, rowId: '', columnKey: '', value: '', originalValue: '' }
       };
     },
     backendTableState: function (tableId) {
@@ -277,7 +280,7 @@
         sort: sort,
         order: [{ column: orderIndex, dir: sort.direction === 'descending' ? 'desc' : 'asc', name: sort.column || '' }],
         filters: clone(state.filters || {}),
-        columns: columns.map(function (col) { return { key: col.key, data: col.key, name: col.key, label: col.label, type: col.type, searchable: col.searchable !== false, orderable: col.sortable !== false, hidden: !!col.hidden, width: col.width }; })
+        columns: columns.map(function (col) { return { key: col.key, data: col.key, name: col.key, label: col.label, type: col.type, searchable: col.searchable !== false, orderable: col.sortable !== false, hidden: !!col.hidden, width: col.width, editable: col.editable !== false, cellCallback: col.cellCallback || '' }; })
       };
     },
     backendTableUseWebSocket: function (state, operation) {
@@ -686,6 +689,60 @@
       if (value === null || typeof value === 'undefined') return '';
       return String(value);
     },
+    backendTableCanEditCell: function (state, row, column) {
+      if (!row || !column || !column.key) return false;
+      if (column.key === 'id') return false;
+      if (column.editable === false || column.editable === 0 || column.editable === '0') return false;
+      if (!this.backendTableFeature(state, 'cellEditing')) return false;
+      if ((state || {}).readOnly) return false;
+      return true;
+    },
+    backendTableIsCellEditing: function (state, row, column) {
+      var cell = (state || {}).cellEditor || {};
+      var rowId = (row && (row.id || row.key)) || '';
+      return !!cell.open && cell.rowId === rowId && cell.columnKey === (column || {}).key;
+    },
+    backendTableOpenCellEditor: function (tableId, row, column) {
+      var state = this.backendTableState(tableId);
+      if (!this.backendTableCanEditCell(state, row, column)) return null;
+      var rowId = (row && (row.id || row.key)) || '';
+      var value = row && typeof row[column.key] !== 'undefined' && row[column.key] !== null ? String(row[column.key]) : '';
+      state.validation = {};
+      state.cellEditor = { open: true, rowId: rowId, columnKey: column.key, value: value, originalValue: value };
+    },
+    backendTableCancelCellEditor: function (tableId) {
+      var state = this.backendTableState(tableId);
+      state.cellEditor = { open: false, rowId: '', columnKey: '', value: '', originalValue: '' };
+    },
+    backendTableCellDraftValue: function (state, row, column) {
+      if (this.backendTableIsCellEditing(state, row, column)) return ((state || {}).cellEditor || {}).value || '';
+      return row && typeof row[(column || {}).key] !== 'undefined' && row[(column || {}).key] !== null ? String(row[(column || {}).key]) : '';
+    },
+    backendTableSetCellDraft: function (tableId, value) {
+      var state = this.backendTableState(tableId);
+      state.cellEditor = Object.assign({}, state.cellEditor || {}, { value: value == null ? '' : String(value) });
+    },
+    backendTableCellMultiValue: function (state, row, column) {
+      var val = this.backendTableCellDraftValue(state, row, column);
+      if (!val) return [];
+      return String(val).split(',').map(function (part) { return part.trim(); }).filter(Boolean);
+    },
+    backendTableSetCellMultiDraft: function (tableId, event) {
+      var vals = Array.prototype.slice.call(((event || {}).target || {}).selectedOptions || []).map(function (opt) { return opt.value; });
+      this.backendTableSetCellDraft(tableId, vals.join(', '));
+    },
+    backendTableSaveCell: function (tableId, row, column) {
+      var state = this.backendTableState(tableId);
+      var cell = state.cellEditor || {};
+      if (!cell.open || !column || !column.key) return Promise.resolve({ ok: false });
+      var vm = this;
+      return this.backendTableMutate(tableId, 'cell.save', { rowId: cell.rowId || ((row || {}).id || (row || {}).key), columnKey: column.key, value: cell.value || '', keepEditor: true }).then(function (payload) {
+        if (payload && payload.ok === false) return payload;
+        state.toast = 'Cell saved';
+        vm.backendTableCancelCellEditor(tableId);
+        return payload;
+      });
+    },
     backendTableColumnOptions: function (state, column) {
       column = column || {};
       var options = toList(column.options || []);
@@ -708,6 +765,18 @@
       if (!column || !column.key || !value) return Promise.resolve({ ok: false });
       return this.backendTableMutate(tableId, 'column.option.add', { columnKey: column.key, value: value, keepEditor: true }).then(function (payload) {
         if (payload && payload.ok !== false) state.toast = 'Option added';
+        return payload;
+      });
+    },
+    backendTableAddFilterOption: function (tableId, column) {
+      var state = this.backendTableState(tableId);
+      var entry = this.backendTableFilterDraftEntry(state, (column || {}).key);
+      var value = String((entry && entry.value) || '').trim();
+      if (!value && typeof prompt === 'function') value = String(prompt('Add option for ' + ((column || {}).label || (column || {}).key), '') || '').trim();
+      if (!value) { state.error = 'Enter a value before adding it to the column options.'; return Promise.resolve({ ok: false, error: 'option_value_missing' }); }
+      var vm = this;
+      return this.backendTableAddColumnOption(tableId, column, value).then(function (payload) {
+        if (payload && payload.ok !== false) vm.backendTableSetFilterDraft(tableId, column.key, 'value', value);
         return payload;
       });
     },
@@ -851,7 +920,7 @@
     backendTableFeature: function (state, key) {
       var cfg = mergeConfig(defaultTableConfig(), (state || {}).config || {});
       var enabled = !!((cfg.features || {})[key]);
-      var map = { rowCrud: 'crudRows', columnCrud: 'crudColumns', rowDetails: 'expansionRows', resizeColumns: 'resizableColumns', filters: 'filtering', grouping: 'columnGrouping', bulkActions: 'bulkActions', selection: 'selection', pagination: 'serverPagination' };
+      var map = { rowCrud: 'crudRows', columnCrud: 'crudColumns', rowDetails: 'expansionRows', resizeColumns: 'resizableColumns', filters: 'filtering', grouping: 'columnGrouping', bulkActions: 'bulkActions', selection: 'selection', pagination: 'serverPagination', cellEditing: 'cellEditing' };
       var serverKey = map[key] || key;
       var features = (state || {}).features || {};
       if (Object.prototype.hasOwnProperty.call(features, serverKey) && (+features[serverKey] === 0 || features[serverKey] === false)) return false;
@@ -909,14 +978,14 @@
             '<button v-if="vm.backendTableFeature(state, &quot;columnCrud&quot;)" type="button" class="mioos-btn" @click="vm.backendTableOpenColumnEditor(tableId || state.id)">Add column</button>' +
             '<span v-if="state.readOnly" class="mioos-table-readonly">Read-only</span>' +
           '</header>' +
-          '<div class="mioos-table-processing" role="status" aria-live="polite" v-if="state.loading || state.saving"><span class="mioos-table-loading-line"></span><strong>[[ state.saving ? state.config.saveMessage : state.config.loadingMessage ]]</strong><em>[[ state.requestLabel || state.config.processingMessage ]]</em></div>' +
+          '<div class="mioos-table-processing" role="status" aria-label="Table loading" v-if="state.loading || state.saving"><span class="mioos-table-loading-line"></span></div>' +
           '<div class="mioos-table-toast" role="status" v-if="state.toast">[[ state.toast ]]</div>' +
           '<div class="mioos-table-bulkbar" v-if="selectedCount && vm.backendTableFeature(state, &quot;bulkActions&quot;)"><span>[[ selectedCount ]] selected</span><button v-for="action in state.bulkActions" :key="action.key" type="button" @click="vm.backendTableRunBulkAction(tableId || state.id, action)">[[ action.label ]]</button><button type="button" @click="vm.backendTableClearSelection(tableId || state.id)">Clear</button></div>' +
           '<div class="mioos-table-error" v-if="state.error">[[ state.error ]]</div>' +
           '<div class="mioos-table-editor-backdrop" v-if="state.filterModalOpen" @click.self="vm.backendTableCloseFilters(tableId || state.id)">' +
             '<div class="mioos-table-editor is-filter-editor mioos-system-modal" role="dialog" aria-modal="true" :style="vm.backendTableDialogStyle(state, &quot;filters&quot;)">' +
               '<header class="mioos-system-modal-titlebar" @pointerdown.prevent="vm.backendTableBeginDialogDrag(tableId || state.id, &quot;filters&quot;, $event)"><strong>Advanced filters</strong><button type="button" @click="vm.backendTableCloseFilters(tableId || state.id)">×</button></header>' +
-              '<section class="mioos-table-modal-list is-advanced-filter"><article v-for="col in filterableColumns" :key="col.key" class="mioos-table-filter-row"><div><strong>[[ col.label ]]</strong><small>[[ col.key ]] · [[ col.type ]]</small></div><select :value="vm.backendTableFilterDraftEntry(state, col.key).mode" @change="vm.backendTableSetFilterDraft(tableId || state.id, col.key, &quot;mode&quot;, $event.target.value)"><option value="include">Include</option><option value="exclude">Exclude</option><option value="contains">Contains</option><option value="starts">Starts with</option><option value="ends">Ends with</option><option value="range">Range</option><option value="blank">Blank</option><option value="notblank">Not blank</option></select><template v-if="vm.backendTableFilterDraftEntry(state, col.key).mode === &quot;range&quot;"><input :type="vm.backendTableFilterControl(col) === &quot;date&quot; ? &quot;date&quot; : (vm.backendTableFilterControl(col) === &quot;number&quot; ? &quot;number&quot; : &quot;text&quot;)" :value="vm.backendTableFilterDraftEntry(state, col.key).from" @input="vm.backendTableSetFilterDraft(tableId || state.id, col.key, &quot;from&quot;, $event.target.value)" placeholder="From"><input :type="vm.backendTableFilterControl(col) === &quot;date&quot; ? &quot;date&quot; : (vm.backendTableFilterControl(col) === &quot;number&quot; ? &quot;number&quot; : &quot;text&quot;)" :value="vm.backendTableFilterDraftEntry(state, col.key).to" @input="vm.backendTableSetFilterDraft(tableId || state.id, col.key, &quot;to&quot;, $event.target.value)" placeholder="To"></template><template v-else-if="vm.backendTableFilterControl(col) === &quot;select&quot;"><select :value="vm.backendTableFilterDraftEntry(state, col.key).value" @change="vm.backendTableSetFilterDraft(tableId || state.id, col.key, &quot;value&quot;, $event.target.value)"><option value="">Any</option><option v-for="opt in vm.backendTableColumnOptions(state, col)" :key="opt" :value="opt">[[ opt ]]</option></select><button v-if="vm.backendTableCanAddColumnOption(state, col)" type="button" class="mioos-table-inline-link" @click="vm.backendTableAddColumnOption(tableId || state.id, col, vm.backendTableFilterDraftEntry(state, col.key).value)">Add value</button></template><template v-else-if="vm.backendTableFilterControl(col) === &quot;boolean&quot;"><select :value="vm.backendTableFilterDraftEntry(state, col.key).value" @change="vm.backendTableSetFilterDraft(tableId || state.id, col.key, &quot;value&quot;, $event.target.value)"><option value="">Any</option><option value="true">True</option><option value="false">False</option></select></template><input v-else :type="vm.backendTableFilterControl(col) === &quot;date&quot; ? &quot;date&quot; : (vm.backendTableFilterControl(col) === &quot;number&quot; ? &quot;number&quot; : &quot;text&quot;)" :value="vm.backendTableFilterDraftEntry(state, col.key).value" @input="vm.backendTableSetFilterDraft(tableId || state.id, col.key, &quot;value&quot;, $event.target.value)" placeholder="Filter value"></article></section>' +
+              '<section class="mioos-table-modal-list is-advanced-filter"><article v-for="col in filterableColumns" :key="col.key" class="mioos-table-filter-row"><div><strong>[[ col.label ]]</strong><small>[[ col.key ]] · [[ col.type ]]</small></div><select :value="vm.backendTableFilterDraftEntry(state, col.key).mode" @change="vm.backendTableSetFilterDraft(tableId || state.id, col.key, &quot;mode&quot;, $event.target.value)"><option value="include">Include</option><option value="exclude">Exclude</option><option value="contains">Contains</option><option value="starts">Starts with</option><option value="ends">Ends with</option><option value="range">Range</option><option value="blank">Blank</option><option value="notblank">Not blank</option></select><template v-if="vm.backendTableFilterDraftEntry(state, col.key).mode === &quot;range&quot;"><input :type="vm.backendTableFilterControl(col) === &quot;date&quot; ? &quot;date&quot; : (vm.backendTableFilterControl(col) === &quot;number&quot; ? &quot;number&quot; : &quot;text&quot;)" :value="vm.backendTableFilterDraftEntry(state, col.key).from" @input="vm.backendTableSetFilterDraft(tableId || state.id, col.key, &quot;from&quot;, $event.target.value)" placeholder="From"><input :type="vm.backendTableFilterControl(col) === &quot;date&quot; ? &quot;date&quot; : (vm.backendTableFilterControl(col) === &quot;number&quot; ? &quot;number&quot; : &quot;text&quot;)" :value="vm.backendTableFilterDraftEntry(state, col.key).to" @input="vm.backendTableSetFilterDraft(tableId || state.id, col.key, &quot;to&quot;, $event.target.value)" placeholder="To"></template><template v-else-if="vm.backendTableFilterControl(col) === &quot;select&quot;"><select :value="vm.backendTableFilterDraftEntry(state, col.key).value" @change="vm.backendTableSetFilterDraft(tableId || state.id, col.key, &quot;value&quot;, $event.target.value)"><option value="">Any</option><option v-for="opt in vm.backendTableColumnOptions(state, col)" :key="opt" :value="opt">[[ opt ]]</option></select><button v-if="vm.backendTableCanAddColumnOption(state, col)" type="button" class="mioos-table-inline-link" @click="vm.backendTableAddFilterOption(tableId || state.id, col)">Add value</button></template><template v-else-if="vm.backendTableFilterControl(col) === &quot;boolean&quot;"><select :value="vm.backendTableFilterDraftEntry(state, col.key).value" @change="vm.backendTableSetFilterDraft(tableId || state.id, col.key, &quot;value&quot;, $event.target.value)"><option value="">Any</option><option value="true">True</option><option value="false">False</option></select></template><input v-else :type="vm.backendTableFilterControl(col) === &quot;date&quot; ? &quot;date&quot; : (vm.backendTableFilterControl(col) === &quot;number&quot; ? &quot;number&quot; : &quot;text&quot;)" :value="vm.backendTableFilterDraftEntry(state, col.key).value" @input="vm.backendTableSetFilterDraft(tableId || state.id, col.key, &quot;value&quot;, $event.target.value)" placeholder="Filter value"></article></section>' +
               '<footer><button type="button" class="mioos-btn is-primary" @click="vm.backendTableApplyFilters(tableId || state.id)">Apply filters</button><button type="button" class="mioos-btn" @click="vm.backendTableClearFilters(tableId || state.id)">Clear filters</button><button type="button" class="mioos-btn" @click="vm.backendTableCloseFilters(tableId || state.id)">Cancel</button></footer>' +
             '</div>' +
           '</div>' +
@@ -958,7 +1027,7 @@
                   '<tr v-if="state.groupByColumns && state.groupByColumns.length" class="mioos-table-group-row"><td :colspan="vm.backendTableColspan(state)"><button type="button" @click="vm.backendTableToggleGroup(tableId || state.id, group.key)">[[ vm.backendTableIsGroupExpanded(state, group.key) ? \'▾\' : \'▸\' ]]</button><strong>[[ group.label ]]</strong><span>[[ group.count ]] rows</span></td></tr>' +
                   '<template v-if="!(state.groupByColumns && state.groupByColumns.length) || vm.backendTableIsGroupExpanded(state, group.key)">' +
                     '<template v-for="row in group.rows" :key="keyOf(row)">' +
-                      '<tr :class="{ \'is-selected\': vm.backendTableIsSelected(state, row) }"><td v-if="vm.backendTableShowControl(state)" class="mioos-table-control-cell"><button v-if="row._expand && vm.backendTableFeature(state, &quot;rowDetails&quot;)" class="mioos-table-detail-toggle" type="button" :aria-expanded="vm.backendTableIsExpanded(state, row) ? \'true\' : \'false\'" @click="vm.backendTableToggleExpand(tableId || state.id, row)">[[ vm.backendTableIsExpanded(state, row) ? \'▾\' : \'▸\' ]]</button><input v-if="vm.backendTableShowSelection(state)" type="checkbox" :checked="vm.backendTableIsSelected(state, row)" @change="vm.backendTableToggleRow(tableId || state.id, row)"></td><td v-for="col in columns" :key="col.key"><span :class="\'mioos-table-cell type-\' + col.type">[[ vm.backendTableCellText(row, col) ]]</span></td><td v-if="vm.backendTableShowActions(state)" class="mioos-table-actions"><button v-for="action in vm.backendTableVisibleRowActions(state)" :key="action.key" type="button" @click="vm.backendTableRunAction(tableId || state.id, action, row)">[[ action.label ]]</button></td></tr>' +
+                      '<tr :class="{ \'is-selected\': vm.backendTableIsSelected(state, row) }"><td v-if="vm.backendTableShowControl(state)" class="mioos-table-control-cell"><button v-if="row._expand && vm.backendTableFeature(state, &quot;rowDetails&quot;)" class="mioos-table-detail-toggle" type="button" :aria-expanded="vm.backendTableIsExpanded(state, row) ? \'true\' : \'false\'" @click="vm.backendTableToggleExpand(tableId || state.id, row)">[[ vm.backendTableIsExpanded(state, row) ? \'▾\' : \'▸\' ]]</button><input v-if="vm.backendTableShowSelection(state)" type="checkbox" :checked="vm.backendTableIsSelected(state, row)" @change="vm.backendTableToggleRow(tableId || state.id, row)"></td><td v-for="col in columns" :key="col.key" :class="{ \'is-cell-editing\': vm.backendTableIsCellEditing(state, row, col), \'is-cell-editable\': vm.backendTableCanEditCell(state, row, col) }"><div v-if="vm.backendTableIsCellEditing(state, row, col)" class="mioos-table-cell-editor"><textarea v-if="vm.backendTableFilterControl(col) === &quot;textarea&quot;" :value="vm.backendTableCellDraftValue(state, row, col)" @input="vm.backendTableSetCellDraft(tableId || state.id, $event.target.value)"></textarea><select v-else-if="col.type === &quot;multiselect&quot;" multiple :value="vm.backendTableCellMultiValue(state, row, col)" @change="vm.backendTableSetCellMultiDraft(tableId || state.id, $event)"><option v-for="opt in vm.backendTableColumnOptions(state, col)" :key="opt" :value="opt">[[ opt ]]</option></select><select v-else-if="vm.backendTableFilterControl(col) === &quot;select&quot;" :value="vm.backendTableCellDraftValue(state, row, col)" @change="vm.backendTableSetCellDraft(tableId || state.id, $event.target.value)"><option value="">Choose…</option><option v-for="opt in vm.backendTableColumnOptions(state, col)" :key="opt" :value="opt">[[ opt ]]</option></select><select v-else-if="vm.backendTableFilterControl(col) === &quot;boolean&quot;" :value="vm.backendTableCellDraftValue(state, row, col)" @change="vm.backendTableSetCellDraft(tableId || state.id, $event.target.value)"><option value="">Choose…</option><option value="true">True</option><option value="false">False</option></select><input v-else-if="vm.backendTableFilterControl(col) === &quot;date&quot;" type="date" :value="vm.backendTableCellDraftValue(state, row, col)" @input="vm.backendTableSetCellDraft(tableId || state.id, $event.target.value)"><input v-else-if="vm.backendTableFilterControl(col) === &quot;number&quot;" type="number" :value="vm.backendTableCellDraftValue(state, row, col)" @input="vm.backendTableSetCellDraft(tableId || state.id, $event.target.value)"><input v-else :value="vm.backendTableCellDraftValue(state, row, col)" @input="vm.backendTableSetCellDraft(tableId || state.id, $event.target.value)"><small v-if="vm.backendTableFieldError(state, col.key)" class="mioos-field-error">[[ vm.backendTableFieldError(state, col.key) ]]</small><span class="mioos-table-cell-actions"><button type="button" class="mioos-btn is-primary" :disabled="state.saving" @click="vm.backendTableSaveCell(tableId || state.id, row, col)">Save</button><button type="button" class="mioos-btn" @click="vm.backendTableCancelCellEditor(tableId || state.id)">Cancel</button></span></div><button v-else-if="vm.backendTableCanEditCell(state, row, col)" type="button" class="mioos-table-cell-edit-button" @click="vm.backendTableOpenCellEditor(tableId || state.id, row, col)"><span :class="\'mioos-table-cell type-\' + col.type">[[ vm.backendTableCellText(row, col) ]]</span><small>Edit</small></button><span v-else :class="\'mioos-table-cell type-\' + col.type">[[ vm.backendTableCellText(row, col) ]]</span></td><td v-if="vm.backendTableShowActions(state)" class="mioos-table-actions"><button v-for="action in vm.backendTableVisibleRowActions(state)" :key="action.key" type="button" @click="vm.backendTableRunAction(tableId || state.id, action, row)">[[ action.label ]]</button></td></tr>' +
                       '<tr v-if="vm.backendTableIsExpanded(state, row)" class="mioos-table-expanded-row"><td v-if="vm.backendTableShowControl(state)"></td><td :colspan="columns.length + (vm.backendTableShowActions(state) ? 1 : 0)"><strong>[[ (row._expand || {}).title || \'Details\' ]]</strong><p>[[ (row._expand || {}).body || JSON.stringify(row) ]]</p></td></tr>' +
                     '</template>' +
                   '</template>' +

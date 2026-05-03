@@ -62,7 +62,7 @@ SET MOD("surface")="mioos-surface-table"
 SET MOD("tableState","dataset")="demo"
 SET MOD("tableState","config","contract")="mioos-advanced-table-v8"
 SET MOD("tableState","config","transport")="websocket"
-SET MOD("tableState","config","mutateTransport")="http"
+SET MOD("tableState","config","mutateTransport")="websocket"
 SET MOD("tableState","config","density")="compact"
 SET MOD("tableState","config","defaultPageSize")=25
 ```
@@ -153,4 +153,47 @@ Selected-row CSV export is server-side:
 }
 ```
 
-Next feature examples for editable cells, column reorder, and fixed columns are planned in `docs/mioos/ROI_64I_64K_Table_DataTables_Parity.md`.
+Editable-cell examples are now implemented in `docs/mioos/ROI_64I_Editable_Cells.md`. Column reorder and fixed columns remain planned in `docs/mioos/ROI_64I_64K_Table_DataTables_Parity.md`.
+
+
+## Editable cells with MUMPS callbacks
+
+To make a cell editable, define the column type and editable flag in MUMPS. Select-like controls should also define their allowed values under `validation("fields",key,"enum")`.
+
+```mumps
+SET @ROOT@("schema","columns",3,"key")="status"
+SET @ROOT@("schema","columns",3,"label")="Status"
+SET @ROOT@("schema","columns",3,"type")="select"
+SET @ROOT@("schema","columns",3,"editable")=1
+SET @ROOT@("schema","columns",3,"cellCallback")="STATUS^MYTABCB"
+SET @ROOT@("validation","fields","status","enum",1)="Active"
+SET @ROOT@("validation","fields","status","enum",2)="Pending"
+SET MOD("tableState","config","features","cellEditing")=1
+```
+
+The browser sends a single-cell mutation; both WebSocket and HTTP fallback enter `MUTATE^MIOOSTBL`:
+
+```json
+{
+  "dataset": "demo",
+  "action": "cell.save",
+  "rowId": "demo-1",
+  "columnKey": "status",
+  "value": "Active",
+  "mutationOnly": true
+}
+```
+
+Example callback:
+
+```mumps
+MYTABCB ; cell callback
+STATUS(STATE,DATASET,ROWID,COLUMN,VALUE,OUT,ERR)
+ IF VALUE'="Active",VALUE'="Pending" DO  QUIT 0
+ . SET ERR("error")="validation_failed"
+ . SET ERR("field")=COLUMN
+ . SET ERR("message")="Unknown status"
+ . SET ERR("fieldErrors",COLUMN)="Unknown status"
+ SET OUT("value")=VALUE
+ QUIT 1
+```

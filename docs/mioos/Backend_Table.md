@@ -228,7 +228,7 @@ this.openBackendTableWindow({
 
 The table contract is now `mioos-advanced-table-v8`. Table examples are written for MUMPS developers first: register a module with `componentKey="table"`, `surface="mioos-surface-table"`, and `tableState` nodes. Normal table modules should not require Vue or JavaScript authoring.
 
-Mutations default to authenticated HTTP (`/api/mioos/table/mutate`) to avoid the reported `socket_timeout` on `table.mutate`. Queries may still use WebSocket for responsive server-side paging.
+Mutations default to WebSocket `table.mutate` with authenticated HTTP `/api/mioos/table/mutate` fallback. Both transports call `MUTATE^MIOOSTBL` and return acknowledgement JSON rather than full refreshed table payloads.
 
 Read-only/simple variants disable `selection`, `bulkActions`, `rowCrud`, `columnCrud`, and `rowDetails`, which removes the selection and Actions columns from the rendered table.
 
@@ -247,7 +247,7 @@ The current table contract is `mioos-advanced-table-v8`.
 Stabilization behavior added before the next ROI:
 
 - Table dialogs use bounded, table-window-relative dragging instead of fixed viewport coordinates.
-- The network indicator is a thin loading bar with status text, avoiding row/table layout jumps.
+- The network indicator is a thin loading bar only; there is no loading text block, so draws/sorts do not shift the table layout.
 - Filters are modal-first and typed from schema metadata: `text`, `textarea`, `select`, `multiselect`, `boolean`, `date`, and `number` render matching controls.
 - Advanced filters support `include`, `exclude`, `contains`, `starts`, `ends`, `range`, `blank`, and `notblank` modes.
 - Select-like columns can add a new allowed option with `column.option.add`; the backend stores it under `validation("fields",column,"enum")` and mirrors it into schema options.
@@ -287,3 +287,37 @@ Selected-row CSV export request:
 ```
 
 The next ROI sequence is defined in `docs/mioos/ROI_64I_64K_Table_DataTables_Parity.md`.
+
+
+## ROI 64I update — editable cells
+
+The advanced table now supports in-place editable cells through the `cell.save` mutation action. The UI renders the cell editor from schema type metadata (`text`, `textarea`, `select`, `multiselect`, `boolean`, `date`, and `number`) and shows only Save/Cancel controls inside the active cell.
+
+Cell saves use WebSocket `table.mutate` first and HTTP `/api/mioos/table/mutate` as fallback. Both paths call `MUTATE^MIOOSTBL`; the backend validates the target row, column key, editable flag, field rules, and optional `cellCallback` before writing.
+
+MUMPS schema example:
+
+```mumps
+SET @ROOT@("schema","columns",3,"key")="status"
+SET @ROOT@("schema","columns",3,"label")="Status"
+SET @ROOT@("schema","columns",3,"type")="select"
+SET @ROOT@("schema","columns",3,"editable")=1
+SET @ROOT@("schema","columns",3,"cellCallback")="STATUS^MYTABCB"
+SET @ROOT@("validation","fields","status","enum",1)="Active"
+SET @ROOT@("validation","fields","status","enum",2)="Pending"
+```
+
+Mutation request:
+
+```json
+{
+  "dataset": "demo",
+  "action": "cell.save",
+  "rowId": "demo-1",
+  "columnKey": "status",
+  "value": "Active",
+  "mutationOnly": true
+}
+```
+
+See `docs/mioos/ROI_64I_Editable_Cells.md` for the full callback contract and MUMPS-only example.

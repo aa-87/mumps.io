@@ -6,7 +6,7 @@
   "description": "Example user module using the backend table component.",
   "source": "user",
   "category": "Examples",
-  "icon": "▤",
+  "icon": "\u25a4",
   "componentKey": "table",
   "surface": "mioos-surface-table",
   "config": {
@@ -15,9 +15,12 @@
     "defaultPageSize": 25,
     "density": "compact",
     "transport": "websocket",
-    "mutateTransport": "http",
+    "mutateTransport": "websocket",
     "actionsWidth": 156,
-    "defaultSort": { "column": "name", "direction": "ascending" },
+    "defaultSort": {
+      "column": "name",
+      "direction": "ascending"
+    },
     "features": {
       "search": true,
       "filters": true,
@@ -29,7 +32,8 @@
       "bulkActions": true,
       "pagination": true,
       "rowDetails": true,
-      "resizeColumns": true
+      "resizeColumns": true,
+      "cellEditing": true
     }
   }
 }

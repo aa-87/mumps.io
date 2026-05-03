@@ -14,6 +14,8 @@ This document designates the next ROI sequence after the current table stabiliza
 
 ## ROI 64I — Editable Cells and Cell Callback Contract
 
+Status: implemented in this pass. See `ROI_64I_Editable_Cells.md` for final contract details.
+
 ### Goal
 
 Make individual cells editable in-place. Each editable cell should render the correct controller from schema metadata and show minimal Save/Cancel actions.

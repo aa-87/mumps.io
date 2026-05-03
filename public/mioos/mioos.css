@@ -2901,19 +2901,59 @@ button:disabled { cursor: default; opacity: .55; }
   left: 12px;
   right: 12px;
   z-index: 8;
-  min-height: 28px;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 1px;
-  padding: 7px 10px 6px;
-  border-radius: 8px;
+  height: 3px;
+  padding: 0;
+  border-radius: 999px;
   overflow: hidden;
   pointer-events: none;
 }
-.mioos-table-processing em { display: block; }
+.mioos-table-processing strong,
+.mioos-table-processing em { display: none !important; }
 .mioos-table-loading-line { position: absolute; inset: 0 0 auto 0; height: 3px; background: rgba(37, 99, 235, .18); overflow: hidden; }
 .mioos-table-loading-line::after { content: ""; position: absolute; top: 0; bottom: 0; left: -35%; width: 35%; background: currentColor; opacity: .72; animation: mioos-table-loading-bar 1.05s ease-in-out infinite; }
 .mioos-table-spinner { display: none !important; }
+.mioos-table-grid td.is-cell-editable { padding: 0; }
+.mioos-table-cell-edit-button {
+  width: 100%;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: text;
+}
+.mioos-table-cell-edit-button small {
+  opacity: 0;
+  font-size: 10px;
+  color: #2563eb;
+  font-weight: 700;
+}
+.mioos-table-cell-edit-button:hover,
+.mioos-table-cell-edit-button:focus-visible { background: rgba(37, 99, 235, .08); outline: none; }
+.mioos-table-cell-edit-button:hover small,
+.mioos-table-cell-edit-button:focus-visible small { opacity: 1; }
+.mioos-table-cell-editor {
+  display: grid;
+  gap: 6px;
+  min-width: 180px;
+  padding: 6px;
+  background: var(--theme-card, #fff);
+  border: 1px solid rgba(37, 99, 235, .35);
+  box-shadow: 0 10px 28px rgba(15, 23, 42, .16);
+}
+.mioos-table-cell-editor input,
+.mioos-table-cell-editor select,
+.mioos-table-cell-editor textarea { width: 100%; min-width: 150px; }
+.mioos-table-cell-editor textarea { min-height: 76px; resize: vertical; }
+.mioos-table-cell-actions { display: flex; gap: 6px; justify-content: flex-end; }
+.mioos-table-cell-actions .mioos-btn { min-height: 28px; padding: 4px 8px; }
+.theme-dark-mode .mioos-table-cell-editor { background: #0f172a; border-color: rgba(96,165,250,.45); }
+
 @keyframes mioos-table-loading-bar { 0% { left: -35%; } 55% { left: 50%; } 100% { left: 110%; } }
 .mioos-table-editor-backdrop {
   position: absolute;

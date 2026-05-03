@@ -390,4 +390,9 @@ The advanced table contract is now `mioos-advanced-table-v8`. This update focuse
 
 The advanced table stabilization pass keeps the contract at `mioos-advanced-table-v8` and adds typed filter modals, advanced include/exclude/range filtering, bounded draggable table dialogs, server-side selected-row CSV export, select-option dictionary updates through `column.option.add`, immutable column keys on edit, and a low-shift loading bar.
 
-The next table ROI sequence is documented in `ROI_64I_64K_Table_DataTables_Parity.md` and covers editable cells, column reorder, and fixed columns as MUMPS-first/server-authoritative features.
+ROI 64I is implemented: editable cells now render typed inline controls and save through server-side `cell.save` with optional MUMPS callbacks. The next table ROI sequence continues with ROI 64J column reorder and ROI 64K fixed columns, documented in `ROI_64I_64K_Table_DataTables_Parity.md`.
+
+
+### ROI 64I editable cells
+
+Editable cells are now server-authoritative. Schema columns may set `editable` and optional `cellCallback`; the browser renders the correct inline controller from the schema type and saves through `cell.save` over WebSocket with HTTP fallback. The network indicator is now a bar-only surface with no text block to avoid table layout jumpiness.

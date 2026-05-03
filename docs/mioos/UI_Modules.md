@@ -65,8 +65,20 @@ Table modules now target `mioos-advanced-table-v8`. Use schema `type` and valida
 
 The next planned table module sequence is ROI 64I through ROI 64K:
 
-- ROI 64I: editable cells with typed controls and optional MUMPS cell callbacks.
+- ROI 64I: editable cells with typed controls and optional MUMPS cell callbacks. Implemented through `cell.save` and documented in `ROI_64I_Editable_Cells.md`.
 - ROI 64J: column reorder on boot and as a user option.
 - ROI 64K: fixed columns on boot and as a user option.
 
 See `ROI_64I_64K_Table_DataTables_Parity.md` for the MUMPS contracts.
+
+
+## ROI 64I editable-cell module behavior
+
+Table-backed modules can enable cell editing with:
+
+```mumps
+SET MOD("tableState","config","features","cellEditing")=1
+SET MOD("tableState","config","mutateTransport")="websocket"
+```
+
+The module author controls each cell from MUMPS schema metadata. Non-ID columns default to editable unless `editable=0`; ID columns remain read-only. Optional column `cellCallback` entries let a MUMPS routine validate or normalize a single cell before persistence without frontend code.

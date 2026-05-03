@@ -60,6 +60,7 @@ MIOOST ; MIOOS tests
 	DO T066
 	DO T067
 	DO T068
+	DO T069
 	QUIT
 	;
 RESET
@@ -1356,5 +1357,19 @@ T068
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","EXPORT(STATE,DATASET,ROOT,IN,OUT)"),"[MIOOST][T068][csv export backend]")
 	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/ROI_64I_64K_Table_DataTables_Parity.md","ROI 64J"),"[MIOOST][T068][next roi column reorder design]")
 	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/ROI_64I_64K_Table_DataTables_Parity.md","ROI 64K"),"[MIOOST][T068][next roi fixed columns design]")
+	QUIT
+	;
+
+T069
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableSaveCell"),"[MIOOST][T069][editable cell save api]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","mioos-table-cell-editor"),"[MIOOST][T069][inline cell editor]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableAddFilterOption"),"[MIOOST][T069][advanced filter add value]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","Table loading"),"[MIOOST][T069][bar only loading indicator]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","cell.save"),"[MIOOST][T069][cell save mutation]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","VALCELL"),"[MIOOST][T069][cell validation]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","CELLCB"),"[MIOOST][T069][cell callback]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/ROI_64I_Editable_Cells.md","cellCallback"),"[MIOOST][T069][roi64i docs]")
+	DO OK^MIOTASSERT($$FILEHAS("examples/mioos_modules/table/module.json","cellEditing"),"[MIOOST][T069][manifest cell editing]")
+	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 64I editable cells"),"[MIOOST][T069][llm roi64i]")
 	QUIT
 	;
