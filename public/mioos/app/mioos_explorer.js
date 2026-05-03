@@ -418,8 +418,8 @@
   window.MIOOSExplorer = {
     methods: {
 
-      explorerShellInput: function (message, value) { return this.inputDialog ? this.inputDialog('Explorer', message, value) : Promise.resolve(window.prompt(message || 'Input', value || '')); },
-      explorerShellConfirm: function (message) { return this.confirmDialog ? this.confirmDialog('Explorer', message) : Promise.resolve(window.confirm(message || 'Continue?')); },
+      explorerShellInput: function (message, value) { return this.inputDialog ? this.inputDialog('Explorer', message, value) : Promise.resolve(null); },
+      explorerShellConfirm: function (message) { return this.confirmDialog ? this.confirmDialog('Explorer', message) : Promise.resolve(false); },
 
       resetExplorerUpload: function (state) {
         if (!state) return;
@@ -664,6 +664,7 @@
             history: [],
             future: [],
             contextMenu: { open: false, left: 0, top: 0, targetKey: '', targetType: 'blank' },
+            windowMenu: { open: false, key: '' },
             clipboard: null
           };
         }
@@ -1734,6 +1735,110 @@
             return null;
           }
           if (self.finalizeTransfer) self.finalizeTransfer(item.id, false, { error: (err && err.message) || 'upload_recovery_failed', stage: 'Upload recovery failed', processedBytes: resume.contiguousBytes || 0, totalBytes: resume.totalBytes || 0, resume: Object.assign({}, resume) });
+          return null;
+        });
+      },
+      explorerMenuGroups: function (windowId) {
+        var win = this.windows.find(function (entry) { return entry.id === windowId; });
+        var state = this.ensureExplorerWindowState(win) || {};
+        var hasSelection = !!state.selection;
+        return [
+          { key: 'file', label: 'File', items: [
+            { key: 'open', label: 'Open', disabled: !hasSelection },
+            { key: 'new-folder', label: 'New Folder' },
+            { key: 'upload', label: 'Upload Files' },
+            { key: 'download', label: 'Download', disabled: !hasSelection },
+            { key: 'properties', label: 'Properties' }
+          ] },
+          { key: 'edit', label: 'Edit', items: [
+            { key: 'copy', label: 'Copy', disabled: !hasSelection },
+            { key: 'cut', label: 'Cut', disabled: !hasSelection },
+            { key: 'paste', label: 'Paste', disabled: !this.explorerCanPaste(windowId) },
+            { key: 'rename', label: 'Rename', disabled: !hasSelection },
+            { key: 'delete', label: 'Delete', disabled: !hasSelection }
+          ] },
+          { key: 'view', label: 'View', items: [
+            { key: 'view-details', label: 'Details' },
+            { key: 'view-icons', label: 'Icons' },
+            { key: 'refresh', label: 'Refresh' }
+          ] },
+          { key: 'tools', label: 'Tools', items: [
+            { key: 'go-up', label: 'Up one level' },
+            { key: 'task-manager', label: 'Task Manager' }
+          ] },
+          { key: 'help', label: 'Help', items: [
+            { key: 'about', label: 'About this folder' }
+          ] }
+        ];
+      },
+      explorerToggleWindowMenu: function (windowId, key) {
+        var win = this.windows.find(function (entry) { return entry.id === windowId; });
+        var state = this.ensureExplorerWindowState(win);
+        if (!state) return;
+        state.windowMenu = state.windowMenu || { open: false, key: '' };
+        state.windowMenu = { open: !(state.windowMenu.open && state.windowMenu.key === key), key: key || '' };
+        if (state.contextMenu) state.contextMenu.open = false;
+      },
+      explorerCloseWindowMenu: function (windowId) {
+        var win = this.windows.find(function (entry) { return entry.id === windowId; });
+        var state = this.ensureExplorerWindowState(win);
+        if (state) state.windowMenu = { open: false, key: '' };
+      },
+      explorerRunWindowMenuAction: function (windowId, action) {
+        this.explorerCloseWindowMenu(windowId);
+        if (action === 'open') return this.explorerContextOpen(windowId);
+        if (action === 'new-folder') return this.explorerCreateFolder(windowId);
+        if (action === 'upload') return this.explorerPromptUpload(windowId);
+        if (action === 'download') return this.explorerDownloadSelected(windowId);
+        if (action === 'copy') return this.explorerCopySelected(windowId);
+        if (action === 'cut') return this.explorerCutSelected(windowId);
+        if (action === 'paste') return this.explorerPasteIntoWindow(windowId);
+        if (action === 'rename') return this.explorerRenameSelected(windowId);
+        if (action === 'delete') return this.explorerDeleteSelected(windowId);
+        if (action === 'view-details') return this.explorerSetViewMode(windowId, 'details');
+        if (action === 'view-icons') return this.explorerSetViewMode(windowId, 'icons');
+        if (action === 'refresh') return this.refreshExplorerWindow(windowId);
+        if (action === 'go-up') return this.explorerGoUp(windowId);
+        if (action === 'task-manager') return this.openApp ? this.openApp('task-manager') : null;
+        if (action === 'about') return this.openFolderPropertiesWindow(windowId);
+        return null;
+      },
+      explorerHandleItemDragStart: function (event, item, sourceWindowId) {
+        if (!event || !event.dataTransfer || !item) return;
+        var payload = { id: item.id || item.key || '', key: item.key || '', name: item.name || item.title || '', kind: item.kind || item.type || '', sourceWindowId: sourceWindowId || '', parentId: item.parentId || item.folderId || '' };
+        try { event.dataTransfer.setData('application/x-mioos-vfs-item', JSON.stringify(payload)); } catch (err) {}
+        try { event.dataTransfer.effectAllowed = 'move'; } catch (err2) {}
+      },
+      explorerHandleItemDragOver: function (event, item) {
+        if (!event || !item) return;
+        if (String(item.kind || item.type || '').toLowerCase() !== 'folder') return;
+        event.preventDefault();
+        try { event.dataTransfer.dropEffect = 'move'; } catch (err) {}
+      },
+      explorerHandleItemDrop: function (event, targetItem, targetWindowId) {
+        var raw = event && event.dataTransfer && event.dataTransfer.getData('application/x-mioos-vfs-item');
+        var payload = null;
+        var targetKind = String((targetItem || {}).kind || (targetItem || {}).type || '').toLowerCase();
+        var targetFolder = targetKind === 'folder' ? (targetItem.id || targetItem.key || targetItem.folderId) : '';
+        var win, state;
+        if (!targetFolder && targetWindowId && targetWindowId !== 'desktop') {
+          win = this.windows.find(function (entry) { return entry.id === targetWindowId; });
+          state = this.ensureExplorerWindowState(win);
+          targetFolder = (state && state.folderId) || '';
+        }
+        if (!targetFolder && targetWindowId === 'desktop' && this.desktopFolderId) targetFolder = this.desktopFolderId();
+        if (!raw || !targetFolder || !this.command) return Promise.resolve(null);
+        try { payload = JSON.parse(raw); } catch (err) { payload = null; }
+        if (!payload || !payload.id || payload.id === targetFolder) return Promise.resolve(null);
+        var self = this;
+        if (event && event.preventDefault) event.preventDefault();
+        return this.command('fs.move', { id: payload.id, parent: targetFolder }).then(function () {
+          if (state && self.refreshExplorerWindow) self.refreshExplorerWindow(targetWindowId).catch(function () {});
+          if (payload.sourceWindowId && payload.sourceWindowId !== targetWindowId && payload.sourceWindowId !== 'desktop' && self.refreshExplorerWindow) self.refreshExplorerWindow(payload.sourceWindowId).catch(function () {});
+          if (self.refreshDesktopVfsViews) self.refreshDesktopVfsViews();
+          return null;
+        }).catch(function (err) {
+          if (self.showAlert) self.showAlert('Explorer', (err && err.message) || 'fs_move_failed');
           return null;
         });
       },

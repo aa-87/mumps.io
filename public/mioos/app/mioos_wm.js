@@ -83,6 +83,7 @@
         if (appKey === 'text-viewer') return '📄';
         if (appKey === 'image-viewer') return '🖼';
         if (appKey === 'media-viewer') return '🎞';
+        if (appKey === 'task-manager') return '▦';
         return '□';
       },
       ensureWindowFrame: function (win) {
@@ -228,6 +229,7 @@
           'is-active': this.activeWindowId === win.id,
           'is-maximized': win.state === 'maximized',
           'is-snapped': win.state === 'snapped',
+          'is-minimized': win.state === 'minimized',
           'is-dragging': this.dragState.active && this.dragState.windowId === win.id && this.dragState.mode === 'move',
           'is-resizing': this.dragState.active && this.dragState.windowId === win.id && this.dragState.mode === 'resize'
         };
@@ -430,17 +432,19 @@
       onWindowDragOver: function (win, event) {
         if (!win || !event || !(((this.boot || {}).desktop || {}).windowing || {}).dropUpload) return;
         if (win.appKey !== 'my-computer' && win.appKey !== 'documents' && win.appKey !== 'explorer' && win.appKey !== 'home') return;
-        if (event.dataTransfer && event.dataTransfer.types && Array.prototype.indexOf.call(event.dataTransfer.types, 'Files') < 0) return;
+        if (event.dataTransfer && event.dataTransfer.types && Array.prototype.indexOf.call(event.dataTransfer.types, 'Files') < 0 && Array.prototype.indexOf.call(event.dataTransfer.types, 'application/x-mioos-vfs-item') < 0) return;
         event.preventDefault();
       },
       onDesktopDragOver: function (event) {
         if (!event || !(((this.boot || {}).desktop || {}).windowing || {}).dropUpload) return;
-        if (event.dataTransfer && event.dataTransfer.types && Array.prototype.indexOf.call(event.dataTransfer.types, 'Files') < 0) return;
+        if (event.dataTransfer && event.dataTransfer.types && Array.prototype.indexOf.call(event.dataTransfer.types, 'Files') < 0 && Array.prototype.indexOf.call(event.dataTransfer.types, 'application/x-mioos-vfs-item') < 0) return;
         event.preventDefault();
       },
       onDesktopDrop: function (event) {
-        var files;
+        var files, raw;
         if (!event) return;
+        raw = event.dataTransfer && event.dataTransfer.getData && event.dataTransfer.getData('application/x-mioos-vfs-item');
+        if (raw && this.explorerHandleItemDrop) { event.preventDefault(); return this.explorerHandleItemDrop(event, { id: this.desktopFolderId ? this.desktopFolderId() : 'desktop', kind: 'folder' }, 'desktop'); }
         files = (event.dataTransfer && event.dataTransfer.files) || [];
         if (!files.length) return;
         event.preventDefault();
@@ -487,8 +491,13 @@
         return Promise.resolve(null);
       },
       onWindowDrop: function (win, event) {
-        var files;
+        var files, raw;
         if (!win || !event) return;
+        raw = event.dataTransfer && event.dataTransfer.getData && event.dataTransfer.getData('application/x-mioos-vfs-item');
+        if (raw && this.explorerHandleItemDrop && (win.appKey === 'my-computer' || win.appKey === 'documents' || win.appKey === 'explorer' || win.appKey === 'home')) {
+          event.preventDefault();
+          return this.explorerHandleItemDrop(event, null, win.id);
+        }
         files = (event.dataTransfer && event.dataTransfer.files) || [];
         if (!files.length) return;
         event.preventDefault();

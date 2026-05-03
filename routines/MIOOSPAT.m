@@ -62,7 +62,7 @@ INIT(ROOT)
 	DO ENUM(ROOT,"duplicateStatus","None","Candidate","Duplicate","Not duplicate")
 	DO STATES(ROOT,"state")
 	SET I=0 FOR  SET I=$ORDER(@ROOT@("schema","columns",I)) QUIT:I'>0  DO
-	. IF $GET(@ROOT@("schema","columns",I,"key"))="status" SET @ROOT@("schema","columns",I,"type")="select"
+	. IF $GET(@ROOT@("schema","columns",I,"key"))="status" SET @ROOT@("schema","columns",I,"type")="select",@ROOT@("schema","columns",I,"editable")=0
 	. IF $GET(@ROOT@("schema","columns",I,"key"))="consent" SET @ROOT@("schema","columns",I,"type")="select"
 	. IF $GET(@ROOT@("schema","columns",I,"key"))="state" SET @ROOT@("schema","columns",I,"type")="select"
 	. IF $GET(@ROOT@("schema","columns",I,"key"))="duplicateStatus" SET @ROOT@("schema","columns",I,"type")="select"

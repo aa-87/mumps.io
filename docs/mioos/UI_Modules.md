@@ -132,3 +132,7 @@ Table module column type choices include patient-centric and basic table editor 
 - Media/text/PDF viewer templates must use safe Vue bindings and must not place quoted object-literal keys directly inside double-quoted template attributes.
 - Explorer upload entry points accept multiple files from the picker and from drag/drop onto Explorer windows or the desktop.
 - Window controls stop pointer events before titlebar dragging to avoid maximize/close render conflicts.
+
+## ROI 72B shell menus and table-like surfaces
+
+The Start Menu and Explorer Details surfaces now intentionally reuse table-like controller styling for dense, data-heavy shell views. Explorer window menus use a shared action dispatch so File/Edit/View/Tools/Help entries can be reused across folder-like windows.

@@ -66,6 +66,7 @@ MIOOST ; MIOOS tests
 	DO T074
 	DO T075
 	DO T076
+	DO T077
 	QUIT
 	;
 RESET
@@ -1467,4 +1468,20 @@ T076
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","mioos-table-toast-modal"),"[MIOOST][T076][modal toast css]")
 	QUIT
 	;
+	;
+
+T077
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","is-table-menu"),"[MIOOST][T077][table driven start menu]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","locale:"),"[MIOOST][T077][language start entries]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","task-manager"),"[MIOOST][T077][task manager launcher]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableOpenCellEditContextMenu"),"[MIOOST][T077][cell edit context menu]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableRunCellEditClipboard"),"[MIOOST][T077][cell clipboard actions]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","filterControlForColumn(column) === 'multiselect'"),"[MIOOST][T077][added multiselect option selected]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSPAT.m","@ROOT@(""schema"",""columns"",I,""editable"")=0"),"[MIOOST][T077][patient status locked to row actions]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","explorerMenuGroups"),"[MIOOST][T077][explorer common menu api]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","explorerHandleItemDrop"),"[MIOOST][T077][vfs item drag drop]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_wm.js","application/x-mioos-vfs-item"),"[MIOOST][T077][window desktop vfs drops]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","ROI 72B shell/table/explorer stabilization"),"[MIOOST][T077][roi72b css marker]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/ROI_72B_Shell_Table_Explorer_Stabilization.md","ROI 72B"),"[MIOOST][T077][roi72b docs]")
+	QUIT
 	;

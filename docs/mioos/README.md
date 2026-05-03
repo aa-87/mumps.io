@@ -433,3 +433,7 @@ ROI 71 gates Patient Registration launch, query, mutation, export, delete, and r
 ## ROI 72 update
 
 Patient Registration includes import preview/commit and reconciliation report actions. The shell also received regression fixes for table modals, the Start Menu, context menus, double-click maximize/restore, media/text viewers, desktop icon placement, and transfer list responsiveness.
+
+## ROI 72B shell/table/explorer stabilization
+
+ROI 72B adds the dense table-like Start Menu, Explorer menu actions, modal shell dialogs, table cell edit clipboard context menu, VFS drag/drop movement, taskbar previews, and a first-pass Task Manager surface. See `ROI_72B_Shell_Table_Explorer_Stabilization.md`.

@@ -417,3 +417,7 @@ The browser should call these as mutation-only operations. Backend validation an
 - Table action feedback should be rendered as a floating modal toast. Do not reintroduce inline success text that shifts the table body.
 - Cell editors must keep compact save/cancel controls visible in narrow cells. Enter saves the active cell edit and Escape cancels it.
 - Select/multiselect Add Value remains a `column.option.add` mutation, not a browser-only option injection.
+
+## ROI 72B table cell editing hardening
+
+Select and multiselect cell editors now keep the Add Value flow inside the MIOOS table modal system. When a new option is added from a cell or row editor, it is immediately selected in that editor. Active cell editors also stop the desktop context menu and expose a small Cut/Copy/Paste context menu.

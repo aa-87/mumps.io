@@ -3456,3 +3456,65 @@ button:disabled { cursor: default; opacity: .55; }
 
 .mioos-desktop-surface.is-drop-target,
 .mioos-window-vue.is-drop-target { outline: 2px dashed var(--accent, #2563eb); outline-offset: -6px; }
+
+/* ROI 72B shell/table/explorer stabilization: table-driven start menu, modal prompts, cell clipboard, window previews. */
+.mioos-window-vue.is-minimized { transform: translate3d(-200vw,-200vh,0) !important; opacity: 0 !important; pointer-events: none !important; visibility: hidden !important; }
+.mioos-shell-dialog-backdrop { position: fixed; inset: 0; z-index: 7000; display: grid; place-items: center; background: rgba(0,0,0,.28); backdrop-filter: blur(2px); }
+.mioos-shell-dialog { width: min(440px, calc(100vw - 28px)); max-height: calc(100vh - 28px); display: flex; flex-direction: column; overflow: hidden; background: var(--theme-surface-strong,#fff); color: var(--theme-text,#111827); border: 1px solid var(--theme-panel-border,rgba(0,0,0,.22)); border-radius: 8px; box-shadow: 0 18px 48px rgba(0,0,0,.36); }
+.mioos-shell-dialog-titlebar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 7px 9px; background: var(--titlebar-bg,linear-gradient(#2f65c7,#17428e)); color: var(--titlebar-text,#fff); font-weight: 700; }
+.mioos-shell-dialog-titlebar button { width: 24px; height: 22px; border: 1px solid rgba(0,0,0,.35); border-radius: 3px; background: linear-gradient(#fff,#d7e6ff); color: #111; font-weight: 900; }
+.mioos-shell-dialog-body { display: grid; gap: 8px; padding: 12px; }
+.mioos-shell-dialog-body p { margin: 0; line-height: 1.35; }
+.mioos-shell-dialog-body input { width: 100%; box-sizing: border-box; min-height: 30px; border: 1px solid rgba(80,100,130,.5); border-radius: 4px; padding: 4px 7px; background: var(--theme-field-bg,#fff); color: var(--theme-field-text,#111827); }
+.mioos-shell-dialog footer { display: flex; justify-content: flex-end; gap: 8px; padding: 9px 12px; border-top: 1px solid var(--theme-panel-border,rgba(0,0,0,.14)); background: var(--theme-panel-bg,#f3f6fb); }
+.mioos-start-menu-vue.is-table-menu { width: min(520px, calc(100vw - 18px)); border-radius: 2px; border-color: #808080; background: #ece9d8; color: #000; font-family: Tahoma, "MS Sans Serif", sans-serif; font-size: 11px; backdrop-filter: none; }
+.mioos-start-menu-vue.is-table-menu .mioos-start-head-vue { min-height: 30px; padding: 4px 6px; background: linear-gradient(90deg,#000080,#1084d0); }
+.mioos-start-menu-vue.is-table-menu .mioos-start-avatar-vue { width: 22px; height: 22px; border-radius: 2px; font-size: 11px; }
+.mioos-start-table-wrap { min-height: 0; overflow: auto; padding: 2px 3px 4px; background: #fff; border-top: 1px solid #aca899; border-bottom: 1px solid #aca899; }
+.mioos-start-folder-vue { padding: 0; border: 0; }
+.mioos-start-folder-vue summary { min-height: 20px; display: grid; grid-template-columns: 14px 1fr 34px; align-items: center; gap: 3px; padding: 1px 4px; background: #ece9d8; border: 1px solid #d4d0c8; font-weight: 700; }
+.mioos-start-folder-vue[open] .mioos-start-folder-icon { transform: rotate(90deg); display: inline-block; }
+.mioos-start-folder-vue summary em { font-style: normal; text-align: right; opacity: .72; }
+.mioos-start-table { width: 100%; border-collapse: collapse; table-layout: fixed; background: #fff; }
+.mioos-start-table tr { height: 22px; cursor: pointer; }
+.mioos-start-table tr:hover, .mioos-start-table tr.is-selected { background: #0a246a; color: #fff; }
+.mioos-start-table tr.is-disabled { opacity: .55; pointer-events: none; }
+.mioos-start-table td { padding: 1px 4px; border-bottom: 1px solid #efefef; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mioos-start-cell-icon { width: 24px; text-align: center; }
+.mioos-start-table td strong { display: inline; font-size: 11px; font-weight: 400; }
+.mioos-start-table td span { margin-left: 7px; opacity: .72; }
+.mioos-simple-table-shell { border-collapse: collapse; width: 100%; background: var(--theme-surface-strong,#fff); font-size: 12px; }
+.mioos-simple-table-shell th, .mioos-simple-table-shell td { border-bottom: 1px solid var(--theme-panel-border,rgba(0,0,0,.12)); padding: 3px 6px; text-align: left; }
+.mioos-simple-table-shell th { background: var(--theme-table-head,#eef3f8); font-weight: 700; }
+.mioos-window-menu-root { position: relative; display: inline-block; }
+.mioos-window-menu-root > button { min-height: 22px; padding: 1px 8px; border: 1px solid transparent; background: transparent; font: inherit; color: inherit; }
+.mioos-window-menu-root.is-open > button, .mioos-window-menu-root > button:hover { border-color: #aca899; background: #fff; }
+.mioos-window-submenu { position: absolute; top: 100%; left: 0; z-index: 50; min-width: 170px; display: grid; gap: 0; padding: 2px; border: 1px solid #808080; background: #fff; box-shadow: 2px 2px 0 rgba(0,0,0,.18); }
+.mioos-window-submenu button { min-height: 22px; padding: 2px 24px 2px 18px; border: 0; background: transparent; text-align: left; font: inherit; color: #111; white-space: nowrap; }
+.mioos-window-submenu button:hover:not(:disabled) { background: #0a246a; color: #fff; }
+.mioos-window-submenu button:disabled { color: #888; }
+.mioos-cell-edit-context-menu { position: fixed; z-index: 7200; min-width: 138px; display: grid; gap: 1px; padding: 3px; border: 1px solid #6b7280; background: var(--theme-surface-strong,#fff); color: var(--theme-text,#111827); box-shadow: 0 12px 26px rgba(0,0,0,.24); }
+.mioos-cell-edit-context-menu button { min-height: 24px; padding: 2px 10px; border: 0; background: transparent; color: inherit; text-align: left; font: inherit; }
+.mioos-cell-edit-context-menu button:hover { background: var(--accent-soft,rgba(59,130,246,.18)); }
+.mioos-table-cell-editor { overflow: visible !important; position: relative; }
+.mioos-table-cell-actions { position: sticky; right: 0; align-self: center; display: inline-flex; gap: 2px; margin-left: 3px; background: var(--theme-surface-strong,#fff); box-shadow: -4px 0 8px rgba(255,255,255,.86); z-index: 3; }
+.mioos-table-cell-action { width: 24px !important; min-width: 24px !important; height: 24px !important; padding: 0 !important; line-height: 20px !important; display: inline-grid; place-items: center; font-size: 14px; touch-action: manipulation; }
+.mioos-task-preview-vue { position: fixed; z-index: 4700; width: 270px; min-height: 128px; padding: 8px; border: 1px solid rgba(50,65,90,.35); border-radius: 7px; background: var(--theme-surface-strong,#fff); color: var(--theme-text,#111827); box-shadow: 0 18px 38px rgba(0,0,0,.3); display: grid; gap: 5px; pointer-events: none; }
+.mioos-task-preview-vue strong { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mioos-task-preview-vue span { font-size: 11px; opacity: .76; }
+.mioos-task-preview-snapshot { display: grid; place-items: center; min-height: 72px; border: 1px solid var(--theme-panel-border,rgba(0,0,0,.12)); background: linear-gradient(135deg,rgba(255,255,255,.9),rgba(220,230,245,.74)); }
+.mioos-task-preview-snapshot span { font-size: 32px; opacity: 1; }
+@media (max-width: 640px) {
+  .mioos-start-menu-vue.is-table-menu { width: calc(100vw - 8px); max-height: calc(100vh - var(--taskbar-height,48px) - 8px); }
+  .mioos-start-table td span { display: none; }
+  .mioos-cell-edit-context-menu button, .mioos-table-cell-action { min-height: 32px !important; min-width: 32px !important; }
+}
+.mioos-surface-task-manager { height: 100%; display: flex; flex-direction: column; min-height: 0; background: var(--theme-surface,#f8fafc); color: var(--theme-text,#111827); }
+.mioos-task-manager-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; padding: 10px; }
+.mioos-task-manager-card { display: grid; gap: 5px; padding: 9px; border: 1px solid var(--theme-panel-border,rgba(0,0,0,.12)); border-radius: 8px; background: var(--theme-surface-strong,#fff); }
+.mioos-task-manager-card em { font-size: 22px; font-style: normal; font-weight: 800; }
+.mioos-task-bar { height: 8px; border: 1px solid rgba(0,0,0,.16); background: rgba(0,0,0,.06); overflow: hidden; border-radius: 999px; }
+.mioos-task-bar i { display: block; height: 100%; background: var(--accent,#2563eb); }
+.mioos-task-window-table { margin: 0 10px 10px; width: calc(100% - 20px); }
+.mioos-task-window-table td:last-child { display: flex; gap: 4px; flex-wrap: wrap; }
+@media (max-width: 720px) { .mioos-task-manager-grid { grid-template-columns: 1fr; } }

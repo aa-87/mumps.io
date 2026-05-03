@@ -33,6 +33,8 @@
           clockText: '',
           alertTitle: '',
           alertMessage: '',
+          shellDialog: { open: false, kind: '', title: '', message: '', value: '', placeholder: '', confirmText: 'OK', cancelText: 'Cancel', danger: false, resolver: null },
+          taskbarPreview: { open: false, windowId: '', left: 0, bottom: 54 },
           zCounter: 10,
           dragState: {
             active: false,
@@ -96,7 +98,7 @@
       computed: {
         visibleWindows: function () {
           return this.windows
-            .filter(function (win) { return win.state !== 'closed' && win.state !== 'minimized'; })
+            .filter(function (win) { return win.state !== 'closed'; })
             .sort(function (a, b) { return (a.z || 0) - (b.z || 0); });
         },
         taskbarWindows: function () {
@@ -520,13 +522,24 @@
         handleGlobalClickClose: function (event) {
           var target = event && event.target;
           if (!target) return;
-          if (target.closest && (target.closest('.mioos-context-menu') || target.closest('.mioos-popup-menu-vue') || target.closest('.mioos-explorer-context-menu') || target.closest('.mioos-start-menu-vue') || target.closest('.mioos-start-button-vue'))) return;
+          if (target.closest && (target.closest('.mioos-context-menu') || target.closest('.mioos-popup-menu-vue') || target.closest('.mioos-explorer-context-menu') || target.closest('.mioos-window-submenu') || target.closest('.mioos-cell-edit-context-menu') || target.closest('.mioos-start-menu-vue') || target.closest('.mioos-start-button-vue'))) return;
           this.closeAllContextMenus();
         },
         closeAllContextMenus: function () {
           var closed = false;
           if (this.menuOpen) { this.menuOpen = false; closed = true; }
           if (this.desktopUi && this.desktopUi.contextMenu && this.desktopUi.contextMenu.open) { this.desktopUi.contextMenu.open = false; closed = true; }
+          (this.windows || []).forEach(function (win) {
+            if (win && win.explorerState) {
+              if (win.explorerState.contextMenu && win.explorerState.contextMenu.open) { win.explorerState.contextMenu.open = false; closed = true; }
+              if (win.explorerState.windowMenu && win.explorerState.windowMenu.open) { win.explorerState.windowMenu.open = false; closed = true; }
+            }
+            if (win && win.tableState && win.tableState.cellContextMenu && win.tableState.cellContextMenu.open) { win.tableState.cellContextMenu.open = false; closed = true; }
+          });
+          Object.keys(this.backendTables || {}).forEach(function (key) {
+            var st = this.backendTables[key];
+            if (st && st.cellContextMenu && st.cellContextMenu.open) { st.cellContextMenu.open = false; closed = true; }
+          }, this);
           if (this.explorerUi && this.explorerUi.contextMenu && this.explorerUi.contextMenu.open) { this.explorerUi.contextMenu.open = false; closed = true; }
           return closed;
         },
@@ -534,6 +547,7 @@
           var key = String((event && event.key) || '').toLowerCase();
           if (!event) return;
           if (key === 'escape') {
+            if (this.shellDialog && this.shellDialog.open && this.resolveShellDialog) { this.resolveShellDialog(false); event.preventDefault(); event.stopPropagation(); return; }
             if (this.backendTableCloseAllTopDialogs && this.backendTableCloseAllTopDialogs()) { event.preventDefault(); event.stopPropagation(); return; }
             if (this.closeAllContextMenus && this.closeAllContextMenus()) { event.preventDefault(); event.stopPropagation(); return; }
             if (this.menuOpen) { this.menuOpen = false; event.preventDefault(); event.stopPropagation(); return; }
@@ -1229,10 +1243,12 @@
           }
         },
         refreshDesktopIcons: function () {
+          if (this.closeDesktopContextMenu) this.closeDesktopContextMenu();
           if (this.refreshView) this.refreshView();
           if (this.showAlert) this.showAlert('Desktop', 'Desktop refreshed.');
         },
         rearrangeDesktopIcons: function () {
+          if (this.closeDesktopContextMenu) this.closeDesktopContextMenu();
           var self = this;
           var metrics = this.desktopGridMetrics();
           var viewportHeight = this.desktopViewportHeight();
@@ -1335,41 +1351,42 @@
         },
         desktopCreateFolder: function () {
           var self = this;
-          var name = window.prompt(this.t('explorer.promptNewFolder', 'New folder name'), this.t('explorer.defaultFolderName', 'New Folder'));
           this.closeDesktopContextMenu();
-          if (name === null) return Promise.resolve();
-          name = String(name || '').trim();
-          if (!name || !this.command) return Promise.resolve();
-          return this.command('fs.mkdir', { parent: this.desktopFolderId(), name: name }).then(function () { return self.refreshDesktopVfsViews(); }).catch(function (err) { self.showAlert('Desktop', (err && err.message) || 'fs_mkdir_failed'); });
+          return this.inputDialog('Desktop', this.t('explorer.promptNewFolder', 'New folder name'), this.t('explorer.defaultFolderName', 'New Folder')).then(function (name) {
+            name = String(name || '').trim();
+            if (!name || !self.command) return null;
+            return self.command('fs.mkdir', { parent: self.desktopFolderId(), name: name }).then(function () { return self.refreshDesktopVfsViews(); });
+          }).catch(function (err) { self.showAlert('Desktop', (err && err.message) || 'fs_mkdir_failed'); });
         },
         desktopCreateTextFile: function () {
           var self = this;
-          var name = window.prompt('New text file name', 'New Text Document.txt');
           this.closeDesktopContextMenu();
-          if (name === null) return Promise.resolve();
-          name = String(name || '').trim();
-          if (!name || !this.command) return Promise.resolve();
-          return this.command('fs.write', { parent: this.desktopFolderId(), name: name, content: '', mime: 'text/plain' }).then(function () { return self.refreshDesktopVfsViews(); }).catch(function (err) { self.showAlert('Desktop', (err && err.message) || 'fs_write_failed'); });
+          return this.inputDialog('Desktop', 'New text file name', 'New Text Document.txt').then(function (name) {
+            name = String(name || '').trim();
+            if (!name || !self.command) return null;
+            return self.command('fs.write', { parent: self.desktopFolderId(), name: name, content: '', mime: 'text/plain' }).then(function () { return self.refreshDesktopVfsViews(); });
+          }).catch(function (err) { self.showAlert('Desktop', (err && err.message) || 'fs_write_failed'); });
         },
         desktopRenameSelected: function () {
           var self = this;
           var entry = this.desktopContextEntry();
-          var name;
           this.closeDesktopContextMenu();
           if (!entry || !this.desktopEntryIsVfs(entry) || !this.command) return Promise.resolve();
-          name = window.prompt(this.t('explorer.promptRename', 'Rename item'), entry.name || entry.title || '');
-          if (name === null) return Promise.resolve();
-          name = String(name || '').trim();
-          if (!name || name === (entry.name || entry.title || '')) return Promise.resolve();
-          return this.command('fs.rename', { id: entry.id || entry.key, name: name }).then(function () { return self.refreshDesktopVfsViews(); }).catch(function (err) { self.showAlert('Desktop', (err && err.message) || 'fs_rename_failed'); });
+          return this.inputDialog('Desktop', this.t('explorer.promptRename', 'Rename item'), entry.name || entry.title || '').then(function (name) {
+            name = String(name || '').trim();
+            if (!name || name === (entry.name || entry.title || '')) return null;
+            return self.command('fs.rename', { id: entry.id || entry.key, name: name }).then(function () { return self.refreshDesktopVfsViews(); });
+          }).catch(function (err) { self.showAlert('Desktop', (err && err.message) || 'fs_rename_failed'); });
         },
         desktopDeleteSelected: function () {
           var self = this;
           var entry = this.desktopContextEntry();
           this.closeDesktopContextMenu();
           if (!entry || !this.desktopEntryIsVfs(entry) || !this.command) return Promise.resolve();
-          if (!window.confirm(this.t('explorer.confirmDelete', 'Delete the selected item?'))) return Promise.resolve();
-          return this.command('fs.delete', { id: entry.id || entry.key }).then(function () { return self.refreshDesktopVfsViews(); }).catch(function (err) { self.showAlert('Desktop', (err && err.message) || 'fs_delete_failed'); });
+          return this.confirmDialog('Desktop', this.t('explorer.confirmDelete', 'Delete the selected item?')).then(function (confirmed) {
+            if (!confirmed) return null;
+            return self.command('fs.delete', { id: entry.id || entry.key }).then(function () { return self.refreshDesktopVfsViews(); });
+          }).catch(function (err) { self.showAlert('Desktop', (err && err.message) || 'fs_delete_failed'); });
         },
         themeStudioStorageKey: function () {
           return 'mioos.themeStudio.active.v2';
@@ -2488,7 +2505,9 @@
           (this.boot.modules || []).forEach(function (module) {
             add({ key: module.appKey || module.id, appKey: module.appKey || module.id, title: module.title || module.name || module.id, subtitle: module.description || module.subtitle || module.category || 'Module', icon: module.icon || '▣', kind: 'module', id: module.id }, 'module', 'modules');
           });
-          [{ key: 'app-catalog', title: 'Application Catalog', subtitle: 'Browse installed modules', icon: '▦', kind: 'tool' }, { key: 'control-panel', title: 'Control Panel', subtitle: 'System settings', icon: '⚙', kind: 'tool' }, { key: 'diagnostics', title: 'Diagnostics', subtitle: 'Transport and boot health', icon: '📈', kind: 'tool' }, { key: 'security-center', title: 'Security Center', subtitle: 'Sessions and users', icon: '🛡', kind: 'tool' }, { key: 'debug-center', title: 'Debug Center', subtitle: 'Developer tools', icon: '🧪', kind: 'tool' }].forEach(function (entry) { add(entry, 'app', 'system'); });
+          [{ key: 'home', title: 'Folder Explorer', subtitle: 'Browse desktop and VFS folders', icon: '📁', kind: 'tool' }, { key: 'my-computer', title: 'My Computer', subtitle: 'Root filesystem browser', icon: '💻', kind: 'tool' }, { key: 'documents', title: 'Documents', subtitle: 'Home folder explorer', icon: '🗂', kind: 'tool' }, { key: 'customize', title: 'Theme Studio', subtitle: 'Themes, wallpaper, language, and shell settings', icon: '🎨', kind: 'tool' }, { key: 'app-catalog', title: 'Application Catalog', subtitle: 'Browse installed modules', icon: '▦', kind: 'tool' }, { key: 'control-panel', title: 'Control Panel', subtitle: 'System settings', icon: '⚙', kind: 'tool' }, { key: 'task-manager', title: 'Task Manager', subtitle: 'Windows, memory, VFS, sessions, and errors', icon: '▦', kind: 'tool' }, { key: 'diagnostics', title: 'Diagnostics', subtitle: 'Transport and boot health', icon: '📈', kind: 'tool' }, { key: 'security-center', title: 'Security Center', subtitle: 'Sessions and users', icon: '🛡', kind: 'tool' }, { key: 'debug-center', title: 'Debug Center', subtitle: 'Developer tools', icon: '🧪', kind: 'tool' }].forEach(function (entry) { add(entry, 'app', entry.key === 'home' || entry.key === 'my-computer' || entry.key === 'documents' ? 'places' : 'system'); });
+          (this.localeOptions || []).forEach(function (locale) { add({ key: 'locale:' + locale.code, title: locale.label || locale.code, subtitle: 'Switch language', icon: '🌐', kind: 'language', action: 'locale', code: locale.code }, 'action', 'language'); });
+          (this.shellThemeOptions ? this.shellThemeOptions() : []).forEach(function (theme) { add({ key: 'theme:' + theme.key, title: theme.label || theme.key, subtitle: 'Apply theme preset', icon: '🎨', kind: 'theme', action: 'theme', themeKey: theme.key }, 'action', 'themes'); });
           return rows;
         },
         startMenuFilesystemItems: function () {
@@ -2524,9 +2543,12 @@
           var apps = catalog.filter(function (item) { return item.groupKey === 'applications'; });
           var modules = catalog.filter(function (item) { return item.source === 'module'; });
           var system = catalog.filter(function (item) { return item.groupKey === 'system'; });
+          var places = catalog.filter(function (item) { return item.groupKey === 'places'; });
+          var language = catalog.filter(function (item) { return item.groupKey === 'language'; });
+          var themes = catalog.filter(function (item) { return item.groupKey === 'themes'; });
           var pinned = [];
-          ['home', 'terminal', 'transfers', 'customize'].forEach(function (key) { var found = catalog.find(function (item) { return item.key === key || item.appKey === key; }); if (found) pinned.push(found); });
-          var groups = [{ key: 'pinned', title: 'Pinned', subtitle: 'Common places and tools', open: true, items: pinned }, { key: 'applications', title: 'All Programs', subtitle: 'Application catalog', open: true, items: apps.concat(modules) }, { key: 'filesystem', title: 'Desktop Files', subtitle: 'Files and folders from /Home/Desktop', open: nested, items: files }, { key: 'system', title: 'System', subtitle: 'Settings, security, and diagnostics', open: style === 'popup' ? true : false, items: system }];
+          ['home', 'terminal', 'transfers', 'customize', 'app-catalog'].forEach(function (key) { var found = catalog.find(function (item) { return item.key === key || item.appKey === key; }); if (found) pinned.push(found); });
+          var groups = [{ key: 'pinned', title: 'Pinned', subtitle: 'Common places and tools', open: true, items: pinned }, { key: 'places', title: 'Places', subtitle: 'Folders and explorer entry points', open: true, items: places }, { key: 'applications', title: 'Programs', subtitle: 'Application catalog', open: true, items: apps.concat(modules) }, { key: 'filesystem', title: 'Desktop Files', subtitle: 'Files and folders from /Home/Desktop', open: nested, items: files }, { key: 'themes', title: 'Themes', subtitle: 'Shell presets', open: false, items: themes }, { key: 'language', title: 'Language', subtitle: 'Locale shortcuts', open: false, items: language }, { key: 'system', title: 'System', subtitle: 'Settings, security, and diagnostics', open: style === 'popup' ? true : false, items: system }];
           var self = this;
           groups = groups.map(function (group) { var copy = Object.assign({}, group); copy.items = self.startMenuFilterItems(copy.items); if (!nested || style === 'popup') copy.open = true; return copy; }).filter(function (group) { return (group.items || []).length > 0; });
           if (!groups.length) groups.push({ key: 'empty', title: 'No results', subtitle: 'Try another search', open: true, items: [{ key: 'empty-result', title: 'No matching apps or files', subtitle: 'Search /Home/Desktop and applications', icon: '⌕', disabled: true }] });
@@ -2567,6 +2589,8 @@
           if (!item || item.disabled) return;
           this.menuOpen = false;
           if (this.startMenuUi) this.startMenuUi.lastOpenedAt = Date.now();
+          if (item.action === 'locale' && this.changeLocale) { this.changeLocale(item.code || String(item.key || '').replace(/^locale:/, '')); return; }
+          if (item.action === 'theme' && this.applyShellTheme) { this.applyShellTheme(item.themeKey || String(item.key || '').replace(/^theme:/, '')); return; }
           if (item.source === 'vfs') { if (this.openDesktopEntry) this.openDesktopEntry(item.raw || { key: item.fileId || item.folderId || item.id || item.key, id: item.fileId || item.folderId || item.id || item.key, name: item.title, kind: item.kind, source: 'vfs' }); return; }
           if (item.source === 'module' && this.openModuleEntry) { this.openModuleEntry(item.raw && (item.raw.id || item.raw.appKey) || item.appKey || item.key); return; }
           var key = item.launchKey || item.appKey || item.key;
@@ -2777,12 +2801,51 @@
           if (this.notifications.length > 6) this.notifications.length = 6;
           return item;
         },
+        openShellDialog: function (patch) {
+          var self = this;
+          if (!this.shellDialog) this.shellDialog = { open: false, kind: '', title: '', message: '', value: '', placeholder: '', confirmText: 'OK', cancelText: 'Cancel', danger: false, resolver: null };
+          return new Promise(function (resolve) {
+            self.shellDialog = Object.assign({}, self.shellDialog, { open: true, resolver: resolve }, patch || {});
+            self.$nextTick(function () {
+              var input = document.querySelector('.mioos-shell-dialog input, .mioos-shell-dialog textarea');
+              if (input && input.focus) { input.focus(); if (input.select) input.select(); }
+            });
+          });
+        },
         inputDialog: function (title, message, value) {
-          var answer = window.prompt(message || title || 'Input', value || '');
-          return Promise.resolve(answer);
+          return this.openShellDialog({ kind: 'input', title: title || 'Input', message: message || '', value: value || '', confirmText: 'OK', cancelText: 'Cancel', danger: false });
         },
         confirmDialog: function (title, message) {
-          return Promise.resolve(window.confirm(message || title || 'Continue?'));
+          return this.openShellDialog({ kind: 'confirm', title: title || 'Confirm', message: message || '', value: '', confirmText: 'Confirm', cancelText: 'Cancel', danger: true });
+        },
+        resolveShellDialog: function (ok) {
+          var dialog = this.shellDialog || {};
+          var resolver = dialog.resolver;
+          var value = ok ? (dialog.kind === 'confirm' ? true : dialog.value) : (dialog.kind === 'confirm' ? false : null);
+          this.shellDialog = { open: false, kind: '', title: '', message: '', value: '', placeholder: '', confirmText: 'OK', cancelText: 'Cancel', danger: false, resolver: null };
+          if (resolver) resolver(value);
+          return value;
+        },
+        shellDialogKeydown: function (event) {
+          if (!event) return;
+          if (event.key === 'Escape') { event.preventDefault(); this.resolveShellDialog(false); }
+          if (event.key === 'Enter' && ((this.shellDialog || {}).kind === 'input')) { event.preventDefault(); this.resolveShellDialog(true); }
+        },
+        showTaskbarPreview: function (win, event) {
+          if (!win) return;
+          var rect = event && event.currentTarget && event.currentTarget.getBoundingClientRect ? event.currentTarget.getBoundingClientRect() : { left: 0, width: 160 };
+          this.taskbarPreview = { open: true, windowId: win.id, left: Math.max(8, Math.round(rect.left + (rect.width / 2) - 135)), bottom: +((((this.boot || {}).desktop || {}).taskbarHeight) || 48) + 8 };
+        },
+        hideTaskbarPreview: function () {
+          if (this.taskbarPreview) this.taskbarPreview.open = false;
+        },
+        taskbarPreviewWindow: function () {
+          var id = ((this.taskbarPreview || {}).windowId) || '';
+          return (this.windows || []).find(function (win) { return win.id === id; }) || null;
+        },
+        taskbarPreviewStyle: function () {
+          var p = this.taskbarPreview || {};
+          return { left: Math.max(8, +p.left || 8) + 'px', bottom: Math.max(48, +p.bottom || 56) + 'px' };
         },
         copyTextToClipboard: function (text) {
           if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(String(text || ''));

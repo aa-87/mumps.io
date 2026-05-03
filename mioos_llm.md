@@ -654,3 +654,7 @@ The current shell/table stabilization fixes several regression-prone areas after
 Advanced Table cell editing keeps compact `✓` and `×` controls visible in narrow cells, binds Enter to save and Escape to cancel, and emits table action feedback through a floating modal toast rather than inline layout-shifting text. Patient Registration now has server-side `patient.review.active` / `patient.review.inactive` actions and a bulk active action before terminal rewrite work continues.
 
 Terminal rewrite work is planned as separate follow-up ROIs: T1 transport foundation, T2 profiles/customization, T3 startup automation sequences, and T4 hardening. Do not mix the full terminal backend rewrite into unrelated patient/table stabilization packages.
+
+## ROI 72B shell/table/explorer stabilization
+
+Current source includes ROI 72B stabilization: dense table-like Start Menu with restored language/theme/folder entries, shell modal dialogs for Explorer/Desktop prompts, common Explorer menu dispatch, draggable VFS items between Explorer/Desktop folders, kept-mounted minimized windows for media playback, taskbar window previews, a first-pass Task Manager surface, table cell edit Cut/Copy/Paste context menu, Add Value auto-selection, and Patient Registration status locked to row actions. Terminal rewrite remains planned as T1 transport foundation, T2 profiles/customization, T3 startup automation sequences, and T4 hardening.
