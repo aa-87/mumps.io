@@ -29,9 +29,8 @@ QUERY(STATE,CONF,IN,OUT,ERR)
 	IF SORTBY'="" DO SORT(.WORK,SORTBY,SORTDIR)
 	IF FILTERED=0 SET PAGE=1
 	IF FILTERED>0,PAGE>((FILTERED+PSIZE-1)\PSIZE) SET PAGE=((FILTERED+PSIZE-1)\PSIZE)
-	IF DATASET'="vfs" SET ROOT=$$ROOT(.STATE,DATASET) DO METASC(ROOT,.SCHEMA),FIXSC(ROOT,.SCHEMA,.OUT)
+	IF DATASET'="vfs" SET ROOT=$$ROOT(.STATE,DATASET) DO METASC(ROOT,.SCHEMA)
 	MERGE OUT("schema","columns")=SCHEMA("columns")
-	IF $DATA(SCHEMA("fixedColumns")) MERGE OUT("schema","fixedColumns")=SCHEMA("fixedColumns")
 	DO ACTIONS(.OUT,$SELECT(DATASET="vfs":1,1:0))
 	DO PAGE(.WORK,.OUT,PAGE,PSIZE,TOTAL,FILTERED)
 	DO GROUPIN(.IN,.GROUPKEYS,.GROUPN)
@@ -50,11 +49,8 @@ QUERY(STATE,CONF,IN,OUT,ERR)
 	SET OUT("features","crudRows")=$SELECT(DATASET="vfs":0,1:1)
 	SET OUT("features","crudColumns")=$SELECT(DATASET="vfs":0,1:1)
 	SET OUT("features","resizableColumns")=1
-	SET OUT("features","columnReorder")=$SELECT(DATASET="vfs":0,1:1)
-	SET OUT("features","fixedColumns")=$SELECT(DATASET="vfs":0,1:+$GET(OUT("features","fixedColumns"),1))
-	SET OUT("features","fixedStart")=+$GET(OUT("features","fixedStart"),0)
-	SET OUT("features","fixedEnd")=+$GET(OUT("features","fixedEnd"),0)
 	SET OUT("features","cellEditing")=$SELECT(DATASET="vfs":0,1:1)
+	SET OUT("features","columnReorder")=$SELECT(DATASET="vfs":0,1:1)
 	SET OUT("draw")=DRAW
 	SET OUT("recordsTotal")=TOTAL
 	SET OUT("recordsFiltered")=FILTERED
@@ -66,7 +62,7 @@ ERRQ
 	QUIT 0
 	;
 MUTATE(STATE,CONF,IN,OUT,ERR)
-	NEW DATASET,ACTION,ROOT,ID,KEY,ORIG,I,J,N,FOUND,ROW,COL,OPTVAL,VAL,CBOUT,ORDER,OLD,START,END,CNT
+	NEW DATASET,ACTION,ROOT,ID,KEY,ORIG,I,N,FOUND,ROW,COL,OPTVAL,VAL,CBOUT
 	NEW $ETRAP,$ESTACK SET $ETRAP="GOTO ERRM^MIOOSTBL"
 	KILL OUT,ERR
 	SET ERR("routine")="MIOOSTBL"
@@ -141,36 +137,7 @@ MUTATE(STATE,CONF,IN,OUT,ERR)
 	. IF KEY="" QUIT
 	. SET I=0 FOR  SET I=$ORDER(@ROOT@("schema","columns",I)) QUIT:I'>0  IF $GET(@ROOT@("schema","columns",I,"key"))=KEY SET @ROOT@("schema","columns",I,"hidden")=$SELECT($$TRUTH($GET(IN("hidden"))):1,1:0)
 	. SET OUT("mutated","columnVisibility")=KEY
-	IF ACTION="column.reorder" DO
-	. KILL ORDER,OLD
-	. SET I=0 FOR  SET I=$ORDER(IN("columns",I)) QUIT:I'>0  DO
-	. . SET KEY=$$KEY($GET(IN("columns",I,"key"),$GET(IN("columns",I))))
-	. . IF KEY'="" SET ORDER(I)=KEY
-	. IF '$DATA(ORDER) DO
-	. . SET I=0 FOR  SET I=$ORDER(IN("order",I)) QUIT:I'>0  DO
-	. . . SET KEY=$$KEY($GET(IN("order",I,"key"),$GET(IN("order",I))))
-	. . . IF KEY'="" SET ORDER(I)=KEY
-	. MERGE OLD=@ROOT@("schema","columns")
-	. KILL @ROOT@("schema","columns")
-	. SET N=0,I=0 FOR  SET I=$ORDER(ORDER(I)) QUIT:I'>0  DO
-	. . SET KEY=ORDER(I),FOUND=0,J=0 FOR  SET J=$ORDER(OLD(J)) QUIT:J'>0!(FOUND>0)  IF $GET(OLD(J,"key"))=KEY SET FOUND=J
-	. . IF FOUND>0 SET N=N+1 MERGE @ROOT@("schema","columns",N)=OLD(FOUND) SET @ROOT@("schema","columns",N,"order")=N
-	. SET J=0 FOR  SET J=$ORDER(OLD(J)) QUIT:J'>0  DO
-	. . SET KEY=$GET(OLD(J,"key")) QUIT:KEY=""
-	. . SET FOUND=0,I=0 FOR  SET I=$ORDER(@ROOT@("schema","columns",I)) QUIT:I'>0  IF $GET(@ROOT@("schema","columns",I,"key"))=KEY SET FOUND=1
-	. . IF 'FOUND SET N=N+1 MERGE @ROOT@("schema","columns",N)=OLD(J) SET @ROOT@("schema","columns",N,"order")=N
-	. SET OUT("mutated","columnOrder")=N
-	IF ACTION="column.fixed" DO
-	. SET CNT=0,I=0 FOR  SET I=$ORDER(@ROOT@("schema","columns",I)) QUIT:I'>0  SET CNT=CNT+1
-	. SET START=+$GET(IN("fixedColumns","start"),+$GET(IN("fixedStart"),0)),END=+$GET(IN("fixedColumns","end"),+$GET(IN("fixedEnd"),0))
-	. IF START<0 SET START=0
-	. IF END<0 SET END=0
-	. IF START>CNT SET START=CNT
-	. IF END>CNT SET END=CNT
-	. IF START+END>CNT SET END=$SELECT(CNT-START>0:CNT-START,1:0)
-	. SET @ROOT@("features","fixedColumns")=1
-	. SET @ROOT@("schema","fixedColumns","start")=START,@ROOT@("schema","fixedColumns","end")=END
-	. SET OUT("mutated","fixedColumns","start")=START,OUT("mutated","fixedColumns","end")=END
+	IF ACTION="column.reorder" DO REORDER(ROOT,.IN,.OUT)
 	IF ACTION="column.option.add" DO
 	. SET KEY=$$KEY($GET(IN("columnKey"),$GET(IN("key"))))
 	. SET OPTVAL=$GET(IN("value"),$GET(IN("option","value")))
@@ -200,9 +167,8 @@ VALIDATE(STATE,CONF,DATASET,ACTION,IN,ERR)
 	IF ACTION="rows.export"!(ACTION="export") QUIT $$VALIDS(.IN,.ERR)
 	IF ACTION="column.save"!(ACTION="column.add")!(ACTION="column.update") QUIT $$VALCOL(.CONF,.IN,.ERR)
 	IF ACTION="column.delete"!(ACTION="column.resize")!(ACTION="column.visibility") QUIT $$VALKEY($GET(IN("columnKey"),$GET(IN("key"),$GET(IN("column","key")))),.ERR)
-	IF ACTION="column.reorder" QUIT $$VALORDER(.IN,.ERR)
-	IF ACTION="column.fixed" QUIT $$VALFIXED(.IN,.ERR)
 	IF ACTION="column.option.add" QUIT $$VALOPT(.IN,.ERR)
+	IF ACTION="column.reorder" QUIT $$VALORDER($$ROOT(.STATE,DATASET),.IN,.ERR)
 	SET ERR("error")="unsupported_table_action" QUIT 0
 	;
 VALROW(STATE,DATASET,CONF,IN,ERR)
@@ -348,29 +314,6 @@ VALKEY(KEY,ERR)
 	IF KEY="" SET ERR("error")="invalid_column_key" QUIT 0
 	QUIT 1
 	;
-VALORDER(IN,ERR)
-	NEW I,KEY,SEEN
-	SET SEEN=0,I=0 FOR  SET I=$ORDER(IN("columns",I)) QUIT:I'>0!($GET(ERR("error"))'="")  DO
-	. SET KEY=$$KEY($GET(IN("columns",I,"key"),$GET(IN("columns",I))))
-	. IF KEY="" SET ERR("error")="invalid_column_key" QUIT
-	. SET SEEN=1
-	IF 'SEEN SET I=0 FOR  SET I=$ORDER(IN("order",I)) QUIT:I'>0!($GET(ERR("error"))'="")  DO
-	. SET KEY=$$KEY($GET(IN("order",I,"key"),$GET(IN("order",I))))
-	. IF KEY="" SET ERR("error")="invalid_column_key" QUIT
-	. SET SEEN=1
-	IF $GET(ERR("error"))'="" QUIT 0
-	IF 'SEEN SET ERR("error")="column_order_missing",ERR("message")="Column order is required" QUIT 0
-	QUIT 1
-	;
-VALFIXED(IN,ERR)
-	NEW START,END
-	SET START=+$GET(IN("fixedColumns","start"),+$GET(IN("fixedStart"),0))
-	SET END=+$GET(IN("fixedColumns","end"),+$GET(IN("fixedEnd"),0))
-	IF START<0 SET ERR("error")="invalid_fixed_columns",ERR("message")="Fixed start count cannot be negative" QUIT 0
-	IF END<0 SET ERR("error")="invalid_fixed_columns",ERR("message")="Fixed end count cannot be negative" QUIT 0
-	IF (START>20)!(END>20) SET ERR("error")="invalid_fixed_columns",ERR("message")="Fixed column counts are too high" QUIT 0
-	QUIT 1
-	;
 VALOPT(IN,ERR)
 	NEW KEY,VAL
 	SET KEY=$$KEY($GET(IN("columnKey"),$GET(IN("key"))))
@@ -378,6 +321,22 @@ VALOPT(IN,ERR)
 	IF KEY="" SET ERR("error")="invalid_column_key",ERR("message")="Choose a valid column" QUIT 0
 	IF VAL="" SET ERR("error")="option_value_missing",ERR("field")=KEY,ERR("message")="Option value is required" QUIT 0
 	IF $LENGTH(VAL)>120 SET ERR("error")="option_value_too_long",ERR("field")=KEY,ERR("message")="Option value is too long" QUIT 0
+	QUIT 1
+	;
+VALORDER(ROOT,IN,ERR)
+	NEW I,KEY,IDX,COUNT,SEEN,EXIST
+	SET (COUNT,EXIST)=0
+	SET I=0 FOR  SET I=$ORDER(@ROOT@("schema","columns",I)) QUIT:I'>0  SET EXIST=EXIST+1
+	SET I=0 FOR  SET I=$ORDER(IN("columns",I)) QUIT:I'>0!($GET(ERR("error"))'="")  DO
+	. SET KEY=$$KEY($GET(IN("columns",I,"key")))
+	. IF KEY="" SET ERR("error")="invalid_column_key",ERR("message")="Column reorder contains an invalid key" QUIT
+	. IF $DATA(SEEN(KEY)) SET ERR("error")="duplicate_column_key",ERR("message")="Column reorder contains duplicate key "_KEY QUIT
+	. SET IDX=$$COLIDX(ROOT,KEY)
+	. IF IDX'>0 SET ERR("error")="unknown_column_key",ERR("message")="Column reorder contains unknown key "_KEY QUIT
+	. SET SEEN(KEY)=1,COUNT=COUNT+1
+	IF $GET(ERR("error"))'="" QUIT 0
+	IF COUNT'>0 SET ERR("error")="column_order_missing",ERR("message")="Column reorder payload is required" QUIT 0
+	IF EXIST>0,COUNT'=EXIST SET ERR("error")="column_order_incomplete",ERR("message")="Column reorder must include every column" QUIT 0
 	QUIT 1
 	;
 OPTEXISTS(ROOT,KEY,VAL)
@@ -403,11 +362,10 @@ MMSG(ACTION)
 	IF ACTION="rows.export"!(ACTION="export") QUIT "CSV export generated"
 	IF ACTION="column.visibility" QUIT "Column visibility updated"
 	IF ACTION="column.resize" QUIT "Column resized"
-	IF ACTION="column.reorder" QUIT "Column order saved"
-	IF ACTION="column.fixed" QUIT "Fixed columns saved"
 	IF ACTION="column.save"!(ACTION="column.add")!(ACTION="column.update") QUIT "Column saved"
 	IF ACTION="column.delete" QUIT "Column deleted"
 	IF ACTION="column.option.add" QUIT "Column option added"
+	IF ACTION="column.reorder" QUIT "Column order saved"
 	QUIT "Table updated"
 	;
 
@@ -507,26 +465,6 @@ METASC(ROOT,SCHEMA)
 	. . . SET N=N+1,SCHEMA("columns",I,"options",N)=$GET(@ROOT@("validation","fields",KEY,"enum",J))
 	QUIT
 	;
-FIXSC(ROOT,SCHEMA,OUT)
-	NEW I,N,START,END,CNT,KEY,FIXED
-	SET START=+$GET(@ROOT@("schema","fixedColumns","start"),+$GET(@ROOT@("features","fixedStart"),0))
-	SET END=+$GET(@ROOT@("schema","fixedColumns","end"),+$GET(@ROOT@("features","fixedEnd"),0))
-	IF START<0 SET START=0
-	IF END<0 SET END=0
-	SET CNT=0,I=0 FOR  SET I=$ORDER(SCHEMA("columns",I)) QUIT:I'>0  SET CNT=CNT+1
-	IF START>CNT SET START=CNT
-	IF END>CNT SET END=CNT
-	IF START+END>CNT SET END=$SELECT(CNT-START>0:CNT-START,1:0)
-	SET SCHEMA("fixedColumns","start")=START,SCHEMA("fixedColumns","end")=END
-	SET OUT("features","fixedColumns")=$SELECT(+$GET(@ROOT@("features","fixedColumns"),1):1,1:0)
-	SET OUT("features","fixedStart")=START,OUT("features","fixedEnd")=END
-	SET I=0,N=0 FOR  SET I=$ORDER(SCHEMA("columns",I)) QUIT:I'>0  DO
-	. SET N=N+1,KEY=$GET(SCHEMA("columns",I,"key")),FIXED=$GET(@ROOT@("schema","columns",I,"fixed"))
-	. IF FIXED="",START>0,N'>START SET FIXED="start"
-	. IF FIXED="",END>0,N>(CNT-END) SET FIXED="end"
-	. IF FIXED'="" SET SCHEMA("columns",I,"fixed")=FIXED
-	QUIT
-	;
 SETCTYPE(ROOT,KEY,TYPE)
 	NEW I
 	SET I=0 FOR  SET I=$ORDER(@ROOT@("schema","columns",I)) QUIT:I'>0  IF $GET(@ROOT@("schema","columns",I,"key"))=$GET(KEY) SET @ROOT@("schema","columns",I,"type")=$GET(TYPE)
@@ -544,6 +482,20 @@ HASC(ROOT,KEY)
 	SET OK=0,I=0 FOR  SET I=$ORDER(@ROOT@("schema","columns",I)) QUIT:I'>0!(OK)  DO
 	. IF $GET(@ROOT@("schema","columns",I,"key"))=KEY SET OK=1
 	QUIT OK
+	;
+REORDER(ROOT,IN,OUT)
+	NEW I,J,KEY,IDX,TMP
+	KILL TMP
+	SET (I,J)=0 FOR  SET I=$ORDER(IN("columns",I)) QUIT:I'>0  DO
+	. SET KEY=$$KEY($GET(IN("columns",I,"key"))) QUIT:KEY=""
+	. SET IDX=$$COLIDX(ROOT,KEY) QUIT:IDX'>0
+	. SET J=J+1
+	. MERGE TMP(J)=@ROOT@("schema","columns",IDX)
+	. SET TMP(J,"key")=KEY
+	KILL @ROOT@("schema","columns")
+	MERGE @ROOT@("schema","columns")=TMP
+	SET OUT("mutated","columnOrder")=J
+	QUIT
 	;
 EXPORT(STATE,DATASET,ROOT,IN,OUT)
 	NEW I,J,KEY,LINE,CSV,COUNT,ID,R
@@ -676,10 +628,6 @@ MASSIVEQ(IN,OUT,CONF)
 	SET OUT("features","crudRows")=0
 	SET OUT("features","crudColumns")=0
 	SET OUT("features","resizableColumns")=1
-	SET OUT("features","columnReorder")=0
-	SET OUT("features","fixedColumns")=0
-	SET OUT("features","fixedStart")=0
-	SET OUT("features","fixedEnd")=0
 	SET OUT("features","cellEditing")=0
 	SET OUT("features","readOnly")=1
 	SET OUT("draw")=DRAW
@@ -751,10 +699,6 @@ MASSFASTQ(OUT,TOTAL,PAGE,PSIZE,DRAW,SORTDIR)
 	SET OUT("features","crudRows")=0
 	SET OUT("features","crudColumns")=0
 	SET OUT("features","resizableColumns")=1
-	SET OUT("features","columnReorder")=0
-	SET OUT("features","fixedColumns")=0
-	SET OUT("features","fixedStart")=0
-	SET OUT("features","fixedEnd")=0
 	SET OUT("features","cellEditing")=0
 	SET OUT("features","readOnly")=1
 	SET OUT("draw")=DRAW

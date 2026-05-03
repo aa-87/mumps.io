@@ -1,45 +1,47 @@
 # ROI 64J — Column Reorder
 
-## Status
-
-Implemented in this ROI pass after fixing the modal close and native browser prompt/confirm regressions.
+ROI 64J adds DataTables-style column reorder to the MIOOS Advanced Table while keeping the backend as the source of truth.
 
 ## Goal
 
-Allow MUMPS-authored advanced tables to define a boot column order and allow users to reorder columns from the table UI without introducing a frontend dependency or client-side-only state.
+Allow a MUMPS-authored table module to enable user-driven column ordering without writing frontend code. The browser may move columns in the Columns modal, but persistence always goes through `MUTATE^MIOOSTBL`.
 
-## Contract
+## MUMPS contract
 
-The table contract remains `mioos-advanced-table-v8` and adds the `columnReorder` feature flag.
+Enable reorder in the module/table config:
 
 ```mumps
-SET @ROOT@("features","columnReorder")=1
-SET @ROOT@("schema","columns",1,"key")="name"
-SET @ROOT@("schema","columns",1,"order")=1
-SET @ROOT@("schema","columns",2,"key")="status"
-SET @ROOT@("schema","columns",2,"order")=2
-SET @ROOT@("schema","columns",3,"key")="updated"
-SET @ROOT@("schema","columns",3,"order")=3
+SET MOD("tableState","config","features","columnReorder")=1
 ```
 
-The active column order is the order of `schema("columns",n)` returned by `QUERY^MIOOSTBL`. The user-facing reorder operation persists that order back to the dataset schema.
+Column order is the order of the schema nodes:
 
-## Mutation request
+```mumps
+SET @ROOT@("schema","columns",1,"key")="name"
+SET @ROOT@("schema","columns",2,"key")="status"
+SET @ROOT@("schema","columns",3,"key")="owner"
+```
+
+After a reorder save, `MIOOSTBL` rewrites `schema("columns",n)` in the requested order while preserving each column's label, type, width, visibility, validation metadata, and editability flags.
+
+## Mutation
+
+The UI sends `column.reorder` through WebSocket `table.mutate` first, with HTTP `/api/mioos/table/mutate` as fallback. Both transports call the same backend routine.
 
 ```json
 {
   "dataset": "demo",
   "action": "column.reorder",
+  "mutationOnly": true,
   "columns": [
-    { "key": "name", "order": 1 },
-    { "key": "status", "order": 2 },
-    { "key": "updated", "order": 3 }
-  ],
-  "mutationOnly": true
+    { "key": "status", "order": 1 },
+    { "key": "name", "order": 2 },
+    { "key": "owner", "order": 3 }
+  ]
 }
 ```
 
-## Mutation acknowledgement
+Successful acknowledgement:
 
 ```json
 {
@@ -52,30 +54,28 @@ The active column order is the order of `schema("columns",n)` returned by `QUERY
 }
 ```
 
+## Validation
+
+`VALORDER^MIOOSTBL` rejects:
+
+- missing column payloads
+- invalid column keys
+- duplicate column keys
+- unknown column keys
+- incomplete order payloads that do not include every column
+
 ## UI behavior
 
-- Column reorder controls live in the existing Columns modal.
-- The controls use table-owned MIOOS modal/window styling, not native browser controls.
-- Moving a column immediately sends `column.reorder` through the same mutation pipeline as other table mutations.
-- WebSocket remains the default mutation transport and HTTP remains fallback.
-- Unlisted columns are preserved at the end by the backend.
+The Columns modal includes up/down controls when `features.columnReorder` is enabled. The controls save immediately, show a non-blocking toast, and refetch the table from the server.
 
-## Related stabilization fixes
+The same pass also keeps Add Value and destructive confirmations inside MIOOS table dialogs instead of native browser `prompt()` or `confirm()` controls.
 
-This pass also fixes two regressions from the prior ROI:
-
-1. Close buttons now stop pointer events before they reach the draggable title bar, so clicking `×` dismisses the table modal instead of starting a drag.
-2. Add Value and Delete Column now use MIOOS table dialogs instead of `prompt()` and `confirm()`.
-
-## Validation
+## Reload/test commands
 
 ```mumps
 ZLINK "MIOOSTBL"
+ZLINK "MIOOSMOD"
+ZLINK "MIOOSMTBL"
 ZLINK "MIOOST"
 DO ^MIOOST
-```
-
-```bash
-node --check public/mioos/app/mioos_table.js
-python3 -m json.tool examples/mioos_modules/table/module.json
 ```

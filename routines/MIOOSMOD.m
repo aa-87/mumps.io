@@ -53,7 +53,7 @@ INTERNAL(OUT)
 	SET OUT("components",C,"surface")="mioos-surface-table"
 	SET OUT("components",C,"source")="internal"
 	SET OUT("components",C,"owner")="MIOOS"
-	SET OUT("components",C,"description")="Server-side MUMPS table with WebSocket query, HTTP-safe mutations, dense layouts, server pagination, sorting, select-all, bulk actions, CRUD, resizing, and massive datasets."
+	SET OUT("components",C,"description")="Server-side MUMPS table with WebSocket query, HTTP-safe mutations, dense layouts, server pagination, sorting, select-all, bulk actions, CRUD, resizing, column reorder, and massive datasets."
 	SET OUT("components",C,"script")="/public/mioos/app/mioos_table.js"
 	SET OUT("components",C,"backend")="MIOOSTBL"
 	SET OUT("components",C,"queryRoute")="/api/mioos/table/query"
@@ -65,9 +65,9 @@ INTERNAL(OUT)
 	SET OUT("components",C,"features",5)="row-crud"
 	SET OUT("components",C,"features",6)="column-crud"
 	SET OUT("components",C,"features",7)="resizable-columns"
-	SET OUT("components",C,"features",8)="fixed-columns"
-	SET OUT("components",C,"features",9)="server-query"
-	SET OUT("components",C,"features",10)="http-safe-mutations"
+	SET OUT("components",C,"features",8)="server-query"
+	SET OUT("components",C,"features",9)="http-safe-mutations"
+	SET OUT("components",C,"features",10)="column-reorder"
 	SET C=+$GET(OUT("componentCount"))+1,OUT("componentCount")=C
 	SET OUT("components",C,"key")="table-showcase"
 	SET OUT("components",C,"name")="mioos-surface-table-showcase"
@@ -194,6 +194,7 @@ ADDTABLE(OUT,ID,KEY,TITLE,DESC,CAT,ICON,DATASET)
 	. SET OUT("modules",M,"tableState","config","features","selection")=0
 	. SET OUT("modules",M,"tableState","config","features","bulkActions")=0
 	. SET OUT("modules",M,"tableState","config","features","rowDetails")=0
+	. SET OUT("modules",M,"tableState","config","features","columnReorder")=0
 	QUIT
 	;
 USER(STATE,OUT)

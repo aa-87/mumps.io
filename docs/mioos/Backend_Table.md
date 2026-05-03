@@ -322,41 +322,25 @@ Mutation request:
 
 See `docs/mioos/ROI_64I_Editable_Cells.md` for the full callback contract and MUMPS-only example.
 
-
 ## ROI 64J column reorder
 
-Advanced table datasets can now opt into server-persisted column reorder with the `columnReorder` feature. The frontend sends a small mutation acknowledgement request through the normal table mutation transport:
+Advanced Table modules can enable server-persisted column ordering with:
+
+```mumps
+SET MOD("tableState","config","features","columnReorder")=1
+```
+
+The browser exposes up/down controls in the Columns modal and sends `column.reorder` through the normal WebSocket-first / HTTP-fallback mutation path. `MUTATE^MIOOSTBL` validates the order with `VALORDER`, rewrites `schema("columns")` in the requested sequence, and returns an acknowledgement-only response so the browser can refetch the table.
+
+The mutation payload must include every existing column exactly once:
 
 ```json
 {
   "dataset": "demo",
   "action": "column.reorder",
   "columns": [
-    { "key": "name", "order": 1 },
-    { "key": "status", "order": 2 }
-  ],
-  "mutationOnly": true
+    { "key": "status", "order": 1 },
+    { "key": "name", "order": 2 }
+  ]
 }
 ```
-
-`MUTATE^MIOOSTBL` validates the requested keys, rewrites `@ROOT@("schema","columns",n)` in the requested order, appends any omitted existing columns, and returns `Column order saved`. MUMPS-authored boot order is still defined by the order of the schema column nodes.
-
-```mumps
-SET @ROOT@("features","columnReorder")=1
-SET @ROOT@("schema","columns",1,"key")="name"
-SET @ROOT@("schema","columns",1,"order")=1
-SET @ROOT@("schema","columns",2,"key")="status"
-SET @ROOT@("schema","columns",2,"order")=2
-```
-
-## ROI 64K fixed columns
-
-Advanced table datasets can now expose fixed start/end columns. The MUMPS-owned dataset contract is:
-
-```mumps
-SET @ROOT@("features","fixedColumns")=1
-SET @ROOT@("schema","fixedColumns","start")=1
-SET @ROOT@("schema","fixedColumns","end")=0
-```
-
-The query response includes `schema.fixedColumns`, `features.fixedColumns`, `features.fixedStart`, and `features.fixedEnd`. The browser applies sticky offsets after column visibility and column reorder. Users can change the counts from the Columns modal; this sends `column.fixed` through the normal WebSocket-first / HTTP-fallback mutation path and `MUTATE^MIOOSTBL` persists the counts under `schema("fixedColumns")`.

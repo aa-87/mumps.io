@@ -83,13 +83,6 @@ SET MOD("tableState","config","mutateTransport")="websocket"
 
 The module author controls each cell from MUMPS schema metadata. Non-ID columns default to editable unless `editable=0`; ID columns remain read-only. Optional column `cellCallback` entries let a MUMPS routine validate or normalize a single cell before persistence without frontend code.
 
+## ROI 64J column reorder UI
 
-## ROI 64J table modal and column reorder behavior
-
-The table surface now uses table-owned MIOOS dialogs for Add Value and destructive confirmations. Native `prompt()` and `confirm()` are not used for table controls. Close buttons stop pointer events before they reach draggable title bars, so the `×` control dismisses the current dialog reliably.
-
-The Columns modal also includes column reorder controls when `columnReorder` is enabled. Reordering sends `column.reorder` over the same WebSocket-first/HTTP-fallback table mutation path used by other table updates.
-
-## ROI 64K fixed columns UI
-
-The Advanced Table Columns modal now includes Fixed columns controls when `features.fixedColumns` is enabled. Start and End counts are persisted with a `column.fixed` table mutation. Fixed cells use sticky positioning inside the table scroll region and stay compatible with column visibility, column reorder, editable cells, selection/details controls, and Actions.
+The Advanced Table Columns modal now supports column reorder when `features.columnReorder` is enabled. Users move a column up or down; each move saves through `column.reorder`, returns an acknowledgement, and refetches the server-authored schema. Native browser prompts/confirms are avoided in favor of MIOOS table dialogs.

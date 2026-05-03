@@ -62,7 +62,6 @@ MIOOST ; MIOOS tests
 	DO T068
 	DO T069
 	DO T070
-	DO T071
 	QUIT
 	;
 RESET
@@ -1377,27 +1376,17 @@ T069
 	;
 
 T070
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableCloseOptionDialog"),"[MIOOST][T070][mioos add value dialog close]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableOpenConfirmDialog"),"[MIOOST][T070][mioos confirm dialog]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableMoveColumn"),"[MIOOST][T070][column reorder ui]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","columnReorder: true"),"[MIOOST][T070][column reorder feature flag]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableMoveColumn"),"[MIOOST][T070][column reorder ui move]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","column.reorder"),"[MIOOST][T070][column reorder mutation]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","VALORDER"),"[MIOOST][T070][column reorder validation]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","columnReorder"),"[MIOOST][T070][column reorder server feature]")
-	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/ROI_64J_Column_Reorder.md","Column order saved"),"[MIOOST][T070][roi64j docs]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableOpenOptionDialog"),"[MIOOST][T070][mioos add value dialog]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","prompt("),0,"[MIOOST][T070][no native prompt]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","confirm("),0,"[MIOOST][T070][no native confirm]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","VALORDER"),"[MIOOST][T070][column order backend validation]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","REORDER(ROOT,IN,OUT)"),"[MIOOST][T070][column order backend persistence]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSMOD.m","column-reorder"),"[MIOOST][T070][component feature advertises reorder]")
 	DO OK^MIOTASSERT($$FILEHAS("examples/mioos_modules/table/module.json","columnReorder"),"[MIOOST][T070][manifest column reorder]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/ROI_64J_Column_Reorder.md","column.reorder"),"[MIOOST][T070][roi64j docs]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 64J column reorder"),"[MIOOST][T070][llm roi64j]")
-	QUIT
-	;
-
-T071
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableFixedState"),"[MIOOST][T071][fixed columns state]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableSaveFixedColumns"),"[MIOOST][T071][fixed columns ui mutation]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","column.fixed"),"[MIOOST][T071][fixed columns mutation action]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","ROI 64K: fixed table columns"),"[MIOOST][T071][fixed columns css]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","VALFIXED"),"[MIOOST][T071][fixed columns validation]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","FIXSC"),"[MIOOST][T071][fixed columns schema metadata]")
-	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/ROI_64K_Fixed_Columns.md","column.fixed"),"[MIOOST][T071][roi64k docs]")
-	DO OK^MIOTASSERT($$FILEHAS("examples/mioos_modules/table/module.json","fixedColumns"),"[MIOOST][T071][manifest fixed columns]")
-	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 64K fixed columns"),"[MIOOST][T071][llm roi64k]")
 	QUIT
 	;

@@ -101,8 +101,6 @@ STATUS(STATE,DATASET,ROWID,COLUMN,VALUE,OUT,ERR)
 
 ## ROI 64J — Column Reorder
 
-Status: implemented in this pass. See `ROI_64J_Column_Reorder.md` for final contract details.
-
 ### Goal
 
 Allow column order to be configured on boot and optionally changed by a user.
@@ -121,8 +119,8 @@ Mutation request:
 ```json
 {
   "dataset": "demo",
-  "action": "column.reorder",
-  "columns": [{ "key": "name", "order": 1 }, { "key": "status", "order": 2 }, { "key": "updated", "order": 3 }],
+  "action": "columns.reorder",
+  "columnOrder": ["name", "status", "updated"],
   "mutationOnly": true
 }
 ```
@@ -135,8 +133,6 @@ Backend acceptance criteria:
 - Store user-specific overrides separately from base schema when the table is user-customizable.
 
 ## ROI 64K — Fixed Columns
-
-Status: implemented. See `docs/mioos/ROI_64K_Fixed_Columns.md` for the final mutation contract and MUMPS example.
 
 ### Goal
 
@@ -191,3 +187,7 @@ DO ^MIOOST
 node --check public/mioos/app/mioos_table.js
 python3 -m json.tool examples/mioos_modules/table/module.json
 ```
+
+## ROI 64J implementation note
+
+Column reorder is now implemented through `features.columnReorder`, the Columns modal up/down controls, and the server-side `column.reorder` mutation. This mirrors the important server-owned behavior of DataTables ColReorder while preserving the MUMPS-authored table contract.

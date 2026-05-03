@@ -198,67 +198,22 @@ STATUS(STATE,DATASET,ROWID,COLUMN,VALUE,OUT,ERR)
  QUIT 1
 ```
 
+## Column reorder example
 
-## Column reorder from MUMPS
-
-Enable reorder for a dataset by exposing the feature and ordering the schema columns in the desired boot order:
-
-```mumps
-SET @ROOT@("features","columnReorder")=1
-SET @ROOT@("schema","columns",1,"key")="name"
-SET @ROOT@("schema","columns",1,"label")="Name"
-SET @ROOT@("schema","columns",1,"order")=1
-SET @ROOT@("schema","columns",2,"key")="status"
-SET @ROOT@("schema","columns",2,"label")="Status"
-SET @ROOT@("schema","columns",2,"order")=2
-SET @ROOT@("schema","columns",3,"key")="updated"
-SET @ROOT@("schema","columns",3,"label")="Updated"
-SET @ROOT@("schema","columns",3,"order")=3
-```
-
-The browser Columns modal can then move columns and persists the result with:
-
-```json
-{
-  "dataset": "demo",
-  "action": "column.reorder",
-  "columns": [
-    { "key": "name", "order": 1 },
-    { "key": "status", "order": 2 },
-    { "key": "updated", "order": 3 }
-  ],
-  "mutationOnly": true
-}
-```
-
-## Fixed columns example
-
-To pin the first visible data column while the middle columns scroll, add the fixed-column contract to the dataset root:
+To let users reorder columns without frontend code, enable the feature in the table module metadata:
 
 ```mumps
-NEW USER,ROOT,MOD
-SET USER=$GET(STATE("principal"),"admin")
-SET ROOT=$NAME(^MIO("MIOOS","TABLE",USER,"demo"))
-SET @ROOT@("features","fixedColumns")=1
-SET @ROOT@("schema","fixedColumns","start")=1
-SET @ROOT@("schema","fixedColumns","end")=0
-
-KILL MOD
-SET MOD("key")="demo-fixed-table"
-SET MOD("title")="Demo Fixed Table"
-SET MOD("componentKey")="table"
-SET MOD("surface")="mioos-surface-table"
-SET MOD("tableState","dataset")="demo"
-SET MOD("tableState","config","features","fixedColumns")=1
-SET MOD("tableState","config","fixedColumns","start")=1
-SET MOD("tableState","config","fixedColumns","end")=0
-DO REGISTER^MIOOSMOD(.MOD)
+SET MOD("tableState","config","features","columnReorder")=1
 ```
+
+The persisted order is the order of `schema("columns",n)` under the dataset root. The Columns modal sends `column.reorder`; `MIOOSTBL` validates that every column key is present exactly once before rewriting the schema order.
 
 Reload and validate:
 
 ```mumps
 ZLINK "MIOOSTBL"
+ZLINK "MIOOSMOD"
+ZLINK "MIOOSMTBL"
 ZLINK "MIOOST"
 DO ^MIOOST
 ```

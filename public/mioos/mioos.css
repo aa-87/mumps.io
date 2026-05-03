@@ -3008,80 +3008,33 @@ button:disabled { cursor: default; opacity: .55; }
 .theme-dark-mode .mioos-table-pager input { color: #f8fafc; background: #1e293b; border-color: rgba(191,219,254,.28); }
 .theme-dark-mode .mioos-table-column-list button.active { background: #1d4ed8; color: #fff; }
 
-
-/* ROI 64J stabilization: table-owned dialogs and column reorder controls. */
-.mioos-table-column-item {
+/* ROI 64J: column reorder and table modal hardening. */
+.mioos-table-column-list .mioos-table-column-item {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px;
+  gap: 6px;
   align-items: stretch;
 }
-.mioos-table-column-item .mioos-table-column-toggle { min-width: 0; }
-.mioos-table-column-reorder {
+.mioos-table-column-reorder,
+.mioos-table-column-actions {
   display: inline-flex;
-  gap: 4px;
   align-items: center;
+  gap: 4px;
 }
-.mioos-table-column-reorder button {
+.mioos-table-column-reorder button,
+.mioos-table-column-actions button {
   min-width: 30px;
-  justify-content: center;
-  text-align: center;
-  font-weight: 800;
-}
-.mioos-table-column-reorder button:disabled { opacity: .38; cursor: not-allowed; }
-.mioos-table-editor.is-option-dialog,
-.mioos-table-editor.is-confirm-dialog { width: min(460px, calc(100% - 24px)); }
-.mioos-table-dialog-body {
-  display: grid;
-  gap: 10px;
-  padding: 12px;
-}
-.mioos-table-dialog-body p { margin: 0; line-height: 1.35; }
-.mioos-table-dialog-body label { display: grid; gap: 5px; font-size: 12px; font-weight: 700; }
-.mioos-table-dialog-body input {
-  min-height: 32px;
-  border-radius: 9px;
-  border: 1px solid var(--theme-panel-border, rgba(148,163,184,.45));
+  min-height: 28px;
+  border: 1px solid rgba(148,163,184,.35);
+  border-radius: 8px;
   background: var(--theme-field-bg, #fff);
   color: var(--theme-field-text, #111827);
-  padding: 6px 8px;
+  font-weight: 800;
 }
-.mioos-table-editor.is-confirm-dialog.danger { border-color: rgba(220,38,38,.45); }
-.mioos-btn.danger { border-color: #b91c1c; color: #7f1d1d; background: #fee2e2; }
-.theme-dark-mode .mioos-table-dialog-body input { color: #f8fafc; background: #1e293b; border-color: rgba(191,219,254,.28); }
-.theme-dark-mode .mioos-btn.danger { color: #fecaca; background: #7f1d1d; border-color: #ef4444; }
-
-/* ROI 64K: fixed table columns. */
-.mioos-table-grid th.is-fixed,
-.mioos-table-grid td.is-fixed {
-  position: sticky;
-  background: var(--theme-card, #fff);
-  box-shadow: 1px 0 0 rgba(70, 94, 130, .18), -1px 0 0 rgba(70, 94, 130, .12);
-}
-.mioos-table-grid thead th.is-fixed { z-index: 8; }
-.mioos-table-grid tbody td.is-fixed { z-index: 5; }
-.mioos-table-grid .is-fixed-start { left: 0; }
-.mioos-table-grid .is-fixed-end { right: 0; }
-.mioos-table-grid .is-fixed-control { min-width: 58px; }
-.mioos-table-grid .is-fixed-actions { min-width: 96px; }
-.mioos-table-grid tr.is-selected td.is-fixed { background: #e6f0ff; }
-.mioos-table-grid tbody tr:hover td.is-fixed { background: #eef5ff; }
-.mioos-table-fixed-controls {
-  display: grid;
-  grid-template-columns: auto minmax(90px, 120px) minmax(90px, 120px) auto;
-  gap: 8px;
-  align-items: end;
-  padding: 10px 0 12px;
-  border-bottom: 1px solid rgba(148,163,184,.22);
-}
-.mioos-table-fixed-controls label { display: grid; gap: 4px; font-size: 11px; font-weight: 700; }
-.mioos-table-fixed-controls input { min-height: 30px; border-radius: 9px; border: 1px solid var(--theme-panel-border, rgba(148,163,184,.45)); padding: 5px 8px; }
-.mioos-table-fixed-controls small { grid-column: 1 / -1; color: #64748b; }
-.theme-dark-mode .mioos-table-grid th.is-fixed,
-.theme-dark-mode .mioos-table-grid td.is-fixed { background: #111827; }
-.theme-dark-mode .mioos-table-grid tr.is-selected td.is-fixed { background: #1e3a8a; }
-.theme-dark-mode .mioos-table-grid tbody tr:hover td.is-fixed { background: #1e293b; }
-.theme-dark-mode .mioos-table-fixed-controls small { color: #cbd5e1; }
-@media (max-width: 760px) {
-  .mioos-table-fixed-controls { grid-template-columns: 1fr; }
-}
+.mioos-table-column-reorder button:disabled { opacity: .42; cursor: not-allowed; }
+.mioos-table-editor.is-option-editor,
+.mioos-table-editor.is-confirm-editor { width: min(480px, calc(100% - 24px)); }
+.mioos-table-confirm-body { padding: 14px; font-size: 13px; line-height: 1.45; }
+.mioos-system-modal-titlebar button[aria-label^="Close"] { cursor: pointer; }
+.theme-dark-mode .mioos-table-column-reorder button,
+.theme-dark-mode .mioos-table-column-actions button { background: #111827; color: #f8fafc; border-color: rgba(191,219,254,.24); }
