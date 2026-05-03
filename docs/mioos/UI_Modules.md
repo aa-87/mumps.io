@@ -97,3 +97,11 @@ The Patient Registration catalogue entry launches `mioos-surface-table` with dat
 
 The Advanced Table module now treats editable cells, validation, column visibility, column reorder, fixed columns, grouping, filtering, and selected-row CSV export as one composed server-side surface. User-created table modules should enable table features through `MOD("tableState","config","features",...)` and persist fixed-column defaults through `MOD("tableState","config","fixedColumns",...)`.
 
+
+## ROI 68A table module sample matrix
+
+Table-backed modules should remain MUMPS-first. A developer should be able to create a production-style table module by editing a routine that seeds `^MIO("MIOOS","TABLE",user,dataset,...)` and by registering `MOD("componentKey")="table"`, `MOD("surface")="mioos-surface-table"`, and `MOD("tableState","dataset")=<dataset>`.
+
+The expanded sample matrix under `examples/mioos_modules/table/samples/` covers read-only tables, editable cells, validation rules, typed controls, advanced filters, multi-column grouping, column visibility, column reorder, fixed columns, selected-row CSV export, desktop icon/App Catalogue entry points, and table-backed module registration without frontend code. These samples are intentionally MUMPS snippets rather than JavaScript because the target module author is a MUMPS developer.
+
+The table transport posture remains WebSocket-first with authenticated HTTP fallback. Do not fork the Vue table component or introduce a build step for table modules.

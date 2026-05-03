@@ -240,3 +240,80 @@ ZLINK "MIOOSMTBL"
 ZLINK "MIOOST"
 DO ^MIOOST
 ```
+
+## ROI 68A Sample matrix
+
+The table examples are now organized as a MUMPS-first sample matrix. Use these files as copy/paste starting points; they intentionally avoid frontend framework code.
+
+| Sample | File | What it demonstrates |
+| --- | --- | --- |
+| Basic read-only table | `samples/basic_readonly.m` | Read-only table with no Actions column, no selection, and no CRUD controls. |
+| Editable cells | `samples/editable_cells.m` | `cell.save`, typed inline controls, and a MUMPS `cellCallback`. |
+| Validation rules | `samples/validation_rules.m` | Required, max length, enum/select, multiselect, boolean, date, number, numeric range, row hook, and cell callback validation. |
+| Advanced filters | `samples/advanced_filters.m` | Include, exclude, contains, starts, ends, range, blank, and not blank filters. |
+| Grouping/reorder/fixed columns | `samples/grouping_reorder_fixed.m` | Multi-column grouping, column visibility, column reorder, and fixed-column metadata. |
+| Server CSV export | `samples/server_csv_export.m` | `rows.export` with selected row IDs only and server-generated CSV. |
+| Module registration | `samples/table_module_registration.m` | Desktop/App Catalogue entry point using `MOD(...)` and `tableState` without frontend code. |
+
+Every sample answers the same operational questions:
+
+- **What routine do I edit?** Copy the sample routine or move its `SET` blocks into your module seed routine.
+- **What globals do I set?** Seed `^MIO("MIOOS","TABLE",USER,dataset,...)` for schema, rows, validation rules, fixed columns, and callbacks.
+- **What command do I run?** `ZLINK` the sample and table routines, seed the data, then run `DO ^MIOOST`.
+- **How do I make an icon appear?** Register a module record with `key`, `appKey`, `title`, `icon`, `componentKey="table"`, `surface="mioos-surface-table"`, and `tableState.dataset`.
+- **How do I open this table from the shell?** Sign in as the same `USER`, open App Catalogue/Start Menu, and launch the registered module.
+- **How do I validate that it works?** Confirm the table opens, then run the backend regression suite in YottaDB / GT.M.
+
+Recommended validation commands:
+
+```mumps
+ZLINK "MIOOSTBL"
+ZLINK "MIOOSTBLC"
+ZLINK "MIOOSAPI"
+ZLINK "MIOOSWS"
+ZLINK "MIOOSMOD"
+ZLINK "MIOOSMTBL"
+ZLINK "MIOOSPAT"
+ZLINK "MIOOST"
+DO ^MIOOST
+```
+
+Browser/example checks from the repository root:
+
+```bash
+node --check public/mioos/app/mioos_table.js
+python3 -m json.tool examples/mioos_modules/table/module.json
+```
+
+## ROI 68A backend contract notes
+
+The current contract is `mioos-advanced-table-v8`. `QUERY^MIOOSTBL` returns the contract version in `OUT("contract")`. Query requests are WebSocket-first with HTTP fallback. Mutations use `table.mutate` / `/api/mioos/table/mutate`; both call `MUTATE^MIOOSTBL` and both return deterministic field errors instead of timing out.
+
+Small successful mutation acknowledgement shape:
+
+```json
+{
+  "ok": 1,
+  "dataset": "demo",
+  "action": "cell.save",
+  "mutationOnly": 1,
+  "refetch": 1,
+  "message": "Cell saved",
+  "mutated": { "rowId": "demo-1", "columnKey": "status" }
+}
+```
+
+Failed mutation shape after HTTP/WebSocket normalization:
+
+```json
+{
+  "ok": 0,
+  "dataset": "demo",
+  "action": "row.save",
+  "error": "table_mutate_failed",
+  "message": "Please fix the highlighted fields",
+  "fieldErrors": { "name": "Name is required" },
+  "mutationOnly": 1,
+  "refetch": 0
+}
+```

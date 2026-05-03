@@ -64,6 +64,7 @@ MIOOST ; MIOOS tests
 	DO T070
 	DO T071
 	DO T072
+	DO T073
 	QUIT
 	;
 RESET
@@ -1415,5 +1416,9 @@ T072
 	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","prompt("),0,"[MIOOST][T072][no native prompt]")
 	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","confirm("),0,"[MIOOST][T072][no native confirm]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 64L advanced table hardening"),"[MIOOST][T072][llm roi64l]")
+	QUIT
+	;
+T073
+	DO RUN^MIOOSTBLC
 	QUIT
 	;

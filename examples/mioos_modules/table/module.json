@@ -3,10 +3,10 @@
   "key": "user.table.example",
   "appKey": "user.table.example",
   "title": "Table Example",
-  "description": "Example user module using the backend table component.",
+  "description": "MUMPS-first example module using the Advanced Backend Table contract and ROI 68A sample matrix.",
   "source": "user",
   "category": "Examples",
-  "icon": "\u25a4",
+  "icon": "▤",
   "componentKey": "table",
   "surface": "mioos-surface-table",
   "config": {
@@ -35,11 +35,49 @@
       "resizeColumns": true,
       "cellEditing": true,
       "columnReorder": true,
-      "fixedColumns": true
+      "fixedColumns": true,
+      "advancedFilters": true
     },
     "fixedColumns": {
       "start": 1,
       "end": 0
-    }
+    },
+    "sampleMatrix": [
+      {
+        "key": "basic-readonly",
+        "title": "Basic read-only table",
+        "file": "samples/basic_readonly.m"
+      },
+      {
+        "key": "editable-cells",
+        "title": "Editable cells and callbacks",
+        "file": "samples/editable_cells.m"
+      },
+      {
+        "key": "validation-rules",
+        "title": "Validation rules",
+        "file": "samples/validation_rules.m"
+      },
+      {
+        "key": "advanced-filters",
+        "title": "Advanced filters",
+        "file": "samples/advanced_filters.m"
+      },
+      {
+        "key": "grouping-reorder-fixed",
+        "title": "Grouping, reorder, fixed columns",
+        "file": "samples/grouping_reorder_fixed.m"
+      },
+      {
+        "key": "server-csv-export",
+        "title": "Selected-row server CSV export",
+        "file": "samples/server_csv_export.m"
+      },
+      {
+        "key": "module-registration",
+        "title": "Table-backed module registration",
+        "file": "samples/table_module_registration.m"
+      }
+    ]
   }
 }

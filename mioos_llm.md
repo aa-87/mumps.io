@@ -612,3 +612,11 @@ Patient Registration is now a MUMPS-driven module foundation using synthetic sam
 ### Table regression fix after ROI 68
 
 The Advanced Table must not reference a free `vm` variable inside root methods. `backendTableApplyPayload` must call `this.backendTableNormalizeFixedColumns(...)` when applying fixed-column metadata. A previous free-variable reference produced `vm is not defined` above the table and broke editable-cell save refetches. Keep cell saves on the shared `cell.save` mutation path and verify payload application before proceeding to ROI 69.
+
+## ROI 68A advanced table backend contract tests and sample matrix
+
+Treat the current attached source as authoritative. ROI 68A adds `MIOOSTBLC` and wires it into `D ^MIOOST`. The helper tests the Advanced Table backend contract directly: query response shape, contract version `mioos-advanced-table-v8`, data alias opt-in, page-only massive dataset materialization, page clamping, small mutation acknowledgements, selected-row CSV export, validation rules, row validation hooks, cell callbacks, filtering, sorting, multi-column grouping, read-only feature composition, and known browser regressions including the old free `vm` reference.
+
+`MIOOSTBL` now returns `OUT("contract")="mioos-advanced-table-v8"` and supports additional validation metadata for boolean, multiselect, numeric min/max range, and generic row validation hooks through `validation("routine")`. HTTP and WebSocket mutation wrappers still call `MUTATE^MIOOSTBL` and normalize failures to deterministic mutation JSON with `mutationOnly:true` and `refetch:false`.
+
+Expanded MUMPS-first table samples are in `examples/mioos_modules/table/samples/`. Keep future table docs and examples backend-first; avoid frontend snippets except when documenting internal shell code.

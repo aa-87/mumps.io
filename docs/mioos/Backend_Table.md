@@ -355,3 +355,29 @@ The `patient-registration` dataset now advertises `patientRegistration` metadata
 
 ROI 64L stabilizes the ROI 64F–64K table feature set. The fixed-column contract is now returned from `QUERY^MIOOSTBL` as `schema.fixedColumns` and `fixedColumns`, and fixed-column changes are persisted through `column.fixed` in `MUTATE^MIOOSTBL`. Massive/read-only datasets explicitly return `features.fixedColumns=0`, so sticky user controls are not exposed for the large generated read-only sample.
 
+
+## ROI 68A backend contract lock
+
+The current Advanced Table contract is `mioos-advanced-table-v8`. `QUERY^MIOOSTBL` returns `OUT("contract")="mioos-advanced-table-v8"` so the browser, docs, and tests can verify the backend response shape. Query responses must include the server-owned rows, schema, grouping, pagination, feature, row-action, and bulk-action nodes. The duplicate `data` alias is omitted unless the request explicitly sets `includeDataAlias` to a true value.
+
+Successful mutation responses are acknowledgement-only. They include `ok`, `dataset`, `action`, `mutationOnly`, `refetch`, `message`, and a small `mutated` node. They must not include `rows` or `schema`. Failed mutations are normalized by both `TABLEMUTATE^MIOOSAPI` and `TABLEMUTATE^MIOOSWS` as deterministic JSON with `ok:false`, `error:"table_mutate_failed"`, `dataset`, `action`, `message`, `fieldErrors` where applicable, `mutationOnly:true`, and `refetch:false`.
+
+Validation metadata supported by `MIOOSTBL` now includes:
+
+```mumps
+SET @ROOT@("validation","fields","name","required")=1
+SET @ROOT@("validation","fields","owner","maxLength")=40
+SET @ROOT@("validation","fields","status","enum",1)="Open"
+SET @ROOT@("validation","fields","updated","date")=1
+SET @ROOT@("validation","fields","score","numeric")=1
+SET @ROOT@("validation","fields","score","min")=0
+SET @ROOT@("validation","fields","score","max")=100
+SET @ROOT@("validation","fields","active","boolean")=1
+SET @ROOT@("validation","fields","tags","multiselect")=1
+SET @ROOT@("validation","fields","tags","enum",1)="Core"
+SET @ROOT@("validation","routine")="VALMYROW^MYTABVAL"
+```
+
+The optional row validation hook signature is `HOOK(IN,ERR,ROOT)`. Return `1` to accept the row and `0` to reject it. Set `ERR("fieldErrors",field)` for browser field highlighting. Optional per-column cell callbacks still use `CALLBACK(STATE,DATASET,ROWID,COLUMN,VALUE,OUT,ERR)` and may set `OUT("value")` to normalize a saved value.
+
+`RUN^MIOOSTBLC` is now part of `D ^MIOOST` and covers query shape, mutation acknowledgements, validation, filtering, grouping, sorting, feature composition, and known table browser regressions.

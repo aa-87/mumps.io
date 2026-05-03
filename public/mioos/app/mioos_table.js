@@ -30,7 +30,7 @@
       actionsWidth: 156,
       fixedColumns: { start: 0, end: 0 },
       emptyMessage: 'No rows match the current server-side table query.',
-      loadingMessage: 'Loading rows from server…',
+      loadingMessage: '',
       saveMessage: 'Saving table changes…',
       processingMessage: 'Server communication in progress'
     };
@@ -320,7 +320,7 @@
       state.processing = true;
       var requestId = 'q' + state.draw + '-' + Date.now();
       state.queryRequestId = requestId;
-      state.requestLabel = 'Loading rows from server';
+      state.requestLabel = 'table.query';
       state.error = '';
       var body = this.backendTableQueryPayload(state, state.draw);
       var request = this.backendTableUseWebSocket(state, 'query')

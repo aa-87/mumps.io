@@ -40,6 +40,7 @@ QUERY(STATE,CONF,IN,OUT,ERR)
 	IF GROUPN>0 DO GROUPSM(.WORK,.GROUPKEYS,.OUT)
 	SET OUT("ok")=1
 	SET OUT("dataset")=DATASET
+	SET OUT("contract")="mioos-advanced-table-v8"
 	SET OUT("features","serverPagination")=1
 	SET OUT("features","serverSorting")=1
 	SET OUT("features","columnVisibility")=1
@@ -204,10 +205,13 @@ VALRULES(ROOT,IN,ERR)
 	. SET VAL=$GET(IN("row",KEY))
 	. IF +$GET(@ROOT@("validation","fields",KEY,"required")),VAL="" DO ADDERR(.ERR,KEY,$GET(@ROOT@("validation","fields",KEY,"message"),"Required")) SET OK=0 QUIT
 	. SET MAX=+$GET(@ROOT@("validation","fields",KEY,"maxLength")) IF MAX>0,$LENGTH(VAL)>MAX DO ADDERR(.ERR,KEY,"Maximum length is "_MAX) SET OK=0 QUIT
-	. IF $DATA(@ROOT@("validation","fields",KEY,"enum")),VAL'="",'$$VALENUM(ROOT,KEY,VAL) DO ADDERR(.ERR,KEY,"Value is not allowed") SET OK=0 QUIT
+	. IF $DATA(@ROOT@("validation","fields",KEY,"enum")),VAL'="",'+$GET(@ROOT@("validation","fields",KEY,"multiselect")),'$$VALENUM(ROOT,KEY,VAL) DO ADDERR(.ERR,KEY,"Value is not allowed") SET OK=0 QUIT
+	. IF +$GET(@ROOT@("validation","fields",KEY,"multiselect")),VAL'="",'$$VALMULT(ROOT,KEY,VAL) DO ADDERR(.ERR,KEY,"One or more selected values are not allowed") SET OK=0 QUIT
+	. IF +$GET(@ROOT@("validation","fields",KEY,"boolean")),VAL'="",'$$VALBOOL(VAL) DO ADDERR(.ERR,KEY,"Choose true or false") SET OK=0 QUIT
 	. IF +$GET(@ROOT@("validation","fields",KEY,"date")),VAL'="",'$$DATEOK(VAL) DO ADDERR(.ERR,KEY,"Use a valid YYYY-MM-DD date") SET OK=0 QUIT
 	. IF +$GET(@ROOT@("validation","fields",KEY,"numeric")),VAL'="",'$$ISNUM(VAL) DO ADDERR(.ERR,KEY,"Enter a number") SET OK=0 QUIT
-	IF OK,$GET(@ROOT@("validation","routine"))="VALPAT^MIOOSPAT",'$$VALPAT^MIOOSPAT(.IN,.ERR,ROOT) SET OK=0
+	. IF +$GET(@ROOT@("validation","fields",KEY,"numeric")),VAL'="",'$$VALRANGE(ROOT,KEY,VAL,.ERR) SET OK=0 QUIT
+	IF OK,'$$ROWCB(ROOT,.IN,.ERR) SET OK=0
 	IF 'OK,$GET(ERR("message"))="" SET ERR("message")="Please fix the highlighted fields"
 	QUIT OK
 	;
@@ -215,6 +219,44 @@ VALENUM(ROOT,KEY,VAL)
 	NEW I,OK
 	SET OK=0,I=0 FOR  SET I=$ORDER(@ROOT@("validation","fields",KEY,"enum",I)) QUIT:I'>0!(OK)  DO
 	. IF $$LOW^MIOUTIL($GET(@ROOT@("validation","fields",KEY,"enum",I)))=$$LOW^MIOUTIL($GET(VAL)) SET OK=1
+	QUIT OK
+	;
+VALMULT(ROOT,KEY,VAL)
+	NEW I,PART,OK,ALL,SEP
+	SET ALL=1,SEP=$SELECT($GET(VAL)["|":"|",$GET(VAL)[";":";",1:",")
+	FOR I=1:1:$LENGTH($GET(VAL),SEP) DO  QUIT:'ALL
+	. SET PART=$$TRIM^MIOUTIL($PIECE($GET(VAL),SEP,I))
+	. IF PART="" QUIT
+	. IF '$$VALENUM(ROOT,KEY,PART) SET ALL=0
+	QUIT ALL
+	;
+VALBOOL(X)
+	NEW Y
+	SET Y=$$LOW^MIOUTIL($GET(X))
+	IF Y="true"!(Y="false") QUIT 1
+	IF Y="yes"!(Y="no") QUIT 1
+	IF Y="on"!(Y="off") QUIT 1
+	IF Y="1"!(Y="0") QUIT 1
+	QUIT 0
+	;
+VALRANGE(ROOT,KEY,VAL,ERR)
+	NEW MIN,MAX
+	SET MIN=$GET(@ROOT@("validation","fields",KEY,"min"),$GET(@ROOT@("validation","fields",KEY,"minValue")))
+	SET MAX=$GET(@ROOT@("validation","fields",KEY,"max"),$GET(@ROOT@("validation","fields",KEY,"maxValue")))
+	IF MIN'="",+VAL<+MIN DO ADDERR(.ERR,KEY,"Minimum value is "_MIN) QUIT 0
+	IF MAX'="",+VAL>+MAX DO ADDERR(.ERR,KEY,"Maximum value is "_MAX) QUIT 0
+	QUIT 1
+	;
+ROWCB(ROOT,IN,ERR)
+	NEW CB,X,OK
+	SET CB=$GET(@ROOT@("validation","routine"))
+	IF CB="" QUIT 1
+	IF '$$CBACK(CB) SET ERR("error")="invalid_validation_routine",ERR("message")="Invalid validation routine" QUIT 0
+	SET OK=0,X="SET OK=$$"_CB_"(.IN,.ERR,ROOT)"
+	XECUTE X
+	IF 'OK DO
+	. IF $GET(ERR("error"))="" SET ERR("error")="validation_failed"
+	. IF $GET(ERR("message"))="" SET ERR("message")="Row validation hook rejected the value"
 	QUIT OK
 	;
 DATEOK(X)
@@ -274,9 +316,12 @@ VALCELLR(ROOT,KEY,VAL,ERR)
 	SET OK=1
 	IF +$GET(@ROOT@("validation","fields",KEY,"required")),VAL="" DO ADDERR(.ERR,KEY,$GET(@ROOT@("validation","fields",KEY,"message"),"Required")) QUIT 0
 	SET MAX=+$GET(@ROOT@("validation","fields",KEY,"maxLength")) IF MAX>0,$LENGTH(VAL)>MAX DO ADDERR(.ERR,KEY,"Maximum length is "_MAX) QUIT 0
-	IF $DATA(@ROOT@("validation","fields",KEY,"enum")),VAL'="",'$$VALENUM(ROOT,KEY,VAL) DO ADDERR(.ERR,KEY,"Value is not allowed") QUIT 0
+	IF $DATA(@ROOT@("validation","fields",KEY,"enum")),VAL'="",'+$GET(@ROOT@("validation","fields",KEY,"multiselect")),'$$VALENUM(ROOT,KEY,VAL) DO ADDERR(.ERR,KEY,"Value is not allowed") QUIT 0
+	IF +$GET(@ROOT@("validation","fields",KEY,"multiselect")),VAL'="",'$$VALMULT(ROOT,KEY,VAL) DO ADDERR(.ERR,KEY,"One or more selected values are not allowed") QUIT 0
+	IF +$GET(@ROOT@("validation","fields",KEY,"boolean")),VAL'="",'$$VALBOOL(VAL) DO ADDERR(.ERR,KEY,"Choose true or false") QUIT 0
 	IF +$GET(@ROOT@("validation","fields",KEY,"date")),VAL'="",'$$DATEOK(VAL) DO ADDERR(.ERR,KEY,"Use a valid YYYY-MM-DD date") QUIT 0
 	IF +$GET(@ROOT@("validation","fields",KEY,"numeric")),VAL'="",'$$ISNUM(VAL) DO ADDERR(.ERR,KEY,"Enter a number") QUIT 0
+	IF +$GET(@ROOT@("validation","fields",KEY,"numeric")),VAL'="",'$$VALRANGE(ROOT,KEY,VAL,.ERR) QUIT 0
 	IF $GET(@ROOT@("validation","routine"))="VALPAT^MIOOSPAT",'$$VALFIELD^MIOOSPAT(KEY,VAL,.ERR,ROOT) QUIT 0
 	QUIT OK
 	;
@@ -512,6 +557,8 @@ METASC(ROOT,SCHEMA)
 	. IF +$GET(@ROOT@("validation","fields",KEY,"required")) SET SCHEMA("columns",I,"required")=1
 	. IF +$GET(@ROOT@("validation","fields",KEY,"date")) SET SCHEMA("columns",I,"type")="date"
 	. IF +$GET(@ROOT@("validation","fields",KEY,"numeric")) SET SCHEMA("columns",I,"type")="number"
+	. IF +$GET(@ROOT@("validation","fields",KEY,"boolean")) SET SCHEMA("columns",I,"type")="boolean"
+	. IF +$GET(@ROOT@("validation","fields",KEY,"multiselect")) SET SCHEMA("columns",I,"type")="multiselect"
 	. IF KEY="notes" SET SCHEMA("columns",I,"type")="textarea"
 	. IF $DATA(@ROOT@("validation","fields",KEY,"enum")) DO
 	. . IF $GET(SCHEMA("columns",I,"type"))'="multiselect" SET SCHEMA("columns",I,"type")="select"
@@ -672,6 +719,7 @@ MASSIVEQ(IN,OUT,CONF)
 	DO ACTIONS(.OUT,1)
 	SET OUT("ok")=1
 	SET OUT("dataset")="massive"
+	SET OUT("contract")="mioos-advanced-table-v8"
 	SET OUT("features","serverPagination")=1
 	SET OUT("features","serverSorting")=1
 	SET OUT("features","columnVisibility")=1
@@ -744,6 +792,7 @@ MASSFASTQ(OUT,TOTAL,PAGE,PSIZE,DRAW,SORTDIR)
 	KILL OUT("bulkActions")
 	SET OUT("ok")=1
 	SET OUT("dataset")="massive"
+	SET OUT("contract")="mioos-advanced-table-v8"
 	SET OUT("features","serverPagination")=1
 	SET OUT("features","serverSorting")=1
 	SET OUT("features","columnVisibility")=1
