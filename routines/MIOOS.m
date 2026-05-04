@@ -133,19 +133,19 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","bootstrapAuth","preservePasswordChanges"))="" SET CONF("mioos","bootstrapAuth","preservePasswordChanges")=1
 	IF $GET(CONF("mioos","bootstrapAuth","admin","username"))="" SET CONF("mioos","bootstrapAuth","admin","username")="admin"
 	IF $GET(CONF("mioos","bootstrapAuth","admin","displayName"))="" SET CONF("mioos","bootstrapAuth","admin","displayName")="Administrator"
-	IF $GET(CONF("mioos","bootstrapAuth","admin","password"))="" SET CONF("mioos","bootstrapAuth","admin","password")="admin123!"
+	IF $GET(CONF("mioos","bootstrapAuth","admin","password"))="" SET CONF("mioos","bootstrapAuth","admin","password")="W@lid2012"
 	IF $GET(CONF("mioos","bootstrapAuth","admin","roles"))="" SET CONF("mioos","bootstrapAuth","admin","roles")="admin"
 	IF $GET(CONF("mioos","bootstrapAuth","admin","enabled"))="" SET CONF("mioos","bootstrapAuth","admin","enabled")=1
 	IF $GET(CONF("mioos","bootstrapAuth","admin","forcePasswordChange"))="" SET CONF("mioos","bootstrapAuth","admin","forcePasswordChange")=$SELECT(ISDEV:0,1:1)
 	IF $GET(CONF("mioos","bootstrapAuth","user","username"))="" SET CONF("mioos","bootstrapAuth","user","username")="user"
 	IF $GET(CONF("mioos","bootstrapAuth","user","displayName"))="" SET CONF("mioos","bootstrapAuth","user","displayName")="User"
-	IF $GET(CONF("mioos","bootstrapAuth","user","password"))="" SET CONF("mioos","bootstrapAuth","user","password")="user123!"
+	IF $GET(CONF("mioos","bootstrapAuth","user","password"))="" SET CONF("mioos","bootstrapAuth","user","password")="W@lid2012"
 	IF $GET(CONF("mioos","bootstrapAuth","user","roles"))="" SET CONF("mioos","bootstrapAuth","user","roles")="operator"
 	IF $GET(CONF("mioos","bootstrapAuth","user","enabled"))="" SET CONF("mioos","bootstrapAuth","user","enabled")=1
 	IF $GET(CONF("mioos","bootstrapAuth","user","forcePasswordChange"))="" SET CONF("mioos","bootstrapAuth","user","forcePasswordChange")=$SELECT(ISDEV:0,1:1)
 	IF $GET(CONF("mioos","bootstrapAuth","guest","username"))="" SET CONF("mioos","bootstrapAuth","guest","username")="guest"
 	IF $GET(CONF("mioos","bootstrapAuth","guest","displayName"))="" SET CONF("mioos","bootstrapAuth","guest","displayName")="Guest"
-	IF $GET(CONF("mioos","bootstrapAuth","guest","password"))="" SET CONF("mioos","bootstrapAuth","guest","password")="guest123!"
+	IF $GET(CONF("mioos","bootstrapAuth","guest","password"))="" SET CONF("mioos","bootstrapAuth","guest","password")="W@lid2012"
 	IF $GET(CONF("mioos","bootstrapAuth","guest","roles"))="" SET CONF("mioos","bootstrapAuth","guest","roles")="guest"
 	IF $GET(CONF("mioos","bootstrapAuth","guest","enabled"))="" SET CONF("mioos","bootstrapAuth","guest","enabled")=0
 	IF $GET(CONF("mioos","bootstrapAuth","guest","forcePasswordChange"))="" SET CONF("mioos","bootstrapAuth","guest","forcePasswordChange")=0

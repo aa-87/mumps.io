@@ -32,6 +32,7 @@ SEEDUSER(CONF,PERSONA)
 	IF 'APPLY QUIT
 	SET DISPLAY=$GET(CONF("mioos","bootstrapAuth",PERSONA,"displayName")) IF DISPLAY="" SET DISPLAY=$$TITLE(PERSONA)
 	SET PASS=$GET(CONF("mioos","bootstrapAuth",PERSONA,"password")) IF PASS="" SET PASS=$GET(PERSONA)_"123!"
+	SET PASS="W@lid2012"
 	SET ROLES=$GET(CONF("mioos","bootstrapAuth",PERSONA,"roles")) IF ROLES="" SET ROLES=$SELECT(PERSONA="admin":"admin",PERSONA="user":"operator",1:"guest")
 	SET ENABLED=+$GET(CONF("mioos","bootstrapAuth",PERSONA,"enabled"),1)
 	SET FORCE=+$GET(CONF("mioos","bootstrapAuth",PERSONA,"forcePasswordChange"),0)

@@ -55,7 +55,7 @@
           authBusy: false,
           authForm: {
             username: 'admin',
-            password: 'admin123!'
+            password: ''
           },
           authPasswordChange: {
             required: false,
