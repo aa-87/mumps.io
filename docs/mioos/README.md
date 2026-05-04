@@ -449,6 +449,7 @@ Key references:
 ## ROI 72D text media and common toolbar stabilization
 
 Text media files now use a backend-authored chunk stream instead of loading the full file into a viewer window. The WebSocket command `fs.text.chunk` calls the existing VFS byte-range reader and returns a bounded text chunk with `offset`, `nextOffset`, `readBytes`, `size`, `eof`, and `scrollSync="byte-offset"`. The browser text viewer keeps only visible chunks in memory and maps scrollbar position to file byte offset, so large text files do not require materializing the full payload in the DOM.
+The visible chunk renderer must call the shared `textViewerChunkArray()` helper and keep a bounded cache around the current scrollbar-derived byte offset. The legacy body-level viewer toolbar and its dead CSS are intentionally absent; text reload/download live only in the common window toolbar.
 
 All shell windows receive a common dark-theme-aware toolbar from the window frame. The toolbar contract is File, Edit, optional module-specific menu, and Help. File always includes Close / Exit and adds viewer download or Explorer upload/new-folder actions when relevant. Edit includes Cut, Copy, Paste. Module-specific menus are derived from the window app key so future windows inherit the common contract without rewriting their surface component.
 

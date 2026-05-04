@@ -143,7 +143,30 @@
 
   function textViewerChunkArray(stream) {
     var chunks = (stream || {}).chunks || {};
-    return Object.keys(chunks).map(function (key) { return chunks[key]; }).filter(function (chunk) { return chunk && typeof chunk.offset !== 'undefined'; }).sort(function (a, b) { return (+a.offset || 0) - (+b.offset || 0); });
+    var visibleOffset = +((stream || {}).visibleOffset || 0);
+    var chunkSize = Math.max(4096, +((stream || {}).chunkSize || 262144));
+    var list = Object.keys(chunks).map(function (key) { return chunks[key]; }).filter(function (chunk) {
+      return chunk && typeof chunk.offset !== 'undefined';
+    }).sort(function (a, b) { return (+a.offset || 0) - (+b.offset || 0); });
+    if (list.length <= 5) return list;
+    return list.filter(function (chunk) {
+      var offset = +chunk.offset || 0;
+      return Math.abs(offset - visibleOffset) <= (chunkSize * 2);
+    });
+  }
+
+  function pruneTextViewerChunkCache(stream) {
+    var chunks = (stream || {}).chunks || {};
+    var keys = Object.keys(chunks).map(function (key) { return +key || 0; }).sort(function (a, b) { return a - b; });
+    var visibleOffset = +((stream || {}).visibleOffset || 0);
+    var chunkSize = Math.max(4096, +((stream || {}).chunkSize || 262144));
+    var index;
+    if (keys.length <= 7) return;
+    for (index = 0; index < keys.length; index += 1) {
+      if (Math.abs(keys[index] - visibleOffset) <= (chunkSize * 3)) continue;
+      delete chunks[keys[index]];
+      if (stream.loadedOffsets) delete stream.loadedOffsets[keys[index]];
+    }
   }
 
   function stringToBytes(raw) {
@@ -855,7 +878,7 @@
       },
       textViewerVisibleChunks: function (windowId) {
         var win = this.textViewerWindowById ? this.textViewerWindowById(windowId) : null;
-        return textChunkArray((((win || {}).fileView || {}).textStream) || {});
+        return textViewerChunkArray((((win || {}).fileView || {}).textStream) || {});
       },
       textViewerLoadChunk: function (windowId, offset) {
         var win = this.textViewerWindowById ? this.textViewerWindowById(windowId) : null;
@@ -881,6 +904,7 @@
           stream.initialLoaded = true;
           stream.status = stream.eof && actualOffset === 0 ? 'Loaded complete text file.' : ('Showing bytes ' + actualOffset + '–' + stream.chunks[actualOffset].nextOffset + (stream.size ? (' of ' + stream.size) : ''));
           stream.error = '';
+          pruneTextViewerChunkCache(stream);
           return stream.chunks[actualOffset];
         }).catch(function (err) {
           stream.error = (err && err.message) || 'Unable to read text chunk.';

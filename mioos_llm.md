@@ -674,5 +674,6 @@ Every MIOOS window is expected to inherit the common window toolbar from `window
 - Help: About.
 
 Text media viewer contract: use `fs.text.chunk` and `textViewerOnScroll` / `textViewerLoadChunk`; never load the full file just to open it. The viewer must render a virtual chunk stack and synchronize scrollbar position to byte offset. Keep Reload and Download out of the old viewer body; expose those through the common toolbar.
+Regression guard: `textViewerVisibleChunks()` must return `textViewerChunkArray(...)`, never an unscoped or stale helper name, and the old `.mioos-viewer-toolbar` body toolbar CSS should not be reintroduced.
 
 Locale contract: language menu clicks reload the main URL. English removes `lang`, Arabic uses `?lang=ar`, and Spanish uses `?lang=sp`; the backend canonicalizes `sp` to `es`.
