@@ -113,7 +113,7 @@
             '<start-menu-popup v-if="vm.menuOpen"></start-menu-popup>' +
             '<popup-menu v-if="vm.desktopContextMenuState().open"></popup-menu>' +
             '<div v-if="vm.snapPreview.active" class="mioos-snap-preview" :data-snap-zone="vm.snapPreview.zone" :style="vm.snapPreviewStyle()"></div>' +
-            '<div class="mioos-desktop-surface" :class="{ \'pointer-events-none\': vm.dragState.active }">' +
+            '<div class="mioos-desktop-surface" :style="vm.desktopSurfaceStyle()" :class="{ \'pointer-events-none\': vm.dragState.active }">' +
               '<desktop-icon v-for="entry in vm.desktopRenderEntries()" :key="entry.key" :icon="entry"></desktop-icon>' +
             '</div>' +
             '<window-frame v-for="win in vm.visibleWindows" :key="win.id" :window="win"></window-frame>' +
@@ -351,8 +351,7 @@
         },
         template: '' +
           '<div class="mioos-surface mioos-surface-viewer-native" :class="\'is-\' + kind">' +
-            '<nav v-if="kind === \'media\'" class="mioos-viewer-menu-strip mioos-viewer-media-toolbar" role="toolbar" aria-label="Media playback options"><label class="mioos-viewer-loop-toggle"><input type="checkbox" v-model="mediaLoop"> Loop</label></nav>' +
-            '<header v-else class="mioos-viewer-toolbar"><div><strong>[[ (window.meta || {}).fileName || window.title ]]</strong><span>[[ fileView.mime || (window.meta || {}).mime || \'File preview\' ]]</span></div><button type="button" class="mioos-explorer-command" @click="retry">Reload</button><button type="button" class="mioos-explorer-command" @click="download">Download</button></header>' +
+            '<header class="mioos-viewer-toolbar" :class="{ \'is-media-toolbar\': kind === \'media\' }"><div><strong>[[ (window.meta || {}).fileName || window.title ]]</strong><span>[[ fileView.mime || (window.meta || {}).mime || (kind === \'media\' ? \'Media preview\' : \'File preview\') ]]</span></div><button type="button" class="mioos-explorer-command" @click="retry">Reload</button><button type="button" class="mioos-explorer-command" @click="download">Download</button><label v-if="kind === \'media\'" class="mioos-viewer-loop-toggle"><input type="checkbox" v-model="mediaLoop"> Loop</label></header>' +
             '<section class="mioos-viewer-body" :class="{ \'is-media-full\': kind === \'media\' }">' +
               '<div v-if="fileView.loading" class="mioos-viewer-state">Loading file…</div>' +
               '<div v-else-if="fileView.error" class="mioos-viewer-state is-error">[[ fileView.error ]]</div>' +
@@ -660,9 +659,16 @@
                         <div class="mioos-theme-row-vue">
                           <label><span>Login box style</span><select :value="((activeTheme.loginScreenConfig || {}).loginBoxStyle) || 'xp-transparent'" @change="vm.themeStudioUpdateField('loginScreenConfig.loginBoxStyle', $event.target.value)"><option value="xp-transparent">Transparent card</option><option value="glow-vibrant">Vibrant glass</option><option value="curve-minimal">Minimal panel</option></select></label>
                           <label><span>Avatar size</span><input type="range" min="48" max="112" step="2" :value="((activeTheme.loginScreenConfig || {}).avatarSize) || 72" @input="vm.themeStudioUpdateField('loginScreenConfig.avatarSize', +$event.target.value)"></label>
+                          <label><span>Desktop login width</span><input type="number" min="320" max="720" step="10" :value="((activeTheme.loginScreenConfig || {}).desktopWidth) || 420" @input="vm.themeStudioUpdateField('loginScreenConfig.desktopWidth', +$event.target.value)"></label>
+                          <label><span>Mobile login width</span><input type="number" min="260" max="420" step="10" :value="((activeTheme.loginScreenConfig || {}).mobileWidth) || 320" @input="vm.themeStudioUpdateField('loginScreenConfig.mobileWidth', +$event.target.value)"></label>
                           <label><span>Text color</span><input type="color" :value="((activeTheme.loginScreenConfig || {}).textColor) || '#ffffff'" @input="vm.themeStudioUpdateField('loginScreenConfig.textColor', $event.target.value)"></label>
                           <label><span>Warning heading</span><input type="text" :value="((activeTheme.loginScreenConfig || {}).warningTitle) || ''" @input="vm.themeStudioUpdateField('loginScreenConfig.warningTitle', $event.target.value)"></label>
                           <label class="span-2"><span>Privacy / warning message</span><textarea rows="4" :value="((activeTheme.loginScreenConfig || {}).privacyNotice) || ''" @input="vm.themeStudioUpdateField('loginScreenConfig.privacyNotice', $event.target.value)"></textarea></label>
+                          <label class="span-2"><span>Login background custom CSS</span><textarea rows="3" spellcheck="false" placeholder="background: radial-gradient(circle at top, #123, #000);" :value="vm.themeStudioCustomElementCssValue('loginBackground')" @input="vm.themeStudioUpdateCustomElementCss('loginBackground', $event.target.value)"></textarea></label>
+                          <label class="span-2"><span>Login card custom CSS</span><textarea rows="3" spellcheck="false" placeholder="background: rgba(15,23,42,.88); border-color: rgba(255,255,255,.28);" :value="vm.themeStudioCustomElementCssValue('loginCard')" @input="vm.themeStudioUpdateCustomElementCss('loginCard', $event.target.value)"></textarea></label>
+                          <label><span>Login avatar custom CSS</span><textarea rows="3" spellcheck="false" placeholder="border-color: #fff; box-shadow: 0 12px 36px rgba(0,0,0,.35);" :value="vm.themeStudioCustomElementCssValue('loginAvatar')" @input="vm.themeStudioUpdateCustomElementCss('loginAvatar', $event.target.value)"></textarea></label>
+                          <label><span>Login button custom CSS</span><textarea rows="3" spellcheck="false" placeholder="background: linear-gradient(#60a5fa, #2563eb); color: #fff;" :value="vm.themeStudioCustomElementCssValue('loginButton')" @input="vm.themeStudioUpdateCustomElementCss('loginButton', $event.target.value)"></textarea></label>
+                          <label class="span-2"><span>Warning panel custom CSS</span><textarea rows="3" spellcheck="false" placeholder="background: rgba(2,6,23,.48); color: #fff;" :value="vm.themeStudioCustomElementCssValue('loginNotice')" @input="vm.themeStudioUpdateCustomElementCss('loginNotice', $event.target.value)"></textarea></label>
                         </div>
                       </div>
 
@@ -714,7 +720,7 @@
                           <div v-for="icon in previewIcons" :key="icon.key" class="mioos-theme-preview-icon-vue"><span>[[ icon.icon ]]</span><em>[[ icon.label ]]</em></div>
                         </div>
                         <section class="mioos-theme-preview-window-vue" :style="{ left: (previewWindow.x || 82) + \'px\', top: (previewWindow.y || 64) + \'px\', width: (previewWindow.w || 292) + \'px\', height: (previewWindow.h || 190) + \'px\' }">
-                          <header class="mioos-theme-preview-titlebar-vue"><div class="mioos-theme-preview-titlecopy"><span>🗔</span><strong>[[ previewWindow.title || 'Sample Window' ]]</strong></div><div class="mioos-theme-preview-controls-vue"><i class="is-min"></i><i class="is-max"></i><i class="is-close"></i></div></header>
+                          <header class="mioos-theme-preview-titlebar-vue"><div class="mioos-theme-preview-titlecopy"><span>🗔</span><strong>[[ previewWindow.title || 'Sample Window' ]]</strong></div><div class="mioos-theme-preview-controls-vue"><i class="is-min"><span>—</span></i><i class="is-max"><span>□</span></i><i class="is-close"><span>×</span></i></div></header>
                           <div class="mioos-theme-preview-content-vue"><button type="button" class="mioos-btn">Action</button><label><span>Name</span><input type="text" value="Live preview" aria-label="Live preview input"></label><div class="mioos-theme-preview-menu-vue"><span>File</span><span>Edit</span><span>View</span></div></div>
                         </section>
                         <div class="mioos-theme-preview-startmenu-open-vue" :class="['style-' + vm.startMenuStyleType()]" v-if="activeTab === 'start' || activeTab === 'themes'">
@@ -736,7 +742,7 @@
                             <strong>[[ ((activeTheme.loginScreenConfig || {}).warningTitle) || 'Privacy warning' ]]</strong>
                             <span>[[ ((activeTheme.loginScreenConfig || {}).privacyNotice) || 'Authorized use only.' ]]</span>
                           </div>
-                          <div class="mioos-theme-login-card-vue">
+                          <div class="mioos-theme-login-card-vue" :style="vm.themeStudioLoginPreviewCardStyle(false)">
                             <img v-if="((activeTheme.loginScreenConfig || {}).avatarUrl)" class="mioos-theme-login-avatar-img-vue" :src="(activeTheme.loginScreenConfig || {}).avatarUrl" :style="{ width: (((activeTheme.loginScreenConfig || {}).avatarSize) || 72) + \'px\', height: (((activeTheme.loginScreenConfig || {}).avatarSize) || 72) + \'px\' }">
                             <div v-else class="mioos-theme-login-avatar-vue" :style="{ width: (((activeTheme.loginScreenConfig || {}).avatarSize) || 72) + \'px\', height: (((activeTheme.loginScreenConfig || {}).avatarSize) || 72) + \'px\' }"></div>
                             <strong>User account</strong>
@@ -757,7 +763,7 @@
                           <div v-for="icon in previewIcons.slice(0, 2)" :key="icon.key + '-mobile'" class="mioos-theme-preview-icon-vue"><span>[[ icon.icon ]]</span><em>[[ icon.label ]]</em></div>
                         </div>
                         <section v-if="activeTab !== 'login'" class="mioos-theme-preview-window-vue mobile-sample" :style="{ left: '18px', top: '88px', width: '178px', height: '160px' }">
-                          <header class="mioos-theme-preview-titlebar-vue"><div class="mioos-theme-preview-titlecopy"><span>🗔</span><strong>Mail</strong></div><div class="mioos-theme-preview-controls-vue"><i class="is-min"></i><i class="is-max"></i><i class="is-close"></i></div></header>
+                          <header class="mioos-theme-preview-titlebar-vue"><div class="mioos-theme-preview-titlecopy"><span>🗔</span><strong>Mail</strong></div><div class="mioos-theme-preview-controls-vue"><i class="is-min"><span>—</span></i><i class="is-max"><span>□</span></i><i class="is-close"><span>×</span></i></div></header>
                           <div class="mioos-theme-preview-content-vue"><label><span>Search</span><input type="text" value="Touch UI" aria-label="Touch UI"></label></div>
                         </section>
                         <div class="mioos-theme-login-preview-vue is-mobile" v-if="activeTab === 'login'" :class="['style-' + (((activeTheme.loginScreenConfig || {}).loginBoxStyle) || 'xp-transparent')]">
@@ -765,7 +771,7 @@
                             <strong>[[ ((activeTheme.loginScreenConfig || {}).warningTitle) || 'Privacy warning' ]]</strong>
                             <span>[[ ((activeTheme.loginScreenConfig || {}).privacyNotice) || 'Authorized use only.' ]]</span>
                           </div>
-                          <div class="mioos-theme-login-card-vue">
+                          <div class="mioos-theme-login-card-vue" :style="vm.themeStudioLoginPreviewCardStyle(true)">
                             <img v-if="((activeTheme.loginScreenConfig || {}).avatarUrl)" class="mioos-theme-login-avatar-img-vue" :src="(activeTheme.loginScreenConfig || {}).avatarUrl" :style="{ width: (((activeTheme.loginScreenConfig || {}).avatarSize) || 64) + \'px\', height: (((activeTheme.loginScreenConfig || {}).avatarSize) || 64) + \'px\' }">
                             <div v-else class="mioos-theme-login-avatar-vue" :style="{ width: (((activeTheme.loginScreenConfig || {}).avatarSize) || 64) + \'px\', height: (((activeTheme.loginScreenConfig || {}).avatarSize) || 64) + \'px\' }"></div>
                             <strong>User account</strong>
@@ -784,6 +790,8 @@
               <footer class="mioos-theme-studio-footer-vue">
                 <div class="mioos-theme-studio-footer-copy-vue">Live preview updates immediately. Apply writes the current theme to the desktop; Save persists and closes.</div>
                 <div class="mioos-theme-studio-footer-actions-vue">
+                  <button type="button" class="mioos-btn" @click="vm.themeStudioExportTheme(activeTheme.id)">Export Theme</button>
+                  <label role="button" tabindex="0" class="mioos-btn mioos-file-trigger-vue"><input type="file" accept="application/json,.json" @change="vm.themeStudioImportThemeFile($event)">Import Theme</label>
                   <button type="button" class="mioos-btn" @click="vm.themeStudioCancel()">Cancel</button>
                   <button type="button" class="mioos-btn" @click="vm.themeStudioApplyToDesktop(activeTheme.id)">Apply</button>
                   <button type="button" class="mioos-btn is-primary" @click="vm.themeStudioSaveCustomTheme()">Save</button>

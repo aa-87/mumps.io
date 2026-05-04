@@ -1,0 +1,406 @@
+You are taking over development of MIOOS (MUMPS.IO OS Shell).
+I will attach the current project ZIP/folder. Treat the attached source as the only source of truth. Do not rely on prior conversation history, prior generated ZIPs, or assumptions about what was already applied. Inspect the attached repo before changing anything.
+The project is a stateful, server-authored, OS-like runtime shell built on the MUMPS.IO stack. It is not a normal SPA. Preserve the backend-authored architecture:
+MUMPS backend on YottaDB / GT.M
+
+MIOTPL server-side rendering
+
+MIOHTTP / MIOAPI HTTP routes
+
+MIOOS WebSocket control/realtime model where appropriate
+
+VFS through MIOOSFS
+
+Boot/session/desktop state through MIOOSST
+
+Shell/view-model helpers through MIOOSVM and MIOOSUI
+
+Browser files under public/mioos/app/
+Vue 3 Options API UMD only
+
+No new frontend framework
+
+No build step
+
+No TypeScript
+
+No Composition API
+
+No Node/Express runtime
+
+No external SPA architecture
+
+Current known project state to verify from the attached ZIP
+
+ROI 71A — Theme, asset, login/shell readability hardening Focused on asset serving, theme contrast, start menu cleanup, RTL switching, and transfer UI stability. 
+ROI 71B — Explorer, viewer, terminal, and table regression hardening Focused on Explorer Details/Icon behavior, viewer menus, media loop support, terminal mount/duplication fixes, patient table banner cleanup, and recursive folder delete. Larger items are planned as follow-up ROIs: 
+ROI 71C — Common window menu API across Explorer/media/table/module windows. 
+ROI 71D — Full desktop + Explorer drag rectangle multi-select and multi-file move/rename. 
+ROI 71E — Admin Users Management UI. 
+ROI 71F — Rich code/document viewer for MUMPS, JS, Markdown, HTML, CSS, moustache, CSV, PDF, XML, HL7, X12, text. 
+ROI 71G — Internal Task Manager. 
+ROI 71H — Broad regression lockdown after those contracts are implemented. 
+ROI 72C — Terminal Transport Rewrite Foundation This should come before 
+ROI 73 because the terminal rewrite was marked as very important and has been intentionally deferred through the stabilization passes. Goal Rewrite the Terminal module foundation so terminal sessions are fast, stable, multi-instance capable, and built around a clean backend/socket contract. ScopeReplace the current terminal UI/backend flow with a cleaner terminal session model.Support launching one or multiple terminal windows.Add explicit terminal session IDs.Add fast WebSocket/pipe behavior for immediate input/output.Add deterministic session lifecycle:createattachdetachresizesend inputreceive outputcloseAdd backend route/WS tests where possible.Prevent terminal sessions from freezing the shell.Preserve existing OS architecture:MUMPS/YottaDB backendMIOTPL/MIOHTTP/MIOAPI/MIOOSWSVue 3 Options API UMDno new frameworkno build stepAcceptance A user can open multiple terminal windows, type into each independently, receive output immediately, resize the terminal, minimize/restore without losing the session, and close a session cleanly. After that, the likely sequence should be: 
+ROI 72C — Terminal Transport Rewrite Foundation
+ROI 72D — Terminal Profiles and Customization
+ROI 72E — Terminal Startup Automation Sequences
+ROI 72F — Terminal Hardening, Recovery, and Task Manager Integration
+
+ROI 73 — App Catalogue / Module Creation Rewrite A regression fix for public/mioos/app/mioos_table.js where backendTableApplyPayload() must call this.backendTableNormalizeFixedColumns(...), not vm.backendTableNormalizeFixedColumns(...) If the attached repo is older or missing any of these, do not assume they exist. Report the mismatch and implement the next source-accurate step. Non-negotiable rules The attached ZIP/folder is the only source of truth. Inspect the repo before changing anything. Do not rely on prior generated artifacts. Preserve the existing architecture. Do not introduce new external dependencies. Use Vue 3 Options API UMD only. Keep browser files modular. The project is geared toward MUMPS developers with little or no frontend experience. Table examples and docs must be MUMPS-first, not JavaScript-first. Do not use DataURLs for uploads or persisted images. Do not emit authenticated asset URLs before login. Tests must stay quiet on success and explicit on failure. Every ROI must update docs, tests, examples, and mioos_llm.md when behavior changes. Return only modified files in the final ZIP or patch. Be honest about tests that cannot be run. If an artifact download fails, also provide a patch or pasteable file contents. Before proceeding to a later ROI, fix regressions from the attached source. Required baseline checks Before and after each ROI, run or inspect: D ^MIOOST
+If YottaDB / GT.M is unavailable, state clearly that D ^MIOOST could not be run.
+Also run JavaScript syntax checks for touched browser files:
+node --check public/mioos/app/mioos_core.jsnode --check public/mioos/app/mioos_modules.jsnode --check public/mioos/app/mioos_table.jsnode --check public/mioos/app/mioos_permissions.jsnode --check public/mioos/app/mioos_shell_ui.jsnode --check public/mioos/app/mioos_wm.jsnode --check public/mioos/app/mioos_state.jsnode --check public/mioos/app/mioos_ws.js
+
+Validate JSON examples if modified:
+python3 -m json.tool examples/mioos_modules/table/module.jsonpython3 -m json.tool examples/mioos_modules/patient_registration/module.json
+
+For touched MUMPS routines, also perform quote/parity/static sanity checks where possible and run ZLINK in a real YottaDB / GT.M environment if available:
+ZLINK "MIOOSTBL"ZLINK "MIOOSAPI"ZLINK "MIOOSWS"ZLINK "MIOOSMOD"ZLINK "MIOOSMTBL"ZLINK "MIOOSPAT"ZLINK "MIOOST"DO ^MIOOST
+
+Relevant files to inspect first
+
+Backend table/component contract
+
+routines/MIOOSTBL.m — advanced table query/mutation engine, validation, grouping, pagination, export, cell save, column visibility/reorder/fixed columns
+
+routines/MIOOST.m — regression tests
+
+routines/MIOOSAPI.m — HTTP route handlers, including table query/mutate/module routes
+
+routines/MIOOSWS.m — WebSocket command handlers, including table.query, table.mutate, module table commands
+
+routines/MIOOSMOD.m — module registry and built-in module metadata
+
+routines/MIOOSMTBL.m — table-backed module definition library
+
+routines/MIOOSPAT.m — patient registration foundation, validation, audit/status metadata
+
+routines/MIOOSST.m — desktop/session/app entry state if module icons or boot state are involved
+
+routines/MIOOS.m — initialization/bootstrapping if new routines must be registered or initialized
+
+Browser table/module UI
+
+public/mioos/app/mioos_table.js — Advanced Table component, typed cell editors, filters, grouping, draggable modals, column visibility/reorder/fixed columns, mutation UX
+
+public/mioos/app/mioos_ws.js — WebSocket request/timeout/fallback support
+
+public/mioos/app/mioos_modules.js — App Catalogue and table module authoring UI
+
+public/mioos/app/mioos_core.js — boot/app coordination and shared helpers
+
+public/mioos/app/mioos_shell_ui.js — shell UI/window integration if table/modal behavior touches shell windows
+
+public/mioos/app/mioos_wm.js — window manager behavior if modals or app windows need integration
+
+public/mioos/app/mioos_state.js — state/session helpers if preferences are persisted client side
+
+public/mioos/mioos.css — Advanced Table styles, draggable modals, loading bar, sticky/fixed columns, validation and toast states
+
+Docs/examples
+
+docs/mioos/Backend_Table.md
+
+docs/mioos/UI_Modules.md
+
+docs/mioos/README.md
+
+docs/mioos/HIPAA.md
+
+docs/mioos/ROI_64F_Table_Performance_Mutations.md
+
+docs/mioos/ROI_64G_Table_Mutation_Validation.md
+
+docs/mioos/ROI_64H_Table_Module_Finalization.md
+
+docs/mioos/ROI_64I_Editable_Cells.md
+
+docs/mioos/ROI_64I_64K_Table_DataTables_Parity.md
+
+docs/mioos/ROI_64J_Column_Reorder.md
+
+docs/mioos/ROI_64K_Fixed_Columns.md
+
+docs/mioos/ROI_64L_Hardening_Polish.md
+
+docs/mioos/ROI_68_Patient_Registration_Foundation.md
+
+examples/mioos_modules/table/README.md
+
+examples/mioos_modules/table/module.json
+
+examples/mioos_modules/patient_registration/README.md
+
+examples/mioos_modules/patient_registration/module.json
+
+mioos_llm.md
+
+Immediate first ROI to implement now
+
+        Please use attached zip as the only source of truth.
+        MAKE SURE ABSOLUTELY NO REGRESSIONAS. Analyze, 
+        and Methodically implement Solutions based on the current issue below without regressing ANYTHING. 
+        Always add tests to prevent regression. 
+        1) The following tests are failing: YDB>d ^MIOOST FAIL: [MIOOST][T077][rtl css] 
+        2) The Video/Media viewer is completely missing the toolbar. 
+            It should have a minimal, functional toolbar, 
+            exactly like the explorer toolbar. Make sure the loop function stays the same and does not regress. 
+        3) I'm still unable to open text based files. 
+        Below 
+            is some debuggging info / The web Socket message exachage: {"command":"fs.read.range","id":"fs-22","offset":0,"size":262144,"event":"desktop.command","requestId":"ws-9-1777902097688"} {"command":"fs.read.range","event":"desktop.result","ok":1,"requestId":"ws-4-1777902073107","sessionId":"auth-c24fbfad-7421-00f0-4d46-fc6334574dec","vfs":{"content":"Vintage blue\r\n\r\n{\r\n \"schema\": \"mioos-theme-v4\",\r\n \"exportedAt\": \"2026-04-20T06:30:00.000Z\",\r\n \"theme\": {\r\n \"id\": \"custom-1776665050781\",\r\n \"name\": \"Vintage\",\r\n \"sourceId\": \"vintage\",\r\n \"base\": \"vintage\",\r\n \"baseTheme\": \"vintage\",\r\n \"defaultVariant\": \"light\",\r\n \"iconSet\": \"system\",\r\n \"fontStack\": \"Tahoma, \\\"MS Sans Serif\\\", sans-serif\",\r\n \"wallpaperPreset\": \"bliss\",\r\n \"wallpaperFit\": \"cover\",\r\n \"previewScale\": 0.86,\r\n \"classModifiers\": [\"vintage-luna\", \"bevel-sharp\"],\r\n \"extraCss\": \"\"\r\n },\r\n \"variants\": {\r\n \"light\": {\r\n \"darkEnabled\": false,\r\n \"cssVars\": {\r\n \"--desktop-bg\": \"#008080\",\r\n \"--desktop-overlay\": \"rgba(0,0,0,0.15)\",\r\n \"--window-bg\": \"#f0f0f0\",\r\n \"--window-border\": \"#dfdfdf\",\r\n \"--window-border-strong\": \"#808080\",\r\n \"--titlebar-bg\": \"linear-gradient(180deg, #0a246a 0%, #a6c0f0 30%, #0a246a 100%)\",\r\n \"--titlebar-text\": \"#ffffff\",\r\n \"--titlebar-inactive\": \"linear-gradient(180deg, #808080 0%, #c0c0c0 100%)\",\r\n \"--titlebar-inactive-text\": \"#dfdfdf\",\r\n \"--accent\": \"#0a246a\",\r\n \"--accent-soft\": \"rgba(10, 36, 106, 0.18)\",\r\n \"--taskbar-bg\": \"linear-gradient(180deg, #0a246a 0%, #0a246a 100%)\",\r\n \"--taskbar-border\": \"#ffffff\",\r\n \"--taskbar-text\": \"#ffffff\",\r\n \"--menu-bg\": \"#f0f0f0\",\r\n \"--menu-border\": \"#000080\",\r\n \"--menu-text\": \"#000000\",\r\n \"--menu-hover\": \"#000080\",\r\n \"--menu-hover-text\": \"#ffffff\",\r\n \"--menu-divider\": \"#c0c0c0\",\r\n \"--menu-shadow\": \"2px 2px 3px rgba(0,0,0,0.5)\",\r\n \"--icon-label-bg\": \"rgba(0,0,128,0.65)\",\r\n \"--icon-label-text\": \"#ffffff\",\r\n \"--icon-shadow\": \"1px 1px 2px rgba(0,0,0,0.8)\",\r\n \"--shadow-window\": \"2px 3px 6px rgba(0,0,0,0.45)\",\r\n \"--shadow-window-active\": \"3px 4px 8px rgba(0,0,0,0.55)\",\r\n \"--font-ui\": \"Tahoma, \\\"MS Sans Serif\\\", sans-serif\",\r\n \"--font-size-ui\": \"11px\",\r\n \"--window-radius\": \"2px\",\r\n \"--desktop-grid-cell\": \"92px\",\r\n \"--desktop-icon-size\": \"48px\",\r\n \"--titlebar-height\": \"30px\",\r\n \"--taskbar-height\": \"36px\",\r\n \"--button-radius\": \"2px\",\r\n \"--button-tint\": \"linear-gradient(180deg, #ffffff 0%, #c0c0c0 50%, #808080 100%)\",\r\n \"--button-tint-hover\": \"linear-gradient(180deg, #ffffc0 0%, #ffff80 100%)\",\r\n \"--button-tint-active\": \"linear-gradient(180deg, #808080 0%, #c0c0c0 100%)\",\r\n \"--glass-opacity\": \"0.85\",\r\n \"--control-min\": \"#c0c0c0\",\r\n \"--control-max\": \"#c0c0c0\",\r\n \"--control-close\": \"#c0c0c0\"\r\n },\r\n \"animationSpeeds\": {\r\n \"minimize\": 140,\r\n \"progress\": 180,\r\n \"open\": 160,\r\n \"hover\": 80,\r\n \"menu\": 120,\r\n \"wallpaper\": 220,\r\n \"taskbar\": 100\r\n },\r\n \"taskbarConfig\": {\r\n \"position\": \"bottom\",\r\n \"height\": 36,\r\n \"transparentAmount\": 0,\r\n \"buttonStyle\": \"xp\"\r\n },\r\n \"startMenuConfig\": {\r\n \"style\": \"classic\",\r\n \"width\": 320,\r\n \"accentColor\": \"#0a246a\",\r\n \"nested\": true,\r\n \"variants\": [\"classic\"]\r\n },\r\n \"loginScreenConfig\": {\r\n \"avatarUrl\": \"\",\r\n \"warningImageUrl\": \"\",\r\n \"wallpaperUrl\": \"\",\r\n \"privacyNotice\": \"\",\r\n \"warningTitle\": \"\",\r\n \"loginBoxStyle\": \"xp-transparent\",\r\n \"avatarSize\": 64,\r\n \"textColor\": \"#ffffff\"\r\n },\r\n \"mobileConfig\": {\r\n \"taskbarHeightMobile\": 48,\r\n \"iconSizeMobile\": 64,\r\n \"dockCompact\": true\r\n }\r\n },\r\n \"dark\": {\r\n \"darkEnabled\": true,\r\n \"cssVars\": {\r\n \"--desktop-bg\": \"#002b2b\",\r\n \"--desktop-overlay\": \"rgba(0,0,0,0.4)\",\r\n \"--window-bg\": \"#2a2a2a\",\r\n \"--window-border\": \"#555555\",\r\n \"--window-border-strong\": \"#1a1a1a\",\r\n \"--titlebar-bg\": \"linear-gradient(180deg, #1a1a4d 0%, #4a4a8a 30%, #1a1a4d 100%)\",\r\n \"--titlebar-text\": \"#ffffff\",\r\n \"--titlebar-inactive\": \"linear-gradient(180deg, #404040 0%, #707070 100%)\",\r\n \"--titlebar-inactive-text\": \"#cccccc\",\r\n \"--accent\": \"#4a4a8a\",\r\n \"--accent-soft\": \"rgba(74,74,138,0.25)\",\r\n \"--taskbar-bg\": \"linear-gradient(180deg, #1a1a4d 0%, #1a1a4d 100%)\",\r\n \"--taskbar-border\": \"#555555\",\r\n \"--taskbar-text\": \"#ffffff\",\r\n \"--menu-bg\": \"#2a2a2a\",\r\n \"--menu-border\": \"#555555\",\r\n \"--menu-text\": \"#ffffff\",\r\n \"--menu-hover\": \"#4a4a8a\",\r\n \"--menu-hover-text\": \"#ffffff\",\r\n \"--menu-divider\": \"#555555\",\r\n \"--menu-shadow\": \"2px 2px 3px rgba(0,0,0,0.7)\",\r\n \"--icon-label-bg\": \"rgba(0,0,80,0.75)\",\r\n \"--icon-label-text\": \"#ffffff\",\r\n \"--icon-shadow\": \"1px 1px 3px rgba(0,0,0,0.9)\",\r\n \"--shadow-window\": \"2px 3px 8px rgba(0,0,0,0.6)\",\r\n \"--shadow-window-active\": \"4px 5px 12px rgba(0,0,0,0.7)\",\r\n \"--font-ui\": \"Tahoma, \\\"MS Sans Serif\\\", sans-serif\",\r\n \"--font-size-ui\": \"11px\",\r\n \"--window-radius\": \"2px\",\r\n \"--desktop-grid-cell\": \"92px\",\r\n \"--desktop-icon-size\": \"48px\",\r\n \"--titlebar-height\": \"30px\",\r\n \"--taskbar-height\": \"36px\",\r\n \"--button-radius\": \"2px\",\r\n \"--button-tint\": \"linear-gradient(180deg, #555555 0%, #808080 50%, #a0a0a0 100%)\",\r\n \"--button-tint-hover\": \"linear-gradient(180deg, #6060c0 0%, #8080ff 100%)\",\r\n \"--button-tint-active\": \"linear-gradient(180deg, #404040 0%, #606060 100%)\",\r\n \"--glass-opacity\": \"0.9\",\r\n \"--control-min\": \"#808080\",\r\n \"--control-max\": \"#808080\",\r\n \"--control-close\": \"#c00000\"\r\n },\r\n \"animationSpeeds\": {\r\n \"minimize\": 140,\r\n \"progress\": 180,\r\n \"open\": 160,\r\n \"hover\": 80,\r\n \"menu\": 120,\r\n \"wallpaper\": 220,\r\n \"taskbar\": 100\r\n },\r\n \"taskbarConfig\": {\r\n \"position\": \"bottom\",\r\n \"height\": 36,\r\n \"transparentAmount\": 0,\r\n \"buttonStyle\": \"xp\"\r\n },\r\n \"startMenuConfig\": {\r\n \"style\": \"classic\",\r\n \"width\": 320,\r\n \"accentColor\": \"#4a4a8a\",\r\n \"nested\": true,\r\n \"variants\": [\"classic\"]\r\n },\r\n \"loginScreenConfig\": {\r\n \"avatarUrl\": \"\",\r\n \"warningImageUrl\": \"\",\r\n \"wallpaperUrl\": \"\",\r\n \"privacyNotice\": \"\",\r\n \"warningTitle\": \"\",\r\n \"loginBoxStyle\": \"xp-transparent\",\r\n \"avatarSize\": 64,\r\n \"textColor\": \"#ffffff\"\r\n },\r\n \"mobileConfig\": {\r\n \"taskbarHeightMobile\": 48,\r\n \"iconSizeMobile\": 64,\r\n \"dockCompact\": true\r\n }\r\n }\r\n }\r\n}","encoding":"text","eof":1,"id":"fs-21","kind":"file","mime":"text\/plain","name":"theme1.txt","nextOffset":6633,"offset":0,"path":"\/Home\/Desktop\/ROI2Folder\/theme1.txt","readBytes":6633,"size":6633,"truncated":0}} 
+            The UI just habgs, and displays "Loafing file" 
+        4) The Ability to add custom CSS to each component of the login screen, in the Theme editor, login tab 
+        5) The "Desktop Preview", and "Mobile Preview" are not renderreding the corrent minimize, maximize,close top right button according to the theme. 
+            Currently they always shows one, no matter what 
+        6) Clicking on "Arabic" in the TabskBar, just launches a generic window. It should reload the page and set the locale. i,e /?lang=ar, etc. 
+        7) Switched locale RTL, still renders the startmenu menu on the left hand side, despite the taskbar correctly "flipping" 
+        8) Still no Export Theme and Import theme buttons on the botton, next to Cancel, Apply, and Save. Please Add 
+        9) CHanging the taskbar position to either Top, or Left, places the taskbar on top of the desktop icons, cutting themff. 
+            The Right plracement is completely mishaped with everything pushed on top. 
+        10) In the "Dark theme", 
+            everything is good just minor extra adjustments: 
+            a) The Address bar in the explorer window in the DARK theme mode, is rendering white text on white background. It should be dark background. 
+            b) The UI + Form Elements page is currently rendering everything white text on white background. It should dark Bckground. Please fix 
+            c) The "Light", and "Dark" button's text in the theme editor in DARK mode is being rendered as Bkack text on black background. Please change the text to white. 
+        11) The avatar size is not being reflected. There also be an option to decide the login wideth on desktop and mobile.
+
+Goal
+
+Add detailed backend-contract coverage for the Advanced Table component and greatly expand the MUMPS-first table samples. The table has accumulated many features across ROI 64F–64L, and the next immediate step is to lock the backend contract before building more patient workflow functionality.
+Why this comes before ROI 69
+
+Recent work added mutations, validation, typed controls, advanced filters, selected-row export, editable cells, column reorder, fixed columns, table-backed module authoring, and patient registration. Regressions have occurred in the table component. Before adding the next patient workflow ROI, the backend table contract needs explicit tests and the examples need enough variety to catch regressions early.
+Scope
+
+Add or expand tests in routines/MIOOST.m and helper test routines if the existing test routine is too large. Keep tests quiet on success and explicit on failure.
+Add expanded examples under examples/mioos_modules/table/ and update docs so a MUMPS developer can create tables without writing frontend code.
+Backend contract tests to add
+
+Contract version is current and documented.
+Query response includes:
+ok
+
+dataset
+
+draw
+
+recordsTotal
+
+recordsFiltered
+
+schema.columns
+
+rows
+
+groups
+
+pagination.page
+
+pagination.pageSize
+
+pagination.totalRows
+
+pagination.filteredRows
+
+pagination.pageRows
+
+pagination.pageCount
+
+features
+
+rowActions
+
+bulkActions
+
+includeDataAlias omits duplicate data payload.
+includeDataAlias includes the data alias only when explicitly requested.
+Server-side pagination returns only the requested page rows.
+Massive dataset path does not materialize unnecessary browser payloads.
+Page jump inputs clamp to valid ranges.
+Add detailed tests for mutations:
+column.visibility returns small mutation acknowledgement only.
+row.save returns small mutation acknowledgement only on success.
+cell.save returns small mutation acknowledgement only on success.
+column.option.add returns deterministic acknowledgement.
+column.reorder validates order and persists schema order.
+column.fixed validates fixed counts and persists fixed-column metadata.
+rows.export exports selected rows only as server-generated CSV.
+Failed mutations return deterministic JSON:
+ok
+
+dataset
+
+action
+
+error
+
+message
+
+fieldErrors when applicable
+
+mutationOnly
+
+refetch
+
+HTTP and WebSocket mutation paths call the same backend routine.
+Add detailed tests for validation:
+Required field validation.
+Max length validation.
+Enum/select validation.
+Multiselect validation if supported in schema.
+Boolean validation.
+Strict date validation, including impossible dates such as February 31.
+Numeric validation.
+Numeric range validation.
+Field-level validation errors preserve user input on the browser contract side where possible.
+Optional MUMPS validation hook is called and can reject a row.
+Optional MUMPS cell callback is called for cell.save and can reject a single-cell edit.
+Add detailed tests for filtering/grouping/sorting:
+Basic search.
+Column filters.
+Advanced filter modes:
+include
+
+exclude
+
+contains
+
+starts with
+
+ends with
+
+range
+
+blank
+
+not blank
+
+Sort by named column.
+Multi-column grouping using groupByColumns.
+Grouped column still appears in column visibility controls when appropriate.
+Grouping remains stable under pagination/sort/filter.
+Add detailed tests for feature composition:
+Read-only/simple tables do not expose actions, selection, CRUD, row details, or bulk actions unless explicitly enabled.
+Editable tables expose appropriate row/cell edit features.
+Fixed columns work with reordered columns.
+Column visibility works with fixed columns.
+Column reorder works with hidden columns.
+Editable cells work after sorting/filtering/refetch.
+Selected-row export respects current selected IDs, not the full page by default.
+Add regression tests for known bugs:
+No free variable vm reference in public/mioos/app/mioos_table.js table payload application path.
+backendTableApplyPayload() must not throw on fixed-column normalization.
+Modal close controls should not begin drag operations.
+Native prompt() / confirm() must not be used for Add Value/Delete Column flows.
+Loading indicator should not include layout-shifting loading text.
+Expanded MUMPS-first samples to add
+
+Expand examples/mioos_modules/table/README.md and examples/mioos_modules/table/module.json. Add additional sample files if useful, such as:
+examples/mioos_modules/table/samples/basic_readonly.m
+
+examples/mioos_modules/table/samples/editable_cells.m
+
+examples/mioos_modules/table/samples/validation_rules.m
+
+examples/mioos_modules/table/samples/advanced_filters.m
+
+examples/mioos_modules/table/samples/grouping_reorder_fixed.m
+
+examples/mioos_modules/table/samples/server_csv_export.m
+
+examples/mioos_modules/table/samples/table_module_registration.m
+
+Use the actual repo contract after inspection. Do not invent incompatible globals.
+The samples should cover at least:
+Basic read-only table.
+Editable table with cell.save.
+Typed controls:
+text
+
+textarea
+
+select
+
+multiselect if supported
+
+boolean
+
+date
+
+number
+
+Validation rules:
+required
+
+max length
+
+enum/select
+
+date
+
+numeric range
+
+Optional MUMPS row validation hook.
+Optional MUMPS cell callback hook.
+Advanced filters.
+Multi-column grouping.
+Column visibility.
+Column reorder.
+Fixed columns.
+Selected-row server-side CSV export.
+Desktop icon / App Catalogue entry point.
+Table-backed module registration without frontend code.
+Commands to reload routines and run tests.
+Each sample must answer:
+What routine do I edit?
+What globals do I set?
+What command do I run?
+How do I make an icon appear?
+How do I open this table from the shell?
+How do I validate that it works?
+Docs to update for ROI 68A
+
+Update or add:
+docs/mioos/Backend_Table.md
+
+docs/mioos/UI_Modules.md
+
+docs/mioos/README.md
+
+docs/mioos/ROI_68A_Table_Backend_Contract_Tests_and_Samples.md
+
+examples/mioos_modules/table/README.md
+
+examples/mioos_modules/table/module.json
+
+mioos_llm.md
+
+Goal
+
+Final stabilization pass
+Scope
+
+Review error boundaries.
+Review loading states.
+Review empty states.
+Review keyboard navigation.
+Review responsive behavior.
+Remove dead code.
+Final regression tests.
+Acceptance
+
+All tests pass. Components are stable and production-ready. No unnecessary code remains.
+Expected final answer format for each implementation chat
+Use this final answer format:
+Diagnosis
+Root cause
+ROI implemented
+Code changes
+Tests run
+Acceptance checklist
+Modified files
+Download link to ZIP containing only modified files
+Patch fallback
+Be honest if D ^MIOOST could not be run.
+If artifact download fails, also provide a patch or pasteable file contents.

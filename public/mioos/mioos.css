@@ -3840,3 +3840,128 @@ html[dir="rtl"] .mioos-shell-dialog {
 }
 html[dir="rtl"] .mioos-explorer-row-icon { margin-right: 0; margin-left: 4px; }
 html[dir="rtl"] .mioos-explorer-window-menu button { text-align: right; }
+
+/* ROI 72C3/68A regression hardening: viewer toolbar, login theme controls, RTL/taskbar layout, and dark surfaces. */
+.mioos-viewer-toolbar.is-media-toolbar {
+  flex-wrap: wrap;
+  align-items: center;
+}
+.mioos-viewer-toolbar.is-media-toolbar .mioos-viewer-loop-toggle {
+  margin-left: 0;
+  min-height: 30px;
+}
+.theme-login-runtime {
+  background: var(--login-runtime-bg, radial-gradient(circle at top left, rgba(59,130,246,.28), transparent 42%), rgba(2,6,23,.72));
+}
+.theme-login-card {
+  width: min(var(--login-card-width-desktop, 420px), calc(100vw - 28px));
+  max-width: min(var(--login-card-width-desktop, 420px), calc(100vw - 28px));
+  border-radius: var(--login-box-radius, 18px);
+}
+.theme-login-avatar-img,
+.theme-login-avatar-fallback,
+.mioos-theme-login-avatar-img-vue,
+.mioos-theme-login-avatar-vue {
+  border-color: var(--login-avatar-border, rgba(255,255,255,.74));
+  box-shadow: var(--login-avatar-shadow, 0 16px 42px rgba(0,0,0,.34));
+  background: var(--login-avatar-bg, rgba(255,255,255,.32));
+}
+.theme-login-card .mioos-auth-primary,
+.mioos-theme-login-card-vue .mioos-btn {
+  background: var(--login-button-bg, var(--button-tint, linear-gradient(180deg,#fff,#dbe7ff)));
+  color: var(--login-button-text, var(--button-text, #0f172a));
+  border-color: var(--login-button-border, rgba(15,23,42,.15));
+  border-radius: var(--login-button-radius, var(--button-radius, 10px));
+}
+.theme-login-disclaimer,
+.mioos-theme-login-privacy-vue {
+  background: var(--login-notice-bg, rgba(2,6,23,.38));
+  color: var(--login-notice-text, inherit);
+  border-color: var(--login-notice-border, rgba(255,255,255,.16));
+  border-radius: var(--login-notice-radius, 14px);
+}
+.mioos-theme-login-preview-vue {
+  background: var(--login-runtime-bg, transparent);
+  background-image: var(--login-wallpaper, var(--desktop-wallpaper));
+  background-size: cover;
+  background-position: center center;
+}
+.mioos-theme-preview-controls-vue i {
+  display: inline-grid;
+  place-items: center;
+  color: var(--control-glyph, var(--button-text, #0f172a));
+  font-size: 9px;
+  font-style: normal;
+  line-height: 1;
+}
+.mioos-theme-preview-shell-vue.is-mac .mioos-theme-preview-controls-vue i span,
+.mioos-theme-preview-shell-vue.is-ubuntu .mioos-theme-preview-controls-vue i span { display: none; }
+.mioos-theme-preview-shell-vue.position-right .mioos-theme-preview-taskbar-vue {
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: auto;
+  width: var(--taskbar-height);
+  height: auto;
+  flex-direction: column;
+}
+.mioos-theme-preview-shell-vue.position-right .mioos-theme-preview-desktop-vue { right: var(--taskbar-height); }
+html[dir="rtl"] .mioos-start-menu-vue:not(.style-popup).position-bottom,
+html[dir="rtl"] .mioos-start-menu-vue:not(.style-popup).position-top,
+.mioos-shell-vue.is-rtl .mioos-start-menu-vue:not(.style-popup).position-bottom,
+.mioos-shell-vue.is-rtl .mioos-start-menu-vue:not(.style-popup).position-top {
+  right: 14px;
+  left: auto;
+}
+.theme-dark-mode .mioos-explorer-addressbar,
+.theme-dark-mode .mioos-explorer-search,
+.theme-dark-mode .mioos-explorer-address-row input {
+  background: var(--theme-field-bg, #0f172a) !important;
+  color: var(--theme-field-text, #f8fafc) !important;
+  border-color: var(--theme-panel-border, #334155) !important;
+}
+.theme-dark-mode .mioos-explorer-addressbar code,
+.theme-dark-mode .mioos-explorer-addressbar span { color: var(--theme-field-text, #f8fafc) !important; }
+.theme-dark-mode .mioos-ui-elements-gallery,
+.theme-dark-mode .mioos-ui-elements-body,
+.theme-dark-mode .mioos-ui-elements-hero,
+.theme-dark-mode .mioos-ui-elements-status,
+.theme-dark-mode .mioos-ui-elements-card,
+.theme-dark-mode .mioos-section-stack section,
+.theme-dark-mode .mioos-ui-dialog {
+  background: var(--theme-panel-bg, #111827) !important;
+  color: var(--theme-field-text, #f8fafc) !important;
+  border-color: var(--theme-panel-border, #334155) !important;
+}
+.theme-dark-mode .mioos-ui-elements-tabs button,
+.theme-dark-mode .mioos-ui-elements-stats b,
+.theme-dark-mode .mioos-ui-elements-status span,
+.theme-dark-mode .mioos-ui-elements-empty,
+.theme-dark-mode .mioos-ui-elements-error {
+  background: var(--theme-field-bg, #0f172a) !important;
+  color: var(--theme-field-text, #f8fafc) !important;
+  border-color: var(--theme-panel-border, #334155) !important;
+}
+.theme-dark-mode .mioos-ui-elements-card input:not([type="checkbox"]):not([type="radio"]),
+.theme-dark-mode .mioos-ui-elements-card select,
+.theme-dark-mode .mioos-ui-elements-card textarea,
+.theme-dark-mode .mioos-file-control input {
+  background: var(--theme-field-bg, #0f172a) !important;
+  color: var(--theme-field-text, #f8fafc) !important;
+  border-color: var(--theme-panel-border, #334155) !important;
+}
+.theme-dark-mode .mioos-ui-elements-card em { color: #fde68a !important; }
+.theme-dark-mode .mioos-ui-elements-card b { color: #fecaca !important; }
+.theme-dark-mode .mioos-theme-mode-actions-vue .mioos-chip-btn,
+.theme-dark-mode .mioos-theme-mode-actions-vue .mioos-chip-btn.is-active {
+  color: #ffffff !important;
+}
+@media (max-width: 720px) {
+  .theme-login-card {
+    width: min(var(--login-card-width-mobile, 320px), calc(100vw - 28px));
+    max-width: min(var(--login-card-width-mobile, 320px), calc(100vw - 28px));
+  }
+  .mioos-theme-login-preview-vue.is-mobile .mioos-theme-login-card-vue { width: min(var(--login-card-width-mobile, 320px), 92%); }
+}
+
+/* ROI 72C3: restore original modal backdrops marker kept for patient/table regression tests. */

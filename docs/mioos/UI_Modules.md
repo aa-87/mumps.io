@@ -113,3 +113,21 @@ The login modal is driven by Theme Studio login configuration: wallpaper, avatar
 ## ROI 72C2 shell viewer and Start Menu behavior
 
 The shell now registers a shared `mioos-surface-viewer` for text, image, PDF, audio, video, and structured file windows. Start Menu VFS folders expand in-place and lazy-load children with `fs.list`; clicking a folder toggles expansion rather than closing the menu.
+
+## ROI 68A table-backed module contract lock
+
+Table-backed modules should use the built-in `mioos-surface-table` and the backend-owned `MIOOSTBL` contract. A MUMPS module author does not need JavaScript to create a table module:
+
+```mumps
+SET MOD("componentKey")="table"
+SET MOD("surface")="mioos-surface-table"
+SET MOD("tableState","dataset")="sample-readonly"
+SET MOD("tableState","config","contract")="mioos-advanced-table-v8"
+SET MOD("tableState","config","features","cellEditing")=1
+SET MOD("tableState","config","features","columnReorder")=1
+SET MOD("tableState","config","features","fixedColumns")=1
+```
+
+The table backend owns query, mutation, validation, export, column metadata, fixed-column metadata, and selected-row CSV generation. HTTP and WebSocket table mutations must continue to call `MUTATE^MIOOSTBL`; frontend module code should not fork mutation handling.
+
+Expanded MUMPS-first samples are under `examples/mioos_modules/table/samples/`. Start with `basic_readonly.m`, then add `editable_cells.m`, `validation_rules.m`, `advanced_filters.m`, `grouping_reorder_fixed.m`, `server_csv_export.m`, and `table_module_registration.m` as needed.

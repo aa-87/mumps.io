@@ -655,3 +655,11 @@ When working from this source, preserve these regression contracts:
 - Login warning image is a banner, not an avatar.
 - RTL locale changes apply document/shell `dir` and `is-rtl` immediately.
 - VFS blob streaming must account for one-chunk files larger than the default stored chunk size to avoid `ERR_CONTENT_LENGTH_MISMATCH`.
+
+## ROI 68A table contract lock
+
+Treat `mioos-advanced-table-v8` as the current Advanced Table contract. Table modules remain backend-authored: MUMPS seeds `^MIO("MIOOS","TABLE",USER,DATASET,...)`, registers `MOD("componentKey")="table"`, and uses `mioos-surface-table`. Do not introduce frontend table frameworks or client-side-only data ownership.
+
+`MIOOST` calls the Advanced Table contract regression helper. Preserve query response fields (`ok`, `dataset`, `draw`, `recordsTotal`, `recordsFiltered`, `schema.columns`, `rows`, `groups`, `pagination.*`, `features`, `rowActions`, `bulkActions`) and mutation acknowledgements (`ok`, `dataset`, `action`, `mutationOnly`, `refetch`, `message`). Failed table mutations should produce deterministic JSON with `error`, `message`, and `fieldErrors` when applicable.
+
+The canonical examples are under `examples/mioos_modules/table/samples/`; they must stay MUMPS-first and answer which routine/global to edit, what `MOD(...)` nodes to set, how to surface an icon, how to open from the shell, and how to validate with `D ^MIOOST`.

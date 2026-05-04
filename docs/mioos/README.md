@@ -434,3 +434,14 @@ ROI 71C3 repairs authenticated VFS blob `Content-Length` by recalculating the by
 The current shell keeps the `glow` theme as the clean-install default, opens desktop files directly in their matching viewers, and reads text/structured files through WebSocket commands before falling back to HTTP. Media viewers intentionally expose only functional playback chrome: native controls plus a Loop toggle.
 
 Theme Studio now has a Desktop background custom CSS field. MUMPS developers and administrators can paste declarations such as `background-image: radial-gradient(...);` or `background-color: #0f172a;` without writing frontend code. Login warning images render as full-width banners, and RTL locale switches apply document direction immediately.
+
+## ROI 68A Advanced Table backend-contract coverage
+
+ROI 68A locks the Advanced Table backend contract before additional patient workflow work. `MIOOST` now includes table-contract regression coverage and calls the helper table contract routine. The locked contract version is `mioos-advanced-table-v8`.
+
+Key references:
+
+- `docs/mioos/Backend_Table.md` — backend query/mutation contract, validation, transport, and CSV export notes.
+- `docs/mioos/ROI_68A_Table_Backend_Contract_Tests_and_Samples.md` — test coverage and sample matrix.
+- `examples/mioos_modules/table/README.md` — MUMPS-first table author workflow.
+- `examples/mioos_modules/table/samples/` — copyable sample routines for read-only tables, editable cells, validation, filters, grouping/reorder/fixed columns, selected-row CSV export, and App Catalogue registration.

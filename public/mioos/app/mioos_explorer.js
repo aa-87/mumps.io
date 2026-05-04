@@ -91,6 +91,44 @@
     });
   }
 
+  function fileIdFromPayload(payload) {
+    payload = payload || {};
+    return String(payload.id || payload.fileId || payload.key || ((payload.meta || {}).id) || ((payload.entry || {}).id) || '');
+  }
+
+  function normalizeFetchedText(text, size) {
+    var out = String(text || '');
+    if (+size > 0 && out.length > +size) {
+      return out.slice(0, +size) + '\n\n[Preview truncated at ' + (+size) + ' characters. Download the file to view the full contents.]';
+    }
+    return out;
+  }
+
+  function readTextFileResilient(vm, item, options) {
+    var opts = options || {};
+    var id = String((item && (item.id || item.key || item.fileId)) || '');
+    var path = String((item && item.path) || '');
+    var size = +(opts.size || ((((vm.boot || {}).vfs || {}).readWindowBytes) || 32768));
+    var fallbackDelayMs = Math.max(250, +(opts.fallbackDelayMs || 1200));
+    var wsPromise;
+    var fetchPromise;
+    function asResult(text) {
+      return { message: null, payload: { id: id, path: path, mime: (item && item.mime) || 'text/plain', eof: 1, fallback: 'http_blob' }, text: normalizeFetchedText(text, opts.allowFull === false ? size : 0) };
+    }
+    function httpFallback() { return fetchTextBlob(vm, item).then(asResult); }
+    if (!vm.command) return httpFallback();
+    wsPromise = vm.readTextFileViaWebSocket(item, opts).then(function (result) {
+      var payload = (result || {}).payload || {};
+      var payloadId = fileIdFromPayload(payload);
+      if (id && payloadId && payloadId !== id) throw new Error('stale_text_payload');
+      return result;
+    });
+    fetchPromise = new Promise(function (resolve, reject) {
+      window.setTimeout(function () { httpFallback().then(resolve, reject); }, fallbackDelayMs);
+    });
+    return Promise.race([wsPromise, fetchPromise]).catch(function () { return httpFallback(); });
+  }
+
   function stringToBytes(raw) {
     var value = String(raw || '');
     var bytes = new Uint8Array(value.length);
@@ -784,7 +822,7 @@
             state.preview.content = (err && err.message) || 'Unable to preview file.';
           });
         }
-        return this.readTextFileViaWebSocket(item, { offset: 0, size: previewBytes, allowFull: false }).then(function (result) {
+        return readTextFileResilient(this, item, { offset: 0, size: previewBytes, allowFull: false }).then(function (result) {
           var payload = (result || {}).payload || {};
           state.preview = {
             title: item.name || item.title || '',
@@ -2121,7 +2159,7 @@
           });
           return;
         }
-        this.readTextFileViaWebSocket(item, { offset: 0, size: +((((this.boot || {}).vfs || {}).readWindowBytes) || 32768), allowFull: true }).then(function (result) {
+        readTextFileResilient(this, item, { offset: 0, size: +((((this.boot || {}).vfs || {}).readWindowBytes) || 32768), allowFull: true }).then(function (result) {
           var payload = (result || {}).payload || {};
           var text = (result || {}).text || '';
           if (!text && !payload.mime && !payload.eof) throw new Error('empty_text_payload');
@@ -2225,7 +2263,7 @@
           });
           return;
         }
-        this.readTextFileViaWebSocket(item, { offset: 0, size: +((((this.boot || {}).vfs || {}).readWindowBytes) || 32768), allowFull: true }).then(function (result) {
+        readTextFileResilient(this, item, { offset: 0, size: +((((this.boot || {}).vfs || {}).readWindowBytes) || 32768), allowFull: true }).then(function (result) {
           var payload = (result || {}).payload || {};
           win.fileView.loading = false;
           win.fileView.mime = payload.mime || win.fileView.mime;

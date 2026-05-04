@@ -18,6 +18,8 @@ mioos-advanced-table-v8
 SET MOD("tableState","config","contract")="mioos-advanced-table-v8"
 ```
 
+## Backend contract coverage
+
 ## Backend contract tests
 
 `MIOOST` now calls `RUN^MIOOSTBLC`. The helper routine adds direct backend contract coverage while keeping `MIOOST` quiet on success and explicit on failure.

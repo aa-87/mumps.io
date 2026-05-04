@@ -1724,7 +1724,12 @@
             windowBody: { background: '--window-bg', color: '--theme-field-text', 'border-color': '--window-border', 'box-shadow': '--shadow-window' },
             taskbar: { background: '--taskbar-bg', color: '--taskbar-text', 'border-color': '--taskbar-border' },
             startMenu: { background: '--start-menu-bg', color: '--start-menu-text', 'border-color': '--menu-border', 'box-shadow': '--menu-shadow' },
-            desktopBackground: { background: '--desktop-wallpaper', 'background-image': '--desktop-wallpaper', 'background-color': '--desktop-bg' }
+            desktopBackground: { background: '--desktop-wallpaper', 'background-image': '--desktop-wallpaper', 'background-color': '--desktop-bg' },
+            loginBackground: { background: '--login-runtime-bg', 'background-color': '--login-runtime-bg', 'background-image': '--login-runtime-bg' },
+            loginCard: { background: '--login-box-bg', color: '--login-box-text', 'border-color': '--login-box-border', 'box-shadow': '--login-box-shadow', 'border-radius': '--login-box-radius' },
+            loginAvatar: { background: '--login-avatar-bg', 'border-color': '--login-avatar-border', 'box-shadow': '--login-avatar-shadow' },
+            loginButton: { background: '--login-button-bg', color: '--login-button-text', 'border-color': '--login-button-border', 'border-radius': '--login-button-radius' },
+            loginNotice: { background: '--login-notice-bg', color: '--login-notice-text', 'border-color': '--login-notice-border', 'border-radius': '--login-notice-radius' }
           };
         },
         themeStudioCustomElementCssValue: function (elementKey) {
@@ -1779,11 +1784,29 @@
         themeStudioExportTheme: function (id) {
           var store = this.initThemeStudioStore();
           var target = this.themeStudioThemeById(id || store.activeThemeId);
-          var exported;
+          var exported, json, filename, blob, url, a;
           if (!target) return;
           exported = this.themeStudioBuildExport(target);
-          store.importBuffer = JSON.stringify(exported, null, 2);
-          this.showAlert('Theme Studio', 'Theme JSON refreshed with light and dark variants.');
+          json = JSON.stringify(exported, null, 2);
+          store.importBuffer = json;
+          try {
+            if (window.Blob && window.URL && document && document.createElement) {
+              filename = String(target.name || target.id || 'mioos-theme').replace(/[^A-Za-z0-9_.-]+/g, '_') + '.json';
+              blob = new Blob([json], { type: 'application/json' });
+              url = window.URL.createObjectURL(blob);
+              a = document.createElement('a');
+              a.href = url;
+              a.download = filename;
+              a.style.display = 'none';
+              document.body.appendChild(a);
+              a.click();
+              window.setTimeout(function () {
+                try { window.URL.revokeObjectURL(url); } catch (revokeErr) {}
+                try { if (a && a.parentNode) a.parentNode.removeChild(a); } catch (removeErr) {}
+              }, 0);
+            }
+          } catch (downloadErr) {}
+          this.showAlert('Theme Studio', 'Theme JSON exported with light and dark variants.');
         },
         themeStudioBuildExport: function (theme) {
           var target = this.themeStudioNormalizeConfig(theme || this.themeStudioActiveTheme() || {});
@@ -1800,6 +1823,7 @@
             wallpaperFit: target.wallpaperFit || 'cover',
             previewScale: target.previewScale || 0.72,
             classModifiers: this.themeStudioClone(target.classModifiers || []),
+            customElementCss: this.themeStudioClone(target.customElementCss || {}),
             extraCss: target.extraCss || ''
           };
           return {
@@ -1823,7 +1847,8 @@
               taskbarConfig: this.themeStudioClone(live.taskbarConfig || {}),
               startMenuConfig: this.themeStudioClone(live.startMenuConfig || {}),
               loginScreenConfig: this.themeStudioClone(live.loginScreenConfig || {}),
-              mobileConfig: this.themeStudioClone(live.mobileConfig || {})
+              mobileConfig: this.themeStudioClone(live.mobileConfig || {}),
+              customElementCss: this.themeStudioClone(live.customElementCss || {})
             };
           }
           return {
@@ -1832,7 +1857,8 @@
             taskbarConfig: this.themeStudioClone(stored.taskbarConfig || live.taskbarConfig || {}),
             startMenuConfig: this.themeStudioClone(stored.startMenuConfig || live.startMenuConfig || {}),
             loginScreenConfig: this.themeStudioClone(stored.loginScreenConfig || live.loginScreenConfig || {}),
-            mobileConfig: this.themeStudioClone(stored.mobileConfig || live.mobileConfig || {})
+            mobileConfig: this.themeStudioClone(stored.mobileConfig || live.mobileConfig || {}),
+            customElementCss: this.themeStudioClone(stored.customElementCss || live.customElementCss || {})
           };
         },
         themeStudioBuildVariantExport: function (theme, darkEnabled) {
@@ -1845,7 +1871,8 @@
             taskbarConfig: this.themeStudioClone(snapshot.taskbarConfig || {}),
             startMenuConfig: this.themeStudioClone(snapshot.startMenuConfig || {}),
             loginScreenConfig: this.themeStudioClone(snapshot.loginScreenConfig || {}),
-            mobileConfig: this.themeStudioClone(snapshot.mobileConfig || {})
+            mobileConfig: this.themeStudioClone(snapshot.mobileConfig || {}),
+            customElementCss: this.themeStudioClone(snapshot.customElementCss || {})
           };
         },
         themeStudioExportBaseId: function (theme) {
@@ -1880,6 +1907,27 @@
           this.themeStudioPersistCustomThemes();
           this.applyThemeStudioConfig(parsed, { silent: true, persist: false });
         },
+        themeStudioImportThemeFile: function (event) {
+          var self = this;
+          var file = event && event.target && event.target.files && event.target.files[0];
+          if (!file) return Promise.resolve();
+          function clearInput() { try { if (event && event.target) event.target.value = ''; } catch (clearErr) {} }
+          function applyText(text) {
+            var store = self.initThemeStudioStore();
+            store.importBuffer = String(text || '');
+            self.themeStudioImportTheme();
+            clearInput();
+          }
+          if (file.text) {
+            return file.text().then(applyText, function () { clearInput(); self.showAlert('Theme Studio', 'Could not read theme import file.'); });
+          }
+          return new Promise(function (resolve) {
+            var reader = new FileReader();
+            reader.onload = function () { applyText(reader.result || ''); resolve(); };
+            reader.onerror = function () { clearInput(); self.showAlert('Theme Studio', 'Could not read theme import file.'); resolve(); };
+            reader.readAsText(file);
+          });
+        },
         themeStudioCopyImportBuffer: function () {
           var store = this.initThemeStudioStore();
           var value = String(store.importBuffer || '');
@@ -1902,6 +1950,11 @@
           var style = { '--desktop-wallpaper': this.themeStudioWallpaperCss(active), transform: 'scale(' + (((active || {}).previewScale) || 0.86) + ')' };
           Object.keys(((active || {}).cssVars) || {}).forEach(function (key) { style[key] = active.cssVars[key]; });
           return style;
+        },
+        themeStudioLoginPreviewCardStyle: function (mobile) {
+          var cfg = ((this.themeStudioActiveTheme() || {}).loginScreenConfig) || {};
+          var width = mobile ? Math.max(260, Math.min(440, +(cfg.mobileWidth || 320))) : Math.max(320, Math.min(760, +(cfg.desktopWidth || 420)));
+          return { width: 'min(' + width + 'px, ' + (mobile ? '92%' : '90%') + ')' };
         },
         themeStudioPreviewIcons: function () {
           return [
@@ -1954,7 +2007,7 @@
           out.animationSpeeds = Object.assign({}, base.animationSpeeds || {}, incoming.animationSpeeds || {});
           out.taskbarConfig = Object.assign({ position: 'bottom', height: parseInt((base.cssVars || {})['--taskbar-height'] || '48', 10) || 48, transparentAmount: 0, buttonStyle: 'xp' }, base.taskbarConfig || {}, incoming.taskbarConfig || {});
           out.startMenuConfig = Object.assign({ style: 'classic', width: 360, accentColor: (out.cssVars || {})['--accent'] || '#0b63f6', nested: true, variants: ['classic', 'popup'] }, base.startMenuConfig || {}, incoming.startMenuConfig || {});
-          out.loginScreenConfig = Object.assign({ wallpaperUrl: '', privacyNotice: '', warningTitle: '', loginBoxStyle: 'xp-transparent', avatarSize: 72, textColor: (out.cssVars || {})['--taskbar-text'] || '#ffffff' }, base.loginScreenConfig || {}, incoming.loginScreenConfig || {});
+          out.loginScreenConfig = Object.assign({ wallpaperUrl: '', privacyNotice: '', warningTitle: '', loginBoxStyle: 'xp-transparent', avatarSize: 72, desktopWidth: 420, mobileWidth: 320, textColor: (out.cssVars || {})['--taskbar-text'] || '#ffffff' }, base.loginScreenConfig || {}, incoming.loginScreenConfig || {});
           out.mobileConfig = Object.assign({ taskbarHeightMobile: 46, iconSizeMobile: 60, dockCompact: true }, base.mobileConfig || {}, incoming.mobileConfig || {});
           out.colorSchemes = (incoming.colorSchemes && incoming.colorSchemes.length) ? incoming.colorSchemes.slice() : ((base.colorSchemes && base.colorSchemes.length) ? base.colorSchemes.slice() : []);
           out.darkEnabled = !!incoming.darkEnabled;
@@ -1962,7 +2015,10 @@
           if (!out.name) out.name = base.name || 'Custom Theme';
           if (!out.sourceId) out.sourceId = base.id || 'glow';
           if (!out.wallpaperPreset) out.wallpaperPreset = base.wallpaperPreset || 'aurora';
-          out.loginScreenConfig = Object.assign({ avatarUrl: '', warningImageUrl: '' }, out.loginScreenConfig || {});
+          out.loginScreenConfig = Object.assign({ avatarUrl: '', warningImageUrl: '', customElementCss: {} }, out.loginScreenConfig || {});
+          out.loginScreenConfig.avatarSize = Math.max(48, Math.min(160, +(out.loginScreenConfig.avatarSize || 72)));
+          out.loginScreenConfig.desktopWidth = Math.max(320, Math.min(760, +(out.loginScreenConfig.desktopWidth || 420)));
+          out.loginScreenConfig.mobileWidth = Math.max(260, Math.min(440, +(out.loginScreenConfig.mobileWidth || 320)));
           out.variants = Object.assign({ light: {}, dark: {} }, incoming.variants || {});
           if (out.wallpaperUrl && out.wallpaperPreset !== 'custom-upload') out.wallpaperPreset = 'custom-upload';
           return out;
@@ -2241,7 +2297,9 @@
             rootNode.style.setProperty('--login-box-shadow', '0 22px 56px rgba(0,0,0,0.28)');
           }
           rootNode.style.setProperty('--login-box-text', loginCfg.textColor || current['--taskbar-text'] || '#ffffff');
-          rootNode.style.setProperty('--login-avatar-size', Math.max(48, Math.min(128, +(loginCfg.avatarSize || 82))) + 'px');
+          rootNode.style.setProperty('--login-avatar-size', Math.max(48, Math.min(160, +(loginCfg.avatarSize || 82))) + 'px');
+          rootNode.style.setProperty('--login-card-width-desktop', Math.max(320, Math.min(760, +(loginCfg.desktopWidth || 420))) + 'px');
+          rootNode.style.setProperty('--login-card-width-mobile', Math.max(260, Math.min(440, +(loginCfg.mobileWidth || 320))) + 'px');
           this._themeStudioAppliedKeys = this.themeStudioManagedVarKeys().slice(0);
           rootNode.dataset.shellTheme = theme.id || 'glow';
           rootNode.dataset.shellFamily = theme.base || 'win7';
@@ -2387,6 +2445,9 @@
           if (path === 'startMenuConfig.width') target.cssVars['--start-menu-width'] = (+value || 360) + 'px';
           if (path === 'startMenuConfig.accentColor') target.cssVars['--start-menu-accent'] = value;
           if (path === 'loginScreenConfig.textColor') target.cssVars['--login-box-text'] = value;
+          if (path === 'loginScreenConfig.avatarSize') target.cssVars['--login-avatar-size'] = Math.max(48, Math.min(160, +value || 72)) + 'px';
+          if (path === 'loginScreenConfig.desktopWidth') target.cssVars['--login-card-width-desktop'] = Math.max(320, Math.min(760, +value || 420)) + 'px';
+          if (path === 'loginScreenConfig.mobileWidth') target.cssVars['--login-card-width-mobile'] = Math.max(260, Math.min(440, +value || 320)) + 'px';
           this.themeStudioApplyLive(target);
           if (target.variants) target.variants[target.darkEnabled ? 'dark' : 'light'] = this.themeStudioBuildVariantSnapshot(target, !!target.darkEnabled);
           this.themeStudioPersistCustomThemes();
@@ -2489,7 +2550,7 @@
           var h = this.taskbarHeightValue() + 14;
           return {
             paddingTop: (pos === 'top' ? h : 16) + 'px',
-            paddingRight: '16px',
+            paddingRight: (pos === 'right' ? h : 16) + 'px',
             paddingBottom: (pos === 'bottom' ? h : 16) + 'px',
             paddingLeft: (pos === 'left' ? h : 16) + 'px',
             boxSizing: 'border-box'
@@ -2533,7 +2594,7 @@
             '--taskbar-blur': (6 + Math.round(alpha * 14)) + 'px',
             '--taskbar-effective-bg': this.taskbarEffectiveBackground(this.themeStudioActiveTheme(), alpha)
           };
-          if (pos === 'left') style.width = h + 'px'; else style.height = h + 'px';
+          if (pos === 'left' || pos === 'right') style.width = h + 'px'; else style.height = h + 'px';
           return style;
         },
         startMenuStyleType: function () {
@@ -2562,9 +2623,26 @@
             }
             return style;
           }
-          if (pos === 'top') { style.top = h + 'px'; style.bottom = 'auto'; style.left = '14px'; }
-          else if (pos === 'left') { style.left = (h + 12) + 'px'; style.bottom = '14px'; style.top = 'auto'; }
-          else { style.left = '14px'; style.bottom = h + 'px'; }
+          var locale = this.currentLocale || {};
+          var rtl = String(locale.dir || '').toLowerCase() === 'rtl' || !!locale.rtl;
+          if (pos === 'top') {
+            style.top = h + 'px';
+            style.bottom = 'auto';
+            if (rtl) { style.right = '14px'; style.left = 'auto'; } else { style.left = '14px'; style.right = 'auto'; }
+          } else if (pos === 'left') {
+            style.left = (h + 12) + 'px';
+            style.right = 'auto';
+            style.bottom = '14px';
+            style.top = 'auto';
+          } else if (pos === 'right') {
+            style.right = (h + 12) + 'px';
+            style.left = 'auto';
+            style.bottom = '14px';
+            style.top = 'auto';
+          } else {
+            style.bottom = h + 'px';
+            if (rtl) { style.right = '14px'; style.left = 'auto'; } else { style.left = '14px'; style.right = 'auto'; }
+          }
           return style;
         },
         startMenuNormalizeItem: function (entry, source, groupKey) {

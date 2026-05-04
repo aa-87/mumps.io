@@ -68,6 +68,9 @@ MIOOST ; MIOOS tests
 	DO T076
 	DO T077
 	DO T078
+	DO T079
+	DO T080
+	DO RUN^MIOOSTBLC
 	QUIT
 	;
 RESET
@@ -1471,7 +1474,7 @@ T077
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_i18n.js","dataset.localeDir"),"[MIOOST][T077][rtl locale dataset]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".theme-login-disclaimer img"),"[MIOOST][T077][login banner css]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-viewer-loop-toggle"),"[MIOOST][T077][viewer loop css]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","html[dir="_"rtl"_"]"),"[MIOOST][T077][rtl css]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","html[dir=""rtl""]"),"[MIOOST][T077][rtl css]")
 	QUIT
 	;
 T078
@@ -1488,3 +1491,39 @@ T078
 	DO OK^MIOTASSERT($$FILEHAS("examples/mioos_modules/table/README.md","MUMPS-first"),"[MIOOST][T078][mumps first table samples]")
 	DO OK^MIOTASSERT($$FILEHAS("examples/mioos_modules/table/module.json","Advanced Backend Table contract"),"[MIOOST][T078][table module manifest]")
 	QUIT
+
+T079
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","readTextFileResilient"),"[MIOOST][T079][resilient text viewer fallback]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","is-media-toolbar"),"[MIOOST][T079][media viewer toolbar]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mediaLoop"),"[MIOOST][T079][media loop preserved]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","Login background custom CSS"),"[MIOOST][T079][login background css editor]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","--login-card-width-desktop"),"[MIOOST][T079][login desktop width variable]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","themeStudioImportThemeFile"),"[MIOOST][T079][theme import file button]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_i18n.js","window.location.assign"),"[MIOOST][T079][locale reload]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","pos === 'right'"),"[MIOOST][T079][right taskbar layout]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","locale.dir"),"[MIOOST][T079][rtl start menu positioning]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-theme-preview-shell-vue.position-right"),"[MIOOST][T079][right taskbar preview css]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".theme-dark-mode .mioos-explorer-addressbar"),"[MIOOST][T079][dark explorer addressbar]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".theme-dark-mode .mioos-ui-elements-card"),"[MIOOST][T079][dark ui form elements]")
+	QUIT
+	;
+T080
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","mioos-advanced-table-v8"),"[MIOOST][T080][table contract version]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","OUT(""pagination"",""pageRows"")"),"[MIOOST][T080][table pagination page rows]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","IF $$TRUTH($GET(IN(""includeDataAlias"")))"),"[MIOOST][T080][data alias opt in]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","DATEOK"),"[MIOOST][T080][strict date validator]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","VALRANGE"),"[MIOOST][T080][numeric range validator]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","ROWCB"),"[MIOOST][T080][row validation hook]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","CELLCB"),"[MIOOST][T080][cell callback hook]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","groupByColumns"),"[MIOOST][T080][multi column grouping]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","column.option.add"),"[MIOOST][T080][option add mutation]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","selected_rows.csv"),"[MIOOST][T080][selected row csv export]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableNormalizeFixedColumns"),"[MIOOST][T080][fixed-column normalize path]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","vm.backendTableNormalizeFixedColumns"),0,"[MIOOST][T080][no free vm fixed-column regression]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","prompt("),0,"[MIOOST][T080][no native prompt in table flows]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","confirm("),0,"[MIOOST][T080][no native confirm in table flows]")
+	DO OK^MIOTASSERT($$FILEHAS("examples/mioos_modules/table/samples/basic_readonly.m","TBASICRO"),"[MIOOST][T080][basic readonly sample]")
+	DO OK^MIOTASSERT($$FILEHAS("examples/mioos_modules/table/samples/validation_rules.m","ROW^TVALRULE"),"[MIOOST][T080][validation hook sample]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/ROI_68A_Table_Backend_Contract_Tests_and_Samples.md","Backend contract coverage"),"[MIOOST][T080][roi68a docs]")
+	QUIT
+	;

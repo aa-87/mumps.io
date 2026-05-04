@@ -52,10 +52,14 @@
       try {
         var url = new window.URL(window.location.href);
         url.searchParams.set('lang', code);
-        if (window.history && window.history.replaceState) {
-          window.history.replaceState(window.history.state || {}, '', url.toString());
+        if (window.location && window.location.assign) {
+          window.location.assign(url.pathname + url.search + url.hash);
+          return;
         }
       } catch (urlErr) {}
+      try {
+        if (window.location) window.location.href = '/?lang=' + encodeURIComponent(code);
+      } catch (fallbackErr) {}
       if (app && app.refreshView) {
         try { app.refreshView().catch(function () {}); } catch (refreshErr) {}
       }
