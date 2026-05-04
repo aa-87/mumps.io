@@ -62,3 +62,9 @@ The shell no longer depends on an authenticated theme-load XHR before sign-in. `
 Active profiles saved through `MIOOSTHEME` are now resolved during `LOAD^MIOOSST` and rendered through `THEMEINL^MIOOSUI`. This keeps boot fast and avoids the visible flash/lag caused by client-side theme loading before authentication. The browser still supports `themeStudioLoadRemote()` from Customize, but automatic startup theme loading now prefers the server-rendered `desktop.activeThemeProfile` boot contract.
 
 Uploaded wallpapers are stored as VFS files and referenced by blob URLs in the saved profile (`desktop.wallpaperPreset="custom-url"`, `desktop.wallpaperUrl=<blob-url>`). The initial renderer maps those values into `--mioos-desktop-background` so custom wallpapers can appear on first paint after sign-in.
+
+## Server-backed boot theme and login surface
+
+On an initial boot with no active server profile and no explicit user-local applied theme, the shell defaults to the `Glow` Theme Studio profile. If a server-rendered active profile exists, it remains authoritative and is hydrated before first paint.
+
+Theme Studio login configuration now drives the runtime login modal. Image upload responses are parsed defensively so backend failures produce user-visible errors instead of breaking the uploader.

@@ -72,14 +72,23 @@
               '<span>[[ vm.alertMessage ]]</span>' +
               '<button type="button" @click="vm.dismissAlert">[[ vm.t(\'alert.dismiss\') ]]</button>' +
             '</div>' +
-            '<section v-if="vm.requiresSignin" class="mioos-auth-overlay" aria-hidden="false">' +
-              '<div class="mioos-auth-card" role="dialog" aria-modal="true" :aria-label="vm.boot.product.name">' +
-                '<div class="mioos-auth-head"><strong>[[ vm.boot.product.name ]]</strong><span>[[ vm.boot.product.subtitle ]]</span></div>' +
+            '<section v-if="vm.requiresSignin" class="mioos-auth-overlay theme-login-runtime" aria-hidden="false">' +
+              '<div class="mioos-auth-login-bg" :style="{ backgroundImage: vm.themeStudioLoginWallpaperCss(vm.themeStudioActiveTheme()) }"></div>' +
+              '<div class="mioos-auth-card theme-login-card" role="dialog" aria-modal="true" :aria-label="vm.boot.product.name">' +
+                '<div class="theme-login-avatar-wrap">' +
+                  '<img v-if="vm.activeLoginAvatarUrl()" class="theme-login-avatar-img" :src="vm.activeLoginAvatarUrl()" alt="Login avatar">' +
+                  '<div v-else class="theme-login-avatar-fallback" aria-hidden="true">M</div>' +
+                '</div>' +
+                '<div class="mioos-auth-head theme-login-head"><strong>[[ vm.boot.product.name ]]</strong><span>[[ vm.boot.product.subtitle ]]</span></div>' +
                 '<template v-if="!vm.authPasswordChange.required">' +
                   '<p class="mioos-auth-copy">[[ vm.t(\'auth.requiredCopy\') ]]</p>' +
                   '<label class="mioos-auth-field"><span>[[ vm.t(\'auth.username\') ]]</span><input v-model="vm.authForm.username" type="text" autocomplete="username"></label>' +
-                  '<label class="mioos-auth-field"><span>[[ vm.t(\'auth.password\') ]]</span><input v-model="vm.authForm.password" type="password" autocomplete="current-password"></label>' +
-                  '<p v-if="vm.activeLoginPrivacyNotice()" class="mioos-auth-privacy">[[ vm.activeLoginPrivacyNotice() ]]</p><div class="mioos-auth-actions">' +
+                  '<label class="mioos-auth-field"><span>[[ vm.t(\'auth.password\') ]]</span><input v-model="vm.authForm.password" type="password" autocomplete="current-password" @keydown.enter="vm.submitSignin"></label>' +
+                  '<aside class="theme-login-disclaimer" role="note">' +
+                    '<img v-if="vm.activeLoginWarningImageUrl()" :src="vm.activeLoginWarningImageUrl()" alt="" aria-hidden="true">' +
+                    '<div><strong>[[ vm.activeLoginWarningTitle() ]]</strong><p>[[ vm.activeLoginDisclaimer() ]]</p></div>' +
+                  '</aside>' +
+                  '<div class="mioos-auth-actions">' +
                     '<button type="button" class="mioos-auth-primary" @click="vm.submitSignin">[[ vm.t(\'auth.signin\') ]]</button>' +
                     '<button type="button" v-if="vm.boot.auth.guestLoginEnabled" @click="vm.submitGuestSignin">[[ vm.t(\'auth.continueGuest\') ]]</button>' +
                   '</div>' +
@@ -87,8 +96,9 @@
                 '<template v-else>' +
                   '<p class="mioos-auth-copy">Password rotation is required before shell access can continue.</p>' +
                   '<label class="mioos-auth-field"><span>New password</span><input v-model="vm.authPasswordChange.newPassword" type="password" autocomplete="new-password"></label>' +
-                  '<label class="mioos-auth-field"><span>Confirm password</span><input v-model="vm.authPasswordChange.confirmPassword" type="password" autocomplete="new-password"></label>' +
-                  '<p v-if="vm.activeLoginPrivacyNotice()" class="mioos-auth-privacy">[[ vm.activeLoginPrivacyNotice() ]]</p><div class="mioos-auth-actions"><button type="button" class="mioos-auth-primary" @click="vm.submitPasswordChange">Change password</button></div>' +
+                  '<label class="mioos-auth-field"><span>Confirm password</span><input v-model="vm.authPasswordChange.confirmPassword" type="password" autocomplete="new-password" @keydown.enter="vm.submitPasswordChange"></label>' +
+                  '<aside class="theme-login-disclaimer" role="note"><div><strong>[[ vm.activeLoginWarningTitle() ]]</strong><p>[[ vm.activeLoginDisclaimer() ]]</p></div></aside>' +
+                  '<div class="mioos-auth-actions"><button type="button" class="mioos-auth-primary" @click="vm.submitPasswordChange">Change password</button></div>' +
                 '</template>' +
               '</div>' +
             '</section>' +
@@ -262,7 +272,7 @@
                     <th><button type="button" @click="sort('modified')">Modified [[ sortMark('modified') ]]</button></th>
                   </tr></thead>
                   <tbody>
-                    <tr v-for="item in items" :key="itemKey(item)" :class="{ 'is-selected': selectedKey === itemKey(item) }" @click.stop="select(item)" @dblclick.stop="open(item)" @contextmenu.prevent.stop="rowMenu(item, $event)">
+                    <tr v-for="item in items" :key="itemKey(item)" :class="{ \'is-selected\': selectedKey === itemKey(item) }" @click.stop="select(item)" @dblclick.stop="open(item)" @contextmenu.prevent.stop="rowMenu(item, $event)">
                       <td><span class="mioos-explorer-row-icon">[[ vm.explorerItemGlyph(item) ]]</span><span class="mioos-explorer-row-name">[[ item.name || item.title ]]</span></td>
                       <td>[[ vm.explorerItemTypeLabel(item) ]]</td>
                       <td>[[ vm.explorerFormatSize(item) ]]</td>
@@ -271,7 +281,7 @@
                   </tbody>
                 </table>
                 <div v-else class="mioos-explorer-icon-grid" role="list" aria-label="Folder contents">
-                  <button v-for="item in items" :key="itemKey(item)" type="button" class="mioos-explorer-icon-tile" :class="{ 'is-selected': selectedKey === itemKey(item) }" @click.stop="select(item)" @dblclick.stop="open(item)" @contextmenu.prevent.stop="rowMenu(item, $event)">
+                  <button v-for="item in items" :key="itemKey(item)" type="button" class="mioos-explorer-icon-tile" :class="{ \'is-selected\': selectedKey === itemKey(item) }" @click.stop="select(item)" @dblclick.stop="open(item)" @contextmenu.prevent.stop="rowMenu(item, $event)">
                     <span class="mioos-explorer-icon-tile-glyph">[[ vm.explorerItemGlyph(item) ]]</span>
                     <span>[[ item.name || item.title ]]</span>
                   </button>
@@ -396,7 +406,7 @@
                         </div>
                         <div class="mioos-theme-row-vue">
                           <label class="span-2"><span>Global font size</span><input type="range" min="10" max="18" step="1" :value="vm.themeStudioFontScaleValue()" @input="vm.themeStudioSetFontScale($event.target.value)"></label>
-                          <div class="mioos-font-preview-vue span-2" :style="{ fontSize: vm.themeStudioFontScaleValue() + 'px' }">
+                          <div class="mioos-font-preview-vue span-2" :style="{ fontSize: vm.themeStudioFontScaleValue() + \'px\' }">
                             <strong :style="{ fontFamily: vm.themeStudioFontValue('titlebar') }">Title bar sample</strong>
                             <span :style="{ fontFamily: vm.themeStudioFontValue('taskbar') }">Taskbar and Start menu text update live.</span>
                             <small :style="{ fontFamily: vm.themeStudioFontValue('icon') }">Desktop icons · Menus · Dialogs</small>
@@ -585,12 +595,12 @@
                   <div class="mioos-theme-preview-card-vue" v-if="vm.themeStudioPreviewTab() === 'desktop'">
                     <strong>Desktop preview</strong>
                     <div class="mioos-theme-preview-stage-vue">
-                      <div class="mioos-theme-preview-shell-vue" :class="['is-' + (activeTheme.base || 'win7'), 'style-' + vm.startMenuStyleType(), 'position-' + vm.taskbarPosition(), 'button-' + vm.taskbarButtonStyleType()]" :style="vm.themeStudioPreviewRootStyle()">
+                      <div class="mioos-theme-preview-shell-vue" :class="[\'is-\' + (activeTheme.base || 'win7'), \'style-\' + vm.startMenuStyleType(), \'position-\' + vm.taskbarPosition(), \'button-\' + vm.taskbarButtonStyleType()]" :style="vm.themeStudioPreviewRootStyle()">
                         <div class="mioos-theme-preview-wallpaper-vue"></div>
                         <div class="mioos-theme-preview-icons-vue">
                           <div v-for="icon in previewIcons" :key="icon.key" class="mioos-theme-preview-icon-vue"><span>[[ icon.icon ]]</span><em>[[ icon.label ]]</em></div>
                         </div>
-                        <section class="mioos-theme-preview-window-vue" :style="{ left: (previewWindow.x || 82) + 'px', top: (previewWindow.y || 64) + 'px', width: (previewWindow.w || 292) + 'px', height: (previewWindow.h || 190) + 'px' }">
+                        <section class="mioos-theme-preview-window-vue" :style="{ left: (previewWindow.x || 82) + \'px\', top: (previewWindow.y || 64) + \'px\', width: (previewWindow.w || 292) + \'px\', height: (previewWindow.h || 190) + \'px\' }">
                           <header class="mioos-theme-preview-titlebar-vue"><div class="mioos-theme-preview-titlecopy"><span>🗔</span><strong>[[ previewWindow.title || 'Sample Window' ]]</strong></div><div class="mioos-theme-preview-controls-vue"><i class="is-min"></i><i class="is-max"></i><i class="is-close"></i></div></header>
                           <div class="mioos-theme-preview-content-vue"><button type="button" class="mioos-btn">Action</button><label><span>Name</span><input type="text" value="Live preview" aria-label="Live preview input"></label><div class="mioos-theme-preview-menu-vue"><span>File</span><span>Edit</span><span>View</span></div></div>
                         </section>
@@ -614,8 +624,8 @@
                             <span>[[ ((activeTheme.loginScreenConfig || {}).privacyNotice) || 'Authorized use only.' ]]</span>
                           </div>
                           <div class="mioos-theme-login-card-vue">
-                            <img v-if="((activeTheme.loginScreenConfig || {}).avatarUrl)" class="mioos-theme-login-avatar-img-vue" :src="(activeTheme.loginScreenConfig || {}).avatarUrl" :style="{ width: (((activeTheme.loginScreenConfig || {}).avatarSize) || 72) + 'px', height: (((activeTheme.loginScreenConfig || {}).avatarSize) || 72) + 'px' }">
-                            <div v-else class="mioos-theme-login-avatar-vue" :style="{ width: (((activeTheme.loginScreenConfig || {}).avatarSize) || 72) + 'px', height: (((activeTheme.loginScreenConfig || {}).avatarSize) || 72) + 'px' }"></div>
+                            <img v-if="((activeTheme.loginScreenConfig || {}).avatarUrl)" class="mioos-theme-login-avatar-img-vue" :src="(activeTheme.loginScreenConfig || {}).avatarUrl" :style="{ width: (((activeTheme.loginScreenConfig || {}).avatarSize) || 72) + \'px\', height: (((activeTheme.loginScreenConfig || {}).avatarSize) || 72) + \'px\' }">
+                            <div v-else class="mioos-theme-login-avatar-vue" :style="{ width: (((activeTheme.loginScreenConfig || {}).avatarSize) || 72) + \'px\', height: (((activeTheme.loginScreenConfig || {}).avatarSize) || 72) + \'px\' }"></div>
                             <strong>User account</strong>
                             <button type="button" class="mioos-btn">Log On</button>
                           </div>
@@ -628,7 +638,7 @@
                   <div class="mioos-theme-preview-card-vue is-mobile" v-else>
                     <strong>Mobile preview</strong>
                     <div class="mioos-theme-preview-stage-vue is-mobile">
-                      <div class="mioos-theme-preview-shell-vue is-mobile" :class="['is-' + (activeTheme.base || 'win7'), 'style-' + vm.startMenuStyleType(), 'position-' + vm.taskbarPosition(), 'button-' + vm.taskbarButtonStyleType()]" :style="vm.themeStudioPreviewMobileRootStyle()">
+                      <div class="mioos-theme-preview-shell-vue is-mobile" :class="[\'is-\' + (activeTheme.base || 'win7'), \'style-\' + vm.startMenuStyleType(), \'position-\' + vm.taskbarPosition(), \'button-\' + vm.taskbarButtonStyleType()]" :style="vm.themeStudioPreviewMobileRootStyle()">
                         <div class="mioos-theme-preview-wallpaper-vue"></div>
                         <div v-if="activeTab !== 'login'" class="mioos-theme-preview-icons-vue is-mobile">
                           <div v-for="icon in previewIcons.slice(0, 2)" :key="icon.key + '-mobile'" class="mioos-theme-preview-icon-vue"><span>[[ icon.icon ]]</span><em>[[ icon.label ]]</em></div>
@@ -643,8 +653,8 @@
                             <span>[[ ((activeTheme.loginScreenConfig || {}).privacyNotice) || 'Authorized use only.' ]]</span>
                           </div>
                           <div class="mioos-theme-login-card-vue">
-                            <img v-if="((activeTheme.loginScreenConfig || {}).avatarUrl)" class="mioos-theme-login-avatar-img-vue" :src="(activeTheme.loginScreenConfig || {}).avatarUrl" :style="{ width: (((activeTheme.loginScreenConfig || {}).avatarSize) || 64) + 'px', height: (((activeTheme.loginScreenConfig || {}).avatarSize) || 64) + 'px' }">
-                            <div v-else class="mioos-theme-login-avatar-vue" :style="{ width: (((activeTheme.loginScreenConfig || {}).avatarSize) || 64) + 'px', height: (((activeTheme.loginScreenConfig || {}).avatarSize) || 64) + 'px' }"></div>
+                            <img v-if="((activeTheme.loginScreenConfig || {}).avatarUrl)" class="mioos-theme-login-avatar-img-vue" :src="(activeTheme.loginScreenConfig || {}).avatarUrl" :style="{ width: (((activeTheme.loginScreenConfig || {}).avatarSize) || 64) + \'px\', height: (((activeTheme.loginScreenConfig || {}).avatarSize) || 64) + \'px\' }">
+                            <div v-else class="mioos-theme-login-avatar-vue" :style="{ width: (((activeTheme.loginScreenConfig || {}).avatarSize) || 64) + \'px\', height: (((activeTheme.loginScreenConfig || {}).avatarSize) || 64) + \'px\' }"></div>
                             <strong>User account</strong>
                             <button type="button" class="mioos-btn">Log On</button>
                           </div>
@@ -753,8 +763,8 @@
           }
         },
         template: '' +
-          '<aside class="mioos-start-menu-vue is-modern-launcher" :class="[\'is-\' + vm.currentShellThemeFamily(), \'style-\' + vm.startMenuStyleType(), \'position-\' + vm.taskbarPosition(), \'button-\' + vm.taskbarButtonStyleType()]" :style="vm.startMenuPopupStyle()" tabindex="-1" role="dialog" aria-label="Start menu" @keydown="vm.startMenuHandleKeydown($event)" @click.stop>' +
-            '<header class="mioos-start-modern-head">' +
+          '<aside class="mioos-start-menu-vue is-modern-launcher" :class="[\'is-\' + vm.currentShellThemeFamily(), \'style-\' + vm.startMenuStyleType(), \'position-\' + vm.taskbarPosition(), \'button-\' + vm.taskbarButtonStyleType(), { \'is-dragging\': ((vm.startMenuUi || {}).popupDrag || {}).active }]" :style="vm.startMenuPopupStyle()" tabindex="-1" role="dialog" aria-label="Start menu" @keydown="vm.startMenuHandleKeydown($event)" @click.stop>' +
+            '<header class="mioos-start-modern-head" @pointerdown="vm.startMenuBeginPopupDrag($event)">' +
               '<div class="mioos-start-modern-brand"><div class="mioos-start-modern-avatar" aria-hidden="true">M</div><div><strong>[[ vm.boot.product.name ]]</strong><span>[[ vm.boot.product.subtitle ]]</span></div></div>' +
               '<button type="button" class="mioos-start-modern-close" aria-label="Close Start menu" @click="vm.menuOpen=false">×</button>' +
             '</header>' +
@@ -763,14 +773,17 @@
               '<span class="mioos-start-modern-count">[[ resultLabel ]]</span>' +
             '</section>' +
             '<nav class="mioos-start-modern-groups" aria-label="Start menu shortcuts">' +
-              '<section v-for="group in groups" :key="group.key" class="mioos-start-modern-section">' +
-                '<header class="mioos-start-modern-section-head"><span class="mioos-start-modern-section-icon">[[ vm.startMenuGroupIcon(group.key) ]]</span><div><strong>[[ group.title ]]</strong><span>[[ group.subtitle ]]</span></div><em>[[ (group.items || []).length ]]</em></header>' +
-                '<div class="mioos-start-modern-list" role="list">' +
-                  '<button v-for="item in group.items" :key="item.key" type="button" role="listitem" class="mioos-start-modern-item" :class="{ \'is-selected\': selectedKey === item.key, \'is-disabled\': item.disabled }" :title="item.title + (item.subtitle ? \' — \' + item.subtitle : \'\')" :disabled="item.disabled" @mouseenter="vm.startMenuSelectItem(item)" @focus="vm.startMenuSelectItem(item)" @click="vm.startMenuOpenItem(item)">' +
-                    '<span class="mioos-start-modern-item-icon" aria-hidden="true">[[ item.icon ]]</span>' +
-                    '<span class="mioos-start-modern-item-copy"><strong>[[ item.title ]]</strong><em>[[ vm.startMenuItemMeta(item) ]]</em></span>' +
-                    '<span class="mioos-start-modern-item-source">[[ vm.startMenuSourceBadge(item) ]]</span>' +
-                  '</button>' +
+              '<section v-for="group in groups" :key="group.key" class="mioos-start-modern-section" :class="{ \'is-collapsed\': !vm.startMenuGroupOpen(group) }">' +
+                '<button type="button" class="mioos-start-modern-section-head" @click="vm.startMenuToggleGroup(group, $event)"><span class="mioos-start-modern-caret" aria-hidden="true">[[ vm.startMenuGroupOpen(group) ? \'▾\' : \'▸\' ]]</span><span class="mioos-start-modern-section-icon">[[ vm.startMenuGroupIcon(group.key) ]]</span><div><strong>[[ group.title ]]</strong><span>[[ group.subtitle ]]</span></div><em>[[ (group.items || []).length ]]</em></button>' +
+                '<div v-show="vm.startMenuGroupOpen(group)" class="mioos-start-modern-list" role="list">' +
+                  '<div v-for="row in vm.startMenuRenderRows(group)" :key="row.key" class="mioos-start-modern-node" :class="{ \'is-folder\': vm.startMenuIsFolderItem(row.item), \'is-open\': vm.startMenuFolderOpen(row.item) }">' +
+                    '<button type="button" role="listitem" class="mioos-start-modern-item" :class="{ \'is-selected\': selectedKey === row.item.key, \'is-disabled\': row.item.disabled, \'is-child\': row.level > 0 }" :style="{ paddingLeft: (12 + Math.min(row.level, 8) * 18) + \'px\' }" :title="row.item.title + (row.item.subtitle ? \' — \' + row.item.subtitle : \'\')" :disabled="row.item.disabled" @mouseenter="vm.startMenuSelectItem(row.item)" @focus="vm.startMenuSelectItem(row.item)" @click="vm.startMenuOpenItem(row.item)">' +
+                      '<span class="mioos-start-modern-item-icon" aria-hidden="true">[[ row.item.icon ]]</span>' +
+                      '<span class="mioos-start-modern-item-copy"><strong>[[ row.item.title ]]</strong><em>[[ vm.startMenuItemMeta(row.item) ]]</em></span>' +
+                      '<span class="mioos-start-modern-item-source">[[ vm.startMenuSourceBadge(row.item) ]]</span>' +
+                    '</button>' +
+                    '<button v-if="vm.startMenuIsFolderItem(row.item)" type="button" class="mioos-start-modern-folder-toggle" :aria-label="(vm.startMenuFolderOpen(row.item) ? \'Collapse \' : \'Expand \') + row.item.title" @click="vm.startMenuToggleFolder(row.item, $event)">[[ vm.startMenuFolderLoading(row.item) ? \'…\' : (vm.startMenuFolderOpen(row.item) ? \'▾\' : \'▸\') ]]</button>' +
+                  '</div>' +
                 '</div>' +
               '</section>' +
             '</nav>' +

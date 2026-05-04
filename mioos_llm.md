@@ -616,3 +616,14 @@ The Advanced Table must not reference a free `vm` variable inside root methods. 
 ## ROI 72C Start Menu Rewrite
 
 The Start Menu was rewritten as a dedicated, isolated ROI. Preserve this separation: future Start Menu work should not mix terminal, patient, table, or explorer rewrites unless explicitly requested. The menu must continue to source entries from `startMenuGroups()` so App Catalogue modules, Desktop VFS entries, language shortcuts, theme presets, Folder Explorer, and system tools remain available. The component is `start-menu-popup` in `public/mioos/app/mioos_shell_ui.js`; helper methods are in `public/mioos/app/mioos_core.js`; CSS is marked with `ROI 72C Start Menu Rewrite` in `public/mioos/mioos.css`.
+
+## ROI 72C follow-up — Start Menu folders, Theme Login, and text viewer stability
+
+- Start Menu groups and VFS folders are expandable.
+- Subfolders are lazy-loaded through `fs.list` and rendered recursively without preloading the whole VFS tree.
+- Popup Start Menu variant is movable by dragging its header.
+- Initial boot defaults to `Glow` unless a server active theme profile or explicit user-local applied theme exists.
+- Runtime login uses Theme Studio login background/avatar/warning/disclaimer settings.
+- Protected theme/blob URLs remain sanitized before authentication.
+- Theme Studio image upload parsing is robust against empty/non-JSON error responses.
+- Text file viewer falls back to `/api/mioos/fs/blob` when socket reads cannot hydrate content.

@@ -415,3 +415,7 @@ ROI 64L is implemented as a stabilization pass for ROI 64F–64K. It completes t
 ## ROI 72C Start Menu rewrite
 
 ROI 72C is dedicated entirely to the Start Menu component. The menu is now a modern, mobile-friendly launcher with grouped shortcuts, clear source badges, search, keyboard navigation, and a bottom-sheet layout on smaller screens. It preserves existing links from the App Catalogue, server-authored modules, language options, theme presets, shell tools, and Desktop VFS entries.
+
+## ROI 72C Follow-up — Start Menu folders, Theme Login, and viewer stability
+
+The Start Menu launcher now supports expandable VFS folders/subfolders through lazy `fs.list` loading, and the popup variant is movable like a modal. Initial first boot defaults to `Glow` unless a server-rendered active theme profile or explicit user-local theme exists. Runtime login uses Theme Studio login assets/disclaimer while still sanitizing protected asset URLs before authentication. Text-file viewers fall back to the HTTP blob endpoint when a socket read cannot hydrate content.

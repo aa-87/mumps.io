@@ -82,6 +82,15 @@
     return route + (route.indexOf('?') >= 0 ? '&' : '?') + params.join('&');
   }
 
+  function fetchTextBlob(vm, item) {
+    var url = buildFsBlobUrl(vm, item, { inline: true });
+    if (!url || !window.fetch) return Promise.reject(new Error('fs_blob_unavailable'));
+    return window.fetch(url, { credentials: 'same-origin' }).then(function (res) {
+      if (!res.ok) throw new Error('fs_blob_http_' + res.status);
+      return res.text();
+    });
+  }
+
   function stringToBytes(raw) {
     var value = String(raw || '');
     var bytes = new Uint8Array(value.length);
@@ -2094,15 +2103,24 @@
         if (!this.command) return;
         this.command('fs.read.range', { id: item.id || item.key || item.fileId, offset: 0, size: +((((this.boot || {}).vfs || {}).readWindowBytes) || 32768) }).then(function (msg) {
           var payload = payloadRoot(msg);
+          var text = appendTruncationNotice(textFromPayload(payload), payload);
+          if (!text && !payload.mime) throw new Error('empty_range_payload');
           win.fileView.loading = false;
-          win.fileView.content = appendTruncationNotice(textFromPayload(payload), payload);
+          win.fileView.content = text;
           win.fileView.mime = payload.mime || win.fileView.mime;
         }).catch(function () {
           return this.command('fs.read', { id: item.id || item.key || item.fileId }).then(function (msg) {
             var payload = payloadRoot(msg);
+            var text = textFromPayload(payload);
+            if (!text && !payload.mime) throw new Error('empty_read_payload');
             win.fileView.loading = false;
-            win.fileView.content = textFromPayload(payload);
+            win.fileView.content = text;
             win.fileView.mime = payload.mime || win.fileView.mime;
+          });
+        }.bind(this)).catch(function () {
+          return fetchTextBlob(this, item).then(function (text) {
+            win.fileView.loading = false;
+            win.fileView.content = text || '';
           });
         }.bind(this)).catch(function (err) {
           win.fileView.loading = false;

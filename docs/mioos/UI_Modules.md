@@ -103,3 +103,9 @@ The Advanced Table module now treats editable cells, validation, column visibili
 The Start Menu is a shell component, not a standalone SPA. Its component markup is in `public/mioos/app/mioos_shell_ui.js`, and its source entries are normalized through `startMenuAppCatalogItems()`, `startMenuFilesystemItems()`, and `startMenuGroups()` in `public/mioos/app/mioos_core.js`.
 
 ROI 72C rewrites the visual presentation only. New modules should continue to appear through the module/App Catalogue path, while language shortcuts, theme shortcuts, Folder Explorer, Desktop VFS items, search, and keyboard navigation remain part of the contract.
+
+## Start Menu and Theme Login follow-up
+
+The Start Menu component is a modern mobile-friendly launcher with expandable groups and recursively expandable VFS folders. The popup style can be repositioned by dragging the header. Folder expansion uses the existing `fs.list` command and does not preload every folder on boot.
+
+The login modal is driven by Theme Studio login configuration: wallpaper, avatar, warning image/title, and disclaimer. Protected `/api/mioos/theme-asset` and `/api/mioos/fs/blob` URLs are sanitized before authentication so authenticated assets are not emitted pre-login.

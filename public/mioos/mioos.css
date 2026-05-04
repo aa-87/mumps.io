@@ -3313,3 +3313,115 @@ button:disabled { cursor: default; opacity: .55; }
   .mioos-start-modern-footer { align-items: stretch; flex-direction: column; }
   .mioos-start-modern-secondary { width: 100%; }
 }
+
+/* ROI 72C follow-up: expandable/movable Start Menu plus Theme Studio login runtime. */
+.mioos-start-menu-vue.is-modern-launcher.is-dragging { cursor: grabbing; user-select: none; }
+.mioos-start-menu-vue.is-modern-launcher.style-popup .mioos-start-modern-head { cursor: grab; touch-action: none; }
+.mioos-start-menu-vue.is-modern-launcher.style-popup.is-dragging .mioos-start-modern-head { cursor: grabbing; }
+.mioos-start-modern-section-head {
+  appearance: none;
+  border: 0;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 18px 28px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.mioos-start-modern-caret { font-size: 12px; opacity: .78; text-align: center; }
+.mioos-start-modern-node { position: relative; display: grid; grid-template-columns: 1fr auto; align-items: stretch; gap: 4px; }
+.mioos-start-modern-node .mioos-start-modern-item { min-width: 0; }
+.mioos-start-modern-folder-toggle {
+  align-self: stretch;
+  min-width: 34px;
+  border: 1px solid color-mix(in srgb, var(--menu-border, rgba(148,163,184,.4)) 65%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--menu-bg, #fff) 84%, var(--start-menu-accent, #2563eb) 16%);
+  color: var(--menu-text, #0f172a);
+  cursor: pointer;
+  font-weight: 800;
+}
+.mioos-start-modern-folder-toggle:hover,
+.mioos-start-modern-folder-toggle:focus-visible { outline: none; background: var(--menu-hover, rgba(59,130,246,.14)); }
+.mioos-start-modern-children {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 4px;
+  margin: 2px 0 6px 32px;
+  padding-left: 10px;
+  border-left: 2px solid color-mix(in srgb, var(--start-menu-accent, #2563eb) 36%, transparent);
+}
+.mioos-start-modern-item.is-child { min-height: 34px; font-size: .92em; }
+.mioos-start-modern-item.is-child .mioos-start-modern-item-icon { transform: scale(.88); }
+.theme-login-runtime {
+  overflow: hidden;
+  background: radial-gradient(circle at top left, rgba(59,130,246,.28), transparent 42%), rgba(2,6,23,.72);
+}
+.mioos-auth-login-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  opacity: .9;
+  transform: scale(1.02);
+  filter: saturate(1.08) contrast(1.02);
+}
+.theme-login-runtime::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(2,6,23,.62), rgba(15,23,42,.22) 50%, rgba(2,6,23,.72));
+  z-index: 1;
+}
+.theme-login-card {
+  position: relative;
+  z-index: 2;
+  background: var(--login-box-bg, rgba(15,23,42,.88));
+  color: var(--login-box-text, #fff);
+  border: 1px solid var(--login-box-border, rgba(255,255,255,.28));
+  box-shadow: var(--login-box-shadow, 0 24px 70px rgba(0,0,0,.38));
+  backdrop-filter: blur(18px);
+  max-width: min(440px, calc(100vw - 28px));
+}
+.theme-login-avatar-wrap { display: grid; place-items: center; margin: -8px 0 12px; }
+.theme-login-avatar-img,
+.theme-login-avatar-fallback {
+  width: clamp(64px, var(--login-avatar-size, 82px), 112px);
+  height: clamp(64px, var(--login-avatar-size, 82px), 112px);
+  border-radius: 999px;
+  object-fit: cover;
+  border: 3px solid rgba(255,255,255,.74);
+  box-shadow: 0 16px 42px rgba(0,0,0,.34);
+}
+.theme-login-avatar-fallback {
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, var(--accent, #4ba3ff), #0f172a);
+  color: white;
+  font-size: 34px;
+  font-weight: 900;
+}
+.theme-login-head { text-align: center; }
+.theme-login-disclaimer {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  align-items: start;
+  margin: 12px 0;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(2,6,23,.38);
+  border: 1px solid rgba(255,255,255,.16);
+  color: inherit;
+}
+.theme-login-disclaimer img { width: 36px; height: 36px; object-fit: cover; border-radius: 8px; }
+.theme-login-disclaimer strong { display: block; margin-bottom: 4px; }
+.theme-login-disclaimer p { margin: 0; line-height: 1.35; opacity: .92; }
+@media (max-width: 720px) {
+  .mioos-start-menu-vue.is-modern-launcher.style-popup .mioos-start-modern-head { cursor: default; }
+  .mioos-start-modern-node { grid-template-columns: 1fr 40px; }
+  .mioos-start-modern-children { margin-left: 18px; }
+}

@@ -135,7 +135,7 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("uploadBatchSize")=$$UPBATCH^MIOOSFSUP(.CONF)
 	SET STATE("uploadMaxInflightChunks")=$$UPINFLGT^MIOOSFSUP(.CONF)
 	SET STATE("uploadBatchFlushThreshold")=$$UPFLUSH^MIOOSFSUP(.CONF)
-	SET STATE("themeKey")=$GET(CONF("mioos","desktop","theme"),"luna-blue")
+	SET STATE("themeKey")=$GET(CONF("mioos","desktop","theme"),"glow")
 	SET STATE("wallpaper")=$GET(CONF("mioos","desktop","wallpaper"),"aurora")
 	SET STATE("density")=$GET(CONF("mioos","desktop","density"),"comfortable")
 	SET STATE("fontFamily")=$GET(CONF("mioos","desktop","fontFamily"),"Segoe UI")
@@ -223,7 +223,7 @@ ACTIVETHM(STATE,CONF)
 	;
 THEMEBOOT(STATE,CONF)
 	NEW DESK,WID,URL,FIT
-	SET STATE("theme")=$GET(STATE("themeKey"),"luna-blue")
+	SET STATE("theme")=$GET(STATE("themeKey"),"glow")
 	SET URL=$GET(STATE("activeThemeProfile","desktop","wallpaperUrl"))
 	SET WID=$GET(STATE("activeThemeProfile","desktop","wallpaperId"))
 	IF URL="",WID'="" SET URL=$GET(STATE("fsBlobPath"),"/api/mioos/fs/blob")_"?id="_WID
@@ -778,7 +778,7 @@ THEMES(ROOT,CURRENT)
 		SET @ROOT@(1,"family")="Meadow Classic"
 		SET @ROOT@(1,"familyKey")="meadow-classic"
 		SET @ROOT@(1,"mode")="light"
-		SET @ROOT@(1,"isCurrent")=$SELECT($GET(CURRENT)="luna-blue":1,$GET(CURRENT)="meadow-classic-light":1,1:0)
+		SET @ROOT@(1,"isCurrent")=$SELECT($GET(CURRENT)="glow":1,$GET(CURRENT)="luna-blue":1,$GET(CURRENT)="meadow-classic-light":1,1:0)
 		SET @ROOT@(1,"wallpaper")="gradient-gloss"
 		SET @ROOT@(1,"accent")="#3a78d8"
 		SET @ROOT@(1,"taskbar")="#4b82d8"

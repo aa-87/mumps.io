@@ -63,6 +63,7 @@ MIOOST ; MIOOS tests
 	DO T071
 	DO T072
 	DO T073
+	DO T074
 	QUIT
 	;
 RESET
@@ -162,7 +163,7 @@ T002
 	DO EQ^MIOTASSERT($GET(OBJ("routes","fsList")),"/api/mioos/fs/list","[MIOOST][T002][fs list route]")
 	DO EQ^MIOTASSERT($GET(OBJ("routes","fsBlob")),"/api/mioos/fs/blob","[MIOOST][T002][fs blob route]")
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","windowing","engine")),"mioos-native-vue-css","[MIOOST][T002][windowing engine]")
-	DO EQ^MIOTASSERT($GET(OBJ("desktop","themeKey")),"luna-blue","[MIOOST][T002][theme key]")
+	DO EQ^MIOTASSERT($GET(OBJ("desktop","themeKey")),"glow","[MIOOST][T002][theme key]")
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","themeMode")),"light","[MIOOST][T002][theme mode]")
 	DO EQ^MIOTASSERT($GET(OBJ("desktop","windowing","chrome")),"reusable-shell-chrome","[MIOOST][T002][window chrome]")
 	DO EQ^MIOTASSERT(+$GET(OBJ("desktop","windowing","titlebarHeight")),40,"[MIOOST][T002][titlebar height]")
@@ -1408,4 +1409,17 @@ T073
 	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/ROI_72C_Start_Menu_Rewrite.md","ROI 72C"),"[MIOOST][T073][start menu roi doc]")
 	QUIT
 	;
+	;
+T074
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","startMenuToggleFolder"),"[MIOOST][T074][start folder toggle]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","startMenuLoadFolderChildren"),"[MIOOST][T074][start folder fs list]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","startMenuRenderRows"),"[MIOOST][T074][start recursive rows]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","startMenuBeginPopupDrag"),"[MIOOST][T074][movable popup start]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","store.activeThemeId = 'glow'"),"[MIOOST][T074][initial glow fallback]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSST.m","glow"),"[MIOOST][T074][server glow default]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","invalid_json_response"),"[MIOOST][T074][theme upload robust json]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","theme-login-runtime"),"[MIOOST][T074][theme login runtime]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","fetchTextBlob"),"[MIOOST][T074][text viewer blob fallback]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","ROI 72C follow-up"),"[MIOOST][T074][followup css]")
+	QUIT
 	;

@@ -27,7 +27,7 @@
           activeWindowId: '',
           menuOpen: false,
           menuFilter: '',
-          startMenuUi: { selectedKey: '', lastOpenedAt: 0 },
+          startMenuUi: { selectedKey: '', lastOpenedAt: 0, expandedGroups: {}, expandedFolders: {}, folderChildren: {}, folderLoading: {}, popupPosition: null, popupDrag: null },
           socket: null,
           socketConnected: false,
           clockText: '',
@@ -1936,6 +1936,9 @@
               if (store.order.indexOf(parsedApplied.id) < 0) store.order.push(parsedApplied.id);
               if (!parsedApplied.locked && store.customThemes.indexOf(parsedApplied.id) < 0) store.customThemes.push(parsedApplied.id);
               store.activeThemeId = parsedApplied.id;
+            } else {
+              /* Initial boot is Glow unless a server-rendered profile or explicit user-local applied theme exists. */
+              store.activeThemeId = 'glow';
             }
           }
           if (!store.activeThemeId) store.activeThemeId = 'glow';
@@ -1966,7 +1969,7 @@
         },
         themeStudioManagedVarKeys: function () {
           return [
-            '--desktop-bg','--desktop-overlay','--window-bg','--window-border','--window-border-strong','--titlebar-bg','--titlebar-text','--titlebar-inactive','--accent','--accent-soft','--taskbar-bg','--taskbar-border','--taskbar-text','--menu-bg','--menu-border','--menu-text','--menu-hover','--menu-divider','--menu-shadow','--icon-label-bg','--icon-label-text','--icon-shadow','--shadow-window','--shadow-window-active','--font-ui','--font-titlebar','--font-taskbar','--font-menu','--font-icon-label','--font-size-ui','--font-size-titlebar','--font-size-taskbar','--font-size-menu','--font-size-icon-label','--window-radius','--taskbar-height','--taskbar-transparency','--taskbar-overlay','--taskbar-blur','--taskbar-effective-bg','--theme-surface','--theme-surface-strong','--theme-panel-bg','--theme-panel-border','--theme-field-bg','--theme-field-text','--theme-muted-text','--theme-tab-bg','--theme-tab-active-bg','--theme-tab-border','--theme-preview-card-bg','--theme-preview-card-border','--titlebar-height','--desktop-grid-cell','--desktop-icon-size','--button-radius','--button-tint','--button-tint-hover','--button-text','--glass-opacity','--control-min','--control-max','--control-close','--start-menu-width','--start-menu-accent','--taskbar-position','--desktop-icon-size-mobile','--taskbar-height-mobile','--desktop-wallpaper','--login-wallpaper','--theme-minimize-speed','--theme-progress-speed','--theme-open-speed','--theme-hover-speed','--theme-menu-speed','--theme-wallpaper-speed','--theme-taskbar-speed','--login-box-bg','--login-box-border','--login-box-shadow','--login-box-text'
+            '--desktop-bg','--desktop-overlay','--window-bg','--window-border','--window-border-strong','--titlebar-bg','--titlebar-text','--titlebar-inactive','--accent','--accent-soft','--taskbar-bg','--taskbar-border','--taskbar-text','--menu-bg','--menu-border','--menu-text','--menu-hover','--menu-divider','--menu-shadow','--icon-label-bg','--icon-label-text','--icon-shadow','--shadow-window','--shadow-window-active','--font-ui','--font-titlebar','--font-taskbar','--font-menu','--font-icon-label','--font-size-ui','--font-size-titlebar','--font-size-taskbar','--font-size-menu','--font-size-icon-label','--window-radius','--taskbar-height','--taskbar-transparency','--taskbar-overlay','--taskbar-blur','--taskbar-effective-bg','--theme-surface','--theme-surface-strong','--theme-panel-bg','--theme-panel-border','--theme-field-bg','--theme-field-text','--theme-muted-text','--theme-tab-bg','--theme-tab-active-bg','--theme-tab-border','--theme-preview-card-bg','--theme-preview-card-border','--titlebar-height','--desktop-grid-cell','--desktop-icon-size','--button-radius','--button-tint','--button-tint-hover','--button-text','--glass-opacity','--control-min','--control-max','--control-close','--start-menu-width','--start-menu-accent','--taskbar-position','--desktop-icon-size-mobile','--taskbar-height-mobile','--desktop-wallpaper','--login-wallpaper','--theme-minimize-speed','--theme-progress-speed','--theme-open-speed','--theme-hover-speed','--theme-menu-speed','--theme-wallpaper-speed','--theme-taskbar-speed','--login-box-bg','--login-box-border','--login-box-shadow','--login-box-text','--login-avatar-size'
           ];
         },
         themeStudioLightSurfaceVars: function (theme) {
@@ -2138,6 +2141,7 @@
             rootNode.style.setProperty('--login-box-shadow', '0 22px 56px rgba(0,0,0,0.28)');
           }
           rootNode.style.setProperty('--login-box-text', loginCfg.textColor || current['--taskbar-text'] || '#ffffff');
+          rootNode.style.setProperty('--login-avatar-size', Math.max(48, Math.min(128, +(loginCfg.avatarSize || 82))) + 'px');
           this._themeStudioAppliedKeys = this.themeStudioManagedVarKeys().slice(0);
           rootNode.dataset.shellTheme = theme.id || 'glow';
           rootNode.dataset.shellFamily = theme.base || 'win7';
@@ -2326,9 +2330,16 @@
           form = new FormData();
           form.append('kind', kind);
           form.append('file', file, file.name || 'image.bin');
-          return fetch(route, { method: 'POST', body: form, credentials: 'same-origin' }).then(function (res) { return res.json().then(function (obj) { return { ok: res.ok, obj: obj || {} }; }); }).then(function (payload) {
-            if (!payload.ok || !payload.obj || !payload.obj.ok) throw new Error((payload.obj && (payload.obj.detail || payload.obj.error)) || 'upload_failed');
-            self.themeStudioSetUploadedAsset(path, payload.obj.url || '', { assetId: payload.obj.assetId || payload.obj.id || '', kind: payload.obj.kind || kind });
+          return fetch(route, { method: 'POST', body: form, credentials: 'same-origin' }).then(function (res) {
+            return res.text().then(function (text) {
+              var obj = {};
+              if (text) { try { obj = JSON.parse(text); } catch (err) { obj = { ok: false, error: 'invalid_json_response', detail: text.slice(0, 180) }; } }
+              return { ok: res.ok, status: res.status, obj: obj || {} };
+            });
+          }).then(function (payload) {
+            if (!payload.ok || !payload.obj || !payload.obj.ok) throw new Error((payload.obj && (payload.obj.detail || payload.obj.message || payload.obj.error)) || ('upload_failed_http_' + (payload.status || '')));
+            self.themeStudioSetUploadedAsset(path, payload.obj.url || payload.obj.assetUrl || '', { assetId: payload.obj.assetId || payload.obj.id || '', kind: payload.obj.kind || kind });
+            if (self.themeStudioPersistActiveRemote) self.themeStudioPersistActiveRemote(self.themeStudioActiveTheme(), true).catch(function () {});
             self.pushNotification('Theme Studio', 'Image uploaded.');
           }).catch(function (err) {
             store.uploadStatus = 'failed';
@@ -2402,13 +2413,21 @@
           var width = +((((this.themeStudioActiveTheme() || {}).startMenuConfig || {}).width) || 360);
           var h = this.taskbarHeightValue() + 12;
           var startStyle = this.startMenuStyleType();
-          var style = { width: Math.max(300, width) + 'px' };
+          var ui = this.startMenuUi || {};
+          var style = { width: Math.max(320, width) + 'px' };
           if (startStyle === 'popup') {
-            style.left = '50%';
-            style.top = '50%';
+            style.maxWidth = 'min(720px, calc(100vw - 24px))';
             style.bottom = 'auto';
-            style.transform = 'translate(-50%, -50%)';
-            style.maxWidth = 'min(680px, calc(100vw - 40px))';
+            style.right = 'auto';
+            if (ui.popupPosition && typeof ui.popupPosition.left !== 'undefined' && typeof ui.popupPosition.top !== 'undefined') {
+              style.left = Math.max(8, Math.min(+ui.popupPosition.left || 0, Math.max(8, window.innerWidth - Math.max(320, width) - 8))) + 'px';
+              style.top = Math.max(8, Math.min(+ui.popupPosition.top || 0, Math.max(8, window.innerHeight - 120))) + 'px';
+              style.transform = 'none';
+            } else {
+              style.left = '50%';
+              style.top = '50%';
+              style.transform = 'translate(-50%, -50%)';
+            }
             return style;
           }
           if (pos === 'top') { style.top = h + 'px'; style.bottom = 'auto'; style.left = '14px'; }
@@ -2466,6 +2485,90 @@
           }).filter(Boolean);
         },
         startMenuAllItems: function () { return this.startMenuAppCatalogItems().concat(this.startMenuFilesystemItems()); },
+        startMenuEnsureUi: function () {
+          if (!this.startMenuUi) this.startMenuUi = {};
+          if (!this.startMenuUi.expandedGroups) this.startMenuUi.expandedGroups = {};
+          if (!this.startMenuUi.expandedFolders) this.startMenuUi.expandedFolders = {};
+          if (!this.startMenuUi.folderChildren) this.startMenuUi.folderChildren = {};
+          if (!this.startMenuUi.folderLoading) this.startMenuUi.folderLoading = {};
+          if (!this.startMenuUi.selectedKey) this.startMenuUi.selectedKey = '';
+          return this.startMenuUi;
+        },
+        startMenuGroupDefaultOpen: function (groupKey) {
+          return ['pinned', 'places', 'applications', 'filesystem'].indexOf(String(groupKey || '')) >= 0;
+        },
+        startMenuGroupOpen: function (group) {
+          var ui = this.startMenuEnsureUi();
+          var key = String((group || {}).key || '');
+          if (Object.prototype.hasOwnProperty.call(ui.expandedGroups, key)) return !!ui.expandedGroups[key];
+          return typeof (group || {}).open === 'boolean' ? !!group.open : this.startMenuGroupDefaultOpen(key);
+        },
+        startMenuToggleGroup: function (group, event) {
+          if (event) { event.preventDefault(); event.stopPropagation(); }
+          if (!group) return;
+          var ui = this.startMenuEnsureUi();
+          var key = String(group.key || '');
+          ui.expandedGroups[key] = !this.startMenuGroupOpen(group);
+        },
+        startMenuFolderKey: function (item) {
+          item = item || {};
+          return String(item.folderId || item.id || item.fileId || item.key || item.path || item.title || '');
+        },
+        startMenuIsFolderItem: function (item) {
+          item = item || {};
+          return item.source === 'vfs' && (item.kind === 'folder' || item.folderId || ((item.raw || {}).kind === 'folder'));
+        },
+        startMenuFolderOpen: function (item) {
+          var ui = this.startMenuEnsureUi();
+          return !!ui.expandedFolders[this.startMenuFolderKey(item)];
+        },
+        startMenuFolderLoading: function (item) {
+          var ui = this.startMenuEnsureUi();
+          return !!ui.folderLoading[this.startMenuFolderKey(item)];
+        },
+        startMenuFolderChildren: function (item) {
+          var ui = this.startMenuEnsureUi();
+          return ui.folderChildren[this.startMenuFolderKey(item)] || [];
+        },
+        startMenuToggleFolder: function (item, event) {
+          var self = this;
+          var ui = this.startMenuEnsureUi();
+          var key = this.startMenuFolderKey(item);
+          if (event) { event.preventDefault(); event.stopPropagation(); }
+          if (!this.startMenuIsFolderItem(item) || !key) return Promise.resolve();
+          ui.expandedFolders[key] = !ui.expandedFolders[key];
+          if (!ui.expandedFolders[key] || ui.folderChildren[key]) return Promise.resolve(ui.folderChildren[key] || []);
+          ui.folderLoading[key] = true;
+          return this.startMenuLoadFolderChildren(item).then(function (children) {
+            ui.folderChildren[key] = children || [];
+            ui.folderLoading[key] = false;
+            return children;
+          }).catch(function (err) {
+            ui.folderChildren[key] = [{ key: 'folder-error:' + key, title: 'Unable to load folder', subtitle: (err && err.message) || 'fs_list_failed', icon: '⚠', disabled: true, source: 'vfs', groupKey: 'filesystem' }];
+            ui.folderLoading[key] = false;
+            return ui.folderChildren[key];
+          });
+        },
+        startMenuLoadFolderChildren: function (item) {
+          var self = this;
+          var folderId = (item || {}).folderId || (item || {}).id || (item || {}).fileId || ((item || {}).raw || {}).id || '';
+          if (!folderId || !this.command) return Promise.resolve([]);
+          return this.command('fs.list', { id: folderId, parent: folderId }).then(function (msg) {
+            var payload = msg && (msg.vfs || msg.payload || msg.result || msg);
+            var rows = [];
+            if (payload && Array.isArray(payload.items)) rows = payload.items;
+            else if (payload && payload.items && typeof payload.items === 'object') rows = Object.keys(payload.items).map(function (k) { return payload.items[k]; });
+            else if (payload && Array.isArray(payload.rows)) rows = payload.rows;
+            return rows.map(function (entry) {
+              var copy = Object.assign({}, entry || {});
+              copy.key = 'vfs:' + (copy.id || copy.key || copy.path || copy.name);
+              return self.startMenuNormalizeItem(copy, 'vfs', 'filesystem');
+            }).filter(Boolean).sort(function (a, b) {
+              if (a.kind !== b.kind) { if (a.kind === 'folder') return -1; if (b.kind === 'folder') return 1; }
+              return String(a.title || '').localeCompare(String(b.title || ''));
+            });
+          });
+        },
         startMenuMatchesItem: function (item, needle) {
           if (!needle) return true;
           var hay = ((item.title || '') + ' ' + (item.subtitle || '') + ' ' + (item.key || '') + ' ' + (item.path || '')).toLowerCase();
@@ -2476,15 +2579,30 @@
           var self = this;
           return (items || []).filter(function (item) { return self.startMenuMatchesItem(item, needle); });
         },
+        startMenuVisibleItems: function (group) {
+          return this.startMenuGroupOpen(group) ? ((group || {}).items || []) : [];
+        },
+        startMenuRenderRows: function (group) {
+          var self = this;
+          var rows = [];
+          function add(item, level) {
+            rows.push({ key: String(item.key || '') + ':' + level, item: item, level: level });
+            if (self.startMenuIsFolderItem(item) && self.startMenuFolderOpen(item)) {
+              (self.startMenuFolderChildren(item) || []).forEach(function (child) { add(child, level + 1); });
+            }
+          }
+          (this.startMenuVisibleItems(group) || []).forEach(function (item) { add(item, 0); });
+          return rows;
+        },
         startMenuFlatItems: function () {
           var out = [];
-          (this.startMenuGroups() || []).forEach(function (group) { (group.items || []).forEach(function (item) { if (!item.disabled) out.push(item); }); });
+          var self = this;
+          (this.startMenuGroups() || []).forEach(function (group) {
+            (self.startMenuRenderRows(group) || []).forEach(function (row) { if (row.item && !row.item.disabled) out.push(row.item); });
+          });
           return out;
         },
         startMenuGroups: function () {
-          var theme = this.themeStudioActiveTheme() || {};
-          var style = (((theme.startMenuConfig || {}).style) || 'classic');
-          var nested = ((theme.startMenuConfig || {}).nested) !== false;
           var catalog = this.startMenuAppCatalogItems();
           var files = this.startMenuFilesystemItems();
           var apps = catalog.filter(function (item) { return item.groupKey === 'applications'; });
@@ -2495,16 +2613,25 @@
           var themes = catalog.filter(function (item) { return item.groupKey === 'themes'; });
           var pinned = [];
           ['home', 'terminal', 'transfers', 'customize', 'app-catalog'].forEach(function (key) { var found = catalog.find(function (item) { return item.key === key || item.appKey === key; }); if (found) pinned.push(found); });
-          var groups = [{ key: 'pinned', title: 'Pinned', subtitle: 'Common places and tools', open: true, items: pinned }, { key: 'places', title: 'Places', subtitle: 'Folders and explorer entry points', open: true, items: places }, { key: 'applications', title: 'Programs', subtitle: 'Apps and server-authored modules', open: true, items: apps.concat(modules) }, { key: 'filesystem', title: 'Desktop Files', subtitle: 'Files and folders from /Home/Desktop', open: nested, items: files }, { key: 'themes', title: 'Themes', subtitle: 'Shell theme presets', open: false, items: themes }, { key: 'language', title: 'Language', subtitle: 'Locale shortcuts', open: false, items: language }, { key: 'system', title: 'System', subtitle: 'Settings, security, and diagnostics', open: style === 'popup' ? true : false, items: system }];
+          var groups = [
+            { key: 'pinned', title: 'Pinned', subtitle: 'Common places and tools', open: true, items: pinned },
+            { key: 'places', title: 'Places', subtitle: 'Folders and explorer entry points', open: true, items: places },
+            { key: 'applications', title: 'Programs', subtitle: 'Apps and server-authored modules', open: true, items: apps.concat(modules) },
+            { key: 'filesystem', title: 'Desktop Files', subtitle: 'Expandable files and folders from /Home/Desktop', open: true, items: files },
+            { key: 'themes', title: 'Themes', subtitle: 'Shell theme presets', open: false, items: themes },
+            { key: 'language', title: 'Language', subtitle: 'Locale shortcuts', open: false, items: language },
+            { key: 'system', title: 'System', subtitle: 'Settings, security, and diagnostics', open: false, items: system }
+          ];
           var self = this;
-          groups = groups.map(function (group) { var copy = Object.assign({}, group); copy.items = self.startMenuFilterItems(copy.items); if (!nested || style === 'popup') copy.open = true; return copy; }).filter(function (group) { return (group.items || []).length > 0; });
+          groups = groups.map(function (group) { var copy = Object.assign({}, group); copy.items = self.startMenuFilterItems(copy.items); return copy; }).filter(function (group) { return (group.items || []).length > 0; });
           if (!groups.length) groups.push({ key: 'empty', title: 'No results', subtitle: 'Try another search', open: true, items: [{ key: 'empty-result', title: 'No matching apps or files', subtitle: 'Search /Home/Desktop and applications', icon: '⌕', disabled: true }] });
           return groups;
         },
         startMenuItemByKey: function (key) {
-          var match = null;
-          (this.startMenuGroups() || []).some(function (group) { return (group.items || []).some(function (item) { if (String(item.key) === String(key)) { match = item; return true; } return false; }); });
-          return match;
+          var rows = this.startMenuFlatItems ? this.startMenuFlatItems() : [];
+          var i;
+          for (i = 0; i < rows.length; i += 1) if (String(rows[i].key) === String(key)) return rows[i];
+          return null;
         },
         startMenuSelectItem: function (item) {
           if (!item || !item.key) return;
@@ -2569,6 +2696,58 @@
           var key = item.launchKey || item.appKey || item.key;
           if (key === 'theme-studio') key = 'customize';
           this.openApp(key);
+        },
+        startMenuBeginPopupDrag: function (event) {
+          if (this.startMenuStyleType && this.startMenuStyleType() !== 'popup') return;
+          if (!event || (event.button && event.button !== 0)) return;
+          if (event.target && event.target.closest && event.target.closest('button,input,select,textarea,a')) return;
+          var ui = this.startMenuEnsureUi();
+          var rect = event.currentTarget && event.currentTarget.closest ? event.currentTarget.closest('.mioos-start-menu-vue').getBoundingClientRect() : null;
+          ui.popupPosition = ui.popupPosition || { left: rect ? rect.left : Math.max(16, (window.innerWidth - 520) / 2), top: rect ? rect.top : Math.max(16, (window.innerHeight - 520) / 2) };
+          ui.popupDrag = { active: true, startX: event.clientX, startY: event.clientY, left: ui.popupPosition.left, top: ui.popupPosition.top };
+          var self = this;
+          if (event.preventDefault) event.preventDefault();
+          if (this._startMenuPopupDragMove) window.removeEventListener('pointermove', this._startMenuPopupDragMove);
+          if (this._startMenuPopupDragEnd) window.removeEventListener('pointerup', this._startMenuPopupDragEnd);
+          this._startMenuPopupDragMove = function (ev) { self.startMenuMovePopupDrag(ev); };
+          this._startMenuPopupDragEnd = function (ev) { self.startMenuEndPopupDrag(ev); };
+          window.addEventListener('pointermove', this._startMenuPopupDragMove);
+          window.addEventListener('pointerup', this._startMenuPopupDragEnd, { once: true });
+        },
+        startMenuMovePopupDrag: function (event) {
+          var ui = this.startMenuEnsureUi();
+          var drag = ui.popupDrag || {};
+          if (!drag.active || !event) return;
+          var width = +((((this.themeStudioActiveTheme() || {}).startMenuConfig || {}).width) || 520);
+          ui.popupPosition = {
+            left: Math.max(8, Math.min((drag.left || 0) + event.clientX - drag.startX, Math.max(8, window.innerWidth - Math.max(320, width) - 8))),
+            top: Math.max(8, Math.min((drag.top || 0) + event.clientY - drag.startY, Math.max(8, window.innerHeight - 120)))
+          };
+        },
+        startMenuEndPopupDrag: function () {
+          var ui = this.startMenuEnsureUi();
+          if (ui.popupDrag) ui.popupDrag.active = false;
+          if (this._startMenuPopupDragMove) window.removeEventListener('pointermove', this._startMenuPopupDragMove);
+          this._startMenuPopupDragMove = null;
+          this._startMenuPopupDragEnd = null;
+        },
+        activeLoginAvatarUrl: function () {
+          var cfg = this.activeLoginScreenConfig ? this.activeLoginScreenConfig() : {};
+          var url = cfg.avatarUrl || cfg.warningImageUrl || '';
+          return this.isProtectedThemeUrl(url) && this.requiresSignin ? '' : url;
+        },
+        activeLoginWarningImageUrl: function () {
+          var cfg = this.activeLoginScreenConfig ? this.activeLoginScreenConfig() : {};
+          var url = cfg.warningImageUrl || '';
+          return this.isProtectedThemeUrl(url) && this.requiresSignin ? '' : url;
+        },
+        activeLoginWarningTitle: function () {
+          var cfg = this.activeLoginScreenConfig ? this.activeLoginScreenConfig() : {};
+          return cfg.warningTitle || 'Authorized access only';
+        },
+        activeLoginDisclaimer: function () {
+          var cfg = this.activeLoginScreenConfig ? this.activeLoginScreenConfig() : {};
+          return cfg.privacyNotice || cfg.disclaimer || 'Access to this system is restricted to authorized users. Activity may be logged and reviewed.';
         },
         activeLoginScreenConfig: function () {
           return (((this.themeStudioActiveTheme() || {}).loginScreenConfig) || {});
