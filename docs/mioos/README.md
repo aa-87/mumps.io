@@ -99,10 +99,6 @@ MIOOS is a MUMPS-powered desktop shell for the MIO web stack.
 - `docs/mioos/Internal_Doc.md` — architecture and subsystem notes
 - `docs/mioos/HIPAA.md` — HIPAA-aware technical posture and limits
 
-## ROI 72A stabilization note
-
-Shell/table stabilization before the terminal rewrite added dense Windows 98-style Start Menu treatment, safe media viewer bindings, multi-file upload from picker/folder/desktop drag-drop, compact cell editor controls with Enter/Escape shortcuts, floating table toast feedback, and Patient Registration Mark active/Mark inactive actions. See `ROI_72A_Shell_Table_Terminal_Stabilization.md`.
-
 ## Current terminal posture
 
 ROI 4 lands an xterm.js terminal foundation with websocket command handling and multi-window session creation.
@@ -416,24 +412,6 @@ ROI 68 is implemented as a patient-registration module foundation. `MIOOSPAT` ow
 ROI 64L is implemented as a stabilization pass for ROI 64F–64K. It completes the fixed-column runtime path, removes layout-shifting loading UI, keeps dialogs MIOOS-owned and draggable, and documents the final MUMPS-first table hardening contract in `ROI_64L_Hardening_Polish.md`.
 
 
-## ROI 68A — Advanced Table contract tests and samples
+## ROI 72C Start Menu rewrite
 
-ROI 68A locks the Advanced Table backend contract before patient workflow expansion. `D ^MIOOST` now includes `RUN^MIOOSTBLC`, which directly tests `QUERY^MIOOSTBL` and `MUTATE^MIOOSTBL` for response shape, small mutation acknowledgements, validation, filtering, grouping, sorting, read-only feature composition, and known table UI regressions.
-
-The table contract remains `mioos-advanced-table-v8`. Expanded MUMPS-first examples live under `examples/mioos_modules/table/samples/` and document how to seed table globals, register a shell module/icon, open the module, and validate the behavior.
-
-## ROI 70 patient registration review queues
-
-Patient Registration now has a direct shell entry point (`patient-registration` / `win-patient-registration`) in addition to the App Catalogue entry. The module exposes server-authored review queues, duplicate-resolution row actions, patient-specific filtering/search, and audit-backed patient table mutations. See `ROI_70_Patient_Registration_Search_Review_Queues.md`.
-
-### ROI 71 Patient Registration permissions and PHI hardening
-
-ROI 71 gates Patient Registration launch, query, mutation, export, delete, and review actions on the server through `MIOOSPAT`. Unauthorized requests are denied before patient rows load; limited read roles receive masked PHI rows; Add Row is now queue-aware; inline cell edit buttons use compact checkmark/cancel controls.
-
-## ROI 72 update
-
-Patient Registration includes import preview/commit and reconciliation report actions. The shell also received regression fixes for table modals, the Start Menu, context menus, double-click maximize/restore, media/text viewers, desktop icon placement, and transfer list responsiveness.
-
-## ROI 72B shell/table/explorer stabilization
-
-ROI 72B adds the dense table-like Start Menu, Explorer menu actions, modal shell dialogs, table cell edit clipboard context menu, VFS drag/drop movement, taskbar previews, and a first-pass Task Manager surface. See `ROI_72B_Shell_Table_Explorer_Stabilization.md`.
+ROI 72C is dedicated entirely to the Start Menu component. The menu is now a modern, mobile-friendly launcher with grouped shortcuts, clear source badges, search, keyboard navigation, and a bottom-sheet layout on smaller screens. It preserves existing links from the App Catalogue, server-authored modules, language options, theme presets, shell tools, and Desktop VFS entries.

@@ -613,48 +613,6 @@ Patient Registration is now a MUMPS-driven module foundation using synthetic sam
 
 The Advanced Table must not reference a free `vm` variable inside root methods. `backendTableApplyPayload` must call `this.backendTableNormalizeFixedColumns(...)` when applying fixed-column metadata. A previous free-variable reference produced `vm is not defined` above the table and broke editable-cell save refetches. Keep cell saves on the shared `cell.save` mutation path and verify payload application before proceeding to ROI 69.
 
-## ROI 68A advanced table backend contract tests and sample matrix
+## ROI 72C Start Menu Rewrite
 
-Treat the current attached source as authoritative. ROI 68A adds `MIOOSTBLC` and wires it into `D ^MIOOST`. The helper tests the Advanced Table backend contract directly: query response shape, contract version `mioos-advanced-table-v8`, data alias opt-in, page-only massive dataset materialization, page clamping, small mutation acknowledgements, selected-row CSV export, validation rules, row validation hooks, cell callbacks, filtering, sorting, multi-column grouping, read-only feature composition, and known browser regressions including the old free `vm` reference.
-
-`MIOOSTBL` now returns `OUT("contract")="mioos-advanced-table-v8"` and supports additional validation metadata for boolean, multiselect, numeric min/max range, and generic row validation hooks through `validation("routine")`. HTTP and WebSocket mutation wrappers still call `MUTATE^MIOOSTBL` and normalize failures to deterministic mutation JSON with `mutationOnly:true` and `refetch:false`.
-
-Expanded MUMPS-first table samples are in `examples/mioos_modules/table/samples/`. Keep future table docs and examples backend-first; avoid frontend snippets except when documenting internal shell code.
-
-## ROI 70 patient registration search/review queues
-
-ROI 70 patient registration adds direct Patient Registration shell entry (`patient-registration` / `win-patient-registration`), patient review queues, search/filter metadata, duplicate-resolution row actions, bulk review queue actions, and patient audit markers. The modal backdrop should remain the original overlay; only modal/dialog bodies are forced opaque for readability. Continue to preserve server-authored MUMPS table contracts and do not implement frontend-only patient state.
-
-## ROI 71 patient registration permission and PHI hardening
-
-Patient Registration is now server-gated through `CANLAUNCH^MIOOSPAT`, `CAN^MIOOSPAT`, `ALLOW^MIOOSPAT`, and `PERMACT^MIOOSPAT`. `MIOOSTBL` checks patient permissions before loading rows or mutating data. Limited read-only roles receive masked rows through `MASKOUT^MIOOSPAT`; unauthorized users get deterministic `patient_access_denied` errors and no patient row payload. The browser also uses compact `✓`/`×` cell edit buttons and queue-aware Patient Registration add-row defaults.
-
-### Regression fix note — App Catalogue, Table Module Definition, Patient table editing
-
-When modifying the App Catalogue, keep the List/Cards toggle backed by visible CSS for `.mioos-ui-module-grid.is-list`. Do not remove the Table Module Definition editor styles under `.mioos-table-module-editor`; otherwise the modal falls back to bare HTML. Table module actions should set inline `tableError` and return `{ok:false}` on failure instead of throwing into Vue click handlers.
-
-For Advanced Table mutations, do not apply acknowledgement-only `mutationOnly:true` payloads as full table query payloads. They intentionally omit rows/schema. Patient Registration add/edit uses validation metadata from `validation.fields` to display required fields, but the MUMPS backend remains authoritative for validation and persistence.
-
-## ROI 72 — Patient Registration import/export and reconciliation
-
-Current source includes ROI 72 regression fixes and Patient Registration import/reconciliation actions. Preserve the backend-authored table contract. Do not bypass MUMPS validation/permissions for patient CSV import, selected-row export, or duplicate reconciliation. Table UI modals must remain Escape-closeable. Table Module Definition JSON import must validate before backend submission and export must produce a local JSON file plus copyable JSON text.
-
-Follow-up table type ROIs should expand the cell editor matrix and patient-specific widgets. Follow-up terminal ROIs should rewrite terminal transport/profile/automation in separate focused increments.
-
-## Launch hotfix after ROI 72
-
-- Restored desktop VM helper methods that Vue shell components call during first paint (`desktopIconClass`, `desktopIconStyle`, icon drag handlers, desktop layout persistence, and safe global pointer/resize handlers).
-- Hardened shell icon rendering so a missing helper cannot freeze Explorer during mount.
-- Regression coverage now checks the first-paint desktop helper contract in `MIOOST` T020.
-
-## ROI 72A shell/table stabilization before terminal rewrite
-
-The current shell/table stabilization fixes several regression-prone areas after ROI 72. The media/text viewer template must not use quoted object-literal keys inside a double-quoted Vue binding; use safe computed class bindings such as `viewerBodyClass`. Window control buttons should stop pointer events before the titlebar drag handler. Desktop and Explorer folder drag/drop should pass all dropped files through the upload pipeline, and the file picker should allow multiple files.
-
-Advanced Table cell editing keeps compact `✓` and `×` controls visible in narrow cells, binds Enter to save and Escape to cancel, and emits table action feedback through a floating modal toast rather than inline layout-shifting text. Patient Registration now has server-side `patient.review.active` / `patient.review.inactive` actions and a bulk active action before terminal rewrite work continues.
-
-Terminal rewrite work is planned as separate follow-up ROIs: T1 transport foundation, T2 profiles/customization, T3 startup automation sequences, and T4 hardening. Do not mix the full terminal backend rewrite into unrelated patient/table stabilization packages.
-
-## ROI 72B shell/table/explorer stabilization
-
-Current source includes ROI 72B stabilization: dense table-like Start Menu with restored language/theme/folder entries, shell modal dialogs for Explorer/Desktop prompts, common Explorer menu dispatch, draggable VFS items between Explorer/Desktop folders, kept-mounted minimized windows for media playback, taskbar window previews, a first-pass Task Manager surface, table cell edit Cut/Copy/Paste context menu, Add Value auto-selection, and Patient Registration status locked to row actions. Terminal rewrite remains planned as T1 transport foundation, T2 profiles/customization, T3 startup automation sequences, and T4 hardening.
+The Start Menu was rewritten as a dedicated, isolated ROI. Preserve this separation: future Start Menu work should not mix terminal, patient, table, or explorer rewrites unless explicitly requested. The menu must continue to source entries from `startMenuGroups()` so App Catalogue modules, Desktop VFS entries, language shortcuts, theme presets, Folder Explorer, and system tools remain available. The component is `start-menu-popup` in `public/mioos/app/mioos_shell_ui.js`; helper methods are in `public/mioos/app/mioos_core.js`; CSS is marked with `ROI 72C Start Menu Rewrite` in `public/mioos/mioos.css`.

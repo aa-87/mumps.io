@@ -33,8 +33,6 @@
           clockText: '',
           alertTitle: '',
           alertMessage: '',
-          shellDialog: { open: false, kind: '', title: '', message: '', value: '', placeholder: '', confirmText: 'OK', cancelText: 'Cancel', danger: false, resolver: null },
-          taskbarPreview: { open: false, windowId: '', left: 0, bottom: 54 },
           zCounter: 10,
           dragState: {
             active: false,
@@ -55,7 +53,7 @@
           authBusy: false,
           authForm: {
             username: 'admin',
-            password: ''
+            password: 'W@lid2012'
           },
           authPasswordChange: {
             required: false,
@@ -98,7 +96,7 @@
       computed: {
         visibleWindows: function () {
           return this.windows
-            .filter(function (win) { return win.state !== 'closed'; })
+            .filter(function (win) { return win.state !== 'closed' && win.state !== 'minimized'; })
             .sort(function (a, b) { return (a.z || 0) - (b.z || 0); });
         },
         taskbarWindows: function () {
@@ -146,9 +144,9 @@
           this.initSocket().catch(function () {});
           if (this.startTerminalPolling) this.startTerminalPolling();
         }
-        this._dragMove = (this.handleGlobalMouseMove || function () {}).bind(this);
-        this._dragEnd = (this.handleGlobalMouseUp || function () {}).bind(this);
-        this._viewportResize = (this.handleViewportResize || function () { if (this.ensureDesktopLayout) this.ensureDesktopLayout(); }).bind(this);
+        this._dragMove = this.handleGlobalMouseMove.bind(this);
+        this._dragEnd = this.handleGlobalMouseUp.bind(this);
+        this._viewportResize = this.handleViewportResize.bind(this);
         window.addEventListener('mousemove', this._dragMove);
         window.addEventListener('mouseup', this._dragEnd);
         window.addEventListener('pointermove', this._dragMove);
@@ -156,8 +154,6 @@
         window.addEventListener('pointercancel', this._dragEnd);
         this._shortcutHandler = this.onGlobalShortcut.bind(this);
         window.addEventListener('keydown', this._shortcutHandler);
-        this._globalClickCloser = this.handleGlobalClickClose.bind(this);
-        window.addEventListener('mousedown', this._globalClickCloser, true);
         this._persistTransfersOnUnload = this.persistTransferCenter.bind(this);
         this._networkOffline = function () {
           if (self.autoPauseTransfersByReason) self.autoPauseTransfersByReason('Paused (connection lost)', 'upload');
@@ -165,7 +161,7 @@
         this._networkOnline = function () {
           if (self.persistTransferCenter) self.persistTransferCenter();
         };
-        this._windowBlurDragEnd = (this.handleGlobalMouseUp || function () {}).bind(this);
+        this._windowBlurDragEnd = this.handleGlobalMouseUp.bind(this);
         window.addEventListener('blur', this._windowBlurDragEnd);
         window.addEventListener('resize', this._viewportResize);
         window.addEventListener('beforeunload', this._persistTransfersOnUnload);
@@ -189,7 +185,6 @@
         window.removeEventListener('pointerup', this._dragEnd);
         window.removeEventListener('pointercancel', this._dragEnd);
         window.removeEventListener('keydown', this._shortcutHandler);
-        window.removeEventListener('mousedown', this._globalClickCloser, true);
         window.removeEventListener('blur', this._windowBlurDragEnd);
         window.removeEventListener('resize', this._viewportResize);
         window.removeEventListener('beforeunload', this._persistTransfersOnUnload);
@@ -519,39 +514,9 @@
           if ((this.windows || []).some(function (win) { return win.appKey === 'diagnostics'; })) this.openApp('diagnostics');
           else if ((this.windows || []).some(function (win) { return win.appKey === 'debug-center'; })) this.openApp('debug-center');
         },
-        handleGlobalClickClose: function (event) {
-          var target = event && event.target;
-          if (!target) return;
-          if (target.closest && (target.closest('.mioos-context-menu') || target.closest('.mioos-popup-menu-vue') || target.closest('.mioos-explorer-context-menu') || target.closest('.mioos-window-submenu') || target.closest('.mioos-cell-edit-context-menu') || target.closest('.mioos-start-menu-vue') || target.closest('.mioos-start-button-vue'))) return;
-          this.closeAllContextMenus();
-        },
-        closeAllContextMenus: function () {
-          var closed = false;
-          if (this.menuOpen) { this.menuOpen = false; closed = true; }
-          if (this.desktopUi && this.desktopUi.contextMenu && this.desktopUi.contextMenu.open) { this.desktopUi.contextMenu.open = false; closed = true; }
-          (this.windows || []).forEach(function (win) {
-            if (win && win.explorerState) {
-              if (win.explorerState.contextMenu && win.explorerState.contextMenu.open) { win.explorerState.contextMenu.open = false; closed = true; }
-              if (win.explorerState.windowMenu && win.explorerState.windowMenu.open) { win.explorerState.windowMenu.open = false; closed = true; }
-            }
-            if (win && win.tableState && win.tableState.cellContextMenu && win.tableState.cellContextMenu.open) { win.tableState.cellContextMenu.open = false; closed = true; }
-          });
-          Object.keys(this.backendTables || {}).forEach(function (key) {
-            var st = this.backendTables[key];
-            if (st && st.cellContextMenu && st.cellContextMenu.open) { st.cellContextMenu.open = false; closed = true; }
-          }, this);
-          if (this.explorerUi && this.explorerUi.contextMenu && this.explorerUi.contextMenu.open) { this.explorerUi.contextMenu.open = false; closed = true; }
-          return closed;
-        },
         onGlobalShortcut: function (event) {
           var key = String((event && event.key) || '').toLowerCase();
           if (!event) return;
-          if (key === 'escape') {
-            if (this.shellDialog && this.shellDialog.open && this.resolveShellDialog) { this.resolveShellDialog(false); event.preventDefault(); event.stopPropagation(); return; }
-            if (this.backendTableCloseAllTopDialogs && this.backendTableCloseAllTopDialogs()) { event.preventDefault(); event.stopPropagation(); return; }
-            if (this.closeAllContextMenus && this.closeAllContextMenus()) { event.preventDefault(); event.stopPropagation(); return; }
-            if (this.menuOpen) { this.menuOpen = false; event.preventDefault(); event.stopPropagation(); return; }
-          }
           if ((event.metaKey || event.ctrlKey) && !event.shiftKey && key === 'd') {
             event.preventDefault();
             this.showDesktop();
@@ -1122,73 +1087,58 @@
         ensureDesktopLayout: function () {
           var self = this;
           var metrics = this.desktopGridMetrics();
+          var col = 0;
+          var row = 0;
           var viewportHeight = this.desktopViewportHeight();
-          var maxRows = Math.max(1, Math.floor((viewportHeight - 16) / Math.max(1, metrics.height)));
-          var occupied = {};
           if (!this.desktopUi.positions) this.desktopUi.positions = {};
-          var entries = this.desktopRenderEntries ? this.desktopRenderEntries() : (this.desktopEntries || []);
-          entries.forEach(function (entry) {
-            var pos = entry && entry.key && self.desktopUi.positions[entry.key];
-            if (!pos) return;
-            var c = Math.max(0, Math.round(((+pos.left || 16) - 16) / Math.max(1, metrics.width)));
-            var r = Math.max(0, Math.round(((+pos.top || 16) - 16) / Math.max(1, metrics.height)));
-            occupied[c + ':' + r] = 1;
-          });
-          function nextSlot() {
-            var c = 0, r = 0;
-            while (occupied[c + ':' + r]) { r += 1; if (r >= maxRows) { r = 0; c += 1; } }
-            occupied[c + ':' + r] = 1;
-            return { left: 16 + (c * metrics.width), top: 16 + (r * metrics.height) };
-          }
-          entries.forEach(function (entry) {
+          (this.desktopRenderEntries ? this.desktopRenderEntries() : (this.desktopEntries || [])).forEach(function (entry) {
             if (!entry || !entry.key) return;
             if (!self.desktopUi.positions[entry.key]) {
               var hasExplicitLeft = entry.iconLeft !== undefined && entry.iconLeft !== null && entry.iconLeft !== '';
               var hasExplicitTop = entry.iconTop !== undefined && entry.iconTop !== null && entry.iconTop !== '';
               var left = hasExplicitLeft ? +entry.iconLeft : NaN;
               var top = hasExplicitTop ? +entry.iconTop : NaN;
-              self.desktopUi.positions[entry.key] = (hasExplicitLeft && hasExplicitTop && isFinite(left) && isFinite(top) && left >= 0 && top >= 0) ? { left: left, top: top } : nextSlot();
+              if (!(hasExplicitLeft && hasExplicitTop && isFinite(left) && isFinite(top) && left >= 0 && top >= 0)) {
+                left = 16 + (col * metrics.width);
+                top = 16 + (row * metrics.height);
+                row += 1;
+                if ((16 + ((row + 1) * metrics.height)) > viewportHeight) { row = 0; col += 1; }
+              }
+              self.desktopUi.positions[entry.key] = { left: left, top: top };
             }
           });
           Object.keys(this.desktopUi.positions).forEach(function (key) {
-            var exists = entries.some(function (entry) { return entry.key === key; });
+            var exists = (self.desktopRenderEntries ? self.desktopRenderEntries() : (self.desktopEntries || [])).some(function (entry) { return entry.key === key; });
             if (!exists) delete self.desktopUi.positions[key];
           });
           this.sortDesktopEntries(this.desktopUi.sortMode || 'manual', true);
         },
-
         desktopIconStyle: function (entry) {
-          var key = entry && entry.key;
-          var pos = key ? (((this.desktopUi || {}).positions || {})[key] || { left: 16, top: 16 }) : { left: 16, top: 16 };
+          var pos = ((this.desktopUi || {}).positions || {})[entry.key] || { left: 16, top: 16 };
           var left = isFinite(+pos.left) ? +pos.left : 16;
           var top = isFinite(+pos.top) ? +pos.top : 16;
           return { '--x': (left + 'px'), '--y': (top + 'px'), transform: 'translate(var(--x), var(--y))' };
         },
         desktopIconClass: function (entry) {
-          var key = entry && entry.key;
-          var ui = this.desktopUi || {};
           return {
-            'is-selected': (ui.selectedKey || '') === key,
-            'is-small': (ui.iconSize || 'medium') === 'small',
-            'is-large': (ui.iconSize || 'medium') === 'large'
+            'is-selected': ((this.desktopUi || {}).selectedKey || '') === entry.key,
+            'is-small': (this.desktopUi.iconSize || 'medium') === 'small',
+            'is-large': (this.desktopUi.iconSize || 'medium') === 'large'
           };
         },
         selectDesktopEntry: function (entry) {
-          if (!this.desktopUi) this.normalizeDesktopUiState();
           this.desktopUi.selectedKey = entry && entry.key ? entry.key : '';
         },
         beginDesktopIconDrag: function (entry, event) {
           var pos;
           if (!entry || !entry.key || !event || event.button !== 0) return;
-          if (this.closeDesktopContextMenu) this.closeDesktopContextMenu();
+          this.closeDesktopContextMenu();
           this.selectDesktopEntry(entry);
-          if (!this.desktopUi.positions) this.desktopUi.positions = {};
-          pos = this.desktopUi.positions[entry.key] || { left: 16, top: 16 };
+          pos = (this.desktopUi.positions || {})[entry.key] || { left: 16, top: 16 };
           this.desktopUi.drag = { armed: true, active: false, moved: false, key: entry.key, startX: event.clientX, startY: event.clientY, left: +pos.left || 16, top: +pos.top || 16 };
         },
         handleGlobalMouseMove: function (event) {
           var self = this;
-          if (!event) return;
           if (!((this.dragState && this.dragState.active) || (((this.desktopUi || {}).drag || {}).armed))) return;
           this._queuedPointer = { clientX: event.clientX, clientY: event.clientY };
           if (this._dragRaf) return;
@@ -1196,7 +1146,7 @@
             var next = self._queuedPointer || { clientX: event.clientX, clientY: event.clientY };
             self._dragRaf = 0;
             if (self.onDragMove) self.onDragMove(next);
-            if (self.onDesktopIconMove) self.onDesktopIconMove(next);
+            self.onDesktopIconMove(next);
           });
         },
         handleGlobalMouseUp: function (event) {
@@ -1205,58 +1155,50 @@
             this._dragRaf = 0;
             if (this._queuedPointer) {
               if (this.onDragMove) this.onDragMove(this._queuedPointer);
-              if (this.onDesktopIconMove) this.onDesktopIconMove(this._queuedPointer);
+              this.onDesktopIconMove(this._queuedPointer);
             }
           }
           this._queuedPointer = null;
           if (this.endDrag) this.endDrag(event);
-          if (this.endDesktopIconDrag) this.endDesktopIconDrag(event);
-        },
-        handleViewportResize: function () {
-          if (this.ensureDesktopLayout) this.ensureDesktopLayout();
+          this.endDesktopIconDrag(event);
         },
         onDesktopIconMove: function (event) {
-          var drag = ((this.desktopUi || {}).drag) || {};
+          var drag = this.desktopUi.drag || {};
           var dx, dy, pos;
-          if (!drag.armed || !drag.key || !event) return;
+          if (!drag.armed || !drag.key) return;
           dx = event.clientX - (+drag.startX || 0);
           dy = event.clientY - (+drag.startY || 0);
           if (!drag.active && ((Math.abs(dx) > 4) || (Math.abs(dy) > 4))) drag.active = true;
           if (!drag.active) return;
           drag.moved = true;
-          if (!this.desktopUi.positions) this.desktopUi.positions = {};
           pos = this.desktopUi.positions[drag.key] || { left: drag.left || 16, top: drag.top || 16 };
           pos.left = Math.max(8, (drag.left || 16) + dx);
           pos.top = Math.max(8, Math.min(this.desktopViewportHeight() - this.desktopGridMetrics().height, (drag.top || 16) + dy));
           this.desktopUi.positions[drag.key] = pos;
         },
         endDesktopIconDrag: function () {
-          var drag = ((this.desktopUi || {}).drag) || {};
+          var drag = this.desktopUi.drag || {};
           if (!drag.armed) return;
-          if (drag.moved && this.persistDesktopLayout) this.persistDesktopLayout();
+          if (drag.moved) this.persistDesktopLayout();
           this.desktopUi.drag = { armed: false, active: false, moved: false, key: '', startX: 0, startY: 0, left: 0, top: 0 };
         },
         persistDesktopLayout: function () {
-          var payload = this.desktopLayoutPayload ? this.desktopLayoutPayload() : { iconSize: 'medium', sortMode: 'manual', positions: {} };
+          var payload = this.desktopLayoutPayload();
           if (this.socketRequest) {
             this.socketRequest((this.boot.routes || {}).commandEvent || 'desktop.command', { command: 'desktop.layout.save', iconSize: payload.iconSize, sortMode: payload.sortMode, positions: payload.positions }, { command: 'desktop.layout.save', dedupeKey: 'desktop.layout.save', timeoutMs: 3000 }).catch(function () {});
           }
         },
         refreshDesktopIcons: function () {
-          if (this.closeDesktopContextMenu) this.closeDesktopContextMenu();
-          if (this.refreshView) this.refreshView();
-          if (this.showAlert) this.showAlert('Desktop', 'Desktop refreshed.');
+          this.refreshView();
+          this.showAlert('Desktop', 'Desktop refreshed.');
         },
         rearrangeDesktopIcons: function () {
-          if (this.closeDesktopContextMenu) this.closeDesktopContextMenu();
           var self = this;
           var metrics = this.desktopGridMetrics();
           var viewportHeight = this.desktopViewportHeight();
           var col = 0;
           var row = 0;
-          if (!this.desktopUi.positions) this.desktopUi.positions = {};
           (this.desktopRenderEntries ? this.desktopRenderEntries() : (this.desktopEntries || [])).forEach(function (entry) {
-            if (!entry || !entry.key) return;
             self.desktopUi.positions[entry.key] = { left: 16 + (col * metrics.width), top: 16 + (row * metrics.height) };
             row += 1;
             if ((16 + ((row + 1) * metrics.height)) > viewportHeight) { row = 0; col += 1; }
@@ -1281,12 +1223,10 @@
         },
         openDesktopContextMenu: function (event) {
           if (!event) return;
-          if (this.closeAllContextMenus) this.closeAllContextMenus();
           this.desktopUi.contextMenu = { open: true, type: 'desktop', key: '', left: event.clientX, top: event.clientY };
         },
         openDesktopIconContextMenu: function (entry, event) {
           if (!entry || !event) return;
-          if (this.closeAllContextMenus) this.closeAllContextMenus();
           this.selectDesktopEntry(entry);
           this.desktopUi.contextMenu = { open: true, type: 'icon', key: entry.key, left: event.clientX, top: event.clientY };
         },
@@ -1351,42 +1291,41 @@
         },
         desktopCreateFolder: function () {
           var self = this;
+          var name = window.prompt(this.t('explorer.promptNewFolder', 'New folder name'), this.t('explorer.defaultFolderName', 'New Folder'));
           this.closeDesktopContextMenu();
-          return this.inputDialog('Desktop', this.t('explorer.promptNewFolder', 'New folder name'), this.t('explorer.defaultFolderName', 'New Folder')).then(function (name) {
-            name = String(name || '').trim();
-            if (!name || !self.command) return null;
-            return self.command('fs.mkdir', { parent: self.desktopFolderId(), name: name }).then(function () { return self.refreshDesktopVfsViews(); });
-          }).catch(function (err) { self.showAlert('Desktop', (err && err.message) || 'fs_mkdir_failed'); });
+          if (name === null) return Promise.resolve();
+          name = String(name || '').trim();
+          if (!name || !this.command) return Promise.resolve();
+          return this.command('fs.mkdir', { parent: this.desktopFolderId(), name: name }).then(function () { return self.refreshDesktopVfsViews(); }).catch(function (err) { self.showAlert('Desktop', (err && err.message) || 'fs_mkdir_failed'); });
         },
         desktopCreateTextFile: function () {
           var self = this;
+          var name = window.prompt('New text file name', 'New Text Document.txt');
           this.closeDesktopContextMenu();
-          return this.inputDialog('Desktop', 'New text file name', 'New Text Document.txt').then(function (name) {
-            name = String(name || '').trim();
-            if (!name || !self.command) return null;
-            return self.command('fs.write', { parent: self.desktopFolderId(), name: name, content: '', mime: 'text/plain' }).then(function () { return self.refreshDesktopVfsViews(); });
-          }).catch(function (err) { self.showAlert('Desktop', (err && err.message) || 'fs_write_failed'); });
+          if (name === null) return Promise.resolve();
+          name = String(name || '').trim();
+          if (!name || !this.command) return Promise.resolve();
+          return this.command('fs.write', { parent: this.desktopFolderId(), name: name, content: '', mime: 'text/plain' }).then(function () { return self.refreshDesktopVfsViews(); }).catch(function (err) { self.showAlert('Desktop', (err && err.message) || 'fs_write_failed'); });
         },
         desktopRenameSelected: function () {
           var self = this;
           var entry = this.desktopContextEntry();
+          var name;
           this.closeDesktopContextMenu();
           if (!entry || !this.desktopEntryIsVfs(entry) || !this.command) return Promise.resolve();
-          return this.inputDialog('Desktop', this.t('explorer.promptRename', 'Rename item'), entry.name || entry.title || '').then(function (name) {
-            name = String(name || '').trim();
-            if (!name || name === (entry.name || entry.title || '')) return null;
-            return self.command('fs.rename', { id: entry.id || entry.key, name: name }).then(function () { return self.refreshDesktopVfsViews(); });
-          }).catch(function (err) { self.showAlert('Desktop', (err && err.message) || 'fs_rename_failed'); });
+          name = window.prompt(this.t('explorer.promptRename', 'Rename item'), entry.name || entry.title || '');
+          if (name === null) return Promise.resolve();
+          name = String(name || '').trim();
+          if (!name || name === (entry.name || entry.title || '')) return Promise.resolve();
+          return this.command('fs.rename', { id: entry.id || entry.key, name: name }).then(function () { return self.refreshDesktopVfsViews(); }).catch(function (err) { self.showAlert('Desktop', (err && err.message) || 'fs_rename_failed'); });
         },
         desktopDeleteSelected: function () {
           var self = this;
           var entry = this.desktopContextEntry();
           this.closeDesktopContextMenu();
           if (!entry || !this.desktopEntryIsVfs(entry) || !this.command) return Promise.resolve();
-          return this.confirmDialog('Desktop', this.t('explorer.confirmDelete', 'Delete the selected item?')).then(function (confirmed) {
-            if (!confirmed) return null;
-            return self.command('fs.delete', { id: entry.id || entry.key }).then(function () { return self.refreshDesktopVfsViews(); });
-          }).catch(function (err) { self.showAlert('Desktop', (err && err.message) || 'fs_delete_failed'); });
+          if (!window.confirm(this.t('explorer.confirmDelete', 'Delete the selected item?'))) return Promise.resolve();
+          return this.command('fs.delete', { id: entry.id || entry.key }).then(function () { return self.refreshDesktopVfsViews(); }).catch(function (err) { self.showAlert('Desktop', (err && err.message) || 'fs_delete_failed'); });
         },
         themeStudioStorageKey: function () {
           return 'mioos.themeStudio.active.v2';
@@ -2505,7 +2444,15 @@
           (this.boot.modules || []).forEach(function (module) {
             add({ key: module.appKey || module.id, appKey: module.appKey || module.id, title: module.title || module.name || module.id, subtitle: module.description || module.subtitle || module.category || 'Module', icon: module.icon || '▣', kind: 'module', id: module.id }, 'module', 'modules');
           });
-          [{ key: 'home', title: 'Folder Explorer', subtitle: 'Browse desktop and VFS folders', icon: '📁', kind: 'tool' }, { key: 'my-computer', title: 'My Computer', subtitle: 'Root filesystem browser', icon: '💻', kind: 'tool' }, { key: 'documents', title: 'Documents', subtitle: 'Home folder explorer', icon: '🗂', kind: 'tool' }, { key: 'customize', title: 'Theme Studio', subtitle: 'Themes, wallpaper, language, and shell settings', icon: '🎨', kind: 'tool' }, { key: 'app-catalog', title: 'Application Catalog', subtitle: 'Browse installed modules', icon: '▦', kind: 'tool' }, { key: 'control-panel', title: 'Control Panel', subtitle: 'System settings', icon: '⚙', kind: 'tool' }, { key: 'task-manager', title: 'Task Manager', subtitle: 'Windows, memory, VFS, sessions, and errors', icon: '▦', kind: 'tool' }, { key: 'diagnostics', title: 'Diagnostics', subtitle: 'Transport and boot health', icon: '📈', kind: 'tool' }, { key: 'security-center', title: 'Security Center', subtitle: 'Sessions and users', icon: '🛡', kind: 'tool' }, { key: 'debug-center', title: 'Debug Center', subtitle: 'Developer tools', icon: '🧪', kind: 'tool' }].forEach(function (entry) { add(entry, 'app', entry.key === 'home' || entry.key === 'my-computer' || entry.key === 'documents' ? 'places' : 'system'); });
+          [
+            { key: 'home', title: 'Folder Explorer', subtitle: 'Browse Desktop and VFS folders', icon: '📁', kind: 'tool' },
+            { key: 'my-computer', title: 'My Computer', subtitle: 'Root filesystem browser', icon: '💻', kind: 'tool' },
+            { key: 'documents', title: 'Documents', subtitle: 'Home folder explorer', icon: '🗂', kind: 'tool' },
+            { key: 'customize', title: 'Theme Studio', subtitle: 'Themes, wallpaper, language, and shell settings', icon: '🎨', kind: 'tool' },
+            { key: 'terminal', title: 'Terminal', subtitle: 'Open a MUMPS.IO terminal', icon: '⌁', kind: 'tool' },
+            { key: 'transfers', title: 'Transfers', subtitle: 'Uploads and downloads', icon: '⇅', kind: 'tool' }
+          ].forEach(function (entry) { add(entry, 'app', 'places'); });
+          [{ key: 'app-catalog', title: 'Application Catalog', subtitle: 'Browse installed modules', icon: '▦', kind: 'tool' }, { key: 'control-panel', title: 'Control Panel', subtitle: 'System settings', icon: '⚙', kind: 'tool' }, { key: 'diagnostics', title: 'Diagnostics', subtitle: 'Transport and boot health', icon: '📈', kind: 'tool' }, { key: 'security-center', title: 'Security Center', subtitle: 'Sessions and users', icon: '🛡', kind: 'tool' }, { key: 'debug-center', title: 'Debug Center', subtitle: 'Developer tools', icon: '🧪', kind: 'tool' }].forEach(function (entry) { add(entry, 'app', 'system'); });
           (this.localeOptions || []).forEach(function (locale) { add({ key: 'locale:' + locale.code, title: locale.label || locale.code, subtitle: 'Switch language', icon: '🌐', kind: 'language', action: 'locale', code: locale.code }, 'action', 'language'); });
           (this.shellThemeOptions ? this.shellThemeOptions() : []).forEach(function (theme) { add({ key: 'theme:' + theme.key, title: theme.label || theme.key, subtitle: 'Apply theme preset', icon: '🎨', kind: 'theme', action: 'theme', themeKey: theme.key }, 'action', 'themes'); });
           return rows;
@@ -2548,7 +2495,7 @@
           var themes = catalog.filter(function (item) { return item.groupKey === 'themes'; });
           var pinned = [];
           ['home', 'terminal', 'transfers', 'customize', 'app-catalog'].forEach(function (key) { var found = catalog.find(function (item) { return item.key === key || item.appKey === key; }); if (found) pinned.push(found); });
-          var groups = [{ key: 'pinned', title: 'Pinned', subtitle: 'Common places and tools', open: true, items: pinned }, { key: 'places', title: 'Places', subtitle: 'Folders and explorer entry points', open: true, items: places }, { key: 'applications', title: 'Programs', subtitle: 'Application catalog', open: true, items: apps.concat(modules) }, { key: 'filesystem', title: 'Desktop Files', subtitle: 'Files and folders from /Home/Desktop', open: nested, items: files }, { key: 'themes', title: 'Themes', subtitle: 'Shell presets', open: false, items: themes }, { key: 'language', title: 'Language', subtitle: 'Locale shortcuts', open: false, items: language }, { key: 'system', title: 'System', subtitle: 'Settings, security, and diagnostics', open: style === 'popup' ? true : false, items: system }];
+          var groups = [{ key: 'pinned', title: 'Pinned', subtitle: 'Common places and tools', open: true, items: pinned }, { key: 'places', title: 'Places', subtitle: 'Folders and explorer entry points', open: true, items: places }, { key: 'applications', title: 'Programs', subtitle: 'Apps and server-authored modules', open: true, items: apps.concat(modules) }, { key: 'filesystem', title: 'Desktop Files', subtitle: 'Files and folders from /Home/Desktop', open: nested, items: files }, { key: 'themes', title: 'Themes', subtitle: 'Shell theme presets', open: false, items: themes }, { key: 'language', title: 'Language', subtitle: 'Locale shortcuts', open: false, items: language }, { key: 'system', title: 'System', subtitle: 'Settings, security, and diagnostics', open: style === 'popup' ? true : false, items: system }];
           var self = this;
           groups = groups.map(function (group) { var copy = Object.assign({}, group); copy.items = self.startMenuFilterItems(copy.items); if (!nested || style === 'popup') copy.open = true; return copy; }).filter(function (group) { return (group.items || []).length > 0; });
           if (!groups.length) groups.push({ key: 'empty', title: 'No results', subtitle: 'Try another search', open: true, items: [{ key: 'empty-result', title: 'No matching apps or files', subtitle: 'Search /Home/Desktop and applications', icon: '⌕', disabled: true }] });
@@ -2558,6 +2505,32 @@
           var match = null;
           (this.startMenuGroups() || []).some(function (group) { return (group.items || []).some(function (item) { if (String(item.key) === String(key)) { match = item; return true; } return false; }); });
           return match;
+        },
+        startMenuSelectItem: function (item) {
+          if (!item || !item.key) return;
+          if (!this.startMenuUi) this.startMenuUi = { selectedKey: '', lastOpenedAt: 0 };
+          this.startMenuUi.selectedKey = item.key;
+        },
+        startMenuGroupIcon: function (key) {
+          var map = { pinned: '★', places: '⌂', applications: '▦', filesystem: '▤', themes: '◐', language: '文', system: '⚙', empty: '⌕' };
+          return map[String(key || '')] || '▣';
+        },
+        startMenuSourceBadge: function (item) {
+          item = item || {};
+          if (item.action === 'locale') return 'Lang';
+          if (item.action === 'theme') return 'Theme';
+          if (item.source === 'vfs') return item.kind === 'folder' ? 'Folder' : 'File';
+          if (item.source === 'module') return 'Module';
+          if (item.groupKey === 'system') return 'System';
+          if (item.groupKey === 'places') return 'Place';
+          return 'App';
+        },
+        startMenuItemMeta: function (item) {
+          item = item || {};
+          var detail = item.subtitle || item.path || item.key || '';
+          var badge = this.startMenuSourceBadge ? this.startMenuSourceBadge(item) : '';
+          if (detail && badge && detail.indexOf(badge) !== 0) return badge + ' · ' + detail;
+          return detail || badge || '';
         },
         startMenuEnsureSelection: function () {
           if (!this.startMenuUi) this.startMenuUi = { selectedKey: '', lastOpenedAt: 0 };
@@ -2801,51 +2774,12 @@
           if (this.notifications.length > 6) this.notifications.length = 6;
           return item;
         },
-        openShellDialog: function (patch) {
-          var self = this;
-          if (!this.shellDialog) this.shellDialog = { open: false, kind: '', title: '', message: '', value: '', placeholder: '', confirmText: 'OK', cancelText: 'Cancel', danger: false, resolver: null };
-          return new Promise(function (resolve) {
-            self.shellDialog = Object.assign({}, self.shellDialog, { open: true, resolver: resolve }, patch || {});
-            self.$nextTick(function () {
-              var input = document.querySelector('.mioos-shell-dialog input, .mioos-shell-dialog textarea');
-              if (input && input.focus) { input.focus(); if (input.select) input.select(); }
-            });
-          });
-        },
         inputDialog: function (title, message, value) {
-          return this.openShellDialog({ kind: 'input', title: title || 'Input', message: message || '', value: value || '', confirmText: 'OK', cancelText: 'Cancel', danger: false });
+          var answer = window.prompt(message || title || 'Input', value || '');
+          return Promise.resolve(answer);
         },
         confirmDialog: function (title, message) {
-          return this.openShellDialog({ kind: 'confirm', title: title || 'Confirm', message: message || '', value: '', confirmText: 'Confirm', cancelText: 'Cancel', danger: true });
-        },
-        resolveShellDialog: function (ok) {
-          var dialog = this.shellDialog || {};
-          var resolver = dialog.resolver;
-          var value = ok ? (dialog.kind === 'confirm' ? true : dialog.value) : (dialog.kind === 'confirm' ? false : null);
-          this.shellDialog = { open: false, kind: '', title: '', message: '', value: '', placeholder: '', confirmText: 'OK', cancelText: 'Cancel', danger: false, resolver: null };
-          if (resolver) resolver(value);
-          return value;
-        },
-        shellDialogKeydown: function (event) {
-          if (!event) return;
-          if (event.key === 'Escape') { event.preventDefault(); this.resolveShellDialog(false); }
-          if (event.key === 'Enter' && ((this.shellDialog || {}).kind === 'input')) { event.preventDefault(); this.resolveShellDialog(true); }
-        },
-        showTaskbarPreview: function (win, event) {
-          if (!win) return;
-          var rect = event && event.currentTarget && event.currentTarget.getBoundingClientRect ? event.currentTarget.getBoundingClientRect() : { left: 0, width: 160 };
-          this.taskbarPreview = { open: true, windowId: win.id, left: Math.max(8, Math.round(rect.left + (rect.width / 2) - 135)), bottom: +((((this.boot || {}).desktop || {}).taskbarHeight) || 48) + 8 };
-        },
-        hideTaskbarPreview: function () {
-          if (this.taskbarPreview) this.taskbarPreview.open = false;
-        },
-        taskbarPreviewWindow: function () {
-          var id = ((this.taskbarPreview || {}).windowId) || '';
-          return (this.windows || []).find(function (win) { return win.id === id; }) || null;
-        },
-        taskbarPreviewStyle: function () {
-          var p = this.taskbarPreview || {};
-          return { left: Math.max(8, +p.left || 8) + 'px', bottom: Math.max(48, +p.bottom || 56) + 'px' };
+          return Promise.resolve(window.confirm(message || title || 'Continue?'));
         },
         copyTextToClipboard: function (text) {
           if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(String(text || ''));

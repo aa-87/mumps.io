@@ -39,7 +39,6 @@
     if (key === 'sample-table' || key === 'patient-registration') return 'mioos-surface-table';
     if (key === 'my-computer' || key === 'documents' || key === 'explorer' || key === 'home') return 'mioos-surface-explorer';
     if (key === 'terminal') return 'mioos-surface-terminal';
-    if (key === 'task-manager') return 'mioos-surface-task-manager';
     if (key === 'theme-studio' || key === 'customize') return 'mioos-surface-theme';
     if (key === 'text-viewer' || key === 'image-viewer' || key === 'media-viewer' || key === 'pdf-viewer' || key === 'structured-viewer') return 'mioos-surface-viewer';
     if (key === 'backend-table' || key === 'table' || key === 'data-grid') return 'mioos-surface-table';
@@ -50,18 +49,6 @@
   window.MIOOSShellUI = {
     register: function (app) {
       ensureShellStyles();
-
-      app.component('shell-dialog', {
-        computed: { vm: function () { return root(this); }, dialog: function () { return this.vm.shellDialog || {}; } },
-        template: '' +
-          '<div class="mioos-shell-dialog-backdrop" v-if="dialog.open" @click.self="vm.resolveShellDialog(false)" @keydown="vm.shellDialogKeydown($event)">' +
-            '<section class="mioos-shell-dialog mioos-system-modal" role="dialog" aria-modal="true" aria-label="Shell dialog">' +
-              '<header class="mioos-shell-dialog-titlebar"><strong>[[ dialog.title || "MIOOS" ]]</strong><button type="button" aria-label="Close dialog" @click="vm.resolveShellDialog(false)">×</button></header>' +
-              '<div class="mioos-shell-dialog-body"><p v-if="dialog.message">[[ dialog.message ]]</p><input v-if="dialog.kind === &quot;input&quot;" :value="dialog.value" :placeholder="dialog.placeholder || &quot;&quot;" @input="vm.shellDialog.value = $event.target.value" @keydown="vm.shellDialogKeydown($event)"></div>' +
-              '<footer><button type="button" class="mioos-btn" :class="{ danger: dialog.danger }" @click="vm.resolveShellDialog(true)">[[ dialog.confirmText || "OK" ]]</button><button type="button" class="mioos-btn" @click="vm.resolveShellDialog(false)">[[ dialog.cancelText || "Cancel" ]]</button></footer>' +
-            '</section>' +
-          '</div>'
-      });
       app.component('desktop-shell', {
         computed: {
           vm: function () { return root(this); },
@@ -80,7 +67,6 @@
           '<div class="mioos-shell-vue" :class="[\'theme-\' + vm.currentShellThemeFamily(), { \'is-window-dragging\': vm.dragState.active, \'is-icon-dragging\': desktopDragging }]" @mousedown="handleDesktopMouseDown" @contextmenu.prevent="vm.openDesktopContextMenu($event)">' +
             '<div class="mioos-wallpaper-layer" :style="vm.desktopWallpaperStyle()"></div>' +
             '<div class="mioos-wallpaper-tint"></div>' +
-            '<shell-dialog v-if="(vm.shellDialog || {}).open"></shell-dialog>' +
             '<div v-if="vm.alertMessage" class="mioos-alert" aria-live="polite" role="status">' +
               '<strong>[[ vm.alertTitle ]]</strong>' +
               '<span>[[ vm.alertMessage ]]</span>' +
@@ -109,7 +95,7 @@
             '<start-menu-popup v-if="vm.menuOpen"></start-menu-popup>' +
             '<popup-menu v-if="vm.desktopContextMenuState().open"></popup-menu>' +
             '<div v-if="vm.snapPreview.active" class="mioos-snap-preview" :data-snap-zone="vm.snapPreview.zone" :style="vm.snapPreviewStyle()"></div>' +
-            '<div class="mioos-desktop-surface" :class="{ \'pointer-events-none\': vm.dragState.active }" @dragover.prevent="vm.onDesktopDragOver($event)" @drop.prevent="vm.onDesktopDrop($event)">' +
+            '<div class="mioos-desktop-surface" :class="{ \'pointer-events-none\': vm.dragState.active }">' +
               '<desktop-icon v-for="entry in vm.desktopRenderEntries()" :key="entry.key" :icon="entry"></desktop-icon>' +
             '</div>' +
             '<window-frame v-for="win in vm.visibleWindows" :key="win.id" :window="win"></window-frame>' +
@@ -130,17 +116,11 @@
             };
           },
           iconClasses: function () {
-            if (this.vm && typeof this.vm.desktopIconClass === 'function') return this.vm.desktopIconClass(this.icon);
-            var ui = (this.vm && this.vm.desktopUi) || {};
-            return {
-              'is-selected': (ui.selectedKey || '') === (this.icon && this.icon.key),
-              'is-small': (ui.iconSize || 'medium') === 'small',
-              'is-large': (ui.iconSize || 'medium') === 'large'
-            };
+            return this.vm.desktopIconClass(this.icon);
           }
         },
         template: '' +
-          '<button type="button" class="mioos-desktop-icon-vue" draggable="true" :class="iconClasses" :style="iconStyle" :title="labelOf(icon)" @click.stop="vm.selectDesktopEntry(icon)" @dragstart="vm.explorerHandleItemDragStart($event, icon, &quot;desktop&quot;)" @dragover.prevent="vm.explorerHandleItemDragOver($event, icon)" @drop.prevent.stop="vm.explorerHandleItemDrop($event, icon, &quot;desktop&quot;)" @mousedown.stop="vm.beginDesktopIconDrag(icon, $event)" @contextmenu.prevent.stop="vm.openDesktopIconContextMenu(icon, $event)" @dblclick.stop="onOpen" @keydown.enter.prevent="onOpen">' +
+          '<button type="button" class="mioos-desktop-icon-vue" :class="iconClasses" :style="iconStyle" :title="labelOf(icon)" @click.stop="vm.selectDesktopEntry(icon)" @mousedown.stop="vm.beginDesktopIconDrag(icon, $event)" @contextmenu.prevent.stop="vm.openDesktopIconContextMenu(icon, $event)" @dblclick.stop="onOpen" @keydown.enter.prevent="onOpen">' +
             '<span class="mioos-desktop-icon-glyph">[[ iconGlyph(icon) ]]</span>' +
             '<span class="mioos-desktop-icon-label">[[ labelOf(icon) ]]</span>' +
           '</button>',
@@ -186,9 +166,9 @@
             '<header class="mioos-titlebar-vue" :class="[\'is-\' + family]" @mousedown.stop="vm.beginDrag(window, $event)" @dblclick.stop="vm.onWindowTitleDblClick(window.id)">' +
               '<div class="mioos-titlebar-copy-vue"><span class="mioos-titlebar-icon">[[ vm.appIcon(window.appKey) ]]</span><strong>[[ window.title ]]</strong></div>' +
               '<div class="mioos-window-actions-vue">' +
-                '<button type="button" class="mioos-window-control is-minimize" :title="vm.t(\'action.minimize\')" @mousedown.stop @pointerdown.stop @click.stop="vm.minimizeWindow(window.id)"><span>—</span></button>' +
-                '<button type="button" class="mioos-window-control is-maximize" :title="vm.windowToggleLabel(window)" @mousedown.stop @pointerdown.stop @click.stop="vm.toggleMaximize(window.id)"><span>□</span></button>' +
-                '<button type="button" class="mioos-window-control is-close" :title="vm.t(\'action.close\')" @mousedown.stop @pointerdown.stop @click.stop="vm.closeWindow(window.id)"><span>×</span></button>' +
+                '<button type="button" class="mioos-window-control is-minimize" :title="vm.t(\'action.minimize\')" @click.stop="vm.minimizeWindow(window.id)"><span>—</span></button>' +
+                '<button type="button" class="mioos-window-control is-maximize" :title="vm.windowToggleLabel(window)" @click.stop="vm.toggleMaximize(window.id)"><span>□</span></button>' +
+                '<button type="button" class="mioos-window-control is-close" :title="vm.t(\'action.close\')" @click.stop="vm.closeWindow(window.id)"><span>×</span></button>' +
               '</div>' +
             '</header>' +
             '<div class="mioos-window-content-vue"><component :is="contentComponent" :window="window"></component></div>' +
@@ -222,12 +202,10 @@
         template: `
           <div class="mioos-surface mioos-surface-explorer mioos-explorer-native" @contextmenu.prevent="blankMenu($event)" @click="vm.closeExplorerContextMenu(window.id)">
             <nav class="mioos-explorer-menu-strip" role="menubar" aria-label="Explorer menu" @click.stop>
-              <div v-for="menu in vm.explorerMenuGroups(window.id)" :key="menu.key" class="mioos-window-menu-root" :class="{ 'is-open': ((state.windowMenu || {}).open && (state.windowMenu || {}).key === menu.key) }">
-                <button role="menuitem" type="button" @click.stop="vm.explorerToggleWindowMenu(window.id, menu.key)">[[ menu.label ]]</button>
-                <div v-if="((state.windowMenu || {}).open && (state.windowMenu || {}).key === menu.key)" class="mioos-window-submenu" role="menu">
-                  <button v-for="item in menu.items" :key="item.key" type="button" role="menuitem" :disabled="item.disabled" @click.stop="vm.explorerRunWindowMenuAction(window.id, item.key)">[[ item.label ]]</button>
-                </div>
-              </div>
+              <button role="menuitem" type="button">File</button>
+              <button role="menuitem" type="button">Edit</button>
+              <button role="menuitem" type="button">View</button>
+              <button role="menuitem" type="button">Tools</button>
             </nav>
             <div class="mioos-explorer-toolbar" @click.stop>
               <button type="button" class="mioos-explorer-command" :disabled="!((state.history || []).length)" @click="vm.explorerGoBack(window.id)">‹ Back</button>
@@ -276,7 +254,7 @@
                 <div class="mioos-explorer-empty" v-if="state.loading">Loading folder…</div>
                 <div class="mioos-explorer-empty" v-else-if="state.error">[[ state.error ]]</div>
                 <div class="mioos-explorer-empty" v-else-if="!items.length">This folder is empty.</div>
-                <table v-else-if="(state.viewMode || 'details') === 'details'" class="mioos-explorer-listview mioos-simple-table-shell" role="grid" aria-label="Folder contents">
+                <table v-else-if="(state.viewMode || 'details') === 'details'" class="mioos-explorer-listview" role="grid" aria-label="Folder contents">
                   <thead><tr>
                     <th><button type="button" @click="sort('name')">Name [[ sortMark('name') ]]</button></th>
                     <th><button type="button" @click="sort('type')">Type [[ sortMark('type') ]]</button></th>
@@ -284,7 +262,7 @@
                     <th><button type="button" @click="sort('modified')">Modified [[ sortMark('modified') ]]</button></th>
                   </tr></thead>
                   <tbody>
-                    <tr v-for="item in items" :key="itemKey(item)" draggable="true" :class="{ 'is-selected': selectedKey === itemKey(item) }" @dragstart="vm.explorerHandleItemDragStart($event, item, window.id)" @dragover.prevent="vm.explorerHandleItemDragOver($event, item)" @drop.prevent.stop="vm.explorerHandleItemDrop($event, item, window.id)" @click.stop="select(item)" @dblclick.stop="open(item)" @contextmenu.prevent.stop="rowMenu(item, $event)">
+                    <tr v-for="item in items" :key="itemKey(item)" :class="{ 'is-selected': selectedKey === itemKey(item) }" @click.stop="select(item)" @dblclick.stop="open(item)" @contextmenu.prevent.stop="rowMenu(item, $event)">
                       <td><span class="mioos-explorer-row-icon">[[ vm.explorerItemGlyph(item) ]]</span><span class="mioos-explorer-row-name">[[ item.name || item.title ]]</span></td>
                       <td>[[ vm.explorerItemTypeLabel(item) ]]</td>
                       <td>[[ vm.explorerFormatSize(item) ]]</td>
@@ -293,7 +271,7 @@
                   </tbody>
                 </table>
                 <div v-else class="mioos-explorer-icon-grid" role="list" aria-label="Folder contents">
-                  <button v-for="item in items" :key="itemKey(item)" type="button" draggable="true" class="mioos-explorer-icon-tile" :class="{ 'is-selected': selectedKey === itemKey(item) }" @dragstart="vm.explorerHandleItemDragStart($event, item, window.id)" @dragover.prevent="vm.explorerHandleItemDragOver($event, item)" @drop.prevent.stop="vm.explorerHandleItemDrop($event, item, window.id)" @click.stop="select(item)" @dblclick.stop="open(item)" @contextmenu.prevent.stop="rowMenu(item, $event)">
+                  <button v-for="item in items" :key="itemKey(item)" type="button" class="mioos-explorer-icon-tile" :class="{ 'is-selected': selectedKey === itemKey(item) }" @click.stop="select(item)" @dblclick.stop="open(item)" @contextmenu.prevent.stop="rowMenu(item, $event)">
                     <span class="mioos-explorer-icon-tile-glyph">[[ vm.explorerItemGlyph(item) ]]</span>
                     <span>[[ item.name || item.title ]]</span>
                   </button>
@@ -326,34 +304,6 @@
             </ul>
           </div>
         `
-      });
-
-      app.component('mioos-surface-task-manager', {
-        props: ['window'],
-        computed: {
-          vm: function () { return root(this); },
-          rows: function () { return (this.vm.windows || []).filter(function (win) { return win.state !== 'closed'; }); },
-          memory: function () {
-            var perf = window.performance || {};
-            var mem = perf.memory || {};
-            return { used: mem.usedJSHeapSize || 0, total: mem.totalJSHeapSize || 0, limit: mem.jsHeapSizeLimit || 0 };
-          },
-          vfsCount: function () { return ((this.vm.desktopEntries || []).length || 0); }
-        },
-        methods: {
-          fmt: function (bytes) { if (!bytes) return 'n/a'; if (bytes < 1048576) return Math.round(bytes / 1024) + ' KB'; return (bytes / 1048576).toFixed(1) + ' MB'; },
-          pct: function (a, b) { return b ? Math.max(0, Math.min(100, Math.round((a / b) * 100))) : 0; }
-        },
-        template: '' +
-          '<section class="mioos-surface mioos-surface-task-manager">' +
-            '<header class="mioos-surface-toolbar"><strong>Task Manager</strong><span class="mioos-surface-status">Live client shell snapshot · backend metrics planned in Task Manager ROI T1-T3</span><button type="button" class="mioos-btn" @click="vm.refreshView()">Refresh</button></header>' +
-            '<div class="mioos-task-manager-grid">' +
-              '<article class="mioos-task-manager-card"><strong>Open windows</strong><em>[[ rows.length ]]</em><div class="mioos-task-bar"><i :style="{ width: Math.min(100, rows.length * 8) + \'%\' }"></i></div></article>' +
-              '<article class="mioos-task-manager-card"><strong>Desktop VFS items</strong><em>[[ vfsCount ]]</em><div class="mioos-task-bar"><i :style="{ width: Math.min(100, vfsCount * 4) + \'%\' }"></i></div></article>' +
-              '<article class="mioos-task-manager-card"><strong>JS heap used</strong><em>[[ fmt(memory.used) ]]</em><div class="mioos-task-bar"><i :style="{ width: pct(memory.used, memory.limit) + \'%\' }"></i></div></article>' +
-            '</div>' +
-            '<table class="mioos-simple-table-shell mioos-task-window-table"><thead><tr><th>Window</th><th>App</th><th>State</th><th>Size</th><th>Actions</th></tr></thead><tbody><tr v-for="win in rows" :key="win.id"><td>[[ win.title ]]</td><td>[[ win.appKey ]]</td><td>[[ win.state ]]</td><td>[[ win.width ]]×[[ win.height ]]</td><td><button class="mioos-btn" @click="vm.focusWindow(win.id)">Focus</button><button class="mioos-btn" @click="vm.minimizeWindow(win.id)">Minimize</button><button class="mioos-btn danger" @click="vm.closeWindow(win.id)">Close</button></td></tr></tbody></table>' +
-          '</section>'
       });
 
       app.component('mioos-surface-terminal', {
@@ -765,36 +715,6 @@
           '</div>'
       });
 
-
-      app.component('mioos-surface-viewer', {
-        props: ['window'],
-        computed: {
-          vm: function () { return root(this); },
-          view: function () { return (this.window && this.window.fileView) || {}; },
-          mime: function () { return String(this.view.mime || this.view.type || '').toLowerCase(); },
-          title: function () { return this.view.name || this.view.title || this.window.title || 'Viewer'; },
-          isImage: function () { return this.window.appKey === 'image-viewer' || this.mime.indexOf('image/') === 0; },
-          isVideo: function () { return this.mime.indexOf('video/') === 0; },
-          isAudio: function () { return this.mime.indexOf('audio/') === 0; },
-          isPdf: function () { return this.window.appKey === 'pdf-viewer' || this.mime === 'application/pdf'; },
-          viewerBodyClass: function () { return (this.isImage || this.isVideo || this.isAudio || this.isPdf) ? 'is-media' : ''; },
-          content: function () { return this.view.content || this.view.text || this.view.data || this.view.url || this.view.imageSrc || this.view.mediaSrc || ''; }
-        },
-        template: '' +
-          '<div class="mioos-surface mioos-surface-viewer">' +
-            '<div class="mioos-surface-toolbar"><strong>[[ title ]]</strong><span class="mioos-surface-status">[[ mime || "file" ]]</span><button type="button" class="mioos-btn" v-if="view.downloadUrl || ((window || {}).meta || {}).fileId" @click="vm.downloadViewerFile(window)">Download</button></div>' +
-            '<div class="mioos-viewer-body" :class="viewerBodyClass">' +
-              '<p v-if="view.loading" class="mioos-classic-empty">Loading file…</p>' +
-              '<p v-else-if="view.error" class="mioos-ui-module-error">[[ view.error ]]</p>' +
-              '<img v-else-if="isImage && content" class="mioos-viewer-image" :src="content" :alt="title">' +
-              '<video v-else-if="isVideo && content" class="mioos-viewer-video" :src="content" controls></video>' +
-              '<audio v-else-if="isAudio && content" class="mioos-viewer-audio" :src="content" controls></audio>' +
-              '<iframe v-else-if="isPdf && content" class="mioos-viewer-frame" :src="content" :title="title"></iframe>' +
-              '<pre v-else class="mioos-viewer-text">[[ content || "No preview content was returned by the backend." ]]</pre>' +
-            '</div>' +
-          '</div>'
-      });
-
       app.component('mioos-surface-generic', {
 
         props: ['window'],
@@ -823,28 +743,41 @@
           vm: function () { return root(this); },
           entries: function () { return this.vm.filteredEntries || []; },
           groups: function () { return this.vm.startMenuGroups(); },
-          selectedKey: function () { this.vm.startMenuEnsureSelection(); return ((this.vm.startMenuUi || {}).selectedKey) || ""; }
+          selectedKey: function () { this.vm.startMenuEnsureSelection(); return ((this.vm.startMenuUi || {}).selectedKey) || ""; },
+          totalItems: function () { return this.vm.startMenuFlatItems().length; },
+          resultLabel: function () {
+            var total = this.totalItems || 0;
+            var search = String(this.vm.menuFilter || '').trim();
+            if (search) return total + ' result' + (total === 1 ? '' : 's') + ' for “' + search + '”';
+            return total + ' shortcut' + (total === 1 ? '' : 's') + ' ready';
+          }
         },
         template: '' +
-          '<aside class="mioos-start-menu-vue is-table-menu" :class="[\'is-\' + vm.currentShellThemeFamily(), \'style-\' + vm.startMenuStyleType(), \'position-\' + vm.taskbarPosition(), \'button-\' + vm.taskbarButtonStyleType()]" :style="vm.startMenuPopupStyle()" tabindex="-1" @keydown="vm.startMenuHandleKeydown($event)" @click.stop>' +
-            '<div class="mioos-start-head-vue"><div class="mioos-start-avatar-vue">M</div><div><strong>[[ vm.boot.product.name ]]</strong><span>[[ vm.boot.product.subtitle ]]</span></div></div>' +
-            '<label class="mioos-start-search-vue"><span>⌕</span><input v-model="vm.menuFilter" type="text" :placeholder="vm.t(\'search.placeholder\')" @keydown="vm.startMenuHandleKeydown($event)"></label>' +
-            '<div class="mioos-start-table-wrap">' +
-              '<details v-for="group in groups" :key="group.key" class="mioos-start-group-vue mioos-start-folder-vue" :open="group.open">' +
-                '<summary><span class="mioos-start-folder-icon">▸</span><strong>[[ group.title ]]</strong><em>[[ (group.items || []).length ]]</em></summary>' +
-                '<table class="mioos-start-table mioos-simple-table-shell" role="grid">' +
-                  '<tbody>' +
-                    '<tr v-for="item in group.items" :key="item.key" :class="{ \'is-selected\': selectedKey === item.key, \'is-disabled\': item.disabled }" @click="vm.startMenuOpenItem(item)">' +
-                      '<td class="mioos-start-cell-icon">[[ item.icon ]]</td><td><strong>[[ item.title ]]</strong><span>[[ item.subtitle || item.key ]]</span></td>' +
-                    '</tr>' +
-                  '</tbody>' +
-                '</table>' +
-              '</details>' +
-            '</div>' +
-            '<div class="mioos-start-user-vue" v-if="vm.authEnabled">' +
-              '<template v-if="vm.boot.user.authenticated"><span>[[ (vm.boot.user || {}).displayName || \'User\' ]]</span><button type="button" class="mioos-btn" @click="vm.submitSignout">[[ vm.t(\'auth.signout\') ]]</button></template>' +
-              '<template v-else><label class="mioos-auth-field compact"><span>[[ vm.t(\'auth.username\') ]]</span><input v-model="vm.authForm.username" type="text"></label><label class="mioos-auth-field compact"><span>[[ vm.t(\'auth.password\') ]]</span><input v-model="vm.authForm.password" type="password"></label><button type="button" class="mioos-btn" @click="vm.submitSignin">[[ vm.t(\'auth.signin\') ]]</button></template>' +
-            '</div>' +
+          '<aside class="mioos-start-menu-vue is-modern-launcher" :class="[\'is-\' + vm.currentShellThemeFamily(), \'style-\' + vm.startMenuStyleType(), \'position-\' + vm.taskbarPosition(), \'button-\' + vm.taskbarButtonStyleType()]" :style="vm.startMenuPopupStyle()" tabindex="-1" role="dialog" aria-label="Start menu" @keydown="vm.startMenuHandleKeydown($event)" @click.stop>' +
+            '<header class="mioos-start-modern-head">' +
+              '<div class="mioos-start-modern-brand"><div class="mioos-start-modern-avatar" aria-hidden="true">M</div><div><strong>[[ vm.boot.product.name ]]</strong><span>[[ vm.boot.product.subtitle ]]</span></div></div>' +
+              '<button type="button" class="mioos-start-modern-close" aria-label="Close Start menu" @click="vm.menuOpen=false">×</button>' +
+            '</header>' +
+            '<section class="mioos-start-modern-searchrow">' +
+              '<label class="mioos-start-modern-search"><span aria-hidden="true">⌕</span><input v-model="vm.menuFilter" type="search" autocomplete="off" :placeholder="vm.t(\'search.placeholder\')" @keydown="vm.startMenuHandleKeydown($event)"></label>' +
+              '<span class="mioos-start-modern-count">[[ resultLabel ]]</span>' +
+            '</section>' +
+            '<nav class="mioos-start-modern-groups" aria-label="Start menu shortcuts">' +
+              '<section v-for="group in groups" :key="group.key" class="mioos-start-modern-section">' +
+                '<header class="mioos-start-modern-section-head"><span class="mioos-start-modern-section-icon">[[ vm.startMenuGroupIcon(group.key) ]]</span><div><strong>[[ group.title ]]</strong><span>[[ group.subtitle ]]</span></div><em>[[ (group.items || []).length ]]</em></header>' +
+                '<div class="mioos-start-modern-list" role="list">' +
+                  '<button v-for="item in group.items" :key="item.key" type="button" role="listitem" class="mioos-start-modern-item" :class="{ \'is-selected\': selectedKey === item.key, \'is-disabled\': item.disabled }" :title="item.title + (item.subtitle ? \' — \' + item.subtitle : \'\')" :disabled="item.disabled" @mouseenter="vm.startMenuSelectItem(item)" @focus="vm.startMenuSelectItem(item)" @click="vm.startMenuOpenItem(item)">' +
+                    '<span class="mioos-start-modern-item-icon" aria-hidden="true">[[ item.icon ]]</span>' +
+                    '<span class="mioos-start-modern-item-copy"><strong>[[ item.title ]]</strong><em>[[ vm.startMenuItemMeta(item) ]]</em></span>' +
+                    '<span class="mioos-start-modern-item-source">[[ vm.startMenuSourceBadge(item) ]]</span>' +
+                  '</button>' +
+                '</div>' +
+              '</section>' +
+            '</nav>' +
+            '<footer class="mioos-start-modern-footer" v-if="vm.authEnabled">' +
+              '<template v-if="vm.boot.user.authenticated"><div><strong>[[ (vm.boot.user || {}).displayName || \'User\' ]]</strong><span>Authenticated session</span></div><button type="button" class="mioos-start-modern-secondary" @click="vm.submitSignout">[[ vm.t(\'auth.signout\') ]]</button></template>' +
+              '<template v-else><label class="mioos-auth-field compact"><span>[[ vm.t(\'auth.username\') ]]</span><input v-model="vm.authForm.username" type="text"></label><label class="mioos-auth-field compact"><span>[[ vm.t(\'auth.password\') ]]</span><input v-model="vm.authForm.password" type="password"></label><button type="button" class="mioos-start-modern-secondary" @click="vm.submitSignin">[[ vm.t(\'auth.signin\') ]]</button></template>' +
+            '</footer>' +
           '</aside>'
       });
 
@@ -861,9 +794,9 @@
               '<button v-for="app in pinnedApps" :key="app.key" type="button" class="mioos-task-icon-vue" :title="app.title" @click.stop="vm.openApp(app.key)"><span>[[ app.icon ]]</span></button>' +
             '</div>' +
             '<div class="mioos-taskbar-windows-vue">' +
-              '<button v-for="win in windows" :key="win.id" type="button" class="mioos-task-item-vue" :class="{ \'is-active\': vm.activeWindowId === win.id && win.state !== \'minimized\' }" @mouseenter="vm.showTaskbarPreview(win, $event)" @mouseleave="vm.hideTaskbarPreview()" @focus="vm.showTaskbarPreview(win, $event)" @blur="vm.hideTaskbarPreview()" @click.stop="vm.taskbarToggle(win.id)"><span class="mioos-task-item-icon">[[ vm.appIcon(win.appKey) ]]</span><span class="mioos-task-item-title">[[ win.title ]]</span></button>' +
+              '<button v-for="win in windows" :key="win.id" type="button" class="mioos-task-item-vue" :class="{ \'is-active\': vm.activeWindowId === win.id && win.state !== \'minimized\' }" @click.stop="vm.taskbarToggle(win.id)"><span class="mioos-task-item-icon">[[ vm.appIcon(win.appKey) ]]</span><span class="mioos-task-item-title">[[ win.title ]]</span></button>' +
             '</div>' +
-            '<div v-if="(vm.taskbarPreview || {}).open && vm.taskbarPreviewWindow()" class="mioos-task-preview-vue" :style="vm.taskbarPreviewStyle()"><strong>[[ vm.taskbarPreviewWindow().title ]]</strong><span>[[ vm.taskbarPreviewWindow().appKey ]] · [[ vm.taskbarPreviewWindow().state ]]</span><div class="mioos-task-preview-snapshot"><span>[[ vm.appIcon(vm.taskbarPreviewWindow().appKey) ]]</span></div></div><div class="mioos-taskbar-tray-vue">' +
+            '<div class="mioos-taskbar-tray-vue">' +
               '<button type="button" class="mioos-task-icon-vue" title="Show Desktop" @click.stop="vm.showDesktop()">⌄</button>' +
               '<button type="button" class="mioos-task-icon-vue" title="Theme Studio" @click.stop="vm.openApp(\'theme-studio\')">🎨</button>' +
               '<button type="button" class="mioos-task-clock-vue" @click.stop="vm.refreshView">[[ vm.clockText ]]</button>' +

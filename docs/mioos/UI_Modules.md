@@ -98,41 +98,8 @@ The Patient Registration catalogue entry launches `mioos-surface-table` with dat
 The Advanced Table module now treats editable cells, validation, column visibility, column reorder, fixed columns, grouping, filtering, and selected-row CSV export as one composed server-side surface. User-created table modules should enable table features through `MOD("tableState","config","features",...)` and persist fixed-column defaults through `MOD("tableState","config","fixedColumns",...)`.
 
 
-## ROI 68A table module sample matrix
+## Start Menu launcher contract
 
-Table-backed modules should remain MUMPS-first. A developer should be able to create a production-style table module by editing a routine that seeds `^MIO("MIOOS","TABLE",user,dataset,...)` and by registering `MOD("componentKey")="table"`, `MOD("surface")="mioos-surface-table"`, and `MOD("tableState","dataset")=<dataset>`.
+The Start Menu is a shell component, not a standalone SPA. Its component markup is in `public/mioos/app/mioos_shell_ui.js`, and its source entries are normalized through `startMenuAppCatalogItems()`, `startMenuFilesystemItems()`, and `startMenuGroups()` in `public/mioos/app/mioos_core.js`.
 
-The expanded sample matrix under `examples/mioos_modules/table/samples/` covers read-only tables, editable cells, validation rules, typed controls, advanced filters, multi-column grouping, column visibility, column reorder, fixed columns, selected-row CSV export, desktop icon/App Catalogue entry points, and table-backed module registration without frontend code. These samples are intentionally MUMPS snippets rather than JavaScript because the target module author is a MUMPS developer.
-
-The table transport posture remains WebSocket-first with authenticated HTTP fallback. Do not fork the Vue table component or introduce a build step for table modules.
-
-## ROI 70 direct Patient Registration entry
-
-The Patient Registration module is available both through the App Catalogue and as a direct shell module entry. The direct entry uses app key `patient-registration`, module id `mioos.ui.patient.registration`, component `table`, and dataset `patient-registration`. The table renders review queue buttons from server metadata instead of hardcoding patient workflow state in JavaScript.
-
-## ROI 71 Patient Registration entry-point gating
-
-The Patient Registration shell entry and App Catalogue module are only emitted when `CANLAUNCH^MIOOSPAT(.STATE)` allows patient read access. The general UI Modules catalogue remains available when the module system is enabled. Limited read-only roles may open Patient Registration, but the backend returns masked PHI rows.
-
-## Regression note — App Catalogue and Table Module Definition
-
-The App Catalogue layout switch is a visual state, not a separate route. The catalogue grid uses `mioos-ui-module-grid` for card layout and `mioos-ui-module-grid is-list` for list layout. CSS for both states must stay in `public/mioos/mioos.css`; otherwise the List/Cards button will still update Vue state but appear to do nothing.
-
-The Table Module Definition editor is intentionally styled as a system modal with the `mioos-table-module-editor` class. Preview, revisions, import/export, save, and rollback actions call `/api/mioos/modules/table` through `uiModuleTableRequest()`. Failed requests should render deterministic inline error text in the modal and must not surface as unhandled Vue click errors.
-
-## ROI 72 Table Module Definition authoring hardening
-
-The Table Module Definition modal now validates imported JSON before calling the backend, downloads exported JSON locally, and closes on Escape. It should remain usable even when the window cannot be resized enough to expose the close button.
-
-Table module column type choices include patient-centric and basic table editor types such as `mrn`, `state`, `gender`, `phone`, `email`, `zip`, `dob`, `multiselect`, `currency`, `percent`, `time`, and `datetime`.
-
-## ROI 72A shell/UI stabilization notes
-
-- The Start Menu uses a compact Windows 98-style list treatment for high-density catalog data.
-- Media/text/PDF viewer templates must use safe Vue bindings and must not place quoted object-literal keys directly inside double-quoted template attributes.
-- Explorer upload entry points accept multiple files from the picker and from drag/drop onto Explorer windows or the desktop.
-- Window controls stop pointer events before titlebar dragging to avoid maximize/close render conflicts.
-
-## ROI 72B shell menus and table-like surfaces
-
-The Start Menu and Explorer Details surfaces now intentionally reuse table-like controller styling for dense, data-heavy shell views. Explorer window menus use a shared action dispatch so File/Edit/View/Tools/Help entries can be reused across folder-like windows.
+ROI 72C rewrites the visual presentation only. New modules should continue to appear through the module/App Catalogue path, while language shortcuts, theme shortcuts, Folder Explorer, Desktop VFS items, search, and keyboard navigation remain part of the contract.
