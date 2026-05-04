@@ -72,14 +72,6 @@
               '<span>[[ vm.alertMessage ]]</span>' +
               '<button type="button" @click="vm.dismissAlert">[[ vm.t(\'alert.dismiss\') ]]</button>' +
             '</div>' +
-            '<section v-if="vm.shellDialog && vm.shellDialog.open" class="mioos-shell-dialog-backdrop" role="presentation" @click.self="vm.shellDialogCancel">' +
-              "<form class=\"mioos-shell-dialog\" :class=\"{ 'is-danger': vm.shellDialog.danger }\" :role=\"vm.shellDialog.kind === 'confirm' ? 'alertdialog' : 'dialog'\" aria-modal=\"true\" @submit.prevent=\"vm.shellDialogSubmit\">" +
-                '<header><strong>[[ vm.shellDialog.title ]]</strong><button type="button" aria-label="Close dialog" @click="vm.shellDialogCancel">×</button></header>' +
-                '<p>[[ vm.shellDialog.message ]]</p>' +
-                "<input v-if=\"vm.shellDialog.kind === 'input'\" v-model=\"vm.shellDialog.value\" type=\"text\" :placeholder=\"vm.shellDialog.placeholder || ''\">" +
-                "<footer><button type=\"button\" class=\"mioos-btn\" @click=\"vm.shellDialogCancel\">[[ vm.shellDialog.cancelText || 'Cancel' ]]</button><button type=\"submit\" class=\"mioos-btn\" :class=\"{ danger: vm.shellDialog.danger }\">[[ vm.shellDialog.confirmText || 'OK' ]]</button></footer>" +
-              '</form>' +
-            '</section>' +
             '<section v-if="vm.requiresSignin" class="mioos-auth-overlay theme-login-runtime" aria-hidden="false">' +
               '<div class="mioos-auth-login-bg" :style="{ backgroundImage: vm.themeStudioLoginWallpaperCss(vm.themeStudioActiveTheme()) }"></div>' +
               '<div class="mioos-auth-card theme-login-card" role="dialog" aria-modal="true" :aria-label="vm.boot.product.name">' +
@@ -113,7 +105,7 @@
             '<start-menu-popup v-if="vm.menuOpen"></start-menu-popup>' +
             '<popup-menu v-if="vm.desktopContextMenuState().open"></popup-menu>' +
             '<div v-if="vm.snapPreview.active" class="mioos-snap-preview" :data-snap-zone="vm.snapPreview.zone" :style="vm.snapPreviewStyle()"></div>' +
-            '<div class="mioos-desktop-surface" :class="{ \'pointer-events-none\': vm.dragState.active }">' +
+            '<div class="mioos-desktop-surface" :class="{ \'pointer-events-none\': vm.dragState.active }" :style="vm.desktopSurfaceStyle()">' +
               '<desktop-icon v-for="entry in vm.desktopRenderEntries()" :key="entry.key" :icon="entry"></desktop-icon>' +
             '</div>' +
             '<window-frame v-for="win in vm.visibleWindows" :key="win.id" :window="win"></window-frame>' +
@@ -218,14 +210,12 @@
           sortMark: function (key) { return this.state.sortKey === key ? (this.state.sortDir === 'desc' ? '▼' : '▲') : ''; }
         },
         template: `
-          <div class="mioos-surface mioos-surface-explorer mioos-explorer-native" @contextmenu.prevent="blankMenu($event)" @click="vm.closeExplorerContextMenu(window.id); vm.explorerCloseWindowMenu(window.id)">
+          <div class="mioos-surface mioos-surface-explorer mioos-explorer-native" @contextmenu.prevent="blankMenu($event)" @click="vm.closeExplorerContextMenu(window.id)">
             <nav class="mioos-explorer-menu-strip" role="menubar" aria-label="Explorer menu" @click.stop>
-              <div v-for="group in vm.explorerMenuGroups(window.id)" :key="group.key" class="mioos-explorer-menu-group">
-                <button role="menuitem" type="button" :class="{ 'is-open': ((state.windowMenu || {}).open && (state.windowMenu || {}).key === group.key) }" @click="vm.explorerToggleWindowMenu(window.id, group.key)">[[ group.label ]]</button>
-                <ul v-if="((state.windowMenu || {}).open && (state.windowMenu || {}).key === group.key)" class="mioos-explorer-window-menu" role="menu">
-                  <li v-for="item in group.items" :key="item.key"><button type="button" role="menuitem" :disabled="item.disabled" @click="vm.explorerRunWindowMenuAction(window.id, item.key)">[[ item.label ]]</button></li>
-                </ul>
-              </div>
+              <button role="menuitem" type="button">File</button>
+              <button role="menuitem" type="button">Edit</button>
+              <button role="menuitem" type="button">View</button>
+              <button role="menuitem" type="button">Tools</button>
             </nav>
             <div class="mioos-explorer-toolbar" @click.stop>
               <button type="button" class="mioos-explorer-command" :disabled="!((state.history || []).length)" @click="vm.explorerGoBack(window.id)">‹ Back</button>
@@ -274,7 +264,7 @@
                 <div class="mioos-explorer-empty" v-if="state.loading">Loading folder…</div>
                 <div class="mioos-explorer-empty" v-else-if="state.error">[[ state.error ]]</div>
                 <div class="mioos-explorer-empty" v-else-if="!items.length">This folder is empty.</div>
-                <table v-else-if="(state.viewMode || 'details') === 'details'" class="mioos-explorer-listview mioos-simple-table mioos-ui-table" role="grid" aria-label="Folder contents">
+                <table v-else-if="(state.viewMode || 'details') === 'details'" class="mioos-explorer-listview" role="grid" aria-label="Folder contents">
                   <thead><tr>
                     <th><button type="button" @click="sort('name')">Name [[ sortMark('name') ]]</button></th>
                     <th><button type="button" @click="sort('type')">Type [[ sortMark('type') ]]</button></th>
@@ -282,7 +272,7 @@
                     <th><button type="button" @click="sort('modified')">Modified [[ sortMark('modified') ]]</button></th>
                   </tr></thead>
                   <tbody>
-                    <tr v-for="item in items" :key="itemKey(item)" :class="{ \'is-selected\': selectedKey === itemKey(item) }" draggable="true" @dragstart="vm.explorerHandleItemDragStart($event, item, window.id)" @dragover="vm.explorerHandleItemDragOver($event, item)" @drop="vm.explorerHandleItemDrop($event, item, window.id)" @click.stop="select(item)" @dblclick.stop="open(item)" @contextmenu.prevent.stop="rowMenu(item, $event)">
+                    <tr v-for="item in items" :key="itemKey(item)" :class="{ \'is-selected\': selectedKey === itemKey(item) }" @click.stop="select(item)" @dblclick.stop="open(item)" @contextmenu.prevent.stop="rowMenu(item, $event)">
                       <td><span class="mioos-explorer-row-icon">[[ vm.explorerItemGlyph(item) ]]</span><span class="mioos-explorer-row-name">[[ item.name || item.title ]]</span></td>
                       <td>[[ vm.explorerItemTypeLabel(item) ]]</td>
                       <td>[[ vm.explorerFormatSize(item) ]]</td>
@@ -291,9 +281,9 @@
                   </tbody>
                 </table>
                 <div v-else class="mioos-explorer-icon-grid" role="list" aria-label="Folder contents">
-                  <button v-for="item in items" :key="itemKey(item)" type="button" class="mioos-explorer-icon-tile" :class="{ \'is-selected\': selectedKey === itemKey(item) }" draggable="true" @dragstart="vm.explorerHandleItemDragStart($event, item, window.id)" @dragover="vm.explorerHandleItemDragOver($event, item)" @drop="vm.explorerHandleItemDrop($event, item, window.id)" @click.stop="select(item)" @dblclick.stop="open(item)" @contextmenu.prevent.stop="rowMenu(item, $event)">
+                  <button v-for="item in items" :key="itemKey(item)" type="button" class="mioos-explorer-icon-tile" :class="{ \'is-selected\': selectedKey === itemKey(item) }" @click.stop="select(item)" @dblclick.stop="open(item)" @contextmenu.prevent.stop="rowMenu(item, $event)">
                     <span class="mioos-explorer-icon-tile-glyph">[[ vm.explorerItemGlyph(item) ]]</span>
-                    <span class="mioos-explorer-icon-tile-name" :title="item.name || item.title">[[ item.name || item.title ]]</span>
+                    <span>[[ item.name || item.title ]]</span>
                   </button>
                 </div>
               </section>
@@ -329,7 +319,7 @@
 
       app.component('mioos-surface-viewer', {
         props: ['window'],
-        data: function () { return { menuOpen: '' }; },
+        data: function () { return { mediaLoop: false }; },
         computed: {
           vm: function () { return root(this); },
           fileView: function () { return (this.window && this.window.fileView) || {}; },
@@ -339,72 +329,19 @@
           safeText: function () { return String(this.fileView.content || ''); }
         },
         methods: {
-          closeMenu: function () { this.menuOpen = ''; },
-          toggleMenu: function (key) { this.menuOpen = this.menuOpen === key ? '' : key; },
-          download: function () { this.closeMenu(); if (this.vm.downloadViewerFile) this.vm.downloadViewerFile(this.window); },
+          download: function () { if (this.vm.downloadViewerFile) this.vm.downloadViewerFile(this.window); },
           retry: function () {
-            this.closeMenu();
             var meta = (this.window || {}).meta || {};
             var item = { id: meta.fileId, key: meta.fileId, fileId: meta.fileId, name: meta.fileName || this.window.title, title: meta.fileName || this.window.title, mime: meta.mime };
             if (this.kind === 'text' && this.vm.openTextViewerWindow) { this.vm.closeWindow(this.window.id); this.vm.openTextViewerWindow(item); return; }
+            if (this.kind === 'structured' && this.vm.openStructuredViewerWindow) { this.vm.closeWindow(this.window.id); this.vm.openStructuredViewerWindow(item); return; }
             if (this.kind === 'image' && this.vm.openImageViewerWindow) { this.vm.closeWindow(this.window.id); this.vm.openImageViewerWindow(item); return; }
             if (this.kind === 'media' && this.vm.openMediaViewerWindow) { this.vm.closeWindow(this.window.id); this.vm.openMediaViewerWindow(item); return; }
             if (this.kind === 'pdf' && this.vm.openPdfViewerWindow) { this.vm.closeWindow(this.window.id); this.vm.openPdfViewerWindow(item); }
           },
-          closeViewer: function () { this.closeMenu(); if (this.vm.closeWindow) this.vm.closeWindow(this.window.id); },
-          showProperties: function () { this.closeMenu(); if (this.vm.openFilePropertiesWindow) this.vm.openFilePropertiesWindow({ id: (this.window.meta || {}).fileId, name: (this.window.meta || {}).fileName || this.window.title, mime: (this.window.meta || {}).mime || this.fileView.mime }); },
-          copySourceUrl: function () { this.closeMenu(); if (navigator.clipboard && this.sourceUrl) navigator.clipboard.writeText(this.sourceUrl).catch(function () {}); },
-          toggleLoop: function () { this.closeMenu(); this.fileView.loop = !this.fileView.loop; },
-          selectViewerText: function () {
-            this.closeMenu();
-            var el = this.$el && this.$el.querySelector('.mioos-viewer-text');
-            if (el && window.getSelection) {
-              var range = document.createRange();
-              range.selectNodeContents(el);
-              var sel = window.getSelection();
-              sel.removeAllRanges();
-              sel.addRange(range);
-            }
-          }
+          help: function () { if (this.vm.showAlert) this.vm.showAlert('File viewer', 'Use File to download, Edit to reload the preview, and Loop for audio/video playback.'); }
         },
-        template: `
-          <div class="mioos-surface mioos-surface-viewer-native" :class="'is-' + kind" @click="closeMenu">
-            <nav class="mioos-viewer-menu-strip" role="menubar" aria-label="File viewer menu" @click.stop>
-              <div class="mioos-viewer-menu-group">
-                <button type="button" role="menuitem" @click="toggleMenu('file')">File</button>
-                <ul v-if="menuOpen === 'file'" role="menu">
-                  <li><button type="button" @click="download">Download</button></li>
-                  <li><button type="button" @click="retry">Reload</button></li>
-                  <li><button type="button" @click="closeViewer">Close</button></li>
-                </ul>
-              </div>
-              <div class="mioos-viewer-menu-group">
-                <button type="button" role="menuitem" @click="toggleMenu('edit')">Edit</button>
-                <ul v-if="menuOpen === 'edit'" role="menu">
-                  <li v-if="kind === 'text' || kind === 'structured'"><button type="button" @click="selectViewerText">Select all</button></li>
-                  <li v-if="kind === 'media'"><button type="button" @click="toggleLoop">[[ fileView.loop ? 'Disable loop' : 'Loop playback' ]]</button></li>
-                  <li><button type="button" @click="copySourceUrl">Copy source URL</button></li>
-                </ul>
-              </div>
-              <div class="mioos-viewer-menu-group">
-                <button type="button" role="menuitem" @click="toggleMenu('help')">Help</button>
-                <ul v-if="menuOpen === 'help'" role="menu">
-                  <li><button type="button" @click="showProperties">Properties</button></li>
-                </ul>
-              </div>
-              <span>[[ (window.meta || {}).fileName || window.title ]]</span>
-            </nav>
-            <section class="mioos-viewer-body" :class="{ 'is-media-full': kind === 'media' || kind === 'image' }">
-              <div v-if="fileView.loading" class="mioos-viewer-state">Loading file…</div>
-              <div v-else-if="fileView.error" class="mioos-viewer-state is-error">[[ fileView.error ]]</div>
-              <pre v-else-if="kind === 'text' || kind === 'structured'" class="mioos-viewer-text">[[ safeText ]]</pre>
-              <img v-else-if="kind === 'image'" class="mioos-viewer-image" :src="sourceUrl" :alt="(window.meta || {}).fileName || window.title">
-              <iframe v-else-if="kind === 'pdf'" class="mioos-viewer-frame" :src="sourceUrl" title="PDF preview"></iframe>
-              <video v-else-if="kind === 'media' && mediaKind === 'video'" class="mioos-viewer-media" :src="sourceUrl" :loop="!!fileView.loop" controls playsinline preload="metadata"></video>
-              <audio v-else-if="kind === 'media'" class="mioos-viewer-audio" :src="sourceUrl" :loop="!!fileView.loop" controls preload="metadata"></audio>
-              <div v-else class="mioos-viewer-state">No preview is available for this file type.</div>
-            </section>
-          </div>`
+        template: "<div class=\"mioos-surface mioos-surface-viewer-native\" :class=\"'is-' + kind\"><nav class=\"mioos-viewer-menu-strip\" role=\"menubar\" aria-label=\"File viewer menu\"><button type=\"button\" role=\"menuitem\" @click=\"download\">File</button><button type=\"button\" role=\"menuitem\" @click=\"retry\">Edit</button><button type=\"button\" role=\"menuitem\" @click=\"help\">Help</button><label v-if=\"kind === 'media'\" class=\"mioos-viewer-loop-toggle\"><input type=\"checkbox\" v-model=\"mediaLoop\"> Loop</label></nav><section class=\"mioos-viewer-body\" :class=\"{ 'is-media-full': kind === 'media' }\"><div v-if=\"fileView.loading\" class=\"mioos-viewer-state\">Loading file\u2026</div><div v-else-if=\"fileView.error\" class=\"mioos-viewer-state is-error\">[[ fileView.error ]]</div><pre v-else-if=\"kind === 'text' || kind === 'structured'\" class=\"mioos-viewer-text\">[[ safeText ]]</pre><img v-else-if=\"kind === 'image'\" class=\"mioos-viewer-image\" :src=\"sourceUrl\" :alt=\"(window.meta || {}).fileName || window.title\"><iframe v-else-if=\"kind === 'pdf'\" class=\"mioos-viewer-frame\" :src=\"sourceUrl\" title=\"PDF preview\"></iframe><video v-else-if=\"kind === 'media' && mediaKind === 'video'\" class=\"mioos-viewer-media\" :src=\"sourceUrl\" controls playsinline preload=\"metadata\" :loop=\"mediaLoop\"></video><audio v-else-if=\"kind === 'media'\" class=\"mioos-viewer-audio\" :src=\"sourceUrl\" controls preload=\"metadata\" :loop=\"mediaLoop\"></audio><div v-else class=\"mioos-viewer-state\">No preview is available for this file type.</div></section></div>"
       });
 
       app.component('mioos-surface-terminal', {
@@ -531,77 +468,26 @@
 
                       <div class="mioos-theme-studio-panel-vue" v-else-if="tab.key === 'appearance'">
                         <div class="mioos-theme-row-vue">
-                          <label><span>Title bar gradient</span><input type="text" :value="vm.themeStudioTextValue('--titlebar-bg', '')" @input="vm.themeStudioUpdateVar('--titlebar-bg', $event.target.value)"></label>
+                          <label><span>Active title start</span><input type="color" :value="vm.themeStudioColorValue('--titlebar-active-start', '#1e3a8a')" @input="vm.themeStudioSetTitlebarGradient('--titlebar-active-start', $event.target.value)"></label>
+                          <label><span>Active title end</span><input type="color" :value="vm.themeStudioColorValue('--titlebar-active-end', '#0f172a')" @input="vm.themeStudioSetTitlebarGradient('--titlebar-active-end', $event.target.value)"></label>
+                          <label><span>Inactive title start</span><input type="color" :value="vm.themeStudioColorValue('--titlebar-inactive-start', '#334155')" @input="vm.themeStudioSetTitlebarGradient('--titlebar-inactive-start', $event.target.value)"></label>
+                          <label><span>Inactive title end</span><input type="color" :value="vm.themeStudioColorValue('--titlebar-inactive-end', '#111827')" @input="vm.themeStudioSetTitlebarGradient('--titlebar-inactive-end', $event.target.value)"></label>
                           <label><span>Title bar text</span><input type="color" :value="vm.themeStudioColorValue('--titlebar-text', '#10233f')" @input="vm.themeStudioUpdateVar('--titlebar-text', $event.target.value)"></label>
                           <label><span>Window background</span><input type="text" :value="vm.themeStudioTextValue('--window-bg', '')" @input="vm.themeStudioUpdateVar('--window-bg', $event.target.value)"></label>
                           <label><span>Window border</span><input type="color" :value="vm.themeStudioColorValue('--window-border', '#2456a6')" @input="vm.themeStudioUpdateVar('--window-border', $event.target.value)"></label>
                           <label><span>Window radius</span><input type="range" min="0" max="24" step="1" :value="parseInt(vm.themeStudioTextValue('--window-radius', '10px'), 10) || 10" @input="vm.themeStudioUpdateVar('--window-radius', $event.target.value + 'px')"></label>
                           <label><span>Window shadow</span><input type="text" :value="vm.themeStudioTextValue('--shadow-window', '')" @input="vm.themeStudioUpdateVar('--shadow-window', $event.target.value)"></label>
                         </div>
-                        <div class="mioos-theme-row-vue">
-                          <label><span>Active title start</span><input type="color" :value="vm.themeStudioTitlebarColorValue('--titlebar-active-start', '#1e3a8a')" @input="vm.themeStudioSetTitlebarGradient('active', 'start', $event.target.value)"></label>
-                          <label><span>Active title end</span><input type="color" :value="vm.themeStudioTitlebarColorValue('--titlebar-active-end', '#0f172a')" @input="vm.themeStudioSetTitlebarGradient('active', 'end', $event.target.value)"></label>
-                          <label><span>Inactive title start</span><input type="color" :value="vm.themeStudioTitlebarColorValue('--titlebar-inactive-start', '#334155')" @input="vm.themeStudioSetTitlebarGradient('inactive', 'start', $event.target.value)"></label>
-                          <label><span>Inactive title end</span><input type="color" :value="vm.themeStudioTitlebarColorValue('--titlebar-inactive-end', '#111827')" @input="vm.themeStudioSetTitlebarGradient('inactive', 'end', $event.target.value)"></label>
-                        </div>
                       </div>
 
-                      <div class="mioos-theme-studio-panel-vue" v-else-if="tab.key === 'taskbarStart'">
+                      <div class="mioos-theme-studio-panel-vue" v-else-if="tab.key === 'taskbar'">
                         <div class="mioos-theme-row-vue">
-                          <label><span>Taskbar position</span><select :value="((activeTheme.taskbarConfig || {}).position) || 'bottom'" @change="vm.themeStudioUpdateField('taskbarConfig.position', $event.target.value)"><option value="bottom">Bottom</option><option value="top">Top</option><option value="left">Left</option></select></label>
+                          <label><span>Taskbar position</span><select :value="((activeTheme.taskbarConfig || {}).position) || 'bottom'" @change="vm.themeStudioUpdateField('taskbarConfig.position', $event.target.value)"><option value="bottom">Bottom</option><option value="top">Top</option><option value="left">Left</option><option value="right">Right</option></select></label>
                           <label><span>Taskbar height</span><input type="range" min="36" max="72" step="1" :value="vm.taskbarHeightValue()" @input="vm.themeStudioUpdateField('taskbarConfig.height', +$event.target.value)"></label>
                           <label><span>Button style</span><select :value="((activeTheme.taskbarConfig || {}).buttonStyle) || 'xp'" @change="vm.themeStudioUpdateField('taskbarConfig.buttonStyle', $event.target.value)"><option value="xp">Classic bevel</option><option value="glow">Glass capsule</option><option value="curve">Rounded pill</option></select></label>
                           <label><span>Transparency</span><input type="range" min="0" max="1" step="0.01" :value="((activeTheme.taskbarConfig || {}).transparentAmount) || 0" @input="vm.themeStudioUpdateField('taskbarConfig.transparentAmount', +$event.target.value)"></label>
                         </div>
                         <div class="mioos-theme-hint-vue">Adjust both the live shell and the preview: transparency now changes the actual taskbar surface, while button style updates Start and running-window buttons.</div>
-                        <div class="mioos-theme-hint-vue"><strong>Start Menu</strong> — style, width, accent, nesting, and preview all live in this combined tab.</div>
-<div class="mioos-theme-start-stylecards-vue">
-                          <button type="button" class="mioos-theme-stylecard-vue" :class="{ 'is-active': (((activeTheme.startMenuConfig || {}).style) || 'classic') === 'classic' }" @click="vm.themeStudioUpdateField('startMenuConfig.style', 'classic')">
-                            <strong>Classic nested</strong>
-                            <span>Classic two-column launcher with expandable groups.</span>
-                            <div class="mioos-theme-stylecard-mini-vue classic"><i></i><i></i><i></i></div>
-                          </button>
-                          <button type="button" class="mioos-theme-stylecard-vue" :class="{ 'is-active': (((activeTheme.startMenuConfig || {}).style) || 'classic') === 'popup' }" @click="vm.themeStudioUpdateField('startMenuConfig.style', 'popup')">
-                            <strong>Popup launcher</strong>
-                            <span>Centered application launcher with grouped actions and quick launch.</span>
-                            <div class="mioos-theme-stylecard-mini-vue panel"><i></i><i></i><i></i></div>
-                          </button>
-                        </div>
-                        <div class="mioos-theme-row-vue">
-                          <label><span>Menu width</span><input type="range" min="300" max="760" step="10" :value="((activeTheme.startMenuConfig || {}).width) || 360" @input="vm.themeStudioUpdateField('startMenuConfig.width', +$event.target.value)"></label>
-                          <label><span>Accent color</span><input type="color" :value="((activeTheme.startMenuConfig || {}).accentColor) || vm.themeStudioColorValue('--accent', '#0b63f6')" @input="vm.themeStudioUpdateField('startMenuConfig.accentColor', $event.target.value)"></label>
-                          <label v-if="(((activeTheme.startMenuConfig || {}).style) || 'classic') === 'classic'"><span>Nested folders</span><select :value="(((activeTheme.startMenuConfig || {}).nested) === false ? 'off' : 'on')" @change="vm.themeStudioUpdateField('startMenuConfig.nested', $event.target.value === 'on')"><option value="on">Enabled</option><option value="off">Flattened</option></select></label>
-                          <label v-else><span>Popup grouping</span><select :value="((activeTheme.startMenuConfig || {}).pinnedTileLayout) || 'grid'" @change="vm.themeStudioUpdateField('startMenuConfig.pinnedTileLayout', $event.target.value)"><option value="grid">Grid</option><option value="stack">Stacked</option><option value="columns">Columns</option></select></label>
-                        </div>
-                        <div class="mioos-theme-startmenu-mini-vue" :class="['style-' + ((((activeTheme.startMenuConfig || {}).style) || 'classic'))]">
-                          <template v-if="(((activeTheme.startMenuConfig || {}).style) || 'classic') === 'classic'">
-                            <div class="mioos-theme-classicmenu-vue">
-                              <section class="mioos-theme-classicmenu-main-vue">
-                                <details v-for="group in groups" :key="group.key + '-mini'" :open="group.open">
-                                  <summary>[[ group.title ]]</summary>
-                                  <div class="mioos-theme-startmenu-mini-items-vue">
-                                    <span v-for="item in group.items" :key="item.key + '-mini'">[[ item.title ]]</span>
-                                  </div>
-                                </details>
-                              </section>
-                              <aside class="mioos-theme-classicmenu-side-vue">
-                                <strong>Pinned</strong>
-                                <span v-for="item in groups[0].items.slice(0,3)" :key="item.key + '-pin'">[[ item.title ]]</span>
-                              </aside>
-                            </div>
-                          </template>
-                          <template v-else>
-                            <div class="mioos-theme-popupmenu-vue">
-                              <div class="mioos-theme-popupmenu-head-vue">App menu</div>
-                              <div class="mioos-theme-panelmenu-group-vue" v-for="group in groups" :key="group.key + '-popup-mini'">
-                                <strong>[[ group.title ]]</strong>
-                                <button type="button" class="mioos-start-entry-vue" v-for="item in group.items" :key="item.key + '-popup-item'">
-                                  <span class="mioos-start-entry-icon">[[ item.icon ]]</span><span><strong>[[ item.title ]]</strong><em>[[ item.subtitle ]]</em></span>
-                                </button>
-                              </div>
-                            </div>
-                          </template>
-                        </div>
                       </div>
 
                       <div class="mioos-theme-studio-panel-vue" v-else-if="tab.key === 'start'">
@@ -712,8 +598,7 @@
                       </div>
 
                       <div class="mioos-theme-studio-panel-vue" v-else>
-                        <div class="mioos-theme-hint-vue">This tab has been retired. Use Themes, Desktop, Appearance, Taskbar & Start Menu, or Login Screen.</div>
-                        <div class="mioos-theme-row-vue" style="display:none">
+                        <div class="mioos-theme-row-vue">
                           <label><span>Class modifiers</span><input type="text" :value="vm.themeStudioClassModifiersText()" @input="vm.themeStudioSetClassModifiers($event.target.value)"></label>
                           <label><span>Extra CSS</span><textarea rows="6" :value="activeTheme.extraCss || ''" @input="vm.themeStudioUpdateField('extraCss', $event.target.value)"></textarea></label>
                           <label class="span-2"><span>Theme import / export JSON</span><textarea rows="12" :value="store.importBuffer || ''" @input="store.importBuffer = $event.target.value" placeholder="Export the active theme, fine-tune the JSON, then import it as a new detailed theme."></textarea></label>

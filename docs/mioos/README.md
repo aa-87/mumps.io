@@ -424,6 +424,6 @@ The Start Menu launcher now supports expandable VFS folders/subfolders through l
 
 ROI 72C2 fixes the file viewer surface, Theme Studio image uploads, recursive Start Menu folders, desktop icon placement, and server-only theme persistence. Theme images continue to use authenticated server asset URLs and are sanitized before login.
 
-### ROI 71B2 — VFS blob content-length hardening
+## ROI 71C2 — login public assets, dark contrast, viewer chrome, and taskbar placement
 
-Persisted wallpapers/backgrounds loaded through `/api/mioos/fs/blob?id=<file>` now repair stale VFS file-size metadata before writing HTTP headers. This prevents browsers from receiving a `200 OK` or `206 Partial Content` response whose `Content-Length` is larger than the bytes available in the stored globals-backed payload.
+ROI 71C2 adds a dedicated public-login theme asset route for the login background, avatar, and banner so the unauthenticated login screen does not request protected `/api/mioos/theme-asset` URLs. It also hardens dark-theme contrast in Theme Studio, Explorer, transfer, table/patient modals, removes duplicate filenames from viewer File/Edit/Help menu strips, adds audio/video loop controls, restores active/inactive titlebar gradient effects, and adds right-side taskbar placement with desktop padding for top/left/right taskbars.

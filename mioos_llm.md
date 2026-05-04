@@ -632,6 +632,10 @@ The Start Menu was rewritten as a dedicated, isolated ROI. Preserve this separat
 
 Source-of-truth notes: the shell must register `mioos-surface-viewer` for basic file previews. Theme Studio uploads must use server-backed theme asset routes with no DataURLs and no localStorage theme persistence. Start Menu VFS folders must expand recursively without closing the menu. New desktop icons must be placed in the next open grid slot, and the Desktop should include a Programs folder with core launcher shortcuts.
 
-## ROI 71B2 VFS blob content-length hardening
+## ROI 71C2 login public assets and shell contrast hotfix
 
-Saved desktop/theme wallpapers may resolve to authenticated `/api/mioos/fs/blob?id=<file>` URLs after login. The blob endpoint must never trust stale VFS entry size metadata for `Content-Length`. Always repair/read actual payload size from stored VFS chunks with `REPAIRSIZE^MIOOSFS`/`DATASIZE^MIOOSFS` before sending headers. Range and full-body sends must stream by actual stored chunk payload, not by stale metadata alone, to avoid browser `ERR_CONTENT_LENGTH_MISMATCH` on persisted wallpapers.
+Login-screen background, avatar, and warning/banner images must be published through `/api/mioos/theme-public-asset?id=<asset-id>` when they belong to the active login theme profile. Do not emit protected `/api/mioos/theme-asset` URLs before authentication. Normal theme assets remain protected.
+
+Viewer File/Edit/Help bars should not repeat the filename because the window titlebar already carries it. Audio/video viewers expose a Loop toggle. Active/inactive titlebar gradient variables must affect live windows and preview windows. Taskbar positions include bottom, top, left, and right, and the desktop surface must pad around top/left/right/bottom taskbars so icons are not hidden underneath them.
+
+Dark-theme contrast rules for Theme Studio tabs, Explorer icon/details panels, transfer summaries, table/patient modals, and viewer menu strips are locked by ROI 71C2 regression test T076.

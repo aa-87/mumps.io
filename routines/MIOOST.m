@@ -1439,20 +1439,19 @@ T075
 	DO EQ^MIOTASSERT($$FILEHAS("routines/MIOOS.m","globals-profile-service-with-localstorage-fallback"),0,"[MIOOST][T075][server theme persistence only]")
 	QUIT
 	;
+	;
 T076
-	NEW CONF,REQ,CTX,STATE,ERR,OUT,ID,U
-	DO RESET
-	DO CONFDEF^MIOOS(.CONF)
-	DO INIT^MIOOS(.CONF)
-	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T076][load]")
-	SET STATE("principal")="admin",STATE("roles")="admin"
-	KILL OUT,ERR
-	DO OK^MIOTASSERT($$WRITE^MIOOSFS(.STATE,"Desktop","roi76-wallpaper.svg","abcdef","image/svg+xml",.OUT,.ERR),"[MIOOST][T076][write]")
-	SET ID=$GET(OUT("id")),U="^"
-	DO EQ^MIOTASSERT($$DATASIZE^MIOOSFS(ID),6,"[MIOOST][T076][actual data size]")
-	SET $PIECE(^MIO("MIOOS","FS","ENTRY",ID),U,5)=999
-	DO EQ^MIOTASSERT($$REPAIRSIZE^MIOOSFS(ID),6,"[MIOOST][T076][repair return]")
-	DO EQ^MIOTASSERT(+$$FIELD^MIOOSFS(ID,5),6,"[MIOOST][T076][metadata repaired]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","SET SIZE=$$REPAIRSIZE^MIOOSFS(RID)"),"[MIOOST][T076][fsblob repairs content length]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","SET TOTAL=$$DATASIZE^MIOOSFS(RID)"),"[MIOOST][T076][send uses actual payload]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOS.m","themePublicAsset"),"[MIOOST][T076][public login asset route configured]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","THEMEPUBLICASSET"),"[MIOOST][T076][public login asset handler]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTHEME.m","theme-public-asset"),"[MIOOST][T076][public login asset url rewrite]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSST.m","themePublicAsset"),"[MIOOST][T076][boot advertises public theme asset route]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-viewer-loop-toggle"),"[MIOOST][T076][viewer loop control]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","value=""right"">Right"),"[MIOOST][T076][taskbar right option]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","desktopSurfaceStyle()"),"[MIOOST][T076][desktop surface taskbar padding]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","themeStudioSetTitlebarGradient"),"[MIOOST][T076][titlebar gradient live method]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","Active title start"),"[MIOOST][T076][titlebar gradient controls]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","ROI 71C2 login public assets"),"[MIOOST][T076][roi71c2 css marker]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","position-right"),"[MIOOST][T076][taskbar right css]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/ROI_71C2_Login_Dark_Viewer_Taskbar_Hotfix.md","ROI 71C2"),"[MIOOST][T076][roi71c2 docs]")
 	QUIT
+	;

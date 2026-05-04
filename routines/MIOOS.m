@@ -33,6 +33,7 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","route","fsBlob"))="" SET CONF("mioos","route","fsBlob")="/api/mioos/fs/blob"
 	IF $GET(CONF("mioos","route","themeAssetUpload"))="" SET CONF("mioos","route","themeAssetUpload")="/api/mioos/theme-asset/upload"
 	IF $GET(CONF("mioos","route","themeAsset"))="" SET CONF("mioos","route","themeAsset")="/api/mioos/theme-asset"
+	IF $GET(CONF("mioos","route","themePublicAsset"))="" SET CONF("mioos","route","themePublicAsset")="/api/mioos/theme-public-asset"
 	IF $GET(CONF("mioos","route","themeLoad"))="" SET CONF("mioos","route","themeLoad")="/api/mioos/theme/load"
 	IF $GET(CONF("mioos","route","themeSave"))="" SET CONF("mioos","route","themeSave")="/api/mioos/theme/save"
 	IF $GET(CONF("mioos","route","moduleCatalog"))="" SET CONF("mioos","route","moduleCatalog")="/api/mioos/modules/catalog"
@@ -268,6 +269,8 @@ REG(CONF)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","themeAssetUpload")),"THEMEASSETUP^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("GET",$GET(CONF("mioos","route","themeAsset")),"THEMEASSET^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("HEAD",$GET(CONF("mioos","route","themeAsset")),"THEMEASSET^MIOOSAPI",.PROT)
+	DO ADDM^MIOROUTE("GET",$GET(CONF("mioos","route","themePublicAsset")),"THEMEPUBLICASSET^MIOOSAPI",.META)
+	DO ADDM^MIOROUTE("HEAD",$GET(CONF("mioos","route","themePublicAsset")),"THEMEPUBLICASSET^MIOOSAPI",.META)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","themeLoad")),"THEMELOAD^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","themeSave")),"THEMESAVE^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("GET","/public/mioos/*","STATIC^MIOOS",.META)
@@ -280,6 +283,7 @@ REG(CONF)
 	DO ADDEXEMPT(.CONF,SIGNIN)
 	DO ADDEXEMPT(.CONF,PSIGNIN)
 	DO ADDEXEMPT(.CONF,$GET(CONF("mioos","route","passwordChange")))
+	DO ADDEXEMPT(.CONF,$GET(CONF("mioos","route","themePublicAsset")))
 	IF 'AUTHREQ DO ADDEXEMPT(.CONF,$GET(CONF("mioos","route","bootstrap")))
 	IF AUTHREQ DO
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","bootstrap")))

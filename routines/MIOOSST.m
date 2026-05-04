@@ -88,6 +88,7 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	SET STATE("settingsSavePath")=$GET(CONF("mioos","route","settingsSave"),"/api/mioos/settings/save")
 	SET STATE("themeAssetUploadPath")=$GET(CONF("mioos","route","themeAssetUpload"),"/api/mioos/theme-asset/upload")
 	SET STATE("themeAssetPath")=$GET(CONF("mioos","route","themeAsset"),"/api/mioos/theme-asset")
+	SET STATE("themePublicAssetPath")=$GET(CONF("mioos","route","themePublicAsset"),"/api/mioos/theme-public-asset")
 	SET STATE("themeLoadPath")=$GET(CONF("mioos","route","themeLoad"),"/api/mioos/theme/load")
 	SET STATE("themeSavePath")=$GET(CONF("mioos","route","themeSave"),"/api/mioos/theme/save")
 	SET STATE("wsPath")=$GET(CONF("mioos","route","ws"),"/ws/mioos")
@@ -216,6 +217,9 @@ ACTIVETHM(STATE,CONF)
 	. SET MODE=$GET(STATE("activeThemeProfile","mode"))
 	. IF MODE="" SET MODE=$GET(STATE("activeThemeProfile","activeMode"))
 	. IF MODE'="" SET STATE("themeMode")=MODE
+	. SET DENSITY=$GET(STATE("activeThemeProfile","density"))
+	. IF DENSITY="" SET DENSITY=$GET(STATE("activeThemeProfile","appearance","density"))
+	. IF DENSITY'="" SET STATE("density")=DENSITY
 	IF '+$$LOAD^MIOOSTHEME(.STATE,.CONF,.OUT,.ERR) QUIT
 	IF '+$DATA(OUT("profile")) QUIT
 	MERGE STATE("activeThemeProfile")=OUT("profile")
@@ -263,13 +267,12 @@ PROTURL(URL,STATE)
 	QUIT 0
 	;
 SANPROF(ROOT,STATE)
-	NEW K,V,PUBLIC
-	SET PUBLIC=+$GET(@ROOT@("publicLogin"))
+	NEW K,V
 	IF $GET(@ROOT@("desktop","wallpaperUrl"))'="",$$PROTURL($GET(@ROOT@("desktop","wallpaperUrl")),.STATE) SET @ROOT@("desktop","wallpaperUrl")=""
 	IF $GET(@ROOT@("wallpaperUrl"))'="",$$PROTURL($GET(@ROOT@("wallpaperUrl")),.STATE) SET @ROOT@("wallpaperUrl")=""
-	IF 'PUBLIC,$GET(@ROOT@("loginScreenConfig","wallpaperUrl"))'="",$$PROTURL($GET(@ROOT@("loginScreenConfig","wallpaperUrl")),.STATE) SET @ROOT@("loginScreenConfig","wallpaperUrl")=""
-	IF 'PUBLIC,$GET(@ROOT@("loginScreenConfig","avatarUrl"))'="",$$PROTURL($GET(@ROOT@("loginScreenConfig","avatarUrl")),.STATE) SET @ROOT@("loginScreenConfig","avatarUrl")=""
-	IF 'PUBLIC,$GET(@ROOT@("loginScreenConfig","warningImageUrl"))'="",$$PROTURL($GET(@ROOT@("loginScreenConfig","warningImageUrl")),.STATE) SET @ROOT@("loginScreenConfig","warningImageUrl")=""
+	IF $GET(@ROOT@("loginScreenConfig","wallpaperUrl"))'="",$$PROTURL($GET(@ROOT@("loginScreenConfig","wallpaperUrl")),.STATE) SET @ROOT@("loginScreenConfig","wallpaperUrl")=""
+	IF $GET(@ROOT@("loginScreenConfig","avatarUrl"))'="",$$PROTURL($GET(@ROOT@("loginScreenConfig","avatarUrl")),.STATE) SET @ROOT@("loginScreenConfig","avatarUrl")=""
+	IF $GET(@ROOT@("loginScreenConfig","warningImageUrl"))'="",$$PROTURL($GET(@ROOT@("loginScreenConfig","warningImageUrl")),.STATE) SET @ROOT@("loginScreenConfig","warningImageUrl")=""
 	SET K="" FOR  SET K=$ORDER(@ROOT@("cssVars",K)) QUIT:K=""  DO
 	. SET V=$GET(@ROOT@("cssVars",K)) IF V'="",$$PROTURL(V,.STATE) KILL @ROOT@("cssVars",K)
 	SET K="" FOR  SET K=$ORDER(@ROOT@("colors",K)) QUIT:K=""  DO
@@ -503,6 +506,7 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("routes","settingsSave")=$GET(STATE("settingsSavePath"))
 	SET OBJ("routes","themeAssetUpload")=$GET(STATE("themeAssetUploadPath"))
 	SET OBJ("routes","themeAsset")=$GET(STATE("themeAssetPath"))
+	SET OBJ("routes","themePublicAsset")=$GET(STATE("themePublicAssetPath"))
 	SET OBJ("routes","themeLoad")=$GET(STATE("themeLoadPath"))
 	SET OBJ("routes","themeSave")=$GET(STATE("themeSavePath"))
 	SET OBJ("vfs","enabled")=+$GET(STATE("fsEnabled"),1)
