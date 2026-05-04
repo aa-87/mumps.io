@@ -656,47 +656,8 @@ When working from this source, preserve these regression contracts:
 - RTL locale changes apply document/shell `dir` and `is-rtl` immediately.
 - VFS blob streaming must account for one-chunk files larger than the default stored chunk size to avoid `ERR_CONTENT_LENGTH_MISMATCH`.
 
-## ROI 68A table contract lock
-
-Treat `mioos-advanced-table-v8` as the current Advanced Table contract. Table modules remain backend-authored: MUMPS seeds `^MIO("MIOOS","TABLE",USER,DATASET,...)`, registers `MOD("componentKey")="table"`, and uses `mioos-surface-table`. Do not introduce frontend table frameworks or client-side-only data ownership.
-
-`MIOOST` calls the Advanced Table contract regression helper. Preserve query response fields (`ok`, `dataset`, `draw`, `recordsTotal`, `recordsFiltered`, `schema.columns`, `rows`, `groups`, `pagination.*`, `features`, `rowActions`, `bulkActions`) and mutation acknowledgements (`ok`, `dataset`, `action`, `mutationOnly`, `refetch`, `message`). Failed table mutations should produce deterministic JSON with `error`, `message`, and `fieldErrors` when applicable.
-
-The canonical examples are under `examples/mioos_modules/table/samples/`; they must stay MUMPS-first and answer which routine/global to edit, what `MOD(...)` nodes to set, how to surface an icon, how to open from the shell, and how to validate with `D ^MIOOST`.
-
-## Common window toolbar contract
-
-Every MIOOS window is expected to inherit the common window toolbar from `window-frame` through `mioos-window-toolbar`. Do not add one-off File/Edit/Help strips inside individual modules unless the common toolbar cannot represent the action. The minimum menu contract is:
-
-- File: Close / Exit, plus contextual actions such as viewer Download or Explorer New Folder / Upload.
-- Edit: Cut, Copy, Paste.
-- Module menu: derived from `commonWindowCustomMenuLabel(win)` for Explorer, Terminal, Table, Transfers, Text, Media, Image, Permissions, Catalogue, and future module windows.
-- Help: About.
-
-Text media viewer contract: use `fs.text.chunk` and `textViewerOnScroll` / `textViewerLoadChunk`; never load the full file just to open it. Opening text and structured text must not call `/api/mioos/fs/blob` as a fallback. Deduplicate identical chunks with `_mioosTextChunkRequests` and `_mioosTextChunkCache`, keyed by file id, byte offset, and chunk size, so repeated offset-zero loads become one backend command. The viewer must render a virtual chunk stack and synchronize scrollbar position to byte offset. Keep Reload and Download out of the old viewer body; expose those through the common toolbar.
-Regression guard: `textViewerVisibleChunks()` must return `textViewerChunkArray(...)`, never an unscoped or stale helper name; `fetchTextBlob` / `readTextFileResilient` should not return as text-opening paths; and the old `.mioos-viewer-toolbar` body toolbar CSS should not be reintroduced.
-
-Locale contract: language menu clicks reload the main URL. English removes `lang`, Arabic uses `?lang=ar`, and Spanish uses `?lang=sp`; the backend canonicalizes `sp` to `es`.
-
-## ROI 72F text, toolbar, locale, and asset hardening
-
-Preserve these contracts:
-
-- Text viewing is chunked. Do not reintroduce full-file `/api/mioos/fs/blob` fallback for text opening. Use `fs.text.chunk` and keep visible chunks bounded around the scrollbar-derived offset.
-- Large text chunk failures must not throw unhandled promises. Surface errors with `showToast` and keep the window usable.
-- Text edit/save is supported through `textViewerBeginEdit`, `textViewerSave`, and backend command `fs.text.save`. Editing must stay bounded by `maxTextEditBytes`; very large text files remain chunk-view-only.
-- Do not reintroduce the old persistent text stream status footer. Use shell toasts for viewer feedback.
-- Explorer actions belong in the common window toolbar, not a second local Explorer toolbar row. Context menu actions must close the menu before running.
-- Transfer and Terminal top action rows should stay removed; their actions are exposed in common toolbar menus.
-- Help -> About opens an About MIO, MIOOS window surface.
-- Desktop file drop uploads should use the same upload flow as folder drops.
-- Locale shortcuts must call `changeLocale`; `en` removes `lang`, `ar` maps to `?lang=ar`, and Spanish maps to `?lang=sp` while backend canonicalizes `sp` to `es`.
-- Theme asset/image routes should avoid fragile Content-Length emission where runtime byte framing can mismatch the stored string length.
-
-Regression coverage lives in `T082^MIOOST`.
-
 ## Uploaded desktop background streaming
 
-Uploaded desktop background images are dynamic authenticated assets, not static files. They may be served from `/api/mioos/theme-asset` or after promotion from `/api/mioos/fs/blob`. Keep both paths byte-counted: compute `Content-Length` from the actual stored `$ZLENGTH` of the image chunks and write those exact chunks. Do not use the media warmup partial path for promoted wallpaper images.
+Uploaded desktop background images follow a strict binary contract. Theme upload chunks under `^MIO("MIOOS","THEMEASSET",...)` may be uneven, so `PROMOTEW^MIOOSTHEME` must re-chunk them into the VFS chunk size before writing `^MIO("MIOOS","FS","DATA",ID,...)`. Do not copy upload chunk nodes directly into VFS wallpaper data.
 
-Regression guard: `T083^MIOOST` checks the promoted wallpaper detector, raw VFS sender, theme asset byte-count helper, and docs contract.
+Promoted wallpaper VFS blobs are identified by `themeWallpaper` or `sourceAsset` metadata. `/api/mioos/fs/blob` must stream those wallpaper blobs by cumulative stored-byte offsets, must not use the media warmup partial-response path, and should use no-store cache headers with cache-busted wallpaper URLs.

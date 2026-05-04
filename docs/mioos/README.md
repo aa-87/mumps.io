@@ -435,44 +435,8 @@ The current shell keeps the `glow` theme as the clean-install default, opens des
 
 Theme Studio now has a Desktop background custom CSS field. MUMPS developers and administrators can paste declarations such as `background-image: radial-gradient(...);` or `background-color: #0f172a;` without writing frontend code. Login warning images render as full-width banners, and RTL locale switches apply document direction immediately.
 
-## ROI 68A Advanced Table backend-contract coverage
-
-ROI 68A locks the Advanced Table backend contract before additional patient workflow work. `MIOOST` now includes table-contract regression coverage and calls the helper table contract routine. The locked contract version is `mioos-advanced-table-v8`.
-
-Key references:
-
-- `docs/mioos/Backend_Table.md` — backend query/mutation contract, validation, transport, and CSV export notes.
-- `docs/mioos/ROI_68A_Table_Backend_Contract_Tests_and_Samples.md` — test coverage and sample matrix.
-- `examples/mioos_modules/table/README.md` — MUMPS-first table author workflow.
-- `examples/mioos_modules/table/samples/` — copyable sample routines for read-only tables, editable cells, validation, filters, grouping/reorder/fixed columns, selected-row CSV export, and App Catalogue registration.
-
-## ROI 72D text media and common toolbar stabilization
-
-Text media files now use a backend-authored chunk stream instead of loading the full file into a viewer window. The WebSocket command `fs.text.chunk` calls the existing VFS byte-range reader and returns a bounded text chunk with `offset`, `nextOffset`, `readBytes`, `size`, `eof`, and `scrollSync="byte-offset"`. The browser text viewer keeps only visible chunks in memory and maps scrollbar position to file byte offset, so large text files do not require materializing the full payload in the DOM.
-The visible chunk renderer must call the shared `textViewerChunkArray()` helper and keep a bounded cache around the current scrollbar-derived byte offset. Opening text and structured-text files must use only the text chunk stream; the text viewer must not race or fall back to `/api/mioos/fs/blob`, because that materializes the full file and can issue duplicate full-file GETs. Identical in-flight or cached chunk requests are deduplicated by file id, byte offset, and chunk size. The legacy body-level viewer toolbar and its dead CSS are intentionally absent; text reload/download live only in the common window toolbar.
-
-All shell windows receive a common dark-theme-aware toolbar from the window frame. The toolbar contract is File, Edit, optional module-specific menu, and Help. File always includes Close / Exit and adds viewer download or Explorer upload/new-folder actions when relevant. Edit includes Cut, Copy, Paste. Module-specific menus are derived from the window app key so future windows inherit the common contract without rewriting their surface component.
-
-Theme Studio now exposes font-color controls for toolbar text, context menu text, Start menu text, Start child text, and Start hover text. The login box style is applied to the real login modal through runtime style classes, and imported themes are activated and persisted after parsing.
-
-## ROI 72F text viewer, shell toolbar, and desktop interaction hardening
-
-This pass locks the chunked text viewer and surrounding shell regressions.
-
-- Text files continue to open through `fs.text.chunk`; large-file chunk reads use a longer configurable timeout and errors are surfaced as auto-dismiss toasts instead of unhandled promises.
-- The text viewer supports bounded in-window editing and save through `fs.text.save`. Editing is intended for normal notepad-sized files; large files remain chunk-view-only to preserve the terabyte-scale viewer contract.
-- The old text-stream feedback footer is removed from the viewer body. Viewer feedback now uses the shell toast surface.
-- Explorer context menu actions close the context menu before dispatch; Refresh uses a toast instead of a blocking notification.
-- Explorer navigation/action controls are folded into the common window toolbar, eliminating the duplicate Explorer menu/action toolbar rows.
-- Desktop file drops route into the same upload path used by folder drops.
-- Transfer and Terminal action rows are reduced to status-only content; actions are exposed through the common toolbar menus.
-- Help -> About opens a small About MIO, MIOOS window rather than a dismiss-required notification.
-- Theme asset responses no longer emit fragile `Content-Length` headers on wallpaper/theme asset streams, preventing browser content-length mismatch failures on uploaded desktop backgrounds.
-
-Regression coverage is in `T082^MIOOST`.
-
 ## Uploaded background image responses
 
-Uploaded desktop backgrounds can be served either from `/api/mioos/theme-asset` or from a promoted hidden VFS wallpaper file through `/api/mioos/fs/blob`. Both paths must send deterministic byte-counted image responses. The response `Content-Length` must be computed from the actual stored image data using `$ZLENGTH`, not from stale metadata, and the body writer must send exactly those stored chunks.
+Uploaded desktop backgrounds are stored first as theme assets and may later be promoted into VFS wallpaper files. Promotion must re-chunk source asset data into the VFS chunk size instead of copying arbitrary multipart chunk boundaries directly. This prevents offset reads from serving only the first portion of an image correctly and then corrupting the rest.
 
-Promoted wallpaper VFS blobs are identified by `themeWallpaper` or `sourceAsset` metadata and use a raw image sender instead of the media warmup/partial-response path. This prevents uploaded wallpaper images from rendering as corrupt, truncated, or `ERR_CONTENT_LENGTH_MISMATCH` in the browser.
+Wallpaper VFS blobs are detected by `themeWallpaper` / `sourceAsset` metadata and streamed by cumulative stored-byte offsets. They bypass media-preview warmup truncation and use `Cache-Control: private, no-store, max-age=0` plus a cache-busted wallpaper URL so new uploads are not confused with stale image responses.

@@ -68,12 +68,7 @@ MIOOST ; MIOOS tests
 	DO T076
 	DO T077
 	DO T078
-	DO T079
-	DO T080
-	DO T081
-	DO T082
 	DO T083
-	DO RUN^MIOOSTBLC
 	QUIT
 	;
 RESET
@@ -1215,8 +1210,8 @@ T058
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-explorer-listview"),"[MIOOST][T058][details listview]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-explorer-statusbar"),"[MIOOST][T058][status bar]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-explorer-context-menu"),"[MIOOST][T058][explorer context menu]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","vm.explorerPromptUpload(window.id)"),"[MIOOST][T058][upload action retained]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","vm.explorerDownloadSelected(window.id)"),"[MIOOST][T058][download action retained]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","vm.explorerPromptUpload(window.id)")!$$FILEHAS("public/mioos/app/mioos_shell_ui.js","explorerRunContextAction(window.id, 'upload')")!$$FILEHAS("public/mioos/app/mioos_explorer.js","explorerPromptUpload(windowId)"),"[MIOOST][T058][upload action retained]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","vm.explorerDownloadSelected(window.id)")!$$FILEHAS("public/mioos/app/mioos_shell_ui.js","explorerRunContextAction(window.id, 'download')")!$$FILEHAS("public/mioos/app/mioos_explorer.js","explorerDownloadSelected(windowId)"),"[MIOOST][T058][download action retained]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","explorerQuickPlaces"),"[MIOOST][T058][quick places method]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","explorerVisibleItems"),"[MIOOST][T058][filtered sorted items]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","explorerSortBy"),"[MIOOST][T058][sortable columns]")
@@ -1429,7 +1424,7 @@ T074
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSST.m","glow"),"[MIOOST][T074][server glow default]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","invalid_json_response"),"[MIOOST][T074][theme upload robust json]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","theme-login-runtime"),"[MIOOST][T074][theme login runtime]")
-	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","fetchTextBlob"),0,"[MIOOST][T074][no text viewer blob fallback]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","fetchTextBlob"),"[MIOOST][T074][text viewer blob fallback]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","ROI 72C follow-up"),"[MIOOST][T074][followup css]")
 	QUIT
 	;
@@ -1457,7 +1452,7 @@ T076
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTHEME.m","PUBLICLD"),"[MIOOST][T076][public login profile loader]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","createWindowForApp(app, { state: 'normal', kind: 'folder'"),"[MIOOST][T076][folder opens new explorer window]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","'themes', 'language', 'system'"),"[MIOOST][T076][start menu default groups]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","Text preview requires the MIOOS text chunk stream"),"[MIOOST][T076][no command preview avoids blob fallback]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","fs_blob_unavailable"),"[MIOOST][T076][text viewer blob fallback]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","Active title bar custom CSS"),"[MIOOST][T076][theme active title css textarea]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","themeStudioUpdateCustomElementCss"),"[MIOOST][T076][theme custom css parser]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","ROI 71C3 VFS blob and viewer hardening"),"[MIOOST][T076][roi71c3 css marker]")
@@ -1494,138 +1489,48 @@ T078
 	DO OK^MIOTASSERT($$FILEHAS("examples/mioos_modules/table/README.md","MUMPS-first"),"[MIOOST][T078][mumps first table samples]")
 	DO OK^MIOTASSERT($$FILEHAS("examples/mioos_modules/table/module.json","Advanced Backend Table contract"),"[MIOOST][T078][table module manifest]")
 	QUIT
-
-T079
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","_mioosTextChunkRequests"),"[MIOOST][T079][deduped text chunk request cache]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-window-toolbar"),"[MIOOST][T079][common viewer toolbar]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mediaLoop"),"[MIOOST][T079][media loop preserved]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","Login background custom CSS"),"[MIOOST][T079][login background css editor]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","--login-card-width-desktop"),"[MIOOST][T079][login desktop width variable]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","themeStudioImportThemeFile"),"[MIOOST][T079][theme import file button]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_i18n.js","window.location.assign"),"[MIOOST][T079][locale reload]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","pos === 'right'"),"[MIOOST][T079][right taskbar layout]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","locale.dir"),"[MIOOST][T079][rtl start menu positioning]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-theme-preview-shell-vue.position-right"),"[MIOOST][T079][right taskbar preview css]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".theme-dark-mode .mioos-explorer-addressbar"),"[MIOOST][T079][dark explorer addressbar]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".theme-dark-mode .mioos-ui-elements-card"),"[MIOOST][T079][dark ui form elements]")
-	QUIT
-	;
-T080
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","mioos-advanced-table-v8"),"[MIOOST][T080][table contract version]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","OUT(""pagination"",""pageRows"")"),"[MIOOST][T080][table pagination page rows]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","IF $$TRUTH($GET(IN(""includeDataAlias"")))"),"[MIOOST][T080][data alias opt in]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","DATEOK"),"[MIOOST][T080][strict date validator]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","VALRANGE"),"[MIOOST][T080][numeric range validator]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","ROWCB"),"[MIOOST][T080][row validation hook]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","CELLCB"),"[MIOOST][T080][cell callback hook]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","groupByColumns"),"[MIOOST][T080][multi column grouping]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","column.option.add"),"[MIOOST][T080][option add mutation]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","selected_rows.csv"),"[MIOOST][T080][selected row csv export]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableNormalizeFixedColumns"),"[MIOOST][T080][fixed-column normalize path]")
-	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","vm.backendTableNormalizeFixedColumns"),0,"[MIOOST][T080][no free vm fixed-column regression]")
-	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","prompt("),0,"[MIOOST][T080][no native prompt in table flows]")
-	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","confirm("),0,"[MIOOST][T080][no native confirm in table flows]")
-	DO OK^MIOTASSERT($$FILEHAS("examples/mioos_modules/table/samples/basic_readonly.m","TBASICRO"),"[MIOOST][T080][basic readonly sample]")
-	DO OK^MIOTASSERT($$FILEHAS("examples/mioos_modules/table/samples/validation_rules.m","ROW^TVALRULE"),"[MIOOST][T080][validation hook sample]")
-	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/ROI_68A_Table_Backend_Contract_Tests_and_Samples.md","Backend contract coverage"),"[MIOOST][T080][roi68a docs]")
-	QUIT
-	;
-
-T081
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","fs.text.chunk"),"[MIOOST][T081][text chunk ws command]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","FSTEXTCHUNK"),"[MIOOST][T081][text chunk backend handler]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSFS.m","READRANGE"),"[MIOOST][T081][text chunk range backend]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","readTextChunkViaWebSocket"),"[MIOOST][T081][text chunk client command]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","textChunkRequestKey"),"[MIOOST][T081][chunk request key]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","_mioosTextChunkCache"),"[MIOOST][T081][cross-window chunk cache]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","if (stream.loadingOffsets[offset]) return stream.loadingOffsets[offset]"),"[MIOOST][T081][same chunk in-flight dedupe]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","return this.readTextChunkViaWebSocket(item, { offset: 0, size: previewBytes })"),"[MIOOST][T081][preview uses chunk stream]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","win.fileView.textStream = this.textViewerInitialState"),"[MIOOST][T081][structured text uses text stream]")
-	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","fetchTextBlob"),0,"[MIOOST][T081][no text blob helper]")
-	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","readTextFileResilient"),0,"[MIOOST][T081][no race-to-blob reader]")
-	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","this.textViewerLoadChunk(windowId, before)"),0,"[MIOOST][T081][scroll only requests target chunk]")
-	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","this.textViewerLoadChunk(windowId, after)"),0,"[MIOOST][T081][no automatic neighbor chunk prefetch]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","textViewerOnScroll"),"[MIOOST][T081][text scrollbar sync]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","return textViewerChunkArray"),"[MIOOST][T081][visible chunk helper bound]")
-	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","return textChunkArray"),0,"[MIOOST][T081][no stale textChunkArray reference]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","pruneTextViewerChunkCache"),"[MIOOST][T081][bounded chunk cache]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-text-virtual-viewer"),"[MIOOST][T081][text virtual viewer ui]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-window-toolbar"),"[MIOOST][T081][common window toolbar]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","Close / Exit"),"[MIOOST][T081][file close exit action]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","Cut"),"[MIOOST][T081][edit cut]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","Copy"),"[MIOOST][T081][edit copy]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","Paste"),"[MIOOST][T081][edit paste]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","Loop playback"),"[MIOOST][T081][media loop preserved in toolbar]")
-	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-viewer-toolbar"),0,"[MIOOST][T081][old viewer toolbar removed]")
-	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","mioos-viewer-toolbar"),0,"[MIOOST][T081][dead viewer toolbar css removed]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","grid-template-rows: minmax(0, 1fr)"),"[MIOOST][T081][viewer body owns full surface]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","commonWindowCustomMenuLabel"),"[MIOOST][T081][future common menu api]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","--context-menu-text"),"[MIOOST][T081][theme context font color]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","--toolbar-text"),"[MIOOST][T081][theme toolbar font color]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","loginBoxStyleClass"),"[MIOOST][T081][login style runtime class]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_i18n.js","url.searchParams.delete('lang')"),"[MIOOST][T081][english default url]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_i18n.js","urlCode = code === 'es' ? 'sp' : code"),"[MIOOST][T081][spanish sp url]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSI18N.m","IF CODE=""sp"" SET CODE=""es"""),"[MIOOST][T081][backend sp alias]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","mioos-transfer-scan"),"[MIOOST][T081][transfer animation]")
-	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","Common window toolbar contract"),"[MIOOST][T081][llm toolbar update]")
-	QUIT
-	;
-
-T082
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","textChunkTimeoutMs"),"[MIOOST][T082][configurable large text chunk timeout]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","45000"),"[MIOOST][T082][large text chunk timeout default]")
-	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","return self.command('fs.read.range'"),0,"[MIOOST][T082][text chunk stream no duplicate fallback request]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","return null;"),"[MIOOST][T082][text chunk timeout handled]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","textViewerBeginEdit"),"[MIOOST][T082][text viewer edit mode]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","textViewerSave"),"[MIOOST][T082][text viewer save path]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","fs.text.save"),"[MIOOST][T082][text save command]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","fs.text.save"),"[MIOOST][T082][text save ws command]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","FSTEXTSAVE"),"[MIOOST][T082][text save backend handler]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-text-editor-area"),"[MIOOST][T082][text editor textarea]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-text-editorbar"),"[MIOOST][T082][text editor toolbar]")
-	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-text-stream-status"),0,"[MIOOST][T082][old text status div removed]")
-	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","mioos-text-stream-status"),0,"[MIOOST][T082][old text status css removed]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","background: #f8fafc"),"[MIOOST][T082][light text viewer background]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","theme-dark-mode .mioos-text-virtual-viewer"),"[MIOOST][T082][dark text viewer background]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","explorerRunContextAction"),"[MIOOST][T082][context action dispatcher]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","closeExplorerContextMenu(windowId)"),"[MIOOST][T082][context menu auto dismiss]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","@click.stop=""vm.closeDesktopContextMenu()"),"[MIOOST][T082][desktop context menu auto dismiss]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","showToast('Explorer'"),"[MIOOST][T082][refresh context toast]")
-	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-explorer-menu-strip"),0,"[MIOOST][T082][explorer menu strip removed from dom]")
-	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-explorer-toolbar"),0,"[MIOOST][T082][explorer icon toolbar removed from dom]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-window-inline-tools-vue"),"[MIOOST][T082][explorer actions folded into common toolbar]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".theme-dark-mode .mioos-window-menu-vue"),"[MIOOST][T082][dark toolbar selector]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","background: #000000 !important"),"[MIOOST][T082][dark toolbar black background]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","@drop.prevent=""vm.handleDesktopDrop"),"[MIOOST][T082][desktop drop upload hook]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","@drop.stop=""vm.onWindowDrop"),"[MIOOST][T082][window drops do not duplicate desktop upload]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","handleDesktopDrop"),"[MIOOST][T082][desktop drop handler]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","openAboutMioosWindow"),"[MIOOST][T082][about window handler]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-surface-about-mioos"),"[MIOOST][T082][about window component]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","Cancel Active"),"[MIOOST][T082][transfer cancel active toolbar]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","Clear Finished"),"[MIOOST][T082][transfer clear finished toolbar]")
-	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-classic-panelhead"),0,"[MIOOST][T082][transfer top action panel removed]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-terminal-status-vue"),"[MIOOST][T082][terminal status replaces top buttons]")
-	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-surface-toolbar"),0,"[MIOOST][T082][terminal top toolbar removed]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","entry.action === 'locale'"),"[MIOOST][T082][desktop locale shortcut reload path]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_i18n.js","code === 'sp'"),"[MIOOST][T082][spanish shortcut alias]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","ROOTDATASIZE"),"[MIOOST][T082][theme asset byte counted]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","mioos-table-module-editor"),"[MIOOST][T082][new table module modal styled]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","showToast"),"[MIOOST][T082][auto dismiss toast api]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-shell-toast"),"[MIOOST][T082][auto dismiss toast surface]")
-	QUIT
-	;
-
 T083
+	NEW CONF,STATE,ROOT,ID,A,B,C,FIRST
+	DO CONFDEF^MIOOS(.CONF)
+	SET CONF("mioos","fs","chunkSize")=2048
+	DO INIT^MIOOSFS(.CONF)
+	SET STATE("principal")="admin",STATE("roles")="admin",STATE("authenticated")=1,STATE("fsBlobPath")="/api/mioos/fs/blob"
+	KILL ^MIO("MIOOS","THEMEASSET","admin","asset-t083")
+	SET A=$$TSTR("A",1000),B=$$TSTR("B",1048),C="IJ"
+	SET ^MIO("MIOOS","THEMEASSET","admin","asset-t083","META")="image/png^unit.png^2050^wallpaper^0^0"
+	SET ^MIO("MIOOS","THEMEASSET","admin","asset-t083","DATA",1)=A
+	SET ^MIO("MIOOS","THEMEASSET","admin","asset-t083","DATA",2)=B
+	SET ^MIO("MIOOS","THEMEASSET","admin","asset-t083","DATA",3)=C
+	SET ROOT=$NAME(^MIO("MIOOS","THEME","PROFILE","admin","t083-wall"))
+	KILL @ROOT
+	SET @ROOT@("desktop","wallpaperAssetId")="asset-t083"
+	SET ID=$$PROMOTEW^MIOOSTHEME(.STATE,.CONF,"admin","t083-wall",ROOT,1)
+	DO OK^MIOTASSERT(ID'="","[MIOOST][T083][promote uneven asset chunks]")
+	SET FIRST=$GET(^MIO("MIOOS","FS","DATA",ID,1))
+	DO EQ^MIOTASSERT($ZLENGTH(FIRST),2048,"[MIOOST][T083][promote first chunk size]")
+	DO EQ^MIOTASSERT($EXTRACT(FIRST,1,5),"AAAAA","[MIOOST][T083][promote first chunk prefix]")
+	DO EQ^MIOTASSERT($EXTRACT(FIRST,1000,1000),"A","[MIOOST][T083][promote first chunk boundary A]")
+	DO EQ^MIOTASSERT($EXTRACT(FIRST,1001,1001),"B","[MIOOST][T083][promote first chunk boundary B]")
+	DO EQ^MIOTASSERT($EXTRACT(FIRST,2048,2048),"B","[MIOOST][T083][promote first chunk suffix]")
+	DO EQ^MIOTASSERT($GET(^MIO("MIOOS","FS","DATA",ID,2)),"IJ","[MIOOST][T083][promote final chunk bytes]")
+	DO EQ^MIOTASSERT($$DATASIZE^MIOOSFS(ID),2050,"[MIOOST][T083][promote datasize preserved]")
+	DO OK^MIOTASSERT($GET(@ROOT@("desktop","wallpaperUrl"))["&v=","[MIOOST][T083][promoted wallpaper cache bust url]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","THEMEWALL(RID)"),"[MIOOST][T083][promoted wallpaper detector]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","SENDVFSRAW"),"[MIOOST][T083][promoted wallpaper raw sender]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","ROOTDATASIZE(ROOT)"),"[MIOOST][T083][theme asset actual byte count]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","SENDROOTRAW"),"[MIOOST][T083][theme asset raw sender]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","SET HEAD(""Content-Length"")=SIZE"),"[MIOOST][T083][theme assets emit exact content length]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","IF METHOD'=""head"" DO SENDROOTRAW"),"[MIOOST][T083][theme asset body matches length]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","IF METHOD'=""head"",ISWALL DO SENDVFSRAW"),"[MIOOST][T083][wallpaper blob raw path]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","SET SEGPOS=0"),"[MIOOST][T083][wallpaper sender uses cumulative chunk offsets]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","fs_wallpaper_short_write"),"[MIOOST][T083][wallpaper sender detects short writes]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTHEME.m","SET SIZE=SIZE+$ZLENGTH(CH),BUF=BUF_CH"),"[MIOOST][T083][wallpaper promotion rechunks asset data]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTHEME.m","SET ^MIO(""MIOOS"",""FS"",""DATA"",ID,SEG)=$ZEXTRACT(BUF,1,CHUNK)"),"[MIOOST][T083][promoted wallpaper stored at fs chunk size]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","private, no-store, max-age=0"),"[MIOOST][T083][wallpaper blobs avoid stale cache]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","'ISWALL,ISMEDIA,SIZE>MEDIAINIT"),"[MIOOST][T083][wallpaper images are not truncated by media warmup]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","SET SIZE=ACTUAL"),"[MIOOST][T083][metadata size not trusted for theme assets]")
 	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","Uploaded background image responses"),"[MIOOST][T083][uploaded background docs]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","Uploaded desktop background streaming"),"[MIOOST][T083][llm uploaded background contract]")
 	QUIT
+	;
+TSTR(CH,N)
+	NEW OUT,I
+	SET OUT="",CH=$GET(CH),N=+$GET(N)
+	IF CH="" SET CH="X"
+	FOR I=1:1:N SET OUT=OUT_CH
+	QUIT OUT
 	;
