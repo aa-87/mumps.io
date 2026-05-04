@@ -470,3 +470,9 @@ This pass locks the chunked text viewer and surrounding shell regressions.
 - Theme asset responses no longer emit fragile `Content-Length` headers on wallpaper/theme asset streams, preventing browser content-length mismatch failures on uploaded desktop backgrounds.
 
 Regression coverage is in `T082^MIOOST`.
+
+## Uploaded background image responses
+
+Uploaded desktop backgrounds can be served either from `/api/mioos/theme-asset` or from a promoted hidden VFS wallpaper file through `/api/mioos/fs/blob`. Both paths must send deterministic byte-counted image responses. The response `Content-Length` must be computed from the actual stored image data using `$ZLENGTH`, not from stale metadata, and the body writer must send exactly those stored chunks.
+
+Promoted wallpaper VFS blobs are identified by `themeWallpaper` or `sourceAsset` metadata and use a raw image sender instead of the media warmup/partial-response path. This prevents uploaded wallpaper images from rendering as corrupt, truncated, or `ERR_CONTENT_LENGTH_MISMATCH` in the browser.

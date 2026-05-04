@@ -72,6 +72,7 @@ MIOOST ; MIOOS tests
 	DO T080
 	DO T081
 	DO T082
+	DO T083
 	DO RUN^MIOOSTBLC
 	QUIT
 	;
@@ -1607,9 +1608,24 @@ T082
 	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-surface-toolbar"),0,"[MIOOST][T082][terminal top toolbar removed]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","entry.action === 'locale'"),"[MIOOST][T082][desktop locale shortcut reload path]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_i18n.js","code === 'sp'"),"[MIOOST][T082][spanish shortcut alias]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","Do not emit Content-Length for theme assets"),"[MIOOST][T082][theme asset no content length mismatch]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","ROOTDATASIZE"),"[MIOOST][T082][theme asset byte counted]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","mioos-table-module-editor"),"[MIOOST][T082][new table module modal styled]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","showToast"),"[MIOOST][T082][auto dismiss toast api]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-shell-toast"),"[MIOOST][T082][auto dismiss toast surface]")
+	QUIT
+	;
+
+T083
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","THEMEWALL(RID)"),"[MIOOST][T083][promoted wallpaper detector]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","SENDVFSRAW"),"[MIOOST][T083][promoted wallpaper raw sender]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","ROOTDATASIZE(ROOT)"),"[MIOOST][T083][theme asset actual byte count]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","SENDROOTRAW"),"[MIOOST][T083][theme asset raw sender]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","SET HEAD(""Content-Length"")=SIZE"),"[MIOOST][T083][theme assets emit exact content length]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","IF METHOD'=""head"" DO SENDROOTRAW"),"[MIOOST][T083][theme asset body matches length]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","IF METHOD'=""head"",ISWALL DO SENDVFSRAW"),"[MIOOST][T083][wallpaper blob raw path]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","'ISWALL,ISMEDIA,SIZE>MEDIAINIT"),"[MIOOST][T083][wallpaper images are not truncated by media warmup]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","SET SIZE=ACTUAL"),"[MIOOST][T083][metadata size not trusted for theme assets]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","Uploaded background image responses"),"[MIOOST][T083][uploaded background docs]")
+	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","Uploaded desktop background streaming"),"[MIOOST][T083][llm uploaded background contract]")
 	QUIT
 	;

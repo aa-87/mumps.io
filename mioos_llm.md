@@ -694,3 +694,9 @@ Preserve these contracts:
 - Theme asset/image routes should avoid fragile Content-Length emission where runtime byte framing can mismatch the stored string length.
 
 Regression coverage lives in `T082^MIOOST`.
+
+## Uploaded desktop background streaming
+
+Uploaded desktop background images are dynamic authenticated assets, not static files. They may be served from `/api/mioos/theme-asset` or after promotion from `/api/mioos/fs/blob`. Keep both paths byte-counted: compute `Content-Length` from the actual stored `$ZLENGTH` of the image chunks and write those exact chunks. Do not use the media warmup partial path for promoted wallpaper images.
+
+Regression guard: `T083^MIOOST` checks the promoted wallpaper detector, raw VFS sender, theme asset byte-count helper, and docs contract.
