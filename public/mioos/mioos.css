@@ -3425,3 +3425,117 @@ button:disabled { cursor: default; opacity: .55; }
   .mioos-start-modern-node { grid-template-columns: 1fr 40px; }
   .mioos-start-modern-children { margin-left: 18px; }
 }
+
+/* ROI 72C2 hotfix: recursive Start Menu folders and safe viewer surfaces. */
+.mioos-start-menu-vue.is-modern-launcher {
+  --start-folder-min-height: 44px;
+}
+.mioos-start-modern-section,
+.mioos-start-modern-list,
+.mioos-start-modern-node {
+  overflow: visible;
+}
+.mioos-start-modern-list {
+  min-height: calc(var(--start-folder-min-height, 44px) * 2);
+  align-content: start;
+}
+.mioos-start-modern-node.is-folder.is-open {
+  min-height: var(--start-folder-min-height, 44px);
+}
+.mioos-start-modern-node .mioos-start-modern-item.is-child {
+  min-height: 38px;
+}
+.mioos-start-modern-folder-toggle {
+  min-height: 36px;
+  touch-action: manipulation;
+}
+.mioos-start-modern-node.is-open + .mioos-start-modern-node .mioos-start-modern-item.is-child,
+.mioos-start-modern-item.is-child {
+  position: relative;
+  z-index: 1;
+}
+.mioos-surface-viewer-native {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: 100%;
+  overflow: hidden;
+  background: var(--window-bg, #f8fafc);
+}
+.mioos-viewer-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--window-border, rgba(15, 23, 42, .14));
+  background: var(--theme-surface-strong, rgba(255,255,255,.94));
+}
+.mioos-viewer-toolbar > div {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+  margin-right: auto;
+}
+.mioos-viewer-toolbar strong,
+.mioos-viewer-toolbar span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mioos-viewer-toolbar span { opacity: .72; font-size: 11px; }
+.mioos-viewer-body {
+  min-height: 0;
+  overflow: auto;
+  display: grid;
+  place-items: stretch;
+  padding: 0;
+}
+.mioos-viewer-state {
+  align-self: center;
+  justify-self: center;
+  max-width: 80%;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--theme-surface-strong, rgba(255,255,255,.94));
+  border: 1px solid var(--window-border, rgba(15, 23, 42, .14));
+  color: var(--theme-field-text, #111827);
+}
+.mioos-viewer-state.is-error { color: #991b1b; }
+.mioos-viewer-text {
+  margin: 0;
+  min-height: 100%;
+  padding: 14px 16px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font: 12px/1.45 Consolas, "SFMono-Regular", Menlo, monospace;
+  color: var(--theme-field-text, #111827);
+  background: var(--theme-field-bg, #fff);
+}
+.mioos-viewer-image {
+  align-self: center;
+  justify-self: center;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+.mioos-viewer-frame,
+.mioos-viewer-media {
+  width: 100%;
+  height: 100%;
+  min-height: 240px;
+  border: 0;
+  background: #000;
+}
+.mioos-viewer-audio {
+  align-self: center;
+  justify-self: center;
+  width: min(520px, calc(100% - 32px));
+}
+.mioos-window-vue.is-minimized {
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-200vw, -200vh) scale(.92) !important;
+  visibility: hidden;
+}

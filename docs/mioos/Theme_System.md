@@ -68,3 +68,7 @@ Uploaded wallpapers are stored as VFS files and referenced by blob URLs in the s
 On an initial boot with no active server profile and no explicit user-local applied theme, the shell defaults to the `Glow` Theme Studio profile. If a server-rendered active profile exists, it remains authoritative and is hydrated before first paint.
 
 Theme Studio login configuration now drives the runtime login modal. Image upload responses are parsed defensively so backend failures produce user-visible errors instead of breaking the uploader.
+
+## Server-only theme persistence
+
+As of ROI 72C2, active theme selection and custom theme profiles are server-authored. Theme Studio no longer hydrates or persists active/custom themes through `localStorage`. Uploaded wallpaper, login background, warning image, and avatar assets are stored on the server and referenced through `/api/mioos/theme-asset` after authentication.

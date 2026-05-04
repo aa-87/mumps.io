@@ -419,3 +419,7 @@ ROI 72C is dedicated entirely to the Start Menu component. The menu is now a mod
 ## ROI 72C Follow-up — Start Menu folders, Theme Login, and viewer stability
 
 The Start Menu launcher now supports expandable VFS folders/subfolders through lazy `fs.list` loading, and the popup variant is movable like a modal. Initial first boot defaults to `Glow` unless a server-rendered active theme profile or explicit user-local theme exists. Runtime login uses Theme Studio login assets/disclaimer while still sanitizing protected asset URLs before authentication. Text-file viewers fall back to the HTTP blob endpoint when a socket read cannot hydrate content.
+
+## ROI 72C2 viewer/upload/server-theme hotfix
+
+ROI 72C2 fixes the file viewer surface, Theme Studio image uploads, recursive Start Menu folders, desktop icon placement, and server-only theme persistence. Theme images continue to use authenticated server asset URLs and are sanitized before login.

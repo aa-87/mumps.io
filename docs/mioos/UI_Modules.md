@@ -109,3 +109,7 @@ ROI 72C rewrites the visual presentation only. New modules should continue to ap
 The Start Menu component is a modern mobile-friendly launcher with expandable groups and recursively expandable VFS folders. The popup style can be repositioned by dragging the header. Folder expansion uses the existing `fs.list` command and does not preload every folder on boot.
 
 The login modal is driven by Theme Studio login configuration: wallpaper, avatar, warning image/title, and disclaimer. Protected `/api/mioos/theme-asset` and `/api/mioos/fs/blob` URLs are sanitized before authentication so authenticated assets are not emitted pre-login.
+
+## ROI 72C2 shell viewer and Start Menu behavior
+
+The shell now registers a shared `mioos-surface-viewer` for text, image, PDF, audio, video, and structured file windows. Start Menu VFS folders expand in-place and lazy-load children with `fs.list`; clicking a folder toggles expansion rather than closing the menu.

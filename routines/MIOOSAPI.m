@@ -620,35 +620,48 @@ SENDVFS(DEV,CONF,RID,OFFSET,LEN,ISMEDIA,MEDIAWARM,ERR)
 	;
 	;
 THEMEASSETUP(DEV,CONF,REQ,CTX)
-	NEW STATE,ERR,MP,OBJ,OK,IDX,FILEIDX,FN,MIME,CUR,CH,USER,ID,ROOT,SIZE,KIND,TS,ROUTE
+	NEW STATE,ERR,MP,OBJ,OK,IDX,FILEIDX,FN,MIME,CUR,CH,USER,ID,ROOT,SIZE,KIND,TS,ROUTE,CT,RAW,N
 	IF '$$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR) DO  QUIT
 	. DO RESPERR(.DEV,.CONF,500,"theme_asset_state_error",$GET(ERR("error")),.CTX)
 	IF '$$REQUIREAUTH(.DEV,.CONF,.CTX,.STATE) QUIT
-	SET CONF("server","multipart","maxFieldScalarBytes")=8192
-	SET OK=$$PARSE^MIOHTTPMPU(.CONF,.REQ,.MP,.ERR)
-	IF 'OK DO  QUIT
-	. SET ERR("routine")="MIOOSAPI"
-	. DO RESPERR(.DEV,.CONF,400,"invalid_multipart",$GET(ERR("error")),.CTX)
-	SET FILEIDX=0,FN="",MIME="",KIND=$GET(MP("field","kind"),"theme")
-	SET IDX=0
-	FOR  SET IDX=$ORDER(MP("part",IDX)) QUIT:'IDX!(FILEIDX>0)  DO
-	. IF $GET(MP("part",IDX,"filename"))'="" SET FILEIDX=IDX,FN=$GET(MP("part",IDX,"filename")),MIME=$GET(MP("part",IDX,"ctype"),$GET(MP("part",IDX,"contentType"),"application/octet-stream"))
-	IF FILEIDX<1 DO  QUIT
-	. DO FREE^MIOHTTPMPU(.MP)
-	. DO RESPERR(.DEV,.CONF,400,"file_missing","file_missing",.CTX)
+	SET CT=$$LOW^MIOUTIL($GET(REQ("hdr","content-type")))
+	SET FILEIDX=0,FN="",MIME="",KIND="theme",SIZE=0
 	SET USER=$GET(STATE("principal"),"guest")
 	SET ID="themeasset-"_$TR($$UUID^MIOUTIL(),"-","")
 	SET ROOT=$NAME(^MIO("MIOOS","THEMEASSET",USER,ID))
 	KILL @ROOT
-	SET TS=$H,SIZE=0
-	DO PARTOPEN^MIOHTTPMPU(.MP,FILEIDX,.CUR,.CONF)
-	SET IDX=0
-	FOR  QUIT:'$$PARTNEXT^MIOHTTPMPU(.MP,FILEIDX,.CUR,.CH)  DO
-	. SET IDX=IDX+1
-	. SET @ROOT@("DATA",IDX)=CH
-	. SET SIZE=SIZE+$ZLENGTH(CH)
-	DO ITCLOSE^MIOHTTPMPU(.CUR)
-	DO FREE^MIOHTTPMPU(.MP)
+	SET TS=$H
+	IF CT'["multipart/" DO
+	. SET KIND=$SELECT($$HDR(.REQ,"x-mioos-theme-kind")'="":$$HDR(.REQ,"x-mioos-theme-kind"),1:"theme")
+	. SET FN=$$HDR(.REQ,"x-mioos-file-name") IF FN'="" SET FN=$$URLDECQ^MIOHTTP(FN)
+	. SET MIME=$SELECT(CT'="":CT,1:"application/octet-stream")
+	. SET RAW=$$BODYRAW(.REQ),SIZE=$$BODYLEN^MIOHTTP(.REQ)
+	. IF SIZE<1 SET SIZE=$ZLENGTH(RAW)
+	. SET @ROOT@("DATA",1)=RAW
+	ELSE  DO
+	. SET CONF("server","multipart","maxFieldScalarBytes")=8192
+	. SET OK=$$PARSE^MIOHTTPMPU(.CONF,.REQ,.MP,.ERR)
+	. IF 'OK SET ERR("routine")="MIOOSAPI" QUIT
+	. SET KIND=$GET(MP("field","kind"),"theme")
+	. SET IDX=0 FOR  SET IDX=$ORDER(MP("part",IDX)) QUIT:'IDX!(FILEIDX>0)  DO
+	. . IF $GET(MP("part",IDX,"filename"))'="" SET FILEIDX=IDX,FN=$GET(MP("part",IDX,"filename")),MIME=$GET(MP("part",IDX,"ctype"),$GET(MP("part",IDX,"contentType"),"application/octet-stream"))
+	. IF FILEIDX<1 DO FREE^MIOHTTPMPU(.MP) SET ERR("error")="file_missing" QUIT
+	. DO PARTOPEN^MIOHTTPMPU(.MP,FILEIDX,.CUR,.CONF)
+	. SET IDX=0 FOR  QUIT:'$$PARTNEXT^MIOHTTPMPU(.MP,FILEIDX,.CUR,.CH)  DO
+	. . SET IDX=IDX+1
+	. . SET @ROOT@("DATA",IDX)=CH
+	. . SET SIZE=SIZE+$ZLENGTH(CH)
+	. DO ITCLOSE^MIOHTTPMPU(.CUR)
+	. DO FREE^MIOHTTPMPU(.MP)
+	IF $GET(ERR("error"))'="" DO  QUIT
+	. KILL @ROOT
+	. DO RESPERR(.DEV,.CONF,400,$SELECT($GET(ERR("error"))="file_missing":"file_missing",1:"invalid_theme_asset_upload"),$GET(ERR("error")),.CTX)
+	IF +SIZE<1 DO  QUIT
+	. KILL @ROOT
+	. DO RESPERR(.DEV,.CONF,400,"file_empty","file_empty",.CTX)
+	IF MIME'["image/" DO  QUIT
+	. KILL @ROOT
+	. DO RESPERR(.DEV,.CONF,400,"invalid_image_type","invalid_image_type",.CTX)
 	SET @ROOT@("META")=$GET(MIME,"application/octet-stream")_"^"_$GET(FN)_"^"_+SIZE_"^"_$GET(KIND)_"^"_$PIECE(TS,",",1)_"^"_$PIECE(TS,",",2)
 	SET ROUTE=$GET(CONF("mioos","route","themeAsset"),"/api/mioos/theme-asset")
 	SET OBJ("ok")=1,OBJ("uploaded")=1,OBJ("assetId")=ID,OBJ("kind")=KIND,OBJ("mime")=$GET(MIME,"application/octet-stream"),OBJ("sizeBytes")=+SIZE

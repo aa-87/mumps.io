@@ -149,7 +149,7 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 	DO ACTIVETHM(.STATE,.CONF)
 	DO THEMEBOOT(.STATE,.CONF)
 	SET STATE("themeSystemEditor")=$GET(CONF("mioos","desktop","themeSystem","editor"),"customize")
-	SET STATE("themeSystemPersistence")=$GET(CONF("mioos","desktop","themeSystem","persistence"),"globals-profile-service-with-localstorage-fallback")
+	SET STATE("themeSystemPersistence")=$GET(CONF("mioos","desktop","themeSystem","persistence"),"globals-profile-service")
 	SET STATE("themeSystemLiveApply")=+$GET(CONF("mioos","desktop","themeSystem","liveApply"),1)
 	SET STATE("themeSystemQuickSwitch")=+$GET(CONF("mioos","desktop","themeSystem","quickSwitch"),1)
 	SET STATE("themeSystemVersion")=+$GET(CONF("mioos","desktop","themeSystem","version"),4)
@@ -257,6 +257,8 @@ SANPROF(ROOT,STATE)
 	IF $GET(@ROOT@("desktop","wallpaperUrl"))'="",$$PROTURL($GET(@ROOT@("desktop","wallpaperUrl")),.STATE) SET @ROOT@("desktop","wallpaperUrl")=""
 	IF $GET(@ROOT@("wallpaperUrl"))'="",$$PROTURL($GET(@ROOT@("wallpaperUrl")),.STATE) SET @ROOT@("wallpaperUrl")=""
 	IF $GET(@ROOT@("loginScreenConfig","wallpaperUrl"))'="",$$PROTURL($GET(@ROOT@("loginScreenConfig","wallpaperUrl")),.STATE) SET @ROOT@("loginScreenConfig","wallpaperUrl")=""
+	IF $GET(@ROOT@("loginScreenConfig","avatarUrl"))'="",$$PROTURL($GET(@ROOT@("loginScreenConfig","avatarUrl")),.STATE) SET @ROOT@("loginScreenConfig","avatarUrl")=""
+	IF $GET(@ROOT@("loginScreenConfig","warningImageUrl"))'="",$$PROTURL($GET(@ROOT@("loginScreenConfig","warningImageUrl")),.STATE) SET @ROOT@("loginScreenConfig","warningImageUrl")=""
 	SET K="" FOR  SET K=$ORDER(@ROOT@("cssVars",K)) QUIT:K=""  DO
 	. SET V=$GET(@ROOT@("cssVars",K)) IF V'="",$$PROTURL(V,.STATE) KILL @ROOT@("cssVars",K)
 	SET K="" FOR  SET K=$ORDER(@ROOT@("colors",K)) QUIT:K=""  DO
@@ -575,7 +577,7 @@ BOOTARY(STATE,CONF,OBJ)
 	SET OBJ("desktop","accessibility","reducedMotionToggle")=1
 	SET OBJ("desktop","themeSystem","version")=+$GET(STATE("themeSystemVersion"),4)
 	SET OBJ("desktop","themeSystem","editor")=$GET(STATE("themeSystemEditor"),"customize")
-	SET OBJ("desktop","themeSystem","persistence")=$GET(STATE("themeSystemPersistence"),"globals-profile-service-with-localstorage-fallback")
+	SET OBJ("desktop","themeSystem","persistence")=$GET(STATE("themeSystemPersistence"),"globals-profile-service")
 	SET OBJ("desktop","themeSystem","liveApply")=+$GET(STATE("themeSystemLiveApply"),1)
 	SET OBJ("desktop","themeSystem","quickSwitch")=+$GET(STATE("themeSystemQuickSwitch"),1)
 	SET OBJ("desktop","themeSystem","densityOptions",1)="compact"

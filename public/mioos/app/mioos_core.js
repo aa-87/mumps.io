@@ -96,7 +96,7 @@
       computed: {
         visibleWindows: function () {
           return this.windows
-            .filter(function (win) { return win.state !== 'closed' && win.state !== 'minimized'; })
+            .filter(function (win) { return win.state !== 'closed'; })
             .sort(function (a, b) { return (a.z || 0) - (b.z || 0); });
         },
         taskbarWindows: function () {
@@ -1084,12 +1084,27 @@
         desktopLayoutPayload: function () {
           return { iconSize: this.desktopUi.iconSize || 'medium', sortMode: this.desktopUi.sortMode || 'manual', positions: window.MIOOSState.deepClone(this.desktopUi.positions || {}) };
         },
+        desktopNextOpenPosition: function () {
+          var metrics = this.desktopGridMetrics();
+          var viewportHeight = this.desktopViewportHeight();
+          var occupied = {};
+          Object.keys((this.desktopUi || {}).positions || {}).forEach(function (key) {
+            var pos = ((this.desktopUi || {}).positions || {})[key] || {};
+            var col = Math.max(0, Math.round(((+pos.left || 16) - 16) / metrics.width));
+            var row = Math.max(0, Math.round(((+pos.top || 16) - 16) / metrics.height));
+            occupied[col + ',' + row] = 1;
+          }, this);
+          var col = 0, row = 0, guard = 0;
+          while (guard < 1000) {
+            if (!occupied[col + ',' + row]) return { left: 16 + (col * metrics.width), top: 16 + (row * metrics.height) };
+            row += 1;
+            if ((16 + ((row + 1) * metrics.height)) > viewportHeight) { row = 0; col += 1; }
+            guard += 1;
+          }
+          return { left: 16 + (col * metrics.width), top: 16 };
+        },
         ensureDesktopLayout: function () {
           var self = this;
-          var metrics = this.desktopGridMetrics();
-          var col = 0;
-          var row = 0;
-          var viewportHeight = this.desktopViewportHeight();
           if (!this.desktopUi.positions) this.desktopUi.positions = {};
           (this.desktopRenderEntries ? this.desktopRenderEntries() : (this.desktopEntries || [])).forEach(function (entry) {
             if (!entry || !entry.key) return;
@@ -1098,11 +1113,11 @@
               var hasExplicitTop = entry.iconTop !== undefined && entry.iconTop !== null && entry.iconTop !== '';
               var left = hasExplicitLeft ? +entry.iconLeft : NaN;
               var top = hasExplicitTop ? +entry.iconTop : NaN;
+              var slot = null;
               if (!(hasExplicitLeft && hasExplicitTop && isFinite(left) && isFinite(top) && left >= 0 && top >= 0)) {
-                left = 16 + (col * metrics.width);
-                top = 16 + (row * metrics.height);
-                row += 1;
-                if ((16 + ((row + 1) * metrics.height)) > viewportHeight) { row = 0; col += 1; }
+                slot = self.desktopNextOpenPosition();
+                left = slot.left;
+                top = slot.top;
               }
               self.desktopUi.positions[entry.key] = { left: left, top: top };
             }
@@ -1430,7 +1445,7 @@
               hasBootProfile = true;
             }
           }
-          try { rawCustom = window.localStorage.getItem(this.themeStudioProfilesKey()); } catch (err) { rawCustom = ''; }
+          rawCustom = ''; /* theme profiles are server-authored; do not hydrate from localStorage */
           try { parsedCustom = JSON.parse(rawCustom || '[]'); } catch (err2) { parsedCustom = []; }
           if (Array.isArray(parsedCustom)) {
             parsedCustom.forEach(function (entry) {
@@ -1442,7 +1457,7 @@
               store.customThemes.push(cfg.id);
             }.bind(this));
           }
-          try { rawApplied = hasBootProfile ? '' : window.localStorage.getItem(this.themeStudioStorageKey()); } catch (err3) { rawApplied = ''; }
+          rawApplied = ''; /* active theme is server-authored; no localStorage fallback */
           try { parsedApplied = rawApplied ? JSON.parse(rawApplied) : null; } catch (err4) { parsedApplied = null; }
           if (parsedApplied && !hasBootProfile) {
             parsedApplied = this.themeStudioNormalizeConfig(parsedApplied);
@@ -1497,7 +1512,7 @@
           var payload = (store.order || []).map(function (id) { return store.themes[id]; }).filter(function (item) { return item && !item.locked; });
           var commit = function () {
             store.customThemes = payload.map(function (item) { return item.id; });
-            try { window.localStorage.setItem(this.themeStudioProfilesKey(), JSON.stringify(payload)); } catch (err) {}
+            /* Custom themes are persisted through themeStudioSaveRemote, not localStorage. */
             this._themeStudioPersistTimer = null;
           }.bind(this);
           if (immediate === true) {
@@ -1566,7 +1581,7 @@
           this.themeStudioStore.activeThemeId = theme.id;
           if (!opts.silent) this.showAlert('Theme Studio', (theme.name || 'Theme') + ' applied.');
           if (opts.persist !== false) {
-            try { window.localStorage.setItem(this.themeStudioStorageKey(), JSON.stringify(theme)); } catch (err) {}
+            /* Active theme persistence is server-based only. */
           }
           return theme;
         },
@@ -1906,7 +1921,7 @@
             }
           }
 
-          try { rawCustom = window.localStorage.getItem(this.themeStudioProfilesKey()); } catch (err) { rawCustom = ''; }
+          rawCustom = ''; /* theme profiles are server-authored; do not hydrate from localStorage */
           if (rawCustom) {
             try { parsedCustom = JSON.parse(rawCustom); } catch (err2) { parsedCustom = []; }
             if (Array.isArray(parsedCustom)) {
@@ -1927,7 +1942,7 @@
           }
 
           if (!hasBootProfile) {
-            try { rawApplied = window.localStorage.getItem(this.themeStudioStorageKey()); } catch (err3) { rawApplied = ''; }
+            rawApplied = ''; /* active theme is server-authored; no localStorage fallback */
             if (rawApplied) {
               try { parsedApplied = this.themeStudioNormalizeConfig(JSON.parse(rawApplied)); } catch (err4) { parsedApplied = null; }
             }
@@ -1954,7 +1969,7 @@
         },
         themeStudioWallpaperCss: function (theme) {
           var t = this.themeStudioNormalizeConfig(theme || this.themeStudioActiveTheme() || {});
-          if (t.wallpaperUrl && !this.isProtectedThemeUrl(t.wallpaperUrl)) return 'url(' + t.wallpaperUrl + ')';
+          if (t.wallpaperUrl && !(this.requiresSignin && this.isProtectedThemeUrl(t.wallpaperUrl))) return 'url(' + t.wallpaperUrl + ')';
           if (t.wallpaperPreset === 'meadow') return 'linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0) 28%), linear-gradient(180deg, #8acb59 0%, #6fb14a 42%, #3e7b35 100%)';
           if (t.wallpaperPreset === 'aurora') return 'radial-gradient(circle at top, rgba(147,197,253,0.26), transparent 30%), linear-gradient(180deg, #16385c 0%, #23476d 36%, #3a6288 100%)';
           if (t.wallpaperPreset === 'graphite') return 'linear-gradient(180deg, #6c7a89 0%, #313b48 100%)';
@@ -1964,7 +1979,7 @@
         themeStudioLoginWallpaperCss: function (theme) {
           var t = this.themeStudioNormalizeConfig(theme || this.themeStudioActiveTheme() || {});
           var cfg = t.loginScreenConfig || {};
-          if (cfg.wallpaperUrl && !this.isProtectedThemeUrl(cfg.wallpaperUrl)) return 'url(' + cfg.wallpaperUrl + ')';
+          if (cfg.wallpaperUrl && !(this.requiresSignin && this.isProtectedThemeUrl(cfg.wallpaperUrl))) return 'url(' + cfg.wallpaperUrl + ')';
           return this.themeStudioWallpaperCss(t);
         },
         themeStudioManagedVarKeys: function () {
@@ -2165,7 +2180,7 @@
           if ((this.boot || {}).desktop) this.boot.desktop.taskbarPosition = (theme.taskbarConfig || {}).position || 'bottom';
           if (!opts.silent) this.showAlert('Theme Studio', (theme.name || 'Theme') + ' applied.');
           if (opts.persist !== false) {
-            try { window.localStorage.setItem(this.themeStudioStorageKey(), JSON.stringify(theme)); } catch (err) {}
+            /* Active theme persistence is server-based only. */
           }
           return theme;
         },
@@ -2316,7 +2331,7 @@
         themeStudioUploadField: function (path, event) {
           var self = this;
           var file = event && event.target && event.target.files && event.target.files[0];
-          var form, route, kind, store;
+          var route, kind, store;
           if (!file) return Promise.resolve();
           store = this.initThemeStudioStore();
           if (file.type && file.type.indexOf('image/') !== 0) {
@@ -2327,20 +2342,46 @@
           route = (((this.boot || {}).routes || {}).themeAssetUpload) || '/api/mioos/theme-asset/upload';
           kind = path.indexOf('loginScreenConfig.avatarUrl') === 0 ? 'login-avatar' : (path.indexOf('loginScreenConfig.warningImageUrl') === 0 ? 'login-warning' : (path.indexOf('loginScreenConfig.') === 0 ? 'login-wallpaper' : 'wallpaper'));
           store.uploadStatus = 'uploading';
-          form = new FormData();
-          form.append('kind', kind);
-          form.append('file', file, file.name || 'image.bin');
-          return fetch(route, { method: 'POST', body: form, credentials: 'same-origin' }).then(function (res) {
+          function parseUploadResponse(res) {
             return res.text().then(function (text) {
               var obj = {};
-              if (text) { try { obj = JSON.parse(text); } catch (err) { obj = { ok: false, error: 'invalid_json_response', detail: text.slice(0, 180) }; } }
+              if (text) {
+                try { obj = JSON.parse(text); } catch (err) { obj = { ok: false, error: 'invalid_json_response', detail: text.slice(0, 180) }; }
+              }
               return { ok: res.ok, status: res.status, obj: obj || {} };
             });
+          }
+          function postMultipart() {
+            var form = new FormData();
+            form.append('kind', kind);
+            form.append('file', file, file.name || 'image.bin');
+            return fetch(route, { method: 'POST', body: form, credentials: 'same-origin' }).then(parseUploadResponse);
+          }
+          function postRaw() {
+            return fetch(route, {
+              method: 'POST',
+              body: file,
+              credentials: 'same-origin',
+              headers: {
+                'Content-Type': file.type || 'application/octet-stream',
+                'X-MIOOS-Theme-Kind': kind,
+                'X-MIOOS-File-Name': encodeURIComponent(file.name || 'image.bin')
+              }
+            }).then(parseUploadResponse);
+          }
+          return postMultipart().then(function (payload) {
+            if (payload.ok && payload.obj && payload.obj.ok) return payload;
+            return postRaw();
           }).then(function (payload) {
             if (!payload.ok || !payload.obj || !payload.obj.ok) throw new Error((payload.obj && (payload.obj.detail || payload.obj.message || payload.obj.error)) || ('upload_failed_http_' + (payload.status || '')));
             self.themeStudioSetUploadedAsset(path, payload.obj.url || payload.obj.assetUrl || '', { assetId: payload.obj.assetId || payload.obj.id || '', kind: payload.obj.kind || kind });
-            if (self.themeStudioPersistActiveRemote) self.themeStudioPersistActiveRemote(self.themeStudioActiveTheme(), true).catch(function () {});
-            self.pushNotification('Theme Studio', 'Image uploaded.');
+            return (self.themeStudioPersistActiveRemote ? self.themeStudioPersistActiveRemote(self.themeStudioActiveTheme(), true) : Promise.resolve()).catch(function (err) {
+              store.uploadStatus = 'uploaded-server-pending';
+              self.showAlert('Theme Studio', 'Image uploaded, but the active theme profile was not saved: ' + ((err && err.message) || 'theme_save_failed'));
+            });
+          }).then(function () {
+            if (store.uploadStatus !== 'uploaded-server-pending') store.uploadStatus = 'uploaded';
+            self.pushNotification('Theme Studio', 'Image uploaded and linked to the active server theme.');
           }).catch(function (err) {
             store.uploadStatus = 'failed';
             self.showAlert('Theme Studio', 'Image upload failed: ' + (err && err.message ? err.message : 'upload_failed'));
@@ -2447,7 +2488,7 @@
           if (!subtitle && sourceName === 'vfs') subtitle = isFolder ? 'Desktop folder' : 'Desktop file';
           if (!subtitle && sourceName === 'module') subtitle = entry.category || 'Module';
           if (!subtitle && sourceName === 'app') subtitle = kind || 'Application';
-          return { key: key, appKey: entry.appKey || entry.key || key, launchKey: entry.launchKey || entry.appKey || entry.key || key, title: title, subtitle: subtitle, icon: entry.icon || (isFolder ? '📁' : (sourceName === 'vfs' ? '📄' : '▣')), kind: kind || (isFolder ? 'folder' : 'app'), source: sourceName, groupKey: groupKey || entry.groupKey || sourceName, id: entry.id || '', fileId: entry.fileId || (sourceName === 'vfs' ? (entry.id || key) : ''), folderId: entry.folderId || (isFolder ? (entry.id || key) : ''), path: entry.path || entry.canonicalPath || '', raw: entry, disabled: !!entry.disabled };
+          return { key: key, appKey: entry.appKey || entry.key || key, launchKey: entry.launchKey || entry.appKey || entry.key || key, title: title, subtitle: subtitle, icon: entry.icon || (isFolder ? '📁' : (sourceName === 'vfs' ? '📄' : '▣')), kind: kind || (isFolder ? 'folder' : 'app'), source: sourceName, groupKey: groupKey || entry.groupKey || sourceName, id: entry.id || '', fileId: entry.fileId || (sourceName === 'vfs' ? (entry.id || key) : ''), folderId: entry.folderId || (isFolder ? (entry.id || key) : ''), path: entry.path || entry.canonicalPath || '', mime: entry.mime || entry.contentType || '', raw: entry, disabled: !!entry.disabled };
         },
         startMenuAppCatalogItems: function () {
           var self = this;
@@ -2558,6 +2599,8 @@
             var rows = [];
             if (payload && Array.isArray(payload.items)) rows = payload.items;
             else if (payload && payload.items && typeof payload.items === 'object') rows = Object.keys(payload.items).map(function (k) { return payload.items[k]; });
+            else if (payload && Array.isArray(payload.entries)) rows = payload.entries;
+            else if (payload && payload.entries && typeof payload.entries === 'object') rows = Object.keys(payload.entries).map(function (k) { return payload.entries[k]; });
             else if (payload && Array.isArray(payload.rows)) rows = payload.rows;
             return rows.map(function (entry) {
               var copy = Object.assign({}, entry || {});
@@ -2687,11 +2730,15 @@
         startMenuOpenItem: function (itemOrKey) {
           var item = typeof itemOrKey === 'string' ? this.startMenuItemByKey(itemOrKey) : itemOrKey;
           if (!item || item.disabled) return;
+          if (this.startMenuIsFolderItem && this.startMenuIsFolderItem(item)) {
+            this.startMenuToggleFolder(item);
+            return;
+          }
           this.menuOpen = false;
           if (this.startMenuUi) this.startMenuUi.lastOpenedAt = Date.now();
           if (item.action === 'locale' && this.changeLocale) { this.changeLocale(item.code || String(item.key || '').replace(/^locale:/, '')); return; }
           if (item.action === 'theme' && this.applyShellTheme) { this.applyShellTheme(item.themeKey || String(item.key || '').replace(/^theme:/, '')); return; }
-          if (item.source === 'vfs') { if (this.openDesktopEntry) this.openDesktopEntry(item.raw || { key: item.fileId || item.folderId || item.id || item.key, id: item.fileId || item.folderId || item.id || item.key, name: item.title, kind: item.kind, source: 'vfs' }); return; }
+          if (item.source === 'vfs') { if (this.openDesktopEntry) this.openDesktopEntry(item.raw || { key: item.fileId || item.folderId || item.id || item.key, id: item.fileId || item.folderId || item.id || item.key, name: item.title, kind: item.kind, source: 'vfs', mime: item.mime || ((item.raw || {}).mime) || '', path: item.path || '' }); return; }
           if (item.source === 'module' && this.openModuleEntry) { this.openModuleEntry(item.raw && (item.raw.id || item.raw.appKey) || item.appKey || item.key); return; }
           var key = item.launchKey || item.appKey || item.key;
           if (key === 'theme-studio') key = 'customize';

@@ -64,6 +64,7 @@ MIOOST ; MIOOS tests
 	DO T072
 	DO T073
 	DO T074
+	DO T075
 	QUIT
 	;
 RESET
@@ -994,7 +995,7 @@ T051
 		DO BOOTARY^MIOOSST(.STATE,.CONF,.BOOT)
 		DO EQ^MIOTASSERT(+$GET(BOOT("desktop","themeSystem","version")),4,"[MIOOST][T051][theme system version]")
 		DO EQ^MIOTASSERT($GET(BOOT("desktop","themeSystem","editor")),"customize","[MIOOST][T051][theme editor]")
-		DO EQ^MIOTASSERT($GET(BOOT("desktop","themeSystem","persistence")),"globals-profile-service-with-localstorage-fallback","[MIOOST][T051][theme persistence]")
+		DO EQ^MIOTASSERT($GET(BOOT("desktop","themeSystem","persistence")),"globals-profile-service","[MIOOST][T051][theme persistence]")
 		DO EQ^MIOTASSERT(+$GET(BOOT("desktop","shellSurfaces","customize")),1,"[MIOOST][T051][customize surface]")
 		DO EQ^MIOTASSERT(+$GET(BOOT("desktop","shellSurfaces","folderProperties")),1,"[MIOOST][T051][folder properties surface]")
 		DO EQ^MIOTASSERT($GET(BOOT("routes","themeLoad")),"/api/mioos/theme/load","[MIOOST][T051][theme load route]")
@@ -1398,7 +1399,7 @@ T072
 T073
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","is-modern-launcher"),"[MIOOST][T073][modern start component]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-start-modern-groups"),"[MIOOST][T073][modern start groups]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","vm.startMenuSourceBadge(item)"),"[MIOOST][T073][start source badges]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","vm.startMenuSourceBadge(row.item)"),"[MIOOST][T073][start source badges]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","startMenuSelectItem"),"[MIOOST][T073][start hover focus selection]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","startMenuGroupIcon"),"[MIOOST][T073][start group icon]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","locale:"),"[MIOOST][T073][language entries preserved]")
@@ -1423,3 +1424,16 @@ T074
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","ROI 72C follow-up"),"[MIOOST][T074][followup css]")
 	QUIT
 	;
+	;
+	;
+T075
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-surface-viewer"),"[MIOOST][T075][viewer surface registered]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-viewer-media"),"[MIOOST][T075][media viewer controls]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","desktopNextOpenPosition"),"[MIOOST][T075][desktop open slot]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSFS.m","Programs"),"[MIOOST][T075][programs desktop folder]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","postRaw"),"[MIOOST][T075][theme raw upload fallback]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","x-mioos-theme-kind"),"[MIOOST][T075][theme raw upload backend]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","window.localStorage.getItem(this.themeStudioStorageKey"),0,"[MIOOST][T075][no theme active localstorage]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","window.localStorage.setItem(this.themeStudioStorageKey"),0,"[MIOOST][T075][no theme save localstorage]")
+	DO EQ^MIOTASSERT($$FILEHAS("routines/MIOOS.m","globals-profile-service-with-localstorage-fallback"),0,"[MIOOST][T075][server theme persistence only]")
+	QUIT

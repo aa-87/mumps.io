@@ -66,11 +66,22 @@ PURGETESTART(DESK)
 	QUIT
 	;
 SEEDDESKTOP(DESK,OWNER,ROLES)
-	NEW ID
+	NEW ID,PROG
 	DO ENSURESHORTCUT(DESK,"Home","home","","🏠",OWNER,ROLES,.ID)
 	DO ENSURESHORTCUT(DESK,"Terminal","terminal","",">_",OWNER,ROLES,.ID)
 	DO ENSURESHORTCUT(DESK,"Transfers","transfers","","⇅",OWNER,ROLES,.ID)
 	DO ENSURESHORTCUT(DESK,"Customize","customize","","🎨",OWNER,ROLES,.ID)
+	DO ENSUREFOLDER(DESK,"Programs",OWNER,ROLES,.PROG)
+	IF PROG'="" DO
+	. DO SETMETAFLD(PROG,"desktopIcon",1)
+	. DO SETMETAFLD(PROG,"folderIcon","▦")
+	. DO SETMETAFLD(PROG,"system",1)
+	. DO ENSURESHORTCUT(PROG,"App Catalogue","app-catalog","","▦",OWNER,ROLES,.ID)
+	. DO ENSURESHORTCUT(PROG,"Advanced Table MUMPS API","table-samples","","▤",OWNER,ROLES,.ID)
+	. DO ENSURESHORTCUT(PROG,"Patient Registration","patient-registration","","🏥",OWNER,ROLES,.ID)
+	. DO ENSURESHORTCUT(PROG,"UI + Form Elements","ui-elements","","▣",OWNER,ROLES,.ID)
+	. DO ENSURESHORTCUT(PROG,"Permissions","permissions","","🛡",OWNER,ROLES,.ID)
+	. DO ENSURESHORTCUT(PROG,"Terminal","terminal","",">_",OWNER,ROLES,.ID)
 	QUIT
 	;
 ENSUREFOLDER(PARENT,NAME,OWNER,ROLES,OUTID)

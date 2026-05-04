@@ -316,6 +316,44 @@
         `
       });
 
+
+      app.component('mioos-surface-viewer', {
+        props: ['window'],
+        computed: {
+          vm: function () { return root(this); },
+          fileView: function () { return (this.window && this.window.fileView) || {}; },
+          kind: function () { return String((this.window || {}).appKey || '').replace('-viewer', '') || 'file'; },
+          mediaKind: function () { return this.fileView.mediaKind || (((this.window || {}).meta || {}).mediaKind) || (String(this.fileView.mime || '').indexOf('video/') === 0 ? 'video' : 'audio'); },
+          sourceUrl: function () { return this.fileView.content || ''; },
+          safeText: function () { return String(this.fileView.content || ''); }
+        },
+        methods: {
+          download: function () { if (this.vm.downloadViewerFile) this.vm.downloadViewerFile(this.window); },
+          retry: function () {
+            var meta = (this.window || {}).meta || {};
+            var item = { id: meta.fileId, key: meta.fileId, fileId: meta.fileId, name: meta.fileName || this.window.title, title: meta.fileName || this.window.title, mime: meta.mime };
+            if (this.kind === 'text' && this.vm.openTextViewerWindow) { this.vm.closeWindow(this.window.id); this.vm.openTextViewerWindow(item); return; }
+            if (this.kind === 'image' && this.vm.openImageViewerWindow) { this.vm.closeWindow(this.window.id); this.vm.openImageViewerWindow(item); return; }
+            if (this.kind === 'media' && this.vm.openMediaViewerWindow) { this.vm.closeWindow(this.window.id); this.vm.openMediaViewerWindow(item); return; }
+            if (this.kind === 'pdf' && this.vm.openPdfViewerWindow) { this.vm.closeWindow(this.window.id); this.vm.openPdfViewerWindow(item); }
+          }
+        },
+        template: '' +
+          '<div class="mioos-surface mioos-surface-viewer-native" :class="\'is-\' + kind">' +
+            '<header class="mioos-viewer-toolbar"><div><strong>[[ (window.meta || {}).fileName || window.title ]]</strong><span>[[ fileView.mime || (window.meta || {}).mime || \'File preview\' ]]</span></div><button type="button" class="mioos-explorer-command" @click="retry">Reload</button><button type="button" class="mioos-explorer-command" @click="download">Download</button></header>' +
+            '<section class="mioos-viewer-body">' +
+              '<div v-if="fileView.loading" class="mioos-viewer-state">Loading file…</div>' +
+              '<div v-else-if="fileView.error" class="mioos-viewer-state is-error">[[ fileView.error ]]</div>' +
+              '<pre v-else-if="kind === \'text\' || kind === \'structured\'" class="mioos-viewer-text">[[ safeText ]]</pre>' +
+              '<img v-else-if="kind === \'image\'" class="mioos-viewer-image" :src="sourceUrl" :alt="(window.meta || {}).fileName || window.title">' +
+              '<iframe v-else-if="kind === \'pdf\'" class="mioos-viewer-frame" :src="sourceUrl" title="PDF preview"></iframe>' +
+              '<video v-else-if="kind === \'media\' && mediaKind === \'video\'" class="mioos-viewer-media" :src="sourceUrl" controls playsinline preload="metadata"></video>' +
+              '<audio v-else-if="kind === \'media\'" class="mioos-viewer-audio" :src="sourceUrl" controls preload="metadata"></audio>' +
+              '<div v-else class="mioos-viewer-state">No preview is available for this file type.</div>' +
+            '</section>' +
+          '</div>'
+      });
+
       app.component('mioos-surface-terminal', {
         props: ['window'],
         computed: {

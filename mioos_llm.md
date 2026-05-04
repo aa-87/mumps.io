@@ -627,3 +627,7 @@ The Start Menu was rewritten as a dedicated, isolated ROI. Preserve this separat
 - Protected theme/blob URLs remain sanitized before authentication.
 - Theme Studio image upload parsing is robust against empty/non-JSON error responses.
 - Text file viewer falls back to `/api/mioos/fs/blob` when socket reads cannot hydrate content.
+
+## ROI 72C2 viewer/upload/server-theme hotfix
+
+Source-of-truth notes: the shell must register `mioos-surface-viewer` for basic file previews. Theme Studio uploads must use server-backed theme asset routes with no DataURLs and no localStorage theme persistence. Start Menu VFS folders must expand recursively without closing the menu. New desktop icons must be placed in the next open grid slot, and the Desktop should include a Programs folder with core launcher shortcuts.
