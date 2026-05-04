@@ -33,6 +33,7 @@
           clockText: '',
           alertTitle: '',
           alertMessage: '',
+          shellToast: { open: false, title: '', message: '', kind: 'info', timer: null },
           shellDialog: { open: false, kind: '', title: '', message: '', value: '', placeholder: '', confirmText: 'OK', cancelText: 'Cancel', danger: false, resolver: null },
           zCounter: 10,
           dragState: {
@@ -687,10 +688,39 @@
           if (key === 'explorer' || key === 'home' || key === 'documents' || key === 'my-computer') return 'Explorer';
           return (win && win.moduleWindow) ? 'Module' : 'Window';
         },
+        showToast: function (title, message, kind, delayMs) {
+          var toast = this.shellToast || (this.shellToast = { open: false, title: '', message: '', kind: 'info', timer: null });
+          if (toast.timer) { try { window.clearTimeout(toast.timer); } catch (err) {} }
+          toast.open = true;
+          toast.title = title || 'MIOOS';
+          toast.message = message || '';
+          toast.kind = kind || 'info';
+          var self = this;
+          toast.timer = window.setTimeout(function () { self.dismissToast(); }, Math.max(1200, +delayMs || 2600));
+        },
+        dismissToast: function () {
+          var toast = this.shellToast || (this.shellToast = { open: false, title: '', message: '', kind: 'info', timer: null });
+          if (toast.timer) { try { window.clearTimeout(toast.timer); } catch (err) {} }
+          toast.open = false;
+          toast.title = '';
+          toast.message = '';
+          toast.kind = 'info';
+          toast.timer = null;
+        },
         showWindowAbout: function (win) {
-          var title = ((win || {}).title) || ((win || {}).appKey) || 'Window';
-          var key = ((win || {}).appKey) || 'app';
-          this.showAlert('About ' + title, 'MIOOS window: ' + key + '. Common toolbar contract: File, Edit, module menu, Help.');
+          if (this.openAboutMioosWindow) return this.openAboutMioosWindow(win);
+          if (this.showToast) this.showToast('About MIOOS', 'MIOOS window information is available from the common toolbar.', 'info');
+        },
+        openAboutMioosWindow: function (win) {
+          var existing = (this.windows || []).find(function (item) { return item.appKey === 'about-mioos'; });
+          var title = ((win || {}).title) || ((win || {}).appKey) || 'MIOOS';
+          var key = ((win || {}).appKey) || 'shell';
+          if (existing) { existing.state = 'normal'; existing.aboutSourceTitle = title; existing.aboutSourceKey = key; this.focusWindow(existing.id); return existing; }
+          var id = 'win-about-' + (++this.zCounter);
+          var next = { id: id, appKey: 'about-mioos', title: 'About MIO, MIOOS', state: 'normal', left: 180, top: 130, width: 360, height: 220, z: this.zCounter + 1, aboutSourceTitle: title, aboutSourceKey: key };
+          this.windows.push(next);
+          this.focusWindow(id);
+          return next;
         },
         loginBoxStyleClass: function () {
           var cfg = ((this.themeStudioActiveTheme && this.themeStudioActiveTheme()) || {}).loginScreenConfig || {};
@@ -1232,7 +1262,7 @@
         },
         refreshDesktopIcons: function () {
           this.refreshView();
-          this.showAlert('Desktop', 'Desktop refreshed.');
+          if (this.showToast) this.showToast('Desktop', 'Desktop refreshed.', 'success'); else this.showAlert('Desktop', 'Desktop refreshed.');
         },
         rearrangeDesktopIcons: function () {
           var self = this;
@@ -1324,6 +1354,7 @@
         },
         openDesktopEntry: function (entry) {
           if (!entry) return;
+          if (entry.action === 'locale' && this.changeLocale) { this.changeLocale(entry.code || entry.locale || entry.lang || entry.value || 'en'); return; }
           if (entry.source === 'shortcut') { this.openApp(entry.launchKey || entry.appKey || String(entry.key || '').replace(/^shortcut:/, '')); return; }
           if ((entry.kind || entry.type) === 'shortcut' || entry.targetAppKey) { this.openApp(entry.launchKey || entry.appKey || entry.targetAppKey); return; }
           if (!this.desktopEntryIsVfs(entry)) { this.openApp(entry.appKey || entry.launchKey || entry.key); return; }

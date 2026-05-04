@@ -454,3 +454,19 @@ The visible chunk renderer must call the shared `textViewerChunkArray()` helper 
 All shell windows receive a common dark-theme-aware toolbar from the window frame. The toolbar contract is File, Edit, optional module-specific menu, and Help. File always includes Close / Exit and adds viewer download or Explorer upload/new-folder actions when relevant. Edit includes Cut, Copy, Paste. Module-specific menus are derived from the window app key so future windows inherit the common contract without rewriting their surface component.
 
 Theme Studio now exposes font-color controls for toolbar text, context menu text, Start menu text, Start child text, and Start hover text. The login box style is applied to the real login modal through runtime style classes, and imported themes are activated and persisted after parsing.
+
+## ROI 72F text viewer, shell toolbar, and desktop interaction hardening
+
+This pass locks the chunked text viewer and surrounding shell regressions.
+
+- Text files continue to open through `fs.text.chunk`; large-file chunk reads use a longer configurable timeout and errors are surfaced as auto-dismiss toasts instead of unhandled promises.
+- The text viewer supports bounded in-window editing and save through `fs.text.save`. Editing is intended for normal notepad-sized files; large files remain chunk-view-only to preserve the terabyte-scale viewer contract.
+- The old text-stream feedback footer is removed from the viewer body. Viewer feedback now uses the shell toast surface.
+- Explorer context menu actions close the context menu before dispatch; Refresh uses a toast instead of a blocking notification.
+- Explorer navigation/action controls are folded into the common window toolbar, eliminating the duplicate Explorer menu/action toolbar rows.
+- Desktop file drops route into the same upload path used by folder drops.
+- Transfer and Terminal action rows are reduced to status-only content; actions are exposed through the common toolbar menus.
+- Help -> About opens a small About MIO, MIOOS window rather than a dismiss-required notification.
+- Theme asset responses no longer emit fragile `Content-Length` headers on wallpaper/theme asset streams, preventing browser content-length mismatch failures on uploaded desktop backgrounds.
+
+Regression coverage is in `T082^MIOOST`.

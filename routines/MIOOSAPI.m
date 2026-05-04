@@ -690,7 +690,7 @@ THEMEPUBLICASSET(DEV,CONF,REQ,CTX)
 	SET HEAD("Content-Type")=MIME
 	SET HEAD("Cache-Control")="public, max-age=31536000"
 	SET HEAD("X-Content-Type-Options")="nosniff"
-	SET HEAD("Content-Length")=SIZE
+	; Do not emit Content-Length for theme assets because binary-safe write paths may normalize chunks differently than WOUT byte framing on some MUMPS runtimes.
 	SET HEAD("Content-Disposition")=$$DISPHDR($SELECT(FN'="":FN,1:ID),0)
 	SET METHOD=$$LOW^MIOHTTP($GET(REQ("method"),"get"))
 	DO RESPHEAD^MIOSTATIC(.DEV,.CONF,200,.HEAD,$GET(CTX("request_id")))
@@ -725,7 +725,7 @@ THEMEASSET(DEV,CONF,REQ,CTX)
 	SET HEAD("Content-Type")=MIME
 	SET HEAD("Cache-Control")=$SELECT(PUBLIC:"public, max-age=31536000",1:"private, max-age=31536000")
 	SET HEAD("X-Content-Type-Options")="nosniff"
-	SET HEAD("Content-Length")=SIZE
+	; Do not emit Content-Length for theme assets because binary-safe write paths may normalize chunks differently than WOUT byte framing on some MUMPS runtimes.
 	SET HEAD("Content-Disposition")=$$DISPHDR($SELECT(FN'="":FN,1:ID),0)
 	SET METHOD=$$LOW^MIOHTTP($GET(REQ("method"),"get"))
 	DO RESPHEAD^MIOSTATIC(.DEV,.CONF,200,.HEAD,$GET(CTX("request_id")))

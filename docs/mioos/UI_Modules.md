@@ -131,3 +131,11 @@ SET MOD("tableState","config","features","fixedColumns")=1
 The table backend owns query, mutation, validation, export, column metadata, fixed-column metadata, and selected-row CSV generation. HTTP and WebSocket table mutations must continue to call `MUTATE^MIOOSTBL`; frontend module code should not fork mutation handling.
 
 Expanded MUMPS-first samples are under `examples/mioos_modules/table/samples/`. Start with `basic_readonly.m`, then add `editable_cells.m`, `validation_rules.m`, `advanced_filters.m`, `grouping_reorder_fixed.m`, `server_csv_export.m`, and `table_module_registration.m` as needed.
+
+## Shell toolbar and viewer regression contract
+
+All shell windows should prefer the common `mioos-window-toolbar` for File/Edit/module/Help actions. Module-local command rows should be avoided when the same action belongs in the common toolbar. Explorer-specific actions are folded into the common toolbar as icon-only controls after File/Edit/View/Tools and before Help.
+
+Text viewers are special-purpose text-media windows. They render chunked text from `fs.text.chunk`, map scrollbar position to byte offsets, and save normal-size editable text through `fs.text.save`. Viewer status/errors should surface through the shell toast API instead of persistent footer panels.
+
+Help -> About should open the reusable `about-mioos` window surface so modules can provide context without blocking the user with alert-style notifications.

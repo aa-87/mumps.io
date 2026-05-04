@@ -4038,18 +4038,6 @@ html[dir="rtl"] .mioos-window-menu-dropdown-vue,
   overflow-wrap: anywhere;
 }
 .mioos-text-chunk-offset { display: block; margin: 0 0 6px; opacity: .65; font-size: 11px; user-select: none; }
-.mioos-text-stream-status {
-  position: sticky;
-  bottom: 0;
-  z-index: 2;
-  padding: 5px 10px;
-  border-top: 1px solid var(--theme-panel-border, rgba(148,163,184,.24));
-  background: var(--toolbar-bg, rgba(15,23,42,.92));
-  color: var(--toolbar-text, #f8fafc);
-  font-family: var(--font-ui, sans-serif);
-  font-size: 11px;
-}
-.mioos-text-stream-status.is-error { color: #fecaca; }
 .theme-login-card.style-xp-transparent {
   background: rgba(11, 28, 52, .58);
   border-color: rgba(255,255,255,.32);
@@ -4095,3 +4083,151 @@ html[dir="rtl"] .mioos-window-menu-dropdown-vue,
   pointer-events: none;
 }
 @keyframes mioos-transfer-scan { from { transform: translateX(0); } to { transform: translateX(350%); } }
+
+/* ROI 72E regression hardening: text viewer, unified toolbar, toast feedback, transfer/terminal cleanup. */
+.mioos-shell-toast {
+  position: absolute;
+  right: 18px;
+  bottom: calc(var(--taskbar-height, 48px) + 14px);
+  z-index: 6200;
+  display: grid;
+  gap: 2px;
+  max-width: min(360px, calc(100vw - 36px));
+  padding: 9px 12px;
+  border: 1px solid rgba(15,23,42,.18);
+  border-radius: 12px;
+  background: rgba(255,255,255,.96);
+  color: #0f172a;
+  box-shadow: 0 18px 42px rgba(15,23,42,.25);
+  pointer-events: none;
+}
+.mioos-shell-toast strong { font-size: 12px; }
+.mioos-shell-toast span { font-size: 11px; opacity: .82; }
+.mioos-shell-toast.is-error { border-color: rgba(185,28,28,.34); background: #fff1f2; color: #7f1d1d; }
+.mioos-shell-toast.is-success { border-color: rgba(22,101,52,.32); background: #f0fdf4; color: #14532d; }
+.mioos-text-virtual-viewer {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  background: #f8fafc !important;
+  color: #111827 !important;
+}
+.mioos-text-virtual-spacer { overflow: hidden; }
+.mioos-viewer-text-chunk {
+  background: #ffffff !important;
+  color: #111827 !important;
+  border-color: rgba(100,116,139,.26) !important;
+}
+.mioos-text-chunk-offset { color: #475569; }
+.mioos-text-editorbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 4px 8px;
+  border-bottom: 1px solid rgba(100,116,139,.24);
+  background: #eef2f7;
+  color: #0f172a;
+  font-family: var(--font-ui, sans-serif);
+  font-size: 12px;
+}
+.mioos-text-editor-area {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  resize: none;
+  border: 0;
+  outline: 0;
+  padding: 12px 14px;
+  background: #ffffff;
+  color: #111827;
+  font: 12px/1.45 Consolas, "SFMono-Regular", Menlo, monospace;
+  box-sizing: border-box;
+}
+.theme-dark-mode .mioos-window-menu-vue {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border-color: #1f2937 !important;
+}
+.theme-dark-mode .mioos-window-menu-dropdown-vue {
+  background: #050505 !important;
+  color: #ffffff !important;
+  border-color: #1f2937 !important;
+}
+.theme-dark-mode .mioos-window-inline-tools-vue button,
+.theme-dark-mode .mioos-window-menu-group-vue > button { color: #ffffff !important; }
+.theme-dark-mode .mioos-text-virtual-viewer {
+  background: #0b1220 !important;
+  color: #e5e7eb !important;
+}
+.theme-dark-mode .mioos-viewer-text-chunk {
+  background: rgba(15,23,42,.72) !important;
+  color: #e5e7eb !important;
+  border-color: rgba(148,163,184,.28) !important;
+}
+.theme-dark-mode .mioos-text-editorbar { background: #000000; color: #ffffff; border-color: #1f2937; }
+.theme-dark-mode .mioos-text-editor-area { background: #0f172a; color: #f8fafc; }
+.mioos-window-inline-tools-vue {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 8px;
+  padding-left: 8px;
+  border-left: 1px solid var(--toolbar-border, rgba(15,23,42,.16));
+}
+.mioos-window-inline-tools-vue button {
+  min-width: 25px;
+  min-height: 24px;
+  padding: 1px 6px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  box-shadow: none;
+}
+.mioos-window-inline-tools-vue button:hover:not(:disabled) {
+  border-color: var(--toolbar-border, rgba(59,130,246,.35));
+  background: var(--menu-hover, rgba(59,130,246,.14));
+}
+.mioos-window-inline-tools-vue button:disabled { opacity: .45; }
+.mioos-terminal-status-vue {
+  flex: 0 0 auto;
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--theme-panel-border, rgba(15,23,42,.14));
+  background: var(--theme-surface-strong, rgba(248,250,252,.88));
+  color: var(--menu-text, #0f172a);
+  font-size: 11px;
+}
+.theme-dark-mode .mioos-terminal-status-vue { background: #000; color: #fff; border-color: #1f2937; }
+.mioos-surface-about { padding: 16px; display: grid; gap: 10px; align-content: start; }
+.mioos-surface-about h2 { margin: 0; font-size: 18px; }
+.mioos-surface-about p { margin: 0; }
+.mioos-surface-about dl { display: grid; grid-template-columns: max-content minmax(0,1fr); gap: 6px 12px; margin: 0; }
+.mioos-surface-about dt { font-weight: 700; }
+.mioos-surface-about dd { margin: 0; overflow-wrap: anywhere; }
+.mioos-table-module-editor {
+  width: min(980px, calc(100vw - 48px)) !important;
+  max-height: min(760px, calc(100vh - 64px));
+  overflow: auto;
+  border-radius: 16px !important;
+}
+.mioos-table-module-editor header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(100,116,139,.22);
+}
+.mioos-table-module-editor header strong { font-size: 16px; }
+.mioos-table-module-editor header span { display: block; margin-top: 2px; font-size: 12px; opacity: .72; }
+.mioos-table-module-editor textarea,
+.mioos-table-module-editor input,
+.mioos-table-module-editor select {
+  width: 100%;
+  box-sizing: border-box;
+}
+.mioos-table-module-editor .mioos-table-module-form { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+.mioos-table-module-editor .span-2 { grid-column: 1 / -1; }
+.theme-dark-mode .mioos-table-module-editor { background: #111827 !important; color: #f8fafc !important; border-color: #334155 !important; }
+.theme-dark-mode .mioos-table-module-editor header { border-color: #334155; }

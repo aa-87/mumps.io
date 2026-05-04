@@ -40,7 +40,8 @@
       var locale;
       if (!code) return;
       code = String(code || '').toLowerCase();
-      locale = (this.localeOptions(app) || []).filter(function (item) { return String(item.code || '').toLowerCase() === code; })[0] || { code: code, dir: code === 'ar' || code === 'he' || code === 'fa' || code === 'ur' ? 'rtl' : 'ltr', label: code, rtl: code === 'ar' || code === 'he' || code === 'fa' || code === 'ur' };
+      if (code === 'sp') code = 'es';
+      locale = (this.localeOptions(app) || []).filter(function (item) { return String(item.code || '').toLowerCase() === code || (code === 'es' && String(item.code || '').toLowerCase() === 'sp'); })[0] || { code: code, dir: code === 'ar' || code === 'he' || code === 'fa' || code === 'ur' ? 'rtl' : 'ltr', label: code, rtl: code === 'ar' || code === 'he' || code === 'fa' || code === 'ur' };
       if (app && app.boot) {
         app.boot.locale = Object.assign({}, app.boot.locale || {}, locale, { rtl: String(locale.dir || '').toLowerCase() === 'rtl' || !!locale.rtl });
         this.applyDocumentLocale(app);

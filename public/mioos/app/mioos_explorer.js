@@ -828,7 +828,7 @@
         var id = (item && (item.id || item.key || item.fileId)) || '';
         var size = Math.max(4096, Math.min(1048576, +(opts.size || ((((this.boot || {}).vfs || {}).textChunkBytes) || 262144))));
         var offset = alignTextChunkOffset(+(opts.offset || 0), size);
-        var timeoutMs = +(opts.timeoutMs || 12000);
+        var timeoutMs = +(opts.timeoutMs || ((((this.boot || {}).websocket || {}).textChunkTimeoutMs) || 45000));
         var key = textChunkRequestKey(id, offset, size);
         var self = this;
         var request;
@@ -839,9 +839,7 @@
         this._mioosTextChunkCacheOrder = this._mioosTextChunkCacheOrder || [];
         if (this._mioosTextChunkCache[key]) return Promise.resolve(this._mioosTextChunkCache[key]);
         if (this._mioosTextChunkRequests[key]) return this._mioosTextChunkRequests[key];
-        request = this.command('fs.text.chunk', { id: id, offset: offset, size: size }, { timeoutMs: timeoutMs }).catch(function () {
-          return self.command('fs.read.range', { id: id, offset: offset, size: size }, { timeoutMs: timeoutMs });
-        }).then(function (msg) {
+        request = this.command('fs.text.chunk', { id: id, offset: offset, size: size }, { timeoutMs: timeoutMs }).then(function (msg) {
           var payload = payloadRoot(msg);
           var payloadId = fileIdFromPayload(payload);
           var result;
@@ -859,7 +857,7 @@
         var id = (item && (item.id || item.key || item.fileId)) || '';
         var size = +((item || {}).size || (item || {}).bytes || 0);
         var chunkSize = Math.max(4096, Math.min(1048576, +((((this.boot || {}).vfs || {}).textChunkBytes) || 262144)));
-        return { fileId: id, path: (item || {}).path || '', fileName: (item || {}).name || (item || {}).title || 'Text file', mime: (item || {}).mime || 'text/plain', size: size, chunkSize: chunkSize, chunks: {}, loadingOffsets: {}, loadedOffsets: {}, visibleOffset: 0, contentTop: 0, viewportHeight: 320, scrollHeight: size > 0 ? Math.max(800, Math.min(12000000, Math.ceil(size / 2))) : 4000, eof: false, initialLoaded: false, status: 'Opening text stream…', error: '' };
+        return { fileId: id, path: (item || {}).path || '', fileName: (item || {}).name || (item || {}).title || 'Text file', mime: (item || {}).mime || 'text/plain', size: size, chunkSize: chunkSize, chunks: {}, loadingOffsets: {}, loadedOffsets: {}, visibleOffset: 0, contentTop: 0, viewportHeight: 320, scrollHeight: size > 0 ? Math.max(800, Math.min(12000000, Math.ceil(size / 2))) : 4000, eof: false, initialLoaded: false, status: 'Opening text stream…', error: '', editing: false, editableContent: '', dirty: false, saving: false, saveStatus: '' };
       },
       textViewerWindowById: function (windowId) {
         return (this.windows || []).find(function (entry) { return entry.id === windowId; }) || null;
@@ -873,11 +871,14 @@
         var stream = ((win || {}).fileView || {}).textStream;
         var item;
         var request;
+        var self = this;
         if (!win || !stream || !stream.fileId) return Promise.resolve();
         offset = alignTextChunkOffset(offset, stream.chunkSize);
         if (stream.loadedOffsets[offset] && stream.chunks[offset]) return Promise.resolve(stream.chunks[offset]);
         if (stream.loadingOffsets[offset]) return stream.loadingOffsets[offset];
         stream.status = stream.initialLoaded ? 'Loading text chunk…' : 'Opening text stream…';
+        stream.error = '';
+        if (self.showToast) self.showToast('Text viewer', stream.status, 'info', 1400);
         item = { id: stream.fileId, key: stream.fileId, fileId: stream.fileId, name: stream.fileName, title: stream.fileName, mime: stream.mime, path: stream.path, size: stream.size };
         request = this.readTextChunkViaWebSocket(item, { offset: offset, size: stream.chunkSize }).then(function (result) {
           var payload = (result || {}).payload || {};
@@ -892,11 +893,14 @@
           stream.initialLoaded = true;
           stream.status = stream.eof && actualOffset === 0 ? 'Loaded complete text file.' : ('Showing bytes ' + actualOffset + '–' + stream.chunks[actualOffset].nextOffset + (stream.size ? (' of ' + stream.size) : ''));
           stream.error = '';
+          if (!stream.dirty && !stream.editing && actualOffset === 0) stream.editableContent = content;
+          if (self.showToast) self.showToast('Text viewer', 'Text chunk loaded.', 'success', 1400);
           pruneTextViewerChunkCache(stream);
           return stream.chunks[actualOffset];
         }).catch(function (err) {
           stream.error = (err && err.message) || 'Unable to read text chunk.';
-          throw err;
+          if (self.showToast) self.showToast('Text viewer', stream.error, 'error', 3200);
+          return null;
         }).finally(function () { if (stream.loadingOffsets[offset] === request) delete stream.loadingOffsets[offset]; if (win.fileView) win.fileView.loading = false; });
         stream.loadingOffsets[offset] = request;
         return request;
@@ -920,8 +924,101 @@
         var win = this.textViewerWindowById ? this.textViewerWindowById(windowId) : null;
         var stream = ((win || {}).fileView || {}).textStream;
         if (!stream) return;
-        stream.chunks = {}; stream.loadedOffsets = {}; stream.loadingOffsets = {}; stream.initialLoaded = false; stream.error = '';
-        this.textViewerLoadChunk(windowId, stream.visibleOffset || 0);
+        stream.chunks = {}; stream.loadedOffsets = {}; stream.loadingOffsets = {}; stream.initialLoaded = false; stream.error = ''; stream.dirty = false; stream.editing = false;
+        if (this.showToast) this.showToast('Text viewer', 'Text chunk cache refreshed.', 'success');
+        return this.textViewerLoadChunk(windowId, stream.visibleOffset || 0);
+      },
+      textViewerEditableContent: function (windowId) {
+        var win = this.textViewerWindowById ? this.textViewerWindowById(windowId) : null;
+        var stream = ((win || {}).fileView || {}).textStream || {};
+        return stream.editableContent || '';
+      },
+      textViewerSetEditableContent: function (windowId, value) {
+        var win = this.textViewerWindowById ? this.textViewerWindowById(windowId) : null;
+        var stream = ((win || {}).fileView || {}).textStream;
+        if (!stream) return;
+        stream.editableContent = String(value || '');
+        stream.dirty = true;
+      },
+      textViewerBeginEdit: function (windowId) {
+        var win = this.textViewerWindowById ? this.textViewerWindowById(windowId) : null;
+        var stream = ((win || {}).fileView || {}).textStream;
+        var self = this;
+        var maxEditBytes = +((((this.boot || {}).vfs || {}).maxTextEditBytes) || 5242880);
+        var offset = 0;
+        var pieces = [];
+        if (!stream) return Promise.resolve(false);
+        if (+stream.size > maxEditBytes) {
+          stream.error = 'This file is too large for in-window editing. Viewing remains chunked.';
+          if (this.showToast) this.showToast('Text viewer', stream.error, 'error', 3600);
+          return Promise.resolve(false);
+        }
+        stream.status = 'Preparing editable text…';
+        if (this.showToast) this.showToast('Text viewer', stream.status, 'info', 1600);
+        function loadNext() {
+          return self.textViewerLoadChunk(windowId, offset).then(function (chunk) {
+            if (!chunk) return false;
+            pieces.push(String(chunk.content || ''));
+            if (chunk.eof || chunk.nextOffset <= offset || (+stream.size > 0 && chunk.nextOffset >= +stream.size)) return true;
+            offset = alignTextChunkOffset(chunk.nextOffset, stream.chunkSize);
+            return loadNext();
+          });
+        }
+        return loadNext().then(function (ok) {
+          if (!ok) return false;
+          stream.editableContent = pieces.join('');
+          stream.editing = true;
+          stream.dirty = false;
+          stream.status = 'Editable text ready.';
+          if (self.showToast) self.showToast('Text viewer', 'Editable text ready.', 'success');
+          return true;
+        });
+      },
+      textViewerSave: function (windowId) {
+        var win = this.textViewerWindowById ? this.textViewerWindowById(windowId) : null;
+        var stream = ((win || {}).fileView || {}).textStream;
+        var self = this;
+        if (!stream || !stream.fileId || !this.command) return Promise.resolve(false);
+        if (!stream.editing) return this.textViewerBeginEdit(windowId);
+        stream.saving = true;
+        stream.saveStatus = 'Saving…';
+        if (this.showToast) this.showToast('Text viewer', 'Saving text file…', 'info', 1600);
+        return this.command('fs.text.save', { id: stream.fileId, content: stream.editableContent || '', mime: stream.mime || 'text/plain' }, { timeoutMs: +((((this.boot || {}).websocket || {}).textSaveTimeoutMs) || 60000) }).then(function (msg) {
+          stream.dirty = false;
+          stream.saveStatus = 'Saved';
+          stream.chunks = {}; stream.loadedOffsets = {}; stream.loadingOffsets = {}; stream.initialLoaded = false; stream.visibleOffset = 0; stream.contentTop = 0;
+          if (self.showToast) self.showToast('Text viewer', 'Text file saved.', 'success');
+          return self.textViewerLoadChunk(windowId, 0).then(function () { return msg; });
+        }).catch(function (err) {
+          stream.saveStatus = 'Save failed';
+          stream.error = (err && err.message) || 'Unable to save text file.';
+          if (self.showToast) self.showToast('Text viewer', stream.error, 'error', 3600);
+          return false;
+        }).finally(function () { stream.saving = false; });
+      },
+      explorerRunContextAction: function (windowId, action) {
+        this.closeExplorerContextMenu(windowId);
+        if (action === 'open') return this.explorerContextOpen(windowId);
+        if (action === 'copy') return this.explorerCopySelected(windowId);
+        if (action === 'rename') return this.explorerRenameSelected(windowId);
+        if (action === 'delete') return this.explorerDeleteSelected(windowId);
+        if (action === 'new-folder') return this.explorerCreateFolder(windowId);
+        if (action === 'upload') return this.explorerPromptUpload(windowId);
+        if (action === 'download') return this.explorerDownloadSelected(windowId);
+        if (action === 'paste') return this.explorerPasteIntoWindow(windowId);
+        if (action === 'properties') return this.explorerContextProperties(windowId);
+        if (action === 'refresh') {
+          if (this.showToast) this.showToast('Explorer', 'Refreshing folder…', 'info', 1400);
+          return this.refreshExplorerWindow(windowId).then(function () { return null; });
+        }
+        return null;
+      },
+      handleDesktopDrop: function (event) {
+        var files = event && event.dataTransfer && event.dataTransfer.files;
+        if (!files || !files.length) return Promise.resolve(null);
+        if (event && event.preventDefault) event.preventDefault();
+        if (this.showToast) this.showToast('Desktop', 'Uploading dropped file(s)…', 'info', 1800);
+        return this.uploadFilesToDesktop ? this.uploadFilesToDesktop(files) : Promise.resolve(null);
       },
       previewTextFile: function (windowId, item) {
         var win = this.windows.find(function (entry) { return entry.id === windowId; });
@@ -2261,7 +2358,7 @@
         };
         this.windows.push(win);
         this.focusWindow(id);
-        this.textViewerLoadChunk(id, 0);
+        this.textViewerLoadChunk(id, 0).catch(function () { return null; });
       },
       openImageViewerWindow: function (item) {
         var id = nextWindowId(this, 'win-image');

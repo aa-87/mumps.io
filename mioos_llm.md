@@ -677,3 +677,20 @@ Text media viewer contract: use `fs.text.chunk` and `textViewerOnScroll` / `text
 Regression guard: `textViewerVisibleChunks()` must return `textViewerChunkArray(...)`, never an unscoped or stale helper name; `fetchTextBlob` / `readTextFileResilient` should not return as text-opening paths; and the old `.mioos-viewer-toolbar` body toolbar CSS should not be reintroduced.
 
 Locale contract: language menu clicks reload the main URL. English removes `lang`, Arabic uses `?lang=ar`, and Spanish uses `?lang=sp`; the backend canonicalizes `sp` to `es`.
+
+## ROI 72F text, toolbar, locale, and asset hardening
+
+Preserve these contracts:
+
+- Text viewing is chunked. Do not reintroduce full-file `/api/mioos/fs/blob` fallback for text opening. Use `fs.text.chunk` and keep visible chunks bounded around the scrollbar-derived offset.
+- Large text chunk failures must not throw unhandled promises. Surface errors with `showToast` and keep the window usable.
+- Text edit/save is supported through `textViewerBeginEdit`, `textViewerSave`, and backend command `fs.text.save`. Editing must stay bounded by `maxTextEditBytes`; very large text files remain chunk-view-only.
+- Do not reintroduce the old persistent text stream status footer. Use shell toasts for viewer feedback.
+- Explorer actions belong in the common window toolbar, not a second local Explorer toolbar row. Context menu actions must close the menu before running.
+- Transfer and Terminal top action rows should stay removed; their actions are exposed in common toolbar menus.
+- Help -> About opens an About MIO, MIOOS window surface.
+- Desktop file drop uploads should use the same upload flow as folder drops.
+- Locale shortcuts must call `changeLocale`; `en` removes `lang`, `ar` maps to `?lang=ar`, and Spanish maps to `?lang=sp` while backend canonicalizes `sp` to `es`.
+- Theme asset/image routes should avoid fragile Content-Length emission where runtime byte framing can mismatch the stored string length.
+
+Regression coverage lives in `T082^MIOOST`.
