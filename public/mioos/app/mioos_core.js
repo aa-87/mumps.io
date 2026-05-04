@@ -1043,7 +1043,7 @@
             sourceWindowId: ''
           }, payload || {});
           this.transferCenter.items.unshift(next);
-          if (this.transferCenter.items.length > 40) this.transferCenter.items = this.transferCenter.items.slice(0, 40);
+          if (this.transferCenter.items.length > 250) this.transferCenter.items = this.transferCenter.items.slice(0, 250);
           if (this.transferCenter.autoOpen && (next.kind === 'upload' || next.kind === 'download')) this.openTransfersWindow();
           this.persistTransferCenter();
           return next.id;
@@ -1208,10 +1208,12 @@
           }
         },
         refreshDesktopIcons: function () {
+          this.closeDesktopContextMenu();
           this.refreshView();
           this.showAlert('Desktop', 'Desktop refreshed.');
         },
         rearrangeDesktopIcons: function () {
+          this.closeDesktopContextMenu();
           var self = this;
           var metrics = this.desktopGridMetrics();
           var viewportHeight = this.desktopViewportHeight();
@@ -1226,6 +1228,7 @@
           this.persistDesktopLayout();
         },
         sortDesktopEntries: function (mode, silent) {
+          this.closeDesktopContextMenu();
           var nextMode = mode || 'manual';
           if (nextMode === 'name') {
             this.desktopEntries.sort(function (a, b) { return String(a.title || a.key || '').localeCompare(String(b.title || b.key || '')); });
@@ -1237,6 +1240,7 @@
           else if (!silent) this.persistDesktopLayout();
         },
         setDesktopIconSize: function (size) {
+          this.closeDesktopContextMenu();
           this.desktopUi.iconSize = size || 'medium';
           this.persistDesktopLayout();
         },
@@ -1266,7 +1270,7 @@
         },
         contextControlPanel: function () { this.closeDesktopContextMenu(); this.openApp('control-panel'); },
         contextPersonalize: function () { this.closeDesktopContextMenu(); this.openApp('customize'); },
-        contextDeleteIcon: function () { this.desktopDeleteSelected(); },
+        contextDeleteIcon: function () { this.closeDesktopContextMenu(); this.desktopDeleteSelected(); },
         desktopFolderId: function () {
           return (((this.boot || {}).vfs || {}).desktopId) || (((this.view || {}).desktopFolder || {}).id) || 'Desktop';
         },
@@ -2739,6 +2743,7 @@
         startMenuItemMeta: function (item) {
           item = item || {};
           var detail = item.subtitle || item.path || item.key || '';
+          if (/^#?\s*shortcuts?\s+ready$/i.test(String(detail || '').trim()) || /^#\s*/.test(String(detail || '').trim())) detail = '';
           var badge = this.startMenuSourceBadge ? this.startMenuSourceBadge(item) : '';
           if (detail && badge && detail.indexOf(badge) !== 0) return badge + ' · ' + detail;
           return detail || badge || '';

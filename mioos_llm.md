@@ -631,3 +631,7 @@ The Start Menu was rewritten as a dedicated, isolated ROI. Preserve this separat
 ## ROI 72C2 viewer/upload/server-theme hotfix
 
 Source-of-truth notes: the shell must register `mioos-surface-viewer` for basic file previews. Theme Studio uploads must use server-backed theme asset routes with no DataURLs and no localStorage theme persistence. Start Menu VFS folders must expand recursively without closing the menu. New desktop icons must be placed in the next open grid slot, and the Desktop should include a Programs folder with core launcher shortcuts.
+
+## ROI 71B2 VFS blob content-length hardening
+
+Saved desktop/theme wallpapers may resolve to authenticated `/api/mioos/fs/blob?id=<file>` URLs after login. The blob endpoint must never trust stale VFS entry size metadata for `Content-Length`. Always repair/read actual payload size from stored VFS chunks with `REPAIRSIZE^MIOOSFS`/`DATASIZE^MIOOSFS` before sending headers. Range and full-body sends must stream by actual stored chunk payload, not by stale metadata alone, to avoid browser `ERR_CONTENT_LENGTH_MISMATCH` on persisted wallpapers.

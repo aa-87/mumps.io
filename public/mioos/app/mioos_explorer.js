@@ -11,7 +11,7 @@
   function detectTextLike(entry) {
     var mime = ((entry || {}).mime || '').toLowerCase();
     var name = ((entry || {}).name || (entry || {}).title || '').toLowerCase();
-    return mime.indexOf('text/') === 0 || mime.indexOf('json') >= 0 || /\.(txt|md|m|json|js|css|html|xml|log|csv)$/i.test(name);
+    return mime.indexOf('text/') === 0 || mime.indexOf('json') >= 0 || /\.(txt|text|md|markdown|m|mumps|rou|json|js|css|html|htm|mustache|mst|tpl|miotpl|xml|log|csv|hl7|x12|edi)$/i.test(name);
   }
 
   function detectPdfLike(entry) {
@@ -23,7 +23,7 @@
   function detectStructuredLike(entry) {
     var mime = ((entry || {}).mime || '').toLowerCase();
     var name = ((entry || {}).name || (entry || {}).title || '').toLowerCase();
-    return mime.indexOf('json') >= 0 || mime.indexOf('markdown') >= 0 || /\.(json|md|markdown|yml|yaml|xml|csv)$/i.test(name);
+    return mime.indexOf('json') >= 0 || mime.indexOf('markdown') >= 0 || /\.(json|md|markdown|yml|yaml|xml|csv|hl7|x12|edi)$/i.test(name);
   }
 
   function detectImageLike(entry) {
@@ -2178,7 +2178,7 @@
           height: mediaKind === 'video' ? 560 : 260,
           z: this.zCounter + 1,
           meta: { fileId: item.id || item.key || '', mime: item.mime || (mediaKind + '/*'), fileName: item.name || item.title || 'Media file', mediaKind: mediaKind },
-          fileView: { loading: true, content: '', mime: item.mime || (mediaKind + '/*'), mediaKind: mediaKind }
+          fileView: { loading: true, content: '', mime: item.mime || (mediaKind + '/*'), mediaKind: mediaKind, loop: false }
         };
         this.windows.push(win);
         this.focusWindow(id);

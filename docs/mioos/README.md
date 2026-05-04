@@ -423,3 +423,7 @@ The Start Menu launcher now supports expandable VFS folders/subfolders through l
 ## ROI 72C2 viewer/upload/server-theme hotfix
 
 ROI 72C2 fixes the file viewer surface, Theme Studio image uploads, recursive Start Menu folders, desktop icon placement, and server-only theme persistence. Theme images continue to use authenticated server asset URLs and are sanitized before login.
+
+### ROI 71B2 — VFS blob content-length hardening
+
+Persisted wallpapers/backgrounds loaded through `/api/mioos/fs/blob?id=<file>` now repair stale VFS file-size metadata before writing HTTP headers. This prevents browsers from receiving a `200 OK` or `206 Partial Content` response whose `Content-Length` is larger than the bytes available in the stored globals-backed payload.

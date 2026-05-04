@@ -79,7 +79,7 @@ STATIC(DEV,CONF,REQ,CTX)
 	. ; Optional directory listing. For an explicit directory request, render
 	. ; the listing directly once the joined directory path is safe. Do not gate
 	. ; this on DIRHAS: some $ZSEARCH implementations keep process-local state
-	. ; that can make existence probes fragile across tests/requests.
+	. ; that can make existence probes fragile across tests/requests.;
 	. IF DLEN DO
 	. . NEW DP SET DP=RPATH IF DP'="",$E(DP,$L(DP))'="/" SET DP=DP_"/"
 	. . NEW DIRFS
@@ -111,13 +111,13 @@ STATIC(DEV,CONF,REQ,CTX)
 	; --- Conditional validators --------------------------------------------
 	; Evaluate If-Modified-Since before ETag hashing only when If-None-Match
 	; is absent. This keeps HTTP validator precedence correct and lets common
-	; browser revalidation return 304 without reading/hashing the static body.
+	; browser revalidation return 304 without reading/hashing the static body.;
 	NEW MHD,MHS,LM,MGOT,INM,IMS,IHD,IHS
 	SET MHD="",MHS="",LM="",MGOT=0
 	SET INM=$GET(REQ("hdr","if-none-match"))
 	SET IMS=$GET(REQ("hdr","if-modified-since"))
 	SET MGOT=$$GETMTIME(.CONF,FS,.MHD,.MHS,.LM)
-	; Pragmatic fallback: if no mtime is known for this file, seed it once.
+	; Pragmatic fallback: if no mtime is known for this file, seed it once.;
 	IF 'MGOT DO
 	. SET MHD=+$P($H,",",1),MHS=+$P($H,",",2)
 	. DO SETMTIME(FS,MHD,MHS)
@@ -126,11 +126,11 @@ STATIC(DEV,CONF,REQ,CTX)
 	IF MGOT DO
 	. IF LM="" SET LM=$$HTTPDATE(MHD,MHS),^MIO("STATIC","META",FS,"lm")=LM
 	. IF LM'="" SET HEAD("Last-Modified")=LM
-	; IMS-only fast path: resource time <= validator means not modified.
+	; IMS-only fast path: resource time <= validator means not modified.;
 	; Prefer exact comparison against the emitted Last-Modified value so
 	; revalidation is stable across platforms even if filesystem/date parsing
 	; semantics differ. Fall back to parsed HTTP-date comparison for clients
-	; that send a different but valid validator.
+	; that send a different but valid validator.;
 	IF INM="" IF IMS'="" IF MGOT IF $$IMSNOTMOD(IMS,LM,MHD,MHS) DO  QUIT
 	. NEW HLM MERGE HLM=HEAD
 	. SET HLM("Content-Length")=0
@@ -628,7 +628,7 @@ IMSNOTMOD(IMS,LM,RD,RS)
 	; True when an If-Modified-Since validator means the resource can be
 	; answered with 304. Exact header equality is checked first because this
 	; server emits the Last-Modified value and then often receives it back
-	; verbatim from browser/static tests.
+	; verbatim from browser/static tests.;
 	NEW X SET X=$$TRIM^MIOHTTP($GET(IMS))
 	NEW L SET L=$$TRIM^MIOHTTP($GET(LM))
 	IF X'="",L'="",X=L QUIT 1
@@ -637,14 +637,14 @@ IMSNOTMOD(IMS,LM,RD,RS)
 	QUIT $$NOTMOD(+$GET(RD),+$GET(RS),VD,VS)
 	;
 NOTMOD(RD,RS,VD,VS)
-	; True when resource time is less than or equal to validator time.
+	; True when resource time is less than or equal to validator time.;
 	IF +$GET(RD)<+$GET(VD) QUIT 1
 	IF +$GET(RD)>+$GET(VD) QUIT 0
 	IF +$GET(RS)'>+$GET(VS) QUIT 1
 	QUIT 0
 	;
 CMPH(D1,S1,D2,S2)
-	; Legacy helper: true only when first timestamp is newer than second.
+	; Legacy helper: true only when first timestamp is newer than second.;
 	IF D1<D2 QUIT 0
 	IF D1>D2 QUIT 1
 	IF S1<S2 QUIT 0

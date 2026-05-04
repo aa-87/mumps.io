@@ -274,7 +274,7 @@
                 <div class="mioos-explorer-empty" v-if="state.loading">Loading folder…</div>
                 <div class="mioos-explorer-empty" v-else-if="state.error">[[ state.error ]]</div>
                 <div class="mioos-explorer-empty" v-else-if="!items.length">This folder is empty.</div>
-                <table v-else-if="(state.viewMode || 'details') === 'details'" class="mioos-explorer-listview" role="grid" aria-label="Folder contents">
+                <table v-else-if="(state.viewMode || 'details') === 'details'" class="mioos-explorer-listview mioos-simple-table mioos-ui-table" role="grid" aria-label="Folder contents">
                   <thead><tr>
                     <th><button type="button" @click="sort('name')">Name [[ sortMark('name') ]]</button></th>
                     <th><button type="button" @click="sort('type')">Type [[ sortMark('type') ]]</button></th>
@@ -282,7 +282,7 @@
                     <th><button type="button" @click="sort('modified')">Modified [[ sortMark('modified') ]]</button></th>
                   </tr></thead>
                   <tbody>
-                    <tr v-for="item in items" :key="itemKey(item)" :class="{ \'is-selected\': selectedKey === itemKey(item) }" @click.stop="select(item)" @dblclick.stop="open(item)" @contextmenu.prevent.stop="rowMenu(item, $event)">
+                    <tr v-for="item in items" :key="itemKey(item)" :class="{ \'is-selected\': selectedKey === itemKey(item) }" draggable="true" @dragstart="vm.explorerHandleItemDragStart($event, item, window.id)" @dragover="vm.explorerHandleItemDragOver($event, item)" @drop="vm.explorerHandleItemDrop($event, item, window.id)" @click.stop="select(item)" @dblclick.stop="open(item)" @contextmenu.prevent.stop="rowMenu(item, $event)">
                       <td><span class="mioos-explorer-row-icon">[[ vm.explorerItemGlyph(item) ]]</span><span class="mioos-explorer-row-name">[[ item.name || item.title ]]</span></td>
                       <td>[[ vm.explorerItemTypeLabel(item) ]]</td>
                       <td>[[ vm.explorerFormatSize(item) ]]</td>
@@ -291,9 +291,9 @@
                   </tbody>
                 </table>
                 <div v-else class="mioos-explorer-icon-grid" role="list" aria-label="Folder contents">
-                  <button v-for="item in items" :key="itemKey(item)" type="button" class="mioos-explorer-icon-tile" :class="{ \'is-selected\': selectedKey === itemKey(item) }" @click.stop="select(item)" @dblclick.stop="open(item)" @contextmenu.prevent.stop="rowMenu(item, $event)">
+                  <button v-for="item in items" :key="itemKey(item)" type="button" class="mioos-explorer-icon-tile" :class="{ \'is-selected\': selectedKey === itemKey(item) }" draggable="true" @dragstart="vm.explorerHandleItemDragStart($event, item, window.id)" @dragover="vm.explorerHandleItemDragOver($event, item)" @drop="vm.explorerHandleItemDrop($event, item, window.id)" @click.stop="select(item)" @dblclick.stop="open(item)" @contextmenu.prevent.stop="rowMenu(item, $event)">
                     <span class="mioos-explorer-icon-tile-glyph">[[ vm.explorerItemGlyph(item) ]]</span>
-                    <span>[[ item.name || item.title ]]</span>
+                    <span class="mioos-explorer-icon-tile-name" :title="item.name || item.title">[[ item.name || item.title ]]</span>
                   </button>
                 </div>
               </section>
@@ -329,6 +329,7 @@
 
       app.component('mioos-surface-viewer', {
         props: ['window'],
+        data: function () { return { menuOpen: '' }; },
         computed: {
           vm: function () { return root(this); },
           fileView: function () { return (this.window && this.window.fileView) || {}; },
@@ -338,31 +339,72 @@
           safeText: function () { return String(this.fileView.content || ''); }
         },
         methods: {
-          download: function () { if (this.vm.downloadViewerFile) this.vm.downloadViewerFile(this.window); },
+          closeMenu: function () { this.menuOpen = ''; },
+          toggleMenu: function (key) { this.menuOpen = this.menuOpen === key ? '' : key; },
+          download: function () { this.closeMenu(); if (this.vm.downloadViewerFile) this.vm.downloadViewerFile(this.window); },
           retry: function () {
+            this.closeMenu();
             var meta = (this.window || {}).meta || {};
             var item = { id: meta.fileId, key: meta.fileId, fileId: meta.fileId, name: meta.fileName || this.window.title, title: meta.fileName || this.window.title, mime: meta.mime };
             if (this.kind === 'text' && this.vm.openTextViewerWindow) { this.vm.closeWindow(this.window.id); this.vm.openTextViewerWindow(item); return; }
             if (this.kind === 'image' && this.vm.openImageViewerWindow) { this.vm.closeWindow(this.window.id); this.vm.openImageViewerWindow(item); return; }
             if (this.kind === 'media' && this.vm.openMediaViewerWindow) { this.vm.closeWindow(this.window.id); this.vm.openMediaViewerWindow(item); return; }
             if (this.kind === 'pdf' && this.vm.openPdfViewerWindow) { this.vm.closeWindow(this.window.id); this.vm.openPdfViewerWindow(item); }
+          },
+          closeViewer: function () { this.closeMenu(); if (this.vm.closeWindow) this.vm.closeWindow(this.window.id); },
+          showProperties: function () { this.closeMenu(); if (this.vm.openFilePropertiesWindow) this.vm.openFilePropertiesWindow({ id: (this.window.meta || {}).fileId, name: (this.window.meta || {}).fileName || this.window.title, mime: (this.window.meta || {}).mime || this.fileView.mime }); },
+          copySourceUrl: function () { this.closeMenu(); if (navigator.clipboard && this.sourceUrl) navigator.clipboard.writeText(this.sourceUrl).catch(function () {}); },
+          toggleLoop: function () { this.closeMenu(); this.fileView.loop = !this.fileView.loop; },
+          selectViewerText: function () {
+            this.closeMenu();
+            var el = this.$el && this.$el.querySelector('.mioos-viewer-text');
+            if (el && window.getSelection) {
+              var range = document.createRange();
+              range.selectNodeContents(el);
+              var sel = window.getSelection();
+              sel.removeAllRanges();
+              sel.addRange(range);
+            }
           }
         },
-        template: '' +
-          '<div class="mioos-surface mioos-surface-viewer-native" :class="\'is-\' + kind">' +
-            '<nav v-if="kind === \'media\'" class="mioos-viewer-menu-strip" role="menubar" aria-label="Media player menu"><button type="button" role="menuitem">File</button><button type="button" role="menuitem">Edit</button><button type="button" role="menuitem">Help</button><span>[[ (window.meta || {}).fileName || window.title ]]</span></nav>' +
-            '<header v-else class="mioos-viewer-toolbar"><div><strong>[[ (window.meta || {}).fileName || window.title ]]</strong><span>[[ fileView.mime || (window.meta || {}).mime || \'File preview\' ]]</span></div><button type="button" class="mioos-explorer-command" @click="retry">Reload</button><button type="button" class="mioos-explorer-command" @click="download">Download</button></header>' +
-            '<section class="mioos-viewer-body" :class="{ \'is-media-full\': kind === \'media\' }">' +
-              '<div v-if="fileView.loading" class="mioos-viewer-state">Loading file…</div>' +
-              '<div v-else-if="fileView.error" class="mioos-viewer-state is-error">[[ fileView.error ]]</div>' +
-              '<pre v-else-if="kind === \'text\' || kind === \'structured\'" class="mioos-viewer-text">[[ safeText ]]</pre>' +
-              '<img v-else-if="kind === \'image\'" class="mioos-viewer-image" :src="sourceUrl" :alt="(window.meta || {}).fileName || window.title">' +
-              '<iframe v-else-if="kind === \'pdf\'" class="mioos-viewer-frame" :src="sourceUrl" title="PDF preview"></iframe>' +
-              '<video v-else-if="kind === \'media\' && mediaKind === \'video\'" class="mioos-viewer-media" :src="sourceUrl" controls playsinline preload="metadata"></video>' +
-              '<audio v-else-if="kind === \'media\'" class="mioos-viewer-audio" :src="sourceUrl" controls preload="metadata"></audio>' +
-              '<div v-else class="mioos-viewer-state">No preview is available for this file type.</div>' +
-            '</section>' +
-          '</div>'
+        template: `
+          <div class="mioos-surface mioos-surface-viewer-native" :class="'is-' + kind" @click="closeMenu">
+            <nav class="mioos-viewer-menu-strip" role="menubar" aria-label="File viewer menu" @click.stop>
+              <div class="mioos-viewer-menu-group">
+                <button type="button" role="menuitem" @click="toggleMenu('file')">File</button>
+                <ul v-if="menuOpen === 'file'" role="menu">
+                  <li><button type="button" @click="download">Download</button></li>
+                  <li><button type="button" @click="retry">Reload</button></li>
+                  <li><button type="button" @click="closeViewer">Close</button></li>
+                </ul>
+              </div>
+              <div class="mioos-viewer-menu-group">
+                <button type="button" role="menuitem" @click="toggleMenu('edit')">Edit</button>
+                <ul v-if="menuOpen === 'edit'" role="menu">
+                  <li v-if="kind === 'text' || kind === 'structured'"><button type="button" @click="selectViewerText">Select all</button></li>
+                  <li v-if="kind === 'media'"><button type="button" @click="toggleLoop">[[ fileView.loop ? 'Disable loop' : 'Loop playback' ]]</button></li>
+                  <li><button type="button" @click="copySourceUrl">Copy source URL</button></li>
+                </ul>
+              </div>
+              <div class="mioos-viewer-menu-group">
+                <button type="button" role="menuitem" @click="toggleMenu('help')">Help</button>
+                <ul v-if="menuOpen === 'help'" role="menu">
+                  <li><button type="button" @click="showProperties">Properties</button></li>
+                </ul>
+              </div>
+              <span>[[ (window.meta || {}).fileName || window.title ]]</span>
+            </nav>
+            <section class="mioos-viewer-body" :class="{ 'is-media-full': kind === 'media' || kind === 'image' }">
+              <div v-if="fileView.loading" class="mioos-viewer-state">Loading file…</div>
+              <div v-else-if="fileView.error" class="mioos-viewer-state is-error">[[ fileView.error ]]</div>
+              <pre v-else-if="kind === 'text' || kind === 'structured'" class="mioos-viewer-text">[[ safeText ]]</pre>
+              <img v-else-if="kind === 'image'" class="mioos-viewer-image" :src="sourceUrl" :alt="(window.meta || {}).fileName || window.title">
+              <iframe v-else-if="kind === 'pdf'" class="mioos-viewer-frame" :src="sourceUrl" title="PDF preview"></iframe>
+              <video v-else-if="kind === 'media' && mediaKind === 'video'" class="mioos-viewer-media" :src="sourceUrl" :loop="!!fileView.loop" controls playsinline preload="metadata"></video>
+              <audio v-else-if="kind === 'media'" class="mioos-viewer-audio" :src="sourceUrl" :loop="!!fileView.loop" controls preload="metadata"></audio>
+              <div v-else class="mioos-viewer-state">No preview is available for this file type.</div>
+            </section>
+          </div>`
       });
 
       app.component('mioos-surface-terminal', {

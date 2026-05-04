@@ -3664,3 +3664,216 @@ button:disabled { cursor: default; opacity: .55; }
 .mioos-shell-dialog input { margin: 0 12px 4px; min-height: 30px; border: 1px solid var(--theme-panel-border, rgba(0,0,0,.16)); border-radius: 6px; padding: 4px 8px; background: var(--theme-field-bg, #fff); color: var(--theme-field-text, #111827); }
 .mioos-shell-dialog footer { justify-content: flex-end; border-top: 1px solid var(--theme-panel-border, rgba(0,0,0,.12)); }
 .mioos-shell-dialog .mioos-btn.danger { border-color: #b91c1c; color: #fff !important; background: linear-gradient(180deg, #dc2626 0%, #991b1b 100%); }
+
+/* ROI 71A/71B regression hardening: readable dark/panel surfaces, viewer menus, explorer/table parity. */
+html[dir="rtl"] .mioos-root,
+body[dir="rtl"] .mioos-root { direction: rtl; }
+html[dir="rtl"] .mioos-window-vue,
+body[dir="rtl"] .mioos-window-vue { direction: rtl; }
+html[dir="rtl"] .mioos-titlebar-vue,
+body[dir="rtl"] .mioos-titlebar-vue { flex-direction: row-reverse; }
+html[dir="rtl"] .mioos-start-modern-item,
+html[dir="rtl"] .mioos-explorer-listview,
+html[dir="rtl"] .mioos-table-shell { direction: rtl; text-align: right; }
+
+.mioos-shell-vue[data-theme-mode="dark"],
+.mioos-root[data-theme-mode="dark"],
+body[data-theme-mode="dark"] {
+  --menu-bg: rgba(14,18,34,.98);
+  --menu-text: #f3f7ff;
+  --menu-border: rgba(148,163,184,.42);
+  --menu-hover: linear-gradient(180deg, rgba(59,75,118,.95), rgba(34,43,74,.95));
+  --theme-surface: rgba(14,19,35,.96);
+  --theme-surface-strong: rgba(20,28,48,.98);
+  --theme-panel-bg: linear-gradient(180deg, rgba(28,38,63,.98), rgba(16,23,41,.96));
+  --theme-panel-border: rgba(148,163,184,.32);
+  --theme-field-bg: #0f172a;
+  --theme-field-text: #f8fafc;
+  --theme-muted-text: #cbd5e1;
+  --theme-tab-bg: linear-gradient(180deg, #1e293b, #111827);
+  --theme-tab-active-bg: linear-gradient(180deg, #334155, #1e293b);
+  --theme-tab-border: rgba(148,163,184,.36);
+  --window-bg: #111827;
+  --window-border: #475569;
+  --titlebar-text: #f8fafc;
+  color: #f8fafc;
+}
+.mioos-shell-vue[data-theme-mode="dark"] .mioos-window-vue,
+.mioos-root[data-theme-mode="dark"] .mioos-window-vue,
+body[data-theme-mode="dark"] .mioos-window-vue,
+.mioos-shell-vue[data-theme-mode="dark"] .mioos-surface,
+.mioos-root[data-theme-mode="dark"] .mioos-surface,
+body[data-theme-mode="dark"] .mioos-surface {
+  background: var(--window-bg);
+  color: #f8fafc;
+}
+.mioos-shell-vue[data-theme-mode="dark"] input,
+.mioos-shell-vue[data-theme-mode="dark"] select,
+.mioos-shell-vue[data-theme-mode="dark"] textarea,
+.mioos-root[data-theme-mode="dark"] input,
+.mioos-root[data-theme-mode="dark"] select,
+.mioos-root[data-theme-mode="dark"] textarea {
+  background: var(--theme-field-bg) !important;
+  color: var(--theme-field-text) !important;
+  border-color: rgba(148,163,184,.42) !important;
+}
+.mioos-shell-vue[data-theme-mode="dark"] .mioos-theme-tabs7>menu button,
+.mioos-root[data-theme-mode="dark"] .mioos-theme-tabs7>menu button,
+.mioos-shell-vue[data-theme-mode="dark"] .mioos-theme-stylecard-vue,
+.mioos-root[data-theme-mode="dark"] .mioos-theme-stylecard-vue,
+.mioos-shell-vue[data-theme-mode="dark"] .mioos-table-editor,
+.mioos-root[data-theme-mode="dark"] .mioos-table-editor,
+.mioos-shell-vue[data-theme-mode="dark"] .mioos-ui-dialog,
+.mioos-root[data-theme-mode="dark"] .mioos-ui-dialog {
+  background: var(--theme-panel-bg) !important;
+  color: #f8fafc !important;
+  border-color: var(--theme-panel-border) !important;
+}
+.mioos-shell-vue[data-theme-mode="dark"] .mioos-table-shell,
+.mioos-root[data-theme-mode="dark"] .mioos-table-shell,
+.mioos-shell-vue[data-theme-mode="dark"] .mioos-table-wrap,
+.mioos-root[data-theme-mode="dark"] .mioos-table-wrap,
+.mioos-shell-vue[data-theme-mode="dark"] .mioos-explorer-listview,
+.mioos-root[data-theme-mode="dark"] .mioos-explorer-listview,
+.mioos-shell-vue[data-theme-mode="dark"] .mioos-classic-transferrow,
+.mioos-root[data-theme-mode="dark"] .mioos-classic-transferrow,
+.mioos-shell-vue[data-theme-mode="dark"] .mioos-ui-module-card,
+.mioos-root[data-theme-mode="dark"] .mioos-ui-module-card {
+  background: #111827 !important;
+  color: #f8fafc !important;
+  border-color: rgba(148,163,184,.28) !important;
+}
+.mioos-shell-vue[data-theme-mode="dark"] .mioos-table-shell th,
+.mioos-root[data-theme-mode="dark"] .mioos-table-shell th,
+.mioos-shell-vue[data-theme-mode="dark"] .mioos-explorer-listview th,
+.mioos-root[data-theme-mode="dark"] .mioos-explorer-listview th {
+  background: #1e293b !important;
+  color: #f8fafc !important;
+}
+.mioos-shell-vue[data-theme-mode="dark"] .mioos-table-shell td,
+.mioos-root[data-theme-mode="dark"] .mioos-table-shell td,
+.mioos-shell-vue[data-theme-mode="dark"] .mioos-explorer-listview td,
+.mioos-root[data-theme-mode="dark"] .mioos-explorer-listview td {
+  background: #0f172a !important;
+  color: #f8fafc !important;
+  border-color: rgba(148,163,184,.18) !important;
+}
+.mioos-shell-vue[data-theme-mode="dark"] .mioos-start-modern-item,
+.mioos-root[data-theme-mode="dark"] .mioos-start-modern-item,
+.mioos-shell-vue[data-theme-mode="dark"] .mioos-start-modern-section-head,
+.mioos-root[data-theme-mode="dark"] .mioos-start-modern-section-head {
+  color: #f8fafc !important;
+}
+.mioos-shell-vue[data-theme-mode="dark"] .mioos-start-modern-item em,
+.mioos-root[data-theme-mode="dark"] .mioos-start-modern-item em,
+.mioos-shell-vue[data-theme-mode="dark"] .mioos-start-modern-section-head span,
+.mioos-root[data-theme-mode="dark"] .mioos-start-modern-section-head span { color: #cbd5e1 !important; }
+
+.mioos-shell-vue[data-theme-family="ember-panel"] .mioos-explorer-window-menu,
+.mioos-shell-vue[data-theme-family="ember-panel"] .mioos-explorer-context-menu,
+.mioos-shell-vue[data-theme-family="ember-panel"] .mioos-popup-menu-vue,
+.mioos-shell-vue[data-theme-family="ember-panel"] .mioos-viewer-menu-group ul,
+.mioos-root[data-theme-family="ember-panel"] .mioos-explorer-window-menu,
+.mioos-root[data-theme-family="ember-panel"] .mioos-explorer-context-menu,
+.mioos-root[data-theme-family="ember-panel"] .mioos-popup-menu-vue,
+.mioos-root[data-theme-family="ember-panel"] .mioos-viewer-menu-group ul {
+  background: var(--menu-bg, #fff) !important;
+  color: var(--menu-text, #111827) !important;
+  border-color: var(--menu-border, rgba(80,100,130,.35)) !important;
+}
+.mioos-shell-vue[data-theme-family="ember-panel"] .mioos-explorer-window-menu button,
+.mioos-shell-vue[data-theme-family="ember-panel"] .mioos-explorer-context-menu button,
+.mioos-shell-vue[data-theme-family="ember-panel"] .mioos-popup-action,
+.mioos-shell-vue[data-theme-family="ember-panel"] .mioos-viewer-menu-group li button,
+.mioos-root[data-theme-family="ember-panel"] .mioos-explorer-window-menu button,
+.mioos-root[data-theme-family="ember-panel"] .mioos-explorer-context-menu button,
+.mioos-root[data-theme-family="ember-panel"] .mioos-popup-action,
+.mioos-root[data-theme-family="ember-panel"] .mioos-viewer-menu-group li button {
+  color: var(--menu-text, #111827) !important;
+  background: transparent !important;
+}
+.mioos-shell-vue[data-theme-family="ember-panel"] .mioos-titlebar-vue,
+.mioos-root[data-theme-family="ember-panel"] .mioos-titlebar-vue { color: var(--titlebar-text, #ffffff) !important; }
+
+.mioos-viewer-menu-strip {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 30px;
+  padding: 2px 6px;
+  border-bottom: 1px solid var(--theme-panel-border, rgba(0,0,0,.16));
+  background: var(--theme-surface-strong, rgba(255,255,255,.92));
+  color: var(--menu-text, #10233f);
+  position: relative;
+  z-index: 4;
+}
+.mioos-viewer-menu-strip>span { margin-left: auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; opacity: .8; padding-inline-start: 8px; }
+.mioos-viewer-menu-group { position: relative; }
+.mioos-viewer-menu-group>button {
+  min-height: 24px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  padding: 2px 9px;
+}
+.mioos-viewer-menu-group>button:hover,
+.mioos-viewer-menu-group>button:focus-visible { background: var(--menu-hover, rgba(214,231,255,.72)); border-color: var(--menu-border, rgba(80,100,130,.24)); }
+.mioos-viewer-menu-group ul {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  min-width: 150px;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  border: 1px solid var(--menu-border, rgba(80,100,130,.35));
+  border-radius: 6px;
+  box-shadow: 0 12px 28px rgba(0,0,0,.22);
+  background: var(--menu-bg, #fff);
+  color: var(--menu-text, #111827);
+}
+.mioos-viewer-menu-group li button { width: 100%; min-height: 26px; text-align: left; border: 0; border-radius: 4px; background: transparent; color: inherit; padding: 4px 8px; }
+.mioos-viewer-menu-group li button:hover { background: var(--menu-hover, rgba(214,231,255,.72)); }
+.mioos-surface-viewer-native { display: flex; flex-direction: column; min-height: 0; }
+.mioos-surface-viewer-native .mioos-viewer-body.is-media-full { flex: 1 1 auto; min-height: 0; padding: 0; display: grid; place-items: stretch; background: #05070d; }
+.mioos-viewer-image,
+.mioos-viewer-media { width: 100%; height: 100%; object-fit: contain; }
+.mioos-viewer-audio { width: min(94%, 720px); align-self: center; justify-self: center; }
+
+.mioos-explorer-icon-grid { align-content: start; }
+.mioos-explorer-icon-tile { user-select: none; cursor: default; }
+.mioos-explorer-icon-tile[draggable="true"] { cursor: grab; }
+.mioos-explorer-icon-tile:active { cursor: grabbing; }
+.mioos-explorer-icon-tile-name,
+.mioos-explorer-row-name {
+  display: inline-block;
+  max-width: 13rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.mioos-explorer-icon-tile-name { max-width: 7.5rem; white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.mioos-explorer-listview.mioos-simple-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--theme-panel-bg, rgba(255,255,255,.72));
+  color: var(--menu-text, #10233f);
+}
+.mioos-explorer-listview.mioos-simple-table th button { width: 100%; text-align: left; color: inherit; background: transparent; border: 0; }
+.mioos-explorer-listview.mioos-simple-table tr.is-selected td { background: var(--accent-soft, rgba(11,99,246,.16)) !important; }
+
+.mioos-ui-module-grid.is-list { grid-template-columns: 1fr !important; }
+.mioos-ui-module-grid.is-list .mioos-ui-module-card { display: grid; grid-template-columns: 44px minmax(0, 1fr); align-items: start; min-height: 74px; overflow: visible; }
+.mioos-ui-module-grid.is-list .mioos-ui-module-card .mioos-ui-module-icon { grid-row: span 2; }
+
+.mioos-table-cell-editor { min-width: 190px; overflow: visible !important; position: relative; padding-inline-end: 62px; }
+.mioos-table-cell-actions { position: absolute; right: 4px; top: 4px; display: flex; gap: 3px; z-index: 5; background: var(--theme-panel-bg, rgba(255,255,255,.92)); border-radius: 999px; padding: 2px; box-shadow: 0 2px 10px rgba(0,0,0,.16); }
+.mioos-table-cell-action { min-width: 24px; height: 24px; padding: 0; display: grid; place-items: center; }
+
+.mioos-classic-transferrow,
+.mioos-classic-transferoverview,
+.mioos-classic-historyrow { color: var(--menu-text, #10233f); background: var(--theme-panel-bg, rgba(255,255,255,.72)); }

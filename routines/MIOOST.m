@@ -65,6 +65,7 @@ MIOOST ; MIOOS tests
 	DO T073
 	DO T074
 	DO T075
+	DO T076
 	QUIT
 	;
 RESET
@@ -1436,4 +1437,22 @@ T075
 	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","window.localStorage.getItem(this.themeStudioStorageKey"),0,"[MIOOST][T075][no theme active localstorage]")
 	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","window.localStorage.setItem(this.themeStudioStorageKey"),0,"[MIOOST][T075][no theme save localstorage]")
 	DO EQ^MIOTASSERT($$FILEHAS("routines/MIOOS.m","globals-profile-service-with-localstorage-fallback"),0,"[MIOOST][T075][server theme persistence only]")
+	QUIT
+	;
+T076
+	NEW CONF,REQ,CTX,STATE,ERR,OUT,ID,U
+	DO RESET
+	DO CONFDEF^MIOOS(.CONF)
+	DO INIT^MIOOS(.CONF)
+	DO OK^MIOTASSERT($$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR),"[MIOOST][T076][load]")
+	SET STATE("principal")="admin",STATE("roles")="admin"
+	KILL OUT,ERR
+	DO OK^MIOTASSERT($$WRITE^MIOOSFS(.STATE,"Desktop","roi76-wallpaper.svg","abcdef","image/svg+xml",.OUT,.ERR),"[MIOOST][T076][write]")
+	SET ID=$GET(OUT("id")),U="^"
+	DO EQ^MIOTASSERT($$DATASIZE^MIOOSFS(ID),6,"[MIOOST][T076][actual data size]")
+	SET $PIECE(^MIO("MIOOS","FS","ENTRY",ID),U,5)=999
+	DO EQ^MIOTASSERT($$REPAIRSIZE^MIOOSFS(ID),6,"[MIOOST][T076][repair return]")
+	DO EQ^MIOTASSERT(+$$FIELD^MIOOSFS(ID,5),6,"[MIOOST][T076][metadata repaired]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","SET SIZE=$$REPAIRSIZE^MIOOSFS(RID)"),"[MIOOST][T076][fsblob repairs content length]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","SET TOTAL=$$DATASIZE^MIOOSFS(RID)"),"[MIOOST][T076][send uses actual payload]")
 	QUIT

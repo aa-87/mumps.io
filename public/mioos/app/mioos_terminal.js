@@ -341,7 +341,7 @@
           this.showAlert(this.t('alerts.terminalCommandFailed.title', 'Terminal command failed'), msg.detail || msg.error || this.t('alerts.terminalCommandFailed.message', 'The terminal command did not complete.'));
           return;
         }
-        if (msg.terminal) this.handleTerminalMessage(winId, msg.terminal || {});
+        if (msg.terminal && !pending) this.handleTerminalMessage(winId, msg.terminal || {});
         if (pending) {
           if (pending.timer) window.clearTimeout(pending.timer);
           delete slot.pending[msg.requestId || ''];
@@ -405,6 +405,7 @@
           self.handleTerminalMessage(winId, (json && json.terminal) || {});
         }).catch(function () {});
       },
+      mountTerminalWindow: function (winId) { this.ensureXtermMounted(winId); this.resizeXtermClient(winId); },
       syncTerminalWindow: function (winId) { this.resizeTerminal(winId); },
       focusTerminalWindow: function (winId) { var win = this.getWindowById(winId); this.ensureXtermMounted(winId); if (win && win._term && win._term.focus) win._term.focus(); },
       clearTerminalWindow: function (winId) {
