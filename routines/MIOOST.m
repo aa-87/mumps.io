@@ -1427,7 +1427,7 @@ T074
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSST.m","glow"),"[MIOOST][T074][server glow default]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","invalid_json_response"),"[MIOOST][T074][theme upload robust json]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","theme-login-runtime"),"[MIOOST][T074][theme login runtime]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","fetchTextBlob"),"[MIOOST][T074][text viewer blob fallback]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","fetchTextBlob"),0,"[MIOOST][T074][no text viewer blob fallback]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","ROI 72C follow-up"),"[MIOOST][T074][followup css]")
 	QUIT
 	;
@@ -1455,7 +1455,7 @@ T076
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTHEME.m","PUBLICLD"),"[MIOOST][T076][public login profile loader]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","createWindowForApp(app, { state: 'normal', kind: 'folder'"),"[MIOOST][T076][folder opens new explorer window]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","'themes', 'language', 'system'"),"[MIOOST][T076][start menu default groups]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","fs_blob_unavailable"),"[MIOOST][T076][text viewer blob fallback]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","Text preview requires the MIOOS text chunk stream"),"[MIOOST][T076][no command preview avoids blob fallback]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","Active title bar custom CSS"),"[MIOOST][T076][theme active title css textarea]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","themeStudioUpdateCustomElementCss"),"[MIOOST][T076][theme custom css parser]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","ROI 71C3 VFS blob and viewer hardening"),"[MIOOST][T076][roi71c3 css marker]")
@@ -1494,7 +1494,7 @@ T078
 	QUIT
 
 T079
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","readTextFileResilient"),"[MIOOST][T079][resilient text viewer fallback]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","_mioosTextChunkRequests"),"[MIOOST][T079][deduped text chunk request cache]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-window-toolbar"),"[MIOOST][T079][common viewer toolbar]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mediaLoop"),"[MIOOST][T079][media loop preserved]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","Login background custom CSS"),"[MIOOST][T079][login background css editor]")
@@ -1534,6 +1534,15 @@ T081
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","FSTEXTCHUNK"),"[MIOOST][T081][text chunk backend handler]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSFS.m","READRANGE"),"[MIOOST][T081][text chunk range backend]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","readTextChunkViaWebSocket"),"[MIOOST][T081][text chunk client command]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","textChunkRequestKey"),"[MIOOST][T081][chunk request key]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","_mioosTextChunkCache"),"[MIOOST][T081][cross-window chunk cache]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","if (stream.loadingOffsets[offset]) return stream.loadingOffsets[offset]"),"[MIOOST][T081][same chunk in-flight dedupe]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","return this.readTextChunkViaWebSocket(item, { offset: 0, size: previewBytes })"),"[MIOOST][T081][preview uses chunk stream]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","win.fileView.textStream = this.textViewerInitialState"),"[MIOOST][T081][structured text uses text stream]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","fetchTextBlob"),0,"[MIOOST][T081][no text blob helper]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","readTextFileResilient"),0,"[MIOOST][T081][no race-to-blob reader]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","this.textViewerLoadChunk(windowId, before)"),0,"[MIOOST][T081][scroll only requests target chunk]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","this.textViewerLoadChunk(windowId, after)"),0,"[MIOOST][T081][no automatic neighbor chunk prefetch]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","textViewerOnScroll"),"[MIOOST][T081][text scrollbar sync]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","return textViewerChunkArray"),"[MIOOST][T081][visible chunk helper bound]")
 	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","return textChunkArray"),0,"[MIOOST][T081][no stale textChunkArray reference]")

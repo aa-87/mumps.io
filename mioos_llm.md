@@ -673,7 +673,7 @@ Every MIOOS window is expected to inherit the common window toolbar from `window
 - Module menu: derived from `commonWindowCustomMenuLabel(win)` for Explorer, Terminal, Table, Transfers, Text, Media, Image, Permissions, Catalogue, and future module windows.
 - Help: About.
 
-Text media viewer contract: use `fs.text.chunk` and `textViewerOnScroll` / `textViewerLoadChunk`; never load the full file just to open it. The viewer must render a virtual chunk stack and synchronize scrollbar position to byte offset. Keep Reload and Download out of the old viewer body; expose those through the common toolbar.
-Regression guard: `textViewerVisibleChunks()` must return `textViewerChunkArray(...)`, never an unscoped or stale helper name, and the old `.mioos-viewer-toolbar` body toolbar CSS should not be reintroduced.
+Text media viewer contract: use `fs.text.chunk` and `textViewerOnScroll` / `textViewerLoadChunk`; never load the full file just to open it. Opening text and structured text must not call `/api/mioos/fs/blob` as a fallback. Deduplicate identical chunks with `_mioosTextChunkRequests` and `_mioosTextChunkCache`, keyed by file id, byte offset, and chunk size, so repeated offset-zero loads become one backend command. The viewer must render a virtual chunk stack and synchronize scrollbar position to byte offset. Keep Reload and Download out of the old viewer body; expose those through the common toolbar.
+Regression guard: `textViewerVisibleChunks()` must return `textViewerChunkArray(...)`, never an unscoped or stale helper name; `fetchTextBlob` / `readTextFileResilient` should not return as text-opening paths; and the old `.mioos-viewer-toolbar` body toolbar CSS should not be reintroduced.
 
 Locale contract: language menu clicks reload the main URL. English removes `lang`, Arabic uses `?lang=ar`, and Spanish uses `?lang=sp`; the backend canonicalizes `sp` to `es`.

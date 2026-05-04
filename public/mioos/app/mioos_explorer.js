@@ -82,51 +82,9 @@
     return route + (route.indexOf('?') >= 0 ? '&' : '?') + params.join('&');
   }
 
-  function fetchTextBlob(vm, item) {
-    var url = buildFsBlobUrl(vm, item, { inline: true });
-    if (!url || !window.fetch) return Promise.reject(new Error('fs_blob_unavailable'));
-    return window.fetch(url, { credentials: 'same-origin' }).then(function (res) {
-      if (!res.ok) throw new Error('fs_blob_http_' + res.status);
-      return res.text();
-    });
-  }
-
   function fileIdFromPayload(payload) {
     payload = payload || {};
     return String(payload.id || payload.fileId || payload.key || ((payload.meta || {}).id) || ((payload.entry || {}).id) || '');
-  }
-
-  function normalizeFetchedText(text, size) {
-    var out = String(text || '');
-    if (+size > 0 && out.length > +size) {
-      return out.slice(0, +size) + '\n\n[Preview truncated at ' + (+size) + ' characters. Download the file to view the full contents.]';
-    }
-    return out;
-  }
-
-  function readTextFileResilient(vm, item, options) {
-    var opts = options || {};
-    var id = String((item && (item.id || item.key || item.fileId)) || '');
-    var path = String((item && item.path) || '');
-    var size = +(opts.size || ((((vm.boot || {}).vfs || {}).readWindowBytes) || 32768));
-    var fallbackDelayMs = Math.max(250, +(opts.fallbackDelayMs || 1200));
-    var wsPromise;
-    var fetchPromise;
-    function asResult(text) {
-      return { message: null, payload: { id: id, path: path, mime: (item && item.mime) || 'text/plain', eof: 1, fallback: 'http_blob' }, text: normalizeFetchedText(text, opts.allowFull === false ? size : 0) };
-    }
-    function httpFallback() { return fetchTextBlob(vm, item).then(asResult); }
-    if (!vm.command) return httpFallback();
-    wsPromise = vm.readTextFileViaWebSocket(item, opts).then(function (result) {
-      var payload = (result || {}).payload || {};
-      var payloadId = fileIdFromPayload(payload);
-      if (id && payloadId && payloadId !== id) throw new Error('stale_text_payload');
-      return result;
-    });
-    fetchPromise = new Promise(function (resolve, reject) {
-      window.setTimeout(function () { httpFallback().then(resolve, reject); }, fallbackDelayMs);
-    });
-    return Promise.race([wsPromise, fetchPromise]).catch(function () { return httpFallback(); });
   }
 
   function alignTextChunkOffset(offset, chunkSize) {
@@ -166,6 +124,22 @@
       if (Math.abs(keys[index] - visibleOffset) <= (chunkSize * 3)) continue;
       delete chunks[keys[index]];
       if (stream.loadedOffsets) delete stream.loadedOffsets[keys[index]];
+    }
+  }
+
+
+  function textChunkRequestKey(id, offset, size) {
+    return String(id || '') + '@' + (+offset || 0) + ':' + (+size || 0);
+  }
+
+  function pruneVmTextChunkCache(vm) {
+    var cache = (vm || {})._mioosTextChunkCache || {};
+    var order = (vm || {})._mioosTextChunkCacheOrder || [];
+    var max = 32;
+    var key;
+    while (order.length > max) {
+      key = order.shift();
+      delete cache[key];
     }
   }
 
@@ -855,17 +829,31 @@
         var size = Math.max(4096, Math.min(1048576, +(opts.size || ((((this.boot || {}).vfs || {}).textChunkBytes) || 262144))));
         var offset = alignTextChunkOffset(+(opts.offset || 0), size);
         var timeoutMs = +(opts.timeoutMs || 12000);
+        var key = textChunkRequestKey(id, offset, size);
         var self = this;
+        var request;
         if (!id) return Promise.reject(new Error('file_id_missing'));
         if (!this.command) return Promise.reject(new Error('websocket_command_unavailable'));
-        return this.command('fs.text.chunk', { id: id, offset: offset, size: size }, { timeoutMs: timeoutMs }).catch(function () {
+        this._mioosTextChunkRequests = this._mioosTextChunkRequests || {};
+        this._mioosTextChunkCache = this._mioosTextChunkCache || {};
+        this._mioosTextChunkCacheOrder = this._mioosTextChunkCacheOrder || [];
+        if (this._mioosTextChunkCache[key]) return Promise.resolve(this._mioosTextChunkCache[key]);
+        if (this._mioosTextChunkRequests[key]) return this._mioosTextChunkRequests[key];
+        request = this.command('fs.text.chunk', { id: id, offset: offset, size: size }, { timeoutMs: timeoutMs }).catch(function () {
           return self.command('fs.read.range', { id: id, offset: offset, size: size }, { timeoutMs: timeoutMs });
         }).then(function (msg) {
           var payload = payloadRoot(msg);
           var payloadId = fileIdFromPayload(payload);
+          var result;
           if (id && payloadId && payloadId !== String(id)) throw new Error('stale_text_payload');
-          return { message: msg, payload: payload, text: textFromPayload(payload) };
-        });
+          result = { message: msg, payload: payload, text: textFromPayload(payload) };
+          self._mioosTextChunkCache[key] = result;
+          self._mioosTextChunkCacheOrder.push(key);
+          pruneVmTextChunkCache(self);
+          return result;
+        }).finally(function () { delete self._mioosTextChunkRequests[key]; });
+        this._mioosTextChunkRequests[key] = request;
+        return request;
       },
       textViewerInitialState: function (item) {
         var id = (item && (item.id || item.key || item.fileId)) || '';
@@ -884,14 +872,14 @@
         var win = this.textViewerWindowById ? this.textViewerWindowById(windowId) : null;
         var stream = ((win || {}).fileView || {}).textStream;
         var item;
-        var self = this;
+        var request;
         if (!win || !stream || !stream.fileId) return Promise.resolve();
         offset = alignTextChunkOffset(offset, stream.chunkSize);
-        if (stream.loadingOffsets[offset] || stream.loadedOffsets[offset]) return Promise.resolve(stream.chunks[offset]);
-        stream.loadingOffsets[offset] = 1;
+        if (stream.loadedOffsets[offset] && stream.chunks[offset]) return Promise.resolve(stream.chunks[offset]);
+        if (stream.loadingOffsets[offset]) return stream.loadingOffsets[offset];
         stream.status = stream.initialLoaded ? 'Loading text chunk…' : 'Opening text stream…';
         item = { id: stream.fileId, key: stream.fileId, fileId: stream.fileId, name: stream.fileName, title: stream.fileName, mime: stream.mime, path: stream.path, size: stream.size };
-        return this.readTextChunkViaWebSocket(item, { offset: offset, size: stream.chunkSize }).then(function (result) {
+        request = this.readTextChunkViaWebSocket(item, { offset: offset, size: stream.chunkSize }).then(function (result) {
           var payload = (result || {}).payload || {};
           var content = (result || {}).text || '';
           var actualOffset = alignTextChunkOffset(+(payload.offset || offset), stream.chunkSize);
@@ -908,24 +896,16 @@
           return stream.chunks[actualOffset];
         }).catch(function (err) {
           stream.error = (err && err.message) || 'Unable to read text chunk.';
-          if (!stream.initialLoaded && stream.size > 0 && stream.size <= 1048576) {
-            return fetchTextBlob(self, item).then(function (text) {
-              stream.chunks[0] = { offset: 0, nextOffset: text.length, readBytes: text.length, content: text, height: textChunkHeight(text), eof: true };
-              stream.loadedOffsets[0] = 1;
-              stream.size = text.length;
-              stream.scrollHeight = Math.max(800, textChunkHeight(text) + 160);
-              stream.initialLoaded = true;
-              stream.eof = true;
-              stream.error = '';
-            });
-          }
-        }).finally(function () { delete stream.loadingOffsets[offset]; if (win.fileView) win.fileView.loading = false; });
+          throw err;
+        }).finally(function () { if (stream.loadingOffsets[offset] === request) delete stream.loadingOffsets[offset]; if (win.fileView) win.fileView.loading = false; });
+        stream.loadingOffsets[offset] = request;
+        return request;
       },
       textViewerOnScroll: function (windowId, event) {
         var win = this.textViewerWindowById ? this.textViewerWindowById(windowId) : null;
         var stream = ((win || {}).fileView || {}).textStream;
         var el = event && event.target;
-        var ratio, maxScroll, maxOffset, offset, before, after;
+        var ratio, maxScroll, maxOffset, offset;
         if (!stream || !el) return;
         stream.viewportHeight = el.clientHeight || stream.viewportHeight || 320;
         maxScroll = Math.max(1, (stream.scrollHeight || 1) - stream.viewportHeight);
@@ -934,11 +914,7 @@
         offset = alignTextChunkOffset(Math.floor(ratio * maxOffset), stream.chunkSize);
         stream.visibleOffset = offset;
         stream.contentTop = Math.max(0, Math.floor(ratio * Math.max(0, (stream.scrollHeight || 0) - 240)));
-        before = Math.max(0, offset - stream.chunkSize);
-        after = offset + stream.chunkSize;
-        this.textViewerLoadChunk(windowId, before);
         this.textViewerLoadChunk(windowId, offset);
-        if (!stream.size || after < stream.size) this.textViewerLoadChunk(windowId, after);
       },
       textViewerRefresh: function (windowId) {
         var win = this.textViewerWindowById ? this.textViewerWindowById(windowId) : null;
@@ -950,17 +926,14 @@
       previewTextFile: function (windowId, item) {
         var win = this.windows.find(function (entry) { return entry.id === windowId; });
         var state = this.ensureExplorerWindowState(win);
-        var previewBytes = +((((this.boot || {}).vfs || {}).readPreviewBytes) || 16384);
+        var previewBytes = Math.max(4096, Math.min(1048576, +((((this.boot || {}).vfs || {}).textChunkBytes) || 262144)));
         if (!win || !state || !item) return Promise.resolve();
         state.preview = { title: item.name || item.title || '', content: '', mime: item.mime || 'text/plain', imageSrc: '', mediaSrc: '', mediaKind: '' };
         if (!this.command) {
-          return fetchTextBlob(this, item).then(function (text) {
-            state.preview.content = text || '';
-          }).catch(function (err) {
-            state.preview.content = (err && err.message) || 'Unable to preview file.';
-          });
+          state.preview.content = 'Text preview requires the MIOOS text chunk stream.';
+          return Promise.resolve();
         }
-        return readTextFileResilient(this, item, { offset: 0, size: previewBytes, allowFull: false }).then(function (result) {
+        return this.readTextChunkViaWebSocket(item, { offset: 0, size: previewBytes }).then(function (result) {
           var payload = (result || {}).payload || {};
           state.preview = {
             title: item.name || item.title || '',
@@ -2371,22 +2344,8 @@
         };
         this.windows.push(win);
         this.focusWindow(id);
-        if (!this.command) {
-          fetchTextBlob(this, item).then(function (text) {
-            win.fileView.loading = false;
-            win.fileView.content = normalizeStructuredContent(text || '', win.fileView.mime);
-          }).catch(function (err) {
-            win.fileView.loading = false;
-            win.fileView.error = (err && err.message) || 'Unable to open file.';
-          });
-          return;
-        }
-        readTextFileResilient(this, item, { offset: 0, size: +((((this.boot || {}).vfs || {}).readWindowBytes) || 32768), allowFull: true }).then(function (result) {
-          var payload = (result || {}).payload || {};
-          win.fileView.loading = false;
-          win.fileView.mime = payload.mime || win.fileView.mime;
-          win.fileView.content = normalizeStructuredContent((result || {}).text || '', win.fileView.mime);
-        }).catch(function (err) {
+        win.fileView.textStream = this.textViewerInitialState ? this.textViewerInitialState(item || {}) : {};
+        this.textViewerLoadChunk(id, 0).catch(function (err) {
           win.fileView.loading = false;
           win.fileView.error = (err && err.message) || 'Unable to open file.';
         });
