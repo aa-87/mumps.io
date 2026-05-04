@@ -111,6 +111,7 @@ SAFE(S)
 	IF O="" SET O="active"
 	QUIT O
 	;
+
 ASSETURLID(URL)
 	NEW ID
 	SET URL=$GET(URL)
@@ -118,11 +119,6 @@ ASSETURLID(URL)
 	SET ID=$PIECE($PIECE(URL,"id=",2),"&",1)
 	SET ID=$PIECE(ID,"#",1)
 	QUIT ID
-	;
-PUBURL(STATE,ID)
-	NEW ROUTE
-	SET ROUTE=$GET(STATE("themePublicAssetPath"),"/api/mioos/theme-public-asset")
-	QUIT ROUTE_"?id="_$GET(ID)
 	;
 PUBLOGIN(STATE,USER,KEY,ROOT)
 	NEW PUB,FIELD,URL,ID
@@ -134,21 +130,13 @@ PUBLOGIN(STATE,USER,KEY,ROOT)
 	FOR FIELD="wallpaperUrl","avatarUrl","warningImageUrl" DO
 	. SET URL=$GET(@ROOT@("loginScreenConfig",FIELD))
 	. SET ID=$$ASSETURLID(URL)
-	. IF ID'="" DO
-	. . SET ^MIO("MIOOS","THEME","PUBLICASSET",ID)=USER_"^"_FIELD_"^"_KEY
-	. . SET @PUB@("loginScreenConfig",FIELD)=$$PUBURL(.STATE,ID)
+	. IF ID'="" SET ^MIO("MIOOS","THEME","PUBLICASSET",ID)=USER_"^"_FIELD_"^"_KEY
 	QUIT
 	;
 PUBLICLD(OUT)
-	NEW FIELD,URL,ID,STATE
 	KILL OUT
 	IF '$DATA(^MIO("MIOOS","THEME","PUBLIC","LOGIN")) QUIT 0
 	MERGE OUT("profile")=^MIO("MIOOS","THEME","PUBLIC","LOGIN")
-	FOR FIELD="wallpaperUrl","avatarUrl","warningImageUrl" DO
-	. SET URL=$GET(OUT("profile","loginScreenConfig",FIELD))
-	. IF URL["/api/mioos/theme-public-asset" QUIT
-	. SET ID=$$ASSETURLID(URL)
-	. IF ID'="" SET OUT("profile","loginScreenConfig",FIELD)=$$PUBURL(.STATE,ID)
 	SET OUT("ok")=1,OUT("profileKey")=$GET(^MIO("MIOOS","THEME","PUBLIC","LOGIN","key"))
 	QUIT 1
 	;

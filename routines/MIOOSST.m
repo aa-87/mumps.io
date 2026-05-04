@@ -217,9 +217,6 @@ ACTIVETHM(STATE,CONF)
 	. SET MODE=$GET(STATE("activeThemeProfile","mode"))
 	. IF MODE="" SET MODE=$GET(STATE("activeThemeProfile","activeMode"))
 	. IF MODE'="" SET STATE("themeMode")=MODE
-	. SET DENSITY=$GET(STATE("activeThemeProfile","density"))
-	. IF DENSITY="" SET DENSITY=$GET(STATE("activeThemeProfile","appearance","density"))
-	. IF DENSITY'="" SET STATE("density")=DENSITY
 	IF '+$$LOAD^MIOOSTHEME(.STATE,.CONF,.OUT,.ERR) QUIT
 	IF '+$DATA(OUT("profile")) QUIT
 	MERGE STATE("activeThemeProfile")=OUT("profile")
@@ -267,12 +264,13 @@ PROTURL(URL,STATE)
 	QUIT 0
 	;
 SANPROF(ROOT,STATE)
-	NEW K,V
+	NEW K,V,PUBLIC
+	SET PUBLIC=+$GET(@ROOT@("publicLogin"))
 	IF $GET(@ROOT@("desktop","wallpaperUrl"))'="",$$PROTURL($GET(@ROOT@("desktop","wallpaperUrl")),.STATE) SET @ROOT@("desktop","wallpaperUrl")=""
 	IF $GET(@ROOT@("wallpaperUrl"))'="",$$PROTURL($GET(@ROOT@("wallpaperUrl")),.STATE) SET @ROOT@("wallpaperUrl")=""
-	IF $GET(@ROOT@("loginScreenConfig","wallpaperUrl"))'="",$$PROTURL($GET(@ROOT@("loginScreenConfig","wallpaperUrl")),.STATE) SET @ROOT@("loginScreenConfig","wallpaperUrl")=""
-	IF $GET(@ROOT@("loginScreenConfig","avatarUrl"))'="",$$PROTURL($GET(@ROOT@("loginScreenConfig","avatarUrl")),.STATE) SET @ROOT@("loginScreenConfig","avatarUrl")=""
-	IF $GET(@ROOT@("loginScreenConfig","warningImageUrl"))'="",$$PROTURL($GET(@ROOT@("loginScreenConfig","warningImageUrl")),.STATE) SET @ROOT@("loginScreenConfig","warningImageUrl")=""
+	IF 'PUBLIC,$GET(@ROOT@("loginScreenConfig","wallpaperUrl"))'="",$$PROTURL($GET(@ROOT@("loginScreenConfig","wallpaperUrl")),.STATE) SET @ROOT@("loginScreenConfig","wallpaperUrl")=""
+	IF 'PUBLIC,$GET(@ROOT@("loginScreenConfig","avatarUrl"))'="",$$PROTURL($GET(@ROOT@("loginScreenConfig","avatarUrl")),.STATE) SET @ROOT@("loginScreenConfig","avatarUrl")=""
+	IF 'PUBLIC,$GET(@ROOT@("loginScreenConfig","warningImageUrl"))'="",$$PROTURL($GET(@ROOT@("loginScreenConfig","warningImageUrl")),.STATE) SET @ROOT@("loginScreenConfig","warningImageUrl")=""
 	SET K="" FOR  SET K=$ORDER(@ROOT@("cssVars",K)) QUIT:K=""  DO
 	. SET V=$GET(@ROOT@("cssVars",K)) IF V'="",$$PROTURL(V,.STATE) KILL @ROOT@("cssVars",K)
 	SET K="" FOR  SET K=$ORDER(@ROOT@("colors",K)) QUIT:K=""  DO

@@ -632,10 +632,13 @@ The Start Menu was rewritten as a dedicated, isolated ROI. Preserve this separat
 
 Source-of-truth notes: the shell must register `mioos-surface-viewer` for basic file previews. Theme Studio uploads must use server-backed theme asset routes with no DataURLs and no localStorage theme persistence. Start Menu VFS folders must expand recursively without closing the menu. New desktop icons must be placed in the next open grid slot, and the Desktop should include a Programs folder with core launcher shortcuts.
 
-## ROI 71C2 login public assets and shell contrast hotfix
 
-Login-screen background, avatar, and warning/banner images must be published through `/api/mioos/theme-public-asset?id=<asset-id>` when they belong to the active login theme profile. Do not emit protected `/api/mioos/theme-asset` URLs before authentication. Normal theme assets remain protected.
+## ROI 71C3 VFS blob, Explorer, Start menu, text viewer, and Theme CSS hardening
 
-Viewer File/Edit/Help bars should not repeat the filename because the window titlebar already carries it. Audio/video viewers expose a Loop toggle. Active/inactive titlebar gradient variables must affect live windows and preview windows. Taskbar positions include bottom, top, left, and right, and the desktop surface must pad around top/left/right/bottom taskbars so icons are not hidden underneath them.
+Authenticated wallpapers served through `/api/mioos/fs/blob` must compute `Content-Length` from actual VFS data chunks via `REPAIRSIZE^MIOOSFS`, not stale metadata. Multipart VFS writes must count bytes with `$ZLENGTH`/`$ZEXTRACT`.
 
-Dark-theme contrast rules for Theme Studio tabs, Explorer icon/details panels, transfer summaries, table/patient modals, and viewer menu strips are locked by ROI 71C2 regression test T076.
+Login-screen assets must continue to use the public-login asset route only for active login background/avatar/banner. Do not regress back to protected `/api/mioos/theme-asset` URLs before auth.
+
+Folder opens should create distinct Explorer windows. Start menu Language, Themes, and System groups are open by default. Text viewers must always leave loading state and fall back to authenticated blob reads if command reads fail.
+
+Theme Studio custom element CSS textareas parse declarations such as `background: radial-gradient(...)` and map them to live CSS variables for active titlebar, inactive titlebar, window body, taskbar, and Start menu.

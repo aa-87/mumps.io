@@ -33,6 +33,7 @@
           clockText: '',
           alertTitle: '',
           alertMessage: '',
+          shellDialog: { open: false, kind: '', title: '', message: '', value: '', placeholder: '', confirmText: 'OK', cancelText: 'Cancel', danger: false, resolver: null },
           zCounter: 10,
           dragState: {
             active: false,
@@ -243,6 +244,7 @@
         sanitizeProtectedThemeProfile: function (profile) {
           var copy = this.themeStudioClone ? this.themeStudioClone(profile || {}) : JSON.parse(JSON.stringify(profile || {}));
           var self = this;
+          var publicLoginConfig = copy && copy.publicLogin && copy.loginScreenConfig ? this.themeStudioClone(copy.loginScreenConfig) : null;
           function walk(obj) {
             if (!obj || typeof obj !== 'object') return obj;
             Object.keys(obj).forEach(function (key) {
@@ -255,7 +257,9 @@
             });
             return obj;
           }
-          return walk(copy);
+          walk(copy);
+          if (publicLoginConfig) copy.loginScreenConfig = publicLoginConfig;
+          return copy;
         },
         sanitizeBootThemeForAuth: function () {
           var boot = this.boot || {};
@@ -1280,13 +1284,13 @@
           });
         },
         openExplorerFolder: function (folderId, title) {
-          var win = (this.windows || []).find(function (item) { return item.appKey === 'home'; }) || (this.windows || []).find(function (item) { return item.appKey === 'explorer' || item.appKey === 'documents'; });
+          var app = { key: 'explorer', appKey: 'explorer', title: title || 'Folder Explorer', icon: '📁', kind: 'folder', surface: 'mioos-surface-explorer' };
+          var win = this.createWindowForApp ? this.createWindowForApp(app, { state: 'normal', kind: 'folder', moduleWindow: false, meta: { folderId: folderId || this.desktopFolderId() } }) : null;
           if (!win) { this.openApp('home'); return; }
           if (!win.meta) win.meta = {};
           win.meta.folderId = folderId || this.desktopFolderId();
           if (title) win.title = title;
           this.ensureWindowFrame(win);
-          if (win.state === 'closed' || win.state === 'minimized') win.state = 'normal';
           this.focusWindow(win.id);
           if (this.bootstrapExplorerWindow) {
             this.$nextTick(function () {
@@ -1306,41 +1310,45 @@
         },
         desktopCreateFolder: function () {
           var self = this;
-          var name = window.prompt(this.t('explorer.promptNewFolder', 'New folder name'), this.t('explorer.defaultFolderName', 'New Folder'));
           this.closeDesktopContextMenu();
-          if (name === null) return Promise.resolve();
-          name = String(name || '').trim();
-          if (!name || !this.command) return Promise.resolve();
-          return this.command('fs.mkdir', { parent: this.desktopFolderId(), name: name }).then(function () { return self.refreshDesktopVfsViews(); }).catch(function (err) { self.showAlert('Desktop', (err && err.message) || 'fs_mkdir_failed'); });
+          return this.inputDialog('Desktop', this.t('explorer.promptNewFolder', 'New folder name'), this.t('explorer.defaultFolderName', 'New Folder')).then(function (name) {
+            if (name === null) return null;
+            name = String(name || '').trim();
+            if (!name || !self.command) return null;
+            return self.command('fs.mkdir', { parent: self.desktopFolderId(), name: name }).then(function () { return self.refreshDesktopVfsViews(); });
+          }).catch(function (err) { self.showAlert('Desktop', (err && err.message) || 'fs_mkdir_failed'); });
         },
         desktopCreateTextFile: function () {
           var self = this;
-          var name = window.prompt('New text file name', 'New Text Document.txt');
           this.closeDesktopContextMenu();
-          if (name === null) return Promise.resolve();
-          name = String(name || '').trim();
-          if (!name || !this.command) return Promise.resolve();
-          return this.command('fs.write', { parent: this.desktopFolderId(), name: name, content: '', mime: 'text/plain' }).then(function () { return self.refreshDesktopVfsViews(); }).catch(function (err) { self.showAlert('Desktop', (err && err.message) || 'fs_write_failed'); });
+          return this.inputDialog('Desktop', 'New text file name', 'New Text Document.txt').then(function (name) {
+            if (name === null) return null;
+            name = String(name || '').trim();
+            if (!name || !self.command) return null;
+            return self.command('fs.write', { parent: self.desktopFolderId(), name: name, content: '', mime: 'text/plain' }).then(function () { return self.refreshDesktopVfsViews(); });
+          }).catch(function (err) { self.showAlert('Desktop', (err && err.message) || 'fs_write_failed'); });
         },
         desktopRenameSelected: function () {
           var self = this;
           var entry = this.desktopContextEntry();
-          var name;
           this.closeDesktopContextMenu();
           if (!entry || !this.desktopEntryIsVfs(entry) || !this.command) return Promise.resolve();
-          name = window.prompt(this.t('explorer.promptRename', 'Rename item'), entry.name || entry.title || '');
-          if (name === null) return Promise.resolve();
-          name = String(name || '').trim();
-          if (!name || name === (entry.name || entry.title || '')) return Promise.resolve();
-          return this.command('fs.rename', { id: entry.id || entry.key, name: name }).then(function () { return self.refreshDesktopVfsViews(); }).catch(function (err) { self.showAlert('Desktop', (err && err.message) || 'fs_rename_failed'); });
+          return this.inputDialog('Desktop', this.t('explorer.promptRename', 'Rename item'), entry.name || entry.title || '').then(function (name) {
+            if (name === null) return null;
+            name = String(name || '').trim();
+            if (!name || name === (entry.name || entry.title || '')) return null;
+            return self.command('fs.rename', { id: entry.id || entry.key, name: name }).then(function () { return self.refreshDesktopVfsViews(); });
+          }).catch(function (err) { self.showAlert('Desktop', (err && err.message) || 'fs_rename_failed'); });
         },
         desktopDeleteSelected: function () {
           var self = this;
           var entry = this.desktopContextEntry();
           this.closeDesktopContextMenu();
           if (!entry || !this.desktopEntryIsVfs(entry) || !this.command) return Promise.resolve();
-          if (!window.confirm(this.t('explorer.confirmDelete', 'Delete the selected item?'))) return Promise.resolve();
-          return this.command('fs.delete', { id: entry.id || entry.key }).then(function () { return self.refreshDesktopVfsViews(); }).catch(function (err) { self.showAlert('Desktop', (err && err.message) || 'fs_delete_failed'); });
+          return this.confirmDialog('Desktop', this.t('explorer.confirmDelete', 'Delete the selected item?'), { danger: true, confirmText: 'Delete' }).then(function (confirmed) {
+            if (!confirmed) return null;
+            return self.command('fs.delete', { id: entry.id || entry.key }).then(function () { return self.refreshDesktopVfsViews(); });
+          }).catch(function (err) { self.showAlert('Desktop', (err && err.message) || 'fs_delete_failed'); });
         },
         themeStudioStorageKey: function () {
           return 'mioos.themeStudio.active.v2';
@@ -1693,29 +1701,57 @@
           if (target.variants) target.variants[target.darkEnabled ? 'dark' : 'light'] = this.themeStudioBuildVariantSnapshot(target, !!target.darkEnabled);
           this.themeStudioPersistCustomThemes();
         },
+        themeStudioCssDeclarationValue: function (cssText, propertyName) {
+          var text = String(cssText || '');
+          var prop = String(propertyName || '').toLowerCase();
+          var found = '';
+          text.split(';').forEach(function (part) {
+            var idx = part.indexOf(':');
+            var name, value;
+            if (idx < 0) return;
+            name = part.slice(0, idx).trim().toLowerCase();
+            value = part.slice(idx + 1).trim();
+            if (name === prop && value) found = value;
+          });
+          return found;
+        },
+        themeStudioCustomCssMap: function () {
+          return {
+            activeTitlebar: { background: '--titlebar-bg', color: '--titlebar-text', 'box-shadow': '--shadow-window-active' },
+            inactiveTitlebar: { background: '--titlebar-inactive', color: '--titlebar-text' },
+            windowBody: { background: '--window-bg', color: '--theme-field-text', 'border-color': '--window-border', 'box-shadow': '--shadow-window' },
+            taskbar: { background: '--taskbar-bg', color: '--taskbar-text', 'border-color': '--taskbar-border' },
+            startMenu: { background: '--start-menu-bg', color: '--start-menu-text', 'border-color': '--menu-border', 'box-shadow': '--menu-shadow' }
+          };
+        },
+        themeStudioCustomElementCssValue: function (elementKey) {
+          var active = this.themeStudioActiveTheme() || {};
+          return (((active.customElementCss || {})[elementKey]) || '');
+        },
+        themeStudioUpdateCustomElementCss: function (elementKey, value) {
+          var target = this.themeStudioEditableTheme();
+          var map = (this.themeStudioCustomCssMap() || {})[elementKey] || {};
+          var prop;
+          var parsed;
+          if (!target) return;
+          if (!target.customElementCss) target.customElementCss = {};
+          if (!target.cssVars) target.cssVars = {};
+          target.customElementCss[elementKey] = String(value || '');
+          Object.keys(map).forEach(function (property) {
+            parsed = this.themeStudioCssDeclarationValue(value, property);
+            prop = map[property];
+            if (parsed && prop) target.cssVars[prop] = parsed;
+          }, this);
+          this.themeStudioApplyLive(target);
+          if (target.variants) target.variants[target.darkEnabled ? 'dark' : 'light'] = this.themeStudioBuildVariantSnapshot(target, !!target.darkEnabled);
+          this.themeStudioPersistCustomThemes();
+        },
         themeStudioUpdateVar: function (key, value) {
           var target = this.themeStudioEditableTheme();
           if (!target) return;
           if (!target.cssVars) target.cssVars = {};
           target.cssVars[key] = value;
           if (key === '--font-ui') target.fontStack = value;
-          this.themeStudioApplyLive(target);
-          if (target.variants) target.variants[target.darkEnabled ? 'dark' : 'light'] = this.themeStudioBuildVariantSnapshot(target, !!target.darkEnabled);
-          this.themeStudioPersistCustomThemes();
-        },
-        themeStudioSetTitlebarGradient: function (key, value) {
-          var target = this.themeStudioEditableTheme();
-          var vars, activeStart, activeEnd, inactiveStart, inactiveEnd;
-          if (!target) return;
-          if (!target.cssVars) target.cssVars = {};
-          vars = target.cssVars;
-          vars[key] = value;
-          activeStart = vars['--titlebar-active-start'] || '#1e3a8a';
-          activeEnd = vars['--titlebar-active-end'] || '#0f172a';
-          inactiveStart = vars['--titlebar-inactive-start'] || '#334155';
-          inactiveEnd = vars['--titlebar-inactive-end'] || '#111827';
-          vars['--titlebar-bg'] = 'linear-gradient(180deg, ' + activeStart + ' 0%, ' + activeEnd + ' 100%)';
-          vars['--titlebar-inactive'] = 'linear-gradient(180deg, ' + inactiveStart + ' 0%, ' + inactiveEnd + ' 100%)';
           this.themeStudioApplyLive(target);
           if (target.variants) target.variants[target.darkEnabled ? 'dark' : 'light'] = this.themeStudioBuildVariantSnapshot(target, !!target.darkEnabled);
           this.themeStudioPersistCustomThemes();
@@ -1875,6 +1911,27 @@
           var active = this.themeStudioActiveTheme();
           return ((((active || {}).cssVars) || {})[key]) || fallback || '#000000';
         },
+        themeStudioTitlebarColorValue: function (key, fallback) {
+          var value = this.themeStudioColorValue(key, fallback || '#000000');
+          if (/^#[0-9a-f]{3}([0-9a-f]{3})?$/i.test(String(value || ''))) return value;
+          return fallback || '#000000';
+        },
+        themeStudioSetTitlebarGradient: function (mode, stop, value) {
+          var target = this.themeStudioEditableTheme();
+          if (!target) return;
+          if (!target.cssVars) target.cssVars = {};
+          var active = mode === 'inactive' ? false : true;
+          var startKey = active ? '--titlebar-active-start' : '--titlebar-inactive-start';
+          var endKey = active ? '--titlebar-active-end' : '--titlebar-inactive-end';
+          var bgKey = active ? '--titlebar-bg' : '--titlebar-inactive';
+          target.cssVars[stop === 'end' ? endKey : startKey] = value || (stop === 'end' ? '#0f172a' : '#1e3a8a');
+          var start = target.cssVars[startKey] || (active ? '#1e3a8a' : '#334155');
+          var end = target.cssVars[endKey] || (active ? '#0f172a' : '#111827');
+          target.cssVars[bgKey] = 'linear-gradient(180deg, ' + start + ' 0%, ' + end + ' 100%)';
+          this.themeStudioApplyLive(target);
+          if (target.variants) target.variants[target.darkEnabled ? 'dark' : 'light'] = this.themeStudioBuildVariantSnapshot(target, !!target.darkEnabled);
+          this.themeStudioPersistCustomThemes();
+        },
         themeStudioTextValue: function (key, fallback) {
           return this.themeStudioColorValue(key, fallback || '');
         },
@@ -1996,7 +2053,8 @@
         themeStudioLoginWallpaperCss: function (theme) {
           var t = this.themeStudioNormalizeConfig(theme || this.themeStudioActiveTheme() || {});
           var cfg = t.loginScreenConfig || {};
-          if (cfg.wallpaperUrl && !(this.requiresSignin && this.isProtectedThemeUrl(cfg.wallpaperUrl))) return 'url(' + cfg.wallpaperUrl + ')';
+          var publicLogin = !!(t.publicLogin || cfg.publicLogin);
+          if (cfg.wallpaperUrl && !(this.requiresSignin && this.isProtectedThemeUrl(cfg.wallpaperUrl) && !publicLogin)) return 'url(' + cfg.wallpaperUrl + ')';
           return this.themeStudioWallpaperCss(t);
         },
         themeStudioManagedVarKeys: function () {
@@ -2086,31 +2144,36 @@
           var accent = ((((theme || {}).cssVars) || {})['--accent']) || '#5aa2ff';
           return {
             '--desktop-overlay': 'rgba(255,255,255,0.02)',
-            '--window-bg': 'rgba(22, 28, 39, 0.94)',
-            '--window-border': 'rgba(124, 148, 182, 0.34)',
-            '--window-border-strong': 'rgba(6, 10, 18, 0.92)',
-            '--titlebar-text': '#eff6ff',
-            '--titlebar-bg': 'linear-gradient(180deg, rgba(72,86,113,0.96) 0%, rgba(24,32,45,0.98) 100%)',
-            '--titlebar-inactive': 'linear-gradient(180deg, rgba(68,78,95,0.78) 0%, rgba(29,35,47,0.92) 100%)',
-            '--taskbar-bg': 'linear-gradient(180deg, rgba(30,36,48,0.92) 0%, rgba(9,12,18,0.97) 100%)',
+            '--desktop-bg': '#0b1220',
+            '--window-bg': '#101827',
+            '--window-border': '#334155',
+            '--window-border-strong': '#020617',
+            '--titlebar-text': '#f8fafc',
+            '--titlebar-active-start': '#1e3a8a',
+            '--titlebar-active-end': '#0f172a',
+            '--titlebar-inactive-start': '#334155',
+            '--titlebar-inactive-end': '#111827',
+            '--titlebar-bg': 'linear-gradient(180deg, #1e3a8a 0%, #0f172a 100%)',
+            '--titlebar-inactive': 'linear-gradient(180deg, #334155 0%, #111827 100%)',
+            '--taskbar-bg': 'linear-gradient(180deg, #111827 0%, #020617 100%)',
             '--taskbar-text': '#f3f8ff',
             '--taskbar-border': 'rgba(255,255,255,0.12)',
-            '--menu-bg': 'rgba(20, 26, 36, 0.96)',
-            '--menu-border': 'rgba(124,148,182,0.30)',
-            '--menu-text': '#f2f7ff',
-            '--menu-hover': 'linear-gradient(180deg, color-mix(in srgb, ' + accent + ' 34%, rgba(255,255,255,0.12)) 0%, rgba(26,36,52,0.96) 100%)',
-            '--menu-divider': 'rgba(148,163,184,0.18)',
+            '--menu-bg': '#111827',
+            '--menu-border': '#334155',
+            '--menu-text': '#f8fafc',
+            '--menu-hover': 'linear-gradient(180deg, color-mix(in srgb, ' + accent + ' 38%, #1f2937) 0%, #1e293b 100%)',
+            '--menu-divider': 'rgba(148,163,184,0.28)',
             '--icon-label-bg': 'rgba(8, 14, 22, 0.62)',
             '--icon-label-text': '#ffffff',
-            '--button-tint': 'linear-gradient(180deg, rgba(245,247,250,0.96) 0%, rgba(206,214,224,0.94) 100%)',
-            '--button-tint-hover': 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(221,228,237,0.96) 100%)',
-            '--button-text': '#111827',
+            '--button-tint': 'linear-gradient(180deg, #f8fafc 0%, #cbd5e1 100%)',
+            '--button-tint-hover': 'linear-gradient(180deg, #ffffff 0%, #e2e8f0 100%)',
+            '--button-text': '#0f172a',
             '--theme-surface': 'rgba(17, 22, 31, 0.82)',
             '--theme-surface-strong': 'rgba(23, 29, 40, 0.92)',
-            '--theme-panel-bg': 'rgba(21, 27, 37, 0.88)',
-            '--theme-panel-border': 'rgba(124, 148, 182, 0.20)',
-            '--theme-field-bg': 'rgba(32, 38, 50, 0.96)',
-            '--theme-field-text': '#f3f7fd',
+            '--theme-panel-bg': '#111827',
+            '--theme-panel-border': '#334155',
+            '--theme-field-bg': '#0f172a',
+            '--theme-field-text': '#f8fafc',
             '--theme-muted-text': '#c4d0df',
             '--theme-tab-bg': 'rgba(20, 26, 36, 0.94)',
             '--theme-tab-active-bg': 'linear-gradient(180deg, rgba(104,138,182,0.42) 0%, rgba(24,32,45,0.98) 100%)',
@@ -2201,20 +2264,23 @@
           }
           return theme;
         },
+        themeStudioAllowedTabs: function () {
+          return ['themes', 'desktop', 'appearance', 'taskbarStart', 'login'];
+        },
         themeStudioTabs: function () {
           return [
             { key: 'themes', label: 'Themes' },
             { key: 'desktop', label: 'Desktop' },
             { key: 'appearance', label: 'Appearance' },
-            { key: 'taskbar', label: 'Taskbar' },
-            { key: 'start', label: 'Start Menu' },
-            { key: 'login', label: 'Login Screen' },
-            { key: 'animation', label: 'Animation' },
-            { key: 'advanced', label: 'Advanced' }
+            { key: 'taskbarStart', label: 'Taskbar & Start Menu' },
+            { key: 'login', label: 'Login Screen' }
           ];
         },
         themeStudioActiveTab: function () {
-          return (((this.themeStudioStore || {}).activeTab) || 'themes');
+          var tab = (((this.themeStudioStore || {}).activeTab) || 'themes');
+          if (this.themeStudioAllowedTabs().indexOf(tab) < 0) tab = 'themes';
+          if (this.themeStudioStore) this.themeStudioStore.activeTab = tab;
+          return tab;
         },
         themeStudioFontOptions: function () {
           return [
@@ -2255,7 +2321,7 @@
         },
         themeStudioSetTab: function (tabKey) {
           this.initThemeStudioStore();
-          this.themeStudioStore.activeTab = tabKey || 'themes';
+          this.themeStudioStore.activeTab = this.themeStudioAllowedTabs().indexOf(tabKey) >= 0 ? tabKey : 'themes';
         },
         themeStudioPreviewTab: function () {
           this.initThemeStudioStore();
@@ -2266,16 +2332,19 @@
           this.themeStudioStore.previewTab = (tabKey === 'mobile') ? 'mobile' : 'desktop';
         },
         themeStudioRenameActiveTheme: function (nextName) {
-          var name = nextName;
-          var target;
-          if (!name) name = window.prompt('Rename theme', ((this.themeStudioActiveTheme() || {}).name) || 'Theme');
-          if (!name) return;
-          target = this.themeStudioEditableTheme();
-          if (!target) return;
-          target.name = String(name).trim() || 'Custom Theme';
+          var self = this;
+          if (!nextName) {
+            return this.inputDialog('Theme Studio', 'Rename theme', ((this.themeStudioActiveTheme() || {}).name) || 'Theme').then(function (name) {
+              if (name !== null) self.themeStudioRenameActiveTheme(name);
+            });
+          }
+          var target = this.themeStudioEditableTheme();
+          if (!target) return Promise.resolve();
+          target.name = String(nextName).trim() || 'Custom Theme';
           this.themeStudioApplyLive(target);
           if (target.variants) target.variants[target.darkEnabled ? 'dark' : 'light'] = this.themeStudioBuildVariantSnapshot(target, !!target.darkEnabled);
           this.themeStudioPersistCustomThemes();
+          return Promise.resolve();
         },
         themeStudioSetDarkEnabled: function (enabled) {
           var target = this.themeStudioEditableTheme();
@@ -2415,7 +2484,7 @@
           var h = this.taskbarHeightValue() + 14;
           return {
             paddingTop: (pos === 'top' ? h : 16) + 'px',
-            paddingRight: (pos === 'right' ? h : 16) + 'px',
+            paddingRight: '16px',
             paddingBottom: (pos === 'bottom' ? h : 16) + 'px',
             paddingLeft: (pos === 'left' ? h : 16) + 'px',
             boxSizing: 'border-box'
@@ -2459,7 +2528,7 @@
             '--taskbar-blur': (6 + Math.round(alpha * 14)) + 'px',
             '--taskbar-effective-bg': this.taskbarEffectiveBackground(this.themeStudioActiveTheme(), alpha)
           };
-          if (pos === 'left' || pos === 'right') style.width = h + 'px'; else style.height = h + 'px';
+          if (pos === 'left') style.width = h + 'px'; else style.height = h + 'px';
           return style;
         },
         startMenuStyleType: function () {
@@ -2488,10 +2557,9 @@
             }
             return style;
           }
-          if (pos === 'top') { style.top = h + 'px'; style.bottom = 'auto'; style.left = '14px'; style.right = 'auto'; }
-          else if (pos === 'left') { style.left = (h + 12) + 'px'; style.right = 'auto'; style.bottom = '14px'; style.top = 'auto'; }
-          else if (pos === 'right') { style.right = (h + 12) + 'px'; style.left = 'auto'; style.bottom = '14px'; style.top = 'auto'; }
-          else { style.left = '14px'; style.right = 'auto'; style.bottom = h + 'px'; }
+          if (pos === 'top') { style.top = h + 'px'; style.bottom = 'auto'; style.left = '14px'; }
+          else if (pos === 'left') { style.left = (h + 12) + 'px'; style.bottom = '14px'; style.top = 'auto'; }
+          else { style.left = '14px'; style.bottom = h + 'px'; }
           return style;
         },
         startMenuNormalizeItem: function (entry, source, groupKey) {
@@ -2554,7 +2622,7 @@
           return this.startMenuUi;
         },
         startMenuGroupDefaultOpen: function (groupKey) {
-          return ['pinned', 'places', 'applications', 'filesystem'].indexOf(String(groupKey || '')) >= 0;
+          return ['pinned', 'places', 'applications', 'filesystem', 'themes', 'language', 'system'].indexOf(String(groupKey || '')) >= 0;
         },
         startMenuGroupOpen: function (group) {
           var ui = this.startMenuEnsureUi();
@@ -2679,9 +2747,9 @@
             { key: 'places', title: 'Places', subtitle: 'Folders and explorer entry points', open: true, items: places },
             { key: 'applications', title: 'Programs', subtitle: 'Apps and server-authored modules', open: true, items: apps.concat(modules) },
             { key: 'filesystem', title: 'Desktop Files', subtitle: 'Expandable files and folders from /Home/Desktop', open: true, items: files },
-            { key: 'themes', title: 'Themes', subtitle: 'Shell theme presets', open: false, items: themes },
-            { key: 'language', title: 'Language', subtitle: 'Locale shortcuts', open: false, items: language },
-            { key: 'system', title: 'System', subtitle: 'Settings, security, and diagnostics', open: false, items: system }
+            { key: 'themes', title: 'Themes', subtitle: 'Shell theme presets', open: true, items: themes },
+            { key: 'language', title: 'Language', subtitle: 'Locale shortcuts', open: true, items: language },
+            { key: 'system', title: 'System', subtitle: 'Settings, security, and diagnostics', open: true, items: system }
           ];
           var self = this;
           groups = groups.map(function (group) { var copy = Object.assign({}, group); copy.items = self.startMenuFilterItems(copy.items); return copy; }).filter(function (group) { return (group.items || []).length > 0; });
@@ -2796,15 +2864,20 @@
           this._startMenuPopupDragMove = null;
           this._startMenuPopupDragEnd = null;
         },
+        activeLoginPublicAssets: function () {
+          var theme = this.themeStudioActiveTheme ? this.themeStudioActiveTheme() : {};
+          var cfg = this.activeLoginScreenConfig ? this.activeLoginScreenConfig() : {};
+          return !!((theme || {}).publicLogin || (cfg || {}).publicLogin);
+        },
         activeLoginAvatarUrl: function () {
           var cfg = this.activeLoginScreenConfig ? this.activeLoginScreenConfig() : {};
           var url = cfg.avatarUrl || cfg.warningImageUrl || '';
-          return this.isProtectedThemeUrl(url) && this.requiresSignin ? '' : url;
+          return this.isProtectedThemeUrl(url) && this.requiresSignin && !this.activeLoginPublicAssets() ? '' : url;
         },
         activeLoginWarningImageUrl: function () {
           var cfg = this.activeLoginScreenConfig ? this.activeLoginScreenConfig() : {};
           var url = cfg.warningImageUrl || '';
-          return this.isProtectedThemeUrl(url) && this.requiresSignin ? '' : url;
+          return this.isProtectedThemeUrl(url) && this.requiresSignin && !this.activeLoginPublicAssets() ? '' : url;
         },
         activeLoginWarningTitle: function () {
           var cfg = this.activeLoginScreenConfig ? this.activeLoginScreenConfig() : {};
@@ -2847,8 +2920,10 @@
             taskbarConfig: Object.assign({}, cfg.taskbarConfig || {}, src.taskbarConfig || {}),
             startMenuConfig: Object.assign({}, cfg.startMenuConfig || {}, src.startMenuConfig || {}),
             loginScreenConfig: Object.assign({}, loginCfg, {
-              wallpaperUrl: loginCfg.wallpaperUrl || ((desktop.login || {}).wallpaperUrl) || ''
+              wallpaperUrl: loginCfg.wallpaperUrl || ((desktop.login || {}).wallpaperUrl) || '',
+              publicLogin: !!(src.publicLogin || loginCfg.publicLogin)
             }),
+            publicLogin: !!src.publicLogin,
             mobileConfig: Object.assign({}, cfg.mobileConfig || {}, src.mobileConfig || {})
           }));
           if (((src.appearance || {}).accent) && mapped.cssVars) mapped.cssVars['--accent'] = src.appearance.accent;
@@ -3018,12 +3093,44 @@
           if (this.notifications.length > 6) this.notifications.length = 6;
           return item;
         },
-        inputDialog: function (title, message, value) {
-          var answer = window.prompt(message || title || 'Input', value || '');
-          return Promise.resolve(answer);
+        openShellDialog: function (kind, title, message, options) {
+          var self = this;
+          var opts = options || {};
+          if (this.shellDialog && this.shellDialog.open && this.shellDialog.resolver) {
+            try { this.shellDialog.resolver(null); } catch (err) {}
+          }
+          return new Promise(function (resolve) {
+            self.shellDialog = {
+              open: true,
+              kind: kind || 'input',
+              title: title || (kind === 'confirm' ? 'Confirm' : 'Input'),
+              message: message || '',
+              value: opts.value || '',
+              placeholder: opts.placeholder || '',
+              confirmText: opts.confirmText || (kind === 'confirm' ? 'Confirm' : 'OK'),
+              cancelText: opts.cancelText || 'Cancel',
+              danger: !!opts.danger,
+              resolver: resolve
+            };
+          });
         },
-        confirmDialog: function (title, message) {
-          return Promise.resolve(window.confirm(message || title || 'Continue?'));
+        inputDialog: function (title, message, value) {
+          return this.openShellDialog('input', title, message, { value: value || '', confirmText: 'OK' });
+        },
+        confirmDialog: function (title, message, options) {
+          return this.openShellDialog('confirm', title, message, options || {});
+        },
+        shellDialogCancel: function () {
+          var resolver = (this.shellDialog || {}).resolver;
+          this.shellDialog = { open: false, kind: '', title: '', message: '', value: '', placeholder: '', confirmText: 'OK', cancelText: 'Cancel', danger: false, resolver: null };
+          if (resolver) resolver(null);
+        },
+        shellDialogSubmit: function () {
+          var dialog = this.shellDialog || {};
+          var resolver = dialog.resolver;
+          var value = dialog.kind === 'confirm' ? true : String(dialog.value || '');
+          this.shellDialog = { open: false, kind: '', title: '', message: '', value: '', placeholder: '', confirmText: 'OK', cancelText: 'Cancel', danger: false, resolver: null };
+          if (resolver) resolver(value);
         },
         copyTextToClipboard: function (text) {
           if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(String(text || ''));

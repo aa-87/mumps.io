@@ -11,7 +11,7 @@
   function detectTextLike(entry) {
     var mime = ((entry || {}).mime || '').toLowerCase();
     var name = ((entry || {}).name || (entry || {}).title || '').toLowerCase();
-    return mime.indexOf('text/') === 0 || mime.indexOf('json') >= 0 || /\.(txt|text|md|markdown|m|mumps|rou|json|js|css|html|htm|mustache|mst|tpl|miotpl|xml|log|csv|hl7|x12|edi)$/i.test(name);
+    return mime.indexOf('text/') === 0 || mime.indexOf('json') >= 0 || mime.indexOf('xml') >= 0 || mime.indexOf('javascript') >= 0 || /\.(txt|text|md|markdown|m|int|mac|rou|json|js|css|html|htm|tpl|mustache|xml|log|csv|hl7|x12|edi|ini|cfg|conf|yaml|yml)$/i.test(name);
   }
 
   function detectPdfLike(entry) {
@@ -23,7 +23,7 @@
   function detectStructuredLike(entry) {
     var mime = ((entry || {}).mime || '').toLowerCase();
     var name = ((entry || {}).name || (entry || {}).title || '').toLowerCase();
-    return mime.indexOf('json') >= 0 || mime.indexOf('markdown') >= 0 || /\.(json|md|markdown|yml|yaml|xml|csv|hl7|x12|edi)$/i.test(name);
+    return mime.indexOf('json') >= 0 || mime.indexOf('markdown') >= 0 || mime.indexOf('xml') >= 0 || /\.(json|md|markdown|yml|yaml|xml|csv|hl7|x12|edi)$/i.test(name);
   }
 
   function detectImageLike(entry) {
@@ -2120,9 +2120,9 @@
         this.command('fs.read.range', { id: item.id || item.key || item.fileId, offset: 0, size: +((((this.boot || {}).vfs || {}).readWindowBytes) || 32768) }).then(function (msg) {
           var payload = payloadRoot(msg);
           var text = appendTruncationNotice(textFromPayload(payload), payload);
-          if (!text && !payload.mime) throw new Error('empty_range_payload');
+          if (!text && !payload.mime && !payload.eof) throw new Error('empty_range_payload');
           win.fileView.loading = false;
-          win.fileView.content = text;
+          win.fileView.content = text || '';
           win.fileView.mime = payload.mime || win.fileView.mime;
         }).catch(function () {
           return this.command('fs.read', { id: item.id || item.key || item.fileId }).then(function (msg) {
@@ -2130,7 +2130,7 @@
             var text = textFromPayload(payload);
             if (!text && !payload.mime) throw new Error('empty_read_payload');
             win.fileView.loading = false;
-            win.fileView.content = text;
+            win.fileView.content = text || '';
             win.fileView.mime = payload.mime || win.fileView.mime;
           });
         }.bind(this)).catch(function () {
@@ -2141,6 +2141,7 @@
         }.bind(this)).catch(function (err) {
           win.fileView.loading = false;
           win.fileView.error = (err && err.message) || 'Unable to open file.';
+          win.fileView.content = '';
         });
       },
       openImageViewerWindow: function (item) {
@@ -2178,7 +2179,7 @@
           height: mediaKind === 'video' ? 560 : 260,
           z: this.zCounter + 1,
           meta: { fileId: item.id || item.key || '', mime: item.mime || (mediaKind + '/*'), fileName: item.name || item.title || 'Media file', mediaKind: mediaKind },
-          fileView: { loading: true, content: '', mime: item.mime || (mediaKind + '/*'), mediaKind: mediaKind, loop: false }
+          fileView: { loading: true, content: '', mime: item.mime || (mediaKind + '/*'), mediaKind: mediaKind }
         };
         this.windows.push(win);
         this.focusWindow(id);
