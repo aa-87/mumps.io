@@ -205,7 +205,17 @@ LOAD(CONF,REQ,CTX,STATE,ERR)
 ACTIVETHM(STATE,CONF)
 	NEW OUT,ERR,KEY,MODE,DENSITY
 	KILL OUT,ERR,STATE("activeThemeProfile"),STATE("activeThemeKey")
-	IF '+$GET(STATE("authenticated")) QUIT
+	IF '+$GET(STATE("authenticated")) DO  QUIT
+	. IF '+$$PUBLICLD^MIOOSTHEME(.OUT) QUIT
+	. IF '+$DATA(OUT("profile")) QUIT
+	. MERGE STATE("activeThemeProfile")=OUT("profile")
+	. SET STATE("activeThemeKey")=$GET(OUT("profileKey"),$GET(OUT("activeKey")))
+	. SET KEY=$GET(STATE("activeThemeProfile","presetKey"))
+	. IF KEY="" SET KEY=$GET(STATE("activeThemeProfile","key"))
+	. IF KEY'="" SET STATE("themeKey")=KEY
+	. SET MODE=$GET(STATE("activeThemeProfile","mode"))
+	. IF MODE="" SET MODE=$GET(STATE("activeThemeProfile","activeMode"))
+	. IF MODE'="" SET STATE("themeMode")=MODE
 	IF '+$$LOAD^MIOOSTHEME(.STATE,.CONF,.OUT,.ERR) QUIT
 	IF '+$DATA(OUT("profile")) QUIT
 	MERGE STATE("activeThemeProfile")=OUT("profile")
@@ -253,12 +263,13 @@ PROTURL(URL,STATE)
 	QUIT 0
 	;
 SANPROF(ROOT,STATE)
-	NEW K,V
+	NEW K,V,PUBLIC
+	SET PUBLIC=+$GET(@ROOT@("publicLogin"))
 	IF $GET(@ROOT@("desktop","wallpaperUrl"))'="",$$PROTURL($GET(@ROOT@("desktop","wallpaperUrl")),.STATE) SET @ROOT@("desktop","wallpaperUrl")=""
 	IF $GET(@ROOT@("wallpaperUrl"))'="",$$PROTURL($GET(@ROOT@("wallpaperUrl")),.STATE) SET @ROOT@("wallpaperUrl")=""
-	IF $GET(@ROOT@("loginScreenConfig","wallpaperUrl"))'="",$$PROTURL($GET(@ROOT@("loginScreenConfig","wallpaperUrl")),.STATE) SET @ROOT@("loginScreenConfig","wallpaperUrl")=""
-	IF $GET(@ROOT@("loginScreenConfig","avatarUrl"))'="",$$PROTURL($GET(@ROOT@("loginScreenConfig","avatarUrl")),.STATE) SET @ROOT@("loginScreenConfig","avatarUrl")=""
-	IF $GET(@ROOT@("loginScreenConfig","warningImageUrl"))'="",$$PROTURL($GET(@ROOT@("loginScreenConfig","warningImageUrl")),.STATE) SET @ROOT@("loginScreenConfig","warningImageUrl")=""
+	IF 'PUBLIC,$GET(@ROOT@("loginScreenConfig","wallpaperUrl"))'="",$$PROTURL($GET(@ROOT@("loginScreenConfig","wallpaperUrl")),.STATE) SET @ROOT@("loginScreenConfig","wallpaperUrl")=""
+	IF 'PUBLIC,$GET(@ROOT@("loginScreenConfig","avatarUrl"))'="",$$PROTURL($GET(@ROOT@("loginScreenConfig","avatarUrl")),.STATE) SET @ROOT@("loginScreenConfig","avatarUrl")=""
+	IF 'PUBLIC,$GET(@ROOT@("loginScreenConfig","warningImageUrl"))'="",$$PROTURL($GET(@ROOT@("loginScreenConfig","warningImageUrl")),.STATE) SET @ROOT@("loginScreenConfig","warningImageUrl")=""
 	SET K="" FOR  SET K=$ORDER(@ROOT@("cssVars",K)) QUIT:K=""  DO
 	. SET V=$GET(@ROOT@("cssVars",K)) IF V'="",$$PROTURL(V,.STATE) KILL @ROOT@("cssVars",K)
 	SET K="" FOR  SET K=$ORDER(@ROOT@("colors",K)) QUIT:K=""  DO

@@ -756,8 +756,15 @@
         var state = this.ensureExplorerWindowState(win);
         var previewBytes = +((((this.boot || {}).vfs || {}).readPreviewBytes) || 16384);
         var self = this;
-        if (!win || !state || !item || !this.command) return Promise.resolve();
+        if (!win || !state || !item) return Promise.resolve();
         state.preview = { title: item.name || item.title || '', content: '', mime: item.mime || 'text/plain', imageSrc: '', mediaSrc: '', mediaKind: '' };
+        if (!this.command) {
+          return fetchTextBlob(this, item).then(function (text) {
+            state.preview.content = text || '';
+          }).catch(function (err) {
+            state.preview.content = (err && err.message) || 'Unable to preview file.';
+          });
+        }
         return this.command('fs.read.range', { id: item.id || item.key || item.fileId, offset: 0, size: previewBytes }).then(function (msg) {
           var payload = payloadRoot(msg);
           state.preview = {
@@ -2100,7 +2107,16 @@
         };
         this.windows.push(win);
         this.focusWindow(id);
-        if (!this.command) return;
+        if (!this.command) {
+          fetchTextBlob(this, item).then(function (text) {
+            win.fileView.loading = false;
+            win.fileView.content = text || '';
+          }).catch(function (err) {
+            win.fileView.loading = false;
+            win.fileView.error = (err && err.message) || 'Unable to open file.';
+          });
+          return;
+        }
         this.command('fs.read.range', { id: item.id || item.key || item.fileId, offset: 0, size: +((((this.boot || {}).vfs || {}).readWindowBytes) || 32768) }).then(function (msg) {
           var payload = payloadRoot(msg);
           var text = appendTruncationNotice(textFromPayload(payload), payload);
@@ -2124,7 +2140,7 @@
           });
         }.bind(this)).catch(function (err) {
           win.fileView.loading = false;
-          win.fileView.content = (err && err.message) || 'Unable to open file.';
+          win.fileView.error = (err && err.message) || 'Unable to open file.';
         });
       },
       openImageViewerWindow: function (item) {
@@ -2208,7 +2224,16 @@
         };
         this.windows.push(win);
         this.focusWindow(id);
-        if (!this.command) return;
+        if (!this.command) {
+          fetchTextBlob(this, item).then(function (text) {
+            win.fileView.loading = false;
+            win.fileView.content = normalizeStructuredContent(text || '', win.fileView.mime);
+          }).catch(function (err) {
+            win.fileView.loading = false;
+            win.fileView.error = (err && err.message) || 'Unable to open file.';
+          });
+          return;
+        }
         this.command('fs.read.range', { id: item.id || item.key || item.fileId, offset: 0, size: +((((this.boot || {}).vfs || {}).readWindowBytes) || 32768) }).then(function (msg) {
           var payload = payloadRoot(msg);
           var raw = textFromPayload(payload);
@@ -2225,7 +2250,7 @@
           });
         }.bind(this)).catch(function (err) {
           win.fileView.loading = false;
-          win.fileView.content = (err && err.message) || 'Unable to open file.';
+          win.fileView.error = (err && err.message) || 'Unable to open file.';
         });
       }
     }
