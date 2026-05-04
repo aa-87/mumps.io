@@ -7,7 +7,7 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","profile"))="" SET CONF("mioos","profile")="dev"
 	SET ISDEV=$SELECT($GET(CONF("mioos","profile"))="dev":1,1:0)
 	IF $GET(CONF("mioos","route","desktop"))="" SET CONF("mioos","route","desktop")="/mioos"
-	IF $GET(CONF("mioos","route","desktopAlias"))="" SET CONF("mioos","route","desktopAlias")="/os"
+	IF $GET(CONF("mioos","route","desktopAlias"))="" SET CONF("mioos","route","desktopAlias")="/"
 	IF $GET(CONF("mioos","route","bootstrap"))="" SET CONF("mioos","route","bootstrap")="/api/mioos/bootstrap"
 	IF $GET(CONF("mioos","route","view"))="" SET CONF("mioos","route","view")="/api/mioos/view"
 	IF $GET(CONF("mioos","route","signin"))="" SET CONF("mioos","route","signin")="/api/mioos/auth/signin"
