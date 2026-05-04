@@ -70,6 +70,7 @@ MIOOST ; MIOOS tests
 	DO T078
 	DO T079
 	DO T080
+	DO T081
 	DO RUN^MIOOSTBLC
 	QUIT
 	;
@@ -1494,7 +1495,7 @@ T078
 
 T079
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","readTextFileResilient"),"[MIOOST][T079][resilient text viewer fallback]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","is-media-toolbar"),"[MIOOST][T079][media viewer toolbar]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-window-toolbar"),"[MIOOST][T079][common viewer toolbar]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mediaLoop"),"[MIOOST][T079][media loop preserved]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","Login background custom CSS"),"[MIOOST][T079][login background css editor]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","--login-card-width-desktop"),"[MIOOST][T079][login desktop width variable]")
@@ -1525,5 +1526,31 @@ T080
 	DO OK^MIOTASSERT($$FILEHAS("examples/mioos_modules/table/samples/basic_readonly.m","TBASICRO"),"[MIOOST][T080][basic readonly sample]")
 	DO OK^MIOTASSERT($$FILEHAS("examples/mioos_modules/table/samples/validation_rules.m","ROW^TVALRULE"),"[MIOOST][T080][validation hook sample]")
 	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/ROI_68A_Table_Backend_Contract_Tests_and_Samples.md","Backend contract coverage"),"[MIOOST][T080][roi68a docs]")
+	QUIT
+	;
+
+T081
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","fs.text.chunk"),"[MIOOST][T081][text chunk ws command]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","FSTEXTCHUNK"),"[MIOOST][T081][text chunk backend handler]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSFS.m","READRANGE"),"[MIOOST][T081][text chunk range backend]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","readTextChunkViaWebSocket"),"[MIOOST][T081][text chunk client command]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","textViewerOnScroll"),"[MIOOST][T081][text scrollbar sync]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-text-virtual-viewer"),"[MIOOST][T081][text virtual viewer ui]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-window-toolbar"),"[MIOOST][T081][common window toolbar]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","Close / Exit"),"[MIOOST][T081][file close exit action]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","Cut"),"[MIOOST][T081][edit cut]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","Copy"),"[MIOOST][T081][edit copy]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","Paste"),"[MIOOST][T081][edit paste]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","Loop playback"),"[MIOOST][T081][media loop preserved in toolbar]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-viewer-toolbar"),0,"[MIOOST][T081][old viewer toolbar removed]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","commonWindowCustomMenuLabel"),"[MIOOST][T081][future common menu api]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","--context-menu-text"),"[MIOOST][T081][theme context font color]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","--toolbar-text"),"[MIOOST][T081][theme toolbar font color]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","loginBoxStyleClass"),"[MIOOST][T081][login style runtime class]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_i18n.js","url.searchParams.delete('lang')"),"[MIOOST][T081][english default url]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_i18n.js","urlCode = code === 'es' ? 'sp' : code"),"[MIOOST][T081][spanish sp url]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSI18N.m","IF CODE=""sp"" SET CODE=""es"""),"[MIOOST][T081][backend sp alias]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","mioos-transfer-scan"),"[MIOOST][T081][transfer animation]")
+	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","Common window toolbar contract"),"[MIOOST][T081][llm toolbar update]")
 	QUIT
 	;

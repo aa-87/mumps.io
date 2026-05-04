@@ -673,6 +673,29 @@
         changeLocale: function (code) {
           if (I18N.changeLocale) I18N.changeLocale(this, code);
         },
+        commonWindowCustomMenuLabel: function (win) {
+          var key = String((win || {}).appKey || '');
+          if (key === 'terminal') return 'Terminal';
+          if (key === 'transfers') return 'Transfers';
+          if (key === 'text-viewer') return 'Text';
+          if (key === 'media-viewer') return 'Media';
+          if (key === 'image-viewer') return 'Image';
+          if (key === 'pdf-viewer' || key === 'structured-viewer') return 'View';
+          if (key === 'app-catalog' || key === 'ui-modules') return 'Catalogue';
+          if (key === 'permissions' || key === 'permissions-ui') return 'Permissions';
+          if (key === 'backend-table' || key === 'table' || key === 'data-grid' || key === 'table-samples' || key === 'sample-table' || key === 'patient-registration') return 'Table';
+          if (key === 'explorer' || key === 'home' || key === 'documents' || key === 'my-computer') return 'Explorer';
+          return (win && win.moduleWindow) ? 'Module' : 'Window';
+        },
+        showWindowAbout: function (win) {
+          var title = ((win || {}).title) || ((win || {}).appKey) || 'Window';
+          var key = ((win || {}).appKey) || 'app';
+          this.showAlert('About ' + title, 'MIOOS window: ' + key + '. Common toolbar contract: File, Edit, module menu, Help.');
+        },
+        loginBoxStyleClass: function () {
+          var cfg = ((this.themeStudioActiveTheme && this.themeStudioActiveTheme()) || {}).loginScreenConfig || {};
+          return 'style-' + String(cfg.loginBoxStyle || 'xp-transparent');
+        },
         openTransfersWindow: function () {
           var win = this.windows.find(function (item) { return item.appKey === 'transfers'; });
           if (!win) return;
@@ -1729,7 +1752,9 @@
             loginCard: { background: '--login-box-bg', color: '--login-box-text', 'border-color': '--login-box-border', 'box-shadow': '--login-box-shadow', 'border-radius': '--login-box-radius' },
             loginAvatar: { background: '--login-avatar-bg', 'border-color': '--login-avatar-border', 'box-shadow': '--login-avatar-shadow' },
             loginButton: { background: '--login-button-bg', color: '--login-button-text', 'border-color': '--login-button-border', 'border-radius': '--login-button-radius' },
-            loginNotice: { background: '--login-notice-bg', color: '--login-notice-text', 'border-color': '--login-notice-border', 'border-radius': '--login-notice-radius' }
+            loginNotice: { background: '--login-notice-bg', color: '--login-notice-text', 'border-color': '--login-notice-border', 'border-radius': '--login-notice-radius' },
+            commonToolbar: { background: '--toolbar-bg', color: '--toolbar-text', 'border-color': '--toolbar-border' },
+            contextMenu: { background: '--menu-bg', color: '--context-menu-text', 'border-color': '--menu-border' }
           };
         },
         themeStudioCustomElementCssValue: function (elementKey) {
@@ -1892,6 +1917,7 @@
             if (!source.sourceId && source.baseTheme) source.sourceId = source.baseTheme;
             selected = source.darkEnabled ? (variants.dark || {}) : (variants.light || {});
             next = Object.assign({}, source, selected || {});
+            next.customElementCss = Object.assign({}, source.customElementCss || {}, (selected || {}).customElementCss || {});
             next.variants = { light: this.themeStudioClone(variants.light || {}), dark: this.themeStudioClone(variants.dark || {}) };
           } else {
             next = parsed;
@@ -1905,7 +1931,8 @@
           store.customThemes.push(parsed.id);
           store.activeThemeId = parsed.id;
           this.themeStudioPersistCustomThemes();
-          this.applyThemeStudioConfig(parsed, { silent: true, persist: false });
+          this.themeStudioActivate(parsed.id, { persist: true, silent: true });
+          this.showAlert('Theme Studio', 'Theme imported and applied.');
         },
         themeStudioImportThemeFile: function (event) {
           var self = this;
@@ -2120,7 +2147,7 @@
         },
         themeStudioManagedVarKeys: function () {
           return [
-            '--desktop-bg','--desktop-overlay','--window-bg','--window-border','--window-border-strong','--titlebar-bg','--titlebar-text','--titlebar-inactive','--titlebar-active-start','--titlebar-active-end','--titlebar-inactive-start','--titlebar-inactive-end','--accent','--accent-soft','--taskbar-bg','--taskbar-border','--taskbar-text','--menu-bg','--menu-border','--menu-text','--menu-hover','--menu-divider','--menu-shadow','--icon-label-bg','--icon-label-text','--icon-shadow','--shadow-window','--shadow-window-active','--font-ui','--font-titlebar','--font-taskbar','--font-menu','--font-icon-label','--font-size-ui','--font-size-titlebar','--font-size-taskbar','--font-size-menu','--font-size-icon-label','--window-radius','--taskbar-height','--taskbar-transparency','--taskbar-overlay','--taskbar-blur','--taskbar-effective-bg','--theme-surface','--theme-surface-strong','--theme-panel-bg','--theme-panel-border','--theme-field-bg','--theme-field-text','--theme-muted-text','--theme-tab-bg','--theme-tab-active-bg','--theme-tab-border','--theme-preview-card-bg','--theme-preview-card-border','--titlebar-height','--desktop-grid-cell','--desktop-icon-size','--button-radius','--button-tint','--button-tint-hover','--button-text','--glass-opacity','--control-min','--control-max','--control-close','--start-menu-width','--start-menu-accent','--taskbar-position','--desktop-icon-size-mobile','--taskbar-height-mobile','--desktop-wallpaper','--login-wallpaper','--theme-minimize-speed','--theme-progress-speed','--theme-open-speed','--theme-hover-speed','--theme-menu-speed','--theme-wallpaper-speed','--theme-taskbar-speed','--login-box-bg','--login-box-border','--login-box-shadow','--login-box-text','--login-avatar-size'
+            '--desktop-bg','--desktop-overlay','--window-bg','--window-border','--window-border-strong','--titlebar-bg','--titlebar-text','--titlebar-inactive','--titlebar-active-start','--titlebar-active-end','--titlebar-inactive-start','--titlebar-inactive-end','--accent','--accent-soft','--taskbar-bg','--taskbar-border','--taskbar-text','--menu-bg','--menu-border','--menu-text','--menu-hover','--menu-hover-text','--start-child-text','--context-menu-text','--toolbar-text','--toolbar-bg','--toolbar-border','--menu-divider','--menu-shadow','--icon-label-bg','--icon-label-text','--icon-shadow','--shadow-window','--shadow-window-active','--font-ui','--font-titlebar','--font-taskbar','--font-menu','--font-icon-label','--font-size-ui','--font-size-titlebar','--font-size-taskbar','--font-size-menu','--font-size-icon-label','--window-radius','--taskbar-height','--taskbar-transparency','--taskbar-overlay','--taskbar-blur','--taskbar-effective-bg','--theme-surface','--theme-surface-strong','--theme-panel-bg','--theme-panel-border','--theme-field-bg','--theme-field-text','--theme-muted-text','--theme-tab-bg','--theme-tab-active-bg','--theme-tab-border','--theme-preview-card-bg','--theme-preview-card-border','--titlebar-height','--desktop-grid-cell','--desktop-icon-size','--button-radius','--button-tint','--button-tint-hover','--button-text','--glass-opacity','--control-min','--control-max','--control-close','--start-menu-width','--start-menu-accent','--taskbar-position','--desktop-icon-size-mobile','--taskbar-height-mobile','--desktop-wallpaper','--login-wallpaper','--theme-minimize-speed','--theme-progress-speed','--theme-open-speed','--theme-hover-speed','--theme-menu-speed','--theme-wallpaper-speed','--theme-taskbar-speed','--login-box-bg','--login-box-border','--login-box-shadow','--login-box-text','--login-avatar-size'
           ];
         },
         themeStudioLightSurfaceVars: function (theme) {

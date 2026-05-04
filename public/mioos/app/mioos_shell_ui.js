@@ -82,7 +82,7 @@
             '</section>' +
             '<section v-if="vm.requiresSignin" class="mioos-auth-overlay theme-login-runtime" aria-hidden="false">' +
               '<div class="mioos-auth-login-bg" :style="{ backgroundImage: vm.themeStudioLoginWallpaperCss(vm.themeStudioActiveTheme()) }"></div>' +
-              '<div class="mioos-auth-card theme-login-card" role="dialog" aria-modal="true" :aria-label="vm.boot.product.name">' +
+              '<div class="mioos-auth-card theme-login-card" :class="vm.loginBoxStyleClass ? vm.loginBoxStyleClass() : \'style-xp-transparent\'" role="dialog" aria-modal="true" :aria-label="vm.boot.product.name">' +
                 '<div class="theme-login-avatar-wrap">' +
                   '<img v-if="vm.activeLoginAvatarUrl()" class="theme-login-avatar-img" :src="vm.activeLoginAvatarUrl()" alt="Login avatar">' +
                   '<div v-else class="theme-login-avatar-fallback" aria-hidden="true">M</div>' +
@@ -149,6 +149,74 @@
         }
       });
 
+      app.component('mioos-window-toolbar', {
+        props: ['window'],
+        computed: {
+          vm: function () { return root(this); },
+          isViewer: function () { return /-viewer$/.test(String((this.window || {}).appKey || '')); },
+          isText: function () { return String((this.window || {}).appKey || '') === 'text-viewer'; },
+          isMedia: function () { return String((this.window || {}).appKey || '') === 'media-viewer'; },
+          mediaLoop: {
+            get: function () { return !!((((this.window || {}).fileView) || {}).mediaLoop); },
+            set: function (value) { if (this.window && this.window.fileView) this.window.fileView.mediaLoop = !!value; }
+          },
+          customLabel: function () { return this.vm.commonWindowCustomMenuLabel ? this.vm.commonWindowCustomMenuLabel(this.window) : ''; }
+        },
+        methods: {
+          cut: function () { this.exec('cut'); },
+          copy: function () { this.exec('copy'); },
+          paste: function () { this.exec('paste'); },
+          exec: function (cmd) { try { document.execCommand(cmd); } catch (err) {} },
+          close: function () { if (this.vm.closeWindow) this.vm.closeWindow(this.window.id); },
+          about: function () { if (this.vm.showWindowAbout) this.vm.showWindowAbout(this.window); },
+          download: function () { if (this.vm.downloadViewerFile) this.vm.downloadViewerFile(this.window); },
+          refreshText: function () { if (this.vm.textViewerRefresh) this.vm.textViewerRefresh(this.window.id); },
+          clearTerminal: function () { if (this.vm.clearTerminalWindow) this.vm.clearTerminalWindow(this.window.id); },
+          refreshTerminal: function () { if (this.vm.pollTerminal) this.vm.pollTerminal(this.window.id); },
+          transferPause: function () { if (this.vm.pauseAllTransfers) this.vm.pauseAllTransfers(); },
+          transferResume: function () { if (this.vm.resumePausedTransfers) this.vm.resumePausedTransfers(); },
+          explorerUpload: function () { if (this.vm.explorerPromptUpload) this.vm.explorerPromptUpload(this.window.id); },
+          explorerNewFolder: function () { if (this.vm.explorerCreateFolder) this.vm.explorerCreateFolder(this.window.id); }
+        },
+        template: `
+          <nav class="mioos-window-menu-vue" role="menubar" :aria-label="(window.title || 'Window') + ' menu'">
+            <div class="mioos-window-menu-group-vue" role="none">
+              <button type="button" role="menuitem" aria-haspopup="true">File</button>
+              <div class="mioos-window-menu-dropdown-vue" role="menu">
+                <button v-if="isViewer" type="button" role="menuitem" @click="download">Download</button>
+                <button v-if="isText" type="button" role="menuitem" @click="refreshText">Reload visible text chunks</button>
+                <button v-if="window.appKey === 'explorer' || window.appKey === 'home' || window.appKey === 'documents' || window.appKey === 'my-computer'" type="button" role="menuitem" @click="explorerNewFolder">New Folder</button>
+                <button v-if="window.appKey === 'explorer' || window.appKey === 'home' || window.appKey === 'documents' || window.appKey === 'my-computer'" type="button" role="menuitem" @click="explorerUpload">Upload</button>
+                <button type="button" role="menuitem" @click="close">Close / Exit</button>
+              </div>
+            </div>
+            <div class="mioos-window-menu-group-vue" role="none">
+              <button type="button" role="menuitem" aria-haspopup="true">Edit</button>
+              <div class="mioos-window-menu-dropdown-vue" role="menu">
+                <button type="button" role="menuitem" @click="cut">Cut</button>
+                <button type="button" role="menuitem" @click="copy">Copy</button>
+                <button type="button" role="menuitem" @click="paste">Paste</button>
+              </div>
+            </div>
+            <div v-if="customLabel" class="mioos-window-menu-group-vue" role="none">
+              <button type="button" role="menuitem" aria-haspopup="true">[[ customLabel ]]</button>
+              <div class="mioos-window-menu-dropdown-vue" role="menu">
+                <label v-if="isMedia" class="mioos-window-menu-check-vue"><input type="checkbox" v-model="mediaLoop"> Loop playback</label>
+                <button v-if="window.appKey === 'terminal'" type="button" role="menuitem" @click="refreshTerminal">Refresh terminal</button>
+                <button v-if="window.appKey === 'terminal'" type="button" role="menuitem" @click="clearTerminal">Clear terminal</button>
+                <button v-if="window.appKey === 'transfers'" type="button" role="menuitem" @click="transferPause">Pause All</button>
+                <button v-if="window.appKey === 'transfers'" type="button" role="menuitem" @click="transferResume">Resume Paused</button>
+                <button v-if="isText" type="button" role="menuitem" @click="refreshText">Refresh chunk cache</button>
+                <button v-if="!isMedia && !isText && window.appKey !== 'terminal' && window.appKey !== 'transfers'" type="button" role="menuitem" @click="about">About this module</button>
+              </div>
+            </div>
+            <div class="mioos-window-menu-group-vue" role="none">
+              <button type="button" role="menuitem" aria-haspopup="true">Help</button>
+              <div class="mioos-window-menu-dropdown-vue" role="menu"><button type="button" role="menuitem" @click="about">About</button></div>
+            </div>
+          </nav>`
+      });
+
       app.component('window-frame', {
         props: ['window'],
         data: function () {
@@ -189,6 +257,7 @@
                 '<button type="button" class="mioos-window-control is-close" :title="vm.t(\'action.close\')" @click.stop="vm.closeWindow(window.id)"><span>×</span></button>' +
               '</div>' +
             '</header>' +
+            '<mioos-window-toolbar :window="window"></mioos-window-toolbar>' +
             '<div class="mioos-window-content-vue"><component :is="contentComponent" :window="window"></component></div>' +
             '<span v-for="edge in resizeEdges" :key="edge" class="mioos-resize-handle-vue" :data-edge="edge" :data-resize-edge="edge" @pointerdown.stop.prevent="vm.beginResize(window, edge, $event)"></span>' +
           '</section>'
@@ -329,31 +398,37 @@
 
       app.component('mioos-surface-viewer', {
         props: ['window'],
-        data: function () { return { mediaLoop: false }; },
         computed: {
           vm: function () { return root(this); },
           fileView: function () { return (this.window && this.window.fileView) || {}; },
           kind: function () { return String((this.window || {}).appKey || '').replace('-viewer', '') || 'file'; },
           mediaKind: function () { return this.fileView.mediaKind || (((this.window || {}).meta || {}).mediaKind) || (String(this.fileView.mime || '').indexOf('video/') === 0 ? 'video' : 'audio'); },
           sourceUrl: function () { return this.fileView.content || ''; },
-          safeText: function () { return String(this.fileView.content || ''); }
+          safeText: function () { return String(this.fileView.content || ''); },
+          textStream: function () { return this.fileView.textStream || null; },
+          textChunks: function () { return this.textStream && this.vm.textViewerVisibleChunks ? this.vm.textViewerVisibleChunks(this.window.id) : []; },
+          textSpacerStyle: function () { var s = this.textStream || {}; return { height: Math.max(600, +(s.scrollHeight || 4000)) + 'px' }; },
+          textContentStyle: function () { var s = this.textStream || {}; return { transform: 'translateY(' + Math.max(0, +(s.contentTop || 0)) + 'px)' }; },
+          textStatus: function () { var s = this.textStream || {}; return s.error || s.status || (this.fileView.loading ? 'Opening text stream…' : ''); },
+          mediaLoop: function () { return !!this.fileView.mediaLoop; }
+        },
+        mounted: function () {
+          var vm = this.vm, win = this.window;
+          if (this.textStream) vm.$nextTick(function () { if (vm.textViewerLoadChunk) vm.textViewerLoadChunk(win.id, 0); });
         },
         methods: {
-          download: function () { if (this.vm.downloadViewerFile) this.vm.downloadViewerFile(this.window); },
-          retry: function () {
-            var meta = (this.window || {}).meta || {};
-            var item = { id: meta.fileId, key: meta.fileId, fileId: meta.fileId, name: meta.fileName || this.window.title, title: meta.fileName || this.window.title, mime: meta.mime };
-            if (this.kind === 'text' && this.vm.openTextViewerWindow) { this.vm.closeWindow(this.window.id); this.vm.openTextViewerWindow(item); return; }
-            if (this.kind === 'image' && this.vm.openImageViewerWindow) { this.vm.closeWindow(this.window.id); this.vm.openImageViewerWindow(item); return; }
-            if (this.kind === 'media' && this.vm.openMediaViewerWindow) { this.vm.closeWindow(this.window.id); this.vm.openMediaViewerWindow(item); return; }
-            if (this.kind === 'pdf' && this.vm.openPdfViewerWindow) { this.vm.closeWindow(this.window.id); this.vm.openPdfViewerWindow(item); }
-          }
+          onTextScroll: function (event) { if (this.vm.textViewerOnScroll) this.vm.textViewerOnScroll(this.window.id, event); }
         },
         template: '' +
           '<div class="mioos-surface mioos-surface-viewer-native" :class="\'is-\' + kind">' +
-            '<header class="mioos-viewer-toolbar" :class="{ \'is-media-toolbar\': kind === \'media\' }"><div><strong>[[ (window.meta || {}).fileName || window.title ]]</strong><span>[[ fileView.mime || (window.meta || {}).mime || (kind === \'media\' ? \'Media preview\' : \'File preview\') ]]</span></div><button type="button" class="mioos-explorer-command" @click="retry">Reload</button><button type="button" class="mioos-explorer-command" @click="download">Download</button><label v-if="kind === \'media\'" class="mioos-viewer-loop-toggle"><input type="checkbox" v-model="mediaLoop"> Loop</label></header>' +
-            '<section class="mioos-viewer-body" :class="{ \'is-media-full\': kind === \'media\' }">' +
-              '<div v-if="fileView.loading" class="mioos-viewer-state">Loading file…</div>' +
+            '<section class="mioos-viewer-body" :class="{ \'is-media-full\': kind === \'media\', \'is-text-virtual\': !!textStream }">' +
+              '<div v-if="textStream" class="mioos-text-virtual-viewer" @scroll="onTextScroll">' +
+                '<div class="mioos-text-virtual-spacer" :style="textSpacerStyle"><div class="mioos-text-chunk-stack" :style="textContentStyle">' +
+                  '<pre v-for="chunk in textChunks" :key="chunk.offset" class="mioos-viewer-text mioos-viewer-text-chunk"><span class="mioos-text-chunk-offset">Byte [[ chunk.offset ]]</span>[[ chunk.content ]]</pre>' +
+                '</div></div>' +
+                '<div class="mioos-text-stream-status" :class="{ \'is-error\': !!((textStream || {}).error) }">[[ textStatus ]]</div>' +
+              '</div>' +
+              '<div v-else-if="fileView.loading" class="mioos-viewer-state">Opening file…</div>' +
               '<div v-else-if="fileView.error" class="mioos-viewer-state is-error">[[ fileView.error ]]</div>' +
               '<pre v-else-if="kind === \'text\' || kind === \'structured\'" class="mioos-viewer-text">[[ safeText ]]</pre>' +
               '<img v-else-if="kind === \'image\'" class="mioos-viewer-image" :src="sourceUrl" :alt="(window.meta || {}).fileName || window.title">' +
@@ -492,6 +567,11 @@
                         <div class="mioos-theme-row-vue">
                           <label><span>Title bar gradient</span><input type="text" :value="vm.themeStudioTextValue('--titlebar-bg', '')" @input="vm.themeStudioUpdateVar('--titlebar-bg', $event.target.value)"></label>
                           <label><span>Title bar text</span><input type="color" :value="vm.themeStudioColorValue('--titlebar-text', '#10233f')" @input="vm.themeStudioUpdateVar('--titlebar-text', $event.target.value)"></label>
+                          <label><span>Toolbar text</span><input type="color" :value="vm.themeStudioColorValue('--toolbar-text', '#10233f')" @input="vm.themeStudioUpdateVar('--toolbar-text', $event.target.value)"></label>
+                          <label><span>Context menu text</span><input type="color" :value="vm.themeStudioColorValue('--context-menu-text', vm.themeStudioColorValue('--menu-text', '#10233f'))" @input="vm.themeStudioUpdateVar('--context-menu-text', $event.target.value)"></label>
+                          <label><span>Start menu text</span><input type="color" :value="vm.themeStudioColorValue('--menu-text', '#10233f')" @input="vm.themeStudioUpdateVar('--menu-text', $event.target.value)"></label>
+                          <label><span>Start child text</span><input type="color" :value="vm.themeStudioColorValue('--start-child-text', vm.themeStudioColorValue('--menu-text', '#10233f'))" @input="vm.themeStudioUpdateVar('--start-child-text', $event.target.value)"></label>
+                          <label><span>Start hover text</span><input type="color" :value="vm.themeStudioColorValue('--menu-hover-text', '#ffffff')" @input="vm.themeStudioUpdateVar('--menu-hover-text', $event.target.value)"></label>
                           <label><span>Window background</span><input type="text" :value="vm.themeStudioTextValue('--window-bg', '')" @input="vm.themeStudioUpdateVar('--window-bg', $event.target.value)"></label>
                           <label><span>Window border</span><input type="color" :value="vm.themeStudioColorValue('--window-border', '#2456a6')" @input="vm.themeStudioUpdateVar('--window-border', $event.target.value)"></label>
                           <label><span>Window radius</span><input type="range" min="0" max="24" step="1" :value="parseInt(vm.themeStudioTextValue('--window-radius', '10px'), 10) || 10" @input="vm.themeStudioUpdateVar('--window-radius', $event.target.value + 'px')"></label>

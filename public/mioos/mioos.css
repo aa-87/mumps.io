@@ -3965,3 +3965,164 @@ html[dir="rtl"] .mioos-start-menu-vue:not(.style-popup).position-top,
 }
 
 /* ROI 72C3: restore original modal backdrops marker kept for patient/table regression tests. */
+
+/* ROI 72D text media and common window menu hardening. */
+.mioos-window-menu-vue {
+  position: relative;
+  z-index: 8;
+  display: flex;
+  align-items: stretch;
+  gap: 1px;
+  min-height: 28px;
+  padding: 2px 6px;
+  border-bottom: 1px solid var(--toolbar-border, var(--theme-panel-border, rgba(15,23,42,.18)));
+  background: var(--toolbar-bg, var(--theme-surface-strong, rgba(248,250,252,.92)));
+  color: var(--toolbar-text, var(--menu-text, #0f172a));
+  font-family: var(--font-menu, var(--font-ui));
+  font-size: var(--font-size-menu, 12px);
+}
+.mioos-window-menu-group-vue { position: relative; display: flex; align-items: stretch; }
+.mioos-window-menu-group-vue > button {
+  min-width: 46px;
+  min-height: 24px;
+  padding: 2px 9px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  box-shadow: none;
+}
+.mioos-window-menu-group-vue:hover > button,
+.mioos-window-menu-group-vue:focus-within > button {
+  border-color: var(--toolbar-border, rgba(59,130,246,.35));
+  background: var(--menu-hover, rgba(59,130,246,.14));
+  color: var(--menu-hover-text, inherit);
+}
+.mioos-window-menu-dropdown-vue {
+  position: absolute;
+  top: calc(100% - 1px);
+  left: 0;
+  display: none;
+  min-width: 184px;
+  padding: 4px;
+  border: 1px solid var(--menu-border, rgba(15,23,42,.24));
+  border-radius: 6px;
+  background: var(--menu-bg, var(--theme-surface-strong, #ffffff));
+  color: var(--context-menu-text, var(--menu-text, #0f172a));
+  box-shadow: var(--menu-shadow, 0 12px 30px rgba(15,23,42,.24));
+}
+.mioos-window-menu-group-vue:hover .mioos-window-menu-dropdown-vue,
+.mioos-window-menu-group-vue:focus-within .mioos-window-menu-dropdown-vue { display: grid; gap: 2px; }
+.mioos-window-menu-dropdown-vue button,
+.mioos-window-menu-check-vue {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  min-height: 26px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  box-shadow: none;
+}
+.mioos-window-menu-dropdown-vue button:hover,
+.mioos-window-menu-check-vue:hover { background: var(--menu-hover, rgba(59,130,246,.14)); color: var(--menu-hover-text, inherit); }
+html[dir="rtl"] .mioos-window-menu-dropdown-vue,
+.mioos-shell-vue.is-rtl .mioos-window-menu-dropdown-vue { left: auto; right: 0; }
+.theme-dark-mode .mioos-window-menu-vue {
+  background: var(--toolbar-bg, #0f172a);
+  color: var(--toolbar-text, #f8fafc);
+  border-color: var(--toolbar-border, #334155);
+}
+.theme-dark-mode .mioos-window-menu-dropdown-vue {
+  background: var(--menu-bg, #111827);
+  color: var(--context-menu-text, var(--menu-text, #f8fafc));
+  border-color: var(--menu-border, #334155);
+}
+.mioos-surface-viewer-native { min-height: 0; }
+.mioos-viewer-body.is-text-virtual { padding: 0; overflow: hidden; }
+.mioos-text-virtual-viewer {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background: var(--theme-field-bg, #0b1220);
+  color: var(--theme-field-text, #e5e7eb);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+}
+.mioos-text-virtual-spacer { position: relative; min-height: 100%; }
+.mioos-text-chunk-stack { position: absolute; left: 0; right: 0; top: 0; padding: 10px 12px 44px; }
+.mioos-viewer-text-chunk {
+  margin: 0 0 10px;
+  padding: 8px 10px 10px;
+  border: 1px solid var(--theme-panel-border, rgba(148,163,184,.24));
+  border-radius: 8px;
+  background: rgba(15,23,42,.58);
+  color: inherit;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.mioos-text-chunk-offset { display: block; margin: 0 0 6px; opacity: .65; font-size: 11px; user-select: none; }
+.mioos-text-stream-status {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  padding: 5px 10px;
+  border-top: 1px solid var(--theme-panel-border, rgba(148,163,184,.24));
+  background: var(--toolbar-bg, rgba(15,23,42,.92));
+  color: var(--toolbar-text, #f8fafc);
+  font-family: var(--font-ui, sans-serif);
+  font-size: 11px;
+}
+.mioos-text-stream-status.is-error { color: #fecaca; }
+.theme-login-card.style-xp-transparent {
+  background: rgba(11, 28, 52, .58);
+  border-color: rgba(255,255,255,.32);
+  box-shadow: 0 20px 54px rgba(2,8,23,.44);
+}
+.theme-login-card.style-glow-vibrant {
+  background: linear-gradient(145deg, rgba(255,255,255,.34), rgba(96,165,250,.18));
+  border-color: rgba(255,255,255,.52);
+  box-shadow: 0 0 0 1px rgba(255,255,255,.22), 0 28px 80px rgba(37,99,235,.34);
+  backdrop-filter: blur(24px) saturate(1.28);
+}
+.theme-login-card.style-curve-minimal {
+  background: rgba(255,255,255,.92);
+  color: #0f172a;
+  border-color: rgba(15,23,42,.12);
+  box-shadow: 0 18px 42px rgba(15,23,42,.22);
+  border-radius: 28px;
+}
+.theme-login-avatar-img,
+.theme-login-avatar-fallback { width: var(--login-avatar-size, 82px); height: var(--login-avatar-size, 82px); max-width: 160px; max-height: 160px; }
+.mioos-start-entry-vue.is-child,
+.mioos-start-modern-item.is-child,
+.mioos-start-group-items-vue .mioos-start-entry-vue em { color: var(--start-child-text, inherit); }
+.mioos-start-entry-vue:hover strong,
+.mioos-start-entry-vue:hover em,
+.mioos-start-entry-vue.is-selected strong,
+.mioos-start-entry-vue.is-selected em { color: var(--menu-hover-text, inherit); }
+.mioos-popup-menu,
+.mioos-explorer-context-menu,
+.mioos-context-menu-vue { color: var(--context-menu-text, var(--menu-text, inherit)); }
+.mioos-explorer-toolbar,
+.mioos-surface-toolbar,
+.mioos-classic-toolbar,
+.mioos-classic-panelhead { color: var(--toolbar-text, inherit); }
+.mioos-classic-transferoverview { position: relative; overflow: hidden; }
+.mioos-classic-transferoverview::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 -40%;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.28), transparent);
+  animation: mioos-transfer-scan 1.8s linear infinite;
+  pointer-events: none;
+}
+@keyframes mioos-transfer-scan { from { transform: translateX(0); } to { transform: translateX(350%); } }

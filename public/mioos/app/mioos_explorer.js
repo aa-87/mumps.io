@@ -129,6 +129,23 @@
     return Promise.race([wsPromise, fetchPromise]).catch(function () { return httpFallback(); });
   }
 
+  function alignTextChunkOffset(offset, chunkSize) {
+    chunkSize = Math.max(4096, +chunkSize || 262144);
+    offset = Math.max(0, +offset || 0);
+    return Math.floor(offset / chunkSize) * chunkSize;
+  }
+
+  function textChunkHeight(content) {
+    var text = String(content || '');
+    var lines = text ? text.split(/\r\n|\r|\n/).length : 1;
+    return Math.max(36, Math.min(200000, lines * 18));
+  }
+
+  function textViewerChunkArray(stream) {
+    var chunks = (stream || {}).chunks || {};
+    return Object.keys(chunks).map(function (key) { return chunks[key]; }).filter(function (chunk) { return chunk && typeof chunk.offset !== 'undefined'; }).sort(function (a, b) { return (+a.offset || 0) - (+b.offset || 0); });
+  }
+
   function stringToBytes(raw) {
     var value = String(raw || '');
     var bytes = new Uint8Array(value.length);
@@ -808,6 +825,103 @@
             return { message: msg, payload: payload, text: textFromPayload(payload) };
           });
         });
+      },
+      readTextChunkViaWebSocket: function (item, options) {
+        var opts = options || {};
+        var id = (item && (item.id || item.key || item.fileId)) || '';
+        var size = Math.max(4096, Math.min(1048576, +(opts.size || ((((this.boot || {}).vfs || {}).textChunkBytes) || 262144))));
+        var offset = alignTextChunkOffset(+(opts.offset || 0), size);
+        var timeoutMs = +(opts.timeoutMs || 12000);
+        var self = this;
+        if (!id) return Promise.reject(new Error('file_id_missing'));
+        if (!this.command) return Promise.reject(new Error('websocket_command_unavailable'));
+        return this.command('fs.text.chunk', { id: id, offset: offset, size: size }, { timeoutMs: timeoutMs }).catch(function () {
+          return self.command('fs.read.range', { id: id, offset: offset, size: size }, { timeoutMs: timeoutMs });
+        }).then(function (msg) {
+          var payload = payloadRoot(msg);
+          var payloadId = fileIdFromPayload(payload);
+          if (id && payloadId && payloadId !== String(id)) throw new Error('stale_text_payload');
+          return { message: msg, payload: payload, text: textFromPayload(payload) };
+        });
+      },
+      textViewerInitialState: function (item) {
+        var id = (item && (item.id || item.key || item.fileId)) || '';
+        var size = +((item || {}).size || (item || {}).bytes || 0);
+        var chunkSize = Math.max(4096, Math.min(1048576, +((((this.boot || {}).vfs || {}).textChunkBytes) || 262144)));
+        return { fileId: id, path: (item || {}).path || '', fileName: (item || {}).name || (item || {}).title || 'Text file', mime: (item || {}).mime || 'text/plain', size: size, chunkSize: chunkSize, chunks: {}, loadingOffsets: {}, loadedOffsets: {}, visibleOffset: 0, contentTop: 0, viewportHeight: 320, scrollHeight: size > 0 ? Math.max(800, Math.min(12000000, Math.ceil(size / 2))) : 4000, eof: false, initialLoaded: false, status: 'Opening text stream…', error: '' };
+      },
+      textViewerWindowById: function (windowId) {
+        return (this.windows || []).find(function (entry) { return entry.id === windowId; }) || null;
+      },
+      textViewerVisibleChunks: function (windowId) {
+        var win = this.textViewerWindowById ? this.textViewerWindowById(windowId) : null;
+        return textChunkArray((((win || {}).fileView || {}).textStream) || {});
+      },
+      textViewerLoadChunk: function (windowId, offset) {
+        var win = this.textViewerWindowById ? this.textViewerWindowById(windowId) : null;
+        var stream = ((win || {}).fileView || {}).textStream;
+        var item;
+        var self = this;
+        if (!win || !stream || !stream.fileId) return Promise.resolve();
+        offset = alignTextChunkOffset(offset, stream.chunkSize);
+        if (stream.loadingOffsets[offset] || stream.loadedOffsets[offset]) return Promise.resolve(stream.chunks[offset]);
+        stream.loadingOffsets[offset] = 1;
+        stream.status = stream.initialLoaded ? 'Loading text chunk…' : 'Opening text stream…';
+        item = { id: stream.fileId, key: stream.fileId, fileId: stream.fileId, name: stream.fileName, title: stream.fileName, mime: stream.mime, path: stream.path, size: stream.size };
+        return this.readTextChunkViaWebSocket(item, { offset: offset, size: stream.chunkSize }).then(function (result) {
+          var payload = (result || {}).payload || {};
+          var content = (result || {}).text || '';
+          var actualOffset = alignTextChunkOffset(+(payload.offset || offset), stream.chunkSize);
+          if (+payload.size > 0) stream.size = +payload.size;
+          stream.mime = payload.mime || stream.mime;
+          stream.scrollHeight = stream.size > 0 ? Math.max(800, Math.min(12000000, Math.ceil(stream.size / 2))) : Math.max(stream.scrollHeight || 0, textChunkHeight(content) * 4);
+          stream.chunks[actualOffset] = { offset: actualOffset, nextOffset: +(payload.nextOffset || (actualOffset + content.length)), readBytes: +(payload.readBytes || content.length), content: content, height: textChunkHeight(content), eof: +payload.eof === 1 || payload.eof === true };
+          stream.loadedOffsets[actualOffset] = 1;
+          stream.eof = !!stream.chunks[actualOffset].eof;
+          stream.initialLoaded = true;
+          stream.status = stream.eof && actualOffset === 0 ? 'Loaded complete text file.' : ('Showing bytes ' + actualOffset + '–' + stream.chunks[actualOffset].nextOffset + (stream.size ? (' of ' + stream.size) : ''));
+          stream.error = '';
+          return stream.chunks[actualOffset];
+        }).catch(function (err) {
+          stream.error = (err && err.message) || 'Unable to read text chunk.';
+          if (!stream.initialLoaded && stream.size > 0 && stream.size <= 1048576) {
+            return fetchTextBlob(self, item).then(function (text) {
+              stream.chunks[0] = { offset: 0, nextOffset: text.length, readBytes: text.length, content: text, height: textChunkHeight(text), eof: true };
+              stream.loadedOffsets[0] = 1;
+              stream.size = text.length;
+              stream.scrollHeight = Math.max(800, textChunkHeight(text) + 160);
+              stream.initialLoaded = true;
+              stream.eof = true;
+              stream.error = '';
+            });
+          }
+        }).finally(function () { delete stream.loadingOffsets[offset]; if (win.fileView) win.fileView.loading = false; });
+      },
+      textViewerOnScroll: function (windowId, event) {
+        var win = this.textViewerWindowById ? this.textViewerWindowById(windowId) : null;
+        var stream = ((win || {}).fileView || {}).textStream;
+        var el = event && event.target;
+        var ratio, maxScroll, maxOffset, offset, before, after;
+        if (!stream || !el) return;
+        stream.viewportHeight = el.clientHeight || stream.viewportHeight || 320;
+        maxScroll = Math.max(1, (stream.scrollHeight || 1) - stream.viewportHeight);
+        ratio = Math.max(0, Math.min(1, (el.scrollTop || 0) / maxScroll));
+        maxOffset = Math.max(0, (stream.size || 0) - (stream.chunkSize * 2));
+        offset = alignTextChunkOffset(Math.floor(ratio * maxOffset), stream.chunkSize);
+        stream.visibleOffset = offset;
+        stream.contentTop = Math.max(0, Math.floor(ratio * Math.max(0, (stream.scrollHeight || 0) - 240)));
+        before = Math.max(0, offset - stream.chunkSize);
+        after = offset + stream.chunkSize;
+        this.textViewerLoadChunk(windowId, before);
+        this.textViewerLoadChunk(windowId, offset);
+        if (!stream.size || after < stream.size) this.textViewerLoadChunk(windowId, after);
+      },
+      textViewerRefresh: function (windowId) {
+        var win = this.textViewerWindowById ? this.textViewerWindowById(windowId) : null;
+        var stream = ((win || {}).fileView || {}).textStream;
+        if (!stream) return;
+        stream.chunks = {}; stream.loadedOffsets = {}; stream.loadingOffsets = {}; stream.initialLoaded = false; stream.error = '';
+        this.textViewerLoadChunk(windowId, stream.visibleOffset || 0);
       },
       previewTextFile: function (windowId, item) {
         var win = this.windows.find(function (entry) { return entry.id === windowId; });
@@ -2134,6 +2248,7 @@
       },
       openTextViewerWindow: function (item) {
         var id = nextWindowId(this, 'win-text');
+        var stream = this.textViewerInitialState ? this.textViewerInitialState(item || {}) : {};
         var win = {
           id: id,
           appKey: 'text-viewer',
@@ -2141,36 +2256,15 @@
           state: 'normal',
           left: 130,
           top: 90,
-          width: 660,
-          height: 480,
+          width: 720,
+          height: 520,
           z: this.zCounter + 1,
           meta: { fileId: item.id || item.key || '', mime: item.mime || 'text/plain', fileName: item.name || item.title || 'Text file' },
-          fileView: { loading: true, content: '', mime: item.mime || 'text/plain' }
+          fileView: { loading: true, content: '', mime: item.mime || 'text/plain', textStream: stream }
         };
         this.windows.push(win);
         this.focusWindow(id);
-        if (!this.command) {
-          fetchTextBlob(this, item).then(function (text) {
-            win.fileView.loading = false;
-            win.fileView.content = text || '';
-          }).catch(function (err) {
-            win.fileView.loading = false;
-            win.fileView.error = (err && err.message) || 'Unable to open file.';
-          });
-          return;
-        }
-        readTextFileResilient(this, item, { offset: 0, size: +((((this.boot || {}).vfs || {}).readWindowBytes) || 32768), allowFull: true }).then(function (result) {
-          var payload = (result || {}).payload || {};
-          var text = (result || {}).text || '';
-          if (!text && !payload.mime && !payload.eof) throw new Error('empty_text_payload');
-          win.fileView.loading = false;
-          win.fileView.content = text || '';
-          win.fileView.mime = payload.mime || win.fileView.mime;
-        }).catch(function (err) {
-          win.fileView.loading = false;
-          win.fileView.error = (err && err.message) || 'Unable to open file.';
-          win.fileView.content = '';
-        });
+        this.textViewerLoadChunk(id, 0);
       },
       openImageViewerWindow: function (item) {
         var id = nextWindowId(this, 'win-image');

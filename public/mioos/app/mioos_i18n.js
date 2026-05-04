@@ -51,14 +51,16 @@
       } catch (storageErr) {}
       try {
         var url = new window.URL(window.location.href);
-        url.searchParams.set('lang', code);
+        var urlCode = code === 'es' ? 'sp' : code;
+        if (code === 'en') url.searchParams.delete('lang');
+        else url.searchParams.set('lang', urlCode);
         if (window.location && window.location.assign) {
           window.location.assign(url.pathname + url.search + url.hash);
           return;
         }
       } catch (urlErr) {}
       try {
-        if (window.location) window.location.href = '/?lang=' + encodeURIComponent(code);
+        if (window.location) window.location.href = code === 'en' ? '/' : ('/?lang=' + encodeURIComponent(code === 'es' ? 'sp' : code));
       } catch (fallbackErr) {}
       if (app && app.refreshView) {
         try { app.refreshView().catch(function () {}); } catch (refreshErr) {}

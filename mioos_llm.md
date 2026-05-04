@@ -663,3 +663,16 @@ Treat `mioos-advanced-table-v8` as the current Advanced Table contract. Table mo
 `MIOOST` calls the Advanced Table contract regression helper. Preserve query response fields (`ok`, `dataset`, `draw`, `recordsTotal`, `recordsFiltered`, `schema.columns`, `rows`, `groups`, `pagination.*`, `features`, `rowActions`, `bulkActions`) and mutation acknowledgements (`ok`, `dataset`, `action`, `mutationOnly`, `refetch`, `message`). Failed table mutations should produce deterministic JSON with `error`, `message`, and `fieldErrors` when applicable.
 
 The canonical examples are under `examples/mioos_modules/table/samples/`; they must stay MUMPS-first and answer which routine/global to edit, what `MOD(...)` nodes to set, how to surface an icon, how to open from the shell, and how to validate with `D ^MIOOST`.
+
+## Common window toolbar contract
+
+Every MIOOS window is expected to inherit the common window toolbar from `window-frame` through `mioos-window-toolbar`. Do not add one-off File/Edit/Help strips inside individual modules unless the common toolbar cannot represent the action. The minimum menu contract is:
+
+- File: Close / Exit, plus contextual actions such as viewer Download or Explorer New Folder / Upload.
+- Edit: Cut, Copy, Paste.
+- Module menu: derived from `commonWindowCustomMenuLabel(win)` for Explorer, Terminal, Table, Transfers, Text, Media, Image, Permissions, Catalogue, and future module windows.
+- Help: About.
+
+Text media viewer contract: use `fs.text.chunk` and `textViewerOnScroll` / `textViewerLoadChunk`; never load the full file just to open it. The viewer must render a virtual chunk stack and synchronize scrollbar position to byte offset. Keep Reload and Download out of the old viewer body; expose those through the common toolbar.
+
+Locale contract: language menu clicks reload the main URL. English removes `lang`, Arabic uses `?lang=ar`, and Spanish uses `?lang=sp`; the backend canonicalizes `sp` to `es`.

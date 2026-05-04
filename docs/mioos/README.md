@@ -445,3 +445,11 @@ Key references:
 - `docs/mioos/ROI_68A_Table_Backend_Contract_Tests_and_Samples.md` — test coverage and sample matrix.
 - `examples/mioos_modules/table/README.md` — MUMPS-first table author workflow.
 - `examples/mioos_modules/table/samples/` — copyable sample routines for read-only tables, editable cells, validation, filters, grouping/reorder/fixed columns, selected-row CSV export, and App Catalogue registration.
+
+## ROI 72D text media and common toolbar stabilization
+
+Text media files now use a backend-authored chunk stream instead of loading the full file into a viewer window. The WebSocket command `fs.text.chunk` calls the existing VFS byte-range reader and returns a bounded text chunk with `offset`, `nextOffset`, `readBytes`, `size`, `eof`, and `scrollSync="byte-offset"`. The browser text viewer keeps only visible chunks in memory and maps scrollbar position to file byte offset, so large text files do not require materializing the full payload in the DOM.
+
+All shell windows receive a common dark-theme-aware toolbar from the window frame. The toolbar contract is File, Edit, optional module-specific menu, and Help. File always includes Close / Exit and adds viewer download or Explorer upload/new-folder actions when relevant. Edit includes Cut, Copy, Paste. Module-specific menus are derived from the window app key so future windows inherit the common contract without rewriting their surface component.
+
+Theme Studio now exposes font-color controls for toolbar text, context menu text, Start menu text, Start child text, and Start hover text. The login box style is applied to the real login modal through runtime style classes, and imported themes are activated and persisted after parsing.
