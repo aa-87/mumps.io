@@ -3715,3 +3715,128 @@ button:disabled { cursor: default; opacity: .55; }
 .mioos-taskbar-vue.position-right .mioos-task-clock-vue,
 .mioos-taskbar-vue.position-right .mioos-start-button-vue { width: calc(var(--taskbar-height) - 10px); justify-content: center; padding: 0; }
 .mioos-start-menu-vue.position-right { right: calc(var(--taskbar-height) + 12px); left: auto; bottom: 14px; top: auto; }
+
+/* ROI 71C3 VFS blob and viewer hardening. */
+.theme-login-disclaimer {
+  grid-template-columns: 1fr;
+}
+.theme-login-disclaimer img {
+  width: 100%;
+  height: clamp(84px, 18vw, 140px);
+  object-fit: cover;
+  border-radius: 10px;
+  display: block;
+}
+.mioos-viewer-media-toolbar {
+  justify-content: flex-end;
+  min-height: 32px;
+}
+.mioos-viewer-loop-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 24px;
+  padding: 2px 10px;
+  border: 1px solid var(--menu-border, rgba(0,0,0,.16));
+  border-radius: 6px;
+  background: var(--menu-hover, rgba(0,120,215,.10));
+  color: var(--menu-text, #111827);
+  font-weight: 600;
+  cursor: pointer;
+}
+.mioos-viewer-loop-toggle input { margin: 0; }
+.mioos-explorer-listview { table-layout: fixed; }
+.mioos-explorer-listview th:nth-child(1),
+.mioos-explorer-listview td:nth-child(1) { width: 52%; }
+.mioos-explorer-row-name,
+.mioos-explorer-icon-tile span:last-child,
+.mioos-explorer-details-card span,
+.mioos-explorer-details-card strong {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mioos-explorer-row-name { display: inline-block; vertical-align: middle; }
+.mioos-explorer-icon-tile span:last-child { display: block; }
+.mioos-classic-transferoverview,
+.mioos-classic-transferoverview strong,
+.mioos-classic-transferoverview span,
+.mioos-classic-transferoverview small {
+  color: #1f2937;
+}
+.mioos-system-modal-titlebar,
+.mioos-system-modal-titlebar strong,
+.mioos-system-modal-titlebar button,
+.mioos-system-modal-titlebar .mioos-btn {
+  color: #0f172a;
+}
+.theme-dark-mode .mioos-theme-studio-vue .tabs.mioos-theme-tabs7 > menu button,
+.theme-dark-mode .mioos-theme-previewtabs-vue > menu button,
+.theme-dark-mode .mioos-theme-studio-vue .mioos-theme-tabs7 button,
+.theme-dark-mode .mioos-theme-studio-vue .theme-preview-tabs button {
+  color: #f8fafc !important;
+  background: var(--theme-tab-bg, rgba(20,26,36,.94)) !important;
+  border-color: var(--theme-tab-border, rgba(124,148,182,.24)) !important;
+}
+.theme-dark-mode .mioos-theme-studio-vue .tabs.mioos-theme-tabs7 > menu button.active,
+.theme-dark-mode .mioos-theme-previewtabs-vue > menu button.active,
+.theme-dark-mode .mioos-theme-studio-vue .mioos-theme-tabs7 button.active,
+.theme-dark-mode .mioos-theme-studio-vue .theme-preview-tabs button.active {
+  color: #ffffff !important;
+  background: var(--theme-tab-active-bg, rgba(48,80,120,.72)) !important;
+}
+.theme-dark-mode .mioos-explorer-toolbar,
+.theme-dark-mode .mioos-explorer-address-row,
+.theme-dark-mode .mioos-explorer-viewbar,
+.theme-dark-mode .mioos-explorer-body,
+.theme-dark-mode .mioos-explorer-nav-pane,
+.theme-dark-mode .mioos-explorer-main,
+.theme-dark-mode .mioos-explorer-preview-pane,
+.theme-dark-mode .mioos-explorer-statusbar {
+  background: var(--theme-panel-bg, #111827) !important;
+  color: var(--theme-field-text, #f8fafc) !important;
+  border-color: var(--theme-panel-border, #334155) !important;
+}
+.theme-dark-mode .mioos-explorer-toolbar button,
+.theme-dark-mode .mioos-explorer-viewbar button,
+.theme-dark-mode .mioos-explorer-address-row input {
+  color: var(--theme-field-text, #f8fafc) !important;
+  background: var(--theme-field-bg, #0f172a) !important;
+  border-color: var(--theme-panel-border, #334155) !important;
+}
+.theme-dark-mode .mioos-explorer-listview,
+.theme-dark-mode .mioos-explorer-listview th,
+.theme-dark-mode .mioos-explorer-listview td,
+.theme-dark-mode .mioos-explorer-icon-grid,
+.theme-dark-mode .mioos-explorer-icon-tile {
+  background: var(--theme-panel-bg, #111827) !important;
+  color: var(--theme-field-text, #f8fafc) !important;
+  border-color: var(--theme-panel-border, #334155) !important;
+}
+.theme-dark-mode .mioos-explorer-icon-tile:hover,
+.theme-dark-mode .mioos-explorer-listview tbody tr:hover {
+  background: color-mix(in srgb, var(--accent, #60a5fa) 18%, #111827 82%) !important;
+}
+.theme-dark-mode .mioos-explorer-icon-tile.is-selected,
+.theme-dark-mode .mioos-explorer-listview tbody tr.is-selected {
+  background: color-mix(in srgb, var(--accent, #60a5fa) 28%, #111827 72%) !important;
+}
+.theme-dark-mode .mioos-start-modern-item-copy strong,
+.theme-dark-mode .mioos-start-modern-item-copy span,
+.theme-dark-mode .mioos-start-modern-item-copy em {
+  color: var(--start-menu-text, var(--menu-text, #f8fafc)) !important;
+}
+html[dir="rtl"] .mioos-shell-vue,
+body[dir="rtl"] .mioos-shell-vue,
+.mioos-shell-vue.is-rtl {
+  direction: rtl;
+}
+html[dir="rtl"] .mioos-window-vue,
+html[dir="rtl"] .mioos-desktop-icon-vue,
+html[dir="rtl"] .mioos-start-menu-vue,
+html[dir="rtl"] .mioos-shell-dialog {
+  direction: rtl;
+}
+html[dir="rtl"] .mioos-explorer-row-icon { margin-right: 0; margin-left: 4px; }
+html[dir="rtl"] .mioos-explorer-window-menu button { text-align: right; }

@@ -329,6 +329,7 @@
 
       app.component('mioos-surface-viewer', {
         props: ['window'],
+        data: function () { return { mediaLoop: false }; },
         computed: {
           vm: function () { return root(this); },
           fileView: function () { return (this.window && this.window.fileView) || {}; },
@@ -350,7 +351,7 @@
         },
         template: '' +
           '<div class="mioos-surface mioos-surface-viewer-native" :class="\'is-\' + kind">' +
-            '<nav v-if="kind === \'media\'" class="mioos-viewer-menu-strip" role="menubar" aria-label="Media player menu"><button type="button" role="menuitem">File</button><button type="button" role="menuitem">Edit</button><button type="button" role="menuitem">Help</button><span>[[ (window.meta || {}).fileName || window.title ]]</span></nav>' +
+            '<nav v-if="kind === \'media\'" class="mioos-viewer-menu-strip mioos-viewer-media-toolbar" role="toolbar" aria-label="Media playback options"><label class="mioos-viewer-loop-toggle"><input type="checkbox" v-model="mediaLoop"> Loop</label></nav>' +
             '<header v-else class="mioos-viewer-toolbar"><div><strong>[[ (window.meta || {}).fileName || window.title ]]</strong><span>[[ fileView.mime || (window.meta || {}).mime || \'File preview\' ]]</span></div><button type="button" class="mioos-explorer-command" @click="retry">Reload</button><button type="button" class="mioos-explorer-command" @click="download">Download</button></header>' +
             '<section class="mioos-viewer-body" :class="{ \'is-media-full\': kind === \'media\' }">' +
               '<div v-if="fileView.loading" class="mioos-viewer-state">Loading file…</div>' +
@@ -358,8 +359,8 @@
               '<pre v-else-if="kind === \'text\' || kind === \'structured\'" class="mioos-viewer-text">[[ safeText ]]</pre>' +
               '<img v-else-if="kind === \'image\'" class="mioos-viewer-image" :src="sourceUrl" :alt="(window.meta || {}).fileName || window.title">' +
               '<iframe v-else-if="kind === \'pdf\'" class="mioos-viewer-frame" :src="sourceUrl" title="PDF preview"></iframe>' +
-              '<video v-else-if="kind === \'media\' && mediaKind === \'video\'" class="mioos-viewer-media" :src="sourceUrl" controls playsinline preload="metadata"></video>' +
-              '<audio v-else-if="kind === \'media\'" class="mioos-viewer-audio" :src="sourceUrl" controls preload="metadata"></audio>' +
+              '<video v-else-if="kind === \'media\' && mediaKind === \'video\'" class="mioos-viewer-media" :src="sourceUrl" controls playsinline preload="metadata" :loop="mediaLoop"></video>' +
+              '<audio v-else-if="kind === \'media\'" class="mioos-viewer-audio" :src="sourceUrl" controls preload="metadata" :loop="mediaLoop"></audio>' +
               '<div v-else class="mioos-viewer-state">No preview is available for this file type.</div>' +
             '</section>' +
           '</div>'
@@ -484,6 +485,7 @@
                         <div class="mioos-theme-row-vue">
                           <label><span>Desktop icon size</span><input type="range" min="36" max="72" step="1" :value="parseInt(vm.themeStudioTextValue('--desktop-icon-size', '48px'), 10) || 48" @input="vm.themeStudioUpdateVar('--desktop-icon-size', $event.target.value + 'px')"></label>
                           <label><span>Icon label shadow</span><input type="text" :value="vm.themeStudioTextValue('--icon-shadow', '0 1px 2px rgba(0,0,0,0.75)')" @input="vm.themeStudioUpdateVar('--icon-shadow', $event.target.value)"></label>
+                          <label class="span-2"><span>Desktop background custom CSS</span><textarea rows="3" spellcheck="false" placeholder="background-image: radial-gradient(circle at top, rgba(96,165,250,.28), transparent 34%); background-color: #0f172a;" :value="vm.themeStudioCustomElementCssValue('desktopBackground')" @input="vm.themeStudioUpdateCustomElementCss('desktopBackground', $event.target.value)"></textarea></label>
                         </div>
                       </div>
 

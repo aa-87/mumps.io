@@ -642,3 +642,16 @@ Login-screen assets must continue to use the public-login asset route only for a
 Folder opens should create distinct Explorer windows. Start menu Language, Themes, and System groups are open by default. Text viewers must always leave loading state and fall back to authenticated blob reads if command reads fail.
 
 Theme Studio custom element CSS textareas parse declarations such as `background: radial-gradient(...)` and map them to live CSS variables for active titlebar, inactive titlebar, window body, taskbar, and Start menu.
+
+## Source note — ROI 71C3 regression follow-up
+
+When working from this source, preserve these regression contracts:
+
+- Clean boot/default server theme is `glow`, not `luna-blue`.
+- Desktop file entries must dispatch through `openFileViewerWindow()` and open media/image/PDF/text/structured viewers directly.
+- Text-like files should use the WebSocket `fs.read.range`/`fs.read` path first. HTTP blob reads are only a fallback when socket commands are unavailable.
+- Media viewer toolbar must not contain fake File/Edit/Help buttons and must not duplicate the file name; keep a functional Loop toggle.
+- Theme Studio supports `desktopBackground` custom CSS mapped to desktop wallpaper/background variables.
+- Login warning image is a banner, not an avatar.
+- RTL locale changes apply document/shell `dir` and `is-rtl` immediately.
+- VFS blob streaming must account for one-chunk files larger than the default stored chunk size to avoid `ERR_CONTENT_LENGTH_MISMATCH`.

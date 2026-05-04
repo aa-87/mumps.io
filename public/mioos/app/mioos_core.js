@@ -1542,6 +1542,8 @@
         },
         themeStudioWallpaperCss: function (theme) {
           var t = this.themeStudioNormalizeConfig(theme || this.themeStudioActiveTheme() || {});
+          var customWallpaper = (((t.cssVars || {})['--desktop-wallpaper']) || '');
+          if (customWallpaper && customWallpaper !== 'none') return customWallpaper;
           if (t.wallpaperPreset === 'custom-url' && t.wallpaperUrl && !this.isProtectedThemeUrl(t.wallpaperUrl)) return 'url(' + t.wallpaperUrl + ')';
           if (t.wallpaperPreset === 'meadow') return 'linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0) 28%), linear-gradient(180deg, #8acb59 0%, #6fb14a 42%, #3e7b35 100%)';
           if (t.wallpaperPreset === 'aurora') return 'radial-gradient(circle at top, rgba(147,197,253,0.26), transparent 30%), linear-gradient(180deg, #16385c 0%, #23476d 36%, #3a6288 100%)';
@@ -1721,7 +1723,8 @@
             inactiveTitlebar: { background: '--titlebar-inactive', color: '--titlebar-text' },
             windowBody: { background: '--window-bg', color: '--theme-field-text', 'border-color': '--window-border', 'box-shadow': '--shadow-window' },
             taskbar: { background: '--taskbar-bg', color: '--taskbar-text', 'border-color': '--taskbar-border' },
-            startMenu: { background: '--start-menu-bg', color: '--start-menu-text', 'border-color': '--menu-border', 'box-shadow': '--menu-shadow' }
+            startMenu: { background: '--start-menu-bg', color: '--start-menu-text', 'border-color': '--menu-border', 'box-shadow': '--menu-shadow' },
+            desktopBackground: { background: '--desktop-wallpaper', 'background-image': '--desktop-wallpaper', 'background-color': '--desktop-bg' }
           };
         },
         themeStudioCustomElementCssValue: function (elementKey) {
@@ -2043,6 +2046,8 @@
         },
         themeStudioWallpaperCss: function (theme) {
           var t = this.themeStudioNormalizeConfig(theme || this.themeStudioActiveTheme() || {});
+          var customWallpaper = (((t.cssVars || {})['--desktop-wallpaper']) || '');
+          if (customWallpaper && customWallpaper !== 'none') return customWallpaper;
           if (t.wallpaperUrl && !(this.requiresSignin && this.isProtectedThemeUrl(t.wallpaperUrl))) return 'url(' + t.wallpaperUrl + ')';
           if (t.wallpaperPreset === 'meadow') return 'linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0) 28%), linear-gradient(180deg, #8acb59 0%, #6fb14a 42%, #3e7b35 100%)';
           if (t.wallpaperPreset === 'aurora') return 'radial-gradient(circle at top, rgba(147,197,253,0.26), transparent 30%), linear-gradient(180deg, #16385c 0%, #23476d 36%, #3a6288 100%)';

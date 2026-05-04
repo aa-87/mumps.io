@@ -66,6 +66,8 @@ MIOOST ; MIOOS tests
 	DO T074
 	DO T075
 	DO T076
+	DO T077
+	DO T078
 	QUIT
 	;
 RESET
@@ -1228,7 +1230,7 @@ T060
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","startMenuFlatItems"),"[MIOOST][T060][start menu long list source]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","startMenuHandleKeydown"),"[MIOOST][T060][start menu keyboard]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","startMenuOpenItem"),"[MIOOST][T060][start menu launcher]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","vm.startMenuOpenItem(item)"),"[MIOOST][T060][start menu item click]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","vm.startMenuOpenItem(row.item)"),"[MIOOST][T060][start menu item click]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","vm.startMenuHandleKeydown($event)"),"[MIOOST][T060][start menu key handler]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","Desktop Files"),"[MIOOST][T060][start menu desktop files]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_wm.js","createWindowForApp(app"),"[MIOOST][T060][dynamic start menu window]")
@@ -1454,4 +1456,35 @@ T076
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","themeStudioUpdateCustomElementCss"),"[MIOOST][T076][theme custom css parser]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","ROI 71C3 VFS blob and viewer hardening"),"[MIOOST][T076][roi71c3 css marker]")
 	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/ROI_71C3_VFS_Explorer_Start_Text_Theme_Hardening.md","ROI 71C3"),"[MIOOST][T076][roi71c3 docs]")
+	QUIT
+	;
+T077
+	DO EQ^MIOTASSERT($$FILEHAS("routines/MIOOS.m","luna-blue"),0,"[MIOOST][T077][theme default no luna blue]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOS.m","glow"),"[MIOOST][T077][theme default glow]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSFS.m","F>N,'HAS2"),"[MIOOST][T077][single chunk blob length repair]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","openFileViewerWindow"),"[MIOOST][T077][desktop file viewer dispatcher]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","readTextFileViaWebSocket"),"[MIOOST][T077][text websocket reader]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","fs.read.range"),"[MIOOST][T077][text read range ws]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mediaLoop"),"[MIOOST][T077][media loop control]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","Desktop background custom CSS"),"[MIOOST][T077][desktop background css editor]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","desktopBackground"),"[MIOOST][T077][desktop background custom css mapping]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_i18n.js","dataset.localeDir"),"[MIOOST][T077][rtl locale dataset]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".theme-login-disclaimer img"),"[MIOOST][T077][login banner css]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-viewer-loop-toggle"),"[MIOOST][T077][viewer loop css]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","html[dir="_"rtl"_"]"),"[MIOOST][T077][rtl css]")
+	QUIT
+	;
+T078
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","includeDataAlias"),"[MIOOST][T078][table data alias contract]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","schema"),"[MIOOST][T078][table schema contract]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","recordsFiltered"),"[MIOOST][T078][table filtered count contract]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","pagination"),"[MIOOST][T078][table pagination contract]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","groups"),"[MIOOST][T078][table grouping contract]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","mutationOnly"),"[MIOOST][T078][small mutation acknowledgement]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","fieldErrors"),"[MIOOST][T078][deterministic validation errors]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","column.reorder"),"[MIOOST][T078][column reorder mutation]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","column.fixed"),"[MIOOST][T078][fixed column mutation]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTBL.m","rows.export"),"[MIOOST][T078][selected row export mutation]")
+	DO OK^MIOTASSERT($$FILEHAS("examples/mioos_modules/table/README.md","MUMPS-first"),"[MIOOST][T078][mumps first table samples]")
+	DO OK^MIOTASSERT($$FILEHAS("examples/mioos_modules/table/module.json","Advanced Backend Table contract"),"[MIOOST][T078][table module manifest]")
 	QUIT

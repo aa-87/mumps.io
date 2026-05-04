@@ -428,3 +428,9 @@ ROI 72C2 fixes the file viewer surface, Theme Studio image uploads, recursive St
 ## ROI 71C3 — VFS blob, Explorer windows, Start menu, text viewer, and Theme CSS hardening
 
 ROI 71C3 repairs authenticated VFS blob `Content-Length` by recalculating the byte length of stored chunks, fixes multipart upload byte accounting for future files, keeps login images on a public-login-only asset route, opens each folder in a distinct Explorer window, opens Language/Themes/System Start menu groups by default, hardens dark Start menu folder title contrast, prevents text viewers from hanging on `Loading file…`, and adds Theme Studio custom CSS entry points for active/inactive titlebars, windows, taskbar, and Start menu.
+
+## ROI 71C3 regression follow-up
+
+The current shell keeps the `glow` theme as the clean-install default, opens desktop files directly in their matching viewers, and reads text/structured files through WebSocket commands before falling back to HTTP. Media viewers intentionally expose only functional playback chrome: native controls plus a Loop toggle.
+
+Theme Studio now has a Desktop background custom CSS field. MUMPS developers and administrators can paste declarations such as `background-image: radial-gradient(...);` or `background-color: #0f172a;` without writing frontend code. Login warning images render as full-width banners, and RTL locale switches apply document direction immediately.

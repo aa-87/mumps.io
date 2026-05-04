@@ -17,16 +17,23 @@
     applyDocumentLocale: function (app) {
       var locale = this.currentLocale(app);
       var root = window.MIOOSState && window.MIOOSState.getRootNode ? window.MIOOSState.getRootNode() : null;
+      var dir = String(locale.dir || (locale.rtl ? 'rtl' : 'ltr') || 'ltr').toLowerCase();
+      var isRtl = dir === 'rtl' || !!locale.rtl;
       if (document && document.documentElement) {
         document.documentElement.setAttribute('lang', locale.code || 'en');
-        document.documentElement.setAttribute('dir', locale.dir || 'ltr');
+        document.documentElement.setAttribute('dir', dir);
+        document.documentElement.classList.toggle('is-rtl', isRtl);
       }
       if (document && document.body) {
-        document.body.setAttribute('dir', locale.dir || 'ltr');
+        document.body.setAttribute('dir', dir);
+        document.body.classList.toggle('is-rtl', isRtl);
       }
       if (root) {
         root.setAttribute('lang', locale.code || 'en');
-        root.setAttribute('dir', locale.dir || 'ltr');
+        root.setAttribute('dir', dir);
+        root.classList.toggle('is-rtl', isRtl);
+        root.dataset.localeDir = dir;
+        root.dataset.localeCode = locale.code || 'en';
       }
     },
     changeLocale: function (app, code) {
@@ -40,11 +47,17 @@
       }
       try { document.cookie = 'mioos_lang=' + encodeURIComponent(code) + '; Path=/; SameSite=Lax'; } catch (cookieErr) {}
       try {
+        if (window.sessionStorage) window.sessionStorage.setItem('mioos_lang', code);
+      } catch (storageErr) {}
+      try {
         var url = new window.URL(window.location.href);
         url.searchParams.set('lang', code);
-        window.location.href = url.toString();
-      } catch (err) {
-        window.location.search = '?lang=' + encodeURIComponent(code);
+        if (window.history && window.history.replaceState) {
+          window.history.replaceState(window.history.state || {}, '', url.toString());
+        }
+      } catch (urlErr) {}
+      if (app && app.refreshView) {
+        try { app.refreshView().catch(function () {}); } catch (refreshErr) {}
       }
     }
   };
