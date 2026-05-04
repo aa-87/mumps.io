@@ -52,8 +52,8 @@
           profile: 'dev',
           authBusy: false,
           authForm: {
-            username: 'admin',
-            password: 'W@lid2012'
+            username: '',
+            password: ''
           },
           authPasswordChange: {
             required: false,
