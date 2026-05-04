@@ -440,3 +440,7 @@ Theme Studio now has a Desktop background custom CSS field. MUMPS developers and
 Uploaded desktop backgrounds are stored first as theme assets and may later be promoted into VFS wallpaper files. Promotion must re-chunk source asset data into the VFS chunk size instead of copying arbitrary multipart chunk boundaries directly. This prevents offset reads from serving only the first portion of an image correctly and then corrupting the rest.
 
 Wallpaper VFS blobs are detected by `themeWallpaper` / `sourceAsset` metadata and streamed by cumulative stored-byte offsets. They bypass media-preview warmup truncation and use `Cache-Control: private, no-store, max-age=0` plus a cache-busted wallpaper URL so new uploads are not confused with stale image responses.
+
+## Text viewer regression contract
+
+The text media viewer must use the `fs.text.chunk` stream path for opening and previewing text-based files. The old browser blob fallback helpers (`fetchTextBlob`, `readTextFileResilient`, and `fs_blob_unavailable`) are intentionally retired so large text files do not trigger whole-file `/api/mioos/fs/blob` downloads. Regression tests in `T074`, `T076`, and `T084` lock the chunk reader, request de-duplication cache, backend WebSocket command, and editable save path.

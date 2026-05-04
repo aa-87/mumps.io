@@ -661,3 +661,7 @@ When working from this source, preserve these regression contracts:
 Uploaded desktop background images follow a strict binary contract. Theme upload chunks under `^MIO("MIOOS","THEMEASSET",...)` may be uneven, so `PROMOTEW^MIOOSTHEME` must re-chunk them into the VFS chunk size before writing `^MIO("MIOOS","FS","DATA",ID,...)`. Do not copy upload chunk nodes directly into VFS wallpaper data.
 
 Promoted wallpaper VFS blobs are identified by `themeWallpaper` or `sourceAsset` metadata. `/api/mioos/fs/blob` must stream those wallpaper blobs by cumulative stored-byte offsets, must not use the media warmup partial-response path, and should use no-store cache headers with cache-busted wallpaper URLs.
+
+## Text media viewer contract
+
+Text-based file viewing is chunk-stream only. Use `fs.text.chunk` for reads and `fs.text.save` for saves. Do not reintroduce browser blob fallback helpers such as `fetchTextBlob`, `readTextFileResilient`, or `fs_blob_unavailable`; those paths caused full-file downloads and duplicated requests for large text/markdown files. Keep the scrollbar mapped to byte offsets, keep chunk requests de-duplicated, and keep the bounded cache pruning behavior in place.
