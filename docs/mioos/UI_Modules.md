@@ -139,3 +139,9 @@ All shell windows should prefer the common `mioos-window-toolbar` for File/Edit/
 Text viewers are special-purpose text-media windows. They render chunked text from `fs.text.chunk`, map scrollbar position to byte offsets, and save normal-size editable text through `fs.text.save`. Viewer status/errors should surface through the shell toast API instead of persistent footer panels.
 
 Help -> About should open the reusable `about-mioos` window surface so modules can provide context without blocking the user with alert-style notifications.
+
+## Final regression stabilization notes
+
+The New table module flow remains MUMPS-first. A generated table module must provide `componentKey="table"`, `surface="mioos-surface-table"`, and `tableState.config.contract="mioos-advanced-table-v8"`. No frontend framework, build step, or TypeScript is required. Modal styling is shared by `.mioos-table-module-editor` and is dark-theme aware.
+
+Application shortcuts shown in Explorer must include launch metadata (`targetAppKey` / `launchKey`) and icon metadata. Explorer opens those shortcuts through the normal app launcher so Start menu, desktop, and VFS views stay consistent.

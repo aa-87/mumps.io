@@ -464,14 +464,16 @@ TRUTH(X)
 	QUIT 0
 	;
 MMSG(ACTION)
-	IF ACTION="row.save"!(ACTION="row.add")!(ACTION="row.update") QUIT "Row saved"
+	IF ACTION="row.add" QUIT "Row added"
+	IF ACTION="row.save"!(ACTION="row.update") QUIT "Row saved"
 	IF ACTION="cell.save" QUIT "Cell saved"
 	IF ACTION="row.delete" QUIT "Row deleted"
 	IF ACTION="rows.delete"!(ACTION="bulk.delete") QUIT "Rows deleted"
 	IF ACTION="rows.export"!(ACTION="export") QUIT "CSV export generated"
 	IF ACTION="column.visibility" QUIT "Column visibility updated"
 	IF ACTION="column.resize" QUIT "Column resized"
-	IF ACTION="column.save"!(ACTION="column.add")!(ACTION="column.update") QUIT "Column saved"
+	IF ACTION="column.add" QUIT "Column added"
+	IF ACTION="column.save"!(ACTION="column.update") QUIT "Column saved"
 	IF ACTION="column.delete" QUIT "Column deleted"
 	IF ACTION="column.option.add" QUIT "Column option added"
 	IF ACTION="column.reorder" QUIT "Column order saved"

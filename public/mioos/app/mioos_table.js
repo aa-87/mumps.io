@@ -382,6 +382,8 @@
         if (payload && payload.ok === false) {
           state.validation = clone(payload.fieldErrors || {});
           state.error = payload.message || payload.detail || payload.error || 'Table mutation failed';
+          vm.backendTableSetToast(tableId, state.error);
+          if (vm.showToast) vm.showToast('Table', state.error, 'error', 4200);
           return payload;
         }
         state.validation = {};
@@ -392,11 +394,14 @@
         state.selected = {};
         if (state.editor && !body.keepEditor) state.editor.open = false;
         vm.backendTableSetToast(tableId, (payload && payload.message) || 'Table updated');
+        if (vm.showToast) vm.showToast('Table', (payload && payload.message) || 'Table updated', 'success', 2200);
         if (payload && payload.refetch) return vm.backendTableFetch(tableId).then(function () { return payload; });
         vm.backendTableApplyPayload(state, payload || {});
         return payload;
       }).catch(function (err) {
         state.error = serverErrorMessage('Table mutation', err);
+        vm.backendTableSetToast(tableId, state.error);
+        if (vm.showToast) vm.showToast('Table', state.error, 'error', 4200);
         return { ok: false, error: state.error };
       }).finally(function () {
         if (state.mutationRequestId === requestId) {
@@ -783,13 +788,19 @@
       if (key === 'patient.review.pending') return this.backendTableOpenConfirmDialog(tableId, { kind: key, title: 'Send to review', message: 'Move this patient to Pending Review?', confirmText: 'Send to review', danger: false, payload: { rowId: rowId } });
       if (key === 'patient.review.active') return this.backendTableOpenConfirmDialog(tableId, { kind: key, title: 'Mark patient active', message: 'Mark this patient as Active? The backend will require patient validation and record the status transition audit marker.', confirmText: 'Mark active', danger: false, payload: { rowId: rowId } });
       if (key === 'patient.review.inactive') return this.backendTableOpenConfirmDialog(tableId, { kind: key, title: 'Mark patient inactive', message: 'Move this patient to Inactive?', confirmText: 'Mark inactive', danger: false, payload: { rowId: rowId } });
-      if (this.showAlert) this.showAlert('Table action', ((action || {}).label || key || 'Action') + ' queued for ' + ((row || {}).name || (row || {}).id || 'row'));
+      if (key.indexOf('patient.') === 0 && rowId) return this.backendTableMutate(tableId, key, { rowId: rowId });
+      this.backendTableSetToast(tableId, ((action || {}).label || key || 'Action') + ' is not wired for this table.');
+      if (this.showToast) this.showToast('Table action', ((action || {}).label || key || 'Action') + ' is not wired for this table.', 'error', 3200);
     },
     backendTableRunBulkAction: function (tableId, action) {
       var state = this.backendTableState(tableId);
       var key = (action || {}).key || action || '';
       var ids = this.backendTableSelectedIds(state);
-      if (!ids.length) return;
+      if (!ids.length) {
+        this.backendTableSetToast(tableId, 'Select one or more rows first.');
+        if (this.showToast) this.showToast('Table', 'Select one or more rows first.', 'error', 2800);
+        return Promise.resolve({ ok: false, error: 'no_rows_selected' });
+      }
       if (key === 'export' || key === 'rows.export') { return this.backendTableMutate(tableId, 'rows.export', { ids: ids }).then(function (payload) {
         if (payload && payload.export && payload.export.csv) {
           state.toast = payload.message || (ids.length + ' row(s) exported');
@@ -812,7 +823,9 @@
       if (key === 'patient.bulk.pending') return this.backendTableOpenConfirmDialog(tableId, { kind: key, title: 'Send selected to review', message: 'Move ' + ids.length + ' selected patient(s) to Pending Review?', confirmText: 'Send to review', danger: false, payload: { ids: ids } });
       if (key === 'patient.bulk.needs-correction') return this.backendTableOpenConfirmDialog(tableId, { kind: key, title: 'Flag selected', message: 'Move ' + ids.length + ' selected patient(s) to Needs Correction?', confirmText: 'Flag selected', danger: false, payload: { ids: ids } });
       if (key === 'patient.bulk.active') return this.backendTableOpenConfirmDialog(tableId, { kind: key, title: 'Mark selected active', message: 'Mark ' + ids.length + ' selected patient(s) as Active?', confirmText: 'Mark active', danger: false, payload: { ids: ids } });
-      if (this.showAlert) this.showAlert('Bulk table action', ((action || {}).label || key || 'Action') + ' applied to ' + ids.length + ' row(s)');
+      if (key.indexOf('patient.') === 0) return this.backendTableMutate(tableId, key, { ids: ids });
+      this.backendTableSetToast(tableId, ((action || {}).label || key || 'Action') + ' is not wired for this table.');
+      if (this.showToast) this.showToast('Bulk table action', ((action || {}).label || key || 'Action') + ' is not wired for this table.', 'error', 3200);
     },
     backendTablePatientQueueList: function (state) {
       var queues = (((state || {}).patientRegistration || {}).reviewQueues) || [];
@@ -1129,7 +1142,10 @@
     backendTableSaveEditor: function (tableId) {
       var state = this.backendTableState(tableId);
       if (!this.backendTableValidateEditor(state)) { state.error = 'Please fix the highlighted table editor fields.'; return Promise.resolve({ ok: false, error: 'validation_failed' }); }
-      if ((state.editor || {}).mode === 'column') return this.backendTableMutate(tableId, 'column.save', { column: clone(state.editor.column || {}), originalKey: (state.editor.column || {}).originalKey || '' }).then(function(payload){ if (payload && payload.ok !== false) state.toast = 'Column saved'; });
+      if ((state.editor || {}).mode === 'column') {
+        var columnAction = (state.editor.column || {}).originalKey ? 'column.save' : 'column.add';
+        return this.backendTableMutate(tableId, columnAction, { column: clone(state.editor.column || {}), originalKey: (state.editor.column || {}).originalKey || '' }).then(function(payload){ if (payload && payload.ok !== false) state.toast = columnAction === 'column.add' ? 'Column added' : 'Column saved'; return payload; });
+      }
       var body = { row: clone(state.editor.row || {}) };
       if (state.dataset === 'patient-registration') body.reviewQueue = String((((state.filters || {}).reviewQueue || {}).value) || (body.row || {}).reviewQueue || '');
       var action = ((state.editor || {}).isNew || !String((body.row || {}).id || '').trim()) ? 'row.add' : 'row.save';

@@ -758,10 +758,23 @@
           });
         },
         transferSummaryText: function () {
-          var active = this.activeTransfers().filter(function (item) { return item.status !== 'paused'; }).length;
-          var paused = this.activeTransfers().filter(function (item) { return item.status === 'paused'; }).length;
-          var done = this.completedTransfers().length;
-          return active + ' active · ' + paused + ' paused · ' + done + ' finished';
+          return this.transferStatusDetail ? this.transferStatusDetail() : '';
+        },
+        transferStatusHeadline: function () {
+          var active = this.transferActiveCount ? this.transferActiveCount() : 0;
+          var paused = this.transferPausedCount ? this.transferPausedCount() : 0;
+          var failed = this.transferFailedCount ? this.transferFailedCount() : 0;
+          if (active > 0) return active + ' transfer' + (active === 1 ? '' : 's') + ' in progress';
+          if (paused > 0) return paused + ' transfer' + (paused === 1 ? '' : 's') + ' paused';
+          if (failed > 0) return failed + ' transfer' + (failed === 1 ? '' : 's') + ' needs attention';
+          return 'Transfers idle';
+        },
+        transferStatusDetail: function () {
+          var active = this.transferActiveCount ? this.transferActiveCount() : 0;
+          var paused = this.transferPausedCount ? this.transferPausedCount() : 0;
+          var completed = this.transferCompletedCount ? this.transferCompletedCount() : 0;
+          var failed = this.transferFailedCount ? this.transferFailedCount() : 0;
+          return active + ' active · ' + paused + ' paused · ' + completed + ' completed · ' + failed + ' failed/cancelled';
         },
 
         transferQueueRows: function (limit) {
@@ -3104,6 +3117,10 @@
             publicLogin: !!src.publicLogin,
             mobileConfig: Object.assign({}, cfg.mobileConfig || {}, src.mobileConfig || {})
           }));
+          mapped.variants = Object.assign({ light: {}, dark: {} }, cfg.variants || src.variants || {});
+          mapped.activeMode = mapped.darkEnabled ? 'dark' : 'light';
+          mapped.defaultVariant = mapped.activeMode;
+          mapped.mode = mapped.activeMode;
           if (((src.appearance || {}).accent) && mapped.cssVars) mapped.cssVars['--accent'] = src.appearance.accent;
           if (mapped.wallpaperUrl) mapped.wallpaperPreset = mapped.wallpaperPreset || 'custom-upload';
           mapped.locked = false;
@@ -3112,6 +3129,8 @@
         themeStudioServerProfile: function (theme) {
           var target = this.themeStudioNormalizeConfig(theme || this.themeStudioActiveTheme() || {});
           var mode = target.darkEnabled ? 'dark' : 'light';
+          target.variants = Object.assign({ light: {}, dark: {} }, target.variants || {});
+          target.variants[mode] = this.themeStudioBuildVariantSnapshot ? this.themeStudioBuildVariantSnapshot(target, mode === 'dark') : (target.variants[mode] || {});
           return {
             key: target.id,
             id: target.id,
@@ -3131,7 +3150,8 @@
             startMenuConfig: this.themeStudioClone(target.startMenuConfig || {}),
             loginScreenConfig: this.themeStudioClone(target.loginScreenConfig || {}),
             mobileConfig: this.themeStudioClone(target.mobileConfig || {}),
-            themeConfig: Object.assign(this.themeStudioClone(target), { darkEnabled: mode === 'dark', defaultVariant: mode, activeMode: mode })
+            variants: this.themeStudioClone(target.variants || { light: {}, dark: {} }),
+            themeConfig: Object.assign(this.themeStudioClone(target), { darkEnabled: mode === 'dark', mode: mode, defaultVariant: mode, activeMode: mode, variants: this.themeStudioClone(target.variants || { light: {}, dark: {} }) })
           };
         },
         themeStudioOpenSession: function () {
@@ -3192,6 +3212,11 @@
           target.locked = false;
           target.userTheme = true;
           target.sourceId = target.sourceId || original.id || original.sourceId || 'glow';
+          target.mode = target.darkEnabled ? 'dark' : 'light';
+          target.activeMode = target.mode;
+          target.defaultVariant = target.mode;
+          target.variants = Object.assign({ light: {}, dark: {} }, target.variants || {});
+          target.variants[target.mode] = this.themeStudioBuildVariantSnapshot ? this.themeStudioBuildVariantSnapshot(target, target.mode === 'dark') : (target.variants[target.mode] || {});
           store.themes[target.id] = target;
           if (store.order.indexOf(target.id) < 0) store.order.push(target.id);
           if (store.customThemes.indexOf(target.id) < 0) store.customThemes.push(target.id);

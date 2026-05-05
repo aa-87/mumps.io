@@ -203,3 +203,7 @@ ROI 71 adds sample server-side permission gates before Patient Registration quer
 ## ROI 72 import/export note
 
 Patient Registration import/export remains a HIPAA-ready architecture pattern, not a compliance guarantee. Deployments must still enforce transport security, authorization, audit retention, minimum necessary access, and operational policies. Import preview/commit and reconciliation actions are server-side and permission-gated.
+
+## Patient Registration regression stabilization
+
+Patient Registration mutations remain audit-oriented and server-authoritative. Row edits, cell saves, column changes, import CSV, reconciliation, duplicate review, and patient status transitions must dispatch to the MUMPS backend and must not silently fail in the browser. Both HTTP and WebSocket mutation paths call `MUTATE^MIOOSTBL`, which invokes `MIOOSPAT` validation/audit hooks for patient-registration datasets.

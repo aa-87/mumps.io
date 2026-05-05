@@ -112,3 +112,7 @@ P100,Doe,Jane,1980-01-01,555-0100,jane@example.invalid,NY,10001,Draft,No
 6. Use **Reconcile** to generate duplicate-candidate reports.
 
 All import and reconciliation operations go through MUMPS table mutations and server-side validation.
+
+## Final regression stabilization
+
+The Patient Registration example exercises the same table backend contract as the runtime module. `row.add`, `row.save`, `cell.save`, `column.option.add`, `column.add`, `patient.import.commit`, and `patient.reconcile.report` must route through `MUTATE^MIOOSTBL` / `MIOOSPAT` and return deterministic feedback. Keep PHI behavior server-authoritative and preserve audit hooks when extending the example.

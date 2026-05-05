@@ -4402,3 +4402,86 @@ html[dir="rtl"] .mioos-window-menu-dropdown-vue,
   color: var(--theme-field-text, #f8fafc) !important;
   border-color: var(--theme-panel-border, #334155) !important;
 }
+
+/* ROI Final regression stabilization: explorer details contrast, toolbar separator, animated transfer status. */
+.mioos-explorer-toolbar-separator {
+  display: inline-block;
+  width: 1px;
+  align-self: stretch;
+  margin: 4px 8px;
+  background: var(--toolbar-border, rgba(15,23,42,.22));
+  box-shadow: 1px 0 rgba(255,255,255,.38);
+}
+.theme-dark-mode .mioos-explorer-toolbar-separator {
+  background: rgba(148,163,184,.38);
+  box-shadow: 1px 0 rgba(255,255,255,.08);
+}
+.theme-dark-mode .mioos-explorer-listview tbody tr.is-selected {
+  background: linear-gradient(180deg, #eaf2ff 0%, #c7dcff 100%) !important;
+  color: #0f172a !important;
+  outline-color: rgba(255,255,255,.65) !important;
+}
+.theme-dark-mode .mioos-explorer-listview tbody tr.is-selected td,
+.theme-dark-mode .mioos-explorer-listview tbody tr.is-selected span,
+.theme-dark-mode .mioos-explorer-listview tbody tr.is-selected strong,
+.theme-dark-mode .mioos-explorer-listview tbody tr.is-selected small,
+.theme-dark-mode .mioos-explorer-listview tbody tr.is-selected .mioos-explorer-row-name {
+  color: #0f172a !important;
+  text-shadow: none !important;
+}
+.mioos-transfer-status-panel {
+  display: grid;
+  grid-template-columns: auto minmax(0,1fr);
+  align-items: center;
+  gap: 10px 12px;
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: linear-gradient(135deg, rgba(248,250,252,.98), rgba(226,232,240,.92));
+  border: 1px solid rgba(100,116,139,.24);
+  box-shadow: inset 0 1px rgba(255,255,255,.65), 0 10px 28px rgba(15,23,42,.12);
+}
+.mioos-transfer-status-orb {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  position: relative;
+  background: radial-gradient(circle at 35% 35%, #ffffff 0%, #93c5fd 36%, #2563eb 100%);
+  box-shadow: 0 0 0 5px rgba(37,99,235,.12), 0 10px 20px rgba(37,99,235,.22);
+}
+.mioos-transfer-status-orb span {
+  position: absolute;
+  inset: 7px;
+  border-radius: inherit;
+  border: 2px solid rgba(255,255,255,.92);
+  border-top-color: transparent;
+  animation: mioos-transfer-orb-spin 1.15s linear infinite;
+}
+.mioos-transfer-status-panel.is-idle .mioos-transfer-status-orb span { animation-duration: 3.2s; opacity: .42; }
+.mioos-transfer-status-meter {
+  grid-column: 1 / -1;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  border: 1px solid rgba(100,116,139,.2);
+  background: rgba(148,163,184,.22);
+}
+.mioos-transfer-status-meter span {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #60a5fa, #2563eb);
+  transition: width .22s ease;
+}
+.theme-dark-mode .mioos-transfer-status-panel {
+  background: linear-gradient(135deg, rgba(15,23,42,.96), rgba(2,6,23,.96)) !important;
+  color: #f8fafc !important;
+  border-color: rgba(148,163,184,.3) !important;
+  box-shadow: inset 0 1px rgba(255,255,255,.08), 0 16px 38px rgba(0,0,0,.45);
+}
+.theme-dark-mode .mioos-transfer-status-orb {
+  background: radial-gradient(circle at 35% 35%, #e0f2fe 0%, #38bdf8 38%, #1d4ed8 100%);
+  box-shadow: 0 0 0 5px rgba(56,189,248,.12), 0 0 28px rgba(56,189,248,.32);
+}
+.theme-dark-mode .mioos-transfer-status-meter { background: rgba(15,23,42,.92); border-color: rgba(148,163,184,.32); }
+@keyframes mioos-transfer-orb-spin { to { transform: rotate(360deg); } }

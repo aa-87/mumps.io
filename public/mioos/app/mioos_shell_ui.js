@@ -246,6 +246,12 @@
                 <button type="button" role="menuitem" @click="explorerUp">Up one level</button>
               </div>
             </div>
+            <!-- Explorer toolbar order contract: File | Edit | View | Tools | Help | separator | Back | Forward | Up | Refresh | Upload | Download | New Folder | Rename | Delete -->
+            <div v-if="isExplorer" class="mioos-window-menu-group-vue" role="none">
+              <button type="button" role="menuitem" aria-haspopup="true">Help</button>
+              <div class="mioos-window-menu-dropdown-vue" role="menu" @click="dismissMenus($event)"><button type="button" role="menuitem" @click="about">About</button></div>
+            </div>
+            <span v-if="isExplorer" class="mioos-explorer-toolbar-separator" aria-hidden="true"></span>
             <div v-if="isExplorer" class="mioos-window-inline-tools-vue" role="group" aria-label="Explorer actions">
               <button type="button" title="Back" :disabled="!(((window.explorerState || {}).history || []).length)" @click="explorerBack">⬅️</button>
               <button type="button" title="Forward" :disabled="!(((window.explorerState || {}).future || []).length)" @click="explorerForward">➡️</button>
@@ -278,7 +284,7 @@
                 <button v-if="!isMedia && !isText && window.appKey !== 'terminal' && window.appKey !== 'transfers'" type="button" role="menuitem" @click="about">About this module</button>
               </div>
             </div>
-            <div class="mioos-window-menu-group-vue" role="none">
+            <div v-if="!isExplorer" class="mioos-window-menu-group-vue" role="none">
               <button type="button" role="menuitem" aria-haspopup="true">Help</button>
               <div class="mioos-window-menu-dropdown-vue" role="menu" @click="dismissMenus($event)"><button type="button" role="menuitem" @click="about">About</button></div>
             </div>
@@ -952,9 +958,10 @@
             '<div class="mioos-classic-shell mioos-classic-transfers">' +
               
               '<div class="mioos-classic-transferstack">' +
-                '<section class="mioos-classic-transferoverview">' +
-                  '<div class="mioos-classic-transferoverview-copy mioos-classic-transferfacts"><strong>[[ vm.transferSummaryText ? vm.transferSummaryText() : \'No transfers\' ]]</strong><span>[[ vm.transferActiveCount ? vm.transferActiveCount() : rows.length ]] active • [[ vm.transferPausedCount ? vm.transferPausedCount() : 0 ]] paused • [[ vm.transferCompletedCount ? vm.transferCompletedCount() : completed.length ]] completed • [[ vm.transferFailedCount ? vm.transferFailedCount() : 0 ]] failed</span></div>' +
-                  '<div class="mioos-classic-progress mioos-classic-progress--overall"><span :style="{ width: ((vm.overallTransferPercent ? vm.overallTransferPercent() : 0) + \'%\') }"></span></div>' +
+                '<section class="mioos-classic-transferoverview mioos-transfer-status-panel" :class="{ \'is-active\': (vm.transferActiveCount ? vm.transferActiveCount() : rows.length) > 0, \'is-idle\': !(vm.transferActiveCount ? vm.transferActiveCount() : rows.length) }">' +
+                  '<div class="mioos-transfer-status-orb" aria-hidden="true"><span></span></div>' +
+                  '<div class="mioos-classic-transferoverview-copy mioos-classic-transferfacts"><strong>[[ vm.transferStatusHeadline ? vm.transferStatusHeadline() : (vm.transferSummaryText ? vm.transferSummaryText() : \'Transfers idle\') ]]</strong><span>[[ vm.transferStatusDetail ? vm.transferStatusDetail() : ((vm.transferActiveCount ? vm.transferActiveCount() : rows.length) + \' active • \' + (vm.transferPausedCount ? vm.transferPausedCount() : 0) + \' paused • \' + (vm.transferCompletedCount ? vm.transferCompletedCount() : completed.length) + \' completed\') ]]</span></div>' +
+                  '<div class="mioos-transfer-status-meter"><span :style="{ width: ((vm.overallTransferPercent ? vm.overallTransferPercent() : 0) + \'%\') }"></span></div>' +
                 '</section>' +
                 '<div class="mioos-classic-queue" v-if="rows.length">' +
                   '<div class="mioos-classic-queuerow is-head"><div>Name</div><div>Path</div><div>Progress</div><div>Status</div><div>Size</div></div>' +

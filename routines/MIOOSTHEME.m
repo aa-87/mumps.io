@@ -74,6 +74,8 @@ MODEFIX(ROOT)
 	NEW MODE,DEF,DARK
 	SET MODE=$GET(@ROOT@("mode"))
 	IF MODE="" SET MODE=$GET(@ROOT@("activeMode"))
+	IF MODE="" SET MODE=$GET(@ROOT@("themeConfig","mode"))
+	IF MODE="" SET MODE=$GET(@ROOT@("themeConfig","activeMode"))
 	SET DEF=$GET(@ROOT@("defaultVariant"))
 	IF DEF="" SET DEF=$GET(@ROOT@("themeConfig","defaultVariant"))
 	SET DARK=+$GET(@ROOT@("themeConfig","darkEnabled"))
@@ -82,9 +84,14 @@ MODEFIX(ROOT)
 	IF MODE="" SET MODE="light"
 	IF MODE'="dark" SET MODE="light"
 	SET @ROOT@("mode")=MODE,@ROOT@("activeMode")=MODE,@ROOT@("defaultVariant")=MODE
-	IF $DATA(@ROOT@("themeConfig")) DO
-	. SET @ROOT@("themeConfig","defaultVariant")=MODE
-	. IF MODE="dark" SET @ROOT@("themeConfig","darkEnabled")=1
+	SET @ROOT@("themeConfig","mode")=MODE
+	SET @ROOT@("themeConfig","activeMode")=MODE
+	SET @ROOT@("themeConfig","defaultVariant")=MODE
+	IF MODE="dark" SET @ROOT@("themeConfig","darkEnabled")=1
+	IF MODE="dark",'$DATA(@ROOT@("variants","dark")),$DATA(@ROOT@("themeConfig","variants","dark")) MERGE @ROOT@("variants","dark")=@ROOT@("themeConfig","variants","dark")
+	IF MODE="dark",'$DATA(@ROOT@("themeConfig","variants","dark")),$DATA(@ROOT@("variants","dark")) MERGE @ROOT@("themeConfig","variants","dark")=@ROOT@("variants","dark")
+	IF MODE="dark",'$DATA(@ROOT@("variants","dark")) SET @ROOT@("variants","dark","mode")="dark"
+	IF MODE="dark",'$DATA(@ROOT@("themeConfig","variants","dark")) SET @ROOT@("themeConfig","variants","dark","mode")="dark"
 	QUIT
 	;
 ASSETID(ROOT)

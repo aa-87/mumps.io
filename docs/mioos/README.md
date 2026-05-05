@@ -464,3 +464,13 @@ This pass locks the server-backed user theme contract and related patient/table 
 - `ROI2Folder` is filtered from desktop rendering as a legacy test artifact.
 - Patient Registration add-row uses the backend `row.add` mutation; add-option updates the local option list and selects the new value before refetch.
 - New Table Module drafts default to the backend table surface and `mioos-advanced-table-v8` contract, with styled modal surfaces for light/dark themes.
+
+## Final regression stabilization contract
+
+This ROI locks the source-accurate shell contracts without changing the MUMPS.IO architecture. The text media viewer stays WebSocket-first and reads `fs.text.chunk` windows with byte-offset scroll synchronization. It maintains an in-flight request map and bounded chunk cache, and it no longer falls back to a full `fs.read` browser payload when range/chunk reads fail. Save remains deliberate: small files can enter full edit mode and write through `fs.text.save`; files over `mioos.fs.maxTextEditBytes` stay in bounded view-only mode with an explicit toast/message instead of attempting unsafe whole-file editing.
+
+Theme Studio saves `mode`, `activeMode`, `defaultVariant`, `themeConfig.darkEnabled`, and dark variant data together. Startup hydration reads the same fields from the active server profile so a saved dark custom theme loads as dark on the next boot, while multiple user theme profiles remain available in the Start menu theme group.
+
+Explorer Details view has a dark-mode contrast rule: the selected row uses a light selected background and dark text only in details rows. The Explorer toolbar order is File, Edit, View, Tools, Help, separator, then Back, Forward, Up, Refresh, Upload, Download, New Folder, Rename, and Delete. VFS application shortcuts expose icon and target app metadata to Explorer; double-click and context Open route through the same launcher path. `ROI2Folder` is filtered from both desktop rendering and Explorer’s Desktop folder listing.
+
+Transfers use the animated `mioos-transfer-status-panel` contract instead of the old text banner. Patient Registration and UI table modules use deterministic toast/error feedback, `MUTATE^MIOOSTBL` for HTTP and WebSocket mutation paths, and the same `mioos-advanced-table-v8` table-backed module contract.

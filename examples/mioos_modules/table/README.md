@@ -317,3 +317,7 @@ Failed mutation shape after HTTP/WebSocket normalization:
   "refetch": 0
 }
 ```
+
+## Final regression stabilization
+
+For table-backed modules, keep the manifest/server definition MUMPS-first and set `componentKey="table"`, `surface="mioos-surface-table"`, and `tableState.config.contract="mioos-advanced-table-v8"`. Mutations are shared by HTTP and WebSocket paths through `MUTATE^MIOOSTBL`, and the shell now requires visible success/failure feedback instead of silent failures.

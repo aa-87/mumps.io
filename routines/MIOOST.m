@@ -72,6 +72,7 @@ MIOOST ; MIOOS tests
 	DO T084
 	DO T085
 	DO T086
+	DO T087
 	QUIT
 	;
 RESET
@@ -1620,5 +1621,63 @@ T086
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_modules.js","mioos-advanced-table-v8"),"[MIOOST][T086][table module contract default]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","polished New Table Module modal"),"[MIOOST][T086][table module modal styling]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","multiple server-backed user themes"),"[MIOOST][T086][llm user theme contract]")
+	QUIT
+	;
+
+T087
+	NEW STATE,CONF,IN,OUT,ERR,ROOT,DESK,ID,FOUND,I
+	KILL STATE,CONF,IN,OUT,ERR
+	DO CONFDEF^MIOOS(.CONF)
+	SET STATE("authenticated")=1,STATE("principal")="final-user",STATE("roles")="admin"
+	SET IN("key")="final-dark",IN("activate")=1
+	SET IN("profile","key")="final-dark",IN("profile","id")="final-dark",IN("profile","name")="Final Dark",IN("profile","activeMode")="dark",IN("profile","defaultVariant")="dark"
+	SET IN("profile","themeConfig","darkEnabled")=1,IN("profile","themeConfig","activeMode")="dark",IN("profile","themeConfig","defaultVariant")="dark"
+	SET IN("profile","themeConfig","variants","dark","cssVars","--surface")="#020617"
+	DO OK^MIOTASSERT($$SAVE^MIOOSTHEME(.STATE,.CONF,.IN,.OUT,.ERR),"[MIOOST][T087][dark active/default variants save]")
+	SET ROOT=$NAME(^MIO("MIOOS","THEME","PROFILE","final-user","final-dark"))
+	DO EQ^MIOTASSERT($GET(@ROOT@("activeMode")),"dark","[MIOOST][T087][activeMode persisted]")
+	DO EQ^MIOTASSERT($GET(@ROOT@("defaultVariant")),"dark","[MIOOST][T087][defaultVariant persisted]")
+	DO EQ^MIOTASSERT($GET(@ROOT@("themeConfig","activeMode")),"dark","[MIOOST][T087][themeConfig activeMode persisted]")
+	DO EQ^MIOTASSERT($GET(@ROOT@("themeConfig","defaultVariant")),"dark","[MIOOST][T087][themeConfig defaultVariant persisted]")
+	DO OK^MIOTASSERT($DATA(@ROOT@("variants","dark"))>0,"[MIOOST][T087][variants dark persisted]")
+	KILL STATE SET STATE("authenticated")=1,STATE("principal")="final-user"
+	DO ACTIVETHM^MIOOSST(.STATE,.CONF)
+	DO EQ^MIOTASSERT($GET(STATE("themeMode")),"dark","[MIOOST][T087][startup boot hydration dark]")
+	KILL STATE,OUT,ERR DO INIT^MIOOSFS(.CONF)
+	SET STATE("principal")="admin",STATE("roles")="admin",STATE("authenticated")=1
+	SET DESK=$$DESKTOPID^MIOOSFS()
+	DO MKDIRID^MIOOSFS(DESK,"ROI2Folder","admin","admin",.ID)
+	DO OK^MIOTASSERT(ID'="","[MIOOST][T087][roi2 folder setup]")
+	DO OK^MIOTASSERT($$LIST^MIOOSFS(.STATE,DESK,.OUT,.ERR),"[MIOOST][T087][desktop list]")
+	SET FOUND=0,I=0 FOR  SET I=$ORDER(OUT("entries",I)) QUIT:I'>0  IF $GET(OUT("entries",I,"name"))="ROI2Folder" SET FOUND=1
+	DO EQ^MIOTASSERT(FOUND,0,"[MIOOST][T087][roi2 hidden from explorer desktop]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","textViewerByteOffsetForScroll"),"[MIOOST][T087][scroll byte mapping helper]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","this.command('fs.read'"),0,"[MIOOST][T087][no full fs.read fallback]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","boundedEdit"),"[MIOOST][T087][bounded edit mode]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","chunked-text-v2"),"[MIOOST][T087][chunked text backend contract]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","Explorer toolbar order contract: File | Edit | View | Tools | Help"),"[MIOOST][T087][explorer toolbar order contract]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","mioos-explorer-toolbar-separator"),"[MIOOST][T087][explorer toolbar separator]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","theme-dark-mode .mioos-explorer-listview tbody tr.is-selected"),"[MIOOST][T087][dark details selected row css]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","color: #0f172a !important"),"[MIOOST][T087][dark details selected row text contrast]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js"," active = paused"),0,"[MIOOST][T087][old transfer banner absent]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-transfer-status-panel"),"[MIOOST][T087][animated transfer panel]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","mioos-transfer-status-orb"),"[MIOOST][T087][animated transfer orb css]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","explorerLaunchShortcut"),"[MIOOST][T087][shortcut launch handler]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","shortcutTargetAppKey"),"[MIOOST][T087][shortcut app metadata]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSFS.m","ROI2Folder"),"[MIOOST][T087][desktop explorer roi2 filter]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableSetToast(tableId, state.error)"),"[MIOOST][T087][table deterministic error feedback]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","'row.add'"),"[MIOOST][T087][row add action]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","'cell.save'"),"[MIOOST][T087][cell save action]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","'column.option.add'"),"[MIOOST][T087][column option add action]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","'column.add'"),"[MIOOST][T087][column add action]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","patient.import.commit"),"[MIOOST][T087][patient import csv action]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","patient.reconcile.report"),"[MIOOST][T087][patient reconcile action]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","MUTATE^MIOOSTBL"),"[MIOOST][T087][http table mutate shared backend]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","MUTATE^MIOOSTBL"),"[MIOOST][T087][websocket table mutate shared backend]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_modules.js","mioos-surface-table"),"[MIOOST][T087][new table module surface]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_modules.js","mioos-advanced-table-v8"),"[MIOOST][T087][new table module contract]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","mioos-table-module-editor"),"[MIOOST][T087][new table module styling]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","Final regression stabilization contract"),"[MIOOST][T087][final regression docs]")
+	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","Final regression stabilization contract"),"[MIOOST][T087][final regression llm]")
 	QUIT
 	;

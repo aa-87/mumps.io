@@ -685,3 +685,15 @@ Patient Registration row creation uses `row.add`; editing existing rows uses `ro
 Legacy `ROI2Folder` is a desktop test artifact and should not be rendered as a user desktop icon.
 
 Regression note: tests require the phrase multiple server-backed user themes to ensure future ROI passes do not collapse Theme Studio back to a single overwritten custom profile.
+
+## Final regression stabilization contract
+
+Use the attached source tree as the only source of truth. The final stabilization contract preserves MUMPS/YottaDB backend routines, MIOTPL server rendering, MIOHTTP/MIOOSAPI HTTP routes, MIOOSWS WebSocket commands, MIOOSFS VFS, and Vue 3 Options API UMD browser files.
+
+Text media viewer contract: large text files are viewed with `fs.text.chunk`, byte-offset scroll synchronization, request dedupe, and bounded chunk caches. Do not reintroduce whole-file browser fallback reads for huge files. Editing is bounded by `mioos.fs.maxTextEditBytes`; oversized files remain chunked view-only and must show a clear message.
+
+Theme persistence contract: save and boot must keep `mode`, `activeMode`, `defaultVariant`, `themeConfig.darkEnabled`, and `variants.dark` together. Multiple server-backed user themes must continue to load, and the Start menu theme group must remain available.
+
+Explorer/desktop contract: Details selected rows in dark mode use a light row with dark text. Explorer toolbar ordering is File, Edit, View, Tools, Help, separator, then navigation/action icons. VFS app shortcuts carry icon and launch metadata and open through the normal launcher. `ROI2Folder` must be filtered from both desktop and Explorer Desktop folder views only.
+
+Patient/table contract: `row.add`, `row.save`, `cell.save`, `column.add`, `column.option.add`, import CSV, reconciliation, and patient actions must show deterministic success/failure feedback and must route HTTP and WebSocket mutations to `MUTATE^MIOOSTBL`. Generated UI table modules must use `componentKey=table`, `surface=mioos-surface-table`, and `mioos-advanced-table-v8`.

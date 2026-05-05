@@ -421,3 +421,9 @@ The browser should call these as mutation-only operations. Backend validation an
 ## ROI 72B table cell editing hardening
 
 Select and multiselect cell editors now keep the Add Value flow inside the MIOOS table modal system. When a new option is added from a cell or row editor, it is immediately selected in that editor. Active cell editors also stop the desktop context menu and expose a small Cut/Copy/Paste context menu.
+
+## Final regression stabilization notes
+
+Table mutations continue to converge on `MUTATE^MIOOSTBL`. The HTTP route `/api/mioos/table/mutate` and the WebSocket command `table.mutate` use the same backend routine so `row.add`, `row.save`, `cell.save`, `column.add`, `column.option.add`, CSV import, reconciliation, and patient action dispatch share validation and audit behavior.
+
+Client mutation failures must set deterministic table feedback: field errors are rendered inline, `state.error` is populated, and a toast is shown. Successful mutations also show a non-blocking toast and refetch when the backend returns `refetch=1`.

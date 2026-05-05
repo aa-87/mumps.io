@@ -177,6 +177,9 @@ FSTEXTCHUNK(STATE,CONF,TREE,OUTJSON,ERR)
 	SET OUT("mediaType")="text"
 	SET OUT("chunkSize")=SIZE
 	SET OUT("scrollSync")="byte-offset"
+	SET OUT("viewerContract")="chunked-text-v2"
+	SET OUT("boundedEdit")=1
+	SET OUT("maxEditBytes")=+$GET(CONF("mioos","fs","maxTextEditBytes"),+$GET(CONF("mioos","fs","textChunkThresholdBytes"),2411725))
 	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"fs.text.chunk","vfs",.OUT)
 	QUIT 1
 	;

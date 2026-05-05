@@ -218,6 +218,10 @@ ACTIVETHM(STATE,CONF)
 	. IF KEY'="" SET STATE("themeKey")=KEY
 	. SET MODE=$GET(STATE("activeThemeProfile","mode"))
 	. IF MODE="" SET MODE=$GET(STATE("activeThemeProfile","activeMode"))
+	. IF MODE="" SET MODE=$GET(STATE("activeThemeProfile","defaultVariant"))
+	. IF MODE="" SET MODE=$GET(STATE("activeThemeProfile","themeConfig","activeMode"))
+	. IF MODE="" SET MODE=$GET(STATE("activeThemeProfile","themeConfig","defaultVariant"))
+	. IF MODE="",+$GET(STATE("activeThemeProfile","themeConfig","darkEnabled")) SET MODE="dark"
 	. IF MODE'="" SET STATE("themeMode")=MODE
 	IF '+$$LOAD^MIOOSTHEME(.STATE,.CONF,.OUT,.ERR) QUIT
 	KILL STATE("userThemeProfiles")
@@ -230,6 +234,10 @@ ACTIVETHM(STATE,CONF)
 	IF KEY'="" SET STATE("themeKey")=KEY
 	SET MODE=$GET(STATE("activeThemeProfile","mode"))
 	IF MODE="" SET MODE=$GET(STATE("activeThemeProfile","activeMode"))
+	IF MODE="" SET MODE=$GET(STATE("activeThemeProfile","defaultVariant"))
+	IF MODE="" SET MODE=$GET(STATE("activeThemeProfile","themeConfig","activeMode"))
+	IF MODE="" SET MODE=$GET(STATE("activeThemeProfile","themeConfig","defaultVariant"))
+	IF MODE="",+$GET(STATE("activeThemeProfile","themeConfig","darkEnabled")) SET MODE="dark"
 	IF MODE'="" SET STATE("themeMode")=MODE
 	SET DENSITY=$GET(STATE("activeThemeProfile","density"))
 	IF DENSITY="" SET DENSITY=$GET(STATE("activeThemeProfile","appearance","density"))

@@ -44,6 +44,44 @@
     return mime.indexOf('video/') === 0 || /\.(mp4|webm|ogv|mov|m4v)$/i.test(name);
   }
 
+  function shortcutTargetAppKey(entry) {
+    var shortcut = (entry || {}).shortcut || {};
+    return String((entry || {}).targetAppKey || (entry || {}).appKey || (entry || {}).launchKey || shortcut.targetAppKey || shortcut.launchKey || shortcut.appKey || '').trim();
+  }
+
+  function shortcutTargetPath(entry) {
+    var shortcut = (entry || {}).shortcut || {};
+    return String((entry || {}).targetPath || shortcut.targetPath || '').trim();
+  }
+
+  function isAppShortcut(entry) {
+    var kind = String(((entry || {}).kind || (entry || {}).type || '')).toLowerCase();
+    var mime = String(((entry || {}).mime || '')).toLowerCase();
+    return (kind === 'shortcut' || mime === 'application/x-mioos-shortcut') && !!(shortcutTargetAppKey(entry) || shortcutTargetPath(entry));
+  }
+
+  function explorerIconFromMetadata(entry) {
+    var customize = (entry || {}).customize || {};
+    return (entry || {}).icon || (entry || {}).folderIcon || (entry || {}).shortcutIcon || customize.icon || '';
+  }
+
+  function isHiddenExplorerDesktopArtifact(vm, state, entry) {
+    var name = String((entry || {}).name || (entry || {}).title || '');
+    var desktopId = (((vm || {}).boot || {}).vfs || {}).desktopId || (((vm || {}).boot || {}).desktop || {}).desktopFolderId || '';
+    var folder = (state || {}).folder || {};
+    var path = String(folder.path || folder.canonicalPath || '');
+    if (name !== 'ROI2Folder') return false;
+    return (!!desktopId && String((state || {}).folderId || '') === String(desktopId)) || path === '/Home/Desktop' || /\/Desktop$/.test(path);
+  }
+
+  function textViewerByteOffsetForScroll(stream, scrollTop, viewportHeight) {
+    var chunkSize = Math.max(4096, +((stream || {}).chunkSize || 262144));
+    var maxScroll = Math.max(1, (+((stream || {}).scrollHeight || 1)) - Math.max(1, +(viewportHeight || (stream || {}).viewportHeight || 320)));
+    var ratio = Math.max(0, Math.min(1, (+(scrollTop || 0)) / maxScroll));
+    var maxOffset = Math.max(0, (+((stream || {}).size || 0)) - chunkSize);
+    return alignTextChunkOffset(Math.floor(ratio * maxOffset), chunkSize);
+  }
+
   function navigatorOnline() {
     if (typeof navigator === 'undefined' || typeof navigator.onLine === 'undefined') return true;
     return !!navigator.onLine;
@@ -640,6 +678,11 @@
         });
       },
       explorerItemGlyph: function (item) {
+        var metaIcon = explorerIconFromMetadata(item);
+        var appKey = shortcutTargetAppKey(item);
+        if (metaIcon) return metaIcon;
+        if (appKey && this.appIcon) return this.appIcon(appKey);
+        if (isAppShortcut(item)) return '▣';
         if (detectImageLike(item)) return '🖼';
         if (detectAudioLike(item)) return '🎵';
         if (detectVideoLike(item)) return '🎬';
@@ -822,18 +865,11 @@
         var size = +(opts.size || ((((this.boot || {}).vfs || {}).readWindowBytes) || 32768));
         var offset = +(opts.offset || 0);
         var timeoutMs = +(opts.timeoutMs || 10000);
-        var self = this;
         if (!id) return Promise.reject(new Error('file_id_missing'));
         if (!this.command) return Promise.reject(new Error('websocket_command_unavailable'));
         return this.command('fs.read.range', { id: id, offset: offset, size: size }, { timeoutMs: timeoutMs }).then(function (msg) {
           var payload = payloadRoot(msg);
           return { message: msg, payload: payload, text: appendTruncationNotice(textFromPayload(payload), payload) };
-        }).catch(function (rangeErr) {
-          if (opts.allowFull === false) throw rangeErr;
-          return self.command('fs.read', { id: id }, { timeoutMs: timeoutMs }).then(function (msg) {
-            var payload = payloadRoot(msg);
-            return { message: msg, payload: payload, text: textFromPayload(payload) };
-          });
         });
       },
       readTextChunkViaWebSocket: function (item, options) {
@@ -874,7 +910,7 @@
         var virtualized = textViewerShouldVirtualize(this, item || {});
         var chunkSize = virtualized ? textViewerBaseChunkBytes(this) : Math.max(4096, Math.min(4194304, Math.max(size || 0, threshold)));
         var scrollHeight = virtualized && size > 0 ? Math.max(800, Math.min(12000000, Math.ceil(size / 2))) : Math.max(600, textChunkHeight(''));
-        return { fileId: id, path: (item || {}).path || '', fileName: (item || {}).name || (item || {}).title || 'Text file', mime: (item || {}).mime || 'text/plain', size: size, thresholdBytes: threshold, virtualized: virtualized, chunkSize: chunkSize, chunks: {}, loadingOffsets: {}, loadedOffsets: {}, visibleOffset: 0, pendingOffset: null, contentTop: 0, viewportHeight: 320, scrollHeight: scrollHeight, eof: false, initialLoaded: false, status: virtualized ? 'Opening text stream…' : 'Opening text file…', error: '', editing: false, editableContent: '', dirty: false, saving: false, saveStatus: '', zoom: 1 };
+        return { fileId: id, path: (item || {}).path || '', fileName: (item || {}).name || (item || {}).title || 'Text file', mime: (item || {}).mime || 'text/plain', size: size, thresholdBytes: threshold, virtualized: virtualized, boundedEdit: true, editMode: virtualized ? 'bounded' : 'full', maxEditBytes: +((((this.boot || {}).vfs || {}).maxTextEditBytes) || threshold), chunkSize: chunkSize, chunks: {}, loadingOffsets: {}, loadedOffsets: {}, visibleOffset: 0, pendingOffset: null, contentTop: 0, viewportHeight: 320, scrollHeight: scrollHeight, eof: false, initialLoaded: false, status: virtualized ? 'Opening text stream…' : 'Opening text file…', error: '', editing: false, editableContent: '', dirty: false, saving: false, saveStatus: '', zoom: 1 };
       },
       textViewerWindowById: function (windowId) {
         return (this.windows || []).find(function (entry) { return entry.id === windowId; }) || null;
@@ -928,13 +964,11 @@
         var win = this.textViewerWindowById ? this.textViewerWindowById(windowId) : null;
         var stream = ((win || {}).fileView || {}).textStream;
         var el = event && event.target;
-        var maxScroll, ratio, maxOffset, offset, track, self = this;
+        var maxOffset, offset, track, self = this;
         if (!stream || !el || !stream.virtualized) return;
         stream.viewportHeight = el.clientHeight || stream.viewportHeight || 320;
-        maxScroll = Math.max(1, (stream.scrollHeight || 1) - stream.viewportHeight);
-        ratio = Math.max(0, Math.min(1, (el.scrollTop || 0) / maxScroll));
         maxOffset = Math.max(0, (stream.size || 0) - stream.chunkSize);
-        offset = alignTextChunkOffset(Math.floor(ratio * maxOffset), stream.chunkSize);
+        offset = textViewerByteOffsetForScroll(stream, el.scrollTop || 0, stream.viewportHeight);
         if (stream.pendingOffset === offset && stream.scrollRaf) return;
         stream.pendingOffset = offset;
         if (stream.scrollRaf) return;
@@ -997,8 +1031,9 @@
         var pieces = [];
         if (!stream) return Promise.resolve(false);
         if (+stream.size > maxEditBytes) {
-          stream.error = 'This file is too large for in-window editing. Viewing remains chunked.';
-          if (this.showToast) this.showToast('Text viewer', stream.error, 'error', 3600);
+          stream.editMode = 'view-only-large-file';
+          stream.error = 'This file is above the bounded-edit limit. Viewing remains chunked; save is disabled until the file is small enough for a safe full edit.';
+          if (this.showToast) this.showToast('Text viewer', stream.error, 'error', 5200);
           return Promise.resolve(false);
         }
         stream.status = 'Preparing editable text…';
@@ -1143,6 +1178,7 @@
       openFileViewerWindow: function (item) {
         var kind = ((item || {}).kind || (item || {}).type || '').toLowerCase();
         if (!item) return;
+        if (isAppShortcut(item)) { this.explorerLaunchShortcut(item); return; }
         if (kind === 'folder') {
           if (this.openExplorerFolder) this.openExplorerFolder(item.id || item.key || item.folderId, item.name || item.title || 'Folder');
           return;
@@ -1156,11 +1192,27 @@
       },
       explorerOpenItem: function (windowId, item) {
         var kind = ((item || {}).kind || (item || {}).type || '').toLowerCase();
+        if (isAppShortcut(item)) return this.explorerLaunchShortcut(item);
         if (kind === 'folder') {
           this.loadExplorerFolder(windowId, item.id || item.key || item.folderId, { selectFirst: true, pushHistory: true });
           return;
         }
         this.openFileViewerWindow(item);
+      },
+      explorerLaunchShortcut: function (item) {
+        var appKey = shortcutTargetAppKey(item);
+        var targetPath = shortcutTargetPath(item);
+        if (appKey) {
+          if (this.openApp) {
+            this.openApp(appKey);
+            if (this.showToast) this.showToast('Explorer', 'Opening ' + ((item || {}).name || appKey) + '.', 'success', 1800);
+            return Promise.resolve(appKey);
+          }
+          if (this.launchApp) return this.launchApp(appKey);
+        }
+        if (targetPath && this.openExplorerPath) return this.openExplorerPath(targetPath);
+        if (this.showAlert) this.showAlert('Explorer', 'This shortcut does not have a launch target.');
+        return Promise.resolve(false);
       },
       explorerGoUp: function (windowId) {
         var win = this.windows.find(function (entry) { return entry.id === windowId; });
@@ -1189,9 +1241,10 @@
         var needle = String(((state || {}).searchTerm) || '').trim().toLowerCase();
         var key = ((state || {}).sortKey) || 'name';
         var dir = ((state || {}).sortDir) === 'desc' ? -1 : 1;
+        items = items.filter(function (item) { return !isHiddenExplorerDesktopArtifact(this, state, item); }.bind(this));
         if (needle) {
           items = items.filter(function (item) {
-            var hay = [item.name, item.title, item.mime, item.kind, item.type].join(' ').toLowerCase();
+            var hay = [item.name, item.title, item.mime, item.kind, item.type, shortcutTargetAppKey(item)].join(' ').toLowerCase();
             return hay.indexOf(needle) >= 0;
           });
         }
@@ -2367,7 +2420,7 @@
               if (transferId && self.finalizeTransfer) self.finalizeTransfer(transferId, false, { error: code, stage: 'Download failed' });
               throw err;
             }
-            return self.command('fs.read', { id: item.id || item.key || item.fileId }).then(function (msg) {
+            return self.command('fs.read.range', { id: item.id || item.key || item.fileId, offset: 0, size: size }).then(function (msg) {
               var payload = payloadRoot(msg);
               var data = textFromPayload(payload);
               triggerSave(data);
