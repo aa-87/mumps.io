@@ -169,6 +169,15 @@
           customLabel: function () { return this.vm.commonWindowCustomMenuLabel ? this.vm.commonWindowCustomMenuLabel(this.window) : ''; }
         },
         methods: {
+          dismissMenus: function (event) {
+            var target = event && event.target;
+            var group = target && target.closest ? target.closest('.mioos-window-menu-group-vue') : null;
+            if (group) {
+              group.classList.add('is-click-dismissed');
+              window.setTimeout(function () { try { group.classList.remove('is-click-dismissed'); } catch (err) {} }, 360);
+            }
+            try { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); } catch (err2) {}
+          },
           cut: function () { this.exec('cut'); },
           copy: function () { this.exec('copy'); },
           paste: function () { this.exec('paste'); },
@@ -177,6 +186,11 @@
           about: function () { if (this.vm.showWindowAbout) this.vm.showWindowAbout(this.window); },
           download: function () { if (this.vm.downloadViewerFile) this.vm.downloadViewerFile(this.window); },
           refreshText: function () { if (this.vm.textViewerRefresh) this.vm.textViewerRefresh(this.window.id); },
+          editText: function () { if (this.vm.textViewerBeginEdit) this.vm.textViewerBeginEdit(this.window.id); },
+          saveText: function () { if (this.vm.textViewerSave) this.vm.textViewerSave(this.window.id); },
+          zoomTextIn: function () { if (this.vm.textViewerZoom) this.vm.textViewerZoom(this.window.id, 0.1); },
+          zoomTextOut: function () { if (this.vm.textViewerZoom) this.vm.textViewerZoom(this.window.id, -0.1); },
+          zoomTextReset: function () { if (this.vm.textViewerZoomReset) this.vm.textViewerZoomReset(this.window.id); },
           clearTerminal: function () { if (this.vm.clearTerminalWindow) this.vm.clearTerminalWindow(this.window.id); },
           refreshTerminal: function () { if (this.vm.pollTerminal) this.vm.pollTerminal(this.window.id); },
           transferPause: function () { if (this.vm.pauseAllTransfers) this.vm.pauseAllTransfers(); },
@@ -200,8 +214,10 @@
           <nav class="mioos-window-menu-vue" role="menubar" :aria-label="(window.title || 'Window') + ' menu'">
             <div class="mioos-window-menu-group-vue" role="none">
               <button type="button" role="menuitem" aria-haspopup="true">File</button>
-              <div class="mioos-window-menu-dropdown-vue" role="menu">
+              <div class="mioos-window-menu-dropdown-vue" role="menu" @click="dismissMenus($event)">
                 <button v-if="isViewer" type="button" role="menuitem" @click="download">Download</button>
+                <button v-if="isText" type="button" role="menuitem" @click="editText">Edit Text</button>
+                <button v-if="isText" type="button" role="menuitem" @click="saveText" :disabled="!(((window.fileView || {}).textStream || {}).editing)">Save Text</button>
                 <button v-if="isText" type="button" role="menuitem" @click="refreshText">Reload visible text chunks</button>
                 <button v-if="window.appKey === 'explorer' || window.appKey === 'home' || window.appKey === 'documents' || window.appKey === 'my-computer'" type="button" role="menuitem" @click="explorerNewFolder">New Folder</button>
                 <button v-if="window.appKey === 'explorer' || window.appKey === 'home' || window.appKey === 'documents' || window.appKey === 'my-computer'" type="button" role="menuitem" @click="explorerUpload">Upload</button>
@@ -210,7 +226,7 @@
             </div>
             <div class="mioos-window-menu-group-vue" role="none">
               <button type="button" role="menuitem" aria-haspopup="true">Edit</button>
-              <div class="mioos-window-menu-dropdown-vue" role="menu">
+              <div class="mioos-window-menu-dropdown-vue" role="menu" @click="dismissMenus($event)">
                 <button type="button" role="menuitem" @click="cut">Cut</button>
                 <button type="button" role="menuitem" @click="copy">Copy</button>
                 <button type="button" role="menuitem" @click="paste">Paste</button>
@@ -218,32 +234,32 @@
             </div>
             <div v-if="isExplorer" class="mioos-window-menu-group-vue" role="none">
               <button type="button" role="menuitem" aria-haspopup="true">View</button>
-              <div class="mioos-window-menu-dropdown-vue" role="menu">
+              <div class="mioos-window-menu-dropdown-vue" role="menu" @click="dismissMenus($event)">
                 <button type="button" role="menuitem" @click="explorerView('details')">Details</button>
                 <button type="button" role="menuitem" @click="explorerView('icons')">Icons</button>
               </div>
             </div>
             <div v-if="isExplorer" class="mioos-window-menu-group-vue" role="none">
               <button type="button" role="menuitem" aria-haspopup="true">Tools</button>
-              <div class="mioos-window-menu-dropdown-vue" role="menu">
+              <div class="mioos-window-menu-dropdown-vue" role="menu" @click="dismissMenus($event)">
                 <button type="button" role="menuitem" @click="explorerRefresh">Refresh</button>
                 <button type="button" role="menuitem" @click="explorerUp">Up one level</button>
               </div>
             </div>
             <div v-if="isExplorer" class="mioos-window-inline-tools-vue" role="group" aria-label="Explorer actions">
-              <button type="button" title="Back" :disabled="!(((window.explorerState || {}).history || []).length)" @click="explorerBack">‹</button>
-              <button type="button" title="Forward" :disabled="!(((window.explorerState || {}).future || []).length)" @click="explorerForward">›</button>
-              <button type="button" title="Up" @click="explorerUp">⌃</button>
-              <button type="button" title="Refresh" @click="explorerRefresh">⟳</button>
-              <button type="button" title="Upload" @click="explorerUpload">⇧</button>
-              <button type="button" title="Download" :disabled="!((window.explorerState || {}).selection)" @click="explorerDownload">⇩</button>
-              <button type="button" title="New folder" @click="explorerNewFolder">＋</button>
-              <button type="button" title="Rename" :disabled="!((window.explorerState || {}).selection)" @click="explorerRename">✎</button>
-              <button type="button" title="Delete" :disabled="!((window.explorerState || {}).selection)" @click="explorerDelete">⌫</button>
+              <button type="button" title="Back" :disabled="!(((window.explorerState || {}).history || []).length)" @click="explorerBack">⬅️</button>
+              <button type="button" title="Forward" :disabled="!(((window.explorerState || {}).future || []).length)" @click="explorerForward">➡️</button>
+              <button type="button" title="Up" @click="explorerUp">⬆️</button>
+              <button type="button" title="Refresh" @click="explorerRefresh">🔄</button>
+              <button type="button" title="Upload" @click="explorerUpload">📤</button>
+              <button type="button" title="Download" :disabled="!((window.explorerState || {}).selection)" @click="explorerDownload">📥</button>
+              <button type="button" title="New folder" @click="explorerNewFolder">📁➕</button>
+              <button type="button" title="Rename" :disabled="!((window.explorerState || {}).selection)" @click="explorerRename">✏️</button>
+              <button type="button" title="Delete" :disabled="!((window.explorerState || {}).selection)" @click="explorerDelete">🗑️</button>
             </div>
             <div v-if="customLabel && !isExplorer" class="mioos-window-menu-group-vue" role="none">
               <button type="button" role="menuitem" aria-haspopup="true">[[ customLabel ]]</button>
-              <div class="mioos-window-menu-dropdown-vue" role="menu">
+              <div class="mioos-window-menu-dropdown-vue" role="menu" @click="dismissMenus($event)">
                 <label v-if="isMedia" class="mioos-window-menu-check-vue"><input type="checkbox" v-model="mediaLoop"> Loop playback</label>
                 <button v-if="window.appKey === 'terminal'" type="button" role="menuitem" @click="terminalNew">New Session</button>
                 <button v-if="window.appKey === 'terminal'" type="button" role="menuitem" @click="refreshTerminal">Refresh terminal</button>
@@ -253,13 +269,18 @@
                 <button v-if="window.appKey === 'transfers'" type="button" role="menuitem" @click="transferResume">Resume Paused</button>
                 <button v-if="window.appKey === 'transfers'" type="button" role="menuitem" @click="transferCancelActive">Cancel Active</button>
                 <button v-if="window.appKey === 'transfers'" type="button" role="menuitem" @click="transferClearFinished">Clear Finished</button>
+                <button v-if="isText" type="button" role="menuitem" @click="editText">Edit</button>
+                <button v-if="isText" type="button" role="menuitem" @click="saveText">Save</button>
+                <button v-if="isText" type="button" role="menuitem" @click="zoomTextIn">Zoom In</button>
+                <button v-if="isText" type="button" role="menuitem" @click="zoomTextOut">Zoom Out</button>
+                <button v-if="isText" type="button" role="menuitem" @click="zoomTextReset">Reset Zoom</button>
                 <button v-if="isText" type="button" role="menuitem" @click="refreshText">Refresh chunk cache</button>
                 <button v-if="!isMedia && !isText && window.appKey !== 'terminal' && window.appKey !== 'transfers'" type="button" role="menuitem" @click="about">About this module</button>
               </div>
             </div>
             <div class="mioos-window-menu-group-vue" role="none">
               <button type="button" role="menuitem" aria-haspopup="true">Help</button>
-              <div class="mioos-window-menu-dropdown-vue" role="menu"><button type="button" role="menuitem" @click="about">About</button></div>
+              <div class="mioos-window-menu-dropdown-vue" role="menu" @click="dismissMenus($event)"><button type="button" role="menuitem" @click="about">About</button></div>
             </div>
           </nav>`
       });
@@ -304,7 +325,7 @@
                 '<button type="button" class="mioos-window-control is-close" :title="vm.t(\'action.close\')" @click.stop="vm.closeWindow(window.id)"><span>×</span></button>' +
               '</div>' +
             '</header>' +
-            '<mioos-window-toolbar :window="window"></mioos-window-toolbar>' +
+            '<mioos-window-toolbar v-if="!window.hideToolbar" :window="window"></mioos-window-toolbar>' +
             '<div class="mioos-window-content-vue"><component :is="contentComponent" :window="window"></component></div>' +
             '<span v-for="edge in resizeEdges" :key="edge" class="mioos-resize-handle-vue" :data-edge="edge" :data-resize-edge="edge" @pointerdown.stop.prevent="vm.beginResize(window, edge, $event)"></span>' +
           '</section>'
@@ -436,7 +457,8 @@
           textStream: function () { return this.fileView.textStream || null; },
           textChunks: function () { return this.textStream && this.vm.textViewerVisibleChunks ? this.vm.textViewerVisibleChunks(this.window.id) : []; },
           textSpacerStyle: function () { var s = this.textStream || {}; return { height: Math.max(600, +(s.scrollHeight || 4000)) + 'px' }; },
-          textContentStyle: function () { var s = this.textStream || {}; return { transform: 'translateY(' + Math.max(0, +(s.contentTop || 0)) + 'px)' }; },
+          textContentStyle: function () { var s = this.textStream || {}; return { transform: 'translateY(' + Math.max(0, +(s.contentTop || 0)) + 'px)', fontSize: (12 * (+(s.zoom || 1))) + 'px' }; },
+          textPlainStyle: function () { var s = this.textStream || {}; return { fontSize: (12 * (+(s.zoom || 1))) + 'px' }; },
           canEditText: function () { return !!this.textStream; },
           editableText: {
             get: function () { return this.textStream ? this.vm.textViewerEditableContent(this.window.id) : ''; },
@@ -456,12 +478,12 @@
         template: '' +
           '<div class="mioos-surface mioos-surface-viewer-native" :class="\'is-\' + kind">' +
             '<section class="mioos-viewer-body" :class="{ \'is-media-full\': kind === \'media\', \'is-text-virtual\': !!textStream }">' +
-              '<div v-if="textStream" class="mioos-text-virtual-viewer" @scroll="onTextScroll">' +
-                '<div class="mioos-text-editorbar"><button v-if="!textStream.editing" type="button" class="mioos-btn" @click="beginEditText">Edit</button><button v-else type="button" class="mioos-btn" @click="saveText" :disabled="!!(textStream.saving) || !textStream.dirty">Save</button><span v-if="textStream.dirty">Unsaved changes</span></div>' +
-                '<textarea v-if="textStream.editing" class="mioos-text-editor-area" v-model="editableText" spellcheck="false"></textarea>' +
-                '<div v-else class="mioos-text-virtual-spacer" :style="textSpacerStyle"><div class="mioos-text-chunk-stack" :style="textContentStyle">' +
+              '<div v-if="textStream" class="mioos-text-virtual-viewer" :class="{ editing: textStream.editing, virtualized: textStream.virtualized }" @scroll="onTextScroll">' +
+                '<textarea v-if="textStream.editing" class="mioos-text-editor-area" v-model="editableText" spellcheck="false" :style="textPlainStyle"></textarea>' +
+                '<div v-else-if="textStream.virtualized" class="mioos-text-virtual-spacer" :style="textSpacerStyle"><div class="mioos-text-chunk-stack" :style="textContentStyle">' +
                   '<pre v-for="chunk in textChunks" :key="chunk.offset" class="mioos-viewer-text mioos-viewer-text-chunk"><span class="mioos-text-chunk-offset">Byte [[ chunk.offset ]]</span>[[ chunk.content ]]</pre>' +
                 '</div></div>' +
+                '<pre v-else v-for="chunk in textChunks" :key="chunk.offset" class="mioos-viewer-text mioos-viewer-text-chunk is-full-text" :style="textPlainStyle"><span class="mioos-text-chunk-offset">[[ textStream.dirty ? "Unsaved changes" : (textStream.saveStatus || "Editable text file") ]]</span>[[ chunk.content ]]</pre>' +
               '</div>' +
               '<div v-else-if="fileView.loading" class="mioos-viewer-state">Opening file…</div>' +
               '<div v-else-if="fileView.error" class="mioos-viewer-state is-error">[[ fileView.error ]]</div>' +
@@ -479,7 +501,7 @@
       app.component('mioos-surface-about-mioos', {
         props: ['window'],
         computed: { vm: function () { return root(this); } },
-        template: `<div class="mioos-surface mioos-surface-about"><h2>About MIO, MIOOS</h2><p>MIOOS is the MUMPS.IO OS Shell runtime.</p><dl><dt>Source window</dt><dd>[[ window.aboutSourceTitle || 'MIOOS' ]]</dd><dt>App key</dt><dd>[[ window.aboutSourceKey || 'shell' ]]</dd><dt>Toolbar</dt><dd>File, Edit, module menu, and Help are provided by the common window toolbar.</dd></dl></div>`
+        template: `<div class="mioos-surface mioos-surface-about"><h2>About MIO, MIOOS</h2><p>MIOOS is the MUMPS.IO OS Shell runtime.</p><dl><dt>Source window</dt><dd>[[ window.aboutSourceTitle || 'MIOOS' ]]</dd><dt>App key</dt><dd>[[ window.aboutSourceKey || 'shell' ]]</dd></dl></div>`
       });
 
       app.component('mioos-surface-terminal', {

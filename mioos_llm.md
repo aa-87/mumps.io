@@ -665,3 +665,11 @@ Promoted wallpaper VFS blobs are identified by `themeWallpaper` or `sourceAsset`
 ## Text media viewer contract
 
 Text-based file viewing is chunk-stream only. Use `fs.text.chunk` for reads and `fs.text.save` for saves. Do not reintroduce browser blob fallback helpers such as `fetchTextBlob`, `readTextFileResilient`, or `fs_blob_unavailable`; those paths caused full-file downloads and duplicated requests for large text/markdown files. Keep the scrollbar mapped to byte offsets, keep chunk requests de-duplicated, and keep the bounded cache pruning behavior in place.
+
+## Text viewer threshold and toolbar contract
+
+Do not reintroduce an in-window `mioos-text-editorbar` for the text viewer. Text edit, save, refresh, and zoom actions belong in the common window toolbar: File -> Edit Text / Save Text and Text -> Zoom In / Zoom Out / Reset Zoom.
+
+The configurable threshold `CONF("mioos","fs","textChunkThresholdBytes")` defaults to `2411725` bytes. Text files at or below that threshold load through one WebSocket text chunk for editable Notepad-style behavior. Larger files use the virtual `fs.text.chunk` byte-offset stream. Save must clear any VM text chunk cache for that file before reloading offset zero, otherwise the viewer can display stale content after a successful `fs.text.save`.
+
+Toolbar menu item clicks must dismiss the opened submenu, About windows set `hideToolbar: true`, and dark mode scrollbars/Transfer rows must stay black-background friendly.

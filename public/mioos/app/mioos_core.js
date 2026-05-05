@@ -717,7 +717,7 @@
           var key = ((win || {}).appKey) || 'shell';
           if (existing) { existing.state = 'normal'; existing.aboutSourceTitle = title; existing.aboutSourceKey = key; this.focusWindow(existing.id); return existing; }
           var id = 'win-about-' + (++this.zCounter);
-          var next = { id: id, appKey: 'about-mioos', title: 'About MIO, MIOOS', state: 'normal', left: 180, top: 130, width: 360, height: 220, z: this.zCounter + 1, aboutSourceTitle: title, aboutSourceKey: key };
+          var next = { id: id, appKey: 'about-mioos', title: 'About MIO, MIOOS', state: 'normal', left: 180, top: 130, width: 360, height: 220, z: this.zCounter + 1, hideToolbar: true, aboutSourceTitle: title, aboutSourceKey: key };
           this.windows.push(next);
           this.focusWindow(id);
           return next;

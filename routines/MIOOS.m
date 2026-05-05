@@ -176,6 +176,8 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","download","httpChunkBytes"))="" SET CONF("mioos","download","httpChunkBytes")=131072
 	IF $GET(CONF("mioos","fs","readPreviewBytes"))="" SET CONF("mioos","fs","readPreviewBytes")=262144
 	IF $GET(CONF("mioos","fs","readWindowBytes"))="" SET CONF("mioos","fs","readWindowBytes")=262144
+	IF $GET(CONF("mioos","fs","textChunkThresholdBytes"))="" SET CONF("mioos","fs","textChunkThresholdBytes")=2411725
+	IF $GET(CONF("mioos","fs","maxTextEditBytes"))="" SET CONF("mioos","fs","maxTextEditBytes")=2411725
 	IF $GET(CONF("mioos","fs","transferPersistence"))="" SET CONF("mioos","fs","transferPersistence")="localstorage-resumable-transfer-list"
 	IF $GET(CONF("mioos","download","mediaInitialBytes"))="" SET CONF("mioos","download","mediaInitialBytes")=131072
 	IF $GET(CONF("mioos","download","mediaWarmupBytes"))="" SET CONF("mioos","download","mediaWarmupBytes")=131072

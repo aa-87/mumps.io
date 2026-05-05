@@ -444,3 +444,11 @@ Wallpaper VFS blobs are detected by `themeWallpaper` / `sourceAsset` metadata an
 ## Text viewer regression contract
 
 The text media viewer must use the `fs.text.chunk` stream path for opening and previewing text-based files. The old browser blob fallback helpers (`fetchTextBlob`, `readTextFileResilient`, and `fs_blob_unavailable`) are intentionally retired so large text files do not trigger whole-file `/api/mioos/fs/blob` downloads. Regression tests in `T074`, `T076`, and `T084` lock the chunk reader, request de-duplication cache, backend WebSocket command, and editable save path.
+
+## Text viewer toolbar and threshold contract
+
+Text viewer editing is owned by the common window toolbar, not by an extra in-window edit panel. Use File -> Edit Text / Save Text or the Text menu actions for edit, save, refresh, zoom in, zoom out, and reset zoom.
+
+The text viewer uses a configurable threshold before entering the virtual byte-offset chunk stream. `CONF("mioos","fs","textChunkThresholdBytes")` defaults to `2411725` bytes, approximately 2.3 MB. Text files at or below that threshold are loaded as a single text chunk so Notepad-style edit/save remains simple and smooth. Files above the threshold use `fs.text.chunk` with scrollbar-to-byte-offset synchronization and request coalescing.
+
+Regression coverage in `T085^MIOOST` locks the toolbar-only text actions, hidden About toolbar, smooth scroll coalescing, stale chunk-cache invalidation after save, dark transfer/scrollbar surfaces, details-view filename truncation, and Patient Registration banner removal.
