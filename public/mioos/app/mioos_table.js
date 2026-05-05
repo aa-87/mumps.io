@@ -958,12 +958,29 @@
       var control = filterControlForColumn(column);
       return this.backendTableFeature(state, 'columnCrud') && (control === 'select' || control === 'multiselect');
     },
+    backendTableApplyNewColumnOption: function (state, columnKey, value) {
+      value = String(value || '').trim();
+      if (!state || !columnKey || !value) return value;
+      function append(list) {
+        list = Array.isArray(list) ? list.slice(0) : toList(list || []);
+        if (list.map(String).indexOf(value) < 0) list.push(value);
+        return list;
+      }
+      normalizeColumns(state.columns || []).forEach(function (col) {
+        if (col && col.key === columnKey) col.options = append(col.options || []);
+      });
+      state.validationRules = state.validationRules || {};
+      state.validationRules[columnKey] = Object.assign({}, state.validationRules[columnKey] || {});
+      if (state.validationRules[columnKey].enum) state.validationRules[columnKey].enum = append(state.validationRules[columnKey].enum);
+      return value;
+    },
     backendTableAddColumnOption: function (tableId, column, value) {
       var state = this.backendTableState(tableId);
       value = String(value || '').trim();
       if (!column || !column.key || !value) return Promise.resolve({ ok: false });
+      var vm = this;
       return this.backendTableMutate(tableId, 'column.option.add', { columnKey: column.key, value: value, keepEditor: true }).then(function (payload) {
-        if (payload && payload.ok !== false) state.toast = 'Option added';
+        if (payload && payload.ok !== false) { state.toast = 'Option added'; vm.backendTableApplyNewColumnOption(state, column.key, value); }
         return payload;
       });
     },
@@ -1008,6 +1025,7 @@
       var vm = this;
       return this.backendTableAddColumnOption(tableId, column, value).then(function (payload) {
         if (payload && payload.ok !== false) {
+          vm.backendTableApplyNewColumnOption(state, column.key, value);
           if (dialog.context === 'filter') vm.backendTableSetFilterDraft(tableId, column.key, 'value', value);
           if (dialog.context === 'editor' && state.editor && state.editor.row) {
             if (filterControlForColumn(column) === 'multiselect') {
@@ -1055,7 +1073,7 @@
       state.validation = {};
       var draft = clone(row || {});
       if (!row || !row.id) draft = this.backendTablePatientAddDefaults(state, draft);
-      state.editor = { open: true, mode: 'row', title: row && row.id ? 'Edit row' : 'Add row', row: draft, column: {} };
+      state.editor = { open: true, mode: 'row', title: row && row.id ? 'Edit row' : 'Add row', row: draft, column: {}, isNew: !(row && row.id) };
     },
     backendTablePatientAddDefaults: function (state, row) {
       row = row || {};
@@ -1114,7 +1132,8 @@
       if ((state.editor || {}).mode === 'column') return this.backendTableMutate(tableId, 'column.save', { column: clone(state.editor.column || {}), originalKey: (state.editor.column || {}).originalKey || '' }).then(function(payload){ if (payload && payload.ok !== false) state.toast = 'Column saved'; });
       var body = { row: clone(state.editor.row || {}) };
       if (state.dataset === 'patient-registration') body.reviewQueue = String((((state.filters || {}).reviewQueue || {}).value) || (body.row || {}).reviewQueue || '');
-      return this.backendTableMutate(tableId, 'row.save', body).then(function(payload){ if (payload && payload.ok !== false) { state.toast = 'Row saved'; state.error = ''; } return payload; });
+      var action = ((state.editor || {}).isNew || !String((body.row || {}).id || '').trim()) ? 'row.add' : 'row.save';
+      return this.backendTableMutate(tableId, action, body).then(function(payload){ if (payload && payload.ok !== false) { state.toast = action === 'row.add' ? 'Row added' : 'Row saved'; state.error = ''; if (state.editor) state.editor.isNew = false; } return payload; });
     },
     backendTableDeleteColumn: function (tableId, column) {
       if (!column || !column.key) return null;

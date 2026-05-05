@@ -452,3 +452,15 @@ Text viewer editing is owned by the common window toolbar, not by an extra in-wi
 The text viewer uses a configurable threshold before entering the virtual byte-offset chunk stream. `CONF("mioos","fs","textChunkThresholdBytes")` defaults to `2411725` bytes, approximately 2.3 MB. Text files at or below that threshold are loaded as a single text chunk so Notepad-style edit/save remains simple and smooth. Files above the threshold use `fs.text.chunk` with scrollbar-to-byte-offset synchronization and request coalescing.
 
 Regression coverage in `T085^MIOOST` locks the toolbar-only text actions, hidden About toolbar, smooth scroll coalescing, stale chunk-cache invalidation after save, dark transfer/scrollbar surfaces, details-view filename truncation, and Patient Registration banner removal.
+
+## ROI 86 theme/profile and patient table stabilization
+
+This pass locks the server-backed user theme contract and related patient/table module regressions:
+
+- Theme saves are save-as operations for user themes, so more than one custom theme can exist for a user.
+- Dark mode is persisted through `mode`, `activeMode`, `defaultVariant`, and `themeConfig.darkEnabled` so reloads do not silently fall back to light mode.
+- Boot state includes `desktop.userThemeProfiles`; the Start Menu Themes group can list saved user themes in addition to built-in presets.
+- Locale shortcuts are guarded before generic app launching so Language → Arabic/Spanish/English changes the URL/locale instead of opening a random window.
+- `ROI2Folder` is filtered from desktop rendering as a legacy test artifact.
+- Patient Registration add-row uses the backend `row.add` mutation; add-option updates the local option list and selects the new value before refetch.
+- New Table Module drafts default to the backend table surface and `mioos-advanced-table-v8` contract, with styled modal surfaces for light/dark themes.

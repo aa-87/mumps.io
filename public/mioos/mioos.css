@@ -4315,3 +4315,90 @@ html[dir="rtl"] .mioos-window-menu-dropdown-vue,
 .theme-dark-mode ::-webkit-scrollbar-track { background: #000000; }
 .theme-dark-mode ::-webkit-scrollbar-thumb { background: #374151; border: 2px solid #000000; border-radius: 8px; }
 .theme-dark-mode ::-webkit-scrollbar-thumb:hover { background: #4b5563; }
+
+/* ROI 86: polished New Table Module modal and dark-safe table-module editor surfaces. */
+.mioos-table-module-editor {
+  width: min(1120px, calc(100vw - 40px));
+  max-height: min(86vh, 860px);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow: 0 24px 80px rgba(2, 8, 23, 0.34);
+}
+.mioos-table-module-editor > header,
+.mioos-table-module-editor > footer {
+  background: var(--theme-surface-strong, rgba(248,251,255,.96));
+  border-color: var(--theme-panel-border, rgba(37,72,126,.16));
+}
+.mioos-table-module-editor > main {
+  overflow: auto;
+  padding: 18px;
+  background: var(--theme-surface, rgba(244,248,255,.78));
+}
+.mioos-table-module-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0 10px;
+}
+.mioos-table-module-section-head h3 { margin: 0; }
+.mioos-table-module-section-head small { color: var(--theme-muted-text, #5d6b7e); }
+.mioos-table-module-column-row,
+.mioos-table-module-row-editor,
+.mioos-table-module-json,
+.mioos-table-module-preview,
+.mioos-table-module-revisions {
+  background: var(--theme-panel-bg, rgba(255,255,255,.88));
+  color: var(--theme-field-text, #10243d);
+  border: 1px solid var(--theme-panel-border, rgba(37,72,126,.16));
+  border-radius: 16px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+.mioos-table-module-column-row,
+.mioos-table-module-row-editor {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) auto;
+  gap: 10px;
+  align-items: end;
+}
+.mioos-table-module-row-actions { display: flex; justify-content: flex-end; align-items: end; }
+.mioos-table-module-json textarea {
+  width: 100%;
+  min-height: 140px;
+  resize: vertical;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.mioos-table-module-preview table {
+  width: 100%;
+  border-collapse: collapse;
+  overflow: hidden;
+  border-radius: 12px;
+}
+.mioos-table-module-preview th,
+.mioos-table-module-preview td {
+  padding: 8px 10px;
+  border: 1px solid var(--theme-panel-border, rgba(37,72,126,.16));
+  text-align: left;
+}
+.theme-dark-mode .mioos-table-module-editor > header,
+.theme-dark-mode .mioos-table-module-editor > footer,
+.theme-dark-mode .mioos-table-module-editor > main,
+.theme-dark-mode .mioos-table-module-column-row,
+.theme-dark-mode .mioos-table-module-row-editor,
+.theme-dark-mode .mioos-table-module-json,
+.theme-dark-mode .mioos-table-module-preview,
+.theme-dark-mode .mioos-table-module-revisions {
+  background: var(--theme-panel-bg, #111827) !important;
+  color: var(--theme-field-text, #f8fafc) !important;
+  border-color: var(--theme-panel-border, #334155) !important;
+}
+.theme-dark-mode .mioos-table-module-editor input,
+.theme-dark-mode .mioos-table-module-editor select,
+.theme-dark-mode .mioos-table-module-editor textarea {
+  background: var(--theme-field-bg, #0f172a) !important;
+  color: var(--theme-field-text, #f8fafc) !important;
+  border-color: var(--theme-panel-border, #334155) !important;
+}

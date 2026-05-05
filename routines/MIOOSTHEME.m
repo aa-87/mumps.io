@@ -59,6 +59,7 @@ SAVE(STATE,CONF,IN,OUT,ERR)
 	IF $DATA(IN("profile")) MERGE @ROOT=IN("profile")
 	ELSE  MERGE @ROOT=IN
 	SET @ROOT@("key")=KEY
+	DO MODEFIX(ROOT)
 	SET WID=$$PROMOTEW(.STATE,.CONF,USER,KEY,ROOT,ACTIVATE)
 	IF ACTIVATE DO
 	. SET ^MIO("MIOOS","THEME","ACTIVE",USER)=KEY
@@ -68,6 +69,23 @@ SAVE(STATE,CONF,IN,OUT,ERR)
 	IF WID'="" SET OUT("wallpaperId")=WID
 	MERGE OUT("profile")=@ROOT
 	QUIT 1
+	;
+MODEFIX(ROOT)
+	NEW MODE,DEF,DARK
+	SET MODE=$GET(@ROOT@("mode"))
+	IF MODE="" SET MODE=$GET(@ROOT@("activeMode"))
+	SET DEF=$GET(@ROOT@("defaultVariant"))
+	IF DEF="" SET DEF=$GET(@ROOT@("themeConfig","defaultVariant"))
+	SET DARK=+$GET(@ROOT@("themeConfig","darkEnabled"))
+	IF MODE="",DEF="dark" SET MODE="dark"
+	IF MODE="",DARK SET MODE="dark"
+	IF MODE="" SET MODE="light"
+	IF MODE'="dark" SET MODE="light"
+	SET @ROOT@("mode")=MODE,@ROOT@("activeMode")=MODE,@ROOT@("defaultVariant")=MODE
+	IF $DATA(@ROOT@("themeConfig")) DO
+	. SET @ROOT@("themeConfig","defaultVariant")=MODE
+	. IF MODE="dark" SET @ROOT@("themeConfig","darkEnabled")=1
+	QUIT
 	;
 ASSETID(ROOT)
 	NEW A,URL

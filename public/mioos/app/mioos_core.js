@@ -461,16 +461,26 @@
           };
         },
         shellThemeOptions: function () {
-          return [
+          var out = [
             { key: 'xp-classic-blue', label: 'Vintage' },
             { key: 'win7-aero', label: 'Glow' },
             { key: 'mac-slate', label: 'Curve' },
             { key: 'ubuntu-amber', label: 'Panel' }
           ];
+          var store = this.themeStudioStore && this.themeStudioStore.initialized ? this.themeStudioStore : null;
+          if (store && store.customThemes && store.customThemes.length) {
+            store.customThemes.forEach(function (id) {
+              var theme = store.themes && store.themes[id];
+              if (!theme || theme.locked) return;
+              out.push({ key: id, label: theme.name || id, userTheme: true });
+            });
+          }
+          return out;
         },
         resolveShellThemeProfile: function (themeKey) {
           var quickMap = this.shellThemeQuickMap();
-          var id = quickMap[String(themeKey || '')] || themeKey || (((this.themeStudioStore || {}).activeThemeId) || '') || 'glow';
+          var raw = String(themeKey || '').replace(/^theme:/, '');
+          var id = quickMap[raw] || raw || (((this.themeStudioStore || {}).activeThemeId) || '') || 'glow';
           this.initThemeStudioStore();
           return this.themeStudioThemeById(id) || this.themeStudioThemeById('glow');
         },
@@ -2111,6 +2121,16 @@
               store.activeThemeId = bootTheme.id;
             }
           }
+          (this.themeStudioBootUserProfiles ? this.themeStudioBootUserProfiles() : []).forEach(function (profile) {
+            var cfg = this.themeStudioConfigFromServerProfile(profile && (profile.data || profile.profile || profile));
+            if (!cfg || !cfg.id) return;
+            cfg.locked = false;
+            cfg.userTheme = true;
+            store.themes[cfg.id] = cfg;
+            if (store.order.indexOf(cfg.id) < 0) store.order.push(cfg.id);
+            if (store.customThemes.indexOf(cfg.id) < 0) store.customThemes.push(cfg.id);
+            if (!hasBootProfile && ((profile || {}).active || ((this.boot || {}).desktop || {}).activeThemeKey === cfg.id)) store.activeThemeId = cfg.id;
+          }.bind(this));
 
           rawCustom = ''; /* theme profiles are server-authored; do not hydrate from localStorage */
           if (rawCustom) {
@@ -2741,7 +2761,7 @@
           ].forEach(function (entry) { add(entry, 'app', 'places'); });
           [{ key: 'app-catalog', title: 'Application Catalog', subtitle: 'Browse installed modules', icon: '▦', kind: 'tool' }, { key: 'control-panel', title: 'Control Panel', subtitle: 'System settings', icon: '⚙', kind: 'tool' }, { key: 'diagnostics', title: 'Diagnostics', subtitle: 'Transport and boot health', icon: '📈', kind: 'tool' }, { key: 'security-center', title: 'Security Center', subtitle: 'Sessions and users', icon: '🛡', kind: 'tool' }, { key: 'debug-center', title: 'Debug Center', subtitle: 'Developer tools', icon: '🧪', kind: 'tool' }].forEach(function (entry) { add(entry, 'app', 'system'); });
           (this.localeOptions || []).forEach(function (locale) { add({ key: 'locale:' + locale.code, title: locale.label || locale.code, subtitle: 'Switch language', icon: '🌐', kind: 'language', action: 'locale', code: locale.code }, 'action', 'language'); });
-          (this.shellThemeOptions ? this.shellThemeOptions() : []).forEach(function (theme) { add({ key: 'theme:' + theme.key, title: theme.label || theme.key, subtitle: 'Apply theme preset', icon: '🎨', kind: 'theme', action: 'theme', themeKey: theme.key }, 'action', 'themes'); });
+          (this.shellThemeOptions ? this.shellThemeOptions() : []).forEach(function (theme) { add({ key: 'theme:' + theme.key, title: theme.label || theme.key, subtitle: theme.userTheme ? 'Apply saved user theme' : 'Apply theme preset', icon: theme.userTheme ? '🖌️' : '🎨', kind: 'theme', action: 'theme', themeKey: theme.key }, 'action', 'themes'); });
           return rows;
         },
         startMenuFilesystemItems: function () {
@@ -2957,14 +2977,24 @@
         startMenuOpenItem: function (itemOrKey) {
           var item = typeof itemOrKey === 'string' ? this.startMenuItemByKey(itemOrKey) : itemOrKey;
           if (!item || item.disabled) return;
+          if (item.action === 'locale' && this.changeLocale) {
+            this.menuOpen = false;
+            if (this.startMenuUi) this.startMenuUi.lastOpenedAt = Date.now();
+            this.changeLocale(item.code || String(item.key || '').replace(/^locale:/, ''));
+            return;
+          }
+          if (item.action === 'theme' && this.applyShellTheme) {
+            this.menuOpen = false;
+            if (this.startMenuUi) this.startMenuUi.lastOpenedAt = Date.now();
+            this.applyShellTheme(item.themeKey || String(item.key || '').replace(/^theme:/, ''));
+            return;
+          }
           if (this.startMenuIsFolderItem && this.startMenuIsFolderItem(item)) {
             this.startMenuToggleFolder(item);
             return;
           }
           this.menuOpen = false;
           if (this.startMenuUi) this.startMenuUi.lastOpenedAt = Date.now();
-          if (item.action === 'locale' && this.changeLocale) { this.changeLocale(item.code || String(item.key || '').replace(/^locale:/, '')); return; }
-          if (item.action === 'theme' && this.applyShellTheme) { this.applyShellTheme(item.themeKey || String(item.key || '').replace(/^theme:/, '')); return; }
           if (item.source === 'vfs') { if (this.openDesktopEntry) this.openDesktopEntry(item.raw || { key: item.fileId || item.folderId || item.id || item.key, id: item.fileId || item.folderId || item.id || item.key, name: item.title, kind: item.kind, source: 'vfs', mime: item.mime || ((item.raw || {}).mime) || '', path: item.path || '' }); return; }
           if (item.source === 'module' && this.openModuleEntry) { this.openModuleEntry(item.raw && (item.raw.id || item.raw.appKey) || item.appKey || item.key); return; }
           var key = item.launchKey || item.appKey || item.key;
@@ -3037,6 +3067,13 @@
         themeStudioBootProfile: function () {
           return ((((this.boot || {}).desktop || {}).activeThemeProfile) || null);
         },
+        themeStudioBootUserProfiles: function () {
+          var profiles = ((((this.boot || {}).desktop || {}).userThemeProfiles) || []);
+          if (!Array.isArray(profiles)) {
+            return Object.keys(profiles || {}).map(function (key) { return profiles[key]; }).filter(Boolean);
+          }
+          return profiles.filter(Boolean);
+        },
         themeStudioConfigFromServerProfile: function (profile) {
           profile = (this.requiresSignin && this.sanitizeProtectedThemeProfile) ? this.sanitizeProtectedThemeProfile(profile || {}) : profile;
           var src = profile || {};
@@ -3052,7 +3089,7 @@
             id: id,
             name: cfg.name || src.name || id,
             sourceId: cfg.sourceId || src.sourceId || src.family || src.baseTheme || cfg.baseTheme || id,
-            darkEnabled: (src.mode || cfg.mode || '') === 'dark' || !!cfg.darkEnabled,
+            darkEnabled: (src.mode || src.activeMode || src.defaultVariant || cfg.mode || cfg.activeMode || cfg.defaultVariant || '') === 'dark' || !!cfg.darkEnabled,
             cssVars: Object.assign({}, cfg.cssVars || {}, src.cssVars || {}, src.colors || {}),
             wallpaperUrl: wallpaperUrl,
             wallpaperFit: wallpaperFit,
@@ -3082,6 +3119,8 @@
             presetKey: target.id,
             family: target.sourceId || target.id,
             mode: mode,
+            activeMode: mode,
+            defaultVariant: mode,
             density: ((((this.boot || {}).desktop || {}).density) || 'comfortable'),
             appearance: { accent: ((target.cssVars || {})['--accent']) || '', density: ((((this.boot || {}).desktop || {}).density) || 'comfortable') },
             colors: this.themeStudioClone(target.cssVars || {}),
@@ -3092,7 +3131,7 @@
             startMenuConfig: this.themeStudioClone(target.startMenuConfig || {}),
             loginScreenConfig: this.themeStudioClone(target.loginScreenConfig || {}),
             mobileConfig: this.themeStudioClone(target.mobileConfig || {}),
-            themeConfig: this.themeStudioClone(target)
+            themeConfig: Object.assign(this.themeStudioClone(target), { darkEnabled: mode === 'dark', defaultVariant: mode, activeMode: mode })
           };
         },
         themeStudioOpenSession: function () {
@@ -3127,6 +3166,38 @@
           this.themeStudioPersistCustomThemes(true);
           this.themeStudioCloseWindow();
         },
+        themeStudioUniqueCustomThemeId: function () {
+          var store = this.initThemeStudioStore();
+          var id;
+          do { id = 'custom-' + Date.now() + '-' + Math.floor(Math.random() * 100000); } while (store.themes && store.themes[id]);
+          return id;
+        },
+        themeStudioUniqueUserThemeName: function (baseName) {
+          var store = this.initThemeStudioStore();
+          var base = String(baseName || 'User Theme').replace(/\s+copy$/i, '').trim() || 'User Theme';
+          var names = {};
+          (store.order || []).forEach(function (id) { var t = store.themes && store.themes[id]; if (t && t.name) names[String(t.name).toLowerCase()] = 1; });
+          if (!names[base.toLowerCase()]) return base;
+          var i = 2;
+          while (names[(base + ' ' + i).toLowerCase()]) i += 1;
+          return base + ' ' + i;
+        },
+        themeStudioCreateSavedUserTheme: function (source) {
+          var store = this.initThemeStudioStore();
+          var original = source || this.themeStudioActiveTheme() || {};
+          var target = this.themeStudioNormalizeConfig(this.themeStudioClone(original));
+          target.id = this.themeStudioUniqueCustomThemeId();
+          target.key = target.id;
+          target.name = this.themeStudioUniqueUserThemeName(target.name || 'User Theme');
+          target.locked = false;
+          target.userTheme = true;
+          target.sourceId = target.sourceId || original.id || original.sourceId || 'glow';
+          store.themes[target.id] = target;
+          if (store.order.indexOf(target.id) < 0) store.order.push(target.id);
+          if (store.customThemes.indexOf(target.id) < 0) store.customThemes.push(target.id);
+          store.activeThemeId = target.id;
+          return target;
+        },
         themeStudioPersistActiveRemote: function (theme, activate) {
           var target = this.themeStudioNormalizeConfig(theme || this.themeStudioActiveTheme() || {});
           var payload = { key: target.id, activate: activate === false ? 0 : 1, profile: this.themeStudioServerProfile(target) };
@@ -3148,14 +3219,15 @@
           });
         },
         themeStudioSaveCustomTheme: function () {
-          var target = this.themeStudioEditableTheme();
+          var source = this.themeStudioActiveTheme();
+          var target = this.themeStudioCreateSavedUserTheme(source || this.themeStudioEditableTheme());
           var self = this;
           if (!target) return Promise.resolve();
           this.themeStudioPersistCustomThemes(true);
           this.applyThemeStudioConfig(target, { silent: true, persist: true });
           return this.themeStudioPersistActiveRemote(target, true).then(function () {
             self.themeStudioOpenSession();
-            self.pushNotification('Theme Studio', (target.name || 'Theme') + ' saved.');
+            self.pushNotification('Theme Studio', (target.name || 'Theme') + ' saved as a user theme.');
             self.themeStudioCloseWindow();
           }).catch(function (err) {
             self.showAlert('Theme Studio', 'Theme saved locally, but server save failed: ' + ((err && err.message) || 'theme_save_failed'));

@@ -220,6 +220,8 @@ ACTIVETHM(STATE,CONF)
 	. IF MODE="" SET MODE=$GET(STATE("activeThemeProfile","activeMode"))
 	. IF MODE'="" SET STATE("themeMode")=MODE
 	IF '+$$LOAD^MIOOSTHEME(.STATE,.CONF,.OUT,.ERR) QUIT
+	KILL STATE("userThemeProfiles")
+	IF $DATA(OUT("profiles")) MERGE STATE("userThemeProfiles")=OUT("profiles")
 	IF '+$DATA(OUT("profile")) QUIT
 	MERGE STATE("activeThemeProfile")=OUT("profile")
 	SET STATE("activeThemeKey")=$GET(OUT("profileKey"),$GET(OUT("activeKey")))
@@ -617,6 +619,7 @@ BOOTARY(STATE,CONF,OBJ)
 	. MERGE OBJ("desktop","activeThemeProfile")=STATE("activeThemeProfile")
 	. IF '+$GET(STATE("authenticated"),0) DO SANPROF($NAME(OBJ("desktop","activeThemeProfile")),.STATE)
 	IF $GET(STATE("activeThemeKey"))'="" SET OBJ("desktop","activeThemeKey")=$GET(STATE("activeThemeKey"))
+	IF $DATA(STATE("userThemeProfiles")) MERGE OBJ("desktop","userThemeProfiles")=STATE("userThemeProfiles")
 	MERGE OBJ("apps")=STATE("apps")
 	DO MERGELAYOUT(.STATE,$NAME(OBJ("apps")))
 	KILL OBJ("desktopEntries"),OBJ("desktopFolder")

@@ -673,3 +673,15 @@ Do not reintroduce an in-window `mioos-text-editorbar` for the text viewer. Text
 The configurable threshold `CONF("mioos","fs","textChunkThresholdBytes")` defaults to `2411725` bytes. Text files at or below that threshold load through one WebSocket text chunk for editable Notepad-style behavior. Larger files use the virtual `fs.text.chunk` byte-offset stream. Save must clear any VM text chunk cache for that file before reloading offset zero, otherwise the viewer can display stale content after a successful `fs.text.save`.
 
 Toolbar menu item clicks must dismiss the opened submenu, About windows set `hideToolbar: true`, and dark mode scrollbars/Transfer rows must stay black-background friendly.
+
+## ROI 86 theme/profile and patient table regression rules
+
+User themes are server-backed profiles. Saving from Theme Studio creates a new user theme profile rather than overwriting the previous saved custom theme. Preserve dark mode across reload by persisting all of these fields together: `mode`, `activeMode`, `defaultVariant`, and `themeConfig.darkEnabled`. Boot payloads should include `desktop.userThemeProfiles` so newly saved user themes can appear in the Start Menu Themes group.
+
+Locale shortcuts are shell commands, not apps. `locale:ar`, `locale:en`, `locale:es`, and `locale:sp` must be intercepted before generic window launching. Arabic should reload with `?lang=ar`, English should remove `lang`, and Spanish should use the legacy-compatible `?lang=sp` URL while the runtime locale code remains Spanish.
+
+Patient Registration row creation uses `row.add`; editing existing rows uses `row.save`. Add-option flows must update the local select/multiselect option list and select the newly added value immediately, so the Add Row modal remains usable while the backend refetches. New Table Module drafts must stay MUMPS-first and default to `componentKey="table"`, `surface="mioos-surface-table"`, and `mioos-advanced-table-v8`.
+
+Legacy `ROI2Folder` is a desktop test artifact and should not be rendered as a user desktop icon.
+
+Regression note: tests require the phrase multiple server-backed user themes to ensure future ROI passes do not collapse Theme Studio back to a single overwritten custom profile.

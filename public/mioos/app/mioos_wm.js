@@ -106,6 +106,17 @@
         return win;
       },
       openApp: function (appKey) {
+        appKey = String(appKey || '');
+        if (appKey.indexOf('locale:') === 0 || appKey === 'ar' || appKey === 'en' || appKey === 'es' || appKey === 'sp') {
+          this.menuOpen = false;
+          if (this.changeLocale) this.changeLocale(appKey.replace(/^locale:/, ''));
+          return;
+        }
+        if (appKey.indexOf('theme:') === 0 && this.applyShellTheme) {
+          this.menuOpen = false;
+          this.applyShellTheme(appKey.replace(/^theme:/, ''));
+          return;
+        }
         if (this.requiresSignin) {
           this.showAlert(this.t('alerts.signinRequired.title'), this.t('alerts.signinRequired.open'));
           return;

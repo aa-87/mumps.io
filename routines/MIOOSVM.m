@@ -67,9 +67,11 @@ DESKTOPVM(STATE,CONF,ROOT,FROOT)
 	SET N=0,I=0
 	FOR  SET I=$ORDER(OUT("entries",I)) QUIT:I'>0  DO
 	. SET ID=$GET(OUT("entries",I,"id")) QUIT:ID=""
+	. SET NAME=$GET(OUT("entries",I,"name"))
+	. IF $$SKIPDESK(NAME) QUIT
 	. SET N=N+1
 	. MERGE @ROOT@(N)=OUT("entries",I)
-	. SET KIND=$GET(OUT("entries",I,"kind")),NAME=$GET(OUT("entries",I,"name")),MIME=$GET(OUT("entries",I,"mime"))
+	. SET KIND=$GET(OUT("entries",I,"kind")),MIME=$GET(OUT("entries",I,"mime"))
 	. SET @ROOT@(N,"key")=ID
 	. SET @ROOT@(N,"title")=NAME
 	. SET @ROOT@(N,"label")=NAME
@@ -86,6 +88,9 @@ DESKTOPVM(STATE,CONF,ROOT,FROOT)
 	. SET @ROOT@(N,"subtitle")=$SELECT(KIND="shortcut":"Shortcut",KIND="folder":"Folder",$GET(OUT("entries",I,"sizeLabel"))'="":$GET(OUT("entries",I,"sizeLabel")),1:"File")
 	SET @FROOT@("count")=N
 	QUIT
+	;
+SKIPDESK(NAME)
+	QUIT $SELECT($GET(NAME)="ROI2Folder":1,1:0)
 	;
 ICON(KIND,MIME,NAME)
 	NEW LNAME,LMIME

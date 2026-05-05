@@ -37,35 +37,34 @@
       }
     },
     changeLocale: function (app, code) {
-      var locale;
+      var locale, runtimeCode, urlCode;
       if (!code) return;
       code = String(code || '').toLowerCase();
-      if (code === 'sp') code = 'es';
-      locale = (this.localeOptions(app) || []).filter(function (item) { return String(item.code || '').toLowerCase() === code || (code === 'es' && String(item.code || '').toLowerCase() === 'sp'); })[0] || { code: code, dir: code === 'ar' || code === 'he' || code === 'fa' || code === 'ur' ? 'rtl' : 'ltr', label: code, rtl: code === 'ar' || code === 'he' || code === 'fa' || code === 'ur' };
+      runtimeCode = code === 'sp' ? 'es' : code;
+      locale = (this.localeOptions(app) || []).filter(function (item) { return String(item.code || '').toLowerCase() === runtimeCode; })[0] || { code: runtimeCode, dir: runtimeCode === 'ar' || runtimeCode === 'he' || runtimeCode === 'fa' || runtimeCode === 'ur' ? 'rtl' : 'ltr', label: runtimeCode, rtl: runtimeCode === 'ar' || runtimeCode === 'he' || runtimeCode === 'fa' || runtimeCode === 'ur' };
       if (app && app.boot) {
         app.boot.locale = Object.assign({}, app.boot.locale || {}, locale, { rtl: String(locale.dir || '').toLowerCase() === 'rtl' || !!locale.rtl });
         this.applyDocumentLocale(app);
       }
-      try { document.cookie = 'mioos_lang=' + encodeURIComponent(code) + '; Path=/; SameSite=Lax'; } catch (cookieErr) {}
+      try { document.cookie = 'mioos_lang=' + encodeURIComponent(runtimeCode) + '; Path=/; SameSite=Lax'; } catch (cookieErr) {}
       try {
-        if (window.sessionStorage) window.sessionStorage.setItem('mioos_lang', code);
+        if (window.sessionStorage) window.sessionStorage.setItem('mioos_lang', runtimeCode);
       } catch (storageErr) {}
       try {
         var url = new window.URL(window.location.href);
-        var urlCode = code === 'es' ? 'sp' : code;
-        if (code === 'en') url.searchParams.delete('lang');
-        else url.searchParams.set('lang', urlCode);
+        if (runtimeCode === 'en') url.searchParams.delete('lang');
+        else if (runtimeCode === 'es') url.searchParams.set('lang', 'sp');
+        else url.searchParams.set('lang', runtimeCode);
         if (window.location && window.location.assign) {
           window.location.assign(url.pathname + url.search + url.hash);
           return;
         }
       } catch (urlErr) {}
       try {
-        if (window.location) window.location.href = code === 'en' ? '/' : ('/?lang=' + encodeURIComponent(code === 'es' ? 'sp' : code));
+        urlCode = runtimeCode === 'en' ? '' : (runtimeCode === 'es' ? 'sp' : runtimeCode);
+        window.location.href = '/' + (urlCode ? '?lang=' + encodeURIComponent(urlCode) : '');
       } catch (fallbackErr) {}
-      if (app && app.refreshView) {
-        try { app.refreshView().catch(function () {}); } catch (refreshErr) {}
-      }
     }
+
   };
 })();

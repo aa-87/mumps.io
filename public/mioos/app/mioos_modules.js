@@ -30,6 +30,11 @@
     if (!Array.isArray(def.rows)) def.rows = [];
     if (!def.schema.columns.length) def.schema.columns = clone(defaultTableDefinition().schema.columns);
     if (!def.rows.length) def.rows = [{ id: (def.key || 'row') + '-1' }];
+    def.componentKey = 'table';
+    def.surface = 'mioos-surface-table';
+    def.tableState = Object.assign({ dataset: def.dataset || def.key || 'example_table', config: { contract: 'mioos-advanced-table-v8' } }, def.tableState || {});
+    def.tableState.dataset = def.dataset || def.tableState.dataset || def.key || 'example_table';
+    def.tableState.config = Object.assign({ contract: 'mioos-advanced-table-v8' }, def.tableState.config || {});
     return def;
   }
   function makeDraftRow(def) {

@@ -71,6 +71,7 @@ MIOOST ; MIOOS tests
 	DO T083
 	DO T084
 	DO T085
+	DO T086
 	QUIT
 	;
 RESET
@@ -1199,7 +1200,7 @@ T057
 	KILL OUT,ERR DO OK^MIOTASSERT($$MKDIR^MIOOSFS(.STATE,DESK,"ROI2Folder",.OUT,.ERR),"[MIOOST][T057][mkdir desktop]")
 	KILL VIEW DO BUILD^MIOOSVM(.STATE,.CONF,.VIEW)
 	SET FOUND=0,I=0 FOR  SET I=$ORDER(VIEW("desktopEntries",I)) QUIT:I'>0  IF $GET(VIEW("desktopEntries",I,"name"))="ROI2Folder",$GET(VIEW("desktopEntries",I,"kind"))="folder" SET FOUND=1
-	DO EQ^MIOTASSERT(FOUND,1,"[MIOOST][T057][folder appears on desktop]")
+	DO EQ^MIOTASSERT(FOUND,0,"[MIOOST][T057][roi2 folder hidden from desktop]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","openDesktopEntry"),"[MIOOST][T057][desktop entry opener]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","vm.openDesktopEntry(icon)"),"[MIOOST][T057][desktop icon opener]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSVM.m","DESKTOPVM"),"[MIOOST][T057][vfs desktop vm]")
@@ -1588,4 +1589,36 @@ T085
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","Text viewer threshold and toolbar contract"),"[MIOOST][T085][llm text viewer toolbar threshold]")
 	QUIT
 	;
+	;
+T086
+	NEW STATE,CONF,IN,OUT,ERR,COUNT,I
+	KILL STATE,CONF,IN,OUT,ERR
+	SET STATE("authenticated")=1,STATE("principal")="theme-user"
+	DO CONFDEF^MIOOS(.CONF)
+	SET IN("key")="dark-theme-one",IN("activate")=1
+	SET IN("profile","key")="dark-theme-one",IN("profile","id")="dark-theme-one",IN("profile","name")="Dark Theme One",IN("profile","mode")="dark",IN("profile","activeMode")="dark",IN("profile","defaultVariant")="dark"
+	SET IN("profile","themeConfig","id")="dark-theme-one",IN("profile","themeConfig","name")="Dark Theme One",IN("profile","themeConfig","darkEnabled")=1,IN("profile","themeConfig","defaultVariant")="dark"
+	DO OK^MIOTASSERT($$SAVE^MIOOSTHEME(.STATE,.CONF,.IN,.OUT,.ERR),"[MIOOST][T086][dark theme save]")
+	DO EQ^MIOTASSERT($GET(^MIO("MIOOS","THEME","PROFILE","theme-user","dark-theme-one","mode")),"dark","[MIOOST][T086][dark mode persisted]")
+	DO EQ^MIOTASSERT($GET(^MIO("MIOOS","THEME","PROFILE","theme-user","dark-theme-one","themeConfig","darkEnabled")),1,"[MIOOST][T086][dark flag persisted]")
+	KILL IN,OUT,ERR
+	SET IN("key")="dark-theme-two",IN("activate")=1
+	SET IN("profile","key")="dark-theme-two",IN("profile","id")="dark-theme-two",IN("profile","name")="Dark Theme Two",IN("profile","mode")="dark",IN("profile","themeConfig","darkEnabled")=1
+	DO OK^MIOTASSERT($$SAVE^MIOOSTHEME(.STATE,.CONF,.IN,.OUT,.ERR),"[MIOOST][T086][second user theme save]")
+	KILL OUT,ERR DO OK^MIOTASSERT($$LOAD^MIOOSTHEME(.STATE,.CONF,.OUT,.ERR),"[MIOOST][T086][load user themes]")
+	SET COUNT=0,I=0 FOR  SET I=$ORDER(OUT("profiles",I)) QUIT:I'>0  SET COUNT=COUNT+1
+	DO OK^MIOTASSERT(COUNT>1,"[MIOOST][T086][multiple user themes loaded]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","themeStudioCreateSavedUserTheme"),"[MIOOST][T086][client save creates new user theme]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","userThemeProfiles"),"[MIOOST][T086][boot user themes loaded]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","Apply saved user theme"),"[MIOOST][T086][start menu user theme group]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_wm.js","appKey.indexOf('locale:')"),"[MIOOST][T086][locale shortcut guarded]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_i18n.js","url.searchParams.set('lang', 'sp')"),"[MIOOST][T086][spanish sp url]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSI18N.m","IF CODE=""sp"" SET CODE=""es"""),"[MIOOST][T086][server sp locale alias]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSVM.m","SKIPDESK(NAME)"),"[MIOOST][T086][roi2 folder desktop filter]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","backendTableApplyNewColumnOption"),"[MIOOST][T086][add option selected locally]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_table.js","'row.add'"),"[MIOOST][T086][add row uses row.add]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_modules.js","mioos-advanced-table-v8"),"[MIOOST][T086][table module contract default]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","polished New Table Module modal"),"[MIOOST][T086][table module modal styling]")
+	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","multiple server-backed user themes"),"[MIOOST][T086][llm user theme contract]")
+	QUIT
 	;
