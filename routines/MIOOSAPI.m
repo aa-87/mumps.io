@@ -413,7 +413,7 @@ FSUPBEGIN(DEV,CONF,REQ,CTX)
 	SET NAME=$GET(TREE("name"))
 	SET MIME=$GET(TREE("mime"),"application/octet-stream")
 	SET TOTAL=+$GET(TREE("totalBytes"))
-	SET ENC=$GET(TREE("encoding"),$SELECT($GET(CONF("mioos","upload","chunkTransport"))="http-binary":"binary",1:"base64-dataurl"))
+	SET ENC=$GET(TREE("encoding"),$SELECT($GET(CONF("mioos","upload","chunkTransport"))="http-binary":"binary",1:"base64"))
 	IF '$$BEGIN^MIOOSFSUP(.STATE,.CONF,PARENT,NAME,MIME,TOTAL,ENC,.OUT,.ERR) DO  QUIT
 	. DO RESPERR(.DEV,.CONF,403,"fs_upload_begin_failed",$GET(ERR("error")),.CTX)
 	SET OUT("transport")=$GET(CONF("mioos","upload","chunkTransport"),"http-binary")

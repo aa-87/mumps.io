@@ -73,6 +73,7 @@ MIOOST ; MIOOS tests
 	DO T085
 	DO T086
 	DO T087
+	DO T088
 	QUIT
 	;
 RESET
@@ -1679,5 +1680,38 @@ T087
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","mioos-table-module-editor"),"[MIOOST][T087][new table module styling]")
 	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","Final regression stabilization contract"),"[MIOOST][T087][final regression docs]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","Final regression stabilization contract"),"[MIOOST][T087][final regression llm]")
+	QUIT
+	;
+
+T088
+	NEW CONF,STATE,ERR,OUT,DESK,UP,ID,RAW,SIZE,TREE,JSON
+	DO RESET
+	DO CONFDEF^MIOOS(.CONF)
+	DO INIT^MIOOSFS(.CONF)
+	SET STATE("authenticated")=1,STATE("principal")="admin",STATE("roles")="admin"
+	SET DESK=$$DESKTOPID^MIOOSFS()
+	KILL OUT,ERR DO OK^MIOTASSERT($$BEGIN^MIOOSFSUP(.STATE,.CONF,DESK,"ws-binary.bin","application/octet-stream",3,"base64",.OUT,.ERR),"[MIOOST][T088][base64 upload begin]")
+	SET UP=$GET(OUT("uploadId"))
+	DO EQ^MIOTASSERT($GET(OUT("encoding")),"base64","[MIOOST][T088][base64 upload encoding]")
+	KILL OUT,ERR DO OK^MIOTASSERT($$CHUNK^MIOOSFSUP(.STATE,.CONF,UP,1,"QUJD",3,.OUT,.ERR),"[MIOOST][T088][base64 chunk raw byte accounting]")
+	DO EQ^MIOTASSERT(+$GET(OUT("receivedBytes")),3,"[MIOOST][T088][base64 received raw bytes]")
+	KILL OUT,ERR DO OK^MIOTASSERT($$COMMIT^MIOOSFSUP(.STATE,.CONF,UP,.OUT,.ERR),"[MIOOST][T088][base64 upload commit]")
+	SET ID=$GET(OUT("id"))
+	DO OK^MIOTASSERT($$READRAW^MIOOSFS(ID,.RAW,.SIZE),"[MIOOST][T088][base64 upload raw read]")
+	DO EQ^MIOTASSERT(SIZE,3,"[MIOOST][T088][base64 upload stored size]")
+	DO EQ^MIOTASSERT(RAW,"ABC","[MIOOST][T088][base64 upload decoded payload]")
+	KILL OUT,ERR DO OK^MIOTASSERT($$WRITE^MIOOSFS(.STATE,DESK,"bounded.txt","abc","text/plain",.OUT,.ERR),"[MIOOST][T088][bounded save setup]")
+	SET ID=$GET(OUT("id"))
+	SET CONF("mioos","fs","maxTextEditBytes")=5
+	KILL TREE,JSON,ERR SET TREE("id")=ID,TREE("content")="123456",TREE("mime")="text/plain",TREE("requestId")="t088"
+	DO EQ^MIOTASSERT($$FSTEXTSAVE^MIOOSWS(.STATE,.CONF,.TREE,.JSON,.ERR),0,"[MIOOST][T088][bounded save rejects oversized]")
+	DO EQ^MIOTASSERT($GET(ERR("error")),"text_draft_too_large","[MIOOST][T088][bounded save error contract]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","textViewerDraftByteLength"),"[MIOOST][T088][client bounded save byte guard]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","Edited text is above the bounded-edit save limit"),"[MIOOST][T088][client bounded save message]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","base64-dataurl"),0,"[MIOOST][T088][no explorer dataurl upload encoding]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSFSUP.m","ENC=""base64"""),"[MIOOST][T088][server base64 upload branch]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSFSUP.m","B64D^MIOSJWT"),"[MIOOST][T088][server base64 decode]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","Checkpoint stabilization 2026-05-05"),"[MIOOST][T088][checkpoint docs]")
+	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","Checkpoint stabilization 2026-05-05"),"[MIOOST][T088][checkpoint llm]")
 	QUIT
 	;

@@ -418,7 +418,7 @@ ROI 72C is dedicated entirely to the Start Menu component. The menu is now a mod
 
 ## ROI 72C Follow-up — Start Menu folders, Theme Login, and viewer stability
 
-The Start Menu launcher now supports expandable VFS folders/subfolders through lazy `fs.list` loading, and the popup variant is movable like a modal. Initial first boot defaults to `Glow` unless a server-rendered active theme profile or explicit user-local theme exists. Runtime login uses Theme Studio login assets/disclaimer while still sanitizing protected asset URLs before authentication. Text-file viewers fall back to the HTTP blob endpoint when a socket read cannot hydrate content.
+The Start Menu launcher now supports expandable VFS folders/subfolders through lazy `fs.list` loading, and the popup variant is movable like a modal. Initial first boot defaults to `Glow` unless a server-rendered active theme profile or explicit user-local theme exists. Runtime login uses Theme Studio login assets/disclaimer while still sanitizing protected asset URLs before authentication. Text-file viewers use the WebSocket text chunk contract for hydration; stale whole-file HTTP blob fallbacks must not return for large text files.
 
 ## ROI 72C2 viewer/upload/server-theme hotfix
 
@@ -474,3 +474,10 @@ Theme Studio saves `mode`, `activeMode`, `defaultVariant`, `themeConfig.darkEnab
 Explorer Details view has a dark-mode contrast rule: the selected row uses a light selected background and dark text only in details rows. The Explorer toolbar order is File, Edit, View, Tools, Help, separator, then Back, Forward, Up, Refresh, Upload, Download, New Folder, Rename, and Delete. VFS application shortcuts expose icon and target app metadata to Explorer; double-click and context Open route through the same launcher path. `ROI2Folder` is filtered from both desktop rendering and Explorer’s Desktop folder listing.
 
 Transfers use the animated `mioos-transfer-status-panel` contract instead of the old text banner. Patient Registration and UI table modules use deterministic toast/error feedback, `MUTATE^MIOOSTBL` for HTTP and WebSocket mutation paths, and the same `mioos-advanced-table-v8` table-backed module contract.
+
+
+## Checkpoint stabilization 2026-05-05
+
+This checkpoint adds two hardening contracts on top of the final regression stabilization pass. First, bounded text editing is enforced on both sides of the WebSocket contract: `fs.text.chunk` publishes `maxEditBytes`, the browser preflights saves with `textViewerDraftByteLength`, and `FSTEXTSAVE^MIOOSWS` rejects oversized drafts with `text_draft_too_large` instead of attempting a risky whole-file write.
+
+Second, upload fallback behavior is binary-safe and DataURL-free. The preferred path remains HTTP binary chunk upload. If the shell must fall back to WebSocket chunks for binary content, it now declares `encoding=base64`, sends pure base64 chunk data with raw byte counts, and `MIOOSFSUP` decodes through `B64D^MIOSJWT` before committing raw VFS bytes. New uploads and persisted image assets must not be stored as DataURLs.

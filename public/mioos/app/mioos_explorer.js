@@ -183,6 +183,17 @@
     return String(id || '') + '@' + (+offset || 0) + ':' + (+size || 0);
   }
 
+  function textViewerDraftByteLength(value) {
+    var text = String(value || '');
+    if (typeof TextEncoder !== 'undefined') {
+      try { return (new TextEncoder()).encode(text).length; } catch (err) {}
+    }
+    if (typeof Blob !== 'undefined') {
+      try { return (new Blob([text])).size; } catch (err2) {}
+    }
+    return text.length;
+  }
+
   function pruneVmTextChunkCache(vm) {
     var cache = (vm || {})._mioosTextChunkCache || {};
     var order = (vm || {})._mioosTextChunkCacheOrder || [];
@@ -938,6 +949,8 @@
           var content = (result || {}).text || '';
           var actualOffset = alignTextChunkOffset(+(payload.offset || offset), stream.chunkSize);
           if (+payload.size > 0) stream.size = +payload.size;
+          if (+payload.maxEditBytes > 0) stream.maxEditBytes = +payload.maxEditBytes;
+          if (typeof payload.boundedEdit !== 'undefined') stream.boundedEdit = !!(+payload.boundedEdit || payload.boundedEdit === true);
           stream.mime = payload.mime || stream.mime;
           if (stream.virtualized) stream.scrollHeight = stream.size > 0 ? Math.max(800, Math.min(12000000, Math.ceil(stream.size / 2))) : Math.max(stream.scrollHeight || 0, textChunkHeight(content) * 4);
           else stream.scrollHeight = Math.max(600, textChunkHeight(content) + 48);
@@ -1026,10 +1039,10 @@
         var win = this.textViewerWindowById ? this.textViewerWindowById(windowId) : null;
         var stream = ((win || {}).fileView || {}).textStream;
         var self = this;
-        var maxEditBytes = +((((this.boot || {}).vfs || {}).maxTextEditBytes) || textViewerThresholdBytes(this));
         var offset = 0;
         var pieces = [];
         if (!stream) return Promise.resolve(false);
+        var maxEditBytes = +(stream.maxEditBytes || ((((this.boot || {}).vfs || {}).maxTextEditBytes) || textViewerThresholdBytes(this)));
         if (+stream.size > maxEditBytes) {
           stream.editMode = 'view-only-large-file';
           stream.error = 'This file is above the bounded-edit limit. Viewing remains chunked; save is disabled until the file is small enough for a safe full edit.';
@@ -1063,6 +1076,12 @@
         var self = this;
         if (!stream || !stream.fileId || !this.command) return Promise.resolve(false);
         if (!stream.editing) return this.textViewerBeginEdit(windowId);
+        if (textViewerDraftByteLength(stream.editableContent || '') > +(stream.maxEditBytes || textViewerThresholdBytes(this))) {
+          stream.saveStatus = 'Save blocked';
+          stream.error = 'Edited text is above the bounded-edit save limit. Save a smaller file or reduce the edit before retrying.';
+          if (this.showToast) this.showToast('Text viewer', stream.error, 'error', 5200);
+          return Promise.resolve({ ok: false, error: 'text_draft_too_large' });
+        }
         stream.saving = true;
         stream.saveStatus = 'Saving…';
         if (this.showToast) this.showToast('Text viewer', 'Saving text file…', 'info', 1600);
@@ -1672,17 +1691,7 @@
               });
             }).then(finalize).catch(function (err) { return fail(err, 'fs_write_failed'); });
           }
-          return blobToArrayBuffer(file).then(function (buffer) {
-            var result = 'data:' + mime + ';base64,' + uint8ToBase64(new Uint8Array(buffer));
-            return self.command('fs.write', {
-              parent: state.folderId,
-              name: file.name,
-              mime: mime,
-              data: result,
-              content: result,
-              text: result
-            });
-          }).then(finalize).catch(function (err) { return fail(err, 'fs_write_failed'); });
+          return Promise.reject(new Error('binary_upload_requires_chunked_transport')).catch(function (err) { return fail(err, 'fs_write_failed'); });
         }
         if (chunkTransport === 'http-binary') {
           return httpJson((((self.boot || {}).routes || {}).fsUploadBegin || '/api/mioos/fs/upload/begin'), {
@@ -1875,7 +1884,7 @@
           name: file.name,
           mime: mime,
           totalBytes: file.size,
-          encoding: isText ? 'text' : 'base64-dataurl'
+          encoding: isText ? 'text' : 'base64'
         }, { command: 'fs.upload.begin', dedupeKey: 'fs.upload.begin|' + windowId + '|' + file.name + '|' + file.size, timeoutMs: uploadTimeoutConfig(self).uploadBeginTimeoutMs }).then(function (msg) {
           var payload = payloadRoot(msg);
           var uploadId = payload.uploadId;

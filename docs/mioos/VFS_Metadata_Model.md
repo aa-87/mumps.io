@@ -32,3 +32,7 @@
 - Folder appearance persistence
 - Sharing scope update
 - View/sort preference persistence
+
+## Checkpoint stabilization 2026-05-05 upload encoding contract
+
+Explorer uploads must persist bytes, not DataURLs. HTTP binary chunk upload is the preferred route. WebSocket fallback for binary files uses `encoding=base64`, stores raw byte counts for transfer accounting, and decodes base64 chunks before committing the file into `^MIO("MIOOS","FS","DATA",...)`. Legacy DataURL read encodings may still exist for old API compatibility, but new upload and persisted image paths must not depend on DataURLs.

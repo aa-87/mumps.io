@@ -626,7 +626,7 @@ The Start Menu was rewritten as a dedicated, isolated ROI. Preserve this separat
 - Runtime login uses Theme Studio login background/avatar/warning/disclaimer settings.
 - Protected theme/blob URLs remain sanitized before authentication.
 - Theme Studio image upload parsing is robust against empty/non-JSON error responses.
-- Text file viewer falls back to `/api/mioos/fs/blob` when socket reads cannot hydrate content.
+- Text file viewer uses `fs.text.chunk`; large-file whole-blob fallback must not return when socket reads fail.
 
 ## ROI 72C2 viewer/upload/server-theme hotfix
 
@@ -639,7 +639,7 @@ Authenticated wallpapers served through `/api/mioos/fs/blob` must compute `Conte
 
 Login-screen assets must continue to use the public-login asset route only for active login background/avatar/banner. Do not regress back to protected `/api/mioos/theme-asset` URLs before auth.
 
-Folder opens should create distinct Explorer windows. Start menu Language, Themes, and System groups are open by default. Text viewers must always leave loading state and fall back to authenticated blob reads if command reads fail.
+Folder opens should create distinct Explorer windows. Start menu Language, Themes, and System groups are open by default. Text viewers must always leave loading state and surface chunk/read errors with toast feedback; do not reintroduce large-file authenticated blob fallback reads.
 
 Theme Studio custom element CSS textareas parse declarations such as `background: radial-gradient(...)` and map them to live CSS variables for active titlebar, inactive titlebar, window body, taskbar, and Start menu.
 
@@ -697,3 +697,10 @@ Theme persistence contract: save and boot must keep `mode`, `activeMode`, `defau
 Explorer/desktop contract: Details selected rows in dark mode use a light row with dark text. Explorer toolbar ordering is File, Edit, View, Tools, Help, separator, then navigation/action icons. VFS app shortcuts carry icon and launch metadata and open through the normal launcher. `ROI2Folder` must be filtered from both desktop and Explorer Desktop folder views only.
 
 Patient/table contract: `row.add`, `row.save`, `cell.save`, `column.add`, `column.option.add`, import CSV, reconciliation, and patient actions must show deterministic success/failure feedback and must route HTTP and WebSocket mutations to `MUTATE^MIOOSTBL`. Generated UI table modules must use `componentKey=table`, `surface=mioos-surface-table`, and `mioos-advanced-table-v8`.
+
+
+## Checkpoint stabilization 2026-05-05
+
+Preserve the bounded-edit text contract. `fs.text.chunk` returns `maxEditBytes`; the browser checks draft byte length before `fs.text.save`; and `FSTEXTSAVE^MIOOSWS` must reject oversized saves with `text_draft_too_large`. This is intentional: huge files are smooth chunked viewers, not unsafe whole-file editors.
+
+Preserve the DataURL-free upload contract. HTTP binary chunks are preferred. WebSocket binary fallback uses `encoding=base64` with raw byte accounting, and `MIOOSFSUP` decodes chunks through `B64D^MIOSJWT` before writing VFS bytes. Do not restore `base64-dataurl` for new Explorer upload encoding or persisted images.

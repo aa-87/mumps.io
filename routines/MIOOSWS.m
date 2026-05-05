@@ -184,14 +184,19 @@ FSTEXTCHUNK(STATE,CONF,TREE,OUTJSON,ERR)
 	QUIT 1
 	;
 FSTEXTSAVE(STATE,CONF,TREE,OUTJSON,ERR)
-	NEW OUT,META,ID,PARENT,NAME,MIME
+	NEW OUT,META,ID,PARENT,NAME,MIME,DATA,MAX
 	SET ID=$SELECT($GET(TREE("id"))'="":$GET(TREE("id")),1:$GET(TREE("path")))
 	IF ID="" SET ERR("error")="file_id_missing" QUIT 0
+	SET DATA=$GET(TREE("content"))
+	SET MAX=+$GET(CONF("mioos","fs","maxTextEditBytes"))
+	IF MAX'>0 SET MAX=+$GET(CONF("mioos","fs","textChunkThresholdBytes"),2411725)
+	IF MAX<1 SET MAX=1
+	IF $ZLENGTH(DATA)>MAX SET ERR("error")="text_draft_too_large",ERR("message")="Edited text exceeds the bounded-edit save limit" QUIT 0
 	IF '$$META^MIOOSFS(.STATE,ID,.META,.ERR) QUIT 0
 	IF $GET(META("kind"))'="file" SET ERR("error")="not_a_file" QUIT 0
 	SET PARENT=$GET(META("parentId")),NAME=$GET(META("name")),MIME=$SELECT($GET(TREE("mime"))'="":$GET(TREE("mime")),1:$GET(META("mime"),"text/plain"))
-	IF '$$WRITE^MIOOSFS(.STATE,PARENT,NAME,$GET(TREE("content")),MIME,.OUT,.ERR) QUIT 0
-	SET OUT("saved")=1,OUT("edited")=1
+	IF '$$WRITE^MIOOSFS(.STATE,PARENT,NAME,DATA,MIME,.OUT,.ERR) QUIT 0
+	SET OUT("saved")=1,OUT("edited")=1,OUT("boundedEdit")=1,OUT("maxEditBytes")=MAX
 	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"fs.text.save","vfs",.OUT)
 	QUIT 1
 	;
@@ -209,7 +214,7 @@ FSUPBEGIN(STATE,CONF,TREE,OUTJSON,ERR)
 	SET NAME=$GET(TREE("name"))
 	SET MIME=$GET(TREE("mime"),"application/octet-stream")
 	SET TOTAL=+$GET(TREE("totalBytes"))
-	SET ENC=$GET(TREE("encoding"),"base64-dataurl")
+	SET ENC=$GET(TREE("encoding"),"base64")
 	IF '$$BEGIN^MIOOSFSUP(.STATE,.CONF,PARENT,NAME,MIME,TOTAL,ENC,.OUT,.ERR) QUIT 0
 	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"fs.upload.begin","vfs",.OUT)
 	QUIT 1
