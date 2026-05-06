@@ -1,0 +1,428 @@
+Please use the attached ZIP/folder as the ONLY source of truth. MAKE SURE ABSOLUTELY NO REGRESSIONS.
+
+You are taking over development of MIOOS / MUMPS.IO OS Shell. Do not rely on prior ChatGPT conversations, prior patches, prior generated ZIPs, or assumptions. Inspect the attached source first, then perform a full checkpoint stabilization pass across every system feature. The goal is to identify bugs, fix source-accurate issues, and add regression tests so future ROIs can proceed safely.
+
+Core architecture rules:
+- Preserve the existing MUMPS.IO architecture.
+- Backend: MUMPS on YottaDB / GT.M.
+- Server-side rendering: MIOTPL.
+- HTTP/API: MIOHTTP / MIOOSAPI.
+- WebSocket/control/realtime: MIOOSWS where appropriate.
+- VFS: MIOOSFS.
+- Boot/session/desktop state: MIOOSST.
+- Shell/view-model helpers: MIOOSVM and MIOOSUI where applicable.
+- Theme/profile persistence: MIOOSTHEME.
+- Locale/i18n: MIOOSI18N.
+- Module registry: MIOOSMOD / MIOOSMTBL.
+- Patient workflow: MIOOSPAT.
+- Table backend contract: MIOOSTBL.
+- Browser files under public/mioos/app/.
+- Vue 3 Options API UMD only.
+- No new frontend framework.
+- No build step.
+- No TypeScript.
+- No Composition API.
+- No Node/Express runtime.
+- No external SPA architecture.
+- The project is for MUMPS developers with little/no frontend experience, so docs/examples must remain MUMPS-first.
+- Do not use DataURLs for uploads or persisted images.
+- Do not emit authenticated asset URLs before login.
+- Tests must stay quiet on success and explicit on failure.
+- Every checkpoint fix must update docs, tests, examples, and mioos_llm.md when behavior changes.
+- Return only modified files in the final ZIP or patch.
+- Be honest about tests that cannot be run.
+
+Primary checkpoint goal:
+
+Set a complete project checkpoint by systematically reviewing every major MIOOS feature, testing for bugs/regressions, fixing issues source-accurately, and adding tests to lock expected behavior. This checkpoint should create a stable baseline before additional ROIs.
+
+Important current known issues to include in the checkpoint:
+
+1. Large text files are still not viewable/editable reliably.
+   - Redesign cleanly if needed.
+   - Analyze text viewer UI, backend text read/write contract, WebSocket chunking, threshold behavior, cache/dedupe, scroll behavior, save/edit behavior, timeout/error handling, and fallback behavior.
+   - Large files must be viewable smoothly.
+   - Editing/saving must work predictably.
+   - Avoid whole-file browser payloads for huge files.
+   - If full editing is unsafe for very large files, implement a clear bounded-edit mode and document it.
+   - Add tests for chunked reading, dedupe, scroll-to-byte mapping, edit/save, timeout handling, and no stale full-blob fallback regressions.
+
+2. Dark Theme mode is still not saved with the theme and not loaded at startup.
+   - Analyze Theme Studio client state, save/apply flows, server profile persistence, boot payload, startup theme application, and custom user themes.
+   - Dark mode must persist with saved theme and load at startup.
+   - Multiple user themes must continue to work.
+   - Saved user themes must appear in Start Menu Themes group.
+   - Add tests for mode, activeMode/defaultVariant, darkEnabled, variants.dark, server profile save/load, and boot hydration.
+
+3. Transfers window needs dark-theme-friendly redesign.
+   - Remove or redesign old banner text like “0 active = paused - 0 finished”.
+   - Use a polished animated status design.
+   - Preserve transfer functionality.
+   - Transfer toolbar/menu actions must remain functional.
+   - Add tests for absence of old banner and presence/functionality of new transfer status contract.
+
+4. Explorer Details view selected row is invisible in dark theme.
+   - Selected row should have a light selected-row background and dark readable text.
+   - Fix Details view only without breaking icon view/light mode.
+   - Add CSS/static tests for selected row contrast.
+
+5. Explorer toolbar order and consolidation.
+   - Help should appear immediately after Tools.
+   - Then separator.
+   - Then navigation/action icons.
+   - Desired order:
+     File | Edit | View | Tools | Help | separator | Back icon | Forward icon | Up icon | Refresh icon | Upload icon | Download icon | New Folder icon | Rename icon | Delete icon
+   - Icons should be large, colorful, and usable.
+   - There must not be duplicate Explorer toolbars.
+   - Add tests for order, icons, and no duplicate toolbar/menu strips.
+
+6. Application shortcuts in Explorer.
+   - Explorer shortcuts are missing application icons and are not launchable.
+   - Analyze VFS shortcut representation and app/module launch path.
+   - App shortcuts viewed in Explorer must show correct icons.
+   - Double-click/launch/context open must launch target application/module.
+   - Add tests for shortcut metadata, icon resolution, and launch behavior.
+
+7. ROI2Folder consistency.
+   - ROI2Folder is hidden on desktop but still present in Desktop folder in Explorer.
+   - Hide/remove consistently from both desktop rendering and Explorer view of Desktop.
+   - Do not hide unrelated folders.
+   - Add tests for desktop and Explorer Desktop filtering.
+
+8. Patient Registration workflow regression.
+   - Add Row, Add Column, Reconcile, Import CSV, and patient functions/actions are unavailable or silent.
+   - Analyze full Patient Registration UI/backend:
+     - routines/MIOOSPAT.m
+     - routines/MIOOSTBL.m
+     - routines/MIOOSAPI.m
+     - routines/MIOOSWS.m
+     - public/mioos/app/mioos_table.js
+     - public/mioos/app/mioos_modules.js
+     - public/mioos/app/mioos_core.js
+     - public/mioos/app/mioos_shell_ui.js
+     - CSS/modal/toast/loading/error states
+   - Fix backend routes, HTTP/WebSocket mutate paths, table mutation contracts, toolbar/menu actions, modal actions, feedback/toasts, and patient-specific actions.
+   - Add tests for:
+     - row.add
+     - row.save
+     - cell.save
+     - column.option.add
+     - column add
+     - import CSV
+     - reconcile
+     - patient action dispatch
+     - deterministic success/failure feedback
+     - no silent failures
+     - HTTP and WebSocket paths using the same backend routines
+   - Preserve HIPAA/audit-oriented design already present.
+
+9. UI Modules “New Table Module”.
+   - Analyze App Catalogue / UI Modules entry point, modal styling, draft creation, backend module registration, table-backed module defaults, icon/start menu/desktop launch behavior.
+   - It must be styled correctly in light/dark mode.
+   - It must create a valid table-backed module without frontend code.
+   - Generated module must use actual backend table contract from source:
+     - componentKey/table surface
+     - mioos-surface-table
+     - current table contract, likely mioos-advanced-table-v8 if still current
+   - Add tests for modal styling markers, backend correctness, saved module registry entries, and launchability.
+
+Full checkpoint feature audit scope:
+
+A. Boot/session/auth/startup
+- Login screen renders correctly in light/dark modes.
+- Login box style applies.
+- Avatar size and desktop/mobile login widths apply.
+- Authenticated asset URLs are not emitted before login.
+- Boot payload includes desktop state, modules, themes, locale, permissions, VFS settings, and user theme profiles.
+- Startup applies saved active theme and dark mode.
+- Add tests for boot JSON/profile fields and no unauthenticated asset leaks.
+
+B. Desktop shell
+- Desktop icons render correctly.
+- Desktop drag/drop uploads work.
+- Desktop context menu actions dismiss automatically.
+- Desktop refresh uses toast/auto-dismiss feedback.
+- Start Menu opens/closes reliably.
+- Taskbar positions top/bottom/left/right do not cover icons.
+- RTL taskbar and start menu placement is correct.
+- Window manager supports open/minimize/maximize/restore/close/focus.
+- Help -> About opens a small About MIO/MIOOS window without its own toolbar.
+- Add regression tests for all shell/window contracts.
+
+C. Explorer/VFS
+- Icon/details/list views.
+- Details view filename truncation.
+- Details dark-mode selected row contrast.
+- Back/forward/up/refresh/upload/download/new folder/rename/delete.
+- Recursive folder delete if supported.
+- File preview.
+- Text/structured text viewer.
+- Image/video/music viewers.
+- Application shortcuts icons and launch behavior.
+- Desktop folder filtering including ROI2Folder.
+- Upload/download paths and theme/background assets.
+- Context menus dismiss after action.
+- Add tests for every Explorer command and view contract.
+
+D. Text viewer
+- Small text files load/edit/save.
+- Large text files use chunked stream.
+- Scrollbar maps to byte offsets smoothly.
+- Requests dedupe by file id + offset + size.
+- Timeouts handled via toasts, not uncaught promise errors.
+- Zoom in/out/reset.
+- Save clears stale cache and reloads.
+- Old body Reload/Download toolbar does not return.
+- Add comprehensive tests.
+
+E. Media viewers
+- Image viewer opens and displays uploaded images without corruption/truncation.
+- Audio/video viewer has toolbar/menu actions and Loop remains functional.
+- Media viewer does not regress common toolbar.
+- Add tests for media toolbar, loop, and asset serving.
+
+F. Theme Studio
+- Apply/save/import/export.
+- Multiple user themes.
+- Dark mode persistence.
+- Custom CSS.
+- Login screen custom CSS and login box style.
+- Toolbar/context/title/start menu font color controls.
+- Uploaded wallpapers/backgrounds render without content-length mismatch or corruption.
+- Saved user themes appear in Start Menu Themes.
+- Add tests for profile persistence, imported theme activation, and asset serving.
+
+G. Locale/i18n/RTL
+- Language shortcuts must reload main URL:
+  - English => no lang/default
+  - Arabic => ?lang=ar
+  - Spanish => ?lang=sp or canonical current source behavior
+- Clicking Arabic/Spanish/English must not open generic app windows.
+- RTL flips layout where appropriate.
+- Start Menu position in RTL must be correct.
+- Add tests for locale shortcut dispatch and URL generation/canonicalization.
+
+H. Transfers
+- Dark-theme-friendly status display.
+- Animated progress/status.
+- Pause/resume/cancel active/clear finished via toolbar/menu.
+- No duplicate top action div if toolbar owns actions.
+- Add tests for transfer actions and no old banner regression.
+
+I. Terminal
+- Terminal toolbar/menu actions.
+- New session/refresh/clear/close behavior.
+- No duplicate body control row if toolbar owns those actions.
+- Multiple terminal sessions if currently supported.
+- Add tests for no duplicate controls and toolbar actions.
+
+J. Advanced Table backend contract
+- Preserve table backend contract.
+- Query response includes:
+  ok, dataset, draw, recordsTotal, recordsFiltered, schema.columns, rows, groups,
+  pagination.page, pagination.pageSize, pagination.totalRows, pagination.filteredRows,
+  pagination.pageRows, pagination.pageCount, features, rowActions, bulkActions.
+- includeDataAlias omission/inclusion behavior.
+- Server-side pagination and page clamp.
+- Massive dataset path avoids unnecessary browser payload.
+- Mutations:
+  column.visibility
+  row.add
+  row.save
+  cell.save
+  column.option.add
+  column.reorder
+  column.fixed
+  rows.export selected rows only
+- Failure JSON:
+  ok, dataset, action, error, message, fieldErrors when applicable, mutationOnly, refetch.
+- Validation:
+  required, max length, enum/select, multiselect, boolean, strict date including impossible dates, numeric/range, MUMPS row hook, MUMPS cell hook.
+- Filtering/grouping/sorting:
+  basic search, column filters, advanced include/exclude/contains/starts with/ends with/range/blank/not blank, named sort, multi-column grouping, grouping under pagination/sort/filter.
+- Feature composition:
+  read-only/simple tables do not expose write actions unless enabled.
+  editable tables expose edit features.
+  fixed columns with reordered/hidden columns.
+  selected-row export respects selected IDs.
+- Known bugs:
+  no free variable `vm` in payload path.
+  no native prompt/confirm for Add Value/Delete Column.
+  modal close controls should not begin drag operations.
+  loading indicator should not layout-shift.
+- Add tests and docs.
+
+K. Patient Registration
+- Add Row / Add Column / Add Option.
+- Reconcile.
+- Import CSV.
+- Duplicates/triage/status workflows.
+- Audit/status metadata.
+- Feedback/toasts on success/failure.
+- Error boundaries and empty states.
+- HIPAA-aware behavior.
+- Add backend and frontend regression tests.
+
+L. App Catalogue / UI Modules
+- App Catalogue opens.
+- UI Modules page opens.
+- New Table Module modal styled and functional.
+- Module registration works.
+- Table-backed module launches.
+- Desktop/start menu icon appears if configured.
+- MUMPS-first sample docs remain accurate.
+- Add tests for modal, registration, boot/module visibility, and launch.
+
+M. Permissions UI
+- Opens and renders in dark/light.
+- Toolbar/common menu works.
+- Save/apply feedback.
+- Add tests for rendering and no silent failures.
+
+N. Styling/dark mode/global UI
+- Common toolbar dark mode should be black/dark and readable.
+- Dark scrollbars on black background.
+- Transfer/patient/table/module/explorer dark surfaces readable.
+- Selected row contrast.
+- Long filenames truncation.
+- Modal styling in light/dark.
+- Responsive behavior.
+- Keyboard navigation where applicable.
+- Add CSS/static tests.
+
+O. Error/loading/empty states
+- Review all major windows for:
+  - uncaught Promise errors
+  - silent failures
+  - blocking notifications where toast is expected
+  - loading indicators
+  - empty states
+  - error states
+- Add tests for no known uncaught paths and feedback contracts.
+
+Important files to inspect first:
+
+Backend:
+- routines/MIOOS.m
+- routines/MIOOSAPI.m
+- routines/MIOOSWS.m
+- routines/MIOOSFS.m
+- routines/MIOOSST.m
+- routines/MIOOSVM.m
+- routines/MIOOSUI.m
+- routines/MIOOSTHEME.m
+- routines/MIOOSI18N.m
+- routines/MIOOSMOD.m
+- routines/MIOOSMTBL.m
+- routines/MIOOSPAT.m
+- routines/MIOOSTBL.m
+- routines/MIOOST.m
+- any helper test routines already present, such as MIOOSTBLC.m if present
+
+Frontend:
+- public/mioos/app/mioos_core.js
+- public/mioos/app/mioos_explorer.js
+- public/mioos/app/mioos_i18n.js
+- public/mioos/app/mioos_modules.js
+- public/mioos/app/mioos_permissions.js
+- public/mioos/app/mioos_shell_ui.js
+- public/mioos/app/mioos_state.js
+- public/mioos/app/mioos_table.js
+- public/mioos/app/mioos_wm.js
+- public/mioos/app/mioos_ws.js
+- public/mioos/mioos.css
+
+Docs/examples:
+- docs/mioos/README.md
+- docs/mioos/UI_Modules.md
+- docs/mioos/Backend_Table.md
+- docs/mioos/HIPAA.md
+- examples/mioos_modules/table/README.md
+- examples/mioos_modules/table/module.json
+- examples/mioos_modules/patient_registration/README.md
+- examples/mioos_modules/patient_registration/module.json
+- mioos_llm.md
+
+Required baseline checks before and after:
+1. Try:
+   D ^MIOOST
+
+   If YottaDB / GT.M is unavailable, clearly state that D ^MIOOST could not be run.
+
+2. JavaScript syntax checks:
+   node --check public/mioos/app/mioos_core.js
+   node --check public/mioos/app/mioos_modules.js
+   node --check public/mioos/app/mioos_table.js
+   node --check public/mioos/app/mioos_permissions.js
+   node --check public/mioos/app/mioos_shell_ui.js
+   node --check public/mioos/app/mioos_wm.js
+   node --check public/mioos/app/mioos_state.js
+   node --check public/mioos/app/mioos_ws.js
+   node --check public/mioos/app/mioos_explorer.js
+   node --check public/mioos/app/mioos_i18n.js
+
+3. JSON validation:
+   python3 -m json.tool examples/mioos_modules/table/module.json
+   python3 -m json.tool examples/mioos_modules/patient_registration/module.json
+
+4. MUMPS static/compile checks where possible:
+   - quote/parity/static checks for touched routines.
+   - if YottaDB/GT.M is available:
+     ZLINK "MIOOS"
+     ZLINK "MIOOSAPI"
+     ZLINK "MIOOSWS"
+     ZLINK "MIOOSFS"
+     ZLINK "MIOOSST"
+     ZLINK "MIOOSVM"
+     ZLINK "MIOOSUI"
+     ZLINK "MIOOSTHEME"
+     ZLINK "MIOOSI18N"
+     ZLINK "MIOOSMOD"
+     ZLINK "MIOOSMTBL"
+     ZLINK "MIOOSPAT"
+     ZLINK "MIOOSTBL"
+     ZLINK "MIOOST"
+     DO ^MIOOST
+
+Implementation rules:
+- Do not make broad rewrites unless source analysis proves they are required.
+- Prefer source-accurate minimal changes with strong regression tests.
+- Do not remove features to make tests pass.
+- Do not weaken tests if implementation is wrong.
+- If a test is stale due to intentional architecture change, update the test and add a negative regression test preventing the old broken behavior from returning.
+- Keep UI dark-theme aware.
+- Avoid duplicate toolbars and duplicate modal action panels.
+- Use toasts/auto-dismiss feedback instead of blocking notifications where appropriate.
+- Maintain common toolbar behavior.
+- Do not regress text preview, desktop uploads, theme assets, or existing table features.
+- Do not introduce new libraries or build tooling.
+- Keep examples MUMPS-first.
+
+Checkpoint deliverables:
+1. A short audit matrix listing each feature area reviewed:
+   - status: pass / fixed / needs follow-up
+   - files touched
+   - tests added
+2. Source changes for fixed issues.
+3. Expanded tests in MIOOST and helper test routines where appropriate.
+4. Updated docs and mioos_llm.md.
+5. Modified-files-only ZIP.
+6. Patch fallback.
+
+Expected final answer format:
+
+Diagnosis
+Root cause
+Checkpoint/ROI implemented
+Feature audit matrix
+Code changes
+Tests added
+Tests run
+Acceptance checklist
+Modified files
+Download link to ZIP containing only modified files
+Patch fallback
+
+Be honest if D ^MIOOST or ZLINK could not be run because YottaDB / GT.M is unavailable.
+
+If artifact download fails, provide a patch or pasteable file contents.
