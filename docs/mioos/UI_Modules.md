@@ -212,3 +212,9 @@ Text viewer integrations should treat files above the virtualization threshold a
 ## ROI 100 text viewer integration note
 
 Text modules should treat all text-like files as editable. Large files should open first in HTTP chunked view mode, then use the shared **Edit** action to stitch safe chunks into the editor on demand. Do not add module-level full-blob reads or WebSocket-only large-text loaders; use the shell's `/api/mioos/fs/text-chunk` viewer path and chunked HTTP save/upload path.
+
+## ROI 101 UI notes
+
+Table modules should continue to use `mioos-full-table`, `mioos-surface-table`, Advanced Table, and permissions/patient surfaces rather than inline light backgrounds. The shared table variables (`--mioos-table-cell-bg`, `--mioos-table-text-color`, `--mioos-table-input-bg`, `--mioos-table-selected-bg`, and related state variables) now supply Dark Theme readability for cells, headers, hover/selected rows, filter rows, modal controls, editable cells, and validation messages without requiring module-specific CSS.
+
+Text viewer integrations should no longer depend on visible-range or scrollbar-driven loading. The shell opens text files as explicit HTTP chunk load sessions, then shows an editable CodeMirror/plain-text editor when the full buffer has been stitched together safely. Save should use the shared chunked HTTP upload path for non-trivial text and keep the stale modified/size conflict check; do not add DataURL, full-blob, or WebSocket-only text transfer paths.

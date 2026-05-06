@@ -470,3 +470,9 @@ For file-backed table examples or CSV/text preview helpers, keep the large-text 
 ## ROI 100 text helper note
 
 File-backed table helpers that preview text should use the same large-text contract as the shell: `textChunkBytes` defaults to `65536`, `textChunkThresholdBytes` remains the virtualization threshold, and edit-size caps are not enforced through `maxTextEditBytes`. Backends must continue returning only the requested text range for chunk reads; large text saves should use bounded HTTP chunk/upload plumbing instead of WebSocket-sized full payloads.
+
+## ROI 101 table and text transport note
+
+Backend/table modules should avoid hardcoded light row/cell colors and rely on the shared table variables so Dark Theme remains readable across read-only, dense, editable, filtered, permissions, and patient workflows. The Advanced Table backend contract remains `MIOOSTBL`; this ROI only changes the frontend CSS contract and static regression coverage.
+
+Text helper routes keep the safe range-read contract. `/api/mioos/fs/text-chunk` returns an explicit text-edit-session marker (`loadTrigger=open-session-not-scroll`, `viewerContract=text-edit-session-v4-http-range`) and clamps chunk size below the safe runtime limit. `/api/mioos/fs/text-save` is intentionally a small-payload compatibility route; larger text saves must use the authenticated upload begin/chunk/commit staging route so the backend does not assemble unsafe giant JSON strings or overwrite a file with a partial payload.

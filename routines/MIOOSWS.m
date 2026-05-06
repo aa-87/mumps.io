@@ -180,8 +180,11 @@ FSTEXTCHUNK(STATE,CONF,TREE,OUTJSON,ERR)
 	IF '$$READWIN^MIOOSFS(.STATE,ID,OFFSET,SIZE,.OUT,.ERR) QUIT 0
 	SET OUT("mediaType")="text"
 	SET OUT("chunkSize")=SIZE
-	SET OUT("scrollSync")="byte-offset"
-	SET OUT("viewerContract")="chunked-text-v3"
+	SET OUT("scrollSync")="none"
+	SET OUT("loadTrigger")="open-session-not-scroll"
+	SET OUT("transport")="bounded-websocket-text-chunk"
+	SET OUT("viewerContract")="text-edit-session-v4-ws-range"
+	SET OUT("loadContract")="explicit-text-edit-session-v4"
 	SET OUT("boundedEdit")=0
 	SET OUT("fullEditOnDemand")=1
 	SET OUT("maxEditBytes")=0
@@ -191,10 +194,14 @@ FSTEXTCHUNK(STATE,CONF,TREE,OUTJSON,ERR)
 	QUIT 1
 	;
 FSTEXTSAVE(STATE,CONF,TREE,OUTJSON,ERR)
-	NEW OUT,META,ID,PARENT,NAME,MIME,DATA
+	NEW OUT,META,ID,PARENT,NAME,MIME,DATA,LIMIT
+	; MAXSTRING guard: large text save must use chunked HTTP upload, not a giant WebSocket JSON payload.
 	SET ID=$SELECT($GET(TREE("id"))'="":$GET(TREE("id")),1:$GET(TREE("path")))
 	IF ID="" SET ERR("error")="file_id_missing" QUIT 0
 	SET DATA=$GET(TREE("content"))
+	SET LIMIT=+$GET(CONF("mioos","fs","textChunkBytes"),65536) IF LIMIT<4096 SET LIMIT=4096
+	IF LIMIT>65536 SET LIMIT=65536
+	IF $ZLENGTH(DATA)>LIMIT SET ERR("error")="fs_text_save_requires_chunked",ERR("message")="Large text saves must use chunked HTTP upload staging" QUIT 0
 	IF '$$META^MIOOSFS(.STATE,ID,.META,.ERR) QUIT 0
 	IF $GET(META("kind"))'="file" SET ERR("error")="not_a_file" QUIT 0
 	SET PARENT=$GET(META("parentId")),NAME=$GET(META("name")),MIME=$SELECT($GET(TREE("mime"))'="":$GET(TREE("mime")),1:$GET(META("mime"),"text/plain"))

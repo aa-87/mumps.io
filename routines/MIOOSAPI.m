@@ -231,8 +231,11 @@ FSTEXTCHUNK(DEV,CONF,REQ,CTX)
 	. DO RESPERR(.DEV,.CONF,403,"fs_text_chunk_failed",$GET(ERR("error")),.CTX)
 	SET OUT("mediaType")="text"
 	SET OUT("chunkSize")=SIZE
-	SET OUT("scrollSync")="byte-offset"
-	SET OUT("viewerContract")="chunked-text-v3-http-range"
+	SET OUT("scrollSync")="none"
+	SET OUT("loadTrigger")="open-session-not-scroll"
+	SET OUT("transport")="http-text-chunk"
+	SET OUT("viewerContract")="text-edit-session-v4-http-range"
+	SET OUT("loadContract")="explicit-text-edit-session-v4"
 	SET OUT("boundedEdit")=0
 	SET OUT("fullEditOnDemand")=1
 	SET OUT("maxEditBytes")=0
@@ -243,7 +246,8 @@ FSTEXTCHUNK(DEV,CONF,REQ,CTX)
 	QUIT
 	;
 FSTEXTSAVE(DEV,CONF,REQ,CTX)
-	NEW TREE,ERR,STATE,OUT,META,ID,PARENT,NAME,MIME,DATA
+	NEW TREE,ERR,STATE,OUT,META,ID,PARENT,NAME,MIME,DATA,LIMIT
+	; MAXSTRING guard: large text save must use the chunked HTTP upload route, not full JSON.
 	IF '$$PARSEBODY(.REQ,.TREE,.ERR) DO  QUIT
 	. DO RESPERR(.DEV,.CONF,400,"invalid_json",$GET(ERR("error")),.CTX)
 	IF '$$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR) DO  QUIT
@@ -253,6 +257,10 @@ FSTEXTSAVE(DEV,CONF,REQ,CTX)
 	IF ID="" DO  QUIT
 	. DO RESPERR(.DEV,.CONF,400,"file_id_missing","file_id_missing",.CTX)
 	SET DATA=$GET(TREE("content"))
+	SET LIMIT=+$GET(CONF("mioos","fs","textChunkBytes"),65536) IF LIMIT<4096 SET LIMIT=4096
+	IF LIMIT>65536 SET LIMIT=65536
+	IF $ZLENGTH(DATA)>LIMIT DO  QUIT
+	. DO RESPERR(.DEV,.CONF,413,"fs_text_save_requires_chunked","Large text saves must use /api/mioos/fs/upload chunk staging to avoid MAXSTRING and partial-write risk",.CTX)
 	IF '$$META^MIOOSFS(.STATE,ID,.META,.ERR) DO  QUIT
 	. DO RESPERR(.DEV,.CONF,403,"fs_text_save_failed",$GET(ERR("error")),.CTX)
 	IF $GET(META("kind"))'="file" DO  QUIT

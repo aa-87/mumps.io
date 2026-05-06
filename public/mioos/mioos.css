@@ -67,6 +67,27 @@
   --control-min: #f2d25a;
   --control-max: #7ecb61;
   --control-close: #e06d5c;
+  --mioos-table-surface-bg: #f8fbff;
+  --mioos-table-cell-bg: #ffffff;
+  --mioos-table-alt-row-bg: #f7fbff;
+  --mioos-table-header-bg: linear-gradient(180deg, #eef6ff 0%, #dcecff 100%);
+  --mioos-table-text-color: #111827;
+  --mioos-table-muted-text-color: #475569;
+  --mioos-table-border-color: rgba(70, 94, 130, .18);
+  --mioos-table-hover-bg: #eef6ff;
+  --mioos-table-selected-bg: #dbeafe;
+  --mioos-table-selected-text-color: #0f172a;
+  --mioos-table-input-bg: #ffffff;
+  --mioos-table-input-text: #111827;
+  --mioos-table-button-bg: linear-gradient(#ffffff, #dfe9f7);
+  --mioos-table-button-text: #111827;
+  --mioos-table-modal-bg: #ffffff;
+  --mioos-table-error-bg: #f8d7da;
+  --mioos-table-error-text: #842029;
+  --mioos-table-warning-bg: #fff7db;
+  --mioos-table-warning-text: #7a5600;
+  --mioos-table-success-bg: #e9f8ef;
+  --mioos-table-success-text: #12662c;
 }
 
 * { box-sizing: border-box; }
@@ -4386,7 +4407,14 @@ html[dir="rtl"] .mioos-window-menu-dropdown-vue,
 .theme-dark-mode .mioos-viewer-text-chunk,
 .theme-dark-mode .mioos-viewer-text-chunk.is-full-text { background: #050505 !important; color: #f8fafc !important; border-color: #1f2937 !important; }
 .theme-dark-mode .mioos-text-editor-area { background: #050505 !important; color: #f8fafc !important; }
-.theme-dark-mode * { scrollbar-color: #374151 #000000; }
+.theme-dark-mode .mioos-root,
+.theme-dark-mode .mioos-window-content-vue,
+.theme-dark-mode .mioos-explorer-main,
+.theme-dark-mode .mioos-table-wrap,
+.theme-dark-mode .mioos-full-table,
+.theme-dark-mode .mioos-text-virtual-viewer,
+.theme-dark-mode .mioos-start-modern-groups,
+.theme-dark-mode .mioos-ui-elements-body { scrollbar-color: #374151 #000000; }
 .theme-dark-mode ::-webkit-scrollbar { width: 12px; height: 12px; background: #000000; }
 .theme-dark-mode ::-webkit-scrollbar-track { background: #000000; }
 .theme-dark-mode ::-webkit-scrollbar-thumb { background: #374151; border: 2px solid #000000; border-radius: 8px; }
@@ -5430,3 +5458,223 @@ html[dir="rtl"] .mioos-window-menu-dropdown-vue,
   color: #fee2e2;
   border-color: rgba(248,113,113,.42);
 }
+
+
+/* ROI 101: variable-driven dark table correctness and explicit text editor safety. */
+.theme-dark-mode {
+  --mioos-table-surface-bg: #020617;
+  --mioos-table-cell-bg: #0f172a;
+  --mioos-table-alt-row-bg: #111827;
+  --mioos-table-header-bg: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+  --mioos-table-text-color: #f8fafc;
+  --mioos-table-muted-text-color: #cbd5e1;
+  --mioos-table-border-color: rgba(148, 163, 184, .28);
+  --mioos-table-hover-bg: #1e293b;
+  --mioos-table-selected-bg: #1d4ed8;
+  --mioos-table-selected-text-color: #ffffff;
+  --mioos-table-input-bg: #020617;
+  --mioos-table-input-text: #f8fafc;
+  --mioos-table-button-bg: #1e293b;
+  --mioos-table-button-text: #f8fafc;
+  --mioos-table-modal-bg: #0f172a;
+  --mioos-table-error-bg: #450a0a;
+  --mioos-table-error-text: #fecaca;
+  --mioos-table-warning-bg: #451a03;
+  --mioos-table-warning-text: #fed7aa;
+  --mioos-table-success-bg: #052e16;
+  --mioos-table-success-text: #bbf7d0;
+  --mioos-dark-table-cell-bg: var(--mioos-table-cell-bg);
+  --mioos-dark-table-text: var(--mioos-table-text-color);
+}
+.mioos-full-table,
+.mioos-surface-table,
+.mioos-table-showcase,
+.mioos-permissions-ui,
+.mioos-surface-patient,
+.mioos-patient-registration {
+  color: var(--mioos-table-text-color);
+}
+.mioos-full-table { background: var(--mioos-table-surface-bg); }
+.mioos-table-wrap { background: var(--mioos-table-surface-bg); border-color: var(--mioos-table-border-color); }
+.mioos-table-grid,
+.mioos-table-grid tbody,
+.mioos-permissions-table { color: var(--mioos-table-text-color); background: var(--mioos-table-surface-bg); }
+.mioos-table-grid th,
+.mioos-table-grid td,
+.mioos-permissions-table th,
+.mioos-permissions-table td { border-color: var(--mioos-table-border-color); }
+.mioos-table-grid td,
+.mioos-permissions-table td { color: var(--mioos-table-text-color); background: var(--mioos-table-cell-bg); }
+.mioos-table-grid thead th,
+.mioos-table-grid th,
+.mioos-table-groups th,
+.mioos-permissions-table th { color: var(--mioos-table-text-color); background: var(--mioos-table-header-bg); }
+.mioos-table-grid tbody tr:nth-child(even) td,
+.mioos-permissions-table tbody tr:nth-child(even) td { background: var(--mioos-table-alt-row-bg); }
+.mioos-table-grid tbody tr:hover td,
+.mioos-permissions-table tbody tr:hover td { background: var(--mioos-table-hover-bg); color: var(--mioos-table-text-color); }
+.mioos-table-grid tr.is-selected td { background: var(--mioos-table-selected-bg); color: var(--mioos-table-selected-text-color); }
+.mioos-table-group-row td,
+.mioos-table-expanded-row td,
+.mioos-table-empty-row td { background: var(--mioos-table-alt-row-bg); color: var(--mioos-table-text-color); }
+.mioos-table-toolbar,
+.mioos-table-bulkbar,
+.mioos-table-pager,
+.mioos-table-processing,
+.mioos-table-toast,
+.mioos-table-filters,
+.mioos-table-column-picker,
+.mioos-table-editor,
+.mioos-table-editor > header,
+.mioos-table-editor > footer,
+.mioos-permissions-head,
+.mioos-permissions-panel,
+.mioos-permissions-cards section,
+.mioos-permissions-audit li,
+.mioos-table-patient-banner {
+  color: var(--mioos-table-text-color);
+  background: var(--mioos-table-modal-bg);
+  border-color: var(--mioos-table-border-color);
+}
+.mioos-table-error { color: var(--mioos-table-error-text); background: var(--mioos-table-error-bg); border-color: color-mix(in srgb, var(--mioos-table-error-text) 38%, transparent); }
+.mioos-table-status.is-warning,
+.mioos-ui-elements-status.has-errors { color: var(--mioos-table-warning-text); background: var(--mioos-table-warning-bg); border-color: color-mix(in srgb, var(--mioos-table-warning-text) 38%, transparent); }
+.mioos-table-toast,
+.mioos-ui-toast.success { color: var(--mioos-table-success-text); background: var(--mioos-table-success-bg); border-color: color-mix(in srgb, var(--mioos-table-success-text) 38%, transparent); }
+.mioos-table-toolbar input,
+.mioos-table-toolbar select,
+.mioos-table-pager input,
+.mioos-table-pager select,
+.mioos-table-filters input,
+.mioos-table-filters select,
+.mioos-table-filters textarea,
+.mioos-table-form-grid input,
+.mioos-table-form-grid select,
+.mioos-table-form-grid textarea,
+.mioos-table-filter-row input,
+.mioos-table-filter-row select,
+.mioos-table-filter-row textarea,
+.mioos-table-cell-editor input,
+.mioos-table-cell-editor select,
+.mioos-table-cell-editor textarea,
+.mioos-table-fixed-controls input,
+.mioos-permissions-ui input,
+.mioos-permissions-ui select,
+.mioos-permissions-ui textarea {
+  color: var(--mioos-table-input-text);
+  background: var(--mioos-table-input-bg);
+  border-color: var(--mioos-table-border-color);
+}
+.mioos-table-column-picker summary,
+.mioos-table-column-picker button,
+.mioos-table-bulkbar button,
+.mioos-table-actions button,
+.mioos-table-grid th button,
+.mioos-table-grid td button,
+.mioos-table-pager button,
+.mioos-table-filters button,
+.mioos-table-column-reorder button,
+.mioos-table-column-actions button,
+.mioos-permissions-tabs button {
+  color: var(--mioos-table-button-text);
+  background: var(--mioos-table-button-bg);
+  border-color: var(--mioos-table-border-color);
+}
+.mioos-table-column-list button.active,
+.mioos-permissions-tabs button.active { background: var(--mioos-table-selected-bg); color: var(--mioos-table-selected-text-color); }
+.mioos-field-error,
+.mioos-table-form-grid label.has-error .mioos-field-error { color: var(--mioos-table-error-text); }
+.mioos-table-form-grid label.has-error input,
+.mioos-table-form-grid label.has-error select,
+.mioos-table-form-grid label.has-error textarea { border-color: var(--mioos-table-error-text); box-shadow: 0 0 0 2px color-mix(in srgb, var(--mioos-table-error-text) 22%, transparent); }
+.theme-dark-mode .mioos-full-table .mioos-table-grid,
+.theme-dark-mode .mioos-full-table .mioos-table-grid tbody,
+.theme-dark-mode .mioos-full-table .mioos-table-grid tr,
+.theme-dark-mode .mioos-full-table .mioos-table-grid tbody td,
+.theme-dark-mode .mioos-full-table .mioos-table-grid td,
+.theme-dark-mode .mioos-full-table .mioos-table-grid td.mioos-table-sticky,
+.theme-dark-mode .mioos-full-table .mioos-table-empty-row td,
+.theme-dark-mode .mioos-full-table.density-compact .mioos-table-grid tbody td,
+.theme-dark-mode .mioos-surface-table .mioos-table-grid tbody td,
+.theme-dark-mode .mioos-table-showcase .mioos-table-grid tbody td,
+.theme-dark-mode .mioos-permissions-table tbody td,
+.theme-dark-mode .mioos-table-module-preview tbody td {
+  background: var(--mioos-table-cell-bg) !important;
+  color: var(--mioos-table-text-color) !important;
+  border-color: var(--mioos-table-border-color) !important;
+}
+.theme-dark-mode .mioos-full-table .mioos-table-grid tbody tr:nth-child(even) td,
+.theme-dark-mode .mioos-full-table.density-compact .mioos-table-grid tbody tr:nth-child(even) td,
+.theme-dark-mode .mioos-surface-table .mioos-table-grid tbody tr:nth-child(even) td,
+.theme-dark-mode .mioos-table-showcase .mioos-table-grid tbody tr:nth-child(even) td,
+.theme-dark-mode .mioos-permissions-table tbody tr:nth-child(even) td {
+  background: var(--mioos-table-alt-row-bg) !important;
+}
+.theme-dark-mode .mioos-full-table .mioos-table-grid thead th,
+.theme-dark-mode .mioos-full-table .mioos-table-grid th,
+.theme-dark-mode .mioos-surface-table .mioos-table-grid thead th,
+.theme-dark-mode .mioos-table-showcase .mioos-table-grid thead th,
+.theme-dark-mode .mioos-permissions-table th,
+.theme-dark-mode .mioos-table-module-preview th {
+  background: var(--mioos-table-header-bg) !important;
+  color: var(--mioos-table-text-color) !important;
+  border-color: var(--mioos-table-border-color) !important;
+}
+.theme-dark-mode .mioos-full-table .mioos-table-grid tbody tr:hover td,
+.theme-dark-mode .mioos-full-table .mioos-table-grid tbody tr:hover td.mioos-table-sticky,
+.theme-dark-mode .mioos-surface-table .mioos-table-grid tbody tr:hover td,
+.theme-dark-mode .mioos-table-showcase .mioos-table-grid tbody tr:hover td,
+.theme-dark-mode .mioos-permissions-table tbody tr:hover td { background: var(--mioos-table-hover-bg) !important; color: var(--mioos-table-text-color) !important; }
+.theme-dark-mode .mioos-full-table .mioos-table-grid tr.is-selected td,
+.theme-dark-mode .mioos-full-table .mioos-table-grid tr.is-selected td.mioos-table-sticky,
+.theme-dark-mode .mioos-surface-table .mioos-table-grid tr.is-selected td,
+.theme-dark-mode .mioos-table-showcase .mioos-table-grid tr.is-selected td { background: var(--mioos-table-selected-bg) !important; color: var(--mioos-table-selected-text-color) !important; }
+.theme-dark-mode .mioos-full-table .mioos-table-toolbar,
+.theme-dark-mode .mioos-full-table .mioos-table-bulkbar,
+.theme-dark-mode .mioos-full-table .mioos-table-pager,
+.theme-dark-mode .mioos-full-table .mioos-table-filters,
+.theme-dark-mode .mioos-full-table .mioos-table-column-picker,
+.theme-dark-mode .mioos-full-table .mioos-table-editor,
+.theme-dark-mode .mioos-table-editor,
+.theme-dark-mode .mioos-table-editor > header,
+.theme-dark-mode .mioos-table-editor > footer,
+.theme-dark-mode .mioos-table-filter-row,
+.theme-dark-mode .mioos-table-patient-banner,
+.theme-dark-mode .mioos-permissions-ui,
+.theme-dark-mode .mioos-permissions-head,
+.theme-dark-mode .mioos-permissions-panel,
+.theme-dark-mode .mioos-permissions-cards section,
+.theme-dark-mode .mioos-permissions-audit li { background: var(--mioos-table-modal-bg) !important; color: var(--mioos-table-text-color) !important; border-color: var(--mioos-table-border-color) !important; }
+.theme-dark-mode .mioos-table-toolbar input,
+.theme-dark-mode .mioos-table-toolbar select,
+.theme-dark-mode .mioos-table-pager input,
+.theme-dark-mode .mioos-table-pager select,
+.theme-dark-mode .mioos-table-filters input,
+.theme-dark-mode .mioos-table-filters select,
+.theme-dark-mode .mioos-table-filters textarea,
+.theme-dark-mode .mioos-table-filter-row input,
+.theme-dark-mode .mioos-table-filter-row select,
+.theme-dark-mode .mioos-table-filter-row textarea,
+.theme-dark-mode .mioos-table-form-grid input,
+.theme-dark-mode .mioos-table-form-grid select,
+.theme-dark-mode .mioos-table-form-grid textarea,
+.theme-dark-mode .mioos-table-cell-editor input,
+.theme-dark-mode .mioos-table-cell-editor select,
+.theme-dark-mode .mioos-table-cell-editor textarea,
+.theme-dark-mode .mioos-table-fixed-controls input { background: var(--mioos-table-input-bg) !important; color: var(--mioos-table-input-text) !important; border-color: var(--mioos-table-border-color) !important; }
+.theme-dark-mode .mioos-table-filter-modal input,
+.theme-dark-mode .mioos-table-filter-modal select,
+.theme-dark-mode .mioos-table-filter-modal textarea { background: var(--mioos-table-input-bg) !important; color: var(--mioos-table-input-text) !important; border-color: var(--mioos-table-border-color) !important; }
+.theme-dark-mode .mioos-table-column-picker summary,
+.theme-dark-mode .mioos-table-column-picker button,
+.theme-dark-mode .mioos-table-bulkbar button,
+.theme-dark-mode .mioos-table-actions button,
+.theme-dark-mode .mioos-table-grid th button,
+.theme-dark-mode .mioos-table-grid td button,
+.theme-dark-mode .mioos-table-pager button,
+.theme-dark-mode .mioos-table-filters button,
+.theme-dark-mode .mioos-table-column-reorder button,
+.theme-dark-mode .mioos-table-column-actions button { background: var(--mioos-table-button-bg) !important; color: var(--mioos-table-button-text) !important; border-color: var(--mioos-table-border-color) !important; }
+.theme-dark-mode .mioos-table-error,
+.theme-dark-mode .mioos-field-error { color: var(--mioos-table-error-text) !important; }
+.theme-dark-mode .mioos-table-readonly { background: var(--mioos-table-warning-bg) !important; color: var(--mioos-table-warning-text) !important; border-color: color-mix(in srgb, var(--mioos-table-warning-text) 42%, transparent) !important; }

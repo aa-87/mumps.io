@@ -228,7 +228,7 @@
                 <button v-if="isViewer" type="button" role="menuitem" @click="download">Download</button>
                 <button v-if="isText" type="button" role="menuitem" @click="editText" :disabled="!textCanEdit" :title="textEditDisabledReason || 'Edit Text'">Edit Text</button>
                 <button v-if="isText" type="button" role="menuitem" @click="saveText" :disabled="!textCanEdit || !((textStream || {}).editing)" :title="textEditDisabledReason || 'Save Text'">Save Text</button>
-                <button v-if="isText" type="button" role="menuitem" @click="refreshText">Reload visible text chunks</button>
+                <button v-if="isText" type="button" role="menuitem" @click="refreshText">Reload editable text file</button>
                 <button v-if="isText" type="button" role="menuitem" @click="toggleTextWrap">Toggle Line Wrap</button>
                 <button v-if="window.appKey === 'explorer' || window.appKey === 'home' || window.appKey === 'documents' || window.appKey === 'my-computer'" type="button" role="menuitem" @click="explorerNewFolder">New Folder</button>
                 <button v-if="window.appKey === 'explorer' || window.appKey === 'home' || window.appKey === 'documents' || window.appKey === 'my-computer'" type="button" role="menuitem" @click="explorerUpload">Upload</button>
@@ -292,7 +292,7 @@
                 <button v-if="isText" type="button" role="menuitem" @click="zoomTextOut">Zoom Out</button>
                 <button v-if="isText" type="button" role="menuitem" @click="zoomTextReset">Reset Zoom</button>
                 <button v-if="isText" type="button" role="menuitem" @click="toggleTextWrap">Toggle Line Wrap</button>
-                <button v-if="isText" type="button" role="menuitem" @click="refreshText">Refresh chunk cache</button>
+                <button v-if="isText" type="button" role="menuitem" @click="refreshText">Reload editable text file</button>
                 <button v-if="isText" type="button" role="menuitem" @click="showTextStatus">Show Status</button>
                 <button v-if="isText" type="button" role="menuitem" @click="toggleTextStatusPin">[[ ((textStream || {}).statusPinned) ? 'Unpin Status' : 'Pin Status' ]]</button>
                 <button v-if="!isMedia && !isText && window.appKey !== 'terminal' && window.appKey !== 'transfers'" type="button" role="menuitem" @click="about">About this module</button>
@@ -483,7 +483,7 @@
           codeMirrorHostStyle: function () { var s = this.textStream || {}; return { fontSize: (12 * (+(s.zoom || 1))) + 'px' }; },
           documentPreviewStyle: function () { var s = this.textStream || {}; var zoom = Math.max(0.75, Math.min(2.25, +(s.zoom || 1))); return { '--mioos-markdown-preview-zoom': String(zoom), fontSize: (16 * zoom) + 'px' }; },
           canEditText: function () { return !!this.textStream; },
-          textEditNotice: function () { var s = this.textStream || {}; return (s.virtualized && !s.editing) ? 'Large file is viewable now. Choose Edit to load all chunks for editing.' : ''; },
+          textEditNotice: function () { var s = this.textStream || {}; return (s.fullContentLoaded && s.editing) ? 'Editable text file loaded with explicit HTTP chunks.' : ''; },
           codeMirrorStatus: function () { var s = this.textStream || {}; return s.codeMirrorFallback || ''; },
           showRenderedDocumentPreview: function () { var s = this.textStream || {}; return !!s && !s.virtualized && !s.editing && !!(s.markdownPreviewEnabled || s.nativeHtmlPreview) && !!s.renderedPreviewHtml; },
           previewFrameSrcdoc: function () {
@@ -511,8 +511,8 @@
         beforeUnmount: function () { this.destroyCodeMirror(); },
         unmounted: function () { this.destroyCodeMirror(); },
         methods: {
-          armTextScroll: function (source) { if (this.vm.textViewerArmScroll) this.vm.textViewerArmScroll(this.window.id, source || 'user'); },
-          onTextScroll: function (event) { if (this.vm.textViewerOnScroll) this.vm.textViewerOnScroll(this.window.id, event); },
+          armTextScroll: function () { return false; },
+          onTextScroll: function () { return false; },
           beginEditText: function () { if (this.vm.textViewerBeginEdit) this.vm.textViewerBeginEdit(this.window.id); },
           saveText: function () { if (this.vm.textViewerSave) this.vm.textViewerSave(this.window.id); },
           retryText: function () { if (this.vm.textViewerRetryChunk) this.vm.textViewerRetryChunk(this.window.id); },
@@ -593,7 +593,7 @@
         template: '' +
           '<div class="mioos-surface mioos-surface-viewer-native" :class="\'is-\' + kind">' +
             '<section class="mioos-viewer-body" :class="{ \'is-media-full\': kind === \'media\', \'is-text-virtual\': !!textStream }">' +
-              '<div v-if="textStream" class="mioos-text-virtual-viewer" :class="{ editing: textStream.editing, virtualized: textStream.virtualized, \'has-codemirror\': textStream.codeMirrorActive }" tabindex="0" @wheel.passive="armTextScroll(\'wheel\')" @pointerdown="armTextScroll(\'pointer\')" @pointermove="armTextScroll(\'pointer\')" @touchstart.passive="armTextScroll(\'touch\')" @touchmove.passive="armTextScroll(\'touch\')" @keydown="armTextScroll(\'keyboard\')" @scroll="onTextScroll">' +
+              '<div v-if="textStream" class="mioos-text-virtual-viewer" :class="{ editing: textStream.editing, virtualized: textStream.virtualized, \'has-codemirror\': textStream.codeMirrorActive }" tabindex="0" data-text-scroll-load-disabled="true">' +
                 '<div v-if="showRenderedDocumentPreview" class="mioos-document-preview" data-preview-sandbox-strategy="sandboxed-srcdoc-no-scripts" data-markdown-full-pane-preview="1" :style="documentPreviewStyle">' +
                   '<iframe class="mioos-viewer-frame mioos-document-preview-frame" sandbox="" :srcdoc="previewFrameSrcdoc" title="Rendered document preview" data-markdown-resize-frame="fills-client-area"></iframe>' +
                   '<div v-if="previewStatusText && textViewerStatusVisible" class="mioos-text-status is-transient" role="status">[[ previewStatusText ]]</div>' +

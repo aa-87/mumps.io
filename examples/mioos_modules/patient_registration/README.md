@@ -136,3 +136,7 @@ Patient Registration remains a table-backed MUMPS workflow. The login shell now 
 ## ROI 99 regression notes
 
 Patient Registration continues to use the shared Advanced Table surface and server-side patient workflow. Dark Theme readability for patient rows, review filters, CSV import modal controls, validation messages, selected rows, and empty/error states is supplied by the scoped table CSS contract. Do not add patient-specific light backgrounds that bypass the shared table variables.
+
+## ROI 101 patient table notes
+
+Patient Registration remains server-authoritative through `MIOOSPAT` and the Advanced Table mutation contract. Dark Theme patient rows, import/reconcile filters, review controls, selected rows, modal inputs, empty states, and validation messages are covered by the shared table variables. Keep patient-specific customizations scoped to the patient surface and do not bypass the shared table color contract with hardcoded light backgrounds.

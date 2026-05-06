@@ -341,3 +341,7 @@ The basic read-only and massive read-only examples do not need new MUMPS fields.
 ## ROI 99 regression notes
 
 The table example relies on shared `mioos-full-table` styling. In Dark Theme, normal cells, dense cells, editable CRUD cells, headers, hover, selected rows, filter inputs, and empty/error states are readable without requiring hover. Keep example CSS MUMPS-first and avoid hardcoded light row backgrounds in module definitions.
+
+## ROI 101 dark table and text-editor notes
+
+The table example now inherits a variable-driven table color contract. In Dark Theme, normal rows, dense rows, editable cells, headers, hover states, selected states, filter controls, modal inputs, empty states, and validation messages are readable without hover. Example modules should not add `background: white`, DataURL file paths, or global dark wildcard overrides; use the existing shared table classes and MUMPS table definitions.
