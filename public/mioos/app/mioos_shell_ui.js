@@ -168,7 +168,8 @@
           isExplorer: function () { return ['explorer','home','documents','my-computer'].indexOf(String((this.window || {}).appKey || '')) >= 0; },
           textStream: function () { return ((((this.window || {}).fileView) || {}).textStream) || null; },
           textCanEdit: function () { return !!this.textStream; },
-          textEditDisabledReason: function () { return this.textCanEdit ? '' : 'Text editing is unavailable for this item.'; },
+          viewerCanEditAsText: function () { return !!(this.isViewer && (((this.window || {}).meta || {}).fileId)); },
+          textEditDisabledReason: function () { return (this.textCanEdit || this.viewerCanEditAsText) ? '' : 'Text editing is unavailable for this item.'; },
           mediaLoop: {
             get: function () { return !!((((this.window || {}).fileView) || {}).mediaLoop); },
             set: function (value) { if (this.window && this.window.fileView) this.window.fileView.mediaLoop = !!value; }
@@ -194,6 +195,7 @@
           download: function () { if (this.vm.downloadViewerFile) this.vm.downloadViewerFile(this.window); },
           refreshText: function () { if (this.vm.textViewerRefresh) this.vm.textViewerRefresh(this.window.id); },
           editText: function () { if (this.vm.textViewerBeginEdit) this.vm.textViewerBeginEdit(this.window.id); },
+          editViewerAsText: function () { if (this.vm.openViewerTextEditor) this.vm.openViewerTextEditor(this.window.id); },
           saveText: function () { if (this.vm.textViewerSave) this.vm.textViewerSave(this.window.id); },
           zoomTextIn: function () { if (this.vm.textViewerZoom) this.vm.textViewerZoom(this.window.id, 0.1); },
           zoomTextOut: function () { if (this.vm.textViewerZoom) this.vm.textViewerZoom(this.window.id, -0.1); },
@@ -226,6 +228,7 @@
               <button type="button" role="menuitem" aria-haspopup="true">File</button>
               <div class="mioos-window-menu-dropdown-vue" role="menu" @click="dismissMenus($event)">
                 <button v-if="isViewer" type="button" role="menuitem" @click="download">Download</button>
+                <button v-if="isViewer && !isText" type="button" role="menuitem" @click="editViewerAsText" :disabled="!viewerCanEditAsText" :title="textEditDisabledReason || 'Edit File as Text'">Edit File as Text</button>
                 <button v-if="isText" type="button" role="menuitem" @click="editText" :disabled="!textCanEdit" :title="textEditDisabledReason || 'Edit Text'">Edit Text</button>
                 <button v-if="isText" type="button" role="menuitem" @click="saveText" :disabled="!textCanEdit || !((textStream || {}).editing)" :title="textEditDisabledReason || 'Save Text'">Save Text</button>
                 <button v-if="isText" type="button" role="menuitem" @click="refreshText">Reload editable text file</button>
@@ -286,6 +289,7 @@
                 <button v-if="window.appKey === 'transfers'" type="button" role="menuitem" @click="transferResume">Resume Paused</button>
                 <button v-if="window.appKey === 'transfers'" type="button" role="menuitem" @click="transferCancelActive">Cancel Active</button>
                 <button v-if="window.appKey === 'transfers'" type="button" role="menuitem" @click="transferClearFinished">Clear Finished</button>
+                <button v-if="isViewer && !isText && !isMedia" type="button" role="menuitem" @click="editViewerAsText" :disabled="!viewerCanEditAsText" :title="textEditDisabledReason || 'Edit File as Text'">Edit File as Text</button>
                 <button v-if="isText" type="button" role="menuitem" @click="editText" :disabled="!textCanEdit" :title="textEditDisabledReason || 'Edit'">Edit</button>
                 <button v-if="isText" type="button" role="menuitem" @click="saveText" :disabled="!textCanEdit || !((textStream || {}).editing)" :title="textEditDisabledReason || 'Save'">Save</button>
                 <button v-if="isText" type="button" role="menuitem" @click="zoomTextIn">Zoom In</button>
@@ -483,7 +487,7 @@
           codeMirrorHostStyle: function () { var s = this.textStream || {}; return { fontSize: (12 * (+(s.zoom || 1))) + 'px' }; },
           documentPreviewStyle: function () { var s = this.textStream || {}; var zoom = Math.max(0.75, Math.min(2.25, +(s.zoom || 1))); return { '--mioos-markdown-preview-zoom': String(zoom), fontSize: (16 * zoom) + 'px' }; },
           canEditText: function () { return !!this.textStream; },
-          textEditNotice: function () { var s = this.textStream || {}; return (s.fullContentLoaded && s.editing) ? 'Editable text file loaded with explicit HTTP chunks.' : ''; },
+          textEditNotice: function () { return ''; },
           codeMirrorStatus: function () { var s = this.textStream || {}; return s.codeMirrorFallback || ''; },
           showRenderedDocumentPreview: function () { var s = this.textStream || {}; return !!s && !s.virtualized && !s.editing && !!(s.markdownPreviewEnabled || s.nativeHtmlPreview) && !!s.renderedPreviewHtml; },
           previewFrameSrcdoc: function () {
@@ -493,7 +497,7 @@
             return html.indexOf('</head>') >= 0 ? html.replace('</head>', style + '</head>') : style + html;
           },
           previewStatusText: function () { var s = this.textStream || {}; return s.renderedPreviewError || ((s.statusVisible || s.statusPinned) ? s.status : ''); },
-          textViewerStatusVisible: function () { var s = this.textStream || {}; return !!(s.statusPinned || s.statusVisible || s.error || this.textEditNotice || (s.retryOffset !== null && typeof s.retryOffset !== 'undefined')); },
+          textViewerStatusVisible: function () { var s = this.textStream || {}; return !!(s.statusPinned || s.statusVisible || s.error || (s.retryOffset !== null && typeof s.retryOffset !== 'undefined')); },
           editableText: {
             get: function () { return this.textStream ? this.vm.textViewerEditableContent(this.window.id) : ''; },
             set: function (value) { if (this.vm.textViewerSetEditableContent) this.vm.textViewerSetEditableContent(this.window.id, value); }
@@ -607,7 +611,7 @@
                   '<pre v-if="!textStream.editing && !textStream.codeMirrorActive" v-for="chunk in textChunks" :key="chunk.offset" class="mioos-viewer-text mioos-viewer-text-chunk is-full-text" :style="textPlainStyle"><span class="mioos-text-chunk-offset">[[ textStream.dirty ? "Unsaved changes" : (textStream.saveStatus || "Editable text file") ]]</span>[[ chunk.content ]]</pre>' +
                   '<div v-if="codeMirrorStatus" class="mioos-codemirror-fallback" role="status">[[ codeMirrorStatus ]]</div>' +
                 '</div>' +
-                '<div v-if="textViewerStatusVisible" class="mioos-text-status" :class="{ \'is-transient\': !textStream.statusPinned, \'is-pinned\': textStream.statusPinned, \'is-error\': textStream.error }" data-text-status-auto-hide="info-success-short-error-persistent" role="status"><span :class="{ \'is-error\': textStream.error }">[[ textStream.error || textEditNotice || textStream.status ]]</span><button v-if="textStream.retryOffset !== null && typeof textStream.retryOffset !== \'undefined\'" type="button" class="mioos-btn" @click.stop="retryText">Retry</button></div>' +
+                '<div v-if="textViewerStatusVisible" class="mioos-text-status" :class="{ \'is-transient\': !textStream.statusPinned, \'is-pinned\': textStream.statusPinned, \'is-error\': textStream.error }" data-text-status-auto-hide="info-success-short-error-persistent" role="status"><span :class="{ \'is-error\': textStream.error }">[[ textStream.error || textStream.status ]]</span><button v-if="textStream.retryOffset !== null && typeof textStream.retryOffset !== \'undefined\'" type="button" class="mioos-btn" @click.stop="retryText">Retry</button></div>' +
               '</div>' +
               '<div v-else-if="fileView.loading" class="mioos-viewer-state">Opening file…</div>' +
               '<div v-else-if="fileView.error" class="mioos-viewer-state is-error">[[ fileView.error ]]</div>' +

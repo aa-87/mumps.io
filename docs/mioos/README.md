@@ -608,3 +608,9 @@ Large text save now prefers the existing authenticated HTTP upload staging route
 Large text files no longer auto-load the entire file when the explorer metadata is unknown or above the safe text threshold. The viewer opens a single bounded HTTP text chunk as a preview, disables scroll-triggered loading, and shows a clear warning instead of recursively issuing chunk requests until browser memory is exhausted. Files below the safe threshold still load through explicit HTTP chunks and become editable; manual edit for previewed files remains guarded by the browser edit cap.
 
 HTML files now open as a sandboxed iframe backed by the authenticated `/api/mioos/fs/blob` inline route. They do not run through the text chunk editor path on open, so HTML preview behaves like a document preview and does not issue `/api/mioos/fs/text-chunk` requests just to render.
+
+## ROI 102 — HTML edit action and bounded large-text preview
+
+HTML files open as sandboxed iframe previews by default. The window toolbar now exposes **Edit File as Text** for viewer windows with a file id; choosing it switches the same viewer into the CodeMirror/plain-text editor path and loads the file through the bounded text chunk pipeline. This keeps HTML preview behavior while restoring explicit HTML source editing.
+
+Large or unknown-size text files no longer escalate from initial preview into automatic full-document chunk loading. Opening such a file loads one bounded preview chunk only, keeps the preview pane scrollable, and leaves full editor loading as an explicit toolbar action guarded by the browser edit byte cap and chunk-loop/stalled-offset checks. The transient bottom status panel is no longer kept alive by a permanent “editable loaded” notice; it auto-hides unless pinned, retriable, or showing an error.

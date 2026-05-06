@@ -2288,4 +2288,8 @@ T101
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","clearTextViewerChunkCache"),"[MIOOST][T101][cache clear after save]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","MAXSTRING guard")&$$FILEHAS("routines/MIOOSAPI.m","fs_text_save_requires_chunked"),"[MIOOST][T101][MAXSTRING guard]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","text-edit-session-v4-http-range"),"[MIOOST][T101][http chunk session contract]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","Edit File as Text")&$$FILEHAS("public/mioos/app/mioos_explorer.js","openViewerTextEditor"),"[MIOOST][T101][any viewer edit as text toolbar]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","Opening a large/unknown text file must never escalate into an automatic full-document chunk loop"),"[MIOOST][T101][large preview no auto full loop]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","ROI 102: large text preview must remain scrollable"),"[MIOOST][T101][large preview scrollbar css]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","textEditNotice: function () { return ''; }")&$$FILEHAS("public/mioos/app/mioos_shell_ui.js","s.statusPinned || s.statusVisible || s.error"),"[MIOOST][T101][status auto hide no permanent notice]")
 	QUIT

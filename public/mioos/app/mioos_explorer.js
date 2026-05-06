@@ -1119,20 +1119,16 @@
           stream.scrollLoadDisabled = true;
           stream.loadStrategy = 'single-preview-too-large';
           stream.initialLoadRequest = this.textViewerLoadChunk(windowId, 0).then(function (chunk) {
-            var knownSize = +stream.size || 0;
-            if (chunk && (chunk.eof || (knownSize > 0 && knownSize <= (+stream.thresholdBytes || textViewerThresholdBytes(self)) && knownSize <= (+stream.maxEditBytes || textViewerBrowserEditMaxBytes(self))))) {
-              stream.virtualized = false;
-              stream.boundedEdit = false;
-              stream.editMode = 'full';
-              stream.chunks = {}; stream.loadedOffsets = {}; stream.loadingOffsets = {}; stream.initialLoaded = false;
-              return self.textViewerLoadCompleteFile(windowId);
-            }
+            /* Opening a large/unknown text file must never escalate into an automatic full-document chunk loop.
+               Edit is an explicit toolbar action and is still capped by textViewerLoadCompleteFile guards. */
+            stream.virtualized = true;
             stream.boundedEdit = true;
             stream.editMode = 'preview-only-too-large';
             stream.fullContentLoaded = false;
             stream.editing = false;
             stream.error = '';
-            textViewerApplyStatus(stream, 'warning', 'Large or unknown-size text file opened as a one-chunk preview. Download or split it before editing safely.');
+            stream.retryOffset = null;
+            textViewerApplyStatus(stream, 'warning', 'Large or unknown-size text file opened as a one-chunk preview. Use Edit File as Text only when it is safe to load into the browser editor.');
             return !!chunk;
           }).finally(function () { stream.initialLoadRequest = null; });
           return stream.initialLoadRequest;
@@ -1284,6 +1280,10 @@
         var stream = ((win || {}).fileView || {}).textStream;
         if (!stream) return Promise.resolve(null);
         stream.scrollLoadDisabled = true;
+        if (stream.virtualized || stream.editMode === 'preview-only-too-large') {
+          stream.chunks = {}; stream.loadedOffsets = {}; stream.loadingOffsets = {}; stream.initialLoaded = false; stream.retryOffset = null;
+          return this.textViewerLoadChunk(windowId, 0);
+        }
         return this.textViewerLoadCompleteFile ? this.textViewerLoadCompleteFile(windowId) : this.textViewerLoadChunk(windowId, stream.retryOffset !== null && typeof stream.retryOffset !== 'undefined' ? stream.retryOffset : 0);
       },
       textViewerArmScroll: function (windowId, source) {
@@ -2822,6 +2822,35 @@
         if (!win) return Promise.resolve();
         return this.downloadFileEntry({ id: (win.meta || {}).fileId, name: (win.meta || {}).fileName || win.title, mime: (win.meta || {}).mime || ((win.fileView || {}).mime || '') }, '');
       },
+      openViewerTextEditor: function (windowId) {
+        var win = this.textViewerWindowById ? this.textViewerWindowById(windowId) : null;
+        var meta = (win || {}).meta || {};
+        var view = (win || {}).fileView || {};
+        var item, stream;
+        if (!win || !meta.fileId) return Promise.resolve(false);
+        item = {
+          id: meta.fileId, key: meta.fileId, fileId: meta.fileId,
+          parentId: meta.parentId || view.parentId || '',
+          name: meta.fileName || win.title || 'File',
+          title: meta.fileName || win.title || 'File',
+          mime: meta.mime || view.mime || 'text/plain',
+          size: +(meta.size || meta.sizeBytes || view.size || view.sizeBytes || 0),
+          bytes: +(meta.bytes || view.bytes || 0),
+          path: meta.path || view.path || ''
+        };
+        stream = this.textViewerInitialState ? this.textViewerInitialState(item) : {};
+        stream.previewOnOpen = false;
+        stream.markdownPreviewEnabled = false;
+        stream.nativeHtmlPreview = false;
+        stream.previewMode = 'text';
+        stream.forceTextEdit = true;
+        stream.status = 'Loading file into CodeMirror text editor…';
+        stream.statusVisible = true;
+        win.fileView = Object.assign({}, view, { loading: true, error: '', content: '', mime: item.mime, textStream: stream, htmlIframePreview: false });
+        win.appKey = win.appKey || 'text-viewer';
+        if (this.showToast) this.showToast('File viewer', 'Opening file in CodeMirror text editor…', 'info', 1800);
+        return this.textViewerBeginEdit ? this.textViewerBeginEdit(windowId) : Promise.resolve(false);
+      },
       openMarkdownViewerWindow: function (item) {
         var id = nextWindowId(this, 'win-markdown');
         var stream = this.textViewerInitialState ? this.textViewerInitialState(item || {}) : {};
@@ -2839,7 +2868,7 @@
           width: 780,
           height: 560,
           z: this.zCounter + 1,
-          meta: { fileId: item.id || item.key || '', parentId: item.parentId || item.parent || item.folderId || '', mime: item.mime || 'text/markdown', fileName: item.name || item.title || 'Markdown file' },
+          meta: { fileId: item.id || item.key || '', parentId: item.parentId || item.parent || item.folderId || '', mime: item.mime || 'text/markdown', fileName: item.name || item.title || 'Markdown file', size: +(item.size || item.sizeBytes || item.bytes || 0) },
           fileView: { loading: true, content: '', mime: item.mime || 'text/markdown', textStream: stream }
         };
         this.windows.push(win);
@@ -2859,8 +2888,8 @@
           width: 820,
           height: 600,
           z: this.zCounter + 1,
-          meta: { fileId: item.id || item.key || item.fileId || '', parentId: item.parentId || item.parent || item.folderId || '', mime: item.mime || 'text/html', fileName: item.name || item.title || 'HTML file' },
-          fileView: { loading: false, content: url, mime: item.mime || 'text/html', htmlIframePreview: true }
+          meta: { fileId: item.id || item.key || item.fileId || '', parentId: item.parentId || item.parent || item.folderId || '', mime: item.mime || 'text/html', fileName: item.name || item.title || 'HTML file', size: +(item.size || item.sizeBytes || item.bytes || 0) },
+          fileView: { loading: false, content: url, mime: item.mime || 'text/html', htmlIframePreview: true, size: +(item.size || item.sizeBytes || item.bytes || 0) }
         };
         if (!url) win.fileView.error = 'Unable to open HTML preview.';
         this.windows.push(win);
@@ -2879,7 +2908,7 @@
           width: 720,
           height: 520,
           z: this.zCounter + 1,
-          meta: { fileId: item.id || item.key || item.fileId || '', parentId: item.parentId || item.parent || item.folderId || '', mime: item.mime || 'text/plain', fileName: item.name || item.title || 'Text file' },
+          meta: { fileId: item.id || item.key || item.fileId || '', parentId: item.parentId || item.parent || item.folderId || '', mime: item.mime || 'text/plain', fileName: item.name || item.title || 'Text file', size: +(item.size || item.sizeBytes || item.bytes || 0) },
           fileView: { loading: true, content: '', mime: item.mime || 'text/plain', textStream: stream }
         };
         this.windows.push(win);

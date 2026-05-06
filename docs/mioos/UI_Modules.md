@@ -222,3 +222,7 @@ Text viewer integrations should no longer depend on visible-range or scrollbar-d
 ## ROI 103 viewer integration note
 
 Do not reintroduce automatic full-buffer loading for unknown-size or threshold-exceeding text files. Normal text files under the safe threshold may load all chunks for editing; large or unknown-size files should open one preview chunk and require download/splitting or a guarded manual edit path. HTML viewers should use the sandboxed iframe preview route rather than the text chunk editor pipeline.
+
+## ROI 102 viewer integration note
+
+Viewer windows with a `meta.fileId` should preserve the generic **Edit File as Text** toolbar action. HTML should continue to preview in a sandboxed iframe on open, but the edit action may replace the preview with a CodeMirror/plain-text stream for source edits. Do not wire large text preview scrolling back to chunk fetching; initial large/unknown text open is intentionally one bounded preview chunk with normal scrollbar behavior.

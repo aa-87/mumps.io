@@ -5678,3 +5678,33 @@ html[dir="rtl"] .mioos-window-menu-dropdown-vue,
 .theme-dark-mode .mioos-table-error,
 .theme-dark-mode .mioos-field-error { color: var(--mioos-table-error-text) !important; }
 .theme-dark-mode .mioos-table-readonly { background: var(--mioos-table-warning-bg) !important; color: var(--mioos-table-warning-text) !important; border-color: color-mix(in srgb, var(--mioos-table-warning-text) 42%, transparent) !important; }
+
+/* ROI 102: large text preview must remain scrollable while file loading stays bounded. */
+.mioos-text-virtual-viewer.virtualized {
+  display: block !important;
+  position: relative;
+  overflow: auto !important;
+  min-height: 0;
+}
+.mioos-text-virtual-viewer.virtualized .mioos-text-virtual-spacer {
+  position: relative;
+  overflow: visible !important;
+  min-height: 100%;
+}
+.mioos-text-virtual-viewer.virtualized .mioos-text-chunk-stack {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  padding-bottom: 48px;
+}
+.mioos-text-virtual-viewer.virtualized .mioos-text-status {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 4;
+}
+.mioos-text-virtual-viewer.virtualized .mioos-viewer-text-chunk {
+  max-width: none;
+}

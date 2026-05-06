@@ -828,3 +828,11 @@ The `maxTextEditBytes` cap is removed. All text-like files should be viewable an
 - Unknown-size or threshold-exceeding text files must not auto-load all HTTP chunks. Keep `textViewerShouldVirtualize(this, item || {}) || size > browserMax` as the open gate and use the one-chunk preview warning for large/unknown files.
 - Do not add scroll-triggered, idle-loop, or repeated chunk loading back to normal text open.
 - HTML files preview through a sandboxed iframe using the authenticated inline blob route; they should not create a text stream or call `/api/mioos/fs/text-chunk` on open.
+
+## ROI 102 handoff — HTML edit and large text preview
+
+- HTML files should open as sandboxed iframe previews by default, not as automatic chunked text editors.
+- Keep the toolbar action `Edit File as Text` for viewer windows with `meta.fileId`; it calls `openViewerTextEditor` and switches the current viewer into the CodeMirror/plain-text edit path.
+- Large or unknown-size text open must remain a one-chunk preview and must never auto-escalate into `textViewerLoadCompleteFile`. Full edit is explicit and remains guarded by browser byte cap, chunk count, and stalled-offset checks.
+- The large text preview pane must be scrollable via CSS; do not reintroduce scroll-triggered chunk loading.
+- The bottom text status panel must auto-hide unless pinned, retryable, or erroring; do not use permanent computed notices to keep it mounted.
