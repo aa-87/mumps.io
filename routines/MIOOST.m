@@ -78,6 +78,8 @@ MIOOST ; MIOOS tests
 	DO T090
 	DO T091
 	DO T092
+	DO T093
+	DO T094
 	QUIT
 	;
 RESET
@@ -1907,4 +1909,99 @@ T092
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 92"),"[MIOOST][T092][llm updated]")
 	QUIT
 	;
+	;
+	;
+T093
+	NEW CONF,STATE,OUT,ERR,ID,RAW,TREE,JSON,BIG
+	DO RESET
+	DO CONFDEF^MIOOS(.CONF)
+	DO EQ^MIOTASSERT(+$GET(CONF("mioos","fs","textChunkBytes")),131072,"[MIOOST][T093][default transport chunk safe]")
+	DO EQ^MIOTASSERT(+$GET(CONF("mioos","fs","textChunkThresholdBytes")),2411725,"[MIOOST][T093][virtualization threshold retained]")
+	DO OK^MIOTASSERT(+$GET(CONF("mioos","fs","textChunkBytes"))<+$GET(CONF("mioos","fs","textChunkThresholdBytes")),"[MIOOST][T093][chunk size separate from threshold]")
+	DO OK^MIOTASSERT(+$GET(CONF("mioos","fs","textChunkBytes"))'>262144,"[MIOOST][T093][chunk maxstring safe]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","--mioos-start-menu-readable-text"),"[MIOOST][T093][dark start menu readable variable]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","theme-dark-mode .mioos-start-menu-vue .mioos-start-modern-item"),"[MIOOST][T093][dark launchable selector]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","theme-dark-mode .mioos-start-menu-vue .mioos-start-entry-vue"),"[MIOOST][T093][dark pinned selector]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","theme-dark-mode .mioos-start-menu-vue .mioos-start-modern-item.is-child"),"[MIOOST][T093][dark nested child selector]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","theme-dark-mode .mioos-start-menu-vue .mioos-start-entry-vue:hover"),"[MIOOST][T093][dark hover selector]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","theme-dark-mode .mioos-window-menu-vue button"),"[MIOOST][T093][dark toolbar menu selector]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","theme-dark-mode .mioos-explorer-context-menu button"),"[MIOOST][T093][dark context menu selector]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","body { color: #fff"),0,"[MIOOST][T093][no global body white override]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","* { color: #fff"),0,"[MIOOST][T093][no global wildcard white override]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","@wheel.passive=""armTextScroll"),"[MIOOST][T093][wheel arms text scroll]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","@pointerdown=""armTextScroll"),"[MIOOST][T093][pointer arms text scroll]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","@pointermove=""armTextScroll"),"[MIOOST][T093][pointer drag keeps scroll armed]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","@touchstart.passive=""armTextScroll"),"[MIOOST][T093][touch arms text scroll]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","@touchmove.passive=""armTextScroll"),"[MIOOST][T093][touch drag keeps scroll armed]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","@keydown=""armTextScroll"),"[MIOOST][T093][keyboard arms text scroll]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","if (!stream.userScrollArmed)"),"[MIOOST][T093][idle scroll ignored]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","scrollIntentExpiresAt"),"[MIOOST][T093][scroll intent expires]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","lastRequestedOffset"),"[MIOOST][T093][same offset dedupe]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","textViewerArmScroll"),"[MIOOST][T093][scroll arm entrypoint]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","initialLoadRequest"),"[MIOOST][T093][single initial chunk guard]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","prefetch"),0,"[MIOOST][T093][no idle neighbor prefetch]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","textChunkRequestKey(id, offset, size)"),"[MIOOST][T093][dedupe key id offset size]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","Socket timed out; retrying text chunk"),0,"[MIOOST][T093][no auto retry loop]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","retryPolicy: 'manual-only'"),"[MIOOST][T093][manual retry policy]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","readTextChunkViaHttp"),"[MIOOST][T093][http range fallback retained]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","this.command('fs.read'"),0,"[MIOOST][T093][no full file read fallback]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","Large text files are chunked read-only above the bounded edit limit"),"[MIOOST][T093][large edit explicit]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","!textCanEdit"),"[MIOOST][T093][large edit button disabled]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","clearTextViewerChunkCache(stream.fileId)"),"[MIOOST][T093][save clears chunk cache]")
+	DO INIT^MIOOS(.CONF)
+	SET STATE("principal")=$GET(CONF("mioos","bootstrapAuth","admin","username"),"admin")
+	SET STATE("roles")=$GET(CONF("mioos","bootstrapAuth","admin","roles"),"admin")
+	SET RAW=$$TSTR("A",4096)_$$TSTR("B",4096)_$$TSTR("C",200)
+	DO OK^MIOTASSERT($$WRITE^MIOOSFS(.STATE,$$HOMEID^MIOOSFS(),"t093-large-text.txt",RAW,"text/plain",.OUT,.ERR),"[MIOOST][T093][write synthetic text]")
+	SET ID=$GET(OUT("id"))
+	KILL OUT,ERR DO OK^MIOTASSERT($$READWIN^MIOOSFS(.STATE,ID,0,4096,.OUT,.ERR),"[MIOOST][T093][offset zero chunk]")
+	DO EQ^MIOTASSERT(+$GET(OUT("readBytes")),4096,"[MIOOST][T093][offset zero size]")
+	DO EQ^MIOTASSERT($EXTRACT($GET(OUT("content")),1,1),"A","[MIOOST][T093][offset zero content]")
+	KILL OUT,ERR DO OK^MIOTASSERT($$READWIN^MIOOSFS(.STATE,ID,4096,4096,.OUT,.ERR),"[MIOOST][T093][middle chunk]")
+	DO EQ^MIOTASSERT(+$GET(OUT("offset")),4096,"[MIOOST][T093][middle offset]")
+	DO EQ^MIOTASSERT($EXTRACT($GET(OUT("content")),1,1),"B","[MIOOST][T093][middle content]")
+	KILL OUT,ERR DO OK^MIOTASSERT($$READWIN^MIOOSFS(.STATE,ID,8192,4096,.OUT,.ERR),"[MIOOST][T093][end chunk]")
+	DO EQ^MIOTASSERT(+$GET(OUT("readBytes")),200,"[MIOOST][T093][end clamps to eof]")
+	DO EQ^MIOTASSERT(+$GET(OUT("eof")),1,"[MIOOST][T093][end eof]")
+	KILL TREE,JSON,ERR SET TREE("id")=ID,TREE("offset")=0,TREE("size")=2411725,TREE("requestId")="t093-chunk"
+	DO OK^MIOTASSERT($$FSTEXTCHUNK^MIOOSWS(.STATE,.CONF,.TREE,.JSON,.ERR),"[MIOOST][T093][ws threshold-sized request accepted safely]")
+	DO OK^MIOTASSERT(JSON["chunkSize","[MIOOST][T093][ws returns chunk size field]")
+	DO OK^MIOTASSERT(JSON[+$GET(CONF("mioos","fs","textChunkBytes")),"[MIOOST][T093][ws clamps threshold-sized request]")
+	KILL TREE,JSON,ERR SET TREE("id")="missing-t093",TREE("offset")=0,TREE("size")=4096,TREE("requestId")="t093-invalid"
+	DO EQ^MIOTASSERT($$FSTEXTCHUNK^MIOOSWS(.STATE,.CONF,.TREE,.JSON,.ERR),0,"[MIOOST][T093][invalid id rejected]")
+	DO OK^MIOTASSERT($GET(ERR("error"))'="","[MIOOST][T093][invalid id deterministic error]")
+	SET CONF("mioos","fs","maxTextEditBytes")=16
+	SET BIG=$$TSTR("X",17)
+	KILL TREE,JSON,ERR SET TREE("id")=ID,TREE("content")=BIG,TREE("requestId")="t093-save-large"
+	DO EQ^MIOTASSERT($$FSTEXTSAVE^MIOOSWS(.STATE,.CONF,.TREE,.JSON,.ERR),0,"[MIOOST][T093][large save rejected]")
+	DO EQ^MIOTASSERT($GET(ERR("error")),"text_draft_too_large","[MIOOST][T093][large save message]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","ROI 93"),"[MIOOST][T093][docs updated]")
+	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 93"),"[MIOOST][T093][llm updated]")
+	QUIT
+	;
+	;
+	;
+T094
+	DO RESET
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","/* ROI 94: dark table rows, toolbars, and About dialog readability. */"),"[MIOOST][T094][roi marker]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","--mioos-dark-table-row-bg"),"[MIOOST][T094][dark table row bg variable]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","theme-dark-mode .mioos-full-table .mioos-table-grid td"),"[MIOOST][T094][dark table cell selector]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","theme-dark-mode .mioos-full-table .mioos-table-grid tbody tr:nth-child(even) td"),"[MIOOST][T094][dark table alternate row selector]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","theme-dark-mode .mioos-full-table .mioos-table-grid tbody tr:hover td"),"[MIOOST][T094][dark table hover selector]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","theme-dark-mode .mioos-full-table .mioos-table-grid tr.is-selected td"),"[MIOOST][T094][dark table selected selector]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","theme-dark-mode .mioos-full-table .mioos-table-grid .mioos-table-group-row td"),"[MIOOST][T094][dark table group selector]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","theme-dark-mode .mioos-full-table .mioos-table-cell-edit-button"),"[MIOOST][T094][dark editable table cell selector]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","--mioos-dark-toolbar-text"),"[MIOOST][T094][dark toolbar text variable]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","theme-dark-mode .mioos-window-menu-vue button"),"[MIOOST][T094][dark window toolbar button text]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","theme-dark-mode .mioos-classic-toolbar button"),"[MIOOST][T094][dark classic toolbar button text]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","theme-dark-mode .mioos-explorer-toolbar"),"[MIOOST][T094][dark explorer toolbar surface]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","theme-dark-mode .mioos-surface-toolbar"),"[MIOOST][T094][dark generic toolbar surface]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","--mioos-dark-about-text"),"[MIOOST][T094][dark about text variable]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","theme-dark-mode .mioos-surface-about"),"[MIOOST][T094][dark about surface]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","theme-dark-mode .mioos-surface-about h2"),"[MIOOST][T094][dark about heading text]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","body { color: #fff"),0,"[MIOOST][T094][no global body white override]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","* { color: #fff"),0,"[MIOOST][T094][no global wildcard white override]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","ROI 94"),"[MIOOST][T094][docs updated]")
+	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 94"),"[MIOOST][T094][llm updated]")
+	QUIT
 	;

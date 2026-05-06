@@ -535,3 +535,14 @@ This ROI preserves the existing MUMPS/YottaDB + MIOTPL + MIOOSWS/MIOOSAPI + Vue 
 - Notifications/toasts inherit `--font-size-ui`, so Theme Studio global UI font size applies to alert text without hard-coded 11/12px overrides.
 - Taskbar entries distinguish pinned-only apps, open apps, active/focused windows, inactive open windows, and minimized windows. Large window counts use a horizontal scroll marker and mobile taskbar rules.
 - Mobile window movement uses pointer/touch titlebar drag and touch resize hooks. Window content, Explorer, and text viewer scroll areas keep normal touch scrolling.
+
+## ROI 93 — dark Start Menu contrast and idle-safe large text viewing
+
+This ROI keeps the existing MUMPS/YottaDB, MIOTPL, MIOOSWS/MIOOSAPI, VFS, and Vue 3 Options API UMD architecture unchanged.
+
+Dark Start Menu launchable rows now have a scoped dark-mode readability contract. `.theme-dark-mode .mioos-start-menu-vue` defines dedicated readable Start Menu foreground variables, and launchable rows, pinned/group entries, nested child rows, hover, focus, selected, and disabled states use those variables only inside the Start Menu. Light theme is not globally forced to white, and other menu/context surfaces keep their own dark scoped rules.
+
+Large text viewing remains chunk-stream based. `mioos.fs.textChunkThresholdBytes` is the small/medium-versus-virtual viewer threshold, while `mioos.fs.textChunkBytes` / boot `vfs.textChunkSizeBytes` is the per-request transport chunk size. The default transport chunk is 131072 bytes, clamped below MAXSTRING-risk payload sizes and intentionally far below the 2411725-byte virtualization/edit threshold.
+
+Opening a large text file requests only the initial visible chunk. Scroll-driven chunk loads now require explicit user scroll intent (`wheel`, pointer/touch scrollbar interaction, keyboard navigation, or manual retry), so idle/programmatic scroll events cannot start an auto-load loop. Requests are still deduped by file id + offset + size, failures remain manual-retry/toast driven, and large files stay read-only above `mioos.fs.maxTextEditBytes` unless a future ROI implements tested chunk patch semantics. Small/medium text editing and `fs.text.save` remain supported; a successful save clears stale text chunk cache before reloading.
+

@@ -164,6 +164,9 @@
           isText: function () { return String((this.window || {}).appKey || '') === 'text-viewer'; },
           isMedia: function () { return String((this.window || {}).appKey || '') === 'media-viewer'; },
           isExplorer: function () { return ['explorer','home','documents','my-computer'].indexOf(String((this.window || {}).appKey || '')) >= 0; },
+          textStream: function () { return ((((this.window || {}).fileView) || {}).textStream) || null; },
+          textCanEdit: function () { var s = this.textStream || {}; return !!this.textStream && !(+s.size > 0 && +s.maxEditBytes > 0 && +s.size > +s.maxEditBytes); },
+          textEditDisabledReason: function () { return this.textCanEdit ? '' : 'Large text files are chunked read-only above the bounded edit limit.'; },
           mediaLoop: {
             get: function () { return !!((((this.window || {}).fileView) || {}).mediaLoop); },
             set: function (value) { if (this.window && this.window.fileView) this.window.fileView.mediaLoop = !!value; }
@@ -218,8 +221,8 @@
               <button type="button" role="menuitem" aria-haspopup="true">File</button>
               <div class="mioos-window-menu-dropdown-vue" role="menu" @click="dismissMenus($event)">
                 <button v-if="isViewer" type="button" role="menuitem" @click="download">Download</button>
-                <button v-if="isText" type="button" role="menuitem" @click="editText">Edit Text</button>
-                <button v-if="isText" type="button" role="menuitem" @click="saveText" :disabled="!(((window.fileView || {}).textStream || {}).editing)">Save Text</button>
+                <button v-if="isText" type="button" role="menuitem" @click="editText" :disabled="!textCanEdit" :title="textEditDisabledReason || 'Edit Text'">Edit Text</button>
+                <button v-if="isText" type="button" role="menuitem" @click="saveText" :disabled="!textCanEdit || !((textStream || {}).editing)" :title="textEditDisabledReason || 'Save Text'">Save Text</button>
                 <button v-if="isText" type="button" role="menuitem" @click="refreshText">Reload visible text chunks</button>
                 <button v-if="window.appKey === 'explorer' || window.appKey === 'home' || window.appKey === 'documents' || window.appKey === 'my-computer'" type="button" role="menuitem" @click="explorerNewFolder">New Folder</button>
                 <button v-if="window.appKey === 'explorer' || window.appKey === 'home' || window.appKey === 'documents' || window.appKey === 'my-computer'" type="button" role="menuitem" @click="explorerUpload">Upload</button>
@@ -277,8 +280,8 @@
                 <button v-if="window.appKey === 'transfers'" type="button" role="menuitem" @click="transferResume">Resume Paused</button>
                 <button v-if="window.appKey === 'transfers'" type="button" role="menuitem" @click="transferCancelActive">Cancel Active</button>
                 <button v-if="window.appKey === 'transfers'" type="button" role="menuitem" @click="transferClearFinished">Clear Finished</button>
-                <button v-if="isText" type="button" role="menuitem" @click="editText">Edit</button>
-                <button v-if="isText" type="button" role="menuitem" @click="saveText">Save</button>
+                <button v-if="isText" type="button" role="menuitem" @click="editText" :disabled="!textCanEdit" :title="textEditDisabledReason || 'Edit'">Edit</button>
+                <button v-if="isText" type="button" role="menuitem" @click="saveText" :disabled="!textCanEdit || !((textStream || {}).editing)" :title="textEditDisabledReason || 'Save'">Save</button>
                 <button v-if="isText" type="button" role="menuitem" @click="zoomTextIn">Zoom In</button>
                 <button v-if="isText" type="button" role="menuitem" @click="zoomTextOut">Zoom Out</button>
                 <button v-if="isText" type="button" role="menuitem" @click="zoomTextReset">Reset Zoom</button>
@@ -467,7 +470,8 @@
           textSpacerStyle: function () { var s = this.textStream || {}; return { height: Math.max(600, +(s.scrollHeight || 4000)) + 'px' }; },
           textContentStyle: function () { var s = this.textStream || {}; return { transform: 'translateY(' + Math.max(0, +(s.contentTop || 0)) + 'px)', fontSize: (12 * (+(s.zoom || 1))) + 'px' }; },
           textPlainStyle: function () { var s = this.textStream || {}; return { fontSize: (12 * (+(s.zoom || 1))) + 'px' }; },
-          canEditText: function () { return !!this.textStream; },
+          canEditText: function () { var s = this.textStream || {}; return !!this.textStream && !(+s.size > 0 && +s.maxEditBytes > 0 && +s.size > +s.maxEditBytes); },
+          textEditNotice: function () { return this.canEditText ? '' : 'Large file is chunked read-only above the bounded edit limit.'; },
           editableText: {
             get: function () { return this.textStream ? this.vm.textViewerEditableContent(this.window.id) : ''; },
             set: function (value) { if (this.vm.textViewerSetEditableContent) this.vm.textViewerSetEditableContent(this.window.id, value); }
@@ -479,6 +483,7 @@
           if (this.textStream) vm.$nextTick(function () { if (vm.textViewerLoadInitialText) vm.textViewerLoadInitialText(win.id).catch(function () { return null; }); else if (vm.textViewerLoadChunk) vm.textViewerLoadChunk(win.id, 0).catch(function () { return null; }); });
         },
         methods: {
+          armTextScroll: function (source) { if (this.vm.textViewerArmScroll) this.vm.textViewerArmScroll(this.window.id, source || 'user'); },
           onTextScroll: function (event) { if (this.vm.textViewerOnScroll) this.vm.textViewerOnScroll(this.window.id, event); },
           beginEditText: function () { if (this.vm.textViewerBeginEdit) this.vm.textViewerBeginEdit(this.window.id); },
           saveText: function () { if (this.vm.textViewerSave) this.vm.textViewerSave(this.window.id); },
@@ -487,13 +492,13 @@
         template: '' +
           '<div class="mioos-surface mioos-surface-viewer-native" :class="\'is-\' + kind">' +
             '<section class="mioos-viewer-body" :class="{ \'is-media-full\': kind === \'media\', \'is-text-virtual\': !!textStream }">' +
-              '<div v-if="textStream" class="mioos-text-virtual-viewer" :class="{ editing: textStream.editing, virtualized: textStream.virtualized }" @scroll="onTextScroll">' +
+              '<div v-if="textStream" class="mioos-text-virtual-viewer" :class="{ editing: textStream.editing, virtualized: textStream.virtualized }" tabindex="0" @wheel.passive="armTextScroll(\'wheel\')" @pointerdown="armTextScroll(\'pointer\')" @pointermove="armTextScroll(\'pointer\')" @touchstart.passive="armTextScroll(\'touch\')" @touchmove.passive="armTextScroll(\'touch\')" @keydown="armTextScroll(\'keyboard\')" @scroll="onTextScroll">' +
                 '<textarea v-if="textStream.editing" class="mioos-text-editor-area" v-model="editableText" spellcheck="false" :style="textPlainStyle"></textarea>' +
                 '<div v-else-if="textStream.virtualized" class="mioos-text-virtual-spacer" :style="textSpacerStyle"><div class="mioos-text-chunk-stack" :style="textContentStyle">' +
                   '<pre v-for="chunk in textChunks" :key="chunk.offset" class="mioos-viewer-text mioos-viewer-text-chunk"><span class="mioos-text-chunk-offset">Byte [[ chunk.offset ]]</span>[[ chunk.content ]]</pre>' +
                 '</div></div>' +
                 '<pre v-else v-for="chunk in textChunks" :key="chunk.offset" class="mioos-viewer-text mioos-viewer-text-chunk is-full-text" :style="textPlainStyle"><span class="mioos-text-chunk-offset">[[ textStream.dirty ? "Unsaved changes" : (textStream.saveStatus || "Editable text file") ]]</span>[[ chunk.content ]]</pre>' +
-                "<div v-if=\"textStream.status || textStream.error\" class=\"mioos-text-status\" role=\"status\"><span :class=\"{ 'is-error': textStream.error }\">[[ textStream.error || textStream.status ]]</span><button v-if=\"textStream.retryOffset !== null && typeof textStream.retryOffset !== 'undefined'\" type=\"button\" class=\"mioos-btn\" @click.stop=\"retryText\">Retry</button></div>" +
+                "<div v-if=\"textStream.status || textStream.error || textEditNotice\" class=\"mioos-text-status\" role=\"status\"><span :class=\"{ 'is-error': textStream.error }\">[[ textStream.error || textEditNotice || textStream.status ]]</span><button v-if=\"textStream.retryOffset !== null && typeof textStream.retryOffset !== 'undefined'\" type=\"button\" class=\"mioos-btn\" @click.stop=\"retryText\">Retry</button></div>" +
               '</div>' +
               '<div v-else-if="fileView.loading" class="mioos-viewer-state">Opening file…</div>' +
               '<div v-else-if="fileView.error" class="mioos-viewer-state is-error">[[ fileView.error ]]</div>' +

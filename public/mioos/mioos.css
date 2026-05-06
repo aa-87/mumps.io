@@ -4846,3 +4846,170 @@ html[dir="rtl"] .mioos-window-menu-dropdown-vue,
   .mioos-resize-handle-vue[data-edge="e"],
   .mioos-resize-handle-vue[data-edge="w"] { width: 14px; }
 }
+
+/* ROI 93: scoped dark Start Menu launchable readability and idle-safe text-viewer affordances. */
+.theme-dark-mode .mioos-start-menu-vue {
+  --mioos-start-menu-readable-text: var(--start-menu-dark-text, #f8fafc);
+  --mioos-start-menu-readable-muted: var(--start-menu-dark-muted, #cbd5e1);
+  --mioos-start-menu-readable-hover-text: var(--start-menu-dark-hover-text, #ffffff);
+}
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-modern-item,
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-modern-item strong,
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-modern-item span,
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-modern-item.is-child,
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-entry-vue,
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-entry-vue strong,
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-entry-vue span,
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-modern-folder-toggle {
+  color: var(--mioos-start-menu-readable-text) !important;
+}
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-modern-item em,
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-modern-item-source,
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-entry-vue em,
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-child-vue {
+  color: var(--mioos-start-menu-readable-muted) !important;
+}
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-modern-item:hover,
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-modern-item:focus,
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-modern-item:focus-visible,
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-modern-item.is-selected,
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-entry-vue:hover,
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-entry-vue:focus,
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-entry-vue:focus-visible,
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-entry-vue.is-selected {
+  background: var(--menu-hover, rgba(96,165,250,.24)) !important;
+  color: var(--mioos-start-menu-readable-hover-text) !important;
+}
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-modern-item:hover strong,
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-modern-item:hover span,
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-modern-item:hover em,
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-modern-item:focus strong,
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-modern-item:focus span,
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-modern-item:focus em,
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-modern-item.is-selected strong,
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-modern-item.is-selected span,
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-modern-item.is-selected em,
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-entry-vue:hover strong,
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-entry-vue:hover span,
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-entry-vue:hover em,
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-entry-vue:focus strong,
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-entry-vue:focus span,
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-entry-vue:focus em,
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-entry-vue.is-selected strong,
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-entry-vue.is-selected span,
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-entry-vue.is-selected em {
+  color: var(--mioos-start-menu-readable-hover-text) !important;
+}
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-modern-item[aria-disabled="true"],
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-modern-item:disabled,
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-entry-vue[aria-disabled="true"],
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-entry-vue:disabled {
+  color: var(--theme-muted-text, #94a3b8) !important;
+  opacity: .7;
+}
+.theme-dark-mode .mioos-text-virtual-viewer:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent, #60a5fa) 72%, transparent);
+  outline-offset: 2px;
+}
+
+
+/* ROI 94: dark table rows, toolbars, and About dialog readability. */
+.theme-dark-mode .mioos-full-table .mioos-table-grid,
+.theme-dark-mode .mioos-full-table .mioos-table-grid tbody,
+.theme-dark-mode .mioos-full-table .mioos-table-grid tr,
+.theme-dark-mode .mioos-full-table .mioos-table-grid td,
+.theme-dark-mode .mioos-full-table .mioos-table-grid td.mioos-table-sticky,
+.theme-dark-mode .mioos-full-table .mioos-table-empty-row td {
+  background: var(--mioos-dark-table-row-bg, #0f172a) !important;
+  color: var(--mioos-dark-table-row-text, #f8fafc) !important;
+  border-color: var(--theme-panel-border, rgba(148,163,184,.24)) !important;
+}
+.theme-dark-mode .mioos-full-table .mioos-table-grid tbody tr:nth-child(even) td,
+.theme-dark-mode .mioos-full-table .mioos-table-grid tbody tr:nth-child(even) td.mioos-table-sticky {
+  background: var(--mioos-dark-table-row-alt-bg, #111827) !important;
+  color: var(--mioos-dark-table-row-text, #f8fafc) !important;
+}
+.theme-dark-mode .mioos-full-table .mioos-table-grid tbody tr:hover td,
+.theme-dark-mode .mioos-full-table .mioos-table-grid tbody tr:hover td.mioos-table-sticky {
+  background: var(--mioos-dark-table-row-hover-bg, #1e293b) !important;
+  color: var(--mioos-dark-table-row-hover-text, #ffffff) !important;
+}
+.theme-dark-mode .mioos-full-table .mioos-table-grid tr.is-selected td,
+.theme-dark-mode .mioos-full-table .mioos-table-grid tr.is-selected td.mioos-table-sticky {
+  background: var(--mioos-dark-table-row-selected-bg, #1d4ed8) !important;
+  color: var(--mioos-dark-table-row-selected-text, #ffffff) !important;
+}
+.theme-dark-mode .mioos-full-table .mioos-table-grid .mioos-table-group-row td,
+.theme-dark-mode .mioos-full-table .mioos-table-grid .mioos-table-expanded-row td {
+  background: var(--mioos-dark-table-group-bg, #172554) !important;
+  color: var(--mioos-dark-table-group-text, #eff6ff) !important;
+}
+.theme-dark-mode .mioos-full-table .mioos-table-cell,
+.theme-dark-mode .mioos-full-table .mioos-table-cell-edit-button,
+.theme-dark-mode .mioos-full-table .mioos-table-cell-edit-button span,
+.theme-dark-mode .mioos-full-table .mioos-table-cell-edit-button strong {
+  color: inherit !important;
+}
+.theme-dark-mode .mioos-full-table .mioos-table-cell-edit-button small { color: var(--mioos-dark-table-row-accent-text, #bfdbfe) !important; }
+.theme-dark-mode .mioos-full-table .mioos-table-cell-editor {
+  background: var(--theme-field-bg, #020617) !important;
+  color: var(--theme-field-text, #f8fafc) !important;
+}
+.theme-dark-mode .mioos-window-menu-vue,
+.theme-dark-mode .mioos-viewer-menu-strip,
+.theme-dark-mode .mioos-classic-menubar,
+.theme-dark-mode .mioos-classic-toolbar,
+.theme-dark-mode .mioos-explorer-toolbar,
+.theme-dark-mode .mioos-surface-toolbar,
+.theme-dark-mode .mioos-window-toolbar {
+  background: var(--mioos-dark-toolbar-bg, var(--toolbar-bg, #020617)) !important;
+  color: var(--mioos-dark-toolbar-text, var(--toolbar-text, #f8fafc)) !important;
+  border-color: var(--mioos-dark-toolbar-border, var(--toolbar-border, #334155)) !important;
+}
+.theme-dark-mode .mioos-window-menu-vue button,
+.theme-dark-mode .mioos-window-menu-dropdown-vue button,
+.theme-dark-mode .mioos-window-inline-tools-vue button,
+.theme-dark-mode .mioos-viewer-menu-strip button,
+.theme-dark-mode .mioos-classic-menubar button,
+.theme-dark-mode .mioos-classic-toolbar button,
+.theme-dark-mode .mioos-classic-tool,
+.theme-dark-mode .mioos-explorer-toolbar button,
+.theme-dark-mode .mioos-explorer-command,
+.theme-dark-mode .mioos-surface-toolbar button,
+.theme-dark-mode .mioos-window-toolbar button {
+  color: var(--mioos-dark-toolbar-text, var(--toolbar-text, #f8fafc)) !important;
+  border-color: var(--mioos-dark-toolbar-border, var(--toolbar-border, #334155)) !important;
+}
+.theme-dark-mode .mioos-classic-tool,
+.theme-dark-mode .mioos-explorer-command,
+.theme-dark-mode .mioos-window-inline-tools-vue button {
+  background: var(--mioos-dark-toolbar-button-bg, #1e293b) !important;
+}
+.theme-dark-mode .mioos-window-menu-vue button:hover,
+.theme-dark-mode .mioos-window-menu-vue button:focus,
+.theme-dark-mode .mioos-window-menu-dropdown-vue button:hover,
+.theme-dark-mode .mioos-window-menu-dropdown-vue button:focus,
+.theme-dark-mode .mioos-classic-toolbar button:hover,
+.theme-dark-mode .mioos-classic-toolbar button:focus,
+.theme-dark-mode .mioos-explorer-toolbar button:hover,
+.theme-dark-mode .mioos-explorer-toolbar button:focus,
+.theme-dark-mode .mioos-surface-toolbar button:hover,
+.theme-dark-mode .mioos-surface-toolbar button:focus {
+  background: var(--mioos-dark-toolbar-hover-bg, rgba(96,165,250,.24)) !important;
+  color: var(--mioos-dark-toolbar-hover-text, #ffffff) !important;
+}
+.theme-dark-mode .mioos-surface-about {
+  background: var(--mioos-dark-about-bg, var(--theme-panel-bg, #0f172a)) !important;
+  color: var(--mioos-dark-about-text, var(--theme-field-text, #f8fafc)) !important;
+}
+.theme-dark-mode .mioos-surface-about h2,
+.theme-dark-mode .mioos-surface-about p,
+.theme-dark-mode .mioos-surface-about dl,
+.theme-dark-mode .mioos-surface-about dt,
+.theme-dark-mode .mioos-surface-about dd,
+.theme-dark-mode .mioos-surface-about strong,
+.theme-dark-mode .mioos-surface-about span,
+.theme-dark-mode .mioos-surface-about small,
+.theme-dark-mode .mioos-surface-about em {
+  color: var(--mioos-dark-about-text, var(--theme-field-text, #f8fafc)) !important;
+}

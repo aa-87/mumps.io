@@ -1,0 +1,465 @@
+Please use the attached ZIP/folder as the **ONLY source of truth**. **MAKE SURE ABSOLUTELY NO REGRESSIONS.**
+
+You are taking over development of **MIOOS / MUMPS.IO OS Shell**. Do **not** rely on prior ChatGPT conversations, prior patches, prior generated ZIPs, assumptions, or any generated artifacts. Inspect the attached source first, then implement source-accurate fixes only.
+
+## Core architecture rules
+
+Preserve the existing MUMPS.IO architecture:
+
+- Backend: MUMPS on YottaDB / GT.M.
+- Server-side rendering: MIOTPL.
+- HTTP/API: MIOHTTP / MIOOSAPI.
+- WebSocket/control/realtime: MIOOSWS where appropriate.
+- VFS/files: MIOOSFS / MIOOSFSUP.
+- Boot/session/desktop state: MIOOSST / MIOOSVM / MIOOSUI as applicable.
+- Theme/profile persistence: MIOOSTHEME.
+- Locale/i18n: MIOOSI18N.
+- Module registry/table-backed modules: MIOOSMOD / MIOOSMTBL.
+- Advanced Table backend contract: MIOOSTBL.
+- Patient workflow: MIOOSPAT.
+- Browser files under `public/mioos/app/`.
+- Vue 3 Options API UMD only.
+- No new frontend framework.
+- No build step.
+- No TypeScript.
+- No Composition API.
+- No Node/Express runtime.
+- No external dependencies.
+- The project is for MUMPS developers with little/no frontend experience, so docs/examples must remain MUMPS-first.
+- Do not use DataURLs for uploads or persisted images.
+- Do not emit authenticated asset URLs before login.
+- Tests must stay quiet on success and explicit on failure.
+- Every ROI must update docs, tests, examples if applicable, and `mioos_llm.md` when behavior changes.
+- Return only modified files in the final ZIP or patch.
+- Be honest about tests that cannot be run.
+
+## Current ROI goal
+
+Fix two still-regressed areas without breaking anything else:
+
+1. Dark theme Start Menu launchable item text is black on black.
+2. Large text files partially load, keep loading even while idle, never finish cleanly, and cannot be edited.
+
+Inspect the attached source first and verify the actual implementation paths before changing anything.
+
+---
+
+# Issue 1 — Dark theme Start Menu launchable text is black on black
+
+## Problem
+
+In Dark theme, the text color for Start Menu launchable items is black on a black/dark background.
+
+Examples:
+
+- Start Menu → Pinned → `Home`
+- Start Menu → Pinned → `Terminal`
+- Start Menu → Pinned → `Transfers`
+- Any Start Menu launchable child item or nested menu item using the same broken text color inheritance.
+
+## Requirements
+
+- Start Menu launchable items must render white/light text in Dark theme.
+- Nested Start Menu child items must also be readable.
+- Pinned items, app shortcuts, user theme entries, and any launchable action row must be readable.
+- Hover, active, focused, selected, disabled, and nested states must remain readable.
+- Light theme must not regress.
+- Prefer scoped dark-theme selectors and existing theme variables over broad hardcoded global overrides.
+- Avoid changing unrelated surfaces unless source inspection shows the same contrast bug exists there.
+
+## Areas to inspect
+
+Frontend/CSS:
+
+- `public/mioos/mioos.css`
+- `public/mioos/app/mioos_core.js`
+- `public/mioos/app/mioos_shell_ui.js`
+- `public/mioos/app/mioos_i18n.js` if RTL/locale affects menu rendering.
+
+Backend/theme defaults if relevant:
+
+- `routines/MIOOSTHEME.m`
+- `routines/MIOOSST.m`
+- `routines/MIOOSVM.m`
+
+## Suggested implementation approach
+
+1. Identify the exact classes/selectors used for Start Menu launchable rows.
+2. Identify how Dark theme is represented in the DOM:
+   - `.theme-dark-mode`
+   - shell/theme modifier classes
+   - CSS variables such as `--menu-text`, `--start-menu-text`, `--taskbar-text`, or similar.
+3. Add scoped dark selectors so Start Menu launchable text uses a light/white color.
+4. Ensure hover/selected/active states still use readable foreground/background pairs.
+5. Avoid forcing text white in light mode.
+6. Add regression tests that fail if this dark text contrast path is removed.
+
+## Required tests for Issue 1
+
+Add tests in `routines/MIOOST.m` or a helper test routine if `MIOOST.m` is too large.
+
+Tests should include positive and negative coverage for:
+
+- Dark Start Menu launchable item text selector exists.
+- Dark Pinned item text selector exists.
+- Dark nested/child Start Menu item text selector exists.
+- Dark hover/selected Start Menu item text remains readable.
+- Dark context/toolbar menu text does not accidentally regress if the same selector family is reused.
+- Light theme selectors are not forced to white globally.
+- No broad CSS selector makes all text white in all themes.
+
+---
+
+# Issue 2 — Large text files partially load, keep loading while idle, never finish, and cannot be edited
+
+## Problem
+
+Large text files partially work, but the viewer keeps trying to load even when the scrollbar is not touched. The file never finishes cleanly, and editing still does not work.
+
+Known prior symptom example:
+
+```json
+{"command":"fs.text.chunk","id":"fs-17","offset":0,"size":2411725,"event":"desktop.command","requestId":"ws-17-1778043237391"}
+```
+
+The chunk size is too large for the current socket/control path. A value around `2411725` bytes appears to be a threshold-sized request, not a safe chunk-sized request.
+
+## Key design distinction
+
+Do **not** confuse these two values:
+
+1. **Text virtualization threshold** — the file size at which the viewer switches from normal editable text mode to chunked/virtual large-file mode. This can remain around 2.3 MB or be made configurable.
+2. **Text chunk request size** — the number of bytes requested per chunk. This should be much smaller than the threshold and should be configurable. Use a safe default such as 64 KB, 128 KB, or another source-verified safe size.
+
+## Requirements
+
+### Viewing large files
+
+- Large text files must be viewable without socket errors.
+- Opening a large file should request only the initial chunk unless the user scrolls or explicitly requests more.
+- The viewer must not continuously load/preload/retry chunks while idle.
+- The file must not try to “finish loading” the entire content into the browser for huge files.
+- No automatic neighbor prefetch unless it is explicitly bounded, deduped, and does not run while idle.
+- Identical chunk requests must be deduped by file id + offset + size.
+- Failed chunk requests must not create infinite retry loops.
+- Socket timeout/error must show retry/toast feedback and must not break the viewer.
+- Avoid whole-file `/api/mioos/fs/blob` fallback for large text.
+- If WebSocket cannot safely carry chunks, add a backend HTTP text-chunk/range endpoint that returns only the requested chunk and use it as a fallback.
+
+### Scrollbar behavior
+
+- Scrollbar must map smoothly to byte offsets.
+- Scrolling should load the target byte offset, not continuously fetch unrelated chunks.
+- Do not jitter or fight the browser’s native scroll behavior.
+- Do not reload the same chunk repeatedly when the scrollbar has not moved.
+- Debounce/coalesce scroll events carefully.
+
+### Editing large files
+
+Editing behavior must be deliberately designed, not half-broken.
+
+Acceptable designs:
+
+1. **Small/medium editable mode**
+   - Files under a configurable edit threshold load into an editor and can be saved.
+   - Save clears stale chunk/read cache and reloads the saved content.
+
+2. **Large bounded-edit/read-only mode**
+   - Files above the safe edit threshold are viewable through chunks.
+   - If full random-access editing is unsafe, show a clear message that large files are read-only or limited-edit.
+   - Do not show broken edit/save buttons for unsupported large-file edit mode.
+
+3. **True large-file edit mode**, only if implemented safely
+   - Requires deterministic chunk patch/save semantics.
+   - Must include backend tests for partial writes, conflict handling, cache invalidation, and MAXSTRING safety.
+
+Do not claim large-file editing works unless it truly works end-to-end.
+
+## Areas to inspect
+
+Frontend:
+
+- `public/mioos/app/mioos_explorer.js`
+- `public/mioos/app/mioos_ws.js`
+- `public/mioos/app/mioos_shell_ui.js`
+- `public/mioos/app/mioos_core.js`
+- `public/mioos/mioos.css`
+
+Backend:
+
+- `routines/MIOOSWS.m`
+- `routines/MIOOSAPI.m`
+- `routines/MIOOSFS.m`
+- `routines/MIOOSFSUP.m`
+- `routines/MIOOS.m`
+- `routines/MIOOSST.m`
+- `routines/MIOOST.m`
+
+Docs/config:
+
+- `docs/mioos/README.md`
+- `mioos_llm.md`
+- any config/default routine defining text thresholds or chunk sizes.
+
+## Suggested implementation approach
+
+1. Inspect current text viewer stream state.
+2. Identify all text-read paths:
+   - preview path
+   - small file open path
+   - structured text path such as `.md`, `.json`, `.csv`, `.xml`, `.yaml`
+   - large file virtual/chunk path
+   - edit/save path
+3. Separate threshold and chunk size configuration:
+   - `textChunkThresholdBytes` or equivalent: when to virtualize.
+   - `textChunkBytes` / `textChunkSizeBytes` or equivalent: per-request chunk size.
+4. Ensure default chunk request size is safe and far below 2.3 MB.
+5. Remove any code that uses the threshold as the chunk request size.
+6. Ensure open-large-file does one initial chunk request only.
+7. Ensure scroll handler only loads the target chunk after actual scroll input.
+8. Ensure idle viewer does not prefetch or retry forever.
+9. Add in-flight request dedupe and bounded cache pruning.
+10. Add explicit timeout handling and toast/retry feedback.
+11. Fix small/medium edit/save if broken.
+12. For large editing, implement explicit read-only/bounded-edit UI unless full chunk editing is actually implemented.
+13. Update docs and `mioos_llm.md` with the final text-viewer contract.
+
+## Required tests for Issue 2
+
+Add tests in `routines/MIOOST.m` or helper routines if needed.
+
+Tests should include:
+
+### Config/contract tests
+
+- Text virtualization threshold and text chunk size are separate settings.
+- Default text chunk size is far below the virtualization threshold.
+- Default `fs.text.chunk` request size is not `2411725` or any threshold-sized value.
+- Chunk size is MAXSTRING-safe.
+
+### Frontend static contract tests
+
+- Large text open initializes only one initial chunk request.
+- No automatic neighbor prefetch while idle.
+- No idle auto-load loop.
+- No retry loop after chunk failure.
+- Chunk request dedupe key includes file id + offset + size.
+- Scroll handler is debounced/coalesced and loads target offset only.
+- Timeout/catch path shows toast or retry feedback.
+- No uncaught Promise path for socket timeout.
+- No whole-file blob fallback for large text.
+- Small-file edit/save controls still exist.
+- Large-file unsupported edit mode is clearly shown or hidden, depending on design.
+- Save clears stale text chunk cache.
+
+### Backend contract tests
+
+- `fs.text.chunk` or the current backend chunk route returns only requested chunk bytes.
+- Offset 0 returns first chunk only.
+- Middle offset returns correct byte range.
+- End offset handles EOF correctly.
+- Invalid id returns deterministic error JSON.
+- Invalid offset/size clamps or rejects deterministically.
+- Chunk route does not materialize the entire file into one string.
+- Save route works for small/medium files.
+- Large save path is rejected with clear deterministic message if large edit is unsupported.
+
+### Performance/MAXSTRING tests
+
+- Test synthetic text data with:
+  - small file
+  - threshold-minus-one file
+  - threshold-plus-one file
+  - multi-chunk large file
+  - very long line crossing a chunk boundary
+- Assert no single chunk exceeds safe configured limit.
+- Assert no WebSocket payload concatenates a huge file.
+- Assert repeated same-offset request returns cached/in-flight result where applicable.
+
+---
+
+# Important constraints
+
+- Do not remove features to make tests pass.
+- Do not weaken tests if the implementation is wrong.
+- If a test is stale due to intentional architecture change, update it and add a negative regression test preventing the old broken behavior from returning.
+- Keep UI dark-theme aware.
+- Avoid duplicate toolbars and duplicate action panels.
+- Use toasts/auto-dismiss feedback where appropriate instead of blocking notifications.
+- Preserve existing table, explorer, transfer, terminal, theme, and patient workflows unless explicitly fixing them.
+- Do not introduce any new framework, dependency, build step, or TypeScript.
+- Do not regress text preview, desktop uploads, uploaded theme/background assets, theme import/export, existing table features, or Patient Registration.
+- Keep examples/docs MUMPS-first.
+
+---
+
+# Files to inspect first
+
+## Backend
+
+- `routines/MIOOS.m`
+- `routines/MIOOSAPI.m`
+- `routines/MIOOSWS.m`
+- `routines/MIOOSFS.m`
+- `routines/MIOOSFSUP.m`
+- `routines/MIOOSST.m`
+- `routines/MIOOSVM.m`
+- `routines/MIOOSUI.m`
+- `routines/MIOOSTHEME.m`
+- `routines/MIOOSI18N.m`
+- `routines/MIOOSMOD.m`
+- `routines/MIOOSMTBL.m`
+- `routines/MIOOSTBL.m`
+- `routines/MIOOST.m`
+
+## Frontend
+
+- `public/mioos/app/mioos_auth.js`
+- `public/mioos/app/mioos_core.js`
+- `public/mioos/app/mioos_explorer.js`
+- `public/mioos/app/mioos_i18n.js`
+- `public/mioos/app/mioos_modules.js`
+- `public/mioos/app/mioos_permissions.js`
+- `public/mioos/app/mioos_shell_ui.js`
+- `public/mioos/app/mioos_state.js`
+- `public/mioos/app/mioos_table.js`
+- `public/mioos/app/mioos_terminal.js`
+- `public/mioos/app/mioos_wm.js`
+- `public/mioos/app/mioos_ws.js`
+- `public/mioos/mioos.css`
+
+## Docs/examples
+
+- `docs/mioos/README.md`
+- `docs/mioos/UI_Modules.md`
+- `docs/mioos/Backend_Table.md`
+- `examples/mioos_modules/table/README.md`
+- `examples/mioos_modules/table/module.json`
+- `examples/mioos_modules/patient_registration/README.md`
+- `examples/mioos_modules/patient_registration/module.json`
+- `mioos_llm.md`
+
+---
+
+# Required baseline checks before and after
+
+## MUMPS tests
+
+Try:
+
+```mumps
+D ^MIOOST
+```
+
+If YottaDB / GT.M is unavailable, clearly state that `D ^MIOOST` could not be run.
+
+## JavaScript syntax checks
+
+Run:
+
+```bash
+node --check public/mioos/app/mioos_auth.js
+node --check public/mioos/app/mioos_core.js
+node --check public/mioos/app/mioos_modules.js
+node --check public/mioos/app/mioos_table.js
+node --check public/mioos/app/mioos_permissions.js
+node --check public/mioos/app/mioos_shell_ui.js
+node --check public/mioos/app/mioos_wm.js
+node --check public/mioos/app/mioos_state.js
+node --check public/mioos/app/mioos_ws.js
+node --check public/mioos/app/mioos_explorer.js
+node --check public/mioos/app/mioos_i18n.js
+node --check public/mioos/app/mioos_terminal.js
+```
+
+## JSON validation
+
+Run if these files exist:
+
+```bash
+python3 -m json.tool examples/mioos_modules/table/module.json
+python3 -m json.tool examples/mioos_modules/patient_registration/module.json
+python3 -m json.tool examples/mioos_modules/permissions/module.json
+python3 -m json.tool examples/mioos_modules/ui_elements/module.json
+```
+
+## MUMPS static/compile checks where possible
+
+- Quote/parity/static checks for touched routines.
+- If YottaDB/GT.M is available:
+
+```mumps
+ZLINK "MIOOS"
+ZLINK "MIOOSAPI"
+ZLINK "MIOOSWS"
+ZLINK "MIOOSFS"
+ZLINK "MIOOSFSUP"
+ZLINK "MIOOSST"
+ZLINK "MIOOSVM"
+ZLINK "MIOOSUI"
+ZLINK "MIOOSTHEME"
+ZLINK "MIOOSI18N"
+ZLINK "MIOOSMOD"
+ZLINK "MIOOSMTBL"
+ZLINK "MIOOSTBL"
+ZLINK "MIOOST"
+DO ^MIOOST
+```
+
+---
+
+# Regression tests to add
+
+Add a new `T0xx` section in `routines/MIOOST.m` or a helper test routine if `MIOOST.m` is too large.
+
+Include positive and negative tests for:
+
+- Dark Start Menu launchable text readability.
+- No black-on-black dark menu/toolbar/context text.
+- Light theme is not forced to white globally.
+- Large text initial open loads one chunk only.
+- No idle auto-load loop.
+- No automatic neighbor prefetch while idle.
+- No retry loop after chunk failure.
+- Chunk size is separate from threshold.
+- Default chunk request size is safe and not threshold-sized.
+- No full-file blob fallback for large text.
+- Socket timeout handled with toast/retry feedback.
+- Scrollbar maps to target byte offset only.
+- Small/medium edit/save works.
+- Large-file edit behavior is explicit and safe.
+- Save clears stale cache.
+- MAXSTRING-safe text chunks and long-line handling.
+
+---
+
+# Performance/MAXSTRING requirements
+
+- Verify text chunks are bounded well below MAXSTRING.
+- Verify no single WebSocket payload concatenates a huge file.
+- Use conservative tests to avoid flaky performance failures.
+- If runtime profiling is unavailable, add static guards and document what could not be run.
+- For text viewer tests, create safe synthetic data rather than huge memory allocations.
+
+---
+
+# Expected final answer format
+
+Use this final response format:
+
+```text
+Diagnosis
+Root cause
+ROI implemented
+Code changes
+Tests added
+Tests run
+Acceptance checklist
+Modified files
+Download link to ZIP containing only modified files
+Patch fallback
+```
+
+Be honest if `D ^MIOOST` or `ZLINK` could not be run because YottaDB / GT.M is unavailable.
+
+If artifact download fails, provide a patch or pasteable file contents.

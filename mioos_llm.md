@@ -749,3 +749,22 @@ Regression rules from ROI 92:
 - Notification/toast text inherits `--font-size-ui`; do not reintroduce hard-coded notification font-size overrides.
 - Taskbar UI distinguishes pinned-only apps, open apps, focused active windows, inactive open windows, and minimized windows. Many windows must remain usable through the scroll marker/mobile CSS.
 - Mobile window movement uses pointer/touch titlebar drag and touch resize handlers. Scrollable content areas must keep touch pan behavior.
+
+## ROI 93 — dark Start Menu contrast and idle-safe large text viewing
+
+Use the uploaded source tree as truth. Preserve the MUMPS-first architecture and browser-only Vue 3 Options API UMD code.
+
+Regression rules from ROI 93:
+
+- Dark Start Menu launchable text must be readable through scoped `.theme-dark-mode .mioos-start-menu-vue` selectors. Pinned/group rows, app shortcuts, user theme entries, nested launchable child rows, hover/focus/selected states, and disabled rows must use Start Menu-specific dark readable foreground variables instead of inheriting a black/light-mode `--menu-text` value. Do not fix this by globally forcing all light or dark text to white.
+- Keep dark toolbar/window/context menu readability scoped to their own menu surfaces. Do not change unrelated surfaces to satisfy Start Menu contrast tests.
+- Large text transport must keep the virtualization threshold separate from transport chunk size. The threshold decides when the viewer virtualizes; `textChunkBytes` / `textChunkSizeBytes` decides the requested byte window and must stay MAXSTRING-safe, defaulting to 131072 bytes rather than 2411725 bytes.
+- Opening a virtualized text file loads only the initial chunk. Idle/programmatic scroll events must not arm more chunk loads. Actual user scroll intent is armed by wheel, pointer/touch, keyboard navigation, or explicit retry, then the debounced scroll handler maps the viewport to a single target byte offset.
+- Text chunk requests stay deduped by file id + offset + size. Failed chunks show toast/status feedback and wait for manual retry; do not reintroduce automatic retry loops, idle neighbor prefetch, or whole-file blob/read fallbacks for large text.
+- Small/medium files remain editable and save through `fs.text.save`. Files above `maxTextEditBytes` remain chunked read-only with disabled/clear edit affordances unless future work adds deterministic backend-tested partial-write semantics.
+- Save must clear stale text chunk cache before reloading saved content.
+
+
+## ROI 94 — dark table/toolbars/About contrast
+
+Preserve the scoped dark contrast rules added in ROI 94. Advanced Table row bodies must not render white text over light grey backgrounds in dark theme; use `.theme-dark-mode .mioos-full-table .mioos-table-grid` selectors for normal, alternate, hover, selected, grouped, expanded, sticky, and editable cells. Toolbar/menu text must remain bright on dark backgrounds for window menus, inline window tools, viewer menus, classic toolbars, Explorer toolbars, and generic surface toolbars without globally forcing every button or text node to white. Help → About windows must keep `.theme-dark-mode .mioos-surface-about` background and text variables so headings, paragraphs, and definition-list text remain readable.
