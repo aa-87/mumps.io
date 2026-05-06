@@ -84,6 +84,8 @@ MIOOST ; MIOOS tests
 	DO T096
 	DO T097
 	DO T098
+	DO T099
+	DO T100
 	QUIT
 	;
 RESET
@@ -1715,10 +1717,10 @@ T088
 	SET ID=$GET(OUT("id"))
 	SET CONF("mioos","fs","maxTextEditBytes")=5
 	KILL TREE,JSON,ERR SET TREE("id")=ID,TREE("content")="123456",TREE("mime")="text/plain",TREE("requestId")="t088"
-	DO EQ^MIOTASSERT($$FSTEXTSAVE^MIOOSWS(.STATE,.CONF,.TREE,.JSON,.ERR),0,"[MIOOST][T088][bounded save rejects oversized]")
-	DO EQ^MIOTASSERT($GET(ERR("error")),"text_draft_too_large","[MIOOST][T088][bounded save error contract]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","textViewerDraftByteLength"),"[MIOOST][T088][client bounded save byte guard]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","Edited text is above the bounded-edit save limit"),"[MIOOST][T088][client bounded save message]")
+	DO OK^MIOTASSERT($$FSTEXTSAVE^MIOOSWS(.STATE,.CONF,.TREE,.JSON,.ERR),"[MIOOST][T088][text save ignores removed edit cap]")
+	DO OK^MIOTASSERT(JSON["fullEditOnDemand","[MIOOST][T088][unbounded full edit marker]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","textViewerDraftByteLength"),0,"[MIOOST][T088][no client edit byte cap]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","Edited text is above the bounded-edit save limit"),0,"[MIOOST][T088][no bounded save message]")
 	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","base64-dataurl"),0,"[MIOOST][T088][no explorer dataurl upload encoding]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSFSUP.m","ENC=""base64"""),"[MIOOST][T088][server base64 upload branch]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSFSUP.m","B64D^MIOSJWT"),"[MIOOST][T088][server base64 decode]")
@@ -1798,7 +1800,7 @@ T090
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","catch(function () { return null; })"),"[MIOOST][T090][no uncaught promise scroll path]")
 	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","this.command('fs.read'"),0,"[MIOOST][T090][no whole file large fallback]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","textViewerByteOffsetForScroll"),"[MIOOST][T090][scroll to byte mapping]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","text_draft_too_large"),"[MIOOST][T090][edit save threshold behavior]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","saveTextViaHttp"),"[MIOOST][T090][http text save avoids socket timeout]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSFS.m","QUIT:$DATA(ERR("),"[MIOOST][T090][range loop breaks on error]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","startMenuToggleGroup"),"[MIOOST][T090][start menu group toggle method]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","expandedGroups"),"[MIOOST][T090][start menu collapsed state]")
@@ -1816,19 +1818,19 @@ T091
 	NEW STATE,CONF,IN,OUT,ERR
 	DO RESET
 	DO CONFDEF^MIOOS(.CONF)
-	DO EQ^MIOTASSERT(+$GET(CONF("mioos","fs","textChunkBytes")),860000,"[MIOOST][T091][default chunk size safe]")
+	DO EQ^MIOTASSERT(+$GET(CONF("mioos","fs","textChunkBytes")),65536,"[MIOOST][T091][default chunk size safe]")
 	DO EQ^MIOTASSERT(+$GET(CONF("mioos","fs","textChunkThresholdBytes")),2411725,"[MIOOST][T091][threshold preserved]")
 	DO OK^MIOTASSERT(+$GET(CONF("mioos","fs","textChunkBytes"))<+$GET(CONF("mioos","fs","textChunkThresholdBytes")),"[MIOOST][T091][chunk size separated from threshold]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSST.m","textChunkSizeBytes"),"[MIOOST][T091][boot exposes textChunkSizeBytes]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","vfs.textChunkSizeBytes || vfs.textChunkBytes || MIOOS_TEXT_CHUNK_BASELINE_BYTES"),"[MIOOST][T091][frontend separate chunk config]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","Math.min(MIOOS_TEXT_CHUNK_BASELINE_BYTES"),"[MIOOST][T091][frontend maxstring safe clamp]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","vfs.textChunkSizeBytes || vfs.textChunkBytes || MIOOS_TEXT_WS_SAFE_CHUNK_BYTES"),"[MIOOST][T091][frontend separate chunk config]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","Math.min(safeMax"),"[MIOOST][T091][frontend maxstring safe clamp]")
 	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","Math.max(size || 0, threshold)"),0,"[MIOOST][T091][no threshold as default chunk]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","textChunkRequestKey(id, offset, size)"),"[MIOOST][T091][chunk dedupe includes size]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","readTextChunkViaHttp"),"[MIOOST][T091][http text chunk fallback]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","Socket chunk failed; using HTTP text-chunk fallback"),"[MIOOST][T091][socket fallback feedback]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","HTTP text chunk failed; using bounded WebSocket fallback"),"[MIOOST][T091][explicit opt-in socket fallback feedback]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","Text chunk paused; retry from the current offset is available"),"[MIOOST][T091][retry feedback]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","targetOffset = textViewerByteOffsetForScroll"),"[MIOOST][T091][scroll target offset mapping]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","view-only-large-file"),"[MIOOST][T091][large file readonly mode]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","full-on-demand"),"[MIOOST][T091][large file edit on demand mode]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","textViewerLoadCompleteFile"),"[MIOOST][T091][editable files load in safe chunks]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","clearTextViewerChunkCache(stream.fileId)"),"[MIOOST][T091][save clears stale chunk cache]")
 	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","/api/mioos/fs/blob full-file fallback"),0,"[MIOOST][T091][no blob fallback marker for text]")
@@ -1868,7 +1870,7 @@ T092
 	NEW CONF
 	DO RESET
 	DO CONFDEF^MIOOS(.CONF)
-	DO EQ^MIOTASSERT(+$GET(CONF("mioos","fs","textChunkBytes")),860000,"[MIOOST][T092][default chunk size safe]")
+	DO EQ^MIOTASSERT(+$GET(CONF("mioos","fs","textChunkBytes")),65536,"[MIOOST][T092][default chunk size safe]")
 	DO OK^MIOTASSERT(+$GET(CONF("mioos","fs","textChunkBytes"))<+$GET(CONF("mioos","fs","textChunkThresholdBytes")),"[MIOOST][T092][chunk size remains below threshold]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","theme-dark-mode .mioos-start-menu-vue .mioos-start-modern-item"),"[MIOOST][T092][dark start menu launchable text]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","theme-dark-mode .mioos-start-menu-vue .mioos-start-entry-vue"),"[MIOOST][T092][dark pinned/group item text]")
@@ -1882,10 +1884,10 @@ T092
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","textChunkRequestKey(id, offset, size)"),"[MIOOST][T092][chunk requests dedupe by id offset size]")
 	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","Socket timed out; retrying text chunk"),0,"[MIOOST][T092][no automatic socket retry loop]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","retryPolicy: 'manual-only'"),"[MIOOST][T092][failed chunks are manual retry only]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","vfs.textChunkSizeBytes || vfs.textChunkBytes || MIOOS_TEXT_CHUNK_BASELINE_BYTES"),"[MIOOST][T092][default chunk size not threshold]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","vfs.textChunkSizeBytes || vfs.textChunkBytes || MIOOS_TEXT_WS_SAFE_CHUNK_BYTES"),"[MIOOST][T092][default chunk size not threshold]")
 	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","size: 2411725"),0,"[MIOOST][T092][no 2411725 default chunk request]")
 	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","this.command('fs.read'"),0,"[MIOOST][T092][no whole-file read fallback]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","view-only-large-file"),"[MIOOST][T092][large text edit explicit safe mode]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","full-on-demand"),"[MIOOST][T092][large text edit on demand mode]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","clearTextViewerChunkCache(stream.fileId)"),"[MIOOST][T092][save clears stale cache]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","IF SIZE>LIMIT SET SIZE=LIMIT"),"[MIOOST][T092][ws chunk maxstring clamp]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSFS.m","QUIT:$DATA(ERR("),"[MIOOST][T092][backend range read stops on error]")
@@ -1919,7 +1921,7 @@ T093
 	NEW CONF,STATE,OUT,ERR,ID,RAW,TREE,JSON,BIG
 	DO RESET
 	DO CONFDEF^MIOOS(.CONF)
-	DO EQ^MIOTASSERT(+$GET(CONF("mioos","fs","textChunkBytes")),860000,"[MIOOST][T093][default transport chunk safe]")
+	DO EQ^MIOTASSERT(+$GET(CONF("mioos","fs","textChunkBytes")),65536,"[MIOOST][T093][default transport chunk safe]")
 	DO EQ^MIOTASSERT(+$GET(CONF("mioos","fs","textChunkThresholdBytes")),2411725,"[MIOOST][T093][virtualization threshold retained]")
 	DO OK^MIOTASSERT(+$GET(CONF("mioos","fs","textChunkBytes"))<+$GET(CONF("mioos","fs","textChunkThresholdBytes")),"[MIOOST][T093][chunk size separate from threshold]")
 	DO OK^MIOTASSERT(+$GET(CONF("mioos","fs","textChunkBytes"))'>860000,"[MIOOST][T093][chunk maxstring safe]")
@@ -1949,8 +1951,8 @@ T093
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","retryPolicy: 'manual-only'"),"[MIOOST][T093][manual retry policy]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","readTextChunkViaHttp"),"[MIOOST][T093][http range fallback retained]")
 	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","this.command('fs.read'"),0,"[MIOOST][T093][no full file read fallback]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","Large text files are chunked read-only above the bounded edit limit"),"[MIOOST][T093][large edit explicit]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","!textCanEdit"),"[MIOOST][T093][large edit button disabled]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","Large file is viewable now. Choose Edit to load all chunks for editing"),"[MIOOST][T093][large edit explicit]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","textCanEdit: function () { return !!this.textStream; }"),"[MIOOST][T093][large edit button enabled]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","clearTextViewerChunkCache(stream.fileId)"),"[MIOOST][T093][save clears chunk cache]")
 	DO INIT^MIOOS(.CONF)
 	SET STATE("principal")=$GET(CONF("mioos","bootstrapAuth","admin","username"),"admin")
@@ -1977,8 +1979,8 @@ T093
 	SET CONF("mioos","fs","maxTextEditBytes")=16
 	SET BIG=$$TSTR("X",17)
 	KILL TREE,JSON,ERR SET TREE("id")=ID,TREE("content")=BIG,TREE("requestId")="t093-save-large"
-	DO EQ^MIOTASSERT($$FSTEXTSAVE^MIOOSWS(.STATE,.CONF,.TREE,.JSON,.ERR),0,"[MIOOST][T093][large save rejected]")
-	DO EQ^MIOTASSERT($GET(ERR("error")),"text_draft_too_large","[MIOOST][T093][large save message]")
+	DO OK^MIOTASSERT($$FSTEXTSAVE^MIOOSWS(.STATE,.CONF,.TREE,.JSON,.ERR),"[MIOOST][T093][large save accepted after cap removal]")
+	DO OK^MIOTASSERT(JSON["fullEditOnDemand","[MIOOST][T093][large save unbounded marker]")
 	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","ROI 93"),"[MIOOST][T093][docs updated]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 93"),"[MIOOST][T093][llm updated]")
 	QUIT
@@ -2105,7 +2107,7 @@ T097
 	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","readAsDataURL"),0,"[MIOOST][T097][no dataurl upload]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSFSUP.m","IF N>860000 SET N=860000"),"[MIOOST][T097][upload maxstring clamp]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOS.m","upload"",""chunkBytes"")=860000"),"[MIOOST][T097][upload chunk default separate]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOS.m","textChunkBytes"")=860000"),"[MIOOST][T097][text chunk default raised]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOS.m","textChunkBytes"")=65536"),"[MIOOST][T097][text chunk default safe]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","textChunkRequestKey(id, offset, size)"),"[MIOOST][T097][dedupe key]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","lastRequestedOffset"),"[MIOOST][T097][stale response guard]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","clearTextViewerChunkCache(stream.fileId)"),"[MIOOST][T097][save invalidates cache]")
@@ -2125,9 +2127,10 @@ T098
 	SET OLD131=130000+1072,OLD262=260000+2144
 	DO RESET
 	DO CONFDEF^MIOOS(.CONF)
-	DO EQ^MIOTASSERT(+$GET(CONF("mioos","fs","textChunkBytes")),860000,"[MIOOST][T098][text default chunk size]")
+	DO EQ^MIOTASSERT(+$GET(CONF("mioos","fs","textChunkBytes")),65536,"[MIOOST][T098][text default chunk size]")
 	DO EQ^MIOTASSERT(+$GET(CONF("mioos","upload","chunkBytes")),860000,"[MIOOST][T098][upload default chunk size]")
-	DO EQ^MIOTASSERT(+$GET(CONF("mioos","download","httpChunkBytes")),860000,"[MIOOST][T098][http default chunk size]")
+	DO EQ^MIOTASSERT(+$GET(CONF("mioos","download","httpChunkBytes")),860000,"[MIOOST][T098][http default chunk size separate]")
+	DO EQ^MIOTASSERT($GET(CONF("mioos","fs","maxTextEditBytes")),"","[MIOOST][T098][max edit default removed]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTHEME.m","avatarUrl")&$$FILEHAS("routines/MIOOSTHEME.m","PUBLICASSET"),"[MIOOST][T098][login avatar persisted marker]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTHEME.m","specificProfile")&$$FILEHAS("routines/MIOOSTHEME.m","LOGINUSER"),"[MIOOST][T098][username-stage specific profile]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTHEME.m","$$SAFE(ID)=ID"),"[MIOOST][T098][public asset id validation]")
@@ -2154,12 +2157,15 @@ T098
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","Show Status")&$$FILEHAS("public/mioos/app/mioos_shell_ui.js","Pin Status"),"[MIOOST][T098][window options status]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","data-text-status-auto-hide"),"[MIOOST][T098][status does not reserve hidden]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","readTextChunkPreferred"),"[MIOOST][T098][http preferred text chunk]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","MIOOS_TEXT_WS_SAFE_CHUNK_BYTES = 65536"),"[MIOOST][T098][safe websocket chunk ceiling]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","MIOOS_TEXT_VIRTUAL_THRESHOLD_BYTES = 2411725"),"[MIOOST][T098][threshold separate from chunk]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","readTextChunkViaHttp(item, opts)"),"[MIOOST][T098][http first reader]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","textChunkRequestKey(id, offset, size)"),"[MIOOST][T098][chunk dedupe]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","staleTextChunkResponseIgnored"),"[MIOOST][T098][stale chunk ignored]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","large_partial_text_save_blocked"),"[MIOOST][T098][large partial save guard]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","full_text_not_loaded_for_save"),"[MIOOST][T098][save waits for complete file]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","FSTEXTCHUNK(DEV,CONF,REQ,CTX)")&$$FILEHAS("routines/MIOOSAPI.m","REQUIREAUTH"),"[MIOOST][T098][http chunk auth]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","IF SIZE>LIMIT SET SIZE=LIMIT"),"[MIOOST][T098][http chunk clamp]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","invalid_offset")&$$FILEHAS("routines/MIOOSAPI.m","invalid_size"),"[MIOOST][T098][invalid chunk request rejected]")
 	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","vfs.textChunkSizeBytes || vfs.textChunkBytes || "_OLD131),0,"[MIOOST][T098][no stale frontend chunk fallback]")
 	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","Math.min("_OLD262),0,"[MIOOST][T098][no stale frontend clamp]")
 	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","ROI 98"),"[MIOOST][T098][readme docs]")
@@ -2167,3 +2173,90 @@ T098
 	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/Backend_Table.md","ROI 98"),"[MIOOST][T098][backend docs]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 98"),"[MIOOST][T098][llm docs]")
 	QUIT
+
+	;
+T099
+	NEW STATE,CONF,ROOT,OUT,PRE,ERR,USER,AROOT
+	DO RESET
+	DO CONFDEF^MIOOS(.CONF)
+	SET STATE("themePublicAssetPath")="/api/mioos/theme-public-asset",STATE("authenticated")=1,STATE("principal")="alice"
+	SET ROOT=$NAME(^MIO("MIOOS","THEME","PROFILE","alice","login-theme"))
+	SET @ROOT@("key")="login-theme",@ROOT@("id")="login-theme",@ROOT@("name")="Login Theme",@ROOT@("mode")="dark"
+	SET @ROOT@("loginScreenConfig","wallpaperUrl")="/api/mioos/theme-asset?id=common-bg"
+	SET @ROOT@("loginScreenConfig","avatarUrl")="/api/mioos/theme-asset?id=avatar-img"
+	SET @ROOT@("loginScreenConfig","warningImageUrl")="/api/mioos/theme-asset?id=warn-img"
+	SET @ROOT@("loginScreenConfig","warningTitle")="Authorized access only"
+	SET ^MIO("MIOOS","THEMEASSET","alice","common-bg","META")="image/png^bg.png^1"
+	SET ^MIO("MIOOS","THEMEASSET","alice","avatar-img","META")="image/png^avatar.png^1"
+	SET ^MIO("MIOOS","THEMEASSET","alice","warn-img","META")="image/png^warning.png^1"
+	DO PUBLOGIN^MIOOSTHEME(.STATE,"alice","login-theme",ROOT)
+	DO OK^MIOTASSERT($$LOGINPUBLIC^MIOOSTHEME(.CONF,"",.PRE,.ERR),"[MIOOST][T099][common public login theme]")
+	DO EQ^MIOTASSERT($GET(PRE("profile","loginScreenConfig","warningImageUrl")),"","[MIOOST][T099][common warning hidden before username]")
+	KILL OUT,ERR DO OK^MIOTASSERT($$LOGINPUBLIC^MIOOSTHEME(.CONF,"alice",.OUT,.ERR),"[MIOOST][T099][specific public login theme]")
+	DO OK^MIOTASSERT($GET(OUT("specificProfile","loginScreenConfig","warningImageUrl"))["/api/mioos/theme-public-asset?id=warn-img","[MIOOST][T099][specific warning public url]")
+	DO EQ^MIOTASSERT($GET(OUT("specificProfile","loginScreenConfig","warningImageAssetId")),"warn-img","[MIOOST][T099][specific warning marker key]")
+	DO OK^MIOTASSERT($GET(OUT("specificProfile","loginScreenConfig","warningImageUrl"))'=$GET(OUT("specificProfile","loginScreenConfig","wallpaperUrl")),"[MIOOST][T099][warning distinct from background]")
+	DO EQ^MIOTASSERT($GET(OUT("specificProfile","loginScreenConfig","warningImageUrl"))["data:",0,"[MIOOST][T099][warning no dataurl]")
+	DO EQ^MIOTASSERT($GET(OUT("specificProfile","loginScreenConfig","warningImageUrl"))["/mnt/",0,"[MIOOST][T099][warning no raw path]")
+	DO OK^MIOTASSERT($$PUBLICAS^MIOOSTHEME("warn-img",.USER,.AROOT),"[MIOOST][T099][public warning asset resolves]")
+	DO EQ^MIOTASSERT(USER,"alice","[MIOOST][T099][public warning owner scoped]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_auth.js","specificProfile || result.json.profile"),"[MIOOST][T099][frontend prefers specific warning profile]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_auth.js","handleLoginWarningImageError"),"[MIOOST][T099][missing warning clears broken image]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","data-login-warning-image-stage"),"[MIOOST][T099][warning dom binding marker]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","@error=""vm.handleLoginWarningImageError"),"[MIOOST][T099][warning image error binding]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","Login-specific theme")&$$FILEHAS("public/mioos/app/mioos_shell_ui.js","warningImageUrl"),"[MIOOST][T099][admin warning upload field]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","ROI 99: dark readable table contract"),"[MIOOST][T099][dark table roi marker]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","--mioos-dark-table-cell-bg")&$$FILEHAS("public/mioos/mioos.css","--mioos-dark-table-text"),"[MIOOST][T099][dark table vars]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".theme-dark-mode .mioos-full-table .mioos-table-grid tbody td"),"[MIOOST][T099][advanced cell dark selector]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".theme-dark-mode .mioos-full-table.density-compact .mioos-table-grid tbody td"),"[MIOOST][T099][dense table dark selector]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".theme-dark-mode .mioos-surface-table .mioos-table-grid tbody td"),"[MIOOST][T099][patient/surface table dark selector]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".theme-dark-mode .mioos-table-showcase .mioos-table-grid tbody td"),"[MIOOST][T099][simple/showcase table dark selector]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".theme-dark-mode .mioos-table-filter-modal input"),"[MIOOST][T099][advanced filter input dark selector]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".theme-dark-mode .mioos-full-table .mioos-table-grid tr.is-selected td"),"[MIOOST][T099][selected row readable]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","theme-dark-mode *"),0,"[MIOOST][T099][no global wildcard dark override]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","Opening large text in HTTP chunked view mode"),"[MIOOST][T099][large initial range only marker]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","full-on-demand"),"[MIOOST][T099][large edit on demand mode]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","retryPolicy: 'manual-only'"),"[MIOOST][T099][manual retry only]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","pruneTextViewerChunkCache"),"[MIOOST][T099][cache prune marker]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","saveTextViaChunkedHttp")&$$FILEHAS("public/mioos/app/mioos_explorer.js","saveTextViaHttp"),"[MIOOST][T099][chunked/http save route marker]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","fullEditOnDemand"),"[MIOOST][T099][backend unbounded edit marker]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","maxChunkBytes")&$$FILEHAS("routines/MIOOSAPI.m","chunkThresholdBytes"),"[MIOOST][T099][chunk and threshold response markers]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","textCanEdit: function () { return !!this.textStream; }")&$$FILEHAS("public/mioos/app/mioos_shell_ui.js","Large file is viewable now. Choose Edit to load all chunks for editing"),"[MIOOST][T099][save edit enabled for virtual large]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","ROI 99"),"[MIOOST][T099][readme docs]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/UI_Modules.md","ROI 99"),"[MIOOST][T099][ui docs]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/Backend_Table.md","ROI 99"),"[MIOOST][T099][backend docs]")
+	DO OK^MIOTASSERT($$FILEHAS("examples/mioos_modules/table/README.md","ROI 99"),"[MIOOST][T099][table example docs]")
+	DO OK^MIOTASSERT($$FILEHAS("examples/mioos_modules/patient_registration/README.md","ROI 99"),"[MIOOST][T099][patient example docs]")
+	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 99"),"[MIOOST][T099][llm docs]")
+	QUIT
+	;
+T100
+	NEW CONF,STATE,OUT,ERR,ID,TREE,JSON
+	DO RESET
+	DO CONFDEF^MIOOS(.CONF)
+	DO EQ^MIOTASSERT(+$GET(CONF("mioos","fs","textChunkBytes")),65536,"[MIOOST][T100][smaller text chunk default]")
+	DO EQ^MIOTASSERT($GET(CONF("mioos","fs","maxTextEditBytes")),"","[MIOOST][T100][max text edit cap removed]")
+	DO OK^MIOTASSERT($GET(CONF("mioos","route","fsTextSave"))="/api/mioos/fs/text-save","[MIOOST][T100][http text save route default]")
+	DO INIT^MIOOSFS(.CONF)
+	SET STATE("authenticated")=1,STATE("principal")="admin",STATE("roles")="admin"
+	KILL OUT,ERR DO OK^MIOTASSERT($$WRITE^MIOOSFS(.STATE,$$HOMEID^MIOOSFS(),"t100-all-editable.txt","abc","text/plain",.OUT,.ERR),"[MIOOST][T100][write editable text setup]")
+	SET ID=$GET(OUT("id"))
+	SET CONF("mioos","fs","maxTextEditBytes")=1
+	KILL TREE,JSON,ERR SET TREE("id")=ID,TREE("content")="abcdef",TREE("mime")="text/plain",TREE("requestId")="t100-save"
+	DO OK^MIOTASSERT($$FSTEXTSAVE^MIOOSWS(.STATE,.CONF,.TREE,.JSON,.ERR),"[MIOOST][T100][save not rejected by removed cap]")
+	DO OK^MIOTASSERT(JSON["fullEditOnDemand","[MIOOST][T100][save returns full edit marker]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","noWebSocketFallback: !!stream.virtualized"),"[MIOOST][T100][large view skips websocket fallback]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","saveTextViaChunkedHttp")&$$FILEHAS("public/mioos/app/mioos_explorer.js","fsUploadChunk")&$$FILEHAS("public/mioos/app/mioos_explorer.js","/api/mioos/fs/text-save"),"[MIOOST][T100][chunked/http save frontend]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","Loading all chunks for editable text"),"[MIOOST][T100][large edit loads all chunks]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","stream.virtualized = false"),"[MIOOST][T100][full edit switches out of virtual view]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","parentId: (item || {}).parentId")&$$FILEHAS("public/mioos/app/mioos_explorer.js","new Blob([content]")&$$FILEHAS("public/mioos/app/mioos_explorer.js","X-MIOOS-Upload-Bytes"),"[MIOOST][T100][chunked save avoids full json payload]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","textViewerDraftByteLength"),0,"[MIOOST][T100][client edit byte cap removed]")
+	DO EQ^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","text_save_payload_too_large"),0,"[MIOOST][T100][backend edit byte cap removed]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","FSTEXTSAVE(DEV,CONF,REQ,CTX)"),"[MIOOST][T100][http save backend]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSST.m","OBJ(""routes"",""fsTextSave"")"),"[MIOOST][T100][boot exposes http save route]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","ROI 100 large text edit cap removal"),"[MIOOST][T100][readme docs]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/UI_Modules.md","ROI 100 text viewer integration note"),"[MIOOST][T100][ui docs]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/Backend_Table.md","ROI 100 text helper note"),"[MIOOST][T100][backend docs]")
+	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 100 handoff"),"[MIOOST][T100][llm docs]")
+	QUIT
+

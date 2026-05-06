@@ -336,3 +336,8 @@ For MUMPS-first examples, keep the table module contract explicit in module JSON
 ## ROI 98 display note
 
 The basic read-only and massive read-only examples do not need new MUMPS fields. Dark mode now supplies readable header, body cell, hover, and selected-state colors for read-only table surfaces automatically.
+
+
+## ROI 99 regression notes
+
+The table example relies on shared `mioos-full-table` styling. In Dark Theme, normal cells, dense cells, editable CRUD cells, headers, hover, selected rows, filter inputs, and empty/error states are readable without requiring hover. Keep example CSS MUMPS-first and avoid hardcoded light row backgrounds in module definitions.

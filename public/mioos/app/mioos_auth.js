@@ -36,11 +36,12 @@
       },
       applyCommonLoginTheme: function () {
         var profile = ((((this.boot || {}).desktop || {}).activeThemeProfile) || null);
-        if (!this.authLoginTheme) this.authLoginTheme = { status: 'idle', requestSeq: 0, username: '', commonProfile: null, specificProfile: null, appliedCommonTheme: null, appliedSpecificTheme: null, error: '' };
+        if (!this.authLoginTheme) this.authLoginTheme = { status: 'idle', requestSeq: 0, username: '', commonProfile: null, specificProfile: null, appliedCommonTheme: null, appliedSpecificTheme: null, error: '', warningImageError: 0 };
         this.authLoginTheme.commonProfile = profile;
         this.authLoginTheme.specificProfile = null;
         this.authLoginTheme.appliedCommonTheme = null;
         this.authLoginTheme.appliedSpecificTheme = null;
+        this.authLoginTheme.warningImageError = 0;
         if (profile && this.applyLoginThemeProfile) this.applyLoginThemeProfile(profile, 'common');
       },
       applyLoginThemeProfile: function (profile, stage) {
@@ -51,6 +52,7 @@
         theme.publicLogin = true;
         if (theme.loginScreenConfig) theme.loginScreenConfig.publicLogin = true;
         if (this.authLoginTheme) {
+          this.authLoginTheme.warningImageError = 0;
           if (String(stage || '').indexOf('login-specific') >= 0 || String(stage || '').indexOf('password') >= 0 || String(stage || '').indexOf('loaded') >= 0) this.authLoginTheme.appliedSpecificTheme = theme;
           else this.authLoginTheme.appliedCommonTheme = theme;
         }
@@ -58,10 +60,11 @@
         if (this.authLoginTheme) this.authLoginTheme.status = stage || 'applied';
       },
       clearLoginSpecificAssets: function (reason) {
-        if (!this.authLoginTheme) this.authLoginTheme = { status: 'idle', requestSeq: 0, username: '', commonProfile: null, specificProfile: null, appliedCommonTheme: null, appliedSpecificTheme: null, error: '' };
+        if (!this.authLoginTheme) this.authLoginTheme = { status: 'idle', requestSeq: 0, username: '', commonProfile: null, specificProfile: null, appliedCommonTheme: null, appliedSpecificTheme: null, error: '', warningImageError: 0 };
         this.authLoginTheme.requestSeq += 1;
         this.authLoginTheme.specificProfile = null;
         this.authLoginTheme.appliedSpecificTheme = null;
+        this.authLoginTheme.warningImageError = 0;
         this.authLoginTheme.username = '';
         this.authLoginTheme.error = '';
         this.authLoginTheme.status = reason || 'cleared';
@@ -70,6 +73,14 @@
         if (this.authForm) this.authForm.password = '';
         if (this.authPasswordChange) this.authPasswordChange.required = false;
         if (this.authLoginTheme.commonProfile && this.applyLoginThemeProfile) this.applyLoginThemeProfile(this.authLoginTheme.commonProfile, 'common-cleared');
+      },
+      handleLoginWarningImageError: function (event) {
+        if (!this.authLoginTheme) this.authLoginTheme = { status: 'idle', requestSeq: 0, username: '', commonProfile: null, specificProfile: null, appliedCommonTheme: null, appliedSpecificTheme: null, error: '', warningImageError: 0 };
+        this.authLoginTheme.warningImageError = 1;
+        if (event && event.target) {
+          event.target.removeAttribute('src');
+          event.target.style.display = 'none';
+        }
       },
       submitLoginNameStage: function () {
         var self = this;
@@ -81,12 +92,13 @@
           this.setAuthFeedback('warning', 'Username required', 'Enter your username to continue.');
           return;
         }
-        if (!this.authLoginTheme) this.authLoginTheme = { status: 'idle', requestSeq: 0, username: '', commonProfile: null, specificProfile: null, appliedCommonTheme: null, appliedSpecificTheme: null, error: '' };
+        if (!this.authLoginTheme) this.authLoginTheme = { status: 'idle', requestSeq: 0, username: '', commonProfile: null, specificProfile: null, appliedCommonTheme: null, appliedSpecificTheme: null, error: '', warningImageError: 0 };
         seq = (this.authLoginTheme.requestSeq || 0) + 1;
         this.authLoginTheme.requestSeq = seq;
         this.authLoginTheme.username = username;
         this.authLoginTheme.status = 'loading';
         this.authLoginTheme.error = '';
+        this.authLoginTheme.warningImageError = 0;
         this.authBusy = true;
         this.dismissAlert();
         this.setAuthFeedback('info', 'Loading login screen', 'Preparing the next step…');
@@ -103,7 +115,7 @@
             if (!result.ok || !result.json || result.json.ok !== 1) {
               throw new Error('login_theme_failed');
             }
-            profile = result.json.profile || result.json.loginTheme || result.json.specificProfile || null;
+            profile = result.json.specificProfile || result.json.profile || result.json.loginTheme || null;
             self.authLoginTheme.specificProfile = profile;
             self.authLoginTheme.status = 'loaded';
             self.authUsernameAccepted = true;

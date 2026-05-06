@@ -99,7 +99,7 @@
                   "<label class=\"mioos-auth-field\" data-login-username-stage=\"visible\"><span>[[ vm.t('auth.username') ]]</span><input v-model=\"vm.authForm.username\" type=\"text\" autocomplete=\"username\" :disabled=\"vm.authStage === 'password' && vm.authUsernameAccepted\" @keydown.enter=\"vm.submitLoginNameStage\"></label>" +
                   "<label v-if=\"vm.authStage === 'password'\" class=\"mioos-auth-field\" data-login-password-stage=\"visible\"><span>[[ vm.t('auth.password') ]]</span><input v-model=\"vm.authForm.password\" type=\"password\" autocomplete=\"current-password\" @keydown.enter=\"vm.submitSignin\"></label>" +
                   '<aside class="theme-login-disclaimer" role="note">' +
-                    '<img v-if="vm.activeLoginWarningImageUrl()" :src="vm.activeLoginWarningImageUrl()" alt="" aria-hidden="true">' +
+                    '<img v-if="vm.activeLoginWarningImageUrl()" :src="vm.activeLoginWarningImageUrl()" alt="" aria-hidden="true" @error="vm.handleLoginWarningImageError && vm.handleLoginWarningImageError($event)" data-login-warning-image-stage="username-specific-warning-target">' +
                     '<div><strong>[[ vm.activeLoginWarningTitle() ]]</strong><p>[[ vm.activeLoginDisclaimer() ]]</p></div>' +
                   '</aside>' +
                   '<div class="mioos-auth-actions">' +
@@ -167,8 +167,8 @@
           isMedia: function () { return String((this.window || {}).appKey || '') === 'media-viewer'; },
           isExplorer: function () { return ['explorer','home','documents','my-computer'].indexOf(String((this.window || {}).appKey || '')) >= 0; },
           textStream: function () { return ((((this.window || {}).fileView) || {}).textStream) || null; },
-          textCanEdit: function () { var s = this.textStream || {}; return !!this.textStream && !(+s.size > 0 && +s.maxEditBytes > 0 && +s.size > +s.maxEditBytes); },
-          textEditDisabledReason: function () { return this.textCanEdit ? '' : 'Large text files are chunked read-only above the bounded edit limit.'; },
+          textCanEdit: function () { return !!this.textStream; },
+          textEditDisabledReason: function () { return this.textCanEdit ? '' : 'Text editing is unavailable for this item.'; },
           mediaLoop: {
             get: function () { return !!((((this.window || {}).fileView) || {}).mediaLoop); },
             set: function (value) { if (this.window && this.window.fileView) this.window.fileView.mediaLoop = !!value; }
@@ -482,8 +482,8 @@
           textPlainStyle: function () { var s = this.textStream || {}; return { fontSize: (12 * (+(s.zoom || 1))) + 'px' }; },
           codeMirrorHostStyle: function () { var s = this.textStream || {}; return { fontSize: (12 * (+(s.zoom || 1))) + 'px' }; },
           documentPreviewStyle: function () { var s = this.textStream || {}; var zoom = Math.max(0.75, Math.min(2.25, +(s.zoom || 1))); return { '--mioos-markdown-preview-zoom': String(zoom), fontSize: (16 * zoom) + 'px' }; },
-          canEditText: function () { var s = this.textStream || {}; return !!this.textStream && !(+s.size > 0 && +s.maxEditBytes > 0 && +s.size > +s.maxEditBytes); },
-          textEditNotice: function () { return this.canEditText ? '' : 'Large file is chunked read-only above the bounded edit limit.'; },
+          canEditText: function () { return !!this.textStream; },
+          textEditNotice: function () { var s = this.textStream || {}; return (s.virtualized && !s.editing) ? 'Large file is viewable now. Choose Edit to load all chunks for editing.' : ''; },
           codeMirrorStatus: function () { var s = this.textStream || {}; return s.codeMirrorFallback || ''; },
           showRenderedDocumentPreview: function () { var s = this.textStream || {}; return !!s && !s.virtualized && !s.editing && !!(s.markdownPreviewEnabled || s.nativeHtmlPreview) && !!s.renderedPreviewHtml; },
           previewFrameSrcdoc: function () {

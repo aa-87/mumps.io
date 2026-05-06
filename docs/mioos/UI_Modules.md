@@ -190,7 +190,7 @@ Text/structured file windows now prefer the local CodeMirror helper for small an
 
 ## ROI 97 viewer and login-theme module notes
 
-File modules should treat Markdown, HTML, PDF, and large text as viewer capabilities rather than direct blob reads. `.md` files default to a local Marked rendered preview and use CodeMirror only when the user enters edit mode and the file is below the bounded edit limit. `.html` and `.htm` files render in sandboxed iframe preview mode without scripts; `.pdf` files use the browser-native PDF renderer via the authenticated local blob route. Large text-like files remain chunked read-only and must not request `/api/mioos/fs/blob` for full-file content.
+File modules should treat Markdown, HTML, PDF, and large text as viewer capabilities rather than direct blob reads. `.md` files default to a local Marked rendered preview and use CodeMirror only when the user enters edit mode and the file is below the full edit-on-demand limit. `.html` and `.htm` files render in sandboxed iframe preview mode without scripts; `.pdf` files use the browser-native PDF renderer via the authenticated local blob route. Large text-like files open in HTTP chunked view mode and must not request `/api/mioos/fs/blob` for full-file content; choosing Edit stitches chunks into the editor.
 
 The theme editor separates common pre-login theme settings from login-specific settings. Common settings are safe before username entry; login-specific avatar/warning/CSS loads only after the username stage and is cleared when the username changes.
 
@@ -198,3 +198,17 @@ The theme editor separates common pre-login theme settings from login-specific s
 ## ROI 98 UI notes
 
 Dark-mode Theme Studio clear/neutral buttons now use scoped `data-theme-editor-secondary` selectors and keep `#004cff` text with accessible hover/focus-visible states. Read-only table presentations receive dark header/body/hover/selected styling without changing the module author contract or the Advanced Table editable CRUD controls. Markdown and HTML preview panes fill the viewer client area and use the existing viewer Zoom In/Zoom Out controls.
+
+
+## ROI 99 UI notes
+
+Table-like modules must rely on the shared `mioos-full-table` / `mioos-surface-table` surfaces instead of hardcoded light row backgrounds. Dark Theme readability now covers simple read-only examples, dense operational examples, editable CRUD tables, Patient Registration, and advanced filter/modal inputs through scoped `.theme-dark-mode` table selectors. Do not add global `* { color: white }` rules; use the table variables and classes already present in `public/mioos/mioos.css`.
+
+Login-screen modules and theme examples should keep common pre-login visuals separate from username-stage visuals. Avatar and warning image uploads are persisted as theme assets and exposed pre-auth only through the staged public asset route after the username-stage request.
+
+Text viewer integrations should treat files above the virtualization threshold as HTTP-chunked virtual text until the user chooses Edit. The shared Edit action stitches chunks into the editor on demand; use the existing status/retry affordances rather than background auto-load or retry loops.
+
+
+## ROI 100 text viewer integration note
+
+Text modules should treat all text-like files as editable. Large files should open first in HTTP chunked view mode, then use the shared **Edit** action to stitch safe chunks into the editor on demand. Do not add module-level full-blob reads or WebSocket-only large-text loaders; use the shell's `/api/mioos/fs/text-chunk` viewer path and chunked HTTP save/upload path.

@@ -35,6 +35,7 @@
         fsUploadAbort: '/api/mioos/fs/upload/abort',
         fsBlob: '/api/mioos/fs/blob',
         fsTextChunk: '/api/mioos/fs/text-chunk',
+        fsTextSave: '/api/mioos/fs/text-save',
         debugSnapshotCommand: 'debug.snapshot',
         websocket: '/ws/mioos',
         terminalWebsocket: '/ws/mioos/terminal',
@@ -150,7 +151,7 @@
         maxFrameBytes: 262144,
         maxMessageBytes: 1048576
       },
-      vfs: { enabled: false, rootId: 'root', homeId: 'home', desktopId: 'desktop', chunkSize: 860000, httpChunkBytes: 860000, readPreviewBytes: 860000, readWindowBytes: 860000, textChunkBytes: 860000, textChunkSizeBytes: 860000, textChunkThresholdBytes: 2411725, maxTextEditBytes: 2411725, mediaInitialBytes: 860000, mediaWarmupBytes: 860000, globalsOnly: true, uploadStaleSeconds: 1800, downloadStaleSeconds: 900, uploadChunkBytes: 860000, uploadConcurrency: 3, transferPersistence: 'localstorage-resumable-transfer-list', transferControls: { cancel: true, retry: true, pause: true, resume: true } },
+      vfs: { enabled: false, rootId: 'root', homeId: 'home', desktopId: 'desktop', chunkSize: 860000, httpChunkBytes: 860000, readPreviewBytes: 860000, readWindowBytes: 860000, textChunkBytes: 65536, textChunkSizeBytes: 65536, textChunkSafeMaxBytes: 65536, textChunkThresholdBytes: 2411725, maxTextEditBytes: 0, mediaInitialBytes: 860000, mediaWarmupBytes: 860000, globalsOnly: true, uploadStaleSeconds: 1800, downloadStaleSeconds: 900, uploadChunkBytes: 860000, uploadConcurrency: 3, transferPersistence: 'localstorage-resumable-transfer-list', transferControls: { cancel: true, retry: true, pause: true, resume: true } },
       desktopEntries: [],
       desktopFolder: { id: '', path: '/Home/Desktop', canonicalPath: '/Home/Desktop', count: 0 },
       apps: [],

@@ -5232,6 +5232,158 @@ html[dir="rtl"] .mioos-window-menu-dropdown-vue,
   color: #ffffff !important;
 }
 
+
+
+/* ROI 99: dark readable table contract for read-only, dense, editable CRUD, patient, and advanced-filter tables. */
+.theme-dark-mode .mioos-full-table,
+.theme-dark-mode .mioos-surface-table,
+.theme-dark-mode .mioos-surface-table-showcase,
+.theme-dark-mode .mioos-table-showcase,
+.theme-dark-mode .mioos-table-editor {
+  --mioos-dark-table-bg: #020617;
+  --mioos-dark-table-cell-bg: #0f172a;
+  --mioos-dark-table-cell-alt-bg: #111827;
+  --mioos-dark-table-text: #f8fafc;
+  --mioos-dark-table-muted: #cbd5e1;
+  --mioos-dark-table-border: rgba(148,163,184,.28);
+  --mioos-dark-table-hover-bg: #1e293b;
+  --mioos-dark-table-selected-bg: #1d4ed8;
+  --mioos-dark-table-input-bg: #020617;
+  --mioos-dark-table-input-text: #f8fafc;
+}
+.theme-dark-mode .mioos-surface-table .mioos-full-table,
+.theme-dark-mode .mioos-surface-table-showcase .mioos-table-showcase,
+.theme-dark-mode .mioos-full-table .mioos-table-wrap,
+.theme-dark-mode .mioos-table-editor,
+.theme-dark-mode .mioos-table-showcase-card,
+.theme-dark-mode .mioos-table-patient-import-body {
+  background: var(--mioos-dark-table-bg) !important;
+  color: var(--mioos-dark-table-text) !important;
+  border-color: var(--mioos-dark-table-border) !important;
+}
+.theme-dark-mode .mioos-full-table .mioos-table-grid,
+.theme-dark-mode .mioos-full-table .mioos-table-grid tbody,
+.theme-dark-mode .mioos-full-table .mioos-table-grid tr,
+.theme-dark-mode .mioos-surface-table .mioos-table-grid,
+.theme-dark-mode .mioos-surface-table-showcase .mioos-table-grid,
+.theme-dark-mode .mioos-table-showcase .mioos-table-grid,
+.theme-dark-mode .mioos-simple-readonly-table,
+.theme-dark-mode .mioos-readonly-table {
+  background: var(--mioos-dark-table-bg) !important;
+  color: var(--mioos-dark-table-text) !important;
+}
+.theme-dark-mode .mioos-full-table .mioos-table-grid thead th,
+.theme-dark-mode .mioos-full-table .mioos-table-grid thead th.mioos-table-sticky,
+.theme-dark-mode .mioos-surface-table .mioos-table-grid thead th,
+.theme-dark-mode .mioos-surface-table-showcase .mioos-table-grid thead th,
+.theme-dark-mode .mioos-table-showcase .mioos-table-grid thead th,
+.theme-dark-mode .mioos-simple-readonly-table thead th,
+.theme-dark-mode .mioos-readonly-table thead th {
+  background: var(--mioos-dark-table-cell-alt-bg) !important;
+  color: var(--mioos-dark-table-text) !important;
+  border-color: var(--mioos-dark-table-border) !important;
+}
+.theme-dark-mode .mioos-full-table .mioos-table-grid tbody td,
+.theme-dark-mode .mioos-full-table .mioos-table-grid tbody td.mioos-table-sticky,
+.theme-dark-mode .mioos-full-table.density-compact .mioos-table-grid tbody td,
+.theme-dark-mode .mioos-surface-table .mioos-table-grid tbody td,
+.theme-dark-mode .mioos-surface-table-showcase .mioos-table-grid tbody td,
+.theme-dark-mode .mioos-table-showcase .mioos-table-grid tbody td,
+.theme-dark-mode .mioos-simple-readonly-table tbody td,
+.theme-dark-mode .mioos-readonly-table tbody td {
+  background: var(--mioos-dark-table-cell-bg) !important;
+  color: var(--mioos-dark-table-text) !important;
+  border-color: var(--mioos-dark-table-border) !important;
+}
+.theme-dark-mode .mioos-full-table .mioos-table-grid tbody tr:nth-child(even) td,
+.theme-dark-mode .mioos-surface-table .mioos-table-grid tbody tr:nth-child(even) td,
+.theme-dark-mode .mioos-surface-table-showcase .mioos-table-grid tbody tr:nth-child(even) td,
+.theme-dark-mode .mioos-table-showcase .mioos-table-grid tbody tr:nth-child(even) td {
+  background: var(--mioos-dark-table-cell-alt-bg) !important;
+  color: var(--mioos-dark-table-text) !important;
+}
+.theme-dark-mode .mioos-full-table .mioos-table-grid tbody tr:hover td,
+.theme-dark-mode .mioos-surface-table .mioos-table-grid tbody tr:hover td,
+.theme-dark-mode .mioos-surface-table-showcase .mioos-table-grid tbody tr:hover td,
+.theme-dark-mode .mioos-table-showcase .mioos-table-grid tbody tr:hover td,
+.theme-dark-mode .mioos-simple-readonly-table tbody tr:hover td,
+.theme-dark-mode .mioos-readonly-table tbody tr:hover td {
+  background: var(--mioos-dark-table-hover-bg) !important;
+  color: #ffffff !important;
+}
+.theme-dark-mode .mioos-full-table .mioos-table-grid tr.is-selected td,
+.theme-dark-mode .mioos-surface-table .mioos-table-grid tr.is-selected td,
+.theme-dark-mode .mioos-surface-table-showcase .mioos-table-grid tr.is-selected td,
+.theme-dark-mode .mioos-table-showcase .mioos-table-grid tr.is-selected td,
+.theme-dark-mode .mioos-simple-readonly-table tr.is-selected td,
+.theme-dark-mode .mioos-readonly-table tr.is-selected td {
+  background: var(--mioos-dark-table-selected-bg) !important;
+  color: #ffffff !important;
+}
+.theme-dark-mode .mioos-full-table .mioos-table-empty-row td,
+.theme-dark-mode .mioos-full-table .mioos-table-expanded-row td,
+.theme-dark-mode .mioos-full-table .mioos-table-group-row td,
+.theme-dark-mode .mioos-table-patient-banner,
+.theme-dark-mode .mioos-table-toast,
+.theme-dark-mode .mioos-table-error,
+.theme-dark-mode .mioos-field-error {
+  background: var(--mioos-dark-table-cell-alt-bg) !important;
+  color: var(--mioos-dark-table-text) !important;
+  border-color: var(--mioos-dark-table-border) !important;
+}
+.theme-dark-mode .mioos-full-table .mioos-table-cell,
+.theme-dark-mode .mioos-full-table .mioos-table-cell span,
+.theme-dark-mode .mioos-full-table .mioos-table-cell strong,
+.theme-dark-mode .mioos-full-table .mioos-table-cell-edit-button,
+.theme-dark-mode .mioos-full-table .mioos-table-cell-edit-button span,
+.theme-dark-mode .mioos-full-table .mioos-table-cell-edit-button strong,
+.theme-dark-mode .mioos-table-pager,
+.theme-dark-mode .mioos-table-pager span,
+.theme-dark-mode .mioos-table-column-list,
+.theme-dark-mode .mioos-table-filter-summary {
+  color: var(--mioos-dark-table-text) !important;
+}
+.theme-dark-mode .mioos-full-table input,
+.theme-dark-mode .mioos-full-table select,
+.theme-dark-mode .mioos-full-table textarea,
+.theme-dark-mode .mioos-table-editor input,
+.theme-dark-mode .mioos-table-editor select,
+.theme-dark-mode .mioos-table-editor textarea,
+.theme-dark-mode .mioos-table-filter-modal input,
+.theme-dark-mode .mioos-table-filter-modal select,
+.theme-dark-mode .mioos-table-filter-modal textarea,
+.theme-dark-mode .mioos-table-patient-import-body textarea,
+.theme-dark-mode .mioos-table-cell-editor,
+.theme-dark-mode .mioos-table-cell-editor input,
+.theme-dark-mode .mioos-table-cell-editor select,
+.theme-dark-mode .mioos-table-cell-editor textarea {
+  background: var(--mioos-dark-table-input-bg) !important;
+  color: var(--mioos-dark-table-input-text) !important;
+  border-color: var(--mioos-dark-table-border) !important;
+}
+.theme-dark-mode .mioos-full-table input:focus,
+.theme-dark-mode .mioos-full-table select:focus,
+.theme-dark-mode .mioos-full-table textarea:focus,
+.theme-dark-mode .mioos-table-cell-editor:focus-within {
+  background: #0b1220 !important;
+  color: #ffffff !important;
+  border-color: rgba(147,197,253,.72) !important;
+}
+.theme-dark-mode .mioos-full-table button,
+.theme-dark-mode .mioos-table-editor button,
+.theme-dark-mode .mioos-table-column-list button,
+.theme-dark-mode .mioos-table-filter-modal button {
+  color: var(--mioos-dark-table-text) !important;
+  border-color: var(--mioos-dark-table-border) !important;
+}
+.theme-dark-mode .mioos-full-table button:hover,
+.theme-dark-mode .mioos-table-editor button:hover,
+.theme-dark-mode .mioos-table-column-list button:hover,
+.theme-dark-mode .mioos-table-filter-modal button:hover {
+  background: var(--mioos-dark-table-hover-bg) !important;
+  color: #ffffff !important;
+}
+
 /* ROI 98: Markdown/HTML rendered preview fills the viewer pane and zooms through iframe srcdoc. */
 .mioos-text-virtual-viewer .mioos-document-preview[data-markdown-full-pane-preview="1"] {
   width: 100%;

@@ -467,7 +467,7 @@ This pass locks the server-backed user theme contract and related patient/table 
 
 ## Final regression stabilization contract
 
-This ROI locks the source-accurate shell contracts without changing the MUMPS.IO architecture. The text media viewer stays WebSocket-first and reads `fs.text.chunk` windows with byte-offset scroll synchronization. It maintains an in-flight request map and bounded chunk cache, and it no longer falls back to a full `fs.read` browser payload when range/chunk reads fail. Save remains deliberate: small files can enter full edit mode and write through `fs.text.save`; files over `mioos.fs.maxTextEditBytes` stay in bounded view-only mode with an explicit toast/message instead of attempting unsafe whole-file editing.
+This ROI locks the source-accurate shell contracts without changing the MUMPS.IO architecture. The text media viewer uses bounded `fs.text.chunk`/HTTP text windows with byte-offset scroll synchronization. It maintains an in-flight request map and bounded chunk cache, and it no longer falls back to a full `fs.read` browser payload when range/chunk reads fail. Save remains deliberate: text files enter full edit mode on demand by stitching bounded HTTP chunks, then save through HTTP chunk/upload plumbing rather than a large WebSocket payload.
 
 Theme Studio saves `mode`, `activeMode`, `defaultVariant`, `themeConfig.darkEnabled`, and dark variant data together. Startup hydration reads the same fields from the active server profile so a saved dark custom theme loads as dark on the next boot, while multiple user theme profiles remain available in the Start menu theme group.
 
@@ -478,7 +478,7 @@ Transfers use the animated `mioos-transfer-status-panel` contract instead of the
 
 ## Checkpoint stabilization 2026-05-05
 
-This checkpoint adds two hardening contracts on top of the final regression stabilization pass. First, bounded text editing is enforced on both sides of the WebSocket contract: `fs.text.chunk` publishes `maxEditBytes`, the browser preflights saves with `textViewerDraftByteLength`, and `FSTEXTSAVE^MIOOSWS` rejects oversized drafts with `text_draft_too_large` instead of attempting a risky whole-file write.
+This checkpoint adds two hardening contracts on top of the final regression stabilization pass. First, the old text edit-size cap has been removed; large files load for editing by stitching HTTP text chunks. The browser no longer applies `textViewerDraftByteLength`, `FSTEXTSAVE^MIOOSWS` no longer rejects drafts solely because of an edit-size cap, and normal saves prefer bounded HTTP chunk/upload plumbing before small JSON or WebSocket compatibility paths.
 
 Second, upload fallback behavior is binary-safe and DataURL-free. The preferred path remains HTTP binary chunk upload. If the shell must fall back to WebSocket chunks for binary content, it now declares `encoding=base64`, sends pure base64 chunk data with raw byte counts, and `MIOOSFSUP` decodes through `B64D^MIOSJWT` before committing raw VFS bytes. New uploads and persisted image assets must not be stored as DataURLs.
 
@@ -489,7 +489,7 @@ This checkpoint tightens the source-accurate baseline without changing the MUMPS
 - Startup dark themes now have a server first-paint marker and a Vue hydration apply step. `DESKCTX^MIOOSUI` emits `themeRootClass` from the active theme mode, the root template renders it, and `primeBootForFirstPaint()` applies the hydrated active profile before layout normalization. This prevents a saved dark user theme from booting visually as light until another theme action occurs.
 - The Transfers window keeps the animated `mioos-transfer-status-panel`, removes the old banner-style status language, and can display a large active queue in one window. The browser keeps up to 250 transfer records and the visible queue request now asks for 96 active rows inside a scrollable transfer list.
 - Patient Registration CSV import accepts normal quoted CSV fields, including embedded commas and escaped double quotes. Preview and commit still route through `MUTATE^MIOOSTBL`, `MIOOSPAT`, validation, and audit stamping.
-- Large text viewing remains chunk-stream based. Full edit/save stays bounded by `mioos.fs.maxTextEditBytes`; oversize drafts are rejected on the client and by `FSTEXTSAVE^MIOOSWS`.
+- Large text viewing remains chunk-stream based. Full edit/save stays bounded by `full-edit-on-demand text loading`; oversize drafts are rejected on the client and by `FSTEXTSAVE^MIOOSWS`.
 
 Regression coverage is extended in `T089^MIOOST` for first-paint dark boot, transfer queue capacity, quoted CSV import, and documentation markers.
 
@@ -501,7 +501,7 @@ Unauthenticated boot renders only the login overlay and permitted public login a
 
 Theme Studio Save now updates the currently active editable user theme. Creating a new user theme is explicit through **Save As / New Theme**. User-created themes can be deleted; built-in themes are locked. Deleting the active user theme falls back to a built-in theme and refreshes the saved theme list used by Theme Studio and the Start Menu Themes group. Dark mode applies dark defaults underneath the saved theme CSS variables so user-defined `--titlebar-bg`, `--titlebar-text`, `--titlebar-inactive`, `--titlebar-inactive-text`, and window-control colors survive reload.
 
-Large text viewing remains chunked. `fs.text.chunk` is the read path for large text files, frontend chunk requests are de-duplicated, scroll position maps to byte offsets, transient socket timeouts show retry feedback without closing the viewer, and the backend range loop quits cleanly on segment errors instead of spinning until the socket fails. Full edit/save stays bounded by `mioos.fs.maxTextEditBytes`.
+Large text viewing remains chunked. `fs.text.chunk` is the read path for large text files, frontend chunk requests are de-duplicated, scroll position maps to byte offsets, transient socket timeouts show retry feedback without closing the viewer, and the backend range loop quits cleanly on segment errors instead of spinning until the socket fails. Full edit/save stays bounded by `full-edit-on-demand text loading`.
 
 Start Menu groups are collapsible with mouse and keyboard-accessible toggles. Built-in groups and the user Themes group share the same collapse state. Collapse state is session-local in the existing Vue `startMenuUi.expandedGroups` object; no server preference was introduced in this ROI.
 
@@ -509,8 +509,8 @@ Start Menu groups are collapsible with mouse and keyboard-accessible toggles. Bu
 
 This ROI keeps the MUMPS-first MIOOS architecture unchanged while correcting four regressions:
 
-- Text viewers now keep `textChunkThresholdBytes` as the small-file/full-edit threshold and use separate `textChunkBytes` / `textChunkSizeBytes` values for the actual transport chunk size. The default text chunk is 860000 bytes and is clamped well below the prior 2411725-byte threshold so WebSocket control messages do not attempt multi-megabyte text payloads.
-- Large text files stay in chunked read-only/bounded-edit mode. Small and medium files are loaded as a full editable document by stitching multiple safe chunks. Saving clears stale text chunk caches and reloads the saved content through the safe chunk path.
+- Text viewers now keep `textChunkThresholdBytes` as the small-file/full-edit threshold and use separate `textChunkBytes` / `textChunkSizeBytes` values for the actual transport chunk size. The default text chunk is 65536 bytes and is clamped well below the prior 2411725-byte threshold so WebSocket control messages do not attempt multi-megabyte text payloads.
+- Large text files open immediately in HTTP chunked view mode and can be switched to full edit-on-demand mode by choosing Edit. Small and medium files are loaded as a full editable document by stitching multiple safe chunks. Saving clears stale text chunk caches and reloads the saved content through the safe chunk path.
 - A POST `/api/mioos/fs/text-chunk` route is available as an authenticated HTTP fallback for text chunks. It calls `READWIN^MIOOSFS` and returns only the requested byte window, never the whole-file `/api/mioos/fs/blob` payload.
 - Dark theme contrast is restored across Start Menu items, child items, context/window/toolbar menus, common panels/cards, module surfaces, explorer/table/patient labels, and the Transfers surface.
 - The UI Modules **New Table Module** flow now gives toast/status feedback, normalizes generated table-backed modules to `componentKey=table`, `surface=mioos-surface-table`, and the current `mioos-advanced-table-v8` table contract, and exposes saved table definitions through the catalogue payload.
@@ -519,9 +519,9 @@ This ROI keeps the MUMPS-first MIOOS architecture unchanged while correcting fou
 MUMPS developers should configure text behavior with separate values:
 
 ```mumps
-SET CONF("mioos","fs","textChunkBytes")=860000          ; transport chunk size
+SET CONF("mioos","fs","textChunkBytes")=65536          ; transport chunk size
 SET CONF("mioos","fs","textChunkThresholdBytes")=2411725 ; full-edit threshold
-SET CONF("mioos","fs","maxTextEditBytes")=2411725       ; bounded edit/save cap
+SET CONF("mioos","fs","fullEditOnDemand")=65536       ; full edit-on-demand/save cap
 ```
 
 ## ROI 92 — dark menu, text viewer, taskbar, and mobile window hardening
@@ -530,7 +530,7 @@ This ROI preserves the existing MUMPS/YottaDB + MIOTPL + MIOOSWS/MIOOSAPI + Vue 
 
 - Dark theme menu text is scoped to menu surfaces: Start Menu launchables, pinned/group rows, nested child rows, window toolbar menus, Explorer context menus, popup menus, and classic menubars use dark menu/theme variables without forcing light mode to white.
 - Large text opening remains chunked through `fs.text.chunk`. Initial open is de-duplicated, idle viewers do not request neighbor chunks, scroll events explicitly arm the byte-offset load path, and failed chunk loads stop in manual-retry status instead of looping.
-- Large text edit behavior remains safe: small/medium files stitch bounded chunks for full edit/save, while oversize files stay in explicit `view-only-large-file` mode with feedback.
+- Large text edit behavior remains safe: small/medium files stitch safe chunks for full edit/save, while oversize files stay in explicit `full-on-demand` mode with feedback.
 - Window toolbar menu actions dismiss after mouse or keyboard activation. Inline Explorer/viewer/terminal/transfer actions still dispatch through their existing methods.
 - Notifications/toasts inherit `--font-size-ui`, so Theme Studio global UI font size applies to alert text without hard-coded 11/12px overrides.
 - Taskbar entries distinguish pinned-only apps, open apps, active/focused windows, inactive open windows, and minimized windows. Large window counts use a horizontal scroll marker and mobile taskbar rules.
@@ -542,9 +542,9 @@ This ROI keeps the existing MUMPS/YottaDB, MIOTPL, MIOOSWS/MIOOSAPI, VFS, and Vu
 
 Dark Start Menu launchable rows now have a scoped dark-mode readability contract. `.theme-dark-mode .mioos-start-menu-vue` defines dedicated readable Start Menu foreground variables, and launchable rows, pinned/group entries, nested child rows, hover, focus, selected, and disabled states use those variables only inside the Start Menu. Light theme is not globally forced to white, and other menu/context surfaces keep their own dark scoped rules.
 
-Large text viewing remains chunk-stream based. `mioos.fs.textChunkThresholdBytes` is the small/medium-versus-virtual viewer threshold, while `mioos.fs.textChunkBytes` / boot `vfs.textChunkSizeBytes` is the per-request transport chunk size. The default transport chunk is 860000 bytes, clamped below MAXSTRING-risk payload sizes and intentionally far below the 2411725-byte virtualization/edit threshold.
+Large text viewing remains chunk-stream based. `mioos.fs.textChunkThresholdBytes` is the small/medium-versus-virtual viewer threshold, while `mioos.fs.textChunkBytes` / boot `vfs.textChunkSizeBytes` is the per-request transport chunk size. The default transport chunk is 65536 bytes, clamped below MAXSTRING-risk payload sizes and intentionally far below the 2411725-byte virtualization/edit threshold.
 
-Opening a large text file requests only the initial visible chunk. Scroll-driven chunk loads now require explicit user scroll intent (`wheel`, pointer/touch scrollbar interaction, keyboard navigation, or manual retry), so idle/programmatic scroll events cannot start an auto-load loop. Requests are still deduped by file id + offset + size, failures remain manual-retry/toast driven, and large files stay read-only above `mioos.fs.maxTextEditBytes` unless a future ROI implements tested chunk patch semantics. Small/medium text editing and `fs.text.save` remain supported; a successful save clears stale text chunk cache before reloading.
+Opening a large text file requests only the initial visible chunk. Scroll-driven chunk loads now require explicit user scroll intent (`wheel`, pointer/touch scrollbar interaction, keyboard navigation, or manual retry), so idle/programmatic scroll events cannot start an auto-load loop. Requests are still deduped by file id + offset + size, failures remain manual-retry/toast driven, and large files stay read-only above `full-edit-on-demand text loading` unless a future ROI implements tested chunk patch semantics. Small/medium text editing and `fs.text.save` remain supported; a successful save clears stale text chunk cache before reloading.
 
 
 ## ROI 95/96 — local CodeMirror text editor foundation
@@ -553,7 +553,7 @@ MIOOS text viewers use the local CodeMirror 5.65.21 package only when it is avai
 
 The supplied local package includes only a small source-accurate mode/theme set. MUMPS (`.m`, `.rou`, `.mumps`, `.int`, `.mac`) uses `mumps`; Markdown uses `markdown`; HTML/XML use `xml`; SQL uses `sql`; CSV uses `spreadsheet`. JavaScript, JSON, CSS, YAML, HL7, X12, log files, and unknown content remain `text/plain` unless a future attached local package provides tested modes.
 
-Small and medium text files may use CodeMirror for read-only viewing and bounded full-document editing. Large files stay in the existing chunked read-only path above `mioos.fs.maxTextEditBytes`; MIOOS does not pretend to support unsafe random-access whole-file edits. Saving still clears stale chunk caches and reloads the current view through safe text chunks.
+Small and medium text files may use CodeMirror for read-only viewing and full-document editing loaded through chunks. Large files stay in the existing chunked read-only path above `full-edit-on-demand text loading`; MIOOS does not pretend to support unsafe random-access whole-file edits. Saving still clears stale chunk caches and reloads the current view through safe text chunks.
 
 ROI 96 hardens the loader race path: if a CodeMirror `<script>` or `<link>` already exists but has not finished loading, the helper waits for the same in-flight asset instead of treating it as loaded. Theme or mode load failures are non-fatal and fall back to CodeMirror `text/plain`; only missing CodeMirror core falls back to the plain textarea/pre viewer.
 
@@ -575,4 +575,22 @@ Upload defaults were reduced to a MAXSTRING-safe HTTP chunk size while text view
 - Text viewer success/info status is transient and can be shown or pinned from the window toolbar. Error status remains visible so save/read failures are not hidden too quickly.
 - Large text reads prefer the authenticated HTTP text-chunk endpoint. The WebSocket text chunk command remains a bounded fallback path, but the default large-file viewer does not use a full-file blob fallback. Chunk requests are keyed by file id, offset, and size, and stale responses are ignored.
 - Chunked/virtual large text is read-only for save purposes unless the full bounded file is loaded. The save guard prevents overwriting a large file with only the visible chunk.
-- Active text/read/upload chunk defaults are now `860000` bytes. The virtualization/edit threshold remains separate from transport chunk sizing, and server-side clamp checks remain in place.
+- Active text/save chunk defaults are now `65536` bytes; upload/download chunk defaults remain separate at `860000` bytes. The virtualization/edit threshold remains separate from transport chunk sizing, and server-side clamp checks remain in place.
+
+
+## ROI 99 — warning-image staging, dark tables, and bounded text windows
+
+ROI 99 fixes the current regression set without changing the MUMPS-first architecture. The username stage now prefers the login-specific public profile returned by `MIOOSTHEME` before the common profile, so a configured `loginScreenConfig.warningImageUrl` is applied through `/api/mioos/theme-public-asset?id=...` after a login name is submitted. Common pre-login background/CSS remains the only visual asset before username staging. Stale username-specific avatar, warning image, and CSS are cleared when the login name changes; missing warning images clear their DOM source instead of leaving broken-image UI.
+
+Dark Theme table readability is handled by a scoped table contract under `.theme-dark-mode` for read-only/simple tables, dense operational tables, editable CRUD/Advanced Table, Patient Registration tables, filter/modal tables, selected rows, headers, empty rows, validation/error states, and inputs/selects/textareas. The rules use table-specific variables such as `--mioos-dark-table-cell-bg` and `--mioos-dark-table-text` and do not add global wildcard color overrides, so Light Theme tables keep their existing behavior.
+
+Large text viewing now separates the virtualization threshold from transport chunk size. `mioos.fs.textChunkThresholdBytes` stays at `2411725` for deciding when virtual/chunk mode begins. `mioos.fs.textChunkBytes`, boot `vfs.textChunkSizeBytes`, and `vfs.textChunkSafeMaxBytes` default to `65536` so HTTP and WebSocket text chunks stay below conservative MAXSTRING/socket/JSON payload ceilings. The viewer loads only the requested visible byte range, dedupes by file id + offset + size, prunes cached chunks, catches timeout/read failures, and waits for manual retry instead of looping.
+
+Large text editing remains explicit and HTTP-bounded. Files open as `full-on-demand`; choosing Edit stitches the full text from safe HTTP chunks, and save uses chunked HTTP upload/save plumbing rather than a large WebSocket payload. A successful save clears stale chunk caches before reloading/revalidating the current view.
+
+
+## ROI 100 large text edit cap removal and socket-timeout avoidance
+
+The arbitrary `maxTextEditBytes` edit cap has been removed. All text-like files remain viewable through the bounded HTTP text-chunk route (`/api/mioos/fs/text-chunk`) so opening a large file requests only the visible range and does not fall back to large WebSocket payloads. The default text transport chunk is now `65536` bytes, while `textChunkThresholdBytes=2411725` still only decides when the virtual viewer starts.
+
+Large files open quickly in HTTP chunked view mode. Choosing **Edit** explicitly stitches the file from sequential HTTP chunks into the normal text editor, marks the stream as `full-on-demand`, and then save writes the full edited content through bounded HTTP chunks using the existing upload routes, with `/api/mioos/fs/text-save` retained as a small/compatibility fallback and the WebSocket `fs.text.save` command retained only as an explicit compatibility path. Save still clears stale text chunk caches and reloads the current view after success. The viewer still avoids `/api/mioos/fs/blob` full-file fallback, idle prefetch loops, and automatic socket retry loops for large text.

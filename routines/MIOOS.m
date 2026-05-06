@@ -43,6 +43,7 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","route","settingsLoad"))="" SET CONF("mioos","route","settingsLoad")="/api/mioos/settings/load"
 	IF $GET(CONF("mioos","route","settingsSave"))="" SET CONF("mioos","route","settingsSave")="/api/mioos/settings/save"
 	IF $GET(CONF("mioos","route","fsTextChunk"))="" SET CONF("mioos","route","fsTextChunk")="/api/mioos/fs/text-chunk"
+	IF $GET(CONF("mioos","route","fsTextSave"))="" SET CONF("mioos","route","fsTextSave")="/api/mioos/fs/text-save"
 	IF $GET(CONF("mioos","route","ws"))="" SET CONF("mioos","route","ws")="/ws/mioos"
 	IF $GET(CONF("mioos","route","wsTerminal"))="" SET CONF("mioos","route","wsTerminal")="/ws/mioos/terminal"
 	IF $GET(CONF("mioos","brand","title"))="" SET CONF("mioos","brand","title")="MIOOS"
@@ -179,9 +180,8 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","download","httpChunkBytes"))="" SET CONF("mioos","download","httpChunkBytes")=860000
 	IF $GET(CONF("mioos","fs","readPreviewBytes"))="" SET CONF("mioos","fs","readPreviewBytes")=860000
 	IF $GET(CONF("mioos","fs","readWindowBytes"))="" SET CONF("mioos","fs","readWindowBytes")=860000
-	IF $GET(CONF("mioos","fs","textChunkBytes"))="" SET CONF("mioos","fs","textChunkBytes")=860000
+	IF $GET(CONF("mioos","fs","textChunkBytes"))="" SET CONF("mioos","fs","textChunkBytes")=65536
 	IF $GET(CONF("mioos","fs","textChunkThresholdBytes"))="" SET CONF("mioos","fs","textChunkThresholdBytes")=2411725
-	IF $GET(CONF("mioos","fs","maxTextEditBytes"))="" SET CONF("mioos","fs","maxTextEditBytes")=2411725
 	IF $GET(CONF("mioos","fs","transferPersistence"))="" SET CONF("mioos","fs","transferPersistence")="localstorage-resumable-transfer-list"
 	IF $GET(CONF("mioos","download","mediaInitialBytes"))="" SET CONF("mioos","download","mediaInitialBytes")=860000
 	IF $GET(CONF("mioos","download","mediaWarmupBytes"))="" SET CONF("mioos","download","mediaWarmupBytes")=860000
@@ -193,6 +193,7 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","route","settingsLoad"))="" SET CONF("mioos","route","settingsLoad")="/api/mioos/settings/load"
 	IF $GET(CONF("mioos","route","settingsSave"))="" SET CONF("mioos","route","settingsSave")="/api/mioos/settings/save"
 	IF $GET(CONF("mioos","route","fsTextChunk"))="" SET CONF("mioos","route","fsTextChunk")="/api/mioos/fs/text-chunk"
+	IF $GET(CONF("mioos","route","fsTextSave"))="" SET CONF("mioos","route","fsTextSave")="/api/mioos/fs/text-save"
 	IF $GET(CONF("mioos","modules","enabled"))="" SET CONF("mioos","modules","enabled")=1
 	IF $GET(CONF("mioos","modules","appCatalogEnabled"))="" SET CONF("mioos","modules","appCatalogEnabled")=1
 	IF $GET(CONF("mioos","modules","dynamicWindows"))="" SET CONF("mioos","modules","dynamicWindows")=1
@@ -255,6 +256,7 @@ REG(CONF)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsList")),"FSLIST^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsRead")),"FSREAD^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsTextChunk")),"FSTEXTCHUNK^MIOOSAPI",.PROT)
+	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsTextSave")),"FSTEXTSAVE^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsWrite")),"FSWRITE^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsMkdir")),"FSMKDIR^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","fsMeta")),"FSMETA^MIOOSAPI",.PROT)
@@ -302,6 +304,7 @@ REG(CONF)
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","fsList")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","fsRead")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","fsTextChunk")))
+	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","fsTextSave")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","fsWrite")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","fsMkdir")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","fsMeta")))

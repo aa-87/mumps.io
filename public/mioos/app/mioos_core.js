@@ -56,7 +56,7 @@
           authStage: 'username',
           authUsernameAccepted: false,
           authFeedback: { open: false, title: '', message: '', kind: 'info' },
-          authLoginTheme: { status: 'idle', requestSeq: 0, username: '', commonProfile: null, specificProfile: null, error: '' },
+          authLoginTheme: { status: 'idle', requestSeq: 0, username: '', commonProfile: null, specificProfile: null, error: '', warningImageError: 0 },
           authForm: {
             username: '',
             password: ''
@@ -3076,6 +3076,7 @@
         activeLoginWarningImageUrl: function () {
           var cfg = this.activeLoginScreenConfig ? this.activeLoginScreenConfig() : {};
           var url = cfg.warningImageUrl || '';
+          if ((this.authLoginTheme || {}).warningImageError) return '';
           return this.isProtectedThemeUrl(url) && this.requiresSignin && !this.activeLoginPublicAssets() ? '' : url;
         },
         activeLoginWarningTitle: function () {

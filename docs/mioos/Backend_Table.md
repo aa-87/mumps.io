@@ -458,3 +458,15 @@ ROI 97 does not change the Advanced Table backend contract. The backend changes 
 ## ROI 98 read-only table rendering note
 
 No backend contract change is required. Tables configured as simple/read-only keep omitting mutation controls, and the browser shell now applies dark-theme-aware cell, header, hover, and selected-state styles for those read-only surfaces. Advanced Table mutation/editing CSS remains intact.
+
+
+## ROI 99 backend/table guardrails
+
+Advanced Table backend behavior is unchanged: queries and mutations remain server-authoritative through `MIOOSTBL`, and Patient Registration remains routed through the table/patient backend contracts. The dark readability fix is CSS-only and scoped to table surfaces, including headers, cells, selected rows, filter inputs, modal editors, empty states, and error/validation content.
+
+For file-backed table examples or CSV/text preview helpers, keep the large-text contract bounded. `textChunkBytes` is a per-request transport size and defaults to `65536`; `textChunkThresholdBytes` is the virtualization threshold and remains separate. Backend chunk handlers reject negative offsets and invalid sizes, clamp oversized chunk requests, and return only the requested range.
+
+
+## ROI 100 text helper note
+
+File-backed table helpers that preview text should use the same large-text contract as the shell: `textChunkBytes` defaults to `65536`, `textChunkThresholdBytes` remains the virtualization threshold, and edit-size caps are not enforced through `maxTextEditBytes`. Backends must continue returning only the requested text range for chunk reads; large text saves should use bounded HTTP chunk/upload plumbing instead of WebSocket-sized full payloads.

@@ -217,9 +217,13 @@ FSTEXTCHUNK(DEV,CONF,REQ,CTX)
 	. DO RESPERR(.DEV,.CONF,500,"fs_state_error",$GET(ERR("error")),.CTX)
 	IF '$$REQUIREAUTH(.DEV,.CONF,.CTX,.STATE) QUIT
 	SET ID=$SELECT($GET(TREE("id"))'="":$GET(TREE("id")),1:$GET(TREE("path")))
-	SET OFFSET=+$GET(TREE("offset")) IF OFFSET<0 SET OFFSET=0
-	SET LIMIT=+$GET(CONF("mioos","fs","textChunkBytes"),860000) IF LIMIT<4096 SET LIMIT=4096
-	IF LIMIT>860000 SET LIMIT=860000
+	IF $GET(TREE("offset"))'="",+$GET(TREE("offset"))<0 DO  QUIT
+	. DO RESPERR(.DEV,.CONF,400,"invalid_offset","Text chunk offset must be zero or greater",.CTX)
+	IF $GET(TREE("size"))'="",+$GET(TREE("size"))<1 DO  QUIT
+	. DO RESPERR(.DEV,.CONF,400,"invalid_size","Text chunk size must be positive",.CTX)
+	SET OFFSET=+$GET(TREE("offset"))
+	SET LIMIT=+$GET(CONF("mioos","fs","textChunkBytes"),65536) IF LIMIT<4096 SET LIMIT=4096
+	IF LIMIT>65536 SET LIMIT=65536
 	SET SIZE=+$GET(TREE("size")) IF SIZE<1 SET SIZE=LIMIT
 	IF SIZE<4096 SET SIZE=4096
 	IF SIZE>LIMIT SET SIZE=LIMIT
@@ -229,8 +233,34 @@ FSTEXTCHUNK(DEV,CONF,REQ,CTX)
 	SET OUT("chunkSize")=SIZE
 	SET OUT("scrollSync")="byte-offset"
 	SET OUT("viewerContract")="chunked-text-v3-http-range"
-	SET OUT("boundedEdit")=1
-	SET OUT("maxEditBytes")=+$GET(CONF("mioos","fs","maxTextEditBytes"),+$GET(CONF("mioos","fs","textChunkThresholdBytes"),2411725))
+	SET OUT("boundedEdit")=0
+	SET OUT("fullEditOnDemand")=1
+	SET OUT("maxEditBytes")=0
+	SET OUT("maxChunkBytes")=LIMIT
+	SET OUT("chunkThresholdBytes")=+$GET(CONF("mioos","fs","textChunkThresholdBytes"),2411725)
+	DO RESPJSONX^MIOHTTP(.DEV,.CONF,200,.OUT,$GET(CTX("request_id")),.CTX)
+	SET CTX("status")=200
+	QUIT
+	;
+FSTEXTSAVE(DEV,CONF,REQ,CTX)
+	NEW TREE,ERR,STATE,OUT,META,ID,PARENT,NAME,MIME,DATA
+	IF '$$PARSEBODY(.REQ,.TREE,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,400,"invalid_json",$GET(ERR("error")),.CTX)
+	IF '$$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,500,"fs_state_error",$GET(ERR("error")),.CTX)
+	IF '$$REQUIREAUTH(.DEV,.CONF,.CTX,.STATE) QUIT
+	SET ID=$SELECT($GET(TREE("id"))'="":$GET(TREE("id")),1:$GET(TREE("path")))
+	IF ID="" DO  QUIT
+	. DO RESPERR(.DEV,.CONF,400,"file_id_missing","file_id_missing",.CTX)
+	SET DATA=$GET(TREE("content"))
+	IF '$$META^MIOOSFS(.STATE,ID,.META,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,403,"fs_text_save_failed",$GET(ERR("error")),.CTX)
+	IF $GET(META("kind"))'="file" DO  QUIT
+	. DO RESPERR(.DEV,.CONF,400,"fs_text_save_failed","not_a_file",.CTX)
+	SET PARENT=$GET(META("parentId")),NAME=$GET(META("name")),MIME=$SELECT($GET(TREE("mime"))'="":$GET(TREE("mime")),1:$GET(META("mime"),"text/plain"))
+	IF '$$WRITE^MIOOSFS(.STATE,PARENT,NAME,DATA,MIME,.OUT,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,403,"fs_text_save_failed",$GET(ERR("error")),.CTX)
+	SET OUT("saved")=1,OUT("edited")=1,OUT("boundedEdit")=0,OUT("maxEditBytes")=0,OUT("fullEditOnDemand")=1
 	DO RESPJSONX^MIOHTTP(.DEV,.CONF,200,.OUT,$GET(CTX("request_id")),.CTX)
 	SET CTX("status")=200
 	QUIT

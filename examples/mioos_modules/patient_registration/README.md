@@ -131,3 +131,8 @@ Preview and commit still call the same patient table mutations, so required-fiel
 ## Login/theme/start-menu/text-viewer regression ROI note
 
 Patient Registration remains a table-backed MUMPS workflow. The login shell now shows safe retry/success feedback before the desktop loads, so patient windows should only appear after authenticated boot. The Start Menu group that exposes examples/modules can be collapsed session-locally; expanding it should launch Patient Registration normally. Quoted CSV import behavior and patient mutation routing are unchanged.
+
+
+## ROI 99 regression notes
+
+Patient Registration continues to use the shared Advanced Table surface and server-side patient workflow. Dark Theme readability for patient rows, review filters, CSV import modal controls, validation messages, selected rows, and empty/error states is supplied by the scoped table CSS contract. Do not add patient-specific light backgrounds that bypass the shared table variables.

@@ -190,16 +190,20 @@ PUBBASE(ROOT,DEST,USER,KEY)
 	QUIT
 	;
 PUBLCFG(STATE,ROOT,DEST,SPEC)
-	NEW FIELD,SEC,URL
+	NEW FIELD,SEC,URL,ID
 	SET @DEST@("loginScreenConfig","publicLogin")=1
 	FOR FIELD="loginBoxStyle","avatarSize","desktopWidth","mobileWidth","textColor","warningTitle","privacyNotice","disclaimer" SET @DEST@("loginScreenConfig",FIELD)=$GET(@ROOT@("loginScreenConfig",FIELD))
 	SET @DEST@("loginScreenConfig","wallpaperUrl")=$$PUBURL(.STATE,$GET(@ROOT@("loginScreenConfig","wallpaperUrl")))
 	IF +$GET(SPEC) DO
 	. SET @DEST@("loginScreenConfig","avatarUrl")=$$PUBURL(.STATE,$GET(@ROOT@("loginScreenConfig","avatarUrl")))
+	. SET ID=$$ASSETURLID($GET(@ROOT@("loginScreenConfig","avatarUrl"))) IF ID'="",$$SAFE(ID)=ID SET @DEST@("loginScreenConfig","avatarAssetId")=ID
 	. SET @DEST@("loginScreenConfig","warningImageUrl")=$$PUBURL(.STATE,$GET(@ROOT@("loginScreenConfig","warningImageUrl")))
+	. SET ID=$$ASSETURLID($GET(@ROOT@("loginScreenConfig","warningImageUrl"))) IF ID'="",$$SAFE(ID)=ID SET @DEST@("loginScreenConfig","warningImageAssetId")=ID
 	ELSE  DO
 	. SET @DEST@("loginScreenConfig","avatarUrl")=""
+	. SET @DEST@("loginScreenConfig","avatarAssetId")=""
 	. SET @DEST@("loginScreenConfig","warningImageUrl")=""
+	. SET @DEST@("loginScreenConfig","warningImageAssetId")=""
 	FOR SEC="loginBackground","loginCard","loginButton" IF $DATA(@ROOT@("customElementCss",SEC)) MERGE @DEST@("customElementCss",SEC)=@ROOT@("customElementCss",SEC)
 	IF +$GET(SPEC) DO
 	. FOR SEC="loginAvatar","loginNotice" IF $DATA(@ROOT@("customElementCss",SEC)) MERGE @DEST@("customElementCss",SEC)=@ROOT@("customElementCss",SEC)
