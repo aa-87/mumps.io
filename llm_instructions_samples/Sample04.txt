@@ -1,0 +1,291 @@
+Please use the attached ZIP/folder as the ONLY source of truth. MAKE SURE ABSOLUTELY NO REGRESSIONS.
+
+You are taking over development of MIOOS / MUMPS.IO OS Shell. Do not rely on prior ChatGPT conversations, prior patches, prior generated ZIPs, or assumptions. Inspect the attached source first, then implement source-accurate fixes only.
+
+Core architecture rules:
+- Preserve the existing MUMPS.IO architecture.
+- Backend: MUMPS on YottaDB / GT.M.
+- Server-side rendering: MIOTPL.
+- HTTP/API: MIOHTTP / MIOOSAPI.
+- WebSocket/control/realtime: MIOOSWS where appropriate.
+- VFS: MIOOSFS.
+- Boot/session/desktop state: MIOOSST / MIOOSVM / MIOOSUI as applicable.
+- Theme/profile persistence: MIOOSTHEME.
+- Locale/i18n: MIOOSI18N.
+- Module registry/table-backed modules: MIOOSMOD / MIOOSMTBL.
+- Table backend contract: MIOOSTBL.
+- Patient workflow: MIOOSPAT.
+- Browser files under public/mioos/app/.
+- Vue 3 Options API UMD only.
+- No new frontend framework.
+- No build step.
+- No TypeScript.
+- No Composition API.
+- No Node/Express runtime.
+- No external SPA architecture.
+- No external dependencies.
+- The project is geared toward MUMPS developers with little/no frontend experience, so docs/examples must remain MUMPS-first.
+- Do not use DataURLs for uploads or persisted images.
+- Do not emit authenticated asset URLs before login.
+- Tests must stay quiet on success and explicit on failure.
+- Every ROI must update docs, tests, examples, and mioos_llm.md when behavior changes.
+- Return only modified files in the final ZIP or patch.
+- Be honest about tests that cannot be run.
+
+Current ROI goal:
+Fix the still-regressed login/theme/start-menu/text-viewer issues below. These were attempted before but are still not resolved. Inspect the attached source first and verify the actual implementation paths before changing anything.
+
+Current problems to fix:
+
+1. Taskbar is still visible on the login screen when unauthenticated.
+   - The login screen must not show taskbar, start menu, desktop icons, shell controls, or desktop windows before authentication.
+   - Authenticated asset URLs must not be emitted before login.
+   - Inspect:
+     - public/mioos/app/mioos_core.js
+     - public/mioos/app/mioos_shell_ui.js
+     - public/mioos/app/mioos_state.js
+     - routines/MIOOSST.m
+     - routines/MIOOSVM.m
+     - login/auth templates if present
+   - Desired behavior:
+     - unauthenticated state shows only the login UI and allowed public background/assets
+     - taskbar/start menu are hidden
+     - authenticated boot restores shell normally
+   - Add regression tests for:
+     - taskbar hidden on login
+     - start menu hidden on login
+     - desktop shell hidden on login
+     - login UI remains visible
+     - shell returns after authenticated boot
+     - no authenticated asset URLs before login
+
+2. Still no feedback on either invalid or successful sign-on.
+   - Invalid credentials must show clear, non-blocking, dark-theme-aware feedback.
+   - Successful sign-on must show visible progress/success feedback before/while shell loads.
+   - Network/server errors must show useful non-sensitive feedback.
+   - Feedback should clear/update on retry.
+   - Do not leak sensitive auth details.
+   - Inspect:
+     - login form code in public/mioos/app/mioos_core.js and/or shell UI
+     - auth route/backend response in routines/MIOOSAPI.m or auth-related routines
+     - existing toast/notification mechanism
+   - Add tests for:
+     - invalid credentials feedback string/contract
+     - success feedback string/contract
+     - server/network error feedback
+     - feedback dark-theme readability
+     - feedback clears/updates on retry
+     - no sensitive backend details exposed
+
+3. Theme editor still automatically creates a new theme on every Save, and old/new user themes cannot be deleted.
+   - Save must update the currently selected editable user theme.
+   - Creating a new theme must require explicit Save As/New Theme action.
+   - There must be a Delete Theme action for user-created themes.
+   - Built-in/base themes must not be deletable.
+   - Deleting the active user theme must safely fall back to a default/built-in theme.
+   - Start Menu Themes group and Theme Studio theme list must update after save/delete.
+   - Import/export must not regress.
+   - Inspect:
+     - public/mioos/app/mioos_core.js
+     - public/mioos/app/mioos_shell_ui.js
+     - public/mioos/mioos.css
+     - routines/MIOOSTHEME.m
+     - routines/MIOOSST.m
+     - routines/MIOOSVM.m
+     - routines/MIOOST.m
+   - Add tests for:
+     - Save updates current user theme instead of creating a new one
+     - explicit Save As creates a new user theme
+     - delete user theme exists and removes the theme
+     - built-in themes cannot be deleted
+     - deleting active user theme falls back safely
+     - theme list boot payload updates
+     - start menu themes group updates
+
+4. In dark theme, window titlebar settings and/or custom CSS are not reflected. It only works in light theme.
+   - Analyze runtime theme variable application and CSS specificity.
+   - Dark mode must use dark variant titlebar settings/custom CSS:
+     - --titlebar-bg
+     - --titlebar-text
+     - --titlebar-inactive
+     - --titlebar-inactive-text
+     - window control colors
+     - any Theme Studio custom CSS applying to titlebar/window controls
+   - Ensure the dark variant does not get overwritten by the light variant or static CSS after reload.
+   - Preserve light mode behavior.
+   - Inspect:
+     - public/mioos/app/mioos_core.js
+     - public/mioos/app/mioos_shell_ui.js
+     - public/mioos/app/mioos_wm.js
+     - public/mioos/mioos.css
+     - routines/MIOOSTHEME.m
+   - Add tests for:
+     - dark titlebar variables saved
+     - dark titlebar variables loaded on boot
+     - dark titlebar CSS selectors are not hardcoded to light
+     - custom titlebar CSS applies in dark mode
+     - inactive titlebar dark styling preserved
+
+5. Still unable to open large text files; receiving “Socket error”.
+   - Analyze the large text viewer end-to-end:
+     - public/mioos/app/mioos_explorer.js
+     - public/mioos/app/mioos_ws.js
+     - public/mioos/app/mioos_shell_ui.js
+     - routines/MIOOSWS.m
+     - routines/MIOOSAPI.m
+     - routines/MIOOSFS.m
+     - MIOOS config defaults
+   - Large files must be viewable smoothly without socket errors.
+   - Avoid whole-file browser payloads for huge files.
+   - Chunk reads must dedupe identical file id + offset + size requests.
+   - Scrollbar must map to byte offset without jitter.
+   - Socket timeout/error must show retry/toast feedback and must not break the viewer.
+   - Consider HTTP range fallback for chunk retrieval only if it preserves chunked semantics and does not regress into whole-file blob reads.
+   - Editing/saving:
+     - small/medium files should be editable/savable
+     - very large files should have a clear bounded-edit or read-only mode if full edit is unsafe
+   - Add tests for:
+     - fs.text.chunk backend route
+     - frontend chunk request/dedupe
+     - socket timeout handling
+     - retry feedback
+     - no uncaught promise path
+     - no whole-file blob fallback for large files
+     - scroll-to-byte mapping
+     - edit/save threshold behavior
+
+6. Start Menu groups are not collapsible.
+   - Implement collapsible Start Menu groups.
+   - Must work for built-in groups and user-theme group.
+   - Must work in light/dark theme and RTL.
+   - Persist collapse state if an existing state/preference mechanism exists; otherwise keep session-local and document that behavior.
+   - Add keyboard/mouse accessible toggle affordance consistent with current UI.
+   - Add tests for:
+     - group toggle method exists
+     - group collapsed state exists
+     - collapsed child items hidden
+     - expanded child items launch normally
+     - user theme group supports collapse
+     - RTL/dark selectors exist
+
+Important constraints:
+- Do not remove features to make tests pass.
+- Do not weaken tests if the implementation is wrong.
+- If a test is stale due to intentional architecture change, update it and add a negative regression test preventing the old broken behavior from returning.
+- Keep UI dark-theme aware.
+- Avoid duplicate toolbars and duplicate action panels.
+- Use toasts/auto-dismiss feedback where appropriate instead of blocking notifications.
+- Preserve existing table, explorer, transfer, terminal, theme, and patient workflows unless explicitly fixing them.
+- Do not introduce any new framework, dependency, build step, or TypeScript.
+- Do not regress text preview, desktop uploads, uploaded theme/background assets, or existing table features.
+- Keep examples/docs MUMPS-first.
+
+Files to inspect first:
+
+Backend:
+- routines/MIOOS.m
+- routines/MIOOSAPI.m
+- routines/MIOOSWS.m
+- routines/MIOOSFS.m
+- routines/MIOOSST.m
+- routines/MIOOSVM.m
+- routines/MIOOSUI.m
+- routines/MIOOSTHEME.m
+- routines/MIOOSI18N.m
+- routines/MIOOSMOD.m
+- routines/MIOOSMTBL.m
+- routines/MIOOSTBL.m
+- routines/MIOOST.m
+
+Frontend:
+- public/mioos/app/mioos_core.js
+- public/mioos/app/mioos_explorer.js
+- public/mioos/app/mioos_i18n.js
+- public/mioos/app/mioos_modules.js
+- public/mioos/app/mioos_permissions.js
+- public/mioos/app/mioos_shell_ui.js
+- public/mioos/app/mioos_state.js
+- public/mioos/app/mioos_table.js
+- public/mioos/app/mioos_wm.js
+- public/mioos/app/mioos_ws.js
+- public/mioos/mioos.css
+
+Docs/examples:
+- docs/mioos/README.md
+- docs/mioos/UI_Modules.md
+- docs/mioos/Backend_Table.md
+- examples/mioos_modules/table/README.md
+- examples/mioos_modules/table/module.json
+- examples/mioos_modules/patient_registration/README.md
+- examples/mioos_modules/patient_registration/module.json
+- mioos_llm.md
+
+Required baseline checks before and after:
+1. Try:
+   D ^MIOOST
+
+   If YottaDB / GT.M is unavailable, clearly state that D ^MIOOST could not be run.
+
+2. JavaScript syntax checks:
+   node --check public/mioos/app/mioos_core.js
+   node --check public/mioos/app/mioos_modules.js
+   node --check public/mioos/app/mioos_table.js
+   node --check public/mioos/app/mioos_permissions.js
+   node --check public/mioos/app/mioos_shell_ui.js
+   node --check public/mioos/app/mioos_wm.js
+   node --check public/mioos/app/mioos_state.js
+   node --check public/mioos/app/mioos_ws.js
+   node --check public/mioos/app/mioos_explorer.js
+   node --check public/mioos/app/mioos_i18n.js
+
+3. JSON validation:
+   python3 -m json.tool examples/mioos_modules/table/module.json
+   python3 -m json.tool examples/mioos_modules/patient_registration/module.json
+
+4. MUMPS static/compile checks where possible:
+   - quote/parity/static checks for touched routines.
+   - if YottaDB/GT.M is available:
+     ZLINK "MIOOS"
+     ZLINK "MIOOSAPI"
+     ZLINK "MIOOSWS"
+     ZLINK "MIOOSFS"
+     ZLINK "MIOOSST"
+     ZLINK "MIOOSVM"
+     ZLINK "MIOOSUI"
+     ZLINK "MIOOSTHEME"
+     ZLINK "MIOOSI18N"
+     ZLINK "MIOOSMOD"
+     ZLINK "MIOOSMTBL"
+     ZLINK "MIOOSTBL"
+     ZLINK "MIOOST"
+     DO ^MIOOST
+
+Regression tests to add:
+- Add a new T0xx section in routines/MIOOST.m or helper routine if MIOOST.m is too large.
+- Include positive and negative tests for:
+  - taskbar/start menu hidden while unauthenticated
+  - login invalid/success/error feedback
+  - Save vs Save As theme behavior
+  - user theme delete
+  - no deleting built-in themes
+  - dark mode theme persistence and dark titlebar custom CSS
+  - large text chunk socket-error handling
+  - no whole-file large text fallback
+  - start menu group collapse/expand
+
+Expected final answer format:
+
+Diagnosis
+Root cause
+ROI implemented
+Code changes
+Tests added
+Tests run
+Acceptance checklist
+Modified files
+Download link to ZIP containing only modified files
+Patch fallback
+
+Be honest if D ^MIOOST or ZLINK could not be run because YottaDB / GT.M is unavailable.
+
+If artifact download fails, provide a patch or pasteable file contents.

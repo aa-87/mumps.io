@@ -4420,7 +4420,7 @@ html[dir="rtl"] .mioos-window-menu-dropdown-vue,
 }
 .theme-dark-mode .mioos-explorer-listview tbody tr.is-selected {
   background: linear-gradient(180deg, #eaf2ff 0%, #c7dcff 100%) !important;
-  color: #0f172a !important;
+  color: #004cff !important;
   outline-color: rgba(255,255,255,.65) !important;
 }
 .theme-dark-mode .mioos-explorer-listview tbody tr.is-selected td,
@@ -4428,7 +4428,7 @@ html[dir="rtl"] .mioos-window-menu-dropdown-vue,
 .theme-dark-mode .mioos-explorer-listview tbody tr.is-selected strong,
 .theme-dark-mode .mioos-explorer-listview tbody tr.is-selected small,
 .theme-dark-mode .mioos-explorer-listview tbody tr.is-selected .mioos-explorer-row-name {
-  color: #0f172a !important;
+  color: #004cff !important;
   text-shadow: none !important;
 }
 .mioos-transfer-status-panel {
