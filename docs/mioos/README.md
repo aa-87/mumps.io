@@ -259,7 +259,7 @@ ROI 33 — HTTP binary chunk transport for resumable uploads and hardened pause/
 - Added automatic upload auto-pause on connection loss and browser offline events so interrupted HTTP chunk uploads stay resumable instead of flipping to failed immediately.
 - Fixed resumed-upload transfer controls so Pause remains available after Resume, including persisted transfer recovery flows.
 - Corrected `FSBLOB^MIOOSAPI` media-first partial-window behavior so `stream=media` no longer expands to the full file on the first non-range request.
-- Tuned default transport values for higher throughput: VFS chunk size `131072`, upload chunk bytes `262144`, upload concurrency `6`, HTTP blob send target `1048576`, media initial bytes `2097152`.
+- Tuned default transport values for higher throughput: VFS chunk size `860000`, upload chunk bytes `860000`, upload concurrency `6`, HTTP blob send target `860000`, media initial bytes `860000`.
 - Reduced main-thread upload overhead by throttling transfer progress updates during parallel HTTP chunk uploads.
 - Note: raw HTTP binary upload already sends `Blob.slice()` directly, so web workers are not the primary lever there; the next upload ROI should focus on optional dedicated upload workers for scheduling/telemetry and measuring whether they improve real throughput on the target browsers.
 
@@ -509,7 +509,7 @@ Start Menu groups are collapsible with mouse and keyboard-accessible toggles. Bu
 
 This ROI keeps the MUMPS-first MIOOS architecture unchanged while correcting four regressions:
 
-- Text viewers now keep `textChunkThresholdBytes` as the small-file/full-edit threshold and use separate `textChunkBytes` / `textChunkSizeBytes` values for the actual transport chunk size. The default text chunk is 131072 bytes and is clamped well below the prior 2411725-byte threshold so WebSocket control messages do not attempt multi-megabyte text payloads.
+- Text viewers now keep `textChunkThresholdBytes` as the small-file/full-edit threshold and use separate `textChunkBytes` / `textChunkSizeBytes` values for the actual transport chunk size. The default text chunk is 860000 bytes and is clamped well below the prior 2411725-byte threshold so WebSocket control messages do not attempt multi-megabyte text payloads.
 - Large text files stay in chunked read-only/bounded-edit mode. Small and medium files are loaded as a full editable document by stitching multiple safe chunks. Saving clears stale text chunk caches and reloads the saved content through the safe chunk path.
 - A POST `/api/mioos/fs/text-chunk` route is available as an authenticated HTTP fallback for text chunks. It calls `READWIN^MIOOSFS` and returns only the requested byte window, never the whole-file `/api/mioos/fs/blob` payload.
 - Dark theme contrast is restored across Start Menu items, child items, context/window/toolbar menus, common panels/cards, module surfaces, explorer/table/patient labels, and the Transfers surface.
@@ -519,7 +519,7 @@ This ROI keeps the MUMPS-first MIOOS architecture unchanged while correcting fou
 MUMPS developers should configure text behavior with separate values:
 
 ```mumps
-SET CONF("mioos","fs","textChunkBytes")=131072          ; transport chunk size
+SET CONF("mioos","fs","textChunkBytes")=860000          ; transport chunk size
 SET CONF("mioos","fs","textChunkThresholdBytes")=2411725 ; full-edit threshold
 SET CONF("mioos","fs","maxTextEditBytes")=2411725       ; bounded edit/save cap
 ```
@@ -542,7 +542,7 @@ This ROI keeps the existing MUMPS/YottaDB, MIOTPL, MIOOSWS/MIOOSAPI, VFS, and Vu
 
 Dark Start Menu launchable rows now have a scoped dark-mode readability contract. `.theme-dark-mode .mioos-start-menu-vue` defines dedicated readable Start Menu foreground variables, and launchable rows, pinned/group entries, nested child rows, hover, focus, selected, and disabled states use those variables only inside the Start Menu. Light theme is not globally forced to white, and other menu/context surfaces keep their own dark scoped rules.
 
-Large text viewing remains chunk-stream based. `mioos.fs.textChunkThresholdBytes` is the small/medium-versus-virtual viewer threshold, while `mioos.fs.textChunkBytes` / boot `vfs.textChunkSizeBytes` is the per-request transport chunk size. The default transport chunk is 131072 bytes, clamped below MAXSTRING-risk payload sizes and intentionally far below the 2411725-byte virtualization/edit threshold.
+Large text viewing remains chunk-stream based. `mioos.fs.textChunkThresholdBytes` is the small/medium-versus-virtual viewer threshold, while `mioos.fs.textChunkBytes` / boot `vfs.textChunkSizeBytes` is the per-request transport chunk size. The default transport chunk is 860000 bytes, clamped below MAXSTRING-risk payload sizes and intentionally far below the 2411725-byte virtualization/edit threshold.
 
 Opening a large text file requests only the initial visible chunk. Scroll-driven chunk loads now require explicit user scroll intent (`wheel`, pointer/touch scrollbar interaction, keyboard navigation, or manual retry), so idle/programmatic scroll events cannot start an auto-load loop. Requests are still deduped by file id + offset + size, failures remain manual-retry/toast driven, and large files stay read-only above `mioos.fs.maxTextEditBytes` unless a future ROI implements tested chunk patch semantics. Small/medium text editing and `fs.text.save` remain supported; a successful save clears stale text chunk cache before reloading.
 
@@ -564,3 +564,15 @@ ROI 97 restores the two-stage login workflow for local/offline shells. The unaut
 Markdown files now open in a rendered preview backed by the vendored local Marked UMD file at `public/mioos/vendor/marked/lib/marked.umd.js`; editing continues through CodeMirror for bounded text files. Markdown and HTML previews render inside sandboxed `srcdoc` iframes without script execution. Large Markdown/HTML files stay in the chunked read-only text viewer instead of requesting a full blob. PDF files use the browser-native PDF viewer through the authenticated local file route and keep the normal download fallback.
 
 Upload defaults were reduced to a MAXSTRING-safe HTTP chunk size while text viewing defaults were increased to the existing 256 KiB safe ceiling. Uploads no longer fall back to whole-file FileReader/WebSocket payloads; retries remain bounded and timeout errors surface as user-visible upload failures. Dark toolbar/menu normal states no longer draw per-item outlines, while `:focus-visible` remains styled for keyboard accessibility.
+
+
+## ROI 98 — staged login visuals, dark UI hardening, and HTTP-first text chunks
+
+- The staged login workflow remains split between the common pre-login background and the username/password stage. After a username is submitted, the public login-theme response can apply only controlled public-login assets for the account avatar, warning image, and login-specific CSS. Stale username-stage avatar/warning/CSS references are cleared when the username changes, and protected theme/blob URLs are not emitted before authentication.
+- Theme Studio dark-mode neutral clear controls are scoped with `data-theme-editor-secondary` and keep the requested `#004cff` text color with a light, focused button surface. Light theme button styling is not broadly overwritten.
+- Simple/read-only table surfaces now have explicit dark-theme header, cell, hover, selected, and text-color rules while leaving the Advanced Table/editable table styling intact.
+- Markdown and HTML rendered previews fill the MIOOS viewer pane, respect toolbar/client-area sizing, and use the existing viewer zoom controls. Markdown zoom is injected into the sandboxed `srcdoc` so Zoom In/Out affects rendered content rather than only the outer pane.
+- Text viewer success/info status is transient and can be shown or pinned from the window toolbar. Error status remains visible so save/read failures are not hidden too quickly.
+- Large text reads prefer the authenticated HTTP text-chunk endpoint. The WebSocket text chunk command remains a bounded fallback path, but the default large-file viewer does not use a full-file blob fallback. Chunk requests are keyed by file id, offset, and size, and stale responses are ignored.
+- Chunked/virtual large text is read-only for save purposes unless the full bounded file is loaded. The save guard prevents overwriting a large file with only the visible chunk.
+- Active text/read/upload chunk defaults are now `860000` bytes. The virtualization/edit threshold remains separate from transport chunk sizing, and server-side clamp checks remain in place.

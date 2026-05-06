@@ -177,7 +177,7 @@ PUBLOGIN(STATE,USER,KEY,ROOT)
 	FOR FIELD="wallpaperUrl","avatarUrl","warningImageUrl" DO
 	. SET URL=$GET(@ROOT@("loginScreenConfig",FIELD))
 	. SET ID=$$ASSETURLID(URL)
-	. IF ID'="" SET ^MIO("MIOOS","THEME","PUBLICASSET",ID)=USER_"^"_FIELD_"^"_KEY
+	. IF ID'="",$$SAFE(ID)=ID SET ^MIO("MIOOS","THEME","PUBLICASSET",ID)=USER_"^"_FIELD_"^"_KEY
 	QUIT
 	;
 PUBBASE(ROOT,DEST,USER,KEY)
@@ -211,8 +211,9 @@ PUBURL(STATE,URL)
 	IF URL="" QUIT ""
 	IF URL["data:" QUIT ""
 	SET ID=$$ASSETURLID(URL)
-	IF ID'="" DO  QUIT ROUTE_"?id="_ID
+	IF ID'="",$$SAFE(ID)=ID DO  QUIT ROUTE_"?id="_ID
 	. SET ROUTE=$GET(STATE("themePublicAssetPath"),"/api/mioos/theme-public-asset")
+	IF ID'="" QUIT ""
 	IF URL["/api/mioos/theme-asset" QUIT ""
 	IF URL["/api/mioos/fs/blob" QUIT ""
 	QUIT URL
@@ -236,7 +237,10 @@ PUBLICLD(OUT)
 	;
 PUBLICAS(ID,USER,ROOT)
 	NEW REC
-	SET REC=$GET(^MIO("MIOOS","THEME","PUBLICASSET",$GET(ID)))
+	SET ID=$GET(ID)
+	IF ID="" QUIT 0
+	IF $$SAFE(ID)'=ID QUIT 0
+	SET REC=$GET(^MIO("MIOOS","THEME","PUBLICASSET",ID))
 	IF REC="" QUIT 0
 	SET USER=$PIECE(REC,"^",1)
 	IF USER="" QUIT 0

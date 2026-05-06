@@ -36,9 +36,11 @@
       },
       applyCommonLoginTheme: function () {
         var profile = ((((this.boot || {}).desktop || {}).activeThemeProfile) || null);
-        if (!this.authLoginTheme) this.authLoginTheme = { status: 'idle', requestSeq: 0, username: '', commonProfile: null, specificProfile: null, error: '' };
+        if (!this.authLoginTheme) this.authLoginTheme = { status: 'idle', requestSeq: 0, username: '', commonProfile: null, specificProfile: null, appliedCommonTheme: null, appliedSpecificTheme: null, error: '' };
         this.authLoginTheme.commonProfile = profile;
         this.authLoginTheme.specificProfile = null;
+        this.authLoginTheme.appliedCommonTheme = null;
+        this.authLoginTheme.appliedSpecificTheme = null;
         if (profile && this.applyLoginThemeProfile) this.applyLoginThemeProfile(profile, 'common');
       },
       applyLoginThemeProfile: function (profile, stage) {
@@ -48,13 +50,18 @@
         if (!theme) return;
         theme.publicLogin = true;
         if (theme.loginScreenConfig) theme.loginScreenConfig.publicLogin = true;
+        if (this.authLoginTheme) {
+          if (String(stage || '').indexOf('login-specific') >= 0 || String(stage || '').indexOf('password') >= 0 || String(stage || '').indexOf('loaded') >= 0) this.authLoginTheme.appliedSpecificTheme = theme;
+          else this.authLoginTheme.appliedCommonTheme = theme;
+        }
         this.applyThemeStudioConfig(theme, { silent: true, persist: false });
         if (this.authLoginTheme) this.authLoginTheme.status = stage || 'applied';
       },
       clearLoginSpecificAssets: function (reason) {
-        if (!this.authLoginTheme) this.authLoginTheme = { status: 'idle', requestSeq: 0, username: '', commonProfile: null, specificProfile: null, error: '' };
+        if (!this.authLoginTheme) this.authLoginTheme = { status: 'idle', requestSeq: 0, username: '', commonProfile: null, specificProfile: null, appliedCommonTheme: null, appliedSpecificTheme: null, error: '' };
         this.authLoginTheme.requestSeq += 1;
         this.authLoginTheme.specificProfile = null;
+        this.authLoginTheme.appliedSpecificTheme = null;
         this.authLoginTheme.username = '';
         this.authLoginTheme.error = '';
         this.authLoginTheme.status = reason || 'cleared';
@@ -74,7 +81,7 @@
           this.setAuthFeedback('warning', 'Username required', 'Enter your username to continue.');
           return;
         }
-        if (!this.authLoginTheme) this.authLoginTheme = { status: 'idle', requestSeq: 0, username: '', commonProfile: null, specificProfile: null, error: '' };
+        if (!this.authLoginTheme) this.authLoginTheme = { status: 'idle', requestSeq: 0, username: '', commonProfile: null, specificProfile: null, appliedCommonTheme: null, appliedSpecificTheme: null, error: '' };
         seq = (this.authLoginTheme.requestSeq || 0) + 1;
         this.authLoginTheme.requestSeq = seq;
         this.authLoginTheme.username = username;

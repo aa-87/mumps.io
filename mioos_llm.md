@@ -727,7 +727,7 @@ Large text viewers must stay chunked through `fs.text.chunk` with request de-dup
 
 Use the attached source as truth for this ROI. Important regression guards:
 
-- Large text transport separates the full-edit threshold (`textChunkThresholdBytes`, still around 2411725 bytes) from transport chunk size (`textChunkBytes` / `textChunkSizeBytes`, default 131072 bytes, clamped below MAXSTRING-risk sizes).
+- Large text transport separates the full-edit threshold (`textChunkThresholdBytes`, still around 2411725 bytes) from transport chunk size (`textChunkBytes` / `textChunkSizeBytes`, default 860000 bytes, clamped below MAXSTRING-risk sizes).
 - Text chunks are deduped by file id + offset + size. WebSocket `fs.text.chunk` is attempted first; transient socket/timeout failure shows feedback and falls back to authenticated HTTP POST `/api/mioos/fs/text-chunk`, which calls `READWIN^MIOOSFS` and returns only the requested byte window.
 - Large files remain chunked read-only/bounded-edit. Small/medium files are loaded as full editable text by stitching bounded chunks. Save clears stale chunk caches and reloads safely.
 - Do not reintroduce `/api/mioos/fs/blob` as a large text fallback.
@@ -743,7 +743,7 @@ Regression rules from ROI 92:
 
 - Dark menu/readability fixes must stay scoped to menu surfaces. Do not globally force every dark-mode button to white text; use theme/menu variables for Start Menu items, pinned/group rows, nested child rows, toolbar/window menus, context menus, popup menus, and classic menubars.
 - Large text viewers must request only the initial chunk on open. Do not add idle neighbor prefetch, automatic retry loops, or whole-file blob/read fallbacks for large text. Chunk requests are deduped by file id + offset + size. Socket/timeout failures should show toast/status and wait for manual retry.
-- Keep chunk threshold and chunk size separate. Default transport chunk size remains 131072 bytes and is clamped below MAXSTRING-risk sizes; the threshold remains the small/medium full-edit decision point.
+- Keep chunk threshold and chunk size separate. Default transport chunk size is now 860000 bytes and is clamped below MAXSTRING-risk sizes; the threshold remains the small/medium full-edit decision point.
 - Large text edit is explicit and safe: small/medium files stitch bounded chunks for full edit/save, and oversize files remain `view-only-large-file` unless a future ROI implements deterministic chunk patch semantics with backend tests.
 - Shared toolbar menu commands dismiss menus after mouse or keyboard activation. Nested/open behavior should remain hover/click friendly, but action activation must close the menu.
 - Notification/toast text inherits `--font-size-ui`; do not reintroduce hard-coded notification font-size overrides.
@@ -758,7 +758,7 @@ Regression rules from ROI 93:
 
 - Dark Start Menu launchable text must be readable through scoped `.theme-dark-mode .mioos-start-menu-vue` selectors. Pinned/group rows, app shortcuts, user theme entries, nested launchable child rows, hover/focus/selected states, and disabled rows must use Start Menu-specific dark readable foreground variables instead of inheriting a black/light-mode `--menu-text` value. Do not fix this by globally forcing all light or dark text to white.
 - Keep dark toolbar/window/context menu readability scoped to their own menu surfaces. Do not change unrelated surfaces to satisfy Start Menu contrast tests.
-- Large text transport must keep the virtualization threshold separate from transport chunk size. The threshold decides when the viewer virtualizes; `textChunkBytes` / `textChunkSizeBytes` decides the requested byte window and must stay MAXSTRING-safe, defaulting to 131072 bytes rather than 2411725 bytes.
+- Large text transport must keep the virtualization threshold separate from transport chunk size. The threshold decides when the viewer virtualizes; `textChunkBytes` / `textChunkSizeBytes` decides the requested byte window and must stay MAXSTRING-safe, defaulting to 860000 bytes rather than 2411725 bytes.
 - Opening a virtualized text file loads only the initial chunk. Idle/programmatic scroll events must not arm more chunk loads. Actual user scroll intent is armed by wheel, pointer/touch, keyboard navigation, or explicit retry, then the debounced scroll handler maps the viewport to a single target byte offset.
 - Text chunk requests stay deduped by file id + offset + size. Failed chunks show toast/status feedback and wait for manual retry; do not reintroduce automatic retry loops, idle neighbor prefetch, or whole-file blob/read fallbacks for large text.
 - Small/medium files remain editable and save through `fs.text.save`. Files above `maxTextEditBytes` remain chunked read-only with disabled/clear edit affordances unless future work adds deterministic backend-tested partial-write semantics.
@@ -785,3 +785,16 @@ Large text remains chunked/read-only above `maxTextEditBytes`. Small/medium file
 - HTML preview uses sandboxed `srcdoc` without scripts for bounded files. PDF preview uses the authenticated local blob route and browser-native rendering.
 - Uploads must stay HTTP chunked, bounded, retry-limited, and must not read the whole file into one browser string or DataURL. Text viewer chunks and upload chunks are separate values.
 - Dark toolbar/menu normal states intentionally have transparent borders/outlines; keep `:focus-visible` styling for keyboard users.
+
+
+## ROI 98 handoff — staged login visuals, dark UI polish, and HTTP-first large text
+
+- Source of truth remains the attached MIOOS tree. ROI 98 fixes the username-stage login visual chain by tracking `appliedCommonTheme` and `appliedSpecificTheme` on the pre-auth login state. The common profile supplies the public background before username entry; username-stage profile can then supply the public avatar, warning image, and login-specific CSS. Stale specific profile/theme is cleared whenever the user returns to or changes the username stage.
+- `MIOOSTHEME` continues to publish generic, enumeration-safe username-stage responses while validating public theme asset ids and rewriting protected theme asset URLs to the controlled `/api/mioos/theme-public-asset` route. Data URLs and protected fs/theme URLs must not be emitted before authentication.
+- Dark Theme Studio clear buttons are scoped via `data-theme-editor-secondary` and intentionally use exact text color `#004cff`. Keep this scoped to Theme Studio dark mode.
+- Simple/read-only table cells are dark-theme aware; Advanced Table/editable CRUD styling remains a separate surface.
+- Markdown rendered preview uses the full viewer pane and the existing text viewer zoom controls. The sandboxed iframe receives a `data-mioos-markdown-preview-zoom` style injection so zoom affects rendered Markdown content.
+- Text viewer status is transient for info/success, pinnable/showable from the toolbar, and persistent for errors.
+- Large text now prefers authenticated HTTP text chunks (`readTextChunkPreferred` -> `readTextChunkViaHttp`) with dedupe by id/offset/size and stale response ignore. WebSocket remains only a fallback/legacy path; do not reintroduce full-file blob fallback for large text.
+- Partial/chunked large text save is explicitly blocked with `large_partial_text_save_blocked`; small/medium full CodeMirror editing remains the intended editable path.
+- Active text/read/upload chunk default is `860000` bytes. Keep transport chunk size separate from the full-edit/virtualization threshold and preserve server clamp/MAXSTRING safeguards.

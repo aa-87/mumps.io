@@ -753,7 +753,7 @@
           return next;
         },
         loginBoxStyleClass: function () {
-          var cfg = ((this.themeStudioActiveTheme && this.themeStudioActiveTheme()) || {}).loginScreenConfig || {};
+          var cfg = this.activeLoginScreenConfig ? this.activeLoginScreenConfig() : (((this.themeStudioActiveTheme && this.themeStudioActiveTheme()) || {}).loginScreenConfig || {});
           return 'style-' + String(cfg.loginBoxStyle || 'xp-transparent');
         },
         openTransfersWindow: function () {
@@ -3053,8 +3053,18 @@
           this._startMenuPopupDragMove = null;
           this._startMenuPopupDragEnd = null;
         },
+        activeLoginThemeForRuntime: function () {
+          var auth = this.authLoginTheme || {};
+          if (this.requiresSignin) {
+            if (this.authStage === 'password' && auth.appliedSpecificTheme) return auth.appliedSpecificTheme;
+            if (auth.appliedCommonTheme) return auth.appliedCommonTheme;
+            if (this.authStage === 'password' && auth.specificProfile && this.themeStudioConfigFromServerProfile) return this.themeStudioConfigFromServerProfile(auth.specificProfile);
+            if (auth.commonProfile && this.themeStudioConfigFromServerProfile) return this.themeStudioConfigFromServerProfile(auth.commonProfile);
+          }
+          return this.themeStudioActiveTheme ? this.themeStudioActiveTheme() : {};
+        },
         activeLoginPublicAssets: function () {
-          var theme = this.themeStudioActiveTheme ? this.themeStudioActiveTheme() : {};
+          var theme = this.activeLoginThemeForRuntime ? this.activeLoginThemeForRuntime() : (this.themeStudioActiveTheme ? this.themeStudioActiveTheme() : {});
           var cfg = this.activeLoginScreenConfig ? this.activeLoginScreenConfig() : {};
           return !!((theme || {}).publicLogin || (cfg || {}).publicLogin);
         },
@@ -3077,7 +3087,8 @@
           return cfg.privacyNotice || cfg.disclaimer || 'Access to this system is restricted to authorized users. Activity may be logged and reviewed.';
         },
         activeLoginScreenConfig: function () {
-          return (((this.themeStudioActiveTheme() || {}).loginScreenConfig) || {});
+          var theme = this.activeLoginThemeForRuntime ? this.activeLoginThemeForRuntime() : (this.themeStudioActiveTheme ? this.themeStudioActiveTheme() : {});
+          return (((theme || {}).loginScreenConfig) || {});
         },
         activeLoginPrivacyNotice: function () {
           return (((this.activeLoginScreenConfig() || {}).privacyNotice) || '');

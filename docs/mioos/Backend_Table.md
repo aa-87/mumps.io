@@ -453,3 +453,8 @@ SET DEF("tableState","config","contract")="mioos-advanced-table-v8"
 ## ROI 97 backend contract note
 
 ROI 97 does not change the Advanced Table backend contract. The backend changes are scoped to login-theme public profile publishing, static viewer routing through existing VFS/blob/text-chunk APIs, upload chunk sizing, and regression tests. Table-backed modules should continue using `MIOOSTBL` contracts unchanged.
+
+
+## ROI 98 read-only table rendering note
+
+No backend contract change is required. Tables configured as simple/read-only keep omitting mutation controls, and the browser shell now applies dark-theme-aware cell, header, hover, and selected-state styles for those read-only surfaces. Advanced Table mutation/editing CSS remains intact.

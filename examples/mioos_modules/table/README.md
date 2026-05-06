@@ -331,3 +331,8 @@ This table example remains MUMPS-first and does not require frontend framework c
 The same table surface used by this example is now available through **New Table Module** in the UI Modules catalogue. Backend-generated modules do not require new frontend code: `MIOOSMTBL` installs a user module with `componentKey=table`, `surface=mioos-surface-table`, and `tableState.config.contract=mioos-advanced-table-v8`.
 
 For MUMPS-first examples, keep the table module contract explicit in module JSON or generated definitions and let `MIOOSTBL` own query/mutate behavior.
+
+
+## ROI 98 display note
+
+The basic read-only and massive read-only examples do not need new MUMPS fields. Dark mode now supplies readable header, body cell, hover, and selected-state colors for read-only table surfaces automatically.

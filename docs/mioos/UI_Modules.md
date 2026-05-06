@@ -193,3 +193,8 @@ Text/structured file windows now prefer the local CodeMirror helper for small an
 File modules should treat Markdown, HTML, PDF, and large text as viewer capabilities rather than direct blob reads. `.md` files default to a local Marked rendered preview and use CodeMirror only when the user enters edit mode and the file is below the bounded edit limit. `.html` and `.htm` files render in sandboxed iframe preview mode without scripts; `.pdf` files use the browser-native PDF renderer via the authenticated local blob route. Large text-like files remain chunked read-only and must not request `/api/mioos/fs/blob` for full-file content.
 
 The theme editor separates common pre-login theme settings from login-specific settings. Common settings are safe before username entry; login-specific avatar/warning/CSS loads only after the username stage and is cleared when the username changes.
+
+
+## ROI 98 UI notes
+
+Dark-mode Theme Studio clear/neutral buttons now use scoped `data-theme-editor-secondary` selectors and keep `#004cff` text with accessible hover/focus-visible states. Read-only table presentations receive dark header/body/hover/selected styling without changing the module author contract or the Advanced Table editable CRUD controls. Markdown and HTML preview panes fill the viewer client area and use the existing viewer Zoom In/Zoom Out controls.

@@ -5159,3 +5159,122 @@ html[dir="rtl"] .mioos-window-menu-dropdown-vue,
   outline-offset: 2px;
   box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.7) !important;
 }
+
+/* ROI 98: staged-login avatar target must remain visible after username-specific theme loads. */
+.theme-login-avatar-wrap[data-login-avatar-stage="username-specific-avatar-target"] {
+  display: grid;
+  place-items: center;
+  min-height: 0;
+}
+.theme-login-avatar-wrap[data-login-avatar-stage="username-specific-avatar-target"] .theme-login-avatar-img {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: cover;
+}
+
+/* ROI 98: dark Theme Studio neutral/clear buttons. Scoped to Theme Studio only; requested text color is exact. */
+.theme-dark-mode .mioos-theme-studio-vue button[data-theme-editor-secondary="clear-upload"],
+.theme-dark-mode .mioos-theme-studio-vue .mioos-theme-uploadbar-vue button[data-theme-editor-secondary],
+.theme-dark-mode .mioos-theme-studio-vue .mioos-theme-uploadcard-actions-vue button[data-theme-editor-secondary] {
+  color: #004cff !important;
+  background: #eef6ff !important;
+  border-color: #7aa2ff !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.75), 0 0 0 1px rgba(0,76,255,.08) !important;
+}
+.theme-dark-mode .mioos-theme-studio-vue button[data-theme-editor-secondary="clear-upload"]:hover,
+.theme-dark-mode .mioos-theme-studio-vue button[data-theme-editor-secondary="clear-upload"]:focus-visible {
+  color: #004cff !important;
+  background: #ffffff !important;
+  border-color: #004cff !important;
+}
+.theme-dark-mode .mioos-theme-studio-vue button[data-theme-editor-secondary="clear-upload"]:focus-visible {
+  outline: 2px solid #93c5fd !important;
+  outline-offset: 2px;
+}
+
+/* ROI 98: dark simple/read-only tables without changing light tables or editable Advanced Table behavior. */
+.theme-dark-mode .mioos-full-table.is-readonly .mioos-table-wrap,
+.theme-dark-mode .mioos-full-table.is-readonly .mioos-table-grid,
+.theme-dark-mode .mioos-table-showcase .mioos-table-grid,
+.theme-dark-mode .mioos-simple-readonly-table,
+.theme-dark-mode .mioos-readonly-table {
+  background: #020617 !important;
+  color: #f8fafc !important;
+}
+.theme-dark-mode .mioos-full-table.is-readonly .mioos-table-grid thead th,
+.theme-dark-mode .mioos-table-showcase .mioos-table-grid thead th,
+.theme-dark-mode .mioos-simple-readonly-table thead th,
+.theme-dark-mode .mioos-readonly-table thead th {
+  background: #111827 !important;
+  color: #f8fafc !important;
+  border-color: rgba(191,219,254,.26) !important;
+}
+.theme-dark-mode .mioos-full-table.is-readonly .mioos-table-grid tbody td,
+.theme-dark-mode .mioos-table-showcase .mioos-table-grid tbody td,
+.theme-dark-mode .mioos-simple-readonly-table tbody td,
+.theme-dark-mode .mioos-readonly-table tbody td {
+  background: #0f172a !important;
+  color: #f8fafc !important;
+  border-color: rgba(148,163,184,.20) !important;
+}
+.theme-dark-mode .mioos-full-table.is-readonly .mioos-table-grid tbody tr:hover td,
+.theme-dark-mode .mioos-table-showcase .mioos-table-grid tbody tr:hover td,
+.theme-dark-mode .mioos-simple-readonly-table tbody tr:hover td,
+.theme-dark-mode .mioos-readonly-table tbody tr:hover td {
+  background: #1e293b !important;
+  color: #ffffff !important;
+}
+.theme-dark-mode .mioos-full-table.is-readonly .mioos-table-grid tr.is-selected td,
+.theme-dark-mode .mioos-simple-readonly-table tr.is-selected td,
+.theme-dark-mode .mioos-readonly-table tr.is-selected td {
+  background: #1d4ed8 !important;
+  color: #ffffff !important;
+}
+
+/* ROI 98: Markdown/HTML rendered preview fills the viewer pane and zooms through iframe srcdoc. */
+.mioos-text-virtual-viewer .mioos-document-preview[data-markdown-full-pane-preview="1"] {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  overflow: hidden;
+  background: var(--theme-panel-bg, #ffffff);
+  color: var(--theme-panel-text, #111827);
+}
+.mioos-document-preview-frame[data-markdown-resize-frame="fills-client-area"] {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+  background: inherit;
+  display: block;
+}
+.theme-dark-mode .mioos-text-virtual-viewer .mioos-document-preview[data-markdown-full-pane-preview="1"] {
+  background: #020617;
+  color: #f8fafc;
+}
+.theme-dark-mode .mioos-document-preview-frame[data-markdown-resize-frame="fills-client-area"] {
+  background: #020617;
+}
+
+/* ROI 98: transient text viewer status does not permanently reserve bottom space when hidden. */
+.mioos-text-status.is-transient {
+  transition: opacity .18s ease, transform .18s ease;
+}
+.mioos-text-status.is-pinned {
+  border-style: solid;
+}
+.theme-dark-mode .mioos-text-status {
+  background: rgba(15,23,42,.92);
+  color: #f8fafc;
+  border-color: rgba(147,197,253,.28);
+}
+.theme-dark-mode .mioos-text-status.is-error {
+  background: rgba(127,29,29,.88);
+  color: #fee2e2;
+  border-color: rgba(248,113,113,.42);
+}

@@ -175,16 +175,16 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","terminal","pipe","drainPause"))="" SET CONF("mioos","terminal","pipe","drainPause")=.04
 	IF $GET(CONF("mioos","terminal","pipe","reconnectGraceSeconds"))="" SET CONF("mioos","terminal","pipe","reconnectGraceSeconds")=180
 	IF $GET(CONF("mioos","fs","enabled"))="" SET CONF("mioos","fs","enabled")=1
-	IF $GET(CONF("mioos","fs","chunkSize"))="" SET CONF("mioos","fs","chunkSize")=131072
-	IF $GET(CONF("mioos","download","httpChunkBytes"))="" SET CONF("mioos","download","httpChunkBytes")=131072
-	IF $GET(CONF("mioos","fs","readPreviewBytes"))="" SET CONF("mioos","fs","readPreviewBytes")=262144
-	IF $GET(CONF("mioos","fs","readWindowBytes"))="" SET CONF("mioos","fs","readWindowBytes")=262144
-	IF $GET(CONF("mioos","fs","textChunkBytes"))="" SET CONF("mioos","fs","textChunkBytes")=262144
+	IF $GET(CONF("mioos","fs","chunkSize"))="" SET CONF("mioos","fs","chunkSize")=860000
+	IF $GET(CONF("mioos","download","httpChunkBytes"))="" SET CONF("mioos","download","httpChunkBytes")=860000
+	IF $GET(CONF("mioos","fs","readPreviewBytes"))="" SET CONF("mioos","fs","readPreviewBytes")=860000
+	IF $GET(CONF("mioos","fs","readWindowBytes"))="" SET CONF("mioos","fs","readWindowBytes")=860000
+	IF $GET(CONF("mioos","fs","textChunkBytes"))="" SET CONF("mioos","fs","textChunkBytes")=860000
 	IF $GET(CONF("mioos","fs","textChunkThresholdBytes"))="" SET CONF("mioos","fs","textChunkThresholdBytes")=2411725
 	IF $GET(CONF("mioos","fs","maxTextEditBytes"))="" SET CONF("mioos","fs","maxTextEditBytes")=2411725
 	IF $GET(CONF("mioos","fs","transferPersistence"))="" SET CONF("mioos","fs","transferPersistence")="localstorage-resumable-transfer-list"
-	IF $GET(CONF("mioos","download","mediaInitialBytes"))="" SET CONF("mioos","download","mediaInitialBytes")=131072
-	IF $GET(CONF("mioos","download","mediaWarmupBytes"))="" SET CONF("mioos","download","mediaWarmupBytes")=131072
+	IF $GET(CONF("mioos","download","mediaInitialBytes"))="" SET CONF("mioos","download","mediaInitialBytes")=860000
+	IF $GET(CONF("mioos","download","mediaWarmupBytes"))="" SET CONF("mioos","download","mediaWarmupBytes")=860000
 	IF $GET(CONF("mioos","fs","transport"))="" SET CONF("mioos","fs","transport")="http-and-websocket"
 	IF $GET(CONF("mioos","route","tableQuery"))="" SET CONF("mioos","route","tableQuery")="/api/mioos/table/query"
 	IF $GET(CONF("mioos","route","tableMutate"))="" SET CONF("mioos","route","tableMutate")="/api/mioos/table/mutate"
@@ -198,7 +198,7 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","modules","dynamicWindows"))="" SET CONF("mioos","modules","dynamicWindows")=1
 	IF $GET(CONF("mioos","modules","launcher"))="" SET CONF("mioos","modules","launcher")="desktop-icons-and-menu"
 	IF $GET(CONF("mioos","table","maxPageSize"))="" SET CONF("mioos","table","maxPageSize")=250
-	IF $GET(CONF("mioos","upload","chunkBytes"))="" SET CONF("mioos","upload","chunkBytes")=131072
+	IF $GET(CONF("mioos","upload","chunkBytes"))="" SET CONF("mioos","upload","chunkBytes")=860000
 	IF $GET(CONF("mioos","upload","concurrency"))="" SET CONF("mioos","upload","concurrency")=3
 	IF $GET(CONF("mioos","upload","batchSize"))="" SET CONF("mioos","upload","batchSize")=2
 	IF $GET(CONF("mioos","upload","maxInflightChunks"))="" SET CONF("mioos","upload","maxInflightChunks")=6

@@ -86,9 +86,9 @@
               '</form>' +
             '</section>' +
             '<section v-if="vm.requiresSignin" class="mioos-auth-overlay theme-login-runtime" aria-hidden="false">' +
-              '<div class="mioos-auth-login-bg" :style="{ backgroundImage: vm.themeStudioLoginWallpaperCss(vm.themeStudioActiveTheme()) }"></div>' +
+              '<div class="mioos-auth-login-bg" :style="{ backgroundImage: vm.themeStudioLoginWallpaperCss(vm.activeLoginThemeForRuntime ? vm.activeLoginThemeForRuntime() : vm.themeStudioActiveTheme()) }" data-login-runtime-theme="common-prelogin-and-username-specific"></div>' +
               '<div class="mioos-auth-card theme-login-card" :class="vm.loginBoxStyleClass ? vm.loginBoxStyleClass() : \'style-xp-transparent\'" role="dialog" aria-modal="true" :aria-label="vm.boot.product.name">' +
-                '<div class="theme-login-avatar-wrap">' +
+                '<div class="theme-login-avatar-wrap" data-login-avatar-stage="username-specific-avatar-target">' +
                   '<img v-if="vm.activeLoginAvatarUrl()" class="theme-login-avatar-img" :src="vm.activeLoginAvatarUrl()" alt="Login avatar">' +
                   '<div v-else class="theme-login-avatar-fallback" aria-hidden="true">M</div>' +
                 '</div>' +
@@ -198,6 +198,8 @@
           zoomTextIn: function () { if (this.vm.textViewerZoom) this.vm.textViewerZoom(this.window.id, 0.1); },
           zoomTextOut: function () { if (this.vm.textViewerZoom) this.vm.textViewerZoom(this.window.id, -0.1); },
           zoomTextReset: function () { if (this.vm.textViewerZoomReset) this.vm.textViewerZoomReset(this.window.id); },
+          showTextStatus: function () { if (this.vm.textViewerShowStatus) this.vm.textViewerShowStatus(this.window.id); },
+          toggleTextStatusPin: function () { if (this.vm.textViewerToggleStatusPin) this.vm.textViewerToggleStatusPin(this.window.id); },
           toggleTextWrap: function () { if (this.vm.textViewerToggleLineWrap) this.vm.textViewerToggleLineWrap(this.window.id); },
           clearTerminal: function () { if (this.vm.clearTerminalWindow) this.vm.clearTerminalWindow(this.window.id); },
           refreshTerminal: function () { if (this.vm.pollTerminal) this.vm.pollTerminal(this.window.id); },
@@ -291,6 +293,8 @@
                 <button v-if="isText" type="button" role="menuitem" @click="zoomTextReset">Reset Zoom</button>
                 <button v-if="isText" type="button" role="menuitem" @click="toggleTextWrap">Toggle Line Wrap</button>
                 <button v-if="isText" type="button" role="menuitem" @click="refreshText">Refresh chunk cache</button>
+                <button v-if="isText" type="button" role="menuitem" @click="showTextStatus">Show Status</button>
+                <button v-if="isText" type="button" role="menuitem" @click="toggleTextStatusPin">[[ ((textStream || {}).statusPinned) ? 'Unpin Status' : 'Pin Status' ]]</button>
                 <button v-if="!isMedia && !isText && window.appKey !== 'terminal' && window.appKey !== 'transfers'" type="button" role="menuitem" @click="about">About this module</button>
               </div>
             </div>
@@ -477,12 +481,19 @@
           textContentStyle: function () { var s = this.textStream || {}; return { transform: 'translateY(' + Math.max(0, +(s.contentTop || 0)) + 'px)', fontSize: (12 * (+(s.zoom || 1))) + 'px' }; },
           textPlainStyle: function () { var s = this.textStream || {}; return { fontSize: (12 * (+(s.zoom || 1))) + 'px' }; },
           codeMirrorHostStyle: function () { var s = this.textStream || {}; return { fontSize: (12 * (+(s.zoom || 1))) + 'px' }; },
+          documentPreviewStyle: function () { var s = this.textStream || {}; var zoom = Math.max(0.75, Math.min(2.25, +(s.zoom || 1))); return { '--mioos-markdown-preview-zoom': String(zoom), fontSize: (16 * zoom) + 'px' }; },
           canEditText: function () { var s = this.textStream || {}; return !!this.textStream && !(+s.size > 0 && +s.maxEditBytes > 0 && +s.size > +s.maxEditBytes); },
           textEditNotice: function () { return this.canEditText ? '' : 'Large file is chunked read-only above the bounded edit limit.'; },
           codeMirrorStatus: function () { var s = this.textStream || {}; return s.codeMirrorFallback || ''; },
           showRenderedDocumentPreview: function () { var s = this.textStream || {}; return !!s && !s.virtualized && !s.editing && !!(s.markdownPreviewEnabled || s.nativeHtmlPreview) && !!s.renderedPreviewHtml; },
-          previewFrameSrcdoc: function () { return String(((this.textStream || {}).renderedPreviewHtml) || ''); },
-          previewStatusText: function () { var s = this.textStream || {}; return s.renderedPreviewError || s.previewStrategy || s.status || ''; },
+          previewFrameSrcdoc: function () {
+            var html = String(((this.textStream || {}).renderedPreviewHtml) || '');
+            var zoom = Math.max(0.75, Math.min(2.25, +(((this.textStream || {}).zoom) || 1)));
+            var style = '<style data-mioos-markdown-preview-zoom>html{font-size:' + (16 * zoom) + 'px !important;}body{min-height:100%;}</style>';
+            return html.indexOf('</head>') >= 0 ? html.replace('</head>', style + '</head>') : style + html;
+          },
+          previewStatusText: function () { var s = this.textStream || {}; return s.renderedPreviewError || ((s.statusVisible || s.statusPinned) ? s.status : ''); },
+          textViewerStatusVisible: function () { var s = this.textStream || {}; return !!(s.statusPinned || s.statusVisible || s.error || this.textEditNotice || (s.retryOffset !== null && typeof s.retryOffset !== 'undefined')); },
           editableText: {
             get: function () { return this.textStream ? this.vm.textViewerEditableContent(this.window.id) : ''; },
             set: function (value) { if (this.vm.textViewerSetEditableContent) this.vm.textViewerSetEditableContent(this.window.id, value); }
@@ -583,9 +594,9 @@
           '<div class="mioos-surface mioos-surface-viewer-native" :class="\'is-\' + kind">' +
             '<section class="mioos-viewer-body" :class="{ \'is-media-full\': kind === \'media\', \'is-text-virtual\': !!textStream }">' +
               '<div v-if="textStream" class="mioos-text-virtual-viewer" :class="{ editing: textStream.editing, virtualized: textStream.virtualized, \'has-codemirror\': textStream.codeMirrorActive }" tabindex="0" @wheel.passive="armTextScroll(\'wheel\')" @pointerdown="armTextScroll(\'pointer\')" @pointermove="armTextScroll(\'pointer\')" @touchstart.passive="armTextScroll(\'touch\')" @touchmove.passive="armTextScroll(\'touch\')" @keydown="armTextScroll(\'keyboard\')" @scroll="onTextScroll">' +
-                '<div v-if="showRenderedDocumentPreview" class="mioos-document-preview" data-preview-sandbox-strategy="sandboxed-srcdoc-no-scripts">' +
-                  '<iframe class="mioos-viewer-frame mioos-document-preview-frame" sandbox="" :srcdoc="previewFrameSrcdoc" title="Rendered document preview"></iframe>' +
-                  '<div v-if="previewStatusText" class="mioos-text-status" role="status">[[ previewStatusText ]]</div>' +
+                '<div v-if="showRenderedDocumentPreview" class="mioos-document-preview" data-preview-sandbox-strategy="sandboxed-srcdoc-no-scripts" data-markdown-full-pane-preview="1" :style="documentPreviewStyle">' +
+                  '<iframe class="mioos-viewer-frame mioos-document-preview-frame" sandbox="" :srcdoc="previewFrameSrcdoc" title="Rendered document preview" data-markdown-resize-frame="fills-client-area"></iframe>' +
+                  '<div v-if="previewStatusText && textViewerStatusVisible" class="mioos-text-status is-transient" role="status">[[ previewStatusText ]]</div>' +
                 '</div>' +
                 '<div v-else-if="textStream.virtualized" class="mioos-text-virtual-spacer" :style="textSpacerStyle"><div class="mioos-text-chunk-stack" :style="textContentStyle">' +
                   '<pre v-for="chunk in textChunks" :key="chunk.offset" class="mioos-viewer-text mioos-viewer-text-chunk"><span class="mioos-text-chunk-offset">Byte [[ chunk.offset ]]</span>[[ chunk.content ]]</pre>' +
@@ -596,7 +607,7 @@
                   '<pre v-if="!textStream.editing && !textStream.codeMirrorActive" v-for="chunk in textChunks" :key="chunk.offset" class="mioos-viewer-text mioos-viewer-text-chunk is-full-text" :style="textPlainStyle"><span class="mioos-text-chunk-offset">[[ textStream.dirty ? "Unsaved changes" : (textStream.saveStatus || "Editable text file") ]]</span>[[ chunk.content ]]</pre>' +
                   '<div v-if="codeMirrorStatus" class="mioos-codemirror-fallback" role="status">[[ codeMirrorStatus ]]</div>' +
                 '</div>' +
-                '<div v-if="textStream.status || textStream.error || textEditNotice" class="mioos-text-status" role="status"><span :class="{ \'is-error\': textStream.error }">[[ textStream.error || textEditNotice || textStream.status ]]</span><button v-if="textStream.retryOffset !== null && typeof textStream.retryOffset !== \'undefined\'" type="button" class="mioos-btn" @click.stop="retryText">Retry</button></div>' +
+                '<div v-if="textViewerStatusVisible" class="mioos-text-status" :class="{ \'is-transient\': !textStream.statusPinned, \'is-pinned\': textStream.statusPinned, \'is-error\': textStream.error }" data-text-status-auto-hide="info-success-short-error-persistent" role="status"><span :class="{ \'is-error\': textStream.error }">[[ textStream.error || textEditNotice || textStream.status ]]</span><button v-if="textStream.retryOffset !== null && typeof textStream.retryOffset !== \'undefined\'" type="button" class="mioos-btn" @click.stop="retryText">Retry</button></div>' +
               '</div>' +
               '<div v-else-if="fileView.loading" class="mioos-viewer-state">Opening file…</div>' +
               '<div v-else-if="fileView.error" class="mioos-viewer-state is-error">[[ fileView.error ]]</div>' +
@@ -724,7 +735,7 @@
                             <input type="file" accept="image/*" @change="vm.themeStudioUploadField('wallpaperUrl', $event)">
                             Upload wallpaper
                           </label>
-                          <button type="button" class="mioos-btn" @click="vm.themeStudioClearUploadedField('wallpaperUrl')">Clear wallpaper</button>
+                          <button type="button" class="mioos-btn" data-theme-editor-secondary="clear-upload" @click="vm.themeStudioClearUploadedField('wallpaperUrl')">Clear wallpaper</button>
                         </div>
                         <div class="mioos-theme-row-vue">
                           <label><span>Desktop icon size</span><input type="range" min="36" max="72" step="1" :value="parseInt(vm.themeStudioTextValue('--desktop-icon-size', '48px'), 10) || 48" @input="vm.themeStudioUpdateVar('--desktop-icon-size', $event.target.value + 'px')"></label>
@@ -881,7 +892,7 @@
                                 <input type="file" accept="image/*" @change="vm.themeStudioUploadField('loginScreenConfig.wallpaperUrl', $event)">
                                 Upload background
                               </label>
-                              <button type="button" class="mioos-btn" @click="vm.themeStudioClearUploadedField('loginScreenConfig.wallpaperUrl')">Clear</button>
+                              <button type="button" class="mioos-btn" data-theme-editor-secondary="clear-upload" @click="vm.themeStudioClearUploadedField('loginScreenConfig.wallpaperUrl')">Clear</button>
                             </div>
                           </div>
                         </div>
@@ -895,7 +906,7 @@
                                 <input type="file" accept="image/*" @change="vm.themeStudioUploadField('loginScreenConfig.avatarUrl', $event)">
                                 Upload avatar
                               </label>
-                              <button type="button" class="mioos-btn" @click="vm.themeStudioClearUploadedField('loginScreenConfig.avatarUrl')">Clear</button>
+                              <button type="button" class="mioos-btn" data-theme-editor-secondary="clear-upload" @click="vm.themeStudioClearUploadedField('loginScreenConfig.avatarUrl')">Clear</button>
                             </div>
                           </div>
                           <div class="mioos-theme-uploadcard-vue span-2">
@@ -906,7 +917,7 @@
                                 <input type="file" accept="image/*" @change="vm.themeStudioUploadField('loginScreenConfig.warningImageUrl', $event)">
                                 Upload banner image
                               </label>
-                              <button type="button" class="mioos-btn" @click="vm.themeStudioClearUploadedField('loginScreenConfig.warningImageUrl')">Clear</button>
+                              <button type="button" class="mioos-btn" data-theme-editor-secondary="clear-upload" @click="vm.themeStudioClearUploadedField('loginScreenConfig.warningImageUrl')">Clear</button>
                             </div>
                           </div>
                         </div>
