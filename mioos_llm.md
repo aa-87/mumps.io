@@ -734,3 +734,18 @@ Use the attached source as truth for this ROI. Important regression guards:
 - Dark theme text contrast is enforced for Start Menu parent/child launchable items, context menus, toolbar/window menus, Explorer/table/patient labels, and common cards/panels without changing light theme.
 - New Table Module must save through `MIOOSMTBL`, normalize generated definitions to `componentKey=table`, `surface=mioos-surface-table`, `tableState.config.contract=mioos-advanced-table-v8`, and expose table definitions through `MIOOSMOD` catalogue payloads.
 - Transfers dark theme uses dark surfaces, readable pause buttons, and active shimmer only when the status panel has `is-active`; `is-idle` disables animation.
+
+## ROI 92 — dark menu/text-viewer/taskbar/mobile hardening
+
+Use the uploaded source tree as truth. Preserve the MUMPS-first architecture and browser-only Vue 3 Options API UMD code.
+
+Regression rules from ROI 92:
+
+- Dark menu/readability fixes must stay scoped to menu surfaces. Do not globally force every dark-mode button to white text; use theme/menu variables for Start Menu items, pinned/group rows, nested child rows, toolbar/window menus, context menus, popup menus, and classic menubars.
+- Large text viewers must request only the initial chunk on open. Do not add idle neighbor prefetch, automatic retry loops, or whole-file blob/read fallbacks for large text. Chunk requests are deduped by file id + offset + size. Socket/timeout failures should show toast/status and wait for manual retry.
+- Keep chunk threshold and chunk size separate. Default transport chunk size remains 131072 bytes and is clamped below MAXSTRING-risk sizes; the threshold remains the small/medium full-edit decision point.
+- Large text edit is explicit and safe: small/medium files stitch bounded chunks for full edit/save, and oversize files remain `view-only-large-file` unless a future ROI implements deterministic chunk patch semantics with backend tests.
+- Shared toolbar menu commands dismiss menus after mouse or keyboard activation. Nested/open behavior should remain hover/click friendly, but action activation must close the menu.
+- Notification/toast text inherits `--font-size-ui`; do not reintroduce hard-coded notification font-size overrides.
+- Taskbar UI distinguishes pinned-only apps, open apps, focused active windows, inactive open windows, and minimized windows. Many windows must remain usable through the scroll marker/mobile CSS.
+- Mobile window movement uses pointer/touch titlebar drag and touch resize handlers. Scrollable content areas must keep touch pan behavior.

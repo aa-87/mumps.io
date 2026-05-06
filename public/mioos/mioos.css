@@ -4494,7 +4494,7 @@ html[dir="rtl"] .mioos-window-menu-dropdown-vue,
 }
 .theme-dark-mode .mioos-explorer-listview tbody tr.is-selected {
   background: linear-gradient(180deg, #eaf2ff 0%, #c7dcff 100%) !important;
-  color: #0f172a !important;
+  color: #004cff  !important;
   outline-color: rgba(255,255,255,.65) !important;
 }
 .theme-dark-mode .mioos-explorer-listview tbody tr.is-selected td,
@@ -4502,7 +4502,7 @@ html[dir="rtl"] .mioos-window-menu-dropdown-vue,
 .theme-dark-mode .mioos-explorer-listview tbody tr.is-selected strong,
 .theme-dark-mode .mioos-explorer-listview tbody tr.is-selected small,
 .theme-dark-mode .mioos-explorer-listview tbody tr.is-selected .mioos-explorer-row-name {
-  color: #0f172a !important;
+  color: #004cff  !important;
   text-shadow: none !important;
 }
 .mioos-transfer-status-panel {
@@ -4726,3 +4726,123 @@ html[dir="rtl"] .mioos-window-menu-dropdown-vue,
 }
 .mioos-classic-transferoverview.is-active .mioos-transfer-status-orb span { animation: mioos-transfer-orb-spin 1.15s linear infinite; }
 .mioos-classic-transferoverview.is-active .mioos-transfer-status-meter span { animation: mioos-transfer-shimmer 1.1s linear infinite; }
+
+/* ROI 92: dark menu contrast, notification scaling, taskbar state, and mobile touch guards. */
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-modern-item,
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-modern-item strong,
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-modern-item em,
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-modern-item.is-child,
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-modern-folder-toggle,
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-entry-vue,
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-entry-vue strong,
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-entry-vue em,
+.theme-dark-mode .mioos-start-menu-vue .mioos-chip-btn,
+.theme-dark-mode .mioos-window-menu-vue,
+.theme-dark-mode .mioos-window-menu-vue button,
+.theme-dark-mode .mioos-window-menu-dropdown-vue,
+.theme-dark-mode .mioos-window-menu-dropdown-vue button,
+.theme-dark-mode .mioos-explorer-context-menu,
+.theme-dark-mode .mioos-explorer-context-menu button,
+.theme-dark-mode .mioos-popup-menu-vue,
+.theme-dark-mode .mioos-popup-menu-vue button,
+.theme-dark-mode .mioos-classic-menubar,
+.theme-dark-mode .mioos-classic-menubar button {
+  color: var(--menu-text, var(--theme-field-text, #f8fafc)) !important;
+}
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-modern-item:hover,
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-modern-item:focus,
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-modern-item.is-selected,
+.theme-dark-mode .mioos-window-menu-vue button:hover,
+.theme-dark-mode .mioos-window-menu-vue button:focus,
+.theme-dark-mode .mioos-window-menu-dropdown-vue button:hover,
+.theme-dark-mode .mioos-window-menu-dropdown-vue button:focus,
+.theme-dark-mode .mioos-explorer-context-menu button:hover,
+.theme-dark-mode .mioos-explorer-context-menu button:focus,
+.theme-dark-mode .mioos-popup-menu-vue button:hover,
+.theme-dark-mode .mioos-popup-menu-vue button:focus,
+.theme-dark-mode .mioos-classic-menubar button:hover,
+.theme-dark-mode .mioos-classic-menubar button:focus {
+  color: var(--menu-hover-text, var(--menu-text, #ffffff)) !important;
+  background: var(--menu-hover, rgba(96,165,250,.24)) !important;
+}
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-modern-item.is-disabled,
+.theme-dark-mode .mioos-start-menu-vue .mioos-start-modern-item:disabled,
+.theme-dark-mode .mioos-window-menu-dropdown-vue button:disabled,
+.theme-dark-mode .mioos-explorer-context-menu button:disabled,
+.theme-dark-mode .mioos-popup-menu-vue button:disabled {
+  color: var(--theme-muted-text, #94a3b8) !important;
+  opacity: .68;
+}
+.mioos-shell-toast,
+.mioos-ui-toast,
+.mioos-table-toast {
+  font-size: var(--font-size-ui, 12px);
+  line-height: 1.35;
+}
+.mioos-shell-toast strong { font-size: 1em; }
+.mioos-shell-toast span { font-size: .92em; }
+.mioos-ui-toast button { font-size: calc(var(--font-size-ui, 12px) * 1.35); }
+.theme-dark-mode .mioos-shell-toast,
+.theme-dark-mode .mioos-ui-toast,
+.theme-dark-mode .mioos-table-toast {
+  background: var(--theme-panel-bg, #111827);
+  border-color: var(--theme-panel-border, #334155);
+  color: var(--theme-field-text, #f8fafc);
+}
+.mioos-taskbar-windows-vue.is-scrollable-many-windows {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  touch-action: pan-x;
+}
+.mioos-taskbar-vue.is-many-windows .mioos-task-item-vue {
+  flex: 0 1 132px;
+  max-width: 132px;
+  min-width: 82px;
+}
+.mioos-task-item-vue.is-focused,
+.mioos-task-item-vue.is-active {
+  outline: 2px solid color-mix(in srgb, var(--accent, #60a5fa) 72%, transparent);
+  box-shadow: inset 0 -3px 0 var(--accent, #60a5fa), 0 0 0 1px rgba(255,255,255,.18);
+}
+.mioos-task-item-vue.is-inactive-open {
+  box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--accent, #60a5fa) 50%, transparent);
+  opacity: .94;
+}
+.mioos-task-item-vue.is-minimized-open { opacity: .72; }
+.mioos-task-icon-vue.is-pinned-only { opacity: .78; }
+.mioos-task-icon-vue.is-open-app { box-shadow: inset 0 -3px 0 var(--accent, #60a5fa); }
+.mioos-task-icon-vue.is-focused-app { outline: 2px solid color-mix(in srgb, var(--accent, #60a5fa) 72%, transparent); }
+.mioos-titlebar-vue {
+  cursor: grab;
+  touch-action: none;
+}
+.mioos-titlebar-vue:active { cursor: grabbing; }
+.mioos-resize-handle-vue { touch-action: none; }
+.mioos-window-content-vue,
+.mioos-surface-explorer,
+.mioos-text-virtual-scroll,
+.mioos-text-editor,
+.mioos-explorer-main {
+  touch-action: pan-x pan-y;
+}
+@media (max-width: 800px) {
+  .mioos-taskbar-vue {
+    gap: 4px;
+    padding-inline: 6px;
+  }
+  .mioos-taskbar-vue.is-many-windows .mioos-task-item-vue {
+    min-width: 72px;
+    max-width: 116px;
+    min-height: 40px;
+  }
+  .mioos-task-icon-vue,
+  .mioos-task-item-vue,
+  .mioos-start-button-vue {
+    min-height: 40px;
+  }
+  .mioos-resize-handle-vue[data-edge="n"],
+  .mioos-resize-handle-vue[data-edge="s"] { height: 14px; }
+  .mioos-resize-handle-vue[data-edge="e"],
+  .mioos-resize-handle-vue[data-edge="w"] { width: 14px; }
+}

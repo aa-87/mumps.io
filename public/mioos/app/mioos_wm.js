@@ -12,6 +12,13 @@
     if (mobile && theme && theme.mobileConfig && theme.mobileConfig.taskbarHeightMobile) return +theme.mobileConfig.taskbarHeightMobile;
     return +(((theme.taskbarConfig || {}).height) || ((((vm.boot || {}).desktop || {}).windowing || {}).taskbarHeight) || 40);
   }
+  function touchPoint(event) {
+    return (event && event.touches && event.touches[0]) || (event && event.changedTouches && event.changedTouches[0]) || null;
+  }
+  function capturePointer(event) {
+    if (!event || !event.target || !event.target.setPointerCapture || event.pointerId === null || typeof event.pointerId === 'undefined') return;
+    try { event.target.setPointerCapture(event.pointerId); } catch (err) {}
+  }
   function viewportBounds(vm) {
     var padBottom = taskbarHeight(vm);
     return {
@@ -180,6 +187,34 @@
         this.clearSnapPreview();
         if (this.activeWindowId === windowId) this.activeWindowId = '';
       },
+      taskbarPinnedOpenCount: function (appKey) {
+        appKey = String(appKey || '');
+        if (!appKey) return 0;
+        return (this.windows || []).filter(function (win) { return win && win.appKey === appKey && win.state !== 'closed'; }).length;
+      },
+      taskbarPinnedClass: function (app) {
+        var key = (app && (app.key || app.appKey)) || '';
+        var count = this.taskbarPinnedOpenCount(key);
+        var focused = !!((this.windows || []).find(function (win) { return win && win.appKey === key && win.id === this.activeWindowId && win.state !== 'minimized' && win.state !== 'closed'; }.bind(this)));
+        return { 'is-pinned-only': !count, 'is-open-app': !!count, 'is-focused-app': focused };
+      },
+      taskbarPinnedLabel: function (app) {
+        var key = (app && (app.key || app.appKey)) || '';
+        var title = (app && (app.title || app.label || key)) || 'Pinned app';
+        var count = this.taskbarPinnedOpenCount(key);
+        return title + (count ? (' — ' + count + ' open') : ' — pinned');
+      },
+      taskbarWindowClass: function (win) {
+        var focused = !!(win && this.activeWindowId === win.id && win.state !== 'minimized' && win.state !== 'closed');
+        return { 'is-active': focused, 'is-focused': focused, 'is-taskbar-open': !!(win && win.state !== 'closed'), 'is-inactive-open': !!(win && !focused && win.state !== 'minimized' && win.state !== 'closed'), 'is-minimized-open': !!(win && win.state === 'minimized') };
+      },
+      taskbarWindowLabel: function (win) {
+        var title = (win && win.title) || 'Window';
+        if (!win) return title;
+        if (this.activeWindowId === win.id && win.state !== 'minimized' && win.state !== 'closed') return title + ' — active window';
+        if (win.state === 'minimized') return title + ' — minimized window';
+        return title + ' — open window';
+      },
       taskbarToggle: function (windowId) {
         var win = findWindow(this, windowId);
         if (!win) return;
@@ -299,10 +334,23 @@
         this.clearSnapPreview();
         scheduleTerminalSync(this, win);
       },
+      beginTouchDrag: function (win, event) {
+        var pt = touchPoint(event);
+        if (!pt) return;
+        if (event && event.preventDefault) event.preventDefault();
+        return this.beginDrag(win, { clientX: pt.clientX, clientY: pt.clientY, button: 0, target: event && event.target });
+      },
+      beginTouchResize: function (win, edge, event) {
+        var pt = touchPoint(event);
+        if (!pt) return;
+        if (event && event.preventDefault) event.preventDefault();
+        return this.beginResize(win, edge, { clientX: pt.clientX, clientY: pt.clientY, button: 0, target: event && event.target, stopPropagation: function () {} });
+      },
       beginDrag: function (win, event) {
         if (!win || +win.draggable !== 1) return;
         this.ensureWindowFrame(win);
-        if (event.button !== 0) return;
+        if (event && typeof event.button === 'number' && event.button !== 0) return;
+        capturePointer(event);
         this.focusWindow(win.id);
         this.dragState.active = true;
         this.dragState.mode = 'move';
@@ -320,8 +368,9 @@
       beginResize: function (win, edge, event) {
         if (!win || +win.resizable !== 1) return;
         this.ensureWindowFrame(win);
-        if (event.button !== 0) return;
-        event.stopPropagation();
+        if (event && typeof event.button === 'number' && event.button !== 0) return;
+        capturePointer(event);
+        if (event && event.stopPropagation) event.stopPropagation();
         this.focusWindow(win.id);
         this.dragState.active = true;
         this.dragState.mode = 'resize';

@@ -523,3 +523,15 @@ SET CONF("mioos","fs","textChunkBytes")=131072          ; transport chunk size
 SET CONF("mioos","fs","textChunkThresholdBytes")=2411725 ; full-edit threshold
 SET CONF("mioos","fs","maxTextEditBytes")=2411725       ; bounded edit/save cap
 ```
+
+## ROI 92 — dark menu, text viewer, taskbar, and mobile window hardening
+
+This ROI preserves the existing MUMPS/YottaDB + MIOTPL + MIOOSWS/MIOOSAPI + Vue 3 Options API architecture while tightening UI regressions in-place.
+
+- Dark theme menu text is scoped to menu surfaces: Start Menu launchables, pinned/group rows, nested child rows, window toolbar menus, Explorer context menus, popup menus, and classic menubars use dark menu/theme variables without forcing light mode to white.
+- Large text opening remains chunked through `fs.text.chunk`. Initial open is de-duplicated, idle viewers do not request neighbor chunks, scroll events explicitly arm the byte-offset load path, and failed chunk loads stop in manual-retry status instead of looping.
+- Large text edit behavior remains safe: small/medium files stitch bounded chunks for full edit/save, while oversize files stay in explicit `view-only-large-file` mode with feedback.
+- Window toolbar menu actions dismiss after mouse or keyboard activation. Inline Explorer/viewer/terminal/transfer actions still dispatch through their existing methods.
+- Notifications/toasts inherit `--font-size-ui`, so Theme Studio global UI font size applies to alert text without hard-coded 11/12px overrides.
+- Taskbar entries distinguish pinned-only apps, open apps, active/focused windows, inactive open windows, and minimized windows. Large window counts use a horizontal scroll marker and mobile taskbar rules.
+- Mobile window movement uses pointer/touch titlebar drag and touch resize hooks. Window content, Explorer, and text viewer scroll areas keep normal touch scrolling.

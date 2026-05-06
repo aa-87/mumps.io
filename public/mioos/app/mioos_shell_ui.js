@@ -213,7 +213,7 @@
           explorerView: function (mode) { if (this.vm.explorerSetViewMode) this.vm.explorerSetViewMode(this.window.id, mode); }
         },
         template: `
-          <nav class="mioos-window-menu-vue" role="menubar" :aria-label="(window.title || 'Window') + ' menu'">
+          <nav class="mioos-window-menu-vue" role="menubar" :aria-label="(window.title || 'Window') + ' menu'" @click="dismissMenus($event)" @keyup.enter="dismissMenus($event)" @keyup.space="dismissMenus($event)">
             <div class="mioos-window-menu-group-vue" role="none">
               <button type="button" role="menuitem" aria-haspopup="true">File</button>
               <div class="mioos-window-menu-dropdown-vue" role="menu" @click="dismissMenus($event)">
@@ -325,7 +325,7 @@
         },
         template: '' +
           '<section class="mioos-window-vue" :class="vm.windowClass(window)" :style="vm.windowStyle(window)" role="dialog" :aria-label="window.title" :data-window-state="window.state" :data-window-app="window.appKey" @mousedown="vm.focusWindow(window.id)" @dragover.stop="vm.onWindowDragOver(window, $event)" @drop.stop="vm.onWindowDrop(window, $event)">' +
-            '<header class="mioos-titlebar-vue" :class="[\'is-\' + family]" @mousedown.stop="vm.beginDrag(window, $event)" @dblclick.stop="vm.onWindowTitleDblClick(window.id)">' +
+            '<header class="mioos-titlebar-vue" :class="[\'is-\' + family]" @pointerdown.stop="vm.beginDrag(window, $event)" @touchstart.stop="vm.beginTouchDrag(window, $event)" @dblclick.stop="vm.onWindowTitleDblClick(window.id)">' +
               '<div class="mioos-titlebar-copy-vue"><span class="mioos-titlebar-icon">[[ vm.appIcon(window.appKey) ]]</span><strong>[[ window.title ]]</strong></div>' +
               '<div class="mioos-window-actions-vue">' +
                 '<button type="button" class="mioos-window-control is-minimize" :title="vm.t(\'action.minimize\')" @click.stop="vm.minimizeWindow(window.id)"><span>—</span></button>' +
@@ -335,7 +335,7 @@
             '</header>' +
             '<mioos-window-toolbar v-if="!window.hideToolbar" :window="window"></mioos-window-toolbar>' +
             '<div class="mioos-window-content-vue"><component :is="contentComponent" :window="window"></component></div>' +
-            '<span v-for="edge in resizeEdges" :key="edge" class="mioos-resize-handle-vue" :data-edge="edge" :data-resize-edge="edge" @pointerdown.stop.prevent="vm.beginResize(window, edge, $event)"></span>' +
+            '<span v-for="edge in resizeEdges" :key="edge" class="mioos-resize-handle-vue" :data-edge="edge" :data-resize-edge="edge" @pointerdown.stop.prevent="vm.beginResize(window, edge, $event)" @touchstart.stop.prevent="vm.beginTouchResize(window, edge, $event)"></span>' +
           '</section>'
       });
 
@@ -1065,13 +1065,13 @@
           pinnedApps: function () { return (this.vm.launcherEntries || []).slice(0, 5); }
         },
         template: '' +
-          '<footer class="mioos-taskbar-vue" :class="[\'is-\' + vm.currentShellThemeFamily(), \'position-\' + vm.taskbarPosition(), \'button-\' + vm.taskbarButtonStyleType()]" :style="vm.taskbarShellStyle()">' +
+          '<footer class="mioos-taskbar-vue" :class="[\'is-\' + vm.currentShellThemeFamily(), \'position-\' + vm.taskbarPosition(), \'button-\' + vm.taskbarButtonStyleType(), { \'is-many-windows\': windows.length > 8 }]" :style="vm.taskbarShellStyle()">' +
             '<button type="button" class="mioos-start-button-vue" @click.stop="vm.toggleMenu()"><span>◫</span><strong>[[ (vm.boot.desktop || {}).launcherLabel || \'Menu\' ]]</strong></button>' +
-            '<div class="mioos-taskbar-pinned-vue">' +
-              '<button v-for="app in pinnedApps" :key="app.key" type="button" class="mioos-task-icon-vue" :title="app.title" @click.stop="vm.openApp(app.key)"><span>[[ app.icon ]]</span></button>' +
+            '<div class="mioos-taskbar-pinned-vue" aria-label="Pinned apps">' +
+              '<button v-for="app in pinnedApps" :key="app.key" type="button" class="mioos-task-icon-vue" :class="vm.taskbarPinnedClass(app)" :title="app.title" :aria-label="vm.taskbarPinnedLabel(app)" @click.stop="vm.openApp(app.key)"><span>[[ app.icon ]]</span></button>' +
             '</div>' +
-            '<div class="mioos-taskbar-windows-vue">' +
-              '<button v-for="win in windows" :key="win.id" type="button" class="mioos-task-item-vue" :class="{ \'is-active\': vm.activeWindowId === win.id && win.state !== \'minimized\' }" @click.stop="vm.taskbarToggle(win.id)"><span class="mioos-task-item-icon">[[ vm.appIcon(win.appKey) ]]</span><span class="mioos-task-item-title">[[ win.title ]]</span></button>' +
+            '<div class="mioos-taskbar-windows-vue is-scrollable-many-windows" :class="{ \'is-many-windows\': windows.length > 8 }">' +
+              '<button v-for="win in windows" :key="win.id" type="button" class="mioos-task-item-vue" :class="vm.taskbarWindowClass(win)" :aria-label="vm.taskbarWindowLabel(win)" :title="vm.taskbarWindowLabel(win)" @click.stop="vm.taskbarToggle(win.id)"><span class="mioos-task-item-icon">[[ vm.appIcon(win.appKey) ]]</span><span class="mioos-task-item-title">[[ win.title ]]</span></button>' +
             '</div>' +
             '<div class="mioos-taskbar-tray-vue">' +
               '<button type="button" class="mioos-task-icon-vue" title="Show Desktop" @click.stop="vm.showDesktop()">⌄</button>' +

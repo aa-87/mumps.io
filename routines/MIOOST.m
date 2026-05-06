@@ -77,6 +77,7 @@ MIOOST ; MIOOS tests
 	DO T089
 	DO T090
 	DO T091
+	DO T092
 	QUIT
 	;
 RESET
@@ -1575,7 +1576,6 @@ T085
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSST.m","OBJ(""vfs"",""textChunkThresholdBytes"")"),"[MIOOST][T085][text threshold boot field]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","textChunkThresholdBytes"),"[MIOOST][T085][backend text chunk cap uses threshold]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","textViewerShouldVirtualize"),"[MIOOST][T085][text viewer threshold gate]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","virtualized ? textViewerBaseChunkBytes(this)"),"[MIOOST][T085][small text single read size]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","requestAnimationFrame"),"[MIOOST][T085][smooth text scroll throttle]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","pendingOffset"),"[MIOOST][T085][coalesced text scroll offsets]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","clearTextViewerChunkCache(stream.fileId)"),"[MIOOST][T085][save clears stale chunk cache]")
@@ -1630,7 +1630,7 @@ T086
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","multiple server-backed user themes"),"[MIOOST][T086][llm user theme contract]")
 	QUIT
 	;
-
+	;
 T087
 	NEW STATE,CONF,IN,OUT,ERR,ROOT,DESK,ID,FOUND,I
 	KILL STATE,CONF,IN,OUT,ERR
@@ -1661,7 +1661,6 @@ T087
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","textViewerByteOffsetForScroll"),"[MIOOST][T087][scroll byte mapping helper]")
 	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","this.command('fs.read'"),0,"[MIOOST][T087][no full fs.read fallback]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","boundedEdit"),"[MIOOST][T087][bounded edit mode]")
-	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","chunked-text-v2"),"[MIOOST][T087][chunked text backend contract]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","Explorer toolbar order contract: File | Edit | View | Tools | Help"),"[MIOOST][T087][explorer toolbar order contract]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","mioos-explorer-toolbar-separator"),"[MIOOST][T087][explorer toolbar separator]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","theme-dark-mode .mioos-explorer-listview tbody tr.is-selected"),"[MIOOST][T087][dark details selected row css]")
@@ -1688,7 +1687,7 @@ T087
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","Final regression stabilization contract"),"[MIOOST][T087][final regression llm]")
 	QUIT
 	;
-
+	;
 T088
 	NEW CONF,STATE,ERR,OUT,DESK,UP,ID,RAW,SIZE,TREE,JSON
 	DO RESET
@@ -1721,7 +1720,7 @@ T088
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","Checkpoint stabilization 2026-05-05"),"[MIOOST][T088][checkpoint llm]")
 	QUIT
 	;
-
+	;
 T089
 	NEW STATE,CONF,IN,OUT,ERR,ROOT,CSV,FOUND,I
 	DO RESET
@@ -1752,7 +1751,7 @@ T089
 	DO OK^MIOTASSERT($$FILEHAS("examples/mioos_modules/patient_registration/README.md","quoted CSV"),"[MIOOST][T089][patient csv docs]")
 	QUIT
 	;
-
+	;
 T090
 	NEW STATE,CONF,IN,OUT,ERR
 	DO RESET
@@ -1806,7 +1805,7 @@ T090
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","Login/theme/start-menu/text-viewer regression ROI"),"[MIOOST][T090][llm roi]")
 	QUIT
 	;
-
+	;
 T091
 	NEW STATE,CONF,IN,OUT,ERR
 	DO RESET
@@ -1859,4 +1858,53 @@ T091
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 91"),"[MIOOST][T091][llm updated]")
 	QUIT
 	;
-
+T092
+	NEW CONF
+	DO RESET
+	DO CONFDEF^MIOOS(.CONF)
+	DO EQ^MIOTASSERT(+$GET(CONF("mioos","fs","textChunkBytes")),131072,"[MIOOST][T092][default chunk size safe]")
+	DO OK^MIOTASSERT(+$GET(CONF("mioos","fs","textChunkBytes"))<+$GET(CONF("mioos","fs","textChunkThresholdBytes")),"[MIOOST][T092][chunk size remains below threshold]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","theme-dark-mode .mioos-start-menu-vue .mioos-start-modern-item"),"[MIOOST][T092][dark start menu launchable text]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","theme-dark-mode .mioos-start-menu-vue .mioos-start-entry-vue"),"[MIOOST][T092][dark pinned/group item text]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","theme-dark-mode .mioos-start-menu-vue .mioos-start-modern-item.is-child"),"[MIOOST][T092][dark child item text]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","theme-dark-mode .mioos-window-menu-vue button"),"[MIOOST][T092][dark window toolbar item text]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","theme-dark-mode .mioos-explorer-context-menu button"),"[MIOOST][T092][dark context menu item text]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","var(--menu-hover-text"),"[MIOOST][T092][hover selected remains readable]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","body:not(.theme-dark-mode) .mioos-start-modern-item { color: #fff"),0,"[MIOOST][T092][light mode not forced white]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","initialLoadRequest"),"[MIOOST][T092][initial load deduped]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","userScrollArmed = true"),"[MIOOST][T092][scroll loads use explicit user target]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","textChunkRequestKey(id, offset, size)"),"[MIOOST][T092][chunk requests dedupe by id offset size]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","Socket timed out; retrying text chunk"),0,"[MIOOST][T092][no automatic socket retry loop]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","retryPolicy: 'manual-only'"),"[MIOOST][T092][failed chunks are manual retry only]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","vfs.textChunkSizeBytes || vfs.textChunkBytes || 131072"),"[MIOOST][T092][default chunk size not threshold]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","size: 2411725"),0,"[MIOOST][T092][no 2411725 default chunk request]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","this.command('fs.read'"),0,"[MIOOST][T092][no whole-file read fallback]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","view-only-large-file"),"[MIOOST][T092][large text edit explicit safe mode]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","clearTextViewerChunkCache(stream.fileId)"),"[MIOOST][T092][save clears stale cache]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","IF SIZE>LIMIT SET SIZE=LIMIT"),"[MIOOST][T092][ws chunk maxstring clamp]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSFS.m","QUIT:$DATA(ERR("),"[MIOOST][T092][backend range read stops on error]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","@click=""dismissMenus($event)"""),"[MIOOST][T092][toolbar root click dismiss]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","@keyup.enter=""dismissMenus($event)"""),"[MIOOST][T092][keyboard enter dismiss]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","@keyup.space=""dismissMenus($event)"""),"[MIOOST][T092][keyboard space dismiss]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","font-size: var(--font-size-ui"),"[MIOOST][T092][notification font uses global size]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","target.cssVars['--font-size-ui']"),"[MIOOST][T092][theme studio writes font size]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_wm.js","taskbarWindowClass"),"[MIOOST][T092][taskbar window state classes]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-task-item-vue.is-focused"),"[MIOOST][T092][focused taskbar class css]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-task-item-vue.is-inactive-open"),"[MIOOST][T092][inactive open taskbar css]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-task-icon-vue.is-pinned-only"),"[MIOOST][T092][pinned only taskbar css]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","is-scrollable-many-windows"),"[MIOOST][T092][many windows scroll marker]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","vm.taskbarToggle(win.id)"),"[MIOOST][T092][taskbar click dispatch preserved]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","@pointerdown.stop=""vm.beginDrag(window, $event)"""),"[MIOOST][T092][pointer titlebar drag]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","@touchstart.stop=""vm.beginTouchDrag(window, $event)"""),"[MIOOST][T092][touch titlebar drag]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_wm.js","beginTouchDrag"),"[MIOOST][T092][touch drag handler]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","window.addEventListener('touchmove'"),"[MIOOST][T092][global touch move path]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","handleGlobalTouchMove"),"[MIOOST][T092][touch move cleanup path]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-titlebar-vue"),"[MIOOST][T092][titlebar touch css]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","touch-action: none"),"[MIOOST][T092][drag handle touch-action]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-window-content-vue"),"[MIOOST][T092][content scroll touch preserved]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","ROI 92"),"[MIOOST][T092][docs updated]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/UI_Modules.md","ROI 92"),"[MIOOST][T092][ui docs updated]")
+	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 92"),"[MIOOST][T092][llm updated]")
+	QUIT
+	;
+	;

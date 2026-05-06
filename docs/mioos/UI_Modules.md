@@ -175,3 +175,11 @@ Required MUMPS-first workflow:
 3. Use **Preview** to validate and inspect the generated table query shape.
 4. Use **Save and register** to install the module and dataset.
 5. Launch the generated module from the catalogue/start menu; no Vue component or frontend file is required.
+
+## ROI 92 shell UI regression contract
+
+UI modules should rely on the shared window toolbar and taskbar contracts instead of creating duplicate action panels. Toolbar/dropdown command clicks, including keyboard activation, dismiss the open menu. Custom module menu items should be ordinary toolbar commands so they inherit dark contrast and dismissal behavior.
+
+Notifications and module toasts should inherit the global `--font-size-ui` variable. Do not add fixed notification font-size overrides that bypass Theme Studio global font scaling.
+
+Module windows automatically participate in the taskbar open/focused/minimized class model. File viewer windows and generated table windows should continue to launch through the normal window manager so pinned-only apps, inactive open windows, and active windows remain visually distinct. On mobile, keep scrollable content inside `.mioos-window-content-vue` or the existing surface scroll containers so titlebar touch drag does not hijack content scrolling.

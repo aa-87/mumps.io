@@ -149,12 +149,17 @@
         }
         this._dragMove = this.handleGlobalMouseMove.bind(this);
         this._dragEnd = this.handleGlobalMouseUp.bind(this);
+        this._dragTouchMove = this.handleGlobalTouchMove.bind(this);
+        this._dragTouchEnd = this.handleGlobalMouseUp.bind(this);
         this._viewportResize = this.handleViewportResize.bind(this);
         window.addEventListener('mousemove', this._dragMove);
         window.addEventListener('mouseup', this._dragEnd);
         window.addEventListener('pointermove', this._dragMove);
         window.addEventListener('pointerup', this._dragEnd);
         window.addEventListener('pointercancel', this._dragEnd);
+        window.addEventListener('touchmove', this._dragTouchMove, { passive: false });
+        window.addEventListener('touchend', this._dragTouchEnd);
+        window.addEventListener('touchcancel', this._dragTouchEnd);
         this._shortcutHandler = this.onGlobalShortcut.bind(this);
         window.addEventListener('keydown', this._shortcutHandler);
         this._persistTransfersOnUnload = this.persistTransferCenter.bind(this);
@@ -187,6 +192,9 @@
         window.removeEventListener('pointermove', this._dragMove);
         window.removeEventListener('pointerup', this._dragEnd);
         window.removeEventListener('pointercancel', this._dragEnd);
+        window.removeEventListener('touchmove', this._dragTouchMove);
+        window.removeEventListener('touchend', this._dragTouchEnd);
+        window.removeEventListener('touchcancel', this._dragTouchEnd);
         window.removeEventListener('keydown', this._shortcutHandler);
         window.removeEventListener('blur', this._windowBlurDragEnd);
         window.removeEventListener('resize', this._viewportResize);
@@ -1247,6 +1255,14 @@
             if (self.onDragMove) self.onDragMove(next);
             self.onDesktopIconMove(next);
           });
+        },
+        handleGlobalTouchMove: function (event) {
+          var touch;
+          if (!((this.dragState && this.dragState.active) || (((this.desktopUi || {}).drag || {}).armed))) return;
+          touch = event && event.touches && event.touches[0];
+          if (!touch) return;
+          if (event.preventDefault) event.preventDefault();
+          return this.handleGlobalMouseMove({ clientX: touch.clientX, clientY: touch.clientY });
         },
         handleGlobalMouseUp: function (event) {
           if (this._dragRaf) {

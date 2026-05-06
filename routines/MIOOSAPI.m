@@ -819,9 +819,9 @@ THEMEASSET(DEV,CONF,REQ,CTX)
 	SET CTX("status")=200
 	QUIT
 	;
-
 	;
-
+	;
+	;
 	;
 ISTRUE(X)
 	NEW V
@@ -850,5 +850,6 @@ ISMEDIAMIME(MIME)
 	NEW X
 	SET X=$$LOW^MIOHTTP($GET(MIME))
 	QUIT $SELECT($EXTRACT(X,1,6)="audio/":1,$EXTRACT(X,1,6)="video/":1,1:0)
+	;
 	;
 	;
