@@ -231,11 +231,8 @@ FSTEXTCHUNK(DEV,CONF,REQ,CTX)
 	. DO RESPERR(.DEV,.CONF,403,"fs_text_chunk_failed",$GET(ERR("error")),.CTX)
 	SET OUT("mediaType")="text"
 	SET OUT("chunkSize")=SIZE
-	SET OUT("scrollSync")="none"
-	SET OUT("loadTrigger")="open-session-not-scroll"
-	SET OUT("transport")="http-text-chunk"
-	SET OUT("viewerContract")="text-edit-session-v4-http-range"
-	SET OUT("loadContract")="explicit-text-edit-session-v4"
+	SET OUT("scrollSync")="byte-offset"
+	SET OUT("viewerContract")="chunked-text-v3-http-range"
 	SET OUT("boundedEdit")=0
 	SET OUT("fullEditOnDemand")=1
 	SET OUT("maxEditBytes")=0
@@ -247,7 +244,7 @@ FSTEXTCHUNK(DEV,CONF,REQ,CTX)
 	;
 FSTEXTSAVE(DEV,CONF,REQ,CTX)
 	NEW TREE,ERR,STATE,OUT,META,ID,PARENT,NAME,MIME,DATA,LIMIT
-	; MAXSTRING guard: large text save must use the chunked HTTP upload route, not full JSON.
+	; Guard full-JSON text saves; large edits use staged HTTP upload chunks.
 	IF '$$PARSEBODY(.REQ,.TREE,.ERR) DO  QUIT
 	. DO RESPERR(.DEV,.CONF,400,"invalid_json",$GET(ERR("error")),.CTX)
 	IF '$$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR) DO  QUIT
@@ -260,7 +257,7 @@ FSTEXTSAVE(DEV,CONF,REQ,CTX)
 	SET LIMIT=+$GET(CONF("mioos","fs","textChunkBytes"),65536) IF LIMIT<4096 SET LIMIT=4096
 	IF LIMIT>65536 SET LIMIT=65536
 	IF $ZLENGTH(DATA)>LIMIT DO  QUIT
-	. DO RESPERR(.DEV,.CONF,413,"fs_text_save_requires_chunked","Large text saves must use /api/mioos/fs/upload chunk staging to avoid MAXSTRING and partial-write risk",.CTX)
+	. DO RESPERR(.DEV,.CONF,413,"fs_text_save_requires_chunked","Large text saves must use staged HTTP upload chunks",.CTX)
 	IF '$$META^MIOOSFS(.STATE,ID,.META,.ERR) DO  QUIT
 	. DO RESPERR(.DEV,.CONF,403,"fs_text_save_failed",$GET(ERR("error")),.CTX)
 	IF $GET(META("kind"))'="file" DO  QUIT
@@ -633,11 +630,12 @@ FSBLOB(DEV,CONF,REQ,CTX)
 	. SET H206("Content-Length")=RLEN
 	. DO RESPHEAD^MIOSTATIC(.DEV,.CONF,206,.H206,$GET(CTX("request_id")))
 	. IF METHOD'="head" DO
-	. . IF ISWALL DO SENDVFSRAW(.DEV,.CONF,RID,RS,RLEN,.SERR) QUIT
+	. . IF ISWALL!(+ISMEDIA) DO SENDVFSRAW(.DEV,.CONF,RID,RS,RLEN,.SERR) QUIT
 	. . DO SENDVFS(.DEV,.CONF,RID,RS,RLEN,+ISMEDIA,MEDIAWARM,.SERR)
 	. IF $DATA(SERR("error")) DO LOGSTREAM(.CTX,RID,RS,RLEN,.SERR)
 	. SET CTX("status")=206
-	IF RNG="",METHOD="get",STREAM="media",'ISWALL,ISMEDIA,SIZE>MEDIAINIT DO  QUIT
+	; Avoid synthetic first-206 media responses by default: browsers issue Range requests themselves.
+	IF RNG="",METHOD="get",STREAM="media",'ISWALL,ISMEDIA,SIZE>MEDIAINIT,+$GET(CONF("mioos","download","mediaInitial206"),0) DO  QUIT
 	. SET RS=0,RE=MEDIAINIT-1
 	. IF RE>SIZE SET RE=SIZE-1
 	. SET RLEN=(RE-RS)+1
@@ -645,14 +643,14 @@ FSBLOB(DEV,CONF,REQ,CTX)
 	. SET H206("Content-Range")="bytes "_RS_"-"_RE_"/"_SIZE
 	. SET H206("Content-Length")=RLEN
 	. DO RESPHEAD^MIOSTATIC(.DEV,.CONF,206,.H206,$GET(CTX("request_id")))
-	. DO SENDVFS(.DEV,.CONF,RID,RS,RLEN,1,MEDIAWARM,.SERR)
+	. DO SENDVFSRAW(.DEV,.CONF,RID,RS,RLEN,.SERR)
 	. IF $DATA(SERR("error")) DO LOGSTREAM(.CTX,RID,RS,RLEN,.SERR)
 	. SET CTX("status")=206
 	MERGE H200=HEAD
 	SET H200("Content-Length")=SIZE
 	DO RESPHEAD^MIOSTATIC(.DEV,.CONF,200,.H200,$GET(CTX("request_id")))
 	IF METHOD'="head" DO
-	. IF ISWALL DO SENDVFSRAW(.DEV,.CONF,RID,0,SIZE,.SERR) QUIT
+	. IF ISWALL!(+ISMEDIA) DO SENDVFSRAW(.DEV,.CONF,RID,0,SIZE,.SERR) QUIT
 	. DO SENDVFS(.DEV,.CONF,RID,0,SIZE,+ISMEDIA,MEDIAWARM,.SERR)
 	IF $DATA(SERR("error")) DO LOGSTREAM(.CTX,RID,0,SIZE,.SERR)
 	SET CTX("status")=200
