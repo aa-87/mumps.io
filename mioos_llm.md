@@ -768,3 +768,11 @@ Regression rules from ROI 93:
 ## ROI 94 — dark table/toolbars/About contrast
 
 Preserve the scoped dark contrast rules added in ROI 94. Advanced Table row bodies must not render white text over light grey backgrounds in dark theme; use `.theme-dark-mode .mioos-full-table .mioos-table-grid` selectors for normal, alternate, hover, selected, grouped, expanded, sticky, and editable cells. Toolbar/menu text must remain bright on dark backgrounds for window menus, inline window tools, viewer menus, classic toolbars, Explorer toolbars, and generic surface toolbars without globally forcing every button or text node to white. Help → About windows must keep `.theme-dark-mode .mioos-surface-about` background and text variables so headings, paragraphs, and definition-list text remain readable.
+
+## ROI 95/96 — CodeMirror and loader-race contract
+
+Use only the local CodeMirror 5.65.21 files under `public/mioos/vendor/codemirror/`. Do not add npm, CDN CodeMirror URLs, build steps, TypeScript, Composition API, or unsupported modes. The loader is `public/mioos/app/mioos_codemirror.js`; it must detect loaded assets, wait on in-flight existing script/style tags, avoid duplicate injection, and preserve plain text fallback if CodeMirror core cannot load.
+
+Mode mapping is source-accurate to the attached package: MUMPS uses `mumps`; Markdown uses `markdown`; XML/HTML use `xml`; SQL uses `sql`; CSV uses `spreadsheet`; JavaScript/JSON/CSS/YAML/HL7/X12/log/unknown content falls back to plain text. Do not load the supplied `vue` or `handlebars` files unless their missing local dependencies are also supplied and tested.
+
+Large text remains chunked/read-only above `maxTextEditBytes`. Small/medium files may use CodeMirror for bounded full-document edit/save. Save must clear chunk caches and reload safely. Do not restore whole-file `/api/mioos/fs/blob` fallback, idle prefetch loops, automatic retry loops, or unsafe random-access large-file editing.

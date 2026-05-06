@@ -1,0 +1,806 @@
+Please use the attached ZIP/folder as the ONLY source of truth. MAKE SURE ABSOLUTELY NO REGRESSIONS.
+
+You are taking over development of MIOOS / MUMPS.IO OS Shell. Do not rely on prior ChatGPT conversations, prior patches, prior generated ZIPs, assumptions, or generated artifacts. Inspect the attached source first, then set a full checkpoint by extracting every testable feature in MIOOS, covering every ROI represented in the source history/docs/tests — including all 90+ ROI areas if present — and adding as many meaningful regression, performance, and MAXSTRING tests as possible.
+
+This is a CHECKPOINT TEST LOCK ROI. The primary goal is not feature expansion. The primary goal is to stabilize the current codebase by discovering every testable behavior, creating a feature/ROI audit matrix, adding tests, profiling risky paths, MAXSTRING-testing risky string/payload paths, and fixing only source-accurate bugs discovered during the checkpoint.
+
+Core architecture rules:
+- Preserve the existing MUMPS.IO architecture.
+- Backend: MUMPS on YottaDB / GT.M.
+- Server-side rendering: MIOTPL.
+- HTTP/API: MIOHTTP / MIOOSAPI.
+- WebSocket/control/realtime: MIOOSWS where appropriate.
+- VFS/files: MIOOSFS / MIOOSFSUP.
+- Boot/session/desktop state: MIOOSST / MIOOSVM / MIOOSUI as applicable.
+- Theme/profile persistence: MIOOSTHEME.
+- Locale/i18n: MIOOSI18N.
+- Module registry/table-backed modules: MIOOSMOD / MIOOSMTBL.
+- Advanced Table backend contract: MIOOSTBL.
+- Patient workflow: MIOOSPAT.
+- Terminal routines/modules if present: MIOOSTERM / MIOOSTPIPE / MIOOSTWS or current source equivalents.
+- Auth/session/security routines if present: MIOOSAUTH / MIOAUTH* or current source equivalents.
+- Browser files under public/mioos/app/.
+- Vue 3 Options API UMD only.
+- No new frontend framework.
+- No build step.
+- No TypeScript.
+- No Composition API.
+- No Node/Express runtime.
+- No external dependencies unless already vendored in the attached source.
+- No npm install.
+- No CDN dependency.
+- Keep the project usable offline/local.
+- The project is for MUMPS developers with little/no frontend experience, so docs/examples must remain MUMPS-first.
+- Do not use DataURLs for uploads or persisted images.
+- Do not emit authenticated asset URLs before login.
+- Tests must stay quiet on success and explicit on failure.
+- Every checkpoint behavior change must update docs, examples when applicable, and mioos_llm.md.
+- Return only modified files in the final ZIP or patch.
+- Be honest about tests that cannot be run.
+
+Primary checkpoint goal:
+Create a full “MIOOS Checkpoint Test Lock” by:
+1. Inspecting the repo and extracting every testable feature.
+2. Extracting every documented ROI, test label, feature label, module, route, command, backend routine, frontend component, CSS subsystem, and example workflow.
+3. Building an ROI-to-feature-to-test audit matrix.
+4. Adding or expanding MUMPS regression tests.
+5. Adding static browser/CSS/JSON contract checks where runtime browser testing is unavailable.
+6. Adding performance profiling tests for major backend, VFS, table, WebSocket, JSON, auth, route, theme, text, terminal, transfer, module, patient, and file paths.
+7. Adding MAXSTRING tests for every risky string/payload construction path.
+8. Fixing source-accurate bugs found while writing the tests.
+9. Avoiding all regressions.
+
+Do not merely add superficial FILEHAS tests. Use direct routine calls and realistic in-memory globals wherever practical. Static tests are acceptable only when browser/runtime behavior cannot be executed in the current environment.
+
+Initial source audit required before modifying anything:
+- List all routines under routines/.
+- List all browser files under public/mioos/app/.
+- List all CSS/vendor/static assets under public/mioos/.
+- List all docs under docs/mioos/.
+- List all examples under examples/.
+- Inspect existing test routines:
+  - routines/MIOOST.m
+  - routines/MIOOSTBLC.m if present
+  - any helper test routines such as *T.m, *TEST.m, *PERF.m, *CHK.m if present.
+- Extract all existing test labels T001…T999 from test routines.
+- Extract all ROI documents from docs/mioos/ matching ROI_* or similar.
+- Extract every ROI number/name mentioned in docs, examples, mioos_llm.md, routines, comments, and test labels.
+- Build a “current ROI coverage map” before changing code:
+  - ROI / feature area
+  - source files
+  - current tests
+  - missing tests
+  - performance risk
+  - MAXSTRING risk
+  - status: covered / partially covered / missing / needs source fix
+
+Required baseline checks before and after:
+1. Try:
+   D ^MIOOST
+
+   If YottaDB / GT.M is unavailable, clearly state that D ^MIOOST could not be run.
+
+2. If YottaDB / GT.M is available, also try source compile checks:
+   ZLINK "MIOOS"
+   ZLINK "MIOOSAPI"
+   ZLINK "MIOOSWS"
+   ZLINK "MIOOSFS"
+   ZLINK "MIOOSFSUP"
+   ZLINK "MIOOSST"
+   ZLINK "MIOOSVM"
+   ZLINK "MIOOSUI"
+   ZLINK "MIOOSTHEME"
+   ZLINK "MIOOSI18N"
+   ZLINK "MIOOSMOD"
+   ZLINK "MIOOSMTBL"
+   ZLINK "MIOOSPAT"
+   ZLINK "MIOOSTBL"
+   ZLINK "MIOOSTERM"
+   ZLINK "MIOOSTPIPE"
+   ZLINK "MIOOSTWS"
+   ZLINK "MIOOST"
+   ZLINK "MIOOSTBLC"
+   DO ^MIOOST
+
+   If any routine does not exist in the attached source, do not invent it. Record it as not present and compile only source-present routines.
+
+3. JavaScript syntax checks for all source-present browser files. At minimum, check:
+   node --check public/mioos/app/mioos_auth.js
+   node --check public/mioos/app/mioos_core.js
+   node --check public/mioos/app/mioos_explorer.js
+   node --check public/mioos/app/mioos_i18n.js
+   node --check public/mioos/app/mioos_modules.js
+   node --check public/mioos/app/mioos_permissions.js
+   node --check public/mioos/app/mioos_shell_ui.js
+   node --check public/mioos/app/mioos_state.js
+   node --check public/mioos/app/mioos_table.js
+   node --check public/mioos/app/mioos_terminal.js
+   node --check public/mioos/app/mioos_wm.js
+   node --check public/mioos/app/mioos_ws.js
+
+   Also run node --check on every newly added JS file and every existing JS file found under public/mioos/app/.
+
+4. JSON validation for all source-present JSON files. At minimum, check:
+   python3 -m json.tool config/mws.conf.json
+   python3 -m json.tool examples/mioos_modules/table/module.json
+   python3 -m json.tool examples/mioos_modules/patient_registration/module.json
+   python3 -m json.tool examples/mioos_modules/permissions/module.json
+   python3 -m json.tool examples/mioos_modules/ui_elements/module.json
+   python3 -m json.tool examples/patient_registration/module.json
+
+   Also validate every .json found in examples/, config/, public/ if applicable.
+
+5. Static MUMPS sanity checks:
+   - No odd quote-count lines in touched routines unless intentional and documented.
+   - No missing labels referenced by added tests.
+   - No syntax-obvious duplicate labels.
+   - No lines over project/runtime-dangerous limits if the repo has conventions.
+   - No unintended deletion of existing test labels.
+   - No accidental bypass of the main D ^MIOOST entry point.
+   - No raw DataURL persistence.
+   - No authenticated asset URLs emitted before login.
+
+Checkpoint test architecture:
+- Keep D ^MIOOST as the main entry point.
+- Prefer adding helper test routines if MIOOST.m is too large.
+- Suggested helper routines if needed:
+  - MIOOSTCHK.m — checkpoint orchestrator and audit sanity.
+  - MIOOSTROI.m — ROI coverage extraction/static tests.
+  - MIOOSTMAX.m — MAXSTRING and large-payload tests.
+  - MIOOSTPERF.m — performance profiles.
+  - MIOOSTUI.m — browser/CSS/static UI contract tests.
+  - MIOOSTFS.m — VFS/explorer/upload/download tests.
+  - MIOOSTXT.m — text viewer and large-file tests.
+  - MIOOSTTHM.m — theme/login/start menu tests.
+  - MIOOSTPAT.m — patient workflow tests.
+  - MIOOSTMOD.m — modules/app catalogue tests.
+  - MIOOSTTRM.m — terminal tests.
+  - MIOOSTXFR.m — transfers tests.
+  - MIOOSTSEC.m — auth/security tests.
+- Only add helpers when justified by size/clarity.
+- Wire every helper into D ^MIOOST.
+- Tests must be quiet on success and explicit on failure.
+- Performance tests should fail only on conservative, non-flaky thresholds or emit a warning-style failure only if the project’s test conventions support it.
+- MAXSTRING tests should use safe synthetic chunks and must not intentionally crash the runtime.
+
+ROI extraction requirements:
+- Scan docs/mioos/ for all ROI files.
+- Scan mioos_llm.md for ROI references and feature contracts.
+- Scan routines and browser files for ROI comments, feature markers, test markers, and TODO/FIXME.
+- Build a complete ROI list from the source. Try to cover every ROI represented in the repo, including all 90+ if present.
+- For each ROI:
+  - identify claimed behavior
+  - identify touched subsystem
+  - identify current tests
+  - add missing tests where practical
+  - add performance/MAXSTRING coverage if relevant
+  - document remaining untestable behavior
+
+Feature extraction and test coverage requirements:
+
+A. HTTP/server foundation
+Inspect/test:
+- MIOHTTP / MIOHTTP* request parsing.
+- Route dispatch.
+- Static file serving.
+- Headers.
+- Security headers.
+- Multipart uploads.
+- Range requests.
+- ETag/cache behavior.
+- JSON responses.
+- Error responses.
+- Logging/metrics if present.
+
+Tests:
+- valid and invalid HTTP methods.
+- not found route.
+- malformed request safety.
+- header normalization.
+- long header values.
+- multipart boundary parsing.
+- static file ETag/If-None-Match.
+- range start/end/clamp.
+- deterministic error JSON.
+- no MAXSTRING on large headers/body fragments.
+
+Performance:
+- route dispatch loop.
+- static route lookup.
+- multipart parsing with synthetic chunks.
+- JSON response builder.
+
+MAXSTRING:
+- long URI.
+- long query string.
+- many headers.
+- large chunked body metadata.
+
+B. Auth/session/security
+Inspect/test:
+- login/auth routines/routes.
+- JWT/session token creation/verification if present.
+- session cookie behavior.
+- invalid credentials feedback.
+- success feedback.
+- expired/missing auth.
+- roles/permissions.
+- unauthenticated boot.
+- no authenticated assets before login.
+
+Tests:
+- invalid login.
+- successful login contract.
+- missing token.
+- expired/invalid token.
+- permission denied.
+- admin/non-admin path.
+- taskbar/start menu hidden before auth.
+- no sensitive details leaked.
+
+Performance:
+- JWT decode/verify.
+- session lookup.
+- permission lookup.
+
+MAXSTRING:
+- long username.
+- long roles/claims.
+- huge/invalid token.
+
+C. Boot/session/desktop shell
+Inspect/test:
+- MIOOSST / MIOOSVM boot payload.
+- desktop icons.
+- taskbar.
+- start menu.
+- window manager.
+- profile persistence.
+- session state.
+- About window.
+- context menus.
+- toolbar menus.
+- RTL layout.
+
+Tests:
+- boot payload fields.
+- authenticated shell visible.
+- unauthenticated shell hidden.
+- desktop icon list.
+- taskbar positions.
+- active window class.
+- minimize/maximize/restore/close.
+- Help -> About opens window.
+- About window toolbar hidden if source contract expects it.
+- context menu dismiss.
+- toolbar menu dismiss.
+- start menu group collapse/expand if supported.
+- RTL start menu placement.
+
+Performance:
+- boot payload with many icons/modules/themes.
+- start menu generation with many groups.
+- window manager synthetic many windows.
+
+MAXSTRING:
+- long icon labels.
+- long paths.
+- large boot JSON.
+- many modules/themes.
+
+D. VFS/files/explorer
+Inspect/test:
+- MIOOSFS / MIOOSFSUP.
+- file/folder list.
+- create/rename/delete.
+- recursive delete if present.
+- upload/download.
+- blob/range streaming.
+- Explorer icon/details/list views.
+- desktop folder filtering.
+- application shortcut metadata and launch.
+- context menu actions.
+
+Tests:
+- root/home/desktop listing.
+- hidden/filtered desktop folders such as ROI2Folder if source contract includes it.
+- create folder.
+- rename.
+- delete.
+- upload.
+- download.
+- range response.
+- invalid id/path traversal prevention.
+- long filename truncation.
+- dark selected details-row contrast.
+- app shortcut icons.
+- app shortcut launch target.
+
+Performance:
+- list 10/100/1,000/10,000 entries if feasible.
+- upload chunk ingest.
+- range lookup.
+- recursive delete.
+- shortcut resolution.
+
+MAXSTRING:
+- long filename/path.
+- many directory entries.
+- large metadata.
+- large/uneven binary chunks.
+
+E. Text/file viewer/editor
+Inspect/test:
+- text preview.
+- small text viewer/editor.
+- large text viewer/editor.
+- CodeMirror integration if present.
+- chunk transport.
+- WebSocket chunk path.
+- HTTP chunk fallback if present.
+- dedupe/cache/prune.
+- scrollbar-to-byte mapping.
+- edit/save thresholds.
+- socket timeout handling.
+- no full-file blob fallback for large text.
+
+Tests:
+- small file view/edit/save.
+- medium file view/edit/save.
+- large file initial open.
+- initial open requests only required chunks.
+- no idle infinite loading.
+- no neighbor prefetch unless intentionally bounded.
+- chunk dedupe by id+offset+size.
+- timeout/error produces toast/retry, not uncaught Promise.
+- save clears stale cache.
+- large edit behavior is explicit/safe/read-only/bounded.
+- MAXSTRING-safe chunk size.
+- long-line handling.
+
+Performance:
+- 1 KB, 100 KB, threshold-sized, >threshold synthetic files.
+- jump to middle/end.
+- chunk cache prune.
+- repeated request dedupe.
+
+MAXSTRING:
+- long line near safe limit.
+- multibyte text.
+- chunk boundary with CRLF/LF.
+- JSON/CSV/Markdown/XML around boundary.
+
+F. CodeMirror/vendor editor if present
+Inspect/test:
+- vendored CodeMirror files.
+- no CDN.
+- loader.
+- mode map.
+- theme map.
+- light/dark switching.
+- read-only/edit mode.
+- dirty state.
+- save integration.
+- fallback if unavailable.
+
+Tests:
+- local assets exist.
+- no external codemirror URL.
+- mode mapping for JS/JSON/MD/HTML/CSS/XML/SQL/YAML/text/etc if supported.
+- dark and light editor themes.
+- no duplicate script/style injection.
+- fallback plain text path.
+
+Performance:
+- editor creation for small/medium files.
+- large-file mode does not instantiate huge full document if unsafe.
+
+MAXSTRING:
+- no full huge file string in CodeMirror when virtual mode required.
+
+G. Media viewers and uploaded assets
+Inspect/test:
+- image viewer.
+- audio/video viewer.
+- loop.
+- uploaded desktop wallpapers.
+- theme assets.
+- promoted VFS wallpapers.
+- content-length/streaming correctness.
+- no image corruption/truncation.
+
+Tests:
+- uploaded image metadata.
+- theme asset serving.
+- promoted wallpaper rechunking.
+- range/streaming headers.
+- no DataURL persisted.
+- video/audio loop control.
+- media toolbar actions.
+
+Performance:
+- large wallpaper streaming.
+- image asset route.
+- media range setup.
+
+MAXSTRING:
+- binary chunks.
+- uneven chunks.
+- image metadata.
+- actual stored byte length.
+
+H. Theme Studio/theme persistence/login screen
+Inspect/test:
+- built-in themes.
+- user themes.
+- save vs save-as.
+- delete user theme.
+- cannot delete built-in.
+- import/export.
+- dark mode persistence.
+- dark titlebar variables.
+- custom CSS.
+- login screen style.
+- avatar/width.
+- startup boot apply.
+
+Tests:
+- save updates existing theme.
+- save-as creates new theme.
+- delete old user theme.
+- deleting active theme fallback.
+- dark mode fields persisted.
+- variants.light and variants.dark preserved.
+- boot payload includes active dark mode.
+- start menu theme list includes user themes.
+- dark titlebar custom CSS applies.
+- taskbar/start menu hidden on login.
+- login invalid/success feedback.
+
+Performance:
+- many user themes.
+- large theme JSON import.
+- many cssVars.
+- repeated theme apply.
+
+MAXSTRING:
+- huge custom CSS.
+- huge theme import.
+- long theme names.
+- many theme profiles.
+
+I. Locale/i18n/RTL
+Inspect/test:
+- MIOOSI18N locale maps.
+- browser locale switching.
+- Arabic/Spanish/English shortcuts.
+- URL canonicalization.
+- RTL shell/taskbar/start menu.
+
+Tests:
+- English default.
+- Arabic ?lang=ar.
+- Spanish alias/canonical behavior from source.
+- no generic locale app window.
+- html dir markers.
+- RTL start menu placement.
+- taskbar flip.
+
+Performance:
+- locale map generation.
+- switch locale path.
+
+MAXSTRING:
+- long translation values.
+- many locale keys.
+
+J. Common toolbar/window manager
+Inspect/test:
+- common toolbar.
+- File/Edit/View/Tools/Help menus.
+- Explorer toolbar order.
+- viewer toolbar.
+- transfer/terminal toolbar.
+- menu dismiss behavior.
+- duplicate toolbar prevention.
+- dark toolbar styling.
+
+Tests:
+- Help after Tools.
+- separator before nav icons.
+- Back/Forward/Up/Refresh/Upload/Download/New Folder/Rename/Delete.
+- clicking toolbar item dismisses menu.
+- submenu click dismisses menu.
+- no duplicate Explorer toolbar.
+- dark toolbar text/background.
+
+Performance:
+- many windows.
+- many toolbar items.
+
+MAXSTRING:
+- long menu labels.
+- many menu entries.
+
+K. Transfers
+Inspect/test:
+- transfer queue.
+- active/paused/finished states.
+- pause/resume/cancel active/clear finished.
+- dark theme status.
+- idle vs active animation.
+
+Tests:
+- old banner absent if redesigned.
+- dark transfer background.
+- Pause button contrast.
+- shimmer only when active transfers exist.
+- toolbar actions present/function.
+
+Performance:
+- many transfers.
+- frequent progress updates.
+
+MAXSTRING:
+- long paths/names.
+- many transfer rows.
+
+L. Terminal
+Inspect/test:
+- terminal UI and backend.
+- sessions.
+- input/output.
+- attach/detach/close.
+- resize.
+- clear/refresh.
+- toolbar actions.
+- multiple sessions if supported.
+
+Tests:
+- session create.
+- input dispatch.
+- output event contract.
+- resize.
+- close cleanup.
+- multiple session isolation.
+- no duplicate control row if toolbar owns controls.
+
+Performance:
+- output burst.
+- many small input writes.
+- multiple sessions.
+
+MAXSTRING:
+- long terminal output lines.
+- output burst split safely.
+- long input.
+
+M. Advanced Table backend contract
+Inspect/test MIOOSTBL and table browser code.
+
+Must cover:
+- contract version.
+- query response:
+  ok, dataset, draw, recordsTotal, recordsFiltered, schema.columns, rows, groups,
+  pagination.page, pagination.pageSize, pagination.totalRows, pagination.filteredRows,
+  pagination.pageRows, pagination.pageCount, features, rowActions, bulkActions.
+- includeDataAlias omit/include.
+- server-side pagination.
+- page clamp.
+- massive dataset payload behavior.
+- mutations:
+  row.add, row.save, cell.save, column.visibility, column.option.add,
+  column.reorder, column.fixed, rows.export, import CSV if present.
+- failure JSON:
+  ok, dataset, action, error, message, fieldErrors, mutationOnly, refetch.
+- validation:
+  required, max length, enum/select, multiselect, boolean, strict date, numeric, numeric range, row hook, cell hook.
+- filtering:
+  search, column filters, include/exclude/contains/starts-with/ends-with/range/blank/not blank.
+- grouping/sorting:
+  named sort, multi-column grouping, pagination/sort/filter stability.
+- composition:
+  read-only tables hide write actions unless enabled.
+  editable tables expose edit features.
+  fixed columns with hidden/reordered columns.
+  selected-row export uses selected IDs.
+- known regressions:
+  no free `vm` variable.
+  no native prompt/confirm.
+  modal close does not start drag.
+  loading indicator does not layout shift.
+
+Performance:
+- 100/1,000/10,000 rows synthetic.
+- filtering/sorting/grouping.
+- mutation ack size.
+- CSV export.
+- many columns.
+
+MAXSTRING:
+- large cells.
+- long filters.
+- many selected IDs.
+- CSV export near safe limit.
+
+N. Patient Registration
+Inspect/test:
+- MIOOSPAT.
+- patient table/module.
+- Add Row.
+- Add Column.
+- Add Option.
+- Import CSV.
+- Reconcile.
+- duplicates.
+- triage/review queues.
+- audit/status metadata.
+- feedback/toasts.
+- HIPAA docs/behavior.
+
+Tests:
+- row add/save.
+- validation.
+- option add/select.
+- CSV import parse.
+- state normalization.
+- reconcile.
+- duplicates.
+- queue filters.
+- deterministic feedback.
+- no silent failure.
+- HTTP/WS backend consistency.
+
+Performance:
+- patient search.
+- CSV import many rows.
+- duplicate detection.
+- queue grouping/filtering.
+
+MAXSTRING:
+- large CSV line.
+- quoted comma/newline.
+- long notes/address/name.
+- large import split safely.
+
+O. UI Modules/App Catalogue/Permissions/UI Elements
+Inspect/test:
+- App Catalogue.
+- UI Modules.
+- New Table Module.
+- Permissions UI.
+- UI Elements Gallery.
+- module JSON examples.
+- module registry.
+
+Tests:
+- module registry boot.
+- app catalogue opens.
+- module launch.
+- new table modal style.
+- new table backend registration.
+- table-backed module uses current contract/surface.
+- permissions UI opens/saves.
+- UI elements dark/light readable.
+- examples JSON valid.
+
+Performance:
+- module registry with many modules.
+- launch path.
+- permissions matrix.
+
+MAXSTRING:
+- long module names/descriptions.
+- many modules.
+- large permissions list.
+
+P. CSS/dark mode/responsive/mobile
+Inspect/test:
+- dark scrollbars.
+- dark menu text.
+- dark Explorer details panel.
+- selected rows.
+- toolbar contrast.
+- titlebar contrast.
+- transfer/patient/table/module/modal dark surfaces.
+- responsive mobile taskbar.
+- mobile window drag.
+- touch/pointer events.
+
+Tests:
+- dark scrollbar selectors.
+- dark menu text selectors.
+- selected details-row contrast.
+- modal dark selectors.
+- mobile taskbar markers.
+- pointer/touch titlebar drag handler.
+- touch-action safety.
+- content scroll not hijacked.
+
+Performance:
+- CSS size growth sanity.
+- no duplicated giant blocks.
+
+MAXSTRING:
+- huge custom CSS tested in theme profile path.
+
+Q. Docs/examples/mioos_llm
+Update:
+- docs/mioos/README.md.
+- docs/mioos/Backend_Table.md if table tests expand.
+- docs/mioos/UI_Modules.md if modules change.
+- docs/mioos/HIPAA.md if patient/security behavior changes.
+- mioos_llm.md checkpoint notes.
+- examples if behavior changes.
+
+Add checkpoint doc:
+- docs/mioos/ROI_Checkpoint_Full_Test_Lock.md
+
+Checkpoint doc must include:
+- ROI/feature audit matrix.
+- tests added.
+- performance coverage.
+- MAXSTRING coverage.
+- known follow-ups.
+- how to run D ^MIOOST.
+- how to run JS/JSON/static checks.
+
+Performance profiling requirements:
+- Use existing MIOPERF / MIOMET / timing helpers if present.
+- If no harness exists, add a quiet helper that records elapsed time and fails only on conservative thresholds.
+- Avoid flaky tests.
+- Use synthetic data.
+- Provide performance profile table in final answer:
+  - feature
+  - test label
+  - dataset size
+  - threshold
+  - result if run
+  - skipped reason if not run.
+
+MAXSTRING requirements:
+- Identify runtime MAXSTRING if possible.
+- Add tests just under safe limits where practical.
+- Add split/chunk tests instead of dangerous allocations.
+- Cover:
+  - JSON encode/decode.
+  - HTTP headers/body.
+  - WebSocket payloads.
+  - VFS chunks.
+  - text viewer chunks.
+  - theme import/custom CSS.
+  - CSV import/export.
+  - table rows/cells/filter JSON.
+  - terminal output.
+  - logs/metrics if applicable.
+
+Bug-fix rule:
+If tests reveal real bugs, fix source-accurately in this checkpoint if feasible. If a bug is too large/risky, add documentation and a follow-up marker. Do not leave D ^MIOOST failing unless the existing project already supports expected-failure markers and the failure is explicitly documented.
+
+Final output requirements:
+- Return a modified-files-only ZIP.
+- Return a patch fallback.
+- Include exact modified file list.
+- Include tests added.
+- Include performance/MAXSTRING coverage.
+- Include what could not be run.
+- Be explicit if YottaDB/GT.M was unavailable.
+- Include no unsupported claims.
+
+Expected final answer format:
+
+Diagnosis
+Root cause
+Checkpoint implemented
+ROI/feature audit matrix
+Tests added
+Performance profiles added
+MAXSTRING tests added
+Code changes
+Tests run
+Tests not run
+Acceptance checklist
+Known follow-ups
+Modified files
+Download link to ZIP containing only modified files
+Patch fallback

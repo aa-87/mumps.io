@@ -80,6 +80,8 @@ MIOOST ; MIOOS tests
 	DO T092
 	DO T093
 	DO T094
+	DO T095
+	DO T096
 	QUIT
 	;
 RESET
@@ -2005,3 +2007,60 @@ T094
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 94"),"[MIOOST][T094][llm updated]")
 	QUIT
 	;
+	;
+T095
+	DO RESET
+	DO OK^MIOTASSERT($$FILEOK("public/mioos/app/mioos_codemirror.js"),"[MIOOST][T095][codemirror loader exists]")
+	DO OK^MIOTASSERT($$FILEOK("public/mioos/vendor/codemirror/lib/codemirror.js"),"[MIOOST][T095][codemirror core js vendored]")
+	DO OK^MIOTASSERT($$FILEOK("public/mioos/vendor/codemirror/lib/codemirror.css"),"[MIOOST][T095][codemirror core css vendored]")
+	DO OK^MIOTASSERT($$FILEOK("public/mioos/vendor/codemirror/modes/mumps.js"),"[MIOOST][T095][mumps mode vendored]")
+	DO OK^MIOTASSERT($$FILEOK("public/mioos/vendor/codemirror/modes/markdown.js"),"[MIOOST][T095][markdown mode vendored]")
+	DO OK^MIOTASSERT($$FILEOK("public/mioos/vendor/codemirror/modes/xml.js"),"[MIOOST][T095][xml mode vendored]")
+	DO OK^MIOTASSERT($$FILEOK("public/mioos/vendor/codemirror/modes/sql.js"),"[MIOOST][T095][sql mode vendored]")
+	DO OK^MIOTASSERT($$FILEOK("public/mioos/vendor/codemirror/modes/spreadsheet.js"),"[MIOOST][T095][spreadsheet mode vendored]")
+	DO OK^MIOTASSERT($$FILEOK("public/mioos/vendor/codemirror/themes/xq-light.css"),"[MIOOST][T095][light theme vendored]")
+	DO OK^MIOTASSERT($$FILEOK("public/mioos/vendor/codemirror/themes/xq-dark.css"),"[MIOOST][T095][dark theme vendored]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/layouts/mioos_shell.html","mioos_codemirror.js"),"[MIOOST][T095][shell loads helper]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_codemirror.js","MIOOSCodeMirror"),"[MIOOST][T095][helper global]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_codemirror.js","MODE_FILES"),"[MIOOST][T095][mode file map]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_codemirror.js","EXTENSION_MODE_MAP"),"[MIOOST][T095][extension mode map]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_codemirror.js","themeForCurrentMioos"),"[MIOOST][T095][theme switch helper]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_codemirror.js","m: 'mumps'"),"[MIOOST][T095][mumps extension]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_codemirror.js","md: 'markdown'"),"[MIOOST][T095][markdown extension]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_codemirror.js","html: 'xml'"),"[MIOOST][T095][html xml extension]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_codemirror.js","csv: 'spreadsheet'"),"[MIOOST][T095][csv spreadsheet extension]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-codemirror-host"),"[MIOOST][T095][viewer codemirror host]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","CodeMirror unavailable; plain text fallback is active."),"[MIOOST][T095][plain fallback message]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","Toggle Line Wrap"),"[MIOOST][T095][line wrap menu]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","lineWrapping: true"),"[MIOOST][T095][line wrap state]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","textViewerToggleLineWrap"),"[MIOOST][T095][line wrap action]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","ROI 95/96: local CodeMirror viewer/editor and dark surface contract"),"[MIOOST][T095][dark codemirror css marker]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","theme-dark-mode .mioos-codemirror-host .CodeMirror"),"[MIOOST][T095][dark codemirror selector]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","theme-dark-mode .mioos-explorer-preview-pane"),"[MIOOST][T095][dark explorer preview selector]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","ROI 95/96"),"[MIOOST][T095][docs marker]")
+	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 95/96"),"[MIOOST][T095][llm marker]")
+	DO EQ^MIOTASSERT($$FILEHAS("templates/layouts/mioos_shell.html","codemirror.net"),0,"[MIOOST][T095][no codemirror cdn shell]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_codemirror.js","codemirror.net"),0,"[MIOOST][T095][no codemirror cdn helper]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_codemirror.js","modes/javascript.js"),0,"[MIOOST][T095][no unsupported js mode]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","this.command('fs.read'"),0,"[MIOOST][T095][no full file read fallback]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","body { color: #fff"),0,"[MIOOST][T095][no body white override]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","* { color: #fff"),0,"[MIOOST][T095][no wildcard white override]")
+	QUIT
+	;
+T096
+	DO RESET
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_codemirror.js","assetPromises[src]"),"[MIOOST][T096][inflight promise reuse]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_codemirror.js","data-mioos-codemirror-loaded"),"[MIOOST][T096][asset loaded marker]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_codemirror.js","waitForExistingAsset"),"[MIOOST][T096][wait existing asset]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_codemirror.js","existing.addEventListener('load'"),"[MIOOST][T096][existing load listener]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_codemirror.js","CodeMirror core unavailable after local asset load"),"[MIOOST][T096][core verification]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_codemirror.js","theme load failed"),"[MIOOST][T096][nonfatal theme failure]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_codemirror.js","mode load failed"),"[MIOOST][T096][nonfatal mode failure]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_codemirror.js","return 'text/plain'"),"[MIOOST][T096][plain mode fallback]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","codeMirrorMounting"),"[MIOOST][T096][component mount dedupe]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","setValue(value, true)"),"[MIOOST][T096][silent value sync]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","stream.codeMirrorFallback"),"[MIOOST][T096][fallback state]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","ROI 96 hardens the loader race path"),"[MIOOST][T096][loader race docs]")
+	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","wait on in-flight existing script/style tags"),"[MIOOST][T096][llm loader race]")
+	QUIT
+

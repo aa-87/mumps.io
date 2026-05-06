@@ -183,3 +183,7 @@ UI modules should rely on the shared window toolbar and taskbar contracts instea
 Notifications and module toasts should inherit the global `--font-size-ui` variable. Do not add fixed notification font-size overrides that bypass Theme Studio global font scaling.
 
 Module windows automatically participate in the taskbar open/focused/minimized class model. File viewer windows and generated table windows should continue to launch through the normal window manager so pinned-only apps, inactive open windows, and active windows remain visually distinct. On mobile, keep scrollable content inside `.mioos-window-content-vue` or the existing surface scroll containers so titlebar touch drag does not hijack content scrolling.
+
+## ROI 95/96 text editor module note
+
+Text/structured file windows now prefer the local CodeMirror helper for small and medium documents while preserving the same MIOOS toolbar contract. Modules should not add CDN CodeMirror URLs, npm packages, build steps, or custom unsupported modes. Use the existing text viewer actions for Edit, Save, Zoom, Toggle Line Wrap, and Refresh; large text files remain chunked read-only unless a future ROI adds backend-tested partial-edit semantics.

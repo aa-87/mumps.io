@@ -5013,3 +5013,117 @@ html[dir="rtl"] .mioos-window-menu-dropdown-vue,
 .theme-dark-mode .mioos-surface-about em {
   color: var(--mioos-dark-about-text, var(--theme-field-text, #f8fafc)) !important;
 }
+
+/* ROI 95/96: local CodeMirror viewer/editor and dark surface contract. */
+.mioos-codemirror-frame {
+  min-height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--theme-panel-bg, #ffffff);
+  color: var(--theme-field-text, #111827);
+}
+.mioos-codemirror-host {
+  min-height: 420px;
+  flex: 1 1 auto;
+  border: 1px solid var(--theme-panel-border, rgba(59,130,246,.22));
+  background: var(--theme-field-bg, #ffffff);
+  color: var(--theme-field-text, #111827);
+}
+.mioos-codemirror-host .CodeMirror {
+  min-height: 420px;
+  height: auto;
+  font-family: var(--font-mono, Consolas, "Courier New", monospace);
+  font-size: inherit;
+  line-height: 1.45;
+  background: var(--theme-field-bg, #ffffff);
+  color: var(--theme-field-text, #111827);
+}
+.mioos-codemirror-host .CodeMirror-scroll { min-height: 420px; }
+.mioos-codemirror-fallback {
+  padding: 6px 8px;
+  border-top: 1px solid var(--theme-panel-border, rgba(59,130,246,.22));
+  background: var(--theme-panel-bg, #f8fafc);
+  color: var(--theme-muted-text, #475569);
+  font-size: 12px;
+}
+.theme-dark-mode .mioos-surface-viewer-native,
+.theme-dark-mode .mioos-viewer-body,
+.theme-dark-mode .mioos-text-virtual-viewer,
+.theme-dark-mode .mioos-codemirror-frame,
+.theme-dark-mode .mioos-codemirror-host,
+.theme-dark-mode .mioos-codemirror-host .CodeMirror,
+.theme-dark-mode .mioos-codemirror-host .CodeMirror-gutters,
+.theme-dark-mode .mioos-codemirror-host .CodeMirror-scroll {
+  background: var(--mioos-dark-editor-bg, #020617) !important;
+  color: var(--mioos-dark-editor-text, #e5edf7) !important;
+  border-color: var(--theme-panel-border, rgba(148,163,184,.26)) !important;
+}
+.theme-dark-mode .mioos-codemirror-host .CodeMirror-guttermarker,
+.theme-dark-mode .mioos-codemirror-host .CodeMirror-guttermarker-subtle,
+.theme-dark-mode .mioos-codemirror-host .CodeMirror-linenumber {
+  color: var(--mioos-dark-editor-gutter-text, #94a3b8) !important;
+}
+.theme-dark-mode .mioos-codemirror-host .CodeMirror-cursor { border-left-color: var(--mioos-dark-editor-text, #e5edf7) !important; }
+.theme-dark-mode .mioos-codemirror-fallback {
+  background: var(--mioos-dark-editor-status-bg, #0f172a) !important;
+  color: var(--mioos-dark-editor-status-text, #cbd5e1) !important;
+  border-color: var(--theme-panel-border, rgba(148,163,184,.26)) !important;
+}
+.theme-dark-mode .mioos-explorer-preview-pane,
+.theme-dark-mode .mioos-explorer-detail-panel,
+.theme-dark-mode .mioos-explorer-details,
+.theme-dark-mode .mioos-explorer-sidebar,
+.theme-dark-mode .mioos-explorer-right-pane,
+.theme-dark-mode .mioos-permissions-vue,
+.theme-dark-mode .mioos-permissions-card,
+.theme-dark-mode .mioos-module-surface,
+.theme-dark-mode .mioos-module-card,
+.theme-dark-mode .mioos-table-module-editor,
+.theme-dark-mode .mioos-surface-patient,
+.theme-dark-mode .mioos-patient-registration,
+.theme-dark-mode .mioos-ui-dialog,
+.theme-dark-mode .mioos-notification,
+.theme-dark-mode .mioos-toast,
+.theme-dark-mode .mioos-dialog,
+.theme-dark-mode .mioos-modal,
+.theme-dark-mode .mioos-classic-transferstack,
+.theme-dark-mode .mioos-terminal-stage-vue,
+.theme-dark-mode .mioos-terminal-host-vue {
+  background: var(--mioos-dark-surface-bg, #0f172a) !important;
+  color: var(--mioos-dark-surface-text, #f8fafc) !important;
+  border-color: var(--theme-panel-border, rgba(148,163,184,.26)) !important;
+}
+.theme-dark-mode .mioos-explorer-preview-pane *,
+.theme-dark-mode .mioos-explorer-detail-panel *,
+.theme-dark-mode .mioos-explorer-details *,
+.theme-dark-mode .mioos-permissions-vue *,
+.theme-dark-mode .mioos-module-surface *,
+.theme-dark-mode .mioos-surface-patient *,
+.theme-dark-mode .mioos-patient-registration *,
+.theme-dark-mode .mioos-ui-dialog *,
+.theme-dark-mode .mioos-notification *,
+.theme-dark-mode .mioos-toast *,
+.theme-dark-mode .mioos-dialog *,
+.theme-dark-mode .mioos-modal * {
+  color: inherit;
+}
+.theme-dark-mode .mioos-explorer-preview-pane input,
+.theme-dark-mode .mioos-explorer-preview-pane textarea,
+.theme-dark-mode .mioos-explorer-preview-pane select,
+.theme-dark-mode .mioos-permissions-vue input,
+.theme-dark-mode .mioos-permissions-vue textarea,
+.theme-dark-mode .mioos-permissions-vue select,
+.theme-dark-mode .mioos-module-surface input,
+.theme-dark-mode .mioos-module-surface textarea,
+.theme-dark-mode .mioos-module-surface select,
+.theme-dark-mode .mioos-patient-registration input,
+.theme-dark-mode .mioos-patient-registration textarea,
+.theme-dark-mode .mioos-patient-registration select,
+.theme-dark-mode .mioos-ui-dialog input,
+.theme-dark-mode .mioos-ui-dialog textarea,
+.theme-dark-mode .mioos-ui-dialog select {
+  background: var(--theme-field-bg, #020617) !important;
+  color: var(--theme-field-text, #f8fafc) !important;
+  border-color: var(--theme-panel-border, rgba(148,163,184,.26)) !important;
+}

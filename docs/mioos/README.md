@@ -546,3 +546,13 @@ Large text viewing remains chunk-stream based. `mioos.fs.textChunkThresholdBytes
 
 Opening a large text file requests only the initial visible chunk. Scroll-driven chunk loads now require explicit user scroll intent (`wheel`, pointer/touch scrollbar interaction, keyboard navigation, or manual retry), so idle/programmatic scroll events cannot start an auto-load loop. Requests are still deduped by file id + offset + size, failures remain manual-retry/toast driven, and large files stay read-only above `mioos.fs.maxTextEditBytes` unless a future ROI implements tested chunk patch semantics. Small/medium text editing and `fs.text.save` remain supported; a successful save clears stale text chunk cache before reloading.
 
+
+## ROI 95/96 — local CodeMirror text editor foundation
+
+MIOOS text viewers use the local CodeMirror 5.65.21 package only when it is available from `public/mioos/vendor/codemirror/`. The browser helper is `public/mioos/app/mioos_codemirror.js`; it loads assets lazily, reuses already-loaded or in-flight script/style tags, marks completed assets with `data-mioos-codemirror-loaded`, and keeps the plain text fallback usable if CodeMirror core cannot load.
+
+The supplied local package includes only a small source-accurate mode/theme set. MUMPS (`.m`, `.rou`, `.mumps`, `.int`, `.mac`) uses `mumps`; Markdown uses `markdown`; HTML/XML use `xml`; SQL uses `sql`; CSV uses `spreadsheet`. JavaScript, JSON, CSS, YAML, HL7, X12, log files, and unknown content remain `text/plain` unless a future attached local package provides tested modes.
+
+Small and medium text files may use CodeMirror for read-only viewing and bounded full-document editing. Large files stay in the existing chunked read-only path above `mioos.fs.maxTextEditBytes`; MIOOS does not pretend to support unsafe random-access whole-file edits. Saving still clears stale chunk caches and reloads the current view through safe text chunks.
+
+ROI 96 hardens the loader race path: if a CodeMirror `<script>` or `<link>` already exists but has not finished loading, the helper waits for the same in-flight asset instead of treating it as loaded. Theme or mode load failures are non-fatal and fall back to CodeMirror `text/plain`; only missing CodeMirror core falls back to the plain textarea/pre viewer.

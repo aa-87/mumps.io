@@ -196,6 +196,7 @@
           zoomTextIn: function () { if (this.vm.textViewerZoom) this.vm.textViewerZoom(this.window.id, 0.1); },
           zoomTextOut: function () { if (this.vm.textViewerZoom) this.vm.textViewerZoom(this.window.id, -0.1); },
           zoomTextReset: function () { if (this.vm.textViewerZoomReset) this.vm.textViewerZoomReset(this.window.id); },
+          toggleTextWrap: function () { if (this.vm.textViewerToggleLineWrap) this.vm.textViewerToggleLineWrap(this.window.id); },
           clearTerminal: function () { if (this.vm.clearTerminalWindow) this.vm.clearTerminalWindow(this.window.id); },
           refreshTerminal: function () { if (this.vm.pollTerminal) this.vm.pollTerminal(this.window.id); },
           transferPause: function () { if (this.vm.pauseAllTransfers) this.vm.pauseAllTransfers(); },
@@ -224,6 +225,7 @@
                 <button v-if="isText" type="button" role="menuitem" @click="editText" :disabled="!textCanEdit" :title="textEditDisabledReason || 'Edit Text'">Edit Text</button>
                 <button v-if="isText" type="button" role="menuitem" @click="saveText" :disabled="!textCanEdit || !((textStream || {}).editing)" :title="textEditDisabledReason || 'Save Text'">Save Text</button>
                 <button v-if="isText" type="button" role="menuitem" @click="refreshText">Reload visible text chunks</button>
+                <button v-if="isText" type="button" role="menuitem" @click="toggleTextWrap">Toggle Line Wrap</button>
                 <button v-if="window.appKey === 'explorer' || window.appKey === 'home' || window.appKey === 'documents' || window.appKey === 'my-computer'" type="button" role="menuitem" @click="explorerNewFolder">New Folder</button>
                 <button v-if="window.appKey === 'explorer' || window.appKey === 'home' || window.appKey === 'documents' || window.appKey === 'my-computer'" type="button" role="menuitem" @click="explorerUpload">Upload</button>
                 <button type="button" role="menuitem" @click="close">Close / Exit</button>
@@ -285,6 +287,7 @@
                 <button v-if="isText" type="button" role="menuitem" @click="zoomTextIn">Zoom In</button>
                 <button v-if="isText" type="button" role="menuitem" @click="zoomTextOut">Zoom Out</button>
                 <button v-if="isText" type="button" role="menuitem" @click="zoomTextReset">Reset Zoom</button>
+                <button v-if="isText" type="button" role="menuitem" @click="toggleTextWrap">Toggle Line Wrap</button>
                 <button v-if="isText" type="button" role="menuitem" @click="refreshText">Refresh chunk cache</button>
                 <button v-if="!isMedia && !isText && window.appKey !== 'terminal' && window.appKey !== 'transfers'" type="button" role="menuitem" @click="about">About this module</button>
               </div>
@@ -458,6 +461,7 @@
 
       app.component('mioos-surface-viewer', {
         props: ['window'],
+        data: function () { return { codeMirrorMounting: false }; },
         computed: {
           vm: function () { return root(this); },
           fileView: function () { return (this.window && this.window.fileView) || {}; },
@@ -470,8 +474,10 @@
           textSpacerStyle: function () { var s = this.textStream || {}; return { height: Math.max(600, +(s.scrollHeight || 4000)) + 'px' }; },
           textContentStyle: function () { var s = this.textStream || {}; return { transform: 'translateY(' + Math.max(0, +(s.contentTop || 0)) + 'px)', fontSize: (12 * (+(s.zoom || 1))) + 'px' }; },
           textPlainStyle: function () { var s = this.textStream || {}; return { fontSize: (12 * (+(s.zoom || 1))) + 'px' }; },
+          codeMirrorHostStyle: function () { var s = this.textStream || {}; return { fontSize: (12 * (+(s.zoom || 1))) + 'px' }; },
           canEditText: function () { var s = this.textStream || {}; return !!this.textStream && !(+s.size > 0 && +s.maxEditBytes > 0 && +s.size > +s.maxEditBytes); },
           textEditNotice: function () { return this.canEditText ? '' : 'Large file is chunked read-only above the bounded edit limit.'; },
+          codeMirrorStatus: function () { var s = this.textStream || {}; return s.codeMirrorFallback || ''; },
           editableText: {
             get: function () { return this.textStream ? this.vm.textViewerEditableContent(this.window.id) : ''; },
             set: function (value) { if (this.vm.textViewerSetEditableContent) this.vm.textViewerSetEditableContent(this.window.id, value); }
@@ -479,26 +485,109 @@
           mediaLoop: function () { return !!this.fileView.mediaLoop; }
         },
         mounted: function () {
-          var vm = this.vm, win = this.window;
-          if (this.textStream) vm.$nextTick(function () { if (vm.textViewerLoadInitialText) vm.textViewerLoadInitialText(win.id).catch(function () { return null; }); else if (vm.textViewerLoadChunk) vm.textViewerLoadChunk(win.id, 0).catch(function () { return null; }); });
+          var vm = this.vm, win = this.window, self = this;
+          if (this.textStream) vm.$nextTick(function () {
+            var load = vm.textViewerLoadInitialText ? vm.textViewerLoadInitialText(win.id) : (vm.textViewerLoadChunk ? vm.textViewerLoadChunk(win.id, 0) : Promise.resolve(null));
+            load.catch(function () { return null; }).finally(function () { self.scheduleCodeMirrorSync(); });
+          });
         },
+        updated: function () { this.scheduleCodeMirrorSync(); },
+        beforeUnmount: function () { this.destroyCodeMirror(); },
+        unmounted: function () { this.destroyCodeMirror(); },
         methods: {
           armTextScroll: function (source) { if (this.vm.textViewerArmScroll) this.vm.textViewerArmScroll(this.window.id, source || 'user'); },
           onTextScroll: function (event) { if (this.vm.textViewerOnScroll) this.vm.textViewerOnScroll(this.window.id, event); },
           beginEditText: function () { if (this.vm.textViewerBeginEdit) this.vm.textViewerBeginEdit(this.window.id); },
           saveText: function () { if (this.vm.textViewerSave) this.vm.textViewerSave(this.window.id); },
-          retryText: function () { if (this.vm.textViewerRetryChunk) this.vm.textViewerRetryChunk(this.window.id); }
+          retryText: function () { if (this.vm.textViewerRetryChunk) this.vm.textViewerRetryChunk(this.window.id); },
+          scheduleCodeMirrorSync: function () {
+            var self = this;
+            if (!this.textStream) return;
+            this.vm.$nextTick(function () { self.syncCodeMirror(); });
+          },
+          destroyCodeMirror: function () {
+            if (this._mioosCodeMirrorEditor && this._mioosCodeMirrorEditor.destroy) this._mioosCodeMirrorEditor.destroy();
+            this._mioosCodeMirrorEditor = null;
+            this.codeMirrorMounting = false;
+          },
+          syncCodeMirror: function () {
+            var stream = this.textStream;
+            var host = this.$refs.textCodeMirrorHost;
+            var helper = window.MIOOSCodeMirror;
+            var self = this;
+            var vm = this.vm;
+            var win = this.window;
+            var value, readOnly, fontSize, theme;
+            if (!stream || stream.virtualized || !host) {
+              this.destroyCodeMirror();
+              return;
+            }
+            if (!stream.fullContentLoaded && !stream.initialLoaded) return;
+            if (!helper || !helper.createTextEditor) {
+              stream.codeMirrorActive = false;
+              stream.codeMirrorFallback = 'CodeMirror unavailable; plain text fallback is active.';
+              return;
+            }
+            value = vm.textViewerEditableContent ? vm.textViewerEditableContent(win.id) : String(this.fileView.content || '');
+            readOnly = !stream.editing;
+            fontSize = (12 * (+(stream.zoom || 1))) + 'px';
+            theme = helper.themeForCurrentMioos ? helper.themeForCurrentMioos() : 'xq-light';
+            if (this._mioosCodeMirrorEditor) {
+              this._mioosCodeMirrorEditor.setValue(value, true);
+              this._mioosCodeMirrorEditor.setReadOnly(readOnly);
+              this._mioosCodeMirrorEditor.setLineWrapping(stream.lineWrapping !== false);
+              this._mioosCodeMirrorEditor.setTheme(theme);
+              this._mioosCodeMirrorEditor.setFontSize(fontSize);
+              this._mioosCodeMirrorEditor.refresh();
+              stream.codeMirrorActive = true;
+              return;
+            }
+            if (this.codeMirrorMounting) return;
+            this.codeMirrorMounting = true;
+            helper.createTextEditor(host, {
+              filename: stream.fileName || ((win.meta || {}).fileName) || win.title || '',
+              mime: stream.mime || this.fileView.mime || 'text/plain',
+              value: value,
+              readOnly: readOnly,
+              lineWrapping: stream.lineWrapping !== false,
+              fontSize: fontSize,
+              onChange: function (text) {
+                if (!stream.editing) return;
+                if (vm.textViewerSetEditableContent) vm.textViewerSetEditableContent(win.id, text);
+              }
+            }).then(function (editor) {
+              self._mioosCodeMirrorEditor = editor;
+              stream.codeMirrorActive = true;
+              stream.codeMirrorFallback = '';
+              if (stream.status && stream.status.indexOf('CodeMirror unavailable') >= 0) stream.status = 'CodeMirror editor ready.';
+              editor.setTheme(theme);
+              editor.setReadOnly(readOnly);
+              editor.setLineWrapping(stream.lineWrapping !== false);
+              editor.setFontSize(fontSize);
+              editor.refresh();
+            }).catch(function () {
+              stream.codeMirrorActive = false;
+              stream.codeMirrorFallback = 'CodeMirror unavailable; plain text fallback is active.';
+              stream.status = stream.codeMirrorFallback;
+            }).finally(function () {
+              self.codeMirrorMounting = false;
+            });
+          }
         },
         template: '' +
           '<div class="mioos-surface mioos-surface-viewer-native" :class="\'is-\' + kind">' +
             '<section class="mioos-viewer-body" :class="{ \'is-media-full\': kind === \'media\', \'is-text-virtual\': !!textStream }">' +
-              '<div v-if="textStream" class="mioos-text-virtual-viewer" :class="{ editing: textStream.editing, virtualized: textStream.virtualized }" tabindex="0" @wheel.passive="armTextScroll(\'wheel\')" @pointerdown="armTextScroll(\'pointer\')" @pointermove="armTextScroll(\'pointer\')" @touchstart.passive="armTextScroll(\'touch\')" @touchmove.passive="armTextScroll(\'touch\')" @keydown="armTextScroll(\'keyboard\')" @scroll="onTextScroll">' +
-                '<textarea v-if="textStream.editing" class="mioos-text-editor-area" v-model="editableText" spellcheck="false" :style="textPlainStyle"></textarea>' +
-                '<div v-else-if="textStream.virtualized" class="mioos-text-virtual-spacer" :style="textSpacerStyle"><div class="mioos-text-chunk-stack" :style="textContentStyle">' +
+              '<div v-if="textStream" class="mioos-text-virtual-viewer" :class="{ editing: textStream.editing, virtualized: textStream.virtualized, \'has-codemirror\': textStream.codeMirrorActive }" tabindex="0" @wheel.passive="armTextScroll(\'wheel\')" @pointerdown="armTextScroll(\'pointer\')" @pointermove="armTextScroll(\'pointer\')" @touchstart.passive="armTextScroll(\'touch\')" @touchmove.passive="armTextScroll(\'touch\')" @keydown="armTextScroll(\'keyboard\')" @scroll="onTextScroll">' +
+                '<div v-if="textStream.virtualized" class="mioos-text-virtual-spacer" :style="textSpacerStyle"><div class="mioos-text-chunk-stack" :style="textContentStyle">' +
                   '<pre v-for="chunk in textChunks" :key="chunk.offset" class="mioos-viewer-text mioos-viewer-text-chunk"><span class="mioos-text-chunk-offset">Byte [[ chunk.offset ]]</span>[[ chunk.content ]]</pre>' +
                 '</div></div>' +
-                '<pre v-else v-for="chunk in textChunks" :key="chunk.offset" class="mioos-viewer-text mioos-viewer-text-chunk is-full-text" :style="textPlainStyle"><span class="mioos-text-chunk-offset">[[ textStream.dirty ? "Unsaved changes" : (textStream.saveStatus || "Editable text file") ]]</span>[[ chunk.content ]]</pre>' +
-                "<div v-if=\"textStream.status || textStream.error || textEditNotice\" class=\"mioos-text-status\" role=\"status\"><span :class=\"{ 'is-error': textStream.error }\">[[ textStream.error || textEditNotice || textStream.status ]]</span><button v-if=\"textStream.retryOffset !== null && typeof textStream.retryOffset !== 'undefined'\" type=\"button\" class=\"mioos-btn\" @click.stop=\"retryText\">Retry</button></div>" +
+                '<div v-else class="mioos-codemirror-frame" :class="{ \'is-active\': textStream.codeMirrorActive, \'is-fallback\': !!textStream.codeMirrorFallback }">' +
+                  '<div ref="textCodeMirrorHost" class="mioos-codemirror-host" v-show="textStream.codeMirrorActive || !textStream.codeMirrorFallback" :style="codeMirrorHostStyle"></div>' +
+                  '<textarea v-if="textStream.editing && !textStream.codeMirrorActive" class="mioos-text-editor-area" v-model="editableText" spellcheck="false" :style="textPlainStyle"></textarea>' +
+                  '<pre v-if="!textStream.editing && !textStream.codeMirrorActive" v-for="chunk in textChunks" :key="chunk.offset" class="mioos-viewer-text mioos-viewer-text-chunk is-full-text" :style="textPlainStyle"><span class="mioos-text-chunk-offset">[[ textStream.dirty ? "Unsaved changes" : (textStream.saveStatus || "Editable text file") ]]</span>[[ chunk.content ]]</pre>' +
+                  '<div v-if="codeMirrorStatus" class="mioos-codemirror-fallback" role="status">[[ codeMirrorStatus ]]</div>' +
+                '</div>' +
+                '<div v-if="textStream.status || textStream.error || textEditNotice" class="mioos-text-status" role="status"><span :class="{ \'is-error\': textStream.error }">[[ textStream.error || textEditNotice || textStream.status ]]</span><button v-if="textStream.retryOffset !== null && typeof textStream.retryOffset !== \'undefined\'" type="button" class="mioos-btn" @click.stop="retryText">Retry</button></div>' +
               '</div>' +
               '<div v-else-if="fileView.loading" class="mioos-viewer-state">Opening file…</div>' +
               '<div v-else-if="fileView.error" class="mioos-viewer-state is-error">[[ fileView.error ]]</div>' +
@@ -511,7 +600,6 @@
             '</section>' +
           '</div>'
       });
-
 
       app.component('mioos-surface-about-mioos', {
         props: ['window'],
