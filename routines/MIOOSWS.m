@@ -178,7 +178,6 @@ FSTEXTCHUNK(STATE,CONF,TREE,OUTJSON,ERR)
 	IF SIZE<4096 SET SIZE=4096
 	IF SIZE>LIMIT SET SIZE=LIMIT
 	IF '$$READWIN^MIOOSFS(.STATE,ID,OFFSET,SIZE,.OUT,.ERR) QUIT 0
-	IF +$GET(OUT("eof"))=0,+$GET(OUT("bytes"))<1 SET ERR("error")="empty_text_chunk_not_eof" QUIT 0
 	SET OUT("mediaType")="text"
 	SET OUT("chunkSize")=SIZE
 	SET OUT("scrollSync")="none"
@@ -188,7 +187,7 @@ FSTEXTCHUNK(STATE,CONF,TREE,OUTJSON,ERR)
 	SET OUT("loadContract")="bounded-explicit-text-load-v5"
 	SET OUT("boundedEdit")=0
 	SET OUT("fullEditOnDemand")=1
-	SET OUT("maxEditBytes")=0
+	SET OUT("maxEditBytes")=+$GET(CONF("mioos","fs","maxBrowserTextEditBytes"),8388608)
 	SET OUT("maxChunkBytes")=LIMIT
 	SET OUT("chunkThresholdBytes")=+$GET(CONF("mioos","fs","textChunkThresholdBytes"),2411725)
 	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"fs.text.chunk","vfs",.OUT)

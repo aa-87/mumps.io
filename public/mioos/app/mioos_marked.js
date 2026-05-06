@@ -67,14 +67,60 @@
     return loadPromise;
   }
 
-  function documentFrame(bodyHtml) {
-    return '<!doctype html><html><head><meta charset="utf-8"><base target="_blank">' +
-      '<style>body{font-family:system-ui,-apple-system,Segoe UI,sans-serif;line-height:1.55;margin:1rem;color:#172033;background:#fff;}pre,code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;}img{max-width:100%;height:auto;}table{border-collapse:collapse;}td,th{border:1px solid #d8dee9;padding:.35rem .55rem;}blockquote{border-left:4px solid #d8dee9;margin-left:0;padding-left:1rem;color:#4b5563;}</style>' +
-      '</head><body class="mioos-markdown-preview">' + String(bodyHtml || '') + '</body></html>';
+  function sanitizeUrl(value) {
+    var raw = String(value || '').trim();
+    if (!raw) return '';
+    if (/^(javascript|data|vbscript):/i.test(raw)) return '';
+    return raw;
+  }
+
+  function sanitizeInlineHtml(html) {
+    var raw = String(html || '');
+    var parser, doc, root, blocked;
+    if (global.DOMParser) {
+      parser = new global.DOMParser();
+      doc = parser.parseFromString('<div data-mioos-markdown-inline-root="1">' + raw + '</div>', 'text/html');
+      root = doc.body && doc.body.firstElementChild;
+      if (!root) return '';
+      blocked = root.querySelectorAll('script,style,iframe,object,embed,link,meta,base,form,input,button,textarea,select,option,frame,frameset');
+      Array.prototype.slice.call(blocked).forEach(function (node) { if (node && node.parentNode) node.parentNode.removeChild(node); });
+      Array.prototype.slice.call(root.querySelectorAll('*')).forEach(function (node) {
+        Array.prototype.slice.call(node.attributes || []).forEach(function (attr) {
+          var name = String(attr.name || '').toLowerCase();
+          var value = String(attr.value || '');
+          if (name.indexOf('on') === 0 || name === 'style' || name === 'srcdoc' || name === 'sandbox') { node.removeAttribute(attr.name); return; }
+          if (name === 'href' || name === 'src' || name === 'xlink:href' || name === 'action') {
+            value = sanitizeUrl(value);
+            if (!value) node.removeAttribute(attr.name);
+            else node.setAttribute(attr.name, value);
+          }
+        });
+        if (String(node.tagName || '').toLowerCase() === 'a') {
+          node.setAttribute('target', '_blank');
+          node.setAttribute('rel', 'noopener noreferrer');
+        }
+        if (String(node.tagName || '').toLowerCase() === 'img') {
+          node.setAttribute('loading', 'lazy');
+          node.setAttribute('decoding', 'async');
+        }
+      });
+      return root.innerHTML;
+    }
+    return raw
+      .replace(/<script[\s\S]*?<\/script>/gi, '')
+      .replace(/<style[\s\S]*?<\/style>/gi, '')
+      .replace(/<iframe[\s\S]*?<\/iframe>/gi, '')
+      .replace(/\son[a-z]+=("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+      .replace(/\s(srcdoc|style|sandbox)=("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+      .replace(/(href|src)=("|')\s*(javascript|data|vbscript):[^"']*\2/gi, '');
+  }
+
+  function inlineMarkdownHtml(bodyHtml) {
+    return '<div class="mioos-markdown-preview-content" data-markdown-inline-render="1">' + sanitizeInlineHtml(bodyHtml) + '</div>';
   }
 
   function plainTextDocument(text) {
-    return documentFrame('<pre>' + escapeHtml(text) + '</pre>');
+    return '<pre class="mioos-markdown-preview-fallback">' + escapeHtml(text) + '</pre>';
   }
 
   function htmlPreviewDocument(html) {
@@ -86,9 +132,9 @@
   function renderMarkdownDocument(markdown) {
     return load().then(function (marked) {
       var html = marked.parse(String(markdown || ''));
-      return { ok: 1, html: documentFrame(html), strategy: 'sandboxed-srcdoc-no-scripts' };
+      return { ok: 1, html: inlineMarkdownHtml(html), strategy: 'inline-sanitized-markdown-no-iframe' };
     }).catch(function (err) {
-      return { ok: 0, html: plainTextDocument(markdown), strategy: 'plain-text-fallback', error: (err && err.message) || 'marked_unavailable' };
+      return { ok: 0, html: plainTextDocument(markdown), strategy: 'inline-plain-text-fallback-no-iframe', error: (err && err.message) || 'marked_unavailable' };
     });
   }
 
@@ -101,7 +147,9 @@
     renderMarkdownDocument: renderMarkdownDocument,
     plainTextDocument: plainTextDocument,
     htmlPreviewDocument: htmlPreviewDocument,
-    sandboxStrategy: 'sandboxed-srcdoc-no-scripts',
+    sanitizeInlineHtml: sanitizeInlineHtml,
+    inlineMarkdownHtml: inlineMarkdownHtml,
+    sandboxStrategy: 'html-only-sandboxed-iframe-markdown-inline-sanitized',
     noDataUrl: true,
     getLastError: function () { return lastError; }
   };

@@ -229,8 +229,6 @@ FSTEXTCHUNK(DEV,CONF,REQ,CTX)
 	IF SIZE>LIMIT SET SIZE=LIMIT
 	IF '$$READWIN^MIOOSFS(.STATE,ID,OFFSET,SIZE,.OUT,.ERR) DO  QUIT
 	. DO RESPERR(.DEV,.CONF,403,"fs_text_chunk_failed",$GET(ERR("error")),.CTX)
-	IF +$GET(OUT("eof"))=0,+$GET(OUT("bytes"))<1 DO  QUIT
-	. DO RESPERR(.DEV,.CONF,502,"fs_text_chunk_failed","empty_text_chunk_not_eof",.CTX)
 	SET OUT("mediaType")="text"
 	SET OUT("chunkSize")=SIZE
 	SET OUT("scrollSync")="none"
@@ -240,7 +238,7 @@ FSTEXTCHUNK(DEV,CONF,REQ,CTX)
 	SET OUT("loadContract")="bounded-explicit-text-load-v5"
 	SET OUT("boundedEdit")=0
 	SET OUT("fullEditOnDemand")=1
-	SET OUT("maxEditBytes")=0
+	SET OUT("maxEditBytes")=+$GET(CONF("mioos","fs","maxBrowserTextEditBytes"),8388608)
 	SET OUT("maxChunkBytes")=LIMIT
 	SET OUT("chunkThresholdBytes")=+$GET(CONF("mioos","fs","textChunkThresholdBytes"),2411725)
 	DO RESPJSONX^MIOHTTP(.DEV,.CONF,200,.OUT,$GET(CTX("request_id")),.CTX)

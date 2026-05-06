@@ -781,7 +781,7 @@ Large text remains chunked/read-only above `fullEditOnDemand`. Small/medium file
 
 - Login is staged: username first, then `/api/mioos/auth/login-theme` loads public-safe login-specific visuals before password entry. Do not reintroduce a combined username/password-only login screen.
 - Public login assets must be rewritten to `/api/mioos/theme-public-asset?id=...`; never emit protected `/api/mioos/theme-asset` or `/api/mioos/fs/blob` URLs before authentication.
-- Marked is local-only at `public/mioos/vendor/marked/lib/marked.umd.js`. Markdown preview uses a sandboxed iframe; CodeMirror remains the edit path.
+- Marked is local-only at `public/mioos/vendor/marked/lib/marked.umd.js`. Markdown preview uses sanitized inline HTML, never an iframe; CodeMirror remains the edit path.
 - HTML preview uses sandboxed `srcdoc` without scripts for bounded files. PDF preview uses the authenticated local blob route and browser-native rendering.
 - Uploads must stay HTTP chunked, bounded, retry-limited, and must not read the whole file into one browser string or DataURL. Text viewer chunks and upload chunks are separate values.
 - Dark toolbar/menu normal states intentionally have transparent borders/outlines; keep `:focus-visible` styling for keyboard users.
@@ -793,7 +793,7 @@ Large text remains chunked/read-only above `fullEditOnDemand`. Small/medium file
 - `MIOOSTHEME` continues to publish generic, enumeration-safe username-stage responses while validating public theme asset ids and rewriting protected theme asset URLs to the controlled `/api/mioos/theme-public-asset` route. Data URLs and protected fs/theme URLs must not be emitted before authentication.
 - Dark Theme Studio clear buttons are scoped via `data-theme-editor-secondary` and intentionally use exact text color `#004cff`. Keep this scoped to Theme Studio dark mode.
 - Simple/read-only table cells are dark-theme aware; Advanced Table/editable CRUD styling remains a separate surface.
-- Markdown rendered preview uses the full viewer pane and the existing text viewer zoom controls. The sandboxed iframe receives a `data-mioos-markdown-preview-zoom` style injection so zoom affects rendered Markdown content.
+- Markdown rendered preview uses the full viewer pane and the existing text viewer zoom controls. The inline preview receives `--mioos-markdown-preview-zoom` through shell styling so zoom affects rendered Markdown content.
 - Text viewer status is transient for info/success, pinnable/showable from the toolbar, and persistent for errors.
 - Large text now prefers authenticated HTTP text chunks (`readTextChunkPreferred` -> `readTextChunkViaHttp`) with dedupe by id/offset/size and stale response ignore. WebSocket remains only a fallback/legacy path; do not reintroduce full-file blob fallback for large text.
 - Large text save is not blocked by a MIOOS edit-size cap. The browser loads the full text on explicit Edit and saves with bounded HTTP chunks, while still avoiding full-file blob reads and large WebSocket payloads.
@@ -843,10 +843,9 @@ The `maxTextEditBytes` cap is removed. All text-like files should be viewable an
 - Large or unknown-size text files continue to open as one bounded preview chunk by default. Explicit source editing must stay capped by `maxBrowserTextEditBytes`/`MIOOS_TEXT_BROWSER_EDIT_MAX_BYTES`.
 - Mobile titlebar controls must keep `@pointerdown.stop @pointerup.stop @touchstart.stop @touchend.stop @click.stop.prevent` on minimize, maximize/restore, and close buttons. CSS coarse-pointer hit targets and `touch-action: manipulation` are required so taps are not consumed by titlebar drag.
 
-## ROI 104 handoff — deterministic text chunk sessions and themed Markdown preview
 
-The source of truth now uses a bounded text load-session model in `public/mioos/app/mioos_explorer.js`. The chunk key is exactly `fileId:offset:size`. Session state includes requested/completed/failed key maps, seen offsets, request count, max requests, last/next offsets, EOF, expected bytes, loaded bytes, and error state. Do not replace this with scrollbar-driven loading, idle prefetch, recursive retry loops, or full-file blob reads.
+## ROI 105/106 handoff — Markdown inline, HTML iframe-only
 
-Full-edit chunk loading must preserve the backend `nextOffset` exactly and must never floor/align it backward. Stop immediately on repeated offsets, non-increasing `nextOffset`, missing unsafe progress metadata, zero-byte non-EOF chunks, malformed metadata, browser edit cap, or `MIOOS_TEXT_MAX_CHUNK_REQUESTS`. Manual retry is one bounded user action and must still respect duplicate/repeated-offset guards.
+Markdown preview is intentionally **not** iframe-based. `MIOOSMarked.renderMarkdownDocument()` returns sanitized inline HTML using `inline-sanitized-markdown-no-iframe`, and `mioos_shell_ui.js` inserts it via the Markdown inline preview container. HTML remains the iframe-only preview route. Preserve this split: Markdown inline; HTML iframe.
 
-`READWIN^MIOOSFS` returns byte metadata: `requestedSize`, `bytes`, `readBytes`, `nextOffset`, `eof`, and `size`. `/api/mioos/fs/text-chunk` and `fs.text.chunk` propagate that contract and reject empty non-EOF chunks. Markdown preview remains local/offline and sandboxed; the iframe srcdoc receives theme-aware light/dark colors from `mioos_shell_ui.js`. HTML preview remains a sandboxed authenticated blob iframe until the user explicitly chooses **Edit File as Text**.
+The text loader now publishes partial full-load content into the viewer while chunks arrive and CodeMirror waits for `fullContentLoaded`. Keep the `loadFailedTerminal` stop flag so failed text chunk sessions do not re-enter automatically from mount/update hooks.

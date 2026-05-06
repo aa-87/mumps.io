@@ -227,8 +227,7 @@ Do not reintroduce automatic full-buffer loading for unknown-size or threshold-e
 
 Viewer windows with a `meta.fileId` should preserve the generic **Edit File as Text** toolbar action. HTML should continue to preview in a sandboxed iframe on open, but the edit action may replace the preview with a CodeMirror/plain-text stream for source edits. Do not wire large text preview scrolling back to chunk fetching; initial large/unknown text open is intentionally one bounded preview chunk with normal scrollbar behavior.
 
-## ROI 104 text viewer integration guardrails
 
-Modules must treat text loading as a bounded session, not as a scroll/timer/watch loop. A text chunk request key is `fileId:offset:size`; repeated in-flight keys, repeated offsets, non-increasing `nextOffset`, zero-byte non-EOF chunks, malformed metadata, browser edit cap hits, and max chunk-count hits must surface a UI error and stop. Manual retry is intentionally bounded and must not bypass duplicate/repeated-offset guards.
+## ROI 105/106 Markdown preview contract
 
-Large or unknown-size text files should open as a one-chunk preview. A module may expose **Edit File as Text** only as an explicit user action, and the shell will guard that full load with the same session limits. Markdown remains a rendered preview first, using a sandboxed iframe whose background and foreground follow the active light/dark theme. HTML remains a sandboxed iframe preview by default and should not start the text-chunk pipeline until source editing is explicitly requested.
+Markdown viewers must render through the shell's sanitized inline preview (`data-markdown-inline-preview="no-iframe"`) and theme-aware CSS. Do not add a Markdown iframe or `srcdoc` path. HTML viewers keep the sandboxed iframe preview path (`data-html-iframe-preview`) and may switch to text chunks only when the user chooses **Edit File as Text**.

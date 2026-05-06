@@ -489,25 +489,13 @@
           canEditText: function () { return !!this.textStream; },
           textEditNotice: function () { return ''; },
           codeMirrorStatus: function () { var s = this.textStream || {}; return s.codeMirrorFallback || ''; },
-          showRenderedDocumentPreview: function () { var s = this.textStream || {}; return !!s && !s.virtualized && !s.editing && !!(s.markdownPreviewEnabled || s.nativeHtmlPreview) && !!s.renderedPreviewHtml; },
+          showInlineMarkdownPreview: function () { var s = this.textStream || {}; return !!s && !s.virtualized && !s.editing && !!s.markdownPreviewEnabled && !!s.renderedPreviewHtml; },
+          showRenderedDocumentPreview: function () { var s = this.textStream || {}; return !!s && !s.virtualized && !s.editing && !!s.nativeHtmlPreview && !!s.renderedPreviewHtml; },
+          markdownInlineHtml: function () { return String(((this.textStream || {}).renderedPreviewHtml) || ''); },
           previewFrameSrcdoc: function () {
             var html = String(((this.textStream || {}).renderedPreviewHtml) || '');
             var zoom = Math.max(0.75, Math.min(2.25, +(((this.textStream || {}).zoom) || 1)));
-            var doc = (typeof document !== 'undefined' && document.documentElement) ? document.documentElement : null;
-            var body = (typeof document !== 'undefined' && document.body) ? document.body : null;
-            var dark = !!((doc && doc.classList && doc.classList.contains('theme-dark-mode')) || (body && body.classList && body.classList.contains('theme-dark-mode')));
-            function cssVar(name, fallback) {
-              var value = '';
-              try { value = (typeof window !== 'undefined' && window.getComputedStyle && (doc || body)) ? window.getComputedStyle(doc || body).getPropertyValue(name) : ''; } catch (err) { value = ''; }
-              value = String(value || '').trim();
-              return /^[#a-zA-Z0-9,.%()\s-]+$/.test(value) ? value : fallback;
-            }
-            var bg = cssVar('--theme-panel-bg', dark ? '#020617' : '#ffffff');
-            var fg = cssVar('--theme-panel-text', dark ? '#f8fafc' : '#172033');
-            var link = cssVar('--accent', dark ? '#93c5fd' : '#0b63f6');
-            var border = cssVar('--theme-panel-border', dark ? 'rgba(148,163,184,.34)' : '#d8dee9');
-            var codeBg = cssVar('--theme-field-bg', dark ? '#0f172a' : '#f8fafc');
-            var style = '<style data-mioos-markdown-preview-theme="light-or-dark">html{font-size:' + (16 * zoom) + 'px !important;background:' + bg + ' !important;color:' + fg + ' !important;color-scheme:' + (dark ? 'dark' : 'light') + ';}body{min-height:100%;background:' + bg + ' !important;color:' + fg + ' !important;}body.mioos-markdown-preview{background:' + bg + ' !important;color:' + fg + ' !important;}a{color:' + link + ';}pre,code{background:' + codeBg + ';color:' + fg + ';}td,th{border-color:' + border + ';}blockquote{border-left-color:' + border + ';color:' + fg + ';opacity:.88;}</style>';
+            var style = '<style data-mioos-markdown-preview-zoom>html{font-size:' + (16 * zoom) + 'px !important;}body{min-height:100%;}</style>';
             return html.indexOf('</head>') >= 0 ? html.replace('</head>', style + '</head>') : style + html;
           },
           previewStatusText: function () { var s = this.textStream || {}; return s.renderedPreviewError || ((s.statusVisible || s.statusPinned) ? s.status : ''); },
@@ -556,7 +544,10 @@
               this.destroyCodeMirror();
               return;
             }
-            if (!stream.fullContentLoaded && !stream.initialLoaded) return;
+            if (!stream.fullContentLoaded) {
+              this.destroyCodeMirror();
+              return;
+            }
             if (!helper || !helper.createTextEditor) {
               stream.codeMirrorActive = false;
               stream.codeMirrorFallback = 'CodeMirror unavailable; plain text fallback is active.';
@@ -612,8 +603,12 @@
           '<div class="mioos-surface mioos-surface-viewer-native" :class="\'is-\' + kind">' +
             '<section class="mioos-viewer-body" :class="{ \'is-media-full\': kind === \'media\', \'is-text-virtual\': !!textStream }">' +
               '<div v-if="textStream" class="mioos-text-virtual-viewer" :class="{ editing: textStream.editing, virtualized: textStream.virtualized, \'has-codemirror\': textStream.codeMirrorActive }" tabindex="0" data-text-scroll-load-disabled="true">' +
-                '<div v-if="showRenderedDocumentPreview" class="mioos-document-preview" data-preview-sandbox-strategy="sandboxed-srcdoc-no-scripts" data-markdown-full-pane-preview="1" :style="documentPreviewStyle">' +
-                  '<iframe class="mioos-viewer-frame mioos-document-preview-frame" sandbox="" :srcdoc="previewFrameSrcdoc" title="Rendered document preview" data-markdown-resize-frame="fills-client-area"></iframe>' +
+                '<div v-if="showInlineMarkdownPreview" class="mioos-document-preview mioos-markdown-inline-preview" data-markdown-inline-preview="no-iframe" data-markdown-full-pane-preview="1" :style="documentPreviewStyle">' +
+                  '<div class="mioos-markdown-preview-scroll" v-html="markdownInlineHtml"></div>' +
+                  '<div v-if="previewStatusText && textViewerStatusVisible" class="mioos-text-status is-transient" role="status">[[ previewStatusText ]]</div>' +
+                '</div>' +
+                '<div v-else-if="showRenderedDocumentPreview" class="mioos-document-preview" data-preview-sandbox-strategy="html-only-sandboxed-srcdoc-no-scripts" data-html-full-pane-preview="1" :style="documentPreviewStyle">' +
+                  '<iframe class="mioos-viewer-frame mioos-document-preview-frame" sandbox="" :srcdoc="previewFrameSrcdoc" title="Rendered HTML preview" data-html-resize-frame="fills-client-area"></iframe>' +
                   '<div v-if="previewStatusText && textViewerStatusVisible" class="mioos-text-status is-transient" role="status">[[ previewStatusText ]]</div>' +
                 '</div>' +
                 '<div v-else-if="textStream.virtualized" class="mioos-text-virtual-spacer" :style="textSpacerStyle"><div class="mioos-text-chunk-stack" :style="textContentStyle">' +
