@@ -228,6 +228,14 @@
     return String(text || '').length;
   }
 
+  function textViewerRevisionMarker(meta) {
+    meta = meta || {};
+    var modified = meta.modifiedAt || meta.mtime || meta.updated || meta.modified || '';
+    var size = +(meta.sizeBytes || meta.size || meta.bytes || 0);
+    if (!modified) return '';
+    return 'm:' + String(modified) + ';s:' + String(size || 0);
+  }
+
   function textViewerShouldVirtualize(vm, item) {
     var size = +((item || {}).size || (item || {}).bytes || 0);
     var threshold = textViewerThresholdBytes(vm);
