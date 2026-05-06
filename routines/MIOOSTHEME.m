@@ -84,7 +84,7 @@ DELETE(STATE,CONF,IN,OUT,ERR)
 	SET PUBKEY=$GET(^MIO("MIOOS","THEME","PUBLIC","LOGIN","key"))
 	KILL @ROOT
 	IF ACTIVE=KEY KILL ^MIO("MIOOS","THEME","ACTIVE",USER)
-	IF PUBKEY=KEY KILL ^MIO("MIOOS","THEME","PUBLIC","LOGIN")
+	IF PUBKEY=KEY KILL ^MIO("MIOOS","THEME","PUBLIC","LOGIN"),^MIO("MIOOS","THEME","PUBLIC","LOGINUSER",USER)
 	SET PID="" FOR  SET PID=$ORDER(^MIO("MIOOS","THEME","PUBLICASSET",PID)) QUIT:PID=""  IF $PIECE($GET(^MIO("MIOOS","THEME","PUBLICASSET",PID)),"^",3)=KEY KILL ^MIO("MIOOS","THEME","PUBLICASSET",PID)
 	KILL OUT
 	SET OUT("ok")=1,OUT("deleted")=1,OUT("key")=KEY,OUT("activeKey")=$GET(^MIO("MIOOS","THEME","ACTIVE",USER)),OUT("fallbackKey")="glow"
@@ -166,17 +166,66 @@ ASSETURLID(URL)
 	QUIT ID
 	;
 PUBLOGIN(STATE,USER,KEY,ROOT)
-	NEW PUB,FIELD,URL,ID
+	NEW PUB,UPUB,FIELD,URL,ID
 	SET PUB=$NAME(^MIO("MIOOS","THEME","PUBLIC","LOGIN"))
-	KILL @PUB
-	MERGE @PUB=@ROOT
-	SET @PUB@("owner")=USER,@PUB@("key")=KEY,@PUB@("publicLogin")=1
-	SET @PUB@("loginScreenConfig","publicLogin")=1
+	SET UPUB=$NAME(^MIO("MIOOS","THEME","PUBLIC","LOGINUSER",$GET(USER)))
+	KILL @PUB,@UPUB
+	DO PUBBASE(ROOT,PUB,USER,KEY)
+	DO PUBLCFG(.STATE,ROOT,PUB,0)
+	DO PUBBASE(ROOT,UPUB,USER,KEY)
+	DO PUBLCFG(.STATE,ROOT,UPUB,1)
 	FOR FIELD="wallpaperUrl","avatarUrl","warningImageUrl" DO
 	. SET URL=$GET(@ROOT@("loginScreenConfig",FIELD))
 	. SET ID=$$ASSETURLID(URL)
 	. IF ID'="" SET ^MIO("MIOOS","THEME","PUBLICASSET",ID)=USER_"^"_FIELD_"^"_KEY
 	QUIT
+	;
+PUBBASE(ROOT,DEST,USER,KEY)
+	NEW FIELD
+	KILL @DEST
+	SET @DEST@("owner")=USER,@DEST@("key")=KEY,@DEST@("publicLogin")=1
+	FOR FIELD="id","name","family","base","mode","activeMode","defaultVariant","fontStack","density" SET @DEST@(FIELD)=$GET(@ROOT@(FIELD))
+	IF $DATA(@ROOT@("cssVars")) MERGE @DEST@("cssVars")=@ROOT@("cssVars")
+	IF $DATA(@ROOT@("themeConfig","cssVars")) MERGE @DEST@("themeConfig","cssVars")=@ROOT@("themeConfig","cssVars")
+	QUIT
+	;
+PUBLCFG(STATE,ROOT,DEST,SPEC)
+	NEW FIELD,SEC,URL
+	SET @DEST@("loginScreenConfig","publicLogin")=1
+	FOR FIELD="loginBoxStyle","avatarSize","desktopWidth","mobileWidth","textColor","warningTitle","privacyNotice","disclaimer" SET @DEST@("loginScreenConfig",FIELD)=$GET(@ROOT@("loginScreenConfig",FIELD))
+	SET @DEST@("loginScreenConfig","wallpaperUrl")=$$PUBURL(.STATE,$GET(@ROOT@("loginScreenConfig","wallpaperUrl")))
+	IF +$GET(SPEC) DO
+	. SET @DEST@("loginScreenConfig","avatarUrl")=$$PUBURL(.STATE,$GET(@ROOT@("loginScreenConfig","avatarUrl")))
+	. SET @DEST@("loginScreenConfig","warningImageUrl")=$$PUBURL(.STATE,$GET(@ROOT@("loginScreenConfig","warningImageUrl")))
+	ELSE  DO
+	. SET @DEST@("loginScreenConfig","avatarUrl")=""
+	. SET @DEST@("loginScreenConfig","warningImageUrl")=""
+	FOR SEC="loginBackground","loginCard","loginButton" IF $DATA(@ROOT@("customElementCss",SEC)) MERGE @DEST@("customElementCss",SEC)=@ROOT@("customElementCss",SEC)
+	IF +$GET(SPEC) DO
+	. FOR SEC="loginAvatar","loginNotice" IF $DATA(@ROOT@("customElementCss",SEC)) MERGE @DEST@("customElementCss",SEC)=@ROOT@("customElementCss",SEC)
+	QUIT
+	;
+PUBURL(STATE,URL)
+	NEW ID,ROUTE
+	SET URL=$GET(URL)
+	IF URL="" QUIT ""
+	IF URL["data:" QUIT ""
+	SET ID=$$ASSETURLID(URL)
+	IF ID'="" DO  QUIT ROUTE_"?id="_ID
+	. SET ROUTE=$GET(STATE("themePublicAssetPath"),"/api/mioos/theme-public-asset")
+	IF URL["/api/mioos/theme-asset" QUIT ""
+	IF URL["/api/mioos/fs/blob" QUIT ""
+	QUIT URL
+	;
+LOGINPUBLIC(CONF,USER,OUT,ERR)
+	KILL OUT
+	SET OUT("ok")=1,OUT("stage")="password",OUT("loginThemeScope")="common-plus-login-specific",OUT("enumerationSafe")=1
+	IF $DATA(^MIO("MIOOS","THEME","PUBLIC","LOGIN")) MERGE OUT("profile")=^MIO("MIOOS","THEME","PUBLIC","LOGIN")
+	IF $GET(USER)'="",$DATA(^MIO("MIOOS","THEME","PUBLIC","LOGINUSER",USER)) DO
+	. MERGE OUT("specificProfile")=^MIO("MIOOS","THEME","PUBLIC","LOGINUSER",USER)
+	. MERGE OUT("profile")=^MIO("MIOOS","THEME","PUBLIC","LOGINUSER",USER)
+	IF '$DATA(OUT("profile")) SET OUT("profile","publicLogin")=1,OUT("profile","loginScreenConfig","publicLogin")=1
+	QUIT 1
 	;
 PUBLICLD(OUT)
 	KILL OUT

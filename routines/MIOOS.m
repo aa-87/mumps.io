@@ -11,6 +11,7 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","route","bootstrap"))="" SET CONF("mioos","route","bootstrap")="/api/mioos/bootstrap"
 	IF $GET(CONF("mioos","route","view"))="" SET CONF("mioos","route","view")="/api/mioos/view"
 	IF $GET(CONF("mioos","route","signin"))="" SET CONF("mioos","route","signin")="/api/mioos/auth/signin"
+	IF $GET(CONF("mioos","route","loginTheme"))="" SET CONF("mioos","route","loginTheme")="/api/mioos/auth/login-theme"
 	IF $GET(CONF("mioos","route","publicSignin"))="" SET CONF("mioos","route","publicSignin")=$GET(CONF("mioos","route","signin"),"/api/mioos/auth/signin")
 	IF $GET(CONF("mioos","route","signout"))="" SET CONF("mioos","route","signout")="/api/mioos/auth/signout"
 	IF $GET(CONF("mioos","route","guestSignin"))="" SET CONF("mioos","route","guestSignin")="/api/mioos/auth/guest"
@@ -178,7 +179,7 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","download","httpChunkBytes"))="" SET CONF("mioos","download","httpChunkBytes")=131072
 	IF $GET(CONF("mioos","fs","readPreviewBytes"))="" SET CONF("mioos","fs","readPreviewBytes")=262144
 	IF $GET(CONF("mioos","fs","readWindowBytes"))="" SET CONF("mioos","fs","readWindowBytes")=262144
-	IF $GET(CONF("mioos","fs","textChunkBytes"))="" SET CONF("mioos","fs","textChunkBytes")=131072
+	IF $GET(CONF("mioos","fs","textChunkBytes"))="" SET CONF("mioos","fs","textChunkBytes")=262144
 	IF $GET(CONF("mioos","fs","textChunkThresholdBytes"))="" SET CONF("mioos","fs","textChunkThresholdBytes")=2411725
 	IF $GET(CONF("mioos","fs","maxTextEditBytes"))="" SET CONF("mioos","fs","maxTextEditBytes")=2411725
 	IF $GET(CONF("mioos","fs","transferPersistence"))="" SET CONF("mioos","fs","transferPersistence")="localstorage-resumable-transfer-list"
@@ -197,7 +198,7 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","modules","dynamicWindows"))="" SET CONF("mioos","modules","dynamicWindows")=1
 	IF $GET(CONF("mioos","modules","launcher"))="" SET CONF("mioos","modules","launcher")="desktop-icons-and-menu"
 	IF $GET(CONF("mioos","table","maxPageSize"))="" SET CONF("mioos","table","maxPageSize")=250
-	IF $GET(CONF("mioos","upload","chunkBytes"))="" SET CONF("mioos","upload","chunkBytes")=860000
+	IF $GET(CONF("mioos","upload","chunkBytes"))="" SET CONF("mioos","upload","chunkBytes")=131072
 	IF $GET(CONF("mioos","upload","concurrency"))="" SET CONF("mioos","upload","concurrency")=3
 	IF $GET(CONF("mioos","upload","batchSize"))="" SET CONF("mioos","upload","batchSize")=2
 	IF $GET(CONF("mioos","upload","maxInflightChunks"))="" SET CONF("mioos","upload","maxInflightChunks")=6
@@ -243,6 +244,7 @@ REG(CONF)
 	DO ADDM^MIOROUTE("GET",$GET(CONF("mioos","route","desktopAlias")),"DESKTOP^MIOOS",.META)
 	DO ADDM^MIOROUTE("POST",SIGNIN,"SIGNIN^MIOOSAPI",.META)
 	IF PSIGNIN'=SIGNIN DO ADDM^MIOROUTE("POST",PSIGNIN,"SIGNIN^MIOOSAPI",.META)
+	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","loginTheme")),"LOGINTHEME^MIOOSAPI",.META)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","signout")),"SIGNOUT^MIOOSAPI",.META)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","guestSignin")),"GUESTSIGNIN^MIOOSAPI",.META)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","passwordChange")),"CHANGEPASSWORD^MIOOSAPI",.META)
@@ -290,6 +292,7 @@ REG(CONF)
 	DO ADDEXEMPT(.CONF,"/public/mioos/")
 	DO ADDEXEMPT(.CONF,SIGNIN)
 	DO ADDEXEMPT(.CONF,PSIGNIN)
+	DO ADDEXEMPT(.CONF,$GET(CONF("mioos","route","loginTheme")))
 	DO ADDEXEMPT(.CONF,$GET(CONF("mioos","route","passwordChange")))
 	IF 'AUTHREQ DO ADDEXEMPT(.CONF,$GET(CONF("mioos","route","bootstrap")))
 	IF AUTHREQ DO

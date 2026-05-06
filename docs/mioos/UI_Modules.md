@@ -187,3 +187,9 @@ Module windows automatically participate in the taskbar open/focused/minimized c
 ## ROI 95/96 text editor module note
 
 Text/structured file windows now prefer the local CodeMirror helper for small and medium documents while preserving the same MIOOS toolbar contract. Modules should not add CDN CodeMirror URLs, npm packages, build steps, or custom unsupported modes. Use the existing text viewer actions for Edit, Save, Zoom, Toggle Line Wrap, and Refresh; large text files remain chunked read-only unless a future ROI adds backend-tested partial-edit semantics.
+
+## ROI 97 viewer and login-theme module notes
+
+File modules should treat Markdown, HTML, PDF, and large text as viewer capabilities rather than direct blob reads. `.md` files default to a local Marked rendered preview and use CodeMirror only when the user enters edit mode and the file is below the bounded edit limit. `.html` and `.htm` files render in sandboxed iframe preview mode without scripts; `.pdf` files use the browser-native PDF renderer via the authenticated local blob route. Large text-like files remain chunked read-only and must not request `/api/mioos/fs/blob` for full-file content.
+
+The theme editor separates common pre-login theme settings from login-specific settings. Common settings are safe before username entry; login-specific avatar/warning/CSS loads only after the username stage and is cleared when the username changes.

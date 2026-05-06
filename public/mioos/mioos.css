@@ -5127,3 +5127,35 @@ html[dir="rtl"] .mioos-window-menu-dropdown-vue,
   color: var(--theme-field-text, #f8fafc) !important;
   border-color: var(--theme-panel-border, rgba(148,163,184,.26)) !important;
 }
+
+/* ROI 97: dark toolbar normal-state outline removal with focus-visible preservation. */
+.theme-dark-mode .mioos-window-menu-vue button,
+.theme-dark-mode .mioos-window-menu-dropdown-vue button,
+.theme-dark-mode .mioos-common-toolbar-vue button,
+.theme-dark-mode .mioos-explorer-toolbar-vue button,
+.theme-dark-mode .mioos-table-toolbar-vue button,
+.theme-dark-mode .mioos-terminal-toolbar-vue button {
+  border-color: transparent !important;
+  outline: none;
+  box-shadow: none !important;
+}
+
+.theme-dark-mode .mioos-window-menu-group-vue:hover > button,
+.theme-dark-mode .mioos-window-menu-group-vue:focus-within > button,
+.theme-dark-mode .mioos-window-menu-dropdown-vue button:hover,
+.theme-dark-mode .mioos-window-menu-dropdown-vue button:focus:not(:focus-visible) {
+  border-color: transparent !important;
+  outline: none;
+  box-shadow: none !important;
+}
+
+.theme-dark-mode .mioos-window-menu-vue button:focus-visible,
+.theme-dark-mode .mioos-window-menu-dropdown-vue button:focus-visible,
+.theme-dark-mode .mioos-common-toolbar-vue button:focus-visible,
+.theme-dark-mode .mioos-explorer-toolbar-vue button:focus-visible,
+.theme-dark-mode .mioos-table-toolbar-vue button:focus-visible,
+.theme-dark-mode .mioos-terminal-toolbar-vue button:focus-visible {
+  outline: 2px solid rgba(147, 197, 253, 0.85);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.7) !important;
+}

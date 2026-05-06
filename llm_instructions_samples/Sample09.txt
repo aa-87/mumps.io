@@ -1,0 +1,860 @@
+Please use the attached **MIOOS ZIP/folder**, attached **CodeMirror 5.65.21 ZIP/folder**, and attached **Marked library ZIP/folder** as the **ONLY sources of truth**. **MAKE SURE ABSOLUTELY NO REGRESSIONS.**
+
+You are taking over development of **MIOOS / MUMPS.IO OS Shell**. Do **not** rely on prior ChatGPT conversations, prior patches, prior generated ZIPs, assumptions, cached artifacts, or generated files. Inspect the attached source first, inspect the attached local dependency packages, then implement source-accurate fixes only.
+
+## Core architecture rules
+
+Preserve the existing MUMPS.IO architecture.
+
+- Backend: MUMPS on YottaDB / GT.M.
+- Server-side rendering: `MIOTPL`.
+- HTTP/API: `MIOHTTP` / `MIOOSAPI`.
+- WebSocket/control/realtime: `MIOOSWS` where appropriate.
+- VFS/files/uploads: `MIOOSFS` / `MIOOSFSUP`.
+- Boot/session/desktop state: `MIOOSST` / `MIOOSVM` / `MIOOSUI` as applicable.
+- Theme/profile/login theme persistence: `MIOOSTHEME`.
+- Locale/i18n: `MIOOSI18N`.
+- Module registry/table-backed modules: `MIOOSMOD` / `MIOOSMTBL`.
+- Advanced Table backend contract: `MIOOSTBL`.
+- Patient workflow: `MIOOSPAT`.
+- Browser files live under `public/mioos/app/`.
+- Use Vue 3 Options API UMD only.
+- No new frontend framework.
+- No build step.
+- No TypeScript.
+- No Composition API.
+- No Node/Express runtime.
+- No npm install.
+- No CDN dependency.
+- CodeMirror may be vendored only from the attached local `codemirror-5.65.21.zip`.
+- Marked may be vendored only from the attached local Marked package/ZIP.
+- Keep the project usable offline/local.
+- The project is for MUMPS developers with little/no frontend experience, so docs/examples must remain MUMPS-first.
+- Do not use DataURLs for uploads or persisted images.
+- Do not emit authenticated asset URLs before login.
+- Tests must stay quiet on success and explicit on failure.
+- Every ROI must update docs, tests, examples if applicable, and `mioos_llm.md` when behavior changes.
+- Return only modified files in the final ZIP or patch.
+- Be honest about tests that cannot be run.
+
+## Current ROI goal
+
+Fix login theme regressions, add Marked-powered Markdown preview, add safe native HTML and PDF viewers, fix dark-toolbar outlines, stabilize upload timeouts, and improve large text-file performance without regressing existing CodeMirror/text-viewer work.
+
+This ROI must avoid regressions and must add strong regression tests.
+
+---
+
+# Required source inspection
+
+Inspect these files first, then patch only what is necessary.
+
+## Backend
+
+- `routines/MIOOS.m`
+- `routines/MIOOSAPI.m`
+- `routines/MIOOSWS.m`
+- `routines/MIOOSFS.m`
+- `routines/MIOOSFSUP.m`
+- `routines/MIOOSST.m`
+- `routines/MIOOSVM.m`
+- `routines/MIOOSUI.m`
+- `routines/MIOOSTHEME.m`
+- `routines/MIOOSI18N.m`
+- `routines/MIOOSMOD.m`
+- `routines/MIOOSMTBL.m`
+- `routines/MIOOSTBL.m`
+- `routines/MIOOST.m`
+
+## Frontend
+
+- `public/mioos/app/mioos_auth.js`
+- `public/mioos/app/mioos_core.js`
+- `public/mioos/app/mioos_explorer.js`
+- `public/mioos/app/mioos_i18n.js`
+- `public/mioos/app/mioos_modules.js`
+- `public/mioos/app/mioos_permissions.js`
+- `public/mioos/app/mioos_shell_ui.js`
+- `public/mioos/app/mioos_state.js`
+- `public/mioos/app/mioos_table.js`
+- `public/mioos/app/mioos_terminal.js`
+- `public/mioos/app/mioos_wm.js`
+- `public/mioos/app/mioos_ws.js`
+- `public/mioos/app/mioos_codemirror.js` if present
+- `public/mioos/mioos.css`
+
+## Templates/static
+
+- `templates/layouts/mioos_shell.html`
+- any login/auth templates found in the source
+- any static asset serving route definitions
+- any login theme editor/admin UI templates or modules
+
+## Docs/examples
+
+- `docs/mioos/README.md`
+- `docs/mioos/UI_Modules.md`
+- `docs/mioos/Backend_Table.md`
+- `examples/mioos_modules/table/README.md`
+- `examples/mioos_modules/table/module.json`
+- `examples/mioos_modules/patient_registration/README.md`
+- `examples/mioos_modules/patient_registration/module.json`
+- `mioos_llm.md`
+
+## Attached dependencies
+
+### CodeMirror
+
+Inspect:
+
+- `codemirror-5.65.21.zip`
+- `lib/codemirror.js`
+- `lib/codemirror.css`
+- available `mode/` or `modes/`
+- available `theme/` or `themes/`
+- available `addon/` or `addons/`
+- license/readme files
+
+Use only files that exist in the attached CodeMirror package. Vendor only the minimum required files under the project’s source-appropriate local static vendor location, likely:
+
+- `public/mioos/vendor/codemirror/`
+
+Do not use CDN or npm.
+
+### Marked
+
+Inspect the attached Marked package/ZIP before integrating.
+
+Expected browser file may be similar to:
+
+- `lib/marked.umd.js`
+
+Vendor only the minimum required local browser file and license/readme if required, likely under:
+
+- `public/mioos/vendor/marked/`
+
+Do not use CDN or npm.
+
+---
+
+# Primary issues to fix
+
+## 1. Login screen custom theme regression
+
+There is a regression in the login screen custom theme CSS and images:
+
+- Background image is not reflected.
+- Avatar image is not reflected after admin/login name is entered.
+- Warning image is not reflected.
+- Custom CSS is not reflected.
+- Nothing changes after the admin login name is entered.
+
+### Required login workflow
+
+Implement or restore this two-stage login workflow:
+
+1. User enters login name only.
+2. Screen loads the login-specific assets for that login name:
+   - specific avatar
+   - specific warning image/message styling if configured
+   - specific login CSS if configured
+   - then shows password input
+3. User enters password and logs in.
+4. UI shows clear input feedback:
+   - username stage loading/success/warning/error status
+   - password stage success/warning/error status
+   - no confusing stale image/CSS state
+
+### Admin theme editor requirements
+
+The admin theme editor must clearly separate:
+
+1. **Common pre-login theme**
+   - common login background image
+   - common login custom CSS
+   - common CSS/assets shown before any user info is entered
+   - may be safely presented without authenticated session and without username knowledge
+
+2. **Login-specific theme**
+   - user/login-specific avatar
+   - user/login-specific warning image
+   - user/login-specific CSS or settings
+   - loaded only after login name is entered/submitted
+
+### Security constraints
+
+- Do not emit authenticated asset URLs before login.
+- Do not use DataURLs for persisted images.
+- Do not leak whether an account exists through obviously different error messages or timings.
+- If login-specific visuals are shown after a username is entered, keep feedback generic enough to avoid worsening account enumeration.
+- Normalize delay and messages where source architecture allows.
+- Avoid returning raw filesystem paths.
+- Validate login theme asset IDs/keys.
+- Do not allow custom CSS to escape intended login-theme scope if the current architecture has a safe scoping pattern.
+- Preserve brute-force mitigation:
+  - username stage first
+  - password stage second
+  - rate-limit / lockout / retry behavior must not regress if present
+  - do not add a single combined username/password form if the source already expects staged login
+
+### Tests to add
+
+Add tests for:
+
+- common pre-login background image marker/path
+- common pre-login CSS marker/path
+- login-specific avatar is loaded after username stage
+- login-specific warning image is loaded after username stage
+- password field is hidden before username stage and shown after username stage
+- no authenticated asset URL emitted before login
+- no DataURL persisted for login images
+- stale login-specific assets are cleared when username changes
+- custom CSS remains scoped to login screen
+- warning/success/error feedback markers exist
+- admin theme editor contains separate common vs login-specific sections
+
+---
+
+## 2. Markdown `.md` viewer using local Marked; CodeMirror for editing
+
+Use the attached local Marked library for viewing Markdown files.
+
+### Required behavior
+
+- `.md` / Markdown files should have a rendered preview using Marked.
+- Editing should continue to use CodeMirror where safe.
+- Large Markdown files must respect the same large-file rules as other text:
+  - do not request entire file if unsafe
+  - no full-file `/api/mioos/fs/blob` fallback for large Markdown
+  - large Markdown may be chunked read-only or bounded preview with clear UI feedback
+- Preview must be local/offline only.
+- No CDN.
+- Marked loader must be robust:
+  - detect if already loaded
+  - avoid duplicate script injection
+  - wait for in-flight script
+  - fail gracefully to plain text / CodeMirror if Marked unavailable
+- If supported by source style, add:
+  - View mode: Rendered Preview
+  - Edit mode: CodeMirror
+  - Split mode if feasible without major regression risk
+- Prevent script injection:
+  - determine Marked version/package behavior from attached source
+  - if Marked does not sanitize HTML by default, do not assume it does
+  - either render Markdown inside a sandboxed iframe or implement a conservative sanitizer/source-appropriate escape path
+  - document the chosen safety model
+
+### Example desired browser usage
+
+The final implementation does not need to copy this exactly, but should achieve equivalent local usage from the vendored package:
+
+```html
+<div id="content"></div>
+<script src="/public/mioos/vendor/marked/lib/marked.umd.js"></script>
+<script>
+document.getElementById('content').innerHTML =
+  marked.parse('# Marked in browser\n\nRendered by **marked**.');
+</script>
+```
+
+### Tests to add
+
+- Marked vendor file exists locally.
+- No external Marked CDN references.
+- Marked loader exists.
+- Loader avoids duplicate injection and waits for in-flight script.
+- `.md` maps to Markdown rendered preview.
+- `.md` edit maps to CodeMirror Markdown/plaintext mode as available.
+- Large Markdown does not use full-file blob fallback.
+- Markdown preview has a documented XSS/sandbox/sanitization strategy.
+- Marked failure degrades gracefully.
+
+---
+
+## 3. Dark-theme toolbar outlines
+
+In dark theme, there is an unwanted outline around toolbar items such as:
+
+- File
+- Edit
+- Help
+- other toolbar/menu labels
+
+### Required behavior
+
+- Remove the outline around individual toolbar items in dark theme.
+- Toolbar/menu items should render simply:
+  - white or bright text
+  - black/dark background
+  - no visible individual item outline/border/ring unless focused by keyboard accessibility
+- Preserve keyboard accessibility:
+  - do not remove meaningful `:focus-visible` indication entirely
+  - remove mouse-click outlines and unintended borders
+  - keep accessible focus styling subtle and dark-theme appropriate
+- Do not regress light theme.
+
+### Areas to inspect/fix
+
+- common toolbar
+- Explorer toolbar
+- viewer/editor toolbar
+- table toolbar
+- module toolbar
+- permissions toolbar
+- terminal toolbar
+- menu/submenu items
+- Help/About dialogs if toolbar styles leak there
+
+### Tests to add
+
+- dark toolbar item has no border/outline marker for normal state
+- dark menu item has no border/outline marker for normal state
+- `:focus-visible` still exists or has an accessible marker
+- light theme toolbar selectors not broadly overwritten
+- no global wildcard dark override
+
+---
+
+## 4. Upload random failures: `socket_request_timeout`
+
+Uploading files randomly fails with:
+
+```text
+mioos_ws.js:168 Uncaught (in promise) Error: socket_request_timeout
+    at mioos_ws.js:168:24
+```
+
+Uploads also suffer from random timeouts.
+
+### Required analysis
+
+Inspect current upload flow end-to-end:
+
+- frontend upload code
+- `mioos_ws.js` request/response/timeout handling
+- `MIOOSWS` upload handlers
+- `MIOOSFSUP` upload chunk/session logic
+- `MIOOSAPI` fallback routes if present
+- WebSocket max payload constraints
+- YottaDB / GT.M MAXSTRING constraints
+- browser-side file chunk sizing
+- server ack/commit behavior
+- retry behavior
+- cancellation behavior
+- progress UI
+- duplicate chunk/session handling
+
+### Required fixes
+
+- No uncaught promise path.
+- Upload timeout must be caught and shown as a clear UI error/toast/status.
+- Reduce random timeouts by making upload protocol more resilient:
+  - bounded chunk size
+  - bounded concurrency if supported
+  - retry only idempotent chunks
+  - no infinite retry loops
+  - clear retry limit/backoff
+  - resume/retry session if source architecture supports it
+  - validate server acks
+- If WebSocket is unsuitable for large upload chunks, add or restore an authenticated HTTP chunk upload fallback.
+- Do not use DataURLs.
+- Do not load entire file into a single browser string.
+- Do not assemble unsafe huge MUMPS locals.
+- Keep uploads quiet/safe on success, explicit on failure.
+- Clear stale upload sessions on cancel/failure where appropriate.
+- Avoid duplicate writes if retry occurs after server processed a chunk.
+- Avoid increasing WebSocket payload size beyond safe MUMPS/runtime/socket limits.
+
+### Tests to add
+
+- frontend catches `socket_request_timeout`
+- upload chunk size is separate from text-view chunk size
+- upload chunk size is below safe MAXSTRING/socket-risk threshold
+- no DataURL upload path
+- no full-file browser read for upload
+- upload retry limit marker
+- no infinite upload retry loop
+- server rejects invalid upload session
+- server rejects invalid upload offset/size
+- duplicate chunk/ack behavior is deterministic
+- failed upload surfaces UI error
+- canceled upload does not keep retrying
+- large upload path is chunked
+
+---
+
+## 5. Large text-file load performance
+
+Large text files still take too long. Analyze and improve performance. The chunk size likely needs to be increased, but must be increased safely.
+
+### Current constraints
+
+- The viewer must not request the whole file for large files.
+- Do not set WebSocket chunk size so high that it causes socket timeout, MAXSTRING, JSON payload, or browser memory errors.
+- Chunk size and virtualization threshold must remain separate config values:
+  - threshold decides when virtual chunk mode begins
+  - chunk size decides each request size
+- Large files must not auto-load forever while idle.
+- Duplicate chunk requests must be deduped by file id + offset + size.
+- No infinite retry loop after chunk failure.
+- Save must clear stale caches and reload/revalidate the current view.
+- No full-file `/api/mioos/fs/blob` fallback for large text.
+- Scrollbar must map to byte offsets smoothly.
+
+### Required performance approach
+
+Analyze source/runtime constraints first, then improve safely:
+
+- Measure or inspect existing chunk sizes and thresholds.
+- Identify current WebSocket timeout and request timeout behavior.
+- Identify whether HTTP range/text-chunk fallback exists and is safer for larger chunks.
+- Prefer increasing HTTP chunk size over WebSocket chunk size if WebSocket is fragile.
+- Consider bounded parallel prefetch only if:
+  - capped concurrency
+  - capped total bytes
+  - deduped
+  - no idle infinite loop
+  - failures stop or degrade gracefully
+- Improve initial load:
+  - load first visible chunk only
+  - optionally prefetch adjacent chunk once
+  - avoid rendering giant DOM
+- Improve jump-to-middle/end:
+  - map scrollbar to byte offset
+  - fetch only needed chunk/range
+  - cancel/ignore stale responses
+- Improve CodeMirror use:
+  - use CodeMirror for small/medium full-document editing
+  - large text should remain virtual/read-only unless safe chunk-aware editing is implemented
+- Do not pretend large random-access editing is supported if unsafe.
+
+### Tests to add
+
+- chunk size and threshold are separate
+- chunk size clamp remains MAXSTRING-safe
+- no full-file blob fallback for large text
+- no idle load loop
+- no infinite retry loop
+- dedupe by id/offset/size
+- jump-to-offset maps to byte range
+- stale chunk response ignored
+- save clears cache/revalidates
+- large file opens initial range only
+- adjacent prefetch bounded if implemented
+- WebSocket chunk size remains lower than safe ceiling
+- HTTP text chunk fallback returns only requested range if implemented
+- MAXSTRING boundary synthetic test
+- long line chunk boundary test
+- Markdown/JSON/CSV boundary test where feasible
+
+---
+
+## 6. HTML files: native viewer in iframe; CodeMirror for editing
+
+HTML files should be viewed natively and edited with CodeMirror.
+
+### Required behavior
+
+- `.html` / `.htm` files should render in an iframe viewer.
+- Editing should use CodeMirror where safe.
+- Large HTML files must follow large-file rules:
+  - do not request full content if unsafe
+  - large HTML may be chunked read-only or show clear “too large for native preview” feedback
+- Use a sandboxed iframe.
+- Do not let preview escape the shell or navigate top-level window.
+- Decide carefully whether scripts should run:
+  - safest default is sandbox without script execution
+  - if script execution is allowed, it must be explicit and documented
+- Use `srcdoc` only for bounded safe-size content if source policy allows.
+- If `srcdoc` is not source-appropriate, use an authenticated local preview endpoint that serves only safe/authorized content.
+- Do not use DataURLs.
+
+### Tests to add
+
+- `.html` / `.htm` maps to iframe preview.
+- `.html` edit maps to CodeMirror HTML/XML/plaintext mode as available.
+- iframe has sandbox attribute.
+- no DataURL preview path.
+- large HTML does not use full-file blob fallback.
+- unsafe/too-large HTML preview shows clear feedback.
+- CodeMirror fallback works for edit mode.
+
+---
+
+## 7. PDF file viewer
+
+Add a PDF viewer.
+
+### Required behavior
+
+- PDF files should open in a viewer window.
+- Prefer browser-native PDF rendering with `<iframe>` or `<object>` using an authenticated local asset/preview URL.
+- Do not use DataURLs.
+- Do not fetch external PDF.js or CDN.
+- If no local PDF renderer exists, use browser-native PDF viewer.
+- If browser cannot render, provide download/open fallback.
+- Preserve auth/session checks.
+- Do not emit authenticated asset URLs before login.
+- Avoid loading PDFs through giant WebSocket payloads.
+- Do not break existing file download behavior.
+- Large PDFs should stream/range where source server supports it, or at minimum use direct authenticated file route rather than JSON/WebSocket blob payload.
+
+### Tests to add
+
+- `.pdf` maps to PDF viewer.
+- PDF viewer uses iframe/object with local authenticated route.
+- no PDF DataURL path.
+- no external PDF.js/CDN reference.
+- fallback message/action exists.
+- PDF route requires auth if route is added.
+- PDF viewer does not use WebSocket blob payload for large content.
+
+---
+
+# CodeMirror requirements to preserve
+
+If the source already has CodeMirror integration from a prior ROI, do not regress it.
+
+- Use local CodeMirror only.
+- Keep robust loader:
+  - detect already loaded
+  - avoid duplicate script/style injection
+  - wait on in-flight script/style
+  - verify `window.CodeMirror`
+  - fail gracefully if assets fail
+- Viewer/editor supports:
+  - read-only mode
+  - edit mode where safe
+  - save
+  - dirty-state indicator
+  - undo/redo through CodeMirror
+  - line numbers
+  - line wrapping toggle if present
+  - dark/light theme switch
+  - keyboard shortcuts where safe
+- Theme should update with MIOOS dark/light theme.
+- Unsupported modes fall back to text/plain rather than killing CodeMirror.
+- Do not invent CodeMirror modes that are not in the attached package unless implementing a small local mode is source-justified and tested.
+- Preserve no-build UMD/browser architecture.
+
+---
+
+# Implementation plan
+
+## Phase 1 — Audit baseline
+
+1. Unzip attached MIOOS source.
+2. Unzip/inspect attached CodeMirror package.
+3. Unzip/inspect attached Marked package.
+4. Identify existing ROI level in `MIOOST.m`, docs, and `mioos_llm.md`.
+5. Run baseline static checks where possible before changing files.
+6. Identify all login theme persistence and rendering paths.
+7. Identify all text/viewer/editor open paths:
+   - text/plain
+   - Markdown
+   - HTML
+   - PDF
+   - JSON/XML/YAML/CSV/logs
+8. Identify upload protocol:
+   - browser chunking
+   - WebSocket request timeout
+   - backend upload session/write flow
+   - HTTP fallback if any
+9. Identify dark toolbar/menu CSS selectors causing outlines.
+
+## Phase 2 — Login theme fix
+
+1. Restore/implement staged username → password workflow.
+2. Add common pre-login theme fields in admin editor:
+   - common background image
+   - common custom CSS
+3. Add login-specific theme fields:
+   - avatar image
+   - warning image
+   - login-specific CSS/settings
+4. Ensure safe unauthenticated asset handling for common pre-login assets.
+5. Ensure login-specific assets load only after username submit.
+6. Clear stale assets when username changes.
+7. Keep generic feedback to avoid account enumeration.
+8. Add tests.
+
+## Phase 3 — Marked Markdown preview
+
+1. Vendor minimal Marked browser UMD file.
+2. Add local loader helper, or extend existing viewer helper in source style.
+3. Add rendered Markdown preview mode.
+4. Keep CodeMirror edit mode.
+5. Add safe rendering strategy:
+   - sandboxed iframe preferred if Marked output is unsanitized
+   - document behavior
+6. Add tests.
+
+## Phase 4 — HTML/PDF viewers
+
+1. Add HTML native iframe preview.
+2. Add PDF browser-native iframe/object viewer.
+3. Ensure local authenticated routes/asset URLs are used.
+4. Avoid DataURLs and WebSocket blob payloads for large documents.
+5. Add tests.
+
+## Phase 5 — Upload timeout stabilization
+
+1. Fix uncaught `socket_request_timeout` promise path.
+2. Add bounded retry / error handling for upload chunks.
+3. Keep chunks MAXSTRING/socket safe.
+4. Consider HTTP chunk fallback if source architecture supports it.
+5. Improve progress/cancel/failure UI.
+6. Add tests.
+
+## Phase 6 — Large text performance
+
+1. Measure/inspect current chunk limits and thresholds.
+2. Increase chunk size only within safe runtime/socket limits.
+3. Prefer HTTP chunk fallback for larger chunks if WebSocket remains fragile.
+4. Add bounded adjacent prefetch if safe and tested.
+5. Avoid idle loops/infinite retries.
+6. Add performance/MAXSTRING tests.
+
+## Phase 7 — Dark toolbar outline fix
+
+1. Remove unintended normal-state outlines/borders around toolbar/menu items in dark mode.
+2. Preserve accessible `:focus-visible`.
+3. Fix only scoped selectors.
+4. Add CSS/static tests.
+
+## Phase 8 — Docs/tests/package
+
+1. Update docs:
+   - `docs/mioos/README.md`
+   - `docs/mioos/UI_Modules.md`
+   - relevant examples if behavior impacts module authors
+   - `mioos_llm.md`
+2. Add MUMPS regression tests, likely next available `T0xx` section.
+3. Keep tests quiet on success and explicit on failure.
+4. Run required checks.
+5. Return modified-files-only ZIP.
+6. Also provide patch fallback.
+
+---
+
+# Required baseline and final checks
+
+Run before and after where possible.
+
+## MUMPS runtime
+
+Try:
+
+```mumps
+D ^MIOOST
+```
+
+If YottaDB / GT.M is unavailable, clearly state that `D ^MIOOST` could not be run.
+
+If YottaDB / GT.M is available, also try:
+
+```mumps
+ZLINK "MIOOS"
+ZLINK "MIOOSAPI"
+ZLINK "MIOOSWS"
+ZLINK "MIOOSFS"
+ZLINK "MIOOSFSUP"
+ZLINK "MIOOSST"
+ZLINK "MIOOSVM"
+ZLINK "MIOOSUI"
+ZLINK "MIOOSTHEME"
+ZLINK "MIOOSI18N"
+ZLINK "MIOOSMOD"
+ZLINK "MIOOSMTBL"
+ZLINK "MIOOSTBL"
+ZLINK "MIOOST"
+DO ^MIOOST
+```
+
+## JavaScript syntax checks
+
+Run:
+
+```bash
+node --check public/mioos/app/mioos_auth.js
+node --check public/mioos/app/mioos_core.js
+node --check public/mioos/app/mioos_modules.js
+node --check public/mioos/app/mioos_table.js
+node --check public/mioos/app/mioos_permissions.js
+node --check public/mioos/app/mioos_shell_ui.js
+node --check public/mioos/app/mioos_wm.js
+node --check public/mioos/app/mioos_state.js
+node --check public/mioos/app/mioos_ws.js
+node --check public/mioos/app/mioos_explorer.js
+node --check public/mioos/app/mioos_i18n.js
+node --check public/mioos/app/mioos_terminal.js
+```
+
+Also check newly added or modified helper files, for example:
+
+```bash
+node --check public/mioos/app/mioos_codemirror.js
+node --check public/mioos/app/mioos_marked.js
+```
+
+If vendored UMD files are plain browser JavaScript and compatible with `node --check`, check them too. If not, document why not.
+
+## JSON validation
+
+Run:
+
+```bash
+python3 -m json.tool examples/mioos_modules/table/module.json
+python3 -m json.tool examples/mioos_modules/patient_registration/module.json
+python3 -m json.tool examples/mioos_modules/permissions/module.json
+python3 -m json.tool examples/mioos_modules/ui_elements/module.json
+```
+
+## Static MUMPS checks
+
+At minimum run quote/parity/static label checks for touched routines. If no dedicated checker exists, use conservative grep/python checks and document limitations.
+
+---
+
+# Regression tests to add
+
+Add a new `T0xx` section in `routines/MIOOST.m` or a source-appropriate helper if `MIOOST.m` is too large.
+
+Include tests for:
+
+## Login theme
+
+- common pre-login background image
+- common pre-login CSS
+- login-specific avatar after username stage
+- login-specific warning image after username stage
+- password field hidden before username stage
+- password field visible after username stage
+- stale assets cleared on username change
+- no authenticated asset URL before login
+- no DataURL persisted image path
+- admin theme editor common vs login-specific sections
+- login CSS scoped to login screen
+- warning/success/error feedback markers
+
+## Marked Markdown
+
+- Marked vendor file exists
+- no external Marked CDN
+- Marked loader exists
+- loader dedupes and waits for in-flight scripts
+- `.md` maps to rendered preview
+- Markdown edit uses CodeMirror
+- large Markdown avoids full-file blob fallback
+- preview sandbox/sanitization strategy marker
+- Marked failure fallback marker
+
+## HTML/PDF viewers
+
+- `.html`/`.htm` maps to iframe preview
+- iframe sandbox marker exists
+- HTML edit uses CodeMirror
+- no HTML DataURL preview
+- `.pdf` maps to PDF viewer
+- PDF uses local/authenticated route
+- no PDF DataURL path
+- no external PDF.js/CDN
+- PDF fallback UI marker
+
+## Uploads
+
+- `socket_request_timeout` is caught
+- upload chunk timeout surfaces UI error
+- bounded retry limit marker
+- no infinite retry loop
+- upload chunk size below safe MAXSTRING/socket ceiling
+- upload chunk size separate from text chunk size
+- no DataURL upload path
+- no full-file browser string upload path
+- invalid upload session rejected
+- invalid upload offset/size rejected
+- duplicate chunk ack deterministic
+- cancel stops retrying
+
+## Large text performance
+
+- chunk size and threshold separate
+- safe chunk-size clamp
+- no full-file large text blob fallback
+- no idle auto-load loop
+- no infinite retry loop
+- chunk dedupe by id/offset/size
+- scroll-to-byte mapping marker
+- stale response ignored
+- cache invalidated on save
+- initial large-file open requests only needed range
+- bounded adjacent prefetch if implemented
+- MAXSTRING boundary synthetic test
+- long-line boundary test
+
+## Dark toolbar/menu
+
+- dark toolbar normal item has no border/outline marker
+- dark menu normal item has no border/outline marker
+- `:focus-visible` remains accessible
+- no broad global dark wildcard override
+- light theme not broadly overwritten
+
+---
+
+# Acceptance criteria
+
+The ROI is accepted only if:
+
+- Login theme common assets show before username entry.
+- Login-specific avatar/warning/CSS loads after username entry.
+- Password step appears after username step.
+- Login feedback is clear and stale visual state is cleared.
+- Admin theme editor separates common pre-login theme from login-specific theme.
+- Markdown `.md` preview uses local Marked.
+- Markdown edit uses CodeMirror where safe.
+- HTML files preview natively in sandboxed iframe and edit with CodeMirror.
+- PDF files open in a local/browser-native viewer with safe fallback.
+- Dark toolbar/menu items no longer show unwanted outlines in normal state.
+- Upload `socket_request_timeout` no longer causes uncaught promise failure.
+- Uploads are chunked, bounded, retry-safe, and show explicit errors.
+- Large text loads faster and remains safe.
+- Chunk size increases only within proven safe limits.
+- No WebSocket/MAXSTRING/socket payload regression.
+- No DataURL upload or persisted image path.
+- No CDN dependency.
+- No npm/build step.
+- No full-file large text/blob fallback.
+- Tests/docs/`mioos_llm.md` are updated.
+- Modified-files-only ZIP and patch fallback are provided.
+- Any tests that cannot be run are honestly listed.
+
+---
+
+# Expected final answer format
+
+Use this exact final structure:
+
+```text
+Diagnosis
+Root cause
+ROI implemented
+Login theme workflow summary
+Marked Markdown integration summary
+HTML/PDF viewer summary
+Upload timeout/performance summary
+Large text performance/MAXSTRING summary
+Dark-theme toolbar summary
+Code changes
+Tests added
+Tests run
+Tests not run / limitations
+Acceptance checklist
+Modified files
+Download link to ZIP containing only modified files
+Patch fallback
+```
+
+Be honest if `D ^MIOOST` or `ZLINK` could not be run because YottaDB / GT.M is unavailable.
+
+If artifact download fails, provide a patch or pasteable file contents.

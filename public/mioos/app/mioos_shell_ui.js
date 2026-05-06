@@ -40,7 +40,7 @@
     if (key === 'my-computer' || key === 'documents' || key === 'explorer' || key === 'home') return 'mioos-surface-explorer';
     if (key === 'terminal') return 'mioos-surface-terminal';
     if (key === 'theme-studio' || key === 'customize') return 'mioos-surface-theme';
-    if (key === 'text-viewer' || key === 'image-viewer' || key === 'media-viewer' || key === 'pdf-viewer' || key === 'structured-viewer') return 'mioos-surface-viewer';
+    if (key === 'text-viewer' || key === 'markdown-viewer' || key === 'html-viewer' || key === 'image-viewer' || key === 'media-viewer' || key === 'pdf-viewer' || key === 'structured-viewer') return 'mioos-surface-viewer';
     if (key === 'backend-table' || key === 'table' || key === 'data-grid') return 'mioos-surface-table';
     if (key === 'transfers') return 'mioos-surface-transfers';
     if (key === 'about-mioos') return 'mioos-surface-about-mioos';
@@ -94,17 +94,19 @@
                 '</div>' +
                 '<div class="mioos-auth-head theme-login-head"><strong>[[ vm.boot.product.name ]]</strong><span>[[ vm.boot.product.subtitle ]]</span></div>' +
                 '<template v-if="!vm.authPasswordChange.required">' +
-                  '<p class="mioos-auth-copy">[[ vm.t(\'auth.requiredCopy\') ]]</p>' +
-                  '<div v-if="vm.authFeedback && vm.authFeedback.open" class="mioos-auth-feedback" :class="\'is-\' + (vm.authFeedback.kind || \'info\')" role="status" aria-live="polite"><strong>[[ vm.authFeedback.title ]]</strong><span>[[ vm.authFeedback.message ]]</span></div>' +
-                  '<label class="mioos-auth-field"><span>[[ vm.t(\'auth.username\') ]]</span><input v-model="vm.authForm.username" type="text" autocomplete="username"></label>' +
-                  '<label class="mioos-auth-field"><span>[[ vm.t(\'auth.password\') ]]</span><input v-model="vm.authForm.password" type="password" autocomplete="current-password" @keydown.enter="vm.submitSignin"></label>' +
+                  "<p class=\"mioos-auth-copy\">[[ vm.authStage === 'password' ? 'Password step ready. Confirm the displayed login screen, then enter your password.' : vm.t('auth.requiredCopy') ]]</p>" +
+                  "<div v-if=\"vm.authFeedback && vm.authFeedback.open\" class=\"mioos-auth-feedback\" :class=\"'is-' + (vm.authFeedback.kind || 'info')\" role=\"status\" aria-live=\"polite\" data-login-feedback-marker=\"warning-success-error\"><strong>[[ vm.authFeedback.title ]]</strong><span>[[ vm.authFeedback.message ]]</span></div>" +
+                  "<label class=\"mioos-auth-field\" data-login-username-stage=\"visible\"><span>[[ vm.t('auth.username') ]]</span><input v-model=\"vm.authForm.username\" type=\"text\" autocomplete=\"username\" :disabled=\"vm.authStage === 'password' && vm.authUsernameAccepted\" @keydown.enter=\"vm.submitLoginNameStage\"></label>" +
+                  "<label v-if=\"vm.authStage === 'password'\" class=\"mioos-auth-field\" data-login-password-stage=\"visible\"><span>[[ vm.t('auth.password') ]]</span><input v-model=\"vm.authForm.password\" type=\"password\" autocomplete=\"current-password\" @keydown.enter=\"vm.submitSignin\"></label>" +
                   '<aside class="theme-login-disclaimer" role="note">' +
                     '<img v-if="vm.activeLoginWarningImageUrl()" :src="vm.activeLoginWarningImageUrl()" alt="" aria-hidden="true">' +
                     '<div><strong>[[ vm.activeLoginWarningTitle() ]]</strong><p>[[ vm.activeLoginDisclaimer() ]]</p></div>' +
                   '</aside>' +
                   '<div class="mioos-auth-actions">' +
-                    "<button type=\"button\" class=\"mioos-auth-primary\" :disabled=\"vm.authBusy\" @click=\"vm.submitSignin\">[[ vm.authBusy ? 'Signing in…' : vm.t(\'auth.signin\') ]]</button>" +
-                    "<button type=\"button\" v-if=\"vm.boot.auth.guestLoginEnabled\" :disabled=\"vm.authBusy\" @click=\"vm.submitGuestSignin\">[[ vm.authBusy ? 'Starting…' : vm.t(\'auth.continueGuest\') ]]</button>" +
+                    "<button v-if=\"vm.authStage !== 'password'\" type=\"button\" class=\"mioos-auth-primary\" :disabled=\"vm.authBusy\" @click=\"vm.submitLoginNameStage\">[[ vm.authBusy ? 'Loading…' : 'Continue' ]]</button>" +
+                    "<button v-else type=\"button\" class=\"mioos-auth-primary\" :disabled=\"vm.authBusy\" @click=\"vm.submitSignin\">[[ vm.authBusy ? 'Signing in…' : vm.t('auth.signin') ]]</button>" +
+                    "<button type=\"button\" v-if=\"vm.authStage === 'password'\" :disabled=\"vm.authBusy\" @click=\"vm.returnToLoginNameStage\">Change username</button>" +
+                    "<button type=\"button\" v-if=\"vm.boot.auth.guestLoginEnabled\" :disabled=\"vm.authBusy\" @click=\"vm.submitGuestSignin\">[[ vm.authBusy ? 'Starting…' : vm.t('auth.continueGuest') ]]</button>" +
                   '</div>' +
                 '</template>' +
                 '<template v-else>' +
@@ -161,7 +163,7 @@
         computed: {
           vm: function () { return root(this); },
           isViewer: function () { return /-viewer$/.test(String((this.window || {}).appKey || '')); },
-          isText: function () { return String((this.window || {}).appKey || '') === 'text-viewer'; },
+          isText: function () { return !!this.textStream; },
           isMedia: function () { return String((this.window || {}).appKey || '') === 'media-viewer'; },
           isExplorer: function () { return ['explorer','home','documents','my-computer'].indexOf(String((this.window || {}).appKey || '')) >= 0; },
           textStream: function () { return ((((this.window || {}).fileView) || {}).textStream) || null; },
@@ -478,6 +480,9 @@
           canEditText: function () { var s = this.textStream || {}; return !!this.textStream && !(+s.size > 0 && +s.maxEditBytes > 0 && +s.size > +s.maxEditBytes); },
           textEditNotice: function () { return this.canEditText ? '' : 'Large file is chunked read-only above the bounded edit limit.'; },
           codeMirrorStatus: function () { var s = this.textStream || {}; return s.codeMirrorFallback || ''; },
+          showRenderedDocumentPreview: function () { var s = this.textStream || {}; return !!s && !s.virtualized && !s.editing && !!(s.markdownPreviewEnabled || s.nativeHtmlPreview) && !!s.renderedPreviewHtml; },
+          previewFrameSrcdoc: function () { return String(((this.textStream || {}).renderedPreviewHtml) || ''); },
+          previewStatusText: function () { var s = this.textStream || {}; return s.renderedPreviewError || s.previewStrategy || s.status || ''; },
           editableText: {
             get: function () { return this.textStream ? this.vm.textViewerEditableContent(this.window.id) : ''; },
             set: function (value) { if (this.vm.textViewerSetEditableContent) this.vm.textViewerSetEditableContent(this.window.id, value); }
@@ -578,7 +583,11 @@
           '<div class="mioos-surface mioos-surface-viewer-native" :class="\'is-\' + kind">' +
             '<section class="mioos-viewer-body" :class="{ \'is-media-full\': kind === \'media\', \'is-text-virtual\': !!textStream }">' +
               '<div v-if="textStream" class="mioos-text-virtual-viewer" :class="{ editing: textStream.editing, virtualized: textStream.virtualized, \'has-codemirror\': textStream.codeMirrorActive }" tabindex="0" @wheel.passive="armTextScroll(\'wheel\')" @pointerdown="armTextScroll(\'pointer\')" @pointermove="armTextScroll(\'pointer\')" @touchstart.passive="armTextScroll(\'touch\')" @touchmove.passive="armTextScroll(\'touch\')" @keydown="armTextScroll(\'keyboard\')" @scroll="onTextScroll">' +
-                '<div v-if="textStream.virtualized" class="mioos-text-virtual-spacer" :style="textSpacerStyle"><div class="mioos-text-chunk-stack" :style="textContentStyle">' +
+                '<div v-if="showRenderedDocumentPreview" class="mioos-document-preview" data-preview-sandbox-strategy="sandboxed-srcdoc-no-scripts">' +
+                  '<iframe class="mioos-viewer-frame mioos-document-preview-frame" sandbox="" :srcdoc="previewFrameSrcdoc" title="Rendered document preview"></iframe>' +
+                  '<div v-if="previewStatusText" class="mioos-text-status" role="status">[[ previewStatusText ]]</div>' +
+                '</div>' +
+                '<div v-else-if="textStream.virtualized" class="mioos-text-virtual-spacer" :style="textSpacerStyle"><div class="mioos-text-chunk-stack" :style="textContentStyle">' +
                   '<pre v-for="chunk in textChunks" :key="chunk.offset" class="mioos-viewer-text mioos-viewer-text-chunk"><span class="mioos-text-chunk-offset">Byte [[ chunk.offset ]]</span>[[ chunk.content ]]</pre>' +
                 '</div></div>' +
                 '<div v-else class="mioos-codemirror-frame" :class="{ \'is-active\': textStream.codeMirrorActive, \'is-fallback\': !!textStream.codeMirrorFallback }">' +
@@ -862,10 +871,11 @@
                       </div>
 
                       <div class="mioos-theme-studio-panel-vue" v-else-if="tab.key === 'login'">
+                        <div class="mioos-theme-section-heading-vue" data-login-theme-section="common-pre-login"><strong>Common pre-login theme</strong><span>Shown before any username is entered. Public asset URLs only.</span></div>
                         <div class="mioos-theme-uploadcards-vue">
                           <div class="mioos-theme-uploadcard-vue">
                             <div class="mioos-theme-uploadcard-illustration-vue wallpaper">Background</div>
-                            <div class="mioos-theme-uploadcard-copy-vue"><strong>Login background image</strong><span>Shown full-screen behind the sign-in card.</span></div>
+                            <div class="mioos-theme-uploadcard-copy-vue"><strong>Common login background image</strong><span>Shown full-screen behind the sign-in card before username entry.</span></div>
                             <div class="mioos-theme-uploadcard-actions-vue">
                               <label role="button" tabindex="0" class="mioos-btn mioos-file-trigger-vue">
                                 <input type="file" accept="image/*" @change="vm.themeStudioUploadField('loginScreenConfig.wallpaperUrl', $event)">
@@ -874,6 +884,9 @@
                               <button type="button" class="mioos-btn" @click="vm.themeStudioClearUploadedField('loginScreenConfig.wallpaperUrl')">Clear</button>
                             </div>
                           </div>
+                        </div>
+                        <div class="mioos-theme-section-heading-vue" data-login-theme-section="login-specific"><strong>Login-specific theme</strong><span>Loaded after the username stage: avatar, warning image, and login-specific styling.</span></div>
+                        <div class="mioos-theme-uploadcards-vue">
                           <div class="mioos-theme-uploadcard-vue">
                             <div class="mioos-theme-uploadcard-illustration-vue avatar">Avatar</div>
                             <div class="mioos-theme-uploadcard-copy-vue"><strong>Account avatar</strong><span>Displayed inside the login card above the account name.</span></div>
@@ -905,11 +918,11 @@
                           <label><span>Text color</span><input type="color" :value="((activeTheme.loginScreenConfig || {}).textColor) || '#ffffff'" @input="vm.themeStudioUpdateField('loginScreenConfig.textColor', $event.target.value)"></label>
                           <label><span>Warning heading</span><input type="text" :value="((activeTheme.loginScreenConfig || {}).warningTitle) || ''" @input="vm.themeStudioUpdateField('loginScreenConfig.warningTitle', $event.target.value)"></label>
                           <label class="span-2"><span>Privacy / warning message</span><textarea rows="4" :value="((activeTheme.loginScreenConfig || {}).privacyNotice) || ''" @input="vm.themeStudioUpdateField('loginScreenConfig.privacyNotice', $event.target.value)"></textarea></label>
-                          <label class="span-2"><span>Login background custom CSS</span><textarea rows="3" spellcheck="false" placeholder="background: radial-gradient(circle at top, #123, #000);" :value="vm.themeStudioCustomElementCssValue('loginBackground')" @input="vm.themeStudioUpdateCustomElementCss('loginBackground', $event.target.value)"></textarea></label>
+                          <label class="span-2"><span>Common login background custom CSS</span><textarea rows="3" spellcheck="false" placeholder="background: radial-gradient(circle at top, #123, #000);" :value="vm.themeStudioCustomElementCssValue('loginBackground')" @input="vm.themeStudioUpdateCustomElementCss('loginBackground', $event.target.value)"></textarea></label>
                           <label class="span-2"><span>Login card custom CSS</span><textarea rows="3" spellcheck="false" placeholder="background: rgba(15,23,42,.88); border-color: rgba(255,255,255,.28);" :value="vm.themeStudioCustomElementCssValue('loginCard')" @input="vm.themeStudioUpdateCustomElementCss('loginCard', $event.target.value)"></textarea></label>
-                          <label><span>Login avatar custom CSS</span><textarea rows="3" spellcheck="false" placeholder="border-color: #fff; box-shadow: 0 12px 36px rgba(0,0,0,.35);" :value="vm.themeStudioCustomElementCssValue('loginAvatar')" @input="vm.themeStudioUpdateCustomElementCss('loginAvatar', $event.target.value)"></textarea></label>
+                          <label><span>Login-specific avatar custom CSS</span><textarea rows="3" spellcheck="false" placeholder="border-color: #fff; box-shadow: 0 12px 36px rgba(0,0,0,.35);" :value="vm.themeStudioCustomElementCssValue('loginAvatar')" @input="vm.themeStudioUpdateCustomElementCss('loginAvatar', $event.target.value)"></textarea></label>
                           <label><span>Login button custom CSS</span><textarea rows="3" spellcheck="false" placeholder="background: linear-gradient(#60a5fa, #2563eb); color: #fff;" :value="vm.themeStudioCustomElementCssValue('loginButton')" @input="vm.themeStudioUpdateCustomElementCss('loginButton', $event.target.value)"></textarea></label>
-                          <label class="span-2"><span>Warning panel custom CSS</span><textarea rows="3" spellcheck="false" placeholder="background: rgba(2,6,23,.48); color: #fff;" :value="vm.themeStudioCustomElementCssValue('loginNotice')" @input="vm.themeStudioUpdateCustomElementCss('loginNotice', $event.target.value)"></textarea></label>
+                          <label class="span-2"><span>Login-specific warning panel custom CSS</span><textarea rows="3" spellcheck="false" placeholder="background: rgba(2,6,23,.48); color: #fff;" :value="vm.themeStudioCustomElementCssValue('loginNotice')" @input="vm.themeStudioUpdateCustomElementCss('loginNotice', $event.target.value)"></textarea></label>
                         </div>
                       </div>
 

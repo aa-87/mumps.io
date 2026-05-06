@@ -776,3 +776,12 @@ Use only the local CodeMirror 5.65.21 files under `public/mioos/vendor/codemirro
 Mode mapping is source-accurate to the attached package: MUMPS uses `mumps`; Markdown uses `markdown`; XML/HTML use `xml`; SQL uses `sql`; CSV uses `spreadsheet`; JavaScript/JSON/CSS/YAML/HL7/X12/log/unknown content falls back to plain text. Do not load the supplied `vue` or `handlebars` files unless their missing local dependencies are also supplied and tested.
 
 Large text remains chunked/read-only above `maxTextEditBytes`. Small/medium files may use CodeMirror for bounded full-document edit/save. Save must clear chunk caches and reload safely. Do not restore whole-file `/api/mioos/fs/blob` fallback, idle prefetch loops, automatic retry loops, or unsafe random-access large-file editing.
+
+## ROI 97 carry-forward notes
+
+- Login is staged: username first, then `/api/mioos/auth/login-theme` loads public-safe login-specific visuals before password entry. Do not reintroduce a combined username/password-only login screen.
+- Public login assets must be rewritten to `/api/mioos/theme-public-asset?id=...`; never emit protected `/api/mioos/theme-asset` or `/api/mioos/fs/blob` URLs before authentication.
+- Marked is local-only at `public/mioos/vendor/marked/lib/marked.umd.js`. Markdown preview uses a sandboxed iframe; CodeMirror remains the edit path.
+- HTML preview uses sandboxed `srcdoc` without scripts for bounded files. PDF preview uses the authenticated local blob route and browser-native rendering.
+- Uploads must stay HTTP chunked, bounded, retry-limited, and must not read the whole file into one browser string or DataURL. Text viewer chunks and upload chunks are separate values.
+- Dark toolbar/menu normal states intentionally have transparent borders/outlines; keep `:focus-visible` styling for keyboard users.

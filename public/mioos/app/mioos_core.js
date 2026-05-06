@@ -53,7 +53,10 @@
           pingTimer: null,
           profile: 'dev',
           authBusy: false,
+          authStage: 'username',
+          authUsernameAccepted: false,
           authFeedback: { open: false, title: '', message: '', kind: 'info' },
+          authLoginTheme: { status: 'idle', requestSeq: 0, username: '', commonProfile: null, specificProfile: null, error: '' },
           authForm: {
             username: '',
             password: ''
@@ -122,6 +125,10 @@
         }
       },
       watch: {
+        'authForm.username': function (value, oldValue) {
+          if (!this.requiresSignin || String(value || '') === String(oldValue || '')) return;
+          if (this.clearLoginSpecificAssets) this.clearLoginSpecificAssets('username-changed');
+        },
         'view.desktopEntries': {
           deep: true,
           handler: function (entries) {
@@ -146,6 +153,9 @@
           this.refreshView();
           this.initSocket().catch(function () {});
           if (this.startTerminalPolling) this.startTerminalPolling();
+        } else {
+          if (this.applyCommonLoginTheme) this.applyCommonLoginTheme();
+          if (this.setAuthFeedback) this.setAuthFeedback('info', 'Username stage', 'Enter your username to continue.');
         }
         this._dragMove = this.handleGlobalMouseMove.bind(this);
         this._dragEnd = this.handleGlobalMouseUp.bind(this);
@@ -3050,7 +3060,7 @@
         },
         activeLoginAvatarUrl: function () {
           var cfg = this.activeLoginScreenConfig ? this.activeLoginScreenConfig() : {};
-          var url = cfg.avatarUrl || cfg.warningImageUrl || '';
+          var url = cfg.avatarUrl || '';
           return this.isProtectedThemeUrl(url) && this.requiresSignin && !this.activeLoginPublicAssets() ? '' : url;
         },
         activeLoginWarningImageUrl: function () {

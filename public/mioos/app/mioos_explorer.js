@@ -1,4 +1,5 @@
 (function () {
+  var MIOOS_UPLOAD_RETRY_LIMIT = 4;
   function clone(value) {
     return JSON.parse(JSON.stringify(value || {}));
   }
@@ -18,6 +19,18 @@
     var mime = ((entry || {}).mime || '').toLowerCase();
     var name = ((entry || {}).name || (entry || {}).title || '').toLowerCase();
     return mime.indexOf('application/pdf') === 0 || /\.pdf$/i.test(name);
+  }
+
+  function detectMarkdownLike(entry) {
+    var mime = ((entry || {}).mime || '').toLowerCase();
+    var name = ((entry || {}).name || (entry || {}).title || '').toLowerCase();
+    return mime.indexOf('markdown') >= 0 || /\.(md|markdown)$/i.test(name);
+  }
+
+  function detectHtmlLike(entry) {
+    var mime = ((entry || {}).mime || '').toLowerCase();
+    var name = ((entry || {}).name || (entry || {}).title || '').toLowerCase();
+    return mime.indexOf('text/html') === 0 || /\.(html|htm)$/i.test(name);
   }
 
   function detectStructuredLike(entry) {
@@ -122,6 +135,13 @@
   function isTransientUploadStatus(status) {
     status = +status;
     return status === 408 || status === 409 || status === 425 || status === 429 || (status >= 500 && status < 600);
+  }
+
+  function uploadFriendlyError(err) {
+    var msg = String((err && (err.message || err.code || err.detail)) || err || '');
+    if (msg === 'socket_request_timeout') return 'Upload timed out waiting for a server acknowledgement. The failed chunk is bounded and retry-safe.';
+    if (msg === 'http_chunk_upload_required') return 'Chunked HTTP upload is required for safe local uploads; no whole-file WebSocket fallback was used.';
+    return msg || 'Upload failed.';
   }
 
   function uploadRetryDelay(attempt) {
@@ -402,31 +422,6 @@
         resolve(picked);
       });
     });
-  }
-
-  function fileToText(file) {
-    return new Promise(function (resolve, reject) {
-      var reader = new FileReader();
-      reader.onload = function (evt) { resolve(String((evt.target && evt.target.result) || '')); };
-      reader.onerror = function () { reject(new Error('file_read_failed')); };
-      reader.readAsText(file);
-    });
-  }
-
-  function blobToArrayBuffer(blob) {
-    return new Promise(function (resolve, reject) {
-      var reader = new FileReader();
-      reader.onload = function (evt) { resolve((evt.target && evt.target.result) || new ArrayBuffer(0)); };
-      reader.onerror = function () { reject(new Error('file_read_failed')); };
-      reader.readAsArrayBuffer(blob);
-    });
-  }
-
-  function uint8ToBase64(uint8) {
-    var binary = '';
-    var i;
-    for (i = 0; i < uint8.length; i += 1) binary += String.fromCharCode(uint8[i]);
-    return window.btoa(binary);
   }
 
   function useChunkedUpload(file, isText) {
@@ -988,7 +983,7 @@
         var virtualized = textViewerShouldVirtualize(this, item || {});
         var chunkSize = textViewerBaseChunkBytes(this);
         var scrollHeight = virtualized && size > 0 ? Math.max(800, Math.min(12000000, Math.ceil(size / 2))) : Math.max(600, textChunkHeight(''));
-        return { fileId: id, path: (item || {}).path || '', fileName: (item || {}).name || (item || {}).title || 'Text file', mime: (item || {}).mime || 'text/plain', size: size, thresholdBytes: threshold, virtualized: virtualized, boundedEdit: true, editMode: virtualized ? 'bounded' : 'full', maxEditBytes: +((((this.boot || {}).vfs || {}).maxTextEditBytes) || threshold), chunkSize: chunkSize, chunks: {}, loadingOffsets: {}, loadedOffsets: {}, visibleOffset: 0, lastRequestedOffset: null, pendingOffset: null, contentTop: 0, viewportHeight: 320, scrollHeight: scrollHeight, eof: false, initialLoaded: false, initialLoadRequest: null, userScrollArmed: false, lastUserScrollAt: 0, scrollIntentExpiresAt: 0, lastScrollTop: 0, scrollArmSource: '', fullContentLoaded: false, fullLoadRequest: null, status: virtualized ? 'Opening text stream…' : 'Opening text file in safe chunks…', error: '', editing: false, editableContent: '', dirty: false, saving: false, saveStatus: '', retryOffset: null, retryPolicy: 'manual-only', zoom: 1, lineWrapping: true, codeMirrorActive: false, codeMirrorFallback: '' };
+        return { fileId: id, path: (item || {}).path || '', fileName: (item || {}).name || (item || {}).title || 'Text file', mime: (item || {}).mime || 'text/plain', size: size, thresholdBytes: threshold, virtualized: virtualized, boundedEdit: true, editMode: virtualized ? 'bounded' : 'full', maxEditBytes: +((((this.boot || {}).vfs || {}).maxTextEditBytes) || threshold), chunkSize: chunkSize, chunks: {}, loadingOffsets: {}, loadedOffsets: {}, visibleOffset: 0, lastRequestedOffset: null, pendingOffset: null, contentTop: 0, viewportHeight: 320, scrollHeight: scrollHeight, eof: false, initialLoaded: false, initialLoadRequest: null, userScrollArmed: false, lastUserScrollAt: 0, scrollIntentExpiresAt: 0, lastScrollTop: 0, scrollArmSource: '', fullContentLoaded: false, fullLoadRequest: null, status: virtualized ? 'Opening text stream…' : 'Opening text file in safe chunks…', error: '', editing: false, editableContent: '', dirty: false, saving: false, saveStatus: '', retryOffset: null, retryPolicy: 'manual-only', zoom: 1, lineWrapping: true, codeMirrorActive: false, codeMirrorFallback: '', markdownPreviewEnabled: false, nativeHtmlPreview: false, renderedPreviewHtml: '', renderedPreviewError: '', previewStrategy: '', previewMode: 'text' };
       },
       textViewerWindowById: function (windowId) {
         return (this.windows || []).find(function (entry) { return entry.id === windowId; }) || null;
@@ -1056,6 +1051,37 @@
         });
         return stream.initialLoadRequest;
       },
+      textViewerRenderDocumentPreview: function (windowId) {
+        var win = this.textViewerWindowById ? this.textViewerWindowById(windowId) : null;
+        var stream = ((win || {}).fileView || {}).textStream;
+        var text = '';
+        if (!stream || stream.virtualized || stream.editing) return Promise.resolve(false);
+        text = String(stream.editableContent || (((win || {}).fileView || {}).content) || '');
+        if (!stream.markdownPreviewEnabled && !stream.nativeHtmlPreview) return Promise.resolve(false);
+        if (stream.markdownPreviewEnabled) {
+          stream.previewStrategy = 'sandboxed-srcdoc-no-scripts';
+          stream.renderedPreviewError = '';
+          if (!window.MIOOSMarked || !window.MIOOSMarked.renderMarkdownDocument) {
+            stream.renderedPreviewHtml = '<!doctype html><html><body><pre>' + text.replace(/[&<>]/g, function (ch) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[ch]; }) + '</pre></body></html>';
+            stream.renderedPreviewError = 'Marked unavailable; showing plain text fallback.';
+            return Promise.resolve(true);
+          }
+          return window.MIOOSMarked.renderMarkdownDocument(text).then(function (result) {
+            stream.renderedPreviewHtml = result.html || '';
+            stream.previewStrategy = result.strategy || 'sandboxed-srcdoc-no-scripts';
+            stream.renderedPreviewError = result.ok ? '' : 'Marked unavailable; showing plain text fallback.';
+            return true;
+          });
+        }
+        if (stream.nativeHtmlPreview) {
+          stream.previewStrategy = 'sandboxed-srcdoc-no-scripts';
+          stream.renderedPreviewError = '';
+          if (window.MIOOSMarked && window.MIOOSMarked.htmlPreviewDocument) stream.renderedPreviewHtml = window.MIOOSMarked.htmlPreviewDocument(text);
+          else stream.renderedPreviewHtml = String(text || '');
+          return Promise.resolve(true);
+        }
+        return Promise.resolve(false);
+      },
       textViewerLoadCompleteFile: function (windowId) {
         var win = this.textViewerWindowById ? this.textViewerWindowById(windowId) : null;
         var stream = ((win || {}).fileView || {}).textStream;
@@ -1099,7 +1125,7 @@
           stream.scrollHeight = Math.max(600, textChunkHeight(full) + 48);
           if (win.fileView) win.fileView.content = full;
           if (self.showToast) self.showToast('Text viewer', 'Editable text file loaded.', 'success', 1400);
-          return true;
+          return (self.textViewerRenderDocumentPreview ? self.textViewerRenderDocumentPreview(windowId) : Promise.resolve(false)).then(function () { return true; });
         }).catch(function (err) {
           stream.error = textViewerFriendlyError(err);
           stream.retryOffset = offset;
@@ -1378,6 +1404,8 @@
         if (detectImageLike(item)) { this.openImageViewerWindow(item); return; }
         if (detectAudioLike(item) || detectVideoLike(item)) { this.openMediaViewerWindow(item); return; }
         if (detectPdfLike(item)) { this.openPdfViewerWindow(item); return; }
+        if (detectMarkdownLike(item)) { this.openMarkdownViewerWindow(item); return; }
+        if (detectHtmlLike(item)) { this.openHtmlViewerWindow(item); return; }
         if (detectStructuredLike(item)) { this.openStructuredViewerWindow(item); return; }
         if (detectTextLike(item)) { this.openTextViewerWindow(item); return; }
         if (this.showAlert) this.showAlert('Explorer', 'No preview is available for this file type.');
@@ -1839,7 +1867,7 @@
           });
         }
         function fail(err, fallback) {
-          var message = (err && err.message) || fallback;
+          var message = uploadFriendlyError(err) || fallback;
           if (message === 'transfer_cancelled') {
             self.setExplorerUploadProgress(state, { active: false, stage: 'Cancelled', error: '', uploadId: '' });
             if (transferId && self.updateTransfer) self.updateTransfer(transferId, { status: 'cancelled', stage: 'Cancelled', processedBytes: ((state.upload || {}).sentBytes || 0), totalBytes: file.size });
@@ -1850,22 +1878,7 @@
           if (self.showAlert) self.showAlert(self.t('alerts.shellEventError.title', 'Explorer'), message);
           throw (err || new Error(fallback));
         }
-        if (!useChunkedUpload(file, isText)) {
-          self.setExplorerUploadProgress(state, { stage: 'Uploading' });
-          if (isText) {
-            return fileToText(file).then(function (result) {
-              return self.command('fs.write', {
-                parent: state.folderId,
-                name: file.name,
-                mime: mime,
-                data: result,
-                content: result,
-                text: result
-              });
-            }).then(finalize).catch(function (err) { return fail(err, 'fs_write_failed'); });
-          }
-          return Promise.reject(new Error('binary_upload_requires_chunked_transport')).catch(function (err) { return fail(err, 'fs_write_failed'); });
-        }
+        /* ROI 97: uploads always use chunked binary HTTP; no full-file FileReader/string upload path. */
         if (chunkTransport === 'http-binary') {
           return httpJson((((self.boot || {}).routes || {}).fsUploadBegin || '/api/mioos/fs/upload/begin'), {
             parent: state.folderId,
@@ -1926,7 +1939,7 @@
               var attempt = (transferControl.retries[index] || 0) + 1;
               transferControl.retries[index] = attempt;
               delete transferControl.xh[index];
-              if (attempt > 4) {
+              if (attempt > MIOOS_UPLOAD_RETRY_LIMIT) {
                 fail(new Error('fs_upload_chunk_failed'), 'fs_upload_chunk_failed');
                 return;
               }
@@ -2051,63 +2064,7 @@
             return fail(err, 'fs_upload_failed');
           });
         }
-        return self.socketRequest((self.boot.routes || {}).commandEvent || 'desktop.command', {
-          command: 'fs.upload.begin',
-          parent: state.folderId,
-          name: file.name,
-          mime: mime,
-          totalBytes: file.size,
-          encoding: isText ? 'text' : 'base64'
-        }, { command: 'fs.upload.begin', dedupeKey: 'fs.upload.begin|' + windowId + '|' + file.name + '|' + file.size, timeoutMs: uploadTimeoutConfig(self).uploadBeginTimeoutMs }).then(function (msg) {
-          var payload = payloadRoot(msg);
-          var uploadId = payload.uploadId;
-          var chunkChars = (payload && payload.chunkBytes) || ((self.boot && self.boot.vfs && self.boot.vfs.uploadChunkBytes) || 32768);
-          var uploadConcurrency = (payload && payload.concurrencyDefault) || ((self.boot && self.boot.vfs && self.boot.vfs.uploadConcurrency) || 7);
-          var uploadBatchSize = (payload && payload.batchSize) || ((self.boot && self.boot.vfs && self.boot.vfs.uploadBatchSize) || ((self.boot && self.boot.websocket && self.boot.websocket.uploadBatchSize) || 1));
-          if (!uploadId) throw new Error('upload_begin_failed');
-          state.upload.uploadId = uploadId;
-          state.upload.transferId = transferId || '';
-          transferControl.uploadId = uploadId;
-          self.setExplorerUploadProgress(state, { stage: 'Uploading chunks', uploadId: uploadId });
-          if (transferId && self.updateTransfer) self.updateTransfer(transferId, { status: 'uploading', stage: 'Uploading chunks', processedBytes: 0, totalBytes: file.size });
-          if (isText) {
-            return fileToText(file).then(function (textValue) {
-              var segments = [];
-              var offset = 0;
-              while (offset < textValue.length || (textValue.length === 0 && segments.length === 0)) {
-                var piece = textValue.slice(offset, offset + chunkChars);
-                segments.push({ data: piece, bytes: piece.length });
-                offset += chunkChars;
-                if (textValue.length === 0) break;
-              }
-              return self.uploadChunkedSegments(uploadId, segments, state, transferControl, file.name, uploadConcurrency, uploadBatchSize);
-            });
-          }
-          return blobToArrayBuffer(file).then(function (buffer) {
-            var bytes = new Uint8Array(buffer);
-            var rawChunkBytes = Math.max(131072, Math.floor(chunkChars * 3 / 4));
-            var segments = [];
-            var offset = 0;
-            while (offset < bytes.length || (bytes.length === 0 && segments.length === 0)) {
-              var end = Math.min(offset + rawChunkBytes, bytes.length);
-              var slice = bytes.slice(offset, end);
-              segments.push({ data: uint8ToBase64(slice), bytes: Math.max(0, end - offset) });
-              offset = end;
-              if (bytes.length === 0) break;
-            }
-            return self.uploadChunkedSegments(uploadId, segments, state, transferControl, file.name, uploadConcurrency, uploadBatchSize);
-          });
-        }).then(function () {
-          self.setExplorerUploadProgress(state, { stage: 'Finalizing', progress: 100, sentBytes: state.upload.totalBytes });
-          if (transferId && self.updateTransfer) self.updateTransfer(transferId, { status: 'finalizing', stage: 'Finalizing', processedBytes: state.upload.totalBytes, totalBytes: state.upload.totalBytes });
-          return self.socketRequest((self.boot.routes || {}).commandEvent || 'desktop.command', { command: 'fs.upload.commit', uploadId: (state.upload && state.upload.uploadId) }, { command: 'fs.upload.commit', dedupeKey: 'fs.upload.commit|' + ((state.upload && state.upload.uploadId) || ''), timeoutMs: uploadTimeoutConfig(self).uploadCommitTimeoutMs });
-        }).then(finalize).catch(function (err) {
-          var uploadId = state.upload && state.upload.uploadId;
-          if (uploadId) {
-            self.socketRequest((self.boot.routes || {}).commandEvent || 'desktop.command', { command: 'fs.upload.abort', uploadId: uploadId }, { command: 'fs.upload.abort', dedupeKey: 'fs.upload.abort|' + uploadId, timeoutMs: uploadTimeoutConfig(self).uploadAbortTimeoutMs }).catch(function () {});
-          }
-          return fail(err, 'fs_upload_failed');
-        });
+        return fail(new Error('http_chunk_upload_required'), 'fs_upload_failed');
       },
       resumePersistedUpload: function (item, entry) {
         var self = this;
@@ -2163,7 +2120,7 @@
           delete active[index];
           delete xh[index];
           nextIndex = Math.min(nextIndex || index, index);
-          if (resume.retries[index] > 4) {
+          if (resume.retries[index] > MIOOS_UPLOAD_RETRY_LIMIT) {
             if (self.finalizeTransfer) self.finalizeTransfer(item.id, false, { error: 'fs_upload_chunk_failed', stage: 'Resume failed', processedBytes: completedBytes, totalBytes: file.size, resume: Object.assign({}, resume, { contiguousBytes: completedBytes }) });
             return;
           }
@@ -2624,6 +2581,52 @@
       downloadViewerFile: function (win) {
         if (!win) return Promise.resolve();
         return this.downloadFileEntry({ id: (win.meta || {}).fileId, name: (win.meta || {}).fileName || win.title, mime: (win.meta || {}).mime || ((win.fileView || {}).mime || '') }, '');
+      },
+      openMarkdownViewerWindow: function (item) {
+        var id = nextWindowId(this, 'win-markdown');
+        var stream = this.textViewerInitialState ? this.textViewerInitialState(item || {}) : {};
+        stream.markdownPreviewEnabled = true;
+        stream.previewMode = stream.virtualized ? 'chunked-readonly' : 'rendered-preview';
+        stream.status = stream.virtualized ? 'Large Markdown opened read-only in chunked mode; rendered preview is disabled above the safe full-file limit.' : 'Opening Markdown preview with local Marked…';
+        var win = {
+          id: id,
+          appKey: 'markdown-viewer',
+          title: item.name || item.title || 'Markdown file',
+          state: 'normal',
+          left: 130,
+          top: 90,
+          width: 780,
+          height: 560,
+          z: this.zCounter + 1,
+          meta: { fileId: item.id || item.key || '', mime: item.mime || 'text/markdown', fileName: item.name || item.title || 'Markdown file' },
+          fileView: { loading: true, content: '', mime: item.mime || 'text/markdown', textStream: stream }
+        };
+        this.windows.push(win);
+        this.focusWindow(id);
+        (this.textViewerLoadInitialText ? this.textViewerLoadInitialText(id) : this.textViewerLoadChunk(id, 0)).catch(function () { return null; });
+      },
+      openHtmlViewerWindow: function (item) {
+        var id = nextWindowId(this, 'win-html');
+        var stream = this.textViewerInitialState ? this.textViewerInitialState(item || {}) : {};
+        stream.nativeHtmlPreview = true;
+        stream.previewMode = stream.virtualized ? 'chunked-readonly' : 'iframe-preview';
+        stream.status = stream.virtualized ? 'Large HTML opened read-only in chunked mode; native preview is disabled above the safe full-file limit.' : 'Opening sandboxed HTML preview…';
+        var win = {
+          id: id,
+          appKey: 'html-viewer',
+          title: item.name || item.title || 'HTML file',
+          state: 'normal',
+          left: 135,
+          top: 95,
+          width: 820,
+          height: 600,
+          z: this.zCounter + 1,
+          meta: { fileId: item.id || item.key || '', mime: item.mime || 'text/html', fileName: item.name || item.title || 'HTML file' },
+          fileView: { loading: true, content: '', mime: item.mime || 'text/html', textStream: stream }
+        };
+        this.windows.push(win);
+        this.focusWindow(id);
+        (this.textViewerLoadInitialText ? this.textViewerLoadInitialText(id) : this.textViewerLoadChunk(id, 0)).catch(function () { return null; });
       },
       openTextViewerWindow: function (item) {
         var id = nextWindowId(this, 'win-text');

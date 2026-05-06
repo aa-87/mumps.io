@@ -18,6 +18,11 @@
     window.setTimeout(function () { window.location.reload(); }, 180);
   }
 
+  function genericLoginThemeError(err) {
+    if (err && err.name === 'TypeError') return 'Network error while loading the login screen. Please try again.';
+    return 'Login screen could not be prepared. Check the username and try again.';
+  }
+
   window.MIOOSAuth = {
     methods: {
       setAuthFeedback: function (kind, title, message) {
@@ -26,8 +31,99 @@
       clearAuthFeedback: function () {
         this.authFeedback = { open: false, kind: 'info', title: '', message: '' };
       },
+      loginThemeRoute: function () {
+        return (((this.boot || {}).routes || {}).loginTheme) || '/api/mioos/auth/login-theme';
+      },
+      applyCommonLoginTheme: function () {
+        var profile = ((((this.boot || {}).desktop || {}).activeThemeProfile) || null);
+        if (!this.authLoginTheme) this.authLoginTheme = { status: 'idle', requestSeq: 0, username: '', commonProfile: null, specificProfile: null, error: '' };
+        this.authLoginTheme.commonProfile = profile;
+        this.authLoginTheme.specificProfile = null;
+        if (profile && this.applyLoginThemeProfile) this.applyLoginThemeProfile(profile, 'common');
+      },
+      applyLoginThemeProfile: function (profile, stage) {
+        var theme;
+        if (!profile || !this.themeStudioConfigFromServerProfile || !this.applyThemeStudioConfig) return;
+        theme = this.themeStudioConfigFromServerProfile(profile);
+        if (!theme) return;
+        theme.publicLogin = true;
+        if (theme.loginScreenConfig) theme.loginScreenConfig.publicLogin = true;
+        this.applyThemeStudioConfig(theme, { silent: true, persist: false });
+        if (this.authLoginTheme) this.authLoginTheme.status = stage || 'applied';
+      },
+      clearLoginSpecificAssets: function (reason) {
+        if (!this.authLoginTheme) this.authLoginTheme = { status: 'idle', requestSeq: 0, username: '', commonProfile: null, specificProfile: null, error: '' };
+        this.authLoginTheme.requestSeq += 1;
+        this.authLoginTheme.specificProfile = null;
+        this.authLoginTheme.username = '';
+        this.authLoginTheme.error = '';
+        this.authLoginTheme.status = reason || 'cleared';
+        this.authUsernameAccepted = false;
+        this.authStage = 'username';
+        if (this.authForm) this.authForm.password = '';
+        if (this.authPasswordChange) this.authPasswordChange.required = false;
+        if (this.authLoginTheme.commonProfile && this.applyLoginThemeProfile) this.applyLoginThemeProfile(this.authLoginTheme.commonProfile, 'common-cleared');
+      },
+      submitLoginNameStage: function () {
+        var self = this;
+        var username = String((this.authForm || {}).username || '').trim();
+        var seq;
+        if (this.authBusy) return;
+        if (!username) {
+          this.clearLoginSpecificAssets('username-empty');
+          this.setAuthFeedback('warning', 'Username required', 'Enter your username to continue.');
+          return;
+        }
+        if (!this.authLoginTheme) this.authLoginTheme = { status: 'idle', requestSeq: 0, username: '', commonProfile: null, specificProfile: null, error: '' };
+        seq = (this.authLoginTheme.requestSeq || 0) + 1;
+        this.authLoginTheme.requestSeq = seq;
+        this.authLoginTheme.username = username;
+        this.authLoginTheme.status = 'loading';
+        this.authLoginTheme.error = '';
+        this.authBusy = true;
+        this.dismissAlert();
+        this.setAuthFeedback('info', 'Loading login screen', 'Preparing the next step…');
+        window.fetch(this.loginThemeRoute(), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ username: username })
+        })
+          .then(safeJson)
+          .then(function (result) {
+            var profile;
+            if (seq !== ((self.authLoginTheme || {}).requestSeq)) return;
+            if (!result.ok || !result.json || result.json.ok !== 1) {
+              throw new Error('login_theme_failed');
+            }
+            profile = result.json.profile || result.json.loginTheme || result.json.specificProfile || null;
+            self.authLoginTheme.specificProfile = profile;
+            self.authLoginTheme.status = 'loaded';
+            self.authUsernameAccepted = true;
+            self.authStage = 'password';
+            self.authForm.password = '';
+            if (profile && self.applyLoginThemeProfile) self.applyLoginThemeProfile(profile, 'login-specific-loaded');
+            self.setAuthFeedback('success', 'Continue', 'Enter your password to continue.');
+          })
+          .catch(function (err) {
+            if (seq !== ((self.authLoginTheme || {}).requestSeq)) return;
+            self.clearLoginSpecificAssets('username-stage-error');
+            if (self.authLoginTheme) self.authLoginTheme.error = genericLoginThemeError(err);
+            self.setAuthFeedback('error', 'Login screen unavailable', genericLoginThemeError(err));
+          })
+          .finally(function () {
+            if (seq === ((self.authLoginTheme || {}).requestSeq)) self.authBusy = false;
+          });
+      },
+      returnToLoginNameStage: function () {
+        this.clearLoginSpecificAssets('change-username');
+        this.setAuthFeedback('info', 'Username stage', 'Enter your username to continue.');
+      },
       submitSignin: function () {
         var self = this;
+        if (!this.authPasswordChange.required && this.authStage !== 'password') {
+          return this.submitLoginNameStage();
+        }
         if (this.authBusy) return;
         this.authBusy = true;
         this.dismissAlert();
@@ -47,6 +143,7 @@
             }
             if (result.json.requiresPasswordChange) {
               self.authPasswordChange.required = true;
+              self.authStage = 'password-change';
               self.authPasswordChange.username = result.json.username || self.authForm.username || '';
               self.authPasswordChange.changeToken = result.json.changeToken || '';
               self.authPasswordChange.newPassword = '';
@@ -57,11 +154,13 @@
               self.setAuthFeedback('info', 'Password update required', 'Update your password to continue loading the shell.');
               return;
             }
+            self.authStage = 'success';
             self.setAuthFeedback('success', 'Sign in accepted', 'Loading your desktop…');
             reloadSoon();
           })
           .catch(function (err) {
             var message = (err && err.safeMessage) || (err && err.name === 'TypeError' ? 'Network error while contacting the sign-in service. Please try again.' : 'Sign-in could not be completed. Please try again.');
+            self.authStage = 'password';
             self.setAuthFeedback('error', 'Sign in failed', message);
           })
           .finally(function () {

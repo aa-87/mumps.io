@@ -82,6 +82,7 @@ MIOOST ; MIOOS tests
 	DO T094
 	DO T095
 	DO T096
+	DO T097
 	QUIT
 	;
 RESET
@@ -2062,5 +2063,58 @@ T096
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","stream.codeMirrorFallback"),"[MIOOST][T096][fallback state]")
 	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","ROI 96 hardens the loader race path"),"[MIOOST][T096][loader race docs]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","wait on in-flight existing script/style tags"),"[MIOOST][T096][llm loader race]")
+	QUIT
+	;
+T097
+	DO RESET
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOS.m","/api/mioos/auth/login-theme"),"[MIOOST][T097][login theme route default]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","LOGINTHEME(DEV,CONF,REQ,CTX)"),"[MIOOST][T097][login theme endpoint]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTHEME.m","LOGINPUBLIC(CONF,USER,OUT,ERR)"),"[MIOOST][T097][public login theme loader]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTHEME.m","PUBURL(STATE,URL)"),"[MIOOST][T097][public asset url rewrite]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTHEME.m","LOGINUSER"),"[MIOOST][T097][login specific public profile]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_auth.js","submitLoginNameStage"),"[MIOOST][T097][username stage method]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_auth.js","clearLoginSpecificAssets"),"[MIOOST][T097][stale login assets cleared]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","data-login-password-stage"),"[MIOOST][T097][password visible marker]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","data-login-feedback-marker"),"[MIOOST][T097][feedback marker]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","Common pre-login theme"),"[MIOOST][T097][admin common section]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","Login-specific theme"),"[MIOOST][T097][admin login-specific section]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","cfg.avatarUrl || cfg.warningImageUrl"),0,"[MIOOST][T097][warning not avatar fallback]")
+	DO OK^MIOTASSERT($$FILEOK("public/mioos/vendor/marked/lib/marked.umd.js"),"[MIOOST][T097][marked vendor]")
+	DO OK^MIOTASSERT($$FILEOK("public/mioos/app/mioos_marked.js"),"[MIOOST][T097][marked loader]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_marked.js","assetPromises[src]"),"[MIOOST][T097][marked loader dedupe]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_marked.js","data-mioos-marked-loaded"),"[MIOOST][T097][marked loaded marker]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_marked.js","sandboxed-srcdoc-no-scripts"),"[MIOOST][T097][markdown sandbox strategy]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/layouts/mioos_shell.html","mioos_marked.js"),"[MIOOST][T097][shell loads marked helper]")
+	DO EQ^MIOTASSERT($$FILEHAS("templates/layouts/mioos_shell.html","cdn.jsdelivr.net"),0,"[MIOOST][T097][no shell cdn]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_marked.js","https://"),0,"[MIOOST][T097][no external marked]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","detectMarkdownLike"),"[MIOOST][T097][markdown mapping]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","openMarkdownViewerWindow"),"[MIOOST][T097][markdown viewer]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","markdownPreviewEnabled"),"[MIOOST][T097][markdown preview state]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","detectHtmlLike"),"[MIOOST][T097][html mapping]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","openHtmlViewerWindow"),"[MIOOST][T097][html viewer]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","data-preview-sandbox-strategy"),"[MIOOST][T097][sandbox iframe]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","PDF preview is provided by your browser"),"[MIOOST][T097][pdf fallback]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","openPdfViewerWindow"),"[MIOOST][T097][pdf viewer]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","data:application/pdf"),0,"[MIOOST][T097][no pdf data url]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","http_chunk_upload_required"),"[MIOOST][T097][no websocket upload fallback]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","socket_request_timeout"),"[MIOOST][T097][timeout surfaced]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","MIOOS_UPLOAD_RETRY_LIMIT"),"[MIOOST][T097][bounded retry marker]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","file.slice"),"[MIOOST][T097][browser blob slicing]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","fileToText(file)"),0,"[MIOOST][T097][no full string upload call]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","readAsDataURL"),0,"[MIOOST][T097][no dataurl upload]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSFSUP.m","IF N>262144 SET N=262144"),"[MIOOST][T097][upload maxstring clamp]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOS.m","upload"",""chunkBytes"")=131072"),"[MIOOST][T097][upload chunk default separate]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOS.m","textChunkBytes"")=262144"),"[MIOOST][T097][text chunk default raised]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","textChunkRequestKey(id, offset, size)"),"[MIOOST][T097][dedupe key]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","lastRequestedOffset"),"[MIOOST][T097][stale response guard]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","clearTextViewerChunkCache(stream.fileId)"),"[MIOOST][T097][save invalidates cache]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","ROI 97: dark toolbar normal-state outline removal"),"[MIOOST][T097][dark toolbar marker]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","border-color: transparent !important"),"[MIOOST][T097][dark toolbar transparent border]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","focus-visible"),"[MIOOST][T097][focus visible preserved]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","theme-dark-mode *"),0,"[MIOOST][T097][no broad dark wildcard]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","ROI 97"),"[MIOOST][T097][readme docs]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/UI_Modules.md","ROI 97"),"[MIOOST][T097][ui docs]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/Backend_Table.md","ROI 97"),"[MIOOST][T097][backend docs]")
+	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 97"),"[MIOOST][T097][llm docs]")
 	QUIT
 

@@ -449,3 +449,7 @@ SET DEF("tableState","config","contract")="mioos-advanced-table-v8"
 ```
 
 `MANIFEST^MIOOSMTBL` writes the installed module manifest with `tableState`, `dataset`, and the advanced table feature flags. `USER^MIOOSMOD` now carries `dataset`, `tableState`, and capabilities into the module catalogue response so generated table modules launch with `mioos-surface-table` and the current advanced table contract.
+
+## ROI 97 backend contract note
+
+ROI 97 does not change the Advanced Table backend contract. The backend changes are scoped to login-theme public profile publishing, static viewer routing through existing VFS/blob/text-chunk APIs, upload chunk sizing, and regression tests. Table-backed modules should continue using `MIOOSTBL` contracts unchanged.
