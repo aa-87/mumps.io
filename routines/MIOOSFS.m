@@ -445,6 +445,7 @@ READWIN(STATE,ID,OFFSET,LEN,OUT,ERR)
 	IF '$$READRANGE(RID,OFFSET,LEN,.SLICE,.READ,.FERR) DO  QUIT 0
 	. MERGE ERR=FERR
 	. IF $GET(ERR("error"))="" SET ERR("error")="read_range_failed"
+	IF READ<1,OFFSET<TOTAL SET ERR("error")="empty_text_chunk_not_eof" QUIT 0
 	SET NEXT=OFFSET+READ
 	SET OUT("id")=RID
 	SET OUT("kind")="file"
@@ -455,7 +456,9 @@ READWIN(STATE,ID,OFFSET,LEN,OUT,ERR)
 	SET OUT("path")=$$PATH(RID)
 	SET OUT("encoding")="text"
 	SET OUT("offset")=OFFSET
+	SET OUT("requestedSize")=LEN
 	SET OUT("readBytes")=READ
+	SET OUT("bytes")=READ
 	SET OUT("nextOffset")=NEXT
 	SET OUT("eof")=$SELECT(NEXT'<TOTAL:1,1:0)
 	SET OUT("truncated")=$SELECT(OUT("eof")=1:0,1:1)

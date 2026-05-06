@@ -229,6 +229,8 @@ FSTEXTCHUNK(DEV,CONF,REQ,CTX)
 	IF SIZE>LIMIT SET SIZE=LIMIT
 	IF '$$READWIN^MIOOSFS(.STATE,ID,OFFSET,SIZE,.OUT,.ERR) DO  QUIT
 	. DO RESPERR(.DEV,.CONF,403,"fs_text_chunk_failed",$GET(ERR("error")),.CTX)
+	IF +$GET(OUT("eof"))=0,+$GET(OUT("bytes"))<1 DO  QUIT
+	. DO RESPERR(.DEV,.CONF,502,"fs_text_chunk_failed","empty_text_chunk_not_eof",.CTX)
 	SET OUT("mediaType")="text"
 	SET OUT("chunkSize")=SIZE
 	SET OUT("scrollSync")="none"

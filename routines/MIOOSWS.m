@@ -178,6 +178,7 @@ FSTEXTCHUNK(STATE,CONF,TREE,OUTJSON,ERR)
 	IF SIZE<4096 SET SIZE=4096
 	IF SIZE>LIMIT SET SIZE=LIMIT
 	IF '$$READWIN^MIOOSFS(.STATE,ID,OFFSET,SIZE,.OUT,.ERR) QUIT 0
+	IF +$GET(OUT("eof"))=0,+$GET(OUT("bytes"))<1 SET ERR("error")="empty_text_chunk_not_eof" QUIT 0
 	SET OUT("mediaType")="text"
 	SET OUT("chunkSize")=SIZE
 	SET OUT("scrollSync")="none"

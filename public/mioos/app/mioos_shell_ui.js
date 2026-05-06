@@ -493,7 +493,21 @@
           previewFrameSrcdoc: function () {
             var html = String(((this.textStream || {}).renderedPreviewHtml) || '');
             var zoom = Math.max(0.75, Math.min(2.25, +(((this.textStream || {}).zoom) || 1)));
-            var style = '<style data-mioos-markdown-preview-zoom>html{font-size:' + (16 * zoom) + 'px !important;}body{min-height:100%;}</style>';
+            var doc = (typeof document !== 'undefined' && document.documentElement) ? document.documentElement : null;
+            var body = (typeof document !== 'undefined' && document.body) ? document.body : null;
+            var dark = !!((doc && doc.classList && doc.classList.contains('theme-dark-mode')) || (body && body.classList && body.classList.contains('theme-dark-mode')));
+            function cssVar(name, fallback) {
+              var value = '';
+              try { value = (typeof window !== 'undefined' && window.getComputedStyle && (doc || body)) ? window.getComputedStyle(doc || body).getPropertyValue(name) : ''; } catch (err) { value = ''; }
+              value = String(value || '').trim();
+              return /^[#a-zA-Z0-9,.%()\s-]+$/.test(value) ? value : fallback;
+            }
+            var bg = cssVar('--theme-panel-bg', dark ? '#020617' : '#ffffff');
+            var fg = cssVar('--theme-panel-text', dark ? '#f8fafc' : '#172033');
+            var link = cssVar('--accent', dark ? '#93c5fd' : '#0b63f6');
+            var border = cssVar('--theme-panel-border', dark ? 'rgba(148,163,184,.34)' : '#d8dee9');
+            var codeBg = cssVar('--theme-field-bg', dark ? '#0f172a' : '#f8fafc');
+            var style = '<style data-mioos-markdown-preview-theme="light-or-dark">html{font-size:' + (16 * zoom) + 'px !important;background:' + bg + ' !important;color:' + fg + ' !important;color-scheme:' + (dark ? 'dark' : 'light') + ';}body{min-height:100%;background:' + bg + ' !important;color:' + fg + ' !important;}body.mioos-markdown-preview{background:' + bg + ' !important;color:' + fg + ' !important;}a{color:' + link + ';}pre,code{background:' + codeBg + ';color:' + fg + ';}td,th{border-color:' + border + ';}blockquote{border-left-color:' + border + ';color:' + fg + ';opacity:.88;}</style>';
             return html.indexOf('</head>') >= 0 ? html.replace('</head>', style + '</head>') : style + html;
           },
           previewStatusText: function () { var s = this.textStream || {}; return s.renderedPreviewError || ((s.statusVisible || s.statusPinned) ? s.status : ''); },

@@ -88,6 +88,7 @@ MIOOST ; MIOOS tests
 	DO T100
 	DO T101
 	DO T102
+	DO T103
 	QUIT
 	;
 RESET
@@ -2309,4 +2310,52 @@ T102
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","touch-action: manipulation"),"[MIOOST][T102][mobile controls touch action]")
 	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","ROI 103"),"[MIOOST][T102][readme docs]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 103"),"[MIOOST][T102][llm docs]")
+	QUIT
+
+	;
+T103
+	NEW CONF,STATE,OUT,ERR,ID
+	DO RESET
+	DO CONFDEF^MIOOS(.CONF)
+	DO INIT^MIOOSFS(.CONF)
+	SET STATE("authenticated")=1,STATE("principal")="admin",STATE("roles")="admin"
+	KILL OUT,ERR DO OK^MIOTASSERT($$WRITE^MIOOSFS(.STATE,$$HOMEID^MIOOSFS(),"t103-text.txt","abcdef","text/plain",.OUT,.ERR),"[MIOOST][T103][write text setup]")
+	SET ID=$GET(OUT("id"))
+	KILL OUT,ERR DO OK^MIOTASSERT($$READWIN^MIOOSFS(.STATE,ID,0,4,.OUT,.ERR),"[MIOOST][T103][read first window]")
+	DO EQ^MIOTASSERT($GET(OUT("offset")),0,"[MIOOST][T103][offset is byte offset]")
+	DO EQ^MIOTASSERT($GET(OUT("requestedSize")),4,"[MIOOST][T103][requested size returned]")
+	DO EQ^MIOTASSERT($GET(OUT("bytes")),4,"[MIOOST][T103][bytes returned]")
+	DO EQ^MIOTASSERT($GET(OUT("readBytes")),4,"[MIOOST][T103][read bytes preserved]")
+	DO EQ^MIOTASSERT($GET(OUT("nextOffset")),4,"[MIOOST][T103][next offset advances]")
+	DO EQ^MIOTASSERT($GET(OUT("eof")),0,"[MIOOST][T103][not eof after first window]")
+	KILL OUT,ERR DO OK^MIOTASSERT($$READWIN^MIOOSFS(.STATE,ID,4,4,.OUT,.ERR),"[MIOOST][T103][read final short window]")
+	DO EQ^MIOTASSERT($GET(OUT("bytes")),2,"[MIOOST][T103][short read bytes]")
+	DO EQ^MIOTASSERT($GET(OUT("nextOffset")),6,"[MIOOST][T103][short read next offset]")
+	DO EQ^MIOTASSERT($GET(OUT("eof")),1,"[MIOOST][T103][short read eof]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","textChunkRequestKey(id, offset, size)"),"[MIOOST][T103][text chunk request key helper]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","String(id || '') + ':' + textViewerRawOffset(offset || 0) + ':' + (+size || 0)"),"[MIOOST][T103][request key id offset size]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","textViewerCreateLoadSession"),"[MIOOST][T103][text load session model]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","requestedKeys: {}")&$$FILEHAS("public/mioos/app/mioos_explorer.js","completedOffsets: {}")&$$FILEHAS("public/mioos/app/mioos_explorer.js","failedOffsets: {}"),"[MIOOST][T103][session request maps]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","seenOffsets: {}")&$$FILEHAS("public/mioos/app/mioos_explorer.js","fullLoadSeenOffsets"),"[MIOOST][T103][seen offsets tracked]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","text_chunk_offset_repeated"),"[MIOOST][T103][repeated offset guard]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","text_chunk_non_increasing_next_offset"),"[MIOOST][T103][non increasing next offset guard]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","text_chunk_zero_non_eof"),"[MIOOST][T103][zero bytes non eof guard]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","text_chunk_next_offset_missing"),"[MIOOST][T103][missing next offset guard]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","MIOOS_TEXT_MAX_CHUNK_REQUESTS")&$$FILEHAS("public/mioos/app/mioos_explorer.js","text_chunk_max_requests"),"[MIOOST][T103][max chunk request guard]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","text_file_too_large_for_browser_editor")&$$FILEHAS("public/mioos/app/mioos_explorer.js","maxEditBytes"),"[MIOOST][T103][browser editable byte cap]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","alignTextChunkOffset(nextOffset"),0,"[MIOOST][T103][no backward nextOffset alignment]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","single-preview-too-large")&$$FILEHAS("public/mioos/app/mioos_explorer.js","one-chunk preview"),"[MIOOST][T103][large unknown preview only]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","manualRetryCount")&$$FILEHAS("public/mioos/app/mioos_explorer.js","text_chunk_retry_limit"),"[MIOOST][T103][manual retry bounded]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","@scroll="""),0,"[MIOOST][T103][no scrollbar driven load binding]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","markdownPreviewEnabled")&$$FILEHAS("public/mioos/app/mioos_shell_ui.js","data-mioos-markdown-preview-theme"),"[MIOOST][T103][markdown themed preview]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","data-html-iframe-preview")&$$FILEHAS("public/mioos/app/mioos_explorer.js","openHtmlViewerWindow"),"[MIOOST][T103][html iframe preview]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","Edit File as Text")&$$FILEHAS("public/mioos/app/mioos_explorer.js","openViewerTextEditor"),"[MIOOST][T103][html edit as text action]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","mediaInitial206"),"[MIOOST][T103][media synthetic 206 remains opt in]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","@pointerdown.stop @pointerup.stop @touchstart.stop @touchend.stop @click.stop.prevent="),"[MIOOST][T103][mobile controls propagation stopped]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","data-text-status-auto-hide")&$$FILEHAS("public/mioos/app/mioos_shell_ui.js","s.statusPinned || s.statusVisible || s.error"),"[MIOOST][T103][bottom feedback auto hide]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","stale_text_revision_confilict"),0,"[MIOOST][T103][no stale conflict typo]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","stale_text_revision_conflict"),0,"[MIOOST][T103][no false stale revision conflict]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","readAsDataURL"),0,"[MIOOST][T103][no dataurl uploads]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSFS.m","requestedSize")&$$FILEHAS("routines/MIOOSFS.m","OUT(""bytes"")=READ"),"[MIOOST][T103][backend chunk byte metadata]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","ROI 104")&$$FILEHAS("docs/mioos/UI_Modules.md","ROI 104")&$$FILEHAS("mioos_llm.md","ROI 104"),"[MIOOST][T103][docs updated]")
 	QUIT

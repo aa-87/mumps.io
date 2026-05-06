@@ -842,3 +842,11 @@ The `maxTextEditBytes` cap is removed. All text-like files should be viewable an
 - Sequential full-text loading must preserve exact `nextOffset` values from the backend. Do not align/floor full-load offsets back to chunk boundaries. The frontend now has `textViewerRawOffset`, `textViewerChunkNextOffset`, `fullLoadSeenOffsets`, `text_chunk_offset_repeated`, and `text_chunk_offset_mismatch` guards to stop repeated `/api/mioos/fs/text-chunk` loops.
 - Large or unknown-size text files continue to open as one bounded preview chunk by default. Explicit source editing must stay capped by `maxBrowserTextEditBytes`/`MIOOS_TEXT_BROWSER_EDIT_MAX_BYTES`.
 - Mobile titlebar controls must keep `@pointerdown.stop @pointerup.stop @touchstart.stop @touchend.stop @click.stop.prevent` on minimize, maximize/restore, and close buttons. CSS coarse-pointer hit targets and `touch-action: manipulation` are required so taps are not consumed by titlebar drag.
+
+## ROI 104 handoff — deterministic text chunk sessions and themed Markdown preview
+
+The source of truth now uses a bounded text load-session model in `public/mioos/app/mioos_explorer.js`. The chunk key is exactly `fileId:offset:size`. Session state includes requested/completed/failed key maps, seen offsets, request count, max requests, last/next offsets, EOF, expected bytes, loaded bytes, and error state. Do not replace this with scrollbar-driven loading, idle prefetch, recursive retry loops, or full-file blob reads.
+
+Full-edit chunk loading must preserve the backend `nextOffset` exactly and must never floor/align it backward. Stop immediately on repeated offsets, non-increasing `nextOffset`, missing unsafe progress metadata, zero-byte non-EOF chunks, malformed metadata, browser edit cap, or `MIOOS_TEXT_MAX_CHUNK_REQUESTS`. Manual retry is one bounded user action and must still respect duplicate/repeated-offset guards.
+
+`READWIN^MIOOSFS` returns byte metadata: `requestedSize`, `bytes`, `readBytes`, `nextOffset`, `eof`, and `size`. `/api/mioos/fs/text-chunk` and `fs.text.chunk` propagate that contract and reject empty non-EOF chunks. Markdown preview remains local/offline and sandboxed; the iframe srcdoc receives theme-aware light/dark colors from `mioos_shell_ui.js`. HTML preview remains a sandboxed authenticated blob iframe until the user explicitly chooses **Edit File as Text**.
