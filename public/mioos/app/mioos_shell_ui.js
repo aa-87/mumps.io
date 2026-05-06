@@ -228,7 +228,7 @@
                 <button v-if="isViewer" type="button" role="menuitem" @click="download">Download</button>
                 <button v-if="isText" type="button" role="menuitem" @click="editText" :disabled="!textCanEdit" :title="textEditDisabledReason || 'Edit Text'">Edit Text</button>
                 <button v-if="isText" type="button" role="menuitem" @click="saveText" :disabled="!textCanEdit || !((textStream || {}).editing)" :title="textEditDisabledReason || 'Save Text'">Save Text</button>
-                <button v-if="isText" type="button" role="menuitem" @click="refreshText">Reload visible text chunks</button>
+                <button v-if="isText" type="button" role="menuitem" @click="refreshText">Reload editable text file</button>
                 <button v-if="isText" type="button" role="menuitem" @click="toggleTextWrap">Toggle Line Wrap</button>
                 <button v-if="window.appKey === 'explorer' || window.appKey === 'home' || window.appKey === 'documents' || window.appKey === 'my-computer'" type="button" role="menuitem" @click="explorerNewFolder">New Folder</button>
                 <button v-if="window.appKey === 'explorer' || window.appKey === 'home' || window.appKey === 'documents' || window.appKey === 'my-computer'" type="button" role="menuitem" @click="explorerUpload">Upload</button>
@@ -292,7 +292,7 @@
                 <button v-if="isText" type="button" role="menuitem" @click="zoomTextOut">Zoom Out</button>
                 <button v-if="isText" type="button" role="menuitem" @click="zoomTextReset">Reset Zoom</button>
                 <button v-if="isText" type="button" role="menuitem" @click="toggleTextWrap">Toggle Line Wrap</button>
-                <button v-if="isText" type="button" role="menuitem" @click="refreshText">Refresh chunk cache</button>
+                <button v-if="isText" type="button" role="menuitem" @click="refreshText">Reload editable text file</button>
                 <button v-if="isText" type="button" role="menuitem" @click="showTextStatus">Show Status</button>
                 <button v-if="isText" type="button" role="menuitem" @click="toggleTextStatusPin">[[ ((textStream || {}).statusPinned) ? 'Unpin Status' : 'Pin Status' ]]</button>
                 <button v-if="!isMedia && !isText && window.appKey !== 'terminal' && window.appKey !== 'transfers'" type="button" role="menuitem" @click="about">About this module</button>
@@ -483,7 +483,7 @@
           codeMirrorHostStyle: function () { var s = this.textStream || {}; return { fontSize: (12 * (+(s.zoom || 1))) + 'px' }; },
           documentPreviewStyle: function () { var s = this.textStream || {}; var zoom = Math.max(0.75, Math.min(2.25, +(s.zoom || 1))); return { '--mioos-markdown-preview-zoom': String(zoom), fontSize: (16 * zoom) + 'px' }; },
           canEditText: function () { return !!this.textStream; },
-          textEditNotice: function () { return ''; },
+          textEditNotice: function () { var s = this.textStream || {}; return (s.fullContentLoaded && s.editing) ? 'Editable text file loaded with explicit HTTP chunks.' : ''; },
           codeMirrorStatus: function () { var s = this.textStream || {}; return s.codeMirrorFallback || ''; },
           showRenderedDocumentPreview: function () { var s = this.textStream || {}; return !!s && !s.virtualized && !s.editing && !!(s.markdownPreviewEnabled || s.nativeHtmlPreview) && !!s.renderedPreviewHtml; },
           previewFrameSrcdoc: function () {
@@ -493,7 +493,7 @@
             return html.indexOf('</head>') >= 0 ? html.replace('</head>', style + '</head>') : style + html;
           },
           previewStatusText: function () { var s = this.textStream || {}; return s.renderedPreviewError || ((s.statusVisible || s.statusPinned) ? s.status : ''); },
-          textViewerStatusVisible: function () { var s = this.textStream || {}; return !!(s.statusPinned || s.statusVisible || s.error || (s.retryOffset !== null && typeof s.retryOffset !== 'undefined')); },
+          textViewerStatusVisible: function () { var s = this.textStream || {}; return !!(s.statusPinned || s.statusVisible || s.error || this.textEditNotice || (s.retryOffset !== null && typeof s.retryOffset !== 'undefined')); },
           editableText: {
             get: function () { return this.textStream ? this.vm.textViewerEditableContent(this.window.id) : ''; },
             set: function (value) { if (this.vm.textViewerSetEditableContent) this.vm.textViewerSetEditableContent(this.window.id, value); }
@@ -614,6 +614,7 @@
               '<pre v-else-if="kind === \'text\' || kind === \'structured\'" class="mioos-viewer-text">[[ safeText ]]</pre>' +
               '<img v-else-if="kind === \'image\'" class="mioos-viewer-image" :src="sourceUrl" :alt="(window.meta || {}).fileName || window.title">' +
               '<iframe v-else-if="kind === \'pdf\'" class="mioos-viewer-frame" :src="sourceUrl" title="PDF preview"></iframe>' +
+              '<iframe v-else-if="kind === \'html\'" class="mioos-viewer-frame mioos-html-preview-frame" sandbox="" :src="sourceUrl" title="HTML preview" data-html-iframe-preview="direct-authenticated-blob"></iframe>' +
               '<video v-else-if="kind === \'media\' && mediaKind === \'video\'" class="mioos-viewer-media" :src="sourceUrl" controls playsinline preload="metadata" :loop="mediaLoop"></video>' +
               '<audio v-else-if="kind === \'media\'" class="mioos-viewer-audio" :src="sourceUrl" controls preload="metadata" :loop="mediaLoop"></audio>' +
               '<div v-else class="mioos-viewer-state">No preview is available for this file type.</div>' +
