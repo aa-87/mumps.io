@@ -42,6 +42,7 @@ CATALOG(STATE,CONF,OUT,ERR)
 	SET OUT("moduleCount")=0
 	DO INTERNAL(.STATE,.OUT)
 	DO USER(.STATE,.OUT)
+	DO TABLEDEFS(.STATE,.CONF,.OUT)
 	QUIT 1
 	;
 INTERNAL(STATE,OUT)
@@ -234,7 +235,21 @@ USER(STATE,OUT)
 	. SET OUT("modules",M,"source")="user"
 	. SET OUT("modules",M,"componentKey")=$GET(@ROOT@(KEY,"componentKey"),"module-card")
 	. SET OUT("modules",M,"surface")=$GET(@ROOT@(KEY,"surface"),"mioos-surface-ui-module")
+	. SET OUT("modules",M,"dataset")=$GET(@ROOT@(KEY,"dataset"))
 	. IF $DATA(@ROOT@(KEY,"config")) MERGE OUT("modules",M,"config")=@ROOT@(KEY,"config")
+	. IF $DATA(@ROOT@(KEY,"tableState")) MERGE OUT("modules",M,"tableState")=@ROOT@(KEY,"tableState")
+	. IF $DATA(@ROOT@(KEY,"capabilities")) MERGE OUT("modules",M,"capabilities")=@ROOT@(KEY,"capabilities")
 	QUIT
 	;
+	;
+TABLEDEFS(STATE,CONF,OUT)
+	NEW IN,LIB,ERR
+	KILL IN,LIB,ERR
+	SET IN("action")="list"
+	IF '$$LIST^MIOOSMTBL(.STATE,.CONF,.IN,.LIB,.ERR) DO  QUIT
+	. SET OUT("tableModuleLibrary","ok")=0,OUT("tableModuleLibrary","error")=$GET(ERR("error"),"table_module_list_failed")
+	SET OUT("tableModuleLibrary","ok")=1,OUT("tableModuleLibrary","count")=+$GET(LIB("count"))
+	SET OUT("tableDefinitionCount")=+$GET(LIB("count"))
+	IF $DATA(LIB("definitions")) MERGE OUT("tableDefinitions")=LIB("definitions")
+	QUIT
 	;

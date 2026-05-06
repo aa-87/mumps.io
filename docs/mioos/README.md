@@ -504,3 +504,22 @@ Theme Studio Save now updates the currently active editable user theme. Creating
 Large text viewing remains chunked. `fs.text.chunk` is the read path for large text files, frontend chunk requests are de-duplicated, scroll position maps to byte offsets, transient socket timeouts show retry feedback without closing the viewer, and the backend range loop quits cleanly on segment errors instead of spinning until the socket fails. Full edit/save stays bounded by `mioos.fs.maxTextEditBytes`.
 
 Start Menu groups are collapsible with mouse and keyboard-accessible toggles. Built-in groups and the user Themes group share the same collapse state. Collapse state is session-local in the existing Vue `startMenuUi.expandedGroups` object; no server preference was introduced in this ROI.
+
+## ROI 91 large text, dark-theme, table-module, and transfer hardening
+
+This ROI keeps the MUMPS-first MIOOS architecture unchanged while correcting four regressions:
+
+- Text viewers now keep `textChunkThresholdBytes` as the small-file/full-edit threshold and use separate `textChunkBytes` / `textChunkSizeBytes` values for the actual transport chunk size. The default text chunk is 131072 bytes and is clamped well below the prior 2411725-byte threshold so WebSocket control messages do not attempt multi-megabyte text payloads.
+- Large text files stay in chunked read-only/bounded-edit mode. Small and medium files are loaded as a full editable document by stitching multiple safe chunks. Saving clears stale text chunk caches and reloads the saved content through the safe chunk path.
+- A POST `/api/mioos/fs/text-chunk` route is available as an authenticated HTTP fallback for text chunks. It calls `READWIN^MIOOSFS` and returns only the requested byte window, never the whole-file `/api/mioos/fs/blob` payload.
+- Dark theme contrast is restored across Start Menu items, child items, context/window/toolbar menus, common panels/cards, module surfaces, explorer/table/patient labels, and the Transfers surface.
+- The UI Modules **New Table Module** flow now gives toast/status feedback, normalizes generated table-backed modules to `componentKey=table`, `surface=mioos-surface-table`, and the current `mioos-advanced-table-v8` table contract, and exposes saved table definitions through the catalogue payload.
+- Transfers are dark-surface aware. Pause buttons use explicit readable contrast, and status shimmer/ripple is gated by the active-transfer state; idle panels are static.
+
+MUMPS developers should configure text behavior with separate values:
+
+```mumps
+SET CONF("mioos","fs","textChunkBytes")=131072          ; transport chunk size
+SET CONF("mioos","fs","textChunkThresholdBytes")=2411725 ; full-edit threshold
+SET CONF("mioos","fs","maxTextEditBytes")=2411725       ; bounded edit/save cap
+```

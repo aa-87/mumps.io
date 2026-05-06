@@ -76,6 +76,7 @@ MIOOST ; MIOOS tests
 	DO T088
 	DO T089
 	DO T090
+	DO T091
 	QUIT
 	;
 RESET
@@ -1805,3 +1806,57 @@ T090
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","Login/theme/start-menu/text-viewer regression ROI"),"[MIOOST][T090][llm roi]")
 	QUIT
 	;
+
+T091
+	NEW STATE,CONF,IN,OUT,ERR
+	DO RESET
+	DO CONFDEF^MIOOS(.CONF)
+	DO EQ^MIOTASSERT(+$GET(CONF("mioos","fs","textChunkBytes")),131072,"[MIOOST][T091][default chunk size safe]")
+	DO EQ^MIOTASSERT(+$GET(CONF("mioos","fs","textChunkThresholdBytes")),2411725,"[MIOOST][T091][threshold preserved]")
+	DO OK^MIOTASSERT(+$GET(CONF("mioos","fs","textChunkBytes"))<+$GET(CONF("mioos","fs","textChunkThresholdBytes")),"[MIOOST][T091][chunk size separated from threshold]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSST.m","textChunkSizeBytes"),"[MIOOST][T091][boot exposes textChunkSizeBytes]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","vfs.textChunkSizeBytes || vfs.textChunkBytes || 131072"),"[MIOOST][T091][frontend separate chunk config]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","Math.min(262144"),"[MIOOST][T091][frontend maxstring safe clamp]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","Math.max(size || 0, threshold)"),0,"[MIOOST][T091][no threshold as default chunk]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","textChunkRequestKey(id, offset, size)"),"[MIOOST][T091][chunk dedupe includes size]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","readTextChunkViaHttp"),"[MIOOST][T091][http text chunk fallback]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","Socket chunk failed; using HTTP text-chunk fallback"),"[MIOOST][T091][socket fallback feedback]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","Text chunk paused; retry from the current offset is available"),"[MIOOST][T091][retry feedback]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","targetOffset = textViewerByteOffsetForScroll"),"[MIOOST][T091][scroll target offset mapping]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","view-only-large-file"),"[MIOOST][T091][large file readonly mode]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","textViewerLoadCompleteFile"),"[MIOOST][T091][editable files load in safe chunks]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","clearTextViewerChunkCache(stream.fileId)"),"[MIOOST][T091][save clears stale chunk cache]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","/api/mioos/fs/blob full-file fallback"),0,"[MIOOST][T091][no blob fallback marker for text]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","FSTEXTCHUNK(DEV,CONF,REQ,CTX)"),"[MIOOST][T091][http backend chunk route handler]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSAPI.m","READWIN^MIOOSFS(.STATE,ID,OFFSET,SIZE"),"[MIOOST][T091][http route returns requested window]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","IF SIZE>LIMIT SET SIZE=LIMIT"),"[MIOOST][T091][ws route clamps requested chunk]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","theme-dark-mode .mioos-start-modern-item.is-child"),"[MIOOST][T091][dark child menu text]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","theme-dark-mode .mioos-explorer-context-menu button"),"[MIOOST][T091][dark context menu item text]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","theme-dark-mode .mioos-classic-menubar"),"[MIOOST][T091][dark toolbar menu text]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","theme-dark-mode .mioos-window-menu"),"[MIOOST][T091][dark window menu text]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","theme-dark-mode .mioos-ui-module-card"),"[MIOOST][T091][dark panel card defaults]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","--titlebar-inactive-text"),"[MIOOST][T091][titlebar dark vars preserved]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_modules.js","New Table Module"),"[MIOOST][T091][new table entrypoint]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_modules.js","Resolve table definition validation errors before saving"),"[MIOOST][T091][table modal validation feedback]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_modules.js","self.vm.uiModuleTableRequest(action"),"[MIOOST][T091][create dispatches backend]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSMTBL.m","DEF(""componentKey"")=""table"""),"[MIOOST][T091][table module component contract]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSMTBL.m","mioos-surface-table"),"[MIOOST][T091][table module surface contract]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSMTBL.m","mioos-advanced-table-v8"),"[MIOOST][T091][table module current contract]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSMOD.m","tableDefinitions"),"[MIOOST][T091][generated definitions in catalogue]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSMOD.m","MERGE OUT(""modules"",M,""tableState"")"),"[MIOOST][T091][generated modules launch table surface]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","mioos-table-module-editor.is-condensed"),"[MIOOST][T091][condensed table modal css]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","theme-dark-mode .mioos-table-module-editor"),"[MIOOST][T091][dark table modal css]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","theme-dark-mode .mioos-surface-transfers"),"[MIOOST][T091][dark transfer surface]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","data-transfer-action=""pause"""),"[MIOOST][T091][pause action marker]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","mioos-transfer-pause-button"),"[MIOOST][T091][pause button contrast]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","is-idle"),"[MIOOST][T091][idle transfer status class]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","mioos-classic-transferoverview.is-idle .mioos-transfer-status-meter span"),"[MIOOST][T091][idle no shimmer]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","mioos-classic-transferoverview.is-active .mioos-transfer-status-meter span"),"[MIOOST][T091][active shimmer]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","transferResume"),"[MIOOST][T091][resume action still present]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","transferCancelActive"),"[MIOOST][T091][cancel action still present]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","transferClearFinished"),"[MIOOST][T091][clear action still present]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/UI_Modules.md","New Table Module"),"[MIOOST][T091][ui modules docs]")
+	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 91"),"[MIOOST][T091][llm updated]")
+	QUIT
+	;
+

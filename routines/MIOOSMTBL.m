@@ -121,11 +121,11 @@ VALIDDEF(DEF,ERR)
 	SET TITLE=$GET(DEF("title")) IF TITLE="" DO FERR(.ERR,"title","Title is required") SET ERRS=1
 	IF $LENGTH(TITLE)>80 SET DEF("title")=$EXTRACT(TITLE,1,80)
 	SET DEF("key")=KEY,DEF("dataset")=DATASET
+	SET DEF("componentKey")="table",DEF("surface")="mioos-surface-table",DEF("tableState","config","contract")="mioos-advanced-table-v8"
+	SET DEF("tableState","dataset")=DATASET
 	IF $GET(DEF("category"))="" SET DEF("category")="User"
 	IF $GET(DEF("icon"))="" SET DEF("icon")="▤"
 	IF $GET(DEF("description"))="" SET DEF("description")="User-created table-backed module"
-	IF $GET(DEF("componentKey"))="" SET DEF("componentKey")="table"
-	IF $GET(DEF("surface"))="" SET DEF("surface")="mioos-surface-table"
 	IF '$DATA(DEF("schema","columns")) DO FERR(.ERR,"schema.columns","At least one column is required") SET ERRS=1
 	KILL SEEN
 	SET I=0 FOR  SET I=$ORDER(DEF("schema","columns",I)) QUIT:I'>0  DO

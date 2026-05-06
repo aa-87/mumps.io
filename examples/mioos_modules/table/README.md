@@ -325,3 +325,9 @@ For table-backed modules, keep the manifest/server definition MUMPS-first and se
 ## Login/theme/start-menu/text-viewer regression ROI note
 
 This table example remains MUMPS-first and does not require frontend framework changes. When testing it from the shell, remember that unauthenticated boot hides all desktop/module surfaces until sign-in succeeds. Theme Studio changes should be made through explicit Save/Save As semantics, and dark custom titlebar CSS should be verified in both light and dark shells without changing the table module contract.
+
+## New Table Module example notes (ROI 91)
+
+The same table surface used by this example is now available through **New Table Module** in the UI Modules catalogue. Backend-generated modules do not require new frontend code: `MIOOSMTBL` installs a user module with `componentKey=table`, `surface=mioos-surface-table`, and `tableState.config.contract=mioos-advanced-table-v8`.
+
+For MUMPS-first examples, keep the table module contract explicit in module JSON or generated definitions and let `MIOOSTBL` own query/mutate behavior.

@@ -1,0 +1,318 @@
+Please use the attached ZIP/folder as the ONLY source of truth. MAKE SURE ABSOLUTELY NO REGRESSIONS.
+
+You are taking over development of MIOOS / MUMPS.IO OS Shell. Do not rely on prior ChatGPT conversations, prior patches, prior generated ZIPs, assumptions, or any generated artifacts. Inspect the attached source first, then implement source-accurate fixes only.
+
+Core architecture rules:
+- Preserve the existing MUMPS.IO architecture.
+- Backend: MUMPS on YottaDB / GT.M.
+- Server-side rendering: MIOTPL.
+- HTTP/API: MIOHTTP / MIOOSAPI.
+- WebSocket/control/realtime: MIOOSWS where appropriate.
+- VFS/files: MIOOSFS / MIOOSFSUP.
+- Boot/session/desktop state: MIOOSST / MIOOSVM / MIOOSUI as applicable.
+- Theme/profile persistence: MIOOSTHEME.
+- Locale/i18n: MIOOSI18N.
+- Module registry/table-backed modules: MIOOSMOD / MIOOSMTBL.
+- Advanced Table backend contract: MIOOSTBL.
+- Patient workflow: MIOOSPAT.
+- Browser files under public/mioos/app/.
+- Vue 3 Options API UMD only.
+- No new frontend framework.
+- No build step.
+- No TypeScript.
+- No Composition API.
+- No Node/Express runtime.
+- No external dependencies.
+- The project is for MUMPS developers with little/no frontend experience, so docs/examples must remain MUMPS-first.
+- Do not use DataURLs for uploads or persisted images.
+- Do not emit authenticated asset URLs before login.
+- Tests must stay quiet on success and explicit on failure.
+- Every ROI must update docs, tests, examples if applicable, and mioos_llm.md when behavior changes.
+- Return only modified files in the final ZIP or patch.
+- Be honest about tests that cannot be run.
+
+Current ROI goal:
+Fix the still-regressed large text viewer, dark theme text contrast, UI Modules “New Table Module”, and Transfers dark-theme/animation issues. These were attempted before but are still not resolved. Inspect the attached source first and verify the actual implementation paths before changing anything.
+
+Current problems to fix:
+
+1. Still unable to view or edit large text files; socket errors occur.
+   - Sample failing socket command:
+     {"command":"fs.text.chunk","id":"fs-17","offset":0,"size":2411725,"event":"desktop.command","requestId":"ws-17-1778043237391"}
+   - A chunk size around 2.3 MB is too large for the current WebSocket/control path and is causing socket errors.
+   - Redesign the large text viewer transport cleanly.
+   - Requirements:
+     - Large text files must be viewable without socket errors.
+     - Large text must not be loaded as a whole-file browser payload.
+     - Do not use `/api/mioos/fs/blob` full-file fallback for large text.
+     - Use smaller configurable chunk sizes for WebSocket text chunks, for example 64 KB or 128 KB by default, unless source analysis proves a different safe value.
+     - Keep a separate threshold for when to switch from small-file full editable mode to virtual large-file mode. Do not confuse threshold bytes with chunk size bytes.
+     - The threshold may remain around 2.3 MB, but individual chunk requests must be much smaller.
+     - Chunk reads must dedupe identical file id + offset + size requests.
+     - Scrollbar must map to byte offsets smoothly and not jitter.
+     - Socket timeout/error must show retry/toast feedback and must not break the viewer.
+     - If WebSocket cannot safely carry chunks, add a backend HTTP range/text-chunk route that returns only the requested chunk, not the whole file, and use it as a chunk fallback.
+     - Editing:
+       - Small/medium text files should be editable/savable.
+       - Very large files should be clearly read-only or bounded-edit mode if full random-access edit is unsafe.
+       - The UI must clearly explain when a file is too large for full edit.
+       - Save must clear stale chunk cache and reload.
+   - Inspect:
+     - public/mioos/app/mioos_explorer.js
+     - public/mioos/app/mioos_ws.js
+     - public/mioos/app/mioos_shell_ui.js
+     - routines/MIOOSWS.m
+     - routines/MIOOSAPI.m
+     - routines/MIOOSFS.m
+     - routines/MIOOS.m
+     - routines/MIOOSST.m
+     - routines/MIOOST.m
+   - Add tests for:
+     - textChunkThresholdBytes and textChunkSizeBytes are separate config values
+     - default chunk size is safe and far below 2.3 MB
+     - `fs.text.chunk` never requests the threshold size as a chunk size by default
+     - frontend chunk request/dedupe by id + offset + size
+     - backend chunk route returns only requested chunk
+     - socket timeout handling produces toast/retry feedback
+     - no uncaught Promise path
+     - no whole-file blob fallback for large text
+     - scroll-to-byte mapping uses target offset only
+     - bounded edit/read-only mode for large files
+     - save clears stale cache for editable files
+     - MAXSTRING-safe behavior for large/long lines
+
+2. Dark theme has black text on black background in Start Menu launchable items and elsewhere.
+   - Fix text contrast globally in dark theme without regressing light theme.
+   - Start Menu launchable items must render white or otherwise readable text in dark mode.
+   - Also inspect common UI surfaces where black-on-black appears:
+     - Start Menu parent/child items
+     - context menus
+     - toolbar menus
+     - window menus
+     - Explorer rows/items
+     - table/module/patient action labels
+     - buttons/chips/cards that use inherited text incorrectly
+   - Requirements:
+     - Dark theme text should default to readable white/light text on dark surfaces.
+     - Selected states should remain readable.
+     - Light theme should not change.
+     - Avoid hardcoding everything if theme variables already exist; prefer dark theme variables and scoped selectors.
+   - Inspect:
+     - public/mioos/mioos.css
+     - public/mioos/app/mioos_core.js
+     - public/mioos/app/mioos_shell_ui.js
+     - Theme Studio variable application in public/mioos/app/mioos_core.js
+     - routines/MIOOSTHEME.m if server defaults are involved
+   - Add tests for:
+     - dark start menu launchable item text selector
+     - dark child menu item text selector
+     - dark context menu item text selector
+     - dark toolbar menu text selector
+     - dark window menu text selector
+     - dark common panel/card text defaults
+     - no hardcoded light-theme override of dark text
+     - titlebar dark vars still preserved
+
+3. UI Modules “New Table Module” needs analysis and fixing. The UI needs to be condensed.
+   - Analyze the full New Table Module flow end to end:
+     - App Catalogue / UI Modules entry point
+     - modal open state
+     - modal styling in light/dark mode
+     - field validation
+     - draft creation
+     - backend module/table-backed module registration
+     - generated table dataset defaults
+     - icon/start menu/app catalogue/desktop launch behavior
+   - It must be styled correctly and usable.
+   - It must create a valid table-backed module without requiring frontend code.
+   - Generated module must use the actual backend table contract found in source:
+     - componentKey/table surface
+     - mioos-surface-table
+     - current table contract, likely `mioos-advanced-table-v8` if still current
+   - It must show success/error feedback and never fail silently.
+   - It must not create malformed module definitions.
+   - Inspect:
+     - public/mioos/app/mioos_modules.js
+     - public/mioos/app/mioos_core.js
+     - public/mioos/app/mioos_shell_ui.js
+     - public/mioos/app/mioos_table.js
+     - public/mioos/mioos.css
+     - routines/MIOOSMOD.m
+     - routines/MIOOSMTBL.m
+     - routines/MIOOSTBL.m
+     - routines/MIOOSAPI.m
+     - routines/MIOOSWS.m
+     - routines/MIOOST.m
+     - examples/mioos_modules/table/
+     - docs/mioos/UI_Modules.md
+   - Add tests for:
+     - modal CSS/styling markers in light and dark
+     - modal has required fields and validation feedback
+     - create action dispatches to backend
+     - backend table module definition uses current contract
+     - module registry entry is valid
+     - generated module appears in catalogue/start menu if configured
+     - generated module launches with table surface
+     - no silent failure path
+     - docs/examples updated for MUMPS-first workflow
+
+4. Transfers screen dark theme and animation regressions.
+   - In Transfers screen:
+     - There is still a light gray background in dark theme.
+     - Pause button has white text on white background; change Pause button text to black or otherwise readable.
+     - Transfer banner/status shimmer/ripple is active while idle. It should shimmer/ripple only when active transfers exist.
+   - Requirements:
+     - Dark theme transfer surface must be dark and readable.
+     - Pause/resume/cancel/clear actions must remain functional.
+     - Pause button must have readable contrast in all states.
+     - Shimmer/ripple/active animation should be conditional on active transfer count > 0 or active state.
+     - Idle state should be calm/static.
+   - Inspect:
+     - public/mioos/app/mioos_shell_ui.js
+     - public/mioos/app/mioos_core.js
+     - public/mioos/mioos.css
+     - transfer state/actions in browser files
+     - routines/MIOOST.m
+   - Add tests for:
+     - dark transfer surface CSS selector
+     - pause button contrast CSS selector
+     - idle transfer status does not include active animation class
+     - active transfer status includes active animation class
+     - pause/resume/cancel/clear actions still present
+     - old light gray background does not override dark mode
+
+Important constraints:
+- Do not remove features to make tests pass.
+- Do not weaken tests if the implementation is wrong.
+- If a test is stale due to intentional architecture change, update it and add a negative regression test preventing the old broken behavior from returning.
+- Keep UI dark-theme aware.
+- Avoid duplicate toolbars and duplicate action panels.
+- Use toasts/auto-dismiss feedback where appropriate instead of blocking notifications.
+- Preserve existing table, explorer, transfer, terminal, theme, and patient workflows unless explicitly fixing them.
+- Do not introduce any new framework, dependency, build step, or TypeScript.
+- Do not regress text preview, desktop uploads, uploaded theme/background assets, theme import/export, or existing table features.
+- Keep examples/docs MUMPS-first.
+
+Files to inspect first:
+
+Backend:
+- routines/MIOOS.m
+- routines/MIOOSAPI.m
+- routines/MIOOSWS.m
+- routines/MIOOSFS.m
+- routines/MIOOSFSUP.m
+- routines/MIOOSST.m
+- routines/MIOOSVM.m
+- routines/MIOOSUI.m
+- routines/MIOOSTHEME.m
+- routines/MIOOSI18N.m
+- routines/MIOOSMOD.m
+- routines/MIOOSMTBL.m
+- routines/MIOOSTBL.m
+- routines/MIOOST.m
+
+Frontend:
+- public/mioos/app/mioos_auth.js
+- public/mioos/app/mioos_core.js
+- public/mioos/app/mioos_explorer.js
+- public/mioos/app/mioos_i18n.js
+- public/mioos/app/mioos_modules.js
+- public/mioos/app/mioos_permissions.js
+- public/mioos/app/mioos_shell_ui.js
+- public/mioos/app/mioos_state.js
+- public/mioos/app/mioos_table.js
+- public/mioos/app/mioos_terminal.js
+- public/mioos/app/mioos_wm.js
+- public/mioos/app/mioos_ws.js
+- public/mioos/mioos.css
+
+Docs/examples:
+- docs/mioos/README.md
+- docs/mioos/UI_Modules.md
+- docs/mioos/Backend_Table.md
+- examples/mioos_modules/table/README.md
+- examples/mioos_modules/table/module.json
+- examples/mioos_modules/patient_registration/README.md
+- examples/mioos_modules/patient_registration/module.json
+- mioos_llm.md
+
+Required baseline checks before and after:
+1. Try:
+   D ^MIOOST
+
+   If YottaDB / GT.M is unavailable, clearly state that D ^MIOOST could not be run.
+
+2. JavaScript syntax checks:
+   node --check public/mioos/app/mioos_auth.js
+   node --check public/mioos/app/mioos_core.js
+   node --check public/mioos/app/mioos_modules.js
+   node --check public/mioos/app/mioos_table.js
+   node --check public/mioos/app/mioos_permissions.js
+   node --check public/mioos/app/mioos_shell_ui.js
+   node --check public/mioos/app/mioos_wm.js
+   node --check public/mioos/app/mioos_state.js
+   node --check public/mioos/app/mioos_ws.js
+   node --check public/mioos/app/mioos_explorer.js
+   node --check public/mioos/app/mioos_i18n.js
+   node --check public/mioos/app/mioos_terminal.js
+
+3. JSON validation:
+   python3 -m json.tool examples/mioos_modules/table/module.json
+   python3 -m json.tool examples/mioos_modules/patient_registration/module.json
+   python3 -m json.tool examples/mioos_modules/permissions/module.json
+   python3 -m json.tool examples/mioos_modules/ui_elements/module.json
+
+4. MUMPS static/compile checks where possible:
+   - quote/parity/static checks for touched routines.
+   - If YottaDB/GT.M is available:
+     ZLINK "MIOOS"
+     ZLINK "MIOOSAPI"
+     ZLINK "MIOOSWS"
+     ZLINK "MIOOSFS"
+     ZLINK "MIOOSFSUP"
+     ZLINK "MIOOSST"
+     ZLINK "MIOOSVM"
+     ZLINK "MIOOSUI"
+     ZLINK "MIOOSTHEME"
+     ZLINK "MIOOSI18N"
+     ZLINK "MIOOSMOD"
+     ZLINK "MIOOSMTBL"
+     ZLINK "MIOOSTBL"
+     ZLINK "MIOOST"
+     DO ^MIOOST
+
+Regression tests to add:
+- Add a new T0xx section in routines/MIOOST.m or a helper routine if MIOOST.m is too large.
+- Include positive and negative tests for:
+  - large text chunk size separate from threshold
+  - safe chunk size lower than WebSocket timeout-risk size
+  - no `fs.text.chunk` default request size of 2411725
+  - chunk fallback/retry and no uncaught socket error
+  - dark start menu/toolbar/context text readability
+  - New Table Module modal styling and backend contract
+  - Transfer dark surface and pause button contrast
+  - Transfer shimmer only when active
+
+Performance/MAXSTRING:
+- Add or expand tests for text viewer chunk size and MAXSTRING safety.
+- Verify text chunks are bounded well below MAXSTRING.
+- Verify no single WebSocket payload concatenates a huge file.
+- If adding HTTP chunk fallback, verify it returns only requested bytes.
+- Avoid flaky performance thresholds; use conservative checks and static guards when runtime profiling is unavailable.
+
+Expected final answer format:
+
+Diagnosis
+Root cause
+ROI implemented
+Code changes
+Tests added
+Tests run
+Acceptance checklist
+Modified files
+Download link to ZIP containing only modified files
+Patch fallback
+
+Be honest if D ^MIOOST or ZLINK could not be run because YottaDB / GT.M is unavailable.
+
+If artifact download fails, provide a patch or pasteable file contents.

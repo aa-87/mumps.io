@@ -195,6 +195,32 @@ FSREAD(DEV,CONF,REQ,CTX)
 	SET CTX("status")=200
 	QUIT
 	;
+FSTEXTCHUNK(DEV,CONF,REQ,CTX)
+	NEW TREE,ERR,STATE,OUT,ID,OFFSET,SIZE,LIMIT
+	IF '$$PARSEBODY(.REQ,.TREE,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,400,"invalid_json",$GET(ERR("error")),.CTX)
+	IF '$$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,500,"fs_state_error",$GET(ERR("error")),.CTX)
+	IF '$$REQUIREAUTH(.DEV,.CONF,.CTX,.STATE) QUIT
+	SET ID=$SELECT($GET(TREE("id"))'="":$GET(TREE("id")),1:$GET(TREE("path")))
+	SET OFFSET=+$GET(TREE("offset")) IF OFFSET<0 SET OFFSET=0
+	SET LIMIT=+$GET(CONF("mioos","fs","textChunkBytes"),131072) IF LIMIT<4096 SET LIMIT=4096
+	IF LIMIT>262144 SET LIMIT=262144
+	SET SIZE=+$GET(TREE("size")) IF SIZE<1 SET SIZE=LIMIT
+	IF SIZE<4096 SET SIZE=4096
+	IF SIZE>LIMIT SET SIZE=LIMIT
+	IF '$$READWIN^MIOOSFS(.STATE,ID,OFFSET,SIZE,.OUT,.ERR) DO  QUIT
+	. DO RESPERR(.DEV,.CONF,403,"fs_text_chunk_failed",$GET(ERR("error")),.CTX)
+	SET OUT("mediaType")="text"
+	SET OUT("chunkSize")=SIZE
+	SET OUT("scrollSync")="byte-offset"
+	SET OUT("viewerContract")="chunked-text-v3-http-range"
+	SET OUT("boundedEdit")=1
+	SET OUT("maxEditBytes")=+$GET(CONF("mioos","fs","maxTextEditBytes"),+$GET(CONF("mioos","fs","textChunkThresholdBytes"),2411725))
+	DO RESPJSONX^MIOHTTP(.DEV,.CONF,200,.OUT,$GET(CTX("request_id")),.CTX)
+	SET CTX("status")=200
+	QUIT
+	;
 FSWRITE(DEV,CONF,REQ,CTX)
 	NEW TREE,ERR,STATE,OUT
 	IF '$$PARSEBODY(.REQ,.TREE,.ERR) DO  QUIT

@@ -167,18 +167,19 @@ FSREADRNG(STATE,CONF,TREE,OUTJSON,ERR)
 	;
 	;
 FSTEXTCHUNK(STATE,CONF,TREE,OUTJSON,ERR)
-	NEW OUT,ID,SIZE,OFFSET
+	NEW OUT,ID,SIZE,OFFSET,LIMIT
 	SET ID=$SELECT($GET(TREE("id"))'="":$GET(TREE("id")),1:$GET(TREE("path")))
 	SET OFFSET=+$GET(TREE("offset")) IF OFFSET<0 SET OFFSET=0
-	SET SIZE=+$GET(TREE("size")) IF SIZE<1 SET SIZE=+$GET(CONF("mioos","fs","readWindowBytes"),262144)
+	SET LIMIT=+$GET(CONF("mioos","fs","textChunkBytes"),131072) IF LIMIT<4096 SET LIMIT=4096
+	IF LIMIT>262144 SET LIMIT=262144
+	SET SIZE=+$GET(TREE("size")) IF SIZE<1 SET SIZE=LIMIT
 	IF SIZE<4096 SET SIZE=4096
-	IF SIZE>+$GET(CONF("mioos","fs","textChunkThresholdBytes"),2411725) SET SIZE=+$GET(CONF("mioos","fs","textChunkThresholdBytes"),2411725)
-	IF SIZE>4194304 SET SIZE=4194304
+	IF SIZE>LIMIT SET SIZE=LIMIT
 	IF '$$READWIN^MIOOSFS(.STATE,ID,OFFSET,SIZE,.OUT,.ERR) QUIT 0
 	SET OUT("mediaType")="text"
 	SET OUT("chunkSize")=SIZE
 	SET OUT("scrollSync")="byte-offset"
-	SET OUT("viewerContract")="chunked-text-v2"
+	SET OUT("viewerContract")="chunked-text-v3"
 	SET OUT("boundedEdit")=1
 	SET OUT("maxEditBytes")=+$GET(CONF("mioos","fs","maxTextEditBytes"),+$GET(CONF("mioos","fs","textChunkThresholdBytes"),2411725))
 	SET OUTJSON=$$CMDOKJSON(.STATE,$GET(TREE("requestId")),"fs.text.chunk","vfs",.OUT)

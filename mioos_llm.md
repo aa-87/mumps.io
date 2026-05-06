@@ -722,3 +722,15 @@ Unauthenticated boot must show only the login UI and public login assets. Hide t
 Theme Studio Save updates the current editable user theme. Save As / New Theme is the only path that creates a new user theme. Delete Theme is allowed only for user-created themes, never built-ins; deleting the active user theme must fall back to a built-in theme and refresh Theme Studio/Start Menu theme lists. Dark titlebar/window-control custom CSS must win over dark defaults on boot.
 
 Large text viewers must stay chunked through `fs.text.chunk` with request de-dupe, byte-offset scroll synchronization, retry/toast handling for socket timeouts, no uncaught promise path, no full-file large fallback, and bounded edit/save behavior. Start Menu groups are collapsible for built-in and user theme groups; collapse state is session-local unless a future ROI adds a tested preference store.
+
+## ROI 91 — large text, dark contrast, New Table Module, and Transfers
+
+Use the attached source as truth for this ROI. Important regression guards:
+
+- Large text transport separates the full-edit threshold (`textChunkThresholdBytes`, still around 2411725 bytes) from transport chunk size (`textChunkBytes` / `textChunkSizeBytes`, default 131072 bytes, clamped below MAXSTRING-risk sizes).
+- Text chunks are deduped by file id + offset + size. WebSocket `fs.text.chunk` is attempted first; transient socket/timeout failure shows feedback and falls back to authenticated HTTP POST `/api/mioos/fs/text-chunk`, which calls `READWIN^MIOOSFS` and returns only the requested byte window.
+- Large files remain chunked read-only/bounded-edit. Small/medium files are loaded as full editable text by stitching bounded chunks. Save clears stale chunk caches and reloads safely.
+- Do not reintroduce `/api/mioos/fs/blob` as a large text fallback.
+- Dark theme text contrast is enforced for Start Menu parent/child launchable items, context menus, toolbar/window menus, Explorer/table/patient labels, and common cards/panels without changing light theme.
+- New Table Module must save through `MIOOSMTBL`, normalize generated definitions to `componentKey=table`, `surface=mioos-surface-table`, `tableState.config.contract=mioos-advanced-table-v8`, and expose table definitions through `MIOOSMOD` catalogue payloads.
+- Transfers dark theme uses dark surfaces, readable pause buttons, and active shimmer only when the status panel has `is-active`; `is-idle` disables animation.

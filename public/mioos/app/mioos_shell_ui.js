@@ -476,7 +476,7 @@
         },
         mounted: function () {
           var vm = this.vm, win = this.window;
-          if (this.textStream) vm.$nextTick(function () { if (vm.textViewerLoadChunk) vm.textViewerLoadChunk(win.id, 0).catch(function () { return null; }); });
+          if (this.textStream) vm.$nextTick(function () { if (vm.textViewerLoadInitialText) vm.textViewerLoadInitialText(win.id).catch(function () { return null; }); else if (vm.textViewerLoadChunk) vm.textViewerLoadChunk(win.id, 0).catch(function () { return null; }); });
         },
         methods: {
           onTextScroll: function (event) { if (this.vm.textViewerOnScroll) this.vm.textViewerOnScroll(this.window.id, event); },
@@ -977,7 +977,7 @@
                     '<div class="mioos-classic-transferprogresscell"><div class="mioos-classic-progress"><span :style="{ width: ((vm.transferPercent ? vm.transferPercent(item) : (item.progress || 0)) + \'%\') }"></span></div><small class="mioos-classic-transferstatus">[[ vm.transferProgressLabel ? vm.transferProgressLabel(item) : ((item.progress || 0) + \'%\') ]]</small></div>' +
                     '<div class="mioos-classic-transferstatuscell">[[ vm.transferStatusCaption ? vm.transferStatusCaption(item) : (item.stage || item.status) ]]</div>' +
                     '<div class="mioos-classic-transfersize">[[ vm.formatBytesCompact ? vm.formatBytesCompact(item.totalBytes || 0) : (item.totalBytes || 0) ]]</div>' +
-                    '<div class="mioos-classic-transferactions"><button type="button" class="mioos-classic-tool" v-if="vm.canPauseTransfer && vm.canPauseTransfer(item)" @click="vm.pauseTransfer(item)">Pause</button><button type="button" class="mioos-classic-tool" v-if="vm.canResumeTransfer && vm.canResumeTransfer(item)" @click="vm.resumeTransfer(item)">Resume</button><button type="button" class="mioos-classic-tool" v-if="vm.canRetryTransfer && vm.canRetryTransfer(item)" @click="vm.retryTransfer(item)">Retry</button><button type="button" class="mioos-classic-tool danger" v-if="vm.canCancelTransfer && vm.canCancelTransfer(item)" @click="vm.cancelTransfer(item)">Cancel</button></div>' +
+                    '<div class="mioos-classic-transferactions"><button type="button" class="mioos-classic-tool mioos-transfer-pause-button" data-transfer-action="pause" v-if="vm.canPauseTransfer && vm.canPauseTransfer(item)" @click="vm.pauseTransfer(item)">Pause</button><button type="button" class="mioos-classic-tool" v-if="vm.canResumeTransfer && vm.canResumeTransfer(item)" @click="vm.resumeTransfer(item)">Resume</button><button type="button" class="mioos-classic-tool" v-if="vm.canRetryTransfer && vm.canRetryTransfer(item)" @click="vm.retryTransfer(item)">Retry</button><button type="button" class="mioos-classic-tool danger" v-if="vm.canCancelTransfer && vm.canCancelTransfer(item)" @click="vm.cancelTransfer(item)">Cancel</button></div>' +
                   '</div>' +
                 '</div>' +
                 '<div class="mioos-classic-empty" v-else>No transfer activity yet.</div>' +

@@ -153,3 +153,25 @@ UI modules should assume unauthenticated boot exposes only the login overlay. Do
 Theme Studio now separates **Save** from **Save As / New Theme**. Save updates an active user theme; Save As creates a new user theme; Delete Theme removes only user-created themes. Module examples that reference theming should keep dark-mode CSS variables compatible with titlebar/window-control variables and should not override the dark variant with light-only selectors.
 
 Start Menu groups are collapsible and accessible through the group header button. Module-provided launcher groups should remain safe when hidden by `is-collapsed`; item launch logic must continue to run only from expanded child rows.
+
+## New Table Module flow (ROI 91)
+
+The App Catalogue / UI Modules screen includes **New Table Module** for creating a backend table-backed module without frontend code. The modal keeps required fields visible, validates the draft before preview/save/import, and reports both success and backend validation errors through inline status plus shell toasts.
+
+Saved table modules are normalized by `MIOOSMTBL` before registration:
+
+```mumps
+SET DEF("componentKey")="table"
+SET DEF("surface")="mioos-surface-table"
+SET DEF("tableState","config","contract")="mioos-advanced-table-v8"
+```
+
+`SAVE^MIOOSMTBL` stores the definition, installs the generated module manifest under the user module registry, and creates the backend dataset under the table contract. `CATALOG^MIOOSMOD` returns both the generated module entry and `tableDefinitions`, so the module can appear in the catalogue/start menu and launch directly into the table surface.
+
+Required MUMPS-first workflow:
+
+1. Open **Programs → App Catalogue + UI Modules → New Table Module**.
+2. Enter a stable key, title, dataset, and columns.
+3. Use **Preview** to validate and inspect the generated table query shape.
+4. Use **Save and register** to install the module and dataset.
+5. Launch the generated module from the catalogue/start menu; no Vue component or frontend file is required.
