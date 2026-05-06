@@ -1,20 +1,49 @@
 (function () {
+  function safeJson(resp) {
+    return resp.json().catch(function () { return {}; }).then(function (json) { return { ok: resp.ok, status: resp.status, json: json || {} }; });
+  }
+
+  function authMessageFor(result, fallback, serverFallback) {
+    var json = (result || {}).json || {};
+    var status = +(result || {}).status || 0;
+    var code = String(json.error || json.detail || '').toLowerCase();
+    if (status === 401 || code.indexOf('signin') >= 0 || code.indexOf('credential') >= 0 || code.indexOf('password') >= 0 || code.indexOf('invalid') >= 0) {
+      return fallback || 'The username or password was rejected.';
+    }
+    if (status >= 500) return serverFallback || 'The sign-in service could not complete the request. Please try again.';
+    return fallback || serverFallback || 'Sign-in could not be completed. Please try again.';
+  }
+
+  function reloadSoon() {
+    window.setTimeout(function () { window.location.reload(); }, 180);
+  }
+
   window.MIOOSAuth = {
     methods: {
+      setAuthFeedback: function (kind, title, message) {
+        this.authFeedback = { open: !!message, kind: kind || 'info', title: title || 'Sign in', message: message || '' };
+      },
+      clearAuthFeedback: function () {
+        this.authFeedback = { open: false, kind: 'info', title: '', message: '' };
+      },
       submitSignin: function () {
         var self = this;
         if (this.authBusy) return;
         this.authBusy = true;
+        this.dismissAlert();
+        this.setAuthFeedback('info', 'Sign in', 'Checking credentials…');
         window.fetch((this.boot.routes.publicSignin || this.boot.routes.signin), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
           credentials: 'same-origin',
           body: JSON.stringify({ username: this.authForm.username, password: this.authForm.password })
         })
-          .then(function (resp) { return resp.json().then(function (json) { return { ok: resp.ok, json: json }; }); })
+          .then(safeJson)
           .then(function (result) {
             if (!result.ok || !result.json || result.json.ok !== 1) {
-              throw new Error((result.json || {}).detail || (result.json || {}).error || self.t('alerts.signinFailed.message'));
+              var err = new Error(authMessageFor(result, 'The username or password was rejected.', 'The sign-in service could not complete the request. Please try again.'));
+              err.safeMessage = err.message;
+              throw err;
             }
             if (result.json.requiresPasswordChange) {
               self.authPasswordChange.required = true;
@@ -25,12 +54,15 @@
               self.authPasswordChange.status = result.json.passwordStatus || {};
               self.authPasswordChange.policy = result.json.passwordPolicy || (((self.boot || {}).auth || {}).passwordPolicy) || {};
               self.authForm.password = '';
+              self.setAuthFeedback('info', 'Password update required', 'Update your password to continue loading the shell.');
               return;
             }
-            window.location.reload();
+            self.setAuthFeedback('success', 'Sign in accepted', 'Loading your desktop…');
+            reloadSoon();
           })
           .catch(function (err) {
-            self.showAlert(self.t('alerts.signinFailed.title'), err.message || self.t('alerts.signinFailed.message'));
+            var message = (err && err.safeMessage) || (err && err.name === 'TypeError' ? 'Network error while contacting the sign-in service. Please try again.' : 'Sign-in could not be completed. Please try again.');
+            self.setAuthFeedback('error', 'Sign in failed', message);
           })
           .finally(function () {
             self.authBusy = false;
@@ -40,20 +72,26 @@
         var self = this;
         if (this.authBusy) return;
         this.authBusy = true;
+        this.dismissAlert();
+        this.setAuthFeedback('info', 'Guest sign in', 'Starting guest session…');
         window.fetch(this.boot.routes.guestSignin, {
           method: 'POST',
           headers: { Accept: 'application/json' },
           credentials: 'same-origin'
         })
-          .then(function (resp) { return resp.json().then(function (json) { return { ok: resp.ok, json: json }; }); })
+          .then(safeJson)
           .then(function (result) {
             if (!result.ok || !result.json || result.json.ok !== 1) {
-              throw new Error((result.json || {}).detail || (result.json || {}).error || self.t('alerts.guestSigninFailed.message'));
+              var err = new Error(authMessageFor(result, 'Guest sign-in is not available.', 'Guest sign-in could not be completed. Please try again.'));
+              err.safeMessage = err.message;
+              throw err;
             }
-            window.location.reload();
+            self.setAuthFeedback('success', 'Guest session ready', 'Loading your desktop…');
+            reloadSoon();
           })
           .catch(function (err) {
-            self.showAlert(self.t('alerts.guestSigninFailed.title'), err.message || self.t('alerts.guestSigninFailed.message'));
+            var message = (err && err.safeMessage) || (err && err.name === 'TypeError' ? 'Network error while contacting the sign-in service. Please try again.' : 'Guest sign-in could not be completed. Please try again.');
+            self.setAuthFeedback('error', 'Guest sign in failed', message);
           })
           .finally(function () {
             self.authBusy = false;
@@ -64,6 +102,8 @@
         var self = this;
         if (this.authBusy) return;
         this.authBusy = true;
+        this.dismissAlert();
+        this.setAuthFeedback('info', 'Password update', 'Updating password…');
         window.fetch(this.boot.routes.passwordChange, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
@@ -74,15 +114,19 @@
             confirmPassword: this.authPasswordChange.confirmPassword
           })
         })
-          .then(function (resp) { return resp.json().then(function (json) { return { ok: resp.ok, json: json }; }); })
+          .then(safeJson)
           .then(function (result) {
             if (!result.ok || !result.json || result.json.ok !== 1) {
-              throw new Error((result.json || {}).detail || (result.json || {}).error || self.t('alerts.passwordChangeFailed.message'));
+              var err = new Error(authMessageFor(result, 'Password update was rejected. Check the policy and try again.', 'Password update could not be completed. Please try again.'));
+              err.safeMessage = err.message;
+              throw err;
             }
-            window.location.reload();
+            self.setAuthFeedback('success', 'Password updated', 'Loading your desktop…');
+            reloadSoon();
           })
           .catch(function (err) {
-            self.showAlert(self.t('alerts.passwordChangeFailed.title'), err.message || self.t('alerts.passwordChangeFailed.message'));
+            var message = (err && err.safeMessage) || (err && err.name === 'TypeError' ? 'Network error while contacting the sign-in service. Please try again.' : 'Password update could not be completed. Please try again.');
+            self.setAuthFeedback('error', 'Password update failed', message);
           })
           .finally(function () {
             self.authBusy = false;

@@ -65,7 +65,7 @@
           }
         },
         template: '' +
-          '<div class="mioos-shell-vue" :class="[\'theme-\' + vm.currentShellThemeFamily(), { \'is-window-dragging\': vm.dragState.active, \'is-icon-dragging\': desktopDragging }]" @mousedown="handleDesktopMouseDown" @dragover.prevent @drop.prevent="vm.handleDesktopDrop && vm.handleDesktopDrop($event)" @contextmenu.prevent="vm.openDesktopContextMenu($event)">' +
+          '<div class="mioos-shell-vue" :class="[\'theme-\' + vm.currentShellThemeFamily(), { \'is-window-dragging\': vm.dragState.active, \'is-icon-dragging\': desktopDragging, \'is-auth-lock\': vm.requiresSignin, \'is-rtl\': vm.currentLocale && vm.currentLocale.rtl }]" @mousedown="handleDesktopMouseDown" @dragover.prevent @drop.prevent="vm.handleDesktopDrop && vm.handleDesktopDrop($event)" @contextmenu.prevent="vm.openDesktopContextMenu($event)">' +
             '<div class="mioos-wallpaper-layer" :style="vm.desktopWallpaperStyle()"></div>' +
             '<div class="mioos-wallpaper-tint"></div>' +
             '<div v-if="vm.alertMessage" class="mioos-alert" aria-live="polite" role="status">' +
@@ -95,6 +95,7 @@
                 '<div class="mioos-auth-head theme-login-head"><strong>[[ vm.boot.product.name ]]</strong><span>[[ vm.boot.product.subtitle ]]</span></div>' +
                 '<template v-if="!vm.authPasswordChange.required">' +
                   '<p class="mioos-auth-copy">[[ vm.t(\'auth.requiredCopy\') ]]</p>' +
+                  '<div v-if="vm.authFeedback && vm.authFeedback.open" class="mioos-auth-feedback" :class="\'is-\' + (vm.authFeedback.kind || \'info\')" role="status" aria-live="polite"><strong>[[ vm.authFeedback.title ]]</strong><span>[[ vm.authFeedback.message ]]</span></div>' +
                   '<label class="mioos-auth-field"><span>[[ vm.t(\'auth.username\') ]]</span><input v-model="vm.authForm.username" type="text" autocomplete="username"></label>' +
                   '<label class="mioos-auth-field"><span>[[ vm.t(\'auth.password\') ]]</span><input v-model="vm.authForm.password" type="password" autocomplete="current-password" @keydown.enter="vm.submitSignin"></label>' +
                   '<aside class="theme-login-disclaimer" role="note">' +
@@ -102,27 +103,28 @@
                     '<div><strong>[[ vm.activeLoginWarningTitle() ]]</strong><p>[[ vm.activeLoginDisclaimer() ]]</p></div>' +
                   '</aside>' +
                   '<div class="mioos-auth-actions">' +
-                    '<button type="button" class="mioos-auth-primary" @click="vm.submitSignin">[[ vm.t(\'auth.signin\') ]]</button>' +
-                    '<button type="button" v-if="vm.boot.auth.guestLoginEnabled" @click="vm.submitGuestSignin">[[ vm.t(\'auth.continueGuest\') ]]</button>' +
+                    "<button type=\"button\" class=\"mioos-auth-primary\" :disabled=\"vm.authBusy\" @click=\"vm.submitSignin\">[[ vm.authBusy ? 'Signing in…' : vm.t(\'auth.signin\') ]]</button>" +
+                    "<button type=\"button\" v-if=\"vm.boot.auth.guestLoginEnabled\" :disabled=\"vm.authBusy\" @click=\"vm.submitGuestSignin\">[[ vm.authBusy ? 'Starting…' : vm.t(\'auth.continueGuest\') ]]</button>" +
                   '</div>' +
                 '</template>' +
                 '<template v-else>' +
                   '<p class="mioos-auth-copy">Password rotation is required before shell access can continue.</p>' +
+                  '<div v-if="vm.authFeedback && vm.authFeedback.open" class="mioos-auth-feedback" :class="\'is-\' + (vm.authFeedback.kind || \'info\')" role="status" aria-live="polite"><strong>[[ vm.authFeedback.title ]]</strong><span>[[ vm.authFeedback.message ]]</span></div>' +
                   '<label class="mioos-auth-field"><span>New password</span><input v-model="vm.authPasswordChange.newPassword" type="password" autocomplete="new-password"></label>' +
                   '<label class="mioos-auth-field"><span>Confirm password</span><input v-model="vm.authPasswordChange.confirmPassword" type="password" autocomplete="new-password" @keydown.enter="vm.submitPasswordChange"></label>' +
                   '<aside class="theme-login-disclaimer" role="note"><div><strong>[[ vm.activeLoginWarningTitle() ]]</strong><p>[[ vm.activeLoginDisclaimer() ]]</p></div></aside>' +
-                  '<div class="mioos-auth-actions"><button type="button" class="mioos-auth-primary" @click="vm.submitPasswordChange">Change password</button></div>' +
+                  '<div class="mioos-auth-actions"><button type="button" class="mioos-auth-primary" :disabled="vm.authBusy" @click="vm.submitPasswordChange">[[ vm.authBusy ? \'Updating…\' : \'Change password\' ]]</button></div>' +
                 '</template>' +
               '</div>' +
             '</section>' +
-            '<start-menu-popup v-if="vm.menuOpen"></start-menu-popup>' +
-            '<popup-menu v-if="vm.desktopContextMenuState().open"></popup-menu>' +
-            '<div v-if="vm.snapPreview.active" class="mioos-snap-preview" :data-snap-zone="vm.snapPreview.zone" :style="vm.snapPreviewStyle()"></div>' +
-            '<div class="mioos-desktop-surface" :style="vm.desktopSurfaceStyle()" :class="{ \'pointer-events-none\': vm.dragState.active }">' +
+            '<start-menu-popup v-if="!vm.requiresSignin && vm.menuOpen"></start-menu-popup>' +
+            '<popup-menu v-if="!vm.requiresSignin && vm.desktopContextMenuState().open"></popup-menu>' +
+            '<div v-if="!vm.requiresSignin && vm.snapPreview.active" class="mioos-snap-preview" :data-snap-zone="vm.snapPreview.zone" :style="vm.snapPreviewStyle()"></div>' +
+            '<div v-if="!vm.requiresSignin" class="mioos-desktop-surface" :style="vm.desktopSurfaceStyle()" :class="{ \'pointer-events-none\': vm.dragState.active }">' +
               '<desktop-icon v-for="entry in vm.desktopRenderEntries()" :key="entry.key" :icon="entry"></desktop-icon>' +
             '</div>' +
-            '<window-frame v-for="win in vm.visibleWindows" :key="win.id" :window="win"></window-frame>' +
-            '<taskbar-shell></taskbar-shell>' +
+            '<template v-if="!vm.requiresSignin"><window-frame v-for="win in vm.visibleWindows" :key="win.id" :window="win"></window-frame></template>' +
+            '<taskbar-shell v-if="!vm.requiresSignin"></taskbar-shell>' +
           '</div>'
       });
 
@@ -479,7 +481,8 @@
         methods: {
           onTextScroll: function (event) { if (this.vm.textViewerOnScroll) this.vm.textViewerOnScroll(this.window.id, event); },
           beginEditText: function () { if (this.vm.textViewerBeginEdit) this.vm.textViewerBeginEdit(this.window.id); },
-          saveText: function () { if (this.vm.textViewerSave) this.vm.textViewerSave(this.window.id); }
+          saveText: function () { if (this.vm.textViewerSave) this.vm.textViewerSave(this.window.id); },
+          retryText: function () { if (this.vm.textViewerRetryChunk) this.vm.textViewerRetryChunk(this.window.id); }
         },
         template: '' +
           '<div class="mioos-surface mioos-surface-viewer-native" :class="\'is-\' + kind">' +
@@ -490,6 +493,7 @@
                   '<pre v-for="chunk in textChunks" :key="chunk.offset" class="mioos-viewer-text mioos-viewer-text-chunk"><span class="mioos-text-chunk-offset">Byte [[ chunk.offset ]]</span>[[ chunk.content ]]</pre>' +
                 '</div></div>' +
                 '<pre v-else v-for="chunk in textChunks" :key="chunk.offset" class="mioos-viewer-text mioos-viewer-text-chunk is-full-text" :style="textPlainStyle"><span class="mioos-text-chunk-offset">[[ textStream.dirty ? "Unsaved changes" : (textStream.saveStatus || "Editable text file") ]]</span>[[ chunk.content ]]</pre>' +
+                "<div v-if=\"textStream.status || textStream.error\" class=\"mioos-text-status\" role=\"status\"><span :class=\"{ 'is-error': textStream.error }\">[[ textStream.error || textStream.status ]]</span><button v-if=\"textStream.retryOffset !== null && typeof textStream.retryOffset !== 'undefined'\" type=\"button\" class=\"mioos-btn\" @click.stop=\"retryText\">Retry</button></div>" +
               '</div>' +
               '<div v-else-if="fileView.loading" class="mioos-viewer-state">Opening file…</div>' +
               '<div v-else-if="fileView.error" class="mioos-viewer-state is-error">[[ fileView.error ]]</div>' +
@@ -937,7 +941,9 @@
                   <button type="button" class="mioos-btn" @click="vm.themeStudioExportTheme(activeTheme.id)">Export Theme</button>
                   <label role="button" tabindex="0" class="mioos-btn mioos-file-trigger-vue"><input type="file" accept="application/json,.json" @change="vm.themeStudioImportThemeFile($event)">Import Theme</label>
                   <button type="button" class="mioos-btn" @click="vm.themeStudioCancel()">Cancel</button>
+                  <button type="button" class="mioos-btn is-danger" v-if="vm.themeStudioCanDeleteTheme(activeTheme.id)" @click="vm.themeStudioDeleteCustomTheme(activeTheme.id)">Delete Theme</button>
                   <button type="button" class="mioos-btn" @click="vm.themeStudioApplyToDesktop(activeTheme.id)">Apply</button>
+                  <button type="button" class="mioos-btn" @click="vm.themeStudioSaveAsCustomTheme()">Save As / New Theme</button>
                   <button type="button" class="mioos-btn is-primary" @click="vm.themeStudioSaveCustomTheme()">Save</button>
                 </div>
               </footer>
@@ -1032,8 +1038,8 @@
             '</section>' +
             '<nav class="mioos-start-modern-groups" aria-label="Start menu shortcuts">' +
               '<section v-for="group in groups" :key="group.key" class="mioos-start-modern-section" :class="{ \'is-collapsed\': !vm.startMenuGroupOpen(group) }">' +
-                '<button type="button" class="mioos-start-modern-section-head" @click="vm.startMenuToggleGroup(group, $event)"><span class="mioos-start-modern-caret" aria-hidden="true">[[ vm.startMenuGroupOpen(group) ? \'▾\' : \'▸\' ]]</span><span class="mioos-start-modern-section-icon">[[ vm.startMenuGroupIcon(group.key) ]]</span><div><strong>[[ group.title ]]</strong><span>[[ group.subtitle ]]</span></div><em>[[ (group.items || []).length ]]</em></button>' +
-                '<div v-show="vm.startMenuGroupOpen(group)" class="mioos-start-modern-list" role="list">' +
+                '<button type="button" class="mioos-start-modern-section-head" :aria-expanded="vm.startMenuGroupOpen(group) ? \'true\' : \'false\'" :aria-controls="\'start-group-\' + group.key" @click="vm.startMenuToggleGroup(group, $event)"><span class="mioos-start-modern-caret" aria-hidden="true">[[ vm.startMenuGroupOpen(group) ? \'▾\' : \'▸\' ]]</span><span class="mioos-start-modern-section-icon">[[ vm.startMenuGroupIcon(group.key) ]]</span><div><strong>[[ group.title ]]</strong><span>[[ group.subtitle ]]</span></div><em>[[ (group.items || []).length ]]</em></button>' +
+                '<div v-show="vm.startMenuGroupOpen(group)" :id="\'start-group-\' + group.key" class="mioos-start-modern-list" role="list" :aria-hidden="vm.startMenuGroupOpen(group) ? \'false\' : \'true\'">' +
                   '<div v-for="row in vm.startMenuRenderRows(group)" :key="row.key" class="mioos-start-modern-node" :class="{ \'is-folder\': vm.startMenuIsFolderItem(row.item), \'is-open\': vm.startMenuFolderOpen(row.item) }">' +
                     '<button type="button" role="listitem" class="mioos-start-modern-item" :class="{ \'is-selected\': selectedKey === row.item.key, \'is-disabled\': row.item.disabled, \'is-child\': row.level > 0 }" :style="{ paddingLeft: (12 + Math.min(row.level, 8) * 18) + \'px\' }" :title="row.item.title + (row.item.subtitle ? \' — \' + row.item.subtitle : \'\')" :disabled="row.item.disabled" @mouseenter="vm.startMenuSelectItem(row.item)" @focus="vm.startMenuSelectItem(row.item)" @click="vm.startMenuOpenItem(row.item)">' +
                       '<span class="mioos-start-modern-item-icon" aria-hidden="true">[[ row.item.icon ]]</span>' +

@@ -321,3 +321,7 @@ Failed mutation shape after HTTP/WebSocket normalization:
 ## Final regression stabilization
 
 For table-backed modules, keep the manifest/server definition MUMPS-first and set `componentKey="table"`, `surface="mioos-surface-table"`, and `tableState.config.contract="mioos-advanced-table-v8"`. Mutations are shared by HTTP and WebSocket paths through `MUTATE^MIOOSTBL`, and the shell now requires visible success/failure feedback instead of silent failures.
+
+## Login/theme/start-menu/text-viewer regression ROI note
+
+This table example remains MUMPS-first and does not require frontend framework changes. When testing it from the shell, remember that unauthenticated boot hides all desktop/module surfaces until sign-in succeeds. Theme Studio changes should be made through explicit Save/Save As semantics, and dark custom titlebar CSS should be verified in both light and dark shells without changing the table module contract.

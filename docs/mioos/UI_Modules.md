@@ -145,3 +145,11 @@ Help -> About should open the reusable `about-mioos` window surface so modules c
 The New table module flow remains MUMPS-first. A generated table module must provide `componentKey="table"`, `surface="mioos-surface-table"`, and `tableState.config.contract="mioos-advanced-table-v8"`. No frontend framework, build step, or TypeScript is required. Modal styling is shared by `.mioos-table-module-editor` and is dark-theme aware.
 
 Application shortcuts shown in Explorer must include launch metadata (`targetAppKey` / `launchKey`) and icon metadata. Explorer opens those shortcuts through the normal app launcher so Start menu, desktop, and VFS views stay consistent.
+
+## Login/theme/start-menu/text-viewer regression ROI
+
+UI modules should assume unauthenticated boot exposes only the login overlay. Do not mount module windows, desktop shortcuts, Start Menu popups, shell controls, or authenticated asset URLs before `boot.user.authenticated` is true.
+
+Theme Studio now separates **Save** from **Save As / New Theme**. Save updates an active user theme; Save As creates a new user theme; Delete Theme removes only user-created themes. Module examples that reference theming should keep dark-mode CSS variables compatible with titlebar/window-control variables and should not override the dark variant with light-only selectors.
+
+Start Menu groups are collapsible and accessible through the group header button. Module-provided launcher groups should remain safe when hidden by `is-collapsed`; item launch logic must continue to run only from expanded child rows.

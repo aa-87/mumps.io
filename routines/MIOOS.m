@@ -36,6 +36,7 @@ CONFDEF(CONF)
 	IF $GET(CONF("mioos","route","themePublicAsset"))="" SET CONF("mioos","route","themePublicAsset")="/api/mioos/theme-public-asset"
 	IF $GET(CONF("mioos","route","themeLoad"))="" SET CONF("mioos","route","themeLoad")="/api/mioos/theme/load"
 	IF $GET(CONF("mioos","route","themeSave"))="" SET CONF("mioos","route","themeSave")="/api/mioos/theme/save"
+	IF $GET(CONF("mioos","route","themeDelete"))="" SET CONF("mioos","route","themeDelete")="/api/mioos/theme/delete"
 	IF $GET(CONF("mioos","route","moduleCatalog"))="" SET CONF("mioos","route","moduleCatalog")="/api/mioos/modules/catalog"
 	IF $GET(CONF("mioos","route","moduleTable"))="" SET CONF("mioos","route","moduleTable")="/api/mioos/modules/table"
 	IF $GET(CONF("mioos","route","settingsLoad"))="" SET CONF("mioos","route","settingsLoad")="/api/mioos/settings/load"
@@ -275,6 +276,7 @@ REG(CONF)
 	DO ADDM^MIOROUTE("HEAD",$GET(CONF("mioos","route","themePublicAsset")),"THEMEPUBLICASSET^MIOOSAPI",.META)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","themeLoad")),"THEMELOAD^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","themeSave")),"THEMESAVE^MIOOSAPI",.PROT)
+	DO ADDM^MIOROUTE("POST",$GET(CONF("mioos","route","themeDelete")),"THEMEDELETE^MIOOSAPI",.PROT)
 	DO ADDM^MIOROUTE("GET","/public/mioos/*","STATIC^MIOOS",.META)
 	KILL WSMETA SET WSMETA("authRequired")=AUTHREQ,WSMETA("wsPersistent")=1
 	DO ADDWSM^MIOROUTE($GET(CONF("mioos","route","ws")),"MESSAGE^MIOOSWS",.WSMETA)
@@ -308,6 +310,7 @@ REG(CONF)
 	. DO ADDEXEMPT(.CONF,$GET(CONF("mioos","route","themePublicAsset")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","themeLoad")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","themeSave")))
+	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","themeDelete")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","ws")))
 	. DO ADDPROTECT(.CONF,$GET(CONF("mioos","route","wsTerminal")))
 	QUIT

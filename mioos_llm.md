@@ -712,3 +712,13 @@ Do not remove the boot-time dark-theme apply sequence. The server root class `th
 Transfers should keep the animated status panel and support a large active queue in a single window. Preserve the 96-row visible queue request, the 250-record transfer center cap, and the scrollable transfer list styling unless a future ROI replaces them with an explicitly tested virtual list.
 
 Patient CSV import is MUMPS-first and quoted-field aware. Keep the `CSVFLDS` parser path in `MIOOSPAT` so `patient.import.preview` and `patient.import.commit` handle embedded commas while still routing through `MUTATE^MIOOSTBL`, validation, and audit behavior.
+
+## Login/theme/start-menu/text-viewer regression ROI
+
+Use the attached source as the only source of truth. Preserve the existing MUMPS/YottaDB, MIOTPL, MIOHTTP/MIOOSAPI, MIOOSWS, MIOOSFS, and Vue 3 Options API UMD architecture.
+
+Unauthenticated boot must show only the login UI and public login assets. Hide taskbar, Start Menu, desktop icons, shell popups, windows, and authenticated asset URLs until authentication succeeds. Login feedback must be non-blocking, dark-theme-readable, generic for rejected credentials, safe for server/network errors, and visible briefly on success before shell reload.
+
+Theme Studio Save updates the current editable user theme. Save As / New Theme is the only path that creates a new user theme. Delete Theme is allowed only for user-created themes, never built-ins; deleting the active user theme must fall back to a built-in theme and refresh Theme Studio/Start Menu theme lists. Dark titlebar/window-control custom CSS must win over dark defaults on boot.
+
+Large text viewers must stay chunked through `fs.text.chunk` with request de-dupe, byte-offset scroll synchronization, retry/toast handling for socket timeouts, no uncaught promise path, no full-file large fallback, and bounded edit/save behavior. Start Menu groups are collapsible for built-in and user theme groups; collapse state is session-local unless a future ROI adds a tested preference store.

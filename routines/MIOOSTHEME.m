@@ -70,6 +70,26 @@ SAVE(STATE,CONF,IN,OUT,ERR)
 	MERGE OUT("profile")=@ROOT
 	QUIT 1
 	;
+DELETE(STATE,CONF,IN,OUT,ERR)
+	NEW USER,KEY,ROOT,ACTIVE,PUBKEY,PID
+	SET ERR("routine")="MIOOSTHEME"
+	SET USER=$$USERKEY(.STATE),KEY=$GET(IN("key"))
+	IF KEY="" SET KEY=$GET(STATE("themeRequest","key"))
+	IF KEY="" SET ERR("error")="theme_key_missing" QUIT 0
+	IF KEY="glow"!(KEY="vintage")!(KEY="curve")!(KEY="panel")!(KEY="windows-xp")!(KEY="windows-7")!(KEY="mac-os")!(KEY="ubuntu") SET ERR("error")="built_in_theme_locked" QUIT 0
+	SET ROOT=$NAME(^MIO("MIOOS","THEME","PROFILE",USER,KEY))
+	IF '$DATA(@ROOT) SET ERR("error")="theme_not_found" QUIT 0
+	IF +$GET(@ROOT@("locked")) SET ERR("error")="built_in_theme_locked" QUIT 0
+	SET ACTIVE=$GET(^MIO("MIOOS","THEME","ACTIVE",USER))
+	SET PUBKEY=$GET(^MIO("MIOOS","THEME","PUBLIC","LOGIN","key"))
+	KILL @ROOT
+	IF ACTIVE=KEY KILL ^MIO("MIOOS","THEME","ACTIVE",USER)
+	IF PUBKEY=KEY KILL ^MIO("MIOOS","THEME","PUBLIC","LOGIN")
+	SET PID="" FOR  SET PID=$ORDER(^MIO("MIOOS","THEME","PUBLICASSET",PID)) QUIT:PID=""  IF $PIECE($GET(^MIO("MIOOS","THEME","PUBLICASSET",PID)),"^",3)=KEY KILL ^MIO("MIOOS","THEME","PUBLICASSET",PID)
+	KILL OUT
+	SET OUT("ok")=1,OUT("deleted")=1,OUT("key")=KEY,OUT("activeKey")=$GET(^MIO("MIOOS","THEME","ACTIVE",USER)),OUT("fallbackKey")="glow"
+	QUIT 1
+	;
 MODEFIX(ROOT)
 	NEW MODE,DEF,DARK
 	SET MODE=$GET(@ROOT@("mode"))

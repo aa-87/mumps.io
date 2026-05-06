@@ -53,6 +53,7 @@
           pingTimer: null,
           profile: 'dev',
           authBusy: false,
+          authFeedback: { open: false, title: '', message: '', kind: 'info' },
           authForm: {
             username: '',
             password: ''
@@ -1578,22 +1579,8 @@
           return this.themeStudioThemeById(store.activeThemeId) || this.themeStudioThemeById('glow');
         },
         themeStudioEditableTheme: function () {
-          var store = this.initThemeStudioStore();
-          var active = this.themeStudioActiveTheme();
-          var copy;
-          if (!active) return null;
-          if (!active.locked) return active;
-          copy = this.themeStudioClone(active);
-          copy.id = 'custom-' + Date.now();
-          copy.name = active.name + ' Copy';
-          copy.locked = false;
-          copy.sourceId = active.id;
-          store.themes[copy.id] = copy;
-          store.order.push(copy.id);
-          store.customThemes.push(copy.id);
-          store.activeThemeId = copy.id;
-          this.themeStudioPersistCustomThemes();
-          return copy;
+          this.initThemeStudioStore();
+          return this.themeStudioActiveTheme() || null;
         },
         themeStudioPersistCustomThemes: function (immediate) {
           var store = this.initThemeStudioStore();
@@ -1753,19 +1740,6 @@
           Object.assign(active, this.themeStudioClone(this.themeStudioBaseThemeConfigs()[sourceId] || this.themeStudioBaseThemeConfigs()['glow']), { id: active.id, name: active.name, locked: false, sourceId: sourceId });
           this.applyThemeStudioConfig(active, { silent: true, persist: false });
           this.themeStudioPersistCustomThemes();
-        },
-        themeStudioDeleteCustomTheme: function (id) {
-          var store = this.initThemeStudioStore();
-          var targetId = id || store.activeThemeId;
-          var fallback;
-          if (!store.themes[targetId] || store.themes[targetId].locked) return;
-          delete store.themes[targetId];
-          store.order = (store.order || []).filter(function (item) { return item !== targetId; });
-          store.customThemes = (store.customThemes || []).filter(function (item) { return item !== targetId; });
-          fallback = this.themeStudioThemeById('glow') || this.themeStudioThemeList()[0];
-          store.activeThemeId = fallback ? fallback.id : 'glow';
-          this.themeStudioPersistCustomThemes();
-          this.applyThemeStudioConfig(this.themeStudioActiveTheme(), { silent: true, persist: false });
         },
         themeStudioUpdateField: function (path, value) {
           var target = this.themeStudioEditableTheme();
@@ -2214,7 +2188,7 @@
         },
         themeStudioManagedVarKeys: function () {
           return [
-            '--desktop-bg','--desktop-overlay','--window-bg','--window-border','--window-border-strong','--titlebar-bg','--titlebar-text','--titlebar-inactive','--titlebar-active-start','--titlebar-active-end','--titlebar-inactive-start','--titlebar-inactive-end','--accent','--accent-soft','--taskbar-bg','--taskbar-border','--taskbar-text','--menu-bg','--menu-border','--menu-text','--menu-hover','--menu-hover-text','--start-child-text','--context-menu-text','--toolbar-text','--toolbar-bg','--toolbar-border','--menu-divider','--menu-shadow','--icon-label-bg','--icon-label-text','--icon-shadow','--shadow-window','--shadow-window-active','--font-ui','--font-titlebar','--font-taskbar','--font-menu','--font-icon-label','--font-size-ui','--font-size-titlebar','--font-size-taskbar','--font-size-menu','--font-size-icon-label','--window-radius','--taskbar-height','--taskbar-transparency','--taskbar-overlay','--taskbar-blur','--taskbar-effective-bg','--theme-surface','--theme-surface-strong','--theme-panel-bg','--theme-panel-border','--theme-field-bg','--theme-field-text','--theme-muted-text','--theme-tab-bg','--theme-tab-active-bg','--theme-tab-border','--theme-preview-card-bg','--theme-preview-card-border','--titlebar-height','--desktop-grid-cell','--desktop-icon-size','--button-radius','--button-tint','--button-tint-hover','--button-text','--glass-opacity','--control-min','--control-max','--control-close','--start-menu-width','--start-menu-accent','--taskbar-position','--desktop-icon-size-mobile','--taskbar-height-mobile','--desktop-wallpaper','--login-wallpaper','--theme-minimize-speed','--theme-progress-speed','--theme-open-speed','--theme-hover-speed','--theme-menu-speed','--theme-wallpaper-speed','--theme-taskbar-speed','--login-box-bg','--login-box-border','--login-box-shadow','--login-box-text','--login-avatar-size'
+            '--desktop-bg','--desktop-overlay','--window-bg','--window-border','--window-border-strong','--titlebar-bg','--titlebar-text','--titlebar-inactive','--titlebar-inactive-text','--titlebar-active-start','--titlebar-active-end','--titlebar-inactive-start','--titlebar-inactive-end','--accent','--accent-soft','--taskbar-bg','--taskbar-border','--taskbar-text','--menu-bg','--menu-border','--menu-text','--menu-hover','--menu-hover-text','--start-child-text','--context-menu-text','--toolbar-text','--toolbar-bg','--toolbar-border','--menu-divider','--menu-shadow','--icon-label-bg','--icon-label-text','--icon-shadow','--shadow-window','--shadow-window-active','--font-ui','--font-titlebar','--font-taskbar','--font-menu','--font-icon-label','--font-size-ui','--font-size-titlebar','--font-size-taskbar','--font-size-menu','--font-size-icon-label','--window-radius','--taskbar-height','--taskbar-transparency','--taskbar-overlay','--taskbar-blur','--taskbar-effective-bg','--theme-surface','--theme-surface-strong','--theme-panel-bg','--theme-panel-border','--theme-field-bg','--theme-field-text','--theme-muted-text','--theme-tab-bg','--theme-tab-active-bg','--theme-tab-border','--theme-preview-card-bg','--theme-preview-card-border','--titlebar-height','--desktop-grid-cell','--desktop-icon-size','--button-radius','--button-tint','--button-tint-hover','--button-text','--glass-opacity','--control-min','--control-max','--control-close','--control-glyph','--start-menu-width','--start-menu-accent','--taskbar-position','--desktop-icon-size-mobile','--taskbar-height-mobile','--desktop-wallpaper','--login-wallpaper','--theme-minimize-speed','--theme-progress-speed','--theme-open-speed','--theme-hover-speed','--theme-menu-speed','--theme-wallpaper-speed','--theme-taskbar-speed','--login-box-bg','--login-box-border','--login-box-shadow','--login-box-text','--login-avatar-size','--login-card-width-desktop','--login-card-width-mobile'
           ];
         },
         themeStudioLightSurfaceVars: function (theme) {
@@ -2281,8 +2255,9 @@
           };
         },
         themeStudioResolvedVars: function (theme) {
-          var current = Object.assign({}, this.themeStudioLightSurfaceVars(theme), (((theme || {}).cssVars) || {}));
+          var cssVars = (((theme || {}).cssVars) || {});
           var darkVars = this.themeStudioDarkOverrides(theme);
+          var current = theme && theme.darkEnabled ? Object.assign({}, this.themeStudioLightSurfaceVars(theme), darkVars, cssVars) : Object.assign({}, this.themeStudioLightSurfaceVars(theme), cssVars);
           if (theme && !theme.darkEnabled && ((theme.base || '') === 'ubuntu')) {
             current['--titlebar-text'] = '#20161c';
             current['--taskbar-text'] = '#20161c';
@@ -2291,7 +2266,6 @@
             current['--button-tint'] = 'linear-gradient(180deg, rgba(255,251,247,0.92) 0%, rgba(241,226,216,0.88) 100%)';
             current['--button-tint-hover'] = 'linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(244,230,220,0.92) 100%)';
           }
-          Object.keys(darkVars).forEach(function (key) { current[key] = darkVars[key]; });
           return current;
         },
         themeStudioDarkOverrides: function (theme) {
@@ -2304,6 +2278,7 @@
             '--window-border': '#334155',
             '--window-border-strong': '#020617',
             '--titlebar-text': '#f8fafc',
+            '--titlebar-inactive-text': '#cbd5e1',
             '--titlebar-active-start': '#1e3a8a',
             '--titlebar-active-end': '#0f172a',
             '--titlebar-inactive-start': '#334155',
@@ -2323,6 +2298,7 @@
             '--button-tint': 'linear-gradient(180deg, #f8fafc 0%, #cbd5e1 100%)',
             '--button-tint-hover': 'linear-gradient(180deg, #ffffff 0%, #e2e8f0 100%)',
             '--button-text': '#0f172a',
+            '--control-glyph': '#0f172a',
             '--theme-surface': 'rgba(17, 22, 31, 0.82)',
             '--theme-surface-strong': 'rgba(23, 29, 40, 0.92)',
             '--theme-panel-bg': '#111827',
@@ -3121,6 +3097,16 @@
             mobileConfig: Object.assign({}, cfg.mobileConfig || {}, src.mobileConfig || {})
           }));
           mapped.variants = Object.assign({ light: {}, dark: {} }, cfg.variants || src.variants || {});
+          var selectedVariant = (mapped.variants || {})[mapped.darkEnabled ? 'dark' : 'light'] || {};
+          if (selectedVariant && Object.keys(selectedVariant).length) {
+            mapped.cssVars = Object.assign({}, mapped.cssVars || {}, selectedVariant.cssVars || selectedVariant.colors || {});
+            mapped.animationSpeeds = Object.assign({}, mapped.animationSpeeds || {}, selectedVariant.animationSpeeds || {});
+            mapped.taskbarConfig = Object.assign({}, mapped.taskbarConfig || {}, selectedVariant.taskbarConfig || {});
+            mapped.startMenuConfig = Object.assign({}, mapped.startMenuConfig || {}, selectedVariant.startMenuConfig || {});
+            mapped.loginScreenConfig = Object.assign({}, mapped.loginScreenConfig || {}, selectedVariant.loginScreenConfig || {});
+            mapped.mobileConfig = Object.assign({}, mapped.mobileConfig || {}, selectedVariant.mobileConfig || {});
+            mapped.customElementCss = Object.assign({}, mapped.customElementCss || {}, selectedVariant.customElementCss || {});
+          }
           mapped.activeMode = mapped.darkEnabled ? 'dark' : 'light';
           mapped.defaultVariant = mapped.activeMode;
           mapped.mode = mapped.activeMode;
@@ -3246,19 +3232,100 @@
             self.showAlert('Theme Studio', 'Theme applied locally, but server save failed: ' + ((err && err.message) || 'theme_save_failed'));
           });
         },
-        themeStudioSaveCustomTheme: function () {
-          var source = this.themeStudioActiveTheme();
-          var target = this.themeStudioCreateSavedUserTheme(source || this.themeStudioEditableTheme());
+        themeStudioCanDeleteTheme: function (id) {
+          var store = this.initThemeStudioStore();
+          var target = this.themeStudioThemeById(id || store.activeThemeId);
+          return !!(target && !target.locked && (store.customThemes || []).indexOf(target.id) >= 0);
+        },
+        themeStudioUpdateUserTheme: function (source) {
+          var store = this.initThemeStudioStore();
+          var target = this.themeStudioNormalizeConfig(this.themeStudioClone(source || this.themeStudioActiveTheme() || {}));
+          if (!target || !target.id) return null;
+          target.key = target.id;
+          target.locked = false;
+          target.userTheme = true;
+          target.mode = target.darkEnabled ? 'dark' : 'light';
+          target.activeMode = target.mode;
+          target.defaultVariant = target.mode;
+          target.variants = Object.assign({ light: {}, dark: {} }, target.variants || {});
+          target.variants[target.mode] = this.themeStudioBuildVariantSnapshot ? this.themeStudioBuildVariantSnapshot(target, target.mode === 'dark') : (target.variants[target.mode] || {});
+          store.themes[target.id] = target;
+          if ((store.order || []).indexOf(target.id) < 0) store.order.push(target.id);
+          if ((store.customThemes || []).indexOf(target.id) < 0) store.customThemes.push(target.id);
+          store.activeThemeId = target.id;
+          return target;
+        },
+        themeStudioSaveAsCustomTheme: function () {
+          var source = this.themeStudioActiveTheme() || this.themeStudioEditableTheme();
+          var target = this.themeStudioCreateSavedUserTheme(source);
           var self = this;
-          if (!target) return Promise.resolve();
+          if (!target) return Promise.resolve({ ok: 0, error: 'theme_missing' });
           this.themeStudioPersistCustomThemes(true);
           this.applyThemeStudioConfig(target, { silent: true, persist: true });
           return this.themeStudioPersistActiveRemote(target, true).then(function () {
             self.themeStudioOpenSession();
-            self.pushNotification('Theme Studio', (target.name || 'Theme') + ' saved as a user theme.');
-            self.themeStudioCloseWindow();
+            self.pushNotification('Theme Studio', (target.name || 'Theme') + ' saved as a new user theme.');
+            return { ok: 1, key: target.id, created: 1 };
           }).catch(function (err) {
             self.showAlert('Theme Studio', 'Theme saved locally, but server save failed: ' + ((err && err.message) || 'theme_save_failed'));
+            return { ok: 0, error: (err && err.message) || 'theme_save_failed' };
+          });
+        },
+        themeStudioSaveCustomTheme: function () {
+          var store = this.initThemeStudioStore();
+          var source = this.themeStudioActiveTheme();
+          var target;
+          var self = this;
+          if (!source || source.locked || (store.customThemes || []).indexOf(source.id) < 0) {
+            this.showToast ? this.showToast('Theme Studio', 'Use Save As / New Theme to create a user theme before saving changes.', 'error', 4200) : this.showAlert('Theme Studio', 'Use Save As / New Theme to create a user theme before saving changes.');
+            return Promise.resolve({ ok: 0, error: 'save_as_required' });
+          }
+          target = this.themeStudioUpdateUserTheme(source);
+          if (!target) return Promise.resolve({ ok: 0, error: 'theme_missing' });
+          this.themeStudioPersistCustomThemes(true);
+          this.applyThemeStudioConfig(target, { silent: true, persist: true });
+          return this.themeStudioPersistActiveRemote(target, true).then(function () {
+            self.themeStudioOpenSession();
+            self.pushNotification('Theme Studio', (target.name || 'Theme') + ' saved.');
+            self.themeStudioCloseWindow();
+            return { ok: 1, key: target.id, updated: 1 };
+          }).catch(function (err) {
+            self.showAlert('Theme Studio', 'Theme saved locally, but server save failed: ' + ((err && err.message) || 'theme_save_failed'));
+            return { ok: 0, error: (err && err.message) || 'theme_save_failed' };
+          });
+        },
+        themeStudioDeleteRemote: function (key) {
+          var route = (((this.boot || {}).routes || {}).themeDelete) || '/api/mioos/theme/delete';
+          if (this.requiresSignin) return Promise.resolve({ ok: 1, skipped: 'signin_required' });
+          return fetch(route, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: key }) }).then(function (res) {
+            return res.json().then(function (obj) { if (!res.ok || (obj && obj.ok === 0)) throw new Error((obj && (obj.detail || obj.error)) || 'theme_delete_failed'); return obj || {}; });
+          });
+        },
+        themeStudioDeleteCustomTheme: function (id) {
+          var store = this.initThemeStudioStore();
+          var key = id || store.activeThemeId;
+          var target = this.themeStudioThemeById(key);
+          var fallback = this.themeStudioThemeById('glow') || this.themeStudioThemeById('vintage') || this.themeStudioThemeList()[0];
+          var wasActive = store.activeThemeId === key;
+          var self = this;
+          if (!target) return Promise.resolve({ ok: 0, error: 'theme_missing' });
+          if (target.locked || (store.customThemes || []).indexOf(key) < 0) {
+            this.showToast ? this.showToast('Theme Studio', 'Built-in themes cannot be deleted.', 'error', 3600) : this.showAlert('Theme Studio', 'Built-in themes cannot be deleted.');
+            return Promise.resolve({ ok: 0, error: 'built_in_theme_locked' });
+          }
+          delete store.themes[key];
+          store.order = (store.order || []).filter(function (item) { return item !== key; });
+          store.customThemes = (store.customThemes || []).filter(function (item) { return item !== key; });
+          if (wasActive) store.activeThemeId = (fallback && fallback.id) || 'glow';
+          this.themeStudioPersistCustomThemes(true);
+          if (wasActive && fallback) this.applyThemeStudioConfig(fallback, { silent: true, persist: true });
+          return this.themeStudioDeleteRemote(key).catch(function () { return { ok: 0, warning: 'remote_delete_failed' }; }).then(function (result) {
+            if (wasActive && fallback) return self.themeStudioPersistActiveRemote(fallback, true).catch(function () { return null; }).then(function () { return result; });
+            return result;
+          }).then(function () {
+            self.themeStudioOpenSession();
+            self.pushNotification('Theme Studio', (target.name || 'Theme') + ' deleted.');
+            return { ok: 1, deleted: 1, key: key, activeKey: store.activeThemeId };
           });
         },
         themeStudioPreviewRootStyle: function () {

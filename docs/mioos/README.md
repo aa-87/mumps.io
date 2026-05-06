@@ -492,3 +492,15 @@ This checkpoint tightens the source-accurate baseline without changing the MUMPS
 - Large text viewing remains chunk-stream based. Full edit/save stays bounded by `mioos.fs.maxTextEditBytes`; oversize drafts are rejected on the client and by `FSTEXTSAVE^MIOOSWS`.
 
 Regression coverage is extended in `T089^MIOOST` for first-paint dark boot, transfer queue capacity, quoted CSV import, and documentation markers.
+
+## Login/theme/start-menu/text-viewer regression ROI
+
+This ROI restores the source-accurate shell contracts for unauthenticated login, Theme Studio, dark titlebars, large text files, and Start Menu groups.
+
+Unauthenticated boot renders only the login overlay and permitted public login assets. Taskbar, Start Menu, desktop icons, windows, shell popups, and authenticated asset URLs must stay hidden until the authenticated boot payload reloads the shell. Login feedback is non-blocking and dark-theme-aware: retries replace the previous message, rejected credentials use a generic message, network/server failures show safe operational text, and successful sign-in shows a short loading state before the desktop reloads.
+
+Theme Studio Save now updates the currently active editable user theme. Creating a new user theme is explicit through **Save As / New Theme**. User-created themes can be deleted; built-in themes are locked. Deleting the active user theme falls back to a built-in theme and refreshes the saved theme list used by Theme Studio and the Start Menu Themes group. Dark mode applies dark defaults underneath the saved theme CSS variables so user-defined `--titlebar-bg`, `--titlebar-text`, `--titlebar-inactive`, `--titlebar-inactive-text`, and window-control colors survive reload.
+
+Large text viewing remains chunked. `fs.text.chunk` is the read path for large text files, frontend chunk requests are de-duplicated, scroll position maps to byte offsets, transient socket timeouts show retry feedback without closing the viewer, and the backend range loop quits cleanly on segment errors instead of spinning until the socket fails. Full edit/save stays bounded by `mioos.fs.maxTextEditBytes`.
+
+Start Menu groups are collapsible with mouse and keyboard-accessible toggles. Built-in groups and the user Themes group share the same collapse state. Collapse state is session-local in the existing Vue `startMenuUi.expandedGroups` object; no server preference was introduced in this ROI.

@@ -75,6 +75,7 @@ MIOOST ; MIOOS tests
 	DO T087
 	DO T088
 	DO T089
+	DO T090
 	QUIT
 	;
 RESET
@@ -138,6 +139,7 @@ T001
 		KILL EP DO AMATCH("[MIOOST][T001][fs setmeta]","POST","/api/mioos/fs/setmeta",1,"FSSETMETA^MIOOSAPI","/api/mioos/fs/setmeta",.EP)
 	KILL EP DO AMATCH("[MIOOST][T001][theme load]","POST","/api/mioos/theme/load",1,"THEMELOAD^MIOOSAPI","/api/mioos/theme/load",.EP)
 	KILL EP DO AMATCH("[MIOOST][T001][theme save]","POST","/api/mioos/theme/save",1,"THEMESAVE^MIOOSAPI","/api/mioos/theme/save",.EP)
+	KILL EP DO AMATCH("[MIOOST][T001][theme delete]","POST","/api/mioos/theme/delete",1,"THEMEDELETE^MIOOSAPI","/api/mioos/theme/delete",.EP)
 	KILL EP DO AMATCH("[MIOOST][T001][fs blob get]","GET","/api/mioos/fs/blob",1,"FSBLOB^MIOOSAPI","/api/mioos/fs/blob",.EP)
 	KILL EP DO AMATCH("[MIOOST][T001][fs blob head]","HEAD","/api/mioos/fs/blob",1,"FSBLOB^MIOOSAPI","/api/mioos/fs/blob",.EP)
 	KILL EP DO AMATCH("[MIOOST][T001][ws]","WS","/ws/mioos",1,"MESSAGE^MIOOSWS","/ws/mioos",.EP)
@@ -1010,6 +1012,7 @@ T051
 		DO EQ^MIOTASSERT(+$GET(BOOT("desktop","shellSurfaces","folderProperties")),1,"[MIOOST][T051][folder properties surface]")
 		DO EQ^MIOTASSERT($GET(BOOT("routes","themeLoad")),"/api/mioos/theme/load","[MIOOST][T051][theme load route]")
 		DO EQ^MIOTASSERT($GET(BOOT("routes","themeSave")),"/api/mioos/theme/save","[MIOOST][T051][theme save route]")
+		DO EQ^MIOTASSERT($GET(BOOT("routes","themeDelete")),"/api/mioos/theme/delete","[MIOOST][T051][theme delete route]")
 		DO EQ^MIOTASSERT($GET(BOOT("vfs","desktopId"))'="",1,"[MIOOST][T051][desktop id boot]")
 		DO EQ^MIOTASSERT($GET(BOOT("desktop","themeSystem","windowGrammar")),"7css-primary","[MIOOST][T051][theme grammar]")
 		DO EQ^MIOTASSERT($GET(BOOT("desktop","themeSystem","controlAugment")),"basecoat-augment","[MIOOST][T051][theme control augment]")
@@ -1026,6 +1029,7 @@ T051
 		DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","desktop.activeThemeProfile"),"[MIOOST][T051][client boot theme profile]")
 		DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","themeStudioLoadRemote"),"[MIOOST][T051][theme load method]")
 		DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","themeStudioSaveRemote"),"[MIOOST][T051][theme save method]")
+		DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","themeStudioDeleteRemote"),"[MIOOST][T051][theme delete method]")
 		DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","Desktop Preview"),"[MIOOST][T051][desktop preview ui]")
 		DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","Preset Families"),"[MIOOST][T051][preset families ui]")
 		DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","setShellTheme"),"[MIOOST][T051][set shell theme]")
@@ -1259,8 +1263,8 @@ T061
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","vm.themeStudioOpenSession"),"[MIOOST][T061][theme studio session ui]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","vm.themeStudioCancel()"),"[MIOOST][T061][theme studio cancel ui]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","Upload wallpaper"),"[MIOOST][T061][theme studio wallpaper upload ui]")
-	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","themeStudioCreateNewTheme"),0,"[MIOOST][T061][no dead theme create button]")
-	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","themeStudioDeleteCustomTheme"),0,"[MIOOST][T061][no dead theme delete button]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","Save As / New Theme"),"[MIOOST][T061][explicit theme save as button]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","themeStudioDeleteCustomTheme"),"[MIOOST][T061][theme delete button wired]")
 	QUIT
 	;
 T062
@@ -1745,5 +1749,59 @@ T089
 	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","Checkpoint stabilization follow-up pass"),"[MIOOST][T089][docs followup]")
 	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/Backend_Table.md","Patient CSV import contract"),"[MIOOST][T089][backend csv docs]")
 	DO OK^MIOTASSERT($$FILEHAS("examples/mioos_modules/patient_registration/README.md","quoted CSV"),"[MIOOST][T089][patient csv docs]")
+	QUIT
+	;
+
+T090
+	NEW STATE,CONF,IN,OUT,ERR
+	DO RESET
+	DO CONFDEF^MIOOS(.CONF)
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","!vm.requiresSignin && vm.menuOpen"),"[MIOOST][T090][start menu hidden on login]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","<taskbar-shell v-if"),"[MIOOST][T090][taskbar hidden on login]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","!vm.requiresSignin"),"[MIOOST][T090][desktop shell hidden on login]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","mioos-auth-overlay"),"[MIOOST][T090][login ui visible]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","mioos-shell-vue.is-auth-lock .mioos-taskbar-vue"),"[MIOOST][T090][css auth lock hides taskbar]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","sanitizeProtectedThemeProfile"),"[MIOOST][T090][protected login asset sanitizer]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_auth.js","Checking credentials"),"[MIOOST][T090][invalid retry feedback clears to progress]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_auth.js","The username or password was rejected"),"[MIOOST][T090][invalid credentials feedback]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_auth.js","Loading your desktop"),"[MIOOST][T090][success feedback]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_auth.js","Network error while contacting the sign-in service"),"[MIOOST][T090][network feedback]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_auth.js","throw new Error((result.json || {}).detail"),0,"[MIOOST][T090][no sensitive auth detail leak]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-auth-feedback"),"[MIOOST][T090][dark readable feedback css]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","save_as_required"),"[MIOOST][T090][save requires editable user theme]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","themeStudioSaveAsCustomTheme"),"[MIOOST][T090][explicit save as creates theme]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","themeStudioDeleteCustomTheme"),"[MIOOST][T090][delete user theme method]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTHEME.m","built_in_theme_locked"),"[MIOOST][T090][built-in theme delete guard]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSTHEME.m","DELETE(STATE,CONF,IN,OUT,ERR)"),"[MIOOST][T090][server delete theme]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSST.m","themeDeletePath"),"[MIOOST][T090][theme delete route boot payload]")
+	SET STATE("authenticated")=1,STATE("principal")="roi90",STATE("roles")="admin"
+	KILL IN,OUT,ERR SET IN("key")="glow" DO EQ^MIOTASSERT($$DELETE^MIOOSTHEME(.STATE,.CONF,.IN,.OUT,.ERR),0,"[MIOOST][T090][delete built-in rejected]")
+	DO EQ^MIOTASSERT($GET(ERR("error")),"built_in_theme_locked","[MIOOST][T090][delete built-in error]")
+	KILL IN,OUT,ERR SET IN("key")="custom-90",IN("activate")=1,IN("profile","key")="custom-90",IN("profile","name")="ROI 90",IN("profile","locked")=0 DO OK^MIOTASSERT($$SAVE^MIOOSTHEME(.STATE,.CONF,.IN,.OUT,.ERR),"[MIOOST][T090][save custom theme setup]")
+	KILL IN,OUT,ERR SET IN("key")="custom-90" DO OK^MIOTASSERT($$DELETE^MIOOSTHEME(.STATE,.CONF,.IN,.OUT,.ERR),"[MIOOST][T090][delete custom theme]")
+	DO EQ^MIOTASSERT($GET(OUT("fallbackKey")),"glow","[MIOOST][T090][active delete fallback]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","Object.assign({}, this.themeStudioLightSurfaceVars(theme), darkVars, cssVars)"),"[MIOOST][T090][dark vars do not overwrite custom css]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","--titlebar-inactive-text"),"[MIOOST][T090][dark inactive titlebar var saved loaded]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","--titlebar-inactive-text"),"[MIOOST][T090][inactive titlebar dark css]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css",".mioos-window-control.is-close"),"[MIOOST][T090][window control color css]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","selectedVariant"),"[MIOOST][T090][dark variant loaded on boot]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","fs.text.chunk"),"[MIOOST][T090][fs text chunk backend route]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","_mioosTextChunkRequests"),"[MIOOST][T090][frontend chunk dedupe]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","textViewerTransientError"),"[MIOOST][T090][socket timeout handling]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","retryOffset"),"[MIOOST][T090][retry feedback state]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","catch(function () { return null; })"),"[MIOOST][T090][no uncaught promise scroll path]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","this.command('fs.read'"),0,"[MIOOST][T090][no whole file large fallback]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","textViewerByteOffsetForScroll"),"[MIOOST][T090][scroll to byte mapping]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","text_draft_too_large"),"[MIOOST][T090][edit save threshold behavior]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSFS.m","QUIT:$DATA(ERR("),"[MIOOST][T090][range loop breaks on error]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","startMenuToggleGroup"),"[MIOOST][T090][start menu group toggle method]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","expandedGroups"),"[MIOOST][T090][start menu collapsed state]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","is-collapsed"),"[MIOOST][T090][collapsed child items hidden]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","aria-expanded"),"[MIOOST][T090][accessible group toggle]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","key: 'themes'"),"[MIOOST][T090][user theme group collapsible]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","html[dir=""rtl""] .mioos-start-modern-section-head"),"[MIOOST][T090][rtl start group selector]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","theme-dark-mode .mioos-start-modern-section-head"),"[MIOOST][T090][dark start group selector]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","Login/theme/start-menu/text-viewer regression ROI"),"[MIOOST][T090][docs roi]")
+	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","Login/theme/start-menu/text-viewer regression ROI"),"[MIOOST][T090][llm roi]")
 	QUIT
 	;

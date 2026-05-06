@@ -433,3 +433,7 @@ Client mutation failures must set deterministic table feedback: field errors are
 Patient Registration CSV import is a backend table mutation, not a browser-only parser. `patient.import.preview` and `patient.import.commit` both route through `MUTATE^MIOOSTBL` and `MIOOSPAT`, so validation, duplicate review metadata, audit stamping, and deterministic success/failure feedback stay server-authoritative.
 
 CSV rows support standard quoted fields. A value wrapped in double quotes may contain commas, and doubled quotes inside a quoted field are unescaped before validation. For example, `"Quoted, Last"` is imported as one `lastName` value rather than being split into two columns. Keep this behavior covered when extending the import modal or table mutation contract.
+
+## Login/theme/start-menu/text-viewer regression ROI note
+
+No table backend contract changed in this ROI. Table modules still route through `MIOOSTBL` and patient workflows still route through `MIOOSPAT`. The surrounding shell now hides module/table surfaces until authenticated boot, uses safe login feedback, and keeps Start Menu group collapse state session-local. Preserve these shell assumptions when adding table examples or tests.

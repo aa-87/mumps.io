@@ -127,3 +127,7 @@ mrn,lastName,firstName,dob,phone,email,state,zip,status,consent
 ```
 
 Preview and commit still call the same patient table mutations, so required-field validation, status normalization, duplicate/reconcile metadata, and audit fields remain server-controlled.
+
+## Login/theme/start-menu/text-viewer regression ROI note
+
+Patient Registration remains a table-backed MUMPS workflow. The login shell now shows safe retry/success feedback before the desktop loads, so patient windows should only appear after authenticated boot. The Start Menu group that exposes examples/modules can be collapsed session-locally; expanding it should launch Patient Registration normally. Quoted CSV import behavior and patient mutation routing are unchanged.

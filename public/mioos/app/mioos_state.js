@@ -43,6 +43,9 @@
         tableQuery: '/api/mioos/table/query',
         tableMutate: '/api/mioos/table/mutate',
         moduleCatalog: '/api/mioos/modules/catalog',
+        themeLoad: '/api/mioos/theme/load',
+        themeSave: '/api/mioos/theme/save',
+        themeDelete: '/api/mioos/theme/delete',
         settingsLoad: '/api/mioos/settings/load',
         settingsSave: '/api/mioos/settings/save'
       },
