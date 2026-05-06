@@ -116,3 +116,14 @@ All import and reconciliation operations go through MUMPS table mutations and se
 ## Final regression stabilization
 
 The Patient Registration example exercises the same table backend contract as the runtime module. `row.add`, `row.save`, `cell.save`, `column.option.add`, `column.add`, `patient.import.commit`, and `patient.reconcile.report` must route through `MUTATE^MIOOSTBL` / `MIOOSPAT` and return deterministic feedback. Keep PHI behavior server-authoritative and preserve audit hooks when extending the example.
+
+## Quoted CSV example
+
+The Patient Registration import path accepts quoted CSV fields through the MUMPS backend parser. Use quoted CSV when names, notes, or other values contain commas:
+
+```csv
+mrn,lastName,firstName,dob,phone,email,state,zip,status,consent
+"PAT-8900","Quoted, Last","Ada","1980-01-02","555-8900","quoted.import@example.invalid","NY","10001","Draft","No"
+```
+
+Preview and commit still call the same patient table mutations, so required-field validation, status normalization, duplicate/reconcile metadata, and audit fields remain server-controlled.

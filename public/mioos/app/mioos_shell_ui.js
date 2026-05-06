@@ -950,7 +950,7 @@
         props: ['window'],
         computed: {
           vm: function () { return root(this); },
-          rows: function () { return this.vm.transferQueueRows ? this.vm.transferQueueRows(12) : (this.vm.activeTransfers ? this.vm.activeTransfers() : []); },
+          rows: function () { return this.vm.transferQueueRows ? this.vm.transferQueueRows(96) : (this.vm.activeTransfers ? this.vm.activeTransfers() : []); },
           completed: function () { return this.vm.completedTransfers ? this.vm.completedTransfers() : []; }
         },
         template: '' +

@@ -481,3 +481,14 @@ Transfers use the animated `mioos-transfer-status-panel` contract instead of the
 This checkpoint adds two hardening contracts on top of the final regression stabilization pass. First, bounded text editing is enforced on both sides of the WebSocket contract: `fs.text.chunk` publishes `maxEditBytes`, the browser preflights saves with `textViewerDraftByteLength`, and `FSTEXTSAVE^MIOOSWS` rejects oversized drafts with `text_draft_too_large` instead of attempting a risky whole-file write.
 
 Second, upload fallback behavior is binary-safe and DataURL-free. The preferred path remains HTTP binary chunk upload. If the shell must fall back to WebSocket chunks for binary content, it now declares `encoding=base64`, sends pure base64 chunk data with raw byte counts, and `MIOOSFSUP` decodes through `B64D^MIOSJWT` before committing raw VFS bytes. New uploads and persisted image assets must not be stored as DataURLs.
+
+## Checkpoint stabilization follow-up pass
+
+This checkpoint tightens the source-accurate baseline without changing the MUMPS.IO architecture.
+
+- Startup dark themes now have a server first-paint marker and a Vue hydration apply step. `DESKCTX^MIOOSUI` emits `themeRootClass` from the active theme mode, the root template renders it, and `primeBootForFirstPaint()` applies the hydrated active profile before layout normalization. This prevents a saved dark user theme from booting visually as light until another theme action occurs.
+- The Transfers window keeps the animated `mioos-transfer-status-panel`, removes the old banner-style status language, and can display a large active queue in one window. The browser keeps up to 250 transfer records and the visible queue request now asks for 96 active rows inside a scrollable transfer list.
+- Patient Registration CSV import accepts normal quoted CSV fields, including embedded commas and escaped double quotes. Preview and commit still route through `MUTATE^MIOOSTBL`, `MIOOSPAT`, validation, and audit stamping.
+- Large text viewing remains chunk-stream based. Full edit/save stays bounded by `mioos.fs.maxTextEditBytes`; oversize drafts are rejected on the client and by `FSTEXTSAVE^MIOOSWS`.
+
+Regression coverage is extended in `T089^MIOOST` for first-paint dark boot, transfer queue capacity, quoted CSV import, and documentation markers.

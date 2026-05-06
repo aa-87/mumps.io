@@ -202,6 +202,7 @@
           this.bootstrapFromDom();
           this.initThemeStudioStore();
           if (this.themeStudioBootProfile && this.themeStudioBootProfile() && this.hydrateShellTheme) this.hydrateShellTheme(this.themeStudioBootProfile());
+          if (this.appliedThemeProfile && this.applyThemeStudioConfig) this.applyThemeStudioConfig(this.appliedThemeProfile, { silent: true, persist: false });
           this.normalizeDesktopUiState();
           this.ensureDesktopLayout();
           this.normalizeDesktopUiState();
@@ -789,7 +790,9 @@
             return true;
           });
           rows.sort(function (a, b) { return +((b && (b.updatedAt || b.startedAt || 0)) || 0) - +((a && (a.updatedAt || a.startedAt || 0)) || 0); });
-          return rows.slice(0, Math.max(1, +(limit || 8)));
+          var cap = +(limit || 0);
+          if (cap < 1) cap = 96;
+          return rows.slice(0, Math.max(1, Math.min(250, cap)));
         },
         transferActiveCount: function () {
           return this.activeTransfers().filter(function (item) { return item.status !== 'paused'; }).length;
@@ -1119,7 +1122,7 @@
             sourceWindowId: ''
           }, payload || {});
           this.transferCenter.items.unshift(next);
-          if (this.transferCenter.items.length > 40) this.transferCenter.items = this.transferCenter.items.slice(0, 40);
+          if (this.transferCenter.items.length > 250) this.transferCenter.items = this.transferCenter.items.slice(0, 250);
           if (this.transferCenter.autoOpen && (next.kind === 'upload' || next.kind === 'download')) this.openTransfersWindow();
           this.persistTransferCenter();
           return next.id;

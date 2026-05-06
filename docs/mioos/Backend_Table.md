@@ -427,3 +427,9 @@ Select and multiselect cell editors now keep the Add Value flow inside the MIOOS
 Table mutations continue to converge on `MUTATE^MIOOSTBL`. The HTTP route `/api/mioos/table/mutate` and the WebSocket command `table.mutate` use the same backend routine so `row.add`, `row.save`, `cell.save`, `column.add`, `column.option.add`, CSV import, reconciliation, and patient action dispatch share validation and audit behavior.
 
 Client mutation failures must set deterministic table feedback: field errors are rendered inline, `state.error` is populated, and a toast is shown. Successful mutations also show a non-blocking toast and refetch when the backend returns `refetch=1`.
+
+## Patient CSV import contract
+
+Patient Registration CSV import is a backend table mutation, not a browser-only parser. `patient.import.preview` and `patient.import.commit` both route through `MUTATE^MIOOSTBL` and `MIOOSPAT`, so validation, duplicate review metadata, audit stamping, and deterministic success/failure feedback stay server-authoritative.
+
+CSV rows support standard quoted fields. A value wrapped in double quotes may contain commas, and doubled quotes inside a quoted field are unescaped before validation. For example, `"Quoted, Last"` is imported as one `lastName` value rather than being split into two columns. Keep this behavior covered when extending the import modal or table mutation contract.

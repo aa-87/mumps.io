@@ -74,6 +74,7 @@ MIOOST ; MIOOS tests
 	DO T086
 	DO T087
 	DO T088
+	DO T089
 	QUIT
 	;
 RESET
@@ -1713,5 +1714,36 @@ T088
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSFSUP.m","B64D^MIOSJWT"),"[MIOOST][T088][server base64 decode]")
 	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","Checkpoint stabilization 2026-05-05"),"[MIOOST][T088][checkpoint docs]")
 	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","Checkpoint stabilization 2026-05-05"),"[MIOOST][T088][checkpoint llm]")
+	QUIT
+	;
+
+T089
+	NEW STATE,CONF,IN,OUT,ERR,ROOT,CSV,FOUND,I
+	DO RESET
+	DO CONFDEF^MIOOS(.CONF)
+	SET STATE("authenticated")=1,STATE("principal")="checkpoint-user",STATE("roles")="admin"
+	SET ROOT=$$ROOT^MIOOSTBL(.STATE,"patient-registration")
+	KILL @ROOT
+	DO ENSURE^MIOOSTBL(.STATE,"patient-registration")
+	SET CSV="mrn,lastName,firstName,dob,phone,email,state,zip,status,consent"_$CHAR(10)_"""PAT-8900"",""Quoted, Last"",""Ada"",""1980-01-02"",""555-8900"",""quoted.import@example.invalid"",""NY"",""10001"",""Draft"",""No"""
+	KILL IN,OUT,ERR SET IN("dataset")="patient-registration",IN("action")="patient.import.commit",IN("csv")=CSV
+	DO OK^MIOTASSERT($$MUTATE^MIOOSTBL(.STATE,.CONF,.IN,.OUT,.ERR),"[MIOOST][T089][quoted csv import ok]")
+	DO EQ^MIOTASSERT(+$GET(OUT("importPreview","committedCount")),1,"[MIOOST][T089][quoted csv committed]")
+	SET FOUND=0,I=0 FOR  SET I=$ORDER(@ROOT@("rows",I)) QUIT:I'>0!(FOUND)  IF $GET(@ROOT@("rows",I,"id"))="PAT-8900" SET FOUND=I
+	DO OK^MIOTASSERT(FOUND>0,"[MIOOST][T089][quoted csv row found]")
+	IF FOUND>0 DO
+	. DO EQ^MIOTASSERT($GET(@ROOT@("rows",FOUND,"lastName")),"Quoted, Last","[MIOOST][T089][quoted csv comma preserved]")
+	. DO EQ^MIOTASSERT($GET(@ROOT@("rows",FOUND,"state")),"NY","[MIOOST][T089][quoted csv state preserved]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSPAT.m","CSVFLDS(LINE,ARR)"),"[MIOOST][T089][csv parser helper]")
+	DO OK^MIOTASSERT($$FILEHAS("templates/pages/mioos_desktop.html","class=""mioos-root {{themeRootClass}}"""),"[MIOOST][T089][server dark first paint class]")
+	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSUI.m","themeRootClass"),"[MIOOST][T089][theme root class context]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","applyThemeStudioConfig(this.appliedThemeProfile"),"[MIOOST][T089][boot applies active theme]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","transferQueueRows(96)"),"[MIOOST][T089][large transfer window rows]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","slice(0, Math.max(1, Math.min(250"),"[MIOOST][T089][transfer queue cap]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_core.js","items.length > 250"),"[MIOOST][T089][transfer history cap]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","max-height:min(58vh,720px)"),"[MIOOST][T089][large transfer list scroll]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","Checkpoint stabilization follow-up pass"),"[MIOOST][T089][docs followup]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/Backend_Table.md","Patient CSV import contract"),"[MIOOST][T089][backend csv docs]")
+	DO OK^MIOTASSERT($$FILEHAS("examples/mioos_modules/patient_registration/README.md","quoted CSV"),"[MIOOST][T089][patient csv docs]")
 	QUIT
 	;

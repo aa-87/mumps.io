@@ -704,3 +704,11 @@ Patient/table contract: `row.add`, `row.save`, `cell.save`, `column.add`, `colum
 Preserve the bounded-edit text contract. `fs.text.chunk` returns `maxEditBytes`; the browser checks draft byte length before `fs.text.save`; and `FSTEXTSAVE^MIOOSWS` must reject oversized saves with `text_draft_too_large`. This is intentional: huge files are smooth chunked viewers, not unsafe whole-file editors.
 
 Preserve the DataURL-free upload contract. HTTP binary chunks are preferred. WebSocket binary fallback uses `encoding=base64` with raw byte accounting, and `MIOOSFSUP` decodes chunks through `B64D^MIOSJWT` before writing VFS bytes. Do not restore `base64-dataurl` for new Explorer upload encoding or persisted images.
+
+## Checkpoint stabilization follow-up pass
+
+Do not remove the boot-time dark-theme apply sequence. The server root class `themeRootClass` and the client `applyThemeStudioConfig(this.appliedThemeProfile, { silent: true, persist: false })` hydration call together ensure saved dark user themes render correctly at startup.
+
+Transfers should keep the animated status panel and support a large active queue in a single window. Preserve the 96-row visible queue request, the 250-record transfer center cap, and the scrollable transfer list styling unless a future ROI replaces them with an explicitly tested virtual list.
+
+Patient CSV import is MUMPS-first and quoted-field aware. Keep the `CSVFLDS` parser path in `MIOOSPAT` so `patient.import.preview` and `patient.import.commit` handle embedded commas while still routing through `MUTATE^MIOOSTBL`, validation, and audit behavior.

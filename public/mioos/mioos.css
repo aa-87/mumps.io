@@ -2002,6 +2002,7 @@ button:disabled { cursor: default; opacity: .55; }
 .mioos-classic-transferfacts { color: var(--mioos-classic-muted); }
 .mioos-classic-transferfacts strong { color:var(--mioos-classic-text); font-size:16px; margin-right:4px; }
 .mioos-classic-transferlist, .mioos-classic-historylist { display:grid; gap:10px; }
+.mioos-classic-transferlist { max-height:min(58vh,720px); overflow:auto; padding-right:4px; }
 .mioos-classic-transfercard, .mioos-classic-historyrow {
   display:grid; gap:8px; border:1px solid #d2d9e3; border-radius:4px; background:linear-gradient(180deg, #ffffff 0%, #f4f7fb 100%); padding:10px 12px;
 }
@@ -4306,6 +4307,7 @@ html[dir="rtl"] .mioos-window-menu-dropdown-vue,
 .theme-dark-mode .mioos-classic-transfersize,
 .theme-dark-mode .mioos-classic-historyrow small { color: #f8fafc !important; }
 .theme-dark-mode .mioos-classic-progress { background: #111827 !important; border-color: #374151 !important; }
+.theme-dark-mode .mioos-classic-transferlist { scrollbar-color: #374151 #000000; }
 .theme-dark-mode .mioos-text-virtual-viewer { background: #000000 !important; color: #f8fafc !important; }
 .theme-dark-mode .mioos-viewer-text-chunk,
 .theme-dark-mode .mioos-viewer-text-chunk.is-full-text { background: #050505 !important; color: #f8fafc !important; border-color: #1f2937 !important; }
