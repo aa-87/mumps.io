@@ -344,9 +344,9 @@
             '<header class="mioos-titlebar-vue" :class="[\'is-\' + family]" @pointerdown.stop="vm.beginDrag(window, $event)" @touchstart.stop="vm.beginTouchDrag(window, $event)" @dblclick.stop="vm.onWindowTitleDblClick(window.id)">' +
               '<div class="mioos-titlebar-copy-vue"><span class="mioos-titlebar-icon">[[ vm.appIcon(window.appKey) ]]</span><strong>[[ window.title ]]</strong></div>' +
               '<div class="mioos-window-actions-vue">' +
-                '<button type="button" class="mioos-window-control is-minimize" :title="vm.t(\'action.minimize\')" @click.stop="vm.minimizeWindow(window.id)"><span>—</span></button>' +
-                '<button type="button" class="mioos-window-control is-maximize" :title="vm.windowToggleLabel(window)" @click.stop="vm.toggleMaximize(window.id)"><span>□</span></button>' +
-                '<button type="button" class="mioos-window-control is-close" :title="vm.t(\'action.close\')" @click.stop="vm.closeWindow(window.id)"><span>×</span></button>' +
+                '<button type="button" class="mioos-window-control is-minimize" :title="vm.t(\'action.minimize\')" @pointerdown.stop @pointerup.stop @touchstart.stop @touchend.stop @click.stop.prevent="vm.minimizeWindow(window.id)"><span>—</span></button>' +
+                '<button type="button" class="mioos-window-control is-maximize" :title="vm.windowToggleLabel(window)" @pointerdown.stop @pointerup.stop @touchstart.stop @touchend.stop @click.stop.prevent="vm.toggleMaximize(window.id)"><span>□</span></button>' +
+                '<button type="button" class="mioos-window-control is-close" :title="vm.t(\'action.close\')" @pointerdown.stop @pointerup.stop @touchstart.stop @touchend.stop @click.stop.prevent="vm.closeWindow(window.id)"><span>×</span></button>' +
               '</div>' +
             '</header>' +
             '<mioos-window-toolbar v-if="!window.hideToolbar" :window="window"></mioos-window-toolbar>' +

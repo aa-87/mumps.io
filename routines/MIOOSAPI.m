@@ -231,8 +231,11 @@ FSTEXTCHUNK(DEV,CONF,REQ,CTX)
 	. DO RESPERR(.DEV,.CONF,403,"fs_text_chunk_failed",$GET(ERR("error")),.CTX)
 	SET OUT("mediaType")="text"
 	SET OUT("chunkSize")=SIZE
-	SET OUT("scrollSync")="byte-offset"
-	SET OUT("viewerContract")="chunked-text-v3-http-range"
+	SET OUT("scrollSync")="none"
+	SET OUT("loadTrigger")="open-session-not-scroll"
+	SET OUT("transport")="http-text-chunk"
+	SET OUT("viewerContract")="text-edit-session-v4-http-range"
+	SET OUT("loadContract")="bounded-explicit-text-load-v5"
 	SET OUT("boundedEdit")=0
 	SET OUT("fullEditOnDemand")=1
 	SET OUT("maxEditBytes")=0
@@ -244,7 +247,7 @@ FSTEXTCHUNK(DEV,CONF,REQ,CTX)
 	;
 FSTEXTSAVE(DEV,CONF,REQ,CTX)
 	NEW TREE,ERR,STATE,OUT,META,ID,PARENT,NAME,MIME,DATA,LIMIT
-	; Guard full-JSON text saves; large edits use staged HTTP upload chunks.
+	; MAXSTRING guard: full-JSON text saves are small only; large edits use staged HTTP upload chunks.
 	IF '$$PARSEBODY(.REQ,.TREE,.ERR) DO  QUIT
 	. DO RESPERR(.DEV,.CONF,400,"invalid_json",$GET(ERR("error")),.CTX)
 	IF '$$LOAD^MIOOSST(.CONF,.REQ,.CTX,.STATE,.ERR) DO  QUIT

@@ -5708,3 +5708,35 @@ html[dir="rtl"] .mioos-window-menu-dropdown-vue,
 .mioos-text-virtual-viewer.virtualized .mioos-viewer-text-chunk {
   max-width: none;
 }
+
+/* ROI 103: mobile titlebar controls and bounded full-text chunk loading. */
+.mioos-window-actions-vue {
+  position: relative;
+  z-index: 12;
+  pointer-events: auto;
+  touch-action: manipulation;
+}
+.mioos-window-control {
+  position: relative;
+  z-index: 13;
+  pointer-events: auto;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: rgba(0,0,0,0.08);
+}
+@media (max-width: 800px), (pointer: coarse) {
+  .mioos-window-actions-vue { gap: 8px; }
+  .mioos-window-control {
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    min-height: 34px;
+    border-radius: 11px;
+  }
+  .theme-mac .mioos-window-control,
+  .mioos-titlebar-vue.is-mac .mioos-window-control {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    min-height: 28px;
+  }
+}

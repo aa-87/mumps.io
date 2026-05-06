@@ -87,6 +87,7 @@ MIOOST ; MIOOS tests
 	DO T099
 	DO T100
 	DO T101
+	DO T102
 	QUIT
 	;
 RESET
@@ -1831,7 +1832,7 @@ T091
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","HTTP text chunk failed; using bounded WebSocket fallback"),"[MIOOST][T091][explicit opt-in socket fallback feedback]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","Text chunk paused; retry from the current offset is available"),"[MIOOST][T091][retry feedback]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","targetOffset = textViewerByteOffsetForScroll"),"[MIOOST][T091][scroll target offset mapping]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","full-on-demand"),"[MIOOST][T091][large file edit on demand mode]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","single-preview-too-large"),"[MIOOST][T091][large file bounded preview mode]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","textViewerLoadCompleteFile"),"[MIOOST][T091][editable files load in safe chunks]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","clearTextViewerChunkCache(stream.fileId)"),"[MIOOST][T091][save clears stale chunk cache]")
 	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","/api/mioos/fs/blob full-file fallback"),0,"[MIOOST][T091][no blob fallback marker for text]")
@@ -1884,11 +1885,11 @@ T092
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","userScrollArmed = true"),"[MIOOST][T092][scroll loads use explicit user target]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","textChunkRequestKey(id, offset, size)"),"[MIOOST][T092][chunk requests dedupe by id offset size]")
 	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","Socket timed out; retrying text chunk"),0,"[MIOOST][T092][no automatic socket retry loop]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","retryPolicy: 'manual-only'"),"[MIOOST][T092][failed chunks are manual retry only]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","stream.retryPolicy = 'manual-only'"),"[MIOOST][T092][failed chunks are manual retry only]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","vfs.textChunkSizeBytes || vfs.textChunkBytes || MIOOS_TEXT_WS_SAFE_CHUNK_BYTES"),"[MIOOST][T092][default chunk size not threshold]")
 	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","size: 2411725"),0,"[MIOOST][T092][no 2411725 default chunk request]")
 	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","this.command('fs.read'"),0,"[MIOOST][T092][no whole-file read fallback]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","full-on-demand"),"[MIOOST][T092][large text edit on demand mode]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","single-preview-too-large"),"[MIOOST][T092][large text bounded preview mode]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","clearTextViewerChunkCache(stream.fileId)"),"[MIOOST][T092][save clears stale cache]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSWS.m","IF SIZE>LIMIT SET SIZE=LIMIT"),"[MIOOST][T092][ws chunk maxstring clamp]")
 	DO OK^MIOTASSERT($$FILEHAS("routines/MIOOSFS.m","QUIT:$DATA(ERR("),"[MIOOST][T092][backend range read stops on error]")
@@ -1935,24 +1936,24 @@ T093
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","theme-dark-mode .mioos-explorer-context-menu button"),"[MIOOST][T093][dark context menu selector]")
 	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","body { color: #fff"),0,"[MIOOST][T093][no global body white override]")
 	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","* { color: #fff"),0,"[MIOOST][T093][no global wildcard white override]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","@wheel.passive=""armTextScroll"),"[MIOOST][T093][wheel arms text scroll]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","@pointerdown=""armTextScroll"),"[MIOOST][T093][pointer arms text scroll]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","@pointermove=""armTextScroll"),"[MIOOST][T093][pointer drag keeps scroll armed]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","@touchstart.passive=""armTextScroll"),"[MIOOST][T093][touch arms text scroll]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","@touchmove.passive=""armTextScroll"),"[MIOOST][T093][touch drag keeps scroll armed]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","@keydown=""armTextScroll"),"[MIOOST][T093][keyboard arms text scroll]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","if (!stream.userScrollArmed)"),"[MIOOST][T093][idle scroll ignored]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","scrollIntentExpiresAt"),"[MIOOST][T093][scroll intent expires]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","@wheel.passive=""armTextScroll"),0,"[MIOOST][T093][no wheel-driven text loading]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","@pointerdown=""armTextScroll"),0,"[MIOOST][T093][no pointer-driven text loading]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","@pointermove=""armTextScroll"),0,"[MIOOST][T093][no pointer-drag text loading]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","@touchstart.passive=""armTextScroll"),0,"[MIOOST][T093][no touch-driven text loading]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","@touchmove.passive=""armTextScroll"),0,"[MIOOST][T093][no touch-drag text loading]")
+	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","@keydown=""armTextScroll"),0,"[MIOOST][T093][no keyboard-triggered text loading]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","scrollLoadDisabled"),"[MIOOST][T093][scroll loading disabled marker]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","loadStrategy: virtualized ? 'single-preview-too-large'"),"[MIOOST][T093][large text one chunk strategy]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","lastRequestedOffset"),"[MIOOST][T093][same offset dedupe]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","textViewerArmScroll"),"[MIOOST][T093][scroll arm entrypoint]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","textViewerArmScroll"),"[MIOOST][T093][scroll arm no-op entrypoint]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","initialLoadRequest"),"[MIOOST][T093][single initial chunk guard]")
 	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","prefetch"),0,"[MIOOST][T093][no idle neighbor prefetch]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","textChunkRequestKey(id, offset, size)"),"[MIOOST][T093][dedupe key id offset size]")
 	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","Socket timed out; retrying text chunk"),0,"[MIOOST][T093][no auto retry loop]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","retryPolicy: 'manual-only'"),"[MIOOST][T093][manual retry policy]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","stream.retryPolicy = 'manual-only'"),"[MIOOST][T093][manual retry policy]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","readTextChunkViaHttp"),"[MIOOST][T093][http range fallback retained]")
 	DO EQ^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","this.command('fs.read'"),0,"[MIOOST][T093][no full file read fallback]")
-	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","Large file is viewable now. Choose Edit to load all chunks for editing"),"[MIOOST][T093][large edit explicit]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","Edit File as Text")&$$FILEHAS("public/mioos/app/mioos_explorer.js","preview-only-too-large"),"[MIOOST][T093][large edit explicit]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","textCanEdit: function () { return !!this.textStream; }"),"[MIOOST][T093][large edit button enabled]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","clearTextViewerChunkCache(stream.fileId)"),"[MIOOST][T093][save clears chunk cache]")
 	DO INIT^MIOOS(.CONF)
@@ -2292,4 +2293,20 @@ T101
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","Opening a large/unknown text file must never escalate into an automatic full-document chunk loop"),"[MIOOST][T101][large preview no auto full loop]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","ROI 102: large text preview must remain scrollable"),"[MIOOST][T101][large preview scrollbar css]")
 	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","textEditNotice: function () { return ''; }")&$$FILEHAS("public/mioos/app/mioos_shell_ui.js","s.statusPinned || s.statusVisible || s.error"),"[MIOOST][T101][status auto hide no permanent notice]")
+	QUIT
+		;
+T102
+	DO RESET
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","textViewerRawOffset"),"[MIOOST][T102][exact chunk offsets are preserved]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","textViewerChunkNextOffset"),"[MIOOST][T102][monotonic next offset helper]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","text_chunk_offset_repeated"),"[MIOOST][T102][repeat offset loop guard]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","text_chunk_offset_mismatch"),"[MIOOST][T102][offset mismatch guard]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_explorer.js","fullLoadSeenOffsets"),"[MIOOST][T102][full load seen offsets marker]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","@pointerdown.stop @pointerup.stop @touchstart.stop @touchend.stop @click.stop.prevent=""vm.minimizeWindow"),"[MIOOST][T102][mobile minimize hit stops drag]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","@pointerdown.stop @pointerup.stop @touchstart.stop @touchend.stop @click.stop.prevent=""vm.toggleMaximize"),"[MIOOST][T102][mobile maximize hit stops drag]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/app/mioos_shell_ui.js","@pointerdown.stop @pointerup.stop @touchstart.stop @touchend.stop @click.stop.prevent=""vm.closeWindow"),"[MIOOST][T102][mobile close hit stops drag]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","ROI 103: mobile titlebar controls and bounded full-text chunk loading"),"[MIOOST][T102][mobile controls css marker]")
+	DO OK^MIOTASSERT($$FILEHAS("public/mioos/mioos.css","touch-action: manipulation"),"[MIOOST][T102][mobile controls touch action]")
+	DO OK^MIOTASSERT($$FILEHAS("docs/mioos/README.md","ROI 103"),"[MIOOST][T102][readme docs]")
+	DO OK^MIOTASSERT($$FILEHAS("mioos_llm.md","ROI 103"),"[MIOOST][T102][llm docs]")
 	QUIT

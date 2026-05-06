@@ -836,3 +836,9 @@ The `maxTextEditBytes` cap is removed. All text-like files should be viewable an
 - Large or unknown-size text open must remain a one-chunk preview and must never auto-escalate into `textViewerLoadCompleteFile`. Full edit is explicit and remains guarded by browser byte cap, chunk count, and stalled-offset checks.
 - The large text preview pane must be scrollable via CSS; do not reintroduce scroll-triggered chunk loading.
 - The bottom text status panel must auto-hide unless pinned, retryable, or erroring; do not use permanent computed notices to keep it mounted.
+
+## ROI 103 handoff — no repeated text chunk loop; mobile titlebar controls
+
+- Sequential full-text loading must preserve exact `nextOffset` values from the backend. Do not align/floor full-load offsets back to chunk boundaries. The frontend now has `textViewerRawOffset`, `textViewerChunkNextOffset`, `fullLoadSeenOffsets`, `text_chunk_offset_repeated`, and `text_chunk_offset_mismatch` guards to stop repeated `/api/mioos/fs/text-chunk` loops.
+- Large or unknown-size text files continue to open as one bounded preview chunk by default. Explicit source editing must stay capped by `maxBrowserTextEditBytes`/`MIOOS_TEXT_BROWSER_EDIT_MAX_BYTES`.
+- Mobile titlebar controls must keep `@pointerdown.stop @pointerup.stop @touchstart.stop @touchend.stop @click.stop.prevent` on minimize, maximize/restore, and close buttons. CSS coarse-pointer hit targets and `touch-action: manipulation` are required so taps are not consumed by titlebar drag.

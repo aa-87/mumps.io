@@ -180,8 +180,11 @@ FSTEXTCHUNK(STATE,CONF,TREE,OUTJSON,ERR)
 	IF '$$READWIN^MIOOSFS(.STATE,ID,OFFSET,SIZE,.OUT,.ERR) QUIT 0
 	SET OUT("mediaType")="text"
 	SET OUT("chunkSize")=SIZE
-	SET OUT("scrollSync")="byte-offset"
-	SET OUT("viewerContract")="chunked-text-v3"
+	SET OUT("scrollSync")="none"
+	SET OUT("loadTrigger")="open-session-not-scroll"
+	SET OUT("transport")="bounded-websocket-text-chunk"
+	SET OUT("viewerContract")="text-edit-session-v4-ws-range"
+	SET OUT("loadContract")="bounded-explicit-text-load-v5"
 	SET OUT("boundedEdit")=0
 	SET OUT("fullEditOnDemand")=1
 	SET OUT("maxEditBytes")=0
@@ -192,7 +195,7 @@ FSTEXTCHUNK(STATE,CONF,TREE,OUTJSON,ERR)
 	;
 FSTEXTSAVE(STATE,CONF,TREE,OUTJSON,ERR)
 	NEW OUT,META,ID,PARENT,NAME,MIME,DATA,LIMIT
-	; Guard giant WebSocket JSON text saves; large edits use staged HTTP upload chunks.
+	; MAXSTRING guard: giant WebSocket JSON text saves are rejected; large edits use staged HTTP upload chunks.
 	SET ID=$SELECT($GET(TREE("id"))'="":$GET(TREE("id")),1:$GET(TREE("path")))
 	IF ID="" SET ERR("error")="file_id_missing" QUIT 0
 	SET DATA=$GET(TREE("content"))
