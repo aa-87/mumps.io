@@ -1,7 +1,7 @@
 # Installation ON GITYHUB CODESPACES (WIP)
 
  * sudo -i su root   
- * wget https://raw.githubusercontent.com/aa-87/mumps.io/refs/heads/main/scripts/install/codespaces.sh && chmod +X codespaces.sh
+ * chmod +X /workspaces/mumps.io/scripts/install/codespaces.sh
  * ./codespaces.sh
  ** ``` log out and create the following in ~/.bashrc ```
  ***
