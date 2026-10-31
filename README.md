@@ -1,4 +1,4 @@
-# Installation ON GITYHUB CODESPACES (WIP)
+# Installation ON GITHUB CODESPACES (WIP)
 
  * (STILL WIP)
  * sudo -i chmod +X /workspaces/mumps.io/scripts/install/codespaces.sh
