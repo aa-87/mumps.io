@@ -1,3 +1,18 @@
+# Installation ON GITYHUB CODESPACES (WIP)
+
+ * sudo -i su root   
+ * wget https://raw.githubusercontent.com/aa-87/mumps.io/refs/heads/main/scripts/install/codespaces.sh && chmod +X codespaces.sh
+ * ./codespaces.sh
+ ** ``` log out and create the following in ~/.bashrc ```
+ ***
+ ```
+    source $(pkg-config --variable=prefix yottadb)/ydb_env_set
+    export ydb_routines=`$ydb_dist/yottadb -run %XCMD 'W $P($P($ZRO,"(",1,2),")")_" "_"/workspaces/mumps.io/routines"_")"_$P($ZRO,")",2,$L($ZRO,")"))'`   "
+
+
+ ```
+
+
 # MUMPS.IO (MIO) Web Server for YottaDB / GT.M
 
 MUMPS.IO (MIO) is a production-grade web server stack written in MUMPS.
