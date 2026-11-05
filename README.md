@@ -1,7 +1,7 @@
 # Installation ON GITHUB CODESPACES (WIP)
 
  * (STILL WIP)
- * SEE (LINK)[https://chatgpt.com/share/6aecc58e-bfbc-83e9-83dd-d766ee06cef0] FOR A SAMPLE OF CHATGPT (R) USE ! 
+ * SEE https://chatgpt.com/share/6aecc58e-bfbc-83e9-83dd-d766ee06cef0 FOR A SAMPLE OF CHATGPT (R) USE ! 
  * **
  * cp /workspaces/mumps.io/scripts/install/codespaces.sh .
  * sudo -i chmod +X ./codespaces.sh
