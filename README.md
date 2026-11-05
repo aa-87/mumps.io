@@ -8,9 +8,8 @@
  ** ``` log out and create the following in ~/.bashrc ```
  ***
  ```
-    source $(pkg-config --variable=prefix yottadb)/ydb_env_set
-    export ydb_routines=`$ydb_dist/yottadb -run %XCMD 'W $P($P($ZRO,"(",1,2),")")_" "_"/workspaces/mumps.io/routines"_")"_$P($ZRO,")",2,$L($ZRO,")"))'`   "
-
+ source $(pkg-config --variable=prefix yottadb)/ydb_env_set
+ export ydb_routines=`$ydb_dist/yottadb -run %XCMD 'W $P($P($ZRO,"(",1,2),")")_" "_"/home/aa/work/mumps.io/routines"_")"_$P($ZRO,")",2,$L($ZRO,")"))'` 
 
  ```
 
@@ -79,6 +78,7 @@ These rules exist to keep the code maintainable.
 
 - Production code does not use `ZSYSTEM`.
 - Production code does not use `GOTO`.
+- [planned for the future (see why: https://youtu.be/G0iNLbtrENQ?si=Y0t0iz4jBPzGeA86&t=930 ) DO NOT USER `$FIND`
 - Request bodies are streamed to avoid MAXSTRING failures.
 - Large payloads are stored in globals such as `^TMP($J,...)`.
 - Errors always include `ERR("routine")` and `ERR("error")`.
@@ -858,7 +858,7 @@ Add tests for new behavior.
 
 Keep tests quiet on success.
 
-Follow the no-`ZSYSTEM` and no-`GOTO` rules.
+Follow the no-`ZSYSTEM` and no-`GOTO` and no-`$FIND [FUTURE WIP (Assume the code does not include $F ] ( see the following link for why? https://youtu.be/G0iNLbtrENQ?si=Y0t0iz4jBPzGeA86&t=930 )  rules.
 
 
 
