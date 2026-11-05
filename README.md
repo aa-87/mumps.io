@@ -78,7 +78,7 @@ These rules exist to keep the code maintainable.
 
 - Production code does not use `ZSYSTEM`.
 - Production code does not use `GOTO`.
-- [planned for the future (see why: https://youtu.be/G0iNLbtrENQ?si=Y0t0iz4jBPzGeA86&t=930 ) DO NOT USER `$FIND`
+- [planned for the future (see why: https://youtu.be/G0iNLbtrENQ?si=Y0t0iz4jBPzGeA86&t=930 ) DO NOT USE `$FIND`
 - Request bodies are streamed to avoid MAXSTRING failures.
 - Large payloads are stored in globals such as `^TMP($J,...)`.
 - Errors always include `ERR("routine")` and `ERR("error")`.
