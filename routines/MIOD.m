@@ -36,7 +36,7 @@ STERR
 	;
 START(CONF,PORT)
 	NEW ZJ S ZJ=0 S PORT=$G(PORT)
-	I 'PORT SET PORT=$GET(CONF("server","listen","port"),8083)
+	I 'PORT SET PORT=$GET(CONF("server","listen","port"),7777)
 	D INFO^MIOLOG("mio_server_started","")
 	J RUN(PORT) 
 	S ZJ=$ZJOB H 2 I ZJ D:$D(^MIO("CTL",ZJ)) INFO^MIOLOG("listen_success","port=["_PORT_"] pid=["_ZJ_"]")
