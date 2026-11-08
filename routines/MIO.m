@@ -23,6 +23,7 @@ MIO ; Routine for the MIO web server package.;
 ; Entry point
 ; See docs/routines for details.;
 start(PORT) ; start^MIO
+	D ^MIOPRODW  K (PORT)
 	NEW CONF S PORT=$G(PORT)
 	DO INIT(.CONF)
 	S CONF("server","version")="0.1.0"
