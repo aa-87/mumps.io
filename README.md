@@ -1,7 +1,8 @@
 # Installation ON GITHUB CODESPACES (WIP)
 
  * (STILL WIP)
- * SEE https://chatgpt.com/share/6aecc58e-bfbc-83e9-83dd-d766ee06cef0 FOR A SAMPLE OF CHATGPT (R) USE ! 
+ * SEE https://chatgpt.com/share/6aecc58e-bfbc-83e9-83dd-d766ee06cef0 FOR A SAMPLE OF CHATGPT (R) USE !
+ * another example of LLNM use: https://chatgpt.com/share/6af1dfd6-7f88-83e9-8a37-401a41307b1a
  * **
  * cp /workspaces/mumps.io/scripts/install/codespaces.sh .
  * sudo -i chmod +X ./codespaces.sh
