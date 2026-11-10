@@ -1,20 +1,3 @@
-# SEE BELOW FOR CHATGPT USAGE EXAMPLES. NO AGENTS or Codex Or any other similar BS was/is involved.
-
- * (STILL WIP)
- * SEE https://chatgpt.com/share/6aecc58e-bfbc-83e9-83dd-d766ee06cef0 FOR A SAMPLE OF CHATGPT (R) USE !
- * another example of LLNM use: https://chatgpt.com/share/6af1dfd6-7f88-83e9-8a37-401a41307b1a
- * **
- * cp /workspaces/mumps.io/scripts/install/codespaces.sh .
- * sudo -i chmod +X ./codespaces.sh
- * sudo -i ./codespaces.sh
- ** ``` log out and create the following in ~/.bashrc ```
- ***
- ```
- source $(pkg-config --variable=prefix yottadb)/ydb_env_set
- export ydb_routines=`$ydb_dist/yottadb -run %XCMD 'W $P($P($ZRO,"(",1,2),")")_" "_"/home/aa/work/mumps.io/routines"_")"_$P($ZRO,")",2,$L($ZRO,")"))'` 
-
- ```
-
 
 # MUMPS.IO (MIO) Web Server for YottaDB / GT.M
 
@@ -971,4 +954,20 @@ Follow the no-`ZSYSTEM` and no-`GOTO` and no-`$FIND [FUTURE WIP (Assume the code
 
        ```
 
-    
+     SEE BELOW FOR CHATGPT USAGE EXAMPLES. NO AGENTS or Codex Or any other similar BS was/is involved.
+
+ * (STILL WIP)
+ * SEE https://chatgpt.com/share/6aecc58e-bfbc-83e9-83dd-d766ee06cef0 FOR A SAMPLE OF CHATGPT (R) USE !
+ * another example of LLNM use: https://chatgpt.com/share/6af1dfd6-7f88-83e9-8a37-401a41307b1a
+ * **
+ * cp /workspaces/mumps.io/scripts/install/codespaces.sh .
+ * sudo -i chmod +X ./codespaces.sh
+ * sudo -i ./codespaces.sh
+ ** ``` log out and create the following in ~/.bashrc ```
+ ***
+ ```
+ source $(pkg-config --variable=prefix yottadb)/ydb_env_set
+ export ydb_routines=`$ydb_dist/yottadb -run %XCMD 'W $P($P($ZRO,"(",1,2),")")_" "_"/home/aa/work/mumps.io/routines"_")"_$P($ZRO,")",2,$L($ZRO,")"))'` 
+
+ ```
+
