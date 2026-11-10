@@ -74,7 +74,6 @@ MUMPS.IO aims to demonstrate that MUMPS can be a first-class environment for bui
 [Explore the source code](https://github.com/aa-87/mumps.io) · [Report an issue](https://github.com/aa-87/mumps.io/issues) · [Contribute](https://github.com/aa-87/mumps.io/pulls)
 
 # MIOOS ( Sample Desktop-like Application on top of the webserver stack, included to ease the transition from windows/Intersystem environments 
-# MIOOS
 
 ## 2026 desktop simplification update
 - The active shell now uses **one desktop** instead of multiple workspaces.
