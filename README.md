@@ -102,10 +102,6 @@ d stop^MIO
 d start^MIO(9858) ;or any port. 
 ```
 
-Your repository may also provide a top-level entry routine.
-
-For example, you may start from `MIO` or `MIOMIO`.
-
 
 ## Request life cycle
 
