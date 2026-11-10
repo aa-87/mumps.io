@@ -68,6 +68,34 @@ MUMPS.IO is particularly suited to:
 MUMPS.IO aims to demonstrate that MUMPS can be a first-class environment for building modern web applications, APIs, and long-lived application services.
 
 ---
+ ## installation notes for a fresh ubuntu install
+ ```
+  sudo apt-get update && sudo apt-get upgrade
+  sudo apt-get install --no-install-recommends file cmake make gawk gcc git curl tcsh libjansson4 {libconfig,libelf,libicu,libncurses,libreadline,libjansson,libssl}-dev binutils ca-certificates
+
+  mkdir /tmp/tmp && cd /tmp/tmp && wget https://download.yottadb.com/ydbinstall.sh && chmod +x ydbinstall.sh
+
+
+      sudo ./ydbinstall.sh                             # Quiet basic installation
+      sudo ./ydbinstall.sh --verbose                   # Basic installation
+      sudo ./ydbinstall.sh --utf8                      # YottaDB installation with UTF-8 support
+      sudo ./ydbinstall.sh --utf8 --octo --gui         # YottaDB installation with UTF-8 support, Octo, and the GUI
+      ./ydbinstall.sh --help                           # Output a complete list of ydbinstall options
+      sudo ./ydbinstall.sh --utf8 --allplugins         # YottaDB installation with UTF-8 support and all plugins
+
+  source $(pkg-config --variable=prefix yottadb)/ydb_env_set
+  export ydb_routines=`$ydb_dist/yottadb -run %XCMD 'W $P($P($ZRO,"(",1,2),")")_" "_"/home/aa/work/mumps.io/routines"_")"_$P($ZRO,")",2,$L($ZRO,")"))'`   
+      sudo ufw status (if installed).
+      sudo ufw allow 9080
+      sudo iptables -A INPUT -p tcp --dport 9080 -j ACCEPT
+```
+
+ # SEE BELOW FOR CHATGPT USAGE EXAMPLES. NO AGENTS or Codex Or any other similar BS was/is involved.
+
+ * (STILL WIP)
+ * SEE https://chatgpt.com/share/6aecc58e-bfbc-83e9-83dd-d766ee06cef0 FOR A SAMPLE OF CHATGPT (R) USE !
+ * another example of LLNM use: https://chatgpt.com/share/6af1dfd6-7f88-83e9-8a37-401a41307b1a
+
 
 **Get started:** See the [Templating Section MIOTPL](https://github.com/aa-87/mumps.io/blob/main/docs/MIOTPL.md), and browse the examples throughout this repository.
 
