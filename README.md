@@ -86,29 +86,26 @@ D ^MIOTESTS
 ```
 
 If the suite passes, your environment is set up correctly.
+tests pass silently by default. If there is an output then a test(s) has/have failed. 
+lastly, make sure to reprocess the templates by doing (D ^MIOPRODW), or simply restating the server
+```mumps
+d stop^MIO
+d start^MIO(9858) ;or any port. 
+```
 
 ### 2) Start the server
 
-Most deployments load configuration from `^MIO("CONF")`.
+Deployments load configuration from `^MIO("CONF")`.
 
 ```mumps
-N CONF
-M CONF=^MIO("CONF")
-D START^MIOD(.CONF)
+d stop^MIO
+d start^MIO(9858) ;or any port. 
 ```
 
 Your repository may also provide a top-level entry routine.
 
 For example, you may start from `MIO` or `MIOMIO`.
 
-### 3) Test the health endpoints
-
-```bash
-curl -i http://127.0.0.1:9080/healthz
-curl -i http://127.0.0.1:9080/readyz
-```
-
----
 
 ## Request life cycle
 
