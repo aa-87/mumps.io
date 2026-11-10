@@ -68,7 +68,7 @@ MUMPS.IO is particularly suited to:
 MUMPS.IO aims to demonstrate that MUMPS can be a first-class environment for building modern web applications, APIs, and long-lived application services.
 
 ---
- ## installation notes for a fresh ubuntu install
+ ## Installation notes for a fresh ubuntu install
  ```
   sudo apt-get update && sudo apt-get upgrade
   sudo apt-get install --no-install-recommends file cmake make gawk gcc git curl tcsh libjansson4 {libconfig,libelf,libicu,libncurses,libreadline,libjansson,libssl}-dev binutils ca-certificates
