@@ -69,11 +69,11 @@ MUMPS.IO aims to demonstrate that MUMPS can be a first-class environment for bui
 
 ---
 
-**Get started:** See the [Quick Start](#quick-start), explore the [configuration reference](docs/CONFIG.md), and browse the examples throughout this repository.
+**Get started:** See the [Templating Section MIOTPL](https://github.com/aa-87/mumps.io/blob/main/docs/MIOTPL.md), and browse the examples throughout this repository.
 
 [Explore the source code](https://github.com/aa-87/mumps.io) · [Report an issue](https://github.com/aa-87/mumps.io/issues) · [Contribute](https://github.com/aa-87/mumps.io/pulls)
 
-# MIOOS
+# MIOOS ( Sample Desktop-like Application on top of the webserver stack, included to ease the transition from windows/Intersystem environments 
 
 ## 2026 desktop simplification update
 - The active shell now uses **one desktop** instead of multiple workspaces.
