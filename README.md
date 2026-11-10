@@ -841,7 +841,7 @@ Follow the no-`ZSYSTEM` and no-`GOTO` and no-`$FIND [FUTURE WIP (Assume the code
 
 
 #TODO IN README
-```Next README expansions I will generate
+## Next README expansions I will generate
 
       Full request lifecycle walkthrough
 
@@ -922,10 +922,9 @@ Follow the no-`ZSYSTEM` and no-`GOTO` and no-`$FIND [FUTURE WIP (Assume the code
       auth
 
       static assets
-      ```
 
-    ```
-  installation notes for a fresh ubuntu install
+ ## installation notes for a fresh ubuntu install
+ ```
   sudo apt-get update && sudo apt-get upgrade
   sudo apt-get install --no-install-recommends file cmake make gawk gcc git curl tcsh libjansson4 {libconfig,libelf,libicu,libncurses,libreadline,libjansson,libssl}-dev binutils ca-certificates
 
@@ -944,10 +943,9 @@ Follow the no-`ZSYSTEM` and no-`GOTO` and no-`$FIND [FUTURE WIP (Assume the code
       sudo ufw status (if installed).
       sudo ufw allow 9080
       sudo iptables -A INPUT -p tcp --dport 9080 -j ACCEPT
+```
 
-       ```
-
-     SEE BELOW FOR CHATGPT USAGE EXAMPLES. NO AGENTS or Codex Or any other similar BS was/is involved.
+ # SEE BELOW FOR CHATGPT USAGE EXAMPLES. NO AGENTS or Codex Or any other similar BS was/is involved.
 
  * (STILL WIP)
  * SEE https://chatgpt.com/share/6aecc58e-bfbc-83e9-83dd-d766ee06cef0 FOR A SAMPLE OF CHATGPT (R) USE !
