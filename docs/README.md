@@ -1,3 +1,78 @@
+# MUMPS.IO (MIO)
+
+### Bring MUMPS to the Web.
+
+**A complete, MUMPS-native web server stack for YottaDB and GT.M-compatible environments.**
+
+MUMPS.IO is a web application server built from the ground up in MUMPS. It brings modern web development capabilities directly into the MUMPS ecosystem, allowing developers to build HTTP APIs, dynamic websites, and application backends using the language and database technology they already know.
+
+No separate application runtime is required for your MUMPS application logic. Your handlers, routing, middleware, authentication, and application data can all live within the MUMPS environment.
+
+MIO is designed around predictable execution, strict HTTP handling, streaming I/O, security controls, and operational visibility.
+
+**Everything you need to build and operate MUMPS-powered web applications.**
+
+---
+
+## What MUMPS.IO brings to the table
+
+| Capability | What it provides |
+|---|---|
+| **HTTP/1.1 Server** | Strict HTTP parsing, keep-alive, streaming requests and responses, and multipart uploads |
+| **Routing Engine** | Deterministic routing, URL parameters, wildcards, and route-level metadata |
+| **Middleware Pipeline** | Configurable global and per-route middleware with predictable execution order |
+| **Template Engine** | Mustache-compatible templates, partials, HTML escaping, and precompilation |
+| **Static File Server** | Safe file serving, ETags, cache validation, byte ranges, and precompressed assets |
+| **Authentication & Authorization** | API keys, JWT (HS256), role-based access control, and ownership checks |
+| **Security** | CORS, Content Security Policy, security headers, request limits, and configurable security presets |
+| **Observability** | Access logs, metrics, error tracking, and debugging endpoints |
+| **Operational Controls** | Health checks, readiness checks, rate limiting, connection limits, and graceful shutdown |
+| **Performance Tooling** | Dedicated performance harness and regression gates |
+
+## Designed for the MUMPS ecosystem
+
+MUMPS.IO takes the characteristics of MUMPS seriously.
+
+- **Streaming-first architecture:** Request and response bodies can be processed incrementally.
+- **MAXSTRING-aware processing:** Large payloads can be handled using global-backed storage rather than relying exclusively on scalar strings.
+- **Native MUMPS implementation:** Core server functionality and application handlers are implemented in MUMPS.
+- **Global-backed configuration:** Server configuration is represented using M arrays and can be persisted in YottaDB globals.
+- **Predictable execution:** Deterministic routing and middleware execution make application behavior easier to understand, test, and maintain.
+
+## Built with operational requirements in mind
+
+MUMPS.IO includes capabilities for running real applications, not just experimenting with HTTP requests.
+
+- Configurable authentication and authorization.
+- Request-rate and connection controls.
+- Access logging and operational metrics.
+- Health and readiness endpoints.
+- Error tracking and diagnostic endpoints.
+- Graceful connection draining during shutdown.
+- Deployment examples for systemd, Nginx, Caddy, and Kubernetes.
+
+## Who is MUMPS.IO for?
+
+MUMPS.IO is particularly suited to:
+
+- Organizations running YottaDB or GT.M infrastructure.
+- MUMPS developers building modern web applications.
+- Teams exposing existing MUMPS business logic through HTTP APIs.
+- Developers building internal tools and enterprise application backends.
+- Organizations looking to extend their MUMPS environments without introducing a separate application-language stack.
+
+## The philosophy
+
+**Modern web capabilities. Native MUMPS implementation. Predictable engineering.**
+
+MUMPS.IO aims to demonstrate that MUMPS can be a first-class environment for building modern web applications, APIs, and long-lived application services.
+
+---
+
+**Get started:** See the [Quick Start](#quick-start), explore the [configuration reference](docs/CONFIG.md), and browse the examples throughout this repository.
+
+[Explore the source code](https://github.com/aa-87/mumps.io) · [Report an issue](https://github.com/aa-87/mumps.io/issues) · [Contribute](https://github.com/aa-87/mumps.io/pulls)
+
 # MIOOS
 
 ## 2026 desktop simplification update
