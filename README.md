@@ -1,4 +1,4 @@
-# Installation ON GITHUB CODESPACES (WIP)
+# SEE BELOW FOR CHATGPT USAGE EXAMPLES. NO AGENTS or Codex Or any other similar BS was/is involved.
 
  * (STILL WIP)
  * SEE https://chatgpt.com/share/6aecc58e-bfbc-83e9-83dd-d766ee06cef0 FOR A SAMPLE OF CHATGPT (R) USE !
