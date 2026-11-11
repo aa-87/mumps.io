@@ -96,7 +96,7 @@ MUMPS.IO aims to demonstrate that MUMPS can be a first-class environment for bui
 |            |                                                                |
 |------------|----------------------------------------------------------------|
 | example 1  | https://chatgpt.com/share/6af1dfd6-7f88-83e9-8a37-401a41307b1a |
-| example 3  | https://chatgpt.com/share/6af484a5-c024-83e9-b10d-105ca6bec07f |
+| example 2  | https://chatgpt.com/share/6af484a5-c024-83e9-b10d-105ca6bec07f |
 | example 3  | https://chatgpt.com/share/6aecc58e-bfbc-83e9-83dd-d766ee06cef0 |
 
 
