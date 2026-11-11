@@ -104,6 +104,7 @@ MUMPS.IO aims to demonstrate that MUMPS can be a first-class environment for bui
 # MIOOS ( Sample Desktop-like Application on top of the webserver stack, included to ease the transition from windows/Intersystem environments 
 
 MIOOS is a MUMPS-powered desktop shell for the MIO web stack.
+![demo](https://github.com/aa-87/mumps.io/blob/main/tmp/ezgif.com-gif-maker.gif)
 
 ## Current baseline
 
