@@ -91,10 +91,13 @@ MUMPS.IO aims to demonstrate that MUMPS can be a first-class environment for bui
 ```
 
  # SEE BELOW FOR CHATGPT USAGE EXAMPLES. NO AGENTS or Codex Or any other similar BS was/is involved.
+ ## More is added daily ( there is a lot, the donations make it worth it. waaaa2 waa2 (sterling is an interesting bird yo)
 
- * (STILL WIP)
- * SEE https://chatgpt.com/share/6aecc58e-bfbc-83e9-83dd-d766ee06cef0 FOR A SAMPLE OF CHATGPT (R) USE !
- * another example of LLNM use: https://chatgpt.com/share/6af1dfd6-7f88-83e9-8a37-401a41307b1a
+|            |                                                                |
+|------------|----------------------------------------------------------------|
+| example 1  | https://chatgpt.com/share/6af1dfd6-7f88-83e9-8a37-401a41307b1a |
+| example 3  | https://chatgpt.com/share/6af484a5-c024-83e9-b10d-105ca6bec07f |
+| example 3  | https://chatgpt.com/share/6aecc58e-bfbc-83e9-83dd-d766ee06cef0 |
 
 
 **Get started:** See the [Templating Section MIOTPL](https://github.com/aa-87/mumps.io/blob/main/docs/MIOTPL.md), and browse the examples throughout this repository.
