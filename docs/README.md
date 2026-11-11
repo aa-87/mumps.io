@@ -1,5 +1,9 @@
 # MUMPS.IO (MIO)
 
+### live preview of MIOPLGD @ http://162.35.41.160:8080/mioplgd
+### live preview of MIOOS @ http://162.35.41.160:8080/mioos [please be respectful, this is a shared desktop until i can afford some privacy and maybe a chromebook]
+
+
 ### Bring MUMPS to the Web.
 
 **A complete, MUMPS-native web server stack for YottaDB and GT.M-compatible environments.**
