@@ -102,6 +102,12 @@ MUMPS.IO aims to demonstrate that MUMPS can be a first-class environment for bui
 [Explore the source code](https://github.com/aa-87/mumps.io) · [Report an issue](https://github.com/aa-87/mumps.io/issues) · [Contribute](https://github.com/aa-87/mumps.io/pulls)
 
 # MIOOS ( Sample Desktop-like Application on top of the webserver stack, included to ease the transition from windows/Intersystem environments 
+```
+1) make sure you are in the mumps.io directory before launching d start^MIO(####)
+2) Username/Password --> admin/W@lid2012
+```
+
+
 
 MIOOS is a MUMPS-powered desktop shell for the MIO web stack.
 ![demo](https://github.com/aa-87/mumps.io/blob/main/tmp/ezgif.com-gif-maker.gif)
