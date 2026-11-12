@@ -2,7 +2,7 @@
 
 ### live preview of MIOPLGD @ http://162.35.41.160:8080/mioplgd
 ### live preview of MIOOS @ http://162.35.41.160:8080/mioos [please be respectful, this is a shared desktop until i can afford some privacy and maybe a chromebook (((admin/W@lid2012)))]
-!(demo)[http://162.35.41.160:8080/vids/demo.webm] (mp4 coming soon)
+!(demo)[http://162.35.41.160:8080/vids/demo.mp4]
 
 ### Bring MUMPS to the Web.
 
