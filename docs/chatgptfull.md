@@ -22,13 +22,8 @@
 | 19 |https://chatgpt.com/g/g-p-697fc2e64d748191b5f1a3a621be95e9-mumps-ide/project |
 | 20 |https://chatgpt.com/g/g-p-697e9162430081919b6b94cb158554e5-making/project |
 | 21 |https://chatgpt.com/g/g-p-69503507a2388191a9ea36754aa07c64-mgui/project |
-| 22 | |
-| 23 | |
-| 24 | |
-| 25 | |
-| 26 | |
-| 27 | |
-| 28 | |
+| 22 | https://chatgpt.com/g/g-p-69fb2bff38608191b732d6e02bfa447a-mioos/shared/c/69fb437b-6668-83ea-b0d4-e51227c2374c?owner_user_id=user-yOyrjp4KIJSg5pG5skQzMuki|
+| 23 |https://chatgpt.com/g/g-p-69ccc77a00e08191afa942ce1d98d1c3-mioosdgb/shared/c/69cccbcd-2bcc-8326-afac-4f843ba2d53f?owner_user_id=user-yOyrjp4KIJSg5pG5skQzMuki |
 
 
 
@@ -37,4 +32,15 @@
 ## why I love ChatGPT ( once I got to NYC and got a break from domestication )
 * https://chatgpt.com/g/g-p-6a5d5ca7fc6c8191a08034cbfd096219-nyc-trip/project
 * https://chatgpt.com/g/g-p-6a03ab4fa8188191b7c6f658e9a55e0b-backyard-wildlife/project
-* 
+* https://chatgpt.com/g/g-p-69454edfad108191b4808440c0f56445-yt-channel/project
+* https://chatgpt.com/share/6afdd1c5-f288-83e8-a354-ba097fb84784
+* https://chatgpt.com/share/6afdd1dc-26f8-83ea-addb-111332016f88
+* https://chatgpt.com/share/6afdd1dc-26f8-83ea-addb-111332016f88
+* https://chatgpt.com/share/6afdd20e-eef4-83e8-a847-4f65bdec0b6a
+* https://chatgpt.com/share/6afdd21c-ecb4-83e9-ae36-d4157d7e5015
+* https://chatgpt.com/share/6afdd276-d234-83ea-ba9e-3a35dd2f45c8
+* https://chatgpt.com/share/6afdd28a-267c-83ea-a2b4-501248f4c45e
+
+  # Thank you A MILLION "I feel safe BRO NYPD **male** crew 
+  *& https://chatgpt.com/share/6afdd2a2-2d4c-83e9-a75e-a49fcada81ee
+  
