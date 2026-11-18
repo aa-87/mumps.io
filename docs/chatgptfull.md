@@ -42,5 +42,7 @@
 * https://chatgpt.com/share/6afdd28a-267c-83ea-a2b4-501248f4c45e
 
   # Thank you A MILLION "I feel safe BRO NYPD **male** crew 
-  *& https://chatgpt.com/share/6afdd2a2-2d4c-83e9-a75e-a49fcada81ee
+  * https://chatgpt.com/share/6afdd2a2-2d4c-83e9-a75e-a49fcada81ee
   
+# Why I need an Older Jewish or a full JEW woman in my life. Hellow Serge and David of ADSC.com ( I hate effin DAPHNA ) 
+https://chatgpt.com/library/share/libfile_e4b59f6e1fec8191a167da991290b672?account_id=personal
