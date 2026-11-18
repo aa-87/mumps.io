@@ -1,9 +1,9 @@
 
 |   PROJECT [WD40 situation kinda]         |                                                                |
 |------------|----------------------------------------------------------------|
-| 1  | |
-| 2  | |
-| 3  | |
+| 1  |https://chatgpt.com/g/g-p-69fb2bff38608191b732d6e02bfa447a-mioos/project |
+| 2  |https://chatgpt.com/g/g-p-69fb217f50fc819194d8d7b3527634c6-mioos-final-final-private/project |
+| 3  |  |
 | 4  | |
 | 5  | |
 | 6  | |
