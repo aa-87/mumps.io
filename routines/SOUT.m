@@ -18,6 +18,8 @@ REG(CONF)
  SET META("authRequired")=0
  DO ADDM^MIOROUTE("GET","/sout","HOME^SOUT",.META)
  DO ADDM^MIOROUTE("POST","/sout/waitlist","WAITLIST^SOUT",.META)
+ DO ADDM^MIOROUTE("GET","/public/sout/*path","SOUTSTATIC^SOUT",.META)
+ DO ADDM^MIOROUTE("HEAD","/public/sout/*path","SOUTSTATIC^SOUT",.META)
  QUIT
  ;
 HOME(DEV,CONF,REQ,CTX)
@@ -29,6 +31,13 @@ HOME(DEV,CONF,REQ,CTX)
  IF $DATA(ERR) DO RESPERR(.DEV,.CONF,.CTX,500,"template_error",$GET(ERR("error"),"render_failed")) QUIT
  SET HEAD("Content-Type")="text/html; charset=utf-8"
  DO RESPX^MIOHTTP(.DEV,.CONF,200,.HEAD,OUT,$GET(CTX("request_id")),.CTX)
+ QUIT
+ ;
+SOUTSTATIC(DEV,CONF,REQ,CTX)
+ ; Isolated static mount; does not change the application's other mounts.
+ SET CONF("server","static","mount")="/public/sout"
+ SET CONF("server","static","root")="public"
+ DO STATIC^MIOSTATIC(.DEV,.CONF,.REQ,.CTX)
  QUIT
  ;
 WAITLIST(DEV,CONF,REQ,CTX)

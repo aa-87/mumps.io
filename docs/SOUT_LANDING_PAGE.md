@@ -7,7 +7,7 @@ This is an optional MIOTPL-powered landing page module. The working creative dir
 - `templates/layouts/sout_layout.html` — document shell and metadata.
 - `templates/pages/sout_home.html` — Mustache page content.
 - `public/sout/sout.css` — responsive editorial styling.
-- `routines/SOUT.m` — page and signup handlers.
+- `routines/SOUT.m` — page, isolated static asset, and signup handlers.
 
 The page uses MIOTPL variables, sections, inverted sections, and layout/page rendering.
 
@@ -24,7 +24,7 @@ D COMPILE^MIOROUTE
 
 If your application already initializes MIOROUTE and MIOTPL, add only `D REG^SOUT(.CONF)` before its existing `COMPILE^MIOROUTE` call. The landing page is available at `GET /sout`.
 
-Ensure the server's static-file handler serves `/public/*` from the repository's `public` directory. The stylesheet URL is `/public/sout/sout.css`.
+The module registers an isolated static mount at `/public/sout/*path`, served from the repository's `public` directory. It does not change the application's global static mount. The stylesheet is served at `/public/sout/sout.css`.
 
 ## Early-access form
 
