@@ -1,7 +1,5 @@
 # MUMPS.IO (MIO)
 ![demo](https://github.com/aa-87/mumps.io/blob/main/tmp/ezgif.com-gif-maker.gif)
-### live preview of MIOPLGD showcasing the MIOTPL.m routine @ https://www.efusout.com/mioplgd (cloudlfar still propagating) http://162.35.41.160:8181/mioplgd (100% handlebar mustache spec)
-### live preview of MIOOS @ https://www.efusout.com/mioos http://162.35.41.160:8181/mioos (ahmed/ahmed123)
 
 ### Bring MUMPS to the Web.
 
