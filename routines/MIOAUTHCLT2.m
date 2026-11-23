@@ -1,4 +1,5 @@
- MIOAUTHCLT2 ; Additional HS256 client-secret resolution tests for MIOAUTHJWT
+MIOAUTHCLT2 
+  ; Additional HS256 client-secret resolution tests for MIOAUTHJWT
   ;
   ;#################################################################
   ;#                                                               #
