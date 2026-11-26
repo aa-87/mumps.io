@@ -1,4 +1,6 @@
-# MUMPS.IO (MIO)
+# MUMPS.IO (MIO) 
+## MIOOS default login: (admin/W@lid2012) @ /mioos
+## MIOTPL testing endpoint @ /plgd
 ![demo](https://github.com/aa-87/mumps.io/blob/main/tmp/ezgif.com-gif-maker.gif)
 https://efusout.com/plgd/playground
 ### Bring MUMPS to the Web.
